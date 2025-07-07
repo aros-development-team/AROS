@@ -49,6 +49,19 @@ struct __locale __locale_UTF8 = {
 };
 #endif
 
+CONST_STRPTR DefaultAbDay[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+CONST_STRPTR DefaultDay[7]   = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+CONST_STRPTR DefaultAbMon[12] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+};
+CONST_STRPTR DefaultMon[12] = {
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+};
+CONST_STRPTR DefaultAM = "AM";
+CONST_STRPTR DefaultPM = "PM";
+
 locale_t __get_current_locale(void) {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();

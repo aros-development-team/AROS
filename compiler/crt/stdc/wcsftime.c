@@ -2,7 +2,8 @@
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
-#include <aros/posixc/langinfo.h>
+#include <libraries/localestd.h>
+
 #include <wchar.h>
 #include <time.h>
 /*

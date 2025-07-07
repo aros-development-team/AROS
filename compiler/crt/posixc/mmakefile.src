@@ -230,12 +230,15 @@ POSIXC := \
     write
 
 POSIXC_LOCALE := \
-    uselocale
+    localeconv_l \
+    newlocale \
+    freelocale \
+    uselocale \
+    strtod_l
 
 POSIXC_WCHAR := \
     mbsnrtowcs \
     wcsnrtombs
-
 
 # The following files don't have source code here but have a CPU
 # specific version in arch directory hierarchy
@@ -244,6 +247,7 @@ POSIXC_ARCH := \
     vfork_longjmp
 
 POSIXC_LINKLIB := \
+    ctype \
     ftime \
     gcvt \
     getopt \
@@ -266,9 +270,7 @@ USER_CPPFLAGS := \
 
 # Make sure all needed symbols/definitions for extensions are exposed...
 USER_CPPFLAGS += \
-        -D_XOPEN_SOURCE=700 \
-        -D__GNU_SOURCE \
-        -D_BSD_SOURCE \
+        -D_GNU_SOURCE \
         -D_LARGEFILE64_SOURCE
 
 #USER_CPPFLAGS += -DDEBUG=1

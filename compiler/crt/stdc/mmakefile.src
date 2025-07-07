@@ -680,7 +680,9 @@ STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
     $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
 
-USER_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN)
+STDC_COMMON_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN)
+
+USER_CFLAGS := $(STDC_COMMON_CFLAGS)
 USER_LDFLAGS := -nostdc -noposixc
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
@@ -702,7 +704,7 @@ compiler-stdc-genwcharsupport : $(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c
 
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
-    files="$(STDC) $(STDC_WCHAR) $(STDC_COMMON)" \
+    files="$(STDC) $(STDC_LOCALE) $(STDC_WCHAR) $(STDC_COMMON)" \
     linklibfiles="$(STDC_LINKLIB) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" linklibobjs=$(STDC_LINKOBJS)
 
 #MM compiler-stdc : compiler-stdc-genwcharsupport
@@ -820,7 +822,7 @@ STDC_STATIC := \
     vsprintf \
     vsscanf
 
-USER_CFLAGS := $(NOWARN_FLAGS) $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN) $(CFLAGS_MERGE_CONSTANTS)
+USER_CFLAGS := $(STDC_COMMON_CFLAGS) $(CFLAGS_MERGE_CONSTANTS)
 USER_CPPFLAGS := \
         $(STDC_MATH_CPPFLAGS) \
         -DSTDC_STATIC \

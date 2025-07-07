@@ -15,18 +15,18 @@
 extern "C" {
 #endif
 
-#define _ISupper    0x0001  /* UPPERCASE */
-#define _ISlower    0x0002  /* lowercase */
-#define _ISalpha    0x0004  /* a-y */
-#define _ISdigit    0x0008  /* 0-9 */
-#define _ISxdigit   0x0010  /* 0-9, a-f, A-F */
-#define _ISspace    0x0020  /* Space, Tab, CR, LF, FF */
-#define _ISprint    0x0040  /* 32-126, 160-255 */
-#define _ISgraph    0x0080  /* [] */
-#define _ISblank    0x0100  /* Space, Tab */
-#define _IScntrl    0x0200  /* 0-31, 127 */
-#define _ISpunct    0x0400  /* .,:;!? */
-#define _ISalnum    (_ISalpha | _ISdigit)
+#define _ctype_upper    0x0001  /* Uppercase letter (Unicode category 'Lu') */
+#define _ctype_lower    0x0002  /* Lowercase letter (Unicode category 'Ll') */
+#define _ctype_alpha    0x0004  /* Alphabetic letter (all Unicode letter categories 'L*') */
+#define _ctype_digit    0x0008  /* Decimal digit number (Unicode category 'Nd') */
+#define _ctype_xdigit   0x0010  /* Hexadecimal digit: 0-9, a-f, A-F (ASCII only) */
+#define _ctype_space    0x0020  /* Whitespace characters (Unicode White_Space property: space, tab, newline, etc.) */
+#define _ctype_print    0x0040  /* Printable characters including space (all visible Unicode chars plus space) */
+#define _ctype_graph    0x0080  /* Printable characters excluding space */
+#define _ctype_blank    0x0100  /* Horizontal whitespace: space and tab (ASCII ' ' and '\\t') */
+#define _ctype_cntrl    0x0200  /* Control characters (Unicode category 'Cc', e.g. 0-31, 127) */
+#define _ctype_punct    0x0400  /* Punctuation characters (Unicode categories 'Pc', 'Pd', 'Ps', 'Pe', 'Pi', 'Pf', 'Po') */
+#define _ctype_alnum    (_ctype_alpha | _ctype_digit)  /* Alphabetic or digit (letters and decimal digits) */
 
 extern const unsigned short int * const * const __ctype_b_ptr;
 extern const unsigned char     * const * const __ctype_toupper_ptr;
@@ -41,23 +41,21 @@ __header_inline int __name__(int c)  \
 { return __body__; }
 #else
 #define __ctype_make_func(__name__, __body__)    \
-__BEGIN_DECLS                          \
-int __name__(int c); \
-__END_DECLS
+int __name__(int c);
 #endif
 
 /* ISO C Standard Functions */
-__ctype_make_func(isupper,  _istype(c, _ISupper))
-__ctype_make_func(islower,  _istype(c, _ISlower))
-__ctype_make_func(isalpha,  _istype(c, _ISalpha))
-__ctype_make_func(isdigit,  _istype(c, _ISdigit))
-__ctype_make_func(isxdigit, _istype(c, _ISxdigit))
-__ctype_make_func(isspace,  _istype(c, _ISspace))
-__ctype_make_func(isprint,  _istype(c, _ISprint))
-__ctype_make_func(isgraph,  _istype(c, _ISgraph))
-__ctype_make_func(iscntrl,  _istype(c, _IScntrl))
-__ctype_make_func(ispunct,  _istype(c, _ISpunct))
-__ctype_make_func(isalnum,  _istype(c, _ISalnum))
+__ctype_make_func(isupper,  _istype(c, _ctype_upper))
+__ctype_make_func(islower,  _istype(c, _ctype_lower))
+__ctype_make_func(isalpha,  _istype(c, _ctype_alpha))
+__ctype_make_func(isdigit,  _istype(c, _ctype_digit))
+__ctype_make_func(isxdigit, _istype(c, _ctype_xdigit))
+__ctype_make_func(isspace,  _istype(c, _ctype_space))
+__ctype_make_func(isprint,  _istype(c, _ctype_print))
+__ctype_make_func(isgraph,  _istype(c, _ctype_graph))
+__ctype_make_func(iscntrl,  _istype(c, _ctype_cntrl))
+__ctype_make_func(ispunct,  _istype(c, _ctype_punct))
+__ctype_make_func(isalnum,  _istype(c, _ctype_alnum))
 
 __ctype_make_func(toupper,  (*__ctype_toupper_ptr)[(unsigned char)(c)])
 __ctype_make_func(tolower,  (*__ctype_tolower_ptr)[(unsigned char)(c)])
@@ -66,7 +64,7 @@ __ctype_make_func(tolower,  (*__ctype_tolower_ptr)[(unsigned char)(c)])
 #if defined(_POSIX_C_SOURCE) || defined(_GNU_SOURCE)
 
 # ifndef isblank
-__ctype_make_func(isblank,  _istype(c, _ISblank))
+__ctype_make_func(isblank,  _istype(c, _ctype_blank))
 # endif
 
 # ifndef isascii

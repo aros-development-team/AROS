@@ -31,7 +31,7 @@
 #define F_GETOWN        9
 #define F_SETOWN        10
 
-#if defined(__GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
+#if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
 #define F_GETLK64       5
 #define F_SETLK64       6
 #define F_SETLKW64      7
@@ -53,7 +53,7 @@
 #define O_TRUNC         0x0200
 /* NOTIMPL O_TTY_INIT */
 
-#if defined(_BSD_SOURCE) || defined(__GNU_SOURCE)
+#if defined(_BSD_SOURCE) || defined(_GNU_SOURCE)
 #define O_SHLOCK        0
 #define O_EXLOCK        0x0100
 #endif
@@ -61,13 +61,13 @@
 /* File status flags */
 #define O_APPEND        0x0400
 
-#if defined(__GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
+#if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
 #define O_DSYNC         0x4000
 #define O_RSYNC         0x8000
 #define O_SYNC          0x1000
 #endif
 
-#if defined(__GNU_SOURCE)
+#if defined(_GNU_SOURCE)
 #define O_ASYNC         0x2000
 #define O_FSYNC         O_SYNC
 #define O_NDELAY        O_NONBLOCK
@@ -83,7 +83,7 @@
 
 /* NOTIMPL O_SEARCH */
 
-#if defined(__GNU_SOURCE)
+#if defined(_GNU_SOURCE)
 #define O_READ          O_RDONLY
 #define O_WRITE         O_WRONLY
 #endif
@@ -105,7 +105,7 @@
 #define POSIX_FADV_SEQUENTIAL   5
 #define POSIX_FADV_WILLNEED     6
 
-#if defined(_BSD_SOURCE) || defined(__GNU_SOURCE)
+#if defined(_BSD_SOURCE) || defined(_GNU_SOURCE)
 /* BSD-style flock values */
 #define F_EXLCK     4
 #define F_SHLCK     8
@@ -129,7 +129,7 @@ __BEGIN_DECLS
 
 int creat(const char *filename, int mode);
 
-#if defined(__GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
+#if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 500)
 int creat64(const char *filename, int mode);
 #endif
 

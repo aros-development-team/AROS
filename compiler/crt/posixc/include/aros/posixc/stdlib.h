@@ -19,7 +19,7 @@
 __BEGIN_DECLS
 
 /* GNU/SVID extensions */
-#if defined(__GNU_SOURCE)
+#if defined(_GNU_SOURCE)
 double drand48(void);
 double erand48(unsigned short [3]);
 char *initstate(unsigned, char *, int);
@@ -34,7 +34,7 @@ void srandom(unsigned);
 #endif
 
 /* POSIX.1-2001 */
-#if defined(__GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L)
+#if defined(_GNU_SOURCE) || (_POSIX_C_SOURCE >= 200112L)
 int setenv(const char *, const char *, int);
 int unsetenv(const char *);
 int posix_memalign(void **memptr, size_t alignment, size_t size);
@@ -42,12 +42,12 @@ char *realpath(const char * restrict, char * restrict);
 #endif
 
 /* XSI extensions (X/Open, e.g. XPG4, POSIX.1-2001) */
-#if defined(__GNU_SOURCE) || defined(_XOPEN_SOURCE)
+#if defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE)
 int mkstemp(char *);
 #endif
 
 /* BSD / GNU extensions */
-#if defined(__GNU_SOURCE) || defined(_BSD_SOURCE)
+#if defined(_GNU_SOURCE) || defined(_BSD_SOURCE)
 char *mktemp(char *);
 int getloadavg(double loadavg[], int n);
 #endif

@@ -65,7 +65,7 @@ void funlockfile(FILE *);
 /* Extensions requiring feature guards */
 
 /* GNU or XSI */
-#if defined(__GNU_SOURCE) || defined(_XOPEN_SOURCE)
+#if defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE)
 FILE *fdopen(int filedes, const char *mode);
 int pclose(FILE *);
 FILE *popen(const char *, const char *);
@@ -73,7 +73,7 @@ char *tempnam(const char *dir, const char *pfx);
 #endif
 
 /* GNU extensions */
-#if defined(__GNU_SOURCE)
+#if defined(_GNU_SOURCE)
 /* NOTIMPL char *ctermid(char *); */
 /* NOTIMPL int dprintf(int, const char *restrict, ...); */
 /* NOTIMPL FILE *fmemopen(void *restrict, size_t, const char *restrict); */

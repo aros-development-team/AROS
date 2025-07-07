@@ -2,10 +2,11 @@
     Copyright (C) 2008, The AROS Development Team. All rights reserved.
 */
 
+
+#include <ctype.h>
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
-#include <ctype.h>
 
 #define MATCHUINT(dest, value)                   \
     if(sscanf(s, "%u%n", &val, &matched) != EOF) \

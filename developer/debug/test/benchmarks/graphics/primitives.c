@@ -6,7 +6,7 @@
 */
 
 // make sure we include the gnu extensions srand48/drand48
-#define __GNU_SOURCE
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>

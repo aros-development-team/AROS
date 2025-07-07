@@ -20,7 +20,7 @@
 #include <proto/dos.h>
 
 // make sure we include the gnu extension srandom
-#define __GNU_SOURCE
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <string.h>

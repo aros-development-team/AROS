@@ -2054,19 +2054,19 @@ diff -ruN gcc-9.5.0/libstdc++-v3/config/os/aros/ctype_base.h gcc-9.5.0.aros/libs
 +       on the mask type. Because of this, we don't use an enum. */
 +    typedef unsigned short int mask;
 +
-+    static const mask upper  = _ISupper;
-+    static const mask lower  = _ISlower;
-+    static const mask alpha  = _ISalpha;
-+    static const mask digit  = _ISdigit;
-+    static const mask xdigit = _ISxdigit;
-+    static const mask space  = _ISspace;
-+    static const mask print  = _ISprint;
-+    static const mask graph  = _ISgraph;
-+    static const mask cntrl  = _IScntrl;
-+    static const mask punct  = _ISpunct;
-+    static const mask alnum  = _ISalnum;
++    static const mask upper  = _ctype_upper;
++    static const mask lower  = _ctype_lower;
++    static const mask alpha  = _ctype_alpha;
++    static const mask digit  = _ctype_digit;
++    static const mask xdigit = _ctype_xdigit;
++    static const mask space  = _ctype_space;
++    static const mask print  = _ctype_print;
++    static const mask graph  = _ctype_graph;
++    static const mask cntrl  = _ctype_cntrl;
++    static const mask punct  = _ctype_punct;
++    static const mask alnum  = _ctype_alnum;
 +#if __cplusplus >= 201103L
-+    static const mask blank 	= _ISblank;
++    static const mask blank 	= _ctype_blank;
 +#endif
 +};
 +

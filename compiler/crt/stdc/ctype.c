@@ -13,62 +13,62 @@
 
 int isupper(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISupper));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_upper));
 }
 
 int islower(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISlower));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_lower));
 }
 
 int isalpha(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISalpha));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_alpha));
 }
 
 int isdigit(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISdigit));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_digit));
 }
 
 int isxdigit(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISxdigit));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_xdigit));
 }
 
 int isspace(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISspace));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_space));
 }
 
 int isprint(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISprint));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_print));
 }
 
 int isgraph(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISgraph));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_graph));
 }
 
 int isblank(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISblank));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_blank));
 }
 
 int iscntrl(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_IScntrl));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_cntrl));
 }
 
 int ispunct(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISpunct));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_punct));
 }
 
 int isalnum(int c)
 {
-	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ISalnum));
+	return ((*__ctype_b_ptr)[((int) (c)) & 0xff] & (unsigned short int) (_ctype_alnum));
 }
 
 int toupper(int c)

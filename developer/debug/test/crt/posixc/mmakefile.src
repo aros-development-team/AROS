@@ -90,7 +90,7 @@ USER_CPPFLAGS:=
 %build_progs mmake=test-crt-posixc-general \
     files="$(POSIXCTESTFILES)" targetdir=$(EXEDIR)
 
-USER_CPPFLAGS:= -D__GNU_SOURCE
+USER_CPPFLAGS:= -D_GNU_SOURCE
 
 %build_progs mmake=test-crt-posixc-gnu \
     files="$(POSIXCGNUTESTFILES)" targetdir=$(EXEDIR)
