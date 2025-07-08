@@ -397,7 +397,7 @@ jobs:
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       rsync -avz -e ssh \
           $(Build.BinariesDirectory)/Upload/ \
-          "$(MAPPED_USER),arosdev@web.sourceforge.net:uploads/nightly2/"
+          "$MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/"
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
@@ -523,7 +523,7 @@ jobs:
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/
       rsync -avz -e ssh \
            $(Build.BinariesDirectory)/Upload/ \
-           "$(MAPPED_USER),arosdev@web.sourceforge.net:uploads/nightly2/"
+           "$MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/"
       rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
