@@ -67,6 +67,7 @@ static inline int _vkprintf_strlen(const char *c)
 
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_TYPE          char
+#define FMTPRINTF_UTYPE         unsigned char
 #define FMTPRINTF_STR(str)      str
 #define FMTPRINTF_STRLEN(str)   _vkprintf_strlen(str)
 #if defined(FULL_SPECIFIERS)

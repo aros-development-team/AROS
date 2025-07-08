@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-    Function to format a string like printf().
+    Function to format a wide string like printf().
 */
 
 #include <stdio.h>
@@ -16,24 +16,25 @@
 #include <math.h>
 #include <float.h>
 
-#include <ctype.h>
+#include <wchar.h>
+#include <wctype.h>
 
 #ifndef STDC_STATIC
 #define FULL_SPECIFIERS
 #endif
 
-const unsigned char *const __stdc_char_decimalpoint = ".";
+const wchar_t *const __stdc_wchar_decimalpoint = L".";
 
 /* support macros for FMTPRINTF */
-#define FMTPRINTF_TYPE          char
-#define FMTPRINTF_UTYPE         unsigned char
-#define FMTPRINTF_STR(str)      str
-#define FMTPRINTF_STRLEN(str)   strlen(str)
-#define FMTPRINTF_DECIMALPOINT  __stdc_char_decimalpoint
-#define FMTPRINTF_ISDIGIT(c)    isdigit(c)
-#define FMTPRINTF_TOLOWER(c)    tolower(c)
+#define FMTPRINTF_TYPE          wchar_t
+#define FMTPRINTF_UTYPE         wchar_t
+#define FMTPRINTF_STR(str)      L ## str
+#define FMTPRINTF_STRLEN(str)   wcslen(str)
+#define FMTPRINTF_DECIMALPOINT  __stdc_wchar_decimalpoint
+#define FMTPRINTF_ISDIGIT(c)    iswdigit(c)
+#define FMTPRINTF_TOLOWER(c)    towlower(c)
 #define FMTPRINTF_OUT(c,ctx)  do                            \
-                { if((*outc)((unsigned char)(c),data)==EOF) \
+                { if((*outwc)((wchar_t)(c),data)==WEOF) \
                     return outcount;                        \
                   outcount++;                               \
                 }while(0)
@@ -44,20 +45,20 @@ const unsigned char *const __stdc_char_decimalpoint = ".";
 
     NAME */
 
-        int __vcformat (
+        int __vwformat (
 
 /*  SYNOPSIS */
         void       * data,
-        int       (* outc)(int, void *),
-        const char * format,
+        wint_t     (* outwc)(wchar_t, void *),
+        const wchar_t * format,
         va_list      args)
 
 /*  FUNCTION
-        Format a list of arguments and call a function for each char
+        Format a list of arguments and call a function for each wide char
         to print.
 
     INPUTS
-        data - This is passed to the user callback outc as its second argument.
+        data - This is passed to the user callback outwc as its second argument.
         outc - Call this function for every character that should be
                 emitted. The function should return EOF on error and
                 > 0 otherwise.

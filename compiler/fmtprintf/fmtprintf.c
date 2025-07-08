@@ -255,7 +255,7 @@
 #if AROS_FAST_BSTR
                         size2 = FMTPRINTF_STRLEN(buffer2);
 #else
-                        size2 = *(unsigned FMTPRINTF_TYPE *)buffer2++;
+                        size2 = *(FMTPRINTF_UTYPE *)buffer2++;
 #endif
                     else
                     {

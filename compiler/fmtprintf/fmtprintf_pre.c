@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
 
     Prelude for common code block to format a string like printf().
 */
@@ -32,25 +32,25 @@
 #define SIGNFLAG      16 /* '+' is set */
 #define LDBLFLAG      64 /* Processing a long double */
 
-static size_t format_long(char *buffer, char type, int base, unsigned long v)
+static size_t format_long(FMTPRINTF_TYPE *buffer, FMTPRINTF_TYPE type, int base, unsigned long v)
 {
     size_t size = 0;
-    char hex = 'a' - 10;
-    unsigned char mask  = 0;
-    unsigned char shift = 0;
+    FMTPRINTF_TYPE hex = FMTPRINTF_STR('a') - 10;
+    FMTPRINTF_UTYPE mask  = 0;
+    FMTPRINTF_UTYPE shift = 0;
 
     switch (type)
     {
-    case 'X':
-        hex = 'A' - 10;
-    case 'x':
+    case FMTPRINTF_STR('X'):
+        hex = FMTPRINTF_STR('A') - 10;
+    case FMTPRINTF_STR('x'):
         shift   = 4;
         mask    = 0x0F;
         if (base == 10)
             base = 16;
         break;
 
-    case 'o':
+    case FMTPRINTF_STR('o'):
         shift   = 3;
         mask    = 0x07;
         if (base == 10)
@@ -61,9 +61,9 @@ static size_t format_long(char *buffer, char type, int base, unsigned long v)
         /* Use slow divide operations for decimal numbers */
         do
         {
-            char c = v % base;
+            FMTPRINTF_TYPE c = v % base;
 
-            *--buffer = c + '0';
+            *--buffer = c + FMTPRINTF_STR('0');
             v /= base;
             size++;
         } while (v);
@@ -74,9 +74,9 @@ static size_t format_long(char *buffer, char type, int base, unsigned long v)
     /* Divisor is a power of 2, so use fast shifts for division */
     do
     {
-        char c = v & mask;
+        FMTPRINTF_TYPE c = v & mask;
 
-        *--buffer = (c < 10) ? c + '0' : c + hex;
+        *--buffer = (c < 10) ? c + FMTPRINTF_STR('0') : c + hex;
         v >>= shift;
         size++;
     } while (v);
@@ -91,26 +91,26 @@ static size_t format_long(char *buffer, char type, int base, unsigned long v)
  * This is used to process long long values on 32-bit machines. 64-bit
  * operations are performed slower there, and may need to call libgcc routines.
  */
-static size_t format_longlong(char *buffer, char type, int base, unsigned long long v)
+static size_t format_longlong(FMTPRINTF_TYPE *buffer, FMTPRINTF_TYPE type, int base, unsigned long long v)
 {
     size_t size = 0;
-    char hex = 'a' - 10;
-    unsigned char mask  = 0;
-    unsigned char shift = 0;
+    FMTPRINTF_TYPE hex = FMTPRINTF_STR('a') - 10;
+    FMTPRINTF_UTYPE mask  = 0;
+    FMTPRINTF_UTYPE shift = 0;
 
     switch (type)
     {
-    case 'X':
-        hex = 'A' - 10;
+    case FMTPRINTF_STR('X'):
+        hex = FMTPRINTF_STR('A') - 10;
 
-    case 'x':
+    case FMTPRINTF_STR('x'):
         shift = 4;
         mask = 0x0F;
         if (base == 10)
             base = 16;
         break;
 
-    case 'o':
+    case FMTPRINTF_STR('o'):
         shift = 3;
         mask  = 0x07;
         if (base == 10)
@@ -131,9 +131,9 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 #ifndef STDC_LIB32
         do
         {
-            char c = v % base;
+            FMTPRINTF_TYPE c = v % base;
 
-            *--buffer = c + '0';
+            *--buffer = c + FMTPRINTF_STR('0');
             v /= base;
             size++;
         } while (v);
@@ -144,9 +144,9 @@ static size_t format_longlong(char *buffer, char type, int base, unsigned long l
 
     do
     {
-        char c = v & mask;
+        FMTPRINTF_TYPE c = v & mask;
 
-        *--buffer = (c < 10) ? c + '0' : c + hex;
+        *--buffer = (c < 10) ? c + FMTPRINTF_STR('0') : c + hex;
         v >>= shift;
         size++;
     } while (v);

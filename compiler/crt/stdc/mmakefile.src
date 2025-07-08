@@ -422,6 +422,8 @@ STDC_WCHAR_COMMON := \
     
 STDC_WCHAR := \
     __locale \
+    __vwformat \
+    __vwscanf \
     $(STDC_WCHAR_COMMON) \
     wctrans \
     towctrans \
@@ -478,7 +480,6 @@ STDC := \
     __stdc_fpuprivate \
     __vcformat \
     __vcscan \
-    __vwscanf \
     _exit \
     abort \
     abs labs llabs \
