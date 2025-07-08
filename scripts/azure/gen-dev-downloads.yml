@@ -1,13 +1,16 @@
 trigger: none  # don't trigger on any repo pushes by default
-
 pr: none       # disable PR triggers (optional)
 
 resources:
   pipelines:
   - pipeline: websiteBuild  # alias
     project: aros-development-team/Website  # organization/project path
-    source: 12  # pipeline definition ID of the Website pipeline
-    trigger: true  # trigger when this pipeline completes
+    source: 12              # pipeline definition ID of the Website pipeline
+    trigger: true           # trigger when this pipeline completes
+  - pipeline: devdldBuild   # alias
+    project: AROS
+    source: 38
+    trigger: true
 
 pool:
   vmImage: 'ubuntu-latest'
