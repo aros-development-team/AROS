@@ -42,31 +42,13 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    echo "Checking shell access..."
-    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net true; then
-      echo "Shell not active yet. Creating shell..."
-      ssh -t "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net create
-
-      echo "Waiting for shell to become active (retrying up to 5 times)..."
-      for i in $(seq 1 5); do
-        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net true; then
-          echo "Shell is ready."
-          break
-        else
-          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
-          sleep 5
-        fi
-      done
-    else
-      echo "Shell already active."
-    fi
-
     echo "Run download scraper script..."
     python3 $(Build.SourcesDirectory)/scripts/azure/gen-downloads.py > downloads.html
 
     echo "Upload generated downloads.html back to remote..."
-    rsync -e "ssh -o StrictHostKeyChecking=yes" downloads.html \
-      "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html
+    rsync -avz -e ssh \
+      downloads.html \
+      "$(SF_RSYNC_USER),arosdev"@web.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html
   env:
     SF_RSYNC_USER: $(SF_RSYNC_USER)
   displayName: 'Generating downloads.html, and Uploading'
