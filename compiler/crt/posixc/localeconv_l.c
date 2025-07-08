@@ -4,16 +4,14 @@
     Posix uselocale.
 */
 
-#include <locale.h>  // For struct lconv and locale_t
+#include <locale.h>
 
-// Your locale structure, for reference (simplified)
+/*
+   This is broken just now and subject to change
+   Do not use, or expect it to work.
+ */
 struct __locale {
-    // ... other members ...
-
-    struct lconv locale_lconv;  // Embed or point to the lconv for this locale
-
-    // Alternatively, you might have individual members for
-    // decimal_point, thousands_sep, grouping, currency_symbol, etc.
+    struct lconv locale_lconv;
 };
 
 // Given your locale type alias
