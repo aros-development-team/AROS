@@ -3,13 +3,15 @@ pr: none       # disable PR triggers (optional)
 
 resources:
   pipelines:
-  - pipeline: websiteBuild  # alias
-    project: aros-development-team/Website  # organization/project path
-    source: 12              # pipeline definition ID of the Website pipeline
-    trigger: true           # trigger when this pipeline completes
-  - pipeline: devdldBuild   # alias
+
+  - pipeline: websiteBuild
+    project: Website
+    source: "aros-development-team.documentation"
+    trigger: true
+
+  - pipeline: devdldBuild
     project: AROS
-    source: 38
+    source: "Update Developer Nightlies"
     trigger: true
 
 pool:
