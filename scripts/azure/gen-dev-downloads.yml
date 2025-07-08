@@ -1,5 +1,13 @@
-trigger:
-- main  # or your branch name
+trigger: none  # don't trigger on any repo pushes by default
+
+pr: none       # disable PR triggers (optional)
+
+resources:
+  pipelines:
+  - pipeline: websiteBuild  # alias
+    project: aros-development-team/Website  # organization/project path
+    source: 12  # pipeline definition ID of the Website pipeline
+    trigger: true  # trigger when this pipeline completes
 
 pool:
   vmImage: 'ubuntu-latest'
