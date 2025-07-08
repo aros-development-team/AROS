@@ -45,7 +45,31 @@ jobs:
     AROSCONTRIBSRCDIR: '$(Agent.BuildDirectory)/s-contrib' # Path to the contrib source code
 
   steps:
+
+  # Download the SSH key from secure files
+  - task: DownloadSecureFile@1
+    name: GetSSHKey
+    inputs:
+      secureFile: 'sf-azure-key'
+
   - script: |
+      echo "Setting up SSH key..."
+      mkdir -p ~/.ssh
+      cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
+      chmod 600 ~/.ssh/id_rsa
+      chmod 700 ~/.ssh
+
+      ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
+      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+
+      echo "Host web.sourceforge.net" > ~/.ssh/config
+      echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+      echo "    IdentitiesOnly yes" >> ~/.ssh/config
+      echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+      echo "    Port 22" >> ~/.ssh/config
+      chmod 600 ~/.ssh/config
+
+      echo "SSH key and config setup complete."
       if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != "" ]; then
         export TARGETTOOLCHAINOPTS="$TARGETTOOLCHAINOPTS --with-toolchain=$(arosbuild.toolchain.family)"
         export TARGETTOOLCHAIN="$(arosbuild.toolchain.family)"
@@ -340,17 +364,43 @@ jobs:
       pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/sources
       artifactName: sources
 
+  # Create target directory on SourceForge web space
+  - bash: |
+      echo "Checking shell access..."
+      if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+        echo "Shell not active yet. Creating shell..."
+        ssh -t "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net create
+
+        echo "Waiting for shell to become active (retrying up to 5 times)..."
+        for i in $(seq 1 5); do
+          if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+            echo "Shell is ready."
+            break
+          else
+            echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+            sleep 5
+          fi
+        done
+      else
+        echo "Shell already active."
+      fi
+      echo "Ensuring target directory exists on SourceForge..."
+      ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
+        "mkdir -p /home/project-web/arosdev/uploads/nightly2"
+    condition: ne( variables['SF_RSYNC_USER'], '' )
+    displayName: 'Preparing source package upload directory on SourceForge'
+
   - script: |
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources'
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-*source.tar.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources/
-      #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/
+      rsync -avz -e ssh \
+          $(Build.BinariesDirectory)/Upload/ \
+          "$(MAPPED_USER),arosdev@web.sourceforge.net:uploads/nightly2/"
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     condition: ne( variables['SF_RSYNC_USER'], '' )
     displayName: 'Deploying source package(s)'
 
@@ -441,16 +491,42 @@ jobs:
       pathtoPublish: $(Build.ArtifactStagingDirectory)/publish/toolchain
       artifactName: $(arosbuild.name) toolchain
 
+  # Create target directory on SourceForge web space
+  - bash: |
+      echo "Checking shell access..."
+      if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+        echo "Shell not active yet. Creating shell..."
+        ssh -t "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net create
+
+        echo "Waiting for shell to become active (retrying up to 5 times)..."
+        for i in $(seq 1 5); do
+          if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net true; then
+            echo "Shell is ready."
+            break
+          else
+            echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+            sleep 5
+          fi
+        done
+      else
+        echo "Shell already active."
+      fi
+      echo "Ensuring target directory exists on SourceForge..."
+      ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
+        "mkdir -p /home/project-web/arosdev/uploads/nightly2"
+    condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
+    displayName: 'Preparing toolchain upload directory on SourceForge'
+
   - script: |
       mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/'
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/
-      #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/
+      rsync -avz -e ssh \
+           $(Build.BinariesDirectory)/Upload/ \
+           "$(MAPPED_USER),arosdev@web.sourceforge.net:uploads/nightly2/"
       rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
     displayName: 'Deploying toolchain'
 
@@ -750,11 +826,11 @@ jobs:
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
-      #ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
-      sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' $(Build.BinariesDirectory)/Upload/ $MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/
+      rsync -avz -e ssh \
+          $(Build.BinariesDirectory)/Upload/ \
+          "$(MAPPED_USER),aros@web.sourceforge.net:uploads/nightly2/"
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     condition: ne( variables['SF_RSYNC_USER'], '' )
     displayName: 'Deploying build'
 
@@ -824,14 +900,15 @@ jobs:
         if [ -f "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" ]; then
           sed -i.bak -e "s|</title>|</title>\n<link href=\"http://www.aros.org/aros.css?v=1.3\" type=\"text/css\" rel=\"stylesheet\">\n<link media=\"print\" href=\"http://www.aros.org/print.css\" type=\"text/css\" rel=\"stylesheet\">|g" -e "s|background-color:#FF1717|background-color:#F03030|g" -e "s|background-color:#E50000|background-color:#E55050|g" -e "s|background-color:#0CAB37|background-color:#46F788|g" -e "s|background-color:#0DBD3D|background-color:#20E070|g" -e "/<h1 class=\"/d" "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html"
           rm "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html.bak"
-          sshpass -p "$MAPPED_PASS" rsync -avz -e 'ssh -o "StrictHostKeyChecking=no" -p 22' "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" $MAPPED_USER,arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/unittests/
+          rsync -avz -e ssh \
+              "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" \
+              "$(MAPPED_USER),arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/unittests/"
         fi
       fi
       echo "##vso[task.setvariable variable=UNITTESTFAILFLAG;]$UNITTESTFAILFLAG"
       echo "AROS Hosted Cunit Test Phase completed"
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-      MAPPED_PASS: $(SF_RSYNC_PASSWORD)
     continueOnError: true
     condition: and( eq( variables['arosbuild.withunittests'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
     displayName: 'Performing Unit testing with CUnit'
