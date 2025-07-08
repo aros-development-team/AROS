@@ -73,7 +73,7 @@ char *setstate(char *);
 
 /* POSIX.1-2008 / XSI-7 / GNU extensions */
 #if defined(_GNU_SOURCE) || (_XOPEN_SOURCE >= 700) || (_POSIX_C_SOURCE >= 200809L)
-#include <locale.h>
+#include <aros/posixc/locale.h>
 
 double strtod_l(const char *restrict nptr, char **restrict endptr, locale_t loc);
 #endif
