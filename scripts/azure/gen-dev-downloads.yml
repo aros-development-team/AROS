@@ -5,10 +5,36 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
+
+- task: DownloadSecureFile@1
+  name: GetSSHKey
+  inputs:
+    secureFile: 'sf-azure-key'
+
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '3.x'      # Use Python 3.x
   displayName: 'Use Python 3'
+
+- bash: |
+    echo "Setting up SSH key..."
+    mkdir -p ~/.ssh
+    cp "$(GetSSHKey.secureFilePath)" ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
+    chmod 700 ~/.ssh
+
+    ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
+    ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+
+    echo "Host web.sourceforge.net" > ~/.ssh/config
+    echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+    echo "    IdentitiesOnly yes" >> ~/.ssh/config
+    echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+    echo "    Port 22" >> ~/.ssh/config
+    chmod 600 ~/.ssh/config
+
+    echo "SSH key and config setup complete."
+  displayName: 'Setup SSH Key and SSH Config for SourceForge'
 
 - script: |
     python3 -m pip install --upgrade pip
@@ -16,10 +42,36 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    python3 scripts/azure/gen-downloads.py > downloads.html
-  displayName: 'Run nightly2 scraper script'
+    echo "Checking shell access..."
+    if ! ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net true; then
+      echo "Shell not active yet. Creating shell..."
+      ssh -t "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net create
 
+      echo "Waiting for shell to become active (retrying up to 5 times)..."
+      for i in $(seq 1 5); do
+        if ssh -o StrictHostKeyChecking=no "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net true; then
+          echo "Shell is ready."
+          break
+        else
+          echo "Shell not ready yet, waiting 5 seconds (attempt $i)..."
+          sleep 5
+        fi
+      done
+    else
+      echo "Shell already active."
+    fi
+
+    echo "Run download scraper script..."
+    python3 $(Build.SourcesDirectory)/scripts/azure/gen-downloads.py > downloads.html
+
+    echo "Upload generated downloads.html back to remote..."
+    rsync -e "ssh -o StrictHostKeyChecking=yes" downloads.html \
+      "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net:htdocs/downloads.html
+  env:
+    SF_RSYNC_USER: $(SF_RSYNC_USER)
+  displayName: 'Generating downloads.html, and Uploading'
+  
 - publish: downloads.html
   artifact: downloads-html
-  displayName: 'Publish nightly2 HTML artifact'
+  displayName: 'Publish downloads HTML artifact'
   
