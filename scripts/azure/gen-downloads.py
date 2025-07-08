@@ -118,16 +118,16 @@ html.append("""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AROS nightly2 downloads</title>
 <style>
-  body { font-family: Verdana, Arial, sans-serif; background-color: #EEE; margin: 10px; }
-  table.layout.nightly { border-collapse: collapse; width: 100%; }
-  table.layout.nightly td, table.layout.nightly th { border: 1px solid black; padding: 4px; }
-  .layout.nightly { background-color: #EEE; }
-  .layout.nightly a { text-decoration: none; color: black; font-weight: bold; }
-  .layout.nightly a:hover { text-decoration: underline; color: #007700; }
-  .layout.padded { padding: 6px; }
-  .layout.invis { background-color: transparent; border: none; }
-  .layout.nightly p { margin: 4px 0; }
-  .layout.nightly font[size="-1"] { color: #555; }
+  body {{ font-family: Verdana, Arial, sans-serif; background-color: #EEE; margin: 10px; }}
+  table.layout.nightly {{ border-collapse: collapse; width: 100%; }}
+  table.layout.nightly td, table.layout.nightly th {{ border: 1px solid black; padding: 4px; }}
+  .layout.nightly {{ background-color: #EEE; }}
+  .layout.nightly a {{ text-decoration: none; color: black; font-weight: bold; }}
+  .layout.nightly a:hover {{ text-decoration: underline; color: #007700; }}
+  .layout.padded {{ padding: 6px; }}
+  .layout.invis {{ background-color: transparent; border: none; }}
+  .layout.nightly p {{ margin: 4px 0; }}
+  .layout.nightly font[size="-1"] {{ color: #555; }}
 </style>
 </head>
 <body>
