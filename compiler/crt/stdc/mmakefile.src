@@ -463,7 +463,9 @@ STDC_WCHAR := \
     vswscanf \
     wcscoll \
     wcsxfrm \
-    wcswcs
+    wcswcs \
+    vswprintf \
+    swprintf
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \
@@ -663,7 +665,11 @@ STDCIO_WCHAR := \
     vfwscanf \
     fwscanf \
     vwscanf \
-    wscanf
+    wscanf \
+    vfwprintf \
+    fwprintf \
+    vwprintf \
+    wprintf
 
 # The common files will be put both in the shared and in the static link lib
 STDCIO_COMMON := \

@@ -48,35 +48,49 @@ const wchar_t *const __stdc_wchar_decimalpoint = L".";
         int __vwformat (
 
 /*  SYNOPSIS */
-        void       * data,
-        wint_t     (* outwc)(wchar_t, void *),
+        void          * data,
+        wint_t       (* outwc)(wchar_t, void *),
         const wchar_t * format,
-        va_list      args)
+        va_list         args)
 
 /*  FUNCTION
-        Format a list of arguments and call a function for each wide char
-        to print.
+        Formats a list of arguments according to the provided wide-character
+        format string and emits each resulting wide character through a
+        callback function.
 
     INPUTS
-        data - This is passed to the user callback outwc as its second argument.
-        outc - Call this function for every character that should be
-                emitted. The function should return EOF on error and
-                > 0 otherwise.
-        format - A printf() format string.
-        args - A list of arguments for the format string.
+        data   - A user-supplied pointer passed as the second argument to
+                 the outwc() callback function.
+        outwc  - A callback function invoked for each wide character to output.
+                 The callback receives the character and the data pointer.
+                 It should return EOF on error or a positive value on success.
+        format - A wide-character printf() format string containing
+                 formatting directives.
+        args   - A va_list containing the arguments for the format string.
 
     RESULT
-        The number of characters written.
+        The number of wide characters successfully written, or a negative
+        value on error.
 
     NOTES
+        This is a generic backend used to implement wide-character printf
+        functions. It handles parsing of printf-style format specifiers
+        and passes formatted output one character at a time to the caller's
+        output function.
 
     EXAMPLE
 
     BUGS
+        Some format specifiers may not yet be implemented or fully support
+        wide-character variations.
 
     SEE ALSO
+        swprintf(), vswprintf(), fwprintf(), vfwprintf(), wprintf(), vwprintf()
 
     INTERNALS
+        The core printf formatting logic is shared with the narrow-character
+        version where possible but adapted for wide characters. Supports
+        numeric formatting, string output, and most standard printf specifiers.
 
 ******************************************************************************/
 {

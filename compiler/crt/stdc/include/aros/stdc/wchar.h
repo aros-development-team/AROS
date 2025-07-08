@@ -36,7 +36,7 @@ struct __sFILE;
 __BEGIN_DECLS
 
 int __vwscanf(void *data, wint_t (*get_char)(void *), int (*unget_char)(wint_t, void *), const wchar_t * format, va_list args);
-
+int __vwformat(void *data, wint_t (*outwc)(wchar_t, void *), const wchar_t * format, va_list args);
 /*
  * stdc.library (45 funcs)
  */
@@ -49,7 +49,6 @@ int vswscanf(const wchar_t * restrict s,
 int swscanf(const wchar_t * restrict s,
 	const wchar_t * restrict format, ...);
 int wscanf(const wchar_t * restrict format, ...);
-STDC_WCHAR_NOTIMPL(
 int swprintf(wchar_t * restrict s, size_t n,
 	const wchar_t * restrict format, ...);
 int vswprintf(wchar_t * restrict s, size_t n,
@@ -57,7 +56,6 @@ int vswprintf(wchar_t * restrict s, size_t n,
 int vwprintf(const wchar_t * restrict format,
 	va_list arg);
 int wprintf(const wchar_t * restrict format, ...);
-)
 /* General wide-string utilities */
 double wcstod(const wchar_t * restrict nptr,
 	wchar_t ** restrict endptr);
@@ -164,12 +162,10 @@ size_t wcsrtombs(char * restrict dst, const wchar_t ** restrict src,
  * stdcio.library
  */
 /* Formatted wide-character input/output functions */
-STDC_WCHAR_NOTIMPL(
 int fwprintf(struct __sFILE * restrict stream,
         const wchar_t * restrict format, ...);
 int vfwprintf(struct __sFILE * restrict stream,
 	const wchar_t * restrict format, va_list arg);
-)
 int fwscanf(struct __sFILE * restrict stream,
         const wchar_t * restrict format, ...);
 int vfwscanf(struct __sFILE * restrict stream,
