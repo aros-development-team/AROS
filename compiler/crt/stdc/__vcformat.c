@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Function to format a string like printf().
 */
@@ -25,15 +25,17 @@
 const unsigned char *const __stdc_char_decimalpoint = ".";
 
 /* support macros for FMTPRINTF */
-#define FMTPRINTF_COUT(c)  do                           \
-                { if((*outc)((unsigned char)(c),data)==EOF)   \
-                    return outcount;         \
-                  outcount++;                \
-                }while(0)
-
-#define FMTPRINTF_STRLEN(str) strlen(str)
-
+#define FMTPRINTF_TYPE          char
+#define FMTPRINTF_STR(str)      str
+#define FMTPRINTF_STRLEN(str)   strlen(str)
 #define FMTPRINTF_DECIMALPOINT  __stdc_char_decimalpoint
+#define FMTPRINTF_ISDIGIT(c)    isdigit(c)
+#define FMTPRINTF_TOLOWER(c)    tolower(c)
+#define FMTPRINTF_OUT(c,ctx)  do                            \
+                { if((*outc)((unsigned char)(c),data)==EOF) \
+                    return outcount;                        \
+                  outcount++;                               \
+                }while(0)
 
 #include "fmtprintf_pre.c"
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2025, The AROS Development Team. All rights reserved.
 
     Desc: Formats a message and makes sure the user will see it.
 */
@@ -66,12 +66,15 @@ static inline int _vkprintf_strlen(const char *c)
 #define ULONG_MAX       4294967295UL
 
 /* support macros for FMTPRINTF */
-#define FMTPRINTF_COUT(c)       RawPutChar(c)
+#define FMTPRINTF_TYPE          char
+#define FMTPRINTF_STR(str)      str
 #define FMTPRINTF_STRLEN(str)   _vkprintf_strlen(str)
-
 #if defined(FULL_SPECIFIERS)
 #define FMTPRINTF_DECIMALPOINT  __arossupport_char_decimalpoint
 #endif
+#define FMTPRINTF_ISDIGIT(c)    isdigit(c)
+#define FMTPRINTF_TOLOWER(c)    tolower(c)
+#define FMTPRINTF_OUT(c,ctx)    RawPutChar(c)
 
 #include "fmtprintf_pre.c"
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
     $Id:$
 
     Common code block to format a string like printf().
@@ -16,17 +16,17 @@
     {
         if (*format == '%')
         {
-            static const char flagc[] = { '#', '0', '-', ' ', '+' };
+            static const FMTPRINTF_TYPE flagc[] = {FMTPRINTF_STR('#'), FMTPRINTF_STR('0'), FMTPRINTF_STR('-'), FMTPRINTF_STR(' '), FMTPRINTF_STR('+') };
             size_t width=0, preci=ULONG_MAX, flags=0; /* Specifications */
-            char type, subtype = 'i';
+            FMTPRINTF_TYPE type, subtype = FMTPRINTF_STR('i');
 #ifdef AROS_HAVE_LONG_LONG
-            char lltype=0;
+            FMTPRINTF_TYPE lltype=0;
 #endif
-            char buffer1[2];                            /* Signs and that like */
-            char buffer[REQUIREDBUFFER];                /* The body */
-            char *buffer2 = buffer;                     /* So we can set this to any other strings */
+            FMTPRINTF_TYPE buffer1[2];                            /* Signs and that like */
+            FMTPRINTF_TYPE buffer[REQUIREDBUFFER];                /* The body */
+            FMTPRINTF_TYPE *buffer2 = buffer;                     /* So we can set this to any other strings */
             size_t size1 = 0, size2 = 0;                /* How many chars in buffer? */
-            const char *ptr = format + 1;               /* pointer to format string */
+            const FMTPRINTF_TYPE *ptr = format + 1;               /* pointer to format string */
             size_t i, pad;                              /* Some temporary variables */
 #if defined(FULL_SPECIFIERS)
             union {                                     /* floating point arguments %[aAeEfFgG] */
@@ -44,7 +44,7 @@
                     }
             while (i < sizeof(flagc));
 
-            if (*ptr == '*')                            /* read width from arguments */
+            if (*ptr == FMTPRINTF_STR('*'))                            /* read width from arguments */
             {
                 signed int a;
                 ptr++;
@@ -57,13 +57,13 @@
                 else
                     width = a;
             }else
-                while (isdigit(*ptr))
-                    width = width * 10 + (*ptr++ - '0');
+                while (FMTPRINTF_ISDIGIT(*ptr))
+                    width = width * 10 + (*ptr++ - FMTPRINTF_STR('0'));
 
-            if (*ptr == '.')
+            if (*ptr == FMTPRINTF_STR('.'))
             {
                 ptr++;
-                if (*ptr == '*')                        /* read precision from arguments */
+                if (*ptr == FMTPRINTF_STR('*'))                        /* read precision from arguments */
                 {
                     signed int a;
                     ptr++;
@@ -73,19 +73,19 @@
                 }else
                 {
                     preci = 0;
-                    while (isdigit(*ptr))
-                        preci = preci * 10 + (*ptr++ - '0');
+                    while (FMTPRINTF_ISDIGIT(*ptr))
+                        preci = preci * 10 + (*ptr++ - FMTPRINTF_STR('0'));
                 }
             }
 
-            if (*ptr == 'h' || *ptr == 'l' || *ptr == 'L' || *ptr == 'z')
+            if (*ptr == FMTPRINTF_STR('h') || *ptr == FMTPRINTF_STR('l') || *ptr == FMTPRINTF_STR('L') || *ptr == FMTPRINTF_STR('z'))
                 subtype=*ptr++;
 
-            if (*ptr == 'l' || *ptr == 'q')
+            if (*ptr == FMTPRINTF_STR('l') || *ptr == FMTPRINTF_STR('q'))
             {
 #ifdef AROS_HAVE_LONG_LONG
                 lltype = 1;
-                subtype = 'l';
+                subtype = FMTPRINTF_STR('l');
 #endif
                 ptr++;
             }
@@ -94,13 +94,13 @@
 
             switch(type)
             {
-            case 'd':
-            case 'i':
-            case 'o':
-            case 'p':
-            case 'u':
-            case 'x':
-            case 'X':
+            case FMTPRINTF_STR('d'):
+            case FMTPRINTF_STR('i'):
+            case FMTPRINTF_STR('o'):
+            case FMTPRINTF_STR('p'):
+            case FMTPRINTF_STR('u'):
+            case FMTPRINTF_STR('x'):
+            case FMTPRINTF_STR('X'):
             {
 #ifdef AROS_HAVE_LONG_LONG
                     unsigned long long llv = 0;
@@ -108,20 +108,20 @@
                     unsigned long v = 0;
                     int base = 10;
 
-                    if (type=='p')                      /* This is written as 0x08lx (or 0x016lx on 64 bits) */
+                    if (type==FMTPRINTF_STR('p'))                      /* This is written as 0x08lx (or 0x016lx on 64 bits) */
                     {
-                        subtype = 'l';
-                        type = 'x';
+                        subtype = FMTPRINTF_STR('l');
+                        type = FMTPRINTF_STR('x');
                         if (!width)
                             width = sizeof(void *) * 2;
                         flags |= ZEROPADFLAG;
                     }
 
-                    if (type=='d' || type=='i')         /* These are signed */
+                    if (type == FMTPRINTF_STR('d') || type == FMTPRINTF_STR('i'))         /* These are signed */
                     {
                         signed long v2;
 
-                        if (subtype=='l')
+                        if (subtype == FMTPRINTF_STR('l'))
                         {
 #ifdef AROS_HAVE_LONG_LONG
                             if (lltype)
@@ -144,28 +144,28 @@
 #endif
                                 v2=va_arg(args, signed long);
                         }
-                        else if (subtype == 'z')
+                        else if (subtype == FMTPRINTF_STR('z'))
                             v2 = va_arg(args, size_t);
                         else
                             v2 = va_arg(args, signed int);
 
                         if (v2 < 0)
                         {
-                            buffer1[size1++] = '-';
+                            buffer1[size1++] = FMTPRINTF_STR('-');
                             v = -v2;
                         }
                         else
                         {
                             if (flags & SIGNFLAG)
-                                buffer1[size1++] = '+';
+                                buffer1[size1++] = FMTPRINTF_STR('+');
                             else if (flags & BLANKFLAG)
-                                buffer1[size1++] = ' ';
+                                buffer1[size1++] = FMTPRINTF_STR(' ');
                             v = v2;
                         }
                     }
                     else                                /* These are unsigned */
                     {
-                        if (subtype=='l')
+                        if (subtype == FMTPRINTF_STR('l'))
                         {
 #ifdef AROS_HAVE_LONG_LONG
                             if (lltype)
@@ -174,14 +174,14 @@
 #endif
                                 v = va_arg(args, unsigned long);
                         }
-                        else if (subtype == 'z')
+                        else if (subtype == FMTPRINTF_STR('z'))
                             v = va_arg(args, size_t);
                         else
                             v = va_arg(args, unsigned int);
 
                         if (flags & ALTERNATEFLAG)
                         {
-                            char nzero;
+                            FMTPRINTF_TYPE nzero;
 #ifdef AROS_HAVE_LONG_LONG
                             if (lltype)
                                 nzero = (llv != 0);
@@ -189,11 +189,11 @@
 #endif
                                 nzero = (v != 0);
 
-                            if (type == 'o' && preci && nzero)
-                                buffer1[size1++] = '0';
-                            if ((type == 'x' || type == 'X') && nzero)
+                            if (type == FMTPRINTF_STR('o') && preci && nzero)
+                                buffer1[size1++] = FMTPRINTF_STR('0');
+                            if ((type == FMTPRINTF_STR('x') || type == FMTPRINTF_STR('X')) && nzero)
                             {
-                                buffer1[size1++] = '0';
+                                buffer1[size1++] = FMTPRINTF_STR('0');
                                 buffer1[size1++] = type;
                             }
                         }
@@ -223,8 +223,8 @@
                     break;
             }
 
-            case 'c':
-                    if (subtype=='l')
+            case FMTPRINTF_STR('c'):
+                    if (subtype == FMTPRINTF_STR('l'))
                     {
 #ifdef AROS_HAVE_LONG_LONG
                         if (lltype)
@@ -240,26 +240,26 @@
                     preci = 0;
                     break;
 
-            case 's':
-                    buffer2 = va_arg(args, char *);
+            case FMTPRINTF_STR('s'):
+                    buffer2 = va_arg(args, FMTPRINTF_TYPE *);
                     if (!buffer2)
-                        buffer2 = "(null)";
+                        buffer2 = FMTPRINTF_STR("(null)");
                     size2 = FMTPRINTF_STRLEN(buffer2);
                     size2 = size2 <= preci ? size2 : preci;
                     preci = 0;
                     break;
 
-            case 'b':
+            case FMTPRINTF_STR('b'):
                     buffer2 = BADDR(va_arg(args, BPTR));
                     if (buffer2)
 #if AROS_FAST_BSTR
                         size2 = FMTPRINTF_STRLEN(buffer2);
 #else
-                        size2 = *(unsigned char *)buffer2++;
+                        size2 = *(unsigned FMTPRINTF_TYPE *)buffer2++;
 #endif
                     else
                     {
-                        buffer2 = "(null)";
+                        buffer2 = FMTPRINTF_STR("(null)");
                         size2 = 6;
                     }
 
@@ -268,21 +268,21 @@
                     break;
 
 #ifdef FULL_SPECIFIERS
-            case 'a':
-            case 'A':
-            case 'f':
-            case 'F':
-            case 'e':
-            case 'E':
-            case 'g':
-            case 'G':
+            case FMTPRINTF_STR('a'):
+            case FMTPRINTF_STR('A'):
+            case FMTPRINTF_STR('f'):
+            case FMTPRINTF_STR('F'):
+            case FMTPRINTF_STR('e'):
+            case FMTPRINTF_STR('E'):
+            case FMTPRINTF_STR('g'):
+            case FMTPRINTF_STR('G'):
             {
-                    char killzeros=0, sign=0;           /* some flags */
+                    FMTPRINTF_TYPE killzeros=0, sign=0;           /* some flags */
                     int ex1, ex2;                       /* Some temporary variables */
                     size_t size, dnum, dreq;
-                    char *udstr = NULL;
+                    FMTPRINTF_TYPE *udstr = NULL;
 
-                    if (subtype == 'L')
+                    if (subtype == FMTPRINTF_STR('L'))
                     {
                         flags |= LDBLFLAG;
                         fparg.ldbl = va_arg(args, long double);
@@ -294,11 +294,11 @@
                     if (isinf(fparg.dbl))
                     {
                         if (fparg.dbl>0)
-                            udstr = "+inf";
+                            udstr = FMTPRINTF_STR("+inf");
                         else
-                            udstr = "-inf";
+                            udstr = FMTPRINTF_STR("-inf");
                     } else if (isnan(fparg.dbl))
-                        udstr = "NaN";
+                        udstr = FMTPRINTF_STR("NaN");
 
                     if (udstr != NULL)
                     {
@@ -310,24 +310,24 @@
                     if (preci == ULONG_MAX)             /* old default */
                         preci = 6;                      /* new default */
 
-                    if (((subtype != 'L') && (fparg.dbl < 0.0)) || ((subtype == 'L') && (fparg.ldbl < 0.0)))
+                    if (((subtype != FMTPRINTF_STR('L')) && (fparg.dbl < 0.0)) || ((subtype == FMTPRINTF_STR('L')) && (fparg.ldbl < 0.0)))
                     {
-                        sign = '-';
-                        if (subtype == 'L')
+                        sign = FMTPRINTF_STR('-');
+                        if (subtype == FMTPRINTF_STR('L'))
                             fparg.ldbl = -fparg.ldbl;
                         else
                             fparg.dbl = -fparg.dbl;
                     } else {
                         if (flags & SIGNFLAG)
-                            sign = '+';
+                            sign = FMTPRINTF_STR('+');
                         else if (flags & BLANKFLAG)
-                            sign = ' ';
+                            sign = FMTPRINTF_STR(' ');
                     }
 
                     ex1 = 0;
-                    if (tolower(type) != 'a')
+                    if (FMTPRINTF_TOLOWER(type) != FMTPRINTF_STR('a'))
                     {
-                        if (subtype != 'L')
+                        if (subtype != FMTPRINTF_STR('L'))
                         {
                             if (fparg.dbl != 0.0)
                             {
@@ -360,11 +360,11 @@
                     }
 
                     ex2 = preci;
-                    if (tolower(type) == 'f')
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f'))
                         ex2 += ex1;
-                    if (tolower(type) == 'g')
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('g'))
                         ex2--;
-                    if (subtype != 'L')
+                    if (subtype != FMTPRINTF_STR('L'))
                     {
                         fparg.dbl += .5 / pow(10, ex2 < MINFLOATSIZE ? ex2 : MINFLOATSIZE); /* Round up */
                         if (fparg.dbl >= 10.0)          /* Adjusts log10(10.)=.999999999 too */
@@ -381,40 +381,40 @@
                         }
                     }
 
-                    if (tolower(type) == 'g')           /* This changes to one of the other types */
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('g'))           /* This changes to one of the other types */
                     {
                         if (ex1 < (signed long)preci && ex1 >= -4)
                         {
-                            type = 'f';
+                            type = FMTPRINTF_STR('f');
                             preci -= ex1;
                         } else
-                            type = type == 'g' ? 'e' : 'E';
+                            type = type == FMTPRINTF_STR('g') ? FMTPRINTF_STR('e') : FMTPRINTF_STR('E');
                         preci--;
                         if (!(flags & ALTERNATEFLAG))
                             killzeros = 1;              /* set flag to kill trailing zeros */
                     }
 
                     dreq = preci + 1;                   /* Calculate number of decimal places required */
-                    if (type == 'f')
+                    if (type == FMTPRINTF_STR('f'))
                         dreq += ex1;                    /* even more before the decimal point */
 
                     dnum = 0;
                     while (dnum < dreq && dnum < MINFLOATSIZE) /* Calculate all decimal places needed */
                     {
-                        if (subtype != 'L')
+                        if (subtype != FMTPRINTF_STR('L'))
                         {
-                            buffer[dnum++] = (char)fparg.dbl + '0';
-                            fparg.dbl = (fparg.dbl - (double)(char)fparg.dbl) * 10.0;
+                            buffer[dnum++] = (FMTPRINTF_TYPE)fparg.dbl + FMTPRINTF_STR('0');
+                            fparg.dbl = (fparg.dbl - (double)(FMTPRINTF_TYPE)fparg.dbl) * 10.0;
                         } else {
-                            buffer[dnum++] = (char)fparg.ldbl + '0';
-                            fparg.ldbl = (fparg.ldbl - (long double)(char)fparg.ldbl) * 10.0;
+                            buffer[dnum++] = (FMTPRINTF_TYPE)fparg.ldbl + FMTPRINTF_STR('0');
+                            fparg.ldbl = (fparg.ldbl - (long double)(FMTPRINTF_TYPE)fparg.ldbl) * 10.0;
                         }
                     }
                     if (killzeros)                      /* Kill trailing zeros if possible */
-                        while(preci && (dreq-- > dnum || buffer[dreq] == '0'))
+                        while(preci && (dreq-- > dnum || buffer[dreq] == FMTPRINTF_STR('0')))
                             preci--;
 
-                    if (tolower(type) == 'f')           /* Calculate actual size of string (without sign) */
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f'))           /* Calculate actual size of string (without sign) */
                     {
                         size = preci + 1;               /* numbers after decimal point + 1 before */
                         if (ex1 > 0)
@@ -434,90 +434,90 @@
                     pad = pad >= width ? 0 : width - pad;
 
                     if (sign && flags & ZEROPADFLAG)
-                        FMTPRINTF_COUT(sign);
+                        FMTPRINTF_OUT(sign, ctx);
 
                     if (!(flags & LALIGNFLAG))
                         for (i = 0; i < pad; i++)
-                            FMTPRINTF_COUT(flags & ZEROPADFLAG ? '0' : ' ');
+                            FMTPRINTF_OUT(flags & ZEROPADFLAG ? FMTPRINTF_STR('0') : FMTPRINTF_STR(' '), ctx);
 
                     if (sign && !(flags & ZEROPADFLAG))
-                        FMTPRINTF_COUT(sign);
+                        FMTPRINTF_OUT(sign, ctx);
 
                     dreq = 0;
-                    if (tolower(type) == 'a')
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('a'))
                     {
                         // TODO: Implement hexfloat literals
-                        FMTPRINTF_COUT('0');
-                        FMTPRINTF_COUT('x');
-                        FMTPRINTF_COUT('0');
-                        FMTPRINTF_COUT('.');
-                        FMTPRINTF_COUT('0');
-                        if (type=='A')
-                            FMTPRINTF_COUT('P');
+                        FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
+                        FMTPRINTF_OUT(FMTPRINTF_STR('x'), ctx);
+                        FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
+                        FMTPRINTF_OUT(FMTPRINTF_STR('.'), ctx);
+                        FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
+                        if (type == FMTPRINTF_STR('A'))
+                            FMTPRINTF_OUT(FMTPRINTF_STR('P'), ctx);
                         else
-                            FMTPRINTF_COUT('p');
-                        FMTPRINTF_COUT('0');
-                    } else if (tolower(type) == 'f') {
+                            FMTPRINTF_OUT(FMTPRINTF_STR('p'), ctx);
+                        FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
+                    } else if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f')) {
                         if (ex1 < 0)
-                            FMTPRINTF_COUT('0');
+                            FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
                         else
                             while(ex1 >= 0)
                             {
-                                FMTPRINTF_COUT(dreq < dnum ? buffer[dreq++] : '0');
+                                FMTPRINTF_OUT(dreq < dnum ? buffer[dreq++] : FMTPRINTF_STR('0'), ctx);
                                 ex1--;
                             }
                         if (preci || flags & ALTERNATEFLAG)
                         {
-                            FMTPRINTF_COUT(FMTPRINTF_DECIMALPOINT[0]);
+                            FMTPRINTF_OUT(FMTPRINTF_DECIMALPOINT[0], ctx);
                             while(preci--)
                                 if (++ex1 < 0)
-                                    FMTPRINTF_COUT('0');
+                                    FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
                                 else
-                                    FMTPRINTF_COUT(dreq < dnum ? buffer[dreq++] : '0');
+                                    FMTPRINTF_OUT(dreq < dnum ? buffer[dreq++] : FMTPRINTF_STR('0'), ctx);
                         }
                     } else {
-                        FMTPRINTF_COUT(buffer[dreq++]);
+                        FMTPRINTF_OUT(buffer[dreq++], ctx);
                         if (preci || flags & ALTERNATEFLAG)
                         {
-                            FMTPRINTF_COUT(FMTPRINTF_DECIMALPOINT[0]);
+                            FMTPRINTF_OUT(FMTPRINTF_DECIMALPOINT[0], ctx);
                             while(preci--)
-                                FMTPRINTF_COUT(dreq < dnum ? buffer[dreq++] : '0');
+                                FMTPRINTF_OUT(dreq < dnum ? buffer[dreq++] : FMTPRINTF_STR('0'), ctx);
                         }
-                        FMTPRINTF_COUT(type);
+                        FMTPRINTF_OUT(type, ctx);
                         if (ex1 < 0)
                         {
-                            FMTPRINTF_COUT('-');
+                            FMTPRINTF_OUT(FMTPRINTF_STR('-'), ctx);
                             ex1 = -ex1;
                         }
                         else
-                            FMTPRINTF_COUT('+');
+                            FMTPRINTF_OUT(FMTPRINTF_STR('+'), ctx);
                         if (ex1 > 99)
-                            FMTPRINTF_COUT(ex1 / 100 + '0');
-                        FMTPRINTF_COUT(ex1 / 10 % 10 + '0');
-                        FMTPRINTF_COUT(ex1 % 10 + '0');
+                            FMTPRINTF_OUT(ex1 / 100 + FMTPRINTF_STR('0'), ctx);
+                        FMTPRINTF_OUT(ex1 / 10 % 10 + FMTPRINTF_STR('0'), ctx);
+                        FMTPRINTF_OUT(ex1 % 10 + FMTPRINTF_STR('0'), ctx);
                     }
 
                     if (flags & LALIGNFLAG)
                         for (i = 0; i < pad; i++)
-                            FMTPRINTF_COUT(' ');
+                            FMTPRINTF_OUT(FMTPRINTF_STR(' '), ctx);
 
                     width = preci = 0;                  /* Everything already done */
                     break;
                 }
 #endif
-                case '%':
-                    buffer2 = "%";
+                case FMTPRINTF_STR('%'):
+                    buffer2 = FMTPRINTF_STR("%");
                     size2 = 1;
                     preci = 0;
                     break;
-                case 'n':
+                case FMTPRINTF_STR('n'):
                     *va_arg(args, int *) = outcount;
                     width = preci = 0;
                     break;
                 default:
                     if (!type)
                         ptr--;                          /* We've gone too far - step one back */
-                    buffer2 = (char *)format;
+                    buffer2 = (FMTPRINTF_TYPE *)format;
                     size2 = ptr - format;
                     width = preci = 0;
                     break;
@@ -527,28 +527,28 @@
 
             if (flags & ZEROPADFLAG)                    /* print sign and that like */
                 for (i = 0; i < size1; i++)
-                    FMTPRINTF_COUT(buffer1[i]);
+                    FMTPRINTF_OUT(buffer1[i], ctx);
 
             if (!(flags & LALIGNFLAG))                  /* Pad left */
                 for (i = 0; i < pad; i++)
-                    FMTPRINTF_COUT(flags & ZEROPADFLAG ? '0' : ' ');
+                    FMTPRINTF_OUT(flags & ZEROPADFLAG ? FMTPRINTF_STR('0') : FMTPRINTF_STR(' '), ctx);
 
             if (!(flags & ZEROPADFLAG))                 /* print sign if not zero padded */
                 for (i = 0; i < size1; i++)
-                    FMTPRINTF_COUT(buffer1[i]);
+                    FMTPRINTF_OUT(buffer1[i], ctx);
 
             for (i = size2; i < preci; i++)             /* extend to precision */
-                FMTPRINTF_COUT('0');
+                FMTPRINTF_OUT(FMTPRINTF_STR('0'), ctx);
 
             for (i = 0; i < size2; i++)                 /* print body */
-                FMTPRINTF_COUT(buffer2[i]);
+                FMTPRINTF_OUT(buffer2[i], ctx);
 
             if (flags & LALIGNFLAG)                     /* Pad right */
                 for (i = 0; i < pad; i++)
-                    FMTPRINTF_COUT(' ');
+                    FMTPRINTF_OUT(FMTPRINTF_STR(' '), ctx);
 
             format = ptr;
         }
         else
-            FMTPRINTF_COUT(*format++);
+            FMTPRINTF_OUT(*format++, ctx);
     }
