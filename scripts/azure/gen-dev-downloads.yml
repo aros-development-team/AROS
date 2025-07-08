@@ -66,7 +66,7 @@ steps:
 
     echo "Upload generated downloads.html back to remote..."
     rsync -e "ssh -o StrictHostKeyChecking=yes" downloads.html \
-      "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net:htdocs/downloads.html
+      "$(SF_RSYNC_USER),arosdev"@shell.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html
   env:
     SF_RSYNC_USER: $(SF_RSYNC_USER)
   displayName: 'Generating downloads.html, and Uploading'
