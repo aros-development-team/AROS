@@ -1,0 +1,25 @@
+trigger:
+- main  # or your branch name
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'      # Use Python 3.x
+  displayName: 'Use Python 3'
+
+- script: |
+    python3 -m pip install --upgrade pip
+    pip install requests beautifulsoup4
+  displayName: 'Install dependencies'
+
+- script: |
+    python3 scripts/azure/gen-downloads.py > downloads.html
+  displayName: 'Run nightly2 scraper script'
+
+- publish: downloads.html
+  artifact: downloads-html
+  displayName: 'Publish nightly2 HTML artifact'
+  
