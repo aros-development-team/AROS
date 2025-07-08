@@ -8,6 +8,7 @@
     POSIX.1-2008 header file: locale.h
 */
 
+#include <aros/features.h>
 #include <aros/stdc/locale.h> /* C99 and earlier locale definitions */
 
 #ifdef __cplusplus
