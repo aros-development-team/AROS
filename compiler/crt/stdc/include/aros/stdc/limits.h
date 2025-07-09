@@ -52,9 +52,10 @@
  */
 #if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
 #define MB_LEN_MAX 4
-#include <aros/types/size_t.h>
-extern size_t _stdc_MB_CUR_MAX(void);
-#define MB_CUR_MAX _stdc_MB_CUR_MAX()
+#ifndef MB_CUR_MAX
+int __stdc_mb_cur_max(void);
+#define MB_CUR_MAX      (__stdc_mb_cur_max())
+#endif
 #else
 #define MB_LEN_MAX 1
 #define MB_CUR_MAX 1

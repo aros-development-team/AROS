@@ -82,6 +82,8 @@ locale_t __get_setlocale_internal(const char *lcname) {
     else
         return NULL;
 
+    StdCBase->StdCBase.mb_cur_max =  StdCBase->__locale_cur->__lc_mb_max;
+
     return StdCBase->__locale_cur;
 }
 
@@ -90,7 +92,8 @@ static int __init_stdclocale(struct StdCIntBase *StdCBase)
     D(bug("[%s] %s()\n", STDCNAME, __func__));
 
 	StdCBase->__locale_cur = &__locale_C;
-    
+    StdCBase->StdCBase.mb_cur_max =  StdCBase->__locale_cur->__lc_mb_max;
+
     return 1;
 }
 

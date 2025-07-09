@@ -18,7 +18,7 @@
 
 #include <aros/types/wchar_t.h>
 #include <aros/types/wctype_t.h>
-#include <aros/types/locale_t.h>
+#include <aros/types/locale_s.h>
 
 #include <time.h>
 

@@ -36,7 +36,10 @@ typedef struct lldiv_t {
 #define EXIT_SUCCESS    0
 #define EXIT_FAILURE    20
 
+#ifndef MB_CUR_MAX
+int __stdc_mb_cur_max(void);
 #define MB_CUR_MAX      (__stdc_mb_cur_max())
+#endif
 #define RAND_MAX        2147483647
 
 __BEGIN_DECLS
@@ -111,7 +114,6 @@ size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
 size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
 
 /* AROS-specific extensions */
-int __stdc_mb_cur_max(void);
 void *malloc_align(size_t size, size_t alignment);
 void *realloc_nocopy(void *oldmem, size_t newsize);
 int on_exit(void (*func)(int, void *), void *);

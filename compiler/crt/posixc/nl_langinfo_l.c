@@ -11,7 +11,7 @@
 #include <stdlib.h>    // for NULL
 #include <langinfo.h>
 
-#include <aros/types/locale_t.h>
+#include <aros/types/locale_s.h>
 
 char *nl_langinfo_l(nl_item item, locale_t loc) {
     const char *original;

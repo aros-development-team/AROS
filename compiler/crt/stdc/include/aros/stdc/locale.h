@@ -9,6 +9,7 @@
 */
 
 #include <aros/system.h>
+#include <aros/types/locale_t.h>
 
 /*
     struct lconv contains members relating to the formatting of numerical

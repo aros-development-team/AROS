@@ -593,6 +593,9 @@ STDC_LINKLIB := \
     __ctype_linklib \
     strcasestr
 
+STDC_LINKLIB_COMMON := \
+    __stdc_mb_cur_max
+
 STDC_CHAR_LIBSTUBS := \
     ctype
 
@@ -600,7 +603,6 @@ STDC_CHAR_LIBSTUBS := \
 STDC_COMMON := \
     __stdc_geterrnoptr \
     __stdc_getsigngamptr \
-    __stdc_mb_cur_max \
     math/infinity
 
 STDCIO := \
@@ -712,7 +714,7 @@ compiler-stdc-genwcharsupport : $(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
     files="$(STDC) $(STDC_LOCALE) $(STDC_WCHAR) $(STDC_COMMON)" \
-    linklibfiles="$(STDC_LINKLIB) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" linklibobjs=$(STDC_LINKOBJS)
+    linklibfiles="$(STDC_LINKLIB) $(STDC_LINKLIB_COMMON) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" linklibobjs=$(STDC_LINKOBJS)
 
 #MM compiler-stdc : compiler-stdc-genwcharsupport
 
@@ -840,7 +842,7 @@ USER_CPPFLAGS := \
 
 #MM- core-linklibs : linklibs-stdc-static
 %build_linklib mmake=linklibs-stdc-static libname=stdc.static \
-    files="$(STDC_STATIC) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" objdir=$(GENDIR)/$(CURDIR)/static
+    files="$(STDC_STATIC) $(STDC_LINKLIB_COMMON) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" objdir=$(GENDIR)/$(CURDIR)/static
 
 #MM- linklibs-romhack : compiler-stdc
 # FIXME: The next romhack linklib is a temporary hack and has to be

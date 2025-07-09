@@ -6,7 +6,7 @@
 
 #include <locale.h>
 #include <string.h>
-#include <aros/types/locale_t.h>
+#include <aros/types/locale_s.h>
 
 #include "__locale.h"
 

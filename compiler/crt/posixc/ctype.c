@@ -12,7 +12,7 @@
 
 #include <locale.h>
 #include <ctype.h>
-#include <aros/types/locale_t.h>
+#include <aros/types/locale_s.h>
 
 int isupper_l(int c, locale_t loc)
 {

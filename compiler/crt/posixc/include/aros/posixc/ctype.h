@@ -31,9 +31,9 @@ int __name__(int c, locale_t locale);
 #endif
 
 #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
-#include <locale.h>
-#if !defined(POSIXC_NOINLINE) && !defined(POSIXC_NOINLINE_CTYPE)
 #include <aros/types/locale_t.h>
+#if !defined(POSIXC_NOINLINE) && !defined(POSIXC_NOINLINE_CTYPE)
+#include <aros/types/locale_s.h>
 #endif
 
 /* Classification functions */
