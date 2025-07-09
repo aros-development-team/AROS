@@ -155,3 +155,88 @@ static const char * _errstrings[__POSIXC_ELAST+2] =
     /* EPROTO          */       "Protocol error",
     /* Too high        */       NULL
 };
+
+/*****************************************************************************
+
+    NAME */
+        int strerror_r(
+
+/*  SYNOPSIS */
+        int errnum,
+        char *buf,
+        size_t buflen)
+
+/*  FUNCTION
+        Copies a string describing the error code 'errnum' into the buffer
+        'buf', ensuring the string is null-terminated.
+
+        This function is a thread-safe and reentrant alternative to
+        strerror(). It looks up the error message for 'errnum' from the
+        system-defined list of error strings, including POSIX-specific
+        error numbers handled by the AROS POSIXC library.
+
+        If the error number is not recognized, a fallback string is provided
+        by __stdc_strerror(), or "Unknown error" if that fails.
+
+    INPUTS
+        errnum - the error code to look up (usually errno).
+        buf    - a pointer to the buffer where the error message will be stored.
+        buflen - the size of the buffer in bytes.
+
+    RESULT
+        0       - success, message copied to 'buf'.
+        ERANGE  - buffer too small; message was truncated but is null-terminated.
+        Other errno values may be returned for invalid parameters.
+
+    NOTES
+        The string written to 'buf' will be null-terminated.
+        If 'buflen' is 0, no message is written and ERANGE is returned.
+        This is the POSIX-compliant variant of strerror_r(), returning an int.
+
+    EXAMPLE
+        char buf[64];
+        if (strerror_r(errno, buf, sizeof(buf)) != 0)
+            strcpy(buf, "Unknown error");
+        printf("Error: %s\n", buf);
+
+    BUGS
+        The fallback to __stdc_strerror() may return NULL for unknown codes,
+        in which case a generic "Unknown error" message is used.
+        Buffer truncation is not distinguishable from other ERANGE cases.
+
+    SEE ALSO
+        strerror(), __stdc_strerror()
+
+    INTERNALS
+        The error strings for POSIX error numbers are stored in _errstrings[],
+        defined in the AROS POSIXC runtime. Error numbers outside this range
+        are passed to __stdc_strerror() for further resolution.
+
+******************************************************************************/
+{
+    const char *msg;
+    int n = MIN(errnum, __POSIXC_ELAST + 1);
+
+    msg = _errstrings[n];
+
+    if (msg == NULL)
+        msg = __stdc_strerror(errnum);
+
+    if (!msg)
+        msg = "Unknown error";
+
+    size_t len = strlen(msg);
+
+    if (buflen == 0)
+        return ERANGE;
+
+    if (len >= buflen) {
+        // Copy truncated message
+        memcpy(buf, msg, buflen - 1);
+        buf[buflen - 1] = '\0';
+        return ERANGE;
+    }
+
+    memcpy(buf, msg, len + 1);
+    return 0;
+}

@@ -3,6 +3,7 @@
 
     Posix uselocale.
 */
+#include <aros/debug.h>
 
 #include <locale.h>
 
@@ -40,6 +41,8 @@ struct lconv *localeconv_l(locale_t loc)
         "",         // p_sign_posn
         (char)0xFF  // n_sign_posn
     };
+
+    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
 
     if (loc == NULL)
         return localeconv(); // fallback to global localeconv()

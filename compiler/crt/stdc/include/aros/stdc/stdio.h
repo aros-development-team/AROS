@@ -84,12 +84,10 @@ int vsnprintf(char * restrict s, size_t n, const char * restrict format, va_list
 int vsprintf(char * restrict s, const char * restrict format, va_list arg);
 int vsscanf(const char * restrict s, const char * restrict format, va_list arg);
 
-#if !defined(__STRICT_ANSI__)
 /* GNU extensions */
-# if defined(_GNU_SOURCE)
+#if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && defined(_GNU_SOURCE))
 int asprintf(char ** restrict str, const char * restrict format, ...);
 int vasprintf(char ** restrict str, const char * restrict format, va_list args);
-# endif
 #endif
 
 /* Character I/O */

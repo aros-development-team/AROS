@@ -384,7 +384,7 @@ int unlink(const char *path);
 ssize_t write(int fd, const void *buf, size_t nbytes);
 
 /* POSIX.1-2001 and later */
-#if !defined(__STRICT_ANSI__)
+#if defined(__cplusplus) || !defined(__STRICT_ANSI__)
 int execvp(const char *path, char *const argv[]);
 int execlp(const char *path, const char *arg, ...);
 char *getcwd(char *buf, size_t size);
@@ -397,8 +397,8 @@ extern int optind, opterr, optopt;
 #endif
 
 /* POSIX.1-2008 and XSI (or available as extensions) */
-#if !defined(__STRICT_ANSI__) && \
-    (!defined(_POSIX_SOURCE) || defined(_XOPEN_SOURCE))
+#if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && \
+    (!defined(_POSIX_SOURCE) || defined(_XOPEN_SOURCE)))
 int ftruncate(int fd, off_t length);
 int truncate(const char *path, off_t length);
 void sync(void);
@@ -415,8 +415,8 @@ pid_t tcgetpgrp(int fd);
 #endif
 
 /* GNU or BSD extensions */
-#if !defined(__STRICT_ANSI__) && \
-    (defined(_BSD_SOURCE) || defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE))
+#if defined(__cplusplus) || (!defined(__STRICT_ANSI__) && \
+    (defined(_BSD_SOURCE) || defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE)))
 #include <aros/types/useconds_t.h>
 char *getpass(const char *prompt);
 pid_t getpgid(pid_t);

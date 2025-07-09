@@ -2,7 +2,7 @@
 #define _POSIXC_TIME_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file time.h
@@ -12,6 +12,8 @@
 #include <aros/stdc/time.h>
 
 /* TODO: CLOCKS_PER_SEC is supposed to be 1000000 on SUSv2 platforms apparently */
+
+#include <aros/posixc/locale.h>
 
 #include <aros/types/clockid_t.h>
 #include <aros/types/timer_t.h>
@@ -44,7 +46,7 @@ int clock_gettime(clockid_t, struct timespec *);
 /* NOTIMPL int clock_settime(clockid_t, const struct timespec *); */
 /* NOTIMPL struct tm *getdate(const char *); */
 int nanosleep(const struct timespec *, struct timespec *);
-/* NOTIMPL size_t strftime_l(char *restrict, size_t, const char *restrict, const struct tm *restrict, locale_t); */
+size_t strftime_l(char *restrict, size_t, const char *restrict, const struct tm *restrict, locale_t);
 char *strptime(const char *, const char *, struct tm *);
 /* NOTIMPL int timer_create(clockid_t, struct sigevent *, timer_t *); */
 /* NOTIMPL int timer_delete(timer_t); */

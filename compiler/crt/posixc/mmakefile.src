@@ -234,7 +234,13 @@ POSIXC_LOCALE := \
     newlocale \
     freelocale \
     uselocale \
-    strtod_l
+    strtol_l \
+    strtof_l \
+    strtod_l \
+    strtold_l \
+    strtoul_l \
+    strtoll_l \
+    strtoull_l
 
 POSIXC_WCHAR := \
     mbsnrtowcs \
