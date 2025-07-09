@@ -1,8 +1,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-Q=
-
 OBJDIR := $(GENDIR)/$(CURDIR)
 CAMDOBJDIR := $(OBJDIR)/../camdusbmidi/arch
 
