@@ -53,7 +53,13 @@
 #if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
 #define MB_LEN_MAX 4
 #ifndef MB_CUR_MAX
+#if defined(__cplusplus)
+extern "C" {
+#endif
 int __stdc_mb_cur_max(void);
+#if defined(__cplusplus)
+}
+#endif
 #define MB_CUR_MAX      (__stdc_mb_cur_max())
 #endif
 #else

@@ -37,7 +37,9 @@ typedef struct lldiv_t {
 #define EXIT_FAILURE    20
 
 #ifndef MB_CUR_MAX
+__BEGIN_DECLS
 int __stdc_mb_cur_max(void);
+__END_DECLS
 #define MB_CUR_MAX      (__stdc_mb_cur_max())
 #endif
 #define RAND_MAX        2147483647
