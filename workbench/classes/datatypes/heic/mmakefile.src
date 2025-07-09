@@ -24,7 +24,6 @@ CLASSFILES := webpclass
 #MM- workbench-datatypes-heic-quick : datatypes-heic-linklibs-de265-quick datatypes-heic-linklibs-heif-quick
 
 COMMON_CPPFLAGS := \
-        -D_POSIX_SOURCE=600L \
         -D_GNU_SOURCE \
         -D__STDC_CONSTANT_MACROS \
         -D__STDC_FORMAT_MACROS \
@@ -290,4 +289,4 @@ HEICCLASSFILES := heicclass
 %build_module mmake=workbench-datatypes-heic \
     modname=heic modtype=datatype \
     files=$(HEICCLASSFILES) cxxfiles=heicdummy \
-    uselibs="heif de265 stdcio"
+    uselibs="heif de265 stdcio stdc"
