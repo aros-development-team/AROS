@@ -69,8 +69,6 @@ endif
 
 LLVM_BUILD_BINDIR:=$(CROSSTOOLSDIR)/bin
 
-USER_CXXFLAGS := -std=c++11
-
 LLVM_REPOSITORY         :=https://github.com/llvm/llvm-project/releases/download/llvmorg-$(LLVM_VERSION)$(LLVM_REPO)
 
 LLVM_ARCHBASE           :=llvm-$(LLVM_VERSION)$(LLVM_RELEASE).src
@@ -112,7 +110,6 @@ LLVM_CMAKEOPTIONS       :=                                                      
     -DLLVM_ENABLE_PROJECTS=""                                                                                                           \
     -DLLVM_EXTERNAL_PROJECTS="clang;lld"                                                                                                \
     -DLLVM_BUILD_TOOLS=ON                                                                                                               \
-    -DLLVM_ENABLE_UTILS=OFF                                                                                                             \
     -DLLVM_ENABLE_RUNTIMES=""                                                                                                           \
     -DLLVM_ENABLE_DOXYGEN=OFF                                                                                                           \
     -DLLVM_ENABLE_TERMINFO=OFF                                                                                                          \
@@ -183,8 +180,8 @@ LLVM_LIBCXX_CMAKEOPTIONS :=                                                     
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
   -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
-  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nostdinc++ -nodefaultlibs -D_LIBCPP_HAS_NO_WIDE_CHARACTERS"              \
-  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nodefaultlibs"                                                             \
+  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nostdinc++ -nodefaultlibs -D_GNU_SOURCE $(NOWARN_MISSING_FIELD_INITIALIZERS)" \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nodefaultlibs -D_GNU_SOURCE"                                               \
   -DCMAKE_EXE_LINKER_FLAGS="--target=$(AROS_TARGET_CPU)-unknown-aros -nodefaultlibs  -L$(AROS_LIB) -larossupport -lamiga -lautoinit"    \
   -DLIBCXX_CXX_ABI=libcxxabi                                                                                                            \
   -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LIBCXXABI_BUILDBASE)/include                                                                         \
@@ -283,7 +280,8 @@ endif
 
 %fetch mmake=crosstools-llvm-libcxx-fetch archive=$(LIBCXX_ARCHBASE)                                                                    \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxx
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxx                                                                 \
+    patches_specs=$(LIBCXX_ARCHBASE)-aros.diff:$(LIBCXX_ARCHBASE):-p1
 
 %create_patch mmake=crosstools-llvm-libcxx-create-patch                                                                                 \
     archive=$(LIBCXX_ARCHBASE) suffixes="tar.xz"                                                                                        \
@@ -415,42 +413,42 @@ tools-crosstools-llvm-libcxxabi-setup : | $(MONOTREE_BUILDBASE)
 tools-crosstools-llvm-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LLVM_BUILDBASE) ; then \
         mv $(LLVM_BUILDBASE) $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE) \
-	    && $(TOUCH) $(llvm-setupflag) ; \
+	    && $(RM) $(llvm-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-lld-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LLVMLLD_BUILDBASE) ; then \
         mv $(LLVMLLD_BUILDBASE) $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) \
-	    && $(TOUCH) $(llvm-lld-setupflag) ; \
+	    && $(RM) $(llvm-lld-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-clang-cleanup :
 	$(Q)$(IF) $(TEST) -d $(CLANG_BUILDBASE) ; then \
         mv $(CLANG_BUILDBASE) $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE) \
-	    && $(TOUCH) $(clang-setupflag) ; \
+	    && $(RM) $(clang-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-compiler_rt-cleanup :
 	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_BUILDBASE) ; then \
         mv $(COMPILER_RT_BUILDBASE) $(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
-	    && $(TOUCH) $(compiler-rt-setupflag) ; \
+	    && $(RM) $(compiler-rt-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-libcxx-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LIBCXX_BUILDBASE) ; then \
         mv $(LIBCXX_BUILDBASE) $(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE) \
-	    && $(TOUCH) $(llvm-libcxx-setupflag) ; \
+	    && $(RM) $(llvm-libcxx-setupflag) ; \
 	fi
 
 #MM
 tools-crosstools-llvm-libcxxabi-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LIBCXXABI_BUILDBASE) ; then \
         mv $(LIBCXXABI_BUILDBASE) $(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE) \
-	    && $(TOUCH) $(llvm-libcxxabi-setupflag) ; \
+	    && $(RM) $(llvm-libcxxabi-setupflag) ; \
 	fi
 
 # real llvm/clang toolchain rules.

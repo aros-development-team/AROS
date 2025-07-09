@@ -1,0 +1,14 @@
+diff -ruN libcxx-11.0.0.src/src/filesystem/filesystem_common.h libcxx-11.0.0.src.aros/src/filesystem/filesystem_common.h
+--- libcxx-11.0.0.src/src/filesystem/filesystem_common.h	2020-10-07 10:10:48.000000000 +0000
++++ libcxx-11.0.0.src.aros/src/filesystem/filesystem_common.h	2025-07-09 01:12:21.008427636 +0000
+@@ -398,8 +398,8 @@
+     auto dur = duration_cast<microseconds>(nanoseconds(nsec)).count();
+     return static_cast<int_type>(dur);
+   };
+-  struct ::timeval ConvertedTS[2] = {{TS[0].tv_sec, Convert(TS[0].tv_nsec)},
+-                                     {TS[1].tv_sec, Convert(TS[1].tv_nsec)}};
++  struct ::timeval ConvertedTS[2] = {{static_cast<unsigned int>(TS[0].tv_sec), static_cast<unsigned int>(Convert(TS[0].tv_nsec))},
++                                     {static_cast<unsigned int>(TS[1].tv_sec), static_cast<unsigned int>(Convert(TS[1].tv_nsec))}};
+   if (::utimes(p.c_str(), ConvertedTS) == -1) {
+     ec = capture_errno();
+     return true;
