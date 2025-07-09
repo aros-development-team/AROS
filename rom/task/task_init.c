@@ -16,6 +16,8 @@
 #endif
 #include "task_intern.h"
 
+#define D(x) x
+
 extern APTR AROS_SLIB_ENTRY(NewAddTask, Task, 176)();
 extern void AROS_SLIB_ENTRY(RemTask, Task, 48)();
 

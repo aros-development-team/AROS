@@ -2,7 +2,7 @@
     Copyright (C) 2013-2023, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 0
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -261,14 +261,19 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 DeleteIORequest((struct IORequest *)req);
                 DeleteMsgPort(port);
             }
-#if (0)
+#if (1)
             D(bug("[USB2OTG] %s: Configuring Interrupts ...\n",
                         __PRETTY_FUNCTION__));
 
-            *((volatile unsigned int *)USB2OTG_INTRMASK) =
-                (USB2OTG_INTRCORE_ENUMERATIONDONE|USB2OTG_INTRCORE_USBRESET|USB2OTG_INTRCORE_USBSUSPEND) |
-                (USB2OTG_INTRCORE_INENDPOINT|USB2OTG_INTRCORE_RECEIVESTATUSLEVEL|USB2OTG_INTRCORE_SESSIONREQUEST|USB2OTG_INTRCORE_OTG|USB2OTG_INTRCORE_HOSTCHANNEL|USB2OTG_INTRCORE_PORT);
-
+            otg_RegVal = rd32le(USB2OTG_INTRMASK);
+//            D(bug("[USB2OTG] interrupts: 0x%08X\n", otg_RegVal));
+            otg_RegVal |= USB2OTG_INTRCORE_PORT;  // port connect/disconnect
+            wr32le(USB2OTG_INTRMASK, otg_RegVal);
+            //*((volatile unsigned int *)USB2OTG_INTRMASK) =
+            //    (USB2OTG_INTRCORE_ENUMERATIONDONE|USB2OTG_INTRCORE_USBRESET|USB2OTG_INTRCORE_USBSUSPEND) |
+            //    (USB2OTG_INTRCORE_INENDPOINT|USB2OTG_INTRCORE_RECEIVESTATUSLEVEL|USB2OTG_INTRCORE_SESSIONREQUEST|USB2OTG_INTRCORE_OTG|USB2OTG_INTRCORE_HOSTCHANNEL|USB2OTG_INTRCORE_PORT);
+            
+            /*
             if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
             {
                 otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
@@ -289,16 +294,19 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     *((volatile unsigned int *)USB2OTG_DEVINTRMASK) = 0xFFFF;
                 }
             }
+            */
 
             D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n",
                         __PRETTY_FUNCTION__));
             *((volatile unsigned int *)USB2OTG_AHB) = USB2OTG_AHB_INTENABLE;
 
+            /*
             D(bug("[USB2OTG] %s: Initialising NakTimeout (intr @ 0x%p) ...\n",
                         __PRETTY_FUNCTION__, &otg_Unit->hu_NakTimeoutInt));
 
 
             Cause(&otg_Unit->hu_NakTimeoutInt);
+            */
 #endif
         }
 
@@ -429,6 +437,8 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
     }
     ioreq->iouh_Actual = count;
 
+    D(bug("[USB2OTG] UHCMD_QUERYDEVICE sent info\n"));
+
     return RC_OK;
 }
 
@@ -545,7 +555,7 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     Disable();
     AddTail(&otg_Unit->hu_CtrlXFerQueue, (struct Node *) ioreq);
     Enable();
-    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_CONTROLXFER: handled ioreq @ 0x%p\n", ioreq));
 
