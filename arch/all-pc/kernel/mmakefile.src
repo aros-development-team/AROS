@@ -79,7 +79,9 @@ FILES    := \
 MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) \
 		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+ifneq ($(AROS_TOOLCHAIN),llvm)
 USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 
 #MM- kernel-kernel-pc-common : kernel-acpica-sharedlib-linklib linklibs-bootconsole \
 #MM  kernel-kernel-native kernel-acpica-sharedlib-includes

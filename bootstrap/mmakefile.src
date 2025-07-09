@@ -5,8 +5,10 @@ include $(SRCDIR)/config/aros.cfg
 FILES := elfloader
 
 USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include -I $(GENINCDIR)
+ifneq ($(AROS_TOOLCHAIN),llvm)
 ifeq ($(AROS_TARGET_CPU),x86_64)
 USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
 endif
 
 %build_linklib mmake=linklibs-bootstrap libname=bootstrap files="$(FILES)" \
