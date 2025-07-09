@@ -76,7 +76,7 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
   *
   * See README for more information.
   *
-@@ -155,6 +155,42 @@
+@@ -155,6 +155,38 @@
  
  /* * * * * * * * * * * * * * * * * * * * * * * * * *
   *
@@ -104,14 +104,10 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
 + */
 +static const char* apzAros_Long_Float_Pthread_TypesPatch[] = {
 +"#ifdef __AROS__\n\
-+# define FLOAT AROSFLOAT\n\
-+# define LONG AROSLONG\n\
-+# include_next <pthread.h>\n\
-+# undef FLOAT\n\
-+# undef LONG\n\
-+#else\n\
-+# include_next <pthread.h>\n\
-+#endif /* __AROS__ */",
++# define __typedef_FLOAT\n\
++# define __typedef_LONG\n\
++#endif /* __AROS__ */\n\
++# include_next <pthread.h>\n",
 +    (char*)NULL };
 +
 +/* * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -119,7 +115,7 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
   *  Description of Aab_Darwin7_9_Long_Double_Funcs fix
   */
  tSCC zAab_Darwin7_9_Long_Double_FuncsName[] =
-@@ -11204,7 +11240,7 @@
+@@ -11204,7 +11236,7 @@
   */
  #define REGEX_COUNT          318
  #define MACH_LIST_SIZE_LIMIT 187
@@ -128,7 +124,7 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
  
  /*
   *  Enumerate the fixes
-@@ -11212,6 +11248,7 @@
+@@ -11212,6 +11244,7 @@
  typedef enum {
      AAB_AIX_STDIO_FIXIDX,
      AAB_AIX_FCNTL_FIXIDX,
@@ -136,7 +132,7 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
      AAB_DARWIN7_9_LONG_DOUBLE_FUNCS_FIXIDX,
      DARWIN_API_AVAILABILITY_FIXIDX,
      AAB_FD_ZERO_ASM_POSIX_TYPES_H_FIXIDX,
-@@ -11497,6 +11534,11 @@
+@@ -11497,6 +11530,11 @@
       AAB_AIX_FCNTL_TEST_CT, FD_MACH_ONLY | FD_SUBROUTINE,
       aAab_Aix_FcntlTests,   apzAab_Aix_FcntlPatch, 0 },
  
@@ -151,7 +147,7 @@ diff -ruN gcc-15.1.0/fixincludes/fixincl.x gcc-15.1.0.aros/fixincludes/fixincl.x
 diff -ruN gcc-15.1.0/fixincludes/inclhack.def gcc-15.1.0.aros/fixincludes/inclhack.def
 --- gcc-15.1.0/fixincludes/inclhack.def	2025-04-25 08:17:59.000000000 +0000
 +++ gcc-15.1.0.aros/fixincludes/inclhack.def	2020-12-27 16:58:14.310000000 +0000
-@@ -103,6 +103,28 @@
+@@ -103,6 +103,25 @@
  };
  
  /*
@@ -164,14 +160,11 @@ diff -ruN gcc-15.1.0/fixincludes/inclhack.def gcc-15.1.0.aros/fixincludes/inclha
 +  files     = pthread.h;
 +  replace = <<- _EndOfHeader_
 +	#ifdef __AROS__
-+	# define FLOAT AROSFLOAT
-+	# define LONG AROSLONG
-+	# include_next <pthread.h>
-+	# undef FLOAT
-+	# undef LONG
-+	#else
-+	# include_next <pthread.h>
++	# define __typedef_FLOAT
++	# define __typedef_LONG
 +	#endif /* __AROS__ */
++	#include_next <pthread.h>
++
 +	_EndOfHeader_;
 +};
 +
@@ -455,8 +448,8 @@ diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_REUSE		+= marm/mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard=mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard
 diff -ruN gcc-15.1.0/gcc/config/aros.h gcc-15.1.0.aros/gcc/config/aros.h
 --- gcc-15.1.0/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/aros.h	2025-06-17 11:49:26.664319518 +0000
-@@ -0,0 +1,129 @@
++++ gcc-15.1.0.aros/gcc/config/aros.h	2025-07-09 18:42:17.248050152 +0000
+@@ -0,0 +1,123 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -482,17 +475,11 @@ diff -ruN gcc-15.1.0/gcc/config/aros.h gcc-15.1.0.aros/gcc/config/aros.h
 +#undef SIZE_TYPE
 +#define SIZE_TYPE "long unsigned int"
 +
-+#if !defined(__AROSGCC_UINTWCHAR)
-+#undef WCHAR_TYPE
-+#define WCHAR_TYPE "char"
-+#undef WCHAR_TYPE_SIZE
-+#define WCHAR_TYPE_SIZE 8
-+#else
 +#undef	WCHAR_TYPE
 +#define WCHAR_TYPE "unsigned int"
++
 +#undef	WCHAR_TYPE_SIZE
 +#define WCHAR_TYPE_SIZE 32
-+#endif
 +
 +#undef PTRDIFF_TYPE
 +#define PTRDIFF_TYPE "long int"

@@ -496,10 +496,10 @@ diff -ruN gcc-9.5.0/gcc/config/aros.h gcc-9.5.0.aros/gcc/config/aros.h
 +#define SIZE_TYPE "long unsigned int"
 +
 +#undef WCHAR_TYPE
-+#define WCHAR_TYPE "char"
++#define WCHAR_TYPE "unsigned int"
 +
 +#undef WCHAR_TYPE_SIZE
-+#define WCHAR_TYPE_SIZE 8
++#define WCHAR_TYPE_SIZE 32
 +
 +#undef PTRDIFF_TYPE
 +#define PTRDIFF_TYPE "long int"
