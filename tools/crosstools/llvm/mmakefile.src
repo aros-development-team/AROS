@@ -323,7 +323,21 @@ LLVM_TOOL_TARGETS := llvm-as llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-ranl
 tools-crosstools-llvm-toolchain :
 ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
 	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                                                                                    \
+        $(ECHO) "Building llvm/LLVM.so" &&                                                                                              \
         $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm LLVM $(crosstools-llvm-make-env) &&                                           \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-LLVM-stripped &&                                                            \
+        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+        $(ECHO) "Building llvm/lld" &&                                                                                                  \
+        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) &&                                            \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-lld-stripped $(crosstools-llvm-install-env) &&                              \
+        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+        $(ECHO) "Building llvm/Clang" &&                                                                                                \
+        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) &&                                          \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-stripped $(crosstools-llvm-install-env) &&                            \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-libraries-stripped $(crosstools-llvm-install-env) &&                  \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-resource-headers-stripped $(crosstools-llvm-install-env) &&           \
+        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
+        $(ECHO) "Building llvm tools" &&                                                                                                \
         $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm $(LLVM_TOOL_TARGETS) $(crosstools-llvm-make-env) &&                           \
         $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install/strip $(crosstools-llvm-install-env) &&                                     \
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&                                                            \
@@ -331,14 +345,6 @@ ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&                                                        \
         $(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config &&                                                                               \
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/LLVMConfig.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/ &&                             \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) &&                                            \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-lld-stripped $(crosstools-llvm-install-env) &&                              \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) &&                                          \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-stripped $(crosstools-llvm-install-env) &&                            \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-libraries-stripped $(crosstools-llvm-install-env) &&                  \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-resource-headers-stripped $(crosstools-llvm-install-env) &&           \
         $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
         $(TOUCH) $(llvm-installflag);                                                                                                   \
         fi
