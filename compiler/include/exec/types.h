@@ -34,8 +34,14 @@
 /* Distinguish between 64 and 32bit systems */
 #ifndef __typedef_LONG
 #   define __typedef_LONG
+#   define __typedef_ULONG
     typedef   signed AROS_32BIT_TYPE	        LONG;	/* signed 32-bit value */
     typedef unsigned AROS_32BIT_TYPE	        ULONG;	/* unsigned 32-bit value */
+#else
+#ifndef __typedef_ULONG
+#   define __typedef_ULONG
+    typedef unsigned AROS_32BIT_TYPE	        ULONG;	/* unsigned 32-bit value */
+#endif
 #endif
 
 #ifndef __typedef_QUAD
