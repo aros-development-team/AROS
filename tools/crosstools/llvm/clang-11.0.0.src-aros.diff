@@ -63,8 +63,8 @@ diff -ruN clang-11.0.0.src/include/clang/Driver/Options.td clang-11.0.0.src.aros
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">,
 diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h
 --- clang-11.0.0.src/lib/Basic/Targets/OSTargets.h	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-06-26 12:47:36.147031156 +0000
-@@ -71,6 +71,26 @@
++++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-10 14:01:17.157241939 +0000
+@@ -71,6 +71,37 @@
        : OSTargetInfo<Target>(Triple, Opts) {}
  };
  
@@ -74,18 +74,29 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/l
 +protected:
 +  void getOSDefines(const LangOptions &Opts, const llvm::Triple &Triple,
 +                    MacroBuilder &Builder) const override {
-+    // FIXME:
-+    // Are these Macros correct ???
-+    // AROS defines
-+    Builder.defineMacro("__AROS__");
++    // std defines for AROS
++    DefineStd(Builder, "AROS", Opts);
++    // defines for AmigaOS support
++    Builder.defineMacro("AMIGA");
++    Builder.defineMacro("_AMIGA");
++
++#if (0)
++    // AROS GCC does NOT define this.
++    Builder.defineMacro("__AMIGA__");
++#endif
++
 +    Builder.defineMacro("__ELF__");
++    if (Opts.POSIXThreads)
++      Builder.defineMacro("_REENTRANT");
++    if (Opts.CPlusPlus)
++      Builder.defineMacro("_GNU_SOURCE");
 +  }
 +
 +public:
-+  // FIXME:
-+  // Is this correct ???
 +  AROSTargetInfo(const llvm::Triple &Triple, const TargetOptions &Opts)
-+      : OSTargetInfo<Target>(Triple, Opts) {}
++      : OSTargetInfo<Target>(Triple, Opts) {
++      this->WCharType = TargetInfo::UnsignedInt;
++  }
 +};
 +
  void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
@@ -212,8 +223,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-06-29 17:09:46.997574826 +0000
-@@ -0,0 +1,373 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-10 19:23:03.155971818 +0000
+@@ -0,0 +1,394 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -326,7 +337,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    }
 +
 +#if (0)
-+  CmdArgs.push_back("--eh-frame-hdr");
++    if (!Args.hasArg(options::OPT_static)) {
++        CmdArgs.push_back("--eh-frame-hdr");
++    }
 +#endif
 +
 +    if (const char *LDMOption = getLDMOption(Target, Args)) {
@@ -368,9 +381,11 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +
 +        if (D.CCCIsCXX()) {
 +            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
-+            CmdArgs.push_back("-lpthread");
 +        }
 +        CmdArgs.push_back("--start-group");
++        if (D.CCCIsCXX()) {
++            CmdArgs.push_back("-lpthread");
++        }
 +        CmdArgs.push_back("-lmui");
 +        CmdArgs.push_back("-larossupport");
 +        CmdArgs.push_back("-lamiga");
@@ -418,8 +433,20 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        CmdArgs.push_back("-lautoinit");
 +        CmdArgs.push_back("-llibinit");
 +        if (Args.hasArg(options::OPT_nostartfiles)) {
-+            if (!Args.hasArg(options::OPT_no_stdc)) {
-+                CmdArgs.push_back("-lstdc.static");
++            if (!Args.hasArg(options::OPT_static)) {
++                if (!Args.hasArg(options::OPT_no_posixc)) {
++                    CmdArgs.push_back("-lposixc");
++                }
++                CmdArgs.push_back("-lstdcio");
++                if (!Args.hasArg(options::OPT_no_stdc)) {
++                    CmdArgs.push_back("-lstdc");
++                }
++            }
++            else
++            {
++                if (!Args.hasArg(options::OPT_no_stdc)) {
++                    CmdArgs.push_back("-lstdc.static");
++                }
 +            }
 +        }// 2nd OPT_nostartfiles endif
 +        CmdArgs.push_back("--end-group");
@@ -509,14 +536,12 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
 +                      llvm::opt::ArgStringList &CC1Args,
 +                      Action::OffloadKind DeviceOffloadingKind) const {
-+    CC1Args.push_back("-D__AROS__");
-+    CC1Args.push_back("-D__AROS");
-+    CC1Args.push_back("-DAROS");
-+    CC1Args.push_back("-D__AMIGA__");
-+    CC1Args.push_back("-D_AMIGA");
-+    CC1Args.push_back("-DAMIGA");
-+    CC1Args.push_back("-D__ELF__");
-+    CC1Args.push_back("-Dsystem=posix");
++    if (DriverArgs.hasArg(options::OPT_posixc)) {
++        CC1Args.push_back("-D_POSIX_SOURCE");
++    }
++    if (DriverArgs.hasArg(options::OPT_nix)) {
++        CC1Args.push_back("-D__NIX__");
++    }
 +}
 +
 +
@@ -527,15 +552,20 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        DriverArgs.hasArg(options::OPT_nostdincxx))
 +        return;
 +
++    SmallString<128> ClangBinDir(getDriver().InstalledDir);
 +    switch (GetCXXStdlibType(DriverArgs)) {
-+    case ToolChain::CST_Libcxx:
-+        AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
-+        break;
-+
-+    case ToolChain::CST_Libstdcxx:
-+        AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
++    case ToolChain::CST_Libcxx: {
++        SmallString<128> Dir(ClangBinDir);
++        llvm::sys::path::append(Dir, "..", "include", "c++", "v1");
++        llvm::sys::fs::make_absolute(Dir);
++        llvm::sys::path::remove_dots(Dir, /*remove_dot_dot=*/true);
++        addSystemInclude(DriverArgs, CC1Args, Dir.str());
 +        break;
 +    }
++    case ToolChain::CST_Libstdcxx:
++        break;
++    }
++    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
 +}
 +
 +void AROSToolChain::
@@ -562,12 +592,14 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    SmallString<128> LibPath(SysRoot);
 +    const llvm::Triple &Target = getTriple();
 +    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
-+
++    SmallString<10> tgtPath("lib/");
 +    if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
-+        llvm::sys::path::append(LibPath, "lib32/");
-+    } else {
-+        llvm::sys::path::append(LibPath, "lib/");
++        SmallString<128> TstLibPath(LibPath);
++        llvm::sys::path::append(TstLibPath, "lib32/");
++        if (getVFS().exists(TstLibPath))
++            tgtPath.assign("lib32/");
 +    }
++    llvm::sys::path::append(LibPath, tgtPath);
 +
 +    // Derived from startfile spec.
 +    CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
@@ -589,8 +621,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.h	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-06-29 16:11:00.085592358 +0000
-@@ -0,0 +1,99 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-07-10 19:01:20.153051071 +0000
+@@ -0,0 +1,107 @@
 +//===--- AROS.h - AROS ToolChain Implementations ----------*- C -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -666,6 +698,14 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +  void addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                              llvm::opt::ArgStringList &CmdArgs) const;
 +
++  RuntimeLibType GetDefaultRuntimeLibType() const override {
++    return ToolChain::RLT_CompilerRT;
++  }
++
++  CXXStdlibType GetDefaultCXXStdlibType() const override {
++    return ToolChain::CST_Libcxx;
++  }
++
 +  const char *getDefaultLinker() const override {
 +    const llvm::Triple &Target = getTriple();
 +    llvm::Triple CompilerTarget(LLVM_DEFAULT_TARGET_TRIPLE);
@@ -692,24 +732,13 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_AROS_H
 diff -ruN clang-11.0.0.src/lib/Frontend/InitHeaderSearch.cpp clang-11.0.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
 --- clang-11.0.0.src/lib/Frontend/InitHeaderSearch.cpp	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2025-06-26 12:47:36.151031247 +0000
-@@ -221,6 +221,11 @@
++++ clang-11.0.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2025-07-10 13:43:21.473240929 +0000
+@@ -215,7 +215,7 @@
+                                             const HeaderSearchOptions &HSOpts) {
+   llvm::Triple::OSType os = triple.getOS();
  
-   if (HSOpts.UseStandardSystemIncludes) {
-     switch (os) {
-+    case llvm::Triple::AROS:
-+        // FIXME:
-+        // Fill this in with your default include paths...
-+        // AddPath("??/??/??/??", System, false);
-+        // AddPath("/usr/include", System, false);
-     case llvm::Triple::CloudABI:
-     case llvm::Triple::FreeBSD:
-     case llvm::Triple::NetBSD:
-@@ -333,6 +338,7 @@
+-  if (triple.isOSDarwin()) {
++  if ((triple.isOSDarwin()) || (triple.isAROS())) {
+     llvm_unreachable("Include management is handled in the driver.");
    }
  
-   switch (os) {
-+  case llvm::Triple::AROS:
-   case llvm::Triple::CloudABI:
-   case llvm::Triple::RTEMS:
-   case llvm::Triple::NaCl:

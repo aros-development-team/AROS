@@ -12,6 +12,8 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM tools-crosstools-llvm-libcxx-setup : crosstools-llvm-libcxx-fetch
 #MM tools-crosstools-llvm-libcxxabi-setup : crosstools-llvm-libcxxabi-fetch
 
+#MM- tools-crosstools-clang-setup-quick : tools-crosstools-clang-setup
+
 #MM crosstools-llvm-create-patch : tools-crosstools-llvm-cleanup
 #MM crosstools-llvm-lld-create-patch : tools-crosstools-llvm-lld-cleanup
 #MM crosstools-compiler-rt-create-patch : tools-crosstools-compiler_rt-cleanup
@@ -20,22 +22,22 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM crosstools-clang-create-patch :  tools-crosstools-clang-cleanup
 
 #MM- crosstools-compiler-rt-setup : tools-crosstools-llvm-setup tools-crosstools-compiler_rt-setup
-#MM crosstools-compiler-rt : tools-crosstools-llvm-toolchain crosstools-compiler-rt-setup tools-crosstools-autolibs
+#MM crosstools-compiler-rt : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain tools-crosstools-autolibs
 #MM crosstools-compiler-rt-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs
-#MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-setup crosstools-llvm-toolchain-quick
+#MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
 
-#MM crosstools-compiler-rt32 : tools-crosstools-llvm-toolchain crosstools-compiler-rt-setup tools-crosstools-autolibs32
+#MM crosstools-compiler-rt32 : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain tools-crosstools-autolibs32
 #MM crosstools-compiler-rt32-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs32
-#MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-setup crosstools-llvm-toolchain-quick
+#MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
 
 #MM- crosstools-llvm-libcxx-setup : tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup
 #MM crosstools-llvm-libcxx : crosstools-llvm-libcxx-setup tools-crosstools-llvm-toolchain
-#MM- crosstools-llvm-libcxx-quick : crosstools-llvm-libcxx-fetch crosstools-llvm-libcxxabi-fetch crosstools-llvm-toolchain-quick
+#MM- crosstools-llvm-libcxx-quick : crosstools-llvm-libcxx-setup crosstools-llvm-libcxxabi-setup tools-crosstools-llvm-toolchain-quick
 
-#MM- crosstools-llvm : crosstools-llvm-toolchain crosstools-compiler-rt crosstools-llvm-libcxx crosstools-llvm-libcxxabi
+#MM- crosstools-llvm : tools-crosstools-llvm-toolchain crosstools-compiler-rt crosstools-llvm-libcxx crosstools-llvm-libcxxabi
 #MM- crosstools-llvm-quick : crosstools-llvm-toolchain-quick crosstools-compiler-rt-quick crosstools-llvm-libcxx-quick crosstools-llvm-libcxxabi-quick
-#MM crosstools-llvm-toolchain : setup tools-crosstools-llvm-setup  tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
-#MM- crosstools-llvm-toolchain-quick : setup tools-crosstools-llvm-setup  tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
+#MM crosstools-llvm-toolchain : setup tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
+#MM- crosstools-llvm-toolchain-quick : setup tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
 
 # Build for supported targets -:
 
@@ -318,6 +320,7 @@ ifeq ($(JOBS),)
 endif
 
 LLVM_TOOL_TARGETS := llvm-as llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-ranlib llvm-strip llvm-config
+LLVM_TOOL_INSTTARGETS := install-llvm-ar-stripped install-llvm-nm-stripped install-llvm-objcopy-stripped install-llvm-objdump-stripped install-llvm-ranlib-stripped install-llvm-strip-stripped
 
 #MM
 tools-crosstools-llvm-toolchain :
@@ -339,11 +342,12 @@ ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
         $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
         $(ECHO) "Building llvm tools" &&                                                                                                \
         $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm $(LLVM_TOOL_TARGETS) $(crosstools-llvm-make-env) &&                           \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install/strip $(crosstools-llvm-install-env) &&                                     \
+        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm $(LLVM_TOOL_INSTTARGETS) $(crosstools-llvm-install-env) &&                          \
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&                                                            \
         $(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-as &&                                                                                   \
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&                                                        \
         $(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config &&                                                                               \
+        $(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm && \
         cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/LLVMConfig.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/ &&                             \
         $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
         $(TOUCH) $(llvm-installflag);                                                                                                   \
@@ -422,12 +426,16 @@ tools-crosstools-llvm-cleanup :
 	    && $(RM) $(llvm-setupflag) ; \
 	fi
 
+#MM- tools-crosstools-llvm-cleanup-quick : tools-crosstools-llvm-cleanup
+
 #MM
 tools-crosstools-llvm-lld-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LLVMLLD_BUILDBASE) ; then \
         mv $(LLVMLLD_BUILDBASE) $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE) \
 	    && $(RM) $(llvm-lld-setupflag) ; \
 	fi
+
+#MM- tools-crosstools-llvm-lld-cleanup-quick : tools-crosstools-llvm-lld-cleanup
 
 #MM
 tools-crosstools-clang-cleanup :
@@ -436,12 +444,16 @@ tools-crosstools-clang-cleanup :
 	    && $(RM) $(clang-setupflag) ; \
 	fi
 
+#MM- tools-crosstools-clang-cleanup-quick : tools-crosstools-clang-cleanup
+
 #MM
 tools-crosstools-compiler_rt-cleanup :
 	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_BUILDBASE) ; then \
         mv $(COMPILER_RT_BUILDBASE) $(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE) \
 	    && $(RM) $(compiler-rt-setupflag) ; \
 	fi
+
+#MM- tools-crosstools-compiler_rt-cleanup-quick : tools-crosstools-compiler_rt-cleanup
 
 #MM
 tools-crosstools-llvm-libcxx-cleanup :
@@ -450,12 +462,16 @@ tools-crosstools-llvm-libcxx-cleanup :
 	    && $(RM) $(llvm-libcxx-setupflag) ; \
 	fi
 
+#MM- tools-crosstools-libcxx-cleanup-quick : tools-crosstools-libcxx-cleanup
+
 #MM
 tools-crosstools-llvm-libcxxabi-cleanup :
 	$(Q)$(IF) $(TEST) -d $(LIBCXXABI_BUILDBASE) ; then \
         mv $(LIBCXXABI_BUILDBASE) $(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE) \
 	    && $(RM) $(llvm-libcxxabi-setupflag) ; \
 	fi
+
+#MM- tools-crosstools-libcxxabi-cleanup-quick : tools-crosstools-libcxxabi-cleanup
 
 # real llvm/clang toolchain rules.
 

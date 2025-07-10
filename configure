@@ -9276,7 +9276,7 @@ case "$aros_toolchain" in
         toolchain_strip="${NOP}"
         toolchain_objcopy="llvm-objcopy"
         toolchain_objdump="llvm-objdump"
-        use_libatomic=yes
+        use_libatomic=no
         toolchain_def_opt_lvl="-O2"
         toolchain_debug_opt_lvl="-O0"
         toolchain_size_opt_lvl="-Os"
