@@ -828,7 +828,7 @@ jobs:
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       rsync -avz -e ssh \
           $(Build.BinariesDirectory)/Upload/ \
-          "$(MAPPED_USER),aros@web.sourceforge.net:uploads/nightly2/"
+          "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
     condition: ne( variables['SF_RSYNC_USER'], '' )
@@ -902,7 +902,7 @@ jobs:
           rm "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html.bak"
           rsync -avz -e ssh \
               "$(AROSBUILDBINDIR)/$(TOOLCHAIN)-$(arosbuild.name)-$(arosbuilddate)-unittests.html" \
-              "$(MAPPED_USER),arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/unittests/"
+              "$MAPPED_USER,arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/unittests/"
         fi
       fi
       echo "##vso[task.setvariable variable=UNITTESTFAILFLAG;]$UNITTESTFAILFLAG"
