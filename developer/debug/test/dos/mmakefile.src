@@ -2,7 +2,6 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_CFLAGS := -noposixc
 USER_CPPFLAGS = -DADATE="\"$(shell date '+%d.%m.%Y')\""
 CUNITEXEDIR := $(AROS_TESTS)/cunit/dos
 
