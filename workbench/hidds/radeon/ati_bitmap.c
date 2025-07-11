@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
 #include "ati.h"
@@ -852,6 +852,52 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawPixel)
     UNLOCK_BITMAP
 }
 
+static void _drawpixel(atiBitMap *bm, OOP_Object *gc, HIDDT_Pixel src,
+                       HIDDT_DrawMode mode, int bpp, int x, int y)
+{
+    void *ptr = bm->addresses[y];
+    HIDDT_Pixel val, dest = 0;
+    HIDDT_Pixel writeMask;
+
+    if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0) {
+        val = src;
+    } else {
+        switch (bpp) {
+            case 1:
+                dest = ((UBYTE *)ptr)[x];
+                break;
+            case 2:
+                dest = ((UWORD *)ptr)[x];
+                break;
+            case 4:
+                dest = ((ULONG *)ptr)[x];
+                break;
+        }
+
+        writeMask = ~GC_COLMASK(gc) & dest;
+        val = 0;
+
+        if (mode & 1) val = ( src &  dest);
+        if (mode & 2) val = ( src & ~dest) | val;
+        if (mode & 4) val = (~src &  dest) | val;
+        if (mode & 8) val = (~src & ~dest) | val;
+
+        val = (val & (writeMask | GC_COLMASK(gc))) | writeMask;
+    }
+
+    switch (bpp) {
+        case 1:
+            ((UBYTE *)ptr)[x] = val;
+            break;
+        case 2:
+            ((UWORD *)ptr)[x] = val;
+            break;
+        case 4:
+            ((ULONG *)ptr)[x] = val;
+            break;
+    }
+}
+
 VOID METHOD(ATIOffBM, Hidd_BitMap, DrawEllipse)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, DrawEllipse))));
 
@@ -876,56 +922,6 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
 
-	void _drawpixel(int x, int y)
-	{
-		void *ptr = bm->addresses[y];
-		HIDDT_Pixel val, dest = 0;
-
-		if (vHidd_GC_DrawMode_Copy == mode && GC_COLMASK(gc) == ~0)
-		{
-			val = src;
-		}
-		else
-		{
-			switch (bm->bpp)
-		    {
-		        case 1:
-		            dest = ((UBYTE *)ptr)[x];
-		            break;
-		        case 2:
-		            dest = ((UWORD *)ptr)[x];
-		            break;
-		        case 4:
-		            dest = ((ULONG *)ptr)[x];
-		            break;
-		    }
-
-			writeMask = ~GC_COLMASK(gc) & dest;
-
-			val = 0;
-
-			if(mode & 1) val = ( src &  dest);
-			if(mode & 2) val = ( src & ~dest) | val;
-			if(mode & 4) val = (~src &  dest) | val;
-			if(mode & 8) val = (~src & ~dest) | val;
-
-			val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
-		}
-
-		switch (bm->bpp)
-	    {
-	        case 1:
-	            ((UBYTE *)ptr)[x] = val;
-	            break;
-	        case 2:
-	            ((UWORD *)ptr)[x] = val;
-	            break;
-	        case 4:
-	            ((ULONG *)ptr)[x] = val;
-	            break;
-	    }
-	}
-
 	LOCK_BITMAP
 
 	UBYTE *ptr = (UBYTE*)((IPTR)bm->framebuffer);
@@ -948,23 +944,23 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
     	if  (doclip)
     	{
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-    			_drawpixel(msg->x + x, msg->y + y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y + y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-    			_drawpixel(msg->x + x, msg->y - y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y - y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-    			_drawpixel(msg->x - x, msg->y + y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y + y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-    			_drawpixel(msg->x - x, msg->y - y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y - y);
     	}
     	else
     	{
-    		_drawpixel(msg->x + x, msg->y + y);
-    		_drawpixel(msg->x + x, msg->y - y);
-    		_drawpixel(msg->x - x, msg->y + y);
-    		_drawpixel(msg->x - x, msg->y - y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y + y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y - y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y + y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y - y);
     	}
 
     	y++;            /* always move up here */
@@ -989,23 +985,23 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
     	if  (doclip)
     	{
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y + y))
-    			_drawpixel(msg->x + x, msg->y + y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y + y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x + x, msg->y - y))
-    			_drawpixel(msg->x + x, msg->y - y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y - y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y + y))
-    			_drawpixel(msg->x - x, msg->y + y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y + y);
 
     		if (!POINT_OUTSIDE_CLIP(gc, msg->x - x, msg->y - y))
-    			_drawpixel(msg->x - x, msg->y - y);
+				_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y - y);
     	}
     	else
     	{
-    		_drawpixel(msg->x + x, msg->y + y);
-    		_drawpixel(msg->x + x, msg->y - y);
-    		_drawpixel(msg->x - x, msg->y + y);
-    		_drawpixel(msg->x - x, msg->y - y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y + y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x + x, msg->y - y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y + y);
+			_drawpixel(bm, gc, src, mode, bm->bpp, msg->x - x, msg->y - y);
     	}
 
     	x--;            /* always move left here */
