@@ -4205,7 +4205,7 @@ $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
 ifeq (%(touch),yes)
 $(%(mmake)-touchfileflag):
 	%mkdirs_q $(%(mmake)-pkgdir)
-	find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
+	$(Q)find %(srcdir) -exec $(TOUCH) -c -r %(srcdir)/CMakeLists.txt '{}' \; && \
 	$(TOUCH) $@
 endif
 
