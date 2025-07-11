@@ -2,7 +2,7 @@
 #define _POSIXC_STRING_H_
 
 /*
-    Copyright Â© 2012-2025, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: C99/POSIX.1-2008 header file string.h

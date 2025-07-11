@@ -234,6 +234,7 @@ POSIXC_LOCALE := \
     localeconv_l \
     newlocale \
     strftime_l \
+    strcoll_l \
     strtol_l \
     strtof_l \
     strtod_l \
@@ -241,6 +242,7 @@ POSIXC_LOCALE := \
     strtoul_l \
     strtoll_l \
     strtoull_l \
+    strxfrm_l \
     uselocale
 
 POSIXC_WCHAR := \
@@ -254,10 +256,22 @@ POSIXC_WCHAR := \
     wcswcs
 
 POSIXC_WCHAR_LOCALE := \
+    iswalnum_l \
+    iswalpha_l \
+    iswblank_l \
+    iswcntrl_l \
+    iswdigit_l \
+    iswgraph_l \
+    iswlower_l \
+    iswprint_l \
+    iswpunct_l \
+    iswspace_l \
+    iswupper_l \
+    iswxdigit_l \
     towlower_l \
     towupper_l \
-    wcscoll_l
-
+    wcscoll_l \
+    wcsxfrm_l
 
 # The following files don't have source code here but have a CPU
 # specific version in arch directory hierarchy

@@ -35,8 +35,6 @@ void          freelocale(locale_t);
 locale_t      newlocale(int category_mask, const char *locale, locale_t base);
 locale_t      uselocale(locale_t newloc);
 struct lconv *localeconv_l(locale_t loc);
-/* NOTIMPL: int strcoll_l(const char *s1, const char *s2, locale_t loc); */
-/* NOTIMPL: size_t strxfrm_l(char *dest, const char *src, size_t n, locale_t loc);  */
 #endif /* _POSIX_C_SOURCE >= 200809L */
 
 #ifdef __cplusplus
