@@ -465,7 +465,9 @@ STDC_WCHAR := \
     wcsxfrm \
     wcswcs \
     vswprintf \
-    swprintf
+    swprintf \
+    wcstoimax \
+    wcstoumax
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \
