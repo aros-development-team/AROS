@@ -1,3 +1,9 @@
+/*
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+    POSIX.1-2008 function wcstoll.
+*/
+
 #include <wctype.h>
 #include <limits.h>
 #include <errno.h>

@@ -453,21 +453,15 @@ STDC_WCHAR := \
     wcstof \
     wcstold \
     wcstol \
-    wcstoll \
     wcstoul \
-    wcstoull \
     wctob \
     btowc \
     wcsftime \
     swscanf \
     vswscanf \
-    wcscoll \
     wcsxfrm \
-    wcswcs \
     vswprintf \
-    swprintf \
-    wcstoimax \
-    wcstoumax
+    swprintf
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \

@@ -37,6 +37,7 @@
 
 ******************************************************************************/
 {
-    DeleteVar(name, GVF_LOCAL_ONLY);
+   DeleteVar(name, GVF_LOCAL_ONLY);
+   return 0;
 } /* unsetenv */
 

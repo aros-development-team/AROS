@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-    C99 function wcstoumax().
+    POSIX.1-2008 function wcstoumax().
 */
 
 #include <stdlib.h>
@@ -57,7 +57,7 @@
 ******************************************************************************/
 {
     /* TODO: Implement errno handling in wcstoumax() */
-#if defined(AROS_HAVE_LONG_LONG)
+#if 0 && defined(AROS_HAVE_LONG_LONG)
     return (uintmax_t) wcstoull(nptr, endptr, base);
 #else
     return (uintmax_t) wcstoul(nptr, endptr, base);

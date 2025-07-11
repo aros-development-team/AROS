@@ -2,7 +2,7 @@
 #define _POSIXC_TIME_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file time.h

@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-    C99 function strtoimax().
+    POSIX.1-2008 function wcstoimax().
 */
 
 #include <stdlib.h>

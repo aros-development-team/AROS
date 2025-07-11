@@ -186,6 +186,9 @@
 #endif
             default:
             {
+                unsigned long v1=0;
+                unsigned long long llv1=0;
+                int min=0;
                 wchar_t buf[128];
                 size_t pos = 0;
                 int base = (type == 'x' || type == 'X') ? 16 : (type == 'o' ? 8 : 10);
@@ -212,34 +215,45 @@
                 {
                     if (type == 'u')
                     {
-                        unsigned long long v = wcstoull(buf, NULL, base);
+                        unsigned long long v2=v1;
+                        if (lltype==1) v2=llv1;
                         switch (subtype)
                         {
-                        case 'l': case 'L':
-                            *va_arg(args, unsigned long long *) = v;
+                        case 'l':
+                        case 'L':
+                            if(lltype==1)
+                                *va_arg(args,unsigned long long*)=v2;
+                            else
+                                *va_arg(args,unsigned long *)=v2;
                             break;
                         case 'i':
-                            *va_arg(args, unsigned int *) = (unsigned int)v;
+                            *va_arg(args,unsigned int *)=v2;
                             break;
                         case 'h':
-                            *va_arg(args, unsigned short *) = (unsigned short)v;
+                            *va_arg(args,unsigned short *)=v2;
                             break;
                         }
                     }
                     else
                     {
-                        long long v = wcstoll(buf, NULL, base);
-                        switch (subtype)
+                        signed long long v2=v1;
+                        if(lltype==1) v2=llv1;
+                        if(min=='-') v2=-v2;
+                        switch(subtype)
                         {
-                        case 'l': case 'L':
-                            *va_arg(args, long long *) = v;
-                            break;
-                        case 'i':
-                            *va_arg(args, int *) = (int)v;
-                            break;
-                        case 'h':
-                            *va_arg(args, short *) = (short)v;
-                            break;
+                            case 'l':
+                            case 'L':
+                                if(lltype==1)
+                                    *va_arg(args,signed long long *)=v2;
+                                else
+                                    *va_arg(args,signed long *)=v2;
+                                break;
+                            case 'i':
+                                *va_arg(args,signed int *)=v2;
+                                break;
+                            case 'h':
+                                *va_arg(args,signed short *)=v2;
+                                break;
                         }
                     }
                     blocks++;

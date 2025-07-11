@@ -230,21 +230,34 @@ POSIXC := \
     write
 
 POSIXC_LOCALE := \
+    freelocale \
     localeconv_l \
     newlocale \
-    freelocale \
-    uselocale \
+    strftime_l \
     strtol_l \
     strtof_l \
     strtod_l \
     strtold_l \
     strtoul_l \
     strtoll_l \
-    strtoull_l
+    strtoull_l \
+    uselocale
 
 POSIXC_WCHAR := \
     mbsnrtowcs \
-    wcsnrtombs
+    wcsnrtombs \
+    wcstoimax \
+    wcscoll \
+    wcstoll \
+    wcstoull \
+    wcstoumax \
+    wcswcs
+
+POSIXC_WCHAR_LOCALE := \
+    towlower_l \
+    towupper_l \
+    wcscoll_l
+
 
 # The following files don't have source code here but have a CPU
 # specific version in arch directory hierarchy
@@ -287,7 +300,7 @@ POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notd
 
 %build_module mmake=compiler-posixc \
     modname=posixc modtype=library \
-    files="$(POSIXC) $(POSIXC_LOCALE) $(POSIXC_WCHAR) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
+    files="$(POSIXC) $(POSIXC_LOCALE) $(POSIXC_WCHAR) $(POSIXC_WCHAR_LOCALE) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
     linklibfiles="$(POSIXC_LINKLIB) $(POSIXC_COMMON)" linklibobjs=$(POSIXC_LINKOBJS) \
     uselibs="stdc_rel stdcio_rel"
 
