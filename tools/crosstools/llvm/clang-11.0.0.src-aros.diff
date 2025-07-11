@@ -228,8 +228,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 14:49:09.235957170 +0000
-@@ -0,0 +1,403 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 19:25:07.473527923 +0000
+@@ -0,0 +1,404 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -374,8 +374,12 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs, JA);
 +
 +    if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-+        SmallString<128> LibPath(SysRoot);
 +
++        if (AROSTC.ShouldLinkCXXStdlib(Args)) {
++            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
++        }
++
++        SmallString<128> LibPath(SysRoot);
 +        if (Target.isArch32Bit() && CompilerTarget.isArch64Bit()) {
 +            llvm::sys::path::append(LibPath, "lib32");
 +        } else {
@@ -384,9 +388,6 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +
 +        CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
 +
-+        if (D.CCCIsCXX()) {
-+            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
-+        }
 +        CmdArgs.push_back("--start-group");
 +        if (D.CCCIsCXX()) {
 +            CmdArgs.push_back("-lpthread");
