@@ -181,7 +181,7 @@ crosstools-toolchain: tools $(CROSSTOOLS_BUILDFLAG)
 	@$(NOP)
 
 crosstools : crosstools-toolchain features
-	@$(MAKE) $(MKARGS) linklibs-libatomic
+	@$(MAKE) $(MKARGS) toolchain-linklibs
 
 $(TOP)/config/features.status: $(SRCDIR)/config/features $(CROSSTOOLS_BUILDFLAG)
 	@$(IF) ! $(TEST) -f $@ ; then \
