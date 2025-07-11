@@ -8,5 +8,5 @@
 
 int iswblank_l(wint_t wc, locale_t locale)
 {
-	return isblank(wc);
+	return iswblank(wc);
 }
