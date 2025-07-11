@@ -11139,7 +11139,13 @@ then :
 fi
 
 if test "$aros_tool_prefix" = "yes" ; then
-    aros_tool_prefix=$aros_target_cpu-aros-
+    if test "$aros_toolchain" = "gnu" ; then
+        aros_tool_prefix=$aros_target_cpu-aros-
+    else
+        if test "$aros_toolchain" = "llvm" ; then
+            aros_tool_prefix=bin/
+        fi
+    fi
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
 printf "%s\n" "$aros_tool_prefix" >&6; }
@@ -11235,7 +11241,7 @@ else $as_nop
 fi
 
 if test "$use_gcc_version" = ""; then
-    if test "${crosstools}" = "no"; then
+    if test "${crosstools}" = "no" -a "$aros_toolchain" = "gnu"; then
       if test "x$aros_toolchain_install" != "x"; then
 
   target_gcc_version=""
@@ -11246,7 +11252,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}$(toolchain_cpp_opts) -dumpversion`"
+    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     if test "x$ax_cv_gcc_version" = "x"
 then :
 
@@ -11400,8 +11406,8 @@ fi
 
 
 if test "$aros_toolchain" = "llvm" ; then
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking what specific target llvm version to use" >&5
-printf %s "checking what specific target llvm version to use... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking specific target llvm version to use" >&5
+printf %s "checking specific target llvm version to use... " >&6; }
 fi
 
 # Check whether --with-llvm-version was given.
@@ -11424,7 +11430,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-    ax_cv_llvm_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}$(toolchain_cpp_opts) -dumpversion`"
+    ax_cv_llvm_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     if test "x$ax_cv_llvm_version" = "x"
 then :
 
