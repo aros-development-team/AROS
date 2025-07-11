@@ -63,8 +63,8 @@ diff -ruN clang-11.0.0.src/include/clang/Driver/Options.td clang-11.0.0.src.aros
    Group<CompileOnly_Group>, HelpText<"Language standard to compile for">,
 diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h
 --- clang-11.0.0.src/lib/Basic/Targets/OSTargets.h	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-10 14:01:17.157241939 +0000
-@@ -71,6 +71,37 @@
++++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-11 10:54:33.575958710 +0000
+@@ -71,6 +71,42 @@
        : OSTargetInfo<Target>(Triple, Opts) {}
  };
  
@@ -81,7 +81,8 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/l
 +    Builder.defineMacro("_AMIGA");
 +
 +#if (0)
-+    // AROS GCC does NOT define this.
++    /* AROS GCC does NOT define this, so neither
++       do we. */
 +    Builder.defineMacro("__AMIGA__");
 +#endif
 +
@@ -96,6 +97,10 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/l
 +  AROSTargetInfo(const llvm::Triple &Triple, const TargetOptions &Opts)
 +      : OSTargetInfo<Target>(Triple, Opts) {
 +      this->WCharType = TargetInfo::UnsignedInt;
++      this->WIntType = TargetInfo::UnsignedInt;
++#if (0)
++      CharIsSigned = false;
++#endif
 +  }
 +};
 +
