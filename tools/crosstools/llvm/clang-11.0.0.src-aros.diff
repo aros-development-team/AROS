@@ -228,8 +228,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 12:44:05.315956575 +0000
-@@ -0,0 +1,405 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 14:49:09.235957170 +0000
+@@ -0,0 +1,403 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -586,9 +586,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        CC1Args.push_back(DriverArgs.MakeArgString("-L" + Dir));
 +        CC1Args.push_back("-lc++");
 +        CC1Args.push_back("-lc++abi");
-+#if (0)
 +        CC1Args.push_back("-lunwind");
-+#endif
 +        break;
 +    }
 +    case ToolChain::CST_Libstdcxx:
