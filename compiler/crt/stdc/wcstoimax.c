@@ -18,7 +18,7 @@
         wchar_t       ** restrict endptr,
         int                     base)
 
-    FUNCTION
+/*  FUNCTION
         Converts a wide-character string of digits into an integer of type
         intmax_t, according to the specified base. This function behaves like
         wcstol() but returns an intmax_t result.
