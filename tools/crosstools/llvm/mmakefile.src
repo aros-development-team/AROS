@@ -77,7 +77,9 @@ libunwind-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-libunwind-$(LLVM_VERSI
 llvm-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 llvm-libcxx-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxx-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 llvm-libcxxabi-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxxabi-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
-libunwind-installflag := $(CROSSTOOLSDIR)/.installflag-libunwind-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-compiler-rt-installflag := $(CROSSTOOLSDIR)/.installflag-compiler_rt-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-compiler-rt32-installflag := $(CROSSTOOLSDIR)/.installflag-compiler_rt32-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-libunwind-installflag := $(CROSSTOOLSDIR)/.installflag-libunwind-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 
 # Variables used to configure/build Clang and co.
 
