@@ -293,4 +293,4 @@ HEICCLASSFILES := heicclass
 %build_module mmake=workbench-datatypes-heic \
     modname=heic modtype=datatype \
     files=$(HEICCLASSFILES) cxxfiles=heicdummy \
-    uselibs="heif de265 stdcio stdc"
+    uselibs="heif de265 posixc stdc"
