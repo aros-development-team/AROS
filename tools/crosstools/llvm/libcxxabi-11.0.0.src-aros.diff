@@ -1,0 +1,101 @@
+diff -ruN libcxxabi-11.0.0.src/src/cxa_demangle.cpp libcxxabi-11.0.0.src.aros/src/cxa_demangle.cpp
+--- libcxxabi-11.0.0.src/src/cxa_demangle.cpp	2020-10-07 10:10:48.000000000 +0000
++++ libcxxabi-11.0.0.src.aros/src/cxa_demangle.cpp	2025-07-11 12:36:25.919953625 +0000
+@@ -27,6 +27,8 @@
+ constexpr const char *itanium_demangle::FloatData<double>::spec;
+ constexpr const char *itanium_demangle::FloatData<long double>::spec;
+ 
++using IDNode = itanium_demangle::Node;
++
+ // <discriminator> := _ <non-negative number>      # when number < 10
+ //                 := __ <non-negative number> _   # when number >= 10
+ //  extension      := decimal-digit+               # at the end of string
+@@ -80,7 +82,7 @@
+   void print(StringView SV) {
+     fprintf(stderr, "\"%.*s\"", (int)SV.size(), SV.begin());
+   }
+-  void print(const Node *N) {
++  void print(const IDNode *N) {
+     if (N)
+       N->visit(std::ref(*this));
+     else
+@@ -90,7 +92,7 @@
+     ++Depth;
+     printStr("{");
+     bool First = true;
+-    for (const Node *N : A) {
++    for (const IDNode *N : A) {
+       if (First)
+         print(N);
+       else
+@@ -210,23 +212,23 @@
+     }
+   };
+ 
+-  template<typename NodeT> void operator()(const NodeT *Node) {
++  template<typename NodeT> void operator()(const NodeT *IDNode) {
+     Depth += 2;
+     fprintf(stderr, "%s(", itanium_demangle::NodeKind<NodeT>::name());
+-    Node->match(CtorArgPrinter{*this});
++    IDNode->match(CtorArgPrinter{*this});
+     fprintf(stderr, ")");
+     Depth -= 2;
+   }
+ 
+-  void operator()(const ForwardTemplateReference *Node) {
++  void operator()(const ForwardTemplateReference *IDNode) {
+     Depth += 2;
+     fprintf(stderr, "ForwardTemplateReference(");
+-    if (Node->Ref && !Node->Printing) {
+-      Node->Printing = true;
+-      CtorArgPrinter{*this}(Node->Ref);
+-      Node->Printing = false;
++    if (IDNode->Ref && !IDNode->Printing) {
++      IDNode->Printing = true;
++      CtorArgPrinter{*this}(IDNode->Ref);
++      IDNode->Printing = false;
+     } else {
+-      CtorArgPrinter{*this}(Node->Index);
++      CtorArgPrinter{*this}(IDNode->Index);
+     }
+     fprintf(stderr, ")");
+     Depth -= 2;
+@@ -234,7 +236,7 @@
+ };
+ }
+ 
+-void itanium_demangle::Node::dump() const {
++void IDNode::dump() const {
+   DumpVisitor V;
+   visit(std::ref(V));
+   V.newLine();
+@@ -311,7 +313,7 @@
+   }
+ 
+   void *allocateNodeArray(size_t sz) {
+-    return Alloc.allocate(sizeof(Node *) * sz);
++    return Alloc.allocate(sizeof(IDNode *) * sz);
+   }
+ };
+ }  // unnamed namespace
+@@ -332,6 +334,10 @@
+ }
+ 
+ namespace __cxxabiv1 {
++
++// Add this alias to avoid ambiguity
++using IDNode = itanium_demangle::Node;
++
+ extern "C" _LIBCXXABI_FUNC_VIS char *
+ __cxa_demangle(const char *MangledName, char *Buf, size_t *N, int *Status) {
+   if (MangledName == nullptr || (Buf != nullptr && N == nullptr)) {
+@@ -344,7 +350,8 @@
+   Demangler Parser(MangledName, MangledName + std::strlen(MangledName));
+   OutputStream S;
+ 
+-  Node *AST = Parser.parse();
++  // Replace Node* with IDNode*
++  IDNode *AST = Parser.parse();
+ 
+   if (AST == nullptr)
+     InternalStatus = demangle_invalid_mangled_name;

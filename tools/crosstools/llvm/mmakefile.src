@@ -13,6 +13,7 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM tools-crosstools-llvm-libcxxabi-setup : crosstools-llvm-libcxxabi-fetch
 
 #MM- tools-crosstools-clang-setup-quick : tools-crosstools-clang-setup
+#MM- tools-crosstools-llvm-libcxxabi-setup-quick : tools-crosstools-llvm-libcxxabi-setup
 
 #MM crosstools-llvm-create-patch : tools-crosstools-llvm-cleanup
 #MM crosstools-llvm-lld-create-patch : tools-crosstools-llvm-lld-cleanup
@@ -60,6 +61,7 @@ llvm-libcxxabi-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-libcxxabi-$(
 
 llvm-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 llvm-libcxx-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxx-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-libcxxabi-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxxabi-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
 
 # Variables used to configure/build Clang and co.
 
@@ -164,6 +166,7 @@ LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_BUILDBASE)"
 LLVM_INSTALLCMD         :=$(MAKE) -j1 install/strip
 
 LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                                                                          \
+  -DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config                                                                                   \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
@@ -173,7 +176,9 @@ LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                  
   -DLIBCXXABI_LIBCXX_INCLUDES=$(LIBCXX_BUILDBASE)/include                                                                               \
   -DLIBCXXABI_ENABLE_SHARED=OFF                                                                                                         \
   -DLIBCXXABI_ENABLE_STATIC=ON                                                                                                          \
-  -DLIBCXXABI_USE_LLVM_UNWINDER=ON
+  -DLIBCXXABI_USE_LLVM_UNWINDER=ON                                                                                                      \
+  -DLIBCXXABI_ENABLE_THREADS=ON                                                                                                         \
+  -DLIBCXXABI_HAS_PTHREAD_API=ON
 
 LLVM_LIBCXX_CMAKEOPTIONS :=                                                                                                             \
   -DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config                                                                                   \
@@ -215,6 +220,24 @@ tools-crosstools-llvm-libcxx : | $(HOSTGENDIR)/$(CURDIR)/libcxx
         && $(MAKE)                                                                                                                      \
         && $(MAKE) -j1 install/strip                                                                                                    \
         && $(TOUCH) $(llvm-libcxx-installflag) ;                                                                                        \
+	fi
+
+$(HOSTGENDIR)/$(CURDIR)/libcxxabi:
+	%mkdir_q dir="$@"
+
+#MM
+tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxxabi-installflag) ; then                                                                            \
+        cd $(HOSTGENDIR)/$(CURDIR)/libcxxabi                                                                                               \
+        && cmake                                                                                                                        \
+            -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
+            -DCMAKE_BUILD_TYPE=Release                                                                                                  \
+            -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
+            $(LLVM_LIBCXXABI_CMAKEOPTIONS)                                                                                                 \
+            -S $(LIBCXXABI_BUILDBASE)                                                                                                      \
+        && $(MAKE)                                                                                                                      \
+        && $(MAKE) -j1 install/strip                                                                                                    \
+        && $(TOUCH) $(llvm-libcxxabi-installflag) ;                                                                                        \
 	fi
 
 LLVM_COMPILER_RT_CMAKEBASE :=                                                                                                           \
@@ -291,7 +314,8 @@ endif
 
 %fetch mmake=crosstools-llvm-libcxxabi-fetch archive=$(LIBCXXABI_ARCHBASE)                                                              \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxxabi
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxxabi                                                              \
+    patches_specs=$(LIBCXXABI_ARCHBASE)-aros.diff:$(LIBCXXABI_ARCHBASE):-p1
 
 %create_patch mmake=crosstools-llvm-libcxxabi-create-patch                                                                              \
     archive=$(LIBCXXABI_ARCHBASE) suffixes="tar.xz"                                                                                     \
@@ -462,7 +486,7 @@ tools-crosstools-llvm-libcxx-cleanup :
 	    && $(RM) $(llvm-libcxx-setupflag) ; \
 	fi
 
-#MM- tools-crosstools-libcxx-cleanup-quick : tools-crosstools-libcxx-cleanup
+#MM- tools-crosstools-llvm-libcxx-cleanup-quick : tools-crosstools-llvm-libcxx-cleanup
 
 #MM
 tools-crosstools-llvm-libcxxabi-cleanup :
@@ -471,7 +495,7 @@ tools-crosstools-llvm-libcxxabi-cleanup :
 	    && $(RM) $(llvm-libcxxabi-setupflag) ; \
 	fi
 
-#MM- tools-crosstools-libcxxabi-cleanup-quick : tools-crosstools-libcxxabi-cleanup
+#MM- tools-crosstools-llvm-libcxxabi-cleanup-quick : tools-crosstools-llvm-libcxxabi-cleanup
 
 # real llvm/clang toolchain rules.
 
@@ -479,5 +503,6 @@ tools-crosstools-llvm-libcxxabi-cleanup :
 #MM tools-crosstools-llvm-toolchain : crosstools-llvm-toolchain-cmake
 #MM crosstools-llvm-toolchain-cmake : tools-crosstools-llvm-setup  tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
 #MM tools-crosstools-llvm-libcxx : tools-crosstools-llvm-setup tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup crosstools-compiler-rt
+#MM tools-crosstools-llvm-libcxxabi : tools-crosstools-llvm-setup tools-crosstools-llvm-libcxx crosstools-compiler-rt
 
 #MM- toolchain-linklibs-llvm : tools-crosstools-llvm-libcxx
