@@ -223,8 +223,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-10 19:23:03.155971818 +0000
-@@ -0,0 +1,394 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 09:38:46.407956452 +0000
+@@ -0,0 +1,401 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -571,10 +571,17 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +void AROSToolChain::
 +AddCXXStdlibLibArgs(const llvm::opt::ArgList &DriverArgs,
 +                    llvm::opt::ArgStringList &CC1Args) const {
++    SmallString<128> ClangBinDir(getDriver().InstalledDir);
 +    switch (GetCXXStdlibType(DriverArgs)) {
-+    case ToolChain::CST_Libcxx:
++    case ToolChain::CST_Libcxx: {
++        SmallString<128> Dir(ClangBinDir);
++        llvm::sys::path::append(Dir, "..", "lib");
++        llvm::sys::fs::make_absolute(Dir);
++        llvm::sys::path::remove_dots(Dir, /*remove_dot_dot=*/true);
++        CC1Args.push_back(DriverArgs.MakeArgString("-L" + Dir));
 +        CC1Args.push_back("-lc++");
 +        break;
++    }
 +    case ToolChain::CST_Libstdcxx:
 +        CC1Args.push_back("-lstdc++");
 +        break;
