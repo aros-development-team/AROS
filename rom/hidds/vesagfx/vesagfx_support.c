@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: VESA Gfx hardware support functions
 */
@@ -237,14 +237,14 @@ static void Find_PCI_Card(struct HWData *sd)
     if (sd->pciDeviceAttrBase)
     {
         pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-        
+
         D(bug("[VESAGfx] Creating PCI object\n"));
 
         if (pci)
         {
             struct Hook FindHook = {
-                h_Entry:    (IPTR (*)())Enumerator,
-                h_Data:     sd,
+                .h_Entry    = (IPTR (*)())Enumerator,
+                .h_Data     = sd,
             };
 
             struct TagItem Requirements[] = {
@@ -253,11 +253,11 @@ static void Find_PCI_Card(struct HWData *sd)
                 { tHidd_PCI_SubClass,   0x00 },
                 { TAG_DONE, 0UL }
             };
-        
+
             struct pHidd_PCI_EnumDevices enummsg = {
-                mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-                callback:       &FindHook,
-                requirements:   (struct TagItem*)&Requirements,
+                .mID            = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                .callback       = &FindHook,
+                .requirements   = (struct TagItem*)&Requirements,
             }, *msg = &enummsg;
             D(bug("[VESAGfx] Calling search Hook\n"));
             OOP_DoMethod(pci, (OOP_Msg)msg);
