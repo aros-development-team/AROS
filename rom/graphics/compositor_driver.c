@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -78,8 +78,8 @@ BOOL compositor_IsBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handle
     {
         struct pHidd_Compositor_BitMapValidate msg =
         {
-            mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapValidate,
-            bm     : bitmap,
+            .mID   = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapValidate,
+            .bm    = bitmap,
         };
 
         return (BOOL)OOP_DoMethod(DIH(handle)->drv->compositor, &msg.mID);
@@ -93,8 +93,8 @@ BOOL compositor_SetBMCompositable(struct BitMap *bitmap, DisplayInfoHandle handl
     {
         struct pHidd_Compositor_BitMapEnable msg =
         {
-            mID    : PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapEnable,
-            bm     : bitmap,
+            .mID   = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapEnable,
+            .bm    = bitmap,
         };
 
         return (BOOL)OOP_DoMethod(DIH(handle)->drv->compositor, &msg.mID);
