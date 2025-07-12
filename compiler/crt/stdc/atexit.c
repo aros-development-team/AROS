@@ -41,7 +41,7 @@
     if (!aen) return -1;
 
     aen->node.ln_Type = AEN_VOID;
-    aen->func.fvoid = func;
+    aen->func.fn = func;
 
     return __addexitfunc(aen);
 }

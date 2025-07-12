@@ -469,7 +469,6 @@ STDC_WCHAR_LIBSTUBS := \
 
 STDC := \
     __ctype \
-    __exitfunc \
     __optionallibs \
     __signal \
     __assert \
@@ -478,12 +477,10 @@ STDC := \
     __stdc_fpuprivate \
     __vcformat \
     __vcscan \
-    _exit \
     abort \
     abs labs llabs \
     asctime asctime_r \
     asprintf \
-    atexit \
     atof \
     atoi \
     atol \
@@ -494,7 +491,6 @@ STDC := \
     ctime ctime_r \
     difftime \
     div ldiv lldiv \
-    exit \
     fenv _fenv \
     free \
     getc \
@@ -515,7 +511,6 @@ STDC := \
     memmove \
     memset \
     mktime \
-    on_exit \
     putc \
     qsort \
     raise \
@@ -583,6 +578,20 @@ STDC := \
     vsnprintf \
     vsprintf \
     vsscanf
+
+
+STDC_CRT := \
+    __exitfunc
+
+STDC_C_CRT := \
+    _exit \
+    atexit \
+    exit \
+    on_exit
+
+STDC_CXX_CRT := \
+    __cxa_atexit \
+    __cxa_finalize
 
 STDC_LINKLIB := \
     __flt_rounds \
@@ -707,10 +716,25 @@ $(GENDIR)/$(CURDIR)/defaults/%.c: $(GENCTBL) $(GENDIR)/ucd/UnicodeData.txt $(GEN
 #MM
 compiler-stdc-genwcharsupport : $(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c
 
+STDC_FILES := \
+    $(STDC) \
+    $(STDC_CRT) \
+    $(STDC_C_CRT) \
+    $(STDC_CXX_CRT) \
+    $(STDC_LOCALE) \
+    $(STDC_WCHAR) \
+    $(STDC_COMMON)
+
+STDC_LINK_FILES := \
+    $(STDC_LINKLIB) \
+    $(STDC_LINKLIB_COMMON) \
+    $(STDC_CHAR_LIBSTUBS) \
+    $(STDC_WCHAR_LIBSTUBS)
+
 %build_module mmake=compiler-stdc \
     modname=stdc modtype=library \
-    files="$(STDC) $(STDC_LOCALE) $(STDC_WCHAR) $(STDC_COMMON)" \
-    linklibfiles="$(STDC_LINKLIB) $(STDC_LINKLIB_COMMON) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" linklibobjs=$(STDC_LINKOBJS)
+    files="$(STDC_FILES)" linklibfiles="$(STDC_LINK_FILES)" \
+    linklibobjs=$(STDC_LINKOBJS)
 
 #MM compiler-stdc : compiler-stdc-genwcharsupport
 

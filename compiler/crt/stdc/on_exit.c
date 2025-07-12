@@ -37,9 +37,9 @@
 
     if (!aen) return -1;
 
-    aen->node.ln_Type = AEN_PTR;
-    aen->func.fptr = func;
-    aen->ptr = arg;
+    aen->node.ln_Type = AEN_ON;
+    aen->func.on.fn = func;
+    aen->func.on.arg = arg;
 
     return __addexitfunc(aen);
 }

@@ -17,6 +17,7 @@ NIXFILES := \
 
 FILES := \
 	startup \
+	cxx-startup \
 	detach  \
 	elf-startup
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))

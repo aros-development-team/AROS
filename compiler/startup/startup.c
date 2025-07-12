@@ -128,7 +128,6 @@ static void __startup_main(struct ExecBase *SysBase)
 
 ADD2SET(__startup_main, PROGRAM_ENTRIES, 127);
 
-
 /*
     Stub function for GCC __main().
 

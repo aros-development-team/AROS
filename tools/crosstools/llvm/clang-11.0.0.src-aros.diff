@@ -228,8 +228,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 23:09:28.692938278 +0000
-@@ -0,0 +1,402 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-12 14:06:10.023388871 +0000
+@@ -0,0 +1,414 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -341,9 +341,11 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +            CmdArgs.push_back(Args.MakeArgString("--sysroot=" + SysRoot));
 +    }
 +
++#if (0)
 +    if (!Args.hasArg(options::OPT_static)) {
 +        CmdArgs.push_back("--eh-frame-hdr");
 +    }
++#endif
 +
 +    if (const char *LDMOption = getLDMOption(Target, Args)) {
 +        CmdArgs.push_back("-m");
@@ -372,8 +374,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    AddLinkerInputs(AROSTC, Inputs, Args, CmdArgs, JA);
 +
 +    if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-+
-+        if (AROSTC.ShouldLinkCXXStdlib(Args)) {
++        bool jobWantsPThread;
++        if ((jobWantsPThread = AROSTC.ShouldLinkCXXStdlib(Args))) {
 +            AROSTC.AddCXXStdlibLibArgs(Args, CmdArgs);
 +        }
 +
@@ -387,7 +389,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +        CmdArgs.push_back(Args.MakeArgString(StringRef("-L") + LibPath));
 +
 +        CmdArgs.push_back("--start-group");
-+        if (D.CCCIsCXX()) {
++        if ((jobWantsPThread) ||
++           (Args.hasArg(options::OPT_pthreads, options::OPT_pthread))) {
 +            CmdArgs.push_back("-lpthread");
 +        }
 +        CmdArgs.push_back("-lmui");
@@ -518,13 +521,13 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +            SmallString<128> ResourceDir(SysRoot);
 +            llvm::sys::path::append(ResourceDir, "include/aros/posixc");
 +            addSystemInclude(DriverArgs, CC1Args, ResourceDir);
-+        }// OPT_no_posixc endif
++        }// OPT_no_posixc
 +        if (!DriverArgs.hasArg(options::OPT_no_stdc)) {
 +            SmallString<128> ResourceDir(SysRoot);
 +            llvm::sys::path::append(ResourceDir, "include/aros/stdc");
 +            addSystemInclude(DriverArgs, CC1Args, ResourceDir);
-+        }// OPT_no_stdc endif
-+    }// OPT_nobuiltininc endif
++        }// OPT_no_stdc
++    }// OPT_nobuiltininc
 +}
 +
 +void AROSToolChain::
@@ -597,10 +600,14 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +void AROSToolChain::
 +addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                       llvm::opt::ArgStringList &CmdArgs) const {
-+    if (Args.hasArg(options::OPT_nostartfiles))
++    const Driver &D = getDriver();
++
++   /* we need to provide cxx-startup.o, for c++ code,
++    * even when no startfiles is specified
++    */
++    if (!D.CCCIsCXX() && Args.hasArg(options::OPT_nostartfiles))
 +        return;
 +
-+    const Driver &D = getDriver();
 +    const std::string &SysRoot = D.SysRoot;
 +    SmallString<128> LibPath(SysRoot);
 +    const llvm::Triple &Target = getTriple();
@@ -614,12 +621,17 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    }
 +    llvm::sys::path::append(LibPath, tgtPath);
 +
-+    // Derived from startfile spec.
-+    CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
-+    if (Args.hasArg(options::OPT_detach)) {
-+        CmdArgs.push_back(Args.MakeArgString(LibPath + "detach.o"));
++    if (!Args.hasArg(options::OPT_nostartfiles)) {
++        // Standard AROS/AmigaOS-like startfiles.
++        CmdArgs.push_back(Args.MakeArgString(LibPath + "startup.o"));
++        if (Args.hasArg(options::OPT_detach)) {
++            CmdArgs.push_back(Args.MakeArgString(LibPath + "detach.o"));
++        }
 +    }
-+    if (Args.hasArg(options::OPT_nix)) {
++    // cxx-startup.o for __dso_handle
++    CmdArgs.push_back(Args.MakeArgString(LibPath + "cxx-startup.o"));
++    if (!Args.hasArg(options::OPT_nostartfiles) && Args.hasArg(options::OPT_nix)) {
++        // *nix support startfiles.
 +        CmdArgs.push_back(Args.MakeArgString(LibPath + "nixmain.o"));
 +    }
 +}
