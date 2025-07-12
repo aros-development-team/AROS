@@ -102,6 +102,7 @@ static const char LDSCRIPT_PART2[] =
 "     KEEP (*(.eh_frame))\n";
 
 static const char LDSCRIPT_PART3[] =
+"     PROVIDE(__eh_frame_end = .);\n"
 "  }\n"
 #ifdef TARGET_FORMAT_EXE
 "  .gcc_except_table  : { *(.gcc_except_table) }\n"
