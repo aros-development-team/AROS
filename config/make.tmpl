@@ -3795,6 +3795,11 @@ ifeq (%(crossbuild),yes)
         CC="$(strip $(%(mmake)-CROSS_CC) $(%(mmake)-CROSS_SYSROOT))" \
         CXX="$(strip $(%(mmake)-CROSS_CXX) $(%(mmake)-CROSS_SYSROOT))" \
         LD="$(strip $(%(mmake)-CROSS_LD))" \
+        AS="$(strip $(%(mmake)-CROSS_AS))" \
+        AFLAGS="$(strip $(%(mmake)-CROSS_AFLAGS))" \
+        OBJCOPY="$(strip $(%(mmake)-CROSS_OBJCOPY))" \
+        RANLIB="$(strip $(%(mmake)-CROSS_RANLIB))" \
+        STRIP="$(strip $(%(mmake)-CROSS_STRIP))" \
         CFLAGS="$(strip $(%(mmake)-CROSS_CFLAGS))" \
         CXXFLAGS="$(strip $(%(mmake)-CROSS_CXXFLAGS))" \
         LDFLAGS="$(strip $(%(mmake)-CROSS_LDFLAGS))" \

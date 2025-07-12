@@ -1,3 +1,28 @@
+diff -ruN grub-2.12/configure grub-2.12.aros/configure
+--- grub-2.12/configure	2023-12-20 16:01:29.000000000 +0000
++++ grub-2.12.aros/configure	2025-07-12 21:43:42.363481063 +0000
+@@ -38424,9 +38424,9 @@
+   $as_echo_n "(cached) " >&6
+ else
+   cat > conftest.c <<\EOF
+-void cmain (void);
+-void
+-cmain (void)
++int main (void);
++int
++main (void)
+ {
+    *((int *) 0x1000) = 2;
+ }
+@@ -38442,7 +38442,7 @@
+ fi
+ grub_cv_prog_objcopy_absolute=yes
+ for link_addr in 0x2000 0x8000 0x7C00; do
+-  if { ac_try='${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib ${TARGET_IMG_LDFLAGS_AC} ${TARGET_IMG_BASE_LDOPT},$link_addr conftest.o -o conftest.exec'
++  if { ac_try='${CC-cc} ${TARGET_CFLAGS} ${TARGET_LDFLAGS} -nostdlib -Wl,-e,_start ${TARGET_IMG_LDFLAGS_AC} ${TARGET_IMG_BASE_LDOPT},$link_addr conftest.o -o conftest.exec'
+   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+   (eval $ac_try) 2>&5
+   ac_status=$?
 diff -ruN grub-2.12/grub-core/fs/affs.c grub-2.12.aros/grub-core/fs/affs.c
 --- grub-2.12/grub-core/fs/affs.c	2022-12-07 22:38:25.000000000 +0000
 +++ grub-2.12.aros/grub-core/fs/affs.c	2020-01-16 19:13:41.085635000 +0000
@@ -330,3 +355,4 @@ diff -ruN grub-2.12/Makefile.in grub-2.12.aros/Makefile.in
  grub_file_CFLAGS = $(AM_CFLAGS) $(CFLAGS_PROGRAM) 
  grub_file_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
  grub_file_CPPFLAGS = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
+Binary files grub-2.12/__pycache__/gentpl.cpython-311.pyc and grub-2.12.aros/__pycache__/gentpl.cpython-311.pyc differ

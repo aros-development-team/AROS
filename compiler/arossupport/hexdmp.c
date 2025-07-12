@@ -11,7 +11,7 @@
     NAME */
 #include <proto/arossupport.h>
 
-        void hexdump (
+        void hexdmp (
 
 /*  SYNOPSIS */
         const void * data,

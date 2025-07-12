@@ -56,7 +56,7 @@ int     vkprintf     (const char * fmt, va_list ap);
 int     rkprintf     (const STRPTR, const STRPTR, int, const char * fmt, ...) ATTRIB_FMT(4, 5);
 void    NastyFreeMem (APTR mem, IPTR size);
 APTR    RemoveSList  (APTR * list, APTR node);
-void    hexdump      (const void * data, IPTR offset, ULONG count);
+void    hexdmp       (const void * data, IPTR offset, ULONG count);
 void    RawPutChars  (const UBYTE * string, int len);
 BOOL    IsDosEntryA  (char *Name, ULONG Flags);
 

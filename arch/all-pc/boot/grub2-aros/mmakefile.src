@@ -26,13 +26,39 @@ CONFIG_OPTS := \
 		--disable-werror \
 		--program-prefix=
 
+ifeq ($(AROS_TOOLCHAIN),llvm)
+ifneq ($(AROS_TARGET_CPU32),)
+GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU32)
+GRUB2_ENV+=TARGET_CFLAGS="$(TARGET_ISA_32_CFLAGS)"
+GRUB2_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_32_LDFLAGS) -L$(AROS_LIB32) -larossupport -lamiga -lautoinit"
+GRUB2_ENV+=TARGET_CCASFLAGS="$(TARGET_ISA_32_AFLAGS) -Wa,--32"
+else
+GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU)
+endif
+GRUB2_ENV+=ac_cv_prog_cc_nostdlib=no
+GRUB2_ENV+=ac_cv_prog_cc_nostartfiles=yes
+
+grub2-aros--CROSS_CPP=$(TARGET_CPP)
+grub2-aros--CROSS_CC=$(TARGET_CC)
+grub2-aros--CROSS_CXX=$(TARGET_CXX)
+grub2-aros--CROSS_SYSROOT=$(TARGET_SYSROOT)
+grub2-aros--CROSS_LD=$(TARGET_LD)
+grub2-aros--CROSS_CFLAGS=$(TARGET_CFLAGS)
+grub2-aros--CROSS_CXXFLAGS=$(TARGET_CXXFLAGS)
+grub2-aros--CROSS_LDFLAGS=$(TARGET_LDFLAGS)
+grub2-aros--CROSS_AS=$(TARGET_AS) $(TARGET_AFLAGS)
+GRUB2_CROSSFLAG=yes
+else
+GRUB2_CROSSFLAG=no
+endif
+
 grub2-aros--touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
 
-NOWARN_CLFAGS := $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INT_CONVERSION) $(NOWARN_INCOMPAT_POINTER_TYPES)
-TARGET_ISA_CFLAGS := $(CFLAGS_GNU11) $(NOWARN_CLFAGS)
+NOWARN_CFLAGS := $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INT_CONVERSION) $(NOWARN_INCOMPAT_POINTER_TYPES)
+TARGET_ISA_CFLAGS := $(NOWARN_CFLAGS)
 TARGET_ISA_CFLAGS += -D_STDC_NOINLINE_CTYPE
 
 %fetch_and_build mmake=grub2-aros \
         package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.gz tar.xz" package_repo=$(GRUB2REPOS) \
         prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
-        extraoptions="$(CONFIG_OPTS)" kernelisaflags=
+        extraoptions="$(CONFIG_OPTS)" config_env_extra="$(GRUB2_ENV)" kernelisaflags= crossbuild=$(GRUB2_CROSSFLAG)

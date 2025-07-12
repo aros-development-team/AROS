@@ -15,7 +15,7 @@ FILES	:= \
     deinitrastport \
     freerastport \
     freestruct \
-    hexdump \
+    hexdmp \
     isdosentrya \
     kprintf \
     rkprintf \

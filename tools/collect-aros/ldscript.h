@@ -142,10 +142,14 @@ static const char LDSCRIPT_PART3[] =
 "  .bss 0 :\n"
 #endif
 "  {\n"
+"   PROVIDE(__bss_start = .);\n"
 "   *(.bss)\n"
 "   *(.bss.*)\n"
 "   *(.gnu.linkonce.b.*)\n"
 "   *(COMMON)\n"
+"   PROVIDE(_edata = .);\n"
+"   PROVIDE(edata = .);\n"
+"   PROVIDE(_end = .);\n"
 "  }\n"
 #ifdef TARGET_FORMAT_EXE
 "  . = DATA_SEGMENT_END( . ); \n"
