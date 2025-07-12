@@ -228,8 +228,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Drive
        break;
 diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
 --- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 19:25:07.473527923 +0000
-@@ -0,0 +1,404 @@
++++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-11 23:09:28.692938278 +0000
+@@ -0,0 +1,402 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -341,11 +341,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +            CmdArgs.push_back(Args.MakeArgString("--sysroot=" + SysRoot));
 +    }
 +
-+#if (0)
 +    if (!Args.hasArg(options::OPT_static)) {
 +        CmdArgs.push_back("--eh-frame-hdr");
 +    }
-+#endif
 +
 +    if (const char *LDMOption = getLDMOption(Target, Args)) {
 +        CmdArgs.push_back("-m");
