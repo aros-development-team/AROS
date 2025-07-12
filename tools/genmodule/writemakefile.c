@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2005-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2025, The AROS Development Team. All rights reserved.
 
     Code to write a Makefile with variables that provides the files
     and configuration for building the module
@@ -123,7 +123,7 @@ void writemakefile(struct config *cfg)
     for (s = cfg->rellibs; s ; s = s->next)
         fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     if (cfg->options & OPTION_RELLINKLIB)
-        fprintf(out, " -D__%s_NOLIBBASE__", upname(cfg->modulename));
+        fprintf(out, " -D__%s_NOLIBBASE__", cfg->modulenameupper);
     fprintf(out, "\n");
     fprintf(out, "%s_LINKLIBCPPFLAGS  +=", moduleversname);
     for (s = cfg->rellibs; s ; s = s->next)
