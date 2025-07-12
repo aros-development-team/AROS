@@ -1310,7 +1310,7 @@ case "$target_cpu" in
         x86_64_isa_extra="ISA_X8664_FLAGS               = "
         case "$aros_toolchain" in
             *llvm*)
-                x86_isa_extra+="-target=i386-unknown-aros "
+                x86_isa_extra+="--target=i386-unknown-aros "
                 if test "$target_cpu" = "x86_64"; then
                     target_needs_collect32=yes
                     aros_target32_cpu=i386
