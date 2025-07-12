@@ -4,10 +4,10 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(fma881, STDC, 186)
-	_FUNCTION(AROS_SLIB_ENTRY(fma881, STDC, 186))
+	.globl	AROS_SLIB_ENTRY(fma881, STDC, 184)
+	_FUNCTION(AROS_SLIB_ENTRY(fma881, STDC, 184))
 	
-AROS_SLIB_ENTRY(fma881, STDC, 186):
+AROS_SLIB_ENTRY(fma881, STDC, 184):
 	fmove.s	%d0,%fp0
 	fmove.s	%d1,%fp1
 	fmove.s	%d2,%fp2

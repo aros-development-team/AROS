@@ -4,10 +4,10 @@
 
 	.text
 	.balign 4
-	.globl	AROS_SLIB_ENTRY(signbit881, STDC, 128)
-	_FUNCTION(AROS_SLIB_ENTRY(signbit881, STDC, 128))
+	.globl	AROS_SLIB_ENTRY(signbit881, STDC, 126)
+	_FUNCTION(AROS_SLIB_ENTRY(signbit881, STDC, 126))
 	
-AROS_SLIB_ENTRY(signbit881, STDC, 128):
+AROS_SLIB_ENTRY(signbit881, STDC, 126):
 	moveq	#31,%d1
 	asr.l	%d1,%d0
 	rts
