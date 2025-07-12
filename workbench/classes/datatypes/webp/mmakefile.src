@@ -49,9 +49,14 @@ USER_CPPFLAGS   := -DEMSCRIPTEN -DHAVE_CONFIG_H
 USER_CFLAGS := -noposixc
 USER_INCLUDES := -I $(WEBPARCHSRCDIR) -I $(GENDIR)/$(CURDIR)
 
+#Uncomment the following line to enable SSE41
+#WEBP_USESSE41=yes
 ifeq ($(AROS_TARGET_CPU),x86_64)
 USER_CPPFLAGS += -DWEBP_HAVE_SSE2
 WEBP_USESSE2=yes
+ifeq ($(WEBP_USESSE41),yes)
+USER_CPPFLAGS += -DWEBP_HAVE_SSE41
+endif
 endif
 
 WEBPSYUVFILES := \
@@ -102,6 +107,19 @@ WEBPDSPFILES += \
         src/dsp/enc_sse2 \
         src/dsp/lossless_enc_sse2 \
         src/dsp/ssim_sse2
+endif
+
+ifeq ($(WEBP_USESSE41),yes)
+WEBPDSPFILES += \
+        src/dsp/alpha_processing_sse41 \
+        src/dsp/dec_sse41 \
+        src/dsp/lossless_sse41 \
+        src/dsp/upsampling_sse41 \
+        src/dsp/yuv_sse41
+
+WEBPDSPFILES += \
+        src/dsp/enc_sse41 \
+        src/dsp/lossless_enc_sse41
 endif
 
 %build_linklib mmake=datatypes-webp-linklibs-webpdsp \
