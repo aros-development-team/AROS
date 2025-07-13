@@ -3,14 +3,11 @@ CFLAGS = -O3 -Wall -Wno-uninitialized -Wno-parentheses \
 	-D__NOGLOBALIFACE__
 CC = gcc $(CFLAGS)
 MAKEFILE = Makefile.OS4
-#LINKER = ld -e Main -s -lauto
 LINKER = gcc -nostdlib
-#AMIGA_LIB = -lamiga
-#C_LIB = -lauto
 
 DEV_NAME = etherlink3.device
 OBJS = os4_device.o device.o unit.o request.o pci.o expansion.o pccard.o
-HDRS = device.h endian.h io.h
+HDRS = device.h compatibility.h endian.h io.h ethernet.h
 
 all: $(DEV_NAME)
 
@@ -18,13 +15,13 @@ all: $(DEV_NAME)
 	$(CC) -c $<
 
 $(DEV_NAME): $(MAKEFILE) startup.o $(OBJS)
-	$(LINKER) startup.o $(OBJS) $(AMIGA_LIB) $(C_LIB) -o $(DEV_NAME)
+	$(LINKER) startup.o $(OBJS) -o $(DEV_NAME)
 	strip $(DEV_NAME)
 	Protect "$(DEV_NAME)" "-e"
 
 $(OBJS): $(MAKEFILE) $(HDRS)
 
-unit.o: etherlink3.h mii.h
+unit.o: task.h etherlink3.h mii.h
 pci.o expansion.o: pci.h
 
 install: all

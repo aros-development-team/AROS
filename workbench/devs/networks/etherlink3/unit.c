@@ -1,7 +1,6 @@
 /*
 
-Copyright (C) 2012-2017 The AROS Dev team
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +19,6 @@ MA 02111-1307, USA.
 
 */
 
-#include <string.h>
 
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -36,6 +34,7 @@ MA 02111-1307, USA.
 #include <proto/timer.h>
 
 #include "device.h"
+#include "task.h"
 #include "etherlink3.h"
 #include "mii.h"
 
@@ -54,29 +53,13 @@ MA 02111-1307, USA.
 #define PORT_COUNT 6
 
 
-#ifndef AbsExecBase
-#define AbsExecBase sys_base
-#endif
-#ifdef __amigaos4__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
-   IExec->AddTask(task, initial_pc, final_pc, NULL)
-#endif
-#ifdef __AROS__
-#undef AddTask
-#define AddTask(task, initial_pc, final_pc) \
-   ({ \
-      struct TagItem _task_tags[] = \
-         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
-      NewAddTask(task, initial_pc, final_pc, _task_tags); \
-   })
-#endif
-
 VOID SelectMedium(struct DevUnit *unit, UWORD transceiver,
    struct DevBase *base);
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
    UWORD upper_bound_right, struct DevBase *base);
+static BOOL StatusInt(REG(a1, struct DevUnit *unit),
+   REG(a5, APTR int_code));
 static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code));
 static VOID CopyPacket(struct DevUnit *unit, struct IOSana2Req *request,
    UWORD packet_size, UWORD packet_type, UBYTE *buffer, BOOL all_read,
@@ -91,9 +74,11 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code));
 static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code));
+static VOID ResetHandler(REG(a1, struct DevUnit *unit),
+   REG(a5, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask(struct ExecBase *sys_base);
+static VOID UnitTask(struct DevUnit *unit);
 static UWORD ReadEEPROM(struct DevUnit *unit, UWORD index,
    struct DevBase *base);
 static BOOL ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
@@ -109,9 +94,6 @@ static VOID WriteMIIBits(struct DevUnit *unit, ULONG value, UBYTE count,
 static BOOL ReadMIIBit(struct DevUnit *unit, struct DevBase *base);
 static VOID WriteMIIBit(struct DevUnit *unit, BOOL is_one,
    struct DevBase *base);
-#if 0
-static VOID DoMIIZCycle(struct DevUnit *unit, struct DevBase *base);
-#endif
 static VOID BusyMicroDelay(ULONG micros, struct DevBase *base);
 
 
@@ -167,9 +149,9 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
    struct DevUnit *unit;
    struct Task *task;
    struct MsgPort *port;
-   UBYTE i, *buffer;
+   UBYTE i;
    APTR stack;
-   ULONG *upd, *next_upd, *fragment, dma_size;
+   ULONG *upd, *fragment, dma_size, next_upd_p, buffer_p;
    APTR rx_int_function, tx_int_function;
 
    unit = AllocMem(sizeof(struct DevUnit), MEMF_CLEAR | MEMF_PUBLIC);
@@ -200,6 +182,8 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
          (APTR)GetTagData(IOTAG_LongOut, (UPINT)NULL, io_tags);
       unit->LongsIn =
          (APTR)GetTagData(IOTAG_LongsIn, (UPINT)NULL, io_tags);
+      unit->WordsOut =
+         (APTR)GetTagData(IOTAG_WordsOut, (UPINT)NULL, io_tags);
       unit->LongsOut =
          (APTR)GetTagData(IOTAG_LongsOut, (UPINT)NULL, io_tags);
       unit->BEWordOut =
@@ -217,9 +201,9 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       unit->FreeDMAMem =
          (APTR)GetTagData(IOTAG_FreeDMAMem, (UPINT)NULL, io_tags);
       if(unit->ByteIn == NULL || unit->LongIn == NULL
-         || unit->ByteOut == NULL
-         || unit->WordOut == NULL || unit->LongOut == NULL
-         || unit->LongsIn == NULL || unit->LongsOut == NULL
+         || unit->ByteOut == NULL || unit->WordOut == NULL
+         || unit->LongOut == NULL || unit->LongsIn == NULL
+         || unit->WordsOut == NULL|| unit->LongsOut == NULL
          || unit->BEWordOut == NULL || unit->LEWordIn == NULL
          || unit->LELongIn == NULL || unit->LEWordOut == NULL
          || unit->LELongOut == NULL
@@ -276,18 +260,29 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
          }
       }
 
+      /* Allocate buffers and descriptors */
+
       if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
       {
-         unit->rx_buffer = unit->AllocDMAMem(unit->card,
-            ETH_MAXPACKETSIZE * RX_SLOT_COUNT, 1);
+         for(i = 0; i < RX_SLOT_COUNT; i++)
+         {
+            unit->rx_buffers[i] =
+               unit->AllocDMAMem(unit->card, ETH_MAXPACKETSIZE, 1);
+            if(unit->rx_buffers[i] == NULL)
+               success = FALSE;
+         }
          unit->tx_buffer =
             unit->AllocDMAMem(unit->card, ETH_MAXPACKETSIZE, 1);
+         if(unit->tx_buffer == NULL)
+            success = FALSE;
       }
       else
       {
          unit->rx_buffer =
             AllocVec((ETH_MAXPACKETSIZE + 3) & ~3, MEMF_PUBLIC);
          unit->tx_buffer = AllocVec(ETH_MAXPACKETSIZE, MEMF_PUBLIC);
+         if(unit->rx_buffer == NULL || unit->tx_buffer == NULL)
+            success = FALSE;
       }
 
       if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
@@ -298,15 +293,34 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
             ETH_HEADERSIZE * TX_SLOT_COUNT, 1);
          unit->dpds =
             unit->AllocDMAMem(unit->card, DPD_SIZE * TX_SLOT_COUNT, 8);
-         next_upd = unit->upds =
+         unit->upds =
             unit->AllocDMAMem(unit->card, UPD_SIZE * RX_SLOT_COUNT, 8);
          if(unit->tx_requests == NULL || unit->headers == NULL
-            || unit->dpds == NULL || next_upd == NULL)
+            || unit->dpds == NULL || unit->upds == NULL)
             success = FALSE;
       }
+   }
 
-      if(unit->rx_buffer == NULL || unit->tx_buffer == NULL)
-         success = FALSE;
+   if(success)
+   {
+      if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
+      {
+         /* Get physical addresses of DMA structures */
+
+         dma_size = UPD_SIZE * RX_SLOT_COUNT;
+         unit->upds_p = (ULONG)(UPINT)CachePreDMA(unit->upds, &dma_size, 0);
+         if(dma_size != UPD_SIZE * RX_SLOT_COUNT)
+            success = FALSE;
+         dma_size = UPD_SIZE * RX_SLOT_COUNT;
+         CachePostDMA(unit->upds, &dma_size, 0);
+
+         dma_size = DPD_SIZE * TX_SLOT_COUNT;
+         unit->dpds_p = (ULONG)(UPINT)CachePreDMA(unit->dpds, &dma_size, 0);
+         if(dma_size != DPD_SIZE * TX_SLOT_COUNT)
+            success = FALSE;
+         dma_size = DPD_SIZE * TX_SLOT_COUNT;
+         CachePostDMA(unit->dpds, &dma_size, 0);
+      }
    }
 
    if(success)
@@ -315,26 +329,30 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       {
          /* Construct RX ring */
 
-         buffer = unit->rx_buffer;
+         upd = unit->upds;
+         next_upd_p = unit->upds_p;
          for(i = 0; i < RX_SLOT_COUNT; i++)
          {
-            upd = next_upd;
-            next_upd = upd + UPD_SIZE / sizeof(ULONG);
-            upd[EL3UPD_NEXT] = MakeLELong((ULONG)(UPINT)next_upd);
+            if(i == RX_SLOT_COUNT - 1)
+               next_upd_p = unit->upds_p;
+            else
+               next_upd_p += UPD_SIZE;
+            upd[EL3UPD_NEXT] = MakeLELong(next_upd_p);
             upd[EL3UPD_STATUS] = 0;
             fragment = upd + EL3UPD_FIRSTFRAG;
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(UPINT)buffer);
+
+            dma_size = ETH_MAXPACKETSIZE;
+            buffer_p = (ULONG)(UPINT)
+               CachePreDMA(unit->rx_buffers[i], &dma_size, 0);
+
+            fragment[EL3FRAG_ADDR] = MakeLELong(buffer_p);
             fragment[EL3FRAG_LEN] =
                MakeLELong(EL3FRAG_LENF_LAST | ETH_MAXPACKETSIZE);
-            buffer += ETH_MAXPACKETSIZE;
+            upd += UPD_SIZE / sizeof(ULONG);
          }
-         upd[EL3UPD_NEXT] = MakeLELong((ULONG)(UPINT)unit->upds);
-         unit->next_upd = unit->upds;
 
          dma_size = UPD_SIZE * RX_SLOT_COUNT;
-         CachePreDMA(unit->upds, &dma_size, 0);
-         dma_size = ETH_MAXPACKETSIZE * RX_SLOT_COUNT;
-         CachePreDMA(unit->rx_buffer, &dma_size, 0);
+         CachePreDMA(unit->upds, &dma_size, DMA_ReadFromRAM);
       }
 
       /* Record maximum speed in BPS */
@@ -344,7 +362,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       else
          unit->speed = 10000000;
 
-      /* Initialise status, transmit and receive interrupts */
+      /* Initialise interrupts and reset handler */
 
       unit->status_int.is_Node.ln_Name =
          base->device.dd_Library.lib_Node.ln_Name;
@@ -374,11 +392,13 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       unit->tx_end_int.is_Code = (VOID_FUNC)DMATXEndInt;
       unit->tx_end_int.is_Data = unit;
 
-      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
-   }
+      unit->reset_handler.is_Node.ln_Name =
+         base->device.dd_Library.lib_Node.ln_Name;
+      unit->reset_handler.is_Code = (APTR)ResetHandler;
+      unit->reset_handler.is_Data = unit;
 
-   if(success)
-   {
+      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+
       /* Create a new task */
 
       unit->task = task =
@@ -389,7 +409,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 
    if(success)
    {
-      stack = AllocMem(STACK_SIZE, MEMF_PUBLIC);
+      task->tc_SPLower = stack = AllocMem(STACK_SIZE, MEMF_PUBLIC);
       if(stack == NULL)
          success = FALSE;
    }
@@ -407,14 +427,11 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
       task->tc_SPReg = stack + STACK_SIZE;
       NewList(&task->tc_MemEntry);
 
-      if(AddTask(task, UnitTask, NULL) == NULL)
+      if(AddUnitTask(task, UnitTask, unit) != NULL)
+         unit->flags |= UNITF_TASKADDED;
+      else
          success = FALSE;
    }
-
-   /* Send the unit to the new task */
-
-   if(success)
-      task->tc_UserData = unit;
 
    if(!success)
    {
@@ -446,14 +463,6 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 *   RESULT
 *	None.
 *
-*   EXAMPLE
-*
-*   NOTES
-*
-*   BUGS
-*
-*   SEE ALSO
-*
 ****************************************************************************
 *
 */
@@ -468,9 +477,10 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
       task = unit->task;
       if(task != NULL)
       {
-         if(task->tc_UserData != NULL)
+         if(task->tc_SPLower != NULL)
          {
-            RemTask(task);
+            if((unit->flags & UNITF_TASKADDED) != 0)
+               RemTask(task);
             FreeMem(task->tc_SPLower, STACK_SIZE);
          }
          FreeMem(task, sizeof(struct Task));
@@ -491,12 +501,9 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
          unit->FreeDMAMem(unit->card, unit->dpds);
          unit->FreeDMAMem(unit->card, unit->headers);
          FreeVec(unit->tx_requests);
-      }
-
-      if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
-      {
          unit->FreeDMAMem(unit->card, unit->tx_buffer);
-         unit->FreeDMAMem(unit->card, unit->rx_buffer);
+         for(i = 0; i < RX_SLOT_COUNT; i++)
+            unit->FreeDMAMem(unit->card, unit->rx_buffers[i]);
       }
       else
       {
@@ -546,11 +553,11 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
 BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    struct DevBase *base)
 {
-   UBYTE *p, i;
-   UWORD address_part, links = 0, ports, new_ports, tp_ports,
+   UBYTE *p;
+   UWORD address_part, links = 0, ports, new_ports, tp_ports, i, phy_no,
       media_status, transceiver, status, advert, ability, modes;
    ULONG config;
-   BOOL autoselect;
+   BOOL autoselect, mii_found = FALSE;
 
    /* Reset card. We avoid resetting the receive logic because it stops the
       link status working in the MII Status register */
@@ -563,9 +570,9 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    while((unit->LEWordIn(unit->card, EL3REG_STATUS) &
       EL3REG_STATUSF_CMDINPROGRESS) != 0);
 
-   /* Select IO addresses and interrupt for PCCard */
+   /* Select IO addresses and interrupt for PCCard and ISA */
 
-   unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW);
+   unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW | 0);
    if(unit->bus == PCCARD_BUS)
       unit->LEWordOut(unit->card, EL3REG_RESCONFIG, 0x3f00);
    if(unit->bus == ISA_BUS)
@@ -665,21 +672,28 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
       if((ports & EL3REG_MEDIAOPTIONSF_MII) != 0
          || unit->generation >= CYCLONE_GEN)
       {
-         for(i = 0; i < 32; i++)
+         for(i = 0; i < 32 && !mii_found; i++)
          {
-            if(ReadMII(unit, i, MII_STATUS, &status, base))
+            /* Check the built-in PHY at address 24 first, as there are
+               sometimes phantom PHYs reported at other addresses */
+
+            phy_no = (24 + i) % 32;
+
+            if(ReadMII(unit, phy_no, MII_STATUS, &status, base))
             {
-               ReadMII(unit, i, MII_STATUS, &status, base);
+               ReadMII(unit, phy_no, MII_STATUS, &status, base);
                                     /* Yes, status reg must be read twice */
                if((status & MII_STATUSF_LINK) != 0)
                {
-                  if(i == 24)   /* Built-in transceiver */
+                  mii_found = TRUE;
+                  if(phy_no == 24)   /* Built-in transceiver */
                   {
                      if(((status & MII_STATUSF_AUTONEGDONE) != 0)
                         && ((status & MII_STATUSF_EXTREGSET) != 0))
                      {
-                        ReadMII(unit, i, MII_AUTONEGADVERT, &advert, base);
-                        ReadMII(unit, i, MII_AUTONEGABILITY, &ability,
+                        ReadMII(unit, phy_no, MII_AUTONEGADVERT, &advert,
+                           base);
+                        ReadMII(unit, phy_no, MII_AUTONEGABILITY, &ability,
                            base);
                         modes = advert & ability;
 
@@ -697,12 +711,11 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
                         modes = MII_AUTONEGF_10BASET;
                         links |= EL3REG_MEDIAOPTIONSF_10BASET;
                      }
-                     unit->autoneg_modes = modes;
                   }
                   else
                   {
                      links |= EL3REG_MEDIAOPTIONSF_MII;
-                     unit->mii_phy_no = i;
+                     unit->mii_phy_no = phy_no;
                   }
                }
             }
@@ -746,7 +759,6 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    if((transceiver == EL3XCVR_10BASET || transceiver == EL3XCVR_100BASETX)
       && unit->generation >= CYCLONE_GEN)
    {
-      modes = unit->autoneg_modes;
       if
       (
          (modes & MII_AUTONEGF_100BASETXFD) != 0
@@ -839,7 +851,7 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
    /* Go online */
 
    if((unit->capabilities & EL3ROM_CAPABILITIESF_FULLMASTER) != 0)
-      unit->LELongOut(unit->card, EL3REG_UPLIST, (ULONG)(UPINT)unit->upds);
+      unit->LELongOut(unit->card, EL3REG_UPLIST, unit->upds_p);
    GoOnline(unit, base);
 
    /* Return */
@@ -962,7 +974,7 @@ VOID GoOnline(struct DevUnit *unit, struct DevBase *base)
          EL3REG_MEDIAF_BEATCHECK | EL3REG_MEDIAF_JABBERCHECK);
    }
    else if(transceiver == EL3XCVR_10BASE2)
-      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_STARTCOAX);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_STARTCOAX | 0);
 
    unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SELECTWINDOW | 3);
    if((unit->flags & UNITF_FULLDUPLEX) != 0)
@@ -1010,7 +1022,7 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
    {
       /* Stop interrupts */
 
-      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SETINTMASK);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SETINTMASK | 0);
       unit->LEWordOut(unit->card, EL3REG_COMMAND,
          EL3CMD_ACKINT | EL3INTF_ANY);
 
@@ -1335,17 +1347,35 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 *
 ****************************************************************************
 *
-* int_code is really in A5, but GCC 2.95.3 doesn't seem able to handle that.
-* Since we don't use this parameter, we can lie.
+*/
+
+static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
+{
+   ServiceInterrupt(unit, unit->device);
+
+   return FALSE;
+}
+
+
+
+/****i* etherlink3.device/ServiceInterrupt *********************************
+*
+*   NAME
+*	ServiceInterrupt
+*
+*   SYNOPSIS
+*	ServiceInterrupt(unit)
+*
+*	VOID ServiceInterrupt(struct DevUnit *);
+*
+****************************************************************************
 *
 */
 
-BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
+VOID ServiceInterrupt(struct DevUnit *unit, struct DevBase *base)
 {
-   struct DevBase *base;
    UWORD ints;
 
-   base = unit->device;
    ints = unit->LEWordIn(unit->card, EL3REG_STATUS);
 
    if((ints & EL3INTF_ANY) != 0)
@@ -1356,6 +1386,10 @@ BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
       {
          unit->LEWordOut(unit->card, EL3REG_COMMAND,
             EL3CMD_ACKINT | EL3INTF_UPDONE);
+#ifndef __MORPHOS__
+         unit->LEWordOut(unit->card, EL3REG_COMMAND,
+            EL3CMD_SETINTMASK | (unit->int_mask & ~EL3INTF_UPDONE));
+#endif
          Cause(&unit->rx_int);
       }
       if((ints & EL3INTF_DOWNDONE) != 0)
@@ -1389,7 +1423,7 @@ BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
          EL3CMD_ACKINT | EL3INTF_ANY);
    }
 
-   return FALSE;
+   return;
 }
 
 
@@ -1720,15 +1754,10 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
          send_size = (packet_size + 3) & ~0x3;
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
          {
-            union {
-                UBYTE bytes[12];
-                ULONG ulong[3];
-            } header;
-            memcpy(&header.bytes[0], request->ios2_DstAddr, 6);
-            memcpy(&header.bytes[6], unit->address, 6);
-            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[0]);
-            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[1]);
-            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[2]);
+            unit->WordsOut(unit->card, EL3REG_DATA0,
+               (UWORD *)request->ios2_DstAddr, ETH_ADDRESSSIZE >> 1);
+            unit->WordsOut(unit->card, EL3REG_DATA0,
+               (UWORD *)unit->address, ETH_ADDRESSSIZE >> 1);
             unit->BEWordOut(unit->card, EL3REG_DATA0,
                request->ios2_PacketType);
             send_size -= ETH_HEADERSIZE;
@@ -1937,26 +1966,26 @@ VOID UpdateStats(struct DevUnit *unit, struct DevBase *base)
 static VOID DMARXInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code))
 {
-   UWORD packet_size;
+   UWORD slot, packet_size;
    struct DevBase *base;
    BOOL is_orphan, accepted;
-   ULONG rx_status, packet_type, *upd, *fragment, dma_size;
+   ULONG rx_status, packet_type, *upd, dma_size;
    UBYTE *buffer;
    struct IOSana2Req *request, *request_tail;
    struct Opener *opener, *opener_tail;
    struct TypeStats *tracker;
 
    base = unit->device;
-   upd = unit->next_upd;
+   slot = unit->rx_slot;
+   upd = unit->upds + slot * UPD_SIZE / sizeof(ULONG);
 
    dma_size = UPD_SIZE * RX_SLOT_COUNT;
-   CachePostDMA(unit->upds, &dma_size, 0);
+   CachePostDMA(unit->upds, &dma_size, DMA_ReadFromRAM);
 
    while(((rx_status = LELong(upd[EL3UPD_STATUS]))
       & EL3UPD_STATUSF_COMPLETE) != 0)
    {
-      fragment = upd + EL3UPD_FIRSTFRAG;
-      buffer = (UBYTE *)(UPINT)LELong(fragment[EL3FRAG_ADDR]);
+      buffer = unit->rx_buffers[slot];
 
       dma_size = ETH_MAXPACKETSIZE;
       CachePostDMA(buffer, &dma_size, 0);
@@ -2039,20 +2068,19 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
       dma_size = ETH_MAXPACKETSIZE;
       CachePreDMA(buffer, &dma_size, 0);
 
-      upd = (ULONG *)(UPINT)LELong(upd[EL3UPD_NEXT]);
+      slot = (slot + 1) % RX_SLOT_COUNT;
+      upd = unit->upds + slot * UPD_SIZE / sizeof(ULONG);
    }
 
    dma_size = UPD_SIZE * RX_SLOT_COUNT;
-   CachePreDMA(unit->upds, &dma_size, 0);
+   CachePreDMA(unit->upds, &dma_size, DMA_ReadFromRAM);
 
    /* Return */
 
-   unit->next_upd = upd;
+   unit->rx_slot = slot;
    unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_UPUNSTALL);
-#if 1 /* ??? */
    unit->LEWordOut(unit->card, EL3REG_COMMAND,
       EL3CMD_SETINTMASK | unit->int_mask);
-#endif
    return;
 }
 
@@ -2075,12 +2103,12 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
 static VOID DMATXInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code))
 {
-   UWORD packet_size, data_size, slot, new_slot, *p, *q, i;
+   UWORD packet_size, data_size, slot, new_slot, prev_slot, *p, *q, i;
    struct DevBase *base;
    struct IOSana2Req *request;
    BOOL proceed = TRUE;
    struct Opener *opener;
-   ULONG wire_error, *dpd, *last_dpd, *next_dpd, *fragment, dma_size;
+   ULONG wire_error, *dpd, *last_dpd, *fragment, dma_size, dpd_p, buffer_p;
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    BYTE error;
    UBYTE *buffer;
@@ -2104,9 +2132,9 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
 
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
             packet_size += ETH_HEADERSIZE;
-         dpd = unit->dpds + ((DPD_SIZE / sizeof(ULONG)) * slot);
+         dpd = unit->dpds + slot * DPD_SIZE / sizeof(ULONG);
 
-         /* Write packet preamble */
+         /* Write packet descriptor */
 
          Remove((APTR)request);
          unit->tx_requests[slot] = request;
@@ -2120,8 +2148,6 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
          {
             buffer = unit->headers + ETH_HEADERSIZE * slot;
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(UPINT)buffer);
-            fragment[EL3FRAG_LEN] = MakeLELong(ETH_HEADERSIZE);
 
             p = (UWORD *)buffer;
             for(i = 0, q = (UWORD *)request->ios2_DstAddr;
@@ -2131,11 +2157,14 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
                i < ETH_ADDRESSSIZE / 2; i++)
                *p++ = *q++;
             *p++ = MakeBEWord(request->ios2_PacketType);
-            buffer = (UBYTE *)p;
 
             dma_size = ETH_HEADERSIZE;
-            CachePreDMA(buffer, &dma_size, DMA_ReadFromRAM);
+            buffer_p = (ULONG)(UPINT)
+               CachePreDMA(buffer, &dma_size, DMA_ReadFromRAM);
+            fragment[EL3FRAG_ADDR] = MakeLELong(buffer_p);
+            fragment[EL3FRAG_LEN] = MakeLELong(ETH_HEADERSIZE);
             fragment += EL3_FRAGLEN;
+            buffer = (UBYTE *)p;
          }
 
          /* Get packet data */
@@ -2160,45 +2189,49 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
                   S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF
                   | S2EVENT_TX, base);
             }
+            unit->tx_buffers[slot] = buffer;
          }
 
          /* Fill in rest of descriptor for packet transmission */
 
          if(error == 0)
          {
-            fragment[EL3FRAG_ADDR] = MakeLELong((ULONG)(UPINT)buffer);
+            dma_size = data_size;
+            buffer_p = (ULONG)(UPINT)
+               CachePreDMA(buffer, &dma_size, DMA_ReadFromRAM);
+            fragment[EL3FRAG_ADDR] = MakeLELong(buffer_p);
             fragment[EL3FRAG_LEN] =
                MakeLELong(EL3FRAG_LENF_LAST | data_size);
 
-            /* Pass packet to adapter */
+            /* Pass packet to adapter. Note that we stall TX in all cases,
+               as checking if the TX list is non-empty first could cause a
+               race condition */
 
-            dma_size = data_size;
-            CachePreDMA(buffer, &dma_size, DMA_ReadFromRAM);
+            dpd_p = unit->dpds_p + slot * DPD_SIZE;
+            unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_DOWNSTALL);
+            while((unit->LEWordIn(unit->card, EL3REG_STATUS)
+               & EL3REG_STATUSF_CMDINPROGRESS) != 0);
 
-            last_dpd = (ULONG *)(UPINT)
-               unit->LELongIn(unit->card, EL3REG_DOWNLIST);
-            if(last_dpd != NULL)
+            if(unit->LELongIn(unit->card, EL3REG_DOWNLIST)
+               != (ULONG)(UPINT)NULL)
             {
-               unit->LEWordOut(unit->card, EL3REG_COMMAND,
-                  EL3CMD_DOWNSTALL);
-               while((unit->LEWordIn(unit->card, EL3REG_STATUS)
-                  & EL3REG_STATUSF_CMDINPROGRESS) != 0);
-               while((next_dpd =
-                  (ULONG *)(UPINT)LELong(last_dpd[EL3DPD_NEXT])) != NULL)
-                  last_dpd = next_dpd;
-               last_dpd[EL3DPD_NEXT] = MakeLELong((ULONG)(UPINT)dpd);
-               dma_size = DPD_SIZE * TX_SLOT_COUNT;
-               CachePreDMA(unit->dpds, &dma_size, 0);
-               unit->LEWordOut(unit->card, EL3REG_COMMAND,
-                  EL3CMD_DOWNUNSTALL);
+               /* There are still packets being sent, so add the new one to
+                  the end of the list, and restart TX */
+
+               prev_slot = (slot + TX_SLOT_COUNT - 1) % TX_SLOT_COUNT;
+               last_dpd = unit->dpds + prev_slot * DPD_SIZE / sizeof(ULONG);
+               last_dpd[EL3DPD_NEXT] = MakeLELong(dpd_p);
             }
             else
             {
-               dma_size = DPD_SIZE * TX_SLOT_COUNT;
-               CachePreDMA(unit->dpds, &dma_size, 0);
-               unit->LELongOut(unit->card, EL3REG_DOWNLIST,
-                  (ULONG)(UPINT)dpd);
+               /* All previous packets completed, so set the new one as the
+                  start of a new list */
+
+               unit->LELongOut(unit->card, EL3REG_DOWNLIST, dpd_p);
             }
+            dma_size = DPD_SIZE * TX_SLOT_COUNT;
+            CachePreDMA(unit->dpds, &dma_size, DMA_ReadFromRAM);
+            unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_DOWNUNSTALL);
 
             unit->tx_in_slot = new_slot;
          }
@@ -2250,15 +2283,15 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
    UBYTE *buffer;
    struct DevBase *base;
    struct IOSana2Req *request;
-   ULONG *dpd, *fragment, dma_size;
+   ULONG dpd_p, dma_size;
    struct TypeStats *tracker;
 
    /* Find out which packets have completed */
 
    base = unit->device;
-   dpd = (ULONG *)(UPINT)unit->LELongIn(unit->card, EL3REG_DOWNLIST);
-   if(dpd != NULL)
-      new_out_slot = (dpd - unit->dpds) / (sizeof(ULONG) * DPD_SIZE);
+   dpd_p = unit->LELongIn(unit->card, EL3REG_DOWNLIST);
+   if(dpd_p != (ULONG)(UPINT)NULL)
+      new_out_slot = (dpd_p - unit->dpds_p) / DPD_SIZE;
    else
       new_out_slot = unit->tx_in_slot;
 
@@ -2274,20 +2307,17 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
       if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
          packet_size += ETH_HEADERSIZE;
 
-      dpd = unit->dpds + ((DPD_SIZE / sizeof(ULONG)) * i);
-      fragment = dpd + EL3DPD_FIRSTFRAG;
       dma_size = DPD_SIZE * TX_SLOT_COUNT;
-      CachePostDMA(unit->dpds, &dma_size, 0);
+      CachePostDMA(unit->dpds, &dma_size, DMA_ReadFromRAM);
 
       if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
       {
-         buffer = (APTR)(UPINT)LELong(fragment[EL3FRAG_ADDR]);
+         buffer = unit->headers + i * ETH_HEADERSIZE;
          dma_size = ETH_HEADERSIZE;
          CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
-         fragment += EL3_FRAGLEN;
       }
 
-      buffer = (APTR)(UPINT)LELong(fragment[EL3FRAG_ADDR]);
+      buffer = unit->tx_buffers[i];
       dma_size = data_size;
       CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
 
@@ -2318,6 +2348,42 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
 
    if(unit->request_ports[WRITE_QUEUE]->mp_Flags == PA_IGNORE)
       Cause(&unit->tx_int);
+
+   return;
+}
+
+
+
+/****i* etherlink3.device/ResetHandler *************************************
+*
+*   NAME
+*	ResetHandler -- Disable hardware before a reboot.
+*
+*   SYNOPSIS
+*	ResetHandler(unit, int_code)
+*
+*	VOID ResetHandler(struct DevUnit *, APTR);
+*
+****************************************************************************
+*
+*/
+
+static VOID ResetHandler(REG(a1, struct DevUnit *unit),
+   REG(a5, APTR int_code))
+{
+   if((unit->flags & UNITF_HAVEADAPTER) != 0)
+   {
+      /* Stop interrupts */
+
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_SETINTMASK | 0);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND,
+         EL3CMD_ACKINT | EL3INTF_ANY);
+
+      /* Stop transmission and reception */
+
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_RXDISABLE);
+      unit->LEWordOut(unit->card, EL3REG_COMMAND, EL3CMD_TXDISABLE);
+   }
 
    return;
 }
@@ -2381,48 +2447,32 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 *	UnitTask
 *
 *   SYNOPSIS
-*	UnitTask()
+*	UnitTask(unit)
 *
-*	VOID UnitTask();
+*	VOID UnitTask(struct DevUnit *);
 *
 *   FUNCTION
-*
-*   INPUTS
-*
-*   RESULT
-*
-*   EXAMPLE
-*
-*   NOTES
-*
-*   BUGS
-*
-*   SEE ALSO
+*	Completes deferred requests, and handles card insertion and removal
+*	in conjunction with the relevant interrupts.
 *
 ****************************************************************************
 *
 */
 
-static VOID UnitTask(struct ExecBase *sys_base)
+static VOID UnitTask(struct DevUnit *unit)
 {
-   struct Task *task;
-   struct IORequest *request;
-   struct DevUnit *unit;
    struct DevBase *base;
+   struct IORequest *request;
    struct MsgPort *general_port;
    ULONG signals, wait_signals, card_removed_signal, card_inserted_signal,
       general_port_signal;
 
-   /* Get parameters */
-
-   task = FindTask(NULL);
-   unit = task->tc_UserData;
    base = unit->device;
 
    /* Activate general request port */
 
    general_port = unit->request_ports[GENERAL_QUEUE];
-   general_port->mp_SigTask = task;
+   general_port->mp_SigTask = unit->task;
    general_port->mp_SigBit = AllocSignal(-1);
    general_port_signal = 1 << general_port->mp_SigBit;
    general_port->mp_Flags = PA_SIGNAL;
@@ -2436,7 +2486,7 @@ static VOID UnitTask(struct ExecBase *sys_base)
 
    /* Tell ourselves to check port for old messages */
 
-   Signal(task, general_port_signal);
+   Signal(unit->task, general_port_signal);
 
    /* Infinite loop to service requests and signals */
 
@@ -2616,15 +2666,12 @@ static ULONG ReadMIIBits(struct DevUnit *unit, UBYTE count,
    UBYTE i;
    ULONG value = 0;
 
-/*   LEWordOut(io_addr, LEWordIn(reg) & ~EL3REG_PHYMGMTF_WRITE);*/
    for(i = 0; i < count; i++)
    {
       value <<= 1;
       if(ReadMIIBit(unit, base))
          value |= 1;
-unit->LEWordIn(unit->card, EL3REG_PHYMGMT);
    }
-/*      ReadMIIBit(unit, base)? value |= 1;*/
 
    return value;
 }
@@ -2669,6 +2716,9 @@ static VOID WriteMIIBits(struct DevUnit *unit, ULONG value, UBYTE count,
 *
 ****************************************************************************
 *
+* Note that it appears necessary to read the data bit at a different point
+* in the clock cycle than is described in the 3Com documentation.
+*
 */
 
 static BOOL ReadMIIBit(struct DevUnit *unit, struct DevBase *base)
@@ -2677,11 +2727,10 @@ static BOOL ReadMIIBit(struct DevUnit *unit, struct DevBase *base)
 
    unit->LEWordOut(unit->card, EL3REG_PHYMGMT, 0);
    BusyMicroDelay(1, base);
-   unit->LEWordOut(unit->card, EL3REG_PHYMGMT, EL3REG_PHYMGMTF_CLK);
-   BusyMicroDelay(1, base);
    is_one =
       (unit->LEWordIn(unit->card, EL3REG_PHYMGMT) & EL3REG_PHYMGMTF_DATA)
       != 0;
+   unit->LEWordOut(unit->card, EL3REG_PHYMGMT, EL3REG_PHYMGMTF_CLK);
    BusyMicroDelay(1, base);
 
    return is_one;
@@ -2722,53 +2771,20 @@ static VOID WriteMIIBit(struct DevUnit *unit, BOOL is_one,
 
 
 
-/****i* etherlink3.device/DoMIIZCycle **************************************
+/****i* etherlink3.device/BusyMicroDelay ***********************************
 *
 *   NAME
-*	DoMIIZCycle
+*       BusyMilliDelay - Busy-wait for specified number of microseconds.
 *
 *   SYNOPSIS
-*	DoMIIZCycle(unit)
+*       BusyMilliDelay(micros)
 *
-*	VOID DoMIIZCycle(struct DevUnit *);
+*       VOID BusyMilliDelay(ULONG);
 *
 ****************************************************************************
 *
 */
 
-#if 0
-static VOID DoMIIZCycle(struct DevUnit *unit, struct DevBase *base)
-{
-   unit->LEWordOut(unit->card, EL3REG_PHYMGMT,
-      unit->LEWordIn(unit->card, EL3REG_PHYMGMT) & ~EL3REG_PHYMGMTF_CLK);
-   BusyMicroDelay(1, base);
-   unit->LEWordOut(unit->card, EL3REG_PHYMGMT, EL3REG_PHYMGMTF_CLK);
-   BusyMicroDelay(1, base);
-
-   return;
-}
-#endif
-
-
-
-#if 0
-static VOID BusyMicroDelay(ULONG micros, struct DevBase *base)
-{
-   struct timeval time, end_time;
-
-   GetSysTime(&end_time);
-   time.tv_secs = 0;
-   time.tv_micro = micros;
-   AddTime(&end_time, &time);
-
-   while(CmpTime(&end_time, &time) < 0)
-      GetSysTime(&time);
-
-   return;
-}
-
-
-#else
 static VOID BusyMicroDelay(ULONG micros, struct DevBase *base)
 {
    struct EClockVal time, end_time;
@@ -2785,7 +2801,6 @@ static VOID BusyMicroDelay(ULONG micros, struct DevBase *base)
 
    return;
 }
-#endif
 
 
 

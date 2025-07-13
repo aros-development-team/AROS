@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2012 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,41 +31,21 @@ MA 02111-1307, USA.
 #include <devices/sana2specialstats.h>
 #include <devices/timer.h>
 
+#include "compatibility.h"
 #include "io.h"
+#include "ethernet.h"
 
 #define DEVICE_NAME "etherlink3.device"
 #define VERSION 1
-#define REVISION 2
-#define DATE "12.6.2012"
+#define REVISION 3
+#define DATE "12.7.2025"
 
-#define UTILITY_VERSION 39
+#define UTILITY_VERSION 36
 #define PROMETHEUS_VERSION 2
 #define POWERPCI_VERSION 2
 #define EXPANSION_VERSION 50
 #define OPENPCI_VERSION 1
 #define PCCARD_VERSION 1
-
-#ifndef UPINT
-#ifdef __AROS__
-typedef IPTR UPINT;
-typedef SIPTR PINT;
-#else
-typedef ULONG UPINT;
-typedef LONG PINT;
-#endif
-#endif
-
-#ifndef REG
-#if defined(__mc68000) && !defined(__AROS__)
-#define _REG(A, B) B __asm(#A)
-#define REG(A, B) _REG(A, B)
-#else
-#define REG(A, B) B
-#endif
-#endif
-
-#define _STR(A) #A
-#define STR(A) _STR(A)
 
 #ifndef __AROS__
 #define USE_HACKS
@@ -81,23 +61,15 @@ struct DevBase
    struct Library *prometheus_base;
    struct Library *powerpci_base;
    struct Library *openpci_base;
+   struct Library *expansion_base;
    struct Library *pccard_base;
    APTR card_base;
    struct MinList pci_units;
    struct MinList isa_units;
    struct MinList pccard_units;
    struct timerequest timer_request;
-#ifdef __amigaos4__
-   struct Library *expansion_base;
-   struct ExecIFace *i_exec;
-   struct UtilityIFace *i_utility;
-   struct PCIIFace *i_pci;
-   struct CardIFace *i_card;
-   struct PCCardIFace *i_pccard;
-   struct TimerIFace *i_timer;
-#endif
    VOID (*wrapper_int_code)();
-   VOID (*wrapper_card_code)();
+   VOID (*card_wrapper_int_code)();
 };
 
 
@@ -129,24 +101,12 @@ enum
    TORNADO_GEN
 };
 
-#define ETH_ADDRESSSIZE 6
-#define ETH_HEADERSIZE 14
-#define ETH_MTU 1500
-#define ETH_MAXPACKETSIZE ((ETH_HEADERSIZE) + (ETH_MTU))
-
-#define ETH_PACKET_DEST 0
-#define ETH_PACKET_SOURCE 6
-#define ETH_PACKET_TYPE 12
-#define ETH_PACKET_IEEELEN 12
-#define ETH_PACKET_SNAPTYPE 20
-#define ETH_PACKET_DATA 14
-
 #define STAT_COUNT 3
 
 #define TX_SLOT_COUNT 20
 #define RX_SLOT_COUNT 20
-#define DPD_SIZE (sizeof(ULONG) * 6)
-#define UPD_SIZE (sizeof(ULONG) * 4)
+#define DPD_SIZE 0x20
+#define UPD_SIZE 0x20
 
 
 struct DevUnit
@@ -168,6 +128,7 @@ struct DevUnit
    VOID (*WordOut)(APTR, ULONG, UWORD);
    VOID (*LongOut)(APTR, ULONG, ULONG);
    VOID (*LongsIn)(APTR, ULONG, ULONG *, ULONG);
+   VOID (*WordsOut)(APTR, ULONG, const UWORD *, ULONG);
    VOID (*LongsOut)(APTR, ULONG, const ULONG *, ULONG);
    VOID (*BEWordOut)(APTR, ULONG, UWORD);
    UWORD (*LEWordIn)(APTR, ULONG);
@@ -177,7 +138,9 @@ struct DevUnit
    APTR (*AllocDMAMem)(APTR, UPINT, UWORD);
    VOID (*FreeDMAMem)(APTR, APTR);
    UBYTE *rx_buffer;
+   UBYTE *rx_buffers[RX_SLOT_COUNT];
    UBYTE *tx_buffer;
+   UBYTE *tx_buffers[TX_SLOT_COUNT];
    UPINT io_base;
    UPINT window1_offset;
    ULONG card_removed_signal;
@@ -192,11 +155,13 @@ struct DevUnit
    struct Interrupt rx_int;
    struct Interrupt tx_int;
    struct Interrupt tx_end_int;
+   struct Interrupt reset_handler;
    struct Sana2DeviceStats stats;
    ULONG special_stats[STAT_COUNT];
    ULONG *dpds;
+   ULONG dpds_p;
    ULONG *upds;
-   ULONG *next_upd;
+   ULONG upds_p;
    UBYTE *headers;
    ULONG speed;
    struct IOSana2Req **tx_requests;
@@ -206,10 +171,10 @@ struct DevUnit
    UWORD size_shift;
    UWORD bus;
    UWORD generation;
-   UWORD autoneg_modes;
    UWORD buffer_size;
    UWORD tx_in_slot;
    UWORD tx_out_slot;
+   UWORD rx_slot;
    UWORD tx_active_req_count;
    UWORD int_mask;
    UBYTE mii_phy_no;
@@ -225,11 +190,6 @@ struct Opener
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
-   const VOID *real_rx_function;
-   const VOID *real_tx_function;
-   const VOID *real_dma_tx_function;
-#endif
 };
 
 
@@ -263,15 +223,18 @@ struct AddressRange
 
 /* Unit flags */
 
-#define UNITF_SHARED (1 << 0)
-#define UNITF_ONLINE (1 << 1)
-#define UNITF_WASONLINE (1 << 2)   /* card was online at time of removal */
-#define UNITF_HAVEADAPTER (1 << 3)
-#define UNITF_CONFIGURED (1 << 4)
-#define UNITF_PROM (1 << 5)
-#define UNITF_FULLDUPLEX (1 << 6)
-#define UNITF_RXBUFFERINUSE (1 << 7)
-#define UNITF_TXBUFFERINUSE (1 << 8)
+#define UNITF_SHARED        (1 << 0)
+#define UNITF_PROM          (1 << 1)
+#define UNITF_CONFIGURED    (1 << 2)
+#define UNITF_ONLINE        (1 << 3)
+#define UNITF_HAVEADAPTER   (1 << 4)
+#define UNITF_TASKADDED     (1 << 5)
+#define UNITF_INTADDED      (1 << 6)
+#define UNITF_RESETADDED    (1 << 7)
+#define UNITF_WASONLINE     (1 << 8)   /* card online at time of removal */
+#define UNITF_FULLDUPLEX    (1 << 9)
+#define UNITF_RXBUFFERINUSE (1 << 10)
+#define UNITF_TXBUFFERINUSE (1 << 11)
 
 
 /* Library and device bases */
@@ -285,18 +248,6 @@ struct AddressRange
 #define OpenPciBase (base->openpci_base)
 #define PCCardBase (base->pccard_base)
 #define TimerBase (base->timer_request.tr_node.io_Device)
-
-#ifdef __amigaos4__
-#define IExec (base->i_exec)
-#define IUtility (base->i_utility)
-#define ICard (base->i_card)
-#define IPCCard (base->i_pccard)
-#define ITimer (base->i_timer)
-#endif
-
-#ifndef BASE_REG
-#define BASE_REG a6
-#endif
 
 
 #endif

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2005 Neil Cafferkey
+Copyright (C) 2005-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,21 +41,7 @@ MA 02111-1307, USA.
          (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
    })
 
-#ifndef __i386__ /* Big endian */
-
-#define BEWord(A) \
-   (A)
-
-#define BELong(A) \
-   (A)
-
-#define LEWord(A) \
-   FlipWord(A)
-
-#define LELong(A) \
-   FlipLong(A)
-
-#else
+#if defined(__i386__) || defined(__x86_64__) /* Little endian */
 
 #define BEWord(A) \
    FlipWord(A)
@@ -68,6 +54,20 @@ MA 02111-1307, USA.
 
 #define LELong(A) \
    (A)
+
+#else /* Big endian */
+
+#define BEWord(A) \
+   (A)
+
+#define BELong(A) \
+   (A)
+
+#define LEWord(A) \
+   FlipWord(A)
+
+#define LELong(A) \
+   FlipLong(A)
 
 #endif
 

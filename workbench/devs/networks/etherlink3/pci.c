@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2011 Neil Cafferkey
+Copyright (C) 2004-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ static VOID LongOutHook(struct BusContext *context, ULONG offset,
    ULONG value);
 static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count);
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count);
 static VOID LongsOutHook(struct BusContext *context, ULONG offset,
    const ULONG *buffer, ULONG count);
 static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
@@ -115,6 +117,7 @@ static const struct TagItem unit_tags[] =
    {IOTAG_WordOut, (UPINT)WordOutHook},
    {IOTAG_LongOut, (UPINT)LongOutHook},
    {IOTAG_LongsIn, (UPINT)LongsInHook},
+   {IOTAG_WordsOut, (UPINT)WordsOutHook},
    {IOTAG_LongsOut, (UPINT)LongsOutHook},
    {IOTAG_BEWordOut, (UPINT)BEWordOutHook},
    {IOTAG_LEWordIn, (UPINT)LEWordInHook},
@@ -281,12 +284,29 @@ static struct DevUnit *CreatePCIUnit(ULONG index, struct DevBase *base)
 
    if(success)
    {
-      if(!(WrapInt(&unit->status_int, base)
-         && WrapInt(&unit->rx_int, base)
-         && WrapInt(&unit->tx_int, base)
-         && WrapInt(&unit->tx_end_int, base)))
+      if(!(WrapInt(&unit->status_int, FALSE, base)
+         && WrapInt(&unit->rx_int, FALSE, base)
+         && WrapInt(&unit->tx_int, FALSE, base)
+         && WrapInt(&unit->tx_end_int, FALSE, base)
+         && WrapInt(&unit->reset_handler, FALSE, base)))
          success = FALSE;
-      success = AddPCIIntServer(context->card, &unit->status_int, base);
+   }
+
+   /* Add hardware interrupt and reset handler */
+
+   if(success)
+   {
+      if(AddPCIIntServer(context->card, &unit->status_int, base))
+         unit->flags |= UNITF_INTADDED;
+      else
+         success = FALSE;
+
+#if defined(__amigaos4__) || defined(__AROS__)
+      if(AddResetCallback(&unit->reset_handler))
+         unit->flags |= UNITF_RESETADDED;
+      else
+         success = FALSE;
+#endif
    }
 
    if(!success)
@@ -334,7 +354,13 @@ VOID DeletePCIUnit(struct DevUnit *unit, struct DevBase *base)
    if(unit != NULL)
    {
       context = unit->card;
-      RemPCIIntServer(context->card, &unit->status_int, base);
+#if defined(__amigaos4__) || defined(__AROS__)
+      if((unit->flags & UNITF_RESETADDED) != 0)
+         RemResetCallback(&unit->reset_handler);
+#endif
+      if((unit->flags & UNITF_INTADDED) != 0)
+         RemPCIIntServer(context->card, &unit->status_int, base);
+      UnwrapInt(&unit->reset_handler, base);
       UnwrapInt(&unit->tx_end_int, base);
       UnwrapInt(&unit->tx_int, base);
       UnwrapInt(&unit->rx_int, base);
@@ -725,6 +751,30 @@ static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count)
 {
    LONGSIN(context->io_base + offset, buffer, count);
+
+   return;
+}
+
+
+
+/****i* etherlink3.device/WordsOutHook *************************************
+*
+*   NAME
+*	WordsOutHook
+*
+*   SYNOPSIS
+*	WordsOutHook(context, offset, buffer, count)
+*
+*	VOID WordsOutHook(struct BusContext *, ULONG, const UWORD *, ULONG);
+*
+****************************************************************************
+*
+*/
+
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count)
+{
+   WORDSOUT(context->io_base + offset, buffer, count);
 
    return;
 }

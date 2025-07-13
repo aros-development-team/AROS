@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ MA 02111-1307, USA.
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/pccard.h>
-#include <resources/card.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -70,11 +69,11 @@ static VOID CardRemovedHook(struct BusContext *context,
 static BOOL CardInsertedHook(struct BusContext *context,
    struct DevBase *base);
 static VOID CardRemovedInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code));
+   REG(a5, APTR int_code));
 static VOID CardInsertedInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code));
+   REG(a5, APTR int_code));
 static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code), REG(d0, UBYTE mask));
+   REG(a5, APTR int_code), REG(d0, UBYTE mask));
 static UBYTE ByteInHook(struct BusContext *context, ULONG offset);
 static ULONG LongInHook(struct BusContext *context, ULONG offset);
 static VOID ByteOutHook(struct BusContext *context, ULONG offset,
@@ -85,6 +84,8 @@ static VOID LongOutHook(struct BusContext *context, ULONG offset,
    ULONG value);
 static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count);
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count);
 static VOID LongsOutHook(struct BusContext *context, ULONG offset,
    const ULONG *buffer, ULONG count);
 static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
@@ -115,6 +116,7 @@ static const struct TagItem unit_tags[] =
    {IOTAG_WordOut, (UPINT)WordOutHook},
    {IOTAG_LongOut, (UPINT)LongOutHook},
    {IOTAG_LongsIn, (UPINT)LongsInHook},
+   {IOTAG_WordsOut, (UPINT)WordsOutHook},
    {IOTAG_LongsOut, (UPINT)LongsOutHook},
    {IOTAG_BEWordOut, (UPINT)BEWordOutHook},
    {IOTAG_LEWordIn, (UPINT)LEWordInHook},
@@ -275,10 +277,9 @@ static struct DevUnit *CreatePCCardUnit(ULONG index,
 
    if(success)
    {
-      if(!(WrapInt(&unit->status_int, base)
-         && WrapInt(&unit->rx_int, base)
-         && WrapInt(&unit->tx_int, base)
-         && WrapInt(&unit->tx_end_int, base)))
+      if(!(WrapInt(&unit->rx_int, FALSE, base)
+         && WrapInt(&unit->tx_int, FALSE, base)
+         && WrapInt(&unit->tx_end_int, FALSE, base)))
          success = FALSE;
 
       unit->insertion_function = (APTR)CardInsertedHook;
@@ -332,7 +333,6 @@ VOID DeletePCCardUnit(struct DevUnit *unit, struct DevBase *base)
       UnwrapInt(&unit->tx_end_int, base);
       UnwrapInt(&unit->tx_int, base);
       UnwrapInt(&unit->rx_int, base);
-      UnwrapInt(&unit->status_int, base);
       context = unit->card;
       DeleteUnit(unit, base);
       context->unit = NULL;
@@ -416,9 +416,9 @@ static struct BusContext *AllocCard(struct DevBase *base)
       card_status_int->is_Code = (APTR)CardStatusInt;
       card_status_int->is_Data = context;
 
-      if(!(WrapCardInt(card_removed_int, base)
-         && WrapCardInt(card_inserted_int, base)
-         && WrapCardInt(card_status_int, base)))
+      if(!(WrapInt(card_removed_int, TRUE, base)
+         && WrapInt(card_inserted_int, TRUE, base)
+         && WrapInt(card_status_int, TRUE, base)))
          success = FALSE;
    }
 
@@ -430,7 +430,6 @@ static struct BusContext *AllocCard(struct DevBase *base)
 
    if(success)
    {
-      context->have_card = TRUE;
       if(!IsCardCompatible(context, base))
          success = FALSE;
    }
@@ -473,9 +472,9 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
          CardResetCard(card_handle);
       }
       ReleaseCard(card_handle, CARDF_REMOVEHANDLE);
-      UnwrapCardInt(card_handle->cah_CardStatus, base);
-      UnwrapCardInt(card_handle->cah_CardInserted, base);
-      UnwrapCardInt(card_handle->cah_CardRemoved, base);
+      UnwrapInt(card_handle->cah_CardStatus, base);
+      UnwrapInt(card_handle->cah_CardInserted, base);
+      UnwrapInt(card_handle->cah_CardRemoved, base);
 
       FreeVec(card_handle->cah_CardStatus);
       FreeVec(card_handle->cah_CardInserted);
@@ -731,7 +730,7 @@ static BOOL CardInsertedHook(struct BusContext *context,
 */
 
 static VOID CardRemovedInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code))
+   REG(a5, APTR int_code))
 {
    struct DevBase *base;
    struct DevUnit *unit;
@@ -770,17 +769,15 @@ static VOID CardRemovedInt(REG(a1, struct BusContext *context),
 */
 
 static VOID CardInsertedInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code))
+   REG(a5, APTR int_code))
 {
    struct DevBase *base;
    struct DevUnit *unit;
 
    unit = context->unit;
-   if (unit != NULL) {
-      base = unit->device;
-      context->have_card = TRUE;
-      Signal(unit->task, unit->card_inserted_signal);
-   }
+   base = unit->device;
+   context->have_card = TRUE;
+   Signal(unit->task, unit->card_inserted_signal);
 
    return;
 }
@@ -799,24 +796,25 @@ static VOID CardInsertedInt(REG(a1, struct BusContext *context),
 *
 ****************************************************************************
 *
-* We pretend the int_code parameter goes in A6 rather than A5 because 68k
-* GCC can't cope with A5 and we know the parameter isn't used in this case.
-*
 */
 
 static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
-   REG(a6, APTR int_code), REG(d0, UBYTE mask))
+   REG(a5, APTR int_code), REG(d0, UBYTE mask))
 {
+   struct DevUnit *unit;
+
+   unit = context->unit;
+
    if(context->resource_version < 39)
    {
-      /* Work around gayle interrupt bug */
+      /* Work around Gayle interrupt bug */
 
       *((volatile UBYTE *)0xda9000) = (mask ^ 0x2c) | 0xc0;
       mask = 0;
    }
 
-   if(context->unit != NULL)
-      StatusInt(context->unit, StatusInt);
+   if(unit != NULL)
+      ServiceInterrupt(unit, unit->device);
 
    return mask;
 }
@@ -955,6 +953,30 @@ static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count)
 {
    LONGSIN(context->io_base + offset, buffer, count);
+
+   return;
+}
+
+
+
+/****i* etherlink3.device/WordsOutHook *************************************
+*
+*   NAME
+*	WordsOutHook
+*
+*   SYNOPSIS
+*	WordsOutHook(context, offset, buffer, count)
+*
+*	VOID WordsOutHook(struct BusContext *, ULONG, const UWORD *, ULONG);
+*
+****************************************************************************
+*
+*/
+
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count)
+{
+   WORDSOUT(context->io_base + offset, buffer, count);
 
    return;
 }
