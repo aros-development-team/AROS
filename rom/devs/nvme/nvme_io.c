@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -54,23 +54,23 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     int queueno;
 
     D(
-        bug("[NVME%02ld] %s(%08x%08x, 0x%p, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, data, len, is_write ? "WRITE" : "READ");
+        bug("[NVME%02u] %s(%08x%08x, 0x%p, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, data, len, is_write ? "WRITE" : "READ");
 
-        bug("[NVME%02ld] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus);
-        bug("[NVME%02ld] %s: bus dev @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev);
+        bug("[NVME%02u] %s: bus @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus);
+        bug("[NVME%02u] %s: bus dev @ 0x%p\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev);
 
-        bug("[NVME%02ld] %s: %u queues available\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev->queuecnt);
+        bug("[NVME%02u] %s: %u queues available\n", unit->au_UnitNum, __func__, unit->au_Bus->ab_Dev->queuecnt);
     )
 
     if ((off64 >> unit->au_SecShift) > unit->au_High)
     {
-        bug("[NVME%02ld] %s: BADADDRESS %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
+        bug("[NVME%02u] %s: BADADDRESS %x > %x\n", unit->au_UnitNum, __func__, (off64 >> unit->au_SecShift), unit->au_High);
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
     else if ((len == 0) || (len > (1 << unit->au_Bus->ab_Dev->dev_mdts) * unit->au_Bus->ab_Dev->pagesize))
     {
-        bug("[NVME%02ld] %s: BADLENGTH (writing %u bytes to %x)\n", unit->au_UnitNum, __func__, len, (off64 >> unit->au_SecShift));
+        bug("[NVME%02u] %s: BADLENGTH (writing %u bytes to %x)\n", unit->au_UnitNum, __func__, len, (off64 >> unit->au_SecShift));
         io->io_Error = IOERR_BADLENGTH;
         return TRUE;
     }
@@ -165,14 +165,14 @@ AROS_LH1(void, BeginIO,
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
 
-    D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
+    D(bug("[NVME%02u] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
     ObtainSemaphore(&unit->au_Lock);
     AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
     ReleaseSemaphore(&unit->au_Lock);
 
     switch (io->io_Command) {
     case CMD_READ:
-        D(bug("[NVME%02ld] CMD_READ ", unit->au_UnitNum);)
+        D(bug("[NVME%02u] CMD_READ ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         D(bug("%08x (%u)\n", off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
         done = nvme_sector_rw(io, off64, FALSE);
@@ -180,7 +180,7 @@ AROS_LH1(void, BeginIO,
 
     case TD_READ64:
     case NSCMD_TD_READ64:
-        D(bug("[NVME%02ld] TD_READ64 ", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_READ64 ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
@@ -188,7 +188,7 @@ AROS_LH1(void, BeginIO,
         break;
 
     case CMD_WRITE:
-        D(bug("[NVME%02ld] CMD_WRITE ", unit->au_UnitNum);)
+        D(bug("[NVME%02u] CMD_WRITE ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         D(bug("%08x (%u)\n", off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
         done = nvme_sector_rw(io, off64, TRUE);
@@ -196,7 +196,7 @@ AROS_LH1(void, BeginIO,
 
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
-        D(bug("[NVME%02ld] TD_WRITE64 ", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_WRITE64 ", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         D(bug("%08x%08x (%u)\n", off64 >> 32, off64 & 0xFFFFFFFF, iotd->iotd_Req.io_Length);)
@@ -204,40 +204,40 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_FORMAT:
-        D(bug("[NVME%02ld] TD_FORMAT\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_FORMAT\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         done = nvme_sector_rw(io, off64, TRUE);
         break;
 
     case TD_FORMAT64:
     case NSCMD_TD_FORMAT64:
-        D(bug("[NVME%02ld] TD_FORMAT64\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_FORMAT64\n", unit->au_UnitNum);)
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
         done = nvme_sector_rw(io, off64, TRUE);
         break;
 
     case TD_SEEK:
-        D(bug("[NVME%02ld] TD_SEEK\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_SEEK\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case TD_SEEK64:
     case NSCMD_TD_SEEK64:
-        D(bug("[NVME%02ld] TD_SEEK64\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_SEEK64\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case TD_CHANGESTATE:
-        D(bug("[NVME%02ld] TD_CHANGESTATE\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_CHANGESTATE\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case NSCMD_DEVICEQUERY:
-        D(bug("[NVME%02ld] TD_DEVICEQUERY\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_DEVICEQUERY\n", unit->au_UnitNum);)
         if (len < sizeof(*nsqr))
             goto bad_length;
 
@@ -252,19 +252,19 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_PROTSTATUS:
-        D(bug("[NVME%02ld] TD_PROTSTATUS\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_PROTSTATUS\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case TD_GETDRIVETYPE:
-        D(bug("[NVME%02ld] TD_GETDRIVETYPE\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_GETDRIVETYPE\n", unit->au_UnitNum);)
         IOStdReq(io)->io_Actual = DRIVE_NEWSTYLE;
         done = TRUE;
         break;
 
     case TD_GETGEOMETRY:
-        D(bug("[NVME%02ld] TD_GETGEOMETRY\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_GETGEOMETRY\n", unit->au_UnitNum);)
         if (len < sizeof(*geom))
             goto bad_length;
 
@@ -288,33 +288,33 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_ADDCHANGEINT:
-        D(bug("[NVME%02ld] TD_ADDCHANGEINT\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_ADDCHANGEINT\n", unit->au_UnitNum);)
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         break;
 
     case TD_REMCHANGEINT:
-        D(bug("[NVME%02ld] TD_REMCHANGEINT\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_REMCHANGEINT\n", unit->au_UnitNum);)
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         done = TRUE;
         break;
 
     case TD_MOTOR:
-        D(bug("[NVME%02ld] TD_MOTOR\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_MOTOR\n", unit->au_UnitNum);)
         // FIXME: Tie in with power management
         IOStdReq(io)->io_Actual = 1;
         done = TRUE;
         break;
     
     case CMD_CLEAR:
-        D(bug("[NVME%02ld] TD_CLEAR\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_CLEAR\n", unit->au_UnitNum);)
         // FIXME: Implemennt cache invalidate
         done = TRUE;
         break;
 
     case CMD_UPDATE:
-        D(bug("[NVME%02ld] TD_UPDATE\n", unit->au_UnitNum);)
+        D(bug("[NVME%02u] TD_UPDATE\n", unit->au_UnitNum);)
         // FIXME: Implement cache flush
         done = TRUE;
         break;
@@ -350,7 +350,7 @@ bad_address:
         ReplyMsg(&io->io_Message);
 
     if (done)
-        D(bug("[NVME%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
+        D(bug("[NVME%02u] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
 
     AROS_LIBFUNC_EXIT
 }

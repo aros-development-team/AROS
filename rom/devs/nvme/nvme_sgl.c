@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 */
  
 
@@ -42,6 +42,6 @@
 
 BOOL nvme_initsgl(struct nvme_command *cmdio, struct completionevent_handler *ioehandle, struct nvme_Unit *unit, ULONG len, APTR *data, BOOL is_write)
 {
-    bug("[NVME%02ld] %s: SGL support not yet implemented!\n", unit->au_UnitNum, __func__);
+    bug("[NVME%02u] %s: SGL support not yet implemented!\n", unit->au_UnitNum, __func__);
     return FALSE;
 }
