@@ -21,7 +21,11 @@
 void
 SlaveEntry( void );
 
+#ifdef PROCGW
 PROCGW( static, void,  slaveentry, SlaveEntry );
+#else
+#define slaveentry SlaveEntry
+#endif
 
 static const LONG frequencies[] =
 {
