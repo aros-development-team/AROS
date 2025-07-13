@@ -8,6 +8,7 @@
     POSIX.1-2008 header file: sys/statvfs.h
 */
 
+#include <aros/system.h>
 #include <aros/types/fs_t.h>
 
 struct statvfs {
@@ -24,7 +25,11 @@ struct statvfs {
     unsigned long  f_namemax;  // Maximum filename length
 };
 
+__BEGIN_DECLS
+
 int statvfs(const char *path, struct statvfs *buf);
 int fstatvfs(int fd, struct statvfs *buf);
+
+__END_DECLS
 
 #endif /* _POSIXC_SYS_STATVFS_H_ */

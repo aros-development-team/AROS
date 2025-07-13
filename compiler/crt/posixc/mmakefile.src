@@ -81,6 +81,7 @@ POSIXC := \
     fsetpos \
     fsetpos64 \
     fstat \
+    fstatvfs \
     fstat64 \
     fsync \
     ftell \
@@ -196,6 +197,7 @@ POSIXC := \
     stat \
     stat64 \
     statfs \
+    statvfs \
     strerror \
     strptime \
     swab \
