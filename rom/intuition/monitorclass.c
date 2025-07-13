@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -1220,12 +1220,12 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
         struct pHidd_Gfx_DisplayToBMCoords dtbmcmsg =
         {
-            mID : HiddGfxBase + moHidd_Gfx_DisplayToBMCoords,
-            Target : HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
-            DispX : msg->DispX,
-            DispY : msg->DispY,
-            TargetX : msg->ScrX,
-            TargetY : msg->ScrY
+            .mID        = HiddGfxBase + moHidd_Gfx_DisplayToBMCoords,
+            .Target     = HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
+            .DispX      = msg->DispX,
+            .DispY      = msg->DispY,
+            .TargetX    = msg->ScrX,
+            .TargetY    = msg->ScrY
         };
         /* call the gfx driver to transform the co-ords */
 #if USE_FAST_DISPLAYTOBMCOORDS
@@ -1290,12 +1290,12 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
         struct pHidd_Gfx_BMToDisplayCoords bmtdcmsg =
         {
-            mID : HiddGfxBase + moHidd_Gfx_BMToDisplayCoords,
-            Target : HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
-            TargetX : msg->ScrX,
-            TargetY : msg->ScrY,
-            DispX : msg->DispX,
-            DispY : msg->DispY
+            .mID        = HiddGfxBase + moHidd_Gfx_BMToDisplayCoords,
+            .Target     = HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
+            .TargetX    = msg->ScrX,
+            .TargetY    = msg->ScrY,
+            .DispX      = msg->DispX,
+            .DispY      = msg->DispY
         };
         /* call the gfx driver to transform the co-ords */
 #if USE_FAST_BMTODISPLAYCOORDS
