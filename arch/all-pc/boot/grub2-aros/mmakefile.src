@@ -30,7 +30,7 @@ ifeq ($(AROS_TOOLCHAIN),llvm)
 ifneq ($(AROS_TARGET_CPU32),)
 GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU32)
 GRUB2_ENV+=TARGET_CFLAGS="$(TARGET_ISA_32_CFLAGS)"
-GRUB2_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_32_LDFLAGS) -L$(AROS_LIB32) -larossupport -lamiga -lautoinit"
+GRUB2_ENV+=TARGET_LDFLAGS="$(TARGET_ISA_32_LDFLAGS) -nostartfiles -L$(AROS_LIB32) -larossupport -lamiga -lautoinit"
 GRUB2_ENV+=TARGET_CCASFLAGS="$(TARGET_ISA_32_AFLAGS) -Wa,--32"
 else
 GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU)
