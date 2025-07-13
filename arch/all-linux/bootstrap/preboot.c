@@ -1,9 +1,15 @@
 /*
-    Copyright (C) 2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <unistd.h>
-#include <syscall.h>
+#if HAVE_SYSCALL_H
+#  include <syscall.h>
+#elif HAVE_SYS_SYSCALL_H
+#  include <sys/syscall.h>
+#else
+#  error "No syscall.h found"
+#endif
 
 pid_t arostid;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -50,7 +50,13 @@
 #include <sys/types.h>
 
 #include <unistd.h>
-#include <syscall.h>
+#if HAVE_SYSCALL_H
+#  include <syscall.h>
+#elif HAVE_SYS_SYSCALL_H
+#  include <sys/syscall.h>
+#else
+#  error "No syscall.h found"
+#endif
 
 static int memnest;
 extern pid_t arostid;
