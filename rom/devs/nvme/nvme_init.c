@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
  */
 
 #include <proto/exec.h>
@@ -312,15 +312,15 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     {
         struct Hook FindHook =
         {
-            h_Entry:    (IPTR (*)())nvme_PCIEnumerator_h,
-            h_Data:     &Args
+            .h_Entry    = (IPTR (*)())nvme_PCIEnumerator_h,
+            .h_Data     = &Args
         };
 
         struct pHidd_PCI_EnumDevices enummsg =
         {
-            mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-            callback:       &FindHook,
-            requirements:   Requirements,
+            .mID            = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+            .callback       = &FindHook,
+            .requirements   = Requirements,
         };
 
         OOP_DoMethod(pci, &enummsg.mID);
