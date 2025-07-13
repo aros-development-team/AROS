@@ -708,6 +708,9 @@ AC_CHECK_HEADERS([sys/ipc.h sys/shm.h \
 AC_CHECK_HEADERS([sys/mount.h],,,[#include <sys/param.h>])
 AC_CHECK_HEADERS([GL/glx.h],[host_feature_glx=yes],[host_feature_glx=no],)
 
+AC_CHECK_HEADERS([syscall.h],[host_header_syscall=yes],[host_header_syscall=no],)
+AC_CHECK_HEADERS([sys/syscall.h],[host_header_syssyscall=yes],[host_header_syssyscall=no],)
+
 AC_MSG_CHECKING([if __unused conflicts with sys/stat.h])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
      [[
@@ -3941,6 +3944,8 @@ AC_SUBST(aros_host_aclocal)
 AC_SUBST(aros_host_autoconf)
 AC_SUBST(aros_host_autoheader)
 AC_SUBST(aros_host_automake)
+AC_SUBST(host_header_syscall)
+AC_SUBST(host_header_syssyscall)
 
 # Target Related #########################
 AC_SUBST(aros_elf_translate)

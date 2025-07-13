@@ -776,6 +776,8 @@ target_extra_cfg
 make_extra_targetcfg
 make_extra_commands
 aros_elf_translate
+host_header_syssyscall
+host_header_syscall
 aros_tools_dir
 aros_host_lib_suffix
 aros_host_exe_suffix
@@ -7946,6 +7948,31 @@ then :
  host_feature_glx=yes
 else $as_nop
   host_feature_glx=no
+fi
+
+done
+
+       for ac_header in syscall.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "syscall.h" "ac_cv_header_syscall_h" "$ac_includes_default"
+if test "x$ac_cv_header_syscall_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_SYSCALL_H 1" >>confdefs.h
+ host_header_syscall=yes
+else $as_nop
+  host_header_syscall=no
+fi
+
+done
+       for ac_header in sys/syscall.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "sys/syscall.h" "ac_cv_header_sys_syscall_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_syscall_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_SYS_SYSCALL_H 1" >>confdefs.h
+ host_header_syssyscall=yes
+else $as_nop
+  host_header_syssyscall=no
 fi
 
 done
@@ -18782,6 +18809,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Host Related ###########################
+
+
 
 
 

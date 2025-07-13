@@ -12,6 +12,10 @@ AROS_STDC_WCHAR32         := @aros_config_wchar32@
 #Bootloader
 GRUB2_VERSION             := @target_grub2_version@
 
+#
+# "Host" options & flags
+#
+
 # DBUS flags
 DBUS_CFLAGS               := @DBUS_CFLAGS@
 DBUS_LIBFLAGS             := @DBUS_LIBFLAGS@
@@ -30,6 +34,15 @@ ifeq ($(OPT_HOST_SDLGFX),yes)
 HOST_SDL_CFLAGS           := @aros_host_sdl_cflags@
 HOST_SDL_LIBS             := @aros_host_sdl_libs@
 endif
+
+ifeq (@host_header_syscall@,yes)
+HOST_SYSCALL_CPPFLAGS += -DHAVE_SYSCALL_H 
+endif
+
+ifeq (@host_header_syssyscall@,yes)
+HOST_SYSCALL_CPPFLAGS += -DHAVE_SYS_SYSCALL_H 
+endif
+
 
 #
 # Toolchain options
