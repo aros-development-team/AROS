@@ -1,5 +1,5 @@
 /*
-   Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
    Desc: Main bootmenu code
 */
@@ -478,6 +478,7 @@ static void freeGadgets_PageBoot(LIBBASETYPEPTR LIBBASE)
 static BOOL populateGadgets_PageDisplay(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
 {
     D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
+    return TRUE;
 }
 
 static void freeGadgets_PageDisplay(LIBBASETYPEPTR LIBBASE)
@@ -488,6 +489,7 @@ static void freeGadgets_PageDisplay(LIBBASETYPEPTR LIBBASE)
 static BOOL populateGadgets_PageExpansion(LIBBASETYPEPTR LIBBASE, struct Gadget *gadget)
 {
     D(bug("[DOSBoot:bootmenu] %s(0x%p)\n", __func__, gadget));
+    return TRUE;
 }
 
 static void freeGadgets_PageExpansion(LIBBASETYPEPTR LIBBASE)
