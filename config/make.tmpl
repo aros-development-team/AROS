@@ -1111,9 +1111,10 @@ endif
 %(prog) : OBJDIR := %(objdir)
 %(prog) : OBJS := $(strip %(objs))
 %(prog) : LDFLAGS := $(strip %(ldflags))
-%(prog) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
+%(prog) : LIBS := $(strip $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+%(prog) : ARCHLIBS := $(strip $(addprefix -l,%(usehostlibs)) %(archlibs))
 %(prog) : %(objs) $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="%(archlibs)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="$(ARCHLIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1707,7 +1708,7 @@ ifeq (%(compiler),host)
 %(mmake)_LDFLAGS            := $(HOST_LDFLAGS)
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_LDFLAGS            := $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+%(mmake)_LDFLAGS            := $(strip $(KERNEL_LDFLAGS) $(USER_LDFLAGS))
 endif
 else
 %(mmake)_LDFLAGS          := %(ldflags)
