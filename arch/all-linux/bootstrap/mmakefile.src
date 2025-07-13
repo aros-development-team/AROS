@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES         := malloc preboot
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
-		 -I$(GENINCDIR)
+		 -I$(GENINCDIR) $(KERNEL_INCLUDES)
 USER_CPPFLAGS := $(HOST_SYSCALL_CPPFLAGS)
 
 %build_archspecific \
