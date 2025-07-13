@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 
     Desc: PCI bus driver for ahci.device
 */
@@ -156,15 +156,15 @@ static int ahci_bus_Detect(struct AHCIBase *AHCIBase)
     {
         struct Hook FindHook =
         {
-            h_Entry:    (IPTR (*)())ahci_PCIEnumerator_h,
-            h_Data:     &Args
+            .h_Entry    = (IPTR (*)())ahci_PCIEnumerator_h,
+            .h_Data     = &Args
         };
 
         struct pHidd_PCI_EnumDevices enummsg =
         {
-            mID:            OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-            callback:       &FindHook,
-            requirements:   Requirements,
+            .mID            = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+            .callback       = &FindHook,
+            .requirements   = Requirements,
         };
 
         OOP_DoMethod(pci, &enummsg.mID);
