@@ -24,6 +24,7 @@ CONFIG_OPTS := \
 		--disable-efiemu \
 		--disable-grub-mkfont \
 		--disable-werror \
+		--enable-silent-rules \
 		--program-prefix=
 
 ifeq ($(AROS_TOOLCHAIN),llvm)
