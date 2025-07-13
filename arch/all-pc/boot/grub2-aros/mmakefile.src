@@ -1,5 +1,5 @@
 # Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
-# just for building the grub2 utils
+# Rules for building the grub2 native utils,
 # in provision to use grub-mkimage in InstallAROS
 
 include $(SRCDIR)/config/aros.cfg
@@ -17,14 +17,14 @@ GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
 GRUB2REPOS      := ftp://ftp.gnu.org/gnu/grub
 
 CONFIG_OPTS := \
-		--with-platform=$(GRUB_ARCH) \
+		--with-platform=$(GRUB_ARCH)        \
 		--datarootdir=$(GRUB2DESTDIR)/share \
 		--sysconfdir=$(GRUB2DESTDIR)/etc	\
-		--disable-nls \
-		--disable-efiemu \
-		--disable-grub-mkfont \
-		--disable-werror \
-		--enable-silent-rules \
+		--disable-nls                       \
+		--disable-efiemu                    \
+		--disable-grub-mkfont               \
+		--disable-werror                    \
+		--enable-silent-rules               \
 		--program-prefix=
 
 ifeq ($(AROS_TOOLCHAIN),llvm)
