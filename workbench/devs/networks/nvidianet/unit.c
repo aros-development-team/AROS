@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2023 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -697,7 +697,7 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
 
    /* Flush pending read and write requests */
 
-   FlushUnit(unit, MGMT_QUEUE, S2ERR_OUTOFSERVICE, base);
+   FlushUnit(unit, WRITE_QUEUE, S2ERR_OUTOFSERVICE, base);
 
    /* Report Offline event and return */
 
@@ -1175,22 +1175,12 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
          request->io_Error = error;
          ReplyMsg((APTR)request);
       }
-      while((request = (APTR)GetMsg(&opener->mgmt_port)) != NULL)
-      {
-         request->io_Error = error;
-         ReplyMsg((APTR)request);
-      }
       opener = (APTR)opener->node.mln_Succ;
    }
 
 #else
    opener = request->ios2_BufferManagement;
    while((request = (APTR)GetMsg(&opener->read_port)) != NULL)
-   {
-      request->io_Error = IOERR_ABORTED;
-      ReplyMsg((APTR)request);
-   }
-   while((request = (APTR)GetMsg(&opener->mgmt_port)) != NULL)
    {
       request->io_Error = IOERR_ABORTED;
       ReplyMsg((APTR)request);

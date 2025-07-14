@@ -60,7 +60,6 @@ struct DevBase
 enum
 {
    WRITE_QUEUE,
-   MGMT_QUEUE,
    ADOPT_QUEUE,
    EVENT_QUEUE,
    GENERAL_QUEUE,
@@ -122,7 +121,6 @@ struct Opener
 {
    struct MinNode node;
    struct MsgPort read_port;
-   struct MsgPort mgmt_port;
    BOOL (*rx_function)(REG(a0, APTR), REG(a1, APTR), REG(d0, ULONG));
    BOOL (*tx_function)(REG(a0, APTR), REG(a1, APTR), REG(d0, ULONG));
    UBYTE *(*dma_tx_function)(REG(a0, APTR));

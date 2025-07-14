@@ -122,7 +122,7 @@ const TEXT retries_name[] = "Retries";
 const TEXT fifo_underruns_name[] = "Underruns";
 
 
-const TEXT *const special_stat_names[] =
+static const TEXT *const special_stat_names[] =
 {
    badmulticast_name,
    retries_name,

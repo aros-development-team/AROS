@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2023 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -257,8 +257,6 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
    {
       NewList(&opener->read_port.mp_MsgList);
       opener->read_port.mp_Flags = PA_IGNORE;
-      NewList(&opener->mgmt_port.mp_MsgList);
-      opener->mgmt_port.mp_Flags = PA_IGNORE;
       NewList((APTR)&opener->initial_stats);
 
       for(i = 0; i < 2; i++)
