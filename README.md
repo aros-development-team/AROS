@@ -108,6 +108,7 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
   </tr>
   <tr>
     <td>linux-x86_64</td>
