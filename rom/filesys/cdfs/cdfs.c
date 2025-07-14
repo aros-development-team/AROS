@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2020, The AROS Development Team
+ * Copyright (C) 2013-2025, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -254,6 +254,21 @@ static struct CDFS *CDFS_Init(struct ExecBase *SysBase)
 #define ACTION_(x)  ACTION_##x
 #endif
 
+static void reply(struct ExecBase *SysBase, struct DosPacket *dp, SIPTR res, SIPTR res2)
+{
+    struct MsgPort *mp;
+    struct Message *mn;
+
+    D(bug("Reply %d => %p (%d)\n", dp->dp_Type, res, res2));
+    mp = dp->dp_Port;
+    mn = dp->dp_Link;
+    mn->mn_Node.ln_Name = (char*)dp;
+    dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
+    dp->dp_Res1 = res;
+    dp->dp_Res2 = res2;
+    PutMsg(mp, mn);
+}
+
 LONG CDFS_Handler(struct ExecBase *SysBase)
 {
     struct MsgPort *mp;
@@ -264,21 +279,6 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
     LONG retval;
     BOOL die = FALSE;
     ULONG sigpacket;
-
-    void reply(struct DosPacket *dp, SIPTR res, SIPTR res2)
-    {
-        struct MsgPort *mp;
-        struct Message *mn;
-
-        D(bug("Reply %d => %p (%d)\n", dp->dp_Type, res, res2));
-        mp = dp->dp_Port;
-        mn = dp->dp_Link;
-        mn->mn_Node.ln_Name = (char*)dp;
-        dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
-        dp->dp_Res1 = res;
-        dp->dp_Res2 = res2;
-        PutMsg(mp, mn);
-    }
 
     D(bug("%s: start\n", __func__));
 
@@ -292,7 +292,7 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
     if (cdfs == NULL) {
         retval = ERROR_NO_FREE_STORE;
         D(bug("%s: %b - error %d\n", __func__, dp->dp_Arg1, retval));
-        reply(dp, DOSFALSE, retval);
+        reply(SysBase, dp, DOSFALSE, retval);
         return RETURN_FAIL;
     }
 
@@ -300,7 +300,7 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
     retval = CDFS_DeviceOpen(cdfs, (struct FileSysStartupMsg *)BADDR(dp->dp_Arg2), &dev);
     if (retval != RETURN_OK) {
         D(bug("%s: Open %b - error %d\n", __func__, dp->dp_Arg1, retval));
-        reply(dp, DOSFALSE, retval);
+        reply(SysBase,dp, DOSFALSE, retval);
         return RETURN_FAIL;
     }
 
@@ -308,7 +308,7 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
     ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
 
     D(bug("%s: Opened %b\n", __func__, dp->dp_Arg1));
-    reply(dp, DOSTRUE, 0);
+    reply(SysBase, dp, DOSTRUE, 0);
 
     sigpacket = 1 << mp->mp_SigBit;
     while (!die) {
@@ -604,7 +604,7 @@ LONG CDFS_Handler(struct ExecBase *SysBase)
                 break;
             }
 
-            reply(dp, res, res2);
+            reply(SysBase, dp, res, res2);
         }
     }
 

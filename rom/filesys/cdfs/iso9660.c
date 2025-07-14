@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2020, The AROS Development Team
+ * Copyright (C) 2013-2025, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -412,7 +412,7 @@ struct namecmp {
     int          len;
 };
 
-BOOL cmp(struct ISOLock *fl, APTR data)
+static BOOL nmcmp(struct ISOLock *fl, APTR data)
 {
     struct namecmp *d = data;
     struct CDFS *cdfs = d->cdfs;
@@ -433,17 +433,17 @@ static LONG isoFindName(struct CDFSVolume *vol, struct ISOLock *ifile, CONST_STR
         .len  = strlen(file)
     };
 
-    return isoFindCmp(vol, ifile, iparent->il_Extent, cmp, &data);
+    return isoFindCmp(vol, ifile, iparent->il_Extent, nmcmp, &data);
+}
+
+static BOOL extcmp(struct ISOLock *fl, APTR data) {
+    ULONG extent = (ULONG)(IPTR)data;
+    return extent == fl->il_Extent;
 }
 
 static LONG isoFindExtent(struct CDFSVolume *vol, struct ISOLock *ifile, ULONG extent, ULONG parent)
 {
-    BOOL cmp(struct ISOLock *fl, APTR data) {
-        ULONG extent = (ULONG)(IPTR)data;
-        return extent == fl->il_Extent;
-    }
-
-    return isoFindCmp(vol, ifile, parent, cmp, (APTR)(IPTR)extent);
+    return isoFindCmp(vol, ifile, parent, extcmp, (APTR)(IPTR)extent);
 }
 
 static VOID isoReadPathTables(struct CDFSVolume *vol)
