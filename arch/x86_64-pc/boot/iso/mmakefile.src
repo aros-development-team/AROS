@@ -29,7 +29,17 @@ ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
 endif
 
-MODULES_DEFAULT := $(shell sed -e 's|@arch.dir@|$(AROS_DIR_ARCH)|g' $(SRCDIR)/$(CURDIR)/../modules.default)
+ifeq ($(DEBUG),yes)
+SEDPARAMS = -e 's|@debug@|debug|g'
+else
+SEDPARAMS = -e 's|@debug@||g'
+endif
+
+MODULES_DEFAULT := $(shell sed \
+  $(SEDPARAMS) \
+  -e 's|@arch.dir@|$(AROS_DIR_ARCH)|g' \
+  -e 's|@pkg.fmt@|$(AROS_PACKAGE_FMT)|g' \
+  $(SRCDIR)/$(CURDIR)/../modules.default)
 BOOTSTRAP_BOOT_FILES := bootstrap.$(AROS_PACKAGE_FMT)
 ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
     $(addprefix $(AROSDIR),$(MODULES_DEFAULT))

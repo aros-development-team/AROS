@@ -68,7 +68,7 @@ ACPIRSRCS      :=
 ACPIHIDDS      := acpiacad acpibattery acpibutton
 
 %make_package mmake=kernel-acpi file=$(AROSARCHDIR)/aros-acpi.pkg \
-	 devs=$(ACPIDEVS) res=$(ACPIRSRCS) hidds=$(ACPIHIDDS)
+	 devs=$(ACPIDEVS) res=$(ACPIRSRCS) hidds=$(ACPIHIDDS) packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- x86_64-pc legacy drivers package --------
 
