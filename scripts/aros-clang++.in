@@ -1,2 +1,2 @@
 #!/bin/sh
-exec @orig_target_cxx@ "$@" -static
+exec @orig_target_cxx@ @orig_target_cxx_flags@ "$@" -static

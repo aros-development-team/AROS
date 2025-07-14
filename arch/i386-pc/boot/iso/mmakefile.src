@@ -33,7 +33,12 @@ endif
 
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
 BOOTSTRAP_BOOT_FILES := bootstrap.$(AROS_PACKAGE_FMT)
-DEFAULT_BOOT_FILES := $(shell cat $(MODULES_DEFAULT))
+DEFAULT_BOOT_FILES := $(shell \
+  sed \
+    -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
+    -e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
+    -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+    $(MODULES_DEFAULT))
 ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
     $(addprefix $(AROSDIR),$(DEFAULT_BOOT_FILES))
 

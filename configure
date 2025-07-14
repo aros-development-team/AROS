@@ -688,6 +688,7 @@ gcc_default_cpu_tune
 gcc_default_cpu
 CLASSIC_VARIANT_DEFINE
 aros_nesting_supervisor
+host_has_lzma
 target_grub2_version
 aros_enable_mmu
 ENABLE_EXECSMP
@@ -755,6 +756,8 @@ aros_target_as
 aros_target_cpp
 aros_target_cxx
 aros_target_cc
+orig_target_cxx_flags
+orig_target_c_flags
 aros_plain_ar
 aros_plain_nm
 aros_target_ranlib
@@ -822,13 +825,11 @@ SDL_CONFIG
 XMKMF
 ALSA_LIBS
 ALSA_CFLAGS
-PKG_CONFIG_LIBDIR
-PKG_CONFIG_PATH
-PKG_CONFIG
 kernel_cflags_iquote_end
 kernel_cflags_iquote
 host_cflags_iquote_end
 host_cflags_iquote
+aros_kernel_toolchain
 aros_toolchain
 aros_target_nostdlib_ldflags
 aros_target_detach_ldflags
@@ -862,6 +863,11 @@ target_llvm_version
 HARDVAR
 SOFTVAR
 target_gcc_version
+LZMA_LIBS
+LZMA_CFLAGS
+PKG_CONFIG_LIBDIR
+PKG_CONFIG_PATH
+PKG_CONFIG
 GZIP
 ant
 android_tool
@@ -979,13 +985,13 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-with_aros_prefs
 with_c_compiler
 with_cxx_compiler
 with_python_sys_prefix
 with_python_prefix
 with_python_exec_prefix
 enable_libpng_config
+with_aros_prefs
 with_toolchain
 enable_lto
 enable_coverage
@@ -1010,6 +1016,7 @@ enable_amigaos_compliance
 with_kernel_toolchain_prefix
 with_elf_toolchain_prefix
 with_aros_toolchain
+enable_lzma
 enable_crosstools
 with_aros_toolchain_install
 with_binutils_version
@@ -1061,6 +1068,8 @@ PYTHON
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+LZMA_CFLAGS
+LZMA_LIBS
 ALSA_CFLAGS
 ALSA_LIBS
 XMKMF'
@@ -1719,6 +1728,7 @@ Optional Features:
   --enable-amigaos-compliance=VERSION
                           Enforce userspace AmigaOS compliance to a specific
                           KickStart version (default=none).
+  --disable-lzma          Disable optional liblzma support
   --disable-crosstools    Do not build cross-compiler toolchain
   --enable-objc           Enable Objectve-C support (default=no)
   --enable-java           Enable Java support (default=no)
@@ -1745,11 +1755,6 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-aros-prefs=PREFSSET
-                          Use the preferences from the set defined by PREFSSET
-                          (defaults to AROS normal config, 'classic' provides
-                          a config more like traditional workbench - and
-                          better suited to weaker systems)
   --with-c-compiler=VERSION
                           Use specified c compiler for building AROS
   --with-cxx-compiler=VERSION
@@ -1759,6 +1764,11 @@ Optional Packages:
   --with-python_prefix    override the default PYTHON_PREFIX
   --with-python_exec_prefix
                           override the default PYTHON_EXEC_PREFIX
+  --with-aros-prefs=PREFSSET
+                          Use the preferences from the set defined by PREFSSET
+                          (defaults to AROS normal config, 'classic' provides
+                          a config more like traditional workbench - and
+                          better suited to weaker systems)
   --with-toolchain=family Which toolchain family to crosscompile with
                           (defaults to gnu)
   --with-logresource=...  Specify code should use log.resource to output
@@ -1837,6 +1847,8 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  LZMA_CFLAGS C compiler flags for LZMA, overriding pkg-config
+  LZMA_LIBS   linker flags for LZMA, overriding pkg-config
   ALSA_CFLAGS C compiler flags for ALSA, overriding pkg-config
   ALSA_LIBS   linker flags for ALSA, overriding pkg-config
   XMKMF       Path to xmkmf, Makefile generator for X Window System
@@ -3607,30 +3619,6 @@ printf %s "checking for target cpu (debug output)... " >&6; }
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_cpu" >&5
 printf "%s\n" "$target_cpu" >&6; }
 
-#-----------------------------------------------------------------------------
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which prefs set to use" >&5
-printf %s "checking which prefs set to use... " >&6; }
-
-# Check whether --with-aros-prefs was given.
-if test ${with_aros_prefs+y}
-then :
-  withval=$with_aros_prefs; config_prefs_set="$withval"
-else $as_nop
-  config_prefs_set=""
-fi
-
-if test "$config_prefs_set" != "" ; then
-    msg_result=$config_prefs_set
-else
-    msg_result="default"
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
-printf "%s\n" "$msg_result" >&6; }
-
-aros_nominal_width=800
-aros_nominal_height=600
-aros_nominal_depth=4
-
 
 HOST_WANTS_X11=
 HOST_WANTS_GLX=
@@ -3671,7 +3659,6 @@ else
     host_cxx_compilers="$use_cxx_compiler"
     CXX=$use_cxx_compiler
 fi
-
 
 # The first step is to find the host binaries.
 # Check for a compiler.
@@ -5104,6 +5091,8 @@ fi
 
 IS_SUN_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'Sun C\+\+'`
 if test "$IS_SUN_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_CC=cc
+    HOST_TOOLCHAIN_CXX=c++
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=sun
@@ -5111,6 +5100,8 @@ fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
     if test "$CC_BASE" != "gcc"; then
+        HOST_TOOLCHAIN_CC=clang
+        HOST_TOOLCHAIN_CXX=clang++
         HOST_TOOLCHAIN_PREFIX=llvm-
         HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
         HOST_TOOLCHAIN_FAMILY=llvm
@@ -5122,6 +5113,8 @@ if test "x$IS_GNU_COMPILER" = "x"; then
     IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
 fi
 if test "$IS_GNU_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_CC=gcc
+    HOST_TOOLCHAIN_CXX=g++
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=gnu
@@ -9191,6 +9184,31 @@ fi
 printf "%s\n" "$as_me: Performing target configuration..." >&6;}
 
 
+#-----------------------------------------------------------------------------
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which prefs set to use" >&5
+printf %s "checking which prefs set to use... " >&6; }
+
+# Check whether --with-aros-prefs was given.
+if test ${with_aros_prefs+y}
+then :
+  withval=$with_aros_prefs; config_prefs_set="$withval"
+else $as_nop
+  config_prefs_set=""
+fi
+
+if test "$config_prefs_set" != "" ; then
+    msg_result=$config_prefs_set
+else
+    msg_result="default"
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
+printf "%s\n" "$msg_result" >&6; }
+
+aros_nominal_width=800
+aros_nominal_height=600
+aros_nominal_depth=4
+
+
 test_kernel_cc=no
 
 aros_nowarn_flags="NOWARN_UNUSED_COMMAND_LINE_ARGUMENT NOWARN_UNKNOWN_WARNING_OPTION NOWARN_POINTER_SIGN NOWARN_PARENTHESES"
@@ -9312,7 +9330,6 @@ case "$aros_toolchain" in
         aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
-        aros_kernel_llvmwrapper=yes
         ;;
     *gnu*)
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if we should enable unit32 WCHAR suport" >&5
@@ -10066,6 +10083,9 @@ case "$target_os" in
         HOST_WANTS_SDL=yes
         HOST_WANTS_DBUS=yes
         HOST_WANTS_DLOPEN=yes
+        aros_kernel_toolchain=$HOST_TOOLCHAIN_FAMILY
+        kernel_toolchain_c_compiler=$HOST_TOOLCHAIN_CC
+        kernel_toolchain_cxx_compiler=$HOST_TOOLCHAIN_CXX
         aros_target_arch="linux"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -10096,6 +10116,12 @@ case "$target_os" in
                 android_tool_dir_prefix="x86"
                 android_tool_prefix="i686-android-linux"
                 android_ndk_arch="x86"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        orig_target_c_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        orig_target_cxx_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        ;;
+                esac
                 llvm_target_cpu="X86"
                 ;;
             *x86_64*)
@@ -10107,6 +10133,8 @@ case "$target_os" in
                 aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
                 case "$aros_toolchain" in
                     *llvm*)
+                        orig_target_c_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        orig_target_cxx_flags="--target=$aros_target_cpu-pc-linux-gnu"
                         ;;
                     *)
                         aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
@@ -10251,6 +10279,12 @@ case "$target_os" in
         aros_target_arch="pc"
         aros_shared_default="no"
         target_bootloader="grub2"
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
         case "$target_cpu" in
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -11135,6 +11169,10 @@ crosstools_guess="yes"
 aros_target_toolchain="no"
 aros_kernel_sysroot=""
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain family" >&5
+printf %s "checking Kernel toolchain family... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_toolchain" >&5
+printf "%s\n" "$aros_kernel_toolchain" >&6; }
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking Kernel toolchain prefix" >&5
 printf %s "checking Kernel toolchain prefix... " >&6; }
 
@@ -11175,12 +11213,241 @@ if test "$aros_tool_prefix" = "yes" ; then
         aros_tool_prefix=$aros_target_cpu-aros-
     else
         if test "$aros_toolchain" = "llvm" ; then
-            aros_tool_prefix=bin/
+            aros_tool_prefix="none"
         fi
     fi
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
 printf "%s\n" "$aros_tool_prefix" >&6; }
+
+if test "$target_bootloader" = "grub2" ; then
+    # Check whether --enable-lzma was given.
+if test ${enable_lzma+y}
+then :
+  enableval=$enable_lzma;
+else $as_nop
+  enable_lzma=yes
+
+fi
+
+
+    if test "x$enable_lzma" != "xno"; then
+
+
+
+
+
+
+
+if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
+	if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
+set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_PKG_CONFIG+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+PKG_CONFIG=$ac_cv_path_PKG_CONFIG
+if test -n "$PKG_CONFIG"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
+printf "%s\n" "$PKG_CONFIG" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_path_PKG_CONFIG"; then
+  ac_pt_PKG_CONFIG=$PKG_CONFIG
+  # Extract the first word of "pkg-config", so it can be a program name with args.
+set dummy pkg-config; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_ac_pt_PKG_CONFIG+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $ac_pt_PKG_CONFIG in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
+if test -n "$ac_pt_PKG_CONFIG"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
+printf "%s\n" "$ac_pt_PKG_CONFIG" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+  if test "x$ac_pt_PKG_CONFIG" = x; then
+    PKG_CONFIG=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+printf "%s\n" "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    PKG_CONFIG=$ac_pt_PKG_CONFIG
+  fi
+else
+  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
+fi
+
+fi
+if test -n "$PKG_CONFIG"; then
+	_pkg_min_version=0.9.0
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
+printf %s "checking pkg-config is at least version $_pkg_min_version... " >&6; }
+	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+	else
+		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+		PKG_CONFIG=""
+	fi
+fi
+
+pkg_failed=no
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for liblzma" >&5
+printf %s "checking for liblzma... " >&6; }
+
+if test -n "$LZMA_CFLAGS"; then
+    pkg_cv_LZMA_CFLAGS="$LZMA_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"liblzma\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "liblzma") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LZMA_CFLAGS=`$PKG_CONFIG --cflags "liblzma" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$LZMA_LIBS"; then
+    pkg_cv_LZMA_LIBS="$LZMA_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"liblzma\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "liblzma") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_LZMA_LIBS=`$PKG_CONFIG --libs "liblzma" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+                LZMA_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "liblzma" 2>&1`
+        else
+                LZMA_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "liblzma" 2>&1`
+        fi
+        # Put the nasty error message in config.log where it belongs
+        echo "$LZMA_PKG_ERRORS" >&5
+
+
+        have_lzma=no
+
+elif test $pkg_failed = untried; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+
+        have_lzma=no
+
+else
+        LZMA_CFLAGS=$pkg_cv_LZMA_CFLAGS
+        LZMA_LIBS=$pkg_cv_LZMA_LIBS
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+        have_lzma=yes
+
+printf "%s\n" "#define HAVE_LZMA 1" >>confdefs.h
+
+
+fi
+    else
+      have_lzma=no
+    fi
+else
+    have_lzma=no
+fi
 
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
@@ -11225,6 +11492,13 @@ else
         if test "x-$aros_flavour" != "x-emulation" -a "x-$aros_flavour" != "x-emulcompat" ; then
             aros_kernel_sysroot="$""(TARGET_SYSROOT)"
         fi
+    fi
+fi
+if test "$aros_toolchain" = "gnu" ; then
+    aros_toolchain_dir=$AROS_CROSSTOOLSDIR
+else
+    if test "$aros_toolchain" = "llvm" ; then
+        aros_toolchain_dir=$AROS_CROSSTOOLSDIR/bin/
     fi
 fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
@@ -11277,6 +11551,11 @@ if test "$use_gcc_version" = ""; then
       if test "x$aros_toolchain_install" != "x"; then
 
   target_gcc_version=""
+  if test "$aros_tool_prefix" = "none"; then
+    cross_gcc_prefix=
+  else
+    cross_gcc_prefix=$aros_tool_prefix
+  fi
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking gcc version" >&5
 printf %s "checking gcc version... " >&6; }
 if test ${ax_cv_gcc_version+y}
@@ -11284,7 +11563,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
+    ax_cv_gcc_version="`$aros_toolchain_dir/${cross_gcc_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     if test "x$ax_cv_gcc_version" = "x"
 then :
 
@@ -11455,6 +11734,11 @@ if test "$use_llvm_version" = ""; then
       if test "x$aros_toolchain_install" != "x"; then
 
   target_llvm_version=""
+  if test "$aros_tool_prefix" = "none"; then
+    cross_llvm_prefix=
+  else
+    cross_llvm_prefix=$aros_tool_prefix
+  fi
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking llvm version" >&5
 printf %s "checking llvm version... " >&6; }
 if test ${ax_cv_llvm_version+y}
@@ -11462,7 +11746,7 @@ then :
   printf %s "(cached) " >&6
 else $as_nop
 
-    ax_cv_llvm_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
+    ax_cv_llvm_version="`$aros_toolchain_dir/${cross_llvm_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     if test "x$ax_cv_llvm_version" = "x"
 then :
 
@@ -11999,7 +12283,7 @@ fi
 if test "$aros_toolchain" = "gnu" ; then
     target_tool_prefix="${aros_target_cpu}-aros-"
 elif test "$aros_toolchain" = "llvm" ; then
-    target_tool_prefix="bin/"
+    target_tool_prefix=""
 fi
 
 if test "$kernel_tool_prefix" != "" ; then
@@ -12018,6 +12302,10 @@ else
         # Kernel tools required - find them
         # Note that 'normally', aros_kernel_* overrides will be
         # empty, unless specified in the per-arch sections above.
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking kernel tools" >&5
+printf "%s\n" "$as_me: Checking kernel tools" >&6;}
+
         test_kernel_cc=yes
         if test "x$aros_kernel_cpp" = "x"; then
             aros_kernel_cpp=${kernel_tool_prefix}${CPP_BASE}
@@ -12464,6 +12752,7 @@ fi
     aros_kernel_cc="$aros_kernel_cc $ac_tool_optarg"
 fi
 
+
         req_avail=yes
 if test "$aros_kernel_cc" = ""; then
     req_avail=no
@@ -12705,6 +12994,12 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
         fi
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking kernel c++ compiler" >&5
+printf %s "checking kernel c++ compiler... " >&6; }
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cxx" >&5
+printf "%s\n" "$aros_kernel_cxx" >&6; };
+
         if test "x$aros_kernel_ld" = "x"; then
             aros_kernel_ld=${kernel_tool_prefix}${LD_BASE}
         fi
@@ -14509,7 +14804,7 @@ if test "$aros_target_toolchain" = "yes"; then
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $msg_result" >&5
 printf "%s\n" "$msg_result" >&6; }
     # We are building AROS crosstools
-    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    tmp_tool_prefix="$aros_toolchain_dir/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
     orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
@@ -15403,7 +15698,7 @@ if test "$req_avail" = "no"; then
     as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-if test "aros_tool_prefix}${toolchain_as}" = ""; then
+if test "${aros_tool_prefix}${toolchain_as}" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${target_tool_prefix}as", so it can be a program name with args.
 set dummy ${target_tool_prefix}as; ac_word=$2
@@ -15560,9 +15855,9 @@ fi
 
     fi
 else
-    ac_tool_optarg=`expr "Xaros_tool_prefix}${toolchain_as}" : '[^ ]* \(.*\)'`
-    # Extract the first word of "aros_tool_prefix}${toolchain_as}", so it can be a program name with args.
-set dummy aros_tool_prefix}${toolchain_as}; ac_word=$2
+    ac_tool_optarg=`expr "X${aros_tool_prefix}${toolchain_as}" : '[^ ]* \(.*\)'`
+    # Extract the first word of "${aros_tool_prefix}${toolchain_as}", so it can be a program name with args.
+set dummy ${aros_tool_prefix}${toolchain_as}; ac_word=$2
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 printf %s "checking for $ac_word... " >&6; }
 if test ${ac_cv_path_orig_target_as+y}
@@ -16928,6 +17223,8 @@ fi
 fi
 
 if test "$kernel_tool_prefix" = "none" ; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Using AROS tools with ELF wrapper(s) for Kernel" >&5
+printf "%s\n" "$as_me: Using AROS tools with ELF wrapper(s) for Kernel" >&6;}
     # No kernel tools specified
     # Assume kernel tools == target tools with ELF wrapper
     aros_kernel_cc=$orig_target_cc
@@ -17078,6 +17375,7 @@ aros_target_cc_path=
 
 # Target tools
 
+
 if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
@@ -17214,6 +17512,14 @@ printf %s "checking for the kernel compiler's include path... " >&6; }
 printf "%s\n" "$aros_kernel_cc_includes" >&6; }
         # Adding -nostdinc to kernel includes as they are always used together.
         aros_kernel_includes="$aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes $aros_kernel_includes"
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for the kernel linker's search paths" >&5
+printf %s "checking for the kernel linker's search paths... " >&6; }
+        LD_DIRS="$(${aros_kernel_ld} --verbose 2>/dev/null | \
+          grep 'SEARCH_DIR' | \
+          awk -F'"' '{ for (i=2; i<=NF; i+=2) { gsub(/^=/, "", $i); printf "-L%s ", $i } }')"
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LD_DIRS" >&5
+printf "%s\n" "$LD_DIRS" >&6; }
+        aros_kernel_ldflags="$aros_kernel_ldflags $LD_DIRS"
     fi
 fi
 
@@ -17608,137 +17914,7 @@ else $as_nop
 fi
 
 
-
-
-
-
-
-
-
-if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
-	if test -n "$ac_tool_prefix"; then
-  # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
-set dummy ${ac_tool_prefix}pkg-config; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_path_PKG_CONFIG+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  case $PKG_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_PKG_CONFIG="$PKG_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_path_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-PKG_CONFIG=$ac_cv_path_PKG_CONFIG
-if test -n "$PKG_CONFIG"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $PKG_CONFIG" >&5
-printf "%s\n" "$PKG_CONFIG" >&6; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-
-
-fi
-if test -z "$ac_cv_path_PKG_CONFIG"; then
-  ac_pt_PKG_CONFIG=$PKG_CONFIG
-  # Extract the first word of "pkg-config", so it can be a program name with args.
-set dummy pkg-config; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_path_ac_pt_PKG_CONFIG+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  case $ac_pt_PKG_CONFIG in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_ac_pt_PKG_CONFIG="$ac_pt_PKG_CONFIG" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_path_ac_pt_PKG_CONFIG="$as_dir$ac_word$ac_exec_ext"
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-ac_pt_PKG_CONFIG=$ac_cv_path_ac_pt_PKG_CONFIG
-if test -n "$ac_pt_PKG_CONFIG"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_pt_PKG_CONFIG" >&5
-printf "%s\n" "$ac_pt_PKG_CONFIG" >&6; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-
-  if test "x$ac_pt_PKG_CONFIG" = x; then
-    PKG_CONFIG=""
-  else
-    case $cross_compiling:$ac_tool_warned in
-yes:)
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
-printf "%s\n" "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
-ac_tool_warned=yes ;;
-esac
-    PKG_CONFIG=$ac_pt_PKG_CONFIG
-  fi
-else
-  PKG_CONFIG="$ac_cv_path_PKG_CONFIG"
-fi
-
-fi
-if test -n "$PKG_CONFIG"; then
-	_pkg_min_version=0.9.0
-	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config is at least version $_pkg_min_version" >&5
-printf %s "checking pkg-config is at least version $_pkg_min_version... " >&6; }
-	if $PKG_CONFIG --atleast-pkgconfig-version $_pkg_min_version; then
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-	else
-		{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-		PKG_CONFIG=""
-	fi
-fi
-if test "x$enable_alsa" = "xyes"
+    if test "x$enable_alsa" = "xyes"
 then :
 
 
@@ -18592,6 +18768,7 @@ fi
 
 if test "$use_kernel_cc_wrapper" = "yes" || test "$aros_kernel_llvmwrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
+    aros_kernel_cxx="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}"
 fi
 
 aros_kernel_cppflags=$aros_config_cppflags
@@ -18951,6 +19128,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 
+
+
 # Native version related
 
 
@@ -18960,6 +19139,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 
 
 # Bootloader related
+
+host_has_lzma=$have_lzma
 
 
 # Unix/Hosted version related

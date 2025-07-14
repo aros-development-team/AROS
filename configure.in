@@ -102,23 +102,6 @@ AC_MSG_RESULT($target_os)
 AC_MSG_CHECKING([for target cpu (debug output)])
 AC_MSG_RESULT($target_cpu)
 
-#-----------------------------------------------------------------------------
-AC_MSG_CHECKING([which prefs set to use])
-AC_ARG_WITH(aros-prefs,AS_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
-if test "$config_prefs_set" != "" ; then
-    msg_result=$config_prefs_set
-else
-    msg_result="default"
-fi
-AC_MSG_RESULT($msg_result)
-
-dnl --------------------------------------------------------------------
-dnl Set the default Workbench resolution
-dnl --------------------------------------------------------------------
-aros_nominal_width=800
-aros_nominal_height=600
-aros_nominal_depth=4
-
 dnl --------------------------------------------------------------------
 dnl Host Configuration Section
 dnl --------------------------------------------------------------------
@@ -151,7 +134,6 @@ else
     CXX=$use_cxx_compiler
 fi
 
-
 # The first step is to find the host binaries.
 # Check for a compiler.
 # Due to a bug in autoconf check for c++ compiler first.
@@ -180,6 +162,8 @@ fi
 
 IS_SUN_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'Sun C\+\+'`
 if test "$IS_SUN_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_CC=cc
+    HOST_TOOLCHAIN_CXX=c++
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=sun
@@ -187,6 +171,8 @@ fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
     if test "$CC_BASE" != "gcc"; then
+        HOST_TOOLCHAIN_CC=clang
+        HOST_TOOLCHAIN_CXX=clang++
         HOST_TOOLCHAIN_PREFIX=llvm-
         HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
         HOST_TOOLCHAIN_FAMILY=llvm
@@ -198,6 +184,8 @@ if test "x$IS_GNU_COMPILER" = "x"; then
     IS_GNU_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'gcc'`
 fi
 if test "$IS_GNU_COMPILER" -ne "0"; then
+    HOST_TOOLCHAIN_CC=gcc
+    HOST_TOOLCHAIN_CXX=g++
     HOST_TOOLCHAIN_PREFIX=
     HOST_TOOLCHAIN_SUFFIX=
     HOST_TOOLCHAIN_FAMILY=gnu
@@ -829,6 +817,24 @@ fi
 
 AC_MSG_NOTICE([Performing target configuration...])
 
+
+#-----------------------------------------------------------------------------
+AC_MSG_CHECKING([which prefs set to use])
+AC_ARG_WITH(aros-prefs,AS_HELP_STRING([--with-aros-prefs=PREFSSET],[Use the preferences from the set defined by PREFSSET (defaults to AROS normal config, 'classic' provides a config more like traditional workbench - and better suited to weaker systems)]),config_prefs_set="$withval",config_prefs_set="")
+if test "$config_prefs_set" != "" ; then
+    msg_result=$config_prefs_set
+else
+    msg_result="default"
+fi
+AC_MSG_RESULT($msg_result)
+
+dnl --------------------------------------------------------------------
+dnl Set the default Workbench resolution
+dnl --------------------------------------------------------------------
+aros_nominal_width=800
+aros_nominal_height=600
+aros_nominal_depth=4
+
 dnl --------------------------------------------------------------------
 dnl Target Configuration Section
 dnl --------------------------------------------------------------------
@@ -932,7 +938,6 @@ case "$aros_toolchain" in
         aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
-        aros_kernel_llvmwrapper=yes
         ;;
     *gnu*)
         AC_MSG_CHECKING([if we should enable unit32 WCHAR suport])
@@ -1343,6 +1348,9 @@ case "$target_os" in
         HOST_WANTS_SDL=yes
         HOST_WANTS_DBUS=yes
         HOST_WANTS_DLOPEN=yes
+        aros_kernel_toolchain=$HOST_TOOLCHAIN_FAMILY
+        kernel_toolchain_c_compiler=$HOST_TOOLCHAIN_CC
+        kernel_toolchain_cxx_compiler=$HOST_TOOLCHAIN_CXX
         aros_target_arch="linux"
         aros_target_family="unix"
         case "$target_cpu" in
@@ -1373,6 +1381,12 @@ case "$target_os" in
                 android_tool_dir_prefix="x86"
                 android_tool_prefix="i686-android-linux"
                 android_ndk_arch="x86"
+                case "$aros_toolchain" in
+                    *llvm*)
+                        orig_target_c_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        orig_target_cxx_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        ;;
+                esac
                 llvm_target_cpu="X86"
                 ;;
             *x86_64*)
@@ -1384,6 +1398,8 @@ case "$target_os" in
                 aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
                 case "$aros_toolchain" in
                     *llvm*)
+                        orig_target_c_flags="--target=$aros_target_cpu-pc-linux-gnu"
+                        orig_target_cxx_flags="--target=$aros_target_cpu-pc-linux-gnu"
                         ;;
                     *)
                         aros_kernel_isa_extra="$""(CFLAGS_GENERAL_REGS_ONLY)"
@@ -1532,6 +1548,12 @@ case "$target_os" in
         aros_target_arch="pc"
         aros_shared_default="no"
         target_bootloader="grub2"
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
         case "$target_cpu" in
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -2308,6 +2330,8 @@ crosstools_guess="yes"
 aros_target_toolchain="no"
 aros_kernel_sysroot=""
 
+AC_MSG_CHECKING([Kernel toolchain family])
+AC_MSG_RESULT($aros_kernel_toolchain)
 AC_MSG_CHECKING([Kernel toolchain prefix])
 AC_ARG_WITH(kernel-toolchain-prefix,AS_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
 AC_MSG_RESULT($kernel_tool_prefix)
@@ -2325,11 +2349,32 @@ if test "$aros_tool_prefix" = "yes" ; then
         aros_tool_prefix=$aros_target_cpu-aros-
     else
         if test "$aros_toolchain" = "llvm" ; then
-            aros_tool_prefix=bin/
+            aros_tool_prefix="none"
         fi
     fi
 fi
 AC_MSG_RESULT($aros_tool_prefix)
+
+if test "$target_bootloader" = "grub2" ; then
+    AC_ARG_ENABLE([lzma],
+      [AS_HELP_STRING([--disable-lzma], [Disable optional liblzma support])],
+      [],
+      [enable_lzma=yes]
+    )
+
+    if test "x$enable_lzma" != "xno"; then
+      PKG_CHECK_MODULES([LZMA], [liblzma], [
+        have_lzma=yes
+        AC_DEFINE([HAVE_LZMA], [1], [Define if liblzma is available])
+      ], [
+        have_lzma=no
+      ])
+    else
+      have_lzma=no
+    fi
+else
+    have_lzma=no
+fi
 
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
@@ -2360,6 +2405,13 @@ else
         fi
     fi
 fi
+if test "$aros_toolchain" = "gnu" ; then
+    aros_toolchain_dir=$AROS_CROSSTOOLSDIR
+else
+    if test "$aros_toolchain" = "llvm" ; then
+        aros_toolchain_dir=$AROS_CROSSTOOLSDIR/bin/
+    fi
+fi
 AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
 #-----------------------------------------------------------------------------
@@ -2380,8 +2432,13 @@ fi
 # Helper to identify gcc version
 AC_DEFUN([CROSS_GCC_VERSION], [
   target_gcc_version=""
+  if test "$aros_tool_prefix" = "none"; then
+    cross_gcc_prefix=
+  else
+    cross_gcc_prefix=$aros_tool_prefix
+  fi
   AC_CACHE_CHECK([gcc version],[ax_cv_gcc_version],[
-    ax_cv_gcc_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
+    ax_cv_gcc_version="`$aros_toolchain_dir/${cross_gcc_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     AS_IF([test "x$ax_cv_gcc_version" = "x"],[
       ax_cv_gcc_version=""
     ])
@@ -2461,8 +2518,13 @@ fi
 # Helper to identify llvm version
 AC_DEFUN([CROSS_LLVM_VERSION], [
   target_llvm_version=""
+  if test "$aros_tool_prefix" = "none"; then
+    cross_llvm_prefix=
+  else
+    cross_llvm_prefix=$aros_tool_prefix
+  fi
   AC_CACHE_CHECK([llvm version],[ax_cv_llvm_version],[
-    ax_cv_llvm_version="`$AROS_CROSSTOOLSDIR/${aros_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
+    ax_cv_llvm_version="`$aros_toolchain_dir/${cross_llvm_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts} -dumpversion`"
     AS_IF([test "x$ax_cv_llvm_version" = "x"],[
       ax_cv_llvm_version=""
     ])
@@ -2874,7 +2936,7 @@ fi
 if test "$aros_toolchain" = "gnu" ; then
     target_tool_prefix="${aros_target_cpu}-aros-"
 elif test "$aros_toolchain" = "llvm" ; then
-    target_tool_prefix="bin/"
+    target_tool_prefix=""
 fi
 
 if test "$kernel_tool_prefix" != "" ; then
@@ -2892,6 +2954,9 @@ else
         # Kernel tools required - find them
         # Note that 'normally', aros_kernel_* overrides will be
         # empty, unless specified in the per-arch sections above.
+        
+        AC_MSG_NOTICE([Checking kernel tools])
+
         test_kernel_cc=yes
         if test "x$aros_kernel_cpp" = "x"; then
             aros_kernel_cpp=${kernel_tool_prefix}${CPP_BASE}
@@ -2905,6 +2970,7 @@ else
         fi
         AROS_BUILDCMD(aros_kernel_cc,$aros_kernel_cc,${kernel_tool_version})
         AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc)
+
         AROS_REQUIRED(cc,$aros_kernel_cc)
 
         if test "x$aros_kernel_cxx" = "x"; then
@@ -2916,6 +2982,10 @@ else
         if test "x$aros_kernel_cxx" != "x" ; then
             AROS_REQUIRED(cxx,$aros_kernel_cxx)
         fi
+
+        AC_MSG_CHECKING([kernel c++ compiler])
+        AC_MSG_RESULT([$aros_kernel_cxx]);
+
         if test "x$aros_kernel_ld" = "x"; then
             aros_kernel_ld=${kernel_tool_prefix}${LD_BASE}
         fi
@@ -2986,7 +3056,7 @@ if test "$aros_target_toolchain" = "yes"; then
     fi
     AC_MSG_RESULT([$msg_result])
     # We are building AROS crosstools
-    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    tmp_tool_prefix="$aros_toolchain_dir/${target_tool_prefix}"
     orig_target_cc="${tmp_tool_prefix}${toolchain_c_compiler}${target_tool_version}"
     orig_target_cxx="${tmp_tool_prefix}${toolchain_cxx_compiler}${target_tool_version}"
     orig_target_cpp="${tmp_tool_prefix}${toolchain_cpp_preprocessor}${toolchain_cpp_opts}"
@@ -3018,7 +3088,7 @@ else
     AROS_REQUIRED(cxx,$orig_target_cxx)
     AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}${toolchain_ld})
     AROS_REQUIRED(ld,$orig_target_ld)
-    AROS_TOOL_TARGET(orig_target_as,as,aros_tool_prefix}${toolchain_as})
+    AROS_TOOL_TARGET(orig_target_as,as,${aros_tool_prefix}${toolchain_as})
     AROS_REQUIRED(as,$orig_target_as)
     AROS_TOOL_TARGET(orig_target_ar,ar,${aros_tool_prefix}${toolchain_ar})
     AROS_REQUIRED(ar,$orig_target_ar)
@@ -3039,6 +3109,7 @@ else
 fi
 
 if test "$kernel_tool_prefix" = "none" ; then
+    AC_MSG_NOTICE([Using AROS tools with ELF wrapper(s) for Kernel])
     # No kernel tools specified
     # Assume kernel tools == target tools with ELF wrapper
     aros_kernel_cc=$orig_target_cc
@@ -3131,6 +3202,7 @@ aros_target_cc_path=
 
 # Target tools
 AC_SUBST(aros_toolchain)
+AC_SUBST(aros_kernel_toolchain)
 if test "$aros_target_toolchain" != "yes"; then
     prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
     if test "$GCC" = "yes"; then
@@ -3261,6 +3333,12 @@ if test "x$test_kernel_cc" != "xno"; then
         AC_MSG_RESULT($aros_kernel_cc_includes)
         # Adding -nostdinc to kernel includes as they are always used together.
         aros_kernel_includes="$aros_target_nostdinc_cflags -isystem $aros_kernel_cc_includes $aros_kernel_includes"
+        AC_MSG_CHECKING([for the kernel linker's search paths])
+        LD_DIRS="$(${aros_kernel_ld} --verbose 2>/dev/null | \
+          grep 'SEARCH_DIR' | \
+          awk -F'"' '{ for (i=2; i<=NF; i+=2) { gsub(/^=/, "", $i); printf "-L%s ", $i } }')"
+        AC_MSG_RESULT([$LD_DIRS])
+        aros_kernel_ldflags="$aros_kernel_ldflags $LD_DIRS"
     fi
 fi
 
@@ -3696,6 +3774,7 @@ fi
 
 if test "$use_kernel_cc_wrapper" = "yes" || test "$aros_kernel_llvmwrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}"
+    aros_kernel_cxx="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}"
 fi
 
 aros_kernel_cppflags=$aros_config_cppflags
@@ -3973,6 +4052,8 @@ AC_SUBST(aros_plain_ar)
 AC_SUBST(aros_kernel_ar)
 AC_SUBST(aros_kernel_ranlib)
 AC_SUBST(orig_target_cc)
+AC_SUBST(orig_target_c_flags)
+AC_SUBST(orig_target_cxx_flags)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_kernel_cc)
 AC_SUBST(orig_target_cxx)
@@ -4065,6 +4146,7 @@ AC_SUBST(aros_enable_mmu)
 
 # Bootloader related
 AC_SUBST(target_grub2_version)
+AC_SUBST([host_has_lzma], [$have_lzma])
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)

@@ -4691,13 +4691,16 @@ else
 endif
 
 ifeq ($(%(mmake)-PACK_FMT),gz)
+%(mmake)-PACK_OPTS=
 %(mmake)-PACK_FLAGS=-f
+%(mmake)-PACK_LVL=-9
 else
 ifeq ($(%(mmake)-PACK_FMT),xz)
-%(mmake)-PACK_FLAGS=-feq
+%(mmake)-PACK_OPTS=--check=crc32 --x86
+%(mmake)-PACK_FLAGS=-f
+%(mmake)-PACK_LVL=-9e
 endif
 endif
-%(mmake)-PACK_LVL=-9
 
 #MM- %(mmake)-compress : %(mmake) %(mmake)-compress-genbin
 #MM- %(mmake)-compress-quick : %(mmake)-quick %(mmake)-compress-genbin
@@ -4709,7 +4712,7 @@ endif
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
 	$(Q){ \
 		orig_size=$$(stat -c%s "$^"); \
-		gzip $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		gzip $(%(mmake)-PACK_OPTS) $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
 		comp_size=$$(stat -c%s "$@"); \
 		if [ "$$orig_size" -eq 0 ]; then \
 			ratio="-"; \
@@ -4723,7 +4726,7 @@ endif
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
 	$(Q){ \
 		orig_size=$$(stat -c%s "$^"); \
-		xz $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		xz $(%(mmake)-PACK_OPTS) $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
 		comp_size=$$(stat -c%s "$@"); \
 		if [ "$$orig_size" -eq 0 ]; then \
 			ratio="-"; \

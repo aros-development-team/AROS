@@ -11,8 +11,19 @@ AROS_STDC_WCHAR32         := @aros_config_wchar32@
 
 #Bootloader
 GRUB2_VERSION             := @target_grub2_version@
-
+GRUB2_USELZMA             := @host_has_lzma@
+ifeq ($(GRUB2_USELZMA),yes)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+AROS_PACKAGE_FMT          := xz
+else
+ifeq ($(AROS_TARGET_CPU),i386)
+AROS_PACKAGE_FMT          := xz
+endif
+endif
+endif
+ifeq ($(AROS_PACKAGE_FMT),)
 AROS_PACKAGE_FMT          := gz
+endif
 
 #
 # "Host" options & flags

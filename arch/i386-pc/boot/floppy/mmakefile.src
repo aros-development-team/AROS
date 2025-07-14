@@ -22,9 +22,13 @@ SYSTEM_FILES := \
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
 MODULE_BOOTSTRAP := $(AROS_DIR_BOOTARCH)/bootstrap.$(AROS_PACKAGE_FMT)
 MODULE_LEGACY := $(AROS_DIR_BOOTARCH)/aros-legacy.pkg.$(AROS_PACKAGE_FMT)
-BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT)) \
- $(MODULE_LEGACY)
-
+BOOT_FILES := $(MODULE_BOOTSTRAP) $(MODULE_LEGACY) $(shell \
+  sed \
+    -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
+    -e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
+    -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+    $(MODULES_DEFAULT))
+ 
 BOOT_EXTRA_FILES :=
 
 BOOT_TAR_EXECUTABLES := \
@@ -143,6 +147,12 @@ BOOT_DEST_DIRS  := $(sort $(dir $(BOOT_DEST_FILES)))
 SYSTEM_DEST_FILES := $(foreach f, $(SYSTEM_FILES), $(SYSTEM_DEST_DIR)/$(f))
 SYSTEM_DEST_DIRS  := $(sort $(dir $(SYSTEM_DEST_FILES)))
 
+ifeq ($(DEBUG),yes)
+SEDPARAMS = -e 's|@debug@|debug|g'
+else
+SEDPARAMS = -e 's|@debug@||g'
+endif
+
 #MM
 bootdisk-setup-pc-i386 :
 	@$(MKDIR) "$(AROSDIR)/Tools/Boot Disks"
@@ -150,9 +160,11 @@ bootdisk-setup-pc-i386 :
 	%mkdirs_q $(BOOT_DEST_DIR)
 	%mkdirs_q $(BOOT_DEST_DIR)/$(AROS_DIR_BOOT)/grub
 	@$(ECHO) Generating $(SRCDIR)/$(CURDIR)/menu.lst...
-	@$(SED) -e \
-	 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' \
-	 -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+	@$(SED) $(SEDPARAMS) \
+		-e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' \
+		-e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
+		-e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
+		-e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
 	 $(SRCDIR)/$(CURDIR)/menu.lst \
 	 > $(BOOT_DEST_DIR)/$(AROS_DIR_BOOT)/grub/menu.lst
 

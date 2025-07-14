@@ -30,7 +30,7 @@ kernel-bootstrap-pc_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
 %rule_link_binary mmake=kernel-bootstrap-pc file=$(OBJDIR)/vesa.bin.o name=vesa files=vesa \
 	start=0x1000 ldflags="-m elf_i386"
 
-%compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME)
+%compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME) fmt=$(AROS_PACKAGE_FMT)
 
 # Add $(GENDIR)/boot to file's dependencies
 $(EXEDIR)/$(EXENAME) : $(GENDIR)/boot

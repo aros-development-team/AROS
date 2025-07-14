@@ -1,2 +1,2 @@
 #!/bin/sh
-exec @orig_target_cc@ "$@" -static
+exec @orig_target_cc@ @orig_target_c_flags@ "$@" -static

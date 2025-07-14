@@ -21,8 +21,9 @@ USE_MMU                       := @aros_enable_mmu@
 # since they depend on the AROS C Library
 AROS_TARGET_TOOLCHAIN         := @aros_target_toolchain@
 
-# The toolchain family to build
+# The toolchain families to build/use
 AROS_TOOLCHAIN                := @aros_toolchain@
+KERNEL_TOOLCHAIN              := @aros_kernel_toolchain@
 
 TARGET_BINUTILS_VER           := @target_binutils_version@
 TARGET_GCC_VER                := @target_gcc_version@
@@ -47,7 +48,7 @@ RUST_TARGET                   := @rust_target@
 
 KERNEL_CPP                    := @aros_kernel_cpp@
 KERNEL_CC                     := $(CC_PREFIX)@aros_kernel_cc@
-KERNEL_CXX                    := $(CC_PREFIX)@aros_target_cxx@
+KERNEL_CXX                    := $(CC_PREFIX)@aros_kernel_cxx@
 KERNEL_LD                     := @aros_kernel_ld@
 
 KERNEL_RESCOMP                := @aros_kernel_rescomp@
