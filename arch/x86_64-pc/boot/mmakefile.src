@@ -15,7 +15,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-pc-x86_64-kernel: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-x86_64-kernel file=$(AROSARCHDIR)/kernel \
-	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task
+	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- x86_64-pc board support package --------
 
@@ -53,7 +53,7 @@ KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx 
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
 	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
-        arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH)
+    arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH) packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- ACPI drivers package --------
 
@@ -80,6 +80,6 @@ LEGACY_DEVS  := trackdisk
 LEGACY_HIDDS := serialmouse
 
 %make_package mmake=kernel-legacy-pc-x86_64 file=$(AROSARCHDIR)/aros-legacy.pkg \
-	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS)
+	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) packfmt=$(AROS_PACKAGE_FMT)
 
 %common

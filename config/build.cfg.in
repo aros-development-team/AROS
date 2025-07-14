@@ -12,6 +12,8 @@ AROS_STDC_WCHAR32         := @aros_config_wchar32@
 #Bootloader
 GRUB2_VERSION             := @target_grub2_version@
 
+AROS_PACKAGE_FMT          := gz
+
 #
 # "Host" options & flags
 #

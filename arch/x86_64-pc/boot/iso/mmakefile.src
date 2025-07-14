@@ -30,7 +30,7 @@ BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
 endif
 
 MODULES_DEFAULT := $(shell sed -e 's|@arch.dir@|$(AROS_DIR_ARCH)|g' $(SRCDIR)/$(CURDIR)/../modules.default)
-BOOTSTRAP_BOOT_FILES := bootstrap.gz
+BOOTSTRAP_BOOT_FILES := bootstrap.$(AROS_PACKAGE_FMT)
 ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
     $(addprefix $(AROSDIR),$(MODULES_DEFAULT))
 

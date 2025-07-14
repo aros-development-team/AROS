@@ -38,7 +38,7 @@ $(AROSDIR)/Emergency-Boot.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf
 $(AROSDIR)/Sources: FORCE $(AROSDIR)/Sources.info $(AROSDIR)/Sources/README.txt.info
 	$(Q)$(MKDIR) $(AROSDIR)/Sources
 	$(Q)$(CP) -a $(SRCDIR)/arch/m68k-amiga/doc/. $(AROSDIR)/Sources/.
-	$(Q)$(TAR) -C $(SRCDIR) --exclude=.svn --exclude=linux-x86_64 --exclude=amiga-m68k -czf $(AROSDIR)/Sources/AROS.tar.gz .
+	$(Q)$(TAR) -C $(SRCDIR) --exclude=.svn --exclude=linux-x86_64 --exclude=amiga-m68k -czf $(AROSDIR)/Sources/AROS.tar.$(AROS_PACKAGE_FMT) .
 	$(Q)(cd $(AROSDIR)/Sources; ./build-toolchain.sh --fetch-only)
 
 $(AROSDIR)/Sources.info: Sources.info.src Sources.png
@@ -86,7 +86,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)/aros.elf"
-	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_BOOTARCH)/aros.rom.gz" "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)"
+	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_BOOTARCH)/aros.rom.$(AROS_PACKAGE_FMT)" "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)"
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@mkisofs -f \
 		-o $@ \

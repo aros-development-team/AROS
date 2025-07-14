@@ -53,7 +53,7 @@ INFLATE_FILES := \
     C/Which
 
 OTHER_FILES := \
-    $(AROS_DIR_BOOTARCH)/aros.rom.gz \
+    $(AROS_DIR_BOOTARCH)/aros.rom.$(AROS_PACKAGE_FMT) \
     Disk.info \
     README.txt \
     README.txt.info \
@@ -144,7 +144,7 @@ $(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(C
 $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/aros.rom : $(BOOT_SRC_DIR)/$(AROS_DIR_BOOTARCH)/aros.elf | $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)
 	$(EBFROMMVCMD)
 
-$(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/aros.rom.gz : $(EBFROMDEP) | $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)
+$(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)/aros.rom.$(AROS_PACKAGE_FMT) : $(EBFROMDEP) | $(BOOT_DEST_DIR)/$(AROS_DIR_BOOTARCH)
 	$(EBFROMPACKCMD)
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c

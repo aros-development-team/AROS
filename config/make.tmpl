@@ -4702,7 +4702,7 @@ endif
 
 %(file).xz: %(file)
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
-	$(Q)xz $^
+	$(Q)xz -9 -feq $^
 
 %end
 

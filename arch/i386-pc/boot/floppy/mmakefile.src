@@ -20,8 +20,8 @@ SYSTEM_FILES := \
     Libs/locale.library
 
 MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
-MODULE_BOOTSTRAP := $(AROS_DIR_BOOTARCH)/bootstrap.gz
-MODULE_LEGACY := $(AROS_DIR_BOOTARCH)/aros-legacy.pkg.gz
+MODULE_BOOTSTRAP := $(AROS_DIR_BOOTARCH)/bootstrap.$(AROS_PACKAGE_FMT)
+MODULE_LEGACY := $(AROS_DIR_BOOTARCH)/aros-legacy.pkg.$(AROS_PACKAGE_FMT)
 BOOT_FILES := $(MODULE_BOOTSTRAP) $(shell cat $(MODULES_DEFAULT)) \
  $(MODULE_LEGACY)
 
@@ -182,7 +182,7 @@ bootdisk-pc-i386-quick : bootdisk-pc-i386
 systemdisk-pc-i386-quick : systemdisk-pc-i386
 
 $(DISTDIR)/aros-pc-i386.img: $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
- $(AROSARCHDIR)/bootstrap.gz \
+ $(AROSARCHDIR)/bootstrap.$(AROS_PACKAGE_FMT) \
  $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@

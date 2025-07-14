@@ -7,7 +7,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- grub2-pc-i386: arch-common-grub2 grub2-iso-setup
 
 MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
-MODULE_BOOTSTRAP:=/$(AROS_DIR_BOOTARCH)/bootstrap.gz
+MODULE_BOOTSTRAP:=/$(AROS_DIR_BOOTARCH)/bootstrap.$(AROS_PACKAGE_FMT)
 
 bootloader-grub2-pc-i386: $(AROS_BOOT)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
 bootloader-grub2gfx-pc-i386: $(AROS_BOOT)/grub/grub.cfg $(AROSDIR)/EFI/BOOT/grub/grub.cfg
