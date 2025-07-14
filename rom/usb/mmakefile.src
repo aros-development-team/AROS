@@ -61,7 +61,7 @@ USB_RES     := usbromstartup
 
 #MM kernel-package-usb : kernel-usb
 
-%make_package mmake=kernel-package-usb file=$(AROS_BOOT)/poseidon.pkg \
+%make_package mmake=kernel-package-usb file=$(AROS_BOOT)/poseidon.pkg packfmt=$(AROS_PACKAGE_FMT) \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
 
 %common
