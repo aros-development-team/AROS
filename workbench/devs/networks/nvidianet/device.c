@@ -50,12 +50,14 @@ LONG Main()
 }
 
 
+/* Constant data */
+
 const TEXT device_name[] = DEVICE_NAME;
 const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
-const TEXT utility_name[] = UTILITYNAME;
+static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
-const TEXT timer_name[] = TIMERNAME;
+static const TEXT timer_name[] = TIMERNAME;
 
 
 static const APTR vectors[] =
@@ -163,7 +165,7 @@ struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    base->utility_base = (APTR)OpenLibrary(utility_name, UTILITY_VERSION);
    base->prometheus_base = OpenLibrary(prometheus_name, PROMETHEUS_VERSION);
 
-   if(base->utility_base == NULL)
+   if(base->utility_base == NULL || base->prometheus_base == NULL)
       success = FALSE;
 
    if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0)
@@ -465,8 +467,6 @@ VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
 
 VOID DeleteDevice(struct DevBase *base)
 {
-   UWORD neg_size, pos_size;
-
    /* Close devices */
 
    CloseDevice((APTR)&base->timer_request);
@@ -480,9 +480,7 @@ VOID DeleteDevice(struct DevBase *base)
 
    /* Free device's memory */
 
-   neg_size = base->device.dd_Library.lib_NegSize;
-   pos_size = base->device.dd_Library.lib_PosSize;
-   FreeMem((UBYTE *)base - neg_size, pos_size + neg_size);
+   DeleteLibrary((APTR)base);
 
    return;
 }
@@ -571,7 +569,12 @@ struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 /****i* nvidianet.device/WrapInt *******************************************
 *
 *   NAME
-*	WrapInt
+*	WrapInt -- Prepare an interrupt for non-original calling conventions
+*
+*   SYNOPSIS
+*	success = WrapInt(interrupt)
+*
+*	BOOL WrapInt(struct Interrupt *;
 *
 ****************************************************************************
 *
@@ -604,7 +607,12 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 /****i* nvidianet.device/UnwrapInt *****************************************
 *
 *   NAME
-*	UnwrapInt
+*	UnwrapInt -- Deallocate resources added by WrapInt()
+*
+*   SYNOPSIS
+*	UnwrapInt(interrupt)
+*
+*	VOID UnwrapInt(struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -612,7 +620,8 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 
 VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
 {
-   if(interrupt->is_Code == base->wrapper_int_code)
+   if(interrupt->is_Code != NULL
+      && interrupt->is_Code == base->wrapper_int_code)
       FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
 
    return;
