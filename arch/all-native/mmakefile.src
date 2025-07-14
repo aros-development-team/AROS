@@ -25,7 +25,7 @@ FS_LIBS     := partition
 FS_CORE_HANDLERS := afs cdrom
 FS_XTRA_HANDLERS := sfs fat
 
-%make_package mmake=kernel-package-fs file=$(AROS_BOOT)/aros-fs.pkg \
+%make_package mmake=kernel-package-fs file=$(AROS_BOOT)/aros-fs.pkg packfmt=$(AROS_PACKAGE_FMT) \
 	      handlers="$(FS_CORE_HANDLERS) $(FS_XTRA_HANDLERS)" libs=$(FS_LIBS)
 
 %common
