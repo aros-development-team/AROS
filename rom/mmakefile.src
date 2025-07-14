@@ -136,7 +136,7 @@ BASE_LIBS     := aros dos gadtools graphics intuition keymap layers oop utility
 BASE_LIBS_ARCH := debug
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon
 
-%make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg \
+%make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg packfmt=$(AROS_PACKAGE_FMT) \
 	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) arch_libs=$(BASE_LIBS_ARCH) res=$(BASE_RSRCS)
 
 %common
