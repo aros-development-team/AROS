@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- boot-pc-i386        : \
 #MM                              bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386 \
-#MM                              kernel-bootstrap-pc-gz
+#MM                              kernel-bootstrap-pc-compress
 
 #MM- includes-pc-i386 : \
 #MM                              includes-common-i386 \
@@ -17,12 +17,12 @@ include $(SRCDIR)/config/aros.cfg
 #
 
 #MM- kernel-link-pc-i386 : \
-#MM                              kernel-pc-i386-kernel-gz \
-#MM                              kernel-bsp-pc-i386-gz \
-#MM                              kernel-legacy-pc-i386-gz \
-#MM                              kernel-package-base-gz \
-#MM                              kernel-package-usb-gz \
-#MM                              kernel-package-fs-gz
+#MM                              kernel-pc-i386-kernel-compress \
+#MM                              kernel-bsp-pc-i386-compress \
+#MM                              kernel-legacy-pc-i386-compress \
+#MM                              kernel-package-base-compress \
+#MM                              kernel-package-usb-compress \
+#MM                              kernel-package-fs-compress
 
 #
 # The kernel

@@ -3,11 +3,11 @@ include $(SRCDIR)/config/aros.cfg
 
 # The "core" AROS components for a bootable system
 
-#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-gz
-#MM- kernel-link-pc-x86_64 : kernel-pc-x86_64-kernel-gz \
-#MM                          kernel-bsp-pc-x86_64-gz kernel-legacy-pc-x86_64-gz \
-#MM                          kernel-package-base-gz  kernel-package-usb-gz      \
-#MM                          kernel-package-fs-gz
+#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-compress
+#MM- kernel-link-pc-x86_64 : kernel-pc-x86_64-kernel-compress \
+#MM                          kernel-bsp-pc-x86_64-compress kernel-legacy-pc-x86_64-compress \
+#MM                          kernel-package-base-compress  kernel-package-usb-compress      \
+#MM                          kernel-package-fs-compress
 #MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc kernel --------
@@ -57,7 +57,7 @@ KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx 
 
 # -------- ACPI drivers package --------
 
-#MM- kernel-link-pc-x86_64 : kernel-acpi-gz
+#MM- kernel-link-pc-x86_64 : kernel-acpi-compress
 #MM kernel-acpi :	        \
 #MM     kernel-hidd-acpibutton	        \
 #MM     kernel-hidd-acpiacad	        \

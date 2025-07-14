@@ -1796,7 +1796,7 @@ endif
 
 %(mmake)_STRIPDEBUG ?= $(DEBUG)
 
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-compress-quick),)
 %rule_compile_cxx_multi mmake=%(mmake) \
     basenames="$(%(mmake)_CXX_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
     cppflags="$(%(mmake)_CPPFLAGS)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
@@ -4642,7 +4642,7 @@ postinstall-%(package)-delete-la-files:
 # Other arguments are self-explanatory
 
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res=
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= packfmt=
 
 PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
 PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
@@ -4672,7 +4672,7 @@ PKG_DIR            := $(dir %(file))
 	$(Q)$(ECHO) Packaging $@...
 	$(Q)$(SRCDIR)/tools/package/pkg c $@ $^
 
-%compress_file mmake=%(mmake) file="%(file)"
+%compress_file mmake=%(mmake) file="%(file)" fmt=%(packfmt)
 
 %rule_makedirs dirs="$(PKG_DIR)"
 
@@ -4682,17 +4682,27 @@ PKG_DIR            := $(dir %(file))
 # Compresses %(file) with a gzip.
 # Good in conjunction with for example %build_prog
 
-%define compress_file mmake=/A file=/A
+%define compress_file mmake=/A file=/A fmt=
 
-#MM- %(mmake)-gz : %(mmake) %(mmake)-gz-genbin
-#MM- %(mmake)-gz-quick : %(mmake)-quick %(mmake)-gz-genbin
+ifeq (%(fmt),)
+%(mmake)-PACK_FMT = gz
+else
+%(mmake)-PACK_FMT = %(fmt)
+endif
+
+#MM- %(mmake)-compress : %(mmake) %(mmake)-compress-genbin
+#MM- %(mmake)-compress-quick : %(mmake)-quick %(mmake)-compress-genbin
 
 #MM
-%(mmake)-gz-genbin : %(file).gz
+%(mmake)-compress-genbin : %(file).$(%(mmake)-PACK_FMT)
 
 %(file).gz: %(file)
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
 	$(Q)gzip -9 -f $^
+
+%(file).xz: %(file)
+	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	$(Q)xz $^
 
 %end
 
@@ -4701,7 +4711,7 @@ PKG_DIR            := $(dir %(file))
 # Arguments are similar to make_package
 
 %define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    startup= uselibs= ldflags="$(LDFLAGS)" map= deps= strip="$(STRIP)"
+    startup= uselibs= ldflags="$(LDFLAGS)" map= deps= strip="$(STRIP)" packfmt=
 
 KOBJ_CLASSES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
 KOBJ_DEVICES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
@@ -4757,7 +4767,7 @@ endif
 	$(Q)$(TARGET_CC) $(TARGET_SYSROOT) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
 	%strip_q strip="%(strip)" file="$@"
 
-%compress_file mmake="%(mmake)" file="%(file)"
+%compress_file mmake="%(mmake)" file="%(file)" fmt=%(packfmt)
 
 %rule_makedirs dirs="$(TMP_DIRS)"
 
