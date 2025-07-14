@@ -112,3 +112,38 @@ aros_cv_[$2]="[$]aros_[$2]"
 ])
 aros_[$2]="[$]aros_cv_[$2]"
 AC_MSG_RESULT([$]aros_$2)])
+
+dnl AX_GCC_ARM_MARCH_CONFIG([BASEARCH], [SOFTVAR], [HARDVAR])
+dnl BASEARCH: Base architecture (e.g. armv7-a)
+dnl SOFTVAR:  Shell variable name to store the soft-float -march target
+dnl HARDVAR:  Shell variable name to store the hard-float -march target
+
+AC_DEFUN([AX_GCC_ARM_MARCH_CONFIG], [
+  AC_REQUIRE([AC_PROG_CC])
+  AC_REQUIRE([AC_PROG_GCC_TRADITIONAL])
+
+  m4_pushdef([BASEARCH], [$1])
+  m4_pushdef([SOFTVAR], [$2])
+  m4_pushdef([HARDVAR], [$3])
+
+  if test "$GCC_VERSION_MAJOR" -lt "10"; then
+    if test "$GCC_VERSION_MAJOR" -lt "8"; then
+      SOFTVAR="BASEARCH"
+      HARDVAR="BASEARCH"
+    else
+      SOFTVAR="BASEARCH+nofp"
+      HARDVAR="BASEARCH+fp"
+    fi
+    aros_config_cflags="$aros_config_cflags ${CFLAGS_NO_COMMON}"
+  else
+    SOFTVAR="BASEARCH+nofp"
+    HARDVAR="BASEARCH+fp"
+  fi
+
+  AC_SUBST([SOFTVAR])
+  AC_SUBST([HARDVAR])
+
+  m4_popdef([BASEARCH])
+  m4_popdef([SOFTVAR])
+  m4_popdef([HARDVAR])
+])

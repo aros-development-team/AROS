@@ -356,6 +356,39 @@ AS_IF([test "$AS_TR_SH([with_]m4_tolower([$1]))" = "yes"],
         [AC_DEFINE([HAVE_][$1], 1, [Enable ]m4_tolower([$1])[ support])])
 ])dnl PKG_HAVE_DEFINE_WITH_MODULES
 
+# AM_CONDITIONAL                                            -*- Autoconf -*-
+
+# Copyright (C) 1997-2021 Free Software Foundation, Inc.
+#
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# AM_CONDITIONAL(NAME, SHELL-CONDITION)
+# -------------------------------------
+# Define a conditional.
+AC_DEFUN([AM_CONDITIONAL],
+[AC_PREREQ([2.52])dnl
+ m4_if([$1], [TRUE],  [AC_FATAL([$0: invalid condition: $1])],
+       [$1], [FALSE], [AC_FATAL([$0: invalid condition: $1])])dnl
+AC_SUBST([$1_TRUE])dnl
+AC_SUBST([$1_FALSE])dnl
+_AM_SUBST_NOTMAKE([$1_TRUE])dnl
+_AM_SUBST_NOTMAKE([$1_FALSE])dnl
+m4_define([_AM_COND_VALUE_$1], [$2])dnl
+if $2; then
+  $1_TRUE=
+  $1_FALSE='#'
+else
+  $1_TRUE='#'
+  $1_FALSE=
+fi
+AC_CONFIG_COMMANDS_PRE(
+[if test -z "${$1_TRUE}" && test -z "${$1_FALSE}"; then
+  AC_MSG_ERROR([[conditional "$1" was never defined.
+Usually this means the macro was only invoked conditionally.]])
+fi])])
+
 # Copyright (C) 1999-2021 Free Software Foundation, Inc.
 #
 # This file is free software; the Free Software Foundation
@@ -732,40 +765,22 @@ AC_DEFUN([AM_RUN_LOG],
    echo "$as_me:$LINENO: \$? = $ac_status" >&AS_MESSAGE_LOG_FD
    (exit $ac_status); }])
 
-dnl AX_GCC_ARM_MARCH_CONFIG([BASEARCH], [SOFTVAR], [HARDVAR])
-dnl BASEARCH: Base architecture (e.g. armv7-a)
-dnl SOFTVAR:  Shell variable name to store the soft-float -march target
-dnl HARDVAR:  Shell variable name to store the hard-float -march target
+# Copyright (C) 2006-2021 Free Software Foundation, Inc.
+#
+# This file is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
 
-AC_DEFUN([AX_GCC_ARM_MARCH_CONFIG], [
-  AC_REQUIRE([AC_PROG_CC])
-  AC_REQUIRE([AC_PROG_GCC_TRADITIONAL])
+# _AM_SUBST_NOTMAKE(VARIABLE)
+# ---------------------------
+# Prevent Automake from outputting VARIABLE = @VARIABLE@ in Makefile.in.
+# This macro is traced by Automake.
+AC_DEFUN([_AM_SUBST_NOTMAKE])
 
-  m4_pushdef([BASEARCH], [$1])
-  m4_pushdef([SOFTVAR], [$2])
-  m4_pushdef([HARDVAR], [$3])
-
-  if test "$GCC_VERSION_MAJOR" -lt "10"; then
-    if test "$GCC_VERSION_MAJOR" -lt "8"; then
-      SOFTVAR="BASEARCH"
-      HARDVAR="BASEARCH"
-    else
-      SOFTVAR="BASEARCH+nofp"
-      HARDVAR="BASEARCH+fp"
-    fi
-    aros_config_cflags="$aros_config_cflags ${CFLAGS_NO_COMMON}"
-  else
-    SOFTVAR="BASEARCH+nofp"
-    HARDVAR="BASEARCH+fp"
-  fi
-
-  AC_SUBST([SOFTVAR])
-  AC_SUBST([HARDVAR])
-
-  m4_popdef([BASEARCH])
-  m4_popdef([SOFTVAR])
-  m4_popdef([HARDVAR])
-])
+# AM_SUBST_NOTMAKE(VARIABLE)
+# --------------------------
+# Public sister of _AM_SUBST_NOTMAKE.
+AC_DEFUN([AM_SUBST_NOTMAKE], [_AM_SUBST_NOTMAKE($@)])
 
 m4_include([scripts/autoconf/m4/python.m4])
 m4_include([scripts/autoconf/m4/sdl.m4])
