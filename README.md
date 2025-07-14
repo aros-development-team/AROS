@@ -7,7 +7,7 @@
 ## Nightly Test Builds
 
 
-* All builds are scheduled to run at 00:00 UTC.
+* Builds are scheduled to run starting at 00:00 UTC. LLVM builds generally start 2hrs later.
 * The builds are made using the scripts/azure-pipelines.yml file. Further details can be found in that file.
 * GCC 6.5.0 builds are configured using default toolchain settings. Newer GCC builds may also use newer versions of binutils.
 * The main AROS target and distfiles are built for each arch.
