@@ -4690,6 +4690,15 @@ else
 %(mmake)-PACK_FMT = %(fmt)
 endif
 
+ifeq ($(%(mmake)-PACK_FMT),gz)
+%(mmake)-PACK_FLAGS=-f
+else
+ifeq ($(%(mmake)-PACK_FMT),xz)
+%(mmake)-PACK_FLAGS=-feq
+endif
+endif
+%(mmake)-PACK_LVL=-9
+
 #MM- %(mmake)-compress : %(mmake) %(mmake)-compress-genbin
 #MM- %(mmake)-compress-quick : %(mmake)-quick %(mmake)-compress-genbin
 
@@ -4698,11 +4707,31 @@ endif
 
 %(file).gz: %(file)
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
-	$(Q)gzip -9 -f $^
+	$(Q){ \
+		orig_size=$$(stat -c%s "$^"); \
+		gzip $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		comp_size=$$(stat -c%s "$@"); \
+		if [ "$$orig_size" -eq 0 ]; then \
+			ratio="-"; \
+		else \
+			ratio=$$(awk -v o=$$orig_size -v c=$$comp_size 'BEGIN { printf "-%.0f%%", 100 - (100 * c / o) }'); \
+		fi; \
+		echo ">> $(subst $(TARGETDIR)/,,$@) ($$ratio)"; \
+	}
 
 %(file).xz: %(file)
 	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
-	$(Q)xz -9 -feq $^
+	$(Q){ \
+		orig_size=$$(stat -c%s "$^"); \
+		xz $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		comp_size=$$(stat -c%s "$@"); \
+		if [ "$$orig_size" -eq 0 ]; then \
+			ratio="-"; \
+		else \
+			ratio=$$(awk -v o=$$orig_size -v c=$$comp_size 'BEGIN { printf "-%.0f%%", 100 - (100 * c / o) }'); \
+		fi; \
+		echo ">> $(subst $(TARGETDIR)/,,$@) ($$ratio)"; \
+	}
 
 %end
 
