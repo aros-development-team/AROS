@@ -4682,7 +4682,7 @@ PKG_DIR            := $(dir %(file))
 # Compresses %(file) with a gzip.
 # Good in conjunction with for example %build_prog
 
-%define compress_file mmake=/A file=/A fmt=
+%define compress_file mmake=/A file=/A target=$(AROS_TARGET_CPU) fmt=
 
 ifeq (%(fmt),)
 %(mmake)-PACK_FMT = gz
@@ -4696,7 +4696,14 @@ ifeq ($(%(mmake)-PACK_FMT),gz)
 %(mmake)-PACK_LVL=-9
 else
 ifeq ($(%(mmake)-PACK_FMT),xz)
-%(mmake)-PACK_OPTS=--check=crc32 --x86
+%(mmake)-PACK_OPTS=--check=crc32
+ifeq (%(target),x86_64)
+%(mmake)-PACK_OPTS+=--x86
+else
+ifeq (%(target),i386)
+%(mmake)-PACK_OPTS+=--x86
+endif
+endif
 %(mmake)-PACK_FLAGS=-f
 %(mmake)-PACK_LVL=-9e
 endif
