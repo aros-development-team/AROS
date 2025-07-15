@@ -692,14 +692,14 @@ void Send_IPCP_req(){
 	AddByte( &p,LocalIP[3] );
 
 	//if( ppp_libbase->enable_dns ){  // ask DNS addresses too...
-		AddByte( &p, 129 );
+		AddByte( &p, (BYTE)129 );
 		AddByte( &p, 0x06 );
 		AddByte( &p, PrimaryDNS[0] );
 		AddByte( &p, PrimaryDNS[1] );
 		AddByte( &p, PrimaryDNS[2] );
 		AddByte( &p, PrimaryDNS[3] );
 
-		AddByte( &p, 131 );
+		AddByte( &p, (BYTE)131 );
 		AddByte( &p, 0x06 );
 		AddByte( &p, SecondaryDNS[0] );
 		AddByte( &p, SecondaryDNS[1] );
