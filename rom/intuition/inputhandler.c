@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -1362,12 +1362,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         {
             struct msGetDisplayBounds bmsg =
             {
-                MethodID : MM_GetDisplayBounds,
-                Bounds : &DBounds,
+                .MethodID   = MM_GetDisplayBounds,
+                .Bounds     = &DBounds,
             };
             struct msDisplayToScreenCoords coordmsg =
             {
-                MethodID : MM_DisplayToScreenCoords,
+                .MethodID   = MM_DisplayToScreenCoords,
             };
             DoMethodA(GetPrivIBase(IntuitionBase)->ActiveMonitor, &bmsg);
             DWidth = (DBounds.MaxX - DBounds.MinX) + 1;
@@ -2952,7 +2952,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             
             bug
             (
-                "[Intui] InputHandler: Unknown IEClass: addr = %x  class = %d (origclass = %d)\n",
+                "[Intui] InputHandler: Unknown IEClass: addr = 0x%p  class = %d (origclass = %d)\n",
                 orig_ie, ie->ie_Class,orig_ie->ie_Class
             );
             break;
