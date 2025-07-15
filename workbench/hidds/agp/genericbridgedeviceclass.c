@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <hidd/agp.h>
@@ -25,63 +25,63 @@ struct HiddAgpPciDevicesEnumeratorData
 UBYTE readconfigbyte(OOP_Object * pciDevice, UBYTE where)
 {
     struct pHidd_PCIDevice_ReadConfigByte rcbmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte),
-    reg: where,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte),
+        .reg    = where,
     }, *msg = &rcbmsg;
-    
+
     return (UBYTE)OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 UWORD readconfigword(OOP_Object * pciDevice, UBYTE where)
 {
     struct pHidd_PCIDevice_ReadConfigWord rcwmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord),
-    reg: where,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord),
+        .reg    = where,
     }, *msg = &rcwmsg;
-    
+
     return (UWORD)OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 ULONG readconfiglong(OOP_Object * pciDevice, UBYTE where)
 {
     struct pHidd_PCIDevice_ReadConfigLong rclmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
-    reg: where,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
+        .reg    = where,
     }, *msg = &rclmsg;
-    
+
     return (ULONG)OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 VOID writeconfiglong(OOP_Object * pciDevice, UBYTE where, ULONG val)
 {
     struct pHidd_PCIDevice_WriteConfigLong wclmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong),
-    reg: where,
-    val: val,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigLong),
+        .reg    = where,
+        .val    = val,
     }, *msg = &wclmsg;
-    
+
     OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 VOID writeconfigbyte(OOP_Object * pciDevice, UBYTE where, UBYTE val)
 {
     struct pHidd_PCIDevice_WriteConfigByte wcbmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte),
-    reg: where,
-    val: val,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigByte),
+        .reg    = where,
+        .val    = val,
     }, *msg = &wcbmsg;
-    
+
     OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
 VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
 {
     struct pHidd_PCIDevice_WriteConfigWord wcwmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord),
-    reg: where,
-    val: val,
+        .mID    = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord),
+        .reg    = where,
+        .val    = val,
     }, *msg = &wcwmsg;
-    
+
     OOP_DoMethod(pciDevice, (OOP_Msg)msg);
 }
 
@@ -301,23 +301,23 @@ BOOL METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, ScanAndDetectDevices)
         
     /* Scan all PCI devices */
     struct HiddAgpPciDevicesEnumeratorData hdata = {
-    gbddata :           gbddata,
-    hiddPCIDeviceAB :   SD(cl)->hiddPCIDeviceAB
+        .gbddata            = gbddata,
+        .hiddPCIDeviceAB    = SD(cl)->hiddPCIDeviceAB
     };
     
     struct Hook FindHook = {
-    h_Entry:    (IPTR (*)())HiddAgpPciDevicesEnumerator,
-    h_Data:     &hdata,
+        .h_Entry            = (IPTR (*)())HiddAgpPciDevicesEnumerator,
+        .h_Data             = &hdata,
     };
 
     struct TagItem Requirements[] = {
-    { TAG_DONE,             0UL }
+        { TAG_DONE,             0UL }
     };
 
     struct pHidd_PCI_EnumDevices enummsg = {
-    mID:        OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
-    callback:   &FindHook,
-    requirements:   (struct TagItem*)&Requirements,
+        .mID            = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback       = &FindHook,
+        .requirements   = (struct TagItem*)&Requirements,
     };
 
     OOP_DoMethod(SD(cl)->pcibus, (OOP_Msg)&enummsg);
@@ -554,7 +554,7 @@ VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, BindMemory)
 
     /* Flush GATT table at card */
     struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
     };
 
     OOP_DoMethod(o, (OOP_Msg)&fgtmsg);
@@ -592,7 +592,7 @@ VOID METHOD(GenericBridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
 
     /* Flush GATT table */
     struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
     };
 
     OOP_DoMethod(o, (OOP_Msg)&fgtmsg);

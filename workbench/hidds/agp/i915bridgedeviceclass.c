@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <hidd/agp.h>
@@ -206,7 +206,7 @@ VOID METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, UnBindMemory)
 
     /* Flush GATT table */
     struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
     };
 
     OOP_DoMethod(o, (OOP_Msg)&fgtmsg);
@@ -254,7 +254,7 @@ VOID METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, BindMemory)
 
     /* Flush GATT table at card */
     struct pHidd_AGPBridgeDevice_FlushGattTable fgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushGattTable)
     };
 
     OOP_DoMethod(o, (OOP_Msg)&fgtmsg);
@@ -274,9 +274,9 @@ BOOL METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
     ULONG entries = 0, i = 0;
 
     struct pHidd_AGPBridgeDevice_ScanAndDetectDevices saddmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_ScanAndDetectDevices)
     };
-    
+
     /* Scan for bridge and igp devices */
     if (!OOP_DoMethod(o, (OOP_Msg)&saddmsg))
         return FALSE;
@@ -295,7 +295,7 @@ BOOL METHOD(i915BridgeDevice, Hidd_AGPBridgeDevice, Initialize)
 
     /* Creation of GATT table */
     struct pHidd_AGPBridgeDevice_CreateGattTable cgtmsg = {
-    mID: OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_CreateGattTable)
+        .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_CreateGattTable)
     };
     if (!OOP_DoMethod(o, (OOP_Msg)&cgtmsg))
         return FALSE;

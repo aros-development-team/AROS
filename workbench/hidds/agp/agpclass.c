@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <hidd/agp.h>
@@ -65,7 +65,7 @@ OOP_Object * METHOD(AGP, Hidd_AGP, GetBridgeDevice)
         ForeachNode(&adata->classes, name)
         {
             struct pHidd_AGPBridgeDevice_Initialize imsg = {
-            mID : OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Initialize)
+            .mID    = OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Initialize)
             };
 
             OOP_Object * bridgedevice = OOP_NewObject(NULL, name->name, NULL);
