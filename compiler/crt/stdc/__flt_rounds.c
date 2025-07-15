@@ -1,11 +1,13 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 
     Desc: Floating point rounding support
 */
 
-#include <float.h>
+#define STDC_NOINLINE_FLOAT
+
 #include <fenv.h>
+#include <float.h>
 
 int __flt_rounds()
 {

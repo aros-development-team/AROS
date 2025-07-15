@@ -121,8 +121,37 @@
 # endif
 #endif
 
+#if !defined(STDC_NOINLINE) && !defined(STDC_NOINLINE_FLOAT) \
+    && defined(_STDC_FENV_H_)
+static inline int __flt_rounds(void) {
+    switch (fegetround()) {
+# ifdef FE_TOWARDZERO
+        case FE_TOWARDZERO:     return 0;
+# endif
+# ifdef FE_TONEAREST
+        case FE_TONEAREST:      return 1;
+# endif
+# ifdef FE_UPWARD
+        case FE_UPWARD:         return 2;
+# endif
+# ifdef FE_DOWNWARD
+        case FE_DOWNWARD:       return 3;
+# endif
+        default:                return -1;
+    }
+}
+#else
 __BEGIN_DECLS
 extern int __flt_rounds(void);
 __END_DECLS
+#endif
+
+#ifndef FLT_ROUNDS
+#define FLT_ROUNDS (__flt_rounds())
+#endif
+
+#ifndef FLT_RADIX
+#define FLT_RADIX 2
+#endif
 
 #endif /* _STDC_FLOAT_H_ */
