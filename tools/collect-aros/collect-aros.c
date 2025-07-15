@@ -339,7 +339,10 @@ int main(int argc, char *argv[])
     else
         fprintf(ldscriptfile, "  .data1            0 : { *(.data1) }\n");
 #endif
+#if defined(TARGET_CPU_i386) || defined(TARGET_CPU_x86_64)
     fwrite(LDSCRIPT_PART4C, sizeof(LDSCRIPT_PART4C) - 1, 1, ldscriptfile);
+#endif
+    fwrite(LDSCRIPT_PART4D, sizeof(LDSCRIPT_PART4D) - 1, 1, ldscriptfile);
 #ifdef TARGET_FORMAT_EXE
     fprintf(ldscriptfile, "  .eh_frame          :\n");
 #else
@@ -348,7 +351,7 @@ int main(int argc, char *argv[])
     else
         fprintf(ldscriptfile, "  .eh_frame         0 :\n");
 #endif
-    fwrite(LDSCRIPT_PART4D, sizeof(LDSCRIPT_PART4D) - 1, 1, ldscriptfile);
+    fwrite(LDSCRIPT_PART4E, sizeof(LDSCRIPT_PART4E) - 1, 1, ldscriptfile);
     /* Append .eh_frame terminator only on final stage */
     if (incremental == 0)
         fputs("LONG(0)\n", ldscriptfile);

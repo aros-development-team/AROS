@@ -58,13 +58,21 @@ static const char LDSCRIPT_PART4B[] =
 "  }\n";
 
 static const char LDSCRIPT_PART4C[] =
+"  .got ALIGN(8) :\n"
+"  {\n"
+"    PROVIDE(_GLOBAL_OFFSET_TABLE_ = .);\n"
+"    KEEP(*(.got))\n"
+"    KEEP(*(.got.plt))\n"
+"  }\n";
+
+static const char LDSCRIPT_PART4D[] =
 "  /* ARM-specific exception stuff */\n"
 "  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) }\n"
 "   PROVIDE(__exidx_start = .);\n"
 "  .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }\n"
 "   PROVIDE(__exidx_end = .);\n";
 
-static const char LDSCRIPT_PART4D[] =
+static const char LDSCRIPT_PART4E[] =
 "  {\n"
 "     PROVIDE(__eh_frame_start = .);\n"
 "     KEEP (*(.eh_frame))\n";
