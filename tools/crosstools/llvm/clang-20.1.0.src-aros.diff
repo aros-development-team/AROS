@@ -1,71 +1,68 @@
-diff -ruN clang-11.0.0.src/include/clang/Driver/Options.td clang-11.0.0.src.aros/include/clang/Driver/Options.td
---- clang-11.0.0.src/include/clang/Driver/Options.td	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/include/clang/Driver/Options.td	2025-06-26 12:47:36.147031156 +0000
-@@ -668,6 +668,7 @@
-   HelpText<"Filename to write DOT-formatted header dependencies to">;
- def module_dependency_dir : Separate<["-"], "module-dependency-dir">,
-   Flags<[CC1Option]>, HelpText<"Directory to dump module dependencies to">;
+diff -ruN clang-20.1.0.src/include/clang/Driver/Options.td clang-20.1.0.src.aros/include/clang/Driver/Options.td
+--- clang-20.1.0.src/include/clang/Driver/Options.td	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/include/clang/Driver/Options.td	2025-07-15 21:54:15.370362121 +0000
+@@ -1498,6 +1498,7 @@
+   HelpText<"Path to libomptarget-nvptx bitcode library">;
+ def libomptarget_spirv_bc_path_EQ : Joined<["--"], "libomptarget-spirv-bc-path=">, Group<i_Group>,
+   HelpText<"Path to libomptarget-spirv bitcode library">;
 +def detach : Flag<["-"], "detach">, Flags<[DriverOption,NoArgumentUnused]>;
- def dumpmachine : Flag<["-"], "dumpmachine">;
- def dumpspecs : Flag<["-"], "dumpspecs">, Flags<[Unsupported]>;
- def dumpversion : Flag<["-"], "dumpversion">;
-@@ -2690,11 +2691,15 @@
+ def dD : Flag<["-"], "dD">, Group<d_Group>, Visibility<[ClangOption, CC1Option]>,
+   HelpText<"Print macro definitions in -E mode in addition to normal output">;
+ def dI : Flag<["-"], "dI">, Group<d_Group>, Visibility<[ClangOption, CC1Option]>,
+@@ -5682,6 +5683,7 @@
  def multiply__defined__unused : Separate<["-"], "multiply_defined_unused">;
  def multiply__defined : Separate<["-"], "multiply_defined">;
  def mwarn_nonportable_cfstrings : Flag<["-"], "mwarn-nonportable-cfstrings">, Group<m_Group>;
 +def nix : Flag<["-"], "nix">, Flags<[DriverOption,NoArgumentUnused]>;
- def no_canonical_prefixes : Flag<["-"], "no-canonical-prefixes">, Flags<[HelpHidden, CoreOption]>,
-   HelpText<"Use relative instead of canonical paths">;
- def no_cpp_precomp : Flag<["-"], "no-cpp-precomp">, Group<clang_ignored_f_Group>;
- def no_integrated_cpp : Flag<["-", "--"], "no-integrated-cpp">, Flags<[DriverOption]>;
- def no_pedantic : Flag<["-", "--"], "no-pedantic">, Group<pedantic_Group>;
+ def canonical_prefixes : Flag<["-"], "canonical-prefixes">,
+   Flags<[HelpHidden]>, Visibility<[ClangOption, CLOption, DXCOption]>,
+   HelpText<"Use absolute paths for invoking subcommands (default)">;
+@@ -5718,11 +5720,16 @@
+ def nomultidefs : Flag<["-"], "nomultidefs">;
+ def nopie : Flag<["-"], "nopie">, Visibility<[ClangOption, FlangOption]>, Flags<[TargetSpecific]>; // OpenBSD
+ def no_pie : Flag<["-"], "no-pie">, Visibility<[ClangOption, FlangOption]>;
 +def no_posixc : Flag<["-"], "no-posixc">, Flags<[DriverOption,NoArgumentUnused]>;
 +def no_stdc : Flag<["-"], "no-stdc">, Flags<[DriverOption,NoArgumentUnused]>;
 +def no_sysbase : Flag<["-"], "no_sysbase">, Flags<[DriverOption,NoArgumentUnused]>;
- def no__dead__strip__inits__and__terms : Flag<["-"], "no_dead_strip_inits_and_terms">;
- def nobuiltininc : Flag<["-"], "nobuiltininc">, Flags<[CC1Option, CoreOption]>,
-   HelpText<"Disable builtin #include directories">;
-@@ -2709,16 +2714,19 @@
- def nomultidefs : Flag<["-"], "nomultidefs">;
- def nopie : Flag<["-"], "nopie">;
- def no_pie : Flag<["-"], "no-pie">, Alias<nopie>;
 +def noposixc : Flag<["-"], "noposixc">, Alias<no_posixc>;
  def noprebind : Flag<["-"], "noprebind">;
  def noprofilelib : Flag<["-"], "noprofilelib">;
  def noseglinkedit : Flag<["-"], "noseglinkedit">;
- def nostartfiles : Flag<["-"], "nostartfiles">;
+ def nostartfiles : Flag<["-"], "nostartfiles">, Group<Link_Group>;
+ def startfiles : Flag<["-"], "startfiles">, Group<Link_Group>;
 +def nostdc : Flag<["-"], "nostdc">, Alias<no_stdc>;
- def nostdinc : Flag<["-"], "nostdinc">, Flags<[CoreOption]>;
- def nostdlibinc : Flag<["-"], "nostdlibinc">;
- def nostdincxx : Flag<["-"], "nostdinc++">, Flags<[CC1Option]>,
-   HelpText<"Disable standard #include directories for the C++ standard library">;
- def nostdlib : Flag<["-"], "nostdlib">;
+ def nostdinc : Flag<["-"], "nostdinc">,
+   Visibility<[ClangOption, CLOption, DXCOption]>, Group<IncludePath_Group>,
+   HelpText<"Disable both standard system #include directories and builtin #include directories">;
+@@ -5739,6 +5746,7 @@
+   Visibility<[ClangOption, FlangOption]>,
+   Group<Link_Group>;
  def nostdlibxx : Flag<["-"], "nostdlib++">;
 +def nosysbase : Flag<["-"], "nosysbase">, Alias<no_sysbase>;
  def object : Flag<["-"], "object">;
- def o : JoinedOrSeparate<["-"], "o">, Flags<[DriverOption, RenderAsInput, CC1Option, CC1AsOption]>,
-   HelpText<"Write output to <file>">, MetaVarName<"<file>">;
-@@ -2729,6 +2737,7 @@
- def pg : Flag<["-"], "pg">, HelpText<"Enable mcount instrumentation">, Flags<[CC1Option]>;
+ def o : JoinedOrSeparate<["-"], "o">,
+   Flags<[NoXarchOption]>,
+@@ -5766,6 +5774,7 @@
+   MarshallingInfoFlag<CodeGenOpts<"InstrumentForProfiling">>;
  def pipe : Flag<["-", "--"], "pipe">,
    HelpText<"Use pipes between commands, when possible">;
 +def posixc : Flag<["-"], "posixc">, Flags<[DriverOption,NoArgumentUnused]>;
  def prebind__all__twolevel__modules : Flag<["-"], "prebind_all_twolevel_modules">;
  def prebind : Flag<["-"], "prebind">;
  def preload : Flag<["-"], "preload">;
-@@ -2818,6 +2827,7 @@
- def static_libgcc : Flag<["-"], "static-libgcc">;
- def static_libstdcxx : Flag<["-"], "static-libstdc++">;
- def static : Flag<["-", "--"], "static">, Flags<[NoArgumentUnused]>;
+@@ -5833,6 +5842,7 @@
+   BothFlags<[], [ClangOption, CC1Option, FlangOption, FC1Option]>>;
+ def pie : Flag<["-"], "pie">, Group<Link_Group>;
+ def static_pie : Flag<["-"], "static-pie">, Group<Link_Group>;
 +def stdc : Flag<["-"], "stdc">, Flags<[DriverOption,NoArgumentUnused]>;
- def std_default_EQ : Joined<["-"], "std-default=">;
- def std_EQ : Joined<["-", "--"], "std=">, Flags<[CC1Option]>,
-   Group<CompileOnly_Group>, HelpText<"Language standard to compile for">,
-diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h
---- clang-11.0.0.src/lib/Basic/Targets/OSTargets.h	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-11 10:54:33.575958710 +0000
-@@ -71,6 +71,42 @@
-       : OSTargetInfo<Target>(Triple, Opts) {}
+ def read__only__relocs : Separate<["-"], "read_only_relocs">;
+ def remap : Flag<["-"], "remap">;
+ def rewrite_objc : Flag<["-"], "rewrite-objc">, Flags<[NoXarchOption]>,
+diff -ruN clang-20.1.0.src/lib/Basic/Targets/OSTargets.h clang-20.1.0.src.aros/lib/Basic/Targets/OSTargets.h
+--- clang-20.1.0.src/lib/Basic/Targets/OSTargets.h	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Basic/Targets/OSTargets.h	2025-07-15 21:56:21.649869574 +0000
+@@ -34,6 +34,42 @@
+   }
  };
  
 +// AROS target
@@ -104,38 +101,32 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets/OSTargets.h clang-11.0.0.src.aros/l
 +  }
 +};
 +
- void getDarwinDefines(MacroBuilder &Builder, const LangOptions &Opts,
-                       const llvm::Triple &Triple, StringRef &PlatformName,
-                       VersionTuple &PlatformMinVersion);
-diff -ruN clang-11.0.0.src/lib/Basic/Targets.cpp clang-11.0.0.src.aros/lib/Basic/Targets.cpp
---- clang-11.0.0.src/lib/Basic/Targets.cpp	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Basic/Targets.cpp	2025-06-26 12:47:36.147031156 +0000
-@@ -136,6 +136,11 @@
-       return new DarwinAArch64TargetInfo(Triple, Opts);
+ void getAppleMachODefines(MacroBuilder &Builder, const LangOptions &Opts,
+                           const llvm::Triple &Triple);
+ 
+diff -ruN clang-20.1.0.src/lib/Basic/Targets.cpp clang-20.1.0.src.aros/lib/Basic/Targets.cpp
+--- clang-20.1.0.src/lib/Basic/Targets.cpp	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Basic/Targets.cpp	2025-07-15 22:06:20.267535689 +0000
+@@ -146,6 +146,8 @@
+       return std::make_unique<AppleMachOAArch64TargetInfo>(Triple, Opts);
  
      switch (os) {
-+    //  FIXME:
-+    //  Needs to be tested before inclusion!!!
-+    //  New Target AROS AArch64
-+    //  case llvm::Triple::AROS:
-+    //    return new AROSTargetInfo<AArch64leTargetInfo>(Triple, Opts);
-     case llvm::Triple::CloudABI:
-       return new CloudABITargetInfo<AArch64leTargetInfo>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<AArch64leTargetInfo>(Triple, Opts);
      case llvm::Triple::FreeBSD:
-@@ -180,6 +185,11 @@
-       return new DarwinARMTargetInfo(Triple, Opts);
+       return std::make_unique<FreeBSDTargetInfo<AArch64leTargetInfo>>(Triple,
+                                                                       Opts);
+@@ -184,6 +186,8 @@
  
+   case llvm::Triple::aarch64_be:
      switch (os) {
-+    //  FIXME:
-+    //  Needs to be tested before inclusion!!!
-+    //  New Target AROS ARMle
-+    //  case llvm::Triple::AROS:
-+    //    return new AROSTargetInfo<ARMleTargetInfo>(Triple, Opts);
-     case llvm::Triple::CloudABI:
-       return new CloudABITargetInfo<ARMleTargetInfo>(Triple, Opts);
-     case llvm::Triple::Linux:
-@@ -216,6 +226,11 @@
-       return new DarwinARMTargetInfo(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<AArch64beTargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<AArch64beTargetInfo>>(Triple,
+                                                                       Opts);
+@@ -206,6 +210,11 @@
+       return std::make_unique<DarwinARMTargetInfo>(Triple, Opts);
  
      switch (os) {
 +    //  FIXME:
@@ -144,11 +135,29 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets.cpp clang-11.0.0.src.aros/lib/Basic
 +    //  case llvm::Triple::AROS:
 +    //    return new AROSTargetInfo<ARMbeTargetInfo>(Triple, Opts);
      case llvm::Triple::Linux:
-       return new LinuxTargetInfo<ARMbeTargetInfo>(Triple, Opts);
+       switch (Triple.getEnvironment()) {
+       default:
+@@ -215,6 +224,8 @@
+       }
+     case llvm::Triple::LiteOS:
+       return std::make_unique<OHOSTargetInfo<ARMleTargetInfo>>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<ARMleTargetInfo>(Triple, Opts);
      case llvm::Triple::FreeBSD:
-@@ -318,6 +333,11 @@
-     if (Triple.isOSDarwin())
-       return new DarwinPPC32TargetInfo(Triple, Opts);
+       return std::make_unique<FreeBSDTargetInfo<ARMleTargetInfo>>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+@@ -253,6 +264,8 @@
+     switch (os) {
+     case llvm::Triple::Linux:
+       return std::make_unique<LinuxTargetInfo<ARMbeTargetInfo>>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<ARMbeTargetInfo>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+       return std::make_unique<NetBSDTargetInfo<ARMbeTargetInfo>>(Triple, Opts);
+     case llvm::Triple::RTEMS:
+@@ -318,6 +331,11 @@
+ 
+   case llvm::Triple::mips64:
      switch (os) {
 +    //  FIXME:
 +    //  Needs to be tested before inclusion!!!
@@ -156,11 +165,11 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets.cpp clang-11.0.0.src.aros/lib/Basic
 +    //  case llvm::Triple::AROS:
 +    //    return new AROSTargetInfo<PPC32TargetInfo>(Triple, Opts);
      case llvm::Triple::Linux:
-       return new LinuxTargetInfo<PPC32TargetInfo>(Triple, Opts);
-     case llvm::Triple::FreeBSD:
-@@ -338,6 +358,11 @@
-     if (Triple.isOSDarwin())
-       return new DarwinPPC64TargetInfo(Triple, Opts);
+       return std::make_unique<LinuxTargetInfo<MipsTargetInfo>>(Triple, Opts);
+     case llvm::Triple::RTEMS:
+@@ -334,6 +352,11 @@
+ 
+   case llvm::Triple::mips64el:
      switch (os) {
 +    //  FIXME:
 +    //  Needs to be tested before inclusion!!!
@@ -168,67 +177,126 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets.cpp clang-11.0.0.src.aros/lib/Basic
 +    //  case llvm::Triple::AROS:
 +    //    return new AROSTargetInfo<PPC64TargetInfo>(Triple, Opts);
      case llvm::Triple::Linux:
-       return new LinuxTargetInfo<PPC64TargetInfo>(Triple, Opts);
+       return std::make_unique<LinuxTargetInfo<MipsTargetInfo>>(Triple, Opts);
+     case llvm::Triple::RTEMS:
+@@ -352,6 +375,8 @@
+     switch (os) {
+     case llvm::Triple::Linux:
+       return std::make_unique<LinuxTargetInfo<M68kTargetInfo>>(Triple, Opts);
++        case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<M68kTargetInfo>>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+       return std::make_unique<NetBSDTargetInfo<M68kTargetInfo>>(Triple, Opts);
+     default:
+@@ -362,6 +387,8 @@
+     switch (os) {
+     case llvm::Triple::Linux:
+       return std::make_unique<LinuxTargetInfo<PPC32TargetInfo>>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<PPC32TargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<PPC32TargetInfo>>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+@@ -380,6 +407,8 @@
+     switch (os) {
+     case llvm::Triple::Linux:
+       return std::make_unique<LinuxTargetInfo<PPC32TargetInfo>>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<PPC32TargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<PPC32TargetInfo>>(Triple, Opts);
+     default:
+@@ -392,6 +421,8 @@
+       return std::make_unique<LinuxTargetInfo<PPC64TargetInfo>>(Triple, Opts);
      case llvm::Triple::Lv2:
-@@ -465,6 +490,11 @@
-     switch (os) {
-     case llvm::Triple::Ananas:
-       return new AnanasTargetInfo<X86_32TargetInfo>(Triple, Opts);
-+    //  FIXME:
-+    //  Needs to be tested!!!
-+    // New Target AROS X86_32
+       return std::make_unique<PS3PPUTargetInfo<PPC64TargetInfo>>(Triple, Opts);
 +    case llvm::Triple::AROS:
-+      return new AROSTargetInfo<X86_32TargetInfo>(Triple, Opts);
-     case llvm::Triple::CloudABI:
-       return new CloudABITargetInfo<X86_32TargetInfo>(Triple, Opts);
-     case llvm::Triple::Linux: {
-@@ -524,6 +554,11 @@
++      return std::make_unique<AROSTargetInfo<PPC64TargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<PPC64TargetInfo>>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+@@ -408,6 +439,8 @@
      switch (os) {
-     case llvm::Triple::Ananas:
-       return new AnanasTargetInfo<X86_64TargetInfo>(Triple, Opts);
-+    //  FIXME:
-+    //  Needs to be tested!!!
-+    //  New Target AROS X86_64
+     case llvm::Triple::Linux:
+       return std::make_unique<LinuxTargetInfo<PPC64TargetInfo>>(Triple, Opts);
 +    case llvm::Triple::AROS:
-+      return new AROSTargetInfo<X86_64TargetInfo>(Triple, Opts);
-     case llvm::Triple::CloudABI:
-       return new CloudABITargetInfo<X86_64TargetInfo>(Triple, Opts);
-     case llvm::Triple::Linux: {
-diff -ruN clang-11.0.0.src/lib/Driver/CMakeLists.txt clang-11.0.0.src.aros/lib/Driver/CMakeLists.txt
---- clang-11.0.0.src/lib/Driver/CMakeLists.txt	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/CMakeLists.txt	2025-06-26 12:47:36.147031156 +0000
-@@ -36,6 +36,7 @@
-   ToolChains/AIX.cpp
-   ToolChains/Ananas.cpp
++      return std::make_unique<AROSTargetInfo<PPC64TargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<PPC64TargetInfo>>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+@@ -431,6 +464,8 @@
+ 
+   case llvm::Triple::riscv32:
+     switch (os) {
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<RISCV32TargetInfo>(Triple, Opts);
+     case llvm::Triple::NetBSD:
+       return std::make_unique<NetBSDTargetInfo<RISCV32TargetInfo>>(Triple,
+                                                                    Opts);
+@@ -442,6 +477,8 @@
+ 
+   case llvm::Triple::riscv64:
+     switch (os) {
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<RISCV64TargetInfo>(Triple, Opts);
+     case llvm::Triple::FreeBSD:
+       return std::make_unique<FreeBSDTargetInfo<RISCV64TargetInfo>>(Triple,
+                                                                     Opts);
+@@ -550,6 +587,9 @@
+         return std::make_unique<AndroidX86_32TargetInfo>(Triple, Opts);
+       }
+     }
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<X86_32TargetInfo>>(Triple,
++                                                                        Opts);
+     case llvm::Triple::DragonFly:
+       return std::make_unique<DragonFlyBSDTargetInfo<X86_32TargetInfo>>(Triple,
+                                                                         Opts);
+@@ -611,6 +651,9 @@
+         return std::make_unique<OHOSX86_64TargetInfo>(Triple, Opts);
+       }
+     }
++    case llvm::Triple::AROS:
++      return std::make_unique<AROSTargetInfo<X86_64TargetInfo>>(Triple,
++                                                                        Opts);
+     case llvm::Triple::DragonFly:
+       return std::make_unique<DragonFlyBSDTargetInfo<X86_64TargetInfo>>(Triple,
+                                                                         Opts);
+diff -ruN clang-20.1.0.src/lib/Driver/CMakeLists.txt clang-20.1.0.src.aros/lib/Driver/CMakeLists.txt
+--- clang-20.1.0.src/lib/Driver/CMakeLists.txt	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Driver/CMakeLists.txt	2025-07-15 21:48:58.051599048 +0000
+@@ -45,6 +45,7 @@
    ToolChains/AMDGPU.cpp
-+  ToolChains/AROS.cpp
+   ToolChains/AMDGPUOpenMP.cpp
    ToolChains/AVR.cpp
++  ToolChains/AROS.cpp
    ToolChains/BareMetal.cpp
    ToolChains/Clang.cpp
-diff -ruN clang-11.0.0.src/lib/Driver/Driver.cpp clang-11.0.0.src.aros/lib/Driver/Driver.cpp
---- clang-11.0.0.src/lib/Driver/Driver.cpp	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/Driver.cpp	2025-06-26 12:47:36.151031247 +0000
-@@ -10,6 +10,7 @@
- #include "InputInfo.h"
- #include "ToolChains/AIX.h"
- #include "ToolChains/AMDGPU.h"
-+#include "ToolChains/AROS.h"
+   ToolChains/CommonArgs.cpp
+diff -ruN clang-20.1.0.src/lib/Driver/Driver.cpp clang-20.1.0.src.aros/lib/Driver/Driver.cpp
+--- clang-20.1.0.src/lib/Driver/Driver.cpp	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Driver/Driver.cpp	2025-07-15 21:48:07.859795622 +0000
+@@ -12,6 +12,7 @@
+ #include "ToolChains/AMDGPUOpenMP.h"
  #include "ToolChains/AVR.h"
- #include "ToolChains/Ananas.h"
+ #include "ToolChains/Arch/RISCV.h"
++#include "ToolChains/AROS.h"
  #include "ToolChains/BareMetal.h"
-@@ -4897,6 +4898,9 @@
-     case llvm::Triple::Ananas:
-       TC = std::make_unique<toolchains::Ananas>(*this, Target, Args);
+ #include "ToolChains/CSKYToolChain.h"
+ #include "ToolChains/Clang.h"
+@@ -6610,6 +6611,9 @@
+     case llvm::Triple::AIX:
+       TC = std::make_unique<toolchains::AIX>(*this, Target, Args);
        break;
 +    case llvm::Triple::AROS:
-+      TC = std::make_unique<toolchains::AROSToolChain>(*this, Target, Args);
++      TC = std::make_unique<toolchains::AROSClang>(*this, Target, Args);
 +      break;
-     case llvm::Triple::CloudABI:
-       TC = std::make_unique<toolchains::CloudABI>(*this, Target, Args);
+     case llvm::Triple::Haiku:
+       TC = std::make_unique<toolchains::Haiku>(*this, Target, Args);
        break;
-diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp
---- clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-15 20:21:11.609706173 +0000
+diff -ruN clang-20.1.0.src/lib/Driver/ToolChains/AROS.cpp clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.cpp
+--- clang-20.1.0.src/lib/Driver/ToolChains/AROS.cpp	1970-01-01 00:00:00.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.cpp	2025-07-15 22:09:45.178735968 +0000
 @@ -0,0 +1,432 @@
 +//===--- AROS.cpp - AROS Tool Chain -------------===//
 +//
@@ -341,8 +409,8 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +                           const InputInfoList &Inputs,
 +                           const ArgList &Args,
 +                           const char *LinkingOutput) const {
-+    const toolchains::AROSToolChain &AROSTC =
-+      static_cast<const toolchains::AROSToolChain &>(getToolChain());
++    const toolchains::AROSClang &AROSTC =
++      static_cast<const toolchains::AROSClang &>(getToolChain());
 +    const char *Exec = Args.MakeArgString(AROSTC.GetLinkerPath());
 +    const Driver &D = AROSTC.getDriver();
 +    const std::string &SysRoot = D.SysRoot;
@@ -484,7 +552,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +//------------------------------------------------------------------------------------------------------//
 +
 +
-+AROSToolChain::AROSToolChain(const Driver &D,
++AROSClang::AROSClang(const Driver &D,
 +                             const llvm::Triple &Triple,
 +                             const llvm::opt::ArgList &Args)
 +    : Generic_ELF(D, Triple, Args) {
@@ -494,7 +562,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 +
 +#if (0)
-+bool AROSToolChain::IsUnwindTablesDefault() const {
++bool AROSClang::IsUnwindTablesDefault() const {
 +    // FIXME:
 +
 +    // all non-x86 targets need unwind tables, however,
@@ -502,7 +570,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +
 +    // FIXME:
 +    // Is this the correct implementation of this function ???
-+//  bool AROSToolChain::IsUnwindTablesDefault(const ArgList &Args) const {
++//  bool AROSClang::IsUnwindTablesDefault(const ArgList &Args) const {
 +    //// Unwind tables are not emitted if -fno-exceptions
 +    //// is supplied (except when targeting x86_64).
 +    //return getArch() == llvm::Triple::x86_64 ||
@@ -515,19 +583,19 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 +#endif
 +
-+bool AROSToolChain::isPICDefault() const {
++bool AROSClang::isPICDefault() const {
 +    return false;
 +}
 +
-+bool AROSToolChain::isPIEDefault() const {
++bool AROSClang::isPIEDefault() const {
 +    return false;
 +}
 +
-+bool AROSToolChain::isPICDefaultForced() const {
++bool AROSClang::isPICDefaultForced() const {
 +    return false;
 +}
 +
-+void AROSToolChain::
++void AROSClang::
 +AddAROSSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                         llvm::opt::ArgStringList &CC1Args) const {
 +    const Driver &D = getDriver();
@@ -548,7 +616,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    }// OPT_nobuiltininc
 +}
 +
-+void AROSToolChain::
++void AROSClang::
 +AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                          llvm::opt::ArgStringList &CC1Args) const {
 +    if (DriverArgs.hasArg(options::OPT_nostdlibinc))
@@ -557,7 +625,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
 +}
 +
-+void AROSToolChain::
++void AROSClang::
 +addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
 +                      llvm::opt::ArgStringList &CC1Args,
 +                      Action::OffloadKind DeviceOffloadingKind) const {
@@ -570,7 +638,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 +
 +
-+void AROSToolChain::
++void AROSClang::
 +AddClangCXXStdlibIncludeArgs(const llvm::opt::ArgList &DriverArgs,
 +                             llvm::opt::ArgStringList &CC1Args) const {
 +    if (DriverArgs.hasArg(options::OPT_nostdlibinc) ||
@@ -593,7 +661,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    AddAROSSystemIncludeArgs(DriverArgs, CC1Args);
 +}
 +
-+void AROSToolChain::
++void AROSClang::
 +AddCXXStdlibLibArgs(const llvm::opt::ArgList &DriverArgs,
 +                    llvm::opt::ArgStringList &CC1Args) const {
 +    SmallString<128> ClangBinDir(getDriver().InstalledDir);
@@ -615,7 +683,7 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +    }
 +}
 +
-+void AROSToolChain::
++void AROSClang::
 +addStartObjectFileArgs(const llvm::opt::ArgList &Args,
 +                       llvm::opt::ArgStringList &CmdArgs) const {
 +    const Driver &D = getDriver();
@@ -655,16 +723,16 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.cpp clang-11.0.0.src.aros/
 +}
 +
 +
-+Tool *AROSToolChain::buildAssembler() const {
++Tool *AROSClang::buildAssembler() const {
 +    return new tools::AROS::Assembler(*this);
 +}
 +
-+Tool *AROSToolChain::buildLinker() const {
++Tool *AROSClang::buildLinker() const {
 +    return new tools::AROS::Linker(*this);
 +}
-diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h
---- clang-11.0.0.src/lib/Driver/ToolChains/AROS.h	1970-01-01 00:00:00.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-07-15 19:54:52.129475170 +0000
+diff -ruN clang-20.1.0.src/lib/Driver/ToolChains/AROS.h clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.h
+--- clang-20.1.0.src/lib/Driver/ToolChains/AROS.h	1970-01-01 00:00:00.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Driver/ToolChains/AROS.h	2025-07-15 22:09:36.030771678 +0000
 @@ -0,0 +1,111 @@
 +//===--- AROS.h - AROS ToolChain Implementations ----------*- C -*-===//
 +//
@@ -719,9 +787,9 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +} // end namespace tools
 +
 +namespace toolchains {
-+class LLVM_LIBRARY_VISIBILITY AROSToolChain : public Generic_ELF {
++class LLVM_LIBRARY_VISIBILITY AROSClang : public Generic_ELF {
 +public:
-+  AROSToolChain(const Driver &D,
++  AROSClang(const Driver &D,
 +                const llvm::Triple &Triple,
 +                const llvm::opt::ArgList &Args);
 +
@@ -777,15 +845,14 @@ diff -ruN clang-11.0.0.src/lib/Driver/ToolChains/AROS.h clang-11.0.0.src.aros/li
 +} // end namespace clang
 +
 +#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_AROS_H
-diff -ruN clang-11.0.0.src/lib/Frontend/InitHeaderSearch.cpp clang-11.0.0.src.aros/lib/Frontend/InitHeaderSearch.cpp
---- clang-11.0.0.src/lib/Frontend/InitHeaderSearch.cpp	2020-10-07 10:10:48.000000000 +0000
-+++ clang-11.0.0.src.aros/lib/Frontend/InitHeaderSearch.cpp	2025-07-10 13:43:21.473240929 +0000
-@@ -215,7 +215,7 @@
-                                             const HeaderSearchOptions &HSOpts) {
-   llvm::Triple::OSType os = triple.getOS();
- 
--  if (triple.isOSDarwin()) {
-+  if ((triple.isOSDarwin()) || (triple.isAROS())) {
-     llvm_unreachable("Include management is handled in the driver.");
-   }
- 
+diff -ruN clang-20.1.0.src/lib/Lex/InitHeaderSearch.cpp clang-20.1.0.src.aros/lib/Lex/InitHeaderSearch.cpp
+--- clang-20.1.0.src/lib/Lex/InitHeaderSearch.cpp	2025-03-04 19:51:43.000000000 +0000
++++ clang-20.1.0.src.aros/lib/Lex/InitHeaderSearch.cpp	2025-07-15 22:12:22.074124334 +0000
+@@ -284,6 +284,7 @@
+ bool InitHeaderSearch::ShouldAddDefaultIncludePaths(
+     const llvm::Triple &triple) {
+   switch (triple.getOS()) {
++  case llvm::Triple::AROS:
+   case llvm::Triple::AIX:
+   case llvm::Triple::DragonFly:
+   case llvm::Triple::ELFIAMCU:
