@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -514,14 +514,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
       default:
         if (hunktype & HUNKF_ADVISORY) {
-          D(bug("Unknown hunk 0x%06lx with advisory flag skipped\n", hunktype & 0xFFFFFF));
+          D(bug("Unknown hunk 0x%06x with advisory flag skipped\n", hunktype & 0xFFFFFF));
           if (read_block_buffered(fh, &lcount, sizeof(lcount), funcarray, srb, DOSBase))
             goto end;
           lcount = AROS_BE2LONG(lcount);
           if (seek_forward(fh, lcount * 4, funcarray, srb, DOSBase))
             goto end;
         } else {
-          bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF);
+          bug("Hunk type 0x%06x not implemented\n", hunktype & 0xFFFFFF);
           ERROR(ERROR_BAD_HUNK);
         }
     } /* switch */

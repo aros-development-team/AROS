@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Code to dynamically load ELF executables
 */
@@ -322,6 +322,17 @@ static int relocate
 
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
+#if defined(__i386__) || defined(__x86_64__)
+    IPTR got_base = 0;
+
+    for (int i = 0; i < eh->shnum; ++i) {
+        const char *name = (const char *)((UBYTE *)sh[eh->shstrndx].addr + sh[i].name);
+        if (strcmp(name, ".got") == 0) {
+            got_base = (IPTR)sh[i].addr;
+            break;
+        }
+    }
+#endif
 
     for (i=0; i<numrel; i++, rel++)
     {
@@ -392,6 +403,14 @@ static int relocate
                 *p += s - (ULONG)p;
                 break;
 
+            case R_386_GOTPC: /* PC-relative offset to GOT */
+                if (!got_base) {
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *p = got_base - (ULONG)p;
+                break;
+
             case R_386_NONE:
                 break;
 
@@ -415,6 +434,14 @@ static int relocate
 
             case R_X86_64_PC64:
                 *(UQUAD *)p = (UQUAD)s + (UQUAD)rel->addend - (IPTR) p;
+                break;
+
+            case R_X86_64_GOTOFF64:
+                if (!got_base) {
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                *(UQUAD *)p = (UQUAD)s + (UQUAD)rel->addend - (UQUAD)got_base;
                 break;
 
             case R_X86_64_NONE: /* No reloc */
@@ -715,7 +742,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
     {
         ULONG attrs_size = READLONG_UNALIGNED(attrs->size);
 
-        if (!strcmp(attrs->vendor, "aeabi"))
+        if (strcmp(attrs->vendor, "aeabi") == 0)
         {
             struct attrs_subsection *aeabi_attrs = (void *)attrs->vendor + 6;
             ULONG aeabi_len = attrs_size - 10;
