@@ -488,6 +488,8 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc()\n"));
 
     if ((use_settings) && (data->wped_ViewSettings_Current))
     {
+        if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
+        {
 D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: Updating tags for Background ..\n"));
         IPTR current_rendermodepage = 0;
         ULONG current_rendermode;
@@ -545,6 +547,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
                     }
                     break;
             }
+        }
         }
 
         SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_IconListMode, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ListMode, MUIA_Cycle_Active);
