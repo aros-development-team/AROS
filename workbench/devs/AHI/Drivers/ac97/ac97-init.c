@@ -19,20 +19,20 @@ static const struct {
     { 0x8086, 0x2485, "Intel ICH3"	},
     { 0x8086, 0x24c5, "Intel ICH4"	},
     { 0x8086, 0x24d5, "Intel ICH5"	},
-	{ 0x8086, 0x25a6, "ESB"         },
+        { 0x8086, 0x25a6, "ESB"         },
     { 0x8086, 0x266e, "Intel ICH6"	},
     { 0x8086, 0x27de, "Intel ICH7"	},
-	{ 0x8086, 0x2698, "ESB2"        },
+        { 0x8086, 0x2698, "ESB2"        },
     { 0x8086, 0x7195, "Intel 440MX"	},
     { 0x1039, 0x7012, "SIS 7012"	},
     { 0x10de, 0x01b1, "NVIDIA nForce"	},
-	{ 0x10de, 0x003a, "MCP04"       },
+        { 0x10de, 0x003a, "MCP04"       },
     { 0x10de, 0x006a, "NVIDIA nForce2"	},
-	{ 0x10de, 0x0059, "CK804"       },
+        { 0x10de, 0x0059, "CK804"       },
     { 0x10de, 0x008a, "MCP2S AC'97 Audio Controller" },
     { 0x10de, 0x00da, "NVIDIA nForce3"	},
-	{ 0x10de, 0x00ea, "CK8S"        },
-	{ 0x10de, 0x026b, "MCP51"       },
+        { 0x10de, 0x00ea, "CK8S"        },
+        { 0x10de, 0x026b, "MCP51"       },
     { 0x1022, 0x746d, "AMD 8111"	},
     { 0x1022, 0x7445, "AMD 768"		},
     { 0x10b9, 0x5455, "Ali 5455"	},
@@ -81,30 +81,30 @@ static AROS_UFH3(void, Enumerator,
 
     for (i=0; support[i].VendorID; i++)
     {
-	if (VendorID == support[i].VendorID && ProductID == support[i].ProductID)
-	{
-	    struct TagItem attrs[] = {
-		{ aHidd_PCIDevice_isIO,	    TRUE },
-		{ aHidd_PCIDevice_isMEM,    FALSE },
-		{ aHidd_PCIDevice_isMaster, TRUE },
-		{ TAG_DONE, 0UL },	
-	    };
+        if (VendorID == support[i].VendorID && ProductID == support[i].ProductID)
+        {
+            struct TagItem attrs[] = {
+                { aHidd_PCIDevice_isIO,	    TRUE },
+                { aHidd_PCIDevice_isMEM,    FALSE },
+                { aHidd_PCIDevice_isMaster, TRUE },
+                { TAG_DONE, 0UL },	
+            };
 
-	    D(bug("[AHI:AC97] %s: Detected supported '%s' card\n", __func__, support[i].Model));
+            D(bug("[AHI:AC97] %s: Detected supported '%s' card\n", __func__, support[i].Model));
 
-	    ac97Base->mixer_set_reg = i8x0_set_reg;
-	    ac97Base->mixer_get_reg = i8x0_get_reg;
+            ac97Base->mixer_set_reg = i8x0_set_reg;
+            ac97Base->mixer_get_reg = i8x0_get_reg;
 
-	    OOP_SetAttrs(device, (struct TagItem *)&attrs);
+            OOP_SetAttrs(device, (struct TagItem *)&attrs);
 
-	    OOP_GetAttr(device, aHidd_PCIDevice_Base0, &value);
-	    ac97Base->mixerbase = (APTR)value;
-	    OOP_GetAttr(device, aHidd_PCIDevice_Base1, &value);
-	    ac97Base->dmabase = (APTR)value;
-	    OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &value);
-	    ac97Base->irq_num = (ULONG)value;
+            OOP_GetAttr(device, aHidd_PCIDevice_Base0, &value);
+            ac97Base->mixerbase = (APTR)value;
+            OOP_GetAttr(device, aHidd_PCIDevice_Base1, &value);
+            ac97Base->dmabase = (APTR)value;
+            OOP_GetAttr(device, aHidd_PCIDevice_INTLine, &value);
+            ac97Base->irq_num = (ULONG)value;
 
-	    D(
+            D(
                 bug("[AHI:AC97] %s: Mixer IO base @ %p\n", __func__, ac97Base->mixerbase);
                 bug("[AHI:AC97] %s: DMA IO base @ %p\n", __func__, ac97Base->dmabase);
             )
@@ -168,7 +168,7 @@ static AROS_UFH3(void, Enumerator,
                     bug("[AHI:AC97] %s:    PO_CR=%02x\n", __func__, inb((IPTR)ac97Base->dmabase + PO_CR));
                 )
             }
-	}
+        }
     }
 
     AROS_USERFUNC_EXIT
@@ -187,58 +187,58 @@ BOOL DriverInit( struct DriverBase* AHIsubBase )
 
     if(DOSBase)
     {
-	ac97Base->oopbase = (APTR)OpenLibrary(AROSOOP_NAME, 0);
-	if (OOPBase)
-	{
-	    __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+        ac97Base->oopbase = (APTR)OpenLibrary(AROSOOP_NAME, 0);
+        if (OOPBase)
+        {
+            __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
-	    D(bug("[AHI:AC97] %s: Libraries opened\n", __func__));
+            D(bug("[AHI:AC97] %s: Libraries opened\n", __func__));
 
-	    if (__IHidd_PCIDev)
-	    {
-		OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-		
-		D(bug("[AHI:AC97] %s: PCIDevice AttrBase = %x\n", __func__, __IHidd_PCIDev));
-		
-		if (pci)
-		{
-		    struct Hook FindHook = {
-			h_Entry:    (IPTR(*)())Enumerator,
-			h_Data:	    ac97Base,
-		    };
+            if (__IHidd_PCIDev)
+            {
+            OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
+            
+            D(bug("[AHI:AC97] %s: PCIDevice AttrBase = %x\n", __func__, __IHidd_PCIDev));
+            
+            if (pci)
+            {
+                struct Hook FindHook = {
+                    .h_Entry            = (IPTR(*)())Enumerator,
+                    .h_Data             = ac97Base,
+                };
 
-		    struct TagItem Reqs[] = {
-			{ tHidd_PCI_Class,	0x04 },
-			{ tHidd_PCI_SubClass,	0x01 },
-			{ TAG_DONE, 0UL },
-		    };
+                struct TagItem Reqs[] = {
+                    { tHidd_PCI_Class,	        0x04 },
+                    { tHidd_PCI_SubClass,       0x01 },
+                    { TAG_DONE,                 0UL },
+                };
 
-		    struct pHidd_PCI_EnumDevices enummsg = {
-			mID:		OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
-			callback:	&FindHook,
-			requirements:	(struct TagItem *)&Reqs,
-		    }, *msg = &enummsg;
+                struct pHidd_PCI_EnumDevices enummsg = {
+                    .mID                = OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                    .callback           = &FindHook,
+                    .requirements       = (struct TagItem *)&Reqs,
+                }, *msg = &enummsg;
 
-		    D(bug("[AHI:AC97] %s: Got PCI object\n", __func__));
+                D(bug("[AHI:AC97] %s: Got PCI object\n", __func__));
 
-		    ac97Base->cardfound = FALSE;
+                ac97Base->cardfound = FALSE;
 
-		    OOP_DoMethod(pci, (OOP_Msg)msg);
+                OOP_DoMethod(pci, (OOP_Msg)msg);
 
-		    OOP_DisposeObject(pci);
+                OOP_DisposeObject(pci);
 
-		    return ac97Base->cardfound;
-		}
-	    }
-	}
-	else
-	{
-	    Req("Unable to open 'oop.library'\n");
-	}
+                return ac97Base->cardfound;
+            }
+            }
+        }
+        else
+        {
+            Req("Unable to open 'oop.library'\n");
+        }
     }
     else
     {
-	Req( "Unable to open 'dos.library' version 37.\n" );
+        Req( "Unable to open 'dos.library' version 37.\n" );
     }
   
     return FALSE;
