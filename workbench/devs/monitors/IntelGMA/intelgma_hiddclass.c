@@ -907,8 +907,8 @@ ULONG METHOD(INTELG45, Hidd_Gfx, ShowViewPorts)
 {
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
-        mID : OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
-        data : msg->Data
+        .mID    = OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
+        .data   = msg->Data
     };
     D(bug("[IntelG45] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
     OOP_DoMethod(sd->compositor, (OOP_Msg)&bscmsg);
@@ -943,9 +943,9 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     /* Get Sync and PixelFormat properties */
     struct pHidd_Gfx_GetMode __getmodemsg =
     {
-        .modeID =       modeid,
-        .syncPtr =      &sync,
-        .pixFmtPtr =    &pf,
+        .modeID     = modeid,
+        .syncPtr    = &sync,
+        .pixFmtPtr  = &pf,
     }, *getmodemsg = &__getmodemsg;
 
     getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
