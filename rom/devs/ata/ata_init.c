@@ -258,9 +258,9 @@ static int ATA_init(struct ataBase *ATABase)
     if (OOP_ObtainMethodBasesArray(&ATABase->hwMethodBase, methBaseIDs))
     {
         bug("[ATA--] %s: Failed to obtain MethodBases!\n", __func__);
-        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[0], ATABase->hwMethodBase);
-        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[1], ATABase->busMethodBase);
-        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[2], ATABase->HiddSCMethodBase);
+        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[0], (APTR)(IPTR)ATABase->hwMethodBase);
+        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[1], (APTR)(IPTR)ATABase->busMethodBase);
+        bug("[ATA--] %s:     %s = %p\n", __func__, methBaseIDs[2], (APTR)(IPTR)ATABase->HiddSCMethodBase);
 #if defined(__OOP_NOATTRBASES__)
          OOP_ReleaseAttrBasesArray(&ATABase->unitAttrBase, attrBaseIDs);
 #endif

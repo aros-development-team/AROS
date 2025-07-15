@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -2155,9 +2155,9 @@ static BYTE atapi_Write(struct ata_Unit *unit, ULONG block, ULONG count,
 static BYTE atapi_Eject(struct ata_Unit *unit)
 {
     struct atapi_StartStop cmd = {
-        command: SCSI_STARTSTOP,
-        immediate: 1,
-        flags: ATAPI_SS_EJECT,
+        .command    = SCSI_STARTSTOP,
+        .immediate  = 1,
+        .flags      = ATAPI_SS_EJECT,
     };
 
     struct SCSICmd sc = {
