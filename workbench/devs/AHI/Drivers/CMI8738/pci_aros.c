@@ -93,26 +93,25 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev) {
     struct enum_data ed;
 
     struct Hook FindHook = {
-        h_Entry : (HOOKFUNC)Enumerator,
-        h_Data : &ed,
+        .h_Entry    = (HOOKFUNC)Enumerator,
+        .h_Data     = &ed,
     };
 
     struct TagItem Reqs[] = {
 #if 0
-      { tHidd_PCI_Class   	, 0x04 	    }, /* Multimedia */
-      { tHidd_PCI_SubClass	, 0x01 	    }, /* Audio */
+        { tHidd_PCI_Class       , 0x04      }, /* Multimedia */
+        { tHidd_PCI_SubClass    , 0x01      }, /* Audio */
 #endif
-        {tHidd_PCI_VendorID, vendorid},
-        {tHidd_PCI_ProductID, deviceid},
-        {TAG_DONE, 0},
+        { tHidd_PCI_VendorID    , vendorid  },
+        { tHidd_PCI_ProductID   , deviceid  },
+        { TAG_DONE              , 0         },
     };
 
     struct pHidd_PCI_EnumDevices enummsg = {
-        mID : OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
-        callback : &FindHook,
-        requirements : (struct TagItem *)&Reqs,
-    },
-                                 *msg = &enummsg;
+        .mID            = OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+        .callback       = &FindHook,
+        .requirements   = (struct TagItem *)&Reqs,
+    }, *msg = &enummsg;
 
     ed.prev_dev  = (OOP_Object *)dev;
     ed.found_dev = 0;
