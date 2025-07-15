@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -170,9 +170,9 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     /* Get width and height of mode */
     struct pHidd_Gfx_GetMode __getmodemsg =
     {
-        modeID: modeid,
-        syncPtr:        &sync,
-        pixFmtPtr:      &pf,
+        .modeID     = modeid,
+        .syncPtr    = &sync,
+        .pixFmtPtr  = &pf,
     }, *getmodemsg = &__getmodemsg;
 
     getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
