@@ -150,6 +150,8 @@ aros_host_def_cc="$CC"
 AC_PROG_CC_STDC
 AC_PROG_CPP
 
+PKG_PROG_PKG_CONFIG
+
 # detect the compiler version
 AC_MSG_CHECKING([which toolchain family ${CC_BASE} belongs to])
 HOST_COMPILER_VERSION=`"$CC" --version 2>/dev/null`
