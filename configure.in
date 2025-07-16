@@ -1365,7 +1365,7 @@ case "$target_os" in
                 aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
                 aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
                 gcc_target_cpu="m68000"
-                llvm_target_cpu=""
+                llvm_target_cpu="M68k"
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -1829,7 +1829,7 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
                 aros_isa_flags="$""(ISA_MC68000_FLAGS)"
                 gcc_target_cpu="m68000"
-                llvm_target_cpu=""
+                llvm_target_cpu="M68k"
                 ;;
             *i?86*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -2181,7 +2181,7 @@ case "$target_os" in
                 aros_nominal_width=640
                 aros_nominal_height=256
                 aros_nominal_depth=2
-                llvm_target_cpu=""
+                llvm_target_cpu="M68k"
                 ;;
             *ppc*)
                 aros_cpu="ppc"
@@ -2277,7 +2277,7 @@ case "$target_os" in
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
                 gcc_target_cpu="m68000"
-                llvm_target_cpu=""
+                llvm_target_cpu="M68k"
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
@@ -2313,7 +2313,7 @@ case "$target_os" in
                 aros_mungwall_debug="0"
                 aros_modules_debug="0"
                 gcc_target_cpu="m68000"
-                llvm_target_cpu=""
+                llvm_target_cpu="M68k"
                 ignore_undefined_symbols="-ius"
                 ;;
            *)
