@@ -401,7 +401,7 @@ jobs:
       rm -Rf $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Sources
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-    condition: ne( variables['SF_RSYNC_USER'], '' )
+    condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
     displayName: 'Deploying source package(s)'
 
   - script: |
@@ -514,7 +514,11 @@ jobs:
       echo "Ensuring target directory exists on SourceForge..."
       ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
         "mkdir -p /home/project-web/arosdev/uploads/nightly2"
-    condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
+    condition: and(
+      ne( variables['SF_RSYNC_USER'], '' ),
+      ne( variables['arosbuild.deploy'], 'no' ),
+      eq( variables['arosbuild.withtoolchain'], 'yes' )
+    )
     displayName: 'Preparing toolchain upload directory on SourceForge'
 
   - script: |
@@ -831,7 +835,7 @@ jobs:
           "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
     env:
       MAPPED_USER: $(SF_RSYNC_USER)
-    condition: ne( variables['SF_RSYNC_USER'], '' )
+    condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
     displayName: 'Deploying build'
 
   - script: |
