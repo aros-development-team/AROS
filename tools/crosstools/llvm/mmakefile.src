@@ -15,8 +15,6 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 
 #MM crosstools-llvm-cmakefiles-yes-setup : crosstools-llvm-cmakefiles-fetch
 
-$(info LLVM_CMAKE_FILES=$(LLVM_CMAKE_FILES))
-
 #MM crosstools-llvm-fetch : crosstools-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup
 
 #MM- tools-crosstools-clang-setup-quick : tools-crosstools-clang-setup
