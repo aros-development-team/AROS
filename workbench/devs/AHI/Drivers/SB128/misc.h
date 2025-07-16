@@ -16,7 +16,7 @@ All Rights Reserved.
 */
 
 #ifndef AHI_Drivers_misc_h
-#define AHI_Drivers_h
+#define AHI_Drivers_misc_h
 
 //#include <config.h>
 

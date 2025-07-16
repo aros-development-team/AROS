@@ -207,15 +207,18 @@ HEADERS		= $(wildcard $(srcdir)/*.h)
 
 #DEPENDENCIES	= $(SOURCES) $(HEADERS)
 
+OBJECT_SRCS = $(addprefix $(srcdir)/,$(patsubst %.o,%.c,$(OBJECTS)))
+DEPEND_SOURCES = $(filter $(SOURCES), $(OBJECT_SRCS))
+
 .PHONY:	depend
 
 depend:
 	$(RM) Makefile.dep
 	$(MAKE) Makefile.dep
 
-Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
+Makefile.dep:	$(DEPEND_SOURCES) $(GENERATED)
 	@echo Making $@
-	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(DEPEND_SOURCES) > $@
 
 -include Makefile.dep
 

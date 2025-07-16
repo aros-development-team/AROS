@@ -159,15 +159,26 @@ HEADERS		= $(wildcard $(srcdir)/*.h)
 
 #DEPENDENCIES	= $(SOURCES) $(HEADERS)
 
+EXEC_SUFFIXES = $(patsubst AHI_%,%,$(EXECUTABLES))
+define gather_objects
+EXEC_OBJECTS += $(value OBJECTS_$1)
+endef
+$(foreach suffix,$(EXEC_SUFFIXES),$(eval $(call gather_objects,$(suffix))))
+
+EXEC_OBJECTS := $(filter %.o,$(EXEC_OBJECTS))
+EXEC_SOURCES = $(addprefix $(srcdir)/,$(patsubst %.o,%.c,$(EXEC_OBJECTS)))
+
+DEPEND_SOURCES = $(filter $(SOURCES),$(EXEC_SOURCES) $(addprefix $(srcdir)/,$(patsubst %.o,%.c,$(OBJECTS))))
+
 .PHONY:	depend
 
 depend:
 	$(RM) Makefile.dep
 	$(MAKE) Makefile.dep
 
-Makefile.dep:	$(DEPENDENCIES) $(GENERATED)
+Makefile.dep:	$(DEPEND_SOURCES) $(GENERATED)
 	@echo Making $@
-	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(SOURCES) > $@
+	-@$(CC) $(CPPFLAGS) $(CFLAGS) -MM $(DEPEND_SOURCES) > $@
 
 -include Makefile.dep
 
