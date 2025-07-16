@@ -22,7 +22,10 @@ static wchar_t ascii_wcs[] = {
 };
 
 /* UTF-8 test string with non-ASCII chars (ö and check mark) */
-static const char *utf8_str = "AROS R\xC3\xB6cks \xE2\x9C\x93";
+static const char *utf8_str = "AROS R"
+    "\xC3\xB6"
+    "cks "
+    "\xE2\x9C\x93";
 static wchar_t utf8_wcs[] = {
     L'A', L'R', L'O', L'S', L' ',
     L'R', 0x00F6, L'c', L'k', L's', L' ',
