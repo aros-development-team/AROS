@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2025 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -325,7 +325,7 @@ static void FillUnitName(struct UnitNode *u) {
     sprintf((char *) &u->name, msgUnitDevice, u->prefs.ahiup_Unit);
   }
   else {
-    sprintf((char *) &u->name, msgUnitMusic);
+    sprintf((char *) &u->name, "%s", msgUnitMusic);
   }
   u->node.ln_Name = (char *) &u->name;
 }

@@ -709,8 +709,8 @@ BOOL BuildGUI(char *screenname)
   MUIApp = ApplicationObject,
     MUIA_Application_Title, (IPTR) msgTextProgramName,
     MUIA_Application_Version, Version,
-    MUIA_Application_Copyright, (IPTR) "©1996-2005 Martin Blom",
-    MUIA_Application_Author, (IPTR) "Stéphane Barbaray/Martin Blom",
+    MUIA_Application_Copyright, (IPTR) "\xA9""1996-2005 Martin Blom",
+    MUIA_Application_Author, (IPTR) "St""\xE9""phane Barbaray/Martin Blom",
     MUIA_Application_Description, (IPTR) msgTextProgramName,
     MUIA_Application_Base, (IPTR) "AHI",
     MUIA_Application_HelpFile, HELPFILE,
@@ -914,7 +914,7 @@ void EventLoop(void)
       {
         char* args[] = { "\033c",
                          (char*)msgTextProgramName,
-                         "1996-2005 Stéphane Barbaray/Martin Blom"
+                         "1996-2005 St""\xE9""phane Barbaray/Martin Blom"
                        };
 
         MUI_RequestA(MUIApp, MUIWindow, 0, (char *) msgTextProgramName,

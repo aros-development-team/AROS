@@ -140,7 +140,7 @@ const ULONG  Revision       = REVISION;
 
 const char DevName[]  = AHINAME;
 const char IDString[] = "$VER: " AHINAME " " VERS
-                        " ©1994-2005 Martin Blom. " CPU " version.\r\n";
+                        " ""\xA9""1994-2005 Martin Blom. " CPU " version.\r\n";
 
 struct ExecBase           *SysBase        = NULL;
 struct DosLibrary         *DOSBase        = NULL;

@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017-2023 The AROS Dev Team
+     Copyright (C) 2017-2025 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
      
      This program is free software; you can redistribute it and/or
@@ -538,7 +538,7 @@ char *getChannels(void) {
   D(bug("[AHI:Prefs] %s()\n", __func__);)
 
   if(state.ChannelsDisabled) {
-    sprintf(chanBuffer, (char *) msgOptNoChannels);
+    sprintf(chanBuffer, "%s", (char *) msgOptNoChannels);
   }
   else {
     sprintf(chanBuffer, msgChanFmt, state.ChannelsSelected);
@@ -553,7 +553,7 @@ char *getOutVol(void) {
 
   if(state.OutVolMute) {
     if(selected == 0) {
-      sprintf(outvolBuffer, (char *) msgOptMuted);
+      sprintf(outvolBuffer, "%s", (char *) msgOptMuted);
       return outvolBuffer;
     }
     else {
@@ -572,7 +572,7 @@ char *getMonVol(void) {
 
   if(state.MonVolMute) {
     if(selected == 0) {
-      sprintf(monvolBuffer, (char *) msgOptMuted);
+      sprintf(monvolBuffer, "%s", (char *) msgOptMuted);
       return monvolBuffer;
     }
     else {
