@@ -2374,16 +2374,17 @@ if test "$target_bootloader" = "grub2" ; then
     else
       have_lzma=no
     fi
+
+    AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
+
+    AC_CHECK_LIB([elf], [elf_version], have_liblelf_lib=yes, have_liblelf_lib=no)
+
+    if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
+        have_libelf=yes
+    fi
 else
+    have_libelf=no
     have_lzma=no
-fi
-
-AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
-
-AC_CHECK_LIB([elf], [elf_version], have_liblelf_lib=yes, have_liblelf_lib=no)
-
-if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
-    have_libelf=yes
 fi
 
 #-----------------------------------------------------------------------------
