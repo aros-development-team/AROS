@@ -2,7 +2,7 @@
 #define MUISCREEN_H
 
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2025, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,7 +14,7 @@
 #define PSD_INITIAL_TITLE  "Zune Public Screen"
 #define PSD_ID_MPUB        MAKE_ID('M','P','U','B')
 
-#define PSD_NAME_FRONTMOST "«Frontmost»"
+#define PSD_NAME_FRONTMOST "\xAB""Frontmost""\xBB"
 
 #define PSD_FILENAME_SAVE "envarc:Zune/PublicScreens.iff"
 #define PSD_FILENAME_USE  "env:Zune/PublicScreens.iff"
