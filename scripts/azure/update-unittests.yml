@@ -26,13 +26,13 @@ steps:
 
 - script: |
     echo "Checking shell access..."
-    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
+    if ! ssh -o StrictHostKeyChecking=no "$MAPPED_USER,aros"@shell.sourceforge.net true; then
       echo "Shell not active yet. Creating shell..."
-      ssh -t "$MAPPED_USER"@shell.sourceforge.net create
+      ssh -t "$MAPPED_USER,aros"@shell.sourceforge.net create
 
       echo "Waiting for shell to become active (retrying up to 5 times)..."
       for i in $(seq 1 5); do
-        if ssh -o StrictHostKeyChecking=no "$MAPPED_USER"@shell.sourceforge.net true; then
+        if ssh -o StrictHostKeyChecking=no "$MAPPED_USER,aros"@shell.sourceforge.net true; then
           echo "Shell is ready."
           break
         else
@@ -45,7 +45,7 @@ steps:
     fi
 
     echo "Running cleanup script on SourceForge..."
-    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
+    ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER,aros"@shell.sourceforge.net \
       "cd '$PROJWEBDIR' && ./aros/scripts/unittests-clean"
   env:
     MAPPED_USER: $(SF_RSYNC_USER)
