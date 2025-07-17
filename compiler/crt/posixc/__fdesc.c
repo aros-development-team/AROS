@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     File descriptor handling internals.
 */
@@ -152,16 +152,26 @@ LONG __oflags2amode(int flags)
      * O_WRITE is on, that overrides O_READ.
      * Similarly, O_CREAT overrides O_WRITE.
      */
-    if (flags & O_RDONLY)   openmode = MODE_OLDFILE;
-    if (flags & O_WRONLY)   openmode = MODE_OLDFILE;
-    if (flags & O_RDWR)     openmode = MODE_OLDFILE;
-    if (flags & O_READ)     openmode = MODE_OLDFILE;
-    if (flags & O_WRITE)    openmode = MODE_READWRITE;
-    if (flags & O_CREAT)    /* Handled later */;
-    if (flags & O_APPEND)   /* Handled later */;
-    if (flags & O_TRUNC)    /* Handled later */;
-    if (flags & O_EXEC)     /* Ignored */;
-    if (flags & O_NONBLOCK) /* Ignored */;
+    if (flags & O_RDONLY)
+        openmode = MODE_OLDFILE;
+    if (flags & O_WRONLY)
+        openmode = MODE_OLDFILE;
+    if (flags & O_RDWR)
+        openmode = MODE_OLDFILE;
+    if (flags & O_READ)
+        openmode = MODE_OLDFILE;
+    if (flags & O_WRITE)
+        openmode = MODE_READWRITE;
+    if (flags & O_CREAT)
+        /* Handled later */;
+    if (flags & O_APPEND)
+        /* Handled later */;
+    if (flags & O_TRUNC)
+        /* Handled later */;
+    if (flags & O_EXEC)
+        /* Ignored */;
+    if (flags & O_NONBLOCK)
+        /* Ignored */;
 
     return openmode;
 }
