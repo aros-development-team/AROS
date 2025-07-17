@@ -827,12 +827,17 @@ jobs:
       artifactName: $(arosbuild.name) logs
 
   - script: |
-      mkdir -p ~/.ssh
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries'
       mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure'
       mv $(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Binaries/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
       mv $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log.bz2.md5 $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/logs/azure/
+    env:
+      MAPPED_USER: $(SF_RSYNC_USER)
+    condition: ne( variables['SF_RSYNC_USER'], '' )
+    displayName: 'Staging build for deployment'
+
+  - script: |
       rsync -avz -e ssh \
           $(Build.BinariesDirectory)/Upload/ \
           "$MAPPED_USER,aros@web.sourceforge.net:uploads/nightly2/"
