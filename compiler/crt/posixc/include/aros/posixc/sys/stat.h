@@ -137,7 +137,7 @@ __BEGIN_DECLS
 
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
-/* NOTIMPL int fchmodat(int, const char *, mode_t, int); */
+int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
 int fstat(int fd, struct stat *sb);
 int fstat64(int fd, struct stat64 *sb);
 

@@ -10,20 +10,7 @@
 */
 
 #include <dos/dos.h>
-#include <exec/lists.h>
-#include <aros/types/wint_t.h>
-#include <aros/types/mbstate_t.h>
-
-struct __sFILE
-{
-    struct MinNode  node;
-    BPTR            fh;
-    ULONG           fhFlags;
-    int             flags;
-
-    mbstate_t       mbs;        /* multibyte conversion state */
-    wint_t          unget_wc;   /* pushed-back wide char (if __STDCIO_STDIO_UNGETWC set) */
-};
+#include <aros/types/file_s.h>
 
 #define __STDCIO_STDIO_EOF          0x0001L
 #define __STDCIO_STDIO_ERROR        0x0002L

@@ -479,6 +479,7 @@ STDC := \
     __vcscan \
     abort \
     abs labs llabs \
+    aligned_alloc \
     asctime asctime_r \
     asprintf \
     atof \
@@ -502,7 +503,6 @@ STDC := \
     localtime localtime_r \
     longjmp \
     malloc \
-    malloc_align \
     $(STDC_MATH_RAW) \
     $(STDC_MATH) \
     memchr \

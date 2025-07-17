@@ -1,49 +1,42 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 
-    AROS extension function malloc_align().
+    C11 function aligned_alloc().
 */
 
-#include <exec/types.h>
-
-#include "__memalign.h"
-
 #include <errno.h>
-
-#define powerof2(x) ((((x)-1)&(x))==0)
 
 /*****************************************************************************
 
     NAME */
 #include <stdlib.h>
 
-        void *malloc_align (
+        void *aligned_alloc (
 
 /*  SYNOPSIS */
-        size_t size,
-        size_t alignment)
+        size_t alignment,
+        size_t size)
 
 /*  FUNCTION
         Allocate aligned memory.
 
     INPUTS
-        size - How much memory to allocate.
         alignment - Alignment of allocated memory. The address of the
                     allocated memory will be a multiple of this value, which
                     must be a power of two and a multiple of sizeof(void *).
+        size - How much memory to allocate.
 
     RESULT
-        A pointer to the allocated memory or NULL.
+        Returns zero on success.
+        Returns EINVAL if the alignment parameter was not a power of two, or
+        was not a multiple of sizeof(void *).
+        Returns ENOMEM if there was insufficient memory to fulfill the request.
 
     NOTES
-        errno is set to EINVAL if the alignment parameter was not a power of
-        two, or was not a multiple of sizeof(void *).
-        errno is set to ENOMEM if there was insufficient memory to fulfill
-        the request.
-        Memory allocated by malloc_align() should be freed with free(). If
+        Memory allocated by aligned_alloc() should be freed with free(). If
         not, it will be freed when the program terminates.
 
-        This function is AROS specific.
+        If an error occurs, errno will not be set.
 
     EXAMPLE
 
@@ -91,4 +84,4 @@
     *((void **) tmp) = orig;
 
     return mem;
-} /* posix_memalign */
+}

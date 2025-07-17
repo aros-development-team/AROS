@@ -45,7 +45,7 @@
     BUGS
 
     SEE ALSO
-        stdc.library/malloc_align(), stdc.library/calloc(),
+        stdc.library/aligned_alloc(), stdc.library/calloc(),
         stdc.library/free(), stdc.library/malloc()
 
     INTERNALS
@@ -56,7 +56,7 @@
 
     old_errno = errno;
 
-    *memptr = malloc_align(size, alignment);
+    *memptr = aligned_alloc(alignment, size);
     if (!*memptr)
         ret = errno;
 

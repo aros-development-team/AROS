@@ -115,8 +115,9 @@ int wctomb(char *s, wchar_t wchar);
 size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
 size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
 
+void *aligned_alloc(size_t alignment, size_t size);
+
 /* AROS-specific extensions */
-void *malloc_align(size_t size, size_t alignment);
 void *realloc_nocopy(void *oldmem, size_t newsize);
 int on_exit(void (*func)(int, void *), void *);
 

@@ -78,7 +78,7 @@ int alphasort(const struct dirent **a, const struct dirent **b);
 int alphasort64(const struct dirent64 **a, const struct dirent64 **b);
 int closedir(DIR *dir);
 int dirfd(DIR *dir);
-/* NOTIMPL DIR *fdopendir(int); */
+DIR *fdopendir(int fd);
 DIR *opendir(const char *filename);
 struct dirent *readdir(DIR *dir);
 struct dirent64 *readdir64 (DIR *dir);

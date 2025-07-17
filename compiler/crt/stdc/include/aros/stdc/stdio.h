@@ -14,9 +14,9 @@
 #include <aros/types/fpos_t.h>
 #include <aros/types/null.h>
 #include <aros/types/seek.h>
-
-struct __sFILE;
-typedef struct __sFILE FILE;
+#ifdef __cplusplus
+#include <aros/types/file_s.h>
+#endif
 
 #define _IOFBF 0 /* Fully buffered. */
 #define _IOLBF 1 /* Line buffered. */
@@ -34,6 +34,11 @@ typedef struct __sFILE FILE;
 #define TMP_MAX 10240
 
 __BEGIN_DECLS
+
+#ifndef _AROS_TYPES_FILE_S_H
+struct __sFILE;
+#endif
+typedef struct __sFILE FILE;
 
 #if defined(_POSIXC_STDIO_H_)
 FILE *__posixc_getstdin(void);

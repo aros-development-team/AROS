@@ -2,7 +2,7 @@
 #define ___STDIO_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: internal header file for stdio
@@ -17,11 +17,7 @@
 #define off64_t UQUAD
 #endif
 
-struct __sFILE
-{
-    int fd;
-    int flags;
-};
+#include <aros/types/file_s.h>
 
 #define __POSIXC_STDIO_EOF    0x0001L
 #define __POSIXC_STDIO_ERROR  0x0002L

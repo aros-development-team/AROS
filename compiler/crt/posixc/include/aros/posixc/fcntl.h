@@ -88,14 +88,15 @@
 #define O_WRITE         O_WRONLY
 #endif
 
-/* NOTIMPL #define AT_FDCWD */
-/* NOTIMPL #define AT_EACCESS */
-/* NOTIMPL #define AT_SYMLINK_NOFOLLOW */
-/* NOTIMPL #define AT_SYMLINK_FOLLOW */
-/* NOTIMPL #define AT_REMOVEDIR */
-/* NOTIMPL #define O_CLOEXEC */
-/* NOTIMPL #define O_DIRECTORY */
-/* NOTIMPL #define O_NOFOLLOW */
+#define O_CLOEXEC       0x10000
+#define O_DIRECTORY     0x20000
+#define O_NOFOLLOW      0x40000
+
+#define AT_FDCWD                -100
+#define AT_EACCESS              0x01
+#define AT_SYMLINK_NOFOLLOW     0x02
+#define AT_SYMLINK_FOLLOW       0x04
+#define AT_REMOVEDIR            0x08
 
 /* Advice for posix_fadvise */
 #define POSIX_FADV_DONTNEED     1
@@ -135,8 +136,8 @@ int creat64(const char *filename, int mode);
 
 int fcntl(int fd, int cmd, ...);
 int open(const char *filename, int flags, ...);
+int openat(int dirfd, const char *path, int flags, ...);
 
-/* NOTIMPL int openat(int, const char *, int, ...); */
 /* NOTIMPL int posix_fadvise(int fd, off_t offset, size_t len, int advice); */
 /* NOTIMPL int posix_fallocate(int fd, off_t offset, size_t len); */
 
