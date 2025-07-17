@@ -2378,6 +2378,14 @@ else
     have_lzma=no
 fi
 
+AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
+
+AC_CHECK_LIB([elf], [elf_version], have_liblelf_lib=yes, have_liblelf_lib=no)
+
+if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
+    have_libelf=yes
+fi
+
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
 AC_MSG_CHECKING([whether to build crosstools])
@@ -4149,6 +4157,7 @@ AC_SUBST(aros_enable_mmu)
 # Bootloader related
 AC_SUBST(target_grub2_version)
 AC_SUBST([host_has_lzma], [$have_lzma])
+AC_SUBST([host_has_libelf],[$have_libelf])
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)

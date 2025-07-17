@@ -688,6 +688,7 @@ gcc_default_cpu_tune
 gcc_default_cpu
 CLASSIC_VARIANT_DEFINE
 aros_nesting_supervisor
+host_has_libelf
 host_has_lzma
 target_grub2_version
 aros_enable_mmu
@@ -11450,6 +11451,66 @@ else
     have_lzma=no
 fi
 
+       for ac_header in libelf.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "libelf.h" "ac_cv_header_libelf_h" "$ac_includes_default"
+if test "x$ac_cv_header_libelf_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBELF_H 1" >>confdefs.h
+ have_libelf_h=yes
+else $as_nop
+  have_libelf_h=no
+fi
+
+done
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for elf_version in -lelf" >&5
+printf %s "checking for elf_version in -lelf... " >&6; }
+if test ${ac_cv_lib_elf_elf_version+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lelf  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char elf_version ();
+int
+main (void)
+{
+return elf_version ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_elf_elf_version=yes
+else $as_nop
+  ac_cv_lib_elf_elf_version=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_elf_elf_version" >&5
+printf "%s\n" "$ac_cv_lib_elf_elf_version" >&6; }
+if test "x$ac_cv_lib_elf_elf_version" = xyes
+then :
+  have_liblelf_lib=yes
+else $as_nop
+  have_liblelf_lib=no
+fi
+
+
+if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
+    have_libelf=yes
+fi
+
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether to build crosstools" >&5
@@ -19142,6 +19203,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 # Bootloader related
 
 host_has_lzma=$have_lzma
+
+host_has_libelf=$have_libelf
 
 
 # Unix/Hosted version related
