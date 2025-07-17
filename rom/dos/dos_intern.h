@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Internal types and stuff for dos
 */
@@ -324,8 +324,8 @@ void freepacketinfo(struct DosLibrary *DOSBase, struct PacketHelperStruct*);
 #define ASSERT_VALID_FILELOCK(lock) do { \
         struct FileLock *fl = BADDR(lock); \
         if (fl && fl->fl_Access != SHARED_LOCK && fl->fl_Access != EXCLUSIVE_LOCK) { \
-            bug("%s() bogus FileLock! '%s' %x %d %s/%s/%d\n", \
-                __FUNCTION__, FindTask(NULL)->tc_Node.ln_Name, fl, fl->fl_Access, __SRCFILENAME__,__FUNCTION__,__LINE__); \
+            bug("%s() bogus FileLock! '%s' %p %d %s/%s/%d\n", \
+                __func__, FindTask(NULL)->tc_Node.ln_Name, fl, fl->fl_Access, __SRCFILENAME__,__FUNCTION__,__LINE__); \
         } \
     } while (0);
 
