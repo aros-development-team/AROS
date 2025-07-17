@@ -4,7 +4,13 @@
     C11 function aligned_alloc().
 */
 
+#include <exec/types.h>
+
+#include "__memalign.h"
+
 #include <errno.h>
+
+#define powerof2(x) ((((x)-1)&(x))==0)
 
 /*****************************************************************************
 
