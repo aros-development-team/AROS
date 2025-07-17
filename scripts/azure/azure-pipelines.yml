@@ -16,6 +16,7 @@
 #    arosbuild.nativetoolchain - yes/no
 #    arosbuild.toolchain.family - "llvm", "gnu"
 #    arosbuild.gcc.version -
+#    arosbuild.llvm.version -
 #    arosbuild.bootpackage - target to build for boot package if applicable
 #    arosbuild.bootpackagefmt -
 #    arosbuild.withcontrib - yes/no
@@ -94,6 +95,9 @@ jobs:
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
       fi
+      if [ "$AROSBUILD_LLVM_VERSION" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
+      fi
       if [ "$AROSBUILD_WITHUNITTESTS" != "" ]; then
         export CONFIGOPTS="$CONFIGOPTS --enable-unit-tests=$(arosbuild.withunittests)"
       fi
@@ -148,6 +152,9 @@ jobs:
       CONFIGOPTS="$CONFIGOPTS $TOOLCHAINOPTS"
       if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
         CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+      fi
+      if [ "$AROSBUILD_LLVM_VERSION" != "" ]; then
+        CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
       fi
       command -v brew &>/dev/null || ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)" < /dev/null 2> /dev/null
       brew list gawk &>/dev/null || brew install gawk
