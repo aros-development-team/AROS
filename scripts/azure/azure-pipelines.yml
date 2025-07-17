@@ -514,11 +514,7 @@ jobs:
       echo "Ensuring target directory exists on SourceForge..."
       ssh -o StrictHostKeyChecking=yes -p 22 "$(SF_RSYNC_USER)",arosdev@shell.sourceforge.net \
         "mkdir -p /home/project-web/arosdev/uploads/nightly2"
-    condition: and(
-      ne( variables['SF_RSYNC_USER'], '' ),
-      ne( variables['arosbuild.deploy'], 'no' ),
-      eq( variables['arosbuild.withtoolchain'], 'yes' )
-    )
+    condition: and(ne(variables['SF_RSYNC_USER'], ''), ne(variables['arosbuild.deploy'], 'no'), eq(variables['arosbuild.withtoolchain'], 'yes'))
     displayName: 'Preparing toolchain upload directory on SourceForge'
 
   - script: |
