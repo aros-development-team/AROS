@@ -1,0 +1,61 @@
+diff -ruN libcxx-20.1.0.src/include/CMakeLists.txt libcxx-20.1.0.src.aros/include/CMakeLists.txt
+--- libcxx-20.1.0.src/include/CMakeLists.txt	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/include/CMakeLists.txt	2025-07-17 15:10:41.015537657 +0000
+@@ -2097,6 +2097,10 @@
+   list(APPEND _all_includes "${dst}")
+ endforeach()
+ 
++if(NOT Python3_EXECUTABLE)
++  find_package(Python3 REQUIRED)
++endif()
++
+ # Generate the IWYU mapping. This depends on all header files but it's also considered as an
+ # "include" for dependency tracking.
+ add_custom_command(OUTPUT "${LIBCXX_GENERATED_INCLUDE_DIR}/libcxx.imp"
+diff -ruN libcxx-20.1.0.src/include/cstdio libcxx-20.1.0.src.aros/include/cstdio
+--- libcxx-20.1.0.src/include/cstdio	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/include/cstdio	2025-07-17 00:31:51.127593065 +0000
+@@ -117,7 +117,9 @@
+ 
+ _LIBCPP_BEGIN_NAMESPACE_STD
+ 
++#if !defined(__AROS__) || !defined(_STDC_STDIO_H_)
+ using ::FILE _LIBCPP_USING_IF_EXISTS;
++#endif
+ using ::fpos_t _LIBCPP_USING_IF_EXISTS;
+ 
+ using ::fclose _LIBCPP_USING_IF_EXISTS;
+diff -ruN libcxx-20.1.0.src/src/chrono.cpp libcxx-20.1.0.src.aros/src/chrono.cpp
+--- libcxx-20.1.0.src/src/chrono.cpp	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/src/chrono.cpp	2025-07-17 00:42:39.744932735 +0000
+@@ -37,7 +37,7 @@
+ 
+ // OpenBSD and GPU do not have a fully conformant suite of POSIX timers, but
+ // it does have clock_gettime and CLOCK_MONOTONIC which is all we need.
+-#if defined(__APPLE__) || defined(__gnu_hurd__) || defined(__OpenBSD__) || defined(__AMDGPU__) ||                      \
++#if defined(__AROS__) || defined(__APPLE__) || defined(__gnu_hurd__) || defined(__OpenBSD__) || defined(__AMDGPU__) ||                      \
+     defined(__NVPTX__) || (defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0)
+ #  define _LIBCPP_HAS_CLOCK_GETTIME
+ #endif
+diff -ruN libcxx-20.1.0.src/src/CMakeLists.txt libcxx-20.1.0.src.aros/src/CMakeLists.txt
+--- libcxx-20.1.0.src/src/CMakeLists.txt	2025-03-04 19:51:43.000000000 +0000
++++ libcxx-20.1.0.src.aros/src/CMakeLists.txt	2025-07-17 01:56:42.622323131 +0000
+@@ -4,7 +4,6 @@
+   any.cpp
+   bind.cpp
+   call_once.cpp
+-  charconv.cpp
+   chrono.cpp
+   error_category.cpp
+   exception.cpp
+@@ -61,6 +60,8 @@
+   verbose_abort.cpp
+   )
+ 
++#  list(APPEND LIBCXX_SOURCES charconv.cpp)
++
+ if (LIBCXX_ENABLE_THREADS)
+   list(APPEND LIBCXX_SOURCES
+     atomic.cpp
+Binary files libcxx-20.1.0.src/utils/libcxx/__pycache__/header_information.cpython-311.pyc and libcxx-20.1.0.src.aros/utils/libcxx/__pycache__/header_information.cpython-311.pyc differ
+Binary files libcxx-20.1.0.src/utils/libcxx/__pycache__/__init__.cpython-311.pyc and libcxx-20.1.0.src.aros/utils/libcxx/__pycache__/__init__.cpython-311.pyc differ
