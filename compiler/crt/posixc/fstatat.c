@@ -7,7 +7,7 @@
 
 #include <aros/debug.h>
 
-#include <stat.h>
+#include <sys/stat.h>
 
 int fstatat(int, const char *restrict, struct stat *restrict, int)
 {
