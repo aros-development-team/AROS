@@ -53,6 +53,7 @@ POSIXC := \
     execvp \
     fchdir \
     fchmod \
+    fchmodat \
     fchown \
     fclose \
     fcntl \
