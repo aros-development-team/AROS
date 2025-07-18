@@ -141,7 +141,7 @@ int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
 int fstat(int fd, struct stat *sb);
 int fstat64(int fd, struct stat64 *sb);
 
-/* NOTIMPL int fstatat(int, const char *restrict, struct stat *restrict, int); */
+int fstatat(int, const char *restrict, struct stat *restrict, int);
 /* NOTIMPL int futimens(int, const struct timespec [2]); */
 int lstat64(const char * restrict path, struct stat64 * restrict sb);
 int lstat(const char * restrict path, struct stat * restrict sb);

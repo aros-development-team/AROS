@@ -57,6 +57,7 @@ POSIXC := \
     fclose \
     fcntl \
     fdopen \
+    fdopendir \
     feof \
     ferror \
     fflush \
@@ -81,6 +82,7 @@ POSIXC := \
     fsetpos \
     fsetpos64 \
     fstat \
+    fstatat \
     fstatvfs \
     fstat64 \
     fsync \
@@ -137,6 +139,7 @@ POSIXC := \
     nl_langinfo_l \
     nrand48 \
     open \
+    openat \
     opendir \
     pathconf \
     pclose \
