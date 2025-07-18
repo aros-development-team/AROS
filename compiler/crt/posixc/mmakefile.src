@@ -221,6 +221,7 @@ POSIXC := \
     umask \
     uname \
     ungetc \
+    unlinkat \
     unsetenv \
     updatestdio \
     usleep \
