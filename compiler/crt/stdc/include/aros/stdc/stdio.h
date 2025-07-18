@@ -14,9 +14,6 @@
 #include <aros/types/fpos_t.h>
 #include <aros/types/null.h>
 #include <aros/types/seek.h>
-#ifdef __cplusplus
-#include <aros/types/file_s.h>
-#endif
 
 #define _IOFBF 0 /* Fully buffered. */
 #define _IOLBF 1 /* Line buffered. */
