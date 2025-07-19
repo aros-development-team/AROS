@@ -73,6 +73,8 @@ MA 02111-1307, USA.
 #define IOTAG_LEQuadsOut (TAG_USER + 39)
 #define IOTAG_AllocDMAMem (TAG_USER + 40)
 #define IOTAG_FreeDMAMem (TAG_USER + 41)
+#define IOTAG_SendFrame (TAG_USER + 42)
+#define IOTAG_ReceiveFrame (TAG_USER + 43)
 
 
 /* I/O macros */

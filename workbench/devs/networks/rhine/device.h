@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,16 +31,15 @@ MA 02111-1307, USA.
 #include <devices/sana2specialstats.h>
 #include <devices/timer.h>
 
-#include "endian.h"
 #include "io.h"
 #include "ethernet.h"
 
 #define DEVICE_NAME "rhine.device"
-#define VERSION 0
-#define REVISION 4
-#define DATE "8.7.2017"
+#define VERSION 1
+#define REVISION 1
+#define DATE "19.7.2025"
 
-#define UTILITY_VERSION 39
+#define UTILITY_VERSION 36
 #define PROMETHEUS_VERSION 2
 
 #ifndef UPINT
