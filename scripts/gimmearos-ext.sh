@@ -23,10 +23,20 @@ makeopts="-j3 -s"
 configopts="--with-portssources=$portsdir"
 configopts="$configopts --enable-ccache=yes"
 configopts="$configopts --with-paranoia=yes"
-configopts="$configopts --with-gcc-version=10.2.0"
+
+#configopts="$configopts --with-gcc-version=10.5.0"
+#configopts="$configopts --with-gcc-version=9.5.0"
+#configopts="$configopts --with-gcc-version=12.2.0"
+#configopts="$configopts --with-gcc-version=10.5.0"
+#configopts="$configopts --with-gcc-version=13.4.0"
+#configopts="$configopts --with-gcc-version=8.3.0"
+#configopts="$configopts --with-gcc-version=6.5.0"
+#configopts="$configopts --with-gcc-version=11.2.0"
+configopts="$configopts --with-gcc-version=15.1.0"
+
 #configopts="$configopts --with-logresource"
 #configopts="$configopts --enable-unit-tests=yes"
- 
+
 
 install_pkg()
 {
