@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _SYSMON_INTERN_H
@@ -34,8 +34,10 @@ struct SysMonData
 
     struct Hook pageactivehook;
     struct Hook                 tasklistrefreshhook;
+    struct Hook                 taskviewclickhook;
     STRPTR                      tasklistinfobuf;
 
+    Object                      *taskview;
     Object                      *tasklist;
     Object                      *tasklistinfo;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright 2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -23,6 +23,11 @@
 CONST_STRPTR CPU_DEFSTR  = "CPU --\n--.- %";
 
 //#define NOTYET_USED
+
+extern AROS_UFP3(VOID, TaskClickedFunction,
+    AROS_UFPA(struct Hook *, h, A0),
+    AROS_UFPA(Object *, obj, A2),
+    AROS_UFPA(APTR, msg, A1));
 
 AROS_UFH3(VOID, tasklistrefreshfunction,
     AROS_UFHA(struct Hook *, h, A0),
@@ -163,9 +168,9 @@ BOOL CreateApplication(struct SysMonData * smdata)
                     smdata->pages = RegisterGroup(smdata->tabs),
                         Child, (VGroup,
                             MUIA_CycleChain, 1,
-                            Child, ListviewObject,
+                            Child, (IPTR)(smdata->taskview = ListviewObject,
                                 MUIA_Listview_List, (IPTR)smdata->tasklist,
-                            End,
+                            End),
                             Child, VGroup,
                                 Child, smdata->tasklistinfo = TextObject,
                                     NoFrame,
@@ -279,6 +284,11 @@ BOOL CreateApplication(struct SysMonData * smdata)
 
     DoMethod(smdata->tasklist, MUIM_Notify, MUIA_Tasklist_Refreshed, TRUE,
         smdata->application, 2, MUIM_CallHook, (IPTR)&smdata->tasklistrefreshhook);
+
+    smdata->taskviewclickhook.h_Entry = (APTR)TaskClickedFunction;
+    smdata->taskviewclickhook.h_Data = (APTR)INST_DATA(OCLASS(smdata->tasklist), smdata->tasklist);
+    DoMethod(smdata->taskview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
+        smdata->tasklist, 2, MUIM_CallHook, (IPTR)&smdata->taskviewclickhook);
 
 #ifdef NOTYET_USED
     DoMethod(smdata->pages, MUIM_Notify, MUIA_Group_ActivePage, MUIV_EveryTime,

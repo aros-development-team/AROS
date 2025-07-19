@@ -1,5 +1,5 @@
 /*
-    Copyright ©2010-2017, The AROS Development Team. All rights reserved.
+    Copyright ©2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -12,14 +12,17 @@
 #include <proto/muimaster.h>
 #include <proto/task.h>
 #include <proto/dos.h>
+#include <proto/debug.h>
 
 #include <exec/execbase.h>
 #include <exec/rawfmt.h>
 
+#include <libraries/debug.h>
 #include <libraries/mui.h>
 #include <resources/task.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "locale.h"
 
@@ -52,6 +55,7 @@ struct TaskInfo
 struct Tasklist_DATA
 {
     APTR                        tld_taskresBase;
+    struct  Library             *tld_debugBase;
 
     struct MUI_EventHandlerNode tld_InputEvent;
     struct MUI_InputHandlerNode tld_TimerEvent;
@@ -63,8 +67,13 @@ struct Tasklist_DATA
 
 #ifdef TASKLIST_FLUSHUPDATE
     struct Hook                 tld_SelectedHook;
-    struct Task                 *tld_TaskSelected;
 #endif
+    struct Task                 *tld_TaskSelected;
+    Object                      *tld_TaskWinObj;
+    Object                      *tld_TaskWinNameObj;
+    Object                      *tld_TaskWinGuageObj;
+    Object                      *tld_TaskTxt1Obj;
+    Object                      *tld_TaskTxt2Obj;
     struct List                 tld_TaskList;
 
     ULONG                       tld_TasksTotal;
@@ -298,6 +307,131 @@ AROS_UFH3(VOID, TaskSelectedFunction,
     AROS_USERFUNC_EXIT
 }
 #endif
+
+void TaskViewUpdate(struct Tasklist_DATA *data, struct Task *task)
+{
+    if (task)
+    {
+        SET(data->tld_TaskWinObj, MUIA_Window_Title, (IPTR) task->tc_Node.ln_Type == NT_TASK ? "Task Details" : "Process Details");
+        SET(data->tld_TaskWinNameObj, MUIA_Text_Contents, (IPTR) task->tc_Node.ln_Name);
+        SET(data->tld_TaskWinGuageObj, MUIA_Gauge_Current,
+            (LONG) ((100.0 * ((IPTR)task->tc_SPUpper - (IPTR)task->tc_SPReg)) / ((IPTR)task->tc_SPUpper - (IPTR)task->tc_SPLower)));
+        
+        if (data->tld_debugBase)
+        {
+#define DebugBase data->tld_debugBase
+            const char *symname;
+            APTR currentpc = 0;
+            struct TagItem tskTags[] = 
+            {
+                { TaskTag_REG_PC, (IPTR)&currentpc },
+                { TAG_DONE, 0 }
+            };
+            char addrbuf[17];
+            QueryTaskTagList(task, tskTags);
+            DecodeLocation(currentpc, DL_SymbolName , &symname, TAG_DONE);
+#undef DebugBase
+            sprintf(addrbuf, "%p", currentpc);
+            SET(data->tld_TaskTxt1Obj, MUIA_Text_Contents, (IPTR) addrbuf);
+            SET(data->tld_TaskTxt2Obj, MUIA_Text_Contents, (IPTR) symname);
+        }
+    }
+    else
+    {
+        
+    }
+}
+
+AROS_UFH3(VOID, TaskClickedFunction,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Tasklist_DATA *data = h->h_Data;
+    struct TaskInfo *ti = NULL;
+
+    DoMethod(obj, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &ti);
+    bug("[SysMon:TaskList] %s: ti @  0x%p\n", __func__, ti);
+
+    if (ti != NULL)
+    {
+        data->tld_TaskSelected = ti->ti_Task;
+    }
+    else
+        data->tld_TaskSelected = NULL;
+
+    if (data->tld_TaskSelected)
+    {
+        if (!data->tld_TaskWinObj)
+        {
+            data->tld_TaskWinObj = (Object *)WindowObject,
+                MUIA_Window_ID, MAKE_ID('T','S','K','D'),
+                MUIA_Window_Activate, TRUE,
+                WindowContents, (IPTR) VGroup,
+                    Child, (IPTR) ColGroup(2),
+                        Child, (IPTR)(TextObject,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "Name",
+                        End),
+                        Child, (IPTR)(data->tld_TaskWinNameObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) data->tld_TaskSelected->tc_Node.ln_Name,
+                        End),
+                        Child, (IPTR)(TextObject,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "Status",
+                        End),
+                        Child, (IPTR)(data->tld_TaskWinNameObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "",
+                        End),
+                        Child, (IPTR)(TextObject,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "Stack Usage",
+                        End),
+                        Child, (IPTR)(data->tld_TaskWinGuageObj = GaugeObject,
+                            MUIA_Gauge_InfoText, "%ld %%",
+                            MUIA_Gauge_Horiz, TRUE,
+                            MUIA_Gauge_Current, 0,
+                        End),
+                        Child, HVSpace,
+                        Child, HVSpace,
+                        Child, (IPTR)(data->tld_TaskTxt1Obj = TextObject,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "",
+                        End),
+                        Child, (IPTR)(data->tld_TaskTxt2Obj = TextObject,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_Text_PreParse, (IPTR) "\33l",
+                            MUIA_Text_Contents, (IPTR) "",
+                        End),
+                    End,
+                End,
+            End;
+            DoMethod(_app(obj), OM_ADDMEMBER, (IPTR) data->tld_TaskWinObj);
+            DoMethod(data->tld_TaskWinObj, OM_ADDMEMBER, (IPTR) data->tld_TaskWinObj);
+            DoMethod(data->tld_TaskWinObj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                data->tld_TaskWinObj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+        }
+        if (data->tld_TaskWinObj)
+        {
+            SET(data->tld_TaskWinObj, MUIA_Window_Open, TRUE);
+            TaskViewUpdate(data, data->tld_TaskSelected);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
 
 AROS_UFH3(LONG, TaskCompareFunction,
     AROS_UFHA(struct Hook *, h, A0),
@@ -590,6 +724,8 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_TASKLIST_INST_DATA;
 
+        data->tld_debugBase = OpenLibrary("debug.library", 0);
+
         data->tld_taskresBase = OpenResource("task.resource");
         if (data->tld_taskresBase)
         {
@@ -622,8 +758,8 @@ Object *Tasklist__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             SET(self, MUIA_List_DisplayHook, &data->tld_DisplayHook);
             SET(self, MUIA_List_CompareHook, &data->tld_CompareHook);
 
-#ifdef TASKLIST_FLUSHUPDATE
             data->tld_TaskSelected = NULL;
+#ifdef TASKLIST_FLUSHUPDATE
             data->tld_SelectedHook.h_Entry = (APTR)TaskSelectedFunction;
             data->tld_SelectedHook.h_Data = (APTR)data;
             DoMethod(self, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
@@ -723,7 +859,7 @@ IPTR Tasklist__MUIM_Show(Class *CLASS, Object *self, struct MUIP_Show *message)
 
     retval = DoSuperMethodA(CLASS, self, (Msg) message);
 
-    data->tld_InputEvent.ehn_Events = IDCMP_MOUSEBUTTONS;
+    data->tld_InputEvent.ehn_Events = IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY;
     data->tld_InputEvent.ehn_Priority = 10;
     data->tld_InputEvent.ehn_Flags = 0;
     data->tld_InputEvent.ehn_Object = self;
@@ -772,26 +908,32 @@ IPTR Tasklist__MUIM_HandleEvent(Class *CLASS, Object *self, struct MUIP_HandleEv
          (message->imsg->MouseX < _mright(self)) &&
          (message->imsg->MouseY < _mbottom(self)))
     {
-        if ((message->imsg) && (message->imsg->Class == IDCMP_MOUSEBUTTONS))
-        {
-            if (message->imsg->Code == SELECTUP)
+        if (message->imsg)
+            if (message->imsg->Class == IDCMP_MOUSEBUTTONS)
             {
-                D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
-                DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
-                if ((selectres.entry == -1) && (selectres.column != -1) && (message->imsg->MouseY < (_mtop(self) + _font(self)->tf_YSize + 4)))
+                if (message->imsg->Code == SELECTUP)
                 {
-                    if (data->tasklistSortColumn == selectres.column)
-                        data->tasklistSortMode = ~data->tasklistSortMode;
-                    else
-                        data->tasklistSortMode = 0;
-                    data->tasklistSortColumn = selectres.column;
-                    SET(self, MUIA_List_Quiet, TRUE);
-                    DoMethod(self, MUIM_List_Sort);
-                    DoMethod(self, MUIM_List_Redraw, MUIV_List_Redraw_All);
-                    SET(self, MUIA_List_Quiet, FALSE);
+                    D(bug("[SysMon:TaskList] %s: Click @ %d, %d\n", __func__, message->imsg->MouseX, message->imsg->MouseY));
+                    DoMethod(self, MUIM_List_TestPos, message->imsg->MouseX, message->imsg->MouseY, &selectres);
+                    if ((selectres.entry == -1) && (selectres.column != -1) && (message->imsg->MouseY < (_mtop(self) + _font(self)->tf_YSize + 4)))
+                    {
+                        if (data->tasklistSortColumn == selectres.column)
+                            data->tasklistSortMode = ~data->tasklistSortMode;
+                        else
+                            data->tasklistSortMode = 0;
+                        data->tasklistSortColumn = selectres.column;
+                        SET(self, MUIA_List_Quiet, TRUE);
+                        DoMethod(self, MUIM_List_Sort);
+                        DoMethod(self, MUIM_List_Redraw, MUIV_List_Redraw_All);
+                        SET(self, MUIA_List_Quiet, FALSE);
+                    }
                 }
             }
-        }
+            else if (message->imsg->Class == IDCMP_RAWKEY)
+            {
+                //msg->Code;
+                //msg->Qualifier;
+            }
     }
 
     return DoSuperMethodA(CLASS, self, (Msg) message);
@@ -918,10 +1060,15 @@ IPTR Tasklist__MUIM_Tasklist_Refresh(Class *CLASS, Object *self, Msg message)
 
 IPTR Tasklist__MUIM_Tasklist_HandleTimer(Class *CLASS, Object *self, Msg message)
 {
+    SETUP_TASKLIST_INST_DATA;
+
     D(bug("[SysMon:TaskList] %s()\n", __func__));
 
     DoMethod(self, MUIM_Tasklist_Refresh);
-
+    if (data->tld_TaskWinObj)
+    {
+        TaskViewUpdate(data, data->tld_TaskSelected);
+    }
     return (IPTR)FALSE;
 }
 
