@@ -35,6 +35,8 @@ CXXFLAGS_GNU20                          := @aros_cxxflags_gnu20@
 CXXFLAGS_CXX23                          := @aros_cxxflags_cxx23@
 CXXFLAGS_GNU23                          := @aros_cxxflags_gnu23@
 
+CXXFLAGS_NOSTDLIBXX                     := @aros_cxxflags_nostdlibxx@
+
 #
 # Standard compiler features ...
 #

@@ -848,6 +848,7 @@ aros_cflags_noexceptions
 aros_cflags_exceptions
 aros_cflags_no_integrated_as
 aros_targetsection_comment
+aros_cxxflags_nostdlibxx
 aros_cxxflags_gnu23
 aros_cxxflags_cxx23
 aros_cxxflags_gnu20
@@ -8494,6 +8495,35 @@ fi
 
 CXXFLAGS="$save_cxxflags"
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CXX} accepts -nostdlib++" >&5
+printf %s "checking whether ${CXX} accepts -nostdlib++... " >&6; }
+CXXFLAGS=-nostdlib++
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"
+then :
+  aros_nostdlibxx="yes"
+else $as_nop
+  aros_nostdlibxx="no"
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_nostdlibxx" >&5
+printf "%s\n" "$aros_nostdlibxx" >&6; }
+if test "x-$aros_nostdlibxx" = "x-yes" ; then
+    aros_cxxflags_nostdlibxx=-nostdlib++
+fi
+
+CXXFLAGS="$save_cxxflags"
+
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -8672,6 +8702,8 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
+
 
 
 

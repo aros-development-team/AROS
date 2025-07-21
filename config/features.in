@@ -1532,6 +1532,16 @@ fi
 
 CXXFLAGS="$save_cxxflags"
 
+AC_MSG_CHECKING([whether ${CXX} accepts -nostdlib++])
+CXXFLAGS=-nostdlib++
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_nostdlibxx="yes"],[aros_nostdlibxx="no"])
+AC_MSG_RESULT($aros_nostdlibxx)
+if test "x-$aros_nostdlibxx" = "x-yes" ; then
+    aros_cxxflags_nostdlibxx=-nostdlib++
+fi
+
+CXXFLAGS="$save_cxxflags"
+
 AC_LANG_PUSH(C)
 
 #########################################################
@@ -1658,6 +1668,8 @@ AC_SUBST(aros_cxxflags_cxx20)
 AC_SUBST(aros_cxxflags_gnu20)
 AC_SUBST(aros_cxxflags_cxx23)
 AC_SUBST(aros_cxxflags_gnu23)
+
+AC_SUBST(aros_cxxflags_nostdlibxx)
 
 #
 # export the feature flags...
