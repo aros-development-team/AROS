@@ -2,7 +2,7 @@
 #define _POSIXC_SYS_TIME_H_
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: POSIX.1-2008 header file sys/time.h
@@ -11,7 +11,7 @@
 #include <aros/system.h>
 #include <aros/types/timeval_s.h> /* get struct timeval */
 
-#include <sys/select.h>
+#include <aros/posixc/sys/select.h>
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
 struct itimerval
