@@ -1417,7 +1417,6 @@ case "$target_os" in
                 # export flags/options needed to build 32bit 
                 # components
                 aros_target_cpu32="i386"
-                aros_target_extra="AROS_TARGET_CPU32             ?= $aros_target_cpu32$export_newline"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
@@ -1613,7 +1612,6 @@ case "$target_os" in
                 # export flags/options needed to build 32bit 
                 # components
                 aros_target_cpu32="i386"
-                aros_target_extra="AROS_TARGET_CPU32             ?= $aros_target_cpu32$export_newline"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
@@ -2631,7 +2629,7 @@ case "$aros_target_cpu" in
         fi
 
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
-            aros_target_cpu_extra=$aros_gcc_cpu
+            aros_target_cpu_type=$aros_gcc_cpu
             gcc_target_cpu=mc$aros_gcc_cpu
         fi
         aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
@@ -3945,6 +3943,10 @@ else
     esac
 fi
 
+if ! test "$aros_target_cpu32" = "" ; then
+aros_target_cpu_extra="$export_newline""AROS_TARGET_CPU32       ?= $aros_target_cpu32$export_newline"
+fi
+
 dnl strip trailing spaces ...
 CC=m4_normalize($CC)
 CFLAGS=m4_normalize($CFLAGS)
@@ -3987,6 +3989,7 @@ aros_kernel_ranlib=m4_normalize($aros_kernel_ranlib)
 # Generic
 AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
+AC_SUBST(aros_target_cpu_type)
 AC_SUBST(aros_target_cpu_extra)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
@@ -4449,6 +4452,22 @@ if test "${aros_kernel_llvmwrapper}" = "yes"; then
     )
 fi
 
+if test -n "$PKG_CONFIG"; then
+    AC_CONFIG_COMMANDS([pkg-config-support],
+        [
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}
+
+            chmod a+x ${prefix}-aros-pkg-config
+        ],
+        [
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+        ]
+    )
+    AC_CONFIG_FILES(
+        ${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config:scripts/pkg-config.in
+    )
+fi
 
 # Android support
 if test "$aros_target_variant" == "android"; then

@@ -818,6 +818,7 @@ aros_target_toolchain
 aros_flavour_uc
 aros_flavour
 aros_target_cpu_extra
+aros_target_cpu_type
 aros_cpu
 aros_arch
 SDL_LIBS
@@ -10282,7 +10283,6 @@ case "$target_os" in
                 # export flags/options needed to build 32bit
                 # components
                 aros_target_cpu32="i386"
-                aros_target_extra="AROS_TARGET_CPU32             ?= $aros_target_cpu32$export_newline"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
@@ -10470,7 +10470,6 @@ case "$target_os" in
                 # export flags/options needed to build 32bit
                 # components
                 aros_target_cpu32="i386"
-                aros_target_extra="AROS_TARGET_CPU32             ?= $aros_target_cpu32$export_newline"
                 target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
                 case "$aros_toolchain" in
                     *llvm*)
@@ -11943,7 +11942,7 @@ printf "%s\n" "$aros_gcc_cpu" >&6; }
         fi
 
         if test "$gcc_default_cpu" != "$aros_gcc_cpu"; then
-            aros_target_cpu_extra=$aros_gcc_cpu
+            aros_target_cpu_type=$aros_gcc_cpu
             gcc_target_cpu=mc$aros_gcc_cpu
         fi
         aros_isa_flags="$""(ISA_MC"$aros_gcc_cpu"_FLAGS)"
@@ -18992,6 +18991,10 @@ else
     esac
 fi
 
+if ! test "$aros_target_cpu32" = "" ; then
+aros_target_cpu_extra="$export_newline""AROS_TARGET_CPU32       ?= $aros_target_cpu32$export_newline"
+fi
+
 CC=$CC
 CFLAGS=$CFLAGS
 CHMOD=$CHMOD
@@ -19031,6 +19034,7 @@ aros_kernel_objdump=$aros_kernel_objdump
 aros_kernel_ranlib=$aros_kernel_ranlib
 
 # Generic
+
 
 
 
@@ -19385,6 +19389,12 @@ if test "${aros_kernel_llvmwrapper}" = "yes"; then
 
 fi
 
+if test -n "$PKG_CONFIG"; then
+    ac_config_commands="$ac_config_commands pkg-config-support"
+
+    ac_config_files="$ac_config_files ${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config:scripts/pkg-config.in"
+
+fi
 
 # Android support
 if test "$aros_target_variant" == "android"; then
@@ -20129,6 +20139,11 @@ AROS_TARGET32_CPU=$aros_target_cpu32
 
 
 
+            aros_tools_dir=${aros_tools_dir}
+            aros_target_cpu=${aros_target_cpu}
+
+
+
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
@@ -20168,6 +20183,8 @@ do
     "clang-kernel-compiler-wrapper-support") CONFIG_COMMANDS="$CONFIG_COMMANDS clang-kernel-compiler-wrapper-support" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_c_compiler}:scripts/aros-${toolchain_c_compiler}.in" ;;
     "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-${toolchain_cxx_compiler}:scripts/aros-${toolchain_cxx_compiler}.in" ;;
+    "pkg-config-support") CONFIG_COMMANDS="$CONFIG_COMMANDS pkg-config-support" ;;
+    "${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config:scripts/pkg-config.in" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
     "${aros_targetcfg_dir}/conf.cmake") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in" ;;
 
@@ -20764,6 +20781,11 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
             prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf
 
             chmod a+x ${prefix}-${toolchain_c_compiler} ${prefix}-${toolchain_cxx_compiler}
+         ;;
+    "pkg-config-support":C)
+            prefix=${PWD}/${aros_tools_dir}/${aros_target_cpu}
+
+            chmod a+x ${prefix}-aros-pkg-config
          ;;
 
   esac
