@@ -22,9 +22,15 @@
 #ifndef PTHREAD_H
 #define PTHREAD_H
 
+#if defined(__AROS__)
+#include <aros/posixc/sys/types.h>
+#include <aros/posixc/sys/time.h>
+#include <aros/posixc/errno.h>
+#else
 #include <sys/types.h>
 #include <sys/time.h>
 #include <errno.h>
+#endif
 #include <exec/types.h>
 #include <exec/semaphores.h>
 #include <sched.h>
