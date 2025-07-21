@@ -4,14 +4,16 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- arch-common-grub2-host : grub2-host-quick grub2-efi-host-quick 
-#MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick grub2-aros-quick
+#MM- arch-common-grub2-host : grub2-host-quick grub2-efi-host-quick grub2-efi32-$(AROS_TARGET_CPU32)-quick
+#MM  grub2-iso-setup        : grub2-host-quick grub2-efi-host-quick grub2-efi32-$(AROS_TARGET_CPU32)-quick grub2-aros-quick
 #MM- bootloader-grub2       : arch-common-grub2
 #MM- bootloader-grub2-isosetup : arch-common-grub2 grub2-iso-setup
 #MM grub2-host : grub2-aros-fetch
 #MM- grub2-host-quick : grub2-aros-fetch
 #MM grub2-efi-host : grub2-aros-fetch
 #MM- grub2-efi-host-quick : grub2-aros-fetch
+#MM- grub2-efi32-host-quick : grub2-aros-fetch
+#MM- grub2-efi32-i386-quick : grub2-efi32-host-quick
 
 BOOT_GRUB := $(AROS_BOOT)/grub
 BOOT_EFI  := $(AROSDIR)/EFI/BOOT/grub
@@ -34,6 +36,11 @@ $(BOOT_EFI)/fonts:
 
 $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi:
 	%mkdirs_q $@
+
+ifneq ($(AROS_TARGET_CPU32),)
+$(BOOT_EFI)/$(AROS_TARGET_CPU32)-efi:
+	%mkdirs_q $@
+endif
 
 #MM
 bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/fonts/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/fonts/_unicode.pf2
@@ -69,7 +76,6 @@ export CONFIG_LDFLAGS   :=
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
-                --target=$(AROS_TARGET_CPU)                     \
                 --datarootdir=$(DESTDIR)/share                  \
                 --sysconfdir=$(DESTDIR)/etc                     \
                 --enable-silent-rules                           \
@@ -97,19 +103,34 @@ endif
 
 grub2-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
 grub2-efi-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+grub2-efi32-host-touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
 
 NOWARN_CLFAGS := $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INT_CONVERSION) $(NOWARN_INCOMPAT_POINTER_TYPES)
 KERNEL_ISA_CFLAGS := $(NOWARN_CLFAGS)
 
+GRUB2_HOST_OPTS := \
+                --target=$(AROS_TARGET_CPU)                     \
+				$(CONFIG_OPTS)
+
 %build_with_configure mmake=grub2-host compiler=host nix=yes \
         prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR) \
-        package=pc extraoptions="$(CONFIG_OPTS) --with-platform=pc" \
+        package=pc extraoptions="$(GRUB2_HOST_OPTS) --with-platform=pc" \
         install_target= targetisaflags= config_env_extra="$(GRUB2_HOST_ENV)"
 
 %build_with_configure mmake=grub2-efi-host compiler=host nix=yes \
         prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR) touch=no \
-        package=efi extraoptions="$(CONFIG_OPTS) --with-platform=efi" \
+        package=efi-$(AROS_TARGET_CPU) extraoptions="$(GRUB2_HOST_OPTS) --with-platform=efi" \
         install_target= targetisaflags= config_env_extra="$(GRUB2_EFI_ENV)"
+
+ifneq ($(AROS_TARGET_CPU32),)
+GRUB2_HOST32_OPTS := \
+                --target=$(AROS_TARGET_CPU32)                     \
+				$(CONFIG_OPTS)
+%build_with_configure mmake=grub2-efi32-host compiler=host nix=yes \
+        prefix="$(DESTDIR)" srcdir=$(GRUBSRCDIR) touch=no \
+        package=efi-$(AROS_TARGET_CPU32) extraoptions="$(GRUB2_HOST32_OPTS) --with-platform=efi" \
+        install_target= targetisaflags= config_env_extra="$(GRUB2_EFI_ENV)"
+endif
 
 PC_MODS	    := biosdisk
 EFI_MODS    :=
@@ -122,33 +143,52 @@ endif
 LST_FILES   :=	command fs moddep
 MKIMG_OPTS  :=	-O i386-pc -p /$(AROS_DIR_BOOT)/grub
 MKIMG_EFI   :=  -O $(AROS_TARGET_CPU)-efi -p /EFI/BOOT/grub
+MKIMG_EFI32   :=  -O $(AROS_TARGET_CPU32)-efi -p /EFI/BOOT/grub
 
 ifeq ($(CPU),x86_64)
     EFI_GRUB_IMG := BOOTX64.EFI
+	EFI32_GRUB_IMG := BOOTIA32.EFI
 else
     EFI_GRUB_IMG := BOOTIA32.EFI
 endif
 
 #MM
-grub2-iso-setup: grub2-pc-iso-setup grub2-efi-iso-setup
+grub2-iso-setup: grub2-pc-iso-setup grub2-efi-iso-setup grub2-efi-iso-$(AROS_TARGET_CPU32)-setup
 
 #MM
 grub2-pc-iso-setup: $(BOOT_GRUB)/i386-pc
 	@$(ECHO) Creating $(BOOT_GRUB)...
-	@cd $(HOSTGENDIR)/$(CURDIR)/pc/grub-core                           	&& \
-	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(PC_MODS) $(GRUB2_MODS) && \
-	$(CP) *.img $(BOOT_GRUB)/i386-pc                                  	&& \
-	$(CP) *.mod $(BOOT_GRUB)/i386-pc                                  	&& \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)/i386-pc         	&& \
+	@cd $(HOSTGENDIR)/$(CURDIR)/pc/grub-core                           	        && \
+	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(PC_MODS) $(GRUB2_MODS)     && \
+	$(CP) *.img $(BOOT_GRUB)/i386-pc                                  	        && \
+	$(CP) *.mod $(BOOT_GRUB)/i386-pc                                  	        && \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)/i386-pc         	        && \
 	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/i386-pc/grub2_eltorito
+
+#MM
+grub2-efi-iso--setup:
+	$(NOP)
 
 #MM
 grub2-efi-iso-setup: $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi
 	@$(ECHO) Creating $(BOOT_EFI)...
-	@cd $(HOSTGENDIR)/$(CURDIR)/efi/grub-core                           	&& \
-	../grub-mkimage $(MKIMG_EFI) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS) && \
-	$(CP) grub.efi $(AROSDIR)/EFI/BOOT/$(EFI_GRUB_IMG)                     	&& \
-	$(CP) *.mod $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi                                         	&& \
+	@cd $(HOSTGENDIR)/$(CURDIR)/efi-$(AROS_TARGET_CPU)/grub-core                && \
+	../grub-mkimage $(MKIMG_EFI) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS)     && \
+	$(CP) grub.efi $(AROSDIR)/EFI/BOOT/$(EFI_GRUB_IMG)                     	    && \
+	$(CP) *.mod $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi                              && \
 	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi
+
+ifneq ($(AROS_TARGET_CPU32),)
+#MM
+grub2-efi-iso-i386-setup: $(BOOT_EFI)/$(AROS_TARGET_CPU32)-efi
+	@$(ECHO) Creating $(BOOT_EFI)/$(AROS_TARGET_CPU32)-efi...
+	@cd $(HOSTGENDIR)/$(CURDIR)/efi-$(AROS_TARGET_CPU32)/grub-core         	    && \
+	../grub-mkimage $(MKIMG_EFI32) -d . -o grub.efi $(EFI_MODS) $(GRUB2_MODS)   && \
+	$(CP) grub.efi $(AROSDIR)/EFI/BOOT/$(EFI32_GRUB_IMG)                  	    && \
+	$(CP) *.mod $(BOOT_EFI)/$(AROS_TARGET_CPU32)-efi                            && \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_EFI)/$(AROS_TARGET_CPU32)-efi
+	
+#MM grub2-efi-iso-i386-setup : grub2-efi32-host
+endif
 
 %common
