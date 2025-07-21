@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -12,6 +12,10 @@
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
+
+#ifdef __AROS__
+#include <stdlib.h>
+#endif
 
 #include "mui.h"
 #include "support.h"
