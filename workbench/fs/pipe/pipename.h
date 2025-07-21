@@ -43,7 +43,7 @@
 
 extern int   ParsePipeName ( BYTE *Bname, char **nmp, ULONG *sizep, char **tapnmp );
 extern void  BSTRtoCstr    ( register BYTE *BSTRp, register char *str, unsigned maxsize );
-extern void  CstrtoBSTR    ( register char *str, register BYTE *BSTRp, unsigned maxsize );
+extern void  CstrtoBSTR    ( register const char *str, register BYTE *BSTRp, unsigned maxsize );
 extern void  CstrtoFIB     ( register char *str, register BYTE *BSTRp, unsigned maxsize );
 extern int   inrange       ( register int x, register int  lower, register int  upper );
 extern char  uppercase     ( register char c );

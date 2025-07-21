@@ -178,7 +178,7 @@ unsigned       maxsize;
 
 void  CstrtoBSTR (str, BSTRp, maxsize)
 
-register char  *str;
+register const char  *str;
 BYTE           *BSTRp;
 unsigned       maxsize;
 
