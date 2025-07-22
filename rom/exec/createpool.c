@@ -87,14 +87,15 @@
     D(bug("[exec] CreatePool(0x%08X, %u, %u)\n", requirements, puddleSize, threshSize);)
 
     /*
-     * puddleSize needs to include MEMHEADER_TOTAL, allocator context size and one pointer.
+     * puddleSize needs to include MEMHEADER_TOTAL, allocator context size and
+     * ALLOCPOOLED_USER_OFFSET.
      * This is because our puddles must be able to accommodate an allocation
      * of own size. Allocations of larger size will always use enlarged puddles.
      * Pointer is used for pointing back to the MemHeader from which the block
      * was allocated, in AllocVec()-alike manner. This way we get rid of slow
      * lookup in FreePooled().
      */
-    puddleSize += MEMHEADER_TOTAL + mhac_GetCtxSize() + sizeof(struct MemHeader *);
+    puddleSize += MEMHEADER_TOTAL + mhac_GetCtxSize() + ALLOCPOOLED_USER_OFFSET;
 
     /* If mungwall is enabled, count also size of walls, at least for one allocation */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
