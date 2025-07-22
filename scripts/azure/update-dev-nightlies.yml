@@ -34,7 +34,7 @@ steps:
 
     echo "Running update scripts on SourceForge..."
     ssh -o StrictHostKeyChecking=yes -p 22 "$MAPPED_USER"@shell.sourceforge.net \
-      "cd '$PROJWEBDIR' && ./aros/scripts/nightly2-update-dev-frs && ./aros/scripts/nightly2-update-dev"
+      "cd '$PROJWEBDIR' && ./aros/scripts/nightly2-update-dev-frs && ./aros/scripts/nightly2-update-dev &&  ./aros/scripts/nightly2-clean"
   env:
     MAPPED_USER: $(SF_RSYNC_USER)  # Set this in your pipeline variable group or UI
   condition: ne( variables['SF_RSYNC_USER'], '' )
