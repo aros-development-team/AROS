@@ -2373,6 +2373,20 @@ if test "$target_bootloader" = "grub2" ; then
       have_lzma=no
     fi
 
+    AC_PATH_PROG([XORRISO], [xorriso], [no])
+    if test "$XORRISO" != "no"; then
+        have_xorriso=yes
+    else
+        XORRISO=
+    fi
+
+    AC_PATH_PROG([MTOOLS], [mtools], [no])
+    if test "$MTOOLS" != "no"; then
+        have_mtools=yes
+    else
+        MTOOLS=
+    fi
+
     AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
 
     AC_CHECK_LIB([elf], [elf_version], have_liblelf_lib=yes, have_liblelf_lib=no)
@@ -4162,6 +4176,8 @@ AC_SUBST(aros_enable_mmu)
 AC_SUBST(target_grub2_version)
 AC_SUBST([host_has_lzma], [$have_lzma])
 AC_SUBST([host_has_libelf],[$have_libelf])
+AC_SUBST(have_xorriso)
+AC_SUBST(have_mtools)
 
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)

@@ -65,6 +65,7 @@ PNGTOPNM                 := @PNGTOPNM@
 PPMTOILBM                := @PPMTOILBM@
 SED                      := @SED@
 CHMOD                    := @CHMOD@
+XORRISO                  := @XORRISO@
 
 HOST_FLEX_VERSION        := @ax_cv_flex_version@
 

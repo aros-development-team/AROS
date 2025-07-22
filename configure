@@ -688,6 +688,8 @@ gcc_default_cpu_tune
 gcc_default_cpu
 CLASSIC_VARIANT_DEFINE
 aros_nesting_supervisor
+have_mtools
+have_xorriso
 host_has_libelf
 host_has_lzma
 target_grub2_version
@@ -865,6 +867,8 @@ target_llvm_version
 HARDVAR
 SOFTVAR
 target_gcc_version
+MTOOLS
+XORRISO
 LZMA_LIBS
 LZMA_CFLAGS
 GZIP
@@ -11447,6 +11451,110 @@ fi
       have_lzma=no
     fi
 
+    # Extract the first word of "xorriso", so it can be a program name with args.
+set dummy xorriso; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_XORRISO+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $XORRISO in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_XORRISO="$XORRISO" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_XORRISO="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_XORRISO" && ac_cv_path_XORRISO="no"
+  ;;
+esac
+fi
+XORRISO=$ac_cv_path_XORRISO
+if test -n "$XORRISO"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $XORRISO" >&5
+printf "%s\n" "$XORRISO" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    if test "$XORRISO" != "no"; then
+        have_xorriso=yes
+    else
+        XORRISO=
+    fi
+
+    # Extract the first word of "mtools", so it can be a program name with args.
+set dummy mtools; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_MTOOLS+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $MTOOLS in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_MTOOLS="$MTOOLS" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_MTOOLS="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_MTOOLS" && ac_cv_path_MTOOLS="no"
+  ;;
+esac
+fi
+MTOOLS=$ac_cv_path_MTOOLS
+if test -n "$MTOOLS"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $MTOOLS" >&5
+printf "%s\n" "$MTOOLS" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+    if test "$MTOOLS" != "no"; then
+        have_mtools=yes
+    else
+        MTOOLS=
+    fi
+
            for ac_header in libelf.h
 do :
   ac_fn_c_check_header_compile "$LINENO" "libelf.h" "ac_cv_header_libelf_h" "$ac_includes_default"
@@ -19210,6 +19318,8 @@ aros_kernel_ranlib=$aros_kernel_ranlib
 host_has_lzma=$have_lzma
 
 host_has_libelf=$have_libelf
+
+
 
 
 # Unix/Hosted version related
