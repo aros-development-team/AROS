@@ -98,8 +98,8 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
                         fi
 
                     done
-else
-echo "Skipping search for old versions of:" $file
+                else
+                    echo "Skipping search for old versions of:" $file
                 fi
 
                 # Move file to download dir
