@@ -23,10 +23,47 @@ endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
+ifeq ($(HOST_MTOOLS),yes)
+ifneq ($(XORRISO),)
+BOOTLOADER_USMKRESCUE = yes
+endif
+endif
 endif
 
 ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
 BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
+ifeq ($(HOST_MTOOLS),yes)
+ifneq ($(XORRISO),)
+BOOTLOADER_USMKRESCUE = yes
+endif
+endif
+endif
+
+ifeq ($(BOOTLOADER_USMKRESCUE),yes)
+ISOCMD=$(TOOLDIR)/grub-mkrescue
+ISOMODULES := $(shell cat $(TOOLDIR)/lib/grub/grub2.mods)
+ISOOPTIONS=--modules="$(ISOMODULES)"
+ISOOPTIONS+=--xorriso="$(XORRISO)" \
+                -V "AROS Live CD" \
+                -p "The AROS Dev Team" \
+                -p "The AROS Dev Team (www.aros.org)" \
+                -allow-leading-dots \
+                -iso-level 4 \
+                -sysid "AROS-${AROS_TARGET_CPU}-${AROS_TARGET_ARCH}" -l -J -r
+else
+ISOCMD=mkisofs -f
+ISOOPTIONS=-b $(BOOTLOADER_ELTORITO_REL) \
+                -c $(AROS_DIR_BOOTARCH)/boot.catalog \
+                -no-emul-boot \
+                -boot-load-size 4 \
+                -boot-info-table \
+                -allow-leading-dots \
+                -iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "The AROS Dev Team" \
+                -p "The AROS Dev Team (www.aros.org)" \
+                -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r
 endif
 
 ifeq ($(DEBUG),yes)
@@ -48,21 +85,10 @@ $(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
 
 $(TARGET_ISO): $(ISO_DEPS) $(AROSDIR)/.backdrop
 	%mkdirs_q $(AROSDIR)/S
-	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
-	@$(MKDIR) -p "$(DISTDIR)"
-	@mkisofs -f \
+	$(Q)$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	$(Q)$(MKDIR) -p "$(DISTDIR)"
+	$(Q)$(ISOCMD) \
                 -o $@ \
-                -b $(BOOTLOADER_ELTORITO_REL) \
-                -c $(AROS_DIR_BOOTARCH)/boot.catalog \
-                -no-emul-boot \
-                -boot-load-size 4 \
-                -boot-info-table \
-                -allow-leading-dots \
-                -iso-level 4 \
-                -V "AROS Live CD" \
-                -publisher "The AROS Dev Team" \
-                -p "The AROS Dev Team (www.aros.org)" \
-                -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
-                -l -J -r \
+                $(ISOOPTIONS) \
                 $(AROSDIR)
 
