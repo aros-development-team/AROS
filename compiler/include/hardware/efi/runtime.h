@@ -86,20 +86,20 @@ struct EFI_RuntimeServices {
 
     // Variable Services
     __eficall EFI_STATUS (*GetVariable)(
-        CHAR16 *VariableName,
-        EFI_GUID *VendorGuid,
+        const CHAR16 *VariableName,
+        const EFI_GUID *VendorGuid,
         ULONG *Attributes,
         UQUAD *DataSize,
         void *Data
     );
     __eficall EFI_STATUS (*GetNextVariableName)(
         UQUAD *VariableNameSize,
-        CHAR16 *VariableName,
-        EFI_GUID *VendorGuid
+        const CHAR16 *VariableName,
+        const EFI_GUID *VendorGuid
     );
     __eficall EFI_STATUS (*SetVariable)(
-        CHAR16 *VariableName,
-        EFI_GUID *VendorGuid,
+        const CHAR16 *VariableName,
+        const EFI_GUID *VendorGuid,
         ULONG Attributes,
         UQUAD DataSize,
         void *Data
@@ -113,7 +113,7 @@ struct EFI_RuntimeServices {
         ULONG ResetType,
         EFI_STATUS ResetStatus,
         UQUAD DataSize,
-        CHAR16 *ResetData
+        const CHAR16 *ResetData
     );
 };
 

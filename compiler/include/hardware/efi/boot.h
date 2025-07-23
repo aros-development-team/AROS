@@ -71,46 +71,46 @@ struct EFI_BootServices {
     // Protocol Handler Services
     __eficall EFI_STATUS (*InstallProtocolInterface)(
         EFI_HANDLE *Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         EFI_INTERFACE_TYPE InterfaceType,
         void *Interface
     );
     __eficall EFI_STATUS (*ReinstallProtocolInterface)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void *OldInterface,
         void *NewInterface
     );
     __eficall EFI_STATUS (*UninstallProtocolInterface)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void *Interface
     );
     __eficall EFI_STATUS (*HandleProtocol)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void **Interface
     );
     void *Reserved;
     __eficall EFI_STATUS (*RegisterProtocolNotify)(
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         EFI_EVENT Event,
         void **Registration
     );
     __eficall EFI_STATUS (*LocateHandle)(
         EFI_LOCATE_SEARCH_TYPE SearchType,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void *SearchKey,
         UQUAD *BufferSize,
         EFI_HANDLE *Buffer
     );
     __eficall EFI_STATUS (*LocateDevicePath)(
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         EFI_DEVICE_PATH_PROTOCOL **DevicePath,
         EFI_HANDLE *Device
     );
     __eficall EFI_STATUS (*InstallConfigurationTable)(
-        EFI_GUID *Guid,
+        const EFI_GUID *Guid,
         void *Table
     );
 
@@ -126,13 +126,13 @@ struct EFI_BootServices {
     __eficall EFI_STATUS (*StartImage)(
         EFI_HANDLE ImageHandle,
         UQUAD *ExitDataSize,
-        CHAR16 **ExitData
+        const CHAR16 **ExitData
     );
     __eficall EFI_STATUS (*Exit)(
         EFI_HANDLE ImageHandle,
         EFI_STATUS ExitStatus,
         UQUAD ExitDataSize,
-        CHAR16 *ExitData
+        const CHAR16 *ExitData
     );
     __eficall EFI_STATUS (*UnloadImage)(
         EFI_HANDLE ImageHandle
@@ -149,7 +149,7 @@ struct EFI_BootServices {
         UQUAD Timeout,
         UQUAD WatchdogCode,
         UQUAD DataSize,
-        CHAR16 *WatchdogData
+        const CHAR16 *WatchdogData
     );
 
     // Driver Support Services
@@ -168,7 +168,7 @@ struct EFI_BootServices {
     // Protocol Access Services
     __eficall EFI_STATUS (*OpenProtocol)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void **Interface,
         EFI_HANDLE AgentHandle,
         EFI_HANDLE ControllerHandle,
@@ -176,13 +176,13 @@ struct EFI_BootServices {
     );
     __eficall EFI_STATUS (*CloseProtocol)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         EFI_HANDLE AgentHandle,
         EFI_HANDLE ControllerHandle
     );
     __eficall EFI_STATUS (*OpenProtocolInformation)(
         EFI_HANDLE Handle,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         EFI_OPEN_PROTOCOL_INFORMATION_ENTRY **EntryBuffer,
         UQUAD *EntryCount
     );
@@ -190,18 +190,18 @@ struct EFI_BootServices {
     // Library Services
     __eficall EFI_STATUS (*ProtocolsPerHandle)(
         EFI_HANDLE Handle,
-        EFI_GUID ***ProtocolBuffer,
+        const EFI_GUID ***ProtocolBuffer,
         UQUAD *ProtocolBufferCount
     );
     __eficall EFI_STATUS (*LocateHandleBuffer)(
         EFI_LOCATE_SEARCH_TYPE SearchType,
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void *SearchKey,
         UQUAD *NoHandles,
         EFI_HANDLE **Buffer
     );
     __eficall EFI_STATUS (*LocateProtocol)(
-        EFI_GUID *Protocol,
+        const EFI_GUID *Protocol,
         void *Registration,
         void **Interface
     );
@@ -224,5 +224,6 @@ struct EFI_BootServices {
     __eficall void (*SetMem)(void *Buffer, UQUAD Size, UBYTE Value);
 };
 
+#define EFI_BOOT_SERVICES_SIGNATURE 0x56524553544f4f42
 
 #endif
