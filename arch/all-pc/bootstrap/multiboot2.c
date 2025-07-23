@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2025, The AROS Development Team. All rights reserved.
 
     Desc: Multiboot v2 parser
 */
@@ -65,6 +65,12 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
     unsigned long memlower = 0;
     unsigned long long memupper = 0;
     unsigned long usable = (unsigned long)&_end;
+#if defined(MULTIBOOT_64BIT)
+    int mb2_have_efi64 = 0;
+    unsigned long long mb2_efi_systable = 0;
+#else
+    unsigned long mb2_efi_systable = 0;
+#endif
 
     con_InitMultiboot2(mb);
     Hello();
@@ -129,23 +135,34 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
             break;
 
-#ifdef MULTIBOOT_64BIT
+#if defined(MULTIBOOT_64BIT)
         case MB2_TAG_EFI64:
             D(kprintf("[%s] EFI 64-bit System table 0x%016llX\n", str_BSMultiboot2, ((struct mb2_tag_efi64 *)mbtag)->pointer);)
+            if (mb2_have_efi64 == 0)
+            {
+                mb2_efi_systable = ((struct mb2_tag_efi64 *)mbtag)->pointer;
+                mb2_have_efi64 = 1;
+            }
+            break;
+#endif
 
-            tag->ti_Tag  = KRN_EFISystemTable;
-            tag->ti_Data = ((struct mb2_tag_efi64 *)mbtag)->pointer;
-#else
         case MB2_TAG_EFI32:
             D(kprintf("[%s] EFI 32-bit System table 0x%08X\n", str_BSMultiboot2, ((struct mb2_tag_efi32 *)mbtag)->pointer);)
-
-            tag->ti_Tag  = KRN_EFISystemTable;
-            tag->ti_Data = ((struct mb2_tag_efi32 *)mbtag)->pointer;
+#if defined(MULTIBOOT_64BIT)
+            if (mb2_have_efi64 == 0)
+                mb2_efi_systable = ((struct mb2_tag_efi32 *)mbtag)->pointer;
+#else
+            mb2_efi_systable = ((struct mb2_tag_efi32 *)mbtag)->pointer;
 #endif
-            tag++;
-
             break;
         }
+    }
+
+    if (mb2_efi_systable != 0)
+    {
+        tag->ti_Tag  = KRN_EFISystemTable;
+        tag->ti_Data = mb2_efi_systable;
+        tag++;
     }
 
     if (!mmap && memlower && memupper)
