@@ -1,0 +1,28 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
+FILES := ACPIInfo
+
+#MM- workbench-c : workbench-c-$(AROS_TARGET_ARCH)-acpi
+#MM- workbench-c-quick : workbench-c-$(AROS_TARGET_ARCH)-acpi-quick
+
+#
+# explicit rules to build the tools on supported targets
+#
+
+#MM- workbench-c-pc-acpi : workbench-c-acpi-tools
+#MM- workbench-c-pc-acpi-quick : workbench-c-acpi-tools-quick
+
+#MM workbench-c-acpi-tools : \
+#MM                                      includes \
+#MM                                      kernel-acpica-sharedlib-includes \
+#MM                                      linklibs \
+#MM                                      kernel-acpica-sharedlib-linklib
+
+
+%build_progs mmake=workbench-c-acpi-tools targetdir=$(AROS_C) \
+  files="$(FILES)" usestartup=no uselibs="acpica"
+
+%common
