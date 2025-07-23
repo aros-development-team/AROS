@@ -43,6 +43,11 @@ ifeq ($(BOOTLOADER_USMKRESCUE),yes)
 ISOCMD=$(TOOLDIR)/grub-mkrescue
 ISOMODULES := $(shell cat $(TOOLDIR)/lib/grub/grub2.mods)
 ISOOPTIONS=--modules="$(ISOMODULES)"
+ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
+ISOOPTIONS+=--fonts=unicode
+else
+ISOOPTIONS+=--fonts=
+endif
 ISOOPTIONS+=--xorriso="$(XORRISO)" \
                 -V "AROS Live CD" \
                 -p "The AROS Dev Team" \
