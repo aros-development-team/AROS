@@ -23,7 +23,7 @@ endif
 $(AROS_BOOT)/grub/grub.cfg: grub.cfg
 	@$(ECHO) Generating $@...
 	@$(SED) $(SEDPARAMS) \
-		-e 's#@modules.default@#sed "s\#^\#    module \#g" $(MODULES_DEFAULT)#e' \
+		-e 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' \
 		-e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
 		-e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
 		-e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
