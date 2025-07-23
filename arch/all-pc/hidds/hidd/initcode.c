@@ -120,7 +120,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
         sysTypeFmt = str_HWNamePC;
     }
 
-    hwTags[0].ti_Data = (IPTR)AllocVec(strlen(sysTypeFmt) + 1 + strlen(hwType), MEMF_CLEAR);
+    hwTags[0].ti_Data = (IPTR)AllocVec(strlen(sysTypeFmt) - 4 + strlen(hwPlat) + strlen(hwType) + 1, MEMF_CLEAR);
     sprintf((char *)hwTags[0].ti_Data, sysTypeFmt, hwPlat, hwType);
 
     D(bug("[HIDD] %s: System Type = '%s'\n", __func__, (char *)hwTags[0].ti_Data);)
