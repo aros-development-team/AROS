@@ -21,6 +21,9 @@ BOOT_EFI  := $(AROSDIR)/EFI/BOOT/grub
 GRUBSRCDIR := $(PORTSDIR)/grub/grub-$(GRUB2_VERSION)
 DESTDIR     :=	$(TOOLDIR)
 
+SPLASHVERSION := dark
+SPLASHIMAGE := $(SRCDIR)/images/Boot/Grub2/splash.$(SPLASHVERSION).png
+
 $(BOOT_GRUB):
 	%mkdirs_q $@
 
@@ -51,28 +54,28 @@ $(DESTDIR)/share/grub:
 	%mkdirs_q $@
 
 #MM
-bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/fonts/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/fonts/_unicode.pf2
+bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/_unicode.pf2
 
-$(BOOT_GRUB)/splash.png: splash.png $(BOOT_GRUB)
-		$(CP) $< $(BOOT_GRUB)
+$(BOOT_GRUB)/splash.png: $(SPLASHIMAGE) | $(BOOT_GRUB)
+		$(CP) $< $@
 
-$(BOOT_GRUB)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
-		$(CP) $< $(BOOT_GRUB)/fonts/_unicode.pf2
+$(BOOT_GRUB)/_unicode.pf2: unicode.pf2 | $(BOOT_GRUB)
+		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
 
-$(BOOT_EFI)/splash.png: splash.png $(BOOT_EFI)
+$(BOOT_EFI)/splash.png: splash.png | $(BOOT_EFI)
 		$(CP) $< $(BOOT_EFI)
 
-$(BOOT_EFI)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
-		$(CP) $< $(BOOT_EFI)/fonts/_unicode.pf2
+$(BOOT_EFI)/_unicode.pf2: unicode.pf2 | $(BOOT_EFI)
+		$(CP) $< $(BOOT_EFI)/_unicode.pf2
 
 #MM
 bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/fonts/unicode.pf2 $(BOOT_EFI)/fonts/unicode.pf2
 
 $(BOOT_GRUB)/fonts/unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
-		$(CP) $< $(BOOT_GRUB)
+		$(CP) $< $(BOOT_GRUB)/fonts
 
 $(BOOT_EFI)/fonts/unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
-		$(CP) $< $(BOOT_EFI)
+		$(CP) $< $(BOOT_EFI)/fonts
 
 $(DESTDIR)/share/grub/unicode.pf2: unicode.pf2 | $(DESTDIR)/share/grub
 		$(CP) $< $@
