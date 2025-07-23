@@ -2,7 +2,7 @@
 	path = workbench/libs/muimaster/catalogs
 	url = https://github.com/aros-translation-team/muimaster.library.git
 [submodule "arch/all-pc/acpitool/catalogs"]
-	path = arch/all-pc/acpitool/catalogs
+	path = arch/all-native/acpitool/catalogs
 	url = https://github.com/aros-translation-team/acpitool.git
 [submodule "rom/dos/catalogs"]
 	path = rom/dos/catalogs
