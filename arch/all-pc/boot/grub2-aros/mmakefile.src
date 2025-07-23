@@ -20,12 +20,17 @@ CONFIG_OPTS := \
 		--with-platform=$(GRUB_ARCH)        \
 		--datarootdir=$(GRUB2DESTDIR)/share \
 		--sysconfdir=$(GRUB2DESTDIR)/etc	\
+		--enable-silent-rules               \
 		--disable-nls                       \
 		--disable-efiemu                    \
 		--disable-grub-mkfont               \
 		--disable-werror                    \
-		--enable-silent-rules               \
 		--program-prefix=
+
+#ifeq ($(GRUB2_USELZMA),yes)
+#CONFIG_OPTS += \
+#		        --enable-liblzma
+#endif
 
 ifeq ($(AROS_TOOLCHAIN),llvm)
 ifneq ($(AROS_TARGET_CPU32),)
