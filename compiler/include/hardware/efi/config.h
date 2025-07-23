@@ -2,14 +2,14 @@
 #define HARDWARE_EFI_CONFIG_H
 
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: EFI firmware configuration tables
     Lang: english
 */
 
-#include <libraries/uuid.h>
+#include <hardware/efi/types.h>
 
 struct EFI_Config
 {
