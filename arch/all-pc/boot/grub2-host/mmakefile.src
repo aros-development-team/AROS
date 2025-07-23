@@ -62,8 +62,8 @@ $(BOOT_GRUB)/splash.png: $(SPLASHIMAGE) | $(BOOT_GRUB)
 $(BOOT_GRUB)/_unicode.pf2: unicode.pf2 | $(BOOT_GRUB)
 		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
 
-$(BOOT_EFI)/splash.png: splash.png | $(BOOT_EFI)
-		$(CP) $< $(BOOT_EFI)
+$(BOOT_EFI)/splash.png: $(SPLASHIMAGE) | $(BOOT_EFI)
+		$(CP) $< $@
 
 $(BOOT_EFI)/_unicode.pf2: unicode.pf2 | $(BOOT_EFI)
 		$(CP) $< $(BOOT_EFI)/_unicode.pf2
