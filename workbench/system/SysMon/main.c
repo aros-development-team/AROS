@@ -287,8 +287,8 @@ BOOL CreateApplication(struct SysMonData * smdata)
 
     smdata->taskviewclickhook.h_Entry = (APTR)TaskClickedFunction;
     smdata->taskviewclickhook.h_Data = (APTR)INST_DATA(OCLASS(smdata->tasklist), smdata->tasklist);
-    DoMethod(smdata->taskview, MUIM_Notify, MUIA_Listview_DoubleClick, TRUE,
-        smdata->tasklist, 2, MUIM_CallHook, (IPTR)&smdata->taskviewclickhook);
+    DoMethod(smdata->taskview, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+        smdata->tasklist, 3, MUIM_CallHook, (IPTR)&smdata->taskviewclickhook, MUIV_TriggerValue);
 
 #ifdef NOTYET_USED
     DoMethod(smdata->pages, MUIM_Notify, MUIA_Group_ActivePage, MUIV_EveryTime,
