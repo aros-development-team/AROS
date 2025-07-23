@@ -460,13 +460,32 @@ static ACPI_STATUS ACPIHostBridgeCallbackA(ACPI_HANDLE handle, ULONG nesting_lev
 
             if (!found)
             {
-#if 0
-                FindIRQRouting(psd, hbNode, handle, (hbInfo->Address >> 20) & 0xff);
-#else
-                /* Always start explicitly with bus 0. My test machine give hbInfo->Address = 00180000 which gives
-                    bus 1 which is not true */
-                FindIRQRouting(psd, hbNode, handle, 0);
-#endif
+                UINT32 busNumber = 0;
+                ACPI_OBJECT *obj;
+                ACPI_BUFFER outBuf = { ACPI_ALLOCATE_BUFFER, NULL };
+                BOOL busValid = FALSE;
+
+                Status = AcpiEvaluateObject(handle, "_BBN", NULL, &outBuf);
+                if (ACPI_SUCCESS(Status)) {
+                    obj = (ACPI_OBJECT *)outBuf.Pointer;
+                    if (obj && obj->Type == ACPI_TYPE_INTEGER) {
+                        busNumber = obj->Integer.Value;
+                        busValid = TRUE;
+                        D(bug("[PCIPC:Driver] %s: evaluated _BBN = %u\n", __func__, busNumber));
+                    } else {
+                        bug("[PCIPC:Driver] %s: WARNING: _BBN present but not integer (type %u), falling back\n", 
+                            __func__, obj ? obj->Type : 0xFFFF);
+                    }
+                    FreeVec(outBuf.Pointer);
+                }
+                if (!busValid) {
+                    // fallback from _ADR
+                    busNumber = (hbInfo->Address >> 16) & 0xFFFF;
+                    if (busNumber > 255)
+                        busNumber = 0;  // Clamp to valid PCI bus range
+                }
+                D(bug("[PCIPC:Driver] %s: Checking routing for bus %u\n", __func__, busNumber));
+                FindIRQRouting(psd, hbNode, handle, busNumber);
 
                 Enqueue((struct List *)return_value, &hbNode->ahb_Node);
             }
