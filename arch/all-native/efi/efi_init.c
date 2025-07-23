@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -83,10 +83,16 @@ static int efi_Init(struct EFIBase *EFIBase)
         return FALSE;
     }
 
+    if (CheckTable(&EFIBase->System->BootServices->Hdr, EFI_BOOT_SERVICES_SIGNATURE))
+    {
+        EFIBase->Boot = EFIBase->System->BootServices;
+        D(bug("[EFI] Valid Boot Services table at 0x%p\n", EFIBase->Boot));
+    }
+
     if (CheckTable(&EFIBase->System->RuntimeServices->Hdr, EFI_RUNTIME_SERVICES_SIGNATURE))
     {
         EFIBase->Runtime = EFIBase->System->RuntimeServices;
-        D(bug("[EFI] Valid runtime services table at 0x%p\n", EFIBase->Runtime));
+        D(bug("[EFI] Valid Runtime Services table at 0x%p\n", EFIBase->Runtime));
 
         /* Install EFI reset/power-off mechanism */
         EFIBase->reset_handler.is_Node.ln_Pri = -56;
