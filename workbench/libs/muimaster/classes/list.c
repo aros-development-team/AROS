@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2024, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -4156,6 +4156,7 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
                             DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
                         }
                     }
+                    result = MUI_EventHandlerRC_Eat;
                 }
             }
             else
