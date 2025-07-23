@@ -26,7 +26,7 @@ SPLASHVERSION := $(GRUB2_SPLASHIMG)
 else
 SPLASHVERSION := dark
 endif
-SPLASHIMAGE := $(SRCDIR)/images/Boot/Grub2/splash.$(GRUB2_SPLASHIMG).png
+SPLASHIMAGE := $(SRCDIR)/images/Boot/Grub2/splash.$(SPLASHVERSION).png
 
 $(BOOT_GRUB):
 	%mkdirs_q $@
