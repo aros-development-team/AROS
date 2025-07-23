@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -21,8 +21,8 @@
 
 #include LC_LIBDEFS_FILE
 
-const char str_HWNamePC[] = "IBM Compatable x86 %s";
-const char str_HWNameVM[] = "Virtualized x86 %s";
+const char str_HWNamePC[] = "IBM Compatable%sx86 %s";
+const char str_HWNameVM[] = "Virtualized%sx86 %s";
 
 const char str_HWTypePC[] = "PC";
 const char str_HWTypeMobile[] = "Mobile Device";
@@ -49,7 +49,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     struct Library *OOPBase = GM_OOPBASE_FIELD(lh);
     struct Library *ACPICABase;
     struct  class_static_data *csd;
-    const char *sysTypeFmt = NULL, *hwType = NULL;
+    const char *sysTypeFmt = NULL, *hwType = NULL, *hwPlat = NULL;
     struct TagItem hwTags[] =
     {
        { TAG_IGNORE,    0       },
@@ -103,6 +103,11 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
         CloseLibrary(ACPICABase);
     }
 
+    if (OpenResource("efi.resource"))
+        hwPlat = " EFI ";
+    else
+        hwPlat = " ";
+
     if (!hwType)
         hwType = str_HWTypePC;
 
@@ -115,8 +120,8 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
         sysTypeFmt = str_HWNamePC;
     }
 
-    hwTags[0].ti_Data = (IPTR)AllocVec(strlen(sysTypeFmt) - 1 + strlen(hwType), MEMF_CLEAR);
-    sprintf((char *)hwTags[0].ti_Data, sysTypeFmt, hwType);
+    hwTags[0].ti_Data = (IPTR)AllocVec(strlen(sysTypeFmt) + 1 + strlen(hwType), MEMF_CLEAR);
+    sprintf((char *)hwTags[0].ti_Data, sysTypeFmt, hwPlat, hwType);
 
     D(bug("[HIDD] %s: System Type = '%s'\n", __func__, (char *)hwTags[0].ti_Data);)
     if (!OOP_NewObject(csd->rootclass, NULL, hwTags))
