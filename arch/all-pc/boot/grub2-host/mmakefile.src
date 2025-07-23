@@ -21,8 +21,12 @@ BOOT_EFI  := $(AROSDIR)/EFI/BOOT/grub
 GRUBSRCDIR := $(PORTSDIR)/grub/grub-$(GRUB2_VERSION)
 DESTDIR     :=	$(TOOLDIR)
 
+ifneq ($(GRUB2_SPLASHIMG),)
+SPLASHVERSION := $(GRUB2_SPLASHIMG)
+else
 SPLASHVERSION := dark
-SPLASHIMAGE := $(SRCDIR)/images/Boot/Grub2/splash.$(SPLASHVERSION).png
+endif
+SPLASHIMAGE := $(SRCDIR)/images/Boot/Grub2/splash.$(GRUB2_SPLASHIMG).png
 
 $(BOOT_GRUB):
 	%mkdirs_q $@
