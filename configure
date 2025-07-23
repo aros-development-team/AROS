@@ -10414,7 +10414,7 @@ case "$target_os" in
     pc)
         aros_target_arch="pc"
         aros_shared_default="no"
-        target_bootloader="grub2"
+        target_bootloader="grub2gfx"
         aros_kernel_toolchain=$aros_toolchain
         kernel_toolchain_c_compiler=$toolchain_c_compiler
         kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
