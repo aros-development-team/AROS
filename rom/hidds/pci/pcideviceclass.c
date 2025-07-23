@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 
     Desc: PCI device class
 */
@@ -661,10 +661,6 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
                 dev->strClass, dev->strSubClass, dev->strInterface));
             D(bug("[PCIDevice] > IRQ %u INT %u\n", dev->IRQLine, dev->INTLine));
 
-            // print out a warning to the user in case the interrupt line is not assigned by BIOS
-            if (dev->INTLine == 255 && !dev->isBridge)
-                bug("[PCIDevice] WARNING: Interrupt line is not assigned! Device may freeze or malfunction at use!\n");
-    
             /* Read two first base addresses */
             for (i = 0; i < 2; i++)
             {

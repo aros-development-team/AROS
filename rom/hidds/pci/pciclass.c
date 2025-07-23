@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -16,6 +16,8 @@
 #include <utility/hooks.h>
 
 #include "pci.h"
+
+#define PCI_DISPLAY_FAILEDIRQS
 
 static OOP_Object *FindBridge(OOP_Class *cl, OOP_Object *drv, UBYTE bus);
 static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
@@ -167,24 +169,50 @@ BOOL PCI__HW__SetUpDriver(OOP_Class *cl, OOP_Object *o,
         }
     }
 
-    if (irq_routing != NULL)
+    // Handle IRQ Routing
     {
         struct pcibase *pciBase = (struct pcibase *)cl->UserData;
         OOP_Object *pcidev;
+        if (irq_routing != NULL)
+        {
+            D(bug("[PCI] %s: Checking IRQ routing for newly added devices\n", __func__));
 
-        D(bug("[PCI] %s: Checking IRQ routing for newly added devices\n", __func__));
-
+            ForeachNode(&pciBase->psd.devices, pcidev)
+            {
+                AssignIRQ(cl, drv, irq_routing, pcidev);
+            }
+        }
+#if defined(PCI_DISPLAY_FAILEDIRQS)
+        /*
+         * Print out a warning to the user, in case the interrupt line was not assigned by BIOS
+         * and we have failed to find routing information to configure it.
+         */
         ForeachNode(&pciBase->psd.devices, pcidev)
         {
-            AssignIRQ(cl, drv, irq_routing, pcidev);
+            IPTR devVal1 = 0, devVal2 = 0;
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_INTLine, &devVal1);
+            OOP_GetAttr(pcidev, aHidd_PCIDevice_isBridge, &devVal2);
+            if (devVal1 == 255 && !devVal2)
+            {
+                IPTR devVal3 = 0;
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Bus, &devVal1);
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Dev, &devVal2);
+                OOP_GetAttr(pcidev, aHidd_PCIDevice_Sub, &devVal3);
+                bug("[PCI] WARNING: Device 0x%p @ %u:%u:%u Interrupt line is not assigned!\n", pcidev, devVal1, devVal2, devVal3);
+                bug("[PCI] WARNING: This may cause it to freeze or malfunction when used!\n");
+            }
         }
+#endif
     }
 
-    /* Successful, add the driver to the end of drivers list */
+    // Success - add the driver to the end of the drivers list
     return TRUE;
 }
 
-/* Assign an IRQ to a device according to the routing table */
+/* 
+ * Assign and configure a device's IRQ(s), using details obtained
+ * from routing tables.
+ */
 static void AssignIRQ(OOP_Class *cl, OOP_Object *drv,
     struct MinList *irq_routing, OOP_Object *pcidev)
 {
