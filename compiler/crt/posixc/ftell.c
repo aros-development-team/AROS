@@ -53,6 +53,12 @@
         return 0;
     }
 
+    if (fdesc->fcb->privflags & _FCB_ISDIR)
+    {
+        errno = EISDIR;
+        return -1;
+    }
+
     fh = fdesc->fcb->handle;
 
     Flush (fh);
