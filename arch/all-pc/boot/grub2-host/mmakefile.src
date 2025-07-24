@@ -17,10 +17,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM- grub2-efi32-i386-quick : grub2-efi32-host-quick
 
 # grub-mkrescue uses lower-case path names
+ifeq ($(AROS_TARGET_CPU),x86_64)
 ifeq ($(HOST_MTOOLS),yes)
 ifneq ($(XORRISO),)
 EFI_DIR=efi
 #EFI_BOOT_DIR=boot
+endif
 endif
 endif
 EFI_DIR ?= EFI
