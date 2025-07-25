@@ -213,7 +213,7 @@ static char *NextWord(char *s)
 
             if (!Exec_CheckTask(t, SysBase))
             {
-                kprintf("Task 0x%P not found\n", t);
+                kprintf("Task 0x%p not found\n", t);
                 continue;
             }
 
