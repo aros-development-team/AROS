@@ -26,10 +26,19 @@ int main(void)
         LogRHandle = logInitialise(&testProvider);
 
         printf("creating log.resource entries...\n");
-        logAddEntry((LOGF_Flag_Type_Error | 20), LogRHandle, "Test", __func__, 0, "Test Debug Entry\nThis is test entry #%u\nYou can safely ignore this entry", 1);
-        logAddEntry((LOGF_Flag_Type_Error | 20), LogRHandle, "Test", __func__, 0, "Test Information %s\nYou can safely ignore this entry", "Entry");
-        logAddEntry((LOGF_Flag_Type_Error | 20), LogRHandle, "Test", __func__, 0, "Test Warning Entry\nYou can safely ignore this entry");
-        logAddEntry((LOGF_Flag_Type_Error | 20), LogRHandle, "Test", __func__, 0, "Test Error Entry\nYou can safely ignore this entry");
+#define LOGLVL_UNUSED 20  
+        logAddEntry((LOGF_Flag_Type_Debug | LOGLVL_UNUSED),
+            LogRHandle, "Test", __func__, 0,
+            "Test Debug Entry\nThis is test entry #%u\nYou can safely ignore this entry", 1);
+        logAddEntry((LOGF_Flag_Type_Information | LOGLVL_UNUSED),
+            LogRHandle, "Test", __func__, 0,
+            "Test Information %s\nYou can safely ignore this entry", "Entry");
+        logAddEntry((LOGF_Flag_Type_Warn | LOGLVL_UNUSED),
+            LogRHandle, "Test", __func__, 0,
+            "Test Warning Entry\nYou can safely ignore this entry");
+        logAddEntry((LOGF_Flag_Type_Error | LOGLVL_UNUSED),
+            LogRHandle, "Test", __func__, 0,
+            "Test Error Entry\nYou can safely ignore this entry");
         printf("entries created\n");
     }
 
