@@ -32,9 +32,10 @@ struct Resident
 
     /* Extension taken over from MorphOS. Only valid
        if RTF_EXTENDED is set */
-       
+#if !defined(STRUCT_RESIDENT_PLAIN)
     UWORD            	   rt_Revision;
     struct TagItem        *rt_Tags;
+#endif
 };
 
 #define RTC_MATCHWORD  (0x4AFC)
