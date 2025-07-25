@@ -211,6 +211,9 @@ static char *NextWord(char *s)
         {
             struct Task *t = GetA(data);
 
+            if (!t) {
+              t = me;
+            }
             if (!Exec_CheckTask(t, SysBase))
             {
                 kprintf("Task 0x%p not found\n", t);
