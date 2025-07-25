@@ -4642,7 +4642,7 @@ postinstall-%(package)-delete-la-files:
 # Other arguments are self-explanatory
 
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
-    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= packfmt=
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt=
 
 PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
 PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
@@ -4659,7 +4659,7 @@ PKG_LIBRARIES_ARCH := $(addprefix $(AROS_LIBRARIES_ARCH)/,$(addsuffix .library, 
 PKG_RESOURCES_ARCH := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .resource, %(arch_res)))
 
 PKG_FILES          := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES) \
-    $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH)
+    $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH) %(misc)
 PKG_DIR            := $(dir %(file))
 
 #MM
