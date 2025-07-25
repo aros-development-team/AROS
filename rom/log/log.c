@@ -208,9 +208,11 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
                     else if (lastBroadcast->le_Node.ln_Type == EHMB_REMENTRY)
                     {
                         logEventBroadcast(EHMB_REMENTRY, &lastBroadcast->le_Node, NULL);
+                        struct LogResHandle *lrHandle = lastBroadcast->lep_Producer;
+                        FreeVec(lastBroadcast->le_Node.ln_Name);
                         FreeVec(lastBroadcast->lectx_Originator);
                         FreeVec(lastBroadcast->le_Entry);
-                        FreeVec(lastBroadcast);
+                        FreeVecPooled(lrHandle->lrh_Pool, lastBroadcast);
                     }
                     else
                     {
