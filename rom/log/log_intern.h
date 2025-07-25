@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _LOG_INTERN_H
@@ -61,22 +61,9 @@ struct logRDF
 struct logListenerHook
 {
     struct Node         llh_Node;               /* Node linkage                         */
+    APTR                llh_Pool;
     struct MsgPort     *llh_MsgPort;            /* Target message port                  */
     ULONG               llh_MsgMask;            /* Mask of messages to send             */
-};
-
-struct logEvent
-{
-    struct Message      lev_Msg;                /* Intertask communication message      */
-    UWORD               lev_Event;              /* Event number as specified above      */
-    APTR                lev_Param1;             /* Parameter 1 for event                */
-    APTR                lev_Param2;             /* Parameter 2                          */
-};
-
-struct logEventInternal
-{
-    struct Node         levi_Node;              /* Node linkage                         */
-    struct logEvent     levi_EventNote;         /* Encapsulated logEvent                */
 };
 
 struct LogResBase
@@ -84,14 +71,26 @@ struct LogResBase
     struct Library          lrb_Lib;
     struct UtilityBase      *lrb_UtilityBase;   /* for tags etc                         */
     struct Library          *lrb_DosBase;       /* for dos stuff                        */
+
+    /* broadcast/service task */
     struct Task             *lrb_Task;
     struct MsgPort          *lrb_ServicePort;
+
+    /* low memory handler */
     struct Interrupt        lrb_LowMemHandler;
+    
+    /* internal log data */
     struct LogResHandle     lrb_LRProvider;
-    struct SignalSemaphore  lrb_ReentrantLock;  /* Lock for non-reentrant stuff         */
+    struct SignalSemaphore  lrb_ListenerLock;  /* Locks for non-reentrant stuff ..... */
+    struct SignalSemaphore  lrb_ReentrantLock;
     struct timerequest      lrb_TimerIOReq;     /* Standard timer request               */
     struct List             lrb_Providers;      /* List of EventProviders               */
     struct List             lrb_Listeners;      /* List of EventListeners               */
+    
+    /* broadcast/service task data */
+    BYTE                    lrb_sigDIE;
+    BYTE                    lrb_sigADD;
+    BYTE                    lrb_sigREM;
 };
 
 #endif /* _LOG_INTERN_H */

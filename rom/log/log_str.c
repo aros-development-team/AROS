@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -137,6 +137,18 @@ AROS_LH2(STRPTR, logCopyStrFmtA,
     }
 
     return(buf);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH2(int, logCmpStr,
+         AROS_LHA(CONST_STRPTR, str1, A0),
+         AROS_LHA(CONST_STRPTR, str2, A1),
+         LIBBASETYPEPTR, LIBBASE, 8, log)
+{
+    AROS_LIBFUNC_INIT
+
+    return strcmp(str1, str2);
 
     AROS_LIBFUNC_EXIT
 }

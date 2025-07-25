@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -17,12 +17,15 @@
 
 #include <resources/log.h>
 
+#include <stddef.h>
+
 #include "log_intern.h"
 
 #include LC_LIBDEFS_FILE
 
 extern BOOL GM_UNIQUENAME(OpenDOS)(LIBBASETYPEPTR LIBBASE);
 extern BOOL GM_UNIQUENAME(OpenUtility)(LIBBASETYPEPTR LIBBASE);
+extern BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE);
 
 #define DOSBase LIBBASE->lrb_DosBase
 #define TimerBase LIBBASE->lrb_TimerIOReq.tr_node.io_Device
@@ -33,7 +36,7 @@ AROS_LH1(VOID, logLockEntries,
          LIBBASETYPEPTR, LIBBASE, 13, log)
 {
     AROS_LIBFUNC_INIT
-
+    ObtainSemaphore(&LIBBASE->lrb_ReentrantLock);
     AROS_LIBFUNC_EXIT
 }
 
@@ -42,7 +45,7 @@ AROS_LH1(VOID, logUnlockEntries,
          LIBBASETYPEPTR, LIBBASE, 15, log)
 {
     AROS_LIBFUNC_INIT
-
+    ReleaseSemaphore(&LIBBASE->lrb_ReentrantLock);
     AROS_LIBFUNC_EXIT
 }
 
@@ -68,12 +71,21 @@ AROS_LH1(APTR, logNextEntry,
         else if (*entryHandle != (APTR)LOGEntry_Last)
         {
             le = *entryHandle;
-            leP = (struct logEntryPrivate *)((IPTR)le - ((IPTR)&leP->le_Node - (IPTR)leP));
-            leP = (struct logEntryPrivate *)GetSucc(leP);
-            if (leP)
-                *entryHandle = &leP->le_Node;
+            if (le->le_Node.ln_Type == NT_LOGENTRY)
+            {
+                leP = (struct logEntryPrivate *)((IPTR)le - offsetof(struct logEntryPrivate, le_Node));
+                leP = (struct logEntryPrivate *)GetSucc(leP);
+                if (leP)
+                    *entryHandle = &leP->le_Node;
             else
                 *entryHandle = (APTR)LOGEntry_Last;
+            }
+            else
+                *entryHandle = (APTR)LOGEntry_Last;
+        }
+        else
+        {
+            // Return the last entry if called with LOGEntry_Last
         }
         return *entryHandle;
     }
@@ -92,11 +104,11 @@ AROS_LH2(IPTR, logGetEntryAttrs,
     struct logEntry *le = (struct logEntry *)entryHandle;
     IPTR count = 0;
 
-    if (le && (GM_UNIQUENAME(OpenUtility)(LIBBASE)))
+    if (le && (le->le_Node.ln_Type == NT_LOGENTRY) && (GM_UNIQUENAME(OpenUtility)(LIBBASE)))
     {
         struct logEntryPrivate *leP;
         struct TagItem *ti;
-        leP = (struct logEntryPrivate *)((IPTR)le - ((IPTR)&leP->le_Node - (IPTR)leP));
+        leP = (struct logEntryPrivate *)((IPTR)le - offsetof(struct logEntryPrivate, le_Node));
 
         if((ti = FindTagItem(LOGMA_Flags, tags)))
         {
@@ -162,7 +174,7 @@ AROS_LH7(struct logEntry *, logAddEntryA,
     AROS_LIBFUNC_INIT
 
     struct LogResHandle *lrHandle = (struct LogResHandle *)loghandle;
-    if (lrHandle)
+    if (LIBBASE->lrb_Task && lrHandle)
     {
         struct logEntryPrivate *leP;
         if((leP = AllocVecPooled(lrHandle->lrh_Pool, sizeof(struct logEntryPrivate))))
@@ -191,31 +203,39 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                 if(GM_UNIQUENAME(OpenDOS)(LIBBASE))
                 {
                     DateStamp(&leP->le_DateStamp);
-                } else {
-                    FreeVecPooled(lrHandle->lrh_Pool, leP);
-                    return(NULL);
-                    // The below does not work since there is no device reference in the request.
-                    // Just say no above so the system can boot.
-                    //struct timerequest tr;
-                    //CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
-                    //tr.tr_node.io_Command = TR_GETSYSTIME;
-                    //DoIO((struct IORequest *) &tr);
-                    //leP->le_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
-                    //leP->le_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
-                    //leP->le_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
+                } else if (GM_UNIQUENAME(OpenTimer)(LIBBASE)) {
+                    struct timerequest tr;
+                    CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
+                    tr.tr_node.io_Command = TR_GETSYSTIME;
+                    DoIO((struct IORequest *) &tr);
+                    leP->le_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
+                    leP->le_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
+                    leP->le_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
                 }
-                
+                else
+                {
+                    leP->le_DateStamp.ds_Days = 0;
+                    leP->le_DateStamp.ds_Minute = 0;
+                    leP->le_DateStamp.ds_Tick = 0;
+                }
+
                 Forbid();
-                AddTail(&LIBBASE->lrb_LRProvider.lrh_Entries, &leP->lep_Node);
                 if (leP->lep_Producer != &LIBBASE->lrb_LRProvider)
                     AddTail(&lrHandle->lrh_Entries, &leP->le_Node);
                 Permit();
 
-#if (0)
-//                TODO
-//                PutMsg(LIBBASE->lrb_ServicePort, (struct Message *)leP);
-                Signal(LIBBASE->lrb_Task, SIGF_SINGLE);
+                leP->le_Node.ln_Type = EHMB_ADDENTRY;
+                Disable();
+#if defined(__AROSEXEC_SMP__)
+//                EXEC_SPINLOCK_LOCK(&LIBBASE->lrb_ServicePort->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
+                AddTail(&LIBBASE->lrb_ServicePort->mp_MsgList, (struct Node *)leP);
+#if defined(__AROSEXEC_SMP__)
+//                EXEC_SPINLOCK_UNLOCK(&LIBBASE->lrb_ServicePort->mp_SpinLock);
+#endif
+                Enable();
+                Signal((struct Task *)LIBBASE->lrb_ServicePort->mp_SigTask, (1 << LIBBASE->lrb_ServicePort->mp_SigBit));
+
                 return((struct logEntry *)&leP->le_Node);
             }
             FreeVecPooled(lrHandle->lrh_Pool, leP);
@@ -234,7 +254,7 @@ AROS_LH1(void, logRemEntry,
     AROS_LIBFUNC_INIT
 
     struct logEntryPrivate *leP;
-    leP = (struct logEntryPrivate *)((IPTR)le - ((IPTR)&leP->le_Node - (IPTR)leP));
+    leP = (struct logEntryPrivate *)((IPTR)le - offsetof(struct logEntryPrivate, le_Node));
 
     Forbid();
     Remove(&leP->lep_Node);
@@ -242,15 +262,19 @@ AROS_LH1(void, logRemEntry,
         Remove(&leP->le_Node);
     Permit();
 
-#if (0)
-// TODO
-//    PutMsg(LIBBASE->lrb_ServicePort, (struct Message *)leP);
+    if (LIBBASE->lrb_Task)
+    {
+        leP->le_Node.ln_Type = EHMB_REMENTRY;
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+//        EXEC_SPINLOCK_LOCK(&LIBBASE->lrb_ServicePort->mp_SpinLock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-    Signal(LIBBASE->lrb_Task, SIGF_SINGLE);
-
-    FreeVec(le->lectx_Originator);
-    FreeVec(le->le_Entry);
-    FreeVec(le);
-
+        AddTail(&LIBBASE->lrb_ServicePort->mp_MsgList, (struct Node *)leP);
+#if defined(__AROSEXEC_SMP__)
+//        EXEC_SPINLOCK_UNLOCK(&LIBBASE->lrb_ServicePort->mp_SpinLock);
+#endif
+        Enable();
+        Signal((struct Task *)LIBBASE->lrb_ServicePort->mp_SigTask, (1 << LIBBASE->lrb_ServicePort->mp_SigBit));
+    }
     AROS_LIBFUNC_EXIT
 }

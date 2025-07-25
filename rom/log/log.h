@@ -1,9 +1,11 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _RESOURCES_LOG_H
 #define _RESOURCES_LOG_H
+
+#include <exec/nodes.h>
 
 struct LogProviderNode
 {
@@ -11,9 +13,15 @@ struct LogProviderNode
 };
 
 #define EHMB_START                      (1)
+#define EHMF_START                      (1 << EHMB_START)
 #define EHMB_STOP                       (2)
+#define EHMF_STOP                       (1 << EHMB_STOP)
 #define EHMB_ADDENTRY                   (3)
+#define EHMF_ADDENTRY                   (1 << EHMB_ADDENTRY)
 #define EHMB_REMENTRY                   (4)
+#define EHMF_REMENTRY                   (1 << EHMB_REMENTRY)
+#define EHMF_LOGEVENTS                  (EHMF_ADDENTRY | EHMF_REMENTRY)
+#define EHMF_ALLEVENTS                  (EHMF_START | EHMF_STOP | EHMF_LOGEVENTS)
 
 #define LLF_READ                        (1)
 #define LLF_WRITE                       (2)
@@ -35,6 +43,8 @@ struct LogProviderNode
 #define LOGMA_SubComponent            	(LOGMA_TAGBASE | 6)
 #define LOGMA_LogTag                    (LOGMA_TAGBASE | 7)
 #define LOGMA_Entry                     (LOGMA_TAGBASE | 8)
+#define LOGMA_Level                     (LOGMA_TAGBASE | 9)
+#define LOGMA_Type                      (LOGMA_TAGBASE | 10
 
 #define LOGB_Type_Error                 0
 #define LOGF_Type_Error                 (1 << LOGB_Type_Error)
@@ -54,5 +64,24 @@ struct LogProviderNode
 #define LOGB_Type_Debug                 5
 #define LOGF_Type_Debug                 (1 << LOGB_Type_Debug)
 #define LOGF_Flag_Type_Debug            (LOGF_Type_Debug << LOGMS_Flag_Type)
+
+#define LOGF_Type_All                   (LOGF_Type_Error | LOGF_Type_Crit | LOGF_Type_Warn | LOGF_Type_Information | LOGF_Type_Verbose | LOGF_Type_Debug)
+#define LOGF_Flag_Type_All              (LOGF_Flag_Type_Error | LOGF_Flag_Type_Crit | LOGF_Flag_Type_Warn | LOGF_Flag_Type_Information | LOGF_Flag_Type_Verbose | LOGF_Flag_Type_Debug)
+
+
+enum LogEntryType {
+    LOGTYPE_Error        = LOGF_Flag_Type_Error,
+    LOGTYPE_Crit         = LOGF_Flag_Type_Crit,
+    LOGTYPE_Warn         = LOGF_Flag_Type_Warn,
+    LOGTYPE_Information  = LOGF_Flag_Type_Information,
+    LOGTYPE_Verbose      = LOGF_Flag_Type_Verbose,
+    LOGTYPE_Debug        = LOGF_Flag_Type_Debug
+};
+
+struct LogResBroadcastMsg {
+    struct Message      lrbm_Msg;
+    IPTR                lrbm_MsgType;
+    APTR                lrbm_Target;
+};
 
 #endif /* _RESOURCES_LOG_H */
