@@ -953,6 +953,9 @@ static void writeinitlib(FILE *out, struct config *cfg)
             "    AROS_USERFUNC_INIT\n"
     );
 
+    if (cfg->modtype==RESOURCE)
+        fprintf(out, "    (void)segList;\n");
+    
     if (cfg->modtype == HANDLER) {
         fprintf(out,
              "\n"
