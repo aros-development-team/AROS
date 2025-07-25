@@ -4,7 +4,10 @@ include $(SRCDIR)/config/aros.cfg
 FILES :=    seriallogger
 FUNCS :=
 
-USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS := \
+        -DMUIMASTER_YES_INLINE_STDARG \
+        -DSTRUCT_RESIDENT_PLAIN
+
 USER_CFLAGS := -Wall -Wextra
 #USER_CPPFLAGS += -DDEBUG=1
 
