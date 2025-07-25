@@ -22,6 +22,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM kernel-bsp-pc-x86_64 :	\
 #MM			   linklibs-bootconsole		\
 #MM			   kernel-log				\
+#MM			   kernel-log-serial		\
 #MM			   kernel-hidd-bus			\
 #MM			   kernel-hidd-base			\
 #MM			   kernel-ata				\
@@ -39,6 +40,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM			   kernel-pc-i386-parallel  \
 #MM			   kernel-hidd-vgagfx    	\
 #MM			   kernel-hidd-vesagfx    	\
+#MM			   kernel-hidd-gopgfx    	\
 #MM			   kernel-hidd-pci    		\
 #MM			   kernel-hidd-pci-pcipc    \
 #MM			   kernel-processor
@@ -49,10 +51,14 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx gopgfx storage system
+
+LOG_RESOURCES := serial.logger
+BSP_MISC := \
+        $(addprefix $(AROS_DEVS)/,$(LOG_RESOURCES))
 
 %make_package mmake=kernel-bsp-pc-x86_64 file=$(AROSARCHDIR)/aros-bsp.pkg \
-	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
+	devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) misc=$(BSP_MISC) \
     arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH) packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- ACPI drivers package --------
