@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
 */
 
 #define USE_INLINE_STDARG
@@ -272,9 +272,10 @@ AROS_UFH3(LONG, LogListDisplayHook,
         }
         subjEnd = strchr(evtStr, '\n');
         if (subjEnd)
-            levtID = (IPTR)subjEnd - (IPTR)evtStr;
+            levtID = (IPTR)subjEnd - (IPTR)evtStr + 1;
         else
             levtID = strlen(evtStr) + 1;
+        // Clamp the length
         if (levtID > LEN_SUBJSTRING)
             levtID = LEN_SUBJSTRING;
         if (tagStr)
@@ -286,6 +287,7 @@ AROS_UFH3(LONG, LogListDisplayHook,
         {
             logRawDoFmt(eventdetails, levtID, "%s", evtStr);
         }
+        eventdetails[levtID] = 0;
         strarr[4] = eventdetails;
     }
     else
