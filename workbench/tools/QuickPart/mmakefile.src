@@ -1,0 +1,35 @@
+# Copyright © 2012-2025, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+QPARTFILES  := \
+    QP_Main \
+    QP_FindDisks \
+    QP_ccApp \
+    QP_ccTxt \
+    QP_ccDisk \
+    QP_ccPartitionContainer \
+    QP_ccFree \
+    QP_ccPartition \
+    QP_ccOpGrp \
+    QP_ccOperation \
+    QP_PartitionColors \
+    QP_Gui \
+    QP_locale
+
+EXEDIR := $(AROS_TOOLS)/QuickPart
+
+NOWARN_FLAGS := $(NOWARN_UNUSED_VARIABLE) $(NOWARN_MAYBE_UNINITIALIZED)
+USER_CFLAGS := $(NOWARN_FLAGS)
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-tools : workbench-tools-quickpart
+#MM workbench-tools-quickpart : workbench-tools-quickpart-setup iconset-$(AROS_TARGET_ICONSET)-additional-icons-aros-tools-QuickPart workbench-tools-quickpart-images workbench-tools-quickpart-catalogs
+#MM workbench-tools-quickpart : includes linklibs kernel-hidd-storage-includes
+
+%build_prog mmake=workbench-tools-quickpart \
+    progname=QuickPart targetdir=$(EXEDIR) \
+    files=$(QPARTFILES) uselibs="mui arossupport amiga"
+
+%common

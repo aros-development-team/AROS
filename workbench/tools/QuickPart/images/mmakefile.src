@@ -1,0 +1,26 @@
+# Copyright © 2003-2014, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+#MM- workbench-tools-quickpart-images : quickpart-image-logo quickpart-image-harddisk
+
+#MM quickpart-image-logo : quickpart-images-dir
+
+quickpart-image-logo: $(AROS_TOOLS)/QuickPart/gfx/quickpart.logo
+
+#MM quickpart-image-harddisk : quickpart-images-dir
+
+quickpart-image-harddisk: $(AROS_TOOLS)/QuickPart/gfx/harddisk
+
+$(AROS_TOOLS)/QuickPart/gfx/quickpart.logo: quickpart.logo
+		@$(CP) $< $@
+
+$(AROS_TOOLS)/QuickPart/gfx/harddisk: harddisk
+		@$(CP) $< $@
+
+#MM
+quickpart-images-dir :
+	%mkdirs_q $(AROS_TOOLS)/QuickPart/gfx/
+
+%common
