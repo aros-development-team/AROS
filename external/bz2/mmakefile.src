@@ -9,7 +9,7 @@ include $(SRCDIR)/config/aros.cfg
 ###################################################################################
 
 LIBBZ2VERSION=1.0.8
-REPOSITORIES = https://sourceware.mirror.garr.it/bzip2 https://sourceware.org/pub/bzip2
+REPOSITORIES = ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/bzip2 https://sourceware.org/pub/bzip2
 ARCHBASE     := bzip2-$(LIBBZ2VERSION)
 ARCHSUFFIX := "tar.gz"
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
