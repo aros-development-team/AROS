@@ -38,6 +38,8 @@ int main(void)
     {
         struct MsgPort *MsgPort;
         MsgPort = CreateMsgPort();
+        if (!MsgPort)
+            return 0;
         APTR eventListener;
         if ((eventListener= logAddListener(MsgPort, LOGF_Flag_Type_All | EHMF_ALLEVENTS)) != NULL)
         {
@@ -101,6 +103,7 @@ int main(void)
             }
             logRemListener(eventListener);
         }
+        DeleteMsgPort(MsgPort);
     }
 
     return 20;
