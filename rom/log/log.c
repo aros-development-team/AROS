@@ -199,11 +199,11 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
                     while ((lastBroadcast = (struct logEntryPrivate *)GetMsg(LIBBASE->lrb_ServicePort)) != NULL)
                     if (lastBroadcast->le_Node.ln_Type == EHMB_ADDENTRY)
                     {
-                        Forbid();
+                        logLockEntries(LLF_WRITE);
                         AddTail(&LIBBASE->lrb_LRProvider.lrh_Entries, &lastBroadcast->lep_Node);
-                        Permit();
                         lastBroadcast->le_Node.ln_Type = NT_LOGENTRY;
                         logEventBroadcast(EHMB_ADDENTRY, &lastBroadcast->le_Node, NULL);
+                        logUnlockEntries(LLF_WRITE);
                     }
                     else if (lastBroadcast->le_Node.ln_Type == EHMB_REMENTRY)
                     {
