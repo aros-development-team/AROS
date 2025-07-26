@@ -80,6 +80,7 @@ void pLockSemShared(struct PsdBase *ps, struct PsdLockSem *pls);
 void pUnlockSem(struct PsdBase *ps, struct PsdLockSem *pls);
 
 BOOL pOpenDOS(struct PsdBase *ps);
+BOOL pHaveDOS(struct PsdBase *ps);
 
 UWORD pAllocDevAddr(struct PsdDevice *pd);
 

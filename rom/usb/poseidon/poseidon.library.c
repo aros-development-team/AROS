@@ -5420,11 +5420,16 @@ AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
         {
             if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata)))
             {
-		if (ps->ps_Flags & PSF_KLOG) {
-		    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
-		}
+                if (ps->ps_Flags & PSF_KLOG) {
+                    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
+                }
 
-                if(pOpenDOS(ps))
+                /* 
+                 * Its possible that we get called in supervisor mode here,
+                 * due to a race condition when booting - so dont try to open
+                 * DOS directly since it will cause a crash/stack/corruption
+                 */
+                if(pHaveDOS(ps))
                 {
                     DateStamp(&pem->pem_DateStamp);
                 } else {
@@ -8711,6 +8716,17 @@ BOOL pFixBrokenConfig(struct PsdPipe *pp)
     return(fixed);
 }
 /* \\\ */
+
+/* /// "pHaveDOS()" */
+BOOL pHaveDOS(LIBBASETYPEPTR ps)
+{
+    if(DOSBase)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 
 /* /// "pOpenDOS()" */
 BOOL pOpenDOS(LIBBASETYPEPTR ps)
