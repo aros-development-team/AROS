@@ -69,6 +69,15 @@
 
 *****************************************************************************************/
 
+BOOL GM_UNIQUENAME(HaveTimer)(LIBBASETYPEPTR LIBBASE)
+{
+    if (TimerBase)
+        return TRUE;
+    if (LIBBASE->lrb_sigTryTimer != -1)
+        Signal((struct Task *)LIBBASE->lrb_ServicePort->mp_SigTask, (1 << LIBBASE->lrb_sigTryTimer));
+    return FALSE;
+}
+
 BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE)
 {
     if (TimerBase)
@@ -88,12 +97,24 @@ BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE)
     return FALSE;
 }
 
+BOOL GM_UNIQUENAME(HaveDOS)(LIBBASETYPEPTR LIBBASE)
+{
+    if (DOSBase)
+        return TRUE;
+    if (LIBBASE->lrb_sigTryDOS != -1)
+        Signal((struct Task *)LIBBASE->lrb_ServicePort->mp_SigTask, (1 << LIBBASE->lrb_sigTryDOS));
+    return FALSE;
+}
+
 BOOL GM_UNIQUENAME(OpenDOS)(LIBBASETYPEPTR LIBBASE)
 {
     if (DOSBase)
         return TRUE;
-    else if ((DOSBase = OpenLibrary("dos.library", 39)))
-        return TRUE;
+    else
+    {
+        if ((DOSBase = OpenLibrary("dos.library", 39)))
+            return TRUE;
+    }
     return FALSE;
 }
 
@@ -176,10 +197,28 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
         if (LIBBASE->lrb_sigDIE == -1)
             return;
 
+        if (!DOSBase)
+        {
+            LIBBASE->lrb_sigTryDOS = AllocSignal(-1);
+            if (LIBBASE->lrb_sigTryDOS == -1)
+                return;
+        }
+
+        if (!TimerBase)
+        {
+            LIBBASE->lrb_sigTryTimer = AllocSignal(-1);
+            if (LIBBASE->lrb_sigTryTimer == -1)
+                return;
+        }
+
         /* we are now ready ..*/
         LIBBASE->lrb_Task = thisTask;
 
         ULONG sigmask = (1 << LIBBASE->lrb_sigDIE) | (1 << LIBBASE->lrb_ServicePort->mp_SigBit);
+        if (!DOSBase)
+            sigmask |= (1 << LIBBASE->lrb_sigTryDOS);
+        if (!TimerBase)
+            sigmask |= (1 << LIBBASE->lrb_sigTryTimer);
 
         logAddEntry(LOGF_Flag_Type_Information, &LIBBASE->lrb_LRProvider, "", __func__, 0,
                             "AROS System Logger v%u.%u\nLogging started\nListening on port 0x%p", MAJOR_VERSION, MINOR_VERSION, LIBBASE->lrb_ServicePort);
@@ -194,6 +233,18 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
                             "Support task ending\n");
                     LIBBASE->lrb_Task = NULL;
                 }
+                else if (!DOSBase &&
+                        (signals & (1 << LIBBASE->lrb_sigTryDOS)))
+                {
+                    GM_UNIQUENAME(OpenDOS)(LIBBASE);
+                }
+                else if (!TimerBase &&
+                        (signals & (1 << LIBBASE->lrb_sigTryTimer)))
+                {
+                    GM_UNIQUENAME(OpenTimer)(LIBBASE);
+                    // TODO: Adjust existing entries once we have a valid timer.
+                }
+
                 if (signals & (1 << LIBBASE->lrb_ServicePort->mp_SigBit))
                 {
                     while ((lastBroadcast = (struct logEntryPrivate *)GetMsg(LIBBASE->lrb_ServicePort)) != NULL)
@@ -239,6 +290,11 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR LIBBASE)
     NewList(&LIBBASE->lrb_Providers);
     AddTail(&LIBBASE->lrb_Providers, &LIBBASE->lrb_LRProvider.lrh_Node);
     NewList(&LIBBASE->lrb_Listeners);
+
+    LIBBASE->lrb_sigTryDOS = -1;
+    LIBBASE->lrb_sigTryTimer = -1;
+
+    LIBBASE->lrb_KernelBase = OpenResource("kernel.resource");
 
     InitSemaphore(&LIBBASE->lrb_ListenerLock);
     InitSemaphore(&LIBBASE->lrb_ReentrantLock);

@@ -12,6 +12,10 @@ struct LogProviderNode
     struct Node    lpn_Node;
 };
 
+#define NT_LISTENER                     (1)
+#define NT_PROVIDER                     (2)
+#define NT_LOGENTRY                     (3)
+
 #define EHMB_START                      (1)
 #define EHMF_START                      (1 << EHMB_START)
 #define EHMB_STOP                       (2)

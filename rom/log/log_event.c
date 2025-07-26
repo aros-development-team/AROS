@@ -4,6 +4,7 @@
 
 #include <proto/exec.h>
 #define __NOLIBBASE__
+#include <proto/kernel.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/timer.h>
@@ -23,13 +24,14 @@
 
 #include LC_LIBDEFS_FILE
 
-extern BOOL GM_UNIQUENAME(OpenDOS)(LIBBASETYPEPTR LIBBASE);
+extern BOOL GM_UNIQUENAME(HaveDOS)(LIBBASETYPEPTR LIBBASE);
 extern BOOL GM_UNIQUENAME(OpenUtility)(LIBBASETYPEPTR LIBBASE);
-extern BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE);
+extern BOOL GM_UNIQUENAME(HaveTimer)(LIBBASETYPEPTR LIBBASE);
 
 #define DOSBase LIBBASE->lrb_DosBase
 #define TimerBase LIBBASE->lrb_TimerIOReq.tr_node.io_Device
 #define UtilityBase LIBBASE->lrb_UtilityBase
+#define KernelBase LIBBASE->lrb_KernelBase
 
 AROS_LH1(VOID, logLockEntries,
          AROS_LHA(ULONG, flags, D0),
@@ -200,10 +202,10 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                 leP->lectx_Originator = logCopyStrFmt("0x%p %s", thisTask, ((struct Node *)thisTask)->ln_Name);
                 leP->le_eid = eventid;
 
-                if(GM_UNIQUENAME(OpenDOS)(LIBBASE))
+                if(GM_UNIQUENAME(HaveDOS)(LIBBASE))
                 {
                     DateStamp(&leP->le_DateStamp);
-                } else if (GM_UNIQUENAME(OpenTimer)(LIBBASE)) {
+                } else if (GM_UNIQUENAME(HaveTimer)(LIBBASE)) {
                     struct timerequest tr;
                     CopyMem(&LIBBASE->lrb_TimerIOReq, &tr, sizeof(struct timerequest));
                     tr.tr_node.io_Command = TR_GETSYSTIME;
@@ -217,6 +219,15 @@ AROS_LH7(struct logEntry *, logAddEntryA,
                     leP->le_DateStamp.ds_Days = 0;
                     leP->le_DateStamp.ds_Minute = 0;
                     leP->le_DateStamp.ds_Tick = 0;
+                    if (KernelBase)
+                    {
+                        UQUAD stamp = KrnTimeStamp();
+                        if (stamp != 0)
+                        {
+                            //
+                            
+                        }
+                    }
                 }
 
                 Forbid();

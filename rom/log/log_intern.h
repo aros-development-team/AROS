@@ -13,10 +13,6 @@
 
 #include <devices/timer.h>
 
-#define NT_LISTENER                     (1)
-#define NT_PROVIDER                     (2)
-#define NT_LOGENTRY                     (3)
-    
 #define LOGMS_Flag_Private              24
 #define LOGM_Flag_PrivateMask           (0xFF << LOGMS_Flag_Private)
 
@@ -69,6 +65,7 @@ struct logListenerHook
 struct LogResBase
 {
     struct Library          lrb_Lib;
+    APTR                    lrb_KernelBase;
     struct UtilityBase      *lrb_UtilityBase;   /* for tags etc                         */
     struct Library          *lrb_DosBase;       /* for dos stuff                        */
 
@@ -89,8 +86,8 @@ struct LogResBase
     
     /* broadcast/service task data */
     BYTE                    lrb_sigDIE;
-    BYTE                    lrb_sigADD;
-    BYTE                    lrb_sigREM;
+    BYTE                    lrb_sigTryDOS;
+    BYTE                    lrb_sigTryTimer;
 };
 
 #endif /* _LOG_INTERN_H */
