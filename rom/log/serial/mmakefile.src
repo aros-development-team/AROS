@@ -11,7 +11,7 @@ USER_CPPFLAGS := \
 USER_CFLAGS := -Wall -Wextra
 #USER_CPPFLAGS += -DDEBUG=1
 
-#MM kernel-log-serial : linklibs includes
+#MM kernel-log-serial : linklibs includes kernel-log-includes
 
 USER_LDFLAGS := -static
 
