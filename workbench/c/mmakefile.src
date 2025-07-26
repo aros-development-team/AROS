@@ -137,6 +137,11 @@ USER_LDFLAGS     := -static
     files=$(SH_FILES) targetdir=$(AROS_C) \
     usestartup=no
 
+#MM workbench-c-logger : kernel-log-includes
+
+%build_prog mmake=workbench-c-logger progname=Logger \
+    files=Logger targetdir=$(AROS_C) coverageinstr=no usestartup=no
+
 ifneq ($(AROS_TARGET_CPU),m68k)
     USER_CFLAGS += -DTARGETCPU="\"$(AROS_TARGET_CPU)\""
 endif
