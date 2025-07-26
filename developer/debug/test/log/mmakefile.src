@@ -12,7 +12,7 @@ FILES := \
 #MM- test : test-log
 #MM- test-quick : test-log-quick
 
-#MM  test-log : includes linklibs
+#MM  test-log : includes linklibs kernel-log-includes
 
 %build_progs mmake=test-log \
     files=$(FILES) targetdir=$(EXEDIR)
