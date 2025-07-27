@@ -1151,6 +1151,12 @@ endif
 %(mmake)-link_DIRS += $(AROS_LIB)/
 # add lib and .a to static linklib names
 %(mmake)-link_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+ifeq (%(usestartup),yes)
+    %(mmake)-link_LIBS += startup.o
+endif
+ifeq (%(detach),yes)
+    %(mmake)-link_LIBS += detach.o
+endif
 # search for the linklibs in the given path, ignore ones not found
 %(mmake)-link_DEPLIBS := $(foreach lib,$(%(mmake)-link_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(%(mmake)-link_DIRS)))) \
@@ -1159,9 +1165,10 @@ endif
 
 $(%(mmake)-link_PROGS) : OBJDIR := %(objdir)
 $(%(mmake)-link_PROGS) : LDFLAGS := $(strip %(ldflags))
-$(%(mmake)-link_PROGS) : LIBS := $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS) %(usehostlibs))
+$(%(mmake)-link_PROGS) : LIBS := $(strip $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+$(%(mmake)-link_PROGS) : ARCHLIBS := $(strip $(addprefix -l,%(usehostlibs)) %(archlibs))
 $(%(mmake)-link_PROGS) : %(targetdir)/% : %(objdir)/%.o $(%(mmake)-link_DEPLIBS)
-	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="%(archlibs)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="$(ARCHLIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
 %end
 #------------------------------------------------------------------------------
 
@@ -1841,10 +1848,10 @@ endif
 # Build programs, for every C file an executable will be built with the same
 # name as the C file
 %define build_progs mmake=/A files=/A nix=no \
-    objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
+    objdir="$(GENDIR)/$(CURDIR)" srcdir= \
+    targetdir="$(AROSDIR)/$(CURDIR)" \
     cppflags="$(CPPFLAGS)" cflags="$(CFLAGS)" dflags= ldflags= \
-    includedir= libdir= \
-    compiler=target \
+    includedir= libdir= compiler=target usetree=no \
     uselibs= usehostlibs= usestartup=yes detach=no \
     coverageinstr="$(TARGET_COVERAGEINSTR)" funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
 
@@ -1853,21 +1860,26 @@ endif
 %gen_archspecificrules mainmmake=%(mmake)
 %gen_archspecificrules mainmmake=%(mmake) target=-quick
 
-%(mmake)_OBJDIR    := %(objdir)
-%(mmake)_TARGETDIR := %(targetdir)
+%(mmake)_OBJDIR     := %(objdir)
+%(mmake)_TARGETDIR  := %(targetdir)
 %(mmake)_LIBS := %(uselibs)
 
-%(mmake)_FILES     := %(files)
-%(mmake)_OBJS      := $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES)))
-%(mmake)_DEPS      := $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES)))
-%(mmake)_EXES      := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_FILES))
+%(mmake)_FILES      := %(files)
+ifeq (%(usetree),no)
+    %(mmake)_OBJS   ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_FILES)))))
+    %(mmake)_DEPS   := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_FILES)))))
+else
+    %(mmake)_OBJS   ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES))))
+    %(mmake)_DEPS   := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES))))
+endif
+%(mmake)_EXES       := $(addprefix $(%(mmake)_TARGETDIR)/,$(notdir $(%(mmake)_FILES)))
 
-%(mmake)_CPPFLAGS := %(cppflags)
+%(mmake)_CPPFLAGS   := %(cppflags)
 ifneq (%(includedir),)
     %(mmake)_CPPFLAGS += -I%(includedir)
 endif
-%(mmake)_CFLAGS    := %(cflags)
-%(mmake)_COVERAGE := no
+%(mmake)_CFLAGS     := %(cflags)
+%(mmake)_COVERAGE   := no
 
 ifeq (%(compiler),target)
 %(mmake)_ARCHLIBS := $(TARGET_C_LIBS)
@@ -1926,15 +1938,17 @@ endif
 %(mmake) : $(%(mmake)_EXES)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
-%rule_compile_multi mmake=%(mmake) basenames="$(%(mmake)_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
-    cflags="$(%(mmake)_CFLAGS)" cppflags="$(%(mmake)_CPPFLAGS)" dflags="$(%(mmake)_DFLAGS)" compiler="%(compiler)"
+%rule_compile_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cflags="$(%(mmake)_CFLAGS)" cppflags="$(%(mmake)_CPPFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)" usetree=%(usetree) srcdir=%(srcdir)
 
-%rule_link_progs mmake=%(mmake) progs="$(%(mmake)_FILES)" nix="%(nix)" \
-    targetdir="$(%(mmake)_TARGETDIR)" objdir="$(%(mmake)_OBJDIR)" \
-    ldflags="$(%(mmake)_LDFLAGS)" \
+%rule_link_progs mmake=%(mmake) \
+    progs="$(notdir $(%(mmake)_FILES))" targetdir="$(%(mmake)_TARGETDIR)" \
+    objdir="$(%(mmake)_OBJDIR)" ldflags="$(%(mmake)_LDFLAGS)" nix="%(nix)" \
     uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" archlibs="$(%(mmake)_ARCHLIBS)" \
-    usestartup="%(usestartup)" detach="%(detach)" \
-    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" \
+    coverageinstr="$(%(mmake)_COVERAGE)" usestartup="%(usestartup)" detach="%(detach)"
 
 endif
 
