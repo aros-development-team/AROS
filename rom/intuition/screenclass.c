@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -841,10 +841,13 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     case SA_PixelFormat:
         if (IS_HIDD_BM(screen->Screen.RastPort.BitMap))
         {
-            OOP_Object *pixfmt;
+            OOP_Object *pixfmt = NULL;
 
             OOP_GetAttr(HIDD_BM_OBJ(screen->Screen.RastPort.BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
-            OOP_GetAttr(pixfmt, aHidd_PixFmt_CgxPixFmt, msg->opg_Storage);
+            if (pixfmt)
+                OOP_GetAttr(pixfmt, aHidd_PixFmt_CgxPixFmt, msg->opg_Storage);
+            else
+                *msg->opg_Storage = -1;
         }
         else
         {
