@@ -1,0 +1,527 @@
+#include <libraries/debug.h>
+#include <proto/debug.h>
+
+#include <ctype.h>
+#include <string.h>
+
+#include "debug_internal.h"
+#include "exec_intern.h"
+#include "exec_util.h"
+
+/****************************************************************************************/
+
+char *NextWord(char *s)
+{
+    /* Skip to first space or EOL */
+    while (*s != ' ')
+    {
+        if (!*s)
+            return s;
+        s++;
+    }
+
+    /* Then skip to first non-space */
+    while (*++s == ' ');
+
+    return s;
+}
+
+/*****************************************************************************/
+
+void InternalDebug(void *stack)
+{
+    char comm[128];
+    char *data;
+    BOOL ignorelf = FALSE;
+
+    /*
+     * Try to obtain debug input from the kernel.
+     * If it failed, we will hang up in RawMayGetChar(), so exit immediately.
+     */
+    if (!KrnObtainInput())
+        return;
+
+    struct Task *me = FindTask(NULL);
+
+    RawIOInit();
+
+    if (stack) {
+        kprintf("Entering SAD. Quitting will resume execution at %p.\n",
+                *(void **)stack);
+    }
+    for (;;)
+    {
+        int i = 0;
+
+        kprintf("SAD(%d,%d)>", TDNESTCOUNT_GET, IDNESTCOUNT_GET);
+
+        /* Get Command code */
+        do
+        {
+            char key = GetK(SysBase);
+            BOOL t = ignorelf;
+
+            /* We skip only single LF which immediately follows the CR. So we remember
+               previous value of the flag and reset it when any character arrives. */
+            ignorelf = FALSE;
+            if (key == '\n') {
+                if (t)
+                    continue;
+                else
+                    break;
+            }
+
+            /* TABs are problematic to deal with, we ignore them */
+            else if (key == 0x09)
+                continue;
+
+            /* If we've just got CR, we may get LF next and we'll need to skip it */
+            else if (key == '\r') {
+                ignorelf = TRUE;
+                break;
+            }
+
+            /* Process backspace */
+            else if (key == 0x08)
+            {
+                if (i > 0) {
+                    /* Go backwards, erase the character, then go backwards again */
+                    RawPutChar(key);
+                    RawPutChar(' ');
+                    RawPutChar(key);
+                    i--;
+                }
+                continue;
+            }
+
+            RawPutChar(key);
+            comm[i++] = key;
+        }
+        while (i < (int)sizeof(comm)-1);
+        comm[i] = 0;
+        RawPutChar('\n');
+
+        /* Now get data for command */
+        data = NextWord(comm);
+        comm[2] = 0;
+
+        /* Reboot command */
+        if (strcmp(comm, "RE") == 0 && strcmp(data, "AAAAAAAA") == 0)
+            ColdReboot();
+        /* Restart command */
+        else if (strcmp(comm, "RS") == 0 && strcmp(data, "FFFFFFFF") == 0)
+            ShutdownA(SD_ACTION_COLDREBOOT);
+        /* Forbid command */
+        else if (strcmp(comm, "FO") == 0)
+            Forbid();
+        /* Permit command */
+        else if (strcmp(comm, "PE") == 0)
+            Permit();
+        /* Disable command */
+        else if (strcmp(comm, "DI") == 0)
+            Disable();
+        /* Show task information */
+        else if (strcmp(comm, "TI") == 0)
+        {
+            struct Task *t = GetA(data);
+
+            if (!t) {
+              t = me;
+            }
+            if (!Exec_CheckTask(t, SysBase))
+            {
+                kprintf("Task 0x%p not found\n", t);
+                continue;
+            }
+
+            kprintf("Task status (%p = '%s'):\n"
+                            "tc_Node.ln_Pri = %d\n"
+                            "tc_Flags       = %02x\n"
+                            "tc_SigAlloc    = %04.4lx\n"
+                            "tc_SigWait     = %04.4lx\n"
+                            "tc_SPLower     = %p\n"
+                            "tc_SPReg       = %p\n"
+                            "tc_SPUpper     = %p\n"
+                            "tc_IDNestCnt   = %d\n"
+                            "tc_TDNestCnt   = %d\n",
+                            t, t->tc_Node.ln_Name,
+                            t->tc_Node.ln_Pri,
+                            t->tc_Flags,
+                            t->tc_SigAlloc,
+                            t->tc_SigWait,
+                            t->tc_SPLower,
+                            t->tc_SPReg,
+                            t->tc_SPUpper,
+                            t->tc_IDNestCnt,
+                            t->tc_TDNestCnt);
+        }
+        else if (strcmp(comm,"RI") == 0)
+        {
+            struct Task *t = GetA(data);
+
+            if (!t) {
+              t = me;
+            }
+            if (!Exec_CheckTask(t, SysBase))
+            {
+                kprintf("Task 0x%p not found\n", t);
+                continue;
+            }
+
+            kprintf("Task context (%p = '%s'):\n", t, t->tc_Node.ln_Name);
+            FormatCPUContext(NULL, t->tc_UnionETask.tc_ETask->et_RegFrame, SysBase);
+            /* If inspecting the task that called Debug, also show SP and PC
+               from the time of the Debug call as that is likely more useful. */
+            if ((t == me) && stack) {
+                kprintf("Return address after SAD exit: %p (on stack address %p)\n",
+                        *(void **)stack, stack);
+            }
+            RawPutChar('\n');
+        }
+        /* Enable command */
+        else if (strcmp(comm, "EN") == 0)
+            Enable();
+        /* ShowLibs command */
+        else if (strcmp(comm, "SL") == 0)
+        {
+            struct Node * node;
+
+            kprintf("Available libraries:\n");
+
+            /* Look through the list */
+            for (node = GetHead(&SysBase->LibList); node; node = GetSucc(node))
+            {
+                kprintf("0x%p : %s\n", node, node->ln_Name);
+            }
+        }
+        else if (strcmp(comm, "SI") == 0)
+        {
+/*          char buf[512];
+            
+            kprintf("Available interrupts:\n");
+            
+            get_irq_list(&buf);
+            kprintf(buf);*/
+            kprintf("Not implemented\n");
+        }
+        /* ShowResources command */
+        else if (strcmp(comm, "SR") == 0)
+        {
+            struct Node * node;
+
+            kprintf("Available resources:\n");
+
+            /* Look through the list */
+            for (node = GetHead(&SysBase->ResourceList); node; node = GetSucc(node))
+            {
+                kprintf("0x%p : %s\n", node, node->ln_Name);
+            }
+        }
+        /* ShowDevices command */
+        else if (strcmp(comm,"SD") == 0)
+        {
+            struct Node * node;
+
+            kprintf("Available devices:\n");
+
+            /* Look through the list */
+            for (node=GetHead(&SysBase->DeviceList); node; node = GetSucc(node))
+            {
+                kprintf("0x%p : %s\n", node, node->ln_Name);
+            }
+        }
+        /* ShowTasks command */
+        else if (strcmp(comm, "ST") == 0)
+        {
+            struct Node * node;
+
+            kprintf("Task List:\n");
+
+#if defined(__AROSEXEC_SMP__)
+            ForeachNode(&PrivExecBase(SysBase)->TaskRunning, node)
+            {
+#else
+            node = (struct Node *)GET_THIS_TASK;
+#endif
+            kprintf("0x%p T %d %s\n", node, node->ln_Pri, node->ln_Name);
+#if defined(__AROSEXEC_SMP__)
+            }
+#endif
+            /* Look through the list */
+            for (node = GetHead(&SysBase->TaskReady); node; node = GetSucc(node))
+            {
+                kprintf("0x%p R %d %s\n", node, node->ln_Pri, node->ln_Name);
+            }
+
+            for (node = GetHead(&SysBase->TaskWait); node; node = GetSucc(node))
+            {
+                kprintf("0x%p W %d %s\n", node, node->ln_Pri, node->ln_Name);
+            }
+
+            kprintf("Idle called %d times\n", SysBase->IdleCount);
+        }
+        /* Help command */
+        else if (strcmp(comm, "HE") == 0)
+        {
+            kprintf("SAD Help:\n");
+            kprintf("RE AAAAAAAA - reboots AROS - ColdReboot()\n"
+                    "RS FFFFFFFF - RESET\n"
+                    "FO - Forbid()\n"
+                    "PE - Permit()\n"
+                    "DI - Disable()\n"
+                    "EN - Enable()\n"
+                    "SI - Show IRQ lines status\n"
+                    "TI - Show Active task info\n"
+                    "RI xxxxxxxx - Show registers inside task's context\n"
+                    "AM xxxxxxxx yyyyyyyy - AllocVec - size=xxxxxxxx, "
+                    "requiments=yyyyyyyy\n"
+                    "FM xxxxxxxx - FreeVec from xxxxxxxx\n"
+                    "RB xxxxxxxx - read byte from xxxxxxxx\n"
+                    "RW xxxxxxxx - read word from xxxxxxxx\n"
+                    "RL xxxxxxxx - read long from xxxxxxxx\n"
+                    "WB xxxxxxxx bb - write byte bb at xxxxxxxx\n"
+                    "WW xxxxxxxx wwww - write word wwww at xxxxxxxx\n"
+                    "WL xxxxxxxx llllllll - write long llllllll at xxxxxxxx\n"
+                    "RA xxxxxxxx ssssssss - read array(ssssssss bytes long) "
+                    "from xxxxxxxx\n"
+                    "RC xxxxxxxx ssssssss - read ascii (ssssssss bytes long) "
+                    "from xxxxxxxx\n"
+                    "QT 00000000 - quit SAD\n"
+                    "SL - show all available libraries (libbase : libname)\n"
+                    "SR - show all available resources (resbase : resname)\n"
+                    "SD - show all available devices (devbase : devname)\n"
+                    "SS xxxxxxxx - show symbol for xxxxxxxx\n"
+                    "ST - show tasks (T - this, R - ready, W - wait)\n"
+                    "HE - this help.\n");
+        }
+        /* AllocMem command */
+        else if (strcmp(comm, "AM") == 0)
+        {
+            ULONG size = GetL(data);
+            ULONG requim = GetL(NextWord(data));
+
+            kprintf("Allocated at 0x%p\n", AllocVec(size, requim));
+        }
+        /* FreeMem command */
+        else if (strcmp(comm, "FM") == 0)
+        {
+            APTR base = GetA(&data[0]);
+
+            kprintf("Freed at 0x%p\n", base);
+            FreeVec(base);
+        }
+        /* ReadByte */
+        else if (strcmp(comm, "RB") == 0)
+        {
+            UBYTE *addr = GetA(data);
+
+            kprintf("Byte at 0x%p: %02X\n", addr, *addr);
+        }
+        /* ReadWord */
+        else if (strcmp(comm, "RW") == 0)
+        {
+            UWORD *addr = GetA(data);
+
+            kprintf("Word at 0x%p: %04X\n", addr, *addr);
+        }
+        /* ReadLong */
+        else if (strcmp(comm, "RL") == 0)
+        {
+            ULONG *addr = GetA(data);
+
+            kprintf("Long at 0x%p: %08X\n", addr, *addr);
+        }
+        /* WriteByte */
+        else if (strcmp(comm,"WB") == 0)
+        {
+            UBYTE *addr = GetA(data);
+            UBYTE val = GetB(NextWord(data));
+
+            kprintf("Byte at 0x%p: %02X\n", addr, val);
+            *addr = val;
+        }
+        /* WriteWord */
+        else if (strcmp(comm, "WW") == 0)
+        {
+            UWORD *addr = GetA(data);
+            UWORD val = GetW(NextWord(data));
+
+            kprintf("Word at 0x%p: %04X\n", addr, val);
+            *addr = val;
+        }
+        /* WriteLong */
+        else if (strcmp(comm, "WL") == 0)
+        {
+            ULONG *addr = GetA(data);
+            ULONG val = GetL(NextWord(data));
+
+            kprintf("Long at 0x%p: %08X\n", addr, val);
+            *addr = val;
+        }
+        /* ReadArray */
+        else if (strcmp(comm, "RA") == 0)
+        {
+            UBYTE *ptr = GetA(data);
+            ULONG cnt = GetL(NextWord(data));
+            ULONG t;
+
+            kprintf("Array from 0x%p (size=0x%08X):\n", ptr, cnt);
+
+            for(t = 1; t <= cnt; t++)
+            {
+                kprintf("%02X ", *ptr++);
+                if(!(t % 16)) kprintf("\n");
+            }
+            kprintf("\n");
+        }
+        /* ReadASCII */
+        else if (strcmp(comm, "RC") == 0)
+        {
+            char *ptr = GetA(data);
+            ULONG cnt = GetL(NextWord(data));
+            ULONG t;
+
+            kprintf("ASCII from 0x%p (size=%08X):\n", ptr, cnt);
+
+            for(t = 1; t <= cnt; t++)
+            {
+                RawPutChar(*ptr++);
+                if(!(t % 70)) kprintf(" \n");
+            }
+            kprintf(" \n");
+        }
+        else if (strcmp(comm, "SS") == 0) {
+            char *ptr = GetA(data);
+            STRPTR modname = "(unknown)";
+            STRPTR symname = "(unknown)";
+            APTR   sym_l   = (APTR)(IPTR)0;
+            APTR   sym_h   = (APTR)~(IPTR)0;
+            struct TagItem tags[] = {
+                { DL_ModuleName, (IPTR)&modname },
+                { DL_SymbolName, (IPTR)&symname },
+                { DL_SymbolStart, (IPTR)&sym_l  },
+                { DL_SymbolEnd, (IPTR)&sym_h },
+                { TAG_END }
+            };
+
+            if (DebugBase) {
+                DecodeLocationA(ptr, tags);
+            }
+
+            kprintf("%p:%p %s %s+0x%p\n", sym_l, sym_h, modname, symname, (APTR)ptr - (APTR)sym_l);
+        }
+        else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
+        {
+            kprintf("Quitting SAD...\n");
+            KrnReleaseInput(); /* Release debug input */
+            return;
+        }
+        else kprintf("?? Type HE for help\n");
+    }
+}
+
+/****************************************************************************************/
+
+char GetK(struct ExecBase *SysBase)
+{
+    int i;
+
+    do
+    {
+        i = RawMayGetChar();
+    } while(i == -1);
+
+    return (char)i;
+}
+
+/****************************************************************************************/
+
+UQUAD GetQ(char* string)
+{
+    UQUAD       ret = 0;
+    int         i;
+    char        digit;
+
+    for(i = 0; i < 16; i++)
+    {
+        digit = toupper(string[i]);
+
+        if (!isxdigit(digit))
+            break;
+
+        digit -= '0';
+        if (digit > 9) digit -= 'A' - '0' - 10;
+        ret = (ret << 4) + digit;
+    }
+
+    return ret;
+}
+
+/****************************************************************************************/
+
+ULONG GetL(char* string)
+{
+    ULONG       ret = 0;
+    int         i;
+    char        digit;
+    
+    for(i = 0; i < 8; i++)
+    {
+        digit = toupper(string[i]);
+
+        if (!isxdigit(digit))
+            break;
+
+        digit -= '0';
+        if (digit > 9) digit -= 'A' - '0' - 10;
+        ret = (ret << 4) + digit;
+    }
+
+    return ret;
+}
+
+/****************************************************************************************/
+
+UWORD GetW(char* string)
+{
+    UWORD       ret = 0;
+    int         i;
+    char        digit;
+    
+    for(i = 0; i < 4; i++)
+    {
+        digit = toupper(string[i]);
+
+        if (!isxdigit(digit))
+            break;
+
+        digit -= '0';
+        if (digit > 9) digit -= 'A' - '0' - 10;
+        ret = (ret << 4) + digit;
+    }
+
+    return ret;
+}
+
+/****************************************************************************************/
+
+UBYTE GetB(char* string)
+{
+    UBYTE       ret = 0;
+    int         i;
+    char        digit;
+    
+    for(i = 0; i < 2; i++)
+    {
+        digit = toupper(string[i]);
+
+        if (!isxdigit(digit))
+            break;
+
+        digit -= '0';
+        if (digit > 9) digit -= 'A' - '0' - 10;
+        ret = (ret << 4) + digit;
+    }
+
+    return ret;
+}

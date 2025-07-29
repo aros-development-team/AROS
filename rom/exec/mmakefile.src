@@ -38,6 +38,7 @@ ALL_FUNCTIONS := \
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers intserver_vblank \
 	      memory memory_nommu mungwall semaphores service traphandler \
+	      debug_internal \
 	      exec_flags exec_debug exec_vlog exec_util exec_locks supervisoralert
 
 %get_archincludes modname=kernel \
