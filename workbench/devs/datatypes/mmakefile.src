@@ -18,6 +18,7 @@ AUDIODESCRIPTORS  := \
 			 M3U MID MP1 MP3 \
 			 OGG RM WAVE WMA
 PICDESCRIPTORS    := \
+			 AVIF \
 			 Degas \
 			 GEMImage \
 			 HEIC \

@@ -1,0 +1,11 @@
+# DataType Description for AVIF
+Name=AVIF
+Version=$VER: AVIF 45.1 (04.06.2025)
+BaseName=heic
+Pattern=#?.avif
+Mask= ANY ANY ANY ANY 'f' 't' 'y' 'p'
+GroupID=pict
+ID=avif
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
+

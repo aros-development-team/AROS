@@ -2,7 +2,7 @@
 Name=HEIC
 Version=$VER: HEIC 45.1 (04.06.2025)
 BaseName=heic
-Pattern=#?.(heic|heif|avif)
+Pattern=#?.(heic|heif)
 Mask= ANY ANY ANY ANY 'f' 't' 'y' 'p'
 GroupID=pict
 ID=heic
