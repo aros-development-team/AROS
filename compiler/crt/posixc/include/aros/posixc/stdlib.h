@@ -60,7 +60,7 @@ int getloadavg(double loadavg[], int n);
 /* NOTIMPL char *mkdtemp(char *); */
 /* NOTIMPL int posix_openpt(int); */
 /* NOTIMPL char *ptsname(int); */
-/* NOTIMPL int rand_r(unsigned int *); */
+int rand_r(unsigned int *);
 /* NOTIMPL void setkey(const char *); */
 /* NOTIMPL int unlockpt(int); */
 
