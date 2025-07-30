@@ -14,7 +14,9 @@ CLASSFILES := webpclass
 #MM datatypes-heic-linklibs-heif : \
 #MM includes \
 #MM linklibs \
-#MM datatypes-heic-linklibs-heif-genfiles datatypes-heic-linklibs-de265
+#MM datatypes-heic-linklibs-heif-genfiles \
+#MM datatypes-heic-linklibs-de265 \
+#MM datatypes-heic-linklibs-aom
 
 #MM datatypes-heic-linklibs-de265 : \
 #MM includes \
@@ -61,51 +63,22 @@ AOMARCHSRCDIR := $(PORTSDIR)/libaom/$(AOMARCHBASE)
 #MM- includes-copy : \
 #MM     linklibs-aom-fetch linklibs-heif-fetch
 
-#MM datatypes-heic-linklibs-aom : linklibs-aom-fetch datatypes-heic-linklibs-aom-generated
+#MM datatypes-heic-linklibs-aom : linklibs-aom-fetch
 
 USER_INCLUDES   := -I$(GENDIR)/$(CURDIR)/libaom -I$(AOMARCHSRCDIR)
 
-#LIBAOMCFILES := \
-#            config/aom_config
+LIBAOM_CMAKEOPTIONS := \
+  -DAOM_TARGET_CPU=$(AROS_TARGET_CPU) \
+  -DBUILD_SHARED_LIBS=OFF \
+  -DENABLE_NASM=ON \
+  -DCONFIG_AV1_ENCODER=0 \
+  -DCONFIG_AV1_DECODER=1 \
+  -DCONFIG_MULTITHREAD=0
 
-LIBAOMCFILES := \
-            aom/src/aom_codec \
-            aom/src/aom_decoder \
-            aom/src/aom_encoder \
-            aom/src/aom_image \
-            aom/src/aom_integer
+TARGET_LDFLAGS += -static-libstdc++
 
-LIBAOMCAFILES := \
-            "${AOM_ROOT}/av1/arg_defs.c" \
-            "${AOM_ROOT}/common/args_helper.c" \
-            "${AOM_ROOT}/common/args.c" \
-            "${AOM_ROOT}/common/av1_config.c" \
-            "${AOM_ROOT}/common/md5_utils.c" \
-            "${AOM_ROOT}/common/tools_common.c" \
-            "${AOM_ROOT}/common/rawenc.c" \
-            "${AOM_ROOT}/common/y4menc.c" \
-            "${AOM_ROOT}/common/ivfdec.c" \
-        "${AOM_ROOT}/common/obudec.c" \
-        "${AOM_ROOT}/common/video_reader.c"
-
-%build_linklib mmake=datatypes-heic-linklibs-aom \
-    libname=aom \
-    files="$(addprefix $(AOMARCHSRCDIR)/,$(LIBAOMCFILES))" \
-    cxxfiles="$(addprefix $(AOMARCHSRCDIR)/,$(LIBAOMCXXFILES))" \
-    objdir=$(GENDIR)/$(CURDIR)/libaom libdir=$(GENDIR)/$(CURDIR)/lib
-
-$(GENDIR)/$(CURDIR)/libaom/config/aom_config.h : $(SRCDIR)/$(CURDIR)/aom_config.h $(SRCDIR)/$(CURDIR)/mmakefile.src
-	@$(ECHO) "Generating libaom/config/aom_config.h ..."
-	%mkdir_q dir=$(GENDIR)/$(CURDIR)/libaom/config
-	@$(CP) $< $@
-
-$(GENDIR)/$(CURDIR)/libaom/config/aom_version.h : $(SRCDIR)/$(CURDIR)/aom_version.h $(SRCDIR)/$(CURDIR)/mmakefile.src
-	@$(ECHO) "Generating libaom/config/aom_version.h ..."
-	%mkdir_q dir=$(GENDIR)/$(CURDIR)/libaom/config
-	@$(CP) $< $@
-
-#MM
-datatypes-heic-linklibs-aom-generated : $(GENDIR)/$(CURDIR)/libaom/config/aom_config.h $(GENDIR)/$(CURDIR)/libaom/config/aom_version.h
+%build_with_cmake mmake=datatypes-heic-linklibs-aom package=aom srcdir=$(AOMARCHSRCDIR) \
+    prefix="$(AROS_DEVELOPER)" extraoptions="$(LIBAOM_CMAKEOPTIONS)"
 
 LIBDE265VERSION=1.0.16
 DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
@@ -196,7 +169,7 @@ HEIFARCHSRCDIR := $(PORTSDIR)/libheif/libheif-$(LIBHEIFVERSION)
 
 #MM datatypes-heic-linklibs-heif : linklibs-heif-fetch
 
-USER_INCLUDES   += -I$(HEIFARCHSRCDIR)/libheif -I$(HEIFARCHSRCDIR)/libheif/api
+USER_INCLUDES   += -I$(HEIFARCHSRCDIR)/libheif -I$(HEIFARCHSRCDIR)/libheif/api  -I$(AOMARCHSRCDIR)
 USER_CPPFLAGS := $(COMMON_CPPFLAGS) -DHAVE_LIBDE265
 
 USER_CXXFLAGS := $(NOWARN_CXXFLAGS)
@@ -212,6 +185,8 @@ ifeq ($(AROS_TOOLCHAIN),llvm)
 USER_CXXFLAGS += $(CXXFLAGS_GNU17)
 endif
 endif
+
+USER_CPPFLAGS += -DPLUGIN_AOM_DECODER -DHAVE_AOM_DECODER
 
 LIBHEIFCXXFILES := \
         libheif/bitstream \
@@ -272,7 +247,8 @@ LIBHEIFCXXFILES := \
 
 LIBHEIFCXXFILES += \
         libheif/plugins/encoder_mask \
-        libheif/plugins/decoder_libde265
+        libheif/plugins/decoder_libde265 \
+        libheif/plugins/decoder_aom
 
 $(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(HEIFARCHSRCDIR)/libheif/api/libheif/heif_version.h.in | $(GENDIR)/$(CURDIR)/libheif
 	cat $< | $(SED) s/@PROJECT_VERSION_MAJOR@/1/ | $(SED) s/@PROJECT_VERSION_MINOR@/6/ | $(SED) s/@PROJECT_VERSION_PATCH@/2/ | $(SED) s/@PROJECT_VERSION_TWEAK@/0/ > $@
@@ -293,4 +269,4 @@ HEICCLASSFILES := heicclass
 %build_module mmake=workbench-datatypes-heic \
     modname=heic modtype=datatype \
     files=$(HEICCLASSFILES) cxxfiles=heicdummy \
-    uselibs="heif de265 posixc stdc"
+    uselibs="heif aom de265 posixc stdc"
