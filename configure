@@ -688,6 +688,7 @@ gcc_default_cpu_tune
 gcc_default_cpu
 CLASSIC_VARIANT_DEFINE
 aros_nesting_supervisor
+have_nasm
 have_mtools
 have_xorriso
 host_has_libelf
@@ -872,6 +873,7 @@ XORRISO
 LZMA_LIBS
 LZMA_CFLAGS
 grub2_splash
+NASM
 GZIP
 ant
 android_tool
@@ -11359,6 +11361,59 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
 printf "%s\n" "$aros_tool_prefix" >&6; }
 
+# Extract the first word of "nasm", so it can be a program name with args.
+set dummy nasm; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_path_NASM+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  case $NASM in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_NASM="$NASM" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_path_NASM="$as_dir$ac_word$ac_exec_ext"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_NASM" && ac_cv_path_NASM="no"
+  ;;
+esac
+fi
+NASM=$ac_cv_path_NASM
+if test -n "$NASM"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NASM" >&5
+printf "%s\n" "$NASM" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+if test "$NASM" != "no"; then
+    have_nasm=yes
+else
+    NASM=
+    CONFIG_WARNINGS+="NASM not found: AVIF support may not be available in heic.datatype"
+fi
+
 case "$target_bootloader" in
     grub2*)
         if test "$target_bootloader" = "grub2gfx"; then
@@ -11577,6 +11632,10 @@ fi
             have_mtools=yes
         else
             MTOOLS=
+        fi
+
+        if test "x-$have_xorriso" != "x-yes" -o "x-$have_mtools" != "x-yes" ; then
+            CONFIG_WARNINGS+="XORISSO or MTOOLS not found: bootiso will not have EFI support enabled"
         fi
 
                for ac_header in libelf.h
@@ -19350,6 +19409,8 @@ host_has_libelf=$have_libelf
 
 
 
+
+
 # Unix/Hosted version related
 
 
@@ -19542,6 +19603,12 @@ fi
 
 # cmake helper
 ac_config_files="$ac_config_files ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in"
+
+
+echo "$CONFIG_WARNINGS" > config.warnings
+
+# At the end, add a final message
+ac_config_commands="$ac_config_commands postmsg"
 
 
 cat >confcache <<\_ACEOF
@@ -20325,6 +20392,7 @@ do
     "${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config") CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-aros-pkg-config:scripts/pkg-config.in" ;;
     "${aros_gendir}/arch/all-android/bootstrap/app/default.properties") CONFIG_FILES="$CONFIG_FILES ${aros_gendir}/arch/all-android/bootstrap/app/default.properties:arch/all-android/bootstrap/app/default.properties.in" ;;
     "${aros_targetcfg_dir}/conf.cmake") CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in" ;;
+    "postmsg") CONFIG_COMMANDS="$CONFIG_COMMANDS postmsg" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -20925,6 +20993,16 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
 
             chmod a+x ${prefix}-aros-pkg-config
          ;;
+    "postmsg":C)
+  echo ""
+  echo "Configuration complete!"
+  if test -f config.warnings; then
+    cat config.warnings
+    rm -f config.warnings
+  fi
+  echo "Now run 'make' to build the project."
+  echo ""
+ ;;
 
   esac
 done # for ac_tag
@@ -20962,6 +21040,7 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+
 
 
 

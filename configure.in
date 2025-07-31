@@ -2355,6 +2355,14 @@ if test "$aros_tool_prefix" = "yes" ; then
 fi
 AC_MSG_RESULT($aros_tool_prefix)
 
+AC_PATH_PROG([NASM], [nasm], [no])
+if test "$NASM" != "no"; then
+    have_nasm=yes
+else
+    NASM=
+    CONFIG_WARNINGS+="NASM not found: AVIF support may not be available in heic.datatype"
+fi
+
 case "$target_bootloader" in
     grub2*)
         if test "$target_bootloader" = "grub2gfx"; then
@@ -2395,6 +2403,10 @@ case "$target_bootloader" in
             have_mtools=yes
         else
             MTOOLS=
+        fi
+
+        if test "x-$have_xorriso" != "x-yes" -o "x-$have_mtools" != "x-yes" ; then
+            CONFIG_WARNINGS+="XORISSO or MTOOLS not found: bootiso will not have EFI support enabled"
         fi
 
         AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
@@ -4193,6 +4205,8 @@ AC_SUBST([host_has_libelf],[$have_libelf])
 AC_SUBST(have_xorriso)
 AC_SUBST(have_mtools)
 
+AC_SUBST(have_nasm)
+
 # Unix/Hosted version related
 AC_SUBST(aros_nesting_supervisor)
 
@@ -4507,7 +4521,22 @@ fi
 # cmake helper
 AC_CONFIG_FILES(${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in)
 
+echo "$CONFIG_WARNINGS" > config.warnings
+
+# At the end, add a final message
+AC_CONFIG_COMMANDS([postmsg], [
+  echo ""
+  echo "Configuration complete!"
+  if test -f config.warnings; then
+    cat config.warnings
+    rm -f config.warnings
+  fi
+  echo "Now run 'make' to build the project."
+  echo ""
+])
+
 AC_OUTPUT
+
 
 dnl This is in order to not define SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
