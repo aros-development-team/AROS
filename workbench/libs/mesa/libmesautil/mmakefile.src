@@ -9,7 +9,7 @@ include $(SRCDIR)/$(CURDIR)/../mesa.cfg
 -include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
 include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
 
-#MM- mesa3dgl-linklibs : mesa3d-linklib-mesautil
+#MM- mesa3dgl-linklibs : mesa3d-linklib-mesautil mesa3d-linklib-mesadevutil
 
 USER_INCLUDES += \
             -I$(top_srcdir)/$(CUR_MESADIR) \
@@ -61,6 +61,12 @@ mesa3d-linklib-mesautil-generated : $(MESA3DGL_MESAUTIL_GENERATED_C_SOURCES) $(M
 
 #MM mesa3d-linklib-mesautil : mesa3d-linklib-mesautil-generated
 
-%build_linklib mmake=mesa3d-linklib-mesautil libname=mesautil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG)
+
+%build_linklib mmake=mesa3d-linklib-mesautil libname=mesautil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/util files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) -DEMBEDDED_DEVICE
+
+%build_linklib mmake=mesa3d-linklib-mesadevutil libname=mesadevutil libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR)/devutil files="$(MESA3DGL_MESAUTIL_SOURCES_C)" cxxfiles="$(MESA3DGL_MESAUTIL_SOURCES_CXX)"
 
 %common
