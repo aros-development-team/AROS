@@ -59,11 +59,10 @@
 #include "QP_ccDisk.h"
 #include "QP_ccPartition.h"
 #include "QP_ccPartitionContainer.h"
+#include "QP_globals.h"
 
 extern struct   MUI_CustomClass      *mcc_qptxt;
 extern struct   MUI_CustomClass      *mcc_qpfree;
-
-extern char *QPDisk__SizeName[8];
 
 /* QuickPart PARTITION Custom Class */
 
@@ -279,8 +278,7 @@ static IPTR QPPartition__OM_NEW
             char            partLabelTxt[128];
             UQUAD           partoff = 0, adjustedsize;
             IPTR            diskDev = 0, diskUnit = 0;
-            int             ddlen, sizecounter = 0,
-                            accum = 1;
+            int             ddlen, sizecounter = 0;
 
             D(bug("[QuickPart:Part.I] Finding partition details...\n"));
 
@@ -292,15 +290,14 @@ static IPTR QPPartition__OM_NEW
 
             D(bug("[QuickPart:Part.I] Partition device is %s:%u\n", diskDev, diskUnit));
 
-            adjustedsize = (((data->qppd_Part_DE.de_HighCyl - data->qppd_Part_DE.de_LowCyl + 1) * data->qppd_Part_DE.de_Surfaces * data->qppd_Part_DE.de_BlocksPerTrack)-1) * Part_Geom.dg_SectorSize;
+            adjustedsize = (((data->qppd_Part_DE.de_HighCyl - data->qppd_Part_DE.de_LowCyl + 1) * data->qppd_Part_DE.de_Surfaces * data->qppd_Part_DE.de_BlocksPerTrack) - 1) * Part_Geom.dg_SectorSize;
 
-            while ( adjustedsize >= 1024 )
+            while (( adjustedsize > 1024 ) && (QP__SizeName[sizecounter] != NULL))
             {
                 sizecounter +=1;
-                accum = accum * 1024;
-                adjustedsize = adjustedsize /1024;
+                adjustedsize /= 1024;
             }
-            sprintf(partLabelTxt, "%u%s", adjustedsize, QPDisk__SizeName[sizecounter]);
+            sprintf(partLabelTxt, "%u%s", adjustedsize, QP__SizeName[sizecounter]);
             data->qppd_Str_Size = StrDup(partLabelTxt);
             sprintf(partLabelTxt, "%s, %s", partLabel, data->qppd_Str_Size);
             data->qppd_Str_Label = StrDup(partLabelTxt);

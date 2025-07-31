@@ -16,6 +16,7 @@ QPARTFILES  := \
     QP_ccOperation \
     QP_PartitionColors \
     QP_Gui \
+    QP_globals \
     QP_locale
 
 EXEDIR := $(AROS_TOOLS)/QuickPart

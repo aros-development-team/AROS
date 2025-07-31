@@ -52,6 +52,7 @@
 #include "QP_ccDisk.h"
 #include "QP_ccPartition.h"
 #include "QP_ccPartitionContainer.h"
+#include "QP_globals.h"
 #include "QP_locale.h"
 
 #define SETUP_INST_DATA struct QPDisk_DATA *data = INST_DATA(CLASS, self)
@@ -69,18 +70,6 @@ struct localeStreamHookData
 {
     char               *str_sizeval;
     struct QPDisk_DATA *str_intdata;
-};
-
-char                                 *QPDisk__SizeName[8] =
-{
-    "B",
-    "KB",
-    "MB",
-    "GB",
-    "TB",
-    "PB",
-    "EB",
-    NULL
 };
 
 void QPDisk__Func_w2strcpy(UWORD *name, UWORD *wstr, ULONG len)
@@ -185,8 +174,7 @@ static IPTR QPDisk__MUIM_QPart_Disk_ScanForParts
     SETUP_INST_DATA;
 
     UQUAD   adjustedsize = 0;
-    int sizecounter = 0,
-         accum = 0;
+    int sizecounter = 0;
 
     struct   Locale             *locale = NULL;
 
@@ -231,13 +219,11 @@ static IPTR QPDisk__MUIM_QPart_Disk_ScanForParts
             D(bug("[QuickPart:Disk] MUIM_QPart_Disk_ScanForParts:  = %llu bytes\n", data->qpd_Disk_val_DriveCapacity));
 
             adjustedsize = data->qpd_Disk_val_DriveCapacity;
-            accum = 1;
 
-            while ( adjustedsize >= 1024 )
+            while (( adjustedsize > 1024 ) && (QP__SizeName[sizecounter] != NULL))
             {
                 sizecounter +=1;
-                accum = accum * 1024;
-                adjustedsize = adjustedsize /1024;
+                adjustedsize /= 1024;
             }
 
             /* localise the byte size for display */
@@ -268,7 +254,7 @@ static IPTR QPDisk__MUIM_QPart_Disk_ScanForParts
             {
                 if ((((struct localeStreamHookData *)data->qpd_Disk_hook_LocaliseNumber->h_Data)->str_sizeval))
                 {
-                    sprintf(data->qpd_Disk_str_DriveCapacity, ": %u%s ( %s %s )", adjustedsize, QPDisk__SizeName[sizecounter], ((struct localeStreamHookData *)data->qpd_Disk_hook_LocaliseNumber->h_Data)->str_sizeval, _(WORD_Bytes));
+                    sprintf(data->qpd_Disk_str_DriveCapacity, ": %u%s ( %s %s )", adjustedsize, QP__SizeName[sizecounter], ((struct localeStreamHookData *)data->qpd_Disk_hook_LocaliseNumber->h_Data)->str_sizeval, _(WORD_Bytes));
                     set(data->qpd_Object_txt_DriveCapacity, MUIA_Text_Contents, data->qpd_Disk_str_DriveCapacity);
                 }
             }
