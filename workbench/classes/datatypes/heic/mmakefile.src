@@ -87,7 +87,7 @@ ifneq (,$(findstring ppc,$(AROS_TARGET_CPU)))
 AOM_NOCPUDETECT=yes
 endif
 
-ifeq ($(AOM_NOCPUDETECT),=yes)
+ifeq ($(AOM_NOCPUDETECT),yes)
 LIBAOM_CMAKEOPTIONS += \
   -DCONFIG_RUNTIME_CPU_DETECT=0
 endif
