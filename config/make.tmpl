@@ -4105,16 +4105,16 @@ else
 endif
 
 ifeq (%(compiler),host)
-    BD_LDFLAGS               := $(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)
-    BD_CFLAGS                := $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)
-    BD_CXXFLAGS              := $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)
-    BD_CPPFLAGS              := $(HOST_CPPFLAGS) %(extracppflags)
+    %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)"
+    %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)"
+    %(mmake)-cmake-env += CXXFLAGS="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)"
+    %(mmake)-cmake-env += CPPFLAGS="$(HOST_CPPFLAGS) %(extracppflags)"
     %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
 ifeq (,$(findstring CMAKE_BUILD_TYPE,%(extraoptions)))
     %(mmake)-cmake_opts      += -DCMAKE_BUILD_TYPE=Release
 endif
     %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
-                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags))"
     ifeq (%(useldlinker),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
     endif
@@ -4124,10 +4124,10 @@ endif
         %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
     endif
     ifeq (%(usecflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags))"
     endif
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(HOST_CPPFLAGS) %(extracppflags))"
     endif
     ifneq ($(CC_PREFIX),)
         %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(subst $(CC_PREFIX),,$(HOST_CXX)))"
@@ -4135,7 +4135,7 @@ endif
         %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
     endif
     ifeq (%(usecxxflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags))"
     endif
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
@@ -4143,21 +4143,21 @@ endif
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
-    BD_LDFLAGS               := $(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))
-    BD_CFLAGS                := $(strip $(CFLAGS) %(extracflags))
-    BD_CXXFLAGS              := $(strip $(CXXFLAGS) %(extracxxflags))
-    BD_CPPFLAGS              := $(strip $(CPPFLAGS) %(extracppflags))
+    %(mmake)-cmake-env += LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))"
+    %(mmake)-cmake-env += CFLAGS="$(strip $(CFLAGS) %(extracflags))"
+    %(mmake)-cmake-env += CXXFLAGS="$(strip $(CXXFLAGS) %(extracxxflags))"
+    %(mmake)-cmake-env += CPPFLAGS="$(strip $(CPPFLAGS) %(extracppflags))"
     %(mmake)-cmake_opts      := -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
     ifeq (%(usecflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(BD_CFLAGS))"
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(CFLAGS) %(extracflags))"
     endif
     ifeq (%(usecppflags),yes)
-        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(BD_CPPFLAGS))"
+        %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(CPPFLAGS) %(extracppflags))"
     endif
     ifeq (%(usecxxflags),yes)
-        %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(BD_CXXFLAGS))"
+        %(mmake)-cmake_opts      += -DCMAKE_CXX_FLAGS="$(strip $(CXXFLAGS) %(extracxxflags))"
     endif
-    %(mmake)-cmake_opts  += -DCMAKE_EXE_LINKER_FLAGS="$(strip $(BD_LDFLAGS))"
+    %(mmake)-cmake_opts  += -DCMAKE_EXE_LINKER_FLAGS="$(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))"
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(GENDIR)/$(CURDIR)
     else
@@ -4203,7 +4203,7 @@ else
 endif
 
 $(%(mmake)-installflag) : $(%(mmake)-cmakeflag)
-	$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
+	$(Q)$(IF) ! $(MAKE) -q -C $(%(mmake)-pkgdir); then \
 	    $(RM) $(%(mmake)-installflag) && \
 	    $(%(mmake)-cmakecmdbuild) && \
 	    cd $(%(mmake)-pkgdir) && \
@@ -4236,9 +4236,9 @@ $(%(mmake)-cmakeflag) : TMP_SRCDIR := $(shell $(ECHO) %(srcdir) | sed 's/^\(.\):
 $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(%(mmake)-pkgdir)
-	cd $(%(mmake)-pkgdir) && \
+	$(Q)cd $(%(mmake)-pkgdir) && \
 	$(RM) -Rf CMakeCache.txt CMakeFiles \; && \
-	cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
+	$(%(mmake)-cmake-env) cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
 	$(TOUCH) $@
 
 #MM
