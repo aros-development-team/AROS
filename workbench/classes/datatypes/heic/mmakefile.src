@@ -2,7 +2,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-CLASSFILES := webpclass
+#Q=
 
 #MM- workbench-datatypes-complete: workbench-datatypes-heic
 #MM workbench-datatypes-heic : \
@@ -71,14 +71,34 @@ LIBAOM_CMAKEOPTIONS := \
   -DAOM_TARGET_CPU=$(AROS_TARGET_CPU) \
   -DBUILD_SHARED_LIBS=OFF \
   -DENABLE_NASM=ON \
+  -DENABLE_EXAMPLES=OFF \
+  -DENABLE_TESTS=OFF \
+  -DENABLE_TOOLS=OFF \
   -DCONFIG_AV1_ENCODER=0 \
   -DCONFIG_AV1_DECODER=1 \
   -DCONFIG_MULTITHREAD=0
 
-TARGET_LDFLAGS += -static-libstdc++
+#  -DCMAKE_VERBOSE_MAKEFILE=ON
+
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+AOM_NOCPUDETECT=yes
+endif
+ifneq (,$(findstring ppc,$(AROS_TARGET_CPU)))
+AOM_NOCPUDETECT=yes
+endif
+
+ifeq ($(AOM_NOCPUDETECT),=yes)
+LIBAOM_CMAKEOPTIONS += \
+  -DCONFIG_RUNTIME_CPU_DETECT=0
+endif
+
+LIBAOM_LDFLAGS+=$(TARGET_CXX_LDFLAGS)
+ifneq ($(TARGET_CXX_LIBS),)
+LIBAOM_LDFLAGS+=-Wl,--start-group $(TARGET_CXX_LIBS) -Wl,--end-group
+endif
 
 %build_with_cmake mmake=datatypes-heic-linklibs-aom package=aom srcdir=$(AOMARCHSRCDIR) \
-    prefix="$(AROS_DEVELOPER)" extraoptions="$(LIBAOM_CMAKEOPTIONS)"
+    prefix="$(AROS_DEVELOPER)" extraoptions="$(LIBAOM_CMAKEOPTIONS)" extraldflags="$(LIBAOM_LDFLAGS)"
 
 LIBDE265VERSION=1.0.16
 DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
@@ -262,6 +282,7 @@ $(GENDIR)/$(CURDIR)/libheif/heif_version.h : $(HEIFARCHSRCDIR)/libheif/api/libhe
 #MM
 datatypes-heic-linklibs-heif-genfiles : $(GENDIR)/$(CURDIR)/libheif/heif_version.h
 
+USER_CPPFLAGS += -DHEICCLASS_USESUPPORTPROC
 USER_LDFLAGS += -L$(GENDIR)/$(CURDIR)/lib
 
 HEICCLASSFILES := heicclass

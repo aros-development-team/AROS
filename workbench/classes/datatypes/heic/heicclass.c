@@ -1,10 +1,11 @@
 /*
-    Copyright © 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright © 2020-2025, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /**************************************************************************************************/
 
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -26,6 +27,10 @@
 #include "libheif/heif_plugin.h"
 
 ADD2LIBS("SYS:Classes/datatypes/picture.datatype", 0, struct Library *, PictureBase);
+
+#if defined(__x86_64__)
+//#define CHECK_STACK_USAGE
+#endif
 
 /**************************************************************************************************/
 
@@ -51,7 +56,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
     {
         ULONG headersize = 12;
         if (size < headersize)
-                headersize = 12;
+            headersize = 12;
 
         Seek(file, 0, OFFSET_BEGINNING);
 
@@ -85,7 +90,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
                             err = heif_context_read_from_memory_without_copy(heifc, buffer, size, NULL);
                             if (err.code)
                             {
-                                    D(bug("[heic.datatype] %s: failed to get context (%s)\n", __func__, err.message));
+                                D(bug("[heic.datatype] %s: failed to get context (%s)\n", __func__, err.message));
                             }
                             
                             int numImages = heif_context_get_number_of_top_level_images(heifc);
@@ -103,7 +108,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
                                 err = heif_context_get_image_handle(heifc, IDs[0], &handle);
                                 if (err.code)
                                 {
-                                        D(bug("[heic.datatype] %s: failed to get image handle (%s)\n", __func__, err.message));
+                                    D(bug("[heic.datatype] %s: failed to get image handle (%s)\n", __func__, err.message));
                                 }
 
                                 D(bug("[heic.datatype] %s: handle = 0x%p\n", __func__, handle));
@@ -116,8 +121,8 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
 
                                 if (heif_image_handle_has_alpha_channel(handle))
                                 {
-                                                mode = PBPAFMT_RGBA;
-                                                hmode = heif_chroma_interleaved_RGBA;
+                                    mode = PBPAFMT_RGBA;
+                                    hmode = heif_chroma_interleaved_RGBA;
                                 }
 
                                 struct heif_image* image = NULL;
@@ -130,7 +135,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
 
                                 if (err.code)
                                 {
-                                        D(bug("[heic.datatype] %s: failed to decode image data (%s)\n", __func__, err.message));
+                                    D(bug("[heic.datatype] %s: failed to decode image data (%s)\n", __func__, err.message));
                                 }
                                 else
                                 {
@@ -147,7 +152,7 @@ static LONG HEIC_Decode (Class *cl, Object *o, BPTR file, struct BitMapHeader *b
 
                                     p = heif_image_get_plane_readonly(image, heif_channel_interleaved, &stride);
 
-				    D(bug("[heic.datatype] %s: data @ 0x%p, stride %u\n", __func__, p, stride);)
+                                    D(bug("[heic.datatype] %s: data @ 0x%p, stride %u\n", __func__, p, stride);)
 
                                     SetDTAttrs(o, NULL, NULL,
                                             DTA_NominalHoriz,	bmh->bmh_Width,
@@ -216,10 +221,10 @@ LONG HEIC_Import(struct IClass *cl, Object *o, struct TagItem *tags)
     D(bug("[heic.datatype] %s('%s')\n", __func__, filename));
 
     GetDTAttrs(o,
-            PDTA_BitMapHeader,	&bmh,
+            PDTA_BitMapHeader,	        &bmh,
             (filename) ? DTA_Handle : TAG_IGNORE,
-                &file,
-            DTA_SourceType,		&srctype,
+                                        &file,
+            DTA_SourceType,             &srctype,
             TAG_END);
 
     D(
@@ -247,6 +252,113 @@ LONG HEIC_Import(struct IClass *cl, Object *o, struct TagItem *tags)
     return error;
 }
 
+#if defined(HEICCLASS_USESUPPORTPROC)
+/*****************************************************************************************************/
+/* Use a support process to load the image, because some of the plugins may use quite a bit of stack */
+/*****************************************************************************************************/
+
+struct ImportProcMsg
+{
+    struct Message  ipm_ExecMessage;
+    Object          *ipm_Object;
+    struct IClass   *ipm_Class;
+    struct TagItem  *ipm_Tags;
+    IPTR            *ipm_retval;
+};
+
+VOID ImportProc_entry(void)
+{
+    struct Process *proc = (struct Process *) FindTask(NULL);
+    WaitPort(&proc->pr_MsgPort);
+    struct ImportProcMsg *imsg = (struct ImportProcMsg *) GetMsg(&proc->pr_MsgPort);
+    volatile IPTR exitflag = 0;
+    IPTR retval;
+#if defined(CHECK_STACK_USAGE)
+    UBYTE *p, *top;
+    // Get current stack pointer into `top`
+#if defined(__x86_64__)
+    asm volatile (
+        "mov %%rsp, %0"
+        : "=r"(top)
+    );
+#else
+#error: no support to get current stack pointer for current target arch
+#endif
+    // Write the watermark using a loop
+    // Using byte store to be safe
+    for (p = ((struct Task *)proc)->tc_SPLower; p < top; ++p) {
+        *(volatile UBYTE *)p = 0xA5;
+    }
+#endif
+    imsg->ipm_retval = (IPTR *)&exitflag;
+    retval = HEIC_Import(imsg->ipm_Class, imsg->ipm_Object, imsg->ipm_Tags);
+    exitflag = retval;
+#if defined(CHECK_STACK_USAGE)
+    p = ((struct Task *)proc)->tc_SPLower;
+    while (p < top && *(UBYTE *)p == 0xA5)
+        ++p;
+    bug("[heic.datatype] %s: stack free = %ubytes ...\n", __func__, ((IPTR)p - (IPTR)((struct Task *)proc)->tc_SPLower));
+#endif
+    ReplyMsg(&imsg->ipm_ExecMessage);
+    // Wait until its safe for us to exit...
+    while (exitflag == retval)
+        ;
+}
+
+LONG CreateImportProcess(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MsgPort *mport;
+    struct Process *proc = NULL;
+    LONG retval = -1;
+
+    if ((mport = CreateMsgPort()))
+    {
+    	struct ImportProcMsg *imsg = (struct ImportProcMsg*)AllocVec(sizeof(struct ImportProcMsg),MEMF_PUBLIC);
+    	if (imsg)
+    	{
+            imsg->ipm_Object                        = obj;
+            imsg->ipm_Class                         = cl;
+            imsg->ipm_ExecMessage.mn_Node.ln_Type   = NT_MESSAGE;
+            imsg->ipm_ExecMessage.mn_ReplyPort      = mport;
+            imsg->ipm_Tags                          = msg->ops_AttrList;
+
+            /* Under testing, AVIF decoding uses a little more than
+             * 41k stack on 64bit, so provide a bit more just in case
+             */
+            if ((proc = CreateNewProcTags(NP_Entry, ImportProc_entry,
+#if __WORDSIZE > 32
+                              NP_StackSize, 81920,
+#else
+                              NP_StackSize, 40960,
+#endif
+                              NP_Name,"heic.datatype import process",
+                          TAG_DONE)))
+            {
+                IPTR *exitflag = NULL;
+                struct ImportProcMsg *reply;
+                PutMsg(&proc->pr_MsgPort,&imsg->ipm_ExecMessage);
+                WaitPort(mport);
+                while ((reply = (struct ImportProcMsg *)GetMsg(mport)) != NULL)
+                {
+                    if (retval == -1)
+                    {
+                        exitflag = reply->ipm_retval;
+                        retval = *exitflag;
+                    }
+                }
+                if (exitflag)
+                    *exitflag = !retval;
+            }
+            FreeVec(imsg);
+            imsg = NULL;
+        }
+        DeleteMsgPort(mport);
+        mport = NULL;
+    }
+    return retval;
+}
+#endif
+
 /**************************************************************************************************/
 
 IPTR HEIF__OM_NEW(struct IClass *cl, Object *o, struct opSet *msg)
@@ -260,7 +372,11 @@ IPTR HEIF__OM_NEW(struct IClass *cl, Object *o, struct opSet *msg)
 
         D(bug("[heic.datatype] %s: object @ 0x%p\n", __func__, retval));
 
+#if defined(HEICCLASS_USESUPPORTPROC)
+        error =  CreateImportProcess(cl, (Object *)retval, msg);
+#else
         error =  HEIC_Import(cl, (Object *)retval, msg->ops_AttrList);
+#endif
         if (error != (0)) {
             D(bug("[heic.datatype] %s: disposing...\n", __func__));
 
