@@ -1,5 +1,5 @@
 /*
-    Copyright 2019, The AROS Development Team. All rights reserved.
+    Copyright 2019-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -418,6 +418,15 @@ static void VMWareSVGA_WSScr_FenceReference( struct svga_winsys_screen *sws,
     *pdst = src;
 }
 
+int VMWareSVGA_WSScr_FenceSync(struct svga_winsys_screen *sws,
+                       int32_t *,
+                       struct pipe_fence_handle *)
+{
+    D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
+    return 0;
+}
+
+
 static int VMWareSVGA_WSScr_FenceSignalled( struct svga_winsys_screen *sws,
                            struct pipe_fence_handle *fence,
                            unsigned flag )
@@ -534,8 +543,15 @@ static void VMWareSVGA_WSScr_StatsTimePop()
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
 }
 
+static void VMWareSVGA_WSScr_Log(struct svga_winsys_screen *sws, const char *log)
+{
+    D(bug("[VMWareSVGA:Gallium] %s('%s')\n", __func__, log);)
+}
+
 void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
 {
+    D(bug("[VMWareSVGA:Gallium] %s()\n", __func__);)
+
     data->wssbase.destroy                       = NULL;
     data->wssbase.get_hw_version                = VMWareSVGA_WSScr_GetHWVersion;
     data->wssbase.get_cap                       = VMWareSVGA_WSScr_GetCap;
@@ -556,9 +572,7 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
 
     data->wssbase.fence_get_fd                  = VMWareSVGA_WSScr_FenceGet;
     data->wssbase.fence_create_fd               = VMWareSVGA_WSScr_FenceCreate;
-#if (0)
-    data->wssbase.fence_server_sync              = vmw_svga_winsys_fence_server_sync;
-#endif
+    data->wssbase.fence_server_sync              = VMWareSVGA_WSScr_FenceSync;
     data->wssbase.fence_reference               = VMWareSVGA_WSScr_FenceReference;
     data->wssbase.fence_signalled               = VMWareSVGA_WSScr_FenceSignalled;
     data->wssbase.fence_finish                  = VMWareSVGA_WSScr_FenceFinish;
@@ -574,6 +588,8 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
     data->wssbase.stats_inc                     = VMWareSVGA_WSScr_StatsInc;
     data->wssbase.stats_time_push               = VMWareSVGA_WSScr_StatsTimePush;
     data->wssbase.stats_time_pop                = VMWareSVGA_WSScr_StatsTimePop;
+
+    data->wssbase.host_log                      = VMWareSVGA_WSScr_Log;
 
     data->use_gbobjects = TRUE;                 // use Guest-backed objects...
 
@@ -591,5 +607,9 @@ void VMWareSVGA_WSScr_WinSysInit(struct HIDDGalliumVMWareSVGAData * data)
             data->wssbase.have_gb_objects = TRUE;
     }
 
+    D(bug("[VMWareSVGA:Gallium] %s: Initializing HW caps...\n", __func__);)
+
     VMWareSVGA_WSScr_InitHW3DCaps(data);
+
+    D(bug("[VMWareSVGA:Gallium] %s: HW caps initialized\n", __func__);)
 }
