@@ -2,6 +2,7 @@
     Copyright 2019-2025, The AROS Development Team. All rights reserved.
 */
 
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -419,8 +420,8 @@ static void VMWareSVGA_WSScr_FenceReference( struct svga_winsys_screen *sws,
 }
 
 int VMWareSVGA_WSScr_FenceSync(struct svga_winsys_screen *sws,
-                       int32_t *,
-                       struct pipe_fence_handle *)
+                       int32_t *context_fd,
+                       struct pipe_fence_handle *fence)
 {
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
     return 0;
