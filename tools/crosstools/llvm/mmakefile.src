@@ -525,7 +525,7 @@ $(MONOTREE_BUILDBASE)/cmake: | $(MONOTREE_BUILDBASE)
 	%mkdir_q dir="$@"
 
 crosstools-llvm-runtimes--setup crosstools-llvm-cmakefiles--setup:
-	$(NOP)
+	$(Q)$(NOP)
 
 #MM
 crosstools-llvm-cmakefiles-yes-setup : crosstools-llvm-cmakefiles-fetch | $(MONOTREE_BUILDBASE)/cmake
