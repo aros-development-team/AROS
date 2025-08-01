@@ -128,6 +128,21 @@ diff -ruN mesa-20.0.8/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-20.0.8.
  #include <unistd.h>
  #include <sys/stat.h>
  #elif defined(PIPE_OS_WINDOWS)
+diff -ruN mesa-20.0.8/src/gallium/auxiliary/tgsi/tgsi_exec.c mesa-20.0.8.aros/src/gallium/auxiliary/tgsi/tgsi_exec.c
+--- mesa-20.0.8/src/gallium/auxiliary/tgsi/tgsi_exec.c	2020-06-12 01:21:16.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/auxiliary/tgsi/tgsi_exec.c	2025-08-01 21:07:48.303934807 +0000
+@@ -1512,8 +1512,9 @@
+                          }*/
+          int pos = index2D->i[i] * TGSI_EXEC_MAX_INPUT_ATTRIBS + index->i[i];
+          assert(pos >= 0);
+-         assert(pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS);
+-         chan->u[i] = mach->Inputs[pos].xyzw[swizzle].u[i];
++//         assert(pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS);
++         if (pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS)
++            chan->u[i] = mach->Inputs[pos].xyzw[swizzle].u[i];
+       }
+       break;
+ 
 diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_compiler.h mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h
 --- mesa-20.0.8/src/gallium/include/pipe/p_compiler.h	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h	2025-05-23 22:58:02.240404762 +0000
