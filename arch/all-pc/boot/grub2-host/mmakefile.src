@@ -207,7 +207,7 @@ grub2-pc-iso-setup: $(BOOT_GRUB)/i386-pc | $(DESTDIR)/lib/grub/grub2.mods
 
 #MM
 grub2-efi-iso--setup:
-	$(NOP)
+	$(Q)$(NOP)
 
 #MM
 grub2-efi-iso-setup: $(BOOT_EFI)/$(AROS_TARGET_CPU)-efi | $(DESTDIR)/lib/grub/grub2.mods
