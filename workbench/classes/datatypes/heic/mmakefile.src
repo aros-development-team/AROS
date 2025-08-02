@@ -83,6 +83,8 @@ LIBAOM_CMAKEOPTIONS := \
 
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
 AOM_NOCPUDETECT=yes
+LIBAOM_CMAKEOPTIONS += \
+  -DENABLE_NEON=0
 endif
 ifneq (,$(findstring ppc,$(AROS_TARGET_CPU)))
 AOM_NOCPUDETECT=yes
