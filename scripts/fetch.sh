@@ -124,11 +124,15 @@ curl_http() {
     local ret
     local state=0
 
+    local protocol
+
     if echo "$tryurl" | grep "prdownloads.sourceforge.net" >/dev/null; then
         if ! echo "$tryurl" | grep "/download" >/dev/null; then
             curlext="/download"
         fi
     fi
+
+    protocol=$(echo "$tryurl$curlext" | cut -d':' -f1)
 
     urlsrc=$(curl -fsIL -o /dev/null -w "%{url_effective}" "$tryurl$curlext")
     if [ $? -ne 0 ]; then
@@ -146,8 +150,20 @@ curl_http() {
     fi
 
     while :; do
-        if eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o \"$curloutput\""; then
+        eval curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - "$curlsrc" -o "$curloutput"
+        ret=$?
+
+        if [ $ret -eq 0 ]; then
             return 0
+        fi
+
+        # In case the requested URL was HTTP, but has been redirected to HTTPS with
+        # SSL certificate failure (curl exit code 60) just use insecure mode
+        # (we didnt care in the first place, since we use HTTP)
+        if [ $ret -eq 60 ] && [ "$protocol" = "http" ] && [ $state -lt 3 ]; then
+            curlextraflags="$curlextraflags -k"
+            state=3
+            continue
         fi
 
         case $state in
@@ -448,6 +464,7 @@ while  test "x$1" != "x"; do
 	-po) patches_origins="$2";;
 	 -p) patches="$2";;
      -l) location="$2";;
+     -rn) renamedir="$2";;
   	  *) echo "fetch: Unknown option \`$1'."; usage "$0";;
     esac
     
