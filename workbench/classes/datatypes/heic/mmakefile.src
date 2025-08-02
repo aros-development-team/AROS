@@ -49,12 +49,12 @@ LIBAOMVERSION=3.12.1
 AOMREPOSITORIES = https://storage.googleapis.com/aom-releases
 AOMARCHBASE     := libaom-$(LIBAOMVERSION)
 AOMARCHSUFFIX := "tar.gz"
-#AOMPATCHSPEC := $(AOMARCHBASE)-aros.diff:$(AOMARCHBASE):-f,-p1
+AOMPATCHSPEC := $(AOMARCHBASE)-aros.diff:$(AOMARCHBASE):-f,-p1
 AOMARCHSRCDIR := $(PORTSDIR)/libaom/$(AOMARCHBASE)
 
 %fetch mmake=linklibs-aom-fetch archive=$(AOMARCHBASE) destination=$(PORTSDIR)/libaom \
     location=$(PORTSSOURCEDIR) archive_origins=$(AOMREPOSITORIES) suffixes=$(AOMARCHSUFFIX) \
-    patches_specs=$(PATCHSPEC)
+    patches_specs=$(AOMPATCHSPEC)
 
 %create_patch mmake=linklibs-aom-create-patch \
     archive=$(AOMARCHBASE) suffixes=$(AOMARCHSUFFIX) \
@@ -78,6 +78,7 @@ LIBAOM_CMAKEOPTIONS := \
   -DCONFIG_AV1_DECODER=1 \
   -DCONFIG_MULTITHREAD=0
 
+#LIBAOM_CMAKEOPTIONS += \
 #  -DCMAKE_VERBOSE_MAKEFILE=ON
 
 ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
