@@ -15,7 +15,7 @@ DAYS_KEEP=30
 umask 0002
 
 #-- Acquire Lock -------------------------------------------------------------
-$ROOT/bin/lockfile -r 0 "$LOCK"
+aros/bin/lockfile -r 0 "$LOCK"
 if [[ $? != 0 ]]; then
     echo Could not acquire lock. Aborting...
     exit 1
