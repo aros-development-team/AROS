@@ -150,7 +150,7 @@ curl_http() {
     fi
 
     while :; do
-        eval curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - "$curlsrc" -o "$curloutput"
+        eval "curl -fL --retry 3 --retry-connrefused $curlextraflags --speed-limit 1 --speed-time 15 -C - \"$curlsrc\" -o \"$curloutput\""
         ret=$?
 
         if [ $ret -eq 0 ]; then
