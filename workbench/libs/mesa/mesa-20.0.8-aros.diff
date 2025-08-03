@@ -130,19 +130,57 @@ diff -ruN mesa-20.0.8/src/gallium/auxiliary/driver_ddebug/dd_util.h mesa-20.0.8.
  #elif defined(PIPE_OS_WINDOWS)
 diff -ruN mesa-20.0.8/src/gallium/auxiliary/tgsi/tgsi_exec.c mesa-20.0.8.aros/src/gallium/auxiliary/tgsi/tgsi_exec.c
 --- mesa-20.0.8/src/gallium/auxiliary/tgsi/tgsi_exec.c	2020-06-12 01:21:16.000000000 +0000
-+++ mesa-20.0.8.aros/src/gallium/auxiliary/tgsi/tgsi_exec.c	2025-08-01 21:07:48.303934807 +0000
-@@ -1512,8 +1512,9 @@
++++ mesa-20.0.8.aros/src/gallium/auxiliary/tgsi/tgsi_exec.c	2025-08-03 13:00:01.741133859 +0000
+@@ -1512,8 +1512,13 @@
                           }*/
           int pos = index2D->i[i] * TGSI_EXEC_MAX_INPUT_ATTRIBS + index->i[i];
           assert(pos >= 0);
--         assert(pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS);
++#if !defined(__AROS__)
+          assert(pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS);
 -         chan->u[i] = mach->Inputs[pos].xyzw[swizzle].u[i];
-+//         assert(pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS);
++#else
 +         if (pos < TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS)
++#endif
 +            chan->u[i] = mach->Inputs[pos].xyzw[swizzle].u[i];
++
        }
        break;
  
+@@ -1534,10 +1539,16 @@
+ 
+    case TGSI_FILE_IMMEDIATE:
+       for (i = 0; i < TGSI_QUAD_SIZE; i++) {
++#if !defined(__AROS__)
+          assert(index->i[i] >= 0 && index->i[i] < (int)mach->ImmLimit);
++#else
++         assert(index->i[i] >= 0);
++#endif
+          assert(index2D->i[i] == 0);
+-
+-         chan->f[i] = mach->Imms[index->i[i]][swizzle];
++#if defined(__AROS__)
++         if (index->i[i] < (int)mach->ImmLimit)
++#endif
++            chan->f[i] = mach->Imms[index->i[i]][swizzle];
+       }
+       break;
+ 
+diff -ruN mesa-20.0.8/src/gallium/drivers/softpipe/sp_setup.c mesa-20.0.8.aros/src/gallium/drivers/softpipe/sp_setup.c
+--- mesa-20.0.8/src/gallium/drivers/softpipe/sp_setup.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/softpipe/sp_setup.c	2025-08-03 13:02:00.753133979 +0000
+@@ -711,7 +711,12 @@
+    int sy = (int)eleft->sy;
+ 
+    assert((int)eleft->sy == (int) eright->sy);
++#if !defined(__AROS__)
+    assert(lines >= 0);
++#else
++   if (lines < 0)
++      return;
++#endif
+ 
+    /* clip top/bottom */
+    start_y = sy;
 diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_compiler.h mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h
 --- mesa-20.0.8/src/gallium/include/pipe/p_compiler.h	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/gallium/include/pipe/p_compiler.h	2025-05-23 22:58:02.240404762 +0000
