@@ -31,6 +31,7 @@ FILES := \
         browsereditwin \
         applist \
         win \
+        register \
         about \
         app \
         vastubs \

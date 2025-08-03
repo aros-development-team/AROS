@@ -32,6 +32,16 @@
 
 #include "debug.h"
 
+#if !defined(__AROS__)
+#define WINSUPERCLASS   MUIC_Window
+#define WINREGOBJECT    RegisterObject
+#else
+#include <zune/systemprefswindow.h>
+#include "register.h"
+#define WINSUPERCLASS   MUIC_SystemPrefsWindow
+#define WINREGOBJECT    OpenURLRegisterObject
+#endif
+
 /**************************************************************************/
 
 struct data
@@ -58,11 +68,12 @@ struct data
     Object *newWin;
     Object *launch;
 
+#if !defined(__AROS__)
     Object *save;
     Object *use;
     Object *apply;
     Object *cancel;
-
+#endif
     ULONG  flags;
 };
 
@@ -88,14 +99,7 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 
     memset(&temp,0,sizeof(temp));
 
-    if((obj = (Object *)DoSuperNew(cl,obj,
-        MUIA_HelpNode,           "WIN",
-        MUIA_Window_ID,          MAKE_ID('M', 'W', 'I', 'N'),
-        MUIA_Window_Title,       getString(MSG_Win_WinTitle),
-        MUIA_Window_ScreenTitle, getString(MSG_App_ScreenTitle),
-
-        WindowContents, VGroup,
-            Child, temp.reg = RegisterObject,
+    temp.reg = WINREGOBJECT,
                 MUIA_Background,       MUII_RegisterBack,
                 MUIA_CycleChain,       TRUE,
                 MUIA_Register_Titles,  tabs,
@@ -155,7 +159,20 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                         Child, VSpace(0),
                     End,
                 End,
-            End,
+            End;
+    
+    if (!temp.reg)
+        return 0;
+    
+    if((obj = (Object *)DoSuperNew(cl,obj,
+        MUIA_HelpNode,           "WIN",
+        MUIA_Window_ID,          MAKE_ID('M', 'W', 'I', 'N'),
+        MUIA_Window_Title,       getString(MSG_Win_WinTitle),
+        MUIA_Window_ScreenTitle, getString(MSG_App_ScreenTitle),
+
+#if !defined(__AROS__)
+        WindowContents, VGroup,
+            Child, temp.reg,
             /* Buttons */
             Child, HGroup,
                 Child, temp.save = obutton(MSG_Win_Save,MSG_Win_Save_Help),
@@ -166,8 +183,10 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, wspace(16),
                 Child, temp.cancel = obutton(MSG_Win_Cancel,MSG_Win_Cancel_Help),
             End,
-
         End,
+#else
+        WindowContents, temp.reg,
+#endif
         TAG_MORE, msg->ops_AttrList)) != NULL)
     {
         struct data *data = INST_DATA(cl,obj);
@@ -180,17 +199,21 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
         data->FTPList = (Object *)xget(data->FTPs, MUIA_AppList_ListObj);
 
         /* buttons */
-        set(obj,MUIA_Window_DefaultObject,data->browserList);
+        set(obj, MUIA_Window_DefaultObject, data->browserList);
 
         /* window notifies */
         DoMethod(obj,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,MUIV_Notify_Application,2,
             MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
 
+#if !defined(__AROS__)
         /* buttons notifies */
         DoMethod(data->save,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Save);
         DoMethod(data->use,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Use);
         DoMethod(data->apply,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_Win_StorePrefs,MUIV_Win_StorePrefs_Apply);
         DoMethod(data->cancel,MUIM_Notify,MUIA_Pressed,FALSE,MUIV_Notify_Application,2,MUIM_Application_ReturnID,MUIV_Application_ReturnID_Quit);
+#endif
+    } else {
+        // Dispose of temp.reg
     }
 
     return (IPTR)obj;
@@ -431,7 +454,7 @@ BOOL initWinClass(void)
 
     ENTER();
 
-    if((g_winClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
+    if((g_winClass = MUI_CreateCustomClass(NULL, WINSUPERCLASS, NULL, sizeof(struct data), ENTRY(dispatcher))) != NULL)
     {
         localizeStrings(tabs);
         success = TRUE;

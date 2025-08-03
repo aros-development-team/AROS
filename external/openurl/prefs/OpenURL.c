@@ -68,6 +68,9 @@ struct MUI_CustomClass *g_mailerEditWinClass = NULL;
 struct MUI_CustomClass *g_FTPEditWinClass = NULL;
 struct MUI_CustomClass *g_popportClass = NULL;
 struct MUI_CustomClass *g_popphClass = NULL;
+#if defined(__AROS__)
+extern struct MUI_CustomClass *OpenURLRegister_CLASS;
+#endif
 
 APTR                   g_pool = NULL;
 struct Catalog         *g_cat = NULL;
@@ -216,6 +219,9 @@ static void closeStuff(void)
 
 static ULONG createClasses(void)
 {
+#if defined(__AROS__)
+    if (initRegClass() == FALSE)          return MSG_Err_NoWinClass;
+#endif
     if (initPopphClass() == FALSE)          return MSG_Err_PopphClass;
     if (initPopportClass() == FALSE)        return MSG_Err_PopupPortClass;
     if (initFTPEditWinClass() == FALSE)     return MSG_Err_NoFTPEditWinClass;
@@ -232,6 +238,9 @@ static ULONG createClasses(void)
 
 static void disposeClasses(void)
 {
+#if defined(__AROS__)
+    if (OpenURLRegister_CLASS) disposeRegClass();
+#endif
     if (g_popphClass)          disposePopphClass();
     if (g_popportClass)        disposePopportClass();
     if (g_FTPEditWinClass)     disposeFTPEditWinClass();

@@ -79,6 +79,12 @@ void disposeBrowserEditWinClass ( void );
 BOOL initAppListClass ( void );
 void disposeAppListClass ( void );
 
+#if defined(__AROS__)
+/* register.c */
+BOOL initRegClass ( void );
+void disposeRegClass ( void );
+#endif
+
 /* win.c */
 BOOL initWinClass ( void );
 void disposeWinClass ( void );
