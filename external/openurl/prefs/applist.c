@@ -669,6 +669,9 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
                     End,
                 End,
 
+                Child, (IPTR)(BalanceObject,
+                End),
+
                 Child, VGroup,
                     //VirtualFrame,
                     //MUIA_Background, MUII_GroupBack,
