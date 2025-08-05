@@ -80,6 +80,7 @@ struct stat64
 #define st_ctime st_ctim.tv_sec
 
 /* mode_t values */
+
 #define	S_IFMT	 0170000		/* type of file */
 #define	S_IFBLK	 0060000		/* block special */
 #define	S_IFCHR	 0020000		/* character special */
@@ -91,7 +92,9 @@ struct stat64
 
 #define	S_IRWXU	0000700			/* RWX mask for owner */
 #define	S_IRUSR	0000400			/* R for owner */
+#define S_IREAD  S_IRUSR
 #define	S_IWUSR	0000200			/* W for owner */
+#define S_IWRITE S_IWUSR
 #define	S_IXUSR	0000100			/* X for owner */
 
 #define	S_IRWXG	0000070			/* RWX mask for group */
