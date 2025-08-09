@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -31,7 +31,7 @@
 #define PAGESHIFT 12
 #endif
 
-#define DIRQ(x) x
+#define DIRQ(x)
 
 /*
     By rights, we should disable the nvme controller completly on shutdown
