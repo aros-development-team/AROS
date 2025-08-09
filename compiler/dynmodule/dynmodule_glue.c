@@ -66,6 +66,8 @@ __dynmodulemsg_t *__dynglue_DisposeIFPort(struct MsgPort *dmmport)
         ifMsg->IFOpenRequest.Error = DMIFERR_Closing;
         ReplyMsg((struct Message *)ifMsg);
     }
+    if (dmmport->mp_Node.ln_Name)
+        FreeVec(dmmport->mp_Node.ln_Name);
     DeletePort(dmmport);
 }
 
@@ -122,11 +124,13 @@ int main(int argc, char **argv)
     }
 
     dmmport = __dynglue_InitIFPort(pname);
-    FreeVec(pname);
     if (!dmmport)
         DYNMODULE_Exit(0);
 
-    D(bug("[%s] %s: port @ 0x%p\n", dbgname, __func__, dmmport));
+    D(
+        bug("[%s] %s: port '%s' @ 0x%p\n", dbgname, __func__,
+            dmmport->mp_Node.ln_Name, dmmport);
+    )
 
     if(!DYNMODULE_Setup(dmmport)) {
         __dynglue_DisposeIFPort(dmmport);
