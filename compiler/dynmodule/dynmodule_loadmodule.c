@@ -21,12 +21,12 @@ extern const char *DYNMODULE_FreeResource_Sym;
 
 void *dynmoduleLoadModule(const char *modname, const char *port)
 {
-    int (*EntryPFn)(void *, long, void *);
     void *mhandle;
 
     D(bug("[DynLink] %s('%s','%s')\n", __func__, modname, port));
 
     if ((mhandle = dynmodule__InternalLoadModule(modname, port, TRUE)) != NULL) {
+        int (*EntryPFn)(void *, long, void *);
         EntryPFn = dynmoduleGetProcAddress(mhandle, DYNMODULE_EntryPoint_Sym);
         if (EntryPFn) {
             if (!EntryPFn(mhandle, 0, NULL)) {

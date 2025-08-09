@@ -16,7 +16,7 @@
 
 void dynmodule__InternalFreeModule(int slotid)
 {
-    __dynmodulemsg_t msg,*reply;
+    __dynmodulemsg_t msg;
     struct MsgPort *replyport, *dmmport;
     __dynmoduleinstance_t *dynmod = (__dynmoduleinstance_t *) dynmoduleslots[slotid].mhandle;
 
@@ -33,6 +33,7 @@ void dynmodule__InternalFreeModule(int slotid)
     msg.IFMsgType               = DMIFMSG_Close;
 
     if ((dmmport = FindPort((CONST_STRPTR)dynmoduleslots[slotid].pnam)) == dynmod->dmi_IFMsgPort) {
+        __dynmodulemsg_t *reply;
         D(bug("[DynLink] %s: Sending IF Close Msg to Port @ 0x%p\n", __func__, dmmport));
         PutMsg(dmmport, (struct Message *)&msg);
         while ((reply = (__dynmodulemsg_t *)GetMsg(replyport)) == NULL) {
