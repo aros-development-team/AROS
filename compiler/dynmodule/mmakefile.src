@@ -21,9 +21,6 @@ DYNMODULEFILES := \
     dynmodule_import \
     dynmodule_getprocaddr
 
-OLD := \
-    dynmodule
-
 %build_linklib mmake=linklibs-dynmod \
     libname=dynmod \
     files="$(DYNMODULEFILES)"

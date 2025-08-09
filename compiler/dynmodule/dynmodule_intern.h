@@ -45,7 +45,6 @@ typedef struct
         dynmodi_ifclosemsg_t        IFCloseRequest;
         dynmod_sym_t                IFResolveRequest;
     };
-    // ... Might grow
 } __dynmodulemsg_t;
 
 typedef struct
