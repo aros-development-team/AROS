@@ -47,7 +47,7 @@ AROS_LH3(IPTR, NewStackSwap,
     if (args != NULL)
     {
         /* Only last two arguments are put to stack in x86-64 */
-        if ((IPTR)newsp <= (IPTR)splower + (sizeof(IPTR) << 1))
+        if ((IPTR)newsp <= (IPTR)sss->stk_Lower + (sizeof(IPTR) << 1))
         {
             bug("[%s] no space to store function params\n", __func__);
             bug("[%s] called function may cause AROS to crash,\n", __func__);
