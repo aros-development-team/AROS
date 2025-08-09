@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: PrepareContext() - Prepare a task context for dispatch, x86-64 version
 */
@@ -29,6 +29,10 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
 
     if (!(task->tc_Flags & TF_ETASK))
         return FALSE;
+
+    if (((IPTR)sp & (AROS_STACKALIGN - 1)) != 0) {
+       bug("[%s] Task @ 0x%p has missaligned SP 0x%p (%02x)\n", __func__, task, sp, (IPTR)sp & (AROS_STACKALIGN - 1));
+    }
 
     ctx = KrnCreateContext();
     task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;

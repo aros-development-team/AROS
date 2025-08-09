@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: NewStackSwap() - Call a function with swapped stack, x86-64 version
 */
@@ -20,17 +20,41 @@ AROS_LH3(IPTR, NewStackSwap,
     AROS_LIBFUNC_INIT
 
     volatile struct Task *t = FindTask(NULL);
-    volatile IPTR *sp = sss->stk_Pointer;
-    volatile APTR spreg = t->tc_SPReg;
+    volatile IPTR *newsp = sss->stk_Pointer;
+    volatile APTR sporig = t->tc_SPReg;
     volatile APTR splower = t->tc_SPLower;
     volatile APTR spupper = t->tc_SPUpper;
     IPTR ret;
 
+    D(
+        bug("[%s] Initial stack -:\n", __func__);
+        bug("[%s]      upper   0x%p\n", __func__, t->tc_SPUpper);
+        bug("[%s]      current 0x%p\n", __func__, t->tc_SPReg);
+        bug("[%s]      lower   0x%p\n", __func__, t->tc_SPLower);
+    )
+    
+    if (((IPTR)newsp & (AROS_STACKALIGN - 1)) != 0) {
+       bug("[%s] called with missaligned SP 0x%p (%02x)\n", __func__, newsp, (IPTR)newsp & (AROS_STACKALIGN - 1));
+       newsp = (IPTR *)((IPTR)newsp & ~(AROS_STACKALIGN - 1));
+        if ((IPTR)newsp <= (IPTR)splower)
+        {
+            bug("[%s] no space to align stack\n", __func__);
+            bug("[%s] called function may cause AROS to crash,\n", __func__);
+            bug("[%s] or behave incorrectly\n", __func__);
+        }
+    }
+
     if (args != NULL)
     {
         /* Only last two arguments are put to stack in x86-64 */
-        _PUSH(sp, args->Args[7]);
-        _PUSH(sp, args->Args[6]);
+        if ((IPTR)newsp <= (IPTR)splower + (sizeof(IPTR) << 1))
+        {
+            bug("[%s] no space to store function params\n", __func__);
+            bug("[%s] called function may cause AROS to crash,\n", __func__);
+            bug("[%s] or behave incorrectly\n", __func__);
+        }
+        _PUSH(newsp, args->Args[7]);
+        _PUSH(newsp, args->Args[6]);
     }
     else
     {
@@ -42,7 +66,7 @@ AROS_LH3(IPTR, NewStackSwap,
     {
         UBYTE* startfill = sss->stk_Lower;
 
-        while (startfill < (UBYTE *)sp)
+        while (startfill < (UBYTE *)newsp)
             *startfill++ = 0xE1;
     }
 
@@ -50,11 +74,11 @@ AROS_LH3(IPTR, NewStackSwap,
      * We need to Disable() before changing limits and SP, otherwise
      * stack check will fail if we get interrupted in the middle of this
      */
-    D(bug("[NewStackSwap] SP 0x%p, entry point 0x%p\n", sp, entry));
+    D(bug("[%s] SP 0x%p, entry point 0x%p\n", __func__, newsp, entry));
     Disable();
 
     /* Change limits. The rest is done in asm below */
-    t->tc_SPReg = (APTR)sp;
+    t->tc_SPReg = (APTR)newsp;
     t->tc_SPLower = sss->stk_Lower;
     t->tc_SPUpper = sss->stk_Upper;
 
@@ -62,7 +86,7 @@ AROS_LH3(IPTR, NewStackSwap,
     /* Save original RSP */
     "push %%rbp\n\t"
     "movq %%rsp, %%rbp\n\t"
-    /* Actually change the stack */
+    /* Change the stack, and store rbp incase it gets clobbered ... */
     "movq %2, %%rsp\n\t"
 
     /* Enable(). It preserves all registers by convention. */
@@ -86,16 +110,24 @@ AROS_LH3(IPTR, NewStackSwap,
     "movq %%rbp, %%rsp\n\t"
     "popq %%rbp\n"
     : "=a"(ret)
-    : "r"(entry), "r"(sp), "r"(args), "D"(SysBase)
+    : "r"(entry), "r"(newsp), "r"(args), "D"(SysBase)
     : "rsi", "rdx", "rcx", "r8", "r9", "cc");
 
     /* Change limits back and return */
-    t->tc_SPReg = spreg;
+    t->tc_SPReg = sporig;
     t->tc_SPLower = splower;
     t->tc_SPUpper = spupper;
     Enable();
 
-    D(bug("[NewStackSwap] Returning 0x%p\n", ret));
+    D(
+        bug("[%s] Final stack -:\n", __func__);
+        bug("[%s]      upper   0x%p\n", __func__, t->tc_SPUpper);
+        bug("[%s]      current 0x%p\n", __func__, t->tc_SPReg);
+        bug("[%s]      lower   0x%p\n", __func__, t->tc_SPLower);
+    )
+
+    D(bug("[%s] Returning 0x%p\n", __func__, ret));
+
     return ret;
 
     AROS_LIBFUNC_EXIT
