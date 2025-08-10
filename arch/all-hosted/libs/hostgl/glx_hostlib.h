@@ -19,11 +19,9 @@ struct glx_func
     GLXWindow (*glXCreateWindow) (Display *dpy, GLXFBConfig config, Window win, const int *attribList);
     void (*glXDestroyWindow) (Display *dpy, GLXWindow window);
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
+#if defined(RENDERER_BUFFER)
     GLXPbuffer (*glXCreatePbuffer) (Display *dpy, GLXFBConfig config, const int *attribList);
     void (*glXDestroyPbuffer) (Display *dpy, GLXPbuffer pbuf);
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
     XVisualInfo * (*glXGetVisualFromFBConfig) (Display *dpy, GLXFBConfig config);
     GLXPixmap (*glXCreateGLXPixmap) (Display *dpy, XVisualInfo *vis, Pixmap pixmap);
     void (*glXDestroyGLXPixmap) (Display *dpy, GLXPixmap pix);

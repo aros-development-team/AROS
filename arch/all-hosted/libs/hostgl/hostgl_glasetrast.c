@@ -1,6 +1,8 @@
 /*
-    Copyright 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
 */
+
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -47,6 +49,8 @@
 *****************************************************************************/
 {
     struct hostgl_context *_ctx = (struct hostgl_context *)ctx;
+
+    D(bug("[HostGL] %s()\n", __func__));
 
     if (_ctx)
     {

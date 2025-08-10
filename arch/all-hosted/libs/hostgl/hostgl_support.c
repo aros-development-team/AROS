@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2015, The AROS Development Team. All rights reserved.
+    Copyright 2009-2025, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -22,17 +22,19 @@ VOID HostGLSelectRastPort(struct hostgl_context * ctx, struct TagItem * tagList)
     ctx->window = (struct Window *)GetTagData(GLA_Window, 0, tagList);
     ctx->visible_rp = (struct RastPort *)GetTagData(GLA_RastPort, 0, tagList);
 
+    D(bug("[HOSTGL] %s(ctx @ 0x%p, taglist @ 0x%p)\n", __func__, ctx, tagList));
+
     if (ctx->Screen)
     {
-        D(bug("[HOSTGL] HostGLSelectRastPort: Screen @ %x\n", ctx->Screen));
+        D(bug("[HOSTGL] %s: Screen @ 0x%p\n", __func__, ctx->Screen));
         if (ctx->window)
         {
-            D(bug("[HOSTGL] HostGLSelectRastPort: Window @ %x\n", ctx->window));
+            D(bug("[HOSTGL] %s: Window @ 0x%p\n", __func__, ctx->window));
             if (!(ctx->visible_rp))
             {
                 /* Use the windows rastport */
                 ctx->visible_rp = ctx->window->RPort;
-                D(bug("[HOSTGL] HostGLSelectRastPort: Windows RastPort @ %x\n", ctx->visible_rp));
+                D(bug("[HOSTGL] %s: Windows RastPort @ 0x%p\n", __func__, ctx->visible_rp));
             }
         }
         else
@@ -41,7 +43,7 @@ VOID HostGLSelectRastPort(struct hostgl_context * ctx, struct TagItem * tagList)
             {
                 /* Use the screens rastport */
                 ctx->visible_rp = &ctx->Screen->RastPort;
-                D(bug("[HOSTGL] HostGLSelectRastPort: Screens RastPort @ %x\n", ctx->visible_rp));
+                D(bug("[HOSTGL] %s: Screens RastPort @ 0x%p\n", __func__, ctx->visible_rp));
             }
         }
     }
@@ -50,26 +52,26 @@ VOID HostGLSelectRastPort(struct hostgl_context * ctx, struct TagItem * tagList)
         /* Not passed a screen */
         if (ctx->window)
         {
-            D(bug("[HOSTGL] HostGLSelectRastPort: Window @ %x\n", ctx->window));
+            D(bug("[HOSTGL] %s: Window @ 0x%p\n", __func__, ctx->window));
             /* Use the windows Screen */
             ctx->Screen = ctx->window->WScreen;
-            D(bug("[HOSTGL] HostGLSelectRastPort: Windows Screen @ %x\n", ctx->Screen));
+            D(bug("[HOSTGL] %s: Windows Screen @ 0x%p\n", __func__, ctx->Screen));
 
             if (!(ctx->visible_rp))
             {
                 /* Use the windows rastport */
                 ctx->visible_rp = ctx->window->RPort;
-                D(bug("[HOSTGL] HostGLSelectRastPort: Windows RastPort @ %x\n", ctx->visible_rp));
+                D(bug("[HOSTGL] %s: Windows RastPort @ 0x%p\n", __func__, ctx->visible_rp));
             }
         }
         else
         {
             /* Only Passed A Rastport */
-            D(bug("[HOSTGL] HostGLSelectRastPort: Using RastPort only!\n"));
+            D(bug("[HOSTGL] %s: Using RastPort only!\n", __func__));
         }
     }
 
-    D(bug("[HOSTGL] HostGLSelectRastPort: Using RastPort @ %x\n", ctx->visible_rp));
+    D(bug("[HOSTGL] %s: Using RastPort @ 0x%p\n", __func__, ctx->visible_rp));
 }
 
 BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
@@ -78,6 +80,8 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
     LONG requestedright = 0, requestedbottom = 0;
     LONG defaultleft = 0, defaulttop = 0;
     LONG defaultright = 0, defaultbottom = 0;
+
+    D(bug("[HOSTGL] %s(ctx @ 0x%p, taglist @ 0x%p)\n", __func__, ctx, tagList));
 
     /* Set the defaults based on window information */
     if (ctx->window)
@@ -91,12 +95,11 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
         }
     }
 
-    D(bug("[HOSTGL] HostGLStandardInit(ctx @ %x, taglist @ %x)\n", ctx, tagList));
-    D(bug("[HOSTGL] HostGLStandardInit: Using RastPort @ %x\n", ctx->visible_rp));
+    D(bug("[HOSTGL] %s: Using RastPort @ 0x%p\n", __func__, ctx->visible_rp));
 
     ctx->visible_rp = CloneRastPort(ctx->visible_rp);
 
-    D(bug("[HOSTGL] HostGLStandardInit: Cloned RastPort @ %x\n", ctx->visible_rp));
+    D(bug("[HOSTGL] %s: Cloned RastPort @ 0x%p\n", __func__, ctx->visible_rp));
 
     /* We assume left and top are given or if there is a window, set to border left/top
        or if there is no window set to 0 */
@@ -147,13 +150,13 @@ BOOL HostGLStandardInit(struct hostgl_context * ctx, struct TagItem *tagList)
     if (ctx->Screen)
         ctx->BitsPerPixel  = GetCyberMapAttr(ctx->Screen->RastPort.BitMap, CYBRMATTR_BPPIX) * 8;
     
-    D(bug("[HOSTGL] HostGLStandardInit: Context Base dimensions set -:\n"));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->visible_rp_width        = %d\n", ctx->visible_rp_width));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->visible_rp_height       = %d\n", ctx->visible_rp_height));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->left                    = %d\n", ctx->left));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->right                   = %d\n", ctx->right));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->top                     = %d\n", ctx->top));
-    D(bug("[HOSTGL] HostGLStandardInit:    ctx->bottom                  = %d\n", ctx->bottom));
+    D(bug("[HOSTGL] %s: Context Base dimensions set -:\n", __func__));
+    D(bug("[HOSTGL] %s:    ctx->visible_rp_width        = %d\n", __func__, ctx->visible_rp_width));
+    D(bug("[HOSTGL] %s:    ctx->visible_rp_height       = %d\n", __func__, ctx->visible_rp_height));
+    D(bug("[HOSTGL] %s:    ctx->left                    = %d\n", __func__, ctx->left));
+    D(bug("[HOSTGL] %s:    ctx->right                   = %d\n", __func__, ctx->right));
+    D(bug("[HOSTGL] %s:    ctx->top                     = %d\n", __func__, ctx->top));
+    D(bug("[HOSTGL] %s:    ctx->bottom                  = %d\n", __func__, ctx->bottom));
 
     return TRUE;
 }
@@ -163,8 +166,7 @@ VOID HostGLRecalculateBufferWidthHeight(struct hostgl_context * ctx)
     ULONG newwidth = 0;
     ULONG newheight = 0;
     
-    D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight\n"));
-    
+    D(bug("[HOSTGL] %s(0x%p)\n", __func__, ctx));
     
     ctx->visible_rp_width =
         ctx->visible_rp->Layer->bounds.MaxX - ctx->visible_rp->Layer->bounds.MinX + 1;
@@ -183,10 +185,10 @@ VOID HostGLRecalculateBufferWidthHeight(struct hostgl_context * ctx)
     if ((newwidth != ctx->framebuffer->width) || (newheight != ctx->framebuffer->height))
     {
         /* The drawing area size has changed. Buffer must change */
-        D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight: current height    =   %d\n", ctx->framebuffer->height));
-        D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight: current width     =   %d\n", ctx->framebuffer->width));
-        D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight: new height        =   %d\n", newheight));
-        D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight: new width         =   %d\n", newwidth));
+        D(bug("[HOSTGL] %s: current height    =   %d\n", __func__, ctx->framebuffer->height));
+        D(bug("[HOSTGL] %s: current width     =   %d\n", __func__, ctx->framebuffer->width));
+        D(bug("[HOSTGL] %s: new height        =   %d\n", __func__, newheight));
+        D(bug("[HOSTGL] %s: new width         =   %d\n", __func__, newwidth));
         
         ctx->framebuffer->width = newwidth;
         ctx->framebuffer->height = newheight;
@@ -202,7 +204,7 @@ VOID HostGLRecalculateBufferWidthHeight(struct hostgl_context * ctx)
                 { TAG_DONE }
             };
         
-            D(bug("[HOSTGL] HostGLRecalculateBufferWidthHeight: Clipping Rastport to Window's dimensions\n"));
+            D(bug("[HOSTGL] %s: Clipping Rastport to Window's dimensions\n", __func__));
 
             /* Clip the rastport to the visible area */
             rastcliprect.MinX = ctx->left;
@@ -216,6 +218,7 @@ VOID HostGLRecalculateBufferWidthHeight(struct hostgl_context * ctx)
 
 VOID HostGLFreeContext(struct hostgl_context * ctx)
 {
+    D(bug("[HOSTGL] %s(0x%p)\n", __func__, ctx));
     if (ctx)
     {
         FreeVec(ctx);

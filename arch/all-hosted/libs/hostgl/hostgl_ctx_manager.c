@@ -1,12 +1,13 @@
 /*
-    Copyright 2011, The AROS Development Team. All rights reserved.
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
 */
+
+#include <aros/debug.h>
 
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 #include "hostgl_ctx_manager.h"
 #include "tls.h"
-#include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -73,11 +74,12 @@ VOID HostGL_UpdateGlobalGLXContext()
 #if defined(RENDERER_SEPARATE_X_WINDOW)
             GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXWindow, cur_ctx->glXWindow, cur_ctx->glXctx);
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
-            GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPbuffer, cur_ctx->glXPbuffer, cur_ctx->glXctx);
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
-            GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPixmap, cur_ctx->glXPixmap, cur_ctx->glXctx);
+#if defined(RENDERER_BUFFER)
+            if (cur_ctx->visinfo) {
+                GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPixmap, cur_ctx->glXPixmap, cur_ctx->glXctx);
+            } else {
+                GLXCALL(glXMakeContextCurrent, dsp, cur_ctx->glXPbuffer, cur_ctx->glXPbuffer, cur_ctx->glXctx);
+            }
 #endif
         }
     }

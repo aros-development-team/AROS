@@ -1,5 +1,5 @@
 /*
-    Copyright 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef HOSTGL_TYPES_H
@@ -15,7 +15,10 @@
 
 struct hostgl_framebuffer
 {
-    GLXFBConfig                 *fbconfigs;
+    union {
+        GLXFBConfig             *fbconfigs;
+        struct glx_config       **glxconfigs;
+    };
     ULONG                       width;
     ULONG                       height;
     BOOL                        resized;
@@ -24,19 +27,21 @@ struct hostgl_framebuffer
 struct hostgl_context
 {
     OOP_AttrBase HiddX11BitMapAB;
+    XVisualInfo     *visinfo;
 #if defined(RENDERER_SEPARATE_X_WINDOW)
     Window      XWindow;
     GLXWindow   glXWindow;
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
-    GLXPbuffer  glXPbuffer;
-    ULONG       *swapbuffer;
-    ULONG       *swapbufferline;
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
-    XVisualInfo     *visinfo;
-    struct BitMap   *glXPixmapBM;
-    GLXPixmap       glXPixmap;
+#if defined(RENDERER_BUFFER)
+    union {
+        GLXPixmap       glXPixmap;
+        GLXPbuffer      glXPbuffer;
+    };
+    union {
+        struct BitMap   *glXPixmapBM;
+        ULONG           *swapbuffer;
+    };
+    ULONG           *swapbufferline;
 #endif
     GLXContext  glXctx;
 

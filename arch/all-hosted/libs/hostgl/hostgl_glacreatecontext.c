@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2025, The AROS Development Team. All rights reserved.
 */
 
 #define AROS_TAGRETURNTYPE  GLAContext
@@ -14,6 +14,8 @@
 #include "hostgl_support.h"
 
 #include <x11gfx_bitmapclass.h>
+
+#define HOSTGL_SAFESTACK    (1 << 19)
 
 /*****************************************************************************
 
@@ -105,73 +107,95 @@
     const LONG              fbattributessize = 40;
     LONG                    fbattributes[fbattributessize];
 #if defined(RENDERER_SEPARATE_X_WINDOW)
-    XVisualInfo             *visinfo;
     XSetWindowAttributes    swa;
     LONG                    swamask;
 #endif
+
+    D(
+        struct Task *ctx_task = FindTask(NULL);
+        bug("[HostGL] %s()\n", __func__);
+        //Sanity check
+        if (((IPTR)ctx_task->tc_SPUpper - (IPTR)ctx_task->tc_SPLower) < HOSTGL_SAFESTACK) {
+            bug("[HostGL] %s: called with very low stack - may crash ( < %ubytes)\n", __func__, HOSTGL_SAFESTACK);
+        }
+    )
 
     HostGL_Lock();
 
     /* Standard glA initialization */
 
     /* Allocate HostGL context struct initialized to zeros */
-    if (!(ctx = (struct hostgl_context *)AllocVec(sizeof(struct hostgl_context), MEMF_PUBLIC | MEMF_CLEAR)))
-    {
-        bug("glACreateContext: ERROR - failed to allocate Context\n");
+    if (!(ctx = (struct hostgl_context *)AllocVec(sizeof(struct hostgl_context), MEMF_PUBLIC | MEMF_CLEAR))) {
+        bug("%s: ERROR - failed to allocate Context\n", __func__);
         goto error_out;
     }
 
+    D(bug("[HostGL] %s: ctx @ 0x%p\n", __func__, ctx));
+    
     ctx->HiddX11BitMapAB = OOP_ObtainAttrBase(IID_Hidd_BitMap_X11);
 
     HostGLSelectRastPort(ctx, tagList);
-    if (!ctx->visible_rp)
-    {
-        bug("glACreateContext: ERROR - failed to select visible rastport\n");
+    if (!ctx->visible_rp) {
+        bug("%s: ERROR - failed to select visible rastport\n", __func__);
         goto error_out;
     }
 
     HostGLStandardInit(ctx, tagList);
 
+    D(bug("[HostGL] %s: allocating framebuffer ..\n", __func__));
+
     ctx->framebuffer = (struct hostgl_framebuffer *)AllocVec(sizeof(struct hostgl_framebuffer), MEMF_PUBLIC | MEMF_CLEAR);
-    if (!ctx->framebuffer)
-    {
-        bug("glACreateContext: ERROR -  failed to create frame buffer\n");
+    if (!ctx->framebuffer) {
+        bug("%s: ERROR -  failed to create frame buffer\n", __func__);
         goto error_out;
     }
 
     HostGLRecalculateBufferWidthHeight(ctx);
 
-    if (!HostGL_FillFBAttributes(fbattributes, fbattributessize, tagList))
-    {
-        bug("glACreateContext: ERROR -  failed to fill FB attributes\n");
-        goto error_out;
-    }
-
     /* X/GLX initialization */
-
+    D(bug("[HostGL] %s: initializing Host ..\n", __func__));
+    
     /* Get connection with the server */
     dsp = HostGL_GetGlobalX11Display();
+    D(bug("[HostGL] %s: dsp @ 0x%p\n", __func__, dsp));
     screen = DefaultScreen(dsp);
+    D(bug("[HostGL] %s: screen @ 0x%p\n", __func__, screen));
+
+    int novisinfo = 0;
+#if !defined(RENDERER_SEPARATE_X_WINDOW)
+retryconfigs:
+#endif
+    if (!HostGL_FillFBAttributes(fbattributes, fbattributessize, tagList, novisinfo)) {
+        bug("%s: ERROR -  failed to fill FB attributes\n", __func__);
+        goto error_out;
+    }
 
     /* Choose fb config */
     ctx->framebuffer->fbconfigs = GLXCALL(glXChooseFBConfig, dsp, screen, fbattributes, &numreturned);
-    
-    if (ctx->framebuffer->fbconfigs == NULL)
-    {
-        bug("glACreateContext: ERROR -  failed to retrieve fbconfigs\n");
+    if (ctx->framebuffer->fbconfigs == NULL) {
+        bug("%s: ERROR -  failed to retrieve fbconfigs\n", __func__);
         goto error_out;
     }
+    D(bug("[HostGL] %s: fbconfigs @ 0x%p\n", __func__, ctx->framebuffer->fbconfigs));
 
-#if defined(RENDERER_SEPARATE_X_WINDOW)
-    visinfo = GLXCALL(glXGetVisualFromFBConfig, dsp, ctx->framebuffer>fbconfigs[0]);
-
-    swa.colormap = XCALL(XCreateColormap, dsp, RootWindow(dsp, screen), visinfo->visual, AllocNone);
+    if (novisinfo == 0)
+        ctx->visinfo = GLXCALL(glXGetVisualFromFBConfig, dsp, ctx->framebuffer->fbconfigs[0]);
+#if !defined(RENDERER_SEPARATE_X_WINDOW)
+    if ((novisinfo == 0) && (ctx->visinfo == NULL)) {
+        XCALL(XFree, ctx->framebuffer->fbconfigs);
+        ctx->framebuffer->fbconfigs = NULL;
+        novisinfo = 1;
+        goto retryconfigs;
+    }
+#else
+    D(bug("[HostGL] %s: initializing X ..\n", __func__));
+    swa.colormap = XCALL(XCreateColormap, dsp, RootWindow(dsp, screen), ctx->visinfo->visual, AllocNone);
     swamask = CWColormap;
 
     /* Create X window */
     ctx->XWindow = XCALL(XCreateWindow, dsp, RootWindow(dsp, screen),
         ctx->left, ctx->top, ctx->framebuffer>width, ctx->framebuffer>height, 0,
-        visinfo->depth, InputOutput, visinfo->visual, swamask, &swa);
+        ctx->visinfo->depth, InputOutput, ctx->visinfo->visual, swamask, &swa);
     
     /* Create GLX window */
     ctx->glXWindow = GLXCALL(glXCreateWindow, dsp, ctx->framebuffer>fbconfigs[0], ctx->XWindow, NULL);
@@ -183,35 +207,26 @@
 
     /* Create GL context */
     ctx->glXctx = GLXCALL(glXCreateNewContext, dsp, ctx->framebuffer>fbconfigs[0], GLX_RGBA_TYPE, NULL, True);
+
 #endif
 
-#if defined(RENDERER_PBUFFER_WPA)
-    /* Create GLX Pbuffer */
-    HostGL_AllocatePBuffer(ctx);
-
-    /* Create GL context */
-    ctx->glXctx = GLXCALL(glXCreateNewContext, dsp, ctx->framebuffer>fbconfigs[0], GLX_RGBA_TYPE, NULL, True);
-#endif
-    
-#if defined(RENDERER_PIXMAP_BLIT)
-    ctx->visinfo = GLXCALL(glXGetVisualFromFBConfig, dsp, ctx->framebuffer->fbconfigs[0]);
-
-    /* Create GLX Pixmap */
-    HostGL_AllocatePixmap(ctx);
-
-    /* Create GL context */
+#if defined(RENDERER_BUFFER)
+    D(bug("[HostGL] %s: initializing buffer ..\n", __func__));
+    HostGL_AllocateBuffer(ctx);
+    D(bug("[HostGL] %s: creating context ..\n", __func__));
     ctx->glXctx = GLXCALL(glXCreateNewContext, dsp, ctx->framebuffer->fbconfigs[0], GLX_RGBA_TYPE, NULL, True);
 #endif
 
-    if (!ctx->glXctx)
-    {
-        bug("glACreateContext: ERROR -  failed to create GLX context\n");
+    if (!ctx->glXctx) {
+        bug("%s: ERROR -  failed to create GLX context\n", __func__);
         goto error_out;
     }
 
-    D(bug("[HostGL] TASK: 0x%x, CREATE 0x%x\n", FindTask(NULL), ctx->glXctx));
+    D(bug("[HostGL] %s: ThisTask @ 0x%p, glXctx @ 0x%p\n", __func__, ctx_task, ctx->glXctx));
 
     HostGL_UnLock();
+
+    D(bug("[HostGL] %s: returning 0x%p\n", __func__, ctx));
 
     return (GLAContext)ctx;
 
@@ -220,18 +235,14 @@ error_out:
     if (ctx && ctx->glXWindow) GLXCALL(glXDestroyWindow, dsp, ctx->glXWindow);
     if (ctx && ctx->XWindow) XCALL(XDestroyWindow, dsp, ctx->XWindow);
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
-    if (ctx) HostGL_DeAllocatePBuffer(ctx);
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
-    if (ctx) HostGL_DeAllocatePixmap(ctx);
+#if defined(RENDERER_BUFFER)
+    if (ctx) HostGL_DeAllocateBuffer(ctx);
 #endif
 
     if (ctx->HiddX11BitMapAB)
         OOP_ReleaseAttrBase(IID_Hidd_BitMap_X11);
 
-    if (ctx->framebuffer)
-    {
+    if (ctx->framebuffer) {
         if (ctx->framebuffer->fbconfigs) XCALL(XFree, ctx->framebuffer->fbconfigs);
         FreeVec(ctx->framebuffer);
     }

@@ -1,18 +1,22 @@
-#include <aros/config.h>
+/*
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
+*/
 
+#include <aros/config.h>
+#include <aros/debug.h>
 #include <aros/symbolsets.h>
 
 #include "hostgl_renderer_config.h"
 #include "glx_hostlib.h"
 
+#ifndef __HOSTLIB_NOLIBBASE__
+#define __HOSTLIB_NOLIBBASE__
+#endif
 #include <proto/hostlib.h>
 
 #include <string.h>
 
 #include LC_LIBDEFS_FILE
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 void *glx_handle = NULL;
 struct glx_func glx_func;
@@ -31,11 +35,9 @@ static const char *glx_func_names[] =
     "glXCreateWindow",
     "glXDestroyWindow",
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
+#if defined(RENDERER_BUFFER)
     "glXCreatePbuffer",
     "glXDestroyPbuffer",
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
     "glXGetVisualFromFBConfig",
     "glXCreateGLXPixmap",
     "glXDestroyGLXPixmap",
@@ -57,11 +59,11 @@ static void *hostlib_load_so(const char *sofile, const char **names, void **func
     const char *name;
     int i = 0;
 
-    D(bug("[HostGL] loading %d functions from %s\n", nfuncs, sofile));
+    D(bug("[HostGL:GLX] loading functions from %s\n", sofile));
 
     if ((handle = HostLib_Open(sofile, &err)) == NULL)
     {
-        bug("[HostGL] couldn't open '%s': %s\n", sofile, err);
+        bug("[HostGL:GLX] couldn't open '%s': %s\n", sofile, err);
         return NULL;
     }
 
@@ -70,14 +72,14 @@ static void *hostlib_load_so(const char *sofile, const char **names, void **func
         funcptr[i] = HostLib_GetPointer(handle, name, &err);
         D(bug("%s(%x)\n", name, funcptr[i]));
         if (err != NULL) {
-            bug("[HostGL] couldn't get symbol '%s' from '%s': %s\n", name, sofile, err);
+            bug("[HostGL:GLX] couldn't get symbol '%s' from '%s': %s\n", name, sofile, err);
             HostLib_Close(handle, NULL);
             return NULL;
         }
         i++;
     }
 
-    D(bug("[HostGL] GLX done\n"));
+    D(bug("[HostGL:GLX] GLX done\n"));
 
     return handle;
 }
@@ -93,8 +95,8 @@ static void load_gl_functions(const char **names, void **funcptr)
 
         /*
          * AROSMesa's linklib prior to version 18 was invalidly redirecting standard GL calls
-         * to their NV equivalents. HostGL tries to provide those NV functions by remaping them
-         * only ARB function in order for old applications to run correclty.
+         * to their NV equivalents. HostGL tries to provide those NV functions by remaping
+         * to ARB functions, in order for old applications to run correclty.
          */
         if (strstr((char *)name, "NV") != NULL)
         {
@@ -109,18 +111,18 @@ static void load_gl_functions(const char **names, void **funcptr)
             }
         }
 
-        D(if (funcptr[i] == NULL) bug("[HostGL] Not found: %s\n", name));
+        D(if (funcptr[i] == NULL) bug("[HostGL:GLX] Not found: %s\n", name));
         i++;
     }
 }
 
 static int glx_hostlib_init(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[HostGL] GLX hostlib init\n"));
+    D(bug("[HostGL:GLX] GLX hostlib init\n"));
 
     if ((HostLibBase = OpenResource("hostlib.resource")) == NULL)
     {
-        bug("[HostGL] couldn't open hostlib.resource\n");
+        bug("[HostGL:GLX] couldn't open hostlib.resource\n");
         return FALSE;
     }
 
@@ -135,7 +137,7 @@ static int glx_hostlib_init(LIBBASETYPEPTR LIBBASE)
 
 static int glx_hostlib_expunge(LIBBASETYPEPTR LIBBASE)
 {
-    D(bug("[HostGL] GLX hostlib expunge\n"));
+    D(bug("[HostGL:GLX] GLX hostlib expunge\n"));
 
     if (glx_handle != NULL)
         HostLib_Close(glx_handle, NULL);

@@ -1,20 +1,19 @@
 /*
-    Copyright 2011-2015, The AROS Development Team. All rights reserved.
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
 */
 
 #include "hostgl_ctx_manager.h"
 #include "hostgl_funcs.h"
 #include <proto/exec.h>
 #include <aros/debug.h>
-#if defined(RENDERER_PBUFFER_WPA)
+#if defined(RENDERER_BUFFER)
 #include <proto/cybergraphics.h>
 #include <proto/graphics.h>
 #include <cybergraphx/cybergraphics.h>
 static struct SignalSemaphore * GetX11SemaphoreFromBitmap(struct BitMap * bm);
+//define RENDERER_USEBMSEMLOCK
 #endif
-#if defined(RENDERER_PIXMAP_BLIT)
-#include <proto/graphics.h>
-#endif
+
 /*****************************************************************************
 
     NAME */
@@ -56,54 +55,83 @@ static struct SignalSemaphore * GetX11SemaphoreFromBitmap(struct BitMap * bm);
         GLXCALL(glXSwapBuffers, dsp, _ctx->glXWindow);
         HostGL_UnLock();
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
-        LONG line = 0;
-        LONG width = _ctx->framebuffer->width;
-        LONG height = _ctx->framebuffer->height;
-        
-        /* This codes works correct with both 16bpp and 32 bpp pixel buffers */
+#if defined(RENDERER_BUFFER)
+        if (_ctx->visinfo) {
+            D(bug("[HostGL] %s: swapping pixmap\n", __func__));
+            HostGL_Lock();
+            HostGL_UpdateGlobalGLXContext();
+            GLXCALL(glXWaitGL);
+            HostGL_UnLock();
 
-        HostGL_Lock();
-        HostGL_UpdateGlobalGLXContext();
-        ObtainSemaphore(GetX11SemaphoreFromBitmap(_ctx->visible_rp->BitMap));
-        GLCALL(glReadPixels, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, _ctx->swapbuffer);
-        ReleaseSemaphore(GetX11SemaphoreFromBitmap(_ctx->visible_rp->BitMap));
-        HostGL_UnLock();
+            BltBitMapRastPort(_ctx->glXPixmapBM, 0, 0,
+                              _ctx->visible_rp, _ctx->left, _ctx->top,
+                              _ctx->framebuffer->width, _ctx->framebuffer->height,
+                              192);
 
-        /* Flip image */
-        for (line = 0; line < height / 2; line++)
-        {
-            ULONG * start = _ctx->swapbuffer + (line * width);
-            ULONG * end = _ctx->swapbuffer + ((height - line - 1) * width);
-            CopyMem(start, _ctx->swapbufferline, width * SWAPBUFFER_BPP);
-            CopyMem(end, start, width * SWAPBUFFER_BPP);
-            CopyMem(_ctx->swapbufferline, end, width * SWAPBUFFER_BPP);
+            HostGL_Lock();
+            HostGL_UpdateGlobalGLXContext();
+            GLXCALL(glXWaitX);
+            HostGL_UnLock();
+        } else {
+#if defined(RENDERER_USEBMSEMLOCK)
+            struct SignalSemaphore *bmSem;
+#endif
+            LONG line = 0;
+            LONG width = _ctx->framebuffer->width;
+            LONG height = _ctx->framebuffer->height;
+
+            D(
+                bug("[HostGL] %s: swapping pbuffer\n", __func__);
+                bug("[HostGL] %s:    bitmap @ 0x%p\n", __func__, _ctx->visible_rp->BitMap);
+                bug("[HostGL] %s:    buffer @ 0x%p\n", __func__, _ctx->swapbuffer);
+            )
+
+#if defined(RENDERER_USEBMSEMLOCK)
+            /* This codes works correct with both 16bpp and 32 bpp pixel buffers */
+            bmSem = GetX11SemaphoreFromBitmap(_ctx->visible_rp->BitMap);
+            if (bmSem) {
+                D(bug("[HostGL] %s: bitmap access semaphore @ 0x%p\n", __func__, bmSem));
+#endif
+                HostGL_Lock();
+                HostGL_UpdateGlobalGLXContext();
+#if defined(RENDERER_USEBMSEMLOCK)
+                ObtainSemaphore(bmSem);
+#endif
+                GLCALL(glReadPixels, 0, 0, width, height, GL_BGRA, GL_UNSIGNED_BYTE, _ctx->swapbuffer);
+#if defined(RENDERER_USEBMSEMLOCK)
+                ReleaseSemaphore(bmSem);
+#endif
+                HostGL_UnLock();
+#if defined(RENDERER_USEBMSEMLOCK)
+            } else {
+                D(bug("[HostGL] %s: failed to obtain bitmap access semaphore\n", __func__));
+            }
+#endif
+            D(bug("[HostGL] %s: flipping image\n", __func__));
+
+            /* Flip image */
+            for (line = 0; line < height / 2; line++)
+            {
+                ULONG * start = _ctx->swapbuffer + (line * width);
+                ULONG * end = _ctx->swapbuffer + ((height - line - 1) * width);
+                CopyMem(start, _ctx->swapbufferline, width * SWAPBUFFER_BPP);
+                CopyMem(end, start, width * SWAPBUFFER_BPP);
+                CopyMem(_ctx->swapbufferline, end, width * SWAPBUFFER_BPP);
+            }
+
+            D(bug("[HostGL] %s: rendering image\n", __func__));
+
+            WritePixelArray(_ctx->swapbuffer, 0, 0, width * SWAPBUFFER_BPP, _ctx->visible_rp, _ctx->left, _ctx->top,
+                width, height, RECTFMT_BGRA32);
         }
-
-        WritePixelArray(_ctx->swapbuffer, 0, 0, width * SWAPBUFFER_BPP, _ctx->visible_rp, _ctx->left, _ctx->top,
-            width, height, RECTFMT_BGRA32);
 #endif
-#if defined(RENDERER_PIXMAP_BLIT)
-        HostGL_Lock();
-        HostGL_UpdateGlobalGLXContext();
-        GLXCALL(glXWaitGL);
-        HostGL_UnLock();
-
-        BltBitMapRastPort(_ctx->glXPixmapBM, 0, 0,
-                          _ctx->visible_rp, _ctx->left, _ctx->top,
-                          _ctx->framebuffer->width, _ctx->framebuffer->height,
-                          192);
-
-        HostGL_Lock();
-        HostGL_UpdateGlobalGLXContext();
-        GLXCALL(glXWaitX);
-        HostGL_UnLock();
-#endif
+        D(bug("[HostGL] %s: buffers swapped\n", __func__));
         HostGL_CheckAndUpdateBufferSize(_ctx);
     }
+    D(bug("[HostGL] %s: done\n", __func__));
 }
 
-#if defined(RENDERER_PBUFFER_WPA)
+#if defined(RENDERER_USEBMSEMLOCK)
 /* HACK: EVIL HACK TO GET ACCESS TO X11 HIDD INTERNALS */
 #include <proto/oop.h>
 #define HIDD_BM_OBJ(bitmap)     (*(OOP_Object **)&((bitmap)->Planes[0]))

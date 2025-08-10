@@ -1,5 +1,5 @@
 /*
-    Copyright 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright 2011-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -66,11 +66,8 @@
         GLXCALL(glXDestroyWindow, dsp, _ctx->glXWindow);
         XCALL(XDestroyWindow, dsp, _ctx->XWindow);
 #endif
-#if defined(RENDERER_PBUFFER_WPA)
-        HostGL_DeAllocatePBuffer(_ctx);
-#endif
-#if defined(RENDERER_PIXMAP_BLIT)
-        HostGL_DeAllocatePixmap(_ctx);
+#if defined(RENDERER_BUFFER)
+        HostGL_DeAllocateBuffer(_ctx);
 #endif
 
         if (_ctx->HiddX11BitMapAB)
