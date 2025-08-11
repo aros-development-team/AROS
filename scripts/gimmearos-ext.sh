@@ -11,7 +11,7 @@
 # In contrast to gimmearos.sh this script creates the toolchain
 # in external directories.
 
-# $VER: gimmearos-ext.sh 1.18 (19.05.2023)
+# $VER: gimmearos-ext.sh 1.19 (11.08.2025)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -102,9 +102,14 @@ case "$input" in
         install_pkg "apt-get install" libpng-dev
         install_pkg "apt-get install" libsdl1.2-dev
         install_pkg "apt-get install" byacc
-        install_pkg "apt-get install" python-mako
+        install_pkg "apt-get install" python3-mako
         install_pkg "apt-get install" libxcursor-dev
         install_pkg "apt-get install" nasm
+        install_pkg "apt-get install" jlha-utils
+        install_pkg "apt-get install" wget
+        install_pkg "apt-get install" liblzma-dev
+        install_pkg "apt-get install" mtools
+        install_pkg "apt-get install" xorriso
         ;;
 
     2 ) echo -e "\nInstalling prerequisites with apt-get..."
@@ -132,6 +137,11 @@ case "$input" in
         install_pkg "apt-get install" python-mako
         install_pkg "apt-get install" libxcursor-dev
         install_pkg "apt-get install" nasm
+        install_pkg "apt-get install" jlha-utils
+        install_pkg "apt-get install" wget
+        install_pkg "apt-get install" liblzma-dev
+        install_pkg "apt-get install" mtools
+        install_pkg "apt-get install" xorriso
 
         install_pkg "apt-get install" libc6-dev-i386
         install_pkg "apt-get install" lib32gcc1
