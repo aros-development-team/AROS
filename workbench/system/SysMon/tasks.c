@@ -71,7 +71,7 @@ struct Tasklist_DATA
     struct Task                 *tld_TaskSelected;
     Object                      *tld_TaskWinObj;
     Object                      *tld_TaskWinNameObj;
-    Object                      *tld_TaskWinGuageObj;
+    Object                      *tld_TaskWinGaugeObj;
     Object                      *tld_TaskTxt1Obj;
     Object                      *tld_TaskTxt2Obj;
     struct List                 tld_TaskList;
@@ -314,7 +314,7 @@ void TaskViewUpdate(struct Tasklist_DATA *data, struct Task *task)
     {
         SET(data->tld_TaskWinObj, MUIA_Window_Title, (IPTR) task->tc_Node.ln_Type == NT_TASK ? "Task Details" : "Process Details");
         SET(data->tld_TaskWinNameObj, MUIA_Text_Contents, (IPTR) task->tc_Node.ln_Name);
-        SET(data->tld_TaskWinGuageObj, MUIA_Gauge_Current,
+        SET(data->tld_TaskWinGaugeObj, MUIA_Gauge_Current,
             (LONG) ((100.0 * ((IPTR)task->tc_SPUpper - (IPTR)task->tc_SPReg)) / ((IPTR)task->tc_SPUpper - (IPTR)task->tc_SPLower)));
         
         if (data->tld_debugBase)
@@ -400,7 +400,7 @@ AROS_UFH3(VOID, TaskClickedFunction,
                             MUIA_Text_PreParse, (IPTR) "\33l",
                             MUIA_Text_Contents, (IPTR) "Stack Usage",
                         End),
-                        Child, (IPTR)(data->tld_TaskWinGuageObj = GaugeObject,
+                        Child, (IPTR)(data->tld_TaskWinGaugeObj = GaugeObject,
                             MUIA_Gauge_InfoText, "%ld %%",
                             MUIA_Gauge_Horiz, TRUE,
                             MUIA_Gauge_Current, 0,
