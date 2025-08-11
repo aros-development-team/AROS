@@ -1,5 +1,5 @@
 /*
-    Copyright ©2010-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½2010-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -320,7 +320,7 @@ void TaskViewUpdate(struct Tasklist_DATA *data, struct Task *task)
         if (data->tld_debugBase)
         {
 #define DebugBase data->tld_debugBase
-            const char *symname;
+            const char *symname = NULL;
             APTR currentpc = 0;
             struct TagItem tskTags[] = 
             {
