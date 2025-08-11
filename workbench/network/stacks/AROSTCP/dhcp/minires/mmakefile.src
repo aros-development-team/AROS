@@ -1,6 +1,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../includes
+NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := \
         -DHMAC_MD5 \
         -DMINIRES_LIB \

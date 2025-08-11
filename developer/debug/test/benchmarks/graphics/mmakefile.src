@@ -4,6 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES       := primitives pixelarray text gfxbench amigademo
 EXEDIR      := $(AROS_TESTS)/benchmarks/graphics
+NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM- test-benchmarks : test-benchmarks-graphics
 #MM- test-benchmarks-quick : test-benchmarks-graphics-quick

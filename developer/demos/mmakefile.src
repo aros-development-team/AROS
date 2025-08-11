@@ -64,6 +64,8 @@ FILES	:= \
     winshape
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
+NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
 
 #MM demos :includes linklibs demos-images-setup workbench-demos-zune
 

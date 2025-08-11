@@ -1,6 +1,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes
+NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := \
         -D_GNU_SOURCE
 
