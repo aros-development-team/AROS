@@ -332,6 +332,8 @@ void TaskViewUpdate(struct Tasklist_DATA *data, struct Task *task)
             DecodeLocation(currentpc, DL_SymbolName , &symname, TAG_DONE);
 #undef DebugBase
             sprintf(addrbuf, "%p", currentpc);
+            if (!symname)
+                symname = "<unknown>";
             SET(data->tld_TaskTxt1Obj, MUIA_Text_Contents, (IPTR) addrbuf);
             SET(data->tld_TaskTxt2Obj, MUIA_Text_Contents, (IPTR) symname);
         }
