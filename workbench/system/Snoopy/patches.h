@@ -50,7 +50,7 @@ enum {
  * data on the stack. We can't use __aligned inside our patches
  * because the caller may not have a longword-aligned stack.
  */
-#define D_S(name, type) char c_##name[sizeof(type)+3]; \
+#define ALIGN4(name, type) char c_##name[sizeof(type)+3]; \
     type *name = (type *)((long)(c_##name+3) & ~3)
 
 #endif

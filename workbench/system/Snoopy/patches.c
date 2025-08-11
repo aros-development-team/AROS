@@ -1140,7 +1140,7 @@ char *MyNameFromLock(BPTR lock, char *filename, char *buf, int maxlen)
 {
     struct Process *myproc = (struct Process *)FindTask(NULL);
     int pos = maxlen - 1;
-    D_S(fib, struct FileInfoBlock);
+    ALIGN4(fib, struct FileInfoBlock);
     LONG savedioerr = IoErr();
     BPTR curlock;
     BPTR newlock;
