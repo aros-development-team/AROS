@@ -305,9 +305,11 @@ AC_SUBST(HAVE_OSS)
 
 dnl Check for AROS hosted driver support linklibs
 
-AC_CHECK_LIB( alsa-bridge, ALSA_Init,  [ AC_MSG_RESULT(Hosted Alsa Driver will be built); HAVE_ALSA=1],)
-AC_CHECK_LIB( WASAPI-bridge, WASAPI_Init,  [ AC_MSG_RESULT(Hosted WASAPI Driver will be built); HAVE_WASAPI=1],)
+AC_CHECK_LIB(alsa-bridge, ALSA_Init,  [ AC_MSG_RESULT(Hosted Alsa Driver will be built); HAVE_ALSA=1],)
+AC_CHECK_LIB(pulseaudio-bridge, PULSEA_Init,  [ AC_MSG_RESULT(Hosted PulseAudio Driver will be built); HAVE_PULSEAUDIO=1],)
+AC_CHECK_LIB(WASAPI-bridge, WASAPI_Init,  [ AC_MSG_RESULT(Hosted WASAPI Driver will be built); HAVE_WASAPI=1],)
 AC_SUBST(HAVE_ALSA)
+AC_SUBST(HAVE_PULSEAUDIO)
 AC_SUBST(HAVE_WASAPI)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -339,6 +341,7 @@ AC_OUTPUT(Makefile
           Drivers/Envy24/Makefile
           Drivers/Alsa/Makefile
           Drivers/OSS/Makefile
+          Drivers/PulseAudio/Makefile
           Drivers/WASAPI/Makefile
           Examples/Makefile
           Examples/Device/PlayTest/Makefile

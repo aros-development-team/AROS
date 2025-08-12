@@ -8,27 +8,28 @@
 
 @SET_MAKE@
 
-top_srcdir	= @top_srcdir@
-srcdir		= @srcdir@
-DISTDIR		= @DISTDIR@
+top_srcdir      = @top_srcdir@
+srcdir          = @srcdir@
+DISTDIR	        = @DISTDIR@
 
-DEVDIR		= ${DISTDIR}/Developer
-DRIVERDIR	= ${DEVDIR}/Drivers
+DEVDIR          = ${DISTDIR}/Developer
+DRIVERDIR       = ${DEVDIR}/Drivers
 
-host		= @host@
-host_cpu	= @host_cpu@
+host            = @host@
+host_cpu        = @host_cpu@
 
-INSTALL		= @INSTALL@
-INSTALL_DATA	= @INSTALL_DATA@
+INSTALL         = @INSTALL@
+INSTALL_DATA    = @INSTALL_DATA@
 
-VPATH		= @srcdir@
+VPATH           = @srcdir@
 
 HAVE_ASMIO      = @HAVE_ASMIO@
-HAVE_OPENPCI	= @HAVE_OPENPCI@
+HAVE_OPENPCI    = @HAVE_OPENPCI@
 
-HAVE_OSS	= @HAVE_OSS@
-HAVE_ALSA	= @HAVE_ALSA@
-HAVE_WASAPI = @HAVE_WASAPI@
+HAVE_ALSA       = @HAVE_ALSA@
+HAVE_OSS        = @HAVE_OSS@
+HAVE_PULSEAUDIO = @HAVE_PULSEAUDIO@
+HAVE_WASAPI     = @HAVE_WASAPI@
 
 #
 # Targets
@@ -38,7 +39,9 @@ HAVE_WASAPI = @HAVE_WASAPI@
 
 SUBDIRS		= Device Filesave Void
 
+#
 # Add supported native drivers
+#
 ifneq ($(strip $(HAVE_ASMIO)),)
 SUBDIRS		+= ac97
 SUBDIRS		+= HDAudio
@@ -60,13 +63,19 @@ ifeq ($(strip $(host)),powerpc-unknown-amigaos)
 SUBDIRS		+= EMU10kx
 endif
 
+#
 # Add supported AROS hosted drivers
+#
 ifneq ($(strip $(HAVE_ALSA)),)
 SUBDIRS		+= Alsa
 endif
 
 ifneq ($(strip $(HAVE_OSS)),)
 SUBDIRS		+= OSS
+endif
+
+ifneq ($(strip $(HAVE_PULSEAUDIO)),)
+SUBDIRS		+= PulseAudio
 endif
 
 ifneq ($(strip $(HAVE_WASAPI)),)

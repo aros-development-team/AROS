@@ -1,0 +1,18 @@
+# Copyright (C) 2015-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AHI-pulseaudio-bridge-linux : linklibs-pulseaudio-bridge-$(OPT_HOST_PULSEAUDIO)
+#MM- linklibs-pulseaudio-bridge-yes : AHI-linklibs-pulseaudio-bridge
+
+USER_CFLAGS =  $(KERNEL_INCLUDES) -isystem $(GENINCDIR)
+
+PULSEAUDIO_BRIDGE_FILES = \
+    pulseaudio \
+    pulseaudio_hostlib
+
+%build_linklib mmake=AHI-linklibs-pulseaudio-bridge \
+  libname=pulseaudio-bridge \
+  files="$(PULSEAUDIO_BRIDGE_FILES)"
+
+

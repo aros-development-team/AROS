@@ -650,6 +650,7 @@ ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 HAVE_WASAPI
+HAVE_PULSEAUDIO
 HAVE_ALSA
 HAVE_OSS
 HAVE_OPENPCI
@@ -5362,6 +5363,47 @@ then :
 printf "%s\n" "Hosted Alsa Driver will be built" >&6; }; HAVE_ALSA=1
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for PULSEA_Init in -lpulseaudio-bridge" >&5
+printf %s "checking for PULSEA_Init in -lpulseaudio-bridge... " >&6; }
+if test ${ac_cv_lib_pulseaudio_bridge_PULSEA_Init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpulseaudio-bridge  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char PULSEA_Init ();
+int
+main (void)
+{
+return PULSEA_Init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_pulseaudio_bridge_PULSEA_Init=yes
+else $as_nop
+  ac_cv_lib_pulseaudio_bridge_PULSEA_Init=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pulseaudio_bridge_PULSEA_Init" >&5
+printf "%s\n" "$ac_cv_lib_pulseaudio_bridge_PULSEA_Init" >&6; }
+if test "x$ac_cv_lib_pulseaudio_bridge_PULSEA_Init" = xyes
+then :
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: Hosted PulseAudio Driver will be built" >&5
+printf "%s\n" "Hosted PulseAudio Driver will be built" >&6; }; HAVE_PULSEAUDIO=1
+fi
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for WASAPI_Init in -lWASAPI-bridge" >&5
 printf %s "checking for WASAPI_Init in -lWASAPI-bridge... " >&6; }
 if test ${ac_cv_lib_WASAPI_bridge_WASAPI_Init+y}
@@ -5402,6 +5444,7 @@ then :
    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: Hosted WASAPI Driver will be built" >&5
 printf "%s\n" "Hosted WASAPI Driver will be built" >&6; }; HAVE_WASAPI=1
 fi
+
 
 
 
@@ -5769,7 +5812,7 @@ printf "%s\n" "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
-ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/WASAPI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
+ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/PulseAudio/Makefile Drivers/WASAPI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -6485,6 +6528,7 @@ do
     "Drivers/Envy24/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/Envy24/Makefile" ;;
     "Drivers/Alsa/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/Alsa/Makefile" ;;
     "Drivers/OSS/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/OSS/Makefile" ;;
+    "Drivers/PulseAudio/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/PulseAudio/Makefile" ;;
     "Drivers/WASAPI/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/WASAPI/Makefile" ;;
     "Examples/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Makefile" ;;
     "Examples/Device/PlayTest/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Device/PlayTest/Makefile" ;;

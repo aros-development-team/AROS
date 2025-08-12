@@ -8,7 +8,7 @@
 /* Define to 1 if you have the <asm/io.h> header file. */
 #undef HAVE_ASM_IO_H
 
-/* Assembler supports -Wa,--defsym */
+/* Assembler needs -Wa */
 #undef HAVE_AS_DEF_SYM
 
 /* Define to 1 if you have the <inttypes.h> header file. */
