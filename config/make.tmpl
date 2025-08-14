@@ -4361,7 +4361,7 @@ else
 endif
 
 ifeq (%(ignorecr),yes)
-    %(mmake)-diffflag   := %(srcdir)
+    %(mmake)-diffflag   := --strip-trailing-cr
 else
     %(mmake)-diffflag   :=
 endif
