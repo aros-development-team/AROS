@@ -115,16 +115,12 @@ void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect
     LONG width  = opRect->MaxX - opRect->MinX + 1;
     LONG height = opRect->MaxY - opRect->MinY + 1;
 
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32)
-    {
-        bug("[Cgfx] %s not possible for bitmap depth < 32\n", __func__);
-        return;
-    }
-
     ULONG *readbuf  = AllocMem(width * height * 4, MEMF_ANY);
     ULONG *writebuf = AllocMem(width * height * 4, MEMF_ANY);
     if (!readbuf || !writebuf)
     {
+        bug("[Cgfx] %s failed to allocate storage\n", __func__);
+
         if (readbuf)  FreeMem(readbuf,  width * height * 4);
         if (writebuf) FreeMem(writebuf, width * height * 4);
         return;

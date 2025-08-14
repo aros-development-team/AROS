@@ -21,12 +21,6 @@ void ProcessPixelArrayTintFunc(struct RastPort *opRast, struct Rectangle *opRect
     LONG width, height;
     ULONG *buffer;
 
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32)
-    {
-        bug("[Cgfx] %s not possible for bitmap depth < 32\n", __func__);
-        return;
-    }
-
     width  = opRect->MaxX - opRect->MinX + 1;
     height = opRect->MaxY - opRect->MinY + 1;
 

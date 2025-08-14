@@ -22,9 +22,9 @@ void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRec
     LONG width, height;
     ULONG * buffer, *ptr;
 
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32)
+    if (GetCyberMapAttr(opRast->BitMap, CYBRMATTR_BPPIX) < 4)
     {
-        bug("[Cgfx] %s not possible for bitmap depth < 32\n", __func__);
+        bug("[Cgfx] %s not possible for selected bitmap\n", __func__);
         return;
     }
 
