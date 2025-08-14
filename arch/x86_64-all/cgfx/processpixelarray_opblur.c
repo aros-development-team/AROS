@@ -20,6 +20,7 @@
 #define W1 116
 #define W2 70
 
+#if defined(__SSSE3__)
 static inline __m128i mul_weights_3tap_u8_to_u8(__m128i left, __m128i center, __m128i right)
 {
     const __m128i zero = _mm_setzero_si128();
@@ -104,6 +105,7 @@ static void GaussianRow_SSSE3(ULONG *dst, const ULONG *src, int w)
         dst[x] = (ca<<24)|(cr<<16)|(cg<<8)|cb;
     }
 }
+#endif
 
 void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, struct Library *CyberGfxBase)
 {
