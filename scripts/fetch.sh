@@ -5,6 +5,9 @@
 
 SPOOFED_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
+LOCATION="./"
+BASE="./"
+
 error()
 {    
     echo "$1"
@@ -349,9 +352,9 @@ unpack_cached()
 	! mkdir -p "$location" && return 1
     fi
 
-    if ! test -f "${location}/.${archive}.unpacked";  then
+    if ! test -f "$BASE/.${archive}.unpacked";  then
         if unpack "$location" "$archive" "$archivepath"; then
-	    echo yes > "${location}/.${archive}.unpacked"
+	    echo yes > "$BASE/.${archive}.unpacked"
 	    true
 	else
 	    false
@@ -365,12 +368,11 @@ do_patch()
     
     local old_PWD="$PWD"
     cd "$location"
-    local abs_location="$PWD"
     
     local patch=$(echo "$patch_spec": | cut -d: -f1)
     local subdir=$(echo "$patch_spec": | cut -d: -f2)
     local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
-    local patch_cmd="patch -Z $patch_opt < $abs_location/$patch"
+    local patch_cmd="patch -Z $patch_opt < $BASE/$patch"
         
     cd "${subdir:-.}"  2> /dev/null;
     
@@ -392,9 +394,9 @@ patch_cached()
     local patchname=$(echo "$patch" | cut -d: -f1)
     
     if test "x$patchname" != "x"; then
-        if ! test -f "${location}/.${patchname}.applied";  then
+        if ! test -f "$BASE/.${patchname}.applied";  then
             if do_patch "$location" "$patch"; then
-	        echo yes > "${location}/.${patchname}.applied"
+	        echo yes > "$BASE/.${patchname}.applied"
 	        true
 	    else
 	        false
@@ -403,7 +405,6 @@ patch_cached()
     fi
 }
 
-    
 fetchlock()
 {
     local location="$1" archive="$2" localbuild="$3" ;
@@ -439,7 +440,6 @@ fetchlock()
     done
 }
 
-
 fetchunlock()
 {
     local location="$1" archive="$2";
@@ -449,7 +449,6 @@ fetchunlock()
     fi
 }
 
-location="./"
 
 while  test "x$1" != "x"; do
     if test "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
@@ -463,7 +462,8 @@ while  test "x$1" != "x"; do
 	 -d) destination="$2";;
 	-po) patches_origins="$2";;
 	 -p) patches="$2";;
-     -l) location="$2";;
+     -b) newbase="$2";;
+     -l) newlocation="$2";;
      -rn) renamedir="$2";;
   	  *) echo "fetch: Unknown option \`$1'."; usage "$0";;
     esac
@@ -476,25 +476,26 @@ test -z "$archive" && usage "$0"
 
 archive_origins=${archive_origins:-.}
 destination=${destination:-.}
-location=${location:-.}
+LOCATION=${newlocation:-.}
+BASE=${newbase:-${destination}}
 patches_origins=${patches_origins:-.}
 
 fetchlockfile="$archive"
-fetchlock "$location" "$fetchlockfile"
+fetchlock "$LOCATION" "$fetchlockfile"
 
-fetch_cached "$archive_origins" "$archive" "$suffixes" "$location" archive2
+fetch_cached "$archive_origins" "$archive" "$suffixes" "$LOCATION" archive2
 
-test -z "$archive2" && fetchunlock "$location" "$fetchlockfile" && error "fetch: Error while fetching the archive \`$archive'."
+test -z "$archive2" && fetchunlock "$LOCATION" "$fetchlockfile" && error "fetch: Error while fetching the archive \`$archive'."
 archive="$archive2"
 
 for patch in $patches; do
     patch=$(echo "$patch" | cut -d: -f1)
     if test "x$patch" != "x"; then
-        if ! fetch_cached "$patches_origins" "$patch" "" "$destination"; then
-            fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$destination" patch2
+        if ! fetch_cached "$patches_origins" "$patch" "" "$BASE"; then
+            fetch_cached "$patches_origins" "$patch" "tar.bz2 tar.gz zip" "$BASE" patch2
             test -z "$patch2" && error "fetch: Error while fetching the patch \`$patch'."
             if ! unpack_cached "$destination" "$patch2" "$destination"; then
-                fetchunlock "$location" "$fetchlockfile"
+                fetchunlock "$LOCATION" "$fetchlockfile"
                 error "fetch: Error while unpacking \`$patch2'."
             fi
         fi
@@ -502,17 +503,17 @@ for patch in $patches; do
 done
 
 if test "x$suffixes" != "x"; then
-    if ! unpack_cached "$destination" "$archive" "$location"; then
-        fetchunlock "$location" "$fetchlockfile"
+    if ! unpack_cached "$destination" "$archive" "$LOCATION"; then
+        fetchunlock "$LOCATION" "$fetchlockfile"
         error "fetch: Error while unpacking \`$archive'."
     fi
 fi
     
 for patch in $patches; do
     if ! patch_cached "$destination" "$patch"; then
-        fetchunlock "$location" "$fetchlockfile"
+        fetchunlock "$LOCATION" "$fetchlockfile"
         error "fetch: Error while applying the patch \`$patch'."
     fi
 done
 
-fetchunlock "$location" "$fetchlockfile"
+fetchunlock "$LOCATION" "$fetchlockfile"

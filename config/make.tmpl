@@ -2182,7 +2182,7 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 # Explanation of this macro is done in the developer's manual
 %define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
     conffile=  confoverride= \
-    asmfiles= \
+    asmfiles= usetree=no \
     files="$(basename $(call WILDCARD, *.c))" \
     objcfiles= \
     cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
@@ -2601,7 +2601,7 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
 %rule_compile_cxx_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_CXX_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cxxflags="$(%(mmake)%(flavour)_CXXFLAGS)" dxxflags="$(%(mmake)%(flavour)_DXXFLAGS)" \
-    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
 %rule_compile_objc_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_OBJC_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
@@ -2609,19 +2609,19 @@ $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(m
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_CCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
-    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_TARGETCCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
-    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_NLIBARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
-    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
 %rule_compile_multi mmake=%(mmake)%(flavour) \
     basenames="$(%(mmake)%(flavour)_LINKLIBCCGENFILES)" srcdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
     cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
-    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
 %rule_assemble_multi mmake=%(mmake)%(flavour) \
     cmd="$(%(mmake)%(flavour)_ASSEMBLER)" basenames="$(%(mmake)%(flavour)_ASMFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
     cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" aflags="$(%(mmake)%(flavour)_AFLAGS)"
@@ -2784,7 +2784,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
   files="$(basename $(call WILDCARD, *.c))" \
-  objcfiles= asmfiles= \
+  objcfiles= asmfiles= usetree=no \
   cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
   alwayscxxlink=no \
   linklibfiles= linklibobjs= aflags="$(AFLAGS)" cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
@@ -2800,7 +2800,7 @@ endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
    cflags="%(cflags)" cppflags="%(cppflags)" aflags="%(aflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
    objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
    uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
-   nostartup="%(nostartup)" archspecific="%(archspecific)" \
+   nostartup="%(nostartup)" archspecific="%(archspecific)" usetree=%(usetree) \
    include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
    build_abi=M build_library=M stripdebug="%(stripdebug)" incextra="%(incextra)"
 
@@ -4143,6 +4143,8 @@ endif
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)/%(package)
     endif
 else
+    %(mmake)-cmake-env += PKG_CONFIG_LIBDIR="$(AROS_DEVELOPER)/lib/pkgconfig"
+    %(mmake)-cmake-env += PKG_CONFIG_SYSROOT_DIR="$(AROSDIR)"
     %(mmake)-cmake-env += LDFLAGS="$(strip $(TARGET_ISA_LDFLAGS) $(LDFLAGS) %(extraldflags))"
     %(mmake)-cmake-env += CFLAGS="$(strip $(CFLAGS) %(extracflags))"
     %(mmake)-cmake-env += CXXFLAGS="$(strip $(CXXFLAGS) %(extracxxflags))"
@@ -4270,6 +4272,8 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 #                         same way as packages are.
 #     - location        = the local directory where to put the fetched archive and patches.
 #                         If not specified, the directory specified by destination is used.
+#     - base     = the directory normally used to extract into.
+#                         If not specified, the destination directory is assumed.
 #     - destination     = the directory to unpack the archive to.
 #                         If not specified, the current directory is assumed.
 #     - patches_origins = list of locations where to find the patches. They are tried
@@ -4286,7 +4290,7 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 #                         
 #                         The patch_subdir and patch_opt fields are optional.
 
-%define fetch mmake=/A archive_origins=. archive=/A suffixes= location= destination=. \
+%define fetch mmake=/A archive_origins=. archive=/A suffixes= location= base= destination=. \
     patches_origins="$(SRCDIR)/$(CURDIR)" patches_specs=::
 
 .PHONY: %(mmake)
@@ -4297,13 +4301,19 @@ else
     %(mmake)-location := %(destination)
 endif
 
+ifneq (%(base),)
+    %(mmake)-baseflag := -b %(base)
+else
+    %(mmake)-baseflag :=
+endif
+
 %(mmake)-fetchedflag := $(%(mmake)-location)/.%(archive)-fetched
 
 #MM
 %(mmake) :
 	$(Q)$(ECHO) "Fetching   %(archive) ..."
 	$(Q)$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
-	-d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
+	-d %(destination) $(%(mmake)-baseflag) -po "%(patches_origins)" -p "%(patches_specs)"
 	$(Q)$(IF) ! $(TEST) -f $(%(mmake)-fetchedflag) ; then \
 		 $(TOUCH) $(%(mmake)-fetchedflag) ; \
 	fi
@@ -4330,7 +4340,7 @@ endif
 #     - destination = the directory to unpack the archive to.
 #     - excludes    = diff patterns to exclude files or directories from the patch
 
-%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" location= destination=/A excludes= prediff= postdiff=
+%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" location= base= destination=/A excludes= ignorecr=no prediff= postdiff=
 
 .PHONY: %(mmake)
 
@@ -4350,24 +4360,40 @@ else
     %(mmake)-srcdir   := %(archive)
 endif
 
+ifeq (%(ignorecr),yes)
+    %(mmake)-diffflag   := %(srcdir)
+else
+    %(mmake)-diffflag   :=
+endif
+
+ifneq (%(base),)
+    %(mmake)-baseflag := -b %(base)/tmp
+    %(mmake)-base := %(base)
+else
+    %(mmake)-baseflag :=
+    %(mmake)-base := %(destination)
+endif
+
 #MM- %(mmake) : %(prediff) %(mmake)-diff %(postdiff)
 #MM- %(mmake)-quick : %(prediff) %(mmake)-diff %(postdiff)
 
 #MM
 %(mmake)-diff:
-	$(Q)$(FETCH) -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) -d %(destination)/tmp ; \
-	$(MV) %(destination)/$(%(mmake)-srcdir) %(destination)/tmp/$(%(mmake)-srcdir).aros ; \
-	cd %(destination)/tmp ; \
+	%mkdirs_q $(%(mmake)-base)/tmp
+	$(Q)$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir).aros ; \
+	$(FETCH) -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) -d %(destination) $(%(mmake)-baseflag); \
+	$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir) ; \
+	cd $(%(mmake)-base)/tmp ; \
 	$(FOR) f in %(excludes) ; do \
 	    $(ECHO) $$f >> ./exclude.patterns ; \
 	done ; \
 	$(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
-	TZ="UTC" diff -ruN $(%(mmake)-exclude) \
+	TZ="UTC" diff -ruN $(%(mmake)-diffflag) $(%(mmake)-exclude) \
 	    $(%(mmake)-srcdir) \
 	    $(%(mmake)-srcdir).aros \
 	    >$(SRCDIR)/$(CURDIR)/%(archive)-aros-new.diff ; \
-	$(MV) %(destination)/tmp/$(%(mmake)-srcdir).aros %(destination)/$(%(mmake)-srcdir) ; \
-	$(RM) %(destination)/tmp
+	$(MV) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir).aros $(%(mmake)-base)/$(%(mmake)-srcdir) ; \
+	$(RM) $(%(mmake)-base)/tmp
 %end
 #------------------------------------------------------------------------------
 
