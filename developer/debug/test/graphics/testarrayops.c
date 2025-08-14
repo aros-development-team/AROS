@@ -157,7 +157,7 @@ int main(void)
 		}
 		Permit();
 		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d\n", (int)i);
+		printf(" Operation count  : %d (x 128x128)\n", (int)i);
 		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
 
 		printf("\nTesting Darken\n");
@@ -183,7 +183,7 @@ int main(void)
 		}
 		Permit();
 		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d\n", (int)i);
+		printf(" Operation count  : %d (x 128x128)\n", (int)i);
 		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
 
 		printf("\nTesting Tint\n");
@@ -210,7 +210,7 @@ int main(void)
 		}
 		Permit();
 		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d\n", (int)i);
+		printf(" Operation count  : %d (x 128x128)\n", (int)i);
 		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
 
 		Delay(3 * 50);
@@ -234,7 +234,7 @@ int main(void)
 		}
 		Permit();
 		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d\n", (int)i);
+		printf(" Operation count  : %d (x %ux%u\n", (int)i, width - 20, height - 20);
 		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
 
     }
