@@ -1,6 +1,28 @@
-diff -ruN ./cpu_features.c .aros/cpu_features.c
---- ./cpu_features.c	2025-06-19 22:48:50.386000000 +0000
-+++ .aros/cpu_features.c	2025-06-20 00:04:52.815027915 +0000
+diff -ruN zlib/adler32_simd.c zlib.aros/adler32_simd.c
+--- zlib/adler32_simd.c	2025-06-19 22:48:50.358000000 +0000
++++ zlib.aros/adler32_simd.c	2025-08-14 13:02:27.676380200 +0000
+@@ -50,7 +50,8 @@
+ #define NMAX 5552
+ 
+ #if defined(ADLER32_SIMD_SSSE3)
+-
++#include "x86_simd.h"
++ZLIB_PUSH_X86_TARGETS("ssse3")
+ #include <tmmintrin.h>
+ 
+ uint32_t ZLIB_INTERNAL adler32_simd_(  /* SSSE3 */
+@@ -195,7 +196,7 @@
+      */
+     return s1 | (s2 << 16);
+ }
+-
++ZLIB_POP_X86_TARGETS()
+ #elif defined(ADLER32_SIMD_NEON)
+ 
+ #include <arm_neon.h>
+diff -ruN zlib/cpu_features.c zlib.aros/cpu_features.c
+--- zlib/cpu_features.c	2025-06-19 22:48:50.386000000 +0000
++++ zlib.aros/cpu_features.c	2025-08-14 13:11:35.712383700 +0000
 @@ -80,7 +80,11 @@
  void ZLIB_INTERNAL cpu_check_features(void)
  {
@@ -13,9 +35,506 @@ diff -ruN ./cpu_features.c .aros/cpu_features.c
  #endif
  }
  #elif defined(ARMV8_OS_WINDOWS) || defined(X86_WINDOWS)
-diff -ruN ./zconf.h .aros/zconf.h
---- ./zconf.h	2025-06-19 22:48:50.470000000 +0000
-+++ .aros/zconf.h	1970-01-01 00:00:00.000000000 +0000
+@@ -157,6 +161,8 @@
+  * (i.e. CPUID).
+  */
+ #ifdef CRC32_SIMD_AVX512_PCLMUL
++#include "x86_simd.h"
++ZLIB_PUSH_X86_TARGETS("avx512f,pclmul")
+ #include <immintrin.h>
+ #include <xsaveintrin.h>
+ #endif
+@@ -191,6 +197,9 @@
+     x86_cpu_enable_avx512 = _xgetbv(0) & 0x00000040;
+ #endif
+ }
++#ifdef CRC32_SIMD_AVX512_PCLMUL
++    ZLIB_POP_X86_TARGETS()
++#endif
+ #endif // x86 & NO_SIMD
+ 
+ #elif defined(RISCV_RVV)
+diff -ruN zlib/crc32_512_simd.c zlib.aros/crc32_512_simd.c
+--- zlib/crc32_512_simd.c	1970-01-01 00:00:00.000000000 +0000
++++ zlib.aros/crc32_512_simd.c	2025-08-14 13:27:38.944381500 +0000
+@@ -0,0 +1,205 @@
++/* crc32_simd.c
++ *
++ * Copyright 2017 The Chromium Authors
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the Chromium source repository LICENSE file.
++ */
++
++#include "crc32_simd.h"
++
++#if defined(CRC32_SIMD_AVX512_PCLMUL)
++#include "x86_simd.h"
++ZLIB_PUSH_X86_TARGETS("avx512f,pclmul,vpclmulqdq")
++/*
++ * crc32_avx512_simd_(): compute the crc32 of the buffer, where the buffer
++ * length must be at least 256, and a multiple of 64. Based on:
++ *
++ * "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction"
++ *  V. Gopal, E. Ozturk, et al., 2009, http://intel.ly/2ySEwL0
++ */
++
++#include <emmintrin.h>
++#include <smmintrin.h>
++#include <wmmintrin.h>
++#include <immintrin.h>
++
++uint32_t ZLIB_INTERNAL crc32_avx512_simd_(  /* AVX512+PCLMUL */
++    const unsigned char *buf,
++    z_size_t len,
++    uint32_t crc)
++{
++    /*
++     * Definitions of the bit-reflected domain constants k1,k2,k3,k4
++     * are similar to those given at the end of the paper, and remaining
++     * constants and CRC32+Barrett polynomials remain unchanged.
++     *
++     * Replace the index of x from 128 to 512. As follows:
++     * k1 = ( x ^ ( 512 * 4 + 32 ) mod P(x) << 32 )' << 1 = 0x011542778a
++     * k2 = ( x ^ ( 512 * 4 - 32 ) mod P(x) << 32 )' << 1 = 0x01322d1430
++     * k3 = ( x ^ ( 512 + 32 ) mod P(x) << 32 )' << 1 = 0x0154442bd4
++     * k4 = ( x ^ ( 512 - 32 ) mod P(x) << 32 )' << 1 = 0x01c6e41596
++     */
++    static const uint64_t zalign(64) k1k2[] = { 0x011542778a, 0x01322d1430,
++                                                0x011542778a, 0x01322d1430,
++                                                0x011542778a, 0x01322d1430,
++                                                0x011542778a, 0x01322d1430 };
++    static const uint64_t zalign(64) k3k4[] = { 0x0154442bd4, 0x01c6e41596,
++                                                0x0154442bd4, 0x01c6e41596,
++                                                0x0154442bd4, 0x01c6e41596,
++                                                0x0154442bd4, 0x01c6e41596 };
++    static const uint64_t zalign(16) k5k6[] = { 0x01751997d0, 0x00ccaa009e };
++    static const uint64_t zalign(16) k7k8[] = { 0x0163cd6124, 0x0000000000 };
++    static const uint64_t zalign(16) poly[] = { 0x01db710641, 0x01f7011641 };
++    __m512i x0, x1, x2, x3, x4, x5, x6, x7, x8, y5, y6, y7, y8;
++    __m128i a0, a1, a2, a3;
++
++    /*
++     * There's at least one block of 256.
++     */
++    x1 = _mm512_loadu_si512((__m512i *)(buf + 0x00));
++    x2 = _mm512_loadu_si512((__m512i *)(buf + 0x40));
++    x3 = _mm512_loadu_si512((__m512i *)(buf + 0x80));
++    x4 = _mm512_loadu_si512((__m512i *)(buf + 0xC0));
++
++    x1 = _mm512_xor_si512(x1, _mm512_castsi128_si512(_mm_cvtsi32_si128(crc)));
++
++    x0 = _mm512_load_si512((__m512i *)k1k2);
++
++    buf += 256;
++    len -= 256;
++
++    /*
++     * Parallel fold blocks of 256, if any.
++     */
++    while (len >= 256)
++    {
++        x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
++        x6 = _mm512_clmulepi64_epi128(x2, x0, 0x00);
++        x7 = _mm512_clmulepi64_epi128(x3, x0, 0x00);
++        x8 = _mm512_clmulepi64_epi128(x4, x0, 0x00);
++
++
++        x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
++        x2 = _mm512_clmulepi64_epi128(x2, x0, 0x11);
++        x3 = _mm512_clmulepi64_epi128(x3, x0, 0x11);
++        x4 = _mm512_clmulepi64_epi128(x4, x0, 0x11);
++
++        y5 = _mm512_loadu_si512((__m512i *)(buf + 0x00));
++        y6 = _mm512_loadu_si512((__m512i *)(buf + 0x40));
++        y7 = _mm512_loadu_si512((__m512i *)(buf + 0x80));
++        y8 = _mm512_loadu_si512((__m512i *)(buf + 0xC0));
++
++        x1 = _mm512_xor_si512(x1, x5);
++        x2 = _mm512_xor_si512(x2, x6);
++        x3 = _mm512_xor_si512(x3, x7);
++        x4 = _mm512_xor_si512(x4, x8);
++
++        x1 = _mm512_xor_si512(x1, y5);
++        x2 = _mm512_xor_si512(x2, y6);
++        x3 = _mm512_xor_si512(x3, y7);
++        x4 = _mm512_xor_si512(x4, y8);
++
++        buf += 256;
++        len -= 256;
++    }
++
++    /*
++     * Fold into 512-bits.
++     */
++    x0 = _mm512_load_si512((__m512i *)k3k4);
++
++    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
++    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
++    x1 = _mm512_xor_si512(x1, x2);
++    x1 = _mm512_xor_si512(x1, x5);
++
++    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
++    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
++    x1 = _mm512_xor_si512(x1, x3);
++    x1 = _mm512_xor_si512(x1, x5);
++
++    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
++    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
++    x1 = _mm512_xor_si512(x1, x4);
++    x1 = _mm512_xor_si512(x1, x5);
++
++    /*
++     * Single fold blocks of 64, if any.
++     */
++    while (len >= 64)
++    {
++        x2 = _mm512_loadu_si512((__m512i *)buf);
++
++        x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
++        x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
++        x1 = _mm512_xor_si512(x1, x2);
++        x1 = _mm512_xor_si512(x1, x5);
++
++        buf += 64;
++        len -= 64;
++    }
++
++    /*
++     * Fold 512-bits to 384-bits.
++     */
++    a0 = _mm_load_si128((__m128i *)k5k6);
++
++    a1 = _mm512_extracti32x4_epi32(x1, 0);
++    a2 = _mm512_extracti32x4_epi32(x1, 1);
++
++    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
++    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
++
++    a1 = _mm_xor_si128(a1, a3);
++    a1 = _mm_xor_si128(a1, a2);
++
++    /*
++     * Fold 384-bits to 256-bits.
++     */
++    a2 = _mm512_extracti32x4_epi32(x1, 2);
++    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
++    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
++    a1 = _mm_xor_si128(a1, a3);
++    a1 = _mm_xor_si128(a1, a2);
++
++    /*
++     * Fold 256-bits to 128-bits.
++     */
++    a2 = _mm512_extracti32x4_epi32(x1, 3);
++    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
++    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
++    a1 = _mm_xor_si128(a1, a3);
++    a1 = _mm_xor_si128(a1, a2);
++
++    /*
++     * Fold 128-bits to 64-bits.
++     */
++    a2 = _mm_clmulepi64_si128(a1, a0, 0x10);
++    a3 = _mm_setr_epi32(~0, 0, ~0, 0);
++    a1 = _mm_srli_si128(a1, 8);
++    a1 = _mm_xor_si128(a1, a2);
++
++    a0 = _mm_loadl_epi64((__m128i*)k7k8);
++    a2 = _mm_srli_si128(a1, 4);
++    a1 = _mm_and_si128(a1, a3);
++    a1 = _mm_clmulepi64_si128(a1, a0, 0x00);
++    a1 = _mm_xor_si128(a1, a2);
++
++    /*
++     * Barret reduce to 32-bits.
++     */
++    a0 = _mm_load_si128((__m128i*)poly);
++
++    a2 = _mm_and_si128(a1, a3);
++    a2 = _mm_clmulepi64_si128(a2, a0, 0x10);
++    a2 = _mm_and_si128(a2, a3);
++    a2 = _mm_clmulepi64_si128(a2, a0, 0x00);
++    a1 = _mm_xor_si128(a1, a2);
++
++    /*
++     * Return the crc32.
++     */
++    return _mm_extract_epi32(a1, 1);
++}
++ZLIB_POP_X86_TARGETS()
++#endif
+diff -ruN zlib/crc32_simd.c zlib.aros/crc32_simd.c
+--- zlib/crc32_simd.c	2025-06-19 22:48:50.426000000 +0000
++++ zlib.aros/crc32_simd.c	2025-08-14 13:28:08.784381400 +0000
+@@ -6,203 +6,10 @@
+  */
+ 
+ #include "crc32_simd.h"
+-#if defined(CRC32_SIMD_AVX512_PCLMUL)
+ 
+-/*
+- * crc32_avx512_simd_(): compute the crc32 of the buffer, where the buffer
+- * length must be at least 256, and a multiple of 64. Based on:
+- *
+- * "Fast CRC Computation for Generic Polynomials Using PCLMULQDQ Instruction"
+- *  V. Gopal, E. Ozturk, et al., 2009, http://intel.ly/2ySEwL0
+- */
+-
+-#include <emmintrin.h>
+-#include <smmintrin.h>
+-#include <wmmintrin.h>
+-#include <immintrin.h>
+-
+-uint32_t ZLIB_INTERNAL crc32_avx512_simd_(  /* AVX512+PCLMUL */
+-    const unsigned char *buf,
+-    z_size_t len,
+-    uint32_t crc)
+-{
+-    /*
+-     * Definitions of the bit-reflected domain constants k1,k2,k3,k4
+-     * are similar to those given at the end of the paper, and remaining
+-     * constants and CRC32+Barrett polynomials remain unchanged.
+-     *
+-     * Replace the index of x from 128 to 512. As follows:
+-     * k1 = ( x ^ ( 512 * 4 + 32 ) mod P(x) << 32 )' << 1 = 0x011542778a
+-     * k2 = ( x ^ ( 512 * 4 - 32 ) mod P(x) << 32 )' << 1 = 0x01322d1430
+-     * k3 = ( x ^ ( 512 + 32 ) mod P(x) << 32 )' << 1 = 0x0154442bd4
+-     * k4 = ( x ^ ( 512 - 32 ) mod P(x) << 32 )' << 1 = 0x01c6e41596
+-     */
+-    static const uint64_t zalign(64) k1k2[] = { 0x011542778a, 0x01322d1430,
+-                                                0x011542778a, 0x01322d1430,
+-                                                0x011542778a, 0x01322d1430,
+-                                                0x011542778a, 0x01322d1430 };
+-    static const uint64_t zalign(64) k3k4[] = { 0x0154442bd4, 0x01c6e41596,
+-                                                0x0154442bd4, 0x01c6e41596,
+-                                                0x0154442bd4, 0x01c6e41596,
+-                                                0x0154442bd4, 0x01c6e41596 };
+-    static const uint64_t zalign(16) k5k6[] = { 0x01751997d0, 0x00ccaa009e };
+-    static const uint64_t zalign(16) k7k8[] = { 0x0163cd6124, 0x0000000000 };
+-    static const uint64_t zalign(16) poly[] = { 0x01db710641, 0x01f7011641 };
+-    __m512i x0, x1, x2, x3, x4, x5, x6, x7, x8, y5, y6, y7, y8;
+-    __m128i a0, a1, a2, a3;
+-
+-    /*
+-     * There's at least one block of 256.
+-     */
+-    x1 = _mm512_loadu_si512((__m512i *)(buf + 0x00));
+-    x2 = _mm512_loadu_si512((__m512i *)(buf + 0x40));
+-    x3 = _mm512_loadu_si512((__m512i *)(buf + 0x80));
+-    x4 = _mm512_loadu_si512((__m512i *)(buf + 0xC0));
+-
+-    x1 = _mm512_xor_si512(x1, _mm512_castsi128_si512(_mm_cvtsi32_si128(crc)));
+-
+-    x0 = _mm512_load_si512((__m512i *)k1k2);
+-
+-    buf += 256;
+-    len -= 256;
+-
+-    /*
+-     * Parallel fold blocks of 256, if any.
+-     */
+-    while (len >= 256)
+-    {
+-        x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
+-        x6 = _mm512_clmulepi64_epi128(x2, x0, 0x00);
+-        x7 = _mm512_clmulepi64_epi128(x3, x0, 0x00);
+-        x8 = _mm512_clmulepi64_epi128(x4, x0, 0x00);
+-
+-
+-        x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
+-        x2 = _mm512_clmulepi64_epi128(x2, x0, 0x11);
+-        x3 = _mm512_clmulepi64_epi128(x3, x0, 0x11);
+-        x4 = _mm512_clmulepi64_epi128(x4, x0, 0x11);
+-
+-        y5 = _mm512_loadu_si512((__m512i *)(buf + 0x00));
+-        y6 = _mm512_loadu_si512((__m512i *)(buf + 0x40));
+-        y7 = _mm512_loadu_si512((__m512i *)(buf + 0x80));
+-        y8 = _mm512_loadu_si512((__m512i *)(buf + 0xC0));
+-
+-        x1 = _mm512_xor_si512(x1, x5);
+-        x2 = _mm512_xor_si512(x2, x6);
+-        x3 = _mm512_xor_si512(x3, x7);
+-        x4 = _mm512_xor_si512(x4, x8);
+-
+-        x1 = _mm512_xor_si512(x1, y5);
+-        x2 = _mm512_xor_si512(x2, y6);
+-        x3 = _mm512_xor_si512(x3, y7);
+-        x4 = _mm512_xor_si512(x4, y8);
+-
+-        buf += 256;
+-        len -= 256;
+-    }
+-
+-    /*
+-     * Fold into 512-bits.
+-     */
+-    x0 = _mm512_load_si512((__m512i *)k3k4);
+-
+-    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
+-    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
+-    x1 = _mm512_xor_si512(x1, x2);
+-    x1 = _mm512_xor_si512(x1, x5);
+-
+-    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
+-    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
+-    x1 = _mm512_xor_si512(x1, x3);
+-    x1 = _mm512_xor_si512(x1, x5);
+-
+-    x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
+-    x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
+-    x1 = _mm512_xor_si512(x1, x4);
+-    x1 = _mm512_xor_si512(x1, x5);
+-
+-    /*
+-     * Single fold blocks of 64, if any.
+-     */
+-    while (len >= 64)
+-    {
+-        x2 = _mm512_loadu_si512((__m512i *)buf);
+-
+-        x5 = _mm512_clmulepi64_epi128(x1, x0, 0x00);
+-        x1 = _mm512_clmulepi64_epi128(x1, x0, 0x11);
+-        x1 = _mm512_xor_si512(x1, x2);
+-        x1 = _mm512_xor_si512(x1, x5);
+-
+-        buf += 64;
+-        len -= 64;
+-    }
+-
+-    /*
+-     * Fold 512-bits to 384-bits.
+-     */
+-    a0 = _mm_load_si128((__m128i *)k5k6);
+-
+-    a1 = _mm512_extracti32x4_epi32(x1, 0);
+-    a2 = _mm512_extracti32x4_epi32(x1, 1);
+-
+-    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
+-    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
+-
+-    a1 = _mm_xor_si128(a1, a3);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    /*
+-     * Fold 384-bits to 256-bits.
+-     */
+-    a2 = _mm512_extracti32x4_epi32(x1, 2);
+-    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
+-    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
+-    a1 = _mm_xor_si128(a1, a3);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    /*
+-     * Fold 256-bits to 128-bits.
+-     */
+-    a2 = _mm512_extracti32x4_epi32(x1, 3);
+-    a3 = _mm_clmulepi64_si128(a1, a0, 0x00);
+-    a1 = _mm_clmulepi64_si128(a1, a0, 0x11);
+-    a1 = _mm_xor_si128(a1, a3);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    /*
+-     * Fold 128-bits to 64-bits.
+-     */
+-    a2 = _mm_clmulepi64_si128(a1, a0, 0x10);
+-    a3 = _mm_setr_epi32(~0, 0, ~0, 0);
+-    a1 = _mm_srli_si128(a1, 8);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    a0 = _mm_loadl_epi64((__m128i*)k7k8);
+-    a2 = _mm_srli_si128(a1, 4);
+-    a1 = _mm_and_si128(a1, a3);
+-    a1 = _mm_clmulepi64_si128(a1, a0, 0x00);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    /*
+-     * Barret reduce to 32-bits.
+-     */
+-    a0 = _mm_load_si128((__m128i*)poly);
+-
+-    a2 = _mm_and_si128(a1, a3);
+-    a2 = _mm_clmulepi64_si128(a2, a0, 0x10);
+-    a2 = _mm_and_si128(a2, a3);
+-    a2 = _mm_clmulepi64_si128(a2, a0, 0x00);
+-    a1 = _mm_xor_si128(a1, a2);
+-
+-    /*
+-     * Return the crc32.
+-     */
+-    return _mm_extract_epi32(a1, 1);
+-}
+-
+-#endif
+ #if defined(CRC32_SIMD_SSE42_PCLMUL)
+-
++#include "x86_simd.h"
++ZLIB_PUSH_X86_TARGETS("sse2,sse4.1,sse4.2,pclmul")
+ /*
+  * crc32_sse42_simd_(): compute the crc32 of the buffer, where the buffer
+  * length must be at least 64, and a multiple of 16.
+@@ -344,7 +151,7 @@
+      */
+     return _mm_extract_epi32(x1, 1);
+ }
+-
++ZLIB_POP_X86_TARGETS()
+ #elif defined(CRC32_ARMV8_CRC32)
+ 
+ /* CRC32 checksums using ARMv8-a crypto instructions.
+diff -ruN zlib/crc_folding.c zlib.aros/crc_folding.c
+--- zlib/crc_folding.c	2025-06-19 22:48:50.427000000 +0000
++++ zlib.aros/crc_folding.c	2025-08-14 13:31:21.924381300 +0000
+@@ -19,7 +19,8 @@
+ #include "deflate.h"
+ 
+ #ifdef CRC32_SIMD_SSE42_PCLMUL
+-
++#include "x86_simd.h"
++ZLIB_PUSH_X86_TARGETS("sse2,sse4.1,sse4.2,pclmul")
+ #include <inttypes.h>
+ #include <emmintrin.h>
+ #include <immintrin.h>
+@@ -495,5 +496,5 @@
+     crc = _mm_extract_epi32(xmm_crc3, 2);
+     return ~crc;
+ }
+-
++ZLIB_POP_X86_TARGETS()
+ #endif  /* CRC32_SIMD_SSE42_PCLMUL */
+diff -ruN zlib/x86_simd.h zlib.aros/x86_simd.h
+--- zlib/x86_simd.h	1970-01-01 00:00:00.000000000 +0000
++++ zlib.aros/x86_simd.h	2025-08-14 13:17:05.616380500 +0000
+@@ -0,0 +1,27 @@
++#ifndef ZLIB_X86_SIMD_H
++#define ZLIB_X86_SIMD_H
++
++#define ZLIB_MACRO_STR(X) #X
++
++#if defined(__i386__) || defined (__x86_64__)
++# ifdef __clang__
++    #define ZLIB_PUSH_X86_TARGETS(TARGETS) \
++      _Pragma( ZLIB_MACRO_STR( clang attribute push (__attribute__((target( TARGETS ))), apply_to=function) ) )
++
++    #define ZLIB_POP_X86_TARGETS() \
++      _Pragma( "clang attribute pop" )
++# elif defined __GNUC__
++    #define ZLIB_PUSH_X86_TARGETS(TARGETS) \
++      _Pragma( "GCC push_options" ) \
++      _Pragma( ZLIB_MACRO_STR( GCC target ( TARGETS ) ) )
++
++    #define ZLIB_POP_X86_TARGETS() \
++      _Pragma( "GCC pop_options" )
++# endif
++#endif // x86 or x86_64
++#ifndef ZLIB_PUSH_X86_TARGETS
++# define ZLIB_PUSH_X86_TARGETS(TARGETS)
++# define ZLIB_POP_X86_TARGETS()
++#endif
++
++#endif
+diff -ruN zlib/zconf.h zlib.aros/zconf.h
+--- zlib/zconf.h	2025-06-19 22:48:50.470000000 +0000
++++ zlib.aros/zconf.h	1970-01-01 00:00:00.000000000 +0000
 @@ -1,558 +0,0 @@
 -/* zconf.h -- configuration of the zlib compression library
 - * Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
@@ -575,9 +1094,9 @@ diff -ruN ./zconf.h .aros/zconf.h
 -#endif
 -
 -#endif /* ZCONF_H */
-diff -ruN ./zconf.h.chr .aros/zconf.h.chr
---- ./zconf.h.chr	1970-01-01 00:00:00.000000000 +0000
-+++ .aros/zconf.h.chr	2025-06-20 22:12:16.280200423 +0000
+diff -ruN zlib/zconf.h.chr zlib.aros/zconf.h.chr
+--- zlib/zconf.h.chr	1970-01-01 00:00:00.000000000 +0000
++++ zlib.aros/zconf.h.chr	2025-06-20 22:12:16.280200500 +0000
 @@ -0,0 +1,558 @@
 +/* zconf.h -- configuration of the zlib compression library
 + * Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
