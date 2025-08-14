@@ -21,7 +21,10 @@ static inline void ApplyBlur(const ULONG *src, ULONG *dst, LONG width, LONG heig
     const int radius = 1;
 
     ULONG *tmp = AllocMem(width * height * 4, MEMF_ANY);
-    if (!tmp) return;
+    if (!tmp) {
+        bug("[Cgfx] %s failed to allocate storage\n", __func__);
+        return;
+    }
 
     // Horizontal pass
     for (LONG y = 0; y < height; y++)
