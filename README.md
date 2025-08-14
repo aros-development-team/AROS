@@ -226,8 +226,11 @@
 
 AROS contains a number of projects that have been donated to the codebase, you can find links to them here.
 
-[AHI](../blob/master/workbench/devs/AHI/README.md)
-[Poseidon](../blob/master/rom/usb/README.md)
+
+* [AHI](../master/workbench/devs/AHI/README.md)
+
+* [Poseidon](../master/rom/usb/README.md)
+
 
 
 ## Contributing
