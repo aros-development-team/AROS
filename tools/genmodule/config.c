@@ -54,7 +54,7 @@ freeBanner(char *banner)
 
 const static char usage[] =
     "\n"
-    "Usage: genmodule [-c conffile] [-o configoverridefile] [-s suffix] [-d gendir] [-l library-stub gendir] [-f flavour] [-v versionextra]\n"
+    "Usage: genmodule [-h] [-c conffile] [-o configoverridefile] [-s suffix] [-d gendir] [-l library-stub gendir] [-f flavour] [-v versionextra]\n"
     "       {writefiles|writemakefile|writeincludes|writelibdefs|writefunclist|writefd|writeskel|writethunk} modname modtype\n"
 ;
 
@@ -86,6 +86,33 @@ static const char *dtmprefix[] =
     NULL
 };
 
+void print_help(void)
+{
+    fprintf(stderr, "\n"
+            "Usage: genmodule [OPTION]... COMMAND MODNAME MODTYPE\n"
+            "\nOptions:\n"
+            "  -h: Show this help and exit.\n"
+            "  -c CONFFILE: Config file path. Default is MODNAME.conf.\n"
+            "  -o CONFIGOVERRIDEFILE: File path for config overrides applied after CONFFILE.\n"
+            "  -s SUFFIX: Custom suffix to add to generated filenames.\n"
+            "  -d GENDIR: Directory for generated files. Default is \".\"\n"
+            "  -l STUBGENDIR: Directory for generated stubs. Default is GENDIR.\n"
+            "  -f FLAVOUR: The flavour of the module.\n"
+            "  -v VERSIONEXTRA: Extra version information for the module.\n"
+            "\nCommands:\n"
+            "  writefd: Generate fd file for the module.\n"
+            "  writefiles: Generate a number of files not covered elsewhere.\n"
+            "  writefunclist: Generate a function list. Purpose unclear.\n"
+            "  writeincludes: Generate include files for the module.\n"
+            "  writelibdefs: Generate libdefs file for the module.\n"
+            "  writemakefile: Generate a makefile with some definitions.\n"
+            "  writeskel: Generate skeleton implementation of the module.\n"
+            "  writethunk: Generate thunk file for the module.\n"
+            "\nModtypes: datatype, device, gadget, handler, hidd, hook, library"
+            ", mcc, mcp, mui, resource, usbclass\n\n"
+            );
+}
+
 /* Create a config struct. Initialize with the values from the programs command
  * line arguments and the contents of the modules .conf file
  */
@@ -104,7 +131,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
 
-    while ((c = getopt(argc, argv, ":c:o:s:d:l:f:v:")) != -1)
+    while ((c = getopt(argc, argv, ":hc:o:s:d:l:f:v:")) != -1)
     {
         if (c == ':')
         {
@@ -114,6 +141,10 @@ struct config *initconfig(int argc, char **argv)
 
         switch (c)
         {
+        case 'h':
+            print_help();
+            exit(0);
+
         case 'c':
             cfg->conffile = optarg;
             break;
