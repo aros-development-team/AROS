@@ -27,7 +27,7 @@ preferences program), but maybe there are a few more.  Sorry about that.
 Things I'd like to do now
 -------------------------
 
-See [AHI TODO](../../../../wiki/future-AHI) for future plans ..
+See [AHI TODO](../../../../../wiki/future-AHI) for future plans ..
 
 How to make your very own version of AHI
 -----------------------------------------
