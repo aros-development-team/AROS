@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := \
+        processpixelarray_opblur \
+        processpixelarray_opbrightness \
+        processpixelarray_opsetalpha \
+        processpixelarray_optint
+
+GFXDIR_BASE := workbench/libs/cgfx
+USER_INCLUDES := -iquote $(SRCDIR)/$(GFXDIR_BASE)
+
+%build_archspecific \
+  mainmmake=workbench-libs-cgfx maindir=$(GFXDIR_BASE) \
+  asmfiles=$(AFILES) files=$(FILES) \
+  arch=x86_64 modname=cybergraphics
+
+#MM workbench-libs-cgfx-x86_64 : includes-asm_h kernel-kernel-includes
+
+%common
