@@ -228,7 +228,7 @@
 AROS contains a number of projects that have been donated to the codebase, you can find links to them here.
 
 
-* [AHI](../master/workbench/devs/AHI/README.md) - The de-facto standard retargetable audio system for AROS, AmigaOS, and MorphOS.
+* [![AHI](https://github.com/aros-development-team/AROS/blob/master/images/Logos/AHI.png?raw=true)](../master/workbench/devs/AHI/README.md) - The de-facto standard retargetable audio system for AROS, AmigaOS, and MorphOS.
 
 * [Poseidon](../master/rom/usb/README.md) - Modular USB host stack for Amiga-like systems.
 
