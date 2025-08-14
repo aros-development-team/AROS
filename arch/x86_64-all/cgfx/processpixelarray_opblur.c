@@ -109,8 +109,6 @@ static void GaussianRow_SSSE3(ULONG *dst, const ULONG *src, int w)
 
 void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, struct Library *CyberGfxBase)
 {
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32) return;
-
     const int w = opRect->MaxX - opRect->MinX + 1;
     const int h = opRect->MaxY - opRect->MinY + 1;
 

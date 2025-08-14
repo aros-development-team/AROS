@@ -91,9 +91,6 @@ static inline void TintRow_SSE2(ULONG *p, int n, ULONG tint)
 
 void ProcessPixelArrayTintFunc(struct RastPort *opRast, struct Rectangle *opRect, ULONG tint, struct Library *CyberGfxBase)
 {
-    if (GetBitMapAttr(opRast->BitMap, BMA_DEPTH) < 32)
-        return;
-
     const ULONG w = opRect->MaxX - opRect->MinX + 1;
     const ULONG h = opRect->MaxY - opRect->MinY + 1;
 
