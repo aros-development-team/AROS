@@ -1,6 +1,6 @@
-
 AHI version 6
-¯¯¯¯¯¯¯¯¯¯¯¯¯
+-------------
+
 This is AHI version 6.  Yeah, really.  It's been a long road but it's
 finally here. No more excuses. :-)
 
@@ -25,14 +25,13 @@ preferences program), but maybe there are a few more.  Sorry about that.
 
 
 Things I'd like to do now
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
- · Fix all the bugs you find.
- · Rethink everything while still maintaining full backward
-   compatibility. See you in V7!
+-------------------------
 
+See [AHI TODO]() for future plans ..
 
 How to make your very own version of AHI
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+-----------------------------------------
+
 To configure on an Amiga (for building the AmigaOS version):
 
 sh configure --host=m68k-amigaos
@@ -98,14 +97,15 @@ revup:
 
 When you add code, please remember a few things:
 
-  · Avoid TAB characters, if possible.
-  · The TAB size is 8.
-  · The indent level is 2.
-  · Compiler warnings are NOT acceptable.
+  Â· Avoid TAB characters, if possible.
+  Â· The TAB size is 8.
+  Â· The indent level is 2.
+  Â· Compiler warnings are NOT acceptable.
 
 
 Required programs/packages
-¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+--------------------------
+
 Here is a short list of required tools that I'm aware of:
 
 From GeekGadgets:
