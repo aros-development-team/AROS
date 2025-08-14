@@ -222,6 +222,14 @@
   </tr>
 </table>
 
+## Incorporated components
+
+AROS contains a number of projects that have been donated to the codebase, you can find links to them here.
+
+[AHI](../blob/master/workbench/devs/AHI/README.md)
+[Poseidon](../blob/master/rom/usb/README.md)
+
+
 ## Contributing
 
 Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for details on joining the GitHub organization, and guidelines on contributing to the AROS project.
