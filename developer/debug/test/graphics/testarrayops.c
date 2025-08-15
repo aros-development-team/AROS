@@ -21,7 +21,7 @@
 
 #include <stdio.h>
 
-struct BitMap *LoadPictureAsBitMap(CONST_STRPTR filename)
+struct BitMap *LoadPictureAsBitMap(CONST_STRPTR filename, struct BitMap **testbm)
 {
     Object *dto = NULL;
     struct BitMap *bm = NULL;
@@ -55,11 +55,16 @@ struct BitMap *LoadPictureAsBitMap(CONST_STRPTR filename)
 					{
 						struct Screen *pubScreen = LockPubScreen(NULL);
 
-						struct BitMap *clone = AllocBitMap(
+						struct BitMap *clone2, *clone = AllocBitMap(
 							width, height, depth,
 							0,
 							(pubScreen) ? pubScreen->RastPort.BitMap : 0);
 
+						clone2 = AllocBitMap(
+							width, height, depth,
+							0,
+							(pubScreen) ? pubScreen->RastPort.BitMap : 0);
+						
 						if (pubScreen)
 							UnlockPubScreen(NULL, pubScreen);
 
@@ -68,8 +73,18 @@ struct BitMap *LoadPictureAsBitMap(CONST_STRPTR filename)
 							struct RastPort rp_dst;
 							InitRastPort(&rp_dst);
 							rp_dst.BitMap = clone;
-
-							BltBitMapRastPort(bm, 0, 0, &rp_dst, 0, 0, bm->BytesPerRow * 8, bm->Rows, 0xC0);
+							if (clone2) {
+								BltBitMapRastPort(bm, 0, 0, &rp_dst, 0, 0, bm->BytesPerRow * 8, bm->Rows, 0xC0);
+								*testbm = clone2;
+							}
+							else {
+								FreeBitMap(clone);
+								clone = NULL;
+							}
+						}
+						else {
+							if (clone2)
+								FreeBitMap(clone2);
 						}
 
 						bm = clone;
@@ -86,11 +101,11 @@ struct BitMap *LoadPictureAsBitMap(CONST_STRPTR filename)
 
 int main(void)
 {
-    struct BitMap *bm = NULL;
+    struct BitMap *bm = NULL, *testbm = NULL;
     struct Window *win = NULL;
 
     /* Load the bitmap from file */
-    bm = LoadPictureAsBitMap("SYS:Developer/Debug/Tests/Datatypes/png/SamplePNGImage_1mb.png");
+    bm = LoadPictureAsBitMap("SYS:Developer/Debug/Tests/Datatypes/png/SamplePNGImage_1mb.png", &testbm);
     if (!bm)
     {
         printf("Failed to load image\n");
@@ -118,6 +133,7 @@ int main(void)
     {
 		ULONG 	width = GetBitMapAttr(bm, BMA_WIDTH),
 				height = GetBitMapAttr(bm, BMA_HEIGHT);
+		ULONG endpos, value;
 		struct timeval tv_start, tv_end;
         struct RastPort rp_src;
         InitRastPort(&rp_src);
@@ -146,6 +162,23 @@ int main(void)
 				  height,
 				  0xC0);   
 		}
+		rp_src.BitMap = testbm;
+		Forbid();
+		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
+		endpos = 10 + (tiles - 1 * 138);
+		value = (tiles - 1) * step;
+		for(i = 0; ; i++)
+		{
+			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
+			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
+			if (dur >= 4 * 1000000) break;
+			ProcessPixelArray(&rp_src, 0, 0, 512, 128, POP_BRIGHTEN, value, NULL);
+		}
+		Permit();
+		printf("\n Aligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 512x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
 		Forbid();
 		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
 		for(i = 0; ; i++)
@@ -153,13 +186,15 @@ int main(void)
 			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
 			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
 			if (dur >= 4 * 1000000) break;
-			ProcessPixelArray(&rp_src, 10 + (tiles - 1 * 138), 10, 128, 128, POP_BRIGHTEN, (tiles - 1) * step, NULL);
+			ProcessPixelArray(&rp_src, endpos, 10, 128, 128, POP_BRIGHTEN, value, NULL);
 		}
 		Permit();
-		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d (x 128x128)\n", (int)i);
-		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
+		printf(" Missaligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 128x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
 
+        rp_src.BitMap = bm;		
 		printf("\nTesting Darken\n");
 		for (t = i = 0; i < 256; t++, i = i + step) {
 			Delay(25);
@@ -172,6 +207,22 @@ int main(void)
 				  height,
 				  0xC0);   
 		}
+		rp_src.BitMap = testbm;
+		Forbid();
+		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
+		value = (tiles - 1) * step;
+		for(i = 0; ; i++)
+		{
+			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
+			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
+			if (dur >= 4 * 1000000) break;
+			ProcessPixelArray(&rp_src, 0, 0, 512, 128, POP_DARKEN, value, NULL);
+		}
+		Permit();
+		printf("\n Aligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 512x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
 		Forbid();
 		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
 		for(i = 0; ; i++)
@@ -179,13 +230,15 @@ int main(void)
 			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
 			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
 			if (dur >= 4 * 1000000) break;
-			ProcessPixelArray(&rp_src, 10 + (tiles - 1 * 138), 148, 128, 128, POP_DARKEN, (tiles - 1) * step, NULL);
+			ProcessPixelArray(&rp_src, endpos, 148, 128, 128, POP_DARKEN, value, NULL);
 		}
 		Permit();
-		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d (x 128x128)\n", (int)i);
-		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
+		printf(" Missaligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 128x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
 
+        rp_src.BitMap = bm;
 		printf("\nTesting Tint\n");
 		for (t = 0; t < tiles; t++) {
 			Delay(3 * 50);
@@ -199,6 +252,7 @@ int main(void)
 				  height,
 				  0xC0);   
 		}
+		rp_src.BitMap = testbm;
 		Forbid();
 		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
 		for(i = 0; ; i++)
@@ -206,14 +260,31 @@ int main(void)
 			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
 			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
 			if (dur >= 4 * 1000000) break;
-			ProcessPixelArray(&rp_src, 10 + (tiles - 1 * 138), 296, 128, 128, POP_TINT, (LONG)0xFFFF2020, NULL);
+			ProcessPixelArray(&rp_src, 0, 0, 512, 128, POP_TINT, (LONG)0xFFFF2020, NULL);
 		}
 		Permit();
-		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d (x 128x128)\n", (int)i);
-		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
+		printf("\n Aligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 512x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
+		Forbid();
+		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
+		for(i = 0; ; i++)
+		{
+			CurrentTime(&tv_end.tv_secs, &tv_end.tv_micro);
+			dur = (tv_end.tv_sec - tv_start.tv_sec) * 1000000 + tv_end.tv_micro - tv_start.tv_micro;
+			if (dur >= 4 * 1000000) break;
+			ProcessPixelArray(&rp_src, endpos, 296, 128, 128, POP_TINT, (LONG)0xFFFF2020, NULL);
+		}
+		Permit();
+		printf(" Missaligned operation -:\n");
+		printf("   Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
+		printf("   Operation count  : %d (x 128x128)\n", (int)i);
+		printf("   Ops/sec          : %f\n", i * 1000000.0 / dur);
+
 
 		Delay(3 * 50);
+        rp_src.BitMap = bm;
 		printf("\nTesting Blur\n");
 		ProcessPixelArray(&rp_src, width / 2 , 10, (width / 2) - 10, height - 20, POP_BLUR, 0, NULL);
 		BltBitMapRastPort(bm,
@@ -223,6 +294,7 @@ int main(void)
 			  width,
 			  height,
 			  0xC0);
+		rp_src.BitMap = testbm;
 		Forbid();
 		CurrentTime(&tv_start.tv_secs, &tv_start.tv_micro);
 		for(i = 0; ; i++)
@@ -256,6 +328,7 @@ int main(void)
 
     /* Cleanup */
     CloseWindow(win);
+    FreeBitMap(testbm);
     FreeBitMap(bm);
 
     return 0;
