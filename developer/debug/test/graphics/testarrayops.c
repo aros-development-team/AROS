@@ -306,7 +306,7 @@ int main(void)
 		}
 		Permit();
 		printf("\n Elapsed time     : %d us (%f s)\n", (int)dur, (double)dur / 1000000);
-		printf(" Operation count  : %d (x %ux%u\n", (int)i, width - 20, height - 20);
+		printf(" Operation count  : %d (x %ux%u)\n", (int)i, width - 20, height - 20);
 		printf(" Ops/sec          : %f\n", i * 1000000.0 / dur);
 
     }
