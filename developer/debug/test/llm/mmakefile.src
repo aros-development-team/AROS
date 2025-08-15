@@ -1,0 +1,14 @@
+# Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_prog mmake=test-llm \
+    progname=llama2 targetdir=$(AROS_TESTS)/llama2 \
+    uselibs="posixc"
+
+# https://huggingface.co/karpathy/tinyllamas/blob/main/stories110M.bin
+# https://huggingface.co/karpathy/tinyllamas/blob/main/stories110M.pt
+
+#%fetch mmake=linklibs-aom-fetch archive=$(AOMARCHBASE) destination=$(PORTSDIR)/libaom \
+#    location=$(PORTSSOURCEDIR) archive_origins=$(AOMREPOSITORIES) suffixes=$(AOMARCHSUFFIX) \
+#    patches_specs=$(PATCHSPEC)
