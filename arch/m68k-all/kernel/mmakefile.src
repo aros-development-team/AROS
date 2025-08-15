@@ -45,6 +45,8 @@ USER_CPPFLAGS := -DPARANOIA_STACK
 USER_AFLAGS := $(USER_INCLUDES)
 
 TARGET_ISA_AFLAGS:=$(ISA_MC68060_FLAGS)
+# Workaround for KERNEL_OPTIMIZATION_CFLAGS not getting included into KERNEL_CFLAGS
+USER_CFLAGS := -Os
 
 %build_archspecific \
   mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=m68k \
