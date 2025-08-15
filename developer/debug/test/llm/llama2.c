@@ -169,17 +169,15 @@ void read_checkpoint(char* checkpoint, Config* config, TransformerWeights* weigh
     if (!buffer) {
         perror("malloc");
         close(*fd);
-        return;
+        exit(EXIT_FAILURE);
     }
-
     ssize_t bytes_read = read(*fd, buffer, *file_size);
     if (bytes_read != *file_size) {
         perror("read");
         free(buffer);
         close(*fd);
-        return;
+        exit(EXIT_FAILURE);
     }
-
     *data = buffer;
 #endif
     float* weights_ptr = *data + sizeof(Config)/sizeof(float);
@@ -918,8 +916,13 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler,
 #ifndef TESTING
 
 void error_usage() {
+#if !defined(__AROS__)
     fprintf(stderr, "Usage:   run <checkpoint> [options]\n");
     fprintf(stderr, "Example: run model.bin -n 256 -i \"Once upon a time\"\n");
+#else
+    fprintf(stderr, "Usage:   llama2 <checkpoint> [options]\n");
+    fprintf(stderr, "Example: llama2 model.bin -n 256 -i \"Once upon a time\"\n");
+#endif
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  -t <float>  temperature in [0,inf], default 1.0\n");
     fprintf(stderr, "  -p <float>  p value in top-p (nucleus) sampling in [0,1] default 0.9\n");

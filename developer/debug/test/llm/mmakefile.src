@@ -2,8 +2,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-%build_prog mmake=test-llm \
-    progname=llama2 targetdir=$(AROS_TESTS)/llama2 \
+#MM- test-llm : test-llm-llama2 test-llm-qwen3
+
+%build_prog mmake=test-llm-llama2 \
+    progname=llama2 targetdir=$(AROS_TESTS)/llm \
+    uselibs="posixc"
+    
+%build_prog mmake=test-llm-qwen3 \
+    progname=qwen3 targetdir=$(AROS_TESTS)/llm \
     uselibs="posixc"
 
 # https://huggingface.co/karpathy/tinyllamas/blob/main/stories110M.bin
