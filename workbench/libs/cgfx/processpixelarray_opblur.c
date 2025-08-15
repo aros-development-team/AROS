@@ -27,13 +27,10 @@ static inline void ApplyBlur(const ULONG *src, ULONG *dst, LONG width, LONG heig
     }
 
     // Horizontal pass
-    for (LONG y = 0; y < height; y++)
-    {
-        for (LONG x = 0; x < width; x++)
-        {
+    for (LONG y = 0; y < height; y++) {
+        for (LONG x = 0; x < width; x++) {
             float a = 0, r = 0, g = 0, b = 0;
-            for (int k = -radius; k <= radius; k++)
-            {
+            for (int k = -radius; k <= radius; k++) {
                 int nx = x + k;
                 if (nx < 0) nx = 0;
                 if (nx >= width) nx = width - 1;
@@ -53,13 +50,10 @@ static inline void ApplyBlur(const ULONG *src, ULONG *dst, LONG width, LONG heig
     }
 
     // Vertical pass
-    for (LONG y = 0; y < height; y++)
-    {
-        for (LONG x = 0; x < width; x++)
-        {
+    for (LONG y = 0; y < height; y++) {
+        for (LONG x = 0; x < width; x++) {
             float a = 0, r = 0, g = 0, b = 0;
-            for (int k = -radius; k <= radius; k++)
-            {
+            for (int k = -radius; k <= radius; k++) {
                 int ny = y + k;
                 if (ny < 0) ny = 0;
                 if (ny >= height) ny = height - 1;
@@ -80,20 +74,15 @@ static inline void ApplyBlur(const ULONG *src, ULONG *dst, LONG width, LONG heig
 
     FreeMem(tmp, width * height * 4);
 #else
-    for (LONG y = 0; y < height; y++)
-    {
-        for (LONG x = 0; x < width; x++)
-        {
+    for (LONG y = 0; y < height; y++) {
+        for (LONG x = 0; x < width; x++) {
             unsigned int r = 0, g = 0, b = 0, a = 0, count = 0;
 
-            for (int ky = -1; ky <= 1; ky++)
-            {
-                for (int kx = -1; kx <= 1; kx++)
-                {
+            for (int ky = -1; ky <= 1; ky++) {
+                for (int kx = -1; kx <= 1; kx++) {
                     int nx = x + kx;
                     int ny = y + ky;
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                    {
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
                         ULONG p = src[ny * width + nx];
                         a += (p >> 24) & 0xFF;
                         r += (p >> 16) & 0xFF;
@@ -120,8 +109,7 @@ void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect
 
     ULONG *readbuf  = AllocMem(width * height * 4, MEMF_ANY);
     ULONG *writebuf = AllocMem(width * height * 4, MEMF_ANY);
-    if (!readbuf || !writebuf)
-    {
+    if (!readbuf || !writebuf) {
         bug("[Cgfx] %s failed to allocate storage\n", __func__);
 
         if (readbuf)  FreeMem(readbuf,  width * height * 4);

@@ -14,13 +14,12 @@
 
 void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRect, UBYTE alphalevel, struct Library *CyberGfxBase)
 {
-    D(bug("[Cgfx] %s(%d)\n", __func__, value));
+    D(bug("[Cgfx] %s(alphalevel=%d)\n", __func__, alphalevel));
 
     LONG x, y;
     ULONG color;
-    LONG alpha;
     LONG width, height;
-    ULONG * buffer, *ptr;
+    ULONG *linebuf, *ptr;
 
     if (GetCyberMapAttr(opRast->BitMap, CYBRMATTR_BPPIX) < 4)
     {
@@ -31,20 +30,30 @@ void ProcessPixelArrayAlphaFunc(struct RastPort *opRast, struct Rectangle *opRec
     width  = opRect->MaxX - opRect->MinX + 1;
     height = opRect->MaxY - opRect->MinY + 1;
 
-    ptr = buffer = AllocMem(width * height * 4, MEMF_ANY);
-    ReadPixelArray(buffer, 0, 0, width * 4, opRast, opRect->MinX, opRect->MinY, width, height, RECTFMT_ARGB);
+    linebuf = AllocMem(width * sizeof(ULONG), MEMF_ANY);
+    if (linebuf) {
+        for (y = 0; y < height; y++) {
+            ReadPixelArray(linebuf, 0, 0, width * sizeof(ULONG),
+                           opRast,
+                           opRect->MinX, opRect->MinY + y,
+                           width, 1,
+                           RECTFMT_ARGB);
 
-    for (y = 0; y < height; y++)
-    {
-        for(x = 0; x < width; x++)
-        {
-            color = (*ptr) & 0xFFFFFF00;
-            color |= alphalevel;
-            *ptr = color;
-            ptr++;
+            ptr = linebuf;
+            for (x = 0; x < width; x++) {
+                color = (*ptr) & 0xFFFFFF00;
+                color |= alphalevel;
+                *ptr = color;
+                ptr++;
+            }
+
+            WritePixelArray(linebuf, 0, 0, width * sizeof(ULONG),
+                            opRast,
+                            opRect->MinX, opRect->MinY + y,
+                            width, 1,
+                            RECTFMT_ARGB);
         }
-    }
 
-    WritePixelArray(buffer, 0, 0, width * 4, opRast, opRect->MinX, opRect->MinY, width, height, RECTFMT_ARGB);
-    FreeMem(buffer, width * height * 4);
+        FreeMem(linebuf, width * sizeof(ULONG));
+    }
 }
