@@ -12,6 +12,13 @@
 
 #include "cybergraphics_intern.h"
 
+#ifdef __clang__
+_Pragma("clang attribute push(__attribute__((target(\"ssse3\"))), apply_to=function)")
+#elif defined(__GNUC__)
+_Pragma("GCC push_options")
+_Pragma("GCC target(\"ssse3\")")
+#endif
+
 #include <tmmintrin.h>
 #include <emmintrin.h>
 
@@ -190,3 +197,9 @@ void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect
     FreeMem(tmp, (ULONG)w*h*4);
     FreeMem(dst, (ULONG)w*h*4);
 }
+
+# ifdef __clang__
+    _Pragma( "clang attribute pop" )
+# elif defined __GNUC__
+  _Pragma( "GCC pop_options" )
+# endif
