@@ -4,10 +4,15 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- test-llm : test-llm-llama2 test-llm-qwen3
 
+ifeq ($(AROS_TARGET_CPU),x86_64)
+ISA_FLAGS += -msse4.2 -mpclmul
+OPTIMIZATION_CFLAGS := -O3
+endif
+
 %build_prog mmake=test-llm-llama2 \
     progname=llama2 targetdir=$(AROS_TESTS)/llm \
     uselibs="posixc"
-    
+
 %build_prog mmake=test-llm-qwen3 \
     progname=qwen3 targetdir=$(AROS_TESTS)/llm \
     uselibs="posixc"
