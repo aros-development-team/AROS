@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -55,6 +55,7 @@ struct filehandle
     struct MsgPort          *conreadmp;
     struct MsgPort          *conwritemp;
     struct Window           *window;
+    struct Menu             *winmenu;
     struct Window           *otherwindow; /* WINDOW0xXXXXXXXX parameter */
     struct Task             *contask;
     struct Task             *breaktask;

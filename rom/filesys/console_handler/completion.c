@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -144,7 +144,7 @@ static void PrepareCompletion(struct filehandle *fh, struct completioninfo *ci)
 
     ci->wordquoted = in_quotes;
 
-    D(bug("PrepareCompletion: dirpart = \"%s\"  filepart = \"%s\"\n", ci->dirpart, ci->filepart));
+    D(bug("[con:handler] %s: dirpart = \"%s\"  filepart = \"%s\"\n", __func__, ci->dirpart, ci->filepart));
 }
 
 /****************************************************************************************/
