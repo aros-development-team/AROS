@@ -13,6 +13,7 @@ FUNCS := \
         cvideoctrltaglist                       \
         docdrawmethodtaglist                    \
         extractcolor                            \
+        extractcolor_renderfunc                 \
         fillpixelarray                          \
         freecmodelist                           \
         getcybermapattr                         \
