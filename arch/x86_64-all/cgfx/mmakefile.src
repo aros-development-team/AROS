@@ -2,6 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES  := \
+        extractcolor_renderfunc \
         processpixelarray_opblur \
         processpixelarray_opbrightness \
         processpixelarray_opsetalpha \
