@@ -47,23 +47,28 @@
 
 #if defined(CONSOLE_SHOW_MENU)
 extern const char GM_UNIQUENAME(LibName)[];
-__section(".text.romtag") const char GM_UNIQUENAME(DateStr)[] = MOD_DATE_STRING;
 __section(".text.romtag") const char GM_UNIQUENAME(CopyDateStr)[] = "1995-2025";
 __section(".text.romtag") const char GM_UNIQUENAME(AROSTeamStr)[] = "AROS Development Team";
-__section(".text.romtag") const char GM_UNIQUENAME(AboutTemplateStr)[] = MOD_NAME_STRING " V%ld.%ld (%s)\n\nCopyright \xa9 %s by %s";
+__section(".text.romtag") const char GM_UNIQUENAME(AboutTemplateStr)[] = "%s V%ld.%ld\n%s V%ld.%ld\n\nCopyright \xa9 %s by %s";
 
 static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBase)
 {
     struct {
-        ULONG conversnm;
-        ULONG conrevnm;
-        const char *concopystr;
-        const char *condatestr;
-        const char *conauthstr;
+        const char *conhnamestr;
+        ULONG conhversnm;
+        ULONG conhrevnm;
+        const char *condnamestr;
+        ULONG condversnm;
+        ULONG condrevnm;
+        const char *conhdatestr;
+        const char *conhauthstr;
     } erArgs = {
+        &GM_UNIQUENAME(LibName)[0],
         VERSION_NUMBER,
         REVISION_NUMBER,
-        &GM_UNIQUENAME(DateStr)[0],
+        NULL,
+        0,
+        0,
         &GM_UNIQUENAME(CopyDateStr)[0],
         &GM_UNIQUENAME(AROSTeamStr)[0]
     };
@@ -73,8 +78,31 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
     es.es_Title        = &GM_UNIQUENAME(LibName)[0];
     es.es_TextFormat   = &GM_UNIQUENAME(AboutTemplateStr)[0];
     es.es_GadgetFormat = "Continue";
-    // TODO: Display console.device version info also.
-    EasyRequestArgs(win, &es, NULL, (RAWARG)&erArgs);
+    struct MsgPort *querymp = CreateMsgPort();
+    RAWARG eraPtr = (RAWARG)&erArgs;
+    if (querymp) {
+        struct IOStdReq *queryio = (struct IOStdReq *) CreateIORequest(querymp, sizeof(struct IOStdReq));
+        if (queryio) {
+            if (0 == OpenDevice("console.device", -1, (struct IORequest *)queryio, 0)) {
+                struct Library *condevBase = (struct Library *)queryio->io_Device;
+                erArgs.condnamestr = condevBase->lib_Node.ln_Name;
+                erArgs.condversnm = condevBase->lib_Version;
+                erArgs.condrevnm = condevBase->lib_Revision;
+                CloseDevice((struct IORequest *)queryio);
+            }
+            DeleteIORequest((struct IORequest *)queryio);
+        }
+        DeleteMsgPort(querymp);
+    }
+    if (erArgs.condnamestr == NULL) {
+        es.es_TextFormat   = &GM_UNIQUENAME(AboutTemplateStr)[13];
+        erArgs.condnamestr = erArgs.conhnamestr;
+        erArgs.condversnm = erArgs.conhversnm;
+        erArgs.condrevnm = erArgs.conhrevnm;
+        eraPtr = (RAWARG)&erArgs.condnamestr;
+    }
+
+    EasyRequestArgs(win, &es, NULL, eraPtr);
 }
 #endif
 
