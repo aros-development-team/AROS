@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: console.device function CDInputHandler()
 */
@@ -31,7 +31,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 /*  SYNOPSIS */
         AROS_LHA(struct InputEvent *, events, A0),
-        AROS_LHA(APTR, _cdihdata, A1),
+        AROS_LHA(APTR, consoleDevice, A1),
 
 /*  LOCATION */
         struct Library *, ConsoleDevice, 7, Console)
@@ -55,16 +55,15 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    struct cdihData *cdihdata = _cdihdata;
-
 #undef ConsoleDevice
-#define ConsoleDevice (cdihdata->consoleDevice)
+    struct ConsoleBase *ConsoleDevice = (struct ConsoleBase *)consoleDevice;
 
     struct InputEvent *ie;
     BOOL send_message = FALSE;
 
+    struct cdihData *cdihdata = (struct cdihData *)&ConsoleDevice->consIHData;
     struct cdihMessage *message = cdihdata->cdihMsg;
+
     D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 
     for (ie = events; ie; ie = ie->ie_NextEvent)
@@ -132,9 +131,6 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
     AROS_LIBFUNC_EXIT
 } /* CDInputHandler */
 
-
-
-#undef ConsoleDevice
 #undef IntuitionBase
 
 /***********************
@@ -240,9 +236,7 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
         AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     if (cdihandler)
     {
-        cdihdata =
-            AllocMem(sizeof(struct cdihData), MEMF_PUBLIC | MEMF_CLEAR);
-        if (cdihdata)
+        cdihdata = &ConsoleDevice->consIHData;
         {
             cdihdata->inputPort = CreateMsgPort();
             if (cdihdata->inputPort)
@@ -281,12 +275,10 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
                         cdihandler->is_Code =
                             (VOID_FUNC) AROS_SLIB_ENTRY(CDInputHandler,
                             Console, 7);
-                        cdihandler->is_Data = cdihdata;
+                        cdihandler->is_Data = ConsoleDevice;
                         cdihandler->is_Node.ln_Pri = 50;
                         cdihandler->is_Node.ln_Name =
                             "console.device InputHandler";
-
-                        cdihdata->consoleDevice = ConsoleDevice;
 
                         ReturnPtr("initCDIH", struct Interrupt *,
                             cdihandler);
@@ -295,7 +287,6 @@ struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice)
                 }
                 DeleteMsgPort(cdihdata->inputPort);
             }
-            FreeMem(cdihdata, sizeof(struct cdihData));
         }
         FreeMem(cdihandler, sizeof(struct Interrupt));
     }
@@ -311,7 +302,7 @@ VOID cleanupCDIH(struct Interrupt *cdihandler,
 {
     struct cdihData *cdihdata;
 
-    cdihdata = (struct cdihData *)cdihandler->is_Data;
+    cdihdata = &ConsoleDevice->consIHData;
 
     /* Reset mp_SigBit, since we were not using it */
     cdihdata->cdihReplyPort->mp_SigBit = -1;
@@ -321,7 +312,6 @@ VOID cleanupCDIH(struct Interrupt *cdihandler,
 
     DeleteMsgPort(cdihdata->inputPort);
 
-    FreeMem(cdihandler->is_Data, sizeof(struct cdihData));
     FreeMem(cdihandler, sizeof(struct Interrupt));
 
     return;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -224,10 +224,8 @@ struct cdihMessage
 };
 
 /* Data passed to the console device input handler */
-
 struct cdihData
 {
-    struct ConsoleBase *consoleDevice;
     /* Port to which we send input to the console device
        from the console device input handler.
      */
@@ -296,6 +294,7 @@ struct ConsoleBase
     Class *charMapClass;
     Class *snipMapClass;
 
+    struct cdihData consIHData;
     /* Copy buffer
 
        This buffer is shared across all console units. It is used by

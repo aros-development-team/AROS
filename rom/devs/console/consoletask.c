@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Code executed by the console.device task.
 */
@@ -168,11 +168,8 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 
     D(bug("Console task initialized\n"));
 
-
     /* Get console.device input handler's port */
-    inputport =
-        ((struct cdihData *)ConsoleDevice->inputHandler->is_Data)->
-        inputPort;
+    inputport = ConsoleDevice->consIHData.inputPort;
 
     inputsig = 1 << inputport->mp_SigBit;
     commandsig = 1 << ConsoleDevice->commandPort->mp_SigBit;
