@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Filesystem that uses console device for input/output.
 */
@@ -8,6 +8,8 @@
 #define CUR_DOWN  'B'
 #define CUR_RIGHT 'C'
 #define CUR_LEFT  'D'
+
+#define CODE_PASTE 'V'
 
 #define INP_DONE                0
 #define INP_CURSORLEFT          1
@@ -83,6 +85,7 @@ void do_cursorvisible(struct filehandle *fh, BOOL on);
 void do_deletechar(struct filehandle *fh);
 void do_eraseinline(struct filehandle *fh);
 void do_eraseindisplay(struct filehandle *fh);
+void do_paste(struct filehandle * fh);
 
 WORD scan_input(struct filehandle *fh, UBYTE *);
 

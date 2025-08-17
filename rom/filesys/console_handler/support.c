@@ -745,7 +745,7 @@ struct MyEditHookMsg
     WORD            code;
 };
 
-static void do_paste(struct filehandle * fh)
+void do_paste(struct filehandle * fh)
 {
     struct MsgPort replyport, *port;
     struct SGWork sgw;
@@ -771,7 +771,7 @@ static void do_paste(struct filehandle * fh)
     msg.msg.mn_ReplyPort = &replyport;
     msg.msg.mn_Length = sizeof(msg);
 
-    msg.code = 'V';
+    msg.code = CODE_PASTE;
     msg.sgw = &sgw;
 
     /* FIXME: Ensure no fields are left uninitialized */
@@ -780,7 +780,7 @@ static void do_paste(struct filehandle * fh)
     sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
     sgw.PrevBuffer = 0;
     sgw.IEvent = 0;
-    sgw.Code = 'V';
+    sgw.Code = CODE_PASTE;
     sgw.Actions = 0;
     sgw.LongInt = 0;
     sgw.GadgetInfo = 0;
@@ -993,7 +993,7 @@ BOOL process_input(struct filehandle *fh)
             break;
 
         case INP_EOF:
-            D(bug("[CON] Read EOF (window closing)\n"));
+            D(bug("[con:handler] %s: Read EOF (window closing)\n", __func__));
 
             if (fh->flags & FHFLG_WAITFORCLOSE)
                 return TRUE;
@@ -1082,6 +1082,7 @@ BOOL process_input(struct filehandle *fh)
             break;
 
         case INP_PASTE:
+            D(bug("[con:handler] %s: INP_PASTE\n", __func__));
             do_paste(fh);
             break;
 

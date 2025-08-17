@@ -205,8 +205,8 @@ static LONG MakeConWindow(struct filehandle *fh)
               { NM_SUB,  "2",           "2",    0, 0, (APTR)MEN_CONSOLE_CLIP2   },
               { NM_SUB,  "3",           "3",    0, 0, (APTR)MEN_CONSOLE_CLIP3   },
              { NM_ITEM, NM_BARLABEL                                             },
-             { NM_ITEM,  "Copy",        "C",    0, 0, (APTR)MEN_CONSOLE_COPY    },
-             { NM_ITEM,  "Paste",       "V",    0, 0, (APTR)MEN_CONSOLE_PASTE   },
+             { NM_ITEM,  "Copy",        "c",    0, 0, (APTR)MEN_CONSOLE_COPY    },
+             { NM_ITEM,  "Paste",       "v",    0, 0, (APTR)MEN_CONSOLE_PASTE   },
             { NM_END                                                            }
         };
         if ((fh->winmenu = CreateMenusA(newconmenu, menu_tags))) {
@@ -496,77 +496,6 @@ static void stopread(struct filehandle *fh, struct DosPacket *waitingdp)
     }
 }
 
-#if defined(CONSOLE_SHOW_MENU)
-static BOOL CONClipBWriteLONG(struct IOClipReq *ior, LONG *ldata)
-{
-    ior->io_Data    = (APTR)ldata;
-    ior->io_Length  = 4;
-    ior->io_Command = CMD_WRITE;
-    DoIO ((struct IORequest *)ior);
-
-    if (ior->io_Actual == 4)
-        return ior->io_Error ? FALSE : TRUE;
-
-    return FALSE;
-}
-
-static BOOL CONClipBWriteFTXT(struct IOClipReq *ior, CONST_STRPTR string)
-{
-    if (!ior || !string)
-        return FALSE;
-
-    LONG slen = strlen(string), length, temp;
-    BOOL odd = (slen & 1);
-
-    length = (odd) ? slen + 1 : slen;
-
-    ior->io_Offset = 0;
-    ior->io_Error  = 0;
-    ior->io_ClipID = 0;
-
-    CONClipBWriteLONG(ior, (LONG *) "FORM");
-    length += 12;
-
-    temp = AROS_LONG2BE(length);
-    CONClipBWriteLONG(ior, &temp);
-    CONClipBWriteLONG(ior, (LONG *) "FTXT");
-    CONClipBWriteLONG(ior, (LONG *) "CHRS");
-    temp = AROS_LONG2BE(slen);
-    CONClipBWriteLONG(ior, &temp);
-
-    ior->io_Data    = (STRPTR)string;
-    ior->io_Length  = slen;
-    ior->io_Command = CMD_WRITE;
-    DoIO((struct IORequest *)ior);
-
-    if (odd) {
-        ior->io_Data   = (APTR)"";
-        ior->io_Length = 1;
-        DoIO((struct IORequest *)ior);
-    }
-
-    ior->io_Command = CMD_UPDATE;
-    DoIO ((struct IORequest *)ior);
-
-    return ior->io_Error ? FALSE : TRUE;
-}
-
-static void CONClipBRedIntoBuffer(struct IOClipReq *ior, struct filehandle *fh)
-{
-#if (0)
-    WORD i = fh->conbufferpos;
-    while ((fh->conbuffersize < CONSOLEBUFFER_SIZE) && *s)
-    {
-        memmove(&fh->consolebuffer[i + 1], &fh->consolebuffer[i], fh->conbuffersize - i);
-
-        fh->consolebuffer[i++] = *s++;
-        fh->conbuffersize++;
-    }
-#endif
-}
-
-#endif
-
 LONG CONMain(struct ExecBase *SysBase)
 {
     struct MsgPort *mp;
@@ -663,12 +592,15 @@ LONG CONMain(struct ExecBase *SysBase)
             struct IntuiMessage *msg;
             D(bug("[con:handler] %s: window signal\n", __func__));
             while ((msg = (struct IntuiMessage *)GetMsg(fh->window->UserPort))) {
-                ULONG msgclass = msg->Class;
+                ULONG   msgclass = msg->Class;
+                UWORD   msgcode  = msg->Code;
+                ReplyMsg((struct Message *)msg);
+
                 switch (msgclass) {
                 case IDCMP_MENUPICK:
                     {
-                        struct MenuItem     *item;
-                        UWORD men  = msg->Code;
+                        struct MenuItem *item;
+                        UWORD           men  = msgcode;
 
                         D(bug("[con:handler] %s: IDCMP_MENUPICK\n", __func__));
 
@@ -706,49 +638,19 @@ LONG CONMain(struct ExecBase *SysBase)
                                         break;
                                     case MEN_CONSOLE_COPY:
                                         {
+
                                             D(bug("[con:handler] %s: Menu: Copy\n", __func__));
                                           
 #if (1)
                                             Console_Copy((Object *) fh->conreadio->io_Unit);
-#else
-                                            struct MsgPort   *clipPort;
-                                            if ((clipPort = CreateMsgPort())) {
-                                                struct IOClipReq *clipReq;
-                                                if ((clipReq = (struct IOClipReq *)CreateIORequest(clipPort, sizeof(struct IOClipReq)))) {
-                                                    if (OpenDevice("clipboard.device", clipunit, (struct IORequest *)clipReq, 0) == 0) {
-                                                        D(bug("[con:handler] %s: clipboard #%u opened\n", __func__, clipunit));
-#if (0)
-                                                        CONClipBWriteFTXT(clipReq, ?);
-#endif
-                                                        CloseDevice((struct IORequest *)clipReq);
-                                                    }
-                                                    DeleteIORequest((struct IORequest *)clipReq);
-                                                }
-                                                DeleteMsgPort(clipPort);
-                                            }
 #endif
                                         }
                                         break;
                                     case MEN_CONSOLE_PASTE:
                                         {
                                             D(bug("[con:handler] %s: Menu: Paste\n", __func__));
-#if (1)
-                                            Console_Paste((Object *) fh->conwriteio.io_Unit);
-#else
-                                            struct MsgPort   *clipPort;
-                                            if ((clipPort = CreateMsgPort())) {
-                                                struct IOClipReq *clipReq;
-                                                if ((clipReq = (struct IOClipReq *)CreateIORequest(clipPort, sizeof(struct IOClipReq)))) {
-                                                    if (OpenDevice("clipboard.device", clipunit, (struct IORequest *)clipReq, 0) == 0) {
-                                                        D(bug("[con:handler] %s: clipboard #%u opened\n", __func__, clipunit));
-                                                        CONClipBRedIntoBuffer(clipReq, fh);
-                                                        CloseDevice((struct IORequest *)clipReq);
-                                                    }
-                                                    DeleteIORequest((struct IORequest *)clipReq);
-                                                }
-                                                DeleteMsgPort(clipPort);
-                                            }
-#endif
+                                            do_paste(fh);
+                                            process_input(fh);
                                         }
                                         break;
                                     case MEN_CONSOLE_CLIP0:
@@ -774,7 +676,6 @@ LONG CONMain(struct ExecBase *SysBase)
                 default:
                     break;
                 }
-                ReplyMsg((struct Message *)msg);
             }
         }
 #endif
