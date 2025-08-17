@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/console.h>
 #include <proto/intuition.h>
 #include <proto/gadtools.h>
 #include <proto/workbench.h>
@@ -30,9 +31,6 @@
 #include <intuition/intuition.h>
 #include <workbench/startup.h>
 #include <devices/conunit.h>
-#if defined(CONSOLE_SHOW_MENU)
-#include <devices/clipboard.h>
-#endif
 
 #include <stddef.h>
 #include <string.h>
@@ -44,6 +42,9 @@
 #include <proto/execlock.h>
 #include <resources/execlock.h>
 #endif
+
+#define DREAD(x)
+#define DACTION(x)
 
 #if defined(CONSOLE_SHOW_MENU)
 extern const char GM_UNIQUENAME(LibName)[];
@@ -84,10 +85,10 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
         struct IOStdReq *queryio = (struct IOStdReq *) CreateIORequest(querymp, sizeof(struct IOStdReq));
         if (queryio) {
             if (0 == OpenDevice("console.device", -1, (struct IORequest *)queryio, 0)) {
-                struct Library *condevBase = (struct Library *)queryio->io_Device;
-                erArgs.condnamestr = condevBase->lib_Node.ln_Name;
-                erArgs.condversnm = condevBase->lib_Version;
-                erArgs.condrevnm = condevBase->lib_Revision;
+                struct Library *ConsoleDevice = (struct Library *)queryio->io_Device;
+                erArgs.condnamestr = ConsoleDevice->lib_Node.ln_Name;
+                erArgs.condversnm = ConsoleDevice->lib_Version;
+                erArgs.condrevnm = ConsoleDevice->lib_Revision;
                 CloseDevice((struct IORequest *)queryio);
             }
             DeleteIORequest((struct IORequest *)queryio);
@@ -110,7 +111,6 @@ static void MakeConsAbout(struct Window *win, struct IntuitionBase *IntuitionBas
 #include "support.h"
 
 #if defined(CONSOLE_SHOW_MENU)
-#include "consoleif.h"
 enum
 {
     MEN_CONSOLE_ABOUT = 1,
@@ -548,8 +548,7 @@ LONG CONMain(struct ExecBase *SysBase)
     }
     D(bug("[con:handler] 0x%p open\n", fh));
     replypkt(dp, DOSTRUE);
-
-    for (;;) {
+    {
 #if defined(CONSOLE_SHOW_MENU)
         ULONG clipunit = 0;
 #endif
@@ -558,366 +557,378 @@ LONG CONMain(struct ExecBase *SysBase)
         ULONG packetmask = 1L << mp->mp_SigBit;
         ULONG winmask = fh->window ? 1L << fh->window->UserPort->mp_SigBit : 0L;
         ULONG appwindowmask = fh->appmsgport ? 1L << fh->appmsgport->mp_SigBit : 0L;
-        ULONG i = 0, insertedlen = 0;
+        ULONG i, insertedlen;
         ULONG sigs;
         UBYTE iconpath[INPUTBUFFER_SIZE];
         WORD currentpos, currentrest;
 
-        sigs = Wait(packetmask | conreadmask | timermask | winmask | appwindowmask);
+        for (;;) {
+            i = 0;
+            insertedlen = 0;
+            sigs = Wait(packetmask | conreadmask | timermask | winmask | appwindowmask);
 
-        if ((appwindowmask) && (sigs & appwindowmask)) {
-            D(bug("[con:handler] %s: appwindow msg signal\n", __func__));
-            while ((fh->appmsg = (struct AppMessage *)GetMsg(fh->appmsgport))) {
-                if (fh->appmsg->am_Type == AMTYPE_APPWINDOW) {
-                    if (fh->appmsg->am_NumArgs >= 1) {
-                        do {
-                            if (fh->appmsg->am_ArgList[i].wa_Lock) {
-                                NameFromLock(fh->appmsg->am_ArgList[i].wa_Lock,
-                                             iconpath, INPUTBUFFER_SIZE - 1);
-                                AddPart(iconpath, fh->appmsg->am_ArgList[i].wa_Name,
-                                        INPUTBUFFER_SIZE - 1);
-                                D(bug("[con:handler] D&D iconpath: %s\n", iconpath));
+            if ((appwindowmask) && (sigs & appwindowmask)) {
+                D(bug("[con:handler] %s: appwindow msg signal\n", __func__));
+                while ((fh->appmsg = (struct AppMessage *)GetMsg(fh->appmsgport))) {
+                    if (fh->appmsg->am_Type == AMTYPE_APPWINDOW) {
+                        if (fh->appmsg->am_NumArgs >= 1) {
+                            do {
+                                if (fh->appmsg->am_ArgList[i].wa_Lock) {
+                                    NameFromLock(fh->appmsg->am_ArgList[i].wa_Lock,
+                                                 iconpath, INPUTBUFFER_SIZE - 1);
+                                    AddPart(iconpath, fh->appmsg->am_ArgList[i].wa_Name,
+                                            INPUTBUFFER_SIZE - 1);
+                                    D(bug("[con:handler] D&D iconpath: %s\n", iconpath));
 
-                                if ((insertedlen = strlen(iconpath))) {
-                                    /*
-                                     * Get rid of trailing slashes of drawers?
-                                    if ((iconpath[insertedlen - 1] == '/'))
-                                        insertedlen--;
-                                     */
-                                    if (strchr(iconpath, ' ')
-                                         && insertedlen <= (INPUTBUFFER_SIZE - 2)) {
-                                        memmove(iconpath + 1, iconpath, ++insertedlen);
-                                        iconpath[0] = iconpath[insertedlen++] = '"';
+                                    if ((insertedlen = strlen(iconpath))) {
+                                        /*
+                                         * Get rid of trailing slashes of drawers?
+                                        if ((iconpath[insertedlen - 1] == '/'))
+                                            insertedlen--;
+                                         */
+                                        if (strchr(iconpath, ' ')
+                                             && insertedlen <= (INPUTBUFFER_SIZE - 2)) {
+                                            memmove(iconpath + 1, iconpath, ++insertedlen);
+                                            iconpath[0] = iconpath[insertedlen++] = '"';
+                                        }
+                                        if (insertedlen <= (INPUTBUFFER_SIZE - 1))
+                                            iconpath[insertedlen++] = ' ';
+
+                                        currentpos = fh->inputpos;
+                                        currentrest = fh->inputsize - fh->inputpos;
+                                        memmove(&fh->inputbuffer[currentpos + insertedlen],
+                                                &fh->inputbuffer[currentpos],
+                                                currentrest);
+                                        CopyMem(iconpath, &fh->inputbuffer[currentpos],
+                                                insertedlen);
+                                        fh->inputsize += insertedlen;
+                                        fh->inputpos += insertedlen;
+
+                                        do_write(fh, &fh->inputbuffer[currentpos],
+                                                 insertedlen + currentrest);
+                                        do_movecursor(fh, CUR_LEFT, currentrest);
                                     }
-                                    if (insertedlen <= (INPUTBUFFER_SIZE - 1))
-                                        iconpath[insertedlen++] = ' ';
-
-                                    currentpos = fh->inputpos;
-                                    currentrest = fh->inputsize - fh->inputpos;
-                                    memmove(&fh->inputbuffer[currentpos + insertedlen],
-                                            &fh->inputbuffer[currentpos],
-                                            currentrest);
-                                    CopyMem(iconpath, &fh->inputbuffer[currentpos],
-                                            insertedlen);
-                                    fh->inputsize += insertedlen;
-                                    fh->inputpos += insertedlen;
-
-                                    do_write(fh, &fh->inputbuffer[currentpos],
-                                             insertedlen + currentrest);
-                                    do_movecursor(fh, CUR_LEFT, currentrest);
                                 }
-                            }
-                        } while (++i < fh->appmsg->am_NumArgs);
-                    }
-                }
-                ReplyMsg((struct Message *)fh->appmsg);
-            }
-            ActivateWindow(fh->window);
-        }
-
-#if defined(CONSOLE_SHOW_MENU)
-        if ((winmask) && (sigs & winmask)) {
-            struct IntuiMessage *msg;
-            D(bug("[con:handler] %s: window signal\n", __func__));
-            while ((msg = (struct IntuiMessage *)GetMsg(fh->window->UserPort))) {
-                ULONG   msgclass = msg->Class;
-                UWORD   msgcode  = msg->Code;
-                ReplyMsg((struct Message *)msg);
-
-                switch (msgclass) {
-                case IDCMP_MENUPICK:
-                    {
-                        struct MenuItem *item;
-                        UWORD           men  = msgcode;
-
-                        D(bug("[con:handler] %s: IDCMP_MENUPICK\n", __func__));
-
-                        while(men != MENUNULL)
-                        {
-                            if ((item = ItemAddress(fh->winmenu, men)))
-                            {
-                                IPTR menu_selected = (IPTR)GTMENUITEM_USERDATA(item);
-                                switch(menu_selected)
-                                {
-                                    case MEN_CONSOLE_ABOUT:
-                                        {
-                                            D(bug("[con:handler] %s: Menu: Show About ...\n", __func__));
-                                            MakeConsAbout(fh->window, IntuitionBase);
-                                        }
-                                        break;
-                                    case MEN_CONSOLE_CLOSE:
-                                        {
-                                            D(bug("[con:handler] %s: Menu: Close\n", __func__));
-#if (0)
-                                            fh->usecount--;
-                                            D(bug("[con:handler] usecount = %d\n", fh->usecount));
-                                            if (fh->usecount <= 0) {
-                                                if (fh->flags & FHFLG_WAIT) {
-                                                    D(bug("[con:handler] Delayed close, waiting...\n"));
-                                                    stopread(fh, waitingdp);
-                                                    waitingdp = NULL;
-                                                    fh->flags = (fh->flags & ~FHFLG_READPENDING) | FHFLG_WAITFORCLOSE;
-                                                }
-                                                else
-                                                    goto end;
-                                            }
-#endif
-                                        }
-                                        break;
-                                    case MEN_CONSOLE_COPY:
-                                        {
-
-                                            D(bug("[con:handler] %s: Menu: Copy\n", __func__));
-                                          
-#if (1)
-                                            Console_Copy((Object *) fh->conreadio->io_Unit);
-#endif
-                                        }
-                                        break;
-                                    case MEN_CONSOLE_PASTE:
-                                        {
-                                            D(bug("[con:handler] %s: Menu: Paste\n", __func__));
-                                            do_paste(fh);
-                                            process_input(fh);
-                                        }
-                                        break;
-                                    case MEN_CONSOLE_CLIP0:
-                                        clipunit = 0;
-                                        break;
-                                    case MEN_CONSOLE_CLIP1:
-                                        clipunit = 1;
-                                        break;
-                                    case MEN_CONSOLE_CLIP2:
-                                        clipunit = 2;
-                                        break;
-                                    case MEN_CONSOLE_CLIP3:
-                                        clipunit = 3;
-                                        break;
-                                }
-                                men = item->NextSelect;
-                            } else {
-                                men = MENUNULL;
-                            }
+                            } while (++i < fh->appmsg->am_NumArgs);
                         }
                     }
-                    break;
-                default:
-                    break;
+                    ReplyMsg((struct Message *)fh->appmsg);
                 }
+                ActivateWindow(fh->window);
             }
-        }
-#endif
 
-        if (sigs & timermask) {
-            D(bug("[con:handler] %s: timer signal\n", __func__));
-            if (waitingdp) {
-                replypkt(waitingdp, DOSFALSE);
-                waitingdp = NULL;
-            }
-        }
+    #if defined(CONSOLE_SHOW_MENU)
+            if ((winmask) && (sigs & winmask)) {
+                struct IntuiMessage *msg;
+                D(bug("[con:handler] %s: window signal\n", __func__));
+                while ((msg = (struct IntuiMessage *)GetMsg(fh->window->UserPort))) {
+                    ULONG   msgclass = msg->Class;
+                    UWORD   msgcode  = msg->Code;
+                    ReplyMsg((struct Message *)msg);
 
-        if (sigs & conreadmask) {
-            D(bug("[con:handler] %s: console read signal\n", __func__));
-            GetMsg(fh->conreadmp);
-            fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
-            if (waitingdp) {
-                stopwait(fh, waitingdp, DOSTRUE);
-                waitingdp = NULL;
-            }
-            D(bug("IO_READ %d\n", fh->conreadio->io_Actual));
-            fh->conbuffersize = fh->conreadio->io_Actual;
-            fh->conbufferpos = 0;
-            /* terminate with 0 char */
-            fh->consolebuffer[fh->conbuffersize] = '\0';
-            if (fh->flags & FHFLG_RAW) {
-                LONG inp;
-                /* raw mode */
-                for (inp = 0; (inp < fh->conbuffersize) && (fh->inputpos < INPUTBUFFER_SIZE);) {
-                    fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
-                }
-                fh->inputsize = fh->inputstart = fh->inputpos;
-                HandlePendingReads(fh);
-            } /* if (fh->flags & FHFLG_RAW) */
-            else {
-                /* Cooked mode */
-                if (process_input(fh)) {
-                    /*
-                     * process_input() returns TRUE when EOF was received after the WAIT console
-                     * has been closed by the owner.
-                     */
-                    dp = NULL;
-                    goto end;
-                }
-            } /* if (fh->flags & FHFLG_RAW) else ... */
+                    switch (msgclass) {
+                    case IDCMP_MENUPICK:
+                        {
+                            struct MenuItem *item;
+                            UWORD           men  = msgcode;
 
-            if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) /* device could have been closed */
-                startread(fh);
-        }
+                            D(bug("[con:handler] %s: IDCMP_MENUPICK\n", __func__));
 
-        while ((mn = GetMsg(mp))) {
-            dp = (struct DosPacket*) mn->mn_Node.ln_Name;
-            dp->dp_Res2 = 0;
-            D(
-                    bug("[con:handler] (con @ 0x%p) packet 0x%p:%d 0x%p,0x%p,0x%p\n", fh, dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2,
-                            dp->dp_Arg3));
-            error = 0;
-            switch (dp->dp_Type) {
-            case ACTION_FH_FROM_LOCK:
-                fl = BADDR(dp->dp_Arg2);
-                if (fl->fl_Task != mp || fl->fl_Key != (IPTR) fh) {
-                    replypkt2(dp, DOSFALSE, ERROR_OBJECT_NOT_FOUND);
-                    break;
-                }
-                fh->usecount--;
-                FreeMem(fl, sizeof(*fl));
-                /* Fallthrough */
-            case ACTION_FINDINPUT:
-            case ACTION_FINDOUTPUT:
-            case ACTION_FINDUPDATE:
-                dosfh = BADDR(dp->dp_Arg1);
-                dosfh->fh_Interactive = DOSTRUE;
-                dosfh->fh_Arg1 = (SIPTR) fh;
-                fh->usecount++;
-                fh->breaktask = dp->dp_Port->mp_SigTask;
-                D(bug("[con:handler] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
-                replypkt(dp, DOSTRUE);
-                break;
-            case ACTION_COPY_DIR_FH:
-                fl = AllocMem(sizeof(*fl), MEMF_CLEAR | MEMF_PUBLIC);
-                if (fl == BNULL) {
-                    replypkt2(dp, (SIPTR) BNULL, ERROR_NO_FREE_STORE);
-                }
-                else {
-                    fh->usecount++;
-                    fl->fl_Task = mp;
-                    fl->fl_Access = ACCESS_READ;
-                    fl->fl_Key = (IPTR) fh;
-                    replypkt(dp, (SIPTR) MKBADDR(fl));
-                }
-                break;
-            case ACTION_FREE_LOCK:
-                fl = BADDR(dp->dp_Arg1);
-                fh = (struct filehandle *)fl->fl_Key;
-
-                FreeMem(fl, sizeof(*fl));
-                fh->usecount--;
-
-                replypkt(dp, DOSTRUE);
-                break;
-            case ACTION_END:
-                fh->usecount--;
-                D(bug("[con:handler] usecount=%d\n", fh->usecount));
-                if (fh->usecount <= 0) {
-                    if (fh->flags & FHFLG_WAIT) {
-                        D(bug("[con:handler] Delayed close, waiting...\n"));
-
-                        /*
-                         * Bounce all pending read and waits (the same as we do when exiting).
-                         * However the process is still around, waiting for EOF input.
-                         * Our user has just closed his struct FileHandle and dropped us.
-                         */
-                        stopread(fh, waitingdp);
-                        waitingdp = NULL;
-                        fh->flags = (fh->flags & ~FHFLG_READPENDING) | FHFLG_WAITFORCLOSE;
+                            while(men != MENUNULL)
+                            {
+                                if ((item = ItemAddress(fh->winmenu, men)))
+                                {
+                                    IPTR menu_selected = (IPTR)GTMENUITEM_USERDATA(item);
+                                    switch(menu_selected)
+                                    {
+                                        case MEN_CONSOLE_ABOUT:
+                                            {
+                                                D(bug("[con:handler] %s: Menu: Show About ...\n", __func__));
+                                                MakeConsAbout(fh->window, IntuitionBase);
+                                            }
+                                            break;
+                                        case MEN_CONSOLE_CLOSE:
+                                            {
+                                                D(bug("[con:handler] %s: Menu: Close\n", __func__));
+                                                struct Library *ConsoleDevice = (struct Library *)fh->conreadio->io_Device;
+                                                struct InputEvent ie;
+                                                ie.ie_NextEvent = NULL;
+                                                ie.ie_Class     = IECLASS_CLOSEWINDOW;
+                                                CDInputHandler(&ie, ConsoleDevice);
+                                                D(bug("[con:handler] %s: Menu: Close window sent\n", __func__));
+                                            }
+                                            break;
+                                        case MEN_CONSOLE_COPY:
+                                            {
+                                                D(bug("[con:handler] %s: Menu: Copy\n", __func__));
+                                                struct Library *ConsoleDevice = (struct Library *)fh->conreadio->io_Device;
+                                                struct InputEvent ie;
+                                                ie.ie_NextEvent = NULL;
+                                                ie.ie_Class     = IECLASS_RAWKEY;
+                                                ie.ie_Code      = 0x33;
+                                                ie.ie_Qualifier = IEQUALIFIER_RCOMMAND;
+                                                CDInputHandler(&ie, ConsoleDevice);
+                                                D(bug("[con:handler] %s: Menu: Copy sent\n", __func__));
+                                            }
+                                            break;
+                                        case MEN_CONSOLE_PASTE:
+                                            {
+                                                D(bug("[con:handler] %s: Menu: Paste\n", __func__));
+                                                do_paste(fh);
+                                                process_input(fh);
+                                            }
+                                            break;
+                                        case MEN_CONSOLE_CLIP0:
+                                            clipunit = 0;
+                                            break;
+                                        case MEN_CONSOLE_CLIP1:
+                                            clipunit = 1;
+                                            break;
+                                        case MEN_CONSOLE_CLIP2:
+                                            clipunit = 2;
+                                            break;
+                                        case MEN_CONSOLE_CLIP3:
+                                            clipunit = 3;
+                                            break;
+                                    }
+                                    men = item->NextSelect;
+                                } else {
+                                    men = MENUNULL;
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        break;
                     }
-                    else
+                }
+            }
+    #endif
+
+            if (sigs & timermask) {
+                D(bug("[con:handler] %s: timer signal\n", __func__));
+                if (waitingdp) {
+                    replypkt(waitingdp, DOSFALSE);
+                    waitingdp = NULL;
+                }
+            }
+
+            if (sigs & conreadmask) {
+                DREAD(bug("[con:handler] %s: console read signal\n", __func__));
+                GetMsg(fh->conreadmp);
+                fh->flags &= ~FHFLG_ASYNCCONSOLEREAD;
+                if (waitingdp) {
+                    stopwait(fh, waitingdp, DOSTRUE);
+                    waitingdp = NULL;
+                }
+                DREAD(bug("[con:handler] %s: IO_READ %d\n", __func__, fh->conreadio->io_Actual));
+                fh->conbuffersize = fh->conreadio->io_Actual;
+                fh->conbufferpos = 0;
+                /* terminate with 0 char */
+                fh->consolebuffer[fh->conbuffersize] = '\0';
+                if (fh->flags & FHFLG_RAW) {
+                    LONG inp;
+                    /* raw mode */
+                    DREAD(bug("[con:handler] %s: FHFLG_RAW\n", __func__));
+                    for (inp = 0; (inp < fh->conbuffersize) && (fh->inputpos < INPUTBUFFER_SIZE);) {
+                        fh->inputbuffer[fh->inputpos++] = fh->consolebuffer[inp++];
+                    }
+                    fh->inputsize = fh->inputstart = fh->inputpos;
+                    HandlePendingReads(fh);
+                } /* if (fh->flags & FHFLG_RAW) */
+                else {
+                    DREAD(bug("[con:handler] %s: COOKED\n", __func__));
+                    /* Cooked mode */
+                    if (process_input(fh)) {
+                        /*
+                         * process_input() returns TRUE when EOF was received after the WAIT console
+                         * has been closed by the owner.
+                         */
+                        dp = NULL;
                         goto end;
-                }
-                replypkt(dp, DOSTRUE);
-                break;
-            case ACTION_READ:
-                if (!MakeSureWinIsOpen(fh)) {
-                    replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                    }
+                } /* if (fh->flags & FHFLG_RAW) else ... */
+
+                if (fh->flags & FHFLG_CONSOLEDEVICEOPEN) /* device could have been closed */
+                    startread(fh);
+            }
+
+            while ((mn = GetMsg(mp))) {
+                dp = (struct DosPacket*) mn->mn_Node.ln_Name;
+                dp->dp_Res2 = 0;
+                DACTION(
+                        bug("[con:handler] (con @ 0x%p) packet 0x%p:%d 0x%p,0x%p,0x%p\n", fh, dp, dp->dp_Type, dp->dp_Arg1, dp->dp_Arg2,
+                                dp->dp_Arg3));
+                error = 0;
+                switch (dp->dp_Type) {
+                case ACTION_FH_FROM_LOCK:
+                    DACTION(bug("[con:handler] ACTION_FH_FROM_LOCK\n"));
+                    fl = BADDR(dp->dp_Arg2);
+                    if (fl->fl_Task != mp || fl->fl_Key != (IPTR) fh) {
+                        replypkt2(dp, DOSFALSE, ERROR_OBJECT_NOT_FOUND);
+                        break;
+                    }
+                    fh->usecount--;
+                    FreeMem(fl, sizeof(*fl));
+                    /* Fallthrough */
+                case ACTION_FINDINPUT:
+                case ACTION_FINDOUTPUT:
+                case ACTION_FINDUPDATE:
+                    DACTION(bug("[con:handler] ACTION_FINDxxxx\n"));
+                    dosfh = BADDR(dp->dp_Arg1);
+                    dosfh->fh_Interactive = DOSTRUE;
+                    dosfh->fh_Arg1 = (SIPTR) fh;
+                    fh->usecount++;
+                    fh->breaktask = dp->dp_Port->mp_SigTask;
+                    DACTION(bug("[con:handler] Find fh=%x. Usecount=%d\n", dosfh, fh->usecount));
+                    replypkt(dp, DOSTRUE);
                     break;
-                }
-                fh->breaktask = dp->dp_Port->mp_SigTask;
-                startread(fh);
-                con_read(fh, dp);
-                break;
-            case ACTION_WRITE:
-                if (!MakeSureWinIsOpen(fh)) {
-                    replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                case ACTION_COPY_DIR_FH:
+                    DACTION(bug("[con:handler] ACTION_COPY_DIR_FH\n"));
+                    fl = AllocMem(sizeof(*fl), MEMF_CLEAR | MEMF_PUBLIC);
+                    if (fl == BNULL) {
+                        replypkt2(dp, (SIPTR) BNULL, ERROR_NO_FREE_STORE);
+                    }
+                    else {
+                        fh->usecount++;
+                        fl->fl_Task = mp;
+                        fl->fl_Access = ACCESS_READ;
+                        fl->fl_Key = (IPTR) fh;
+                        replypkt(dp, (SIPTR) MKBADDR(fl));
+                    }
                     break;
-                }
-                fh->breaktask = dp->dp_Port->mp_SigTask;
-                startread(fh);
-                answer_write_request(fh, dp);
-                break;
-            case ACTION_SCREEN_MODE:
-                {
-                    D(bug("ACTION_SCREEN_MODE %s\n", dp->dp_Arg1 ? "RAW" : "CON"));
-                    if (dp->dp_Arg1 && !(fh->flags & FHFLG_RAW)) {
-                        /* Switching from CON: mode to RAW: mode */
-                        fh->flags |= FHFLG_RAW;
-                        fh->inputstart = fh->inputsize;
-                        fh->inputpos = fh->inputsize;
-                        HandlePendingReads(fh);
-                    } else {
-                        /* otherwise just copy the flags */
-                        if (dp->dp_Arg1)
-                            fh->flags |= FHFLG_RAW;
+                case ACTION_FREE_LOCK:
+                    DACTION(bug("[con:handler] ACTION_FREE_LOCK\n"));
+                    fl = BADDR(dp->dp_Arg1);
+                    fh = (struct filehandle *)fl->fl_Key;
+
+                    FreeMem(fl, sizeof(*fl));
+                    fh->usecount--;
+
+                    replypkt(dp, DOSTRUE);
+                    break;
+                case ACTION_END:
+                    fh->usecount--;
+                    D(bug("[con:handler] ACTION_END (usecount %d)\n", fh->usecount));
+                    if (fh->usecount <= 0) {
+                        if (fh->flags & FHFLG_WAIT) {
+                            D(bug("[con:handler] Delayed close, waiting...\n"));
+
+                            /*
+                             * Bounce all pending read and waits (the same as we do when exiting).
+                             * However the process is still around, waiting for EOF input.
+                             * Our user has just closed his struct FileHandle and dropped us.
+                             */
+                            stopread(fh, waitingdp);
+                            waitingdp = NULL;
+                            fh->flags = (fh->flags & ~FHFLG_READPENDING) | FHFLG_WAITFORCLOSE;
+                        }
                         else
-                            fh->flags &= ~FHFLG_RAW;
+                            goto end;
                     }
                     replypkt(dp, DOSTRUE);
-                }
-                break;
-            case ACTION_CHANGE_SIGNAL:
-                {
-                    struct Task *old = fh->breaktask;
-                    if (dp->dp_Arg2)
-                        fh->breaktask = (struct Task*) dp->dp_Arg2;
-                    replypkt2(dp, DOSTRUE, (SIPTR) old);
-                }
-                break;
-            case ACTION_WAIT_CHAR:
-                {
+                    break;
+                case ACTION_READ:
+                    DACTION(bug("[con:handler] ACTION_READ\n"));
                     if (!MakeSureWinIsOpen(fh)) {
                         replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
                         break;
                     }
-                    if (fh->inputsize > 0) {
+                    fh->breaktask = dp->dp_Port->mp_SigTask;
+                    startread(fh);
+                    con_read(fh, dp);
+                    break;
+                case ACTION_WRITE:
+                    DACTION(bug("[con:handler] ACTION_WRITE\n"));
+                    if (!MakeSureWinIsOpen(fh)) {
+                        replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                        break;
+                    }
+                    fh->breaktask = dp->dp_Port->mp_SigTask;
+                    startread(fh);
+                    answer_write_request(fh, dp);
+                    break;
+                case ACTION_SCREEN_MODE:
+                    {
+                        DACTION(bug("[con:handler] ACTION_SCREEN_MODE %s\n", dp->dp_Arg1 ? "RAW" : "CON"));
+                        if (dp->dp_Arg1 && !(fh->flags & FHFLG_RAW)) {
+                            /* Switching from CON: mode to RAW: mode */
+                            fh->flags |= FHFLG_RAW;
+                            fh->inputstart = fh->inputsize;
+                            fh->inputpos = fh->inputsize;
+                            HandlePendingReads(fh);
+                        } else {
+                            /* otherwise just copy the flags */
+                            if (dp->dp_Arg1)
+                                fh->flags |= FHFLG_RAW;
+                            else
+                                fh->flags &= ~FHFLG_RAW;
+                        }
                         replypkt(dp, DOSTRUE);
                     }
-                    else if (dp->dp_Arg1 == 0) {
-                        replypkt(dp, DOSFALSE);
-                    } else {
-                        LONG timeout = dp->dp_Arg1;
-                        LONG sec = timeout / 1000000;
-                        LONG usec = timeout % 1000000;
-
-                        fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
-                        fh->timerreq->tr_time.tv_secs = sec;
-                        fh->timerreq->tr_time.tv_micro = usec;
-                        SendIO((struct IORequest *) fh->timerreq);
-                        waitingdp = dp;
+                    break;
+                case ACTION_CHANGE_SIGNAL:
+                    {
+                        struct Task *old = fh->breaktask;
+                        DACTION(bug("[con:handler] ACTION_CHANGE_SIGNAL\n"));
+                        if (dp->dp_Arg2)
+                            fh->breaktask = (struct Task*) dp->dp_Arg2;
+                        replypkt2(dp, DOSTRUE, (SIPTR) old);
                     }
-                    startread(fh);
+                    break;
+                case ACTION_WAIT_CHAR:
+                    {
+                        DACTION(bug("[con:handler] ACTION_WAIT_CHAR\n"));
+                        if (!MakeSureWinIsOpen(fh)) {
+                            replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+                            break;
+                        }
+                        if (fh->inputsize > 0) {
+                            replypkt(dp, DOSTRUE);
+                        }
+                        else if (dp->dp_Arg1 == 0) {
+                            replypkt(dp, DOSFALSE);
+                        } else {
+                            LONG timeout = dp->dp_Arg1;
+                            LONG sec = timeout / 1000000;
+                            LONG usec = timeout % 1000000;
+
+                            fh->timerreq->tr_node.io_Command = TR_ADDREQUEST;
+                            fh->timerreq->tr_time.tv_secs = sec;
+                            fh->timerreq->tr_time.tv_micro = usec;
+                            SendIO((struct IORequest *) fh->timerreq);
+                            waitingdp = dp;
+                        }
+                        startread(fh);
+                    }
+                    break;
+                case ACTION_IS_FILESYSTEM:
+                    DACTION(bug("[con:handler] ACTION_IS_FILESYSTEM\n"));
+                    replypkt(dp, DOSFALSE);
+                    break;
+                case ACTION_DISK_INFO:
+                    {
+                        /* strange console handler features */
+                        struct InfoData *id = BADDR(dp->dp_Arg1);
+                        DACTION(bug("[con:handler] ACTION_DISK_INFO\n"));
+                        SetMem(id, 0, sizeof(struct InfoData));
+                        id->id_DiskType =
+                                (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
+                        id->id_VolumeNode = (BPTR) fh->window;
+                        id->id_InUse = (IPTR) fh->conreadio;
+                        replypkt(dp, DOSTRUE);
+                    }
+                    break;
+                case ACTION_SEEK:
+                    /* Yes, DOSTRUE. Check Guru Book for details. */
+                    DACTION(bug("[con:handler] ACTION_SEEK\n"));
+                    replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
+                    break;
+                default:
+                    bug("[con:handler] unknown action %d\n", dp->dp_Type);
+                    replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
+                    break;
                 }
-                break;
-            case ACTION_IS_FILESYSTEM:
-                replypkt(dp, DOSFALSE);
-                break;
-            case ACTION_DISK_INFO:
-                {
-                    /* strange console handler features */
-                    struct InfoData *id = BADDR(dp->dp_Arg1);
-                    SetMem(id, 0, sizeof(struct InfoData));
-                    id->id_DiskType =
-                            (fh->flags & FHFLG_RAW) ? AROS_MAKE_ID('R', 'A', 'W', 0) : AROS_MAKE_ID('C', 'O', 'N', 0);
-                    id->id_VolumeNode = (BPTR) fh->window;
-                    id->id_InUse = (IPTR) fh->conreadio;
-                    replypkt(dp, DOSTRUE);
-                }
-                break;
-            case ACTION_SEEK:
-                /* Yes, DOSTRUE. Check Guru Book for details. */
-                replypkt2(dp, DOSTRUE, ERROR_ACTION_NOT_KNOWN);
-                break;
-            default:
-                bug("[con:handler] unknown action %d\n", dp->dp_Type);
-                replypkt2(dp, DOSFALSE, ERROR_ACTION_NOT_KNOWN);
-                break;
             }
         }
     }
