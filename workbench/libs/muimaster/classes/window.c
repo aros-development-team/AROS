@@ -2780,8 +2780,8 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
                 data->wd_ReqWidth, MUIV_Window_Width_MinMax(0)))
         {
             data->wd_Width = data->wd_MinMax.MinWidth
-                - data->wd_ReqWidth
-                * (data->wd_MinMax.MaxWidth - data->wd_MinMax.MinWidth);
+                - (data->wd_ReqWidth
+                * (data->wd_MinMax.MaxWidth - data->wd_MinMax.MinWidth)) / 100;
         }
         else if (_between(MUIV_Window_Width_Screen(100),
                 data->wd_ReqWidth, MUIV_Window_Width_Screen(0)))
@@ -3675,6 +3675,15 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 /*            data->wd_MinMax.MinWidth, */
 /*            data->wd_MinMax.MinHeight, */
 /*            data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
+
+    if(data->wd_MinMax.MaxWidth > data->wd_RenderInfo.mri_ScreenWidth)
+    {
+        data->wd_MinMax.MaxWidth = data->wd_RenderInfo.mri_ScreenWidth;
+    }
+    if(data->wd_MinMax.MaxHeight > data->wd_RenderInfo.mri_ScreenHeight)
+    {
+        data->wd_MinMax.MaxHeight = data->wd_RenderInfo.mri_ScreenHeight;
+    }
 }
 
 
