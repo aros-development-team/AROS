@@ -312,7 +312,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
         UWORD compression = 0;
         UWORD planar = PLANARCONFIG_CONTIG;
         STRPTR name = NULL;
-        BOOL isTiled = FALSE;
+        BOOL isTiled = FALSE, useYCbCr = TRUE;
 
         D(bug("[tiff.datatype] %s: tif @  0x%p\n", __func__, tif));
 
@@ -320,6 +320,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
             if (compression == COMPRESSION_JPEG) {
                 TIFFSetField(tif, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
                 D(bug("[tiff.datatype] %s: JPEG compression detected — using RGB mode\n", __func__));
+                useYCbCr = FALSE;
             } else {
                 D(bug("[tiff.datatype] %s: TIFF uses compression type: %u (not JPEG)\n", __func__, compression));
             }
@@ -437,7 +438,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                 D(bug("[tiff.datatype] %s[8BPS]: data stored in planes\n", __func__));
                 plnrbuf = AllocVec(buffersize * SamplesPerPixel, MEMF_ANY);
                 D(bug("[tiff.datatype] %s[8BPS]: allocated conversion buffer (%u x %u x %u = %ubytes) @ 0x%p\n", __func__, tileWidth, tileLength, SamplesPerPixel, buffersize * SamplesPerPixel, plnrbuf));
-            } else if (PhotometricInterpretation == PHOTOMETRIC_YCBCR) {
+            } else if ((PhotometricInterpretation == PHOTOMETRIC_YCBCR) && (useYCbCr)) {
                 D(bug("[tiff.datatype] %s[8BPS]: YCBCR data\n", __func__));
                 ycbcrbuf = AllocVec(buffersize * SamplesPerPixel, MEMF_ANY);
                 D(bug("[tiff.datatype] %s[8BPS]: allocated conversion buffer (%ubytes) @ 0x%p\n", __func__, buffersize * SamplesPerPixel, ycbcrbuf));
