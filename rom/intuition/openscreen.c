@@ -137,7 +137,7 @@ static const char THIS_FILE[] = __FILE__;
     UWORD                 *customdripens = NULL;
     ULONG                 *colors32 = NULL;
     WORD                   sysfont = -1;
-    BOOL                   ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
+    BOOL                   ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE, likewb = FALSE;
 #ifdef USEWINDOWLOCK
     BOOL                   windowlock = FALSE;
     BOOL                   dowindowlock = TRUE;
@@ -373,7 +373,7 @@ static const char THIS_FILE[] = __FILE__;
             }
 #endif
 
-            sysfont = 1;
+            likewb = TRUE;
             sharepens = TRUE; /* not sure */
         }
 
@@ -1840,6 +1840,14 @@ static const char THIS_FILE[] = __FILE__;
         } else if (ns.Font) {
             screen->DInfo.dri_Font = OpenFont(ns.Font);
             DEBUG_OPENSCREEN(dprintf("OpenScreen: custom font 0x%lx\n",screen->DInfo.dri_Font));
+        } else if (likewb) {
+            screen->DInfo.dri_Font = SafeReopenFont(IntuitionBase, &IBase->ScreenFont);
+
+            if (screen->DInfo.dri_Font)
+            {
+                screen->SysFont = TRUE;
+            }
+            DEBUG_OPENSCREEN(dprintf("OpenScreen: Set ScreenFont (LikeWorkbench)\n"));
         }
 
         if (!screen->DInfo.dri_Font)
