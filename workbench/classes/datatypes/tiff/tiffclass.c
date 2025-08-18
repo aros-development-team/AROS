@@ -56,7 +56,7 @@ void abort(void)
 
 void exit(int bla)
 {
-  D(bug("[tiff.datatype] exit\n"));
+  D(bug("[tiff.datatype] %s()\n", __func__));
   abort();
 }
 
@@ -143,7 +143,6 @@ static void tiffConvert16to8(UWORD pi, UWORD sspp, ULONG pxfmt, ULONG width, ULO
     /* unsupported sspp: do nothing (could log) */
 }
 
-
 static void tiffConvert32to8(UWORD pi, UWORD sspp, ULONG pxfmt, ULONG width, ULONG height, const UBYTE *src, UBYTE *dst)
 {
     D(bug("[tiff.datatype] %s(%04x, %04x, %08x, %u, %u, 0x%p, 0x%p)\n", __func__, pi, sspp, pxfmt, width, height, src, dst));
@@ -203,6 +202,67 @@ static void tiffConvert32to8(UWORD pi, UWORD sspp, ULONG pxfmt, ULONG width, ULO
     }
 }
 
+
+static void tiffYCbCr2RGB(UBYTE y, UBYTE cb, UBYTE cr, UBYTE *r, UBYTE *g, UBYTE *b)
+{
+    LONG c = (LONG)y - 16;
+    LONG d = (LONG)cb - 128;
+    LONG e = (LONG)cr - 128;
+
+    LONG rr = (298 * c + 409 * e + 128) >> 8;
+    LONG gg = (298 * c - 100 * d - 208 * e + 128) >> 8;
+    LONG bb = (298 * c + 516 * d + 128) >> 8;
+
+    if (rr < 0)
+        rr = 0;
+    else if (rr > 255)
+        rr = 255;
+    if (gg < 0)
+        gg = 0;
+    else if (gg > 255)
+        gg = 255;
+    if (bb < 0)
+        bb = 0;
+    else if (bb > 255)
+        bb = 255;
+
+    *r = (UBYTE)rr;
+    *g = (UBYTE)gg;
+    *b = (UBYTE)bb;
+}
+
+static void tiffConvertYCbCr(ULONG pxfmt, ULONG width, ULONG height,
+                             UBYTE *src, UBYTE *dst)
+{
+    ULONG i;
+
+    D(bug("[tiff.datatype] %s()\n", __func__));
+
+    for (i = 0; i < width * height; i++)
+    {
+        UBYTE y  = src[i * 3 + 0];
+        UBYTE cb = src[i * 3 + 1];
+        UBYTE cr = src[i * 3 + 2];
+
+        UBYTE r, g, b;
+        tiffYCbCr2RGB(y, cb, cr, &r, &g, &b);
+
+        if (pxfmt == PBPAFMT_RGB)
+        {
+            dst[i * 3 + 0] = r;
+            dst[i * 3 + 1] = g;
+            dst[i * 3 + 2] = b;
+        }
+        else if (pxfmt == PBPAFMT_RGBA)
+        {
+            dst[i * 4 + 0] = r;
+            dst[i * 4 + 1] = g;
+            dst[i * 4 + 2] = b;
+            dst[i * 4 + 3] = 0xFF;
+        }
+    }
+}
+
 /**************************************************************************************************/
 
 #if !defined(MIN)
@@ -220,7 +280,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
     TIFF          *tif;
     char tiffFName[1024];
 
-    D(bug("[tiff.datatype] LoadTIFF()\n"));
+    D(bug("[tiff.datatype] %s()\n", __func__));
 
     if( GetDTAttrs(o,   DTA_SourceType    , (IPTR)&sourcetype ,
                         DTA_Handle        , (IPTR)&filehandle,
@@ -230,16 +290,16 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
     }
 
     if ( sourcetype == DTST_RAM && filehandle.iff == NULL && bmhd ) {
-        D(bug("[tiff.datatype] LoadTIFF: Creating an empty object\n"));
+        D(bug("[tiff.datatype] %s: Creating an empty object\n", __func__));
         return TRUE;
     }
     if ( sourcetype != DTST_FILE || !filehandle.bptr || !bmhd ) {
-        D(bug("[tiff.datatype] LoadTIFF: unsupported mode\n"));
+        D(bug("[tiff.datatype] %s: unsupported mode\n", __func__));
         return FALSE;
     }
 
     NameFromFH(filehandle.bptr, tiffFName, 1023);
-    D(bug("[tiff.datatype] LoadTIFF: opening '%s'\n", tiffFName));
+    D(bug("[tiff.datatype] %s: opening '%s'\n", __func__, tiffFName));
 
     tif = TIFFOpen(tiffFName, "r");
     if (tif) {
@@ -254,17 +314,17 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
         STRPTR name = NULL;
         BOOL isTiled = FALSE;
 
-        D(bug("[tiff.datatype] LoadTIFF: tif @  0x%p\n", tif));
+        D(bug("[tiff.datatype] %s: tif @  0x%p\n", __func__, tif));
 
         if (TIFFGetField(tif, TIFFTAG_COMPRESSION, &compression)) {
             if (compression == COMPRESSION_JPEG) {
                 TIFFSetField(tif, TIFFTAG_JPEGCOLORMODE, JPEGCOLORMODE_RGB);
-                D(bug("[tiff.datatype] LoadTIFF: JPEG compression detected — using RGB mode\n"));
+                D(bug("[tiff.datatype] %s: JPEG compression detected — using RGB mode\n", __func__));
             } else {
-                D(bug("[tiff.datatype] LoadTIFF: TIFF uses compression type: %u (not JPEG)\n", compression));
+                D(bug("[tiff.datatype] %s: TIFF uses compression type: %u (not JPEG)\n", __func__, compression));
             }
         } else {
-            D(bug("[tiff.datatype] LoadTIFF: Could not read compression tag.\n"));
+            D(bug("[tiff.datatype] %s: Could not read compression tag.\n", __func__));
         }
 
         TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &BitsPerSample);
@@ -283,7 +343,10 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
         if (bmhd->bmh_Depth > 32)
             bmhd->bmh_Depth = 32;
         
-        D(bug("[tiff.datatype] LoadTIFF: %ux%ux%u (%ux%x)\n", imageWidth, imageLength, bmhd->bmh_Depth, BitsPerSample, SamplesPerPixel));
+        D(
+            bug("[tiff.datatype] %s: %ux%ux%u (%ux%x)\n", __func__, imageWidth, imageLength, bmhd->bmh_Depth, BitsPerSample, SamplesPerPixel);
+            bug("[tiff.datatype] %s: PhotometricInterpretation %04x\n", __func__, PhotometricInterpretation);
+        )
 
         /* Pass picture size to picture.datatype */
         GetDTAttrs( o, DTA_Name, (IPTR)&name, TAG_DONE );
@@ -307,26 +370,26 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
             isTiled = TRUE;
         }
 
-        D(bug("[tiff.datatype] LoadTIFF: Allocating %u bytes\n", buffersize * ((SamplesPerPixel * samplesize) / 8)));
+        D(bug("[tiff.datatype] %s: Allocating %u bytes\n", __func__, buffersize * ((SamplesPerPixel * samplesize) / 8)));
         buf = AllocVec(buffersize * ((SamplesPerPixel * samplesize) / 8), MEMF_ANY);
         if (!buf) {
             TIFFClose(tif);
             return FALSE;
         }
-        D(bug("[tiff.datatype] LoadTIFF: buf @ 0x%p\n", buf));
+        D(bug("[tiff.datatype] %s: buf @ 0x%p\n", __func__, buf));
 
         if (BitsPerSample <= 8) {
-            APTR plnrbuf = NULL;
+            UBYTE *plnrbuf = NULL, *ycbcrbuf = NULL;
             BOOL done = FALSE;
 
-            if (SamplesPerPixel == 1) {
+            if (SamplesPerPixel < 3) {
                 if (PhotometricInterpretation < PHOTOMETRIC_RGB) {
                     tmp_buf = AllocVec(tileWidth * tileLength * 3, 0);
                     D(
                     if (BitsPerSample == 1)
-                        bug("[tiff.datatype] LoadTIFF[8BPS]: Black & White image\n");
+                        bug("[tiff.datatype] %s[8BPS]: Black & White image\n", __func__);
                     else
-                        bug("[tiff.datatype] LoadTIFF[8BPS]: %ubit Greyscale image\n", BitsPerSample);
+                        bug("[tiff.datatype] %s[8BPS]: %ubit Greyscale image\n", __func__, BitsPerSample);
                     )
                     pformat = PBPAFMT_RGB;
                 } else if (PhotometricInterpretation == PHOTOMETRIC_PALETTE) {
@@ -334,9 +397,9 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                     UWORD                   *green_colormap;
                     UWORD                   *blue_colormap;
 
-                    D(bug("[tiff.datatype] LoadTIFF[8BPS]: %ubit Palette Mapped\n", BitsPerSample));
+                    D(bug("[tiff.datatype] %s[8BPS]: %ubit Palette Mapped\n", __func__, BitsPerSample));
 
-                    if (BitsPerSample < 8)
+                    if ((BitsPerSample < 8) || (SamplesPerPixel > 1))
                         tmp_buf = AllocVec(tileWidth * tileLength, 0);
 
                     if (TIFFGetField(tif, TIFFTAG_COLORMAP, &red_colormap, &green_colormap, &blue_colormap)) {
@@ -357,7 +420,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
 
                                 colorregs++;
                             }
-                            D(bug("[tiff.datatype] LoadTIFF[8BPS]: read %u palette entries\n", 1 << BitsPerSample));
+                            D(bug("[tiff.datatype] %s[8BPS]: read %u palette entries\n", __func__, 1 << BitsPerSample));
                         } /* if (GetDTAttrs(o, ... */
                     }
                     pformat = PBPAFMT_LUT8;
@@ -367,13 +430,17 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
             else if (SamplesPerPixel == 4)
                 pformat = PBPAFMT_RGBA;
             else {
-                D(bug("[tiff.datatype] LoadTIFF[8BPS]: unhandled SamplesPerPixel (%u)\n", SamplesPerPixel));
+                D(bug("[tiff.datatype] %s[8BPS]: unhandled SamplesPerPixel (%u)\n", __func__, SamplesPerPixel));
             }
 
             if (planar == PLANARCONFIG_SEPARATE) {
-                D(bug("[tiff.datatype] LoadTIFF[8BPS]: data stored in planes\n"));
+                D(bug("[tiff.datatype] %s[8BPS]: data stored in planes\n", __func__));
                 plnrbuf = AllocVec(buffersize * SamplesPerPixel, MEMF_ANY);
-                D(bug("[tiff.datatype] LoadTIFF[8BPS]: allocated (%u x %u x %u = %ubytes) @ 0x%p\n", tileWidth, tileLength, SamplesPerPixel, buffersize * SamplesPerPixel, plnrbuf));
+                D(bug("[tiff.datatype] %s[8BPS]: allocated conversion buffer (%u x %u x %u = %ubytes) @ 0x%p\n", __func__, tileWidth, tileLength, SamplesPerPixel, buffersize * SamplesPerPixel, plnrbuf));
+            } else if (PhotometricInterpretation == PHOTOMETRIC_YCBCR) {
+                D(bug("[tiff.datatype] %s[8BPS]: YCBCR data\n", __func__));
+                ycbcrbuf = AllocVec(buffersize * SamplesPerPixel, MEMF_ANY);
+                D(bug("[tiff.datatype] %s[8BPS]: allocated conversion buffer (%ubytes) @ 0x%p\n", __func__, buffersize * SamplesPerPixel, ycbcrbuf));
             }
 
             for (y = 0; !done && y < bmhd->bmh_Height; y += tileLength) {
@@ -382,16 +449,19 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                     ULONG copyHeight = MIN(tileLength, bmhd->bmh_Height - y);
 
                     if (isTiled) {
-                        D(bug("[tiff.datatype] LoadTIFF[8BPS]: Tiled read %ux%u @ %u,%u...\n",
+                        D(bug("[tiff.datatype] %s[8BPS]: Tiled read %ux%u @ %u,%u...\n", __func__,
                               tileWidth, tileLength, x, y));
                         if (!(plnrbuf)) {
-                            if (TIFFReadTile(tif, buf, x, y, 0, 0) < 0) {
+                            if (TIFFReadTile(tif, (ycbcrbuf) ? ycbcrbuf : buf, x, y, 0, 0) < 0) {
                                 done = TRUE;
                                 break;
                             }
+                            if (ycbcrbuf) {
+                                tiffConvertYCbCr(pformat, tileWidth, tileLength, ycbcrbuf, buf);
+                            }
                         } else {
-                            int plane;
-                            for (plane = 0; plane < SamplesPerPixel; ++plane) {
+                            int plane, planemax = (SamplesPerPixel == 2) ? 1 : SamplesPerPixel;
+                            for (plane = 0; plane < planemax; ++plane) {
                                 if (TIFFReadTile(tif, plnrbuf + plane * copyWidth * copyHeight, x, y, 0, plane) < 0) {
                                     done = TRUE;
                                     break;
@@ -399,17 +469,20 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                             }
                         }
                     } else {
-                        D(bug("[tiff.datatype] LoadTIFF[8BPS]: Scanline read line %u...\n", y));
+                        D(bug("[tiff.datatype] %s[8BPS]: Scanline read line %u...\n", __func__, y));
                         copyWidth  = bmhd->bmh_Width;
                         copyHeight = 1;
                         if (!(plnrbuf)) {
-                            if (TIFFReadScanline(tif, buf, y, 0) != 1) {
+                            if (TIFFReadScanline(tif,  (ycbcrbuf) ? ycbcrbuf : buf, y, 0) != 1) {
                                 done = TRUE;
                                 break;
                             }
+                            if (ycbcrbuf) {
+                                tiffConvertYCbCr(pformat, copyWidth, copyHeight, ycbcrbuf, buf);
+                            }
                         } else {
-                            int plane;
-                            for (plane = 0; plane < SamplesPerPixel; ++plane) {
+                            int plane, planemax = (SamplesPerPixel == 2) ? 1 : SamplesPerPixel;
+                            for (plane = 0; plane < planemax; ++plane) {
                                 if (TIFFReadScanline(tif, plnrbuf + plane * copyWidth * copyHeight, y, plane) != 1) {
                                     done = TRUE;
                                     break;
@@ -418,12 +491,16 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                         }
                     }
                     if (plnrbuf) {
-                        if (SamplesPerPixel == 3) {
+                        int prow, pcol;
+                        if (SamplesPerPixel == 2) {
+                            for (prow = 0; prow < copyHeight; ++prow) {
+                                CopyMem(plnrbuf, buf, copyWidth);
+                            }
+                        } else  if (SamplesPerPixel == 3) {
                             // src: plnrbuf contains R-plane then G-plane then B-plane, each plane = tileWidth*tileLength bytes
                             UBYTE *rplane = plnrbuf + 0 * copyWidth * copyHeight;
                             UBYTE *gplane = plnrbuf + 1 * copyWidth * copyHeight;
                             UBYTE *bplane = plnrbuf + 2 * copyWidth * copyHeight;
-                            int prow, pcol;
                             for (prow = 0; prow < copyHeight; ++prow) {
                                 for (pcol = 0; pcol < copyWidth; ++pcol) {
                                     int bout = prow * copyWidth + pcol;
@@ -534,7 +611,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                     else
                         srcRowBytes = copyWidth * bytesPerPixel;
 
-                    D(bug("[tiff.datatype] LoadTIFF[8BPS]: rendering %ux%u @ %u,%u, srcRowBytes=%u, bpp=%u\n",
+                    D(bug("[tiff.datatype] %s[8BPS]: rendering %ux%u @ %u,%u, srcRowBytes=%u, bpp=%u\n", __func__,
                           copyWidth, copyHeight, x, y, srcRowBytes, bytesPerPixel));
 
                     if (!DoSuperMethod(cl, o,
@@ -546,12 +623,17 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                                        y,
                                        copyWidth,
                                        copyHeight)) {
-                        D(bug("[tiff.datatype] LoadTIFF[8BPS]: DT object failed to render\n"));
+                        D(bug("[tiff.datatype] %s[8BPS]: DT object failed to render\n", __func__));
                         done = TRUE;
                         break;
                     }
                 }
             }
+            if ((planar == PLANARCONFIG_SEPARATE) && (SamplesPerPixel == 2)) {
+                // TODO: Load the alpha channel.
+            }
+            if (ycbcrbuf)
+                FreeVec(ycbcrbuf);
             if (plnrbuf)
                 FreeVec(plnrbuf);
         } else if (BitsPerSample == 16) {
@@ -564,22 +646,22 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                 tmp_buf = AllocVec(tileWidth * tileLength * 3, MEMF_ANY);
                 pformat = PBPAFMT_RGB;
                 if (PhotometricInterpretation < PHOTOMETRIC_RGB) {
-                    D(bug("[tiff.datatype] LoadTIFF[16BPS]: %ubit Greyscale image\n", BitsPerSample);                    )
+                    D(bug("[tiff.datatype] %s[16BPS]: %ubit Greyscale image\n", __func__, BitsPerSample);                    )
                 }
             } else {
-                D(bug("[tiff.datatype] LoadTIFF[16BPS]: unhandled SamplesPerPixel\n"));
+                D(bug("[tiff.datatype] %s[16BPS]: unhandled SamplesPerPixel\n", __func__));
             }
 
             for(y = 0; !done && y < bmhd->bmh_Height; y += tileLength) {
                 for(x = 0; !done && x < bmhd->bmh_Width; x += tileWidth) {
                     if (isTiled) {
-                        D(bug("[tiff.datatype] LoadTIFF[16BPS]: Tiled read %ux%u @ %u,%u...\n", tileWidth, tileLength, x, y));
+                        D(bug("[tiff.datatype] %s[16BPS]: Tiled read %ux%u @ %u,%u...\n", __func__, tileWidth, tileLength, x, y));
                         if (TIFFReadTile(tif, buf, x, y, 0, 0) < 0) {
                             done = TRUE;
                             break;
                         }
                     } else {
-                        D(bug("[tiff.datatype] LoadTIFF[16BPS]: Scanline read...\n"));
+                        D(bug("[tiff.datatype] %s[16BPS]: Scanline read...\n", __func__));
                         if (TIFFReadScanline(tif, buf, y, 0) != 1) {
                             done = TRUE;
                             break;
@@ -588,10 +670,10 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
 
                     if (!done) {
                         if (tmp_buf) {
-                            D(bug("[tiff.datatype] LoadTIFF[16BPS]: calling tiffConvert16to8\n"));
+                            D(bug("[tiff.datatype] %s[16BPS]: calling tiffConvert16to8\n", __func__));
                             tiffConvert16to8(PhotometricInterpretation, SamplesPerPixel, pformat, tileWidth, tileLength, buf, tmp_buf);
                         }
-                        D(bug("[tiff.datatype] LoadTIFF[16BPS]: rendering to datatype obj...\n"));
+                        D(bug("[tiff.datatype] %s[16BPS]: rendering to datatype obj...\n", __func__));
                         if(!DoSuperMethod(cl, o,
                                           PDTM_WRITEPIXELARRAY,
                                           (IPTR) tmp_buf ? tmp_buf : buf,
@@ -601,7 +683,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                                           y,
                                           MIN(tileWidth, bmhd->bmh_Width - x),
                                           MIN(tileLength, bmhd->bmh_Height - y))) {
-                            D(bug("[tiff.datatype] LoadTIFF[16BPS]: DT object failed to render\n"));
+                            D(bug("[tiff.datatype] %s[16BPS]: DT object failed to render\n", __func__));
                             //png_error(png.png_ptr, "Out of memory!");
                             done = TRUE;
                             break;
@@ -619,10 +701,10 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                 tmp_buf = AllocVec(tileWidth * tileLength * 3, 0);
                 pformat = PBPAFMT_RGB;
                 if (PhotometricInterpretation < PHOTOMETRIC_RGB) {
-                    D(bug("[tiff.datatype] LoadTIFF[32BPS]: %ubit Greyscale image\n", BitsPerSample);                    )
+                    D(bug("[tiff.datatype] %s[32BPS]: %ubit Greyscale image\n", __func__, BitsPerSample);                    )
                 }
             } else {
-                D(bug("[tiff.datatype] LoadTIFF[32BPS]: unhandled SamplesPerPixel\n"));
+                D(bug("[tiff.datatype] %s[32BPS]: unhandled SamplesPerPixel\n", __func__));
             }
 
             for (y = 0; !done && y < bmhd->bmh_Height; ) {
@@ -631,7 +713,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
 
                 if (isTiled) {
                     for (x = 0; !done && x < bmhd->bmh_Width; x += tileWidth) {
-                        D(bug("[tiff.datatype] LoadTIFF[32BPS]: Tiled read %ux%u @ %u,%u...\n",
+                        D(bug("[tiff.datatype] %s[32BPS]: Tiled read %ux%u @ %u,%u...\n", __func__,
                               tileWidth, tileLength, x, y));
 
                         if (TIFFReadTile(tif, buf, x, y, 0, 0) < 0) {
@@ -661,7 +743,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                                               PixelArrayMod,
                                               x, y,
                                               copyWidth, copyHeight)) {
-                                D(bug("[tiff.datatype] LoadTIFF[32BPS]: DT object failed to render\n"));
+                                D(bug("[tiff.datatype] %s[32BPS]: DT object failed to render\n", __func__));
                                 done = TRUE;
                                 break;
                             }
@@ -669,7 +751,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                     }
                     y += tileLength;  // next tile row
                 } else {
-                    D(bug("[tiff.datatype] LoadTIFF[32BPS]: Scanline read line %u...\n", y));
+                    D(bug("[tiff.datatype] %s[32BPS]: Scanline read line %u...\n", __func__, y));
 
                     if (TIFFReadScanline(tif, buf, y, 0) != 1) {
                         done = TRUE;
@@ -694,7 +776,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
                                       PixelArrayMod,
                                       0, y,
                                       bmhd->bmh_Width, 1)) {
-                        D(bug("[tiff.datatype] LoadTIFF[32BPS]: DT object failed to render\n"));
+                        D(bug("[tiff.datatype] %s[32BPS]: DT object failed to render\n", __func__));
                         done = TRUE;
                         break;
                     }
@@ -704,7 +786,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
             }
         }
 
-        D(bug("[tiff.datatype] LoadTIFF: done, cleaning up...\n"));
+        D(bug("[tiff.datatype] %s: done, cleaning up...\n", __func__));
 
         FreeVec(tmp_buf);
         FreeVec(buf);
@@ -713,7 +795,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
 
         return TRUE;
     }
-    D(bug("[tiff.datatype] LoadTIFF: failed to open tif\n"));
+    D(bug("[tiff.datatype] %s: failed to open tif\n", __func__));
 
     return FALSE;
 }
@@ -724,7 +806,7 @@ static BOOL LoadTIFF(struct IClass *cl, Object *o)
 
 static BOOL SaveTIFF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 {
-    D(bug("[tiff.datatype] SaveTIFF()\n"));
+    D(bug("[tiff.datatype] %s()\n", __func__));
 
     return TRUE;
 }
@@ -735,7 +817,7 @@ IPTR TIFF__OM_NEW(Class *cl, Object *o, Msg msg)
 {
     Object *newobj;
     
-    D(bug("[tiff.datatype] DT_Dispatcher: Method OM_NEW\n"));
+    D(bug("[tiff.datatype] %s()\n", __func__));
 
     newobj = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (newobj) {
@@ -752,7 +834,7 @@ IPTR TIFF__OM_NEW(Class *cl, Object *o, Msg msg)
 
 IPTR TIFF__DTM_WRITE(Class *cl, Object *o, struct dtWrite *dtw)
 {
-    D(bug("[tiff.datatype] DT_Dispatcher: Method DTM_WRITE\n"));
+    D(bug("[tiff.datatype] %s()\n", __func__));
     if ((dtw -> dtw_Mode) == DTWM_RAW) {
         /* Local data format requested */
         return SaveTIFF(cl, o, dtw );
