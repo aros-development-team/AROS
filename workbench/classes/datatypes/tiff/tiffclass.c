@@ -67,7 +67,7 @@ static void tiffConvert16to8(UWORD pi, UWORD sspp, ULONG pxfmt, ULONG width, ULO
     D(bug("[tiff.datatype] %s(%04x, %04x, %08x, %u, %u, 0x%p, 0x%p)\n", __func__, pi, sspp, pxfmt, width, height, src, dst));
 
     for (int i = 0; i < (width * height); i++) {
-        if (pi == PHOTOMETRIC_MINISWHITE || pi == PHOTOMETRIC_MINISWHITE)
+        if (pi < PHOTOMETRIC_RGB)
         {
             UBYTE pixval;
 
@@ -137,7 +137,7 @@ static void tiffConvert32to8(UWORD pi, UWORD sspp, ULONG pxfmt, ULONG width, ULO
     D(bug("[tiff.datatype] %s(%04x, %04x, %08x, %u, %u, 0x%p, 0x%p)\n", __func__, pi, sspp, pxfmt, width, height, src, dst));
 
     for (int i = 0; i < (width * height); i++) {
-        if (pi == PHOTOMETRIC_MINISWHITE || pi == PHOTOMETRIC_MINISWHITE)
+        if (pi < PHOTOMETRIC_RGB)
         {
             UBYTE pixval;
 
