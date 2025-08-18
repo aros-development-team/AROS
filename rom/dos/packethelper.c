@@ -12,41 +12,52 @@
 
 #include "dos_intern.h"
 
-BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketHelperStruct *phs)
+BOOL getpacketinfo(struct DosLibrary *DOSBase, BPTR baselock, CONST_STRPTR name, struct PacketHelperStruct *phs)
 {
+    BSTR bstrname = C2BSTR(name);
+
     if (!strchr(name, ':'))
     {
-        /* no ":" */
-        struct Process *me = (struct Process *)FindTask(NULL);
-        BPTR cur;
-        BSTR bstrname = C2BSTR(name);
+        /* relative path */
         struct FileLock *fl;
 
-        ASSERT_VALID_PROCESS(me);
-
-        cur = me->pr_CurrentDir;
-        if (cur && cur != (BPTR)-1) {
-            fl = BADDR(cur);
+        if (baselock) {
+            /* baselock provided; relative to it */
+            fl = BADDR(baselock);
             phs->port = fl->fl_Task;
-            phs->lock = cur;
-        } else {
-            phs->port = DOSBase->dl_Root->rn_BootProc;
-            phs->lock = BNULL;
+            phs->lock = baselock;
         }
+        else {
+            /* no lock provided; relative to current directory */
+            struct Process *me = (struct Process *)FindTask(NULL);
+            ASSERT_VALID_PROCESS(me);
+
+            BPTR lock = me->pr_CurrentDir;
+            if (lock && lock != (BPTR)-1) {
+                fl = BADDR(lock);
+                phs->port = fl->fl_Task;
+                phs->lock = lock;
+            } else {
+                phs->port = DOSBase->dl_Root->rn_BootProc;
+                phs->lock = BNULL;
+            }
+        }
+
         phs->dp = NULL;
         phs->name = bstrname;
         return TRUE;
-    } else { /* ":" */
-        BSTR bstrname = C2BSTR(name);
-        struct DevProc *dvp = NULL;
-        if ((dvp = GetDeviceProc(name, dvp))) {
-            phs->name = bstrname;
-            phs->port = dvp->dvp_Port;
-            phs->lock = dvp->dvp_Lock;
-            phs->dp = dvp;
-            return TRUE;
-        }
     }
+
+    /* absolute path */
+    struct DevProc *dvp = NULL;
+    if ((dvp = GetDeviceProc(name, dvp))) {
+        phs->name = bstrname;
+        phs->port = dvp->dvp_Port;
+        phs->lock = dvp->dvp_Lock;
+        phs->dp = dvp;
+        return TRUE;
+    }
+
     return FALSE;
 }
 

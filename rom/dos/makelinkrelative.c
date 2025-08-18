@@ -3,22 +3,26 @@
 
     Desc: Create a hard or soft link.
 */
+#include <dos/dosextens.h>
 #include "dos_intern.h"
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
+#include <exec/types.h>
 #include <proto/dos.h>
 
-        AROS_LH3(LONG, MakeLink,
+        AROS_LH4(LONG, MakeLinkRelative,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR, name, D1),
-        AROS_LHA(SIPTR,   dest, D2),
-        AROS_LHA(LONG  , soft, D3),
+        AROS_LHA(BPTR,         lock, D1),
+        AROS_LHA(CONST_STRPTR, name, D2),
+        AROS_LHA(SIPTR,        dest, D3),
+        AROS_LHA(LONG,         soft, D4),
 
 /*  LOCATION */
-        struct DosLibrary *, DOSBase, 74, Dos)
+        struct DosLibrary *, DOSBase, 237, Dos)
 
 /*  FUNCTION
         MakeLink() will create a link between two files or directories.
@@ -43,21 +47,24 @@
         information.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        ReadLink()
-
-    INTERNALS
+        This call is AROS-specific.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return MakeLinkRelative(BNULL, name, dest, soft);
+    struct PacketHelperStruct phs;
+    LONG status;
+
+    status = DOSFALSE;
+    if (getpacketinfo(DOSBase, lock, name, &phs))
+    {
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_MAKE_LINK,
+            phs.lock, phs.name, (SIPTR)dest, soft ? LINK_SOFT: LINK_HARD);
+        freepacketinfo(DOSBase, &phs);
+    }
+
+    return status;
 
     AROS_LIBFUNC_EXIT
-} /* MakeLink */
+} /* MakeLinkRelative */

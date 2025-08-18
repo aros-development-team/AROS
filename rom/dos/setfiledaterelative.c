@@ -17,14 +17,15 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 
-        AROS_LH2(BOOL, SetFileDate,
+        AROS_LH3(BOOL, SetFileDateRelative,
 
 /*  SYNOPSIS */
-        AROS_LHA(CONST_STRPTR,       name, D1),
-        AROS_LHA(const struct DateStamp *, date, D2),
+        AROS_LHA(BPTR,                     lock, D1),
+        AROS_LHA(CONST_STRPTR,             name, D2),
+        AROS_LHA(const struct DateStamp *, date, D3),
 
 /*  LOCATION */
-        struct DosLibrary *, DOSBase, 66, Dos)
+        struct DosLibrary *, DOSBase, 234, Dos)
 
 /*  FUNCTION
         Change the modification time of a file or directory.
@@ -38,20 +39,23 @@
         failure.
 
     NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
+        This call is AROS-specific.
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return SetFileDateRelative(BNULL, name, date);
+    struct PacketHelperStruct phs;
+    LONG status = DOSFALSE;
+
+    D(bug("[SetFileDateRelative] lock=0x%p '%s' %x\n", lock, name, date));
+
+    if (getpacketinfo(DOSBase, lock, name, &phs)) {
+        status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_DATE, (IPTR)NULL, phs.lock, phs.name, (IPTR)date);
+        freepacketinfo(DOSBase, &phs);
+    }
+
+    return status;
 
     AROS_LIBFUNC_EXIT
-} /* SetFileDate */
+} /* SetFileDateRelative */
