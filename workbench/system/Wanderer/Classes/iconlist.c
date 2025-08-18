@@ -467,21 +467,26 @@ static void IconList_InvertPixelRect(struct RastPort *rp, WORD minx, WORD miny, 
 // Simple lasso drawing by inverting area outlines
 static void IconList_InvertLassoOutlines(Object *obj, struct IconList_DATA *data, struct Rectangle *rect)
 {
-    struct Rectangle    lasso;
+    struct Rectangle    lasso = *rect;
     struct Rectangle    clip;
     
 #if defined(DEBUG_ILC_LASSO) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __func__));
 #endif
 
-    /* get abolute iconlist coords */
-    lasso.MinX = rect->MinX + _mleft(obj);
-    lasso.MaxX = rect->MaxX + _mleft(obj);
-    lasso.MinY = rect->MinY + _mtop(obj);
-    lasso.MaxY = rect->MaxY + _mtop(obj);
-  
+    if (((lasso.MaxX - lasso.MinX) < 2) ||
+        ((lasso.MaxY - lasso.MinY) < 2))
+        return;
+
     clip.MinX = _mleft(obj);
     clip.MinY = _mtop(obj);
+  
+    /* get abolute iconlist coords */
+    lasso.MinX += clip.MinX;
+    lasso.MaxX += clip.MinX;
+    lasso.MinY += clip.MinY;
+    lasso.MaxY += clip.MinY;
+  
     if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
     {
         clip.MinY += data->icld_LVMAttribs->lmva_HeaderHeight;
