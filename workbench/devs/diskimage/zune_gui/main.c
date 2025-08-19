@@ -39,7 +39,7 @@
 #include "rev/DiskImageGUI_rev.h"
 
 #ifdef __AROS__
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #else
 #define D(x) 
