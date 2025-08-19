@@ -91,12 +91,6 @@ void FreeVecPooled(APTR pool, APTR mem);
 /* asprintf_os3.s / asprintf_aros.c */
 #if !defined(__AROS__)
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
-#else
-#define SNPrintf(buf, len, fmt, ... )        \
- ({                                 \
-    const IPTR _args[] = {AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    VSNPrintf(buf, len, fmt, (RAWARG)_args);     \
- })
 #endif
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...);
 #ifdef __AROS__

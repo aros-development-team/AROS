@@ -1,15 +1,18 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Varargs stub for Printf()
 */
 
+#define NO_INLINE_STDARG /* turn off inline def */
+#include <exec/types.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+#include <clib/alib_protos.h>
 
-LONG Printf(STRPTR fmt, ...) __stackparm;
+LONG Printf(CONST_STRPTR fmt, ...) __stackparm;
 
-LONG Printf(STRPTR fmt, ...)
+LONG Printf(CONST_STRPTR fmt, ...)
 {
     LONG retval;
 

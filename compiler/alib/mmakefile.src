@@ -58,6 +58,7 @@ FILES	:= \
     erroroutput \
     extendfonttags \
     fastrand \
+    fprintf \
     freeievents \
     getdatastreamfromformat \
     getdtattrs \
@@ -96,6 +97,7 @@ FILES	:= \
     openscreentags \
     openwindowtags \
     openworkbenchobject \
+    printf \
     rangerand \
     refreshdtobject \
     refreshdtobjects \
@@ -114,6 +116,7 @@ FILES	:= \
     setrpattrs \
     setsuperattrs \
     setwindowpointer \
+    snprintf \
     sprintf \
     strdup \
     systemtags \
