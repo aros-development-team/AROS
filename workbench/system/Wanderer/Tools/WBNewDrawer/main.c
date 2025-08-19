@@ -152,6 +152,7 @@ static void bt_ok_hook_function(void)
     else
     {
         set(window, MUIA_Window_Activate, TRUE);
+        set(window, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
         set(window, MUIA_Window_ActiveObject, str_name);
     }
 }
