@@ -16,6 +16,9 @@
 #define LOGMS_Flag_Private              24
 #define LOGM_Flag_PrivateMask           (0xFF << LOGMS_Flag_Private)
 
+#define LOGF_Flag_Private_STMPKrn       (0x1 << LOGMS_Flag_Private)
+#define LOGF_Flag_Private_STMPTimer     (0x2 << LOGMS_Flag_Private)
+
 #define LOGRESENTRYCTX                                                                          \
     STRPTR              lectx_Originator;       /* Taskname */                                  \
     ULONG               lectx_Flags;            /* RC: 0=Note, 5=Warn, 10=Error, 20=Fail */
@@ -85,7 +88,6 @@ struct LogResBase
     struct List             lrb_Listeners;      /* List of EventListeners               */
     
     /* broadcast/service task data */
-    BYTE                    lrb_sigDIE;
     BYTE                    lrb_sigTryDOS;
     BYTE                    lrb_sigTryTimer;
 };

@@ -82,13 +82,11 @@ BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE)
 {
     if (TimerBase)
         return TRUE;
-    else
-    {
+    else {
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_Node.ln_Type  = NT_REPLYMSG;
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_Length        = sizeof(struct timerequest);
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_ReplyPort     = NULL;
-        if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) &LIBBASE->lrb_TimerIOReq, 0))
-        {
+        if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) &LIBBASE->lrb_TimerIOReq, 0)) {
             LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_Node.ln_Name = "log.resource";
             LIBBASE->lrb_TimerIOReq.tr_node.io_Command = TR_ADDREQUEST;
             return TRUE;
@@ -110,8 +108,7 @@ BOOL GM_UNIQUENAME(OpenDOS)(LIBBASETYPEPTR LIBBASE)
 {
     if (DOSBase)
         return TRUE;
-    else
-    {
+    else {
         if ((DOSBase = OpenLibrary("dos.library", 39)))
             return TRUE;
     }
@@ -137,10 +134,8 @@ AROS_LH1(APTR, logInitialise,
 
     APTR logPool;
 
-    if (LIBBASE->lrb_Task)
-    {
-        if((logProvider) && (logPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 16384, 1024)))
-        {
+    if (LIBBASE->lrb_Task) {
+        if((logProvider) && (logPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 16384, 1024))) {
             struct LogResHandle *lpHandle = AllocVecPooled(logPool, sizeof(struct LogResHandle));
             lpHandle->lrh_Node.ln_Type = NT_PROVIDER;
             lpHandle->lrh_Node.ln_Pred = NULL;
@@ -165,10 +160,9 @@ AROS_LH1(void, logFinalise,
     AROS_LIBFUNC_INIT
 
     struct LogResHandle *lpHandle, *tmp;
-    ForeachNodeSafe(&LIBBASE->lrb_Providers, lpHandle, tmp)
-    {
-        if (lpHandle->lrh_Node.ln_Name && !logCmpStr(lpHandle->lrh_Node.ln_Name, ((struct Node *)logProvider)->ln_Name))
-        {
+    ForeachNodeSafe(&LIBBASE->lrb_Providers, lpHandle, tmp) {
+        if (lpHandle->lrh_Node.ln_Name &&
+            !logCmpStr(lpHandle->lrh_Node.ln_Name, ((struct Node *)logProvider)->ln_Name)) {
             // TODO:
         }
     }
@@ -187,25 +181,17 @@ static AROS_INTH1(log_LowMemHandler, LIBBASETYPEPTR, LIBBASE)
 
 static void log_Task(LIBBASETYPEPTR LIBBASE)
 {
-    struct Task *thisTask = FindTask(NULL);
-
-    if (!LIBBASE->lrb_Task)
-    {
+    if (!LIBBASE->lrb_Task) {
+        struct Task *thisTask = FindTask(NULL);
         struct logEntryPrivate *lastBroadcast = NULL;
 
-        LIBBASE->lrb_sigDIE = AllocSignal(-1);
-        if (LIBBASE->lrb_sigDIE == -1)
-            return;
-
-        if (!DOSBase)
-        {
+        if (!DOSBase) {
             LIBBASE->lrb_sigTryDOS = AllocSignal(-1);
             if (LIBBASE->lrb_sigTryDOS == -1)
                 return;
         }
 
-        if (!TimerBase)
-        {
+        if (!TimerBase) {
             LIBBASE->lrb_sigTryTimer = AllocSignal(-1);
             if (LIBBASE->lrb_sigTryTimer == -1)
                 return;
@@ -214,7 +200,7 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
         /* we are now ready ..*/
         LIBBASE->lrb_Task = thisTask;
 
-        ULONG sigmask = (1 << LIBBASE->lrb_sigDIE) | (1 << LIBBASE->lrb_ServicePort->mp_SigBit);
+        ULONG sigmask = SIGF_ABORT | (1 << LIBBASE->lrb_ServicePort->mp_SigBit);
         if (!DOSBase)
             sigmask |= (1 << LIBBASE->lrb_sigTryDOS);
         if (!TimerBase)
@@ -223,60 +209,61 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
         logAddEntry(LOGF_Flag_Type_Information, &LIBBASE->lrb_LRProvider, "", __func__, 0,
                             "AROS System Logger v%u.%u\nLogging started\nListening on port 0x%p", MAJOR_VERSION, MINOR_VERSION, LIBBASE->lrb_ServicePort);
 
-        while (LIBBASE->lrb_Task != NULL)
-        {
+        while (LIBBASE->lrb_Task != NULL) {
             ULONG signals = Wait(sigmask);
             {
-                if (signals & (1 << LIBBASE->lrb_sigDIE))
-                {
+                if (signals & SIGF_ABORT) {
                     logAddEntry(LOGF_Flag_Type_Information, &LIBBASE->lrb_LRProvider, "", __func__, 0,
                             "Support task ending\n");
                     LIBBASE->lrb_Task = NULL;
                 }
                 else if (!DOSBase &&
-                        (signals & (1 << LIBBASE->lrb_sigTryDOS)))
-                {
+                        (signals & (1 << LIBBASE->lrb_sigTryDOS))) {
                     GM_UNIQUENAME(OpenDOS)(LIBBASE);
                 }
                 else if (!TimerBase &&
-                        (signals & (1 << LIBBASE->lrb_sigTryTimer)))
-                {
+                        (signals & (1 << LIBBASE->lrb_sigTryTimer))) {
                     GM_UNIQUENAME(OpenTimer)(LIBBASE);
-                    // TODO: Adjust existing entries once we have a valid timer.
+                    {
+#if (0)
+                        /*
+                         * Get the current time, and kernel stamp, to
+                         * adjust the existing entries times using.
+                         */
+                        UQUAD stamp;
+                        if (KernelBase)
+                            stamp = KrnTimeStamp();
+#endif
+                    }
                 }
 
-                if (signals & (1 << LIBBASE->lrb_ServicePort->mp_SigBit))
-                {
+                if (signals & (1 << LIBBASE->lrb_ServicePort->mp_SigBit)) {
                     while ((lastBroadcast = (struct logEntryPrivate *)GetMsg(LIBBASE->lrb_ServicePort)) != NULL)
-                    if (lastBroadcast->le_Node.ln_Type == EHMB_ADDENTRY)
-                    {
-                        logLockEntries(LLF_WRITE);
-                        AddTail(&LIBBASE->lrb_LRProvider.lrh_Entries, &lastBroadcast->lep_Node);
-                        lastBroadcast->le_Node.ln_Type = NT_LOGENTRY;
-                        logEventBroadcast(EHMB_ADDENTRY, &lastBroadcast->le_Node, NULL);
-                        logUnlockEntries(LLF_WRITE);
-                    }
-                    else if (lastBroadcast->le_Node.ln_Type == EHMB_REMENTRY)
-                    {
-                        logEventBroadcast(EHMB_REMENTRY, &lastBroadcast->le_Node, NULL);
-                        struct LogResHandle *lrHandle = lastBroadcast->lep_Producer;
-                        FreeVec(lastBroadcast->le_Node.ln_Name);
-                        FreeVec(lastBroadcast->lectx_Originator);
-                        FreeVec(lastBroadcast->le_Entry);
-                        FreeVecPooled(lrHandle->lrh_Pool, lastBroadcast);
-                    }
-                    else
-                    {
-                        logAddEntry(LOGF_Flag_Type_Warn, &LIBBASE->lrb_LRProvider, "", __func__, 0,
-                            "Unhandled event type, received\n");
-                    }
+                        if (lastBroadcast->le_Node.ln_Type == EHMB_ADDENTRY) {
+                            logLockEntries(LLF_WRITE);
+                            AddTail(&LIBBASE->lrb_LRProvider.lrh_Entries, &lastBroadcast->lep_Node);
+                            lastBroadcast->le_Node.ln_Type = NT_LOGENTRY;
+                            logEventBroadcast(EHMB_ADDENTRY, &lastBroadcast->le_Node, NULL);
+                            logUnlockEntries(LLF_WRITE);
+                        } else if (lastBroadcast->le_Node.ln_Type == EHMB_REMENTRY) {
+                            logEventBroadcast(EHMB_REMENTRY, &lastBroadcast->le_Node, NULL);
+                            struct LogResHandle *lrHandle = lastBroadcast->lep_Producer;
+                            FreeVec(lastBroadcast->le_Node.ln_Name);
+                            FreeVec(lastBroadcast->lectx_Originator);
+                            FreeVec(lastBroadcast->le_Entry);
+                            FreeVecPooled(lrHandle->lrh_Pool, lastBroadcast);
+                        } else {
+                            logAddEntry(LOGF_Flag_Type_Warn, &LIBBASE->lrb_LRProvider, "", __func__, 0,
+                                "Unhandled event type, received\n");
+                        }
                 }
             }
         }
-        FreeSignal(LIBBASE->lrb_sigDIE);
-    }
-    else
-    {
+        if (LIBBASE->lrb_sigTryDOS != -1)
+            FreeSignal(LIBBASE->lrb_sigTryDOS);
+        if (LIBBASE->lrb_sigTryTimer != -1)
+            FreeSignal(LIBBASE->lrb_sigTryTimer);
+    } else {
         logAddEntry(LOGF_Flag_Type_Information, &LIBBASE->lrb_LRProvider, "", __func__, 0,
                             "Broadcaster already running\n");
     }
@@ -299,21 +286,23 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(&LIBBASE->lrb_ListenerLock);
     InitSemaphore(&LIBBASE->lrb_ReentrantLock);
 
-    if((LIBBASE->lrb_LRProvider.lrh_Pool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 1024, 1024)))
-    {
+    if ((LIBBASE->lrb_LRProvider.lrh_Pool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 1024, 1024))) {
         LIBBASE->lrb_LowMemHandler.is_Node.ln_Name = LIBBASE->lrb_Lib.lib_Node.ln_Name;
         LIBBASE->lrb_LowMemHandler.is_Code         = (VOID_FUNC)log_LowMemHandler;
         LIBBASE->lrb_LowMemHandler.is_Data         = LIBBASE;
         AddMemHandler(&LIBBASE->lrb_LowMemHandler);
 
-        LIBBASE->lrb_Task = NewCreateTask(TASKTAG_NAME, "Log Event Broadcaster",
+        struct Task *lebTask = NewCreateTask(TASKTAG_NAME, "Log Event Broadcaster",
                     TASKTAG_PC, log_Task,
                     TASKTAG_PRI, 21,
                     TASKTAG_TASKMSGPORT, &LIBBASE->lrb_ServicePort,
                     TASKTAG_ARG1, LIBBASE,
                     TAG_END);
 
-        return TRUE;
+        if (LIBBASE->lrb_ServicePort)
+            return TRUE;
+        DeletePool(LIBBASE->lrb_LRProvider.lrh_Pool);
+        LIBBASE->lrb_LRProvider.lrh_Pool = NULL;
     }
 
     return FALSE;
