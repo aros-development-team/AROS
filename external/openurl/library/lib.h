@@ -27,6 +27,7 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/rexxsyslib.h>
+#include <proto/icon.h>
 
 #if defined(__amigaos4__)
 #include <dos/obsolete.h>

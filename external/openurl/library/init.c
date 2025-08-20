@@ -55,6 +55,7 @@ struct Library *RexxSysBase = NULL;
 struct RxsLib *RexxSysBase = NULL;
 #endif
 struct Library *IFFParseBase = NULL;
+struct Library *IconBase = NULL;
 #endif
 
 /***********************************************************************/
@@ -70,6 +71,12 @@ freeBase(struct LibraryHeader *lib)
   {
     CALL_LFUNC(URL_FreePrefsA, lib->prefs, NULL);
     lib->prefs = NULL;
+  }
+
+  if(IconBase)
+  {
+    CloseLibrary(IconBase);
+    IconBase = NULL;
   }
 
   if(RexxSysBase)
@@ -148,6 +155,7 @@ initBase(struct LibraryHeader *lib)
          GETINTERFACE(IIFFParse, IFFParseBase))
       if((RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 36)) &&
          GETINTERFACE(IRexxSys, RexxSysBase))
+      if((IconBase = OpenLibrary("icon.library", 37)))
       {
         #if defined(__amigaos4__)
         lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED|MEMF_CLEAR,
