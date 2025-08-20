@@ -3,7 +3,7 @@
  * Copyright © 1995-96 Michael Letowski
  */
 
-#define DEBUG 0
+//#define DEBUG 0
 #include <aros/debug.h>
 
 #include <graphics/displayinfo.h>
@@ -192,7 +192,7 @@ STATIC PBOOL GetFont(Class *cl, Object *o, struct TagItem *attrs)
 
     /* Get file handle and BitMapHeader */
     GetDTAttrs(o, DTA_Handle, &FH, PDTA_BitMapHeader, &BMHD, TAG_DONE);
-    if (FH && BMHD) {
+    if ((FH) && (BMHD)) {
         /* Get font file name */
         if ((FIB = AllocDosObject(DOS_FIB,NULL))) {                                 /* Create FileInfoBlock */
             if (ExamineFH(FH, FIB))                                                 /* Examine it */
@@ -280,8 +280,9 @@ STATIC PBOOL GetFont(Class *cl, Object *o, struct TagItem *attrs)
                             else                                                        /* Some color fonts */
                                 for (I = 0; I < NumFonts; I++)                          /* For each font */
                                     if ((F = Fonts[I]))                                 /* Is it valid? */
-                                        if (ftst(F->tf_Style, FSF_COLORFONT))           /* Is it color? */
-                                            if ((CFC = CFont(F)->ctf_ColorFontColors))  /* Color table valid? */
+                                        if (ftst(F->tf_Style, FSF_COLORFONT)) {          /* Is it color? */
+                                            D(bug("[font.datatype] %s: colour font\n", __func__));
+                                            if ((CFC = CFont(F)->ctf_ColorFontColors)) {  /* Color table valid? */
                                                 for (J = 0; J < CFC->cfc_Count; J++) {  /* Fore each color in table */
                                                     CMap[J].red =   (CFC->cfc_ColorTable[J] & 0x0F00) >> 4;
                                                     CRegs[J*3+0] =  Color32(CMap[J].red);
@@ -290,6 +291,26 @@ STATIC PBOOL GetFont(Class *cl, Object *o, struct TagItem *attrs)
                                                     CMap[J].blue =  (CFC->cfc_ColorTable[J] & 0x000F) << 4;
                                                     CRegs[J*3+2] =  Color32(CMap[J].blue);
                                                 }
+                                            } else {
+                                                D(bug("[font.datatype] %s: No colours specified\n", __func__));
+                                                if (Depth == 8) {
+                                                    for (J = 0; J < 256; J++) {
+                                                        if (Opts.opt_Inverse) {
+                                                            CMap[J].red   = J;
+                                                            CMap[J].green = J;
+                                                            CMap[J].blue  = J;
+                                                        } else {
+                                                            CMap[J].red   = 255 - J;
+                                                            CMap[J].green = 255 - J;
+                                                            CMap[J].blue  = 255 - J;
+                                                        }
+                                                        CRegs[J*3 + 0] = Color32(CMap[J].red);
+                                                        CRegs[J*3 + 1] = Color32(CMap[J].green);
+                                                        CRegs[J*3 + 2] = Color32(CMap[J].blue);
+                                                    }
+                                                }
+                                            }
+                                        }
                         }
 
                         /* Prepare bitmap */
@@ -372,24 +393,30 @@ STATIC struct TextFont **OpenFonts(struct Opts *opts,
     ULONG I, NumEntries = fch->fch_NumEntries;
     ULONG FCnt = 0;                                                             /* Number of opened fonts */
 
-    D(bug("[font.datatype] %s(0x%p, 0x%p, '%s')\n", __func__, opts, fch, name));
-
+    D(
+        bug("[font.datatype] %s(0x%p, 0x%p, '%s')\n", __func__, opts, fch, name);
+        bug("[font.datatype] %s: %u entries\n", __func__, NumEntries);
+    )
     if ((Fonts = AllocVec(NumEntries * sizeof(APTR), MEMF_CLEAR))) {
+        D(bug("[font.datatype] %s: storage @ 0x%p\n", __func__, Fonts));
         for (I = 0; I < NumEntries; I++) {
+            memset(&TTA, 0 , sizeof(struct TTextAttr));
             TFC = &TFontContents(fch)[I];                                       /* Get FontContents */
             TTA.tta_Name = name;                                                /* Copy attrs */
             TTA.tta_YSize = TFC->tfc_YSize;
             TTA.tta_Style = TFC->tfc_Style;
             TTA.tta_Flags = TFC->tfc_Flags | FPF_DISKFONT;
-            if (ftst(TFC->tfc_Style, FSF_TAGGED))                               /* Tags should be set */
+            if (ftst(TFC->tfc_Style, FSF_TAGGED)) {                               /* Tags should be set */
                 TTA.tta_Tags = (struct TagItem *)&TFC->tfc_FileName[MAXFONTPATH - (TFC->tfc_TagCount * sizeof(struct TagItem))];
-            else if (opts->opt_DPIFlag) {                                       /* DPI given - set our own DPI tags */
+                D(bug("[font.datatype] %s: using font tags @ 0x%p\n", __func__, TTA.tta_Tags));
+            } else if (opts->opt_DPIFlag) {                                       /* DPI given - set our own DPI tags */
                 XDPI = clamp(opts->opt_XDPI, 1, 65535);
                 YDPI = clamp(opts->opt_YDPI, 1, 65535);
                 MyTags[0].ti_Data = (XDPI << 16) | YDPI;
                 TTA.tta_Tags = MyTags;
                 fset(TTA.tta_Style, FSF_TAGGED);
             }
+            D(bug("[font.datatype] %s: opening font ..\n", __func__));
             if ((Fonts[I] = OpenDiskFont((struct TextAttr *)&TTA)))
                 FCnt++;
         }
@@ -398,8 +425,11 @@ STATIC struct TextFont **OpenFonts(struct Opts *opts,
             D(bug("[font.datatype] %s: returning 0x%p (%u)\n", __func__, Fonts, FCnt));
             return (Fonts);
         }
+        bug("[font.datatype] %s: Failed to open any fonts\n", __func__);
         SetIoErr(ERROR_OBJECT_NOT_FOUND);
         FreeVec(Fonts);
+    } else {
+        bug("[font.datatype] %s: Failed to allocate storage\n", __func__);
     }
     return(NULL);
 } /* OpenFonts */

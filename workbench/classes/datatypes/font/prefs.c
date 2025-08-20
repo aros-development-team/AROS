@@ -3,7 +3,7 @@
  * Copyright © 1995-96 Michael Letowski
  */
 
-#define DEBUG 0
+//#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>

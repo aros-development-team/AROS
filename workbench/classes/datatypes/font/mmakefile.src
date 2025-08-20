@@ -7,7 +7,7 @@ FILES := fontclass prefs otag
 
 #MM workbench-datatypes-font : includes linklibs
 
-USER_CPPFLAGS   := -DMYDEBUG
+#USER_CPPFLAGS   := -DDEBUG
 
 %build_module mmake=workbench-datatypes-font \
     modname=font modtype=datatype \
