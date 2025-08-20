@@ -108,10 +108,8 @@
 
 /* --------------------------- library bases ------------------------------ */
 extern struct Library *IconBase;
-#if defined(__AROS__)
+#if defined(__AROS__) || defined(__amigaos3__)
 extern struct UtilityBase *UtilityBase;
-#else
-extern struct Library *UtilityBase;
 #endif
 
 #if defined(__GNUC__) && !defined(__amigaos4__)

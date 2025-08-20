@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -377,7 +377,7 @@ BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScr
         if (!(cmd = expandPlaceHolders(bn->ubn_Path,ph,PH_COUNT_BROWSER)))
             goto done;
 
-        filePart = FilePart(bn->ubn_Path);
+        filePart = (STRPTR)FilePart(bn->ubn_Path);
 
         if (filePart)
         {
@@ -533,7 +533,7 @@ BOOL sendToFTP(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenN
         if (!(cmd = expandPlaceHolders(fn->ufn_Path,ph,PH_COUNT_FTP)))
             goto done;
 
-        filePart = FilePart(fn->ufn_Path);
+        filePart = (STRPTR)FilePart(fn->ufn_Path);
 
         if (filePart)
         {
@@ -604,7 +604,7 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
     struct URL_MailerNode *mn;
     STRPTR                start, end, data, address = NULL, subject = NULL, body = NULL,
                           cmd = NULL, *tag;
-    TEXT                  fileName[36];
+    char                  fileName[36];
     BOOL                  res = FALSE, written = FALSE;
     UWORD                 offset, len;
 
@@ -816,7 +816,7 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
         if (!(cmd = expandPlaceHolders(mn->umn_Path,ph,PH_COUNT_MAILER)))
             goto done;
 
-        filePart = FilePart(mn->umn_Path);
+        filePart = (STRPTR)FilePart(mn->umn_Path);
 
         if (filePart)
         {

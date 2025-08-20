@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -46,8 +46,10 @@ ULONG SetAttrs( APTR object, ULONG tag1, ... )
 { return SetAttrsA(object, (struct TagItem *)&tag1); }
 
 #include <proto/dos.h>
+#ifndef Printf
 LONG Printf( CONST_STRPTR format, ... )
 { return VPrintf(format, (APTR)(&format+1)); }
+#endif
 
 #include <proto/openurl.h>
 ULONG URL_Open(STRPTR url, Tag tag1, ...)

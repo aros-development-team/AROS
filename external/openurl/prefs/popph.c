@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -283,14 +283,17 @@ static IPTR mRequestFile(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
     struct data *data = INST_DATA(cl,obj);
     struct Hook intuiHook;
-    TEXT       path[256], *x, *file, *p;
+    TEXT   path[256];
+    STRPTR file;
+    STRPTR p;
+    STRPTR x;
 
     set(_app(obj),MUIA_Application_Sleep,TRUE);
 
     InitHook(&intuiHook, reqIntuiHook, _app(obj));
 
     x = (STRPTR)xget(data->str, MUIA_String_Contents);
-    file = FilePart(x);
+    file = (STRPTR)FilePart(x);
     if((p = PathPart(x)) != NULL)
     {
         strlcpy(path, x, p-x+1);

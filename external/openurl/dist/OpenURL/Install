@@ -1,5 +1,5 @@
 ;
-; $VER: Install 1.3 (21.5.2012)
+; $VER: Install 1.5 (17.5.2014)
 ;
 ; $Id: Install 246 2010-06-11 10:07:45Z thboeckel $
 ;
@@ -12,6 +12,9 @@
 ;                     on the detected system
 ;   1.3   21.05.2012: fixed the wrong selection of the builtin language.
 ;   1.4   20.12.2012: added 3.x to supported MorphOS targets.
+;   1.5   17.04.2014: let the user choose between MUI and ReAction GUI for
+;                     AmigaOS4.
+
 ;----------------------------------------------------------------------------
 ; /// default language detection
 (set #i 0)
@@ -29,6 +32,7 @@
     (
         (set #acknowledgeOS (cat "Please acknowledge the automatic\n"
                                  "detection of your operating system:"))
+        (set #chooseGUI          "Please choose your preferred GUI system:")
         (set #done          (cat "\n"
                                  @app-name " has been successfully installed.\n"
                                  "\n"
@@ -43,6 +47,7 @@
     (
         (set #acknowledgeOS (cat "Bitte bestätigen Sie die automatische\n"
                                  "Ermittlung Ihres Betriebssystems:"))
+        (set #chooseGUI          "Bitte wählen Sie Ihr bevorzugtes GUI-System:")
         (set #done          (cat "\n"
                                  @app-name " wurde erfolgreich installiert.\n"
                                  "\n"
@@ -108,11 +113,22 @@
 )
 (if (= #detectedSystem "os4")
   (
+    ; for AmigaOS4 we let the user choose between MUI and ReAction GUI
+    (set #GUI
+      (askchoice
+        (prompt #chooseGUI)
+        (help @askchoice-help)
+        (choices "MUI" "ReAction")
+      )
+    )
+    (set #GUI
+      (select #GUI "MUI" "ReAction")
+    )
     (set #C_source "C/AmigaOS4")
     (set #C_dest "C:")
     (set #LIB_source "Libs/AmigaOS4")
     (set #LIB_dest "LIBS:")
-    (set #PREFS_source "Prefs/AmigaOS4")
+    (set #PREFS_source (tackon "Prefs/AmigaOS4" #GUI))
   )
 )
 (if (= #detectedSystem "mos")
