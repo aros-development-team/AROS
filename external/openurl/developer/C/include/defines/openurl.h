@@ -16,6 +16,8 @@ typedef ULONG _sfdc_vararg;
 #include <aros/libcall.h>
 #endif /* !AROS_LIBCALL_H */
 
+#include <aros/preprocessor/variadic/cast2iptr.hpp>
+
 #ifndef OPENURL_BASE_NAME
 #define OPENURL_BASE_NAME OpenURLBase
 #endif /* !OPENURL_BASE_NAME */
@@ -27,8 +29,11 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 5, Openurl)
 
 #ifndef NO_INLINE_STDARG
-#define URL_Open(___url, ___last, ...) \
-	({_sfdc_vararg _tags[] = { ___last, __VA_ARGS__ }; URL_OpenA((___url), (struct TagItem *) _tags); })
+#define URL_Open(___url, ...) \
+({ \
+    const IPTR URL_Open_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    URL_OpenA((___url), (struct TagItem*)(URL_Open_args)); \
+})
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_OldGetPrefs() \
@@ -60,8 +65,11 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 12, Openurl)
 
 #ifndef NO_INLINE_STDARG
-#define URL_GetPrefs(___last, ...) \
-	({_sfdc_vararg _tags[] = { ___last, __VA_ARGS__ }; URL_GetPrefsA((struct TagItem *) _tags); })
+#define URL_GetPrefs(...) \
+({ \
+    const IPTR URL_GetPrefs_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    URL_GetPrefsA((struct TagItem*)(URL_GetPrefs_args)); \
+})
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_FreePrefsA(___prefs, ___tags) \
@@ -71,8 +79,11 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 13, Openurl)
 
 #ifndef NO_INLINE_STDARG
-#define URL_FreePrefs(___prefs, ___last, ...) \
-	({_sfdc_vararg _tags[] = { ___last, __VA_ARGS__ }; URL_FreePrefsA((___prefs), (struct TagItem *) _tags); })
+#define URL_FreePrefs(___prefs, ...) \
+({ \
+    const IPTR URL_FreePrefs_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    URL_FreePrefsA((___prefs), (struct TagItem*)(URL_FreePrefs_args)); \
+})
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_SetPrefsA(___up, ___tags) \
@@ -82,8 +93,11 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 14, Openurl)
 
 #ifndef NO_INLINE_STDARG
-#define URL_SetPrefs(___up, ___last, ...) \
-	({_sfdc_vararg _tags[] = { ___last, __VA_ARGS__ }; URL_SetPrefsA((___up), (struct TagItem *) _tags); })
+#define URL_SetPrefs(___up, ...) \
+({ \
+    const IPTR URL_SetPrefs_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    URL_SetPrefsA((___up), (struct TagItem*)(URL_SetPrefs_args)); \
+})
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_LaunchPrefsAppA(___tags) \
@@ -92,8 +106,11 @@ typedef ULONG _sfdc_vararg;
 	struct Library *, OPENURL_BASE_NAME, 15, Openurl)
 
 #ifndef NO_INLINE_STDARG
-#define URL_LaunchPrefsApp(___last, ...) \
-	({_sfdc_vararg _tags[] = { ___last, __VA_ARGS__ }; URL_LaunchPrefsAppA((struct TagItem *) _tags); })
+#define URL_LaunchPrefsApp(...) \
+({ \
+    const IPTR URL_LaunchPrefsApp_args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) };\
+    URL_LaunchPrefsAppA((struct TagItem*)(URL_LaunchPrefsApp_args)); \
+})
 #endif /* !NO_INLINE_STDARG */
 
 #define URL_GetAttr(___attr, ___storage) \
