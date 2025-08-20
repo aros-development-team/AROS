@@ -217,7 +217,7 @@ STATIC PBOOL GetFont(Class *cl, Object *o, struct TagItem *attrs)
                         UnLock(DirLock);
                 }
                 if (Fonts) {                                                        /* Check if any fonts loaded */
-                    D(bug("[font.datatype] %s: %u Fonts @ 0x$p\n", __func__, NumFonts, Fonts));
+                    D(bug("[font.datatype] %s: %u Fonts @ 0x%p\n", __func__, NumFonts, Fonts));
                     /* Set colors */
                     for (I = 0; I < 3; I++) {                                       /* For each of RGB triad */
                         if (Opts.opt_ForeFlag)
