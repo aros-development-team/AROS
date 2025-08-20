@@ -1,9 +1,0 @@
-Name=Font
-Version=$VER: Font 41.1 (4.1.2017)
-BaseName=Font
-Pattern=#?
-Mask=0x0f ANY 0x00
-GroupID=syst
-ID=font
-Flags=DTF_BINARY
-Priority=1
