@@ -15,7 +15,7 @@
 #
 # openurl.library project: http://sourceforge.net/projects/openurllib/
 #
-# $Id: AUTHORS 102 2009-05-27 22:22:46Z marust $
+# $Id$
 #
 #***************************************************************************/
 

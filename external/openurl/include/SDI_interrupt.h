@@ -10,7 +10,7 @@
         Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
         Description:    defines to hide compiler specific interrupt and
                         handler stuff
-        Id:             $Id$
+        Id:             $Id: SDI_interrupt.h 488 2014-03-31 13:05:32Z damato $
         URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_interrupt.h $
 
  1.0   17.05.05 : inspired by the SDI_#?.h files made by Jens Langner
