@@ -1,0 +1,54 @@
+sudo: required
+dist: trusty
+
+language: c
+
+# send build/failure notifications only to a specific
+# email address and only on a status change
+notifications:
+  email:
+    recipients:
+      - svn@yam.ch
+    on_success: change
+    on_failure: change
+
+# download and install our required cross compilers
+install:
+  # Make sure we can install i386 packages as some adtools binaries
+  # requires i386 libraries being installed to work in the 64bit env
+  # of Travis
+  - sudo dpkg --add-architecture i386
+  - sudo apt-get -qq update || true
+  - sudo apt-get -qq install libc6:i386
+  # Install all adtools related stuff we need
+  - curl -L https://dl.bintray.com/jens-maus/adtools/adtools-utils.tar.bz2 | sudo tar xj -C /
+  - if [[ ${BUILD} =~ os3 ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-m68k-amigaos.tar.bz2 | sudo tar xj -C / ; fi
+  - if [[ ${BUILD} =~ os4 ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-ppc-amigaos.tar.bz2 | sudo tar xj -C / ; fi
+  - if [[ ${BUILD} =~ mos ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-ppc-morphos.tar.bz2 | sudo tar xj -C / ; fi
+  - if [[ ${BUILD} =~ aros-ppc ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-ppc-aros.tar.bz2 | sudo tar xj -C / ; fi
+  - if [[ ${BUILD} =~ aros-i386 ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-i386-aros.tar.bz2 | sudo tar xj -C / ; fi
+  - if [[ ${BUILD} =~ aros-x86_64 ]]; then curl -L https://dl.bintray.com/jens-maus/adtools/adtools-x86_64-aros.tar.bz2 | sudo tar xj -C / ; fi
+
+# set the PATH variable to the directories the cross compilers are installed.
+before_script:
+  - export PATH=/usr/local/amiga/bin:/opt/m68k-amigaos/bin:/opt/ppc-amigaos/bin:/opt/ppc-morphos/bin:${PATH}
+
+# specify a list of variables to test (here we test the build for our supported
+# list of operating systems).
+env:
+  - BUILD="OS=os4"
+  - BUILD="OS=os4 DEBUG="
+  - BUILD="OS=os3"
+  - BUILD="OS=os3 DEBUG="
+  - BUILD="OS=mos"
+  - BUILD="OS=mos DEBUG="
+  - BUILD="OS=aros-ppc"
+  - BUILD="OS=aros-ppc DEBUG="
+  - BUILD="OS=aros-i386"
+  - BUILD="OS=aros-i386 DEBUG="
+  - BUILD="OS=aros-x86_64"
+  - BUILD="OS=aros-x86_64 DEBUG="
+
+# the build command to execute for each test
+script:
+  - make ${BUILD} -j1

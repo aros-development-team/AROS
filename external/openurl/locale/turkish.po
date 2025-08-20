@@ -1,0 +1,538 @@
+# Translation catalog description file (pot-style)
+# $Id$
+# 
+# version 7
+# language english
+# 
+# Translators:
+# İbrahim Alper Sönmez <amithlondestek@gmail.com>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenURL\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/openurllib/\n"
+"POT-Creation-Date: 2014-02-23 12:01+0100\n"
+"PO-Revision-Date: 2015-01-27 10:05+0000\n"
+"Last-Translator: İbrahim Alper Sönmez <amithlondestek@gmail.com>\n"
+"Language-Team: Turkish (http://www.transifex.com/ato/openurllib/language/tr/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: OpenURL\n"
+"Language: tr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgctxt "MSG_ErrReqTitle (1//)"
+msgid "OpenURL Error"
+msgstr "OpenURL Hatası"
+
+msgctxt "MSG_ErrReqGadget (//)"
+msgid "_Abort"
+msgstr "_Durdur"
+
+msgctxt "MSG_Err_NoMem (//)"
+msgid "Out of memory"
+msgstr "Bellek yetersiz"
+
+msgctxt "MSG_Err_NoMUI (//)"
+msgid "Can't open muimaster.library %ld.%ld or higher"
+msgstr "muimaster.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoIntuition (//)"
+msgid "Can't open intuition.library %ld.%ld or higher"
+msgstr "intuition.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoUtility (//)"
+msgid "Can't open utility.library %ld.%ld or higher"
+msgstr "utility.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoGfx (//)"
+msgid "Can't open graphics.library %ld.%ld or higher"
+msgstr "graphics.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoIcon (//)"
+msgid "Can't open icon.library %ld.%ld or higher"
+msgstr "icon.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoOpenURL (//)"
+msgid "Can't open openurl.library %ld.%ld or higher"
+msgstr "openurl.library %ld.%ld (veya daha üst) sürümü açılamadı."
+
+msgctxt "MSG_Err_NoAppClass (//)"
+msgid "Can't create AppClass"
+msgstr "AppClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoWinClass (11//)"
+msgid "Can't create WinClass"
+msgstr "WinClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoAppListClass (13//)"
+msgid "Can't create AppListClass"
+msgstr "AppListClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoBrowserEditWinClass (//)"
+msgid "Can't create BrowserEditWinClass"
+msgstr "BrowserEditWinClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoMailerEditWinClass (//)"
+msgid "Can't create MailerEditWinClass"
+msgstr "MailerEditWinClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoFTPEditWinClass (//)"
+msgid "Can't create FTPEditWinClass"
+msgstr "FTPEditWinClass oluşturulamadı."
+
+msgctxt "MSG_Err_PopupPortClass (//)"
+msgid "Can't create PopupPortClass"
+msgstr "PopupPortClass oluşturulamadı."
+
+msgctxt "MSG_Err_PopphClass (//)"
+msgid "Can't create PopphClass"
+msgstr "PopphClass oluşturulamadı."
+
+msgctxt "MSG_Err_NoApp (//)"
+msgid "Can't create application object"
+msgstr "Uygulama nesnesi oluşturulamadı."
+
+msgctxt "MSG_Err_NoPrefs (//)"
+msgid "Can't obtain prefs from openurl.library"
+msgstr "openurl.library'den tercihler alınamadı."
+
+msgctxt "MSG_Err_BadPrefs (//)"
+msgid ""
+"This version of this program doesn't know how\n"
+"to handle openurl.library prefs version %ld"
+msgstr "Bu programın bu sürümü openurl.library %ld\nsürüme ait tercihler ile uyumlu değil."
+
+msgctxt "MSG_Err_FailedSave (//)"
+msgid "Can't save prefs"
+msgstr "Tercihler kaydedilemedi."
+
+msgctxt "MSG_App_Description (100//)"
+msgid "OpenURL preferences application."
+msgstr "OpenURL tercih uygulaması."
+
+msgctxt "MSG_App_Copyright (//)"
+msgid "Public Domain Software"
+msgstr "Kamusal Yazılım"
+
+msgctxt "MSG_App_ScreenTitle (//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Menu_Project (200//)"
+msgid "Project"
+msgstr "Proje"
+
+msgctxt "MSG_Menu_About (//)"
+msgid "?\\0About..."
+msgstr "?\\0Hakkında..."
+
+msgctxt "MSG_Menu_AboutMUI (//)"
+msgid "!\\0About MUI..."
+msgstr "!\\0MUI Hakkında..."
+
+msgctxt "MSG_Menu_Hide (//)"
+msgid "H\\0Hide"
+msgstr "H\\0Gizle"
+
+msgctxt "MSG_Menu_Quit (//)"
+msgid "Q\\0Quit"
+msgstr "Q\\0Çıkış"
+
+msgctxt "MSG_Menu_Prefs (//)"
+msgid "Preferences"
+msgstr "Tercihler"
+
+msgctxt "MSG_Menu_Save (//)"
+msgid "S\\0Save"
+msgstr "S\\0Kaydet"
+
+msgctxt "MSG_Menu_Use (//)"
+msgid "U\\0Use"
+msgstr "U\\0Kullan"
+
+msgctxt "MSG_Menu_LastSaved (//)"
+msgid "L\\0Last saved"
+msgstr "L\\0Son kaydedilen"
+
+msgctxt "MSG_Menu_Restore (//)"
+msgid "R\\0Restore"
+msgstr "R\\0Geri getir"
+
+msgctxt "MSG_Menu_Defaults (210//)"
+msgid "D\\0Default settings"
+msgstr "D\\0Varsayılanlara sıfırla"
+
+msgctxt "MSG_Menu_MUI (212//)"
+msgid "M\\0MUI Setting..."
+msgstr "M\\0MUI Ayarları..."
+
+msgctxt "MSG_Win_WinTitle (300//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Win_Labels_Browsers (//)"
+msgid "Browsers"
+msgstr "Tarayıcılar"
+
+msgctxt "MSG_Win_Labels_Mailers (//)"
+msgid "Mailers"
+msgstr "E-Postacılar"
+
+msgctxt "MSG_Win_Labels_FTPs (//)"
+msgid "FTPs"
+msgstr "FTP'ler"
+
+msgctxt "MSG_Win_Labels_Misc (//)"
+msgid "Misc"
+msgstr "Çeşitli"
+
+msgctxt "MSG_Win_Save (//)"
+msgid "_Save"
+msgstr "_Kaydet"
+
+msgctxt "MSG_Win_Save_Help (//)"
+msgid "Save preferences."
+msgstr "Tercihleri kaydeder."
+
+msgctxt "MSG_Win_Use (//)"
+msgid "_Use"
+msgstr "K_ullan"
+
+msgctxt "MSG_Win_Use_Help (//)"
+msgid "Use preferences."
+msgstr "Tercihleri kullanır."
+
+msgctxt "MSG_Win_Apply (//)"
+msgid "_Apply"
+msgstr "U_ygula"
+
+msgctxt "MSG_Win_Apply_Help (//)"
+msgid "Use preferences without closing window."
+msgstr "Tercihleri bu pencereyi kapatmadan uygular."
+
+msgctxt "MSG_Win_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Vazgeç"
+
+msgctxt "MSG_Win_Cancel_Help (//)"
+msgid "Close window, without using preferences."
+msgstr "Yapılan tercihleri uygulamadan pencereyi kapatır."
+
+msgctxt "MSG_AppList_Add (400//)"
+msgid "A_dd"
+msgstr "_Ekle"
+
+msgctxt "MSG_AppList_Add_Help (//)"
+msgid "Add a new entry."
+msgstr "Yeni bir girdi ekler."
+
+msgctxt "MSG_AppList_Edit (//)"
+msgid "_Edit"
+msgstr "_Düzenle"
+
+msgctxt "MSG_AppList_Edit_Help (//)"
+msgid "Edit active entry."
+msgstr "Seçilen girdiyi düzenler."
+
+msgctxt "MSG_AppList_Clone (//)"
+msgid "C_lone"
+msgstr "K_opyala"
+
+msgctxt "MSG_AppList_Clone_Help (//)"
+msgid "Clone active entry."
+msgstr "Seçilen girdinin bir\nkopyasını oluşturur."
+
+msgctxt "MSG_AppList_Delete (//)"
+msgid "Dele_te"
+msgstr "_Sil"
+
+msgctxt "MSG_AppList_Delete_Help (//)"
+msgid "Delete active entry."
+msgstr "Seçilen girdiyi siler."
+
+msgctxt "MSG_AppList_Disable (//)"
+msgid "D_isable"
+msgstr "Dev_re dışı"
+
+msgctxt "MSG_AppList_Disable_Help (//)"
+msgid "Disable active entry."
+msgstr "Seçilen girdiyi\ndevre dışı bırakır."
+
+msgctxt "MSG_AppList_MoveUp_Help (//)"
+msgid "Move active entry up."
+msgstr "Seçilen girdiyi bir yukarı taşır."
+
+msgctxt "MSG_AppList_MoveDown_Help (//)"
+msgid "Move active entry down."
+msgstr "Seçilen girdiyi bir aşağı taşır."
+
+msgctxt "MSG_Edit_Use (500//)"
+msgid "_Use"
+msgstr "_Kullan"
+
+msgctxt "MSG_Edit_Use_Help (//)"
+msgid "Apply changes."
+msgstr "Değişiklikleri uygular."
+
+msgctxt "MSG_Edit_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Vazgeç"
+
+msgctxt "MSG_Edit_Cancel_Help (//)"
+msgid "Close window."
+msgstr "Pencereyi kapatır."
+
+msgctxt "MSG_Edit_ListName (//)"
+msgid "Name"
+msgstr "Ad"
+
+msgctxt "MSG_Edit_ListPath (//)"
+msgid "Path"
+msgstr "Yol"
+
+msgctxt "MSG_Edit_Definitions (//)"
+msgid "Definitions"
+msgstr "Tanımlamalar"
+
+msgctxt "MSG_Edit_ARexx (//)"
+msgid "ARexx commands"
+msgstr "ARexx komutları"
+
+msgctxt "MSG_Edit_PopURL (//)"
+msgid "URL"
+msgstr "URL"
+
+msgctxt "MSG_Edit_PopScreen (//)"
+msgid "Public screen name"
+msgstr "Genel Ekran Adı"
+
+msgctxt "MSG_Edit_Name (//)"
+msgid "_Name"
+msgstr "_Ad"
+
+msgctxt "MSG_Edit_Name_Help (//)"
+msgid "Name of entry."
+msgstr "Girdinin adı."
+
+msgctxt "MSG_Edit_Path (//)"
+msgid "_Path"
+msgstr "_Yol"
+
+msgctxt "MSG_Edit_Path_Help (//)"
+msgid "Complete path to the application."
+msgstr "Uygulamanın tam konumu."
+
+msgctxt "MSG_Edit_Port (//)"
+msgid "_ARexx port"
+msgstr "A_Rexx portu"
+
+msgctxt "MSG_Edit_Port_Help (//)"
+msgid ""
+"Name of the application ARexx port\n"
+"to send commands to."
+msgstr "Komutların gönderileceği uygulamanın\nARexx portunun adı."
+
+msgctxt "MSG_Edit_Show (//)"
+msgid "_Show"
+msgstr "_Göster"
+
+msgctxt "MSG_Edit_Show_Help (//)"
+msgid "ARexx command to uniconify the application."
+msgstr "Uygulamayı simge durumundan\nçıkartacak ARexx komutu."
+
+msgctxt "MSG_Edit_Screen (//)"
+msgid "_To front"
+msgstr "_Öne getir"
+
+msgctxt "MSG_Edit_Screen_Help (//)"
+msgid ""
+"ARexx command to move the application\n"
+"screen to front."
+msgstr "Uygulama ekranını en öne\ngetirecek ARexx komutu."
+
+msgctxt "MSG_Edit_OpenURL (//)"
+msgid "_Open URL"
+msgstr "_URL aç"
+
+msgctxt "MSG_Edit_OpenURL_Help (//)"
+msgid "ARexx command to reach an URL."
+msgstr "Bir internet adresine ulaşmayı\nsağlayacak ARexx komutu."
+
+msgctxt "MSG_Edit_NewWin (//)"
+msgid "N_ew window"
+msgstr "Yeni _pencere"
+
+msgctxt "MSG_Edit_NewWin_Help (//)"
+msgid ""
+"ARexx command to reach an URL\n"
+"in a new window (or tab)."
+msgstr "Bir internet adresine yeni bir pencere\n(veya sekme) içinde ulaşmayı\nsağlayacak ARexx komutu."
+
+msgctxt "MSG_Browser_List_Help (600//)"
+msgid "List of browsers."
+msgstr "Tarayıcıların listesi."
+
+msgctxt "MSG_Browser_WinTitle (//)"
+msgid "Edit Browser"
+msgstr "Tarayıcıyı Düzenle"
+
+msgctxt "MSG_Browser_NewBrowser (//)"
+msgid "New browser"
+msgstr "Yeni tarayıcı"
+
+msgctxt "MSG_Mailer_List_Help (700//)"
+msgid "List of Mailers."
+msgstr "E-Postacıların listesi."
+
+msgctxt "MSG_Mailer_WinTitle (//)"
+msgid "Edit Mailer"
+msgstr "E-Postacıyı Düzenle"
+
+msgctxt "MSG_Mailer_NewMailer (//)"
+msgid "New mailer"
+msgstr "Yeni e-postacı"
+
+msgctxt "MSG_Mailer_Write (//)"
+msgid "_Write mail"
+msgstr "_E-posta yaz"
+
+msgctxt "MSG_Mailer_Write_Help (//)"
+msgid ""
+"ARexx command to open a\n"
+"\"write a new EMail window\"."
+msgstr "\"Yeni bir E-Posta oluştur\"\npenceresi çağıran ARexx komutu."
+
+msgctxt "MSG_Mailer_PopAddress (//)"
+msgid "Address"
+msgstr "Adres"
+
+msgctxt "MSG_Mailer_Popsubject (//)"
+msgid "Subject"
+msgstr "Konu"
+
+msgctxt "MSG_Mailer_PopBodyText (//)"
+msgid "Body text"
+msgstr "Gövde metni"
+
+msgctxt "MSG_Mailer_PopBodyFile (//)"
+msgid "Body file"
+msgstr "Gövde dosyası"
+
+msgctxt "MSG_FTP_List_Help (800//)"
+msgid "List of FTP clients."
+msgstr "FTP istemcilerinin listesi."
+
+msgctxt "MSG_FTP_WinTitle (//)"
+msgid "Edit FTP client"
+msgstr "FTP istemcisini düzenle"
+
+msgctxt "MSG_FTP_NewFTP (//)"
+msgid "New FTP client"
+msgstr "Yeni FTP istemcisi"
+
+msgctxt "MSG_FTP_RemoveURLQualifier (//)"
+msgid "Re_move 'ftp://'"
+msgstr "'ftp://' ön ekini kaldır"
+
+msgctxt "MSG_FTP_RemoveURLQualifier_Help (//)"
+msgid ""
+"If selected, \"ftp://\" is removed\n"
+"from the URL."
+msgstr "Etkinleştirildiğinde, URL'lerden\n\"ftp://\" ön ekini kaldırır."
+
+msgctxt "MSG_Misc_Options (900//)"
+msgid "Options"
+msgstr "Seçenekler"
+
+msgctxt "MSG_Misc_Defaults (//)"
+msgid "Defaults"
+msgstr "Varsayılanlar"
+
+msgctxt "MSG_Misc_Prepend (//)"
+msgid "_Prepend \"http://\" to URLs without a scheme"
+msgstr "Biçemsiz URL'lerin önüne \"_http://\" ekle"
+
+msgctxt "MSG_Misc_Prepend_Help (//)"
+msgid ""
+"If selected, \"http://\" is added to any URL\n"
+"without a scheme, so that it is opened in the\n"
+"browser."
+msgstr "Etkinleştirildiğinde, biçemsiz URL'lere,\ntarayıcıya gönderilmeden önce\n\"http://\" ön eki eklenir."
+
+msgctxt "MSG_Misc_UseMailer (//)"
+msgid "S_end mailto: URLs to email application"
+msgstr "\"_mailto:\" URL'lerini e-posta uygulamasına gönder"
+
+msgctxt "MSG_Misc_UseMailer_Help (//)"
+msgid ""
+"If selected, \"mailto:\" URLs are sent to\n"
+"the mailer, otherwise they are sent to the\n"
+"browser."
+msgstr "Etkinleştirildiğinde, \"mailto:\" ön ekiyle\nbaşlayan URL'ler e-posta uygulamasına\ngönderilir. Aksi halde tarayıcıya gönderilir."
+
+msgctxt "MSG_Misc_UseFTP (//)"
+msgid "Se_nd \"ftp://\" URLs to FTP application"
+msgstr "\"_ftp://\" URL'lerini FTP uygulamasına gönder"
+
+msgctxt "MSG_Misc_UseFTP_Help (//)"
+msgid ""
+"If selected, \"ftp://\" URLs are sent to\n"
+"the FTP client, otherwise they are sent to\n"
+"the browser."
+msgstr "Etkinleştirildiğinde, \"ftp://\" ön ekiyle\nbaşlayan URL'ler FTP istemcisine\ngönderilir. Aksi halde tarayıca gönderilir."
+
+msgctxt "MSG_Misc_Show (//)"
+msgid "Un_iconify application"
+msgstr "Uygulamayı _simge durumundan çıkar"
+
+msgctxt "MSG_Misc_Show_Help (//)"
+msgid ""
+"If selected, the application is uniconified,\n"
+"before sending the URL to it."
+msgstr "Etkinleştirildiğinde, uygulama kendisine\nbir URL gönderilmeden önce simge\ndurumundan çıkarılır."
+
+msgctxt "MSG_Misc_Bring (//)"
+msgid "_Bring browser screen to front"
+msgstr "_Tarayıcı ekranını öne getir"
+
+msgctxt "MSG_Misc_Bring_Help (//)"
+msgid ""
+"If selected, the application screen is moved\n"
+"to front, before sending the URL."
+msgstr "Etkinleştirildiğinde, uygulama penceresi\nkendisine bir URL gönderilmeden önce\nen öne getirilir."
+
+msgctxt "MSG_Misc_Open (//)"
+msgid "_Open URL in new client window (or tab)"
+msgstr "URL'yi yeni bir istemci _penceresinde (veya sekmesinde) aç"
+
+msgctxt "MSG_Misc_Open_Help (//)"
+msgid ""
+"If selected, a new application window (or tab)\n"
+"is opened, before sending the URL."
+msgstr "Etkinleştirildiğinde, uygulamaya bir URL\ngönderilmeden önce, uygulamadan yeni\nbir pencere veya sekme açması istenir."
+
+msgctxt "MSG_Misc_Launch (//)"
+msgid "_Launch browser if one isn't running"
+msgstr "Çalışmakta olan tarayıcı yoksa _başlat"
+
+msgctxt "MSG_Misc_Launch_Help (//)"
+msgid "If selected, a new application is run, if none is found."
+msgstr "Etinleştirildiğinde, çalışmakta olan bir\ntarayıcı bulunamaz ise yeni bir tarayıcı\nbaşlatılır."
+
+msgctxt "MSG_About_WinTitle (1100//)"
+msgid "About OpenURL"
+msgstr "OpenURL Hakkında"
+
+msgctxt "MSG_About_OK (1111//)"
+msgid "_OK"
+msgstr "_Tamam"
+
+msgctxt "MSG_About_Descr (1112//)"
+msgid ""
+"\\33bOpenURL\\33n is a shared library for easily sending\n"
+"URLs from applications to browsers, mailers\n"
+"and FTP clients.\n"
+"\n"
+"\\33cOpenURL is a Public Domain Software."
+msgstr "\\33bOpenURL\\33n uygulamalardaki URL'lerin, web\ntarayıcısı, e-posta veya FTP istemcilerine kolayca\ngönderilmesini sağlayan bir ortak kütüphanedir.\n\n\\33bOpenURL\\33n bir Kamusal Yazılımdır."

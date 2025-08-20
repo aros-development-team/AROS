@@ -4,13 +4,11 @@
 /* Includeheader
 
         Name:           SDI_compiler.h
-        Versionstring:  $VER: SDI_compiler.h 1.35 (03.03.2011)
+        Versionstring:  $VER: SDI_compiler.h 1.38 (27.03.2016)
         Authors:        Dirk Stoecker, Jens Maus
         Distribution:   PD
-        Project page:   http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
+        Project page:   https://github.com/adtools/SDI
         Description:    defines to hide compiler stuff
-        Id:             $Id$
-        URL:            $URL: https://svn.code.sf.net/p/adtools/code/trunk/sdi/SDI_compiler.h $
 
  1.1   25.06.98 : created from data made by Gunter Nikl
  1.2   17.11.99 : added VBCC
@@ -61,6 +59,11 @@
  1.34  26.07.10 : adapted IPTR and SIPTR definitions as the latest MorphOS SDK already
                   contains them. (tboeckel)
  1.35  03.03.11 : fixed AROS macros for m68k (Jason McMullan)
+ 1.36  30.03.15 : changed FAR define to only define it empty in case __far does not
+                  exist (Gunther Nikl)
+ 1.37  18.02.16 : changed INLINE define to not include "static" but use a separate STATIC
+                  define (Jens Maus)
+ 1.38  27.03.16 : when using GCC4/5 for MorphOS compiles VARARGS68K is not supported (Jens Maus)
 
 */
 
@@ -74,7 +77,7 @@
 ** (e.g. add your name or nick name).
 **
 ** Find the latest version of this file at:
-** http://sf.net/p/adtools/code/HEAD/tree/trunk/sdi/
+** https://github.com/adtools/SDI
 **
 ** Jens Maus <mail@jens-maus.de>
 ** Dirk Stoecker <soft@dstoecker.de>
@@ -88,6 +91,7 @@
 #undef CONST
 #undef SAVEDS
 #undef INLINE
+#undef STATIC
 #undef REGARGS
 #undef STDARGS
 #undef OFFSET
@@ -113,7 +117,7 @@
   #define STDARGS
   #define STACKEXT
   #define REGARGS
-  #define INLINE static
+  #define INLINE
   #define OFFSET(p,m) __offsetof(struct p,m)
 
   #if defined(__PPC__)
@@ -127,7 +131,7 @@
   #define STDARGS
   #define STACKEXT
   #define REGARGS
-  #define INLINE inline
+  #define INLINE
 /*************************************************************************/
 #elif defined(__SASC)
   #define ASM __asm
@@ -138,7 +142,7 @@
   #define DEPRECATED __attribute__((deprecated))
   #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ > 0)
     #define USED_VAR USED /* for variables only! */
-    #define INLINE static __inline __attribute__((always_inline))
+    #define INLINE __inline __attribute__((always_inline))
   #endif
   /* we have to distinguish between AmigaOS4 and MorphOS */
   #if (defined(_M68000) || defined(__M68000) || defined(__mc68000)) && !defined(__AROS__)
@@ -150,7 +154,7 @@
     #define STDARGS
     #define REGARGS
     #define STACKEXT
-    #if defined(__MORPHOS__)
+    #if defined(__MORPHOS__) && __GNUC__ == 2
       #define VARARGS68K __attribute__((varargs68k))
     #endif
     #if defined(__AROS__)
@@ -159,13 +163,15 @@
     #define INTERRUPT
     #define CHIP
   #endif
-  #define FAR
+  #if !defined(__far)
+    #define FAR /* __far NOT supported! */
+  #endif
   #define NEAR
 #elif defined(_DCC)
   #define REG(reg,arg) __##reg arg
   #define STACKEXT __stkcheck
   #define STDARGS __stkargs
-  #define INLINE static
+  #define INLINE
 #endif
 
 /* then "common" ones */
@@ -186,7 +192,10 @@
   #define SAVEDS __saveds
 #endif
 #if !defined(INLINE)
-  #define INLINE static __inline
+  #define INLINE __inline
+#endif
+#if !defined(STATIC)
+  #define STATIC static
 #endif
 #if !defined(REGARGS)
   #define REGARGS __regargs

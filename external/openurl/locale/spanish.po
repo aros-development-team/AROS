@@ -1,0 +1,538 @@
+# Translation catalog description file (pot-style)
+# $Id$
+# 
+# version 7
+# language english
+# 
+# Translators:
+# Javier Rivas <jabierdlr@gmail.com>, 2014
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenURL\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/openurllib/\n"
+"POT-Creation-Date: 2014-02-23 12:01+0100\n"
+"PO-Revision-Date: 2014-10-29 22:40+0000\n"
+"Last-Translator: Javier Rivas <jabierdlr@gmail.com>\n"
+"Language-Team: Spanish (http://www.transifex.com/ato/openurllib/language/es/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: OpenURL\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_ErrReqTitle (1//)"
+msgid "OpenURL Error"
+msgstr "OpenURL: ERROR"
+
+msgctxt "MSG_ErrReqGadget (//)"
+msgid "_Abort"
+msgstr "Interru_mpir"
+
+msgctxt "MSG_Err_NoMem (//)"
+msgid "Out of memory"
+msgstr "Memoria insuficiente"
+
+msgctxt "MSG_Err_NoMUI (//)"
+msgid "Can't open muimaster.library %ld.%ld or higher"
+msgstr "No se puede abrir 'muimaster.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoIntuition (//)"
+msgid "Can't open intuition.library %ld.%ld or higher"
+msgstr "No se puede abrir 'intuition.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoUtility (//)"
+msgid "Can't open utility.library %ld.%ld or higher"
+msgstr "No se puede abrir 'utility.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoGfx (//)"
+msgid "Can't open graphics.library %ld.%ld or higher"
+msgstr "No se puede abrir 'graphics.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoIcon (//)"
+msgid "Can't open icon.library %ld.%ld or higher"
+msgstr "No se puede abrir 'icon.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoOpenURL (//)"
+msgid "Can't open openurl.library %ld.%ld or higher"
+msgstr "No se puede abrir 'openurl.library' V%ld.%ld o superior."
+
+msgctxt "MSG_Err_NoAppClass (//)"
+msgid "Can't create AppClass"
+msgstr "No se puede crear 'AppClass'."
+
+msgctxt "MSG_Err_NoWinClass (11//)"
+msgid "Can't create WinClass"
+msgstr "No se puede crear 'WinClass'."
+
+msgctxt "MSG_Err_NoAppListClass (13//)"
+msgid "Can't create AppListClass"
+msgstr "No se puede crear 'AppListClass'."
+
+msgctxt "MSG_Err_NoBrowserEditWinClass (//)"
+msgid "Can't create BrowserEditWinClass"
+msgstr "No se puede crear 'BrowserEditWinClass'."
+
+msgctxt "MSG_Err_NoMailerEditWinClass (//)"
+msgid "Can't create MailerEditWinClass"
+msgstr "No se puede crear 'MailerEditWinClass'."
+
+msgctxt "MSG_Err_NoFTPEditWinClass (//)"
+msgid "Can't create FTPEditWinClass"
+msgstr "No se puede crear 'FTPEditWinClass'."
+
+msgctxt "MSG_Err_PopupPortClass (//)"
+msgid "Can't create PopupPortClass"
+msgstr "No se puede crear 'PopupPortClass'."
+
+msgctxt "MSG_Err_PopphClass (//)"
+msgid "Can't create PopphClass"
+msgstr "No se puede crear 'PopphClass'."
+
+msgctxt "MSG_Err_NoApp (//)"
+msgid "Can't create application object"
+msgstr "No se puede crear objeto de la aplicación."
+
+msgctxt "MSG_Err_NoPrefs (//)"
+msgid "Can't obtain prefs from openurl.library"
+msgstr "No se pueden obtener los ajustes\nde 'openurl.library'."
+
+msgctxt "MSG_Err_BadPrefs (//)"
+msgid ""
+"This version of this program doesn't know how\n"
+"to handle openurl.library prefs version %ld"
+msgstr "La versión de este programa no sabe como\nmanejar los ajustes de 'openurl.library' V%ld"
+
+msgctxt "MSG_Err_FailedSave (//)"
+msgid "Can't save prefs"
+msgstr "No se pueden guardar los ajustes."
+
+msgctxt "MSG_App_Description (100//)"
+msgid "OpenURL preferences application."
+msgstr "Preferencias de OpenURL.library"
+
+msgctxt "MSG_App_Copyright (//)"
+msgid "Public Domain Software"
+msgstr "Software de Dominio Público"
+
+msgctxt "MSG_App_ScreenTitle (//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Menu_Project (200//)"
+msgid "Project"
+msgstr "Proyecto"
+
+msgctxt "MSG_Menu_About (//)"
+msgid "?\\0About..."
+msgstr "?\\0Acerca de..."
+
+msgctxt "MSG_Menu_AboutMUI (//)"
+msgid "!\\0About MUI..."
+msgstr "!\\0Acerca de MUI..."
+
+msgctxt "MSG_Menu_Hide (//)"
+msgid "H\\0Hide"
+msgstr "H\\0Ocultar"
+
+msgctxt "MSG_Menu_Quit (//)"
+msgid "Q\\0Quit"
+msgstr "Q\\0Salir"
+
+msgctxt "MSG_Menu_Prefs (//)"
+msgid "Preferences"
+msgstr "Ajustes"
+
+msgctxt "MSG_Menu_Save (//)"
+msgid "S\\0Save"
+msgstr "S\\0Guardar"
+
+msgctxt "MSG_Menu_Use (//)"
+msgid "U\\0Use"
+msgstr "U\\0Usar"
+
+msgctxt "MSG_Menu_LastSaved (//)"
+msgid "L\\0Last saved"
+msgstr "L\\0Últimos guardados"
+
+msgctxt "MSG_Menu_Restore (//)"
+msgid "R\\0Restore"
+msgstr "R\\0Restaurar"
+
+msgctxt "MSG_Menu_Defaults (210//)"
+msgid "D\\0Default settings"
+msgstr "D\\0Valores iniciales"
+
+msgctxt "MSG_Menu_MUI (212//)"
+msgid "M\\0MUI Setting..."
+msgstr "M\\0Ajustes de MUI..."
+
+msgctxt "MSG_Win_WinTitle (300//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Win_Labels_Browsers (//)"
+msgid "Browsers"
+msgstr "Navegadores"
+
+msgctxt "MSG_Win_Labels_Mailers (//)"
+msgid "Mailers"
+msgstr "Correo"
+
+msgctxt "MSG_Win_Labels_FTPs (//)"
+msgid "FTPs"
+msgstr "FTP"
+
+msgctxt "MSG_Win_Labels_Misc (//)"
+msgid "Misc"
+msgstr "Miscelánea"
+
+msgctxt "MSG_Win_Save (//)"
+msgid "_Save"
+msgstr "_Guardar"
+
+msgctxt "MSG_Win_Save_Help (//)"
+msgid "Save preferences."
+msgstr "Guardar los ajustes."
+
+msgctxt "MSG_Win_Use (//)"
+msgid "_Use"
+msgstr "_Usar"
+
+msgctxt "MSG_Win_Use_Help (//)"
+msgid "Use preferences."
+msgstr "Usar los ajustes."
+
+msgctxt "MSG_Win_Apply (//)"
+msgid "_Apply"
+msgstr "_Aplicar"
+
+msgctxt "MSG_Win_Apply_Help (//)"
+msgid "Use preferences without closing window."
+msgstr "Usar los ajustes sin cerrar la ventana."
+
+msgctxt "MSG_Win_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+msgctxt "MSG_Win_Cancel_Help (//)"
+msgid "Close window, without using preferences."
+msgstr "Cerrar la ventana sin guardar los ajustes."
+
+msgctxt "MSG_AppList_Add (400//)"
+msgid "A_dd"
+msgstr "A_ñadir"
+
+msgctxt "MSG_AppList_Add_Help (//)"
+msgid "Add a new entry."
+msgstr "Añadir una nueva entrada."
+
+msgctxt "MSG_AppList_Edit (//)"
+msgid "_Edit"
+msgstr "_Editar"
+
+msgctxt "MSG_AppList_Edit_Help (//)"
+msgid "Edit active entry."
+msgstr "Editar entrada seleccionada."
+
+msgctxt "MSG_AppList_Clone (//)"
+msgid "C_lone"
+msgstr "_Duplicar"
+
+msgctxt "MSG_AppList_Clone_Help (//)"
+msgid "Clone active entry."
+msgstr "Duplicar entrada seleccionada."
+
+msgctxt "MSG_AppList_Delete (//)"
+msgid "Dele_te"
+msgstr "_Borrar"
+
+msgctxt "MSG_AppList_Delete_Help (//)"
+msgid "Delete active entry."
+msgstr "Borrar entrada seleccionada."
+
+msgctxt "MSG_AppList_Disable (//)"
+msgid "D_isable"
+msgstr "Desact_ivar"
+
+msgctxt "MSG_AppList_Disable_Help (//)"
+msgid "Disable active entry."
+msgstr "Desactivar entrada seleccionada."
+
+msgctxt "MSG_AppList_MoveUp_Help (//)"
+msgid "Move active entry up."
+msgstr "Mover entrada seleccionada arriba."
+
+msgctxt "MSG_AppList_MoveDown_Help (//)"
+msgid "Move active entry down."
+msgstr "Mover entrada seleccionada abajo."
+
+msgctxt "MSG_Edit_Use (500//)"
+msgid "_Use"
+msgstr "_Usar"
+
+msgctxt "MSG_Edit_Use_Help (//)"
+msgid "Apply changes."
+msgstr "Aplicar los cambios."
+
+msgctxt "MSG_Edit_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Cancelar"
+
+msgctxt "MSG_Edit_Cancel_Help (//)"
+msgid "Close window."
+msgstr "Cerrar la ventana."
+
+msgctxt "MSG_Edit_ListName (//)"
+msgid "Name"
+msgstr "\\033bNombre"
+
+msgctxt "MSG_Edit_ListPath (//)"
+msgid "Path"
+msgstr "\\033bSenda"
+
+msgctxt "MSG_Edit_Definitions (//)"
+msgid "Definitions"
+msgstr "Información Del Programa"
+
+msgctxt "MSG_Edit_ARexx (//)"
+msgid "ARexx commands"
+msgstr "Comandos ARexx"
+
+msgctxt "MSG_Edit_PopURL (//)"
+msgid "URL"
+msgstr "URL"
+
+msgctxt "MSG_Edit_PopScreen (//)"
+msgid "Public screen name"
+msgstr "Pantalla pública"
+
+msgctxt "MSG_Edit_Name (//)"
+msgid "_Name"
+msgstr "_Nombre:"
+
+msgctxt "MSG_Edit_Name_Help (//)"
+msgid "Name of entry."
+msgstr "Nombre de la entrada."
+
+msgctxt "MSG_Edit_Path (//)"
+msgid "_Path"
+msgstr "_Senda:"
+
+msgctxt "MSG_Edit_Path_Help (//)"
+msgid "Complete path to the application."
+msgstr "Senda completa del programa."
+
+msgctxt "MSG_Edit_Port (//)"
+msgid "_ARexx port"
+msgstr "_Puerto ARexx:"
+
+msgctxt "MSG_Edit_Port_Help (//)"
+msgid ""
+"Name of the application ARexx port\n"
+"to send commands to."
+msgstr "Nombre del puerto ARexx del programa a enviar comandos."
+
+msgctxt "MSG_Edit_Show (//)"
+msgid "_Show"
+msgstr "_Mostrar:"
+
+msgctxt "MSG_Edit_Show_Help (//)"
+msgid "ARexx command to uniconify the application."
+msgstr "Comando ARexx para desiconificar el programa."
+
+msgctxt "MSG_Edit_Screen (//)"
+msgid "_To front"
+msgstr "Pantalla al _frente:"
+
+msgctxt "MSG_Edit_Screen_Help (//)"
+msgid ""
+"ARexx command to move the application\n"
+"screen to front."
+msgstr "Comando ARexx para mover la pantalla del programa al frente."
+
+msgctxt "MSG_Edit_OpenURL (//)"
+msgid "_Open URL"
+msgstr "Abrir U_RL:"
+
+msgctxt "MSG_Edit_OpenURL_Help (//)"
+msgid "ARexx command to reach an URL."
+msgstr "Comando ARexx para acceder una URL."
+
+msgctxt "MSG_Edit_NewWin (//)"
+msgid "N_ew window"
+msgstr "_Ventana nueva:"
+
+msgctxt "MSG_Edit_NewWin_Help (//)"
+msgid ""
+"ARexx command to reach an URL\n"
+"in a new window (or tab)."
+msgstr "Comando ARexx para acceder una URL en una ventana/pestaña nueva."
+
+msgctxt "MSG_Browser_List_Help (600//)"
+msgid "List of browsers."
+msgstr "Lista de navegadores."
+
+msgctxt "MSG_Browser_WinTitle (//)"
+msgid "Edit Browser"
+msgstr "OpenURL: Editar navegador"
+
+msgctxt "MSG_Browser_NewBrowser (//)"
+msgid "New browser"
+msgstr "Nuevo_navegador"
+
+msgctxt "MSG_Mailer_List_Help (700//)"
+msgid "List of Mailers."
+msgstr "Lista de programas de correo."
+
+msgctxt "MSG_Mailer_WinTitle (//)"
+msgid "Edit Mailer"
+msgstr "OpenURL: Editar programa de correo"
+
+msgctxt "MSG_Mailer_NewMailer (//)"
+msgid "New mailer"
+msgstr "Nuevo_prog_correo"
+
+msgctxt "MSG_Mailer_Write (//)"
+msgid "_Write mail"
+msgstr "_Escribir mensaje:"
+
+msgctxt "MSG_Mailer_Write_Help (//)"
+msgid ""
+"ARexx command to open a\n"
+"\"write a new EMail window\"."
+msgstr "Comando ARexx parar abrir una ventana para escribir mensajes de correo."
+
+msgctxt "MSG_Mailer_PopAddress (//)"
+msgid "Address"
+msgstr "Dirección de correo"
+
+msgctxt "MSG_Mailer_Popsubject (//)"
+msgid "Subject"
+msgstr "Asunto"
+
+msgctxt "MSG_Mailer_PopBodyText (//)"
+msgid "Body text"
+msgstr "Mensaje"
+
+msgctxt "MSG_Mailer_PopBodyFile (//)"
+msgid "Body file"
+msgstr "Fichero con el mensaje"
+
+msgctxt "MSG_FTP_List_Help (800//)"
+msgid "List of FTP clients."
+msgstr "Lista de clientes de FTP."
+
+msgctxt "MSG_FTP_WinTitle (//)"
+msgid "Edit FTP client"
+msgstr "OpenURL: Editar cliente de FTP"
+
+msgctxt "MSG_FTP_NewFTP (//)"
+msgid "New FTP client"
+msgstr "Nuevo_cliente_FTP"
+
+msgctxt "MSG_FTP_RemoveURLQualifier (//)"
+msgid "Re_move 'ftp://'"
+msgstr "_Eliminar \"ftp://\""
+
+msgctxt "MSG_FTP_RemoveURLQualifier_Help (//)"
+msgid ""
+"If selected, \"ftp://\" is removed\n"
+"from the URL."
+msgstr "Eliminar la parte \"ftp://\" de la URL."
+
+msgctxt "MSG_Misc_Options (900//)"
+msgid "Options"
+msgstr "Opciones"
+
+msgctxt "MSG_Misc_Defaults (//)"
+msgid "Defaults"
+msgstr "Por Omisión"
+
+msgctxt "MSG_Misc_Prepend (//)"
+msgid "_Prepend \"http://\" to URLs without a scheme"
+msgstr "A_ñadir \"http://\" a URLs sin ningún esquema"
+
+msgctxt "MSG_Misc_Prepend_Help (//)"
+msgid ""
+"If selected, \"http://\" is added to any URL\n"
+"without a scheme, so that it is opened in the\n"
+"browser."
+msgstr "Añadir al inicio \"http://\" a cualquier URL sin ningún esquema, con lo que se abriría en un navegador."
+
+msgctxt "MSG_Misc_UseMailer (//)"
+msgid "S_end mailto: URLs to email application"
+msgstr "Enviar URLs \"_mailto:\" al programa de correo"
+
+msgctxt "MSG_Misc_UseMailer_Help (//)"
+msgid ""
+"If selected, \"mailto:\" URLs are sent to\n"
+"the mailer, otherwise they are sent to the\n"
+"browser."
+msgstr "Enviar URLs con la cadena \"mailto:\" al programa de correo; si no, se envían al navegador."
+
+msgctxt "MSG_Misc_UseFTP (//)"
+msgid "Se_nd \"ftp://\" URLs to FTP application"
+msgstr "Enviar UR_Ls con \"ftp://\" a programa FTP"
+
+msgctxt "MSG_Misc_UseFTP_Help (//)"
+msgid ""
+"If selected, \"ftp://\" URLs are sent to\n"
+"the FTP client, otherwise they are sent to\n"
+"the browser."
+msgstr "Enviar URLs con el inicio \"ftp://\" al cliente de FTP, si no, enviarla al navegador."
+
+msgctxt "MSG_Misc_Show (//)"
+msgid "Un_iconify application"
+msgstr "Mostrar/_Desiconificar programa"
+
+msgctxt "MSG_Misc_Show_Help (//)"
+msgid ""
+"If selected, the application is uniconified,\n"
+"before sending the URL to it."
+msgstr "Desiconificar el programa antes de enviar la URL."
+
+msgctxt "MSG_Misc_Bring (//)"
+msgid "_Bring browser screen to front"
+msgstr "Traer pantalla del programa al _frente"
+
+msgctxt "MSG_Misc_Bring_Help (//)"
+msgid ""
+"If selected, the application screen is moved\n"
+"to front, before sending the URL."
+msgstr "Traer el programa (y su pantalla) al frente antes de enviar la URL."
+
+msgctxt "MSG_Misc_Open (//)"
+msgid "_Open URL in new client window (or tab)"
+msgstr "Abrir URL en una _ventana/pestaña nueva"
+
+msgctxt "MSG_Misc_Open_Help (//)"
+msgid ""
+"If selected, a new application window (or tab)\n"
+"is opened, before sending the URL."
+msgstr "Abrir una nueva ventana/pestaña del programa antes de enviar la URL."
+
+msgctxt "MSG_Misc_Launch (//)"
+msgid "_Launch browser if one isn't running"
+msgstr "Cargar aplicació_n si no está ejecutada"
+
+msgctxt "MSG_Misc_Launch_Help (//)"
+msgid "If selected, a new application is run, if none is found."
+msgstr "Ejecutar el programa si no está ya ejecutado."
+
+msgctxt "MSG_About_WinTitle (1100//)"
+msgid "About OpenURL"
+msgstr "Acerca de OpenURL"
+
+msgctxt "MSG_About_OK (1111//)"
+msgid "_OK"
+msgstr "_Aceptar"
+
+msgctxt "MSG_About_Descr (1112//)"
+msgid ""
+"\\33bOpenURL\\33n is a shared library for easily sending\n"
+"URLs from applications to browsers, mailers\n"
+"and FTP clients.\n"
+"\n"
+"\\33cOpenURL is a Public Domain Software."
+msgstr "\\033c\\033bOpenURL\\033n es una librería para enviar URLs\nfácilmente desde aplicaciones a navegadores,\nprogramas de correo y clientes de FTP.\n\nOpenURL es de Dominio Público."

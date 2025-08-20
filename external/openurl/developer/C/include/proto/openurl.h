@@ -5,7 +5,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -17,7 +17,7 @@
 
  openurl.library project: http://sourceforge.net/projects/openurllib/
 
- $Id$
+ $Id: openurl.h 31328 2009-05-31 08:27:11Z mazze $
 
 ***************************************************************************/
 

@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -23,6 +23,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
+#include <proto/icon.h>
 
 #include <stdio.h>
 
@@ -294,6 +295,39 @@ static BOOL sendRexxMsg(STRPTR rxport, STRPTR rxcmd)
 
 /****************************************************************************/
 
+static LONG readNeededStack(STRPTR cmdtemplate)
+{
+    LONG _ret = -1;
+    TEXT c = '\0';
+    STRPTR p = NULL;
+    struct DiskObject *dobj = NULL;
+
+    if (!cmdtemplate)
+        return _ret;
+
+    /* Command path will either be a first string without space or complete
+       string*/
+    p = strstr(cmdtemplate, " ");
+    if (p != NULL)
+    {
+        c = *p;
+        *p = '\0';
+    }
+
+    dobj = GetDiskObject(cmdtemplate);
+    if (dobj)
+    {
+        _ret = dobj->do_StackSize;
+        FreeDiskObject(dobj);
+    }
+
+    if (c != '\0') *p = c;
+
+    return _ret;
+}
+
+/****************************************************************************/
+
 BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenName)
 {
     BOOL res = FALSE;
@@ -363,6 +397,7 @@ BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScr
         TEXT   c = '\0';
         BPTR   lock;
         LONG   error;
+        LONG   stack = -1;
 
         if(isFlagSet(bn->ubn_Flags, UNF_DISABLED))
             continue;
@@ -377,7 +412,7 @@ BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScr
         if (!(cmd = expandPlaceHolders(bn->ubn_Path,ph,PH_COUNT_BROWSER)))
             goto done;
 
-        filePart = FilePart(bn->ubn_Path);
+        filePart = (STRPTR)FilePart(bn->ubn_Path);
 
         if (filePart)
         {
@@ -389,6 +424,8 @@ BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScr
 
         if (filePart) *filePart = c;
 
+        stack = readNeededStack(bn->ubn_Path);
+
         /* start the browser */
 
         error = SystemTags(cmd,SYS_Asynch,    TRUE,
@@ -396,6 +433,7 @@ BOOL sendToBrowser(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScr
                                SYS_Output,    NULL,
                                SYS_Error,     NULL,
                                lock ? NP_CurrentDir : TAG_IGNORE, lock,
+                               stack != -1 ? NP_StackSize : TAG_IGNORE, stack,
                                TAG_DONE);
 
         freeArbitrateVecPooled(cmd);
@@ -533,7 +571,7 @@ BOOL sendToFTP(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScreenN
         if (!(cmd = expandPlaceHolders(fn->ufn_Path,ph,PH_COUNT_FTP)))
             goto done;
 
-        filePart = FilePart(fn->ufn_Path);
+        filePart = (STRPTR)FilePart(fn->ufn_Path);
 
         if (filePart)
         {
@@ -604,7 +642,7 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
     struct URL_MailerNode *mn;
     STRPTR                start, end, data, address = NULL, subject = NULL, body = NULL,
                           cmd = NULL, *tag;
-    TEXT                  fileName[36];
+    char                  fileName[36];
     BOOL                  res = FALSE, written = FALSE;
     UWORD                 offset, len;
 
@@ -816,7 +854,7 @@ BOOL sendToMailer(STRPTR URL, struct List *portlist, ULONG flags, STRPTR pubScre
         if (!(cmd = expandPlaceHolders(mn->umn_Path,ph,PH_COUNT_MAILER)))
             goto done;
 
-        filePart = FilePart(mn->umn_Path);
+        filePart = (STRPTR)FilePart(mn->umn_Path);
 
         if (filePart)
         {

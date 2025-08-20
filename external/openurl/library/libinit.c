@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2010 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -22,6 +22,7 @@
 #include "version.h"
 
 #include <exec/resident.h>
+#include <exec/execbase.h>
 #include <proto/exec.h>
 
 #include "macros.h"
@@ -86,7 +87,7 @@ struct OpenURLIFace *IOpenURL = NULL;
 #endif
 
 static const char UserLibName[] = "openurl.library";
-static const char UserLibID[]   = "$VER: openurl.library " LIB_REV_STRING " [" SYSTEMSHORT "/" CPU "] (" LIB_DATE ") " LIB_COPYRIGHT;
+static const char UserLibID[]   = "$VER: openurl.library " LIB_REV_STRING " (" LIB_DATE ") " LIB_COPYRIGHT " [" SYSTEMSHORT "/" CPU "]";
 
 /****************************************************************************/
 
@@ -288,15 +289,9 @@ STATIC CONST CONST_APTR LibVectors[] =
   (CONST_APTR)FUNCARRAY_32BIT_NATIVE,
   #endif
   #if defined(__AROS__)
-    #ifdef AROS_ABI_V1
-    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl, 1),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl, 2),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl, 3),
-    #else
-    (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl),
-    (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl),
-    #endif
+  (CONST_APTR)AROS_SLIB_ENTRY(LibOpen, Openurl, 1),
+  (CONST_APTR)AROS_SLIB_ENTRY(LibClose, Openurl, 2),
+  (CONST_APTR)AROS_SLIB_ENTRY(LibExpunge, Openurl, 3),
   #else
   (CONST_APTR)LibOpen,
   (CONST_APTR)LibClose,

@@ -2,7 +2,7 @@
 
  openurl.library - universal URL display and browser launcher library
  Copyright (C) 1998-2005 by Troels Walsted Hansen, et al.
- Copyright (C) 2005-2013 by openurl.library Open Source Team
+ Copyright (C) 2005-2018 openurl.library Open Source Team
 
  This library is free software; it has been placed in the public domain
  and you can freely redistribute it and/or modify it. Please note, however,
@@ -43,18 +43,19 @@ extern struct UtilityIFace*  __IUtility;
 
 #else
 struct DosLibrary *DOSBase = NULL;
-#if defined(__AROS__)
+#if defined(__AROS__) || defined(__amigaos3__)
 struct UtilityBase *UtilityBase = NULL;
 #else
 struct Library *UtilityBase = NULL;
-struct Library *__UtilityBase = NULL; // required by clib2 & libnix
 #endif
+struct Library *__UtilityBase = NULL; // required by clib2 & libnix
 #if defined(__MORPHOS__)
 struct Library *RexxSysBase = NULL;
 #else
 struct RxsLib *RexxSysBase = NULL;
 #endif
 struct Library *IFFParseBase = NULL;
+struct Library *IconBase = NULL;
 #endif
 
 /***********************************************************************/
@@ -70,6 +71,12 @@ freeBase(struct LibraryHeader *lib)
   {
     CALL_LFUNC(URL_FreePrefsA, lib->prefs, NULL);
     lib->prefs = NULL;
+  }
+
+  if(IconBase)
+  {
+    CloseLibrary(IconBase);
+    IconBase = NULL;
   }
 
   if(RexxSysBase)
@@ -148,6 +155,7 @@ initBase(struct LibraryHeader *lib)
          GETINTERFACE(IIFFParse, IFFParseBase))
       if((RexxSysBase = (APTR)OpenLibrary("rexxsyslib.library", 36)) &&
          GETINTERFACE(IRexxSys, RexxSysBase))
+      if((IconBase = OpenLibrary("icon.library", 37)))
       {
         #if defined(__amigaos4__)
         lib->pool = AllocSysObjectTags(ASOT_MEMPOOL, ASOPOOL_MFlags,    MEMF_SHARED|MEMF_CLEAR,

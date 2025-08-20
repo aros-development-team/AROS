@@ -386,8 +386,10 @@
         };
 
         struct DosPacket *dp;
+        BPTR currdir = BNULL;
 
         FilterTagItems(newtags, filterList, TAGFILTER_NOT);
+        currdir = (BPTR)GetTagData(NP_CurrentDir, (IPTR)BNULL, newtags);
 
         proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Tag  = TAG_MORE;
         proctags[sizeof(proctags)/(sizeof(proctags[0])) - 1].ti_Data = (IPTR)newtags;
@@ -438,16 +440,19 @@
                 dp->dp_Arg7 = (IPTR)ea;         /* AROS extension information*/
                 dp->dp_Arg4 = (IPTR)cis;        /* Arguments & Script*/
 
+                /* Current directory - either provided or inherited */
+                if (currdir == BNULL && me->pr_CurrentDir) currdir = DupLock(me->pr_CurrentDir);
+
                 /* The rest of the packet depends on the cliType. */
                 if (cliType == CLI_NEWCLI) {
                     /* CliInitNewcli style */
                     dp->dp_Res1 = 1;
-                    dp->dp_Arg1 = (IPTR)(me->pr_CurrentDir ? DupLock(me->pr_CurrentDir) : BNULL);
+                    dp->dp_Arg1 = (IPTR)currdir;
                 } else {
                     /* CliInitRun style */
                     dp->dp_Res1 = 0;
                     dp->dp_Arg1 = (IPTR)(__is_process(me) ? MKBADDR(Cli()) : BNULL);
-                    dp->dp_Arg5 = (IPTR)(me->pr_CurrentDir ? DupLock(me->pr_CurrentDir) : BNULL);
+                    dp->dp_Arg5 = (IPTR)currdir;
                     dp->dp_Arg6 = 1;
                 }
 

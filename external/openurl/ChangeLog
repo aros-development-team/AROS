@@ -2,8 +2,49 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 209 2014-04-05 10:50:34Z damato $
-$URL: svn://svn.code.sf.net/p/openurllib/code/releases/7.15/ChangeLog $
+#### v7.18 RELEASE #############################################################
+
+2016-09-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: moved the system and CPU description behind the copyright part.
+
+2016-08-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/Makefile: generate ISO8859-1 encoded catalogs instead of UTF8 encoded
+    ones.
+
+2016-08-06  Jens Maus <mail@jens-maus.de>
+
+  * include: updated SDI headers to latest versions available.
+  * include: removed obsolete msprintf() and msnprintf() prototypes.
+
+#### v7.17 RELEASE #############################################################
+
+2016-08-04  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.17 release preparations
+
+2015-03-22  Jens Maus <mail@jens-maus.de>
+
+  * tools/mkrelease.sh: fixed copy of ReAction-based prefs program which failed
+    due to incorrect path in mkrelease.sh. This fixes bug #13.
+
+#### v7.16 RELEASE #############################################################
+
+2015-03-21  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.16 release preparations
+
+2014-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale: added dutch, russian, spanish and turkish translations and
+    updated all other translations.
+
+2014-04-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * tools/mkrelease.sh, dist/Install: for AmigaOS4 the ReAction version of the
+    preferences application is now included, too. Additionally the Installer
+    script lets the user choose between MUI and ReAction GUI to be installed.
 
 #### v7.15 RELEASE #############################################################
 
