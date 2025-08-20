@@ -24,8 +24,8 @@ ICONS += \
     def_ANIM def_GIFAnim
 
 ICONS += \
-    def_BitmapFont \
-    def_OutlineFont
+    def_Bitmap_Font \
+    def_Outline_Font
 
 IMGS := def_AppIcon1.png def_AppIcon2.png
 APPI := def_AppIcon

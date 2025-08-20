@@ -50,8 +50,8 @@ MISCDESCRIPTORS   := \
 		     Archive ASF AudioMode \
 			 CAT Catalog Country \
 			 DataType DT64 \
-			 BitmapFont \
-			 OutlineFont \
+			 Bitmap_Font \
+			 Outline_Font \
 			 HTML \
 			 LIST Lua \
 			 MP3ID3 MSD MSI \
