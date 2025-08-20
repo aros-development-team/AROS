@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -53,11 +53,12 @@ static AROS_UFH2(VOID, _SPutC,
     AROS_USERFUNC_EXIT
 }
 
-#undef Printf
-VOID Printf( const char *format, ...)
+VOID MathTestPrint( const char *format, ...)
 {
     RawDoFmt( format, (APTR)&(((ULONG *)&format)[1]), _SPutC, NULL);
 }
+#else
+#define MathTestPrint Printf
 #endif
 
 int main(int argc, char **argv)
@@ -75,7 +76,7 @@ int main(int argc, char **argv)
     QUAD * double_resptr2 = (QUAD *)&double_res2;
     QUAD QArg1;
 
-    Printf("---- Testing Started ----\n");
+    MathTestPrint("---- Testing Started ----\n");
 
     Darg1 = (double *)&QArg1;
 
@@ -107,21 +108,21 @@ int main(int argc, char **argv)
     ptr = (LONG *)&SPTwo;       *ptr = DEF_SPTwo;
 
 /* if you deactivate #define float LONG something very funny happens here:
-Printf("two: %x <-> %x \n",*ptr,SPTwo);
-Printf("two: %x <-> %x \n",SPTwo,*ptr);
+MathTestPrint("two: %x <-> %x \n",*ptr,SPTwo);
+MathTestPrint("two: %x <-> %x \n",SPTwo,*ptr);
 */
 
 #define CHECK(func, args, cres) \
     float_res = func args; \
     tested++; \
     if (*float_resptr != cres) \
-        Printf ("FAIL: " #func " " #args " in line %ld " \
+        MathTestPrint ("FAIL: " #func " " #args " in line %ld " \
         "(got=0x%08lx expected=0x%08lx)\n", \
         __LINE__, (unsigned long)*float_resptr, (unsigned long)cres); \
     else \
     { \
         passed++; \
-        Printf ("OK  : " #func " " #args "\n"); \
+        MathTestPrint ("OK  : " #func " " #args "\n"); \
     }
 
 /*
@@ -136,7 +137,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-            Printf ("FAIL: " #func " " #arg1 " in line %ld " \
+            MathTestPrint ("FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                  (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -145,7 +146,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
         } \
         else \
         { \
-            Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
+            MathTestPrint ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)*(((LONG *)double_resptr) + 1), \
@@ -156,7 +157,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     else \
     { \
         passed++; \
-        Printf ("OK  : " #func " " #arg1 "\n"); \
+        MathTestPrint ("OK  : " #func " " #arg1 "\n"); \
     }
 
 #define CHECK_DOUBLE1AF(func, cres) \
@@ -165,7 +166,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-            Printf ("FAIL: " #func " in line %ld " \
+            MathTestPrint ("FAIL: " #func " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -174,7 +175,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
         } \
         else \
         { \
-            Printf ("(little endian) FAIL: " #func " in line %ld " \
+            MathTestPrint ("(little endian) FAIL: " #func " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)*(((LONG *)double_resptr) + 1), \
@@ -185,7 +186,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     } \
     else  { \
         passed++; \
-        Printf ("OK  : " #func "\n"); \
+        MathTestPrint ("OK  : " #func "\n"); \
     }
     
 #define CHECK_DOUBLE1B(func, arg1, cres) \
@@ -196,7 +197,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-            Printf ("FAIL: " #func " " #arg1 " in line %ld " \
+            MathTestPrint ("FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr) >> 32), \
@@ -205,7 +206,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
         } \
         else \
         { \
-            Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
+            MathTestPrint ("(little endian) FAIL: " #func " " #arg1 " in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)*(((LONG *)double_resptr) + 1), \
@@ -215,7 +216,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     } \
     else { \
         passed++; \
-        Printf ("OK  : " #func " " #arg1 "\n"); \
+        MathTestPrint ("OK  : " #func " " #arg1 "\n"); \
     }
 
 #define CHECK_DOUBLE2A(func, arg1, arg2, cres) \
@@ -226,7 +227,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     { \
         if (0 != AROS_BIG_ENDIAN) \
         { \
-            Printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld " \
+            MathTestPrint ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld " \
                 "(got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)(((QUAD)*double_resptr ) >> 32), \
@@ -236,7 +237,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
         } \
         else \
         { \
-            Printf ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") " \
+            MathTestPrint ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") " \
                 "in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                 __LINE__, \
                 (unsigned long)*(((LONG *)double_resptr ) + 1), \
@@ -247,17 +248,17 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     } \
     else { \
         passed++; \
-        Printf ("OK  : " #func " ( " #arg1 "," #arg2 " ) \n"); \
+        MathTestPrint ("OK  : " #func " ( " #arg1 "," #arg2 " ) \n"); \
     }
 
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
-        Printf ("Couldn't open mathffp.library\n");
+        MathTestPrint ("Couldn't open mathffp.library\n");
         return RETURN_FAIL;
     }
         
-    Printf("\nValidating 'mathffp' functionality...\n");
+    MathTestPrint("\nValidating 'mathffp' functionality...\n");
 
     /* this should set the zero-bit*/
     wanted = DEF_FFPNull;       CHECK(SPAbs,(0),wanted);
@@ -290,11 +291,11 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
     {
-        Printf ("Couldn't open mathtrans.library\n");
+        MathTestPrint ("Couldn't open mathtrans.library\n");
         return RETURN_FAIL;
     }
 
-    Printf("\nValidating 'mathtrans' functionality...\n");
+    MathTestPrint("\nValidating 'mathtrans' functionality...\n");
 
     CHECK (SPLog,   (FFPTwo),     0xb1721840UL);
     CHECK (SPLog10, (FFPTwo),     0x9a209b3fUL);
@@ -312,23 +313,23 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0L)))
     {
-        Printf ("Couldn't open mathieeesingbas.library\n");
+        MathTestPrint ("Couldn't open mathieeesingbas.library\n");
         return RETURN_FAIL;
     }
 
-    Printf("\nValidating 'mathieeesingbas' functionality...\n");
+    MathTestPrint("\nValidating 'mathieeesingbas' functionality...\n");
 #if (1)
-    Printf("      TODO!\n");
+    MathTestPrint("      TODO!\n");
 #else
 #endif
 
     if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
     {
-        Printf ("Couldn't open mathieeesingtrans.library\n");
+        MathTestPrint ("Couldn't open mathieeesingtrans.library\n");
         return RETURN_FAIL;
     }
 
-    Printf("\nValidating 'mathieeesingtrans' functionality...\n");
+    MathTestPrint("\nValidating 'mathieeesingtrans' functionality...\n");
 
     CHECK (IEEESPLog,   (SPTwo),      0x3f317218UL);
     CHECK (IEEESPLog10, (SPTwo),      0x3e9a209aUL);
@@ -346,11 +347,11 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 0L)))
     {
-        Printf ("Couldn't open mathieeedoubbas.library\n");
+        MathTestPrint ("Couldn't open mathieeedoubbas.library\n");
         return RETURN_FAIL;
     }
     
-    Printf("\nValidating 'mathieeedoubbas' functionality...\n");
+    MathTestPrint("\nValidating 'mathieeedoubbas' functionality...\n");
 
     CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)1), DEF_DPOne);
     CHECK_DOUBLE1A(IEEEDPFlt, ((LONG)2), DEF_DPTwo);
@@ -370,11 +371,11 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
     {
-        Printf ("Couldn't open mathieeedoubtrans.library\n");
+        MathTestPrint ("Couldn't open mathieeedoubtrans.library\n");
         return RETURN_FAIL;
     }
     
-    Printf("\nValidating 'mathieeedoubtrans' functionality...\n");
+    MathTestPrint("\nValidating 'mathieeedoubtrans' functionality...\n");
 
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(4)), DEF_DPTwo);
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(9)), DEF_DPThree);
@@ -387,7 +388,7 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK_DOUBLE1AF(IEEEDPSincos, 0x3fe14a280fb5068bULL);
 
     wanted = IEEEDPTieee(IEEEDPFlt(2));
-    Printf("IEEEDPTieee(2) = %08lx\n", (LONG)wanted);
+    MathTestPrint("IEEEDPTieee(2) = %08lx\n", (LONG)wanted);
 
     double_res = IEEEDPFieee(SPFlt(2));
     CHECK_DOUBLE1AF(IEEEDPFieee, DEF_DPTwo);
@@ -395,8 +396,8 @@ Printf("two: %x <-> %x \n",SPTwo,*ptr);
     CloseLibrary(MathIeeeDoubTransBase);
     CloseLibrary(MathIeeeDoubBasBase);
 
-    Printf("---- Testing Completed ----\n");
+    MathTestPrint("---- Testing Completed ----\n");
 
-    Printf("Passed %ld of %ld tests\n", passed, tested);
+    MathTestPrint("Passed %ld of %ld tests\n", passed, tested);
     return (tested == passed) ? RETURN_OK : RETURN_FAIL;
 }
