@@ -13,7 +13,7 @@ ICONS := \
 ICONS += \
     def_Drawer def_Project \
     def_Picture def_Text def_Document def_Tool def_Authors \
-    def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_Instrument def_PDF def_Patch \
+    def_CSS def_HTML def_Legal def_Movie def_Music def_Instrument def_PDF def_Patch \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
     def_XCF def_Sound def_Keymap def_DataType def_Installer \
     def_AudioMode def_Zune def_TrueType def_Otag def_A68K def_Catalog \
@@ -22,6 +22,10 @@ ICONS += \
     def_PLS def_M3U def_DT64 def_Pref def_MSD def_MSI def_CDXL def_FLAC \
     def_ELF_EXE_Linux def_KickROM def_Wireless def_LHA \
     def_ANIM def_GIFAnim
+
+ICONS += \
+    def_BitmapFont \
+    def_OutlineFont
 
 IMGS := def_AppIcon1.png def_AppIcon2.png
 APPI := def_AppIcon
