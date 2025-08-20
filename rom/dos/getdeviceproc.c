@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: GetDeviceProc() - Find the filesystem for a path.
 */
@@ -80,6 +80,14 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     AROS_LIBFUNC_EXIT
 
 } /* GetDeviceProc */
+
+/* skip past *all consecutive entries* with the same lock */
+static struct AssignList *deviceproc_nextassignlock(struct AssignList *al, BPTR lock) {
+    while (al != NULL && al->al_Lock == lock) {
+        al = al->al_Next;
+    }
+    return al;
+}
 
 static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp)
 {
@@ -342,20 +350,32 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* finally the tricky bit - multidirectory assigns */
 
     /* if we're pointing at the "primary" lock, then we just take the first
-     * one in the list */
-    if (dp->dvp_Lock == dl->dol_Lock)
-        dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
+     * different one in the list */
+    if (dp->dvp_Lock == dl->dol_Lock) {
+        struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
+        al = deviceproc_nextassignlock(al, dp->dvp_Lock);
+        if (al == NULL) {
+            UnLockDosList(LDF_ALL | LDF_READ);
+            FreeMem(dp, sizeof(struct DevProc));
 
+            SetIoErr(ERROR_NO_MORE_ENTRIES);
+            return NULL;
+        }
+        dp->dvp_Lock = al->al_Lock;
     /* otherwise we're finding the next */
-    else {
+    } else {
         struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
 
-        /* find our current lock (ie the one we returned last time) */
-        for (; al != NULL && al->al_Lock != dp->dvp_Lock; al = al->al_Next);
+        /* Find the first occurrence *after* the current lock */
+        if (dp->dvp_Lock != BNULL) {
+            /* Skip over entries until we find the current lock */
+            for (; al != NULL && al->al_Lock != dp->dvp_Lock; al = al->al_Next)
+                ;
+            al = deviceproc_nextassignlock(al, dp->dvp_Lock);
+        }
 
-        /* if we didn't find it, or we didn't but there's none after it, then
-         * we've run out */
-        if (al == NULL || (al = al->al_Next) == NULL) {
+        /* Check if we reached the end */
+        if (al == NULL) {
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
 
