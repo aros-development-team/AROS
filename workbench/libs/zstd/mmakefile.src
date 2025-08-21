@@ -1,0 +1,66 @@
+#   AROS metamakefile for zstd
+include $(SRCDIR)/config/aros.cfg
+
+ZSTDVERSION=1.5.7
+ZSTDREPOSITORIES = https://github.com/facebook/zstd/releases/download/v$(ZSTDVERSION)
+ZSTDARCHBASE     := zstd-$(ZSTDVERSION)
+ZSTDARCHSUFFIX := "tar.gz"
+#ZSTDATCHSPEC := $(ZSTDARCHBASE)-aros.diff:libcodesets-$(ZSTDARCHBASE):-f,-p1
+ZSTDARCHSRCDIR := $(PORTSDIR)/zstd/$(ZSTDARCHBASE)
+
+%fetch mmake=workbench-libs-zstd-fetch archive=$(ZSTDARCHBASE) destination=$(PORTSDIR)/zstd \
+    location=$(PORTSSOURCEDIR)/zstd archive_origins=$(ZSTDREPOSITORIES) suffixes=$(ZSTDARCHSUFFIX) \
+    patches_specs=$(ZSTDATCHSPEC)
+
+%create_patch mmake=workbench-libs-zstd-create-patch \
+    archive=$(ZSTDARCHBASE) suffixes=$(ZSTDARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/zstd destination=$(PORTSDIR)/zstd \
+    srcdir="libcodesets-$(ZSTDARCHBASE)"
+
+CSOURCES := \
+    $(sort $(wildcard $(ZSTDARCHSRCDIR)/lib/common/*.c)) \
+    $(sort $(wildcard $(ZSTDARCHSRCDIR)/lib/compress/*.c)) \
+    $(sort $(wildcard $(ZSTDARCHSRCDIR)/lib/decompress/*.c)) \
+    $(sort $(wildcard $(ZSTDARCHSRCDIR)/lib/dictBuilder/*.c))
+
+FILES := $(CSOURCES:.c=)
+
+USER_INCLUDES = -I. -idirafter $(ZSTDARCHSRCDIR)/include
+USER_CPPFLAGS := -DZSTD_NO_TRACE
+USER_LDFLAGS := -static
+
+#MM- workbench-libs-zstd : workbench-libs-zstd-library workbench-libs-zstd-charsets
+#MM workbench-libs-zstd-library : workbench-libs-zstd-fetch workbench-libs-zstd-includes 
+
+%build_module mmake=workbench-libs-zstd-library \
+    modname=zstd modtype=library \
+    files="$(FILES)"
+
+%build_linklib mmake=linklibs-zstd \
+    libname=zstd-static \
+    files="$(FILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/libzstd-static
+
+INCLUDE_FILES:=zstd.h zstd_errors.h zdict.h
+%copy_includes dir=$(ZSTDARCHSRCDIR)/lib includes=$(INCLUDE_FILES)
+
+#MM- includes-copy : \
+#MM     workbench-libs-zstd-fetch \
+#MM     workbench-libs-zstd-pkgc
+
+
+$(AROS_LIB)/pkgconfig/libzstd.pc : $(ZSTDARCHSRCDIR)/lib/libzstd.pc.in
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's|@PREFIX@|/Developer|g' \
+	    -e 's|@LIBDIR@|$${prefix}/lib|g' \
+	    -e 's|@INCLUDEDIR@|$${prefix}/include|g' \
+	    -e 's|@VERSION@|$(ZSTDVERSION)|g' \
+	    -e 's|@LIBS_MT@||g' \
+	    -e '/^Libs\.private/d' \
+	    -e 's|^exec_prefix=.*|exec_prefix=$${prefix}|' \
+	    $< > $@
+
+#MM
+workbench-libs-zstd-pkgc : $(AROS_LIB)/pkgconfig/libzstd.pc
+
+%common
