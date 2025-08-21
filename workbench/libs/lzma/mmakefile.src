@@ -3,6 +3,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- workbench-libs-lzma : workbench-libs-lzma-library
+#MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes 
+
 VERSION := 5.8.1
 REPOSITORIES := https://tukaani.org/xz
 ARCHBASE     := xz-$(VERSION)

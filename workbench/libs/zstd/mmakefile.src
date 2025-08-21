@@ -29,7 +29,7 @@ USER_INCLUDES = -I. -idirafter $(ZSTDARCHSRCDIR)/include
 USER_CPPFLAGS := -DZSTD_NO_TRACE
 USER_LDFLAGS := -static
 
-#MM- workbench-libs-zstd : workbench-libs-zstd-library workbench-libs-zstd-charsets
+#MM- workbench-libs-zstd : workbench-libs-zstd-library
 #MM workbench-libs-zstd-library : workbench-libs-zstd-fetch workbench-libs-zstd-includes 
 
 %build_module mmake=workbench-libs-zstd-library \
