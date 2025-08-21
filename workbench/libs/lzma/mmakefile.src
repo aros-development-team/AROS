@@ -1,0 +1,181 @@
+# Copyright 2018-2025, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 
+
+include $(SRCDIR)/config/aros.cfg
+
+VERSION := 5.8.1
+REPOSITORIES := https://tukaani.org/xz
+ARCHBASE     := xz-$(VERSION)
+ARCHSUFFIX := "tar.gz"
+##PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
+ARCHSRCDIR := $(PORTSDIR)/xz/$(ARCHBASE)
+
+USER_CFLAGS :=
+USER_INCLUDES := \
+    -I$(ARCHSRCDIR)/src/common \
+    -I$(ARCHSRCDIR)/src/liblzma/check \
+    -I$(ARCHSRCDIR)/src/liblzma/common \
+    -I$(ARCHSRCDIR)/src/liblzma/delta \
+    -I$(ARCHSRCDIR)/src/liblzma/lz \
+    -I$(ARCHSRCDIR)/src/liblzma/lzma \
+    -I$(ARCHSRCDIR)/src/liblzma/rangecoder \
+    -I$(ARCHSRCDIR)/src/liblzma/simple
+
+USER_CPPFLAGS := \
+    -DHAVE_INTTYPES_H \
+    -DHAVE_STDINT_H \
+    -DHAVE_STDBOOL_H
+
+%fetch mmake=xz-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/xz \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/xz \
+    archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=xz-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/xz \
+    srcdir="$(ARCHBASE)"
+
+FILES += \
+    common/common \
+    common/block_util \
+    common/easy_preset \
+    common/filter_common \
+    common/index \
+    common/stream_flags_common \
+    common/string_conversion \
+    common/vli_size
+
+#    common/stream_decoder_mt \
+#    common/stream_encoder_mt \
+
+FILES += \
+    common/alone_encoder \
+    common/block_buffer_encoder \
+    common/block_encoder \
+    common/block_header_encoder \
+    common/easy_buffer_encoder \
+    common/easy_encoder \
+    common/easy_encoder_memusage \
+    common/filter_buffer_encoder \
+    common/filter_encoder \
+    common/filter_flags_encoder \
+    common/index_encoder \
+    common/stream_buffer_encoder \
+    common/stream_encoder \
+    common/stream_flags_encoder \
+    common/vli_encoder
+
+FILES += \
+    common/alone_decoder \
+    common/auto_decoder \
+    common/block_buffer_decoder \
+    common/block_decoder \
+    common/block_header_decoder \
+    common/easy_decoder_memusage \
+    common/file_info \
+    common/filter_buffer_decoder \
+    common/filter_decoder \
+    common/filter_flags_decoder \
+    common/index_decoder \
+    common/index_hash \
+    common/stream_buffer_decoder \
+    common/stream_decoder \
+    common/stream_flags_decoder \
+    common/vli_decoder
+
+FILES += \
+    common/microlzma_encoder \
+    common/microlzma_decoder \
+    common/lzip_decoder
+
+#ifeq ($(AROS_TARGET_CPU),x86_64)
+ASMIFILES += \
+    check/crc64_x86 \
+    check/crc32_x86
+#else
+FILES += \
+    check/crc64_fast \
+    check/crc32_fast
+#endif
+FILES += \
+    check/sha256
+FILES += \
+    check/check
+
+FILES += \
+    lz/lz_encoder \
+    lz/lz_encoder_mf
+FILES += \
+    lz/lz_decoder
+FILES += \
+    lzma/lzma_encoder_presets
+
+FILES += \
+    lzma/lzma_encoder \
+    lzma/lzma_encoder_optimum_fast \
+    lzma/lzma_encoder_optimum_normal
+
+#    lzma/fastpos_tablegen \
+
+FILES += \
+    lzma/fastpos_table
+FILES += \
+    lzma/lzma_decoder
+
+FILES += \
+    lzma/lzma2_encoder \
+    lzma/lzma2_decoder
+
+#    rangecoder/price_tablegen \
+
+FILES += \
+    rangecoder/price_table
+
+FILES += \
+    delta/delta_common \
+    delta/delta_encoder \
+    delta/delta_decoder
+
+FILES += \
+    simple/simple_coder \
+    simple/simple_encoder \
+    simple/simple_decoder
+
+%build_module mmake=workbench-libs-lzma-library \
+    modname=lzma modtype=library \
+    files="$(addprefix $(ARCHSRCDIR)/src/liblzma/,$(FILES))"
+
+%build_linklib mmake=linklibs-lzma \
+    libname=lzma-static \
+    files="$(addprefix $(ARCHSRCDIR)/src/liblzma/,$(FILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/liblzma-static
+
+API_HEADERS:=$(sort $(wildcard $(ARCHSRCDIR)/src/liblzma/api/lzma/*.h))
+APIINCLUDE_FILES:=$(patsubst $(ARCHSRCDIR)/src/liblzma/api/lzma/%,%,$(API_HEADERS))
+%copy_includes dir=$(ARCHSRCDIR)/src/liblzma/api/lzma includes=$(APIINCLUDE_FILES)  path=lzma
+
+INCLUDE_FILES:=lzma.h
+%copy_includes dir=$(ARCHSRCDIR)/src/liblzma/api includes=$(INCLUDE_FILES)
+
+#MM- includes-copy : \
+#MM     xz-fetch \
+#MM     workbench-libs-lzma-pkgc
+
+$(AROS_LIB)/pkgconfig/liblzma.pc : $(ARCHSRCDIR)/src/liblzma/liblzma.pc.in
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's|@prefix@|/Developer|g' \
+	    -e 's|@libdir@|$${prefix}/lib|g' \
+	    -e 's|@includedir@|$${prefix}/include|g' \
+	    -e 's|@PACKAGE_VERSION@|$(VERSION)|g' \
+	    -e 's|@PACKAGE_URL@||g' \
+	    -e 's|@LIBS_MT@||g' \
+	    -e '/^Libs\.private/d' \
+	    -e '/^Cflags\.private/d' \
+	    -e 's|^exec_prefix=.*|exec_prefix=$${prefix}|' \
+	    $< > $@
+
+#MM
+workbench-libs-lzma-pkgc : $(AROS_LIB)/pkgconfig/liblzma.pc
+
+%common
