@@ -48,7 +48,6 @@ INCLUDE_FILES:=zstd.h zstd_errors.h zdict.h
 #MM     workbench-libs-zstd-fetch \
 #MM     workbench-libs-zstd-pkgc
 
-
 $(AROS_LIB)/pkgconfig/libzstd.pc : $(ZSTDARCHSRCDIR)/lib/libzstd.pc.in
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	@$(SED) -e 's|@PREFIX@|/Developer|g' \
