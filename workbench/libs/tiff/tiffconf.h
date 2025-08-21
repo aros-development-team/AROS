@@ -55,7 +55,11 @@
 
 /* Native cpu byte order: 1 if big-endian (Motorola) or 0 if little-endian
    (Intel) */
+#if AROS_BIG_ENDIAN
+#define HOST_BIGENDIAN 1
+#else
 #define HOST_BIGENDIAN 0
+#endif
 
 /* Support CCITT Group 3 & 4 algorithms */
 #define CCITT_SUPPORT 1
@@ -67,7 +71,7 @@
 /* #undef JBIG_SUPPORT */
 
 /* Support LERC compression */
-#undef LERC_SUPPORT
+#define LERC_SUPPORT 1
 
 /* Support LogLuv high dynamic range encoding */
 #define LOGLUV_SUPPORT 1

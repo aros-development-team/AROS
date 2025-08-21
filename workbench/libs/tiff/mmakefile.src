@@ -21,7 +21,7 @@ ARCHSRCDIR := $(PORTSDIR)/libtiff/$(ARCHBASE)
 #MM includes-copy : \
 #MM     libtiff-fetch
 
-#MM workbench-libs-tiff : workbench-libs-z
+#MM workbench-libs-tiff : workbench-libs-z workbench-libs-zstd
 #MM- workbench-libs-tiff-includes : \
 #MM     includes-copy \
 #MM     workbench-libs-tiff-generated
@@ -82,7 +82,7 @@ USER_INCLUDES := -iquote $(ARCHSRCDIR)/libtiff
 
 %build_module mmake=workbench-libs-tiff \
     modname=tiff modtype=library \
-    files="$(FILES)" linklibname="tiff"
+    files="$(FILES)" linklibname="tiff" uselibs="zstd"
 
 #MM workbench-libs-tiff-generated : libtiff-fetch
 

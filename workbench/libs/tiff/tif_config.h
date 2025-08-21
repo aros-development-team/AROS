@@ -128,25 +128,16 @@
 /* Support webp compression */
 /* #undef WEBP_SUPPORT */
 
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel). */
-#if defined AC_APPLE_UNIVERSAL_BUILD
-# if defined __BIG_ENDIAN__
+#if AROS_BIG_ENDIAN
 #  define WORDS_BIGENDIAN 1
-# endif
 #else
-# ifndef WORDS_BIGENDIAN
-/* #  undef WORDS_BIGENDIAN */
+# ifdef WORDS_BIGENDIAN
+#   undef WORDS_BIGENDIAN
 # endif
 #endif
 
 /* Support zstd compression */
-/* #undef ZSTD_SUPPORT */
-
-/* Enable large inode numbers on Mac OS X 10.5.  */
-#ifndef _DARWIN_USE_64_BIT_INODE
-# define _DARWIN_USE_64_BIT_INODE 1
-#endif
+#define ZSTD_SUPPORT 1
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 /* #undef _FILE_OFFSET_BITS */
@@ -157,19 +148,11 @@
 /* Define for large files, on AIX-style hosts. */
 /* #undef _LARGE_FILES */
 
-#if !defined(__MINGW32__)
-#  define TIFF_SIZE_FORMAT "zu"
-#endif
+#define TIFF_SIZE_FORMAT "zu"
 #if SIZEOF_SIZE_T == 8
 #  define TIFF_SSIZE_FORMAT PRId64
-#  if defined(__MINGW32__)
-#    define TIFF_SIZE_FORMAT PRIu64
-#  endif
 #elif SIZEOF_SIZE_T == 4
 #  define TIFF_SSIZE_FORMAT PRId32
-#  if defined(__MINGW32__)
-#    define TIFF_SIZE_FORMAT PRIu32
-#  endif
 #else
 #  error "Unsupported size_t size; please submit a bug report"
 #endif
