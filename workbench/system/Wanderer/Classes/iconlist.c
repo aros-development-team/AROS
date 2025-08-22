@@ -772,9 +772,9 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
     STRPTR text = NULL, renderflag = "<UHOH>";
     struct TextExtent te;
     ULONG fit;
+    BOOL renderSelected = ((entry->ie_Flags & (ICONENTRY_FLAG_SELECTED | ICONENTRY_FLAG_LASSO)) != 0);
 
-    if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
-    {
+    if (renderSelected) {
         FillPixelArray(rp,
             rect->MinX, rect->MinY,
             rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY,
@@ -835,7 +835,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
                   (
                     rp, data->icld_LVMAttribs->lvma_IconDrawer, NULL,
                     rect->MinX + 1, rect->MinY + 1,
-                    (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+                    (renderSelected) ? IDS_SELECTED : IDS_NORMAL,
                     __iconList_DrawIconStateTags
                   );
             }
@@ -855,7 +855,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
                   (
                     rp, data->icld_LVMAttribs->lvma_IconFile, NULL,
                     rect->MinX + 1, rect->MinY + 1,
-                    (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+                    (renderSelected) ? IDS_SELECTED : IDS_NORMAL,
                     __iconList_DrawIconStateTags
                   );
             }
@@ -876,7 +876,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 
         if (!fit) return;
 
-        SetABPenDrMd(rp, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
+        SetABPenDrMd(rp, _pens(obj)[(renderSelected) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
 
         if (((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize) > 0)
         {
@@ -1074,12 +1074,13 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList] %s: DrawIconState('%s') .. %d, %d\n", __func__, message->entry->ie_IconListEntry.label, iconX, iconY));
 #endif
+        BOOL renderSelected = ((message->entry->ie_Flags & (ICONENTRY_FLAG_SELECTED | ICONENTRY_FLAG_LASSO)) != 0);
         DrawIconStateA
           (
             data->icld_BufferRastPort, message->entry->ie_DiskObj, NULL,
             iconX,
             iconY,
-            (message->entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
+            (renderSelected) ? IDS_SELECTED : IDS_NORMAL,
             __iconList_DrawIconStateTags
           );
 #if defined(DEBUG_ILC_ICONRENDERING)
@@ -6079,7 +6080,25 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     {
                         if (data->icld_LassoActive == TRUE)
                         {
-                            NullifyLasso(data, obj, FALSE);
+                            NullifyLasso(data, obj, TRUE);
+                            struct IconEntry    *node = NULL;
+                            BOOL                changed = FALSE;
+                            // Add all the lasso'd entries to the selection list ..
+                            ForeachNode(&data->icld_IconList, node) {
+                                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
+                                    if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                                        node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                                        if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED)) {
+                                            AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+                                            node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+                                        }
+                                        changed = TRUE;
+                                    }
+                                }
+                            }
+                            if (changed) {
+                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                            }
                         }
                         else if (data->icld_LVMAttribs->lmva_LastSelectedColumn != -1)
                         {
@@ -6258,38 +6277,15 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                         //Entry is inside our lasso ..
                                          if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
                                          {
-                                             /* check if entry was already selected before */
-                                            if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                            {
-                                                Remove(&node->ie_SelectionNode);
-                                                node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                            }
-                                            else
-                                            {
-                                                AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                                node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                            }
                                             node->ie_Flags |= ICONENTRY_FLAG_LASSO;
                                             update_entry = (IPTR)node;
                                          }
                                     }
                                     else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
                                     {
-                                        //Entry is no longer inside our lasso - revert its selected state
-                                        if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                        {
-                                            Remove(&node->ie_SelectionNode);
-                                            node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                        }
-                                        else
-                                        {
-                                            AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                            node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                        }
                                         node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
                                         update_entry = (IPTR)node;
                                     }
-
                                     current++;
                                 }
                             }
@@ -6314,34 +6310,12 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                         //Entry is inside our lasso ..
                                          if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
                                          {
-                                             /* check if entry was already selected before */
-                                            if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                            {
-                                                Remove(&node->ie_SelectionNode);
-                                                node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                            }
-                                            else
-                                            {
-                                                AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                                node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                            }
                                             node->ie_Flags |= ICONENTRY_FLAG_LASSO;
                                             update_entry = (IPTR)node;
                                          }
                                     }
                                     else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
                                     {
-                                        //Entry is no longer inside our lasso - revert its selected state
-                                        if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                                        {
-                                            Remove(&node->ie_SelectionNode);
-                                            node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                                        }
-                                        else
-                                        {
-                                            AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                            node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                        }
                                         node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
                                         update_entry = (IPTR)node;
                                     }
