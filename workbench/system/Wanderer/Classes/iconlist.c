@@ -779,15 +779,13 @@ static BOOL DoLassoSelection(struct IconList_DATA *data, Object *obj) {
 
     // Add all the lasso'd entries to the selection list ..
     ForeachNode(&data->icld_IconList, node) {
-        if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
-            if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
-                node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED)) {
-                    AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                    node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                }
-                changed = TRUE;
+        if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+            node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+            if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED)) {
+                AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+                node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
             }
+            changed = TRUE;
         }
     }
     data->icld_LassoActive = FALSE;
@@ -4968,6 +4966,20 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
     }
 }
 
+static BOOL isMovementKeyEvent(UWORD code) {
+    switch ((code & ~IECODE_UP_PREFIX)) {
+    case RAWKEY_PAGEUP:
+    case RAWKEY_PAGEDOWN:
+    case RAWKEY_UP:
+    case RAWKEY_DOWN:
+    case RAWKEY_LEFT:
+    case RAWKEY_RIGHT:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
 ///MUIM_HandleEvent()
 /**************************************************************************
 MUIM_HandleEvent
@@ -5026,17 +5038,22 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                     /* Remove the lasso if neccessary */
                     if (!rawkey_handled)
-                        if (!((message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && 
-                        ((message->imsg->Code == RAWKEY_PAGEUP) ||
-                         (message->imsg->Code == RAWKEY_PAGEDOWN) ||
-                         (message->imsg->Code == RAWKEY_UP) ||
-                         (message->imsg->Code == RAWKEY_DOWN) ||
-                         (message->imsg->Code == RAWKEY_LEFT) ||
-                         (message->imsg->Code == RAWKEY_RIGHT)))) {
-                            if (NullifyLasso(data, obj, FALSE))
-                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
-                        }
-                        else if (data->icld_LassoActive == TRUE) {
+                        if (!(((message->imsg->Code & ~ IECODE_UP_PREFIX) == RAWKEY_LSHIFT) ||
+                            ((message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && 
+                                (isMovementKeyEvent(message->imsg->Code))))) {
+                            if (data->icld_LassoActive) {
+                               struct IconEntry    *node = NULL;
+                                NullifyLasso(data, obj, TRUE);
+                                ForeachNode(&data->icld_IconList, node) {
+                                    if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                                        node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                                        data->update_entry = (struct IconEntry *)node;
+                                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                                    }
+                                }
+                            }
+                        } else if (((message->imsg->Code & ~ IECODE_UP_PREFIX) != RAWKEY_LSHIFT) && (data->icld_LassoActive == TRUE)) {
                             if (DoLassoSelection(data, obj)) {
                                 SET(obj, MUIA_IconList_SelectionChanged, TRUE);
                             }
