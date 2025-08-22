@@ -719,45 +719,49 @@ static LONG LastVisibleColumnNumber(struct IconList_DATA *data)
 
 ///NullifyLasso()
 // Remove the lasso from the screen
-static void NullifyLasso(struct IconList_DATA *data, Object *obj)
+static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactive)
 {
     /* End Lasso-selection */
-    struct Rectangle    old_lasso;
-    struct IconEntry    *node = NULL;
-    struct Window       *thisWindow = NULL;
+    BOOL                changed = FALSE;
 
 #if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
-                            D(bug("[IconList] %s: Removing Lasso\n", __func__));
+    D(bug("[IconList] %s: Removing Lasso\n", __func__));
 #endif
 
-    /* Stop handling INTUITICKS */
-    GET(obj, MUIA_Window, &thisWindow);
-    if (thisWindow)
-    {
-        ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags & ~(IDCMP_INTUITICKS)));
-        if ((data->ehn.ehn_Events & IDCMP_INTUITICKS))
-        {
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-            data->ehn.ehn_Events &= ~IDCMP_INTUITICKS;
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+    if (data->icld_LassoActive == TRUE) {
+        struct Window       *thisWindow = NULL;
+        GET(obj, MUIA_Window, &thisWindow);
+        Forbid();
+        /* Stop handling INTUITICKS */
+        if (thisWindow) {
+            ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags & ~(IDCMP_INTUITICKS)));
+            if ((data->ehn.ehn_Events & IDCMP_INTUITICKS)) {
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+                data->ehn.ehn_Events &= ~IDCMP_INTUITICKS;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+            }
         }
-    }
 
-    /* Clear Lasso Frame.. */
-    GetAbsoluteLassoRect(data, &old_lasso);
-    IconList_InvertLassoOutlines(obj, data, &old_lasso);
-
-    data->icld_LassoActive = FALSE;
-
-    /* Remove Lasso flag from affected icons.. */
-    ForeachNode(&data->icld_IconList, node)
-    {
-        if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
-        {
-            node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+        /* Clear Lasso Frame.. */
+        struct Rectangle    old_lasso;
+        GetAbsoluteLassoRect(data, &old_lasso);
+        IconList_InvertLassoOutlines(obj, data, &old_lasso);
+        if ((data->icld_LassoActive = keepactive) == FALSE) {
+            struct IconEntry    *node = NULL;
+            /* Remove Lasso flag from affected icons.. */
+            ForeachNode(&data->icld_IconList, node) {
+                if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                    node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                    changed = TRUE;
+                }
+            }
+            
         }
+        Permit();
     }
-    SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+    if (changed) {
+        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+    }
 }
 ///
 
@@ -4894,7 +4898,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     }
 
                     /* Remove the lasso if a key is pressed or the mouse wheel is used */
-                    NullifyLasso(data, obj);
+                    NullifyLasso(data, obj, FALSE);
 
                     if (rawkey_handled)
                     {
@@ -6075,7 +6079,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     {
                         if (data->icld_LassoActive == TRUE)
                         {
-                            NullifyLasso(data, obj);
+                            NullifyLasso(data, obj, FALSE);
                         }
                         else if (data->icld_LVMAttribs->lmva_LastSelectedColumn != -1)
                         {
@@ -6390,7 +6394,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 if (data->icld_LassoActive == TRUE)
                 {
                     /* Remove the lasso if the right mouse button is pressed */
-                    NullifyLasso(data, obj);
+                    NullifyLasso(data, obj, FALSE);
                 }
                 break;
         }
