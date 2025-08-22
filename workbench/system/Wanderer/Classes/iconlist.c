@@ -720,7 +720,7 @@ static LONG LastVisibleColumnNumber(struct IconList_DATA *data)
 /* NullifyLasso()
  * - Removes the lasso from view
  */
-static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactive)
+static BOOL NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactive)
 {
     /* End Lasso-selection */
     BOOL                changed = FALSE;
@@ -760,9 +760,7 @@ static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactiv
         }
         Permit();
     }
-    if (changed) {
-        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
-    }
+    return changed;
 }
 ///
 
@@ -770,7 +768,7 @@ static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactiv
  * - Add currently lasso'd entries
  *   to the list of selected icons.
  */
-static void DoLassoSelection(struct IconList_DATA *data, Object *obj) {
+static BOOL DoLassoSelection(struct IconList_DATA *data, Object *obj) {
     NullifyLasso(data, obj, TRUE);
     struct IconEntry    *node = NULL;
     BOOL                changed = FALSE;
@@ -792,9 +790,8 @@ static void DoLassoSelection(struct IconList_DATA *data, Object *obj) {
             }
         }
     }
-    if (changed) {
-        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
-    }
+    data->icld_LassoActive = FALSE;
+    return changed;
 }
 
 /* UpdateLassoSelection()
@@ -5032,15 +5029,18 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         if (!((message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && 
                         ((message->imsg->Code == RAWKEY_PAGEUP) ||
                          (message->imsg->Code == RAWKEY_PAGEDOWN) ||
-                         (message->imsg->Code == RAWKEY_PAGEUP) ||
+                         (message->imsg->Code == RAWKEY_UP) ||
                          (message->imsg->Code == RAWKEY_DOWN) ||
-                         (message->imsg->Code == RAWKEY_DOWN) ||
-                         (message->imsg->Code == RAWKEY_DOWN) ||
-                         (message->imsg->Code == RAWKEY_DOWN)))) {
-                            NullifyLasso(data, obj, FALSE);
+                         (message->imsg->Code == RAWKEY_LEFT) ||
+                         (message->imsg->Code == RAWKEY_RIGHT)))) {
+                            if (NullifyLasso(data, obj, FALSE))
+                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
                         }
-                        else if (data->icld_LassoActive == TRUE)
-                            DoLassoSelection(data, obj);
+                        else if (data->icld_LassoActive == TRUE) {
+                            if (DoLassoSelection(data, obj)) {
+                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                            }
+                        }
 
                     if (rawkey_handled)
                     {
@@ -5995,7 +5995,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 }
 
                                 active_entry =  Node_FirstVisible(&data->icld_IconList);
-                                
+
                                 if ((active_entry) && (!(active_entry->ie_Flags & ICONENTRY_FLAG_FOCUS)))
                                 {
                                     active_entry->ie_Flags |= ICONENTRY_FLAG_FOCUS;
@@ -6064,11 +6064,11 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             for(i = 0; i < NUM_COLUMNS; i++)
                             {
                                 index = data->icld_LVMAttribs->lmva_ColumnPos[i];
-                                
+
                                 if (!(data->icld_LVMAttribs->lmva_ColumnFlags[index] & LVMCF_COLVISIBLE)) continue;
-                                
+
                                 w = data->icld_LVMAttribs->lmva_ColumnWidth[index];
-                                
+
                                 if ((mx >= x) && (mx < x + w))
                                 {
                                     clickColumn = index;
@@ -6076,7 +6076,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                                 }
                                 x += w;
                             }
-        
+
                             if (((data->icld_LVMAttribs->lvma_Flags & LVMAF_NOHEADER) == 0) && (my <= data->icld_LVMAttribs->lmva_HeaderHeight))
                             {
                                 /* Click on header, update list */
@@ -6219,10 +6219,11 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 {
                     if (message->imsg->Code == SELECTUP)
                     {
-                        if (data->icld_LassoActive == TRUE)
-                            DoLassoSelection(data, obj);
-                        else if (data->icld_LVMAttribs->lmva_LastSelectedColumn != -1)
-                        {
+                        if (data->icld_LassoActive == TRUE) {
+                            if (DoLassoSelection(data, obj)) {
+                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                            }
+                        } else if (data->icld_LVMAttribs->lmva_LastSelectedColumn != -1) {
                             ULONG        orig_sortflags = data->icld_SortFlags;
 
                             if (data->icld_LVMAttribs->lmva_SortColumn == data->icld_LVMAttribs->lmva_LastSelectedColumn)
@@ -6405,7 +6406,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 if (data->icld_LassoActive == TRUE)
                 {
                     /* Remove the lasso if the right mouse button is pressed */
-                    NullifyLasso(data, obj, FALSE);
+                    if (NullifyLasso(data, obj, FALSE)) {
+                        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+                    }
                 }
                 break;
         }
