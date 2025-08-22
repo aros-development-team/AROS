@@ -299,7 +299,7 @@ POSIXC_LINKLIB := \
 POSIXC_COMMON := \
     __posixc_stdstreams
 
-#MM- core-linklibs : linklibs-posixc
+#MM- core-linklibs : compiler-posixc-linklib compiler-posixc-lfa-linklib compiler-posixc-lfa-linklib-rel
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
@@ -325,5 +325,33 @@ POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notd
     files="$(POSIXC) $(POSIXC_LOCALE) $(POSIXC_WCHAR) $(POSIXC_WCHAR_LOCALE) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
     linklibfiles="$(POSIXC_LINKLIB) $(POSIXC_COMMON)" linklibobjs=$(POSIXC_LINKOBJS) \
     uselibs="stdc_rel stdcio_rel"
+
+
+#
+# build the Large File Access support libs using genmodule generated API stubs
+#
+
+#MM compiler-posixc-lfa-linklib : compiler-posixc-includes posixc-lfa-gen-stubs
+#MM compiler-posixc-lfa-linklib-rel : compiler-posixc-includes posixc-lfa-gen-stubs
+
+LFA_LIB_SOURCES := \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_stub.c) \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_stubs.c)
+
+%build_linklib mmake=compiler-posixc-lfa-linklib libname=posixc_lfa files=$(LFA_LIB_SOURCES:.c=) objdir="$(GENDIR)/$(CURDIR)/lfa"
+
+LFA_RELLIB_SOURCES := \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_relstub.c) \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_relstubs.c)
+
+%build_linklib mmake=compiler-posixc-lfa-linklib-rel libname=posixc_lfa_rel files=$(LFA_RELLIB_SOURCES:.c=) objdir="$(GENDIR)/$(CURDIR)/lfa"
+
+#MM
+posixc-lfa-gen-stubs: $(GENDIR)/$(CURDIR)/lfa/.stubs-generated
+
+$(GENDIR)/$(CURDIR)/lfa/.stubs-generated : | $(GENDIR)/$(CURDIR)/lfa
+	@$(ECHO) "Generating Large File Access stubs..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/posixc_lfa.conf -d $(GENDIR)/$(CURDIR)/lfa writefiles posixc library
+	@$(TOUCH) $@
 
 #MM- compiler-posixc-linklib-quick : compiler-posixc-linklib
