@@ -717,15 +717,16 @@ static LONG LastVisibleColumnNumber(struct IconList_DATA *data)
     
 }
 
-///NullifyLasso()
-// Remove the lasso from the screen
+/* NullifyLasso()
+ * - Removes the lasso from view
+ */
 static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactive)
 {
     /* End Lasso-selection */
     BOOL                changed = FALSE;
 
-#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
-    D(bug("[IconList] %s: Removing Lasso\n", __func__));
+#if defined(DEBUG_ILC_LASSO)
+    D(bug("[IconList] %s(%u)\n", __func__, keepactive);)
 #endif
 
     if (data->icld_LassoActive == TRUE) {
@@ -764,6 +765,118 @@ static void NullifyLasso(struct IconList_DATA *data, Object *obj, BOOL keepactiv
     }
 }
 ///
+
+/* DoLassoSelection()
+ * - Add currently lasso'd entries
+ *   to the list of selected icons.
+ */
+static void DoLassoSelection(struct IconList_DATA *data, Object *obj) {
+    NullifyLasso(data, obj, TRUE);
+    struct IconEntry    *node = NULL;
+    BOOL                changed = FALSE;
+
+#if defined(DEBUG_ILC_LASSO)
+    D(bug("[IconList] %s()\n", __func__);)
+#endif
+
+    // Add all the lasso'd entries to the selection list ..
+    ForeachNode(&data->icld_IconList, node) {
+        if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
+            if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED)) {
+                    AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
+                    node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+                }
+                changed = TRUE;
+            }
+        }
+    }
+    if (changed) {
+        SET(obj, MUIA_IconList_SelectionChanged, TRUE);
+    }
+}
+
+/* UpdateLassoSelection()
+ * - update the current selection list. 
+ */
+static void UpdateLassoSelection(struct IconList_DATA *data, Object *obj, struct Rectangle *lasso_rect) {
+    struct IconEntry    *node = NULL;
+    struct Rectangle    iconrect;
+    LONG                current = 0,
+                        startIndex = 0,
+                        endIndex = 0;
+
+#if defined(DEBUG_ILC_LASSO)
+    D(bug("[IconList] %s()\n", __func__);)
+#endif
+
+    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST) {
+        LONG    minY = data->icld_LassoRectangle.MinY,
+                maxY = data->icld_LassoRectangle.MaxY;
+
+        if (minY > maxY) {
+            minY ^= maxY;
+            maxY ^= minY;
+            minY ^= maxY;
+        }
+
+        startIndex = ((minY + 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
+        endIndex = ((maxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
+    }
+
+    ForeachNode(&data->icld_IconList, node) {
+        IPTR update_entry = (IPTR)NULL;
+
+        if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST) {
+            if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
+                update_entry = FALSE;
+
+                if ((current >= startIndex) && (current <= endIndex)) {
+                    //Entry is inside our lasso ..
+                     if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO)) {
+                        node->ie_Flags |= ICONENTRY_FLAG_LASSO;
+                        update_entry = (IPTR)node;
+                     }
+                }
+                else if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                    node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                    update_entry = (IPTR)node;
+                }
+                current++;
+            }
+        } else {
+            if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
+                iconrect.MinX = node->ie_IconX;
+                iconrect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
+                iconrect.MinY = node->ie_IconY;
+                iconrect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
+                if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+                    (node->ie_AreaWidth < data->icld_IconAreaLargestWidth)) {
+                    iconrect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+                    iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
+                }
+
+                if ((((lasso_rect->MaxX + data->icld_ViewX) >= iconrect.MinX) && ((lasso_rect->MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
+                    (((lasso_rect->MaxY + data->icld_ViewY) >= iconrect.MinY) && ((lasso_rect->MinY + data->icld_ViewY) <= iconrect.MaxY))) {
+                    //Entry is inside our lasso ..
+                     if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO)) {
+                        node->ie_Flags |= ICONENTRY_FLAG_LASSO;
+                        update_entry = (IPTR)node;
+                     }
+                } else if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
+                    node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
+                    update_entry = (IPTR)node;
+                }
+            }
+        }
+        if (update_entry) {
+            data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+            data->update_entry = (struct IconEntry *)update_entry;
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+        }
+    }    
+}
 
 static void RenderEntryField(Object *obj, struct IconList_DATA *data,
         struct IconEntry *entry, struct Rectangle *rect, LONG index, BOOL firstvis,
@@ -4642,25 +4755,19 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
         #  vertical wheel is used and one of the ALT keys is down.      */
 
     if ((wheely && !wheelx) &&
-       ((data->icld_AreaHeight <= _mheight(obj)) || (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT))))
-    {
+       ((data->icld_AreaHeight <= _mheight(obj)) || (qual & (IEQUALIFIER_LALT | IEQUALIFIER_RALT)))) {
         wheelx = wheely; wheely = 0;
     }
 
-    if (qual & (IEQUALIFIER_CONTROL))
-    {
+    if (qual & (IEQUALIFIER_CONTROL)) {
         if (wheelx < 0) newleft = 0;
         if (wheelx > 0) newleft = data->icld_AreaWidth;
         if (wheely < 0) newtop = 0;
         if (wheely > 0) newtop = data->icld_AreaHeight;
-    }
-    else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
-    {
+    } else if (qual & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) {
         newleft += (wheelx * _mwidth(obj));
         newtop += (wheely * _mheight(obj));
-    }
-    else
-    {
+    } else {
         newleft += wheelx * 30;
         newtop += wheely * 30;
     }
@@ -4675,11 +4782,33 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
     if (newtop < 0)
         newtop = 0;
 
-    if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY))
-    {
+    if (data->icld_LassoActive == TRUE) {
+        /* update Lasso coordinates */
+        struct Rectangle    lasso_rect;
+        D(bug("[IconList] %s: removing current lasso from display\n", __func__));
+        GetAbsoluteLassoRect(data, &lasso_rect);
+        IconList_InvertLassoOutlines(obj, data, &lasso_rect);
+        if (wheelx < 0)
+            data->icld_LassoRectangle.MaxX -= (data->icld_ViewX - newleft);
+        if (wheelx > 0)
+            data->icld_LassoRectangle.MaxX += (newleft - data->icld_ViewX);
+        if (wheely < 0)
+            data->icld_LassoRectangle.MaxY -= (data->icld_ViewY - newtop);
+        if (wheely > 0)
+            data->icld_LassoRectangle.MaxY += (newtop - data->icld_ViewY);
+    }
+
+    if ((newleft != data->icld_ViewX) || (newtop != data->icld_ViewY)) {
         SetAttrs(obj, MUIA_Virtgroup_Left, newleft,
             MUIA_Virtgroup_Top, newtop,
             TAG_DONE);
+    }
+    if (data->icld_LassoActive == TRUE) {
+        struct Rectangle    lasso_rect;
+        D(bug("[IconList] %s: updating lasso\n", __func__));
+        GetAbsoluteLassoRect(data, &lasso_rect);
+        UpdateLassoSelection(data, obj, &lasso_rect);
+        IconList_InvertLassoOutlines(obj, data, &lasso_rect);
     }
 }
 ///
@@ -4898,8 +5027,20 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                             break;
                     }
 
-                    /* Remove the lasso if a key is pressed or the mouse wheel is used */
-                    NullifyLasso(data, obj, FALSE);
+                    /* Remove the lasso if neccessary */
+                    if (!rawkey_handled)
+                        if (!((message->imsg->Qualifier & IEQUALIFIER_LSHIFT) && 
+                        ((message->imsg->Code == RAWKEY_PAGEUP) ||
+                         (message->imsg->Code == RAWKEY_PAGEDOWN) ||
+                         (message->imsg->Code == RAWKEY_PAGEUP) ||
+                         (message->imsg->Code == RAWKEY_DOWN) ||
+                         (message->imsg->Code == RAWKEY_DOWN) ||
+                         (message->imsg->Code == RAWKEY_DOWN) ||
+                         (message->imsg->Code == RAWKEY_DOWN)))) {
+                            NullifyLasso(data, obj, FALSE);
+                        }
+                        else if (data->icld_LassoActive == TRUE)
+                            DoLassoSelection(data, obj);
 
                     if (rawkey_handled)
                     {
@@ -6079,27 +6220,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     if (message->imsg->Code == SELECTUP)
                     {
                         if (data->icld_LassoActive == TRUE)
-                        {
-                            NullifyLasso(data, obj, TRUE);
-                            struct IconEntry    *node = NULL;
-                            BOOL                changed = FALSE;
-                            // Add all the lasso'd entries to the selection list ..
-                            ForeachNode(&data->icld_IconList, node) {
-                                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE) {
-                                    if (node->ie_Flags & ICONENTRY_FLAG_LASSO) {
-                                        node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                        if (!(node->ie_Flags & ICONENTRY_FLAG_SELECTED)) {
-                                            AddTail(&data->icld_SelectionList, &node->ie_SelectionNode);
-                                            node->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                                        }
-                                        changed = TRUE;
-                                    }
-                                }
-                            }
-                            if (changed) {
-                                SET(obj, MUIA_IconList_SelectionChanged, TRUE);
-                            }
-                        }
+                            DoLassoSelection(data, obj);
                         else if (data->icld_LVMAttribs->lmva_LastSelectedColumn != -1)
                         {
                             ULONG        orig_sortflags = data->icld_SortFlags;
@@ -6205,9 +6326,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 #endif
                         /* Lasso active */
                         struct Rectangle    lasso_rect;
-                        struct Rectangle    iconrect;
 
-                        struct IconEntry    *node = NULL;
 //                        struct IconEntry    *new_selected = NULL;
 
                         /* Remove previous Lasso frame */
@@ -6244,90 +6363,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                         /* get absolute Lasso coordinates */
                         GetAbsoluteLassoRect(data, &lasso_rect);
 
-                        LONG current = 0, startIndex = 0, endIndex = 0;
-                        
-                        if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-                        {
-                            LONG    minY = data->icld_LassoRectangle.MinY,
-                                    maxY = data->icld_LassoRectangle.MaxY;
+                        UpdateLassoSelection(data, obj, &lasso_rect);
 
-                            if (minY > maxY)
-                            {
-                                minY ^= maxY;
-                                maxY ^= minY;
-                                minY ^= maxY;
-                            }
-
-                            startIndex = ((minY + 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
-                            endIndex = ((maxY - 1) - data->icld_LVMAttribs->lmva_HeaderHeight) / data->icld_LVMAttribs->lmva_RowHeight;
-                        }
-
-                        ForeachNode(&data->icld_IconList, node)
-                        {
-                            IPTR update_entry = (IPTR)NULL;
-
-                            if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-                            {
-                                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                {
-                                    update_entry = FALSE;
-
-                                    if ((current >= startIndex) && (current <= endIndex))
-                                    {
-                                        //Entry is inside our lasso ..
-                                         if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
-                                         {
-                                            node->ie_Flags |= ICONENTRY_FLAG_LASSO;
-                                            update_entry = (IPTR)node;
-                                         }
-                                    }
-                                    else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
-                                    {
-                                        node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                        update_entry = (IPTR)node;
-                                    }
-                                    current++;
-                                }
-                            }
-                            else
-                            {
-                                if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-                                {
-                                    iconrect.MinX = node->ie_IconX;
-                                    iconrect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
-                                    iconrect.MinY = node->ie_IconY;
-                                    iconrect.MaxY = node->ie_IconY + node->ie_AreaHeight - 1;
-                                    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-                                        (node->ie_AreaWidth < data->icld_IconAreaLargestWidth))
-                                    {
-                                        iconrect.MinX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                        iconrect.MaxX += ((data->icld_IconAreaLargestWidth - node->ie_AreaWidth)/2);
-                                    }
-
-                                    if ((((lasso_rect.MaxX + data->icld_ViewX) >= iconrect.MinX) && ((lasso_rect.MinX + data->icld_ViewX) <= iconrect.MaxX)) &&
-                                        (((lasso_rect.MaxY + data->icld_ViewY) >= iconrect.MinY) && ((lasso_rect.MinY + data->icld_ViewY) <= iconrect.MaxY)))
-                                    {
-                                        //Entry is inside our lasso ..
-                                         if (!(node->ie_Flags & ICONENTRY_FLAG_LASSO))
-                                         {
-                                            node->ie_Flags |= ICONENTRY_FLAG_LASSO;
-                                            update_entry = (IPTR)node;
-                                         }
-                                    }
-                                    else if (node->ie_Flags & ICONENTRY_FLAG_LASSO)
-                                    {
-                                        node->ie_Flags &= ~ICONENTRY_FLAG_LASSO;
-                                        update_entry = (IPTR)node;
-                                    }
-                                }
-                            }
-                            if (update_entry)
-                            {
-                                data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                                data->update_entry = (struct IconEntry *)update_entry;
-                                MUI_Redraw(obj, MADF_DRAWUPDATE);
-                            }
-                        }
                         /* Draw Lasso frame */
                         IconList_InvertLassoOutlines(obj, data, &lasso_rect);
                     }
