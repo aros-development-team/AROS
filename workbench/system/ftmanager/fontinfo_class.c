@@ -62,6 +62,15 @@ struct IntegerBoundsP
     LONG Max;
 };
 
+void InitFontSizeArray(UWORD sizes[OT_MAXAVAILSIZES]) {
+    sizes[0] = AROS_WORD2BE(5);
+    sizes[1] = AROS_WORD2BE(9);
+    sizes[1] = AROS_WORD2BE(11);
+    sizes[2] = AROS_WORD2BE(15);
+    sizes[3] = AROS_WORD2BE(20);
+    sizes[4] = AROS_WORD2BE(30);
+}
+
 AROS_UFH3(void, IntegerBounds,
         AROS_UFHA(struct Hook *, hook, A0),
         AROS_UFHA(Object *, obj, A2),
@@ -636,9 +645,7 @@ IPTR fiSetOTags_real(FontInfoData *dat)
 
     tag->ti_Tag = TAG_END;
 
-    dat->AvailSizes[0] = AROS_WORD2BE(2);   // <- number of entries...
-    dat->AvailSizes[1] = AROS_WORD2BE(10);
-    dat->AvailSizes[2] = AROS_WORD2BE(15);
+    InitFontSizeArray(dat->AvailSizes);
 
     return tag - dat->OTags;
 }

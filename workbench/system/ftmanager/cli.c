@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -25,6 +25,7 @@ enum
         ARG_COUNT
 };
 
+extern void InitFontSizeArray(UWORD sizes[OT_MAXAVAILSIZES]);
 ULONG fiWriteFiles_real(FontInfoData *dat, STRPTR base, ULONG size);
 
 static void usage(void)
@@ -328,9 +329,7 @@ int ftmanager_cli(void)
 
     tag->ti_Tag = TAG_END;
 
-    dat->AvailSizes[0] = AROS_WORD2BE(2);   // <- number of entries...
-    dat->AvailSizes[1] = AROS_WORD2BE(10);
-    dat->AvailSizes[2] = AROS_WORD2BE(15);
+    InitFontSizeArray(dat->AvailSizes);
 
     if(args[ARG_FONTDIR] == 0)
     {
