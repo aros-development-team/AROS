@@ -65,10 +65,10 @@ struct IntegerBoundsP
 void InitFontSizeArray(UWORD sizes[OT_MAXAVAILSIZES]) {
     sizes[0] = AROS_WORD2BE(5);
     sizes[1] = AROS_WORD2BE(9);
-    sizes[1] = AROS_WORD2BE(11);
-    sizes[2] = AROS_WORD2BE(15);
-    sizes[3] = AROS_WORD2BE(20);
-    sizes[4] = AROS_WORD2BE(30);
+    sizes[2] = AROS_WORD2BE(11);
+    sizes[3] = AROS_WORD2BE(15);
+    sizes[4] = AROS_WORD2BE(20);
+    sizes[5] = AROS_WORD2BE(30);
 }
 
 AROS_UFH3(void, IntegerBounds,
