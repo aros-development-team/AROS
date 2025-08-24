@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2015, The AROS Development Team.
+    Copyright © 2002-2025, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -375,8 +375,6 @@ struct MUI_RenderInfo
 
     /* the following stuff is private */
     struct ColorMap *mri_Colormap;
-    UWORD mri_ScreenWidth;
-    UWORD mri_ScreenHeight;
     UWORD mri_PensStorage[MPEN_COUNT];  /* storage for pens, mri_Pens points
                                          * to here */
 

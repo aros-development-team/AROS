@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2024, The AROS Development Team.
+    Copyright (C) 2002-2025, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -356,10 +356,48 @@ static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
     }
 }
 
+static void InitRenderInfoPens(struct MUI_RenderInfo *mri) {
+    ULONG rgbtable[3 * 3];
+
+    mri->mri_PensStorage[MPEN_SHINE] =
+        mri->mri_DrawInfo->dri_Pens[SHINEPEN];
+    mri->mri_PensStorage[MPEN_BACKGROUND] =
+        mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
+    mri->mri_PensStorage[MPEN_SHADOW] =
+        mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
+    mri->mri_PensStorage[MPEN_TEXT] = mri->mri_DrawInfo->dri_Pens[TEXTPEN];
+    mri->mri_PensStorage[MPEN_FILL] = mri->mri_DrawInfo->dri_Pens[FILLPEN];
+
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHINEPEN], 1,
+        rgbtable);
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN],
+        1, rgbtable + 3);
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1,
+        rgbtable + 6);
+
+    mri->mri_PensStorage[MPEN_HALFSHINE] = ObtainBestPenA
+        (mri->mri_Colormap,
+        DoHalfshineGun(rgbtable[0], rgbtable[3]),
+        DoHalfshineGun(rgbtable[1], rgbtable[4]),
+        DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL);
+
+    mri->mri_PensStorage[MPEN_HALFSHADOW] = ObtainBestPenA
+        (mri->mri_Colormap,
+        DoHalfshadowGun(rgbtable[6], rgbtable[3]),
+        DoHalfshadowGun(rgbtable[7], rgbtable[4]),
+        DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL);
+
+/* I'm really not sure that MUI does this for MPEN_MARK, but it seems
+ * mostly acceptable -dlc */
+    mri->mri_PensStorage[MPEN_MARK] = ObtainBestPenA
+        (mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL);
+
+    mri->mri_Pens = mri->mri_PensStorage;
+}
+
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     struct MUI_RenderInfo *mri)
 {
-    ULONG rgbtable[3 * 3];
     Object *temp_obj;
     IPTR val;
     int i;
@@ -426,11 +464,12 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
         data->wd_Flags |= MUIWF_SCREENLOCKED;
     }
 
-    if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
+    struct Screen *scr = mri->mri_Screen;
+    if (!(mri->mri_DrawInfo = GetScreenDrawInfo(scr)))
     {
         if (data->wd_Flags & MUIWF_SCREENLOCKED)
         {
-            UnlockPubScreen(NULL, mri->mri_Screen);
+            UnlockPubScreen(NULL, scr);
             data->wd_Flags &= ~MUIWF_SCREENLOCKED;
         }
         return FALSE;
@@ -440,61 +479,26 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     {
         if (data->wd_Flags & MUIWF_SCREENLOCKED)
         {
-            UnlockPubScreen(NULL, mri->mri_Screen);
+            UnlockPubScreen(NULL, scr);
             data->wd_Flags &= ~MUIWF_SCREENLOCKED;
         }
         return FALSE;
     }
 
-    mri->mri_Colormap = mri->mri_Screen->ViewPort.ColorMap;
-    mri->mri_ScreenWidth = mri->mri_Screen->Width;
-    mri->mri_ScreenHeight = mri->mri_Screen->Height;
+    mri->mri_Colormap = scr->ViewPort.ColorMap;
 
-    if (mri->mri_ScreenWidth / mri->mri_ScreenHeight < 2)
+    if (scr->Width / scr->Height < 2)
     {
         mri->mri_Flags |= MUIMRI_THINFRAMES;
     }
 
-    if (GetBitMapAttr(mri->mri_Screen->RastPort.BitMap, BMA_DEPTH) >= 15)
+    if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15)
     {
         mri->mri_Flags |= MUIMRI_TRUECOLOR;
     }
 
-    mri->mri_PensStorage[MPEN_SHINE] =
-        mri->mri_DrawInfo->dri_Pens[SHINEPEN];
-    mri->mri_PensStorage[MPEN_BACKGROUND] =
-        mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
-    mri->mri_PensStorage[MPEN_SHADOW] =
-        mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
-    mri->mri_PensStorage[MPEN_TEXT] = mri->mri_DrawInfo->dri_Pens[TEXTPEN];
-    mri->mri_PensStorage[MPEN_FILL] = mri->mri_DrawInfo->dri_Pens[FILLPEN];
-
-    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHINEPEN], 1,
-        rgbtable);
-    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN],
-        1, rgbtable + 3);
-    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1,
-        rgbtable + 6);
-
-    mri->mri_PensStorage[MPEN_HALFSHINE] = ObtainBestPenA
-        (mri->mri_Colormap,
-        DoHalfshineGun(rgbtable[0], rgbtable[3]),
-        DoHalfshineGun(rgbtable[1], rgbtable[4]),
-        DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL);
-
-    mri->mri_PensStorage[MPEN_HALFSHADOW] = ObtainBestPenA
-        (mri->mri_Colormap,
-        DoHalfshadowGun(rgbtable[6], rgbtable[3]),
-        DoHalfshadowGun(rgbtable[7], rgbtable[4]),
-        DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL);
-
-/* I'm really not sure that MUI does this for MPEN_MARK, but it seems
- * mostly acceptable -dlc */
-    mri->mri_PensStorage[MPEN_MARK] = ObtainBestPenA
-        (mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL);
-
-    mri->mri_Pens = mri->mri_PensStorage;
-
+    InitRenderInfoPens(mri);
+    
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
         mri->mri_Fonts[i] = NULL;
@@ -538,10 +542,10 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     }
     else
     {
-        mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
-        mri->mri_BorderRight = mri->mri_Screen->WBorRight;
+        mri->mri_BorderLeft = scr->WBorLeft;
+        mri->mri_BorderRight = scr->WBorRight;
         mri->mri_BorderTop =
-            mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize + 1;
+            scr->WBorTop + scr->Font->ta_YSize + 1;
         temp_obj =
             NewObject(NULL, "sysiclass", SYSIA_DrawInfo,
             (IPTR) mri->mri_DrawInfo, SYSIA_Which, SIZEIMAGE, TAG_DONE);
@@ -552,10 +556,16 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
             mri->mri_BorderBottom = val;
         }
         else
-            mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
+            mri->mri_BorderBottom = scr->WBorBottom;
     }
 
     return TRUE;
+}
+
+static void CleanupRenderInfoPens(struct MUI_RenderInfo *mri) {
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
 }
 
 static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
@@ -604,9 +614,7 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
             mri->mri_Fonts[i] = NULL;
         }
     }
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
+    CleanupRenderInfoPens(mri);
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
@@ -737,7 +745,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 
     CalcWindowPosition(obj, data);
 
-    if ((visinfo = GetVisualInfoA(data->wd_RenderInfo.mri_Screen, NULL)))
+    struct Screen *scr = data->wd_RenderInfo.mri_Screen;
+    if ((visinfo = GetVisualInfoA(scr, NULL)))
     {
         if (data->wd_Menustrip)
         {
@@ -765,11 +774,11 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
      * must give the total size.
      */
     altdims.Width +=
-        data->wd_RenderInfo.mri_Screen->WBorLeft +
-        data->wd_RenderInfo.mri_Screen->WBorRight;
+        scr->WBorLeft +
+        scr->WBorRight;
     altdims.Height +=
-        data->wd_RenderInfo.mri_Screen->WBorTop +
-        data->wd_RenderInfo.mri_Screen->WBorBottom +
+        scr->WBorTop +
+        scr->WBorBottom +
         data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 1;
 
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw ==
@@ -786,13 +795,13 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     get(_app(obj), MUIA_Application_GetWinPos, &winp);
     if (winp)
     {
-        if (data->wd_RenderInfo.mri_ScreenWidth >
+        if (scr->Width >
             (data->wd_X + data->wd_Width))
         {
             data->wd_X = winp->x1;
             data->wd_Width = winp->w1;
         }
-        if (data->wd_RenderInfo.mri_ScreenHeight >
+        if (scr->Height >
             (data->wd_Y + data->wd_Height))
         {
             data->wd_Y = winp->y1;
@@ -816,7 +825,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_ScreenTitle ?
         WA_ScreenTitle :
         TAG_IGNORE, (IPTR) data->wd_ScreenTitle,
-        WA_CustomScreen, (IPTR) data->wd_RenderInfo.mri_Screen,
+        WA_CustomScreen, (IPTR) scr,
         WA_InnerWidth, (IPTR) data->wd_Width,
         WA_InnerHeight, (IPTR) data->wd_Height,
         WA_AutoAdjust, (IPTR) TRUE, WA_NewLookMenus, (IPTR) TRUE,
@@ -1133,7 +1142,7 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
         (MUIV_Window_AltWidth_Screen(100),
             altdims->Width, MUIV_Window_AltWidth_Screen(0)))
     {
-        altdims->Width = data->wd_RenderInfo.mri_ScreenWidth
+        altdims->Width = data->wd_RenderInfo.mri_Screen->Width
             * (-(altdims->Width + 200)) / 100;
     }
     else if
@@ -1141,7 +1150,7 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
         (MUIV_Window_AltWidth_Visible(100),
             altdims->Width, MUIV_Window_AltWidth_Visible(0)))
     {
-        altdims->Width = data->wd_RenderInfo.mri_ScreenWidth
+        altdims->Width = data->wd_RenderInfo.mri_Screen->Width
             * (-(altdims->Width + 100)) / 100;
     }
 
@@ -1158,7 +1167,7 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
         (MUIV_Window_AltHeight_Screen(100),
             altdims->Height, MUIV_Window_AltHeight_Screen(0)))
     {
-        altdims->Height = data->wd_RenderInfo.mri_ScreenHeight
+        altdims->Height = data->wd_RenderInfo.mri_Screen->Height
             * (-(altdims->Height + 200)) / 100;
     }
     else if
@@ -1166,7 +1175,7 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data,
         (MUIV_Window_AltHeight_Visible(100),
             altdims->Height, MUIV_Window_AltHeight_Visible(0)))
     {
-        altdims->Height = data->wd_RenderInfo.mri_ScreenHeight
+        altdims->Height = data->wd_RenderInfo.mri_Screen->Height
             * (-(altdims->Height + 100)) / 100;
     }
 
@@ -2737,6 +2746,8 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
 {
     if (!data->wd_Width)
     {
+        struct Screen *scr = data->wd_RenderInfo.mri_Screen;
+
         if (data->wd_ReqWidth > 0)
             data->wd_Width = data->wd_ReqWidth;
         else if (data->wd_ReqWidth == MUIV_Window_Width_Default)
@@ -2751,13 +2762,13 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
         else if (_between(MUIV_Window_Width_Screen(100),
                 data->wd_ReqWidth, MUIV_Window_Width_Screen(0)))
         {
-            data->wd_Width = data->wd_RenderInfo.mri_ScreenWidth
+            data->wd_Width = scr->Width
                 * (-(data->wd_ReqWidth + 200)) / 100;
         }
         else if (_between(MUIV_Window_Width_Visible(100),
                 data->wd_ReqWidth, MUIV_Window_Width_Visible(0)))
         {
-            data->wd_Width = data->wd_RenderInfo.mri_ScreenWidth
+            data->wd_Width = scr->Width
                 * (-(data->wd_ReqWidth + 100)) / 100;
         }
 
@@ -2775,12 +2786,7 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
         else if (_between(MUIV_Window_Height_Screen(100),
                 data->wd_ReqHeight, MUIV_Window_Height_Screen(0)))
         {
-            struct Screen *scr;
-            int height;
-
-            scr = data->wd_RenderInfo.mri_Screen;
-
-            height =
+            int height =
                 scr->Height - data->wd_RenderInfo.mri_BorderTop -
                 data->wd_RenderInfo.mri_BorderBottom;
 
@@ -2789,7 +2795,7 @@ static void WindowSelectDimensions(struct MUI_WindowData *data)
         else if (_between(MUIV_Window_Height_Visible(100),
                 data->wd_ReqHeight, MUIV_Window_Height_Visible(0)))
         {
-            data->wd_Height = data->wd_RenderInfo.mri_ScreenHeight
+            data->wd_Height = scr->Height
                 * (-(data->wd_ReqHeight + 100)) / 100;
         }
 
