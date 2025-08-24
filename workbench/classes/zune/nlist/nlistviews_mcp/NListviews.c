@@ -171,11 +171,11 @@ Object *MakeCheck(STRPTR label, STRPTR help, ULONG check)
 
 #define LOAD_DATAFONT(obj,cfg_attr) \
   { \
-    LONG ptrd; \
+    IPTR ptrd; \
     if((ptrd = DoMethod(msg->configdata, MUIM_Dataspace_Find, cfg_attr))) \
       set(obj, MUIA_String_Contents, ptrd); \
     else \
-      set(obj, MUIA_String_Contents, ""); \
+      set(obj, MUIA_String_Contents, (IPTR)""); \
   }
 
 #define SAVE_DATAFONT(obj,cfg_attr) \
@@ -1655,7 +1655,6 @@ IPTR mNL_MCP_ConfigToGadgets(struct IClass *cl,Object *obj,struct MUIP_Settingsg
   LOAD_DATAFONT(data->mcp_Font,       MUICFG_NList_Font);
   LOAD_DATAFONT(data->mcp_Font_Little,MUICFG_NList_Font_Little);
   LOAD_DATAFONT(data->mcp_Font_Fixed, MUICFG_NList_Font_Fixed);
-
   {
     LONG *ptrd;
     LONG num = DEFAULT_DRAGTYPE;
