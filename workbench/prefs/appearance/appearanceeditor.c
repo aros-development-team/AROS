@@ -948,7 +948,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 
                         sprintf(sourceBuffer, "THEMES:%s/Env-Archive/SYS/font.prefs", (char *)data->ae_ThemeArray[active]);
                         NameFromFH(message->fh, exportBuffer, 1024);
-                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "font.prefs");
                         AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
                     }
                     if (!(XGET(data->ae_ThemePointer, MUIA_Disabled)) && XGET(data->ae_OptionPointer, MUIA_Selected))
@@ -957,7 +957,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
 
                         sprintf(sourceBuffer, "THEMES:%s/Env-Archive/SYS/pointer.prefs", (char *)data->ae_ThemeArray[active]);
                         NameFromFH(message->fh, exportBuffer, 1024);
-                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "palette.prefs");
+                        sprintf(strstr(exportBuffer, "theme.var"), "%s", "pointer.prefs");
                         AppearanceEditor_ReplacePrefs(sourceBuffer, exportBuffer);
                     }
                 }
@@ -1023,7 +1023,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
 
             SET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
 
-            sprintf(themeFileTmp, "THEMES:%s/global.prefs", (char *)data->ae_ThemeArray[index]);
+            sprintf(themeFileTmp, "THEMES:%s/Env-Archive/Zune/global.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
                 SET(data->ae_OptionZune, MUIA_Selected, FALSE);
@@ -1036,7 +1036,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
             }
 
-            sprintf(themeFileTmp, "THEMES:%s/wanderer.prefs", (char *)data->ae_ThemeArray[index]);
+            sprintf(themeFileTmp, "THEMES:%s/Env-Archive/SYS/Wanderer/global.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
                 SET(data->ae_OptionWand, MUIA_Selected, FALSE);
@@ -1049,7 +1049,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
             }
 
-            sprintf(themeFileTmp, "THEMES:%s/palette.prefs", (char *)data->ae_ThemeArray[index]);
+            sprintf(themeFileTmp, "THEMES:%s/Env-Archive/SYS/palette.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
                 SET(data->ae_OptionPalette, MUIA_Selected, FALSE);
@@ -1062,7 +1062,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
             }
 
-            sprintf(themeFileTmp, "THEMES:%s/font.prefs", (char *)data->ae_ThemeArray[index]);
+            sprintf(themeFileTmp, "THEMES:%s/Env-Archive/SYS/font.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
                 SET(data->ae_OptionFont, MUIA_Selected, FALSE);
@@ -1075,7 +1075,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
                 SET(data->ae_ThemeFont, MUIA_Disabled, FALSE);
             }
 
-            sprintf(themeFileTmp, "THEMES:%s/pointer.prefs", (char *)data->ae_ThemeArray[index]);
+            sprintf(themeFileTmp, "THEMES:%s/Env-Archive/SYS/pointer.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
             {
                 SET(data->ae_OptionPointer, MUIA_Selected, FALSE);
