@@ -93,6 +93,7 @@ FILES := \
     frame \
     imspec \
     imspec_gradient \
+    imspec_gradientdraw \
     imspec_vector \
     locale \
     menu \
