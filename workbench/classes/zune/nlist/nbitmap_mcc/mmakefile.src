@@ -5,12 +5,20 @@ include $(SRCDIR)/config/aros.cfg
 #MM classes-zune-nbitmap-test : includes linklibs classes-zune-nbitmap-test-cpy
 #MM- test-nlist : classes-zune-nbitmap-test
 
+#MM- classes-zune-nbitmap : classes-zune-nbitmap-class classes-zune-nbitmap-test
+#MM- classes-zune-nbitmap-quick : classes-zune-nbitmap-class-quick classes-zune-nbitmap-test-quick
+
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
 USER_CPPFLAGS := -DNO_INLINE_STDARG -DAROS_ABI_V1
 USER_CFLAGS += $(PARANOIA_CFLAGS)
 USER_LDFLAGS := -static
 
-FILES := dispatcher Chunky2Bitmap DitherImage NBitmap Debug
+FILES := \
+     dispatcher \
+     Chunky2Bitmap \
+     DitherImage \
+     NBitmap \
+     Debug
 
 %build_module_simple mmake=classes-zune-nbitmap-class \
   modname=NBitmap modtype=mcc \
