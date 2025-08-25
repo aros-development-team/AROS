@@ -348,7 +348,6 @@ VOID NBitmap_UpdateImage(uint32 item, STRPTR filename, struct IClass *cl, Object
 
 #if defined(__AROS__) && !AROS_BIGENDIAN
 static void NBitmap_Convertbuffer(APTR srcbuf, APTR dstbuf, ULONG width, ULONG height, ULONG pixelsize) {
-  kprintf("[nbitmap] %s(%ux%u,%u)\n", __func__, width, height, pixelsize);
   int i;
   if (pixelsize == 4) {
     for (i = 0; i < width * height; i++) {
