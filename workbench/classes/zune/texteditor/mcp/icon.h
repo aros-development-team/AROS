@@ -20,7 +20,7 @@
 
 ***************************************************************************/
 
-#if !defined(__MORPHOS__) && !defined(__AROS__)
+#if !defined(__MORPHOS__)
 // uncompressed ARGB data
 extern const unsigned long icon32[];
 #define ICON32_WIDTH  24
