@@ -17,6 +17,8 @@
 
 #include LC_LIBDEFS_FILE
 
+//#define ZUNE_FORCE_SYSPENS
+
 struct Library *MUIMasterBase;
 
 static struct TextAttr topaz8Attr =
@@ -26,9 +28,9 @@ static struct TextAttr topaz8Attr =
 static int MUIMasterInit(LIBBASETYPEPTR lh)
 {
     MUIMasterBase = (struct Library *)lh;
-    
+
     InitSemaphore(&MUIMB(lh)->ZuneSemaphore);
-    
+
     NewList((struct List *)&MUIMB(lh)->BuiltinClasses);
     NewList((struct List *)&MUIMB(lh)->Applications);
 
@@ -46,7 +48,7 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
     snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)SHINEPEN);
     defaultPen++;
     // MPEN_HALFSHINE
-#if (1)
+#if !defined(ZUNE_FORCE_SYSPENS)
     defaultPen->buf[0] = 0; // Let the window class calculate the spec to use
 #else
 #if (MAXPENS > 8)
@@ -60,7 +62,7 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
     snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)BACKGROUNDPEN);
     defaultPen++;
     // MPEN_HALFSHADOW
-#if (1)
+#if !defined(ZUNE_FORCE_SYSPENS)
     defaultPen->buf[0] = 0; // Let the window class calculate the spec to use
 #else
 #if (MAXPENS > 8)
@@ -92,7 +94,7 @@ static int MUIMasterExpunge(LIBBASETYPEPTR lh)
 
     if (MUIMB(lh)->defaultPens != NULL)
         FreeMem(MUIMB(lh)->defaultPens, sizeof(struct MUI_PenSpec) * MPEN_COUNT);
-    
+
     if (MUIMB(lh)->SpecialMemory != NULL)
         FreeMem(MUIMB(lh)->SpecialMemory, 4);
 
