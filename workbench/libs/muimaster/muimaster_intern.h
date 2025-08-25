@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef MUIMASTER_INTERN_H
@@ -49,41 +49,42 @@
 
 struct MUIMasterBase_intern
 {
-    struct Library		library;
+    struct Library              library;
 #ifndef __AROS__
     /* On AROS these fields are handled by the system */
-    struct ExecBase		*sysbase;
-    BPTR			seglist;
+    struct ExecBase             *sysbase;
+    BPTR                        seglist;
 
     /* On AROS autoopened libraries are used */
-    struct DosLibrary  	    	*dosbase;
+    struct DosLibrary           *dosbase;
     struct UtilityBase          *utilitybase;
-    struct Library  	    	*aslbase;
-    struct GfxBase  	    	*gfxbase;
-    struct Library  	    	*layersbase;
-    struct IntuitionBase    	*intuibase;
-    struct Library  	    	*cxbase;
+    struct Library              *aslbase;
+    struct GfxBase              *gfxbase;
+    struct Library              *layersbase;
+    struct IntuitionBase        *intuibase;
+    struct Library              *cxbase;
     struct RxsLib               *rxsbase;
-    struct Library  	    	*keymapbase;
+    struct Library              *keymapbase;
     struct Library              *gadtoolsbase;
-    struct Library  	    	*iffparsebase;
-    struct Library  	    	*diskfontbase;
-    struct Library  	    	*iconbase;
-    struct Library  	    	*cybergfxbase;
+    struct Library              *iffparsebase;
+    struct Library              *diskfontbase;
+    struct Library              *iconbase;
+    struct Library              *cybergfxbase;
     struct Library              *workbenchbase;
 #ifdef HAVE_COOLIMAGES
-    struct Library  	    	*coolimagesbase;
+    struct Library              *coolimagesbase;
 #endif
     
-/*  struct Library  	    	*datatypesbase; */
+/*  struct Library              *datatypesbase; */
 #endif /* __AROS__ */
 
-    struct TextFont *topaz8font;
-    struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
-    APTR SpecialMemory;
+    struct TextFont             *topaz8font;
+    struct SignalSemaphore      ZuneSemaphore; /* Used when accessing global data */
+    APTR                        SpecialMemory;
 
-    struct MinList BuiltinClasses;
-    struct MinList Applications;
+    struct MinList              BuiltinClasses;
+    struct MinList              Applications;
+    struct MUI_PenSpec          *defaultPens;
 };
 
 

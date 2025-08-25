@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2025, The AROS Development Team. All rights reserved.
 
 */
 #include <stdlib.h>
@@ -206,6 +206,7 @@ BOOL zune_penspec_setup(struct MUI_PenSpec_intern *psi,
         break;
 
     case PST_SYS:
+        psi->p_pen = mri->mri_DrawInfo->dri_Pens[psi->p_sys];
         break;
 
     default:
@@ -221,6 +222,7 @@ BOOL zune_penspec_cleanup(struct MUI_PenSpec_intern *psi)
 
     switch (psi->p_type)
     {
+    case PST_SYS:
     case PST_MUI:
         break;
 
@@ -232,9 +234,6 @@ BOOL zune_penspec_cleanup(struct MUI_PenSpec_intern *psi)
     case PST_RGB:
         if (psi->p_is_allocated)
             ReleasePen(psi->p_mri->mri_Colormap, psi->p_pen);
-        break;
-
-    case PST_SYS:
         break;
 
     default:

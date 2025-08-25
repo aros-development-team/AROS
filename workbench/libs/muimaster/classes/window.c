@@ -8,6 +8,7 @@
 #include <exec/memory.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include <intuition/imageclass.h>
 #include <intuition/icclass.h>
@@ -42,6 +43,8 @@
 
 //#define MYDEBUG 1
 #include "debug.h"
+
+//#define ZUNE_WINDOWCLASS_FORCEFANCYPENS
 
 extern struct Library *MUIMasterBase;
 
@@ -140,6 +143,8 @@ struct MUI_WindowData
     LONG wd_SleepMinWidth;
 
     struct IClass *wd_Class;
+    struct MUI_PenSpec *hshinespec;
+    struct MUI_PenSpec *hshadowpec;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -356,17 +361,13 @@ static void DisposeCustomFrames(struct MUI_RenderInfo *mri)
     }
 }
 
-static void InitRenderInfoPens(struct MUI_RenderInfo *mri) {
+static void InitRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowData *data) {
     ULONG rgbtable[3 * 3];
-
-    mri->mri_PensStorage[MPEN_SHINE] =
-        mri->mri_DrawInfo->dri_Pens[SHINEPEN];
-    mri->mri_PensStorage[MPEN_BACKGROUND] =
-        mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
-    mri->mri_PensStorage[MPEN_SHADOW] =
-        mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
-    mri->mri_PensStorage[MPEN_TEXT] = mri->mri_DrawInfo->dri_Pens[TEXTPEN];
-    mri->mri_PensStorage[MPEN_FILL] = mri->mri_DrawInfo->dri_Pens[FILLPEN];
+    mri->mri_PensStorage[MPEN_SHINE] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_SHINE], 0);
+    mri->mri_PensStorage[MPEN_BACKGROUND] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_BACKGROUND], 0);
+    mri->mri_PensStorage[MPEN_SHADOW] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_SHADOW], 0);
+    mri->mri_PensStorage[MPEN_TEXT] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_TEXT], 0);
+    mri->mri_PensStorage[MPEN_FILL] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_FILL], 0);
 
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHINEPEN], 1,
         rgbtable);
@@ -375,23 +376,32 @@ static void InitRenderInfoPens(struct MUI_RenderInfo *mri) {
     GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1,
         rgbtable + 6);
 
-    mri->mri_PensStorage[MPEN_HALFSHINE] = ObtainBestPenA
-        (mri->mri_Colormap,
-        DoHalfshineGun(rgbtable[0], rgbtable[3]),
-        DoHalfshineGun(rgbtable[1], rgbtable[4]),
-        DoHalfshineGun(rgbtable[2], rgbtable[5]), NULL);
-
-    mri->mri_PensStorage[MPEN_HALFSHADOW] = ObtainBestPenA
-        (mri->mri_Colormap,
-        DoHalfshadowGun(rgbtable[6], rgbtable[3]),
-        DoHalfshadowGun(rgbtable[7], rgbtable[4]),
-        DoHalfshadowGun(rgbtable[8], rgbtable[5]), NULL);
-
-/* I'm really not sure that MUI does this for MPEN_MARK, but it seems
- * mostly acceptable -dlc */
-    mri->mri_PensStorage[MPEN_MARK] = ObtainBestPenA
-        (mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL);
-
+    if (MUIMB(MUIMasterBase)->defaultPens[MPEN_HALFSHINE].buf[0] != 0)
+        mri->mri_PensStorage[MPEN_HALFSHINE] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_HALFSHINE], 0);
+    else {
+        if (!data->hshinespec) {
+            data->hshinespec = AllocMem(sizeof(struct MUI_PenSpec), MEMF_ANY);
+            snprintf(data->hshinespec->buf, sizeof(data->hshinespec->buf), "%lc%08x,%08x,%08x",
+                (int)PST_RGB,
+                (unsigned int)DoHalfshineGun(rgbtable[0], rgbtable[3]),
+                (unsigned int)DoHalfshineGun(rgbtable[1], rgbtable[4]),
+                (unsigned int)DoHalfshineGun(rgbtable[2], rgbtable[5]));
+        }
+        mri->mri_PensStorage[MPEN_HALFSHINE] = MUI_ObtainPen(mri, data->hshinespec, 0);
+    }
+    if (MUIMB(MUIMasterBase)->defaultPens[MPEN_HALFSHADOW].buf[0] != 0)
+        mri->mri_PensStorage[MPEN_HALFSHADOW] = MUI_ObtainPen(mri, &MUIMB(MUIMasterBase)->defaultPens[MPEN_HALFSHADOW], 0);
+    else {
+        if (!data->hshadowpec) {
+            data->hshadowpec = AllocMem(sizeof(struct MUI_PenSpec), MEMF_ANY);
+            snprintf(data->hshadowpec->buf, sizeof(data->hshadowpec->buf), "%lc%08x,%08x,%08x",
+                (int)PST_RGB,
+                (unsigned int)DoHalfshadowGun(rgbtable[6], rgbtable[3]),
+                (unsigned int)DoHalfshadowGun(rgbtable[7], rgbtable[4]),
+                (unsigned int)DoHalfshadowGun(rgbtable[8], rgbtable[5]));
+        }
+        mri->mri_PensStorage[MPEN_HALFSHADOW] = MUI_ObtainPen(mri, data->hshadowpec, 0);
+    }
     mri->mri_Pens = mri->mri_PensStorage;
 }
 
@@ -497,8 +507,8 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
         mri->mri_Flags |= MUIMRI_TRUECOLOR;
     }
 
-    InitRenderInfoPens(mri);
-    
+    InitRenderInfoPens(mri, data);
+
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
         mri->mri_Fonts[i] = NULL;
@@ -562,10 +572,24 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
     return TRUE;
 }
 
-static void CleanupRenderInfoPens(struct MUI_RenderInfo *mri) {
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
-    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
+static void CleanupRenderInfoPens(struct MUI_RenderInfo *mri, struct MUI_WindowData *data) {
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_MARK]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_HALFSHADOW]);
+    if (data->hshadowpec) {
+        FreeMem(data->hshadowpec, sizeof(struct MUI_PenSpec));
+        data->hshadowpec = NULL;
+    }
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_HALFSHINE]);
+    if (data->hshinespec) {
+        FreeMem(data->hshinespec, sizeof(struct MUI_PenSpec));
+        data->hshinespec = NULL;
+    }
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_MARK]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_FILL]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_TEXT]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_SHADOW]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_BACKGROUND]);
+    MUI_ReleasePen(mri, mri->mri_PensStorage[MPEN_SHINE]);
 }
 
 static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
@@ -614,7 +638,7 @@ static void CleanupRenderInfo(Object *obj, struct MUI_WindowData *data,
             mri->mri_Fonts[i] = NULL;
         }
     }
-    CleanupRenderInfoPens(mri);
+    CleanupRenderInfoPens(mri, data);
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 

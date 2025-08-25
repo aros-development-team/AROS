@@ -1,8 +1,10 @@
 /*
-    Copyright (C) 2002-2015, The AROS Development Team.
+    Copyright (C) 2002-2025, The AROS Development Team.
     All rights reserved.
     
 */
+
+#include <stdio.h>
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -36,12 +38,60 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
      * special values (to avoid clashes) */
     MUIMB(lh)->SpecialMemory = AllocAbs(4, (APTR)MUIV_TriggerValue);
 
+    /* Initalize the default "MUI" pens-specs */
+    MUIMB(lh)->defaultPens = AllocMem(sizeof(struct MUI_PenSpec) * MPEN_COUNT, MEMF_ANY);
+    struct MUI_PenSpec *defaultPen = MUIMB(lh)->defaultPens;
+
+    // 'MPEN_SHINE'
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)SHINEPEN);
+    defaultPen++;
+    // MPEN_HALFSHINE
+#if (1)
+    defaultPen->buf[0] = 0; // Let the window class calculate the spec to use
+#else
+#if (MAXPENS > 8)
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)BARBLOCKPEN);
+#else
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)SHINEPEN);
+#endif
+#endif
+    defaultPen++;
+    // MPEN_BACKGROUND
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)BACKGROUNDPEN);
+    defaultPen++;
+    // MPEN_HALFSHADOW
+#if (1)
+    defaultPen->buf[0] = 0; // Let the window class calculate the spec to use
+#else
+#if (MAXPENS > 8)
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)BARTRIMPEN);
+#else
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)SHADOWPEN);
+#endif
+#endif
+    defaultPen++;
+    // MPEN_SHADOW
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)SHADOWPEN);
+    defaultPen++;
+    // MPEN_TEXT
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)TEXTPEN);
+    defaultPen++;
+    // MPEN_FILL
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)FILLPEN);
+    defaultPen++;
+    // MPEN_MARK
+    snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)HIGHLIGHTTEXTPEN);
+    defaultPen++;
+
     return TRUE;
 }
 
 static int MUIMasterExpunge(LIBBASETYPEPTR lh)
 {
     MUIMasterBase = (struct Library *)lh;
+
+    if (MUIMB(lh)->defaultPens != NULL)
+        FreeMem(MUIMB(lh)->defaultPens, sizeof(struct MUI_PenSpec) * MPEN_COUNT);
     
     if (MUIMB(lh)->SpecialMemory != NULL)
         FreeMem(MUIMB(lh)->SpecialMemory, 4);
