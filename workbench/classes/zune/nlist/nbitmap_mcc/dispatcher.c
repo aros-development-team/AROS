@@ -206,7 +206,7 @@ static IPTR NBitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
   }
 
   CoerceMethod(cl, obj, OM_DISPOSE);
-  return (IPTR)NULL;;
+  return (IPTR)NULL;
 }
 
 /* ULONG NBitmap_Get() */
