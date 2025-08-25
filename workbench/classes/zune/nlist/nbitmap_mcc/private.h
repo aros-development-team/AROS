@@ -114,6 +114,9 @@ struct InstData
   #if !defined(__amigaos4__)
   struct BitMap *ditheredBitmap[3];
   #endif
+  #if defined(__AROS__) && !AROS_BIGENDIAN
+  uint32 *dataalloc[3];
+  #endif
 
   struct MUI_EventHandlerNode ehnode;
 };

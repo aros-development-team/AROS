@@ -346,12 +346,33 @@ VOID NBitmap_UpdateImage(uint32 item, STRPTR filename, struct IClass *cl, Object
   }
 }
 
+#if defined(__AROS__) && !AROS_BIGENDIAN
+static void NBitmap_Convertbuffer(APTR srcbuf, APTR dstbuf, ULONG width, ULONG height, ULONG pixelsize) {
+  kprintf("[nbitmap] %s(%ux%u,%u)\n", __func__, width, height, pixelsize);
+  int i;
+  if (pixelsize == 4) {
+    for (i = 0; i < width * height; i++) {
+      *(ULONG *)((IPTR)dstbuf + i * sizeof(ULONG)) =
+        AROS_BE2LONG(*((ULONG *)((IPTR)srcbuf + i * sizeof(ULONG))));
+    }
+  } else if (pixelsize == 3) {
+    UBYTE *src = (UBYTE *)srcbuf;
+    UBYTE *dst = (UBYTE *)dstbuf;
+    for (i = 0; i < width * height; i++) {
+      dst[i*3 + 0] = src[i*3 + 2]; /* B */
+      dst[i*3 + 1] = src[i*3 + 1]; /* G */
+      dst[i*3 + 2] = src[i*3 + 0]; /* R */
+    }
+  }
+}
+#endif
+
 ///
 /// NBitmap_SetupShades()
 // create an ARGB shade
 BOOL NBitmap_SetupShades(struct InstData *data)
 {
-  uint32 pixel, altivec_align;
+  uint32 pixel, altivec_align = 0;
 
   ENTER();
 
@@ -482,9 +503,46 @@ BOOL NBitmap_NewImage(struct IClass *cl, Object *obj)
       }
       break;
 
-      case MUIV_NBitmap_Type_CLUT8:
       case MUIV_NBitmap_Type_RGB24:
       case MUIV_NBitmap_Type_ARGB32:
+#if defined(__AROS__) && !AROS_BIGENDIAN
+      {
+        ULONG pixelsize = (data->type == MUIV_NBitmap_Type_RGB24) ? 3 : 4;
+        // Convert the provided buffers to a usable format..
+        if (data->data[0]) {
+          ULONG *bufforig = data->data[0];
+          data->dataalloc[0] = AllocVec(data->width *data->height * pixelsize, MEMF_ANY);
+          if (data->dataalloc[0]) {
+            data->data[0] = data->dataalloc[0];
+            NBitmap_Convertbuffer(bufforig, data->data[0], data->width, data->height, pixelsize);
+          }
+        }
+
+        // Ghosted Image
+        if (data->data[1]) {
+          ULONG *bufforig = data->data[1];
+          data->dataalloc[1] = AllocVec(data->width *data->height * pixelsize, MEMF_ANY);
+          if (data->dataalloc[1]) {
+            data->data[1] = data->dataalloc[1];
+            NBitmap_Convertbuffer(bufforig, data->data[1], data->width, data->height, pixelsize);
+          }
+        }
+
+        // Selected Image
+        if (data->data[2]) {
+          ULONG *bufforig = data->data[2];
+          data->dataalloc[2] = AllocVec(data->width *data->height * pixelsize, MEMF_ANY);
+          if (data->dataalloc[2]) {
+            data->data[2] = data->dataalloc[2];
+            NBitmap_Convertbuffer(bufforig, data->data[2], data->width, data->height, pixelsize);
+          }
+        }
+
+        result = TRUE;
+      }
+      break;
+#endif
+      case MUIV_NBitmap_Type_CLUT8:
       {
         // no further requirements, instant success
         result = TRUE;
@@ -614,6 +672,15 @@ VOID NBitmap_DisposeImage(struct IClass *cl, Object *obj)
       FreeVec(data->label);
       data->label = NULL;
     }
+
+#if defined(__AROS__) && !AROS_BIGENDIAN
+    if (data->dataalloc[2])
+      FreeVec(data->dataalloc[2]);
+    if (data->dataalloc[1])
+      FreeVec(data->dataalloc[1]);
+    if (data->dataalloc[0])
+      FreeVec(data->dataalloc[0]);
+#endif
 
     /* free pixel memory */
     for(i = 0; i < 3; i++)
@@ -1015,7 +1082,11 @@ void NBitmap_DrawImage(struct IClass *cl, Object *obj)
 
               if(data->depth == 24)
               {
+#if !defined(__AROS__) || AROS_BIGENDIAN
                 WPA(data->arraypixels[item], 0, 0, data->arraybpr, _rp(obj), _left(obj) + (data->border_horiz / 2), _top(obj) + (data->border_vert / 2), data->width, data->height, RECTFMT_RGB);
+#else
+                WPA(data->arraypixels[item], 0, 0, data->arraybpr, _rp(obj), _left(obj) + (data->border_horiz / 2), _top(obj) + (data->border_vert / 2), data->width, data->height, RECTFMT_BGR24);
+#endif
               }
               else
               {
@@ -1170,7 +1241,11 @@ void NBitmap_DrawImage(struct IClass *cl, Object *obj)
 
               case MUIV_NBitmap_Type_RGB24:
                 D(DBF_ALWAYS, "drawing RGB image");
+#if !defined(__AROS__) || AROS_BIGENDIAN
                 WPA(data->data[item], 0, 0, data->width*3, _rp(obj), x + (data->border_horiz / 2), y + ((data->border_vert / 2) - (data->label_vert/2)), w, h, RECTFMT_RGB);
+#else
+                WPA(data->data[item], 0, 0, data->width*3, _rp(obj), x + (data->border_horiz / 2), y + ((data->border_vert / 2) - (data->label_vert/2)), w, h, RECTFMT_BGR24);
+#endif
               break;
 
               case MUIV_NBitmap_Type_ARGB32:
