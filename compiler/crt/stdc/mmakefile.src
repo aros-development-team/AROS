@@ -843,6 +843,7 @@ STDC_STATIC := \
     strstr \
     strtod \
     strtof \
+    strtok \
     strtol \
     strtoul \
     strtoull \

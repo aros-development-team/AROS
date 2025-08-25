@@ -1,11 +1,17 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function strtok().
 */
 
+#if !defined(STDC_STATIC)
 #include "__stdc_intbase.h"
+#endif
 #include <aros/symbolsets.h>
+
+#if defined(STDC_STATIC)
+static char *__strlst = NULL;
+#endif
 
 /*****************************************************************************
 
@@ -63,29 +69,36 @@
 
 ******************************************************************************/
 {
+#if !defined(STDC_STATIC)
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    char **strlst = &StdCBase->last;
+#else
+    char **strlst = &__strlst;
+#endif
 
     if (str != NULL)
-        StdCBase->last = str;
+        *strlst = str;
     else
-        str = StdCBase->last;
+        str = *strlst;
 
     str += strspn (str, sep);
 
     if (*str == '\0')
         return NULL;
 
-    StdCBase->last = str;
+    *strlst = str;
 
-    StdCBase->last += strcspn (str, sep);
+    *strlst += strcspn (str, sep);
 
-    if (*StdCBase->last != '\0')
-        *StdCBase->last ++ = '\0';
+    if ((*strlst)[0] != '\0') {
+        (*strlst)[0] = '\0';
+        *strlst += 1;
+    }
 
     return str;
 } /* strtok */
 
-
+#if !defined(STDC_STATIC)
 static int __strtok_init(struct StdCIntBase *StdCBase)
 {
     StdCBase->last = NULL;
@@ -94,3 +107,4 @@ static int __strtok_init(struct StdCIntBase *StdCBase)
 }
 
 ADD2OPENLIB(__strtok_init, 0);
+#endif
