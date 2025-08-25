@@ -2,8 +2,8 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM classes-zune-nlist-class  : includes linklibs
-
 #MM classes-zune-nlist-test  : includes linklibs
+##MM- test-nlist : classes-zune-nlist-test
 
 FILES := \
         NList_mcc    \
@@ -37,11 +37,8 @@ USER_LDFLAGS := -static
   modname=NList modtype=mcc \
   files="library $(FILES)"
 
-
-
 %build_prog mmake=classes-zune-nlist-test progname=NList-Test \
-    files="NList-Test $(FILES)" targetdir=$(AROS_TESTS)/NList
-
+    files="NList-Test $(FILES)" objdir=$(GENDIR)/$(CURDIR)/test targetdir=$(AROS_TESTS)/NList
 
 #MM includes-copy
 
