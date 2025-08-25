@@ -36,7 +36,6 @@
 /* local includes */
 #include "NBitmap.h"
 #include "private.h"
-
 #include "Debug.h"
 
 /* Object *DoSuperNew() */
@@ -94,7 +93,9 @@ static IPTR NBitmap_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   if((obj = (Object *)DoSuperNew(cl, obj,
     MUIA_CycleChain, TRUE,
-    //MUIA_FillArea, FALSE,
+#if defined(__AROS__)
+    MUIA_FillArea, FALSE,
+#endif
     MUIA_Font, MUIV_Font_Tiny,
     TAG_MORE, msg->ops_AttrList)) != NULL)
   {

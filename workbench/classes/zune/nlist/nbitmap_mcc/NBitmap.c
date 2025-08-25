@@ -375,8 +375,6 @@ BOOL NBitmap_SetupShades(struct InstData *data)
 
   ENTER();
 
-  altivec_align = 0;
-
   #if defined(__MORPHOS__)
   if (SysBase->LibNode.lib_Version >= 51)
   {
