@@ -40,8 +40,7 @@ typedef enum
     FST_ROUND_THIN_BORDER,
     FST_GRAY_BORDER,
     FST_SEMIROUND_BEVEL,
-    FST_SUBTLE_BORDER,          /* 11 - minimal border */
-    FST_ROUNDED,                /* 12 - rounded corners */
+    FST_ROUNDED,                /* 11 - rounded corners */
     FST_CUSTOM1,
     FST_CUSTOM2,
     FST_CUSTOM3,

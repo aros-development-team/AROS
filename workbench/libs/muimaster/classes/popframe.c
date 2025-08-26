@@ -96,22 +96,28 @@ IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj,
 
     get(obj, MUIA_Framedisplay_Spec, &frame_spec);
 
-    data->wnd =
-        (Object *)(WindowObject, MUIA_Window_Title, (IPTR)data->wintitle,
-                   MUIA_Window_Activate, TRUE, MUIA_Window_IsSubWindow, TRUE,
-                   MUIA_Window_LeftEdge, _left(obj) + x, MUIA_Window_TopEdge,
-                   _bottom(obj) + y + 1, WindowContents, (IPTR)VGroup, Child,
-                   (IPTR)(data->frameadjust =
-                              MUI_NewObject(MUIC_Frameadjust, MUIA_CycleChain,
-                                            1, MUIA_Frameadjust_Spec,
-                                            (IPTR)frame_spec, TAG_DONE)),
-                   Child, (IPTR)HGroup, MUIA_Group_SameWidth, TRUE, Child,
-                   (IPTR)(ok_button =
-                              MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_OK))),
-                   Child, (IPTR)HVSpace, Child, (IPTR)HVSpace, Child,
-                   (IPTR)(cancel_button =
-                              MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_CANCEL))),
-                   End, End, End);
+    // clang-format off
+    data->wnd = (Object *)WindowObject,
+        MUIA_Window_Title, (IPTR)data->wintitle,
+        MUIA_Window_Activate, TRUE,
+        MUIA_Window_IsSubWindow, TRUE,
+        MUIA_Window_LeftEdge, _left(obj) + x,
+        MUIA_Window_TopEdge, _bottom(obj) + y + 1,
+        WindowContents, (IPTR)VGroup,
+            Child, (IPTR)(data->frameadjust = MUI_NewObject(MUIC_Frameadjust,
+                MUIA_CycleChain, 1,
+                MUIA_Frameadjust_Spec, (IPTR)frame_spec,
+                TAG_DONE)),
+            Child, (IPTR)HGroup,
+                MUIA_Group_SameWidth, TRUE,
+                Child, (IPTR)(ok_button = MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_OK))),
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)(cancel_button = MUI_MakeObject(MUIO_Button, (IPTR)_(MSG_CANCEL))),
+                End,
+            End,
+        End;
+    // clang-format on
 
     if (data->wnd) {
       set(ok_button, MUIA_CycleChain, 1);

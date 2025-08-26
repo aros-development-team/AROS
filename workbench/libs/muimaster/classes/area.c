@@ -2265,26 +2265,13 @@ static void area_update_msizes(Object *obj, struct MUI_AreaData *data,
 
   struct dt_frame_image *fi = zframe->customframe;
 
-  if (fi != NULL) {
-    // UWORD   w = fi->tile_left + fi->tile_right;
-    // UWORD   h = fi->tile_top + fi->tile_bottom;
-
-    data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
-    data->mad_subwidth =
-        data->mad_addleft + data->mad_InnerRight + zframe->iright;
-    data->mad_addtop =
-        data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
-    data->mad_subheight =
-        data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
-  } else {
-    data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
-    data->mad_subwidth =
-        data->mad_addleft + data->mad_InnerRight + zframe->iright;
-    data->mad_addtop =
-        data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
-    data->mad_subheight =
-        data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
-  }
+  data->mad_addleft = data->mad_InnerLeft + zframe->ileft;
+  data->mad_subwidth =
+      data->mad_addleft + data->mad_InnerRight + zframe->iright;
+  data->mad_addtop =
+      data->mad_InnerTop + data->mad_TitleHeightAdd + zframe->itop;
+  data->mad_subheight =
+      data->mad_addtop + data->mad_InnerBottom + zframe->ibottom;
 
   if (data->mad_Flags & MADF_FRAMEPHANTOM) {
     data->mad_addleft = 0;
