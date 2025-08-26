@@ -39,6 +39,8 @@ struct dt_frame_image
     short inner_right;
     short inner_bottom;
     BOOL noalpha;
+    short border_radius;    /* Corner radius for rounded frames */
+    short frame_width;      /* Border width for clipping calculations */
 };
 
 struct dt_node

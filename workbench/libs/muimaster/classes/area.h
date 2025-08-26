@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright (C) 1999, David Le Corfec.
     Copyright (C) 2002 - 2014, The AROS Development Team.
     All rights reserved.
@@ -57,6 +57,10 @@
     (MUIB_MUI | 0x0042c555)       /* MUI: V11 */
 #define MUIM_UnknownDropDestination \
     (MUIB_MUI | 0x00425550)       /* ZUNE */
+#define MUIM_CreateFrameClippingRegion \
+    (MUIB_MUI | 0x00425551)       /* ZUNE */
+#define MUIM_QueryFrameCharacteristics \
+    (MUIB_MUI | 0x00425552)       /* ZUNE */
 #define MUIM_DragFinish \
     (MUIB_MUI | 0x004251f0)       /* MUI: V11 */
 #define MUIM_DragQuery \
@@ -345,6 +349,24 @@ struct MUI_DragImage
     ULONG flags;
 };
 
+/* Message structure for querying frame clipping information */
+struct MUIP_QueryFrameCharacteristics
+{
+    STACKED ULONG MethodID;
+    STACKED struct MUI_FrameCharacteristics *characteristics; /* OUT: Frame information */
+};
+
+/* Message structure for creating frame clipping region */
+struct MUIP_CreateFrameClippingRegion
+{
+    STACKED ULONG MethodID;
+    STACKED LONG left;
+    STACKED LONG top;
+    STACKED LONG width;
+    STACKED LONG height;
+    STACKED struct Region *clipinfo; /* OUT: Frame clipping region */
+};
+
 // #define MUIF_DRAGIMAGE_HASMASK       (1<<0) /* Use provided mask for drawing */
                                                /* Not supported at the moment */
 #define MUIF_DRAGIMAGE_SOURCEALPHA   (1<<1)     /* Use drag image source alpha
@@ -622,6 +644,11 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo); /* PRIV *
     (muiAreaData(obj)->mad_VertWeight)    /* accesses private members PRIV */
 #define _hweight(obj)                                              /* PRIV */ \
     (muiAreaData(obj)->mad_HorizWeight)   /* accesses private members PRIV */
+
+
+/**************************************************************************
+  Frame clipping
+ **************************************************************************/
 
 extern const struct __MUIBuiltinClass _MUI_Area_desc;   /* PRIV */
 
