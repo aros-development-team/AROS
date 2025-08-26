@@ -1165,19 +1165,6 @@ static void frame_rounded_down_draw(struct dt_frame_image *fi,
                      MPEN_HALFSHADOW, MPEN_HALFSHADOW);
 }
 
-/**
- * B: Modern subtle border - uses half-tone for minimal appearance
- */
-static void frame_subtle_border_draw(struct dt_frame_image *fi,
-                                     struct MUI_RenderInfo *mri, int gl, int gt,
-                                     int gw, int gh, int left, int top,
-                                     int width, int height) {
-  if (width <= 0 || height <= 0)
-    return;
-
-  rect_draw(fi, mri, left, top, width, height, MPEN_HALFSHADOW);
-}
-
 /**************************************************************************
  hold builtin frames.
 **************************************************************************/
@@ -1236,13 +1223,7 @@ static const struct ZuneFrameGfx __builtinFrameGfx[] = {
     {frame_semiround_bevel_up_draw, 0, 2, 2, 2, 2, NULL, FALSE, 2, 1},
     {frame_semiround_bevel_down_draw, 0, 2, 2, 2, 2, NULL, FALSE, 2, 1},
 
-    /* modern frame styles */
-
-    /* B : FST_SUBTLE_BORDER */
-    {frame_subtle_border_draw, 0, 1, 1, 1, 1, NULL, FALSE, 1, 0},
-    {frame_subtle_border_draw, 0, 1, 1, 1, 1, NULL, FALSE, 1, 0},
-
-    /* C : FST_ROUNDED (12) */
+    /* B : FST_ROUNDED */
     {frame_rounded_up_draw, 0, 2, 2, 2, 2, NULL, FALSE, 1, 8},
     {frame_rounded_down_draw, 0, 2, 2, 2, 2, NULL, FALSE, 1, 8},
 
@@ -1407,7 +1388,8 @@ zune_frame_prepare_for_drawing(const struct ZuneFrameGfx *zframe,
   /* Create a temporary frame image with proper values */
   memset(temp_storage, 0, sizeof(struct dt_frame_image));
 
-  /* Set border radius and width from framespec if available */
+  /* Set border radius and width from framespec if available,
+   * the margins are already calculated at this point */
   if (framespec && framespec->type == FST_ROUNDED) {
     temp_storage->border_radius = framespec->border_radius;
     temp_storage->frame_width = framespec->border_width;
