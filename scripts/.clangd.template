@@ -1,0 +1,162 @@
+# AROS .clangd Configuration Template
+#
+# Optimized for AROS cross-compilation to avoid host system header conflicts
+CompileFlags:
+  # Remove problematic GCC-specific flags that clangd doesn't understand
+  Remove:
+    - "-mcmodel=large"
+    - "-mno-red-zone"
+    - "-mno-ms-bitfields"
+    - "-fno-omit-frame-pointer"
+    - "-fno-common"
+    - "--sysroot"
+    - "-Wno-pointer-sign"
+    - "-Wno-parentheses"
+    - "-Wno-int-conversion"
+    - "-include"
+
+  # Add essential compiler flags for AROS
+  Add:
+    # Target architecture - adjust for your target
+    - "-target"
+    - "x86_64-unknown-linux-gnu"
+
+    # Essential AROS defines
+    - "-D__AROS__"
+    - "-DAROS_BUILD_TYPE=AROS_BUILD_TYPE_PERSONAL"
+    - "-D__STDC_LIMIT_MACROS"
+    - "-D__STDC_FORMAT_MACROS"
+    - "-D__STDC_CONSTANT_MACROS"
+    - "-D_GNU_SOURCE"
+
+    # Prevent host system header conflicts
+    - "-D__GLIBC_USE(x)=0"
+    - "-D_FEATURES_H=1"
+
+    # Main sysroot includes (highest priority)
+    - "-isystem"
+    - "${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include"
+
+    # AROS C library headers
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/aros/stdc"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/aros/posixc"
+
+    # Source tree includes (relative paths from AROS source root)
+    - "-Icompiler/include"
+    - "-Icompiler/include/aros"
+    - "-Icompiler/include/exec"
+    - "-Icompiler/include/proto"
+    - "-Icompiler/include/inline"
+    - "-Icompiler/include/defines"
+    - "-Icompiler/include/clib"
+    - "-Icompiler/include/libraries"
+    - "-Icompiler/include/devices"
+    - "-Icompiler/include/resources"
+    - "-Icompiler/include/graphics"
+    - "-Icompiler/include/intuition"
+    - "-Icompiler/include/utility"
+    - "-Icompiler/include/workbench"
+    - "-Icompiler/include/dos"
+    - "-Icompiler/include/prefs"
+    - "-Icompiler/include/gadgets"
+    - "-Icompiler/include/datatypes"
+    - "-Icompiler/include/hardware"
+    - "-Icompiler/include/SDI"
+
+    # AROS API includes from build directory
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/aros"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/exec"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/proto"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/inline"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/defines"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/clib"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/libraries"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/devices"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/resources"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/graphics"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/intuition"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/utility"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/workbench"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/dos"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/prefs"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/gadgets"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/datatypes"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/hardware"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/AROS/Developer/include/SDI"
+
+    # Generated config and include paths
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/gen/config"
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/gen/include"
+
+    # Common generated library includes
+    - "-I${AROS_BUILD_DIR}/bin/${AROS_TARGET_ARCH}/gen/workbench/libs/muimaster/muimaster/include"
+
+    # Current directory includes
+    - "-I."
+    - "-I.."
+
+    # Clang builtin includes (minimal, for compiler intrinsics only)
+    # Adjust paths based on your clang installation
+    - "-isystem"
+    - "/usr/lib/clang/18/include"
+    - "-isystem"
+    - "/usr/lib/clang/17/include"
+    - "-isystem"
+    - "/usr/lib/clang/16/include"
+    - "-isystem"
+    - "/usr/lib/clang/15/include"
+    - "-isystem"
+    - "/usr/lib/clang/14/include"
+
+# Diagnostics configuration
+Diagnostics:
+  # Suppress warnings that are common in AROS code
+  Suppress:
+    - "unknown-pragmas"
+    - "gnu-statement-expression"
+    - "gnu-zero-variadic-macro-arguments"
+    - "deprecated-declarations"
+    - "pointer-sign"
+    - "incompatible-library-redeclaration"
+    - "implicit-function-declaration"
+    - "unused-includes"
+    - "performance-no-int-to-ptr"
+    - "bugprone-narrowing-conversions"
+    - "int-conversion"
+    - "bugprone-assignment-in-if-condition"
+    - "readability-implicit-bool-conversion"
+    - "misc-redundant-expression"
+    - "cppcoreguidelines-narrowing-conversions"
+    - "bugprone-easily-swappable-parameters"
+
+  # Configure ClangTidy to be less strict for AROS development
+  ClangTidy:
+    Add:
+      - "bugprone-*"
+      - "performance-*"
+    Remove:
+      - "readability-*"
+      - "modernize-*"
+      - "google-*"
+      - "llvm-*"
+      - "misc-*"
+      - "clang-analyzer-*"
+      - "performance-no-int-to-ptr"
+      - "bugprone-narrowing-conversions"
+      - "bugprone-assignment-in-if-condition"
+      - "bugprone-switch-missing-default-case"
+      - "cppcoreguidelines-*"
+      - "cert-*"
+      - "hicpp-*"
+
+# Index configuration for better performance
+Index:
+  # Skip standard library indexing for better performance
+  StandardLibrary: No
+  # Use low priority background indexing
+  Background: Low
+
+# Completion configuration
+Completion:
+  # Enable completion from all scopes for better AROS API discovery
+  AllScopes: Yes
