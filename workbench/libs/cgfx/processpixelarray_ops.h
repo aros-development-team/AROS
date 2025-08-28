@@ -4,7 +4,7 @@
 void ProcessPixelArrayBrightnessFunc(struct RastPort *, struct Rectangle *, LONG,struct Library *);
 void ProcessPixelArrayAlphaFunc(struct RastPort *, struct Rectangle *, UBYTE, struct Library *);
 void ProcessPixelArrayTintFunc(struct RastPort *, struct Rectangle *, ULONG, struct Library *);
-void ProcessPixelArrayBlurFunc(struct RastPort *, struct Rectangle *, struct Library *);
+void ProcessPixelArrayBlurFunc(struct RastPort *, struct Rectangle *, ULONG, struct Library *);
 void ProcessPixelArrayColor2GreyFunc(struct RastPort *, struct Rectangle *, struct Library *);
 void ProcessPixelArrayNegativeFunc(struct RastPort *, struct Rectangle *, struct Library *);
 void ProcessPixelArrayNegativeFadeFunc(struct RastPort *, struct Rectangle *, struct Library *);

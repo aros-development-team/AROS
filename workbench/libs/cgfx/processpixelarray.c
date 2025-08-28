@@ -106,7 +106,7 @@
         ProcessPixelArrayTintFunc(rp, &opRect, value, CyberGfxBase);
         break;
     case POP_BLUR:
-        ProcessPixelArrayBlurFunc(rp, &opRect, CyberGfxBase);
+        ProcessPixelArrayBlurFunc(rp, &opRect, value, CyberGfxBase);
         break;
     case POP_COLOR2GREY:
         ProcessPixelArrayColor2GreyFunc(rp, &opRect, CyberGfxBase);
