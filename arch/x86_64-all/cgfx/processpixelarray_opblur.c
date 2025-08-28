@@ -114,7 +114,7 @@ static void GaussianRow_SSSE3(ULONG *dst, const ULONG *src, int w)
 }
 #endif
 
-void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, struct Library *CyberGfxBase)
+void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, LONG value, struct Library *CyberGfxBase)
 {
     const int w = opRect->MaxX - opRect->MinX + 1;
     const int h = opRect->MaxY - opRect->MinY + 1;
