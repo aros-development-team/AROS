@@ -286,7 +286,8 @@ int main(void)
 		Delay(3 * 50);
         rp_src.BitMap = bm;
 		printf("\nTesting Blur\n");
-		ProcessPixelArray(&rp_src, width / 2 , 10, (width / 2) - 10, height - 20, POP_BLUR, 0, NULL);
+		ProcessPixelArray(&rp_src, width / 3 , 10, width / 3, height - 20, POP_BLUR, 128, NULL);
+		ProcessPixelArray(&rp_src, (width / 3) * 2 , 10, (width / 3) - 10, height - 20, POP_BLUR, 255, NULL);
 		BltBitMapRastPort(bm,
 			  0, 0,
 			  win->RPort,
