@@ -82,7 +82,7 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu,
     while ((child = NextObject(&cstate)))
     {
         int entries;
-        ULONG checkit = 0, checked = 0, toggle = 0, enabled = 0, cmdstring = 0;
+        IPTR checkit = 0, checked = 0, toggle = 0, enabled = 0, cmdstring = 0, exclude = 0;
 
         get(child, MUIA_Menuitem_Title, &menu->nm_Label);
         get(child, MUIA_Menuitem_Shortcut, &menu->nm_CommKey);
@@ -99,18 +99,19 @@ static int Menuitem_FillNewMenu(Object *obj, struct NewMenu *menu,
             menu->nm_Flags |= MENUTOGGLE;
         if (cmdstring)
             menu->nm_Flags |= COMMSEQ;
-        get(child, MUIA_Menuitem_Exclude, &menu->nm_MutualExclude);
+        get(child, MUIA_Menuitem_Exclude, &exclude);
+        menu->nm_MutualExclude = exclude;
 
         if (depth == 0)
         {
-            LONG type = 0;
+            SIPTR type = 0;
             get(child, MUIA_Menuitem_Type, &type);
 
-            if (type == MUIV_Menuitem_Type_Menuitem)
+            if (type == MUIV_Menuitem_Type_Menuitem) {
                 /* Depth 0 Menuitems are to become items of current menu,
                  * not menus. MUI behavior */
                 menu->nm_Type = NM_ITEM;
-            else
+            } else
                 menu->nm_Type = NM_TITLE;
         }
         else if (depth == 1)
