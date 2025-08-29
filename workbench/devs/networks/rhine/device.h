@@ -36,8 +36,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "rhine.device"
 #define VERSION 1
-#define REVISION 1
-#define DATE "19.7.2025"
+#define REVISION 2
+#define DATE "30.8.2025"
 
 #define UTILITY_VERSION 36
 #define PROMETHEUS_VERSION 2

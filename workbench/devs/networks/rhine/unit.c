@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -210,7 +210,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 
    if(success)
    {
-      /* Fill arrays of virtual and physical addresses of TX descriptors */
+      /* Fill arrays of virtual and physical addresses of RX descriptors */
 
       dma_size = RH_DESCSIZE * RX_SLOT_COUNT;
       desc_p = (ULONG)(UPINT)CachePreDMA(desc, &dma_size, 0);
@@ -1503,7 +1503,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 
 static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 {
-   UWORD data_size, i = 0;
+   UWORD i = 0;
    UBYTE *buffer;
    struct DevBase *base;
    ULONG *desc, dma_size;
@@ -1530,7 +1530,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
          == 0 && i != unit->tx_in_slot)
       {
          buffer = unit->tx_buffers[i];
-         dma_size = data_size;
+         dma_size = unit->tx_requests[i]->ios2_DataLength;
          CachePostDMA(buffer, &dma_size, DMA_ReadFromRAM);
 
          /* Check if unit's buffer is now free */
