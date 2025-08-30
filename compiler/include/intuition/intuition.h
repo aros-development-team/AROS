@@ -2,7 +2,7 @@
 #define INTUITION_INTUITION_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Important defines and structures for intuition.library
@@ -51,7 +51,7 @@
 
 #define INTUITIONNAME "intuition.library"
 
-		       /***** Intuition Message *****/
+                       /***** Intuition Message *****/
 
 struct IntuiMessage
 {
@@ -77,7 +77,7 @@ struct ExtIntuiMessage
     struct TabletData * eim_TabletData;
 };
 
-			    /***** IDCMP *****/
+                            /***** IDCMP *****/
 
 #define IDCMP_SIZEVERIFY     (1L<<0)
 #define IDCMP_NEWSIZE	     (1L<<1)
@@ -119,7 +119,7 @@ struct ExtIntuiMessage
 #define WBENCHOPEN	1
 #define WBENCHCLOSE	2
 
-			    /***** IntuiText *****/
+                            /***** IntuiText *****/
 
 struct IntuiText
 {
@@ -134,7 +134,7 @@ struct IntuiText
     struct IntuiText * NextText;
 };
 
-			     /***** Menu *****/
+                             /***** Menu *****/
 
 struct Menu
 {
@@ -222,7 +222,7 @@ struct MenuItem
 #define COMMWIDTH     27
 #define LOWCOMMWIDTH  16
 
-			   /***** Gadgets *****/
+                           /***** Gadgets *****/
 
 struct Gadget
 {
@@ -481,7 +481,7 @@ struct EasyStruct
     CONST_STRPTR es_GadgetFormat; /* Text of the gadgets, separated by |'s */
 };
 
-			    /***** Window *****/
+                            /***** Window *****/
 
 struct Window
 {
@@ -739,7 +739,7 @@ struct ExtNewWindow
 #define WINDOW_BACKMOST  (NULL)
 #define WINDOW_FRONTMOST ((struct Window *)1)
 
-			   /***** Images *****/
+                           /***** Images *****/
 
 struct Image
 {
@@ -756,7 +756,7 @@ struct Image
     struct Image * NextImage;
 };
 
-			   /***** Border *****/
+                           /***** Border *****/
 
 struct Border
 {
@@ -771,7 +771,7 @@ struct Border
     struct Border * NextBorder;
 };
 
-			 /***** Tablets *****/
+                         /***** Tablets *****/
 
 struct TabletData
 {
@@ -806,7 +806,7 @@ struct TabletHookData
     LONG	    thd_ScreenChanged;
 };
 
-			  /***** Keys *****/
+                          /***** Keys *****/
 
 #define SELECTDOWN (IECODE_LBUTTON)
 #define SELECTUP   (IECODE_LBUTTON | IECODE_UP_PREFIX)
@@ -835,7 +835,7 @@ struct TabletHookData
 #define KEYCODE_LESS	0x38
 #define KEYCODE_GREATER 0x39
 
-			   /* Miscellaneous */
+                           /* Miscellaneous */
 
 struct IBox
 {
@@ -883,33 +883,33 @@ struct ColorSpec
    up with DecoratorMessages */
 
 struct NewDecorator
-{   struct  Node     nd_Node;
-    struct  MsgPort *nd_Port;
-            UWORD    nd_cnt;
-            STRPTR   nd_Pattern;
-            STRPTR   nd_IntPattern; /* Private, transformated Pattern be dos/ParsePattern() */
-            struct IClass *nd_ScreenClass;
-            struct TagItem *nd_ScreenTags;
-            IPTR nd_ScreenObjOffset;
-            struct IClass *nd_MenuClass;
-            struct TagItem *nd_MenuTags;
-            IPTR nd_ScreenMenuObjOffset;
-            struct IClass *nd_WindowClass;
-            struct TagItem *nd_WindowTags;
-            IPTR nd_ScreenWindowObjOffset;
+{   struct  Node        nd_Node;
+    struct  MsgPort     *nd_Port;
+    UWORD               nd_cnt;
+    STRPTR              nd_Pattern;
+    STRPTR              nd_IntPattern; /* Private, transformated Pattern be dos/ParsePattern() */
+    struct IClass       *nd_ScreenClass;
+    struct TagItem      *nd_ScreenTags;
+    IPTR                nd_ScreenObjOffset;
+    struct IClass       *nd_MenuClass;
+    struct TagItem      *nd_MenuTags;
+    IPTR                nd_ScreenMenuObjOffset;
+    struct IClass       *nd_WindowClass;
+    struct TagItem      *nd_WindowTags;
+    IPTR                nd_ScreenWindowObjOffset;
 };
 
 /*** AROS Private Messages ***/
 
 struct MagicMessage
 {
-    struct Node     mn_Node;
-    struct MsgPort * mn_ReplyPort;  /* message reply port */
-    UWORD        mn_Length;     /* total message length, in bytes */
-                    /* (include the size of the Message
-                       structure in the length) */
-    ULONG   mn_Magic;       /* can be used to figure out the message sender */
-    ULONG   mn_Version;     /* version can be used to extend a message in later versions */
+    struct Node         mn_Node;
+    struct MsgPort      * mn_ReplyPort; /* message reply port */
+    UWORD               mn_Length;      /* total message length, in bytes */
+                                        /* (include the size of the Message
+                                           structure in the length) */
+    ULONG               mn_Magic;       /* can be used to figure out the message sender */
+    ULONG               mn_Version;     /* version can be used to extend a message in later versions */
 };
 
 /* definition for entry Magic in Messages
@@ -918,14 +918,15 @@ struct MagicMessage
    as you cannot figure out which Messsage ist posted. With Magic this is no
    problem. */
 
-#define   MAGIC_DECORATOR       0x8000001
-#define   MAGIC_SCREENNOTIFY    0x8000002
+#define   MAGIC_DECORATOR               0x8000001
+#define   MAGIC_PRIVATE_TITLECHILD      0x0F0F
+#define   MAGIC_SCREENNOTIFY            0x8000002
 
 
 struct DecoratorMessage
 {
     struct MagicMessage dm_Message;
-    IPTR               dm_Class;
+    IPTR                dm_Class;
     ULONG               dm_Code;
     ULONG               dm_Flags;
     IPTR                dm_Object;

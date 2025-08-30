@@ -2,7 +2,7 @@
 #define INTUITION_SCREENS_H
 
 /*
-    Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Screen handling structures
@@ -215,6 +215,7 @@ struct ExtNewScreen
 #define SA_CompositingLayers    (SA_Dummy + 139) /* [I.G] BOOL            Reserved (MorphOS: use composition for layers)      */
 #define SA_CompositingFlags     (SA_Dummy + 140) /* [ISG] ULONG           AROS: Allow openers to request compositing modes    */
 #define SA_AlphaPreCompositingHook (SA_Dummy + 141) /* [ISG] Hook *       AROS: Hook to Pre-Process Composited buffers        */
+#define SA_ScreenbarTextColor   (SA_Dummy + 160) /* [..G] ULONG           AROS: Raw color for the screenbar text              */
 
 /* SA_Overscan */
 #define OSCAN_TEXT     1
