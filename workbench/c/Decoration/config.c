@@ -264,6 +264,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->RightBorderNoGadgets = 0;
     dc->BottomBorderNoGadgets = 0;
     dc->BarHeight = 0;
+    dc->BarFrame = 0;
     dc->SizeAddX = 0;
     dc->SizeAddY = 0;
     dc->UpDownAddX = 0;
@@ -289,6 +290,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->SLogoOffset = 0;
     dc->STitleOffset = 0;
     dc->SBarHeight = 0;
+    dc->SBarFrame = 0;
     dc->SBarChildPre_o = 0;
     dc->SBarChildPre_s = 0;
     dc->SBarChildFill_o = 0;
@@ -362,6 +364,8 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
                     dc->BottomBorderNoGadgets = GetInt(v);
                 } else  if ((v = strstr(line, "BarHeight ")) == line) {
                     dc->BarHeight = GetInt(v); //screen, window
+                } else  if ((v = strstr(line, "BarFrame ")) == line) {
+                    dc->BarFrame = GetInt(v);
                 } else  if ((v = strstr(line, "BarJoinTB ")) == line) {
                     GetIntegers(v, &dc->BarJoinTB_o, &dc->BarJoinTB_s);
                 } else  if ((v = strstr(line, "BarPreGadget ")) == line) {
@@ -448,6 +452,8 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
                     dc->STitleOffset = GetInt(v);
                 } else  if ((v = strstr(line, "SBarHeight ")) == line) {
                     dc->SBarHeight = GetInt(v);
+                } else  if ((v = strstr(line, "SBarFrame ")) == line) {
+                    dc->SBarFrame = GetInt(v);
                 } else  if ((v = strstr(line, "SBarChildPre ")) == line) {
                     GetIntegers(v, &dc->SBarChildPre_o, &dc->SBarChildPre_s);
                 } else  if ((v = strstr(line, "SBarChildFill ")) == line) {

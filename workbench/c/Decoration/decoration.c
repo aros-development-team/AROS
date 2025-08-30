@@ -54,9 +54,11 @@
 const TEXT version_string[] = "$VER: Decoration 1.10 (01.04.2023)";
 
 STRPTR __detached_name = "Decorator";
+struct IClass *screenchildgclass = NULL;
 
 #define MAGIC_PRIVATE_SKIN              0x0001
-#define MAGIC_PRIVATE_TITLECHILD        0x0F0F
+#define MAGIC_PRIVATE_TITLECLASS	    0x0F0E
+#define MAGIC_PRIVATE_TITLECHILD 	    0x0F0F
 
 struct DecorationDecorator
 {
@@ -263,6 +265,12 @@ int main(void)
                             {
                                 switch(msg->msg.mn_Magic)
                                 {
+                                    case MAGIC_PRIVATE_TITLECLASS:
+                                        dmsg = (struct DecoratorMessage *) msg;
+                                        if (decor) {
+                                            dmsg->dm_Class = (IPTR)screenchildgclass;
+                                        }
+                                        break;
                                     case MAGIC_PRIVATE_TITLECHILD:
                                         dmsg = (struct DecoratorMessage *) msg;
                                         if (decor)

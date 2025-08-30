@@ -18,6 +18,7 @@ struct DecorConfig
     LONG    SLogoOffset;
     LONG    STitleOffset;
     LONG    SBarHeight;
+    LONG    SBarFrame;
     LONG    SBarChildPre_o;
     LONG    SBarChildPre_s;
     LONG    SBarChildFill_o;
@@ -42,6 +43,7 @@ struct DecorConfig
     BOOL    BarRounded;
     BOOL    BarVertical;
     LONG    BarHeight;
+    LONG    BarFrame;
     LONG    BarJoinTB_o;
     LONG    BarJoinTB_s;
     LONG    BarPreGadget_o;
