@@ -863,7 +863,19 @@ IPTR ScreenClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         *msg->opg_Storage = screen->Pens[BARDETAILPEN];
         break;
 
+    case SA_ScreenbarTextColor:
+        *msg->opg_Storage = 0xFFFFFFFF;
+        if (screen->ScrDecorObj) {
+            GetAttr(SA_ScreenbarTextColor, screen->ScrDecorObj, msg->opg_Storage);
+            break;
+        }
+        break;
+
     case SA_ScreenbarTextFont:
+        if (screen->ScrDecorObj) {
+            *msg->opg_Storage = (IPTR)screen->DInfo.dri_Font;
+            break;
+        }
         *msg->opg_Storage = (IPTR)screen->Screen.BarLayer->rp->Font;
         break;
 
