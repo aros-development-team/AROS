@@ -223,9 +223,15 @@ void test_ReadArgs_ERROR_BAD_TEMPLATE(void)
         if (!rda)
         {
             LONG err = IoErr();
+#if defined(__AROS__)
             CU_ASSERT_EQUAL(err, ERROR_BAD_TEMPLATE);
-            CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_LINE_TOO_LONG);
+#else
+// AmigaOS 3.1
+            CU_ASSERT_EQUAL(err, ERROR_LINE_TOO_LONG);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_TEMPLATE);
+#endif
+            CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
             CU_ASSERT_NOT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
@@ -307,11 +313,17 @@ void test_ReadArgs_ERROR_KEY_NEEDS_ARG(void)
         if (!rda)
         {
             LONG err = IoErr();
+#if defined(__AROS__)
             CU_ASSERT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
+#else
+// AmigaOS 3.1
+            CU_ASSERT_EQUAL(err, ERROR_TOO_MANY_ARGS);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
+#endif
             CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_TEMPLATE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_LINE_TOO_LONG);
-            CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_NUMBER);
         }
