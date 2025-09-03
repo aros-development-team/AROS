@@ -275,7 +275,7 @@ void test_ReadArgs_ERROR_TOO_MANY_ARGS(void)
 
 void test_ReadArgs_ERROR_KEY_NEEDS_ARG(void)
 {
-    IPTR args[ARG_CNT];
+    IPTR args[2]; // size of 2 required under AmigaOS or will crash
     struct RDArgs *rdargs;
     STRPTR templ = "FOO/A,BAR="; // malformed templ (key needs arg but not optional)
     STRPTR param = "foo";
