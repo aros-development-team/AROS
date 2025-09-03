@@ -59,6 +59,7 @@ void testREADARGSNUMBER(void)
         memset(args, 0, sizeof args);
 
         if ((ReadArgs(templ, args, rdargs)))
+#if defined(__AROS__)
         {
             if (args[ARG_COL])
                 colno = *(LONG *) args[ARG_COL];
@@ -79,6 +80,14 @@ void testREADARGSNUMBER(void)
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_NUMBER);
         }
+#else
+// AmigaOS 3.1
+        {
+            CU_FAIL("ReadArgs() returned non-NULL");
+
+            FreeArgs(rdargs);
+        }
+#endif
 
         FreeDosObject(DOS_RDARGS, rdargs);
     }
