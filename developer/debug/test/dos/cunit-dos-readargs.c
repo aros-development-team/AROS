@@ -153,6 +153,51 @@ void testREADARGSNUMBERSPACE(void)
     }
 }
 
+/* Reading /F should remove everything after last argument. Test passes on AmigaOS 3.1 */
+void test_ReadArgs_AF(void)
+{
+    IPTR args[2];
+    struct RDArgs *rdargs;
+    STRPTR progargs = NULL;
+
+    STRPTR templ = "PROG/A,ARGS/F";
+    STRPTR param = "foobar barbar \n"; //space + \n is important for this test
+
+    if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+    {
+        rdargs->RDA_Source.CS_Buffer = param;
+        rdargs->RDA_Source.CS_Length = strlen(param);
+        rdargs->RDA_Source.CS_CurChr = 0;
+        rdargs->RDA_DAList = 0;
+        rdargs->RDA_Buffer = NULL;
+        rdargs->RDA_BufSiz = 0;
+        rdargs->RDA_ExtHelp = NULL;
+        rdargs->RDA_Flags = 0;
+
+        memset(args, 0, sizeof args);
+
+        if ((ReadArgs(templ, args, rdargs)))
+        {
+            if (args[1])
+                progargs = (STRPTR)args[1];
+            CU_ASSERT_EQUAL(strlen(progargs), 6);
+            CU_ASSERT_STRING_EQUAL(progargs, "barbar");
+
+            FreeArgs(rdargs);
+        }
+        else
+        {
+            CU_FAIL("ReadArgs() returned NULL");
+        }
+
+        FreeDosObject(DOS_RDARGS, rdargs);
+    }
+    else
+    {
+        CU_FAIL("AllocDosObject() returned NULL");
+    }
+}
+
 #define ARG_COL 0
 #define ARG_CNT 1
 

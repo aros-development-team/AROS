@@ -42,7 +42,6 @@
         { \
             if ((cs->CS_CurChr == ri_CurChr) || \
                 ((cs->CS_Buffer[cs->CS_CurChr-1] != '=') && \
-                (cs->CS_Buffer[cs->CS_CurChr-1] != ' ') && \
                 (cs->CS_Buffer[cs->CS_CurChr-1] != '\t'))) \
                 cs->CS_CurChr++; \
             else \
