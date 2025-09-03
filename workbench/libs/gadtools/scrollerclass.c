@@ -36,7 +36,7 @@
 
 /**********************************************************************************************/
 
-STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
+STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg, int newobj)
 {
     IPTR                retval = 0UL;
     struct TagItem      *tag, tags[] =
@@ -70,6 +70,13 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
         
         switch (tag->ti_Tag)
         {
+             case PGA_Freedom:
+                // No freedom changes unless this object is being constructed
+                if (!newobj) {
+                    tag->ti_Tag = TAG_IGNORE;
+                }
+                break;
+
              case GTA_GadgetKind:
                 data->gadgetkind = tag->ti_Data;
                 break;
@@ -226,7 +233,7 @@ IPTR GTScroller__OM_NEW(Class * cl, Object * o, struct opSet *msg)
         data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
         if (data->frame)
         {
-            scroller_set(cl, o, msg);
+            scroller_set(cl, o, msg, 1);
             data->labelplace = GetTagData(GA_LabelPlace, GV_LabelPlace_Left, ((struct opSet *)msg)->ops_AttrList);
         } else {
             CoerceMethod(cl, o, OM_DISPOSE);
@@ -278,7 +285,7 @@ IPTR GTScroller__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR GTScroller__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = scroller_set(cl, o, msg);
+    IPTR retval = scroller_set(cl, o, msg, 0);
 
     /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
      * because it would circumvent the subclass from fully overriding it.
