@@ -160,6 +160,54 @@ diff -ruN libcodesets-6.22/developer/include/defines/codesets.h libcodesets-6.22
  #endif /* __HAVE_IPTR_ATTR__ */
  #endif /* _SFDC_VARARG_DEFINED */
  
+diff -ruN libcodesets-6.22/developer/include/libraries/codesets.h libcodesets-6.22.aros/developer/include/libraries/codesets.h
+--- libcodesets-6.22/developer/include/libraries/codesets.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/include/libraries/codesets.h	2025-09-03 10:13:09.471684948 +0000
+@@ -58,17 +58,17 @@
+ 
+ #ifndef UTF32_TYPEDEF
+ #define UTF32_TYPEDEF
+-typedef unsigned long  UTF32;   /* at least 32 bits */
++typedef ULONG UTF32;   /* at least 32 bits */
+ #endif
+ 
+ #ifndef UTF16_TYPEDEF
+ #define UTF16_TYPEDEF
+-typedef unsigned short UTF16;   /* at least 16 bits */
++typedef UWORD UTF16;   /* at least 16 bits */
+ #endif
+ 
+ #ifndef UTF8_TYPEDEF
+ #define UTF8_TYPEDEF
+-typedef unsigned char  UTF8;    /* typically 8 bits */
++typedef UBYTE UTF8;    /* typically 8 bits */
+ #endif
+ 
+ /***********************************************************************/
+diff -ruN libcodesets-6.22/include/libraries/codesets.h libcodesets-6.22.aros/include/libraries/codesets.h
+--- libcodesets-6.22/include/libraries/codesets.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/include/libraries/codesets.h	2025-09-03 10:13:04.062684690 +0000
+@@ -58,17 +58,17 @@
+ 
+ #ifndef UTF32_TYPEDEF
+ #define UTF32_TYPEDEF
+-typedef unsigned long  UTF32;   /* at least 32 bits */
++typedef ULONG UTF32;   /* at least 32 bits */
+ #endif
+ 
+ #ifndef UTF16_TYPEDEF
+ #define UTF16_TYPEDEF
+-typedef unsigned short UTF16;   /* at least 16 bits */
++typedef UWORD UTF16;   /* at least 16 bits */
+ #endif
+ 
+ #ifndef UTF8_TYPEDEF
+ #define UTF8_TYPEDEF
+-typedef unsigned char  UTF8;    /* typically 8 bits */
++typedef UBYTE UTF8;    /* typically 8 bits */
+ #endif
+ 
+ /***********************************************************************/
 diff -ruN libcodesets-6.22/include/SDI_lib.h libcodesets-6.22.aros/include/SDI_lib.h
 --- libcodesets-6.22/include/SDI_lib.h	2024-02-26 07:56:38.000000000 +0000
 +++ libcodesets-6.22.aros/include/SDI_lib.h	2025-07-06 01:20:40.200402289 +0000
