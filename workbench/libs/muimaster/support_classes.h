@@ -199,6 +199,30 @@
 #   define ZUNE_KNOB_DESC
 #endif
 
+#if ZUNE_BUILTIN_PANEL
+#   define ZUNE_PANEL_DESC (&_MUI_Panel_desc),
+#else
+#   define ZUNE_PANEL_DESC
+#endif
+
+#if ZUNE_BUILTIN_PANELGROUP
+#   define ZUNE_PANELGROUP_DESC (&_MUI_PanelGroup_desc),
+#else
+#   define ZUNE_PANELGROUP_DESC
+#endif
+
+#if ZUNE_BUILTIN_DRAGHANDLE
+#   define ZUNE_DRAGHANDLE_DESC (&_MUI_DragHandle_desc),
+#else
+#   define ZUNE_DRAGHANDLE_DESC
+#endif
+
+#if ZUNE_BUILTIN_PANELTITLE
+#   define ZUNE_PANELTITLE_DESC (&_MUI_PanelTitle_desc),
+#else
+#   define ZUNE_PANELTITLE_DESC
+#endif
+
 #if ZUNE_BUILTIN_DTPIC
 #   define ZUNE_DTPIC_DESC (&_MUI_Dtpic_desc),
 #else
@@ -262,7 +286,7 @@ AROS_UFP3
         _ret; \
 })
 
-#else 
+#else
 
 struct MUI_CustomClass *MCC_Query(ULONG d0);
 #pragma  libcall mcclib MCC_Query 01e 001
@@ -273,4 +297,3 @@ struct MUI_CustomClass *MCC_Query(ULONG d0);
 
 
 #endif /* _MUIMASTER_SUPPORT_CLASSES_H */
-

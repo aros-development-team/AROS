@@ -10,7 +10,8 @@ FILES  := \
     VHGroup   \
     VHGroup2  \
     HVGroup   \
-    Notify
+    Notify    \
+    PanelGroup
 
 #MM workbench-libs-muimaster-examples : includes linklibs
 
