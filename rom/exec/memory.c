@@ -934,7 +934,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
      * This is done in AllocVec()-alike manner; the pointer is placed before the block.
      * The Amiga platform has extra padding to not destroy the alignment.
      */
-    memSize += ALLOCPOOLED_USER_OFFSET;
+    memSize += MEMPOOL_WORSTALIGN;
     origSize = memSize;
 
     /* If mungwall is enabled, count also size of walls */
@@ -1062,7 +1062,7 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
 
         /* Remember where we were allocated from */
         *((struct MemHeader **)ret) = mh;
-        ret += ALLOCPOOLED_USER_OFFSET;
+        ret += MEMPOOL_WORSTALIGN;
     }
 
     /* Everything fine */
@@ -1088,8 +1088,8 @@ void InternalFreePooled(APTR poolHeader, APTR memory, IPTR memSize, struct Trace
     if (!memory || !memSize) return;
 
     /* Get MemHeader pointer. It is stored right before our block. */
-    freeStart = memory - ALLOCPOOLED_USER_OFFSET;
-    freeSize = memSize + ALLOCPOOLED_USER_OFFSET;
+    freeStart = memory - MEMPOOL_WORSTALIGN;
+    freeSize = memSize + MEMPOOL_WORSTALIGN;
     mh = *((struct MemHeader **)freeStart);
 
     /* Check walls first */

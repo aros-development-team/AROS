@@ -32,10 +32,9 @@
 /* On AGA Amigas, AmiBlitz 3 allocation of wide sprites relies on that AllocPooled
  * returns at least eight byte aligned memory.
  * Testing AmigaOS 3.1 on WinUAE with A600 and A1200 setups did not reproduce any
- * AllocPooled results without eight bytes alignment, so it should be a decent
- * approach to align to eight bytes.
+ * AllocPooled results with less than eight bytes alignment.
  */
-#define ALLOCPOOLED_USER_OFFSET 8
+#define MEMPOOL_WORSTALIGN (AROS_WORSTALIGN > 8 ? AROS_WORSTALIGN : 8)
 
 /* Private Pool structure */
 struct Pool 
