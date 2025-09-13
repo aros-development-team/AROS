@@ -110,7 +110,9 @@ VOID setfmode(struct amigavideo_staticdata *csd, struct amigabm_data *bm)
     csd->copper1[15] = fmode & 0xc;
 }
 
-VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, UBYTE *palette)
+static void updatecopper1frombm(struct amigavideo_staticdata *, struct amigabm_data *);
+
+VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, UBYTE *palette, BOOL update_copper1)
 {
     struct copper2data *c2d = &bm->copld, *c2di = &bm->copsd;
 
@@ -167,6 +169,9 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
             if (bm->interlace)
                 c2di->copper2_palette[i * 2 + 1] = val;
         }
+    }
+    if (update_copper1) {
+        updatecopper1frombm(csd, bm);
     }
     D(bug("[AmigaVideo] %s: copper colors set\n", __func__));
 }
@@ -787,7 +792,8 @@ BOOL setcolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struc
     }
 
     if ((bm->bmcl) && (bm->bmcl->CopLStart))
-        setcoppercolors(csd, bm, bm->palette);
+        setcoppercolors(csd, bm, bm->palette,
+                        (void *)bm == (void *)csd->compositedbms->lh_Head);
 
     return TRUE;
 }
@@ -1684,7 +1690,8 @@ VOID AmigaVideoCl__Hidd_AmigaGfx__EnableAGA(OOP_Class *cl, OOP_Object *o, void *
         copperlist_end = (IPTR)populatebmcopperlist(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
         bm->bmcl->Count = (copperlist_end - (IPTR)bm->bmcl->CopLStart) >> 2;
         setfmode(csd, bm);
-        setcoppercolors(csd, bm, bm->palette);
+        setcoppercolors(csd, bm, bm->palette,
+                        (void *)bm == (void *)csd->compositedbms->lh_Head);
         setcopperscroll2(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
     }
 }

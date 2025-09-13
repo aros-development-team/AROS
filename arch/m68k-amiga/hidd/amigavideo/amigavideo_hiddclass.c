@@ -1173,7 +1173,8 @@ ULONG AmigaVideoCl__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, str
             }
 
             setfmode(csd, bmdata);
-            setcoppercolors(csd, bmdata, bmdata->palette);
+            setcoppercolors(csd, bmdata, bmdata->palette,
+                            (void *)vpd == (void *)msg->Data);
 
             /* handle the viewports 'struct UCopList *' */
             if (vpd->vpe->ViewPort->UCopIns && vpd->vpe->ViewPort->UCopIns->FirstCopList)
