@@ -306,16 +306,20 @@ static BOOL LoadJPEG(struct IClass *cl, Object *o)
 
 /**************************************************************************************************/
 
+#define OUTPUT_BUF_SIZE  4096   /* choose an efficiently fwrite'able size */
+
 typedef struct {
   struct jpeg_destination_mgr pub; /* public fields */
 
   FILE * outfile;               /* target stream */
+#if defined(JPEG_LIB_VERSION_MAJOR) && ((JPEG_LIB_VERSION_MAJOR > 9) || ((JPEG_LIB_VERSION_MAJOR == 9)  &&  (JPEG_LIB_VERSION_MINOR > 5)))
+  JOCTET buffer[OUTPUT_BUF_SIZE];
+#else
   JOCTET * buffer;              /* start of buffer */
+#endif
 } my_destination_mgr;
 
 typedef my_destination_mgr * my_dest_ptr;
-
-#define OUTPUT_BUF_SIZE  4096   /* choose an efficiently fwrite'able size */
 
 METHODDEF(boolean)
 my_empty_output_buffer (j_compress_ptr cinfo)
