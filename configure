@@ -10958,31 +10958,32 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
         esac
         ;;
 
-    native)
+    native*)
+        aros_flavour="standalone"
+        aros_target_arch="native"
+        aros_object_format="riscvelf_aros"
+        aros_isa_flags="$""(ISA_RISCV_FLAGS)"
+        aros_shared_default="no"
+        llvm_target_cpu="RISCV"
+        case "$target_cpu" in
+            *riscv64*)
+                PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
+                aros_target_cpu="riscv64"
+                gcc_default_cpu="rv64imafdc"
+                gcc_default_mode="lp64d"
+                ;;
+            *riscv*)
+                aros_target_cpu="riscv"
+                gcc_default_cpu="rv32imafdc"
+                gcc_default_mode="ilp32d"
+                ;;
+            *)
+                as_fn_error $? "\"Unsupported CPU '$target_cpu' for RISCV\"" "$LINENO" 5
+                ;;
+        esac
+
         case "$aros_target_variant" in
             *sifive_u*)
-                aros_flavour="standalone"
-                aros_target_arch="native"
-                aros_object_format="riscvelf_aros"
-                aros_isa_flags="$""(ISA_RISCV_FLAGS)"
-                aros_shared_default="no"
-                llvm_target_cpu="RISCV"
-                case "$target_cpu" in
-                    *riscv64*)
-                        PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                        aros_target_cpu="riscv64"
-                        gcc_default_cpu="rv64imafdc"
-                        gcc_default_mode="lp64"
-                        ;;
-                    *riscv*)
-                        aros_target_cpu="riscv"
-                        gcc_default_cpu="rv32imafdc"
-                        gcc_default_mode="ilp32"
-                        ;;
-                    *)
-                        as_fn_error $? "\"Unsupported CPU '$target_cpu' for SiFive Unleashed\"" "$LINENO" 5
-                        ;;
-                esac
                 ;;
         esac
         ;;
@@ -19066,6 +19067,9 @@ printf "%s\n" "$aros_config_unittests" >&6; }
 
 
 case "$aros_target_cpu" in
+    riscv)
+        export_target_gcccpu="yes"
+        ;;
     arm)
         export_target_gcccpu="yes"
         ;;
