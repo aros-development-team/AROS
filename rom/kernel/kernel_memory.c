@@ -20,14 +20,15 @@
  * Create MemHeader structure for the specified RAM region.
  * The header will be placed in the beginning of the region itself.
  * The header will NOT be added to the memory list!
+ * start + size needs to provide "last available address" + 1 (matching mh_Upper defintion)
  */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
 {
     /* The MemHeader itself does not have to be aligned */
     struct MemHeader *mh = start;
 
-    /* If the end is less than (1 << 31), MEMF_31BIT is implied */
-    if (((IPTR)start+size) < (1UL << 31))
+    /* If the last available address is less than (1 << 31), MEMF_31BIT is implied */
+    if (((IPTR)start+size-1) < (1UL << 31))
         flags |= MEMF_31BIT;
     else
         flags &= ~MEMF_31BIT;

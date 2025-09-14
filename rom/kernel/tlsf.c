@@ -1280,10 +1280,16 @@ static void * init_Pool(struct MemHeaderExt *mhe, IPTR puddleSize, IPTR initialS
     return tlsf;
 }
 
+/*
+ * Create MemHeaderExt structure for the specified RAM region.
+ * The header will be placed in the beginning of the region itself.
+ * The header will NOT be added to the memory list!
+ * start + size needs to provide "last available address" + 1 (matching mh_Upper defintion)
+ */
 void krnCreateTLSFMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
 {
-    /* If the end is less than (1 << 31), MEMF_31BIT is implied */
-    if (((IPTR)start+size) < (1UL << 31))
+    /* If the last available address is less than (1 << 31), MEMF_31BIT is implied */
+    if (((IPTR)start+size-1) < (1UL << 31))
         flags |= MEMF_31BIT;
     else
         flags &= ~MEMF_31BIT;
