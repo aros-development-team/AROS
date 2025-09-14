@@ -497,7 +497,7 @@ struct CardData* AllocDriverData(struct PCIDevice *dev, struct DriverBase* AHIsu
   card->interrupt.is_Node.ln_Pri  = 0;
   card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifndef __MORPHOS__
-  card->interrupt.is_Code         = (void(*)(void)) CardInterrupt;
+  card->interrupt.is_Code         = (VOID_FUNC) CardInterrupt;
 #else
   card->interrupt.is_Code         = (void(*)(void)) &cardinterrupt;
 #endif
@@ -507,7 +507,7 @@ struct CardData* AllocDriverData(struct PCIDevice *dev, struct DriverBase* AHIsu
   card->playback_interrupt.is_Node.ln_Pri  = 0;
   card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifndef __MORPHOS__
-  card->playback_interrupt.is_Code         = PlaybackInterrupt;
+  card->playback_interrupt.is_Code         = (VOID_FUNC) PlaybackInterrupt;
 #else
   card->playback_interrupt.is_Code         = (void(*)(void)) &playbackinterrupt;
 #endif
@@ -517,7 +517,7 @@ struct CardData* AllocDriverData(struct PCIDevice *dev, struct DriverBase* AHIsu
   card->record_interrupt.is_Node.ln_Pri  = 0;
   card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
 #ifndef __MORPHOS__
-  card->record_interrupt.is_Code         = RecordInterrupt;
+  card->record_interrupt.is_Code         = (VOID_FUNC) RecordInterrupt;
 #else
   card->record_interrupt.is_Code         = (void(*)(void)) &recordinterrupt;
 #endif
