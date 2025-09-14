@@ -448,7 +448,7 @@ diff -ruN gcc-15.1.0/gcc/config/arm/t-aros gcc-15.1.0.aros/gcc/config/arm/t-aros
 +MULTILIB_REUSE		+= marm/mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard=mlittle-endian/march.armv7-a+fp/mfpu.neon/mfloat-abi.hard
 diff -ruN gcc-15.1.0/gcc/config/aros.h gcc-15.1.0.aros/gcc/config/aros.h
 --- gcc-15.1.0/gcc/config/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config/aros.h	2025-07-09 18:42:17.248050152 +0000
++++ gcc-15.1.0.aros/gcc/config/aros.h	2020-12-27 16:58:14.310000000 +0000
 @@ -0,0 +1,123 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
@@ -1042,7 +1042,7 @@ diff -ruN gcc-15.1.0/gcc/config.build gcc-15.1.0.aros/gcc/config.build
      build_install_headers_dir=install-headers-cpio
 diff -ruN gcc-15.1.0/gcc/config.gcc gcc-15.1.0.aros/gcc/config.gcc
 --- gcc-15.1.0/gcc/config.gcc	2025-04-25 08:18:00.000000000 +0000
-+++ gcc-15.1.0.aros/gcc/config.gcc	2020-12-27 16:58:14.310000000 +0000
++++ gcc-15.1.0.aros/gcc/config.gcc	2025-09-14 21:33:07.627486361 +0000
 @@ -993,6 +993,16 @@
    rust_target_objs="${rust_target_objs} netbsd-rust.o"
    target_has_targetrustm=yes
@@ -1133,7 +1133,24 @@ diff -ruN gcc-15.1.0/gcc/config.gcc gcc-15.1.0.aros/gcc/config.gcc
  m68k-*-elf* | fido-*-elf*)
  	case ${target} in
  	fido-*-elf*)
-@@ -3060,6 +3115,13 @@
+@@ -2519,6 +2574,16 @@
+ 	cxx_target_objs="${cxx_target_objs} microblaze-c.o"
+ 	tmake_file="${tmake_file} microblaze/t-microblaze"
+         ;;
++riscv*-*-aros*)
++	tm_file="elfos.h ${tm_file} ${aros_tm_file} riscv/elf.h aros.h"
++	tmake_file="${tmake_file} riscv/t-riscv t-aros"
++	tm_defines="${tm_defines} TARGET_DEFAULT_ASYNC_UNWIND_TABLES=1"
++	case $target in
++	riscv32be-*|riscv64be-*)
++		tm_defines="${tm_defines} TARGET_BIG_ENDIAN_DEFAULT=1"
++		;;
++	esac
++	;;
+ riscv*-*-linux*)
+ 	tm_file="elfos.h gnu-user.h linux.h glibc-stdint.h ${tm_file} riscv/linux.h"
+ 	case "x${enable_multilib}" in
+@@ -3060,6 +3125,13 @@
  	extra_options="${extra_options} rs6000/sysv4.opt rs6000/linux64.opt"
  	tmake_file="${tmake_file} rs6000/t-fprules rs6000/t-rtems rs6000/t-ppccomm"
  	;;
