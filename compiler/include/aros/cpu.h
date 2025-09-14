@@ -134,7 +134,7 @@
 #endif
 
 #ifndef AROS_LARGEST_TYPE
-#define AROS_LARGEST_TYPE           long
+#define AROS_LARGEST_TYPE           long long
 #endif
 
 #ifndef AROS_ATOMIC_TYPE
