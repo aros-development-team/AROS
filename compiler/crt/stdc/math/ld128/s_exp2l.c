@@ -354,7 +354,7 @@ static const float eps[TBLSIZE] = {
  *	for the IEEE Floating Point Standard.  TOMS 17(1), 26-46 (1991).
  */
 long double
-__ieee754_exp2l(long double x)
+exp2l(long double x)
 {
 	union IEEEl2bits u, v;
 	long double r, t, twopk, twopkp10000, z;
