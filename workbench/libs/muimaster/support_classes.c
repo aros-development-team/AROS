@@ -76,7 +76,13 @@ static const struct __MUIBuiltinClass *const builtins[] = {
         ZUNE_CRAWLING_DESC
         ZUNE_POPSCREEN_DESC
         ZUNE_LEVELMETER_DESC
-        ZUNE_KNOB_DESC ZUNE_DTPIC_DESC ZUNE_PALETTE_DESC
+        ZUNE_KNOB_DESC
+        ZUNE_DTPIC_DESC
+        ZUNE_PALETTE_DESC
+        ZUNE_PANEL_DESC
+        ZUNE_PANELGROUP_DESC
+        ZUNE_DRAGHANDLE_DESC
+        ZUNE_PANELTITLE_DESC
 };
 
 Class *ZUNE_GetExternalClass(ClassID classname,

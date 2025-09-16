@@ -85,6 +85,10 @@
     MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
 #define RegisterGroup(ts) \
     MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, ((IPTR) (ts))
+#define Panel              MUIOBJMACRO_START(MUIC_Panel)
+#define HPanelGroup \
+    MUIOBJMACRO_START(MUIC_PanelGroup), MUIA_Group_Horiz, TRUE
+#define VPanelGroup         MUIOBJMACRO_START(MUIC_PanelGroup)
 
 #define End                 OBJMACRO_END
 

@@ -164,6 +164,7 @@
 #define MUICFG_CustomFrame_14           0x60d
 #define MUICFG_CustomFrame_15           0x60e
 #define MUICFG_CustomFrame_16           0x60f
+#define MUICFG_Frame_Rounded            0x610
 
 #define MUICFG_PublicScreen_PopToFront  0x700
 #define MUICFG_Iconification_Hotkey     0x701

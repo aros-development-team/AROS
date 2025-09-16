@@ -134,7 +134,7 @@ enum
     MUIO_Menuitem,     /* STRPTR label, STRPTR shortcut, ULONG flags, ULONG data  */
     MUIO_BarTitle,     /* STRPTR label */
     MUIO_NumericButton,/* STRPTR label, LONG min, LONG max, STRPTR format */
-    
+
     MUIO_CoolButton = 111, /* STRPTR label, APTR CoolImage, ULONG flags */
     MUIO_ImageButton,      /* CONST_STRPTR label, CONST_STRPTR imagePath */
 };
@@ -167,7 +167,7 @@ struct MUI_MinMax
 };
 
 /* special maximum dimension in case it is unlimited */
-#define MUI_MAXMAX 10000 
+#define MUI_MAXMAX 10000
 
 /* Number of pens, the single definintion is below */
 #define MPEN_COUNT 8
@@ -290,11 +290,11 @@ typedef enum {
    "p123"   	    	    	(cmap entry #123)
    "rFFFFFFFF,00000000,00000000 (rgb #FF0000)
    "s3"                         (system pen #3)
-   
+
    It needs to be like this, because for example nlist has
    default penspecs in its source encoded like above which
    it directly passes to MUI_ObtainBestPen */
-   
+
 struct MUI_PenSpec
 {
     UBYTE buf[32];
@@ -571,6 +571,14 @@ struct MUI_AlphaData
 
 #ifndef _MUI_CLASSES_PIXMAP_H
 #include "classes/pixmap.h"
+#endif
+
+#ifndef _MUI_CLASSES_PANEL_H
+#include "classes/panel.h"
+#endif
+
+#ifndef _MUI_CLASSES_PANELGROUP_H
+#include "classes/panelgroup.h"
 #endif
 
 /**************************************************************************
