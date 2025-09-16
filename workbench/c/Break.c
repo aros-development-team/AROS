@@ -132,13 +132,16 @@ main(void)
 
         if ((rd = ReadArgs(ARG_TEMPLATE, (IPTR *) args, rda)))
         {
-            struct Process *pr = NULL;
             Forbid();
             if (args[ARG_PROCESS])
             {
-                struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
-                prNode->ln_Name = (char *) FindCliProc(*(IPTR *) args[ARG_PROCESS]);;
-                AddTail(&prList, prNode);
+                struct Process *pr;
+                if ((pr = FindCliProc(*(IPTR *) args[ARG_PROCESS])) != NULL)
+                {
+                    struct Node *prNode = (struct Node *)AllocVec(sizeof(struct Node), MEMF_ANY);
+                    prNode->ln_Name = (char *) pr;
+                    AddTail(&prList, prNode);
+                }
             }
             else if (args[ARG_PORT])
             {
@@ -211,7 +214,7 @@ main(void)
                 ForeachNodeSafe(&prList, prNode, tmpNode)
                 {
                     Remove(prNode);
-                    pr = (struct Process *)prNode->ln_Name;
+                    struct Process *pr = (struct Process *)prNode->ln_Name;
                     FreeVec(prNode);
 
                     Signal((struct Task *) pr, mask);
@@ -223,7 +226,7 @@ main(void)
                 /* There is no relevant error code, OBJECT_NOT_FOUND
                  * is a filesystem error, so we can't use that... */
                 Permit();
-                pr = (struct Process *) FindTask(NULL);
+                struct Process *pr = (struct Process *) FindTask(NULL);
 
                 BPTR errStream = (pr->pr_CES != BNULL)
                                  ? pr->pr_CES
