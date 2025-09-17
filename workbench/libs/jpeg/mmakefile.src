@@ -32,7 +32,7 @@ FILES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
         jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster \
         jdmerge jdpostct jdsample jdtrans jerror jfdctflt \
         jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 \
-        jquant2 jutils jmemmgr jmemamiga
+        jquant2 jutils jmemmgr jmemamiga jdatadstsrc9e
 
 # We trust upstream
 NOWARN_FLAGS := -Wno-main
