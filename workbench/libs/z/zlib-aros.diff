@@ -21,8 +21,8 @@ diff -ruN zlib/adler32_simd.c zlib.aros/adler32_simd.c
  
  #include <arm_neon.h>
 diff -ruN zlib/cpu_features.c zlib.aros/cpu_features.c
---- zlib/cpu_features.c	2025-06-19 22:48:50.386000000 +0000
-+++ zlib.aros/cpu_features.c	2025-08-14 13:11:35.712383700 +0000
+--- zlib/cpu_features.c	2025-07-31 17:05:57.714000000 +0000
++++ zlib.aros/cpu_features.c	2025-09-18 12:12:01.548914796 +0000
 @@ -80,7 +80,11 @@
  void ZLIB_INTERNAL cpu_check_features(void)
  {
@@ -44,8 +44,13 @@ diff -ruN zlib/cpu_features.c zlib.aros/cpu_features.c
  #include <immintrin.h>
  #include <xsaveintrin.h>
  #endif
-@@ -191,6 +197,9 @@
-     x86_cpu_enable_avx512 = _xgetbv(0) & 0x00000040;
+@@ -188,9 +194,13 @@
+                           x86_cpu_has_pclmulqdq;
+ 
+ #ifdef CRC32_SIMD_AVX512_PCLMUL
+-    x86_cpu_enable_avx512 = _xgetbv(0) & 0x00000040;
++    if ((abcd[2] & 0x04000000) && (abcd[2] & 0x10000000)) /* XSAVE and AVX support */
++        x86_cpu_enable_avx512 = _xgetbv(0) & 0x00000040;
  #endif
  }
 +#ifdef CRC32_SIMD_AVX512_PCLMUL
