@@ -70,22 +70,19 @@ $(DESTDIR)/share/grub:
 	%mkdirs_q $@
 
 #MM
-bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_GRUB)/_unicode.pf2 $(BOOT_EFI)/splash.png $(BOOT_EFI)/_unicode.pf2
+bootloader-grub2gfx-common: $(BOOT_GRUB)/splash.png $(BOOT_EFI)/splash.png
 
 $(BOOT_GRUB)/splash.png: $(SPLASHIMAGE) | $(BOOT_GRUB)
 		$(CP) $< $@
 
-$(BOOT_GRUB)/_unicode.pf2: unicode.pf2 | $(BOOT_GRUB)
-		$(CP) $< $(BOOT_GRUB)/_unicode.pf2
-
 $(BOOT_EFI)/splash.png: $(SPLASHIMAGE) | $(BOOT_EFI)
 		$(CP) $< $@
 
-$(BOOT_EFI)/_unicode.pf2: unicode.pf2 | $(BOOT_EFI)
-		$(CP) $< $(BOOT_EFI)/_unicode.pf2
+$(DESTDIR)/share/grub/unicode.pf2: unicode.pf2 | $(DESTDIR)/share/grub
+		$(CP) $< $@
 
 #MM
-bootloader-grub2gfx-common-livecd: $(BOOT_GRUB)/fonts/unicode.pf2 $(BOOT_EFI)/fonts/unicode.pf2
+bootloader-grub2gfx-gfxmode: $(BOOT_GRUB)/fonts/unicode.pf2 $(BOOT_EFI)/fonts/unicode.pf2
 
 $(BOOT_GRUB)/fonts/unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
 		$(CP) $< $(BOOT_GRUB)/fonts
@@ -93,8 +90,14 @@ $(BOOT_GRUB)/fonts/unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
 $(BOOT_EFI)/fonts/unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
 		$(CP) $< $(BOOT_EFI)/fonts
 
-$(DESTDIR)/share/grub/unicode.pf2: unicode.pf2 | $(DESTDIR)/share/grub
-		$(CP) $< $@
+#MM
+bootloader-grub2gfx-txtmode: $(BOOT_GRUB)/fonts/_unicode.pf2 $(BOOT_EFI)/fonts/_unicode.pf2
+
+$(BOOT_GRUB)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_GRUB)/fonts
+		$(CP) $< $(BOOT_GRUB)/fonts
+
+$(BOOT_EFI)/fonts/_unicode.pf2: unicode.pf2 $(BOOT_EFI)/fonts
+		$(CP) $< $(BOOT_EFI)/fonts
 
 # avoid the make.tmpl s_flag in order to disable stripping of binaries
 export DEBUG		    := yes
