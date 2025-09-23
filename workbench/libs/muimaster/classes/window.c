@@ -3678,13 +3678,13 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
 /*            data->wd_MinMax.MinHeight, */
 /*            data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
 
-    if(data->wd_MinMax.MaxWidth > data->wd_RenderInfo.mri_ScreenWidth)
+    if(data->wd_MinMax.MaxWidth > data->wd_RenderInfo.mri_Screen->Width)
     {
-        data->wd_MinMax.MaxWidth = data->wd_RenderInfo.mri_ScreenWidth;
+        data->wd_MinMax.MaxWidth = data->wd_RenderInfo.mri_Screen->Width;
     }
-    if(data->wd_MinMax.MaxHeight > data->wd_RenderInfo.mri_ScreenHeight)
+    if(data->wd_MinMax.MaxHeight > data->wd_RenderInfo.mri_Screen->Height)
     {
-        data->wd_MinMax.MaxHeight = data->wd_RenderInfo.mri_ScreenHeight;
+        data->wd_MinMax.MaxHeight = data->wd_RenderInfo.mri_Screen->Height;
     }
 }
 
