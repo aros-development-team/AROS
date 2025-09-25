@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2011 Neil Cafferkey
+Copyright (C) 2004-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,6 +45,8 @@ static VOID LongOutHook(struct BusContext *context, ULONG offset,
    ULONG value);
 static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count);
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count);
 static VOID LongsOutHook(struct BusContext *context, ULONG offset,
    const ULONG *buffer, ULONG count);
 static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
@@ -71,6 +73,7 @@ static const struct TagItem unit_tags[] =
    {IOTAG_WordOut, (UPINT)WordOutHook},
    {IOTAG_LongOut, (UPINT)LongOutHook},
    {IOTAG_LongsIn, (UPINT)LongsInHook},
+   {IOTAG_WordsOut, (UPINT)WordsOutHook},
    {IOTAG_LongsOut, (UPINT)LongsOutHook},
    {IOTAG_BEWordOut, (UPINT)BEWordOutHook},
    {IOTAG_LEWordIn, (UPINT)LEWordInHook},
@@ -102,13 +105,13 @@ ULONG GetExpansionCount(struct DevBase *base)
    ULONG count = 0;
    struct PCIDevice *card;
 
-   if(base->i_pci != NULL)
+   if(IPCI != NULL)
    {
       while((card =
-         base->i_pci->FindDeviceTags(FDT_CandidateList, product_codes,
+         IPCI->FindDeviceTags(FDT_CandidateList, product_codes,
          FDT_Index, count, TAG_END)) != NULL)
       {
-         base->i_pci->FreeDevice(card);
+         IPCI->FreeDevice(card);
          count++;
       }
    }
@@ -149,9 +152,8 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
    if(success)
    {
       context->card = card =
-         base->i_pci->FindDeviceTags(FDT_CandidateList, product_codes,
+         IPCI->FindDeviceTags(FDT_CandidateList, product_codes,
          FDT_Index, index, TAG_END);
-      product_id = card->ReadConfigWord(PCI_DEVICE_ID);
       if(card == NULL)
          success = FALSE;
    }
@@ -166,6 +168,7 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
    if(success)
    {
       context->have_card = TRUE;
+      product_id = card->ReadConfigWord(PCI_DEVICE_ID);
       card->SetEndian(PCI_MODE_LITTLE_ENDIAN);
       io_range = card->GetResourceRange(BAR_NO);
       context->io_base = io_range->BaseAddress;
@@ -210,7 +213,7 @@ VOID FreeExpansionCard(struct BusContext *context, struct DevBase *base)
       {
          if(context->have_card)
             card->Unlock();
-         base->i_pci->FreeDevice(card);
+         IPCI->FreeDevice(card);
          FreeMem(context, sizeof(struct BusContext));
       }
    }
@@ -424,6 +427,34 @@ static VOID LongsInHook(struct BusContext *context, ULONG offset,
 
 
 
+/****i* etherlink3.device/WordsOutHook *************************************
+*
+*   NAME
+*	WordsOutHook
+*
+*   SYNOPSIS
+*	WordsOutHook(context, offset, buffer, count)
+*
+*	VOID WordsOutHook(struct BusContext *, ULONG, const UWORD *, ULONG);
+*
+****************************************************************************
+*
+*/
+
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count)
+{
+   struct PCIDevice *card;
+
+   card = context->card;
+   while(count-- > 0)
+      card->OutWord(context->io_base + offset, *buffer++);
+
+   return;
+}
+
+
+
 /****i* etherlink3.device/LongsOutHook *************************************
 *
 *   NAME
@@ -593,8 +624,6 @@ static VOID LELongOutHook(struct BusContext *context, ULONG offset,
 *
 ****************************************************************************
 *
-* Alignment currently must be minimum of 8 bytes.
-*
 */
 
 static APTR AllocDMAMemHook(struct BusContext *context, UPINT size,
@@ -604,6 +633,14 @@ static APTR AllocDMAMemHook(struct BusContext *context, UPINT size,
    APTR mem = NULL, original_mem;
 
    base = context->device;
+
+#ifdef __amigaos4__
+   /* On the SAM, DMA memory must be aligned to the cache line size */
+
+   if(alignment < 0x20)
+      alignment = 0x20;
+#endif
+
    size += 2 * sizeof(APTR) + alignment;
    original_mem = AllocMem(size, MEMF_PUBLIC);
    if(original_mem != NULL)
@@ -639,7 +676,7 @@ static VOID FreeDMAMemHook(struct BusContext *context, APTR mem)
 
    base = context->device;
    if(mem != NULL)
-         FreeMem(*((APTR *)mem - 1), *((UPINT *)mem - 2));
+      FreeMem(*((APTR *)mem - 1), *((UPINT *)mem - 2));
 
    return;
 }

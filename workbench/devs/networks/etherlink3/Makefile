@@ -1,6 +1,5 @@
-CFLAGS = -msmall-code -O0 -ansi -Wall -Wno-uninitialized -Wno-parentheses
+CFLAGS = -msmall-code -O2 -ansi -Wall -Wno-uninitialized -Wno-parentheses
 CC = gcc $(CFLAGS)
-#CC = gcc
 MAKEFILE = Makefile
 LINKER = ld -e _Main -s
 AMIGA_LIB = -lamiga
@@ -8,8 +7,7 @@ C_LIB = -lnix/libnix13
 
 DEV_NAME = etherlink3.device
 OBJS = device.o unit.o request.o pci.o prometheus.o powerpci.o pccard.o
-#OBJS = device.o unit.o request.o pci.o
-HDRS = device.h endian.h io.h
+HDRS = device.h compatibility.h endian.h io.h ethernet.h
 
 all: $(DEV_NAME)
 
@@ -22,7 +20,7 @@ $(DEV_NAME): $(MAKEFILE) $(OBJS)
 
 $(OBJS) startup.o: $(MAKEFILE) $(HDRS)
 $(OBJS): $(HDRS)
-unit.o: etherlink3.h mii.h
+unit.o: task.h etherlink3.h mii.h
 pci.o prometheus.o powerpci.o: pci.h
 
 install: all

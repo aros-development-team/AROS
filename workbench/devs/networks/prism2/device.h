@@ -346,64 +346,6 @@ struct AddressRange
 #define UNITF_ASSOCIATED (1 << 16)
 
 
-/* Endianness macros */
-
-#define FlipWord(A) \
-   ({ \
-      UWORD _FlipWord_A = (A); \
-      _FlipWord_A = (_FlipWord_A << 8) | (_FlipWord_A >> 8); \
-   })
-
-#define FlipLong(A) \
-   ({ \
-      ULONG _FlipLong_A = (A); \
-      _FlipLong_A = \
-         (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
-   })
-
-#ifndef __i386__ /* Big endian */
-
-#define BEWord(A) \
-   (A)
-
-#define BELong(A) \
-   (A)
-
-#define LEWord(A) \
-   FlipWord(A)
-
-#define LELong(A) \
-   FlipLong(A)
-
-#else
-
-#define BEWord(A) \
-   FlipWord(A)
-
-#define BELong(A) \
-   FlipLong(A)
-
-#define LEWord(A) \
-   (A)
-
-#define LELong(A) \
-   (A)
-
-#endif
-
-#define MakeBEWord(A) \
-   BEWord(A)
-
-#define MakeBELong(A) \
-   BELong(A)
-
-#define MakeLEWord(A) \
-   LEWord(A)
-
-#define MakeLELong(A) \
-   LELong(A)
-
-
 /* Library and device bases */
 
 #define SysBase (base->sys_base)

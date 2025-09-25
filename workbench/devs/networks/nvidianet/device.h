@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2023 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,16 +32,15 @@ MA 02111-1307, USA.
 #include <devices/timer.h>
 
 #include "compatibility.h"
-#include "endian.h"
 #include "io.h"
 #include "ethernet.h"
 
 #define DEVICE_NAME "nvidianet.device"
 #define VERSION 1
-#define REVISION 1
-#define DATE "6.1.2023"
+#define REVISION 2
+#define DATE "14.7.2025"
 
-#define UTILITY_VERSION 39
+#define UTILITY_VERSION 36
 #define PROMETHEUS_VERSION 2
 
 
@@ -61,7 +60,6 @@ struct DevBase
 enum
 {
    WRITE_QUEUE,
-   MGMT_QUEUE,
    ADOPT_QUEUE,
    EVENT_QUEUE,
    GENERAL_QUEUE,
@@ -123,15 +121,11 @@ struct Opener
 {
    struct MinNode node;
    struct MsgPort read_port;
-   struct MsgPort mgmt_port;
    BOOL (*rx_function)(REG(a0, APTR), REG(a1, APTR), REG(d0, ULONG));
    BOOL (*tx_function)(REG(a0, APTR), REG(a1, APTR), REG(d0, ULONG));
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-   const VOID *real_rx_function;
-   const VOID *real_tx_function;
-   const VOID *real_dma_tx_function;
 };
 
 

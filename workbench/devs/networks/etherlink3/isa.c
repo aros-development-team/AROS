@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -62,6 +62,8 @@ static VOID LongOutHook(struct BusContext *context, ULONG offset,
    ULONG value);
 static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count);
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count);
 static VOID LongsOutHook(struct BusContext *context, ULONG offset,
    const ULONG *buffer, ULONG count);
 static VOID BEWordOutHook(struct BusContext *context, ULONG offset,
@@ -95,6 +97,7 @@ static const struct TagItem unit_tags[] =
    {IOTAG_WordOut, (UPINT)WordOutHook},
    {IOTAG_LongOut, (UPINT)LongOutHook},
    {IOTAG_LongsIn, (UPINT)LongsInHook},
+   {IOTAG_WordsOut, (UPINT)WordsOutHook},
    {IOTAG_LongsOut, (UPINT)LongsOutHook},
    {IOTAG_BEWordOut, (UPINT)BEWordOutHook},
    {IOTAG_LEWordIn, (UPINT)LEWordInHook},
@@ -230,7 +233,7 @@ struct DevUnit *CreateISAUnit(ULONG index, struct DevBase *base)
 {
    BOOL success = TRUE;
    struct BusContext *context;
-   struct DevUnit *unit;
+   struct DevUnit *unit = NULL;
    UWORD generation, id, i;
    UPINT io_base, id_port;
 
@@ -598,6 +601,30 @@ static VOID LongsInHook(struct BusContext *context, ULONG offset,
    ULONG *buffer, ULONG count)
 {
    LONGSIN(context->io_base + offset, buffer, count);
+
+   return;
+}
+
+
+
+/****i* etherlink3.device/WordsOutHook *************************************
+*
+*   NAME
+*	WordsOutHook
+*
+*   SYNOPSIS
+*	WordsOutHook(context, offset, buffer, count)
+*
+*	VOID WordsOutHook(struct BusContext *, ULONG, const UWORD *, ULONG);
+*
+****************************************************************************
+*
+*/
+
+static VOID WordsOutHook(struct BusContext *context, ULONG offset,
+   const UWORD *buffer, ULONG count)
+{
+   WORDSOUT(context->io_base + offset, buffer, count);
 
    return;
 }

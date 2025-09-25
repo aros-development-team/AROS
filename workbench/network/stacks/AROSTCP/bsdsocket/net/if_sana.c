@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2012 The AROS Dev Team
+ * Copyright (C) 2005 - 2025 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -577,8 +577,10 @@ sana_unrun(struct sana_softc *ssc)
   }
   ssc->ss_reqs = next;
   
-  WaitIO((struct IORequest *)ssc->ss_connectreq);
-  DeleteIORequest((struct IORequest *)ssc->ss_connectreq);
+  if(ssc->ss_connectreq) {
+    WaitIO((struct IORequest *)ssc->ss_connectreq);
+    DeleteIORequest((struct IORequest *)ssc->ss_connectreq);
+  }
 
   ssc->ss_if.if_flags &= ~IFF_RUNNING;
 }

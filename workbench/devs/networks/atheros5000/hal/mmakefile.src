@@ -16,7 +16,7 @@ include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
 CC:=$(oldCC)
 
 NOWARN_FLAGS := $(NOWARN_SHIFT_OVERFLOW)
-USER_CFLAGS += $(NOWARN_FLAGS) -I$(SRCDIR)/$(CURDIR)
+USER_CFLAGS += $(NOWARN_FLAGS) -I$(SRCDIR)/$(CURDIR) $(CFLAGS_NO_BUILTIN)
 
 %build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
  files="$(basename $(HAL_SRCS))"

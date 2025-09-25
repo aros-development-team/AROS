@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2023 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -38,10 +38,10 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "broadcom4400.device"
 #define VERSION 1
-#define REVISION 1
-#define DATE "4.3.2023"
+#define REVISION 2
+#define DATE "19.7.2025"
 
-#define UTILITY_VERSION 39
+#define UTILITY_VERSION 36
 #define PROMETHEUS_VERSION 2
 
 

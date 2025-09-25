@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,10 +37,10 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "realtek8180.device"
 #define VERSION 0
-#define REVISION 5
-#define DATE "7.7.2017"
+#define REVISION 6
+#define DATE "19.7.2025"
 
-#define UTILITY_VERSION 39
+#define UTILITY_VERSION 36
 #define POSEIDON_VERSION 0
 
 #ifndef UPINT
@@ -347,77 +347,6 @@ struct AddressRange
 #define UNITF_INTADDED (1 << 12)
 #define UNITF_RESETADDED (1 << 13)
 #define UNITF_TASKADDED (1 << 14)
-
-
-/* Endianness macros */
-
-#define FlipWord(A) \
-   ({ \
-      UWORD _FlipWord_A = (A); \
-      _FlipWord_A = (_FlipWord_A << 8) | (_FlipWord_A >> 8); \
-   })
-
-#define FlipLong(A) \
-   ({ \
-      ULONG _FlipLong_A = (A); \
-      _FlipLong_A = \
-         (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
-   })
-
-#define FlipQuad(A) \
-   ({ \
-      UQUAD _FlipQuad_A = (A); \
-      _FlipQuad_A = \
-         (FlipLong(_FlipQuad_A) << 32) | FlipLong(_FlipQuad_A >> 32); \
-   })
-
-#ifndef __i386__ /* Big endian */
-
-#define BEWord(A) \
-   (A)
-
-#define BELong(A) \
-   (A)
-
-#define LEWord(A) \
-   FlipWord(A)
-
-#define LELong(A) \
-   FlipLong(A)
-
-#define LEQuad(A) \
-   FlipQuad(A)
-
-#else
-
-#define BEWord(A) \
-   FlipWord(A)
-
-#define BELong(A) \
-   FlipLong(A)
-
-#define LEWord(A) \
-   (A)
-
-#define LELong(A) \
-   (A)
-
-#define LEQuad(A) \
-   (A)
-
-#endif
-
-#define MakeBEWord(A) \
-   BEWord(A)
-
-#define MakeBELong(A) \
-   BELong(A)
-
-#define MakeLEWord(A) \
-   LEWord(A)
-
-#define MakeLELong(A) \
-   LELong(A)
 
 
 /* Library and device bases */

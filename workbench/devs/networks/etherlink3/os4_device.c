@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,27 +23,21 @@ MA 02111-1307, USA.
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
+#include <exec/exectags.h>
+#include <exec/interfaces.h>
+#include <interfaces/exec.h>
 #include <exec/emulation.h>
-#include <utility/utility.h>
-#include <expansion/expansion.h>
-#include <resources/card.h>
-#include <libraries/pccard.h>
 
 #include <proto/exec.h>
-#include <clib/alib_protos.h>
-#include <proto/utility.h>
 
 #include "device.h"
 
 #include "device_protos.h"
-#include "unit_protos.h"
-#include "pci_protos.h"
-#include "request_protos.h"
 
 
 /* Private prototypes */
 
-static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
+static struct DevBase *OS4DevInit(struct DevBase *base, APTR seg_list,
    struct ExecIFace *i_exec);
 static ULONG IfaceObtain(struct Interface *self);
 static ULONG IfaceRelease(struct Interface *self);
@@ -55,7 +49,6 @@ static VOID OS4DevBeginIO(struct Interface *self,
    struct IOSana2Req *request);
 static VOID OS4DevAbortIO(struct Interface *self,
    struct IOSana2Req *request);
-static VOID DeleteDevice(struct DevBase *base);
 static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size);
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size);
 static UBYTE *DMATXFunction(struct IOSana2Req *request);
@@ -63,16 +56,13 @@ static ULONG OS4Int(struct ExceptionContext ex_context,
    struct ExecBase *sys_base, APTR *int_data);
 
 
+/* Constant data */
+
 extern const TEXT device_name[];
 extern const TEXT version_string[];
-extern const TEXT utility_name[];
-extern const TEXT pccard_name[];
-extern const TEXT card_name[];
-extern const TEXT timer_name[];
 extern const struct Resident rom_tag;
 
 static const TEXT manager_name[] = "__device";
-static const TEXT expansion_name[] = EXPANSIONNAME;
 
 
 static const APTR manager_vectors[] =
@@ -131,18 +121,14 @@ const struct Resident os4_rom_tag =
 };
 
 
-static const ULONG rx_tags[] =
-{
-   S2_CopyToBuff,
-   S2_CopyToBuff16,
-};
+/* Private structures */
 
-
-static const ULONG tx_tags[] =
+struct OpenerExtra
 {
-   S2_CopyFromBuff,
-   S2_CopyFromBuff16,
-   S2_CopyFromBuff32
+   struct DevBase *dev_base;
+   const VOID *real_rx_function;
+   const VOID *real_tx_function;
+   const VOID *real_dma_tx_function;
 };
 
 
@@ -153,7 +139,7 @@ static const ULONG tx_tags[] =
 *	OS4DevInit
 *
 *   SYNOPSIS
-*	dev_base = OS4DevInit(dev_base, seg_list, i_exec)
+*	base = OS4DevInit(base, seg_list, i_exec)
 *
 *	struct DevBase *OS4DevInit(struct DevBase *, APTR, ExecIFace *);
 *
@@ -161,17 +147,9 @@ static const ULONG tx_tags[] =
 *
 */
 
-static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
+static struct DevBase *OS4DevInit(struct DevBase *base, APTR seg_list,
    struct ExecIFace *i_exec)
 {
-   struct DevBase *base;
-   BOOL success = TRUE;
-
-   dev_base->i_exec = i_exec;
-   base = dev_base;
-   base->seg_list = seg_list;
-   base->sys_base = (APTR)i_exec->Data.LibBase;
-
    base->device.dd_Library.lib_Node.ln_Type = NT_DEVICE;
    base->device.dd_Library.lib_Node.ln_Name = (TEXT *)device_name;
    base->device.dd_Library.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
@@ -179,49 +157,11 @@ static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
    base->device.dd_Library.lib_Revision = REVISION;
    base->device.dd_Library.lib_IdString = (TEXT *)version_string;
 
-   base->utility_base = (APTR)OpenLibrary(utility_name, UTILITY_VERSION);
-   base->expansion_base = OpenLibrary(expansion_name, EXPANSION_VERSION);
-   if(base->utility_base == NULL || base->expansion_base == NULL)
-      success = FALSE;
-   base->pccard_base = (APTR)OpenLibrary(pccard_name, PCCARD_VERSION);
-   if(base->pccard_base != NULL)
-      base->card_base = (APTR)OpenResource(card_name);
-
-   if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0) !=
-      0)
-      success = FALSE;
-
-   NewList((APTR)(&dev_base->pci_units));
-   NewList((APTR)(&dev_base->pccard_units));
    base->wrapper_int_code = (APTR)OS4Int;
 
-   if(success)
-   {
-      base->i_utility =
-         (APTR)GetInterface((APTR)UtilityBase, "main", 1, NULL);
-      base->i_pci = (APTR)GetInterface(ExpansionBase, "pci", 1, NULL);
-      if(CardResource != NULL)
-      {
-         base->i_pccard =
-           (APTR)GetInterface(PCCardBase, "main", 1, NULL);
-         base->i_card =
-           (APTR)GetInterface(CardResource, "main", 1, NULL);
-//         if(base->i_pccard == NULL || base->i_card == NULL)
-         if(base->i_card == NULL)
-            success = FALSE;
-      }
-      base->i_timer = (APTR)GetInterface((APTR)TimerBase, "main", 1, NULL);
-      if(base->i_utility == NULL || base->i_timer == NULL)
-         success = FALSE;
-   }
+   /* Do generic device initialisation */
 
-   if(!success)
-   {
-      DeleteDevice(base);
-      base = NULL;
-   }
-
-   return base;
+   return DevInit(base, seg_list, (APTR)i_exec);
 }
 
 
@@ -287,25 +227,44 @@ static ULONG IfaceRelease(struct Interface *self)
 static LONG OS4DevOpen(struct Interface *self, struct IOSana2Req *request,
    ULONG unit_num, ULONG flags)
 {
+   struct DevBase *base;
    struct Opener *opener;
-   BYTE error;
+   struct OpenerExtra *opener_extra;
+   BYTE error = 0;
 
-   error = DevOpen(request, unit_num, flags, (APTR)self->Data.LibBase);
+   base = (APTR)self->Data.LibBase;
+   opener_extra = AllocMem(sizeof(struct OpenerExtra),
+      MEMF_PUBLIC | MEMF_CLEAR);
+   if(opener_extra == NULL)
+      request->ios2_Req.io_Error = error = IOERR_OPENFAIL;
+
+   if(error == 0)
+      error = DevOpen(request, unit_num, flags, (APTR)self->Data.LibBase);
 
    /* Set up wrapper hooks to hide 68k emulation */
 
    if(error == 0)
    {
       opener = request->ios2_BufferManagement;
-      opener->real_rx_function = opener->rx_function;
-      opener->real_tx_function = opener->tx_function;
+      opener_extra->dev_base = base;
+      opener_extra->real_rx_function = opener->rx_function;
+      opener_extra->real_tx_function = opener->tx_function;
       opener->rx_function = (APTR)RXFunction;
       opener->tx_function = (APTR)TXFunction;
       if(opener->dma_tx_function != NULL)
       {
-         opener->real_dma_tx_function = opener->dma_tx_function;
+         opener_extra->real_dma_tx_function = opener->dma_tx_function;
          opener->dma_tx_function = (APTR)DMATXFunction;
       }
+      opener->read_port.mp_Node.ln_Name = (APTR)opener_extra;
+   }
+
+   /* Back out if anything went wrong */
+
+   if(error != 0)
+   {
+      if(opener_extra != NULL)
+         FreeMem(opener_extra, sizeof(struct OpenerExtra));
    }
 
    return error;
@@ -319,9 +278,9 @@ static LONG OS4DevOpen(struct Interface *self, struct IOSana2Req *request,
 *	OS4DevClose
 *
 *   SYNOPSIS
-*	seg_list = OS4DevClose(request)
+*	seg_list = OS4DevClose(self, request)
 *
-*	APTR OS4DevClose(struct IOSana2Req *);
+*	APTR OS4DevClose(struct Interface *, struct IOSana2Req *);
 *
 ****************************************************************************
 *
@@ -330,22 +289,17 @@ static LONG OS4DevOpen(struct Interface *self, struct IOSana2Req *request,
 static APTR OS4DevClose(struct Interface *self, struct IOSana2Req *request)
 {
    struct DevBase *base;
-   APTR seg_list = NULL;
+   struct Opener *opener;
 
-   /* Close the unit */
+   /* Free extra data structure for wrapper hooks hiding 68k emulation */
 
    base = (APTR)self->Data.LibBase;
-   CloseUnit(request, base);
+   opener = request->ios2_BufferManagement;
+   FreeMem(opener->read_port.mp_Node.ln_Name, sizeof(struct OpenerExtra));
 
-   /* Expunge the device if a delayed expunge is pending */
+   /* Close unit */
 
-   if(base->device.dd_Library.lib_OpenCnt == 0)
-   {
-      if((base->device.dd_Library.lib_Flags & LIBF_DELEXP) != 0)
-         seg_list = OS4DevExpunge(self);
-   }
-
-   return seg_list;
+   return DevClose(request, (struct DevBase *)self->Data.LibBase);
 }
 
 
@@ -356,9 +310,9 @@ static APTR OS4DevClose(struct Interface *self, struct IOSana2Req *request)
 *	OS4DevExpunge
 *
 *   SYNOPSIS
-*	seg_list = OS4DevExpunge()
+*	seg_list = OS4DevExpunge(self)
 *
-*	APTR OS4DevExpunge(VOID);
+*	APTR OS4DevExpunge(struct Interface *);
 *
 ****************************************************************************
 *
@@ -366,23 +320,7 @@ static APTR OS4DevClose(struct Interface *self, struct IOSana2Req *request)
 
 static APTR OS4DevExpunge(struct Interface *self)
 {
-   struct DevBase *base;
-   APTR seg_list;
-
-   base = (APTR)self->Data.LibBase;
-   if(base->device.dd_Library.lib_OpenCnt == 0)
-   {
-      seg_list = base->seg_list;
-      Remove((APTR)base);
-      DeleteDevice(base);
-   }
-   else
-   {
-      base->device.dd_Library.lib_Flags |= LIBF_DELEXP;
-      seg_list = NULL;
-   }
-
-   return seg_list;
+   return DevExpunge((struct DevBase *)self->Data.LibBase);
 }
 
 
@@ -393,9 +331,9 @@ static APTR OS4DevExpunge(struct Interface *self)
 *	OS4DevBeginIO
 *
 *   SYNOPSIS
-*	OS4DevBeginIO(request)
+*	OS4DevBeginIO(self, request)
 *
-*	VOID OS4DevBeginIO(struct IORequest *);
+*	VOID OS4DevBeginIO(struct Interface *, struct IORequest *);
 *
 ****************************************************************************
 *
@@ -433,9 +371,9 @@ static VOID OS4DevBeginIO(struct Interface *self,
 *	OS4DevAbortIO -- Try to stop a request.
 *
 *   SYNOPSIS
-*	OS4DevAbortIO(request)
+*	OS4DevAbortIO(self, request)
 *
-*	VOID OS4DevAbortIO(struct IOSana2Req *);
+*	VOID OS4DevAbortIO(struct Interface *, struct IOSana2Req *);
 *
 ****************************************************************************
 *
@@ -445,52 +383,6 @@ static VOID OS4DevAbortIO(struct Interface *self,
    struct IOSana2Req *request)
 {
    DevAbortIO(request, (APTR)self->Data.LibBase);
-
-   return;
-}
-
-
-
-/****i* etherlink3.device/DeleteDevice *************************************
-*
-*   NAME
-*	DeleteDevice
-*
-*   SYNOPSIS
-*	DeleteDevice()
-*
-*	VOID DeleteDevice(VOID);
-*
-****************************************************************************
-*
-*/
-
-static VOID DeleteDevice(struct DevBase *base)
-{
-   /* Close interfaces */
-
-   DropInterface((APTR)base->i_timer);
-   DropInterface((APTR)base->i_card);
-   DropInterface((APTR)base->i_pccard);
-   DropInterface((APTR)base->i_pci);
-   DropInterface((APTR)base->i_utility);
-
-   /* Close devices */
-
-   CloseDevice((APTR)&base->timer_request);
-
-   /* Close libraries */
-
-   if(base->pccard_base != NULL)
-      CloseLibrary(base->pccard_base);
-   if(base->expansion_base != NULL)
-      CloseLibrary(base->expansion_base);
-   if(base->utility_base != NULL)
-      CloseLibrary((APTR)base->utility_base);
-
-   /* Free device's memory */
-
-   DeleteLibrary((APTR)base);
 
    return;
 }
@@ -510,14 +402,16 @@ static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
 {
    struct DevBase *base;
    struct Opener *opener;
+   struct OpenerExtra *opener_extra;
    APTR cookie;
 
    opener = request->ios2_BufferManagement;
+   opener_extra = (APTR)opener->read_port.mp_Node.ln_Name;
+   base = opener_extra->dev_base;
    cookie = request->ios2_StatData;
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    request->ios2_Data = cookie;
 
-   return EmulateTags(opener->real_rx_function,
+   return EmulateTags(opener_extra->real_rx_function,
       ET_RegisterA0, cookie, ET_RegisterA1, buffer,
       ET_RegisterD0, size, TAG_END);
 }
@@ -537,13 +431,15 @@ static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
 {
    struct DevBase *base;
    struct Opener *opener;
+   struct OpenerExtra *opener_extra;
    APTR cookie;
 
    opener = request->ios2_BufferManagement;
+   opener_extra = (APTR)opener->read_port.mp_Node.ln_Name;
+   base = opener_extra->dev_base;
    cookie = request->ios2_StatData;
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    request->ios2_Data = cookie;
-   return EmulateTags(opener->real_tx_function,
+   return EmulateTags(opener_extra->real_tx_function,
       ET_RegisterA0, buffer, ET_RegisterA1, cookie,
       ET_RegisterD0, size, TAG_END);
 }
@@ -563,13 +459,15 @@ static UBYTE *DMATXFunction(struct IOSana2Req *request)
 {
    struct DevBase *base;
    struct Opener *opener;
+   struct OpenerExtra *opener_extra;
    APTR cookie;
 
    opener = request->ios2_BufferManagement;
+   opener_extra = (APTR)opener->read_port.mp_Node.ln_Name;
+   base = opener_extra->dev_base;
    cookie = request->ios2_StatData;
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    request->ios2_Data = cookie;
-   return (UBYTE *)EmulateTags(opener->real_dma_tx_function,
+   return (UBYTE *)EmulateTags(opener_extra->real_dma_tx_function,
       ET_RegisterA0, cookie, TAG_END);
 }
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2008 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ MA 02111-1307, USA.
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <utility/utility.h>
+#include <libraries/expansion.h>
 #include "initializers.h"
 
 #include <proto/exec.h>
@@ -51,15 +52,18 @@ LONG Main()
 }
 
 
+/* Constant data */
+
 const TEXT device_name[] = DEVICE_NAME;
 const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
-const TEXT utility_name[] = UTILITYNAME;
+static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
 static const TEXT powerpci_name[] = "powerpci.library";
-const TEXT pccard_name[] = "pccard.library";
-const TEXT card_name[] = "card.resource";
-const TEXT timer_name[] = TIMERNAME;
+static const TEXT expansion_name[] = EXPANSIONNAME;
+static const TEXT pccard_name[] = "pccard.library";
+static const TEXT card_name[] = "card.resource";
+static const TEXT timer_name[] = TIMERNAME;
 
 
 static const APTR vectors[] =
@@ -175,7 +179,14 @@ struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    base->utility_base = (APTR)OpenLibrary(utility_name, UTILITY_VERSION);
    base->prometheus_base = OpenLibrary(prometheus_name, PROMETHEUS_VERSION);
    if(base->prometheus_base == NULL)
+   {
       base->powerpci_base = OpenLibrary(powerpci_name, POWERPCI_VERSION);
+      if(base->powerpci_base == NULL)
+      {
+         base->expansion_base =
+            OpenLibrary(expansion_name, EXPANSION_VERSION);
+      }
+   }
    base->pccard_base = OpenLibrary(pccard_name, PCCARD_VERSION);
    if(base->pccard_base != NULL)
       base->card_base = OpenResource(card_name);
@@ -414,14 +425,21 @@ VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    struct DevUnit *unit;
+   BOOL postpone = TRUE;
 
    request->ios2_Req.io_Error = 0;
    unit = (APTR)request->ios2_Req.io_Unit;
 
-   if(AttemptSemaphore(&unit->access_lock))
-      ServiceRequest(request, base);
-   else
+   /* Either delegate command to device's process or proceed immediately */
+
+   if((unit->flags & UNITF_HAVEADAPTER) != 0)
+      if(AttemptSemaphore(&unit->access_lock))
+         postpone = FALSE;
+
+   if(postpone)
       PutRequest(unit->request_ports[GENERAL_QUEUE], (APTR)request, base);
+   else
+      ServiceRequest(request, base);
 
    return;
 }
@@ -482,8 +500,6 @@ VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
 
 VOID DeleteDevice(struct DevBase *base)
 {
-   UWORD neg_size, pos_size;
-
    /* Close devices */
 
    CloseDevice((APTR)&base->timer_request);
@@ -494,6 +510,8 @@ VOID DeleteDevice(struct DevBase *base)
       CloseLibrary(base->openpci_base);
    if(base->pccard_base != NULL)
       CloseLibrary(base->pccard_base);
+   if(base->expansion_base != NULL)
+      CloseLibrary(base->expansion_base);
    if(base->powerpci_base != NULL)
       CloseLibrary(base->powerpci_base);
    if(base->prometheus_base != NULL)
@@ -503,9 +521,7 @@ VOID DeleteDevice(struct DevBase *base)
 
    /* Free device's memory */
 
-   neg_size = base->device.dd_Library.lib_NegSize;
-   pos_size = base->device.dd_Library.lib_PosSize;
-   FreeMem((UBYTE *)base - neg_size, pos_size + neg_size);
+   DeleteLibrary((APTR)base);
 
    return;
 }
@@ -585,8 +601,7 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
 struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
-   ULONG pci_limit;
-   ULONG pccard_limit;
+   ULONG pci_limit, pccard_limit;
 
    pci_limit = GetPCICount(base);
    pccard_limit = pci_limit + GetPCCardCount(base);
@@ -606,13 +621,19 @@ struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 /****i* etherlink3.device/WrapInt ******************************************
 *
 *   NAME
-*	WrapInt
+*	WrapInt -- Prepare an interrupt for non-original calling conventions
+*
+*   SYNOPSIS
+*	success = WrapInt(interrupt, is_card_int)
+*
+*	BOOL WrapInt(struct Interrupt *, BOOL);
 *
 ****************************************************************************
 *
 */
 
-BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
+BOOL WrapInt(struct Interrupt *interrupt, BOOL is_card_int,
+   struct DevBase *base)
 {
    BOOL success = TRUE;
    APTR *int_data;
@@ -624,7 +645,10 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
       {
          int_data[0] = interrupt->is_Code;
          int_data[1] = interrupt->is_Data;
-         interrupt->is_Code = base->wrapper_int_code;
+         if(is_card_int && base->card_wrapper_int_code != NULL)
+            interrupt->is_Code = base->card_wrapper_int_code;
+         else
+            interrupt->is_Code = base->wrapper_int_code;
          interrupt->is_Data = int_data;
       }
       else
@@ -639,7 +663,12 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 /****i* etherlink3.device/UnwrapInt ****************************************
 *
 *   NAME
-*	UnwrapInt
+*	UnwrapInt -- Deallocate resources added by WrapInt()
+*
+*   SYNOPSIS
+*	UnwrapInt(interrupt)
+*
+*	VOID UnwrapInt(struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -647,59 +676,13 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 
 VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
 {
-   if(interrupt->is_Code == base->wrapper_int_code)
-      FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
-
-   return;
-}
-
-
-/****i* etherlink3.device/WrapCardInt **************************************
-*
-*   NAME
-*	WrapCardInt 
-*
-****************************************************************************
-*
-*/
-
-BOOL WrapCardInt(struct Interrupt *interrupt, struct DevBase *base)
-{
-   BOOL success = TRUE;
-   APTR *int_data;
-
-   if(base->wrapper_card_code != NULL)
+   if(interrupt != NULL)
    {
-      int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
-      if(int_data != NULL)
-      {
-         int_data[0] = interrupt->is_Code;
-         int_data[1] = interrupt->is_Data;
-         interrupt->is_Code = base->wrapper_card_code;
-         interrupt->is_Data = int_data;
-      }
-      else
-         success = FALSE;
+      if(interrupt->is_Code != NULL
+         && (interrupt->is_Code == base->wrapper_int_code
+         || interrupt->is_Code == base->card_wrapper_int_code))
+         FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
    }
-
-   return success;
-}
-
-
-
-/****i* etherlink3.device/UnwrapCardInt ************************************
-*
-*   NAME
-*	UnwrapCardInt
-*
-****************************************************************************
-*
-*/
-
-VOID UnwrapCardInt(struct Interrupt *interrupt, struct DevBase *base)
-{
-   if(interrupt->is_Code == base->wrapper_card_code)
-      FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
 
    return;
 }

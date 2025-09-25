@@ -2,7 +2,7 @@
  * Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2025 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -50,18 +50,18 @@ struct ssc_args {
   LONG  *a_unit;
   UBYTE *a_ip;
   UBYTE *a_netmask;
-  LONG   a_up;
+  SIPTR   a_up;
   LONG  *a_iptype;
   LONG  *a_arptype;
   LONG  *a_ipno;
   LONG  *a_arpno;
   LONG  *a_writeno;
-  LONG   a_notrack;
-  LONG   a_noarp;
+  SIPTR   a_notrack;
+  SIPTR   a_noarp;
   LONG  *a_arphdr;
-  LONG   a_point2point;
-  LONG   a_nosimplex;
-  LONG   a_loopback;
+  SIPTR   a_point2point;
+  SIPTR   a_nosimplex;
+  SIPTR   a_loopback;
 };
 
 struct ssconfig {

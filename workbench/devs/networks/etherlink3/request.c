@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2005 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,8 +18,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston,
 MA 02111-1307, USA.
 
 */
-
-#include <string.h>
 
 #include <exec/types.h>
 #include <exec/errors.h>
@@ -651,9 +649,12 @@ static BOOL CmdConfigInterface(struct IOSana2Req *request,
 static BOOL CmdBroadcast(struct IOSana2Req *request,
    struct DevBase *base)
 {
+   UWORD i;
+
    /* Fill in the broadcast address as destination */
 
-   memset(request->ios2_DstAddr, 0xff, sizeof(request->ios2_DstAddr));
+   for(i = 0; i < ETH_ADDRESSSIZE; i++)
+      request->ios2_DstAddr[i] = 0xff;
 
    /* Queue the write as normal */
 

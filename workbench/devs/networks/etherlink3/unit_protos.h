@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2002 Neil Cafferkey
+Copyright (C) 2002-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ struct TypeStats *FindTypeStats(struct DevUnit *unit, struct MinList *list,
    ULONG packet_type, struct DevBase *base);
 VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
    struct DevBase *base);
-BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+VOID ServiceInterrupt(struct DevUnit *unit, struct DevBase *base);
 VOID UpdateStats(struct DevUnit *unit, struct DevBase *base);
 
 

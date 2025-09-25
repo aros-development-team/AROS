@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,9 +23,63 @@ MA 02111-1307, USA.
 #define IO_H
 
 
+#include <exec/types.h>
+#include <utility/tagitem.h>
+
+#include "endian.h"
+
+
+/* I/O tags */
+
+#define IOTAG_ByteIn (TAG_USER + 0)
+#define IOTAG_WordIn (TAG_USER + 1)
+#define IOTAG_LongIn (TAG_USER + 2)
+#define IOTAG_QuadIn (TAG_USER + 3)
+#define IOTAG_ByteOut (TAG_USER + 4)
+#define IOTAG_WordOut (TAG_USER + 5)
+#define IOTAG_LongOut (TAG_USER + 6)
+#define IOTAG_QuadOut (TAG_USER + 7)
+#define IOTAG_BytesIn (TAG_USER + 8)
+#define IOTAG_WordsIn (TAG_USER + 9)
+#define IOTAG_LongsIn (TAG_USER + 10)
+#define IOTAG_QuadsIn (TAG_USER + 11)
+#define IOTAG_BytesOut (TAG_USER + 12)
+#define IOTAG_WordsOut (TAG_USER + 13)
+#define IOTAG_LongsOut (TAG_USER + 14)
+#define IOTAG_QuadsOut (TAG_USER + 15)
+#define IOTAG_BEWordIn (TAG_USER + 16)
+#define IOTAG_BELongIn (TAG_USER + 17)
+#define IOTAG_BEQuadIn (TAG_USER + 18)
+#define IOTAG_BEWordOut (TAG_USER + 19)
+#define IOTAG_BELongOut (TAG_USER + 20)
+#define IOTAG_BEQuadOut (TAG_USER + 21)
+#define IOTAG_BEWordsIn (TAG_USER + 22)
+#define IOTAG_BELongsIn (TAG_USER + 23)
+#define IOTAG_BEQuadsIn (TAG_USER + 24)
+#define IOTAG_BEWordsOut (TAG_USER + 25)
+#define IOTAG_BELongsOut (TAG_USER + 26)
+#define IOTAG_BEQuadsOut (TAG_USER + 27)
+#define IOTAG_LEWordIn (TAG_USER + 28)
+#define IOTAG_LELongIn (TAG_USER + 29)
+#define IOTAG_LEQuadIn (TAG_USER + 30)
+#define IOTAG_LEWordOut (TAG_USER + 31)
+#define IOTAG_LELongOut (TAG_USER + 32)
+#define IOTAG_LEQuadOut (TAG_USER + 33)
+#define IOTAG_LEWordsIn (TAG_USER + 34)
+#define IOTAG_LELongsIn (TAG_USER + 35)
+#define IOTAG_LEQuadsIn (TAG_USER + 36)
+#define IOTAG_LEWordsOut (TAG_USER + 37)
+#define IOTAG_LELongsOut (TAG_USER + 38)
+#define IOTAG_LEQuadsOut (TAG_USER + 39)
+#define IOTAG_AllocDMAMem (TAG_USER + 40)
+#define IOTAG_FreeDMAMem (TAG_USER + 41)
+#define IOTAG_SendFrame (TAG_USER + 42)
+#define IOTAG_ReceiveFrame (TAG_USER + 43)
+
+
 /* I/O macros */
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 
 #define BYTEIN(address) \
 ({ \
