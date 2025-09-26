@@ -1227,7 +1227,7 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 void GenMinterms(struct RastPort *rp)
 {
     int i;
-    UBYTE minA=0, minB=0;
+    UBYTE minA, minB;
 
     // COMPLEMENT
     if(rp->DrawMode & COMPLEMENT)
