@@ -535,7 +535,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
             nbm->pad         = 0;
 
             if (alloc) {
-                ULONG plane = 0;
+                LONG plane = 0;
 
                 /* Interleaved Bitmap? */
                 if(flags & BMF_INTERLEAVED)
@@ -549,7 +549,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                         for(; plane < depth; plane++) {
                             nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
                         }
-                        for(plane++; plane < 8; plane++) {
+                        for(++plane; plane < 8; plane++) {
                             nbm->Planes[plane] = NULL;
                         }
                     } else {
@@ -568,7 +568,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                             SetMem (nbm->Planes[plane], 0, RASSIZE(sizex, sizey));
                     }
                     if (plane != depth) {
-                        for (plane=0; plane < depth; plane++)
+                        for (--plane; plane >= 0; plane--)
                             if (nbm->Planes[plane])
                                 FreeRaster (nbm->Planes[plane], sizex, sizey);
 
@@ -576,7 +576,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                         nbm = NULL;
                     } else {
                         /* Clear remaining entries.. */
-                        for(plane++; plane < 8; plane++) {
+                        for(++plane; plane < 8; plane++) {
                             nbm->Planes[plane] = NULL;
                         }
                     }
