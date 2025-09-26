@@ -440,11 +440,10 @@ UQUAD GetQ(char* string)
 {
     UQUAD       ret = 0;
     int         i;
-    char        digit;
 
     for(i = 0; i < 16; i++)
     {
-        digit = toupper(string[i]);
+        char digit = toupper(string[i]);
 
         if (!isxdigit(digit))
             break;
