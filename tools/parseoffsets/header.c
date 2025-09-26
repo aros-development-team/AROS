@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <stdio.h>
@@ -214,6 +214,7 @@ void writeHeaderMakefile(char *gendir, char *bindir)
         if (!Makefilefile)
         {
             printf ("Failed to open '%s'\n", Makefilename);
+            free(Makefilename);
             return;
         }
         printBanner(Makefilefile, "#");
