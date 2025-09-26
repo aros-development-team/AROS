@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 #include "gadtools_intern.h"
 #include <exec/memory.h>
@@ -96,7 +96,7 @@
     struct Image        **MyBarTablePtr;
     ULONG               err = 0;
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NewMenu %p TagList %p full %d\n",
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: NewMenu %p TagList %p full %d\n",
                             newmenu, tagList, fullmenu));
 
     D(bug("Entering %s\n",__FUNCTION__));
@@ -106,20 +106,20 @@
     menuentry   =       newmenu;
 
     end = FALSE;
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: count elements\n"));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: count elements\n"));
     while (!end)
     {
         BOOL is_image = FALSE;
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: Type %d\n", menuentry->nm_Type));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: Type %d\n", menuentry->nm_Type));
         switch (menuentry->nm_Type)
         {
             case NM_TITLE:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NW_TITLE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NW_TITLE\n"));
                 MenuMemSize += getmenutitlesize(newmenu,tagList);
                 break;
 
             case IM_ITEM:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_ITEM\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -128,7 +128,7 @@
                 ** There has to be a menu structure available
                 ** to create an item, unless GTMN_FullMenu is FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_ITEM\n"));
                 if (menuentry->nm_Label == NM_BARLABEL)
                 {
                         BarLabels++;
@@ -141,7 +141,7 @@
                 break;
 
             case IM_SUB:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_SUB\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -150,7 +150,7 @@
                 ** There has to be an item menu structure available
                 ** to create a sub item, unless GTMN_FullMenu == FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_SUB\n"));
                 if (menuentry->nm_Label == NM_BARLABEL)
                 {
                         BarLabels++;
@@ -165,19 +165,19 @@
                 /*
                 ** Nothing to do in this case
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_IGNORE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_IGNORE\n"));
                 break;
 
             case NM_END:
                 /*
                 ** The end.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_END\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_END\n"));
                 end = TRUE;
                 break;
 
         } /* switch (menuentry->nm_Type) */
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: Current MenuMemSize %ld\n",MenuMemSize));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: Current MenuMemSize %ld\n",MenuMemSize));
         menuentry++;
     } /* while (!end) */
 
@@ -186,7 +186,7 @@
      */
     MenuMemSize += sizeof(ULONG) + (BarLabels * sizeof(void*));
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: MenuMemSize %ld BarLabels %ld\n",MenuMemSize,BarLabels));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: MenuMemSize %ld BarLabels %ld\n",MenuMemSize,BarLabels));
 
     if (!(MyMenuMemory=AllocVec(MenuMemSize,MEMF_ANY | MEMF_CLEAR)))
     {
@@ -205,20 +205,20 @@
     *((ULONG*) MyMenuMemPtr) = BarLabels;
     MyMenuMemPtr += sizeof(ULONG);
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: MyMenuMemory 0x%lx MyBarTablePtr 0x%lx MyMenuMemPtr 0x%lx\n",MyMenuMemory,MyBarTablePtr,MyMenuMemPtr));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: MyMenuMemory 0x%lx MyBarTablePtr 0x%lx MyMenuMemPtr 0x%lx\n",MyMenuMemory,MyBarTablePtr,MyMenuMemPtr));
 
     end = FALSE;
     while (!end)
     {
         BOOL is_image = FALSE;
 
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: Type %d\n", newmenu->nm_Type));
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: Current MyMenuMemory 0x%lx MyBarTablePtr 0x%lx MyMenuMemPtr 0x%lx\n",MyMenuMemory,MyBarTablePtr,MyMenuMemPtr));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: Type %d\n", newmenu->nm_Type));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: Current MyMenuMemory 0x%lx MyBarTablePtr 0x%lx MyMenuMemPtr 0x%lx\n",MyMenuMemory,MyBarTablePtr,MyMenuMemPtr));
 
         switch (newmenu->nm_Type)
         {
             case NM_TITLE:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NW_TITLE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NW_TITLE\n"));
                 curmenu = makemenutitle(newmenu,
                                         &MyMenuMemPtr,
                                         tagList);
@@ -244,7 +244,7 @@
                 break;
 
             case IM_ITEM:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_ITEM\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -253,7 +253,7 @@
                 ** There has to be a menu structure available
                 ** to create an item, unless GTMN_FullMenu is FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_ITEM\n"));
 
                 if (fullmenu && (NULL == curmenu))
                 {
@@ -296,11 +296,11 @@
                     if (curmenu)
                     {
                         curmenu->FirstItem = newitem;
-                        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: set FirstItem 0x%lx\n", newitem));
+                        DEBUG_CREATEMENUSA(bug("CreateMenusA: set FirstItem 0x%lx\n", newitem));
                     }
                 }
 
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NextItem 0x%lx\n", newitem));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NextItem 0x%lx\n", newitem));
 
                 item_ctr ++;
                 subitem_ctr = 0;
@@ -310,7 +310,7 @@
                 break;
 
             case IM_SUB:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_SUB\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -319,7 +319,7 @@
                 ** There has to be an item menu structure available
                 ** to create a sub item, unless GTMN_FullMenu == FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_SUB\n"));
                 if ( (fullmenu && (NULL == curitem)) ||
                      (prevtype == NM_TITLE) )
                 {
@@ -361,18 +361,18 @@
 
                 if (cursubitem)
                 {
-                    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: CurSubItem 0x%lx NextItem 0x%lx\n", cursubitem,newsubitem));
+                    DEBUG_CREATEMENUSA(bug("CreateMenusA: CurSubItem 0x%lx NextItem 0x%lx\n", cursubitem,newsubitem));
                     cursubitem->NextItem = newsubitem;
                 }
                 else
                 {
                     firstsubitem = newsubitem;
-                    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: FirstSubItem 0x%lx\n", firstsubitem));
+                    DEBUG_CREATEMENUSA(bug("CreateMenusA: FirstSubItem 0x%lx\n", firstsubitem));
                     if (curitem)
                     {
                         curitem->SubItem = newsubitem;
 
-                        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: CurItem 0x%lx SubItem 0x%lx\n", curitem,newsubitem));
+                        DEBUG_CREATEMENUSA(bug("CreateMenusA: CurItem 0x%lx SubItem 0x%lx\n", curitem,newsubitem));
 
                         /* Add the ">>" mark. Hmm ... maybe if would be better if this
                            was done in LayoutMenus() ??? */
@@ -402,20 +402,20 @@
                 /*
                 ** Nothing to do in this case
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_IGNORE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_IGNORE\n"));
                 break;
 
             case NM_END:
                 /*
                 ** The end.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_END\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_END\n"));
                 end = TRUE;
                 break;
 
         } /* switch (newmenu->nm_Type) */
 
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: firstmenu %p curmenu %p firstitem %p curitem %p firstsub %p cursub %p\n",
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: firstmenu %p curmenu %p firstitem %p curitem %p firstsub %p cursub %p\n",
                                 firstmenu, curmenu, firstitem, curitem, firstsubitem, cursubitem));
 
         prevtype = newmenu->nm_Type;
@@ -438,15 +438,15 @@
     if (!firstmenu)
     {
         firstmenu = (struct Menu *)firstitem;
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: No FirstMenu..use firstitem 0x%lx\n", firstitem));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: No FirstMenu..use firstitem 0x%lx\n", firstitem));
     }
     if (!firstmenu)
     {
         firstmenu = (struct Menu *)firstsubitem;
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: No FirstMenu..use firstsubitem 0x%lx\n", firstsubitem));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: No FirstMenu..use firstsubitem 0x%lx\n", firstsubitem));
     }
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: return %p\n", firstmenu));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: return %p\n", firstmenu));
 
 //    DumpMenu(firstmenu);
 
@@ -455,7 +455,7 @@
 
 failexit:
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: failed\n"));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: failed\n"));
 
     /*
     ** Free all memory
@@ -493,7 +493,7 @@ failexit:
 
     ULONG               err = 0;
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NewMenu %p TagList %p full %d\n",
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: NewMenu %p TagList %p full %d\n",
                             newmenu, tagList, fullmenu));
 
     D(bug("Entering %s\n",__FUNCTION__));
@@ -502,12 +502,12 @@ failexit:
     {
         BOOL is_image = FALSE;
 
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: Type %d\n", newmenu->nm_Type));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: Type %d\n", newmenu->nm_Type));
 
         switch (newmenu->nm_Type)
         {
             case NM_TITLE:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NW_TITLE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NW_TITLE\n"));
                 curmenu = makemenutitle(newmenu,
                                         tagList);
 
@@ -532,7 +532,7 @@ failexit:
                 break;
 
             case IM_ITEM:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_ITEM\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -541,7 +541,7 @@ failexit:
                 ** There has to be a menu structure available
                 ** to create an item, unless GTMN_FullMenu is FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_ITEM\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_ITEM\n"));
 
                 if (fullmenu && (NULL == curmenu))
                 {
@@ -582,11 +582,11 @@ failexit:
                     if (curmenu)
                     {
                         curmenu->FirstItem = newitem;
-                        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: set FirstItem 0x%lx\n", newitem));
+                        DEBUG_CREATEMENUSA(bug("CreateMenusA: set FirstItem 0x%lx\n", newitem));
                     }
                 }
 
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NextItem 0x%lx\n", newitem));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NextItem 0x%lx\n", newitem));
 
                 item_ctr ++;
                 subitem_ctr = 0;
@@ -596,7 +596,7 @@ failexit:
                 break;
 
             case IM_SUB:
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: IM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: IM_SUB\n"));
                 is_image = TRUE;
                 /* Fall through */
 
@@ -605,7 +605,7 @@ failexit:
                 ** There has to be an item menu structure available
                 ** to create a sub item, unless GTMN_FullMenu == FALSE.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_SUB\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_SUB\n"));
                 if ( (fullmenu && (NULL == curitem)) ||
                      (prevtype == NM_TITLE) )
                 {
@@ -645,18 +645,18 @@ failexit:
 
                 if (cursubitem)
                 {
-                    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: CurSubItem 0x%lx NextItem 0x%lx\n", cursubitem,newsubitem));
+                    DEBUG_CREATEMENUSA(bug("CreateMenusA: CurSubItem 0x%lx NextItem 0x%lx\n", cursubitem,newsubitem));
                     cursubitem->NextItem = newsubitem;
                 }
                 else
                 {
                     firstsubitem = newsubitem;
-                    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: FirstSubItem 0x%lx\n", firstsubitem));
+                    DEBUG_CREATEMENUSA(bug("CreateMenusA: FirstSubItem 0x%lx\n", firstsubitem));
                     if (curitem)
                     {
                         curitem->SubItem = newsubitem;
 
-                        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: CurItem 0x%lx SubItem 0x%lx\n", curitem,newsubitem));
+                        DEBUG_CREATEMENUSA(bug("CreateMenusA: CurItem 0x%lx SubItem 0x%lx\n", curitem,newsubitem));
 
                         /* Add the ">>" mark. Hmm ... maybe if would be better if this
                            was done in LayoutMenus() ??? */
@@ -686,20 +686,20 @@ failexit:
                 /*
                 ** Nothing to do in this case
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_IGNORE\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_IGNORE\n"));
                 break;
 
             case NM_END:
                 /*
                 ** The end.
                 */
-                DEBUG_CREATEMENUSA(dprintf("CreateMenusA: NM_END\n"));
+                DEBUG_CREATEMENUSA(bug("CreateMenusA: NM_END\n"));
                 end = TRUE;
                 break;
 
         } /* switch (newmenu->nm_Type) */
 
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: firstmenu %p curmenu %p firstitem %p curitem %p firstsub %p cursub %p\n",
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: firstmenu %p curmenu %p firstitem %p curitem %p firstsub %p cursub %p\n",
                                 firstmenu, curmenu, firstitem, curitem, firstsubitem, cursubitem));
 
         prevtype = newmenu->nm_Type;
@@ -722,15 +722,15 @@ failexit:
     if (!firstmenu)
     {
         firstmenu = (struct Menu *)firstitem;
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: No FirstMenu..use firstitem 0x%lx\n", firstitem));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: No FirstMenu..use firstitem 0x%lx\n", firstitem));
     }
     if (!firstmenu)
     {
         firstmenu = (struct Menu *)firstsubitem;
-        DEBUG_CREATEMENUSA(dprintf("CreateMenusA: No FirstMenu..use firstsubitem 0x%lx\n", firstsubitem));
+        DEBUG_CREATEMENUSA(bug("CreateMenusA: No FirstMenu..use firstsubitem 0x%lx\n", firstsubitem));
     }
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: return %p\n", firstmenu));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: return %p\n", firstmenu));
 
     DumpMenu(firstmenu);
 
@@ -739,7 +739,7 @@ failexit:
 
 failexit:
 
-    DEBUG_CREATEMENUSA(dprintf("CreateMenusA: failed\n"));
+    DEBUG_CREATEMENUSA(bug("CreateMenusA: failed\n"));
 
     /*
     ** Free all memory

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -65,8 +65,8 @@
     struct Gadget           *gad;
     IPTR                    old_gadget_value;
     BOOL                    msg_only_for_gadtools = FALSE;
-    UWORD                   old_slider_value;
-    
+    IPTR                    old_slider_value;
+
     /* Find Context Gadget. Should be first GTYP_GADTOOLS gadget
        in window´s gadgetlist */
 
@@ -219,7 +219,7 @@
                             contextgad->getattrtag = GTSL_Level;
 
                             msg_only_for_gadtools = TRUE; /* reply to msg = don't hand it over */
-                            old_slider_value = &contextgad->gadget_value;  /* save old slider value */
+                            old_slider_value = contextgad->gadget_value;  /* save old slider value */
                             GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value); /* get new one */
 
                             if (old_slider_value != contextgad->gadget_value)
@@ -259,7 +259,7 @@
                             D(bug("FilterIMsg: SCROLLER_KIND\n"));
                         case SLIDER_KIND:
 
-                            old_slider_value = &contextgad->gadget_value; /* save old slider value */
+                            old_slider_value = contextgad->gadget_value; /* save old slider value */
                             contextgad->getattrtag = GTSL_Level; /* get new value */
                             GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
 
