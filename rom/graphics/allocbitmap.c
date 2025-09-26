@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Create a new BitMap
 */
@@ -527,66 +527,58 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         nbm = AllocMem (sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
                         MEMF_ANY | MEMF_CLEAR);
 
-        if (nbm)
-        {
+        if (nbm) {
             nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
             nbm->Rows        = sizey;
             nbm->Flags       = flags | BMF_STANDARD;
             nbm->Depth       = depth;
             nbm->pad         = 0;
 
-            if (alloc)
-            {
-                ULONG plane;
+            if (alloc) {
+                ULONG plane = 0;
 
                 /* Interleaved Bitmap? */
                 if(flags & BMF_INTERLEAVED)
                 {
-                    // Set all PlanePtr to NULL
-                    for(plane = 0; plane<=7; plane++)
+                    if((nbm->Planes[plane++] = AllocRaster(sizex*depth, sizey)) != NULL)
                     {
-                        nbm->Planes[plane] = NULL;
-                    }
-                    nbm->Planes[0] = AllocRaster(sizex*depth, sizey);
-                    if(nbm->Planes[0])
-                    {
-                      if (clear)
+                        if (clear)
                           SetMem (nbm->Planes[0], 0, RASSIZE(sizex*depth,sizey));
 
-                      for(plane = 1; plane<depth; plane++)
-                      {
-                          nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
-                      }
+                        /* Set the plane pointers, and clear remaining entries.. */
+                        for(; plane < depth; plane++) {
+                            nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
+                        }
+                        for(plane++; plane < 8; plane++) {
+                            nbm->Planes[plane] = NULL;
+                        }
+                    } else {
+                        /* Failed to allocate plane data storage ... */
+                        FreeMem (nbm, sizeof (struct BitMap));
+                        nbm = NULL;
                     }
-                }
-                else
-                {
-                    // Set all PlanePtr to NULL
-                    for(plane = 0; plane<=7; plane++)
-                    {
-                        nbm->Planes[plane] = NULL;
-                    }
-
-                    for (plane=0; plane<depth; plane++)
-                    {
+                } else {
+                    for (; plane < depth; plane++) {
                         nbm->Planes[plane] = AllocRaster (sizex, sizey);
 
                         if (!nbm->Planes[plane])
                             break;
 
                         if (clear)
-                            SetMem (nbm->Planes[plane], 0, RASSIZE(sizex,sizey));
+                            SetMem (nbm->Planes[plane], 0, RASSIZE(sizex, sizey));
                     }
-
-                    if (plane != depth)
-                    {
-                        for (plane=0; plane<depth; plane++)
+                    if (plane != depth) {
+                        for (plane=0; plane < depth; plane++)
                             if (nbm->Planes[plane])
                                 FreeRaster (nbm->Planes[plane], sizex, sizey);
 
                         FreeMem (nbm, sizeof (struct BitMap));
-
                         nbm = NULL;
+                    } else {
+                        /* Clear remaining entries.. */
+                        for(plane++; plane < 8; plane++) {
+                            nbm->Planes[plane] = NULL;
+                        }
                     }
                 }
             }
