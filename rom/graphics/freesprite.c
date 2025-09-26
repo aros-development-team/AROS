@@ -52,6 +52,7 @@
     UBYTE Mask = (0x01 << pick) ^ 0xff;
     Disable();
     GfxBase->SpriteReserved &= Mask;
+    GfxBase->ExtSprites &= Mask;
     Enable();
   }
   AROS_LIBFUNC_EXIT

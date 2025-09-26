@@ -343,6 +343,12 @@
                 /* Return the assigned ID if the caller asked to do so */
                 if (ResultID)
                     *ResultID = FirstID;
+
+                if (IS_CLASS(gfxclass, "hidd.gfx.amigavideo"))
+                {
+                    // Set Amiga chipset driver in GfxBase
+                    PrivGBase(GfxBase)->PlatformData = (APTR)gfxhidd;
+                }
             }
             else /* if (mdd) */
             {

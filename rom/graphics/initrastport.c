@@ -66,6 +66,8 @@
     rp->DrawMode = JAM2;
     rp->LinePtrn = 0xFFFF;
 
+    GenMinterms(rp);
+
     SetFont (rp, GfxBase->DefaultFont);
 
     AROS_LIBFUNC_EXIT

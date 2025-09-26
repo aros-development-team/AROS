@@ -124,6 +124,17 @@ struct amigavideo_staticdata
     BOOL                        cursorvisible;
     BOOL                        palmode;
     BOOL                        interlaced;
+   
+    /* New flags for the other sprites */
+    UWORD                       *new_copper1_spritept[8];
+    UWORD                       new_spritedatasize[8];
+    WORD                        new_sprite_width[8], new_sprite_height[8];
+    UWORD                       new_spritepos[8], new_spritectl[8];
+    UWORD                       *new_sprite_null[8];
+    UWORD                       *new_sprite[8];
+    WORD                        new_spritex[8], new_spritey[8];
+    BYTE                        new_sprite_offset_x[8], new_sprite_offset_y[8];
+    BOOL                        spritevisible[8];
 };
 
 struct amigavideoclbase

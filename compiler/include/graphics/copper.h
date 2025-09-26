@@ -2,7 +2,7 @@
 #define GRAPHICS_COPPER_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copper definitions and structures.
@@ -38,7 +38,7 @@ struct CopIns
 #define NXTLIST  u3.nxtlist
 #define VWAITPOS u3.u4.u1.VWaitPos
 #define DESTADDR u3.u4.u1.DestAddr
-#define HWAITPOS u3.u4.u2.HWAitPos
+#define HWAITPOS u3.u4.u2.HWaitPos
 #define DESTDATA u3.u4.u2.DestData
 
 struct CopList

@@ -55,5 +55,7 @@
     rp->linpatcnt = 15;
     rp->Flags    &= ~RPF_NO_PENS;
 
+    GenMinterms(rp);
+
     AROS_LIBFUNC_EXIT
 } /* SetBPen */

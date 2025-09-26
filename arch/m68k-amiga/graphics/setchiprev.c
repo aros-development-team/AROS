@@ -19,28 +19,6 @@
 
 /* See rom/graphics/setchiprev.c for documentation */
 
-struct GfxHookData
-{
-    OOP_Object  *amigavideo_driver;
-};
-
-AROS_UFH3S(BOOL, enum_cb,
-           AROS_UFHA(struct Hook *, hook, A0),
-           AROS_UFHA(OOP_Object *, obj, A2),
-           AROS_UFHA(APTR, data, A1))
-{
-    AROS_USERFUNC_INIT
-    struct GfxHookData *_data = (struct GfxHookData *)data;
-    if (OOP_OCLASS(obj)->ClassNode.ln_Name && (!strcmp(OOP_OCLASS(obj)->ClassNode.ln_Name, "hidd.gfx.amigavideo"))) {
-        _data->amigavideo_driver = obj;
-        return TRUE;
-    }
-    else {
-        return FALSE;
-    }
-    AROS_USERFUNC_EXIT
-}
-
 AROS_LH1(ULONG, SetChipRev,
     AROS_LHA(ULONG, ChipRev, D0),
     struct GfxBase *, GfxBase, 148, Graphics)
@@ -83,21 +61,8 @@ AROS_LH1(ULONG, SetChipRev,
 
     // Notify the amigavideo driver if AGA is enabled
     if (chipflags == best_possible_flags || chipflags == SETCHIPREV_AA) {
-        struct Hook enum_hook =
-        {
-            .h_Entry = enum_cb
-        };
-        struct GfxHookData hook_data =
-        {
-            .amigavideo_driver = NULL
-        };
-        APTR gfxroot = ((struct GfxBase_intern *)GfxBase)->GfxRoot;
-        HW_EnumDrivers(gfxroot, &enum_hook, &hook_data);
-        // The amigavideo HIDD should be found on this arch, but check anyway
-        if (hook_data.amigavideo_driver) {
-            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
-            HIDD_AMIGAGFX_EnableAGA(hook_data.amigavideo_driver);
-        }
+        OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+        HIDD_AMIGAGFX_EnableAGA((OOP_Object *)PrivGBase(GfxBase)->PlatformData);
     }
 
     return GfxBase->ChipRevBits0;
