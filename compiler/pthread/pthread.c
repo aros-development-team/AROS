@@ -86,7 +86,9 @@ pthread_t GetThreadId(struct Task *task)
     // 0 is main task, First thread id will be 1 so that it is different than default value of pthread_t
     for (i = 0; i < PTHREAD_THREADS_MAX; i++)
     {
-        if (threads[i].task == task)
+        // be sure not to select existing, "not joined" thread slot with the exec task pointer same as
+        // this one (if a new exec task structure get allocated exactly at the same addres as the old one)
+        if (threads[i].task == task && !threads[i].finished)
             break;
     }
 

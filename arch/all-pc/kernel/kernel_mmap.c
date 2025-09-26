@@ -48,15 +48,12 @@ static struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk
             return NULL;
 
         /* Create MemHeader if it is not there yet */
+        krnCreateMemHeader(reg->name, reg->pri, (APTR)start, end - start, reg->flags);
         *mhPtr = (struct MemHeader *)start;
-        start += sizeof(struct MemHeader);
+        start = (IPTR)(*mhPtr)->mh_First; /* Move start to first available address */
 
-        (*mhPtr)->mh_Node.ln_Name = reg->name;
-        (*mhPtr)->mh_Node.ln_Type = NT_MEMORY;
-        (*mhPtr)->mh_Node.ln_Pri  = reg->pri;
-        (*mhPtr)->mh_Attributes   = reg->flags;
         (*mhPtr)->mh_Lower        = (APTR)mh_Start;
-        (*mhPtr)->mh_First        = NULL;       /* We don't actually have any single MemChunk yet */
+        (*mhPtr)->mh_First        = NULL;       /* Reset mh_First set by krnCreateMemHeader */
         (*mhPtr)->mh_Free         = 0;
 
         /* The next MemChunk will be linked to our MemHeader */

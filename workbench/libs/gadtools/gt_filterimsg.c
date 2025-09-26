@@ -65,6 +65,7 @@
     struct Gadget           *gad;
     IPTR                    old_gadget_value;
     BOOL                    msg_only_for_gadtools = FALSE;
+    UWORD                   old_slider_value;
     
     /* Find Context Gadget. Should be first GTYP_GADTOOLS gadget
        in window´s gadgetlist */
@@ -109,7 +110,9 @@
         rc->imsg = *(struct ExtIntuiMessage *)imsg;
         rc->origmsg = imsg;
         rc->contextgad = contextgad;
-               
+
+    /***************************************************************************************************/
+
         switch(imsg->Class)
         {
             case IDCMP_GADGETDOWN:
@@ -149,7 +152,7 @@
                                     D(bug("FilterIMsg: SCROLLER_KIND\n"));
                                     if (contextgad->gadgetkind == SCROLLER_KIND)
                                     {
-                                        /* listview gadgets don´t report scroller
+                                        /* listview gadgets don't report scroller
                                            activity to app */
                                           
                                         D(bug("FilterIMsg: father is SCROLLER_KIND..send msg\n"));
@@ -214,7 +217,19 @@
                         case SLIDER_KIND:
                             D(bug("FilterIMsg: SLIDER_KIND\n"));
                             contextgad->getattrtag = GTSL_Level;
-                            GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
+
+                            msg_only_for_gadtools = TRUE; /* reply to msg = don't hand it over */
+                            old_slider_value = &contextgad->gadget_value;  /* save old slider value */
+                            GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value); /* get new one */
+
+                            if (old_slider_value != contextgad->gadget_value)
+                            {
+                                /* value has changed => return only 1 IDCMP_MOUSEMOVE
+                                instead of IDCMP_GADGETUP / ICMP_ GADGETDOWN (like AmigaOS) */
+
+                                rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
+                            }  /* if slider value has not changed, leave the message as is */
+
                             rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
                             break;
                         
@@ -232,7 +247,7 @@
                     D(bug("FilterIMsg: No Gadtools custom gadget\n"));
                 }
                 break;
-        
+
             case IDCMP_GADGETUP:
                 D(bug("FilterIMsg: IDCMP_GADGETUP\n"));
                 gad = (struct Gadget *)imsg->IAddress;
@@ -243,6 +258,20 @@
                         case SCROLLER_KIND:
                             D(bug("FilterIMsg: SCROLLER_KIND\n"));
                         case SLIDER_KIND:
+
+                            old_slider_value = &contextgad->gadget_value; /* save old slider value */
+                            contextgad->getattrtag = GTSL_Level; /* get new value */
+                            GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
+
+                            if (old_slider_value != contextgad->gadget_value)
+                            {
+                                /* value has changed => return only 1 IDCMP_MOUSEMOVE
+                                instead of IDCMP_GADGETUP / ICMP_ GADGETDOWN (like AmigaOS) */
+
+                                rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
+                                rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
+                            }  /* if slider value has not changed, leave the message as is */
+
                             D(bug("FilterIMsg: SLIDER_KIND\n"));
                             msg_only_for_gadtools = TRUE;
                             
@@ -282,7 +311,7 @@
                     if (contextgad->childgadgetkind == _ARROW_KIND)
                     {
                         msg_only_for_gadtools = TRUE;
-                        
+
                         if (contextgad->scrollticker)
                         {
                             contextgad->scrollticker--;
@@ -303,7 +332,7 @@
                                 SetGadgetAttrsA(contextgad->parentgadget, imsg->IDCMPWindow, NULL, settags);
 
                                 GetAttr(GTSC_Top, (Object *)contextgad->parentgadget, &contextgad->gadget_value);
-        
+
                                 if (old_gadget_value != contextgad->gadget_value)
                                 {
                                     msg_only_for_gadtools = FALSE;
@@ -312,7 +341,7 @@
                                     rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
                                     rc->imsg.eim_IntuiMessage.IAddress = (APTR)contextgad->parentgadget;
                                 }
-                                
+
                             } /* if (gad->Flags & GFLG_SELECTED) */
 
                         }
@@ -332,13 +361,13 @@
                     /* gadget is still active */
 
                     old_gadget_value = contextgad->gadget_value;
-                    
+
                     switch (contextgad->gadgetkind)
                     {
                         case SCROLLER_KIND:
                         case SLIDER_KIND:
                             msg_only_for_gadtools = TRUE;
-                            
+
                             if (contextgad->childgadgetkind == contextgad->gadgetkind)
                             {
                                 GetAttr(contextgad->getattrtag,
@@ -354,18 +383,20 @@
                                 }
                             }
                             break;
-                        
+
                         case LISTVIEW_KIND:
                             msg_only_for_gadtools = TRUE;
                             break;
-                            
+
                     } /* switch (contextgad->gadgetkind) */
-                    
+
                 } /* gadget is active */
                 break;
                 
         } /* switch (imsg->Class) */
         
+        /*****************************************************************************************************/
+
         if (msg_only_for_gadtools)
         {
             /* it´s not really necessary to call GT_PFIMsg here

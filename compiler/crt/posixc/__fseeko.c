@@ -38,8 +38,14 @@ int __fseeko (
 
     if (!fdesc)
     {
-            errno = EBADF;
-            return -1;
+        errno = EBADF;
+        return -1;
+    }
+
+    if (fdesc->fcb->privflags & _FCB_ISDIR)
+    {
+        errno = EISDIR;
+        return -1;
     }
 
     fh = fdesc->fcb->handle;
@@ -152,8 +158,14 @@ int __fseeko64 (
 
     if (!fdesc)
     {
-            errno = EBADF;
-            return -1;
+        errno = EBADF;
+        return -1;
+    }
+
+    if (fdesc->fcb->privflags & _FCB_ISDIR)
+    {
+        errno = EISDIR;
+        return -1;
     }
 
     if (((offset <= LONG_MIN) || (offset >= LONG_MAX)) && !(fdesc->fcb->privflags & _FCB_FS64))

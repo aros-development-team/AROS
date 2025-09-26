@@ -59,6 +59,7 @@ void testREADARGSNUMBER(void)
         memset(args, 0, sizeof args);
 
         if ((ReadArgs(templ, args, rdargs)))
+#if defined(__AROS__)
         {
             if (args[ARG_COL])
                 colno = *(LONG *) args[ARG_COL];
@@ -79,6 +80,14 @@ void testREADARGSNUMBER(void)
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_NUMBER);
         }
+#else
+// AmigaOS 3.1
+        {
+            CU_FAIL("ReadArgs() returned non-NULL");
+
+            FreeArgs(rdargs);
+        }
+#endif
 
         FreeDosObject(DOS_RDARGS, rdargs);
     }
@@ -134,6 +143,51 @@ void testREADARGSNUMBERSPACE(void)
             CU_ASSERT_NOT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_NUMBER);
+        }
+
+        FreeDosObject(DOS_RDARGS, rdargs);
+    }
+    else
+    {
+        CU_FAIL("AllocDosObject() returned NULL");
+    }
+}
+
+/* Reading /F should remove everything after last argument. Test passes on AmigaOS 3.1 */
+void test_ReadArgs_AF(void)
+{
+    IPTR args[2];
+    struct RDArgs *rdargs;
+    STRPTR progargs = NULL;
+
+    STRPTR templ = "PROG/A,ARGS/F";
+    STRPTR param = "foobar barbar \n"; //space + \n is important for this test
+
+    if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+    {
+        rdargs->RDA_Source.CS_Buffer = param;
+        rdargs->RDA_Source.CS_Length = strlen(param);
+        rdargs->RDA_Source.CS_CurChr = 0;
+        rdargs->RDA_DAList = 0;
+        rdargs->RDA_Buffer = NULL;
+        rdargs->RDA_BufSiz = 0;
+        rdargs->RDA_ExtHelp = NULL;
+        rdargs->RDA_Flags = 0;
+
+        memset(args, 0, sizeof args);
+
+        if ((ReadArgs(templ, args, rdargs)))
+        {
+            if (args[1])
+                progargs = (STRPTR)args[1];
+            CU_ASSERT_EQUAL(strlen(progargs), 6);
+            CU_ASSERT_STRING_EQUAL(progargs, "barbar");
+
+            FreeArgs(rdargs);
+        }
+        else
+        {
+            CU_FAIL("ReadArgs() returned NULL");
         }
 
         FreeDosObject(DOS_RDARGS, rdargs);
@@ -214,9 +268,15 @@ void test_ReadArgs_ERROR_BAD_TEMPLATE(void)
         if (!rda)
         {
             LONG err = IoErr();
+#if defined(__AROS__)
             CU_ASSERT_EQUAL(err, ERROR_BAD_TEMPLATE);
-            CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_LINE_TOO_LONG);
+#else
+// AmigaOS 3.1
+            CU_ASSERT_EQUAL(err, ERROR_LINE_TOO_LONG);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_TEMPLATE);
+#endif
+            CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
             CU_ASSERT_NOT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
@@ -275,7 +335,7 @@ void test_ReadArgs_ERROR_TOO_MANY_ARGS(void)
 
 void test_ReadArgs_ERROR_KEY_NEEDS_ARG(void)
 {
-    IPTR args[ARG_CNT];
+    IPTR args[2]; // size of 2 required under AmigaOS or will crash
     struct RDArgs *rdargs;
     STRPTR templ = "FOO/A,BAR="; // malformed templ (key needs arg but not optional)
     STRPTR param = "foo";
@@ -298,11 +358,17 @@ void test_ReadArgs_ERROR_KEY_NEEDS_ARG(void)
         if (!rda)
         {
             LONG err = IoErr();
+#if defined(__AROS__)
             CU_ASSERT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
+#else
+// AmigaOS 3.1
+            CU_ASSERT_EQUAL(err, ERROR_TOO_MANY_ARGS);
+            CU_ASSERT_NOT_EQUAL(err, ERROR_KEY_NEEDS_ARG);
+#endif
             CU_ASSERT_NOT_EQUAL(err, ERROR_REQUIRED_ARG_MISSING);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_TEMPLATE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_LINE_TOO_LONG);
-            CU_ASSERT_NOT_EQUAL(err, ERROR_TOO_MANY_ARGS);
             CU_ASSERT_NOT_EQUAL(err, ERROR_NO_FREE_STORE);
             CU_ASSERT_NOT_EQUAL(err, ERROR_BAD_NUMBER);
         }

@@ -24,8 +24,8 @@ ARCHSRCDIR := $(PORTSDIR)/libtiff/$(ARCHBASE)
 #MM workbench-libs-tiff : \
 #MM     workbench-libs-z-includes \
 #MM     workbench-libs-z-linklib \
-#MM     workbench-libs-zstd-includes \
-#MM     workbench-libs-zstd-linklib \
+#MM     workbench-libs-zstd-library-includes \
+#MM     workbench-libs-zstd-library-linklib \
 #MM     workbench-libs-lzma-library-includes \
 #MM     workbench-libs-lzma-library-linklib
 

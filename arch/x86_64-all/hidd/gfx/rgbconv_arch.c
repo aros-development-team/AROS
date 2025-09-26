@@ -55,19 +55,26 @@ ARCHCONVERTFUNCP(AVX,RGB15,ARGB32)
 
 #endif
 
-#define cpuid(num) \
-    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+#define cpuid(num, subnum) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num),"c"(subnum)); } while(0)
 
 static int has_ssse3() {
     ULONG eax, ebx, ecx, edx;
-    cpuid(0x00000001);
+    cpuid(0x00000001, 0x0);
     return (ecx & (1 << 9)) != 0; // Bit 9 of ECX = SSSE3
 }
 
-static int has_avx() {
+static int has_avx2() {
     ULONG eax, ebx, ecx, edx;
-    cpuid(0x00000001);
-    return (ecx & (1 << 28)) != 0; // Bit 28 of ECX = AVX
+    int _ret = 0;
+    cpuid(0x00000001, 0x0);
+    _ret = (ecx & (1 << 28)) != 0; // Bit 28 of ECX = AVX
+    if (_ret)
+    {
+        cpuid(0x00000007, 0x0); // subleaf ECX = 0
+        _ret = (ebx & (1 << 5)) != 0; // Bit 5 of EBX = AVX2
+    }
+    return _ret;
 }
 
 void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT])
@@ -92,7 +99,7 @@ void SetArchRGBConversionFunctions(HIDDT_RGBConversionFunction rgbconvertfuncs[N
     if (has_ssse3())
         useSSE3 = TRUE;
 
-    if (has_avx())
+    if (has_avx2())
         useAVX = TRUE;
 
     SCCFSSE2(XRGB32,BGRA32)

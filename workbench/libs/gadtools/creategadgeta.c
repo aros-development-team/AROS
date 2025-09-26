@@ -63,6 +63,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    int LV_HeightCorrection = 0;
+
     struct Gadget       *gad = NULL;
     struct TagItem      stdgadtags[] =
     {
@@ -157,6 +159,8 @@
         stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
     else if ((ng->ng_Flags & PLACETEXT_BELOW))
         stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Below;
+    else if ((ng->ng_Flags & PLACETEXT_IN ))
+    	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_In;
 
     switch(kind)
     {
@@ -246,6 +250,11 @@
             break;
 
         case LISTVIEW_KIND:
+
+            /* correction values are based on a visual comparison between AmigaOS and ApolloOS */
+            LV_HeightCorrection = (ng->ng_TextAttr) ? ((ng->ng_TextAttr)->ta_YSize)-4 : 7;
+            stdgadtags[TAG_Height].ti_Data = stdgadtags[TAG_Height].ti_Data - LV_HeightCorrection;
+
             gad = makelistview(GTB(GadToolsBase),
                                stdgadtags,
                                VI(ng->ng_VisualInfo),

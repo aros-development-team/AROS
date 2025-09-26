@@ -280,7 +280,8 @@ STATIC WORD NumItemsFit(struct Gadget *g, struct LVData *data)
     EnterFunc(bug("NumItemsFit(g=%p, data=%p)\n",g, data));
     D(bug("NumItemsFit: total spacing: %d\n", TotalItemHeight(data) ));
    
-    numfit = (g->Height - 2 * LV_BORDER_Y) /
+    /* fix number of items that fit (added: +2) */
+    numfit = (g->Height+2 - 2 * LV_BORDER_Y) /
                         TotalItemHeight(data);
         
     ReturnInt ("NumItemsFit", UWORD, numfit);

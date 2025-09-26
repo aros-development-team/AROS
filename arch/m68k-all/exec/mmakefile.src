@@ -35,7 +35,8 @@ AFILES=newstackswap stackswap \
        copymem_ac080 \
        copymemquick \
        copymemquick_040 \
-       copymemquick_060
+       copymemquick_060 \
+       debug
 
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR)

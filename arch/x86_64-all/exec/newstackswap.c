@@ -86,7 +86,7 @@ AROS_LH3(IPTR, NewStackSwap,
     /* Save original RSP */
     "push %%rbp\n\t"
     "movq %%rsp, %%rbp\n\t"
-    /* Change the stack, and store rbp incase it gets clobbered ... */
+    /* Actually change the stack */
     "movq %2, %%rsp\n\t"
 
     /* Enable(). It preserves all registers by convention. */
@@ -111,7 +111,7 @@ AROS_LH3(IPTR, NewStackSwap,
     "popq %%rbp\n"
     : "=a"(ret)
     : "r"(entry), "r"(newsp), "r"(args), "D"(SysBase)
-    : "rsi", "rdx", "rcx", "r8", "r9", "cc");
+    : "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11", "cc");
 
     /* Change limits back and return */
     t->tc_SPReg = sporig;
