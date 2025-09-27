@@ -3,15 +3,30 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES  := if inet iso main mbuf mroute ns route unix
+FILES  := \
+    if \
+    inet \
+    iso \
+    main \
+    mbuf \
+    mroute \
+    ns \
+    route \
+    unix
 
-NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
-USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D_GNU_SOURCE=1 -DHAVE_USLEEP
 
-##MM- workbench-network-stacks-arostcp-c : arostcp-c-netstat
+#MM- workbench-network-stacks-arostcp-c : arostcp-c-netstat
+#MM arostcp-c-netstat : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami \
+#MM     arostcp-linklibs-kvm
 
 %build_prog mmake=arostcp-c-netstat \
-    progname=netstat targetdir=$(AROS_SYSTEM)/Networks/AROSTCP/C \
-    files=$(FILES)
+    progname=netstat targetdir=$(AROS_C) \
+    files=$(FILES) uselibs="kvm miami net"
 
 %common

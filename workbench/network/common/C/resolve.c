@@ -64,30 +64,30 @@ int main(void)
       long addr = inet_addr(args->a_ipaddr);
       struct hostent *hp;
       if (addr == INADDR_NONE)
-	hp = gethostbyname(args->a_ipaddr);
+        hp = gethostbyname(args->a_ipaddr);
       else
         hp = gethostbyaddr((caddr_t)&addr, sizeof(addr), AF_INET);
       if (hp) {
-	if (addr == -1) {
-	  char **ip = hp->h_addr_list;
-	  struct in_addr *inaddr;
-	  Printf("ADDR %s", args->a_ipaddr);
-	  while (ip && *ip) {
-	    inaddr = (struct in_addr *)*ip++;
-	    Printf(" %s", Inet_NtoA(inaddr->s_addr));
-	  }
-	} else {
-	  char **alias = hp->h_aliases;
-	  Printf("HOST %s %s", args->a_ipaddr, hp->h_name);
-	  while (alias && *alias) {
-	    Printf(" %s", *alias++);
-	  }
-	}
-	Printf("\n");
+        if (addr == -1) {
+          char **ip = hp->h_addr_list;
+          struct in_addr *inaddr;
+          Printf("ADDR %s", args->a_ipaddr);
+          while (ip && *ip) {
+            inaddr = (struct in_addr *)*ip++;
+            Printf(" %s", Inet_NtoA(inaddr->s_addr));
+          }
+        } else {
+          char **alias = hp->h_aliases;
+          Printf("HOST %s %s", args->a_ipaddr, hp->h_name);
+          while (alias && *alias) {
+            Printf(" %s", *alias++);
+          }
+        }
+        Printf("\n");
         retval = RETURN_OK;
       } else {
         Printf("resolve: unknown host %s\n", args->a_ipaddr);
-	retval = 1;
+        retval = 1;
       }
       FreeArgs(rdargs);
     }
@@ -96,10 +96,8 @@ int main(void)
         Printf("usage: resolve host\n");
         retval = 1;
     }
-  }
-
-  if (DOSBase)
     CloseLibrary((struct Library *)DOSBase);
+  }
 
   return retval;
 }

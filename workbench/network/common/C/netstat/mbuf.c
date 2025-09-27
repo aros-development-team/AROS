@@ -35,6 +35,10 @@
 static char sccsid[] = "@(#)mbuf.c	8.1 (Berkeley) 6/6/93";
 #endif /* not lint */
 
+#if defined(__AROS__)
+#include <err.h>
+#endif
+
 #include <sys/param.h>
 #include <sys/protosw.h>
 #include <sys/socket.h>
@@ -44,7 +48,9 @@ static char sccsid[] = "@(#)mbuf.c	8.1 (Berkeley) 6/6/93";
 #include "netstat.h"
 
 #define	YES	1
+#if !defined(__AROS__)
 typedef int bool;
+#endif
 
 struct	mbstat mbstat;
 

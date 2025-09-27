@@ -1,3 +1,4 @@
+
 #include <exec/types.h>
 #include <kvm.h>
 #include <stdio.h>
@@ -10,8 +11,8 @@ kvm_t *kvm_open(const char *execfile, const char *corefile, const char *swapfile
 
     res = kvm_openfiles(execfile, corefile, swapfile, flags, errbuf);
     if (!res && errstr) {
-	fprintf (stderr, "%s: %s\n", errstr, errbuf);
-	fflush (stderr);
+        fprintf (stderr, "%s: %s\n", errstr, errbuf);
+        fflush (stderr);
     }
     return res;
 }

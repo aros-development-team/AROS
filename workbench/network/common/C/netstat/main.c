@@ -55,13 +55,21 @@
 #include <limits.h>
 #include <netdb.h>
 #include <nlist.h>
+#if !defined(__AROS__)
 #include <paths.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <err.h>
+
+#if defined(__AROS__)
+#include <fcntl.h>
+#endif
+
 #include <proto/miami.h>
+
 #include "netstat.h"
 
 struct nlist nl[] = {
@@ -134,8 +142,8 @@ struct protox {
 	u_char	pr_index;		/* index into nlist of cb head */
 	u_char	pr_sindex;		/* index into nlist of stat block */
 	u_char	pr_wanted;		/* 1 if wanted, 0 otherwise */
-	void	(*pr_cblocks)();	/* control blocks printing routine */
-	void	(*pr_stats)();		/* statistics printing routine */
+	void	(*pr_cblocks)(u_long, char *);	/* control blocks printing routine */
+	void	(*pr_stats)(u_long, char *);		/* statistics printing routine */
 	char	*pr_name;		/* well-known name */
 } protox[] = {
 	{ N_TCB,	N_TCPSTAT,	1,	protopr,
@@ -420,7 +428,7 @@ printproto(tp, name)
 	register struct protox *tp;
 	char *name;
 {
-	void (*pr)();
+	void (*pr)(u_long, char *);
 	u_long off;
 
 	if (sflag) {

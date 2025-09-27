@@ -37,6 +37,10 @@
 static char sccsid[] = "@(#)inet.c	8.4 (Berkeley) 4/20/94";
 #endif /* not lint */
 
+#if defined(__AROS__)
+#include <clib/netlib_protos.h>
+#endif
+
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/socketvar.h>
@@ -61,8 +65,8 @@ static char sccsid[] = "@(#)inet.c	8.4 (Berkeley) 4/20/94";
 #define TCPSTATES
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_timer.h>
-#include <netinet/tcp_var.h>
 //#include <netinet/tcp_debug.h>
+#include <netinet/tcp_var.h>
 #include <netinet/udp.h>
 #include <netinet/udp_var.h>
 

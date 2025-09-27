@@ -58,6 +58,7 @@
 #include <arpa/inet.h>
 
 #include <signal.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -255,7 +256,7 @@ void __chkabort()
 {
 }
 
-void CleanupExit(rc)
+void CleanupExit(int rc)
 {
 	if (timerio)
 		DeleteIORequest(timerio);

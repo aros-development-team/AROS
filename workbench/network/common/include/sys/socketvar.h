@@ -63,6 +63,10 @@
 #include <sys/time.h>
 #endif
 
+#ifndef EXEC_NODES_H
+#include <exec/nodes.h>
+#endif
+
 struct newselitem;
 
 /*

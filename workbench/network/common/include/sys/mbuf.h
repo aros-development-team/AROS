@@ -79,12 +79,14 @@ extern struct mbuf *mfree;
  * at least MINCLSIZE of data must be stored.
  */
 
-#define	MSIZE		256			/* size of an mbuf */
-#define	MLEN		(MSIZE - sizeof(struct m_hdr))	/* normal data len */
-#define	MHLEN		(MLEN - sizeof(struct pkthdr))	/* data len w/pkthdr */
+#define	MSIZE		    256			/* size of an mbuf */
+#define	MLEN		    (MSIZE - sizeof(struct m_hdr))	/* normal data len */
+#define	MHLEN		    (MLEN - sizeof(struct pkthdr))	/* data len w/pkthdr */
 
-#define	MINCLSIZE	(MHLEN + MLEN) /* smallest amount to put in cluster */
-#define	M_MAXCOMPRESS	(MHLEN / 2)    /* max amount to copy for compression */
+#define	MINCLSIZE	    (MHLEN + MLEN) /* smallest amount to put in cluster */
+#define	M_MAXCOMPRESS   (MHLEN / 2)    /* max amount to copy for compression */
+
+#define MCLBYTES        2048
 
 /*
  * Mbuf cluster structure. The first word is used as a reference count when the
