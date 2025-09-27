@@ -203,10 +203,7 @@ VOID CleanUpExit(LONG error);
 extern	char *inet_ntoa(), *iso_ntoa(), *link_ntoa();
 #endif
 
-#define SOCKET_VERSION 3
-struct Library *SocketBase;
 const TEXT version[] = "route 3.4 (14.10.2005)";
-const TEXT socket_name[] = "bsdsocket.library";
 
 void
 usage(char *cp)
@@ -244,11 +241,6 @@ int main(argc, argv)
 	int ch;
 	// char *argvp;
 
-	SocketBase = OpenLibrary(socket_name, SOCKET_VERSION);
-	if(SocketBase == NULL) {
-		fprintf(stderr, "route: cannot open bsdsocket.library version 3\n");
-		return RETURN_FAIL;
-	}
 	SetErrnoPtr(&errno, sizeof(errno));
 
 	if (argc < 2)
@@ -1421,6 +1413,5 @@ int GetOpt(int argc, char **argv, char *opts)
 
 VOID CleanUpExit(LONG error)
 {
-	CloseLibrary(SocketBase);
 	exit(error);
 }

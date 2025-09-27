@@ -37,9 +37,6 @@ static const char version[] __attribute__((used)) = "$VER: resolve 4.0 (17.10.20
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#define SOCKETVERSION 2	/* minimum version to use */
-#define SOCKETNAME "bsdsocket.library"
-
 #ifndef MAXLINELENGTH 
 #define MAXLINELENGTH 1024
 #endif
@@ -48,7 +45,6 @@ int main(void)
 {
   int retval = 128;
   struct DosLibrary *DOSBase;
-  struct Library *SocketBase;
 
 #if ! (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
   struct ExecBase *SysBase;
@@ -56,9 +52,8 @@ int main(void)
 #endif
 
   DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37L);
-  SocketBase = OpenLibrary(SOCKETNAME, SOCKETVERSION);
-  
-  if (DOSBase && SocketBase) {
+
+  if (DOSBase) {
     const char *template = "HOST/A";
     struct {
       STRPTR a_ipaddr;
@@ -101,13 +96,6 @@ int main(void)
         Printf("usage: resolve host\n");
         retval = 1;
     }
-  }
-
-  if (SocketBase) {
-    CloseLibrary(SocketBase);
-  } else {
-    if (DOSBase)
-      Printf("resolve: cannot open bsdsocket.library version 2\n");
   }
 
   if (DOSBase)

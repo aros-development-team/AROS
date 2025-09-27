@@ -86,9 +86,10 @@ LONG whoami(void)
 {
   LONG retval = 128;
   struct DosLibrary *DOSBase;
+#if ! (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
   struct ExecBase *SysBase;
-
   SysBase = *(struct ExecBase**)4;
+#endif
   DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37L);
 
   if (DOSBase) {
@@ -100,14 +101,14 @@ LONG whoami(void)
       struct passwd *pw = getpwuid(uid);
 
       if (pw != NULL) {
-	Printf("%s\n", (ULONG)pw->pw_name);
-	retval = RETURN_OK;
+        Printf("%s\n", (ULONG)pw->pw_name);
+        retval = RETURN_OK;
       } else {
-	Printf("whoami: no login associated with uid %lu.\n", uid);
-	retval = RETURN_WARN;
+        Printf("whoami: no login associated with uid %lu.\n", uid);
+        retval = RETURN_WARN;
       }
 
-//	CloseLibrary(UserGroupBase);
+      CloseLibrary(UserGroupBase);
     } else {
       Printf("whoami: cannot open usergroup.library\n");
     }

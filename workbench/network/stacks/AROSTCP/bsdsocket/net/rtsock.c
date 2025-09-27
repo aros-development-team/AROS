@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2025 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -666,14 +666,15 @@ kinfo_rtable(op, where, given, arg, needed)
 int
 rt_walk(rn, f, w)
 	register struct radix_node *rn;
-	register int (*f)(struct radix_node *, struct walkarg *);
+	register int (*f)();
 	struct walkarg *w;
 {
+	register int (*rtwfunc)(struct radix_node *, struct walkarg *) = (int (*)(struct radix_node *, struct walkarg *))f;
 	int error;
 	for (;;) {
 		while (rn->rn_b >= 0)
 			rn = rn->rn_l;	/* First time through node, go left */
-		if (error = (*f)(rn, w))
+		if (error = (*rtwfunc)(rn, w))
 			return (error);	/* Process Leaf */
 		while (rn->rn_p->rn_r == rn) {	/* if coming back from right */
 			rn = rn->rn_p;		/* go back up */

@@ -76,8 +76,10 @@ void  herror(const char *banner);
 /* init_inet_daemon.c */
 int init_inet_daemon(void);
 
+#ifndef HAVE_IOCTL
 /* ioctl.c */
 int ioctl(int fd, unsigned int request, char *argp);
+#endif
 
 /* iomode.c */
 int iomode(int fd, int mode);
@@ -159,8 +161,10 @@ int   setlogmask(int pmask);
 /* timerinit.c */
 extern long __local_to_GMT;
 
+#ifndef HAVE_USLEEP
 /* usleep.c */
 void usleep(unsigned int usecs);
+#endif
 
 /* utime.c */
 #ifndef UTIME_H

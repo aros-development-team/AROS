@@ -38,6 +38,7 @@
 #ifndef _ERR_H_
 #define	_ERR_H_
 
+#include <stdarg.h>
 #include <sys/cdefs.h>
 
 __BEGIN_DECLS

@@ -43,9 +43,7 @@ static const char copyright[] __attribute__((used)) =
 #include <netinet/in.h>
 
 #include <ctype.h>
-#if !defined(__AROS__)
 #include <err.h>
-#endif
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,8 +55,6 @@ static const char copyright[] __attribute__((used)) =
 
 #include <proto/exec.h>
 #include <dos/dos.h>
-struct Library *SocketBase;
-struct Library *MiamiBase;
 
 #define	SYSLOG_NAMES
 #include <syslog.h>
@@ -95,17 +91,6 @@ main(int argc, char *argv[])
 	int ch, logflags, pri;
 	char *tag, *host, buf[1024];
 
-#if defined(__AROS__)	
-   if (!(SocketBase = OpenLibrary("bsdsocket.library", 3)))
-   {
-      return RETURN_FAIL;   
-   }
-   if (!(SocketBase = OpenLibrary("miami.library", 0)))
-   {
-      return RETURN_FAIL;   
-   }
-#endif
-
 	tag = NULL;
 	host = NULL;
 	pri = LOG_USER | LOG_NOTICE;
@@ -126,12 +111,7 @@ main(int argc, char *argv[])
 		case 'f':		/* file to log */
 			if (freopen(optarg, "r", stdin) == NULL)
 			{
-/* TODO: NicJA - we dont have err() */
-#if !defined(__AROS__)
 				err(1, "%s", optarg);
-#else
-            //return RETURN_FAIL;
-#endif
          }
 			break;
 		case 'h':		/* hostname to deliver to */
@@ -221,29 +201,20 @@ logmessage(int pri, char *host, char *buf)
 		hints.ai_socktype = SOCK_DGRAM;
 		error = getaddrinfo(host, "syslog", &hints, &res);
 		if (error == EAI_SERVICE) {
-/* TODO: NicJA - We dont have warnx() */
-#if !defined(__AROS__)
 			warnx("syslog/udp: unknown service");	/* not fatal */
-#endif
 			error = getaddrinfo(host, "514", &hints, &res);
 		}
 		if (error)
-      {
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
+		{
 			errx(1, "%s: %s", gai_strerror(error), host);
-#endif
 		}
 		/* count max number of sockets we may open */
 		for (maxs = 0, r = res; r; r = r->ai_next, maxs++);
 		socks = malloc(maxs * sizeof(struct socks));
 		if (!socks)
-      {
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
+		{
 			errx(1, "couldn't allocate memory for sockets");
-#endif
-      }
+		}
 
 		for (r = res; r; r = r->ai_next) {
 			sock = socket(r->ai_family, r->ai_socktype,
@@ -257,27 +228,13 @@ logmessage(int pri, char *host, char *buf)
 		freeaddrinfo(res);
 		if (nsock <= 0)
 		{
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
 			errx(1, "socket");
-#endif
 		}
 	}
 
-#if defined(__AROS__)
-   char line_tmp[256];
-   sprintf(line_tmp, "<%d>%s", pri, buf);
-   len = strlen(line_tmp + 1);
-   line = line_tmp;
-   if (len > 0)
-#else
 	if ((len = asprintf(&line, "<%d>%s", pri, buf)) == -1)
-#endif
 	{
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
 		errx(1, "asprintf");
-#endif
 	}
 
 	lsent = -1;
@@ -291,23 +248,15 @@ logmessage(int pri, char *host, char *buf)
 	if (lsent != len) {
 		if (lsent == -1)
 	   {
-/* TODO: NicJA - We dont have warn() */
-#if !defined(__AROS__)
 			warn ("sendto");
-#endif
 	   }
 		else
 	   {
-/* TODO: NicJA - We dont have warnx() */
-#if !defined(__AROS__)
 			warnx ("sendto: short send - %d bytes", lsent);
-#endif
 	   }
 	}
 
-#ifndef __AROS__
 	free(line);
-#endif
 }
 
 /*
@@ -325,10 +274,7 @@ pencode(char *s)
 		fac = decode(save, facilitynames);
 		if (fac < 0)
 	   {
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
 			errx(1, "unknown facility name: %s", save);
-#endif
 	   }
 		*s++ = '.';
 	}
@@ -339,10 +285,7 @@ pencode(char *s)
 	lev = decode(s, prioritynames);
 	if (lev < 0)
 	   {
-/* TODO: NicJA - We dont have errx() */
-#if !defined(__AROS__)
 		errx(1, "unknown priority name: %s", save);
-#endif
 	   }
 	return ((lev & LOG_PRIMASK) | (fac & LOG_FACMASK));
 }

@@ -93,12 +93,8 @@
 #endif
 
 #include <ctype.h>
-#if !defined(__AROS__)
 #include <err.h>
-#else
-#define  err(a,b)
-#define  errx(a,b,c)
-#define  warn(a)
+#if defined(__AROS__)
 #define  inet_makeaddr(a,b) Inet_MakeAddr(a,b)
 #endif
 #include <errno.h>
@@ -109,14 +105,7 @@
 #include <proto/miami.h>
 #include <proto/socket.h>
 
-#if defined(__AROS__)
-struct Library *SocketBase;
-struct Library *MiamiBase;
-#endif
-
-#define SOCKET_VERSION 3
 const TEXT version[] = "$VER: ifconfig 5.0 (04.12.2005)";
-const TEXT socket_name[] = "bsdsocket.library";
 
 struct	ifreq		ifr, ridreq;
 struct	ifaliasreq	addreq __attribute__((aligned(4)));
@@ -266,38 +255,12 @@ struct afswtch *afp;	/*the address family being set or asked about*/
 
 struct afswtch *lookup_af __P((const char *));
 
-static void __close_bsdsocket()
-{
-	if (MiamiBase != NULL)
-	{
-		CloseLibrary(MiamiBase);
-		MiamiBase = NULL;
-	}
-	if (SocketBase != NULL)
-	{
-		CloseLibrary(SocketBase);
-		SocketBase = NULL;
-	}
-}
-
 int
 main(argc, argv)
 	int argc;
 	char *argv[];
 {
 	int ch, aflag;
-
-#if defined(__AROS__)
-   if (!(SocketBase = OpenLibrary(socket_name, SOCKET_VERSION)))
-   {
-      return RETURN_FAIL;
-   }
-   if (!(MiamiBase = OpenLibrary("miami.library", 0)))
-   {
-      return RETURN_FAIL;
-   }
-	atexit(__close_bsdsocket);
-#endif
 
 	/* Parse command-line options */
 	aflag = mflag = 0;
@@ -490,16 +453,12 @@ getinfo(ifr)
 	if (s < 0)
 		err(1, "socket");
 	if (IoctlSocket(s, SIOCGIFFLAGS, (caddr_t)ifr) < 0) {
-#if !defined(__AROS__)
 		warn("SIOCGIFFLAGS %s", ifr->ifr_name);
-#endif
 		return (-1);
 	}
 	flags = ifr->ifr_flags;
 	if (IoctlSocket(s, SIOCGIFMETRIC, (caddr_t)ifr) < 0) {
-#if !defined(__AROS__)
 		warn("SIOCGIFMETRIC %s", ifr->ifr_name);
-#endif
 		metric = 0;
 	} else
 		metric = ifr->ifr_metric;

@@ -358,10 +358,7 @@ struct timerequest *timermsg = NULL;
 BOOL notopen = TRUE;
 #define TimerBase (timermsg->tr_node.io_Device)
 
-#define SOCKET_VERSION 3
-struct Library *SocketBase;
 const TEXT version[] = "$VER: ping 3.10 (14.10.2005)";
-const TEXT socket_name[] = "bsdsocket.library";
 
 void
 clean_timer(void)
@@ -406,11 +403,6 @@ int main(argc, argv)
   ULONG timermask;
 #endif
 
-  SocketBase = OpenLibrary(socket_name, SOCKET_VERSION);
-  if(SocketBase == NULL) {
-    fprintf(stderr, "ping: cannot open bsdsocket.library version 3.\n");
-    return RETURN_FAIL;
-  }
   SetErrnoPtr(&errno, sizeof(errno));
 
   outpack = malloc(MAXPACKET);
@@ -1403,6 +1395,5 @@ usage()
 
 VOID CleanUpExit(LONG error)
 {
-  CloseLibrary(SocketBase);
   exit(error);
 }

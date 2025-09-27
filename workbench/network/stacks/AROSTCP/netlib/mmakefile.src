@@ -1,14 +1,21 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-USER_INCLUDES := -isystem ../netinclude/
+#USER_INCLUDES := -isystem $(SRCDIR)/workbench/network/common/include
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
         -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
 
 #MM- linklibs: arostcp-linklibs
 #MM- workbench-network-stacks-arostcp : arostcp-linklibs
-#MM- arostcp-linklibs : includes arostcp-linklibs-netlib arostcp-linklibs-miami arostcp-linklibs-sana2
+#MM- arostcp-linklibs : \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami \
+#MM     arostcp-linklibs-sana2
+
+#MM arostcp-linklibs-netlib : includes
+#MM arostcp-linklibs-miami : includes
+#MM arostcp-linklibs-sana2 : includes
 
 NETLIBSRC = strerror \
            autoinit \

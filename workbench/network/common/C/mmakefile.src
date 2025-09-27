@@ -3,15 +3,41 @@ include $(SRCDIR)/config/aros.cfg
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)
-USER_CPPFLAGS := -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
+USER_CPPFLAGS := -D_GNU_SOURCE=1 -DHAVE_IOCTL -DHAVE_USLEEP
 
 #MM- workbench-network-common : workbench-network-common-c
+#MM- workbench-network-common-c : \
+#MM     workbench-network-common-c-base \
+#MM     workbench-network-common-c-miami
+#MM- workbench-network-common-c-quick : \
+#MM     workbench-network-common-c-base-quick \
+#MM     workbench-network-common-c-miami-quick
 
-#MM- workbench-network-common-c: network-includes
+#MM workbench-network-common-c-base : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib
+#MM workbench-network-common-c-miami : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami
 
-%build_progs mmake=workbench-network-common-c \
-    files="ifconfig route ping resolve arp logger hostname" \
-    targetdir=$(AROS_C)
+BASEFILES := \
+    arp \
+    ping \
+    route \
+    resolve
+
+MIAMIFILES := \
+    hostname \
+    ifconfig \
+    logger
+
+%build_progs mmake=workbench-network-common-c-base \
+    files="$(BASEFILES)" \
+    targetdir=$(AROS_C) uselibs="net"
+
+%build_progs mmake=workbench-network-common-c-miami \
+    files="$(MIAMIFILES)" \
+    targetdir=$(AROS_C) uselibs="miami net"
 
 #%common
-

@@ -139,7 +139,7 @@ static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) 
 *****************************************************************************
 *
 */
-
+
 /*
  * arp - display, set, and delete arp table entries
  */
@@ -147,9 +147,8 @@ static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) 
 #ifdef AMIGA
 #include <proto/dos.h>
 #include <proto/socket.h>
-#if !defined(__AROS__)
 #include <clib/netlib_protos.h>
-#else
+#if defined(__AROS__)
 #include <proto/exec.h>
 #endif
 #endif /* AMIGA */
@@ -171,8 +170,6 @@ static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) 
 #include <unistd.h>
 #endif
 
-struct Library * SocketBase;
-
 #define max(a,b) ((a) > (b) ? (a) : (b))
 
 static int file(char *name);
@@ -193,19 +190,11 @@ char usage_str[] =
   "       arp -s hostname address [temp] [pub]\n"
   "       arp -f filename\n";
 
-#define SOCKET_VERSION 3
-const TEXT socket_name[] = "bsdsocket.library";
-
 int main(argc, argv)
 	int argc;
 	char **argv;
 {
   int ch;
-
-   if (!(SocketBase = OpenLibrary(socket_name, SOCKET_VERSION)))
-   {
-      return RETURN_FAIL;   
-   }
 
   while ((ch = getopt(argc, argv, "adsf")) != EOF)
     switch((char)ch) {
@@ -306,10 +295,7 @@ set(int argc, char **argv)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-/* TODO: NicJA - Implement herror() */
-#if !defined(__AROS__)
       herror((char *)NULL);
-#endif
       return (1);
     }
     bcopy((char *)hp->h_addr, (char *)&sin->sin_addr,
@@ -363,10 +349,7 @@ get(char *host)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-/* TODO: NicJA - Implement herror() */
-#if !defined(__AROS__)
       herror((char *)NULL);
-#endif
       exit(1);
     }
     bcopy((char *)hp->h_addr, (char *)&sin->sin_addr, sizeof sin->sin_addr);
@@ -407,10 +390,7 @@ delete(char *host)
   if (sin->sin_addr.s_addr == -1) {
     if (!(hp = gethostbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-/* TODO: NicJA - Implement herror() */
-#if !defined(__AROS__)
       herror((char *)NULL);
-#endif
       exit(1);
     }
     bcopy((char *)hp->h_addr, (char *)&sin->sin_addr,
@@ -458,10 +438,7 @@ dump(char *host)
     if (!(hp = gethostbyname(host)) &&
 	!(np = getnetbyname(host))) {
       fprintf(stderr, "arp: %s: ", host);
-/* TODO: NicJA - Implement herror() */
-#if !defined(__AROS__)
       herror((char *)NULL);
-#endif
       exit(1);
     }
     if (hp) 
