@@ -1,6 +1,4 @@
 
-#include <aros/debug.h>
-
 #include <bsdsocket/socketbasetags.h>
 #include <utility/hooks.h>
 #include <sys/socket.h>
@@ -33,7 +31,6 @@ kvm_t *kvm_openfiles(const char *execfile, const char *corefile, const char *swa
     }
     SocketBaseTags(SBTM_GETREF(SBTC_RELEASESTRPTR), (IPTR)&StackVer, TAG_DONE);
     if (strcmp(StackVer, STACK_RELEASE)) {
-		bug("[libkvm] '%s' != '%s'\n", StackVer, STACK_RELEASE);
 		strcpy (errstr, "Wrong bsdsocket.library version");
 		return NULL;
     }
