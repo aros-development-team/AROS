@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
 /****************************************************************************************/
@@ -9,19 +9,16 @@
 
 void pokeCL(UWORD *ci, UWORD target, UWORD table)
 {
-    ULONG targ = (ULONG)target;
     if(!ci) return;
-    targ &= 0x1fe;
-    for(;ci;ci+=2)
-    {
-        if( ((*ci)==0xffff) && ((*(ci+1) == 0xfffe))) return;
-        if(*ci == targ) break;
-    }
-    if (((*ci) == 0xffff) && ((*(ci+1)==0xfffe))) return;
-    if(*ci == targ)
-    {
-        ci++;
-        *ci++ = table;
+    target &= 0x1fe;  // Mask to 9-bit address
+
+    while(*ci != 0xffff || *(ci + 1) != 0xfffe) {
+        if(*ci == target) {
+            ci++;
+            *ci = table;
+            return;
+        }
+        ci += 2;
     }
 }
 
