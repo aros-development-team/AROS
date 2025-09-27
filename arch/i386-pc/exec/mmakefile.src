@@ -17,7 +17,7 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-CFILES := cachecleare debug_init debug memoryrawio
+CFILES := cachecleare debug_init debug_internal memoryrawio
 AFILES := cache userstate
 
 #MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h
