@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -218,9 +218,6 @@ struct GfxBase_intern
 
     /* baseclass for CreateObject */
     OOP_Class                   *basebm;
-
-    // Platform-specific data like chipset driver handle
-    APTR                        PlatformData;
 };
 
 

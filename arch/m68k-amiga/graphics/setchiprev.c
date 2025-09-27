@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetChipRev()
 */
@@ -10,7 +10,7 @@
 #include "graphics_intern.h"
 
 #include <interface/HW.h>
-#include <interface/Hidd_AmigaGfx.h>
+#include <hidd/amigavideo.h>
 
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -35,9 +35,10 @@ AROS_LH1(ULONG, SetChipRev,
         chipflags = GFXF_AA_ALICE | GFXF_HR_AGNUS | GFXF_AA_LISA | GFXF_AA_MLISA | GFXF_HR_DENISE;
     } else if (vposr >= 0x2000) {
         chipflags = GFXF_HR_AGNUS;
-        // ECS Agnus can be combined with different Denise chips.
-        // DENISEID register does not exist in original Denise,
-        // so one cannot just read it once and trust it.
+        /* ECS Agnus can be combined with different Denise chips.
+         * DENISEID register does not exist in original Denise,
+         * so one cannot just read it once and trust it.
+         */
         Disable();
         deniseid1 = custom->deniseid & 0x00ff;
         custom->deniseid = custom->dmaconr;
@@ -61,8 +62,16 @@ AROS_LH1(ULONG, SetChipRev,
 
     // Notify the amigavideo driver if AGA is enabled
     if (chipflags == best_possible_flags || chipflags == SETCHIPREV_AA) {
-        OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
-        HIDD_AMIGAGFX_EnableAGA((OOP_Object *)PrivGBase(GfxBase)->PlatformData);
+        // The amigavideo HIDD should be found on this arch, but check anyway
+        OOP_Class *nativeclass;
+        if ((nativeclass = OOP_FindClass(CLID_Hidd_Gfx_AmigaVideo)) != NULL) {
+            OOP_Object *amigagfxhidd = (OOP_Object *)OOP_NewObject(nativeclass, NULL, NULL);
+            if (amigagfxhidd) {
+                OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+                HIDD_AMIGAGFX_EnableAGA(amigagfxhidd);
+                OOP_DisposeObject(amigagfxhidd);
+            }
+        }
     }
 
     return GfxBase->ChipRevBits0;

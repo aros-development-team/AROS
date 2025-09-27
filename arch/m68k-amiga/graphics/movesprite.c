@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function MoveSprite()
 */
@@ -11,7 +11,7 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
-#include <interface/Hidd_AmigaGfx.h>
+#include <hidd/amigavideo.h>
 
 /*****************************************************************************
 
@@ -66,26 +66,31 @@
 {
     AROS_LIBFUNC_INIT
 
-    OOP_Object *gfxhidd;
-    struct monitor_driverdata *mdd;
+    OOP_Object *gfxhidd = NULL;
 
     if (vp) {
+        struct monitor_driverdata *mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
-        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
         gfxhidd = mdd->gfxhidd;
     } else {
+        OOP_Class *nativeclass;
+        if ((nativeclass = OOP_FindClass(CLID_Hidd_Gfx_AmigaVideo)) != NULL)
+            gfxhidd = (OOP_Object *)OOP_NewObject(nativeclass, NULL, NULL);
         sprite->x = x;
         sprite->y = y;
-        gfxhidd = (OOP_Object *)PrivGBase(GfxBase)->PlatformData;
     }
 
-    if (sprite->num)
-    {
-        OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
-        HIDD_AMIGAGFX_SetSpritePos(gfxhidd, sprite->x, sprite->y, sprite->num);
+    if (gfxhidd) {
+        if (sprite->num) {
+            OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
+            HIDD_AMIGAGFX_SetSpritePos(gfxhidd, sprite->x, sprite->y, sprite->num);
+        } else
+            HIDD_Gfx_SetCursorPos(gfxhidd, sprite->x, sprite->y);
+        if (!vp) {
+            OOP_DisposeObject(gfxhidd);
+        }
     }
-    else HIDD_Gfx_SetCursorPos(gfxhidd, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -302,8 +302,10 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     ULONG *mode_tags_aga;
     ULONG *mode_tags_ecs;
 
-    if (csd->initialized)
-        return NULL;
+    if (csd->amigagfxinstance) {
+        csd->hiddopencnt++;
+        return csd->amigagfxinstance;
+    }
 
     /* construct the hardware name .. */
     {
@@ -600,7 +602,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
         D(bug("[AmigaVideo:Hidd] %s(): Got object from super\n", __func__));
         NewList((struct List *)&data->bitmaps);
-        csd->initialized = 1;
+        csd->amigagfxinstance = o;
+        csd->hiddopencnt = 1;
 
         /* this can't be the right way to match modes.. */
         csd->superforward = TRUE;
@@ -702,11 +705,14 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 /********** GfxHidd::Dispose()  ******************************/
 VOID AmigaVideoCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct amigavideo_staticdata *csd = CSD(cl);
+
     EnterFunc(bug("[AmigaVideo:Hidd] %s(o=%p)\n", __func__, o));
-    
-    D(bug("[AmigaVideo:Hidd] %s: calling super\n", __func__));
-    OOP_DoSuperMethod(cl, o, msg);
-    
+
+    if (--csd->hiddopencnt < 1) {
+        D(bug("[AmigaVideo:Hidd] %s: last opener disposed, calling super\n", __func__));
+        OOP_DoSuperMethod(cl, o, msg);
+    }
     ReturnVoid("[AmigaVideo:Hidd] AGFX::Dispose");
 }
 

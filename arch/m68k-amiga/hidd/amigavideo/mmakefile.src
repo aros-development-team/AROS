@@ -21,3 +21,8 @@ USER_CPPFLAGS += \
 %build_module mmake=kernel-amiga-m68k-amigavideo \
     modname=amigavideo modtype=hidd \
     files="$(AMIGAVIDEO_C_SOURCES)" uselibs="hiddstubs"
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+
+%common

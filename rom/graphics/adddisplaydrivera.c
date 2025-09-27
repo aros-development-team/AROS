@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: AROS-specific function for adding a display driver
 */
@@ -343,12 +343,6 @@
                 /* Return the assigned ID if the caller asked to do so */
                 if (ResultID)
                     *ResultID = FirstID;
-
-                if (IS_CLASS(gfxclass, "hidd.gfx.amigavideo"))
-                {
-                    // Set Amiga chipset driver in GfxBase
-                    PrivGBase(GfxBase)->PlatformData = (APTR)gfxhidd;
-                }
             }
             else /* if (mdd) */
             {

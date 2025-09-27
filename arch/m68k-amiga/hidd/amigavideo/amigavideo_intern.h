@@ -10,8 +10,6 @@
 
 #define AMIGAVIDEO_LIBNAME          "amigavideo.hidd"
 
-#define CLID_Hidd_Gfx_AmigaVideo    "hidd.gfx.amigavideo"
-
 #define COPPEROUT(cop_ptr,val_a,val_b) \
     *cop_ptr++ = val_a; \
     *cop_ptr++ = val_b;
@@ -45,7 +43,7 @@ struct NativeChipsetMode
 struct amigavideo_staticdata
 {
     struct Task                 *svcTask;
-    OOP_Class 	    	        *cs_basebm;           /* baseclass for CreateObject */
+    OOP_Class 	    	        *cs_basebm;                     /* baseclass for CreateObject */
 
     OOP_Class 	    	        *amigagfxclass;
     OOP_Class 	    	        *amigacompositorclass;
@@ -61,6 +59,9 @@ struct amigavideo_staticdata
     OOP_AttrBase                hiddGfxAttrBase;
     OOP_AttrBase                hiddCompositorAttrBase;
     OOP_AttrBase                hiddColorMapAttrBase;
+
+    OOP_Object                  *amigagfxinstance;              /* There can be only one! */
+    LONG                        hiddopencnt;
 
     struct List                 nativemodelist;
 
@@ -94,7 +95,6 @@ struct amigavideo_staticdata
                                 bplcon1, bplcon2, bplcon3, bplcon4;
 
     UBYTE                       fmode_bpl, fmode_spr;
-    UBYTE                       initialized;
 
     UWORD                       max_colors;
 
