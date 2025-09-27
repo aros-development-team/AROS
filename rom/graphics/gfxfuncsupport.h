@@ -4,7 +4,7 @@
 /****************************************************************************************/
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -217,8 +217,6 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
 		       struct GfxBase *GfxBase);
 
 void GenMinterms(struct RastPort *rp);
-void pokeCL(UWORD *ci, UWORD target, UWORD table);
-struct CopIns *pokeCI(struct CopIns *ci, UWORD *field1, short field2);
 
 /****************************************************************************************/
 
