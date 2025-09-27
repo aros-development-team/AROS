@@ -36,12 +36,8 @@ int     get_irq_list(char *buf);
 
 /****************************************************************************************/
 
-AROS_LH1(void, Debug,
-    AROS_LHA(ULONG, flags, D0),
-    struct ExecBase *, SysBase, 19, Exec)
+void InternalDebug(void *stack)
 {
-    AROS_LIBFUNC_INIT
-
     char key;
     /* KeyCode -> ASCII conversion table */
     static char transl[] =
@@ -384,9 +380,7 @@ AROS_LH1(void, Debug,
     } while(strcmp(comm, "QT") != 0 || strcmp(dat, "00000000") != 0);
     
     kprintf("Quitting SAD...\n");
-    
-    AROS_LIBFUNC_EXIT
-} /* Debug */
+}
 
 /****************************************************************************************/
 
