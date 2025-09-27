@@ -72,6 +72,28 @@
 
 #include "netstat.h"
 
+int	Aflag;		/* show addresses of protocol control block */
+int	aflag;		/* show all sockets (including servers) */
+int	bflag;		/* show i/f total bytes in/out */
+int	dflag;		/* show i/f dropped packets */
+int	gflag;		/* show group (multicast) routing or stats */
+int	iflag;		/* show interfaces */
+int	mflag;		/* show memory stats */
+int	nflag;		/* show addresses numerically */
+int	pflag;		/* show given protocol */
+int	rflag;		/* show routing tables (or routing stats) */
+int	sflag;		/* show protocol statistics */
+int	tflag;		/* show i/f watchdog timers */
+
+int	interval;	/* repeat interval for i/f stats */
+
+char	*interface;	/* desired i/f for stats, or NULL for all i/fs */
+int	unit;		/* unit number for above */
+
+int	af;		/* address family */
+
+char	*prog;		/* program name */
+
 struct nlist nl[] = {
 #define	N_MBSTAT	0
 	{ "_mbstat" },
