@@ -86,7 +86,7 @@ LONG whoami(void)
 {
   LONG retval = 128;
   struct DosLibrary *DOSBase;
-#if ! (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+#ifdef __SASC
   struct ExecBase *SysBase;
   SysBase = *(struct ExecBase**)4;
 #endif
