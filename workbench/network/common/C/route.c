@@ -132,7 +132,6 @@ static char sccsid[] = "@(#)route.c	5.35 (Berkeley) 6/27/91";
 */
 #define D(x)
 
-#include <stdio.h>
 #include <sys/errno.h>
 #include <ctype.h>
 #include <stdlib.h>
