@@ -177,11 +177,41 @@
 /*
  * Internet address (a structure for historical reasons)
  */
-typedef uint32_t in_addr_t;
+#ifndef _IN_ADDR_T_DECLARED
+typedef	uint32_t		in_addr_t;
+#define	_IN_ADDR_T_DECLARED
+#endif
 
+#ifndef _IN_PORT_T_DECLARED
+typedef	uint16_t		in_port_t;
+#define	_IN_PORT_T_DECLARED
+#endif
+
+#ifndef _SA_FAMILY_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/sa_family_t.h>
+#else
+typedef	__sa_family_t		sa_family_t;
+#endif
+#define	_SA_FAMILY_T_DECLARED
+#endif
+
+/* Internet address (a structure for historical reasons). */
+#ifndef	_STRUCT_IN_ADDR_DECLARED
 struct in_addr {
 	in_addr_t s_addr;
 };
+#define	_STRUCT_IN_ADDR_DECLARED
+#endif
+
+#ifndef	_SOCKLEN_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/socklen_t.h>
+#else
+typedef	__socklen_t	socklen_t;
+#endif
+#define	_SOCKLEN_T_DECLARED
+#endif
 
 /*
  * Definitions of bits in internet address integers.
@@ -220,13 +250,11 @@ struct in_addr {
 
 #define	IN_LOOPBACKNET		127			/* official! */
 
-/*
- * Socket address, internet style.
- */
+/* Socket address, internet style. */
 struct sockaddr_in {
 	uint8_t	sin_len;
-	uint8_t	sin_family;
-	uint16_t	sin_port;
+	sa_family_t	sin_family;
+	in_port_t	sin_port;
 	struct	in_addr sin_addr;
 	char	sin_zero[8];
 };

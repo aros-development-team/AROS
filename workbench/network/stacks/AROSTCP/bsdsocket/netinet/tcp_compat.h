@@ -1,5 +1,5 @@
-#ifndef NETINET_COMPAT_H
-#define NETINET_COMPAT_H
+#ifndef NETINET_TCP_COMPAT_H
+#define NETINET_TCP_COMPAT_H
 
 /* Legacy definitions used by AROSTCP - code using these needs updated */
 

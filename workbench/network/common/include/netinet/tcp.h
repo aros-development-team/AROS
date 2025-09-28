@@ -37,6 +37,7 @@
 #if __BSD_VISIBLE
 
 typedef	u_int32_t tcp_seq;
+typedef	u_int32_t tcp_cc;
 
 #define tcp6_seq	tcp_seq	/* for KAME src sync over BSD*'s */
 #define tcp6hdr		tcphdr	/* for KAME src sync over BSD*'s */
@@ -116,6 +117,18 @@ __tcp_set_flags(struct tcphdr *th, uint16_t flags)
 #define    TCPOLEN_SACK			8	/* 2*sizeof(tcp_seq) */
 #define TCPOPT_TIMESTAMP	8
 #define    TCPOLEN_TIMESTAMP		10
+#if defined(__AROS__) // TODO: Update...
+#define    TCPOPT_TSTAMP_HDR		\
+    (TCPOPT_NOP<<24|TCPOPT_NOP<<16|TCPOPT_TIMESTAMP<<8|TCPOLEN_TIMESTAMP)
+
+#define	TCPOPT_CC		11		/* CC options: RFC-1644 */
+#define TCPOPT_CCNEW		12
+#define TCPOPT_CCECHO		13
+#define	   TCPOLEN_CC			6
+#define	   TCPOLEN_CC_APPA		(TCPOLEN_CC+2)
+#define	   TCPOPT_CC_HDR(ccopt)		\
+    (TCPOPT_NOP<<24|TCPOPT_NOP<<16|(ccopt)<<8|TCPOLEN_CC)
+#endif /* defined(__AROS__) */
 #define    TCPOLEN_TSTAMP_APPA		(TCPOLEN_TIMESTAMP+2) /* appendix A */
 #define	TCPOPT_SIGNATURE	19		/* Keyed MD5: RFC 2385 */
 #define	   TCPOLEN_SIGNATURE		18

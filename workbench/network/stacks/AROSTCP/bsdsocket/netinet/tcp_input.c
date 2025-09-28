@@ -65,7 +65,7 @@
 struct	tcpiphdr tcp_saveti;
 #endif
 
-#include "compat.h"
+#include "tcp_compat.h"
 
 int	tcprexmtthresh = 3;
 #if defined(__AROS__)

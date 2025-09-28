@@ -63,8 +63,12 @@
 #include <sys/cdefs.h>
 #include <sys/_types.h>
 
+#if !defined(__AROS__)
 /* Required for byteorder(3) functions. */
 #include <machine/endian.h>
+#else
+#include <endian.h>
+#endif
 
 #define	INET_ADDRSTRLEN		16
 #define	INET6_ADDRSTRLEN	46
@@ -101,7 +105,11 @@ typedef	__size_t	size_t;
  * POSIX.1-2001.
  */
 #ifndef _SOCKLEN_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/socklen_t.h>
+#else
 typedef	__socklen_t	socklen_t;
+#endif
 #define	_SOCKLEN_T_DECLARED
 #endif
 
@@ -112,6 +120,7 @@ struct in_addr {
 #define	_STRUCT_IN_ADDR_DECLARED
 #endif
 
+#if !defined(__AROS__)
 /* XXX all new diversions!! argh!! */
 #if __BSD_VISIBLE
 #define	inet_addr		__inet_addr
@@ -172,6 +181,8 @@ __END_DECLS
 #define	ntohl(x)	__ntohl(x)
 #define	ntohs(x)	__ntohs(x)
 #endif
+
+#endif /* !defined(__AROS__) */
 
 #endif /* !_ARPA_INET_H_ */
 

@@ -89,6 +89,8 @@
 #include <netinet/in_protos.h>
 #include <kern/uipc_domain_protos.h>
 
+#include "ip_compat.h"
+
 #ifndef	IPFORWARDING
 #define	IPFORWARDING	0
 #endif

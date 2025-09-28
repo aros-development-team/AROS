@@ -69,7 +69,7 @@
 #include <netinet/tcp_debug.h>
 #endif
 
-#include "compat.h"
+#include "tcp_compat.h"
 
 /*
  * TCP protocol interface to socket abstraction.

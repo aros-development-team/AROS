@@ -90,10 +90,9 @@ extern int dn_expand(const u_char *, const u_char *, const u_char *, u_char *,
 extern int dn_comp(const u_char *, u_char *, int, u_char **, u_char **);
 extern int __dn_skipname(const u_char *, const u_char *);
 
-/* struct rrec; */
 extern int res_mkquery(struct SocketBase *,
 		       int, const char *, int, int, const char *,
-		       int, const struct rrec *, char *, int);
+		       int, const unsigned char *, char *, int);
 extern int res_querydomain(struct SocketBase *, const char *, const char *,
 			   int, int, u_char *, int);
 extern int res_send(struct SocketBase *, const char *, int, char *, int);

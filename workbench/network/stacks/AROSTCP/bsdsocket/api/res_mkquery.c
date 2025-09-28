@@ -56,7 +56,7 @@ int res_mkquery(struct SocketBase *libPtr,
 		int type,		/* class and type of query */
 		const char *data,	/* resource record data */
 		int datalen,		/* length of data */
-		const struct rrec *newrr, /* new rr for modify or append */
+		const unsigned char *newrr, /* new rr for modify or append */
 		char *buf,		/* buffer to put query */
 		int buflen)		/* size of buffer */
 {
@@ -77,7 +77,7 @@ int res_mkquery(struct SocketBase *libPtr,
 	hp = (HEADER *) buf;
 	hp->id = htons(++_res.id);
 	hp->opcode = op;
-	hp->pr = (_res.options & RES_PRIMARY) != 0;
+	hp->unused = (_res.options & RES_PRIMARY) != 0;
 	hp->rd = (_res.options & RES_RECURSE) != 0;
 	hp->rcode = NOERROR;
 	cp = buf + sizeof(HEADER);

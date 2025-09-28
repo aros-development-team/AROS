@@ -39,7 +39,11 @@
 
 #define	__BIND		19950621	/*%< (DEAD) interface version stamp. */
 
+#if !defined(__AROS__)
 #include <machine/endian.h>
+#else
+#include <endian.h>
+#endif
 
 #if !defined(_BYTE_ORDER) || \
     (_BYTE_ORDER != _BIG_ENDIAN && _BYTE_ORDER != _LITTLE_ENDIAN && \
