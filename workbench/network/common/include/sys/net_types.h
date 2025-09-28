@@ -23,6 +23,15 @@
 #ifndef SYS_TYPES_H
 #define	SYS_TYPES_H
 
+#if defined(__AROS__)
+#ifndef _AROS_TYPES_INO_T_H
+#include <aros/types/ino_t.h>
+#endif
+#ifndef _AROS_TYPES_OFF_T_H
+#include <aros/types/off_t.h>
+#endif
+#endif
+
 typedef	unsigned char	u_char;
 typedef	unsigned short	u_short;
 typedef	unsigned int	u_int;
@@ -30,8 +39,10 @@ typedef	unsigned long	u_long;
 typedef	unsigned short	ushort;		/* Sys V compatibility */
 typedef	char*           caddr_t;        /* core address */
 typedef unsigned long   dev_t;
+#if !defined(__AROS__)
 typedef unsigned long   ino_t;
 typedef long            off_t;
+#endif
 
 #ifndef BSDSOCKET_TYPES_H
 #include <bsdsocket/types.h>
