@@ -394,7 +394,7 @@ send:
                             opt[optlen++] = TCPOPT_NOP;
 
                             if (taop->tao_ccsent != 0 &&
-                                CC_GEQ(tp->cc_send, taop->tao_ccsent)) {
+                                SEQ_GEQ(tp->cc_send, taop->tao_ccsent)) {
                                     opt[optlen++] = TCPOPT_CC;
                                     taop->tao_ccsent = tp->cc_send;
                             } else {

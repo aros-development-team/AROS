@@ -65,6 +65,8 @@
 #include <netinet/tcp_debug.h>
 #endif
 
+#include "compat.h"
+
 #include <kern/kern_subr_protos.h>
 
 /* patchable/settable parameters for tcp */

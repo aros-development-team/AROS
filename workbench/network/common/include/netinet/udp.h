@@ -1,5 +1,8 @@
-/*
- * Copyright (c) 1982, 1986 Regents of the University of California.
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1982, 1986, 1993
+ *	The Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,11 +13,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -29,22 +28,43 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)udp.h	7.4 (Berkeley) 6/28/90
  */
 
-#ifndef UDP_H
-#define UDP_H
+#ifndef _NETINET_UDP_H_
+#define	_NETINET_UDP_H_
+
+#include <sys/types.h>
 
 /*
- * Udp protocol header.
+ * UDP protocol header.
  * Per RFC 768, September, 1981.
  */
 struct udphdr {
 	u_short	uh_sport;		/* source port */
 	u_short	uh_dport;		/* destination port */
-	short	uh_ulen;		/* udp length */
+	u_short	uh_ulen;		/* udp length */
 	u_short	uh_sum;			/* udp checksum */
-};
+} __packed;
 
-#endif /* !UDP_H */
+/*
+ * User-settable options (used with setsockopt).
+ */
+#define	UDP_ENCAP			1
+
+/* Start of reserved space for third-party user-settable options. */
+#define	UDP_VENDOR			SO_VENDOR
+
+/*
+ * UDP Encapsulation of IPsec Packets options.
+ */
+/* Encapsulation types. */
+#define	UDP_ENCAP_ESPINUDP_NON_IKE	1 /* draft-ietf-ipsec-nat-t-ike-00/01 */
+#define	UDP_ENCAP_ESPINUDP		2 /* RFC3948 */
+
+/* Default ESP in UDP encapsulation port. */
+#define	UDP_ENCAP_ESPINUDP_PORT		500
+
+/* Maximum UDP fragment size for ESP over UDP. */
+#define	UDP_ENCAP_ESPINUDP_MAXFRAGLEN	552
+
+#endif

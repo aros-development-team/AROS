@@ -1,6 +1,8 @@
-/*
- * Copyright (c) 1983 Regents of the University of California.
- * All rights reserved.
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1983, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -10,11 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -29,12 +27,12 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)tftp.h	5.4 (Berkeley) 4/3/91
  */
 
-#ifndef _TFTP_H_
-#define	_TFTP_H_
+#ifndef _ARPA_TFTP_H_
+#define	_ARPA_TFTP_H_
+
+#include <sys/cdefs.h>
 
 /*
  * Trivial File Transfer Protocol (IEN-133)
@@ -49,16 +47,17 @@
 #define	DATA	03			/* data packet */
 #define	ACK	04			/* acknowledgement */
 #define	ERROR	05			/* error code */
+#define	OACK	06			/* option acknowledgement */
 
-struct	tftphdr {
-	short	th_opcode;		/* packet type */
+struct tftphdr {
+	unsigned short	th_opcode;		/* packet type */
 	union {
-		short	tu_block;	/* block # */
-		short	tu_code;	/* error code */
+		unsigned short	tu_block;	/* block # */
+		unsigned short	tu_code;	/* error code */
 		char	tu_stuff[1];	/* request packet stuff */
-	} th_u;
+	} __packed th_u;
 	char	th_data[1];		/* data or error string */
-};
+} __packed;
 
 #define	th_block	th_u.tu_block
 #define	th_code		th_u.tu_code
@@ -76,5 +75,6 @@ struct	tftphdr {
 #define	EBADID		5		/* unknown transfer ID */
 #define	EEXISTS		6		/* file already exists */
 #define	ENOUSER		7		/* no such user */
+#define	EOPTNEG		8		/* option negotiation failed */
 
 #endif /* !_TFTP_H_ */

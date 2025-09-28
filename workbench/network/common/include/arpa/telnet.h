@@ -1,6 +1,8 @@
-/*
- * Copyright (c) 1983 Regents of the University of California.
- * All rights reserved.
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1983, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -10,11 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -29,12 +27,10 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)telnet.h	5.14 (Berkeley) 4/3/91
  */
 
-#ifndef _TELNET_H_
-#define	_TELNET_H_
+#ifndef _ARPA_TELNET_H_
+#define	_ARPA_TELNET_H_
 
 /*
  * Definitions for the TELNET protocol.
@@ -63,10 +59,11 @@
 #define SYNCH	242		/* for telfunc calls */
 
 #ifdef TELCMDS
-char *telcmds[] = {
+const char *telcmds[] = {
 	"EOF", "SUSP", "ABORT", "EOR",
 	"SE", "NOP", "DMARK", "BRK", "IP", "AO", "AYT", "EC",
-	"EL", "GA", "SB", "WILL", "WONT", "DO", "DONT", "IAC", 0,
+	"EL", "GA", "SB", "WILL", "WONT", "DO", "DONT", "IAC",
+	0
 };
 #else
 extern char *telcmds[];
@@ -74,7 +71,8 @@ extern char *telcmds[];
 
 #define	TELCMD_FIRST	xEOF
 #define	TELCMD_LAST	IAC
-#define	TELCMD_OK(x)	((x) <= TELCMD_LAST && (x) >= TELCMD_FIRST)
+#define	TELCMD_OK(x)	((unsigned int)(x) <= TELCMD_LAST && \
+			 (unsigned int)(x) >= TELCMD_FIRST)
 #define	TELCMD(x)	telcmds[(x)-TELCMD_FIRST]
 
 /* telnet options */
@@ -114,15 +112,20 @@ extern char *telcmds[];
 #define	TELOPT_LFLOW	33	/* remote flow control */
 #define TELOPT_LINEMODE	34	/* Linemode option */
 #define TELOPT_XDISPLOC	35	/* X Display Location */
-#define TELOPT_ENVIRON	36	/* Environment variables */
+#define TELOPT_OLD_ENVIRON 36	/* Old - Environment variables */
 #define	TELOPT_AUTHENTICATION 37/* Authenticate */
 #define	TELOPT_ENCRYPT	38	/* Encryption option */
+#define TELOPT_NEW_ENVIRON 39	/* New - Environment variables */
+#define	TELOPT_TN3270E	40	/* RFC2355 - TN3270 Enhancements */
+#define	TELOPT_CHARSET	42	/* RFC2066 - Charset */
+#define	TELOPT_COMPORT	44	/* RFC2217 - Com Port Control */
+#define	TELOPT_KERMIT	47	/* RFC2840 - Kermit */
 #define	TELOPT_EXOPL	255	/* extended-options-list */
 
 
-#define	NTELOPTS	(1+TELOPT_ENCRYPT)
+#define	NTELOPTS	(1+TELOPT_KERMIT)
 #ifdef TELOPTS
-char *telopts[NTELOPTS+1] = {
+const char *telopts[NTELOPTS+1] = {
 	"BINARY", "ECHO", "RCP", "SUPPRESS GO AHEAD", "NAME",
 	"STATUS", "TIMING MARK", "RCTE", "NAOL", "NAOP",
 	"NAOCRD", "NAOHTS", "NAOHTD", "NAOFFD", "NAOVTS",
@@ -131,16 +134,16 @@ char *telopts[NTELOPTS+1] = {
 	"SEND LOCATION", "TERMINAL TYPE", "END OF RECORD",
 	"TACACS UID", "OUTPUT MARKING", "TTYLOC",
 	"3270 REGIME", "X.3 PAD", "NAWS", "TSPEED", "LFLOW",
-	"LINEMODE", "XDISPLOC", "ENVIRON", "AUTHENTICATION",
-	"ENCRYPT",
-	0,
+	"LINEMODE", "XDISPLOC", "OLD-ENVIRON", "AUTHENTICATION",
+	"ENCRYPT", "NEW-ENVIRON", "TN3270E", "XAUTH", "CHARSET",
+	"RSP", "COM-PORT", "SLE", "STARTTLS", "KERMIT",
+	0
 };
-#endif
-
 #define	TELOPT_FIRST	TELOPT_BINARY
-#define	TELOPT_LAST	TELOPT_ENCRYPT
-#define	TELOPT_OK(x)	((x) <= TELOPT_LAST && (x) >= TELOPT_FIRST)
+#define	TELOPT_LAST	TELOPT_KERMIT
+#define	TELOPT_OK(x)	((unsigned int)(x) <= TELOPT_LAST)
 #define	TELOPT(x)	telopts[(x)-TELOPT_FIRST]
+#endif
 
 /* sub-option qualifiers */
 #define	TELQUAL_IS	0	/* option is... */
@@ -148,6 +151,11 @@ char *telopts[NTELOPTS+1] = {
 #define	TELQUAL_INFO	2	/* ENVIRON: informational version of IS */
 #define	TELQUAL_REPLY	2	/* AUTHENTICATION: client version of IS */
 #define	TELQUAL_NAME	3	/* AUTHENTICATION: client version of IS */
+
+#define	LFLOW_OFF		0	/* Disable remote flow control */
+#define	LFLOW_ON		1	/* Enable remote flow control */
+#define	LFLOW_RESTART_ANY	2	/* Restart output on any char */
+#define	LFLOW_RESTART_XON	3	/* Restart output only on XON */
 
 /*
  * LINEMODE suboptions
@@ -190,18 +198,35 @@ char *telopts[NTELOPTS+1] = {
 #define	SLC_XOFF	16
 #define	SLC_FORW1	17
 #define	SLC_FORW2	18
+#define SLC_MCL         19
+#define SLC_MCR         20
+#define SLC_MCWL        21
+#define SLC_MCWR        22
+#define SLC_MCBOL       23
+#define SLC_MCEOL       24
+#define SLC_INSRT       25
+#define SLC_OVER        26
+#define SLC_ECR         27
+#define SLC_EWR         28
+#define SLC_EBOL        29
+#define SLC_EEOL        30
 
-#define	NSLC		18
+#define	NSLC		30
 
 /*
- * For backwards compatability, we define SLC_NAMES to be the
+ * For backwards compatibility, we define SLC_NAMES to be the
  * list of names if SLC_NAMES is not defined.
  */
-#define	SLC_NAMELIST	"0", "SYNCH", "BRK", "IP", "AO", "AYT", "EOR", \
-			"ABORT", "EOF", "SUSP", "EC", "EL", "EW", "RP", \
-			"LNEXT", "XON", "XOFF", "FORW1", "FORW2", 0,
+#define	SLC_NAMELIST	"0", "SYNCH", "BRK", "IP", "AO", "AYT", "EOR",	\
+			"ABORT", "EOF", "SUSP", "EC", "EL", "EW", "RP",	\
+			"LNEXT", "XON", "XOFF", "FORW1", "FORW2",	\
+			"MCL", "MCR", "MCWL", "MCWR", "MCBOL",		\
+			"MCEOL", "INSRT", "OVER", "ECR", "EWR",		\
+			"EBOL", "EEOL",					\
+			0
+
 #ifdef	SLC_NAMES
-char *slc_names[] = {
+const char *slc_names[] = {
 	SLC_NAMELIST
 };
 #else
@@ -209,7 +234,7 @@ extern char *slc_names[];
 #define	SLC_NAMES SLC_NAMELIST
 #endif
 
-#define	SLC_NAME_OK(x)	((x) >= 0 && (x) < NSLC)
+#define	SLC_NAME_OK(x)	((unsigned int)(x) <= NSLC)
 #define SLC_NAME(x)	slc_names[x]
 
 #define	SLC_NOSUPPORT	0
@@ -226,9 +251,12 @@ extern char *slc_names[];
 #define	SLC_FLUSHIN	0x40
 #define	SLC_FLUSHOUT	0x20
 
-#define	ENV_VALUE	0
-#define	ENV_VAR		1
+#define	OLD_ENV_VAR	1
+#define	OLD_ENV_VALUE	0
+#define	NEW_ENV_VAR	0
+#define	NEW_ENV_VALUE	1
 #define	ENV_ESC		2
+#define ENV_USERVAR	3
 
 /*
  * AUTHENTICATION suboptions
@@ -253,19 +281,21 @@ extern char *slc_names[];
 #define	AUTHTYPE_KERBEROS_V5	2
 #define	AUTHTYPE_SPX		3
 #define	AUTHTYPE_MINK		4
-#define	AUTHTYPE_CNT		5
+#define	AUTHTYPE_SRA		6
+#define	AUTHTYPE_CNT		7
 
 #define	AUTHTYPE_TEST		99
 
 #ifdef	AUTH_NAMES
-char *authtype_names[] = {
-	"NULL", "KERBEROS_V4", "KERBEROS_V5", "SPX", "MINK", 0,
+const char *authtype_names[] = {
+	"NULL", "KERBEROS_V4", "KERBEROS_V5", "SPX", "MINK", NULL, "SRA",
+	0
 };
 #else
 extern char *authtype_names[];
 #endif
 
-#define	AUTHTYPE_NAME_OK(x)	((x) >= 0 && (x) < AUTHTYPE_CNT)
+#define	AUTHTYPE_NAME_OK(x)	((unsigned int)(x) < AUTHTYPE_CNT)
 #define	AUTHTYPE_NAME(x)	authtype_names[x]
 
 /*
@@ -277,7 +307,7 @@ extern char *authtype_names[];
 #define	ENCRYPT_START		3	/* Am starting to send encrypted */
 #define	ENCRYPT_END		4	/* Am ending encrypted */
 #define	ENCRYPT_REQSTART	5	/* Request you start encrypting */
-#define	ENCRYPT_REQEND		6	/* Request you send encrypting */
+#define	ENCRYPT_REQEND		6	/* Request you end encrypting */
 #define	ENCRYPT_ENC_KEYID	7
 #define	ENCRYPT_DEC_KEYID	8
 #define	ENCRYPT_CNT		9
@@ -288,13 +318,14 @@ extern char *authtype_names[];
 #define	ENCTYPE_CNT		3
 
 #ifdef	ENCRYPT_NAMES
-char *encrypt_names[] = {
+const char *encrypt_names[] = {
 	"IS", "SUPPORT", "REPLY", "START", "END",
 	"REQUEST-START", "REQUEST-END", "ENC-KEYID", "DEC-KEYID",
-	0,
+	0
 };
-char *enctype_names[] = {
-	"ANY", "DES_CFB64",  "DES_OFB64",  0,
+const char *enctype_names[] = {
+	"ANY", "DES_CFB64",  "DES_OFB64",
+	0
 };
 #else
 extern char *encrypt_names[];
@@ -302,10 +333,10 @@ extern char *enctype_names[];
 #endif
 
 
-#define	ENCRYPT_NAME_OK(x)	((x) >= 0 && (x) < ENCRYPT_CNT)
+#define	ENCRYPT_NAME_OK(x)	((unsigned int)(x) < ENCRYPT_CNT)
 #define	ENCRYPT_NAME(x)		encrypt_names[x]
 
-#define	ENCTYPE_NAME_OK(x)	((x) >= 0 && (x) < ENCTYPE_CNT)
+#define	ENCTYPE_NAME_OK(x)	((unsigned int)(x) < ENCTYPE_CNT)
 #define	ENCTYPE_NAME(x)		enctype_names[x]
 
 #endif /* !_TELNET_H_ */

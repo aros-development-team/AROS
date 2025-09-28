@@ -1,4 +1,6 @@
 /*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 1982, 1986, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -10,7 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -25,17 +27,26 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)un.h	8.3 (Berkeley) 2/19/95
- * $FreeBSD: src/sys/sys/un.h,v 1.29 2005/04/13 00:01:46 mdodd Exp $
  */
 
 #ifndef _SYS_UN_H_
 #define _SYS_UN_H_
 
-#include <aros/system.h>
+#include <sys/cdefs.h>
+#include <sys/_types.h>
 
-typedef	unsigned AROS_8BIT_TYPE	sa_family_t;
+#ifndef _SA_FAMILY_T_DECLARED
+typedef	__sa_family_t	sa_family_t;
+#define	_SA_FAMILY_T_DECLARED
+#endif
+
+/*
+ * Historically, (struct sockaddr) needed to fit inside an mbuf.
+ * For this reason, UNIX domain sockets were therefore limited to
+ * 104 bytes. While this limit is no longer necessary, it is kept for
+ * binary compatibility reasons.
+ */
+#define	SUNPATHLEN	104
 
 /*
  * Definitions for UNIX IPC domain.
@@ -43,15 +54,16 @@ typedef	unsigned AROS_8BIT_TYPE	sa_family_t;
 struct sockaddr_un {
 	unsigned char	sun_len;	/* sockaddr len including null */
 	sa_family_t	sun_family;	/* AF_UNIX */
-	char	sun_path[104];		/* path name (gag) */
+	char	sun_path[SUNPATHLEN];	/* path name (gag) */
 };
 
 #if __BSD_VISIBLE
 
 /* Socket options. */
-#define	LOCAL_PEERCRED		0x001	/* retrieve peer credentials */
-#define	LOCAL_CREDS		0x002	/* pass credentials to receiver */
-#define	LOCAL_CONNWAIT		0x004	/* connects block until accepted */
+#define	LOCAL_PEERCRED		    1	/* retrieve peer credentials */
+#define	LOCAL_CREDS		        2	/* pass credentials to receiver */
+#define	LOCAL_CREDS_PERSISTENT	3	/* pass credentials to receiver */
+#define	LOCAL_CONNWAIT		    4	/* connects block until accepted */
 
 #ifdef _KERNEL
 struct mbuf;

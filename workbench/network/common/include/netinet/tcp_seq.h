@@ -1,5 +1,7 @@
-/*
- * Copyright (c) 1982, 1986, 1993
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1982, 1986, 1993, 1995
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,11 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -29,9 +27,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)tcp_seq.h	8.1 (Berkeley) 6/10/93
- * $Id$
  */
 
 #ifndef _NETINET_TCP_SEQ_H_
@@ -45,23 +40,23 @@
 #define	SEQ_LEQ(a,b)	((int)((a)-(b)) <= 0)
 #define	SEQ_GT(a,b)	((int)((a)-(b)) > 0)
 #define	SEQ_GEQ(a,b)	((int)((a)-(b)) >= 0)
+#define	SEQ_SUB(a,b)	((int)((a)-(b)))
+
+#define	SEQ_MIN(a, b)	((SEQ_LT(a, b)) ? (a) : (b))
+#define	SEQ_MAX(a, b)	((SEQ_GT(a, b)) ? (a) : (b))
+
+#define	WIN_LT(a,b)	(ntohs(a) < ntohs(b))
+#define	WIN_LEQ(a,b)	(ntohs(a) <= ntohs(b))
+#define	WIN_GT(a,b)	(ntohs(a) > ntohs(b))
+#define	WIN_GEQ(a,b)	(ntohs(a) >= ntohs(b))
+
+#define	WIN_MIN(a, b)	((WIN_LT(a, b)) ? (a) : (b))
+#define	WIN_MAX(a, b)	((WIN_GT(a, b)) ? (a) : (b))
 
 /* for modulo comparisons of timestamps */
 #define TSTMP_LT(a,b)	((int)((a)-(b)) < 0)
+#define TSTMP_GT(a,b)	((int)((a)-(b)) > 0)
 #define TSTMP_GEQ(a,b)	((int)((a)-(b)) >= 0)
-
-/*
- * TCP connection counts are 32 bit integers operated
- * on with modular arithmetic.  These macros can be
- * used to compare such integers.
- */
-#define	CC_LT(a,b)	((int)((a)-(b)) < 0)
-#define	CC_LEQ(a,b)	((int)((a)-(b)) <= 0)
-#define	CC_GT(a,b)	((int)((a)-(b)) > 0)
-#define	CC_GEQ(a,b)	((int)((a)-(b)) >= 0)
-
-/* Macro to increment a CC: skip 0 which has a special meaning */
-#define CC_INC(c)	(++(c) == 0 ? ++(c) : (c))
 
 /*
  * Macros to initialize tcp sequence numbers for
@@ -73,15 +68,35 @@
 
 #define	tcp_sendseqinit(tp) \
 	(tp)->snd_una = (tp)->snd_nxt = (tp)->snd_max = (tp)->snd_up = \
-	    (tp)->iss
+	    (tp)->snd_recover = (tp)->iss
 
-#define	TCP_ISSINCR	(125*1024)	/* increment for tcp_iss each second */
+#ifdef _KERNEL
+/*
+ * Clock macros for RFC 1323 timestamps.
+ */
+#define	TCP_TS_TO_TICKS(_t)	((_t) * hz / 1000)
 
-#define TCP_PAWS_IDLE	(24 * 24 * 60 * 60 * PR_SLOWHZ)
-					/* timestamp wrap-around time */
+/* Timestamp wrap-around time, 24 days. */
+#define TCP_PAWS_IDLE	(24 * 24 * 60 * 60 * 1000)
 
-#ifdef KERNEL
-extern int	tcp_iss;		/* tcp initial send seq # */
-extern int	tcp_ccgen;		/* global connection count */
+#if !defined(__AROS__)
+/*
+ * tcp_ts_getticks() in ms, should be 1ms < x < 1000ms according to RFC 1323.
+ * We always use 1ms granularity independent of hz.
+ */
+static __inline uint32_t
+tcp_ts_getticks(void)
+{
+	struct timeval tv;
+
+	/*
+	 * getmicrouptime() should be good enough for any 1-1000ms granularity.
+	 * Do not use getmicrotime() here as it might break nfsroot/tcp.
+	 */
+	getmicrouptime(&tv);
+	return (tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
 #endif
-#endif
+#endif /* _KERNEL */
+
+#endif /* _NETINET_TCP_SEQ_H_ */

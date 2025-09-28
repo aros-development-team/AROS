@@ -67,6 +67,9 @@ int	tcp_keepidle = TCPTV_KEEP_IDLE;
 int	tcp_keepintvl = TCPTV_KEEPINTVL;
 int	tcp_maxidle;
 #endif /* TUBA_INCLUDE */
+
+#include "compat.h"
+
 /*
  * Fast timeout routine for processing delayed acks
  */

@@ -69,6 +69,8 @@
 #include <netinet/tcp_debug.h>
 #endif
 
+#include "compat.h"
+
 /*
  * TCP protocol interface to socket abstraction.
  */

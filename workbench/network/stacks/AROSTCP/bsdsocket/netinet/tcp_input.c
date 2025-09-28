@@ -65,6 +65,8 @@
 struct	tcpiphdr tcp_saveti;
 #endif
 
+#include "compat.h"
+
 int	tcprexmtthresh = 3;
 #if defined(__AROS__)
 int	tcp_iss;
@@ -685,7 +687,7 @@ findpcb:
 		 * - otherwise do a normal 3-way handshake.
 		 */
 		if ((to.to_flag & TOF_CC) != 0) {
-		    if (taop->tao_cc != 0 && CC_GT(to.to_cc, taop->tao_cc)) {
+		    if (taop->tao_cc != 0 && SEQ_GT(to.to_cc, taop->tao_cc)) {
 			taop->tao_cc = to.to_cc;
 			tp->t_state = TCPS_ESTABLISHED;
 
@@ -839,7 +841,7 @@ findpcb:
 			tp->t_timer[TCPT_REXMT] = 0;
 			if (to.to_flag & TOF_CC) {
 				if (taop->tao_cc != 0 &&
-				    CC_GT(to.to_cc, taop->tao_cc)) {
+				    SEQ_GT(to.to_cc, taop->tao_cc)) {
 					/*
 					 * update cache and make transition:
 					 *        SYN-SENT -> ESTABLISHED*
@@ -910,7 +912,7 @@ trimthenstep6:
 			if (tp->t_state == TCPS_TIME_WAIT &&
 					tp->t_duration > TCPTV_MSL)
 				goto dropwithreset;
-			if (CC_GT(to.to_cc, tp->cc_recv)) {
+			if (SEQ_GT(to.to_cc, tp->cc_recv)) {
 				tp = tcp_close(tp);
 				goto findpcb;
 			}
