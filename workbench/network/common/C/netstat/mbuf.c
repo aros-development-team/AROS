@@ -48,7 +48,9 @@ static char sccsid[] = "@(#)mbuf.c	8.1 (Berkeley) 6/6/93";
 #include "netstat.h"
 
 #define	YES	1
-#if !defined(__AROS__)
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+# include <stdbool.h>
+#else
 typedef int bool;
 #endif
 
