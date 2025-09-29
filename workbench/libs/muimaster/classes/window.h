@@ -375,6 +375,8 @@ struct MUI_RenderInfo
 
     /* the following stuff is private */
     struct ColorMap *mri_Colormap;
+    UWORD mri_Reserved1;
+    UWORD mri_Reserved2;
     UWORD mri_PensStorage[MPEN_COUNT];  /* storage for pens, mri_Pens points
                                          * to here */
 
