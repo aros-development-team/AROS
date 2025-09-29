@@ -605,8 +605,10 @@ enum
     MUIV_Frame_Slider,
     MUIV_Frame_Knob,
     MUIV_Frame_Drag,
+    /* Values reserved for existing MUI4/MUI5 types*/
     MUIV_Frame_Register = 21,
-    MUIV_Frame_Rounded,
+    /* Values reserved for existing MUI4/MUI5 types*/
+    MUIV_Frame_Rounded = 30,
     MUIV_Frame_Count
 };
 
