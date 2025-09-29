@@ -63,62 +63,12 @@
 #include <sys/cdefs.h>
 #include <sys/_types.h>
 
-#if !defined(__AROS__)
-/* Required for byteorder(3) functions. */
-#include <machine/endian.h>
-#else
-#include <endian.h>
+#ifndef IN_H
+#include <netinet/in.h>
 #endif
 
 #define	INET_ADDRSTRLEN		16
 #define	INET6_ADDRSTRLEN	46
-
-#ifndef _UINT16_T_DECLARED
-typedef	__uint16_t	uint16_t;
-#define	_UINT16_T_DECLARED
-#endif
-
-#ifndef _UINT32_T_DECLARED
-typedef	__uint32_t	uint32_t;
-#define	_UINT32_T_DECLARED
-#endif
-
-#ifndef _IN_ADDR_T_DECLARED
-typedef	uint32_t	in_addr_t;
-#define	_IN_ADDR_T_DECLARED
-#endif
-
-#ifndef _IN_PORT_T_DECLARED
-typedef	uint16_t	in_port_t;
-#define	_IN_PORT_T_DECLARED
-#endif
-
-#if __BSD_VISIBLE
-#ifndef _SIZE_T_DECLARED
-typedef	__size_t	size_t;
-#define	_SIZE_T_DECLARED
-#endif
-#endif
-
-/*
- * XXX socklen_t is used by a POSIX.1-2001 interface, but not required by
- * POSIX.1-2001.
- */
-#ifndef _SOCKLEN_T_DECLARED
-#if defined(__AROS__)
-#include <aros/types/socklen_t.h>
-#else
-typedef	__socklen_t	socklen_t;
-#endif
-#define	_SOCKLEN_T_DECLARED
-#endif
-
-#ifndef _STRUCT_IN_ADDR_DECLARED
-struct in_addr {
-	in_addr_t s_addr;
-};
-#define	_STRUCT_IN_ADDR_DECLARED
-#endif
 
 #if !defined(__AROS__)
 /* XXX all new diversions!! argh!! */
@@ -143,13 +93,6 @@ struct in_addr {
 #endif /* __BSD_VISIBLE */
 
 __BEGIN_DECLS
-#ifndef _BYTEORDER_PROTOTYPED
-#define	_BYTEORDER_PROTOTYPED
-uint32_t	 htonl(uint32_t);
-uint16_t	 htons(uint16_t);
-uint32_t	 ntohl(uint32_t);
-uint16_t	 ntohs(uint16_t);
-#endif
 
 in_addr_t	 inet_addr(const char *);
 /*const*/ char	*inet_ntoa(struct in_addr);
@@ -173,14 +116,6 @@ unsigned	 inet_nsap_addr(const char *, unsigned char *, int);
 char		*inet_nsap_ntoa(int, const unsigned char *, char *);
 #endif /* __BSD_VISIBLE */
 __END_DECLS
-
-#ifndef _BYTEORDER_FUNC_DEFINED
-#define	_BYTEORDER_FUNC_DEFINED
-#define	htonl(x)	__htonl(x)
-#define	htons(x)	__htons(x)
-#define	ntohl(x)	__ntohl(x)
-#define	ntohs(x)	__ntohs(x)
-#endif
 
 #endif /* !defined(__AROS__) */
 
