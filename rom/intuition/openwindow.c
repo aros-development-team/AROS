@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -623,7 +623,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     if (nw.Type == WBENCHSCREEN)
     {
-        nw.Screen = LockPubScreen("Workbench");
+        if (GetPrivIBase(IntuitionBase)->pubScrGlobalMode & SHANGHAI)
+            nw.Screen = LockPubScreen(NULL);
+        else
+            nw.Screen = LockPubScreen("Workbench");
         if (nw.Screen)
         {
             moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
@@ -735,8 +738,8 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     if (nw.Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET)))
     {
-        /* this is a hack. the correct way to "correct" (increase if necessary)
-           the w->Border??? items would be to check all GACT_???BORDER gadgets
+        /* this is a hack. the correct way to adjust (increase if necessary)
+           the w->Border??? values would be to check all GACT_???BORDER gadgets
            (inclusive sysgadgets which are GACT_????BORDER gadgets as well) in
            nw.FirstGadget (or WA_Gadgets tag) and all sysgadgets and then
            make sure that each window border is big enough so that none of these
@@ -1179,7 +1182,13 @@ moreFlags |= (name); else moreFlags &= ~(name)
         ((struct IntWindow *)w)->CustomShape = FALSE;
     }
 #endif
-    
+    if (GetPrivIBase(IntuitionBase)->pubScrGlobalMode & POPPUBSCREEN) {
+        if ((nw.Type == PUBLICSCREEN) ||
+            ((GetPrivIBase(IntuitionBase)->pubScrGlobalMode & SHANGHAI) && (nw.Type == WBENCHSCREEN))) {
+            ScreenToFront(w->WScreen);
+        }
+    }
+
     goto exit;
 
 failexit:
