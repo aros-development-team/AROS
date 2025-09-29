@@ -57,10 +57,6 @@
     (MUIB_MUI | 0x0042c555)       /* MUI: V11 */
 #define MUIM_UnknownDropDestination \
     (MUIB_MUI | 0x00425550)       /* ZUNE */
-#define MUIM_CreateFrameClippingRegion \
-    (MUIB_MUI | 0x00425551)       /* ZUNE */
-#define MUIM_QueryFrameCharacteristics \
-    (MUIB_MUI | 0x00425552)       /* ZUNE */
 #define MUIM_DragFinish \
     (MUIB_MUI | 0x004251f0)       /* MUI: V11 */
 #define MUIM_DragQuery \
@@ -297,6 +293,10 @@ struct MUIP_Show
     (MUIB_Area | 0x00000005)    /* PRIV */
 #define MUIM_DrawBackgroundBuffered /* PRIV */ \
     (MUIB_Area | 0x00000006)    /* PRIV */
+#define MUIM_CreateFrameClippingRegion \
+    (MUIB_Area | 0x00000007)
+#define MUIM_QueryFrameCharacteristics \
+    (MUIB_Area | 0x00000008)
 
 struct MUIP_Layout
 {
