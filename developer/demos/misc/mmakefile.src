@@ -1,0 +1,16 @@
+#
+#   Makefile for AROS intuition.library tests
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    globe \
+    jellyfish  \
+    rectangles
+
+EXEDIR := $(AROSDIR)/Demos/misc
+
+%build_progs mmake=demos-misc \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
