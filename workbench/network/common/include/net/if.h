@@ -61,10 +61,8 @@
  * routing and gateway routines maintaining information used to locate
  * interfaces.  These routines live in the files if.c and route.c
  */
+ 
 #include <utility/tagitem.h>
-#ifndef _TIME_ /*  XXX fast fix for SNMP, going away soon */
-#include <sys/time.h>
-#endif
 #include <sys/cdefs.h>
 
 #ifndef KERNEL

@@ -155,6 +155,10 @@ static char sccsid[] = "@(#)route.c	5.35 (Berkeley) 6/27/91";
 #define ioctl IoctlSocket
 /*#include <clib/netlib_protos.h>*/
 
+#ifndef AF_NS
+#define AF_NS AF_NETBIOS
+#endif
+
 struct keytab {
 	char	*kt_cp;
 	int	kt_i;

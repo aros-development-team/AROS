@@ -75,6 +75,14 @@
          (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
    })
 
+#define FlipQuad(A) \
+   ({ \
+      uint64_t _FlipQuad_A = (A); \
+      uint32_t _lo = (uint32_t)(_FlipQuad_A & 0xFFFFFFFFULL); \
+      uint32_t _hi = (uint32_t)(_FlipQuad_A >> 32); \
+      ((uint64_t)FlipLong(_lo) << 32) | (uint64_t)FlipLong(_hi); \
+   })
+
 #if _BYTE_ORDER == _BIG_ENDIAN
 
 #define BEWord(A) \
@@ -83,11 +91,17 @@
 #define BELong(A) \
    (A)
 
+#define BEQuad(A) \
+   (A)
+
 #define LEWord(A) \
    FlipWord(A)
 
 #define LELong(A) \
    FlipLong(A)
+
+#define LEQuad(A) \
+   FlipQuad(A)
 
 #elif _BYTE_ORDER == _LITTLE_ENDIAN
 
@@ -97,10 +111,16 @@
 #define BELong(A) \
    FlipLong(A)
 
+#define BEQuad(A) \
+   FlipQuad(A)
+
 #define LEWord(A) \
    (A)
 
 #define LELong(A) \
+   (A)
+
+#define LEQuad(A) \
    (A)
 
 #else
@@ -115,11 +135,17 @@
 #define MakeBELong(A) \
    BELong(A)
 
+#define MakeBEQuad(A) \
+   BEQuad(A)
+
 #define MakeLEWord(A) \
    LEWord(A)
 
 #define MakeLELong(A) \
    LELong(A)
+
+#define MakeLEQuad(A) \
+   LEQuad(A)
 
 /*
  * Macros for network/external number representation conversion.
@@ -135,6 +161,14 @@
 #define	NTOHS(x)	((x) = ntohs(x))
 #define	HTONL(x)	((x) = htonl(x))
 #define	HTONS(x)	((x) = htons(x))
+#endif
+
+#ifndef ntohll
+#define ntohll(x) BEQuad(x)
+#endif
+
+#ifndef htonll
+#define htonll(x) MakeBEQuad(x)
 #endif
 
 /*

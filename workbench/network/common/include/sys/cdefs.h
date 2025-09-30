@@ -86,6 +86,15 @@
     Other forms of UNIX might have some more trouble.
 *****************************************************************************/
 
+#ifdef _GNU_SOURCE
+/* GNU source implies POSIX.1-2008, XSI 700, plus BSD/GNU extensions */
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#define __BSD_VISIBLE   1
+#endif
+
 /*-
  * POSIX.1 requires that the macros we test be defined before any standard
  * header file is included.
@@ -201,5 +210,11 @@
         __asm__(".equ "  #alias ", " #sym)
 
 #include <endian.h>
+
+#ifndef _TIME_ /*  XXX fast fix for SNMP, going away soon */
+#include <sys/time.h>
+#endif
+
+#define _ALIGN AROS_ALIGN
 
 #endif /* _SYS_CDEFS_H_ */

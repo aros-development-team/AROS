@@ -66,6 +66,9 @@
 
 #if defined(__AROS__)
 #include <fcntl.h>
+#ifndef AF_NS
+#define AF_NS AF_NETBIOS
+#endif
 #endif
 
 #include <proto/miami.h>

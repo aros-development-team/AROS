@@ -1147,20 +1147,7 @@ struct sctpstat {
 #define SCTP_STAT_DECR_GAUGE32(_x) SCTP_STAT_DECR(_x)
 
 /***********************************/
-/* And something for us old timers */
-/***********************************/
-
-#ifndef ntohll
-#include <sys/endian.h>
-#define ntohll(x) be64toh(x)
-#endif
-
-#ifndef htonll
-#include <sys/endian.h>
-#define htonll(x) htobe64(x)
-#endif
-/***********************************/
-
+#if !defined(__AROS__)
 struct xsctp_inpcb {
 	uint32_t last;
 	uint32_t flags;
@@ -1239,6 +1226,7 @@ struct xsctp_raddr {
 	uint16_t state;
 	uint32_t extra_padding[29];	/* future */
 };
+#endif
 
 #define SCTP_MAX_LOGGING_SIZE 30000
 #define SCTP_TRACE_PARAMS 6	/* This number MUST be even   */

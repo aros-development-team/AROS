@@ -2,7 +2,7 @@
 #define DEFINES_MIAMI_PROTOS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -263,7 +263,7 @@
 
 #define __getaddrinfo_WB(__MiamiBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(LONG, getaddrinfo, \
-                  AROS_LCA(char *, (__arg1), A0), \
+                  AROS_LCA(const char *, (__arg1), A0), \
                   AROS_LCA(char *, (__arg2), A1), \
                   AROS_LCA(struct addrinfo *, (__arg3), A2), \
                   AROS_LCA(struct addrinfo **, (__arg4), A3), \

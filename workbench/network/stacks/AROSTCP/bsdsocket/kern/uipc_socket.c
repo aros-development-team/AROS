@@ -105,6 +105,10 @@
 
 #include <sys/uio.h>
 
+#ifndef SO_EVENTMASK
+#define SO_EVENTMASK	0x2001
+#endif
+
 /*
  * Socket operation routines.
  * These routines are called by the routines in

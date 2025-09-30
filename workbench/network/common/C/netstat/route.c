@@ -69,6 +69,10 @@ static const char rcsid[] =
 #include <time.h>
 #include "netstat.h"
 
+#ifndef AF_NS
+#define AF_NS AF_NETBIOS
+#endif
+
 #define kget(p, d) (kread((u_long)(p), (char *)&(d), sizeof (d)))
 
 /*
