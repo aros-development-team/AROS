@@ -250,26 +250,28 @@ void GetDataStreamFromFormat(CONST_STRPTR format, va_list args,
 #define _GNU_SOURCE
 #include <aros/posixc/alloca.h>
 
-#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                               \
-    va_list _args;                      	                                        \
-    RAWARG  _data;  				                                        \
-    ULONG  _datasize = 0;                                                               \
-    ULONG * _index; 				                                        \
-    ULONG  _indexsize = 0;                                                              \
-					                                                \
-    va_start(_args, last);                                                              \
-    GetDataStreamFromFormat (format, _args, NULL, NULL, NULL, &_indexsize);             \
-    _index = (ULONG *)alloca(_indexsize);                                               \
-    GetDataStreamFromFormat (format, _args, NULL, &_datasize, _index, &_indexsize);     \
-    _data = (RAWARG)alloca(_datasize);                                                  \
-    GetDataStreamFromFormat (format, _args, _data, &_datasize, _index, &_indexsize);    \
+#   define AROS_SLOWSTACKFORMAT_PRE_USING(last, format) {                                       \
+    va_list _args;                      	                                                    \
+    RAWARG  _data = 0;   			                                                            \
+    ULONG  _datasize = 0;                                                                       \
+    ULONG * _index; 				                                                            \
+    ULONG  _indexsize = 0;                                                                      \
+                                                                                                \
+    va_start(_args, last);                                                                      \
+    GetDataStreamFromFormat (format, _args, NULL, NULL, NULL, &_indexsize);                     \
+    if ((_indexsize > 0) && (_index = (ULONG *)alloca(_indexsize)) != NULL) {                   \
+        GetDataStreamFromFormat (format, _args, NULL, &_datasize, _index, &_indexsize);         \
+        if ((_data = (RAWARG)alloca(_datasize)) != NULL) {                                      \
+            GetDataStreamFromFormat (format, _args, _data, &_datasize, _index, &_indexsize);    \
+        } \
+    }                                                                                           \
     va_end (_args);
 
-#   define AROS_SLOWSTACKFORMAT_PRE(format)                                             \
+#   define AROS_SLOWSTACKFORMAT_PRE(format)                                                     \
         AROS_SLOWSTACKFORMAT_PRE_USING(format, format)
-#   define AROS_SLOWSTACKFORMAT_ARG(format)                                             \
+#   define AROS_SLOWSTACKFORMAT_ARG(format)                                                     \
         _data
-#   define AROS_SLOWSTACKFORMAT_POST(format)		                                \
+#   define AROS_SLOWSTACKFORMAT_POST(format)		                                            \
     }
 #else
 /* We 'mark' functions that use these macros as non-inlineable
