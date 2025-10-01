@@ -13,7 +13,7 @@ NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE
 USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := -D_GNU_SOURCE=1 -D__BSD_VISIBLE=1 -DHAVE_USLEEP
 
-##MM- workbench-network-common-c : workbench-network-common-c-traceroute
+#MM- workbench-network-common-c : workbench-network-common-c-traceroute
 #MM workbench-network-common-c-traceroute : \
 #MM     network-includes \
 #MM     arostcp-linklibs-netlib \
