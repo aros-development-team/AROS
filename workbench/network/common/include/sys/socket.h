@@ -106,7 +106,11 @@ typedef	__socklen_t	socklen_t;
 #endif
 
 #ifndef _SSIZE_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/ssize_t.h>
+#else
 typedef	__ssize_t	ssize_t;
+#endif
 #define	_SSIZE_T_DECLARED
 #endif
 
