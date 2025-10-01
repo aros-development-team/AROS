@@ -1,9 +1,14 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
 #include <errno.h>
+
+#define __NOBLIBBASE__
+
+#include "__posixc_intbase.h"
+#include "__optionallibs.h"
 
 /*****************************************************************************
 
@@ -17,28 +22,35 @@
         void)
 
 /*  FUNCTION
+        Operates on the user database via netinfo.device
+        interface, Providing a convenient unix-compatible interface to
+        the password unit of the netinfo.device.
 
     INPUTS
 
     RESULT
 
     NOTES
-        Not implemented.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        usergroup.library/setpwent()
 
     INTERNALS
+        Implementation handled by usergroup.library, if available.
 
 ******************************************************************************/
 {
-    /* TODO: Implement setpwent() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
-    errno = ENOSYS;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
+    if (__usergroup_available(PosixCBase)) {
+        AROS_LC0NR(void, setpwent,
+            struct Library *, PosixCBase->PosixCUserGroupBase, 21, Usergroup);
+    } else
+        errno = ENOSYS;
     return;
 }
-

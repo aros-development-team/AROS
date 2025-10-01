@@ -41,3 +41,26 @@ int __intuition_available(struct StdCIntBase *StdCBase)
 
     return StdCBase->StdCIntuitionBase != NULL;
 }
+
+int __optionallibs_close(struct StdCIntBase *StdCBase)
+{
+    if (StdCBase->StdCIntuitionBase) {
+        CloseLibrary((struct Library *)StdCBase->StdCIntuitionBase);
+        StdCBase->StdCIntuitionBase = NULL;
+    }
+    if (StdCBase->StdCLocaleBase) {
+        CloseLibrary((struct Library *)StdCBase->StdCLocaleBase);
+        StdCBase->StdCLocaleBase = NULL;
+    }
+}
+
+static int __close_stdcoptional(struct StdCIntBase *StdCBase)
+{
+    // FIXME is this 0 or 1? Does AROS decrease it before calling libClose?
+    if(StdCBase->StdCBase.lib.lib_OpenCnt == 0) {
+        return __optionallibs_close(StdCBase);
+    }
+    return(TRUE);
+}
+
+ADD2CLOSELIB(__close_stdcoptional, 0)

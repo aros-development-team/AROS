@@ -10,6 +10,7 @@ POSIXC := \
     __fseeko \
     __ftello \
     __assert \
+    __optionallibs \
     __posixc_env \
     __posixc_init \
     __posixc_nixmain \

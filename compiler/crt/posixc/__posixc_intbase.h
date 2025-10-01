@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2025, The AROS Development Team. All rights reserved.
 
     This file defines the private part of PosixCBase.
     This should only be used internally in posixc.library code so
@@ -29,6 +29,9 @@ struct vfork_data;
 struct PosixCIntBase
 {
     struct PosixCBase PosixCBase;
+
+    /* optional libs */
+    struct Library           *PosixCUserGroupBase;
 
     /* common */
     APTR internalpool;

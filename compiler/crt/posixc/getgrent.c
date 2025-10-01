@@ -1,9 +1,14 @@
 /*
-    Copyright (C) 2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
 #include <errno.h>
+
+#define __NOBLIBBASE__
+
+#include "__posixc_intbase.h"
+#include "__optionallibs.h"
 
 /*****************************************************************************
 
@@ -17,28 +22,36 @@
         void)
 
 /*  FUNCTION
+        Operates on the group database via netinfo.device
+        interface, Providing a convenient unix-compatible interface to
+        the group unit of the netinfo.device.
 
     INPUTS
 
     RESULT
 
     NOTES
-        Not implemented.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        usergroup.library/endgrent()
 
     INTERNALS
+        Implementation handled by usergroup.library, if available.
 
 ******************************************************************************/
 {
-    /* TODO: Implement getgrent() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
-    errno = ENOSYS;
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
+    if (__usergroup_available(PosixCBase)) {
+        return AROS_LC0(struct group *, getgrent,
+            struct Library *, PosixCBase->PosixCUserGroupBase, 27, Usergroup);
+    }
+    errno = ENOSYS;
     return NULL;
 }
 
