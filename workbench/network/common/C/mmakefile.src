@@ -12,16 +12,23 @@ USER_CPPFLAGS := \
 #MM- workbench-network-common : workbench-network-common-c
 #MM- workbench-network-common-c : \
 #MM     workbench-network-common-c-base \
-#MM     workbench-network-common-c-miami
+#MM     workbench-network-common-c-miami \
+#MM     workbench-network-common-c-usergroup
 #MM- workbench-network-common-c-quick : \
 #MM     workbench-network-common-c-base-quick \
-#MM     workbench-network-common-c-miami-quick
+#MM     workbench-network-common-c-miami-quick \
+#MM     workbench-network-common-c-usergroup-quick
 
 #MM workbench-network-common-c-base : \
 #MM     network-includes \
 #MM     arostcp-linklibs-netlib
 #MM workbench-network-common-c-miami : \
 #MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami
+#MM workbench-network-common-c-usergroup : \
+#MM     network-includes \
+#MM     workbench-libs-usergroup-includes \
 #MM     arostcp-linklibs-netlib \
 #MM     arostcp-linklibs-miami
 
@@ -36,12 +43,19 @@ MIAMIFILES := \
     ifconfig \
     logger
 
+USERGROUPFILES := \
+    whoami
+
 %build_progs mmake=workbench-network-common-c-base \
     files="$(BASEFILES)" \
     targetdir=$(AROS_C) uselibs="net"
 
 %build_progs mmake=workbench-network-common-c-miami \
     files="$(MIAMIFILES)" \
+    targetdir=$(AROS_C) uselibs="miami net"
+
+%build_progs mmake=workbench-network-common-c-usergroup \
+    files="$(USERGROUPFILES)" \
     targetdir=$(AROS_C) uselibs="miami net"
 
 #%common

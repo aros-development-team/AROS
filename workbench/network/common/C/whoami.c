@@ -65,6 +65,7 @@ extern struct ExecBase* SysBase;
 #include <proto/exec.h>
 #endif
 #include <proto/dos.h>
+#define __USERGROUP_NOLIBBASE__
 #include <proto/usergroup.h>
 #include <libraries/usergroup.h>
 
@@ -80,9 +81,10 @@ extern struct ExecBase* SysBase;
 
 #ifdef __MORPHOS__
 ULONG __abox__ = 1;
-#endif
-
 LONG whoami(void)
+#else
+int main(int argc, char **argv)
+#endif
 {
   LONG retval = 128;
   struct DosLibrary *DOSBase;
@@ -101,7 +103,7 @@ LONG whoami(void)
       struct passwd *pw = getpwuid(uid);
 
       if (pw != NULL) {
-        Printf("%s\n", (ULONG)pw->pw_name);
+        Printf("%s\n", (char *)pw->pw_name);
         retval = RETURN_OK;
       } else {
         Printf("whoami: no login associated with uid %lu.\n", uid);

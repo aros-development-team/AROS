@@ -3,7 +3,8 @@
 /*
  * Definitions of AmiTCP/IP usergroup.library for 32 bit C compilers
  *
- * Copyright © 1994-2002 AmiTCP/IP Group & The MorphOS Team
+ * Copyright © 2025 The AROS Dev Team.
+ * Copyright © 1994-2002 AmiTCP/IP Group
  * Network Solutions Development, Inc.
  * All rights reserved.
  *
@@ -20,12 +21,13 @@
 #ifndef _GRP_H_
 #include <grp.h>
 #endif
+#if (0)
 #ifndef _UTMP_H_
 #include <utmp.h>
 #endif
+#endif
 
-
-#define USERGROUPNAME "AmiTCP:libs/usergroup.library"
+#define USERGROUPNAME "LIBS:usergroup.library"
 
 /* Extended password encryption begins with underscore */
 #define _PASSWORD_EFMT1 '_'

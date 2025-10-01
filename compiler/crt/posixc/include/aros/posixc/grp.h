@@ -17,6 +17,7 @@ struct group
     char   *gr_passwd;    /* Group password */
 };
 
+#if !defined(CLIB_USERGROUP_PROTOS_H)
 __BEGIN_DECLS
 
 void endgrent(void);
@@ -30,5 +31,6 @@ struct group *getgrnam(const char *name);
 void setgrent(void);
 
 __END_DECLS
+#endif
 
 #endif /* _POSIXC_GRP_H_ */

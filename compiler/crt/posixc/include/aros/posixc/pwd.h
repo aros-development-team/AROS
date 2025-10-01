@@ -23,6 +23,7 @@ struct passwd
   char  *pw_gecos;   /* Real name */
 };
 
+#if !defined(CLIB_USERGROUP_PROTOS_H)
 __BEGIN_DECLS
 
 void endpwent(void);
@@ -36,5 +37,6 @@ struct passwd *getpwnam(const char *name);
 void setpwent(void);
 
 __END_DECLS
+#endif
 
 #endif /* _POSIXC_PWD_H_ */

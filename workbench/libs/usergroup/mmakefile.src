@@ -1,0 +1,38 @@
+#
+#   Rules to build usergroup.library.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        usergroup \
+        credential \
+        resource \
+        getutent \
+        getpwent \
+        getgrent \
+        initgroups \
+        loginname \
+        time \
+        getpass \
+        getsalt \
+        crypt \
+        console \
+        random
+
+USER_CPPFLAGS := -DDEBUG=1
+USER_LDFLAGS := -static
+
+#MM workbench-libs-usergroup : includes linklibs
+%subtarget parentmmake=workbench-libs mmake=workbench-libs-usergroup
+
+%build_module mmake=workbench-libs-usergroup modname=usergroup \
+  modtype=library files="$(FILES)" \
+  uselibs=""
+
+INCLUDE_FILES:=usergroup.h
+%copy_includes path=libraries includes=$(INCLUDE_FILES)
+
+INCLUDE_FILES:=utmp.h
+%copy_includes includes=$(INCLUDE_FILES)
+
+%common
