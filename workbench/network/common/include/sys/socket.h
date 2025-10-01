@@ -60,79 +60,51 @@
  */
 #if __BSD_VISIBLE
 #ifndef _GID_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/gid_t.h>
-#else
-typedef	__gid_t		gid_t;
-#endif
-#define	_GID_T_DECLARED
+#define _GID_T_DECLARED
 #endif
 
 #ifndef _OFF_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/off_t.h>
-#else
-typedef	__off_t		off_t;
-#endif
-#define	_OFF_T_DECLARED
+#define _OFF_T_DECLARED
 #endif
 
 #ifndef _PID_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/pid_t.h>
-#else
-typedef	__pid_t		pid_t;
-#endif
-#define	_PID_T_DECLARED
+#define _PID_T_DECLARED
 #endif
 #endif
 
 #ifndef _SA_FAMILY_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/sa_family_t.h>
-#else
-typedef	__sa_family_t	sa_family_t;
-#endif
-#define	_SA_FAMILY_T_DECLARED
+#define _SA_FAMILY_T_DECLARED
 #endif
 
 #ifndef _SOCKLEN_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/socklen_t.h>
-#else
-typedef	__socklen_t	socklen_t;
-#endif
-#define	_SOCKLEN_T_DECLARED
+#define _SOCKLEN_T_DECLARED
 #endif
 
 #ifndef _SSIZE_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/ssize_t.h>
-#else
-typedef	__ssize_t	ssize_t;
-#endif
-#define	_SSIZE_T_DECLARED
+#define _SSIZE_T_DECLARED
 #endif
 
 #if __BSD_VISIBLE 
 #ifndef _UID_T_DECLARED
-#if defined(__AROS__)
 #include <aros/types/uid_t.h>
-#else
-typedef	__uid_t		uid_t;
-#endif
-#define	_UID_T_DECLARED
+#define _UID_T_DECLARED
 #endif
 #endif
 
 #ifndef _UINT32_T_DECLARED
-typedef	__uint32_t	uint32_t;
-#define	_UINT32_T_DECLARED
+#include <aros/types/int_t.h>
+#define _UINT32_T_DECLARED
 #endif
 
 #ifndef _UINTPTR_T_DECLARED
-typedef	__uintptr_t	uintptr_t;
-#define	_UINTPTR_T_DECLARED
+#include <aros/types/uintptr_t.h>
+#define _UINTPTR_T_DECLARED
 #endif
 
 /*
@@ -729,64 +701,5 @@ struct splice {
 };
 
 #endif /* __BSD_VISIBLE */
-
-#ifndef	_KERNEL
-
-#if defined(_FORTIFY_SOURCE) && _FORTIFY_SOURCE > 0
-#include <ssp/socket.h>
-#endif
-
-#if !defined(__AROS__)
-#include <sys/cdefs.h>
-
-__BEGIN_DECLS
-int	accept(int, struct sockaddr * __restrict, socklen_t * __restrict);
-int	bind(int, const struct sockaddr *, socklen_t);
-int	connect(int, const struct sockaddr *, socklen_t);
-#if __BSD_VISIBLE
-int	accept4(int, struct sockaddr * __restrict, socklen_t * __restrict, int);
-int	bindat(int, int, const struct sockaddr *, socklen_t);
-int	connectat(int, int, const struct sockaddr *, socklen_t);
-#endif
-int	getpeername(int, struct sockaddr * __restrict, socklen_t * __restrict);
-int	getsockname(int, struct sockaddr * __restrict, socklen_t * __restrict);
-int	getsockopt(int, int, int, void * __restrict, socklen_t * __restrict);
-int	listen(int, int);
-ssize_t	recv(int, void *, size_t, int);
-ssize_t	recvfrom(int, void *, size_t, int, struct sockaddr * __restrict, socklen_t * __restrict);
-ssize_t	recvmsg(int, struct msghdr *, int);
-#if __BSD_VISIBLE
-struct timespec;
-ssize_t	recvmmsg(int, struct mmsghdr * __restrict, size_t, int,
-    const struct timespec * __restrict);
-#endif
-ssize_t	send(int, const void *, size_t, int);
-ssize_t	sendto(int, const void *,
-	    size_t, int, const struct sockaddr *, socklen_t);
-ssize_t	sendmsg(int, const struct msghdr *, int);
-#if __BSD_VISIBLE
-int	sendfile(int, int, off_t, size_t, struct sf_hdtr *, off_t *, int);
-ssize_t	sendmmsg(int, struct mmsghdr * __restrict, size_t, int);
-int	setfib(int);
-#endif
-int	setsockopt(int, int, int, const void *, socklen_t);
-int	shutdown(int, int);
-int	sockatmark(int);
-int	socket(int, int, int);
-int	socketpair(int, int, int, int *);
-__END_DECLS
-
-#endif /* !_KERNEL */
-
-#ifdef _KERNEL
-struct socket;
-
-int so_options_get(const struct socket *);
-void so_options_set(struct socket *, int);
-
-int so_error_get(const struct socket *);
-void so_error_set(struct socket *, int);
-#endif /* _KERNEL */
-#endif
 
 #endif /* !_SYS_SOCKET_H_ */

@@ -32,75 +32,42 @@
 #include <aros/cpu.h>
 
 /*
- * Basic types upon which most other types are built.
- *
- * Note: It would be nice to simply use the compiler-provided __FOO_TYPE__
- * macros. However, in order to do so we have to check that those match the
- * previous typedefs exactly (not just that they have the same size) since any
- * change would be an ABI break. For example, changing `long` to `long long`
- * results in different C++ name mangling.
+ * Basic types upon which other BSD types are built.
+ * Use AROS provided definitions.
  */
-typedef	signed char		__int8_t;
-typedef	unsigned char		__uint8_t;
-typedef	short			__int16_t;
-typedef	unsigned short		__uint16_t;
-typedef	int			__int32_t;
-typedef	unsigned int		__uint32_t;
-#if __SIZEOF_LONG__ == 8
-typedef	long			__int64_t;
-typedef	unsigned long		__uint64_t;
-#elif __SIZEOF_LONG__ == 4
-__extension__
-typedef	long long		__int64_t;
-__extension__
-typedef	unsigned long long	__uint64_t;
-#else
-#error unsupported long size
-#endif
+typedef signed AROS_8BIT_TYPE       __int8_t;
+typedef unsigned AROS_8BIT_TYPE     __uint8_t;
+typedef signed AROS_16BIT_TYPE      __int16_t;
+typedef unsigned AROS_16BIT_TYPE    __uint16_t;
+typedef signed AROS_32BIT_TYPE      __int32_t;
+typedef unsigned AROS_32BIT_TYPE    __uint32_t;
+typedef signed AROS_64BIT_TYPE      __int64_t;
+typedef unsigned AROS_64BIT_TYPE    __uint64_t;
 
-typedef	__int8_t	__int_least8_t;
-typedef	__int16_t	__int_least16_t;
-typedef	__int32_t	__int_least32_t;
-typedef	__int64_t	__int_least64_t;
-typedef	__int64_t	__intmax_t;
-typedef	__uint8_t	__uint_least8_t;
-typedef	__uint16_t	__uint_least16_t;
-typedef	__uint32_t	__uint_least32_t;
-typedef	__uint64_t	__uint_least64_t;
-typedef	__uint64_t	__uintmax_t;
+typedef __int8_t                    __int_least8_t;
+typedef __int16_t                   __int_least16_t;
+typedef __int32_t                   __int_least32_t;
+typedef __int64_t                   __int_least64_t;
+typedef __int64_t                   __intmax_t;
+typedef __uint8_t                   __uint_least8_t;
+typedef __uint16_t                  __uint_least16_t;
+typedef __uint32_t                  __uint_least32_t;
+typedef __uint64_t                  __uint_least64_t;
+typedef __uint64_t                  __uintmax_t;
 
-#if __WORDSIZE == 64
-typedef	__int64_t	__intptr_t;
-typedef	__int64_t	__intfptr_t;
-typedef	__uint64_t	__uintptr_t;
-typedef	__uint64_t	__uintfptr_t;
-typedef	__uint64_t	__vm_offset_t;
-typedef	__uint64_t	__vm_size_t;
-#elif __WORDSIZE == 32
-typedef	__int32_t	__intptr_t;
-typedef	__int32_t	__intfptr_t;
-typedef	__uint32_t	__uintptr_t;
-typedef	__uint32_t	__uintfptr_t;
-typedef	__uint32_t	__vm_offset_t;
-typedef	__uint32_t	__vm_size_t;
-#else
-#error unsupported pointer size
-#endif
-
-#if __SIZEOF_SIZE_T__ == 8
-typedef	__uint64_t	__size_t;	/* sizeof() */
-typedef	__int64_t	__ssize_t;	/* byte count or error */
-#elif __SIZEOF_SIZE_T__ == 4
-typedef	__uint32_t	__size_t;	/* sizeof() */
-typedef	__int32_t	__ssize_t;	/* byte count or error */
-#else
-#error unsupported size_t size
-#endif
+typedef signed AROS_INTPTR_TYPE     __intptr_t;
+typedef signed AROS_INTPTR_TYPE     __intfptr_t;
+typedef unsigned AROS_INTPTR_TYPE   __uintptr_t;
+typedef unsigned AROS_INTPTR_TYPE   __uintfptr_t;
+typedef unsigned AROS_INTPTR_TYPE   __vm_offset_t;
+typedef unsigned AROS_INTPTR_TYPE   __vm_size_t;
+typedef unsigned AROS_INTPTR_TYPE   __size_t;
+typedef signed AROS_INTPTR_TYPE     __ssize_t;
 
 /*
  * Standard type definitions.
  */
-typedef	__uint8_t	__sa_family_t;
-typedef	__uint32_t	__socklen_t;
+typedef unsigned AROS_8BIT_TYPE     __sa_family_t;
+typedef unsigned AROS_32BIT_TYPE    __socklen_t;
 
 #endif /* !_SYS__TYPES_H_ */
