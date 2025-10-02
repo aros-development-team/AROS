@@ -975,6 +975,7 @@ BPTR InternalLoadSeg_ELF
     /* Now that we have the string and symbol tables loaded,
      * load the rest of the hunks.
      */
+    BOOL do_align;
     for (i = 0; i < int_shnum; i++)
     {
         /* Skip the already loaded hunks */
@@ -994,7 +995,8 @@ BPTR InternalLoadSeg_ELF
                 if (sh[i].flags & SHF_EXECINSTR)
                     exec_hunk_seen = TRUE;
 
-                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, exec_hunk_seen, &srb, DOSBase))
+                do_align = (exec_hunk_seen && sh[i].addralign >= 2) ? TRUE : FALSE;
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], strtab ? strtab->addr : NULL, funcarray, do_align, &srb, DOSBase))
                     goto error;
             }
         }
