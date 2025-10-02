@@ -26,17 +26,16 @@
 
 #ifndef __cplusplus
 
-#include <aros/types/int_t.h>
-
-#ifdef __WCHAR_TYPE__
+#ifndef __WCHAR_TYPE__
+# include <aros/types/int_t.h>
+# if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
+/* AROS policy: UCS-4 capable */
+#  define __WCHAR_TYPE__ uint32_t
+# else
+#  define __WCHAR_TYPE__ char
+# endif
+#endif
 typedef __WCHAR_TYPE__ wchar_t;
-#else
-#if defined(__WCHAR_MAX__) && __WCHAR_MAX__ > 255
-typedef uint32_t wchar_t;  /* UTF-8 capable wide char */
-#else
-typedef char wchar_t;      /* single-byte wide char */
-#endif
-#endif
 
 #if defined(__WCHAR_MAX__)
 #if __WCHAR_MAX__ >= 0x10FFFF
