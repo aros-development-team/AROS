@@ -274,7 +274,7 @@ diff -ruN gcc-13.4.0/gcc/config/aarch64/t-aros gcc-13.4.0.aros/gcc/config/aarch6
 +
 diff -ruN gcc-13.4.0/gcc/config/arm/aros.h gcc-13.4.0.aros/gcc/config/arm/aros.h
 --- gcc-13.4.0/gcc/config/arm/aros.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-13.4.0.aros/gcc/config/arm/aros.h	2025-06-13 16:59:26.316416091 +0000
++++ gcc-13.4.0.aros/gcc/config/arm/aros.h	2020-12-27 16:58:14.310000000 +0000
 @@ -0,0 +1,89 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -367,7 +367,7 @@ diff -ruN gcc-13.4.0/gcc/config/arm/aros.h gcc-13.4.0.aros/gcc/config/arm/aros.h
 +#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-13.4.0/gcc/config/arm/t-aros gcc-13.4.0.aros/gcc/config/arm/t-aros
 --- gcc-13.4.0/gcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-13.4.0.aros/gcc/config/arm/t-aros	2025-06-13 16:59:33.472416080 +0000
++++ gcc-13.4.0.aros/gcc/config/arm/t-aros	2020-12-27 16:58:14.310000000 +0000
 @@ -0,0 +1,84 @@
 +# Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007,
 +# 2008, 2010 Free Software Foundation, Inc.
@@ -1011,7 +1011,7 @@ diff -ruN gcc-13.4.0/gcc/config/t-aros gcc-13.4.0.aros/gcc/config/t-aros
 +LIBGCC_DEPS += stmp-aros-hrds
 +
 +EXTRA_AROS_HEADERS = aros/types/size_t.h aros/types/ptrdiff_t.h \
-+    aros/types/wchar_t.h aros/types/wint_t.h aros/types/null.h
++    aros/types/wchar_t.h aros/types/null.h
 +
 +stmp-int-hdrs : | include/aros/types
 +
@@ -1286,16 +1286,9 @@ diff -ruN gcc-13.4.0/gcc/ginclude/aros/types/wchar_t.h gcc-13.4.0.aros/gcc/gincl
 +/* Replace AROS' wchar_t definition with gcc's one */
 +#define __need_wchar_t
 +#include <stddef.h>
-diff -ruN gcc-13.4.0/gcc/ginclude/aros/types/wint_t.h gcc-13.4.0.aros/gcc/ginclude/aros/types/wint_t.h
---- gcc-13.4.0/gcc/ginclude/aros/types/wint_t.h	1970-01-01 00:00:00.000000000 +0000
-+++ gcc-13.4.0.aros/gcc/ginclude/aros/types/wint_t.h	2020-12-27 16:58:14.310000000 +0000
-@@ -0,0 +1,3 @@
-+/* Replace AROS' wint_t definition with gcc's one */
-+#define __need_wint_t
-+#include <stddef.h>
 diff -ruN gcc-13.4.0/gcc/ginclude/stddef.h gcc-13.4.0.aros/gcc/ginclude/stddef.h
 --- gcc-13.4.0/gcc/ginclude/stddef.h	2025-06-05 16:02:59.000000000 +0000
-+++ gcc-13.4.0.aros/gcc/ginclude/stddef.h	2020-12-27 16:58:14.310000000 +0000
++++ gcc-13.4.0.aros/gcc/ginclude/stddef.h	2025-10-02 23:36:07.792243931 +0000
 @@ -125,6 +125,7 @@
  #ifndef __PTRDIFF_T
  #ifndef _PTRDIFF_T_
@@ -1344,6 +1337,30 @@ diff -ruN gcc-13.4.0/gcc/ginclude/stddef.h gcc-13.4.0.aros/gcc/ginclude/stddef.h
  #endif /* _BSD_SIZE_T_ */
  #endif /* _SIZE_T_ */
  #endif /* __SIZE_T */
+@@ -254,6 +260,7 @@
+ #ifndef __WCHAR_T
+ #ifndef _WCHAR_T_
+ #ifndef _BSD_WCHAR_T_
++#ifndef _AROS_TYPES_WCHAR_T_H
+ #ifndef _BSD_WCHAR_T_DEFINED_    /* Darwin */
+ #ifndef _BSD_RUNE_T_DEFINED_	/* Darwin */
+ #ifndef _WCHAR_T_DECLARED /* FreeBSD 5 */
+@@ -272,6 +279,7 @@
+ #define __WCHAR_T
+ #define _WCHAR_T_
+ #define _BSD_WCHAR_T_
++#define _AROS_TYPES_WCHAR_T_H
+ #define _WCHAR_T_DEFINED_
+ #define _WCHAR_T_DEFINED
+ #define _WCHAR_T_H
+@@ -340,6 +348,7 @@
+ #endif
+ #endif
+ #endif
++#endif
+ #endif
+ #endif
+ #endif
 diff -ruN gcc-13.4.0/gcc/system.h gcc-13.4.0.aros/gcc/system.h
 --- gcc-13.4.0/gcc/system.h	2025-06-05 16:02:59.000000000 +0000
 +++ gcc-13.4.0.aros/gcc/system.h	2020-12-27 16:58:14.310000000 +0000
