@@ -203,6 +203,13 @@
 #include <sys/socket.h>
 #if !defined(__AROS__)
 #include <sys/sysctl.h>
+#else
+# if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#  include <stdbool.h>
+# else
+#  define true 1
+typedef int bool;
+# endif
 #endif
 #include <sys/time.h>
 
