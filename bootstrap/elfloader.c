@@ -80,7 +80,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
         return addr;
 
     D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)(uintptr_t)sh->addralign);)
-    align = sh->addralign - 1;
+    align = sh->addralign? sh->addralign - 1 : 0;
     addr = (char *)(((uintptr_t)addr + align) & ~align);
 
     D(kprintf("%p\n", addr);)
@@ -456,7 +456,13 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
             if ((n->sh[i].flags & SHF_ALLOC) || (n->sh[i].type == SHT_STRTAB) || (n->sh[i].type == SHT_SYMTAB))
             {
                 /* Add maximum space for alignment */
-                unsigned long s = n->sh[i].size + n->sh[i].addralign - 1;
+                unsigned long s;
+                if (n->sh[i].addralign) {
+                    s = n->sh[i].size + n->sh[i].addralign - 1;
+                }
+                else {
+                    s = n->sh[i].size;
+                }
 
                 if (n->sh[i].flags & SHF_WRITE)
                     rwsize += s;
