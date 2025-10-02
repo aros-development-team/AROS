@@ -65,6 +65,9 @@
 #include <utility/tagitem.h>
 #include <sys/cdefs.h>
 
+#define	IFNAMSIZ	16
+
+
 #ifndef KERNEL
 #ifdef __STDC__
 /*
@@ -77,8 +80,6 @@ struct	socket;
 struct	ether_header;
 #endif
 #endif
-
-#define	IFNAMSIZ	16
 
 /*
  * Structure describing information about an interface
@@ -341,6 +342,8 @@ struct if_nameindex {
 	char 			*if_name;
 };
 
+#ifndef NET_IF_ARP_H
 #include <net/if_arp.h>
+#endif
 
 #endif /* !_NET_IF_H_ */

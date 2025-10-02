@@ -1,7 +1,7 @@
 #ifndef _SYS_CDEFS_H_
 #define _SYS_CDEFS_H_
 /*
- * Copyright 1995-2002, The AROS Development Team. All rights reserved.
+ * Copyright 1995-2025, The AROS Development Team. All rights reserved.
  * $Id$
  *
  * <sys/cdefs.h> header file, would you believe it's mostly the same as
@@ -208,13 +208,5 @@
 #define __weak_reference(sym,alias)        \
         __asm__(".weak " #alias);          \
         __asm__(".equ "  #alias ", " #sym)
-
-#include <endian.h>
-
-#ifndef _TIME_ /*  XXX fast fix for SNMP, going away soon */
-#include <sys/time.h>
-#endif
-
-#define _ALIGN AROS_ALIGN
 
 #endif /* _SYS_CDEFS_H_ */

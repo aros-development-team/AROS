@@ -61,7 +61,7 @@
 /* External definitions for functions in inet(3). */
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
+#include <bsdsocket/types.h>
 
 #ifndef IN_H
 #include <netinet/in.h>

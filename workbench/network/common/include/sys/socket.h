@@ -33,12 +33,7 @@
 #define	_SYS_SOCKET_H_
 
 #include <sys/cdefs.h>
-#include <sys/_types.h>
-#if !defined(__AROS__)
-#include <sys/_iovec.h>
-#include <sys/_timeval.h>
-#include <machine/_align.h>
-#endif
+#include <bsdsocket/types.h>
 
 /*
  * AmiTCP asynchronous event definitions
@@ -54,58 +49,6 @@
 /*
  * Definitions related to sockets: types, address families, options.
  */
-
-/*
- * Data types.
- */
-#if __BSD_VISIBLE
-#ifndef _GID_T_DECLARED
-#include <aros/types/gid_t.h>
-#define _GID_T_DECLARED
-#endif
-
-#ifndef _OFF_T_DECLARED
-#include <aros/types/off_t.h>
-#define _OFF_T_DECLARED
-#endif
-
-#ifndef _PID_T_DECLARED
-#include <aros/types/pid_t.h>
-#define _PID_T_DECLARED
-#endif
-#endif
-
-#ifndef _SA_FAMILY_T_DECLARED
-#include <aros/types/sa_family_t.h>
-#define _SA_FAMILY_T_DECLARED
-#endif
-
-#ifndef _SOCKLEN_T_DECLARED
-#include <aros/types/socklen_t.h>
-#define _SOCKLEN_T_DECLARED
-#endif
-
-#ifndef _SSIZE_T_DECLARED
-#include <aros/types/ssize_t.h>
-#define _SSIZE_T_DECLARED
-#endif
-
-#if __BSD_VISIBLE 
-#ifndef _UID_T_DECLARED
-#include <aros/types/uid_t.h>
-#define _UID_T_DECLARED
-#endif
-#endif
-
-#ifndef _UINT32_T_DECLARED
-#include <aros/types/int_t.h>
-#define _UINT32_T_DECLARED
-#endif
-
-#ifndef _UINTPTR_T_DECLARED
-#include <aros/types/uintptr_t.h>
-#define _UINTPTR_T_DECLARED
-#endif
 
 /*
  * Types
