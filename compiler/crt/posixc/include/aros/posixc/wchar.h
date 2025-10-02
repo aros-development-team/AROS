@@ -14,10 +14,14 @@
 
 __BEGIN_DECLS
 
+#if _POSIX_C_SOURCE >= 200809L
+
 size_t mbsnrtowcs(wchar_t *restrict, const char **restrict, size_t, size_t, mbstate_t *restrict);
 size_t wcsnrtombs(char *restrict, const wchar_t **restrict, size_t, size_t, mbstate_t *restrict);
 size_t wcsxfrm_l(wchar_t *dest, const wchar_t *src, size_t n, locale_t loc);
 int wcscoll_l(const wchar_t *ws1, const wchar_t *ws2, locale_t loc);
+
+#endif /* _POSIX_C_SOURCE >= 200809L */
 
 __END_DECLS
 
