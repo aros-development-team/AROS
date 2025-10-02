@@ -5,6 +5,7 @@
 
 SPOOFED_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
 
+ALWAYSUNPACK="no"
 LOCATION="./"
 BASE="./"
 
@@ -352,7 +353,7 @@ unpack_cached()
 	! mkdir -p "$location" && return 1
     fi
 
-    if ! test -f "$BASE/.${archive}.unpacked";  then
+    if ! test "$ALWAYSUNPACK" = "no" -a -f "$BASE/.${archive}.unpacked"; then
         if unpack "$location" "$archive" "$archivepath"; then
 	    echo yes > "$BASE/.${archive}.unpacked"
 	    true
@@ -450,26 +451,37 @@ fetchunlock()
 }
 
 
-while  test "x$1" != "x"; do
-    if test "x${1:0:1}" == "x-" -a  "x${2:0:1}" == "x-"; then
-        usage "$0"
-    fi
-    
+while test "x$1" != "x"; do
     case "$1" in
-        -ao) archive_origins="$2";;
-	 -a) archive="$2";;
-	 -s) suffixes="$2";;
-	 -d) destination="$2";;
-	-po) patches_origins="$2";;
-	 -p) patches="$2";;
-     -b) newbase="$2";;
-     -l) newlocation="$2";;
-     -rn) renamedir="$2";;
-  	  *) echo "fetch: Unknown option \`$1'."; usage "$0";;
+        -ao|-a|-s|-d|-po|-p|-b|-l|-rn)
+            # Ensure there *is* a $2 (even if it's an empty string)
+            if test $# -lt 2; then
+                echo "Option $1 requires an argument."
+                usage "$0"
+            fi
+            # If $2 is non-empty and starts with '-', treat as missing
+            if test "x${2}" != "x" && test "x${2:0:1}" = "x-"; then
+                echo "Option $1 requires an argument."
+                usage "$0"
+            fi
+            case "$1" in
+                -ao) archive_origins="$2";;
+                -a)  archive="$2";;
+                -s)  suffixes="$2";;
+                -d)  destination="$2";;
+                -po) patches_origins="$2";;
+                -p)  patches="$2";;
+                -b)  newbase="$2";;
+                -l)  newlocation="$2";;
+                -rn) renamedir="$2";;
+            esac
+            shift 2;;
+        -f)
+            ALWAYSUNPACK="yes"; shift 1;;
+        *)
+            echo "fetch: Unknown option \`$1'."
+            usage "$0";;
     esac
-    
-    shift
-    shift
 done
 
 test -z "$archive" && usage "$0"

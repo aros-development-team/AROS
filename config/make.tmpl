@@ -1678,30 +1678,30 @@ endif
 
 ifeq ("%(cflags)","")
 ifeq (%(compiler),target)
-%(mmake)_CFLAGS            := $(CFLAGS)
+%(mmake)_CFLAGS            := $(strip $(CFLAGS) $(USER_INCLUDES))
 endif
 ifeq (%(compiler),host)
-%(mmake)_CFLAGS            := $(HOST_CFLAGS)
+%(mmake)_CFLAGS            := $(strip $(HOST_CFLAGS) $(USER_INCLUDES))
 endif
 ifeq (%(compiler),kernel)
-%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(USER_INCLUDES))
 endif
 else
-%(mmake)_CFLAGS            := %(cflags)
+%(mmake)_CFLAGS            := $(strip %(cflags) $(USER_INCLUDES))
 endif
 
 ifeq ("%(cxxflags)","")
 ifeq (%(compiler),target)
-%(mmake)_CXXFLAGS            := $(CXXFLAGS)
+%(mmake)_CXXFLAGS            := $(strip $(CXXFLAGS) $(USER_INCLUDES))
 endif
 ifeq (%(compiler),host)
-%(mmake)_CXXFLAGS            := $(HOST_CXXFLAGS)
+%(mmake)_CXXFLAGS            := $(strip $(HOST_CXXFLAGS) $(USER_INCLUDES))
 endif
 ifeq (%(compiler),kernel)
 %(mmake)_CXXFLAGS            := $(strip $(KERNEL_ISA_CXXFLAGS) $(KERNEL_CXXFLAGS))
 endif
 else
-%(mmake)_CXXFLAGS          := %(cxxflags)
+%(mmake)_CXXFLAGS          := $(strip %(cxxflags) $(USER_INCLUDES))
 endif
 
 ifeq ("%(ldflags)","")
@@ -4381,7 +4381,7 @@ endif
 %(mmake)-diff:
 	%mkdirs_q $(%(mmake)-base)/tmp
 	$(Q)$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir).aros ; \
-	$(FETCH) -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) -d %(destination) $(%(mmake)-baseflag); \
+	$(FETCH) -a %(archive) -s "%(suffixes)" -f -l $(%(mmake)-location) -d %(destination) $(%(mmake)-baseflag); \
 	$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir) ; \
 	cd $(%(mmake)-base)/tmp ; \
 	$(FOR) f in %(excludes) ; do \
