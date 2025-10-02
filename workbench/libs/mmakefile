@@ -49,6 +49,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-rexxsyslib \
 #MM     workbench-libs-realtime \
 #MM     workbench-libs-tiff \
+#MM     workbench-libs-usergroup \
 #MM     workbench-libs-vega \
 #MM     workbench-libs-version \
 #MM     workbench-libs-workbench \
@@ -99,6 +100,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-rexxsyslib-includes \
 #MM     workbench-libs-realtime-includes \
 #MM     workbench-libs-tiff-includes \
+#MM     workbench-libs-usergroup-includes \
 #MM     workbench-libs-vega-includes \
 #MM     workbench-libs-workbench-includes \
 #MM     workbench-libs-z-includes \
