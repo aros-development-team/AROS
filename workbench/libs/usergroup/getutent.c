@@ -250,13 +250,13 @@ AROS_LH1(struct utmp *, getutsid,
 
     NAME */
 #include <utmp.h>
-AROS_LH1(struct lastlog *, getlastlog,
+        AROS_LH1(struct lastlog *, getlastlog,
 
-         /*  SYNOPSIS */
-         AROS_LHA(uid_t, uid, D0),
+/*  SYNOPSIS */
+        AROS_LHA(uid_t, uid, D0),
 
-         /* LOCATION */
-         struct UserGroupBase *, UserGroupBase, 41, Usergroup)
+/* LOCATION */
+        struct UserGroupBase *, UserGroupBase, 41, Usergroup)
 
 /*  FUNCTION
 
@@ -346,17 +346,17 @@ AROS_LH1(struct lastlog *, getlastlog,
 /*****************************************************************************
 
     NAME */
-#include <utmp.h>
-AROS_LH4(int, setlastlog,
+        #include <utmp.h>
+        AROS_LH4(int, setlastlog,
 
-         /*  SYNOPSIS */
-         AROS_LHA(uid_t, uid, D0),
-         AROS_LHA(char *, name, A0),
-         AROS_LHA(char *, con, A1),
-         AROS_LHA(char *, host, A2),
+/*  SYNOPSIS */
+        AROS_LHA(uid_t, uid, D0),
+        AROS_LHA(char *, name, A0),
+        AROS_LHA(char *, con, A1),
+        AROS_LHA(char *, host, A2),
 
-         /* LOCATION */
-         struct UserGroupBase *, UserGroupBase, 42, Usergroup)
+/* LOCATION */
+        struct UserGroupBase *, UserGroupBase, 42, Usergroup)
 
 /*  FUNCTION
         The setlastlog function is used to register user logging in.  Each

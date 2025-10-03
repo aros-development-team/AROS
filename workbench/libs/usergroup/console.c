@@ -26,12 +26,12 @@
 
     NAME */
 
-AROS_LH0I(int, ug_OnConsole,
+        AROS_LH0I(int, ug_OnConsole,
 
-          /*  SYNOPSIS */
+/*  SYNOPSIS */
 
-          /* LOCATION */
-          struct Library *, UserGroupBase, 22, Usergroup)
+/* LOCATION */
+                  struct Library *, UserGroupBase, 22, Usergroup)
 
 /*  FUNCTION
         Check if the user is logged on local console.
@@ -113,15 +113,15 @@ char *i_GetConsoleName(struct MsgPort *consoletask, char *buffer, ULONG size)
 
     NAME */
 
-AROS_LH3I(char *, ug_ConsoleName,
+        AROS_LH3I(char *, ug_ConsoleName,
 
-          /*  SYNOPSIS */
-          AROS_LHA(BPTR, con, D0),
-          AROS_LHA(char *, buffer, A1),
-          AROS_LHA(ULONG, size, D1),
+/*  SYNOPSIS */
+        AROS_LHA(BPTR, con, D0),
+        AROS_LHA(char *, buffer, A1),
+        AROS_LHA(ULONG, size, D1),
 
-          /* LOCATION */
-          struct Library *, UserGroupBase, 23, Usergroup)
+/* LOCATION */
+        struct Library *, UserGroupBase, 23, Usergroup)
 
 /*  FUNCTION
         Get a unique printable identifier for the interactive filehandle.

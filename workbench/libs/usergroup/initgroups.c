@@ -23,10 +23,10 @@
 
 AROS_LH2(int, initgroups,
 
-         /*  SYNOPSIS */
-         AROS_LHA(const char *, name, A1),
-         AROS_LHA(gid_t, basegroup, D0),
-         struct UserGroupBase *, UserGroupBase, 18, Usergroup)
+/*  SYNOPSIS */
+        AROS_LHA(const char *, name, A1),
+        AROS_LHA(gid_t, basegroup, D0),
+        struct UserGroupBase *, UserGroupBase, 18, Usergroup)
 
 /*  FUNCTION
         The initgroups() function reads through the group file and sets up,
