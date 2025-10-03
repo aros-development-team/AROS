@@ -123,8 +123,6 @@
 
 #include <proto/usergroup.h>
 
-static short done_set_ent = 0;
-
 AROS_LH1(struct group *, getgrnam,
         AROS_LHA(const char *, name, A1),
         struct UserGroupBase *, UserGroupBase, 24, Usergroup)
@@ -135,12 +133,12 @@ AROS_LH1(struct group *, getgrnam,
     struct group *gr = NULL;
 
     if (name == NULL) {
-        SetErrno(EFAULT);
+        ug_SetErrno((struct Library *)UserGroupBase, EFAULT);
         return NULL;
     }
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_GROUP_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
 
         gr = (struct group *)nreq->io_Data;
         gr->gr_name = (char *)name;
@@ -148,10 +146,10 @@ AROS_LH1(struct group *, getgrnam,
 
         if (myDoIO(nreq) != 0) {
             gr = NULL;
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -171,17 +169,17 @@ AROS_LH1(struct group *, getgrgid,
     struct group *gr = NULL;
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_GROUP_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gr = (struct group *)nreq->io_Data;
         gr->gr_gid = gid;
         nreq->io_Command = NI_GETBYID;
 
         if (myDoIO(nreq) != 0) {
             gr = NULL;
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -200,12 +198,12 @@ AROS_LH0(void, setgrent,
 
     ObtainSemaphore(ni_lock);
 
-    if (nreq = OpenNIUnit(NETINFO_GROUP_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         nreq->io_Command = CMD_RESET;
         myDoIO(nreq);
-        done_set_ent = 1;
+        UserGroupBase->setent_done = 1;
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -222,22 +220,22 @@ AROS_LH0(struct group *, getgrent,
     struct group *gr = NULL;
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_GROUP_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
          /* do setgrent() if necessary */
-        if (!done_set_ent) {
+        if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
             myDoIO(nreq);
-            done_set_ent = 1;
+            UserGroupBase->setent_done = 1;
         }
 
         nreq->io_Command = CMD_READ;
         if (myDoIO(nreq) == 0) {
             gr = (struct group *)nreq->io_Data;
         } else {
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -253,8 +251,8 @@ AROS_LH0(void, endgrent,
     AROS_LIBFUNC_INIT
 
     ObtainSemaphore(ni_lock);
-    done_set_ent = 0;
-    CloseNIUnit(NETINFO_GROUP_UNIT);
+    UserGroupBase->setent_done = 0;
+    CloseNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT);
     ReleaseSemaphore(ni_lock);
 
     AROS_LIBFUNC_EXIT

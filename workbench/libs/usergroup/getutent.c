@@ -106,21 +106,16 @@ static void unlock_for_writing(void)
 }
 
 #define UTENTS 2
-// Single-User
-static short already_read = 0;  
-// Multi-User
-static short utent_left;
-static struct utmp *utentbuf = NULL, *utent = NULL;
-static BPTR utfile = NULL;
-static LONG uttell;
 
-void CleanupUTMP(struct Library *UserGroupBase)
+void CleanupUTMP(struct Library *ugBase)
 {
-  endutent();
+    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+    endutent();
 
-  if (utentbuf != NULL) {
-    FreeVec(utentbuf), utentbuf = NULL;
-  }
+    if (UserGroupBase->utentbuf != NULL) {
+        FreeVec(UserGroupBase->utentbuf);
+        UserGroupBase->utentbuf = NULL;
+    }
 }
 
 AROS_LH0(void, setutent,
@@ -130,18 +125,19 @@ AROS_LH0(void, setutent,
 
     if (!FindResident("security.library")) {
         // Single-User ...
-        already_read = 0;
+        UserGroupBase->already_read = 0;
+        if (UserGroupBase->utentbuf == NULL)
+            UserGroupBase->utentbuf = AllocVec(sizeof(*UserGroupBase->utent), MEMF_CLEAR | MEMF_PUBLIC);
     } else {
         // Multi-User ...
-
-        if (utentbuf == NULL)
-            utentbuf = AllocVec(sizeof(*utent) * UTENTS, MEMF_CLEAR | MEMF_PUBLIC);
-        if (utentbuf != NULL) {
-            utent_left = 0;
-            if (utfile == NULL) {
-                utfile = Open(_PATH_UTMP, MODE_READWRITE);
+        if (UserGroupBase->utentbuf == NULL)
+            UserGroupBase->utentbuf = AllocVec(sizeof(*UserGroupBase->utent) * UTENTS, MEMF_CLEAR | MEMF_PUBLIC);
+        if (UserGroupBase->utentbuf != NULL) {
+            UserGroupBase->utent_left = 0;
+            if (UserGroupBase->utfile == NULL) {
+                UserGroupBase->utfile = Open(_PATH_UTMP, MODE_READWRITE);
             } else {
-                Seek(utfile, 0, OFFSET_BEGINNING);
+                Seek(UserGroupBase->utfile, 0, OFFSET_BEGINNING);
             }
         }
     }
@@ -156,52 +152,54 @@ AROS_LH0(struct utmp *, getutent,
 
     if (!FindResident("security.library")) {
         // Single-User ...
-        if (!already_read) {
-            static struct utmp utentbuf[1];
-
-            already_read = 1;
-            *utentbuf = *CredentialBase->r_utmp;
-            return utentbuf;
+        if (!UserGroupBase->already_read) {
+            if (UserGroupBase->utentbuf == NULL) {
+                setutent();
+            }
+            if (UserGroupBase->utentbuf) {
+                UserGroupBase->already_read = 1;
+                CopyMem(CredentialBase->r_utmp, UserGroupBase->utentbuf, sizeof(*CredentialBase->r_utmp));
+                return UserGroupBase->utentbuf;
+            }
         }
-
-        SetErrno(ENOENT);
+        ug_SetErrno((struct Library *)UserGroupBase, ENOENT);
     } else {
         // Multi-User ...
 
-        if (utentbuf == NULL) {
+        if (UserGroupBase->utentbuf == NULL) {
             setutent();
         }
 
-        if (utfile) {
+        if (UserGroupBase->utfile) {
             for (;;) {
-                if (utent_left == 0) {
+                if (UserGroupBase->utent_left == 0) {
                     LONG read;
                 
-                    uttell = Seek(utfile, 0, OFFSET_CURRENT);
-                    read = Read(utfile, utentbuf, sizeof(*utent) * UTENTS);
+                    UserGroupBase->uttell = Seek(UserGroupBase->utfile, 0, OFFSET_CURRENT);
+                    read = Read(UserGroupBase->utfile, UserGroupBase->utentbuf, sizeof(*UserGroupBase->utent) * UTENTS);
 
-                    utent = utentbuf;
-                    if (read >= sizeof(*utent)) {
-                        utent_left = read / sizeof(*utent);
+                    UserGroupBase->utent = UserGroupBase->utentbuf;
+                    if (read >= sizeof(*UserGroupBase->utent)) {
+                        UserGroupBase->utent_left = read / sizeof(*UserGroupBase->utent);
                     } else {
                         break;
                     }
                 } else {
-                    uttell += sizeof(*utent);
+                    UserGroupBase->uttell += sizeof(*UserGroupBase->utent);
                 }
 
-                utent_left--;
-                if (utent->ut_time != 0)
-                    return utent++;
-                utent++;
+                UserGroupBase->utent_left--;
+                if (UserGroupBase->utent->ut_time != 0)
+                    return UserGroupBase->utent++;
+                UserGroupBase->utent++;
             }
 
-            SetErrno(ENOENT);
+            ug_SetErrno((struct Library *)UserGroupBase, ENOENT);
         } else {
-            if (utentbuf)
-                SetErrno(ENOENT);
+            if (UserGroupBase->utentbuf)
+                ug_SetErrno((struct Library *)UserGroupBase, ENOENT);
             else
-                SetErrno(ENOMEM);
+                ug_SetErrno((struct Library *)UserGroupBase, ENOMEM);
         }
     }
     return NULL;
@@ -216,12 +214,12 @@ AROS_LH0(void, endutent,
 
     if (!FindResident("security.library")) {
         // Single-User ...
-        already_read = 0;
+        UserGroupBase->already_read = 0;
     } else {
         // Multi-User ...
 
-        if (utfile != NULL) {
-            Close(utfile), utfile = NULL;
+        if (UserGroupBase->utfile != NULL) {
+            Close(UserGroupBase->utfile), UserGroupBase->utfile = NULL;
         }
     }
 
@@ -313,7 +311,7 @@ AROS_LH1(struct utmp *, getutsid,
         }
     } else {
         BPTR llfile = Open(_PATH_LASTLOG, MODE_OLDFILE);
-        int never = 1;
+        BOOL never = TRUE;
 
         // Multi-User ...
 
@@ -323,7 +321,7 @@ AROS_LH1(struct utmp *, getutsid,
             while (Read(llfile, ll, sizeof(*ll)) == sizeof(*ll)) {
                 UserGroupBase->lltell += sizeof(*ll);
                 if (ll->ll_uid == uid) {
-                    never = 0;
+                    never = FALSE;
                     break;
                 }
             }
@@ -449,27 +447,27 @@ AROS_LH1(struct utmp *, getutsid,
             /* Writing lock */
             lock_for_writing();
 
-            if (utentbuf == NULL) {
+            if (UserGroupBase->utentbuf == NULL) {
                 error = ENOMEM;
-            } else if (utfile == NULL) {
+            } else if (UserGroupBase->utfile == NULL) {
                 error = ENOENT;
             } else {
                 LONG utslot = -1;
 
                 while (oldut = getutent()) {
                     if (oldut->ut_sid == sid) {
-                        utslot = uttell;
+                        utslot = UserGroupBase->uttell;
                         break;
                     }
                     if (oldut->ut_time == 0 && utslot == -1) {
-                        utslot = uttell;
+                        utslot = UserGroupBase->uttell;
                     }
                 }
                 if (oldut == NULL)
-                    utslot = uttell;
+                    utslot = UserGroupBase->uttell;
 
-                Seek(utfile, uttell, OFFSET_BEGINNING);
-                Write(utfile, utmp, sizeof(*utmp));
+                Seek(UserGroupBase->utfile, UserGroupBase->uttell, OFFSET_BEGINNING);
+                Write(UserGroupBase->utfile, utmp, sizeof(*utmp));
             }
 
             endutent();
@@ -498,7 +496,7 @@ AROS_LH1(struct utmp *, getutsid,
     }
 
     if (error != 0) {
-          SetErrno(error);
+          ug_SetErrno((struct Library *)UserGroupBase, error);
           return -1;
     }
     return 0;

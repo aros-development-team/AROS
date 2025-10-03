@@ -114,8 +114,6 @@
 #include "base.h"
 #include <proto/usergroup.h>
 
-static short done_set_ent = 0;
-
 AROS_LH1(struct passwd *, getpwnam,
         AROS_LHA(const char *, name, A1),
         struct UserGroupBase *, UserGroupBase, 19, Usergroup)
@@ -126,12 +124,12 @@ AROS_LH1(struct passwd *, getpwnam,
     struct passwd *pw = NULL;
 
     if (name == NULL) {
-        SetErrno(EFAULT);
+        ug_SetErrno((struct Library *)UserGroupBase, EFAULT);
         return NULL;
     }
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_PASSWD_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
 
         pw = (struct passwd *)nreq->io_Data;
         pw->pw_name = (char *)name;
@@ -139,10 +137,10 @@ AROS_LH1(struct passwd *, getpwnam,
 
         if (myDoIO(nreq) != 0) {
             pw = NULL;
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -162,17 +160,17 @@ AROS_LH1(struct passwd *, getpwuid,
     struct passwd *pw = NULL;
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_PASSWD_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         pw = (struct passwd *)nreq->io_Data;
         pw->pw_uid = uid;
         nreq->io_Command = NI_GETBYID;
 
         if (myDoIO(nreq) != 0) {
             pw = NULL;
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -191,12 +189,12 @@ AROS_LH0(void, setpwent,
 
     ObtainSemaphore(ni_lock);
 
-    if (nreq = OpenNIUnit(NETINFO_PASSWD_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         nreq->io_Command = CMD_RESET;
         myDoIO(nreq);
-        done_set_ent = 1;
+        UserGroupBase->setent_done = 1;
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -213,22 +211,22 @@ AROS_LH0(struct passwd *, getpwent,
     struct passwd *pw = NULL;
 
     ObtainSemaphore(ni_lock);
-    if (nreq = OpenNIUnit(NETINFO_PASSWD_UNIT)) {
+    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
          /* do setpwent() if necessary */
-        if (!done_set_ent) {
+        if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
             myDoIO(nreq);
-            done_set_ent = 1;
+            UserGroupBase->setent_done = 1;
         }
 
         nreq->io_Command = CMD_READ;
         if (myDoIO(nreq) == 0) {
             pw = (struct passwd *)nreq->io_Data;
         } else {
-            SetDeviceErr();
+            SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
-        SetDeviceErr();
+        SetDeviceErr((struct Library *)UserGroupBase);
     }
 
     ReleaseSemaphore(ni_lock);
@@ -244,8 +242,8 @@ AROS_LH0(void, endpwent,
     AROS_LIBFUNC_INIT
 
     ObtainSemaphore(ni_lock);
-    done_set_ent = 0;
-    CloseNIUnit(NETINFO_PASSWD_UNIT);
+    UserGroupBase->setent_done = 0;
+    CloseNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT);
     ReleaseSemaphore(ni_lock);
 
     AROS_LIBFUNC_EXIT

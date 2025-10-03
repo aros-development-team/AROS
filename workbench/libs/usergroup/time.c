@@ -68,7 +68,7 @@ struct Locale *OpenLocale( STRPTR name );
 struct Device *TimerBase;
 #endif
 
-int TimeInit(void)
+int TimeInit(struct Library *ugBase)
 {
   if (OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timereq, 0)) {
     TimerBase = NULL;
@@ -134,7 +134,7 @@ int TimeInit(void)
   }
 }
 
-void TimeCleanup(void)
+void TimeCleanup(struct Library *ugBase)
 {
     if (TimerBase) {
         CloseDevice((struct IORequest *)timereq);

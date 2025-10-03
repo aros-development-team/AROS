@@ -131,7 +131,7 @@ AROS_LH1(int, setlogin,
         }
     }
 
-    SetErrno(error);
+    ug_SetErrno((struct Library *)UserGroupBase, error);
     return -1;
 
     AROS_LIBFUNC_EXIT

@@ -45,15 +45,29 @@ typedef enum { es_byte, es_word, es_long } errnop_t;
 
 struct UserGroupBase {
     struct Library      libNode;
+
     struct Task         *owner;
     STRPTR              _ProgramName;
-    int                 internal_errno;
+
+    int                 errnolast;
     void                *errnop;
     errnop_t            errnosize;
-    struct utmp         utentbuf[1];
+
     struct lastlog      ll;
-    LONG                lltell;
-    short               already_read;
+    union {
+        LONG            uttell;
+        LONG            lltell;
+    };
+    union {
+        short           already_read;
+        short           utent_left;
+    };
+    BPTR                utfile;
+    struct utmp         *utentbuf;
+    struct utmp         *utent;
+
+    short               setent_done;
+
     char                buffer[MAXLOGNAME];
     /*struct MsgPort    *niport;
     struct NetInfoReq   *nireq;
@@ -73,16 +87,16 @@ struct UserGroupBase {
 /*
  * errno handling
  */
-void SetErrno(int);
+void ug_SetErrno(struct Library *, int);
 
 /*
  * netinfo.device IO
  */
 extern struct SignalSemaphore ni_lock[];
-struct NetInfoReq *OpenNIUnit(ULONG);
-void CloseNIUnit(ULONG);
+struct NetInfoReq *OpenNIUnit(struct Library *, ULONG);
+void CloseNIUnit(struct Library *, ULONG);
 BYTE myDoIO(struct NetInfoReq *);
-void SetDeviceErr(void);
+void SetDeviceErr(struct Library *);
 
 /*
  * utmp IO
@@ -99,8 +113,8 @@ int LRandomInit(void);
  * support 
  */
 
-int TimeInit(void);
-void TimeCleanup(void);
+int TimeInit(struct Library *);
+void TimeCleanup(struct Library *);
  
 static __inline void InitList(struct List *list)
 {

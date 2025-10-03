@@ -185,8 +185,6 @@ struct UtilityBase *UtilityBase;
 
 #include "assert.h"
 
-extern struct Process*owner;
-
 #if defined(LC_LIBDEFS_FILE)
 #include LC_LIBDEFS_FILE
 
@@ -200,7 +198,7 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
 {
     CleanupUTMP((struct Library *)LIBBASE);
     CleanupNIO((struct Library *)LIBBASE);
-    TimeCleanup();
+    TimeCleanup((struct Library *)LIBBASE);
     if (DOSBase)
         CloseLibrary((void *)DOSBase);
     if (UtilityBase)
@@ -215,8 +213,8 @@ static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 
     if ((DOSBase = (void *)OpenLibrary("dos.library", 37L)) &&
       (UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37L)) &&
-      TimeInit() == 0 && LRandomInit() == 0) {
-        owner = (struct Process *)FindTask(NULL);
+      TimeInit((struct Library *)LIBBASE) == 0 && LRandomInit() == 0) {
+        LIBBASE->owner = FindTask(NULL);
         Forbid();
         if (!(CredentialBase = OpenResource(CREDENTIALNAME))) {
             CredentialBase = CredentialInit("root");
@@ -234,30 +232,22 @@ ADD2EXPUNGELIB(UserGroup__Expunge, 0)
 #endif
 
 /*
- * Errno handling
+   * SetErrno - Errno handling
  */
-ULONG break_mask = 0L;
-int internal_errno;
-void *errnop = NULL;
-errnop_t errnosize;
-
-/*
- * Set errno
- */
-void SetErrno(int _en)
+void ug_SetErrno(struct Library *ugBase, int _en)
 {
-    internal_errno = _en;
-
-    if (errnop)
-        switch (errnosize) {
+    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+    UserGroupBase->errnolast = _en;
+    if (UserGroupBase->errnop)
+        switch (UserGroupBase->errnosize) {
         case es_byte:
-            *(UBYTE *)errnop = _en;
+            *(UBYTE *)UserGroupBase->errnop = _en;
             break;
         case es_word:
-            *(UWORD *)errnop = _en;
+            *(UWORD *)UserGroupBase->errnop = _en;
             break;
         case es_long:
-            *(ULONG *)errnop = _en;
+            *(ULONG *)UserGroupBase->errnop = _en;
             break;
         }
 }
@@ -300,7 +290,7 @@ AROS_LH0 (int, ug_GetErr,
 {
     AROS_LIBFUNC_INIT
 
-    return internal_errno;
+    return UserGroupBase->errnolast;
 
     AROS_LIBFUNC_EXIT
 }
@@ -310,7 +300,6 @@ AROS_LH0 (int, ug_GetErr,
  * Handle the netinfo device
  */
 struct SignalSemaphore ni_lock[1];
-struct Process *owner;
 static struct MsgPort *niport;
 static struct NetInfoReq *nireq;
 
@@ -318,89 +307,91 @@ static struct Device *nidevice[2];
 static APTR niunit[2];
 static APTR nibuffer[2];
 
-struct NetInfoReq *OpenNIUnit(ULONG unit)
+struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
 {
-  /* Check ownership */
-  if (owner != (struct Process *)FindTask(NULL)) {
-    SetErrno(EDEADLK);
-    return NULL;
-  }
+    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
 
-  /* Allocate port */
-  if (niport == NULL) {
-    niport = CreateMsgPort();
-    if (niport == NULL)
-      return NULL;
-  }
-  if (nireq == NULL) {
-    nireq = CreateIORequest(niport, sizeof(*nireq));
-
-    if (nireq == NULL)
-      return NULL;
-  }
-
-  if (nidevice[unit]) {
-    /* Already opened */
-    nireq->io_Device = nidevice[unit];
-    nireq->io_Unit = niunit[unit];
-  } else {
-    if (OpenDevice(NETINFONAME, unit, (struct IORequest *)nireq, 0L)) {
-      return NULL;
+    /* Check ownership */
+    if (UserGroupBase->owner != FindTask(NULL)) {
+        ug_SetErrno(ugBase, EDEADLK);
+        return NULL;
     }
 
-    nidevice[unit] = nireq->io_Device;
-    niunit[unit] = nireq->io_Unit;
-  }
+    /* Allocate port */
+    if (niport == NULL) {
+        niport = CreateMsgPort();
+        if (niport == NULL)
+          return NULL;
+    }
+    if (nireq == NULL) {
+        nireq = CreateIORequest(niport, sizeof(*nireq));
+        if (nireq == NULL)
+            return NULL;
+    }
 
-  if (nibuffer[unit] == NULL) {
-    nibuffer[unit] = AllocVec(MAXLINELENGTH, MEMF_PUBLIC);
-    if (nibuffer[unit] == NULL)
-      return NULL;
-  }
+    if (nidevice[unit]) {
+        /* Already opened */
+        nireq->io_Device = nidevice[unit];
+        nireq->io_Unit = niunit[unit];
+    } else {
+        if (OpenDevice(NETINFONAME, unit, (struct IORequest *)nireq, 0L)) {
+          return NULL;
+        }
 
-  nireq->io_Length = MAXLINELENGTH;
-  nireq->io_Data = nibuffer[unit];
+        nidevice[unit] = nireq->io_Device;
+        niunit[unit] = nireq->io_Unit;
+    }
 
-  return nireq;
+    if (nibuffer[unit] == NULL) {
+        nibuffer[unit] = AllocVec(MAXLINELENGTH, MEMF_PUBLIC);
+        if (nibuffer[unit] == NULL)
+            return NULL;
+    }
+
+    nireq->io_Length = MAXLINELENGTH;
+    nireq->io_Data = nibuffer[unit];
+
+    return nireq;
 }
 
-void CloseNIUnit(ULONG unit)
+void CloseNIUnit(struct Library *ugBase, ULONG unit)
 {
-  ObtainSemaphore(ni_lock);
+    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+    ObtainSemaphore(ni_lock);
 
-  if (nidevice[unit]) {
-    assert(nireq != NULL);
+    if (nidevice[unit]) {
+        assert(nireq != NULL);
 
-    nireq->io_Device = nidevice[unit];
-    nireq->io_Unit = niunit[unit];
+        nireq->io_Device = nidevice[unit];
+        nireq->io_Unit = niunit[unit];
 
-    CloseDevice((struct IORequest *)nireq);
+        CloseDevice((struct IORequest *)nireq);
 
-    nidevice[unit] = NULL;
-    niunit[unit] = NULL;
-  }
+        nidevice[unit] = NULL;
+        niunit[unit] = NULL;
+    }
 
-  ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(ni_lock);
 }
 
-static void CleanupNIO(struct Library *UserGroupBase)
+static void CleanupNIO(struct Library *ugBase)
 {
-  endpwent();
-  endgrent();
+    endpwent();
+    endgrent();
 
-  if (nibuffer[NETINFO_PASSWD_UNIT] != NULL)
-    FreeVec(nibuffer[NETINFO_PASSWD_UNIT]);
-  nibuffer[NETINFO_PASSWD_UNIT] = NULL;
+    if (nibuffer[NETINFO_PASSWD_UNIT] != NULL)
+        FreeVec(nibuffer[NETINFO_PASSWD_UNIT]);
+    nibuffer[NETINFO_PASSWD_UNIT] = NULL;
 
-  if (nibuffer[NETINFO_GROUP_UNIT] != NULL)
-    FreeVec(nibuffer[NETINFO_GROUP_UNIT]);
-  nibuffer[NETINFO_GROUP_UNIT] = NULL;
+    if (nibuffer[NETINFO_GROUP_UNIT] != NULL)
+        FreeVec(nibuffer[NETINFO_GROUP_UNIT]);
+    nibuffer[NETINFO_GROUP_UNIT] = NULL;
 
-  if (nireq)
-    DeleteIORequest(nireq), nireq = NULL;
+    if (nireq)
+        DeleteIORequest(nireq), nireq = NULL;
 
-  if (niport)
-    DeleteMsgPort(niport), niport = NULL;
+    if (niport)
+        DeleteMsgPort(niport), niport = NULL;
 }
 
 BYTE myDoIO(struct NetInfoReq *req)
@@ -411,44 +402,44 @@ BYTE myDoIO(struct NetInfoReq *req)
 
 #if !defined(__AROS__)
 static const BYTE ioerr2errno[-IOERR_SELFTEST] = {
-  /* IOERR_OPENFAIL */
-  ENOENT,
-  /* IOERR_ABORTED */
-  EINTR,
-  /* IOERR_NOCMD */
-  ENODEV,
-  /* IOERR_BADLENGTH */
-  EBUSY,
-  /* IOERR_BADADDRESS */
-  EFAULT,
-  /* IOERR_UNITBUSY */
-  EBUSY,
-  /* IOERR_SELFTEST */
-  ENXIO,
+    /* IOERR_OPENFAIL */
+    ENOENT,
+    /* IOERR_ABORTED */
+    EINTR,
+    /* IOERR_NOCMD */
+    ENODEV,
+    /* IOERR_BADLENGTH */
+    EBUSY,
+    /* IOERR_BADADDRESS */
+    EFAULT,
+    /* IOERR_UNITBUSY */
+    EBUSY,
+    /* IOERR_SELFTEST */
+    ENXIO,
 };
 #endif
 
-void SetDeviceErr(void)
+void SetDeviceErr(struct Library *ugBase)
 {
-  short err;
+    short err;
 
-  if (nireq)
-    err = nireq->io_Error;
-  else
-    err = ENOMEM;
+    if (nireq)
+        err = nireq->io_Error;
+    else
+        err = ENOMEM;
 
-  if (err < 0) {
-    if (err >= IOERR_SELFTEST) {
+    if (err < 0) {
+        if (err >= IOERR_SELFTEST) {
 #if !defined(__AROS__)
-      err = ioerr2errno[-1 - err];
+            err = ioerr2errno[-1 - err];
 #else
-      err = ioerr2errno(-1 - err);
+            err = ioerr2errno(-1 - err);
 #endif
-    } else
-      err = EIO;
-  }
+        } else
+            err = EIO;
+    }
 
-  SetErrno(err);
+    ug_SetErrno(ugBase, err);
 }
 
 /*
@@ -457,85 +448,85 @@ void SetDeviceErr(void)
 #define EUNKNOWN "Unknown error"
 
 static const char * const __ug_errlist[] = {
-  "Undefined error: 0",			  /*  0 - ENOERROR */
-  "Operation not permitted",		  /*  1 - EPERM */
-  "No such entry",			  /*  2 - ENOENT */
-  "No such process",		          /*  3 - ESRCH */
-  "Interrupted library call",		  /*  4 - EINTR */
-  "Input/output error",			  /*  5 - EIO */
-  "Device not configured",		  /*  6 - ENXIO */
-  "Argument list too long",		  /*  7 - E2BIG */
-  "Exec format error",			  /*  8 - ENOEXEC */
-  "Bad file descriptor",		  /*  9 - EBADF */
-  "No child processes",			  /* 10 - ECHILD */
-  "Resource deadlock avoided",	          /* 11 - EDEADLK */
-  "Cannot allocate memory",		  /* 12 - ENOMEM */
-  "Permission denied",			  /* 13 - EACCES */
-  "Bad address",			  /* 14 - EFAULT */
-  "Block device required",		  /* 15 - ENOTBLK */
-  "Device busy",			  /* 16 - EBUSY */
-  "File exists",			  /* 17 - EEXIST */
-  "Cross-device link",			  /* 18 - EXDEV */
-  "Operation not supported by device",	  /* 19 - ENODEV */
-  "Not a directory",			  /* 20 - ENOTDIR */
-  "Is a directory",			  /* 21 - EISDIR */
-  "Invalid argument",			  /* 22 - EINVAL */
-  "Too many open files in system",	  /* 23 - ENFILE */
-  "Too many open files",		  /* 24 - EMFILE */
-  "Inappropriate operation for device",   /* 25 - ENOTTY */
-  "Text file busy",			  /* 26 - ETXTBSY */
-  "File too large",			  /* 27 - EFBIG */
-  "No space left on device",		  /* 28 - ENOSPC */
-  "Illegal seek",			  /* 29 - ESPIPE */
-  "Read-only file system",		  /* 30 - EROFS */
-  "Too many links",			  /* 31 - EMLINK */
-  "Broken pipe",			  /* 32 - EPIPE */
+    "Undefined error: 0",			  /*  0 - ENOERROR */
+    "Operation not permitted",		  /*  1 - EPERM */
+    "No such entry",			  /*  2 - ENOENT */
+    "No such process",		          /*  3 - ESRCH */
+    "Interrupted library call",		  /*  4 - EINTR */
+    "Input/output error",			  /*  5 - EIO */
+    "Device not configured",		  /*  6 - ENXIO */
+    "Argument list too long",		  /*  7 - E2BIG */
+    "Exec format error",			  /*  8 - ENOEXEC */
+    "Bad file descriptor",		  /*  9 - EBADF */
+    "No child processes",			  /* 10 - ECHILD */
+    "Resource deadlock avoided",	          /* 11 - EDEADLK */
+    "Cannot allocate memory",		  /* 12 - ENOMEM */
+    "Permission denied",			  /* 13 - EACCES */
+    "Bad address",			  /* 14 - EFAULT */
+    "Block device required",		  /* 15 - ENOTBLK */
+    "Device busy",			  /* 16 - EBUSY */
+    "File exists",			  /* 17 - EEXIST */
+    "Cross-device link",			  /* 18 - EXDEV */
+    "Operation not supported by device",	  /* 19 - ENODEV */
+    "Not a directory",			  /* 20 - ENOTDIR */
+    "Is a directory",			  /* 21 - EISDIR */
+    "Invalid argument",			  /* 22 - EINVAL */
+    "Too many open files in system",	  /* 23 - ENFILE */
+    "Too many open files",		  /* 24 - EMFILE */
+    "Inappropriate operation for device",   /* 25 - ENOTTY */
+    "Text file busy",			  /* 26 - ETXTBSY */
+    "File too large",			  /* 27 - EFBIG */
+    "No space left on device",		  /* 28 - ENOSPC */
+    "Illegal seek",			  /* 29 - ESPIPE */
+    "Read-only file system",		  /* 30 - EROFS */
+    "Too many links",			  /* 31 - EMLINK */
+    "Broken pipe",			  /* 32 - EPIPE */
 
-  /* math software */
-  "Numerical argument out of domain",	  /* 33 - EDOM */
-  "Result too large",			  /* 34 - ERANGE */
-/* non-blocking and interrupt i/o */
-  "Resource temporarily unavailable",	  /* 35 - EAGAIN */
+    /* math software */
+    "Numerical argument out of domain",	  /* 33 - EDOM */
+    "Result too large",			  /* 34 - ERANGE */
+    /* non-blocking and interrupt i/o */
+    "Resource temporarily unavailable",	  /* 35 - EAGAIN */
                                           /* 35 - EWOULDBLOCK */
-  "Operation now in progress",		  /* 36 - EINPROGRESS */
-  "Operation already in progress",	  /* 37 - EALREADY */
+    "Operation now in progress",		  /* 36 - EINPROGRESS */
+    "Operation already in progress",	  /* 37 - EALREADY */
 
-/* ipc/network software -- argument errors */
-  "Socket operation on non-socket",	  /* 38 - ENOTSOCK */
-  "Destination address required",	  /* 39 - EDESTADDRREQ */
-  "Message too long",			  /* 40 - EMSGSIZE */
-  "Protocol wrong type for socket",	  /* 41 - EPROTOTYPE */
-  "Protocol not available",		  /* 42 - ENOPROTOOPT */
-  "Protocol not supported",		  /* 43 - EPROTONOSUPPORT */
-  "Socket type not supported",		  /* 44 - ESOCKTNOSUPPORT */
-  "Operation not supported",		  /* 45 - EOPNOTSUPP */
-  "Protocol family not supported",	  /* 46 - EPFNOSUPPORT */
+    /* ipc/network software -- argument errors */
+    "Socket operation on non-socket",	  /* 38 - ENOTSOCK */
+    "Destination address required",	  /* 39 - EDESTADDRREQ */
+    "Message too long",			  /* 40 - EMSGSIZE */
+    "Protocol wrong type for socket",	  /* 41 - EPROTOTYPE */
+    "Protocol not available",		  /* 42 - ENOPROTOOPT */
+    "Protocol not supported",		  /* 43 - EPROTONOSUPPORT */
+    "Socket type not supported",		  /* 44 - ESOCKTNOSUPPORT */
+    "Operation not supported",		  /* 45 - EOPNOTSUPP */
+    "Protocol family not supported",	  /* 46 - EPFNOSUPPORT */
                                           /* 47 - EAFNOSUPPORT */
-  "Address family not supported by protocol family",
-  "Address already in use",		  /* 48 - EADDRINUSE */
-  "Can't assign requested address",	  /* 49 - EADDRNOTAVAIL */
+    "Address family not supported by protocol family",
+    "Address already in use",		  /* 48 - EADDRINUSE */
+    "Can't assign requested address",	  /* 49 - EADDRNOTAVAIL */
 
-/* ipc/network software -- operational errors */
-  "Network is down",			  /* 50 - ENETDOWN */
-  "Network is unreachable",		  /* 51 - ENETUNREACH */
-  "Network dropped connection on reset",  /* 52 - ENETRESET */
-  "Software caused connection abort",	  /* 53 - ECONNABORTED */
-  "Connection reset by peer",		  /* 54 - ECONNRESET */
-  "No buffer space available",		  /* 55 - ENOBUFS */
-  "Socket is already connected",	  /* 56 - EISCONN */
-  "Socket is not connected",		  /* 57 - ENOTCONN */
-  "Can't send after socket shutdown",	  /* 58 - ESHUTDOWN */
-  "Too many references: can't splice",	  /* 59 - ETOOMANYREFS */
-  "Connection timed out",		  /* 60 - ETIMEDOUT */
-  "Connection refused",			  /* 61 - ECONNREFUSED */
+    /* ipc/network software -- operational errors */
+    "Network is down",			  /* 50 - ENETDOWN */
+    "Network is unreachable",		  /* 51 - ENETUNREACH */
+    "Network dropped connection on reset",  /* 52 - ENETRESET */
+    "Software caused connection abort",	  /* 53 - ECONNABORTED */
+    "Connection reset by peer",		  /* 54 - ECONNRESET */
+    "No buffer space available",		  /* 55 - ENOBUFS */
+    "Socket is already connected",	  /* 56 - EISCONN */
+    "Socket is not connected",		  /* 57 - ENOTCONN */
+    "Can't send after socket shutdown",	  /* 58 - ESHUTDOWN */
+    "Too many references: can't splice",	  /* 59 - ETOOMANYREFS */
+    "Connection timed out",		  /* 60 - ETIMEDOUT */
+    "Connection refused",			  /* 61 - ECONNREFUSED */
 
-  "Too many levels of symbolic links",	  /* 62 - ELOOP */
-  "File name too long",			  /* 63 - ENAMETOOLONG */
+    "Too many levels of symbolic links",	  /* 62 - ELOOP */
+    "File name too long",			  /* 63 - ENAMETOOLONG */
 
-/* should be rearranged */
-  "Host is down",			  /* 64 - EHOSTDOWN */
-  "No route to host",			  /* 65 - EHOSTUNREACH */
-  "Directory not empty",		  /* 66 - ENOTEMPTY */
+    /* should be rearranged */
+    "Host is down",			  /* 64 - EHOSTDOWN */
+    "No route to host",			  /* 65 - EHOSTUNREACH */
+    "Directory not empty",		  /* 66 - ENOTEMPTY */
 };
 
 static const int __ug_nerr = ENOTEMPTY + 1;
@@ -581,25 +572,25 @@ AROS_LH1I (const char *, ug_StrError,
         AROS_LHA(LONG, code, D1),
         struct Library *, UserGroupBase, 7, Usergroup)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  if (code < 0) {
-    if (code >= IOERR_SELFTEST) {
+    if (code < 0) {
+        if (code >= IOERR_SELFTEST) {
 #if !defined(__AROS__)
-      code = ioerr2errno[-1 - code];
+            code = ioerr2errno[-1 - code];
 #else
-      code = ioerr2errno(-1 - code);
+            code = ioerr2errno(-1 - code);
 #endif
-    } else
-      code = EIO;
-  }
+        } else
+            code = EIO;
+    }
 
-  if (code >= __ug_nerr)
-    return EUNKNOWN;
-  else
-    return __ug_errlist[code];
+    if (code >= __ug_nerr)
+        return EUNKNOWN;
+    else
+        return __ug_errlist[code];
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /****** usergroup.library/ug_SetupContextTags ********************************
@@ -681,16 +672,16 @@ AROS_LH2 (int, ug_SetupContextTagList,
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag;
-    struct Process *caller = (struct Process *)FindTask(NULL);
+    struct Task *caller = FindTask(NULL);
 
-    if (owner != NULL && owner != caller) {
+    if (UserGroupBase->owner != NULL && UserGroupBase->owner != caller) {
         /* We should */
-        InMsg("ug_SetupContextTags: not an owner (%lx)", caller);
+        InMsg("ug_SetupContextTags: not an UserGroupBase->owner (%lx)", caller);
         return -1;
     }
 
     if (tagargs == NULL || name == NULL) {
-        SetErrno(EINVAL);
+        ug_SetErrno((struct Library *)UserGroupBase, EINVAL);
         return -1;
     }
 
@@ -701,9 +692,9 @@ AROS_LH2 (int, ug_SetupContextTagList,
 
         ObtainSemaphore(ni_lock);
 
-        if (owner != NULL && owner != caller) {
+        if (UserGroupBase->owner != NULL && UserGroupBase->owner != caller) {
             if (tag->ti_Data != 0) {
-                owner = (void *)tag->ti_Data;
+                UserGroupBase->owner = (void *)tag->ti_Data;
                 error = 0;
             } else {
                 error = EINVAL;
@@ -715,26 +706,28 @@ AROS_LH2 (int, ug_SetupContextTagList,
         ReleaseSemaphore(ni_lock);
 
         if (error) {
-            SetErrno(error);
+            ug_SetErrno((struct Library *)UserGroupBase, error);
             return -1;
         }
     }
 
     if (tag = FindTagItem(UGT_ERRNOLPTR, tagargs)) {
-        errnop = (void *)tag->ti_Data;
-        errnosize = es_long;
+        UserGroupBase->errnop = (void *)tag->ti_Data;
+        UserGroupBase->errnosize = es_long;
     }
     if (tag = FindTagItem(UGT_ERRNOWPTR, tagargs)) {
-        errnop = (void *)tag->ti_Data;
-        errnosize = es_word;
+        UserGroupBase->errnop = (void *)tag->ti_Data;
+        UserGroupBase->errnosize = es_word;
     }
     if (tag = FindTagItem(UGT_ERRNOBPTR, tagargs)) {
-        errnop = (void *)tag->ti_Data;
-        errnosize = es_byte;
+        UserGroupBase->errnop = (void *)tag->ti_Data;
+        UserGroupBase->errnosize = es_byte;
     }
+#if (0)
     if (tag = FindTagItem(UGT_INTRMASK, tagargs)) {
         break_mask = tag->ti_Data;
     }
+#endif
 
     return 0;
 

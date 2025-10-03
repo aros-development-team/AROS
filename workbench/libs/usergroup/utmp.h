@@ -35,9 +35,9 @@
  *	@(#)utmp.h	5.11 (Berkeley) 4/3/91
  */
 
-#define _PATH_UTMP              "GGTCP:log/utmp"
-#define _PATH_WTMP              "GGTCP:log/wtmp"
-#define _PATH_LASTLOG           "GGTCP:log/lastlog"
+#define _PATH_UTMP              "T:log/utmp"
+#define _PATH_WTMP              "T:log/wtmp"
+#define _PATH_LASTLOG           "T:log/lastlog"
 
 #define UT_NAMESIZE             32
 #define UT_LINESIZE             32

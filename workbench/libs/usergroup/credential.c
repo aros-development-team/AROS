@@ -21,6 +21,8 @@
 
 struct CredentialResource *CredentialBase;
 
+static struct UserGroupCredentials creds[1];
+
 #ifdef notyet
 typedef struct CredentialResource *(*resident_init_fp)(void);
 
@@ -107,7 +109,7 @@ struct CredentialResource *CredentialInit(const char *name)
         return pid;
     }
 
-    SetErrno(error);
+    ug_SetErrno((struct Library *)UserGroupBase, error);
     return -1;
 #endif
     return 0;
@@ -352,7 +354,7 @@ AROS_LH0I(gid_t, getegid,
         return pc->p_ngroups;
     }
 
-    SetErrno(error);
+    ug_SetErrno((struct Library *)UserGroupBase, error);
     return -1;
 
     AROS_LIBFUNC_EXIT
@@ -394,7 +396,7 @@ AROS_LH2 (int, setreuid,
     #endif
     {
           unlock(&credential_list);
-          SetErrno(error);
+          ug_SetErrno((struct Library *)UserGroupBase, error);
           return -1;
     } else {
         /*
@@ -505,7 +507,7 @@ AROS_LH2 (int, setregid,
        (error = suser(pc->pc_ucred))) ||
       (egid != pc->pc_ucred->cr_gid && egid != pc->p_rgid &&
        (error = suser(pc->pc_ucred)))) {
-        SetErrno(error);
+        ug_SetErrno((struct Library *)UserGroupBase, error);
         return -1;
     } else {
         /*
@@ -594,7 +596,7 @@ AROS_LH1 (int, setgid,
         return 0;
     }
 
-    SetErrno(error);
+    ug_SetErrno((struct Library *)UserGroupBase, error);
     return -1;
 
     AROS_LIBFUNC_EXIT
@@ -746,9 +748,6 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 
     AROS_LIBFUNC_EXIT
 }
-
-static struct UserGroupCredentials creds[1];
-
 
 /*****************************************************************************
 
