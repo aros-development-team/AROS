@@ -61,7 +61,7 @@
         The usergroup.library does not directly depend on AmiTCP/IP.  It can
         be used with any program needing user identification, account and
         group databases.
-        
+
     USING USERGROUP.LIBRARY
         Each time the usergroup.library is opened, it creates an new
         instance of the library base.  The library base contains the static
@@ -82,8 +82,8 @@
         It is also possible to call following functions from any task.
         However, note that a non-owning tasks cannot recover error codes:
 
-            getgroups() setreuid() setuid() setregid() setgid() setgroups() 
-            setsid() setlogin() 
+            getgroups() setreuid() setuid() setregid() setgid() setgroups()
+            setsid() setlogin()
 
         It is possible to give the library instance to another task.  Only
         the current owner can close the library.
@@ -212,8 +212,8 @@ static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
     InitSemaphore(ni_lock);
 
     if ((DOSBase = (void *)OpenLibrary("dos.library", 37L)) &&
-      (UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37L)) &&
-      TimeInit((struct Library *)LIBBASE) == 0 && LRandomInit() == 0) {
+            (UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37L)) &&
+            TimeInit((struct Library *)LIBBASE) == 0 && LRandomInit() == 0) {
         LIBBASE->owner = FindTask(NULL);
         Forbid();
         if (!(CredentialBase = OpenResource(CREDENTIALNAME))) {
@@ -286,7 +286,7 @@ void ug_SetErrno(struct Library *ugBase, int _en)
  * Get errno
  */
 AROS_LH0 (int, ug_GetErr,
-        struct UserGroupBase *, UserGroupBase, 6, Usergroup)
+          struct UserGroupBase *, UserGroupBase, 6, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -321,7 +321,7 @@ struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
     if (niport == NULL) {
         niport = CreateMsgPort();
         if (niport == NULL)
-          return NULL;
+            return NULL;
     }
     if (nireq == NULL) {
         nireq = CreateIORequest(niport, sizeof(*nireq));
@@ -335,7 +335,7 @@ struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
         nireq->io_Unit = niunit[unit];
     } else {
         if (OpenDevice(NETINFONAME, unit, (struct IORequest *)nireq, 0L)) {
-          return NULL;
+            return NULL;
         }
 
         nidevice[unit] = nireq->io_Device;
@@ -569,8 +569,8 @@ static const int __ug_nerr = ENOTEMPTY + 1;
 */
 
 AROS_LH1I (const char *, ug_StrError,
-        AROS_LHA(LONG, code, D1),
-        struct Library *, UserGroupBase, 7, Usergroup)
+           AROS_LHA(LONG, code, D1),
+           struct Library *, UserGroupBase, 7, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -640,7 +640,7 @@ AROS_LH1I (const char *, ug_StrError,
                         NULL. If the pointer is NULL, the library will have
                         no owner and any task can become owner by calling
                         ug_SetupContextTagList(UGT_OWNER, FindTask(NULL),
-                        TAG_END) ; 
+                        TAG_END) ;
 
                         Most of the library calls are allowed only for the
                         owner of library.  Only the owner can CloseLibrary()
@@ -665,9 +665,9 @@ AROS_LH1I (const char *, ug_StrError,
 */
 
 AROS_LH2 (int, ug_SetupContextTagList,
-        AROS_LHA(UBYTE *, name, A0),
-        AROS_LHA(struct TagItem *, tagargs, A1),
-        struct UserGroupBase *, UserGroupBase, 5, Usergroup)
+          AROS_LHA(UBYTE *, name, A0),
+          AROS_LHA(struct TagItem *, tagargs, A1),
+          struct UserGroupBase *, UserGroupBase, 5, Usergroup)
 {
     AROS_LIBFUNC_INIT
 

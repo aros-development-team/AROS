@@ -253,7 +253,7 @@ static struct pcred *crfind(pid_t pid)
 */
 
 AROS_LH0I(uid_t, getuid,
-                struct Library *, UserGroupBase, 8, Usergroup)
+          struct Library *, UserGroupBase, 8, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -263,7 +263,7 @@ AROS_LH0I(uid_t, getuid,
 }
 
 AROS_LH0I(uid_t, geteuid,
-                struct Library *, UserGroupBase, 9, Usergroup)
+          struct Library *, UserGroupBase, 9, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -273,7 +273,7 @@ AROS_LH0I(uid_t, geteuid,
 }
 
 AROS_LH0I(gid_t, getgid,
-                struct Library *, UserGroupBase, 12, Usergroup)
+          struct Library *, UserGroupBase, 12, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -283,7 +283,7 @@ AROS_LH0I(gid_t, getgid,
 }
 
 AROS_LH0I(gid_t, getegid,
-                struct Library *, UserGroupBase, 13, Usergroup)
+          struct Library *, UserGroupBase, 13, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -361,9 +361,9 @@ AROS_LH0I(gid_t, getegid,
 }
 
 AROS_LH2 (int, setreuid,
-        AROS_LHA(uid_t, ruid, D0),
-        AROS_LHA(uid_t, euid, D1),
-        struct UserGroupBase *, UserGroupBase, 10, Usergroup)
+          AROS_LHA(uid_t, ruid, D0),
+          AROS_LHA(uid_t, euid, D1),
+          struct UserGroupBase *, UserGroupBase, 10, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -382,22 +382,22 @@ AROS_LH2 (int, setreuid,
     * if (ruid != pc->p_ruid &&
     *     (error = suser(pc->pc_ucred, &p->p_acflag)))
     */
-    #if 1
+#if 1
     /* allow setreuid(-1, 0) to emulate SUID */
     if ((ruid != pc->p_ruid && ruid != pc->pc_ucred->cr_uid /* XXX */ &&
-       (error = suser(pc->pc_ucred))) ||
-      (/* euid != pc->pc_ucred->cr_uid */ 0 && euid != pc->p_ruid &&
-       (error = suser(pc->pc_ucred))))
-    #else
+            (error = suser(pc->pc_ucred))) ||
+            (/* euid != pc->pc_ucred->cr_uid */ 0 && euid != pc->p_ruid &&
+                    (error = suser(pc->pc_ucred))))
+#else
     if ((ruid != pc->p_ruid && ruid != pc->pc_ucred->cr_uid /* XXX */ &&
-       (error = suser(pc->pc_ucred))) ||
-      (euid != pc->pc_ucred->cr_uid && euid != pc->p_ruid &&
-       (error = suser(pc->pc_ucred))))
-    #endif
+            (error = suser(pc->pc_ucred))) ||
+            (euid != pc->pc_ucred->cr_uid && euid != pc->p_ruid &&
+             (error = suser(pc->pc_ucred))))
+#endif
     {
-          unlock(&credential_list);
-          ug_SetErrno((struct Library *)UserGroupBase, error);
-          return -1;
+        unlock(&credential_list);
+        ug_SetErrno((struct Library *)UserGroupBase, error);
+        return -1;
     } else {
         /*
          * Everything's okay, do it.  Copy credentials so other references do
@@ -471,8 +471,8 @@ AROS_LH2 (int, setreuid,
 */
 
 AROS_LH1 (int, setuid,
-        AROS_LHA(uid_t, uid, D0),
-        struct UserGroupBase *, UserGroupBase, 11, Usergroup)
+          AROS_LHA(uid_t, uid, D0),
+          struct UserGroupBase *, UserGroupBase, 11, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -482,9 +482,9 @@ AROS_LH1 (int, setuid,
 }
 
 AROS_LH2 (int, setregid,
-        AROS_LHA(gid_t, rgid, D0),
-        AROS_LHA(gid_t, egid, D1),
-        struct UserGroupBase *, UserGroupBase, 14, Usergroup)
+          AROS_LHA(gid_t, rgid, D0),
+          AROS_LHA(gid_t, egid, D1),
+          struct UserGroupBase *, UserGroupBase, 14, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -504,9 +504,9 @@ AROS_LH2 (int, setregid,
     *     (error = suser(pc->pc_ucred, &p->p_acflag)))
     */
     if ((rgid != pc->p_rgid && rgid != pc->pc_ucred->cr_gid /* XXX */ &&
-       (error = suser(pc->pc_ucred))) ||
-      (egid != pc->pc_ucred->cr_gid && egid != pc->p_rgid &&
-       (error = suser(pc->pc_ucred)))) {
+            (error = suser(pc->pc_ucred))) ||
+            (egid != pc->pc_ucred->cr_gid && egid != pc->p_rgid &&
+             (error = suser(pc->pc_ucred)))) {
         ug_SetErrno((struct Library *)UserGroupBase, error);
         return -1;
     } else {
@@ -525,8 +525,8 @@ AROS_LH2 (int, setregid,
 }
 
 AROS_LH1 (int, setgid,
-        AROS_LHA(gid_t, gid, D0),
-        struct UserGroupBase *, UserGroupBase, 15, Usergroup)
+          AROS_LHA(gid_t, gid, D0),
+          struct UserGroupBase *, UserGroupBase, 15, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -642,24 +642,24 @@ AROS_LH1 (int, setgid,
 #if 0
 ASM uid_t R_ug_mu2id(REG(d0) UWORD id)
 {
-  if (id == 0) {
-    return -2;
-  } else if (id == 65535) {
-    return 0;
-  } else {
-    return id;
-  }
+    if (id == 0) {
+        return -2;
+    } else if (id == 65535) {
+        return 0;
+    } else {
+        return id;
+    }
 }
 
 ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 {
-  if (id == 0) {
-    return 65535;
-  } else if (id == -2) {
-    return 0;
-  } else {
-    return id;
-  }
+    if (id == 0) {
+        return 65535;
+    } else if (id == -2) {
+        return 0;
+    } else {
+        return id;
+    }
 }
 #endif
 
@@ -715,9 +715,6 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
         AROS_LH0I(mode_t, getumask,
 
 /*  SYNOPSIS */
-
-        oldmask = getumask()
-        D0
 
 /* LOCATION */
                 struct Library *, UserGroupBase, 33, Usergroup)

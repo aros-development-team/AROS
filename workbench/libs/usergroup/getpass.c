@@ -97,7 +97,7 @@
 
     SetMode(conin, 0);                                                                  /* Cooked */
     if (useconsole)
-      Close(conin);
+        Close(conin);
 
     return buf;
 

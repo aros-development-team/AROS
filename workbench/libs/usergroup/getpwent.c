@@ -115,8 +115,8 @@
 #include <proto/usergroup.h>
 
 AROS_LH1(struct passwd *, getpwnam,
-        AROS_LHA(const char *, name, A1),
-        struct UserGroupBase *, UserGroupBase, 19, Usergroup)
+         AROS_LHA(const char *, name, A1),
+         struct UserGroupBase *, UserGroupBase, 19, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -151,8 +151,8 @@ AROS_LH1(struct passwd *, getpwnam,
 }
 
 AROS_LH1(struct passwd *, getpwuid,
-        AROS_LHA(uid_t, uid, D0),
-        struct UserGroupBase *, UserGroupBase, 20, Usergroup)
+         AROS_LHA(uid_t, uid, D0),
+         struct UserGroupBase *, UserGroupBase, 20, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -181,7 +181,7 @@ AROS_LH1(struct passwd *, getpwuid,
 }
 
 AROS_LH0(void, setpwent,
-                struct UserGroupBase *, UserGroupBase, 21, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 21, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -203,7 +203,7 @@ AROS_LH0(void, setpwent,
 }
 
 AROS_LH0(struct passwd *, getpwent,
-                struct UserGroupBase *, UserGroupBase, 22, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 22, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -212,7 +212,7 @@ AROS_LH0(struct passwd *, getpwent,
 
     ObtainSemaphore(ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
-         /* do setpwent() if necessary */
+        /* do setpwent() if necessary */
         if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
             myDoIO(nreq);
@@ -237,7 +237,7 @@ AROS_LH0(struct passwd *, getpwent,
 }
 
 AROS_LH0(void, endpwent,
-                struct UserGroupBase *, UserGroupBase, 23, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 23, Usergroup)
 {
     AROS_LIBFUNC_INIT
 

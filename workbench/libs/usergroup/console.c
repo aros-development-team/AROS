@@ -53,8 +53,8 @@
     struct Process *me = (struct Process *)FindTask(NULL);
 
     return
-      me->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
-      me->pr_WindowPtr != (APTR)-1;
+        me->pr_Task.tc_Node.ln_Type == NT_PROCESS &&
+        me->pr_WindowPtr != (APTR)-1;
 
     AROS_LIBFUNC_EXIT
 }
@@ -71,9 +71,9 @@ char *i_GetConsoleName(struct MsgPort *consoletask, char *buffer, ULONG size)
 
     /* Fail if the there is no task for this port */
     if (portowner == NULL ||
-      (consoletask->mp_Node.ln_Type != PA_SIGNAL &&
-       consoletask->mp_Node.ln_Type != PA_SOFTINT) ||
-      portowner->ln_Name == NULL) {
+            (consoletask->mp_Node.ln_Type != PA_SIGNAL &&
+             consoletask->mp_Node.ln_Type != PA_SOFTINT) ||
+            portowner->ln_Name == NULL) {
         poname = "XXX";
     } else {
         /* OK, port owner has got a name, use it */

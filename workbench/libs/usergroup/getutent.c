@@ -119,7 +119,7 @@ void CleanupUTMP(struct Library *ugBase)
 }
 
 AROS_LH0(void, setutent,
-                struct UserGroupBase *, UserGroupBase, 38, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 38, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -146,7 +146,7 @@ AROS_LH0(void, setutent,
 }
 
 AROS_LH0(struct utmp *, getutent,
-                struct UserGroupBase *, UserGroupBase, 39, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 39, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -174,7 +174,7 @@ AROS_LH0(struct utmp *, getutent,
             for (;;) {
                 if (UserGroupBase->utent_left == 0) {
                     LONG read;
-                
+
                     UserGroupBase->uttell = Seek(UserGroupBase->utfile, 0, OFFSET_CURRENT);
                     read = Read(UserGroupBase->utfile, UserGroupBase->utentbuf, sizeof(*UserGroupBase->utent) * UTENTS);
 
@@ -208,7 +208,7 @@ AROS_LH0(struct utmp *, getutent,
 }
 
 AROS_LH0(void, endutent,
-                struct UserGroupBase *, UserGroupBase, 40, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 40, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -228,8 +228,8 @@ AROS_LH0(void, endutent,
 
 #if (0)
 AROS_LH1(struct utmp *, getutsid,
-        AROS_LHA(pid_t, sid, D0),
-        struct UserGroupBase *, UserGroupBase, 40, Usergroup)
+         AROS_LHA(pid_t, sid, D0),
+         struct UserGroupBase *, UserGroupBase, 40, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -237,7 +237,7 @@ AROS_LH1(struct utmp *, getutsid,
 
     for (setutent(); ut = getutent();) {
         if (ut->ut_sid == sid)
-        return ut;
+            return ut;
     }
 
     return NULL;
@@ -268,11 +268,11 @@ AROS_LH1(struct utmp *, getutsid,
         The entry returned by getlastlog is defined by the structure lastlog
         found in the include file <utmp.h>:
 
-              struct lastlog {                                              
-                long  ll_time;              \* the login time *\            
-                uid_t ll_uid;               \* user ID *\                   
-                char  ll_name[UT_NAMESIZE]; \* the login name *\            
-                char  ll_line[UT_LINESIZE]; \* the name of login device *\  
+              struct lastlog {
+                long  ll_time;              \* the login time *\
+                uid_t ll_uid;               \* user ID *\
+                char  ll_name[UT_NAMESIZE]; \* the login name *\
+                char  ll_line[UT_LINESIZE]; \* the name of login device *\
                 char  ll_host[UT_HOSTSIZE]; \* where the login originated *\
               };
 
@@ -316,7 +316,7 @@ AROS_LH1(struct utmp *, getutsid,
         // Multi-User ...
 
         UserGroupBase->lltell = 0;
-    
+
         if (llfile) {
             while (Read(llfile, ll, sizeof(*ll)) == sizeof(*ll)) {
                 UserGroupBase->lltell += sizeof(*ll);
@@ -399,10 +399,10 @@ AROS_LH1(struct utmp *, getutsid,
 
     if (name == NULL || con == NULL) {
         error = EFAULT;
-    } else {    
+    } else {
         if (!FindResident("security.library")) {
             struct utmp utmp[1];
-            struct timeval now[1]; 
+            struct timeval now[1];
 
             // Single-User ...
 
@@ -419,14 +419,14 @@ AROS_LH1(struct utmp *, getutsid,
             *CredentialBase->r_utmp = *utmp;
 
             /*
-            * This trick requires that 
+            * This trick requires that
             * lastlog and utmp are essentially identical..
             */
             utmp->ut_sid = (long) uid;
             *CredentialBase->r_lastlog = *(struct lastlog *)utmp;
         } else {
             struct utmp *oldut, utmp[1];
-            struct timeval now[1]; 
+            struct timeval now[1];
 
             // Multi-User ...
 
@@ -435,7 +435,7 @@ AROS_LH1(struct utmp *, getutsid,
             utmp->ut_time = now->tv_sec;
             utmp->ut_sid = sid;
             strncpy(utmp->ut_name, name, sizeof(utmp->ut_name));
-            if (sid != 0) 
+            if (sid != 0)
                 strncpy(utmp->ut_line, con, sizeof(utmp->ut_line));
             else
                 strcpy(utmp->ut_line, "ALL");
@@ -496,8 +496,8 @@ AROS_LH1(struct utmp *, getutsid,
     }
 
     if (error != 0) {
-          ug_SetErrno((struct Library *)UserGroupBase, error);
-          return -1;
+        ug_SetErrno((struct Library *)UserGroupBase, error);
+        return -1;
     }
     return 0;
 

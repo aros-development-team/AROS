@@ -27,39 +27,39 @@
  */
 struct CredentialResource *CredentialInit(const char *name)
 {
-  struct CredentialResource *res;
-  ULONG ressize = sizeof(*res) + sizeof(VSTRING);
+    struct CredentialResource *res;
+    ULONG ressize = sizeof(*res) + sizeof(VSTRING);
 
-  res = AllocVec(ressize, MEMF_CLEAR|MEMF_PUBLIC);
+    res = AllocVec(ressize, MEMF_CLEAR|MEMF_PUBLIC);
 
-  CopyMem(CREDENTIALNAME, res->r_name, sizeof(CREDENTIALNAME));
-  CopyMem(VSTRING, res->r_vstring, sizeof(VSTRING));
+    CopyMem(CREDENTIALNAME, res->r_name, sizeof(CREDENTIALNAME));
+    CopyMem(VSTRING, res->r_vstring, sizeof(VSTRING));
 
-  res->r_Lib.lib_Node.ln_Type = NT_RESOURCE;
-  res->r_Lib.lib_Node.ln_Name =  (STRPTR)res->r_name;
-  res->r_Lib.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
-  /* res->r_Lib.lib_NegSize = 0; */
-  res->r_Lib.lib_PosSize = ressize;
-  res->r_Lib.lib_Version = VERSION;
-  res->r_Lib.lib_Revision = REVISION;
-  res->r_Lib.lib_IdString = (APTR)res->r_vstring;
-  /* res->r_Lib.lib_Sum = 0; */
-  res->r_Lib.lib_OpenCnt = 1;
+    res->r_Lib.lib_Node.ln_Type = NT_RESOURCE;
+    res->r_Lib.lib_Node.ln_Name =  (STRPTR)res->r_name;
+    res->r_Lib.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
+    /* res->r_Lib.lib_NegSize = 0; */
+    res->r_Lib.lib_PosSize = ressize;
+    res->r_Lib.lib_Version = VERSION;
+    res->r_Lib.lib_Revision = REVISION;
+    res->r_Lib.lib_IdString = (APTR)res->r_vstring;
+    /* res->r_Lib.lib_Sum = 0; */
+    res->r_Lib.lib_OpenCnt = 1;
 
-  res->r_proc->p_ucred = res->r_ucred;
-  res->r_proc->p_cred->p_ngroups = 1;
+    res->r_proc->p_ucred = res->r_ucred;
+    res->r_proc->p_cred->p_ngroups = 1;
 
-  AddResource(res);
+    AddResource(res);
 
-  return res;
+    return res;
 }
 
 struct proc *procfind(pid_t pid)
 {
-  return CredentialBase->r_proc;
+    return CredentialBase->r_proc;
 }
 
 struct ucred *crcopy(struct ucred *cred)
 {
-  return cred;
+    return cred;
 }

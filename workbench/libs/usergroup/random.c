@@ -23,7 +23,7 @@ extern struct Library *TimerBase;
 
 /****i* random.module/LRandom ******************************************
 *
-*   NAME	
+*   NAME
 *	LRandom -- Random number generator
 *
 *   SYNOPSIS
@@ -49,9 +49,9 @@ extern struct Library *TimerBase;
 */
 
 static union random_seed {
-  struct timeval time;
-  ULONG          longs[2];
-  UWORD          words[4];
+    struct timeval time;
+    ULONG          longs[2];
+    UWORD          words[4];
 } seed;
 
 static const UWORD random_offset[4] = { 0x7823, 0xab34, 0x93b4, 0x7673 };
@@ -69,13 +69,13 @@ ULONG LRandom(void)
         carry >>= 16;
     }
 
-    return (ULONG)(seed.words[3] << 24) + (seed.words[2]<<16) + 
-        (seed.words[1] << 8) + seed.words[0];
+    return (ULONG)(seed.words[3] << 24) + (seed.words[2]<<16) +
+           (seed.words[1] << 8) + seed.words[0];
 }
 
 /****i* random.module/LRandomInit ******************************************
 *
-*   NAME	
+*   NAME
 *	LRandomInit -- initialize LRandom generator
 *
 *   SYNOPSIS
@@ -106,8 +106,14 @@ int LRandomInit(void)
 {
     if (TimerBase) {
         GetSysTime(&seed.time);
-        LRandom();   LRandom();   LRandom();   LRandom();
-        LRandom();   LRandom();   LRandom();   LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
+        LRandom();
         return 0;
     }
     return -1;

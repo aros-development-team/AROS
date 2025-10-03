@@ -49,7 +49,7 @@
 */
 
 AROS_LH0(char *, getlogin,
-                struct UserGroupBase *, UserGroupBase, 36, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 36, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -108,8 +108,8 @@ AROS_LH0(char *, getlogin,
 */
 
 AROS_LH1(int, setlogin,
-	AROS_LHA(const char *, buffer, A1),
-	struct UserGroupBase *, UserGroupBase, 37, Usergroup)
+         AROS_LHA(const char *, buffer, A1),
+         struct UserGroupBase *, UserGroupBase, 37, Usergroup)
 {
     AROS_LIBFUNC_INIT
 

@@ -25,7 +25,7 @@
 
 
         groupent = getgrnam(name)
-           D0                A1          
+           D0                A1
         struct group *getgrnam(const char *);
 
 
@@ -124,8 +124,8 @@
 #include <proto/usergroup.h>
 
 AROS_LH1(struct group *, getgrnam,
-        AROS_LHA(const char *, name, A1),
-        struct UserGroupBase *, UserGroupBase, 24, Usergroup)
+         AROS_LHA(const char *, name, A1),
+         struct UserGroupBase *, UserGroupBase, 24, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -160,8 +160,8 @@ AROS_LH1(struct group *, getgrnam,
 }
 
 AROS_LH1(struct group *, getgrgid,
-        AROS_LHA(gid_t, gid, D0),
-        struct UserGroupBase *, UserGroupBase, 25, Usergroup)
+         AROS_LHA(gid_t, gid, D0),
+         struct UserGroupBase *, UserGroupBase, 25, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -190,7 +190,7 @@ AROS_LH1(struct group *, getgrgid,
 }
 
 AROS_LH0(void, setgrent,
-                struct UserGroupBase *, UserGroupBase, 26, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 26, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -212,7 +212,7 @@ AROS_LH0(void, setgrent,
 }
 
 AROS_LH0(struct group *, getgrent,
-                struct UserGroupBase *, UserGroupBase, 27, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 27, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -221,7 +221,7 @@ AROS_LH0(struct group *, getgrent,
 
     ObtainSemaphore(ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
-         /* do setgrent() if necessary */
+        /* do setgrent() if necessary */
         if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
             myDoIO(nreq);
@@ -246,7 +246,7 @@ AROS_LH0(struct group *, getgrent,
 }
 
 AROS_LH0(void, endgrent,
-                struct UserGroupBase *, UserGroupBase, 28, Usergroup)
+         struct UserGroupBase *, UserGroupBase, 28, Usergroup)
 {
     AROS_LIBFUNC_INIT
 

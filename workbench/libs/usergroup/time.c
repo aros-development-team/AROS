@@ -46,8 +46,7 @@ static struct timerequest timereq[1] = { 0 };
 #if !defined(__AROS__)
 struct Library *TimerBase;
 /* This structure must only be allocated by locale.library and is READ-ONLY! */
-struct Locale
-{
+struct Locale {
     STRPTR	loc_LocaleName;	  /* locale's name		 */
     STRPTR	loc_LanguageName;	  /* language of this locale	 */
     STRPTR	loc_PrefLanguages[10];	  /* preferred languages	 */
@@ -58,7 +57,7 @@ struct Locale
     ULONG	loc_TelephoneCode;	  /* country's telephone code	 */
     LONG	loc_GMTOffset;		  /* minutes from GMT		 */
 
-/* deleted the rest to save space */
+    /* deleted the rest to save space */
 };
 void CloseLocale( struct Locale *locale );
 struct Locale *OpenLocale( STRPTR name );
@@ -70,68 +69,68 @@ struct Device *TimerBase;
 
 int TimeInit(struct Library *ugBase)
 {
-  if (OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timereq, 0)) {
-    TimerBase = NULL;
-    return -1;
-  } else {
+    if (OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timereq, 0)) {
+        TimerBase = NULL;
+        return -1;
+    } else {
 #if !defined(__AROS__)
-    TimerBase = (struct Library*)timereq->tr_node.io_Device;
-    if (TimerBase->lib_Version >= 36)
+        TimerBase = (struct Library*)timereq->tr_node.io_Device;
+        if (TimerBase->lib_Version >= 36)
 #else
-    TimerBase = timereq->tr_node.io_Device;
-    if (TimerBase->dd_Library.lib_Version >= 36)
+        TimerBase = timereq->tr_node.io_Device;
+        if (TimerBase->dd_Library.lib_Version >= 36)
 #endif
-    {
-      /*
-       * Initialize time zone information for the gettimeofday()
-       * First try to open locale (2.1 and up), and if that fails,
-       * try to read environment variable TZ.
-       */
-      void *LocaleBase;
-      struct Locale *thisLocale = NULL;
+        {
+            /*
+             * Initialize time zone information for the gettimeofday()
+             * First try to open locale (2.1 and up), and if that fails,
+             * try to read environment variable TZ.
+             */
+            void *LocaleBase;
+            struct Locale *thisLocale = NULL;
 
-      if ((LocaleBase = OpenLibrary("locale.library", 38)) != NULL) {
-        if ((thisLocale = OpenLocale(NULL)) != NULL) {
-          /*
-           * Update time zone minutes west from GMT.
-           */
-          __time_zone.tz_minuteswest = thisLocale->loc_GMTOffset;
-          CloseLocale(thisLocale);
-        }
-        CloseLibrary(LocaleBase);
-      }
-      if (!thisLocale) { /* if locale information was not available */
-        short len;
-        LONG value;
-        char zone[10];
-
-        BPTR file = Open("ENV:TZ", MODE_OLDFILE);
-        if (file) {
-          len = Read(file, zone, sizeof(zone));
-          if (len > 3) {
-            zone[len] = '\000';
-            /* should interpret floats as well! */
-            if (StrToLong(zone+3, &value) > 0) {
-              /*
-               * Update time zone minutes west from GMT.
-               */
-              __time_zone.tz_minuteswest = (short)value * (short)60;
+            if ((LocaleBase = OpenLibrary("locale.library", 38)) != NULL) {
+                if ((thisLocale = OpenLocale(NULL)) != NULL) {
+                    /*
+                     * Update time zone minutes west from GMT.
+                     */
+                    __time_zone.tz_minuteswest = thisLocale->loc_GMTOffset;
+                    CloseLocale(thisLocale);
+                }
+                CloseLibrary(LocaleBase);
             }
-          }
-          Close(file);
+            if (!thisLocale) { /* if locale information was not available */
+                short len;
+                LONG value;
+                char zone[10];
+
+                BPTR file = Open("ENV:TZ", MODE_OLDFILE);
+                if (file) {
+                    len = Read(file, zone, sizeof(zone));
+                    if (len > 3) {
+                        zone[len] = '\000';
+                        /* should interpret floats as well! */
+                        if (StrToLong(zone+3, &value) > 0) {
+                            /*
+                             * Update time zone minutes west from GMT.
+                             */
+                            __time_zone.tz_minuteswest = (short)value * (short)60;
+                        }
+                    }
+                    Close(file);
+                }
+            }
+
+            /*
+             * Update local time seconds to GMT translation
+             */
+            __local_to_GMT += (short)__time_zone.tz_minuteswest * (short)60;
+
+            return 0;
         }
-      }
 
-      /*
-       * Update local time seconds to GMT translation
-       */
-      __local_to_GMT += (short)__time_zone.tz_minuteswest * (short)60;
-
-      return 0;
+        return -1;
     }
-
-    return -1;
-  }
 }
 
 void TimeCleanup(struct Library *ugBase)
@@ -198,9 +197,9 @@ void TimeCleanup(struct Library *ugBase)
 */
 
 AROS_LH2I(int, gettimeofday,
-        AROS_LHA(struct timeval *, tvp, A0),
-        AROS_LHA(struct timezone *, tzp, A1),
-        struct Library *, UserGroupBase, 45, Usergroup)
+          AROS_LHA(struct timeval *, tvp, A0),
+          AROS_LHA(struct timezone *, tzp, A1),
+          struct Library *, UserGroupBase, 45, Usergroup)
 {
     AROS_LIBFUNC_INIT
 
@@ -217,9 +216,9 @@ AROS_LH2I(int, gettimeofday,
 }
 
 AROS_LH2I(int, settimeofday,
-        AROS_LHA(struct timeval *, tvp, A0),
-        AROS_LHA(struct timezone *, tzp, A1),
-        struct Library *, UserGroupBase, 46, Usergroup)
+          AROS_LHA(struct timeval *, tvp, A0),
+          AROS_LHA(struct timezone *, tzp, A1),
+          struct Library *, UserGroupBase, 46, Usergroup)
 {
     AROS_LIBFUNC_INIT
 

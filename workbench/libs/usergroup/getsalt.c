@@ -80,7 +80,7 @@ extern const unsigned char itoa64[];
                  in.
 
         size   - the number of bytes in the buffer. The buffer should be at
-                 least 12 bytes long. 
+                 least 12 bytes long.
 
     RETURN VALUE
         Pointer to the buffer, or NULL if the buffer is too small.
@@ -95,23 +95,23 @@ extern const unsigned char itoa64[];
 */
 
 AROS_LH3I(char *, ug_GetSalt,
-        AROS_LHA(const struct passwd *, pw, A0),
-        AROS_LHA(char *, buffer, A1),
-        AROS_LHA(ULONG, size, D0),
-        struct Library *, UserGroupBase, 30, Usergroup)
+          AROS_LHA(const struct passwd *, pw, A0),
+          AROS_LHA(char *, buffer, A1),
+          AROS_LHA(ULONG, size, D0),
+          struct Library *, UserGroupBase, 30, Usergroup)
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  LONG rv = LRandom();
+    LONG rv = LRandom();
 
-  if (size < 12)
-    return NULL;
+    if (size < 12)
+        return NULL;
 
-  buffer[0] = itoa64[rv & 63];
-  buffer[1] = itoa64[(rv >> 6) & 63];
-  buffer[2] = '\0';
+    buffer[0] = itoa64[rv & 63];
+    buffer[1] = itoa64[(rv >> 6) & 63];
+    buffer[2] = '\0';
 
-  return buffer;
+    return buffer;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
