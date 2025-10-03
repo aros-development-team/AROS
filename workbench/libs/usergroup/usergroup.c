@@ -487,7 +487,7 @@ static const char * const __ug_errlist[] = {
     "Result too large",			  /* 34 - ERANGE */
     /* non-blocking and interrupt i/o */
     "Resource temporarily unavailable",	  /* 35 - EAGAIN */
-                                          /* 35 - EWOULDBLOCK */
+    /* 35 - EWOULDBLOCK */
     "Operation now in progress",		  /* 36 - EINPROGRESS */
     "Operation already in progress",	  /* 37 - EALREADY */
 
@@ -501,7 +501,7 @@ static const char * const __ug_errlist[] = {
     "Socket type not supported",		  /* 44 - ESOCKTNOSUPPORT */
     "Operation not supported",		  /* 45 - EOPNOTSUPP */
     "Protocol family not supported",	  /* 46 - EPFNOSUPPORT */
-                                          /* 47 - EAFNOSUPPORT */
+    /* 47 - EAFNOSUPPORT */
     "Address family not supported by protocol family",
     "Address already in use",		  /* 48 - EADDRINUSE */
     "Can't assign requested address",	  /* 49 - EADDRNOTAVAIL */

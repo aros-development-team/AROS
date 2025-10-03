@@ -25,13 +25,13 @@
 
     NAME */
 
-        AROS_LH1I(char *, getpass,
+AROS_LH1I(char *, getpass,
 
-/*  SYNOPSIS */
-        AROS_LHA(const char *, prompt, A1),
+          /*  SYNOPSIS */
+          AROS_LHA(const char *, prompt, A1),
 
-/* LOCATION */
-        struct Library *, UserGroupBase, 31, Usergroup)
+          /* LOCATION */
+          struct Library *, UserGroupBase, 31, Usergroup)
 
 /*  FUNCTION
         The getpass() function displays a prompt to, and reads in a password
