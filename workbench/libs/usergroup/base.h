@@ -69,11 +69,13 @@ struct UserGroupBase {
     short               setent_done;
 
     char                buffer[MAXLOGNAME];
-    /*struct MsgPort    *niport;
+    struct SignalSemaphore ni_lock;
+    struct MsgPort      *niport;
     struct NetInfoReq   *nireq;
     struct Device       *nidevice[2];
     APTR                niunit[2];
-    APTR                nibuffer[2];*/
+    APTR                nibuffer[2];
+#if (0)
     BPTR                u_pwd_fp;
     BPTR                u_grp_fp;
     char                u_pwd_line[MAXLINELENGTH];
@@ -81,6 +83,7 @@ struct UserGroupBase {
     struct passwd       u_passwd;
     struct group        u_group;
     char                *u_members[MAXGRP];
+#endif
     char                cryptresult[1+4+4+11+1];
 };
 
@@ -92,7 +95,6 @@ void ug_SetErrno(struct Library *, int);
 /*
  * netinfo.device IO
  */
-extern struct SignalSemaphore ni_lock[];
 struct NetInfoReq *OpenNIUnit(struct Library *, ULONG);
 void CloseNIUnit(struct Library *, ULONG);
 BYTE myDoIO(struct NetInfoReq *);

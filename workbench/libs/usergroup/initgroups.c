@@ -54,7 +54,7 @@ AROS_LH2(int, initgroups,
     struct NetInfoReq *nreq;
     short error = -1;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gid_t *groups = nreq->io_Data;
         short ngroups, i, j;
@@ -86,7 +86,7 @@ AROS_LH2(int, initgroups,
         ug_SetErrno((struct Library *)UserGroupBase, ENOENT);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return error;
 

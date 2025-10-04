@@ -126,6 +126,10 @@
 
 #include <proto/usergroup.h>
 
+#ifdef UGCRYPT_USEACRYPT
+#include <clib/alib_protos.h>
+#endif
+
 /*
  * UNIX password, and DES, encryption.
  * By Tom Truscott, trt@rti.rti.org,
@@ -570,6 +574,8 @@ static char	cryptresult[1+4+4+11+1];	/* encrypted result */
 /*
  * Return a pointer to provided buffer consisting of the "setting"
  * followed by an encryption produced by the "key" and "setting".
+ *
+ *	Code modified by Mr. andsk for MuFS compatibility.
  */
 AROS_LH2(char *, crypt,
          AROS_LHA(const char *, key, A0),
@@ -578,6 +584,7 @@ AROS_LH2(char *, crypt,
 {
     AROS_LIBFUNC_INIT
 
+#ifndef UGCRYPT_USEACRYPT
     register char *encp;
     register long i;
     register int t;
@@ -672,8 +679,39 @@ AROS_LH2(char *, crypt,
     encp[0] = itoa64[i];
 
     encp[3] = 0;
-
     return (cryptresult);
+#else
+    int i;
+    char buf[200];
+    char user[40];	/* user name */
+
+    BPTR file = Open("AmiTCP:db/passwd", MODE_OLDFILE);
+    i = 0;
+
+    if (!file) {
+        cryptresult[0] = '\0';
+        return(cryptresult);
+    }
+    if (setting[2] == '\0') {
+        strcpy(cryptresult,ACrypt(buf,key,R_getlogin()));
+        Close(file);
+        return(cryptresult);
+    } else {
+        while (FGets(file,buf,200))
+            if (strstr(buf,setting)) {
+                while((user[i] = buf[i]) != '|')
+                    i++;
+                user[i] = '\0';
+                break;
+            }
+        Close(file);
+        if (i)
+            strcpy(cryptresult,ACrypt(buf,key,user));
+        else
+            cryptresult[0] = '\0';
+        return(cryptresult);
+    }
+#endif
 
     AROS_LIBFUNC_EXIT
 }

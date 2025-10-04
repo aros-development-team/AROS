@@ -128,7 +128,7 @@ AROS_LH1(struct passwd *, getpwnam,
         return NULL;
     }
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
 
         pw = (struct passwd *)nreq->io_Data;
@@ -143,7 +143,7 @@ AROS_LH1(struct passwd *, getpwnam,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return pw;
 
@@ -159,7 +159,7 @@ AROS_LH1(struct passwd *, getpwuid,
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         pw = (struct passwd *)nreq->io_Data;
         pw->pw_uid = uid;
@@ -173,7 +173,7 @@ AROS_LH1(struct passwd *, getpwuid,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return pw;
 
@@ -187,7 +187,7 @@ AROS_LH0(void, setpwent,
 
     struct NetInfoReq *nreq;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
 
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         nreq->io_Command = CMD_RESET;
@@ -197,7 +197,7 @@ AROS_LH0(void, setpwent,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT
 }
@@ -210,7 +210,7 @@ AROS_LH0(struct passwd *, getpwent,
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         /* do setpwent() if necessary */
         if (!UserGroupBase->setent_done) {
@@ -229,7 +229,7 @@ AROS_LH0(struct passwd *, getpwent,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return pw;
 
@@ -241,10 +241,10 @@ AROS_LH0(void, endpwent,
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     UserGroupBase->setent_done = 0;
     CloseNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT);
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT
 }

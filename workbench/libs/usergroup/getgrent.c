@@ -137,7 +137,7 @@ AROS_LH1(struct group *, getgrnam,
         return NULL;
     }
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
 
         gr = (struct group *)nreq->io_Data;
@@ -152,7 +152,7 @@ AROS_LH1(struct group *, getgrnam,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return gr;
 
@@ -168,7 +168,7 @@ AROS_LH1(struct group *, getgrgid,
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gr = (struct group *)nreq->io_Data;
         gr->gr_gid = gid;
@@ -182,7 +182,7 @@ AROS_LH1(struct group *, getgrgid,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return gr;
 
@@ -196,7 +196,7 @@ AROS_LH0(void, setgrent,
 
     struct NetInfoReq *nreq;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
 
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         nreq->io_Command = CMD_RESET;
@@ -206,7 +206,7 @@ AROS_LH0(void, setgrent,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT
 }
@@ -219,7 +219,7 @@ AROS_LH0(struct group *, getgrent,
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         /* do setgrent() if necessary */
         if (!UserGroupBase->setent_done) {
@@ -238,7 +238,7 @@ AROS_LH0(struct group *, getgrent,
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     return gr;
 
@@ -250,10 +250,10 @@ AROS_LH0(void, endgrent,
 {
     AROS_LIBFUNC_INIT
 
-    ObtainSemaphore(ni_lock);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
     UserGroupBase->setent_done = 0;
     CloseNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT);
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT
 }

@@ -209,7 +209,7 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
 
 static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 {
-    InitSemaphore(ni_lock);
+    InitSemaphore(&LIBBASE->ni_lock);
 
     if ((DOSBase = (void *)OpenLibrary("dos.library", 37L)) &&
             (UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37L)) &&
@@ -232,80 +232,8 @@ ADD2EXPUNGELIB(UserGroup__Expunge, 0)
 #endif
 
 /*
-   * SetErrno - Errno handling
- */
-void ug_SetErrno(struct Library *ugBase, int _en)
-{
-    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
-    UserGroupBase->errnolast = _en;
-    if (UserGroupBase->errnop)
-        switch (UserGroupBase->errnosize) {
-        case es_byte:
-            *(UBYTE *)UserGroupBase->errnop = _en;
-            break;
-        case es_word:
-            *(UWORD *)UserGroupBase->errnop = _en;
-            break;
-        case es_long:
-            *(ULONG *)UserGroupBase->errnop = _en;
-            break;
-        }
-}
-
-/****** usergroup.library/ug_GetErr ****************************************
-
-    NAME
-        ug_GetErr - get current error code
-
-    SYNOPSIS
-        error = ug_GetErr(void)
-         D0
-
-        int ug_GetErr(void)
-
-    FUNCTION
-        Most usergroup.library functions return -1 to indicate an error.
-        When this happens (or whatever the defined error return for the
-        routine) this routine may be called to determine more information.
-        The default startup function will redirect the error codes also into
-        the global variable `errno'.
-
-        Note: there is no guarantee as to the value returned from ug_GetErr()
-        after a successful operation.
-
-    RESULTS
-        error - error code
-
-    SEE ALSO
-        ug_StrError(), ug_SetupContextTags(), dos.library/IoErr()
-
-****************************************************************************
-*/
-
-/*
- * Get errno
- */
-AROS_LH0 (int, ug_GetErr,
-          struct UserGroupBase *, UserGroupBase, 6, Usergroup)
-{
-    AROS_LIBFUNC_INIT
-
-    return UserGroupBase->errnolast;
-
-    AROS_LIBFUNC_EXIT
-}
-
-
-/*
  * Handle the netinfo device
  */
-struct SignalSemaphore ni_lock[1];
-static struct MsgPort *niport;
-static struct NetInfoReq *nireq;
-
-static struct Device *nidevice[2];
-static APTR niunit[2];
-static APTR nibuffer[2];
 
 struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
 {
@@ -318,279 +246,89 @@ struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
     }
 
     /* Allocate port */
-    if (niport == NULL) {
-        niport = CreateMsgPort();
-        if (niport == NULL)
+    if (UserGroupBase->niport == NULL) {
+        UserGroupBase->niport = CreateMsgPort();
+        if (UserGroupBase->niport == NULL)
             return NULL;
     }
-    if (nireq == NULL) {
-        nireq = CreateIORequest(niport, sizeof(*nireq));
-        if (nireq == NULL)
+    if (UserGroupBase->nireq == NULL) {
+        UserGroupBase->nireq = CreateIORequest(UserGroupBase->niport, sizeof(*UserGroupBase->nireq));
+        if (UserGroupBase->nireq == NULL)
             return NULL;
     }
 
-    if (nidevice[unit]) {
+    if (UserGroupBase->nidevice[unit]) {
         /* Already opened */
-        nireq->io_Device = nidevice[unit];
-        nireq->io_Unit = niunit[unit];
+        UserGroupBase->nireq->io_Device = UserGroupBase->nidevice[unit];
+        UserGroupBase->nireq->io_Unit = UserGroupBase->niunit[unit];
     } else {
-        if (OpenDevice(NETINFONAME, unit, (struct IORequest *)nireq, 0L)) {
+        if (OpenDevice(NETINFONAME, unit, (struct IORequest *)UserGroupBase->nireq, 0L)) {
             return NULL;
         }
 
-        nidevice[unit] = nireq->io_Device;
-        niunit[unit] = nireq->io_Unit;
+        UserGroupBase->nidevice[unit] = UserGroupBase->nireq->io_Device;
+        UserGroupBase->niunit[unit] = UserGroupBase->nireq->io_Unit;
     }
 
-    if (nibuffer[unit] == NULL) {
-        nibuffer[unit] = AllocVec(MAXLINELENGTH, MEMF_PUBLIC);
-        if (nibuffer[unit] == NULL)
+    if (UserGroupBase->nibuffer[unit] == NULL) {
+        UserGroupBase->nibuffer[unit] = AllocVec(MAXLINELENGTH, MEMF_PUBLIC);
+        if (UserGroupBase->nibuffer[unit] == NULL)
             return NULL;
     }
 
-    nireq->io_Length = MAXLINELENGTH;
-    nireq->io_Data = nibuffer[unit];
+    UserGroupBase->nireq->io_Length = MAXLINELENGTH;
+    UserGroupBase->nireq->io_Data = UserGroupBase->nibuffer[unit];
 
-    return nireq;
+    return UserGroupBase->nireq;
 }
 
 void CloseNIUnit(struct Library *ugBase, ULONG unit)
 {
     struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
-    ObtainSemaphore(ni_lock);
 
-    if (nidevice[unit]) {
-        assert(nireq != NULL);
+    ObtainSemaphore(&UserGroupBase->ni_lock);
 
-        nireq->io_Device = nidevice[unit];
-        nireq->io_Unit = niunit[unit];
+    if (UserGroupBase->nidevice[unit]) {
+        assert(UserGroupBase->nireq != NULL);
 
-        CloseDevice((struct IORequest *)nireq);
+        UserGroupBase->nireq->io_Device = UserGroupBase->nidevice[unit];
+        UserGroupBase->nireq->io_Unit = UserGroupBase->niunit[unit];
 
-        nidevice[unit] = NULL;
-        niunit[unit] = NULL;
+        CloseDevice((struct IORequest *)UserGroupBase->nireq);
+
+        UserGroupBase->nidevice[unit] = NULL;
+        UserGroupBase->niunit[unit] = NULL;
     }
 
-    ReleaseSemaphore(ni_lock);
+    ReleaseSemaphore(&UserGroupBase->ni_lock);
 }
 
 static void CleanupNIO(struct Library *ugBase)
 {
+    struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+
     endpwent();
     endgrent();
 
-    if (nibuffer[NETINFO_PASSWD_UNIT] != NULL)
-        FreeVec(nibuffer[NETINFO_PASSWD_UNIT]);
-    nibuffer[NETINFO_PASSWD_UNIT] = NULL;
+    if (UserGroupBase->nibuffer[NETINFO_PASSWD_UNIT] != NULL)
+        FreeVec(UserGroupBase->nibuffer[NETINFO_PASSWD_UNIT]);
+    UserGroupBase->nibuffer[NETINFO_PASSWD_UNIT] = NULL;
 
-    if (nibuffer[NETINFO_GROUP_UNIT] != NULL)
-        FreeVec(nibuffer[NETINFO_GROUP_UNIT]);
-    nibuffer[NETINFO_GROUP_UNIT] = NULL;
+    if (UserGroupBase->nibuffer[NETINFO_GROUP_UNIT] != NULL)
+        FreeVec(UserGroupBase->nibuffer[NETINFO_GROUP_UNIT]);
+    UserGroupBase->nibuffer[NETINFO_GROUP_UNIT] = NULL;
 
-    if (nireq)
-        DeleteIORequest(nireq), nireq = NULL;
+    if (UserGroupBase->nireq)
+        DeleteIORequest(UserGroupBase->nireq), UserGroupBase->nireq = NULL;
 
-    if (niport)
-        DeleteMsgPort(niport), niport = NULL;
+    if (UserGroupBase->niport)
+        DeleteMsgPort(UserGroupBase->niport), UserGroupBase->niport = NULL;
 }
 
 BYTE myDoIO(struct NetInfoReq *req)
 {
     DoIO((struct IORequest *)req);
     return req->io_Error;
-}
-
-#if !defined(__AROS__)
-static const BYTE ioerr2errno[-IOERR_SELFTEST] = {
-    /* IOERR_OPENFAIL */
-    ENOENT,
-    /* IOERR_ABORTED */
-    EINTR,
-    /* IOERR_NOCMD */
-    ENODEV,
-    /* IOERR_BADLENGTH */
-    EBUSY,
-    /* IOERR_BADADDRESS */
-    EFAULT,
-    /* IOERR_UNITBUSY */
-    EBUSY,
-    /* IOERR_SELFTEST */
-    ENXIO,
-};
-#endif
-
-void SetDeviceErr(struct Library *ugBase)
-{
-    short err;
-
-    if (nireq)
-        err = nireq->io_Error;
-    else
-        err = ENOMEM;
-
-    if (err < 0) {
-        if (err >= IOERR_SELFTEST) {
-#if !defined(__AROS__)
-            err = ioerr2errno[-1 - err];
-#else
-            err = ioerr2errno(-1 - err);
-#endif
-        } else
-            err = EIO;
-    }
-
-    ug_SetErrno(ugBase, err);
-}
-
-/*
- * Get error string
- */
-#define EUNKNOWN "Unknown error"
-
-static const char * const __ug_errlist[] = {
-    "Undefined error: 0",			  /*  0 - ENOERROR */
-    "Operation not permitted",		  /*  1 - EPERM */
-    "No such entry",			  /*  2 - ENOENT */
-    "No such process",		          /*  3 - ESRCH */
-    "Interrupted library call",		  /*  4 - EINTR */
-    "Input/output error",			  /*  5 - EIO */
-    "Device not configured",		  /*  6 - ENXIO */
-    "Argument list too long",		  /*  7 - E2BIG */
-    "Exec format error",			  /*  8 - ENOEXEC */
-    "Bad file descriptor",		  /*  9 - EBADF */
-    "No child processes",			  /* 10 - ECHILD */
-    "Resource deadlock avoided",	          /* 11 - EDEADLK */
-    "Cannot allocate memory",		  /* 12 - ENOMEM */
-    "Permission denied",			  /* 13 - EACCES */
-    "Bad address",			  /* 14 - EFAULT */
-    "Block device required",		  /* 15 - ENOTBLK */
-    "Device busy",			  /* 16 - EBUSY */
-    "File exists",			  /* 17 - EEXIST */
-    "Cross-device link",			  /* 18 - EXDEV */
-    "Operation not supported by device",	  /* 19 - ENODEV */
-    "Not a directory",			  /* 20 - ENOTDIR */
-    "Is a directory",			  /* 21 - EISDIR */
-    "Invalid argument",			  /* 22 - EINVAL */
-    "Too many open files in system",	  /* 23 - ENFILE */
-    "Too many open files",		  /* 24 - EMFILE */
-    "Inappropriate operation for device",   /* 25 - ENOTTY */
-    "Text file busy",			  /* 26 - ETXTBSY */
-    "File too large",			  /* 27 - EFBIG */
-    "No space left on device",		  /* 28 - ENOSPC */
-    "Illegal seek",			  /* 29 - ESPIPE */
-    "Read-only file system",		  /* 30 - EROFS */
-    "Too many links",			  /* 31 - EMLINK */
-    "Broken pipe",			  /* 32 - EPIPE */
-
-    /* math software */
-    "Numerical argument out of domain",	  /* 33 - EDOM */
-    "Result too large",			  /* 34 - ERANGE */
-    /* non-blocking and interrupt i/o */
-    "Resource temporarily unavailable",	  /* 35 - EAGAIN */
-                                          /* 35 - EWOULDBLOCK */
-    "Operation now in progress",		  /* 36 - EINPROGRESS */
-    "Operation already in progress",	  /* 37 - EALREADY */
-
-    /* ipc/network software -- argument errors */
-    "Socket operation on non-socket",	  /* 38 - ENOTSOCK */
-    "Destination address required",	  /* 39 - EDESTADDRREQ */
-    "Message too long",			  /* 40 - EMSGSIZE */
-    "Protocol wrong type for socket",	  /* 41 - EPROTOTYPE */
-    "Protocol not available",		  /* 42 - ENOPROTOOPT */
-    "Protocol not supported",		  /* 43 - EPROTONOSUPPORT */
-    "Socket type not supported",		  /* 44 - ESOCKTNOSUPPORT */
-    "Operation not supported",		  /* 45 - EOPNOTSUPP */
-    "Protocol family not supported",	  /* 46 - EPFNOSUPPORT */
-                                          /* 47 - EAFNOSUPPORT */
-    "Address family not supported by protocol family",
-    "Address already in use",		  /* 48 - EADDRINUSE */
-    "Can't assign requested address",	  /* 49 - EADDRNOTAVAIL */
-
-    /* ipc/network software -- operational errors */
-    "Network is down",			  /* 50 - ENETDOWN */
-    "Network is unreachable",		  /* 51 - ENETUNREACH */
-    "Network dropped connection on reset",  /* 52 - ENETRESET */
-    "Software caused connection abort",	  /* 53 - ECONNABORTED */
-    "Connection reset by peer",		  /* 54 - ECONNRESET */
-    "No buffer space available",		  /* 55 - ENOBUFS */
-    "Socket is already connected",	  /* 56 - EISCONN */
-    "Socket is not connected",		  /* 57 - ENOTCONN */
-    "Can't send after socket shutdown",	  /* 58 - ESHUTDOWN */
-    "Too many references: can't splice",	  /* 59 - ETOOMANYREFS */
-    "Connection timed out",		  /* 60 - ETIMEDOUT */
-    "Connection refused",			  /* 61 - ECONNREFUSED */
-
-    "Too many levels of symbolic links",	  /* 62 - ELOOP */
-    "File name too long",			  /* 63 - ENAMETOOLONG */
-
-    /* should be rearranged */
-    "Host is down",			  /* 64 - EHOSTDOWN */
-    "No route to host",			  /* 65 - EHOSTUNREACH */
-    "Directory not empty",		  /* 66 - ENOTEMPTY */
-};
-
-static const int __ug_nerr = ENOTEMPTY + 1;
-
-/****** usergroup.library/ug_StrError **************************************
-
-    NAME
-        ug_StrError - Return the text associated with error code
-
-    SYNOPSIS
-        text = ug_StrError(code)
-         D0                   D1
-
-        const char *ug_StrError(LONG);
-
-    FUNCTION
-        The strerror() function maps the error number specified by the
-        errnum parameter to a language-dependent error message string, and
-        returns a pointer to the string.  The string pointed to by the
-        return value should not be modified by the program, but may be
-        overwritten by a subsequent call to this function.
-
-    INPUTS
-        code - error code returned by ug_GetErr() function.
-
-    RESULT
-        text - text associated with the error code.
-
-    NOTES
-        The current implementation will understands also the negative IO
-        error codes.
-
-    BUGS
-        Currently only language available is English.
-
-    SEE ALSO
-        ug_GetErr()
-
-******************************************************************************
-*/
-
-AROS_LH1I (const char *, ug_StrError,
-           AROS_LHA(LONG, code, D1),
-           struct Library *, UserGroupBase, 7, Usergroup)
-{
-    AROS_LIBFUNC_INIT
-
-    if (code < 0) {
-        if (code >= IOERR_SELFTEST) {
-#if !defined(__AROS__)
-            code = ioerr2errno[-1 - code];
-#else
-            code = ioerr2errno(-1 - code);
-#endif
-        } else
-            code = EIO;
-    }
-
-    if (code >= __ug_nerr)
-        return EUNKNOWN;
-    else
-        return __ug_errlist[code];
-
-    AROS_LIBFUNC_EXIT
 }
 
 /****** usergroup.library/ug_SetupContextTags ********************************
@@ -690,7 +428,7 @@ AROS_LH2 (int, ug_SetupContextTagList,
     if (tag = FindTagItem(UGT_OWNER, tagargs)) {
         short error;
 
-        ObtainSemaphore(ni_lock);
+        ObtainSemaphore(&UserGroupBase->ni_lock);
 
         if (UserGroupBase->owner != NULL && UserGroupBase->owner != caller) {
             if (tag->ti_Data != 0) {
@@ -703,7 +441,7 @@ AROS_LH2 (int, ug_SetupContextTagList,
             error = EPERM;
         }
 
-        ReleaseSemaphore(ni_lock);
+        ReleaseSemaphore(&UserGroupBase->ni_lock);
 
         if (error) {
             ug_SetErrno((struct Library *)UserGroupBase, error);
