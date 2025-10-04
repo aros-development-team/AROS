@@ -120,6 +120,8 @@
 #include <sys/errno.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 #include <limits.h>
 
 #include "base.h"
@@ -317,19 +319,13 @@ STATIC void prtab(char *s, unsigned char *t, int num_rows);
  */
 
 typedef union {
-    unsigned char b[8];
+    uint8_t  b[8];   /* 8 bytes for byte-level access */
     struct {
-#if defined(LONG_IS_32_BITS)
-        /* long is often faster than a 32-bit bit field */
-        long	i0;
-        long	i1;
-#else
-        long	i0: 32;
-        long	i1: 32;
-#endif
+        uint32_t i0; /* left 32-bit half */
+        uint32_t i1; /* right 32-bit half */
     } b32;
 #if defined(B64)
-    B64	b64;
+    uint64_t b64;   /* optional 64-bit access if platform supports it */
 #endif
 } C_block;
 
@@ -349,12 +345,23 @@ typedef union {
 /*
  * These macros may someday permit efficient use of 64-bit integers.
  */
-#define	ZERO(d,d0,d1)			d0 = 0, d1 = 0
-#define	LOAD(d,d0,d1,bl)		d0 = (bl).b32.i0, d1 = (bl).b32.i1
-#define	LOADREG(d,d0,d1,s,s0,s1)	d0 = s0, d1 = s1
-#define	OR(d,d0,d1,bl)			d0 |= (bl).b32.i0, d1 |= (bl).b32.i1
-#define	STORE(s,s0,s1,bl)		(bl).b32.i0 = s0, (bl).b32.i1 = s1
-#define	DCL_BLOCK(d,d0,d1)		long d0, d1
+#define ZERO(d,d0,d1) do { d0 = 0; d1 = 0; } while(0)
+
+/* Load and store 32-bit halves of a block */
+#define LOAD(L, L0, L1, B)   \
+    { L0 = (B).b32.i0; L1 = (B).b32.i1; }
+
+#define STORE(L, L0, L1, B)  \
+    { (B).b32.i0 = (L0); (B).b32.i1 = (L1); }
+
+/* Copy registers: R0/R1 <= L0/L1 */
+#define LOADREG(R, R0, R1, L, L0, L1) \
+    { R0 = L0; R1 = L1; }
+
+#define OR(d,d0,d1,bl) \
+    do { d0 |= (bl).b32.i0; d1 |= (bl).b32.i1; } while(0)
+
+#define DCL_BLOCK(d,d0,d1) uint32_t d0, d1
 
 #if defined(LARGEDATA)
 /* Waste memory like crazy.  Also, do permutations in line */
@@ -556,7 +563,8 @@ FAR static C_block	PC1ROT[64/CHUNKBITS][1<<CHUNKBITS];
 FAR static C_block	PC2ROT[2][64/CHUNKBITS][1<<CHUNKBITS];
 
 /* Initial permutation/expansion table */
-FAR static C_block	IE3264[32/CHUNKBITS][1<<CHUNKBITS];
+#define IE_ROWS  (64/CHUNKBITS)   /* 64 output/input bits / 4-bit chunks = 16 */
+FAR static C_block IE3264[IE_ROWS][1 << CHUNKBITS];  /* 16 x 16 entries */
 
 /* Table that combines the S, P, and E operations.  */
 FAR static long SPE[2][8][64];
@@ -760,58 +768,58 @@ STATIC int des_setkey(register const char *key)
  */
 STATIC int des_cipher(const char *in, char *out, long salt, int num_iter)
 {
-    /* variables that we want in registers, most important first */
-#if defined(pdp11)
-    register int j;
-#endif
-    register long L0, L1, R0, R1, k;
-    register C_block *kp;
-    register int ks_inc, loop_count;
+    /* local types made explicit for clarity and portability */
+    uint32_t L0, L1, R0, R1, k;
     C_block B;
+    C_block tmp_block; /* temp to safely copy input/output (avoids aliasing/unaligned access) */
+    C_block *kp;
+    ptrdiff_t ks_inc;
+    int loop_count;
 
-    L0 = salt;
-    TO_SIX_BIT(salt, L0);	/* convert to 4*(6+2) format */
-
-#if defined(vax) || defined(pdp11)
-    salt = ~salt;	/* "x &~ y" is faster than "x & y". */
-#define	SALT (~salt)
-#else
-#define	SALT salt
-#endif
-
+    /* copy input bytes into a local aligned C_block */
+    /* use memmove to be safe if in == out, though we copy from 'in' now */
+    memmove(&tmp_block, in, sizeof tmp_block);
+    /* now use tmp_block for initial load */
 #if defined(MUST_ALIGN)
-    B.b[0] = in[0];
-    B.b[1] = in[1];
-    B.b[2] = in[2];
-    B.b[3] = in[3];
-    B.b[4] = in[4];
-    B.b[5] = in[5];
-    B.b[6] = in[6];
-    B.b[7] = in[7];
-    LOAD(L,L0,L1,B);
+    /* original code copied bytes into B.b[] then LOAD(L,...) */
+    memcpy(&B, &tmp_block, sizeof B);
+    LOAD(L, L0, L1, B);
 #else
-    LOAD(L,L0,L1,*(C_block *)in);
+    /* safe memcpy into B (avoids *(C_block *)in cast) */
+    memcpy(&B, &tmp_block, sizeof B);
+    LOAD(L, L0, L1, B);
 #endif
-    LOADREG(R,R0,R1,L,L0,L1);
-    L0 &= 0x55555555L;
-    L1 &= 0x55555555L;
+
+    /* convert salt to 4*(6+2) format */
+    L0 = (uint32_t)salt;
+    TO_SIX_BIT(salt, L0);
+
+    /* SALT handling: avoid macro; use local const */
+#if defined(vax) || defined(pdp11)
+    salt = ~salt; /* "x &~ y" is faster than "x & y". */
+    const uint32_t SALT_LOCAL = (uint32_t)(~salt);
+#else
+    const uint32_t SALT_LOCAL = (uint32_t)salt;
+#endif
+
+    LOADREG(R, R0, R1, L, L0, L1);
+    L0 &= 0x55555555u;
+    L1 &= 0x55555555u;
     L0 = (L0 << 1) | L1;	/* L0 is the even-numbered input bits */
-    R0 &= 0xaaaaaaaaL;
-    R1 = (R1 >> 1) & 0x55555555L;
+    R0 &= 0xaaaaaaaau;
+    R1 = (R1 >> 1) & 0x55555555u;
     L1 = R0 | R1;		/* L1 is the odd-numbered input bits */
-    STORE(L,L0,L1,B);
-    PERM3264(L,L0,L1,B.b,  (C_block *)IE3264);	/* even bits */
-    PERM3264(R,R0,R1,B.b+4,(C_block *)IE3264);	/* odd bits */
+    STORE(L, L0, L1, B);
+    PERM3264(L, L0, L1, B.b,     (C_block *)IE3264);	/* even bits */
+    PERM3264(R, R0, R1, B.b + 4, (C_block *)IE3264);	/* odd bits */
 
     if (num_iter >= 0) {
-        /* encryption */
         kp = &KS[0];
-        ks_inc  = sizeof(*kp);
+        ks_inc = (ptrdiff_t)sizeof(*kp);
     } else {
-        /* decryption */
         num_iter = -num_iter;
-        kp = &KS[KS_SIZE-1];
-        ks_inc  = -sizeof(*kp);
+        kp = &KS[KS_SIZE - 1];
+        ks_inc = -(ptrdiff_t)sizeof(*kp);
     }
 
     while (--num_iter >= 0) {
@@ -833,7 +841,7 @@ STATIC int des_cipher(const char *in, char *out, long salt, int num_iter)
 #endif
 
 #define	CRUNCH(p0, p1, q0, q1)	\
-                        k = (q0 ^ q1) & SALT;	\
+                        k = (q0 ^ q1) & SALT_LOCAL;	\
                         B.b32.i0 = k ^ q0 ^ kp->b32.i0;		\
                         B.b32.i1 = k ^ q1 ^ kp->b32.i1;		\
                         kp = (C_block *)((char *)kp+ks_inc);	\
@@ -850,37 +858,24 @@ STATIC int des_cipher(const char *in, char *out, long salt, int num_iter)
             CRUNCH(L0, L1, R0, R1);
             CRUNCH(R0, R1, L0, L1);
         } while (--loop_count != 0);
-        kp = (C_block *)((char *)kp-(ks_inc*KS_SIZE));
-
+        kp = (C_block *)((char *)kp - (ks_inc * KS_SIZE));
 
         /* swap L and R */
-        L0 ^= R0;
-        L1 ^= R1;
-        R0 ^= L0;
-        R1 ^= L1;
-        L0 ^= R0;
-        L1 ^= R1;
+        L0 ^= R0; L1 ^= R1;
+        R0 ^= L0; R1 ^= L1;
+        L0 ^= R0; L1 ^= R1;
     }
 
-    /* store the encrypted (or decrypted) result */
-    L0 = ((L0 >> 3) & 0x0f0f0f0fL) | ((L1 << 1) & 0xf0f0f0f0L);
-    L1 = ((R0 >> 3) & 0x0f0f0f0fL) | ((R1 << 1) & 0xf0f0f0f0L);
-    STORE(L,L0,L1,B);
-    PERM6464(L,L0,L1,B.b, (C_block *)CF6464);
-#if defined(MUST_ALIGN)
-    STORE(L,L0,L1,B);
-    out[0] = B.b[0];
-    out[1] = B.b[1];
-    out[2] = B.b[2];
-    out[3] = B.b[3];
-    out[4] = B.b[4];
-    out[5] = B.b[5];
-    out[6] = B.b[6];
-    out[7] = B.b[7];
-#else
-    STORE(L,L0,L1,*(C_block *)out);
-#endif
-    return (0);
+    /* postprocessing and final store */
+    L0 = ((L0 >> 3) & 0x0f0f0f0fu) | ((L1 << 1) & 0xf0f0f0f0u);
+    L1 = ((R0 >> 3) & 0x0f0f0f0fu) | ((R1 << 1) & 0xf0f0f0f0u);
+    STORE(L, L0, L1, B);
+    PERM6464(L, L0, L1, B.b, (C_block *)CF6464);
+
+    /* safe write to output — memmove to preserve in==out semantics */
+    memmove(out, &B, sizeof B);
+
+    return 0;
 }
 
 
