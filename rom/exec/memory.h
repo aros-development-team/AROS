@@ -33,6 +33,10 @@
  * returns at least eight byte aligned memory.
  * Testing AmigaOS 3.1 on WinUAE with A600 and A1200 setups did not reproduce any
  * AllocPooled results with less than eight bytes alignment.
+ * The underlying memory allocators respect AROS_WORSTALIGN. On systems where
+ * AROS_WORSTALIGN is four (the smallest value), the minimum alignment from
+ * the allocators involved is eight. The below definition ensures that the minimum
+ * alignment applies to memory returned by AllocPooled as well.
  */
 #define MEMPOOL_WORSTALIGN (AROS_WORSTALIGN > 8 ? AROS_WORSTALIGN : 8)
 

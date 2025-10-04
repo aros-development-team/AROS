@@ -61,15 +61,8 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, stru
         /*
          * Initialize post-wall.
          * Fill only MUNGWALL_SIZE bytes, this is what we are guaranteed to have in the end.
-         * We can't assume anything about padding. AllocMem() does guarantee that the actual
-         * allocation start and size is a multiple of MEMCHUNK_TOTAL, but for example
-         * AllocPooled() doesn't. Pooled allocations are only IPTR-aligned (see InternalFreePooled(),
-         * in AROS pooled allocations are vectored, pool pointer is stored in an IPTR preceding the
-         * actual block in AllocVec()-alike manner).
-         * IPTR alignment is 100% correct since original AmigaOS(tm) autodocs say that even AllocMem()
-         * result is longword-aligned. AROS introduces additional assumption that AllocMem() result
-         * is aligned at least up to AROS_WORSTALIGN (CPU-specific value, see exec/memory.h), however
-         * this is still not true for other allocation functions (AllocVec() etc).
+         * We don't assume anything about padding but the walls preserve
+         * MEMCHUNK_TOTAL alignment.
          */
         memset(res + origSize, 0xDB, MUNGWALL_SIZE);
 

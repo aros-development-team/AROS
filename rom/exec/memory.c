@@ -932,7 +932,8 @@ APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct Trac
      * Memory blocks allocated from the pool store pointers to the MemHeader they were
      * allocated from. This is done in order to avoid slow lookups in InternalFreePooled().
      * This is done in AllocVec()-alike manner; the pointer is placed before the block.
-     * The Amiga platform has extra padding to not destroy the alignment.
+     * There is an architecture-dependent padding to keep the alignment given by
+     * the underlying allocator.
      */
     memSize += MEMPOOL_WORSTALIGN;
     origSize = memSize;
