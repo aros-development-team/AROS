@@ -117,12 +117,5 @@ int LRandomInit(void);
 
 int TimeInit(struct Library *);
 void TimeCleanup(struct Library *);
- 
-static __inline void InitList(struct List *list)
-{
-    list->lh_Head = (struct Node*)&list->lh_Tail;
-    list->lh_Tail = NULL;
-    list->lh_TailPred = (struct Node*)&list->lh_Head;
-}
 
 #endif /* _BASE_H_ */
