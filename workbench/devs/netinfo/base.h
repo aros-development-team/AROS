@@ -143,21 +143,6 @@ struct NetInfoPointer {
 
 #define nip_Name nip_Node->ln_Name
 
-#if (0)
-/* Device initialization functions */
-ASM ULONG _LibInit(REG(a0) APTR seglist, REG(d0) struct Library *devbase);
-ASM ULONG _DevInit(BASEREG, REG(a0) APTR seglist);
-
-/* Library entry points */
-ASM LONG _DevOpen(BASEREG, REG(a1) struct IORequest *req, REG(d0) ULONG unit,
-		  REG(d1) ULONG flags);
-ASM ULONG _DevClose(BASEREG, REG(a1) struct IORequest *req);
-ASM ULONG _DevExpunge(BASEREG);
-ASM ULONG _DevRes(void);
-ASM VOID _NetInfoBeginIO(BASEREG, REG(a1) struct NetInfoReq *req);
-ASM ULONG _NetInfoAbortIO(BASEREG, REG(a1) struct NetInfoReq *req);
-#endif
-
 /* in server.c */
 ASM LONG NetInfoStartup(void);
 void NetInfoTask(struct NetInfoDevice *, struct Message *msg);
@@ -177,12 +162,5 @@ struct NetInfoMap *CheckUnit(struct NetInfoDevice *, struct Unit *u);
 void FreeListVec(struct NetInfoDevice *, struct List *list);
 struct Node *FindNode(struct List *list, struct Node *node);
 char *strsep(register char **stringp, register const char *delim);
-
-static __inline void InitList(struct List *list)
-{
-  list->lh_Head = (struct Node*)&list->lh_Tail;
-  list->lh_Tail = NULL;
-  list->lh_TailPred = (struct Node*)&list->lh_Head;
-}
 
 #endif /* _BASE_H_ */

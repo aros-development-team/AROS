@@ -56,14 +56,14 @@ struct NetInfoMap *InitNetInfoMap(struct NetInfoDevice *nid, struct MsgPort * mp
         nim->nim_Commands = map_cmds;
 
         InitSemaphore(nim->nim_ReqLock);
-        InitList(nim->nim_Rx);
-        InitList(nim->nim_Wx);
+        NEWLIST(nim->nim_Rx);
+        NEWLIST(nim->nim_Wx);
 
         InitSemaphore(nim->nim_EntLock);
-        InitList(nim->nim_Ent);
+        NEWLIST(nim->nim_Ent);
 
         InitSemaphore(nim->nim_PointerLock);
-        InitList(nim->nim_Pointer);
+        NEWLIST(nim->nim_Pointer);
     }
     return nim;
 }

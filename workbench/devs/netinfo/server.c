@@ -81,12 +81,12 @@ void NetInfoTask(struct NetInfoDevice *nid, struct Message *ok_message)
                 nid->nid_Port->mp_Flags = PA_SIGNAL;
                 nid->nid_Port->mp_SigBit = ps;
                 nid->nid_Port->mp_SigTask = FindTask(NULL);
-                InitList(&nid->nid_Port->mp_MsgList);
+                NEWLIST(&nid->nid_Port->mp_MsgList);
 
                 nid->nid_NotifyPort->mp_Flags = PA_SIGNAL;
                 nid->nid_NotifyPort->mp_SigBit = ps;
                 nid->nid_NotifyPort->mp_SigTask = FindTask(NULL);
-                InitList(&nid->nid_NotifyPort->mp_MsgList);
+                NEWLIST(&nid->nid_NotifyPort->mp_MsgList);
 
                 death->mn_Node.ln_Type = NT_MESSAGE;
                 nid->nid_Death = death;
