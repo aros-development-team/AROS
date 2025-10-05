@@ -29,14 +29,16 @@
 
 #define POOL_MAGIC AROS_MAKE_ID('P','o','O','l')
 
-// On AGA Amigas, AmiBlitz 3 allocation of wide sprites relies on that AllocPooled
-// returns at least eight byte aligned memory. AllocPooled on a classic Amiga even
-// aligns memory on 16 bytes on some occasions, so go with that.
-#ifdef AMIGA
-#define ALLOCPOOLED_USER_OFFSET 16
-#else /* AMIGA */
-#define ALLOCPOOLED_USER_OFFSET sizeof(struct MemHeader *)
-#endif /* AMIGA */
+/* On AGA Amigas, AmiBlitz 3 allocation of wide sprites relies on that AllocPooled
+ * returns at least eight byte aligned memory.
+ * Testing AmigaOS 3.1 on WinUAE with A600 and A1200 setups did not reproduce any
+ * AllocPooled results with less than eight bytes alignment.
+ * The underlying memory allocators respect AROS_WORSTALIGN. On systems where
+ * AROS_WORSTALIGN is four (the smallest value), the minimum alignment from
+ * the allocators involved is eight. The below definition ensures that the minimum
+ * alignment applies to memory returned by AllocPooled as well.
+ */
+#define MEMPOOL_WORSTALIGN (AROS_WORSTALIGN > 8 ? AROS_WORSTALIGN : 8)
 
 /* Private Pool structure */
 struct Pool 
