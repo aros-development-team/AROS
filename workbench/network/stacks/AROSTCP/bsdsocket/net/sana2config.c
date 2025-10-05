@@ -157,38 +157,38 @@ static const struct wire_defaults {
     S2WireType_Ethernet, 
     ETHERTYPE_IP, 16, 16, 
     ETHERTYPE_ARP, 4, 1, 
-    IFF_NOTRAILERS|IFF_BROADCAST|IFF_SIMPLEX, 
+    IFF_BROADCAST|IFF_SIMPLEX, 
   },
   { 
     S2WireType_Arcnet, 
     ARCOTYPE_IP, 16, 16, 
     ARCOTYPE_ARP, 4, 7, 
-    IFF_NOTRAILERS|IFF_BROADCAST|IFF_SIMPLEX, 
+    IFF_BROADCAST|IFF_SIMPLEX, 
   },
   { 
     S2WireType_SLIP, 
     SLIPTYPE_IP, 8, 8,
     0, 0, 0,
-    IFF_NOTRAILERS|IFF_POINTOPOINT|IFF_NOARP, 
+    IFF_POINTOPOINT|IFF_NOARP, 
   },
   { 
     S2WireType_CSLIP, 
     SLIPTYPE_IP, 8, 8,
     0, 0, 0,
-    IFF_NOTRAILERS|IFF_POINTOPOINT|IFF_NOARP, 
+    IFF_POINTOPOINT|IFF_NOARP, 
   },
   { 
     S2WireType_PPP, 
     PPPTYPE_IP, 8, 8,
     0, 0, 0,
-    IFF_NOTRAILERS|IFF_POINTOPOINT|IFF_NOARP, 
+    IFF_POINTOPOINT|IFF_NOARP, 
   },
   /* Use ethernet as default */
   {
     0,
     ETHERTYPE_IP, 16, 16,
     ETHERTYPE_ARP, 4, 1,
-    IFF_NOTRAILERS|IFF_BROADCAST|IFF_SIMPLEX, 
+    IFF_BROADCAST|IFF_SIMPLEX, 
   },
 };
 

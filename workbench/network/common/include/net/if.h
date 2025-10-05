@@ -175,28 +175,75 @@ struct ifnet {
 #define	if_iqdrops	if_data.ifi_iqdrops
 #define	if_noproto	if_data.ifi_noproto
 #define	if_lastchange	if_data.ifi_lastchange
-
-#define	IFF_UP		0x1		/* interface is up */
-#define	IFF_BROADCAST	0x2		/* broadcast address valid */
-#define	IFF_DEBUG	0x4		/* turn on debugging */
-#define	IFF_LOOPBACK	0x8		/* is a loopback net */
-#define	IFF_POINTOPOINT	0x10		/* interface is point-to-point link */
-#define	IFF_NOTRAILERS	0x20		/* avoid use of trailers */
-#define	IFF_RUNNING	0x40		/* resources allocated */
-#define	IFF_NOARP	0x80		/* no address resolution protocol */
-#define	IFF_PROMISC	0x100		/* receive all packets */
-#define	IFF_ALLMULTI	0x200		/* receive all multicast packets */
-#define	IFF_OACTIVE	0x400		/* transmission in progress */
-#define	IFF_SIMPLEX	0x800		/* can't hear own transmissions */
+/*-
+ * Interface flags are of two types: network stack owned flags, and driver
+ * owned flags.  Historically, these values were stored in the same ifnet
+ * flags field, but with the advent of fine-grained locking, they have been
+ * broken out such that the network stack is responsible for synchronizing
+ * the stack-owned fields, and the device driver the device-owned fields.
+ * Both halves can perform lockless reads of the other half's field, subject
+ * to accepting the involved races.
+ *
+ * Both sets of flags come from the same number space, and should not be
+ * permitted to conflict, as they are exposed to user space via a single
+ * field.
+ *
+ * The following symbols identify read and write requirements for fields:
+ *
+ * (i) if_flags field set by device driver before attach, read-only there
+ *     after.
+ * (n) if_flags field written only by the network stack, read by either the
+ *     stack or driver.
+ * (d) if_drv_flags field written only by the device driver, read by either
+ *     the stack or driver.
+ */
+#define	IFF_UP		0x1		/* (n) interface is up */
+#define	IFF_BROADCAST	0x2		/* (i) broadcast address valid */
+#define	IFF_DEBUG	0x4		/* (n) turn on debugging */
+#define	IFF_LOOPBACK	0x8		/* (i) is a loopback net */
+#define	IFF_POINTOPOINT	0x10		/* (i) is a point-to-point link */
+#define	IFF_NEEDSEPOCH	0x20		/* (i) calls if_input w/o net epoch */
+#define	IFF_DRV_RUNNING	0x40		/* (d) resources allocated */
+#define	IFF_NOARP	0x80		/* (n) no address resolution protocol */
+#define	IFF_PROMISC	0x100		/* (n) receive all packets */
+#define	IFF_ALLMULTI	0x200		/* (n) receive all multicast packets */
+#define	IFF_DRV_OACTIVE	0x400		/* (d) tx hardware queue is full */
+#define	IFF_SIMPLEX	0x800		/* (i) can't hear own transmissions */
 #define	IFF_LINK0	0x1000		/* per link layer defined bit */
 #define	IFF_LINK1	0x2000		/* per link layer defined bit */
 #define	IFF_LINK2	0x4000		/* per link layer defined bit */
-#define	IFF_MULTICAST	0x8000		/* supports multicast */
+#define	IFF_ALTPHYS	IFF_LINK2	/* use alternate physical connection */
+#define	IFF_MULTICAST	0x8000		/* (i) supports multicast */
+#define	IFF_CANTCONFIG	0x10000		/* (i) unconfigurable using ioctl(2) */
+#define	IFF_PPROMISC	0x20000		/* (n) user-requested promisc mode */
+#define	IFF_MONITOR	0x40000		/* (n) user-requested monitor mode */
+#define	IFF_STATICARP	0x80000		/* (n) static ARP */
+#define	IFF_STICKYARP	0x100000	/* (n) sticky ARP */
+#define	IFF_DYING	0x200000	/* (n) interface is winding down */
+#define	IFF_RENAMING	0x400000	/* (n) interface is being renamed */
+#define	IFF_PALLMULTI	0x800000	/* (n) user-requested allmulti mode */
+#define	IFF_NETLINK_1	0x1000000	/* (n) used by netlink */
 
 /* flags set internally only: */
 #define	IFF_CANTCHANGE \
-	(IFF_BROADCAST|IFF_POINTOPOINT|IFF_RUNNING|IFF_OACTIVE|\
-	    IFF_SIMPLEX|IFF_MULTICAST|IFF_ALLMULTI)
+	(IFF_BROADCAST|IFF_POINTOPOINT|IFF_DRV_RUNNING|IFF_DRV_OACTIVE|\
+	    IFF_SIMPLEX|IFF_MULTICAST|IFF_ALLMULTI|IFF_PROMISC|\
+	    IFF_DYING|IFF_CANTCONFIG|IFF_NEEDSEPOCH)
+
+/*
+ * Values for if_link_state.
+ */
+#define	LINK_STATE_UNKNOWN	0	/* link invalid/unknown */
+#define	LINK_STATE_DOWN		1	/* link is down */
+#define	LINK_STATE_UP		2	/* link is up */
+
+/*
+ * Some convenience macros used for setting ifi_baudrate.
+ * XXX 1000 vs. 1024? --thorpej@netbsd.org
+ */
+#define	IF_Kbps(x)	((uintmax_t)(x) * 1000)	/* kilobits/sec. */
+#define	IF_Mbps(x)	(IF_Kbps((x) * 1000))	/* megabits/sec. */
+#define	IF_Gbps(x)	(IF_Mbps((x) * 1000))	/* gigabits/sec. */
 
 /*
  * Output queues (ifp->if_snd) and internetwork datagram level (pup level 1)
@@ -231,6 +278,128 @@ struct ifnet {
 		(ifq)->ifq_len--; \
 	} \
 }
+
+
+/*
+ * Capabilities that interfaces can advertise.
+ *
+ * struct ifnet.if_capabilities
+ *   contains the optional features & capabilities a particular interface
+ *   supports (not only the driver but also the detected hw revision).
+ *   Capabilities are defined by IFCAP_* below.
+ * struct ifnet.if_capenable
+ *   contains the enabled (either by default or through ifconfig) optional
+ *   features & capabilities on this interface.
+ *   Capabilities are defined by IFCAP_* below.
+ * struct if_data.ifi_hwassist in mbuf CSUM_ flag form, controlled by above
+ *   contains the enabled optional feature & capabilites that can be used
+ *   individually per packet and are specified in the mbuf pkthdr.csum_flags
+ *   field.  IFCAP_* and CSUM_* do not match one to one and CSUM_* may be
+ *   more detailed or differentiated than IFCAP_*.
+ *   Hwassist features are defined CSUM_* in sys/mbuf.h
+ *
+ * Capabilities that cannot be arbitrarily changed with ifconfig/ioctl
+ * are listed in IFCAP_CANTCHANGE, similar to IFF_CANTCHANGE.
+ * This is not strictly necessary because the common code never
+ * changes capabilities, and it is left to the individual driver
+ * to do the right thing. However, having the filter here
+ * avoids replication of the same code in all individual drivers.
+ */
+
+/* IFCAP values as bit indexes */
+
+#define	IFCAP_B_RXCSUM		0 /* can offload checksum on RX */
+#define	IFCAP_B_TXCSUM		1 /* can offload checksum on TX */
+#define	IFCAP_B_NETCONS		2 /* can be a network console */
+#define	IFCAP_B_VLAN_MTU	3 /* VLAN-compatible MTU */
+#define	IFCAP_B_VLAN_HWTAGGING	4 /* hardware VLAN tag support */
+#define	IFCAP_B_JUMBO_MTU	5 /* 9000 byte MTU supported */
+#define	IFCAP_B_POLLING		6 /* driver supports polling */
+#define	IFCAP_B_VLAN_HWCSUM	7 /* can do IFCAP_HWCSUM on VLANs */
+#define	IFCAP_B_TSO4		8 /* can do TCP Segmentation Offload */
+#define	IFCAP_B_TSO6		9 /* can do TCP6 Segmentation Offload */
+#define	IFCAP_B_LRO		10 /* can do Large Receive Offload */
+#define	IFCAP_B_WOL_UCAST	11 /* wake on any unicast frame */
+#define	IFCAP_B_WOL_MCAST	12 /* wake on any multicast frame */
+#define	IFCAP_B_WOL_MAGIC	13 /* wake on any Magic Packet */
+#define	IFCAP_B_TOE4		14 /* interface can offload TCP */
+#define	IFCAP_B_TOE6		15 /* interface can offload TCP6 */
+#define	IFCAP_B_VLAN_HWFILTER	16 /* interface hw can filter vlan tag */
+#define	IFCAP_B_NV		17 /* can do SIOCGIFCAPNV/SIOCSIFCAPNV */
+#define	IFCAP_B_VLAN_HWTSO	18 /* can do IFCAP_TSO on VLANs */
+#define	IFCAP_B_LINKSTATE	19 /* the runtime link state is dynamic */
+#define	IFCAP_B_NETMAP		20 /* netmap mode supported/enabled */
+#define	IFCAP_B_RXCSUM_IPV6	21 /* can offload checksum on IPv6 RX */
+#define	IFCAP_B_TXCSUM_IPV6	22 /* can offload checksum on IPv6 TX */
+#define	IFCAP_B_HWSTATS		23 /* manages counters internally */
+#define	IFCAP_B_TXRTLMT		24 /* hardware supports TX rate limiting */
+#define	IFCAP_B_HWRXTSTMP	25 /* hardware rx timestamping */
+#define	IFCAP_B_MEXTPG		26 /* understands M_EXTPG mbufs */
+#define	IFCAP_B_TXTLS4		27 /* can do TLS encryption and segmentation for TCP */
+#define	IFCAP_B_TXTLS6		28 /* can do TLS encryption and segmentation for TCP6 */
+#define	IFCAP_B_VXLAN_HWCSUM	29 /* can do IFCAN_HWCSUM on VXLANs */
+#define	IFCAP_B_VXLAN_HWTSO	30 /* can do IFCAP_TSO on VXLANs */
+#define	IFCAP_B_TXTLS_RTLMT	31 /* can do TLS with rate limiting */
+#define	IFCAP_B_RXTLS4		32 /* can to TLS receive for TCP */
+#define	IFCAP_B_RXTLS6		33 /* can to TLS receive for TCP6 */
+#define	IFCAP_B_IPSEC_OFFLOAD	34 /* inline IPSEC offload */
+#define	__IFCAP_B_SIZE		35
+
+#define	IFCAP_B_MAX	(__IFCAP_B_MAX - 1)
+#define	IFCAP_B_SIZE	(__IFCAP_B_SIZE)
+
+#define	IFCAP_BIT(x)		(1 << (x))
+
+#define	IFCAP_RXCSUM		IFCAP_BIT(IFCAP_B_RXCSUM)
+#define	IFCAP_TXCSUM		IFCAP_BIT(IFCAP_B_TXCSUM)
+#define	IFCAP_NETCONS		IFCAP_BIT(IFCAP_B_NETCONS)
+#define	IFCAP_VLAN_MTU		IFCAP_BIT(IFCAP_B_VLAN_MTU)
+#define	IFCAP_VLAN_HWTAGGING	IFCAP_BIT(IFCAP_B_VLAN_HWTAGGING)
+#define	IFCAP_JUMBO_MTU		IFCAP_BIT(IFCAP_B_JUMBO_MTU)
+#define	IFCAP_POLLING		IFCAP_BIT(IFCAP_B_POLLING)
+#define	IFCAP_VLAN_HWCSUM	IFCAP_BIT(IFCAP_B_VLAN_HWCSUM)
+#define	IFCAP_TSO4		IFCAP_BIT(IFCAP_B_TSO4)
+#define	IFCAP_TSO6		IFCAP_BIT(IFCAP_B_TSO6)
+#define	IFCAP_LRO		IFCAP_BIT(IFCAP_B_LRO)
+#define	IFCAP_WOL_UCAST		IFCAP_BIT(IFCAP_B_WOL_UCAST)
+#define	IFCAP_WOL_MCAST		IFCAP_BIT(IFCAP_B_WOL_MCAST)
+#define	IFCAP_WOL_MAGIC		IFCAP_BIT(IFCAP_B_WOL_MAGIC)
+#define	IFCAP_TOE4		IFCAP_BIT(IFCAP_B_TOE4)
+#define	IFCAP_TOE6		IFCAP_BIT(IFCAP_B_TOE6)
+#define	IFCAP_VLAN_HWFILTER	IFCAP_BIT(IFCAP_B_VLAN_HWFILTER)
+#define	IFCAP_NV		IFCAP_BIT(IFCAP_B_NV)
+#define	IFCAP_VLAN_HWTSO	IFCAP_BIT(IFCAP_B_VLAN_HWTSO)
+#define	IFCAP_LINKSTATE		IFCAP_BIT(IFCAP_B_LINKSTATE)
+#define	IFCAP_NETMAP		IFCAP_BIT(IFCAP_B_NETMAP)
+#define	IFCAP_RXCSUM_IPV6	IFCAP_BIT(IFCAP_B_RXCSUM_IPV6)
+#define	IFCAP_TXCSUM_IPV6	IFCAP_BIT(IFCAP_B_TXCSUM_IPV6)
+#define	IFCAP_HWSTATS		IFCAP_BIT(IFCAP_B_HWSTATS)
+#define	IFCAP_TXRTLMT		IFCAP_BIT(IFCAP_B_TXRTLMT)
+#define	IFCAP_HWRXTSTMP		IFCAP_BIT(IFCAP_B_HWRXTSTMP)
+#define	IFCAP_MEXTPG		IFCAP_BIT(IFCAP_B_MEXTPG)
+#define	IFCAP_TXTLS4		IFCAP_BIT(IFCAP_B_TXTLS4)
+#define	IFCAP_TXTLS6		IFCAP_BIT(IFCAP_B_TXTLS6)
+#define	IFCAP_VXLAN_HWCSUM	IFCAP_BIT(IFCAP_B_VXLAN_HWCSUM)
+#define	IFCAP_VXLAN_HWTSO	IFCAP_BIT(IFCAP_B_VXLAN_HWTSO)
+#define	IFCAP_TXTLS_RTLMT	IFCAP_BIT(IFCAP_B_TXTLS_RTLMT)
+
+/* IFCAP2_* are integers, not bits. */
+#define	IFCAP2_RXTLS4		(IFCAP_B_RXTLS4 - 32)
+#define	IFCAP2_RXTLS6		(IFCAP_B_RXTLS6 - 32)
+#define	IFCAP2_IPSEC_OFFLOAD	(IFCAP_B_IPSEC_OFFLOAD - 32)
+
+#define	IFCAP2_BIT(x)		(1UL << (x))
+
+#define IFCAP_HWCSUM_IPV6	(IFCAP_RXCSUM_IPV6 | IFCAP_TXCSUM_IPV6)
+
+#define IFCAP_HWCSUM	(IFCAP_RXCSUM | IFCAP_TXCSUM)
+#define	IFCAP_TSO	(IFCAP_TSO4 | IFCAP_TSO6)
+#define	IFCAP_WOL	(IFCAP_WOL_UCAST | IFCAP_WOL_MCAST | IFCAP_WOL_MAGIC)
+#define	IFCAP_TOE	(IFCAP_TOE4 | IFCAP_TOE6)
+#define	IFCAP_TXTLS	(IFCAP_TXTLS4 | IFCAP_TXTLS6)
+
+#define	IFCAP_CANTCHANGE	(IFCAP_NETMAP | IFCAP_NV)
+#define	IFCAP_ALLCAPS		0xffffffff
 
 #define	IFQ_MAXLEN	50
 #define	IFNET_SLOWHZ	1		/* granularity is 1 second */

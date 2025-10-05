@@ -142,7 +142,7 @@ sana_deinit(void)
 
   while (ssq) {
     sana_down(ssq);
-    if (ssq->ss_if.if_flags & IFF_RUNNING) {
+    if (ssq->ss_if.if_flags & IFF_DRV_RUNNING) {
       sana_unrun(ssq);
     }
     ssc = ssq;
@@ -334,7 +334,7 @@ iface_make(struct ssconfig *ifc)
 				ssc->ss_unit    = req->ios2_Req.io_Unit;
 
 				ssc->ss_if.if_type = IFT_OTHER;
-				ssc->ss_if.if_flags &= ~(IFF_RUNNING|IFF_UP);
+				ssc->ss_if.if_flags &= ~(IFF_DRV_RUNNING|IFF_UP);
 
 				/* Initialize */ 
 
@@ -481,7 +481,7 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
    * Configure the Sana-II device driver
    * (now with factory address)
    */
-  if ((ssc->ss_if.if_flags & IFF_RUNNING) == 0) {
+  if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) == 0) {
     struct IOSana2Req *req;
 
     if (req = CreateIOSana2Req(ssc)) {
@@ -493,7 +493,7 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
       if (req->ios2_Req.io_Error == 0 ||
 	  req->ios2_WireError == S2WERR_IS_CONFIGURED) {
 	    /* Mark us as running */
-	    ssc->ss_if.if_flags |= IFF_RUNNING;
+	    ssc->ss_if.if_flags |= IFF_DRV_RUNNING;
 	    if (ssc->ss_cflags & SSF_TRACK) {
 #ifdef INET
           /* Ask for packet type specific statistics */
@@ -523,7 +523,7 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
     }
   }
 
-  if ((ssc->ss_if.if_flags & IFF_RUNNING)) {
+  if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING)) {
     /* Initialize ioRequests, add them into free queue */
     for (i = 0; i < requests ; i++) {
       if (!(req = CreateIORequest(SanaPort, sizeof(*req)))) break;
@@ -582,7 +582,7 @@ sana_unrun(struct sana_softc *ssc)
     DeleteIORequest((struct IORequest *)ssc->ss_connectreq);
   }
 
-  ssc->ss_if.if_flags &= ~IFF_RUNNING;
+  ssc->ss_if.if_flags &= ~IFF_DRV_RUNNING;
 }
 
 /*
@@ -607,7 +607,7 @@ D(bug("[ATCP-SANA] sana_ioctl()\n"));
   case SIOCSIFFLAGS:
 D(bug("[ATCP-SANA] sana_ioctl: SIOCSIFFLAGS - \n"));
 
-    if (((ifr->ifr_flags & (IFF_UP|IFF_RUNNING)) == (IFF_UP|IFF_RUNNING)) && ((ssc->ss_if.if_flags & (IFF_UP|IFF_RUNNING)) == IFF_RUNNING))
+    if (((ifr->ifr_flags & (IFF_UP|IFF_DRV_RUNNING)) == (IFF_UP|IFF_DRV_RUNNING)) && ((ssc->ss_if.if_flags & (IFF_UP|IFF_DRV_RUNNING)) == IFF_DRV_RUNNING))
     {
 D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS bringing interface up .. \n"));
       sana_up(ssc);
@@ -630,12 +630,12 @@ D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS Allocating interface ARP tables .. \n"))
      */
   case SIOCSIFADDR:		/* Set Interface Address */
 D(bug("[ATCP-SANA] sana_ioctl: SIOCSIFADDR - Set Interface Address\n"));
-    if (!(ssc->ss_if.if_flags & IFF_RUNNING))
+    if (!(ssc->ss_if.if_flags & IFF_DRV_RUNNING))
     {
 D(bug("[ATCP-SANA] sana_ioctl: SIFADDR set interface as running .. \n"));
       sana_run(ssc, ssc->ss_reqno, ifa);
     }
-    if ((ssc->ss_if.if_flags & IFF_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
+    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
       if (ssc->ss_if.if_flags & IFF_NOUP)
       {
 D(bug("[ATCP-SANA] sana_ioctl: SIFADDR Clearing interface NOUP flag .. \n"));
@@ -1067,7 +1067,7 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
   ifp->if_opackets++;		/* stats */
 
   /* Check if we are up and running... */
-  if ((ssc->ss_if.if_flags & (IFF_UP|IFF_RUNNING)) != (IFF_UP|IFF_RUNNING)) {
+  if ((ssc->ss_if.if_flags & (IFF_UP|IFF_DRV_RUNNING)) != (IFF_UP|IFF_DRV_RUNNING)) {
     error = ENETDOWN;
     goto bad;
   }

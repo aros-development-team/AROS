@@ -1,23 +1,32 @@
-/*
- * Copyright (C) 1993,1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
- *                         Helsinki University of Technology, Finland.
- *                         All rights reserved.
- * Copyright (C) 2005 Neil Cafferkey
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License
- * version 2 as published by the Free Software Foundation.
+ * Copyright (c) 1986, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Library General Public License for more details.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
  *
- * You should have received a copy of the GNU Library General Public
- * License along with this file; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
- * MA 02111-1307, USA.
- *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
 #ifndef NET_IF_ARP_H
@@ -35,25 +44,41 @@
  */
 struct	arphdr {
 	u_short	ar_hrd;		/* format of hardware address */
-#define ARPHRD_ETHER 	1	/* ethernet hardware address */
-#define ARPHRD_ARCNET 	7	/* ARCNET hardware address */
+#define ARPHRD_ETHER 	1	/* ethernet hardware format */
+#define ARPHRD_IEEE802	6	/* 802.2 networks (ethernet/tb/tr) */
+#define ARPHRD_FRELAY 	15	/* frame relay hardware format */
+#define ARPHRD_IEEE1394	24	/* firewire hardware format */
+#define ARPHRD_INFINIBAND 32	/* infiniband hardware format */
 	u_short	ar_pro;		/* format of protocol address */
 	u_char	ar_hln;		/* length of hardware address */
 	u_char	ar_pln;		/* length of protocol address */
 	u_short	ar_op;		/* one of: */
 #define	ARPOP_REQUEST	1	/* request to resolve address */
 #define	ARPOP_REPLY	2	/* response to previous request */
+#define	ARPOP_REVREQUEST 3	/* request protocol address given hardware */
+#define	ARPOP_REVREPLY	4	/* response giving protocol address */
+#define ARPOP_INVREQUEST 8 	/* request to identify peer */
+#define ARPOP_INVREPLY	9	/* response identifying peer */
 /*
  * The remaining fields are variable in size,
  * according to the sizes above.
  */
-/*	u_char	ar_sha[];	\* sender hardware address */
-/*	u_char	ar_spa[];	\* sender protocol address */
-/*	u_char	ar_tha[];	\* target hardware address */
-/*	u_char	ar_tpa[];	\* target protocol address */
+#ifdef COMMENT_ONLY
+	u_char	ar_sha[];	/* sender hardware address */
+	u_char	ar_spa[];	/* sender protocol address */
+	u_char	ar_tha[];	/* target hardware address */
+	u_char	ar_tpa[];	/* target protocol address */
+#endif
 };
 
-#define MAXADDRARP  16          /* Maximum number of octets in hw address */
+#define ar_sha(ap)	(((caddr_t)((ap)+1)) +   0)
+#define ar_spa(ap)	(((caddr_t)((ap)+1)) +   (ap)->ar_hln)
+#define ar_tha(ap)	(((caddr_t)((ap)+1)) +   (ap)->ar_hln + (ap)->ar_pln)
+#define ar_tpa(ap)	(((caddr_t)((ap)+1)) + 2*(ap)->ar_hln + (ap)->ar_pln)
+
+#define arphdr_len2(ar_hln, ar_pln)					\
+	(sizeof(struct arphdr) + 2*(ar_hln) + 2*(ar_pln))
+#define arphdr_len(ap)	(arphdr_len2((ap)->ar_hln, (ap)->ar_pln))
 
 /*
  * ARP ioctl request. 
@@ -62,7 +87,8 @@ struct arpreq {
 	struct	sockaddr arp_pa;		/* protocol address */
 	struct	{		                /* hardware address */
 	  u_char sa_len;
-	  u_char sa_family;		
+	  u_char sa_family;
+#define MAXADDRARP  16          /* Maximum number of octets in hw address */
 	  char	 sa_data[MAXADDRARP];		
 	}  arp_ha;		
 	int	arp_flags;			/* flags */
@@ -84,41 +110,24 @@ struct arptabreq {
 	long           atr_inuse;               /* # of elements in use */
 	struct arpreq *atr_table;
 };
-
-/*
- * Copyright (c) 1986 Regents of the University of California.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- *	@(#)if_arp.h	7.4 (Berkeley) 6/28/90
- */
+
+struct arpstat {
+	/* Normal things that happen: */
+	uint64_t txrequests;	/* # of ARP requests sent by this host. */
+	uint64_t txreplies;	/* # of ARP replies sent by this host. */
+	uint64_t rxrequests;	/* # of ARP requests received by this host. */
+	uint64_t rxreplies;	/* # of ARP replies received by this host. */
+	uint64_t received;	/* # of ARP packets received by this host. */
+	uint64_t txerrors;	/* # of ARP requests failed to send. */
+
+	uint64_t arp_spares[3];	/* For either the upper or lower half. */
+	/* Abnormal event and error  counting: */
+	uint64_t dropped;	/* # of packets dropped waiting for a reply. */
+	uint64_t timeouts;	/* # of times with entries removed */
+				/* due to timeout. */
+	uint64_t dupips;	/* # of duplicate IPs detected. */
+};
+
 #endif /* NET_IF_ARP_H */
 
 

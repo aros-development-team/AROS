@@ -1,6 +1,8 @@
 #ifndef _NET_IF_DL_H_
 #define _NET_IF_DL_H_
-/*
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Copyright (c) 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -12,11 +14,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -31,9 +29,9 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)if_dl.h	8.1 (Berkeley) 6/10/93
  */
+
+#include <sys/types.h>
 
 /* 
  * A Link-Level Sockaddr may specify the interface in one of two
@@ -56,21 +54,20 @@
 /*
  * Structure of a Link-Level sockaddr:
  */
-#include <sys/types.h>
- 
 struct sockaddr_dl {
 	u_char	sdl_len;	/* Total length of sockaddr */
-	u_char	sdl_family;	/* AF_DLI */
+	u_char	sdl_family;	/* AF_LINK */
 	u_short	sdl_index;	/* if != 0, system given index for interface */
 	u_char	sdl_type;	/* interface type */
 	u_char	sdl_nlen;	/* interface name length, no trailing 0 reqd. */
 	u_char	sdl_alen;	/* link level address length */
 	u_char	sdl_slen;	/* link layer selector length */
-	char	sdl_data[12];	/* minimum work area, can be larger;
+	char	sdl_data[46];	/* minimum work area, can be larger;
 				   contains both if name and ll address */
 };
 
-#define LLADDR(s) ((caddr_t)((s)->sdl_data + (s)->sdl_nlen))
+#define LLADDR(s) (&(s)->sdl_data[(s)->sdl_nlen])
+#define LLINDEX(s) ((s)->sdl_index)
 
 #ifndef KERNEL
 
@@ -79,6 +76,7 @@ struct sockaddr_dl {
 __BEGIN_DECLS
 void	link_addr __P((const char *, struct sockaddr_dl *));
 char	*link_ntoa __P((const struct sockaddr_dl *));
+int	link_ntoa_r __P((const struct sockaddr_dl *, char *, size_t *));
 __END_DECLS
 
 #endif /* !KERNEL */
