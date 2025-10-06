@@ -12,36 +12,6 @@
 #include "base.h"
 
 /*
- * Free nodes of a list (they should all be allocated with AllocVec())
- */
-void FreeListVec(struct NetInfoDevice *nid, struct List *list)
-{
-    struct Node *entry, *next;
-
-    for (entry = list->lh_Head; next = entry->ln_Succ; entry = next) {
-        Remove(entry);
-        FreeVec(entry);
-        entry = NULL;
-    }
-}
-
-/*
- * Ensure that a node is in list
- * return node if it is, NULL otherwise
- */
-struct Node *FindNode(struct List *list, struct Node *node)
-{
-    struct Node *entry, *next;
-
-    for (entry = list->lh_Head; next = entry->ln_Succ; entry = next)
-        if (entry == node) {
-            return node;
-        }
-
-    return NULL;
-}
-
-/*
  * Get next token from string *stringp, where tokens are nonempty
  * strings separated by characters from delim.
  *

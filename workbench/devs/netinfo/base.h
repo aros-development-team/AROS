@@ -161,8 +161,5 @@ void UnknownCommand(struct NetInfoDevice *, struct NetInfoReq *, struct NetInfoM
 
 /* support functions */
 struct NetInfoMap *CheckUnit(struct NetInfoDevice *, struct Unit *u);
-void FreeListVec(struct NetInfoDevice *, struct List *list);
-struct Node *FindNode(struct List *list, struct Node *node);
-char *strsep(register char **stringp, register const char *delim);
 
 #endif /* _BASE_H_ */

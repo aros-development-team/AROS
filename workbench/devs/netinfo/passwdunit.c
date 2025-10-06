@@ -7,6 +7,10 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -260,18 +264,29 @@ static struct Ent *ParsePasswd(struct NetInfoDevice *nid, register UBYTE *p)
     assert(np != NULL);
 #endif
     if (i < PASSWDFIELDS || !np) {
+        if (i < PASSWDFIELDS) {
+            bug("[NetInfo] %s: ERROR: malformed enry\n", __func__);
+        } else {
+            bug("[NetInfo] %s: ERROR: no line-end?\n", __func__);
+        }
         return NULL;
     }
 
-    if ((i = StrToLong(field[2], &uid)) <= 0 || field[2][i] != '\0')
+    if ((i = StrToLong(field[2], &uid)) <= 0 || field[2][i] != '\0') {
+        bug("[NetInfo] %s: ERROR: failed to parse uid\n", __func__);
         return NULL;
-    if ((i = StrToLong(field[3], &gid)) <= 0 || field[3][i] != '\0')
+    }
+    if ((i = StrToLong(field[3], &gid)) <= 0 || field[3][i] != '\0') {
+        bug("[NetInfo] %s: ERROR: failed to parse gid\n", __func__);
         return NULL;
+    }
 
     txtlen = np - field[0] - (field[4] - field[2]);
     pe = AllocVec(sizeof(*pe) + txtlen, MEMF_CLEAR);
-    if (!pe)
+    if (!pe) {
+        bug("[NetInfo] %s: Failed to allocate entry storage\n", __func__);
         return NULL;
+    }
 
     pe->pe_node.ln_Type = ENT_PASSWD;
     pe->pe_tlen = txtlen;
@@ -284,6 +299,8 @@ static struct Ent *ParsePasswd(struct NetInfoDevice *nid, register UBYTE *p)
     to = stpcopy(pe->pe_passwd->pw_gecos  = to, field[4]);
     to = stpcopy(pe->pe_passwd->pw_dir    = to, field[5]);
     to = stpcopy(pe->pe_passwd->pw_shell  = to, field[6]);
+
+    D(bug("[NetInfo] %s: <%d:%d> '%s'\n", __func__, pe->pe_passwd->pw_uid, pe->pe_passwd->pw_gid, pe->pe_passwd->pw_name));
 
 #if defined(DEBUG)
     assert(to == pe->pe_passwd->pw_name + txtlen);

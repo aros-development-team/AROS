@@ -7,12 +7,17 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "entries.h"
+#include "misc.h"
 
 #include <string.h>
 #if defined(DEBUG)
@@ -20,6 +25,7 @@
 #include "assert.h"
 #endif
 
+#define DENTS(x)
 
 static struct NetInfoPointer *FindPointer(struct List *list, struct Ent*to);
 void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);
@@ -93,12 +99,15 @@ void DeInitNetInfoMap(struct NetInfoDevice *nid, struct NetInfoMap *nim)
  */
 void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
 {
-    struct Ent *e = InternalSetEnts(nid, nim);
     const UBYTE *name = (const UBYTE *)
                         ((struct NetInfoEnt*)req->io_Data)->nie_name;
+    struct Ent *e;
     LONG retval = NIERR_NOTFOUND;
 
     D(bug("[NetInfo] %s()\n", __func__));
+
+    e = InternalSetEnts(nid, nim);
+    D(bug("[NetInfo] %s: Ents @ 0x%p\n", __func__, e));
 
     while (e = GetNextEnt(e)) {
         if (strcmp(e->e_name, name) == 0) {
@@ -122,11 +131,14 @@ void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetI
  */
 void GetByIDCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
 {
-    struct Ent *e = InternalSetEnts(nid, nim);
+    struct Ent *e;
     LONG id = ((struct NetInfoEnt*)req->io_Data)->nie_id;
     BYTE retval = NIERR_NOTFOUND;
 
     D(bug("[NetInfo] %s()\n", __func__));
+
+    e = InternalSetEnts(nid, nim);
+    D(bug("[NetInfo] %s: Ents @ 0x%p\n", __func__, e));
 
     while (e = GetNextEnt(e)) {
         if (e->e_id == id) {
@@ -456,7 +468,7 @@ void InternalEndEnts(struct NetInfoDevice *nid, struct NetInfoMap *nim)
  */
 struct Ent *GetNextEnt(struct Ent *e)
 {
-    D(bug("[NetInfo] %s()\n", __func__));
+    DENTS(bug("[NetInfo] %s()\n", __func__));
 
     e = (struct Ent *)e->e_node.ln_Succ;
 
