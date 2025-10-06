@@ -81,6 +81,10 @@
 *
 */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 
 #include <aros/debug.h>
 
 #include <aros/libcall.h>

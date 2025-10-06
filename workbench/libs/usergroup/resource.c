@@ -10,6 +10,10 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 
 #include <aros/debug.h>
 
 #include "base.h"
