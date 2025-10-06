@@ -13,7 +13,7 @@
 #ifdef DEBUG
 #undef DEBUG
 #endif
-#define DEBUG 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <aros/libcall.h>
