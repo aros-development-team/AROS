@@ -11,8 +11,13 @@
 #include <proto/dos.h>
 
 #include "entries.h"
+
 #include <string.h>
+#if defined(DEBUG)
 #include <assert.h>
+#include "assert.h"
+#endif
+
 
 static struct NetInfoPointer *FindPointer(struct List *list, struct Ent*to);
 void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim);

@@ -7,13 +7,17 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "entries.h"
+
 #include <string.h>
 #if defined(DEBUG)
 #include <assert.h>
+#include "assert.h"
 #endif
 
 static void *CopyEntToPasswd(struct NetInfoReq *req, struct Ent *e);
@@ -39,12 +43,16 @@ const static struct MapMethods passwd_methods[1] = {
  */
 struct NetInfoMap *InitPasswdMap(struct NetInfoDevice *nid)
 {
-    struct NetInfoMap *nim = AllocVec(sizeof(*nim), MEMF_CLEAR|MEMF_PUBLIC);
+    D(bug("[NetInfo] %s()\n", __func__));
 
-    if (nim) {
-        nim->nim_Methods = passwd_methods;
-        nim->nim_Name = "passwd";
-        nim->nim_Filename = _PATH_PASSWD;
+    struct NetInfoMap *nim = NULL;
+    if (nid->nid_dbuser) {
+        nim = AllocVec(sizeof(*nim), MEMF_CLEAR|MEMF_PUBLIC);
+        if (nim) {
+            nim->nim_Methods = passwd_methods;
+            nim->nim_Name = "passwd";
+            nim->nim_Filename = nid->nid_dbuser;
+        }
     }
 
     return nim;
@@ -55,6 +63,8 @@ struct NetInfoMap *InitPasswdMap(struct NetInfoDevice *nid)
  */
 static void *CopyEntToPasswd(struct NetInfoReq *req, struct Ent *e)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     struct PasswdEnt *pe = (struct PasswdEnt *)e;
     struct NetInfoPasswd *pw = req->io_Data;
     UBYTE  *to = (UBYTE *)(pw + 1);
@@ -94,6 +104,8 @@ static struct Ent *CopyPasswdToEnt(struct NetInfoDevice *nid, struct NetInfoReq 
     struct PasswdEnt *pe;
     UBYTE *to;
     ULONG txtlen;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     /*
     * These cause EFAULT
@@ -238,6 +250,8 @@ static struct Ent *ParsePasswd(struct NetInfoDevice *nid, register UBYTE *p)
     LONG uid, gid;
     struct PasswdEnt *pe;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     for (i = 0;
             i < PASSWDFIELDS && (field[i++] = strsep((char **)&np, "|\n")) && np && *np;)
         ;
@@ -284,6 +298,8 @@ static int PrintPasswd(struct NetInfoDevice *nid, BPTR file, struct Ent *e)
 {
     struct PasswdEnt *pe = (struct PasswdEnt *)e;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if (VFPrintf(file, "%s|%s|%ld|%ld|%s|%s|%s\n", (RAWARG)pe->pe_passwd) == -1)
         return NIERR_ACCESS;
     else
@@ -295,6 +311,8 @@ static int PrintPasswd(struct NetInfoDevice *nid, BPTR file, struct Ent *e)
  */
 static void GetMembers(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     req->io_Error = NIERR_NOTFOUND;
     TermIO(req);
 }

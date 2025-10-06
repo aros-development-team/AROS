@@ -7,12 +7,18 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
 #include "entries.h"
-#include <assert.h>
+
 #include <string.h>
+#if defined(DEBUG)
+#include <assert.h>
+#include "assert.h"
+#endif
 
 static void *CopyEntToGroup(struct NetInfoReq *req, struct Ent *e);
 static struct Ent *CopyGroupToEnt(struct NetInfoDevice *nid, struct NetInfoReq *req);
@@ -38,14 +44,18 @@ const static struct MapMethods group_methods[1] = {
  */
 struct NetInfoMap *InitGroupMap(struct NetInfoDevice *nid)
 {
-    struct NetInfoMap *nim = AllocVec(sizeof(*nim), MEMF_CLEAR|MEMF_PUBLIC);
+    struct NetInfoMap *nim = NULL;
 
-    if (nim) {
-        nim->nim_Methods = group_methods;
-        nim->nim_Name = "group";
-        nim->nim_Filename = _PATH_GROUP;
+    D(bug("[NetInfo] %s()\n", __func__));
+
+    if (nid->nid_dbgroup) {
+        nim = AllocVec(sizeof(*nim), MEMF_CLEAR|MEMF_PUBLIC);
+        if (nim) {
+            nim->nim_Methods = group_methods;
+            nim->nim_Name = "group";
+            nim->nim_Filename = nid->nid_dbgroup;
+        }
     }
-
     return nim;
 }
 
@@ -63,6 +73,8 @@ static void *CopyEntToGroup(struct NetInfoReq *req, struct Ent *e)
     ULONG actual = sizeof(*gr) + ge->ge_tlen + ge->ge_nmembers * sizeof(UBYTE *);
 
     UBYTE **mfrom;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     req->io_Actual = actual;
 
@@ -99,6 +111,8 @@ static struct Ent *CopyGroupToEnt(struct NetInfoDevice *nid, struct NetInfoReq *
     UBYTE *to, **mem, **mto;
     short nmem = 1;
     ULONG txtlen = 0;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     /*
     * These cause EFAULT
@@ -203,6 +217,8 @@ static struct Ent *ParseGroup(struct NetInfoDevice *nid, register UBYTE *p)
 
     struct GroupEnt *ge;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     np = p;
 
     name = strsep((char **)&np, "|\n");
@@ -274,6 +290,8 @@ static int PrintGroup(struct NetInfoDevice *nid, BPTR file, struct Ent *e)
     UBYTE **member = ge->ge_group->gr_mem;
     UBYTE *fmt = "%s";
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     VFPrintf(file, "%s|%s|%ld|", (RAWARG)ge->ge_group);
     while (*member) {
         FPrintf(file, fmt, *member++);
@@ -296,6 +314,8 @@ static void GetGroups(struct NetInfoDevice *nid, struct NetInfoReq *req, struct 
     register struct GroupEnt *ge;
     register int i;
     BYTE retval = 0;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
 #if __WORDSIZE == 32
     uname = (STRPTR)req->io_Offset;

@@ -60,12 +60,6 @@ struct GroupEnt {
  */
 #define MAXLINELENGTH 1024
 
-/*
- * Datastruct NetInfoDevice * paths
- */
-#define _PATH_PASSWD  "AmiTCP:db/passwd"
-#define _PATH_GROUP   "AmiTCP:db/group"
-
 /* 
  * As this far there are no quick commands
  * we bother to lock only niu_ReqLock

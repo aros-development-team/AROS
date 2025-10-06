@@ -7,7 +7,10 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
+#include <proto/dos.h>
 
 #include "base.h"
 #include "assert.h"
@@ -18,19 +21,29 @@ static void NetInfoPoll(struct NetInfoDevice *nid);
  * Task Startup routine
  * This is called from DOS, so it has got no devbase
  */
- #if !defined(__AROS__)
-#undef SysBase
-#define SysBase (*(APTR *)4)
-#endif
-
 SAVEDS ASM LONG NetInfoStartup(void)
 {
     struct NetInfoDevice *dev;
     struct Message *ok_message = (struct Message *)
                                  ((struct Process*)FindTask(NULL))->pr_ExitData;
 
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+    
     if (ok_message) {
+        char buf[128];
+        LONG len;
+
         dev = (struct NetInfoDevice *) ok_message->mn_Node.ln_Name;
+
+        len = GetVar("SYS/userdb", buf, sizeof(buf), GVF_GLOBAL_ONLY);
+        if (len > 0) {
+        } else
+            dev->nid_dbuser = "SYS:System/Network/AROSTCP/db/passwd";
+        len = GetVar("SYS/groupdb", buf, sizeof(buf), GVF_GLOBAL_ONLY);
+        if (len > 0) {
+        } else
+            dev->nid_dbgroup = "SYS:System/Network/AROSTCP/db/group";
+
         if (dev) {
             NetInfoTask(dev, ok_message);
         } else {
@@ -44,6 +57,8 @@ SAVEDS ASM LONG NetInfoStartup(void)
 
 void TermIO(struct NetInfoReq *req)
 {
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+
     if ((req->io_Flags & IOF_QUICK) == 0)
         ReplyMsg((struct Message *)req);
 }
@@ -59,6 +74,8 @@ void NetInfoTask(struct NetInfoDevice *nid, struct Message *ok_message)
 {
     BYTE ps = AllocSignal(-1);
     struct Message *death;
+
+    D(bug("[NetInfo:Server] %s()\n", __func__));
 
     /* Create main message port */
     if (ps != -1) {
@@ -114,6 +131,8 @@ void NetInfoTask(struct NetInfoDevice *nid, struct Message *ok_message)
 static void NetInfoPoll(struct NetInfoDevice *nid)
 {
     ULONG mask = 1L << nid->nid_Port->mp_SigBit;
+
+    D(bug("[NetInfo:Server] %s()\n", __func__));
 
     while (mask) {
         struct NetInfoReq *req;
@@ -175,6 +194,8 @@ struct Unit *CreateNewUnit(struct NetInfoDevice *nid, short unit)
     struct NetInfoMap *nim = nid->nid_Maps[unit];
     struct NetInfoPointer *nip = AllocVec(sizeof(*nip), MEMF_CLEAR);
 
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+
     if (nip) {
         nim->nim_OpenCnt++;
         nip->nip_Name = nim->nim_Name;
@@ -197,6 +218,8 @@ void ExpungeUnit(struct NetInfoDevice *nid, struct Unit *u)
     struct NetInfoPointer *nip = (struct NetInfoPointer *)u;
     struct NetInfoMap *nim = CheckUnit(nid, u);
 
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+
     if (nim == NULL) {
         /* We should do an Alert */
         InMsg("CloseDevice(): illegal unit pointer %lx", u);
@@ -214,6 +237,8 @@ void PerformIO(struct NetInfoDevice *nid, struct NetInfoReq *req)
 {
     struct NetInfoMap *nim = CheckUnit(nid, req->io_Unit);
 
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+
     if (nim) {
         DoNIMethod(req->io_Command, req, nim);
     } else {
@@ -225,6 +250,8 @@ void PerformIO(struct NetInfoDevice *nid, struct NetInfoReq *req)
 ULONG AbortReq(struct NetInfoDevice *nid, struct List *l, struct NetInfoReq *req)
 {
     struct Node *n;
+
+    D(bug("[NetInfo:Server] %s()\n", __func__));
 
     for (n = l->lh_Head; n->ln_Succ; n = n->ln_Succ) {
         if (n == (struct Node *)req) {
@@ -240,6 +267,8 @@ ULONG AbortReq(struct NetInfoDevice *nid, struct List *l, struct NetInfoReq *req
 
 void UnknownCommand(struct NetInfoDevice *nid, struct NetInfoReq * req, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo:Server] %s()\n", __func__));
+
     req->io_Error = IOERR_NOCMD;
     TermIO(req);
 }

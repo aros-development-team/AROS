@@ -2,6 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := \
+    assert \
     netinfo \
     server \
     entries \

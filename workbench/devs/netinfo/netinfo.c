@@ -109,6 +109,8 @@
 ****************************************************************************
 */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -124,6 +126,8 @@
  */
 static int NetInfo__DevInit(LIBBASETYPEPTR LIBBASE)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     LIBBASE->nid_Task = NULL;
     InitSemaphore(LIBBASE->nid_Lock);
     return TRUE;
@@ -136,6 +140,8 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
 )
 {
     int retval = FALSE;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     /* Enforce single threading so we can Wait() */
     ObtainSemaphore(LIBBASE->nid_Lock);
@@ -202,6 +208,8 @@ static int NetInfo__DevClose(LIBBASETYPEPTR LIBBASE,
 {
     int retval = FALSE;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     ObtainSemaphore(LIBBASE->nid_Lock);
     {
         ExpungeUnit(LIBBASE, req->io_Unit);
@@ -217,6 +225,8 @@ static int NetInfo__DevClose(LIBBASETYPEPTR LIBBASE,
  */
 static int NetInfo__DevExpunge(LIBBASETYPEPTR LIBBASE)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if (AttemptSemaphore(LIBBASE->nid_Lock)) {
         if (LIBBASE->nid_Task) {
             if (LIBBASE->nid_Death && LIBBASE->nid_Death->mn_Node.ln_Type == NT_MESSAGE)
@@ -243,6 +253,8 @@ AROS_LH1(void, BeginIO,
          struct NetInfoDevice *, nid, 5, NetInfo)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     req->io_Message.mn_Node.ln_Type = NT_MESSAGE;
 
@@ -278,6 +290,8 @@ AROS_LH1(LONG, AbortIO,
     ULONG result = 0L;
     struct NetInfoMap *nim;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+    
     if (ni->io_Unit == NULL)
         return NIERR_NULL_POINTER;
 
