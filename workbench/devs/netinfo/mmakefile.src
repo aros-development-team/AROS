@@ -14,7 +14,7 @@ FILES := \
 
 #MM- workbench-devs-quick: workbench-devs-netinfo-quick
 
-USER_CPPFLAGS := -DDEBUG=1
+#USER_CPPFLAGS := -DDEBUG=1
 USER_LDFLAGS := -static
 
 %build_module mmake=workbench-devs-netinfo \

@@ -139,9 +139,9 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
     ULONG flags
 )
 {
-    int retval = FALSE;
-
     D(bug("[NetInfo] %s()\n", __func__));
+
+    req->io_Error  = IOERR_OPENFAIL;
 
     /* Enforce single threading so we can Wait() */
     ObtainSemaphore(LIBBASE->nid_Lock);
@@ -186,24 +186,25 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
     if (LIBBASE->nid_Task == NULL)
         goto zap;
 
-    D(bug("[NetInfo] %s: initializing units...\n", __func__));
+    D(bug("[NetInfo] %s: initializing unit...\n", __func__));
 
     /* OK, create a new unit structure, fill in a request and return */
     req->io_Device = (struct Device *) LIBBASE;
-    if (req->io_Unit = CreateNewUnit(LIBBASE, unit)) {
-        retval = TRUE;
+    if ((req->io_Unit = CreateNewUnit(LIBBASE, unit)) != NULL) {
+        D(bug("[NetInfo] %s: unit @ 0x%p\n", __func__, req->io_Unit));
+        req->io_Error = 0;
     }
 zap:
-    if (req->io_Error = retval) {
+    if (req->io_Error != 0) {
         req->io_Unit = (struct Unit *) -1;
         req->io_Device = (struct Device *) -1;
     }
 
     ReleaseSemaphore(LIBBASE->nid_Lock);
 
-    D(bug("[NetInfo] %s: returning %d\n", __func__, retval));
+    D(bug("[NetInfo] %s: returning %s\n", __func__, req->io_Error ? "FALSE" : "TRUE"));
 
-    return retval;
+    return req->io_Error ? FALSE : TRUE;
 }
 
 static int NetInfo__DevClose(LIBBASETYPEPTR LIBBASE,
