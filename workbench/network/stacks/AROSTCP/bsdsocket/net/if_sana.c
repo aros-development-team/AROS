@@ -315,12 +315,14 @@ iface_make(struct ssconfig *ifc)
 			(struct IORequest *)req, 0L))
 		{
 			sana2perror("OpenDevice", req);
-			
+
+			D(bug("[AROSTCP:SANA] %s: device '%s' unit %u", __func__, ifc->args->a_dev, *ifc->args->a_unit));
+
 			/* Allocate the interface structure */
 			ssc = (struct sana_softc *)
 			bsd_malloc(sizeof(*ssc) + strlen(ifc->args->a_dev) + 1,
 							M_IFNET, M_WAITOK);
-  
+
 			if (!ssc)
 			{
 				__log(LOG_ERR, "iface_find: out of memory\n");
@@ -338,9 +340,9 @@ iface_make(struct ssconfig *ifc)
 
 				/* Initialize */ 
 
-D(bug("[AROSTCP] if_sana.c: iface_make: Current IP from config = %s\n", ifc->args[0].a_ip));
+D(bug("[AROSTCP:SANA] %s: Current IP from config = %s\n", __func__, ifc->args[0].a_ip));
 				ifc->args[0].a_ip = "0.0.0.0";
-D(bug("[AROSTCP] if_sana.c: iface_make: IP set to 0.0.0.0\n"));
+D(bug("[AROSTCP:SANA] %s: IP set to 0.0.0.0\n", __func__));
 
 				ssconfig(ssc, ifc);
 	
@@ -600,27 +602,27 @@ sana_ioctl(register struct ifnet *ifp, int cmd, caddr_t data)
   spl_t s = splimp();
   int error = 0;
 
-D(bug("[ATCP-SANA] sana_ioctl()\n"));
+D(bug("[AROSTCP:SANA] %s()\n", __func__));
 
   switch (cmd) {
 
   case SIOCSIFFLAGS:
-D(bug("[ATCP-SANA] sana_ioctl: SIOCSIFFLAGS - \n"));
+D(bug("[AROSTCP:SANA] %s: SIOCSIFFLAGS - \n", __func__));
 
     if (((ifr->ifr_flags & (IFF_UP|IFF_DRV_RUNNING)) == (IFF_UP|IFF_DRV_RUNNING)) && ((ssc->ss_if.if_flags & (IFF_UP|IFF_DRV_RUNNING)) == IFF_DRV_RUNNING))
     {
-D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS bringing interface up .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFFLAGS bringing interface up .. \n", __func__));
       sana_up(ssc);
     }
     /* Call sana_down() in every case */
     if ((ifr->ifr_flags & IFF_UP) == 0)
     {
-D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS bringing interface DOWN .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFFLAGS bringing interface DOWN .. \n", __func__));
       sana_down(ssc);
     }
     if ((ifr->ifr_flags & IFF_NOARP) == 0)
     {
-D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS Allocating interface ARP tables .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFFLAGS Allocating interface ARP tables .. \n", __func__));
       alloc_arptable(ssc, 0);
     }
     break;
@@ -629,32 +631,32 @@ D(bug("[ATCP-SANA] sana_ioctl: SIFFLAGS Allocating interface ARP tables .. \n"))
      * Set interface address (and mark interface up).
      */
   case SIOCSIFADDR:		/* Set Interface Address */
-D(bug("[ATCP-SANA] sana_ioctl: SIOCSIFADDR - Set Interface Address\n"));
+D(bug("[AROSTCP:SANA] %s: SIOCSIFADDR - Set Interface Address\n", __func__));
     if (!(ssc->ss_if.if_flags & IFF_DRV_RUNNING))
     {
-D(bug("[ATCP-SANA] sana_ioctl: SIFADDR set interface as running .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFADDR set interface as running .. \n", __func__));
       sana_run(ssc, ssc->ss_reqno, ifa);
     }
     if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
       if (ssc->ss_if.if_flags & IFF_NOUP)
       {
-D(bug("[ATCP-SANA] sana_ioctl: SIFADDR Clearing interface NOUP flag .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
         ssc->ss_if.if_flags &= ~IFF_NOUP;
       }
       else
       {
-D(bug("[ATCP-SANA] sana_ioctl: SIFADDR bringing interface UP .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFADDR bringing interface UP .. \n", __func__));
         sana_up(ssc);
       }
     }
     if ((ssc->ss_if.if_flags & IFF_NOARP) == 0)
     {
-D(bug("[ATCP-SANA] sana_ioctl: SIFADDR Allocating interface ARP tables .. \n"));
+D(bug("[AROSTCP:SANA] %s: SIFADDR Allocating interface ARP tables .. \n", __func__));
       alloc_arptable(ssc, 0);
     }
     
   case SIOCAIFADDR:		/* Alter Interface Address */
-D(bug("[ATCP-SANA] sana_ioctl: SIOCAIFADDR - Alter Interface Address\n"));
+D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR - Alter Interface Address\n", __func__));
     switch (ifa->ifa_addr->sa_family) {
 #if INET
     case AF_INET:
@@ -665,11 +667,11 @@ D(bug("[ATCP-SANA] sana_ioctl: SIOCAIFADDR - Alter Interface Address\n"));
     break;
 
   case SIOCSIFDSTADDR:		/* Sets P-P-link destination address */
-D(bug("[ATCP-SANA] sana_ioctl: SIOCSIFDSTADDR - [*] Set P-P-link destination address\n"));
+D(bug("[AROSTCP:SANA] %s: SIOCSIFDSTADDR - [*] Set P-P-link destination address\n", __func__));
     break;
 
   default:
-D(bug("[ATCP-SANA] sana_ioctl: UNKNOWN SIOC\n"));
+D(bug("[AROSTCP:SANA] %s: UNKNOWN SIOC\n", __func__));
     error = EINVAL;
     break;
   }
@@ -720,7 +722,7 @@ sana_restore(struct sana_softc *ssc)
   struct timeval now;
 
 DSANA(__log(LOG_DEBUG,"sana_restore(%s%d) called", ssc->ss_if.if_name, ssc->ss_if.if_unit);)
-D(bug("[ATCP-SANA] sana_restore('%s%d')\n", ssc->ss_if.if_name, ssc->ss_if.if_unit));
+D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit));
 
   s = splimp();
   ssc->ss_if.if_flags |= IFF_UP;
@@ -766,7 +768,7 @@ sana_up(struct sana_softc *ssc)
 {
   struct IOSana2Req *req;
   DSANA(__log(LOG_DEBUG,"sana_up(%s%d) called", ssc->ss_if.if_name, ssc->ss_if.if_unit);)
-D(bug("[ATCP-SANA] sana_up('%s%d')\n", ssc->ss_if.if_name, ssc->ss_if.if_unit));
+  D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit));
 
   gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_GoingOnline);
 
