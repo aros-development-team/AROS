@@ -56,7 +56,7 @@ struct NetInfoPasswd
   UBYTE *pw_gecos;                      /* Real name etc */
   UBYTE *pw_dir;                        /* Home directory */
   UBYTE *pw_shell;                      /* Shell */
-};
+} __packed;
 
 /* The group structure */
 struct NetInfoGroup
@@ -65,6 +65,6 @@ struct NetInfoGroup
   UBYTE *gr_passwd;                     /* Password.    */
   LONG  gr_gid;                         /* Group ID.    */
   UBYTE **gr_mem;                       /* Member list. */
-};
+} __packed;
 
 #endif /* DEVICES_NETINFO_H */

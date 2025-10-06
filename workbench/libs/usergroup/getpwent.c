@@ -138,7 +138,9 @@ AROS_LH1(struct passwd *, getpwnam,
         pw->pw_name = (char *)name;
         nreq->io_Command = NI_GETBYNAME;
         D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
-        if (ug_DoIO(nreq) != 0) {
+        if (ug_DoIO(nreq) == 0) {
+            D(bug("[UserGroup] %s:  -> %d\n", __func__, pw->pw_uid));
+        } else {
             pw = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -166,13 +168,13 @@ AROS_LH1(struct passwd *, getpwuid,
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
-        pw = (struct passwd *)nreq->io_Data;
+        pw = (struct passwd *)nreq->io_Data;            
         pw->pw_uid = uid;
         nreq->io_Command = NI_GETBYID;
-
         D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
-
-        if (ug_DoIO(nreq) != 0) {
+        if (ug_DoIO(nreq) == 0) {
+            D(bug("[UserGroup] %s:  -> '%s'\n", __func__, pw->pw_name));
+        } else {
             pw = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -183,6 +185,7 @@ AROS_LH1(struct passwd *, getpwuid,
 
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
+    D(bug("[UserGroup] %s: returning 0x%p\n", __func__, pw));
     return pw;
 
     AROS_LIBFUNC_EXIT
@@ -201,9 +204,7 @@ AROS_LH0(void, setpwent,
 
     if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         nreq->io_Command = CMD_RESET;
-
         D(bug("[UserGroup] %s: sending CMD_RESET to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
-
         ug_DoIO(nreq);
         UserGroupBase->setent_done = 1;
     } else {
@@ -234,7 +235,6 @@ AROS_LH0(struct passwd *, getpwent,
             ug_DoIO(nreq);
             UserGroupBase->setent_done = 1;
         }
-
         D(bug("[UserGroup] %s: sending CMD_READ to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
         nreq->io_Command = CMD_READ;
         if (ug_DoIO(nreq) == 0) {
@@ -248,6 +248,7 @@ AROS_LH0(struct passwd *, getpwent,
 
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
+    D(bug("[UserGroup] %s: returning 0x%p\n", __func__, pw));
     return pw;
 
     AROS_LIBFUNC_EXIT

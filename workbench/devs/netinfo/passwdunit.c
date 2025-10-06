@@ -300,7 +300,7 @@ static struct Ent *ParsePasswd(struct NetInfoDevice *nid, register UBYTE *p)
     to = stpcopy(pe->pe_passwd->pw_dir    = to, field[5]);
     to = stpcopy(pe->pe_passwd->pw_shell  = to, field[6]);
 
-    D(bug("[NetInfo] %s: <%d:%d> '%s'\n", __func__, pe->pe_passwd->pw_uid, pe->pe_passwd->pw_gid, pe->pe_passwd->pw_name));
+    D(bug("[NetInfo] %s: <%ld:%ld> '%s'\n", __func__, pe->pe_passwd->pw_uid, pe->pe_passwd->pw_gid, pe->pe_passwd->pw_name));
 
 #if defined(DEBUG)
     assert(to == pe->pe_passwd->pw_name + txtlen);

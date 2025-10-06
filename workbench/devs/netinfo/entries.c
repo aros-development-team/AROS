@@ -102,9 +102,10 @@ void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetI
     const UBYTE *name = (const UBYTE *)
                         ((struct NetInfoEnt*)req->io_Data)->nie_name;
     struct Ent *e;
-    LONG retval = NIERR_NOTFOUND;
 
     D(bug("[NetInfo] %s()\n", __func__));
+
+    req->io_Error = NIERR_NOTFOUND;
 
     e = InternalSetEnts(nid, nim);
     D(bug("[NetInfo] %s: Ents @ 0x%p\n", __func__, e));
@@ -112,16 +113,13 @@ void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetI
     while (e = GetNextEnt(e)) {
         if (strcmp(e->e_name, name) == 0) {
             if (Method(copy_out, nim)(req, e)) {
-                retval = 0;
+                req->io_Error = 0;
             } else {
-                retval = NIERR_TOOSMALL;
+                req->io_Error = NIERR_TOOSMALL;
             }
             break;
         }
     }
-
-    req->io_Error = retval;
-
     InternalEndEnts(nid, nim);
     TermIO(req);
 }
@@ -133,25 +131,26 @@ void GetByIDCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInf
 {
     struct Ent *e;
     LONG id = ((struct NetInfoEnt*)req->io_Data)->nie_id;
-    BYTE retval = NIERR_NOTFOUND;
 
     D(bug("[NetInfo] %s()\n", __func__));
+    D(bug("[NetInfo] %s: ID %ld\n", __func__, id));
+
+    req->io_Error = NIERR_NOTFOUND;
 
     e = InternalSetEnts(nid, nim);
     D(bug("[NetInfo] %s: Ents @ 0x%p\n", __func__, e));
 
     while (e = GetNextEnt(e)) {
+        D(bug("[NetInfo] %s: ent id %ld\n", __func__, e->e_id));
         if (e->e_id == id) {
             if (Method(copy_out, nim)(req, e)) {
-                retval = 0;
+                req->io_Error = 0;
             } else {
-                retval = NIERR_TOOSMALL;
+                req->io_Error = NIERR_TOOSMALL;
             }
             break;
         }
     }
-
-    req->io_Error = retval;
 
     InternalEndEnts(nid, nim);
     TermIO(req);
@@ -179,24 +178,21 @@ void ReadCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMa
 {
     struct NetInfoPointer *p = (struct NetInfoPointer *)req->io_Unit;
     struct Ent *e;
-    BYTE retval;
 
     D(bug("[NetInfo] %s()\n", __func__));
+
+    req->io_Error = NIERR_NOTFOUND;
 
     InternalSetEnts(nid, nim);
     e = p->nip_Ent;
     if (p->nip_Ent && (p->nip_Ent = GetNextEnt(e))) {
         if (Method(copy_out, nim)(req, p->nip_Ent)) {
-            retval = 0;
+            req->io_Error = 0;
         } else {
-            retval = NIERR_TOOSMALL;
+            req->io_Error = NIERR_TOOSMALL;
         }
-    } else {
-        retval = NIERR_NOTFOUND;
     }
     InternalEndEnts(nid, nim);
-
-    req->io_Error = retval;
     TermIO(req);
 }
 

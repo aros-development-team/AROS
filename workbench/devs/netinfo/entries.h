@@ -26,13 +26,13 @@ struct Ent {
   UBYTE      *e_name;
   LONG        e_pwd;
   LONG        e_id;
-};
+} __packed;
 
 struct PasswdEnt {
   struct Node          pe_node;
   UWORD                pe_tlen;
   struct NetInfoPasswd pe_passwd[1];
-};
+} __packed;
 
 /* we may have an extended version of passwd */
 #define PASSWDFIELDS 7
@@ -42,7 +42,7 @@ struct GroupEnt {
   UWORD               ge_tlen;
   struct NetInfoGroup ge_group[1];
   ULONG               ge_nmembers;	/* actually, # of members + 1 */
-};
+} __packed;
 
 /*
  * Entry Node Type
@@ -82,7 +82,7 @@ void InternalEndEnts(struct NetInfoDevice *, struct NetInfoMap *nim);
 struct Ent *GetNextEnt(struct Ent *e);
 
 /* Utility */
-static __inline char *stpcopy(char *to, const char *from)
+static inline char *stpcopy(char *to, const char *from)
 {
   while (*to++ = *from++)
     ;

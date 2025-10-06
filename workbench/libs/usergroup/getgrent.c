@@ -147,7 +147,9 @@ AROS_LH1(struct group *, getgrnam,
         gr->gr_name = (char *)name;
         nreq->io_Command = NI_GETBYNAME;
         D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
-        if (ug_DoIO(nreq) != 0) {
+        if (ug_DoIO(nreq) == 0) {
+            D(bug("[UserGroup] %s:  -> '%s'\n", __func__, gr->gr_gid));
+        } else {
             gr = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -179,7 +181,9 @@ AROS_LH1(struct group *, getgrgid,
         gr->gr_gid = gid;
         nreq->io_Command = NI_GETBYID;
         D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
-        if (ug_DoIO(nreq) != 0) {
+        if (ug_DoIO(nreq) == 0) {
+            D(bug("[UserGroup] %s:  -> '%s'\n", __func__, gr->gr_name));
+        } else {
             gr = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -189,6 +193,7 @@ AROS_LH1(struct group *, getgrgid,
 
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
+    D(bug("[UserGroup] %s: returning 0x%p\n", __func__, gr));
     return gr;
 
     AROS_LIBFUNC_EXIT
@@ -251,6 +256,7 @@ AROS_LH0(struct group *, getgrent,
 
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
+    D(bug("[UserGroup] %s: returning 0x%p\n", __func__, gr));
     return gr;
 
     AROS_LIBFUNC_EXIT
