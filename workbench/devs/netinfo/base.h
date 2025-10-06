@@ -74,8 +74,8 @@ struct NetInfoDevice {
   struct MsgPort         nid_NotifyPort[1]; /* Port for notify messages */
   struct List            nid_Instances[1];
   struct NetInfoMap     *nid_Maps[NETINFO_UNITS];
-  char                  *nid_dbuser;
-  char                  *nid_dbgroup;
+  const char            *nid_dbuser;
+  const char            *nid_dbgroup;
 };
 
 #define nid_Task nid_Port->mp_SigTask

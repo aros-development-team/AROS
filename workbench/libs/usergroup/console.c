@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
@@ -68,6 +70,8 @@ char *i_GetConsoleName(struct MsgPort *consoletask, char *buffer, ULONG size)
     IPTR ctx = (IPTR) consoletask;
     STRPTR poname;
     ULONG i;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     /* Fail if the there is no task for this port */
     if (portowner == NULL ||
@@ -149,6 +153,8 @@ char *i_GetConsoleName(struct MsgPort *consoletask, char *buffer, ULONG size)
     AROS_LIBFUNC_INIT
 
     struct FileHandle *confh = BADDR(con);
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (con == 0)
         return NULL;

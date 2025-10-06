@@ -115,6 +115,8 @@
 *
 */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <sys/time.h>
@@ -132,19 +134,20 @@ AROS_LH1(struct group *, getgrnam,
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     if (name == NULL) {
         ug_SetErrno((struct Library *)UserGroupBase, EFAULT);
         return NULL;
     }
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
-
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gr = (struct group *)nreq->io_Data;
         gr->gr_name = (char *)name;
         nreq->io_Command = NI_GETBYNAME;
-
-        if (myDoIO(nreq) != 0) {
+        D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
+        if (ug_DoIO(nreq) != 0) {
             gr = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -168,13 +171,15 @@ AROS_LH1(struct group *, getgrgid,
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gr = (struct group *)nreq->io_Data;
         gr->gr_gid = gid;
         nreq->io_Command = NI_GETBYID;
-
-        if (myDoIO(nreq) != 0) {
+        D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
+        if (ug_DoIO(nreq) != 0) {
             gr = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -196,11 +201,14 @@ AROS_LH0(void, setgrent,
 
     struct NetInfoReq *nreq;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
 
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         nreq->io_Command = CMD_RESET;
-        myDoIO(nreq);
+        D(bug("[UserGroup] %s: sending CMD_RESET to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
+        ug_DoIO(nreq);
         UserGroupBase->setent_done = 1;
     } else {
         SetDeviceErr((struct Library *)UserGroupBase);
@@ -219,17 +227,20 @@ AROS_LH0(struct group *, getgrent,
     struct NetInfoReq *nreq;
     struct group *gr = NULL;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         /* do setgrent() if necessary */
         if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
-            myDoIO(nreq);
+            D(bug("[UserGroup] %s: sending CMD_RESET to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
+            ug_DoIO(nreq);
             UserGroupBase->setent_done = 1;
         }
-
+        D(bug("[UserGroup] %s: sending CMD_READ to netinfo.device/%d...\n", __func__, NETINFO_GROUP_UNIT));
         nreq->io_Command = CMD_READ;
-        if (myDoIO(nreq) == 0) {
+        if (ug_DoIO(nreq) == 0) {
             gr = (struct group *)nreq->io_Data;
         } else {
             SetDeviceErr((struct Library *)UserGroupBase);
@@ -250,9 +261,11 @@ AROS_LH0(void, endgrent,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
     UserGroupBase->setent_done = 0;
-    CloseNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT);
+    ug_CloseUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT);
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT

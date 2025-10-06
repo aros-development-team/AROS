@@ -186,6 +186,8 @@ static int NetInfo__DevOpen(LIBBASETYPEPTR LIBBASE,
     if (LIBBASE->nid_Task == NULL)
         goto zap;
 
+    D(bug("[NetInfo] %s: initializing units...\n", __func__));
+
     /* OK, create a new unit structure, fill in a request and return */
     req->io_Device = (struct Device *) LIBBASE;
     if (req->io_Unit = CreateNewUnit(LIBBASE, unit)) {
@@ -198,6 +200,8 @@ zap:
     }
 
     ReleaseSemaphore(LIBBASE->nid_Lock);
+
+    D(bug("[NetInfo] %s: returning %d\n", __func__, retval));
 
     return retval;
 }

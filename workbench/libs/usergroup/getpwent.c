@@ -111,6 +111,8 @@
 *
 */
 
+#include <aros/debug.h>
+
 #include "base.h"
 #include <proto/usergroup.h>
 
@@ -123,19 +125,20 @@ AROS_LH1(struct passwd *, getpwnam,
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
 
+    D(bug("[UserGroup] %s('%s')\n", __func__, name));
+
     if (name == NULL) {
         ug_SetErrno((struct Library *)UserGroupBase, EFAULT);
         return NULL;
     }
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
-
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         pw = (struct passwd *)nreq->io_Data;
         pw->pw_name = (char *)name;
         nreq->io_Command = NI_GETBYNAME;
-
-        if (myDoIO(nreq) != 0) {
+        D(bug("[UserGroup] %s: sending NI_GETBYNAME to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
+        if (ug_DoIO(nreq) != 0) {
             pw = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
@@ -159,17 +162,22 @@ AROS_LH1(struct passwd *, getpwuid,
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
 
+    D(bug("[UserGroup] %s(%d)\n", __func__, uid));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         pw = (struct passwd *)nreq->io_Data;
         pw->pw_uid = uid;
         nreq->io_Command = NI_GETBYID;
 
-        if (myDoIO(nreq) != 0) {
+        D(bug("[UserGroup] %s: sending NI_GETBYID to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
+
+        if (ug_DoIO(nreq) != 0) {
             pw = NULL;
             SetDeviceErr((struct Library *)UserGroupBase);
         }
     } else {
+        D(bug("[UserGroup] %s: failed to open unit\n", __func__));
         SetDeviceErr((struct Library *)UserGroupBase);
     }
 
@@ -187,11 +195,16 @@ AROS_LH0(void, setpwent,
 
     struct NetInfoReq *nreq;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
 
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         nreq->io_Command = CMD_RESET;
-        myDoIO(nreq);
+
+        D(bug("[UserGroup] %s: sending CMD_RESET to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
+
+        ug_DoIO(nreq);
         UserGroupBase->setent_done = 1;
     } else {
         SetDeviceErr((struct Library *)UserGroupBase);
@@ -210,17 +223,21 @@ AROS_LH0(struct passwd *, getpwent,
     struct NetInfoReq *nreq;
     struct passwd *pw = NULL;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT)) {
         /* do setpwent() if necessary */
         if (!UserGroupBase->setent_done) {
             nreq->io_Command = CMD_RESET;
-            myDoIO(nreq);
+            D(bug("[UserGroup] %s: sending CMD_RESET to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
+            ug_DoIO(nreq);
             UserGroupBase->setent_done = 1;
         }
 
+        D(bug("[UserGroup] %s: sending CMD_READ to netinfo.device/%d...\n", __func__, NETINFO_PASSWD_UNIT));
         nreq->io_Command = CMD_READ;
-        if (myDoIO(nreq) == 0) {
+        if (ug_DoIO(nreq) == 0) {
             pw = (struct passwd *)nreq->io_Data;
         } else {
             SetDeviceErr((struct Library *)UserGroupBase);
@@ -241,9 +258,11 @@ AROS_LH0(void, endpwent,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
     UserGroupBase->setent_done = 0;
-    CloseNIUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT);
+    ug_CloseUnit((struct Library *)UserGroupBase, NETINFO_PASSWD_UNIT);
     ReleaseSemaphore(&UserGroupBase->ni_lock);
 
     AROS_LIBFUNC_EXIT

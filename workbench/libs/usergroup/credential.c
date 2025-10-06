@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include "base.h"
 #include "credential.h"
 #include <proto/usergroup.h>
@@ -32,6 +34,8 @@ typedef struct CredentialResource *(*resident_init_fp)(void);
 struct CredentialResource *CredentialInit(const char *name)
 {
     BPTR resseg = LoadSeg(_PATH_CREDENTIAL);
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (resseg) {
         resident_init_fp initf = (resident_init_fp)((LONG *)(resseg << 2) + 1);
@@ -78,6 +82,8 @@ struct CredentialResource *CredentialInit(const char *name)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
 #ifdef notyet
     pid_t pid = (pid_t)FindTask(NULL);
@@ -149,6 +155,8 @@ struct CredentialResource *CredentialInit(const char *name)
     AROS_LIBFUNC_INIT
 
     struct proc *p = procfind(0);
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return p->p_session->s_leader;
 
@@ -257,6 +265,8 @@ AROS_LH0I(uid_t, getuid,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     return crfind((pid_t)NULL)->p_ruid;
 
     AROS_LIBFUNC_EXIT
@@ -266,6 +276,8 @@ AROS_LH0I(uid_t, geteuid,
           struct Library *, UserGroupBase, 9, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return crfind((pid_t)NULL)->p_euid;
 
@@ -277,6 +289,8 @@ AROS_LH0I(gid_t, getgid,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     return crfind((pid_t)NULL)->p_rgid;
 
     AROS_LIBFUNC_EXIT
@@ -286,6 +300,8 @@ AROS_LH0I(gid_t, getegid,
           struct Library *, UserGroupBase, 13, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return crfind((pid_t)NULL)->p_egid;
 
@@ -338,6 +354,8 @@ AROS_LH0I(gid_t, getegid,
     gid_t *getgroups;
     short error;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     if (ngroups == 0) {
         return pc->p_ngroups;
     } else if (ngroups < pc->p_ngroups) {
@@ -369,6 +387,8 @@ AROS_LH2 (int, setreuid,
 
     struct pcred *pc = crfind((pid_t)NULL);
     short error;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (ruid == NOID)
         ruid = pc->p_ruid;
@@ -476,6 +496,8 @@ AROS_LH1 (int, setuid,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     return setreuid(uid, uid);
 
     AROS_LIBFUNC_EXIT
@@ -490,6 +512,8 @@ AROS_LH2 (int, setregid,
 
     struct pcred *pc = crfind((pid_t)NULL);
     short error;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (rgid == NOID)
         rgid = pc->p_rgid;
@@ -529,6 +553,8 @@ AROS_LH1 (int, setgid,
           struct UserGroupBase *, UserGroupBase, 15, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return setregid(gid, gid);
 
@@ -581,6 +607,8 @@ AROS_LH1 (int, setgid,
     register gid_t *gp;
     register const gid_t *lp;
     short error;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (error = suser(pc->pc_ucred /*, &p->p_acflag */)) {
 
@@ -702,6 +730,8 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
 
     mode_t oldmask = p->p_umask;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     p->p_umask = newmask;
 
     return oldmask ;
@@ -740,6 +770,8 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
     AROS_LIBFUNC_INIT
 
     struct proc *p = procfind((pid_t)NULL);
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return p->p_umask;
 
@@ -783,6 +815,8 @@ ASM UWORD R_ug_id2mu(REG(d0) uid_t id)
     AROS_LIBFUNC_INIT
 
     register struct proc *p = procfind((pid_t)task);
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (p != NULL) {
         register struct UserGroupCredentials *c = creds;

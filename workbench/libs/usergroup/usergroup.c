@@ -155,6 +155,8 @@
 ****************************************************************************
 */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <exec/resident.h>
@@ -196,6 +198,8 @@ static void CleanupNIO(struct Library *);
 
 static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
 {
+    D(bug("[UserGroup] %s()\n", __func__));
+
     CleanupUTMP((struct Library *)LIBBASE);
     CleanupNIO((struct Library *)LIBBASE);
     TimeCleanup((struct Library *)LIBBASE);
@@ -209,6 +213,8 @@ static int UserGroup__Expunge(LIBBASETYPEPTR LIBBASE)
 
 static int UserGroup__Init(LIBBASETYPEPTR LIBBASE)
 {
+    D(bug("[UserGroup] %s()\n", __func__));
+
     InitSemaphore(&LIBBASE->ni_lock);
 
     if ((DOSBase = (void *)OpenLibrary("dos.library", 37L)) &&
@@ -235,9 +241,11 @@ ADD2EXPUNGELIB(UserGroup__Expunge, 0)
  * Handle the netinfo device
  */
 
-struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
+struct NetInfoReq *ug_OpenUnit(struct Library *ugBase, ULONG unit)
 {
     struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     /* Check ownership */
     if (UserGroupBase->owner != FindTask(NULL)) {
@@ -282,9 +290,11 @@ struct NetInfoReq *OpenNIUnit(struct Library *ugBase, ULONG unit)
     return UserGroupBase->nireq;
 }
 
-void CloseNIUnit(struct Library *ugBase, ULONG unit)
+void ug_CloseUnit(struct Library *ugBase, ULONG unit)
 {
     struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     ObtainSemaphore(&UserGroupBase->ni_lock);
 
@@ -307,6 +317,8 @@ static void CleanupNIO(struct Library *ugBase)
 {
     struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     endpwent();
     endgrent();
 
@@ -325,8 +337,10 @@ static void CleanupNIO(struct Library *ugBase)
         DeleteMsgPort(UserGroupBase->niport), UserGroupBase->niport = NULL;
 }
 
-BYTE myDoIO(struct NetInfoReq *req)
+BYTE ug_DoIO(struct NetInfoReq *req)
 {
+    D(bug("[UserGroup] %s()\n", __func__));
+
     DoIO((struct IORequest *)req);
     return req->io_Error;
 }
@@ -408,6 +422,8 @@ AROS_LH2 (int, ug_SetupContextTagList,
           struct UserGroupBase *, UserGroupBase, 5, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     struct TagItem *tag;
     struct Task *caller = FindTask(NULL);

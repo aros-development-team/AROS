@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include "base.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -30,27 +32,31 @@ struct CredentialResource *CredentialInit(const char *name)
     struct CredentialResource *res;
     ULONG ressize = sizeof(*res) + sizeof(VSTRING);
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     res = AllocVec(ressize, MEMF_CLEAR|MEMF_PUBLIC);
+    if (res) {
+        D(bug("[UserGroup] %s: resource allocated @ 0x%p\n", __func__, res));
 
-    CopyMem(CREDENTIALNAME, res->r_name, sizeof(CREDENTIALNAME));
-    CopyMem(VSTRING, res->r_vstring, sizeof(VSTRING));
+        CopyMem(CREDENTIALNAME, res->r_name, sizeof(CREDENTIALNAME));
+        CopyMem(VSTRING, res->r_vstring, sizeof(VSTRING));
 
-    res->r_Lib.lib_Node.ln_Type = NT_RESOURCE;
-    res->r_Lib.lib_Node.ln_Name =  (STRPTR)res->r_name;
-    res->r_Lib.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
-    /* res->r_Lib.lib_NegSize = 0; */
-    res->r_Lib.lib_PosSize = ressize;
-    res->r_Lib.lib_Version = VERSION;
-    res->r_Lib.lib_Revision = REVISION;
-    res->r_Lib.lib_IdString = (APTR)res->r_vstring;
-    /* res->r_Lib.lib_Sum = 0; */
-    res->r_Lib.lib_OpenCnt = 1;
+        res->r_Lib.lib_Node.ln_Type = NT_RESOURCE;
+        res->r_Lib.lib_Node.ln_Name =  (STRPTR)res->r_name;
+        res->r_Lib.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
+        /* res->r_Lib.lib_NegSize = 0; */
+        res->r_Lib.lib_PosSize = ressize;
+        res->r_Lib.lib_Version = VERSION;
+        res->r_Lib.lib_Revision = REVISION;
+        res->r_Lib.lib_IdString = (APTR)res->r_vstring;
+        /* res->r_Lib.lib_Sum = 0; */
+        res->r_Lib.lib_OpenCnt = 1;
 
-    res->r_proc->p_ucred = res->r_ucred;
-    res->r_proc->p_cred->p_ngroups = 1;
+        res->r_proc->p_ucred = res->r_ucred;
+        res->r_proc->p_cred->p_ngroups = 1;
 
-    AddResource(res);
-
+        AddResource(res);
+    }
     return res;
 }
 

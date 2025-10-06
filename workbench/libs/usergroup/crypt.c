@@ -117,6 +117,8 @@
 ****************************************************************************
 */
 
+#include <aros/debug.h>
+
 #include <sys/errno.h>
 #include <assert.h>
 #include <stdio.h>
@@ -591,6 +593,8 @@ AROS_LH2(char *, crypt,
          struct UserGroupBase *, UserGroupBase, 29, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
 #ifndef UGCRYPT_USEACRYPT
     register char *encp;

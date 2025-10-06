@@ -7,6 +7,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -53,6 +55,9 @@ static const init_map_func_t initMapFuncs[NETINFO_UNITS] = {
 struct NetInfoMap *InitNetInfoMap(struct NetInfoDevice *nid, struct MsgPort * mp, ULONG mapno)
 {
     struct NetInfoMap *nim;
+
+    D(bug("[NetInfo] %s()\n", __func__));
+
 #if defined(DEBUG)
     assert(mapno < 2);
 #endif
@@ -75,6 +80,8 @@ struct NetInfoMap *InitNetInfoMap(struct NetInfoDevice *nid, struct MsgPort * mp
 
 void DeInitNetInfoMap(struct NetInfoDevice *nid, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if (Method(cleanup, nim) != NULL)
         Method(cleanup, nim)(nid, nim);
 
@@ -90,6 +97,8 @@ void GetByNameCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetI
     const UBYTE *name = (const UBYTE *)
                         ((struct NetInfoEnt*)req->io_Data)->nie_name;
     LONG retval = NIERR_NOTFOUND;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     while (e = GetNextEnt(e)) {
         if (strcmp(e->e_name, name) == 0) {
@@ -117,6 +126,8 @@ void GetByIDCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInf
     LONG id = ((struct NetInfoEnt*)req->io_Data)->nie_id;
     BYTE retval = NIERR_NOTFOUND;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     while (e = GetNextEnt(e)) {
         if (e->e_id == id) {
             if (Method(copy_out, nim)(req, e)) {
@@ -141,6 +152,8 @@ void ResetCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoM
 {
     struct NetInfoPointer *p = (struct NetInfoPointer *)req->io_Unit;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     p->nip_Ent = (void *)InternalSetEnts(nid, nim);
     InternalEndEnts(nid, nim);
     req->io_Error = 0;
@@ -155,6 +168,8 @@ void ReadCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMa
     struct NetInfoPointer *p = (struct NetInfoPointer *)req->io_Unit;
     struct Ent *e;
     BYTE retval;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     InternalSetEnts(nid, nim);
     e = p->nip_Ent;
@@ -180,6 +195,8 @@ void WriteCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoM
 {
     struct Ent *e, *new_e;
     const UBYTE *name = ((struct NetInfoPasswd *)req->io_Data)->pw_name;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     if (new_e = Method(copy_in, nim)(nid, req)) {
         /* Exclusive lock for writing */
@@ -239,6 +256,8 @@ void UpdateCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfo
 {
     BYTE retval = 0;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if ((nim->nim_Flags & NIMF_CHANGED) != 0) {
         UBYTE newname[128], oldname[128];
         BPTR newfile;
@@ -293,6 +312,8 @@ exit:
  */
 void MembersCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if (Method(membercmd, nim) != NULL) {
         Method(membercmd, nim)(nid, req, nim);
     } else {
@@ -307,6 +328,8 @@ void MembersCmd(struct NetInfoDevice *nid, struct NetInfoReq *req, struct NetInf
 static struct NetInfoPointer *FindPointer(struct List *list, struct Ent *to)
 {
     struct NetInfoPointer *entry, *next;
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     for (entry = (struct NetInfoPointer *)list->lh_Head;
             next = (struct NetInfoPointer *)entry->nip_Node->ln_Succ;
@@ -325,6 +348,8 @@ struct NetInfoMap *CheckUnit(struct NetInfoDevice *nid, struct Unit *u)
 {
     struct NetInfoPointer *nip = (struct NetInfoPointer *)u;
 
+    D(bug("[NetInfo] %s()\n", __func__));
+
     if (nip != NULL)
         return nip->nip_Map;
     else
@@ -338,6 +363,8 @@ struct NetInfoMap *CheckUnit(struct NetInfoDevice *nid, struct Unit *u)
 struct Ent *InternalSetEnts(struct NetInfoDevice *nid, struct NetInfoMap *nim)
 {
     DbMapLockShared(nim);
+
+    D(bug("[NetInfo] %s()\n", __func__));
 
     if ((nim->nim_Flags & NIMF_PARSED) == 0) {
         int was_too_long = 0;
@@ -419,6 +446,8 @@ error:
 
 void InternalEndEnts(struct NetInfoDevice *nid, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     DbMapUnlock(nim);
 }
 
@@ -427,6 +456,8 @@ void InternalEndEnts(struct NetInfoDevice *nid, struct NetInfoMap *nim)
  */
 struct Ent *GetNextEnt(struct Ent *e)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     e = (struct Ent *)e->e_node.ln_Succ;
 
     if (e->e_node.ln_Succ)
@@ -440,6 +471,8 @@ struct Ent *GetNextEnt(struct Ent *e)
  */
 void EntHandleNotify(struct NetInfoDevice *nid, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     DbMapLockShared(nim);
     nim->nim_Flags &= ~NIMF_PARSED;
     DbMapUnlock(nim);
@@ -450,6 +483,8 @@ void EntHandleNotify(struct NetInfoDevice *nid, struct NetInfoMap *nim)
  */
 void EntCleanup(struct NetInfoDevice *nid, struct NetInfoMap *nim)
 {
+    D(bug("[NetInfo] %s()\n", __func__));
+
     DbMapLock(nim);
     FreeListVec(nid, nim->nim_Ent);
     /* End notifies */

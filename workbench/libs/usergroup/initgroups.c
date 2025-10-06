@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <sys/time.h>
@@ -54,8 +56,10 @@ AROS_LH2(int, initgroups,
     struct NetInfoReq *nreq;
     short error = -1;
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     ObtainSemaphore(&UserGroupBase->ni_lock);
-    if (nreq = OpenNIUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
+    if (nreq = ug_OpenUnit((struct Library *)UserGroupBase, NETINFO_GROUP_UNIT)) {
         gid_t *groups = nreq->io_Data;
         short ngroups, i, j;
 
@@ -69,7 +73,7 @@ AROS_LH2(int, initgroups,
 #endif
         nreq->io_Command = NI_MEMBERS;
 
-        if (myDoIO(nreq) == 0 || nreq->io_Error == NIERR_TOOSMALL) {
+        if (ug_DoIO(nreq) == 0 || nreq->io_Error == NIERR_TOOSMALL) {
             ngroups = nreq->io_Actual / sizeof(gid_t) + 1;
             /* search for duplicate of basegroup */
             for (i = j = 1; i < ngroups; i++) {

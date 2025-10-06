@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -72,6 +74,8 @@
     BPTR conout, conin = Open("CONSOLE:", MODE_OLDFILE);
     static char ch, *p, buf[_PASSWORD_LEN];
     int useconsole = conin != NULL;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     /*
      * read and write to CONSOLE: if possible; else read from

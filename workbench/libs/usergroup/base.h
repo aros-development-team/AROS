@@ -95,9 +95,9 @@ void ug_SetErrno(struct Library *, int);
 /*
  * netinfo.device IO
  */
-struct NetInfoReq *OpenNIUnit(struct Library *, ULONG);
-void CloseNIUnit(struct Library *, ULONG);
-BYTE myDoIO(struct NetInfoReq *);
+struct NetInfoReq *ug_OpenUnit(struct Library *, ULONG);
+void ug_CloseUnit(struct Library *, ULONG);
+BYTE ug_DoIO(struct NetInfoReq *);
 void SetDeviceErr(struct Library *);
 
 /*

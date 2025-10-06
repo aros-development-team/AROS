@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <sys/errno.h>
 #include <sys/time.h>
@@ -69,6 +71,8 @@ struct Device *TimerBase;
 
 int TimeInit(struct Library *ugBase)
 {
+    D(bug("[UserGroup] %s()\n", __func__));
+
     if (OpenDevice(TIMERNAME, UNIT_VBLANK, (struct IORequest *)timereq, 0)) {
         TimerBase = NULL;
         return -1;
@@ -135,6 +139,8 @@ int TimeInit(struct Library *ugBase)
 
 void TimeCleanup(struct Library *ugBase)
 {
+    D(bug("[UserGroup] %s()\n", __func__));
+
     if (TimerBase) {
         CloseDevice((struct IORequest *)timereq);
         TimerBase = NULL;
@@ -203,6 +209,8 @@ AROS_LH2I(int, gettimeofday,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[UserGroup] %s()\n", __func__));
+
     if (tvp) {
         GetSysTime(tvp);
         tvp->tv_sec += __local_to_GMT;
@@ -221,6 +229,8 @@ AROS_LH2I(int, settimeofday,
           struct Library *, UserGroupBase, 46, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     return -1;
 

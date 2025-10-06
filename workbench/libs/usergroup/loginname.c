@@ -10,6 +10,8 @@
  *                  Helsinki University of Technology, Finland.
  */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <sys/time.h>
 #include "base.h"
@@ -55,6 +57,8 @@ AROS_LH0(char *, getlogin,
 
     static char buffer[MAXLOGNAME];
     struct proc *p;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     lock(proc_list);
     p = procfind((pid_t)NULL);
@@ -115,6 +119,8 @@ AROS_LH1(int, setlogin,
 
     struct proc *p;
     int error;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (buffer == NULL) {
         error = EFAULT;

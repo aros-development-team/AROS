@@ -81,6 +81,8 @@
 *
 */
 
+#include <aros/debug.h>
+
 #include <aros/libcall.h>
 #include <sys/time.h>
 
@@ -110,6 +112,9 @@ static void unlock_for_writing(void)
 void CleanupUTMP(struct Library *ugBase)
 {
     struct UserGroupBase *UserGroupBase = (struct UserGroupBase *)ugBase;
+
+    D(bug("[UserGroup] %s()\n", __func__));
+
     endutent();
 
     if (UserGroupBase->utentbuf != NULL) {
@@ -122,6 +127,8 @@ AROS_LH0(void, setutent,
          struct UserGroupBase *, UserGroupBase, 38, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (!FindResident("security.library")) {
         // Single-User ...
@@ -149,6 +156,8 @@ AROS_LH0(struct utmp *, getutent,
          struct UserGroupBase *, UserGroupBase, 39, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (!FindResident("security.library")) {
         // Single-User ...
@@ -211,6 +220,8 @@ AROS_LH0(void, endutent,
          struct UserGroupBase *, UserGroupBase, 40, Usergroup)
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (!FindResident("security.library")) {
         // Single-User ...
@@ -300,6 +311,8 @@ AROS_LH1(struct utmp *, getutsid,
     AROS_LIBFUNC_INIT
 
     static struct lastlog ll[1];
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (!FindResident("security.library")) {
         // Single-User ...
@@ -396,6 +409,8 @@ AROS_LH1(struct utmp *, getutsid,
     short error = 0;
     struct proc *p = procfind((pid_t)NULL);
     pid_t sid = p->p_session->s_leader;
+
+    D(bug("[UserGroup] %s()\n", __func__));
 
     if (name == NULL || con == NULL) {
         error = EFAULT;
