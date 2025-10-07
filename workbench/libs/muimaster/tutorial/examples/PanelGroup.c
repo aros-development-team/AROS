@@ -146,7 +146,6 @@ BOOL init_gui(void)
                                 MUIA_Panel_Collapsed,         FALSE,
                                 MUIA_Panel_DrawSeparator,     FALSE,
                                 MUIA_Panel_Padding,           4,
-                                MUIA_Frame,                   MUIV_Frame_Rounded,
 
                                 Child, VGroup,
                                     MUIA_Group_Spacing, 2,
@@ -168,7 +167,6 @@ BOOL init_gui(void)
                                 MUIA_Panel_DrawSeparator,     FALSE,
                                 MUIA_Panel_DrawStateIndicator, TRUE,
                                 MUIA_Panel_Padding,           4,
-                                MUIA_Frame,                   MUIV_Frame_Rounded,
 
                                 Child, VGroup,
                                     MUIA_Group_Spacing, 2,
@@ -239,7 +237,6 @@ BOOL init_gui(void)
                                 MUIA_Panel_Padding,           4,
                                 MUIA_Panel_TitlePosition,     MUIV_Panel_Title_Left,
                                 MUIA_Panel_TitleVertical,     TRUE,
-                                MUIA_Frame,                   MUIV_Frame_Rounded,
                                 MUIA_Background,              MUII_GroupBack,
 
                                 Child, VGroup,
