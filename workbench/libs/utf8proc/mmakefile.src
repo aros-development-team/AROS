@@ -1,0 +1,177 @@
+#   AROS metamakefile for utf8proc
+include $(SRCDIR)/config/aros.cfg
+
+UTF8PROCVERSION=2.11.0
+UTF8PROCREPOSITORIES = https://github.com/JuliaStrings/utf8proc/archive/refs/tags
+UTF8PROCARCHBASE     := v$(UTF8PROCVERSION)
+UTF8PROCBASEDIR     := utf8proc-$(UTF8PROCVERSION)
+UTF8PROCARCHSUFFIX := "tar.gz"
+#UTF8PROCATCHSPEC := $(UTF8PROCARCHBASE)-aros.diff:$(UTF8PROCARCHBASE):-f,-p1
+UTF8PROCARCHSRCDIR := $(PORTSDIR)/utf8proc/$(UTF8PROCBASEDIR)
+
+EXEDIR  := $(AROS_TESTS)/utf8
+
+%fetch mmake=workbench-libs-utf8proc-fetch archive=$(UTF8PROCARCHBASE) destination=$(PORTSDIR)/utf8proc \
+    location=$(PORTSSOURCEDIR)/utf8proc archive_origins=$(UTF8PROCREPOSITORIES) suffixes=$(UTF8PROCARCHSUFFIX) \
+    patches_specs=$(UTF8PROCATCHSPEC)
+
+%create_patch mmake=workbench-libs-utf8proc-create-patch \
+    archive=$(UTF8PROCARCHBASE) suffixes=$(UTF8PROCARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/utf8proc destination=$(PORTSDIR)/utf8proc \
+    srcdir="$(UTF8PROCARCHBASE)"
+
+FILES := \
+    $(UTF8PROCARCHSRCDIR)/utf8proc
+
+USER_INCLUDES = -I. -idirafter $(UTF8PROCBASEDIR)/include
+#USER_CPPFLAGS :=
+USER_LDFLAGS := -static
+
+#MM- workbench-libs-utf8proc : workbench-libs-utf8proc-library
+#MM workbench-libs-utf8proc-library : workbench-libs-utf8proc-fetch workbench-libs-utf8proc-includes 
+
+#MM workbench-libs-utf8proc-library : workbench-libs-utf8proc-fetch
+#MM workbench-libs-utf8proc-library-includes : workbench-libs-utf8proc-fetch
+#MM workbench-libs-utf8proc-library-linklib : workbench-libs-utf8proc-fetch
+
+%build_module mmake=workbench-libs-utf8proc-library \
+    modname=utf8proc modtype=library \
+    files="$(FILES)"
+
+%build_linklib mmake=linklibs-utf8proc \
+    libname=utf8proc-static \
+    files="$(FILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/utf8proc-static
+
+USER_LDFLAGS :=
+
+#MM workbench-libs-utf8proc-tests-norm : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+NORMTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/normtest \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-norm progname=normtest \
+    files=$(NORMTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/norm uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-grapheme : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+GRAPHEMETESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/graphemetest \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-grapheme progname=graphemetest \
+    files=$(GRAPHEMETESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/grapheme uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-printproperty : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+PRINTPROPTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/printproperty \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-printproperty progname=printproperty \
+    files=$(PRINTPROPTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/printproperty uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-charwidth : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+CHARWIDTHTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/charwidth \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-charwidth progname=charwidth \
+    files=$(CHARWIDTHTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/charwidth uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-valid : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+VALIDTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/valid \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-valid progname=valid \
+    files=$(VALIDTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/valid uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-iterate : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+ITERATETESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/iterate \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-iterate progname=iterate \
+    files=$(ITERATETESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/iterate uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-iscase : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+ISCASETESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/iscase \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-iscase progname=iscase \
+    files=$(ISCASETESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/iscase uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-case : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+CASETESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/case \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-case progname=case \
+    files=$(CASETESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/case uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-custom : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+CUSTOMTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/custom \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-custom progname=custom \
+    files=$(CUSTOMTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/custom uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-misc : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+USER_CPPFLAGS := -DUNICODE_VERSION=\"17.0.0\"
+
+MISCTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/misc \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-misc progname=misc \
+    files=$(MISCTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/misc uselibs="utf8proc"
+
+#MM workbench-libs-utf8proc-tests-maxdecomposition : workbench-libs-utf8proc-library-linklib workbench-libs-utf8proc-library-includes
+
+MAXDECOMPOSITIONTESTFILES := \
+    $(UTF8PROCARCHSRCDIR)/test/maxdecomposition \
+    $(UTF8PROCARCHSRCDIR)/test/tests
+
+%build_prog mmake=workbench-libs-utf8proc-tests-maxdecomposition progname=maxdecomposition \
+    files=$(MAXDECOMPOSITIONTESTFILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/maxdecomp uselibs="utf8proc"
+
+#MM- workbench-libs-utf8proc-tests : \
+#MM     workbench-libs-utf8proc-tests-norm \
+#MM     workbench-libs-utf8proc-tests-printproperty \
+#MM     workbench-libs-utf8proc-tests-charwidth \
+#MM     workbench-libs-utf8proc-tests-valid \
+#MM     workbench-libs-utf8proc-tests-iterate \
+#MM     workbench-libs-utf8proc-tests-iscase \
+#MM     workbench-libs-utf8proc-tests-case \
+#MM     workbench-libs-utf8proc-tests-custom \
+#MM     workbench-libs-utf8proc-tests-misc \
+#MM     workbench-libs-utf8proc-tests-maxdecomposition
+
+#MM- includes-copy: workbench-libs-utf8proc-fetch
+
+INCLUDE_FILES:=utf8proc.h
+%copy_includes dir=$(UTF8PROCARCHSRCDIR) includes=$(INCLUDE_FILES)
+
+%common
