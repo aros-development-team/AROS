@@ -2,7 +2,7 @@
  *
  *      stubs.c - common stubs for bsdsocket.library
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright © 1994 AmiTCP/IP Group,
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */
@@ -15,13 +15,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
-#include <netinet/in_systm.h>
-#include <net/if.h>
-#include <net/route.h>
 #include <netinet/in.h>
-#include <netinet/in_var.h>
-
-#include <netinet/ip.h>
 
 #undef select
 
