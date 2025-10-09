@@ -21,8 +21,7 @@
 
 /****************************************************************************************/
 
-struct rtWindowLock
-{
+struct rtWindowLock {
     struct Requester     rtwl_Requester;
     LONG                 rtwl_Magic;
     struct rtWindowLock *rtwl_RequesterPtr;
@@ -50,7 +49,7 @@ struct rtWindowLock
 /****************************************************************************************/
 
 SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *, ReqToolsBase),
-    	    	    	    	    	     REGPARAM(a0, BPTR, segList))					      
+        REGPARAM(a0, BPTR, segList))
 {
 #ifdef __AROS__
     /* SysBase is setup in reqtools_init.c */
@@ -113,37 +112,34 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *,
 /****************************************************************************************/
 
 SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase),
-    	    	    	    	    	     REGPARAM(d0, ULONG, ver))
+        REGPARAM(d0, ULONG, ver))
 {
-    if (DOSBase == NULL)
-    {
+    if (DOSBase == NULL) {
         DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37);
         if (DOSBase == NULL)
             return NULL;
     }
     ReqToolsBase->DOSBase = DOSBase;
 
-    if ( ! ReqToolsBase->ReqToolsPrefs.IsLoaded)
-    {
+    if ( ! ReqToolsBase->ReqToolsPrefs.IsLoaded) {
         UBYTE configbuffer[RTPREFS_SIZE];
 
-	/* Read config file */
-	
+        /* Read config file */
+
         D(bug("reqtools.library: Inside libopen func. Reading config file\n"));
-	
+
         memset(configbuffer, 0, sizeof(configbuffer));
-        
+
         if (GetVar("ReqTools.prefs",
-               configbuffer,
-               sizeof(configbuffer),
-               GVF_BINARY_VAR | GVF_GLOBAL_ONLY | LV_VAR | GVF_DONT_NULL_TERM) == RTPREFS_SIZE)
-        {
+                   configbuffer,
+                   sizeof(configbuffer),
+                   GVF_BINARY_VAR | GVF_GLOBAL_ONLY | LV_VAR | GVF_DONT_NULL_TERM) == RTPREFS_SIZE) {
             UBYTE *configptr = configbuffer;
             ULONG val;
             WORD  i;
 
             D(bug("reqtools.library: Inside libopen func. Configfile loaded successfully\n"));
-            
+
 #define READ_ULONG 	*((ULONG *)configptr);configptr += sizeof(ULONG)
 #define READ_UWORD 	*((UWORD *)configptr);configptr += sizeof(UWORD)
 #define RTPREFS 	(ReqToolsBase->ReqToolsPrefs)
@@ -151,8 +147,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
             val = READ_ULONG;
             RTPREFS.Flags = AROS_LONG2BE(val);
 
-            for(i = 0;i < RTPREF_NR_OF_REQ; i++)
-            {
+            for(i = 0; i < RTPREF_NR_OF_REQ; i++) {
                 val = READ_ULONG;
                 RTPREFS.ReqDefaults[i].Size = AROS_LONG2BE(val);
 
@@ -169,13 +164,13 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
                 RTPREFS.ReqDefaults[i].MinEntries = AROS_WORD2BE(val);
 
                 val = READ_UWORD;
-                RTPREFS.ReqDefaults[i].MaxEntries = AROS_WORD2BE(val);	    
+                RTPREFS.ReqDefaults[i].MaxEntries = AROS_WORD2BE(val);
             }
         }
         ReqToolsBase->ReqToolsPrefs.IsLoaded = TRUE;
 
     } /* if (! ReqToolsBase->ReqToolsPrefs.IsLoaded) */
-    
+
     if(IntuitionBase == NULL)
         IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
     ReqToolsBase->IntuitionBase = IntuitionBase;
@@ -187,7 +182,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     ReqToolsBase->GfxBase =  GfxBase;
     if(GfxBase == NULL)
         return NULL;
-    
+
     if(UtilityBase == NULL)
         UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
     ReqToolsBase->UtilityBase = UtilityBase;
@@ -212,12 +207,10 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 
     D(bug("reqtools.library: Inside libopen func. Libraries opened successfully.\n"));
 
-    if (ConsoleDevice == NULL)
-    {
+    if (ConsoleDevice == NULL) {
         iorequest.io_Message.mn_Length = sizeof(iorequest);
 
-        if (OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&iorequest, 0))
-        {
+        if (OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&iorequest, 0)) {
             return NULL;
         }
         ConsoleDevice = iorequest.io_Device;
@@ -226,12 +219,10 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
         return NULL;
 
     D(bug("reqtools.library: Inside libopen func. Console.device opened successfully.\n"));
-	
-    if (ButtonImgClass == NULL)
-    {
+
+    if (ButtonImgClass == NULL) {
         ButtonImgClass = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct LocalObjData), 0);
-        if (ButtonImgClass)
-        {
+        if (ButtonImgClass) {
             ButtonImgClass->cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(myBoopsiDispatch);
             ButtonImgClass->cl_Dispatcher.h_SubEntry = NULL;
             ButtonImgClass->cl_UserData = (IPTR)ReqToolsBase;
@@ -239,7 +230,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     }
     if (ButtonImgClass == NULL)
         return NULL;
-    
+
     D(bug("reqtools.library: Inside libopen func. ButtonImgClass create successfully.\n"));
 
 #ifndef __AROS__
@@ -247,9 +238,9 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     ReqToolsBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
     ReqToolsBase->LibNode.lib_OpenCnt++;
 #endif
-    
+
     D(bug("reqtools.library: Inside libopen func. Returning success.\n"));
-    
+
     return ReqToolsBase;
 }
 
@@ -260,18 +251,17 @@ SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase))
 #ifndef __AROS__
     /* I have one fewer opener. */
     ReqToolsBase->LibNode.lib_OpenCnt--;
-    
-    if((ReqToolsBase->LibNode.lib_Flags & LIBF_DELEXP) != 0)
-    {
-    	/* CHECKME: used expunge() from reqtools_intern.h. */
+
+    if((ReqToolsBase->LibNode.lib_Flags & LIBF_DELEXP) != 0) {
+        /* CHECKME: used expunge() from reqtools_intern.h. */
 
         if(ReqToolsBase->LibNode.lib_OpenCnt == 0)
             return RTFuncs_Expunge(ReqToolsBase);
-        
+
         ReqToolsBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
     }
 #endif
-    
+
     return BNULL;
 }
 
@@ -282,13 +272,12 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase
     BPTR ret = BNULL;
 
 #ifndef __AROS__
-    if(ReqToolsBase->LibNode.lib_OpenCnt != 0)
-    {
+    if(ReqToolsBase->LibNode.lib_OpenCnt != 0) {
         /* Set the delayed expunge flag and return. */
         ReqToolsBase->LibNode.lib_Flags |= LIBF_DELEXP;
         return BNULL;
     }
-    
+
     /* Get rid of the library. Remove it from the list. */
     Remove(&ReqToolsBase->LibNode.lib_Node);
 
@@ -301,11 +290,11 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase
     if (ButtonImgClass) FreeClass(ButtonImgClass);
 
     D(bug("reqtools.library: Inside libexpunge func. Closing console.device.\n"));
-    
+
     if (ConsoleDevice) CloseDevice((struct IORequest *)&iorequest);
 
     D(bug("reqtools.library: Inside libexpunge func. Closing libraries.\n"));
-    
+
     CloseLibrary((struct Library *)DOSBase);
     CloseLibrary((struct Library *)IntuitionBase);
     CloseLibrary((struct Library *)UtilityBase);
@@ -319,10 +308,10 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase
 #ifndef __AROS__
     /* Free the memory. */
     FreeMem((char *)ReqToolsBase-ReqToolsBase->LibNode.lib_NegSize,
-	    ReqToolsBase->LibNode.lib_NegSize + ReqToolsBase->LibNode.lib_PosSize);
+            ReqToolsBase->LibNode.lib_NegSize + ReqToolsBase->LibNode.lib_PosSize);
 #endif
     ret = (BPTR)TRUE;
-    
+
     return ret;
 }
 
@@ -352,12 +341,12 @@ SAVEDS ASM void RTFuncs_UnlockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqTools
 /****************************************************************************************/
 
 SAVEDS ASM IPTR RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handlerinfo),
-    	    	    	    	       REGPARAM(d0, ULONG, sigs),
-				       REGPARAM(a0, struct TagItem *, taglist))
+                                      REGPARAM(d0, ULONG, sigs),
+                                      REGPARAM(a0, struct TagItem *, taglist))
 {
     return  ((IPTR (*)(REGPARAM(a1, struct rtHandlerInfo *,),
-    	    	    	REGPARAM(d0, ULONG,),
-			REGPARAM(a0, struct TagItem *,)))handlerinfo->private1)(handlerinfo, sigs, taglist);
+                       REGPARAM(d0, ULONG,),
+                       REGPARAM(a0, struct TagItem *,)))handlerinfo->private1)(handlerinfo, sigs, taglist);
 }
 
 /****************************************************************************************/
@@ -365,7 +354,8 @@ SAVEDS ASM IPTR RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handl
 SAVEDS ASM void RTFuncs_rtSetWaitPointer(REGPARAM(a0, struct Window *, window))
 {
     struct TagItem tags[] = { { WA_BusyPointer, TRUE },
-			      { TAG_DONE, 0 } };
+        { TAG_DONE, 0 }
+    };
 
     SetWindowPointerA(window, (struct TagItem *)&tags);
 }
@@ -377,16 +367,12 @@ SAVEDS ASM APTR RTFuncs_rtLockWindow(REGPARAM(a0, struct Window *, window))
     struct rtWindowLock *winLock;
 
     /* Is this window already locked? */
-    if(window->FirstRequest != NULL)
-    {
+    if(window->FirstRequest != NULL) {
         struct rtWindowLock *wLock = (struct rtWindowLock *)window->FirstRequest;
 
-        while(wLock != NULL)
-        {
-            if(wLock->rtwl_Magic ==  ('r' << 24 | 't' << 16 | 'L' << 8 | 'W'))
-            {
-                if(wLock->rtwl_RequesterPtr == wLock)
-                {
+        while(wLock != NULL) {
+            if(wLock->rtwl_Magic ==  ('r' << 24 | 't' << 16 | 'L' << 8 | 'W')) {
+                if(wLock->rtwl_RequesterPtr == wLock) {
                     /* Window was already locked */
                     wLock->rtwl_LockCount++;
 
@@ -398,62 +384,60 @@ SAVEDS ASM APTR RTFuncs_rtLockWindow(REGPARAM(a0, struct Window *, window))
         }
     }
     winLock = (struct rtWindowLock *)AllocVec(sizeof(struct rtWindowLock),
-					      MEMF_CLEAR);
+              MEMF_CLEAR);
 
     /* No memory? */
     if(winLock == NULL)
-	return NULL;
+        return NULL;
 
     winLock->rtwl_Magic = 'r' << 24 | 't' << 16 | 'L' << 8 | 'W';
     winLock->rtwl_RequesterPtr = winLock;
-    
+
     winLock->rtwl_MinHeight = window->MinHeight;
     winLock->rtwl_MaxHeight = window->MaxHeight;
     winLock->rtwl_MinWidth  = window->MinWidth;
     winLock->rtwl_MaxWidth  = window->MaxWidth;
 
     WindowLimits(window, window->Width, window->Height,
-		 window->Width, window->Height);
-    
+                 window->Width, window->Height);
+
     InitRequester((struct Requester *)winLock);
     winLock->rtwl_ReqInstalled = Request((struct Requester *)winLock, window);
-    
+
     winLock->rtwl_Pointer = window->Pointer;
     winLock->rtwl_PtrHeight = window->PtrHeight;
     winLock->rtwl_PtrWidth = window->PtrWidth;
-    
+
     rtSetWaitPointer(window);
-    
+
     return (APTR)winLock;
 }
 
 /****************************************************************************************/
 
 SAVEDS ASM VOID RTFuncs_rtUnlockWindow(REGPARAM(a0, struct Window *, window),
-    	    	    	    	       REGPARAM(a1, APTR, windowlock))
+                                       REGPARAM(a1, APTR, windowlock))
 {
-    
+
     struct rtWindowLock *wLock = (struct rtWindowLock *)windowlock;
 
     if(wLock == NULL)
-	return;
+        return;
 
-    if(wLock->rtwl_LockCount != 0)
-    {
+    if(wLock->rtwl_LockCount != 0) {
         wLock->rtwl_LockCount--;
-    }
-    else
-    {
+    } else {
         struct TagItem tags[] = { { WA_Pointer, (IPTR)wLock->rtwl_Pointer },
-                      { TAG_DONE  , 0 } };
+            { TAG_DONE, 0 }
+        };
 
         SetWindowPointerA(window, tags);
 
-            if (wLock->rtwl_ReqInstalled)
+        if (wLock->rtwl_ReqInstalled)
             EndRequest((struct Requester *)wLock, window);
-        
+
         WindowLimits(window, wLock->rtwl_MinWidth, wLock->rtwl_MinHeight,
-                 wLock->rtwl_MaxWidth, wLock->rtwl_MaxHeight);
+                     wLock->rtwl_MaxWidth, wLock->rtwl_MaxHeight);
 
         FreeVec(wLock);
     }
@@ -462,22 +446,21 @@ SAVEDS ASM VOID RTFuncs_rtUnlockWindow(REGPARAM(a0, struct Window *, window),
 /****************************************************************************************/
 
 SAVEDS ASM void RTFuncs_rtSpread(REGPARAM(a0, ULONG *, posarray),
-    	    	    		 REGPARAM(a1, ULONG *, sizearray),
-				 REGPARAM(d0, ULONG, totalsize),
-				 REGPARAM(d1, ULONG, min),
-				 REGPARAM(d2, ULONG, max),
-				 REGPARAM(d3, ULONG, num))
+                                 REGPARAM(a1, ULONG *, sizearray),
+                                 REGPARAM(d0, ULONG, totalsize),
+                                 REGPARAM(d1, ULONG, min),
+                                 REGPARAM(d2, ULONG, max),
+                                 REGPARAM(d3, ULONG, num))
 {
     ULONG gadpos = min << 16;
     ULONG gadgap;
     UWORD i;
 
-    gadgap = ((max - min - totalsize) << 16) / (num - 1); 
+    gadgap = ((max - min - totalsize) << 16) / (num - 1);
 
     posarray[0] = min;
 
-    for(i = 1; i < num - 1; i++)
-    {
+    for(i = 1; i < num - 1; i++) {
         gadpos += (sizearray[i - 1] << 16) + gadgap;
         posarray[i] = gadpos >> 16;
     }
@@ -506,10 +489,8 @@ SAVEDS ASM void RTFuncs_ScreenToFrontSafely(REGPARAM(a0, struct Screen *, screen
 
     scr = IntuitionBase->FirstScreen;
 
-    while(scr != NULL)
-    {
-        if(scr == screen)
-        {
+    while(scr != NULL) {
+        if(scr == screen) {
 #ifdef USE_FORBID
             ScreenToFront(screen);
             break;
@@ -532,7 +513,7 @@ SAVEDS ASM void RTFuncs_ScreenToFrontSafely(REGPARAM(a0, struct Screen *, screen
             return;
 #endif
         }
-        
+
         scr = scr->NextScreen;
     }
 
@@ -546,9 +527,9 @@ SAVEDS ASM void RTFuncs_ScreenToFrontSafely(REGPARAM(a0, struct Screen *, screen
 /****************************************************************************************/
 
 SAVEDS ASM void RTFuncs_rtSetReqPosition(REGPARAM(d0, ULONG, reqpos),
-    	    	    	    	    	REGPARAM(a0, struct NewWindow *, nw),
-					REGPARAM(a1, struct Screen *, scr),
-					REGPARAM(a2, struct Window *, win))
+        REGPARAM(a0, struct NewWindow *, nw),
+        REGPARAM(a1, struct Screen *, scr),
+        REGPARAM(a2, struct Window *, win))
 {
     /* TODO: Taken from rtfuncs.asm where the C version was in comments. Might be out of date
      */
@@ -559,65 +540,70 @@ SAVEDS ASM void RTFuncs_rtSetReqPosition(REGPARAM(d0, ULONG, reqpos),
 
     rtGetVScreenSize (scr, &scrwidth, &scrheight);
 
-    leftedge = -scr->LeftEdge;    
+    leftedge = -scr->LeftEdge;
     if (leftedge < 0) leftedge = 0;
 
     topedge = -scr->TopEdge;
     if (topedge < 0) topedge = 0;
 
-    left = leftedge; top = topedge;
-    width = scrwidth; height = scrheight;
+    left = leftedge;
+    top = topedge;
+    width = scrwidth;
+    height = scrheight;
 
-    switch (reqpos)
-    {
-	case REQPOS_DEFAULT:
-	    nw->LeftEdge = 25;
-	    nw->TopEdge = 18;
-	    goto topleftscr;
+    switch (reqpos) {
+    case REQPOS_DEFAULT:
+        nw->LeftEdge = 25;
+        nw->TopEdge = 18;
+        goto topleftscr;
 
-	case REQPOS_POINTER:
-	    mx = scr->MouseX; my = scr->MouseY;
-	    break;
+    case REQPOS_POINTER:
+        mx = scr->MouseX;
+        my = scr->MouseY;
+        break;
 
-	case REQPOS_CENTERWIN:
-	    if (win)
-	    {
-            left = win->LeftEdge; top = win->TopEdge;
-            width = win->Width; height = win->Height;
-	    }
-
-	case REQPOS_CENTERSCR:
-	    mx = (width - nw->Width) / 2 + left;
-	    my = (height - nw->Height) / 2 + top;
-	    break;
-
-	case REQPOS_TOPLEFTWIN:
-	    if (win)
-	    {
+    case REQPOS_CENTERWIN:
+        if (win) {
             left = win->LeftEdge;
             top = win->TopEdge;
-	    }
+            width = win->Width;
+            height = win->Height;
+        }
 
-	case REQPOS_TOPLEFTSCR:
+    case REQPOS_CENTERSCR:
+        mx = (width - nw->Width) / 2 + left;
+        my = (height - nw->Height) / 2 + top;
+        break;
+
+    case REQPOS_TOPLEFTWIN:
+        if (win) {
+            left = win->LeftEdge;
+            top = win->TopEdge;
+        }
+
+    case REQPOS_TOPLEFTSCR:
 topleftscr:
-	    mx = left; my = top;
-	    break;
-	    
+        mx = left;
+        my = top;
+        break;
+
     } /* switch (reqpos) */
 
     /* keep window completely visible */
-    mx += nw->LeftEdge; my += nw->TopEdge;
+    mx += nw->LeftEdge;
+    my += nw->TopEdge;
     val = leftedge + scrwidth - nw->Width;
-    
+
     if (mx < leftedge) mx = leftedge;
     else if (mx > val) mx = val;
-    
+
     val = topedge + scrheight - nw->Height;
-    
+
     if (my < topedge) my = topedge;
     else if (my > val) my = val;
 
-    nw->LeftEdge = mx; nw->TopEdge = my;
+    nw->LeftEdge = mx;
+    nw->TopEdge = my;
 }
 
 
@@ -632,18 +618,15 @@ SAVEDS ASM void RTFuncs_CloseWindowSafely(REGPARAM(a0, struct Window *, window))
 
     Forbid();
 
-    if(window->UserPort != NULL)
-    {
-    	msg = (struct IntuiMessage *)window->UserPort->mp_MsgList.lh_Head;
+    if(window->UserPort != NULL) {
+        msg = (struct IntuiMessage *)window->UserPort->mp_MsgList.lh_Head;
 
-        while((succ = msg->ExecMessage.mn_Node.ln_Succ))
-        {
-            if(msg->IDCMPWindow == window)
-            {
-            Remove((struct Node *)msg);
-            ReplyMsg((struct Message *)msg);
+        while((succ = msg->ExecMessage.mn_Node.ln_Succ)) {
+            if(msg->IDCMPWindow == window) {
+                Remove((struct Node *)msg);
+                ReplyMsg((struct Message *)msg);
             }
-            
+
             msg = (struct IntuiMessage *)succ;
         }
     }

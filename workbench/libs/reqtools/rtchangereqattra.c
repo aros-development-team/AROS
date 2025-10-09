@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -38,7 +38,7 @@
 
 	Don't pass the tags listed below to the requester itself (unless
 	documented otherwise). They will not be recognized.
-   
+
     INPUTS
 	req     - pointer to requester.
 	taglist - pointer to array of tags.
@@ -142,7 +142,7 @@
     AROS_LIBFUNC_INIT
 
     return ChangeReqAttrA(req, taglist); /* in filereqalloc.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtChangeReqAttrA */

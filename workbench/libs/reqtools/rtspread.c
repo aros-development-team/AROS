@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -86,7 +86,7 @@
     RTFuncs_rtSpread(posarray, sizearray, totalsize, min, max, num);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtSpread */
 
 

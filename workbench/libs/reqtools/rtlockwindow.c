@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -43,7 +43,7 @@
 	See the RT_LockWindow tag for an automatic way of locking your window.
 
 	Use this function (and rtUnlockWindow()) instead of rtSetWaitPointer().
-    
+
     INPUTS
 
 	window  --  pointer to the window to be locked
@@ -79,5 +79,5 @@
     return RTFuncs_rtLockWindow(window);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtLockWindow */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -37,7 +37,7 @@
 
 	Use rtFreeRequest() to free the requester structure when you no
 	longer need it.
-   
+
     INPUTS
 	type    - type of structure to allocate, currently RT_REQINFO,
 	    RT_FILEREQ, RT_FONTREQ or RT_SCREENMODEREQ.
@@ -45,7 +45,7 @@
 
     TAGS
 	no tags defined yet
-	
+
     RESULT
 	req - pointer to the requester allocated or NULL if no memory.
 
@@ -68,7 +68,7 @@
     AROS_LIBFUNC_INIT
 
     return AllocRequestA(type, taglist); /* in filereqalloc.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtAllocRequestA */

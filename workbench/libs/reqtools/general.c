@@ -39,8 +39,7 @@
 
 /****************************************************************************************/
 
-UWORD CHIP waitpointer[] =
-{
+UWORD CHIP waitpointer[] = {
     0x0000,0x0000,
     0x0400,0x07C0,0x0000,0x07C0,0x0100,0x0380,0x0000,0x07E0,
     0x07C0,0x1FF8,0x1FF0,0x3FEC,0x3FF8,0x7FDE,0x3FF8,0x7FBE,
@@ -65,9 +64,9 @@ extern struct Library 		*UtilityBase;
 /****************************************************************************************/
 
 int ASM SAVEDS GetVScreenSize (
-	REGPARAM(a0, struct Screen *, scr),
-	REGPARAM(a1, int *, width),
-	REGPARAM(a2, int *, height))
+    REGPARAM(a0, struct Screen *, scr),
+    REGPARAM(a1, int *, width),
+    REGPARAM(a2, int *, height))
 {
     struct ViewPortExtra 	*vpe;
     struct Rectangle 		dispclip, *clip;
@@ -83,71 +82,58 @@ int ASM SAVEDS GetVScreenSize (
     getvpetags[0] = VTAG_VIEWPORTEXTRA_GET;
     getvpetags[1] = (IPTR)&vpe;
     getvpetags[2] = TAG_END;
-    
+
 #ifdef USE_FORBID
 
     Forbid();
 
     if (IntuitionBase->FirstScreen == scr &&
-	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
-    {
-	clip = &((struct ViewPortExtra *)getvpetags[1])->DisplayClip;
-    }
-    else
-    {
-	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
-	clip = &dispclip;
+            VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0) {
+        clip = &((struct ViewPortExtra *)getvpetags[1])->DisplayClip;
+    } else {
+        QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
+        clip = &dispclip;
     }
 
     Permit();
 
 #else
 
-    if ((pubscr = LockPubScreenByAddr(scr)))
-    {
-	/* Cool, we got a lock on the screen, we don't need to Forbid() */
-	ilock = LockIBase(0);
-    }
-    else
-    {
-	/* damn it, not a pubscreen, Forbid() as a last resort */
-	Forbid();
+    if ((pubscr = LockPubScreenByAddr(scr))) {
+        /* Cool, we got a lock on the screen, we don't need to Forbid() */
+        ilock = LockIBase(0);
+    } else {
+        /* damn it, not a pubscreen, Forbid() as a last resort */
+        Forbid();
     }
 
     isfirst = (IntuitionBase->FirstScreen == scr);
 
-    if (pubscr)
-    {
-	UnlockIBase(ilock);
+    if (pubscr) {
+        UnlockIBase(ilock);
     }
 
     if (isfirst &&
-	VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0)
-    {
-	clip = &((struct ViewPortExtra *)getvpetags[1])->DisplayClip;
+            VideoControl (scr->ViewPort.ColorMap, (struct TagItem *)getvpetags) == 0) {
+        clip = &((struct ViewPortExtra *)getvpetags[1])->DisplayClip;
+    } else {
+        QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
+        clip = &dispclip;
     }
-    else
-    {
-	QueryOverscan (GetVPModeID (&scr->ViewPort), &dispclip, OSCAN_TEXT);
-	clip = &dispclip;
-    }
-    if (pubscr)
-    {
-	UnlockPubScreen(NULL, pubscr);
-    }
-    else
-    {
-	Permit();
+    if (pubscr) {
+        UnlockPubScreen(NULL, pubscr);
+    } else {
+        Permit();
     }
 
 #endif
-    
+
     *width = clip->MaxX - clip->MinX + 1;
     *height = ht = clip->MaxY - clip->MinY + 1;
-    
+
     if (scr->Width < *width) *width = scr->Width;
     if (scr->Height < *height) *height = scr->Height;
-    
+
     return ((ht >= 400) ? 4 : 2);
 }
 
@@ -163,25 +149,20 @@ struct Screen *REGARGS LockPubScreenByAddr (struct Screen *scr)
 
     pubscreenlist = LockPubScreenList();
     pubscreennode = (struct PubScreenNode *) pubscreenlist->lh_Head;
-    while (pubscreennode->psn_Node.ln_Succ)
-    {
-	if (pubscreennode->psn_Screen == scr)
-	{
-	    strcpy(pubscreenname, pubscreennode->psn_Node.ln_Name);
-	    break;
-	}
-	pubscreennode = (struct PubScreenNode *) pubscreennode->psn_Node.ln_Succ;
+    while (pubscreennode->psn_Node.ln_Succ) {
+        if (pubscreennode->psn_Screen == scr) {
+            strcpy(pubscreenname, pubscreennode->psn_Node.ln_Name);
+            break;
+        }
+        pubscreennode = (struct PubScreenNode *) pubscreennode->psn_Node.ln_Succ;
     }
     UnlockPubScreenList();
 
     /* If we found a matching pubscreen try to lock it (note: can fail) */
-    if (pubscreenname[0])
-    {
-	scr = LockPubScreen(pubscreenname);
-    }
-    else
-    {
-	scr = NULL;
+    if (pubscreenname[0]) {
+        scr = LockPubScreen(pubscreenname);
+    } else {
+        scr = NULL;
     }
 
     return scr;
@@ -196,42 +177,36 @@ struct Screen *REGARGS LockPubScreenByAddr (struct Screen *scr)
 /****************************************************************************************/
 
 struct Screen *REGARGS GetReqScreen (
-	struct NewWindow *nw, struct Window **prwin, struct Screen *scr, char *pubname)
+    struct NewWindow *nw, struct Window **prwin, struct Screen *scr, char *pubname)
 {
     struct Window  *win = *prwin;
     struct Process *proc;
 
-    if (!pubname && !scr && !win)
-    {
-	proc = ThisProcess();
-	if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS) win = proc->pr_WindowPtr;
+    if (!pubname && !scr && !win) {
+        proc = ThisProcess();
+        if (proc->pr_Task.tc_Node.ln_Type == NT_PROCESS) win = proc->pr_WindowPtr;
     }
-    
-    nw->Type = CUSTOMSCREEN;
-    if (scr && !win)
-    {
-	struct Screen *pubscr;
 
-	/* Try to lock the screen as a public screen */
-	if ((pubscr = LockPubScreenByAddr(scr)))
-	{
-	    scr = pubscr;
-	    nw->Type = PUBLICSCREEN;
-	}
-	/* FIXME: probably should do something smart if the locking fail.
-	   RT_Screen is more than dangerous if you ask me... - Piru */
-    }
-    else
-    {
-	if (win && (IPTR)win != ~0) scr = win->WScreen;
-	else
-	{
-	    if (!(scr = LockPubScreen (pubname)))
-		if (!(scr = LockPubScreen (NULL))) return (NULL);
-		
-	    nw->Type = PUBLICSCREEN;
-	    win = NULL;
-	}
+    nw->Type = CUSTOMSCREEN;
+    if (scr && !win) {
+        struct Screen *pubscr;
+
+        /* Try to lock the screen as a public screen */
+        if ((pubscr = LockPubScreenByAddr(scr))) {
+            scr = pubscr;
+            nw->Type = PUBLICSCREEN;
+        }
+        /* FIXME: probably should do something smart if the locking fail.
+           RT_Screen is more than dangerous if you ask me... - Piru */
+    } else {
+        if (win && (IPTR)win != ~0) scr = win->WScreen;
+        else {
+            if (!(scr = LockPubScreen (pubname)))
+                if (!(scr = LockPubScreen (NULL))) return (NULL);
+
+            nw->Type = PUBLICSCREEN;
+            win = NULL;
+        }
     }
     *prwin = win;
     return (nw->Screen = scr);
@@ -246,13 +221,12 @@ static int VpDepth (struct ViewPort *vp)
     int 	depth;
 
     depth = vp->RasInfo->BitMap->Depth;
-    
+
     if (modeid & HAM_KEY) depth -= 2;
     if (modeid & EXTRAHALFBRITE_KEY) depth = 5;
 
-    if( depth > 8 )
-    {
-	depth = 8;
+    if( depth > 8 ) {
+        depth = 8;
     }
 
     return (depth);
@@ -268,43 +242,34 @@ GetVpCM( struct ViewPort *vp, APTR *cmap)
 #ifdef DO_CM_DEPTH
     int numcols;
 
-    if( !vp->ColorMap )
-    {
-	    return( 0 );
+    if( !vp->ColorMap ) {
+        return( 0 );
     }
 
     numcols = vp->ColorMap->Count;
 #else
     int depth, numcols;
 
-    if( !vp->ColorMap )
-    {
-	return( 0 );
+    if( !vp->ColorMap ) {
+        return( 0 );
     }
 
     depth = VpDepth (vp);
     numcols = (1 << depth);
 #endif
-    if( GfxBase->LibNode.lib_Version >= 39 )
-    {
-	if( ( *cmap = AllocVec( ( numcols * 3 + 2 ) * 4, MEMF_PUBLIC | MEMF_CLEAR ) ) )
-	{
-	    ( ( UWORD * ) ( *cmap ) )[ 0 ] = numcols;
-	}
-    }
-    else
-    {
-	*cmap = AllocVec( numcols * 2, MEMF_PUBLIC | MEMF_CLEAR );
+    if( GfxBase->LibNode.lib_Version >= 39 ) {
+        if( ( *cmap = AllocVec( ( numcols * 3 + 2 ) * 4, MEMF_PUBLIC | MEMF_CLEAR ) ) ) {
+            ( ( UWORD * ) ( *cmap ) )[ 0 ] = numcols;
+        }
+    } else {
+        *cmap = AllocVec( numcols * 2, MEMF_PUBLIC | MEMF_CLEAR );
     }
 
-    if( *cmap )
-    {
-	RefreshVpCM( vp, *cmap );
-	return( depth );
-    }
-    else
-    {
-	return( 0 );
+    if( *cmap ) {
+        RefreshVpCM( vp, *cmap );
+        return( depth );
+    } else {
+        return( 0 );
     }
 }
 
@@ -323,16 +288,12 @@ RefreshVpCM( struct ViewPort *vp, APTR cmap )
     depth = VpDepth( vp );
     numcols = ( 1 << depth );
 #endif
-    if( GfxBase->LibNode.lib_Version >= 39 )
-    {
-	GetRGB32( vp->ColorMap, 0, numcols, ( ( ULONG * ) cmap ) + 1 );
-    }
-    else
-    {
-	for( i = 0; i < numcols; i++ )
-	{
-	    ( ( UWORD * ) cmap )[ i ] = GetRGB4( vp->ColorMap, i );
-	}
+    if( GfxBase->LibNode.lib_Version >= 39 ) {
+        GetRGB32( vp->ColorMap, 0, numcols, ( ( ULONG * ) cmap ) + 1 );
+    } else {
+        for( i = 0; i < numcols; i++ ) {
+            ( ( UWORD * ) cmap )[ i ] = GetRGB4( vp->ColorMap, i );
+        }
     }
 }
 
@@ -359,16 +320,20 @@ void REGARGS FreeVpCM (struct ViewPort *vp, APTR cmap, BOOL restore)
 /****************************************************************************************/
 
 void REGARGS InitNewGadget (struct NewGadget *ng,
-		int x, int y, int w, int h, char *s, UWORD id)
+                            int x, int y, int w, int h, char *s, UWORD id)
 {
-    ng->ng_LeftEdge = x; ng->ng_TopEdge = y; ng->ng_Width = w; ng->ng_Height = h;
-    ng->ng_GadgetText = s; ng->ng_GadgetID = id;
+    ng->ng_LeftEdge = x;
+    ng->ng_TopEdge = y;
+    ng->ng_Width = w;
+    ng->ng_Height = h;
+    ng->ng_GadgetText = s;
+    ng->ng_GadgetID = id;
 }
 
 /****************************************************************************************/
 
 struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
-		struct TextFont *deffont, int *fontheight, int *fontwidth, int allowprop)
+                                      struct TextFont *deffont, int *fontheight, int *fontwidth, int allowprop)
 {
     struct TextFont 	*ft;
     int 		forcedef;
@@ -377,60 +342,55 @@ struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
     rtUnlockPrefs();
 
     ft = OpenFont (attr);
-    if (!ft || forcedef || (!allowprop && (ft->tf_Flags & FPF_PROPORTIONAL)))
-    {
-	if (ft) CloseFont (ft);
-	if (deffont) ft = deffont;
-	else ft = GfxBase->DefaultFont;
-	
-	attr->ta_Name = ft->tf_Message.mn_Node.ln_Name;
-	attr->ta_YSize = ft->tf_YSize;
-	attr->ta_Style = ft->tf_Style;
-	attr->ta_Flags = ft->tf_Flags;
-	ft = OpenFont (attr);
+    if (!ft || forcedef || (!allowprop && (ft->tf_Flags & FPF_PROPORTIONAL))) {
+        if (ft) CloseFont (ft);
+        if (deffont) ft = deffont;
+        else ft = GfxBase->DefaultFont;
+
+        attr->ta_Name = ft->tf_Message.mn_Node.ln_Name;
+        attr->ta_YSize = ft->tf_YSize;
+        attr->ta_Style = ft->tf_Style;
+        attr->ta_Flags = ft->tf_Flags;
+        ft = OpenFont (attr);
     }
-    
-    if (ft)
-    {
-	*fontheight = ft->tf_YSize;
-	*fontwidth = ft->tf_XSize;
+
+    if (ft) {
+        *fontheight = ft->tf_YSize;
+        *fontwidth = ft->tf_XSize;
     }
-    
+
     return (ft);
 }
 
 /****************************************************************************************/
 
 struct IntuiMessage *REGARGS GetWin_GT_Msg (struct Window *win,
-					    struct Hook *hook, APTR req)
+        struct Hook *hook, APTR req)
 {
     struct IntuiMessage *imsg, *reqmsg;
 
     while ((imsg = (struct IntuiMessage *)GetMsg (win->UserPort)))
-	if ((reqmsg = ProcessWin_Msg (win, imsg, hook, req))) return (reqmsg);
-	
+        if ((reqmsg = ProcessWin_Msg (win, imsg, hook, req))) return (reqmsg);
+
     return (NULL);
 }
 
 /****************************************************************************************/
 
 struct IntuiMessage *REGARGS ProcessWin_Msg (struct Window *win,
-					    struct IntuiMessage *imsg, struct Hook *hook, APTR req)
+        struct IntuiMessage *imsg, struct Hook *hook, APTR req)
 {
     struct IntuiMessage *reqmsg;
 
-    if (imsg->IDCMPWindow == win)
-    {
-	reqmsg = GT_FilterIMsg (imsg);
-	if (reqmsg) return (reqmsg);
-	ReplyMsg ((struct Message *)imsg);
+    if (imsg->IDCMPWindow == win) {
+        reqmsg = GT_FilterIMsg (imsg);
+        if (reqmsg) return (reqmsg);
+        ReplyMsg ((struct Message *)imsg);
+    } else {
+        if (hook) CallHookPkt (hook, req, imsg);
+        ReplyMsg ((struct Message *)imsg);
     }
-    else
-    {
-	if (hook) CallHookPkt (hook, req, imsg);
-	ReplyMsg ((struct Message *)imsg);
-    }
-    
+
     return (NULL);
 }
 
@@ -448,15 +408,15 @@ void REGARGS DoScreenToFront (struct Screen *scr, int nopop, int popup)
     ULONG noscrtofront;
 
     if (nopop) return;
-    
+
     noscrtofront = (rtLockPrefs()->Flags & RTPRF_NOSCRTOFRONT);
     rtUnlockPrefs();
-    
+
     if (noscrtofront) return;
     if (popup)
-	    ScreenToFront (scr);
+        ScreenToFront (scr);
     else
-	    rtScreenToFrontSafely (scr);
+        rtScreenToFrontSafely (scr);
 }
 
 
@@ -470,8 +430,7 @@ void REGARGS DoCloseWindow (struct Window *win, int idcmpshared)
 
 /****************************************************************************************/
 
-struct BackFillMsg
-{
+struct BackFillMsg {
     struct Layer *layer;
     struct Rectangle bounds;
     LONG offsetx;
@@ -482,16 +441,16 @@ struct BackFillMsg
 
 #ifdef __AROS__
 AROS_UFH3(void, WinBackFill,
-    AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(struct RastPort *, the_rp, A2),
-    AROS_UFHA(struct BackFillMsg *, msg, A1))
+          AROS_UFHA(struct Hook *, hook, A0),
+          AROS_UFHA(struct RastPort *, the_rp, A2),
+          AROS_UFHA(struct BackFillMsg *, msg, A1))
 {
     AROS_USERFUNC_INIT
 #else
 void SAVEDS ASM WinBackFill (
-	REGPARAM(a0, struct Hook *, hook),
-	REGPARAM(a2, struct RastPort *, the_rp),
-	REGPARAM(a1, struct BackFillMsg *, msg))
+    REGPARAM(a0, struct Hook *, hook),
+    REGPARAM(a2, struct RastPort *, the_rp),
+    REGPARAM(a1, struct BackFillMsg *, msg))
 {
 #endif
     struct RastPort rp;
@@ -501,7 +460,7 @@ void SAVEDS ASM WinBackFill (
     SetAPen (&rp, ((UWORD *)hook->h_Data)[BACKGROUNDPEN]);
     mySetWriteMask (&rp, ~0);
     RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
-		   msg->bounds.MaxX, msg->bounds.MaxY);
+              msg->bounds.MaxX, msg->bounds.MaxY);
 
 #ifdef __AROS__
     AROS_USERFUNC_EXIT
@@ -513,31 +472,31 @@ void SAVEDS ASM WinBackFill (
 #ifdef __AROS__
 
 AROS_UFH3(void, PatternWinBackFill,
-    AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(struct RastPort *, the_rp, A2),
-    AROS_UFHA(struct BackFillMsg *, msg, A1))
+          AROS_UFHA(struct Hook *, hook, A0),
+          AROS_UFHA(struct RastPort *, the_rp, A2),
+          AROS_UFHA(struct BackFillMsg *, msg, A1))
 {
     AROS_USERFUNC_INIT
-    
+
     struct RastPort rp;
     UWORD pattern[] = {0xAAAA,0x5555};
-    
+
     memcpy( &rp, the_rp, sizeof( rp ) );
     rp.Layer = NULL;
 
     SetAPen (&rp, ((UWORD *)hook->h_Data)[BACKGROUNDPEN]);
     SetBPen (&rp, ((UWORD *)hook->h_Data)[SHINEPEN]);
     SetDrMd (&rp, JAM2);
-    
+
     mySetWriteMask (&rp, ~0);
-    
+
     SetAfPt(&rp, pattern, 1);
-    
+
     RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
-		   msg->bounds.MaxX, msg->bounds.MaxY);
-		   
+              msg->bounds.MaxX, msg->bounds.MaxY);
+
     SetAfPt(&rp, NULL, 0);
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -554,8 +513,8 @@ void REGARGS mySetWriteMask (struct RastPort *rp, ULONG mask)
 /****************************************************************************************/
 
 struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
-			struct Hook *hook, UWORD *pens, ULONG *maskptr, WORD *zoom,
-			BOOL backfillpattern)
+                                     struct Hook *hook, UWORD *pens, ULONG *maskptr, WORD *zoom,
+                                     BOOL backfillpattern)
 {
     struct RastPort *rp;
     struct Window *win;
@@ -564,12 +523,11 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     int i;
 
 #ifdef __AROS__
-    if (backfillpattern)
-    {
+    if (backfillpattern) {
         hook->h_Entry = (HOOKFUNC)PatternWinBackFill;
     } else
 #endif
-    hook->h_Entry = (HOOKFUNC)WinBackFill;
+        hook->h_Entry = (HOOKFUNC)WinBackFill;
 
     hook->h_Data = (void *)pens;
 
@@ -579,38 +537,32 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     tags[3] = (IPTR)zoom;
     tags[4] = TAG_END;
 
-    if( zoom )
-    {
-	if (IntuitionBase->LibNode.lib_Version >= 39)
-	    zoom[0] = zoom[1] = ~0;
-	else
-	{
-	    zoom[0] = nw->LeftEdge;
-	    zoom[1] = nw->TopEdge;
-	}
-    }
-    else
-    {
-	tags[2] = TAG_IGNORE;
+    if( zoom ) {
+        if (IntuitionBase->LibNode.lib_Version >= 39)
+            zoom[0] = zoom[1] = ~0;
+        else {
+            zoom[0] = nw->LeftEdge;
+            zoom[1] = nw->TopEdge;
+        }
+    } else {
+        tags[2] = TAG_IGNORE;
     }
 
-    if ((win = OpenWindowTagList (nw, (struct TagItem *)tags)))
-    {
-	rp = win->RPort;
-	for (i = 0; i <= HIGHLIGHTTEXTPEN; i++)
-		if (pens[i] > maxpen) maxpen = pens[i];
-		
-	mask = 1;
-	while (mask < maxpen)
-	{
-	    mask <<= 1;
-	    mask |= 1;
-	}
-	
-	mySetWriteMask (rp, mask);
-	if (maskptr) *maskptr = mask;
+    if ((win = OpenWindowTagList (nw, (struct TagItem *)tags))) {
+        rp = win->RPort;
+        for (i = 0; i <= HIGHLIGHTTEXTPEN; i++)
+            if (pens[i] > maxpen) maxpen = pens[i];
+
+        mask = 1;
+        while (mask < maxpen) {
+            mask <<= 1;
+            mask |= 1;
+        }
+
+        mySetWriteMask (rp, mask);
+        if (maskptr) *maskptr = mask;
     }
-    
+
     return (win);
 
 }
@@ -621,25 +573,21 @@ int CheckReqPos (int reqpos, int reqdefnum, struct NewWindow *newwin)
 {
     struct ReqDefaults *reqdefs;
 
-    if (reqpos == REQPOS_DEFAULT)
-    {
-	reqdefs = &rtLockPrefs()->ReqDefaults[reqdefnum];
-	reqpos = reqdefs->ReqPos;
-	
-	if (reqpos <= REQPOS_CENTERSCR)
-	{
-	    newwin->LeftEdge = 0;
-	    newwin->TopEdge = 0;
-	}
-	else
-	{
-	    newwin->LeftEdge = reqdefs->LeftOffset;
-	    newwin->TopEdge = reqdefs->TopOffset;
-	}
-	
-	rtUnlockPrefs();
+    if (reqpos == REQPOS_DEFAULT) {
+        reqdefs = &rtLockPrefs()->ReqDefaults[reqdefnum];
+        reqpos = reqdefs->ReqPos;
+
+        if (reqpos <= REQPOS_CENTERSCR) {
+            newwin->LeftEdge = 0;
+            newwin->TopEdge = 0;
+        } else {
+            newwin->LeftEdge = reqdefs->LeftOffset;
+            newwin->TopEdge = reqdefs->TopOffset;
+        }
+
+        rtUnlockPrefs();
     }
-    
+
     return (reqpos);
 }
 
@@ -656,15 +604,16 @@ int REGARGS StrWidth_noloc (struct IntuiText *itxt, UBYTE *str)
     char labstr[100], *l;
 
     if (!str) return (0);
-    
+
     /* Copy string, remove underscore */
     l = labstr;
     while (*str && *str != '_') *l++ = *str++;
-    
-    if (*str) while ((*l++ = *++str)); else *l = 0;
-    
+
+    if (*str) while ((*l++ = *++str));
+    else *l = 0;
+
     itxt->IText = labstr;
-    
+
     return (IntuiTextLength (itxt));
 }
 
@@ -673,8 +622,8 @@ int REGARGS StrWidth_noloc (struct IntuiText *itxt, UBYTE *str)
 static int ObjectWidth (struct NewGadget *ng, int normalw, int normalh)
 {
     if ((GadToolsBase->lib_Version >= 39) && (ng->ng_TextAttr->ta_YSize > normalh))
-	return (normalw + (ng->ng_TextAttr->ta_YSize - normalh) * 2);
-	
+        return (normalw + (ng->ng_TextAttr->ta_YSize - normalh) * 2);
+
     return (normalw);
 }
 
@@ -683,8 +632,8 @@ static int ObjectWidth (struct NewGadget *ng, int normalw, int normalh)
 static int ObjectHeight (struct NewGadget *ng, int normalh)
 {
     if ((GadToolsBase->lib_Version >= 39) && (ng->ng_TextAttr->ta_YSize > normalh))
-	return (ng->ng_TextAttr->ta_YSize);
-	
+        return (ng->ng_TextAttr->ta_YSize);
+
     return (normalh);
 }
 
@@ -713,19 +662,17 @@ LONG BottomBorderHeight (struct Screen *scr)
     APTR 		obj;
     LONG 		h = 10;
 
-    if ((dri = GetScreenDrawInfo (scr)))
-    {
-	if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, (IPTR) dri,
-						/* Must be SYSISIZE_MEDRES! */
-						SYSIA_Size, SYSISIZE_MEDRES,
-						SYSIA_Which, SIZEIMAGE,
-						TAG_DONE)))
-	{
-	    if (!GetAttr (IA_Height, obj, (IPTR *)&h))
-		    h = 10;  // Probably not needed.. Or?
-	    DisposeObject( obj );
-	}
-	FreeScreenDrawInfo (scr, dri);
+    if ((dri = GetScreenDrawInfo (scr))) {
+        if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, (IPTR) dri,
+                             /* Must be SYSISIZE_MEDRES! */
+                             SYSIA_Size, SYSISIZE_MEDRES,
+                             SYSIA_Which, SIZEIMAGE,
+                             TAG_DONE))) {
+            if (!GetAttr (IA_Height, obj, (IPTR *)&h))
+                h = 10;  // Probably not needed.. Or?
+            DisposeObject( obj );
+        }
+        FreeScreenDrawInfo (scr, dri);
     }
     return (h);
 }

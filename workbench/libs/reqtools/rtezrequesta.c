@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -107,7 +107,7 @@
 	structure is that it is global, where tags have to be specified
 	each function call. See libraries/reqtools.[hi] for a description
 	of the rtReqInfo structure.
-   
+
     INPUTS
 	bodyfmt  - requester body text, can be format string a la RawDoFmt().
 	gadfmt   - text for gadgets (left to right, separated by '|') or NULL.
@@ -146,7 +146,7 @@
 	    REQPOS_TOPLEFTWIN - requester appears at the top left of the
 	        window (only works if the pr_WindowPtr of your process is
 	        valid or if you use RT_Window).
-	    
+
 	    The requester will always remain in the visible part of the
 	    screen, so if you use the Workbench 2.0 ScreenMode preferences
 	    editor to enlarge your Workbench screen and you scroll around,
@@ -155,7 +155,7 @@
 	    visible part of the screen. So if you use one of these the
 	    requester will be appear in the center or the top left off what
 	    you can see of the screen as opposed to the entire screen.
-	    
+
 	    REQPOS_CENTERWIN and REQPOS_TOPLEFTWIN fall back to
 	    REQPOS_CENTERSCR or REQPOS_TOPLEFTSCR respectively when there
 	    is no parent window. So you can safely use these without
@@ -173,7 +173,7 @@
 	    appear on. When this tag is used the RT_Window tag will be
 	    ignored. If the public screen is not found the requester will
 	    open on the default public screen.
-	    
+
 	    Only works on Kickstart 2.0! reqtools.library does not check
 	    this, it is up to you *NOT* to use this tag on Kickstart 1.3 or
 	    below! Note that the 1.3 version of reqtools.library also
@@ -190,7 +190,7 @@
 	    code will not be what you would normally expect. If the return
 	    code is _not_ equal to CALL_HANDLER an error occurred and you
 	    should take appropriate steps.
-	    
+
 	    If the return code was CALL_HANDLER everything went ok and the
 	    requester will still be up! See the explanation for
 	    rtReqHandlerA() below for the following steps you have to take.
@@ -200,7 +200,7 @@
 	    requester is up. This will happen if you used the RT_Window tag
 	    or if your process's pr_WindowPtr is valid. Note that after the
 	    requester has finished your window will be ClearPointer()-ed.
-	    
+
 	    If you used a custom pointer in your window you will have to
 	    re-set it, or not use the RT_WaitPointer tag and put up a wait
 	    pointer yourself. If your program requires ReqTools V38 it is
@@ -238,11 +238,11 @@
 	    its window. Only applies if you used the RT_ShareIDCMP tag to
 	    share the IDCMP port with the parent window. Parameters are as
 	    follows:
-	    
+
 	        A0 - (struct Hook *) your hook
 	        A2 - (struct rtReqInfo *) your requester info
 	        A1 - (struct IntuiMessage *) the message
-	    
+
 	    After you have finished examining the message and your hook
 	    returns, ReqTools will reply the message. So do not reply the
 	    message yourself!
@@ -255,7 +255,7 @@
 	    gadfmt "_Quit|Oh, _No!". Do not use the symbol '%' as it is
 	    used for string formatting. The usual character to use is '_'
 	    like in the example.
-	    
+
 	    IMPORTANT: the shortcuts defined using RT_Underscore take
 	        precedence of the default shortcuts! It is for example not
 	        wise to use a 'N' for a positive response! Pick your
@@ -317,13 +317,13 @@
     AROS_LIBFUNC_INIT
 
     return GetString(bodyfmt,
-             (SIPTR)argarray,
-             gadfmt,
-             0,
-             NULL,
-             IS_EZREQUEST,
-             reqinfo,
-             taglist);
+                     (SIPTR)argarray,
+                     gadfmt,
+                     0,
+                     NULL,
+                     IS_EZREQUEST,
+                     reqinfo,
+                     taglist);
 
     AROS_LIBFUNC_EXIT
 

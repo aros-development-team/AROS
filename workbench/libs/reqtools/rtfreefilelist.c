@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -61,7 +61,7 @@
     AROS_LIBFUNC_INIT
 
     FreeFileList(selfile);
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtFreeFileList */

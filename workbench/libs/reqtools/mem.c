@@ -3,40 +3,32 @@
 #ifndef __AROS__
 APTR REGARGS AllocVecPooled (APTR pool, ULONG memsize)
 {
-    if (pool)
-    {
-	IPTR *mem;
+    if (pool) {
+        IPTR *mem;
 
-	memsize += sizeof(IPTR);
+        memsize += sizeof(IPTR);
 
-	if ((mem = AllocPooled(pool, memsize)))
-	{
-	    *mem++ = memsize;
-	}
+        if ((mem = AllocPooled(pool, memsize))) {
+            *mem++ = memsize;
+        }
 
-	return mem;
-    }
-    else
-    {
+        return mem;
+    } else {
         return AllocVec(memsize, MEMF_PUBLIC | MEMF_CLEAR);
     }
 }
 
 void REGARGS FreeVecPooled (APTR pool, APTR mem)
 {
-    if (mem)
-    {
-	if (pool)
-	{
-	    IPTR *imem = (IPTR *)mem;
-	    IPTR size = *--imem;
- 
-	    FreePooled(pool, imem, size);
+    if (mem) {
+        if (pool) {
+            IPTR *imem = (IPTR *)mem;
+            IPTR size = *--imem;
+
+            FreePooled(pool, imem, size);
+        } else {
+            FreeVec(mem);
         }
-	else
-	{
-             FreeVec(mem);
-	}
     }
 }
 #endif

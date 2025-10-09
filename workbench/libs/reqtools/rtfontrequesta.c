@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -32,7 +32,7 @@
 
 /*  FUNCTION
 	Let the user select a font and a style (optional).
-   
+
     INPUTS
 	fontreq  - pointer to a struct rtFontRequester allocated with
 	    rtAllocRequestA().
@@ -170,7 +170,7 @@
     AROS_LIBFUNC_INIT
 
     return (IPTR)FileRequestA((struct RealFileRequester *)fontreq, NULL, title, taglist); /* in filereq.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtFontRequestA */

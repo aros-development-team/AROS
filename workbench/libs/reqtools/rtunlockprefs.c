@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -52,7 +52,7 @@
     AROS_LIBFUNC_INIT
 
     RTFuncs_UnlockPrefs(ReqToolsBase);
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtUnlockPrefs */

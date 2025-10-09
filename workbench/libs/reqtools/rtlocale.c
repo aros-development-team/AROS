@@ -23,7 +23,7 @@ char *REGARGS GetStr (struct Catalog *cat, char *idstr)
 #if !AROS_BIG_ENDIAN
     id = AROS_BE2WORD(id);
 #endif
-#endif	
+#endif
     local = idstr + 2;
     if (LocaleBase) return ((char *)GetCatalogStr (cat, id, local));
     return (local);

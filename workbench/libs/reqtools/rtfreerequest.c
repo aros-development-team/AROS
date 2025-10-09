@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -32,7 +32,7 @@
 	Free requester structure previously allocated by rtAllocRequestA().
 	This will also free all buffers associated with the requester, so
 	there is no need to call rtFreeReqBuffer() first.
-   
+
     INPUTS
 	req - pointer to requester (may be NULL).
 
@@ -58,7 +58,7 @@
     AROS_LIBFUNC_INIT
 
     FreeRequest(req); /* in filereqalloc.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtFreeRequest */

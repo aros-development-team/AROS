@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -70,7 +70,7 @@
 	ULONG ret, mymask, sigs;
 
 	...
-	// calculate our mask 
+	// calculate our mask
 	mymask = 1 << win->UserPort->mp_SigBit;
 
 	// We use the RT_ReqHandler tag to cause the requester to return
@@ -81,13 +81,13 @@
 	{
 	    do
 	    {
-	        // Wait() if we can 
+	        // Wait() if we can
 	        if( !hinfo->DoNotWait )
 	        {
 	            sigs = Wait( hinfo->WaitMask | mymask );
 	        }
-	        
-	        // check our own message port 
+
+	        // check our own message port
 	        while( msg = GetMsg( win->UserPort ) )
 	        {
 	            ...
@@ -96,7 +96,7 @@
 	            ...
 	        }
 
-	        // let the requester do its thing (remember to pass 'sigs') 
+	        // let the requester do its thing (remember to pass 'sigs')
 	        ret = rtReqHandler( hinfo, sigs, TAG_END );
 
 	        // continue this loop as long as the requester is up
@@ -111,7 +111,7 @@
 	    notify( "Error opening requester!" );
 	}
 	...
-   
+
     INPUTS
 	handlerinfo - pointer to handler info structure initialized by
 	    using the RT_ReqHandler tag when calling a requester function.
@@ -150,7 +150,7 @@
     AROS_LIBFUNC_INIT
 
     return RTFuncs_rtReqHandlerA(handlerinfo, sigs, taglist);
-        
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtReqHandlerA */

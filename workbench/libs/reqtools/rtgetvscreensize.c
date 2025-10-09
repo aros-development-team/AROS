@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -42,7 +42,7 @@
 	Current return codes are 2 for non-interlaced and 4 for interlaced.
 	These values may change in the future, don't depend on them too
 	much. They will in any case remain of the same magnitude.
-   
+
     INPUTS
 	screen - pointer to the screen.
 	widthptr - address of an ULONG variable to hold the width.
@@ -69,14 +69,14 @@
     AROS_LIBFUNC_INIT
 
     int width, height, retval;
-    
+
     retval = GetVScreenSize(screen, &width, &height); /* general.c */
-    
+
     *widthptr  = (ULONG)width;
     *heightptr = (ULONG)height;
-    
+
     return (ULONG)retval;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtGetVScreenSize */

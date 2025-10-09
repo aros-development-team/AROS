@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -216,7 +216,7 @@
     AROS_LIBFUNC_INIT
 
     return (IPTR)FileRequestA((struct RealFileRequester *)screenmodereq, NULL, title, taglist); /* in filereq.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtScreenModeRequestA */

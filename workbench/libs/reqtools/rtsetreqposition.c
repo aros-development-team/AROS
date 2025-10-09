@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -63,7 +63,7 @@
 	REQPOS_TOPLEFTWIN. Even in this case you may call rtSetReqPosition()
 	with a NULL window pointer. The positions will simply fall back to
 	REQPOS_CENTERSCR and REQPOS_TOPLEFTSCR respectively.
-   
+
     INPUTS
 	reqpos - one of the REQPOS_... constants usable with RT_ReqPos.
 	newwindow - pointer to your (already initialized) NewWindow
@@ -94,7 +94,7 @@
     AROS_LIBFUNC_INIT
 
     RTFuncs_rtSetReqPosition(reqpos, nw, scr, win);
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtSetReqPosition */

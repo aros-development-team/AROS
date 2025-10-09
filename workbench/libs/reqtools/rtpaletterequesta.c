@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -46,7 +46,7 @@
 	structure is that it is global, where tags have to be specified
 	each function call. See libraries/reqtools.[hi] for a description
 	of the rtReqInfo structure.
-   
+
     INPUTS
 	title - pointer to requester window title (null terminated).
 	reqinfo - pointer to a rtReqInfo structure allocated with
@@ -125,7 +125,7 @@
     AROS_LIBFUNC_INIT
 
     return PaletteRequestA(title, reqinfo, taglist); /* in palettereq.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtPaletteRequestA */

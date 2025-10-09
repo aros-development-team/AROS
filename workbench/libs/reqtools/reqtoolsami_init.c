@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: AmigaOS specific ReqTools initialization code.
 */
@@ -38,23 +38,22 @@ extern const char libend;
 
 int entry(void)
 {
-  return -1;
+    return -1;
 }
 
 /****************************************************************************************/
 
-const struct Resident ROMTag =
-{
-  RTC_MATCHWORD,
-  (struct Resident *)&ROMTag,
-  (APTR)&libend,
-  RTF_AUTOINIT,
-  VERSION,
-  NT_LIBRARY,
-  0,
-  (char *)name,
-  (char *)&version[6],
-  (ULONG *)inittable
+const struct Resident ROMTag = {
+    RTC_MATCHWORD,
+    (struct Resident *)&ROMTag,
+    (APTR)&libend,
+    RTF_AUTOINIT,
+    VERSION,
+    NT_LIBRARY,
+    0,
+    (char *)name,
+    (char *)&version[6],
+    (ULONG *)inittable
 };
 
 /****************************************************************************************/
@@ -62,8 +61,7 @@ const struct Resident ROMTag =
 const char name[]    = NAME_STRING;
 const char version[] = VERSION_STRING;
 
-const APTR inittable[4] =
-{
+const APTR inittable[4] = {
     (APTR)sizeof(struct ReqToolsBase),
     (APTR)functable,
     NULL,
@@ -79,31 +77,31 @@ const APTR inittable[4] =
 /****************************************************************************************/
 
 struct ReqToolsBase * SAVEDS ASM libinit(REGPARAM(d0, struct ReqToolsBase *, RTBase),
-    	    	    	    	    	    REGPARAM(a0, BPTR, segList))
+        REGPARAM(a0, BPTR, segList))
 {
     ReqToolsBase = RTBase;
     SysBase = *(struct ExecBase **)4L;
-    
+
     ReqToolsBase->LibNode.lib_Node.ln_Type  = NT_LIBRARY;
     ReqToolsBase->LibNode.lib_Node.ln_Name  = (char *)name;
     ReqToolsBase->LibNode.lib_Flags         = LIBF_SUMUSED|LIBF_CHANGED;
     ReqToolsBase->LibNode.lib_Version       = VERSION;
     ReqToolsBase->LibNode.lib_Revision      = REVISION;
     ReqToolsBase->LibNode.lib_IdString      = (char *)&version[6];
-    
+
     return RTFuncs_Init(RTBase, segList);
 }
 
 /****************************************************************************************/
 
 extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
-				   REGPARAM(d0, SIPTR, maxlen),
-				   REGPARAM(a2, char *, title),
-				   REGPARAM(d1, ULONG, checksum),
-				   REGPARAM(d2, ULONG *, value),
-				   REGPARAM(d3, LONG, mode),
-				   REGPARAM(d4, struct rtReqInfo *, reqinfo),
-				   REGPARAM(a0, struct TagItem *, taglist));
+                                   REGPARAM(d0, SIPTR, maxlen),
+                                   REGPARAM(a2, char *, title),
+                                   REGPARAM(d1, ULONG, checksum),
+                                   REGPARAM(d2, ULONG *, value),
+                                   REGPARAM(d3, LONG, mode),
+                                   REGPARAM(d4, struct rtReqInfo *, reqinfo),
+                                   REGPARAM(a0, struct TagItem *, taglist));
 
 
 /****************************************************************************************/
@@ -122,8 +120,7 @@ extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
 
 /****************************************************************************************/
 
-struct MyStackSwapStruct
-{
+struct MyStackSwapStruct {
     struct StackSwapStruct  sss;
     UBYTE   	    	    *stringbuff;
     LONG    	    	    maxlen;
@@ -142,64 +139,60 @@ struct MyStackSwapStruct
 /****************************************************************************************/
 
 static ULONG CheckStack_GetString(UBYTE *stringbuff,
-    	    	    	    	  SIPTR maxlen,
-				  char *title,
-				  ULONG checksum,
-				  ULONG *value,
-				  LONG mode,
-				  struct rtReqInfo *reqinfo,
-				  struct TagItem *taglist)
+                                  SIPTR maxlen,
+                                  char *title,
+                                  ULONG checksum,
+                                  ULONG *value,
+                                  LONG mode,
+                                  struct rtReqInfo *reqinfo,
+                                  struct TagItem *taglist)
 {
-/* I could not manage to get correct code to be generated when
-   using asm("a7") or asm("sp") to access sp!? :-( */
-   
+    /* I could not manage to get correct code to be generated when
+       using asm("a7") or asm("sp") to access sp!? :-( */
+
 #define sp ((IPTR)(&sss))
 
     struct MyStackSwapStruct 	    	sss;
     register struct MyStackSwapStruct 	*sssptr = &sss;
     struct Task     	    	    	*me = FindTask(NULL);
     register ULONG   	       	    	retval = 0;
-    
+
     if ((sp <= (IPTR)me->tc_SPLower) ||
-        (sp >= (IPTR)me->tc_SPUpper) ||
-	(sp - MIN_STACK < (IPTR)me->tc_SPLower))
-    {
-    	sssptr->sss.stk_Lower = AllocVec(MIN_STACK, MEMF_PUBLIC);
-	if (sssptr->sss.stk_Lower)
-	{
-	    sssptr->sss.stk_Upper = ((IPTR)sssptr->sss.stk_Lower) + MIN_STACK;
-	    sssptr->sss.stk_Pointer = (APTR) sssptr->sss.stk_Upper;
-	    
-	    sssptr->stringbuff  = stringbuff;
-	    sssptr->maxlen  	= maxlen;
-	    sssptr->title   	= title;
-	    sssptr->checksum 	= checksum;
-	    sssptr->value   	= value;
-	    sssptr->mode    	= mode;
-	    sssptr->reqinfo 	= reqinfo;
-	    sssptr->taglist 	= taglist;
-	    
-	    StackSwap(&sssptr->sss);
-	    
-    	    retval = GetString(sssptr->stringbuff,
-	    	    	       sssptr->maxlen,
-			       sssptr->title,
-			       sssptr->checksum,
-			       sssptr->value,
-			       sssptr->mode,
-			       sssptr->reqinfo,
-			       sssptr->taglist);
-			       	    
-	    StackSwap(&sssptr->sss);
-	    
-	    FreeVec(sssptr->sss.stk_Lower);
-	}
+            (sp >= (IPTR)me->tc_SPUpper) ||
+            (sp - MIN_STACK < (IPTR)me->tc_SPLower)) {
+        sssptr->sss.stk_Lower = AllocVec(MIN_STACK, MEMF_PUBLIC);
+        if (sssptr->sss.stk_Lower) {
+            sssptr->sss.stk_Upper = ((IPTR)sssptr->sss.stk_Lower) + MIN_STACK;
+            sssptr->sss.stk_Pointer = (APTR) sssptr->sss.stk_Upper;
+
+            sssptr->stringbuff  = stringbuff;
+            sssptr->maxlen  	= maxlen;
+            sssptr->title   	= title;
+            sssptr->checksum 	= checksum;
+            sssptr->value   	= value;
+            sssptr->mode    	= mode;
+            sssptr->reqinfo 	= reqinfo;
+            sssptr->taglist 	= taglist;
+
+            StackSwap(&sssptr->sss);
+
+            retval = GetString(sssptr->stringbuff,
+                               sssptr->maxlen,
+                               sssptr->title,
+                               sssptr->checksum,
+                               sssptr->value,
+                               sssptr->mode,
+                               sssptr->reqinfo,
+                               sssptr->taglist);
+
+            StackSwap(&sssptr->sss);
+
+            FreeVec(sssptr->sss.stk_Lower);
+        }
+    } else {
+        retval = GetString(stringbuff, maxlen, title, checksum, value, mode, reqinfo, taglist);
     }
-    else
-    {
-    	retval = GetString(stringbuff, maxlen, title, checksum, value, mode, reqinfo, taglist);
-    }
-    
+
     return retval;
 }
 
@@ -219,53 +212,53 @@ static ULONG CheckStack_GetString(UBYTE *stringbuff,
 
 ULONG SAVEDS ASM librtEZRequestA(REGPARAM(a1, char *, bodyfmt),
                                  REGPARAM(a2, char *, gadfmt),
-			         REGPARAM(a3, struct rtReqInfo *, reqinfo),
-			         REGPARAM(a4, APTR, argarray),
-			         REGPARAM(a0, struct TagItem *, taglist))
+                                 REGPARAM(a3, struct rtReqInfo *, reqinfo),
+                                 REGPARAM(a4, APTR, argarray),
+                                 REGPARAM(a0, struct TagItem *, taglist))
 {
     return GETSTRING(bodyfmt,
-		     (SIPTR)argarray,
-		     gadfmt,
-		     0,
-		     NULL,
-		     IS_EZREQUEST,
-		     reqinfo,
-		     taglist);
+                     (SIPTR)argarray,
+                     gadfmt,
+                     0,
+                     NULL,
+                     IS_EZREQUEST,
+                     reqinfo,
+                     taglist);
 }
 
 /****************************************************************************************/
 
 ULONG SAVEDS ASM librtGetStringA(REGPARAM(a1, UBYTE *, buffer),
-    	    	    	    	 REGPARAM(d0, ULONG, maxchars),
-				 REGPARAM(a2, char *, title),
-				 REGPARAM(a3, struct rtReqInfo *, reqinfo),
-				 REGPARAM(a0, struct TagItem *, taglist))
+                                 REGPARAM(d0, ULONG, maxchars),
+                                 REGPARAM(a2, char *, title),
+                                 REGPARAM(a3, struct rtReqInfo *, reqinfo),
+                                 REGPARAM(a0, struct TagItem *, taglist))
 {
     return GETSTRING(buffer,
-    		     maxchars,
-		     title,
-		     0,
-		     NULL,
-		     ENTER_STRING,
-		     reqinfo,
-		     taglist);
+                     maxchars,
+                     title,
+                     0,
+                     NULL,
+                     ENTER_STRING,
+                     reqinfo,
+                     taglist);
 }
 
 /****************************************************************************************/
 
 ULONG SAVEDS ASM librtGetLongA(REGPARAM(a1, ULONG *, longptr),
-    	    	    	       REGPARAM(a2, char *, title),
-			       REGPARAM(a3, struct rtReqInfo *, reqinfo),
-			       REGPARAM(a0, struct TagItem *, taglist))
+                               REGPARAM(a2, char *, title),
+                               REGPARAM(a3, struct rtReqInfo *, reqinfo),
+                               REGPARAM(a0, struct TagItem *, taglist))
 {
     return GETSTRING(NULL,
-    		     0,
-		     title,
-		     0,
-		     longptr,
-		     ENTER_NUMBER,
-		     reqinfo,
-		     taglist);
+                     0,
+                     title,
+                     0,
+                     longptr,
+                     ENTER_NUMBER,
+                     reqinfo,
+                     taglist);
 }
 
 /****************************************************************************************/
@@ -273,21 +266,21 @@ ULONG SAVEDS ASM librtGetLongA(REGPARAM(a1, ULONG *, longptr),
 /* NOTE: Used by powerpacker.library/ppGetPassword() */
 
 BOOL SAVEDS ASM librtInternalGetPasswordA(REGPARAM(a1, UBYTE *, buffer),
-					  REGPARAM(d1, ULONG, checksum),
-					  REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
-					  REGPARAM(a3, struct rtReqInfo *, reqinfo),
-					  REGPARAM(a0, struct TagItem *, taglist))
+        REGPARAM(d1, ULONG, checksum),
+        REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
+        REGPARAM(a3, struct rtReqInfo *, reqinfo),
+        REGPARAM(a0, struct TagItem *, taglist))
 {
     buffer[0] = '\0';
 
     return GETSTRING(buffer,
-    		     16,
-    		     "Password",
-		     checksum & 0xffff,
-		     (ULONG *) pwcallback,
-		     CHECK_PASSWORD,
-		     reqinfo,
-		     taglist);
+                     16,
+                     "Password",
+                     checksum & 0xffff,
+                     (ULONG *) pwcallback,
+                     CHECK_PASSWORD,
+                     reqinfo,
+                     taglist);
 }
 
 /****************************************************************************************/
@@ -295,18 +288,18 @@ BOOL SAVEDS ASM librtInternalGetPasswordA(REGPARAM(a1, UBYTE *, buffer),
 /* NOTE: Used by powerpacker.library/ppEnterPassword */
 
 BOOL SAVEDS ASM librtInternalEnterPasswordA(REGPARAM(a1, UBYTE *, buffer),
-					    REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
-					    REGPARAM(a3, struct rtReqInfo *, reqinfo),
-					    REGPARAM(a0, struct TagItem *, taglist))
+        REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
+        REGPARAM(a3, struct rtReqInfo *, reqinfo),
+        REGPARAM(a0, struct TagItem *, taglist))
 {
     return GETSTRING(buffer,
-    		     16,
-    		     "Password",
-		     0,
-		     (ULONG *) pwcallback,
-		     ENTER_PASSWORD,
-		     reqinfo,
-		     taglist);
+                     16,
+                     "Password",
+                     0,
+                     (ULONG *) pwcallback,
+                     ENTER_PASSWORD,
+                     reqinfo,
+                     taglist);
 }
 
 /****************************************************************************************/
@@ -327,8 +320,7 @@ extern void GetVScreenSize(void);
 
 /****************************************************************************************/
 
-void *const functable[]=
-{
+void *const functable[]= {
     RTFuncs_Open,
     RTFuncs_Close,
     RTFuncs_Expunge,

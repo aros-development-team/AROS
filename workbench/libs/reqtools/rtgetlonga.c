@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -42,7 +42,7 @@
 	structure is that it is global, where tags have to be specified
 	each function call. See libraries/reqtools.[hi] for a description
 	of the rtReqInfo structure.
-   
+
     INPUTS
 	&longvar - address of long (32 bit!) variable to hold result.
 	title - pointer to null terminated title of requester window.
@@ -109,7 +109,7 @@
 	RTGL_Invisible - (BOOL) [V38] Using this tag you can switch on
 	    invisible typing. Very useful if you need to get something like
 	    a code number from the user. It is strongly advised to use
-	    { RTGL_ShowDefault, FALSE } or the user may get very confused! 
+	    { RTGL_ShowDefault, FALSE } or the user may get very confused!
 	    Default is FALSE.
 
 	RTGL_BackFill - (BOOL) [V38] Backfill requester window with
@@ -171,16 +171,16 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-   
+
     return GetString(NULL,
-    		     0,
-		     title,
-		     0,
-		     longptr,
-		     ENTER_NUMBER,
-		     reqinfo,
-		     taglist);
-		     
+                     0,
+                     title,
+                     0,
+                     longptr,
+                     ENTER_NUMBER,
+                     reqinfo,
+                     taglist);
+
     AROS_LIBFUNC_EXIT
-  
+
 } /* rtGetLongA */

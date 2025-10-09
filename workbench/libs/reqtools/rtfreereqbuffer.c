@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -36,7 +36,7 @@
 	It is safe to call this function for requesters that have no
 	buffer, so you may call this for all requesters to free as much
 	memory as possible.
-   
+
     INPUTS
 	req - pointer to requester.
 
@@ -62,7 +62,7 @@
     AROS_LIBFUNC_INIT
 
     FreeReqBuffer(req); /* in filereqalloc.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtFreeReqBuffer */

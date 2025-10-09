@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     ReqTools initialization code.
 */
@@ -48,9 +48,9 @@
 static int Init(LIBBASETYPEPTR RTBase)
 {
     ReqToolsBase = (struct ReqToolsBase *)RTBase;
-        
+
     D(bug("reqtools.library: Inside libinit func\n"));
-    
+
     return RTFuncs_Init((struct ReqToolsBase *) RTBase, BNULL) != NULL;
 }
 
@@ -59,15 +59,15 @@ static int Init(LIBBASETYPEPTR RTBase)
 static int OpenLib(LIBBASETYPEPTR RTBase)
 {
     D(bug("reqtools.library: Inside libopen func\n"));
- 
+
     /*
       This function is single-threaded by exec by calling Forbid.
       If you break the Forbid() another task may enter this function
       at the same time. Take care.
     */
-    
+
     D(bug("reqtools.library: Inside libopen func\n"));
-    
+
     return RTFuncs_Open((struct ReqToolsBase *) RTBase, 0) != NULL;
 }
 
@@ -76,9 +76,9 @@ static int OpenLib(LIBBASETYPEPTR RTBase)
 static void CloseLib(LIBBASETYPEPTR RTBase)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	If you break the Forbid() another task may enter this function
-	at the same time. Take care.
+    This function is single-threaded by exec by calling Forbid.
+    If you break the Forbid() another task may enter this function
+    at the same time. Take care.
     */
 
     D(bug("reqtools.library: Inside libclose func.\n"));
@@ -91,12 +91,12 @@ static void CloseLib(LIBBASETYPEPTR RTBase)
 static int Expunge(LIBBASETYPEPTR RTBase)
 {
     /*
-	This function is single-threaded by exec by calling Forbid.
-	Never break the Forbid() or strange things might happen.
+    This function is single-threaded by exec by calling Forbid.
+    Never break the Forbid() or strange things might happen.
     */
 
     /* Test for openers. */
- 
+
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
     return RTFuncs_Expunge((struct ReqToolsBase *) RTBase) != BNULL;

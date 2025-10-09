@@ -95,29 +95,28 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 
     label = ng->ng_GadgetText;
     ng->ng_GadgetText = NULL;
-    
-    if ((gad = myCreateGadget (GENERIC_KIND, gad, ng, TAG_END)))
-    {
 
-	/* set gadget attributes */
-	gad->Flags |= GFLG_GADGIMAGE|GFLG_GADGHIMAGE;
-	gad->GadgetType |= GTYP_BOOLGADGET;
-	gad->Activation |= GACT_RELVERIFY;
+    if ((gad = myCreateGadget (GENERIC_KIND, gad, ng, TAG_END))) {
 
-	/* set image data */
-	idata.idata_Gadget = gad;
-	idata.idata_VisualInfo = ng->ng_VisualInfo;
-	idata.idata_Label = label;
-	idata.idata_TextAttr = ng->ng_TextAttr;
-	idata.idata_Underscore = underscorechar;
+        /* set gadget attributes */
+        gad->Flags |= GFLG_GADGIMAGE|GFLG_GADGHIMAGE;
+        gad->GadgetType |= GTYP_BOOLGADGET;
+        gad->Activation |= GACT_RELVERIFY;
 
-	/* create image */
+        /* set image data */
+        idata.idata_Gadget = gad;
+        idata.idata_VisualInfo = ng->ng_VisualInfo;
+        idata.idata_Label = label;
+        idata.idata_TextAttr = ng->ng_TextAttr;
+        idata.idata_Underscore = underscorechar;
 
-	image = NewObject (ButtonImgClass, NULL, IA_Data, (IPTR) &idata, TAG_END);
+        /* create image */
 
-	gad->GadgetRender = gad->SelectRender = image;
+        image = NewObject (ButtonImgClass, NULL, IA_Data, (IPTR) &idata, TAG_END);
+
+        gad->GadgetRender = gad->SelectRender = image;
     }
-    
+
     ng->ng_GadgetText = label;
 
     return (gad);
@@ -129,22 +128,21 @@ static struct Image *IsButtonGad (struct Gadget *gad)
 {
     struct Image *im;
     union {
-	struct {
-	    WORD Width;
-	    WORD Height;
-	} size;
-	ULONG magic;
+        struct {
+            WORD Width;
+            WORD Height;
+        } size;
+        ULONG magic;
     } __tmp;
 
     if (gad->Flags & (GFLG_GADGIMAGE|GFLG_GADGHIMAGE))
-	if ((im = (struct Image *)gad->SelectRender))
-	    if (im->Depth == CUSTOMIMAGEDEPTH)
-	    {
-		__tmp.size.Width = im->Width;
-		__tmp.size.Height = im->Height;
-		if (__tmp.magic == BUTTON_MAGIC_LONGWORD)
-		    if (im->ImageData == (UWORD *)im) return (im);
-	    }
+        if ((im = (struct Image *)gad->SelectRender))
+            if (im->Depth == CUSTOMIMAGEDEPTH) {
+                __tmp.size.Width = im->Width;
+                __tmp.size.Height = im->Height;
+                if (__tmp.magic == BUTTON_MAGIC_LONGWORD)
+                    if (im->ImageData == (UWORD *)im) return (im);
+            }
 
     return (NULL);
 }
@@ -155,8 +153,7 @@ static struct Image *IsButtonGad (struct Gadget *gad)
 * STRGADS *
 **********/
 
-struct CombStringInfo
-{
+struct CombStringInfo {
     ULONG 			magic;
     struct CombStringInfo 	*self;
     struct StringInfo 		strinfo;
@@ -172,9 +169,9 @@ struct CombStringInfo
 
 #ifdef __AROS__
 AROS_UFH3(ULONG, StrEditHookEntry,
-    AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(struct SGWork *, sgw, A2),
-    AROS_UFHA(ULONG *, msg, A1))
+          AROS_UFHA(struct Hook *, hook, A0),
+          AROS_UFHA(struct SGWork *, sgw, A2),
+          AROS_UFHA(ULONG *, msg, A1))
 {
     AROS_USERFUNC_INIT
 #else
@@ -188,65 +185,54 @@ StrEditHookEntry (
     struct StrGadUserData	*userdata;
     WORD	qual, rawcode;
 
-    if( msg[ 0 ] == SGH_KEY )
-    {
-	rawcode = sgw->IEvent->ie_Code;
-	qual = sgw->IEvent->ie_Qualifier;
+    if( msg[ 0 ] == SGH_KEY ) {
+        rawcode = sgw->IEvent->ie_Code;
+        qual = sgw->IEvent->ie_Qualifier;
 
 //kprintf("sgsg: editop = %d code = %x  quali = %x\n", sgw->EditOp, rawcode, qual);
 
-	if( ( sgw->EditOp == EO_INSERTCHAR ) ||
-	    ( sgw->EditOp == EO_REPLACECHAR ) ||
-	    ( sgw->EditOp == EO_SPECIAL ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
-	    ( sgw->EditOp == EO_NOOP ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
-	    ( sgw->EditOp == EO_ENTER ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
-	    ( sgw->EditOp == EO_BADFORMAT ) )
-	{
+        if( ( sgw->EditOp == EO_INSERTCHAR ) ||
+                ( sgw->EditOp == EO_REPLACECHAR ) ||
+                ( sgw->EditOp == EO_SPECIAL ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
+                ( sgw->EditOp == EO_NOOP ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
+                ( sgw->EditOp == EO_ENTER ) ||  /* CHECKME: AROS/AMIGAOS: ADDED THIS LINE */
+                ( sgw->EditOp == EO_BADFORMAT ) ) {
 //kprintf("sgsg2\n");
-	    if( ( qual & IEQUALIFIER_RCOMMAND ) || ( sgw->Code == 27 ) )
-	    {
-		sgw->Actions &= ~( SGA_USE | SGA_BEEP | SGA_REDISPLAY );
-		sgw->IEvent->ie_Qualifier &= ~IEQUALIFIER_RCOMMAND;
+            if( ( qual & IEQUALIFIER_RCOMMAND ) || ( sgw->Code == 27 ) ) {
+                sgw->Actions &= ~( SGA_USE | SGA_BEEP | SGA_REDISPLAY );
+                sgw->IEvent->ie_Qualifier &= ~IEQUALIFIER_RCOMMAND;
 
-		if( !( qual & IEQUALIFIER_REPEAT ) )
-		{
-			sgw->Actions |= SGA_REUSE|SGA_END;
-			sgw->Code = KEYB_SHORTCUT;
-		}
-	    }
-	}
+                if( !( qual & IEQUALIFIER_REPEAT ) ) {
+                    sgw->Actions |= SGA_REUSE|SGA_END;
+                    sgw->Code = KEYB_SHORTCUT;
+                }
+            }
+        }
 
-	if( ( userdata = ( struct StrGadUserData * ) sgw->Gadget->UserData ) )
-	{
-	    if( userdata->flags & USERFLAG_MATCH_FILE )
-	    {
-		if( sgw->Actions & SGA_USE )
-		{
-		    if( Stricmp( sgw->WorkBuffer, sgw->PrevBuffer ) )
-		    {
-			if( !userdata->fakeimsg.Micros )
-			{
-			    userdata->fakeimsg.Micros = 1;
-			    PutMsg( userdata->msgport, ( struct Message * ) &userdata->fakeimsg );
-			}
-		    }
-		}
-	    }
+        if( ( userdata = ( struct StrGadUserData * ) sgw->Gadget->UserData ) ) {
+            if( userdata->flags & USERFLAG_MATCH_FILE ) {
+                if( sgw->Actions & SGA_USE ) {
+                    if( Stricmp( sgw->WorkBuffer, sgw->PrevBuffer ) ) {
+                        if( !userdata->fakeimsg.Micros ) {
+                            userdata->fakeimsg.Micros = 1;
+                            PutMsg( userdata->msgport, ( struct Message * ) &userdata->fakeimsg );
+                        }
+                    }
+                }
+            }
 
-	    if( userdata->flags & USERFLAG_UP_DOWN_ARROW )
-	    {
-		if( ( rawcode == RAWKEY_UP ) || ( rawcode == RAWKEY_DOWN ) )
-		{
-		    sgw->Actions &= ~( SGA_USE | SGA_BEEP | SGA_REDISPLAY );
-		    sgw->Actions |= SGA_REUSE | SGA_END;
-		    sgw->Code = KEYB_SHORTCUT;
-		}
-	    }
-	    
-	} /* if( ( userdata = ( struct StrGadUserData * ) sgw->Gadget->UserData ) ) */
+            if( userdata->flags & USERFLAG_UP_DOWN_ARROW ) {
+                if( ( rawcode == RAWKEY_UP ) || ( rawcode == RAWKEY_DOWN ) ) {
+                    sgw->Actions &= ~( SGA_USE | SGA_BEEP | SGA_REDISPLAY );
+                    sgw->Actions |= SGA_REUSE | SGA_END;
+                    sgw->Code = KEYB_SHORTCUT;
+                }
+            }
 
-	return( TRUE );
-	
+        } /* if( ( userdata = ( struct StrGadUserData * ) sgw->Gadget->UserData ) ) */
+
+        return( TRUE );
+
     } /* if( msg[ 0 ] == SGH_KEY ) */
 
     return( FALSE );
@@ -257,8 +243,7 @@ StrEditHookEntry (
 
 /****************************************************************************************/
 
-struct Hook stredithook =
-{
+struct Hook stredithook = {
     { NULL },
     ( HOOKFUNC ) StrEditHookEntry, NULL, ( APTR ) 0xff525421
 };
@@ -282,12 +267,12 @@ struct Gadget * REGARGS my_CreateIntegerGadget (
     struct Gadget *intgad;
 
     if ((intgad = myCreateGadget (INTEGER_KIND, gad, newgad,
-	    GTIN_MaxChars, maxchars,
-	    GTIN_Number, value, STRINGA_Justification, just,
-	    GTST_EditHook, (IPTR) &stredithook,
-    TAG_END)))
-	    intgad->UserData = NULL;
-	    
+                                  GTIN_MaxChars, maxchars,
+                                  GTIN_Number, value, STRINGA_Justification, just,
+                                  GTST_EditHook, (IPTR) &stredithook,
+                                  TAG_END)))
+        intgad->UserData = NULL;
+
     return (intgad);
 }
 
@@ -302,9 +287,9 @@ struct Gadget * REGARGS my_CreateStringGadget (
     struct Gadget *strgad;
 
     if ((strgad = myCreateGadget (STRING_KIND, gad, newgad, GTST_MaxChars, maxchars,
-				  GTST_String, (IPTR) string, GTST_EditHook, (IPTR) &stredithook, TAG_END)))
-	    strgad->UserData = NULL;
- 
+                                  GTST_String, (IPTR) string, GTST_EditHook, (IPTR) &stredithook, TAG_END)))
+        strgad->UserData = NULL;
+
     return (strgad);
 }
 
@@ -313,7 +298,7 @@ struct Gadget * REGARGS my_CreateStringGadget (
 void REGARGS my_SetStringGadget (struct Window *win, struct Gadget *gad, char *str)
 {
     if (!gad) return;
-    
+
     myGT_SetGadgetAttrs (gad, win, NULL, GTST_String, (IPTR) str, TAG_END);
 }
 
@@ -322,7 +307,7 @@ void REGARGS my_SetStringGadget (struct Window *win, struct Gadget *gad, char *s
 void REGARGS my_SetIntegerGadget (struct Window *win, struct Gadget *gad, long val)
 {
     if (!gad) return;
-    
+
     myGT_SetGadgetAttrs (gad, win, NULL, GTIN_Number, val, TAG_END);
 }
 
@@ -342,9 +327,8 @@ void REGARGS my_FreeGadgets (struct Gadget *glist)
        If locking is needed for other reasons, semaphore would be better
        than Forbid(). -Piru */
 #endif
-    for (gad = glist; gad; gad = gad->NextGadget)
-    {
-	if ((im = IsButtonGad (gad))) DisposeObject (im);
+    for (gad = glist; gad; gad = gad->NextGadget) {
+        if ((im = IsButtonGad (gad))) DisposeObject (im);
     }
     FreeGadgets (glist);
 #ifdef USE_FORBID
@@ -384,11 +368,10 @@ struct Gadget *REGARGS my_GetKeyGadget (UBYTE key, struct Gadget *glist)
     struct Image  *im;
     char 	  underkey;
 
-    for (gad = glist; gad; gad = gad->NextGadget)
-    {
-	if ((im = IsButtonGad (gad)))
-	    if ((underkey = im->PlaneOnOff))
-		if (key == (UBYTE)ToUpper (underkey)) return (gad);
+    for (gad = glist; gad; gad = gad->NextGadget) {
+        if ((im = IsButtonGad (gad)))
+            if ((underkey = im->PlaneOnOff))
+                if (key == (UBYTE)ToUpper (underkey)) return (gad);
     }
     return (NULL);
 }
@@ -396,7 +379,7 @@ struct Gadget *REGARGS my_GetKeyGadget (UBYTE key, struct Gadget *glist)
 /****************************************************************************************/
 
 ULONG REGARGS CheckGadgetKey (int code, int qual, char *key,
-					  struct KeyButtonInfo *info)
+                              struct KeyButtonInfo *info)
 {
     struct InputEvent 	ev;
     struct Gadget 	*gad;
@@ -414,54 +397,42 @@ ULONG REGARGS CheckGadgetKey (int code, int qual, char *key,
     RawKeyConvert (&ev, key, 1, NULL);
     *key = ToUpper (*key);
 
-    if (!(qual & IEQUALIFIER_REPEAT))
-    {
-	if (upkey)
-	{
-	    /* Gadget released ? */
-	    if (code == (info->lastcode | IECODE_UP_PREFIX))
-	    {
-		if (!(info->lastgad->Activation & GACT_TOGGLESELECT))
-		    my_SelectGadget (info->lastgad, info->win);
-		info->lastcode = 0;
-		return ((ULONG)info->lastgad->GadgetID);
-		
-	    }
-	}
-	else
-	{
-	    /* Shift pressed ? */
-	    if ((code & ~1) == SHIFT_KEY)
-	    {
-		if (info->lastcode)
-		{
-		    my_SelectGadget (info->lastgad, info->win);
-		    info->lastcode = 0;
-		}
-	    }
-	    else
-	    {
-		/* No gadget down yet ? */
-		if (!info->lastcode)
-		{
-		    /* Gadget down ? */
-		    if ((gad = my_GetKeyGadget (*key, info->glist)))
-		    {
-			if (!(gad->Flags & GFLG_DISABLED))
-			    my_DownGadget (gad, code, info);
-			    
-		    }
-		    else /* return with keycode in 'key' */
-			return (0);
-			
-		}
-		
-	    }
-	    
-	} /* if (upkey) else ... */
-	
+    if (!(qual & IEQUALIFIER_REPEAT)) {
+        if (upkey) {
+            /* Gadget released ? */
+            if (code == (info->lastcode | IECODE_UP_PREFIX)) {
+                if (!(info->lastgad->Activation & GACT_TOGGLESELECT))
+                    my_SelectGadget (info->lastgad, info->win);
+                info->lastcode = 0;
+                return ((ULONG)info->lastgad->GadgetID);
+
+            }
+        } else {
+            /* Shift pressed ? */
+            if ((code & ~1) == SHIFT_KEY) {
+                if (info->lastcode) {
+                    my_SelectGadget (info->lastgad, info->win);
+                    info->lastcode = 0;
+                }
+            } else {
+                /* No gadget down yet ? */
+                if (!info->lastcode) {
+                    /* Gadget down ? */
+                    if ((gad = my_GetKeyGadget (*key, info->glist))) {
+                        if (!(gad->Flags & GFLG_DISABLED))
+                            my_DownGadget (gad, code, info);
+
+                    } else /* return with keycode in 'key' */
+                        return (0);
+
+                }
+
+            }
+
+        } /* if (upkey) else ... */
+
     } /* if (!(qual & IEQUALIFIER_REPEAT)) */
-    
+
     *key = 0;
     return (0);
 }
@@ -485,18 +456,18 @@ struct Image * REGARGS my_CreateGadgetLabelImage (
     struct InitData idata;
 
     if (!previm) return (NULL);
-    
+
     idata.idata_Gadget = NULL;
     idata.idata_Label = label;
     idata.idata_VisualInfo = ng->ng_VisualInfo;
     idata.idata_TextAttr = ng->ng_TextAttr;
     idata.idata_Underscore = '_';
-    
-    return (previm->NextImage = NewObject (ButtonImgClass, NULL, IA_Data , (IPTR) &idata,
-    								 IA_FGPen, pen   , 
-								 IA_Left , left  ,
-								 IA_Top  , top   ,
-								 TAG_END));
+
+    return (previm->NextImage = NewObject (ButtonImgClass, NULL, IA_Data, (IPTR) &idata,
+                                           IA_FGPen, pen,
+                                           IA_Left, left,
+                                           IA_Top, top,
+                                           TAG_END));
 }
 
 /****************************************************************************************/
@@ -506,11 +477,10 @@ void REGARGS my_FreeLabelImages (struct Image *images)
     struct Image *im;
 
     images = images->NextImage;
-    while (images)
-    {
-	im = images;
-	images = images->NextImage;
-	DisposeObject (im);
+    while (images) {
+        im = images;
+        images = images->NextImage;
+        DisposeObject (im);
     }
 }
 

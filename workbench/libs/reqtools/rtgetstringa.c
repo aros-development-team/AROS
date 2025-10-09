@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -44,7 +44,7 @@
 	structure is that it is global, where tags have to be specified
 	each function call. See libraries/reqtools.[hi] for a description
 	of the rtReqInfo structure.
-   
+
     INPUTS
 	buffer - pointer to buffer to hold characters entered.
 	maxchars - maximum number of characters that fit in buffer
@@ -109,7 +109,7 @@
 	RTGS_Invisible - (BOOL) [V38] Using this tag you can switch on
 	    invisible typing. Very useful if you need to get something like
 	    a password from the user. It is strongly advised to use an
-	    empty initial string or the user may get very confused! 
+	    empty initial string or the user may get very confused!
 	    Default is FALSE.
 
 	RTGS_BackFill - (BOOL) [V38] Backfill requester window with
@@ -175,16 +175,16 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     return GetString(buffer,
-    		     maxchars,
-		     title,
-		     0,
-		     NULL,
-		     ENTER_STRING,
-		     reqinfo,
-		     taglist);
-		     
+                     maxchars,
+                     title,
+                     0,
+                     NULL,
+                     ENTER_STRING,
+                     reqinfo,
+                     taglist);
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtgetstringa */

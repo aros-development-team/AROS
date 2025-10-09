@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -60,7 +60,7 @@
 	{
 	    BOOL accepted = TRUE;
 
-	    // examine fib to decide if you want this file in the requester 
+	    // examine fib to decide if you want this file in the requester
 	    ...
 	    return( accepted );
 	}
@@ -73,7 +73,7 @@
 
 	You can also use a stub written in machine code to call your
 	function. (see 'utility/hooks.h')
-   
+
     INPUTS
 	filereq  - pointer to a struct rtFileRequester allocated with
 	    rtAllocRequestA().
@@ -180,7 +180,7 @@
 	    or an assign ("C:", "FONTS:",...) from the user. The result of
 	    this requester can be found in the filereq->Dir field. The
 	    volume can also be changed with rtChangeReqAttrA() and the
-	    RTFI_Dir tag. 
+	    RTFI_Dir tag.
 
 	    Note that the user may edit the disk/assign, or enter a new
 	    one. Note also that the real device name is returned, not the
@@ -274,7 +274,7 @@
     AROS_LIBFUNC_INIT
 
     return FileRequestA((struct RealFileRequester *)filereq, file, title, taglist); /* in filereq.c */
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* rtFileRequestA */
