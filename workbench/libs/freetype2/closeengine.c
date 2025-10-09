@@ -14,9 +14,9 @@
 #include LC_LIBDEFS_FILE
 
 AROS_LH1(void, CloseEngine,
-	 AROS_LHA(struct GlyphEngine *, ge, A0),
-	 LIBBASETYPEPTR, LIBBASE, 6, FreeType2
-)
+         AROS_LHA(struct GlyphEngine *, ge, A0),
+         LIBBASETYPEPTR, LIBBASE, 6, FreeType2
+        )
 {
     AROS_LIBFUNC_INIT
 
@@ -25,6 +25,6 @@ AROS_LH1(void, CloseEngine,
     FreeGE((FT_GlyphEngine *)ge);
 
     return;
-    
+
     AROS_LIBFUNC_EXIT
 }
