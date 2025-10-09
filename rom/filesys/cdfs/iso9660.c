@@ -92,14 +92,15 @@ static void bindate2stamp(binDate *bin, struct DateStamp *date)
     /* FIXME: Adjust for timezone */
 }
 
-static inline ULONG isoRead32LM(int32LM *lm)
+static inline ULONG isoRead32LM(const void *ptr)
 {
+    int32LM tmp;
+    memcpy(&tmp, ptr, sizeof(tmp));
+
 #if _BYTE_ORDER == _BIG_ENDIAN
-    return lm->MSB ? lm->MSB : (ULONG)AROS_LE2LONG(lm->LSB);
+    return tmp.MSB ? tmp.MSB : (ULONG)AROS_LE2LONG(tmp.LSB);
 #elif _BYTE_ORDER == _LITTLE_ENDIAN
-    return lm->LSB ? lm->LSB : (ULONG)AROS_BE2LONG(lm->MSB);
-#else /* Wacky byte order? Impossible in this day and age. */
-#error PDP11s are no longer supported.
+    return tmp.LSB ? tmp.LSB : (ULONG)AROS_BE2LONG(tmp.MSB);
 #endif
 }
 
