@@ -2,7 +2,7 @@
 #define GRAPHICS_TEXT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Text output
@@ -65,8 +65,8 @@ struct TextFontExtension
 };
 
 /* tfe_Flags0 */
-#define TE0B_NOREMFONT	   0
-#define TE0F_NOREMFONT (1<<0)
+#define TE0B_NOREMFONT	    0
+#define TE0F_NOREMFONT      (1 << TE0B_NOREMFONT)
 
 /* Text Attributes */
 struct TextAttr
@@ -90,42 +90,42 @@ struct TTextAttr
 };
 
 /* ta_Style/tta_Style */
-#define FS_NORMAL	   0
-#define FSB_UNDERLINED	   0
-#define FSF_UNDERLINED (1<<0)
-#define FSB_BOLD	   1
-#define FSF_BOLD       (1<<1)
-#define FSB_ITALIC	   2
-#define FSF_ITALIC     (1<<2)
-#define FSB_EXTENDED	   3
-#define FSF_EXTENDED   (1<<3)
-#define FSB_COLORFONT	   6
-#define FSF_COLORFONT  (1<<6)
-#define FSB_TAGGED	   7
-#define FSF_TAGGED     (1<<7)
+#define FS_NORMAL	        0
+#define FSB_UNDERLINED	    0
+#define FSF_UNDERLINED      (1 << FSB_UNDERLINED)
+#define FSB_BOLD	        1
+#define FSF_BOLD            (1 << FSB_BOLD)
+#define FSB_ITALIC	        2
+#define FSF_ITALIC          (1 << FSB_ITALIC)
+#define FSB_EXTENDED	    3
+#define FSF_EXTENDED        (1 << FSB_EXTENDED)
+#define FSB_COLORFONT	    6
+#define FSF_COLORFONT       (1 << FSB_COLORFONT)
+#define FSB_TAGGED	        7
+#define FSF_TAGGED          (1 << FSB_TAGGED)
 
 /* ta_Flags/tta_Flags */
-#define FPB_ROMFONT	     0
-#define FPF_ROMFONT	 (1<<0)
-#define FPB_DISKFONT	     1
-#define FPF_DISKFONT	 (1<<1)
-#define FPB_REVPATH	     2
-#define FPF_REVPATH	 (1<<2)
-#define FPB_TALLDOT	     3
-#define FPF_TALLDOT	 (1<<3)
-#define FPB_WIDEDOT	     4
-#define FPF_WIDEDOT	 (1<<4)
-#define FPB_PROPORTIONAL     5
-#define FPF_PROPORTIONAL (1<<5)
-#define FPB_DESIGNED	     6
-#define FPF_DESIGNED	 (1<<6)
-#define FPB_REMOVED	     7
-#define FPF_REMOVED	 (1<<7)
+#define FPB_ROMFONT	        0
+#define FPF_ROMFONT	        (1 << FPB_ROMFONT)
+#define FPB_DISKFONT	    1                       /* font loaded from diskfont.library            */
+#define FPF_DISKFONT	    (1 << FPB_DISKFONT)
+#define FPB_REVPATH	        2
+#define FPF_REVPATH	        (1 << FPB_REVPATH)
+#define FPB_TALLDOT	        3                       /* font targets hires non-interlaced displays   */
+#define FPF_TALLDOT	        (1 << FPB_TALLDOT)
+#define FPB_WIDEDOT	        4                       /* font targets lores interlaced displays       */
+#define FPF_WIDEDOT	        (1 << FPB_WIDEDOT)
+#define FPB_PROPORTIONAL    5                       /* variable character width font                */
+#define FPF_PROPORTIONAL    (1 << FPB_PROPORTIONAL)
+#define FPB_DESIGNED	    6
+#define FPF_DESIGNED	    (1 << FPB_DESIGNED)
+#define FPB_REMOVED	        7
+#define FPF_REMOVED	        (1 << FPB_REMOVED)
 
 /* tta_Tags */
-#define TA_DeviceDPI	   (TAG_USER + 1)
+#define TA_DeviceDPI	    (TAG_USER + 1)          /* hi word = XDPI, lo word = YDPI               */
 
-#define MAXFONTMATCHWEIGHT 32767
+#define MAXFONTMATCHWEIGHT  32767
 
 struct ColorFontColors
 {
@@ -152,12 +152,12 @@ struct ColorTextFont
 };
 
 /* ctf_Flags */
-#define CTB_MAPCOLOR	 0
-#define CTF_MAPCOLOR (1<<0)
-#define CT_COLORFONT (1<<0)
-#define CT_GREYFONT  (1<<1)
-#define CT_ANTIALIAS (1<<2)
-#define CT_COLORMASK 0x000F
+#define CTB_MAPCOLOR	    0
+#define CTF_MAPCOLOR        (1 << CTB_MAPCOLOR)
+#define CT_COLORFONT        (1 << 0)
+#define CT_GREYFONT         (1 << 1)
+#define CT_ANTIALIAS        (1 << 2)
+#define CT_COLORMASK        0x000F
 
 struct TextExtent
 {
