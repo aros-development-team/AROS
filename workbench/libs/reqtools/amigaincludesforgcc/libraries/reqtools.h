@@ -65,8 +65,8 @@
 #include <intuition/intuition.h>
 #endif	/* INTUITION_INTUITION_H */
 
-#define	REQTOOLSNAME		 "reqtools.library"
-#define	REQTOOLSVERSION		 38L
+#define	REQTOOLSNAME            "reqtools.library"
+#define	REQTOOLSVERSION         38L
 
 #ifndef __AROS__
 #define IPTR ULONG
@@ -78,13 +78,13 @@
 *                      *
 ***********************/
 
-#define RTPREF_FILEREQ		 0L
-#define RTPREF_FONTREQ		 1L
-#define RTPREF_PALETTEREQ	 2L
-#define RTPREF_SCREENMODEREQ	 3L
-#define RTPREF_VOLUMEREQ	 4L
-#define RTPREF_OTHERREQ		 5L
-#define RTPREF_NR_OF_REQ	 6L
+#define RTPREF_FILEREQ          0L
+#define RTPREF_FONTREQ          1L
+#define RTPREF_PALETTEREQ       2L
+#define RTPREF_SCREENMODEREQ    3L
+#define RTPREF_VOLUMEREQ        4L
+#define RTPREF_OTHERREQ         5L
+#define RTPREF_NR_OF_REQ        6L
 
 struct ReqDefaults
 {
@@ -115,33 +115,33 @@ struct ReqToolsPrefs
 } __packed;
 
 #ifdef __AROS__
-#define RTPREFS_SIZE        (4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
+#define RTPREFS_SIZE            (4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
 #else
-#define RTPREFS_SIZE        (sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)
+#define RTPREFS_SIZE            (sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)
 #endif
 
 /* Flags */
 
-#define RTPRB_DIRSFIRST		0L
-#define RTPRF_DIRSFIRST		(1L << RTPRB_DIRSFIRST)
-#define RTPRB_DIRSMIXED		1L
-#define RTPRF_DIRSMIXED		(1L << RTPRB_DIRSMIXED)
-#define RTPRB_IMMSORT		2L
-#define RTPRF_IMMSORT		(1L << RTPRB_IMMSORT)
-#define RTPRB_NOSCRTOFRONT	3L
-#define RTPRF_NOSCRTOFRONT	(1L << RTPRB_NOSCRTOFRONT)
-#define RTPRB_NOLED		    4L
-#define RTPRF_NOLED		    (1L << RTPRB_NOLED)
-#define RTPRB_DEFAULTFONT	5L
-#define RTPRF_DEFAULTFONT	(1L << RTPRB_DEFAULTFONT)
-#define RTPRB_DOWHEEL		6L
-#define RTPRF_DOWHEEL		(1L << RTPRB_DOWHEEL)
-#define RTPRB_FKEYS		    7L
-#define RTPRF_FKEYS		    (1L << RTPRB_FKEYS)
-#define RTPRB_FANCYWHEEL	8L
-#define RTPRF_FANCYWHEEL    (1L << RTPRB_FANCYWHEEL)
-#define RTPRB_MMBPARENT		9L
-#define RTPRF_MMBPARENT		(1L << RTPRB_MMBPARENT)
+#define RTPRB_DIRSFIRST         0L
+#define RTPRF_DIRSFIRST         (1L << RTPRB_DIRSFIRST)
+#define RTPRB_DIRSMIXED         1L
+#define RTPRF_DIRSMIXED         (1L << RTPRB_DIRSMIXED)
+#define RTPRB_IMMSORT           2L
+#define RTPRF_IMMSORT           (1L << RTPRB_IMMSORT)
+#define RTPRB_NOSCRTOFRONT      3L
+#define RTPRF_NOSCRTOFRONT      (1L << RTPRB_NOSCRTOFRONT)
+#define RTPRB_NOLED             4L
+#define RTPRF_NOLED             (1L << RTPRB_NOLED)
+#define RTPRB_DEFAULTFONT       5L
+#define RTPRF_DEFAULTFONT       (1L << RTPRB_DEFAULTFONT)
+#define RTPRB_DOWHEEL           6L
+#define RTPRF_DOWHEEL           (1L << RTPRB_DOWHEEL)
+#define RTPRB_FKEYS             7L
+#define RTPRF_FKEYS             (1L << RTPRB_FKEYS)
+#define RTPRB_FANCYWHEEL        8L
+#define RTPRF_FANCYWHEEL        (1L << RTPRB_FANCYWHEEL)
+#define RTPRB_MMBPARENT         9L
+#define RTPRF_MMBPARENT         (1L << RTPRB_MMBPARENT)
 
 /***********************
 *                      *
@@ -193,11 +193,11 @@ struct ReqToolsBase
 };
 
 /* types of requesters, for rtAllocRequestA() */
-#define RT_FILEREQ		 0L
-#define RT_REQINFO		 1L
-#define RT_FONTREQ		 2L
+#define RT_FILEREQ              0L
+#define RT_REQINFO              1L
+#define RT_FONTREQ              2L
 /* (V38) */
-#define RT_SCREENMODEREQ	 3L
+#define RT_SCREENMODEREQ        3L
 
 /***********************
 *                      *
