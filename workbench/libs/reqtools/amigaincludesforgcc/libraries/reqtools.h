@@ -2,7 +2,7 @@
 #define LIBRARIES_REQTOOLS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for reqtools.library
@@ -88,56 +88,60 @@
 
 struct ReqDefaults
 {
-    ULONG Size;
-    ULONG ReqPos;
-    UWORD LeftOffset;
-    UWORD TopOffset;
-    UWORD MinEntries;
-    UWORD MaxEntries;
+    ULONG                   Size;
+    ULONG                   ReqPos;
+    UWORD                   LeftOffset;
+    UWORD                   TopOffset;
+    UWORD                   MinEntries;
+    UWORD                   MaxEntries;
 } __packed;
 
 struct ReqToolsPrefs
 {
     /* Size of preferences (_without_ this field, the semaphore and IsLoaded) */
-    ULONG 			PrefsSize;
-    struct SignalSemaphore 	PrefsSemaphore;
+    ULONG                   PrefsSize;
+#if !defined(__AROS__) || !defined(__AROSPLATFORM_SMP__)
+    struct SignalSemaphore  PrefsSemaphore;
+#else
+    ULONG                   PrefsSemaphore[4];
+#endif
 
     /* Start of real preferences (saved/loaded from ReqTools.prefs) */
-    ULONG 			Flags;
-    struct ReqDefaults 		ReqDefaults[RTPREF_NR_OF_REQ];
+    ULONG                   Flags;
+    struct ReqDefaults      ReqDefaults[RTPREF_NR_OF_REQ];
     /* End of real preferences */
 
-    BOOL IsLoaded; /* To avoid multiple loading of preferences */
+    BOOL                    IsLoaded; /* To avoid multiple loading of preferences */
 } __packed;
 
 #ifdef __AROS__
-#define RTPREFS_SIZE		(4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
+#define RTPREFS_SIZE        (4 + (RTPREF_NR_OF_REQ * (4 + 4 + 2 + 2 + 2 + 2)))
 #else
-#define RTPREFS_SIZE 		(sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)
+#define RTPREFS_SIZE        (sizeof (struct ReqToolsPrefs) - sizeof (struct SignalSemaphore) - 4)
 #endif
 
 /* Flags */
 
-#define RTPRB_DIRSFIRST		 0L
-#define RTPRF_DIRSFIRST		 (1L<<RTPRB_DIRSFIRST)
-#define RTPRB_DIRSMIXED		 1L
-#define RTPRF_DIRSMIXED		 (1L<<RTPRB_DIRSMIXED)
-#define RTPRB_IMMSORT		 2L
-#define RTPRF_IMMSORT		 (1L<<RTPRB_IMMSORT)
-#define RTPRB_NOSCRTOFRONT	 3L
-#define RTPRF_NOSCRTOFRONT	 (1L<<RTPRB_NOSCRTOFRONT)
-#define RTPRB_NOLED		 4L
-#define RTPRF_NOLED		 (1L<<RTPRB_NOLED)
-#define RTPRB_DEFAULTFONT	 5L
-#define RTPRF_DEFAULTFONT	 (1L<<RTPRB_DEFAULTFONT)
-#define RTPRB_DOWHEEL		 6L
-#define RTPRF_DOWHEEL		 (1L<<RTPRB_DOWHEEL)
-#define RTPRB_FKEYS		 7L
-#define RTPRF_FKEYS		 (1L<<RTPRB_FKEYS)
-#define RTPRB_FANCYWHEEL	 8L
-#define RTPRF_FANCYWHEEL	 (1L<<RTPRB_FANCYWHEEL)
-#define RTPRB_MMBPARENT		 9L
-#define RTPRF_MMBPARENT		 (1L<<RTPRB_MMBPARENT)
+#define RTPRB_DIRSFIRST		0L
+#define RTPRF_DIRSFIRST		(1L << RTPRB_DIRSFIRST)
+#define RTPRB_DIRSMIXED		1L
+#define RTPRF_DIRSMIXED		(1L << RTPRB_DIRSMIXED)
+#define RTPRB_IMMSORT		2L
+#define RTPRF_IMMSORT		(1L << RTPRB_IMMSORT)
+#define RTPRB_NOSCRTOFRONT	3L
+#define RTPRF_NOSCRTOFRONT	(1L << RTPRB_NOSCRTOFRONT)
+#define RTPRB_NOLED		    4L
+#define RTPRF_NOLED		    (1L << RTPRB_NOLED)
+#define RTPRB_DEFAULTFONT	5L
+#define RTPRF_DEFAULTFONT	(1L << RTPRB_DEFAULTFONT)
+#define RTPRB_DOWHEEL		6L
+#define RTPRF_DOWHEEL		(1L << RTPRB_DOWHEEL)
+#define RTPRB_FKEYS		    7L
+#define RTPRF_FKEYS		    (1L << RTPRB_FKEYS)
+#define RTPRB_FANCYWHEEL	8L
+#define RTPRF_FANCYWHEEL    (1L << RTPRB_FANCYWHEEL)
+#define RTPRB_MMBPARENT		9L
+#define RTPRF_MMBPARENT		(1L << RTPRB_MMBPARENT)
 
 /***********************
 *                      *
@@ -147,10 +151,10 @@ struct ReqToolsPrefs
 
 struct ReqToolsBase
 {
-    struct Library 		LibNode;
-    UBYTE 			RTFlags;
-    UBYTE 			pad[3];
-    BPTR 			SegList;
+    struct Library          LibNode;
+    UBYTE                   RTFlags;
+    UBYTE                   pad[3];
+    BPTR                    SegList;
 
     /* PUBLIC FIELDS */
 
@@ -159,13 +163,13 @@ struct ReqToolsBase
              library names to fix the problem (e.g. rt_IntuitionBase). */
 
     /* The following library bases may be read and used by your program */
-    struct IntuitionBase 	*IntuitionBase;
-    struct GfxBase 		*GfxBase;
-    struct DosLibrary 		*DOSBase;
+    struct IntuitionBase    *IntuitionBase;
+    struct GfxBase          *GfxBase;
+    struct DosLibrary       *DOSBase;
     /* Next two library bases are only (and always) valid on Kickstart 2.0!
        (1.3 version of reqtools also initializes these when run on 2.0) */
-    struct Library 		*GadToolsBase;
-    struct UtilityBase 		*UtilityBase;
+    struct Library          *GadToolsBase;
+    struct UtilityBase      *UtilityBase;
 
     /* PRIVATE FIELDS, THESE WILL CHANGE FROM RELEASE TO RELEASE! */
 
@@ -173,15 +177,19 @@ struct ReqToolsBase
        Kickstart 3.0 offers low memory handlers a release of ReqTools for 3.0
        will not use this field and start using the normal OpenCnt again. */
     /* Obsolete, at least for AROS. Dont know about AmigaOS. -ksvalast. */
-    UWORD 			RealOpenCnt;
+    UWORD                   RealOpenCnt;
 
-    UWORD 			AvailFontsLock;
-    struct AvailFontsHeader 	*AvailFontsHeader;
-    ULONG 			FontsAssignType;
-    BPTR 			FontsAssignLock;
-    struct AssignList 		*FontsAssignList;
-    struct ReqToolsPrefs 	ReqToolsPrefs;
-    UWORD 			prefspad;
+    UWORD                   AvailFontsLock;
+    struct AvailFontsHeader *AvailFontsHeader;
+    ULONG                   FontsAssignType;
+    BPTR                    FontsAssignLock;
+    struct AssignList       *FontsAssignList;
+
+#if defined(__AROSPLATFORM_SMP__)
+    struct SignalSemaphore  PrefsSemaphore;
+#endif
+    struct ReqToolsPrefs    ReqToolsPrefs;
+    UWORD                   prefspad;
 };
 
 /* types of requesters, for rtAllocRequestA() */
