@@ -51,7 +51,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    return RTFuncs_LockPrefs(ReqToolsBase);
+    ObtainSemaphore(&__RTPREFSSEMAPHORE);
+    return &ReqToolsBase->ReqToolsPrefs;
 
     AROS_LIBFUNC_EXIT
 

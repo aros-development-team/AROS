@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -46,6 +46,12 @@ ULONG GetString (UBYTE *stringbuff, SIPTR maxlen, char *title,
 
 LONG PaletteRequestA (char *title, struct rtReqInfo *reqinfo, struct TagItem *taglist);
 
+#endif
+
+#if defined(__AROSPLATFORM_SMP__)
+#define __RTPREFSSEMAPHORE ReqToolsBase->PrefsSemaphore
+#else
+#define __RTPREFSSEMAPHORE ReqToolsBase->ReqToolsPrefs.PrefsSemaphore
 #endif
 
 /****************************************************************************************/

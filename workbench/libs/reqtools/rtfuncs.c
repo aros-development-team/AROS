@@ -322,7 +322,7 @@ SAVEDS ASM int RTFuncs_Null(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase))
     return 0;
 }
 
-
+#if !defined(__AROS__)
 /****************************************************************************************/
 
 SAVEDS ASM struct ReqToolsPrefs *RTFuncs_LockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqToolsBase))
@@ -337,6 +337,7 @@ SAVEDS ASM void RTFuncs_UnlockPrefs(REGPARAM(a6, struct ReqToolsBase *, ReqTools
 {
     ReleaseSemaphore(&__RTPREFSSEMAPHORE);
 }
+#endif
 
 /****************************************************************************************/
 
@@ -349,6 +350,7 @@ SAVEDS ASM IPTR RTFuncs_rtReqHandlerA(REGPARAM(a1, struct rtHandlerInfo *, handl
                        REGPARAM(a0, struct TagItem *,)))handlerinfo->private1)(handlerinfo, sigs, taglist);
 }
 
+#if !defined(__AROS__)
 /****************************************************************************************/
 
 SAVEDS ASM void RTFuncs_rtSetWaitPointer(REGPARAM(a0, struct Window *, window))
@@ -361,6 +363,7 @@ SAVEDS ASM void RTFuncs_rtSetWaitPointer(REGPARAM(a0, struct Window *, window))
 }
 
 /****************************************************************************************/
+#endif
 
 SAVEDS ASM APTR RTFuncs_rtLockWindow(REGPARAM(a0, struct Window *, window))
 {

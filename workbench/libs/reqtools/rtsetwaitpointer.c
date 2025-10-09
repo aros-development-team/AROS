@@ -65,7 +65,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    RTFuncs_rtSetWaitPointer(window);
+    struct TagItem tags[] = { { WA_BusyPointer, TRUE },
+        { TAG_DONE, 0 }
+    };
+
+    SetWindowPointerA(window, (struct TagItem *)&tags);
 
     AROS_LIBFUNC_EXIT
 
