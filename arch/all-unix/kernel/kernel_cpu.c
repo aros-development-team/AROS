@@ -78,21 +78,21 @@ void cpu_Switch(regs_t *regs)
     struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = GET_THIS_TASK;
     struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
-    struct timespec timeSpec;
+    uint64_t seconds, ns;
     u_int64_t diff;
     UQUAD tp1;
 
     D(bug("[KRN] cpu_Switch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
     D(PRINT_SC(regs));
 
-    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &timeSpec);
+    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &seconds, &ns);
 
     SAVEREGS(ctx, regs);
     ctx->errno_backup = *KernelBase->kb_PlatformData->errnoPtr;
     task->tc_SPReg = (APTR)SP(regs);
 
     tp1 = getIETPriv1(task);
-    diff = BILLION * (timeSpec.tv_sec - (tp1 >> 32)) + timeSpec.tv_nsec - (tp1 & 0xFFFFFFFF);
+    diff = BILLION * (seconds - (tp1 >> 32)) + ns - (tp1 & 0xFFFFFFFF);
 
     setIETPrivTime(task, diff, diff / BILLION, diff % BILLION);
 
@@ -103,7 +103,7 @@ void cpu_Dispatch(regs_t *regs)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pd = KernelBase->kb_PlatformData;
-    struct timespec timeSpec;
+    uint64_t seconds, ns;
     struct Task *task;
     sigset_t sigs;
 
@@ -122,8 +122,8 @@ void cpu_Dispatch(regs_t *regs)
 
     D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
 
-    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &timeSpec);
-    setIETPriv1(task, (((UQUAD)timeSpec.tv_sec << 32) | timeSpec.tv_nsec));
+    HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &seconds, &ns);
+    setIETPriv1(task, ((seconds << 32) | ns));
 
     cpu_DispatchContext(task, regs, pd);
 }

@@ -46,9 +46,11 @@ void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
     return ret;
 }
 
-int Host_HostLib_GetTime(int _id, void *_tp)
+int Host_HostLib_GetTime(int _id, uint64_t *seconds, uint64_t *ns)
 {
-    struct timespec *tp = _tp;
+    struct timespec ts;  // HOST timespec, 32 bits or (likely) 64 bits
     clockid_t clk_id = (clockid_t)_id;
-    return clock_gettime(clk_id, tp);
+    clock_gettime(clk_id, &ts);
+    *seconds = ts.tv_sec;
+    *ns = ts.tv_nsec;
 }
