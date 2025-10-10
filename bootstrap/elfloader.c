@@ -329,41 +329,61 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
         case R_ARM_CALL:
         case R_ARM_JUMP24:
         case R_ARM_PC24:
-        case R_ARM_PREL31:
-            {
-                /* On ARM the 24 bit offset is shifted by 2 to the right */
-                signed long offset = (*p & 0x00ffffff) << 2;
-                /* If highest bit set, make offset negative */
-                if (offset & 0x02000000)
-                    offset -= 0x04000000;
-                
-                offset += s - (uint32_t)p;
-                
-                offset >>= 2;
-                *p &= 0xff000000;
-                *p |= offset & 0x00ffffff;
+        {
+            int32_t temp = (int32_t)(rel->addend + s - (uintptr_t)p);
+
+            if (temp & 3) {
+                kprintf("[ELF Loader] CALL/JUMP24/PC24 unaligned\n");
+                return 0;
             }
-            break;
+
+            int32_t imm24 = temp / 4;
+
+            // Range check for signed 24-bit value: [-2^23, 2^23 - 1].
+            if (imm24 < -(1<<23) || imm24 > ((1<<23)-1)) {
+                kprintf("[ELF Loader] CALL/JUMP24/PC24 overflow\n");
+                return 0;
+            }
+
+            // Insert the 24-bit immediate into the instruction.
+            *p = (*p & 0xFF000000u) | ((uint32_t)imm24 & 0x00FFFFFFu);
+        }
+        break;
+
+        case R_ARM_PREL31:
+        {
+            int32_t temp = (int32_t)(rel->addend + s - (uintptr_t)p);
+
+            // Range check for signed 31 bits (since only 31 bits are stored).
+            if (temp < -(1<<30) || temp > ((1<<30)-1)) {
+                kprintf("[ELF Loader] PREL31 overflow\n");
+                return 0;
+            }
+
+            *p = (*p & 0x80000000u) | ((uint32_t)temp & 0x7FFFFFFFu);
+        }
+        break;
 
         case R_ARM_MOVW_ABS_NC:
         case R_ARM_MOVT_ABS:
-            {
-                signed long offset = *p;
-                offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
-                offset = (offset ^ 0x8000) - 0x8000;
-                
-                offset += s;
-                
-                if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
-                    offset >>= 16;
-                    
-                *p &= 0xfff0f000;
-                *p |= ((offset & 0xf000) << 4) | (offset & 0x0fff);
-            }
-            break;
-            
+        {
+            uint32_t temp = (uint32_t)s + (uint32_t)rel->addend;
+
+            // Select the 16-bit half to encode.
+            uint32_t imm16 = (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+                ? ((temp >> 16) & 0xFFFFu)   // upper 16 bits for MOVT
+                : (temp & 0xFFFFu);          // lower 16 bits for MOVW
+
+            // Clear bits 19-16 and 11-0, where the new value will go.
+            *p &= 0xFFF0F000u;
+
+            // In with the new.
+            *p |= ((imm16 & 0xF000u) << 4) | (imm16 & 0x0FFFu);
+        }
+        break;
+
         case R_ARM_ABS32:
-            *p += s;
+            *p = rel->addend + s;
             break;
 
         case R_ARM_NONE:
