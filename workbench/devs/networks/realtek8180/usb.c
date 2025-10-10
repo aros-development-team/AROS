@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ struct BusContext
    APTR binding;
    struct Hook unbind_hook;
    APTR usb_device;
-   struct MsgPort *msg_port;
+   struct MsgPort *control_pipe_port;
    struct MsgPort *tx_pipe_port;
    struct MsgPort *rx_pipe_port;
    APTR control_pipe;
@@ -444,16 +444,23 @@ static struct BusContext *AllocDevice(ULONG index, struct DevBase *base)
 
    if(success)
    {
+      /* Allocate message ports for endpoint pipes */
+
       context->tx_pipe_port = AllocVec(sizeof(struct MsgPort),
          MEMF_PUBLIC | MEMF_CLEAR);
       context->rx_pipe_port = AllocVec(sizeof(struct MsgPort),
          MEMF_PUBLIC | MEMF_CLEAR);
-      if(context->tx_pipe_port == NULL || context->rx_pipe_port == NULL)
+      context->control_pipe_port = AllocVec(sizeof(struct MsgPort),
+         MEMF_PUBLIC | MEMF_CLEAR);
+      if(context->tx_pipe_port == NULL || context->rx_pipe_port == NULL
+         || context->control_pipe_port == NULL)
          success = FALSE;
    }
 
    if(success)
    {
+      /* Initialise message ports */
+
       NewList(&context->tx_pipe_port->mp_MsgList);
       context->tx_pipe_port->mp_Flags = PA_SOFTINT;
       context->tx_pipe_port->mp_SigTask = &context->tx_pipe_int;
@@ -472,13 +479,8 @@ static struct BusContext *AllocDevice(ULONG index, struct DevBase *base)
       context->rx_pipe_int.is_Code = (APTR)RXPipeInt;
       context->rx_pipe_int.is_Data = context;
 
-      context->msg_port = CreateMsgPort();
-      if(context->msg_port == NULL)
-         success = FALSE;
-   }
+      NewList(&context->control_pipe_port->mp_MsgList);
 
-   if(success)
-   {
       /* Prepare unbinding hook */
 
       hook = &context->unbind_hook;
@@ -525,7 +527,8 @@ static struct BusContext *AllocDevice(ULONG index, struct DevBase *base)
    {
       /* Allocate endpoint pipes */
 
-      context->control_pipe = psdAllocPipe(device, context->msg_port, NULL);
+      context->control_pipe =
+         psdAllocPipe(device, context->control_pipe_port, NULL);
       if(context->control_pipe == NULL)
          success = FALSE;
 
@@ -607,7 +610,7 @@ static VOID FreeDevice(struct BusContext *context, struct DevBase *base)
 
       FreeVec(context->tx_pipe_port);
       FreeVec(context->rx_pipe_port);
-      DeleteMsgPort(context->msg_port);
+      FreeVec(context->control_pipe_port);
 
       /* Free context */
 
@@ -771,9 +774,9 @@ static VOID RXPipeInt(REG(a1, struct BusContext *context),
 *	ReadControlPipe
 *
 *   SYNOPSIS
-*	mask = ReadControlPipe(context, )
+*	ioerr = ReadControlPipe(context, offset, data, length)
 *
-*	UBYTE ReadControlPipe(struct BusContext *, );
+*	LONG ReadControlPipe(struct BusContext *, ULONG, APTR, ULONG);
 *
 ****************************************************************************
 *
@@ -786,7 +789,10 @@ static LONG ReadControlPipe(struct BusContext *context, ULONG offset,
 
    /* Patch pipe's message port to signal this task when finished */
 
-   context->msg_port->mp_SigTask = FindTask(NULL);
+   context->control_pipe_port->mp_SigTask = FindTask(NULL);
+   context->control_pipe_port->mp_SigBit = SIGB_SINGLE;
+
+   /* Read data from pipe */
 
    psdPipeSetup(context->control_pipe, URTF_IN | URTF_DEVICE | URTF_VENDOR,
       R8180UCMD_REG, 0xfe00 + (0xffff & offset), offset >> 16);
@@ -803,9 +809,9 @@ static LONG ReadControlPipe(struct BusContext *context, ULONG offset,
 *	WriteControlPipe
 *
 *   SYNOPSIS
-*	mask = WriteControlPipe(context, )
+*	ioerr = WriteControlPipe(context, offset, data, length)
 *
-*	UBYTE WriteControlPipe(struct BusContext *, );
+*	LONG WriteControlPipe(struct BusContext *, ULONG, APTR, ULONG);
 *
 ****************************************************************************
 *
@@ -818,7 +824,10 @@ static LONG WriteControlPipe(struct BusContext *context, ULONG offset,
 
    /* Patch pipe's message port to signal this task when finished */
 
-   context->msg_port->mp_SigTask = FindTask(NULL);
+   context->control_pipe_port->mp_SigTask = FindTask(NULL);
+   context->control_pipe_port->mp_SigBit = SIGB_SINGLE;
+
+   /* Write data to pipe */
 
    psdPipeSetup(context->control_pipe, URTF_OUT | URTF_DEVICE | URTF_VENDOR,
       R8180UCMD_REG, 0xfe00 + (offset & 0xffff), offset >> 16);
@@ -1053,9 +1062,9 @@ static VOID FreeDMAMemHook(struct BusContext *context, APTR mem)
 *	SendFrameHook
 *
 *   SYNOPSIS
-*	mask = SendFrameHook(context, frame, length) ???
+*	SendFrameHook(context, data, length)
 *
-*	UBYTE SendFrameHook(struct BusContext *, UBYTE *, ULONG); ???
+*	VOID SendFrameHook(struct BusContext *, APTR, ULONG);
 *
 ****************************************************************************
 *
@@ -1083,9 +1092,9 @@ static VOID SendFrameHook(struct BusContext *context, APTR data,
 *	ReceiveFrameHook
 *
 *   SYNOPSIS
-*	mask = ReceiveFrameHook(context, buffer, length) ???
+*	ReceiveFrameHook(context, buffer, length)
 *
-*	UBYTE ReceiveFrameHook(struct BusContext *, UBYTE *, ULONG); ???
+*	VOID ReceiveFrameHook(struct BusContext *, APTR, ULONG);
 *
 ****************************************************************************
 *
