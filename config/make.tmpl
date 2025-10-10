@@ -4103,7 +4103,7 @@ ifneq (%(aros_prefix),)
 else
     %(mmake)-aros_prefix     := $(%(mmake)-prefix)
 endif
-
+    %(mmake)-cmake-env += CMAKE_GENERATOR='Unix Makefiles'
 ifeq (%(compiler),host)
     %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)"
     %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)"
