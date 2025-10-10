@@ -332,11 +332,11 @@ void tcp_input(void *arg, ...)
 		if ((optlen == TCPOLEN_TSTAMP_APPA ||
 		     (optlen > TCPOLEN_TSTAMP_APPA &&
 			optp[TCPOLEN_TSTAMP_APPA] == TCPOPT_EOL)) &&
-		     *(u_long *)optp == htonl(TCPOPT_TSTAMP_HDR) &&
+		     *(u_int32_t *)optp == htonl(TCPOPT_TSTAMP_HDR) &&
 		     (ti->ti_flags & TH_SYN) == 0) {
 			to.to_flag |= TOF_TS;
-			to.to_tsval = ntohl(*(u_long *)(optp + 4));
-			to.to_tsecr = ntohl(*(u_long *)(optp + 8));
+			to.to_tsval = ntohl(*(u_int32_t *)(optp + 4));
+			to.to_tsecr = ntohl(*(u_int32_t *)(optp + 8));
 			optp = NULL;	/* we've parsed the options */
 		}
 	}

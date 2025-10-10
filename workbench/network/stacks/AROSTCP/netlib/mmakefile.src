@@ -36,7 +36,6 @@ NETLIBSRC = strerror \
            writev \
            vasprintf \
            asprintf \
-           init_inet_daemon \
            err
 
 SANA2LIBSRC = sana2perror \

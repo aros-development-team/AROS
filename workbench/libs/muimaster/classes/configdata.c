@@ -147,7 +147,6 @@ const static struct spec_cfg DefFramespecValues[] =
     { MUIV_Frame_Slider,      MUICFG_Frame_Slider,      "400000" }, /* slider container         */
     { MUIV_Frame_Knob,        MUICFG_Frame_Knob,        "202211" }, /* slider knob              */
     { MUIV_Frame_Drag,        MUICFG_Frame_Drag,        "300000" }, /* dnd frame                */
-    { MUIV_Frame_Rounded,     MUICFG_Frame_Rounded,     "B0333391"}, /* rounded frame */
     { -1,                     -1,                       NULL     },
 };
 

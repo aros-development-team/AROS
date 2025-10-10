@@ -148,13 +148,13 @@ struct tcpcb {
  * to tcp_dooptions.
  */
 struct tcpopt {
-	u_long	to_flag;		/* which options are present */
+	u_int32_t	to_flag;		/* which options are present */
 #define TOF_TS		0x0001		/* timestamp */
 #define TOF_CC		0x0002		/* CC and CCnew are exclusive */
 #define TOF_CCNEW	0x0004
 #define	TOF_CCECHO	0x0008
-	u_long	to_tsval;
-	u_long	to_tsecr;
+	u_int32_t	to_tsval;
+	u_int32_t	to_tsecr;
 	tcp_cc	to_cc;		/* holds CC or CCnew */
 	tcp_cc	to_ccecho;
 };

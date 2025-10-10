@@ -608,8 +608,7 @@ enum
     /* Values reserved for existing MUI4/MUI5 types*/
     MUIV_Frame_Register = 21,
     /* Values reserved for existing MUI4/MUI5 types*/
-    MUIV_Frame_Rounded = 30,
-    MUIV_Frame_Count
+    MUIV_Frame_Count = 24
 };
 
 // offset 95

@@ -3,6 +3,8 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM- core-linklibs : linklibs-codesets
+
 CODESETSVERSION=6.22
 CODESETSREPOSITORIES = https://github.com/jens-maus/libcodesets/archive/refs/tags
 CODESETSARCHBASE     := $(CODESETSVERSION)
