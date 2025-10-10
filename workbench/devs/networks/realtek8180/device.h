@@ -37,8 +37,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "realtek8180.device"
 #define VERSION 0
-#define REVISION 6
-#define DATE "19.7.2025"
+#define REVISION 7
+#define DATE "10.10.2025"
 
 #define UTILITY_VERSION 36
 #define POSEIDON_VERSION 0
