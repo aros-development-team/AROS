@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2011 Neil Cafferkey
+Copyright (C) 2011-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,16 +28,6 @@ MA 02111-1307, USA.
 BOOL InitialiseRadio(struct DevUnit *unit, struct DevBase *base);
 VOID GetPower(struct DevUnit *unit, struct DevBase *base);
 VOID SetPower(struct DevUnit *unit, struct DevBase *base);
-#if 1
-VOID WriteCCK(struct DevUnit *unit, UWORD index, UWORD value,
-   struct DevBase *base); 
-VOID WriteOFDM(struct DevUnit *unit, UWORD index, UWORD value,
-   struct DevBase *base);
-#endif
-UWORD ReadRadio(struct DevUnit *unit, UWORD index,
-   struct DevBase *base);
-VOID WriteRadio(struct DevUnit *unit, UWORD index, UWORD value,
-   struct DevBase *base);
 
 
 #endif
