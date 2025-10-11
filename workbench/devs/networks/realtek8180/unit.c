@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -462,9 +462,10 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
    /* Tune the radio */
 
+   unit->ByteOut(unit->card, 0x100 + R8180REG_EEPROM, R8180ECMD_CONFIG);
    unit->ByteOut(unit->card, 0x100 + R8180REG_CONFIG3,
       unit->ByteIn(unit->card, 0x100 + R8180REG_CONFIG3)
-      | R8180REG_CONFIG3F_ANAPARAMWRITE | R8180REG_CONFIG3F_GNTSELECT);
+      | R8180REG_CONFIG3F_GNTSELECT | R8180REG_CONFIG3F_ANAPARAMWRITE);
    unit->LELongOut(unit->card, 0x100 + R8180REG_ANAPARAM2, 0x727f3f52);
    unit->LELongOut(unit->card, 0x100 + R8180REG_ANAPARAM1, 0x45090658);
    unit->ByteOut(unit->card, 0x100 + R8180REG_ANAPARAM3, 0);
@@ -472,6 +473,7 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    unit->ByteOut(unit->card, 0x100 + R8180REG_CONFIG3,
       unit->ByteIn(unit->card, 0x100 + R8180REG_CONFIG3)
       & ~R8180REG_CONFIG3F_ANAPARAMWRITE);
+   unit->ByteOut(unit->card, 0x100 + R8180REG_EEPROM, 0);
 
    /* Reset PLL sequence */
 
@@ -511,12 +513,13 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
    if(success)
    {
-      /* Set up rates */
+      /* Set basic rates */
 
       if(unit->generation == RTL8187L_GEN)
          unit->LEWordOut(unit->card, 0x12d, 0xfff);
       else
          unit->LEWordOut(unit->card, 0x134, 0xfff);
+
       unit->LEWordOut(unit->card, 0x12c, 0x1ff);
       unit->ByteOut(unit->card, 0x100 + R8180REG_CWCONF,
          unit->ByteIn(unit->card, 0x100 + R8180REG_CWCONF)
@@ -678,10 +681,6 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
       success = InitialiseRadio(unit, base);
 
-      unit->ByteOut(unit->card, 0x100 + R8180REG_COMMAND,
-         R8180REG_COMMANDF_TXENABLE | R8180REG_COMMANDF_RXENABLE);
-      unit->LEWordOut(unit->card, 0x100 + R8180REG_INTMASK, INT_MASK);
-
       unit->ByteOut(unit->card, 0x41, 0xf4);
       unit->ByteOut(unit->card, 0x40, 0);
       unit->ByteOut(unit->card, 0x42, 0);
@@ -716,6 +715,8 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
    if(success)
    {
+      /* Set miscellaneous TX/RX parameters */
+
       unit->LELongOut(unit->card, 0x100 + R8180REG_RXCONF,
          R8180REG_RXCONFF_EARLYTHRESH
          | R8180REG_RXCONFF_AUTORESETPHY
