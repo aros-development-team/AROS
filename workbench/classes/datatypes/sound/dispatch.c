@@ -1,6 +1,7 @@
 /*
 **
 **	sound.datatype v41
+**	© 2025 The AROS Dev Team.
 **	© 1998-2004 by Stephan Rupprecht
 **	all rights reserved
 **
@@ -4061,14 +4062,14 @@ void PlayerProcAHI( void )
 									TAG_DONE );
 							}
 						}
-						else					
+						else
 						{
 							failed = TRUE;
 							
 							if( ( AHIBase = OpenAHI( &AHImp, &ahir ) ) )
-							{							
+							{
 								stereo = IsStereo( id->SampleType );
-							
+
 								if( ( SoundHook = (struct Hook *) AllocVec( sizeof( *SoundHook ) + sizeof( *sfd ), MEMF_CLEAR|MEMF_PUBLIC ) ) )
 								{
 									ULONG	audioID, mixfreq;
@@ -4133,7 +4134,7 @@ void PlayerProcAHI( void )
 										AHIA_Sounds, ( id->Continuous ) ? 2L : 1L,
 										AHIA_MixFreq, mixfreq,
 										( id->Cycles ? AHIA_SoundFunc : TAG_IGNORE), (IPTR) SoundHook,
-										TAG_DONE ) ) )						
+										TAG_DONE ) ) )
 									{
 										struct AHISampleInfo	sample;
 										ULONG				freq, vol;
@@ -4163,7 +4164,7 @@ void PlayerProcAHI( void )
 											buffersize = UMult( buffersize, bytesPerPoint[ id->SampleType ] );
 											
 											if( ( buffer = AllocVec( buffersize*2, MEMF_PUBLIC|MEMF_CLEAR ) ) )
-											{												
+											{
 												sample.ahisi_Address	= buffer;
 												
 												if( ! AHI_LoadSound( 0, AHIST_DYNAMICSAMPLE, &sample, actrl ) )
@@ -4235,13 +4236,14 @@ void PlayerProcAHI( void )
 								}
 							}
 							
-							if( failed )
-							{
-								AHI_FreeAudio( actrl );
-								FreeVec( SoundHook );
-								FreeVec( buffer );
-								buffer = NULL;
-								CloseAHI( AHImp, ahir );
+							if (failed) {
+								if (AHIBase) {
+									AHI_FreeAudio( actrl );
+									FreeVec( SoundHook );
+									FreeVec( buffer );
+									buffer = NULL;
+									CloseAHI( AHImp, ahir );
+								}
 								AHIBase = NULL;
 								SetTDMode( cb, id, BUT_STOP );
 							}
