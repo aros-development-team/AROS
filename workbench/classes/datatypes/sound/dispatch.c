@@ -78,27 +78,27 @@
 #endif
 
 #if !defined(__MAXON__) && !defined(__AROS__)
-#define IntuitionBase	cb->cb_IntuitionBase
-#define GfxBase		cb->cb_GfxBase
-#define DOSBase		cb->cb_DOSBase
-#define SysBase		cb->cb_SysBase
-#define DataTypesBase	cb->cb_DataTypesBase
-#define UtilityBase		cb->cb_UtilityBase
-#define IFFParseBase	cb->cb_IFFParseBase
+#define IntuitionBase       cb->cb_IntuitionBase
+#define GfxBase             cb->cb_GfxBase
+#define DOSBase             cb->cb_DOSBase
+#define SysBase             cb->cb_SysBase
+#define DataTypesBase       cb->cb_DataTypesBase
+#define UtilityBase         cb->cb_UtilityBase
+#define IFFParseBase        cb->cb_IFFParseBase
 #elif !defined(__AROS__)
-#define REG(r,v)	register __## r v
+#define REG(r,v)            register __## r v
 #define __regargs
 #endif
 
-#define G(x)				((struct Gadget *)(x))
-#define MAX( a, b )			((a) > (b) ? (a) : (b))
-#define EXTG( x )			((struct ExtGadget *)(x))
+#define G(x)                ((struct Gadget *)(x))
+#define MAX( a, b )         ((a) > (b) ? (a) : (b))
+#define EXTG( x )           ((struct ExtGadget *)(x))
 
 #ifndef ID_CHAN
-#define ID_CHAN		MAKE_ID( 'C', 'H', 'A', 'N' )
+#define ID_CHAN             MAKE_ID( 'C', 'H', 'A', 'N' )
 #endif
 #ifndef ID_16SV
-#define ID_16SV		MAKE_ID( '1', '6', 'S', 'V' )
+#define ID_16SV             MAKE_ID( '1', '6', 'S', 'V' )
 #endif
 
 #ifdef __AROS__
@@ -108,53 +108,52 @@ ADD2LIBS("gadgets/tapedeck.gadget", -40, struct Library *, TapeDeckBase)
 #endif
 
 #ifndef ID_PAN
-#define ID_PAN		MAKE_ID( 'P', 'A', 'N', ' ' )
+#define ID_PAN              MAKE_ID( 'P', 'A', 'N', ' ' )
 #endif
 #ifndef ID_ANNO
-#define ID_ANNO		MAKE_ID( 'A', 'N', 'N', 'O' )
+#define ID_ANNO             MAKE_ID( 'A', 'N', 'N', 'O' )
 #endif
 #ifndef ID_AUTH
-#define ID_AUTH		MAKE_ID( 'A', 'U', 'T', 'H' )
+#define ID_AUTH             MAKE_ID( 'A', 'U', 'T', 'H' )
 #endif
 #ifndef ID_FVER
-#define ID_FVER		MAKE_ID( 'F', 'V', 'E', 'R' )
+#define ID_FVER             MAKE_ID( 'F', 'V', 'E', 'R' )
 #endif
 #ifndef ID_Copyright
-#define ID_Copyright	MAKE_ID( '(', 'c', ')', ' ' )
+#define ID_Copyright        MAKE_ID( '(', 'c', ')', ' ' )
 #endif
 
-#define TEMPLATE	"VOLUME/N/K,BUFFERSIZE/N/K,AHI/S,AHIMODEID/K,FAM=FORCEAHIMODE/S,AMF=AHIMIXFREQ/N/K,AIFF16/S,C=COMPRESS/S," \
-				"W=WIDTH/N/K,H=HEIGHT/N/K,BG=BACKGROUNDCOLOR/K,WF=WAVEFORMCOLOR/K,CP=CONTROLPANEL/T,NOGTSLIDER/S"
+#define TEMPLATE            "VOLUME/N/K,BUFFERSIZE/N/K,AHI/S,AHIMODEID/K,FAM=FORCEAHIMODE/S,AMF=AHIMIXFREQ/N/K,AIFF16/S,C=COMPRESS/S," \
+                            "W=WIDTH/N/K,H=HEIGHT/N/K,BG=BACKGROUNDCOLOR/K,WF=WAVEFORMCOLOR/K,CP=CONTROLPANEL/T,NOGTSLIDER/S"
 
 // MaxonC likes to use 16bit math even when 020+ optimiziation is turned on (BUG!)
 #ifdef __MAXON__
-#define UMult( x, y )	UMult32( (x), (y) )
-#define SMult( x, y )	SMult32( (x), (y) )
-#define UDiv( x, y )		UDivMod32( (x), (y) )
-#define SDiv( x, y )		SDivMod32( (x), (y) )
+#define UMult( x, y )       UMult32( (x), (y) )
+#define SMult( x, y )       SMult32( (x), (y) )
+#define UDiv( x, y )        UDivMod32( (x), (y) )
+#define SDiv( x, y )        SDivMod32( (x), (y) )
 #else
-#define UMult( x, y )	( (x) * (y) )
-#define SMult( x, y )	( (x) * (y) )
-#define UDiv( x, y )		( (x) / (y) )
-#define SDiv( x, y )		( (x) / (y) )
+#define UMult( x, y )       ( (x) * (y) )
+#define SMult( x, y )       ( (x) * (y) )
+#define UDiv( x, y )        ( (x) / (y) )
+#define SDiv( x, y )        ( (x) / (y) )
 #endif
 
 #ifdef __AROS__
-#define Period2Freq( x ) 	( UDiv( UMult(709379, 5L ), (x) ) )
+#define Period2Freq( x )    ( UDiv( UMult(709379, 5L ), (x) ) )
 #else
-#define Period2Freq( x ) 	( UDiv( UMult( ((struct ExecBase *)SysBase)->ex_EClockFrequency, 5L ), (x) ) )
+#define Period2Freq( x )    ( UDiv( UMult( ((struct ExecBase *)SysBase)->ex_EClockFrequency, 5L ), (x) ) )
 #endif
 
-#define Freq2Period( x )	Period2Freq( x )
-#define IsStereo( x )		( (BOOL) ( ( x ) & 1 ) )
+#define Freq2Period( x )    Period2Freq( x )
+#define IsStereo( x )       ( (BOOL) ( ( x ) & 1 ) )
 
 #ifndef SHRT_MAX
-#define SHRT_MAX	0x7fff
+#define SHRT_MAX            0x7fff
 #endif
 
-//#define DEBUG
 #if DEBUG
-#define dbug( x )	x
+#define dbug( x )           x
 #else
 #define dbug( x )
 #endif
@@ -202,18 +201,18 @@ BYTE fibtab[] = {-34,-21,-13,-8,-5,-3,-2,-1,0,1,2,3,5,8,13,21};
 UBYTE bytesPerPoint[] = { 1, 2, 2, 4 };
 
 LONG ifferr2doserr[] = {
-    0L,						// EOF
-    0L,                         			// EOC
-    DTERROR_INVALID_DATA,	/* No lexical scope.                             */
-    ERROR_NO_FREE_STORE,	/* Insufficient memory.                          */
-    ERROR_SEEK_ERROR,		/* Stream read error.                            */
-    ERROR_SEEK_ERROR,		/* Stream write error.                           */
-    ERROR_SEEK_ERROR,		/* Stream seek error.                            */
+    0L,                         // EOF
+    0L,                         // EOC
+    DTERROR_INVALID_DATA,       /* No lexical scope.                             */
+    ERROR_NO_FREE_STORE,        /* Insufficient memory.                          */
+    ERROR_SEEK_ERROR,           /* Stream read error.                            */
+    ERROR_SEEK_ERROR,           /* Stream write error.                           */
+    ERROR_SEEK_ERROR,           /* Stream seek error.                            */
     DTERROR_INVALID_DATA,       /* File is corrupt.                              */
     DTERROR_INVALID_DATA,       /* IFF syntax error.                             */
-    ERROR_OBJECT_WRONG_TYPE,/* Not an IFF file.                              */
-    ERROR_REQUIRED_ARG_MISSING,/* Required call-back hook missing.              */
-    0xDEADDEAD                  	/* Return to client. You should never see this ! */
+    ERROR_OBJECT_WRONG_TYPE,    /* Not an IFF file.                              */
+    ERROR_REQUIRED_ARG_MISSING, /* Required call-back hook missing.              */
+    0xDEADDEAD                  /* Return to client. You should never see this ! */
 };
 
 struct DTMethod	TriggerMethods[] = {
@@ -251,7 +250,7 @@ ULONG Methods[] = {
 };
 
 #if defined(__MAXON__)
-struct Library			*AHIBase = NULL;
+struct Library          *AHIBase = NULL;
 #endif
 
 /****************************************************************************/
@@ -269,7 +268,7 @@ void kprintf( STRPTR FormatStr, ... )
 
     do RawPutChar( *p );
     while( *p++ );
-#define SysBase		cb->cb_SysBase
+#define SysBase cb->cb_SysBase
 }
 #endif
 #endif
@@ -417,7 +416,7 @@ LONG SendObjectMsg( struct InstanceData *id, ULONG Command, APTR Data )
 
     return( (LONG) (msg != NULL) );
 #if !defined(__MAXON__) && !defined(__AROS__)
-#define SysBase	cb->cb_SysBase
+#define SysBase cb->cb_SysBase
 #endif
 }
 
@@ -755,11 +754,11 @@ LONG __regargs hex2long(STRPTR s)
 void CreateTapeDeck( struct ClassBase *cb, struct InstanceData *id, Object *o )
 {
 #if defined(__MAXON__) || defined(__AROS__)
-    extern struct Library	*TapeDeckBase;
+    extern struct Library   *TapeDeckBase;
 #else
-#define TapeDeckBase		cb->cb_TapeDeckBase
+#define TapeDeckBase    cb->cb_TapeDeckBase
 #endif
-    ULONG				cp;
+    ULONG                   cp;
 
     dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
@@ -2181,6 +2180,8 @@ IPTR __regargs Sound_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt )
         SendObjectMsg( id, cmd, data );
     }
 
+    dbug( kprintf( "[Sound.dt] %s: done\n", __func__ ); )
+
     return 0L;
 }
 
@@ -3572,9 +3573,10 @@ void PlayerProcAHI( void )
                             FreeVec( buffer );
                             buffer = NULL;
                         }
-                        FreeVec( SoundHook );
                         CloseAHI( AHImp, ahir );
                         AHIBase = NULL;
+                        FreeVec( SoundHook );
+                        SoundHook = NULL;
                     }
 
                     SetTDMode( cb, id, BUT_STOP );
@@ -3772,7 +3774,7 @@ void PlayerProcAHI( void )
                                         failed = (BOOL) AHI_LoadSound( 0, AHIST_SAMPLE, &sample, actrl );
                                     }
 
-                                    D(bug( "[Sound.dt:AHI] %s: loading sample\n", __func__); )
+                                    D(bug( "[Sound.dt:AHI] %s: sample loaded\n", __func__); )
 
                                     if( ! failed ) {
                                         failed = TRUE;
@@ -3821,10 +3823,11 @@ void PlayerProcAHI( void )
                                     FreeVec( buffer );
                                     buffer = NULL;
                                 }
-                                FreeVec( SoundHook );
                                 D(bug( "[Sound.dt:AHI] %s: closing AHI\n", __func__ ); )
                                 CloseAHI( AHImp, ahir );
                                 AHIBase = NULL;
+                                FreeVec( SoundHook );
+                                SoundHook = NULL;
                             }
                             SetTDMode( cb, id, BUT_STOP );
                         } else {
@@ -3863,9 +3866,10 @@ void PlayerProcAHI( void )
                         FreeVec( buffer );
                         buffer = NULL;
                     }
-                    FreeVec( SoundHook );
                     CloseAHI( AHImp, ahir );
                     AHIBase = NULL;
+                    FreeVec( SoundHook );
+                    SoundHook = NULL;
                 }
             }
             if( ! id->Continuous )
