@@ -252,7 +252,7 @@ ULONG Methods[] = {
 	~0
 };
 
-#if defined(__MAXON__) || defined(__AROS__)
+#if defined(__MAXON__)
 struct Library			*AHIBase = NULL;
 #endif
 
@@ -3059,6 +3059,7 @@ enum {
 
 void __regargs SetTDMode( struct ClassBase *cb, struct InstanceData *id, ULONG mode )
 {
+	D(bug( "[Sound.dt] %s()\n", __func__ ); )
 	if( id->ControlPanel )
 	{
 		IPTR	oldmode = mode;
@@ -3075,6 +3076,7 @@ void __regargs SetTDMode( struct ClassBase *cb, struct InstanceData *id, ULONG m
 		
 		ReleaseSemaphore( &id->Lock );
 	}
+	D(bug( "[Sound.dt] %s: done\n", __func__ ); )
 }
 
 /****************************************************************************/
@@ -3094,12 +3096,12 @@ void PlayerProc( void )
 					loops = 0, audiompmsk = 0, mpmsk;
 	BOOL			releaseAudio = FALSE, restart = 0, paused = FALSE;
 	BYTE			*sample = NULL, *buffer[4] = {};
-	
+
 	mp = &pr->pr_MsgPort;
 	mpmsk = 1L << mp->mp_SigBit;
-	
+
 	dbug( kprintf("child process launched\n"); )
-	
+
 	for( ;; )
 	{
 		struct ObjectMsg	*msg;
@@ -3754,7 +3756,9 @@ struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **io
 #endif
 	struct MsgPort	*mp;
 	struct AHIRequest	*ahir;
-	
+
+	*iop = NULL;
+
 	mp = CreateMsgPort();
 	if( ( ahir = (struct AHIRequest *) CreateIORequest( mp, sizeof( struct AHIRequest ) ) ) )
 	{
@@ -3786,7 +3790,6 @@ struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **io
 
 /****************************************************************************/
 
-
 struct SoundFuncData {
 	UWORD		CyclesLeft;
 	UWORD		Cycles;
@@ -3797,12 +3800,14 @@ struct SoundFuncData {
 	BOOL		Restart;
 	BOOL		*Repeat;
 	struct Task	*SigTask;
-#if !defined(__MAXON__) && !defined(__AROS__)
-#undef SysBase
+#if !defined(__MAXON__)
 	struct Library	*AHIBase;
+# define AHIBase	sfd->AHIBase
+# if !defined(__AROS__)
+#  undef SysBase
 	struct Library	*SysBase;
-#define AHIBase	sfd->AHIBase
-#define SysBase	sfd->SysBase
+#  define SysBase	sfd->SysBase
+# endif
 #endif
 };
 
@@ -3813,9 +3818,9 @@ void __interrupt SoundFunc( REG(a0, struct Hook *h),  REG(a2, struct AHIAudioCtr
 #endif
 {
 	struct SoundFuncData	*sfd = (struct SoundFuncData *) h->h_Data;
-	
-	dbug( kprintf( "SoundFunc\n" ); )
-	
+
+	dbug( kprintf( "[Sound.dt] %s(0x%p)\n", __func__, sfd ); )
+
 	if( ! ( *sfd->Repeat ) )
 	{
 		if( ! ( sfd->CyclesLeft-- ) )
@@ -3844,18 +3849,22 @@ void __interrupt SoundFunc( REG(a0, struct Hook *h),  REG(a2, struct AHIAudioCtr
 	}
 }
 
-#if !defined(__MAXON__) && !defined(__AROS__)
-#undef AHIBase
-#undef SysBase
-#define SysBase	cb->cb_SysBase
+#if !defined(__MAXON__)
+# undef AHIBase
+# if !defined(__AROS__)
+#  undef SysBase
+#  define SysBase	cb->cb_SysBase
+# endif
 #endif
 
 /****************************************************************************/
 
 void PlayerProcAHI( void )
 {
-#if !defined(__MAXON__) && !defined(__AROS__)
+#if !defined(__MAXON__)
+# if !defined(__AROS__)
 	struct Library			*SysBase = (*(struct Library **)4L);
+# endif
 	struct Library			*AHIBase = NULL;
 #endif
 	struct Process		*pr = (struct Process *) FindTask( NULL );
@@ -3891,7 +3900,7 @@ void PlayerProcAHI( void )
 				{
 					case COMMAND_NEXT_BUFFER:
 					{
-						dbug( kprintf( "child: COMMAND_NEXT_BUFFER\n"); )
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_NEXT_BUFFER\n", __func__); )
 
 						ObtainSemaphoreShared( &id->Lock );
 
@@ -3926,7 +3935,7 @@ void PlayerProcAHI( void )
 							{
 								sfd->Restart = FALSE;
 								
-								dbug( kprintf( "restart playback\n" ); )
+								D(bug( "[Sound.dt:AHI] %s: restart playback\n", __func__ ); )
 								
 								for( i = 0; i < numCh; i++ )
 								{
@@ -3940,7 +3949,7 @@ void PlayerProcAHI( void )
 					break;
 					
 					case COMMAND_INIT:
-						dbug( kprintf("child: COMMAND_INIT\n"); )
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_INIT\n", __func__); )
 					
 						id = (struct InstanceData *) msg->Data;
 						cb = id->ClassBase;
@@ -3957,22 +3966,23 @@ void PlayerProcAHI( void )
 					case COMMAND_EXIT:
 					case COMMAND_STOP:
 					{
-						dbug( kprintf("child: COMMAND_STOP/EXIT\n"); )
-						
-						if( AHIBase )
-						{
-							AHI_FreeAudio( actrl );
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_STOP/EXIT\n", __func__); )
+
+						if( AHIBase ) {
+							if (actrl) {
+								AHI_FreeAudio( actrl );
+								actrl = NULL;
+								FreeVec( buffer );
+								buffer = NULL;
+							}
 							FreeVec( SoundHook );
-							FreeVec( buffer );
-							buffer = NULL;
 							CloseAHI( AHImp, ahir );
 							AHIBase = NULL;
-							
-							SetTDMode( cb, id, BUT_STOP );
 						}
-							
-						if( msg->Command == COMMAND_EXIT )
-						{
+
+						SetTDMode( cb, id, BUT_STOP );
+
+						if( msg->Command == COMMAND_EXIT ) {
 							Forbid();
 							ReplyMsg( &msg->Message );
 							DeleteMsgPort( mp );
@@ -3982,7 +3992,7 @@ void PlayerProcAHI( void )
 					break;
 					
 					case COMMAND_PERVOL:
-						dbug( kprintf("child: COMMAND_PERVOL\n"); )
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_PERVOL\n", __func__); )
 					
 						if( AHIBase )
 						{
@@ -4007,7 +4017,7 @@ void PlayerProcAHI( void )
 					
 					case COMMAND_PAUSE:
 					{
-						if( AHIBase )
+						if (( AHIBase ) && (actrl))
 						{
 							if( ! paused )
 							{
@@ -4025,11 +4035,11 @@ void PlayerProcAHI( void )
 					break;
 					
 					case COMMAND_PLAY:
-						dbug( kprintf("child: COMMAND_PLAY\n"); )
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_PLAY\n", __func__); )
 					
 						// ObtainSemaphoreShared( &id->Lock );
 					
-						if( AHIBase )
+						if (( AHIBase ) && (actrl))
 						{
 							if( paused )
 							{
@@ -4065,22 +4075,27 @@ void PlayerProcAHI( void )
 						else
 						{
 							failed = TRUE;
-							
-							if( ( AHIBase = OpenAHI( &AHImp, &ahir ) ) )
-							{
+
+							if (!AHIBase)
+								AHIBase = OpenAHI( &AHImp, &ahir );
+							if (AHIBase) {
+								D(bug( "[Sound.dt:AHI] %s: ahi is open\n", __func__); )
+
 								stereo = IsStereo( id->SampleType );
 
-								if( ( SoundHook = (struct Hook *) AllocVec( sizeof( *SoundHook ) + sizeof( *sfd ), MEMF_CLEAR|MEMF_PUBLIC ) ) )
+								if (!SoundHook)
+									SoundHook = (struct Hook *) AllocVec( sizeof( *SoundHook ) + sizeof( *sfd ), MEMF_CLEAR|MEMF_PUBLIC ) ;
+								if (SoundHook)
 								{
 									ULONG	audioID, mixfreq;
-								#ifndef __AROS__
-									extern void HookEntry( void );
-								#endif
-																
+
 									numCh = stereo ? 2 : 1;
 
 									sfd = (struct SoundFuncData *) (SoundHook+1);
 #if defined(__MAXON__) || defined(__AROS__)								
+#ifndef __AROS__
+extern void HookEntry( void );
+#endif
 									SoundHook->h_Entry = (HOOKFUNC) HookEntry;
 									SoundHook->h_SubEntry = (HOOKFUNC) SoundFunc;
 #else
@@ -4092,17 +4107,20 @@ void PlayerProcAHI( void )
 									sfd->Channels = numCh;
 									sfd->Cycles = 
 									sfd->CyclesLeft = UMult( id->Cycles, numCh );
-//									sfd->Sound = 0;
 									sfd->Continuous = id->Continuous;
 									sfd->Valid[ 0 ] = TRUE;
 									sfd->Repeat = (BOOL *) &id->Repeat;
+
+//									sfd->Sound = 0;
 //									sfd->Valid[ 1 ] = FALSE;
 //									sfd->Restart = FALSE;
-#if !defined(__MAXON__) && !defined(__AROS__)
+#if !defined(__MAXON__)
 									sfd->AHIBase = AHIBase;
+# if !defined(__AROS__)
 									sfd->SysBase = SysBase;
+# endif
 #endif
-									dbug( kprintf("child: ahi is open\n"); )
+									D(bug( "[Sound.dt:AHI] %s: soundhook intitialized\n", __func__); )
 									
 									ObtainSemaphoreShared( &cb->cb_LibLock );
 									
@@ -4122,12 +4140,12 @@ void PlayerProcAHI( void )
 											TAG_DONE ) ) == AHI_INVALID_ID )
 										{
 											audioID = AHI_DEFAULT_ID;
-											dbug( kprintf("child: bestaid failed\n"); )
+											D(bug( "[Sound.dt:AHI] %s: best-id failed\n", __func__); )
 										}
 									}
-									
+
 									ReleaseSemaphore( &cb->cb_LibLock );
-									
+
 									if( ( actrl = AHI_AllocAudio(
 										AHIA_AudioID, audioID,
 										AHIA_Channels, numCh,
@@ -4138,59 +4156,58 @@ void PlayerProcAHI( void )
 									{
 										struct AHISampleInfo	sample;
 										ULONG				freq, vol;
-										
+
 										freq = id->Frequency;
 										vol = ( id->Volume << 10 );
-			
-										dbug( kprintf("child: alloc audio okay\n"); )
-										
+
+										D(bug( "[Sound.dt:AHI] %s: alloc audio okay\n", __func__); )
+
 										sample.ahisi_Type = sdtst2ahist[ id->SampleType ];
 										sample.ahisi_Length = id->SampleLength;
-										
+
 										if( id->Continuous )
 										{
 											ULONG playsamples;
-										
+
 											AHI_GetAudioAttrs( AHI_INVALID_ID, actrl, AHIDB_MaxPlaySamples,(IPTR) &playsamples, TAG_DONE );
 											AHI_ControlAudio( actrl, AHIC_MixFreq_Query, (IPTR) &mixfreq, TAG_DONE );
-										
+
 											buffersize = UDiv( UMult( playsamples,  id->Frequency ), mixfreq );
-										
+
 											if( buffersize < id->SampleLength )
 											{
 												buffersize = id->SampleLength;
 											}
-											
+
 											buffersize = UMult( buffersize, bytesPerPoint[ id->SampleType ] );
-											
+
 											if( ( buffer = AllocVec( buffersize*2, MEMF_PUBLIC|MEMF_CLEAR ) ) )
 											{
 												sample.ahisi_Address	= buffer;
-												
+
 												if( ! AHI_LoadSound( 0, AHIST_DYNAMICSAMPLE, &sample, actrl ) )
 												{
 													sample.ahisi_Address	= &buffer[ buffersize ];
-													
+
 													failed = (BOOL) AHI_LoadSound( 1, AHIST_DYNAMICSAMPLE, &sample, actrl );
 												}
-												
+
 												CopyMem( id->Sample, buffer, UMult( id->SampleLength, bytesPerPoint[ id->SampleType ] ) );
 											}
-											
 										}
 										else
 										{
 											sample.ahisi_Address	= id->Sample;
-											
+
 											failed = (BOOL) AHI_LoadSound( 0, AHIST_SAMPLE, &sample, actrl );
 										}
-										
-										dbug( kprintf("child: loading sample\n"); )
-										
+
+										D(bug( "[Sound.dt:AHI] %s: loading sample\n", __func__); )
+
 										if( ! failed )
 										{
 											failed = TRUE;
-											
+
 											if( ! AHI_ControlAudio( actrl,
 												AHIC_Play, TRUE,
 												TAG_DONE ) )
@@ -4210,41 +4227,44 @@ void PlayerProcAHI( void )
 													AHIP_Sound, 0,
 													AHIP_EndChannel, 0,
 													TAG_DONE );
-												
+
 												failed = FALSE;
-												
-												dbug( kprintf( "child: playback started, freq: %ld\n", freq ); )
+
+												D(bug( "[Sound.dt:AHI] %s: playback started, freq: %ld\n", __func__, freq ); )
 											}
 											else
 											{
-												dbug( kprintf( "child: CtrlAudio failed\n" ); )
+												D(bug( "[Sound.dt:AHI] %s: CtrlAudio failed\n", __func__ ); )
 											}
 										}
 										else
 										{
-											dbug( kprintf( "child: loadsample failed\n" ); )
+											D(bug( "[Sound.dt:AHI] %s: loadsample failed\n", __func__ ); )
 										}
 									}
 									else
 									{
-										dbug( kprintf( "child: AllocAudio failed\n"); )
+										D(bug( "[Sound.dt:AHI] %s: AllocAudio failed\n", __func__); )
 									}
 								}
 								else
 								{
-									dbug( kprintf( "child: No free store\n" ); )
+									D(bug( "[Sound.dt:AHI] %s: No free store\n", __func__ ); )
 								}
 							}
 							
 							if (failed) {
 								if (AHIBase) {
-									AHI_FreeAudio( actrl );
+									if (actrl) {
+										AHI_FreeAudio( actrl );
+										actrl = NULL;
+										FreeVec( buffer );
+										buffer = NULL;
+									}
 									FreeVec( SoundHook );
-									FreeVec( buffer );
-									buffer = NULL;
 									CloseAHI( AHImp, ahir );
+									AHIBase = NULL;
 								}
-								AHIBase = NULL;
 								SetTDMode( cb, id, BUT_STOP );
 							}
 							else
@@ -4252,7 +4272,7 @@ void PlayerProcAHI( void )
 								SetTDMode( cb, id, BUT_PLAY );
 							}
 						}
-						
+						D(bug( "[Sound.dt:AHI] %s: COMMAND_PLAY finished\n", __func__ ); )
 						// ReleaseSemaphore( &id->Lock );
 					break;
 				}
@@ -4270,7 +4290,7 @@ void PlayerProcAHI( void )
 		
 		if( rcv & SIGBREAKF_CTRL_C )
 		{
-			dbug( kprintf( "child: end of sample\n" ); )
+			D(bug( "[Sound.dt:AHI] %s: end of sample\n", __func__ ); )
 			
 			if( AHIBase )
 			{
@@ -4283,18 +4303,21 @@ void PlayerProcAHI( void )
 			
 				if( ! id->Continuous )
 				{
-					AHI_FreeAudio( actrl );
+					if (actrl) {
+						AHI_FreeAudio( actrl );
+						actrl = NULL;
+						FreeVec( buffer );
+						buffer = NULL;
+					}
 					FreeVec( SoundHook );
-					FreeVec( buffer );
-					buffer = NULL;
 					CloseAHI( AHImp, ahir );
 					AHIBase = NULL;
-					SetTDMode( cb, id, BUT_STOP );
 				}
 			}
+			if( ! id->Continuous )
+				SetTDMode( cb, id, BUT_STOP );
 		}
 	}
-	
 #if !defined(__MAXON__) && !defined(__AROS__)
 #define SysBase	cb->cb_SysBase
 #endif
@@ -4346,8 +4369,8 @@ IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
 
     if( id->ColorMap )
     {
-	ReleasePen( id->ColorMap, id->BackgroundPen );
-	ReleasePen( id->ColorMap, id->WaveformPen );
+		ReleasePen( id->ColorMap, id->BackgroundPen );
+		ReleasePen( id->ColorMap, id->WaveformPen );
     }
     
     return (IPTR) DoSuperMethodA(cl, o, msg);
