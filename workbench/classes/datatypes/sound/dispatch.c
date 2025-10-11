@@ -72,8 +72,8 @@
 
 #include "aiff.h"
 
-#ifdef __AROS__
 #define DEBUG 0
+#ifdef __AROS__
 #include <aros/debug.h>
 #endif
 
@@ -758,11 +758,11 @@ void CreateTapeDeck( struct ClassBase *cb, struct InstanceData *id, Object *o )
 #else
 #define TapeDeckBase    cb->cb_TapeDeckBase
 #endif
-    ULONG                   cp;
+    IPTR                   cp;
 
     dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
-    GetDTAttrs( o, DTA_ControlPanel, (IPTR) &cp, TAG_DONE );
+    GetDTAttrs( o, DTA_ControlPanel, (IPTR)&cp, TAG_DONE );
 
     if( TapeDeckBase && cp ) {
         STATIC struct TagItem	prop2vol[] = { {PGA_Top, SDTA_Volume}, {TAG_END} };
@@ -830,6 +830,7 @@ IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
         struct InstanceData	*id = INST_DATA( cl, o );
         struct ObjectMsg		*msg;
         struct MsgPort		*replyport;
+        BOOL running = FALSE;
 
         id->Volume = cb->cb_Volume;
         id->Frequency = Period2Freq( 394 );
@@ -852,44 +853,49 @@ IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
 
         /* create process */
         replyport = CreateMsgPort();
+        if (replyport) {
+            dbug( kprintf( "replyport @ 0x%p\n",  replyport); )
+            if( ( msg = (struct ObjectMsg *) CreateIORequest( replyport, sizeof( *msg ) ) ) ) {
+                ObtainSemaphoreShared( &cb->cb_LibLock );
 
-        if( ( msg = (struct ObjectMsg *) CreateIORequest( replyport, sizeof( *msg ) ) ) ) {
-            ObtainSemaphoreShared( &cb->cb_LibLock );
+                if( ( id->PlayerProc = CreateNewProcTags(
+                                           NP_Name, (IPTR) "sound.datatype",
+                                           NP_Entry, (IPTR) (cb->cb_AHI) ? PlayerProcAHI : PlayerProc,
+                                           NP_Priority, 19L,
+                                           TAG_DONE ) ) ) {
+                    msg->Data = (APTR) id;
+                    msg->Command = COMMAND_INIT;
+                    PutMsg( &id->PlayerProc->pr_MsgPort, &msg->Message );
+                    WaitPort( replyport );
+                    GetMsg( replyport );
 
-            if( ( id->PlayerProc = CreateNewProcTags(
-                                       NP_Name, (IPTR) "sound.datatype",
-                                       NP_Entry, (IPTR) (cb->cb_AHI) ? (IPTR) PlayerProcAHI : (IPTR) PlayerProc,
-                                       NP_Priority, 19L,
-                                       TAG_DONE ) ) ) {
-                msg->Data = (APTR) id;
-                msg->Command = COMMAND_INIT;
-                PutMsg( &id->PlayerProc->pr_MsgPort, &msg->Message );
-                WaitPort( replyport );
-                GetMsg( replyport );
-
-                if( msg->Data ) {
-                    id->PlayerPort = (struct MsgPort *) msg->Data;
-                } else {
-                    id->PlayerProc = NULL;
+                    if( msg->Data ) {
+                        id->PlayerPort = (struct MsgPort *) msg->Data;
+                    } else {
+                        id->PlayerProc = NULL;
+                    }
                 }
-            }
 
-            ReleaseSemaphore( &cb->cb_LibLock );
+                ReleaseSemaphore( &cb->cb_LibLock );
 
-            DeleteIORequest( (struct IORequest *) msg );
+                DeleteIORequest( (struct IORequest *) msg );
 
-            if( id->PlayerProc ) {
-                parsetaglist( cl, o, ops, NULL );
-                CreateTapeDeck( cb, id, o );
+                if( id->PlayerProc ) {
+                    parsetaglist( cl, o, ops, NULL );
+                    CreateTapeDeck( cb, id, o );
+                    running = TRUE;
+                }
             } else {
-                CoerceMethod( cl, o, OM_DISPOSE );
-                o = NULL;
+                dbug( kprintf( "No memory for ioreq\n" ); )
             }
+            DeleteMsgPort( replyport );
         } else {
-            dbug( kprintf( "No memory for ioreq or msgport\n" ); )
+            dbug( kprintf( "failed to allocate MsgPort\n" ); )
         }
-
-        DeleteMsgPort( replyport );
+        if (!running) {
+            CoerceMethod( cl, o, OM_DISPOSE );
+            o = NULL;
+        }
     } else {
         dbug( kprintf( "OM_NEW failed\n" ); )
     }
