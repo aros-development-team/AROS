@@ -15,7 +15,7 @@ AROS_LH0(struct IClass *, ObtainEngine,
     AROS_LIBFUNC_INIT
 
     return (((struct ClassBase *)LIBBASE)->cb_Class);
-        
+
     AROS_LIBFUNC_EXIT
 }
 
