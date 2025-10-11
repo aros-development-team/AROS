@@ -832,6 +832,10 @@ IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
         struct MsgPort		*replyport;
         BOOL running = FALSE;
 
+        dbug(
+            kprintf( "[Sound.dt] %s: id @ 0x%p\n", __func__, id);
+        )
+
         id->Volume = cb->cb_Volume;
         id->Frequency = Period2Freq( 394 );
         id->Cycles = 1;
@@ -916,7 +920,7 @@ void __regargs SetVSlider( struct ClassBase *cb, struct InstanceData *id )
         IPTR	top;
         GetAttr( PGA_Top, (Object *)id->VolumeSlider, &top );
         if( top != id->Volume ) { // avoid loops
-            SetGadgetAttrs( id->VolumeSlider, id->Window, id->Requester,
+            SetGadgetAttrs( id->VolumeSlider, id->ICtx.Window, id->ICtx.Requester,
                             PGA_Top, id->Volume, TAG_DONE );
         }
     }
@@ -1369,13 +1373,11 @@ IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops )
     dbug( kprintf("  parsing list\n"); )
     parsetaglist( cl, o, ops, (ULONG *)&cnt );
     dbug( kprintf("  refreshing\n"); )
-    if( retval || ( ( id->ForceRefresh ) && ( id->Gadget ) ) ) {
+    if( retval || ( ( id->ForceRefresh ) && ( id->ICtx.Gadget ) ) ) {
         struct RastPort	*rp;
-
         if( ( rp = ObtainGIRPort( ops->ops_GInfo ) ) ) {
             DoMethod( o, GM_RENDER, (IPTR) ops->ops_GInfo, (IPTR) rp, GREDRAW_REDRAW );
             ReleaseGIRPort( rp );
-
             id->ForceRefresh = FALSE;
         }
     }
@@ -1524,22 +1526,21 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
     }
 #endif
 
+    dbug( kprintf( "[Sound.dt] %s: Obtaining object domain..\n", __func__ ); )
+
     if( GetDTAttrs( o,
                     DTA_ObjName, (IPTR) &name,
                     DTA_Domain, (IPTR) &domain,
                     TAG_DONE ) == 2L ) {
-        ULONG	vunit = si->si_VertUnit,
-                hunit = si->si_HorizUnit,
-                totalw = si->si_TotHoriz,
-                totalh = si->si_TotVert;
+        dbug( kprintf( "[Sound.dt] %s: vunit/hunit = %d, %d\n", __func__, si->si_VertUnit, si->si_HorizUnit ); )
 
-        si->si_VertUnit = vunit;
-        si->si_VisVert = domain->Height / vunit;
-        si->si_TotVert = totalh;
+        si->si_VisVert = domain->Height;
+        if (si->si_VertUnit > 0)
+            si->si_VisVert /= si->si_VertUnit;
 
-        si->si_HorizUnit = hunit;
-        si->si_VisHoriz = domain->Width / hunit;
-        si->si_TotHoriz = totalw;
+        si->si_VisHoriz = domain->Width;
+        if (si->si_HorizUnit > 0)
+            si->si_VisHoriz /= si->si_HorizUnit;
 
         if( ! name ) {
             if( ! GetDTAttrs( o, DTA_Name, (IPTR) &name, TAG_DONE ) || ! name ) {
@@ -1549,22 +1550,38 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
             }
         }
 
+        dbug( kprintf( "[Sound.dt] %s: name = '%s'\n", __func__, name ); )
+
         if( gpl->gpl_Initial ) {
+            struct InstanceContext iCtx =
+            {
+                .Window = gi->gi_Window,
+                .Requester = gi->gi_Requester,
+                .Gadget = (struct Gadget *) o
+            };
+            dbug(
+                kprintf( "[Sound.dt] %s: gpl_Initial\n", __func__);
+            )
+
             ObtainSemaphore( &id->Lock );
-            id->Window = gi->gi_Window;
-            id->Requester = gi->gi_Requester;
-            id->Gadget = (struct Gadget *) o;
+            CopyMem(&iCtx, &id->ICtx, sizeof(iCtx));
             ReleaseSemaphore( &id->Lock );
+
             /* obtain pens */
             id->ColorMap = gi->gi_Screen->ViewPort.ColorMap;
 
-            ObtainSemaphoreShared( &cb->cb_LibLock );
-            id->BackgroundPen = ObtainBestPenA( id->ColorMap,
-                                                cb->cb_BgCol[0], cb->cb_BgCol[1], cb->cb_BgCol[2], NULL );
-            id->WaveformPen = ObtainBestPenA( id->ColorMap,
-                                              cb->cb_WfCol[0], cb->cb_WfCol[1], cb->cb_WfCol[2], NULL );
-            ReleaseSemaphore( &cb->cb_LibLock );
+            dbug( kprintf( "[Sound.dt] %s: cmap @ 0x%p\n", __func__, id->ColorMap); )
+            if (id->ColorMap) {
+                ObtainSemaphoreShared( &cb->cb_LibLock );
+                id->BackgroundPen = ObtainBestPenA( id->ColorMap,
+                                                    cb->cb_BgCol[0], cb->cb_BgCol[1], cb->cb_BgCol[2], NULL );
+                id->WaveformPen = ObtainBestPenA( id->ColorMap,
+                                                  cb->cb_WfCol[0], cb->cb_WfCol[1], cb->cb_WfCol[2], NULL );
+                ReleaseSemaphore( &cb->cb_LibLock );
+            }
         }
+
+        dbug( kprintf( "[Sound.dt] %s: initialized\n", __func__); )
 
         if( id->TapeDeckGadget ) {
             struct gpLayout	member_gpl;
@@ -1575,6 +1592,8 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
                 {GA_Height, id->TapeDeckHeight},
                 {TAG_DONE }
             };
+
+            dbug( kprintf( "[Sound.dt] %s: preparing tapedeck @ 0x%p\n", __func__, id->TapeDeckGadget); )
 
             if( ( gpl->gpl_Initial ) && ( G( o )->GadgetType & GTYP_REQGADGET ) ) {
                 id->TapeDeckGadget->GadgetType |= GTYP_REQGADGET;
@@ -1607,15 +1626,17 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
             ReleaseSemaphore( &cb->cb_LibLock );
         }
 
+        dbug( kprintf( "[Sound.dt] %s: updating gadget attributes...\n", __func__); )
+
 #ifndef __AROS__
         NotifyAttrs( o, gi, 0L,
                      GA_ID, G(o)->GadgetID,
                      DTA_VisibleVert, si->si_VisVert,
-                     DTA_TotalVert, totalh,
-                     DTA_VertUnit, vunit,
+                     DTA_TotalVert, si->si_TotVert,
+                     DTA_VertUnit, si->si_VertUnit,
                      DTA_VisibleHoriz, si->si_VisHoriz,
-                     DTA_TotalHoriz, totalw,
-                     DTA_HorizUnit, hunit,
+                     DTA_TotalHoriz, si->si_TotHoriz,
+                     DTA_HorizUnit, si->si_HorizUnit,
                      DTA_Title, (IPTR) name,
                      DTA_Busy, FALSE,
                      DTA_Sync, TRUE,
@@ -1625,11 +1646,11 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
             struct TagItem tags[] = {
                 {GA_ID, G(o)->GadgetID},
                 {DTA_VisibleVert, si->si_VisVert},
-                {DTA_TotalVert, totalh},
-                {DTA_VertUnit, vunit},
+                {DTA_TotalVert, si->si_TotVert},
+                {DTA_VertUnit, si->si_VertUnit},
                 {DTA_VisibleHoriz, si->si_VisHoriz},
-                {DTA_TotalHoriz, totalw},
-                {DTA_HorizUnit, hunit},
+                {DTA_TotalHoriz, si->si_TotHoriz},
+                {DTA_HorizUnit, si->si_HorizUnit},
                 {DTA_Title, (IPTR) name},
                 {DTA_Busy, FALSE},
                 {DTA_Sync, TRUE},
@@ -1638,7 +1659,6 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
 
             DoMethod(o, OM_NOTIFY, (IPTR)tags, (IPTR)gi, 0);
         }
-
 #endif
     }
 
@@ -2783,7 +2803,7 @@ void __regargs SetTDMode( struct ClassBase *cb, struct InstanceData *id, ULONG m
         /* avoid deadlocks */
         GetAttr( TDECK_Mode, (Object *)id->TapeDeckGadget, &oldmode );
         if( oldmode != mode ) {
-            SetGadgetAttrs( id->TapeDeckGadget, id->Window, id->Requester,
+            SetGadgetAttrs( id->TapeDeckGadget, id->ICtx.Window, id->ICtx.Requester,
                             TDECK_Mode, mode, TAG_DONE );
         }
 
@@ -3929,13 +3949,19 @@ IPTR __regargs Sound_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg )
 IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
+    struct InstanceContext iCtx =
+    {
+        .Window = NULL,
+        .Requester = NULL,
+        .Gadget = NULL
+    };
+            
     /* prevent other tasks (cursor- or playertask) from reading this */
 
     dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphore( &id->Lock );
-    id->Window = (struct Window *)NULL;
-    id->Requester = NULL;
+    CopyMem(&iCtx, &id->ICtx, sizeof(iCtx));
     ReleaseSemaphore( &id->Lock );
 
     if( id->ColorMap ) {

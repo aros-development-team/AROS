@@ -47,6 +47,13 @@ struct ClassBase
 
 /****************************************************************************/
 
+struct InstanceContext
+{
+	struct Window	*Window;
+	struct Requester	*Requester;
+	struct Gadget		*Gadget;
+};
+
 struct InstanceData
 {
 	struct ClassBase	*ClassBase;
@@ -98,9 +105,8 @@ struct InstanceData
 
 	struct Screen		*Screen;	// DTM_DRAW
 	struct DrawInfo	*DrawInfo;	// DTM_DRAW
-	struct Window	*Window;
-	struct Requester	*Requester;
-	struct Gadget		*Gadget;
+	
+	struct InstanceContext ICtx;
 
 	struct ColorMap	*ColorMap;		// Needed to release allocated pens, GInfo of DTM_REMOVEDTOBJECT == NULL	
 	WORD			WaveformPen;	// Drawing pens
