@@ -403,6 +403,8 @@ LONG SendObjectMsg( struct InstanceData *id, ULONG Command, APTR Data )
 #endif
     struct ObjectMsg	*msg;
 
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     if( ( msg = AllocVec( sizeof( *msg ), MEMF_PUBLIC|MEMF_CLEAR ) ) ) {
         msg->Command = Command;
         msg->Data = Data;
@@ -411,7 +413,9 @@ LONG SendObjectMsg( struct InstanceData *id, ULONG Command, APTR Data )
         dbug( kprintf( "No memory to send objmsg\n" ); )
     }
 
-    return( (LONG) (msg!=NULL) );
+    dbug( kprintf( "[Sound.dt] %s: done\n", __func__ ); )
+
+    return( (LONG) (msg != NULL) );
 #if !defined(__MAXON__) && !defined(__AROS__)
 #define SysBase	cb->cb_SysBase
 #endif
@@ -428,7 +432,7 @@ LONG __regargs Sound_CLEARSELECTED( Class *cl, Object *o, struct dtGeneral *dtg 
 
     (void)cb;
 
-    dbug( kprintf( "DTM_CLEARSELECTED\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     /* 'magic' nothing selected value */
     id->MinX =
@@ -461,7 +465,7 @@ LONG __regargs Sound_SELECT( Class *cl, Object *o, struct dtSelect *dts )
 
     (void)cb;
 
-    dbug( kprintf("DTM_SELECT\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     if( minX > maxX ) {
         maxX = minX;
@@ -553,12 +557,12 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
     TEXT			buf[256];
     LONG			len;
 
-    dbug( kprintf( "GetSoundDTPrefs\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphore( &cb->cb_LibLock );
 
     /* set default settings */
-    dbug( kprintf( "Setting default values\n" ); )
+    dbug( kprintf( "[Sound.dt] %s: Setting default values\n", __func__ ); )
 #ifdef __AROS__
     cb->cb_AHI = TRUE;
 #else
@@ -590,7 +594,7 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
     if( ( len = GetVar( "datatypes/sounddt41.prefs", buf, sizeof( buf )-1, GVF_GLOBAL_ONLY ) ) > 0 ) {
         struct RDArgs	*rdargs;
 
-        dbug( kprintf( "Prefs: %s\n", buf ); )
+        dbug( kprintf( "[Sound.dt] %s: Prefs = '%s'\n", __func__, buf ); )
 
         if( ( rdargs = AllocDosObject( DOS_RDARGS, NULL ) ) ) {
             struct RDArgs	*freeargs;
@@ -616,46 +620,46 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
             rdargs->RDA_Flags = RDAF_NOPROMPT;
 
             if( ( freeargs = ReadArgs( TEMPLATE, (IPTR *)&args, rdargs ) ) ) {
-                dbug( kprintf( "List of options:\n" ); )
+                dbug( kprintf( "[Sound.dt] %s: List of options:\n", __func__ ); )
 
                 if( args.ahi ) {
                     cb->cb_AHI = TRUE;
-                    dbug( kprintf( "AHI\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   AHI\n", __func__ ); )
                 }
 
                 if( args.ahimodeid ) {
                     cb->cb_AHIModeID = hex2long( args.ahimodeid );
-                    dbug( kprintf( "AHIMODEID = %lx\n", cb->cb_AHIModeID ); )
+                    dbug( kprintf( "[Sound.dt] %s:   AHIMODEID = %lx\n", __func__, cb->cb_AHIModeID ); )
                 }
 
                 if( args.forceahimode ) {
                     cb->cb_ForceAHIMode = TRUE;
-                    dbug( kprintf( "FAM\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   FAM\n", __func__ ); )
                 }
 
                 if( args.mixfreq ) {
                     cb->cb_AHIMixFrequency = *args.mixfreq;
-                    dbug( kprintf( "AHIMIXFREQ = %ld\n", *args.mixfreq ); )
+                    dbug( kprintf( "[Sound.dt] %s:   AHIMIXFREQ = %ld\n", __func__, *args.mixfreq ); )
                 }
 
                 if( args.aiff ) {
                     cb->cb_AIFF = TRUE;
-                    dbug( kprintf( "AIFF16\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   AIFF16\n", __func__ ); )
                 }
 
                 if( args.compress ) {
                     cb->cb_Compress = TRUE;
-                    dbug( kprintf( "COMPRESS\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   COMPRESS\n", __func__ ); )
                 }
 
                 if( args.width ) {
                     cb->cb_NomWidth = *args.width;
-                    dbug( kprintf( "WIDTH = %ld\n", *args.width ); )
+                    dbug( kprintf( "[Sound.dt] %s:   WIDTH = %ld\n", __func__, *args.width ); )
                 }
 
                 if( args.height ) {
                     cb->cb_NomHeight = *args.height;
-                    dbug( kprintf( "HEIGHT = %ld\n", *args.height ); )
+                    dbug( kprintf( "[Sound.dt] %s:   HEIGHT = %ld\n", __func__, *args.height ); )
                 }
 
                 if( args.wf ) {
@@ -664,7 +668,7 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
                     cb->cb_WfCol[0] = (num>>16L)<<24;
                     cb->cb_WfCol[1] = (num>>8L)<<24L;
                     cb->cb_WfCol[2] = (num)<<24L;
-                    dbug( kprintf( "WFCOL = %08lx\n", num ); )
+                    dbug( kprintf( "[Sound.dt] %s:   WFCOL = %08lx\n", __func__, num ); )
                 }
 
                 if( args.bg ) {
@@ -673,7 +677,7 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
                     cb->cb_BgCol[0] = (num>>16L)<<24L;
                     cb->cb_BgCol[1] = (num>>8L)<<24L;
                     cb->cb_BgCol[2] = (num)<<24L;
-                    dbug( kprintf( "BGCOL = %08lx\n", num ); )
+                    dbug( kprintf( "[Sound.dt] %s:   BGCOL = %08lx\n", __func__, num ); )
                 }
 
                 if( args.buffersize ) {
@@ -683,25 +687,25 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
                         cb->cb_BufferSize = bufsize;
                     }
 
-                    dbug( kprintf( "BUFFERSZ = %ld\n", bufsize ); )
+                    dbug( kprintf( "[Sound.dt] %s:   BUFFERSZ = %ld\n", __func__, bufsize ); )
                 }
 
                 if( args.cp ) {
                     cb->cb_ControlPanel = TRUE;
-                    dbug( kprintf( "CP=YES\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   CP=YES\n", __func__ ); )
                 } else {
                     cb->cb_ControlPanel = FALSE;
-                    dbug( kprintf( "CP=NO\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   CP=NO\n", __func__ ); )
                 }
 
                 if( args.volume ) {
                     cb->cb_Volume = *args.volume;
-                    dbug( kprintf( "VOLUME = %ld\n", *args.volume ); )
+                    dbug( kprintf( "[Sound.dt] %s:   VOLUME = %ld\n", __func__, *args.volume ); )
                 }
 
                 if( args.nogtsl ) {
                     cb->cb_NoGTSlider = TRUE;
-                    dbug( kprintf( "NOGTSLIDER\n" ); )
+                    dbug( kprintf( "[Sound.dt] %s:   NOGTSLIDER\n", __func__ ); )
                 }
 
                 FreeArgs( freeargs );
@@ -709,17 +713,17 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
                 struct EasyStruct	es = { sizeof(struct EasyStruct), 0, "sound.datatype", buf, "Okay" };
 
                 if( Fault( IoErr(), "Error in prefs file", buf, sizeof( buf ) ) ) {
-                    dbug( kprintf( "Prefserr: %s\n", buf ); )
+                    dbug( kprintf( "[Sound.dt] %s: Prefserr: %s\n", __func__, buf ); )
                     EasyRequestArgs( NULL, &es, NULL, NULL );
                 }
             }
 
             FreeDosObject( DOS_RDARGS, rdargs );
         } else {
-            dbug( kprintf( "AllocDosObject() failed\n" ); )
+            dbug( kprintf( "[Sound.dt] %s: AllocDosObject() failed\n", __func__ ); )
         }
     } else {
-        dbug( kprintf( "GetVar failed\n" ); )
+        dbug( kprintf( "[Sound.dt] %s: GetVar failed\n", __func__ ); )
     }
 
     ReleaseSemaphore( &cb->cb_LibLock );
@@ -757,7 +761,7 @@ void CreateTapeDeck( struct ClassBase *cb, struct InstanceData *id, Object *o )
 #endif
     ULONG				cp;
 
-    dbug( kprintf( "Creating panel\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     GetDTAttrs( o, DTA_ControlPanel, (IPTR) &cp, TAG_DONE );
 
@@ -789,7 +793,7 @@ void CreateTapeDeck( struct ClassBase *cb, struct InstanceData *id, Object *o )
 
         ReleaseSemaphore( &cb->cb_LibLock );
     } else {
-        dbug( kprintf( "Failed or turned off\n" ); )
+        dbug( kprintf( "[Sound.dt] %s: %s\n", __func__, (!TapeDeckBase) ? "Failed" : "Not enabled"); )
     }
 
     id->ControlPanel = FALSE;
@@ -802,7 +806,7 @@ IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
     struct ClassBase	*cb = (struct ClassBase *)cl->cl_UserData;
     struct TagItem	ti[6];
 
-    dbug( kprintf( "OM_NEW\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     GetSoundDTPrefs( cb );
 
@@ -923,7 +927,7 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
     BOOL			pervol = FALSE, newSample = FALSE;
     LONG			cnt = 0L;
 
-    dbug( kprintf( "%s\n", __func__ ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphore( &id->Lock );
 
@@ -933,14 +937,14 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
         switch( ti->ti_Tag ) {
         case SDTA_VoiceHeader:
             id->VoiceHeader = *(struct VoiceHeader *) data;
-            dbug( kprintf("  SDTA_VoiceHeader\n"); )
+            dbug( kprintf("  SDTA_VoiceHeader = 0x%p\n", data); )
             cnt++;
             break;
 
         case SDTA_Sample:
             id->Sample = (BYTE *) data;
             id->LeftSample = FALSE;
-            dbug( kprintf("  SDTA_Sample = %08lx\n", data); )
+            dbug( kprintf("  SDTA_Sample = 0x%p\n", data); )
             newSample = TRUE;
             cnt++;
             break;
@@ -977,7 +981,7 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
 
         case SDTA_SignalTask:
             id->SignalTask = (struct Task *) data;
-            dbug( kprintf("  SDTA_SignalTask = %08lx\n", data); )
+            dbug( kprintf("  SDTA_SignalTask = 0x%p\n", data); )
             cnt++;
             break;
 
@@ -1020,7 +1024,7 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
         case SDTA_Frequency:
             id->Frequency = data;
             pervol = TRUE;
-            dbug( kprintf("  SDTA_Frequency/SamplesPerSec =%ld\n", data); )
+            dbug( kprintf("  SDTA_Frequency/SamplesPerSec = %ld\n", data); )
             cnt++;
             break;
 
@@ -1030,7 +1034,7 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
             }
 
             id->ControlPanel = (BOOL) data;
-            dbug( kprintf("  DTA_ControlPanel =%ld\n", data); )
+            dbug( kprintf("  DTA_ControlPanel = %ld\n", data); )
             cnt++;
             break;
 
@@ -1067,14 +1071,14 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
             id->LeftSample = TRUE;
             id->Sample = (BYTE *) data;
             newSample = TRUE;
-            dbug( kprintf("  SDTA_LeftSample = %08lx\n", data ); )
+            dbug( kprintf("  SDTA_LeftSample = 0x%p\n", data ); )
             cnt++;
             break;
 
         case SDTA_RightSample:
             id->RightSample = (BYTE *) data;
             newSample = TRUE;
-            dbug( kprintf("  SDTA_RightSample = %08lx\n", data ); )
+            dbug( kprintf("  SDTA_RightSample = 0x%p\n", data ); )
             cnt++;
             break;
 
@@ -1129,98 +1133,98 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
     struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
     IPTR				retval = TRUE, data;
 
-    dbug( kprintf("OM_GET\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     switch( opg->opg_AttrID ) {
     case SDTA_VoiceHeader:
         data = (IPTR) &id->VoiceHeader;
-        dbug( kprintf("SDTA_VoiceHeader\n"); )
+        dbug( kprintf("  SDTA_VoiceHeader\n"); )
         break;
 
     case SDTA_Sample:
         data = (IPTR) ( ( id->LeftSample ) ? NULL : id->Sample );
-        dbug( kprintf("SDTA_Sample\n"); )
+        dbug( kprintf("  SDTA_Sample\n"); )
         break;
 
     case SDTA_SampleLength:
         data = id->SampleLength;
-        dbug( kprintf("SDTA_SampleLength\n"); )
+        dbug( kprintf("  SDTA_SampleLength\n"); )
         break;
 
     case SDTA_Period:
         data = (IPTR) Freq2Period( id->Frequency );
-        dbug( kprintf("SDTA_Period\n"); )
+        dbug( kprintf("  SDTA_Period\n"); )
         break;
 
     case SDTA_Volume:
         data = (IPTR) id->Volume;
-        dbug( kprintf("SDTA_Volume\n"); )
+        dbug( kprintf("  SDTA_Volume\n"); )
         break;
 
     case SDTA_Cycles:
         data = (IPTR) id->Cycles;
-        dbug( kprintf("SDTA_Cycles\n"); )
+        dbug( kprintf("  SDTA_Cycles\n"); )
         break;
 
     case SDTA_SignalTask:
         data = (IPTR) id->SignalTask;
-        dbug( kprintf("SDTA_SignalTask\n"); )
+        dbug( kprintf("  SDTA_SignalTask\n"); )
         break;
 
     case SDTA_SignalBitMask: // aka SDTA_SignalBit
         data = (IPTR) ( id->SignalBit == -1 ) ? 0L : ( 1L << id->SignalBit );
-        dbug( kprintf("SDTA_SignalBit(Mask)\n"); )
+        dbug( kprintf("  SDTA_SignalBit(Mask)\n"); )
         break;
 
     case SDTA_SignalBitNumber:
         data = id->SignalBit;
-        dbug( kprintf("SDTA_SignalBitNumber\n"); )
+        dbug( kprintf("  SDTA_SignalBitNumber\n"); )
         break;
 
     case SDTA_Continuous:
         data = (IPTR) id->Continuous;
-        dbug( kprintf("SDTA_Continuous\n"); )
+        dbug( kprintf("  SDTA_Continuous\n"); )
         break;
 
     case SDTA_Pan:
     case SDTA_Panning:
         data = id->Panning;
-        dbug( kprintf("SDTA_Pan(ning)\n"); )
+        dbug( kprintf("  SDTA_Pan(ning)\n"); )
         break;
 
     case SDTA_SampleType:
         data = id->SampleType;
-        dbug( kprintf("SDTA_SampleType\n"); )
+        dbug( kprintf("  SDTA_SampleType\n"); )
         break;
 
     case SDTA_SamplesPerSec:
     case SDTA_Frequency:
         data = id->Frequency;
-        dbug( kprintf("SDTA_Frequency/SamplesPerSec\n"); )
+        dbug( kprintf("  SDTA_Frequency/SamplesPerSec\n"); )
         break;
 
     case DTA_TriggerMethods:
         data = (IPTR) TriggerMethods;
-        dbug( kprintf("SDTA_TriggerMethods\n"); )
+        dbug( kprintf("  SDTA_TriggerMethods\n"); )
         break;
 
     case DTA_ControlPanel:
         data = (IPTR) id->ControlPanel;
-        dbug( kprintf("DTA_ControlPanel\n"); )
+        dbug( kprintf("  DTA_ControlPanel\n"); )
         break;
 
     case DTA_Repeat:
         data = (IPTR) id->Repeat;
-        dbug( kprintf("DTA_Repeat\n"); )
+        dbug( kprintf("  DTA_Repeat\n"); )
         break;
 
     case DTA_Immediate:
         data = (IPTR) id->Immediate;
-        dbug( kprintf("DTA_Immediate\n"); )
+        dbug( kprintf("  DTA_Immediate\n"); )
         break;
 
     case DTA_Methods: {
-        dbug( kprintf( "DTA_Methods\n"); )
+        dbug( kprintf( "  DTA_Methods\n"); )
 #ifndef __GNUC__
         ObtainSemaphore( &cb->cb_LibLock );
         /* first request of DTA_Methods ? */
@@ -1273,7 +1277,7 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 
                 data = (IPTR) ( cb->cb_Methods = CopyDTMethods( superMethods, Methods, NULL ) );
 
-                dbug( kprintf( "CopyDTMethods returned %08lx\n", data ); )
+                dbug( kprintf( "  CopyDTMethods returned %08lx\n", data ); )
             }
         }
 
@@ -1288,22 +1292,22 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
 
     case SDTA_SyncSampleChange:
         data = id->SyncSampleChange;
-        dbug( kprintf("SDTA_SyncSampleChange\n"); )
+        dbug( kprintf("  SDTA_SyncSampleChange\n"); )
         break;
 
     case SDTA_FreeSampleData:
         data = id->FreeSampleData;
-        dbug( kprintf("SDTA_FreeSampleData\n"); )
+        dbug( kprintf("  SDTA_FreeSampleData\n"); )
         break;
 
     case SDTA_LeftSample:
         data = (IPTR) ( ( id->LeftSample ) ? id->Sample : NULL );
-        dbug( kprintf("SDTA_LeftSample\n"); )
+        dbug( kprintf("  SDTA_LeftSample\n"); )
         break;
 
     case SDTA_RightSample:
         data = (IPTR) id->RightSample;
-        dbug( kprintf("SDTA_RightSample\n"); )
+        dbug( kprintf("  SDTA_RightSample\n"); )
         break;
 
     case SDTA_ReplayPeriod: {
@@ -1325,20 +1329,20 @@ IPTR __regargs Sound_GET( Class *cl, Object *o, struct opGet *opg )
         id->ReplayPeriod.tv_secs  = secs;
         id->ReplayPeriod.tv_micro = micro;
 
-        dbug( kprintf("SDTA_ReplayPeriod %ld:%ld\n", secs, micro ); )
+        dbug( kprintf("  SDTA_ReplayPeriod %ld:%ld\n", secs, micro ); )
     }
     break;
 
     default:
         retval = FALSE;
-        dbug( kprintf("Attr: %08lx\n",  opg->opg_AttrID); )
+        dbug( kprintf("  Attr: %08lx\n",  opg->opg_AttrID); )
     }
 
     if( retval ) {
         *opg->opg_Storage = data;
     } else {
         retval = DoSuperMethodA( cl, o, (Msg) opg );
-        dbug( kprintf("SuperAttr: %08lx, %08lx\n",  opg->opg_AttrID, *opg->opg_Storage); )
+        dbug( kprintf("  SuperAttr: %08lx, %p\n",  opg->opg_AttrID, *opg->opg_Storage); )
     }
 
     return( retval );
@@ -1354,7 +1358,7 @@ IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops )
 
     (void)cb;
 
-    dbug( kprintf("OM_SET\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     retval = DoSuperMethodA( cl, o, (Msg) ops );
     dbug( kprintf("  parsing list\n"); )
@@ -1383,7 +1387,7 @@ IPTR __regargs Sound_UPDATE( Class *cl, Object *o, struct opUpdate *opu )
 
     (void)cb;
 
-    dbug( kprintf("OM_UPDATE\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     if( DoSuperMethodA( cl, o, (Msg) &methodID ) ) {
         return FALSE;
@@ -1404,7 +1408,7 @@ IPTR __regargs Sound_DISPOSE( Class *cl, Object *o, Msg msg )
 
     (void)cb;
 
-    dbug( kprintf("OM_DISPOSE\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     /* free playerproc stuff */
     if( id->PlayerProc ) {
@@ -1453,7 +1457,7 @@ IPTR __regargs Sound_DOMAIN( Class *cl, Object *o, struct gpDomain *gpd )
     struct InstanceData 	*id = (struct InstanceData *) INST_DATA( cl, o );
     struct IBox			*gbox = &gpd->gpd_Domain;
 
-    dbug( kprintf("GDOMAIN\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     *gbox = GetAbsGadgetBox( &gpd->gpd_GInfo->gi_Domain, EXTG( o ), FALSE );
 
@@ -1491,7 +1495,7 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
     STRPTR				name = NULL;
     IPTR				retval;
 
-    dbug( kprintf( "GM_LAYOUT\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     retval = DoSuperMethodA( cl, o, (Msg) gpl );
 
@@ -1648,6 +1652,9 @@ void __regargs DrawWaveform( struct ClassBase *cb, struct RastPort *rp, struct I
             step = 1L, k=0L, oldx=x, shift = ( id->SampleType >= SDTST_M16S ? 1 : 0 );
     BOOL	stereo = IsStereo( id->SampleType );
     WORD	minX = ~0, maxX = ~0, oldy = y, oldh = h;
+
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     /* scaling limit is 25500% */
     if( w > (samplelength<<8) ) {
         return;
@@ -1750,7 +1757,7 @@ IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
     struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
     struct InstanceData	*id = (struct InstanceData *) INST_DATA( cl, o );
 
-    dbug( kprintf( "GM_RENDER\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
 //	if( gpr->gpr_Redraw == GREDRAW_REDRAW )
     {
@@ -1847,7 +1854,7 @@ IPTR __regargs Sound_DRAW( Class *cl, Object *o, struct dtDraw *dtd )
     WORD				bgpen = -1, wfpen = -1;
     BOOL				freedri;
 
-    dbug( kprintf( "DTM_DRAW\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     if( ( scr = id->Screen ) ) {
         dri = GetScreenDrawInfo( scr );
@@ -1904,7 +1911,7 @@ IPTR __regargs Sound_HITTEST( Class *cl, Object *o, struct gpHitTest *gpht )
     IPTR				retval = GMR_GADGETHIT;
     WORD				h = G(o)->Height;
 
-    dbug( kprintf( "GM_HITTEST\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     if( ! ( G( o )->Flags & GFLG_DISABLED ) ) {
         /* calculate absolute height */
@@ -1951,7 +1958,8 @@ IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 
     (void)cb;
 
-    dbug( kprintf("GM_GOACTIVE / GM_HANDLEINPUT\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     /* no input processing during layout */
     if( si->si_Flags & DTSIF_LAYOUT ) {
         return GMR_NOREUSE;
@@ -2121,9 +2129,9 @@ IPTR __regargs Sound_GOINACTIVE( Class *cl, Object *o, struct gpGoInactive *gpgi
 
     (void)cb;
 
-    DoSuperMethodA( cl, o, (Msg) gpgi );
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
-    dbug( kprintf("GOINACTIVE\n"); )
+    DoSuperMethodA( cl, o, (Msg) gpgi );
 
     if( id->ActiveMember ) {
         DoMethodA( (Object *) id->ActiveMember, (Msg) gpgi );
@@ -2149,22 +2157,22 @@ IPTR __regargs Sound_TRIGGER( Class *cl, Object *o, struct dtTrigger *dtt )
 
     (void)cb;
 
-    dbug( kprintf("DTM_TRIGGER\n"); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     switch( dtt->dtt_Function ) {
     case STM_PLAY:
-        dbug( kprintf( "STM_PLAY\n" ); )
+        dbug( kprintf( "  STM_PLAY\n" ); )
         cmd = COMMAND_PLAY;
         data = (APTR) id;
         break;
 
     case STM_STOP:
-        dbug( kprintf( "STM_STOP\n" ); )
+        dbug( kprintf( "  STM_STOP\n" ); )
         cmd = COMMAND_STOP;
         break;
 
     case STM_PAUSE:
-        dbug( kprintf( "STM_PAUSE\n" ); )
+        dbug( kprintf( "  STM_PAUSE\n" ); )
         cmd = COMMAND_PAUSE;
         break;
     }
@@ -2268,6 +2276,8 @@ LONG __regargs WriteChunk( struct ClassBase *cb, struct IFFHandle *iff, ULONG ty
 {
     LONG	err;
 
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     if( ! ( err = PushChunk( iff, type, id, size ) ) ) {
         if( ( err = WriteChunkBytes( iff, data, size ) ) == size ) {
             err = PopChunk( iff );
@@ -2282,6 +2292,8 @@ LONG __regargs WriteChunk( struct ClassBase *cb, struct IFFHandle *iff, ULONG ty
 LONG __regargs WriteAIFF( struct ClassBase *cb, Object *o, struct IFFHandle *iff, struct InstanceData *id )
 {
     LONG	err;
+
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     if( ! ( err = PushChunk( iff, ID_AIFF, ID_FORM, IFFSIZE_UNKNOWN ) ) ) {
         CommonChunk	common;
@@ -2331,6 +2343,8 @@ LONG __regargs WriteSVX( struct ClassBase *cb, Object *o, struct IFFHandle *iff,
     ULONG	sampleLength = id->SampleLength;
     BYTE	*sample = id->Sample;
     struct VoiceHeader	vhdr;
+
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     CopyMem( &id->VoiceHeader, &vhdr, sizeof( vhdr ) );
     vhdr.vh_Compression = ( ( id->VoiceHeader.vh_Compression == CMP_FIBDELTA ) || ( cb->cb_Compress ) ) && ( sampletype <= SDTST_S8S );
@@ -2540,7 +2554,7 @@ IPTR __regargs Sound_WRITE( Class *cl, Object *o, struct dtWrite *dtw )
     struct SignalSemaphore	*lock = &((struct DTSpecialInfo *)G( o )->SpecialInfo)->si_Lock;
     LONG				err = 0L;
 
-    dbug( kprintf( "DTM_WRITE / DTM_COPY\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphoreShared( &cb->cb_LibLock );
 
@@ -2753,6 +2767,7 @@ enum {
 void __regargs SetTDMode( struct ClassBase *cb, struct InstanceData *id, ULONG mode )
 {
     D(bug( "[Sound.dt] %s()\n", __func__ ); )
+
     if( id->ControlPanel ) {
         IPTR	oldmode = mode;
 
@@ -2788,10 +2803,10 @@ void PlayerProc( void )
     BOOL			releaseAudio = FALSE, restart = 0, paused = FALSE;
     BYTE			*sample = NULL, *buffer[4] = {};
 
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     mp = &pr->pr_MsgPort;
     mpmsk = 1L << mp->mp_SigBit;
-
-    dbug( kprintf("child process launched\n"); )
 
     for( ;; ) {
         struct ObjectMsg	*msg;
@@ -3325,15 +3340,21 @@ void PlayerProc( void )
 
 /****************************************************************************/
 
-void __regargs CloseAHI( struct MsgPort *mp, struct AHIRequest *ahir )
+static void __regargs CloseAHI( struct MsgPort *mp, struct AHIRequest *ahir )
 {
 #if !defined(__MAXON__) && !defined(__AROS__)
 #undef SysBase
     struct Library	*SysBase = (*(struct Library **)4L);
 #endif
-    CloseDevice( (struct IORequest *) ahir );
-    DeleteIORequest( (struct IORequest *) ahir );
-    DeleteMsgPort( mp );
+
+    dbug( kprintf( "[Sound.dt] %s(0x%p, 0x%p)\n", __func__, mp, ahir ); )
+
+    if (ahir) {
+        CloseDevice( (struct IORequest *) ahir );
+        DeleteIORequest( (struct IORequest *) ahir );
+    }
+    if (mp)
+        DeleteMsgPort( mp );
 #if !defined(__MAXON__) && !defined(__AROS__)
 #define SysBase	cb->cb_SysBase
 #endif
@@ -3341,7 +3362,7 @@ void __regargs CloseAHI( struct MsgPort *mp, struct AHIRequest *ahir )
 
 /****************************************************************************/
 
-struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **iop )
+static struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **iop )
 {
 #if !defined(__MAXON__) && !defined(__AROS__)
 #undef SysBase
@@ -3350,6 +3371,9 @@ struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **io
     struct MsgPort	*mp;
     struct AHIRequest	*ahir;
 
+    dbug( kprintf( "[Sound.dt] %s(0x%p, 0x%p)\n", __func__, mpp, iop ); )
+
+    *mpp = NULL;
     *iop = NULL;
 
     mp = CreateMsgPort();
@@ -3358,6 +3382,10 @@ struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIRequest **io
         if( ! OpenDevice( "ahi.device", AHI_NO_UNIT, (struct IORequest *)ahir, 0L ) ) {
             *mpp = mp;
             *iop = ahir;
+            dbug(
+                kprintf( "[Sound.dt] %s:  message port @ 0x%p\n", __func__, *mpp);
+                kprintf( "[Sound.dt] %s:  ioreq        @ 0x%p\n", __func__, *iop );
+            )
             return( (struct Library *) ahir->ahir_Std.io_Device );
         } else {
             dbug( kprintf( "Can't open ahi.device v4\n" ); )
@@ -3466,7 +3494,7 @@ void PlayerProcAHI( void )
     mp = &pr->pr_MsgPort;
     mpmsk = 1L << mp->mp_SigBit;
 
-    dbug( kprintf( "child launched\n" ); )
+    D(bug( "[Sound.dt:AHI] %s()\n", __func__ ); )
 
     for( ;; ) {
         LONG			rcv;
@@ -3476,6 +3504,7 @@ void PlayerProcAHI( void )
 
         if( rcv & mpmsk ) {
             while( ( msg = (struct ObjectMsg *) GetMsg( mp ) ) ) {
+                D(bug( "[Sound.dt:AHI] %s: Msg @ 0x%p\n", __func__, msg ); )
                 switch( msg->Command ) {
                 case COMMAND_NEXT_BUFFER: {
                     D(bug( "[Sound.dt:AHI] %s: COMMAND_NEXT_BUFFER\n", __func__); )
@@ -3808,15 +3837,17 @@ void PlayerProcAHI( void )
                 }
 
                 if( msg->Message.mn_ReplyPort ) {
+                    D(bug( "[Sound.dt:AHI] %s: replying to msg @ 0x%p (Port @ 0x%p)\n", __func__, msg, msg->Message.mn_ReplyPort); )
                     ReplyMsg( &msg->Message );
                 } else { // NT_FREEMSG
+                    D(bug( "[Sound.dt:AHI] %s: Free'ing msg @ 0x%p\n", __func__, msg); )
                     FreeVec( msg );
                 }
             }
         }
 
         if( rcv & SIGBREAKF_CTRL_C ) {
-            D(bug( "[Sound.dt:AHI] %s: end of sample\n", __func__ ); )
+            D(bug( "[Sound.dt:AHI] %s: finished\n", __func__ ); )
 
             if( AHIBase ) {
                 ObtainSemaphoreShared( &id->Lock );
@@ -3839,6 +3870,10 @@ void PlayerProcAHI( void )
             }
             if( ! id->Continuous )
                 SetTDMode( cb, id, BUT_STOP );
+        }
+        else
+        {
+            D(bug( "[Sound.dt:AHI] %s: work remaining\n", __func__ ); )
         }
     }
 #if !defined(__MAXON__) && !defined(__AROS__)
@@ -3863,7 +3898,7 @@ IPTR __regargs Sound_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
 
-    dbug( kprintf( "DTM_OBTAINDRAWINFO\n" ); )
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     return	(IPTR)(	( id->Screen = (struct Screen *) GetTagData( PDTA_Screen, 0, ops->ops_AttrList ) ) ||
                     ( id->DrawInfo = (struct DrawInfo *) GetTagData( GA_DrawInfo, 0, ops->ops_AttrList ) )
@@ -3874,6 +3909,8 @@ IPTR __regargs Sound_OBTAINDRAWINFO( Class *cl, Object *o, struct opSet *ops )
 
 IPTR __regargs Sound_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg )
 {
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
+
     return (IPTR)0;
 }
 
@@ -3883,7 +3920,8 @@ IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
     /* prevent other tasks (cursor- or playertask) from reading this */
-    dbug( kprintf( "DTM_REMOVEDTOBJECT\n" ); )
+
+    dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphore( &id->Lock );
     id->Window = (struct Window *)NULL;
