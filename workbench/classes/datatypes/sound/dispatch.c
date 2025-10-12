@@ -920,7 +920,7 @@ void __regargs SetVSlider( struct ClassBase *cb, struct InstanceData *id )
         IPTR	top;
         GetAttr( PGA_Top, (Object *)id->VolumeSlider, &top );
         if( top != id->Volume ) { // avoid loops
-            SetGadgetAttrs( id->VolumeSlider, id->ICtx.Window, id->ICtx.Requester,
+            SetGadgetAttrs( id->VolumeSlider, id->Window, id->Requester,
                             PGA_Top, id->Volume, TAG_DONE );
         }
     }
@@ -1373,7 +1373,7 @@ IPTR __regargs Sound_SET( Class *cl, Object *o, struct opSet *ops )
     dbug( kprintf("  parsing list\n"); )
     parsetaglist( cl, o, ops, (ULONG *)&cnt );
     dbug( kprintf("  refreshing\n"); )
-    if( retval || ( ( id->ForceRefresh ) && ( id->ICtx.Gadget ) ) ) {
+    if( retval || ( ( id->ForceRefresh ) && ( id->Gadget ) ) ) {
         struct RastPort	*rp;
         if( ( rp = ObtainGIRPort( ops->ops_GInfo ) ) ) {
             DoMethod( o, GM_RENDER, (IPTR) ops->ops_GInfo, (IPTR) rp, GREDRAW_REDRAW );
@@ -1553,18 +1553,14 @@ IPTR __regargs Sound_LAYOUT( Class *cl, Object *o, struct gpLayout *gpl )
         dbug( kprintf( "[Sound.dt] %s: name = '%s'\n", __func__, name ); )
 
         if( gpl->gpl_Initial ) {
-            struct InstanceContext iCtx =
-            {
-                .Window = gi->gi_Window,
-                .Requester = gi->gi_Requester,
-                .Gadget = (struct Gadget *) o
-            };
             dbug(
                 kprintf( "[Sound.dt] %s: gpl_Initial\n", __func__);
             )
 
             ObtainSemaphore( &id->Lock );
-            CopyMem(&iCtx, &id->ICtx, sizeof(iCtx));
+            id->Window = gi->gi_Window;
+            id->Requester = gi->gi_Requester;
+            id->Gadget = (struct Gadget *) o;
             ReleaseSemaphore( &id->Lock );
 
             /* obtain pens */
@@ -2803,7 +2799,7 @@ void __regargs SetTDMode( struct ClassBase *cb, struct InstanceData *id, ULONG m
         /* avoid deadlocks */
         GetAttr( TDECK_Mode, (Object *)id->TapeDeckGadget, &oldmode );
         if( oldmode != mode ) {
-            SetGadgetAttrs( id->TapeDeckGadget, id->ICtx.Window, id->ICtx.Requester,
+            SetGadgetAttrs( id->TapeDeckGadget, id->Window, id->Requester,
                             TDECK_Mode, mode, TAG_DONE );
         }
 
@@ -3949,19 +3945,13 @@ IPTR __regargs Sound_RELEASEDRAWINFO( Class *cl, Object *o, Msg msg )
 IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
 {
     struct InstanceData	*id = INST_DATA( cl, o );
-    struct InstanceContext iCtx =
-    {
-        .Window = NULL,
-        .Requester = NULL,
-        .Gadget = NULL
-    };
-            
     /* prevent other tasks (cursor- or playertask) from reading this */
 
     dbug( kprintf( "[Sound.dt] %s()\n", __func__ ); )
 
     ObtainSemaphore( &id->Lock );
-    CopyMem(&iCtx, &id->ICtx, sizeof(iCtx));
+    id->Window = (struct Window *)NULL;
+    id->Requester = NULL;
     ReleaseSemaphore( &id->Lock );
 
     if( id->ColorMap ) {
