@@ -70,13 +70,13 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
         D(bug("[ZCC] ENTERING "__AROS_STR(mname)                 \
           "("__AROS_STR(m_msg_type)")\n"));                      \
                                                                  \
-        return (IPTR) mname(__class, __self, (m_msg_type)__msg)  \
+        return (IPTR) mname(__class, __self, (m_msg_type)__msg)
 
 #else
 
 #define __ZUNE_CUSTOMCLASS_METHOD(mname, mid, m_msg_type)        \
     case mid:                                                    \
-        return (IPTR) mname(__class, __self, (m_msg_type)__msg)  \
+        return (IPTR) mname(__class, __self, (m_msg_type)__msg)
 
 #endif
 
