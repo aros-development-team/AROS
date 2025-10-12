@@ -189,7 +189,7 @@ struct MUI_WindowData
 struct __dummyXFC3__
 {
     struct MUI_NotifyData mnd;
-    struct MUI_WindowData mwd;
+    struct MUI_WindowData mwd CLASS_INSTANCE_ALIGN;
 };
 
 #define muiWindowData(obj)   (&(((struct __dummyXFC3__ *)(obj))->mwd))

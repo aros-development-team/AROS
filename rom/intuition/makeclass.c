@@ -1,16 +1,22 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 
     Initialize a BOOPSI class.
 */
+
+#include <aros/cpu.h>
 
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
 
-#define MAX_PUDDLE_SIZE (16 * 1024)     /* Maximum puddle size */
+#define MAX_PUDDLE_SIZE (__WORDSIZE * 1024 / 2)     /* Maximum puddle size */
+
+#ifndef ALIGN_UP
+#define ALIGN_UP(offset, align)  (((offset) + ((align) - 1)) & ~((align) - 1))
+#endif
 
 /*****************************************************************************
 
@@ -131,14 +137,19 @@
                 /* Initialize fields */
                 iclass->cl_Super      = superClassPtr;
                 iclass->cl_ID         = classID;
-                iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
-                                        superClassPtr->cl_InstSize;
+                iclass->cl_InstOffset = ALIGN_UP(superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize, AROS_WORSTALIGN);
                 iclass->cl_InstSize   = instanceSize;
                 iclass->cl_Flags      = flags;
                 iclass->cl_ObjectSize = iclass->cl_InstOffset
                                       + iclass->cl_InstSize
                                       + sizeof(struct _Object);
 
+                D(
+                    bug("[Intuition] %s: offset %d, size %d\n", __func__, iclass->cl_InstOffset, iclass->cl_InstSize);
+                    if (superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize != iclass->cl_InstOffset) {
+                        bug("[Intuition] %s: (orig offset %d)\n", __func__, superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize);
+                    }
+                )
                 /* Try to limit the puddle to MAX_PUDDLE_SIZE.
                  * This comes in to play, for example, with
                  * picture.library, where 32 instances of the
@@ -149,7 +160,10 @@
                     perpuddle = 1;
                 if (perpuddle > 32)
                     perpuddle = 32;
-                
+                D(
+                    bug("[Intuition] %s:%d alloc(s) per %dbyte puddle\n", __func__, perpuddle, MAX_PUDDLE_SIZE);
+                    bug("[Intuition] %s: needed = %dbyte  puddle\n", __func__, perpuddle * iclass->cl_ObjectSize);
+                )
                 /* Initialize memory subsystem */
                 iclass->cl_MemoryPool = CreatePool
                 (

@@ -2,7 +2,7 @@
 #define INTUITION_CLASSES_H
 
 /*
-    Copyright  1995-2008, The AROS Development Team. All rights reserved.
+    Copyright  1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     BOOPSI structures.
@@ -49,7 +49,7 @@ struct _Object
 {
     struct MinNode  o_Node;  /* PRIVATE */
     struct IClass * o_Class;
-};
+} __attribute__((aligned(AROS_WORSTALIGN)));
 
 #define _OBJ(obj) ((struct _Object *)(obj))
 #define BASEOBJECT(obj) ((Object *)(_OBJ(obj) + 1))

@@ -2,7 +2,7 @@
 #define _MUI_MACROS_H
 
 /*
-    Copyright © 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Macros available in original MUI and also some additional ones.
@@ -398,10 +398,22 @@
 #include "classes/area.h"
 #endif
 
+#ifdef __AROS__
+#ifndef AROS_CPU_H
+#include <aros/cpu.h>
+#endif
+#endif
+
+#ifdef AROS_WORSTALIGN
+#define CLASS_INSTANCE_ALIGN __attribute__((aligned(AROS_WORSTALIGN)))
+#else
+#define CLASS_INSTANCE_ALIGN 
+#endif
+
 struct __dummyAreaData__
 {
     struct MUI_NotifyData mnd;
-    struct MUI_AreaData   mad;
+    struct MUI_AreaData   mad CLASS_INSTANCE_ALIGN;
 };
 
 #define muiNotifyData(obj) (&(((struct __dummyAreaData__ *)(obj))->mnd))
