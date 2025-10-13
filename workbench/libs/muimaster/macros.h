@@ -398,16 +398,8 @@
 #include "classes/area.h"
 #endif
 
-#ifdef __AROS__
-#ifndef AROS_CPU_H
-#include <aros/cpu.h>
-#endif
-#endif
-
-#ifdef AROS_WORSTALIGN
-#define CLASS_INSTANCE_ALIGN __attribute__((aligned(AROS_WORSTALIGN)))
-#else
-#define CLASS_INSTANCE_ALIGN 
+#ifndef INTUITION_CLASSALIGN_H
+#include <intuition/classalign.h>
 #endif
 
 struct __dummyAreaData__

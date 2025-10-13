@@ -5,18 +5,10 @@
     Initialize a BOOPSI class.
 */
 
-#include <aros/cpu.h>
-
 #include <exec/lists.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
-
-#define MAX_PUDDLE_SIZE (__WORDSIZE * 1024 / 2)     /* Maximum puddle size */
-
-#ifndef ALIGN_UP
-#define ALIGN_UP(offset, align)  (((offset) + ((align) - 1)) & ~((align) - 1))
-#endif
 
 /*****************************************************************************
 
@@ -89,6 +81,19 @@
 {
     AROS_LIBFUNC_INIT
 
+#define MAX_PUDDLE_SIZE (__WORDSIZE * 1024 / 2)     /* Maximum puddle size */
+
+/*
+ * Make sure class instance data is adequately aligned on SMP capable platforms
+ */
+#ifdef __AROSPLATFORM_SMP__
+#ifndef CLASS_ALIGN_UP
+#define CLASS_ALIGN_UP(offset, align)  (((offset) + ((align) - 1)) & ~((align) - 1))
+#endif
+#else
+#define CLASS_ALIGN_UP(offset, align)  (offset)
+#endif
+
     Class *iclass = NULL;
     
     EXTENDUWORD(instanceSize);
@@ -137,7 +142,7 @@
                 /* Initialize fields */
                 iclass->cl_Super      = superClassPtr;
                 iclass->cl_ID         = classID;
-                iclass->cl_InstOffset = ALIGN_UP(superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize, AROS_WORSTALIGN);
+                iclass->cl_InstOffset = CLASS_ALIGN_UP(superClassPtr->cl_InstOffset + superClassPtr->cl_InstSize, AROS_WORSTALIGN);
                 iclass->cl_InstSize   = instanceSize;
                 iclass->cl_Flags      = flags;
                 iclass->cl_ObjectSize = iclass->cl_InstOffset

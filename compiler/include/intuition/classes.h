@@ -19,6 +19,10 @@
 #endif
 #include <aros/asmcall.h>
 
+#ifndef INTUITION_CLASSALIGN_H
+#include <intuition/classalign.h>
+#endif
+
 /* The following structure is READ-ONLY */
 typedef struct IClass
 {
@@ -49,7 +53,7 @@ struct _Object
 {
     struct MinNode  o_Node;  /* PRIVATE */
     struct IClass * o_Class;
-} __attribute__((aligned(AROS_WORSTALIGN)));
+} CLASS_INSTANCE_ALIGN;
 
 #define _OBJ(obj) ((struct _Object *)(obj))
 #define BASEOBJECT(obj) ((Object *)(_OBJ(obj) + 1))
