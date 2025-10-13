@@ -4,6 +4,11 @@
 #include <aros/cpu.h>
 #include <exec/types.h>
 
+/* Align spinlock_t to 128 bytes so that each lock occupies a full cache line.
+ * This avoids false sharing between CPUs, since otherwise multiple locks could
+ * reside in the same line and contend unnecessarily. On x86_64 the natural
+ * alignment would only be 16 bytes, so the attribute enforces cache-line isolation.
+ */
 typedef struct {
     union
     {
