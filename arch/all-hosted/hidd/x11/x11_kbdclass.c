@@ -20,7 +20,7 @@
 
 /****************************************************************************************/
 
-LONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
+WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
 static OOP_AttrBase HiddInputAB;
 
@@ -136,7 +136,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     struct x11kbd_data  *data;
     XKeyEvent           *xk;
-    LONG                keycode;
+    UWORD                keycode;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
 
@@ -144,7 +144,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
     xk = &(msg->event->xkey);
 
     keycode = xkey2hidd(xk, XSD(cl));
-    if (keycode == -1) {
+    if (keycode == (UWORD)-1) {
         D(bug("[X11:Kbd] %s: unknown key!r - returning\n", __func__));
         return;
     }
@@ -155,7 +155,8 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 
     if (keycode != data->prev_keycode) {
         struct pHidd_Kbd_Event x11kEvt;
-        x11kEvt.kbdevt = (ULONG)keycode;
+        x11kEvt.flags = 0;
+        x11kEvt.code = keycode;
         data->kbd_callback(data->callbackdata, &x11kEvt);
         data->prev_keycode = keycode;
     }
@@ -190,7 +191,7 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 
 /****************************************************************************************/
 
-LONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
+WORD xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
     char    buffer[10];
     KeySym  ks;
