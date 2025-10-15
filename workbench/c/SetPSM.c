@@ -6,7 +6,48 @@
 *
 *****************************************************************/
 
-/******** */
+
+/*****************************************************************************
+
+    NAME
+
+        SetPSM
+
+    SYNOPSIS
+
+        SHANGHAI/S,POP=POPPUBSCREEN/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Sets the "Shanghai" and "PopPubScreen" flags in intition.library
+
+    INPUTS
+
+        SHANGHAI   --  Force workbench windows to open on the default public screen.
+        POP=POPPUBSCREEN  --  Pop the publicscreen to the front when a window opens on it.
+
+    RESULT
+        Returns 5 if SHANGHAI was previously set, and 10 if POPPUBSCREEN was set.
+
+    NOTES
+
+    EXAMPLE
+
+        SetPSM SHANGHAI
+
+    BUGS
+
+    SEE ALSO
+
+        intuition.library/SetPubScreenModes()
+
+    INTERNALS
+
+******************************************************************************/
 
 #define DOSLIB  "dos.library"
 #define DOSVER  36L
