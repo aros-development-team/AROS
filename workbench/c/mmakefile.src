@@ -41,6 +41,7 @@ FILES := \
     SetDate \
     SetDefaultFont \
     SetLocale \
+    SetPSM \
     Shutdown \
     Sort \
     StackSnoop \
