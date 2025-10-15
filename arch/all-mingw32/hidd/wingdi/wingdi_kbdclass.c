@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: GDI hidd handling keypresses.
 */
@@ -12,6 +12,7 @@
 #include <devices/rawkeycodes.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/keyboard.h>
 
 #include <proto/kernel.h>
@@ -28,11 +29,11 @@
 
 /****************************************************************************************/
 
-static OOP_AttrBase HiddKbdAB;
+static OOP_AttrBase HiddInputAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_Kbd  , &HiddKbdAB    },
+    { IID_Hidd_Input  , &HiddInputAB    },
     { NULL          , NULL          }
 };
 
@@ -41,8 +42,8 @@ static struct OOP_ABDescr attrbases[] =
 static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control *KEYBOARDDATA)
 {
     const WORD *keytable;
+    struct pHidd_Kbd_Event kEvt;
     UBYTE numkeys;
-    WORD keycode;
     UWORD eventcode = KEYBOARDDATA->KbdEvent;
     UWORD rawcode   = KEYBOARDDATA->KeyCode;
 
@@ -63,16 +64,16 @@ static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control 
         numkeys = NUM_STDKEYS;
     }
     rawcode &= 0x00FF;
-    
+
     if (rawcode < numkeys)
     {
-        keycode = keytable[rawcode];
-        if (keycode != NOKEY)
+        kEvt.kbdevt = keytable[rawcode];
+        if (kEvt.kbdevt != NOKEY)
         {
             if (eventcode == WM_KEYUP)
-                keycode |= IECODE_UP_PREFIX;
+                kEvt.kbdevt |= IECODE_UP_PREFIX;
 
-            data->kbd_callback(data->callbackdata, keycode);
+            data->kbd_callback(data->callbackdata, &kEvt);
         }
     }
 }
@@ -83,7 +84,6 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 {
     struct TagItem *tag, *tstate;
     APTR            callback = NULL;
-    APTR            callbackdata = NULL;
     
     EnterFunc(bug("GDIKbd::New()\n"));
 
@@ -102,19 +102,14 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         
         D(bug("Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
             
-        if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
         {
             D(bug("Kbd hidd tag\n"));
             switch (idx)
             {
-                case aoHidd_Kbd_IrqHandler:
+                case aoHidd_Input_IrqHandler:
                     callback = (APTR)tag->ti_Data;
                     D(bug("Got callback %p\n", (APTR)tag->ti_Data));
-                    break;
-                        
-                case aoHidd_Kbd_IrqHandlerData:
-                    callbackdata = (APTR)tag->ti_Data;
-                    D(bug("Got data %p\n", (APTR)tag->ti_Data));
                     break;
             }
         }
@@ -134,7 +129,8 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         if (data->interrupt)
         {
             data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
-            data->callbackdata = callbackdata;
+            OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+            D(bug("[GDIKbd] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
 
             XSD(cl)->kbdhidd = o;
 

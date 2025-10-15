@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: The main keyboard class.
 */
@@ -18,6 +18,7 @@
 #include <exec/memory.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 
 #include <aros/system.h>
 #include <aros/symbolsets.h>
@@ -39,10 +40,10 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
 {
     AROS_INTFUNC_INIT
 
+    struct pHidd_Kbd_Event kEvt;
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
     struct Library *TimerBase = kbddata->TimerBase;
     struct EClockVal eclock1, eclock2;
-    KbdIrqData_t keyData;
     UBYTE keycode;
 
     if (kbddata->resetstate == 2) {
@@ -56,28 +57,28 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
-    keyData = keycode;
+    kEvt.kbdevt = keycode;
 
-    D(bug("[kbd:am68k] keyData=%x\n", keyData);)
-    
+    D(bug("[kbd:am68k] key=%x\n", kEvt.kbdevt);)
+
     if (keycode == 0x78) { // reset warning
         kbddata->resetstate++;
         if (kbddata->resetstate == 2) {
-            kbddata->kbd_callback(kbddata->callbackdata, keyData);
+            kbddata->kbd_callback(kbddata->callbackdata, &kEvt);
             // second reset warning, no handshake = starts 10s delay before forced reset
             return 0;
         }
         // first reset warning, handle it normally
     } else {
         if ((keycode & ~0x80) == 0x62)
-            keyData |= (KBD_KEYTOGGLE << 16);
-        kbddata->kbd_callback(kbddata->callbackdata, keyData);
+            kEvt.kbdevt |= (KBD_KEYTOGGLE << 16);
+        kbddata->kbd_callback(kbddata->callbackdata, kEvt.kbdevt);
     }
     /* "release" UAE mouse wheel up/down key codes */
     if (keycode == 0x7a || keycode == 0x7b)
     {
-        keyData |= 0x80;
-        kbddata->kbd_callback(kbddata->callbackdata, keyData);
+        kEvt.kbdevt |= 0x80;
+        kbddata->kbd_callback(kbddata->callbackdata, &kEvt);
     }
 
     // busy wait until handshake pulse has been long enough
@@ -110,7 +111,6 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     };
     struct TagItem      *tag, *tstate;
     KbdIrqCallBack_t    callback = NULL;
-    APTR                callbackdata = NULL;
     BOOL                has_kbd_hidd = FALSE;
     struct Library      *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
 
@@ -140,19 +140,14 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         
         D(bug("[kbd:am68k] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
             
-        if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
         {
             D(bug("Kbd hidd tag\n"));
             switch (idx)
             {
-                case aoHidd_Kbd_IrqHandler:
+                case aoHidd_Input_IrqHandler:
                     callback = (APTR)tag->ti_Data;
                     D(bug("Got callback %p\n", (APTR)tag->ti_Data));
-                    break;
-                        
-                case aoHidd_Kbd_IrqHandlerData:
-                    callbackdata = (APTR)tag->ti_Data;
-                    D(bug("Got data %p\n", (APTR)tag->ti_Data));
                     break;
             }
         }
@@ -171,8 +166,8 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         
         data->kbd_callback   = callback;
-        data->callbackdata   = callbackdata;
-        
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+
         XSD(cl)->timerio = (struct timerequest*)AllocMem(sizeof(struct timerequest), MEMF_CLEAR | MEMF_PUBLIC);
         if (OpenDevice("timer.device", UNIT_ECLOCK, (struct IORequest*)XSD(cl)->timerio, 0))
             Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Gameport device
 */
@@ -26,6 +26,7 @@
 #include <exec/lists.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
@@ -37,6 +38,8 @@
 #endif
 
 #include LC_LIBDEFS_FILE
+
+#define DCB(x)
 
 /****************************************************************************************/
 
@@ -122,6 +125,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR GPBase)
     int i;
 
     /* reset static data */
+    HiddInputAB = 0;
     HiddMouseAB = 0;
 
     for(i = 0; i < GP_NUNITS; i++)
@@ -208,6 +212,20 @@ static int GM_UNIQUENAME(open)
         return FALSE;
     }
 
+    if (!HiddInputAB)
+    {
+        HiddInputAB = OOP_ObtainAttrBase(IID_Hidd_Input);
+
+        if (!HiddInputAB)
+        {
+            ioreq->io_Error = IOERR_OPENFAIL;
+            CloseLibrary(OOPBase);
+            D(bug("[GamePort] %s: Could not get inputhidd attrbase\n", __func__));
+
+            return FALSE;
+        }
+    }
+
     if (!HiddMouseAB)
     {
         HiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
@@ -215,8 +233,9 @@ static int GM_UNIQUENAME(open)
         if (!HiddMouseAB)
         {
             ioreq->io_Error = IOERR_OPENFAIL;
+            OOP_ReleaseAttrBase(IID_Hidd_Input);
             CloseLibrary(OOPBase);
-            D(bug("[GamePort] %s: Could not get attrbase\n", __func__));
+            D(bug("[GamePort] %s: Could not get mousehidd attrbase\n", __func__));
 
             return FALSE;
         }
@@ -233,9 +252,9 @@ static int GM_UNIQUENAME(open)
         /* Install our own mouse handler if opened for the first time */
         if(GPBase->gp_MouseHiddBase) {
             struct TagItem tags[] = {
-                { aHidd_Mouse_IrqHandler    , (IPTR)mouseCallback},
-                { aHidd_Mouse_IrqHandlerData, (IPTR)GPBase       },
-                { TAG_DONE                                       }
+                { aHidd_Input_IrqHandler,       (IPTR)mouseCallback },
+                { aHidd_Input_IrqHandlerData,   (IPTR)GPBase        },
+                { TAG_DONE                                          }
             };
 
             GPBase->gp_Hidd = OOP_NewObject(NULL, CLID_Hidd_Mouse, tags);
@@ -248,6 +267,7 @@ static int GM_UNIQUENAME(open)
         }
 
     }
+    OOP_ReleaseAttrBase(IID_Hidd_Input);
     CloseLibrary(OOPBase);
 
     if(!GPBase->gp_MouseHiddBase)
@@ -477,9 +497,9 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 {
     UWORD amigacode = 0;
     
-    D(bug("[GamePort] %s(GPBase=%p, button=%d, x=%d, y=%d, type=%d, flags=0x%04X)\n",
+    DCB(bug("[GamePort] %s(GPBase=%p, button=%d, x=%d, y=%d, type=%d, flags=0x%04X)\n",
           __func__,
-          GPBase, ev->button, ev->x, ev->y, ev->type, ev->flags));
+          GPBase, ev->button, ev->x, ev->y, ev->type, ev->flags);)
     
     /* Convert the event */
     switch (ev->button)
@@ -512,34 +532,33 @@ static VOID mouseCallback(struct GameportBase *GPBase,
             break;
     }
 
-    D(bug("[GamePort] %s: pushing event %d @ %d,%d to event-buffer\n", __func__, amigacode, ev->x, ev->y));
+    DCB(bug("[GamePort] %s: pushing event %d @ %d,%d to event-buffer\n", __func__, amigacode, ev->x, ev->y));
 
     Disable();
-    
+
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = amigacode;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->x;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->y;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->flags;
-    
-    D(bug("[GamePort] %s: event-buffer updated\n", __func__));
-    
+
+    DCB(bug("[GamePort] %s: event-buffer updated\n", __func__));
+
     if (GPBase->gp_writePos == GP_NUMELEMENTS)
     {
         GPBase->gp_writePos = 0;
     }
-    
-    
+
     if (!IsListEmpty(&GPBase->gp_PendingQueue))
     {
-        D(bug("[GamePort] %s: sending events to listeners...\n", __func__));
+        DCB(bug("[GamePort] %s: sending events to listeners...\n", __func__));
 #if 0
-        D(bug("[GamePort] %s: causing software irq, node type=%d\n", __func__, GPBase->gp_Interrupt.is_Node.ln_Type));
+        DCB(bug("[GamePort] %s: causing software irq, node type=%d\n", __func__, GPBase->gp_Interrupt.is_Node.ln_Type));
         Cause(&GPBase->gp_Interrupt);
 #else
     AROS_INTC1(gpSendQueuedEvents, GPBase);
 #endif
     }
-    
+
     Enable();
 }
 

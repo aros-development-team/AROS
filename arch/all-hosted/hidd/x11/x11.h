@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -13,7 +13,7 @@
 
 #include <oop/oop.h>
 #include <proto/exec.h>
-#include <hidd/keyboard.h>
+#include <hidd/input.h>
 
 #include "x11_class.h"
 
@@ -41,16 +41,14 @@ typedef struct _XVisualInfo XVisualInfo; // Used only as pointer
 /***** X11Mouse HIDD *******************/
 
 /* Private data */
-struct pHidd_Mouse_Event;
 struct x11mouse_data
 {
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    InputIrqCallBack_t mouse_callback;
     APTR callbackdata;
 };
 
 /* IDs */
 #define IID_Hidd_Mouse_X11	"hidd.mouse.x11"
-
 
 /* Methods */
 enum
@@ -71,7 +69,7 @@ VOID Hidd_Mouse_X11_HandleEvent(OOP_Object *o, XEvent *event);
 /* Private data */
 struct x11kbd_data
 {
-    KbdIrqCallBack_t  kbd_callback;
+    InputIrqCallBack_t  kbd_callback;
     APTR    callbackdata;
     UWORD   prev_keycode;
 };
@@ -121,7 +119,8 @@ enum
         NOTY_WINCREATE,
         NOTY_WINDISPOSE,
         NOTY_RESIZEWINDOW,
-        NOTY_NEWCURSOR
+        NOTY_NEWCURSOR,
+        NOTY_HIDECURSOR
 };
 
 

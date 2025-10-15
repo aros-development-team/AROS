@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: The main mouse class.
 */
@@ -17,6 +17,7 @@
 #include <exec/memory.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include <hardware/custom.h>
@@ -142,21 +143,18 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         {
             ULONG idx;
 
-            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
             {
                 switch (idx)
                 {
-                    case aoHidd_Mouse_IrqHandler:
+                    case aoHidd_Input_IrqHandler:
                         data->mouse_callback = (APTR)tag->ti_Data;
-                        break;
-
-                    case aoHidd_Mouse_IrqHandlerData:
-                        data->callbackdata = (APTR)tag->ti_Data;
                         break;
                 }
             }
 
         } /* while (tags to process) */
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
 
         PotgoBase = OpenResource("potgo.resource");
         if (!PotgoBase)

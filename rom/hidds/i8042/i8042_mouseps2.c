@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: PS/2 mouse driver.
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 /****************************************************************************************/

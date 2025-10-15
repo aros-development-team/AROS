@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
-#define __OOP_NOATTRBASES__
-
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <hidd/hidd.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -49,30 +49,21 @@
         CLID_HW_Kbd
 
     NOTES
-        A hardware driver should be a subclass of CLID_Hidd and implement IID_Hidd_Kbd
+        A hardware driver should be a subclass of CLID_Hidd_Kbd and implement IID_Hidd_Kbd
         interface according to the following rules:
 
         1. A single object of driver class represents a single hardware unit.
         2. A single driver object maintains a single callback address (passed to it
-           using aoHidd_Kbd_IrqHandler). Under normal conditions this callback is supplied
-           by CLID_Hidd_Kbd class.
+           using aoHidd_Input_IrqHandler). Under normal conditions this callback is supplied
+           by CLID_Hidd_Input class.
 
 *****************************************************************************************/
-
-static void GlobalCallback(struct kbd_staticdata *csd, KbdIrqData_t code)
-{
-    struct kbd_data *data;
-    
-    for (data = (struct kbd_data *)csd->callbacks.mlh_Head; data->node.mln_Succ;
-         data = (struct kbd_data *)data->node.mln_Succ)
-    {
-        data->callback(data->callbackdata, code);
-    }
-}
 
 OOP_Object *KBDHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct kbd_staticdata *csd = CSD(cl);
+
+    D(bug("[KbdHW] %s()\n", __func__));
 
     if (!csd->hwObj)
     {
@@ -90,30 +81,4 @@ OOP_Object *KBDHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         csd->hwObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
     }
     return csd->hwObj;
-}
-
-VOID KBDHW__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-
-}
-
-OOP_Object *KBDHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddDriver *Msg)
-{
-    struct TagItem tags[] =
-    {
-        { aHidd_Kbd_IrqHandler    , (IPTR)GlobalCallback        },
-        { aHidd_Kbd_IrqHandlerData, (IPTR)CSD(cl)               },
-        { TAG_MORE                , (IPTR)Msg->tags             }
-    };
-    struct pHW_AddDriver add_msg =
-    {
-        .mID         = Msg->mID,
-        .driverClass = Msg->driverClass,
-        .tags        = tags
-    };
-
-    D(bug("[KBD] Adding driver %s, tags 0x%p\n",
-          Msg->driverClass->ClassNode.ln_Name, Msg->tags));
-
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &add_msg.mID);
 }

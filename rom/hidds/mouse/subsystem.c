@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
-#define __OOP_NOATTRBASES__
-
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
 #include <oop/oop.h>
@@ -28,17 +28,17 @@
         single stream and propagated to all clients.
 
         In order to get an access to pointing input subsystem you need to
-        create an object of CLID_Hidd_Mouse class. The actual returned
-        object is a singletone, you do not have to dispose it, and every
-        call will return the same object pointer. After getting this object
+        create an object of CLID_HW_Mouse class. The actual returned
+        object is a singletone, so disposal is not neccessary.  Every
+        call will return the same object pointer. After retrieving the object
         you can, for example, register your driver using moHW_AddDriver
         method, or enumerate drivers using moHW_EnumDrivers.
 
-        If you wish to receive keyboard events, use objects of CLID_Hidd_Mouse
+        If you wish to receive mouse events, use objects of CLID_Hidd_Mouse
         class. This class implements the same interface as driver class, but
         represents receiver's side and is responsible for registering user's
         interrupt handler in the listeners chain. These objects are not real
-        drivers and do not need to me registered within the subsystem.
+        drivers and do not need to be registered within the subsystem.
 
 *****************************************************************************************/
 
@@ -51,12 +51,12 @@
         CLID_HW_Mouse
 
     NOTES
-        A hardware driver should be a subclass of CLID_Hidd and implement IID_Hidd_Mouse
+        A hardware driver should be a subclass of CLID_Hidd_Mouse, and implement IID_Hidd_Mouse
         interface according to the following rules:
 
         1. A single object of driver class represents a single hardware unit.
         2. A single driver object maintains a single callback address (passed to it
-           using aoHidd_Mouse_IrqHandler). Under normal conditions this callback is
+           using aoHidd_Input_IrqHandler). Under normal conditions this callback is
            supplied by CLID_HW_Mouse class.
 
 *****************************************************************************************/
@@ -65,8 +65,7 @@ OOP_Object *MouseHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 {
     struct mouse_staticdata *csd = CSD(cl);
 
-    if (!csd->hwObject)
-    {
+    if (!csd->hwObject) {
         struct TagItem new_tags[] =
         {
             {aHW_ClassName, (IPTR)"Pointing devices"},
@@ -121,13 +120,12 @@ OOP_Object *MouseHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddD
  */
 AROS_UFH3(static BOOL, searchFunc,
     AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(struct driverNode *, dn, A2),
+    AROS_UFHA(struct MouseInput_DriverData *, dn, A2),
     AROS_UFHA(OOP_Object *, wanted, A1))
 {
     AROS_USERFUNC_INIT
 
-    if (dn->drv == wanted)
-    {
+    if (dn->drv == wanted) {
         h->h_Data = dn;
         return TRUE;
     }
@@ -160,8 +158,7 @@ BOOL MouseHW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDr
 
     HW_EnumDrivers(o, &searchHook, Msg->driverObject);
     
-    if (searchHook.h_Data)
-    {
+    if (searchHook.h_Data) {
         struct pHW_RemoveDriver rem_msg =
         {
             .mID = Msg->mID,
@@ -175,7 +172,7 @@ BOOL MouseHW__HW__RemoveDriver(OOP_Class *cl, OOP_Object *o, struct pHW_RemoveDr
 
 AROS_UFH3(static void, enumFunc,
     AROS_UFHA(struct Hook *, h,  A0),
-    AROS_UFHA(struct driverNode *, dn, A2),
+    AROS_UFHA(struct MouseInput_DriverData *, dn, A2),
     AROS_UFHA(OOP_Object *, hookMsg, A1))
 {
     AROS_USERFUNC_INIT

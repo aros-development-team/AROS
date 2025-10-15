@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Android mouse input hidd class.
 */
@@ -8,6 +8,7 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include <android/input.h>
@@ -41,23 +42,21 @@ OOP_Object *AMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
         {
             ULONG idx;
 
-            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
             {
                 switch (idx)
                 {
-                case aoHidd_Mouse_IrqHandler:
+                case aoHidd_Input_IrqHandler:
                     D(bug("[AMouse] Callback address 0x%p\n", tag->ti_Data));
                     data->mouse_callback = (VOID (*)())tag->ti_Data;
-                    break;
-
-                case aoHidd_Mouse_IrqHandlerData:
-                    D(bug("[AMouse] Callback data 0x%p\n", tag->ti_Data));
-                    data->callbackdata = (APTR)tag->ti_Data;
                     break;
                 }
             }
         } /* while (tags to process) */
-        
+
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[AMouse] created mouse hidd, callback data 0x%08x\n", data->callbackdata));
+
         /*
          * Install the mouse hidd.
          * Our class is final, it's not meant to be subclassed. Additionally, we

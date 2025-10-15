@@ -2,7 +2,7 @@
 #define I8042_MOUSE_H
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -16,6 +16,7 @@
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include "i8042_intern.h"
@@ -35,7 +36,7 @@
 
 struct mouse_data
 {
-    VOID                        (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    InputIrqCallBack_t          mouse_callback;
     APTR                        callbackdata;
 
     UWORD                       buttonstate;

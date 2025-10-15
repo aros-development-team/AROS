@@ -9,7 +9,7 @@ INCLUDE_FILES := $(call WILDCARD, include/*.h)
 clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
-FILES	:= kbd_init kbdclass kbdsubsystem
+FILES	:= input_init inputclass inputsubsystem
 
 USER_CPPFLAGS += \
     -D__OOP_NOLIBBASE__ \
@@ -17,8 +17,8 @@ USER_CPPFLAGS += \
     -D__UTILITY_NOLIBBASE__
 USER_LDFLAGS := -static
 
-%build_module mmake=kernel-hidd-kbd \
-    modname=keyboard modtype=hidd \
+%build_module mmake=kernel-hidd-input \
+    modname=inputclass modtype=hidd \
     files="$(FILES)"
 
 %common

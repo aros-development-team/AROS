@@ -1,7 +1,8 @@
 /*
-    Copyright (C) 2004-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
@@ -14,8 +15,14 @@
 #undef HWBase
 #define HWBase (LIBBASE->csd.hwMB)
 
-static int KBD_InitClass(struct kbdbase *LIBBASE)
+static int KbdHidd_InitClass(struct kbdbase *LIBBASE)
 {
+    struct OOP_ABDescr attrbases[] =
+    {
+        {IID_HW,            &LIBBASE->csd.hwAB          },
+        {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
+        {NULL,              NULL                        }
+    };
     struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
 
     D(bug("[KBD] base class initialization\n"));
@@ -24,19 +31,17 @@ static int KBD_InitClass(struct kbdbase *LIBBASE)
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
 
-    LIBBASE->csd.hiddKbdAB = OOP_ObtainAttrBase(IID_Hidd_Kbd);
-    LIBBASE->csd.hwAB = OOP_ObtainAttrBase(IID_HW);
+    if (!OOP_ObtainAttrBases(attrbases))
+        return FALSE;
+
     LIBBASE->csd.hwMB = OOP_GetMethodID(IID_HW, 0);
 
-    if (LIBBASE->csd.hiddKbdAB && LIBBASE->csd.hwAB)
+    if (LIBBASE->csd.hiddInputAB && LIBBASE->csd.hwAB)
     {
         OOP_Object *root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-
-        NewList((struct List *)&LIBBASE->csd.callbacks);
-
         if (HW_AddDriver(root, LIBBASE->csd.hwClass, NULL))
         {
-            D(bug("[KBD] Everything OK\n"));
+            D(bug("[KBD] Keyboard Subsystem Registered\n"));
             return TRUE;
         }
     }
@@ -44,19 +49,25 @@ static int KBD_InitClass(struct kbdbase *LIBBASE)
     return FALSE;
 }
 
-static int KBD_ExpungeClass(struct kbdbase *LIBBASE)
+static int KbdHidd_ExpungeClass(struct kbdbase *LIBBASE)
 {
+    struct OOP_ABDescr attrbases[] =
+    {
+        {IID_HW,            &LIBBASE->csd.hwAB          },
+        {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
+        {NULL,              NULL                        }
+    };
     struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
 
     D(bug("[KBD] Base Class destruction\n"));
 
-    if (LIBBASE->csd.hiddKbdAB)
-        OOP_ReleaseAttrBase(IID_Hidd_Kbd);
+    OOP_ReleaseAttrBases(attrbases);
+
     if (LIBBASE->csd.cs_UtilityBase)
         CloseLibrary(LIBBASE->csd.cs_UtilityBase);
         
     return TRUE;
 }
 
-ADD2INITLIB(KBD_InitClass, 0)
-ADD2EXPUNGELIB(KBD_ExpungeClass, 0)
+ADD2INITLIB(KbdHidd_InitClass, 0)
+ADD2EXPUNGELIB(KbdHidd_ExpungeClass, 0)

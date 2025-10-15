@@ -2,7 +2,7 @@
 #define HIDD_KEYBOARD_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the keyboard hidd.
@@ -13,9 +13,9 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
-#define CLID_Hidd_Kbd "hidd.kbd"
-#define CLID_HW_Kbd "hw.kbd"
-#define IID_Hidd_Kbd "hidd.kbd"
+#define CLID_Hidd_Kbd "hidd.input.kbd"
+#define CLID_HW_Kbd "hw.input.kbd"
+#define IID_Hidd_Kbd "hidd.input.kbd"
 
 #define HiddKbdAB __abHidd_Kbd
 
@@ -23,53 +23,25 @@
 extern OOP_AttrBase HiddKbdAB;
 #endif
 
-typedef ULONG KbdIrqData_t;
-typedef VOID (*KbdIrqCallBack_t)(APTR, KbdIrqData_t);
+/* Parameter values for the IRQ handler */
 
-enum {
-   aoHidd_Kbd_IrqHandler,
-   aoHidd_Kbd_IrqHandlerData,
-   
-   num_Hidd_Kbd_Attrs
+struct pHidd_Kbd_Event
+{
+    union {
+        struct {
+            UWORD flags;
+            UWORD code;
+        };
+        ULONG kbdevt;
+    };
 };
 
-#define aHidd_Kbd_IrqHandler		(aoHidd_Kbd_IrqHandler     + HiddKbdAB)
-#define aHidd_Kbd_IrqHandlerData	(aoHidd_Kbd_IrqHandlerData + HiddKbdAB)
-
-#define IS_HIDDKBD_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddKbdAB, num_Hidd_Kbd_Attrs)
-
 /*
- * The following flags are OR'd by hardware drivers with the keycode to pass to the IrqHandler(s)
+ * Keyboard Event Flags ...
  */
 
 // Qualifier keys sent with KEYTOGGLE set, set their state based on the keys UP/DOWN state.
 #define KBD_KEYTOGGLE (1 << 7)
-
-/*
- * The following methods are legacy and deprecated. Do not use them.
- * Use HW_AddDriver() and HW_RemoveDriver() methods on CLID_HW_Kbd
- * object instead.
- */
-enum
-{
-    moHidd_Kbd_AddHardwareDriver = 0,
-    moHidd_Kbd_RemHardwareDriver,
-
-    NUM_Kbd_METHODS
-};
-
-struct pHidd_Kbd_AddHardwareDriver
-{
-    OOP_MethodID    mID;
-    OOP_Class	    *driverClass;
-    struct TagItem  *tags;
-};
-
-struct pHidd_Kbd_RemHardwareDriver
-{
-    OOP_MethodID    mID;
-    OOP_Object	    *driverObject;
-};
 
 #if !defined(HiddKbdBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddKbdBase HIDD_Kbd_GetMethodBase(__obj)
@@ -88,34 +60,5 @@ static inline OOP_MethodID HIDD_Kbd_GetMethodBase(OOP_Object *obj)
     return KbdMethodBase;
 }
 #endif
-
-#define HIDD_Kbd_AddHardwareDriver(obj, driverClass, tags) \
-    ({OOP_Object *__obj = obj;\
-      HIDD_Kbd_AddHardwareDriver_(HiddKbdBase, __obj, driverClass, tags); })
-
-static inline OOP_Object *HIDD_Kbd_AddHardwareDriver_(OOP_MethodID KbdMethodBase, OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
-{
-    struct pHidd_Kbd_AddHardwareDriver p;
-
-    p.mID = KbdMethodBase + moHidd_Kbd_AddHardwareDriver;
-    p.driverClass = driverClass;
-    p.tags = tags;
-
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
-}
-
-#define HIDD_Kbd_RemHardwareDriver(obj, driverObject) \
-    ({OOP_Object *__obj = obj;\
-      HIDD_Kbd_RemHardwareDriver_(HiddKbdBase, __obj, driverObject); })
-
-static inline OOP_Object *HIDD_Kbd_RemHardwareDriver_(OOP_MethodID KbdMethodBase, OOP_Object *obj, OOP_Object *driverObject)
-{
-    struct pHidd_Kbd_RemHardwareDriver p;
-
-    p.mID = KbdMethodBase + moHidd_Kbd_RemHardwareDriver;
-    p.driverObject = driverObject;
-
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
-}
 
 #endif /* HIDD_KEYBOARD_H */

@@ -41,6 +41,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-hidd-includes \
 #MM	kernel-hostlib-includes \
 #MM     kernel-hidd-gfx-includes \
+#MM     kernel-hidd-input-includes \
+#MM     kernel-hidd-kbd-includes \
+#MM     kernel-hidd-mouse-includes \
 #MM     kernel-graphics-includes \
 #MM     kernel-utility-includes \
 #MM     kernel-intuition-includes \
@@ -81,6 +84,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM	kernel-filesystem \
 #MM     kernel-graphics \
 #MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-utility \
@@ -111,6 +115,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-con \
 #MM     kernel-graphics \
 #MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-utility \
@@ -131,7 +136,7 @@ include $(SRCDIR)/config/aros.cfg
 
 BASE_DEVICES  := console input gameport keyboard
 BASE_HANDLERS := ram con
-BASE_HIDD     := hiddclass gfx keyboard mouse
+BASE_HIDD     := hiddclass gfx inputclass keyboard mouse
 BASE_LIBS     := aros dos gadtools graphics intuition keymap layers oop utility
 BASE_LIBS_ARCH := debug
 BASE_RSRCS    := bootloader dosboot FileSystem lddemon

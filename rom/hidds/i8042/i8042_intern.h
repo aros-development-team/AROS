@@ -6,6 +6,7 @@
 #include <oop/oop.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 /***** Common static data *******************/
@@ -19,7 +20,7 @@ struct i8042_staticdata
     OOP_Object         *mousehidd;
 
     OOP_AttrBase        hiddAttrBase;
-    OOP_AttrBase        hiddKbdAB;
+    OOP_AttrBase        hiddInputAB;
     OOP_AttrBase        hiddMouseAB;
     OOP_MethodID        hwMethodBase;
 
@@ -47,12 +48,12 @@ struct i8042base
 #define XSD(cl) (&((struct i8042base *)cl->UserData)->csd)
 
 #undef HiddAttrBase
-#undef HiddKbdAB
+#undef HiddInputAB
 #undef HiddMouseAB
 #undef HWBase
 #define HiddAttrBase (XSD(cl)->hiddAttrBase)
-#define HiddKbdAB    (XSD(cl)->hiddKbdAB)
-#define HiddMouseAB  (XSD(cl)->hiddMouseAB)
+#define HiddInputAB    (XSD(cl)->hiddInputAB)
+#define HiddMouseAB    (XSD(cl)->hiddMouseAB)
 #define HWBase       (XSD(cl)->hwMethodBase)
 
 #define KernelBase  (XSD(cl)->cs_KernelBase)

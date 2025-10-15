@@ -2,7 +2,7 @@
 #define  KEYBOARD_INTERN_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -16,6 +16,7 @@
 #include <exec/devices.h>
 
 #include <oop/oop.h>
+#include <hidd/input.h>
 
 #define KB_MAXKEYS     256
 #define KB_MATRIXSIZE  (KB_MAXKEYS/(sizeof(UBYTE)*8))
@@ -24,26 +25,26 @@
 
 struct KeyboardBase
 {
-    struct Device      kb_device;
-    struct Library    *kb_KbdHiddBase;
+    struct Device               kb_device;
+    struct Library              *kb_KbdHiddBase;
 
-    struct MinList          kb_PendingQueue;  /* IOrequests (KBD_READEVENT) not done quick */
-    struct SignalSemaphore  kb_QueueLock;
-    struct MinList	    kb_ResetHandlerList;
+    struct MinList              kb_PendingQueue;        /* IOrequests (KBD_READEVENT) not done quick */
+    struct SignalSemaphore      kb_QueueLock;
+    struct MinList              kb_ResetHandlerList;
 
-    struct Interrupt  kb_Interrupt;     /* Interrupt to invoke in case of keypress (or
-					   releases) and there are pending requests */
+    struct Interrupt            kb_Interrupt;           /* Interrupt to invoke in case of keypress (or
+                                                            releases) and there are pending requests */
 
-    UWORD   kb_nHandlers;      		/* Number of reset handlers added */
-    ULONG  *kb_keyEventBuffer;  /* Should be KbdIrqData_t * */
-    UWORD   kb_writePos;
-    BOOL    kb_ResetPhase;	        /* True if reset has begun */
-    UBYTE  *kb_Matrix;
+    UWORD                       kb_nHandlers;      	/* Number of reset handlers added */
+    ULONG                       *kb_keyEventBuffer;
+    UWORD                       kb_writePos;
+    BOOL                        kb_ResetPhase;	        /* True if reset has begun */
+    UBYTE                       *kb_Matrix;
     
-    OOP_Object	   *kb_Hidd;	        /* Hidd object to use */
-    struct Library *kb_OOPBase;
+    OOP_Object	                *kb_Hidd;	        /* Hidd object to use */
+    struct Library              *kb_OOPBase;
     
-    OOP_AttrBase    HiddKbdAB_;
+    OOP_AttrBase                HiddInputAB_;
 
     /* FIXME:
      * m68k lowlevel.library stores only io_Device field after keyboard.device
@@ -53,7 +54,7 @@ struct KeyboardBase
      * we leak memory if above happens but it is much better than freeing
      * random memory
      */
-    struct MinList kb_kbunits;
+    struct MinList              kb_kbunits;
 
     /*
      * The following modifiction allows BlitzBasic games in blitz mode
@@ -65,26 +66,26 @@ struct KeyboardBase
      * https://github.com/AmiBlitz/AmiBlitz3/blob/master/Sourcecodes/Amiblitz3/BlitzLibs/Blitzlibs/blitzkeyslib.ab3
     */
 
-    ULONG          kb_pad1[35];
-    UWORD          kb_pad2;
-    UBYTE          kb_MatrixBuffer[KB_MATRIXSIZE];
+    ULONG                       kb_pad1[35];
+    UWORD                       kb_pad2;
+    UBYTE                       kb_MatrixBuffer[KB_MATRIXSIZE];
 };
 
 
 typedef struct KBUnit
 {
-	struct MinNode node;
-    UWORD  kbu_readPos;		/* Position in the key buffer */
-    UWORD  kbu_Qualifiers;      /* Known qualifiers at this moment */
-    UBYTE  kbu_flags;           /* For unit flags definitions, see below */
+    struct MinNode              node;
+    UWORD                       kbu_readPos;		/* Position in the key buffer */
+    UWORD                       kbu_Qualifiers;         /* Known qualifiers at this moment */
+    UBYTE                       kbu_flags;              /* For unit flags definitions, see below */
 } KBUnit;
 
 #define KBUB_PENDING 0		/* Unit has pending request for keyevents */
 
 #define KBUF_PENDING 0x01
 
-#undef HiddKbdAB
-#define HiddKbdAB KBBase->HiddKbdAB_
+#undef HiddInputAB
+#define HiddInputAB KBBase->HiddInputAB_
 
 #endif /* KEYBOARD_INTERN_H */
 

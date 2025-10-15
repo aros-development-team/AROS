@@ -1,15 +1,17 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: X11 hidd handling keypresses.
 */
 
+#define DEBUG 0
 #include "x11_debug.h"
 
 #define __OOP_NOATTRBASES__
 
 #include <proto/utility.h>
 #include <devices/inputevent.h>
+#include <hidd/keyboard.h>
 
 #include "x11_keytable.h"
 
@@ -18,13 +20,13 @@
 
 /****************************************************************************************/
 
-long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
+LONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd);
 
-static OOP_AttrBase HiddKbdAB;
+static OOP_AttrBase HiddInputAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_Kbd  , &HiddKbdAB    },
+    { IID_Hidd_Input  , &HiddInputAB    },
     { NULL          , NULL          }
 };
 
@@ -56,8 +58,7 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 {
     BOOL                has_kbd_hidd = FALSE;
     struct TagItem      *tag, *tstate;
-    KbdIrqCallBack_t    callback = NULL;
-    APTR                callbackdata = NULL;
+    InputIrqCallBack_t  callback = NULL;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
 
@@ -76,48 +77,35 @@ OOP_Object * X11Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     tstate = msg->attrList;
     D(bug("[X11:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));
     
-    while ((tag = NextTagItem(&tstate)))
-    {
+    while ((tag = NextTagItem(&tstate))) {
         ULONG idx;
-        
 
-        if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
-        {
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
             D(bug("[X11:Kbd] %s: Kbd hidd tag\n", __func__));
-            switch (idx)
-            {
-                case aoHidd_Kbd_IrqHandler:
+            switch (idx) {
+                case aoHidd_Input_IrqHandler:
                     callback = (APTR)tag->ti_Data;
-                    D(bug("[X11:Kbd] %s:   Got callback %p\n", __func__, (APTR)tag->ti_Data));
-                    break;
-                        
-                case aoHidd_Kbd_IrqHandlerData:
-                    callbackdata = (APTR)tag->ti_Data;
-                    D(bug("[X11:Kbd] %s:   Got data %p\n", __func__, (APTR)tag->ti_Data));
+                    D(bug("[X11:Kbd] %s:   Got callback @ 0x%p\n", __func__, (APTR)tag->ti_Data));
                     break;
             }
-        }
-        else
-        {
+        } else {
             D(bug("[X11:Kbd] %s: Got tag %d, data %x\n", __func__, tag->ti_Tag, tag->ti_Data));
         }
-            
     } /* while (tags to process) */
     
-    if (NULL == callback)
-    {
+    if (NULL == callback) {
         D(bug("[X11:Kbd] %s: returning %d\n", __func__, 0));
 
         return NULL; /* Should have some error code here */
     }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    if (o) {
         struct x11kbd_data *data = OOP_INST_DATA(cl, o);
 
         data->kbd_callback = callback;
-        data->callbackdata = callbackdata;
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[X11:Kbd] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
         data->prev_keycode = 0xFFFF;
 
         ObtainSemaphore( &XSD(cl)->sema);
@@ -148,7 +136,7 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
 {
     struct x11kbd_data  *data;
     XKeyEvent           *xk;
-    long                 keycode;
+    LONG                keycode;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
 
@@ -156,22 +144,19 @@ VOID X11Kbd__Hidd_Kbd_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHid
     xk = &(msg->event->xkey);
 
     keycode = xkey2hidd(xk, XSD(cl));
-    if (keycode == -1)
-    {
-        
+    if (keycode == -1) {
         D(bug("[X11:Kbd] %s: unknown key!r - returning\n", __func__));
         return;
     }
 
-    if (msg->event->type == KeyRelease)
-    {
+    if (msg->event->type == KeyRelease) {
         keycode |= IECODE_UP_PREFIX;
     }
 
-    if (keycode != data->prev_keycode)
-    {
-        KbdIrqData_t keydata = keycode;
-        data->kbd_callback(data->callbackdata, keydata);
+    if (keycode != data->prev_keycode) {
+        struct pHidd_Kbd_Event x11kEvt;
+        x11kEvt.kbdevt = (ULONG)keycode;
+        data->kbd_callback(data->callbackdata, &x11kEvt);
         data->prev_keycode = keycode;
     }
 
@@ -192,10 +177,8 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
     short t;
     WORD  result = -1;
     
-    for (t = 0; keytable[t].hiddcode != -1; t++)
-    {
-        if (*ks == keytable[t].keysym)
-        {
+    for (t = 0; keytable[t].hiddcode != -1; t++) {
+        if (*ks == keytable[t].keysym) {
             D(bug("[X11:Kbd] %s: found in key table\n", __func__));
             result = keytable[t].hiddcode;
             break;
@@ -207,22 +190,22 @@ WORD lookup_keytable(KeySym *ks, const struct _keytable *keytable)
 
 /****************************************************************************************/
 
-long xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
+LONG xkey2hidd (XKeyEvent *xk, struct x11_staticdata *xsd)
 {
     char    buffer[10];
     KeySym  ks;
     D(int     count;)
-    long    result;
+    LONG    result;
 
     D(bug("[X11:Kbd] %s()\n", __func__));
     D(bug("[X11:Kbd] %s: xsd @ 0x%p\n", __func__, xsd));
 
-    if ((xsd->xtd) && (xsd->xtd->havetable))
-    {
+    if ((xsd->xtd) && (xsd->xtd->havetable)) {
         D(bug("[X11:Kbd] %s: using loaded X key table\n", __func__));
+
         result = -1;
-        if ((xk->keycode >= 0) && (xk->keycode < 256))
-        {
+
+        if ((xk->keycode >= 0) && (xk->keycode < 256)) {
             result = xsd->xtd->keycode2rawkey[xk->keycode];
             if (result == 255) result = -1;
         }
@@ -256,8 +239,7 @@ AROS_LH1(void , x11kdb_LoadkeyTable,
 
     D(bug("[X11:Kbd] %s(0x%p)\n", __func__, table));
 
-    if (X11Base->xsd.xtd)
-    {
+    if (X11Base->xsd.xtd) {
         D(bug("[X11:Kbd] %s: Copying Table Data\n", __func__));
         CopyMem(table, X11Base->xsd.xtd->keycode2rawkey, 256);
         X11Base->xsd.xtd->havetable = TRUE;

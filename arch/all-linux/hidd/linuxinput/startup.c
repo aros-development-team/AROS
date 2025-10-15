@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -19,16 +19,15 @@ static int LinuxInput_Startup(LIBBASETYPEPTR LIBBASE)
 
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
     if (ms) {
-        HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->lsd.mouseclass, NULL);
+        HIDD_Input_AddHardwareDriver(ms, LIBBASE->lsd.mouseclass, NULL);
         OOP_DisposeObject(ms);
     }
 
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
-        HIDD_Mouse_AddHardwareDriver(kbd, LIBBASE->lsd.kbdclass, NULL);
+        HIDD_Input_AddHardwareDriver(kbd, LIBBASE->lsd.kbdclass, NULL);
         OOP_DisposeObject(kbd);
     }
-
 
     /* We use ourselves, and noone else */
     LIBBASE->library.lib_OpenCnt = 1;

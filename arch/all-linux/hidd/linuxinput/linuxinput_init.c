@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 
     Desc: LinuxInput hidd initialization code.
 */
@@ -31,12 +31,12 @@
  * Some attrbases needed as global vars.
  * These are write-once read-many.
  */
-OOP_AttrBase HiddKbdAB;
+OOP_AttrBase HiddInputAB;
 OOP_AttrBase HiddMouseAB;
 
 static const struct OOP_ABDescr abd[] =
 {
-    { IID_Hidd_Kbd      , &HiddKbdAB    },
+    { IID_Hidd_Input    , &HiddInputAB  },
     { IID_Hidd_Mouse    , &HiddMouseAB  },
     { NULL              , NULL          }
 };

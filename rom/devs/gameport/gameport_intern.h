@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -49,12 +49,17 @@ struct GameportBase
     
     UBYTE   			gp_cTypes[GP_NUNITS];
 
+    OOP_AttrBase                HiddInputAB_;
     OOP_AttrBase                HiddMouseAB_;
 };
 
+#ifdef HiddInputAB
+#undef HiddInputAB
+#endif
 #ifdef HiddMouseAB
 #undef HiddMouseAB
 #endif
+#define HiddInputAB (GPBase->HiddInputAB_)
 #define HiddMouseAB (GPBase->HiddMouseAB_)
 
 typedef struct GPUnit

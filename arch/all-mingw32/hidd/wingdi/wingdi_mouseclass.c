@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: GDI hidd handling mouse events.
 */
@@ -13,6 +13,7 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include LC_LIBDEFS_FILE
@@ -20,10 +21,12 @@
 
 /****************************************************************************************/
 
+static OOP_AttrBase HiddInputAB;
 static OOP_AttrBase HiddMouseAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
+    { IID_Hidd_Input, &HiddInputAB  },
     { IID_Hidd_Mouse, &HiddMouseAB  },
     { NULL          , NULL          }
 };
@@ -135,20 +138,19 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
             {
                 ULONG idx;
             
-                if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx)) {
+                if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
                     switch (idx) {
-                    case aoHidd_Mouse_IrqHandler:
+                    case aoHidd_Input_IrqHandler:
                         D(bug("[GDIMouse] Callback address 0x%p\n", tag->ti_Data));
                         data->mouse_callback = (VOID (*)())tag->ti_Data;
-                        break;
-                    case aoHidd_Mouse_IrqHandlerData:
-                        D(bug("[GDIMouse] Callback data 0x%p\n", tag->ti_Data));
-                        data->callbackdata = (APTR)tag->ti_Data;
                         break;
                     }
                 }
             } /* while (tags to process) */
-        
+
+            OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+            D(bug("[GDIMouse] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
+
             /* Install the mouse hidd */
             ObtainSemaphore( &XSD(cl)->sema);
             XSD(cl)->mousehidd = o;

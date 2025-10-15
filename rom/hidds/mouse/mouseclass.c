@@ -1,11 +1,12 @@
 /*
-    Copyright (C) 2004-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
 */
 
-#define __OOP_NOATTRBASES__
-
+#define DEBUG 0
 #include <aros/debug.h>
+
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -16,7 +17,7 @@
 
 #include "mouse.h"
 
-#define SysBase     (CSD(cl)->cs_SysBase)
+#define SysBase     ((struct ExecBase *)(CSD(cl)->cs_SysBase))
 #define UtilityBase (CSD(cl)->cs_UtilityBase)
 
 /*****************************************************************************************
@@ -86,37 +87,6 @@
 
     SEE ALSO
         aoHidd_Mouse_IrqHandlerData, aoHidd_Mouse_Extended
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        aoHidd_Mouse_IrqHandlerData
-
-    SYNOPSIS
-        [I..], APTR
-
-    LOCATION
-        CLID_Hidd_Mouse
-
-    FUNCTION
-        Specifies a user-defined value that will be passed to interrupt handler as a first
-        parameter. The purpose of this is to pass some static data to the handler.
-        The system will not assume anything about this value.
-
-        Defaults to NULL if not specified.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        aoHidd_Mouse_IrqHandler
 
     INTERNALS
 
@@ -223,65 +193,31 @@
 
 OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-    struct mouse_data *data;
-    struct TagItem *tag, *tstate;
-
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (!o)
-        return NULL;
-
-    data = OOP_INST_DATA(cl, o);
-    data->callback = NULL;
-    data->callbackdata = NULL;
-
-    tstate = msg->attrList;
-    D(bug("tstate: %p\n", tstate));
-
-    while ((tag = NextTagItem(&tstate)))
+    struct pRoot_New mouseNewMsg;
+    struct TagItem mouseTags[] =
     {
-        ULONG idx;
+        {aHidd_Input_Subsystem, (IPTR)CSD(cl)->hwObject },
+        {TAG_MORE,              (IPTR)msg->attrList     },
+        {TAG_DONE                                       }
+    };
+    mouseNewMsg.mID = msg->mID;
+    mouseNewMsg.attrList = mouseTags;
 
-        D(bug("Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+    D(bug("[MouseHidd] %s()\n", __func__));
 
-        if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
-        {
-            D(bug("Mouse hidd tag\n"));
-            switch (idx)
-            {
-                case aoHidd_Mouse_IrqHandler:
-                    data->callback = (APTR)tag->ti_Data;
-                    D(bug("Got callback %p\n", (APTR)tag->ti_Data));
-                    break;
+    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&mouseNewMsg);
 
-                case aoHidd_Mouse_IrqHandlerData:
-                    data->callbackdata = (APTR)tag->ti_Data;
-                    D(bug("Got data %p\n", (APTR)tag->ti_Data));
-                    break;
-            }
-        }
-    } /* while (tags to process) */
-
-    /* Add to interrupts list if we have a callback */
-    if (data->callback)
-    {
-        Disable();
-        ADDTAIL(&CSD(cl)->callbacks, data);
-        Enable();
-    }
+    D(bug("[MouseHidd] %s: returning 0x%p\n", __func__, o));
 
     return o;
 }
 
 VOID Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct mouse_data *data = OOP_INST_DATA(cl, o);
+    struct MouseInput_Data *data = OOP_INST_DATA(cl, o);
 
-    if (data->callback)
-    {
-        Disable();
-        REMOVE((struct Node *)data);
-        Enable();
-    }
+    D(bug("[MouseHidd] %s()\n", __func__));
+    
     OOP_DoSuperMethod(cl, o, msg);
 }
 
@@ -306,109 +242,4 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-/*
- * In future we could support enumeration of devices and specifying
- * which device we wish to read events from (in case if we want to implement
- * amigainput.library or something like it)
- */
-
-/*****************************************************************************************
-
-    NAME
-        moHidd_Mouse_AddHardwareDriver
-
-    SYNOPSIS
-        OOP_Object *OOP_DoMethod(OOP_Object *obj, struct pHidd_Mouse_AddHardwareDriver *Msg);
-
-        OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
-
-    LOCATION
-        CLID_Hidd_Mouse
-
-    FUNCTION
-        Creates a hardware driver object and registers it in the system.
-
-        It does not matter on which instance of CLID_Hidd_Mouse class this method is
-        used. Hardware driver objects are shared between all of them.
-
-        Since V2 this interface is obsolete and deprecated. Use moHW_AddDriver
-        method on CLID_HW_Mouse class in order to install the driver.
-
-    INPUTS
-        obj         - Any object of CLID_Hidd_Mouse class.
-        driverClass - A pointer to OOP class of the driver. In order to create an object
-                      of some previously registered public class, use
-                      oop.library/OOP_FindClass().
-        tags        - An optional taglist which will be passed to driver class' New() method.
-
-    RESULT
-        A pointer to driver object.
-
-    NOTES
-        Do not dispose the returned object yourself, use HIDD_Mouse_RemHardwareDriver() for it.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        moHidd_Mouse_RemHardwareDriver
-
-    INTERNALS
-        This method supplies own interrupt handler to the driver, do not override this.
-
-*****************************************************************************************/
-
-OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_AddHardwareDriver *Msg)
-{
-    return HW_AddDriver(CSD(cl)->hwObject, Msg->driverClass, Msg->tags);
-}
-
-/*****************************************************************************************
-
-    NAME
-        moHidd_Mouse_RemHardwareDriver
-
-    SYNOPSIS
-        void OOP_DoMethod(OOP_Object *obj, struct pHidd_Mouse_RemHardwareDriver *Msg);
-
-        void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
-
-    LOCATION
-        CLID_Hidd_Mouse
-
-    FUNCTION
-        Unregisters and disposes pointing device hardware driver object.
-
-        It does not matter on which instance of CLID_Hidd_Mouse class this method is
-        used. Hardware driver objects are shared between all of them.
-
-        Since V2 this interface is obsolete and deprecated. Use moHW_RemoveDriver
-        method on CLID_HW_Kbd class in order to remove the driver.
-
-    INPUTS
-        obj    - Any object of CLID_Hidd_Mouse class.
-        driver - A pointer to a driver object, returned by HIDD_Mouse_AddHardwareDriver().
-
-    RESULT
-        None
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-        moHidd_Mouse_AddHardwareDriver
-
-    INTERNALS
-
-*****************************************************************************************/
-
-void Mouse__Hidd_Mouse__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_RemHardwareDriver *Msg)
-{
-    HW_RemoveDriver(CSD(cl)->hwObject, Msg->driverObject);
 }

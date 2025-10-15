@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: kbd Hidd for standalone i386 AROS
 */
@@ -24,10 +24,10 @@ static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd      , &LIBBASE->csd.hiddAttrBase},
-        {IID_Hidd_Kbd  , &LIBBASE->csd.hiddKbdAB   },
-        {IID_Hidd_Mouse, &LIBBASE->csd.hiddMouseAB },
-        {NULL          , NULL                      }
+        {IID_Hidd,          &LIBBASE->csd.hiddAttrBase  },
+        {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
+        {IID_Hidd_Mouse,    &LIBBASE->csd.hiddMouseAB   },
+        {NULL,              NULL                        }
     };
 
     D(bug("[i8042] %s()\n", __func__));
@@ -39,14 +39,14 @@ static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
     LIBBASE->csd.cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->csd.cs_UtilityBase)
         return FALSE;
-        
+
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;
 
     LIBBASE->csd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
 
     D(bug("[i8042] %s: Initialization done\n", __func__));
-    
+
     return TRUE;
 }
 
@@ -56,12 +56,12 @@ static int i8042Kbd_ExpungeAttrs(struct i8042base * LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd      , &LIBBASE->csd.hiddAttrBase},
-        {IID_Hidd_Kbd  , &LIBBASE->csd.hiddKbdAB   },
-        {IID_Hidd_Mouse, &LIBBASE->csd.hiddMouseAB },
-        {NULL          , NULL                      }
+        {IID_Hidd,          &LIBBASE->csd.hiddAttrBase  },
+        {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
+        {IID_Hidd_Mouse,    &LIBBASE->csd.hiddMouseAB   },
+        {NULL,              NULL                        }
     };
-    
+
     D(bug("[i8042] %s()\n", __func__));
 
     OOP_ReleaseAttrBases(attrbases);

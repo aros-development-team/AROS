@@ -2,7 +2,7 @@
 #define HIDD_MOUSE_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse hidd.
@@ -17,10 +17,10 @@
 #   include <proto/oop.h>
 #endif
 
-#define CLID_Hidd_Mouse "hidd.mouse"
-#define CLID_HW_Mouse   "hw.mouse"
+#define CLID_Hidd_Mouse "hidd.input.mouse"
+#define CLID_HW_Mouse   "hw.input.mouse"
 
-#define IID_Hidd_Mouse "hidd.mouse"
+#define IID_Hidd_Mouse "hidd.input.mouse"
 
 #define HiddMouseAB __abHidd_Mouse
 
@@ -32,8 +32,6 @@ extern OOP_AttrBase HiddMouseAB;
 
 enum {
 
-   aoHidd_Mouse_IrqHandler,
-   aoHidd_Mouse_IrqHandlerData,
    aoHidd_Mouse_State,
    aoHidd_Mouse_RelativeCoords,
    aoHidd_Mouse_Extended,
@@ -41,9 +39,6 @@ enum {
    num_Hidd_Mouse_Attrs
 };
 
-
-#define aHidd_Mouse_IrqHandler          (aoHidd_Mouse_IrqHandler     + HiddMouseAB)
-#define aHidd_Mouse_IrqHandlerData      (aoHidd_Mouse_IrqHandlerData + HiddMouseAB)
 #define aHidd_Mouse_State               (aoHidd_Mouse_State          + HiddMouseAB)  
 #define aHidd_Mouse_RelativeCoords      (aoHidd_Mouse_RelativeCoords + HiddMouseAB)
 #define aHidd_Mouse_Extended            (aoHidd_Mouse_Extended       + HiddMouseAB)
@@ -88,27 +83,6 @@ enum {
 /* Flags */
 #define vHidd_Mouse_Relative 0x0001
 
-enum
-{
-    moHidd_Mouse_AddHardwareDriver = 0,
-    moHidd_Mouse_RemHardwareDriver,
-
-    NUM_Mouse_METHODS
-};
-
-struct pHidd_Mouse_AddHardwareDriver
-{
-    OOP_MethodID    mID;
-    OOP_Class       *driverClass;
-    struct TagItem  *tags;
-};
-
-struct pHidd_Mouse_RemHardwareDriver
-{
-    OOP_MethodID    mID;
-    OOP_Object      *driverObject;
-};
-
 #if !defined(HiddMouseBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddMouseBase HIDD_Mouse_GetMethodBase(__obj)
 
@@ -127,32 +101,4 @@ static inline OOP_MethodID HIDD_Mouse_GetMethodBase(OOP_Object *obj)
 }
 #endif
 
-#define HIDD_Mouse_AddHardwareDriver(obj, driverClass, tags) \
-    ({OOP_Object *__obj = obj;\
-     HIDD_Mouse_AddHardwareDriver_(HiddMouseBase, __obj, driverClass, tags); })
-
-static inline OOP_Object *HIDD_Mouse_AddHardwareDriver_(OOP_MethodID MouseMethodBase, OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
-{
-    struct pHidd_Mouse_AddHardwareDriver p;
-
-    p.mID = MouseMethodBase + moHidd_Mouse_AddHardwareDriver;
-    p.driverClass = driverClass;
-    p.tags = tags;
-
-    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
-}
-
-#define HIDD_Mouse_RemHardwareDriver(obj, driverObject) \
-    ({OOP_Object *__obj = obj; \
-     HIDD_Mouse_RemHardwareDriver_(HiddMouseBase, __obj, driverObject); })
-
-static inline void HIDD_Mouse_RemHardwareDriver_(OOP_MethodID MouseMethodBase, OOP_Object *obj, OOP_Object *driver)
-{
-    struct pHidd_Mouse_RemHardwareDriver p;
-
-    p.mID = MouseMethodBase + moHidd_Mouse_RemHardwareDriver;
-    p.driverObject = driver;
-
-    OOP_DoMethod(obj, (OOP_Msg) &p);
-}
 #endif /* HIDD_MOUSE_H */

@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2017 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2025 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -15,6 +15,7 @@
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include <aros/symbolsets.h>
@@ -34,7 +35,7 @@
 OOP_Object *SDLMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
     struct mousedata *mousedata;
 
-    D(bug("[sdl] SDLMouse::New\n"));
+    D(bug("[SDL:Mouse] SDLMouse::New\n"));
 
     if (xsd.mousehidd)
         return NULL;
@@ -43,10 +44,10 @@ OOP_Object *SDLMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     {
         mousedata = OOP_INST_DATA(cl, o);
 
-        mousedata->callback = (APTR)GetTagData(aHidd_Mouse_IrqHandler, 0, msg->attrList);
-        mousedata->callbackdata = (APTR)GetTagData(aHidd_Mouse_IrqHandlerData, 0, msg->attrList);
+        mousedata->callback = (APTR)GetTagData(aHidd_Input_IrqHandler, 0, msg->attrList);
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&mousedata->callbackdata);
+        D(bug("[SDL:Mouse] created mouse hidd, callback 0x%08x, data 0x%08x\n", mousedata->callback, mousedata->callbackdata));
 
-        D(bug("[sdl] created mouse hidd, callback 0x%08x, data 0x%08x\n", mousedata->callback, mousedata->callbackdata));
         xsd.mousehidd = o;
     }
 
@@ -57,11 +58,11 @@ VOID SDLMouse__Hidd_Mouse_SDL__HandleEvent(OOP_Class *cl, OOP_Object *o, struct 
     struct mousedata *mousedata = OOP_INST_DATA(cl, o);
     struct pHidd_Mouse_Event hiddev;
 
-    D(bug("[sdl] SDLMouse::HandleEvent\n"));
+    D(bug("[SDL:Mouse] SDLMouse::HandleEvent\n"));
 
     switch (msg->e->type) {
         case SDL_MOUSEMOTION:
-            D(bug("[sdl] mouse moved to [%d,%d]\n", msg->e->motion.x, msg->e->motion.y));
+            D(bug("[SDL:Mouse] mouse moved to [%d,%d]\n", msg->e->motion.x, msg->e->motion.y));
 
             hiddev.type = vHidd_Mouse_Motion;
             hiddev.x = msg->e->motion.x;
@@ -75,7 +76,7 @@ VOID SDLMouse__Hidd_Mouse_SDL__HandleEvent(OOP_Class *cl, OOP_Object *o, struct 
 
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
-            D(bug("[sdl] %s event for button %s\n", msg->e->button.state == SDL_PRESSED ? "PRESS" : "RELEASE",
+            D(bug("[SDL:Mouse] %s event for button %s\n", msg->e->button.state == SDL_PRESSED ? "PRESS" : "RELEASE",
                                                     msg->e->button.button == SDL_BUTTON_LEFT   ? "LEFT"   :
                                                     msg->e->button.button == SDL_BUTTON_RIGHT  ? "RIGHT"  :
                                                     msg->e->button.button == SDL_BUTTON_MIDDLE ? "MIDDLE" :

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Linux hidd handling keyboard events.
 */
@@ -38,63 +38,54 @@ OOP_Object * LinuxKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     BOOL            has_kbd_hidd = FALSE;
     struct TagItem *tag, *tstate;
     APTR            callback = NULL;
-    APTR            callbackdata = NULL;
-    
-    EnterFunc(bug("[LinuxInput] Kbd::New()\n"));
- 
+
+    EnterFunc(bug("[LnxInput:Kbd] Kbd::New()\n"));
+
     ObtainSemaphore(&LSD(cl)->sema);
     if (LSD(cl)->kbdhidd)
         has_kbd_hidd = TRUE;
     ReleaseSemaphore(&LSD(cl)->sema);
- 
+
     if (has_kbd_hidd) /* Cannot open twice */
-        ReturnPtr("[LinuxInput] Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+        ReturnPtr("[LnxInput:Kbd] Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     tstate = msg->attrList;
-    D(bug("[LinuxInput] tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
-    while ((tag = NextTagItem((struct TagItem **)&tstate)))
-    {
+    D(bug("[LnxInput:Kbd] tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
+    while ((tag = NextTagItem((struct TagItem **)&tstate))) {
         ULONG idx;
-    
-        D(bug("[LinuxInput] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
-        
-        if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
+
+        D(bug("[LnxInput:Kbd] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
+
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
         {
-            D(bug("[LinuxInput] Kbd hidd tag\n"));
+            D(bug("[LnxInput:Kbd] Input hidd tag\n"));
             switch (idx)
             {
-            case aoHidd_Kbd_IrqHandler:
+            case aoHidd_Input_IrqHandler:
                 callback = (APTR)tag->ti_Data;
                 D(bug("Got callback %p\n", (APTR)tag->ti_Data));
                 break;
-
-            case aoHidd_Kbd_IrqHandlerData:
-                callbackdata = (APTR)tag->ti_Data;
-                D(bug("Got data %p\n", (APTR)tag->ti_Data));
-                break;
             }
         }
-        
     } /* while (tags to process) */
 
     if (NULL == callback)
-        ReturnPtr("[LinuxInput] Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+        ReturnPtr("[LnxInput:Kbd] Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    if (o) {
         struct LinuxKbd_data *data = OOP_INST_DATA(cl, o);
     
-        data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
-        data->callbackdata = callbackdata;
-
+        data->kbd_callback = callback;
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[LnxInput:Kbd] callback data = %p\n", (APTR)data->callbackdata));
         ObtainSemaphore(&LSD(cl)->sema);
         LSD(cl)->kbdhidd = o;
         Update_EventHandlers(LSD(cl));
         ReleaseSemaphore(&LSD(cl)->sema);
     }
 
-    ReturnPtr("[LinuxInput] Kbd::New", OOP_Object *, o);
+    ReturnPtr("[LnxInput:Kbd] Kbd::New", OOP_Object *, o);
 }
 
 
@@ -112,26 +103,27 @@ VOID LinuxKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID LinuxKbd__Hidd_LinuxKbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
 {
+    struct pHidd_Kbd_Event lkEvt;
     struct LinuxKbd_data  *data;
     UBYTE                  scancode;
     UWORD                  hiddcode;
 
-    EnterFunc(bug("[LinuxInput] linuxkbd_handleevent()\n"));
-    
-    data = OOP_INST_DATA(cl, o);
-    
-    scancode = msg->scanCode;
-    hiddcode = scancode2hidd(scancode, LSD(cl));
-    
-    if (hiddcode != 0xFF)
-    {
-        if (scancode >= 0x80)
-            hiddcode |= IECODE_UP_PREFIX;
+    EnterFunc(bug("[LnxInput:Kbd] linuxkbd_handleevent()\n"));
 
-        data->kbd_callback(data->callbackdata, hiddcode);
+    data = OOP_INST_DATA(cl, o);
+
+    scancode = msg->scanCode;
+    lkEvt.flags = 0;
+    lkEvt.code = scancode2hidd(scancode, LSD(cl));
+
+    if (lkEvt.code != 0xFF) {
+        if (scancode >= 0x80)
+            lkEvt.code |= IECODE_UP_PREFIX;
+
+        data->kbd_callback(data->callbackdata, &lkEvt);
     }
-    
-    ReturnVoid("[LinuxInput] Kbd::HandleEvent");
+
+    ReturnVoid("[LnxInput:Kbd] Kbd::HandleEvent");
 }
 
 
@@ -275,10 +267,10 @@ const UBYTE deftable[] =
 static UWORD scancode2hidd(UBYTE scancode, struct LinuxInput_staticdata *lsd)
 {
     UWORD hiddcode;
-    
+
     if ((scancode & 0x80) == 0x80)
         scancode &= ~0x80;
-    
+
     if (havetable)
     {
         hiddcode = scancode2rawkey[scancode];
@@ -298,12 +290,12 @@ VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode)
 {
     static OOP_MethodID                 mid;
     struct pHidd_LinuxKbd_HandleEvent     p;
-    
+
     if (!mid)
     mid = OOP_GetMethodID(IID_Hidd_LinuxKbd, moHidd_LinuxKbd_HandleEvent);
-    
+
     p.mID    = mid;
     p.scanCode    = scanCode;
-    
+
     OOP_DoMethod(o, (OOP_Msg)&p);
 }

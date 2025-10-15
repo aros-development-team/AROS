@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: The main mouse class.
 */
@@ -29,6 +29,7 @@
 #include <exec/alerts.h>
 #include <exec/memory.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 #include <devices/inputevent.h>
 #include <string.h>
@@ -72,21 +73,20 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         {
             ULONG idx;
 
-            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
             {
                 switch (idx)
                 {
-                    case aoHidd_Mouse_IrqHandler:
+                    case aoHidd_Input_IrqHandler:
                         data->mouse_callback = (APTR)tag->ti_Data;
-                        break;
-
-                    case aoHidd_Mouse_IrqHandlerData:
-                        data->callbackdata = (APTR)tag->ti_Data;
                         break;
                 }
             }
 
         } /* while (tags to process) */
+
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[SerialMouse] callback data = %p\n", (APTR)data->callbackdata));
 
         /* Search for mouse installed. Check every COM port in the system */
         if (!test_mouse_serial(cl, o))
@@ -124,14 +124,6 @@ VOID PCMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch (idx)
         {
-            case aoHidd_Mouse_IrqHandler:
-                *msg->storage = (IPTR)data->mouse_callback;
-                return;
-
-            case aoHidd_Mouse_IrqHandlerData:
-                *msg->storage = (IPTR)data->callbackdata;
-                return;
-
             case aoHidd_Mouse_State:
                 *msg->storage = 0; /* FIXME: Implement this */
                 return;
@@ -156,6 +148,7 @@ static int PCMouse_InitAttrs(struct mousebase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd      , &LIBBASE->msd.hiddAttrBase },
+        { IID_Hidd_Input, &LIBBASE->msd.hiddInputAB  },
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB  },
         { NULL          , NULL                       }
     };
@@ -179,6 +172,7 @@ static int PCMouse_ExpungeAttrs(struct mousebase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd      , &LIBBASE->msd.hiddAttrBase },
+        { IID_Hidd_Input, &LIBBASE->msd.hiddInputAB  },
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB  },
         { NULL          , NULL                       }
     };

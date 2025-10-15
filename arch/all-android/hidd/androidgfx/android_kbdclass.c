@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Android keyboard hidd class.
 */
@@ -7,6 +7,7 @@
 #include <aros/debug.h>
 #include <devices/inputevent.h>
 #include <devices/rawkeycodes.h>
+#include <hidd/input.h>
 #include <hidd/keyboard.h>
 #include <oop/oop.h>
 
@@ -38,22 +39,19 @@ OOP_Object *AKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         {
             ULONG idx;
             
-            if (IS_HIDDKBD_ATTR(tag->ti_Tag, idx))
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
             {
                 switch (idx)
                 {
-                case aoHidd_Kbd_IrqHandler:
+                case aoHidd_Input_IrqHandler:
                     data->callback = (APTR)tag->ti_Data;
                     D(bug("Got callback %p\n", tag->ti_Data));
-                    break;
-                        
-                case aoHidd_Kbd_IrqHandlerData:
-                    data->callbackdata = (APTR)tag->ti_Data;
-                    D(bug("Got data %p\n", tag->ti_Data));
                     break;
                 }
             }
         }
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[AKbd] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
         XSD(cl)->kbdhidd = data;
     }
 
@@ -206,7 +204,9 @@ static const UWORD KeyTable[] =
 
 static inline void PostRawKey(struct kbd_data *data, UWORD code)
 {
-    data->callback(data->callbackdata, code);
+    struct pHidd_Kbd_Event kEvt;
+    kEvt.kbdevt = code;
+    data->callback(data->callbackdata, &kEvt);
 }
 
 void AKbd_ReportKey(struct kbd_data *data, struct KeyEvent *e)

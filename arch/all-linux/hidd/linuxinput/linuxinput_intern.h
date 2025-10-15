@@ -2,7 +2,7 @@
 #define LINUXMOUSE_INTERN_H
 
 /*
-    Copyright © 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux /dev/input/eventX hidd for AROS
@@ -25,7 +25,11 @@
 #   include <oop/oop.h>
 #endif
 
-extern OOP_AttrBase HiddKbdAB;
+#include <hidd/input.h>
+#include <hidd/keyboard.h>
+#include <hidd/mouse.h>
+
+extern OOP_AttrBase HiddInputAB;
 extern OOP_AttrBase HiddMouseAB;
 
 /***** Linux Kbd HIDD *******************/
@@ -51,7 +55,7 @@ VOID HIDD_LinuxKbd_HandleEvent(OOP_Object *o, UBYTE scanCode);
 /* Data */
 struct LinuxKbd_data
 {
-    VOID (*kbd_callback)(APTR, UWORD);
+    InputIrqCallBack_t kbd_callback;
     APTR callbackdata;
 };
 
@@ -79,7 +83,7 @@ VOID HIDD_LinuxMouse_HandleEvent(OOP_Object *o, struct pHidd_Mouse_Event *mouseE
 /* Data */
 struct LinuxMouse_data
 {
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    InputIrqCallBack_t mouse_callback;
     APTR callbackdata;
 };
 

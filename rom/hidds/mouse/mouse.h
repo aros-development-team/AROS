@@ -1,19 +1,22 @@
+#ifndef HIDD_MOUSE_INTERN_H
+#define HIDD_MOUSE_INTERN_H
+
 #include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <dos/bptr.h>
+#include <hidd/input.h>
 
-struct mouse_data
+struct MouseInput_Data
 {
-    struct MinNode node;
-    void (*callback)(APTR data, struct pHidd_Mouse_ExtEvent *ev);
-    APTR callbackdata;
+    ULONG   unused;
 };
 
-struct driverNode
+struct MouseInput_DriverData
 {
-    OOP_Object     *drv;
-    struct MinList *callbacks;
-    UWORD           flags;
+    OOP_Object          *drv;
+    InputIrqCallBack_t  inputcb;
+    APTR                inputcbd;
+    UWORD               flags;
 };
 
 #define vHidd_Mouse_Extended 0x8000 /* Private flag */
@@ -21,6 +24,8 @@ struct driverNode
 struct mouse_staticdata
 {
     OOP_AttrBase           driverdataAB;
+    OOP_AttrBase           hiddInputAB;
+    OOP_AttrBase           hwInputAB;
     OOP_AttrBase           hiddMouseAB;
     OOP_AttrBase           hwAttrBase;
     OOP_MethodID           hwMethodBase;
@@ -28,8 +33,6 @@ struct mouse_staticdata
     OOP_Class             *dataClass;
     OOP_Class             *hwClass;
     OOP_Object            *hwObject;
-
-    struct MinList         callbacks;
 
     struct Library *cs_SysBase;
     struct Library *cs_OOPBase;
@@ -44,14 +47,20 @@ struct mousebase
 
 #define CSD(cl) (&((struct mousebase *)cl->UserData)->csd)
 
+#undef HiddInputAB
+#undef HWInputAB
 #undef HiddMouseAB
 #undef HWAttrBase
 #undef HWBase
+#define HiddInputAB (CSD(cl)->hiddInputAB)
+#define HWInputAB (CSD(cl)->hwInputAB)
 #define HiddMouseAB (CSD(cl)->hiddMouseAB)
 #define HWAttrBase  (CSD(cl)->hwAttrBase)
 #define HWBase      (CSD(cl)->hwMethodBase)
 
-/* Private interface of our private driverNode class */
+/* Private interface of our private MouseInput_DriverData class */
 #define IID_DriverData "hidd.mouse.driverdata"
 
 #define aHidd_DriverData_ClassPtr (CSD(cl)->driverdataAB + 0)
+
+#endif

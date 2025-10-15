@@ -34,31 +34,26 @@ OOP_Object *LinuxMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         return NULL; /* Should have some error code here */
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    if (o) {
         struct LinuxMouse_data *data = OOP_INST_DATA(cl, o);
         struct TagItem *tag, *tstate;
         
         tstate = msg->attrList;
-        while ((tag = NextTagItem(&tstate)))
-        {
+        while ((tag = NextTagItem(&tstate))) {
             ULONG idx;
 
-            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
-            {
-                switch (idx)
-                {
-                case aoHidd_Mouse_IrqHandler:
-                    data->mouse_callback = (VOID (*)(void *, struct pHidd_Mouse_Event *))tag->ti_Data;
-                break;
-
-                case aoHidd_Mouse_IrqHandlerData:
-                    data->callbackdata = (APTR)tag->ti_Data;
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
+                switch (idx) {
+                case aoHidd_Input_IrqHandler:
+                    data->mouse_callback = (APTR)tag->ti_Data;
                 break;
                 }
             }
             
         } /* while (tags to process) */
+
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[LnxInput:Mouse] callback data = %p\n", (APTR)data->callbackdata));
 
         /* Install the mouse hidd */
         ObtainSemaphore(&LSD(cl)->sema);
@@ -85,10 +80,8 @@ VOID LinuxMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     ULONG idx;
 
-    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
-    {
-        switch (idx)
-        {
+    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx)) {
+        switch (idx) {
         case aoHidd_Mouse_RelativeCoords:
             *msg->storage = TRUE;
             return;

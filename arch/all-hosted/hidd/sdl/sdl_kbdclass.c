@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2017 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2025 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -15,6 +15,7 @@
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/keyboard.h>
 
 #include <devices/inputevent.h>
@@ -34,7 +35,7 @@
 OOP_Object *SDLKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg) {
     struct kbddata *kbddata;
 
-    D(bug("[sdl] SDLKbd::New\n"));
+    D(bug("[SDL:Kbd] SDLKbd::New\n"));
 
     /* we only support one instance ..*/
     if (xsd.kbdhidd)
@@ -44,10 +45,10 @@ OOP_Object *SDLKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     {
         kbddata = OOP_INST_DATA(cl, o);
 
-        kbddata->callback = (APTR)GetTagData(aHidd_Kbd_IrqHandler, 0, msg->attrList);
-        kbddata->callbackdata = (APTR)GetTagData(aHidd_Kbd_IrqHandlerData, 0, msg->attrList);
+        kbddata->callback = (APTR)GetTagData(aHidd_Input_IrqHandler, 0, msg->attrList);
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&kbddata->callbackdata);
+        D(bug("[SDL:Kbd] created keyboard hidd, callback 0x%08x, data 0x%08x\n", kbddata->callback, kbddata->callbackdata));
 
-        D(bug("[sdl] created keyboard hidd, callback 0x%08x, data 0x%08x\n", kbddata->callback, kbddata->callbackdata));
         xsd.kbdhidd = o;
     }
 
@@ -56,22 +57,22 @@ OOP_Object *SDLKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
 VOID SDLKbd__Hidd_Kbd_SDL__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_SDL_HandleEvent *msg) {
     struct kbddata *kbddata = OOP_INST_DATA(cl, o);
-    UWORD keycode;
+    struct pHidd_Kbd_Event kEvt;
 
-    D(bug("[sdl] SDLKbd::HandleEvent\n"));
+    D(bug("[SDL:Kbd] SDLKbd::HandleEvent\n"));
 
-    D(bug("[sdl] %s event for sdl key 0x%04x\n", msg->e->key.state == SDL_PRESSED ? "PRESS" : "RELEASE",
+    D(bug("[SDL:Kbd] %s event for sdl key 0x%04x\n", msg->e->key.state == SDL_PRESSED ? "PRESS" : "RELEASE",
                                                  msg->e->key.keysym.sym));
 
-    keycode = xsd.keycode[msg->e->key.keysym.sym];
+    kEvt.kbdevt = xsd.keycode[msg->e->key.keysym.sym];
 
-    D(bug("[sdl] converted to keycode 0x%02x\n", keycode));
+    D(bug("[SDL:Kbd] converted to kEvt.kbdevt 0x%02x\n", kEvt.kbdevt));
 
     if (msg->e->key.state == SDL_RELEASED)
-        keycode |= IECODE_UP_PREFIX;
+        kEvt.kbdevt |= IECODE_UP_PREFIX;
 
     if (kbddata->callback != NULL)
-        kbddata->callback(kbddata->callbackdata, keycode);
+        kbddata->callback(kbddata->callbackdata, &kEvt);
 }
 
 VOID Hidd_Kbd_SDL_HandleEvent(OOP_Object *o, SDL_Event *e) {

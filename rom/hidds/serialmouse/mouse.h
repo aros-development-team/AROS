@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -14,6 +14,7 @@
 #include <oop/oop.h>
 #include <exec/semaphores.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 /* defines for buttonstate */
@@ -27,6 +28,7 @@
 struct mouse_staticdata
 {
     OOP_AttrBase        hiddAttrBase;
+    OOP_AttrBase        hiddInputAB;
     OOP_AttrBase        hiddMouseAB;
     OOP_MethodID        hwMethodBase;
 
@@ -135,9 +137,11 @@ static inline void outb(unsigned char value, unsigned short port)
 #define MSD(cl)         (&((struct mousebase *)cl->UserData)->msd)
 
 #undef HiddAttrBase
+#undef HiddInputAB
 #undef HiddMouseAB
 #undef HWBase
 #define HiddAttrBase (MSD(cl)->hiddAttrBase)
+#define HiddInputAB  (MSD(cl)->hiddInputAB)
 #define HiddMouseAB  (MSD(cl)->hiddMouseAB)
 #define HWBase       (MSD(cl)->hwMethodBase)
 

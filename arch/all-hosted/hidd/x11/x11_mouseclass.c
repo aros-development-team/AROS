@@ -9,6 +9,7 @@
 #define __OOP_NOATTRBASES__
 
 #include <proto/utility.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include "x11_types.h"
@@ -16,10 +17,12 @@
 
 /****************************************************************************************/
 
+static OOP_AttrBase HiddInputAB;
 static OOP_AttrBase HiddMouseAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
+    { IID_Hidd_Input, &HiddInputAB  },
     { IID_Hidd_Mouse, &HiddMouseAB  },
     { NULL          , NULL          }
 };
@@ -55,7 +58,7 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 {
     BOOL has_mouse_hidd = FALSE;
 
-    EnterFunc(bug("[X11Mouse] New()\n"));
+    EnterFunc(bug("[X11:Mouse] New()\n"));
     ObtainSemaphoreShared( &XSD(cl)->sema);
     
     if (XSD(cl)->mousehidd)
@@ -67,38 +70,31 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         return NULL; /* Should have some error code here */
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    if (o) {
         struct x11mouse_data *data = OOP_INST_DATA(cl, o);
         struct TagItem       *tag, *tstate;
         
         tstate = msg->attrList;
-        while ((tag = NextTagItem(&tstate)))
-        {
+        while ((tag = NextTagItem(&tstate))) {
             ULONG idx;
             
-            if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))
-            {
-                switch (idx)
-                {
-                    case aoHidd_Mouse_IrqHandler:
-                        data->mouse_callback = (VOID (*)(void *, struct pHidd_Mouse_Event *))tag->ti_Data;
-                        break;
-                        
-                    case aoHidd_Mouse_IrqHandlerData:
-                        data->callbackdata = (APTR)tag->ti_Data;
+            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
+                switch (idx) {
+                    case aoHidd_Input_IrqHandler:
+                        data->mouse_callback = (APTR)tag->ti_Data;
                         break;
                 }
             }
             
         } /* while (tags to process) */
-        
+
+        OOP_GetAttr(o, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
+        D(bug("[X11:Mouse] %s: callback data = %p\n", __func__, (APTR)data->callbackdata));
+
         /* Install the mouse hidd */
-        
         ObtainSemaphore( &XSD(cl)->sema);
         XSD(cl)->mousehidd = o;
         ReleaseSemaphore( &XSD(cl)->sema);
-        
     }
     
     return o;
@@ -108,7 +104,7 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
 VOID X11Mouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    EnterFunc(bug("[X11Mouse] Dispose()\n"));
+    EnterFunc(bug("[X11:Mouse] Dispose()\n"));
 
     ObtainSemaphore( &XSD(cl)->sema);
     XSD(cl)->mousehidd = NULL;
@@ -124,7 +120,7 @@ VOID X11Mouse__Hidd_Mouse_X11__HandleEvent(OOP_Class *cl, OOP_Object *o, struct 
     struct x11mouse_data        *data = OOP_INST_DATA(cl, o);
     struct pHidd_Mouse_Event     e;
 
-    DB2(bug("[X11Mouse] HandleEvent()\n"));
+    DB2(bug("[X11:Mouse] HandleEvent()\n"));
     XButtonEvent *xb = &(msg->event->xbutton);
     
     e.x = xb->x;
