@@ -377,7 +377,7 @@ struct Ent *InternalSetEnts(struct NetInfoDevice *nid, struct NetInfoMap *nim)
     if ((nim->nim_Flags & NIMF_PARSED) == 0) {
         int was_too_long = 0;
         UBYTE *p, *line = NULL;
-        BPTR fh = NULL;
+        BPTR fh = BNULL;
         struct Ent *ent;
 
         /* We can not get exclusive lock if we have shared lock */
