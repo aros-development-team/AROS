@@ -68,7 +68,7 @@ OOP_Object *ControllerHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     if (!csd->hwObject) {
         struct TagItem new_tags[] =
         {
-            {aHW_ClassName, (IPTR)"Pointing devices"},
+            {aHW_ClassName, (IPTR)"Controllers (Joystick/pad/wheel) devices"},
             {TAG_DONE     , 0                       }
         };
         struct pRoot_New new_msg =
