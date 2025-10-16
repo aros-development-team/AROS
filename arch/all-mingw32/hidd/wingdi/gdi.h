@@ -45,6 +45,7 @@ struct GDI_Control
 #include <exec/libraries.h>
 #include <oop/oop.h>
 #include <exec/semaphores.h>
+#include <hidd/input.h>
 
 #include "winapi.h"
 #include "wingdi_hidd.h"
