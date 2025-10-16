@@ -54,7 +54,7 @@
 #define INTUILIB  "intuition.library"
 #define INTUIVER  36L
 
-#define THISPROC   ((struct Process *)(SysBase->ThisTask))
+#define THISPROC   ((struct Process *)(FindTask(NULL)))
 #define Result2(x) THISPROC->pr_Result2 = x
 
 #define TEMPLATE  "SHANGHAI/S,POP=POPPUBSCREEN/S"
