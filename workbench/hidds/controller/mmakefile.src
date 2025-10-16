@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+
+FILES := controller_init driverdata controllerclass controllersubsystem
+
+USER_CPPFLAGS += \
+    -D__OOP_NOLIBBASE__ \
+    -D__OOP_NOATTRBASES__ \
+    -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-hidds-controller \
+    modname=controller modtype=hidd \
+    files="$(FILES)"
+
+%common
