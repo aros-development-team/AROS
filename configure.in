@@ -33,7 +33,6 @@ AC_CANONICAL_HOST
 # Default versions for the gnu tools we build
 default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
 exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
-default_binutils_version=`cat ${srcdir}/config/binutils_def`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
@@ -2465,6 +2464,11 @@ AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
 #-----------------------------------------------------------------------------
 if test "$aros_toolchain" = "gnu" ; then
+    if test -f "${srcdir}/arch/${aros_target_cpu}-all/binutils_def"; then
+        default_binutils_version=$(cat "${srcdir}/arch/${aros_target_cpu}-all/binutils_def")
+    else
+        default_binutils_version=$(cat "${srcdir}/config/binutils_def")
+    fi
     AC_MSG_CHECKING([what specific target binutils version to use])
 fi
 AC_ARG_WITH(binutils-version,AS_HELP_STRING([--with-binutils-version=VERSION],[Use binutils-VERSION for building AROS]),use_binutils_version="$withval",use_binutils_version="")
