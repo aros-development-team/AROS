@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -9,6 +9,7 @@
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/mouse.h>
 
 #include "mouse.h"
@@ -22,6 +23,7 @@ static int AmigaMouse_Init(struct mousebase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd, &HiddAttrBase },
+        { IID_Hidd_Input, &HiddInputAB },
         { IID_Hidd_Mouse, &HiddMouseAB },
         { NULL          , NULL              }
     };
@@ -34,10 +36,9 @@ static int AmigaMouse_Init(struct mousebase *LIBBASE)
 
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
     if (ms) {
-        if (OOP_ObtainAttrBases(attrbases))
-        {
-            HiddMouseBase = OOP_GetMethodID(IID_Hidd_Mouse, 0);
-            drv = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->msd.mouseclass, NULL);
+        if (OOP_ObtainAttrBases(attrbases)) {
+            OOP_MethodID HiddInputBase = OOP_GetMethodID(IID_Hidd_Input, 0);
+            drv = HIDD_Input_AddHardwareDriver(ms, LIBBASE->msd.mouseclass, NULL);
         }
         OOP_DisposeObject(ms);
     }
@@ -56,6 +57,7 @@ static int AmigaMouse_Expunge(struct mousebase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd, &HiddAttrBase },
+        { IID_Hidd_Input, &HiddInputAB },
         { IID_Hidd_Mouse, &HiddMouseAB },
         { NULL          , NULL              }
     };

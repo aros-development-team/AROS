@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -27,6 +27,7 @@
 
 #include <dos/bptr.h>
 
+#include <hidd/input.h>
 #include <hidd/keyboard.h>
 
 /****************************************************************************************/
@@ -69,7 +70,7 @@ struct kbd_staticdata
     OOP_Object *kbdhidd;
 
     OOP_AttrBase hiddAB;
-    OOP_AttrBase hiddKbdAB;
+    OOP_AttrBase hiddInputAB;
 
     OOP_MethodID hiddKbdBase;
 
@@ -85,7 +86,7 @@ struct kbdbase
 
 struct kbd_data
 {
-    KbdIrqCallBack_t kbd_callback;
+    InputIrqCallBack_t kbd_callback;
     APTR    callbackdata;
     struct Library *TimerBase;
     UBYTE resetstate;
@@ -103,8 +104,8 @@ VOID releaseattrbases(struct abdescr *abd, struct Library *OOPBase);
 #undef HiddAttrBase
 #define HiddAttrBase	(XSD(cl)->hiddAB)
 
-#undef HiddKbdAB
-#define HiddKbdAB	(XSD(cl)->hiddKbdAB)
+#undef HiddInputAB
+#define HiddInputAB	(XSD(cl)->hiddInputAB)
 
 #undef HiddKbdBase
 #define HiddKbdBase	(XSD(cl)->hiddKbdBase)

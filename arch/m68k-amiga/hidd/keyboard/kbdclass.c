@@ -57,9 +57,10 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
     ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
-    kEvt.kbdevt = keycode;
+    kEvt.flags = 0;
+    kEvt.code = keycode;
 
-    D(bug("[kbd:am68k] key=%x\n", kEvt.kbdevt);)
+    D(bug("[kbd:am68k] key=%x\n", kEvt.code);)
 
     if (keycode == 0x78) { // reset warning
         kbddata->resetstate++;
@@ -71,13 +72,12 @@ static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
         // first reset warning, handle it normally
     } else {
         if ((keycode & ~0x80) == 0x62)
-            kEvt.kbdevt |= (KBD_KEYTOGGLE << 16);
-        kbddata->kbd_callback(kbddata->callbackdata, kEvt.kbdevt);
+            kEvt.code |= (KBD_KEYTOGGLE << 16);
+        kbddata->kbd_callback(kbddata->callbackdata, &kEvt);
     }
     /* "release" UAE mouse wheel up/down key codes */
-    if (keycode == 0x7a || keycode == 0x7b)
-    {
-        kEvt.kbdevt |= 0x80;
+    if (keycode == 0x7a || keycode == 0x7b) {
+        kEvt.code |= 0x80;
         kbddata->kbd_callback(kbddata->callbackdata, &kEvt);
     }
 
@@ -110,7 +110,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         .attrList = kbd_tags
     };
     struct TagItem      *tag, *tstate;
-    KbdIrqCallBack_t    callback = NULL;
+    InputIrqCallBack_t    callback = NULL;
     BOOL                has_kbd_hidd = FALSE;
     struct Library      *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
 
@@ -134,17 +134,14 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     tstate = msg->attrList;
     D(bug("[kbd:am68k] tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
     
-    while ((tag = NextTagItem(&tstate)))
-    {
+    while ((tag = NextTagItem(&tstate))) {
         ULONG idx;
         
         D(bug("[kbd:am68k] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
             
-        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
-        {
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
             D(bug("Kbd hidd tag\n"));
-            switch (idx)
-            {
+            switch (idx) {
                 case aoHidd_Input_IrqHandler:
                     callback = (APTR)tag->ti_Data;
                     D(bug("Got callback %p\n", (APTR)tag->ti_Data));
@@ -160,8 +157,7 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, &new_msg.mID);
 
-    if (o)
-    {
+    if (o) {
         struct Interrupt *inter = &XSD(cl)->kbint;
         struct kbd_data *data = OOP_INST_DATA(cl, o);
         

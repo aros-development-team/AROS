@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -9,6 +9,7 @@
 #include <proto/oop.h>
 
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 
 #include "kbd.h"
 
@@ -21,7 +22,7 @@ static int AmigaKbd_Init(struct kbdbase *LIBBASE)
     struct OOP_ABDescr attrbases[] =
     {
         {IID_Hidd       , &HiddAttrBase   },
-        {IID_Hidd_Kbd   , &HiddKbdAB   },
+        {IID_Hidd_Input   , &HiddInputAB   },
         {NULL           , NULL              }
     };
     OOP_Object *kbd;
@@ -33,10 +34,9 @@ static int AmigaKbd_Init(struct kbdbase *LIBBASE)
 
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
-        if (OOP_ObtainAttrBases(attrbases))
-        {
-            HiddKbdBase = OOP_GetMethodID(IID_Hidd_Kbd, 0);
-            drv = HIDD_Kbd_AddHardwareDriver(kbd, LIBBASE->ksd.kbdclass, NULL);
+        if (OOP_ObtainAttrBases(attrbases)) {
+            OOP_MethodID HiddInputBase = OOP_GetMethodID(IID_Hidd_Input, 0);
+            drv = HIDD_Input_AddHardwareDriver(kbd, LIBBASE->ksd.kbdclass, NULL);
         }
         OOP_DisposeObject(kbd);
     }
@@ -54,7 +54,7 @@ static int AmigaKbd_Expunge(struct kbdbase *LIBBASE)
     struct kbd_staticdata *ksd = &LIBBASE->ksd;
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd_Kbd   , &LIBBASE->ksd.hiddKbdAB   },
+        {IID_Hidd_Input   , &HiddInputAB   },
         {NULL           , NULL              }
     };
     

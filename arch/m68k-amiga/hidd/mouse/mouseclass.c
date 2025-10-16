@@ -213,23 +213,17 @@ VOID AmigaMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     ULONG              idx;
 
-    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx))
-    {
-        switch (idx)
-        {
-            case aoHidd_Mouse_IrqHandler:
-                *msg->storage = (IPTR)data->mouse_callback;
-                return;
-
-            case aoHidd_Mouse_IrqHandlerData:
-                *msg->storage = (IPTR)data->callbackdata;
-                return;
-
+    if (IS_HIDDMOUSE_ATTR(msg->attrID, idx)) {
+        switch (idx) {
             case aoHidd_Mouse_State:
                 return;
 
             case aoHidd_Mouse_RelativeCoords:
                 *msg->storage = TRUE;
+                return;
+
+            case aoHidd_Mouse_Extended:
+                *msg->storage = FALSE;
                 return;
         }
 

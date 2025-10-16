@@ -2,7 +2,7 @@
 #define _MOUSE_H
 
 /*
-    Copyright © 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -70,6 +70,7 @@ struct mouse_staticdata
     OOP_Object		*mousehidd;
 
     OOP_AttrBase	hiddAB;
+    OOP_AttrBase	hiddInputAB;
     OOP_AttrBase	hiddMouseAB;
 
     OOP_MethodID         hiddMouseBase;
@@ -102,6 +103,9 @@ struct mouse_data
 
 #undef HiddAttrBase
 #define HiddAttrBase	(MSD(cl)->hiddAB)
+
+#undef HiddInputAB
+#define HiddInputAB	(MSD(cl)->hiddInputAB)
 
 #undef HiddMouseAB
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
