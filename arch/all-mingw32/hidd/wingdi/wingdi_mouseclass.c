@@ -106,16 +106,16 @@ static VOID MouseIntHandler(struct gdimouse_data *data, volatile struct GDI_Cont
 OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
-    
+
     D(EnterFunc("[GDIMouse] hidd.mouse.gdi::New()\n"));
-    
+
     ObtainSemaphoreShared( &XSD(cl)->sema);
-    
+
     if (XSD(cl)->mousehidd)
         has_mouse_hidd = TRUE;
-        
+
     ReleaseSemaphore( &XSD(cl)->sema);
-    
+
     if (has_mouse_hidd) { /* Cannot open twice */
         D(bug("[GDIMouse] Attempt to create a second instance\n"));
         return NULL; /* Should have some error code here */
@@ -123,12 +123,11 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     D(bug("[GDIMouse] Object created by superclass: 0x%p\n"));
-    if (o)
-    {
+    if (o) {
         struct gdimouse_data *data = OOP_INST_DATA(cl, o);
         struct GDI_Control   *ctl = XSD(cl)->ctl;
         struct TagItem       *tag, *tstate;
-        
+
         data->buttons = 0;
         data->interrupt = KrnAddIRQHandler(ctl->MouseIrq, MouseIntHandler, data, ctl);
         D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
@@ -137,7 +136,7 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
             while ((tag = NextTagItem(&tstate)))
             {
                 ULONG idx;
-            
+
                 if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
                     switch (idx) {
                     case aoHidd_Input_IrqHandler:
@@ -169,7 +168,7 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 VOID GDIMouse__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gdimouse_data *data = OOP_INST_DATA(cl, o);
-    
+
     KrnRemIRQHandler(data->interrupt);
     ObtainSemaphore( &XSD(cl)->sema);
     XSD(cl)->mousehidd = NULL;

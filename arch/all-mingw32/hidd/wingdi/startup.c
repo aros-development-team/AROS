@@ -24,6 +24,7 @@
 #include <graphics/gfxbase.h>
 #include <hidd/gfx.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <proto/exec.h>
@@ -69,9 +70,9 @@ static int gdi_Startup(struct gdiclbase *LIBBASE)
     kbdriver = HW_AddDriver(kbd, LIBBASE->xsd.kbdclass, kbd_tags);
     if (kbdriver)
     {
-        msdriver = HIDD_Mouse_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, ms_tags);
+        msdriver = HIDD_Input_AddHardwareDriver(ms, LIBBASE->xsd.mouseclass, ms_tags);
         if (!msdriver)
-            HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+            HIDD_Input_RemHardwareDriver(kbd, kbdriver);
     }
 
     /* If we got no input, we can't work, fail */

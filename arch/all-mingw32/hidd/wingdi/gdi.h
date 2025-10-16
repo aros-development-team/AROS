@@ -56,7 +56,7 @@ struct GDI_Control
 struct pHidd_Mouse_Event;
 struct gdimouse_data
 {
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    InputIrqCallBack_t mouse_callback;
     APTR callbackdata;
     void *interrupt;
     UWORD buttons;
@@ -71,7 +71,7 @@ struct gdimouse_data
 /* Private data */
 struct gdikbd_data
 {
-    VOID  (*kbd_callback)(APTR, ULONG);
+    InputIrqCallBack_t kbd_callback;
     APTR    callbackdata;
     void *interrupt;
 };

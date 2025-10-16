@@ -47,6 +47,8 @@ static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control 
     UWORD eventcode = KEYBOARDDATA->KbdEvent;
     UWORD rawcode   = KEYBOARDDATA->KeyCode;
 
+    kEvt.flags = 0;
+
     /*
      * Signal to event processing thread that we've read the event.
      * Omit Forbid()/Permit() pair here because we are inside interrupt.
@@ -67,11 +69,11 @@ static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control 
 
     if (rawcode < numkeys)
     {
-        kEvt.kbdevt = keytable[rawcode];
-        if (kEvt.kbdevt != NOKEY)
+        kEvt.code = keytable[rawcode];
+        if (kEvt.code != NOKEY)
         {
             if (eventcode == WM_KEYUP)
-                kEvt.kbdevt |= IECODE_UP_PREFIX;
+                kEvt.code |= IECODE_UP_PREFIX;
 
             data->kbd_callback(data->callbackdata, &kEvt);
         }
