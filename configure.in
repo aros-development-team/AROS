@@ -32,7 +32,6 @@ AC_CANONICAL_HOST
 
 # Default versions for the gnu tools we build
 default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
-default_gcc_version=`cat ${srcdir}/config/gcc_def`
 exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_binutils_version=`cat ${srcdir}/config/binutils_def`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
@@ -2499,6 +2498,11 @@ AC_DEFUN([CROSS_GCC_VERSION], [
 
 #-----------------------------------------------------------------------------
 if test "$aros_toolchain" = "gnu" ; then
+    if test -f "${srcdir}/arch/${aros_target_cpu}-all/gcc_def"; then
+        default_gcc_version=$(cat "${srcdir}/arch/${aros_target_cpu}-all/gcc_def")
+    else
+        default_gcc_version=$(cat "${srcdir}/config/gcc_def")
+    fi
     AC_MSG_CHECKING([what specific target gcc version to use])
 fi
 AC_ARG_WITH(gcc-version,AS_HELP_STRING([--with-gcc-version=VERSION],[Compile gcc-VERSION for AROS]),use_gcc_version="$withval",use_gcc_version="")

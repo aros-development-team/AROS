@@ -3550,7 +3550,6 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 # Default versions for the gnu tools we build
 default_toolchain_family=`cat ${srcdir}/config/toolchain_def`
-default_gcc_version=`cat ${srcdir}/config/gcc_def`
 exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_binutils_version=`cat ${srcdir}/config/binutils_def`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
@@ -11792,6 +11791,11 @@ fi
 
 #-----------------------------------------------------------------------------
 if test "$aros_toolchain" = "gnu" ; then
+    if test -f "${srcdir}/arch/${aros_target_cpu}-all/gcc_def"; then
+        default_gcc_version=$(cat "${srcdir}/arch/${aros_target_cpu}-all/gcc_def")
+    else
+        default_gcc_version=$(cat "${srcdir}/config/gcc_def")
+    fi
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking what specific target gcc version to use" >&5
 printf %s "checking what specific target gcc version to use... " >&6; }
 fi
