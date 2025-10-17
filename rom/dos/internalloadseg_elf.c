@@ -532,26 +532,39 @@ static int relocate
             case R_ARM_CALL:
             case R_ARM_JUMP24:
             case R_ARM_PC24:
+            {
+                LONG temp = (LONG)(rel->addend + s - (IPTR)p);
+
+                if (temp & 3) {
+                    kprintf("[ELF Loader] CALL/JUMP24/PC24 unaligned\n");
+                    return 0;
+                }
+
+                LONG imm24 = temp / 4;
+
+                // Range check for signed 24-bit value: [-2^23, 2^23 - 1].
+                if (imm24 < -(1<<23) || imm24 > ((1<<23)-1)) {
+                    kprintf("[ELF Loader] CALL/JUMP24/PC24 overflow\n");
+                    return 0;
+                }
+
+                // Insert the 24-bit immediate into the instruction.
+                ULONG insn = *p;
+                *p = (*p & 0xFF000000u) | ((ULONG)imm24 & 0x00FFFFFFu);
+            }
+            break;
+
             case R_ARM_PREL31:
             {
-                /* On ARM the 24 bit offset is shifted by 2 to the right */
-                signed long offset = (AROS_LE2LONG(*p) & 0x00ffffff) << 2;
-                /* If highest bit set, make offset negative */
-                if (offset & 0x02000000)
-                    offset -= 0x04000000;
+                LONG temp = (LONG)(rel->addend + s - (IPTR)p);
 
-                if (offset >= 0x02000000 ||
-                        offset <= -0x02000000)
-                {
-                        bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
-                        SetIoErr(ERROR_BAD_HUNK);
-                        return 0;
+                // Range check for signed 31 bits.
+                if (temp < -(1<<30) || temp > ((1<<30)-1)) {
+                    kprintf("[ELF Loader] PREL31 overflow\n");
+                    return 0;
                 }
-                offset += s - (ULONG)p;
 
-                offset >>= 2;
-                *p &= AROS_LONG2LE(0xff000000);
-                *p |= AROS_LONG2LE(offset & 0x00ffffff);
+                *p = (*p & 0x80000000u) | ((ULONG)temp & 0x7FFFFFFFu);
             }
             break;
 
@@ -561,38 +574,43 @@ static int relocate
                 ULONG upper,lower,sign,j1,j2;
                 LONG offset;
 
-                upper = AROS_WORD2LE(*((UWORD *)p));
-                lower = AROS_WORD2LE(*((UWORD *)p+1));
+                bug("Thumb relocations are currently not supported\n");
+                SetIoErr(ERROR_BAD_HUNK);
+                return 0;
 
-                sign = (upper >> 10) & 1;
-                j1 = (lower >> 13) & 1;
-                j2 = (lower >> 11) & 1;
+                // The below is written for REL relocations but we use RELA for ARM now.
+                /* upper = AROS_WORD2LE(*((UWORD *)p)); */
+                /* lower = AROS_WORD2LE(*((UWORD *)p+1)); */
 
-                offset = (sign << 24) | ((~(j1 ^ sign) & 1) << 23) |
-                                ((~(j2 ^ sign) & 1) << 22) |
-                                ((upper & 0x03ff) << 12) |
-                                ((lower & 0x07ff) << 1);
+                /* sign = (upper >> 10) & 1; */
+                /* j1 = (lower >> 13) & 1; */
+                /* j2 = (lower >> 11) & 1; */
 
-                if (offset & 0x01000000)
-                        offset -= 0x02000000;
+                /* offset = (sign << 24) | ((~(j1 ^ sign) & 1) << 23) | */
+                /*                 ((~(j2 ^ sign) & 1) << 22) | */
+                /*                 ((upper & 0x03ff) << 12) | */
+                /*                 ((lower & 0x07ff) << 1); */
 
-                if (offset >= 0x01000000 ||
-                        offset <= -0x01000000)
-                {
-                        bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info));
-                        SetIoErr(ERROR_BAD_HUNK);
-                        return 0;
-                }
-                offset += s - (ULONG)p;
+                /* if (offset & 0x01000000) */
+                /*         offset -= 0x02000000; */
 
-                sign = (offset >> 24) & 1;
-                j1 = sign ^ (~(offset >> 23) & 1);
-                j2 = sign ^ (~(offset >> 22) & 1);
+                /* if (offset >= 0x01000000 || */
+                /*         offset <= -0x01000000) */
+                /* { */
+                /*         bug("[ELF Loader] Relocation type %d %d out of range!\n", i, ELF_R_TYPE(rel->info)); */
+                /*         SetIoErr(ERROR_BAD_HUNK); */
+                /*         return 0; */
+                /* } */
+                /* offset += s - (ULONG)p; */
 
-                *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xf800) | (sign << 10) |
-                                ((offset >> 12) & 0x03ff)));
-                *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0xd000) |
-                                (j1 << 13) | (j2 << 11) | ((offset >> 1) & 0x07ff)));
+                /* sign = (offset >> 24) & 1; */
+                /* j1 = sign ^ (~(offset >> 23) & 1); */
+                /* j2 = sign ^ (~(offset >> 22) & 1); */
+
+                /* *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xf800) | (sign << 10) | */
+                /*                 ((offset >> 12) & 0x03ff))); */
+                /* *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0xd000) | */
+                /*                 (j1 << 13) | (j2 << 11) | ((offset >> 1) & 0x07ff))); */
 
             }
             break;
@@ -603,44 +621,50 @@ static int relocate
                 ULONG upper,lower;
                 LONG offset;
 
-                upper = AROS_LE2WORD(*((UWORD *)p));
-                lower = AROS_LE2WORD(*((UWORD *)p+1));
+                bug("Thumb relocations are currently not supported\n");
+                SetIoErr(ERROR_BAD_HUNK);
+                return 0;
 
-                offset = ((upper & 0x000f) << 12) |
-                                ((upper & 0x0400) << 1) |
-                                ((lower & 0x7000) >> 4) |
-                                (lower & 0x00ff);
+                // The below is written for REL relocations but we use RELA for ARM now.
+                /* upper = AROS_LE2WORD(*((UWORD *)p)); */
+                /* lower = AROS_LE2WORD(*((UWORD *)p+1)); */
 
-                offset = (offset ^ 0x8000) - 0x8000;
+                /* offset = ((upper & 0x000f) << 12) | */
+                /*                 ((upper & 0x0400) << 1) | */
+                /*                 ((lower & 0x7000) >> 4) | */
+                /*                 (lower & 0x00ff); */
 
-                offset += s;
+                /* offset = (offset ^ 0x8000) - 0x8000; */
 
-                if (ELF_R_TYPE(rel->info) == R_ARM_THM_MOVT_ABS)
-                        offset >>= 16;
+                /* offset += s; */
 
-                *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xfbf0) |
-                                ((offset & 0xf000) >> 12) |
-                                ((offset & 0x0800) >> 1)));
-                *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0x8f00) |
-                                ((offset & 0x0700)<< 4) |
-                                (offset & 0x00ff)));
+                /* if (ELF_R_TYPE(rel->info) == R_ARM_THM_MOVT_ABS) */
+                /*         offset >>= 16; */
+
+                /* *(UWORD *)p = AROS_WORD2LE((UWORD)((upper & 0xfbf0) | */
+                /*                 ((offset & 0xf000) >> 12) | */
+                /*                 ((offset & 0x0800) >> 1))); */
+                /* *((UWORD *)p + 1) = AROS_WORD2LE((UWORD)((lower & 0x8f00) | */
+                /*                 ((offset & 0x0700)<< 4) | */
+                /*                 (offset & 0x00ff))); */
             }
             break;
 
             case R_ARM_MOVW_ABS_NC:
             case R_ARM_MOVT_ABS:
             {
-                signed long offset = AROS_LE2LONG(*p);
-                offset = ((offset & 0xf0000) >> 4) | (offset & 0xfff);
-                offset = (offset ^ 0x8000) - 0x8000;
+                ULONG temp = (ULONG)s + (ULONG)rel->addend;
 
-                offset += s;
+                // Select the 16-bit half to encode.
+                ULONG imm16 = (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+                    ? ((temp >> 16) & 0xFFFFu)   // upper 16 bits for MOVT
+                    : (temp & 0xFFFFu);          // lower 16 bits for MOVW
 
-                if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
-                    offset >>= 16;
+                // Clear bits 19-16 and 11-0, where the new value will go.
+                *p &= 0xFFF0F000u;
 
-                *p &= AROS_LONG2LE(0xfff0f000);
-                *p |= AROS_LONG2LE(((offset & 0xf000) << 4) | (offset & 0x0fff));
+                // In with the new.
+                *p |= ((imm16 & 0xF000u) << 4) | (imm16 & 0x0FFFu);
             }
             break;
 
@@ -648,7 +672,7 @@ static int relocate
             case R_ARM_TARGET1: /* use for constructors/destructors; maps to
                                    R_ARM_ABS32 */
             case R_ARM_ABS32:
-                *p += s;
+                *p = rel->addend + s;
                 break;
 
             case R_ARM_NONE:
