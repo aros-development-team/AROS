@@ -97,6 +97,8 @@ static const char *feature_ids[] =
     "neon",
     "thumb",
     "thumbee",
+    "fp",    // ARMv8 floating point feature
+    "asimd", // ARMv8 SIMD
     NULL
 };
 
@@ -184,6 +186,13 @@ static ULONG arch_Init(struct ProcessorBase *ProcessorBase)
                                     else if ((val = getval("Features", buf)))
                                     {
                                         data->Features = ParseFlags(val, feature_ids);
+                                        // For ARMv8
+                                        if (data->Features & FF_FP) {
+                                            data->Features |= FF_VFPv3;
+                                        }
+                                        if (data->Features & FF_ASIMD) {
+                                            data->Features |= FF_NEON;
+                                        }
                                     }
                                     else if ((val = getval("CPU implementer", buf)))
                                     {
