@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
 
 */
 #include <stdlib.h>
