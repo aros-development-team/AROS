@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 2002-2025, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -1965,8 +1965,8 @@ static IPTR Application__MUIM_AboutMUI(struct IClass *cl, Object *obj,
     return 0;
 }
 
-static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
-    struct MUIP_Application_SetConfigdata *msg)
+
+static void Application__CloseWindows(struct IClass *cl, Object *obj)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MinList *children = NULL;
@@ -1979,12 +1979,21 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
         cstate = (Object *) children->mlh_Head;
         if ((child = NextObject(&cstate)))
         {
-            D(bug("closing window %p\n", child));
+            D(bug("[MUI:App] %s: closing window %p\n", __func__, child));
 
             set(child, MUIA_Window_Open, FALSE);
 
         }
     }
+}
+
+static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
+    struct MUIP_Application_SetConfigdata *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+
+    Application__CloseWindows(cl, obj);
+
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
     data->app_GlobalInfo.mgi_Configdata = msg->configdata;
@@ -1993,6 +2002,23 @@ static IPTR Application__MUIM_SetConfigdata(struct IClass *cl, Object *obj,
 
     DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 1,
         MUIM_Application_OpenWindows);
+    return 0;
+}
+
+static IPTR Application__MUIM_SetConfigItem(struct IClass *cl, Object *obj,
+    struct MUIP_Application_SetConfigItem *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    if (data->app_GlobalInfo.mgi_Configdata) {
+        switch (msg->item) {
+            case MUICFG_PublicScreen:
+                Application__CloseWindows(cl, obj);
+                data->app_GlobalInfo.mgi_Prefs->publicscreen_name = msg->data;
+                DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 1,
+                    MUIM_Application_OpenWindows);
+                break;
+        }
+    }
     return 0;
 }
 
@@ -2357,6 +2383,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
         return Application__MUIM_AboutMUI(cl, obj, (APTR) msg);
     case MUIM_Application_SetConfigdata:
         return Application__MUIM_SetConfigdata(cl, obj, (APTR) msg);
+    case MUIM_Application_SetConfigItem:
+        return Application__MUIM_SetConfigItem(cl, obj, (APTR) msg);
     case MUIM_Application_OpenWindows:
         return Application__MUIM_OpenWindows(cl, obj, (APTR) msg);
     case MUIM_Application_OpenConfigWindow:
