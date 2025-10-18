@@ -41,6 +41,8 @@
 
 #include "muimaster_intern.h"
 
+#include <proto/muiscreen.h>
+
 //#define MYDEBUG 1
 #include "debug.h"
 
@@ -449,28 +451,30 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
         else if (muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name
             && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name[0])
         {
+            D(bug("[MUI:Window] %s: using public screen '%s'\n", __func__, muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);)
             mri->mri_Screen =
-                LockPubScreen(muiGlobalInfo(obj)->mgi_Prefs->
-                publicscreen_name);
-            // FIXME: open the public screen if necessary
+                LockPubScreen(muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
+            if (!mri->mri_Screen && muiGlobalInfo(obj)->mgi_Configdata && MUIScreenBase) {
+                struct MUI_PubScreenDesc *desc  = (struct MUI_PubScreenDesc *)DoMethod(muiGlobalInfo(obj)->mgi_Configdata,
+                                        MUIM_Configdata_GetPubScrnDesc,
+                                        muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
+                if (desc) {
+                    MUIS_OpenPubScreen(desc);
+                mri->mri_Screen =
+                    LockPubScreen(muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
+                }
+            }
         }
 
         if (mri->mri_Screen == NULL)
         {
+            D(bug("[MUI:Window] %s: using default public screen\n", __func__);)
             mri->mri_Screen = LockPubScreen(NULL);
             if (mri->mri_Screen == NULL)
             {
                 return FALSE;
             }
         }
-
-        // FIXME: is this the right place for this action?
-        if (mri->mri_Screen
-            && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_pop_to_front)
-        {
-            ScreenToFront(mri->mri_Screen);
-        }
-
         data->wd_Flags |= MUIWF_SCREENLOCKED;
     }
 
@@ -3807,6 +3811,12 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
 
         zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
             left, top, width, height, left, top, 0);
+    }
+
+    if (data->wd_RenderInfo.mri_Screen
+        && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_pop_to_front)
+    {
+        ScreenToFront(data->wd_RenderInfo.mri_Screen);
     }
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);

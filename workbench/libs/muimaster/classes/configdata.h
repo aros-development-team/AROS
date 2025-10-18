@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2003, The AROS Development Team. All rights reserved.
+    Copyright  2002-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _MUI_CLASSES_CONFIGDATA_H
@@ -174,6 +174,7 @@
 #define MUICFG_BubbleHelp_FirstDelay    0x706
 #define MUICFG_BubbleHelp_NextDelay     0x707
 
+#define MUIM_Configdata_GetPubScrnDesc  (MUIB_Configdata | 0x00000029)
 #define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
 #define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
 
@@ -189,6 +190,12 @@
 #define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007)
 #define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008)
 #define MUIM_Configdata_SetString      (MUIB_Configdata | 0x00000009)
+
+struct MUIP_Configdata_GetPubScrnDesc
+{
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR name;
+};
 
 struct MUIP_Configdata_GetString
 {

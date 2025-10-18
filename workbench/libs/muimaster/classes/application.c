@@ -2208,8 +2208,6 @@ static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj,
     return 0;
 }
 
-//"envarc:Zune/PublicScreens.iff"
-
 static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     struct MUIP_Application_Load *message)
 {

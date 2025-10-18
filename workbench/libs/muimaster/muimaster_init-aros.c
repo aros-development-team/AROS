@@ -20,6 +20,7 @@
 //#define ZUNE_FORCE_SYSPENS
 
 struct Library *MUIMasterBase;
+struct Library *MUIScreenBase;
 
 static struct TextAttr topaz8Attr =
     { "topaz.font", 8, FS_NORMAL, FPF_ROMFONT, };
@@ -85,12 +86,17 @@ static int MUIMasterInit(LIBBASETYPEPTR lh)
     snprintf(defaultPen->buf, sizeof(defaultPen->buf), "%lc%d", (int)PST_SYS, (int)HIGHLIGHTTEXTPEN);
     defaultPen++;
 
+    MUIScreenBase = OpenLibrary("muiscreen.library", 0);
+
     return TRUE;
 }
 
 static int MUIMasterExpunge(LIBBASETYPEPTR lh)
 {
     MUIMasterBase = (struct Library *)lh;
+
+    if (MUIScreenBase)
+        CloseLibrary(MUIScreenBase);
 
     if (MUIMB(lh)->defaultPens != NULL)
         FreeMem(MUIMB(lh)->defaultPens, sizeof(struct MUI_PenSpec) * MPEN_COUNT);

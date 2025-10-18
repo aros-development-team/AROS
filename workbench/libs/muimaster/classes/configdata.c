@@ -26,13 +26,16 @@
 #include "prefs.h"
 #include "imspec.h"
 
+#include <proto/muiscreen.h>
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_ConfigdataData
 {
-    Object *app;
-    CONST_STRPTR appbase;
+    Object              *app;
+    CONST_STRPTR        appbase;
     struct ZunePrefsNew prefs;
+    struct List         pubscreens;
 };
 
 
@@ -301,6 +304,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /*      D(bug("Configdata_New(%p)\n", obj)); */
 
     data = INST_DATA(cl, obj);
+    NEWLIST(&data->pubscreens);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
@@ -506,6 +510,15 @@ IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /*      struct MUI_ConfigdataData *data = INST_DATA(cl, obj); */
 /*      int i; */
 
+    if (MUIScreenBase) {
+        struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+        struct Node *psNode, *tmp;
+        ForeachNodeSafe(&data->pubscreens, psNode, tmp) {
+            Remove(psNode);
+            MUIS_FreePubScreenDesc((struct MUI_PubScreenDesc *)psNode->ln_Name);
+            FreeVec(psNode);
+        }
+    }
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -1245,7 +1258,45 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
     {
         res = FALSE;
     }
+    
+    if (res && MUIScreenBase) {
+#define PUBSCREEN_FILE "env:Zune/PublicScreens.iff"
+        APTR pfh;
+        D(bug("[MUI:Cfg] %s: loading public screen details from '%s'\n", __func__, PUBSCREEN_FILE);)
+        if ((pfh = MUIS_OpenPubFile(PUBSCREEN_FILE, MODE_OLDFILE))) {
+            struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+            struct MUI_PubScreenDesc *desc;
+            while ((desc = MUIS_ReadPubFile(pfh))) {
+                struct Node *psNode;
+                D(bug("[MUI:Cfg] %s: descriptor @ 0x%p\n", __func__, desc);)
+                psNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                psNode->ln_Name = (char *)desc;
+                AddTail(&data->pubscreens, psNode);
+                if (desc->SysDefault)
+                    SetDefaultPubScreen(desc->Name);
+            }
+            MUIS_ClosePubFile(pfh);
+        }
+    }
+
     return res;
+}
+
+static IPTR Configdata_GetPubScrnDesc(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetPubScrnDesc *msg)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    struct MUI_PubScreenDesc *desc = NULL;
+    if (MUIScreenBase) {
+        struct Node *psNode;
+        ForeachNode(&data->pubscreens, psNode) {
+            if (!strcmp(((struct MUI_PubScreenDesc *)(psNode->ln_Name))->Name, msg->name)) {
+                desc = (struct MUI_PubScreenDesc *)psNode->ln_Name;
+                break;
+            }
+        }
+    }
+    return (IPTR)desc;
 }
 
 
@@ -1286,7 +1337,8 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
         return Configdata_SetWindowPos(cl, obj, (APTR) msg);
     case MUIM_Configdata_GetWindowPos:
         return Configdata_GetWindowPos(cl, obj, (APTR) msg);
-
+    case MUIM_Configdata_GetPubScrnDesc:
+        return Configdata_GetPubScrnDesc(cl, obj, (APTR) msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
