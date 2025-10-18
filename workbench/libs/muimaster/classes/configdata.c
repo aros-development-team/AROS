@@ -342,24 +342,12 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 (IPTR) "ENVARC:zune/global.prefs");
         }
     }
-    /*---------- fonts stuff ----------*/
 
-    data->prefs.fonts[-MUIV_Font_Normal] =
-        GetConfigString(obj, MUICFG_Font_Normal);
-    data->prefs.fonts[-MUIV_Font_List] =
-        GetConfigString(obj, MUICFG_Font_List);
-    data->prefs.fonts[-MUIV_Font_Tiny] =
-        GetConfigString(obj, MUICFG_Font_Tiny);
-    data->prefs.fonts[-MUIV_Font_Fixed] =
-        GetConfigString(obj, MUICFG_Font_Fixed);
-    data->prefs.fonts[-MUIV_Font_Title] =
-        GetConfigString(obj, MUICFG_Font_Title);
-    data->prefs.fonts[-MUIV_Font_Big] =
-        GetConfigString(obj, MUICFG_Font_Big);
-    data->prefs.fonts[-MUIV_Font_Button] =
-        GetConfigString(obj, MUICFG_Font_Button);
-    data->prefs.fonts[-MUIV_Font_Knob] =
-        GetConfigString(obj, MUICFG_Font_Knob);
+    /*---------- init strings ----------*/
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+        DoMethod(obj, MUIM_Configdata_SetString, DefStrValues[i].id, DefStrValues[i].val);
+    }
 
     /*---------- images stuff ----------*/
 
@@ -370,13 +358,8 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     init_framespecs(obj, data);
 
     /*---------- system stuff ----------*/
-
-    data->prefs.publicscreen_name =
-        GetConfigString(obj, MUICFG_PublicScreen);
     data->prefs.publicscreen_pop_to_front =
         GetConfigULong(obj, MUICFG_PublicScreen_PopToFront);
-    data->prefs.iconification_hotkey =
-        GetConfigString(obj, MUICFG_Iconification_Hotkey);
     data->prefs.iconification_show_icon =
         GetConfigULong(obj, MUICFG_Iconification_ShowIcon);
     data->prefs.iconification_show_menu =
@@ -463,109 +446,17 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.list_multi = GetConfigULong(obj, MUICFG_Listview_Multi);
     data->prefs.list_refresh = GetConfigULong(obj, MUICFG_Listview_Refresh);
 
-    /*---------- Strings ----------*/
-    data->prefs.string_bg_inactive =
-        GetConfigString(obj, MUICFG_String_Background);
-    data->prefs.string_text_inactive =
-        GetConfigString(obj, MUICFG_String_Text);
-    data->prefs.string_bg_active =
-        GetConfigString(obj, MUICFG_String_ActiveBackground);
-    data->prefs.string_text_active =
-        GetConfigString(obj, MUICFG_String_ActiveText);
-    data->prefs.string_cursor = GetConfigString(obj, MUICFG_String_Cursor);
-    data->prefs.string_bg_marked =
-        GetConfigString(obj, MUICFG_String_MarkedBackground);
-    data->prefs.string_text_marked =
-        GetConfigString(obj, MUICFG_String_MarkedText);
-
     /*---------- Navigation ----------*/
 
     data->prefs.drag_left_button =
         GetConfigULong(obj, MUICFG_Drag_LeftButton);
-    data->prefs.drag_left_modifier.readable_hotkey =
-        GetConfigString(obj, MUICFG_Drag_LMBModifier);
     data->prefs.drag_middle_button =
         GetConfigULong(obj, MUICFG_Drag_MiddleButton);
-    data->prefs.drag_middle_modifier.readable_hotkey =
-        GetConfigString(obj, MUICFG_Drag_MMBModifier);
     data->prefs.drag_autostart = GetConfigULong(obj, MUICFG_Drag_Autostart);
     data->prefs.drag_autostart_length =
         GetConfigULong(obj, MUICFG_Drag_Autostart_Length);
     data->prefs.drag_look = GetConfigULong(obj, MUICFG_Dragndrop_Look);
     data->prefs.balancing_look = GetConfigULong(obj, MUICFG_Balance_Look);
-
-    if (data->prefs.drag_left_modifier.readable_hotkey != NULL)
-        data->prefs.drag_left_modifier.ix_well =
-            !ParseIX(data->prefs.drag_left_modifier.readable_hotkey,
-            &data->prefs.drag_left_modifier.ix);
-    else
-        data->prefs.drag_left_modifier.ix_well = 0;
-
-    if (data->prefs.drag_middle_modifier.readable_hotkey != NULL)
-        data->prefs.drag_middle_modifier.ix_well =
-            !ParseIX(data->prefs.drag_middle_modifier.readable_hotkey,
-            &data->prefs.drag_middle_modifier.ix);
-    else
-        data->prefs.drag_middle_modifier.ix_well = 0;
-
-    data->prefs.active_object_color =
-        GetConfigString(obj, MUICFG_ActiveObject_Color);
-    /*---------- mui keys ----------*/
-
-    data->prefs.muikeys[MUIKEY_PRESS].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Press);
-    data->prefs.muikeys[MUIKEY_TOGGLE].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Toggle);
-    data->prefs.muikeys[MUIKEY_UP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Up);
-    data->prefs.muikeys[MUIKEY_DOWN].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Down);
-    data->prefs.muikeys[MUIKEY_PAGEUP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PageUp);
-    data->prefs.muikeys[MUIKEY_PAGEDOWN].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PageDown);
-    data->prefs.muikeys[MUIKEY_TOP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Top);
-    data->prefs.muikeys[MUIKEY_BOTTOM].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Bottom);
-    data->prefs.muikeys[MUIKEY_LEFT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Left);
-    data->prefs.muikeys[MUIKEY_RIGHT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Right);
-    data->prefs.muikeys[MUIKEY_WORDLEFT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_WordLeft);
-    data->prefs.muikeys[MUIKEY_WORDRIGHT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_WordRight);
-    data->prefs.muikeys[MUIKEY_LINESTART].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_LineStart);
-    data->prefs.muikeys[MUIKEY_LINEEND].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_LineEnd);
-    data->prefs.muikeys[MUIKEY_GADGET_NEXT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_NextGadget);
-    data->prefs.muikeys[MUIKEY_GADGET_PREV].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PrevGadget);
-    data->prefs.muikeys[MUIKEY_GADGET_OFF].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_GadgetOff);
-    data->prefs.muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_CloseWindow);
-    data->prefs.muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_NextWindow);
-    data->prefs.muikeys[MUIKEY_WINDOW_PREV].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PrevWindow);
-    data->prefs.muikeys[MUIKEY_HELP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Help);
-    data->prefs.muikeys[MUIKEY_POPUP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Popup);
-
-    for (i = 0; i < MUIKEY_COUNT; i++)
-    {
-        if (data->prefs.muikeys[i].readable_hotkey)
-            data->prefs.muikeys[i].ix_well =
-                !ParseIX(data->prefs.muikeys[i].readable_hotkey,
-                &data->prefs.muikeys[i].ix);
-        else
-            data->prefs.muikeys[i].ix_well = 0;
-    }
 
     /*---------- CustomFrames ----------*/
     data->prefs.customframe_config_1 =
@@ -910,6 +801,16 @@ IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object *obj,
     return 0;
 }
 
+static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
+{
+    if ((key->readable_hotkey = val) != NULL)
+        key->ix_well =
+            !ParseIX(key->readable_hotkey,
+            &key->ix);
+    else
+        key->ix_well = 0;
+}
+
 /**************************************************************************
  MUIM_Configdata_SetString
 **************************************************************************/
@@ -933,24 +834,38 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
 
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     switch (msg->id) {
-#if (0)
-    data->prefs.fonts[-MUIV_Font_Normal] =
-        GetConfigString(obj, MUICFG_Font_Normal);
-    data->prefs.fonts[-MUIV_Font_List] =
-        GetConfigString(obj, MUICFG_Font_List);
-    data->prefs.fonts[-MUIV_Font_Tiny] =
-        GetConfigString(obj, MUICFG_Font_Tiny);
-    data->prefs.fonts[-MUIV_Font_Fixed] =
-        GetConfigString(obj, MUICFG_Font_Fixed);
-    data->prefs.fonts[-MUIV_Font_Title] =
-        GetConfigString(obj, MUICFG_Font_Title);
-    data->prefs.fonts[-MUIV_Font_Big] =
-        GetConfigString(obj, MUICFG_Font_Big);
-    data->prefs.fonts[-MUIV_Font_Button] =
-        GetConfigString(obj, MUICFG_Font_Button);
-    data->prefs.fonts[-MUIV_Font_Knob] =
-        GetConfigString(obj, MUICFG_Font_Knob);
-#endif
+    case MUICFG_Font_Normal:
+        data->prefs.fonts[-MUIV_Font_Normal] = msg->string;
+        break;
+
+    case MUICFG_Font_List:
+        data->prefs.fonts[-MUIV_Font_List] = msg->string;
+        break;
+
+    case MUICFG_Font_Tiny:
+        data->prefs.fonts[-MUIV_Font_Tiny] = msg->string;
+        break;
+
+    case MUICFG_Font_Fixed:
+        data->prefs.fonts[-MUIV_Font_Fixed] = msg->string;
+        break;
+
+    case MUICFG_Font_Title:
+        data->prefs.fonts[-MUIV_Font_Title] = msg->string;
+        break;
+
+    case MUICFG_Font_Big:
+        data->prefs.fonts[-MUIV_Font_Big] = msg->string;
+        break;
+
+    case MUICFG_Font_Button:
+        data->prefs.fonts[-MUIV_Font_Button] = msg->string;
+        break;
+
+    case MUICFG_Font_Knob:
+        data->prefs.fonts[-MUIV_Font_Knob] = msg->string;
+        break;
+
     /*---------- system stuff ----------*/
     case MUICFG_PublicScreen:
         data->prefs.publicscreen_name = msg->string;
@@ -992,21 +907,11 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
     /*---------- Navigation ----------*/
 
     case MUICFG_Drag_LMBModifier:
-        if ((data->prefs.drag_left_modifier.readable_hotkey = msg->string) != NULL)
-            data->prefs.drag_left_modifier.ix_well =
-                !ParseIX(data->prefs.drag_left_modifier.readable_hotkey,
-                &data->prefs.drag_left_modifier.ix);
-        else
-            data->prefs.drag_left_modifier.ix_well = 0;
+        Configdata__SetKey(&data->prefs.drag_left_modifier, msg->string);
         break;
 
     case MUICFG_Drag_MMBModifier:
-        if ((data->prefs.drag_middle_modifier.readable_hotkey = msg->string) != NULL)
-            data->prefs.drag_middle_modifier.ix_well =
-                !ParseIX(data->prefs.drag_middle_modifier.readable_hotkey,
-                &data->prefs.drag_middle_modifier.ix);
-        else
-            data->prefs.drag_middle_modifier.ix_well = 0;
+        Configdata__SetKey(&data->prefs.drag_middle_modifier, msg->string);
         break;
 
     case MUICFG_ActiveObject_Color:
@@ -1014,62 +919,93 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
         break;
 
     /*---------- mui keys ----------*/
-#if (0)
-    data->prefs.muikeys[MUIKEY_PRESS].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Press);
-    data->prefs.muikeys[MUIKEY_TOGGLE].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Toggle);
-    data->prefs.muikeys[MUIKEY_UP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Up);
-    data->prefs.muikeys[MUIKEY_DOWN].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Down);
-    data->prefs.muikeys[MUIKEY_PAGEUP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PageUp);
-    data->prefs.muikeys[MUIKEY_PAGEDOWN].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PageDown);
-    data->prefs.muikeys[MUIKEY_TOP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Top);
-    data->prefs.muikeys[MUIKEY_BOTTOM].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Bottom);
-    data->prefs.muikeys[MUIKEY_LEFT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Left);
-    data->prefs.muikeys[MUIKEY_RIGHT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Right);
-    data->prefs.muikeys[MUIKEY_WORDLEFT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_WordLeft);
-    data->prefs.muikeys[MUIKEY_WORDRIGHT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_WordRight);
-    data->prefs.muikeys[MUIKEY_LINESTART].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_LineStart);
-    data->prefs.muikeys[MUIKEY_LINEEND].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_LineEnd);
-    data->prefs.muikeys[MUIKEY_GADGET_NEXT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_NextGadget);
-    data->prefs.muikeys[MUIKEY_GADGET_PREV].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PrevGadget);
-    data->prefs.muikeys[MUIKEY_GADGET_OFF].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_GadgetOff);
-    data->prefs.muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_CloseWindow);
-    data->prefs.muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_NextWindow);
-    data->prefs.muikeys[MUIKEY_WINDOW_PREV].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_PrevWindow);
-    data->prefs.muikeys[MUIKEY_HELP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Help);
-    data->prefs.muikeys[MUIKEY_POPUP].readable_hotkey =
-        GetConfigString(obj, MUICFG_Keyboard_Popup);
+    case MUICFG_Keyboard_Press:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PRESS], msg->string);
+        break;
 
-    for (i = 0; i < MUIKEY_COUNT; i++)
-    {
-        if (data->prefs.muikeys[i].readable_hotkey)
-            data->prefs.muikeys[i].ix_well =
-                !ParseIX(data->prefs.muikeys[i].readable_hotkey,
-                &data->prefs.muikeys[i].ix);
-        else
-            data->prefs.muikeys[i].ix_well = 0;
-    }
-#endif
+    case MUICFG_Keyboard_Toggle:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOGGLE], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Up:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_UP], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Down:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_DOWN], msg->string);
+        break;
+
+    case MUICFG_Keyboard_PageUp:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEUP], msg->string);
+        break;
+
+    case MUICFG_Keyboard_PageDown:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEDOWN], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Top:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOP], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Bottom:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_BOTTOM], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Left:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LEFT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Right:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_RIGHT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_WordLeft:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDLEFT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_WordRight:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDRIGHT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_LineStart:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINESTART], msg->string);
+        break;
+
+    case MUICFG_Keyboard_LineEnd:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINEEND], msg->string);
+        break;
+
+    case MUICFG_Keyboard_NextGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_NEXT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_PrevGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_PREV], msg->string);
+        break;
+
+    case MUICFG_Keyboard_GadgetOff:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_OFF], msg->string);
+        break;
+
+    case MUICFG_Keyboard_CloseWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_CLOSE], msg->string);
+        break;
+
+    case MUICFG_Keyboard_NextWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_NEXT], msg->string);
+        break;
+
+    case MUICFG_Keyboard_PrevWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_PREV], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Help:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_HELP], msg->string);
+        break;
+
+    case MUICFG_Keyboard_Popup:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_POPUP], msg->string);
+        break;
 
     /*---------- CustomFrames ----------*/
     case MUICFG_CustomFrame_1:
