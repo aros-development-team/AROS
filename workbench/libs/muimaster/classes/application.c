@@ -2011,9 +2011,96 @@ static IPTR Application__MUIM_SetConfigItem(struct IClass *cl, Object *obj,
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     if (data->app_GlobalInfo.mgi_Configdata) {
         switch (msg->item) {
+            /*
+            case MUICFG_Window_Spacing_Left:
+            case MUICFG_Window_Spacing_Right:
+            case MUICFG_Window_Spacing_Top:
+            case MUICFG_Window_Buttons:
+            case MUICFG_Window_Spacing_Bottom:
+            case MUICFG_Window_Positions:
+            case MUICFG_Window_Redraw:
+            case MUICFG_Window_Refresh:
+            case MUICFG_Radio_HSpacing:
+            case MUICFG_Radio_VSpacing:
+            case MUICFG_Group_HSpacing:
+            case MUICFG_Group_VSpacing:
+            case MUICFG_Cycle_MenuCtrl_Position:
+            case MUICFG_Cycle_MenuCtrl_Level:
+            case MUICFG_Cycle_MenuCtrl_Speed:
+            case MUICFG_Cycle_Menu_Recessed:
+            case MUICFG_Listview_Font_Leading:
+            case MUICFG_Listview_Smoothed:
+            case MUICFG_Listview_SmoothVal:
+            case MUICFG_Listview_Refresh:
+            case MUICFG_Listview_Multi:
+            case MUICFG_GroupTitle_Position:
+            case MUICFG_GroupTitle_Color:
+            case MUICFG_Scrollbar_Type:
+            case MUICFG_Scrollbar_Arrangement:
+            case MUICFG_Balance_Look:
+            case MUICFG_Dragndrop_Look:
+            case MUICFG_Drag_Autostart:
+            case MUICFG_Drag_Autostart_Length:
+            case MUICFG_Drag_LeftButton:
+            case MUICFG_Drag_MiddleButton:
+            case MUICFG_Register_TruncateTitles:
+            case MUICFG_Screen_Mode:
+            case MUICFG_Screen_Mode_ID:
+            case MUICFG_Screen_Width:
+            case MUICFG_Screen_Height:
+            case MUICFG_PublicScreen_PopToFront:
+            case MUICFG_Iconification_ShowIcon:
+            case MUICFG_Iconification_ShowMenu:
+            case MUICFG_Iconification_OnStartup:
+            case MUICFG_Interfaces_EnableARexx:
+            case MUICFG_BubbleHelp_FirstDelay:
+            case MUICFG_BubbleHelp_NextDelay: */
+            case MUICFG_Keyboard_Press:
+            case MUICFG_Keyboard_Toggle:
+            case MUICFG_Keyboard_Up:
+            case MUICFG_Keyboard_Down:
+            case MUICFG_Keyboard_PageUp:
+            case MUICFG_Keyboard_PageDown:
+            case MUICFG_Keyboard_Top:
+            case MUICFG_Keyboard_Bottom:
+            case MUICFG_Keyboard_Left:
+            case MUICFG_Keyboard_Right:
+            case MUICFG_Keyboard_WordLeft:
+            case MUICFG_Keyboard_WordRight:
+            case MUICFG_Keyboard_LineStart:
+            case MUICFG_Keyboard_LineEnd:
+            case MUICFG_Keyboard_NextGadget:
+            case MUICFG_Keyboard_PrevGadget:
+            case MUICFG_Keyboard_GadgetOff:
+            case MUICFG_Keyboard_CloseWindow:
+            case MUICFG_Keyboard_NextWindow:
+            case MUICFG_Keyboard_PrevWindow:
+            case MUICFG_Keyboard_Help:
+            case MUICFG_Keyboard_Popup:
+            case MUICFG_Drag_LMBModifier:
+            case MUICFG_Drag_MMBModifier:
+            case MUICFG_Iconification_Hotkey:
+                DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_SetString, msg->item, msg->data);
+                break;
+            case MUICFG_Font_Normal:
+            case MUICFG_Font_List:
+            case MUICFG_Font_Tiny:
+            case MUICFG_Font_Fixed:
+            case MUICFG_Font_Title:
+            case MUICFG_Font_Big:
+            case MUICFG_Font_Button:
+            case MUICFG_Font_Knob:
+            case MUICFG_String_Background:
+            case MUICFG_String_Text:
+            case MUICFG_String_ActiveBackground:
+            case MUICFG_String_ActiveText:
+            case MUICFG_String_Cursor:
+            case MUICFG_String_MarkedBackground:
+            case MUICFG_String_MarkedText:
+            case MUICFG_ActiveObject_Color:
             case MUICFG_PublicScreen:
                 Application__CloseWindows(cl, obj);
-                data->app_GlobalInfo.mgi_Prefs->publicscreen_name = msg->data;
+                DoMethod(data->app_GlobalInfo.mgi_Configdata, MUIM_Configdata_SetString, msg->item, msg->data);
                 DoMethod(obj, MUIM_Application_PushMethod, (IPTR) obj, 1,
                     MUIM_Application_OpenWindows);
                 break;
@@ -2121,6 +2208,8 @@ static IPTR Application__MUIM_UpdateMenus(struct IClass *cl, Object *obj,
     return 0;
 }
 
+//"envarc:Zune/PublicScreens.iff"
+
 static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     struct MUIP_Application_Load *message)
 {
@@ -2132,6 +2221,8 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
     struct MinList *children = NULL;
     Object *cstate;
     Object *child;
+
+    bug("[MUI:App] %s(0x%p)\n", __func__, obj);
 
     if (!data->app_Base)
         return 0;
@@ -2146,6 +2237,8 @@ static IPTR Application__MUIM_Load(struct IClass *cl, Object *obj,
         snprintf(name, sizeof(name), "ENVARC:Zune/%s.cfg", data->app_Base);
     else
         strncpy(name, message->name, sizeof(name) - 1);
+
+    bug("[MUI:App] %s: opening '%s'\n", __func__, name);
 
     fh = Open(name, MODE_OLDFILE);
     if (fh)
