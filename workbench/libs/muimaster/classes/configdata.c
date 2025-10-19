@@ -1272,8 +1272,6 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
                 psNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
                 psNode->ln_Name = (char *)desc;
                 AddTail(&data->pubscreens, psNode);
-                if (desc->SysDefault)
-                    SetDefaultPubScreen(desc->Name);
             }
             MUIS_ClosePubFile(pfh);
         }

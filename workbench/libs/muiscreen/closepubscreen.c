@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <libraries/muiscreen.h>
@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <exec/lists.h>
 #include <string.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "muiscreen_intern.h"
@@ -65,7 +65,11 @@
         }
     }
     UnlockPubScreenList();
-    
+
+    if (MUIScreenBase->muisb_def && !strcmp(MUIScreenBase->muisb_def, name)) {
+        SetDefaultPubScreen("");
+    }
+
     if(found)
     {
         PubScreenStatus(pubscrnode->psn_Screen, PSNF_PRIVATE);

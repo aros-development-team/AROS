@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <libraries/muiscreen.h>
@@ -7,7 +7,7 @@
 #include <dos/dos.h>
 #include <proto/iffparse.h>
 #include <prefs/prefhdr.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "fileformat.h"

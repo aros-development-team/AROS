@@ -1,11 +1,11 @@
 /*
-    Copyright (C) 2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <libraries/muiscreen.h>
 #include <proto/dos.h>
 #include <proto/iffparse.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************

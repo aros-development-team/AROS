@@ -1,8 +1,8 @@
-#ifndef PARTITION_INTERN_H
-#define PARTITION_INTERN_H
+#ifndef MUISCREEN_INTERN_H
+#define MUISCREEN_INTERN_H
 
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2025, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,8 +15,13 @@
 
 struct MUIScreenBase_intern
 {
-    struct Library lib;
-    struct List clients;
+    struct Library          lib;
+    const char              *muisb_def;
+    struct Task             *muisb_closeTask;
+    struct MsgPort          *muisb_taskMsgPort;
+    struct SignalSemaphore  muisb_acLock;
+    struct List             muisb_autocScreens;
+    struct List             clients;
 };
 
 #endif
