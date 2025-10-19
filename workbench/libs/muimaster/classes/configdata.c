@@ -28,16 +28,24 @@
 
 #include <proto/muiscreen.h>
 
+#define PUBSCREEN_FILE "env:Zune/PublicScreens.iff"
+
+#define DFSN(x)
+#define DPSD(x)
+
 extern struct Library *MUIMasterBase;
 
 struct MUI_ConfigdataData
 {
-    Object              *app;
-    CONST_STRPTR        appbase;
-    struct ZunePrefsNew prefs;
-    struct List         pubscreens;
+    Object                      *app;
+    CONST_STRPTR                appbase;
+    struct ZunePrefsNew         prefs;
+    struct SignalSemaphore      psLock;
+    struct MsgPort             *fsNotifyPort;
+    struct MUI_InputHandlerNode fsNotifyIHN;
+    struct NotifyRequest        fsNotifyRequest;
+    struct List                 pubscreens;
 };
-
 
 static CONST_STRPTR GetConfigString(Object *obj, ULONG id)
 {
@@ -304,7 +312,9 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /*      D(bug("Configdata_New(%p)\n", obj)); */
 
     data = INST_DATA(cl, obj);
+
     NEWLIST(&data->pubscreens);
+    InitSemaphore(&data->psLock);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
@@ -347,6 +357,28 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         }
     }
 
+    data->fsNotifyPort = CreateMsgPort();
+    if (data->fsNotifyPort) {
+        /* Setup filesystem notification handler ---------------------------*/
+        data->fsNotifyIHN.ihn_Signals = 1UL << data->fsNotifyPort->mp_SigBit;
+        data->fsNotifyIHN.ihn_Object  = obj;
+        data->fsNotifyIHN.ihn_Method  = MUIM_Configdata_LoadPubScreens;
+
+        DoMethod(data->app, MUIM_Application_AddInputHandler, (IPTR)&data->fsNotifyIHN);
+
+        data->fsNotifyRequest.nr_Name                 = PUBSCREEN_FILE;
+        data->fsNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+        data->fsNotifyRequest.nr_stuff.nr_Msg.nr_Port = data->fsNotifyPort;
+        if (StartNotify(&data->fsNotifyRequest)) {
+            DFSN(bug("[MUI:Cfg] %s: FileSystem-Notification setup for '%s'\n", __func__, data->fsNotifyRequest.nr_Name));
+        } else {
+            DFSN(bug("[MUI:Cfg] %s: FAILED to setup FileSystem-Notification for '%s'\n", __func__, data->fsNotifyRequest.nr_Name));
+            DoMethod(data->app, MUIM_Application_RemInputHandler, (IPTR)&data->fsNotifyIHN);
+            DeleteMsgPort(data->fsNotifyPort);
+            data->fsNotifyPort = NULL;
+        }
+    }
+    
     /*---------- init strings ----------*/
     for (i = 0; DefStrValues[i].id; i++)
     {
@@ -502,23 +534,37 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+static void Configdata__DisposeDescriptors(struct MUI_ConfigdataData *data)
+{
+    struct Node *psNode, *tmp;
+
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
+    ObtainSemaphore(&data->psLock);
+    ForeachNodeSafe(&data->pubscreens, psNode, tmp) {
+        Remove(psNode);
+        MUIS_FreePubScreenDesc((struct MUI_PubScreenDesc *)psNode->ln_Name);
+        FreeVec(psNode);
+    }
+    ReleaseSemaphore(&data->psLock);
+}
+
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
 IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-/*      struct MUI_ConfigdataData *data = INST_DATA(cl, obj); */
-/*      int i; */
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
 
-    if (MUIScreenBase) {
-        struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
-        struct Node *psNode, *tmp;
-        ForeachNodeSafe(&data->pubscreens, psNode, tmp) {
-            Remove(psNode);
-            MUIS_FreePubScreenDesc((struct MUI_PubScreenDesc *)psNode->ln_Name);
-            FreeVec(psNode);
-        }
+    if (data->fsNotifyPort) {
+        DoMethod(data->app, MUIM_Application_RemInputHandler, (IPTR) &data->fsNotifyIHN);
+        EndNotify(&data->fsNotifyRequest);
+        DeleteMsgPort(data->fsNotifyPort);
     }
+
+    if (MUIScreenBase)
+        Configdata__DisposeDescriptors(data);
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -1258,23 +1304,9 @@ IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
     {
         res = FALSE;
     }
-    
-    if (res && MUIScreenBase) {
-#define PUBSCREEN_FILE "env:Zune/PublicScreens.iff"
-        APTR pfh;
-        D(bug("[MUI:Cfg] %s: loading public screen details from '%s'\n", __func__, PUBSCREEN_FILE);)
-        if ((pfh = MUIS_OpenPubFile(PUBSCREEN_FILE, MODE_OLDFILE))) {
-            struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
-            struct MUI_PubScreenDesc *desc;
-            while ((desc = MUIS_ReadPubFile(pfh))) {
-                struct Node *psNode;
-                D(bug("[MUI:Cfg] %s: descriptor @ 0x%p\n", __func__, desc);)
-                psNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                psNode->ln_Name = (char *)desc;
-                AddTail(&data->pubscreens, psNode);
-            }
-            MUIS_ClosePubFile(pfh);
-        }
+
+    if (res) {
+        DoMethod(obj, MUIM_Configdata_LoadPubScreens);
     }
 
     return res;
@@ -1285,18 +1317,52 @@ static IPTR Configdata_GetPubScrnDesc(struct IClass *cl, Object *obj,
 {
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     struct MUI_PubScreenDesc *desc = NULL;
+
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
     if (MUIScreenBase) {
         struct Node *psNode;
+        ObtainSemaphoreShared(&data->psLock);
         ForeachNode(&data->pubscreens, psNode) {
             if (!strcmp(((struct MUI_PubScreenDesc *)(psNode->ln_Name))->Name, msg->name)) {
                 desc = (struct MUI_PubScreenDesc *)psNode->ln_Name;
                 break;
             }
         }
+        ReleaseSemaphore(&data->psLock);
     }
     return (IPTR)desc;
 }
 
+static IPTR Configdata_LoadPubScreens(struct IClass *cl, Object *obj,
+    Msg msg)
+{
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
+    if (MUIScreenBase) {
+        struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+        struct Node *psNode, *tmpName;
+        APTR pfh;
+
+        Configdata__DisposeDescriptors(data);
+
+        DPSD(bug("[MUI:Cfg] %s: loading public screen details from '%s'\n", __func__, PUBSCREEN_FILE);)
+
+        ObtainSemaphore(&data->psLock);
+        if ((pfh = MUIS_OpenPubFile(PUBSCREEN_FILE, MODE_OLDFILE))) {
+            struct MUI_PubScreenDesc *desc;
+            while ((desc = MUIS_ReadPubFile(pfh))) {
+                DPSD(bug("[MUI:Cfg] %s: descriptor @ 0x%p\n", __func__, desc);)
+                psNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                psNode->ln_Name = (char *)desc;
+                AddTail(&data->pubscreens, psNode);
+            }
+            MUIS_ClosePubFile(pfh);
+        }
+        ReleaseSemaphore(&data->psLock);
+    }
+    return (IPTR)TRUE;
+}
 
 /*
  * The class dispatcher
@@ -1337,6 +1403,8 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
         return Configdata_GetWindowPos(cl, obj, (APTR) msg);
     case MUIM_Configdata_GetPubScrnDesc:
         return Configdata_GetPubScrnDesc(cl, obj, (APTR) msg);
+    case MUIM_Configdata_LoadPubScreens:
+        return Configdata_LoadPubScreens(cl, obj, (APTR) msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);

@@ -174,10 +174,10 @@
 #define MUICFG_BubbleHelp_FirstDelay    0x706
 #define MUICFG_BubbleHelp_NextDelay     0x707
 
+#define MUIM_Configdata_LoadPubScreens  (MUIB_Configdata | 0x00000028)
 #define MUIM_Configdata_GetPubScrnDesc  (MUIB_Configdata | 0x00000029)
 #define MUIM_Configdata_GetWindowPos    (MUIB_Configdata | 0x0000002A)
 #define MUIM_Configdata_SetWindowPos    (MUIB_Configdata | 0x0000002B)
-
 
 /*** Methods ****************************************************************/
 #define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000)
