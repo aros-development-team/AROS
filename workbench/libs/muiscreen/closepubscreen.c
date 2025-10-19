@@ -72,10 +72,20 @@
 
     if(found)
     {
+        struct Node *node, *tmpnode;
+
         PubScreenStatus(pubscrnode->psn_Screen, PSNF_PRIVATE);
+        ObtainSemaphore(&MUIScreenBase->muisb_acLock);
+        ForeachNodeSafe(&MUIScreenBase->muisb_autocScreens, node, tmpnode) {
+            if (node->ln_Name == (char *)pubscrnode->psn_Screen) {
+                Remove(node);
+                FreeVec(node);
+                break;
+            }
+        }
+        ReleaseSemaphore(&MUIScreenBase->muisb_acLock);
         CloseScreen(pubscrnode->psn_Screen);
 
-        struct Node *node;
         ForeachNode(&MUIScreenBase->clients, node)
         {
             struct MUIS_InfoClient *client = (struct MUIS_InfoClient*) node;
