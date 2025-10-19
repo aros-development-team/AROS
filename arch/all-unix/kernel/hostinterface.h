@@ -1,7 +1,9 @@
 #ifndef _HOSTINTERFACE_H
 #define _HOSTINTERFACE_H
 
-#define HOSTINTERFACE_VERSION 3
+#include <stdint.h>
+
+#define HOSTINTERFACE_VERSION 4
 
 struct HostInterface
 {
@@ -12,7 +14,7 @@ struct HostInterface
     int   (*hostlib_Close)(void *, char **);
     void *(*hostlib_GetPointer)(void *, const char *, char **);
     int   (*KPutC)(int chr);
-    int   (*host_GetTime)(int, void *);
+    int   (*host_GetTime)(int, uint64_t *, uint64_t *);
     struct MinList **ModListPtr;
 };
 

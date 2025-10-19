@@ -1,4 +1,7 @@
-#define HOSTINTERFACE_VERSION 3
+/* The mingw interface logic requires that the hostlib version matches
+ * HOSTINTERFACE_VERSION exactly.
+ */
+#define HOSTINTERFACE_VERSION 4
 
 #ifdef __x86_64__
 #define __aros __attribute__((sysv_abi))
