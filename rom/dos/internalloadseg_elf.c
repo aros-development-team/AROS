@@ -549,7 +549,6 @@ static int relocate
                 }
 
                 // Insert the 24-bit immediate into the instruction.
-                ULONG insn = *p;
                 *p = (*p & 0xFF000000u) | ((ULONG)imm24 & 0x00FFFFFFu);
             }
             break;
