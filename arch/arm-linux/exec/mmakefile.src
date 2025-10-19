@@ -21,6 +21,6 @@ USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  files="cachecleare" arch=linux-arm
+  files="cachecleare" arch=linux-arm modname=exec
 
 %common

@@ -11,9 +11,11 @@ struct LinuxArmProcessor
 };
 
 /* Some of feature flags */
-#define FF_VFP	 0x0001
+#define FF_VFP   0x0001
 #define FF_VFPv3 0x0002
-#define FF_NEON	 0x0004
+#define FF_NEON  0x0004
+#define FF_FP    0x0020
+#define FF_ASIMD 0x0040
 
 struct LibCInterface
 {

@@ -24,25 +24,32 @@ AROS_LH3(void, CacheClearE,
     /* Linux supports only instruction cache flush */
     if (caches & CACRF_ClearI)
     {
+        int ret;
+
         /* Forbid(). We inline it because we could use real executable jumptable,
            in this case this function can be called for validating ExecBase
            itself. */
         AROS_ATOMIC_INC(SysBase->TDNestCnt);
 
-        const int syscall = 0xf0002;
-        __asm __volatile (
-                "mov     %%r0, %0\n"
-                "mov     %%r1, %1\n"
-                "mov     %%r7, %2\n"
-                "mov     %%r2, #0x0\n"
-                "svc     0x00000000\n"
-                :
-                :       "r" (address), "r" ((IPTR)address + length), "r" (syscall)
-                :       "r0", "r1", "r2", "r7", "memory"
-                );
+        register APTR  _r0 __asm__("r0") = address;
+        register APTR  _r1 __asm__("r1") = (STRPTR)address + length;
+        register ULONG _r2 __asm__("r2") = 0;        // flags
+        register ULONG _r7 __asm__("r7") = 0xF0002;  // cacheflush syscall
+
+        __asm__ volatile(
+                         "svc 0\n"
+                         : "+r"(_r0)
+                         : "r"(_r1), "r"(_r2), "r"(_r7)
+                         : "r3", "r4", "r5", "r6", "r8", "r9", "r10", "r12", "memory", "cc"
+                         );
+        ret = (int)_r0;
 
         /* It's okay to use library base now */
         Permit();
+
+        if (ret != 0) {
+            bug("CPU cache could not be cleared!\n");
+        }
     }
 
     AROS_LIBFUNC_EXIT
