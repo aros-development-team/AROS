@@ -220,24 +220,22 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     /* Free everything except the application's messageport */
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
-    struct Window   *window, *win2;
+    struct Window   **winprev_ptr, *wincur;
     struct Screen   *screen;
     struct IIHData  *iihd;
     ULONG            lock;
 
-    window = msg->window;
+    D(bug("CloseWindow (%p)\n", msg->window));
 
-    D(bug("CloseWindow (%p)\n", window));
-
-    RemoveResourceFromList(window, RESOURCE_WINDOW, IntuitionBase);
+    RemoveResourceFromList(msg->window, RESOURCE_WINDOW, IntuitionBase);
 
     iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
-    /* if there is an active gadget in the window being closed, then make
+    /* if there is an active gadget in the msg->window being closed, then make
        it inactive */
     if (iihd->ActiveGadget &&
         !IS_SCREEN_GADGET(iihd->ActiveGadget) &&
-        (iihd->GadgetInfo.gi_Window == window))
+        (iihd->GadgetInfo.gi_Window == msg->window))
     {
         struct Gadget *gadget = iihd->ActiveGadget;
 
@@ -251,7 +249,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
                     gpgi.gpgi_GInfo = &iihd->GadgetInfo;
                     gpgi.gpgi_Abort = 1;
 
-                    Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
+                    Locked_DoMethodA(msg->window, gadget, (Msg)&gpgi, IntuitionBase);
 
                     if (iihd->ActiveSysGadget)
                     {
@@ -260,7 +258,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
                         if (IS_BOOPSI_GADGET(gadget))
                         {
-                            Locked_DoMethodA(window, gadget, (Msg)&gpgi, IntuitionBase);
+                            Locked_DoMethodA(msg->window, gadget, (Msg)&gpgi, IntuitionBase);
                         }
                     }
                 }
@@ -277,28 +275,28 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         iihd->ActiveGadget = NULL;
     }
 
-    /* Need this in case of a window created under the input.device task context */
-    screen = window->WScreen;
+    /* Need this in case of a msg->window created under the input.device task context */
+    screen = msg->window->WScreen;
 
     /* Check if there are still some requesters */
     //jDc: do NOT use this! if there is a requester without ACTIVE flag set this routine will buysloop!
     //jDc: moved this stuff down to layer dispose stuff!
-/*    while (window->FirstRequest)
-        EndRequest(window->FirstRequest, window);*/
+/*    while (msg->window->FirstRequest)
+        EndRequest(msg->window->FirstRequest, msg->window);*/
 
     lock = LockIBase (0);
 
-    if (window == IntuitionBase->ActiveWindow)
+    if (msg->window == IntuitionBase->ActiveWindow)
         IntuitionBase->ActiveWindow = NULL;
-    if (window == iihd->NewActWindow) iihd->NewActWindow = NULL;
+    if (msg->window == iihd->NewActWindow) iihd->NewActWindow = NULL;
 
-    /* Remove window from the parent/descendant chain and find next active window
+    /* Remove msg->window from the parent/descendant chain and find next active msg->window
     **
     **
     ** before:  parent win xyz
     **              \
     **           \
-    **       deadwindow window
+    **       deadwindow msg->window
     **          /
     **         /
     **        /
@@ -312,57 +310,50 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     **
     */
 
-    if (window->Descendant)
-        window->Descendant->Parent = window->Parent;
-    if (window->Parent)
-        window->Parent->Descendant = window->Descendant;
+    if (msg->window->Descendant)
+        msg->window->Descendant->Parent = msg->window->Parent;
+    if (msg->window->Parent)
+        msg->window->Parent->Descendant = msg->window->Descendant;
     
-    /* Was this the active window? */
-    if (!IntuitionBase->ActiveWindow)
-    {
-        /* If so, we need to find out which window to make
+    /* Was this the active msg->window? */
+    if (!IntuitionBase->ActiveWindow) {
+        /* If so, we need to find out which msg->window to make
            active now. We first check whether we have a "parent",
-           which is a window that was open before the one we're closing. */
-        if (window->Parent)
-            ActivateWindow (window->Parent);
-        else
-        /* Otherwise, we find out which was the latest one, and activate it.
-           It's debatable whether this is the best policy, but this is how
-           AmigaOS(TM) does it.  */
-        if ((win2 = window->Descendant))
-        {
-            for (;win2->Descendant; win2 = win2->Descendant);
-                ActivateWindow (win2);
-        }
-    }
-
-    /* Make sure the Screen's window list is still valid */
-
-    if (window == window->WScreen->FirstWindow)
-    {
-        window->WScreen->FirstWindow = window->NextWindow;
-    }
-    else if ((win2 = window->WScreen->FirstWindow))
-    {
-        while (win2->NextWindow)
-        {
-            if (win2->NextWindow == window)
-            {
-                win2->NextWindow = window->NextWindow;
-                break;
+           which is a msg->window that was open before the one we're closing. */
+        if (msg->window->Parent)
+            ActivateWindow (msg->window->Parent);
+        else {
+            /* Otherwise, we find out which was the latest one, and activate it.
+               It's debatable whether this is the best policy, but this is how
+               AmigaOS(TM) does it.  */
+            if ((wincur = msg->window->Descendant)) {
+                for (;wincur->Descendant; wincur = wincur->Descendant)
+                    ;
+                ActivateWindow(wincur);
             }
-            win2 = win2->NextWindow;
         }
+    }
+
+    /* Make sure the Screen's msg->window list is still valid */
+    winprev_ptr = &msg->window->WScreen->FirstWindow;
+    wincur = *winprev_ptr;
+    while (wincur) {
+        if (wincur == msg->window) {
+            *winprev_ptr = wincur->NextWindow;
+            break;
+        }
+        winprev_ptr = &wincur->NextWindow;
+        wincur = wincur->NextWindow;
     }
 
     UnlockIBase (lock);
 
 #ifdef TIMEVALWINDOWACTIVATION
-    if (window->WScreen->FirstWindow && !IntuitionBase->ActiveWindow)
+    if (msg->window->WScreen->FirstWindow && !IntuitionBase->ActiveWindow)
     {
         struct Window *neww = 0,*scanw = 0;
 
-        for (scanw = window->WScreen->FirstWindow; scanw ; scanw = scanw->NextWindow)
+        for (scanw = msg->window->WScreen->FirstWindow; scanw ; scanw = scanw->NextWindow)
         {
             if (neww)
             {
@@ -375,9 +366,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
             if (!neww) neww = scanw;
         }
-
         if (neww) ActivateWindow(neww);
-
     }
 #endif
 
@@ -386,16 +375,16 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     LOCK_REFRESH(screen);
 
     /* IFont may be NULL if we are called from an OpenWindow failure */
-    if (window->IFont)
-        CloseFont (window->IFont);
+    if (msg->window->IFont)
+        CloseFont (msg->window->IFont);
 
     #ifdef DAMAGECACHE
-    if (IW(window)->trashregion) DisposeRegion(IW(window)->trashregion);
+    if (IW(msg->window)->trashregion) DisposeRegion(IW(msg->window)->trashregion);
     #endif
 
-    if (window->FirstRequest)
+    if (msg->window->FirstRequest)
     {
-        struct Requester *r = window->FirstRequest;
+        struct Requester *r = msg->window->FirstRequest;
         
         while (r)
         {
@@ -407,41 +396,49 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 
     // remove transparency!
 #ifdef SKINS
-    if (WLAYER(window))
+    if (WLAYER(msg->window))
     {
-        InstallTransparentRegionHook(WLAYER(window),NULL);
-        InstallTransparentRegion(WLAYER(window),NULL);
+        InstallTransparentRegionHook(WLAYER(msg->window),NULL);
+        InstallTransparentRegion(WLAYER(msg->window),NULL);
     }
 
-    if (((struct IntWindow *)(window))->transpregion) DisposeRegion(((struct IntWindow *)(window))->transpregion);
+    if (((struct IntWindow *)(msg->window))->transpregion) DisposeRegion(((struct IntWindow *)(msg->window))->transpregion);
 #endif
 
-    /* Let the driver clean up. Driver will dealloc window's rastport */
-    intui_CloseWindow (window, IntuitionBase);
+    /* Let the driver clean up. Driver will dealloc msg->window's rastport */
+    intui_CloseWindow (msg->window, IntuitionBase);
 
     /* jDc: trash the screen pointer to avoid unnecessary checks in WindowValid() and
        memory corruption */
-    window->WScreen = (struct Screen *)0xC0DEBAD0;
+    msg->window->WScreen = (struct Screen *)0xC0DEBAD0;
+
+    /* If the screen was a  public screen, check if we were the last window */
+    if (IS(screen)->pubScrNode != NULL)
+    {
+        if (!(IS(screen)->pubScrNode->psn_VisitorCount && screen->FirstWindow)) {
+            
+        }
+    }
 
     /* Remove the Window Outline Shape */
-    if (((struct IntWindow *)window)->OutlineShape) DisposeRegion(((struct IntWindow *)window)->OutlineShape);
+    if (((struct IntWindow *)msg->window)->OutlineShape) DisposeRegion(((struct IntWindow *)msg->window)->OutlineShape);
     /* Push ExitScreen Message to the Screensdecoration Class */
     struct wdpExitWindow       wemsg;
 
     wemsg.MethodID             = WDM_EXITWINDOW;
-    wemsg.wdp_UserBuffer       = ((struct IntWindow *)window)->DecorUserBuffer;
+    wemsg.wdp_UserBuffer       = ((struct IntWindow *)msg->window)->DecorUserBuffer;
     wemsg.wdp_TrueColor        = (((struct IntScreen *)screen)->DInfo.dri_Flags & DRIF_DIRECTCOLOR) ? TRUE : FALSE;
 
     DoMethodA(((struct IntScreen *)(screen))->WinDecorObj, (Msg)&wemsg);
 
-    if (((struct IntWindow *)window)->DecorUserBuffer)
+    if (((struct IntWindow *)msg->window)->DecorUserBuffer)
     {
-        FreeMem((APTR)((struct IntWindow *)window)->DecorUserBuffer, ((struct IntWindow *)window)->DecorUserBufferSize);
+        FreeMem((APTR)((struct IntWindow *)msg->window)->DecorUserBuffer, ((struct IntWindow *)msg->window)->DecorUserBufferSize);
     }
 
 
-    /* Free memory for the window */
-    FreeMem (window, sizeof(struct IntWindow));
+    /* Free memory for the msg->window */
+    FreeMem (msg->window, sizeof(struct IntWindow));
 
     CheckLayers(screen, IntuitionBase);
 
