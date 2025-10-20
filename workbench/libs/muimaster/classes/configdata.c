@@ -47,12 +47,12 @@ struct MUI_ConfigdataData
     struct List                 pubscreens;
 };
 
-static CONST_STRPTR GetConfigString(Object *obj, ULONG id)
+static inline CONST_STRPTR GetConfigString(Object *obj, ULONG id)
 {
     return (CONST_STRPTR) DoMethod(obj, MUIM_Configdata_GetString, id);
 }
 
-static ULONG GetConfigULong(Object *obj, ULONG id)
+static inline ULONG GetConfigULong(Object *obj, ULONG id)
 {
     return (ULONG) DoMethod(obj, MUIM_Configdata_GetULong, id);
 }
@@ -599,58 +599,43 @@ static LONG windowpos_endian(IPTR data, BOOL isNative)
     WORD cnt, i, j;
     void *p = (void *)data;
 
-    if (AROS_BIG_ENDIAN)
-    {
+#if (AROS_BIG_ENDIAN)
+    size = *(LONG *) p;
+#else
+    if (isNative)
         size = *(LONG *) p;
-    }
     else
-    {
-        if (isNative)
-        {
-            size = *(LONG *) p;
-        }
-        else
-        {
-            size = AROS_BE2LONG(*((LONG *) p));
-        }
-        *((LONG *) p) = AROS_SWAP_BYTES_LONG(*((LONG *) p));
-    }
+        size = AROS_BE2LONG(*((LONG *) p));
+    *((LONG *) p) = AROS_SWAP_BYTES_LONG(*((LONG *) p));
+#endif
 
     cnt = sizeof(LONG);
     items = (size - sizeof(LONG)) / sizeof(struct windowpos);
     D(bug("size=%d items=%d\n", size, items));
 
-    for (i = 0; i < items; i++)
-    {
-        if (AROS_BIG_ENDIAN)
-        {
+    for (i = 0; i < items; i++) {
+#if (AROS_BIG_ENDIAN)
+        D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
+#else
+        if (isNative)
             D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
-        }
-        else
-        {
-            if (isNative)
-                D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
-            *((LONG *) ((IPTR)p + cnt)) =
-                AROS_SWAP_BYTES_LONG(*((LONG *) ((IPTR)p + cnt)));
-            if (!isNative)
-                D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
-        }
+        *((LONG *) ((IPTR)p + cnt)) =
+            AROS_SWAP_BYTES_LONG(*((LONG *) ((IPTR)p + cnt)));
+        if (!isNative)
+            D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
+#endif
         cnt += sizeof(LONG);
-        for (j = 0; j < 8; j++)
-        {
-            if (AROS_BIG_ENDIAN)
-            {
+        for (j = 0; j < 8; j++) {
+#if (AROS_BIG_ENDIAN)
+            D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
+#else
+            if (isNative)
                 D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
-            }
-            else
-            {
-                if (isNative)
-                    D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
-                *((WORD *) ((IPTR)p + cnt)) =
-                    AROS_SWAP_BYTES_WORD(*((WORD *) ((IPTR)p + cnt)));
-                if (!isNative)
-                    D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
-            }
+            *((WORD *) ((IPTR)p + cnt)) =
+                AROS_SWAP_BYTES_WORD(*((WORD *) ((IPTR)p + cnt)));
+            if (!isNative)
+                D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
+#endif
             cnt += sizeof(WORD);
         }
     }

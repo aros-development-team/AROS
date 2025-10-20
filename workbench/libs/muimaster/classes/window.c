@@ -46,6 +46,8 @@
 //#define MYDEBUG 1
 #include "debug.h"
 
+#define DPS(x)
+
 //#define ZUNE_WINDOWCLASS_FORCEFANCYPENS
 
 extern struct Library *MUIMasterBase;
@@ -451,13 +453,14 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
         else if (muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name
             && muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name[0])
         {
-            D(bug("[MUI:Window] %s: using public screen '%s'\n", __func__, muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);)
+            DPS(bug("[MUI:Window] %s: using public screen '%s'\n", __func__, muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);)
             mri->mri_Screen =
                 LockPubScreen(muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
             if (!mri->mri_Screen && muiGlobalInfo(obj)->mgi_Configdata && MUIScreenBase) {
                 struct MUI_PubScreenDesc *desc  = (struct MUI_PubScreenDesc *)DoMethod(muiGlobalInfo(obj)->mgi_Configdata,
                                         MUIM_Configdata_GetPubScrnDesc,
                                         muiGlobalInfo(obj)->mgi_Prefs->publicscreen_name);
+                DPS(bug("[MUI:Window] %s: public screen descriptor @ 0x%p\n", __func__, desc);)
                 if (desc) {
                     MUIS_OpenPubScreen(desc);
                 mri->mri_Screen =
@@ -468,7 +471,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data,
 
         if (mri->mri_Screen == NULL)
         {
-            D(bug("[MUI:Window] %s: using default public screen\n", __func__);)
+            DPS(bug("[MUI:Window] %s: using default public screen\n", __func__);)
             mri->mri_Screen = LockPubScreen(NULL);
             if (mri->mri_Screen == NULL)
             {
