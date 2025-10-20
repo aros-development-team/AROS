@@ -876,7 +876,7 @@ static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
 IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetString *msg)
 {
-    int i;
+    int i, def = 0;
 
     for (i = 0; DefStrValues[i].id; i++)
     {
@@ -884,13 +884,15 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
             if (!strcmp(DefStrValues[i].val, msg->string))
             {
                 DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
-                return 0;
+                def = 1;
+                break;
             }
     }
 
-    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->string,
-        strlen(msg->string) + 1, msg->id);
-
+    if (def == 0) {
+        DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->string,
+            strlen(msg->string) + 1, msg->id);
+    }
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     switch (msg->id) {
     case MUICFG_Font_Normal:
