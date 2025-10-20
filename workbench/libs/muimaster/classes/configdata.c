@@ -663,7 +663,9 @@ static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     {
         windowpos_endian(s, FALSE);
         set(data->app, MUIA_Application_CopyWinPosToApp, s);
+#if (!AROS_BIG_ENDIAN)
         windowpos_endian(s, TRUE);
+#endif
     }
     return s;
 }
