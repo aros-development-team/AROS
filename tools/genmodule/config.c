@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options and the module config file for
     the genmodule program
@@ -939,7 +939,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                         "noautolib", "noexpunge", "noresident", "peropenerbase",
                         "pertaskbase", "includes", "noincludes", "nostubs",
                         "autoinit", "noautoinit", "resautoinit", "noinittable", "noresstruct", "nofunctable",
-                        "noopenclose", "selfinit", "rellinklib"
+                        "noopenclose", "selfinit", "rellinklib", "noclassquery"
                     };
                     const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
                     int optionnum;
@@ -1028,6 +1028,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                             break;
                         case 17: /* rellinklib */
                             cfg->options |= OPTION_RELLINKLIB;
+                            break;
+                        case 18: /* noclassquery */
+                            cfg->options |= OPTION_NOCLASSQUERY;
                             break;
                         }
                         while (isspace(*s)) s++;

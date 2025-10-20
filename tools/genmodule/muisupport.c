@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Support functions for MUI classes. Part of genmodule.
 */
@@ -192,20 +192,25 @@ void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *
 
 void writemccquery(FILE *out, struct config *cfg)
 {
+    char *ctype;
+    if (cfg->modtype == MCC) 
+        ctype = "MCC";
+    else
+        ctype = "MCP";
     fprintf
     (
         out,
         "\n"
-        "/* MCC_Query function */\n"
+        "/* %s_Query function */\n"
         "/* ================== */\n"
         "\n"
         "#include <libraries/mui.h>\n"
         "#include <aros/libcall.h>\n"
         "\n"
-        "#define MCC_CLASS       0\n"
-        "#define MCC_PREFS_CLASS 1\n"
+        "#define MCC_CLASS  0\n"
+        "#define MCP_CLASS  1\n"
         "\n"
-        "AROS_LH1(IPTR, MCC_Query,\n"
+        "AROS_LH1(IPTR, %s_Query,\n"
         "         AROS_LHA(LONG, what, D0),\n"
         "         LIBBASETYPEPTR, LIBBASE, 5, %s\n"
         ")\n"
@@ -213,8 +218,10 @@ void writemccquery(FILE *out, struct config *cfg)
         "    AROS_LIBFUNC_INIT\n"
         "\n"
         "    switch( what )\n"
-        "    {\n",
-        cfg->basename
+        "    {\n"
+        , ctype
+        , ctype
+        , cfg->basename
     );
 
     switch(cfg->modtype)
@@ -224,11 +231,10 @@ void writemccquery(FILE *out, struct config *cfg)
         fprintf(out, "        case MCC_CLASS:          return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
         break;
     case MCP:
-        fprintf(out, "        case MCC_PREFS_CLASS:    return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
+        fprintf(out, "        case MCP_CLASS:           return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
         break;
     }
 
-    /* FIXME: handle MCC_PREFS_IMAGE somehow */
     /* FIXME: handle "ONLY_GLOBAL" ?? */
 
     fprintf
