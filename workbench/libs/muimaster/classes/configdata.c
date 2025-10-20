@@ -593,63 +593,32 @@ IPTR Configdata__OM_GET(struct IClass *cl, Object *obj,
 #define AROS_BIG_ENDIAN 0
 #endif
 
-static LONG windowpos_endian(IPTR data, BOOL isNative)
+#if (!AROS_BIG_ENDIAN)
+static LONG windowpos_swapbytes(IPTR data, LONG size)
 {
-    LONG size, items;
+    LONG items;
     WORD cnt, i, j;
     void *p = (void *)data;
 
-#if (AROS_BIG_ENDIAN)
-    size = *(LONG *) p;
-#else
-    if (isNative)
-        size = *(LONG *) p;
-    else
-        size = AROS_BE2LONG(*((LONG *) p));
-    *((LONG *) p) = AROS_SWAP_BYTES_LONG(*((LONG *) p));
-#endif
+    *((LONG *) p) = AROS_SWAP_BYTES_LONG(size);
 
     cnt = sizeof(LONG);
     items = (size - sizeof(LONG)) / sizeof(struct windowpos);
-    D(bug("size=%d items=%d\n", size, items));
-
+    D(bug("[MUI:Cfg] %s: size = %d items = %d\n", __func__, size, items));
     for (i = 0; i < items; i++) {
-#if (AROS_BIG_ENDIAN)
-        D(bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt))));
-#else
-        D(
-            if (isNative)
-                bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt)));
-        )
         *((LONG *) ((IPTR)p + cnt)) =
             AROS_SWAP_BYTES_LONG(*((LONG *) ((IPTR)p + cnt)));
-        D(
-            if (!isNative)
-                bug("ID=%08x\n", *((LONG *) ((IPTR)p + cnt)));
-        )
-#endif
         cnt += sizeof(LONG);
         for (j = 0; j < 8; j++) {
-#if (AROS_BIG_ENDIAN)
-            D(bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt))));
-#else
-            D(
-                if (isNative)
-                    bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt)));
-            )
             *((WORD *) ((IPTR)p + cnt)) =
                 AROS_SWAP_BYTES_WORD(*((WORD *) ((IPTR)p + cnt)));
-            D(
-                if (!isNative)
-                    bug("V%d: %d\n", j, *((WORD *) ((IPTR)p + cnt)));
-            )
-#endif
             cnt += sizeof(WORD);
         }
     }
-    D(bug("size=%d\n", cnt));
+    D(bug("[MUI:Cfg] %s: actual = %d\n", __func__, cnt));
     return cnt;
 }
+#endif
 
 static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
@@ -659,12 +628,13 @@ static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     data = INST_DATA(cl, obj);
     //kprintf ("getwindowpos\n");
     s = (IPTR) DoMethod(obj, MUIM_Dataspace_Find, MUICFG_WindowPos);
-    if (s && data->app)
-    {
-        windowpos_endian(s, FALSE);
+    if (s && data->app) {
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(s, AROS_BE2LONG(*((LONG *)s)));
+#endif
         set(data->app, MUIA_Application_CopyWinPosToApp, s);
 #if (!AROS_BIG_ENDIAN)
-        windowpos_endian(s, TRUE);
+        windowpos_swapbytes(s, *((LONG *)s));
 #endif
     }
     return s;
@@ -686,14 +656,18 @@ static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
 
         /* We can ignore size-variable because
          * MUIA_Application_GetWinPosSize updates *((LONG*)addr) */
-        size = windowpos_endian(addr, TRUE);
+#if (AROS_BIG_ENDIAN)
+        size = *((LONG *)addr);
+#else
+        size = windowpos_swapbytes(addr, *((LONG *)addr));
+#endif
         DoMethod(obj, MUIM_Dataspace_Add, addr, size, MUICFG_WindowPos);
-        windowpos_endian(addr, FALSE);
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(addr, AROS_BE2LONG(*((LONG *)addr)));
+#endif
     }
     return 0;
 }
-
-
 
 /**************************************************************************
  MUIM_Configdata_GetString
