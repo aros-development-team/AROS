@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -14,7 +14,7 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 
-#include <string.h>    
+#include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 
@@ -28,8 +28,8 @@ LONG SetDirEntryName(struct DirEntry *short_de, STRPTR name, ULONG len)
 {
     LONG err = 0;
 
-    D(bug("[NTFS] %s: setting name for entry no #%ld to '", __PRETTY_FUNCTION__, short_de->no);
-      RawPutChars(name, len); bug("'\n"));
+    D(bug("[NTFS] %s: setting name for entry no #%ld to '", __func__, short_de->no);
+    RawPutChars(name, len); bug("'\n"));
 
     return err;
 }

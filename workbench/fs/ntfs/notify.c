@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -76,8 +76,8 @@ void SendNotifyByLock(struct FSData *sb, struct GlobalLock *gl)
     D(bug("[NTFS] notifying for lock (%ld/%ld)\n", gl->dir_cluster, gl->dir_entry));
 
     ForeachNode(&sb->info->notifies, nn)
-        if (nn->gl == gl)
-            SendNotify(nn->nr);
+    if (nn->gl == gl)
+        SendNotify(nn->nr);
 }
 
 /* send a notification for the file referenced by the passed dir entry */
@@ -94,23 +94,23 @@ void SendNotifyByDirEntry(struct FSData *sb, struct DirEntry *de)
     D(bug("[NTFS] notifying for dir entry (%ld/%ld)\n", de->cluster, de->no));
 
     ForeachNode(&sb->info->notifies, nn)
-        if (nn->gl != NULL) {
-            if (nn->gl->dir_cluster == de->cluster && nn->gl->dir_entry == de->no)
-                SendNotify(nn->nr);
-        }
+    if (nn->gl != NULL) {
+        if (nn->gl->dir_cluster == de->cluster && nn->gl->dir_entry == de->no)
+            SendNotify(nn->nr);
+    }
 
-        else {
-	    if (InitDirHandle(sb, &sdh, TRUE) != 0)
-                continue;
+    else {
+        if (InitDirHandle(sb, &sdh, TRUE) != 0)
+            continue;
 
-            if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName, strlen(nn->nr->nr_FullName), &sde) != 0)
-                continue;
+        if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName, strlen(nn->nr->nr_FullName), &sde) != 0)
+            continue;
 
-            if (sde.cluster == de->cluster && sde.no == de->no)
-                SendNotify(nn->nr);
+        if (sde.cluster == de->cluster && sde.no == de->no)
+            SendNotify(nn->nr);
 
-            ReleaseDirHandle(&sdh);
-        }
+        ReleaseDirHandle(&sdh);
+    }
 }
 
 /* handle returned notify messages */

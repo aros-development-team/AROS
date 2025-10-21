@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -22,19 +22,19 @@ LONG InitTimer(void)
 {
     LONG err = ERROR_NO_FREE_STORE;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     glob->timerport = CreateMsgPort();
     if (glob->timerport) {
         glob->timereq = (struct timerequest *)CreateIORequest(glob->timerport,
-            sizeof(struct timerequest));
+                        sizeof(struct timerequest));
         if (glob->timereq) {
             if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)glob->timereq, 0))
                 err = ERROR_DEVICE_NOT_MOUNTED;
             else {
                 glob->timer_active = 0;
                 glob->restart_timer = 1;
-                D(bug("[NTFS] %s: Timer ready\n", __PRETTY_FUNCTION__));
+                D(bug("[NTFS] %s: Timer ready\n", __func__));
                 return 0;
             }
             DeleteIORequest((struct IORequest *)glob->timereq);
@@ -46,11 +46,11 @@ LONG InitTimer(void)
 
 void CleanupTimer(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    D(bug("[NTFS] %s: Cleaning up timer\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Cleaning up timer\n", __func__));
     if (glob->timer_active) {
-        D(bug("[NTFS] %s: Terminating active request\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Terminating active request\n", __func__));
         AbortIO((struct IORequest *)glob->timereq);
         WaitIO((struct IORequest *)glob->timereq);
     }
@@ -61,13 +61,13 @@ void CleanupTimer(void)
 
 void RestartTimer(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     if (glob->timer_active) {
-        D(bug("[NTFS] %s: Queuing timer restart\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Queuing timer restart\n", __func__));
         glob->restart_timer = 1;
     } else {
-        D(bug("[NTFS] %s: Immediate timer restart\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Immediate timer restart\n", __func__));
         glob->timereq->tr_node.io_Command = TR_ADDREQUEST;
         glob->timereq->tr_time.tv_secs = 1;
         glob->timereq->tr_time.tv_micro = 0;
@@ -78,16 +78,16 @@ void RestartTimer(void)
 
 void HandleTimer(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     WaitIO((struct IORequest *)glob->timereq);
     glob->timer_active = 0;
     if (glob->restart_timer) {
-        D(bug("[NTFS] %s: Timer restart queued\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Timer restart queued\n", __func__));
         glob->restart_timer = 0;
         RestartTimer();
     } else {
-        D(bug("[NTFS] %s: Updating disk\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Updating disk\n", __func__));
         UpdateDisk();
     }
 }

@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -34,9 +34,9 @@ void startup(void)
 
     SysBase = sysBase;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    D(bug("[NTFS] %s: handler starting..\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: handler starting..\n", __func__));
     handler();
 
     return RETURN_OK;

@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -30,7 +30,8 @@
 
 #include "debug.h"
 
-void SendEvent(LONG event) {
+void SendEvent(LONG event)
+{
     struct IOStdReq *InputRequest;
     struct MsgPort *InputPort;
     struct InputEvent *ie;
@@ -59,9 +60,10 @@ void SendEvent(LONG event) {
     }
 }
 
-/*-------------------------------------------------------------------------*/  
+/*-------------------------------------------------------------------------*/
 
-int ilog2(ULONG data) {
+int ilog2(ULONG data)
+{
     int bitoffset = 31;
     ULONG bitmask = 1 << bitoffset;
 
@@ -69,35 +71,35 @@ int ilog2(ULONG data) {
         if ((data & bitmask) != 0)
             return bitoffset;
 
-    bitoffset--;
-    bitmask >>= 1;
-  } while (bitmask != 0);
+        bitoffset--;
+        bitmask >>= 1;
+    } while (bitmask != 0);
 
-  return 0;
+    return 0;
 }
 
 /*-----------------------------------------------------------------------*/
 
 void ErrorMessage(CONST_STRPTR fmt, ...)
 {
-	struct IntuitionBase *IntuitionBase;
+    struct IntuitionBase *IntuitionBase;
 
-	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
-	if (IntuitionBase) {
-		struct EasyStruct es = {
-			sizeof (struct EasyStruct),
-			0,
-			"NTFS filesystem critical error",
-			NULL,
-			"Ok"
-		};
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
+    if (IntuitionBase) {
+        struct EasyStruct es = {
+            sizeof (struct EasyStruct),
+            0,
+            "NTFS filesystem critical error",
+            NULL,
+            "Ok"
+        };
 
-		es.es_TextFormat = fmt;
-		AROS_SLOWSTACKFORMAT_PRE(fmt);
-		EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(fmt));
-		AROS_SLOWSTACKFORMAT_POST(fmt);
-		CloseLibrary((struct Library *)IntuitionBase);
-	}
+        es.es_TextFormat = fmt;
+        AROS_SLOWSTACKFORMAT_PRE(fmt);
+        EasyRequestArgs(NULL, &es, NULL, AROS_SLOWSTACKFORMAT_ARG(fmt));
+        AROS_SLOWSTACKFORMAT_POST(fmt);
+        CloseLibrary((struct Library *)IntuitionBase);
+    }
 }
 
 void NTFS2DateStamp(UQUAD *NTFSTime, struct DateStamp *DS)
@@ -108,14 +110,14 @@ void NTFS2DateStamp(UQUAD *NTFSTime, struct DateStamp *DS)
 
 //    nttimeoffset = (377 * 365 + 91) * 24 * 3600 * 10000000;
     nttimeoffset = 0x02C51CD000ULL * 10000000;
-    
+
     adjustedtime = *NTFSTime - nttimeoffset;
-    
-    D(bug("[NTFS]: %s: adjusted = %d, offset = %d\n", __PRETTY_FUNCTION__, adjustedtime, nttimeoffset));
+
+    D(bug("[NTFS]: %s: adjusted = %d, offset = %d\n", __func__, adjustedtime, nttimeoffset));
 
     tval.tv_secs = adjustedtime / 10000000;
     tval.tv_micro = (adjustedtime / 10) % 1000000;
-    
+
     /* calculate days since 1978-01-01 (DOS epoch) */
     DS->ds_Days = tval.tv_secs / (60 * 60 * 24);
 

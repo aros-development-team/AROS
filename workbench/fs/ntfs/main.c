@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -36,7 +36,7 @@ struct Library *UtilityBase;
 struct Library *IntuitionBase;
 struct Library *UUIDBase;
 struct Library *CodesetsBase = NULL;
- 
+
 struct Globals global_data;
 struct Globals *glob = &global_data;
 
@@ -48,8 +48,8 @@ void handler(void)
     struct DosPacket *startuppacket;
     LONG error = ERROR_NO_FREE_STORE;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
-    
+    D(bug("[NTFS]: %s()\n", __func__));
+
     memset(glob, 0, sizeof(struct Globals));
     NEWLIST(&glob->sblist);
     glob->ourtask = FindTask(NULL);
@@ -60,7 +60,7 @@ void handler(void)
     startuppacket = (struct DosPacket *) msg->mn_Node.ln_Name;
     glob->devnode = BADDR(startuppacket->dp_Arg3);
 
-    D(bug("[NTFS] %s: opening libraries.\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: opening libraries.\n", __func__));
     D(bug("\tFS task: 0x%p, port 0x%p\n", glob->ourtask, glob->ourport));
 
     glob->notifyport = CreateMsgPort();
@@ -68,68 +68,67 @@ void handler(void)
     if ((DOSBase = (struct DosLibrary*)OpenLibrary("dos.library", 37))) {
         if ((IntuitionBase = OpenLibrary("intuition.library", 37))) {
             if ((UtilityBase = OpenLibrary("utility.library", 37))) {
-		if ((CodesetsBase = OpenLibrary("codesets.library", 0))) {
-		    if ((UUIDBase = OpenLibrary("uuid.library", 0))) {
-			glob->fssm = BADDR(startuppacket->dp_Arg2);
+                if ((CodesetsBase = OpenLibrary("codesets.library", 0))) {
+                    if ((UUIDBase = OpenLibrary("uuid.library", 0))) {
+                        glob->fssm = BADDR(startuppacket->dp_Arg2);
 
-			if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD))) {
+                        if ((glob->mempool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD))) {
 
-			    error = InitTimer();
-			    if (!error) {
-				InitCharsetTables();
-				if ((error = InitDiskHandler(glob->fssm)) == 0) {
-				    ULONG pktsig = 1 << glob->ourport->mp_SigBit;
-				    ULONG diskchgsig = 1 << glob->diskchgsig_bit;
-				    ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
-				    ULONG timersig = 1 << glob->timerport->mp_SigBit;
-				    ULONG mask = pktsig | diskchgsig | notifysig | timersig;
-				    ULONG sigs;
-				    struct MsgPort *rp;
+                            error = InitTimer();
+                            if (!error) {
+                                InitCharsetTables();
+                                if ((error = InitDiskHandler(glob->fssm)) == 0) {
+                                    ULONG pktsig = 1 << glob->ourport->mp_SigBit;
+                                    ULONG diskchgsig = 1 << glob->diskchgsig_bit;
+                                    ULONG notifysig = 1 << glob->notifyport->mp_SigBit;
+                                    ULONG timersig = 1 << glob->timerport->mp_SigBit;
+                                    ULONG mask = pktsig | diskchgsig | notifysig | timersig;
+                                    ULONG sigs;
+                                    struct MsgPort *rp;
 
-				    D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
+                                    D(bug("\tInitiated device: %s\n", AROS_BSTR_ADDR(glob->devnode->dol_Name)));
 
-				    glob->devnode->dol_Task = glob->ourport;
+                                    glob->devnode->dol_Task = glob->ourport;
 
-				    D(bug("[NTFS] %s: returning startup packet\n", __PRETTY_FUNCTION__));
+                                    D(bug("[NTFS] %s: returning startup packet\n", __func__));
 
-				    rp = startuppacket->dp_Port;
-				    startuppacket->dp_Port = glob->ourport;
-				    startuppacket->dp_Res1 = DOSTRUE;
-				    startuppacket->dp_Res2 = 0;
-				    PutMsg(rp, startuppacket->dp_Link);
+                                    rp = startuppacket->dp_Port;
+                                    startuppacket->dp_Port = glob->ourport;
+                                    startuppacket->dp_Res1 = DOSTRUE;
+                                    startuppacket->dp_Res2 = 0;
+                                    PutMsg(rp, startuppacket->dp_Link);
 
-				    D(bug("[NTFS] %s: Handler init finished.\n", __PRETTY_FUNCTION__));
+                                    D(bug("[NTFS] %s: Handler init finished.\n", __func__));
 
-				    ProcessDiskChange(); /* insert disk */
+                                    ProcessDiskChange(); /* insert disk */
 
-				    while(!glob->quit) {
-					sigs = Wait(mask);
-					if (sigs & diskchgsig)
-					    ProcessDiskChange();
-					if (sigs & pktsig)
-					    ProcessPackets();
-	                                if (sigs & notifysig)
-	                                    ProcessNotify();
-					if (sigs & timersig)
-					    HandleTimer();
-				    }
+                                    while(!glob->quit) {
+                                        sigs = Wait(mask);
+                                        if (sigs & diskchgsig)
+                                            ProcessDiskChange();
+                                        if (sigs & pktsig)
+                                            ProcessPackets();
+                                        if (sigs & notifysig)
+                                            ProcessNotify();
+                                        if (sigs & timersig)
+                                            HandleTimer();
+                                    }
 
-				    D(bug("\n[NTFS] %s: Handler shutdown initiated\n", __PRETTY_FUNCTION__));
+                                    D(bug("\n[NTFS] %s: Handler shutdown initiated\n", __func__));
 
-				    error = 0;
-				    startuppacket = NULL;
+                                    error = 0;
+                                    startuppacket = NULL;
 
-				    CleanupDiskHandler();
-				}
-				CleanupTimer();
-			    }
-			    DeletePool(glob->mempool);
-			}
-			else
-			    error = ERROR_NO_FREE_STORE;
-		    }
-		    CloseLibrary(CodesetsBase);
-		}
+                                    CleanupDiskHandler();
+                                }
+                                CleanupTimer();
+                            }
+                            DeletePool(glob->mempool);
+                        } else
+                            error = ERROR_NO_FREE_STORE;
+                    }
+                    CloseLibrary(CodesetsBase);
+                }
                 CloseLibrary(UtilityBase);
             }
             CloseLibrary(IntuitionBase);
@@ -142,9 +141,9 @@ void handler(void)
     if (glob->death_packet != NULL)
         ReplyPacket(glob->death_packet);
 
-    D(bug("[NTFS] %s: The end.\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: The end.\n", __func__));
     if (startuppacket != NULL) {
-        D(bug("[NTFS] %s: returning startup packet\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: returning startup packet\n", __func__));
 
         startuppacket->dp_Res1 = DOSTRUE;
         startuppacket->dp_Res2 = 0;
@@ -154,8 +153,7 @@ void handler(void)
     return;
 }
 
-static struct IntData
-{
+static struct IntData {
     struct Interrupt Interrupt;
     struct ExecBase *SysBase;
     struct Task *task;
@@ -168,7 +166,7 @@ static AROS_INTH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
 
     struct ExecBase *SysBase = MyIntData->SysBase;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     Signal(MyIntData->task, MyIntData->signal);
     return 0;
@@ -186,7 +184,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm)
     unit = fssm->fssm_Unit;
     flags = fssm->fssm_Flags;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     device = AROS_BSTR_ADDR(fssm->fssm_Device);
 
@@ -198,7 +196,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm)
             if ((glob->diskioreq = CreateIORequest(glob->diskport, sizeof(struct IOExtTD)))) {
 
                 if (OpenDevice(device, unit, (struct IORequest *)glob->diskioreq, flags) == 0) {
-                    D(bug("[NTFS] %s: %s:%d successfully opened\n", __PRETTY_FUNCTION__, device, unit));
+                    D(bug("[NTFS] %s: %s:%d successfully opened\n", __func__, device, unit));
                     Probe_64bit_support();
 
                     if ((glob->diskchgreq = AllocVec(sizeof(struct IOExtTD), MEMF_PUBLIC))) {
@@ -213,7 +211,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm)
                         DiskChangeIntData.Interrupt.is_Node.ln_Pri = 0;
                         DiskChangeIntData.Interrupt.is_Node.ln_Name = "NTFS\0";
                         DiskChangeIntData.Interrupt.is_Data = &DiskChangeIntData;
-			DiskChangeIntData.Interrupt.is_Code = (void (*)(void))AROS_ASMSYMNAME(DiskChangeIntHandler);
+                        DiskChangeIntData.Interrupt.is_Code = (void (*)(void))AROS_ASMSYMNAME(DiskChangeIntHandler);
 
                         /* fill io request data */
                         glob->diskchgreq->iotd_Req.io_Command = TD_ADDCHANGEINT;
@@ -223,35 +221,30 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm)
 
                         SendIO((struct IORequest*)glob->diskchgreq);
 
-                        D(bug("[NTFS] %s: Disk change interrupt handler installed\n", __PRETTY_FUNCTION__));
+                        D(bug("[NTFS] %s: Disk change interrupt handler installed\n", __func__));
 
                         return 0;
-                    }
-                    else
+                    } else
                         err = ERROR_NO_FREE_STORE;
 
                     CloseDevice((struct IORequest *)glob->diskioreq);
-                }
-                else
+                } else
                     err = ERROR_DEVICE_NOT_MOUNTED;
 
                 DeleteIORequest(glob->diskioreq);
                 glob->diskioreq = NULL;
-            }
-            else
+            } else
                 err = ERROR_NO_FREE_STORE;
 
             DeleteMsgPort(glob->diskport);
             glob->diskport = NULL;
-        }
-        else
+        } else
             err = ERROR_NO_FREE_STORE;
 
         FreeSignal(diskchgintbit);
 
         glob->diskchgsig_bit = 0;
-    }
-    else
+    } else
         err = ERROR_NO_FREE_STORE;
 
     return err;
@@ -259,9 +252,9 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm)
 
 void CleanupDiskHandler(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    D(bug("[NTFS] %s: Freeing handler resources:\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Freeing handler resources:\n", __func__));
 
     /* remove disk change interrupt */
     glob->diskchgreq->iotd_Req.io_Command = TD_REMCHANGEINT;
@@ -270,19 +263,19 @@ void CleanupDiskHandler(void)
     glob->diskchgreq->iotd_Req.io_Flags = 0;
 
     DoIO((struct IORequest*)glob->diskchgreq);
-    D(bug("[NTFS] %s: Disk change interrupt handler removed\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Disk change interrupt handler removed\n", __func__));
 
     CloseDevice((struct IORequest *)glob->diskioreq);
     DeleteIORequest(glob->diskioreq);
     FreeVec(glob->diskchgreq);
     DeleteMsgPort(glob->diskport);
-    D(bug("[NTFS] %s: Device closed\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Device closed\n", __func__));
 
     glob->diskioreq = NULL;
     glob->diskchgreq = NULL;
-    glob->diskport = NULL;    
+    glob->diskport = NULL;
 
     FreeSignal(glob->diskchgsig_bit);
 
-    D(bug("[NTFS] %s: Done.\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Done.\n", __func__));
 }

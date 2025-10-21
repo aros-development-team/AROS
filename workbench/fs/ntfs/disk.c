@@ -1,7 +1,7 @@
 /*
  * ntfs.handler - New Technology FileSystem handler
  *
- * Copyright (C) 2012 The AROS Development Team
+ * Copyright (C) 2012-2025 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -48,7 +48,7 @@ void FillDiskInfo (struct InfoData *id)
 {
     struct DosEnvec *de = BADDR(glob->fssm->fssm_Environ);
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     id->id_NumSoftErrors = 0;
     id->id_UnitNumber = glob->fssm->fssm_Unit;
@@ -59,30 +59,30 @@ void FillDiskInfo (struct InfoData *id)
         id->id_NumBlocksUsed = glob->data->used_sectors;
         id->id_BytesPerBlock = glob->data->sectorsize;
 
-	id->id_DiskType = ID_NTFS_DISK;
+        id->id_DiskType = ID_NTFS_DISK;
 
 #if defined(NTFS_READONLY)
-	 id->id_DiskState = ID_WRITE_PROTECTED;
+        id->id_DiskState = ID_WRITE_PROTECTED;
 #endif
 
         id->id_VolumeNode = MKBADDR(glob->data->doslist);
         id->id_InUse = (IsListEmpty(&glob->data->info->locks)
-            && IsListEmpty(&glob->data->info->notifies)) ? DOSFALSE : DOSTRUE;
+                        && IsListEmpty(&glob->data->info->notifies)) ? DOSFALSE : DOSTRUE;
     }
 
     else {
-	id->id_NumBlocks = de->de_Surfaces * de->de_BlocksPerTrack * (de->de_HighCyl+1 - de->de_LowCyl) / de->de_SectorPerBlock;
+        id->id_NumBlocks = de->de_Surfaces * de->de_BlocksPerTrack * (de->de_HighCyl+1 - de->de_LowCyl) / de->de_SectorPerBlock;
         id->id_NumBlocksUsed = id->id_NumBlocks;
         id->id_BytesPerBlock = de->de_SizeBlock << 2;
 
         id->id_DiskState = ID_VALIDATED;
 
         if (glob->disk_inhibited)
-                id->id_DiskType = ID_BUSY;
+            id->id_DiskType = ID_BUSY;
         else if (glob->disk_inserted)
-                id->id_DiskType = ID_NOT_REALLY_DOS; //ID_UNREADABLE_DISK;
+            id->id_DiskType = ID_NOT_REALLY_DOS; //ID_UNREADABLE_DISK;
         else
-                id->id_DiskType = ID_NO_DISK_PRESENT;
+            id->id_DiskType = ID_NO_DISK_PRESENT;
 
         id->id_VolumeNode = BNULL;
         id->id_InUse = DOSFALSE;
@@ -93,7 +93,7 @@ void SendVolumePacket(struct DosList *vol, ULONG action)
 {
     struct DosPacket *dospacket;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     dospacket = AllocDosObject(DOS_STDPKT, TAG_DONE);
     dospacket->dp_Type = ACTION_DISK_CHANGE;
@@ -118,12 +118,11 @@ void DoDiskInsert(void)
     struct NotifyNode *nn;
     struct DosList *newvol = NULL;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    if (glob->data == NULL && (fs_data = _AllocVecPooled(glob->mempool, sizeof(struct FSData))))
-    {
+    if (glob->data == NULL && (fs_data = _AllocVecPooled(glob->mempool, sizeof(struct FSData)))) {
         memset(fs_data, 0, sizeof(struct FSData));
-	
+
         err = ReadBootSector(fs_data);
         if (err == 0) {
 
@@ -131,15 +130,14 @@ void DoDiskInsert(void)
              * match by serial number) */
             dl = LockDosList(LDF_VOLUMES | LDF_WRITE);
             dl = FindDosEntry(dl, fs_data->volume.name + 1,
-               LDF_VOLUMES | LDF_WRITE);
+                              LDF_VOLUMES | LDF_WRITE);
             UnLockDosList(LDF_VOLUMES | LDF_WRITE);
 
-            if (dl != NULL)
-	    {
+            if (dl != NULL) {
                 dl->dol_Task = glob->ourport;
                 fs_data->doslist = dl;
 
-                D(bug("[NTFS] %s: Found old volume.\n", __PRETTY_FUNCTION__));
+                D(bug("[NTFS] %s: Found old volume.\n", __func__));
 
                 vol_info = BADDR(dl->dol_misc.dol_volume.dol_LockList);
 
@@ -149,10 +147,10 @@ void DoDiskInsert(void)
                 /* ReadBootSector() sets a null byte after the
                  * string, so this should be fine */
                 CopyMem(fs_data->volume.name + 1, dl->dol_Name,
-                    fs_data->volume.name[0] + 1);
+                        fs_data->volume.name[0] + 1);
 #else
                 CopyMem(fs_data->volume.name, dl->dol_Name,
-                    fs_data->volume.name[0] + 2);
+                        fs_data->volume.name[0] + 2);
 #endif
 #endif
 
@@ -162,8 +160,8 @@ void DoDiskInsert(void)
                     ForeachNode(&global_lock->locks, lock_node) {
                         ext_lock = LOCKFROMNODE(lock_node);
                         D(bug("[NTFS] %s: Patching adopted lock %p. old port = %p,"
-                            " new port = %p\n", __PRETTY_FUNCTION__, ext_lock, ext_lock->fl_Task,
-                            glob->ourport));
+                              " new port = %p\n", __func__, ext_lock, ext_lock->fl_Task,
+                              glob->ourport));
                         ext_lock->fl_Task = glob->ourport;
                         ext_lock->data = fs_data;
                         ext_lock->dir->ioh.data = fs_data;
@@ -173,19 +171,17 @@ void DoDiskInsert(void)
                 ForeachNode(&vol_info->root_lock.locks, lock_node) {
                     ext_lock = LOCKFROMNODE(lock_node);
                     D(bug("[NTFS] %s: Patching adopted ROOT lock %p. old port = %p,"
-                        " new port = %p\n", __PRETTY_FUNCTION__, ext_lock, ext_lock->fl_Task,
-                        glob->ourport));
+                          " new port = %p\n", __func__, ext_lock, ext_lock->fl_Task,
+                          glob->ourport));
                     ext_lock->fl_Task = glob->ourport;
                     ext_lock->data = fs_data;
                     ext_lock->dir->ioh.data = fs_data;
                 }
 
                 ForeachNode(&vol_info->notifies, nn)
-                    nn->nr->nr_Handler = glob->ourport;
-            }
-            else
-	    {
-                D(bug("[NTFS] %s: Creating new volume.\n", __PRETTY_FUNCTION__));
+                nn->nr->nr_Handler = glob->ourport;
+            } else {
+                D(bug("[NTFS] %s: Creating new volume.\n", __func__));
 
                 /* create transferable core volume info */
                 pool = CreatePool(MEMF_PUBLIC, DEF_POOL_SIZE, DEF_POOL_THRESHOLD);
@@ -193,7 +189,7 @@ void DoDiskInsert(void)
                     vol_info = _AllocVecPooled(pool, sizeof(struct VolumeInfo));
                     if (vol_info != NULL) {
                         vol_info->mem_pool = pool;
-			UUID_Copy((const uuid_t *)&fs_data->uuid, (uuid_t *)&vol_info->uuid);
+                        UUID_Copy((const uuid_t *)&fs_data->uuid, (uuid_t *)&vol_info->uuid);
                         NEWLIST(&vol_info->locks);
                         NEWLIST(&vol_info->notifies);
 
@@ -204,7 +200,7 @@ void DoDiskInsert(void)
                         vol_info->root_lock.attr = ATTR_DIRECTORY;
                         vol_info->root_lock.size = 0;
                         CopyMem(fs_data->volume.name, vol_info->root_lock.name,
-                            fs_data->volume.name[0] + 1);
+                                fs_data->volume.name[0] + 1);
                         NEWLIST(&vol_info->root_lock.locks);
                     }
 
@@ -224,10 +220,10 @@ void DoDiskInsert(void)
 #ifdef AROS_FAST_BPTR
                             /* ReadBootSector() sets a null byte after the string, so this should be fine */
                             CopyMem(fs_data->volume.name + 1, newvol->dol_Name,
-                                fs_data->volume.name[0] + 1);
+                                    fs_data->volume.name[0] + 1);
 #else
                             CopyMem(fs_data->volume.name, BADDR(newvol->dol_Name),
-                                fs_data->volume.name[0] + 2);
+                                    fs_data->volume.name[0] + 2);
 #endif
 
                             fs_data->doslist = newvol;
@@ -242,25 +238,21 @@ void DoDiskInsert(void)
             glob->data = fs_data;
             glob->last_num = -1;
 
-            if (dl != NULL)
-	    {
+            if (dl != NULL) {
                 SendEvent(IECLASS_DISKINSERTED);
-	    }
-            else
+            } else
                 SendVolumePacket(newvol, ACTION_VOLUME_ADD);
 
-            D(bug("[NTFS] %s: Disk successfully initialised\n", __PRETTY_FUNCTION__));
+            D(bug("[NTFS] %s: Disk successfully initialised\n", __func__));
 
             return;
+        } else if (err == IOERR_BADADDRESS) {
+            ErrorMessage("Your device does not support 64-bit\n"
+                         "access to the disk while it is needed!\n"
+                         "In order to prevent data damage access to\n"
+                         "this disk was blocked.\n"
+                         "Please upgrade your device driver.");
         }
-        else if (err == IOERR_BADADDRESS)
-	{
-	    ErrorMessage("Your device does not support 64-bit\n"
-			 "access to the disk while it is needed!\n"
-			 "In order to prevent data damage access to\n"
-			 "this disk was blocked.\n"
-			 "Please upgrade your device driver.");
-	}
 
         _FreeVecPooled(glob->mempool, fs_data);
     }
@@ -274,11 +266,11 @@ BOOL AttemptDestroyVolume(struct FSData *fs_data)
 {
     BOOL destroyed = FALSE;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     /* check if the volume can be removed */
     if (IsListEmpty(&fs_data->info->locks) && IsListEmpty(&fs_data->info->notifies)) {
-        D(bug("[NTFS] %s: Removing volume completely\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Removing volume completely\n", __func__));
 
         if (fs_data == glob->data)
             glob->data = NULL;
@@ -297,7 +289,7 @@ BOOL AttemptDestroyVolume(struct FSData *fs_data)
 
 void DoDiskRemove(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     if (glob->data) {
         struct FSData *fs_data = glob->data;
@@ -306,19 +298,19 @@ void DoDiskRemove(void)
             fs_data->doslist->dol_Task = NULL;
             glob->data = NULL;
             D(bug("\tMoved in-memory super block to spare list. "
-                "Waiting for locks and notifications to be freed\n"));
+                  "Waiting for locks and notifications to be freed\n"));
             AddTail((struct List *)&glob->sblist, (struct Node *)fs_data);
             SendEvent(IECLASS_DISKREMOVED);
         }
     }
 }
- 
+
 void ProcessDiskChange(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     if (glob->disk_inhibited) {
-        D(bug("[NTFS] %s: Disk is inhibited, ignoring disk change\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Disk is inhibited, ignoring disk change\n", __func__));
         return;
     }
 
@@ -330,26 +322,24 @@ void ProcessDiskChange(void)
 
     if (glob->diskioreq->iotd_Req.io_Error == 0 && glob->diskioreq->iotd_Req.io_Actual == 0) {
         /* Disk has been inserted. */
-        D(bug("[NTFS] %s: Disk INSERTED\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Disk INSERTED\n", __func__));
         glob->disk_inserted = TRUE;
         DoDiskInsert();
-    }
-    else {
+    } else {
         /* Disk has been removed. */
-        D(bug("[NTFS] %s: Disk REMOVED\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Disk REMOVED\n", __func__));
         glob->disk_inserted = FALSE;
         DoDiskRemove();
     }
 
-    D(bug("[NTFS] %s: Done\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS] %s: Done\n", __func__));
 }
 
 void UpdateDisk(void)
 {
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    if (glob->data)
-    {
+    if (glob->data) {
         Cache_Flush(glob->data->cache);
     }
 
@@ -359,7 +349,7 @@ void UpdateDisk(void)
     /* Turn off motor (where applicable) if nothing has happened during the
      * last timer period */
     if (!glob->restart_timer) {
-    D(bug("[NTFS] %s: Stopping drive motor\n", __PRETTY_FUNCTION__));
+        D(bug("[NTFS] %s: Stopping drive motor\n", __func__));
         glob->diskioreq->iotd_Req.io_Command = TD_MOTOR;
         glob->diskioreq->iotd_Req.io_Length = 0;
         DoIO((struct IORequest *)glob->diskioreq);
@@ -372,7 +362,7 @@ void Probe_64bit_support(void)
     struct NSDeviceQueryResult nsd_query;
     UWORD *nsd_cmd;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     glob->readcmd = CMD_READ;
     glob->writecmd = CMD_WRITE;
@@ -385,9 +375,9 @@ void Probe_64bit_support(void)
     glob->diskioreq->iotd_Req.io_Data = 0;
 
     if (DoIO((struct IORequest *) glob->diskioreq) != IOERR_NOCMD) {
-	D(bug("[NTFS] %s: 64-bit trackdisk extensions supported\n", __PRETTY_FUNCTION__));
-	glob->readcmd = TD_READ64;
-	glob->writecmd = TD_WRITE64;
+        D(bug("[NTFS] %s: 64-bit trackdisk extensions supported\n", __func__));
+        glob->readcmd = TD_READ64;
+        glob->writecmd = TD_WRITE64;
     }
 
     /* probe NSD */
@@ -398,9 +388,9 @@ void Probe_64bit_support(void)
     if (DoIO((struct IORequest *) glob->diskioreq) == 0)
         for (nsd_cmd = nsd_query.SupportedCommands; *nsd_cmd != 0; nsd_cmd++) {
             if (*nsd_cmd == NSCMD_TD_READ64) {
-		D(bug("[NTFS] %s: NSD 64-bit trackdisk extensions supported\n", __PRETTY_FUNCTION__));
-		glob->readcmd = NSCMD_TD_READ64;
-		glob->writecmd = NSCMD_TD_WRITE64;
+                D(bug("[NTFS] %s: NSD 64-bit trackdisk extensions supported\n", __func__));
+                glob->readcmd = NSCMD_TD_READ64;
+                glob->writecmd = NSCMD_TD_WRITE64;
                 break;
             }
         }
@@ -412,54 +402,52 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYT
     ULONG err;
     ULONG start, end;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
 #if DEBUG_CACHESTATS > 1
     ErrorMessage("Accessing %lu sector(s) starting at %lu.\n"
-        "First volume sector is %lu, sector size is %lu.\n", nblocks, num,
-	glob->data->first_device_sector, block_size);
+                 "First volume sector is %lu, sector size is %lu.\n", nblocks, num,
+                 glob->data->first_device_sector, block_size);
 #endif
 
     /* Adjust parameters if range is partially outside boundaries, or
      * warn user and bale out if completely outside boundaries */
     if (glob->data) {
         start = glob->data->first_device_sector;
-	if (num + nblocks <= glob->data->first_device_sector) {
-	    if (num != glob->last_num) {
-		glob->last_num = num;
-	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
-		    	     "from %lu, before the actual volume space.\n"
-		    	     "First volume sector is %lu, sector size is %lu.\n"
-		    	     "Either your disk is damaged or it is a bug in\n"
-		    	     "the handler. Please check your disk and/or\n"
-		    	     "report this problem to the developers team.",
-		    	     (IPTR)(do_write ? "write" : "read"), nblocks, num,
-		    	     glob->data->first_device_sector, block_size);
-	    }
-	    return IOERR_BADADDRESS;
-	}
-        else if (num < start) {
+        if (num + nblocks <= glob->data->first_device_sector) {
+            if (num != glob->last_num) {
+                glob->last_num = num;
+                ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
+                             "from %lu, before the actual volume space.\n"
+                             "First volume sector is %lu, sector size is %lu.\n"
+                             "Either your disk is damaged or it is a bug in\n"
+                             "the handler. Please check your disk and/or\n"
+                             "report this problem to the developers team.",
+                             (IPTR)(do_write ? "write" : "read"), nblocks, num,
+                             glob->data->first_device_sector, block_size);
+            }
+            return IOERR_BADADDRESS;
+        } else if (num < start) {
             nblocks -= start - num;
             data += (start - num) * block_size;
             num = start;
         }
 
-	end = glob->data->first_device_sector + glob->data->total_sectors;
-	if (num >= end) {
-	    if (num != glob->last_num) {
-		glob->last_num = num;
-	        ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
-		    	     "from %lu, beyond the actual volume space.\n"
-		    	     "Last volume sector is %lu, sector size is %lu.\n"
-		    	     "Either your disk is damaged or it is a bug in\n"
-		    	     "the handler. Please check your disk and/or\n"
-		    	     "report this problem to the developers team.",
-		    	     (IPTR)(do_write ? "write" : "read"), nblocks, num,
-		    	     end - 1, block_size);
-	    }
-	    return IOERR_BADADDRESS;
-	}
-        else if (num + nblocks > end)
+        end = glob->data->first_device_sector + glob->data->total_sectors;
+        if (num >= end) {
+            if (num != glob->last_num) {
+                glob->last_num = num;
+                ErrorMessage("A handler attempted to %s %lu sector(s) starting\n"
+                             "from %lu, beyond the actual volume space.\n"
+                             "Last volume sector is %lu, sector size is %lu.\n"
+                             "Either your disk is damaged or it is a bug in\n"
+                             "the handler. Please check your disk and/or\n"
+                             "report this problem to the developers team.",
+                             (IPTR)(do_write ? "write" : "read"), nblocks, num,
+                             end - 1, block_size);
+            }
+            return IOERR_BADADDRESS;
+        } else if (num + nblocks > end)
             nblocks = end - num;
     }
 
@@ -469,7 +457,7 @@ ULONG AccessDisk(BOOL do_write, ULONG num, ULONG nblocks, ULONG block_size, UBYT
     glob->diskioreq->iotd_Req.io_Actual = off >> 32;
 
     if (glob->diskioreq->iotd_Req.io_Actual && (glob->readcmd == CMD_READ))
-	return IOERR_BADADDRESS;
+        return IOERR_BADADDRESS;
 
     glob->diskioreq->iotd_Req.io_Length = nblocks * block_size;
     glob->diskioreq->iotd_Req.io_Data = data;

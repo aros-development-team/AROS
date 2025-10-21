@@ -1,23 +1,23 @@
 /*
-    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
 
     Disk cache.
  */
 
-/* 
+/*
  * This is an LRU copyback cache.
  *
  * The cache consists of a fixed number of cache blocks, each of which can
  * hold a contiguous range of disk blocks (each range is of a fixed
  * length). Each range is addressed by its base block number, calculated by
  * applying a mask to the requested block number.
- * 
+ *
  * Each cache block contains two Exec list nodes, so it can be part of two
  * lists simultaneously. The first node links a block into a hash table
  * list, while the second links it into either the free list or the dirty
  * list. Initially, all cache blocks are present in the free list, and are
  * absent from the hash table.
- * 
+ *
  * When a disk block is requested by the client, the range that contains
  * that disk block is calculated. The range is then sought by looking up
  * the hash table. Each position in the hash table holds a list containing
@@ -25,26 +25,26 @@
  * blocks are not used internally) that map to that hash location. Each
  * list in the hash table is typically very short, so look-up time is
  * quick.
- * 
+ *
  * If the requested range is not in the hash table, a cache block is
  * removed from the head of the free list and from any hash table list it
  * is in, and used to read the appropriate range from disk. This block is
  * then added to the hash table at its new location.
- * 
+ *
  * Two elements are returned to the client when a requested block is found:
  * an opaque cache block handle, and a pointer to the data buffer.
- * 
+ *
  * When a range is freed, it remains in the hash table so that it can be
  * found quickly if needed again. Unless dirty, it is also added to the
  * tail of the free list through its second list node. The block then
  * remains in the hash table until reused for a different range.
- * 
+ *
  * If a disk block is marked dirty by the client, the entire containing
  * range is marked dirty and added to the tail of the dirty list through
  * the cache block's second node. The dirty list is flushed periodically
  * (currently once per second), and additionally whenever the free list
  * becomes empty.
- * 
+ *
  */
 
 #include <dos/dos.h>
@@ -74,15 +74,14 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
     BOOL success = TRUE;
     struct BlockRange *b;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     /* Allocate cache structure */
 
     if((c = AllocVec(sizeof(struct Cache), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         success = FALSE;
 
-    if(success)
-    {
+    if(success) {
         c->block_size = block_size;
         c->block_count = block_count;
         c->hash_size = hash_size;
@@ -90,7 +89,7 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
         /* Allocate hash table */
 
         c->hash_table = AllocVec(sizeof(struct MinList) * hash_size,
-            MEMF_PUBLIC | MEMF_CLEAR);
+                                 MEMF_PUBLIC | MEMF_CLEAR);
         if(c->hash_table == NULL)
             success = FALSE;
 
@@ -104,14 +103,13 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
         /* Allocate cache blocks and add them to the free list */
 
         c->blocks = AllocVec(sizeof(APTR) * block_count,
-            MEMF_PUBLIC | MEMF_CLEAR);
+                             MEMF_PUBLIC | MEMF_CLEAR);
         if(c == NULL)
             success = FALSE;
 
-        for(i = 0; i < block_count && success; i++)
-        {
+        for(i = 0; i < block_count && success; i++) {
             b = AllocVec(sizeof(struct BlockRange)
-                + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
+                         + (c->block_size << RANGE_SHIFT), MEMF_PUBLIC);
             b->use_count = 0;
             b->state = BS_EMPTY;
             b->num = 0;
@@ -124,12 +122,11 @@ APTR Cache_CreateCache(ULONG hash_size, ULONG block_count, ULONG block_size)
 
             if(success)
                 AddTail((struct List *)&c->free_list,
-                    (struct Node *)&b->node2);
+                        (struct Node *)&b->node2);
         }
     }
 
-    if(!success)
-    {
+    if(!success) {
         Cache_DestroyCache(c);
         c = NULL;
     }
@@ -142,7 +139,7 @@ VOID Cache_DestroyCache(APTR cache)
     struct Cache *c = cache;
     ULONG i;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     Cache_Flush(c);
 
@@ -162,7 +159,7 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
         &c->hash_table[(blockNum >> RANGE_SHIFT) & (c->hash_size - 1)];
     struct MinNode *n;
 
-    D(bug("[NTFS]: %s(%d)\n", __PRETTY_FUNCTION__, blockNum));
+    D(bug("[NTFS]: %s(%d)\n", __func__, blockNum));
 
     /* Change block number to the start block of a range and get byte offset
      * within range */
@@ -172,30 +169,24 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
 
     /* Check existing valid blocks first */
 
-    ForeachNode(l, b2)
-    {
+    ForeachNode(l, b2) {
         if(b2->num == blockNum)
             b = b2;
     }
 
-    if(b != NULL)
-    {
+    if(b != NULL) {
         /* Block found, so increment its usage count and remove it from the
          * free list */
 
-        if(b->use_count++ == 0)
-        {
+        if(b->use_count++ == 0) {
             if(b->state != BS_DIRTY)
                 Remove((struct Node *)&b->node2);
         }
-    }
-    else
-    {
+    } else {
         /* Get a free buffer to read block from disk */
 
         n = (struct MinNode *)RemHead((struct List *)&c->free_list);
-        if(n == NULL)
-        {
+        if(n == NULL) {
             /* No free blocks, so flush dirty list to try and free up some
              * more blocks, then try again */
 
@@ -203,16 +194,13 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
             n = (struct MinNode *)RemHead((struct List *)&c->free_list);
         }
 
-        if(n != NULL)
-        {
+        if(n != NULL) {
             b = (struct BlockRange *)NODE2(n);
 
             /* Read the block from disk */
-            if (b)
-            {
+            if (b) {
                 if((error = AccessDisk(FALSE, blockNum, RANGE_SIZE,
-                    c->block_size, b->data)) == 0)
-                {
+                                       c->block_size, b->data)) == 0) {
                     /* Remove block from its old position in the hash */
 
                     if(b->state == BS_VALID)
@@ -224,21 +212,17 @@ APTR Cache_GetBlock(APTR cache, UQUAD blockNum, UBYTE **data)
                     b->num = blockNum;
                     b->state = BS_VALID;
                     b->use_count = 1;
-                }
-                else
-                {
+                } else {
                     /* Read failed, so put the block back on the free list */
 
                     b->state = BS_EMPTY;
                     AddHead((struct List *)&c->free_list,
-                        (struct Node *)&b->node2);
+                            (struct Node *)&b->node2);
                     b = NULL;
                 }
-            }
-            else
+            } else
                 error = ERROR_NO_FREE_STORE;
-        }
-        else
+        } else
             error = ERROR_NO_FREE_STORE;
     }
 
@@ -255,7 +239,7 @@ VOID Cache_FreeBlock(APTR cache, APTR block)
     struct Cache *c = cache;
     struct BlockRange *b = block;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     /* Decrement usage count */
 
@@ -274,10 +258,9 @@ VOID Cache_MarkBlockDirty(APTR cache, APTR block)
     struct Cache *c = cache;
     struct BlockRange *b = block;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
-    if(b->state != BS_DIRTY)
-    {
+    if(b->state != BS_DIRTY) {
         b->state = BS_DIRTY;
         AddTail((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
@@ -292,11 +275,10 @@ BOOL Cache_Flush(APTR cache)
     struct MinNode *n;
     struct BlockRange *b;
 
-    D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[NTFS]: %s()\n", __func__));
 
     while((n = (struct MinNode *)RemHead((struct List *)&c->dirty_list))
-        != NULL && error == 0)
-    {
+            != NULL && error == 0) {
         /* Write dirty block range to disk */
 
         b = NODE2(n);
@@ -305,13 +287,11 @@ BOOL Cache_Flush(APTR cache)
         /* Transfer block range to free list if unused, or put back on dirty
          * list upon an error */
 
-        if(error == 0)
-        {
+        if(error == 0) {
             b->state = BS_VALID;
             if(b->use_count == 0)
                 AddTail((struct List *)&c->free_list, (struct Node *)&b->node2);
-        }
-        else
+        } else
             AddHead((struct List *)&c->dirty_list, (struct Node *)&b->node2);
     }
 
