@@ -981,7 +981,7 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
                     bug(" Label '%s'\n", de->entryname);
                 )
 
-                if ((!count) || (count && *count == de->no))
+                if ((!count) || (*count == de->no))
                     return 1;
             }
         }
