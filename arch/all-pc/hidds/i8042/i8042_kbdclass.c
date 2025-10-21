@@ -104,6 +104,24 @@ static void Keyboard_IntHandler(struct kbd_data *data, void *unused)
     )
 }
 
+static void kbd_flush_output_buffer(void)
+{
+    UBYTE info;
+    D(int flush_count = 0;)
+    int work = 1000;  /* safety loop */
+
+    while ((info = kbd_read_status()) & KBD_STATUS_OBF && work--)
+    {
+        (void)kbd_read_input();   /* discard data */
+        D(flush_count++;)
+    }
+
+    D(
+        if (flush_count > 0)
+            bug("[i8042:Kbd] Flushed %d leftover bytes from controller\n", flush_count);
+    )
+}
+
 /****************************************************************************************
  * Keyboard Controller Task
  * It is safe to use functions that take the timer IORequest as input
@@ -201,8 +219,12 @@ void KbdCntrlTask(OOP_Class *cl, OOP_Object *o)
     Enable();
     kbdUpdateLEDs(data);
 
-    D(bug("[i8042:Kbd] %s: ready\n", __func__));
+    D(bug("[i8042:Kbd] %s: init sequence complete <reset OK, LED sigbit %lu>\n",
+      __func__, data->LEDSigBit));
 
+    /* Flush any stray data in i8042 output buffer before enabling IRQ */
+    kbd_flush_output_buffer();
+    
     /*
      * Report last key received before keyboard was reset, so that
      * keyboard.device knows about any key currently held down
@@ -542,7 +564,7 @@ static void kbd_irq_process_key(struct kbd_data *data, UBYTE keycode, struct Exe
         kevt.code = 0x78; /* Reset */
     }
 
-    D(bug("[i8042:Kbd] %s: ki - kevt.code %d (%x) last %d (%x)\n", __func__, kevt.code, kevt.code,
+    D(bug("[i8042:Kbd] %s: ki - keycode %d (%x) last %d (%x)\n", __func__, kevt.code, kevt.code,
         data->prev_amigacode, data->prev_amigacode));
 
     /* Update keystate */
