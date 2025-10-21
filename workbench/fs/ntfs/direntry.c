@@ -555,7 +555,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib)
     if (gl == &fs_data->info->root_lock) {
         D(bug("[NTFS] %s:\t\ttype: root directory\n", __func__));
         fib->fib_DirEntryType = ST_ROOT;
-    } else if ((fl->entry == NULL) || (fl->entry && fl->entry->entrytype & ATTR_DIRECTORY)) {
+    } else if ((fl->entry == NULL) || (fl->entry->entrytype & ATTR_DIRECTORY)) {
         D(bug("[NTFS] %s:\t\ttype: directory\n", __func__));
         fib->fib_DirEntryType = ST_USERDIR;
     } else {
