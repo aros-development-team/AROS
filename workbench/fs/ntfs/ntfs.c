@@ -31,6 +31,16 @@
 #include "ntfs_constants.h"
 #include "ntfs_protos.h"
 
+#if defined(__has_builtin)
+#  if __has_builtin(__builtin_popcountl)
+#    define HAVE_BUILTIN_POPCOUNTL 1
+#  endif
+#endif
+
+#ifndef HAVE_BUILTIN_POPCOUNTL
+#define NTFSFS_USEBCHACK
+#endif
+
 //#define DEBUG_MFT
 #include "debug.h"
 
@@ -842,7 +852,6 @@ IPTR InitMFTEntry(struct NTFSMFTEntry *mft, ULONG mft_id)
 
     return 0;
 }
-
 LONG
 ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
 {
@@ -850,92 +859,115 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
     UBYTE *np;
     int ns_len;
 
-    D(bug("[NTFS]: %s(NTFSMFTEntry @ 0x%p)\n", __func__, diro));
+    D(bug("[NTFS]: %s(NTFSMFTEntry @ %p)\n", __func__, (void *)diro));
 
-    if (diro == NULL || de == NULL) {
-        D(bug("[NTFS] %s: NULL pointer parameter\n", __func__));
+    if (!diro || !de)
         return ERROR_REQUIRED_ARG_MISSING;
-    }
 
-    if (countptr) {
+    if (countptr)
         count = *countptr;
-        D(bug("[NTFS] %s: counter @ 0x%p, val = %d\n", __func__, count, *count));
-    }
+
+    if (!de->key || !de->key->indx || !diro->data)
+        return ERROR_INVALID_COMPONENT_NAME;
+
+    UBYTE *idx_base = de->key->indx;
+    size_t total_bytes = (size_t)diro->data->idx_size << SECTORSIZE_SHIFT;
+    UBYTE *idx_end = idx_base + total_bytes;
 
     while (1) {
-        UBYTE ns_type;
-
-        D(bug("[NTFS] %s: pos = 0x%p\n", __func__, de->key->pos));
-
-        if (de->key->pos == NULL) {
-            D(bug("[NTFS] %s: NULL position pointer\n", __func__));
+        if (!de->key->pos)
             return ERROR_INVALID_COMPONENT_NAME;
-        }
 
-        if (de->key->pos >= de->key->indx + (diro->data->idx_size << SECTORSIZE_SHIFT)) {
-            D(bug("[NTFS] %s: reached index record buffer end\n", __func__));
-            de->key->pos = 0;
+        if (de->key->pos >= idx_end || de->key->pos < idx_base) {
+            de->key->pos = NULL;
             return 0;
         }
 
-        if (de->key->pos[0xC] & INDEX_ENTRY_END) {	/* end of index signature */
-            D(bug("[NTFS] %s: reached index-record end signature\n", __func__));
-            de->key->pos = 0;
+        if (de->key->pos[0xC] & INDEX_ENTRY_END) {
+            de->key->pos = NULL;
             return 0;
         }
 
-        np = de->key->pos + 0x50;
-        ns_len = (UBYTE) *(np++);
-        ns_type = *(np++);
+        if (de->key->pos + 8 + sizeof(UWORD) > idx_end)
+            return ERROR_INVALID_COMPONENT_NAME;
 
-        D(bug("[NTFS] %s: np = 0x%p, ns_len = %d (type = %d)\n", __func__, np, ns_len, ns_type));
+        UWORD step_tmp;
+        memcpy(&step_tmp, de->key->pos + 8, sizeof(UWORD));
+        UWORD step = AROS_LE2WORD(step_tmp);
+        if (!step)
+            return ERROR_INVALID_COMPONENT_NAME;
 
-        if (ns_len > 255) {
-            D(bug("[NTFS] %s: invalid name length %d\n", __func__, ns_len));
-            de->key->pos += AROS_LE2WORD(*((UWORD *)(de->key->pos + 8)));
+        if (de->key->pos + 0x50 + 2 > idx_end) {
+            de->key->pos += step;
             continue;
         }
 
-        /*  ignore DOS namespace files (we want Win32 versions) */
-        if ((ns_len) && (ns_type != 2)) {
-            int i;
+        np = de->key->pos + 0x50;
+        ns_len = (UBYTE)*np++;
+        UBYTE ns_type = *np++;
 
-            if (AROS_LE2WORD(*((UWORD *)(de->key->pos + 4)))) {
-                D(bug("[NTFS] %s: **skipping** [64bit mft number]\n", __func__));
-                return 0;
+        if (ns_len <= 0 || ns_len > 255) {
+            de->key->pos += step;
+            continue;
+        }
+
+        size_t name_bytes = (size_t)ns_len * 2;
+        if (np + name_bytes > idx_end) {
+            de->key->pos += step;
+            continue;
+        }
+
+        if (ns_type != 2) {
+            if (de->key->pos + 4 + sizeof(UWORD) > idx_end) {
+                de->key->pos += step;
+                continue;
             }
 
-            D(bug("[NTFS] %s: type = %d\n", __func__, AROS_LE2LONG(*((ULONG *)(de->key->pos + 0x48)))));
-
-            if (de) {
-                FreeVec(de->entryname);
-                de->entryname = NULL;
+            UWORD mft_high_tmp;
+            memcpy(&mft_high_tmp, de->key->pos + 4, sizeof(UWORD));
+            if (AROS_LE2WORD(mft_high_tmp)) {
+                de->key->pos += step;
+                continue;
             }
 
-            if (de && de->data) {
+            if (de->key->pos + 0x48 + sizeof(ULONG) > idx_end) {
+                de->key->pos += step;
+                continue;
+            }
+
+            ULONG entrytype_tmp;
+            memcpy(&entrytype_tmp, de->key->pos + 0x48, sizeof(ULONG));
+            ULONG entrytype = AROS_LE2LONG(entrytype_tmp);
+
+            if (de->data) {
                 if (count)
-                    *count += 1;
+                    (*count)++;
 
                 if (!de->entry)
-                    de->entry = AllocMem(sizeof (struct NTFSMFTEntry), MEMF_ANY|MEMF_CLEAR);
-
-                if (!de->entry) {
-                    D(bug("[NTFS] %s: failed to allocate NTFSMFTEntry\n", __func__));
+                    de->entry = AllocMem(sizeof(struct NTFSMFTEntry), MEMF_ANY | MEMF_CLEAR);
+                if (!de->entry)
                     return ERROR_NO_FREE_STORE;
-                }
 
                 de->entry->data = diro->data;
 
-                de->entry->mftrec_no = AROS_LE2LONG(*(ULONG *)de->key->pos);
+                ULONG mftrec_tmp;
+                memcpy(&mftrec_tmp, de->key->pos, sizeof(ULONG));
+                de->entry->mftrec_no = AROS_LE2LONG(mftrec_tmp);
+                de->entrytype = entrytype;
 
-                de->entrytype = AROS_LE2LONG(*((ULONG *)(de->key->pos + 0x48)));
-
-                if ((de->entryname = AllocVec(ns_len + 1, MEMF_ANY)) == NULL)
+                char *entrynamestr = AllocVec(ns_len + 1, MEMF_ANY);
+                if (!entrynamestr)
                     return ERROR_NO_FREE_STORE;
 
-                for (i = 0; i < ns_len; i++) {
-                    UWORD unicode_char = AROS_LE2WORD(*((UWORD *)(np + (i * 2))));
-                    if (unicode_char <= 65535 && glob->from_unicode)
+                if (de->entryname)
+                    FreeVec(de->entryname);
+                de->entryname = entrynamestr;
+
+                for (int i = 0; i < ns_len; i++) {
+                    UWORD code_tmp;
+                    memcpy(&code_tmp, np + (i * 2), sizeof(UWORD));
+                    UWORD unicode_char = AROS_LE2WORD(code_tmp);
+                    if (glob && glob->from_unicode)
                         de->entryname[i] = glob->from_unicode[unicode_char];
                     else
                         de->entryname[i] = '?';
@@ -944,27 +976,41 @@ ProcessFSEntry(struct NTFSMFTEntry *diro, struct DirEntry *de, ULONG **countptr)
 
                 D(
                     bug("[NTFS] %s: ", __func__);
-                if (count) {
-                bug("[#%d]", *count);
-                }
-                bug(" Label '%s'\n", de->entryname);
+                    if (count)
+                        bug("<#%lu>", (unsigned long)*count);
+                    bug(" Label '%s'\n", de->entryname);
                 )
 
-                if ((!count) || ((count) && (*count == de->no)))
+                if ((!count) || (count && *count == de->no))
                     return 1;
             }
         }
-        de->key->pos += AROS_LE2WORD(*((UWORD *)(de->key->pos + 8)));
+
+        de->key->pos += step;
     }
     return 0;
 }
 
-int bitcount(ULONG n)
+static int bitcount(ULONG n)
 {
-    register unsigned int tmp;
-    tmp = n - ((n >> 1) & 033333333333)
-          - ((n >> 2) & 011111111111);
-    return ((tmp + (tmp >> 3)) & 030707070707) % 63;
+#if defined(HAVE_BUILTIN_POPCOUNTL)
+    return __builtin_popcount(n);
+#else
+#if defined(NTFSFS_USEBCHACK)
+    unsigned long tmp;
+
+    tmp = n - ((n >> 1) & 0x55555555UL)
+            - ((n >> 2) & 0x11111111UL);
+    return ((tmp + (tmp >> 3)) & 0x03070707UL) % 63;
+#else
+    int count = 0;
+    while (n) {
+        n &= (n - 1);
+        count++;
+    }
+    return count;
+#endif
+#endif
 }
 
 LONG ReadBootSector(struct FSData *fs_data )
