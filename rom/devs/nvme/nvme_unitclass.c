@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -28,8 +28,7 @@ static void nvme_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
     register int i = size;
 
-    while (i--)
-    {
+    while (i--) {
         if (str1[i] < ' ')
             str2[i] = '\0';
         else
@@ -50,8 +49,7 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (o)
-    {
+    if (o) {
         struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
         char *DevName, *DevSer, *DevFW;
 
@@ -60,23 +58,20 @@ OOP_Object *NVMEUnit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         InitSemaphore(&unit->au_Lock);
         NEWLIST(&unit->au_IOs);
         unit->au_UnitNum = (dev->dev_HostID << 12) | unitnsno;
-        
+
         DevName = (char *)GetTagData(aHidd_StorageUnit_Model, 0, msg->attrList);
         DevSer = (char *)GetTagData(aHidd_StorageUnit_Serial, 0, msg->attrList);
         DevFW = (char *)GetTagData(aHidd_StorageUnit_Revision, 0, msg->attrList);
 
-        if (DevName)
-        {
+        if (DevName) {
             nvme_strcpy(DevName, unit->au_Model, 40);
             D(bug ("[NVME:Unit] Root__New: Model    %s\n", unit->au_Model);)
         }
-        if (DevSer)
-        {
+        if (DevSer) {
             nvme_strcpy(DevSer, unit->au_SerialNumber, 20);
             D(bug ("[NVME:Unit] Root__New: Serial   %s\n", unit->au_SerialNumber);)
         }
-        if (DevFW)
-        {
+        if (DevFW) {
             nvme_strcpy(DevFW, unit->au_FirmwareRev, 8);
             D(bug ("[NVME:Unit] Root__New: FW Revis %s\n", unit->au_FirmwareRev);)
         }
@@ -97,8 +92,7 @@ void NVMEUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct nvme_Unit *unit = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    Hidd_StorageUnit_Switch (msg->attrID, idx)
-    {
+    Hidd_StorageUnit_Switch (msg->attrID, idx) {
     case aoHidd_StorageUnit_Device:
         *msg->storage = (IPTR)str_devicename;
         return;
@@ -129,8 +123,7 @@ void NVMEUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
 #if (0)
-    Hidd_NVMEUnit_Switch (msg->attrID, idx)
-    {
+    Hidd_NVMEUnit_Switch (msg->attrID, idx) {
     case aoHidd_NVMEUnit_Features:
         *msg->storage = (IPTR)unit->au_features;
         return;

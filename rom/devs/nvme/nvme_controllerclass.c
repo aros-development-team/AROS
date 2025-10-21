@@ -83,13 +83,12 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
     dev->dev_nvmeregbase->cc = dev->ctrl_config;
 #if defined(DISABLE_CONTROLLER_ONSHUTDOWN)
     DIRQ(bug ("[NVME:Controller] %s: deleting submission queue\n", __func__);)
-	c.delete_queue.op.opcode = nvme_admin_delete_sq;
-	c.delete_queue.qid = AROS_WORD2LE(1);
+    c.delete_queue.op.opcode = nvme_admin_delete_sq;
+    c.delete_queue.qid = AROS_WORD2LE(1);
     nvme_submit_admincmd(dev, &c, &cehandle);
 
     Wait(cehandle.ceh_SigSet);
-    if (!cehandle.ceh_Status)
-    {
+    if (!cehandle.ceh_Status) {
         DIRQ(bug ("[NVME:Controller] %s: deleting completion queue\n", __func__);)
         c.delete_queue.op.opcode = nvme_admin_delete_cq;
         c.delete_queue.qid = AROS_WORD2LE(1);
@@ -103,8 +102,7 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
     dev->dev_nvmeregbase->cc = dev->ctrl_config;
 
 #if defined(DISABLE_CONTROLLER_ONSHUTDOWN)
-    if (!cehandle.ceh_Status)
-    {
+    if (!cehandle.ceh_Status) {
         c.features.op.opcode = nvme_admin_set_features;
         c.features.fid = AROS_LONG2LE(NVME_FEAT_NUM_QUEUES);
         c.features.dword11 = 0;
@@ -114,8 +112,7 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
         DIRQ(bug ("[NVME:Controller] %s: setting queue count to 0\n", __func__);)
         nvme_submit_admincmd(dev, &c, &cehandle);
         Wait(cehandle.ceh_SigSet);
-        if (!cehandle.ceh_Status)
-        {
+        if (!cehandle.ceh_Status) {
             DIRQ(bug ("[NVME:Controller] %s: Controller ready for shutdown\n", __func__);)
         }
     }
@@ -124,8 +121,7 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
     struct NVMEBase *NVMEBase = dev->dev_NVMEBase;
     IPTR PCIIntLine = 0;
     OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_INTLine, &PCIIntLine);
-    if (PCIIntLine != qIRQ)
-    {
+    if (PCIIntLine != qIRQ) {
         DIRQ(bug ("[NVME:Controller] %s: disabling MSI interrupts\n", __func__);)
         HIDD_PCIDevice_ReleaseVectors(dev->dev_Object);
     }
@@ -145,20 +141,17 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     device_t dev = (device_t)GetTagData(aHidd_DriverData, 0, msg->attrList);
     struct IORequest *nvmeTimer = nvme_OpenTimer(NVMEBase);
     OOP_Object *nvmeController;
- 
-    if (!nvmeTimer)
-    {
+
+    if (!nvmeTimer) {
         D(bug ("[NVME:Controller] %s: Failed to open time device\n", __func__);)
         return NULL;
     }
-    
+
     nvmeController = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (nvmeController)
-    {
-        struct TagItem pciActivateBusmaster[] =
-        {
-                { aHidd_PCIDevice_isMaster, TRUE },
-                { TAG_DONE, 0UL },
+    if (nvmeController) {
+        struct TagItem pciActivateBusmaster[] = {
+            { aHidd_PCIDevice_isMaster, TRUE },
+            { TAG_DONE, 0UL },
         };
         struct nvme_Controller *data = OOP_INST_DATA(cl, nvmeController);
         struct nvme_queue *nvmeq;
@@ -173,8 +166,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
         data->ac_Class = cl;
         data->ac_Object = nvmeController;
-        if ((data->ac_dev = dev) != NULL)
-        {
+        if ((data->ac_dev = dev) != NULL) {
             dev->dev_Controller = nvmeController;
             OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Base0, (IPTR *)&dev->dev_nvmeregbase);
 
@@ -182,8 +174,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             dev->dbs = ((void volatile *)dev->dev_nvmeregbase) + 4096;
 
             dev->dev_Queues = AllocMem(sizeof(APTR) * (KrnGetCPUCount() + 1), MEMF_CLEAR);
-            if (!dev->dev_Queues)
-            {
+            if (!dev->dev_Queues) {
                 // TODO: dispose the controller object
                 nvme_CloseTimer(nvmeTimer);
                 return NULL;
@@ -192,16 +183,14 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             D(bug ("[NVME:Controller] %s:     dbs @ 0x%p\n", __func__, dev->dbs);)
             dev->dev_Queues[0] = nvme_alloc_queue(dev, 0, 64, 0);
             D(bug ("[NVME:Controller] %s:     admin queue @ 0x%p\n", __func__, dev->dev_Queues[0]);)
-            if (dev->dev_Queues[0])
-            {
+            if (dev->dev_Queues[0]) {
                 unsigned long timeout, cmdno;
                 APTR buffer;
                 UQUAD cap;
                 ULONG sigs, aqa;
 
                 dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-                if (!dev->dev_Queues[0]->cehooks)
-                {
+                if (!dev->dev_Queues[0]->cehooks) {
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -210,9 +199,9 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 }
                 D(bug ("[NVME:Controller] %s:     admin queue hooks @ 0x%p\n", __func__, dev->dev_Queues[0]->cehooks);)
                 dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
-                if (!dev->dev_Queues[0]->cehandlers)
-                {
+                if (!dev->dev_Queues[0]->cehandlers) {
                     FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
+                    dev->dev_Queues[0]->cehooks = NULL;
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -240,7 +229,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 D(bug ("[NVME:Controller] %s:     doorbell stride = %u\n", __func__, dev->db_stride);)
 
                 dev->pageshift = MIN(MAX(((cap >> 48) & 0xf) + 12, PAGESHIFT),
-                    ((cap >> 52) & 0xf) + 12);
+                                     ((cap >> 52) & 0xf) + 12);
                 dev->pagesize = 1UL << (dev->pageshift);
                 D(bug ("[NVME:Controller] %s: using pagesize %u (%u shift)\n", __func__, dev->pagesize, dev->pageshift);)
                 dev->ctrl_config |= (dev->pageshift - 12) << NVME_CC_MPS_SHIFT;
@@ -255,11 +244,21 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 dev->dev_Queues[0]->q_IntHandler.is_Node.ln_Pri = 5;
                 dev->dev_Queues[0]->q_IntHandler.is_Code = (VOID_FUNC) NVME_AdminIntCode;
                 dev->dev_Queues[0]->q_IntHandler.is_Data = dev->dev_Queues[0];
-                HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object, &dev->dev_Queues[0]->q_IntHandler);
+                if (!HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object, &dev->dev_Queues[0]->q_IntHandler)) {
+                    bug("[NVME:Controller] %s: ERROR - failed to add PCI interrupt handler!\n", __func__);
+                    FreeMem(dev->dev_Queues[0]->cehandlers, sizeof(struct completionevent_handler *) * 16);
+                    dev->dev_Queues[0]->cehandlers= NULL;
+                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
+                    dev->dev_Queues[0]->cehooks = NULL;
+                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
+                    dev->dev_Queues = NULL;
+                    // TODO: dispose the controller object
+                    nvme_CloseTimer(nvmeTimer);
+                    return NULL;
+                }
 
                 buffer = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, 8192);
-                if (buffer)
-                {
+                if (buffer) {
                     struct nvme_id_ctrl *ctrl = (struct nvme_id_ctrl *)buffer;
                     struct completionevent_handler cehandle;
                     struct nvme_command c;
@@ -278,8 +277,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     nvme_submit_admincmd(dev, &c, &cehandle);
                     sigs = nvme_WaitTO(nvmeTimer, 1, 0, cehandle.ceh_SigSet);
                     SetSignal(signals, signals);
-                    if ((sigs & cehandle.ceh_SigSet) && (!cehandle.ceh_Status))
-                    {
+                    if ((sigs & cehandle.ceh_SigSet) && (!cehandle.ceh_Status)) {
                         D(bug ("[NVME:Controller] %s:     Model '%s'\n", __func__, ctrl->mn);)
                         D(bug ("[NVME:Controller] %s:     Serial '%s'\n", __func__, ctrl->sn);)
                         D(bug ("[NVME:Controller] %s:     F/W '%s'\n", __func__, ctrl->fr);)
@@ -288,19 +286,18 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         D(bug ("[NVME:Controller] %s: mdts = %u\n", __func__, ctrl->mdts);)
                         dev->dev_mdts = ctrl->mdts;
 
-                        struct TagItem attrs[] =
-                        {
-                                {aHidd_Name,                (IPTR)"nvme.device"                             },
-                                {aHidd_HardwareName,        0                                               },
+                        struct TagItem attrs[] = {
+                            {aHidd_Name,                (IPTR)"nvme.device"                             },
+                            {aHidd_HardwareName,        0                                               },
 #define BUS_TAG_HARDWARENAME 1
-                                {aHidd_Producer,            GetTagData(aHidd_Producer, 0, msg->attrList)    },
-                                {aHidd_Product,             GetTagData(aHidd_Product, 0, msg->attrList)     },
-                                {aHidd_DriverData,          (IPTR)dev                                       },
-                                {aHidd_Bus_MaxUnits,        ctrl->nn                                        },
-                                {aHidd_StorageUnit_Model,   (IPTR)ctrl->mn                                  },
-                                {aHidd_StorageUnit_Serial,  (IPTR)ctrl->sn                                  },
-                                {aHidd_StorageUnit_Revision,(IPTR)ctrl->fr                                  },
-                                {TAG_DONE,                  0                                               }
+                            {aHidd_Producer,            GetTagData(aHidd_Producer, 0, msg->attrList)    },
+                            {aHidd_Product,             GetTagData(aHidd_Product, 0, msg->attrList)     },
+                            {aHidd_DriverData,          (IPTR)dev                                       },
+                            {aHidd_Bus_MaxUnits,        ctrl->nn                                        },
+                            {aHidd_StorageUnit_Model,   (IPTR)ctrl->mn                                  },
+                            {aHidd_StorageUnit_Serial,  (IPTR)ctrl->sn                                  },
+                            {aHidd_StorageUnit_Revision,(IPTR)ctrl->fr                                  },
+                            {TAG_DONE,                  0                                               }
                         };
                         attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)AllocVec(24, MEMF_CLEAR);
                         sprintf((char *)attrs[BUS_TAG_HARDWARENAME].ti_Data, "NVME %u.%u Device Bus", (dev->dev_nvmeregbase->vs >> 16) & 0xFFFF, dev->dev_nvmeregbase->vs & 0xFFFF);
@@ -314,18 +311,14 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         data->ac_ResetHandler.is_Code         = (VOID_FUNC)NVME_ResetHandler;
                         data->ac_ResetHandler.is_Data         = dev;
                         AddResetCallback(&data->ac_ResetHandler);
-                        
+
                         HW_AddDriver(dev->dev_Controller, NVMEBase->busClass, attrs);
-                    }
-                    else
-                    {
+                    } else {
                         bug("[NVME:Controller] %s: ERROR - failed to query controller identity!\n", __func__);
                         data = NULL;
                     }
                     HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
-                }
-                else
-                {
+                } else {
                     D(bug ("[NVME:Controller] %s: ERROR - failed to create DMA buffer!\n", __func__);)
                     FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
@@ -333,17 +326,13 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     // TODO: dispose the controller object
                     data = NULL;
                 }
-            }
-            else
-            {
+            } else {
                 bug("[NVME:Controller] %s: ERROR - failed to create Admin Queue!\n", __func__);
                 FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                 dev->dev_Queues = NULL;
                 data = NULL;
             }
-        }
-        else
-        {
+        } else {
             bug("[NVME:Controller] %s: ERROR - device data missing!\n", __func__);
             data = NULL;
         }
@@ -366,10 +355,8 @@ VOID NVME__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, o);)
 
-    ForeachNodeSafe (&NVMEBase->nvme_Controllers, nvmeNode, tmpNode)
-    {
-        if (nvmeNode->ac_Object == o)
-        {
+    ForeachNodeSafe (&NVMEBase->nvme_Controllers, nvmeNode, tmpNode) {
+        if (nvmeNode->ac_Object == o) {
             D(bug ("[NVME:Controller] %s: Destroying Controller Entry @ %p\n", __func__, nvmeNode);)
             Remove(&nvmeNode->ac_Node);
         }
@@ -382,16 +369,14 @@ void  NVME__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct nvme_Controller *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    HW_Switch(msg->attrID, idx)
-    {
-        case aoHW_Device:
-            {
-                if (data->ac_dev)
-                    *msg->storage = (IPTR)data->ac_dev->dev_Object;
-            }
-            return;
-        default:
-            break;
+    HW_Switch(msg->attrID, idx) {
+    case aoHW_Device: {
+            if (data->ac_dev)
+                *msg->storage = (IPTR)data->ac_dev->dev_Object;
+        }
+        return;
+    default:
+        break;
     }
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
@@ -399,10 +384,10 @@ void  NVME__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 BOOL NVME__Hidd_StorageController__RemoveBus(OOP_Class *cl, OOP_Object *o, struct pHidd_StorageController_RemoveBus *Msg)
 {
     D(bug ("[NVME:Controller] %s(0x%p)\n", __func__, o);)
-   /*
-     * Currently we don't support unloading NVME bus drivers.
-     * This is a very-very big TODO.
-     */
+    /*
+      * Currently we don't support unloading NVME bus drivers.
+      * This is a very-very big TODO.
+      */
     return FALSE;
 }
 

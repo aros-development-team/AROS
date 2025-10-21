@@ -205,7 +205,8 @@ struct nvme_Bus
     device_t            ab_Dev;
 
     struct completionevent_handler *ab_CE;
-    UWORD               ab_UnitCnt;
+    UWORD               ab_UnitMax;             /* Max units the bus can have   */
+    UWORD               ab_UnitCnt;             /* actual # of units on the bus */
     OOP_Object          **ab_Units;
 
     struct Node         *ab_IDNode;

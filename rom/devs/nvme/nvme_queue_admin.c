@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -28,8 +28,7 @@ void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *
 
     D(bug("[NVME:ADMINQ] %s(0x%p)\n", __func__, cqe);)
 
-    if ((handler = nvmeq->cehandlers[cqe->command_id]) != NULL)
-    {
+    if ((handler = nvmeq->cehandlers[cqe->command_id]) != NULL) {
         D(bug ("[NVME:ADMINQ] %s: cehandler @ 0x%p\n", __func__, handler);)
         handler->ceh_Result = AROS_LE2LONG(cqe->result);
         handler->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
@@ -50,8 +49,7 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
     dev->dev_Queues[0]->cehooks[cmd->common.op.command_id] = nvme_complete_adminevent;
     dev->dev_Queues[0]->cehandlers[cmd->common.op.command_id] = handler;
 
-    if (handler)
-    {
+    if (handler) {
         /* clear the signal first */
         SetSignal(0, handler->ceh_SigSet);
     }

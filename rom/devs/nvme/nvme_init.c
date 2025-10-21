@@ -2,6 +2,7 @@
     Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
  */
 
+#define DEBUG 0
 #include <proto/exec.h>
 
 /* We want all other bases obtained from our base */
@@ -42,8 +43,7 @@
 
 #if defined(__OOP_NOATTRBASES__)
 /* Keep order the same as order of IDs in struct NVMEBase! */
-static CONST_STRPTR const attrBaseIDs[] =
-{
+static CONST_STRPTR const attrBaseIDs[] = {
     IID_HW,
     IID_Hidd,
     IID_Hidd_PCIDevice,
@@ -57,8 +57,7 @@ static CONST_STRPTR const attrBaseIDs[] =
 #endif
 
 #if defined(__OOP_NOMETHODBASES__)
-static CONST_STRPTR const methBaseIDs[] =
-{
+static CONST_STRPTR const methBaseIDs[] = {
     IID_Hidd_PCIDevice,
     IID_Hidd_PCIDriver,
     IID_HW,
@@ -82,8 +81,7 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
     if (!NVMEBase->nvme_UtilityBase)
         return FALSE;
 
-    if ((NVMEBase->nvme_KernelBase = OpenResource("kernel.resource")) == NULL)
-    {
+    if ((NVMEBase->nvme_KernelBase = OpenResource("kernel.resource")) == NULL) {
         CloseLibrary(NVMEBase->nvme_UtilityBase);
         return FALSE;
     }
@@ -95,27 +93,21 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
 
     BootLoaderBase = OpenResource("bootloader.resource");
     D(bug("[NVME--] %s: BootloaderBase = %p\n", __func__, BootLoaderBase));
-    if (BootLoaderBase != NULL)
-    {
+    if (BootLoaderBase != NULL) {
         struct List *list;
         struct Node *node;
 
         list = (struct List *)GetBootInfo(BL_Args);
-        if (list)
-        {
-            ForeachNode(list, node)
-            {
-                if (strncmp(node->ln_Name, "NVME=", 4) == 0)
-                {
+        if (list) {
+            ForeachNode(list, node) {
+                if (strncmp(node->ln_Name, "NVME=", 4) == 0) {
                     const char *CmdLine = &node->ln_Name[4];
 
-                    if (strstr(CmdLine, "disable"))
-                    {
+                    if (strstr(CmdLine, "disable")) {
                         D(bug("[NVME--] %s: Disabling NVME support\n", __func__));
                         enabled = FALSE;
                     }
-                    if (strstr(CmdLine, "nomsi"))
-                    {
+                    if (strstr(CmdLine, "nomsi")) {
                         NVMEBase->nvme_Flags |= NVMEF_FLAG_NOMSI;
                     }
                 }
@@ -123,37 +115,34 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
         }
     }
 
-    if (enabled)
-    {
+    if (enabled) {
         /*
          * Alloc everything needed from a pool, so that we avoid memory fragmentation.
          */
-        NVMEBase->nvme_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED , 8192, 4096);
+        NVMEBase->nvme_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
         if (NVMEBase->nvme_MemPool == NULL)
             return FALSE;
 
         D(bug("[NVME--] %s: MemPool @ %p\n", __func__, NVMEBase->nvme_MemPool);)
 
-    #if defined(__OOP_NOATTRBASES__)
+#if defined(__OOP_NOATTRBASES__)
         /* Get some useful bases */
-        if (OOP_ObtainAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs))
-        {
+        if (OOP_ObtainAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs)) {
             DeletePool(NVMEBase->nvme_MemPool);
             NVMEBase->nvme_MemPool = NULL;
             return FALSE;
         }
-    #endif
-    #if defined(__OOP_NOMETHODBASES__)
-        if (OOP_ObtainMethodBasesArray(&NVMEBase->nvme_HiddPCIDeviceMethodBase, methBaseIDs))
-        {
-    #if defined(__OOP_NOATTRBASES__)
+#endif
+#if defined(__OOP_NOMETHODBASES__)
+        if (OOP_ObtainMethodBasesArray(&NVMEBase->nvme_HiddPCIDeviceMethodBase, methBaseIDs)) {
+#if defined(__OOP_NOATTRBASES__)
             OOP_ReleaseAttrBasesArray(&NVMEBase->nvme_HWAttrBase, attrBaseIDs);
-    #endif
+#endif
             DeletePool(NVMEBase->nvme_MemPool);
             NVMEBase->nvme_MemPool = NULL;
             return FALSE;
         }
-    #endif
+#endif
 
         D(bug("[NVME--] %s: Base NVME Hidd Class @ %p\n", __func__, NVMEBase->nvmeClass);)
         D(bug("[NVME--] %s: NVME PCI Bus Class @ %p\n", __func__, NVMEBase->busClass);)
@@ -161,8 +150,7 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
         NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
         if (!NVMEBase->storageRoot)
             NVMEBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-        if (!NVMEBase->storageRoot)
-        {
+        if (!NVMEBase->storageRoot) {
             return FALSE;
         }
         D(bug("[NVME--] %s: storage root @ %p\n", __func__, NVMEBase->storageRoot);)
@@ -179,11 +167,12 @@ static int NVME_Open
 )
 {
     struct nvme_Controller *nvmeNode;
-    struct Hook searchHook =
-    {
+    struct Hook searchHook = {
         .h_Entry = Hidd_NVMEBus_Open,
         .h_Data  = iorq
     };
+
+    D(bug("[NVME%02d] %s(0x%p, %08x)\n", unitnum, __func__, iorq, flags));
 
     /* Assume it failed */
     iorq->io_Error  = IOERR_OPENFAIL;
@@ -191,11 +180,10 @@ static int NVME_Open
     iorq->io_Unit   = (APTR)(IPTR)-1;
 
     /* Try to find the unit */
-    ForeachNode (&NVMEBase->nvme_Controllers, nvmeNode)
-    {
+    ForeachNode (&NVMEBase->nvme_Controllers, nvmeNode) {
         HIDD_StorageController_EnumBuses(nvmeNode->ac_Object, &searchHook, (APTR)(IPTR)unitnum);
     }
-    D(bug("[NVME%02d] Open result: %d\n", unitnum, iorq->io_Error));
+    D(bug("[NVME%02d] %s: Open result: %d\n", unitnum, __func__, iorq->io_Error));
 
     /* If found, io_Error will be reset to zero */
     return iorq->io_Error ? FALSE : TRUE;
@@ -209,10 +197,10 @@ static int NVME_Close
 )
 {
     struct nvme_Unit *unit = (struct nvme_Unit *)iorq->io_Unit;
-    
+
     /* First of all make the important fields of struct IORequest invalid! */
     iorq->io_Unit = (struct Unit *)~0;
-    
+
     /* Decrease use counters of unit */
     AROS_ATOMIC_DEC(((struct Unit *)unit)->unit_OpenCnt);
 
@@ -229,17 +217,16 @@ static int NVME_Close
  *   etc..
  */
 
-typedef struct
-{
+typedef struct {
     struct NVMEBase *NVMEBase;
     struct List     devices;
 } EnumeratorArgs;
 
 static
 AROS_UFH3(void, nvme_PCIEnumerator_h,
-    AROS_UFHA(struct Hook *,    hook,   A0),
-    AROS_UFHA(OOP_Object *,     Device, A2),
-    AROS_UFHA(APTR,             message,A1))
+          AROS_UFHA(struct Hook *,    hook,   A0),
+          AROS_UFHA(OOP_Object *,     Device, A2),
+          AROS_UFHA(APTR,             message,A1))
 {
     AROS_USERFUNC_INIT
 
@@ -260,23 +247,21 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
     D(bug("[NVME:PCI] %s: %s PCI device @ 0x%p\n", __func__, nvmeControllerName, Device));
 
     owner = HIDD_PCIDevice_Obtain(Device, NVMEBase->nvme_Device.dd_Library.lib_Node.ln_Name);
-    if (owner)
-    {
+    if (owner) {
         D(bug("[NVME:PCI] %s: Device is already in use by %s\n", __func__, owner));
         FreePooled(NVMEBase->nvme_MemPool, dev, sizeof(*dev));
         return;
     }
 
     NVMEBase->nvme_HostCount++;
-        
+
     AddTail(&a->devices, (struct Node *)dev);
 
     return;
     AROS_USERFUNC_EXIT
 }
 
-static const struct TagItem Requirements[] =
-{
+static const struct TagItem Requirements[] = {
     {tHidd_PCI_Class,     PCI_CLASS_MASSSTORAGE},
     {tHidd_PCI_SubClass,  PCI_SUBCLASS_NVM},
     {tHidd_PCI_Interface, 2},
@@ -288,17 +273,16 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     OOP_Object *pci;
     EnumeratorArgs Args;
     device_t dev;
-    struct TagItem nvme_tags[] =
-    {
-        {aHidd_Name             , (IPTR)nvmeDeviceName          },
-        {aHidd_HardwareName     , (IPTR)nvmeControllerName      },
-        {aHidd_Producer         , 0                             },
+    struct TagItem nvme_tags[] = {
+        {aHidd_Name, (IPTR)nvmeDeviceName          },
+        {aHidd_HardwareName, (IPTR)nvmeControllerName      },
+        {aHidd_Producer, 0                             },
 #define NVME_TAG_VEND 2
-        {aHidd_Product          , 0                             },
+        {aHidd_Product, 0                             },
 #define NVME_TAG_PROD 3
-        {aHidd_DriverData       , 0                             },
+        {aHidd_DriverData, 0                             },
 #define NVME_TAG_DATA 4
-        {TAG_DONE               , 0                             }
+        {TAG_DONE, 0                             }
     };
 
     D(bug("[NVME:PCI] %s: Enumerating PCI Devices\n", __func__));
@@ -308,16 +292,13 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
 
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-    if (pci)
-    {
-        struct Hook FindHook =
-        {
+    if (pci) {
+        struct Hook FindHook = {
             .h_Entry    = (IPTR (*)())nvme_PCIEnumerator_h,
             .h_Data     = &Args
         };
 
-        struct pHidd_PCI_EnumDevices enummsg =
-        {
+        struct pHidd_PCI_EnumDevices enummsg = {
             .mID            = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices),
             .callback       = &FindHook,
             .requirements   = Requirements,
@@ -328,20 +309,21 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     }
 
     D(bug("[NVME:PCI] %s: Registering Detected Hosts..\n", __func__));
-        
+
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
-        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_VendorID , &nvme_tags[NVME_TAG_VEND].ti_Data);
+        OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_VendorID, &nvme_tags[NVME_TAG_VEND].ti_Data);
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_ProductID, &nvme_tags[NVME_TAG_PROD].ti_Data);
         nvme_tags[NVME_TAG_DATA].ti_Data = (IPTR)dev;
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *) &dev->dev_PCIDriverObject);
         HW_AddDriver(NVMEBase->storageRoot, NVMEBase->nvmeClass, nvme_tags);
         D(
-            if (dev->dev_Controller)
-            {
-                bug("[NVME:PCI] %s: NVME Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
-            }
+        if (dev->dev_Controller) {
+        bug("[NVME:PCI] %s: NVME Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
+        }
         )
     }
+
+    D(bug("[NVME:PCI] %s: Hosts registered..\n", __func__));
 
     return TRUE;
 }

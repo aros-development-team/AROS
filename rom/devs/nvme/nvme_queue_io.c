@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -28,8 +28,7 @@
 void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
 {
     D(bug ("[NVME:IOQ] %s(0x%p)\n", __func__, cqe);)
-    if (nvmeq->cehandlers[cqe->command_id])
-    {
+    if (nvmeq->cehandlers[cqe->command_id]) {
         D(bug ("[NVME:IOQ] %s: completing queue entry #%u\n", __func__, cqe->command_id);)
 
         nvmeq->cehandlers[cqe->command_id]->ceh_Reply = TRUE;
@@ -45,25 +44,20 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
             iolen = (LONG)iotd->iotd_Req.io_Length;
 
             if ((iotd->iotd_Req.io_Command == CMD_WRITE) ||
-                (iotd->iotd_Req.io_Command == TD_WRITE64) ||
-                (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64) ||
-                (iotd->iotd_Req.io_Command == TD_FORMAT) ||
-                (iotd->iotd_Req.io_Command == TD_FORMAT64))
-            {
+                    (iotd->iotd_Req.io_Command == TD_WRITE64) ||
+                    (iotd->iotd_Req.io_Command == NSCMD_TD_WRITE64) ||
+                    (iotd->iotd_Req.io_Command == TD_FORMAT) ||
+                    (iotd->iotd_Req.io_Command == TD_FORMAT64)) {
                 CachePostDMA(dma, &iolen, DMAFLAGS_POSTWRITE);
-            }
-            else
-            {
+            } else {
                 UBYTE *tmpdata = iotd->iotd_Req.io_Data;
                 ULONG x;
 
                 CachePostDMA(dma, &iolen, DMAFLAGS_POSTREAD);
 #if defined(NVME_DUMP_READS)
                 bug("[NVME:IOQ] %s: Read Data-:", __func__);
-                for (x = 0; x < iotd->iotd_Req.io_Length; x++)
-                {
-                    if ((x % 10) == 0)
-                    {
+                for (x = 0; x < iotd->iotd_Req.io_Length; x++) {
+                    if ((x % 10) == 0) {
                         bug("\n                    ");
                     }
                     bug("%02x ", (UBYTE)tmpdata[x]);
@@ -73,8 +67,7 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
 #endif
             }
             /* Free up allocations used for the transfer */
-            if (nvmeq->cehandlers[cqe->command_id]->ceh_IOMem.me_Un.meu_Addr)
-            {
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_IOMem.me_Un.meu_Addr) {
 #if (0)
                 ULONG iolen = nvmeq->cehandlers[cqe->command_id]->ceh_IOMem.me_Length;
                 CachePostDMA(nvmeq->cehandlers[cqe->command_id]->ceh_IOMem.me_Un.meu_Addr, &iolen, DMAFLAGS_POSTREAD);
@@ -85,14 +78,11 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
                 nvmeq->cehandlers[cqe->command_id]->ceh_IOMem.me_Un.meu_Addr = NULL;
             }
 
-            if (nvmeq->cehandlers[cqe->command_id]->ceh_Status)
-            {
+            if (nvmeq->cehandlers[cqe->command_id]->ceh_Status) {
                 UBYTE sct = (nvmeq->cehandlers[cqe->command_id]->ceh_Status >> 7) & 0x7, sc = (nvmeq->cehandlers[cqe->command_id]->ceh_Status) & 0x7F;
                 iotd->iotd_Req.io_Error = IOERR_ABORTED;
                 D(bug("[NVME:IOQ] %s: NVME IO Error %u:%u\n", __func__, sct, sc);)
-            }
-            else
-            {
+            } else {
                 iotd->iotd_Req.io_Error = 0;
                 iotd->iotd_Req.io_Actual = iotd->iotd_Req.io_Length;
             }
@@ -104,9 +94,9 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
 }
 
 int nvme_submit_iocmd(struct completionevent_handler *ce,
-                                    struct nvme_queue *nvmeq,
-                                    struct nvme_command *cmd,
-                                    struct completionevent_handler *handler)
+                      struct nvme_queue *nvmeq,
+                      struct nvme_command *cmd,
+                      struct completionevent_handler *handler)
 {
     int retval;
 

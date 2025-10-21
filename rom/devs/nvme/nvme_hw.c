@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -84,8 +84,7 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
     D(bug("[NVME:HW] %s: cmd id = %u\n", __func__, cqe->command_id);)
     D(bug("[NVME:HW] %s:     status = %04x\n", __func__, AROS_LE2WORD(cqe->status) >> 1);)
 
-    if (nvmeq->cehooks[cqe->command_id])
-    {
+    if (nvmeq->cehooks[cqe->command_id]) {
         D(bug ("[NVME:HW] %s: calling completion hook\n", __func__);)
         nvmeq->cehooks[cqe->command_id](nvmeq, cqe);
     }
@@ -105,8 +104,7 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
     for (;;) {
         struct nvme_completion *cqe = (struct nvme_completion *)&nvmeq->cqba[head];
 
-        if ((AROS_LE2WORD(cqe->status) & 1) != phase)
-        {
+        if ((AROS_LE2WORD(cqe->status) & 1) != phase) {
             break;
         }
         nvmeq->sq_head = AROS_LE2WORD(cqe->sq_head);
@@ -117,8 +115,7 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
         nvme_complete_event(nvmeq, cqe);
     }
 
-    if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase))
-    {
+    if ((head != nvmeq->cq_head) || (phase == nvmeq->cq_phase)) {
         D(bug ("[NVME:HW] %s: updating head=%u, phase=%u\n", __func__, head, phase);)
         nvmeq->q_db[1 << nvmeq->dev->db_stride] = head;
         nvmeq->cq_head = head;

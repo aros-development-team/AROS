@@ -61,24 +61,24 @@ BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *io
     UQUAD prp1_page = (IPTR)*data & ~(unit->au_Bus->ab_Dev->pagesize - 1);
     UWORD prp1_offset = (IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1);
     ULONG prp1_len;
-    
-    DPRP(bug("[NVME%02u] %s(%p, %u)\n", unit->au_UnitNum, __func__, *data, len);)
+
+    DPRP(bug("[NVME%02ld] %s(%p, %u)\n", unit->au_UnitNum, __func__, *data, len);)
 
     // Set up PRP1
     prp1->pagestart = prp1_page >> unit->au_Bus->ab_Dev->pageshift;
     prp1->offset = prp1_offset;
-    DPRP(bug("[NVME%02u] %s: prp1 %p = %015x:%02x\n", unit->au_UnitNum, __func__, *data, prp1->pagestart, prp1->offset);)
+    DPRP(bug("[NVME%02ld] %s: prp1 %p = %015x:%02x\n", unit->au_UnitNum, __func__, *data, prp1->pagestart, prp1->offset);)
     SWAP_LE_QUAD(prp1->raw);
-    
+
     prp1_len = unit->au_Bus->ab_Dev->pagesize - prp1_offset;
 
-    DPRP(bug("[NVME%02u] %s: prp1 data len %u\n", unit->au_UnitNum, __func__, prp1_len);)
+    DPRP(bug("[NVME%02ld] %s: prp1 data len %u\n", unit->au_UnitNum, __func__, prp1_len);)
 
     // Check if we need to use PRP2
     if (len > prp1_len) {
         UQUAD next_addr = (IPTR)*data + prp1_len;
 
-        DPRP(bug("[NVME%02u] %s: using prp2 for %p\n", unit->au_UnitNum, __func__, next_addr);)
+        DPRP(bug("[NVME%02ld] %s: using prp2 for %p\n", unit->au_UnitNum, __func__, next_addr);)
 
         UQUAD prp2_page = next_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
         UWORD prp2_offset = next_addr & (unit->au_Bus->ab_Dev->pagesize - 1);
@@ -90,50 +90,44 @@ BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *io
 
         prp2_len = unit->au_Bus->ab_Dev->pagesize - prp2_offset;
 
-        DPRP(bug("[NVME%02u] %s: prp2 data len %u\n", unit->au_UnitNum, __func__, prp2_len);)
+        DPRP(bug("[NVME%02ld] %s: prp2 data len %u\n", unit->au_UnitNum, __func__, prp2_len);)
 
         // Check if a PRP list is needed
-        if (len > (prp1_len + prp2_len))
-        {
+        if (len > (prp1_len + prp2_len)) {
             ULONG num_prps = ((len - (prp1_len + prp2_len) + unit->au_Bus->ab_Dev->pagesize - 1) / unit->au_Bus->ab_Dev->pagesize) + 1;
             int prpblocks, prpentry, prp = 0, prpperpage = (unit->au_Bus->ab_Dev->pagesize / sizeof(nvme_prp_entry_t));
 
             prpblocks = ((num_prps - 1) / prpperpage) + 1;
-            DPRP(bug("[NVME%02u] %s: prp list needed for %u entries(s) in %u prp page(s)\n", unit->au_UnitNum, __func__, num_prps, prpblocks);)
+            DPRP(bug("[NVME%02ld] %s: prp list needed for %u entries(s) in %u prp page(s)\n", unit->au_UnitNum, __func__, num_prps, prpblocks);)
 
             ioehandle->ceh_IOMem.me_Length = unit->au_Bus->ab_Dev->pagesize + (num_prps + prpblocks) * sizeof(nvme_prp_entry_t);
-            if ((ioehandle->ceh_IOMem.me_Un.meu_Addr = AllocMem(ioehandle->ceh_IOMem.me_Length, MEMF_ANY)) != NULL)
-            {
+            if ((ioehandle->ceh_IOMem.me_Un.meu_Addr = AllocMem(ioehandle->ceh_IOMem.me_Length, MEMF_ANY)) != NULL) {
                 nvme_prp_entry_t *prplist = (APTR)(((IPTR)ioehandle->ceh_IOMem.me_Un.meu_Addr + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
                 UQUAD curr_addr, curr_pagestart;
 
                 DPRP(
-                    bug("[NVME%02u] %s: allocated prplist storage @ 0x%p (%u bytes)\n", unit->au_UnitNum, __func__, ioehandle->ceh_IOMem.me_Un.meu_Addr, ioehandle->ceh_IOMem.me_Length);
-                    bug("[NVME%02u] %s: prplist @ 0x%p\n", unit->au_UnitNum, __func__, prplist);
+                    bug("[NVME%02ld] %s: allocated prplist storage @ 0x%p (%u bytes)\n", unit->au_UnitNum, __func__, ioehandle->ceh_IOMem.me_Un.meu_Addr, ioehandle->ceh_IOMem.me_Length);
+                    bug("[NVME%02ld] %s: prplist @ 0x%p\n", unit->au_UnitNum, __func__, prplist);
                 )
 
                 // Populate PRP list
-                for (prpentry = 0; prpentry < (num_prps + prpblocks - 1); prpentry++)
-                {
+                for (prpentry = 0; prpentry < (num_prps + prpblocks - 1); prpentry++) {
                     if ((prpblocks > 1) && (prpentry < (num_prps + prpblocks - 2)) &&
-                        (prpentry > 0) && (((prpentry + 1) % prpperpage) == 0))
-                    {
+                            (prpentry > 0) && (((prpentry + 1) % prpperpage) == 0)) {
                         curr_addr = (UQUAD)(IPTR)&prplist[prpentry + 1].raw;
                         curr_pagestart = curr_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
                         prplist[prpentry].pagestart =
                             curr_pagestart >> unit->au_Bus->ab_Dev->pageshift;
                         prplist[prpentry].offset = 0;
-                        DPRP(bug("[NVME%02u] %s: # prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
-                    }
-                    else
-                    {
+                        DPRP(bug("[NVME%02ld] %s: # prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
+                    } else {
                         curr_addr = next_addr + prp * unit->au_Bus->ab_Dev->pagesize;
                         curr_pagestart = curr_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
                         prplist[prpentry].pagestart =
                             curr_pagestart >> unit->au_Bus->ab_Dev->pageshift;
                         prplist[prpentry].offset = 0;
                         prp++;
-                        DPRP(bug("[NVME%02u] %s:   prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
+                        DPRP(bug("[NVME%02ld] %s:   prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
                     }
                     SWAP_LE_QUAD(prplist[prpentry].raw);
                 }
@@ -145,14 +139,12 @@ BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *io
                 ULONG dmalen = (num_prps + prpblocks - 1) << 3;
                 CachePreDMA(prplist, &dmalen, DMAFLAGS_PREREAD);
 #endif
-            }
-            else
-            {
-                bug("[NVME%02u] %s: failed to allloc storage for prplist!\n", unit->au_UnitNum, __func__);
+            } else {
+                bug("[NVME%02ld] %s: failed to allloc storage for prplist!\n", unit->au_UnitNum, __func__);
                 return FALSE;
             }
         }
-        DPRP(bug("[NVME%02u] %s: prp2 %015x:%02x\n", unit->au_UnitNum, __func__, prp2->pagestart, prp2->offset);)
+        DPRP(bug("[NVME%02ld] %s: prp2 %015x:%02x\n", unit->au_UnitNum, __func__, prp2->pagestart, prp2->offset);)
         SWAP_LE_QUAD(prp2->raw);
     }
     return TRUE;

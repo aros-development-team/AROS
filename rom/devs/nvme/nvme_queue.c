@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -26,27 +26,24 @@ struct nvme_queue *nvme_alloc_queue(device_t dev, int qid, int depth, int vector
 {
     struct NVMEBase *NVMEBase = dev->dev_NVMEBase;;
     unsigned extra = 0; //DIV_ROUND_UP(depth, 8) + (depth *
-                                        //      sizeof(struct nvme_cmd_info));
+    //      sizeof(struct nvme_cmd_info));
     struct nvme_queue *nvmeq;
-    
+
     D(bug ("[NVME:QUEUE] %s(0x%p, %u, %u, %d)\n", __func__, dev, qid, depth, vector);)
 
     nvmeq = AllocMem(sizeof(struct nvme_queue) + extra, MEMF_CLEAR);
     D(bug ("[NVME:QUEUE] %s: queue allocated @ 0x%p (depth %u)\n", __func__, nvmeq, depth);)
-    if (nvmeq)
-    {
+    if (nvmeq) {
         /* completion queue ... */
         nvmeq->cqba = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, depth * sizeof(struct nvme_completion));
         D(bug ("[NVME:QUEUE] %s:       completion @ 0x%p\n", __func__, nvmeq->cqba);)
-        if (nvmeq->cqba)
-        {
+        if (nvmeq->cqba) {
             memset((void *)nvmeq->cqba, 0, depth * sizeof(struct nvme_completion));
 
             /* submission queue ... */
             nvmeq->sqba = HIDD_PCIDriver_AllocPCIMem(dev->dev_PCIDriverObject, depth * sizeof(struct nvme_command));
             D(bug ("[NVME:QUEUE] %s:       cmd submission @ 0x%p\n", __func__, nvmeq->sqba);)
-            if (nvmeq->sqba)
-            {
+            if (nvmeq->sqba) {
                 nvmeq->dev = dev;
 
 #if defined(__AROSEXEC_SMP__)
