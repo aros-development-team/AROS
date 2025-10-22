@@ -139,7 +139,7 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     data->ihid_private = NULL;
 
     tstate = msg->attrList;
-    D(bug("tstate: %p\n", tstate));
+    D(bug("[InputHidd] %s: tstate = 0x%p\n", __func__, tstate));
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -177,6 +177,9 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             bug("[InputHidd] %s:     Callback @ 0x%p\n", __func__, data->ihid_callback);
             bug("[InputHidd] %s:     Callback Private = %p\n", __func__, data->ihid_private);
         )
+        Disable();
+        ADDTAIL(&__ICSD(cl)->icsd_producers, &data->ihid_node);
+        Enable();
     } else {
         D(bug("[InputHidd] %s: Input event consumer\n", __func__);)
         if (data->ihid_hwObj) {
@@ -232,7 +235,7 @@ VOID Input__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct InputHWInstData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[InputHidd] %s()\n", __func__));
+    D(bug("[InputHidd] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
 
     if (data->ihid_hwObj && data->ihid_callback) {
         Disable();

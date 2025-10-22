@@ -29,6 +29,8 @@ static int Input_InitClass(struct InputClassBase *LIBBASE)
 
     D(bug("[InputHidd] base class initialization\n"));
 
+    NEWLIST(&LIBBASE->icsd.icsd_producers);
+
     LIBBASE->icsd.icsd_UtilityBase  = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!LIBBASE->icsd.icsd_UtilityBase)
         return FALSE;
@@ -38,7 +40,7 @@ static int Input_InitClass(struct InputClassBase *LIBBASE)
 
     LIBBASE->icsd.icsd_hwMB         = OOP_GetMethodID(IID_HW, 0);
 
-    D(bug("[InputHidd] Input Class initialized\n"));
+    D(bug("[InputHidd] class initialized\n"));
     return TRUE;
 }
 
@@ -52,7 +54,7 @@ static int Input_ExpungeClass(struct InputClassBase *LIBBASE)
         {NULL,              NULL                            }
     };
 
-    D(bug("[InputHidd] Base Class destruction\n"));
+    D(bug("[InputHidd] class destruction\n"));
 
     OOP_ReleaseAttrBases(attrbases);
 

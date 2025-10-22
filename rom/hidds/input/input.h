@@ -25,6 +25,8 @@ struct InputClassStaticData
     OOP_Class                   *icsd_inputClass;
     OOP_Class                   *icsd_hwClass;
 
+    struct MinList              icsd_producers;
+
     struct Library              *icsd_OOPBase;
     struct Library              *icsd_UtilityBase;
 };
