@@ -29,7 +29,9 @@ struct i8042_staticdata
     struct Library     *cs_OOPBase;
     struct Library     *cs_UtilityBase;
     struct Interrupt    cs_ResetInt;
-    ULONG               cs_Flags;
+    UWORD               cs_Flags;
+    UBYTE               cs_pad;
+    UBYTE               cs_intbits;
 };
 
 #define PS2B_DISABLEKEYB    0

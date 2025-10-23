@@ -36,9 +36,8 @@
 
 /* Predefinitions */
 
-static void i8042_kbd_process_irq_key(struct kbd_data *, UBYTE, struct ExecBase *SysBase);
-//void kbd_updateleds();
-static int  i8042_kbd_reset(struct kbd_data *data);
+static void i8042_kbd_process_irq_key(struct kbd_data *, UBYTE, struct ExecBase *);
+static int  i8042_kbd_reset(struct i8042base *, struct kbd_data *);
 
 extern const char GM_UNIQUENAME(LibName)[];
 static const char *i8042hwname = "IBM AT-compatible keyboard";
@@ -203,7 +202,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
 
     Disable();
     D(bug("[i8042:Kbd] %s: performing keyboard reset ...\n", __func__));
-    D(UBYTE status = )i8042_kbd_reset(data);            /* Reset the keyboard */
+    D(UBYTE status = )i8042_kbd_reset((struct i8042base *)cl->UserData, data);            /* Reset the keyboard */
     D(
         bug("[i8042:Kbd] %s: reset returned %x\n", __func__, status);
         bug("[i8042:Kbd] %s: updating leds ...\n", __func__);
@@ -587,7 +586,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
 
 /****************************************************************************************/
 
-static int i8042_kbd_reset(struct kbd_data *data)
+static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
 {
     UBYTE status;
 
@@ -659,8 +658,8 @@ static int i8042_kbd_reset(struct kbd_data *data)
     D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__);)
     i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
-    i8042_write_data_with_wait(data->ioTimer,  KBD_MODE_KCC | KBD_MODE_SYS | KBD_MODE_KBD_INT);
-
+    i8042Base->csd.cs_intbits |= KBD_MODE_KBD_INT;
+    i8042_write_data_with_wait(data->ioTimer,  (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
 
     D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
     i8042_write_data_with_wait(data->ioTimer, KBD_OUTCMD_ENABLE);

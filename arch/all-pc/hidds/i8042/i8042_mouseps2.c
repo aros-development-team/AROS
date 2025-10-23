@@ -7,6 +7,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DRESET(x)
+
 /****************************************************************************************/
 
 #include <proto/exec.h>
@@ -34,7 +36,7 @@
 
 /****************************************************************************************/
 
-int i8042_mouse_reset(struct i8042base *csd, struct IORequest* tmr, struct mouse_data *);
+int i8042_mouse_reset(struct i8042base *, struct mouse_data *);
 
 /****************************************************************************************
  * PS/2 Mouse Interrupt handler
@@ -181,7 +183,6 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     struct mouse_data *data = OOP_INST_DATA(cl, o);
     struct Task *thisTask = FindTask(NULL);
     struct MsgPort *p = CreateMsgPort();
-    struct IORequest *tmr;
     int result;
 
     if (!p) {
@@ -191,8 +192,8 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    tmr = CreateIORequest(p, sizeof(struct timerequest));
-    if (!tmr) {
+    data->ioTimer = CreateIORequest(p, sizeof(struct timerequest));
+    if (!data->ioTimer) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->irq = 0;
@@ -200,9 +201,9 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, tmr, 0)) {
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0)) {
         D(bug("[i8042:PS2Mouse] Failed to open timer.device, unit MICROHZ\n");)
-        DeleteIORequest(tmr);
+        DeleteIORequest(data->ioTimer);
         DeleteMsgPort(p);
         data->irq = 0;
         Signal(thisTask->tc_UserData, SIGF_SINGLE);
@@ -214,7 +215,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:PS2Mouse] attempting reset to detect mouse ...\n");)
     Disable();
-    result = i8042_mouse_reset((struct i8042base *)cl->UserData, tmr, data);
+    result = i8042_mouse_reset((struct i8042base *)cl->UserData, data);
     Enable();
 
     /* If no valid PS/2 mouse detected, release the IRQ */
@@ -337,25 +338,26 @@ static int i8042_mouse_detect_intellimouse(struct IORequest* tmr)
 
 /****************************************************************************************/
 
-#define AUX_INTS_OFF (KBD_MODE_KCC | KBD_MODE_DISABLE_MOUSE | KBD_MODE_SYS | KBD_MODE_KBD_INT)
-#define AUX_INTS_ON  (KBD_MODE_KCC | KBD_MODE_SYS | KBD_MODE_MOUSE_INT | KBD_MODE_KBD_INT)
-
-/****************************************************************************************/
-
-static AROS_INTH1(PS2KBMResetHandler, struct IORequest *, tmr)
+static AROS_INTH1(PS2KBMResetHandler, struct i8042base *, i8042Base)
 {
     AROS_INTFUNC_INIT
 
-    D(bug("[i8042:PS2Mouse] %s()\n", __func__);)
+    DRESET(bug("[i8042:PS2Mouse] %s(0x%p)\n", __func__, i8042Base);)
 
-    i8042_write_mode(tmr, AUX_INTS_OFF);
+    struct mouse_data *data = OOP_INST_DATA(i8042Base->csd.mouseclass, i8042Base->csd.mousehidd);
+    DRESET(bug("[i8042:PS2Mouse] %s: mouse_data @ 0x%p, timer request @ 0x%p\n", __func__, data, data->ioTimer);)
+
+    i8042Base->csd.cs_intbits &= ~KBD_MODE_MOUSE_INT;
+    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+
+    DRESET(bug("[i8042:PS2Mouse] %s: mouse interrupts disabled\n", __func__);)
 
     return FALSE;
 
     AROS_INTFUNC_EXIT
 }
 
-int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct mouse_data *data)
+int i8042_mouse_reset(struct i8042base *i8042Base, struct mouse_data *data)
 {
     int result, timeout = 100;
 
@@ -363,12 +365,12 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
      * The commands are for the mouse and nobody else.
      */
 
-    i8042_write_command_with_wait(tmr, KBD_CTRLCMD_MOUSE_ENABLE);
+    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_MOUSE_ENABLE);
 
     /*
      * Check for a mouse port.
      */
-    if (!i8042_mouse_detect_aux_port(tmr))
+    if (!i8042_mouse_detect_aux_port(data->ioTimer))
         return 0;
 
     /*
@@ -382,23 +384,24 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
      * Turn interrupts off and the keyboard as well since the
      * commands are all for the mouse.
      */
-    i8042_write_mode(tmr, AUX_INTS_OFF);
-    i8042_write_command_with_wait(tmr, KBD_CTRLCMD_KBD_DISABLE);
+    i8042Base->csd.cs_intbits &= ~KBD_MODE_MOUSE_INT;
+    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_DISABLE);
 
     /* Reset mouse */
-    i8042_mouse_write_ack(tmr, KBD_OUTCMD_RESET);
-    result = i8042_mouse_wait_for_input(tmr);    /* Test result (0xAA) */
+    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_RESET);
+    result = i8042_mouse_wait_for_input(data->ioTimer);    /* Test result (0xAA) */
     while (result == 0xfa && --timeout) {
         /* somehow the ACK isn't always swallowed above */
-        i8042_delay(tmr, 1000);
-        result = i8042_mouse_wait_for_input(tmr);
+        i8042_delay(data->ioTimer, 1000);
+        result = i8042_mouse_wait_for_input(data->ioTimer);
     }
-    i8042_mouse_wait_for_input(tmr);    /* Mouse type */
+    i8042_mouse_wait_for_input(data->ioTimer);    /* Mouse type */
 
     if (result != 0xaa) {
         /* No mouse. Re-enable keyboard and return failure */
-        i8042_write_command_with_wait(tmr, KBD_CTRLCMD_KBD_ENABLE);
-        i8042_mouse_write_ack(tmr, KBD_OUTCMD_ENABLE);
+        i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_ENABLE);
+        i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_ENABLE);
         return 0;
     }
 
@@ -406,7 +409,7 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
     data->mouse_packetsize = 3;
 
 #if INTELLIMOUSE_SUPPORT
-    if (i8042_mouse_detect_intellimouse(tmr)) {
+    if (i8042_mouse_detect_intellimouse(data->ioTimer)) {
         D(bug("[i8042:PS2Mouse] PS/2 Intellimouse detected\n"));
         data->mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
         data->mouse_packetsize = 4;
@@ -416,17 +419,18 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
     /*
      * Now the commands themselves.
      */
-    i8042_mouse_write_ack(tmr, KBD_OUTCMD_SET_RATE);
-    i8042_mouse_write_ack(tmr, 100);
-    i8042_mouse_write_ack(tmr, KBD_OUTCMD_SET_RES);
-    i8042_mouse_write_ack(tmr, 2);
-    i8042_mouse_write_ack(tmr, KBD_OUTCMD_SET_SCALE11);
+    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_RATE);
+    i8042_mouse_write_ack(data->ioTimer, 100);
+    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_RES);
+    i8042_mouse_write_ack(data->ioTimer, 2);
+    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_SCALE11);
 
     /* Enable Aux device (and re-enable keyboard) */
 
-    i8042_write_command_with_wait(tmr, KBD_CTRLCMD_KBD_ENABLE);
-    i8042_mouse_write_ack(tmr, KBD_OUTCMD_ENABLE);
-    i8042_write_mode(tmr, AUX_INTS_ON);
+    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_ENABLE);
+    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_ENABLE);
+    i8042Base->csd.cs_intbits |= KBD_MODE_MOUSE_INT;
+    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
 
     /*
      * According to the specs there is an external
@@ -444,7 +448,7 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
     i8042Base->csd.cs_ResetInt.is_Node.ln_Name = i8042Base->library.lib_Node.ln_Name;
     i8042Base->csd.cs_ResetInt.is_Node.ln_Pri = -10;
     i8042Base->csd.cs_ResetInt.is_Code = (VOID_FUNC)PS2KBMResetHandler;
-    i8042Base->csd.cs_ResetInt.is_Data = tmr;
+    i8042Base->csd.cs_ResetInt.is_Data = i8042Base;
     AddResetCallback(&i8042Base->csd.cs_ResetInt);
 
     return 1;

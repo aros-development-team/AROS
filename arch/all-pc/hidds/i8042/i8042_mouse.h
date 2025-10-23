@@ -36,6 +36,8 @@
 
 struct mouse_data
 {
+    struct IORequest            *ioTimer;
+
     InputIrqCallBack_t          mouse_callback;
     APTR                        callbackdata;
 
