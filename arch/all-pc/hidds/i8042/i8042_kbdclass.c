@@ -677,14 +677,8 @@ static int kbd_reset(struct kbd_data *data)
     D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__);)
     kbd_write_command_w(data->ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
-#if 0
-    kbd_write_output_w(data->ioTimer,  KBD_MODE_KCC    | // set parameters: scan code to pc conversion,
-                            KBD_MODE_KBD_INT    | //                enable mouse and keyboard,
-                     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
-                     KBD_MODE_SYS);
-#else
-    kbd_write_output_w(data->ioTimer,  KBD_MODE_KCC | KBD_MODE_KBD_INT);
-#endif
+    kbd_write_output_w(data->ioTimer,  KBD_MODE_KCC | KBD_MODE_SYS | KBD_MODE_KBD_INT);
+
 
     D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
     kbd_write_output_w(data->ioTimer, KBD_OUTCMD_ENABLE);
