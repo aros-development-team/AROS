@@ -77,7 +77,7 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         D(bug("[i8042:Mouse] %s: callback data @ 0x%p\n", __func__, data->callbackdata));
 
         /* Search for PS/2 mouse */
-        NewCreateTask(TASKTAG_PC,           PS2Mouse_InitTask,
+        NewCreateTask(TASKTAG_PC,           i8042_mouse_init_task,
                          TASKTAG_NAME,      (IPTR)i8042mpname,
                          TASKTAG_STACKSIZE, 1024,
                          TASKTAG_PRI,       100,
@@ -123,7 +123,7 @@ VOID i8042Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     if (IS_HIDDMOUSE_ATTR(msg->attrID, idx)) {
         switch (idx) {
         case aoHidd_Mouse_State:
-            ps2mouse_getstate(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
+            i8042_mouse_get_state(cl, o, (struct pHidd_Mouse_Event *)msg->storage);
             return;
 
         case aoHidd_Mouse_RelativeCoords:

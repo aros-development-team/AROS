@@ -1,7 +1,7 @@
 #ifndef I8042_COMMON_H
 #define I8042_COMMON_H
 /*
-    Copyright © 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright Â© 2013-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level definitions for i8042 controller.
@@ -51,46 +51,46 @@
 #define KBD_MODE_KCC                    0x40            /* Scan code conversion to PC format */
 #define KBD_MODE_RFU                    0x80
 
-static unsigned char kbd_read_input(void)
+static unsigned char i8042_read_data_port(void)
 {
     return inb(KBD_DATA_REG);
 }
-static unsigned char kbd_read_status(void)
+static unsigned char i8042_read_status_port(void)
 {
     return inb(KBD_STATUS_REG);
 }
-static void kbd_write_output(unsigned char val)
+static void i8042_write_data_port(unsigned char val)
 {
     outb(val, KBD_DATA_REG);
 }
-static void kbd_write_command(unsigned char val)
+static void i8042_write_command_port(unsigned char val)
 {
     outb(val, KBD_CONTROL_REG);
 }
 
 /****************************************************************************************/
 
-void kbd_usleep(struct IORequest* tmr, LONG usec);
+void i8042_delay(struct IORequest* tmr, LONG usec);
 
-int kbd_read_data(void);
-int kbd_clear_input(void);
+int i8042_read_data(void);
+int i8042_kbd_clear_input(void);
 
-void kbd_write_cmd(struct IORequest* tmr, int cmd);
-void aux_write_ack(struct IORequest* tmr, int val);
-void aux_write_noack(struct IORequest* tmr, int val);
-void kbd_write_output_w(struct IORequest* tmr, int val);
-void kbd_write_command_w(struct IORequest* tmr, int val); 
+void i8042_write_mode(struct IORequest* tmr, int cmd);
+void i8042_mouse_write_ack(struct IORequest* tmr, int val);
+void i8042_mouse_write_noack(struct IORequest* tmr, int val);
+void i8042_write_data_with_wait(struct IORequest* tmr, int val);
+void i8042_write_command_with_wait(struct IORequest* tmr, int val); 
 
-static unsigned char handle_kbd_event(void)
+static unsigned char i8042_drain_controller_output(void)
 {
-    unsigned char status = kbd_read_status();
+    unsigned char status = i8042_read_status_port();
     unsigned int work = 10000;
                 
     while (status & KBD_STATUS_OBF)
     {
-        kbd_read_input();
+        i8042_read_data_port();
 
-        status = kbd_read_status();
+        status = i8042_read_status_port();
         if(!work--)
         {
             //printf(KERN_ERR "pc_keyb: controller jammed (0x%02X).\n",status);
@@ -104,38 +104,38 @@ static unsigned char handle_kbd_event(void)
  * Wait until we can write to a peripheral again. Any input that comes in
  * while we're waiting is discarded.
  */
-static void kb_wait(struct IORequest* tmr, ULONG timeout)
+static void i8042_wait_for_write_ready(struct IORequest* tmr, ULONG timeout)
 {
     do
     {
-        unsigned char status = handle_kbd_event();
+        unsigned char status = i8042_drain_controller_output();
         if (! (status & KBD_STATUS_IBF))
             return;
         
-        kbd_usleep(tmr, 1000);
+        i8042_delay(tmr, 1000);
         timeout--;
     } while (timeout);
 }
 
-static int wait_for_input(struct IORequest* tmr, ULONG timeout)
+static int i8042_wait_for_input_with_timeout(struct IORequest* tmr, ULONG timeout)
 {
     do
     {
-        int retval = kbd_read_data();
+        int retval = i8042_read_data();
         if (retval >= 0)
             return retval;
-        kbd_usleep(tmr, 1000);
+        i8042_delay(tmr, 1000);
     } while(--timeout);
     return -1;
 }
-static int kbd_wait_for_input(struct IORequest* tmr)
+static int i8042_wait_for_input(struct IORequest* tmr)
 {
-    return wait_for_input(tmr, 100);
+    return i8042_wait_for_input_with_timeout(tmr, 100);
 }
 
-static int aux_wait_for_input(struct IORequest* tmr)
+static int i8042_mouse_wait_for_input(struct IORequest* tmr)
 {
-    return wait_for_input(tmr, 1000);
+    return i8042_wait_for_input_with_timeout(tmr, 1000);
 }
 
 #endif /* I8042_COMMON_H */
