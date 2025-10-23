@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -196,7 +196,7 @@ OOP_Object *ACPIButton__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
                 if (!acpiButton_Service.acpist_Task)
                 {
                     acpiButton_Service.acpist_Task = NewCreateTask(TASKTAG_NAME       , "ACPI Button Service Task",
-                        TASKTAG_PRI        , 127,
+                        TASKTAG_PRI        , 100,
 #if defined(__AROSEXEC_SMP__)
                         TASKTAG_AFFINITY, TASKAFFINITY_ANY,
 #endif
