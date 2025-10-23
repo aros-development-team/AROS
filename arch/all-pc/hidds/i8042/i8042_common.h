@@ -1,7 +1,7 @@
 #ifndef I8042_COMMON_H
 #define I8042_COMMON_H
 /*
-    Copyright Â© 2013-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2013-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level definitions for i8042 controller.

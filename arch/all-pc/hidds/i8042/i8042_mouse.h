@@ -2,7 +2,7 @@
 #define I8042_MOUSE_H
 
 /*
-    Copyright Â© 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
