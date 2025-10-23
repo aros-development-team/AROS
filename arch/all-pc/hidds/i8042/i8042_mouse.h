@@ -2,7 +2,7 @@
 #define I8042_MOUSE_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the mouse native HIDD.
@@ -70,7 +70,7 @@ struct mouse_data
 /****************************************************************************************/
 
 /* Prototypes */
-void ps2mouse_getstate(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
-extern void PS2Mouse_InitTask(OOP_Class *, OOP_Object *);
+void i8042_mouse_get_state(OOP_Class *, OOP_Object *, struct pHidd_Mouse_Event *);
+extern void i8042_mouse_init_task(OOP_Class *, OOP_Object *);
 
 #endif /* I8042_MOUSE_H */
