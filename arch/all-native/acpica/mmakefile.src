@@ -4,9 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 DEBUG_ACPI=no
 
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20250404
-INTELID            := 852044
-## 776304
+ACPICAVERSION      := 20250807
+INTELID            := 864114
+
 ACPICAREPOSITORIES := \
     https://downloadmirror.intel.com/$(INTELID) \
     https://axrt.org/download/thirdparty
