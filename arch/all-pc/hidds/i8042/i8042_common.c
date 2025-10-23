@@ -63,17 +63,16 @@ int i8042_read_data(void)
 {
     LONG        retval = KBD_NO_DATA;
     UBYTE       status;
-    
+
     status = i8042_read_status_port();
-    if (status & KBD_STATUS_OBF)
-    {
+    if (status & KBD_STATUS_OBF) {
         UBYTE   data = i8042_read_data_port();
-        
+
         retval = data;
         if (status & (KBD_STATUS_GTO | KBD_STATUS_PERR))
             retval = KBD_BAD_DATA;
     }
-    
+
     return retval;
 }
 
@@ -82,8 +81,7 @@ int i8042_kbd_clear_input(void)
     int maxread = 100, lastcode = KBD_NO_DATA;
     UBYTE status;
 
-    do
-    {
+    do {
         int code;
         status = i8042_read_status_port();
         if ((code = i8042_read_data()) == KBD_NO_DATA)

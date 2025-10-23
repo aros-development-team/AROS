@@ -50,10 +50,8 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
     info = i8042_read_status_port();
 
-    for(; ((info = i8042_read_status_port()) & KBD_STATUS_OBF) && work; work--)
-    {
-        if (!(info & KBD_STATUS_MOUSE_OBF))
-        {
+    for(; ((info = i8042_read_status_port()) & KBD_STATUS_OBF) && work; work--) {
+        if (!(info & KBD_STATUS_MOUSE_OBF)) {
             /*
             ** Data from keyboard. Hopefully this gets through to keyboard interrupt
             ** if we break out of for loop here :-\
@@ -63,8 +61,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
         mousecode = i8042_read_data_port();
 
-        if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
-        {
+        if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR)) {
             /* Ignore errors and messages for keyboard -> eat status/error byte */
             continue;
         }
@@ -78,16 +75,14 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
         /* Packet validity check. Bit 3 of first mouse packet byte must be set */
 
-        if ((mouse_data[0] & 8) == 0)
-        {
+        if ((mouse_data[0] & 8) == 0) {
             data->mouse_collected_bytes = 0;
             continue;
         }
 
         data->mouse_collected_bytes++;
 
-        if (data->mouse_collected_bytes != data->mouse_packetsize)
-        {
+        if (data->mouse_collected_bytes != data->mouse_packetsize) {
             /* Mouse Packet not yet complete */
             continue;
         }
@@ -111,12 +106,12 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
          * X, XS, Y and YS make up two 9-bit two's complement fields.
          */
 
-    #if 0
+#if 0
         D(bug("Got the following: 1. byte: 0x%x, dx=%d, dy=%d\n",
               mouse_data[0],
               mouse_data[1],
               mouse_data[2]));
-    #endif
+#endif
 
         e->x = mouse_data[1];
         e->y = mouse_data[2];
@@ -127,8 +122,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
         /* dy is reversed! */
         e->y = -(e->y);
 
-        if (e->x || e->y)
-        {
+        if (e->x || e->y) {
             e->button   = vHidd_Mouse_NoButton;
             e->type     = vHidd_Mouse_Motion;
 
@@ -137,24 +131,21 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 
         buttonstate = mouse_data[0] & 0x07;
 
-        if ((buttonstate & LEFT_BUTTON) != (data->buttonstate & LEFT_BUTTON))
-        {
+        if ((buttonstate & LEFT_BUTTON) != (data->buttonstate & LEFT_BUTTON)) {
             e->button = vHidd_Mouse_Button1;
             e->type   = (buttonstate & LEFT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
 
             data->mouse_callback(data->callbackdata, e);
         }
 
-        if ((buttonstate & RIGHT_BUTTON) != (data->buttonstate & RIGHT_BUTTON))
-        {
+        if ((buttonstate & RIGHT_BUTTON) != (data->buttonstate & RIGHT_BUTTON)) {
             e->button = vHidd_Mouse_Button2;
             e->type   = (buttonstate & RIGHT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
 
             data->mouse_callback(data->callbackdata, e);
         }
 
-        if ((buttonstate & MIDDLE_BUTTON) != (data->buttonstate & MIDDLE_BUTTON))
-        {
+        if ((buttonstate & MIDDLE_BUTTON) != (data->buttonstate & MIDDLE_BUTTON)) {
             e->button = vHidd_Mouse_Button3;
             e->type = (buttonstate & MIDDLE_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
 
@@ -166,8 +157,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 #if INTELLIMOUSE_SUPPORT
         /* mouse wheel */
         e->y = (mouse_data[3] & 8) ? (mouse_data[3] & 15) - 16 : (mouse_data[3] & 15);
-        if (e->y)
-        {
+        if (e->y) {
             e->x = 0;
             e->type  = vHidd_Mouse_WheelMotion;
             e->button = vHidd_Mouse_NoButton;
@@ -179,7 +169,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
     } /* for(; ((info = i8042_read_status_port()) & KBD_STATUS_OBF) && work; work--) */
 
     D(if (!work) bug("mouse.hidd: controller jammed (0x%02X).\n", info);)
-}
+    }
 
 /****************************************************************************************
  * PS/2 Mouse Setup Task
@@ -194,8 +184,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     struct IORequest *tmr;
     int result;
 
-    if (!p)
-    {
+    if (!p) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         data->irq = 0;
         Signal(thisTask->tc_UserData, SIGF_SINGLE);
@@ -203,8 +192,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     }
 
     tmr = CreateIORequest(p, sizeof(struct timerequest));
-    if (!tmr)
-    {
+    if (!tmr) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->irq = 0;
@@ -212,8 +200,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, tmr, 0))
-    {
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, tmr, 0)) {
         D(bug("[i8042:PS2Mouse] Failed to open timer.device, unit MICROHZ\n");)
         DeleteIORequest(tmr);
         DeleteMsgPort(p);
@@ -231,8 +218,7 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
     Enable();
 
     /* If no valid PS/2 mouse detected, release the IRQ */
-    if (!result)
-    {
+    if (!result) {
         D(bug("[i8042:PS2Mouse] No PS/2 Mouse detected!\n");)
         KrnRemIRQHandler(data->irq);
         data->irq = 0;
@@ -251,21 +237,21 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
 void i8042_mouse_get_state(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event)
 {
 #if 0
-struct mouse_data *data = OOP_INST_DATA(cl, o);
-UBYTE ack;
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
+    UBYTE ack;
 
-/* The following doesn't seem to do anything useful */
-        aux_write(KBD_OUTCMD_DISABLE);
-        /* switch to remote mode */
-        aux_write(KBD_OUTCMD_SET_REMOTE_MODE);
-        /* we want data */
-        ack = data->expected_mouse_acks+1;
-        aux_write(KBD_OUTCMD_READ_DATA);
-        while (data->expected_mouse_acks>=ack)
-                i8042_delay(tmr, 1000);
-        /* switch back to stream mode */
-        aux_write(KBD_OUTCMD_SET_STREAM_MODE);
-        aux_write(KBD_OUTCMD_ENABLE);
+    /* The following doesn't seem to do anything useful */
+    aux_write(KBD_OUTCMD_DISABLE);
+    /* switch to remote mode */
+    aux_write(KBD_OUTCMD_SET_REMOTE_MODE);
+    /* we want data */
+    ack = data->expected_mouse_acks+1;
+    aux_write(KBD_OUTCMD_READ_DATA);
+    while (data->expected_mouse_acks>=ack)
+        i8042_delay(tmr, 1000);
+    /* switch back to stream mode */
+    aux_write(KBD_OUTCMD_SET_STREAM_MODE);
+    aux_write(KBD_OUTCMD_ENABLE);
 #endif
 }
 
@@ -283,15 +269,12 @@ static int i8042_mouse_detect_aux_port(struct IORequest* tmr)
     i8042_wait_for_write_ready(tmr, 1000);
     i8042_write_data_port(0x5a);
 
-    do
-    {
+    do {
         unsigned char status = i8042_read_status_port();
 
-        if (status & KBD_STATUS_OBF)
-        {
+        if (status & KBD_STATUS_OBF) {
             (void) i8042_read_data_port();
-            if (status & KBD_STATUS_MOUSE_OBF)
-            {
+            if (status & KBD_STATUS_MOUSE_OBF) {
                 retval = 1;
             }
             break;
@@ -311,21 +294,16 @@ static int i8042_mouse_query(struct IORequest* tmr, UBYTE *buf, int size, int ti
 {
     int ret = 0;
 
-    do
-    {
+    do {
         UBYTE status = i8042_read_status_port();
 
-        if (status & KBD_STATUS_OBF)
-        {
+        if (status & KBD_STATUS_OBF) {
             UBYTE c = i8042_read_data_port();
 
-            if ((c != KBD_REPLY_ACK) && (status & KBD_STATUS_MOUSE_OBF))
-            {
+            if ((c != KBD_REPLY_ACK) && (status & KBD_STATUS_MOUSE_OBF)) {
                 buf[ret++] = c;
             }
-        }
-        else
-        {
+        } else {
             i8042_delay(tmr, 1000);
         }
 
@@ -410,16 +388,14 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
     /* Reset mouse */
     i8042_mouse_write_ack(tmr, KBD_OUTCMD_RESET);
     result = i8042_mouse_wait_for_input(tmr);    /* Test result (0xAA) */
-    while (result == 0xfa && --timeout)
-    {
+    while (result == 0xfa && --timeout) {
         /* somehow the ACK isn't always swallowed above */
         i8042_delay(tmr, 1000);
         result = i8042_mouse_wait_for_input(tmr);
     }
     i8042_mouse_wait_for_input(tmr);    /* Mouse type */
 
-    if (result != 0xaa)
-    {
+    if (result != 0xaa) {
         /* No mouse. Re-enable keyboard and return failure */
         i8042_write_command_with_wait(tmr, KBD_CTRLCMD_KBD_ENABLE);
         i8042_mouse_write_ack(tmr, KBD_OUTCMD_ENABLE);
@@ -430,8 +406,7 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct IORequest* tmr, struct
     data->mouse_packetsize = 3;
 
 #if INTELLIMOUSE_SUPPORT
-    if (i8042_mouse_detect_intellimouse(tmr))
-    {
+    if (i8042_mouse_detect_intellimouse(tmr)) {
         D(bug("[i8042:PS2Mouse] PS/2 Intellimouse detected\n"));
         data->mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
         data->mouse_packetsize = 4;

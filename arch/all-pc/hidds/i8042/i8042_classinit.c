@@ -30,17 +30,13 @@ static int i8042_Init(struct i8042base * LIBBASE)
 
     kbd = OOP_NewObject(NULL, CLID_HW_Kbd, NULL);
     D(bug("[i8042] %s: %s @ %p\n", __func__, CLID_HW_Kbd, kbd));
-    if (!(LIBBASE->csd.cs_Flags & PS2F_DISABLEKEYB) && kbd)
-    {
+    if (!(LIBBASE->csd.cs_Flags & PS2F_DISABLEKEYB) && kbd) {
         D(bug("[i8042] %s: registering Keyboard hardware driver ..\n", __func__));
-        if (HW_AddDriver(kbd, LIBBASE->csd.kbdclass, NULL))
-        {
+        if (HW_AddDriver(kbd, LIBBASE->csd.kbdclass, NULL)) {
             D(bug("[i8042] %s: Keyboard driver installed\n", __func__));
             LIBBASE->library.lib_OpenCnt++;
         }
-    }
-    else
-    {
+    } else {
         D(
             bug("[i8042] %s: unable to create Keyboard class instance\n", __func__);
         )
@@ -49,17 +45,13 @@ static int i8042_Init(struct i8042base * LIBBASE)
     /* Mouse can be missing, it's not a failure */
     ms = OOP_NewObject(NULL, CLID_HW_Mouse, NULL);
     D(bug("[i8042] %s: %s @ %p\n", __func__, CLID_HW_Mouse, ms));
-    if (!(LIBBASE->csd.cs_Flags & PS2F_DISABLEMOUSE) && ms)
-    {
+    if (!(LIBBASE->csd.cs_Flags & PS2F_DISABLEMOUSE) && ms) {
         D(bug("[i8042] %s: registering Mouse hardware driver ..\n", __func__));
-        if (HW_AddDriver(ms, LIBBASE->csd.mouseclass, NULL))
-        {
+        if (HW_AddDriver(ms, LIBBASE->csd.mouseclass, NULL)) {
             D(bug("[i8042] %s: Mouse driver installed\n", __func__));
             LIBBASE->library.lib_OpenCnt++;
         }
-    }
-    else
-    {
+    } else {
         D(
             bug("[i8042] %s: unable to create Mouse class instance\n", __func__);
         )

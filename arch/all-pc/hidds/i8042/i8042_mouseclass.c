@@ -32,8 +32,7 @@
 #include LC_LIBDEFS_FILE
 
 extern const char GM_UNIQUENAME(LibName)[];
-static const char *mice_str[] =
-{
+static const char *mice_str[] = {
     "Generic PS/2 mouse",
     "IntelliMouse(tm)-compatible PS/2 mouse"
 };
@@ -66,9 +65,9 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
             if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
                 switch (idx) {
-                    case aoHidd_Input_IrqHandler:
-                        data->mouse_callback = (APTR)tag->ti_Data;
-                        break;
+                case aoHidd_Input_IrqHandler:
+                    data->mouse_callback = (APTR)tag->ti_Data;
+                    break;
                 }
             }
         } /* while (tags to process) */
@@ -77,14 +76,14 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         D(bug("[i8042:Mouse] %s: callback data @ 0x%p\n", __func__, data->callbackdata));
 
         /* Search for PS/2 mouse */
-        NewCreateTask(TASKTAG_PC,           i8042_mouse_init_task,
-                         TASKTAG_NAME,      (IPTR)i8042mpname,
-                         TASKTAG_STACKSIZE, 1024,
-                         TASKTAG_PRI,       100,
-                         TASKTAG_ARG1,      cl,
-                         TASKTAG_ARG2,      mouse,
-                         TASKTAG_USERDATA,  FindTask(NULL),
-                         TAG_DONE);
+        NewCreateTask(TASKTAG_PC,        i8042_mouse_init_task,
+                      TASKTAG_NAME,      (IPTR)i8042mpname,
+                      TASKTAG_STACKSIZE, 1024,
+                      TASKTAG_PRI,       100,
+                      TASKTAG_ARG1,      cl,
+                      TASKTAG_ARG2,      mouse,
+                      TASKTAG_USERDATA,  FindTask(NULL),
+                      TAG_DONE);
         Wait(SIGF_SINGLE);
         if (!data->irq) {
             D(bug("[i8042:Mouse] %s: Mouse initialization failed\n", __func__));

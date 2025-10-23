@@ -22,8 +22,7 @@
 
 static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
 {
-    struct OOP_ABDescr attrbases[] =
-    {
+    struct OOP_ABDescr attrbases[] = {
         {IID_Hidd,          &LIBBASE->csd.hiddAttrBase  },
         {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
         {IID_Hidd_Mouse,    &LIBBASE->csd.hiddMouseAB   },
@@ -54,8 +53,7 @@ static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
 
 static int i8042Kbd_ExpungeAttrs(struct i8042base * LIBBASE)
 {
-    struct OOP_ABDescr attrbases[] =
-    {
+    struct OOP_ABDescr attrbases[] = {
         {IID_Hidd,          &LIBBASE->csd.hiddAttrBase  },
         {IID_Hidd_Input,    &LIBBASE->csd.hiddInputAB   },
         {IID_Hidd_Mouse,    &LIBBASE->csd.hiddMouseAB   },

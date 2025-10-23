@@ -74,11 +74,9 @@ static void i8042_kbd_irq_handler(struct kbd_data *data, void *unused)
         bug("[i8042:Kbd] %s()\n", __func__);
         bug("[i8042:Kbd] %s: ki - {\n", __func__);
     )
-    for(; ((info = i8042_read_status_port()) & KBD_STATUS_OBF) && work; work--)
-    {
+    for(; ((info = i8042_read_status_port()) & KBD_STATUS_OBF) && work; work--) {
         /* data from information port */
-        if (info & KBD_STATUS_MOUSE_OBF)
-        {
+        if (info & KBD_STATUS_MOUSE_OBF) {
             /*
             ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
             ** if we break out of loop here :-\
@@ -88,8 +86,7 @@ static void i8042_kbd_irq_handler(struct kbd_data *data, void *unused)
         keycode = i8042_read_data_port();
 
         DINT(bug("[i8042:Kbd] %s:   ki - keycode %d (%x)\n", __func__, keycode, keycode));
-        if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
-        {
+        if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR)) {
             /* Ignore errors and messages for mouse -> eat status/error byte */
             continue;
         }
@@ -99,7 +96,7 @@ static void i8042_kbd_irq_handler(struct kbd_data *data, void *unused)
 
     DINT(
         if (!work)
-            bug("[i8042:Kbd] %s:   controller jammed (0x%02X).\n", __func__, info);
+        bug("[i8042:Kbd] %s:   controller jammed (0x%02X).\n", __func__, info);
         bug("[i8042:Kbd] %s: ki - }\n", __func__);
     )
 }
@@ -110,15 +107,14 @@ static void i8042_kbd_flush_output_buffer(void)
     D(int flush_count = 0;)
     int work = 1000;  /* safety loop */
 
-    while ((info = i8042_read_status_port()) & KBD_STATUS_OBF && work--)
-    {
+    while ((info = i8042_read_status_port()) & KBD_STATUS_OBF && work--) {
         (void)i8042_read_data_port();   /* discard data */
         D(flush_count++;)
     }
 
     D(
         if (flush_count > 0)
-            bug("[i8042:Kbd] Flushed %d leftover bytes from controller\n", flush_count);
+        bug("[i8042:Kbd] Flushed %d leftover bytes from controller\n", flush_count);
     )
 }
 
@@ -149,8 +145,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
 
     D(bug("[i8042:Kbd] Task starting..\n"));
 
-    if (!p)
-    {
+    if (!p) {
         D(bug("[i8042:Kbd] Failed to create Timer MsgPort..\n"));
         data->LEDSigBit = (ULONG)-1;
         Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
@@ -158,8 +153,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     }
 
     data->ioTimer = CreateIORequest(p, sizeof(struct timerequest));
-    if (!data->ioTimer)
-    {
+    if (!data->ioTimer) {
         D(bug("[i8042:Kbd] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->LEDSigBit = (ULONG)-1;
@@ -167,8 +161,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0))
-    {
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0)) {
         D(bug("[i8042:Kbd] Failed to open timer.device, unit MICROHZ\n");)
         DeleteIORequest(data->ioTimer);
         data->ioTimer = NULL;
@@ -195,8 +188,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     reset_success = i8042_wait_for_input(data->ioTimer);
     Enable();
 
-    if (reset_success != 0x55)
-    {
+    if (reset_success != 0x55) {
         struct IORequest *io = data->ioTimer;
         data->ioTimer = NULL;
 
@@ -220,11 +212,11 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     i8042_kbd_update_leds(data);
 
     D(bug("[i8042:Kbd] %s: init sequence complete <reset OK, LED sigbit %lu>\n",
-      __func__, data->LEDSigBit));
+          __func__, data->LEDSigBit));
 
     /* Flush any stray data in i8042 output buffer before enabling IRQ */
     i8042_kbd_flush_output_buffer();
-    
+
     /*
      * Report last key received before keyboard was reset, so that
      * keyboard.device knows about any key currently held down
@@ -235,7 +227,7 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     D(bug("[i8042:Kbd] %s: registering handler for IRQ %u\n", __func__, KEYBOARDIRQ));
 
     /* Install keyboard interrupt */
-     data->irq = KrnAddIRQHandler(KEYBOARDIRQ, i8042_kbd_irq_handler, data, NULL);
+    data->irq = KrnAddIRQHandler(KEYBOARDIRQ, i8042_kbd_irq_handler, data, NULL);
 
     D(bug("[i8042:Kbd] Controller setup finished\n"));
 
@@ -243,12 +235,10 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
 
     /* Wait forever and process signals */
-    for (;;)
-    {
+    for (;;) {
         ULONG signals = Wait(sig);
 
-        if (signals & data->LEDSigBit)
-        {
+        if (signals & data->LEDSigBit) {
             D(bug("[i8042:Kbd] %s: updating led's\n", __func__));
             i8042_kbd_update_leds(data);
         }
@@ -266,8 +256,7 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 #if __WORDSIZE == 32 /* FIXME: REMOVEME: just a debugging thing for the weird s-key problem */
     SysBase->ex_Reserved2[1] = (ULONG)std_keytable;
 #endif
-    if (XSD(cl)->kbdhidd)
-    {
+    if (XSD(cl)->kbdhidd) {
         /* Cannot open twice */
         D(bug("[i8042:Kbd] %s: already instantiated!\n", __func__));
         return NULL;
@@ -276,21 +265,18 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     tstate = msg->attrList;
     D(bug("[i8042:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));
 
-    while ((tag = NextTagItem(&tstate)))
-    {
+    while ((tag = NextTagItem(&tstate))) {
         ULONG idx;
 
         D(bug("[i8042:Kbd] %s: Got tag %d, data %p\n", __func__, tag->ti_Tag, (APTR)tag->ti_Data));
 
-        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx))
-        {
+        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
             D(bug("[i8042:Kbd] %s:   Input hidd tag\n", __func__));
-            switch (idx)
-            {
-                case aoHidd_Input_IrqHandler:
-                    callback = (APTR)tag->ti_Data;
-                    D(bug("[i8042:Kbd] %s:     Got callback 0x%p\n", __func__, (APTR)tag->ti_Data));
-                    break;
+            switch (idx) {
+            case aoHidd_Input_IrqHandler:
+                callback = (APTR)tag->ti_Data;
+                D(bug("[i8042:Kbd] %s:     Got callback 0x%p\n", __func__, (APTR)tag->ti_Data));
+                break;
             }
         }
 
@@ -302,14 +288,12 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     D(bug("[i8042:Kbd] %s: creating input hw instance...\n", __func__));
 
     /* Add some descriptional tags to our attributes */
-    struct TagItem kbd_tags[] =
-    {
+    struct TagItem kbd_tags[] = {
         {aHidd_Name        , (IPTR)GM_UNIQUENAME(LibName)   },
         {aHidd_HardwareName, (IPTR)i8042hwname              },
         {TAG_MORE          , (IPTR)msg->attrList            }
     };
-    struct pRoot_New new_msg =
-    {
+    struct pRoot_New new_msg = {
         .mID = msg->mID,
         .attrList = kbd_tags
     };
@@ -330,14 +314,14 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         data->prev_amigacode = -2;
         data->prev_keycode   = 0;
 
-        NewCreateTask(TASKTAG_PC,           i8042_kbd_controller_task,
-                         TASKTAG_NAME,      (IPTR)i8042ctname,
-                         TASKTAG_STACKSIZE, 1024,
-                         TASKTAG_PRI,       100,
-                         TASKTAG_ARG1,      cl,
-                         TASKTAG_ARG2,      kbd,
-                         TASKTAG_USERDATA,  FindTask(NULL),
-                         TAG_DONE);
+        NewCreateTask(TASKTAG_PC,        i8042_kbd_controller_task,
+                      TASKTAG_NAME,      (IPTR)i8042ctname,
+                      TASKTAG_STACKSIZE, 1024,
+                      TASKTAG_PRI,       100,
+                      TASKTAG_ARG1,      cl,
+                      TASKTAG_ARG2,      kbd,
+                      TASKTAG_USERDATA,  FindTask(NULL),
+                      TAG_DONE);
         Wait(SIGF_SINGLE);
         if (data->LEDSigBit == (ULONG)-1) {
             D(bug("[i8042:Kbd] %s: controller initialization failed\n", __func__));
@@ -348,7 +332,7 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     } /* if (kbd) */
     D(else bug("[i8042:Kbd] %s: input hw instantiation failed\n", __func__);)
 
-    XSD(cl)->kbdhidd = kbd;
+        XSD(cl)->kbdhidd = kbd;
     D(bug("[i8042:Kbd] %s: returning 0x%p\n", __func__, kbd);)
 
     return kbd;
@@ -425,8 +409,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
                 if (kevt.code != NOKEY) kevt.code |= releaseflag;
             }
         } /* if (data->prev_keycode == 0xE0) */
-        else
-        {
+        else {
             /* Check Pause key: 0xE1 0x1D 0x45   0xE1 0x9D 0xC5 */
             if ((data->prev_keycode == 0xE1) && (downkeycode == 0x1D)) {
                 /* let's remember, that we still need third key */
@@ -445,8 +428,7 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
         } /* if (data->prev_keycode == 0xE0) else ... */
 
     } /* if (data->prev_keycode) */
-    else
-    {
+    else {
         /* Normal single byte keycode */
         event = keycode;
         if (downkeycode < NUM_STDKEYS) {
@@ -456,116 +438,116 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
     }
 
     switch(event) {
-        case K_KP_Numl:
-            kbd_keystate ^= 0x02;    /* Toggle Numlock bit */
-            data->kbd_ledstate = kbd_keystate;
-            Signal(data->CtrlTask, data->LEDSigBit);
-            //kbd_updateleds(kbd_keystate);
-            break;
+    case K_KP_Numl:
+        kbd_keystate ^= 0x02;    /* Toggle Numlock bit */
+        data->kbd_ledstate = kbd_keystate;
+        Signal(data->CtrlTask, data->LEDSigBit);
+        //kbd_updateleds(kbd_keystate);
+        break;
 
-        case K_Scroll_Lock:
-            kbd_keystate ^= 0x01;    /* Toggle Scrolllock bit */
-            data->kbd_ledstate = kbd_keystate;
-            Signal(data->CtrlTask, data->LEDSigBit);
-            //kbd_updateleds(kbd_keystate);
-            break;
+    case K_Scroll_Lock:
+        kbd_keystate ^= 0x01;    /* Toggle Scrolllock bit */
+        data->kbd_ledstate = kbd_keystate;
+        Signal(data->CtrlTask, data->LEDSigBit);
+        //kbd_updateleds(kbd_keystate);
+        break;
 
-        case K_CapsLock:
-            kbd_keystate ^= 0x04;    /* Toggle Capslock bit */
-            data->kbd_ledstate = kbd_keystate;
-            Signal(data->CtrlTask, data->LEDSigBit);
-            //kbd_updateleds(kbd_keystate);
-            break;
+    case K_CapsLock:
+        kbd_keystate ^= 0x04;    /* Toggle Capslock bit */
+        data->kbd_ledstate = kbd_keystate;
+        Signal(data->CtrlTask, data->LEDSigBit);
+        //kbd_updateleds(kbd_keystate);
+        break;
 
-        case K_LShift:
-            kbd_keystate |= FLAG_LSHIFT;
-            break;
+    case K_LShift:
+        kbd_keystate |= FLAG_LSHIFT;
+        break;
 
-        case (K_LShift | 0x80):
-            kbd_keystate &= ~FLAG_LSHIFT;
-            break;
+    case (K_LShift | 0x80):
+        kbd_keystate &= ~FLAG_LSHIFT;
+        break;
 
-        case K_RShift:
-            kbd_keystate |= FLAG_RSHIFT;
-            break;
+    case K_RShift:
+        kbd_keystate |= FLAG_RSHIFT;
+        break;
 
-        case (K_RShift | 0x80):
-            kbd_keystate &= ~FLAG_RSHIFT;
-            break;
+    case (K_RShift | 0x80):
+        kbd_keystate &= ~FLAG_RSHIFT;
+        break;
 
-        case K_LCtrl:
-            kbd_keystate |= FLAG_LCTRL;
-            break;
+    case K_LCtrl:
+        kbd_keystate |= FLAG_LCTRL;
+        break;
 
-        case (K_LCtrl | 0x80):
-            kbd_keystate &= ~FLAG_LCTRL;
-            break;
+    case (K_LCtrl | 0x80):
+        kbd_keystate &= ~FLAG_LCTRL;
+        break;
 
-        case K_RCtrl:
-            kbd_keystate |= FLAG_RCTRL;
-            break;
+    case K_RCtrl:
+        kbd_keystate |= FLAG_RCTRL;
+        break;
 
-        case (K_RCtrl | 0x80):
-            kbd_keystate &= ~FLAG_RCTRL;
-            break;
+    case (K_RCtrl | 0x80):
+        kbd_keystate &= ~FLAG_RCTRL;
+        break;
 
-        case K_LMeta:
-            kbd_keystate |= FLAG_LMETA;
-            break;
+    case K_LMeta:
+        kbd_keystate |= FLAG_LMETA;
+        break;
 
-        case (K_LMeta | 0x80):
-            kbd_keystate &= ~FLAG_LMETA;
-            break;
+    case (K_LMeta | 0x80):
+        kbd_keystate &= ~FLAG_LMETA;
+        break;
 
-        case K_RMeta:
-        case K_Menu:
-            kbd_keystate |= FLAG_RMETA;
-            break;
+    case K_RMeta:
+    case K_Menu:
+        kbd_keystate |= FLAG_RMETA;
+        break;
 
-        case (K_RMeta | 0x80):
-        case (K_Menu | 0x80):
-            kbd_keystate &= ~FLAG_RMETA;
-            break;
+    case (K_RMeta | 0x80):
+    case (K_Menu | 0x80):
+        kbd_keystate &= ~FLAG_RMETA;
+        break;
 
-        case K_LAlt:
-            kbd_keystate |= FLAG_LALT;
-            break;
+    case K_LAlt:
+        kbd_keystate |= FLAG_LALT;
+        break;
 
-        case (K_LAlt | 0x80):
-            kbd_keystate &= ~FLAG_LALT;
-            break;
+    case (K_LAlt | 0x80):
+        kbd_keystate &= ~FLAG_LALT;
+        break;
 
-        case K_RAlt:
-            kbd_keystate |= FLAG_RALT;
-            break;
+    case K_RAlt:
+        kbd_keystate |= FLAG_RALT;
+        break;
 
-        case (K_RAlt | 0x80):
-            kbd_keystate &= ~FLAG_RALT;
-            break;
+    case (K_RAlt | 0x80):
+        kbd_keystate &= ~FLAG_RALT;
+        break;
 
-        case K_Del:
-            kbd_keystate |= FLAG_DEL;
-            break;
+    case K_Del:
+        kbd_keystate |= FLAG_DEL;
+        break;
 
-        case (K_Del | 0x80):
-            kbd_keystate &= ~FLAG_DEL;
-            break;
+    case (K_Del | 0x80):
+        kbd_keystate &= ~FLAG_DEL;
+        break;
 
     } /* switch(event) */
 
     if ((kbd_keystate & (FLAG_LCTRL | FLAG_RCTRL)) != 0
-        && (kbd_keystate & (FLAG_LALT | FLAG_RALT)) != 0
-        && (kbd_keystate & FLAG_DEL) != 0) {
+            && (kbd_keystate & (FLAG_LALT | FLAG_RALT)) != 0
+            && (kbd_keystate & FLAG_DEL) != 0) {
         ShutdownA(SD_ACTION_COLDREBOOT);
     }
 
     if ((kbd_keystate & (FLAG_LCTRL | FLAG_LMETA | FLAG_RMETA))
-        == (FLAG_LCTRL | FLAG_LMETA | FLAG_RMETA)) {
+            == (FLAG_LCTRL | FLAG_LMETA | FLAG_RMETA)) {
         kevt.code = 0x78; /* Reset */
     }
 
     D(bug("[i8042:Kbd] %s: ki - keycode %d (%x) last %d (%x)\n", __func__, kevt.code, kevt.code,
-        data->prev_amigacode, data->prev_amigacode));
+          data->prev_amigacode, data->prev_amigacode));
 
     /* Update keystate */
     data->kbd_keystate = kbd_keystate;
