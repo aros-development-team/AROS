@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Execute installed reset handlers.
 */
@@ -12,26 +12,31 @@
 #include "exec_debug.h"
 
 /*
-   This function executes installed reset handlers.
+   This function executes all installed reset handlers in sequence.
    It stores the supplied shutdown action type (SD_ACTION_#?) in the
-   ln_Type field of each reset interrupt structure. Typically this
-   information is needed by system reset handlers (EFI, ACPI etc.), but
-   not by peripheral-device reset handlers (USB HCs, NICs etc.).
-   ln_Type field also contains information on whethere the code is
-   executed in supervisor mode.
-   For improved safety callbacks are called in a Disable()d state.
-   This function does not need to Enable().
+   ln_Type field of each reset interrupt structure before invoking it.
+   Typically, this information is used by system-level reset handlers
+   (EFI, ACPI, etc.), but not by peripheral-device handlers (USB HCs,
+   NICs, etc.). The ln_Type field also encodes whether the code is
+   executing in supervisor mode.
+
+   For improved safety, all callbacks are executed in a Disable()d state.
+   This function itself does not need to call Enable().
+
+   NOTE: This function can fail if any installed reset handler crashes
+   or hangs. In such cases, the shutdown sequence may not complete,
+   leaving the system in an undefined or partially reset state. This
+   behavior needs to be corrected so that failure in one handler cannot
+   prevent the rest of the shutdown process from completing.
 */
 
 void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase, UBYTE action)
 {
-    struct Interrupt *i;
+    struct Interrupt *i, *tmp;
 
     Disable();
 
-    for ( i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
-            i = (struct Interrupt *)i->is_Node.ln_Succ)
-    {
+    ForeachNodeSafe(&IntSysBase->ResetHandlers, i, tmp) {
         DSHUTDOWN("Calling handler: %d '%s'", i->is_Node.ln_Pri, i->is_Node.ln_Name);
 
         i->is_Node.ln_Type = action;
