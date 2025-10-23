@@ -1065,6 +1065,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     msg.shapehook = shapehook;
     msg.parentlayer = parentl;
     msg.invisible = windowinvisible;
+    msg.success = FALSE;
 
     DoSyncAction((APTR)int_openwindow, &msg.msg, IntuitionBase);
 
