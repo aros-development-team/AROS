@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #ifndef _PCIPC_H
@@ -154,5 +154,36 @@ void PCIPC_ProbeConfMech(struct pcipc_staticdata *psd);
 #define PCIPC_ProbeConfMech(x)
 
 #endif
+
+/* MSI-X table entry (per-vector), 16 bytes */
+struct msix_entry {
+    ULONG msg_addr_lo;
+    ULONG msg_addr_hi;
+    ULONG msg_data;
+    ULONG vector_ctrl;   /* bit0 = Mask */
+} __attribute__((packed));
+
+/* Helpers for APIC MSI address/data (xAPIC fixed delivery to BSP or current APIC) */
+#define MSI_ADDR_LO(apic_id)      (0xFEE00000u | ((ULONG)(apic_id) << 12))
+#define MSI_ADDR_HI               (0u)
+#define MSI_DATA(vector)          ((ULONG)((vector) & 0xFF)) /* fixed delivery, edge/high */
+
+/* Find the most-significant bit thats set */
+static inline ULONG fls_long(ULONG x)
+{
+    return ((sizeof(x) * 8) - __builtin_clz(x));
+}
+
+/* Integer base 2 logarithm of x */
+static inline ULONG ilog2(ULONG x)
+{
+    return (fls_long(x) - 1);
+}
+
+/* Round up, to nearest power of two */
+static inline ULONG roundup_pow_of_two(ULONG x)
+{
+    return x == 1 ? 1 : (1 << fls_long(x - 1));
+}
 
 #endif /* _PCIPC_H */

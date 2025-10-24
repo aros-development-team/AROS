@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 
     Desc: i386/x86_64 native PCI device support routines.
 */
@@ -27,28 +27,6 @@
 #include "pcipc.h"
 
 #define DMSI(x)
-
-#if (1)
-/* TODO: Move into a suitable header */
-
-/* Find the most-significant bit thats set */
-static inline ULONG fls_long(ULONG x)
-{
-    return ((sizeof(x) * 8) - __builtin_clz(x));
-}
-
-/* Integer base 2 logarithm of x */
-static inline ULONG ilog2(ULONG x)
-{
-    return (fls_long(x) - 1);
-}
-
-/* Round up, to nearest power of two */
-static inline ULONG roundup_pow_of_two(ULONG x)
-{
-    return x == 1 ? 1 : (1 << fls_long(x - 1));
-}
-#endif
 
 OOP_Object *PCIPCDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -190,17 +168,144 @@ void PCIPCDev__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 }
 
-VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_GetVectorAttribs *msg)
+APTR pci_get_bar_va(OOP_Class *cl, OOP_Object *o, UBYTE bar)
+{
+    IPTR base_phys = 0, bar_type = 0, bar_size = 0;
+
+    /* Query base address, size, and type */
+    switch (bar)
+    {
+        case 0:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base0, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size0, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type0, &bar_type);
+            break;
+        case 1:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base1, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size1, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type1, &bar_type);
+            break;
+        case 2:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base2, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size2, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type2, &bar_type);
+            break;
+        case 3:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base3, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size3, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type3, &bar_type);
+            break;
+        case 4:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base4, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size4, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type4, &bar_type);
+            break;
+        case 5:
+            OOP_GetAttr(o, aHidd_PCIDevice_Base5, &base_phys);
+            OOP_GetAttr(o, aHidd_PCIDevice_Size5, &bar_size);
+            OOP_GetAttr(o, aHidd_PCIDevice_Type5, &bar_type);
+            break;
+        default:
+            return NULL;
+    }
+
+    /* Ignore I/O BARs */
+    if (bar_type & PCIBAR_TYPE_IO)
+        return NULL;
+
+    D(bug("[PCIPC:Device] %s: BAR%u phys=%p size=%08x virt=%p\n",
+          __func__, bar, (APTR)base_phys, (ULONG)bar_size, virt);)
+
+    return (APTR)base_phys;
+}
+
+VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
+    OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDevice_GetVectorAttribs *msg)
 {
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
-    IPTR capmsi;
-    UBYTE vectirq = 0;
+    IPTR capmsi = 0, capmsix = 0;
 
     D(bug("[PCIPC:Device] %s()\n", __func__);)
 
-    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI,  &capmsi);
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
 
-    /* Check if MSI is supported */
+    /* Prefer MSI-X if present */
+    if (capmsix)
+    {
+        struct pHidd_PCIDevice_ReadConfigWord wcw;
+        struct pHidd_PCIDevice_ReadConfigLong wcl;
+        UWORD msix_flags;
+        ULONG table_dw;
+        APTR bar_va = NULL;
+
+        wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        wcw.reg = capmsix + PCIMSIX_FLAGS;
+        msix_flags = (UWORD)OOP_DoMethod(o, &wcw.mID);
+
+        if (msix_flags & (1 << 15))  /* MSI-X enabled? */
+        {
+            /* Read Table info (offset + BIR) */
+            wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong;
+            wcl.reg = capmsix + PCIMSIX_TABLE;
+            table_dw = (ULONG)OOP_DoMethod(o, &wcl.mID);
+
+            UBYTE bir   = (UBYTE)(table_dw & 0x7);
+            ULONG toff  = (table_dw & ~0x7u);
+
+            /* Map the BAR */
+            bar_va = pci_get_bar_va(cl, o, bir);
+            if (bar_va)
+            {
+                volatile struct msix_entry *mtab =
+                    (volatile struct msix_entry *)((UBYTE *)bar_va + toff);
+
+                /* Check TableSize from Flags (bits 0–10) */
+                UWORD table_size = (msix_flags & 0x07FF) + 1;
+                if (msg->vectorno < table_size)
+                {
+                    ULONG msg_data = mtab[msg->vectorno].msg_data;
+                    ULONG vector   = (msg_data & 0xFF);
+
+                    struct TagItem *tag, *tags = (struct TagItem *)msg->attribs;
+                    while ((tag = NextTagItem(&tags)))
+                    {
+                        switch (tag->ti_Tag)
+                        {
+                            case tHidd_PCIVector_Int:
+                                tag->ti_Data = vector - HW_IRQ_BASE;
+                                break;
+
+                            case tHidd_PCIVector_Native:
+                                tag->ti_Data = vector;
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+
+                    DMSI(bug("[PCIPC:Device] %s: #%u MSI-X vector read from table -> %u\n",
+                             __func__, msg->vectorno, vector);)
+                    return;
+                }
+                else
+                {
+                    bug("[PCIPC:Device] %s: Illegal MSI-X vector %u (max=%u)\n",
+                        __func__, msg->vectorno, table_size);
+                    return;
+                }
+            }
+            else
+            {
+                bug("[PCIPC:Device] %s: Could not map BAR %u for MSI-X table\n",
+                    __func__, bir);
+            }
+        }
+    }
+
+    /* Fallback to MSI */
     if (capmsi)
     {
         struct pHidd_PCIDevice_ReadConfigWord cmeth;
@@ -209,195 +314,337 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, st
         cmeth.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
         cmeth.reg = capmsi + PCIMSI_FLAGS;
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.mID);
+
         if (msiflags & PCIMSIF_ENABLE)
         {
-            DMSI(bug("[PCIPC:Device] %s: #%u MSI message vectors\n", __func__, (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)));)
-
-            /* MSI is enabled .. but is the requested vector valid? */
-            if (msg->vectorno < (1 <<((msiflags & PCIMSIF_MMEN_MASK) >> 4)))
+            UWORD vecCount = (1 << ((msiflags & PCIMSIF_MMEN_MASK) >> 4));
+            if (msg->vectorno < vecCount)
             {
-                struct TagItem *tag, *tags;
-                  tags=(struct TagItem *)msg->attribs;
+                uint16_t msg_data;
+                struct pHidd_PCIDevice_ReadConfigWord rmsg;
 
-                while((tag = NextTagItem(&tags)))
+                /* Read message data directly from config space */
+                if (msiflags & PCIMSIF_64BIT)
+                    rmsg.reg = capmsi + PCIMSI_DATA64;
+                else
+                    rmsg.reg = capmsi + PCIMSI_DATA32;
+
+                rmsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+                msg_data = (uint16_t)OOP_DoMethod(o, &rmsg.mID);
+
+                uint16_t vector = (msg_data & 0xFF);
+
+                struct TagItem *tag, *tags = (struct TagItem *)msg->attribs;
+                while ((tag = NextTagItem(&tags)))
                 {
                     switch (tag->ti_Tag)
                     {
                         case tHidd_PCIVector_Int:
-                            tag->ti_Data = ((data->msimsg & 0xFF) + msg->vectorno) - HW_IRQ_BASE;
+                            tag->ti_Data = vector - HW_IRQ_BASE;
                             break;
 
                         case tHidd_PCIVector_Native:
-                            tag->ti_Data = ((data->msimsg & 0xFF) + msg->vectorno);
+                            tag->ti_Data = vector;
                             break;
 
                         default:
                             break;
                     }
                 }
+
+                DMSI(bug("[PCIPC:Device] %s: #%u MSI vector read from config -> %u\n",
+                         __func__, msg->vectorno, vector);)
+                return;
             }
             else
             {
-                bug("[PCIPC:Device] %s: Illegal MSI vector %u\n", __func__, msg->vectorno);
+                bug("[PCIPC:Device] %s: Illegal MSI vector %u\n",
+                    __func__, msg->vectorno);
             }
         }
-        else
-        {
-            bug("[PCIPC:Device] %s: MSI is dissabled for the device\n", __func__);
-        }
     }
-    else
-    {
-        bug("[PCIPC:Device] %s: Device doesn't support MSI\n", __func__);
-    }
+    D(bug("[PCIPC:Device] %s: Device has no active MSI/MSI-X\n", __func__);)
 }
 
-
-BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ObtainVectors *msg)
+BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
+                                             struct pHidd_PCIDevice_ObtainVectors *msg)
 {
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
-    IPTR capmsi, capmsix;
+    IPTR capmsi = 0, capmsix = 0;
 
     D(bug("[PCIPC:Device] %s()\n", __func__);)
 
-    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI,  &capmsi);
     OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
 
-    if (capmsix)
-    {
-        DMSI(bug("[PCIPC:Device] %s: Device has MSI-X capability @ %u\n", __func__, capmsix);)
-    }
-    if (capmsi)
-    {
+    /* Prefer MSI-X if present */
+    if (capmsix) {
         union {
             struct pHidd_PCIDevice_WriteConfigWord wcw;
             struct pHidd_PCIDevice_WriteConfigLong wcl;
         } cmeth;
+        UWORD msix_ctl;
+        ULONG table_dw, pba_dw;
+        UWORD vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 1, msg->requirements);
+        UWORD vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 1, msg->requirements);
+
+        /* Read MSI-X control and table pointers */
+        cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+        msix_ctl = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+
+        cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong;
+        cmeth.wcl.reg = capmsix + PCIMSIX_TABLE;
+        table_dw = (ULONG)OOP_DoMethod(o, &cmeth.wcl.mID);
+
+        cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong;
+        cmeth.wcl.reg = capmsix + PCIMSIX_PBA;
+        pba_dw = (ULONG)OOP_DoMethod(o, &cmeth.wcl.mID);
+
+        /* Decode BIR and offsets; map the table BAR to VA */
+        UBYTE table_bir   = (UBYTE)(table_dw & 0x7);
+        ULONG table_off   = (table_dw & ~0x7u);
+        volatile UBYTE *bar_va = pci_get_bar_va(cl, o, table_bir);
+        if (!bar_va) {
+            DMSI(bug("[PCIPC:Device] %s: MSI-X table BAR VA not mapped\n", __func__);)
+        } else {
+            /* Table size = (TableSize field + 1). Bits 0..10 of msix_ctl carry TableSize. */
+            UWORD table_size = (msix_ctl & 0x07FF) + 1;
+
+            /* Clamp requested vector count to the table size */
+            if (vectmax == 0 || vectmax > table_size) vectmax = table_size;
+            if (vectmin == 0) vectmin = 1;
+            if (vectmin > vectmax) vectmin = vectmax;
+
+            /* Choose count (naively, highest within range) */
+            UWORD vectcnt;
+            ULONG apicIRQBase = (ULONG)-1;
+
+            /* Allocate a contiguous block of IRQs for MSI-X (one vector per entry) */
+            for (vectcnt = vectmax; vectcnt >= vectmin; --vectcnt) {
+                apicIRQBase = KrnAllocIRQ(IRQTYPE_APIC, vectcnt);
+                if (apicIRQBase != (ULONG)-1) break;
+            }
+            if (apicIRQBase == (ULONG)-1) {
+                DMSI(bug("[PCIPC:Device] %s: MSI-X IRQ allocation failed\n", __func__);)
+                /* fall through to MSI path below */
+            } else {
+                volatile struct msix_entry *mtab =
+                    (volatile struct msix_entry *)(bar_va + table_off);
+
+                /* 1) Mask function, then enable later (spec-compliant sequence) */
+                UWORD new_ctl = msix_ctl | (1u << 14);                              /* Function Mask = 1 */
+                new_ctl      &= ~(1u << 15);                                        /* Ensure Enable=0 for programming */
+                cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+                cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+                cmeth.wcw.val = new_ctl;
+                OOP_DoMethod(o, &cmeth.wcw.mID);
+
+                /* 2) Program N table entries (masked individually) */
+                ULONG apic_id = 0;                                                  /* we currently only handle APIC 0 */
+                ULONG msg_addr_lo = MSI_ADDR_LO(apic_id);
+                ULONG msg_addr_hi = MSI_ADDR_HI;
+
+                for (UWORD i = 0; i < vectcnt; ++i) {
+                    ULONG vector = (ULONG)(apicIRQBase + i + HW_IRQ_BASE);
+
+                    mtab[i].vector_ctrl = 1;                                        /* mask this vector during setup */
+                    mtab[i].msg_addr_lo = msg_addr_lo;
+                    mtab[i].msg_addr_hi = msg_addr_hi;
+                    mtab[i].msg_data    = MSI_DATA(vector);
+
+                    /* Read back to post writes if needed (optional) */
+                    (void)mtab[i].msg_data;
+                }
+
+                /* 3) Enable MSI-X with function masked */
+                new_ctl |= (1u << 15);                                              /* Enable */
+                cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+                cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+                cmeth.wcw.val = new_ctl;
+                OOP_DoMethod(o, &cmeth.wcw.mID);
+
+                /* 4) Unmask table entries that the driver will actually use */
+                for (UWORD i = 0; i < vectcnt; ++i) {
+                    mtab[i].vector_ctrl = 0;                                        /* unmask */
+                    (void)mtab[i].vector_ctrl;
+                }
+
+                /* 5) Finally clear Function Mask so vectors can fire */
+                new_ctl &= ~(1u << 14);
+                cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+                cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+                cmeth.wcw.val = new_ctl;
+                OOP_DoMethod(o, &cmeth.wcw.mID);
+
+                DMSI(bug("[PCIPC:Device] %s: Enabled MSI-X %u vecs @ base IRQ %u (IDT vec %u)\n",
+                         __func__, vectcnt, apicIRQBase, (apicIRQBase + HW_IRQ_BASE));)
+                return TRUE;
+            }
+        }
+    }
+
+    /* MSI fallback */
+    if (capmsi) {
+        union {
+            struct pHidd_PCIDevice_WriteConfigWord wcw;
+            struct pHidd_PCIDevice_WriteConfigLong wcl;
+        } cmeth;
+        UWORD msiflags;
         UWORD vectmin, vectmax, vectcnt, vecthw;
         ULONG apicIRQBase = 0;
-        UWORD msiflags;
-
-        DMSI(bug("[PCIPC:Device] %s: Device has MSI capability @ %u\n", __func__, capmsi);)
 
         cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
         cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
 
-        DMSI(bug("[PCIPC:Device] %s: Initial MSI Flags = %04x\n", __func__, msiflags);)
         if (msiflags & PCIMSIF_ENABLE)
             return FALSE;
 
         vecthw = (1 << ((msiflags & PCIMSIF_MMC_MASK) >> 1));
-        DMSI(bug("[PCIPC:Device] %s: Max Device MSI vectors = %u\n", __func__, vecthw);)
+        vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 1, msg->requirements);
+        vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 1, msg->requirements);
+        if (vectmin > vecthw) return FALSE;
+        if (vectmax == 0 || vectmax > vecthw) vectmax = vecthw;
 
-        vectmin = (UWORD)GetTagData(tHidd_PCIVector_Min, 0, msg->requirements);
-        if (vectmin > vecthw)
-            return FALSE;
-
-        vectmax = (UWORD)GetTagData(tHidd_PCIVector_Max, 0, msg->requirements);
-        if (vectmax > vecthw)
-            vectmax = vecthw;
-
-        for (vectcnt = vectmax; vectcnt >= vectmin; vectcnt--)
-        {
-            if ((apicIRQBase = KrnAllocIRQ(IRQTYPE_APIC, vectcnt)) != (ULONG)-1)
-            {
-                DMSI(bug("[PCIPC:Device] %s: Allocated %u vectors (start = IRQ #%u)\n", __func__, vectcnt, apicIRQBase);)
-                break;
-            }
+        for (vectcnt = vectmax; vectcnt >= vectmin; vectcnt--) {
+            apicIRQBase = KrnAllocIRQ(IRQTYPE_APIC, vectcnt);
+            if (apicIRQBase != (ULONG)-1) break;
         }
-        if ((apicIRQBase) && (apicIRQBase != -1))
-        {
-            DMSI(bug("[PCIPC:Device] %s: Configuring Device with %u MSI vectors...\n", __func__, vectcnt);)
-            msiflags |= (ilog2(roundup_pow_of_two(vectcnt)) << 4);
-
+        if (apicIRQBase != (ULONG)-1) {
+            /* Program message address (xAPIC) */
             cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
             cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSLO;
-            cmeth.wcl.val = (0xFEE << 20) | (0 << 12);
+            cmeth.wcl.val = (0xFEEu << 20);                                         /* dest APIC ID = 0 in bits 19:12 */
             OOP_DoMethod(o, &cmeth.wcl.mID);
 
             data->msimsg = (UWORD)apicIRQBase + HW_IRQ_BASE;
 
-            if (msiflags & PCIMSIF_64BIT)
-            {
-                DMSI(bug("[PCIPC:Device] %s: -- 64bit device!\n", __func__);)
+            if (msiflags & PCIMSIF_64BIT) {
                 cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
                 cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSHI;
                 cmeth.wcl.val = 0;
                 OOP_DoMethod(o, &cmeth.wcl.mID);
-                
+
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA64;
                 cmeth.wcw.val = data->msimsg;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
-            }
-            else
-            {
+            } else {
                 cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
                 cmeth.wcw.reg = capmsi + PCIMSI_DATA32;
                 cmeth.wcw.val = data->msimsg;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
             }
-            DMSI(bug("[PCIPC:Device] %s: -- MSI message = %04x\n", __func__, cmeth.wcw.val);)
 
+            /* Set Multiple Message Enable to the count we actually allocated */
+            UWORD mme = ilog2(roundup_pow_of_two(vectcnt));
+            msiflags = (msiflags & ~PCIMSIF_MMEN_MASK) | (mme << 4);
             msiflags |= PCIMSIF_ENABLE;
+
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
             cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
             cmeth.wcw.val = msiflags;
             OOP_DoMethod(o, &cmeth.wcw.mID);
 
+            /* Verify */
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
             cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
             msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
-            DMSI(bug("[PCIPC:Device] %s: Configured MSI Flags = %04x\n", __func__, msiflags);)
-            if (msiflags & PCIMSIF_ENABLE)
+            if (msiflags & PCIMSIF_ENABLE) {
+#if (0)
+                data->irq_base  = (UWORD)(apicIRQBase + HW_IRQ_BASE);
+                data->irq_count = vectcnt;
+                data->msix_mode = 0;
+#endif
                 return TRUE;
+            }
         }
+        DMSI(bug("[PCIPC:Device] %s: Failed to obtain/enable MSI vectors\n", __func__);)
     }
-    DMSI(bug("[PCIPC:Device] %s: Failed to obtain/enable MSI vectors\n", __func__);)
 
     return FALSE;
 }
 
-VOID PCIPCDev__Hidd_PCIDevice__ReleaseVectors(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_ReleaseVectors *msg)
+VOID PCIPCDev__Hidd_PCIDevice__ReleaseVectors(
+    OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDevice_ReleaseVectors *msg)
 {
     D(bug("[PCIPC:Device] %s()\n", __func__);)
+
     struct PCIPCDeviceData *data = OOP_INST_DATA(cl, o);
-    IPTR capmsi;
-    UBYTE vectirq = 0;
+    IPTR capmsi = 0, capmsix = 0;
 
-    D(bug("[PCIPC:Device] %s()\n", __func__);)
+    /* Query both MSI and MSI-X capability offsets */
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI,  &capmsi);
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
 
-    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI, &capmsi);
-
-    if (capmsi)
-    {
+    /* Disable MSI-X first if present */
+    if (capmsix) {
         union {
             struct pHidd_PCIDevice_WriteConfigWord wcw;
-            struct pHidd_PCIDevice_WriteConfigLong wcl;
+        } cmeth;
+        UWORD msixflags;
+
+        cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+        msixflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+
+        if (msixflags & (1 << 15)) {                                                /* MSI-X enabled? */
+            DMSI(bug("[PCIPC:Device] %s: Disabling MSI-X (flags=%04x)\n",
+                     __func__, msixflags);)
+
+            msixflags |=  (1 << 14);                                                /* Mask all vectors */
+            msixflags &= ~(1 << 15);                                                /* Disable MSI-X    */
+
+            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+            cmeth.wcw.reg = capmsix + PCIMSIX_FLAGS;
+            cmeth.wcw.val = msixflags;
+            OOP_DoMethod(o, &cmeth.wcw.mID);
+        }
+    }
+
+    /* Disable legacy MSI if present */
+    if (capmsi) {
+        union {
+            struct pHidd_PCIDevice_WriteConfigWord wcw;
         } cmeth;
         UWORD msiflags;
 
         cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
         cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
         msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
-        if (msiflags & PCIMSIF_ENABLE)
-        {
+
+        if (msiflags & PCIMSIF_ENABLE) {
+            DMSI(bug("[PCIPC:Device] %s: Disabling MSI (flags=%04x)\n",
+                     __func__, msiflags);)
+
             msiflags &= ~PCIMSIF_ENABLE;
+
             cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
             cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
             cmeth.wcw.val = msiflags;
             OOP_DoMethod(o, &cmeth.wcw.mID);
-
-            cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
-            cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
-            msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
-            DMSI(bug("[PCIPC:Device] %s: Configured MSI Flags = %04x\n", __func__, msiflags);)
-            if (msiflags & PCIMSIF_ENABLE)
-            {
-                bug("[PCIPC:Device] %s: Failed to disable MSI interrupts for device\n", __func__);
-            }
         }
     }
-    return;
+
+    /* Re-enable INTx for legacy fallback after MSI off */
+    {
+        union { struct pHidd_PCIDevice_WriteConfigWord wcw; } cmeth;
+        UWORD cmd;
+
+        cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        cmeth.wcw.reg = PCICS_COMMAND;
+        cmd = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
+
+        cmd &= ~(1 << 10);                                                          /* clear Interrupt Disable bit */
+
+        cmeth.wcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord;
+        cmeth.wcw.reg = PCICS_COMMAND;
+        cmeth.wcw.val = cmd;
+        OOP_DoMethod(o, &cmeth.wcw.mID);
+    }
+
+    D(bug("[PCIPC:Device] %s: MSI/MSI-X vectors released for %02x:%02x.%x\n",
+        __func__, data->bus, data->dev, data->func));
 }
