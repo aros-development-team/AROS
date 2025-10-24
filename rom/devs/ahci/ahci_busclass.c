@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -26,12 +26,19 @@ static AROS_INTH1(ahciBus_Reset, struct ahci_Bus *, bus)
 
     struct ahci_port *ap  = bus->ab_Port;
 
-    D(bug("[AHCI:Bus] %s()\n", __func__));
+    D(
+        bug("[AHCI:Bus] %s(0x%p)\n", __func__, bus);
+        bug("[AHCI:Bus] %s: port @ 0x%p\n", __func__, ap);
+    )
 
-    ahci_pwrite(ap, AHCI_PREG_CMD, 0);
-    ahci_pwrite(ap, AHCI_PREG_IE, 0);
-    ahci_pwrite(ap, AHCI_PREG_IS, ahci_pread(ap, AHCI_PREG_IS));
-
+    if (ap) {
+        /* Stop & disable the port safely ... */
+        ahci_port_stop(ap, 1);
+        ahci_pwrite(ap, AHCI_PREG_IE, 0);
+        ahci_pwrite(ap, AHCI_PREG_IS, ahci_pread(ap, AHCI_PREG_IS));
+        ahci_pwrite(ap, AHCI_PREG_CMD, 0);
+        D(bug("[AHCI:Bus] %s: port masked & interrupts cleared\n", __func__);)
+    }    
     return FALSE;
 
     AROS_INTFUNC_EXIT
@@ -115,7 +122,7 @@ OOP_Object *AHCIBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         )
 
         /* Install reset callback */
-        data->ab_ResetInt.is_Node.ln_Pri  = SD_PRI_DOS - 1;
+        data->ab_ResetInt.is_Node.ln_Pri  = SD_PRI_DOS - 2;
         data->ab_ResetInt.is_Node.ln_Name = AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name;
         data->ab_ResetInt.is_Code         = (VOID_FUNC)ahciBus_Reset;
         data->ab_ResetInt.is_Data         = data;

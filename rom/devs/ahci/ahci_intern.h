@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2023, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2011-2025, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -126,6 +126,7 @@ typedef struct {
     const char              *dev_gen;
     const char              *dev_revision;
     ULONG                   dev_HostID;
+    struct Interrupt        dev_ResetInt;
 } *device_t;
 
 struct ahci_Controller

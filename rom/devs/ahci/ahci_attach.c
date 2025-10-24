@@ -90,8 +90,8 @@ static const struct ahci_device ahci_devices[] = {
 };
 
 struct ahci_pciid {
-        uint16_t	ahci_vid;
-        uint16_t	ahci_did;
+        u_int16_t	ahci_vid;
+        u_int16_t	ahci_did;
         int		ahci_rev;
 };
 
@@ -124,6 +124,64 @@ static const struct ahci_pciid ahci_msi_blacklist[] = {
 static int	ahci_msi_enable = 1;
 int	ahci_synchronous_boot = 1;
 int ahci_icc_bug = 0;
+
+static AROS_INTH1(ahci_Reset, device_t, dev)
+{
+    AROS_INTFUNC_INIT
+
+    struct ahci_softc *sc = device_get_softc(dev);
+    struct AHCIBase *AHCIBase = dev->dev_Base;
+
+    ahciDebug("[AHCI] %s(0x%p)\n", __func__, dev);
+
+#if (0) // This is handled by the bus resetcallbacks...
+    u_int32_t pi;
+    int i;
+
+    /* Mask all implemented ports and clear any pending interrupts. */
+    pi = ahci_read(sc, AHCI_REG_PI);
+    for (i = 0; i < 32; ++i) {
+        if (pi & (1u << i)) {
+            struct ahci_port *ap = sc->sc_ports[i];
+            if (ap == NULL)
+                continue;
+
+            ahciDebug("[AHCI] %s: disabling port %d\n", __func__, i);
+
+            /* Stop & disable the port safely ... */
+            ahci_port_stop(ap, 1);
+            ahci_pwrite(ap, AHCI_PREG_IE, 0);
+
+            /* Acknowledge any pending per-port interrupt sources */
+            ahci_pwrite(ap, AHCI_PREG_IS, ahci_pread(ap, AHCI_PREG_IS));
+
+            /* Stop the command engine */
+            ahci_pwrite(ap, AHCI_PREG_CMD, 0);
+        }
+    }
+    ahciDebug("[AHCI:Controller] %s: All ports masked, interrupts cleared\n", __func__);
+#endif
+
+    /* Disable global interrupt enable in the GHC. */
+    u_int32_t ghc;
+    ghc = ahci_read(sc, AHCI_REG_GHC);
+    ghc &= ~GHC_IE;
+    ahci_write(sc, AHCI_REG_GHC, ghc);
+
+    /* Clear the global interrupt status if present. */
+    ahci_write(sc, AHCI_REG_IS, ahci_read(sc, AHCI_REG_IS));
+
+    ahciDebug("[AHCI:Controller] %s: GHC.IE disabled\n", __func__);
+
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+    HIDD_PCIDevice_ReleaseVectors(dev->dev_Object);
+
+    ahciDebug("[AHCI:Controller] %s: vectors released\n", __func__);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
 
 /*
  * Match during probe and attach.  The device does not yet have a softc.
@@ -249,7 +307,7 @@ ahci_pci_attach(device_t dev)
 #else
 # define gen                    dev->dev_gen
 #endif
-    uint16_t                    vid, did;
+    u_int16_t                   vid, did;
     u_int32_t                   pi;
     u_int32_t                   cap, cap2;
     u_int                       irq_flags;
@@ -327,6 +385,15 @@ ahci_pci_attach(device_t dev)
         ahciWarn("unable to map interrupt\n");
         ahci_pci_detach(dev);
         return (ENXIO);
+    }
+
+    if (sc->sc_irq_type == 1) {
+        /* Install reset callback */
+        dev->dev_ResetInt.is_Node.ln_Pri  = SD_PRI_DOS - 1;
+        dev->dev_ResetInt.is_Node.ln_Name = AHCIBase->ahci_Device.dd_Library.lib_Node.ln_Name;
+        dev->dev_ResetInt.is_Code         = (VOID_FUNC)ahci_Reset;
+        dev->dev_ResetInt.is_Data         = dev;
+        AddResetCallback(&dev->dev_ResetInt);
     }
 
     /*
@@ -648,6 +715,30 @@ noccc:
             while (ap->ap_signal & AP_SIGF_THREAD_SYNC)
                 ahci_os_sleep(100);
         }
+    }
+
+    /*
+     * Before marking the controller ready, clear any pending interrupts
+     * on all implemented ports.
+     */
+    pi = ahci_read(sc, AHCI_REG_PI);
+    for (int p = 0; p < AHCI_MAX_PORTS; ++p) {
+        if ((pi & (1u << p)) == 0)
+            continue;
+
+        struct ahci_port *ap = sc->sc_ports[p];
+        if (!ap)
+            continue;
+
+        /* Mask and clear per-port interrupts before enabling GHC.IE */
+        ahci_pwrite(ap, AHCI_PREG_IE, 0);
+
+        u_int32_t pis = ahci_pread(ap, AHCI_PREG_IS);
+        if (pis)
+            ahci_pwrite(ap, AHCI_PREG_IS, pis);
+
+        ahciDebug("[AHCI] %s: Cleared pending interrupts for port %d (IS=%08x)\n",
+                  __func__, p, pis);
     }
 
     /*
