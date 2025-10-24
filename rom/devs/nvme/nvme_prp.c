@@ -39,113 +39,197 @@
 
 #include LC_LIBDEFS_FILE
 
-#if (AROS_BIG_ENDIAN != 0)
-#define SWAP_LE_QUAD(x) (x) = AROS_QUAD2LE(x)
-#else
-#define SWAP_LE_QUAD(x)
+#ifndef DMA_Continue
+#define DMA_Continue    (1L << 1)
 #endif
 
-typedef struct nvme_prp_entry {
-    union {
-        struct {
-            UQUAD offset : 12;
-            UQUAD pagestart : 52;
-        };
-        UQUAD raw;
-    };
-} nvme_prp_entry_t;
+#define NVME_CMD_PSDT_MASK      (3 << 6)
 
 BOOL nvme_initprp(struct nvme_command *cmdio, struct completionevent_handler *ioehandle, struct nvme_Unit *unit, ULONG len, APTR *data, BOOL is_write)
 {
-    nvme_prp_entry_t *prp1 = (APTR)&cmdio->rw.prp1;
-    UQUAD prp1_page = (IPTR)*data & ~(unit->au_Bus->ab_Dev->pagesize - 1);
-    UWORD prp1_offset = (IPTR)*data & (unit->au_Bus->ab_Dev->pagesize - 1);
-    ULONG prp1_len;
+    device_t dev = unit->au_Bus->ab_Dev;
+    ULONG page_size;
+    ULONG page_mask;
+    struct NVMEBase *NVMEBase = dev ? dev->dev_NVMEBase : NULL;
+    ULONG first_seg_len = len;
+    ULONG dma_flags = is_write ? DMAFLAGS_PREWRITE : DMAFLAGS_PREREAD;
+    APTR phys1;
+    UQUAD dma_addr1;
+    ULONG first_chunk;
 
-    DPRP(bug("[NVME%02ld] %s(%p, %u)\n", unit->au_UnitNum, __func__, *data, len);)
+    ioehandle->ceh_IOMem.me_Un.meu_Addr = NULL;
 
-    // Set up PRP1
-    prp1->pagestart = prp1_page >> unit->au_Bus->ab_Dev->pageshift;
-    prp1->offset = prp1_offset;
-    DPRP(bug("[NVME%02ld] %s: prp1 %p = %015x:%02x\n", unit->au_UnitNum, __func__, *data, prp1->pagestart, prp1->offset);)
-    SWAP_LE_QUAD(prp1->raw);
+    if (!dev || !dev->dev_PCIDriverObject || !NVMEBase) {
+        goto fail;
+    }
 
-    prp1_len = unit->au_Bus->ab_Dev->pagesize - prp1_offset;
+    (void)NVMEBase;
 
-    DPRP(bug("[NVME%02ld] %s: prp1 data len %u\n", unit->au_UnitNum, __func__, prp1_len);)
+    page_size = dev->pagesize;
+    page_mask = page_size - 1;
 
-    // Check if we need to use PRP2
-    if (len > prp1_len) {
-        UQUAD next_addr = (IPTR)*data + prp1_len;
+    phys1 = CachePreDMA(*data, &first_seg_len, dma_flags);
+    if (!phys1 || first_seg_len == 0) {
+        goto fail;
+    }
 
-        DPRP(bug("[NVME%02ld] %s: using prp2 for %p\n", unit->au_UnitNum, __func__, next_addr);)
+    if (!nvme_dma_append(ioehandle, *data, first_seg_len, dma_flags)) {
+        goto fail;
+    }
 
-        UQUAD prp2_page = next_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
-        UWORD prp2_offset = next_addr & (unit->au_Bus->ab_Dev->pagesize - 1);
-        ULONG prp2_len;
+    dma_addr1 = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, phys1);
+    first_chunk = MIN(len, page_size - (dma_addr1 & page_mask));
+    first_chunk = MIN(first_chunk, first_seg_len);
 
-        nvme_prp_entry_t *prp2 = (APTR)&cmdio->rw.prp2;
-        prp2->pagestart = prp2_page >> unit->au_Bus->ab_Dev->pageshift;
-        prp2->offset = prp2_offset;
+    cmdio->rw.op.flags &= ~NVME_CMD_PSDT_MASK;
+    cmdio->rw.prp1 = AROS_QUAD2LE(dma_addr1);
 
-        prp2_len = unit->au_Bus->ab_Dev->pagesize - prp2_offset;
+    if (len <= first_chunk) {
+        cmdio->rw.prp2 = 0;
+        return TRUE;
+    }
 
-        DPRP(bug("[NVME%02ld] %s: prp2 data len %u\n", unit->au_UnitNum, __func__, prp2_len);)
+    {
+        ULONG remaining = len - first_chunk;
+        ULONG second_seg_len = remaining;
+        APTR next_cpu = (APTR)((UBYTE *)(*data) + first_chunk);
+        APTR phys2 = CachePreDMA(next_cpu, &second_seg_len, dma_flags | DMA_Continue);
 
-        // Check if a PRP list is needed
-        if (len > (prp1_len + prp2_len)) {
-            ULONG num_prps = ((len - (prp1_len + prp2_len) + unit->au_Bus->ab_Dev->pagesize - 1) / unit->au_Bus->ab_Dev->pagesize) + 1;
-            int prpblocks, prpentry, prp = 0, prpperpage = (unit->au_Bus->ab_Dev->pagesize / sizeof(nvme_prp_entry_t));
+        if (!phys2 || second_seg_len < remaining) {
+            goto fail;
+        }
 
-            prpblocks = ((num_prps - 1) / prpperpage) + 1;
-            DPRP(bug("[NVME%02ld] %s: prp list needed for %u entries(s) in %u prp page(s)\n", unit->au_UnitNum, __func__, num_prps, prpblocks);)
+        if (!nvme_dma_append(ioehandle, next_cpu, second_seg_len, dma_flags | DMA_Continue)) {
+            goto fail;
+        }
 
-            ioehandle->ceh_IOMem.me_Length = unit->au_Bus->ab_Dev->pagesize + (num_prps + prpblocks) * sizeof(nvme_prp_entry_t);
-            if ((ioehandle->ceh_IOMem.me_Un.meu_Addr = AllocMem(ioehandle->ceh_IOMem.me_Length, MEMF_ANY)) != NULL) {
-                nvme_prp_entry_t *prplist = (APTR)(((IPTR)ioehandle->ceh_IOMem.me_Un.meu_Addr + unit->au_Bus->ab_Dev->pagesize) & ~(unit->au_Bus->ab_Dev->pagesize - 1));
-                UQUAD curr_addr, curr_pagestart;
+        UQUAD dma_addr2 = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, phys2);
 
-                DPRP(
-                    bug("[NVME%02ld] %s: allocated prplist storage @ 0x%p (%u bytes)\n", unit->au_UnitNum, __func__, ioehandle->ceh_IOMem.me_Un.meu_Addr, ioehandle->ceh_IOMem.me_Length);
-                    bug("[NVME%02ld] %s: prplist @ 0x%p\n", unit->au_UnitNum, __func__, prplist);
-                )
+        if ((dma_addr2 & page_mask) != 0) {
+            goto fail;
+        }
 
-                // Populate PRP list
-                for (prpentry = 0; prpentry < (num_prps + prpblocks - 1); prpentry++) {
-                    if ((prpblocks > 1) && (prpentry < (num_prps + prpblocks - 2)) &&
-                            (prpentry > 0) && (((prpentry + 1) % prpperpage) == 0)) {
-                        curr_addr = (UQUAD)(IPTR)&prplist[prpentry + 1].raw;
-                        curr_pagestart = curr_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
-                        prplist[prpentry].pagestart =
-                            curr_pagestart >> unit->au_Bus->ab_Dev->pageshift;
-                        prplist[prpentry].offset = 0;
-                        DPRP(bug("[NVME%02ld] %s: # prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
-                    } else {
-                        curr_addr = next_addr + prp * unit->au_Bus->ab_Dev->pagesize;
-                        curr_pagestart = curr_addr & ~(unit->au_Bus->ab_Dev->pagesize - 1);
-                        prplist[prpentry].pagestart =
-                            curr_pagestart >> unit->au_Bus->ab_Dev->pageshift;
-                        prplist[prpentry].offset = 0;
-                        prp++;
-                        DPRP(bug("[NVME%02ld] %s:   prplist[%u] = %015x:%02x\n", unit->au_UnitNum, __func__, prpentry, prplist[prpentry].pagestart, prplist[prpentry].offset);)
-                    }
-                    SWAP_LE_QUAD(prplist[prpentry].raw);
+        if (remaining <= page_size) {
+            cmdio->rw.prp2 = AROS_QUAD2LE(dma_addr2);
+            return TRUE;
+        }
+
+        {
+            ULONG entries_needed = (remaining + page_size - 1) / page_size;
+            ULONG entries_per_page = page_size / sizeof(UQUAD);
+            ULONG entries_left;
+            ULONG lists_needed = 0;
+            ULONG alloc_bytes;
+            ULONG alloc_total;
+            UBYTE *prp_storage;
+            ULONG list_index;
+            ULONG page_index = 0;
+            ULONG flush_flags;
+            UQUAD first_list_pci = 0;
+
+            if (entries_per_page == 0) {
+                goto fail;
+            }
+
+            if ((entries_per_page == 1) && (entries_needed > 1)) {
+                goto fail;
+            }
+
+            entries_left = entries_needed;
+            while (entries_left > 0) {
+                lists_needed++;
+                if (entries_left > entries_per_page) {
+                    entries_left -= (entries_per_page - 1);
+                } else {
+                    entries_left = 0;
+                }
+            }
+
+            alloc_bytes = lists_needed * page_size;
+            alloc_total = alloc_bytes + (page_size - 1);
+
+            ioehandle->ceh_IOMem.me_Length = alloc_total;
+            ioehandle->ceh_IOMem.me_Un.meu_Addr = AllocMem(alloc_total, MEMF_ANY | MEMF_CLEAR);
+            if (!ioehandle->ceh_IOMem.me_Un.meu_Addr) {
+                goto fail;
+            }
+
+            prp_storage = (UBYTE *)(((IPTR)ioehandle->ceh_IOMem.me_Un.meu_Addr + page_size - 1) & ~page_mask);
+
+            entries_left = entries_needed;
+            for (list_index = 0; list_index < lists_needed; list_index++) {
+                UQUAD *list_page = (UQUAD *)(prp_storage + (list_index * page_size));
+                BOOL more_lists = entries_left > entries_per_page;
+                ULONG capacity = more_lists ? (entries_per_page - 1) : entries_left;
+                ULONG slot;
+
+                for (slot = 0; slot < capacity; slot++, page_index++) {
+                    list_page[slot] = AROS_QUAD2LE(dma_addr2 + ((UQUAD)page_index * page_size));
                 }
 
-                // Point PRP2 to the PRP list
-                prp2->pagestart = (IPTR)prplist >> unit->au_Bus->ab_Dev->pageshift;
-                prp2->offset = 0;
-#if (0)
-                ULONG dmalen = (num_prps + prpblocks - 1) << 3;
-                CachePreDMA(prplist, &dmalen, DMAFLAGS_PREREAD);
-#endif
-            } else {
-                bug("[NVME%02ld] %s: failed to allloc storage for prplist!\n", unit->au_UnitNum, __func__);
-                return FALSE;
+                entries_left -= capacity;
+
+                if (more_lists) {
+                    UQUAD next_addr = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(
+                        dev->dev_PCIDriverObject,
+                        prp_storage + ((list_index + 1) * page_size));
+
+                    if ((next_addr & page_mask) != 0) {
+                        goto fail;
+                    }
+
+                    list_page[entries_per_page - 1] = AROS_QUAD2LE(next_addr);
+                }
             }
+
+            if (page_index != entries_needed) {
+                goto fail;
+            }
+
+            flush_flags = DMAFLAGS_PREWRITE;
+            for (list_index = 0; list_index < lists_needed; list_index++) {
+                UBYTE *page_ptr = prp_storage + (list_index * page_size);
+                ULONG page_len = page_size;
+                APTR phys_page = CachePreDMA(page_ptr, &page_len, flush_flags);
+                UQUAD pci_addr;
+
+                if (!phys_page || page_len < page_size) {
+                    goto fail;
+                }
+
+                page_len = page_size;
+
+                if (!nvme_dma_append(ioehandle, page_ptr, page_len, flush_flags)) {
+                    goto fail;
+                }
+
+                pci_addr = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, phys_page);
+
+                if ((pci_addr & page_mask) != 0) {
+                    goto fail;
+                }
+
+                if (list_index == 0) {
+                    first_list_pci = pci_addr;
+                }
+
+                flush_flags |= DMA_Continue;
+            }
+
+            cmdio->rw.prp2 = AROS_QUAD2LE(first_list_pci);
         }
-        DPRP(bug("[NVME%02ld] %s: prp2 %015x:%02x\n", unit->au_UnitNum, __func__, prp2->pagestart, prp2->offset);)
-        SWAP_LE_QUAD(prp2->raw);
     }
+
     return TRUE;
+
+fail:
+    nvme_dma_release(ioehandle, TRUE);
+
+    if (ioehandle->ceh_IOMem.me_Un.meu_Addr) {
+        FreeMem(ioehandle->ceh_IOMem.me_Un.meu_Addr, ioehandle->ceh_IOMem.me_Length);
+        ioehandle->ceh_IOMem.me_Un.meu_Addr = NULL;
+        ioehandle->ceh_IOMem.me_Length = 0;
+    }
+
+    return FALSE;
 }

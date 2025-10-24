@@ -2,7 +2,6 @@
     Copyright (C) 2020-2025, The AROS Development Team. All rights reserved
  */
 
-#define DEBUG 0
 #include <proto/exec.h>
 
 /* We want all other bases obtained from our base */
@@ -67,7 +66,8 @@ static CONST_STRPTR const methBaseIDs[] = {
 };
 #endif
 
-CONST_STRPTR nvmeDeviceName = "nvme.device";
+
+extern const char GM_UNIQUENAME(LibName)[];
 CONST_STRPTR nvmeControllerName = "Non-Volatile Memory Express Controller";
 
 static int NVME_Init(struct NVMEBase *NVMEBase)
@@ -75,7 +75,7 @@ static int NVME_Init(struct NVMEBase *NVMEBase)
     struct BootLoaderBase       *BootLoaderBase;
     BOOL enabled = TRUE;
 
-    D(bug("[NVME--] %s: %s Initialization\n", __func__, nvmeDeviceName);)
+    D(bug("[NVME--] %s: %s Initialization\n", __func__, GM_UNIQUENAME(LibName));)
 
     NVMEBase->nvme_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     if (!NVMEBase->nvme_UtilityBase)
@@ -240,6 +240,7 @@ AROS_UFH3(void, nvme_PCIEnumerator_h,
     if (dev == NULL)
         return;
 
+    memset(dev, 0, sizeof(*dev));
     dev->dev_NVMEBase = NVMEBase;
     dev->dev_Object   = Device;
     dev->dev_HostID   = NVMEBase->nvme_HostCount;
@@ -274,15 +275,15 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
     EnumeratorArgs Args;
     device_t dev;
     struct TagItem nvme_tags[] = {
-        {aHidd_Name, (IPTR)nvmeDeviceName          },
-        {aHidd_HardwareName, (IPTR)nvmeControllerName      },
-        {aHidd_Producer, 0                             },
+        {aHidd_Name,            (IPTR)GM_UNIQUENAME(LibName)    },
+        {aHidd_HardwareName,    (IPTR)nvmeControllerName        },
+        {aHidd_Producer,        0                               },
 #define NVME_TAG_VEND 2
-        {aHidd_Product, 0                             },
+        {aHidd_Product,         0                               },
 #define NVME_TAG_PROD 3
-        {aHidd_DriverData, 0                             },
+        {aHidd_DriverData,      0                               },
 #define NVME_TAG_DATA 4
-        {TAG_DONE, 0                             }
+        {TAG_DONE,              0                               }
     };
 
     D(bug("[NVME:PCI] %s: Enumerating PCI Devices\n", __func__));

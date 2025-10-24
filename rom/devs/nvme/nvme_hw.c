@@ -6,7 +6,6 @@
 
 #include <asm/io.h>
 #include <hidd/pci.h>
-#include <interface/Hidd_PCIDriver.h>
 
 #include <string.h>
 
@@ -26,17 +25,26 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
 #if defined(__AROSEXEC_SMP__)
     struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
 #endif
-    int cmdid;
+    int cmdid = -1;
+    UWORD depth = nvmeq->q_depth;
+    UWORD start;
+    UWORD idx;
 
     Disable();
 #if defined(__AROSEXEC_SMP__)
     KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
-    cmdid = nvmeq->cmdid_data + 1;
-    if (cmdid > 15)
-        cmdid = 0;
-    nvmeq->cmdid_data = cmdid;
+    start = nvmeq->cmdid_hint;
+    for (idx = 0; idx < depth; idx++) {
+        UWORD slot = (start + idx) % depth;
+        if (!nvmeq->cmdid_busy[slot]) {
+            nvmeq->cmdid_busy[slot] = 1;
+            nvmeq->cmdid_hint = (slot + 1) % depth;
+            cmdid = slot;
+            break;
+        }
+    }
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&nvmeq->q_lock);
@@ -46,13 +54,36 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
     return cmdid;
 }
 
+void nvme_release_cmdid(struct nvme_queue *nvmeq, UWORD cmdid)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+#endif
+
+    if (cmdid >= nvmeq->q_depth)
+        return;
+
+    Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+
+    nvmeq->cmdid_busy[cmdid] = 0;
+    nvmeq->cmdid_hint = cmdid;
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+    Enable();
+}
+
 int nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 {
 #if defined(__AROSEXEC_SMP__)
     struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
 #endif
-    unsigned long flags;
     UWORD tail;
+    UWORD next;
 
     D(bug ("[NVME:HW] %s(0x%p, 0x%p)\n", __func__, nvmeq, cmd);)
     D(bug ("[NVME:HW] %s: sending command id #%u\n", __func__, cmd->common.op.command_id);)
@@ -63,11 +94,21 @@ int nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 #endif
 
     tail = nvmeq->sq_tail;
+    next = tail + 1;
+    if (next == nvmeq->q_depth)
+        next = 0;
+
+    if (next == nvmeq->sq_head) {
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+        Enable();
+        return -1;
+    }
+
     CopyMem(cmd, &nvmeq->sqba[tail], sizeof(struct nvme_command));
-    if (++tail == nvmeq->q_depth)
-        tail = 0;
-    *nvmeq->q_db = tail;
-    nvmeq->sq_tail = tail;
+    nvmeq->sq_tail = next;
+    *nvmeq->q_db = next;
 
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&nvmeq->q_lock);
@@ -101,6 +142,12 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
 
     D(bug ("[NVME:HW] %s: head=%u, phase=%u\n", __func__, head, phase);)
 
+#if defined(__AROSEXEC_SMP__)
+    {
+        struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+        (void)NVMEBase;
+        KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     for (;;) {
         struct nvme_completion *cqe = (struct nvme_completion *)&nvmeq->cqba[head];
 
@@ -121,5 +168,9 @@ void nvme_process_cq(struct nvme_queue *nvmeq)
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;
     }
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+    }
+#endif
     D(bug ("[NVME:HW] %s: finished\n", __func__);)
 }

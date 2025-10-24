@@ -20,6 +20,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_timer.h"
@@ -32,6 +34,8 @@
 #endif
 
 #define DIRQ(x)
+
+extern const char GM_UNIQUENAME(LibName)[];
 
 /*
     By rights, we should disable the nvme controller completly on shutdown
@@ -72,6 +76,7 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
 
     memset(&c, 0, sizeof(c));
     memset(&cehandle, 0, sizeof(cehandle));
+    nvme_dma_init(&cehandle);
 
     cehandle.ceh_Task = FindTask(NULL);
     cehandle.ceh_SigSet = SIGF_SINGLE;
@@ -85,15 +90,20 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
     DIRQ(bug ("[NVME:Controller] %s: deleting submission queue\n", __func__);)
     c.delete_queue.op.opcode = nvme_admin_delete_sq;
     c.delete_queue.qid = AROS_WORD2LE(1);
-    nvme_submit_admincmd(dev, &c, &cehandle);
-
-    Wait(cehandle.ceh_SigSet);
+    if (nvme_submit_admincmd(dev, &c, &cehandle) == 0) {
+        Wait(cehandle.ceh_SigSet);
+    } else {
+        cehandle.ceh_Status = 1;
+    }
     if (!cehandle.ceh_Status) {
         DIRQ(bug ("[NVME:Controller] %s: deleting completion queue\n", __func__);)
         c.delete_queue.op.opcode = nvme_admin_delete_cq;
         c.delete_queue.qid = AROS_WORD2LE(1);
-        nvme_submit_admincmd(dev, &c, &cehandle);
-        Wait(cehandle.ceh_SigSet);
+        if (nvme_submit_admincmd(dev, &c, &cehandle) == 0) {
+            Wait(cehandle.ceh_SigSet);
+        } else {
+            cehandle.ceh_Status = 1;
+        }
     }
 #endif
     DIRQ(bug ("[NVME:Controller] %s: disabling controller interrupts\n", __func__);)
@@ -110,8 +120,11 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
         DIRQ(bug ("[NVME:Controller] %s: disabling nvme MSI capability, and\n", __func__);)
 #endif
         DIRQ(bug ("[NVME:Controller] %s: setting queue count to 0\n", __func__);)
-        nvme_submit_admincmd(dev, &c, &cehandle);
-        Wait(cehandle.ceh_SigSet);
+        if (nvme_submit_admincmd(dev, &c, &cehandle) == 0) {
+            Wait(cehandle.ceh_SigSet);
+        } else {
+            cehandle.ceh_Status = 1;
+        }
         if (!cehandle.ceh_Status) {
             DIRQ(bug ("[NVME:Controller] %s: Controller ready for shutdown\n", __func__);)
         }
@@ -189,27 +202,6 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 UQUAD cap;
                 ULONG sigs, aqa;
 
-                dev->dev_Queues[0]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-                if (!dev->dev_Queues[0]->cehooks) {
-                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                    dev->dev_Queues = NULL;
-                    // TODO: dispose the controller object
-                    nvme_CloseTimer(nvmeTimer);
-                    return NULL;
-                }
-                D(bug ("[NVME:Controller] %s:     admin queue hooks @ 0x%p\n", __func__, dev->dev_Queues[0]->cehooks);)
-                dev->dev_Queues[0]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
-                if (!dev->dev_Queues[0]->cehandlers) {
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
-                    dev->dev_Queues[0]->cehooks = NULL;
-                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                    dev->dev_Queues = NULL;
-                    // TODO: dispose the controller object
-                    nvme_CloseTimer(nvmeTimer);
-                    return NULL;
-                }
-                D(bug ("[NVME:Controller] %s:     admin queue handlers @ 0x%p\n", __func__, dev->dev_Queues[0]->cehandlers);)
-
                 aqa = dev->dev_Queues[0]->q_depth - 1;
                 aqa |= aqa << 16;
 
@@ -219,8 +211,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
                 dev->dev_nvmeregbase->cc = 0;
                 dev->dev_nvmeregbase->aqa = aqa;
-                dev->dev_nvmeregbase->asq = (UQUAD)(IPTR)dev->dev_Queues[0]->sqba;
-                dev->dev_nvmeregbase->acq = (UQUAD)(IPTR)dev->dev_Queues[0]->cqba;
+                dev->dev_nvmeregbase->asq = dev->dev_Queues[0]->sq_dma;
+                dev->dev_nvmeregbase->acq = dev->dev_Queues[0]->cq_dma;
 
                 /* parse capabilities ... */
                 cap = dev->dev_nvmeregbase->cap;
@@ -246,10 +238,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 dev->dev_Queues[0]->q_IntHandler.is_Data = dev->dev_Queues[0];
                 if (!HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object, &dev->dev_Queues[0]->q_IntHandler)) {
                     bug("[NVME:Controller] %s: ERROR - failed to add PCI interrupt handler!\n", __func__);
-                    FreeMem(dev->dev_Queues[0]->cehandlers, sizeof(struct completionevent_handler *) * 16);
-                    dev->dev_Queues[0]->cehandlers= NULL;
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
-                    dev->dev_Queues[0]->cehooks = NULL;
+                    nvme_free_queue(dev->dev_Queues[0]);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -262,20 +251,27 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     struct nvme_id_ctrl *ctrl = (struct nvme_id_ctrl *)buffer;
                     struct completionevent_handler cehandle;
                     struct nvme_command c;
+                    ULONG sglcap;
 
+                    memset(&cehandle, 0, sizeof(cehandle));
+                    nvme_dma_init(&cehandle);
                     cehandle.ceh_Task = FindTask(NULL);
                     cehandle.ceh_SigSet = SIGF_SINGLE;
 
                     memset(&c, 0, sizeof(c));
                     c.identify.op.opcode = nvme_admin_identify;
                     c.identify.nsid = 0;
-                    c.identify.prp1 = (UQUAD)(IPTR)buffer;
+                    c.identify.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, buffer));
                     c.identify.cns = 1;
 
                     D(bug ("[NVME:Controller] %s: sending nvme_admin_identify\n", __func__);)
                     ULONG signals = SetSignal(0, 0);
-                    nvme_submit_admincmd(dev, &c, &cehandle);
-                    sigs = nvme_WaitTO(nvmeTimer, 1, 0, cehandle.ceh_SigSet);
+                    if (nvme_submit_admincmd(dev, &c, &cehandle) != 0) {
+                        sigs = 0;
+                        cehandle.ceh_Status = 1;
+                    } else {
+                        sigs = nvme_WaitTO(nvmeTimer, 1, 0, cehandle.ceh_SigSet);
+                    }
                     SetSignal(signals, signals);
                     if ((sigs & cehandle.ceh_SigSet) && (!cehandle.ceh_Status)) {
                         D(bug ("[NVME:Controller] %s:     Model '%s'\n", __func__, ctrl->mn);)
@@ -286,8 +282,17 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                         D(bug ("[NVME:Controller] %s: mdts = %u\n", __func__, ctrl->mdts);)
                         dev->dev_mdts = ctrl->mdts;
 
+                        CopyMem(((UBYTE *)ctrl) + NVME_ID_CTRL_SGLS_OFFSET, &sglcap, sizeof(sglcap));
+                        sglcap = AROS_LE2LONG(sglcap);
+
+                        if (sglcap & NVME_ID_CTRL_SGLS_IO_COMMANDS) {
+                            dev->dev_Features |= NVME_DEVF_SGL_SUPPORTED;
+                            D(bug ("[NVME:Controller] %s: SGL support advertised  (0x%08lx)\n", __func__, sglcap);)
+                        } else
+                            dev->dev_Features &= ~NVME_DEVF_SGL_SUPPORTED;
+
                         struct TagItem attrs[] = {
-                            {aHidd_Name,                (IPTR)"nvme.device"                             },
+                            {aHidd_Name,                (IPTR)GM_UNIQUENAME(LibName)                    },
                             {aHidd_HardwareName,        0                                               },
 #define BUS_TAG_HARDWARENAME 1
                             {aHidd_Producer,            GetTagData(aHidd_Producer, 0, msg->attrList)    },
@@ -320,7 +325,7 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
                 } else {
                     D(bug ("[NVME:Controller] %s: ERROR - failed to create DMA buffer!\n", __func__);)
-                    FreeMem(dev->dev_Queues[0]->cehooks, sizeof(_NVMEQUEUE_CE_HOOK) * 16);
+                    nvme_free_queue(dev->dev_Queues[0]);
                     FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
                     dev->dev_Queues = NULL;
                     // TODO: dispose the controller object
@@ -328,8 +333,14 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 }
             } else {
                 bug("[NVME:Controller] %s: ERROR - failed to create Admin Queue!\n", __func__);
-                FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                dev->dev_Queues = NULL;
+                if (dev->dev_Queues && dev->dev_Queues[0]) {
+                    nvme_free_queue(dev->dev_Queues[0]);
+                    dev->dev_Queues[0] = NULL;
+                }
+                if (dev->dev_Queues) {
+                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
+                    dev->dev_Queues = NULL;
+                }
                 data = NULL;
             }
         } else {
@@ -359,6 +370,17 @@ VOID NVME__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         if (nvmeNode->ac_Object == o) {
             D(bug ("[NVME:Controller] %s: Destroying Controller Entry @ %p\n", __func__, nvmeNode);)
             Remove(&nvmeNode->ac_Node);
+            if (nvmeNode->ac_dev && nvmeNode->ac_dev->dev_Queues) {
+                ULONG q;
+                for (q = 0; q <= nvmeNode->ac_dev->queuecnt; q++) {
+                    if (nvmeNode->ac_dev->dev_Queues[q]) {
+                        nvme_free_queue(nvmeNode->ac_dev->dev_Queues[q]);
+                        nvmeNode->ac_dev->dev_Queues[q] = NULL;
+                    }
+                }
+                FreeMem(nvmeNode->ac_dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
+                nvmeNode->ac_dev->dev_Queues = NULL;
+            }
         }
     }
 }

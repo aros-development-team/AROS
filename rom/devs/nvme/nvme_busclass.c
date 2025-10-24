@@ -2,7 +2,6 @@
     Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -50,6 +49,8 @@
 #define DIO(x)
 //#define NVME_DUMP_READS
 
+extern const char GM_UNIQUENAME(LibName)[];
+
 /*
     NVME_IOIntCode:
         handle incomming completion event interrupts
@@ -82,14 +83,24 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
     SetSignal(0, SIGF_SINGLE);
     for (;;) {
         Wait(SIGF_SINGLE);
-        for (i = 0; i < 16; i ++) {
-            if ((nvmeq->cehandlers[i]) && (nvmeq->cehandlers[i]->ceh_Reply)) {
-                struct IOExtTD *iotd = (struct IOExtTD *)nvmeq->cehandlers[i]->ceh_Msg;
-                nvmeq->cehandlers[i] = NULL;
+        for (i = 0; i < nvmeq->q_depth; i ++) {
+            struct completionevent_handler *slot = nvmeq->cehandlers[i];
+
+            if (slot && slot->ceh_Reply) {
+                struct IOExtTD *iotd = (struct IOExtTD *)slot->ceh_Msg;
 
                 D(bug ("[NVME:Bus] %s: replying to IO @ 0x%p\n", __func__, iotd);)
 
                 ReplyMsg((struct Message *)iotd);
+
+                slot->ceh_Reply = FALSE;
+                slot->ceh_Task = NULL;
+                slot->ceh_Msg = NULL;
+                slot->ceh_SigSet = 0;
+
+                nvmeq->cehandlers[i] = NULL;
+                nvmeq->cehooks[i] = NULL;
+                nvme_release_cmdid(nvmeq, i);
             }
         }
     }
@@ -267,6 +278,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
         D(bug ("[NVME:Bus] NVMEBus_Start: buffer @ 0x%p, ExpansionBase @ 0x%p\n", buffer, ExpansionBase);)
 
+        memset(&busehandle, 0, sizeof(busehandle));
+        nvme_dma_init(&busehandle);
         busehandle.ceh_Task = FindTask(NULL);
         busehandle.ceh_SigSet = SIGF_SINGLE;
         OOP_GetAttr(data->ab_Dev->dev_Object, aHidd_PCIDevice_INTLine, &PCIIntLine);
@@ -288,8 +301,12 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         D(bug ("[NVME:Bus] NVMEBus_Start: sending nvme_admin_set_features(NVME_FEAT_NUM_QUEUES, %u)\n", c.features.dword11 & 0xFF);)
 
         ULONG signals = SetSignal(0, 0);
-        nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-        sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+        if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
+            sigs = 0;
+            busehandle.ceh_Status = 1;
+        } else {
+            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+        }
         SetSignal(signals, signals);
         if (!(sigs & busehandle.ceh_SigSet)) {
             DIRQ(bug ("[NVME:Bus] NVMEBus_Start: timeout sending set features\n");)
@@ -346,8 +363,6 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             if (data->ab_Dev->dev_Queues[nn + 1]) {
                 int flags;
 
-                data->ab_CE = AllocMem(sizeof(struct completionevent_handler) * depth, MEMF_ANY);
-                D(bug ("[NVME:Bus] NVMEBus_Start:  Completion Events @ 0x%p\n", data->ab_CE);)
                 data->ab_Dev->dev_Queues[nn + 1]->q_IOTask =NewCreateTask(TASKTAG_NAME, "NVME Queue IO task",
                         TASKTAG_PC, nvme_iotask,
                         TASKTAG_PRI, 21,
@@ -381,40 +396,43 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
 #endif
 
-                    data->ab_Dev->dev_Queues[nn + 1]->cehooks = AllocMem(sizeof(_NVMEQUEUE_CE_HOOK) * 16, MEMF_CLEAR);
-                    data->ab_Dev->dev_Queues[nn + 1]->cehandlers = AllocMem(sizeof(struct completionevent_handler *) * 16, MEMF_CLEAR);
-
-                    D(bug ("[NVME:Bus] NVMEBus_Start:     hooks @ 0x%p, handlers @ 0x%p\n", data->ab_Dev->dev_Queues[nn + 1]->cehooks, data->ab_Dev->dev_Queues[nn + 1]->cehandlers);)
-
                     /* completion queue needs to be set before the submission queue */
                     flags = NVME_QUEUE_PHYS_CONTIG | NVME_CQ_IRQ_ENABLED;
 
                     memset(&c, 0, sizeof(c));
                     c.create_cq.op.opcode = nvme_admin_create_cq;
-                    c.create_cq.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)data->ab_Dev->dev_Queues[nn + 1]->cqba);
+                    c.create_cq.prp1 = AROS_QUAD2LE(data->ab_Dev->dev_Queues[nn + 1]->cq_dma);
                     c.create_cq.cqid = AROS_WORD2LE(nn + 1);
                     c.create_cq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                     c.create_cq.cq_flags = AROS_WORD2LE(flags);
                     c.create_cq.irq_vector = AROS_WORD2LE(nn);
 
                     signals = SetSignal(0, 0);
-                    nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-                    sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                    if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
+                        sigs = 0;
+                        busehandle.ceh_Status = 1;
+                    } else {
+                        sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                    }
                     SetSignal(signals, signals);
                     if ((sigs & busehandle.ceh_SigSet) &&  (!busehandle.ceh_Status)) {
                         flags = NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM;
 
                         memset(&c, 0, sizeof(c));
                         c.create_sq.op.opcode = nvme_admin_create_sq;
-                        c.create_sq.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)data->ab_Dev->dev_Queues[nn + 1]->sqba);
+                        c.create_sq.prp1 = AROS_QUAD2LE(data->ab_Dev->dev_Queues[nn + 1]->sq_dma);
                         c.create_sq.sqid = AROS_WORD2LE(nn + 1);
                         c.create_sq.qsize = AROS_WORD2LE(data->ab_Dev->dev_Queues[nn + 1]->q_depth - 1);
                         c.create_sq.sq_flags = AROS_WORD2LE(flags);
                         c.create_sq.cqid = AROS_WORD2LE(nn + 1);
 
                         signals = SetSignal(0, 0);
-                        nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-                        sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                        if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
+                            sigs = 0;
+                            busehandle.ceh_Status = 1;
+                        } else {
+                            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                        }
                         SetSignal(signals, signals);
                         if ((sigs & busehandle.ceh_SigSet) &&  (!busehandle.ceh_Status)) {
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Name = "NVME IO Interrupt";
@@ -429,11 +447,15 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         }
                     } else {
                         bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to register IO completion queue (status=%u)\n", busehandle.ceh_Status);
+                        nvme_free_queue(data->ab_Dev->dev_Queues[nn + 1]);
+                        data->ab_Dev->dev_Queues[nn + 1] = NULL;
                     }
                 }
 #if defined(USE_MSI)
                 else {
                     bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to obtain necessary vector attribs\n");
+                    nvme_free_queue(data->ab_Dev->dev_Queues[nn + 1]);
+                    data->ab_Dev->dev_Queues[nn + 1] = NULL;
                 }
 #endif
             } else {
@@ -445,26 +467,30 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
         for (nn = 0; (data->ab_Dev->queuecnt > 0) && (nn < maxUnits); nn++) {
             struct nvme_id_ns *id_ns = (struct nvme_id_ns *)buffer;
             struct TagItem attrs[] = {
-                {aHidd_Name,                        (IPTR)"nvme.device"     },
-                {aHidd_DriverData,                  (IPTR)data->ab_Dev      },
-                {aHidd_StorageUnit_Number,          nn                      },
-                {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName  },
-                {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer   },
-                {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW    },
-                {TAG_DONE,                          0                       }
+                {aHidd_Name,                        (IPTR)GM_UNIQUENAME(LibName)    },
+                {aHidd_DriverData,                  (IPTR)data->ab_Dev              },
+                {aHidd_StorageUnit_Number,          nn                              },
+                {aHidd_StorageUnit_Model,           (IPTR)data->ab_DevName          },
+                {aHidd_StorageUnit_Serial,          (IPTR)data->ab_DevSer           },
+                {aHidd_StorageUnit_Revision,        (IPTR)data->ab_DevFW            },
+                {TAG_DONE,                          0                               }
             };
 
             memset(buffer, 0, 8192);
             memset(&c, 0, sizeof(c));
             c.identify.op.opcode = nvme_admin_identify;
-            c.identify.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)buffer);
+                    c.identify.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(data->ab_Dev->dev_PCIDriverObject, buffer));
             c.identify.nsid = AROS_LONG2LE(nn + 1);
             c.identify.cns = 0;
 
             D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_identify\n", nn + 1);)
             signals = SetSignal(0, 0);
-            nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-            sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+            if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
+                sigs = 0;
+                busehandle.ceh_Status = 1;
+            } else {
+                sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+            }
             SetSignal(signals, signals);
             if ((!busehandle.ceh_Status) && (id_ns->ncap != 0)) {
                 int i, lbaf = id_ns->flbas & 0xf;
@@ -485,14 +511,18 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                 memset(&c, 0, sizeof(c));
                 c.features.op.opcode = nvme_admin_get_features;
-                c.features.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)rt);
+                c.features.prp1 = AROS_QUAD2LE((UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(data->ab_Dev->dev_PCIDriverObject, rt));
                 c.features.fid = AROS_LONG2LE(NVME_FEAT_LBA_RANGE);
                 c.features.nsid = AROS_LONG2LE(nn + 1);
 
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u sending nvme_admin_get_features\n", nn + 1);)
                 signals = SetSignal(0, 0);
-                nvme_submit_admincmd(data->ab_Dev, &c, &busehandle);
-                sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                if (nvme_submit_admincmd(data->ab_Dev, &c, &busehandle) != 0) {
+                    sigs = 0;
+                    busehandle.ceh_Status = 1;
+                } else {
+                    sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
+                }
                 SetSignal(signals, signals);
                 if (!busehandle.ceh_Status) {
                     D(

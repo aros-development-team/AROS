@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2020-2023, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2020-2025, The AROS Development Team.  All rights reserved.
  */
 
 #ifndef NVME_INTERN_H
 #define NVME_INTERN_H
+
+#include <proto/exec.h>
 
 #include <exec/types.h>
 #include <asm/io.h>
@@ -31,6 +33,14 @@
 
 #define Unit(io) ((struct nvme_Unit *)(io)->io_Unit)
 #define IOStdReq(io) ((struct IOStdReq *)io)
+
+#define NVME_ID_CTRL_SGLS_OFFSET      536
+#define NVME_ID_CTRL_SGLS_IO_COMMANDS (1UL << 0)
+
+#define DMAFLAGS_PREREAD     0
+#define DMAFLAGS_PREWRITE    DMA_ReadFromRAM
+#define DMAFLAGS_POSTREAD    (1 << 31)
+#define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 
 /* nvme.device base */
 struct NVMEBase
@@ -139,6 +149,7 @@ typedef struct {
     ULONG              	dev_HostID;
 
     UBYTE               dev_mdts;
+    ULONG               dev_Features;
 
     int                 db_stride;
     volatile struct nvme_registers *dev_nvmeregbase;
@@ -151,6 +162,17 @@ typedef struct {
     struct nvme_queue   **dev_Queues;
 } *device_t;
 
+#define NVME_INLINE_DMA_SEGMENTS   4
+
+#define NVME_DEVF_SGL_SUPPORTED   (1UL << 0)
+
+struct nvme_dma_segment
+{
+    APTR                nds_Address;
+    ULONG               nds_Length;
+    ULONG               nds_Flags;
+};
+
 struct completionevent_handler
 {
     struct Task         *ceh_Task;
@@ -160,7 +182,105 @@ struct completionevent_handler
     ULONG               ceh_Result;
     volatile UWORD      ceh_Status;
     UWORD               ceh_Reply;
+
+    struct nvme_dma_segment ceh_DMAInline[NVME_INLINE_DMA_SEGMENTS];
+    struct nvme_dma_segment *ceh_DMAMap;
+    ULONG               ceh_DMAMapCount;
+    ULONG               ceh_DMAMapCapacity;
 };
+
+static inline void nvme_dma_init(struct completionevent_handler *handler)
+{
+    handler->ceh_DMAMap = handler->ceh_DMAInline;
+    handler->ceh_DMAMapCount = 0;
+    handler->ceh_DMAMapCapacity = NVME_INLINE_DMA_SEGMENTS;
+}
+
+static inline void nvme_dma_reset(struct completionevent_handler *handler)
+{
+    if (handler->ceh_DMAMap && handler->ceh_DMAMap != handler->ceh_DMAInline) {
+        FreeMem(handler->ceh_DMAMap,
+                handler->ceh_DMAMapCapacity * sizeof(struct nvme_dma_segment));
+    }
+    handler->ceh_DMAMap = handler->ceh_DMAInline;
+    handler->ceh_DMAMapCapacity = NVME_INLINE_DMA_SEGMENTS;
+    handler->ceh_DMAMapCount = 0;
+}
+
+static inline BOOL nvme_dma_ensure_capacity(struct completionevent_handler *handler,
+                                            ULONG needed)
+{
+    if (needed <= handler->ceh_DMAMapCapacity) {
+        return TRUE;
+    }
+
+    ULONG new_capacity = handler->ceh_DMAMapCapacity ? handler->ceh_DMAMapCapacity : NVME_INLINE_DMA_SEGMENTS;
+
+    while (new_capacity < needed) {
+        new_capacity <<= 1;
+    }
+
+    struct nvme_dma_segment *new_map = AllocMem(new_capacity * sizeof(struct nvme_dma_segment), MEMF_ANY | MEMF_CLEAR);
+    if (!new_map) {
+        return FALSE;
+    }
+
+    if (handler->ceh_DMAMapCount) {
+        CopyMem(handler->ceh_DMAMap, new_map,
+                handler->ceh_DMAMapCount * sizeof(struct nvme_dma_segment));
+    }
+
+    if (handler->ceh_DMAMap && handler->ceh_DMAMap != handler->ceh_DMAInline) {
+        ULONG old_capacity = handler->ceh_DMAMapCapacity;
+        FreeMem(handler->ceh_DMAMap,
+                old_capacity * sizeof(struct nvme_dma_segment));
+    }
+
+    handler->ceh_DMAMap = new_map;
+    handler->ceh_DMAMapCapacity = new_capacity;
+    return TRUE;
+}
+
+static inline BOOL nvme_dma_append(struct completionevent_handler *handler,
+                                   APTR address, ULONG length, ULONG flags)
+{
+    if (!nvme_dma_ensure_capacity(handler, handler->ceh_DMAMapCount + 1)) {
+        return FALSE;
+    }
+
+    struct nvme_dma_segment *segment = &handler->ceh_DMAMap[handler->ceh_DMAMapCount++];
+    segment->nds_Address = address;
+    segment->nds_Length = length;
+    segment->nds_Flags = flags;
+    return TRUE;
+}
+
+static inline void nvme_dma_release(struct completionevent_handler *handler, BOOL do_post)
+{
+    if (do_post) {
+        ULONG idx;
+
+        for (idx = 0; idx < handler->ceh_DMAMapCount; idx++) {
+            struct nvme_dma_segment *segment = &handler->ceh_DMAMap[idx];
+
+            if (segment->nds_Address && segment->nds_Length) {
+                ULONG length = segment->nds_Length;
+                ULONG postflags = (segment->nds_Flags & DMAFLAGS_PREWRITE) ? DMAFLAGS_POSTWRITE : DMAFLAGS_POSTREAD;
+
+                CachePostDMA(segment->nds_Address, &length, postflags);
+            }
+        }
+    }
+
+    if (handler->ceh_DMAMap && handler->ceh_DMAMap != handler->ceh_DMAInline) {
+        ULONG allocated = handler->ceh_DMAMapCapacity;
+        FreeMem(handler->ceh_DMAMap, allocated * sizeof(struct nvme_dma_segment));
+    }
+
+    handler->ceh_DMAMap = handler->ceh_DMAInline;
+    handler->ceh_DMAMapCapacity = NVME_INLINE_DMA_SEGMENTS;
+    handler->ceh_DMAMapCount = 0;
+}
 
 typedef void (*_NVMEQUEUE_CE_HOOK)(struct nvme_queue *, struct nvme_completion *);
 struct nvme_queue {
@@ -177,15 +297,19 @@ struct nvme_queue {
     UWORD q_irq;
     /* command queue */
     struct nvme_command *sqba;
+    UQUAD sq_dma;
     UWORD sq_head;
     UWORD sq_tail;
     /* completion queue */
     _NVMEQUEUE_CE_HOOK *cehooks;
     struct completionevent_handler **cehandlers;
+    struct completionevent_handler *ce_entries;
     volatile struct nvme_completion *cqba;
+    UQUAD cq_dma;
     UWORD cq_head;
     UWORD cq_phase;
-    unsigned long cmdid_data;//[];
+    UWORD cmdid_hint;
+    UBYTE *cmdid_busy;
 };
 
 struct nvme_Controller
@@ -204,7 +328,6 @@ struct nvme_Bus
     struct NVMEBase     *ab_Base;   /* device self */
     device_t            ab_Dev;
 
-    struct completionevent_handler *ab_CE;
     UWORD               ab_UnitMax;             /* Max units the bus can have   */
     UWORD               ab_UnitCnt;             /* actual # of units on the bus */
     OOP_Object          **ab_Units;
