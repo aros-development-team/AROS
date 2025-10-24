@@ -552,11 +552,6 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
             cmeth.wcw.reg = capmsi + PCIMSI_FLAGS;
             msiflags = (UWORD)OOP_DoMethod(o, &cmeth.wcw.mID);
             if (msiflags & PCIMSIF_ENABLE) {
-#if (0)
-                data->irq_base  = (UWORD)(apicIRQBase + HW_IRQ_BASE);
-                data->irq_count = vectcnt;
-                data->msix_mode = 0;
-#endif
                 return TRUE;
             }
         }
