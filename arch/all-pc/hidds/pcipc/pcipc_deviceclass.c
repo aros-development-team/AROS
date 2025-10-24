@@ -261,7 +261,7 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
                 volatile struct msix_entry *mtab =
                     (volatile struct msix_entry *)((UBYTE *)bar_va + toff);
 
-                /* Check TableSize from Flags (bits 0–10) */
+                /* Check TableSize from Flags (bits 0..10) */
                 UWORD table_size = (msix_flags & 0x07FF) + 1;
                 if (msg->vectorno < table_size)
                 {
@@ -320,7 +320,7 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
             UWORD vecCount = (1 << ((msiflags & PCIMSIF_MMEN_MASK) >> 4));
             if (msg->vectorno < vecCount)
             {
-                uint16_t msg_data;
+                UWORD msg_data;
                 struct pHidd_PCIDevice_ReadConfigWord rmsg;
 
                 /* Read message data directly from config space */
@@ -330,9 +330,9 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
                     rmsg.reg = capmsi + PCIMSI_DATA32;
 
                 rmsg.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
-                msg_data = (uint16_t)OOP_DoMethod(o, &rmsg.mID);
+                msg_data = (UWORD)OOP_DoMethod(o, &rmsg.mID);
 
-                uint16_t vector = (msg_data & 0xFF);
+                UWORD vector = (msg_data & 0xFF);
 
                 struct TagItem *tag, *tags = (struct TagItem *)msg->attribs;
                 while ((tag = NextTagItem(&tags)))
