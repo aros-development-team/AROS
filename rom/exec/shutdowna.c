@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: ShutdownA() - Shut down the operating system.
 */
@@ -9,17 +9,6 @@
 
 #include "exec_util.h"
 #include "exec_debug.h"
-
-static void ShutdownHandler(struct ExecBase *SysBase, IPTR action)
-{
-    DSHUTDOWN("Shutdown Handler started..");
-
-    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
-
-    /* We shouldn't get here. If a reset handler has failed to shut down
-     * the system, the system may still be unstable as a result of
-     * peripheral device resets */
-}
 
 /*****************************************************************************
 
@@ -63,19 +52,7 @@ static void ShutdownHandler(struct ExecBase *SysBase, IPTR action)
 {
     AROS_LIBFUNC_INIT
 
-    /* If we are in an emergency situation, go as simple as possible */
-    if (action & SD_FLAG_EMERGENCY)
-    {
-        ShutdownHandler(SysBase, action);
-        return 0;
-    }
-
-    NewCreateTask(TASKTAG_NAME       , "Shutdown",
-                    TASKTAG_PRI        , 127,
-                    TASKTAG_PC         , ShutdownHandler,
-                    TASKTAG_ARG1       , SysBase,
-                    TASKTAG_ARG2       , action,
-                    TAG_DONE);
+    Exec_DoResetCallbacks((struct IntExecBase *)SysBase, action);
 
     return 0;
 
