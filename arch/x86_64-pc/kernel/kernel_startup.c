@@ -30,6 +30,7 @@
 #define D(x)
 #define DSTACK(x)
 
+#define KERNEL_ORIG_TSS
 #define KERNEL_DEBUG_BUFFSIZE   1024
 
 #if !defined(TARGET_SECTION_COMMENT)
@@ -42,10 +43,10 @@
 # define __BUILDSTRXTRA__
 #endif
 
-static APTR core_AllocBootTLS(struct KernBootPrivate *);
-static APTR core_AllocBootTSS(struct KernBootPrivate *);
-static APTR core_AllocBootGDT(struct KernBootPrivate *);
-static APTR core_AllocBootIDT(struct KernBootPrivate *);
+static APTR core_BSPAllocTLS(struct KernBootPrivate *);
+static APTR core_BSPAllocTSS(struct KernBootPrivate *);
+static APTR core_BSPAllocGDT(struct KernBootPrivate *);
+static APTR core_AllocIDT(struct KernBootPrivate *);
 
 /* Common IBM PC memory layout (64bit version) */
 static const struct MemRegion PC_Memory[] =
@@ -319,13 +320,17 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* We are x86-64, and we know we always have APIC. */
     __KernBootPrivate->_APICBase = core_APIC_GetBase();
 
-    /* Pre-Allocare TLS & GDT */
+    /* Pre-Allocate TLS & GDT */
     if (!__KernBootPrivate->BOOTTLS)
-        __KernBootPrivate->BOOTTLS = core_AllocBootTLS(__KernBootPrivate);
-    if (!__KernBootPrivate->BOOTGDT)
-        __KernBootPrivate->BOOTGDT = core_AllocBootGDT(__KernBootPrivate);
-    if (!__KernBootPrivate->TSS)
-        __KernBootPrivate->TSS = core_AllocBootTSS(__KernBootPrivate);
+        __KernBootPrivate->BOOTTLS = core_BSPAllocTLS(__KernBootPrivate);
+    if (!__KernBootPrivate->BOOTGDT) {
+        __KernBootPrivate->kbp_APIC_Max = 1;
+        __KernBootPrivate->BOOTGDT = core_BSPAllocGDT(__KernBootPrivate);
+
+        /* Allocate TSS for boot CPU */
+        if (!__KernBootPrivate->TSS)
+            __KernBootPrivate->TSS = core_BSPAllocTSS(__KernBootPrivate);
+    }
 
     /* Setup GDT */
     core_SetupGDT(__KernBootPrivate, 0,
@@ -363,7 +368,7 @@ void kernel_cstart(const struct TagItem *start_msg)
 
     D(bug("[Kernel] %s: preparing interrupt vectors\n", __func__));
     /* Set-up the IDT */
-    __KernBootPrivate->BOOTIDT = core_AllocBootIDT(__KernBootPrivate);
+    __KernBootPrivate->BOOTIDT = core_AllocIDT(__KernBootPrivate);
     D(bug("[Kernel] %s:                IDT      : 0x%p\n", __func__, __KernBootPrivate->BOOTIDT);)
     core_SetupIDT(0, (x86vectgate_t *)__KernBootPrivate->BOOTIDT);
 
@@ -629,24 +634,6 @@ void core_SetupGDT
     gdtPtr->user_ds.limit_high          = 0xf;
     gdtPtr->user_ds.g                   = 1;
 
-    for (i=0; i < 16; i++)
-    {
-        const unsigned long tss_limit = sizeof(struct tss_64bit) * 16 - 1;
-
-        /* Task State Segment */
-        gdtPtr->tss[i].tss_low.type       = 0x09;                                       /* 64-bit TSS */
-        gdtPtr->tss[i].tss_low.dpl        = 3;                                          /* User mode task */
-        gdtPtr->tss[i].tss_low.p          = 1;                                          /* present */
-        gdtPtr->tss[i].tss_low.l          = 1;                                            /* long mode */
-        gdtPtr->tss[i].tss_low.d          = 1;
-        gdtPtr->tss[i].tss_low.limit_low  = tss_limit;
-        gdtPtr->tss[i].tss_low.base_low   = ((unsigned long)&tssPtr[i]) & 0xffff;
-        gdtPtr->tss[i].tss_low.base_mid   = (((unsigned long)&tssPtr[i]) >> 16) & 0xff;
-        gdtPtr->tss[i].tss_low.limit_high = (tss_limit >> 16) & 0x0f;
-        gdtPtr->tss[i].tss_low.base_high  = (((unsigned long)&tssPtr[i]) >> 24) & 0xff;
-        gdtPtr->tss[i].tss_high.base_ext  = 0;                                          /* is within 4GB :-D */
-    }
-
     gdtPtr->gs.type                     = 0x12;                                         /* data segment */
     gdtPtr->gs.dpl                      = 3;                                            /* user level */
     gdtPtr->gs.p                        = 1;                                            /* present */
@@ -656,38 +643,86 @@ void core_SetupGDT
     gdtPtr->gs.base_mid                 = ((intptr_t)gdtTLS >> 16) & 0xff;
     gdtPtr->gs.base_high                = ((intptr_t)gdtTLS >> 24) & 0xff;
     gdtPtr->gs.g                        = 1;
+
+    for (i = 0; i < __KernBootPrivate->kbp_APIC_Max; i++) {
+        const unsigned long tss_limit = sizeof(struct tss_64bit) * __KernBootPrivate->kbp_APIC_Max - 1;
+        uint64_t base = (uint64_t)&tssPtr[i];
+
+        /* Task State Segment */
+        gdtPtr->tss[i].tss_low.type       = 0x09;                                       /* 64-bit TSS */
+#if defined(KERNEL_ORIG_TSS)
+        gdtPtr->tss[i].tss_low.dpl        = 3;                                          /* User mode task */
+#else
+        gdtPtr->tss[i].tss_low.dpl        = 0;
+#endif
+        gdtPtr->tss[i].tss_low.p          = 1;                                          /* present */
+#if defined(KERNEL_ORIG_TSS)
+        gdtPtr->tss[i].tss_low.l          = 1;                                            /* long mode */
+        gdtPtr->tss[i].tss_low.d          = 1;
+#else
+        gdtPtr->tss[i].tss_low.l          = 0;
+        gdtPtr->tss[i].tss_low.d          = 0;
+#endif
+        gdtPtr->tss[i].tss_low.limit_low  = tss_limit;
+        gdtPtr->tss[i].tss_low.base_low   = base & 0xFFFF;
+        gdtPtr->tss[i].tss_low.base_mid   = (base >> 16) & 0xFF;
+        gdtPtr->tss[i].tss_low.limit_high = (tss_limit >> 16) & 0x0F;
+        gdtPtr->tss[i].tss_low.base_high  = (base >> 24) & 0xFF;
+        gdtPtr->tss[i].tss_high.base_ext  = base >> 32;
+    }
 }
- 
+
+static inline struct tss_64bit *core_CPUTSSFromGDT(struct gdt_64bit *gdt, unsigned cpuNo)
+{
+    struct segment_tss *tssDesc = &gdt->tss[cpuNo];
+
+    uint64_t base =
+        ((uint64_t)tssDesc->tss_low.base_low) |
+        ((uint64_t)tssDesc->tss_low.base_mid  << 16) |
+        ((uint64_t)tssDesc->tss_low.base_high << 24) |
+        ((uint64_t)tssDesc->tss_high.base_ext << 32);
+
+    return (struct tss_64bit *)(uintptr_t)base;
+}
+
 void core_CPUSetup(apicid_t cpuNo, APTR cpuGDT, IPTR SystemStack)
 {
     struct segment_selector cpuGDTsel;
-    struct tss_64bit *tssBase = __KernBootPrivate->TSS;
+    struct gdt_64bit *gdt = (struct gdt_64bit *)cpuGDT;
+    struct tss_64bit *tss = core_CPUTSSFromGDT(gdt, cpuNo);
+
+    size_t const gdt_bytes =
+        offsetof(struct gdt_64bit, tss) +
+        __KernBootPrivate->kbp_APIC_Max * sizeof(struct segment_tss);
 
     D(bug("[Kernel] %s(%03u, 0x%p, 0x%p)\n", __func__, cpuNo, cpuGDT, SystemStack));
 
-    /*
-     * At the moment two of three stacks are reserved. IST is not used (indexes == 0 in interrupt gates)
-     * and ring 1 is not used either. However, the space pointed to by IST is used as a temporary stack
-     * for warm restart routine.
-     */
-    tssBase[cpuNo].ist1 = SystemStack + STACK_SIZE     - 16;    /* Interrupt stack entry 1 (failsafe)    */
-    tssBase[cpuNo].rsp0 = SystemStack + STACK_SIZE * 2 - 16;    /* Ring 0 (Supervisor)                  */
-    tssBase[cpuNo].rsp1 = SystemStack + STACK_SIZE * 3 - 16;    /* Ring 1 (reserved)                    */
-    
-    D(bug("[Kernel] %s[%03u]: Reloading -:\n", __func__, cpuNo));
-    D(bug("[Kernel] %s[%03u]:     CPU GDT @ 0x%p\n", __func__, cpuNo, cpuGDT));
-    D(bug("[Kernel] %s[%03u]:     CPU TSS @ 0x%p\n", __func__, cpuNo, &tssBase[cpuNo]));
+    // Update per-CPU stack pointers in the *actual TSS* encoded in the GDT
+    tss->ist1 = SystemStack + STACK_SIZE     - 16;  /* IST1 (failsafe) */
+    tss->rsp0 = SystemStack + STACK_SIZE * 2 - 16;  /* Ring 0 (supervisor) */
+    tss->rsp1 = SystemStack + STACK_SIZE * 3 - 16;  /* Ring 1 (reserved) */
 
-    cpuGDTsel.size = sizeof(struct gdt_64bit) - 1;
+    D(bug("[Kernel] %s[%03u]: Reloading -:\n", __func__, cpuNo));
+    D(bug("[Kernel] %s[%03u]:     CPU GDT @ 0x%p (%zu bytes)\n",
+          __func__, cpuNo, cpuGDT, gdt_bytes));
+    D(bug("[Kernel] %s[%03u]:     CPU TSS @ 0x%p\n",
+          __func__, cpuNo, tss));
+
+    // Load GDTR
+    cpuGDTsel.size = gdt_bytes - 1;
     cpuGDTsel.base = (unsigned long)cpuGDT;
-    asm volatile ("lgdt %0"::"m"(cpuGDTsel));
-    asm volatile ("ltr %w0"::"r"(TASK_SEG + (cpuNo << 4)));
+    asm volatile ("lgdt %0" :: "m"(cpuGDTsel));
+
+    // Load Task Register (TR) with selector for this CPU's TSS
+    asm volatile ("ltr %w0" :: "r"((uint16_t)(TASK_SEG + (cpuNo << 4))));
+
+    // Reload GS segment (user)
     asm volatile ("mov %0,%%gs"::"a"(USER_GS));
 }
 
 /* Boot-Time Allocation routines ... */
 
-static APTR core_AllocBootTLS(struct KernBootPrivate *__KernBootPrivate)
+static APTR core_BSPAllocTLS(struct KernBootPrivate *__KernBootPrivate)
 {
     tls_t *tlsPtr;
 
@@ -696,16 +731,26 @@ static APTR core_AllocBootTLS(struct KernBootPrivate *__KernBootPrivate)
     return (APTR)tlsPtr;
 }
 
-static APTR core_AllocBootTSS(struct KernBootPrivate *__KernBootPrivate)
+static APTR core_BSPAllocTSS(struct KernBootPrivate *__KernBootPrivate)
 {
     struct tss_64bit *tssPtr;
 
-    tssPtr = krnAllocBootMemAligned(sizeof(struct tss_64bit) * 16, 128);
+    tssPtr = krnAllocBootMemAligned(sizeof(struct tss_64bit) * __KernBootPrivate->kbp_APIC_Max, 128);
 
     return (APTR)tssPtr;
 }
 
-static APTR core_AllocBootIDT(struct KernBootPrivate *__KernBootPrivate)
+
+static APTR core_BSPAllocGDT(struct KernBootPrivate *__KernBootPrivate)
+{
+    struct gdt_64bit *gdtPtr;
+
+    gdtPtr = (struct gdt_64bit *)krnAllocBootMemAligned(sizeof(struct gdt_64bit) + __KernBootPrivate->kbp_APIC_Max * sizeof(struct segment_tss), 128);
+
+    return (APTR)gdtPtr;
+}
+
+static APTR core_AllocIDT(struct KernBootPrivate *__KernBootPrivate)
 {
     if (!__KernBootPrivate->BOOTIDT)
         __KernBootPrivate->BOOTIDT = krnAllocBootMemAligned(sizeof(struct int_gate_64bit) * 256, 256);
@@ -713,11 +758,53 @@ static APTR core_AllocBootIDT(struct KernBootPrivate *__KernBootPrivate)
     return (APTR)__KernBootPrivate->BOOTIDT;
 }
 
-static APTR core_AllocBootGDT(struct KernBootPrivate *__KernBootPrivate)
+IPTR core_BSPReconfigure(struct KernBootPrivate *__KernBootPrivate, UWORD maxcores)
 {
-    struct gdt_64bit *gdtPtr;
+    if (maxcores > __KernBootPrivate->kbp_APIC_Max) {
+        APTR newGDT, newTSS;
+        APTR newAlloc;
+        UWORD prev = __KernBootPrivate->kbp_APIC_Max;
 
-    gdtPtr = (struct gdt_64bit *)krnAllocBootMemAligned(sizeof(struct gdt_64bit), 128);
+        __KernBootPrivate->kbp_APIC_Max = maxcores;
 
-    return (APTR)gdtPtr;
+        D(bug("[Kernel] Reallocating GDT...\n"));
+        struct MemHeader *lowmem;
+        newAlloc = NULL;
+        ForeachNode(&SysBase->MemList, lowmem) {
+            if ((IPTR)lowmem->mh_Lower < 0x000100000) {
+                newAlloc = Allocate(lowmem, sizeof(struct gdt_64bit) + __KernBootPrivate->kbp_APIC_Max * sizeof(struct segment_tss) + 128 - 1);
+                if (newAlloc)
+                    break;
+            }
+        }
+        if (newAlloc)
+            newGDT = (void *)AROS_ROUNDUP2((unsigned long)newAlloc, 128);
+        D(bug("[Kernel]    @ 0x%p\n", newGDT));
+        D(bug("[Kernel] Reallocating TSS...\n"));
+        newAlloc = NULL;
+        ForeachNode(&SysBase->MemList, lowmem) {
+            if ((IPTR)lowmem->mh_Lower < 0x000100000) {
+                newAlloc = Allocate(lowmem, sizeof(struct tss_64bit) * __KernBootPrivate->kbp_APIC_Max + 128 - 1);
+                if (newAlloc)
+                    break;
+            }
+        }
+        if (newAlloc)
+            newTSS = (void *)AROS_ROUNDUP2((unsigned long)newAlloc, 128);
+        D(bug("[Kernel]    @ 0x%p\n", newTSS));
+
+        if (newTSS && newGDT) {
+            APTR prevGDT = __KernBootPrivate->BOOTGDT, prevTSS = __KernBootPrivate->TSS;
+
+            /* Setup GDT */
+            core_SetupGDT(__KernBootPrivate, 0,
+                newGDT,
+                __KernBootPrivate->BOOTTLS,
+                newTSS);
+
+            core_CPUSetup(0, newGDT, __KernBootPrivate->SystemStack);
+            __KernBootPrivate->BOOTGDT = newGDT;
+            __KernBootPrivate->TSS = newTSS;
+        }
+    }
 }

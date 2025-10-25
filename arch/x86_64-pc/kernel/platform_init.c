@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -235,6 +235,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
      * Setup the base syscall handler(s) ...
      */
     NEWLIST(&pdata->kb_SysCallHandlers);
+    krnAddSysCallHandler(pdata, &x86_SCBSPUpdateHandler, TRUE, FALSE);
 
     /*
      * Setup the BSP's exception, spurious, heartbeat and syscall gates early

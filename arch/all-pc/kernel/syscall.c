@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -26,9 +26,10 @@
 #define DSYSCALL(x)
 
 #if (__WORDSIZE != 64)
-extern void core_Kick(struct TagItem *msg, void *target);
-extern void kernel_cstart(const struct TagItem *msg);
+extern void core_Kick(struct TagItem *, void *);
+extern void kernel_cstart(const struct TagItem *);
 #endif
+extern IPTR core_BSPReconfigure(struct KernBootPrivate *, UWORD);
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
 {
@@ -94,6 +95,29 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
 
     return TRUE;
 }
+
+/* BSP syscall */
+void X86_HandleBSPUpdateSC(struct ExceptionContext *regs)
+{
+    UWORD max =
+#if (__WORDSIZE==64)
+        (UWORD)regs->rbx;
+#else
+        (UWORD)regs->ebx;
+#endif
+
+    D(bug("[Kernel] %s(%d)\n", __func__, max));
+    core_BSPReconfigure(__KernBootPrivate, max);
+}
+
+struct syscallx86_Handler x86_SCBSPUpdateHandler =
+{
+    {
+        .ln_Name = (APTR)SC_X86BSPUPDATE
+    },
+    (APTR)X86_HandleBSPUpdateSC
+};
+
 
 /* Default x86 syscall handlers */
 
@@ -237,3 +261,6 @@ struct syscallx86_Handler x86_SCSupervisorHandler =
     },
     (APTR)core_Supervisor
 };
+
+
+

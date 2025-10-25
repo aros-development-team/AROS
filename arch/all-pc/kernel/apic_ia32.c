@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Intel IA-32 APIC driver.
 */
@@ -38,6 +38,7 @@
 
 #define D(x)
 #define DINT(x)
+#define DIPI(x)
 #define DWAKE(x)         /* Badly interferes with AP startup */
 #define DID(x)           /* Badly interferes with everything */
 #define DCALIB(x)
@@ -242,7 +243,7 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
 {
     ULONG ipisend_timeout, status_ipisend;
 
-    D(
+    DIPI(
         apicid_t cpuNum = KrnGetCPUNumber();
         bug("[Kernel:APIC-IA32.%03u] %s: Command 0x%08X to target %03u\n", cpuNum, __func__, cmd, target);
     )
@@ -255,7 +256,7 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
     APIC_REG(__APICBase, APIC_ICRH) = target << 24;
     APIC_REG(__APICBase, APIC_ICRL) = cmd;
 
-    D(bug("[Kernel:APIC-IA32.%03u] %s: Waiting for IPI to complete ", cpuNum, __func__));
+    DIPI(bug("[Kernel:APIC-IA32.%03u] %s: Waiting for IPI to complete ", cpuNum, __func__));
 
     for (ipisend_timeout = 1000; ipisend_timeout > 0; ipisend_timeout--)
     {
@@ -271,8 +272,10 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
         if (status_ipisend == 0)
             break;
     }
-    D(bug("\n"));
-    D(bug("[Kernel:APIC-IA32.%03u] %s: ... left wait loop (status = 0x%08X)\n", cpuNum, __func__, status_ipisend));
+    DIPI(
+        bug("\n");
+        bug("[Kernel:APIC-IA32.%03u] %s: ... left wait loop (status = 0x%08X)\n", cpuNum, __func__, status_ipisend);
+    )
 
     return status_ipisend;
 }
@@ -292,6 +295,7 @@ static ULONG ia32_ipi_send(IPTR __APICBase, ULONG target, ULONG cmd)
 
 #define PIT_SAMPLECOUNT     10
 #define PIT_WAITTICKS       11931
+
 static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
 {
     UQUAD tsc_initial, tsc_final, calibrated_tsc = 0;
@@ -301,77 +305,114 @@ static UQUAD ia32_tsc_calibrate_pit(apicid_t cpuNum)
     UWORD pit_final;
     int samples, iter, i;
 
-    samples = iter = PIT_SAMPLECOUNT;
+    /* initialize arrays and counters */
+    for (i = 0; i < PIT_SAMPLECOUNT; i++)
+    {
+        difftsc[i] = 0;
+        pitresults[i] = 0;
+    }
 
-    tsc_initial = RDTSC();
-    DPIT(bug("[Kernel:APIC-IA32.%03u] %s: TSC pre-calib = %u\n", cpuNum, __func__, tsc_initial);)
+    samples = 0;
+    iter = 0;
+
+    DPIT(bug("[Kernel:APIC-IA32.%03u] %s()\n", cpuNum, __func__);)
 
     for (i = 0; i < PIT_SAMPLECOUNT; i++)
     {
-        tsc_initial = RDTSC();
+        tsc_initial = rdtsc_start();
 
         pit_final   = pit_wait(PIT_WAITTICKS);
 
-        tsc_final = RDTSC();
+        tsc_final = rdtsc_end();
+
+        /* compute unsigned delta (handles wrap automatically) */
+        UQUAD delta = tsc_final - tsc_initial;
 
         /* Ignore results that are invalid, or wrap around. */
-        if ((pit_final >= PIT_WAITTICKS) && (tsc_final > tsc_initial))
+        if ((pit_final >= PIT_WAITTICKS) && (delta != 0))
         {
-            difftsc[i] = tsc_final - tsc_initial;
-            pitresults[i] = pit_final;
+            difftsc[samples] = delta;
+            pitresults[samples] = pit_final;
             pit_total += pit_final;
+
             DPIT(bug("[Kernel:APIC-IA32.%03u] %s: %u, diff = %u\n", cpuNum, __func__, pitresults[i], difftsc[i]);)
+            samples++;
         }
-        else if (tsc_final < tsc_initial)
+        else if (delta == 0)
         {
             DPIT(bug("[Kernel:APIC-IA32.%03u] %s: skipping wrap around\n", cpuNum, __func__);)
-            i -= 1;
         }
         else
         {
             DPIT(bug("[Kernel:APIC-IA32.%03u] %s: ## %02u - ignoring pit_final = %u\n", cpuNum, __func__, (PIT_SAMPLECOUNT - samples), pit_final);)
-            pitresults[i] = 0;
-            samples -= 1;
         }
     }
 
     if (samples > 0)
     {
-        UWORD pit_avg = (pit_total / samples), pit_error = pit_avg - ((pit_avg * (100 - (pit_avg / PIT_WAITTICKS))) / 100);
+        /* compute average PIT ticks for valid samples */
+        UWORD pit_avg = (UWORD)(pit_total / samples);
+
+        /* simple tolerance: 5% */
+        UWORD pit_error = (pit_avg * 5) / 100;
 
         DPIT(
-            bug("[Kernel:APIC-IA32.%03u] %s: PIT Avg %u, error %u\n", cpuNum, __func__, pit_avg, pit_error);
+            bug("[Kernel:APIC-IA32.%03u] %s: PIT Avg %u, error %u\n",
+                cpuNum, __func__, pit_avg, pit_error);
             bug("[Kernel:APIC-IA32.%03u] %s:     Min %u\n", cpuNum, __func__, pit_avg - pit_error);
             bug("[Kernel:APIC-IA32.%03u] %s:     Max %u\n", cpuNum, __func__, pit_avg + pit_error);
         )
 
-        for (i = 0; i < PIT_SAMPLECOUNT; i++)
+        /* Use calibrated_tsc as accumulator for scaled per-sample values */
+        calibrated_tsc = 0;
+        iter = samples;
+
+        for (i = 0; i < samples; i++)
         {
-            if ((pitresults[i] >= pit_avg - pit_error) && (pitresults[i] <= pit_avg + pit_error))
-                calibrated_tsc += (difftsc[i] * PIT_WAITTICKS) / pitresults[i];
+            if ((pitresults[i] >= (pit_avg - pit_error)) && (pitresults[i] <= (pit_avg + pit_error)) && (pitresults[i] != 0))
+            {
+                /* scale difftsc to the PIT_WAITTICKS base:
+                   difftsc[i] ticks correspond to pitresults[i] PIT ticks,
+                   so (difftsc * PIT_WAITTICKS) / pitresults gives ticks per PIT_WAITTICKS (10 ms). */
+                calibrated_tsc += (difftsc[i] * (UQUAD)PIT_WAITTICKS) / (UQUAD)pitresults[i];
+            }
             else
+            {
+                DPIT(bug("[Kernel:APIC-IA32.%03u] %s: sample %d out of tolerance: pit=%u\n",
+                         cpuNum, __func__, i, pitresults[i]);)
                 iter -= 1;
+            }
         }
 
         if (iter > 0)
         {
+            /* calibrated_tsc currently holds the SUM of per-sample ticks-per-10ms.
+               To convert to ticks-per-second: average then multiply by 100 (10ms * 100 = 1s). */
+            calibrated_tsc = (calibrated_tsc * 100ULL) / (UQUAD)iter;
+
             DPIT(
-                for (i = 0; i < PIT_SAMPLECOUNT; i++)
+                for (i = 0; i < samples; i++)
                 {
-                  bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02u = %u (%llu)\n", cpuNum, __func__, i, pitresults[i], difftsc[i]);
+                    if (pitresults[i])
+                    {
+                        bug("[Kernel:APIC-IA32.%03u] %s: pit_final #%02d = %u (difftsc=%llu)\n",
+                            cpuNum, __func__, i, pitresults[i], (unsigned long long)difftsc[i]);
+                    }
                 }
-                bug("[Kernel:APIC-IA32.%03u] %s: iter: %u, freq: %llu\n", cpuNum, __func__, iter, (10 * iter * calibrated_tsc) / iter);
-              )
-            calibrated_tsc = (10 * iter * calibrated_tsc / iter);
+                bug("[Kernel:APIC-IA32.%03u] %s: used=%d freq_est=%llu\n",
+                    cpuNum, __func__, iter, (unsigned long long)calibrated_tsc);
+            )
         }
         else
         {
             bug("[Kernel:APIC-IA32.%03u] %s: calibration failed\n", cpuNum, __func__);
+            calibrated_tsc = 0;
         }
     }
     else
     {
         bug("[Kernel:APIC-IA32.%03u] %s: sampling failed\n", cpuNum, __func__);
+        calibrated_tsc = 0;
     }
 
     return calibrated_tsc;
@@ -540,7 +581,6 @@ static BOOL APIC_isMSHyperV(void)
         }
         return FALSE;
 }
-
 
 /**********************************************************
                         Driver functions

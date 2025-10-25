@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 64bit x86 kernel_intern.h
@@ -30,18 +30,19 @@ struct IOAPICData;
  */
 struct KernBootPrivate
 {
-    IPTR		        _APICBase;		/* Bootstrap APIC base address				*/
-    UWORD                       kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
-    unsigned short	        debug_y_resolution;	/* Parameters of screen's lower half ('vesahack' mode)	*/
+    IPTR		            _APICBase;		    /* Bootstrap APIC base address				            */
+    UWORD                   kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				            */
+    UWORD                   kbp_APIC_Max;
+    unsigned short	        debug_y_resolution; /* Parameters of screen's lower half ('vesahack' mode)  */
     ULONG                   debug_buffsize;
     char                    *debug_buffer;
     void	                *debug_framebuffer;
-    IPTR	                SystemStack;		/* System stack base address	       			*/
-    APTR                        BOOTTLS,
-                                BOOTGDT,
-                                BOOTIDT;
+    IPTR	                SystemStack;		/* System stack base address	       			        */
+    APTR                    BOOTTLS,
+                            BOOTGDT,
+                            BOOTIDT;
     void	                *TSS;
-    struct CPUMMUConfig         MMU;
+    struct CPUMMUConfig     MMU;
 };
 
 extern struct KernBootPrivate *__KernBootPrivate;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/asmcall.h>
@@ -17,6 +17,8 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
+#include "x86_syscalls.h"
+
 #define D(x)
 
 #define ACPI_MODPRIO_APIC       100
@@ -31,15 +33,48 @@ extern struct KernBootPrivate *__KernBootPrivate;
 
 const char *ACPI_TABLE_MADT_STR __attribute__((weak)) = "APIC";
 
-void acpi_APIC_AllocPrivate(struct PlatformData *pdata)
+BOOL acpi_APIC_AllocPrivate(struct PlatformData *pdata, ACPI_TABLE_MADT *madtTable)
 {
-    if (!pdata->kb_APIC)
-    {
-        pdata->kb_APIC = AllocMem(sizeof(struct APICData) + pdata->kb_ACPI->acpi_apicCnt * sizeof(struct CPUData), MEMF_CLEAR);
-        pdata->kb_APIC->apic_count      = 1;            /* Only one CPU is running right now */
+    if (!pdata->kb_APIC) {
+        D(
+            bug("[Kernel:ACPI-APIC] Allocating kernel APIC Private for %u APIC's\n", pdata->kb_ACPI->acpi_apicCnt);
+        )
 
-        D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p, for %u APIC's\n", pdata->kb_APIC, pdata->kb_ACPI->acpi_apicCnt));
+        pdata->kb_APIC = AllocMem(sizeof(struct APICData) + pdata->kb_ACPI->acpi_apicCnt * sizeof(struct CPUData), MEMF_CLEAR);
+        if (pdata->kb_APIC) {
+            D(bug("[Kernel:ACPI-APIC] Local APIC Private @ 0x%p\n", pdata->kb_APIC));
+
+            pdata->kb_APIC->apic_count      = 1;            /* Only one CPU is running right now */
+
+            pdata->kb_ACPI->acpi_madt = madtTable;                      /* Cache ACPI data for secondary cores */
+            pdata->kb_APIC->lapicBase = madtTable->Address;
+            pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
+
+            D(
+                bug("[Kernel:ACPI-APIC] Local APIC address 0x%p < Flags 0x%04X>\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
+                bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt);
+            )
+
+            /* Remember ID of the bootstrap APIC, this is CPU #1 */
+            pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
+            D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
+
+#if (__WORDSIZE==64)
+            /* Reconfigure the GDT & TSS */
+            if (__KernBootPrivate->kbp_APIC_Max != pdata->kb_ACPI->acpi_apicCnt) {
+                D(
+                    bug("[Kernel:ACPI-APIC] Reconfiguring BSP -:\n");
+                    bug("[Kernel:ACPI-APIC]     core(s): %d -> %d\n", __KernBootPrivate->kbp_APIC_Max, pdata->kb_ACPI->acpi_apicCnt);
+                )
+                krnSysCallBSPUpdate(pdata->kb_ACPI->acpi_apicCnt);
+            }
+#endif
+        } else {
+            bug("[Kernel:ACPI-APIC] Failed to allocate kernel private data\n");
+            return FALSE;
+        }
     }
+    return TRUE;
 }
 
 void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
@@ -47,10 +82,10 @@ void acpi_APIC_HandleCPUWakeSC(struct ExceptionContext *regs)
     struct APICCPUWake_Data *apicWake = (struct APICCPUWake_Data *)CPUEXCTX_REGB;
 
     D(
-      bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__);
-      bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake);
-      bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
-     )
+        bug("[Kernel:ACPI-APIC] %s: Handle Wake CPU SysCall\n", __func__);
+        bug("[Kernel:ACPI-APIC] %s: Wake data @ 0x%p\n", __func__, apicWake);
+        bug("[Kernel:ACPI-APIC] %s: Attempting to wake APIC ID %03u (base @ 0x%p)\n", __func__, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
+    )
 
     CPUEXCTX_REGA = core_APIC_Wake(apicWake->cpuw_apicstartrip, apicWake->cpuw_apicid, apicWake->cpuw_apicbase);
 
@@ -77,13 +112,10 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Addr_Ovr_Parse,
 
     D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
 
-    if (!pdata->kb_APIC)
-    {
+    if (!pdata->kb_APIC) {
         ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
-
-        acpi_APIC_AllocPrivate(pdata);
-        pdata->kb_ACPI->acpi_madt = madtTable;  /* Cache ACPI data for secondary cores */
-        pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
+        if (!acpi_APIC_AllocPrivate(pdata, madtTable))
+            return FALSE;
     }
 
     pdata->kb_APIC->lapicBase = lapic_addr_ovr->Address;
@@ -187,29 +219,18 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 
     struct PlatformData *pdata = tsdata->acpits_UserData;
 
-    D(bug("[Kernel:ACPI-APIC] ## %s()\n", __func__));
+    D(bug("[Kernel:ACPI-APIC] ## %s(0x%p, 0x%p, 0x%p)\n", __func__, table_hook, processor, tsdata));
 
-    if (!pdata->kb_APIC)
-    {
+    if (!pdata->kb_APIC) {
         ACPI_TABLE_MADT *madtTable = (ACPI_TABLE_MADT *)tsdata->acpits_Table;
-
-        acpi_APIC_AllocPrivate(pdata);
-        pdata->kb_APIC->lapicBase = madtTable->Address;
-        pdata->kb_ACPI->acpi_madt = madtTable;  /* Cache ACPI data for secondary cores */
-        pdata->kb_APIC->flags = ((madtTable->Flags & ACPI_MADT_PCAT_COMPAT) == ACPI_MADT_MULTIPLE_APIC) ? APF_8259 : 0;
-
-        D(
-            bug("[Kernel:ACPI-APIC] Local APIC address 0x%p; Flags 0x%04X\n", pdata->kb_APIC->lapicBase, pdata->kb_APIC->flags);
-            bug("[Kernel:ACPI-APIC] MADT @ 0x%p\n", pdata->kb_ACPI->acpi_madt);
-        )
-
-        /* Remember ID of the bootstrap APIC, this is CPU #1 */
-        pdata->kb_APIC->cores[0].cpu_LocalID = core_APIC_GetID(pdata->kb_APIC->lapicBase);
-        D(bug("[Kernel:ACPI-APIC] BSP ID: 0x%02X\n", pdata->kb_APIC->cores[0].cpu_LocalID));
+        D(bug("[Kernel:ACPI-APIC] %s: ACPI_TABLE_MADT  @ 0x%p\n", __func__, madtTable));
+        if (!acpi_APIC_AllocPrivate(pdata, madtTable))
+            return FALSE;
     }
 
     if ((pdata->kb_APIC) && (processor->LapicFlags & ACPI_MADT_ENABLED))
     {
+        D(bug("[Kernel:ACPI-APIC] %s: processor is enabled\n", __func__));
         if (pdata->kb_APIC->cores[0].cpu_LocalID == processor->Id)
         {
             /* This is the BSP, slot 0 is always reserved for it. */

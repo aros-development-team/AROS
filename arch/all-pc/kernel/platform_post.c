@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -188,9 +188,10 @@ static AROS_UFH3 (APTR, KernelPost,
         core_APIC_Calibrate(pdata->kb_APIC, 0);        
     }
 
-    D(bug("[Kernel] %s: Attempting to bring up additional cores...\n", __func__));
-    smp_Initialize();
-
+    D(bug("[Kernel] %s: Attempting to start additional cores...\n", __func__));
+    if ((smp_Initialize() > 0) && (pdata->kb_APIC)) {
+        D(bug("[Kernel] %s: %d cores online\n", __func__, pdata->kb_APIC->apic_count));
+    }
     Enable();
 
     D(bug("[Kernel] %s: Platform Initialization complete\n", __func__));

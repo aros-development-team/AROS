@@ -2,7 +2,7 @@
 #define ASM_X86_64_CPU_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: assembler-level specific definitions for x86-64 CPU
@@ -149,6 +149,12 @@ struct tss_64bit {
     uint32_t    bmp[];
 } __attribute__((packed));
 
+struct segment_tss
+{
+    struct segment_desc tss_low;
+    struct segment_ext  tss_high;
+} __attribute__((packed));
+
 struct gdt_64bit
 {
     struct segment_desc seg0;           /* seg 0x00 */
@@ -159,11 +165,7 @@ struct gdt_64bit
     struct segment_desc user_cs;        /* seg 0x28 */
     struct segment_desc gs;             /* seg 0x30 */
     struct segment_desc ldt;            /* seg 0x38 */
-    struct
-    {
-        struct segment_desc tss_low;    /* seg 0x40... */
-        struct segment_ext  tss_high;
-    } tss[16];
+    struct segment_tss  tss[0];
 } __attribute__((packed));
 
 #define MMU_PAGEB_P     0

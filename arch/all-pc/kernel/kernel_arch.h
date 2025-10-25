@@ -139,19 +139,45 @@ BOOL ictl_is_irq_enabled(unsigned char, struct KernelBase *);
 #define INTR_FROMUSERMODE (regs->cs != KERNEL_CS)
 #endif
 
-#if (__WORDSIZE==64)
-static inline unsigned long long RDTSC() {
-   unsigned long _tsc_upper, _tsc_lower;
-   asm volatile (".byte 0x0f, 0x31" : "=a" (_tsc_lower), "=d"(_tsc_upper));
-   return _tsc_lower | ((unsigned long long)_tsc_upper << 32);
-} 
+static inline UQUAD RDTSC(void)
+{
+    unsigned lo, hi;
+    /* Read the TSC without serializing */
+    asm volatile(
+        "rdtsc\n\t"
+        : "=a"(lo), "=d"(hi)
+        :
+        :
+    );
+    return ((UQUAD)hi << 32) | lo;
+}
+
+static inline UQUAD rdtsc_start(void)
+{
+    unsigned lo, hi;
+    /* Serialize previous instructions, then read TSC */
+    asm volatile(
+        "cpuid\n\t"
+        "rdtsc\n\t"
+        : "=a"(lo), "=d"(hi)
+        : "a"(0)
+        : "rbx", "rcx", "memory"
+    );
+    return ((UQUAD)hi << 32) | lo;
+}
+
+static inline UQUAD rdtsc_end(void)
+{
+    unsigned lo, hi;
+#if (0)
+    asm volatile("rdtscp\n\t" : "=a"(lo), "=d"(hi) : : "rcx");
 #else
-static inline unsigned long long RDTSC() {
-   unsigned long long _tsc;
-   asm volatile (".byte 0x0f, 0x31" : "=A" (_tsc));
-   return _tsc;
-} 
+    asm volatile("rdtsc" : "=a"(lo), "=d"(hi) : : "memory");
 #endif
+    /* serialize to ensure the rdtsc is ordered before later instructions */
+    asm volatile("cpuid\n\t" : : : "rax", "rbx", "rcx", "rdx", "memory");
+    return ((UQUAD)hi << 32) | lo;
+}
 
 /* x86 specific SysCalls *************************************************************************/
 
