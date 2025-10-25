@@ -3,7 +3,6 @@
 */
 
 #include <proto/exec.h>
-#define __NOLIBBASE__
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/timer.h>
@@ -33,8 +32,7 @@ AROS_UFH2(void, GM_UNIQUENAME(PutChar),
 {
     AROS_USERFUNC_INIT
 
-    if(rdf->rdf_Len)
-    {
+    if(rdf->rdf_Len) {
         rdf->rdf_Len--;
         *rdf->rdf_Buf++ = ch;
     }
@@ -65,8 +63,8 @@ AROS_LH4(void, logRawDoFmtA,
 
     struct logRDF rdf;
 
-    if(buf && fmtstr && (len > 0))
-    {
+    if(buf && fmtstr && (len > 0)) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         rdf.rdf_Len = len;
         rdf.rdf_Buf = buf;
         RawDoFmt(fmtstr, fmtdata, (VOID_FUNC) GM_UNIQUENAME(PutChar), &rdf);
@@ -87,8 +85,8 @@ AROS_LH6(void, logRawDoFmtCBA,
 {
     AROS_LIBFUNC_INIT
 
-    if(buf && fmtstr && (len > 0))
-    {
+    if(buf && fmtstr && (len > 0)) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         RawDoFmt(fmtstr, fmtdata, cbfunc, cbdata);
         buf[len-1] = 0;
     }
@@ -104,8 +102,8 @@ AROS_LH1(STRPTR, logCopyStr,
 
     STRPTR rs = NULL;
 
-    if (name)
-    {
+    if (name) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         rs = AllocVec((ULONG) strlen(name) + 1, MEMF_ANY);
         if(rs)
             strcpy(rs, name);
@@ -124,14 +122,13 @@ AROS_LH2(STRPTR, logCopyStrFmtA,
 
     STRPTR buf = NULL;
 
-    if (fmtstr)
-    {
+    if (fmtstr) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         ULONG len = 0;
 
         RawDoFmt(fmtstr, fmtdata, (VOID_FUNC) GM_UNIQUENAME(CountChars), &len);
         buf = AllocVec(len + 1, MEMF_ANY);
-        if(buf)
-        {
+        if(buf) {
             logRawDoFmtA(buf, len+1, fmtstr, fmtdata);
         }
     }

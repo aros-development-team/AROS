@@ -3,7 +3,6 @@
 */
 
 #include <proto/exec.h>
-#define __NOLIBBASE__
 #include <proto/kernel.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
@@ -39,6 +38,7 @@ AROS_LH1(VOID, logLockEntries,
          LIBBASETYPEPTR, LIBBASE, 13, log)
 {
     AROS_LIBFUNC_INIT
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     ObtainSemaphore(&LIBBASE->lrb_ReentrantLock);
     AROS_LIBFUNC_EXIT
 }
@@ -48,6 +48,7 @@ AROS_LH1(VOID, logUnlockEntries,
          LIBBASETYPEPTR, LIBBASE, 15, log)
 {
     AROS_LIBFUNC_INIT
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     ReleaseSemaphore(&LIBBASE->lrb_ReentrantLock);
     AROS_LIBFUNC_EXIT
 }
@@ -212,6 +213,7 @@ AROS_LH2(IPTR, logGetEntryAttrs,
 
     struct LogResHandle *lrHandle = (struct LogResHandle *)loghandle;
     if ((LIBBASE->lrb_Task) && (lrHandle)) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         struct logEntryPrivate *leP;
         if ((leP = AllocVecPooled(lrHandle->lrh_Pool, sizeof(struct logEntryPrivate)))) {
             memset(leP, 0, sizeof(struct logEntryPrivate));
@@ -280,6 +282,7 @@ AROS_LH1(void, logRemEntry,
     AROS_LIBFUNC_INIT
 
     if (le) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         struct logEntryPrivate *leP;
         leP = (struct logEntryPrivate *)((IPTR)le - offsetof(struct logEntryPrivate, le_Node));
 

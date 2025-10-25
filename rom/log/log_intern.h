@@ -69,6 +69,7 @@ struct LogResBase
 {
     struct Library          lrb_Lib;
     APTR                    lrb_KernelBase;
+    struct ExecBase         *lrb_ExecBase;
     struct UtilityBase      *lrb_UtilityBase;   /* for tags etc                         */
     struct Library          *lrb_DosBase;       /* for dos stuff                        */
 

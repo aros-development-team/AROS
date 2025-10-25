@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES :=    log log_event log_str log_listener
 FUNCS := \
 
-USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS := -D__NOLIBBASE__
 #USER_CPPFLAGS += -DDEBUG=1
 
 #MM- kernel-log : linklibs

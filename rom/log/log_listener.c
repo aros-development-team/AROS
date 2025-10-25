@@ -3,7 +3,6 @@
 */
 
 #include <proto/exec.h>
-#define __NOLIBBASE__
 #include <proto/log.h>
 
 #include <aros/libcall.h>
@@ -38,6 +37,7 @@ AROS_LH2(struct logListenerHook *, logAddListener,
 
     if(mp)
     {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         if((llh = AllocVecPooled(LIBBASE->lrb_LRProvider.lrh_Pool, sizeof(struct logListenerHook))))
         {
             llh->llh_Node.ln_Type = NT_LISTENER;
@@ -64,6 +64,7 @@ AROS_LH1(VOID, logRemListener,
 {
     AROS_LIBFUNC_INIT
 
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     struct logListenerHook *llh = (struct logListenerHook *)listener;
     ObtainSemaphore(&LIBBASE->lrb_ListenerLock);
     Remove(&llh->llh_Node);
@@ -82,6 +83,7 @@ AROS_LH3(VOID, logEventBroadcast,
 {
     AROS_LIBFUNC_INIT
 
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     struct logListenerHook *llh;
     struct logEntryPrivate *leP = (struct logEntryPrivate *)((IPTR)param1 - offsetof(struct logEntryPrivate, le_Node));
     ULONG msgMatch = (leP->lectx_Level & LOGM_Flag_TypeMask) | (1L << ehmt);
@@ -111,6 +113,7 @@ AROS_LH2(void, logDeleteBroadcast,
 {
     AROS_LIBFUNC_INIT
 
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     struct logListenerHook *llh = (struct logListenerHook *)listener;
     FreeVecPooled(llh->llh_Pool, bMsg);
 

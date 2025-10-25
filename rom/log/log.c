@@ -3,7 +3,6 @@
 */
 
 #include <proto/exec.h>
-#define __NOLIBBASE__
 #include <proto/log.h>
 
 #include <aros/libcall.h>
@@ -18,7 +17,6 @@
 
 #define DOSBase LIBBASE->lrb_DosBase
 #define TimerBase LIBBASE->lrb_TimerIOReq.tr_node.io_Device
-
 
 /*****************************************************************************************
 
@@ -71,6 +69,7 @@
 
 BOOL GM_UNIQUENAME(HaveTimer)(LIBBASETYPEPTR LIBBASE)
 {
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     if (TimerBase)
         return TRUE;
     if (LIBBASE->lrb_sigTryTimer != -1)
@@ -83,6 +82,7 @@ BOOL GM_UNIQUENAME(OpenTimer)(LIBBASETYPEPTR LIBBASE)
     if (TimerBase)
         return TRUE;
     else {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_Node.ln_Type  = NT_REPLYMSG;
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_Length        = sizeof(struct timerequest);
         LIBBASE->lrb_TimerIOReq.tr_node.io_Message.mn_ReplyPort     = NULL;
@@ -99,8 +99,10 @@ BOOL GM_UNIQUENAME(HaveDOS)(LIBBASETYPEPTR LIBBASE)
 {
     if (DOSBase)
         return TRUE;
-    if (LIBBASE->lrb_sigTryDOS != -1)
+    if (LIBBASE->lrb_sigTryDOS != -1) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         Signal((struct Task *)LIBBASE->lrb_ServicePort->mp_SigTask, (1 << LIBBASE->lrb_sigTryDOS));
+    }
     return FALSE;
 }
 
@@ -109,6 +111,7 @@ BOOL GM_UNIQUENAME(OpenDOS)(LIBBASETYPEPTR LIBBASE)
     if (DOSBase)
         return TRUE;
     else {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         if ((DOSBase = OpenLibrary("dos.library", 39)))
             return TRUE;
     }
@@ -119,8 +122,11 @@ BOOL GM_UNIQUENAME(OpenUtility)(LIBBASETYPEPTR LIBBASE)
 {
     if (LIBBASE->lrb_UtilityBase)
         return TRUE;
-    else if ((LIBBASE->lrb_UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39)))
-        return TRUE;
+    else {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
+        if ((LIBBASE->lrb_UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39)))
+            return TRUE;
+    }
     return FALSE;
 }
 
@@ -135,6 +141,7 @@ AROS_LH1(APTR, logInitialise,
     APTR logPool;
 
     if (LIBBASE->lrb_Task) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         if((logProvider) && (logPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 16384, 1024))) {
             struct LogResHandle *lpHandle = AllocVecPooled(logPool, sizeof(struct LogResHandle));
             lpHandle->lrh_Node.ln_Type = NT_PROVIDER;
@@ -182,6 +189,7 @@ static AROS_INTH1(log_LowMemHandler, LIBBASETYPEPTR, LIBBASE)
 static void log_Task(LIBBASETYPEPTR LIBBASE)
 {
     if (!LIBBASE->lrb_Task) {
+        struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
         struct Task *thisTask = FindTask(NULL);
         struct logEntryPrivate *lastBroadcast = NULL;
 
@@ -272,6 +280,7 @@ static void log_Task(LIBBASETYPEPTR LIBBASE)
 /* LibInit */
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR LIBBASE)
 {
+    struct ExecBase *SysBase = GM_SYSBASE_FIELD(LIBBASE);
     LIBBASE->lrb_LRProvider.lrh_Node.ln_Name = LIBBASE->lrb_Lib.lib_Node.ln_Name;
     NewList(&LIBBASE->lrb_LRProvider.lrh_Entries);
     NewList(&LIBBASE->lrb_Providers);
