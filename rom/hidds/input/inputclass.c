@@ -271,7 +271,7 @@ VOID Input__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
         used. Hardware driver objects are shared between all of them.
 
         Since V2 this interface is obsolete and deprecated. Use moHW_AddDriver
-        method on CLID_HW_Kbd class in order to install the driver.
+        method on CLID_HW_Input class in order to install the driver.
 
     INPUTS
         obj         - Any object of CLID_Hidd_Input class.
