@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
  
     Desc: vmware svga hardware functions
 */
@@ -13,16 +13,17 @@
 #include <asm/io.h>
 
 #include <limits.h>
+#include <string.h>
 #include <exec/ports.h>
 #include <devices/timer.h>
 #include <proto/exec.h>
 
 #include "vmwaresvga_intern.h"
 
-#if (DEBUG0)
+#if (DEBUG)
 #define DIRQ(x)                         x
 #define DDMG(x)
-#define DFIFO(x)
+#define DFIFO(x)                        x
 #define DFIFOINF(x)                     x
 #define DFIFOBUF(x)                     x
 #define DFENCE(x)                       x
@@ -85,6 +86,108 @@ VOID VMWareSVGA_MemFree(struct HWData *data, APTR addr, ULONG size)
     FreeMem(addr, size);
 }
 
+BOOL VMWareSVGA_DefineGMR2(struct HWData *data, ULONG gmrId, struct SVGAGuestMemDescriptor *descs, ULONG numDescs)
+{
+    ULONG payload;
+    ULONG reserve;
+    UBYTE *cmd;
+    struct SVGAFifoCmdDefineGMR2 *header;
+
+    if (!(data->capabilities & SVGA_CAP_GMR2))
+        return FALSE;
+
+    if (numDescs && !descs)
+        return FALSE;
+
+    payload = sizeof(struct SVGAFifoCmdDefineGMR2) + (numDescs * sizeof(struct SVGAGuestMemDescriptor));
+    reserve = (payload + (VMWFIFO_CMD_SIZE - 1)) & ~(VMWFIFO_CMD_SIZE - 1);
+
+    cmd = reserveVMWareSVGAFIFO(data, reserve);
+    if (!cmd)
+        return FALSE;
+
+    header = (struct SVGAFifoCmdDefineGMR2 *)cmd;
+    header->gmrId = gmrId;
+    header->numDescriptors = numDescs;
+    header->descriptorSize = sizeof(struct SVGAGuestMemDescriptor);
+
+    if (numDescs && descs)
+        memcpy(header + 1, descs, numDescs * sizeof(struct SVGAGuestMemDescriptor));
+
+    if (reserve > payload)
+        memset(cmd + payload, 0, reserve - payload);
+
+    commitVMWareSVGAFIFO(data, reserve);
+    return TRUE;
+}
+
+VOID VMWareSVGA_DestroyGMR(struct HWData *data, ULONG gmrId)
+{
+    if (!gmrId)
+        return;
+
+    VMWareSVGA_DefineGMR2(data, gmrId, NULL, 0);
+}
+
+BOOL VMWareSVGA_BufferAttachGMR(struct HWData *data, struct VMWareSVGAPBBuf *buf)
+{
+    IPTR start;
+    IPTR end;
+    ULONG numPages;
+    struct SVGAGuestMemDescriptor desc;
+    ULONG gmrId;
+
+    if (!buf || !buf->allocated_map || !buf->allocated_size)
+        return FALSE;
+
+    if (!(data->capabilities & SVGA_CAP_GMR2))
+        return FALSE;
+
+    start = (IPTR)buf->allocated_map & ~(IPTR)(VMW_GMR_PAGE_SIZE - 1);
+    end = (IPTR)buf->allocated_map + buf->allocated_size;
+    end = (end + (VMW_GMR_PAGE_SIZE - 1)) & ~(IPTR)(VMW_GMR_PAGE_SIZE - 1);
+    numPages = (end - start) >> VMW_GMR_PAGE_SHIFT;
+    if (!numPages)
+        numPages = 1;
+
+    gmrId = data->next_gmrid ? data->next_gmrid : 1;
+    data->next_gmrid = gmrId + 1;
+    if (data->next_gmrid == 0)
+        data->next_gmrid = 1;
+
+    desc.ppn = (ULONG)(start >> VMW_GMR_PAGE_SHIFT);
+    desc.numPages = numPages;
+
+    buf->guest_ptr.gmrId = gmrId;
+    buf->guest_ptr.offset = (ULONG)(((IPTR)buf->map) - start);
+    buf->gmr_id = gmrId;
+    buf->gmr_page_count = numPages;
+
+    if (!VMWareSVGA_DefineGMR2(data, gmrId, &desc, 1)) {
+        buf->guest_ptr.gmrId = 0;
+        buf->guest_ptr.offset = 0;
+        buf->gmr_id = 0;
+        buf->gmr_page_count = 0;
+        data->next_gmrid = gmrId;
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+VOID VMWareSVGA_BufferDetachGMR(struct HWData *data, struct VMWareSVGAPBBuf *buf)
+{
+    if (!buf || !buf->gmr_id)
+        return;
+
+    VMWareSVGA_DestroyGMR(data, buf->gmr_id);
+    syncVMWareSVGAFIFO(data);
+
+    buf->guest_ptr.gmrId = 0;
+    buf->guest_ptr.offset = 0;
+    buf->gmr_id = 0;
+    buf->gmr_page_count = 0;
+}
 
 /**********/
 
@@ -159,7 +262,7 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
         else
             data->fifomin = SVGA_FIFO_CAPABILITIES;
     }
-    DFIFOINF(bug("[VMWareSVGA:HW] %s: FIFO Min Regs = %d\n", __func__, data->fifomin));
+    DFIFOINF(bug("[VMWareSVGA:HW] %s: FIFO Min/Max Regs = %u, %u\n", __func__, data->fifomin, data->mmiosize));
 
     data->mmiosize = vmwareReadReg(data, SVGA_REG_MEM_SIZE);
 
@@ -192,7 +295,7 @@ VOID initVMWareSVGAFIFO(struct HWData *data)
 
 void waitVMWareSVGAFIFO(struct HWData *data)
 {
-    bug("[VMWareSVGA:HW] %s()\n", __func__);
+    D(bug("[VMWareSVGA:HW] %s()\n", __func__));
     if (hasCapVMWareSVGAFIFO(data, SVGA_FIFO_FENCE_GOAL) &&
        (data->capabilities & SVGA_CAP_IRQMASK)) {
 #if (0)
@@ -230,6 +333,11 @@ APTR reserveVMWareSVGAFIFO(struct HWData *data, ULONG size)
     BOOL canreserve = FALSE;
 
     DFIFOBUF(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
+    // Handle zero size: just return current FIFO write pointer without reserving
+    if (size == 0) {
+        // Just return current cmdNext pointer (casted to APTR)
+        return (APTR)((UBYTE *)fifo + cmdNext);
+    }
 
     if (data->fifocapabilities & SVGA_FIFO_CAP_RESERVE)
     {
@@ -364,6 +472,10 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
     BOOL canreserve = FALSE;
 
     DFIFOBUF(bug("[VMWareSVGA:HW] %s(%d)\n", __func__, size);)
+    if (size == 0)
+    {
+        return;
+    }
 
     if (data->fifocapabilities & SVGA_FIFO_CAP_RESERVE)
     {
@@ -456,13 +568,23 @@ VOID commitVMWareSVGAFIFO(struct HWData *data, ULONG size)
 
 VOID flushVMWareSVGAFIFO(struct HWData *data, ULONG *fence)
 {
+    ULONG fence_value = 0;
+
     DFIFOBUF(bug("[VMWareSVGA:HW] %s()\n", __func__);)
 
     if (data->fifocmdbuf.reserved)
     {
-        *fence = fenceVMWareSVGAFIFO(data);
         commitVMWareSVGAFIFO(data, data->fifocmdbuf.reserved);
     }
+
+    if (data->fifocmdbuf.used)
+    {
+        fence_value = fenceVMWareSVGAFIFO(data);
+        data->fifocmdbuf.used = 0;
+    }
+
+    if (fence)
+        *fence = fence_value;    
 }
 
 ULONG fenceVMWareSVGAFIFO(struct HWData *data)
@@ -480,6 +602,7 @@ ULONG fenceVMWareSVGAFIFO(struct HWData *data)
         writeVMWareSVGAFIFO(data, fence);
         syncVMWareSVGAFIFO(data);
     }
+    DFENCE(bug("[VMWareSVGA:HW] %s: returning #%d\n", __func__, fence);)
     return fence;
 }
 
@@ -539,6 +662,8 @@ BOOL initVMWareSVGAHW(struct HWData *data, OOP_Object *device)
         return FALSE;
 
     data->maskPool = CreatePool(MEMF_ANY, (32 << 3), (32 << 2));
+
+    data->next_gmrid = 1;
 
     if (id >= SVGA_ID_1)
     {

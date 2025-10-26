@@ -28,6 +28,15 @@
 #define VMW_SHADER_RELOCS (1024)
 #define VMW_REGION_RELOCS (512)
 
+#ifndef HAVE_SVGA_GUEST_PTR
+#define HAVE_SVGA_GUEST_PTR
+struct SVGAGuestPtr
+{
+    ULONG                               gmrId;
+    ULONG                               offset;
+};
+#endif
+
 struct VMWareSVGAPBBuf
 {
     struct Node                         bnode;
@@ -40,6 +49,9 @@ struct VMWareSVGAPBBuf
     ULONG                               allocated_size;
     ULONG                               status_index;
     ULONG                               flush_num;
+    struct SVGAGuestPtr                 guest_ptr;
+    ULONG                               gmr_id;
+    ULONG                               gmr_page_count;
 };
 
 struct VMWareSVGA3DCap {
@@ -52,6 +64,7 @@ struct HIDDGalliumVMWareSVGAData
     struct svga_winsys_screen   wssbase;
     OOP_Object                  *wsgo;
     struct HWData               *hwdata;
+    struct pipe_context         *spipe;
 
     ULONG                       ctxcnt;
     ULONG                       srfcnt;

@@ -170,7 +170,14 @@ static struct svga_winsys_buffer *VMWareSVGA_WSScr_BufferCreate( struct svga_win
     else
         buf->map = buf->allocated_map;
     buf->size = size;
-    
+
+    if (!VMWareSVGA_BufferAttachGMR(data->hwdata, buf))
+    {
+        VMWareSVGA_MemFree(data->hwdata, buf->allocated_map, buf->allocated_size);
+        FREE(buf);
+        return NULL;
+    }
+
     return (struct svga_winsys_buffer *)buf;
 }
 
@@ -196,6 +203,7 @@ static void VMWareSVGA_WSScr_BufferDestroy( struct svga_winsys_screen *sws,
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, sws));
 
+    VMWareSVGA_BufferDetachGMR(data->hwdata, pbuf);
     if (pbuf->allocated_map)
         VMWareSVGA_MemFree(data->hwdata, pbuf->allocated_map, pbuf->allocated_size);
     FREE(pbuf);
@@ -232,7 +240,7 @@ static struct svga_winsys_context *VMWareSVGA_WSScr_ContextCreate(struct svga_wi
 
 ULONG VMWareSVGA_DefineSurface(struct HIDDGalliumVMWareSVGAData *data, struct svga_winsys_surface *srf, SVGA3dSize size, SVGA3dSurfaceAllFlags flags, SVGA3dSurfaceFormat format, uint32 numMipLevels)
 {
-    ULONG sid = ++data->srfcnt;
+    ULONG sid = 0;
     SVGA3dCmdHeader *header;
     SVGA3dCmdDefineSurface *cmd;
     SVGA3dSize *mipSizes;
@@ -241,32 +249,35 @@ ULONG VMWareSVGA_DefineSurface(struct HIDDGalliumVMWareSVGAData *data, struct sv
 
     D(bug("[VMWareSVGA:Gallium] %s()\n", __func__));
 
-    header = reserveVMWareSVGAFIFO(data->hwdata, sizeof *header + sizeof *cmd +
-                            sizeof *mipSizes * numMipLevels);
+    size_t resvsize = sizeof(SVGA3dCmdHeader) + sizeof(SVGA3dCmdDefineSurface) +
+                            sizeof(SVGA3dSize) * numMipLevels;
+    bug("[VMWareSVGA:Gallium] %s: reserving %u bytes\n", __func__, resvsize);
+    header = reserveVMWareSVGAFIFO(data->hwdata, resvsize);
+    if (header) {
+        sid = ++data->srfcnt;
+        header->id = SVGA_3D_CMD_SURFACE_DEFINE;
+        header->size = sizeof *cmd;
+        cmd = (SVGA3dCmdDefineSurface *)&header[1];
 
-    header->id = SVGA_3D_CMD_SURFACE_DEFINE;
-    header->size = sizeof *cmd;
-    cmd = (SVGA3dCmdDefineSurface *)&header[1];
+        cmd->sid = sid;
+        cmd->surfaceFlags = flags;
+        cmd->format = format;
 
-    cmd->sid = sid;
-    cmd->surfaceFlags = flags;
-    cmd->format = format;
+        faces = &cmd->face[0];
+        mipSizes = (SVGA3dSize*) &cmd[1];
+        memset(faces, 0, sizeof *faces * SVGA3D_MAX_SURFACE_FACES);
+        memset(mipSizes, 0, sizeof *mipSizes * numMipLevels);
 
-    faces = &cmd->face[0];
-    mipSizes = (SVGA3dSize*) &cmd[1];
-    memset(faces, 0, sizeof *faces * SVGA3D_MAX_SURFACE_FACES);
-    memset(mipSizes, 0, sizeof *mipSizes * numMipLevels);
+        faces[0].numMipLevels = numMipLevels;
 
-    faces[0].numMipLevels = numMipLevels;
-
-    for (i = 0; i < numMipLevels; i++)
-    {
-        mipSizes[i].width = size.width;
-        mipSizes[i].height = size.height;
-        mipSizes[i].depth = size.depth;
+        for (i = 0; i < numMipLevels; i++)
+        {
+            mipSizes[i].width = size.width;
+            mipSizes[i].height = size.height;
+            mipSizes[i].depth = size.depth;
+        }
+        commitVMWareSVGAFIFO(data->hwdata, data->hwdata->fifocmdbuf.reserved);
     }
-    commitVMWareSVGAFIFO(data->hwdata, data->hwdata->fifocmdbuf.reserved);
-
     D(bug("[VMWareSVGA:Gallium] %s: returning %d\n", __func__, sid));
 
     return sid;

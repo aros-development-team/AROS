@@ -1,5 +1,5 @@
 /*
-    Copyright 2019-2020, The AROS Development Team. All rights reserved.
+    Copyright 2019-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -41,6 +41,8 @@ VMWareSVGA_WSCtx_Reserve(struct svga_winsys_context *swc,
 
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(hiddwsctx->wscsws);
+
+    D(bug("[VMWareSVGA:Gallium] %s: command @ 0x%p, command->size = %d\n", __func__, hiddwsctx->command, hiddwsctx->command->size));
 
     if(nr_bytes > hiddwsctx->command->size)
         return NULL;
@@ -102,7 +104,24 @@ VMWareSVGA_WSCtx_RegionReloc(struct svga_winsys_context *swc,
                           unsigned flags)
 {
     struct HIDDGalliumVMWareSVGACtx *hiddwsctx = VMWareSVGA_WSCtx_HiddDataFromWinSys(swc);
+    struct VMWareSVGAPBBuf *pbuf = (struct VMWareSVGAPBBuf *)buffer;
+
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+
+    if (where)
+    {
+        if (pbuf && pbuf->gmr_id)
+        {
+            where->gmrId = pbuf->guest_ptr.gmrId;
+            where->offset = pbuf->guest_ptr.offset + offset;
+        }
+        else
+        {
+            where->gmrId = 0;
+            where->offset = 0;
+        }
+    }
+
     ++hiddwsctx->region.staged;
 }
 
@@ -162,6 +181,7 @@ VMWareSVGA_WSCtx_Commit(struct svga_winsys_context *swc)
     struct HIDDGalliumVMWareSVGAData *data = VMWareSVGA_WSScr_HiddDataFromWinSys(hiddwsctx->wscsws);
 
     D(bug("[VMWareSVGA:Gallium] %s(0x%p)\n", __func__, swc));
+    D(bug("[VMWareSVGA:Gallium] %s: reserved =  %u\n", __func__, hiddwsctx->command->reserved));
 
     hiddwsctx->surface.used += hiddwsctx->surface.staged;
     hiddwsctx->surface.staged = 0;
@@ -191,8 +211,10 @@ VMWareSVGA_WSCtx_Flush(struct svga_winsys_context *swc,
 
 
     if (hiddwsctx->command->used || pfence != NULL)
+    {
+        D(bug("[VMWareSVGA:Gallium] %s: calling flushVMWareSVGAFIFO\n", __func__));
         flushVMWareSVGAFIFO(data->hwdata, (ULONG *)(IPTR)&fence);
-
+    }
     syncfenceVMWareSVGAFIFO(data->hwdata, (ULONG)(IPTR)fence);
 
     hiddwsctx->command->used = 0;

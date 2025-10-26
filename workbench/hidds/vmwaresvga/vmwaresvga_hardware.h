@@ -10,6 +10,8 @@
 #include "vmwaresvga_bitmap.h"
 #include "vmwaresvga_mouse.h"
 
+struct VMWareSVGAPBBuf;
+
 #include "svga_reg.h"
 #define SVGA_LEGACY_BASE_PORT	0x4560
 
@@ -178,6 +180,39 @@
          /* FIFO layout:
             Fence value */
 
+#define  SVGA_CMD_DEFINE_GMRFB           104
+#define  SVGA_CMD_BLIT_GMRFB_TO_SCREEN   105
+#define  SVGA_CMD_BLIT_SCREEN_TO_GMRFB   106
+#define  SVGA_CMD_ANNOTATION_FILL        107
+#define  SVGA_CMD_ANNOTATION_COPY        108
+#define  SVGA_CMD_DEFINE_GMR2            109
+#define  SVGA_CMD_REMAP_GMR2             110
+
+#define SVGA_REMAP_GMR2_PPN64            (1 << 0)
+#define SVGA_REMAP_GMR2_PPN32            (1 << 1)
+#define SVGA_REMAP_GMR2_SINGLE_PPN       (1 << 2)
+
+#define VMW_GMR_PAGE_SHIFT               12
+#define VMW_GMR_PAGE_SIZE                (1UL << VMW_GMR_PAGE_SHIFT)
+
+struct SVGAFifoCmdDefineGMR2 {
+    ULONG gmrId;
+    ULONG numDescriptors;
+    ULONG descriptorSize;
+};
+
+struct SVGAFifoCmdRemapGMR2 {
+    ULONG gmrId;
+    ULONG numDescriptors;
+    ULONG descriptorSize;
+    ULONG flags;
+};
+
+struct SVGAGuestMemDescriptor {
+    ULONG ppn;
+    ULONG numPages;
+};
+
 /*
  *  Capabilities
  */
@@ -249,6 +284,7 @@ struct HWData  {
     struct Box				delta_damage;
     struct Task 			*render_task;
     struct SignalSemaphore		damage_control;
+    ULONG				next_gmrid;
 };
 
 #define clearCopyVMWareSVGA(d, sx, sy, dx, dy, w, h) \
@@ -349,6 +385,10 @@ VOID syncVMWareSVGAFIFO(struct HWData *);
 
 ULONG fenceVMWareSVGAFIFO(struct HWData *);
 VOID syncfenceVMWareSVGAFIFO(struct HWData *, ULONG);
+BOOL VMWareSVGA_DefineGMR2(struct HWData *, ULONG, struct SVGAGuestMemDescriptor *, ULONG);
+VOID VMWareSVGA_DestroyGMR(struct HWData *, ULONG);
+BOOL VMWareSVGA_BufferAttachGMR(struct HWData *, struct VMWareSVGAPBBuf *);
+VOID VMWareSVGA_BufferDetachGMR(struct HWData *, struct VMWareSVGAPBBuf *);
 
 VOID vmwareHandlerIRQ(struct HWData *, void *);
 
