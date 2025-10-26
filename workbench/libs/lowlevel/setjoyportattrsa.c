@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -21,14 +21,48 @@
       struct LowLevelBase *, LowLevelBase, 22, LowLevel)
 
 /*  FUNCTION
- 
+        Allows control over the behaviour of a joystick or game controller
+        port handled by lowlevel.library.  Each port normally operates in
+        automatic detection mode, identifying whether a mouse, joystick, or
+        other controller is connected.  This function can override that
+        behaviour or reset a port to its default state.
+
+        The attributes are supplied as a tag list.  Only the tags listed
+        below are defined by the standard lowlevel.library interface.
+
+        Tag meanings:
+
+            SJA_Type (ULONG)
+                Sets the controller type for the given port.  Possible values:
+
+                    SJA_TYPE_AUTOSENSE  - Enable automatic device detection (default)
+                    SJA_TYPE_MOUSE      - Force mouse mode
+                    SJA_TYPE_JOYSTK     - Force joystick mode
+                    SJA_TYPE_GAMECTLR   - Force game controller mode
+
+                When set to anything other than AUTOSENSE, lowlevel.library
+                will not attempt to detect the connected device type
+                automatically.  It is the caller’s responsibility to restore
+                AUTOSENSE before exiting.
+
+            SJA_Reinitialize (VOID)
+                Resets the specified port to its initial state, freeing any
+                allocated resources and returning it to AUTOSENSE mode.
+
     INPUTS
- 
+        portNumber - Index of the controller port to modify (typically 0–3).
+        tagList    - Pointer to a TagItem list describing attributes to set.
+                     May be NULL, in which case the function performs no action
+                     but returns TRUE.
+
     RESULT
- 
+        Returns TRUE if successful, or FALSE if the specified port number or
+        tag was invalid or if the operation could not be completed.
+
     BUGS
 
     SEE ALSO
+        ReadJoyPort(), SystemControlA(), utility.library/TagItem
 
     INTERNALS
 
