@@ -34,50 +34,29 @@
         Every client receives events from all keyboard devices merged into
         a single stream.
 
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        aoHidd_Kbd_IrqHandler
-
-    SYNOPSIS
-        [I..], APTR
-
-    LOCATION
-        CLID_Hidd_Kbd
-
-    FUNCTION
-        Specifies a keyboard event handler. The handler will be called every time a
-        keyboard event occurs.  Handlers should be declared using 'C' calling conventions,
+        Keyboard event handlers are specified by passing the aHidd_Input_IrqHandler attrib,
+        The handler will be called every time a keyboard event occurs.  Handlers
+        should be declared using 'C' calling conventions,
         e.g.:
 
-        void KeyboardIRQ(APTR data, KbdIrqData_t keyData)
+        void KeyboardIRQ(APTR data, struct pHidd_Kbd_Event *event)
 
         Handler parameters are:
             data    - The handler will be called with this set to the value
-                      defined using the aoHidd_Kbd_IrqHandlerData attribute.
-            keyData - The keyData is an OR'd value of the input handlers flags
-                      and the raw key code as specified in devices/rawkeycodes.h.
-                      keyData = (flags << 16 ) | rawkeycode.
-                      A key 'release' event is indicated by OR'ing this value
-                      with IECODE_UP_PREFIX (defined in devices/inputevent.h)
+                      defined using the aoHidd_Input_IrqHandlerData attribute.
+            event - A pointer to a read-only event descriptor structure with the following
+                      contents:
+               flags - The input handlers flags
                       currently supported flags are -:
                       KBD_NOCAPSUP - The keyboard does not generate an UP event for Caps Lock.
+               code - The raw key code as specified in devices/rawkeycodes.h.
+                      A key 'release' event is indicated by OR'ing this value
+                      with IECODE_UP_PREFIX (defined in devices/inputevent.h)
 
         The handler is called inside interrupts, so usual restrictions apply to it.
 
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-        Not all hosted drivers provide this attribute.
-
     SEE ALSO
-        aoHidd_Kbd_IrqHandlerData
-
-    INTERNALS
+        aoHidd_Input_IrqHandler, aoHidd_Input_IrqHandlerData
 
 *****************************************************************************************/
 

@@ -32,34 +32,21 @@
         Instances of this class are virtual devices being clients of the
         pointing input subsystem. In order to receive input events, you
         have to create an object of this class and supply a callback using
-        aoHidd_Mouse_IrqHandler attribute. After this your callback will be
+        aoHidd_Input_IrqHandler attribute. After this your callback will be
         called every time the event arrives until you dispose your object.
 
         Every client receives events from all pointing devices merged into
         a single stream.
 
-*****************************************************************************************/
+        Mouse event handlers are specified by passing the aHidd_Input_IrqHandler attrib,
+        The handler will be called every time a mouse event occurs.  Handlers
+        should be declared using 'C' calling conventions,
+        e.g.:
 
-/*****************************************************************************************
-
-    NAME
-        aoHidd_Mouse_IrqHandler
-
-    SYNOPSIS
-        [I..], APTR
-
-    LOCATION
-        CLID_Hidd_Mouse
-
-    FUNCTION
-        Specifies a pointing device interrupt handler. The handler will called be every time a
-        keyboard event happens. A "C" calling convention is used, declare the handler
-        functions as follows:
-
-        void MouseIRQ(APTR data, struct pHidd_Mouse_Event *event);
+        void MouseIRQ(APTR data, struct pHidd_Mouse_ExtEvent *event);
 
         Handler parameters are:
-            data  - Anything you specify using aoHidd_Mouse_IrqHandlerData
+            data  - Anything you specify using aoHidd_Input_IrqHandlerData
             event - A pointer to a read-only event descriptor structure with the following
                     contents:
                 button - button code, or vHidd_Mouse_NoButton of the event describes a simple
@@ -76,19 +63,9 @@
 
         The handler is called inside interrupts, so usual restrictions apply to it.
 
-    NOTES
-        CLID_Hidd_Mouse class always provides extended form of event structure
-        (struct pHidd_Mouse_ExtEvent). Drivers will not always provide it, depending
-        on their aoHidd_Mouse_Extended attribute value.
-
-    EXAMPLE
-
-    BUGS
 
     SEE ALSO
-        aoHidd_Mouse_IrqHandlerData, aoHidd_Mouse_Extended
-
-    INTERNALS
+        aoHidd_Input_IrqHandler, aoHidd_Input_IrqHandlerData
 
 *****************************************************************************************/
 
@@ -152,7 +129,7 @@
     BUGS
 
     SEE ALSO
-        aoHidd_Mouse_IrqHandler, aoHidd_Mouse_Extended
+        aoHidd_Mouse_Extended
 
     INTERNALS
 
@@ -185,7 +162,6 @@
     BUGS
 
     SEE ALSO
-        aoHidd_Mouse_IrqHandler
 
     INTERNALS
 
