@@ -28,7 +28,8 @@
         behaviour or reset a port to its default state.
 
         The attributes are supplied as a tag list.  Only the tags listed
-        below are defined by the standard lowlevel.library interface.
+        below are defined by the standard lowlevel.library interface and
+        compatible Poseidon (USB stack) extensions.
 
         Tag meanings:
 
@@ -48,6 +49,29 @@
             SJA_Reinitialize (VOID)
                 Resets the specified port to its initial state, freeing any
                 allocated resources and returning it to AUTOSENSE mode.
+
+            -- Poseidon (USB stack) extensions --
+
+            SJA_RumbleSetSlowMotor (ULONG)
+                Activates the “slow” (low-frequency) rumble motor of a
+                compatible game controller.  The parameter specifies the
+                intensity level as a 32-bit value from 0 (off) to 0xFFFFFFFF
+                (maximum).  Values outside this range are clamped.
+
+            SJA_RumbleSetFastMotor (ULONG)
+                Activates the “fast” (high-frequency) rumble motor of a
+                compatible game controller.  The parameter specifies the
+                intensity level as a 32-bit value from 0 (off) to 0xFFFFFFFF
+                (maximum).
+
+            SJA_RumbleOff (VOID)
+                Disables all active rumble motors immediately.  Equivalent
+                to setting both SJA_RumbleSetSlowMotor and
+                SJA_RumbleSetFastMotor to zero.
+
+        These rumble control tags are supported only if the underlying port
+        driver or Poseidon class implements force feedback support.  On
+        systems without such support, the tags are ignored without error.
 
     INPUTS
         portNumber - Index of the controller port to modify (typically 0–3).
