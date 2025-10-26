@@ -44,6 +44,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-hidd-kobj \
 #MM     kernel-hidd-gayleata-kobj \
 #MM     kernel-hidd-gfx-kobj \
+#MM     kernel-hidd-input-kobj \
 #MM     kernel-hidd-kbd-kobj \
 #MM     kernel-hidd-mouse-kobj \
 #MM     kernel-hidd-amigakbd-kobj \
@@ -137,7 +138,7 @@ AFILES=rom_entry rom_init cpu_detect superstack_swap
 KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
-KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass keyboard mouse p96gfx
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse p96gfx
 KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
