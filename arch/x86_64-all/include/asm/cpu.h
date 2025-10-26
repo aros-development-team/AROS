@@ -218,6 +218,15 @@ struct PTE {
 #define cpuid(num, eax, ebx, ecx, edx) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
+static inline void __attribute__((always_inline)) cpuid2(unsigned int leaf, unsigned int subleaf,
+                          unsigned int *eax, unsigned int *ebx,
+                          unsigned int *ecx, unsigned int *edx)
+{
+    asm volatile("cpuid"
+        : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+        : "a"(leaf), "c"(subleaf));
+}
+
 static inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
 {
     uint32_t ret1,ret2;
