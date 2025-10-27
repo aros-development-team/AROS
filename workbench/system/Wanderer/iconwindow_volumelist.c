@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2023, The AROS Development Team. All rights reserved.
+  Copyright  2004-2025, The AROS Development Team. All rights reserved.
 */
 
 #define ZCC_QUIET
@@ -755,9 +755,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
     IPTR        retVal = (IPTR)TRUE;
 
-//        D(
-            bug("[Wanderer:VolumeList] %s()\n", __func__);
-//        )
+    D(bug("[Wanderer:VolumeList] %s()\n", __func__);)
 
     if ((BOOL)XGET(_win(self), MUIA_IconWindow_IsRoot))
     {
