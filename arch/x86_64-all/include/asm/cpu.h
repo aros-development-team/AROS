@@ -226,28 +226,26 @@ void cpuid2(unsigned int leaf, unsigned int subleaf,
 #if defined(__x86_64__)
     unsigned int a = leaf, b, c = subleaf, d;
     __asm__ volatile(
-        "mov %%rbx, %%rdi\n\t"
+        "mov %%rbx, %%rdi\n\t"   /* save RBX (used by PIC) */
         "cpuid\n\t"
-        "xchg %%rbx, %%rdi\n\t"
-        : "+a"(a), "=r"(b), "+c"(c), "=d"(d)
+        "xchg %%rbx, %%rdi\n\t"  /* restore RBX */
+        : "+a"(a), "=D"(b), "+c"(c), "=d"(d)
         :
-        : "rdi", "memory");
+        : "memory");
     if (eax) *eax = a;
     if (ebx) *ebx = b;
     if (ecx) *ecx = c;
     if (edx) *edx = d;
 
 #elif defined(__i386__)
-    unsigned int a, b, c, d;
+    unsigned int a = leaf, b, c = subleaf, d;
     __asm__ volatile(
-        "xchg %%ebx, %%edi\n\t"
-        "mov %4, %%eax\n\t"
-        "mov %5, %%ecx\n\t"
+        "xchg %%ebx, %%edi\n\t"  /* save EBX (PIC-safe) */
         "cpuid\n\t"
-        "xchg %%ebx, %%edi\n\t"
-        : "=a"(a), "=r"(b), "=c"(c), "=d"(d)
-        : "r"(leaf), "r"(subleaf)
-        : "edi", "memory");
+        "xchg %%ebx, %%edi\n\t"  /* restore EBX */
+        : "=a"(a), "=D"(b), "=c"(c), "=d"(d)
+        : "a"(leaf), "c"(subleaf)
+        : "memory");
     if (eax) *eax = a;
     if (ebx) *ebx = b;
     if (ecx) *ecx = c;
