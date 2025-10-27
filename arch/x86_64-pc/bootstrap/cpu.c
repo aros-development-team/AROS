@@ -225,10 +225,10 @@ void kick(void *kick_base, struct TagItem64 *km)
             asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
             __builtin_unreachable();
         }
-    }
-
     /* If we get here, dump the *actual* regs from 0x80000001 to see why */
-    cpuid2(0x80000001, 0, &v1, &v2, &v3, &v4);
-    kprintf("Your processor is not x86-64 compatible\n");
-    kprintf("CPUID(0x80000001): EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x\n", v1, v2, v3, v4);
+        cpuid2(0x80000001, 0, &v1, &v2, &v3, &v4);
+        kprintf("[BOOT] CPUID(0x80000001) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n", v1, v2, v3, v4);
+    } else
+        kprintf("[BOOT] CPUID(0x80000000) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n", v1, v2, v3, v4);
+    kprintf("\nThis processor is not x86-64 compatible\n");
 }
