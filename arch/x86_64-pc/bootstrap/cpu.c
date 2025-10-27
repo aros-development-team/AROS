@@ -188,47 +188,46 @@ void setup_mmu(void)
  */
 void kick(void *kick_base, struct TagItem64 *km)
 {
-    unsigned int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
-
+    unsigned int eax0, ebx0, ecx0, edx0;
     /* Get extended max leaf */
-    cpuid2(0x80000000, 0, &v1, &v2, &v3, &v4);
-    if (v1 >= 0x80000001) {
+    cpuid2(0x80000000, 0, &eax0, &ebx0, &ecx0, &edx0);
+
+    if (eax0 >= 0x80000001) {
+        unsigned int eax1, ebx1, ecx1, edx1;
         /* Read LM bit from 0x80000001 EDX */
-        cpuid2(0x80000001, 0, &v1, &v2, &v3, &v4);
-        /* v4 == EDX (LM) */
-        if (v4 & (1u << 29)) {
+        cpuid2(0x80000001, 0, &eax1, &ebx1, &ecx1, &edx1);
+
+        if (edx1 & (1u << 29)) {                /* edx1 == EDX (LM) */
             D(kprintf("[BOOT] 64-bit CPU detected\n");)
-
             KernelTarget.off = kick_base;
-
             asm volatile ("lgdt %0"::"m"(GDT_sel));
             D(kprintf("[BOOT] GDTR loaded\n");)
-
             /* Enable PAE */
             wrcr(cr4, _CR4_PAE | _CR4_PGE);
             D(kprintf("[BOOT] PAE enabled\n");)
-
             /* enable pages */
             wrcr(cr3, &PML4);
             D(kprintf("[BOOT] Page tables loaded\n");)
-
             /* enable long mode */
-            rdmsr(EFER, &v1, &v2);
-            v1 |= _EFER_LME;
-            wrmsr(EFER, v1, v2);
+            {
+                unsigned int efer_low, efer_high;
+                rdmsr(EFER, &efer_low, &efer_high);
+                efer_low |= _EFER_LME;
+                wrmsr(EFER, efer_low, efer_high);
+            }
             D(kprintf("[BOOT] Long mode enabled\n");)
-
             /* paging + protected -> long mode */
             wrcr(cr0, _CR0_PG | _CR0_PE);
-
             D(kprintf("[BOOT] Leaving 32-bit environment. LJMP $%x,$%p\n\n", SEG_SUPER_CS, KernelTarget.off);)
             asm volatile("ljmp *%0"::"m"(KernelTarget),"D"(km),"S"(AROS_BOOT_MAGIC));
             __builtin_unreachable();
         }
-    /* If we get here, dump the *actual* regs from 0x80000001 to see why */
-        cpuid2(0x80000001, 0, &v1, &v2, &v3, &v4);
-        kprintf("[BOOT] CPUID(0x80000001) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n", v1, v2, v3, v4);
-    } else
-        kprintf("[BOOT] CPUID(0x80000000) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n", v1, v2, v3, v4);
+        /* Failure path: dump actual regs from 0x80000001 */
+        kprintf("[BOOT] CPUID(0x80000001) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n",
+                eax1, ebx1, ecx1, edx1);
+    } else {
+        kprintf("[BOOT] CPUID(0x80000000) <EAX 0x%08x, EBX 0x%08x, ECX 0x%08x, EDX 0x%08x>\n",
+                eax0, ebx0, ecx0, edx0);
+    }
     kprintf("\nThis processor is not x86-64 compatible\n");
 }

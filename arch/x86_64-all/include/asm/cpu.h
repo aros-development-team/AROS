@@ -218,13 +218,44 @@ struct PTE {
 #define cpuid(num, eax, ebx, ecx, edx) \
     do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
 
-static inline void __attribute__((always_inline)) cpuid2(unsigned int leaf, unsigned int subleaf,
-                          unsigned int *eax, unsigned int *ebx,
-                          unsigned int *ecx, unsigned int *edx)
+static inline __attribute__((always_inline))
+void cpuid2(unsigned int leaf, unsigned int subleaf,
+            unsigned int *eax, unsigned int *ebx,
+            unsigned int *ecx, unsigned int *edx)
 {
-    asm volatile("cpuid"
-        : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
-        : "a"(leaf), "c"(subleaf));
+#if defined(__x86_64__)
+    unsigned int a = leaf, b, c = subleaf, d;
+    __asm__ volatile(
+        "mov %%rbx, %%rdi\n\t"
+        "cpuid\n\t"
+        "xchg %%rbx, %%rdi\n\t"
+        : "+a"(a), "=r"(b), "+c"(c), "=d"(d)
+        :
+        : "rdi", "memory");
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+
+#elif defined(__i386__)
+    unsigned int a, b, c, d;
+    __asm__ volatile(
+        "xchg %%ebx, %%edi\n\t"
+        "mov %4, %%eax\n\t"
+        "mov %5, %%ecx\n\t"
+        "cpuid\n\t"
+        "xchg %%ebx, %%edi\n\t"
+        : "=a"(a), "=r"(b), "=c"(c), "=d"(d)
+        : "r"(leaf), "r"(subleaf)
+        : "edi", "memory");
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+
+#else
+# error "x86 only"
+#endif
 }
 
 static inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
