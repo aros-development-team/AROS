@@ -28,15 +28,6 @@
 #define VMW_SHADER_RELOCS (1024)
 #define VMW_REGION_RELOCS (512)
 
-#ifndef HAVE_SVGA_GUEST_PTR
-#define HAVE_SVGA_GUEST_PTR
-struct SVGAGuestPtr
-{
-    ULONG                               gmrId;
-    ULONG                               offset;
-};
-#endif
-
 struct VMWareSVGAPBBuf
 {
     struct Node                         bnode;

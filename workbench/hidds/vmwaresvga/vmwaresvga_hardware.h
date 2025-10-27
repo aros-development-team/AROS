@@ -208,11 +208,6 @@ struct SVGAFifoCmdRemapGMR2 {
     ULONG flags;
 };
 
-struct SVGAGuestMemDescriptor {
-    ULONG ppn;
-    ULONG numPages;
-};
-
 /*
  *  Capabilities
  */
