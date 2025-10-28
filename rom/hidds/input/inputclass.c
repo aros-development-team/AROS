@@ -130,7 +130,7 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     struct TagItem          *tag, *tstate;
     APTR                    *inputConsumers = NULL;
 
-    D(bug("[InputHidd] %s()\n", __func__));
+    D(bug("[Input:Hidd] %s()\n", __func__));
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (!o)
@@ -141,7 +141,7 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     data->ihid_private = NULL;
 
     tstate = msg->attrList;
-    D(bug("[InputHidd] %s: tstate = 0x%p\n", __func__, tstate));
+    D(bug("[Input:Hidd] %s: tstate = 0x%p\n", __func__, tstate));
 
     while ((tag = NextTagItem(&tstate)))
     {
@@ -171,27 +171,27 @@ OOP_Object *Input__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     } /* while (tags to process) */
 
     if (inputConsumers) {
-        D(bug("[InputHidd] %s: Input event generator\n", __func__);)
+        D(bug("[Input:Hidd] %s: Input event generator\n", __func__);)
         if (!data->ihid_private)
             data->ihid_private = inputConsumers;
         D(
-            bug("[InputHidd] %s:     for Input HW subsystem @ 0x%p\n", __func__, data->ihid_hwObj);
-            bug("[InputHidd] %s:     Callback @ 0x%p\n", __func__, data->ihid_callback);
-            bug("[InputHidd] %s:     Callback Private = %p\n", __func__, data->ihid_private);
+            bug("[Input:Hidd] %s:     for Input HW subsystem @ 0x%p\n", __func__, data->ihid_hwObj);
+            bug("[Input:Hidd] %s:     Callback @ 0x%p\n", __func__, data->ihid_callback);
+            bug("[Input:Hidd] %s:     Callback Private = %p\n", __func__, data->ihid_private);
         )
         Disable();
         ADDTAIL(&__ICSD(cl)->icsd_producers, &data->ihid_node);
         Enable();
     } else {
-        D(bug("[InputHidd] %s: Input event consumer\n", __func__);)
+        D(bug("[Input:Hidd] %s: Input event consumer\n", __func__);)
         if (data->ihid_hwObj) {
             if (data->ihid_callback) {
                 struct Library *OOPBase = __ICSD(cl)->icsd_OOPBase;
                 struct List *cbList = NULL;
                 D(
-                    bug("[InputHidd] %s:     for Input HW subsystem @ 0x%p\n", __func__, data->ihid_hwObj);
-                    bug("[InputHidd] %s:     Callback @ 0x%p\n", __func__, data->ihid_callback);
-                    bug("[InputHidd] %s:     Callback Private = %p\n", __func__, data->ihid_private);
+                    bug("[Input:Hidd] %s:     for Input HW subsystem @ 0x%p\n", __func__, data->ihid_hwObj);
+                    bug("[Input:Hidd] %s:     Callback @ 0x%p\n", __func__, data->ihid_callback);
+                    bug("[Input:Hidd] %s:     Callback Private = %p\n", __func__, data->ihid_private);
                 )
                 OOP_GetAttr(data->ihid_hwObj, aHW_Input_ConsumerList, (IPTR *)&cbList);
                 if (cbList) {
@@ -210,7 +210,7 @@ VOID Input__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct InputHWInstData *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 
-    D(bug("[InputHidd] %s()\n", __func__));
+    D(bug("[Input:Hidd] %s()\n", __func__));
 
     if (IS_HIDDINPUT_ATTR(msg->attrID, idx)) {
         switch (idx) {
@@ -237,7 +237,7 @@ VOID Input__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct InputHWInstData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[InputHidd] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
+    D(bug("[Input:Hidd] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
 
     if (data->ihid_hwObj && data->ihid_callback) {
         Disable();
@@ -304,7 +304,7 @@ OOP_Object *Input__Hidd_Input__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 {
     struct InputHWInstData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[InputHidd] %s()\n", __func__));
+    D(bug("[Input:Hidd] %s()\n", __func__));
 
     return HW_AddDriver(data->ihid_hwObj, Msg->driverClass, Msg->tags);
 }
@@ -355,7 +355,7 @@ void Input__Hidd_Input__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct p
 {
     struct InputHWInstData *data = OOP_INST_DATA(cl, o);
 
-    D(bug("[InputHidd] %s()\n", __func__));
+    D(bug("[Input:Hidd] %s()\n", __func__));
 
     HW_RemoveDriver(data->ihid_hwObj, Msg->driverObject);
 }

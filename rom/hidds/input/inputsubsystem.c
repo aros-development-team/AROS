@@ -72,7 +72,7 @@ static void InputHW__CallBackFunc(struct MinList *cbList, InputIrqData_t cbData)
 {
     struct InputHWInstData *data;
 
-    D(bug("[InputHidd:HW] %s(0x%p)\n", __func__, cbList));
+    D(bug("[Input:HW] %s(0x%p)\n", __func__, cbList));
 
     for (data = (struct InputHWInstData *)cbList->mlh_Head; data->ihid_node.mln_Succ;
          data = (struct InputHWInstData *)data->ihid_node.mln_Succ)
@@ -89,10 +89,10 @@ OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     char                        *inputSSName = NULL;
     OOP_Object                  *inputSSObj = NULL;
 
-    D(bug("[InputHidd:HW] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
+    D(bug("[Input:HW] %s(0x%p, 0x%p, 0x%p)\n", __func__, cl, o, msg));
 
     tstate = msg->attrList;
-    D(bug("[InputHidd:HW] %s: tstate: %p\n", __func__, tstate));
+    D(bug("[Input:HW] %s: tstate: %p\n", __func__, tstate));
     while ((tag = NextTagItem(&tstate))) {
         ULONG idx;
         if (IS_HW_ATTR(tag->ti_Tag, idx)) {
@@ -105,15 +105,15 @@ OOP_Object *InputHW__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     }
 
     if (inputSSName) {
-        D(bug("[InputHidd:HW] %s: '%s' Input HW Subsystem class\n", __func__, inputSSName));
+        D(bug("[Input:HW] %s: '%s' Input HW Subsystem class\n", __func__, inputSSName));
         inputSSObj = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         if (inputSSObj) {
             struct InputHWData *hd = OOP_INST_DATA(cl, inputSSObj);
-            D(bug("[InputHidd:HW] %s: Consumer List @ 0x%p\n", __func__, &hd->ihd_consumers));
+            D(bug("[Input:HW] %s: Consumer List @ 0x%p\n", __func__, &hd->ihd_consumers));
             NEWLIST(&hd->ihd_consumers);
         }
     }
-    D(bug("[InputHidd:HW] %s: Returning 0x%p\n", __func__, inputSSObj));
+    D(bug("[Input:HW] %s: Returning 0x%p\n", __func__, inputSSObj));
     return inputSSObj;
 }
 
@@ -122,7 +122,7 @@ VOID InputHW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     struct InputHWData *hd = OOP_INST_DATA(cl, o);
     ULONG idx;
     
-    D(bug("[InputHidd:HW] %s()\n", __func__));
+    D(bug("[Input:HW] %s()\n", __func__));
 
     if (IS_HWINPUT_ATTR(msg->attrID, idx)) {
         switch (idx) {
@@ -144,7 +144,7 @@ VOID InputHW__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID InputHW__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    D(bug("[InputHidd:HW] %s()\n", __func__));
+    D(bug("[Input:HW] %s()\n", __func__));
 }
 
 OOP_Object *InputHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddDriver *Msg)
@@ -164,15 +164,15 @@ OOP_Object *InputHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddD
         .tags        = tags
     };
 
-    D(bug("[InputHidd:HW] %s: Registering driver '%s', tags 0x%p\n",
+    D(bug("[Input:HW] %s: Registering driver '%s', tags 0x%p\n",
             __func__,
             Msg->driverClass->ClassNode.ln_Name, Msg->tags));
 
     tags[0].ti_Data = GetTagData(aHidd_Input_IrqHandler, 0, Msg->tags);
     if (tags[0].ti_Data != 0) {
-        D(bug("[InputHidd:HW] %s: - using hw subsystem class input processing hook\n", __func__));
+        D(bug("[Input:HW] %s: - using hw subsystem class input processing hook\n", __func__));
     } else {
-        D(bug("[InputHidd:HW] %s: - using default input processing hook\n", __func__));
+        D(bug("[Input:HW] %s: - using default input processing hook\n", __func__));
         tags[0].ti_Data = (IPTR)InputHW__CallBackFunc;
     }
 
@@ -188,7 +188,7 @@ void InputHW__HW_Input__PushEvent(OOP_Class *cl, OOP_Object *o, struct pHW_Input
     struct InputHWData      *hd = OOP_INST_DATA(cl, o);
     struct InputHWInstData *data;
 
-    D(bug("[InputHidd:HW] %s()\n", __func__));
+    D(bug("[Input:HW] %s()\n", __func__));
 
     ForeachNode(&hd->ihd_consumers, data) {
         data->ihid_callback(data->ihid_private, Msg->iedata);
