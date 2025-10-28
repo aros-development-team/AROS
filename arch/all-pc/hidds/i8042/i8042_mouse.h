@@ -36,13 +36,10 @@
 
 struct mouse_data
 {
-    struct IORequest            *ioTimer;
+    struct i8042_hw_common      hwdata;
 
-    InputIrqCallBack_t          mouse_callback;
-    APTR                        callbackdata;
-
-    UWORD                       buttonstate;
     APTR                        irq;
+    UWORD                       buttonstate;
     UBYTE                       mouse_data[5];
     UBYTE                       mouse_collected_bytes;
     UBYTE                       mouse_protocol;

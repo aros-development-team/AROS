@@ -38,12 +38,10 @@
 
 struct kbd_data
 {
-    struct IORequest        *ioTimer;
-    struct Task             *CtrlTask;
+    struct i8042_hw_common  hwdata;
 
-    InputIrqCallBack_t      kbd_callback;
-    APTR                    callbackdata;
     APTR                    irq;
+    struct Task             *CtrlTask;
 
     ULONG                   LEDSigBit;
 

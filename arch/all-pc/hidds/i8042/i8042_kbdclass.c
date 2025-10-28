@@ -6,7 +6,9 @@
 
 /****************************************************************************************/
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -126,11 +128,11 @@ static void i8042_kbd_flush_output_buffer(void)
  ****************************************************************************************/
 static void i8042_kbd_update_leds(struct kbd_data *data)
 {
-    i8042_write_data_with_wait(data->ioTimer, KBD_OUTCMD_SET_LEDS);
-    i8042_wait_for_input(data->ioTimer);
+    i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_SET_LEDS);
+    i8042_wait_for_input(data->hwdata.ioTimer);
     i8042_read_data_port();
-    i8042_write_data_with_wait(data->ioTimer, data->kbd_ledstate & 0x07);
-    i8042_wait_for_input(data->ioTimer);
+    i8042_write_data_with_wait(data->hwdata.ioTimer, data->kbd_ledstate & 0x07);
+    i8042_wait_for_input(data->hwdata.ioTimer);
     i8042_read_data_port();
 }
 
@@ -151,8 +153,8 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    data->ioTimer = CreateIORequest(p, sizeof(struct timerequest));
-    if (!data->ioTimer) {
+    data->hwdata.ioTimer = CreateIORequest(p, sizeof(struct timerequest));
+    if (!data->hwdata.ioTimer) {
         D(bug("[i8042:Kbd] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->LEDSigBit = (ULONG)-1;
@@ -160,10 +162,10 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0)) {
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->hwdata.ioTimer, 0)) {
         D(bug("[i8042:Kbd] Failed to open timer.device, unit MICROHZ\n");)
-        DeleteIORequest(data->ioTimer);
-        data->ioTimer = NULL;
+        DeleteIORequest(data->hwdata.ioTimer);
+        data->hwdata.ioTimer = NULL;
         DeleteMsgPort(p);
         data->LEDSigBit = (ULONG)-1;
         Signal(data->CtrlTask->tc_UserData, SIGF_SINGLE);
@@ -183,13 +185,13 @@ void i8042_kbd_controller_task(OOP_Class *cl, OOP_Object *o)
     /* Only continue if there appears to be a keyboard controller */
     Disable();
     last_code = i8042_kbd_clear_input();
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_SELF_TEST);
-    reset_success = i8042_wait_for_input(data->ioTimer);
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_SELF_TEST);
+    reset_success = i8042_wait_for_input(data->hwdata.ioTimer);
     Enable();
 
     if (reset_success != 0x55) {
-        struct IORequest *io = data->ioTimer;
-        data->ioTimer = NULL;
+        struct IORequest *io = data->hwdata.ioTimer;
+        data->hwdata.ioTimer = NULL;
 
         /* Signal the launching task we are done .. */
         FreeSignal(data->LEDSigBit);
@@ -248,7 +250,6 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 {
     OOP_Object *kbd = NULL;
     struct TagItem *tag, *tstate;
-    APTR callback = NULL;
 
     D(bug("[i8042:Kbd] %s()\n", __func__));
 
@@ -257,32 +258,9 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 #endif
     if (XSD(cl)->kbdhidd) {
         /* Cannot open twice */
-        D(bug("[i8042:Kbd] %s: already instantiated!\n", __func__));
+        D(bug("[i8042:Kbd] %s: HW driver already instantiated!\n", __func__));
         return NULL;
     }
-
-    tstate = msg->attrList;
-    D(bug("[i8042:Kbd] %s: tstate: %p, tag=%x\n", __func__, tstate, tstate->ti_Tag));
-
-    while ((tag = NextTagItem(&tstate))) {
-        ULONG idx;
-
-        D(bug("[i8042:Kbd] %s: Got tag %d, data %p\n", __func__, tag->ti_Tag, (APTR)tag->ti_Data));
-
-        if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
-            D(bug("[i8042:Kbd] %s:   Input hidd tag\n", __func__));
-            switch (idx) {
-            case aoHidd_Input_IrqHandler:
-                callback = (APTR)tag->ti_Data;
-                D(bug("[i8042:Kbd] %s:     Got callback 0x%p\n", __func__, (APTR)tag->ti_Data));
-                break;
-            }
-        }
-
-    } /* while (tags to process) */
-
-    if (NULL == callback)
-        ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     D(bug("[i8042:Kbd] %s: creating input hw instance...\n", __func__));
 
@@ -307,9 +285,9 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
             bug("[i8042:Kbd] %s:         data @ 0x%p\n", __func__, data);
         )
 
-        data->kbd_callback   = callback;
-        OOP_GetAttr(kbd, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
-        D(bug("[i8042:Kbd] %s: callback data @ 0x%p\n", __func__, data->callbackdata));
+        data->hwdata.base = (struct i8042base *)cl->UserData;
+        data->hwdata.self = kbd;
+
         data->prev_amigacode = -2;
         data->prev_keycode   = 0;
 
@@ -331,7 +309,7 @@ OOP_Object * i8042Kbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     } /* if (kbd) */
     D(else bug("[i8042:Kbd] %s: input hw instantiation failed\n", __func__);)
 
-        XSD(cl)->kbdhidd = kbd;
+    XSD(cl)->kbdhidd = kbd;
     D(bug("[i8042:Kbd] %s: returning 0x%p\n", __func__, kbd);)
 
     return kbd;
@@ -571,8 +549,11 @@ static void i8042_kbd_process_irq_key(struct kbd_data *data, UBYTE keycode, stru
 
     D(bug("[i8042:Kbd] %s: ki - ********************* c %d (%x)\n", __func__, kevt.code, kevt.code));
 
-    /* Pass the code to handler */
-    data->kbd_callback(data->callbackdata, &kevt);
+    /* Broadcast the input event ..*/
+    OOP_Object *kbdhw = data->hwdata.base->csd.kbdhw;
+    D(bug("[i8042:Kbd] %s: kbdhw @ 0x%p, driver @ 0x%p\n", __func__, kbdhw, data->hwdata.self));
+
+    KBDPUSHEVENT(OOP_OCLASS(data->hwdata.self), kbdhw, data->hwdata.self, &kevt);
 
     return;
 }
@@ -594,35 +575,35 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
         bug("[i8042:Kbd] %s()\n", __func__);
         bug("[i8042:Kbd] %s: sending self test...\n", __func__);
     )
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard controller */
     D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-    status = i8042_wait_for_input(data->ioTimer);
+    status = i8042_wait_for_input(data->hwdata.ioTimer);
     if (status != 0x55) {
         DFAIL(bug("[i8042:Kbd] %s: Controller test failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
     D(bug("[i8042:Kbd] %s: sending kbd test...\n", __func__));
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_TEST);
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_KBD_TEST);
     D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-    status = i8042_wait_for_input(data->ioTimer);
+    status = i8042_wait_for_input(data->hwdata.ioTimer);
     if (status != 0) {
         DFAIL(bug("[i8042:Kbd] %s: Keyboard test failed! (%x)\n", __func__, status));
         return FALSE;
     }
 
     D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
     D(
         bug("[i8042:Kbd] %s:     done!\n", __func__);
         bug("[i8042:Kbd] %s: starting reset cycle ..\n", __func__);
     )
     do {
         D(bug("[i8042:Kbd] %s: sending reset...\n", __func__));
-        i8042_write_data_with_wait(data->ioTimer, KBD_OUTCMD_RESET);
+        i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_RESET);
 
         D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-        status = i8042_wait_for_input(data->ioTimer);
+        status = i8042_wait_for_input(data->hwdata.ioTimer);
         if (status == KBD_REPLY_ACK)
             break;
 
@@ -634,7 +615,7 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
 
 
     D(bug("[i8042:Kbd] %s: waiting for power-on-reset...\n", __func__);)
-    status = i8042_wait_for_input_with_timeout(data->ioTimer, 500);
+    status = i8042_wait_for_input_with_timeout(data->hwdata.ioTimer, 500);
     if (status != KBD_REPLY_POR) {
         DFAIL(bug("[i8042:Kbd] %s: Keyboard power-on-reset failed! (%x)\n", __func__, status));
         return FALSE;
@@ -643,9 +624,9 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
     D(bug("[i8042:Kbd] %s: starting disable cycle ..\n", __func__);)
     do {
         D(bug("[i8042:Kbd] %s: sending disable...\n", __func__));
-        i8042_write_data_with_wait(data->ioTimer, KBD_OUTCMD_DISABLE);
+        i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_DISABLE);
         D(bug("[i8042:Kbd] %s:     done!, waiting for completion ..\n", __func__));
-        status = i8042_wait_for_input(data->ioTimer);
+        status = i8042_wait_for_input(data->hwdata.ioTimer);
         if (status == KBD_REPLY_ACK)
             break;
 
@@ -656,17 +637,17 @@ static int i8042_kbd_reset(struct i8042base *i8042Base, struct kbd_data *data)
     } while (1);
 
     D(bug("[i8042:Kbd] %s: sending write mode...\n", __func__);)
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
 
     i8042Base->csd.cs_intbits |= KBD_MODE_KBD_INT;
-    i8042_write_data_with_wait(data->ioTimer,  (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+    i8042_write_data_with_wait(data->hwdata.ioTimer,  (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
 
     D(bug("[i8042:Kbd] %s: sending enable...\n", __func__));
-    i8042_write_data_with_wait(data->ioTimer, KBD_OUTCMD_ENABLE);
+    i8042_write_data_with_wait(data->hwdata.ioTimer, KBD_OUTCMD_ENABLE);
 
     D(bug("[i8042:Kbd] %s: enabled ints\n", __func__));
 
-    status = i8042_wait_for_input(data->ioTimer);
+    status = i8042_wait_for_input(data->hwdata.ioTimer);
     if (status != KBD_REPLY_ACK) {
         DFAIL(
             bug("[i8042:Kbd] %s: No REPLY_ACK (%x) !!!\n", __func__, status);

@@ -4,7 +4,9 @@
     Desc: PS/2 mouse driver.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #define DRESET(x)
@@ -46,6 +48,7 @@ int i8042_mouse_reset(struct i8042base *, struct mouse_data *);
 static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
 {
     struct pHidd_Mouse_Event    *e = &data->event;
+    OOP_Object                  *mousehw = data->hwdata.base->csd.mousehw;
     UWORD                       buttonstate;
     WORD                        work = 10000;
     UBYTE                       info, mousecode, *mouse_data;
@@ -127,8 +130,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
         if (e->x || e->y) {
             e->button   = vHidd_Mouse_NoButton;
             e->type     = vHidd_Mouse_Motion;
-
-            data->mouse_callback(data->callbackdata, e);
+            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
         }
 
         buttonstate = mouse_data[0] & 0x07;
@@ -136,22 +138,19 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
         if ((buttonstate & LEFT_BUTTON) != (data->buttonstate & LEFT_BUTTON)) {
             e->button = vHidd_Mouse_Button1;
             e->type   = (buttonstate & LEFT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
-
-            data->mouse_callback(data->callbackdata, e);
+            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
         }
 
         if ((buttonstate & RIGHT_BUTTON) != (data->buttonstate & RIGHT_BUTTON)) {
             e->button = vHidd_Mouse_Button2;
             e->type   = (buttonstate & RIGHT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
-
-            data->mouse_callback(data->callbackdata, e);
+            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
         }
 
         if ((buttonstate & MIDDLE_BUTTON) != (data->buttonstate & MIDDLE_BUTTON)) {
             e->button = vHidd_Mouse_Button3;
             e->type = (buttonstate & MIDDLE_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
-
-            data->mouse_callback(data->callbackdata, e);
+            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
         }
 
         data->buttonstate = buttonstate;
@@ -163,8 +162,7 @@ static void i8042_mouse_irq_handler(struct mouse_data *data, void *unused)
             e->x = 0;
             e->type  = vHidd_Mouse_WheelMotion;
             e->button = vHidd_Mouse_NoButton;
-
-            data->mouse_callback(data->callbackdata, e);
+            MOUSEPUSHEVENT(OOP_OCLASS(data->hwdata.self), mousehw, data->hwdata.self, e);
         }
 #endif
 
@@ -192,8 +190,8 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    data->ioTimer = CreateIORequest(p, sizeof(struct timerequest));
-    if (!data->ioTimer) {
+    data->hwdata.ioTimer = CreateIORequest(p, sizeof(struct timerequest));
+    if (!data->hwdata.ioTimer) {
         D(bug("[i8042:PS2Mouse] Failed to create Timer MsgPort..\n"));
         DeleteMsgPort(p);
         data->irq = 0;
@@ -201,9 +199,9 @@ void i8042_mouse_init_task(OOP_Class *cl, OOP_Object *o)
         return;
     }
 
-    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->ioTimer, 0)) {
+    if (0 != OpenDevice("timer.device", UNIT_MICROHZ, data->hwdata.ioTimer, 0)) {
         D(bug("[i8042:PS2Mouse] Failed to open timer.device, unit MICROHZ\n");)
-        DeleteIORequest(data->ioTimer);
+        DeleteIORequest(data->hwdata.ioTimer);
         DeleteMsgPort(p);
         data->irq = 0;
         Signal(thisTask->tc_UserData, SIGF_SINGLE);
@@ -345,10 +343,10 @@ static AROS_INTH1(PS2KBMResetHandler, struct i8042base *, i8042Base)
     DRESET(bug("[i8042:PS2Mouse] %s(0x%p)\n", __func__, i8042Base);)
 
     struct mouse_data *data = OOP_INST_DATA(i8042Base->csd.mouseclass, i8042Base->csd.mousehidd);
-    DRESET(bug("[i8042:PS2Mouse] %s: mouse_data @ 0x%p, timer request @ 0x%p\n", __func__, data, data->ioTimer);)
+    DRESET(bug("[i8042:PS2Mouse] %s: mouse_data @ 0x%p, timer request @ 0x%p\n", __func__, data, data->hwdata.ioTimer);)
 
     i8042Base->csd.cs_intbits &= ~KBD_MODE_MOUSE_INT;
-    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+    i8042_write_mode(data->hwdata.ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
 
     DRESET(bug("[i8042:PS2Mouse] %s: mouse interrupts disabled\n", __func__);)
 
@@ -365,12 +363,12 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct mouse_data *data)
      * The commands are for the mouse and nobody else.
      */
 
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_MOUSE_ENABLE);
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_MOUSE_ENABLE);
 
     /*
      * Check for a mouse port.
      */
-    if (!i8042_mouse_detect_aux_port(data->ioTimer))
+    if (!i8042_mouse_detect_aux_port(data->hwdata.ioTimer))
         return 0;
 
     /*
@@ -385,23 +383,23 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct mouse_data *data)
      * commands are all for the mouse.
      */
     i8042Base->csd.cs_intbits &= ~KBD_MODE_MOUSE_INT;
-    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_DISABLE);
+    i8042_write_mode(data->hwdata.ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_KBD_DISABLE);
 
     /* Reset mouse */
-    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_RESET);
-    result = i8042_mouse_wait_for_input(data->ioTimer);    /* Test result (0xAA) */
+    i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_RESET);
+    result = i8042_mouse_wait_for_input(data->hwdata.ioTimer);    /* Test result (0xAA) */
     while (result == 0xfa && --timeout) {
         /* somehow the ACK isn't always swallowed above */
-        i8042_delay(data->ioTimer, 1000);
-        result = i8042_mouse_wait_for_input(data->ioTimer);
+        i8042_delay(data->hwdata.ioTimer, 1000);
+        result = i8042_mouse_wait_for_input(data->hwdata.ioTimer);
     }
-    i8042_mouse_wait_for_input(data->ioTimer);    /* Mouse type */
+    i8042_mouse_wait_for_input(data->hwdata.ioTimer);    /* Mouse type */
 
     if (result != 0xaa) {
         /* No mouse. Re-enable keyboard and return failure */
-        i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_ENABLE);
-        i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_ENABLE);
+        i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_KBD_ENABLE);
+        i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_ENABLE);
         return 0;
     }
 
@@ -409,7 +407,7 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct mouse_data *data)
     data->mouse_packetsize = 3;
 
 #if INTELLIMOUSE_SUPPORT
-    if (i8042_mouse_detect_intellimouse(data->ioTimer)) {
+    if (i8042_mouse_detect_intellimouse(data->hwdata.ioTimer)) {
         D(bug("[i8042:PS2Mouse] PS/2 Intellimouse detected\n"));
         data->mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
         data->mouse_packetsize = 4;
@@ -419,18 +417,18 @@ int i8042_mouse_reset(struct i8042base *i8042Base, struct mouse_data *data)
     /*
      * Now the commands themselves.
      */
-    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_RATE);
-    i8042_mouse_write_ack(data->ioTimer, 100);
-    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_RES);
-    i8042_mouse_write_ack(data->ioTimer, 2);
-    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_SET_SCALE11);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_SET_RATE);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, 100);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_SET_RES);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, 2);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_SET_SCALE11);
 
     /* Enable Aux device (and re-enable keyboard) */
 
-    i8042_write_command_with_wait(data->ioTimer, KBD_CTRLCMD_KBD_ENABLE);
-    i8042_mouse_write_ack(data->ioTimer, KBD_OUTCMD_ENABLE);
+    i8042_write_command_with_wait(data->hwdata.ioTimer, KBD_CTRLCMD_KBD_ENABLE);
+    i8042_mouse_write_ack(data->hwdata.ioTimer, KBD_OUTCMD_ENABLE);
     i8042Base->csd.cs_intbits |= KBD_MODE_MOUSE_INT;
-    i8042_write_mode(data->ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
+    i8042_write_mode(data->hwdata.ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
 
     /*
      * According to the specs there is an external

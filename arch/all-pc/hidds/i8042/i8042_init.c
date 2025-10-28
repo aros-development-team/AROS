@@ -4,9 +4,9 @@
     Desc: kbd Hidd for standalone i386 AROS
 */
 
-#undef  SDEBUG
-#undef  DEBUG
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <hidd/hidd.h>
@@ -18,7 +18,11 @@
 #include "i8042_intern.h"
 
 #undef OOPBase
-#define OOPBase (LIBBASE->csd.cs_OOPBase)
+#define OOPBase     (LIBBASE->csd.cs_OOPBase)
+#undef HWBase
+#define HWBase      (LIBBASE->csd.hwMethodBase)
+#undef HWInputBase
+#define HWInputBase (LIBBASE->csd.hwInputMethodBase)
 
 static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
 {
@@ -42,7 +46,8 @@ static int i8042Kbd_InitAttrs(struct i8042base * LIBBASE)
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;
 
-    LIBBASE->csd.hwMethodBase = OOP_GetMethodID(IID_HW, 0);
+    HWBase = OOP_GetMethodID(IID_HW, 0);
+    HWInputBase = OOP_GetMethodID(IID_HW_Input, 0);
 
     D(bug("[i8042] %s: Initialization done\n", __func__));
 

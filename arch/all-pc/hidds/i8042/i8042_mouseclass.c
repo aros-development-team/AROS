@@ -11,7 +11,9 @@
     with -fPIC flag.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -48,32 +50,16 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
     if (XSD(cl)->mousehidd) {
         /* Cannot open twice */
-        D(bug("[i8042:Mouse] %s: hw driver already instantiated!\n", __func__));
+        D(bug("[i8042:Mouse] %s: HW driver already instantiated!\n", __func__));
         return NULL;
     }
 
     mouse = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (mouse) {
         struct mouse_data   *data = OOP_INST_DATA(cl, mouse);
-        struct TagItem      *tag, *tstate;
 
-        tstate = msg->attrList;
-
-        /* Search for all supported attrs */
-        while ((tag = NextTagItem(&tstate))) {
-            ULONG idx;
-
-            if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
-                switch (idx) {
-                case aoHidd_Input_IrqHandler:
-                    data->mouse_callback = (APTR)tag->ti_Data;
-                    break;
-                }
-            }
-        } /* while (tags to process) */
-
-        OOP_GetAttr(mouse, aHidd_Input_IrqHandlerData, (IPTR *)&data->callbackdata);
-        D(bug("[i8042:Mouse] %s: callback data @ 0x%p\n", __func__, data->callbackdata));
+        data->hwdata.base = (struct i8042base *)cl->UserData;
+        data->hwdata.self = mouse;
 
         /* Search for PS/2 mouse */
         NewCreateTask(TASKTAG_PC,        i8042_mouse_init_task,
@@ -99,7 +85,6 @@ OOP_Object * i8042Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         }
         XSD(cl)->mousehidd = mouse;
     }
-
     return mouse;
 }
 
