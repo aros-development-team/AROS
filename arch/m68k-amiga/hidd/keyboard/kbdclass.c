@@ -100,9 +100,9 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     /* Add some descriptional tags to our attributes */
     struct TagItem      kbd_tags[] =
     {
-        {aHidd_Name        , (IPTR)"AmigaKbd"           },
-        {aHidd_HardwareName, (IPTR)"MOS 6570-036 Keyboard Controller" },
-        {TAG_MORE          , (IPTR)msg->attrList        }
+        {aHidd_Name,            (IPTR)"AmigaKbd"                            },
+        {aHidd_HardwareName,    (IPTR)"MOS 6570-036 Keyboard Controller"    },
+        {TAG_MORE,              (IPTR)msg->attrList                         }
     };
     struct pRoot_New    new_msg =
     {
@@ -132,23 +132,22 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     }
 
     tstate = msg->attrList;
-    D(bug("[kbd:am68k] tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
-    
+    D(bug("[kbd:am68k] tstate: 0x%p\n", tstate));
+
     while ((tag = NextTagItem(&tstate))) {
         ULONG idx;
-        
-        D(bug("[kbd:am68k] Got tag %d, data %x\n", tag->ti_Tag, tag->ti_Data));
-            
+
+        D(bug("[kbd:am68k] Got tag %08x, data %08x\n", tag->ti_Tag, tag->ti_Data));
+
         if (IS_HIDDINPUT_ATTR(tag->ti_Tag, idx)) {
-            D(bug("Kbd hidd tag\n"));
+            D(bug("Hidd_Input tag\n"));
             switch (idx) {
                 case aoHidd_Input_IrqHandler:
                     callback = (APTR)tag->ti_Data;
-                    D(bug("Got callback %p\n", (APTR)tag->ti_Data));
+                    D(bug("subsystem callback @ 0x%p\n", (APTR)tag->ti_Data));
                     break;
             }
         }
-            
     } /* while (tags to process) */
     CloseLibrary(UtilityBase);
 

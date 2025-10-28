@@ -21,9 +21,9 @@ static int AmigaKbd_Init(struct kbdbase *LIBBASE)
     struct kbd_staticdata *ksd = &LIBBASE->ksd;
     struct OOP_ABDescr attrbases[] =
     {
-        {IID_Hidd       , &HiddAttrBase   },
-        {IID_Hidd_Input   , &HiddInputAB   },
-        {NULL           , NULL              }
+        {IID_Hidd,          &HiddAttrBase   },
+        {IID_Hidd_Input,    &HiddInputAB    },
+        {NULL,              NULL            }
     };
     OOP_Object *kbd;
     OOP_Object *drv = NULL;
