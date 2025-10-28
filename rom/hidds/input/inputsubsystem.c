@@ -2,7 +2,9 @@
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <proto/utility.h>
@@ -179,4 +181,16 @@ OOP_Object *InputHW__HW__AddDriver(OOP_Class *cl, OOP_Object *o, struct pHW_AddD
     }
 
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, &add_msg.mID);
+}
+
+void InputHW__HW_Input__PushEvent(OOP_Class *cl, OOP_Object *o, struct pHW_Input_PushEvent *Msg)
+{
+    struct InputHWData      *hd = OOP_INST_DATA(cl, o);
+    struct InputHWInstData *data;
+
+    D(bug("[InputHidd:HW] %s()\n", __func__));
+
+    ForeachNode(&hd->ihd_consumers, data) {
+        data->ihid_callback(data->ihid_private, Msg->iedata);
+    }
 }

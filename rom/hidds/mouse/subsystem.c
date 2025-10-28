@@ -2,7 +2,9 @@
     Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <hidd/hidd.h>
@@ -179,7 +181,7 @@ AROS_UFH3(static void, enumFunc,
 
     struct Hook *user_hook = h->h_Data;
 
-    D(bug("[Mouse] Enum: node 0x%p driver 0x%p\n", dn, dn->drv));
+    D(bug("[Mouse:HW] Enum: node 0x%p driver 0x%p\n", dn, dn->drv));
     CALLHOOKPKT(user_hook, dn->drv, hookMsg);
     
     AROS_USERFUNC_EXIT
@@ -200,4 +202,30 @@ void MouseHW__HW__EnumDrivers(OOP_Class *cl, OOP_Object *o, struct pHW_EnumDrive
     };
     
     OOP_DoSuperMethod(cl, o, &enum_msg.mID);
+}
+
+void MouseHW__HW_Input__PushEvent(OOP_Class *cl, OOP_Object *o, struct pHW_Input_PushEvent *Msg)
+{
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct pHidd_Mouse_ExtEvent xev;
+    struct pHW_Input_PushEvent push_msg =
+    {
+        .mID = Msg->mID,
+        .driver = Msg->driver,
+        .iedata = Msg->iedata
+    };
+    IPTR val = 0;
+    D(bug("[Mouse:HW] %s(0x%p, 0x%p)\n", __func__, Msg->driver, Msg->iedata));
+    OOP_GetAttr(Msg->driver, aHidd_Mouse_Extended, &val);
+    if (!val) {
+        struct pHidd_Mouse_Event *mev = (struct pHidd_Mouse_Event *)Msg->iedata;
+        OOP_GetAttr(Msg->driver, aHidd_Mouse_RelativeCoords, &val);
+        xev.button = mev->button;
+        xev.x      = mev->x;
+        xev.y      = mev->y;
+        xev.type   = mev->type;
+        xev.flags  = (val) ? vHidd_Mouse_Relative : 0;
+        push_msg.iedata = &xev;
+    }
+    OOP_DoSuperMethod(cl, o, &push_msg.mID);
 }

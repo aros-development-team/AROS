@@ -2,7 +2,9 @@
     Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #include <aros/debug.h>
 
 #include <aros/symbolsets.h>

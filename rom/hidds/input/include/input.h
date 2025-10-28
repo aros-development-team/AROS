@@ -13,10 +13,14 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
+typedef void *InputIrqData_t;
+
+#include <interface/HW_Input.h>
+
 #define CLID_Hidd_Input "hidd.input"
 #define CLID_HW_Input "hw.input"
+
 #define IID_Hidd_Input "hidd.input"
-#define IID_HW_Input "hw.input"
 
 #define HiddInputAB __abHidd_Input
 #define HWInputAB   __abHW_Input
@@ -26,7 +30,6 @@ extern OOP_AttrBase HiddInputAB;
 extern OOP_AttrBase HWInputAB;
 #endif
 
-typedef void *InputIrqData_t;
 typedef VOID (*InputIrqCallBack_t)(APTR, InputIrqData_t);
 
 enum {
