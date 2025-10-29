@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 # Trap errors in the early kernel code and display to VGA 
 KERNEL_USE_EARLYTRAP=
 # Print kernel debug for normal CPU traps
-KERNEL_USE_TRAPDEBUG=0
+KERNEL_USE_TRAPDEBUG=
 
 %set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
   modname=kernel pri=0 arch=pc-x86_64 \
