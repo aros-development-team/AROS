@@ -47,6 +47,9 @@ static void core_DumpFPUState(struct ExceptionContext *r)
         return;
     }
 
+    bug("[Kernel] FXSData=%p  FPUCtxSize=%lu\n",
+        r->FXSData, (unsigned long)r->FPUCtxSize);
+
     struct FPFXSContext *fx = (r->Flags & ECF_FPXS)
         ? &r->XSData->legacy
         : r->FXSData;
@@ -227,8 +230,6 @@ static void core_DumpExceptionState(
     }
 
     // --- tail section ---
-    bug("[Kernel] FXSData=%p  FPUCtxSize=%lu\n",
-        r->FXSData, (unsigned long)r->FPUCtxSize);
     bug("[Kernel] ================================\n");
 }
 
