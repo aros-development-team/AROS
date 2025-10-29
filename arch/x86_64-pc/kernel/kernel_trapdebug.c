@@ -20,6 +20,7 @@
 #include "kernel_intr.h"
 
 #define TRAPDEBUG_HALTONTRAP
+#define TRAPDEBUG_UNWIND
 
 int core_GenericTrap(struct ExceptionContext *r,
                      struct KernelBase *KernelBase,
@@ -160,6 +161,13 @@ static void core_DumpFPUState(struct ExceptionContext *r)
     }
 }
 
+unsigned core_BacktraceCurrent(void **out_pcs, unsigned max_depth)
+{
+    void *rbp;
+    __asm__ volatile ("mov %%rbp,%0" : "=r"(rbp));
+    return KrnBacktraceFromRBP(rbp, out_pcs, max_depth);
+}
+
 static void core_DumpExceptionState(
     UWORD num, UQUAD code, struct ExceptionContext *r)
 {
@@ -279,6 +287,22 @@ static void core_DumpExceptionState(
     default:
         break;
     }
+
+#if defined(TRAPDEBUG_UNWIND)
+    {
+        void *pcs[64];
+        unsigned n = 0;
+
+        bug("[Kernel] ================================\n");
+        /* Prefer unwinding from the trapped frame’s RBP */
+        if (r->rbp) {
+            n = KrnBacktraceFromRBP((void*)(uintptr_t)r->rbp, pcs, 64);
+        } else {
+            n = core_BacktraceCurrent(pcs, 64);
+        }
+        KrnPrintBacktrace("[Kernel] ", pcs, n);
+    }
+#endif
 
     // --- tail section ---
     bug("[Kernel] ================================\n");
