@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>

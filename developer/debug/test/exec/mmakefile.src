@@ -16,7 +16,6 @@ EXECPUBLICFILES :=		\
     childstatus		\
     childwait		\
     copymem		\
-    crashtest		\
     dumpmem		\
     enqueue		\
     exceptiontest	\
@@ -37,6 +36,14 @@ EXECPUBLICFILES :=		\
     tasktest		\
     traptest		\
     vblank
+
+EXECPUBLICFILES +=		\
+    crashtest_highpagefault \
+    crashtest_illegalins \
+    crashtest_pagefault \
+    crashtest_unaligned \
+    crashtest_zerodiv \
+    crashtest_zerodivfloat
 
 CUNITEXECTESTFILES := \
     cunit-exec-types
