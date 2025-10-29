@@ -68,6 +68,14 @@
     CopyMem(string, ra->ra_Buff, length);
     *(ra->ra_Buff + length) = '\0';
     
+#ifdef __mc68000__
+    // On Amiga, this return value is expected in A0 too.
+    APTR asmarg = ra->ra_Buff;
+    asm volatile("move.l %0, %%a0\n"
+                 :: "r" (asmarg) : "a0");
+    return asmarg;
+#else
     ReturnPtr("CreateArgString", UBYTE *, ra->ra_Buff);
+#endif
     AROS_LIBFUNC_EXIT
 } /* CreateArgstring */
