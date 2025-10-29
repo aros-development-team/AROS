@@ -32,6 +32,10 @@
 
 extern struct syscallx86_Handler x86_SCSupervisorHandler;
 
+#if defined(_KERNEL_TRAPDEBUG)
+extern void core_InstallDebugTraps(struct KernelBase *kb);
+#endif
+
 #if defined(EMULATE_SYSBASE)
 /* CPU exceptions are processed here */
 void core_IRQ0EHandle(struct ExceptionContext *regs, void *HandlerData, void *HandlerData2)
@@ -236,6 +240,9 @@ static int Platform_Init(struct KernelBase *LIBBASE)
      */
     NEWLIST(&pdata->kb_SysCallHandlers);
     krnAddSysCallHandler(pdata, &x86_SCBSPUpdateHandler, TRUE, FALSE);
+#if defined(_KERNEL_TRAPDEBUG)
+    core_InstallDebugTraps(LIBBASE);
+#endif
 
     /*
      * Setup the BSP's exception, spurious, heartbeat and syscall gates early
