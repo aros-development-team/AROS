@@ -55,7 +55,7 @@
         None known.
 
     SEE ALSO
-        KrnRegisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromRBP()
+        KrnRegisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromFrame()
 
     INTERNALS
         The kernel maintains a single global pointer to the resolver function.

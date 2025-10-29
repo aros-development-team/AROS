@@ -67,7 +67,7 @@
         queuing or stacking mechanism.
 
     SEE ALSO
-        KrnUnregisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromRBP()
+        KrnUnregisterSymResolver(), KrnPrintBacktrace(), KrnBacktraceFromFrame()
 
     INTERNALS
         The resolver and private pointer are stored in KernelBase global fields

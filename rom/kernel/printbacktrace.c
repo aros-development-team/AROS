@@ -87,14 +87,14 @@ static VOID krnBacktraceSingle(APTR priv, APTR pc, KrnSymResolver_t resolver)
 
     EXAMPLE
         APTR pcs[64];
-        ULONG depth = KrnBacktraceFromRBP((APTR)__builtin_frame_address(0), pcs, 64);
+        ULONG depth = KrnBacktraceFromFrame((APTR)__builtin_frame_address(0), pcs, 64);
         KrnPrintBacktrace("[Crash] ", pcs, depth);
 
     BUGS
         None known.
 
     SEE ALSO
-        KrnBacktraceFromRBP(), KrnRegisterSymResolver(), KrnUnregisterSymResolver()
+        KrnBacktraceFromFrame(), KrnRegisterSymResolver(), KrnUnregisterSymResolver()
 
     INTERNALS
         The resolver is stored in a global kernel variable and accessed without
