@@ -2,15 +2,22 @@
 #define AROS_KERNEL_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: TagItems for the kernel.resource
     Lang: english
 */
 
+#ifndef AROS_MACROS_H
 #include <aros/macros.h>
+#endif
+#ifndef UTILITY_TAGITEM_H
 #include <utility/tagitem.h>
+#endif
+#ifndef DOS_BPTR_H
+#include <dos/bptr.h>
+#endif
 
 /* Type of scheduler. See KrnGetScheduler()/KrnSetScheduler() functions. */
 typedef enum
@@ -97,5 +104,22 @@ typedef void (*irqhandler_t)(void *data, void *data2);
 #define KMS_NumAlloc		(TAG_USER + 0x04000006)
 #define KMS_NumFree		(TAG_USER + 0x04000007)
 #define KMS_PageSize		(TAG_USER + 0x04000008)
+
+/* Public symbol info returned by resolver */
+struct KrnSymInfo
+{
+    STRPTR      mod_name;       /* May be NULL */
+    STRPTR      seg_name;       /* May be NULL */
+    STRPTR      sym_name;       /* May be NULL */
+    APTR        seg_start;      /* May be NULL */
+    APTR        seg_end;        /* May be NULL */
+    APTR        sym_start;      /* May be NULL */
+    APTR        sym_end;        /* May be NULL */
+    BPTR        seg_bptr;       /* Optional */
+    ULONG       seg_num;        /* Optional */
+};
+
+/* Single-address resolver callback type (must be trap-safe, non-blocking). */
+typedef LONG (*KrnSymResolver_t)(APTR priv, APTR addr, struct KrnSymInfo *out);
 
 #endif /* AROS_KERNEL_H */

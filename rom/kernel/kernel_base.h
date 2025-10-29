@@ -2,7 +2,7 @@
 #define KERNEL_BASE_H
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -12,10 +12,18 @@
 #define __KERNEL_NOLIBBASE__
 #endif /* __KERNEL_NOLIBBASE__ */
 
+#ifndef EXEC_EXECBASE_H
 #include <exec/execbase.h>
+#endif
+#ifndef EXEC_MEMORY_H
 #include <exec/memory.h>
+#endif
+#ifndef EXEC_SEMAPHORES_H
 #include <exec/semaphores.h>
+#endif
+#ifndef AROS_KERNEL_H
 #include <aros/kernel.h>
+#endif
 
 /* Early declaration for ictl functions */
 struct KernelBase;
@@ -74,6 +82,8 @@ struct KernelBase
 #ifdef KERNELIRQ_NEEDSCONTROLLERS
     UBYTE               kb_ICTypeBase;                  /* used to set IC controller ID's       */
 #endif
+    KrnSymResolver_t    kb_gResolver;
+    APTR                kb_gResolvPrivate;
 };
 
 /*
