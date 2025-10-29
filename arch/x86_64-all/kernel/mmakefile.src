@@ -17,7 +17,7 @@ PRIV_KERNEL_INCLUDES = \
 	$(TARGET_EXEC_INCLUDES) \
 	-I$(SRCDIR)/rom/exec
 
-FILES := cpu_init createcontext
+FILES := cpu_init createcontext backtracefromframe
 
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
 	       -I$(GENINCDIR)

@@ -54,7 +54,7 @@ FUNCS := spininit spinislocked spintrylock spinlock spinunlock addexceptionhandl
 		 timestamp fmtalertinfo
 
 FUNCS += \
-         registersymresolver unregistersymresolver backtracefromrbp printbacktrace
+         registersymresolver unregistersymresolver backtracefromframe printbacktrace
 
 FILES := kernel_init cpu_init kernel_debug kernel_panic                                         \
 	     kernel_cpu kernel_intr kernel_interruptcontroller                                      \

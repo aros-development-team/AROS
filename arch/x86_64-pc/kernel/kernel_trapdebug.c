@@ -165,7 +165,7 @@ unsigned core_BacktraceCurrent(void **out_pcs, unsigned max_depth)
 {
     void *rbp;
     __asm__ volatile ("mov %%rbp,%0" : "=r"(rbp));
-    return KrnBacktraceFromRBP(rbp, out_pcs, max_depth);
+    return KrnBacktraceFromFrame(rbp, out_pcs, max_depth);
 }
 
 static void core_DumpExceptionState(
@@ -296,7 +296,7 @@ static void core_DumpExceptionState(
         bug("[Kernel] ================================\n");
         /* Prefer unwinding from the trapped frame’s RBP */
         if (r->rbp) {
-            n = KrnBacktraceFromRBP((void*)(uintptr_t)r->rbp, pcs, 64);
+            n = KrnBacktraceFromFrame((void*)(uintptr_t)r->rbp, pcs, 64);
         } else {
             n = core_BacktraceCurrent(pcs, 64);
         }
