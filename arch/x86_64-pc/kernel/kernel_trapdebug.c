@@ -19,45 +19,23 @@
 #include "kernel_debug.h"
 #include "kernel_intr.h"
 
+#define TRAPDEBUG_HALTONTRAP
+
 int core_GenericTrap(struct ExceptionContext *r,
                      struct KernelBase *KernelBase,
                      UWORD num,
                      UQUAD code);
 
+static void core_DumpAPICInfo(struct KernelBase *KernelBase);
+
 #define DEFINE_TRAP(num) \
 static int Trap##num(struct ExceptionContext *r, struct KernelBase *KernelBase, struct ExecBase *SysBase) { \
     UQUAD code = 0; \
     struct PlatformData *pd = KernelBase->kb_PlatformData; \
-    apicid_t cpu = 0; \
-    if (pd && pd->kb_APIC && pd->kb_APIC->apic_count > 1) { \
-        struct APICData *apic = pd->kb_APIC; \
-        cpu = KrnGetCPUNumber(); \
-        bug("[Kernel] CPU exception occurred on APIC #%u (of %u)\n", \
-            (unsigned)cpu, (unsigned)apic->apic_count); \
-        bug("[Kernel]   LAPIC base: 0x%016llx  flags: 0x%04x\n", \
-            (unsigned long long)apic->lapicBase, (unsigned)apic->flags); \
-        bug("[Kernel]   MSI range: %u–%u\n", apic->msibase, apic->msilast); \
-        if (cpu < apic->apic_count) { \
-            const struct CPUData *core = &apic->cores[cpu]; \
-            bug("[Kernel]   Core info:\n"); \
-            bug("[Kernel]     LocalAPIC ID: %u  Private ID: %u  ICID: %u\n", \
-                (unsigned)core->cpu_LocalID, \
-                (unsigned)core->cpu_PrivateID, \
-                (unsigned)core->cpu_ICID); \
-            bug("[Kernel]     GDT=%p  IDT=%p  TLS=%p  MMU=%p\n", \
-                core->cpu_GDT, core->cpu_IDT, core->cpu_TLS, core->cpu_MMU); \
-            bug("[Kernel]     TSC=%llu Hz  Timer=%lu Hz  Load=%lu%%\n", \
-                (unsigned long long)core->cpu_TSCFreq, \
-                (unsigned long)core->cpu_TimerFreq, \
-                (unsigned long)core->cpu_Load); \
-            bug("[Kernel]     LAPICTick=%llu  LastLoadTime=%llu  SleepTime=%llu\n", \
-                (unsigned long long)core->cpu_LAPICTick, \
-                (unsigned long long)core->cpu_LastCPULoadTime, \
-                (unsigned long long)core->cpu_SleepTime); \
-        } \
-    } \
     if (pd && pd->kb_LastException == num) \
         code = pd->kb_LastExceptionError; \
+    if (pd && pd->kb_APIC && pd->kb_APIC->apic_count > 1) \
+        core_DumpAPICInfo(KernelBase); \
     return core_GenericTrap(r, KernelBase, num, code); \
 }
 
@@ -67,6 +45,43 @@ DEFINE_TRAP(6)  DEFINE_TRAP(7)  DEFINE_TRAP(8)
 DEFINE_TRAP(10) DEFINE_TRAP(11) DEFINE_TRAP(12)
 DEFINE_TRAP(13) DEFINE_TRAP(14) DEFINE_TRAP(16)
 DEFINE_TRAP(17) DEFINE_TRAP(18) DEFINE_TRAP(19)
+
+static void core_DumpAPICInfo(struct KernelBase *KernelBase)
+{
+    struct PlatformData *pd = KernelBase->kb_PlatformData;
+    struct APICData *apic = pd->kb_APIC;
+    apicid_t cpu = KrnGetCPUNumber();
+
+    bug("[Kernel] CPU exception occurred on APIC #%u (of %u)\n",
+        (unsigned)cpu, (unsigned)apic->apic_count);
+
+    bug("[Kernel]   LAPIC base: 0x%016llx  flags: 0x%04x\n",
+        (unsigned long long)apic->lapicBase,
+        (unsigned)apic->flags);
+
+    if (apic->msibase) {
+        bug("[Kernel]   MSI range: %u–%u\n", apic->msibase, apic->msilast);
+    }
+
+    if (cpu < apic->apic_count) {
+        const struct CPUData *core = &apic->cores[cpu];
+        bug("[Kernel]   Core info:\n");
+        bug("[Kernel]     LocalAPIC ID: %u  Private ID: %u  ICID: %u\n",
+            (unsigned)core->cpu_LocalID,
+            (unsigned)core->cpu_PrivateID,
+            (unsigned)core->cpu_ICID);
+        bug("[Kernel]     GDT=%p  IDT=%p  TLS=%p  MMU=%p\n",
+            core->cpu_GDT, core->cpu_IDT, core->cpu_TLS, core->cpu_MMU);
+        bug("[Kernel]     TSC=%llu Hz  Timer=%lu Hz  Load=%lu%%\n",
+            (unsigned long long)core->cpu_TSCFreq,
+            (unsigned long)core->cpu_TimerFreq,
+            (unsigned long)core->cpu_Load);
+        bug("[Kernel]     LAPICTick=%llu  LastLoadTime=%llu  SleepTime=%llu\n",
+            (unsigned long long)core->cpu_LAPICTick,
+            (unsigned long long)core->cpu_LastCPULoadTime,
+            (unsigned long long)core->cpu_SleepTime);
+    }
+}
 
 static void core_DumpFPUState(struct ExceptionContext *r)
 {
@@ -94,18 +109,21 @@ static void core_DumpFPUState(struct ExceptionContext *r)
         "IE","DE","ZE","OE","UE","PE"
     };
     for (int i = 0; i < 6; ++i) {
-        if (fx->fsw & (1 << i))
+        if (fx->fsw & (1 << i)) {
             bug("[Kernel] FSW: %s set\n", fswFlags[i]);
+        }
     }
 
-    if (fx->fsw & (1 << 7))
+    if (fx->fsw & (1 << 7)) {
         bug("[Kernel] FSW: Stack fault (#MF)\n");
+    }
 
     bug("[Kernel] FCW masks:");
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < 6; ++i) {
         bug(" %s%s",
             (fx->fcw & (1 << i)) ? fswFlags[i] : "",
             (fx->fcw & (1 << i)) ? "M" : "");
+    }
     bug("\n");
 
     // Decode MXCSR exception flags and masks
@@ -118,17 +136,16 @@ static void core_DumpFPUState(struct ExceptionContext *r)
 
     // Dump MMX and XMM register contents
     bug("[Kernel] --- FPU/MMX Registers ---\n");
-    for (int i = 0; i < 8; ++i)
-    {
+    for (int i = 0; i < 8; ++i) {
         bug("[Kernel] MM%-2d: ", i);
-        for (int b = 9; b >= 0; --b)
+        for (int b = 9; b >= 0; --b) {
             bug("%02x", fx->mm[i].data[b]);
+        }
         bug("\n");
     }
 
     bug("[Kernel] --- SSE/XMM Registers ---\n");
-    for (int i = 0; i < 16; ++i)
-    {
+    for (int i = 0; i < 16; ++i) {
         bug("[Kernel] XMM%-2d: ", i);
         for (int b = 15; b >= 0; --b)
             bug("%02x", fx->xmm[i].data[b]);
@@ -168,8 +185,7 @@ static void core_DumpExceptionState(
     bug("[Kernel] Error Code=%08lx\n", (unsigned long)code);
 
     // --- Exception-specific decoding -------------------------------------
-    switch (num)
-    {
+    switch (num) {
     case 0: // Divide Error
         bug("[Kernel] Divide-by-zero or overflow in integer division.\n");
         break;
@@ -268,8 +284,10 @@ int core_GenericTrap(struct ExceptionContext *r,
 {
     core_DumpExceptionState(num, code, r);
 
-    // If you want to freeze the CPU:
+#if defined(TRAPDEBUG_HALTONTRAP)
+    // Freeze the CPU:
     __asm__ volatile("cli; hlt");
+#endif
     return 1;
 }
 
@@ -294,4 +312,3 @@ void core_InstallDebugTraps(struct KernelBase *KernelBase)
     KrnAddExceptionHandler(18, Trap18, KernelBase, NULL);
     KrnAddExceptionHandler(19, Trap19, KernelBase, NULL);
 }
-
