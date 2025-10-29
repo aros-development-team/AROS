@@ -28,6 +28,34 @@ int core_GenericTrap(struct ExceptionContext *r,
 static int Trap##num(struct ExceptionContext *r, struct KernelBase *KernelBase, struct ExecBase *SysBase) { \
     UQUAD code = 0; \
     struct PlatformData *pd = KernelBase->kb_PlatformData; \
+    apicid_t cpu = 0; \
+    if (pd && pd->kb_APIC && pd->kb_APIC->apic_count > 1) { \
+        struct APICData *apic = pd->kb_APIC; \
+        cpu = KrnGetCPUNumber(); \
+        bug("[Kernel] CPU exception occurred on APIC #%u (of %u)\n", \
+            (unsigned)cpu, (unsigned)apic->apic_count); \
+        bug("[Kernel]   LAPIC base: 0x%016llx  flags: 0x%04x\n", \
+            (unsigned long long)apic->lapicBase, (unsigned)apic->flags); \
+        bug("[Kernel]   MSI range: %u–%u\n", apic->msibase, apic->msilast); \
+        if (cpu < apic->apic_count) { \
+            const struct CPUData *core = &apic->cores[cpu]; \
+            bug("[Kernel]   Core info:\n"); \
+            bug("[Kernel]     LocalAPIC ID: %u  Private ID: %u  ICID: %u\n", \
+                (unsigned)core->cpu_LocalID, \
+                (unsigned)core->cpu_PrivateID, \
+                (unsigned)core->cpu_ICID); \
+            bug("[Kernel]     GDT=%p  IDT=%p  TLS=%p  MMU=%p\n", \
+                core->cpu_GDT, core->cpu_IDT, core->cpu_TLS, core->cpu_MMU); \
+            bug("[Kernel]     TSC=%llu Hz  Timer=%lu Hz  Load=%lu%%\n", \
+                (unsigned long long)core->cpu_TSCFreq, \
+                (unsigned long)core->cpu_TimerFreq, \
+                (unsigned long)core->cpu_Load); \
+            bug("[Kernel]     LAPICTick=%llu  LastLoadTime=%llu  SleepTime=%llu\n", \
+                (unsigned long long)core->cpu_LAPICTick, \
+                (unsigned long long)core->cpu_LastCPULoadTime, \
+                (unsigned long long)core->cpu_SleepTime); \
+        } \
+    } \
     if (pd && pd->kb_LastException == num) \
         code = pd->kb_LastExceptionError; \
     return core_GenericTrap(r, KernelBase, num, code); \
