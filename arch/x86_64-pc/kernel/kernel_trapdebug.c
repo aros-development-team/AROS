@@ -85,10 +85,24 @@ static void core_DumpFPUState(struct ExceptionContext *r)
         : ((fx->mxcsr >> 13) & 3) == 1 ? "DOWN"
         : ((fx->mxcsr >> 13) & 3) == 2 ? "UP" : "ZERO");
 
-    // Optional: print top few FPU/SSE regs if you want
-    bug("[Kernel] MM0=%02x%02x... XMM0=%02x%02x...\n",
-        fx->mm[0].data[9], fx->mm[0].data[8],
-        fx->xmm[0].data[15], fx->xmm[0].data[14]);
+    // Dump MMX and XMM register contents
+    bug("[Kernel] --- FPU/MMX Registers ---\n");
+    for (int i = 0; i < 8; ++i)
+    {
+        bug("[Kernel] MM%-2d: ", i);
+        for (int b = 9; b >= 0; --b)
+            bug("%02x", fx->mm[i].data[b]);
+        bug("\n");
+    }
+
+    bug("[Kernel] --- SSE/XMM Registers ---\n");
+    for (int i = 0; i < 16; ++i)
+    {
+        bug("[Kernel] XMM%-2d: ", i);
+        for (int b = 15; b >= 0; --b)
+            bug("%02x", fx->xmm[i].data[b]);
+        bug("\n");
+    }
 }
 
 static void core_DumpExceptionState(
