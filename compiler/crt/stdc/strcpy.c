@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     C99 function strcpy().
 */
@@ -42,11 +42,8 @@
 {
     char * ptr = dest;
 
-    while ((*ptr = *src))
-    {
-        ptr ++;
-        src ++;
-    }
+    while ((*ptr++ = *src++) != '\0')
+        ;
 
     return dest;
 } /* strcpy */
