@@ -59,8 +59,15 @@ static void core_DumpAPICInfo(struct KernelBase *KernelBase)
         (unsigned long long)apic->lapicBase,
         (unsigned)apic->flags);
 
-    if (apic->msibase) {
-        bug("[Kernel]   MSI range: %u–%u\n", apic->msibase, apic->msilast);
+    if (apic->msibase && apic->msibase <= apic->msilast)
+    {
+        ULONG max_start = (APIC_IRQ_BASE - X86_CPU_EXCEPT_COUNT);
+        ULONG max_end   = max_start + APIC_IRQ_COUNT - 1;
+        ULONG allocated = apic->msilast - apic->msibase + 1;
+
+        bug("[Kernel]   MSI range      : %u–%u\n", max_start, max_end);
+        bug("[Kernel]     Allocated    : %u–%u (%u vectors)\n",
+            apic->msibase, apic->msilast, allocated);
     }
 
     if (cpu < apic->apic_count) {
