@@ -30,7 +30,6 @@
 #define D(x)
 #define DSTACK(x)
 
-#define KERNEL_ORIG_TSS
 #define KERNEL_DEBUG_BUFFSIZE   1024
 
 #if !defined(TARGET_SECTION_COMMENT)
@@ -570,6 +569,31 @@ asm("\ndelay:\t.short   0x00eb\n\tretq");
 /* Our boot-time stack */
 static char boot_stack[STACK_SIZE] __attribute__((aligned(16)));
 
+static inline void core_SetupTSS(struct segment_tss *d, uint64_t base)
+{
+    memset(d, 0, sizeof(*d));
+
+    uint32_t limit = sizeof(struct tss_64bit) - 1;
+
+    // low 8 bytes
+    d->tss_low.limit_low   = (uint16_t)(limit & 0xFFFF);
+    d->tss_low.base_low    = (uint16_t)(base & 0xFFFF);
+    d->tss_low.base_mid    = (uint8_t)((base >> 16) & 0xFF);
+    d->tss_low.type        = 0x9;        // 64-bit TSS (Available)
+    d->tss_low.dpl         = 0;          // Supervisor
+    d->tss_low.p           = 1;          // Present
+    d->tss_low.limit_high  = (uint8_t)((limit >> 16) & 0xF);
+    d->tss_low.avl         = 0;
+    d->tss_low.l           = 0;          // must be 0 for TSS
+    d->tss_low.d           = 0;          // must be 0 for TSS
+    d->tss_low.g           = 0;          // byte granularity
+    d->tss_low.base_high   = (uint8_t)((base >> 24) & 0xFF);
+
+    // high 8 bytes
+    d->tss_high.base_ext   = (uint32_t)(base >> 32);
+    d->tss_high.__pad0     = 0;          // reserved, must be 0
+}
+
 void core_SetupGDT
 (
     struct KernBootPrivate *__KernBootPrivate,
@@ -645,30 +669,7 @@ void core_SetupGDT
     gdtPtr->gs.g                        = 1;
 
     for (i = 0; i < __KernBootPrivate->kbp_APIC_Max; i++) {
-        const unsigned long tss_limit = sizeof(struct tss_64bit) * __KernBootPrivate->kbp_APIC_Max - 1;
-        uint64_t base = (uint64_t)&tssPtr[i];
-
-        /* Task State Segment */
-        gdtPtr->tss[i].tss_low.type       = 0x09;                                       /* 64-bit TSS */
-#if defined(KERNEL_ORIG_TSS)
-        gdtPtr->tss[i].tss_low.dpl        = 3;                                          /* User mode task */
-#else
-        gdtPtr->tss[i].tss_low.dpl        = 0;
-#endif
-        gdtPtr->tss[i].tss_low.p          = 1;                                          /* present */
-#if defined(KERNEL_ORIG_TSS)
-        gdtPtr->tss[i].tss_low.l          = 1;                                            /* long mode */
-        gdtPtr->tss[i].tss_low.d          = 1;
-#else
-        gdtPtr->tss[i].tss_low.l          = 0;
-        gdtPtr->tss[i].tss_low.d          = 0;
-#endif
-        gdtPtr->tss[i].tss_low.limit_low  = tss_limit;
-        gdtPtr->tss[i].tss_low.base_low   = base & 0xFFFF;
-        gdtPtr->tss[i].tss_low.base_mid   = (base >> 16) & 0xFF;
-        gdtPtr->tss[i].tss_low.limit_high = (tss_limit >> 16) & 0x0F;
-        gdtPtr->tss[i].tss_low.base_high  = (base >> 24) & 0xFF;
-        gdtPtr->tss[i].tss_high.base_ext  = base >> 32;
+        core_SetupTSS(&gdtPtr->tss[i], (uint64_t)(uintptr_t)&tssPtr[i]);
     }
 }
 
