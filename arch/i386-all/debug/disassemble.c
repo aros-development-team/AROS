@@ -33,10 +33,14 @@ static const char *resolve(struct ud *u, uint64_t addr, int64_t *offset)
     loc = (APTR)addr;
 #endif
 
-	if (DecodeLocation(loc,
-					DL_SymbolName , &symname, DL_SymbolStart  , &symaddr,
-					TAG_DONE))
-	{
+    struct TagItem locTags[] =
+    {
+        { DL_SymbolName,    (IPTR)&symname  },
+        { DL_SymbolStart,   (IPTR)&symaddr  },
+        { TAG_DONE,         0               }
+    };
+
+	if (DecodeLocationA(loc, locTags)) {
         if (symname)
             retval = symname;
         *offset = addr - (IPTR)symaddr;
@@ -68,10 +72,14 @@ AROS_LH3(APTR, InitDisassembleCtx,
     if (ud_obj)
     {
         struct DisData *disData = AllocVec(sizeof(struct DisData), MEMF_ANY);
-        if (disData)
-        {
+        if (disData) {
             const char *symname;
-            DecodeLocation(start, DL_SymbolName , &symname, TAG_DONE);
+            struct TagItem locTags[] =
+            {
+                { DL_SymbolName,    (IPTR)&symname  },
+                { TAG_DONE,         0               }
+            };
+            DecodeLocationA(start, locTags);
             disData->DebugBase = DebugBase;
             if (symname)
                 disData->target = symname;
