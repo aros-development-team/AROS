@@ -289,6 +289,11 @@
 
 #endif /* MDEBUG */
 
+#ifdef __mc68000__
+#   define M68K_RETURN_INREG(val, reg)  asm volatile("move.l %0, %%" reg :: "r"(val) : reg)
+#else
+#   define M68K_RETURN_INREG(val, reg)
+#endif
 
 #if DEBUG
 #   define D(x...)     Indent x
@@ -305,7 +310,13 @@
 #   define ReturnPtr(name,type,val) {  type __aros_val = (type)val; \
 				    ExitFunc kprintf ("Exit " name "=%p\n", \
 				    (APTR)__aros_val); return __aros_val; }
-#   define ReturnStr(name,type,val) { type __aros_val = (type)val; \
+#   define ReturnPtrReg(name,type,val,reg) { \
+        type __aros_val = (type)(val); \
+        ExitFunc kprintf("Exit " name "=%p (" reg ")\n", (APTR)__aros_val); \
+        M68K_RETURN_INREG(__aros_val, reg); \
+        return __aros_val; \
+    }
+#   define ReturnStr(name,type,val) { type __aros_val = (type)val;      \
 				    ExitFunc kprintf ("Exit " name "=\"%s\"\n", \
 				    __aros_val); return __aros_val; }
 #   define ReturnInt(name,type,val) { type __aros_val = (type)val; \
@@ -330,6 +341,11 @@
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
+#   define ReturnPtrReg(name,type,val,reg) { \
+        type __aros_val = (type)(val); \
+        M68K_RETURN_INREG(__aros_val, reg); \
+        return __aros_val; \
+    }
 #   define ReturnStr(name,type,val)         return val
 #   define ReturnInt(name,type,val)         return val
 #   define ReturnXInt(name,type,val)        return val

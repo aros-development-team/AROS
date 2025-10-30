@@ -68,6 +68,6 @@
     CopyMem(string, ra->ra_Buff, length);
     *(ra->ra_Buff + length) = '\0';
     
-    ReturnPtr("CreateArgString", UBYTE *, ra->ra_Buff);
+    ReturnPtrReg("CreateArgString", UBYTE *, ra->ra_Buff, "a0");
     AROS_LIBFUNC_EXIT
 } /* CreateArgstring */

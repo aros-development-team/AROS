@@ -64,6 +64,6 @@
     rm->rm_FileExt = (STRPTR)extension;
     rm->rm_CommAddr = (STRPTR)host;
     
-    ReturnPtr("CreateRexxMsg", struct RexxMsg *, rm);
+    ReturnPtrReg("CreateRexxMsg", struct RexxMsg *, rm, "a0");
     AROS_LIBFUNC_EXIT
 } /* CreateRexxMsg */
