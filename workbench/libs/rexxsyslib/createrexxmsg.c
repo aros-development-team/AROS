@@ -64,13 +64,6 @@
     rm->rm_FileExt = (STRPTR)extension;
     rm->rm_CommAddr = (STRPTR)host;
     
-#ifdef __mc68000__
-    // On Amiga, this return value is expected in A0 too.
-    asm volatile("move.l %0, %%a0\n"
-                 :: "r" (rm) : "a0");
-    return rm;
-#else
-    ReturnPtr("CreateRexxMsg", struct RexxMsg *, rm);
-#endif
+    ReturnPtrReg("CreateRexxMsg", struct RexxMsg *, rm, "a0");
     AROS_LIBFUNC_EXIT
 } /* CreateRexxMsg */
