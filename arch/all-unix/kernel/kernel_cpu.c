@@ -88,10 +88,6 @@ void cpu_Switch(regs_t *regs)
     HostIFace->host_GetTime(CLOCK_PROCESS_CPUTIME_ID, &seconds, &ns);
 
     SAVEREGS(ctx, regs);
-    // TODO: move this to SAVEREGS macro
-    // TODO: save and restore registers matching AROSCPUContext, right now regs.cs is abused
-    // to hold cs, gs and fs
-    ctx->regs.cs = regs->uc_mcontext.gregs[REG_CSGSFS];
     ctx->errno_backup = *KernelBase->kb_PlatformData->errnoPtr;
     task->tc_SPReg = (APTR)SP(regs);
 
@@ -137,8 +133,6 @@ void cpu_DispatchContext(struct Task *task, regs_t *regs, struct PlatformData *p
     struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     RESTOREREGS(ctx, regs);
-    // TODO: fill cs at context creation so that if () is not needed
-    if (ctx->regs.cs != 0) regs->uc_mcontext.gregs[REG_CSGSFS] = ctx->regs.cs;
     *pd->errnoPtr = ctx->errno_backup;
 
     D(PRINT_SC(regs));

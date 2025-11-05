@@ -11,6 +11,10 @@
 
 #include <aros/x86_64/cpucontext.h>
 
+#define USER_CS 0x33
+#define USER_DS 0x00 /* Not used */
+#define USER_GS 0x00 /* Not used */
+
 #ifdef __AROS_EXEC_LIBRARY__
 
 struct ucontext;
@@ -130,6 +134,19 @@ typedef ucontext_t regs_t;
 #define R15(uc)         ((uc)->uc_mcontext.gregs[REG_R15])
 
 /*
+    Save and restore CPU segment registers
+    Note: seems that REG_CSGSFS stores SS????CS
+*/
+
+#define SAVE_SEG_REGS(cc, sc)                                   \
+    cc.cs     = (sc)->uc_mcontext.gregs[REG_CSGSFS] & 0xFFFF;
+
+#define RESTORE_SEG_REGS(cc, sc)                                \
+    (sc)->uc_mcontext.gregs[REG_CSGSFS] &= 0xFFFFFFFFFFFF0000;  \
+    (sc)->uc_mcontext.gregs[REG_CSGSFS] |= cc.cs;
+
+
+/*
     Save and restore the CPU GPRs in the CPU context
 */
 #define SAVE_CPU(cc, sc)        \
@@ -150,8 +167,9 @@ typedef ucontext_t regs_t;
     cc.r15    = R15(sc);        \
     cc.rbp    = FP(sc);         \
     cc.rip    = PC(sc);         \
-    cc.rsp    = SP(sc);
-         
+    cc.rsp    = SP(sc);         \
+    SAVE_SEG_REGS(cc, sc)
+
 /*
  * Restore CPU registers.
  * Note that we do not restore segment registers because they
@@ -175,7 +193,8 @@ typedef ucontext_t regs_t;
     R15(sc) = cc.r15;       \
     FP(sc)  = cc.rbp;       \
     PC(sc)  = cc.rip;       \
-    SP(sc)  = cc.rsp;
+    SP(sc)  = cc.rsp;       \
+    RESTORE_SEG_REGS(cc, sc)
 
 /*
  * Save all registers from UNIX signal context to AROS context.
