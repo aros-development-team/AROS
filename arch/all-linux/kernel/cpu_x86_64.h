@@ -2,7 +2,7 @@
 #define _SIGCORE_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Macros to handle unix signals, x86_64 version.
@@ -43,8 +43,8 @@ typedef struct ucontext regs_t;
 typedef ucontext_t regs_t;
 
 /* name and type of the signal handler */
-#define SIGHANDLER	linux_sighandler
-#define SIGHANDLER_T	__sighandler_t
+#define SIGHANDLER      linux_sighandler
+#define SIGHANDLER_T    __sighandler_t
 
 /*
     This macro contains some magic necessary to make it work.
@@ -61,17 +61,17 @@ typedef ucontext_t regs_t;
                active task within AROS. The linux kernel puts
                all kinds of other junk on it.
 
-		    |			       |
-		    +--------------------------+
-		    | last entry before signal |
-		    +--------------------------+
-		    |	   signal context      |
-		    +--------------------------+
-		    |	   signal number       |
-		    +--------------------------+
-		    |	   return address      | 
-		    +--------------------------+
-		    |			       |
+                |                          |
+                +--------------------------+
+                | last entry before signal |
+                +--------------------------+
+                |       signal context     |
+                +--------------------------+
+                |       signal number      |
+                +--------------------------+
+                |       return address     |
+                +--------------------------+
+                |                          |
 
     so the address of the signal context is &sig+1.
 
@@ -80,10 +80,10 @@ typedef ucontext_t regs_t;
 */
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig, siginfo_t *blub, void *u) 	\
-	{ 										\
-	    sighandler(sig, u); 							\
-	}
+    static void sighandler ## _gate (int sig, siginfo_t *blub, void *u)     \
+    {                                                                       \
+        sighandler(sig, u);                                                 \
+    }
 
 /*
     Macros to access the stack pointer, frame pointer and program
@@ -132,24 +132,24 @@ typedef ucontext_t regs_t;
 /*
     Save and restore the CPU GPRs in the CPU context
 */
-#define SAVE_CPU(cc, sc)	\
-    cc.rax    = R0(sc);		\
-    cc.rbx    = R1(sc);		\
-    cc.rcx    = R2(sc);		\
-    cc.rdx    = R3(sc);		\
-    cc.rdi    = R4(sc);		\
-    cc.rsi    = R5(sc);		\
-    cc.rflags = R6(sc);		\
-    cc.r8     = R8(sc);		\
-    cc.r9     = R9(sc);		\
-    cc.r10    = R10(sc);	\
-    cc.r11    = R11(sc);	\
-    cc.r12    = R12(sc);	\
-    cc.r13    = R13(sc);	\
-    cc.r14    = R14(sc);	\
-    cc.r15    = R15(sc);	\
-    cc.rbp    = FP(sc);		\
-    cc.rip    = PC(sc);		\
+#define SAVE_CPU(cc, sc)        \
+    cc.rax    = R0(sc);         \
+    cc.rbx    = R1(sc);         \
+    cc.rcx    = R2(sc);         \
+    cc.rdx    = R3(sc);         \
+    cc.rdi    = R4(sc);         \
+    cc.rsi    = R5(sc);         \
+    cc.rflags = R6(sc);         \
+    cc.r8     = R8(sc);         \
+    cc.r9     = R9(sc);         \
+    cc.r10    = R10(sc);        \
+    cc.r11    = R11(sc);        \
+    cc.r12    = R12(sc);        \
+    cc.r13    = R13(sc);        \
+    cc.r14    = R14(sc);        \
+    cc.r15    = R15(sc);        \
+    cc.rbp    = FP(sc);         \
+    cc.rip    = PC(sc);         \
     cc.rsp    = SP(sc);
          
 /*
@@ -165,14 +165,14 @@ typedef ucontext_t regs_t;
     R4(sc)  = cc.rdi;       \
     R5(sc)  = cc.rsi;       \
     R6(sc)  = cc.rflags;    \
-    R8(sc)  = cc.r8;	    \
-    R9(sc)  = cc.r9;	    \
-    R10(sc) = cc.r10;	    \
-    R11(sc) = cc.r11;	    \
-    R12(sc) = cc.r12;	    \
-    R13(sc) = cc.r13;	    \
-    R14(sc) = cc.r14;	    \
-    R15(sc) = cc.r15;	    \
+    R8(sc)  = cc.r8;        \
+    R9(sc)  = cc.r9;        \
+    R10(sc) = cc.r10;       \
+    R11(sc) = cc.r11;       \
+    R12(sc) = cc.r12;       \
+    R13(sc) = cc.r13;       \
+    R14(sc) = cc.r14;       \
+    R15(sc) = cc.r15;       \
     FP(sc)  = cc.rbp;       \
     PC(sc)  = cc.rip;       \
     SP(sc)  = cc.rsp;
@@ -182,35 +182,35 @@ typedef ucontext_t regs_t;
  * Save also SSE state if the context has buffer. ECF_FPFXS will be set
  * if SSE state was copied.
  */
-#define SAVEREGS(cc, sc)                                       					\
-    SAVE_CPU((cc)->regs, sc);									\
-    if (sc->uc_mcontext.fpregs && (cc)->regs.FXSData)						\
-    {												\
-    	(cc)->regs.Flags |= ECF_FPFXS;								\
-    	CopyMemQuick(sc->uc_mcontext.fpregs, (cc)->regs.FXSData, sizeof(struct FPFXSContext));	\
+#define SAVEREGS(cc, sc)                                                                        \
+    SAVE_CPU((cc)->regs, sc);                                                                   \
+    if (sc->uc_mcontext.fpregs && (cc)->regs.FXSData)                                           \
+    {                                                                                           \
+        (cc)->regs.Flags |= ECF_FPFXS;                                                          \
+        CopyMemQuick(sc->uc_mcontext.fpregs, (cc)->regs.FXSData, sizeof(struct FPFXSContext));  \
     }
 
 /*
  * Restore all registers from AROS context to UNIX signal context.
  * Check context flags to decide whether to restore SSE or not.
  */
-#define RESTOREREGS(cc, sc)                                    					\
-    RESTORE_CPU((cc)->regs, sc);								\
-    if ((cc)->regs.Flags & ECF_FPFXS)								\
-	CopyMemQuick((cc)->regs.FXSData, sc->uc_mcontext.fpregs, sizeof(struct FPFXSContext));
+#define RESTOREREGS(cc, sc)                                                                 \
+    RESTORE_CPU((cc)->regs, sc);                                                            \
+    if ((cc)->regs.Flags & ECF_FPFXS)                                                       \
+    CopyMemQuick((cc)->regs.FXSData, sc->uc_mcontext.fpregs, sizeof(struct FPFXSContext));
 
 /* Print signal context. Used in crash handler. */
-#define PRINT_SC(sc)						\
-    bug ("    RSP=%016lx  RBP=%016lx  RIP=%016lx\n"		\
-	 "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n" \
-	 "    RDI=%016lx  RSI=%016lx  RFLAGS=%016lx\n"		\
-	 "    R8 =%016lx  R9 =%016lx  R10=%016lx  R11=%016lx\n" \
-	 "    R12=%016lx  R13=%016lx  R14=%016lx  R15=%016lx\n" \
-	 , SP(sc), FP(sc), PC(sc)				\
-	 , R0(sc), R1(sc), R2(sc), R3(sc)			\
-	 , R4(sc), R5(sc), R6(sc), R8(sc), R9(sc)		\
-	 , R10(sc), R11(sc), R12(sc), R13(sc), R14(sc), R15(sc) \
-	)
+#define PRINT_SC(sc)                                            \
+    bug ("    RSP=%016lx  RBP=%016lx  RIP=%016lx\n"             \
+        "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n"  \
+        "    RDI=%016lx  RSI=%016lx  RFLAGS=%016lx\n"           \
+        "    R8 =%016lx  R9 =%016lx  R10=%016lx  R11=%016lx\n"  \
+        "    R12=%016lx  R13=%016lx  R14=%016lx  R15=%016lx\n"  \
+        , SP(sc), FP(sc), PC(sc)                                \
+        , R0(sc), R1(sc), R2(sc), R3(sc)                        \
+        , R4(sc), R5(sc), R6(sc), R8(sc), R9(sc)                \
+        , R10(sc), R11(sc), R12(sc), R13(sc), R14(sc), R15(sc)  \
+    )
 
 #endif /* __AROS_EXEC_LIBRARY__ */
 
@@ -221,7 +221,7 @@ typedef ucontext_t regs_t;
 struct AROSCPUContext
 {
     struct ExceptionContext regs;
-    int	errno_backup;
+    int    errno_backup;
 };
 
 #endif /* _SIGCORE_H */
