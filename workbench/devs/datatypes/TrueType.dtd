@@ -1,8 +1,8 @@
 Name=TrueType
-Version=$VER: TrueType 41.1 (4.1.2017)
+Version=$VER: TrueType 41.2 (6.11.2025)
 BaseName=TrueType
-Pattern=#?
-Mask=0x00 0x01 0x00 0x00 0x00 ANY ANY ANY ANY ANY ANY ANY 0x44 0x53 0x49 0x47
+Pattern=#?.ttf
+Mask=0x00 0x01 0x00 0x00
 GroupID=syst
 Flags=DTF_BINARY
 Priority=1
