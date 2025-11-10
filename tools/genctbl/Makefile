@@ -19,16 +19,25 @@ MKDIR          ?= mkdir
 
 all : $(GENCTBL) $(GENDIR)/ucd/UnicodeData.txt $(GENDIR)/ucd/SpecialCasing.txt
 
+$(PORTSSOURCEDIR) :
+	@$(MKDIR) -p $@
+
 $(GENDIR)/ucd :
 	@$(MKDIR) -p $@
 
-$(GENDIR)/ucd/UnicodeData.txt : | $(GENDIR)/ucd
+$(PORTSSOURCEDIR)/UnicodeData.txt : | $(PORTSSOURCEDIR)
 	@$(ECHO) "Fetching unicode data..."
 	@curl -o $@ https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt
 
-$(GENDIR)/ucd/SpecialCasing.txt : | $(GENDIR)/ucd
+$(GENDIR)/ucd/UnicodeData.txt : $(PORTSSOURCEDIR)/UnicodeData.txt $(GENDIR)/ucd
+	@$(CP) $< $@
+
+$(PORTSSOURCEDIR)/SpecialCasing.txt : | $(PORTSSOURCEDIR)
 	@$(ECHO) "Fetching unicode special casing data..."
 	@curl -o $@ https://www.unicode.org/Public/UCD/latest/ucd/SpecialCasing.txt
+
+$(GENDIR)/ucd/SpecialCasing.txt : $(PORTSSOURCEDIR)/SpecialCasing.txt $(GENDIR)/ucd
+	@$(CP) $< $@
 
 $(GENCTBL) : genctbl.c $(GENMODULE_DEPS)
 	@$(ECHO) "Compiling $(notdir $@)..."
