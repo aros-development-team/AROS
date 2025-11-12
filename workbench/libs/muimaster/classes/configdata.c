@@ -382,7 +382,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     /*---------- init strings ----------*/
     for (i = 0; DefStrValues[i].id; i++)
     {
-        DoMethod(obj, MUIM_Configdata_SetString, DefStrValues[i].id, DefStrValues[i].val);
+        DoMethod(obj, MUIM_Configdata_SetString, DefStrValues[i].id, GetConfigString(obj, DefStrValues[i].id));
     }
 
     /*---------- images stuff ----------*/
