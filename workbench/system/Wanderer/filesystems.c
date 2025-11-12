@@ -82,10 +82,12 @@ static BOOL askToOverwriteAndUnprotect(CONST_STRPTR destPath, struct OpModes *op
  *         askHook  -> Hook responsible for opening a request window
  *         askData  -> FileCopyData struct containg the data displayed by the askHook
  *         fib      -> Sourde file's FileInfoBlock struct
+ *         userdata    -> Contains a pointer to a struct with all the Zune objects used by the display Hook
  *
  * Result: TRUE if user accepted to delete and unprotect (if necessary), FALSE if not
  */
-static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, CONST_STRPTR infoFilePath, struct FileInfoBlock *fib)
+static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, CONST_STRPTR infoFilePath, struct FileInfoBlock *fib,
+    APTR userdata)
 {
     BOOL retvalue = FALSE;
     STRPTR directory = GetPathPart(path);
@@ -97,6 +99,7 @@ static BOOL askToDeleteAndUnprotect(CONST_STRPTR path, struct OpModes *opModes, 
         askData.file = FilePart(path);
         askData.spath = directory;
         askData.type = 0;
+        askData.userdata = userdata;
 
         if (opModes->deletemode != OPMODE_ALL)
         {
@@ -377,7 +380,7 @@ static BOOL deleteDirectoryContents(CONST_STRPTR path, struct OpModes *opModes, 
 /**
  * Helper function that checks if target file/directory already exists
  */
-BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, struct Hook *askHook, struct OpModes *opModes)
+static BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, struct Hook *askHook, struct OpModes *opModes, APTR userdata)
 {
     BOOL stop = FALSE;
 
@@ -389,6 +392,7 @@ BOOL checkIfAlreadyExists(CONST_STRPTR targetPath, CONST_STRPTR sourcePath, stru
         if (destFib != NULL && opModes && (opModes->overwritemode != OPMODE_NONE))
         {
             struct FileCopyData *askData = AllocVec(sizeof(struct FileCopyData), MEMF_CLEAR);
+            askData->userdata = userdata;
 
             stop = !askToOverwriteAndUnprotect(targetPath, opModes, askHook, askData, destFib);
 
@@ -447,7 +451,7 @@ static BOOL copySingleFile(CONST_STRPTR sourcePath, CONST_STRPTR sourceInfoFileP
     // If we are copying a directory, we only need to check if the directory exists and not every single file
     if (!inDir)
     {
-        stop = checkIfAlreadyExists(targetPath, sourcePath, askHook, opModes);
+        stop = checkIfAlreadyExists(targetPath, sourcePath, askHook, opModes, userdata);
     }
 
     if (doCopy && !stop)
@@ -711,7 +715,7 @@ BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *d
         {
             if (first && FileExists(nextTargetDir))
             {
-                stop = checkIfAlreadyExists(nextTargetDir, sourcePath, askHook, opModes);
+                stop = checkIfAlreadyExists(nextTargetDir, sourcePath, askHook, opModes, userdata);
             }
 
             if (!stop)
@@ -796,7 +800,7 @@ BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askH
     {
         isDir = sourceFib->fib_DirEntryType > 0;
  
-        doDelete = askToDeleteAndUnprotect(localPath, opModes, askHook, hasInfoFile ? infoFilePath : NULL, sourceFib);
+        doDelete = askToDeleteAndUnprotect(localPath, opModes, askHook, hasInfoFile ? infoFilePath : NULL, sourceFib, userdata);
 
         if (doDelete)
         {
