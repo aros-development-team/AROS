@@ -291,6 +291,247 @@ const static struct def_strval DefStrValues[] = {
     {0, 0},
 };
 
+static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
+{
+    if ((key->readable_hotkey = val) != NULL)
+        key->ix_well =
+            !ParseIX(key->readable_hotkey,
+            &key->ix);
+    else
+        key->ix_well = 0;
+}
+
+/* Always assign a !persistent! string stored in dataspace (or default) to ZunePrefsNew fields */
+static void Configdata_SynchronizeString(Object *obj, ULONG id)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(OCLASS(obj), obj);
+    CONST_STRPTR val = GetConfigString(obj, id);
+
+    switch (id) {
+    case MUICFG_Font_Normal:
+        data->prefs.fonts[-MUIV_Font_Normal] = val;
+        break;
+
+    case MUICFG_Font_List:
+        data->prefs.fonts[-MUIV_Font_List] = val;
+        break;
+
+    case MUICFG_Font_Tiny:
+        data->prefs.fonts[-MUIV_Font_Tiny] = val;
+        break;
+
+    case MUICFG_Font_Fixed:
+        data->prefs.fonts[-MUIV_Font_Fixed] = val;
+        break;
+
+    case MUICFG_Font_Title:
+        data->prefs.fonts[-MUIV_Font_Title] = val;
+        break;
+
+    case MUICFG_Font_Big:
+        data->prefs.fonts[-MUIV_Font_Big] = val;
+        break;
+
+    case MUICFG_Font_Button:
+        data->prefs.fonts[-MUIV_Font_Button] = val;
+        break;
+
+    case MUICFG_Font_Knob:
+        data->prefs.fonts[-MUIV_Font_Knob] = val;
+        break;
+
+    /*---------- system stuff ----------*/
+    case MUICFG_PublicScreen:
+        data->prefs.publicscreen_name = val;
+        break;
+
+    case MUICFG_Iconification_Hotkey:
+        data->prefs.iconification_hotkey = val;
+        break;
+
+    /*---------- Strings ----------*/
+    case MUICFG_String_Background:
+        data->prefs.string_bg_inactive = val;
+        break;
+
+    case MUICFG_String_Text:
+        data->prefs.string_text_inactive = val;
+        break;
+
+    case MUICFG_String_ActiveBackground:
+        data->prefs.string_bg_active = val;
+        break;
+
+    case MUICFG_String_ActiveText:
+        data->prefs.string_text_active = val;
+        break;
+
+    case MUICFG_String_Cursor:
+        data->prefs.string_cursor = val;
+        break;
+
+    case MUICFG_String_MarkedBackground:
+        data->prefs.string_bg_marked = val;
+        break;
+
+    case MUICFG_String_MarkedText:
+        data->prefs.string_text_marked = val;
+        break;
+
+    /*---------- Navigation ----------*/
+
+    case MUICFG_Drag_LMBModifier:
+        Configdata__SetKey(&data->prefs.drag_left_modifier, val);
+        break;
+
+    case MUICFG_Drag_MMBModifier:
+        Configdata__SetKey(&data->prefs.drag_middle_modifier, val);
+        break;
+
+    case MUICFG_ActiveObject_Color:
+        data->prefs.active_object_color = val;
+        break;
+
+    /*---------- mui keys ----------*/
+    case MUICFG_Keyboard_Press:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PRESS], val);
+        break;
+
+    case MUICFG_Keyboard_Toggle:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOGGLE], val);
+        break;
+
+    case MUICFG_Keyboard_Up:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_UP], val);
+        break;
+
+    case MUICFG_Keyboard_Down:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_DOWN], val);
+        break;
+
+    case MUICFG_Keyboard_PageUp:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEUP], val);
+        break;
+
+    case MUICFG_Keyboard_PageDown:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEDOWN], val);
+        break;
+
+    case MUICFG_Keyboard_Top:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOP], val);
+        break;
+
+    case MUICFG_Keyboard_Bottom:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_BOTTOM], val);
+        break;
+
+    case MUICFG_Keyboard_Left:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LEFT], val);
+        break;
+
+    case MUICFG_Keyboard_Right:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_RIGHT], val);
+        break;
+
+    case MUICFG_Keyboard_WordLeft:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDLEFT], val);
+        break;
+
+    case MUICFG_Keyboard_WordRight:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDRIGHT], val);
+        break;
+
+    case MUICFG_Keyboard_LineStart:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINESTART], val);
+        break;
+
+    case MUICFG_Keyboard_LineEnd:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINEEND], val);
+        break;
+
+    case MUICFG_Keyboard_NextGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_NEXT], val);
+        break;
+
+    case MUICFG_Keyboard_PrevGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_PREV], val);
+        break;
+
+    case MUICFG_Keyboard_GadgetOff:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_OFF], val);
+        break;
+
+    case MUICFG_Keyboard_CloseWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_CLOSE], val);
+        break;
+
+    case MUICFG_Keyboard_NextWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_NEXT], val);
+        break;
+
+    case MUICFG_Keyboard_PrevWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_PREV], val);
+        break;
+
+    case MUICFG_Keyboard_Help:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_HELP], val);
+        break;
+
+    case MUICFG_Keyboard_Popup:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_POPUP], val);
+        break;
+
+    /*---------- CustomFrames ----------*/
+    case MUICFG_CustomFrame_1:
+        data->prefs.customframe_config_1 = val;
+        break;
+    case MUICFG_CustomFrame_2:
+        data->prefs.customframe_config_2 = val;
+        break;
+    case MUICFG_CustomFrame_3:
+        data->prefs.customframe_config_3 = val;
+        break;
+    case MUICFG_CustomFrame_4:
+        data->prefs.customframe_config_4 = val;
+        break;
+    case MUICFG_CustomFrame_5:
+        data->prefs.customframe_config_5 = val;
+        break;
+    case MUICFG_CustomFrame_6:
+        data->prefs.customframe_config_6 = val;
+        break;
+    case MUICFG_CustomFrame_7:
+        data->prefs.customframe_config_7 = val;
+        break;
+    case MUICFG_CustomFrame_8:
+        data->prefs.customframe_config_8 = val;
+        break;
+    case MUICFG_CustomFrame_9:
+        data->prefs.customframe_config_9 = val;
+        break;
+    case MUICFG_CustomFrame_10:
+        data->prefs.customframe_config_10 = val;
+        break;
+    case MUICFG_CustomFrame_11:
+        data->prefs.customframe_config_11 = val;
+        break;
+    case MUICFG_CustomFrame_12:
+        data->prefs.customframe_config_12 = val;
+        break;
+    case MUICFG_CustomFrame_13:
+        data->prefs.customframe_config_13 = val;
+        break;
+    case MUICFG_CustomFrame_14:
+        data->prefs.customframe_config_14 = val;
+        break;
+    case MUICFG_CustomFrame_15:
+        data->prefs.customframe_config_15 = val;
+        break;
+    case MUICFG_CustomFrame_16:
+        data->prefs.customframe_config_16 = val;
+        break;
+    }
+}
 
 /**************************************************************************
  OM_NEW
@@ -378,11 +619,11 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             data->fsNotifyPort = NULL;
         }
     }
-    
+
     /*---------- init strings ----------*/
     for (i = 0; DefStrValues[i].id; i++)
     {
-        DoMethod(obj, MUIM_Configdata_SetString, DefStrValues[i].id, GetConfigString(obj, DefStrValues[i].id));
+        Configdata_SynchronizeString(obj,  DefStrValues[i].id);
     }
 
     /*---------- images stuff ----------*/
@@ -829,249 +1070,13 @@ IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object *obj,
     return 0;
 }
 
-static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
-{
-    if ((key->readable_hotkey = val) != NULL)
-        key->ix_well =
-            !ParseIX(key->readable_hotkey,
-            &key->ix);
-    else
-        key->ix_well = 0;
-}
-
 /**************************************************************************
  MUIM_Configdata_SetString
 **************************************************************************/
 IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_SetString *msg)
 {
-    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     int i;
-
-    switch (msg->id) {
-    case MUICFG_Font_Normal:
-        data->prefs.fonts[-MUIV_Font_Normal] = msg->string;
-        break;
-
-    case MUICFG_Font_List:
-        data->prefs.fonts[-MUIV_Font_List] = msg->string;
-        break;
-
-    case MUICFG_Font_Tiny:
-        data->prefs.fonts[-MUIV_Font_Tiny] = msg->string;
-        break;
-
-    case MUICFG_Font_Fixed:
-        data->prefs.fonts[-MUIV_Font_Fixed] = msg->string;
-        break;
-
-    case MUICFG_Font_Title:
-        data->prefs.fonts[-MUIV_Font_Title] = msg->string;
-        break;
-
-    case MUICFG_Font_Big:
-        data->prefs.fonts[-MUIV_Font_Big] = msg->string;
-        break;
-
-    case MUICFG_Font_Button:
-        data->prefs.fonts[-MUIV_Font_Button] = msg->string;
-        break;
-
-    case MUICFG_Font_Knob:
-        data->prefs.fonts[-MUIV_Font_Knob] = msg->string;
-        break;
-
-    /*---------- system stuff ----------*/
-    case MUICFG_PublicScreen:
-        data->prefs.publicscreen_name = msg->string;
-        break;
-
-    case MUICFG_Iconification_Hotkey:
-        data->prefs.iconification_hotkey = msg->string;
-        break;
-
-    /*---------- Strings ----------*/
-    case MUICFG_String_Background:
-        data->prefs.string_bg_inactive = msg->string;
-        break;
-
-    case MUICFG_String_Text:
-        data->prefs.string_text_inactive = msg->string;
-        break;
-
-    case MUICFG_String_ActiveBackground:
-        data->prefs.string_bg_active = msg->string;
-        break;
-
-    case MUICFG_String_ActiveText:
-        data->prefs.string_text_active = msg->string;
-        break;
-
-    case MUICFG_String_Cursor:
-        data->prefs.string_cursor = msg->string;
-        break;
-
-    case MUICFG_String_MarkedBackground:
-        data->prefs.string_bg_marked = msg->string;
-        break;
-
-    case MUICFG_String_MarkedText:
-        data->prefs.string_text_marked = msg->string;
-        break;
-
-    /*---------- Navigation ----------*/
-
-    case MUICFG_Drag_LMBModifier:
-        Configdata__SetKey(&data->prefs.drag_left_modifier, msg->string);
-        break;
-
-    case MUICFG_Drag_MMBModifier:
-        Configdata__SetKey(&data->prefs.drag_middle_modifier, msg->string);
-        break;
-
-    case MUICFG_ActiveObject_Color:
-        data->prefs.active_object_color = msg->string;
-        break;
-
-    /*---------- mui keys ----------*/
-    case MUICFG_Keyboard_Press:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PRESS], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Toggle:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOGGLE], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Up:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_UP], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Down:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_DOWN], msg->string);
-        break;
-
-    case MUICFG_Keyboard_PageUp:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEUP], msg->string);
-        break;
-
-    case MUICFG_Keyboard_PageDown:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEDOWN], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Top:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOP], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Bottom:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_BOTTOM], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Left:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LEFT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Right:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_RIGHT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_WordLeft:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDLEFT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_WordRight:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDRIGHT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_LineStart:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINESTART], msg->string);
-        break;
-
-    case MUICFG_Keyboard_LineEnd:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINEEND], msg->string);
-        break;
-
-    case MUICFG_Keyboard_NextGadget:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_NEXT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_PrevGadget:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_PREV], msg->string);
-        break;
-
-    case MUICFG_Keyboard_GadgetOff:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_OFF], msg->string);
-        break;
-
-    case MUICFG_Keyboard_CloseWindow:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_CLOSE], msg->string);
-        break;
-
-    case MUICFG_Keyboard_NextWindow:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_NEXT], msg->string);
-        break;
-
-    case MUICFG_Keyboard_PrevWindow:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_PREV], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Help:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_HELP], msg->string);
-        break;
-
-    case MUICFG_Keyboard_Popup:
-        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_POPUP], msg->string);
-        break;
-
-    /*---------- CustomFrames ----------*/
-    case MUICFG_CustomFrame_1:
-        data->prefs.customframe_config_1 = msg->string;
-        break;
-    case MUICFG_CustomFrame_2:
-        data->prefs.customframe_config_2 = msg->string;
-        break;
-    case MUICFG_CustomFrame_3:
-        data->prefs.customframe_config_3 = msg->string;
-        break;
-    case MUICFG_CustomFrame_4:
-        data->prefs.customframe_config_4 = msg->string;
-        break;
-    case MUICFG_CustomFrame_5:
-        data->prefs.customframe_config_5 = msg->string;
-        break;
-    case MUICFG_CustomFrame_6:
-        data->prefs.customframe_config_6 = msg->string;
-        break;
-    case MUICFG_CustomFrame_7:
-        data->prefs.customframe_config_7 = msg->string;
-        break;
-    case MUICFG_CustomFrame_8:
-        data->prefs.customframe_config_8 = msg->string;
-        break;
-    case MUICFG_CustomFrame_9:
-        data->prefs.customframe_config_9 = msg->string;
-        break;
-    case MUICFG_CustomFrame_10:
-        data->prefs.customframe_config_10 = msg->string;
-        break;
-    case MUICFG_CustomFrame_11:
-        data->prefs.customframe_config_11 = msg->string;
-        break;
-    case MUICFG_CustomFrame_12:
-        data->prefs.customframe_config_12 = msg->string;
-        break;
-    case MUICFG_CustomFrame_13:
-        data->prefs.customframe_config_13 = msg->string;
-        break;
-    case MUICFG_CustomFrame_14:
-        data->prefs.customframe_config_14 = msg->string;
-        break;
-    case MUICFG_CustomFrame_15:
-        data->prefs.customframe_config_15 = msg->string;
-        break;
-    case MUICFG_CustomFrame_16:
-        data->prefs.customframe_config_16 = msg->string;
-        break;
-    }
 
     /* If the value is the same as default value, remove it from dataspace (and config file) */
     for (i = 0; DefStrValues[i].id; i++)
@@ -1080,12 +1085,14 @@ IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
             if (!strcmp(DefStrValues[i].val, msg->string))
             {
                 DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                Configdata_SynchronizeString(obj, msg->id);
                 return 0;
             }
     }
 
     DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->string,
         strlen(msg->string) + 1, msg->id);
+    Configdata_SynchronizeString(obj, msg->id);
 
     return 0;
 }
