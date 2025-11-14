@@ -10,6 +10,7 @@
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/hidd.h>
+#include <hidd/input.h>
 #include <graphics/gfxbase.h>
 #include <workbench/startup.h>
 #include <workbench/workbench.h>
@@ -38,7 +39,7 @@ OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
 OOP_AttrBase HiddSDLBitMapAttrBase;
 OOP_AttrBase HiddMouseAB;
-OOP_AttrBase HiddKbdAB;
+OOP_AttrBase HiddInputAB;
 
 static struct OOP_ABDescr attrbases[] = {
     { IID_Meta,           &MetaAttrBase          },
@@ -50,7 +51,7 @@ static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_Gfx,       &HiddGfxAttrBase       },
     { IID_Hidd_BitMap_SDL, &HiddSDLBitMapAttrBase },
     { IID_Hidd_Mouse,     &HiddMouseAB           },
-    { IID_Hidd_Kbd,       &HiddKbdAB             },
+    { IID_Hidd_Input,     &HiddInputAB           },
     { NULL,               NULL                   }
 };
 
@@ -94,10 +95,10 @@ static int sdl_Startup(struct sdlhidd *xsd)
     if (kbd) {
         ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
         if (ms) {
-            kbdriver = HIDD_Kbd_AddHardwareDriver(kbd, xsd->kbdclass, kbd_tags);
+            kbdriver = HIDD_Input_AddHardwareDriver(kbd, xsd->kbdclass, kbd_tags);
             D(bug("[SDL] Keyboard driver object 0x%p\n", kbdriver));
             if (kbdriver) {
-                msdriver = HIDD_Mouse_AddHardwareDriver(ms, xsd->mouseclass, mouse_tags);
+                msdriver = HIDD_Input_AddHardwareDriver(ms, xsd->mouseclass, mouse_tags);
                 D(bug("[SDL] Mouse driver object 0x%p\n", msdriver));
             }
             
@@ -110,7 +111,7 @@ static int sdl_Startup(struct sdlhidd *xsd)
         err = -1;
 
         if (kbdriver)
-            HIDD_Kbd_RemHardwareDriver(kbd, kbdriver);
+            HIDD_Input_RemHardwareDriver(kbd, kbdriver);
 
         if (ms)
             OOP_DisposeObject(ms);

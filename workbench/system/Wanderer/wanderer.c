@@ -196,6 +196,7 @@ AROS_UFH3
     AROS_USERFUNC_INIT
 
     ULONG back = OPMODE_NONE;
+    struct MUIDisplayObjects *d = (struct MUIDisplayObjects *) obj->userdata;
 
     UWORD    ret = 0;
     char     *string = NULL;
@@ -233,10 +234,10 @@ AROS_UFH3
 
     if (string)
     {
-        if (obj->type == 0) ret = AskChoice( _(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0, TRUE);
-        else if (obj->type == 1) ret = AskChoice( _(MSG_REQU_PROTECTION), string, _(MSG_REQU_PROTECTION_UNPROTECT), 0, TRUE);
-        else if (obj->type == 2) ret = AskChoice( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_YESNO), 0, TRUE);
-        else ret = AskChoice( _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_SKIPABORT), 0, TRUE);
+        if (obj->type == 0) ret = AskChoice2(d->copyApp, _(MSG_REQU_DELETE), string, _(MSG_REQU_DELETE_YESNO), 0, TRUE);
+        else if (obj->type == 1) ret = AskChoice2(d->copyApp, _(MSG_REQU_PROTECTION), string, _(MSG_REQU_PROTECTION_UNPROTECT), 0, TRUE);
+        else if (obj->type == 2) ret = AskChoice2(d->copyApp, _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_YESNO), 0, TRUE);
+        else ret = AskChoice2(d->copyApp, _(MSG_REQU_OVERWRITE), string, _(MSG_REQU_OVERWRITE_SKIPABORT), 0, TRUE);
         FreeVec(string);
     }
 

@@ -170,18 +170,7 @@ UWORD CountFiles(CONST_STRPTR path)
     return number;
 }
 
-/**
- * Displays a request window, can display a set of buttons each with a unique numeric return value
- * 
- * Params: title    -> Window title
- *         strg     -> Text displayed 
- *         gadgets  -> Buttons provided as a string split by the | character
- *         selected -> Position of the pre-selected button
- *         centered -> Centeres window on screen if true  
- * 
- * Result: The index of the button pressed, starting with 0
- */
-WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWORD selected, BOOL centered)
+WORD AskChoice2(APTR appptr, CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWORD selected, BOOL centered)
 {
     Object *app, *win, *button, *buttonGroup, *selObject;
     LONG back, old;
@@ -190,14 +179,13 @@ WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWOR
     ULONG id;
     BYTE sourceBuffer[BUFFER_SIZE], destinationBuffer[BUFFER_SIZE];
 
+    app = (Object *)appptr;
+
     back = 0;
 
-    app = MUI_NewObject(MUIC_Application,
-    
-        MUIA_Application_Title,     (IPTR)"Requester",
-        MUIA_Application_Base,      (IPTR)"WANDERER_REQ",
-    
-        SubWindow, (IPTR)(win = MUI_NewObject(MUIC_Window,
+    if (app)
+    {
+        win = MUI_NewObject(MUIC_Window,
             MUIA_Window_Title,           title,
             MUIA_Window_Activate,        TRUE,
             MUIA_Window_DepthGadget,     TRUE,
@@ -207,7 +195,7 @@ WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWOR
             MUIA_Window_Borderless,  FALSE,
             MUIA_Window_TopEdge,        MUIV_Window_TopEdge_Moused,
             MUIA_Window_LeftEdge,       MUIV_Window_LeftEdge_Moused,
-        
+
             WindowContents, (IPTR)MUI_NewObject(MUIC_Group,
                 Child, (IPTR)MUI_NewObject(MUIC_Text,
                     TextFrame,
@@ -221,14 +209,13 @@ WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWOR
                 TAG_DONE),
                 Child, (IPTR)(buttonGroup = MUI_NewObject(MUIC_Group,MUIA_Group_Horiz, TRUE,TAG_DONE)),
             TAG_DONE),
-        TAG_DONE)),
-    TAG_DONE);
+        TAG_DONE);
 
-    if (app)
-    {
         old = 0;
         back = 11;
         selObject = NULL;
+
+        DoMethod(app, OM_ADDMEMBER, win);
 
         while (old != -1)
         {
@@ -323,10 +310,29 @@ WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWOR
         }
 
         set(win, MUIA_Window_Open, FALSE);
-        MUI_DisposeObject(app);
+        DoMethod(app, OM_REMMEMBER, win);
+        MUI_DisposeObject(win);
     }
 
     return back;
+}
+
+/**
+ * Displays a request window, can display a set of buttons each with a unique numeric return value
+ *
+ * Params: title    -> Window title
+ *         strg     -> Text displayed
+ *         gadgets  -> Buttons provided as a string split by the | character
+ *         selected -> Position of the pre-selected button
+ *         centered -> Centeres window on screen if true
+ *
+ * Result: The index of the button pressed, starting with 0
+ */
+extern Object *_WandererIntern_AppObj;
+
+WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWORD selected, BOOL centered)
+{
+    return AskChoice2(_WandererIntern_AppObj, title, strg, gadgets, selected, centered);
 }
 
 /**

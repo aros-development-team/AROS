@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,7 +30,15 @@ MA 02111-1307, USA.
 
 static UBYTE GetPowerPair(struct DevUnit *unit, UWORD index,
    struct DevBase *base);
+static VOID WriteCCK(struct DevUnit *unit, UWORD index, UWORD value,
+   struct DevBase *base);
+static VOID WriteOFDM(struct DevUnit *unit, UWORD index, UWORD value,
+   struct DevBase *base);
 static VOID WritePHY(struct DevUnit *unit, UWORD index, ULONG value,
+   struct DevBase *base);
+static UWORD ReadRadio(struct DevUnit *unit, UWORD index,
+   struct DevBase *base);
+static VOID WriteRadio(struct DevUnit *unit, UWORD index, UWORD value,
    struct DevBase *base);
 
 
@@ -131,21 +139,20 @@ static const UBYTE eeprom_power_locations_b[] =
 /****i* realtek8180.device/InitialiseRadio *********************************
 *
 *   NAME
-*       InitialiseRadio
+*	InitialiseRadio
 *
 *   SYNOPSIS
-*       success = InitialiseRadio(unit, reinsertion)
+*	success = InitialiseRadio(unit)
 *
-*       BOOL InitialiseRadio(struct DevUnit *, BOOL);
+*	BOOL InitialiseRadio(struct DevUnit *);
 *
 *   FUNCTION
 *
 *   INPUTS
-*       unit
-*       reinsertion
+*	unit
 *
 *   RESULT
-*       success - Success indicator.
+*	success - Success indicator.
 *
 ****************************************************************************
 *
@@ -245,6 +252,30 @@ BOOL InitialiseRadio(struct DevUnit *unit, struct DevBase *base)
 
 
 
+/****i* realtek8180.device/GetPower ****************************************
+*
+*   NAME
+*	GetPower -- Get TX power levels for each channel.
+*
+*   SYNOPSIS
+*	GetPower(unit)
+*
+*	VOID GetPower(struct DevUnit *);
+*
+*   FUNCTION
+*	Fills in the power levels to be used for CCK and OFDM transmissions
+*	for each supported radio channel.
+*
+*   INPUTS
+*	unit
+*
+*   RESULT
+*	None.
+*
+****************************************************************************
+*
+*/
+
 VOID GetPower(struct DevUnit *unit, struct DevBase *base)
 {
    const UBYTE *locations;
@@ -266,6 +297,20 @@ VOID GetPower(struct DevUnit *unit, struct DevBase *base)
 
 
 
+/****i* realtek8180.device/GetPowerPair ************************************
+*
+*   NAME
+*	GetPowerPair -- Get an EEPROM value containing power levels.
+*
+*   SYNOPSIS
+*	value = GetPowerPair(unit, index)
+*
+*	UBYTE GetPowerPair(struct DevUnit *, UWORD);
+*
+****************************************************************************
+*
+*/
+
 static UBYTE GetPowerPair(struct DevUnit *unit, UWORD index,
    struct DevBase *base)
 {
@@ -279,6 +324,30 @@ static UBYTE GetPowerPair(struct DevUnit *unit, UWORD index,
 }
 
 
+
+/****i* realtek8180.device/SetPower ****************************************
+*
+*   NAME
+*	SetPower -- Set TX power levels and channel.
+*
+*   SYNOPSIS
+*	SetPower(unit)
+*
+*	VOID SetPower(struct DevUnit *);
+*
+*   FUNCTION
+*	Sets up power and gain in the RF chip for both CCK and OFDM and
+*	selects the current radio channel.
+*
+*   INPUTS
+*	unit
+*
+*   RESULT
+*	None.
+*
+****************************************************************************
+*
+*/
 
 VOID SetPower(struct DevUnit *unit, struct DevBase *base)
 {
@@ -485,7 +554,7 @@ VOID SetPower(struct DevUnit *unit, struct DevBase *base)
 *
 */
 
-VOID WriteCCK(struct DevUnit *unit, UWORD index, UWORD value,
+static VOID WriteCCK(struct DevUnit *unit, UWORD index, UWORD value,
    struct DevBase *base)
 {
    WritePHY(unit, index, value | 1 << 16, base);
@@ -517,7 +586,7 @@ VOID WriteCCK(struct DevUnit *unit, UWORD index, UWORD value,
 *
 */
 
-VOID WriteOFDM(struct DevUnit *unit, UWORD index, UWORD value,
+static VOID WriteOFDM(struct DevUnit *unit, UWORD index, UWORD value,
    struct DevBase *base)
 {
    WritePHY(unit, index, value, base);
@@ -530,7 +599,7 @@ VOID WriteOFDM(struct DevUnit *unit, UWORD index, UWORD value,
 /****i* realtek8180.device/WritePHY ****************************************
 *
 *   NAME
-*	WritePHY -- Write to a CCK PHY register.
+*	WritePHY -- Write to a PHY register.
 *
 *   SYNOPSIS
 *	WritePHY(unit, index, value)
@@ -586,7 +655,7 @@ static VOID WritePHY(struct DevUnit *unit, UWORD index, ULONG value,
 *
 */
 
-UWORD ReadRadio(struct DevUnit *unit, UWORD index,
+static UWORD ReadRadio(struct DevUnit *unit, UWORD index,
    struct DevBase *base)
 {
    UWORD value = 0, value2, output_reg, enable_reg, select_reg;
@@ -700,7 +769,7 @@ UWORD ReadRadio(struct DevUnit *unit, UWORD index,
 *
 */
 
-VOID WriteRadio(struct DevUnit *unit, UWORD index, UWORD value,
+static VOID WriteRadio(struct DevUnit *unit, UWORD index, UWORD value,
    struct DevBase *base)
 {
    UWORD output_reg, enable_reg, select_reg, value2;

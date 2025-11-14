@@ -1,7 +1,7 @@
 /*
  * WPA Supplicant / main() function for Amiga-like OSes
  * Copyright (c) 2003-2007, Jouni Malinen <j@w1.fi>
- * Copyright (c) 2010-2015, Neil Cafferkey
+ * Copyright (c) 2010-2025, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -45,7 +45,7 @@ typedef LONG PINT;
 #endif
 
 static const TEXT template[] = "DEVICE/A,UNIT/K/N,CONFIG/K,VERBOSE/S,NOGUI/S";
-const TEXT version_string[] = "$VER: WirelessManager 1.6 (8.3.2015)";
+const TEXT version_string[] = "$VER: WirelessManager 1.7 (12.10.2025)";
 static const TEXT config_file_name[] = "ENV:Sys/Wireless.prefs";
 
 
@@ -171,6 +171,7 @@ void stop_gui(void)
 {
 	if (gui_proc != NULL)
 	{
+		SetSignal(0, SIGF_SINGLE);
 		Signal((struct Task *) gui_proc, SIGBREAKF_CTRL_C);
 		Wait(SIGF_SINGLE);
 	}

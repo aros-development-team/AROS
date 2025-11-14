@@ -379,7 +379,6 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         Child, (IPTR)Label1(_(MSG_ENABLEWANDPREFS)),
                         Child, (IPTR)HVSpace,
                     End),
-                    Child, (IPTR)HVSpace,
                     Child, (IPTR)(_ThemePalettePrefsGrp = HGroup,
                         Child, (IPTR)(_ThemePalettePrefsObj = MakeCheckmark(TRUE)),
                         Child, (IPTR)Label1(_(MSG_ENABLEPALETTEPREFS)),
