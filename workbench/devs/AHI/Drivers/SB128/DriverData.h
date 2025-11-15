@@ -110,6 +110,11 @@ struct SB128_DATA {
     /** TRUE if the hardware interrupt may Cause() playback_interrupt */
     BOOL                record_interrupt_enabled;
 
+    /** The reset handler */
+    struct Interrupt    reset_handler;
+
+    /** TRUE if the reset handler has been added to the system */
+    BOOL                reset_handler_added;
 
 
     /*** CAMD support functions **********************************************/

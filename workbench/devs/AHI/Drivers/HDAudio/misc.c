@@ -236,6 +236,11 @@ void FreeDriverData(struct HDAudioChip *card, struct DriverBase  *AHIsubBase)
             ahi_pci_rem_intserver(&card->interrupt, card->pci_dev);
         }
 
+        if (card->reset_handler_added)
+        {
+            RemResetCallback(&card->reset_handler);
+        }
+
         FreeVec(card);
     }
 }
@@ -953,19 +958,18 @@ static ULONG ResetHandler(struct HDAudioChip *card)
 
 void AddResetHandler(struct HDAudioChip *card)
 {
-    static struct Interrupt interrupt;
-
-    interrupt.is_Code = (void (*)())ResetHandler;
-    interrupt.is_Data = (APTR) card;
-    interrupt.is_Node.ln_Pri  = 0;
+    struct Interrupt *handler = &card->reset_handler;
+    handler->is_Code = (void (*)())ResetHandler;
+    handler->is_Data = (APTR) card;
+    handler->is_Node.ln_Pri = 0;
 #ifdef __AMIGAOS4__
-    interrupt.is_Node.ln_Type = NT_EXTINTERRUPT;
+    handler->is_Node.ln_Type = NT_EXTINTERRUPT;
 #else
-    interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    handler->is_Node.ln_Type = NT_INTERRUPT;
 #endif
-    interrupt.is_Node.ln_Name = "HDAudio reset handler";
+    handler->is_Node.ln_Name = "HDAudio reset handler";
 
-    AddResetCallback(&interrupt);
+    card->reset_handler_added = AddResetCallback(handler);
 }
 
 
