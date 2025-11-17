@@ -157,7 +157,7 @@ void BOOTLOADER_InitSupport(void)
                 D(bug("[InstallAROS] %s: bootloader installer found\n", __func__));
 #if defined(INSTALL_BL_GRUB)
 # if defined(GRUB) && (GRUB == 1)
-                if (i == BOOTLOADER_GRUB)
+                if (i == BOOTLOADER_GRUB1)
                     BootLoaderType = i;
 #endif
 #endif
