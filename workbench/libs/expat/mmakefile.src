@@ -1,0 +1,84 @@
+#   AROS metamakefile for expat
+include $(SRCDIR)/config/aros.cfg
+
+EXPATVERSION=2.1.0
+EXPATVRS=2_1_0
+EXPATREPOSITORIES = https://github.com/libexpat/libexpat/releases/download/R_$(EXPATVRS)
+EXPATARCHBASE     := expat-$(EXPATVERSION)
+EXPATARCHSUFFIX := "tar.gz"
+EXPATATCHSPEC := $(EXPATARCHBASE)-aros.diff:$(EXPATARCHBASE):-f,-p1
+EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
+
+%fetch mmake=workbench-libs-expat-fetch archive=$(EXPATARCHBASE) destination=$(PORTSDIR)/expat \
+    location=$(PORTSSOURCEDIR)/expat archive_origins=$(EXPATREPOSITORIES) suffixes=$(EXPATARCHSUFFIX) \
+    patches_specs=$(EXPATATCHSPEC)
+
+%create_patch mmake=workbench-libs-expat-create-patch \
+    archive=$(EXPATARCHBASE) suffixes=$(EXPATARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/expat destination=$(PORTSDIR)/expat \
+    srcdir="$(EXPATARCHBASE)"
+
+#MM- workbench-libs-expat : \
+#MM     workbench-libs-expat-lib \
+#MM     workbench-libs-expat-examples \
+#MM     workbench-libs-expat-pc
+
+#MM- workbench-libs-expat-quick : \
+#MM     workbench-libs-expat-lib-quick \
+#MM     workbench-libs-expat-examples-quick
+
+#MM- workbench-libs-expat-clean : \
+#MM     workbench-libs-expat-lib-clean \
+#MM     workbench-libs-expat-examples-clean
+
+#MM  workbench-libs-expat-lib : \
+#MM     workbench-libs-expat-fetch \
+#MM     linklibs
+
+#MM- workbench-libs-expat-includes : \
+#MM     workbench-libs-expat-fetch \
+#MM     kernel-exec-includes \
+#MM     includes-copy
+
+EXPATFILES := \
+    $(EXPATARCHSRCDIR)/lib/xmlparse \
+    $(EXPATARCHSRCDIR)/lib/xmlrole \
+    $(EXPATARCHSRCDIR)/lib/xmltok
+
+%build_module mmake=workbench-libs-expat-lib \
+    modname=expat modtype=library \
+    files="$(EXPATFILES)"  linklibname=expat
+
+INCLUDE_FILES := expat.h expat_external.h
+%copy_includes dir=$(EXPATARCHSRCDIR)/lib
+
+#MM- includes-copy : \
+#MM     workbench-libs-expat-fetch
+
+#MM
+workbench-libs-expat-pc : $(AROS_LIB)/pkgconfig/expat.pc
+
+$(AROS_LIB)/pkgconfig/expat.pc : $(EXPATARCHSRCDIR)/expat.pc.in
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's|@prefix@|/Developer|g' \
+	    -e 's|@libdir@|$${prefix}/lib|g' \
+	    -e 's|@includedir@|$${prefix}/include|g' \
+	    -e 's|@PACKAGE_VERSION@|$(EXPATVERSION)|g' \
+	    -e 's|^exec_prefix=.*|exec_prefix=$${prefix}|' \
+	    $< > $@
+
+#MM workbench-libs-expat-examples : \
+#MM     workbench-libs-expat-lib \
+#MM     includes \
+#MM     linklibs
+
+FILES   := \
+    $(EXPATARCHSRCDIR)/examples/elements \
+    $(EXPATARCHSRCDIR)/examples/outline
+EXEDIR  := $(AROS_TESTS)/expat
+
+%build_progs mmake=workbench-libs-expat-examples \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    objdir=$(GENDIR)/$(CURDIR)/progs uselibs="expat"
+
+%common
