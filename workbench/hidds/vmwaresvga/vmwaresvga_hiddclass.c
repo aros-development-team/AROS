@@ -528,9 +528,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
                     friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, (IPTR)NULL, msg->attrList);
                     if (friend != NULL)
                     {
-                        OOP_Class *friend_class = NULL;
-                        OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
-                        if (friend_class == XSD(cl)->vmwaresvgaonbmclass)
+                        if (OOP_OCLASS(friend) == XSD(cl)->vmwaresvgaonbmclass)
                         {
                             classptr = XSD(cl)->vmwaresvgaoffbmclass;
                         }
