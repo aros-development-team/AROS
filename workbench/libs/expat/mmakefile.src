@@ -1,12 +1,12 @@
 #   AROS metamakefile for expat
 include $(SRCDIR)/config/aros.cfg
 
-EXPATVERSION=2.1.0
-EXPATVRS=2_1_0
+EXPATVERSION=2.7.3
+EXPATVRS=2_7_3
 EXPATREPOSITORIES = https://github.com/libexpat/libexpat/releases/download/R_$(EXPATVRS)
 EXPATARCHBASE     := expat-$(EXPATVERSION)
-EXPATARCHSUFFIX := "tar.gz"
-EXPATATCHSPEC := $(EXPATARCHBASE)-aros.diff:$(EXPATARCHBASE):-f,-p1
+EXPATARCHSUFFIX := "tar.bz2"
+#EXPATATCHSPEC := $(EXPATARCHBASE)-aros.diff:$(EXPATARCHBASE):-f,-p1
 EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
 
 %fetch mmake=workbench-libs-expat-fetch archive=$(EXPATARCHBASE) destination=$(PORTSDIR)/expat \
@@ -42,8 +42,14 @@ EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
 
 EXPATFILES := \
     $(EXPATARCHSRCDIR)/lib/xmlparse \
-    $(EXPATARCHSRCDIR)/lib/xmlrole \
-    $(EXPATARCHSRCDIR)/lib/xmltok
+    $(EXPATARCHSRCDIR)/lib/xmltok \
+    $(EXPATARCHSRCDIR)/lib/xmlrole
+
+USER_CPPFLAGS := \
+  -DHAVE_EXPAT_CONFIG_H \
+  -DXML_POOR_ENTROPY
+USER_INCLUDES := \
+  -I$(SRCDIR)/$(CURDIR)
 
 %build_module mmake=workbench-libs-expat-lib \
     modname=expat modtype=library \
