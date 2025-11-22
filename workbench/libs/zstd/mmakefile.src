@@ -9,12 +9,12 @@ ZSTDARCHSUFFIX := "tar.gz"
 ZSTDARCHSRCDIR := $(PORTSDIR)/zstd/$(ZSTDARCHBASE)
 
 %fetch mmake=workbench-libs-zstd-fetch archive=$(ZSTDARCHBASE) destination=$(PORTSDIR)/zstd \
-    location=$(PORTSSOURCEDIR)/zstd archive_origins=$(ZSTDREPOSITORIES) suffixes=$(ZSTDARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR) archive_origins=$(ZSTDREPOSITORIES) suffixes=$(ZSTDARCHSUFFIX) \
     patches_specs=$(ZSTDATCHSPEC)
 
 %create_patch mmake=workbench-libs-zstd-create-patch \
     archive=$(ZSTDARCHBASE) suffixes=$(ZSTDARCHSUFFIX) \
-    location=$(PORTSSOURCEDIR)/zstd destination=$(PORTSDIR)/zstd \
+    destination=$(PORTSDIR)/zstd \
     srcdir="$(ZSTDARCHBASE)"
 
 CSOURCES := \
