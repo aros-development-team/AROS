@@ -10,12 +10,12 @@ EXPATARCHSUFFIX := "tar.bz2"
 EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
 
 %fetch mmake=workbench-libs-expat-fetch archive=$(EXPATARCHBASE) destination=$(PORTSDIR)/expat \
-    location=$(PORTSSOURCEDIR)/expat archive_origins=$(EXPATREPOSITORIES) suffixes=$(EXPATARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR) archive_origins=$(EXPATREPOSITORIES) suffixes=$(EXPATARCHSUFFIX) \
     patches_specs=$(EXPATATCHSPEC)
 
 %create_patch mmake=workbench-libs-expat-create-patch \
     archive=$(EXPATARCHBASE) suffixes=$(EXPATARCHSUFFIX) \
-    location=$(PORTSSOURCEDIR)/expat destination=$(PORTSDIR)/expat \
+    destination=$(PORTSDIR)/expat \
     srcdir="$(EXPATARCHBASE)"
 
 #MM- workbench-libs-expat : \
