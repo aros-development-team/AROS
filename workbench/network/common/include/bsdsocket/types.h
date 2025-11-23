@@ -104,6 +104,9 @@ typedef unsigned AROS_INTPTR_TYPE   __uintptr_t;
 typedef unsigned AROS_INTPTR_TYPE   __uintfptr_t;
 typedef unsigned AROS_INTPTR_TYPE   __vm_offset_t;
 typedef unsigned AROS_INTPTR_TYPE   __vm_size_t;
+#ifdef __size_t
+#undef __size_t
+#endif
 typedef unsigned AROS_INTPTR_TYPE   __size_t;
 typedef signed AROS_INTPTR_TYPE     __ssize_t;
 
