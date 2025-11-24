@@ -128,6 +128,34 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     return o;
 }
 
+IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+{
+    struct BitmapData *data =OOP_INST_DATA(cl, o);
+
+    if (FindTagItem(aHidd_BitMap_ModeID, msg->attrList))
+    {
+        HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+        OOP_Object *sync, *pixfmt;
+        IPTR width, height;
+        OOP_Object *gfxHidd;
+
+        if (modeid == vHidd_ModeID_Invalid)
+            return FALSE;
+
+        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
+        HIDD_Gfx_GetMode(gfxHidd, modeid, &sync, &pixfmt);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+
+        setModeVMWareSVGA(&XSD(cl)->data, width, height);
+        syncfenceVMWareSVGAFIFO(&XSD(cl)->data, fenceVMWareSVGAFIFO(&XSD(cl)->data));
+        data->width = width;
+        data->height = height;
+    }
+
+    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
 /**********  Bitmap::Dispose()  ***********************************/
 
 VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
