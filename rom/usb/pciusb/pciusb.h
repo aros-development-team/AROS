@@ -60,6 +60,20 @@
 #define USB_DEV_MAX                     128
 #define USB_DEVEP_CNT                   (USB_DEV_MAX * MAX_DEVENDPOINTS)
 
+struct PTDNode
+{
+    struct MinNode              ptd_Node;
+    APTR                        ptd_Descriptor;
+    ULONG                       ptd_Phys;
+    ULONG                       ptd_FrameIdx;
+    UWORD                       ptd_Length;
+    UWORD                       ptd_Flags;
+};
+
+#define PTDF_ACTIVE             (1<<0)
+#define PTDF_BUFFER_VALID       (1<<1)
+#define PTDF_SITD               (1<<2)
+
 struct RTIsoNode
 {
     struct MinNode              rtn_Node;

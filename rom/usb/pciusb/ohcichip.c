@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -53,6 +53,7 @@ static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
 static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *hc)
 {
     struct OhciTD *otd;
+    struct OhciIsoTD *oitd;
 
     KPrintF("%s ED 0x%p: EPCaps=%08lx, HeadPtr=%08lx, TailPtr=%08lx, NextED=%08lx\n", txt, oed,
                      READMEM32_LE(&oed->oed_EPCaps),
@@ -200,7 +201,24 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
         pciusbDebug("OHCI", "TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
                         READMEM32_LE(&otd->otd_BufferEnd));
-        if(otd->otd_BufferPtr)
+
+        if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO)
+        {
+            struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
+            UWORD pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
+            UWORD pktidx;
+
+            len = 0;
+            for(pktidx = 0; pktidx < pktcount; pktidx++)
+            {
+                UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
+                if(!(psw & OITM_PSW_OFFSET))
+                    continue;
+
+                len += (psw & OITM_PSW_OFFSET) + 1;
+            }
+        }
+        else if(otd->otd_BufferPtr)
         {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
             len = READMEM32_LE(&otd->otd_BufferPtr) - (READMEM32_LE(&otd->otd_BufferEnd) + 1 - otd->otd_Length);
@@ -224,16 +242,19 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             continue;
         }
 
-        if (len)
+        if((READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) == 0)
         {
-            epcaps = READMEM32_LE(&oed->oed_EPCaps);
-            direction_in = ((epcaps & OECM_DIRECTION) == OECF_DIRECTION_TD)
-                        ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
-                        : (epcaps & OECF_DIRECTION_IN);
-            CachePostDMA((APTR)(IPTR)READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
-        }
+            if (len)
+            {
+                epcaps = READMEM32_LE(&oed->oed_EPCaps);
+                direction_in = ((epcaps & OECM_DIRECTION) == OECF_DIRECTION_TD)
+                            ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
+                            : (epcaps & OECF_DIRECTION_IN);
+                CachePostDMA((APTR)(IPTR)READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
+            }
 
-        ioreq->iouh_Actual += len;
+            ioreq->iouh_Actual += len;
+        }
 /*
  * CHECKME: This condition may get triggered on control transfers even if terminating TD is not processed yet.
  *          (got triggered by MacMini's keyboard, when someone sends control ED with no data payload,
@@ -262,7 +283,61 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             pciusbDebug("OHCI", "TD 0x%p Terminator detected\n", otd);
             retire = TRUE;
         }
-        switch((ctrlstatus & OTCM_COMPLETIONCODE)>>OTCS_COMPLETIONCODE)
+        if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO)
+        {
+            struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
+            UWORD pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
+            UWORD pktidx;
+
+            for(pktidx = 0; pktidx < pktcount; pktidx++)
+            {
+                UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
+                UWORD pswcc = (psw & OITM_PSW_CC) >> OITS_PSW_CC;
+
+                switch(pswcc << OTCS_COMPLETIONCODE)
+                {
+                    case OTCF_CC_NOERROR:
+                        if(psw & OITM_PSW_OFFSET)
+                            ioreq->iouh_Actual += (psw & OITM_PSW_OFFSET) + 1;
+                        break;
+
+                    case OTCF_CC_CRCERROR:
+                    case OTCF_CC_BABBLE:
+                    case OTCF_CC_PIDCORRUPT:
+                    case OTCF_CC_WRONGPID:
+                        ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_TIMEOUT:
+                        ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_OVERFLOW:
+                        ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_SHORTPKT:
+                        if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
+                            ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_UNDERRUN:
+                    case OTCF_CC_OVERRUN:
+                        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                        retire = TRUE;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            retire = TRUE;
+        }
+        else switch((ctrlstatus & OTCM_COMPLETIONCODE)>>OTCS_COMPLETIONCODE)
         {
             case (OTCF_CC_NOERROR>>OTCS_COMPLETIONCODE):
                 break;
@@ -1384,37 +1459,254 @@ void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 
 WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct PTDNode *ptd0 = NULL;
+    struct PTDNode *ptd1 = NULL;
+    struct OhciIsoTD *oitd0 = NULL;
+    struct OhciIsoTD *oitd1 = NULL;
+    struct OhciED *oed = NULL;
+
     pciusbDebug("OHCI", "%s()\n", __func__);
+
+    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
+    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
+    if(!ptd0 || !ptd1)
+    {
+        if(ptd0)
+            FreeMem(ptd0, sizeof(*ptd0));
+        if(ptd1)
+            FreeMem(ptd1, sizeof(*ptd1));
+        return(UHIOERR_OUTOFMEMORY);
+    }
+
+    oitd0 = ohciAllocIsoTD(hc);
+    oitd1 = ohciAllocIsoTD(hc);
+    oed = ohciAllocED(hc);
+    if(!oitd0 || !oitd1 || !oed)
+    {
+        if(oitd0)
+            ohciFreeIsoTD(hc, oitd0);
+        if(oitd1)
+            ohciFreeIsoTD(hc, oitd1);
+        if(oed)
+            ohciFreeED(hc, oed);
+        FreeMem(ptd0, sizeof(*ptd0));
+        FreeMem(ptd1, sizeof(*ptd1));
+        return(UHIOERR_OUTOFMEMORY);
+    }
+
+    ptd0->ptd_Descriptor = oitd0;
+    ptd0->ptd_Phys = READMEM32_LE(&oitd0->oitd_Self);
+    ptd1->ptd_Descriptor = oitd1;
+    ptd1->ptd_Phys = READMEM32_LE(&oitd1->oitd_Self);
+
+    CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP|OECF_ISO);
+    WRITEMEM32_LE(&oed->oed_HeadPtr, 0);
+    WRITEMEM32_LE(&oed->oed_TailPtr, 0);
+    oed->oed_FirstTD = NULL;
+    oed->oed_IOReq = &rtn->rtn_IOReq;
+
+    rtn->rtn_IOReq.iouh_DriverPrivate1 = oed;
+    rtn->rtn_PTDs[0] = ptd0;
+    rtn->rtn_PTDs[1] = ptd1;
+    rtn->rtn_NextPTD = 0;
 
     return RC_OK;
 }
 
 WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct PTDNode *ptd;
+    struct OhciIsoTD *oitd;
+    ULONG phys;
+    ULONG frame;
+    ULONG ctrl;
+    UWORD pktcnt;
+    UWORD pktidx;
+    UWORD remaining;
+    UWORD offset;
+
     pciusbDebug("OHCI", "%s()\n", __func__);
+
+    ptd = rtn->rtn_PTDs[rtn->rtn_NextPTD];
+    if(!ptd)
+        return(UHIOERR_BADPARAMS);
+
+    oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
+    if(!oitd)
+        return(UHIOERR_BADPARAMS);
+
+    if(!rtn->rtn_BufferReq.ubr_Buffer || !rtn->rtn_BufferReq.ubr_Length)
+        return RC_OK;
+
+    phys = (ULONG)(IPTR)pciGetPhysical(hc, rtn->rtn_BufferReq.ubr_Buffer);
+    frame = rtn->rtn_BufferReq.ubr_Frame ? rtn->rtn_BufferReq.ubr_Frame :
+            ((READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) + 1) & 0xffff);
+
+    pktcnt = (rtn->rtn_BufferReq.ubr_Length + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
+             rtn->rtn_IOReq.iouh_MaxPktSize;
+    if(pktcnt > 8)
+        pktcnt = 8;
+
+    ctrl = (frame << OITCS_STARTINGFRAME) | OITF_NOINT |
+           ((pktcnt - 1) << OITCS_FRAMECOUNT) | OITF_CC_NOTACCESSED;
+
+    oitd->oitd_Succ = NULL;
+    oitd->oitd_ED = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
+    oitd->oitd_Length = rtn->rtn_BufferReq.ubr_Length;
+    WRITEMEM32_LE(&oitd->oitd_Ctrl, ctrl);
+    WRITEMEM32_LE(&oitd->oitd_BufferPage0, phys & ~0xfff);
+    WRITEMEM32_LE(&oitd->oitd_NextTD, 0);
+
+    remaining = rtn->rtn_BufferReq.ubr_Length;
+    offset = phys & 0xfff;
+    for(pktidx = 0; pktidx < pktcnt; pktidx++)
+    {
+        UWORD pktlen = remaining;
+        if(pktlen > rtn->rtn_IOReq.iouh_MaxPktSize)
+            pktlen = rtn->rtn_IOReq.iouh_MaxPktSize;
+
+        oitd->oitd_Offset[pktidx] = offset | OITM_PSW_CC;
+        offset += pktlen;
+        remaining -= pktlen;
+    }
+    while(pktidx < 8)
+    {
+        oitd->oitd_Offset[pktidx++] = OITM_PSW_CC;
+    }
+
+    WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + offset - 1);
+
+    CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
+
+    ptd->ptd_Length = offset;
+    ptd->ptd_FrameIdx = frame;
+    ptd->ptd_Flags = PTDF_BUFFER_VALID;
+
+    rtn->rtn_NextPTD ^= 1;
 
     return RC_OK;
 }
 
 void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
+    struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
+    UWORD idx;
+    struct OhciED *intoed;
+
     pciusbDebug("OHCI", "%s()\n", __func__);
 
-    return;
+    if(!oed)
+        return;
+
+    WRITEMEM32_LE(&oed->oed_EPCaps,
+        OECF_ISO |
+        ((rtn->rtn_IOReq.iouh_DevAddr << OECS_DEVADDR) & OECM_DEVADDR) |
+        ((rtn->rtn_IOReq.iouh_Endpoint << OECS_ENDPOINT) & OECM_ENDPOINT) |
+        (rtn->rtn_IOReq.iouh_MaxPktSize << OECS_MAXPKTLEN));
+    oed->oed_IOReq = &rtn->rtn_IOReq;
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        struct OhciIsoTD *oitd;
+
+        if(!ptd || !(ptd->ptd_Flags & PTDF_BUFFER_VALID))
+            continue;
+
+        oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
+        if(!oitd)
+            continue;
+
+        WRITEMEM32_LE(&oitd->oitd_NextTD, ohcihcp->ohc_OhciTermTD->otd_Self);
+        oitd->oitd_ED = oed;
+        CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
+
+        oed->oed_FirstTD = (struct OhciTD *)oitd;
+        WRITEMEM32_LE(&oed->oed_TailPtr, ohcihcp->ohc_OhciTermTD->otd_Self);
+        WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oitd->oitd_Self));
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+
+        ptd->ptd_Flags |= PTDF_ACTIVE;
+    }
+
+    if(!oed->oed_Pred)
+    {
+        if(rtn->rtn_IOReq.iouh_Interval >= 31)
+        {
+            intoed = ohcihcp->ohc_OhciIntED[4];
+        }
+        else
+        {
+            UWORD cnt = 0;
+            do
+            {
+                intoed = ohcihcp->ohc_OhciIntED[cnt++];
+            }
+            while(rtn->rtn_IOReq.iouh_Interval >= (1 << cnt));
+        }
+
+        Disable();
+        oed->oed_Succ = intoed->oed_Succ;
+        oed->oed_Pred = intoed;
+        oed->oed_NextED = intoed->oed_Succ->oed_Self;
+        intoed->oed_Succ->oed_Pred = oed;
+        intoed->oed_Succ = oed;
+        intoed->oed_NextED = oed->oed_Self;
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        CacheClearE(&intoed->oed_EPCaps, 16, CACRF_ClearD);
+        ohciUpdateIntTree(hc);
+        Enable();
+    }
+
+    WRITEMEM32_LE(&oed->oed_EPCaps, READMEM32_LE(&oed->oed_EPCaps) & ~OECF_SKIP);
+    CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
 }
 
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
+
     pciusbDebug("OHCI", "%s()\n", __func__);
 
-    return;
+    if(oed && !(READMEM32_LE(&oed->oed_EPCaps) & OECF_SKIP))
+    {
+        ohciDisableED(oed);
+        ohciEnableInt(hc, OISF_SOF);
+    }
+
+    if(rtn->rtn_PTDs[0])
+        rtn->rtn_PTDs[0]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+    if(rtn->rtn_PTDs[1])
+        rtn->rtn_PTDs[1]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
 }
 
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
+    UWORD idx;
+
     pciusbDebug("OHCI", "%s()\n", __func__);
 
-    return;
+    ohciStopIsochIO(hc, rtn);
+
+    if(oed)
+    {
+        ohciFreeED(hc, oed);
+        rtn->rtn_IOReq.iouh_DriverPrivate1 = NULL;
+    }
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd)
+        {
+            if(ptd->ptd_Descriptor)
+                ohciFreeIsoTD(hc, (struct OhciIsoTD *)ptd->ptd_Descriptor);
+            FreeMem(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
+    }
 }
 
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
@@ -1424,6 +1716,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
     struct OhciED *oed;
     struct OhciED *predoed;
     struct OhciTD *otd;
+    struct OhciIsoTD *oitd;
     ULONG *tabptr;
     UBYTE *memptr;
     ULONG bitcnt;
@@ -1470,6 +1763,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_PCIMem.me_Length = OHCI_HCCA_SIZE + OHCI_HCCA_ALIGNMENT + 1;
     hc->hc_PCIMem.me_Length += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
+    hc->hc_PCIMem.me_Length += sizeof(struct OhciIsoTD) * OHCI_ISO_TD_POOLSIZE;
 
     memptr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Length);
     hc->hc_PCIMem.me_Un.meu_Addr = (APTR) memptr;
@@ -1512,6 +1806,19 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         otd->otd_Succ = NULL;
         WRITEMEM32_LE(&otd->otd_Self, (IPTR)(&otd->otd_Ctrl) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct OhciTD) * OHCI_TD_POOLSIZE;
+
+        // build up ISO TD pool
+        oitd = (struct OhciIsoTD *) memptr;
+        ohcihcp->ohc_OhciIsoTDPool = oitd;
+        cnt = OHCI_ISO_TD_POOLSIZE - 1;
+        do {
+            oitd->oitd_Succ = (oitd + 1);
+            WRITEMEM32_LE(&oitd->oitd_Self, (IPTR)(&oitd->oitd_Ctrl) + hc->hc_PCIVirtualAdjust);
+            oitd++;
+        } while(--cnt);
+        oitd->oitd_Succ = NULL;
+        WRITEMEM32_LE(&oitd->oitd_Self, (IPTR)(&oitd->oitd_Ctrl) + hc->hc_PCIVirtualAdjust);
+        memptr += sizeof(struct OhciIsoTD) * OHCI_ISO_TD_POOLSIZE;
 
         // terminating ED
         ohcihcp->ohc_OhciTermED = oed = ohciAllocED(hc);
@@ -1718,7 +2025,8 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         CacheClearE(ohcihcp->ohc_OhciHCCA,   sizeof(struct OhciHCCA),          CACRF_ClearD);
         CacheClearE(ohcihcp->ohc_OhciEDPool, sizeof(struct OhciED) * OHCI_ED_POOLSIZE, CACRF_ClearD);
         CacheClearE(ohcihcp->ohc_OhciTDPool, sizeof(struct OhciTD) * OHCI_TD_POOLSIZE, CACRF_ClearD);
-            
+        CacheClearE(ohcihcp->ohc_OhciIsoTDPool, sizeof(struct OhciIsoTD) * OHCI_ISO_TD_POOLSIZE, CACRF_ClearD);
+
         CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBOPER);
         SYNC;
 

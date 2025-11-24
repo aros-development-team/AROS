@@ -12,6 +12,22 @@
 #include <hardware/usb/ohci.h>
 #include "hccommon.h"
 
+#define OHCI_ISO_TD_POOLSIZE 128
+
+#define OITCS_STARTINGFRAME     0
+#define OITCS_DELAYINT          21
+#define OITCS_FRAMECOUNT        24
+#define OITCS_COMPLETIONCODE    28
+
+#define OITF_NOINT              (7UL<<OITCS_DELAYINT)
+#define OITF_CC_MASK            (0xFUL<<OITCS_COMPLETIONCODE)
+#define OITF_CC_NOERROR         (0UL<<OITCS_COMPLETIONCODE)
+#define OITF_CC_NOTACCESSED     (0xFUL<<OITCS_COMPLETIONCODE)
+
+#define OITM_PSW_CC             0xF000
+#define OITS_PSW_CC             12
+#define OITM_PSW_OFFSET         0x0FFF
+
 /* PCI Class: PCI_CLASS_SERIAL_USB */
 
 /* Framelist stuff
@@ -61,6 +77,22 @@ struct OhciTD
     ULONG                   otd_BufferEnd;  /* LE PHYSICAL End of buffer */
 };
 
+struct OhciIsoTD
+{
+    struct OhciIsoTD        *oitd_Succ;
+    IPTR                    oitd_Length;    /* Length of transfer */
+    ULONG                   oitd_Self;      /* LE PHYSICAL pointer to self */
+    /* On 64 bits a padding will be inserted here */
+    struct OhciED           *oitd_ED;        /* Pointer to parent ED this TD belongs to */
+
+    /* HC data, aligned to 16 bytes */
+    ULONG                   oitd_Ctrl;       /* LE Ctrl stuff */
+    ULONG                   oitd_BufferPage0;/* LE PHYSICAL Current Buffer Page Pointer */
+    ULONG                   oitd_NextTD;     /* LE PHYSICAL Next TD */
+    ULONG                   oitd_BufferEnd;  /* LE PHYSICAL End of buffer */
+    ULONG                   oitd_Offset[8];  /* PSWs */
+};
+
 struct OhciHCPrivate
 {
     struct OhciED           *ohc_OhciCtrlHeadED;
@@ -73,6 +105,7 @@ struct OhciHCPrivate
     struct OhciHCCA         *ohc_OhciHCCA;
     struct OhciED           *ohc_OhciEDPool;
     struct OhciTD           *ohc_OhciTDPool;
+    struct OhciIsoTD        *ohc_OhciIsoTDPool;
     struct OhciED           *ohc_OhciAsyncFreeED;
     ULONG                   ohc_OhciDoneQueue;
     struct List             ohc_OhciRetireQueue;

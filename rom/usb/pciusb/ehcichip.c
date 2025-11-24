@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -1264,118 +1264,265 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
 
 WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd0;
-    struct PTDNode *ptd1;
-    volatile ULONG *ispptd;
-    ULONG memmask;
-    ULONG memsize;
-    ULONG isomaxpktsize;
-    ULONG slicesize;
-    ULONG mask = 3;
-    UWORD ptdnum = 0;
-    UWORD memoffset;
-    UWORD cnt;
+    struct PTDNode *ptd0 = NULL;
+    struct PTDNode *ptd1 = NULL;
+    struct EhciITD *itd0 = NULL;
+    struct EhciITD *itd1 = NULL;
+    struct EhciSiTD *sitd0 = NULL;
+    struct EhciSiTD *sitd1 = NULL;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
+    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
+    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
+    if(!ptd0 || !ptd1)
+    {
+        if(ptd0)
+            FreeMem(ptd0, sizeof(*ptd0));
+        if(ptd1)
+            FreeMem(ptd1, sizeof(*ptd1));
         return(UHIOERR_OUTOFMEMORY);
+    }
 
     if(rtn->rtn_IOReq.iouh_Flags & UHFF_SPLITTRANS)
     {
-        isomaxpktsize = rtn->rtn_IOReq.iouh_MaxPktSize;
-        // only 188 bytes can be set per microframe in the best case
-        if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)
-        {
-            if(isomaxpktsize > 192)
-            {
-                isomaxpktsize = 192;
-            }
-        } else {
-        }
-
-        pciusbDebug("EHCI", "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld, size=%ld\n", rtn->rtn_IOReq.iouh_SplitHubPort, rtn->rtn_IOReq.iouh_SplitHubAddr, isomaxpktsize);
-    } else {
-        // obtain right polling interval
-        if(rtn->rtn_IOReq.iouh_Interval < 2) // 0-1 Frames
-        {
-        }
-        else if(rtn->rtn_IOReq.iouh_Interval < 4) // 2-3 Frames
-        {
-        }
-        else if(rtn->rtn_IOReq.iouh_Interval < 8) // 4-7 Frames
-        {
-        }
-        else if(rtn->rtn_IOReq.iouh_Interval > 511) // 64ms and higher
-        {
-        }
-        else //if(rtn->rtn_IOReq.iouh_Interval >= 8) // 1-64ms
-        {
-        }
+        sitd0 = ehciAllocSiTD(hc);
+        sitd1 = ehciAllocSiTD(hc);
     }
-
-    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)
+    else
     {
-    } else {
+        itd0 = ehciAllocITD(hc);
+        itd1 = ehciAllocITD(hc);
     }
-    return RC_OK;    
+
+    if((!itd0 && !sitd0) || (!itd1 && !sitd1))
+    {
+        if(itd0)
+            ehciFreeITD(hc, itd0);
+        if(itd1)
+            ehciFreeITD(hc, itd1);
+        if(sitd0)
+            ehciFreeSiTD(hc, sitd0);
+        if(sitd1)
+            ehciFreeSiTD(hc, sitd1);
+        FreeMem(ptd0, sizeof(*ptd0));
+        FreeMem(ptd1, sizeof(*ptd1));
+        return(UHIOERR_OUTOFMEMORY);
+    }
+
+    if(itd0 && itd1)
+    {
+        ptd0->ptd_Descriptor = itd0;
+        ptd0->ptd_Phys = READMEM32_LE(&itd0->itd_Self);
+        ptd1->ptd_Descriptor = itd1;
+        ptd1->ptd_Phys = READMEM32_LE(&itd1->itd_Self);
+    }
+    else
+    {
+        ptd0->ptd_Descriptor = sitd0;
+        ptd0->ptd_Phys = READMEM32_LE(&sitd0->sitd_Self);
+        ptd0->ptd_Flags |= PTDF_SITD;
+
+        ptd1->ptd_Descriptor = sitd1;
+        ptd1->ptd_Phys = READMEM32_LE(&sitd1->sitd_Self);
+        ptd1->ptd_Flags |= PTDF_SITD;
+    }
+
+    rtn->rtn_PTDs[0] = ptd0;
+    rtn->rtn_PTDs[1] = ptd1;
+    rtn->rtn_NextPTD = 0;
+
+    return RC_OK;  
 }
 
 WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    return RC_OK;    
+    rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_MaxPktSize;
+    rtn->rtn_BufferReq.ubr_Frame = 0;
+    rtn->rtn_BufferReq.ubr_Flags = 0;
+
+    return RC_OK;
 }
 
 void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct IOUsbHWBufferReq *ubr;
-    struct IOUsbHWRTIso *urti;
-    struct IOUsbHWReq *ioreq;
-    struct PTDNode *ptd;
-    volatile ULONG *ispptd;
-    volatile ULONG *memptr;
-    ULONG *srcptr;
-    UWORD cnt;
-    UWORD loopcnt = 2;
-    ULONG framecnt;
-    ULONG len;
-    UWORD isomaxpktsize;
-    UWORD toggle;
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    ULONG frameidx;
+    UWORD idx;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    ubr = &rtn->rtn_BufferReq;
-    urti = rtn->rtn_RTIso;
-    ioreq = &rtn->rtn_IOReq;
+    /* EHCI frame counter shares the FRINDEX layout; shift off microframes */
+    frameidx = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & (EHCI_FRAMELIST_SIZE - 1);
 
-    do
+    for(idx = 0; idx < 2; idx++)
     {
-        if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        struct EhciITD *itd;
+        struct EhciSiTD *sitd;
+        APTR buffer;
+        ULONG phys;
+        ULONG len;
+        ULONG slot;
+        UWORD pktlen;
+        UWORD pktidx;
+        UWORD pktcnt;
+        ULONG offset;
+        BOOL is_split;
+
+        if(!ptd)
+            continue;
+
+        buffer = rtn->rtn_BufferReq.ubr_Buffer;
+        len = rtn->rtn_BufferReq.ubr_Length;
+
+        if(!buffer || !len)
+            continue;
+
+        is_split = (ptd->ptd_Flags & PTDF_SITD) != 0;
+        slot = (frameidx + idx) & (EHCI_FRAMELIST_SIZE - 1);
+        phys = (ULONG)(IPTR)pciGetPhysical(hc, buffer);
+
+        if(is_split)
         {
-        } else {
+            sitd = (struct EhciSiTD *)ptd->ptd_Descriptor;
+
+            WRITEMEM32_LE(&sitd->sitd_EPCaps,
+                ESIM_DEVADDR(rtn->rtn_IOReq.iouh_DevAddr) |
+                ESIM_ENDPT(rtn->rtn_IOReq.iouh_Endpoint) |
+                ((rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) ? ESIM_DIRECTION_IN : 0) |
+                ESIM_PORT(rtn->rtn_IOReq.iouh_HubPort) |
+                ESIM_HUB(rtn->rtn_IOReq.iouh_SplitHubAddr));
+
+            WRITEMEM32_LE(&sitd->sitd_Token, ESITF_STATUS_ACTIVE |
+                ((len & ESITF_LENGTH_MASK) << ESITF_LENGTH_SHIFT));
+
+            WRITEMEM32_LE(&sitd->sitd_BufferPtr[0],
+                (phys & EITM_BUFFER_BASE) | (phys & ESITM_BP0_OFFSET_MASK));
+            WRITEMEM32_LE(&sitd->sitd_BufferPtr[1], (phys & EITM_BUFFER_BASE) | EITM_SMASK | (0x1c << 8));
+            WRITEMEM32_LE(&sitd->sitd_BackPointer, EHCI_TERMINATE);
+
+#if __WORDSIZE == 64
+            sitd->sitd_ExtBufferPtr[0] = 0;
+            sitd->sitd_ExtBufferPtr[1] = 0;
+#endif
+
+            WRITEMEM32_LE(&sitd->sitd_Next, READMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot]));
+            CacheClearE(sitd, sizeof(*sitd), CACRF_ClearD);
         }
-    } while(--loopcnt);
+        else
+        {
+            itd = (struct EhciITD *) ptd->ptd_Descriptor;
+            pktcnt = (len + rtn->rtn_IOReq.iouh_MaxPktSize - 1) / rtn->rtn_IOReq.iouh_MaxPktSize;
+            if(pktcnt > 8)
+                pktcnt = 8;
+
+            WRITEMEM32_LE(&itd->itd_BufferPtr[0],
+                (phys & EITM_BUFFER_BASE) |
+                EITM_DEVADDR(rtn->rtn_IOReq.iouh_DevAddr) |
+                EITM_ENDPT(rtn->rtn_IOReq.iouh_Endpoint));
+            WRITEMEM32_LE(&itd->itd_BufferPtr[1],
+                ((phys + 4096) & EITM_BUFFER_BASE) |
+                EITM_MAXPKTSIZE(rtn->rtn_IOReq.iouh_MaxPktSize));
+            WRITEMEM32_LE(&itd->itd_BufferPtr[2],
+                ((phys + 8192) & EITM_BUFFER_BASE) |
+                EITM_BUFFER_DIR(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN));
+            WRITEMEM32_LE(&itd->itd_BufferPtr[3], (phys + 12288) & EITM_BUFFER_BASE);
+            WRITEMEM32_LE(&itd->itd_BufferPtr[4], (phys + 16384) & EITM_BUFFER_BASE);
+            WRITEMEM32_LE(&itd->itd_BufferPtr[5], (phys + 20480) & EITM_BUFFER_BASE);
+            WRITEMEM32_LE(&itd->itd_BufferPtr[6], (phys + 24576) & EITM_BUFFER_BASE);
+
+#if __WORDSIZE == 64
+            itd->itd_ExtBufferPtr[0] = 0;
+            itd->itd_ExtBufferPtr[1] = 0;
+            itd->itd_ExtBufferPtr[2] = 0;
+            itd->itd_ExtBufferPtr[3] = 0;
+            itd->itd_ExtBufferPtr[4] = 0;
+            itd->itd_ExtBufferPtr[5] = 0;
+            itd->itd_ExtBufferPtr[6] = 0;
+#endif
+
+            offset = phys & EITM_BUFFER_OFFSET;
+            for(pktidx = 0; pktidx < pktcnt; pktidx++)
+            {
+                pktlen = (len > rtn->rtn_IOReq.iouh_MaxPktSize) ? rtn->rtn_IOReq.iouh_MaxPktSize : len;
+                WRITEMEM32_LE(&itd->itd_Transaction[pktidx],
+                    EITF_STATUS_ACTIVE |
+                    ((offset >> 12) << EITF_PAGESELECT_SHIFT) |
+                    ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT));
+
+                len -= pktlen;
+                offset += pktlen;
+            }
+
+            while(pktidx < 8)
+            {
+                itd->itd_Transaction[pktidx++] = 0;
+            }
+
+            WRITEMEM32_LE(&itd->itd_Next, READMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot]));
+
+            CacheClearE(itd, sizeof(*itd), CACRF_ClearD);
+        }
+
+        WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot], ptd->ptd_Phys);
+        CacheClearE(&ehcihcp->ehc_EhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+
+        ptd->ptd_FrameIdx = slot;
+        ptd->ptd_Length = rtn->rtn_BufferReq.ubr_Length;
+        ptd->ptd_Flags |= (PTDF_ACTIVE | PTDF_BUFFER_VALID);
+    }
 }
 
 void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd;
-    volatile ULONG *ispptd;
-    UWORD cnt;
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    UWORD idx;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd && (ptd->ptd_Flags & PTDF_ACTIVE))
+        {
+            volatile ULONG *slot = &ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx];
+            if(READMEM32_LE(slot) == ptd->ptd_Phys)
+            {
+                WRITEMEM32_LE(slot, EHCI_TERMINATE);
+                CacheClearE((APTR)slot, sizeof(ULONG), CACRF_ClearD);
+            }
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+        }
+    }
 }
 
 void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd;
-    volatile ULONG *ispptd;
+    UWORD idx;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    return;
+    ehciStopIsochIO(hc, rtn);
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd)
+        {
+            if(ptd->ptd_Descriptor)
+            {
+                if(ptd->ptd_Flags & PTDF_SITD)
+                    ehciFreeSiTD(hc, (struct EhciSiTD *)ptd->ptd_Descriptor);
+                else
+                    ehciFreeITD(hc, (struct EhciITD *)ptd->ptd_Descriptor);
+            }
+            FreeMem(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
+    }
 }
 
 #undef base
@@ -1438,6 +1585,8 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_PCIMem.me_Length = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
+    hc->hc_PCIMem.me_Length += sizeof(struct EhciITD) * EHCI_ITD_POOLSIZE;
+    hc->hc_PCIMem.me_Length += sizeof(struct EhciSiTD) * EHCI_SITD_POOLSIZE;
 
     /*
         FIXME: We should be able to read some EHCI registers before allocating memory
@@ -1488,6 +1637,35 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         etd->etd_Succ = NULL;
         WRITEMEM32_LE(&etd->etd_Self, (IPTR) (&etd->etd_NextTD) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
+
+        struct EhciITD *itd;
+        struct EhciSiTD *sitd;
+
+        itd = (struct EhciITD *) memptr;
+        ehcihcp->ehc_EhciITDPool = itd;
+        cnt = EHCI_ITD_POOLSIZE - 1;
+        do
+        {
+            itd->itd_Succ = (itd + 1);
+            WRITEMEM32_LE(&itd->itd_Self, (IPTR) (&itd->itd_Next) + hc->hc_PCIVirtualAdjust);
+            itd++;
+        } while(--cnt);
+        itd->itd_Succ = NULL;
+        WRITEMEM32_LE(&itd->itd_Self, (IPTR) (&itd->itd_Next) + hc->hc_PCIVirtualAdjust);
+        memptr += sizeof(struct EhciITD) * EHCI_ITD_POOLSIZE;
+
+        sitd = (struct EhciSiTD *) memptr;
+        ehcihcp->ehc_EhciSiTDPool = sitd;
+        cnt = EHCI_SITD_POOLSIZE - 1;
+        do
+        {
+            sitd->sitd_Succ = (sitd + 1);
+            WRITEMEM32_LE(&sitd->sitd_Self, (IPTR) (&sitd->sitd_Next) + hc->hc_PCIVirtualAdjust);
+            sitd++;
+        } while(--cnt);
+        sitd->sitd_Succ = NULL;
+        WRITEMEM32_LE(&sitd->sitd_Self, (IPTR) (&sitd->sitd_Next) + hc->hc_PCIVirtualAdjust);
+        memptr += sizeof(struct EhciSiTD) * EHCI_SITD_POOLSIZE;
 
         // empty async queue head
         ehcihcp->ehc_EhciAsyncFreeQH = NULL;

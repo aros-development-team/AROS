@@ -81,6 +81,21 @@ static inline struct OhciTD * ohciAllocTD(struct PCIController *hc) {
 }
 /* \\\ */
 
+static inline struct OhciIsoTD * ohciAllocIsoTD(struct PCIController *hc) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
+    struct OhciIsoTD *oitd = ohcihcp->ohc_OhciIsoTDPool;
+
+    if(!oitd)
+    {
+        KPRINTF(200, "Out of ISO TDs!\n");
+        return NULL;
+    }
+
+    ohcihcp->ohc_OhciIsoTDPool = oitd->oitd_Succ;
+    return(oitd);
+}
+/* \\\ */
+
 /* /// "ohciFreeTD()" */
 static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd) {
     struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
@@ -90,6 +105,16 @@ static inline void ohciFreeTD(struct PCIController *hc, struct OhciTD *otd) {
     otd->otd_ED = NULL;
     otd->otd_Succ = ohcihcp->ohc_OhciTDPool;
     ohcihcp->ohc_OhciTDPool = otd;
+}
+/* \\\ */
+
+static inline void ohciFreeIsoTD(struct PCIController *hc, struct OhciIsoTD *oitd) {
+    struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
+
+    oitd->oitd_NextTD = 0;
+    oitd->oitd_ED = NULL;
+    oitd->oitd_Succ = ohcihcp->ohc_OhciIsoTDPool;
+    ohcihcp->ohc_OhciIsoTDPool = oitd;
 }
 /* \\\ */
 

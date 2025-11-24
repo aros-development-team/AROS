@@ -26,6 +26,10 @@ static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
 static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
+static inline struct EhciITD * ehciAllocITD(struct PCIController *hc);
+static inline void ehciFreeITD(struct PCIController *hc, struct EhciITD *itd);
+static inline struct EhciSiTD * ehciAllocSiTD(struct PCIController *hc);
+static inline void ehciFreeSiTD(struct PCIController *hc, struct EhciSiTD *sitd);
 
 BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
@@ -94,6 +98,46 @@ static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd) {
     ehcihcp->ehc_EhciTDPool = etd;
 }
 /* \\\ */
+
+static inline struct EhciITD * ehciAllocITD(struct PCIController *hc) {
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    struct EhciITD *itd = ehcihcp->ehc_EhciITDPool;
+
+    if(!itd)
+    {
+        KPRINTF(20, "Out of ITDs!\n");
+        return NULL;
+    }
+
+    ehcihcp->ehc_EhciITDPool = itd->itd_Succ;
+    return(itd);
+}
+
+static inline void ehciFreeITD(struct PCIController *hc, struct EhciITD *itd) {
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    itd->itd_Succ = ehcihcp->ehc_EhciITDPool;
+    ehcihcp->ehc_EhciITDPool = itd;
+}
+
+static inline struct EhciSiTD * ehciAllocSiTD(struct PCIController *hc) {
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    struct EhciSiTD *sitd = ehcihcp->ehc_EhciSiTDPool;
+
+    if(!sitd)
+    {
+        KPRINTF(20, "Out of SiTDs!\n");
+        return NULL;
+    }
+
+    ehcihcp->ehc_EhciSiTDPool = sitd->sitd_Succ;
+    return sitd;
+}
+
+static inline void ehciFreeSiTD(struct PCIController *hc, struct EhciSiTD *sitd) {
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    sitd->sitd_Succ = ehcihcp->ehc_EhciSiTDPool;
+    ehcihcp->ehc_EhciSiTDPool = sitd;
+}
 #undef base
 #if defined(AROS_USE_LOGRES)
 #undef LogResBase
