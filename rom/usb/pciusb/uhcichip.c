@@ -1526,6 +1526,17 @@ WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct UhciTD *utd0;
     struct UhciTD *utd1;
 
+    UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
+
+    pciusbDebug("UHCI", "%s()\n", __func__);
+
+    if(!rtn->rtn_PTDs || ptdcount < 2)
+        return UHIOERR_BADPARAMS;
+
+    for(idx = 0; idx < ptdcount; idx++)
+        rtn->rtn_PTDs[idx] = NULL;
+
     ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
     ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
     if(!ptd0 || !ptd1)
@@ -1564,6 +1575,8 @@ WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
 WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    pciusbDebug("UHCI", "%s()\n", __func__);
+
     rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
     rtn->rtn_BufferReq.ubr_Frame = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) + 1;
     rtn->rtn_BufferReq.ubr_Flags = 0;
@@ -1580,8 +1593,15 @@ void uhciHandleIsochTDs(struct PCIController *hc)
     {
         struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
         UWORD idx;
+        UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
 
-        for(idx = 0; idx < 2; idx++)
+        if(!rtn->rtn_PTDs || !limit)
+        {
+            rtn = (struct RTIsoNode *) rtn->rtn_Node.mln_Succ;
+            continue;
+        }
+
+        for(idx = 0; idx < limit; idx++)
         {
             struct PTDNode *ptd = rtn->rtn_PTDs[idx];
             struct UhciTD *utd;
@@ -1642,8 +1662,14 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
     ULONG startframe = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
     UWORD idx;
+    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
 
-    for(idx = 0; idx < 2; idx++)
+    pciusbDebug("UHCI", "%s()\n", __func__);
+
+    if(!rtn->rtn_PTDs)
+        return;
+
+    for(idx = 0; idx < limit; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct UhciTD *utd;
@@ -1701,8 +1727,14 @@ void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
     UWORD idx;
+    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
 
-    for(idx = 0; idx < 2; idx++)
+    pciusbDebug("UHCI", "%s()\n", __func__);
+
+    if(!rtn->rtn_PTDs)
+        return;
+
+    for(idx = 0; idx < limit; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd && (ptd->ptd_Flags & PTDF_ACTIVE))
@@ -1721,10 +1753,16 @@ void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 void uhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     UWORD idx;
+    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
+
+    pciusbDebug("UHCI", "%s()\n", __func__);
 
     uhciStopIsochIO(hc, rtn);
 
-    for(idx = 0; idx < 2; idx++)
+    if(!rtn->rtn_PTDs)
+        return;
+
+    for(idx = 0; idx < limit; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd)

@@ -43,6 +43,53 @@ static AROS_INTH1(ehciResetHandler, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
+static void ehciUnlinkIsoDescriptor(struct EhciHCPrivate *ehcihcp, struct PTDNode *ptd)
+{
+    ULONG slot = ptd->ptd_FrameIdx;
+    struct PTDNode *head = ehcihcp->ehc_IsoHead ? ehcihcp->ehc_IsoHead[slot] : NULL;
+    struct PTDNode *prev = NULL;
+
+    if(!head)
+        return;
+
+    if(ptd != head)
+    {
+        prev = head;
+        while(prev && prev->ptd_NextPTD != ptd)
+            prev = prev->ptd_NextPTD;
+    }
+
+    if(prev)
+    {
+        prev->ptd_NextPTD = ptd->ptd_NextPTD;
+        if(ptd == ehcihcp->ehc_IsoTail[slot])
+            ehcihcp->ehc_IsoTail[slot] = prev;
+
+        if(prev->ptd_Flags & PTDF_SITD)
+        {
+            struct EhciSiTD *sitd = (struct EhciSiTD *)prev->ptd_Descriptor;
+            WRITEMEM32_LE(&sitd->sitd_Next, prev->ptd_NextPTD ? prev->ptd_NextPTD->ptd_Phys : ehcihcp->ehc_IsoAnchor[slot]);
+            CacheClearE(sitd, sizeof(*sitd), CACRF_ClearD);
+        }
+        else
+        {
+            struct EhciITD *itd = (struct EhciITD *)prev->ptd_Descriptor;
+            WRITEMEM32_LE(&itd->itd_Next, prev->ptd_NextPTD ? prev->ptd_NextPTD->ptd_Phys : ehcihcp->ehc_IsoAnchor[slot]);
+            CacheClearE(itd, sizeof(*itd), CACRF_ClearD);
+        }
+    }
+    else if(ptd == head)
+    {
+        struct PTDNode *next = ptd->ptd_NextPTD;
+
+        ehcihcp->ehc_IsoHead[slot] = next;
+        ehcihcp->ehc_IsoTail[slot] = next ? ehcihcp->ehc_IsoTail[slot] : NULL;
+
+        WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot], next ? next->ptd_Phys : ehcihcp->ehc_IsoAnchor[slot]);
+        CacheClearE(&ehcihcp->ehc_EhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+    }
+}
+
 static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
     struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
@@ -501,8 +548,15 @@ void ehciHandleIsochTDs(struct PCIController *hc)
     {
         struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
         UWORD idx;
+        UWORD ptdcount = rtn->rtn_PTDCount;
 
-        for(idx = 0; idx < 2; idx++)
+        if(!rtn->rtn_PTDs || !ptdcount)
+        {
+            rtn = (struct RTIsoNode *) rtn->rtn_Node.mln_Succ;
+            continue;
+        }
+
+        for(idx = 0; idx < ptdcount; idx++)
         {
             struct PTDNode *ptd = rtn->rtn_PTDs[idx];
 
@@ -527,13 +581,10 @@ void ehciHandleIsochTDs(struct PCIController *hc)
 
                 rtn->rtn_IOReq.iouh_Actual = (ptd->ptd_Length > remaining) ? (ptd->ptd_Length - remaining) : 0;
                 rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
-                if(READMEM32_LE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx]) == ptd->ptd_Phys)
-                {
-                    WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx], ptd->ptd_NextPhys);
-                    CacheClearE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx], sizeof(ULONG), CACRF_ClearD);
-                }
+                ehciUnlinkIsoDescriptor(ehcihcp, ptd);
                 ehciFreeSiTD(hc, sitd);
                 ptd->ptd_Descriptor = NULL;
+                ptd->ptd_NextPTD = NULL;
             }
             else
             {
@@ -567,13 +618,10 @@ void ehciHandleIsochTDs(struct PCIController *hc)
 
                 rtn->rtn_IOReq.iouh_Actual = actual;
                 rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
-                if(READMEM32_LE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx]) == ptd->ptd_Phys)
-                {
-                    WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx], ptd->ptd_NextPhys);
-                    CacheClearE(&ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx], sizeof(ULONG), CACRF_ClearD);
-                }
+                ehciUnlinkIsoDescriptor(ehcihcp, ptd);
                 ehciFreeITD(hc, itd);
                 ptd->ptd_Descriptor = NULL;
+                ptd->ptd_NextPTD = NULL;
             }
 
             rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Actual;
@@ -1378,75 +1426,61 @@ static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
 
 WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd0 = NULL;
-    struct PTDNode *ptd1 = NULL;
-    struct EhciITD *itd0 = NULL;
-    struct EhciITD *itd1 = NULL;
-    struct EhciSiTD *sitd0 = NULL;
-    struct EhciSiTD *sitd1 = NULL;
+    BOOL split = (rtn->rtn_IOReq.iouh_Flags & UHFF_SPLITTRANS) != 0;
+    UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
-    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
-    if(!ptd0 || !ptd1)
+    if(!rtn->rtn_PTDs || !ptdcount)
+        return UHIOERR_BADPARAMS;
+
+    for(idx = 0; idx < ptdcount; idx++)
     {
-        if(ptd0)
-            FreeMem(ptd0, sizeof(*ptd0));
-        if(ptd1)
-            FreeMem(ptd1, sizeof(*ptd1));
-        return(UHIOERR_OUTOFMEMORY);
+        struct PTDNode *ptd;
+
+        rtn->rtn_PTDs[idx] = NULL;
+        ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        if(!ptd)
+        {
+            ehciFreeIsochIO(hc, rtn);
+            return(UHIOERR_OUTOFMEMORY);
+        }
+
+        if(split)
+        {
+            struct EhciSiTD *sitd = ehciAllocSiTD(hc);
+            if(!sitd)
+            {
+                FreeMem(ptd, sizeof(*ptd));
+                ehciFreeIsochIO(hc, rtn);
+                return(UHIOERR_OUTOFMEMORY);
+            }
+
+            ptd->ptd_Descriptor = sitd;
+            ptd->ptd_Phys = READMEM32_LE(&sitd->sitd_Self);
+            ptd->ptd_Flags |= PTDF_SITD;
+        }
+        else
+        {
+            struct EhciITD *itd = ehciAllocITD(hc);
+            if(!itd)
+            {
+                FreeMem(ptd, sizeof(*ptd));
+                ehciFreeIsochIO(hc, rtn);
+                return(UHIOERR_OUTOFMEMORY);
+            }
+
+            ptd->ptd_Descriptor = itd;
+            ptd->ptd_Phys = READMEM32_LE(&itd->itd_Self);
+        }
+
+        rtn->rtn_PTDs[idx] = ptd;
     }
 
-    if(rtn->rtn_IOReq.iouh_Flags & UHFF_SPLITTRANS)
-    {
-        sitd0 = ehciAllocSiTD(hc);
-        sitd1 = ehciAllocSiTD(hc);
-    }
-    else
-    {
-        itd0 = ehciAllocITD(hc);
-        itd1 = ehciAllocITD(hc);
-    }
-
-    if((!itd0 && !sitd0) || (!itd1 && !sitd1))
-    {
-        if(itd0)
-            ehciFreeITD(hc, itd0);
-        if(itd1)
-            ehciFreeITD(hc, itd1);
-        if(sitd0)
-            ehciFreeSiTD(hc, sitd0);
-        if(sitd1)
-            ehciFreeSiTD(hc, sitd1);
-        FreeMem(ptd0, sizeof(*ptd0));
-        FreeMem(ptd1, sizeof(*ptd1));
-        return(UHIOERR_OUTOFMEMORY);
-    }
-
-    if(itd0 && itd1)
-    {
-        ptd0->ptd_Descriptor = itd0;
-        ptd0->ptd_Phys = READMEM32_LE(&itd0->itd_Self);
-        ptd1->ptd_Descriptor = itd1;
-        ptd1->ptd_Phys = READMEM32_LE(&itd1->itd_Self);
-    }
-    else
-    {
-        ptd0->ptd_Descriptor = sitd0;
-        ptd0->ptd_Phys = READMEM32_LE(&sitd0->sitd_Self);
-        ptd0->ptd_Flags |= PTDF_SITD;
-
-        ptd1->ptd_Descriptor = sitd1;
-        ptd1->ptd_Phys = READMEM32_LE(&sitd1->sitd_Self);
-        ptd1->ptd_Flags |= PTDF_SITD;
-    }
-
-    rtn->rtn_PTDs[0] = ptd0;
-    rtn->rtn_PTDs[1] = ptd1;
     rtn->rtn_NextPTD = 0;
 
-    return RC_OK;  
+    return RC_OK;
 }
 
 WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
@@ -1465,13 +1499,17 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     ULONG frameidx;
     UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    /* EHCI frame counter shares the FRINDEX layout; shift off microframes */
-    frameidx = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & (EHCI_FRAMELIST_SIZE - 1);
+    if(!rtn->rtn_PTDs || !ptdcount)
+        return;
 
-    for(idx = 0; idx < 2; idx++)
+    /* EHCI frame counter shares the FRINDEX layout; shift off microframes */
+    frameidx = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & ehcihcp->ehc_FrameListMask;
+
+    for(idx = 0; idx < ptdcount; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct EhciITD *itd;
@@ -1480,7 +1518,7 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         ULONG phys;
         ULONG len;
         ULONG slot;
-        ULONG framemask = EHCI_FRAMELIST_SIZE - 1;
+        ULONG framemask = ehcihcp->ehc_FrameListMask;
         UWORD pktlen;
         UWORD pktidx;
         UWORD pktcnt;
@@ -1550,7 +1588,8 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             sitd->sitd_ExtBufferPtr[1] = 0;
 #endif
 
-            ptd->ptd_NextPhys = READMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot]);
+            ptd->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
+            ptd->ptd_NextPTD = NULL;
             WRITEMEM32_LE(&sitd->sitd_Next, ptd->ptd_NextPhys);
             CacheClearE(sitd, sizeof(*sitd), CACRF_ClearD);
         }
@@ -1608,15 +1647,39 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
             ptd->ptd_PktCount = pktcnt;
 
-            ptd->ptd_NextPhys = READMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot]);
+            ptd->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
+            ptd->ptd_NextPTD = NULL;
             WRITEMEM32_LE(&itd->itd_Next, ptd->ptd_NextPhys);
 
             CacheClearE(itd, sizeof(*itd), CACRF_ClearD);
         }
 
-        ptd->ptd_NextPhys = READMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot]);
-        WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot], ptd->ptd_Phys);
-        CacheClearE(&ehcihcp->ehc_EhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+        if(ehcihcp->ehc_IsoTail[slot])
+        {
+            struct PTDNode *tail = ehcihcp->ehc_IsoTail[slot];
+
+            tail->ptd_NextPTD = ptd;
+            if(tail->ptd_Flags & PTDF_SITD)
+            {
+                struct EhciSiTD *taildesc = (struct EhciSiTD *)tail->ptd_Descriptor;
+                WRITEMEM32_LE(&taildesc->sitd_Next, ptd->ptd_Phys);
+                CacheClearE(taildesc, sizeof(*taildesc), CACRF_ClearD);
+            }
+            else
+            {
+                struct EhciITD *taildesc = (struct EhciITD *)tail->ptd_Descriptor;
+                WRITEMEM32_LE(&taildesc->itd_Next, ptd->ptd_Phys);
+                CacheClearE(taildesc, sizeof(*taildesc), CACRF_ClearD);
+            }
+        }
+        else
+        {
+            WRITEMEM32_LE(&ehcihcp->ehc_EhciFrameList[slot], ptd->ptd_Phys);
+            CacheClearE(&ehcihcp->ehc_EhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+            ehcihcp->ehc_IsoHead[slot] = ptd;
+        }
+
+        ehcihcp->ehc_IsoTail[slot] = ptd;
 
         ptd->ptd_FrameIdx = slot;
         ptd->ptd_Length = rtn->rtn_BufferReq.ubr_Length;
@@ -1628,21 +1691,21 @@ void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
-    for(idx = 0; idx < 2; idx++)
+    if(!rtn->rtn_PTDs)
+        return;
+
+    for(idx = 0; idx < ptdcount; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd && (ptd->ptd_Flags & PTDF_ACTIVE))
         {
-            volatile ULONG *slot = &ehcihcp->ehc_EhciFrameList[ptd->ptd_FrameIdx];
-            if(READMEM32_LE(slot) == ptd->ptd_Phys)
-            {
-                WRITEMEM32_LE(slot, ptd->ptd_NextPhys ? ptd->ptd_NextPhys : EHCI_TERMINATE);
-                CacheClearE((APTR)slot, sizeof(ULONG), CACRF_ClearD);
-            }
+            ehciUnlinkIsoDescriptor(ehcihcp, ptd);
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+            ptd->ptd_NextPTD = NULL;
         }
     }
 }
@@ -1650,12 +1713,16 @@ void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("EHCI", "%s()\n", __func__);
 
     ehciStopIsochIO(hc, rtn);
 
-    for(idx = 0; idx < 2; idx++)
+    if(!rtn->rtn_PTDs)
+        return;
+
+    for(idx = 0; idx < ptdcount; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd)
@@ -1691,6 +1758,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     ULONG legsup;
     ULONG timeout;
     ULONG tmp;
+    ULONG fls;
 
     ULONG cnt;
 
@@ -1716,7 +1784,24 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     if (!ehcihcp)
         return FALSE;
 
+    ehcihcp->ehc_IsoAnchor = AllocMem(sizeof(ULONG) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+    ehcihcp->ehc_IsoHead = AllocMem(sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+    ehcihcp->ehc_IsoTail = AllocMem(sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+    if(!ehcihcp->ehc_IsoAnchor || !ehcihcp->ehc_IsoHead || !ehcihcp->ehc_IsoTail)
+    {
+        if(ehcihcp->ehc_IsoAnchor)
+            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * EHCI_FRAMELIST_SIZE);
+        if(ehcihcp->ehc_IsoHead)
+            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+        if(ehcihcp->ehc_IsoTail)
+            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+        FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
+        return FALSE;
+    }
+
     hc->hc_CPrivate = ehcihcp;
+    ehcihcp->ehc_FrameListSize = EHCI_FRAMELIST_SIZE;
+    ehcihcp->ehc_FrameListMask = EHCI_FRAMELIST_SIZE - 1;
     hc->hc_portroute = 0;
 
     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
@@ -1851,7 +1936,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         // fill in framelist with IntQH entry points based on interval
         tabptr = ehcihcp->ehc_EhciFrameList;
-        for(cnt = 0; cnt < EHCI_FRAMELIST_SIZE; cnt++)
+        for(cnt = 0; cnt < ehcihcp->ehc_FrameListSize; cnt++)
         {
             eqh = ehcihcp->ehc_EhciIntQH[10];
             bitcnt = 0;
@@ -1863,7 +1948,11 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     break;
                 }
             } while(++bitcnt < 11);
-            *tabptr++ = eqh->eqh_Self;
+            *tabptr = eqh->eqh_Self;
+            ehcihcp->ehc_IsoAnchor[cnt] = eqh->eqh_Self;
+            ehcihcp->ehc_IsoHead[cnt] = NULL;
+            ehcihcp->ehc_IsoTail[cnt] = NULL;
+            tabptr++;
         }
 
         etd = ehcihcp->ehc_ShortPktEndTD = ehciAllocTD(hc);
@@ -1998,7 +2087,18 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     (hccparams & EHCF_PROGFRAMELIST) ? "Yes" : "No",
                     (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No");
 
-        ehcihcp->ehc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
+        fls = 0;
+        if(hccparams & EHCF_PROGFRAMELIST)
+        {
+            fls = (READREG32_LE(pciregbase, EHCI_USBCMD) & EHUM_FRAMELISTSIZE) >> EHUS_FRAMELISTSIZE;
+            if(fls > 2)
+                fls = 0;
+        }
+
+        ehcihcp->ehc_FrameListSize = EHCI_FRAMELIST_SIZE >> fls;
+        ehcihcp->ehc_FrameListMask = ehcihcp->ehc_FrameListSize - 1;
+
+        ehcihcp->ehc_EhciUsbCmd = (fls << EHUS_FRAMELISTSIZE) | (1UL<<EHUS_INTTHRESHOLD);
         ehcihcp->ehc_EhciTimeoutShift = 3;
         if (hc->hc_Quirks & HCQ_EHCI_VBOX_FRAMEROOLOVER) {
             ehcihcp->ehc_EhciTimeoutShift += 2;
@@ -2037,10 +2137,10 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);
 
-        CacheClearE(ehcihcp->ehc_EhciFrameList, sizeof(ULONG) * EHCI_FRAMELIST_SIZE,      CACRF_ClearD);
+        CacheClearE(ehcihcp->ehc_EhciFrameList, sizeof(ULONG) * ehcihcp->ehc_FrameListSize,      CACRF_ClearD);
         CacheClearE(ehcihcp->ehc_EhciQHPool,    sizeof(struct EhciQH) * EHCI_QH_POOLSIZE, CACRF_ClearD);
         CacheClearE(ehcihcp->ehc_EhciTDPool,    sizeof(struct EhciTD) * EHCI_TD_POOLSIZE, CACRF_ClearD);
-                    
+
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, EHCF_CONFIGURED);
         ehcihcp->ehc_EhciUsbCmd |= EHUF_RUNSTOP|EHUF_PERIODICENABLE|EHUF_ASYNCENABLE;
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, ehcihcp->ehc_EhciUsbCmd);
@@ -2094,7 +2194,15 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     hc->hc_CPrivate = NULL;
     if (ehcihcp)
+    {
+        if(ehcihcp->ehc_IsoAnchor)
+            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * EHCI_FRAMELIST_SIZE);
+        if(ehcihcp->ehc_IsoHead)
+            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+        if(ehcihcp->ehc_IsoTail)
+            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
         FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
+    }
     
     pciusbDebug("EHCI", "Shut down complete\n");
 }

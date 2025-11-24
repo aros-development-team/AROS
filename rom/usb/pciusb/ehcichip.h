@@ -19,6 +19,8 @@
 
 #define EHCI_TD_BULK_LIMIT       (128<<10) // limit for one batch of BULK data TDs
 
+struct PTDNode;
+
 struct EhciTD
 {
     struct EhciTD  *etd_Succ;
@@ -149,9 +151,14 @@ struct EhciHCPrivate
     struct EhciQH               *ehc_EhciAsyncQH;
     struct EhciQH               *ehc_EhciIntQH[11];
     struct EhciQH               *ehc_EhciTermQH;
+    ULONG                       *ehc_IsoAnchor;
+    struct PTDNode             **ehc_IsoHead;
+    struct PTDNode             **ehc_IsoTail;
     volatile BOOL               ehc_AsyncAdvanced;
     struct EhciQH               *ehc_EhciAsyncFreeQH;
     struct EhciTD               *ehc_ShortPktEndTD;
+    UWORD                       ehc_FrameListSize;
+    UWORD                       ehc_FrameListMask;
     UWORD                       ehc_EhciTimeoutShift;
 };
 

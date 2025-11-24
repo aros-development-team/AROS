@@ -1502,7 +1502,8 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     struct RTIsoNode *rtn;
 
     WORD retval;
-    
+    UWORD requested_ptds;
+
     KPRINTF(10, "UHCMD_ADDISOHANDLER ioreq: 0x%08lx\n", ioreq);
 
     //uhwDelayMS(1000, unit); /* Wait 200 ms */
@@ -1533,6 +1534,29 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     Disable();
     rtn = (struct RTIsoNode *) RemHead((struct List *) &unit->hu_FreeRTIsoNodes);
     Enable();
+
+    requested_ptds = hc->hc_IsoPTDCount ? hc->hc_IsoPTDCount : PCIUSB_ISO_PTD_COUNT;
+    if(requested_ptds < 2)
+        requested_ptds = 2;
+
+    if(rtn->rtn_PTDs && rtn->rtn_PTDCount != requested_ptds)
+    {
+        FreeMem(rtn->rtn_PTDs, rtn->rtn_PTDCount * sizeof(struct PTDNode *));
+        rtn->rtn_PTDs = NULL;
+        rtn->rtn_PTDCount = 0;
+    }
+
+    if(!rtn->rtn_PTDs)
+    {
+        rtn->rtn_PTDs = AllocMem(requested_ptds * sizeof(struct PTDNode *), MEMF_CLEAR);
+        rtn->rtn_PTDCount = rtn->rtn_PTDs ? requested_ptds : 0;
+    }
+
+    if(!rtn->rtn_PTDs)
+    {
+        AddTail((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
+        return UHIOERR_OUTOFMEMORY;
+    }
 
     /* copy some variables */
     rtn->rtn_IOReq.iouh_Flags = ioreq->iouh_Flags;
@@ -1662,6 +1686,14 @@ WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq,
             ohciFreeIsochIO(hc, rtn);
             break;
     };
+
+    if(rtn->rtn_PTDs)
+    {
+        FreeMem(rtn->rtn_PTDs, rtn->rtn_PTDCount * sizeof(struct PTDNode *));
+        rtn->rtn_PTDs = NULL;
+        rtn->rtn_PTDCount = 0;
+    }
+
     AddHead((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
     Enable();
 

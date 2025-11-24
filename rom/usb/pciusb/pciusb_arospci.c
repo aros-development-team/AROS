@@ -124,6 +124,7 @@ AROS_UFH3(void, pciEnumerator,
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
             if (hc)
             {
+                hc->hc_IsoPTDCount = PCIUSB_ISO_PTD_COUNT;
                 hc->hc_Device = hd;
                 hc->hc_DevID = devid;
                 hc->hc_FunctionNum = sub;
@@ -251,6 +252,8 @@ BOOL pciInit(struct PCIDevice *hd)
         NewMinList(&hu->hu_FreeRTIsoNodes);
         for(cnt = 0; cnt < MAX_ROOT_PORTS; cnt++)
         {
+            hu->hu_RTIsoNodes[cnt].rtn_PTDs = NULL;
+            hu->hu_RTIsoNodes[cnt].rtn_PTDCount = 0;
             AddTail((struct List *) &hu->hu_FreeRTIsoNodes, (struct Node *)&hu->hu_RTIsoNodes[cnt].rtn_Node);
         }
 
@@ -308,8 +311,10 @@ BOOL pciInit(struct PCIDevice *hd)
                 #define USB_TAG_DATA 4
                         {TAG_DONE,                  0       }
                     };
+                    char *usb_chipset = "UHCI";
+                    int usb_min = -1, usb_maj = 1;
 
-                    hc->hc_Node.ln_Name = AllocVec(16, MEMF_CLEAR);
+                    hc->hc_Node.ln_Name = AllocVec(16 + 34, MEMF_CLEAR);
                     hc->hc_Node.ln_Pri = hc->hc_HCIType;
                     sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
@@ -317,32 +322,40 @@ BOOL pciInit(struct PCIDevice *hd)
                     usbc_tags[USB_TAG_VEND].ti_Data = 0;
                     usbc_tags[USB_TAG_PROD].ti_Data = hu->hu_DevID;
 
+                    usbc_tags[1].ti_Data = (IPTR)&hc->hc_Node.ln_Name[16];
                     switch (hc->hc_HCIType)
                     {
-                    case HCITYPE_UHCI:
-                        {
-                            usbc_tags[1].ti_Data = (IPTR)"PCI USB 1.x UHCI Host controller";
-                            break;
-                        }
-
                     case HCITYPE_OHCI:
                         {
-                            usbc_tags[1].ti_Data = (IPTR)"PCI USB 1.1 OHCI Host controller";
+                            usb_chipset = "OHCI";
+                            usb_min = 1;
                             break;
                         }
 
                     case HCITYPE_EHCI:
                         {
-                            usbc_tags[1].ti_Data = (IPTR)"PCI USB 2.0 EHCI Host controller";
+                            usb_chipset = "EHCI";
+                            usb_maj = 2;
+                            usb_min = 0;
                             break;
                         }
 
                     case HCITYPE_XHCI:
                         {
-                            usbc_tags[1].ti_Data = (IPTR)"PCI USB 3.x XHCI Host controller";
+                            usb_chipset = "XHCI";
+                            usb_maj = 3;
+                            usb_min = -1;
                             break;
                         }
                     }
+                    
+                    sprintf((char *)usbc_tags[1].ti_Data, "PCI USB %u.",  usb_maj);
+                    if (usb_min < 0)
+                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "x");
+                    else
+                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "%u", usb_min);
+                    sprintf((char *)(usbc_tags[1].ti_Data + 11), " %s Host controller",  usb_chipset);
+
                     HW_AddDriver(root, usbContrClass, usbc_tags);
                 }
                 hc->hc_Unit = hu;
@@ -389,8 +402,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     pciusbDebug("PCI", "Unit @ %p\n", hu);
 
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
+    ForeachNode(&hu->hu_Controllers, hc)
     {
         CONST_STRPTR owner;
         
@@ -402,15 +414,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
             allocgood = FALSE;
         }
-
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     if(allocgood)
     {
         // allocate necessary memory
-        hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-        while(hc->hc_Node.ln_Succ)
+        ForeachNode(&hu->hu_Controllers, hc)
         {
             switch(hc->hc_HCIType)
             {
@@ -459,29 +468,24 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 }
 #endif
             }
-            hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
     }
 
     if(!allocgood)
     {
         // free previously allocated boards
-        hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-        while(hc->hc_Node.ln_Succ)
+        ForeachNode(&hu->hu_Controllers, hc)
         {
             if (hc->hc_Flags & HCF_ALLOCATED)
             {
                 hc->hc_Flags &= ~HCF_ALLOCATED;
                 HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
             }
-
-            hc = (struct PCIController *) hc->hc_Node.ln_Succ;
         }
         return FALSE;
     }
 
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
+    ForeachNode(&hu->hu_Controllers, hc)
     {
         if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI))
         {
@@ -509,7 +513,6 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             }
             usb11ports += hc->hc_NumPorts;
         }
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
     if((usb11ports != usb20ports) && usb20ports)
     {
@@ -575,13 +578,13 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #endif
 
     // put em online
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
+    ForeachNode(&hu->hu_Controllers, hc)
     {
         hc->hc_Flags |= HCF_ONLINE;
 #if defined(PCIUSB_ENABLEXHCI)
         if (hc->hc_HCIType == HCITYPE_XHCI)
         {
+#if (0)
             UBYTE hcUSBVers = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, XHCI_SBRN);
             if (((hcUSBVers & 0xF0) >> 4) > usbmaj)
             {
@@ -592,9 +595,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             {
                 usbmin = (hcUSBVers & 0xF);
             }
+#else
+            usbmaj = hc->hc_Node.ln_Name[24] - '0';
+            usbmin = hc->hc_Node.ln_Name[26] - '0';
+#endif
         }
 #endif
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     // now add the USB version information to the product name.
@@ -627,8 +633,7 @@ void pciFreeUnit(struct PCIUnit *hu)
     pciusbDebug("PCI", "Freeing unit @ 0x%p", hu);
 
     // put em offline
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
+    ForeachNode(&hu->hu_Controllers, hc)
     {
         hc->hc_Flags &= ~HCF_ONLINE;
         switch (hc->hc_HCIType)
@@ -648,22 +653,19 @@ void pciFreeUnit(struct PCIUnit *hu)
                 uhciFree(hc, hu);
                 break;
         }
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ) {
+    ForeachNode(&hu->hu_Controllers, hc)
+    {
         if(hc->hc_PCIMem.me_Un.meu_Addr) {
             HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
             hc->hc_PCIMem.me_Un.meu_Addr = NULL;
         }
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 
     // disable and free board
-    hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-    while(hc->hc_Node.ln_Succ)
+    ForeachNode(&hu->hu_Controllers, hc)
     {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
         if(hc->hc_PCIIntHandler.is_Node.ln_Name)
@@ -674,7 +676,6 @@ void pciFreeUnit(struct PCIUnit *hu)
 
         hc->hc_Flags &= ~HCF_ALLOCATED;
         HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
-        hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
 }
 /* \\\ */
@@ -682,24 +683,20 @@ void pciFreeUnit(struct PCIUnit *hu)
 /* /// "pciExpunge()" */
 void pciExpunge(struct PCIDevice *hd)
 {
-    struct PCIController *hc;
-    struct PCIUnit *hu;
+    struct PCIController *hc, *ct;
+    struct PCIUnit *hu, *ut;
 
     pciusbDebug("PCI", "Device @ 0x%p", hd);
 
-    hu = (struct PCIUnit *) hd->hd_Units.lh_Head;
-    while(((struct Node *) hu)->ln_Succ)
+    ForeachNodeSafe(&hd->hd_Units, hu, ut)
     {
         Remove((struct Node *) hu);
-        hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
-        while(hc->hc_Node.ln_Succ)
+        ForeachNodeSafe(&hu->hu_Controllers, hc, ct)
         {
             Remove(&hc->hc_Node);
             FreePooled(hd->hd_MemPool, hc, sizeof(struct PCIController));
-            hc = (struct PCIController *) hu->hu_Controllers.lh_Head;
         }
         FreePooled(hd->hd_MemPool, hu, sizeof(struct PCIUnit));
-        hu = (struct PCIUnit *) hd->hd_Units.lh_Head;
     }
     if(hd->hd_PCIHidd)
     {

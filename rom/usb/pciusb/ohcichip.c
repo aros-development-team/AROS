@@ -1463,8 +1463,16 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciIsoTD *oitd0 = NULL;
     struct OhciIsoTD *oitd1 = NULL;
     struct OhciED *oed = NULL;
+    UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("OHCI", "%s()\n", __func__);
+
+    if(!rtn->rtn_PTDs || ptdcount < 2)
+        return(UHIOERR_BADPARAMS);
+
+    for(idx = 0; idx < ptdcount; idx++)
+        rtn->rtn_PTDs[idx] = NULL;
 
     ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
     ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
@@ -1665,6 +1673,9 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
+    UWORD ptdcount = rtn->rtn_PTDCount;
+    UWORD limit = (ptdcount < 2) ? ptdcount : 2;
+    UWORD idx;
 
     pciusbDebug("OHCI", "%s()\n", __func__);
 
@@ -1674,16 +1685,19 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         ohciEnableInt(hc, OISF_SOF);
     }
 
-    if(rtn->rtn_PTDs[0])
-        rtn->rtn_PTDs[0]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
-    if(rtn->rtn_PTDs[1])
-        rtn->rtn_PTDs[1]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+    for(idx = 0; idx < limit; idx++)
+    {
+        if(rtn->rtn_PTDs[idx])
+            rtn->rtn_PTDs[idx]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+    }
 }
 
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
     UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
+    UWORD limit = (ptdcount < 2) ? ptdcount : 2;
 
     pciusbDebug("OHCI", "%s()\n", __func__);
 
@@ -1695,7 +1709,7 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         rtn->rtn_IOReq.iouh_DriverPrivate1 = NULL;
     }
 
-    for(idx = 0; idx < 2; idx++)
+    for(idx = 0; idx < limit; idx++)
     {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd)

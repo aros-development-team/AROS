@@ -71,18 +71,22 @@ struct PTDNode
     UWORD                       ptd_PktCount;
     UWORD                       ptd_PktLength[8];
     UWORD                       ptd_Flags;
+    struct PTDNode             *ptd_NextPTD;
 };
 
 #define PTDF_ACTIVE             (1<<0)
 #define PTDF_BUFFER_VALID       (1<<1)
 #define PTDF_SITD               (1<<2)
 
+#define PCIUSB_ISO_PTD_COUNT    8
+
 struct RTIsoNode
 {
     struct MinNode              rtn_Node;
     struct IOUsbHWRTIso         *rtn_RTIso;
     ULONG                       rtn_NextPTD;
-    struct PTDNode              *rtn_PTDs[2];
+    UWORD                       rtn_PTDCount;
+    struct PTDNode              **rtn_PTDs;
     struct IOUsbHWBufferReq     rtn_BufferReq;
     struct IOUsbHWReq           rtn_IOReq;
     UWORD                       rtn_Dummy;
@@ -210,6 +214,8 @@ struct PCIController
     UWORD                       hc_NumPorts;
     UWORD                       hc_Flags;                           /* See below */
     ULONG                       hc_Quirks;                          /* See below */
+
+    UWORD                       hc_IsoPTDCount;
 
     volatile APTR               hc_RegBase;
 
