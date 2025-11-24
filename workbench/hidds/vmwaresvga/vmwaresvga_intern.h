@@ -72,6 +72,7 @@ struct VMWareSVGA_staticdata {
     struct MouseData            mouse;
     struct HWData               data;
     ULONG                       prefWidth, prefHeight;
+    BOOL                        isQEMU;
 };
 
 struct VMWareSVGABase

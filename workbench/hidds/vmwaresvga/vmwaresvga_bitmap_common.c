@@ -709,10 +709,12 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
+    D(bug(DEBUGNAME " %s()\n", __func__));
+
+#ifdef OnBitmap
     struct HWData *pData = &XSD(cl)->data;
     struct Box box = { msg->x, msg->y, msg->x + msg->width + 1, msg->y + msg->height + 1};
 
-    D(bug(DEBUGNAME " %s()\n", __func__);)
-
     VMWareSVGA_Damage_DeltaAdd(pData, &box);
+#endif
 }

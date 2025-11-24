@@ -81,6 +81,36 @@ AROS_UFH3(void, VMWSVGAEnumerator,
     AROS_USERFUNC_EXIT
 }
 
+AROS_UFH3(void, QEMUEnumerator,
+    AROS_UFHA(struct Hook *,    hook,           A0),
+    AROS_UFHA(OOP_Object *,     pciDevice,      A2),
+    AROS_UFHA(APTR,             message,        A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct VMWareSVGA_staticdata *xsd = (struct VMWareSVGA_staticdata *)hook->h_Data;
+
+    xsd->isQEMU = TRUE;
+
+    AROS_USERFUNC_EXIT
+}
+
+STATIC VOID findQEMU(struct VMWareSVGA_staticdata *xsd)
+{
+    struct Hook findHook = {
+        h_Entry:        (IPTR (*)())QEMUEnumerator,
+        h_Data:         xsd,
+    };
+
+    struct TagItem Requirements[] = {
+        {tHidd_PCI_SubsystemVendorID, 0x1af4 }, /* RedHat Inc. */
+        {tHidd_PCI_SubsystemID,       0x1100 }, /* QEMU Virtual Machine */
+        {TAG_DONE,              0UL          }
+    };
+
+    HIDD_PCI_EnumDevices(xsd->pcihidd, &findHook, (struct TagItem *)&Requirements);
+}
+
 STATIC BOOL findCard(struct VMWareSVGA_staticdata *xsd)
 {
     struct Hook findHook = {
@@ -106,6 +136,10 @@ STATIC BOOL findCard(struct VMWareSVGA_staticdata *xsd)
             xsd->card = NULL;
         }
     }
+
+    if (xsd->card)
+        findQEMU(xsd);
+
     return (xsd->card) ? TRUE : FALSE;
 }
 

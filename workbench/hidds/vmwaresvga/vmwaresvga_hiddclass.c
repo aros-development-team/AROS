@@ -354,6 +354,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         DINFO(
             if (XSD(cl)->data.capabilities & SVGA_CAP_EXTENDED_FIFO)
                 bug("[VMWareSVGA] %s:   Extended FIFO\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
+                bug("[VMWareSVGA] %s:   HW Cursor\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_ALPHA_CURSOR)
                 bug("[VMWareSVGA] %s:   Alpha Cursor\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR_BYPASS)
@@ -441,11 +443,8 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_SupportsHWCursor:
             {
                 found = TRUE;
-                if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
-                {
-                    DINFO(bug("[VMWareSVGA] %s:   HW Cursor\n", __func__);)
+                if (XSD(cl)->isQEMU == FALSE && XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
                     *msg->storage = (IPTR)TRUE;
-                }
                 else
                     *msg->storage = (IPTR)FALSE;
             }
