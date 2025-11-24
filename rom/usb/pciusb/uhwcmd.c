@@ -1554,6 +1554,9 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
         case HCITYPE_EHCI:
             retval = ehciInitIsochIO(hc, rtn);
             break;
+        case HCITYPE_UHCI:
+            retval = uhciInitIsochIO(hc, rtn);
+            break;
         default:
             retval = ohciInitIsochIO(hc, rtn);
             break;
@@ -1576,6 +1579,9 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
             break;
         case HCITYPE_EHCI:
             retval = ehciQueueIsochIO(hc, rtn);
+            break;
+        case HCITYPE_UHCI:
+            retval = uhciQueueIsochIO(hc, rtn);
             break;
         default:
             retval = ohciQueueIsochIO(hc, rtn);
@@ -1649,6 +1655,9 @@ WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq,
         case HCITYPE_EHCI:
             ehciFreeIsochIO(hc, rtn);
             break;
+        case HCITYPE_UHCI:
+            uhciFreeIsochIO(hc, rtn);
+            break;
         default:
             ohciFreeIsochIO(hc, rtn);
             break;
@@ -1711,6 +1720,9 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
         case HCITYPE_EHCI:
             ehciStartIsochIO(hc, rtn);
             break;
+        case HCITYPE_UHCI:
+            uhciStartIsochIO(hc, rtn);
+            break;
         default:
             ohciStartIsochIO(hc, rtn);
             break;
@@ -1772,6 +1784,9 @@ WORD cmdStopRTIso(struct IOUsbHWReq *ioreq,
             break;
         case HCITYPE_EHCI:
             ehciStopIsochIO(hc, rtn);
+            break;
+        case HCITYPE_UHCI:
+            uhciStopIsochIO(hc, rtn);
             break;
         default:
             ohciStopIsochIO(hc, rtn);

@@ -1,10 +1,13 @@
 /*
-    Copyright (C) 2010-2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/oop.h>
+
 #include <hidd/pci.h>
+#include <utility/hooks.h>
 
 #include <devices/usb_hub.h>
 
@@ -955,6 +958,7 @@ static AROS_INTH1(uhciCompleteInt, struct PCIController *,hc)
     uhciCheckPortStatusChange(hc);
     uhwCheckRootHubChanges(hc->hc_Unit);
 
+    uhciHandleIsochTDs(hc);
     uhciHandleFinishedTDs(hc);
 
     if(hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
@@ -1513,4 +1517,222 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     pciusbDebug("UHCI", "Port %ld Change %08lx\n", idx, *mptr);
 
     return TRUE;
+}
+
+WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct PTDNode *ptd0;
+    struct PTDNode *ptd1;
+    struct UhciTD *utd0;
+    struct UhciTD *utd1;
+
+    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
+    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
+    if(!ptd0 || !ptd1)
+    {
+        if(ptd0)
+            FreeMem(ptd0, sizeof(*ptd0));
+        if(ptd1)
+            FreeMem(ptd1, sizeof(*ptd1));
+        return UHIOERR_OUTOFMEMORY;
+    }
+
+    utd0 = uhciAllocTD(hc);
+    utd1 = uhciAllocTD(hc);
+    if(!utd0 || !utd1)
+    {
+        if(utd0)
+            uhciFreeTD(hc, utd0);
+        if(utd1)
+            uhciFreeTD(hc, utd1);
+        FreeMem(ptd0, sizeof(*ptd0));
+        FreeMem(ptd1, sizeof(*ptd1));
+        return UHIOERR_OUTOFMEMORY;
+    }
+
+    ptd0->ptd_Descriptor = utd0;
+    ptd0->ptd_Phys = READMEM32_LE(&utd0->utd_Self);
+    ptd1->ptd_Descriptor = utd1;
+    ptd1->ptd_Phys = READMEM32_LE(&utd1->utd_Self);
+
+    rtn->rtn_PTDs[0] = ptd0;
+    rtn->rtn_PTDs[1] = ptd1;
+    rtn->rtn_NextPTD = 0;
+
+    return RC_OK;
+}
+
+WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
+    rtn->rtn_BufferReq.ubr_Frame = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) + 1;
+    rtn->rtn_BufferReq.ubr_Flags = 0;
+
+    return RC_OK;
+}
+
+void uhciHandleIsochTDs(struct PCIController *hc)
+{
+    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
+    struct RTIsoNode *rtn = (struct RTIsoNode *)hc->hc_RTIsoHandlers.mlh_Head;
+
+    while(rtn->rtn_Node.mln_Succ)
+    {
+        struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+        UWORD idx;
+
+        for(idx = 0; idx < 2; idx++)
+        {
+            struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+            struct UhciTD *utd;
+            ULONG ctrl;
+            ULONG actual;
+            BOOL error = FALSE;
+
+            if(!ptd || !(ptd->ptd_Flags & PTDF_ACTIVE))
+                continue;
+
+            utd = (struct UhciTD *)ptd->ptd_Descriptor;
+            CacheClearE(utd, sizeof(*utd), CACRF_InvalidateD);
+            ctrl = READMEM32_LE(&utd->utd_CtrlStatus);
+            if(ctrl & UTCF_ACTIVE)
+                continue;
+
+            if(ctrl & (UTSF_BITSTUFFERR|UTSF_CRCTIMEOUT|UTSF_BABBLE|UTSF_DATABUFFERERR))
+                error = TRUE;
+
+            actual = ((ctrl & UTSM_ACTUALLENGTH) >> UTSS_ACTUALLENGTH) + 1;
+            rtn->rtn_IOReq.iouh_Actual = actual;
+            rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
+            rtn->rtn_BufferReq.ubr_Length = actual;
+
+            if(READMEM32_LE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx]) == ptd->ptd_Phys)
+            {
+                WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx], ptd->ptd_NextPhys);
+                CacheClearE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx], sizeof(ULONG), CACRF_ClearD);
+            }
+
+            if(urti)
+            {
+                if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN)
+                {
+                    if(urti->urti_InReqHook)
+                        CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+                    if(urti->urti_InDoneHook)
+                        CallHookPkt(urti->urti_InDoneHook, rtn, &rtn->rtn_BufferReq);
+                }
+                else
+                {
+                    if(urti->urti_OutDoneHook)
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
+                }
+            }
+
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+            uhciFreeTD(hc, utd);
+            ptd->ptd_Descriptor = NULL;
+        }
+
+        rtn = (struct RTIsoNode *) rtn->rtn_Node.mln_Succ;
+    }
+}
+
+void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
+    ULONG startframe = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
+    UWORD idx;
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        struct UhciTD *utd;
+        ULONG ctrlstatus;
+        ULONG token;
+        ULONG slot;
+        ULONG phys;
+        ULONG len;
+
+        if(!ptd)
+            continue;
+
+        if(!ptd->ptd_Descriptor)
+        {
+            ptd->ptd_Descriptor = uhciAllocTD(hc);
+            if(!ptd->ptd_Descriptor)
+                continue;
+            ptd->ptd_Phys = READMEM32_LE(&((struct UhciTD *)ptd->ptd_Descriptor)->utd_Self);
+        }
+
+        len = rtn->rtn_IOReq.iouh_Length;
+        if(len > UHCI_ISO_MAXPKTSIZE)
+            len = UHCI_ISO_MAXPKTSIZE;
+        if(!len)
+            continue;
+
+        utd = (struct UhciTD *)ptd->ptd_Descriptor;
+        slot = (startframe + rtn->rtn_BufferReq.ubr_Frame + idx) & (UHCI_FRAMELIST_SIZE - 1);
+        phys = (ULONG)(IPTR)pciGetPhysical(hc, rtn->rtn_BufferReq.ubr_Buffer);
+
+        ctrlstatus = UTCF_ACTIVE | UTCF_ISOCHRONOUS;
+        token = (rtn->rtn_IOReq.iouh_DevAddr << UTTS_DEVADDR) |
+                (rtn->rtn_IOReq.iouh_Endpoint << UTTS_ENDPOINT) |
+                ((len - 1) << UTTS_TRANSLENGTH) |
+                ((rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) ? (PID_IN << UTTS_PID) : (PID_OUT << UTTS_PID));
+
+        WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
+        WRITEMEM32_LE(&utd->utd_Token, token);
+        WRITEMEM32_LE(&utd->utd_BufferPtr, phys);
+
+        ptd->ptd_NextPhys = READMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot]);
+        WRITEMEM32_LE(&utd->utd_Link, ptd->ptd_NextPhys);
+        CacheClearE(utd, sizeof(*utd), CACRF_ClearD);
+
+        WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], ptd->ptd_Phys);
+        CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+
+        ptd->ptd_FrameIdx = slot;
+        ptd->ptd_Length = len;
+        ptd->ptd_Flags |= (PTDF_ACTIVE|PTDF_BUFFER_VALID);
+    }
+}
+
+void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
+    UWORD idx;
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd && (ptd->ptd_Flags & PTDF_ACTIVE))
+        {
+            volatile ULONG *slot = &uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx];
+            if(READMEM32_LE(slot) == ptd->ptd_Phys)
+            {
+                WRITEMEM32_LE(slot, ptd->ptd_NextPhys ? ptd->ptd_NextPhys : UHCI_TERMINATE);
+                CacheClearE((APTR)slot, sizeof(ULONG), CACRF_ClearD);
+            }
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+        }
+    }
+}
+
+void uhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    UWORD idx;
+
+    uhciStopIsochIO(hc, rtn);
+
+    for(idx = 0; idx < 2; idx++)
+    {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd)
+        {
+            if(ptd->ptd_Descriptor)
+                uhciFreeTD(hc, (struct UhciTD *)ptd->ptd_Descriptor);
+            FreeMem(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
+    }
 }

@@ -65,8 +65,11 @@ struct PTDNode
     struct MinNode              ptd_Node;
     APTR                        ptd_Descriptor;
     ULONG                       ptd_Phys;
+    ULONG                       ptd_NextPhys;
     ULONG                       ptd_FrameIdx;
     UWORD                       ptd_Length;
+    UWORD                       ptd_PktCount;
+    UWORD                       ptd_PktLength[8];
     UWORD                       ptd_Flags;
 };
 

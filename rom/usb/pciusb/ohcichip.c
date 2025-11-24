@@ -201,7 +201,6 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
         pciusbDebug("OHCI", "TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
                         READMEM32_LE(&otd->otd_BufferEnd));
-
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO)
         {
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;

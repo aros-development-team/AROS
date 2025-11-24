@@ -9,6 +9,7 @@ void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
 void ehciUpdateIntTree(struct PCIController *hc);
 void ehciHandleFinishedTDs(struct PCIController *hc);
+void ehciHandleIsochTDs(struct PCIController *hc);
 void ehciScheduleCtrlTDs(struct PCIController *hc);
 void ehciScheduleIntTDs(struct PCIController *hc);
 void ehciScheduleBulkTDs(struct PCIController *hc);

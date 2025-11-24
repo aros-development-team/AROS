@@ -3,6 +3,13 @@
 
 #include "uhcichip.h"
 
+WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void uhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void uhciHandleIsochTDs(struct PCIController *hc);
+
 /* uhcichip.c, in order of appearance */
 void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh);
 void uhciUpdateIntTree(struct PCIController *hc);
