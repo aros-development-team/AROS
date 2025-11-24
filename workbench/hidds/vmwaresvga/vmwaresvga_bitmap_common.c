@@ -508,6 +508,12 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 #endif
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
+#ifdef OnBitmap
+    if (data->width <= msg->minX) return;
+    if (data->height <= msg->minY) return;
+#endif
+
+
     LOCK_BITMAP
 
 #ifdef OnBitmap
