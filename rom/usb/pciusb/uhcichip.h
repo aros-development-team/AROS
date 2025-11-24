@@ -91,6 +91,9 @@ struct UhciHCPrivate
     struct UhciQH               *uhc_UhciQHPool;
     struct UhciTD               *uhc_UhciTDPool;
 
+    struct PTDNode             **uhc_IsoHead;
+    struct PTDNode             **uhc_IsoTail;
+
     struct UhciQH               *uhc_UhciCtrlQH;
     struct UhciQH               *uhc_UhciBulkQH;
     struct UhciQH               *uhc_UhciIntQH[9];

@@ -88,6 +88,79 @@ void uhciUpdateIntTree(struct PCIController *hc) {
     }
 }
 
+static void uhciInsertIsoPTD(struct PCIController *hc, struct PTDNode *ptd, ULONG slot)
+{
+    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
+    struct PTDNode *head = uhcihcp->uhc_IsoHead[slot];
+    struct PTDNode *tail = uhcihcp->uhc_IsoTail[slot];
+    struct UhciTD *utd = (struct UhciTD *)ptd->ptd_Descriptor;
+
+    ptd->ptd_NextPTD = NULL;
+    if(!head)
+    {
+        ptd->ptd_NextPhys = READMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot]);
+        WRITEMEM32_LE(&utd->utd_Link, ptd->ptd_NextPhys);
+        uhcihcp->uhc_IsoHead[slot] = uhcihcp->uhc_IsoTail[slot] = ptd;
+        WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], ptd->ptd_Phys);
+        CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+    }
+    else
+    {
+        struct UhciTD *tailtd = (struct UhciTD *)tail->ptd_Descriptor;
+        ULONG nextphys = READMEM32_LE(&tailtd->utd_Link);
+
+        ptd->ptd_NextPhys = head->ptd_NextPhys;
+        WRITEMEM32_LE(&utd->utd_Link, nextphys);
+        WRITEMEM32_LE(&tailtd->utd_Link, ptd->ptd_Phys);
+        CacheClearE(tailtd, sizeof(*tailtd), CACRF_ClearD);
+        tail->ptd_NextPTD = ptd;
+        uhcihcp->uhc_IsoTail[slot] = ptd;
+    }
+
+    CacheClearE(utd, sizeof(*utd), CACRF_ClearD);
+}
+
+static void uhciUnlinkIsoPTD(struct PCIController *hc, struct PTDNode *ptd)
+{
+    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
+    ULONG slot = ptd->ptd_FrameIdx;
+    struct PTDNode *prev = NULL;
+    struct PTDNode *head = uhcihcp->uhc_IsoHead[slot];
+
+    while(head && head != ptd)
+    {
+        prev = head;
+        head = head->ptd_NextPTD;
+    }
+
+    if(!head)
+        return;
+
+    struct PTDNode *next = head->ptd_NextPTD;
+
+    if(prev)
+    {
+        struct UhciTD *prevtd = (struct UhciTD *)prev->ptd_Descriptor;
+        WRITEMEM32_LE(&prevtd->utd_Link, next ? next->ptd_Phys : head->ptd_NextPhys);
+        CacheClearE(prevtd, sizeof(*prevtd), CACRF_ClearD);
+        prev->ptd_NextPTD = next;
+    }
+    else
+    {
+        if(next)
+            next->ptd_NextPhys = head->ptd_NextPhys;
+
+        WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], next ? next->ptd_Phys : head->ptd_NextPhys);
+        CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
+        uhcihcp->uhc_IsoHead[slot] = next;
+    }
+
+    if(!next)
+        uhcihcp->uhc_IsoTail[slot] = prev;
+
+    head->ptd_NextPTD = NULL;
+}
+
 void uhciCheckPortStatusChange(struct PCIController *hc) {
 
     struct PCIUnit *unit = hc->hc_Unit;
@@ -1084,6 +1157,17 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         pciusbDebug("UHCI", "FrameListBase 0x%08lx\n", uhcihcp->uhc_UhciFrameList);
         memptr += sizeof(APTR) * UHCI_FRAMELIST_SIZE;
 
+        uhcihcp->uhc_IsoHead = AllocMem(sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+        uhcihcp->uhc_IsoTail = AllocMem(sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+        if(!uhcihcp->uhc_IsoHead || !uhcihcp->uhc_IsoTail)
+        {
+            if(uhcihcp->uhc_IsoHead)
+                FreeMem(uhcihcp->uhc_IsoHead, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+            if(uhcihcp->uhc_IsoTail)
+                FreeMem(uhcihcp->uhc_IsoTail, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+            goto init_fail;
+        }
+
         // build up QH pool
         // Again, all the UQHs are in the MEMF_31BIT hc_PCIMem.me_Un.meu_Addr pool,
         // so we can safely treat their physical addresses as 32 bit pointers
@@ -1277,6 +1361,21 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
         return TRUE;
     }
 
+init_fail:
+    if(uhcihcp)
+    {
+        if(uhcihcp->uhc_IsoHead)
+            FreeMem(uhcihcp->uhc_IsoHead, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+        if(uhcihcp->uhc_IsoTail)
+            FreeMem(uhcihcp->uhc_IsoTail, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+    }
+
+    if(hc->hc_PCIMem.me_Un.meu_Addr)
+        FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
+
+    FreeMem(uhcihcp, sizeof(struct UhciHCPrivate));
+    hc->hc_CPrivate = NULL;
+
     /*
         FIXME: What would the appropriate debug level be?
     */
@@ -1313,7 +1412,14 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu) {
     struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
     hc->hc_CPrivate = NULL;
     if (uhcihcp)
+    {
+        if(uhcihcp->uhc_IsoHead)
+            FreeMem(uhcihcp->uhc_IsoHead, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+        if(uhcihcp->uhc_IsoTail)
+            FreeMem(uhcihcp->uhc_IsoTail, sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE);
+
         FreeMem(uhcihcp, sizeof(struct UhciHCPrivate));
+    }
 
     pciusbDebug("UHCI", "Shutting down UHCI done.\n");
 }
@@ -1521,53 +1627,51 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 
 WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd0;
-    struct PTDNode *ptd1;
-    struct UhciTD *utd0;
-    struct UhciTD *utd1;
-
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbDebug("UHCI", "%s()\n", __func__);
 
-    if(!rtn->rtn_PTDs || ptdcount < 2)
+    if(!rtn->rtn_PTDs || !ptdcount)
         return UHIOERR_BADPARAMS;
 
     for(idx = 0; idx < ptdcount; idx++)
-        rtn->rtn_PTDs[idx] = NULL;
-
-    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
-    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
-    if(!ptd0 || !ptd1)
     {
-        if(ptd0)
-            FreeMem(ptd0, sizeof(*ptd0));
-        if(ptd1)
-            FreeMem(ptd1, sizeof(*ptd1));
-        return UHIOERR_OUTOFMEMORY;
+        if(rtn->rtn_PTDs[idx])
+        {
+            if(rtn->rtn_PTDs[idx]->ptd_Descriptor)
+                uhciFreeTD(hc, (struct UhciTD *)rtn->rtn_PTDs[idx]->ptd_Descriptor);
+            FreeMem(rtn->rtn_PTDs[idx], sizeof(struct PTDNode));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
     }
 
-    utd0 = uhciAllocTD(hc);
-    utd1 = uhciAllocTD(hc);
-    if(!utd0 || !utd1)
+    for(idx = 0; idx < ptdcount; idx++)
     {
-        if(utd0)
-            uhciFreeTD(hc, utd0);
-        if(utd1)
-            uhciFreeTD(hc, utd1);
-        FreeMem(ptd0, sizeof(*ptd0));
-        FreeMem(ptd1, sizeof(*ptd1));
-        return UHIOERR_OUTOFMEMORY;
+        struct PTDNode *ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        struct UhciTD *utd = ptd ? uhciAllocTD(hc) : NULL;
+
+        if(!ptd || !utd)
+        {
+            if(ptd)
+                FreeMem(ptd, sizeof(*ptd));
+
+            for(ULONG freeidx = 0; freeidx < idx; freeidx++)
+            {
+                struct PTDNode *old = rtn->rtn_PTDs[freeidx];
+                if(old->ptd_Descriptor)
+                    uhciFreeTD(hc, (struct UhciTD *)old->ptd_Descriptor);
+                FreeMem(old, sizeof(*old));
+                rtn->rtn_PTDs[freeidx] = NULL;
+            }
+            return UHIOERR_OUTOFMEMORY;
+        }
+
+        ptd->ptd_Descriptor = utd;
+        ptd->ptd_Phys = READMEM32_LE(&utd->utd_Self);
+        rtn->rtn_PTDs[idx] = ptd;
     }
 
-    ptd0->ptd_Descriptor = utd0;
-    ptd0->ptd_Phys = READMEM32_LE(&utd0->utd_Self);
-    ptd1->ptd_Descriptor = utd1;
-    ptd1->ptd_Phys = READMEM32_LE(&utd1->utd_Self);
-
-    rtn->rtn_PTDs[0] = ptd0;
-    rtn->rtn_PTDs[1] = ptd1;
     rtn->rtn_NextPTD = 0;
 
     return RC_OK;
@@ -1578,7 +1682,7 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     pciusbDebug("UHCI", "%s()\n", __func__);
 
     rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
-    rtn->rtn_BufferReq.ubr_Frame = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) + 1;
+    rtn->rtn_BufferReq.ubr_Frame = (READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) + 1) & (UHCI_FRAMELIST_SIZE - 1);
     rtn->rtn_BufferReq.ubr_Flags = 0;
 
     return RC_OK;
@@ -1593,7 +1697,7 @@ void uhciHandleIsochTDs(struct PCIController *hc)
     {
         struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
         UWORD idx;
-        UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
+        UWORD limit = rtn->rtn_PTDCount;
 
         if(!rtn->rtn_PTDs || !limit)
         {
@@ -1626,11 +1730,7 @@ void uhciHandleIsochTDs(struct PCIController *hc)
             rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
             rtn->rtn_BufferReq.ubr_Length = actual;
 
-            if(READMEM32_LE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx]) == ptd->ptd_Phys)
-            {
-                WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx], ptd->ptd_NextPhys);
-                CacheClearE(&uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx], sizeof(ULONG), CACRF_ClearD);
-            }
+            uhciUnlinkIsoPTD(hc, ptd);
 
             if(urti)
             {
@@ -1659,19 +1759,20 @@ void uhciHandleIsochTDs(struct PCIController *hc)
 
 void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
     ULONG startframe = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT);
     UWORD idx;
-    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
+    UWORD limit = rtn->rtn_PTDCount;
+    UWORD scheduled = 0;
 
     pciusbDebug("UHCI", "%s()\n", __func__);
 
-    if(!rtn->rtn_PTDs)
+    if(!rtn->rtn_PTDs || !limit)
         return;
 
     for(idx = 0; idx < limit; idx++)
     {
-        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        UWORD ptdidx = (rtn->rtn_NextPTD + idx) % limit;
+        struct PTDNode *ptd = rtn->rtn_PTDs[ptdidx];
         struct UhciTD *utd;
         ULONG ctrlstatus;
         ULONG token;
@@ -1697,7 +1798,7 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             continue;
 
         utd = (struct UhciTD *)ptd->ptd_Descriptor;
-        slot = (startframe + rtn->rtn_BufferReq.ubr_Frame + idx) & (UHCI_FRAMELIST_SIZE - 1);
+        slot = (startframe + rtn->rtn_BufferReq.ubr_Frame + scheduled) & (UHCI_FRAMELIST_SIZE - 1);
         phys = (ULONG)(IPTR)pciGetPhysical(hc, rtn->rtn_BufferReq.ubr_Buffer);
 
         ctrlstatus = UTCF_ACTIVE | UTCF_ISOCHRONOUS;
@@ -1710,28 +1811,27 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         WRITEMEM32_LE(&utd->utd_Token, token);
         WRITEMEM32_LE(&utd->utd_BufferPtr, phys);
 
-        ptd->ptd_NextPhys = READMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot]);
-        WRITEMEM32_LE(&utd->utd_Link, ptd->ptd_NextPhys);
-        CacheClearE(utd, sizeof(*utd), CACRF_ClearD);
-
-        WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], ptd->ptd_Phys);
-        CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
-
         ptd->ptd_FrameIdx = slot;
         ptd->ptd_Length = len;
         ptd->ptd_Flags |= (PTDF_ACTIVE|PTDF_BUFFER_VALID);
+        ptd->ptd_NextPTD = NULL;
+
+        uhciInsertIsoPTD(hc, ptd, slot);
+        scheduled++;
     }
+
+    if(scheduled)
+        rtn->rtn_NextPTD = (rtn->rtn_NextPTD + scheduled) % limit;
 }
 
 void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
     UWORD idx;
-    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
+    UWORD limit = rtn->rtn_PTDCount;
 
     pciusbDebug("UHCI", "%s()\n", __func__);
 
-    if(!rtn->rtn_PTDs)
+    if(!rtn->rtn_PTDs || !limit)
         return;
 
     for(idx = 0; idx < limit; idx++)
@@ -1739,12 +1839,7 @@ void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd && (ptd->ptd_Flags & PTDF_ACTIVE))
         {
-            volatile ULONG *slot = &uhcihcp->uhc_UhciFrameList[ptd->ptd_FrameIdx];
-            if(READMEM32_LE(slot) == ptd->ptd_Phys)
-            {
-                WRITEMEM32_LE(slot, ptd->ptd_NextPhys ? ptd->ptd_NextPhys : UHCI_TERMINATE);
-                CacheClearE((APTR)slot, sizeof(ULONG), CACRF_ClearD);
-            }
+            uhciUnlinkIsoPTD(hc, ptd);
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
         }
     }
@@ -1753,7 +1848,7 @@ void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 void uhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     UWORD idx;
-    UWORD limit = (rtn->rtn_PTDCount < 2) ? rtn->rtn_PTDCount : 2;
+    UWORD limit = rtn->rtn_PTDCount;
 
     pciusbDebug("UHCI", "%s()\n", __func__);
 
