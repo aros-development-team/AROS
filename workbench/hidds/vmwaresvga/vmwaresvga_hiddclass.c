@@ -378,6 +378,11 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
             DINFO(bug("[VMWareSVGA] %s:   Display Topology\n", __func__);)
             vmwareWriteReg(&XSD(cl)->data, SVGA_REG_NUM_GUEST_DISPLAYS, 1);
         }
+        if (XSD(cl)->isQEMU == FALSE && XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
+            XSD(cl)->hwCursor = TRUE;
+        else
+            XSD(cl)->hwCursor = FALSE;
+
         DINFO(
             if (XSD(cl)->data.capabilities & SVGA_CAP_PITCHLOCK)
                 bug("[VMWareSVGA] %s:   Pitchlock\n", __func__);
@@ -443,10 +448,7 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_SupportsHWCursor:
             {
                 found = TRUE;
-                if (XSD(cl)->isQEMU == FALSE && XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
-                    *msg->storage = (IPTR)TRUE;
-                else
-                    *msg->storage = (IPTR)FALSE;
+                *msg->storage = (IPTR)XSD(cl)->hwCursor;
             }
             break;
 

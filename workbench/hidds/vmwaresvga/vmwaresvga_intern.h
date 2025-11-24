@@ -73,6 +73,7 @@ struct VMWareSVGA_staticdata {
     struct HWData               data;
     ULONG                       prefWidth, prefHeight;
     BOOL                        isQEMU;
+    BOOL                        hwCursor;
 };
 
 struct VMWareSVGABase
