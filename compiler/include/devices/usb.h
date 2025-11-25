@@ -1,10 +1,11 @@
 #ifndef DEVICES_USB_H
 #define DEVICES_USB_H
 /*
-**	$VER: usb.h 2.0 (15.12.07)
+**	$VER: usb.h 3.2 (25.11.2025)
 **
 **	usb definitions include file
 **
+**	(C) Copyright 2007-2025 The AROS Dev Team.
 **	(C) Copyright 2002-2007 Chris Hodges
 **	    All Rights Reserved
 */
@@ -39,10 +40,8 @@
 #define USR_SET_INTERFACE     0x0b
 #define USR_SYNCH_FRAME       0x0c
 
-#ifdef AROS_USB30_CODE
 #define USR_SET_SEL           0x30
 #define USR_SET_ISOCH_DELAY   0x31
-#endif
 
 /* Usb Standard Feature Selectors */
 #define UFS_DEVICE_REMOTE_WAKEUP  0x01 /* Recipient: Device */
@@ -81,6 +80,13 @@
 #define UDT_BOS                   0x0f
 #define UDT_DEVICE_CAPABILITY     0x10
 #define UDT_WIRELESS_EP_COMP      0x11 /* Wireless endpoint companion descriptor */
+#define UDT_SUPERSPEED_EP_COMP    0x30 /* SuperSpeed Endpoint Companion descriptor */
+#define UDT_SUPERSPEED_ISO_COMP   0x31 /* SuperSpeedPlus Isochronous Endpoint Companion descriptor */
+
+/* Usb Device Capability Types (bDevCapabilityType) */
+#define UDC_USB20_EXTENSION       0x02
+#define UDC_SUPERSPEED_USB        0x03
+#define UDC_CONTAINER_ID          0x04
 
 /* common class specific descriptors */
 #define UDT_CS_UNDEFINED      0x20
@@ -192,7 +198,7 @@ struct Usb20ExtDesc
 {
     UBYTE bLength;
     UBYTE bDescriptorType;
-    UBYTE bDevCapabilityType;
+    UBYTE bDevCapabilityType;    /* UDC_USB20_EXTENSION */
     ULONG bmAttributes;
 };
 
@@ -201,12 +207,31 @@ struct UsbSSDevCapDesc
 {
     UBYTE bLength;
     UBYTE bDescriptorType;
-    UBYTE bDevCapabilityType;
+    UBYTE bDevCapabilityType;    /* UDC_SUPERSPEED_USB */
+    UBYTE bmAttributes;          /* Latency tolerance supported */
+    UWORD wSpeedSupported;       /* Bitmask of supported speeds */
+    UBYTE bFunctionalitySupport; /* Lowest speed the device supports */
+    UBYTE bU1DevExitLat;         /* U1 device exit latency */
+    UWORD bU2DevExitLat;         /* U2 device exit latency */
+};
+
+/* SuperSpeed Endpoint Companion Descriptor */
+struct UsbSSEndpointCompDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;  /* UDT_SUPERSPEED_EP_COMP */
+    UBYTE bMaxBurst;
     UBYTE bmAttributes;
-    UWORD wSpeedSupported;
-    UBYTE bFunctionalitySupport;
-    UBYTE bU1DevExitLat;
-    UWORD bU2DevExitLat;
+    UWORD wBytesPerInterval;
+};
+
+/* SuperSpeedPlus Isochronous Endpoint Companion Descriptor */
+struct UsbSSPIsochEndpointCompDesc
+{
+    UBYTE bLength;
+    UBYTE bDescriptorType;  /* UDT_SUPERSPEED_ISO_COMP */
+    UWORD wReserved;
+    ULONG dwBytesPerInterval;
 };
 
 /*
