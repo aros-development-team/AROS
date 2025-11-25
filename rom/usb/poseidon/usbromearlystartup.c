@@ -63,6 +63,7 @@ AROS_UFH3(static IPTR, usbromstartup_early,
 
         D(bug("[USBROMStartup] %s: Adding early ROM classes...\n", __func__));
 
+        psdAddClass("hubss.class", 0);
         psdAddClass("hub.class", 0);
         msdclass = psdAddClass("massstorage.class", 0);
 

@@ -50,7 +50,7 @@ AROS_UFH3(static IPTR, usbromstartup_late,
 
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
-	D(bug("[USBROMStartup] %s: Adding late classes...\n", __func__));
+        D(bug("[USBROMStartup] %s: Registering input classes...\n", __func__));
 
         if(!(psdAddClass("hid.class", 0)))
         {
@@ -58,7 +58,8 @@ AROS_UFH3(static IPTR, usbromstartup_late,
             psdAddClass("bootkeyboard.class", 0);
         }
 
-	D(bug("[USBROMStartup] %s: Binding classes...\n", __func__));
+        D(bug("[USBROMStartup] %s: Binding classes...\n", __func__));
+
         psdClassScan();
 
         CloseLibrary(ps);
