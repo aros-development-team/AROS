@@ -1516,6 +1516,7 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     rtn->rtn_PTDs[0] = ptd0;
     rtn->rtn_PTDs[1] = ptd1;
     rtn->rtn_NextPTD = 0;
+    rtn->rtn_BounceBuffer = NULL;
 
     return RC_OK;
 }
@@ -1524,6 +1525,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct PTDNode *ptd;
     struct OhciIsoTD *oitd;
+    APTR dmabuffer;
     ULONG phys;
     ULONG frame;
     ULONG ctrl;
@@ -1534,6 +1536,24 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     pciusbDebug("OHCI", "%s()\n", __func__);
 
+    dmabuffer = rtn->rtn_BufferReq.ubr_Buffer;
+#if __WORDSIZE == 64
+    if(!dmabuffer)
+        return RC_OK;
+
+    dmabuffer = usbGetBuffer(dmabuffer, rtn->rtn_BufferReq.ubr_Length,
+                             rtn->rtn_IOReq.iouh_Dir);
+    if(!dmabuffer)
+        return UHIOERR_OUTOFMEMORY;
+
+    if(dmabuffer != rtn->rtn_BufferReq.ubr_Buffer &&
+       rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT)
+    {
+        CopyMem(rtn->rtn_BufferReq.ubr_Buffer, dmabuffer, rtn->rtn_BufferReq.ubr_Length);
+    }
+#endif
+    rtn->rtn_BounceBuffer = (dmabuffer != rtn->rtn_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
+
     ptd = rtn->rtn_PTDs[rtn->rtn_NextPTD];
     if(!ptd)
         return(UHIOERR_BADPARAMS);
@@ -1542,10 +1562,10 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if(!oitd)
         return(UHIOERR_BADPARAMS);
 
-    if(!rtn->rtn_BufferReq.ubr_Buffer || !rtn->rtn_BufferReq.ubr_Length)
+    if(!dmabuffer || !rtn->rtn_BufferReq.ubr_Length)
         return RC_OK;
 
-    phys = (ULONG)(IPTR)pciGetPhysical(hc, rtn->rtn_BufferReq.ubr_Buffer);
+    phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
     frame = rtn->rtn_BufferReq.ubr_Frame ? rtn->rtn_BufferReq.ubr_Frame :
             ((READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) + 1) & 0xffff);
 
@@ -1690,6 +1710,14 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(rtn->rtn_PTDs[idx])
             rtn->rtn_PTDs[idx]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
     }
+
+    if(rtn->rtn_BounceBuffer &&
+       rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer)
+    {
+        usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
+                         rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+        rtn->rtn_BounceBuffer = NULL;
+    }
 }
 
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
@@ -1720,6 +1748,8 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             rtn->rtn_PTDs[idx] = NULL;
         }
     }
+
+    rtn->rtn_BounceBuffer = NULL;
 }
 
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {

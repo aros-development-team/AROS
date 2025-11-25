@@ -473,6 +473,9 @@ struct PsdEndpoint
     UWORD               pep_Interval;     /* Interval for polling in ms */
     UWORD               pep_SyncType;     /* Iso Synchronization Type */
     UWORD               pep_UsageType;    /* Iso Usage Type */
+    UWORD               pep_MaxBurst;     /* Superspeed companion: bursts per service interval */
+    UWORD               pep_CompAttributes; /* Superspeed companion: bmAttributes */
+    ULONG               pep_BytesPerInterval; /* Superspeed companion: bytes per service interval */
 };
 
 /* Flags for pp_Flags */

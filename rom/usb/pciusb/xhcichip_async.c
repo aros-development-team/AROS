@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver async transfer support functions
 */
@@ -127,10 +127,14 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         {
             struct pcisusbXHCIDevice *devCtx;
             UWORD hciport;
-#if (1)
-            hciport = ioreq->iouh_HubPort - 1;
+#if (0)
+    #if (1)
+                hciport = ioreq->iouh_HubPort - 1;
+    #else
+                psdGetAttrs(PGA_DEVICE, pd, DA_AtHubPortNumber, &hciport, TAG_END); 
+    #endif
 #else
-            psdGetAttrs(PGA_DEVICE, pd, DA_AtHubPortNumber, &hciport, TAG_END); 
+            hciport = ioreq->iouh_DevAddr;
 #endif
             pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for port #%u = 0x%p" DEBUGCOLOR_RESET" \n", hciport + 1, hc->hc_Devices[hciport]);
             if ((devCtx = hc->hc_Devices[hciport]) != NULL)
@@ -156,7 +160,9 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                 ioreq->iouh_Endpoint,
                                 (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
                                 txtype,
-                                ioreq->iouh_MaxPktSize);
+                                ioreq->iouh_MaxPktSize,
+                                ioreq->iouh_Interval,
+                                ioreq->iouh_Flags);
 
                     if (txep > 0)
                     {

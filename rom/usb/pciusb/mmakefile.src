@@ -19,7 +19,8 @@ FILES := \
         uhwcmd \
         debug
 
-WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
+USBHARDWAREPATH := Devs/USBHardware
+WBUSBHARDWAREDIR := $(AROSDIR)/$(USBHARDWAREPATH)
 
 #MM
 kernel-usb-pciusb-directories ::
@@ -40,11 +41,11 @@ endif
 #FIXME: Currently pciusb.device is different when compiled for pc or not.
 #       It should thus normally be in SYS:Arch but it is not ATM.
 USER_LDFLAGS := -static
-#USER_CPPFLAGS += -DDEBUG
+USER_CPPFLAGS += -DDEBUG
 
 %build_module mmake=kernel-usb-pciusb \
     modname=pciusb modtype=device \
-    moduledir=Devs/USBHardware \
+    moduledir=$(USBHARDWAREPATH) \
     files="$(FILES)" \
     uselibs="hiddstubs debug"
 

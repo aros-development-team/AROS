@@ -1454,7 +1454,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
             case HCITYPE_XHCI:
                 while(((struct Node *) cmpioreq)->ln_Succ)
                 {
-//                    xhciFreeAsyncContext(hc, cmpioreq);
+                    xhciFreeAsyncContext(hc, unit, cmpioreq);
                     cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     ReplyMsg(&cmpioreq->iouh_Req.io_Message);
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
@@ -1462,7 +1462,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                 cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
                 while(((struct Node *) cmpioreq)->ln_Succ)
                 {
-//                    xhciFreePeriodicContext(hc, cmpioreq);
+                    xhciFreePeriodicContext(hc, unit, cmpioreq);
                     cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     ReplyMsg(&cmpioreq->iouh_Req.io_Message);
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
@@ -2071,6 +2071,36 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
 
 #if defined(PCIUSB_ENABLEXHCI)
                 case HCITYPE_XHCI:
+                    cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
+                    while(((struct Node *) cmpioreq)->ln_Succ)
+                    {
+                        if(ioreq == cmpioreq)
+                        {
+                            /*
+                             * CHECKME: Perhaps immediate freeing can cause issues similar to OHCI.
+                             * Should synchronized abort routine be implemented here too ?
+                             */
+                            xhciFreeAsyncContext(hc, unit, ioreq);
+                            Enable();
+                            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                            TermIO(ioreq, base);
+                            return TRUE;
+                        }
+                        cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+                    }
+                    cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
+                    while(((struct Node *) cmpioreq)->ln_Succ)
+                    {
+                        if(ioreq == cmpioreq)
+                        {
+                            xhciFreePeriodicContext(hc, unit, ioreq);
+                            Enable();
+                            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                            TermIO(ioreq, base);
+                            return TRUE;
+                        }
+                        cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+                    }
                     break;
 #endif
             }
@@ -2186,7 +2216,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     ULONG ctrlstatus;
     BOOL causeint;
 
-    KPRINTF(1, "Enter NakTimeoutInt(0x%p)\n", unit);
+//    KPRINTF(1, "Enter NakTimeoutInt(0x%p)\n", unit);
 
     // check for port status change for UHCI and frame rollovers and NAK Timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
@@ -2356,10 +2386,10 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                 {
                     switch(cnt)
                     {
-                    case 3:
+                    case 2:
                         TOList = &hc->hc_CtrlXFerQueue;
                         break;
-                    case 2:
+                    case 1:
                         TOList = &hc->hc_TDQueue;
                         break;
                     default:
@@ -2369,8 +2399,8 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                     // Timeout active transfers
                     ForeachNode(TOList, ioreq)
                     {
-                        KPRINTF(1, "XHCI: Examining IOReq=%p with (PrivateData @ %p)\n", ioreq, ioreq->iouh_DriverPrivate1);
-                        if (cnt < 2)
+                        //KPRINTF(1, "XHCI: Examining IOReq=%p with (PrivateData @ %p)\n", ioreq, ioreq->iouh_DriverPrivate1);
+                        if (cnt < 1)
                         {
                             if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT)
                             {
@@ -2418,7 +2448,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     unit->hu_NakTimeoutReq.tr_time.tv_micro = 150*1000;
     SendIO((APTR) &unit->hu_NakTimeoutReq);
 
-    KPRINTF(1, "Exit NakTimeoutInt(0x%p)\n", unit);
+//    KPRINTF(1, "Exit NakTimeoutInt(0x%p)\n", unit);
 
     return FALSE;
 

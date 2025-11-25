@@ -155,6 +155,7 @@ struct EhciHCPrivate
     struct PTDNode             **ehc_IsoHead;
     struct PTDNode             **ehc_IsoTail;
     volatile BOOL               ehc_AsyncAdvanced;
+    BOOL                        ehc_64BitCapable;
     struct EhciQH               *ehc_EhciAsyncFreeQH;
     struct EhciTD               *ehc_ShortPktEndTD;
     UWORD                       ehc_FrameListSize;

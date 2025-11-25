@@ -77,9 +77,7 @@ int main(int argc, char *argv[])
     IPTR devpowerdrain;
     IPTR devmaxpktsize0;
     IPTR devhubthinktime;
-#ifdef AROS_USB30_CODE
     IPTR devissuperspeed;
-#endif
 
     struct List *cfgs;
     struct Node *pc;
@@ -127,6 +125,9 @@ int main(int argc, char *argv[])
     IPTR epnumtransmu;
     IPTR epsynctype;
     IPTR epusagetype;
+    IPTR epmaxburst;
+    IPTR epcompattrs;
+    IPTR epbytesperint;
 
     STRPTR strdesc;
     STRPTR strthinktime;
@@ -152,6 +153,7 @@ int main(int argc, char *argv[])
             devmaxpktsize0 = 0;
             devhubthinktime = 0;
             devissuspended = 0;
+            devissuperspeed = 0;
             psdGetAttrs(PGA_DEVICE, pd,
                         DA_Address, &devadr,
                         DA_HubDevice, &devhub,
@@ -174,9 +176,7 @@ int main(int argc, char *argv[])
                         DA_LangIDArray, &devlangarray,
                         DA_IsLowspeed, &devislowspeed,
                         DA_IsHighspeed, &devishighspeed,
-                        #ifdef AROS_USB30_CODE
                         DA_IsSuperspeed, &devissuperspeed,
-                        #endif
                         DA_IsConnected, &devisconnected,
                         DA_NeedsSplitTrans, &devneedssplit,
                         DA_HasAddress, &devhasaddress,
@@ -242,11 +242,7 @@ int main(int argc, char *argv[])
                    devmanufact, devvendorid,
                    psdNumToStr(NTS_VENDORID, (LONG) devvendorid, "unknown"),
                    devserial, devusbvers,
-                    #ifdef AROS_USB30_CODE
                    devislowspeed ? "lowspeed " : (devissuperspeed ? "superspeed " : (devishighspeed ? "highspeed " : "fullspeed ")),
-                    #else
-                   devislowspeed ? "lowspeed " : (devishighspeed ? "highspeed " : "fullspeed "),
-                    #endif
                    devisconnected ? "connected " : "disconnected ",
                    devhasaddress ? "hasaddress " : "",
                    devhasdevdesc ? "hasdevdesc " : "",
@@ -388,6 +384,9 @@ int main(int argc, char *argv[])
                                 epnumtransmu = 0;
                                 epsynctype = 0;
                                 epusagetype = 0;
+                                epmaxburst = 0;
+                                epcompattrs = 0;
+                                epbytesperint = 0;
                                 psdGetAttrs(PGA_ENDPOINT, pep,
                                             EA_IsIn, &episin,
                                             EA_EndpointNum, &epnum,
@@ -397,6 +396,9 @@ int main(int argc, char *argv[])
                                             EA_NumTransMuFrame, &epnumtransmu,
                                             EA_SyncType, &epsynctype,
                                             EA_UsageType, &epusagetype,
+                                            EA_MaxBurst, &epmaxburst,
+                                            EA_CompAttributes, &epcompattrs,
+                                            EA_BytesPerInterval, &epbytesperint,
                                             TAG_END);
                                 Printf("      · Endpoint %ld (%s %s)\n"
                                        "        MaxPktSize: %s%ld\n",
@@ -405,12 +407,17 @@ int main(int argc, char *argv[])
                                        (epnumtransmu == 2) ? "2x " : ((epnumtransmu == 3) ? "3x " : ""),
                                        epmaxpktsize);
 
-                                if(devishighspeed || ((eptranstype != USEAF_CONTROL) && (eptranstype != USEAF_BULK)))
+                                if(devishighspeed || devissuperspeed || ((eptranstype != USEAF_CONTROL) && (eptranstype != USEAF_BULK)))
                                 {
                                     Printf("        %s  : %ld %s\n",
-                                           (((eptranstype == USEAF_CONTROL) || (eptranstype == USEAF_BULK)) && devishighspeed) ? "NAK-Rate" : "Interval",
+                                           (((eptranstype == USEAF_CONTROL) || (eptranstype == USEAF_BULK)) && (devishighspeed || devissuperspeed)) ? "NAK-Rate" : "Interval",
                                            epinterval,
-                                           devishighspeed ? "µFrames" : "ms");
+                                           (devishighspeed || devissuperspeed) ? "µFrames" : "ms");
+                                }
+                                if(devissuperspeed)
+                                {
+                                    Printf("        Superspeed : bursts=%ld, attr=0x%02lx, bytes/interval=%ld\n",
+                                           epmaxburst, epcompattrs, epbytesperint);
                                 }
                                 if(eptranstype == USEAF_ISOCHRONOUS)
                                 {

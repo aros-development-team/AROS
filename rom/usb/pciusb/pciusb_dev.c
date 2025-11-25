@@ -301,11 +301,13 @@ AROS_LH1(void, devBeginIO,
 
     if(ret != RC_DONTREPLY)
     {
-        KPRINTF(1, ("TermIO\n"));
         if (ret != RC_OK)
         {
+            KPRINTF(1, "TermIO <err %04x>\n", ret);
             /* Set error codes */
             ioreq->iouh_Req.io_Error = ret & 0xff;
+        } else {
+            KPRINTF(1, ("TermIO\n"));
         }
         /* Terminate the iorequest */
         TermIO(ioreq, base);

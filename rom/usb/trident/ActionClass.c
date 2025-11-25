@@ -595,9 +595,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
     IPTR devproto;
     IPTR devislowspeed;
     IPTR devishighspeed;
-    #ifdef AROS_USB30_CODE
     IPTR devissuperspeed;
-    #endif
     IPTR devisconnected;
     IPTR devhasaddress;
     IPTR devhasdevdesc;
@@ -651,9 +649,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_ProductName, strarr++,
                     DA_IsLowspeed, &devislowspeed,
                     DA_IsHighspeed, &devishighspeed,
-                    #ifdef AROS_USB30_CODE
                     DA_IsSuperspeed, &devissuperspeed,
-                    #endif
                     DA_IsConnected, &devisconnected,
                     DA_HasAddress, &devhasaddress,
                     DA_HasDevDesc, &devhasdevdesc,
@@ -668,11 +664,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_ConfigList, &pclist,
                     TAG_END);
 
-        #ifdef AROS_USB30_CODE
         *strarr++ = (devislowspeed ? _(MSG_DEVICE_SPEED_LOW) : (devissuperspeed ? _(MSG_DEVICE_SPEED_SUPER) : (devishighspeed ? _(MSG_DEVICE_SPEED_HIGH) : _(MSG_DEVICE_SPEED_FULL))));
-        #else
-        *strarr++ = (devislowspeed ? _(MSG_DEVICE_SPEED_LOW) : (devishighspeed ? _(MSG_DEVICE_SPEED_HIGH) : _(MSG_DEVICE_SPEED_FULL)));
-        #endif
 
         if(devissuspended)
         {
@@ -3485,15 +3477,11 @@ IPTR Action_HW_Online(struct IClass *cl, Object *obj, Msg msg)
         psdGetAttrs(PGA_HARDWARE, hlnode->phw,
                     HA_ProductName, &hlnode->prodname,
                     TAG_END);
-#ifdef AROS_USB30_CODE
         if(psdEnumerateHardware(hlnode->phw) == NULL) {
             psdRemHardware(hlnode->phw);
             hlnode->phw = NULL;
             hlnode->prodname = NULL;
         }
-#else
-        psdEnumerateHardware(hlnode->phw);
-#endif
     }
 
     DoMethod(obj, MUIM_Action_HW_Activate);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver async transfer support functions
 */
@@ -14,9 +14,6 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
-
-#undef base
-#define base (hc->hc_Device)
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
@@ -83,10 +80,14 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         {
             struct pcisusbXHCIDevice *devCtx;
             UWORD hciport;
-#if (1)
-            hciport = ioreq->iouh_HubPort - 1;
+#if (0)
+    #if (1)
+                hciport = ioreq->iouh_HubPort - 1;
+    #else
+                psdGetAttrs(PGA_DEVICE, pd, DA_AtHubPortNumber, &hciport, TAG_END); 
+    #endif
 #else
-            psdGetAttrs(PGA_DEVICE, pd, DA_AtHubPortNumber, &hciport, TAG_END); 
+            hciport = ioreq->iouh_DevAddr;
 #endif
             pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for port #%u = 0x%p" DEBUGCOLOR_RESET" \n", hciport + 1, hc->hc_Devices[hciport]);
             if ((devCtx = hc->hc_Devices[hciport]) != NULL)
@@ -112,7 +113,9 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                                 ioreq->iouh_Endpoint,
                                 (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
                                 UHCMD_INTXFER,
-                                ioreq->iouh_MaxPktSize);
+                                ioreq->iouh_MaxPktSize,
+                                ioreq->iouh_Interval,
+                                ioreq->iouh_Flags);
 
                     if (txep > 0)
                     {
@@ -120,22 +123,6 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                         ep = (struct xhci_ep *)&in[ctxoff * (txep + 1)];
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
-
-                        if(ioreq->iouh_Interval >= 255)
-                        {
-                            ep->ctx[0] |= (10 << 16);
-                        }
-#if (0)
-                        else
-                        {
-                            int val, last = 3;
-                            for (val = 3; val <= 10; val++)
-                            {
-                                if (pow(2, val) * 125 < ioreq->iouh_Interval)
-                                    last = val;
-                            }
-                        }
-#endif
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "Interval %u = %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Interval, (ep->ctx[0] >> 16) & 0xFF);
 #if (0)
                         if (ioreq->iouh_Flags & UHFF_SUPERSPEED)

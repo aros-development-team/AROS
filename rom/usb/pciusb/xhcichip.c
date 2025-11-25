@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver main pciusb interface
 */
 
 #if defined(PCIUSB_ENABLEXHCI)
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
@@ -12,11 +13,10 @@
 
 #include <devices/usb_hub.h>
 
+#include <string.h>
+
 #include "uhwcmd.h"
 #include "xhciproto.h"
-
-#undef base
-#define base (hc->hc_Device)
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
@@ -68,6 +68,43 @@ static UBYTE xhciGetEPID(UBYTE endpoint, UBYTE dir)
         epid += dir;
     }
     return epid;
+}
+
+static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
+{
+    BOOL superspeed = (flags & UHFF_SUPERSPEED) != 0;
+    BOOL highspeed  = (flags & UHFF_HIGHSPEED)  != 0;
+
+    if ((type != UHCMD_INTXFER) && (type != UHCMD_ISOXFER))
+        return 0;
+
+    if (interval == 0)
+        return 0;
+
+    /*
+     * For SuperSpeed/HighSpeed endpoints the interval is an exponent in
+     * microframes. For full/low-speed interrupt endpoints the field uses the
+     * frame-count value directly.
+     */
+    if (superspeed || highspeed)
+    {
+        UWORD microframes = interval;
+        UBYTE exp = 0;
+
+        while (((1U << exp) < microframes) && (exp < 10))
+            exp++;
+
+        /* Interval exponents below 3 mean "every microframe". */
+        if (exp < 3)
+            exp = 3;
+
+        return exp;
+    }
+
+    if (interval > 255)
+        interval = 255;
+
+    return (UBYTE)interval;
 }
 
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
@@ -175,7 +212,9 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
                            UBYTE endpoint,
                            UBYTE dir,
                            ULONG type,
-                           ULONG maxpacket)
+                           ULONG maxpacket,
+                           UWORD interval,
+                           ULONG flags)
 {
     volatile struct pcisusbXHCIRing *epring;
     ULONG epid;
@@ -226,44 +265,53 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
 
     struct xhci_ep *ep = (struct xhci_ep *)&in[ctxoff * (epid + 1)];
 
+    memset((void *)ep, 0, sizeof(*ep));
+
     pciusbDebugEP("xHCI", DEBUGCOLOR_SET "EP input Ctx @ 0x%p" DEBUGCOLOR_RESET" \n", ep);
 
+    ep->ctx[1] &= ~((ULONG)7 << EPS_CTX_TYPE);
     switch (type)
     {
     case UHCMD_ISOXFER:
-        ep->ctx[1]   |= EPF_CTX_TYPE_ISOCH_O;
+        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_ISOCH_I : EPF_CTX_TYPE_ISOCH_O;
         break;
 
     case UHCMD_BULKXFER:
-        ep->ctx[1]   |= EPF_CTX_TYPE_BULK_O;
+        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_BULK_I : EPF_CTX_TYPE_BULK_O;
         break;
-        
+
     case UHCMD_INTXFER:
-        ep->ctx[1]   |= EPF_CTX_TYPE_INTR_O;
+        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_INTR_I : EPF_CTX_TYPE_INTR_O;
+        break;
+
+    case UHCMD_CONTROLXFER:
+        ep->ctx[1] |= EPF_CTX_TYPE_CONTROL;
         break;
     }
-    if (type == UHCMD_CONTROLXFER || (dir))
-        ep->ctx[1] |= EPF_CTX_TYPE_CONTROL;
-    if (epid > 1)
-    {
-        if (type == UHCMD_CONTROLXFER)
-        {
-          ep->length = 8;                                                                               // Avg TRB Length (8 for Control xfer)
+    if (epid > 1) {
+        ULONG avglen = maxpacket;
+
+        if (type == UHCMD_CONTROLXFER) {
+            if (avglen < 8)
+                avglen = 8;                                                                             // Minimum control packet size
         }
-        else
-        {
-            ep->length   = maxpacket;
-        }
-#if (0)
-        ep->ctx[0] |= (3 << 16);                                                                        // Set the interval
-#endif
+
+        ep->length = avglen;                                                                            // Avg TRB Length
+
+        UBYTE ival = xhciCalcInterval(interval, flags, type);
+        if (ival)
+            ep->ctx[0] |= ((ULONG)ival << 16);
     }
     ep->ctx[1] |= (EP_CTX_CERR_MASK << EPS_CTX_CERR);                                                   // Set CErr's initial value, and max packets
     ep->ctx[1] |= (maxpacket << EPS_CTX_PACKETMAX);
 
     pciusbDebugEP("xHCI", DEBUGCOLOR_SET "Setting de-queue ptr to 0x%p" DEBUGCOLOR_RESET" \n", devCtx->dc_EPAllocs[epid].dmaa_DMA);
 
-    xhciSetPointer(hc, ep->deq, ((IPTR)devCtx->dc_EPAllocs[epid].dmaa_DMA | EPF_CTX_DEQ_DCS));
+    IPTR deqptr = (IPTR)devCtx->dc_EPAllocs[epid].dmaa_DMA;
+    deqptr &= ~0xF;                                                                                     // Mask reserved bits
+    deqptr |= EPF_CTX_DEQ_DCS;
+
+    xhciSetPointer(hc, ep->deq, deqptr);
 
     pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: Endpoint Ring Initialized @ 0x%p <EPID %u>" DEBUGCOLOR_RESET" \n", __func__, devCtx->dc_EPAllocs[epid].dmaa_Ptr, epid);
 
@@ -947,7 +995,9 @@ AROS_UFH0(void, xhciControllerTask)
                         ULONG epid = xhciInitEP(hc, devCtx,
                                     0, 0,
                                     UHCMD_CONTROLXFER,
-                                    maxsize);
+                                    maxsize,
+                                    0,
+                                    0);
 
                         /* Pass ownership of the Output Device Context to the xHC */
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: Sending CMD Address Device" DEBUGCOLOR_RESET" \n", __func__);
@@ -1105,7 +1155,16 @@ takeownership:
         READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff + 4);
     }
 
-    pciusbDebug("xHCI", DEBUGCOLOR_SET "HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(xhciregs->hciversion));
+    UWORD xhciversion;
+    char *controllername = &hc->hc_Node.ln_Name[16];
+    xhciversion = AROS_LE2LONG(xhciregs->hciversion) & 0xFFFF;
+    pciusbDebug("xHCI", DEBUGCOLOR_SET "HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", xhciversion);
+    if (xhciversion == 0x0090)
+        controllername[10] = '0';
+    else if (xhciversion == 0x0100)
+        controllername[10] = '1';
+    else if (xhciversion == 0x0320)
+        controllername[10] = '2';
     pciusbDebug("xHCI", DEBUGCOLOR_SET "HCSPARAMS1: 0x%08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(xhciregs->hcsparams1));
     pciusbDebug("xHCI", DEBUGCOLOR_SET "HCSPARAMS2: 0x%08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(xhciregs->hcsparams2));
     pciusbDebug("xHCI", DEBUGCOLOR_SET "HCSPARAMS3: 0x%08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(xhciregs->hcsparams3));

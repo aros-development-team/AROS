@@ -88,6 +88,7 @@ struct RTIsoNode
     UWORD                       rtn_PTDCount;
     struct PTDNode              **rtn_PTDs;
     struct IOUsbHWBufferReq     rtn_BufferReq;
+    APTR                        rtn_BounceBuffer;
     struct IOUsbHWReq           rtn_IOReq;
     UWORD                       rtn_Dummy;
 };

@@ -19,7 +19,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 BOOL xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
 WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast);
 
-ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket);
+ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);

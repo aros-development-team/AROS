@@ -6,7 +6,7 @@
 **	standard usb hardware device include file
 **
 **	(C) Copyright 2002-2007 Chris Hodges
-**	(C) Copyright 2023 AROS Development Team
+**	(C) Copyright 2007-2025 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -64,8 +64,7 @@ struct IOUsbHWReq
     /* V2 structure extension */
     UWORD               iouh_Frame;             /* current USB-Frame value and ISO start frame*/
     UWORD               iouh_SplitHubAddr;      /* For Split-Transaction HUB address */
-    UWORD               iouh_HubPort;           /* HUB downstream port (Mainly for split transaction use) */
-#define iouh_SplitHubPort   iouh_HubPort
+    UWORD               iouh_SplitHubPort;      /* For Split-Transaction HUB downstream port */
     APTR                iouh_DriverPrivate1;    /* private data for internal driver use */
     APTR                iouh_DriverPrivate2;    /* private data for internal driver use */
 };

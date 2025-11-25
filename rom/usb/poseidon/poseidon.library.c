@@ -1784,6 +1784,27 @@ AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
                 takeit = FALSE;
             }
         }
+        if((ti = FindTagItem(EA_MaxBurst, tags)))
+        {
+            if(ti->ti_Data != pep->pep_MaxBurst)
+            {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_CompAttributes, tags)))
+        {
+            if(ti->ti_Data != pep->pep_CompAttributes)
+            {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_BytesPerInterval, tags)))
+        {
+            if(ti->ti_Data != pep->pep_BytesPerInterval)
+            {
+                takeit = FALSE;
+            }
+        }
 
         if(takeit)
         {
@@ -2898,10 +2919,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 
     ULONG *chnk;
 
-#ifdef AROS_USB30_CODE
     struct UsbStdBOSDesc usbosd;
     LONG ioerr_bos;
-#endif
 
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
 
@@ -2967,14 +2986,12 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                 case 64:
                     pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
                     break;
-#ifdef AROS_USB30_CODE
                 case 9:
                     if((AROS_LE2WORD(usdd.bcdUSB) >= 0x0300)) {
                         /* 9 is the only valid value for superspeed mode and it is the exponent of 2 =512 bytes */
                         pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1<<9);
                         break;
                     }
-#endif
                 default:
                     psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
                     KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
@@ -3012,13 +3029,13 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     pd->pd_Flags &= ~PDFF_LOWSPEED;
                     pd->pd_Flags |= PDFF_HIGHSPEED;
                 }
-#ifdef AROS_USB30_CODE
-#if (0)
+
                 if(((!pd->pd_Hub) && pd->pd_USBVers >= 0x300)) {
                     pd->pd_Flags &= ~(PDFF_LOWSPEED|PDFF_HIGHSPEED);
                     pd->pd_Flags |= PDFF_SUPERSPEED;
+                    pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
                 }
-#endif
+
                 /*
                     The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called the Binary Device Object Store (BOS)
                     for a USB device, which reports a bcdUSB value greater than 0x0200 in their device descriptor
@@ -3048,7 +3065,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr_bos));
                     }
                 }
-#endif
 
                 if(usdd.iManufacturer) {
                     pd->pd_MnfctrStr = psdGetStringDescriptor(pp, usdd.iManufacturer);
@@ -3722,9 +3738,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     struct PsdDevice *pd = NULL;
     struct PsdPipe *pp;
     struct MsgPort *mp;
-#ifdef AROS_USB30_CODE
     LONG ioerr;
-#endif
+
     KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
 
     if((mp = CreateMsgPort()))
@@ -3740,7 +3755,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                 pd->pd_Flags |= PDFF_CONNECTED;
 
                 pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-#ifdef AROS_USB30_CODE
                 ioerr = psdDoPipe(pp, NULL, 0);
                 if(ioerr == UHIOERR_HOSTERROR) {
                     psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
@@ -3750,9 +3764,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                     DeleteMsgPort(mp);
                     return(NULL);
                 }
-#else
-                psdDoPipe(pp, NULL, 0);
-#endif
+
                 pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                 psdDelayMS(100); // wait for root hub to settle
                 if(psdEnumerateDevice(pp))
@@ -3982,9 +3994,10 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         pp->pp_Endpoint = pep;
         pp->pp_IOReq = *(pd->pd_Hardware->phw_RootIOReq);
         pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
+#if (0)
         /* Always pass the hub port */
         pp->pp_IOReq.iouh_HubPort = pd->pd_HubPort;
-
+#endif
         if(pd->pd_Flags & PDFF_LOWSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
@@ -4010,17 +4023,16 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
             }
         }
-        #ifdef AROS_USB30_CODE
         if(pd->pd_Flags & PDFF_SUPERSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
         }
-        #endif
         if(pd->pd_Flags & PDFF_NEEDSSPLIT)
         {
             /* USB1.1 device connected to a USB2.0 hub */
             pp->pp_IOReq.iouh_Flags |= UHFF_SPLITTRANS;
             hubpd = pd->pd_Hub;
+            pp->pp_IOReq.iouh_SplitHubPort = pd->pd_HubPort;
 
             // find the root USB 2.0 hub in the tree
             while(hubpd && !(hubpd->pd_Flags & PDFF_HIGHSPEED))
@@ -6936,13 +6948,9 @@ AROS_LH0(void, psdParseCfg,
                     phw = psdAddHardware(name, unit);
                     if(phw)
                     {
-#ifdef AROS_USB30_CODE
                         if(psdEnumerateHardware(phw) == NULL) {
                             psdRemHardware(phw);
                         }
-#else
-                        psdEnumerateHardware(phw);
-#endif
                     }
                 }
             }
@@ -8191,7 +8199,56 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                         }
 
                                         pep->pep_Interval = usep->bInterval;
-                                        if(pd->pd_Flags & PDFF_HIGHSPEED)
+                                        pep->pep_MaxBurst = 1;
+                                        pep->pep_CompAttributes = 0;
+                                        pep->pep_BytesPerInterval = pep->pep_MaxPktSize;
+                                        if(pd->pd_Flags & PDFF_SUPERSPEED)
+                                        {
+                                            switch(pep->pep_TransType)
+                                            {
+                                                case USEAF_CONTROL:
+                                                case USEAF_BULK:
+                                                    pep->pep_Interval = 0; // not used for superspeed control/bulk
+                                                    break;
+
+                                                case USEAF_ISOCHRONOUS:
+                                                    if(pep->pep_MaxPktSize > 1024)
+                                                    {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                                       "Endpoint contains %s (%ld) MaxPktSize value!",
+                                                                       (STRPTR) "too high", pep->pep_MaxPktSize);
+                                                        pep->pep_MaxPktSize = 1024;
+                                                    }
+                                                    if(!pep->pep_Interval)
+                                                    {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                                       "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                                       (STRPTR) "Super", eptype, (STRPTR) "zero");
+                                                        pep->pep_Interval = 1;
+                                                    }
+                                                    else if(pep->pep_Interval > 16)
+                                                    {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                                       "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                                       (STRPTR) "Super", eptype, (STRPTR) "too high");
+                                                        pep->pep_Interval = 16;
+                                                    }
+                                                    pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                                    break;
+
+                                                case USEAF_INTERRUPT:
+                                                    if(!pep->pep_Interval)
+                                                    {
+                                                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                                       "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                                       (STRPTR) "Super", eptype, (STRPTR) "zero");
+                                                        pep->pep_Interval = 1;
+                                                    }
+                                                    pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                                    break;
+                                            }
+                                        }
+                                        else if(pd->pd_Flags & PDFF_HIGHSPEED)
                                         {
                                             switch(pep->pep_TransType)
                                             {
@@ -8305,6 +8362,36 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                 } else {
                                     psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint without prior interface descriptor!");
                                     KPRINTF(20, ("      Endpoint descriptor without Interface\n"));
+                                }
+                                break;
+                            }
+
+                            case UDT_SUPERSPEED_EP_COMP:
+                            {
+                                struct UsbSSEndpointCompDesc *comp = (struct UsbSSEndpointCompDesc *) dbuf;
+                                if(pep)
+                                {
+                                    pep->pep_MaxBurst = comp->bMaxBurst + 1;
+                                    pep->pep_CompAttributes = comp->bmAttributes;
+                                    pep->pep_BytesPerInterval = AROS_WORD2LE(comp->wBytesPerInterval);
+                                    if((pd->pd_Flags & PDFF_SUPERSPEED) && (pep->pep_TransType == USEAF_ISOCHRONOUS))
+                                    {
+                                        pep->pep_NumTransMuFr = (comp->bmAttributes & 0x03) + 1;
+                                    }
+                                } else {
+                                    psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed companion without prior endpoint descriptor!");
+                                }
+                                break;
+                            }
+
+                            case UDT_SUPERSPEED_ISO_COMP:
+                            {
+                                struct UsbSSPIsochEndpointCompDesc *comp = (struct UsbSSPIsochEndpointCompDesc *) dbuf;
+                                if(pep)
+                                {
+                                    pep->pep_BytesPerInterval = AROS_LONG2LE(comp->dwBytesPerInterval);
+                                } else {
+                                    psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed isoch companion without prior endpoint descriptor!");
                                 }
                                 break;
                             }
@@ -8854,6 +8941,9 @@ AROS_UFH0(void, pDeviceTask)
         Alert(AG_OpenLib);
         return;
     }
+
+//    KPrintF("[poseidon] %s: poseidon @ 0x%p\n", __func__, ps);
+
     thistask = FindTask(NULL);
     SetTaskPri(thistask, 21);
     phw = thistask->tc_UserData;
@@ -8870,6 +8960,8 @@ AROS_UFH0(void, pDeviceTask)
     phw->phw_TaskMsgPort.mp_SigBit = AllocSignal(-1L);
     NewList(&phw->phw_TaskMsgPort.mp_MsgList);
 
+//    KPrintF("[poseidon] %s: Task port @ 0x%p\n ", __func__, &phw->phw_TaskMsgPort);
+
     memset(&phw->phw_DevMsgPort, 0, sizeof(phw->phw_DevMsgPort));
     phw->phw_DevMsgPort.mp_Node.ln_Type = NT_MSGPORT;
     phw->phw_DevMsgPort.mp_Node.ln_Name = (APTR) phw;
@@ -8878,14 +8970,18 @@ AROS_UFH0(void, pDeviceTask)
     phw->phw_DevMsgPort.mp_SigBit = AllocSignal(-1L);
     NewList(&phw->phw_DevMsgPort.mp_MsgList);
 
+//    KPrintF("[poseidon] %s: Task port @ 0x%p\n", __func__, &phw->phw_DevMsgPort);
+
     if((phw->phw_RootIOReq = (struct IOUsbHWReq *) CreateIORequest(&phw->phw_DevMsgPort, sizeof(struct IOUsbHWReq))))
     {
+//        KPrintF("[poseidon] %s: ioreq @ 0x%p\n", __func__, phw->phw_RootIOReq);
         devname = phw->phw_DevName;
         ioerr = -1;
         while(*devname)
         {
             if(!(ioerr = OpenDevice(devname, phw->phw_Unit, (struct IORequest *) phw->phw_RootIOReq, 0)))
             {
+//                KPrintF("[poseidon] %s: opened %s/%u\n", __func__, devname, phw->phw_Unit);
                 break;
             }
             do
@@ -8897,6 +8993,8 @@ AROS_UFH0(void, pDeviceTask)
                 }
             } while(*(++devname));
         }
+
+//        KPrintF("[poseidon] %s: device @ 0x%p\n", __func__, phw->phw_RootIOReq->iouh_Req.io_Device);
 
         if(!ioerr)
         {
@@ -8931,6 +9029,8 @@ AROS_UFH0(void, pDeviceTask)
             phw->phw_RootIOReq->iouh_Req.io_Command = UHCMD_QUERYDEVICE;
             DoIO((struct IORequest *) phw->phw_RootIOReq);
 
+//            KPrintF("[poseidon] %s: device queried\n", __func__);
+
             phw->phw_ProductName = psdCopyStr(prodname ? prodname : (STRPTR) "n/a");
             phw->phw_Manufacturer = psdCopyStr(manufacturer ? manufacturer : (STRPTR) "n/a");
             phw->phw_Description = psdCopyStr(description ? description : (STRPTR) "n/a");
@@ -8956,9 +9056,13 @@ AROS_UFH0(void, pDeviceTask)
             KPRINTF(10, ("%s ready!\n", thistask->tc_Node.ln_Name));
             phw->phw_Task = thistask;
 
+//            KPrintF("[poseidon] %s: registering in posedion..\n", __func__);
+
             psdLockWritePBase();
             AddTail(&ps->ps_Hardware, &phw->phw_Node);
             psdUnlockPBase();
+
+//            KPrintF("[poseidon] %s: sending ready signal\n", __func__);
 
             Forbid();
             if(phw->phw_ReadySigTask)
@@ -8992,6 +9096,7 @@ AROS_UFH0(void, pDeviceTask)
                 }
                 sigs = Wait(sigmask);
             } while(!(sigs & SIGBREAKF_CTRL_C));
+
             /* Flush all pending IO Requests */
             phw->phw_RootIOReq->iouh_Req.io_Command = CMD_FLUSH;
             DoIO((struct IORequest *) phw->phw_RootIOReq);
@@ -9406,6 +9511,9 @@ static const ULONG PsdEndpointPT[] =
     PACK_ENTRY(EA_Dummy, EA_NumTransMuFrame, PsdEndpoint, pep_NumTransMuFr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(EA_Dummy, EA_SyncType, PsdEndpoint, pep_SyncType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(EA_Dummy, EA_UsageType, PsdEndpoint, pep_UsageType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_MaxBurst, PsdEndpoint, pep_MaxBurst, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_CompAttributes, PsdEndpoint, pep_CompAttributes, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_BytesPerInterval, PsdEndpoint, pep_BytesPerInterval, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(EA_Dummy, EA_Interface, PsdEndpoint, pep_Interface, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
     PACK_WORDBIT(EA_Dummy, EA_IsIn, PsdEndpoint, pep_Direction, PKCTRL_BIT|PKCTRL_UNPACKONLY, 1),
     PACK_ENDTABLE
