@@ -1,85 +1,88 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM kernel-usb-usbclass-includes : \
-#MM     kernel-usb-poseidon-includes \
+#MM kernel-usb-usbclass-includes :              \
+#MM     kernel-usb-poseidon-includes            \
 #MM     includes-copy
 #MM- kernel-usb-usbclass : linklibs
 
 # This metatarget builds classes which are always disk-based
-#MM- kernel-usb-classes-common : \
-#MM     kernel-usb-classes-asixeth \
-#MM     kernel-usb-classes-usbaudio \
-#MM     kernel-usb-classes-bluetooth \
-#MM     kernel-usb-classes-camdusbmidi \
-#MM     kernel-usb-classes-cdcacm \
-#MM     kernel-usb-classes-dm9601eth \
-#MM     kernel-usb-classes-dfu \
-#MM     kernel-usb-classes-egalaxtouch \
-#MM     kernel-usb-classes-ethwrap \
-#MM     kernel-usb-classes-moschipeth \
-#MM     kernel-usb-classes-palmpda \
-#MM     kernel-usb-classes-pegasus \
-#MM     kernel-usb-classes-printer \
-#MM     kernel-usb-classes-ptp \
-#MM     kernel-usb-classes-rawwrap \
-#MM     kernel-usb-classes-serialcp210x \
-#MM     kernel-usb-classes-serialpl2303 \
-#MM     kernel-usb-classes-simplemidi \
-#MM     kernel-usb-classes-stir4200 \
-#MM     kernel-usb-classes-rndis \
+#MM- kernel-usb-classes-common :                \
+#MM     kernel-usb-classes-asixeth              \
+#MM     kernel-usb-classes-usbaudio             \
+#MM     kernel-usb-classes-bluetooth            \
+#MM     kernel-usb-classes-camdusbmidi          \
+#MM     kernel-usb-classes-cdcacm               \
+#MM     kernel-usb-classes-dm9601eth            \
+#MM     kernel-usb-classes-dfu                  \
+#MM     kernel-usb-classes-egalaxtouch          \
+#MM     kernel-usb-classes-ethwrap              \
+#MM     kernel-usb-classes-moschipeth           \
+#MM     kernel-usb-classes-palmpda              \
+#MM     kernel-usb-classes-pegasus              \
+#MM     kernel-usb-classes-printer              \
+#MM     kernel-usb-classes-ptp                  \
+#MM     kernel-usb-classes-rawwrap              \
+#MM     kernel-usb-classes-serialcp210x         \
+#MM     kernel-usb-classes-serialpl2303         \
+#MM     kernel-usb-classes-simplemidi           \
+#MM     kernel-usb-classes-stir4200             \
+#MM     kernel-usb-classes-rndis                \
 #MM     kernel-usb-classes-felsunxi
 
 # Build complete set of classes on disk
-#MM kernel-usb-classes :		\
-#MM	kernel-usb-classes-common	\
-#MM     kernel-usb-classes-bootkeyboard \
-#MM     kernel-usb-classes-bootmouse	\
-#MM     kernel-usb-classes-hid		\
-#MM     kernel-usb-classes-hub		\
+#MM kernel-usb-classes :		                \
+#MM	kernel-usb-classes-common	                \
+#MM     kernel-usb-classes-bootkeyboard         \
+#MM     kernel-usb-classes-bootmouse	        \
+#MM     kernel-usb-classes-hid		            \
+#MM     kernel-usb-classes-hub		            \
+#MM     kernel-usb-classes-hubss                \
 #MM     kernel-usb-classes-massstorage
 
 # Build a set of kickstart-resident classes for ELF packaging
-#MM kernel-usb-classes-kobj :			\
-#MM     kernel-usb-classes-bootkeyboard-kobj	\
-#MM     kernel-usb-classes-bootmouse-kobj	\
-#MM     kernel-usb-classes-hid-kobj		\
-#MM     kernel-usb-classes-hub-kobj		\
+#MM kernel-usb-classes-kobj :			        \
+#MM     kernel-usb-classes-bootkeyboard-kobj    \
+#MM     kernel-usb-classes-bootmouse-kobj	    \
+#MM     kernel-usb-classes-hid-kobj		        \
+#MM     kernel-usb-classes-hub-kobj		        \
+#MM     kernel-usb-classes-hubss-kobj           \
 #MM     kernel-usb-classes-massstorage-kobj
 
-#MM kernel-usb-classes-clean : \
-#MM     kernel-usb-classes-asixeth-clean \
-#MM     kernel-usb-classes-usbaudio-clean \
-#MM     kernel-usb-classes-bluetooth-clean \
-#MM     kernel-usb-classes-bootkeyboard-clean \
-#MM     kernel-usb-classes-bootmouse-clean \
-#MM     kernel-usb-classes-camdusbmidi-clean \
-#MM     kernel-usb-classes-cdcacm-clean \
-#MM     kernel-usb-classes-dm9601eth-clean \
-#MM     kernel-usb-classes-dfu-clean \
-#MM     kernel-usb-classes-egalaxtouch-clean \
-#MM     kernel-usb-classes-ethwrap-clean \
-#MM     kernel-usb-classes-hid-clean \
-#MM     kernel-usb-classes-hub-clean \
-#MM     kernel-usb-classes-massstorage-clean \
-#MM     kernel-usb-classes-moschipeth-clean \
-#MM     kernel-usb-classes-palmpda-clean \
-#MM     kernel-usb-classes-pegasus-clean \
-#MM     kernel-usb-classes-printer-clean \
-#MM     kernel-usb-classes-ptp-clean \
-#MM     kernel-usb-classes-rawwrap-clean \
-#MM     kernel-usb-classes-serialcp210x-clean \
-#MM     kernel-usb-classes-serialpl2303-clean \
-#MM     kernel-usb-classes-simplemidi-clean \
-#MM     kernel-usb-classes-stir4200-clean \ 
-#MM     kernel-usb-classes-rndis-clean \
+#MM kernel-usb-classes-clean :                  \
+#MM     kernel-usb-classes-asixeth-clean        \
+#MM     kernel-usb-classes-usbaudio-clean       \
+#MM     kernel-usb-classes-bluetooth-clean      \
+#MM     kernel-usb-classes-bootkeyboard-clean   \
+#MM     kernel-usb-classes-bootmouse-clean      \
+#MM     kernel-usb-classes-camdusbmidi-clean    \
+#MM     kernel-usb-classes-cdcacm-clean         \
+#MM     kernel-usb-classes-dm9601eth-clean      \
+#MM     kernel-usb-classes-dfu-clean            \
+#MM     kernel-usb-classes-egalaxtouch-clean    \
+#MM     kernel-usb-classes-ethwrap-clean        \
+#MM     kernel-usb-classes-hid-clean            \
+#MM     kernel-usb-classes-hub-clean            \
+#MM     kernel-usb-classes-hubss-clean          \
+#MM     kernel-usb-classes-massstorage-clean    \
+#MM     kernel-usb-classes-moschipeth-clean     \
+#MM     kernel-usb-classes-palmpda-clean        \
+#MM     kernel-usb-classes-pegasus-clean        \
+#MM     kernel-usb-classes-printer-clean        \
+#MM     kernel-usb-classes-ptp-clean            \
+#MM     kernel-usb-classes-rawwrap-clean        \
+#MM     kernel-usb-classes-serialcp210x-clean   \
+#MM     kernel-usb-classes-serialpl2303-clean   \
+#MM     kernel-usb-classes-simplemidi-clean     \
+#MM     kernel-usb-classes-stir4200-clean       \ 
+#MM     kernel-usb-classes-rndis-clean          \
 #MM     kernel-usb-classes-felsunxi-clean
 
 .PHONY: kernel-usb-classes
 .PHONY: kernel-usb-classes-kobj
 .PHONY: kernel-usb-classes-clean
 
-%build_module_abi mmake=kernel-usb-usbclass \
+%build_module_abi mmake=kernel-usb-usbclass     \
     modname=usbclass modtype=library
 
 %common

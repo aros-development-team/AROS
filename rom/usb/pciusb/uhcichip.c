@@ -1306,11 +1306,12 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateBusmaster); // enable busmaster
 
-        // Fix for VIA Babble problem
-        cnt = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40);
-        if(!(cnt & 0x40)) {
-            pciusbDebug("UHCI", "Applying VIA Babble workaround\n");
-            WRITECONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40, cnt|0x40);
+        if (hc->hc_Quirks & HCQ_UHCI_VIA_BABBLE) {
+            cnt = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40);
+            if(!(cnt & 0x40)) {
+                pciusbDebug("UHCI", "Applying VIA Babble workaround\n");
+                WRITECONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40, cnt|0x40);
+            }
         }
 
         pciusbDebug("UHCI", "Configuring UHCI HC\n");

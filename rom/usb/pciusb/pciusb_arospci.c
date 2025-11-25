@@ -69,7 +69,20 @@ static void handleQuirks(struct PCIController *hc)
     {
         /* Apply MosChip frame-counter register bug workaround */
         hc->hc_Quirks |= HCQ_EHCI_MOSC_FRAMECOUNTBUG;
-    }    
+    }
+    else if (vendorid == 0x1106)
+    {
+        /* Apply fix for VIA Babble problem */
+        switch(productid) {
+            case 0x3038:     // VT83C572 UHCI
+            case 0x3104:     // VT82C596 UHCI
+            case 0x3107:     // VT82C686 UHCI
+                if (revisionid < 0x10) {  // apply only to affected revisions
+                    hc->hc_Quirks |= HCQ_UHCI_VIA_BABBLE;
+                }
+                break;
+        }
+    }
 }
 
 AROS_UFH3(void, pciEnumerator,

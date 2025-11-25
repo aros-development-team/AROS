@@ -174,7 +174,7 @@ AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct
             while((ti = LibNextTagItem(&taglist)) != NULL) {
                 switch (ti->ti_Tag) {
                     case UCCA_Priority:
-                        *((SIPTR *) ti->ti_Data) = 0;
+                        *((SIPTR *) ti->ti_Data) = 1;
                         count++;
                         break;
                     case UCCA_Description:
@@ -1082,6 +1082,10 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                     KPRINTF(2, ("    It's a lowspeed device!\n"));
                     islowspeed = TRUE;
                 }
+                if(uhps.wPortStatus & UPSF_PORT_SUPER_SPEED) {
+                    psdSetAttrs(PGA_DEVICE, pd, DA_IsSuperspeed, TRUE, TAG_END);
+                    KPRINTF(2, ("    It's a superspeed device!\n"));
+                }
 
                 ObtainSemaphore(&nch->nch_HubBase->nh_Adr0Sema);
 
@@ -1120,7 +1124,10 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
                         }
 
                         if((uhps.wPortStatus & (UPSF_PORT_RESET|UPSF_PORT_CONNECTION|UPSF_PORT_ENABLE|UPSF_PORT_POWER|UPSF_PORT_OVER_CURRENT)) == (UPSF_PORT_CONNECTION|UPSF_PORT_ENABLE|UPSF_PORT_POWER)) {
-                            if((uhps.wPortStatus & UPSF_PORT_HIGH_SPEED) || washighspeed) {
+                            if(uhps.wPortStatus & UPSF_PORT_SUPER_SPEED) {
+                                psdSetAttrs(PGA_DEVICE, pd, DA_IsSuperspeed, TRUE, TAG_END);
+                                KPRINTF(2, ("    It's a superspeed device!\n"));
+                            } else if((uhps.wPortStatus & UPSF_PORT_HIGH_SPEED) || washighspeed) {
                                 psdSetAttrs(PGA_DEVICE, pd, DA_IsHighspeed, TRUE, TAG_END);
                                 washighspeed = TRUE;
                                 KPRINTF(2, ("    It's a highspeed device!\n"));

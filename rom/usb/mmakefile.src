@@ -52,7 +52,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM         kernel-usb
 
 # This is kickstart package contents
-USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hub USB/hid USB/massstorage
+USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hubss USB/hub USB/hid USB/massstorage
 USB_DEVS    := USBHardware/pciusb
 USB_LIBS    := poseidon
 USB_RES     := usbromstartup

@@ -8453,6 +8453,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                             }
 
                             case UDT_DEVICE:
+                            case UDT_SSHUB:
                             case UDT_HUB:
                             case UDT_HID:
                             case UDT_REPORT:

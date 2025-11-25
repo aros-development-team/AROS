@@ -612,13 +612,15 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
 #if defined(PCIUSB_ENABLEXHCI)
                                 hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
-                                if(hc->hc_HCIType == HCITYPE_XHCI)
+                                if((hc->hc_HCIType == HCITYPE_XHCI) && (unit->hu_RootHubXPorts))
                                 {
                                     struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
-                                    KPRINTF(1, "RH: XHCI Hub Descriptor\n");
-                                    usdd->bcdUSB = AROS_WORD2LE(0x0300);
-                                    usdd->bDeviceProtocol = 1; // single TT
-                                    usdd->bMaxPacketSize0 = 64;
+                                    KPRINTF(1, "RH: XHCI (USB3) Hub Descriptor\n");
+                                    usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
+                                    usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
+                                    usdd->bDeviceSubClass= 0;
+                                    usdd->bDeviceProtocol= 3;                    /* USB3 hub */
+                                    usdd->bMaxPacketSize0 = 64;                  /* 512 bytes (2^9) encoded as 64 here  */
                                 }
                                 else
 #endif
@@ -998,6 +1000,52 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 case USR_GET_DESCRIPTOR:
                     switch(val>>8)
                     {
+                        case UDT_SSHUB:
+                        {
+                            struct UsbSSHubDesc *shd;
+                            UWORD sslen = sizeof(struct UsbSSHubDesc);
+
+                            KPRINTF(1, "RH: GetSuperSpeedHubDescriptor (%ld)\n", len);
+
+#if !defined(PCIUSB_ENABLEXHCI)
+                            /* No xHCI -> no SuperSpeed hub */
+                            return UHIOERR_STALL;
+#else
+                            /* Only make sense if we actually have an xHCI root */
+                            hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+                            if (!hc || hc->hc_HCIType != HCITYPE_XHCI)
+                                return UHIOERR_STALL;
+#endif
+
+                            ioreq->iouh_Actual = (len > sslen) ? sslen : len;
+                            CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                            if (ioreq->iouh_Length >= sslen)
+                            {
+                                shd = (struct UsbSSHubDesc *)ioreq->iouh_Data;
+
+                                /* Number of SS ports */
+                                shd->bNbrPorts = unit->hu_RootHubXPorts;
+
+                                /* wHubCharacteristics: at least indicate per-port power if PPC set */
+                                {
+                                    UWORD characteristics = 0;
+
+                                    if (hc->hc_Flags & HCF_PPC)
+                                        characteristics |= UHCF_INDIVID_POWER;
+
+                                    shd->wHubCharacteristics = WORD2LE(characteristics);
+                                }
+
+                                /* bPwrOn2PwrGood – USB3 spec suggests up to 20ms typical for xHCI */
+                                shd->bPwrOn2PwrGood = 10; /* 10 * 2ms = 20ms */
+
+                                /* wHubDelay / bHubHdrDecLat left at 0 for now */
+                            }
+
+                            return 0;
+                        }
+
                         case UDT_HUB:
                         {
                             UWORD hubdesclen = 9;
