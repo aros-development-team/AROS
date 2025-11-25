@@ -34,6 +34,7 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (3<<24)|(AUDIO_CTRL_SUBCLASS  <<8)|AUDIO_CLASSCODE    , "Audio Control" },
     { (3<<24)|(AUDIO_STREAM_SUBCLASS<<8)|AUDIO_CLASSCODE    , "Audio Streaming" },
     { (3<<24)|(AUDIO_MIDI_SUBCLASS  <<8)|AUDIO_CLASSCODE    , "Midi" },
+    { (1<<24)                           | 0x10              , "Audio/Video" },
     { (1<<24)                           |AUDIO_CLASSCODE    , "Audio" },
 
     { (3<<24)|(CDC_DLCM_SUBCLASS    <<8)|CDCCTRL_CLASSCODE  , "Direct Line Control" },
@@ -79,6 +80,9 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
 
     { (7<<24)|(1<<16)                   |HUB_CLASSCODE      , "Hub (Hi-speed, Single TT)" },
     { (7<<24)|(2<<16)                   |HUB_CLASSCODE      , "Hub (Hi-speed, Multi TT)" },
+    { (7<<24)|(3<<16)                   |HUB_CLASSCODE      , "Hub (SuperSpeed)" },
+    { (1<<24)                           | 0x1A              , "USB4 Hub" },
+    { (1<<24)                           | 0x12              , "USB Type-C Bridge" },
     { (1<<24)                           |HUB_CLASSCODE      , "Hub" },
 
     { (1<<24)                           |SMARTCARD_CLASSCODE, "Chip-/Smartcard" },
