@@ -1,7 +1,7 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 2.7 (25.11.2025)
+**	$VER: usbhardware.h 3.0 (25.11.2025)
 **
 **	standard usb hardware device include file
 **
@@ -22,51 +22,67 @@
 #include "devices/usb.h"
 #endif
 
+/* Common base (V1) fields */
+#define IOUSBHWREQ_V1_FIELDS                                                                                                                          \
+    struct IORequest    iouh_Req;               /* basic IOReq                                                                                      */\
+    UWORD               iouh_Flags;             /* Transfer flags                                                                                   */\
+    UWORD               iouh_State;             /* USB State Flags                                                                                  */\
+    UWORD               iouh_Dir;               /* Direction of transfer                                                                            */\
+    UWORD               iouh_DevAddr;           /* USB Device Address (0-127)                                                                       */\
+    UWORD               iouh_Endpoint;          /* USB Device Endpoint (0-15)                                                                       */\
+    UWORD               iouh_MaxPktSize;        /* Maximum packet size                                                                              */\
+    ULONG               iouh_Actual;            /* Actual bytes transferred                                                                         */\
+    ULONG               iouh_Length;            /* Size of buffer                                                                                   */\
+    APTR                iouh_Data;              /* Pointer to in/out buffer                                                                         */\
+    UWORD               iouh_Interval;          /* Interrupt Interval (ms or 125us units)                                                           */\
+    ULONG               iouh_NakTimeout;        /* Timeout in ms before request retired                                                             */\
+    struct UsbSetupData iouh_SetupData;         /* Setup fields for ctrl transfers                                                                  */\
+    APTR                iouh_UserData;          /* private data, stack-owned                                                                        */\
+    UWORD               iouh_ExtError           /* Extended error code                                                                              */
+
+/* V2 extension fields (added after V1) */
+#define IOUSBHWREQ_V2_FIELDS                                                                                                                          \
+    UWORD               iouh_Frame;             /* current USB-Frame / ISO start frame                                                              */\
+    UWORD               iouh_SplitHubAddr;      /* Split-Transaction HUB address                                                                    */\
+    UWORD               iouh_SplitHubPort;      /* Split-Transaction HUB downstream port                                                            */\
+    APTR                iouh_DriverPrivate1;    /* private data for internal driver use                                                             */\
+    APTR                iouh_DriverPrivate2     /* private data for internal driver use                                                             */
+
+/* V3 extension fields (for USB3/xHCI etc.) */
+#define IOUSBHWREQ_V3_FIELDS                                                                                                                          \
+    UWORD               iouh_HubPort;           /* root-hub port (1-based)                                                                          */\
+    /* SuperSpeed endpoint companion info */                                                                                                          \
+    UBYTE               iouh_SS_MaxBurst;       /* bMaxBurst                                                                                        */\
+    UBYTE               iouh_SS_Mult;           /* Mult for isoch                                                                                   */\
+    UWORD               iouh_SS_BytesPerInterval; /* wBytesPerInterval                                                                              */\
+    /* Topology */                                                                                                                                    \
+    ULONG               iouh_RouteString;       /* 20-bit USB3 route string                                                                         */\
+    /* Optional fields */                                                                                                                             \
+    UWORD               iouh_MaxStreams;        /* 0 = no streams                                                                                   */\
+    UWORD               iouh_StreamID;          /* per-transfer (usually)                                                                           */\
+    UWORD               iouh_PowerPolicy        /* link power / policy hints                                                                        */
+
 /* IO Request structure */
+/* Original V1 layout (kept for ABI/compat) */
 struct IOUsbHWReqV1
 {
-    struct IORequest    iouh_Req;
-    UWORD               iouh_Flags;             /* Transfer flags                                                                                   */
-    UWORD               iouh_State;             /* USB State Flags                                                                                  */
-    UWORD               iouh_Dir;               /* Direction of transfer                                                                            */
-    UWORD               iouh_DevAddr;           /* USB Device Address (0-127)                                                                       */
-    UWORD               iouh_Endpoint;          /* USB Device Endpoint (0-15)                                                                       */
-    UWORD               iouh_MaxPktSize;        /* Maximum packet size for multiple packet transfers                                                */
-    ULONG               iouh_Actual;            /* Actual bytes transferred                                                                         */
-    ULONG               iouh_Length;            /* Size of buffer                                                                                   */
-    APTR                iouh_Data;              /* Pointer to in/out buffer                                                                         */
-    UWORD               iouh_Interval;          /* Interrupt Interval (in ms or 125 µSec units)                                                     */
-    ULONG               iouh_NakTimeout;        /* Timeout in ms before request will be retired                                                     */
-    struct UsbSetupData iouh_SetupData;         /* Setup fields for ctrl transfers                                                                  */
-    APTR                iouh_UserData;          /* private data, may not be touched by hardware driver,
-                                                    do not make assumptions about its contents                                                      */
-    UWORD               iouh_ExtError;          /* Extended error code                                                                              */
+    IOUSBHWREQ_V1_FIELDS;
 };
 #define IOUsbHWReqObsolete  IOUsbHWReqV1
 
+/* V2 = V1 + V2 extension */
+struct IOUsbHWReqV2
+{
+    IOUSBHWREQ_V1_FIELDS;
+    IOUSBHWREQ_V2_FIELDS;
+};
+
+/* Current version = V1 + V2 + V3 */
 struct IOUsbHWReq
 {
-    struct IORequest    iouh_Req;               /* See IOUsbHWReqV1 for definitions ..                                                              */
-    UWORD               iouh_Flags;
-    UWORD               iouh_State;
-    UWORD               iouh_Dir;
-    UWORD               iouh_DevAddr;
-    UWORD               iouh_Endpoint;
-    UWORD               iouh_MaxPktSize;
-    ULONG               iouh_Actual;
-    ULONG               iouh_Length;
-    APTR                iouh_Data;
-    UWORD               iouh_Interval;
-    ULONG               iouh_NakTimeout;
-    struct UsbSetupData iouh_SetupData;
-    APTR                iouh_UserData;
-    UWORD               iouh_ExtError;
-    /* V2 structure extension */
-    UWORD               iouh_Frame;             /* current USB-Frame value and ISO start frame                                                      */
-    UWORD               iouh_SplitHubAddr;      /* For Split-Transaction HUB address                                                                */
-    UWORD               iouh_SplitHubPort;      /* For Split-Transaction HUB downstream port                                                        */
-    APTR                iouh_DriverPrivate1;    /* private data for internal driver use                                                             */
-    APTR                iouh_DriverPrivate2;    /* private data for internal driver use                                                             */
+    IOUSBHWREQ_V1_FIELDS;
+    IOUSBHWREQ_V2_FIELDS;
+    IOUSBHWREQ_V3_FIELDS;
 };
 
 /* Realtime ISO transfer structure as given in iouh_Data */
@@ -140,7 +156,8 @@ struct IOUsbHWBufferReq
 #define UHFB_MULTI_1            6               /* new for V2.1: Number of transactions per microframe bit 0                                        */
 #define UHFB_MULTI_2            7               /* new for V2.1: Number of transactions per microframe bit 1                                        */
 #define UHFS_THINKTIME          8               /* new for V2.2: Bit times required at most for intertransaction gap on LS/FS                       */
-#define UHFB_SUPERSPEED         15              /* new for v2.7: Device operates at super speed (USB 3.0)                                           */
+#define UHFB_TT_MULTI           10              /* new for v3.0: hub is multi-TT                                                                    */
+#define UHFB_SUPERSPEED         15              /* new for v3.0: Device operates at super speed (USB 3.0)                                           */
 
 #define UHTT_8                  (0)
 #define UHTT_16                 (1)
@@ -160,6 +177,7 @@ struct IOUsbHWBufferReq
 #define UHFF_THINKTIME_16       (UHTT_16 << UHFS_THINKTIME)
 #define UHFF_THINKTIME_24       (UHTT_24 << UHFS_THINKTIME)
 #define UHFF_THINKTIME_32       (UHTT_32 << UHFS_THINKTIME)
+#define UHFF_TT_MULTI           (1 << UHFB_TT_MULTI)
 #define UHFF_SUPERSPEED         (1 << UHFB_SUPERSPEED)
 
 /* Tags for UHCMD_QUERYDEVICE */

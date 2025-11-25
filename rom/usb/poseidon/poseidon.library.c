@@ -3976,12 +3976,14 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
 
     KPRINTF(2, ("psdAllocPipe(%p, %p, %p)\n", pd, mp, pep));
     if(!mp || !pd)
-    {
         return(NULL);
-    }
-    if(pep && (pep->pep_TransType == USEAF_ISOCHRONOUS) && (!(pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Capabilities & UHCF_ISO)))
+
+    if(pep && 
+        (pep->pep_TransType == USEAF_ISOCHRONOUS) &&
+        (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO)))
     {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Your HW controller driver does not support iso transfers. Sorry.");
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Your HW controller driver does not support iso transfers. Sorry.");
         return(NULL);
     }
 
@@ -3992,19 +3994,30 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         pp->pp_Msg.mn_Length = sizeof(struct PsdPipe);
         pp->pp_Device = pd;
         pp->pp_Endpoint = pep;
-        pp->pp_IOReq = *(pd->pd_Hardware->phw_RootIOReq);
-        pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
-#if (0)
-        /* Always pass the hub port */
-        pp->pp_IOReq.iouh_HubPort = pd->pd_HubPort;
-#endif
+
+        /* Base template IOReq from HW driver */
+        pp->pp_IOReq                            = *(pd->pd_Hardware->phw_RootIOReq);
+        pp->pp_IOReq.iouh_DevAddr               = pd->pd_DevAddr; /* Device address is per-pipe */
+
+        /* V3: always pass the root-hub port (1-based) */
+        pp->pp_IOReq.iouh_HubPort               = pd->pd_HubPort;
+
+        /* Initialise fields to safe defaults */
+        pp->pp_IOReq.iouh_SS_MaxBurst           = 0;
+        pp->pp_IOReq.iouh_SS_Mult               = 0;
+        pp->pp_IOReq.iouh_SS_BytesPerInterval   = 0;
+        pp->pp_IOReq.iouh_RouteString           = 0;
+        pp->pp_IOReq.iouh_MaxStreams            = 0;
+        pp->pp_IOReq.iouh_StreamID              = 0;
+        pp->pp_IOReq.iouh_PowerPolicy           = 0;
+
         if(pd->pd_Flags & PDFF_LOWSPEED)
-        {
             pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
-        }
+
         if(pd->pd_Flags & PDFF_HIGHSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+            /* MULT for HS interrupt/isoch (transactions per microframe) */
             if(pep)
             {
                 switch(pep->pep_NumTransMuFr)
@@ -4023,32 +4036,75 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
             }
         }
+
         if(pd->pd_Flags & PDFF_SUPERSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+            /* SuperSpeed endpoint companion information */
+            if (pep)
+            {
+                /* bMaxBurst – spec is 5 bits, we clamp to 8-bit field */
+                if (pep->pep_MaxBurst > 0xFF)
+                    pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
+                else
+                    pp->pp_IOReq.iouh_SS_MaxBurst = (UBYTE)pep->pep_MaxBurst;
+
+                /* Mult: for isoch EPs, bits 1:0 of bmAttributes.
+                   We store the raw 0..3 value and let the HCD interpret it. */
+                if (pep->pep_TransType == USEAF_ISOCHRONOUS)
+                    pp->pp_IOReq.iouh_SS_Mult = (UBYTE)(pep->pep_CompAttributes & 0x3);
+                else
+                    pp->pp_IOReq.iouh_SS_Mult = 0;
+
+                /* wBytesPerInterval – spec is 16 bits; struct uses ULONG.
+                   Clamp to 16 bits for the IOReq field. */
+                if (pep->pep_BytesPerInterval > 0xFFFFUL)
+                    pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
+                else
+                    pp->pp_IOReq.iouh_SS_BytesPerInterval =
+                        (UWORD)pep->pep_BytesPerInterval;
+            }
+            /* USB3 topology (route string) */
+            /* once we add pd->pd_RouteString, copy it here.
+               For now, keep 0 for “direct attach / not computed yet”. */
+            /* pp->pp_IOReq.iouh_RouteString = pd->pd_RouteString; */
         }
+
+        /* Split transactions / TT info for FS/LS behind HS hubs */
         if(pd->pd_Flags & PDFF_NEEDSSPLIT)
         {
             /* USB1.1 device connected to a USB2.0 hub */
             pp->pp_IOReq.iouh_Flags |= UHFF_SPLITTRANS;
+
             hubpd = pd->pd_Hub;
             pp->pp_IOReq.iouh_SplitHubPort = pd->pd_HubPort;
 
-            // find the root USB 2.0 hub in the tree
+            /* Walk up to the high-speed hub that actually owns the TT */
             while(hubpd && !(hubpd->pd_Flags & PDFF_HIGHSPEED))
             {
                 pp->pp_IOReq.iouh_SplitHubPort = hubpd->pd_HubPort;
                 hubpd = hubpd->pd_Hub;
             }
+
             if(!hubpd)
             {
-                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Internal error obtaining split transaction hub!");
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                "Internal error obtaining split transaction hub!");
                 psdFreeVec(pp);
                 return(NULL);
             }
-            pp->pp_IOReq.iouh_Flags |= (hubpd->pd_HubThinkTime<<UHFS_THINKTIME);
+            /* Encode TT think time into flags */
+            pp->pp_IOReq.iouh_Flags |= (hubpd->pd_HubThinkTime << UHFS_THINKTIME);
+
+            /* Hub address that owns the TT */
             pp->pp_IOReq.iouh_SplitHubAddr = hubpd->pd_DevAddr;
+
+            /* mark multi-TT hubs explicitly */
+            if (hubpd->pd_Flags & PDFF_MULTITT)
+                pp->pp_IOReq.iouh_Flags |= UHFF_TT_MULTI;
         }
+
+        /* Endpoint / transfer type specific setup */
         if(pep)
         {
             switch(pep->pep_TransType)
@@ -4074,15 +4130,15 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                     return(NULL);
 
             }
-            pp->pp_IOReq.iouh_Dir = (pep->pep_Direction ? UHDIR_IN : UHDIR_OUT);
-            pp->pp_IOReq.iouh_Endpoint = pep->pep_EPNum;
-            pp->pp_IOReq.iouh_MaxPktSize = pep->pep_MaxPktSize;
-            pp->pp_IOReq.iouh_Interval = pep->pep_Interval;
+            pp->pp_IOReq.iouh_Dir               = (pep->pep_Direction ? UHDIR_IN : UHDIR_OUT);
+            pp->pp_IOReq.iouh_Endpoint          = pep->pep_EPNum;
+            pp->pp_IOReq.iouh_MaxPktSize        = pep->pep_MaxPktSize;
+            pp->pp_IOReq.iouh_Interval          = pep->pep_Interval;
         } else {
-            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
-            pp->pp_IOReq.iouh_Dir = UHDIR_SETUP;
-            pp->pp_IOReq.iouh_Endpoint = 0;
-            pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0;
+            pp->pp_IOReq.iouh_Req.io_Command    = UHCMD_CONTROLXFER;
+            pp->pp_IOReq.iouh_Dir               = UHDIR_SETUP;
+            pp->pp_IOReq.iouh_Endpoint          = 0;
+            pp->pp_IOReq.iouh_MaxPktSize        = pd->pd_MaxPktSize0;
         }
         pd->pd_UseCnt++;
         return(pp);
@@ -9448,6 +9504,7 @@ static const ULONG PsdDevicePT[] =
     PACK_WORDBIT(DA_Dummy, DA_NeedsSplitTrans, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_NEEDSSPLIT),
     PACK_WORDBIT(DA_Dummy, DA_LowPower, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_LOWPOWER),
     PACK_WORDBIT(DA_Dummy, DA_IsSuperspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUPERSPEED),
+    PACK_WORDBIT(DA_Dummy, DA_IsMultiTT, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_MULTITT),
     PACK_ENDTABLE
 };
 

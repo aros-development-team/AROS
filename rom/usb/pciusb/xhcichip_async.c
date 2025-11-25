@@ -127,15 +127,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         {
             struct pcisusbXHCIDevice *devCtx;
             UWORD hciport;
-#if (0)
-    #if (1)
-                hciport = ioreq->iouh_HubPort - 1;
-    #else
-                psdGetAttrs(PGA_DEVICE, pd, DA_AtHubPortNumber, &hciport, TAG_END); 
-    #endif
-#else
-            hciport = ioreq->iouh_DevAddr;
-#endif
+            hciport = ioreq->iouh_HubPort - 1;
+
             pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for port #%u = 0x%p" DEBUGCOLOR_RESET" \n", hciport + 1, hc->hc_Devices[hciport]);
             if ((devCtx = hc->hc_Devices[hciport]) != NULL)
             {

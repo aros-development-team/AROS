@@ -358,19 +358,20 @@ struct PsdHardware
 
 /* Flags for pd_Flags */
 
-#define PDFF_LOWSPEED    0x0001
-#define PDFF_CONNECTED   0x0002
-#define PDFF_HASDEVADDR  0x0004
-#define PDFF_HASDEVDESC  0x0008
-#define PDFF_CONFIGURED  0x0010
-#define PDFF_HIGHSPEED   0x0020
-#define PDFF_NEEDSSPLIT  0x0040
-#define PDFF_LOWPOWER    0x0080
-#define PDFF_DEAD        0x0100
-#define PDFF_SUSPENDED   0x0200
-#define PDFF_SUPERSPEED  0x0400
-#define PDFF_APPBINDING  0x4000
-#define PDFF_DELEXPUNGE  0x8000
+#define PDFF_LOWSPEED       0x0001
+#define PDFF_CONNECTED      0x0002
+#define PDFF_HASDEVADDR     0x0004
+#define PDFF_HASDEVDESC     0x0008
+#define PDFF_CONFIGURED     0x0010
+#define PDFF_HIGHSPEED      0x0020
+#define PDFF_NEEDSSPLIT     0x0040
+#define PDFF_LOWPOWER       0x0080
+#define PDFF_DEAD           0x0100
+#define PDFF_SUSPENDED      0x0200
+#define PDFF_SUPERSPEED     0x0400
+#define PDFF_MULTITT        0x0800   /* Hub supports multiple TTs */
+#define PDFF_APPBINDING     0x4000
+#define PDFF_DELEXPUNGE     0x8000
 
 struct PsdDevice
 {
