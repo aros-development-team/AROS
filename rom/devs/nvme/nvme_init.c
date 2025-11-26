@@ -318,9 +318,9 @@ static int NVME_Probe(struct NVMEBase *NVMEBase)
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver, (IPTR *) &dev->dev_PCIDriverObject);
         HW_AddDriver(NVMEBase->storageRoot, NVMEBase->nvmeClass, nvme_tags);
         D(
-        if (dev->dev_Controller) {
-        bug("[NVME:PCI] %s: NVME Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
-        }
+            if (dev->dev_Controller) {
+                bug("[NVME:PCI] %s: NVME Controller Object @ 0x%p\n", __func__, dev->dev_Controller);
+            }
         )
     }
 

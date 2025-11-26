@@ -15,13 +15,15 @@
 #include <hidd/nvme.h>
 #include <oop/oop.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_hw.h"
 #include "nvme_queue.h"
 #include "nvme_queue_admin.h"
 
-static const char *str_devicename = "nvme.device";
+extern const char GM_UNIQUENAME(LibName)[];
 
 /* support functions */
 static void nvme_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
@@ -94,7 +96,7 @@ void NVMEUnit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     Hidd_StorageUnit_Switch (msg->attrID, idx) {
     case aoHidd_StorageUnit_Device:
-        *msg->storage = (IPTR)str_devicename;
+        *msg->storage = (IPTR)GM_UNIQUENAME(LibName);
         return;
 
     case aoHidd_StorageUnit_Number:
