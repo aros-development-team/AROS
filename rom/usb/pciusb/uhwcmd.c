@@ -1017,7 +1017,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
                             if (!hc || hc->hc_HCIType != HCITYPE_XHCI)
                                 return UHIOERR_STALL;
-#endif
+
 
                             ioreq->iouh_Actual = (len > sslen) ? sslen : len;
                             CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -1046,6 +1046,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
 
                             return 0;
+#endif
                         }
 
                         case UDT_HUB:
