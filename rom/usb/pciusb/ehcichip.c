@@ -2124,8 +2124,14 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
 
+        const char *str64bit;
+#if __WORDSIZE==64
+        str64bit = " 64bit ";
+#else
+        str64bit = " ";
+#endif
         pciusbDebug("EHCI", "Found%sController @ 0x%p with %lu ports (%lu companions with %lu ports each)\n",
-                    (ehcihcp->ehc_64BitCapable) ? " 64bit " : " ",
+                    (ehcihcp->ehc_64BitCapable) ? str64bit : " ",
                     hc->hc_PCIDeviceObject, hc->hc_NumPorts,
                     (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
                     (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP);
