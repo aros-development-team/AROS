@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2014-2025, The AROS Development Team. All rights reserved.
 
     Desc: SuperSpeed USB3.0 hub for Poseidon (based upon hub.class.c by Chris Hodges <chrisly@platon42.de>)
 */
@@ -23,17 +23,17 @@
 
 #include LC_LIBDEFS_FILE
 
-struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *nh, struct PsdDevice *pd);
-struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh, struct PsdDevice *pd);
-void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepClassHub *nch);
+struct NepClassHubSS * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubSSBase *nh, struct PsdDevice *pd);
+struct NepClassHubSS * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubSSBase * nh, struct PsdDevice *pd);
+void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubSSBase *nh, struct NepClassHubSS *nch);
 
-struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void);
-void GM_UNIQUENAME(nFreeHub)(struct NepClassHub *nch);
-struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD port);
-LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port);
-BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
-BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHub *nch, struct PsdDevice *pd);
-void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *nhm);
+struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void);
+void GM_UNIQUENAME(nFreeHub)(struct NepClassHubSS *nch);
+struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWORD port);
+LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port);
+BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd);
+BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd);
+void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHubSS *nch, struct NepHubSSMsg *nhm);
 AROS_UFP0(void, GM_UNIQUENAME(nHubssTask));
 
 /* /// "Lib Stuff" */
@@ -58,12 +58,12 @@ ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
  */
 
 /* /// "usbAttemptDeviceBinding()" */
-struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *nh, struct PsdDevice *pd) {
+struct NepClassHubSS * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubSSBase *nh, struct PsdDevice *pd) {
     struct Library *ps;
     IPTR devclass;
     IPTR issuperspeed = 0;
 
-    //KPRINTF(0, ("usbAttemptDeviceBinding(%p)\n", pd));
+    //KPRINTF(0, ("hubss::usbAttemptDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_Class, &devclass, DA_IsSuperspeed, &issuperspeed, TAG_DONE);
@@ -77,22 +77,23 @@ struct NepClassHub * GM_UNIQUENAME(usbAttemptDeviceBinding)(struct NepHubBase *n
 }
 
 /* /// "usbForceDeviceBinding()" */
-struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh, struct PsdDevice *pd) {
+struct NepClassHubSS * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubSSBase * nh, struct PsdDevice *pd) {
     struct Library *ps;
-    struct NepClassHub *nch;
+    struct NepClassHubSS *nch;
     STRPTR devname;
     char buf[64];
     struct Task *tmptask;
 
-    //KPRINTF(0, ("usbForceDeviceBinding(%p)\n", pd));
+    //KPRINTF(0, ("hubss::usbForceDeviceBinding(%p)\n", pd));
 
     if((ps = OpenLibrary("poseidon.library", 4))) {
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_DONE);
 
-        if((nch = psdAllocVec(sizeof(struct NepClassHub)))) {
+        if((nch = psdAllocVec(sizeof(struct NepClassHubSS)))) {
             nch->nch_HubBase = nh;
             nch->nch_Device = pd;
             psdSafeRawDoFmt(buf, 64, "hubss.class<%p>", nch);
+
             nch->nch_ReadySignal = SIGB_SINGLE;
             nch->nch_ReadySigTask = FindTask(NULL);
             SetSignal(0, SIGF_SINGLE);
@@ -125,7 +126,7 @@ struct NepClassHub * GM_UNIQUENAME(usbForceDeviceBinding)(struct NepHubBase * nh
 }
 
 /* /// "usbReleaseDeviceBinding()" */
-void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepClassHub *nch) {
+void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubSSBase *nh, struct NepClassHubSS *nch) {
     struct Library *ps;
     STRPTR devname;
 
@@ -161,7 +162,7 @@ void GM_UNIQUENAME(usbReleaseDeviceBinding)(struct NepHubBase *nh, struct NepCla
 }
 
 /* /// "usbGetAttrsA()" */
-AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct, A0), AROS_LHA(struct TagItem *, taglist, A1), LIBBASETYPEPTR, nh, 5, hub) {
+AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct, A0), AROS_LHA(struct TagItem *, taglist, A1), LIBBASETYPEPTR, nh, 5, hubss) {
     AROS_LIBFUNC_INIT
 
     struct TagItem *ti;
@@ -218,7 +219,7 @@ AROS_LH3(LONG, usbGetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct
 }
 
 /* /// "usbSetAttrsA()" */
-AROS_LH3(LONG, usbSetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct, A0), AROS_LHA(struct TagItem *, tags, A1), LIBBASETYPEPTR, nh, 6, hub) {
+AROS_LH3(LONG, usbSetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct, A0), AROS_LHA(struct TagItem *, tags, A1), LIBBASETYPEPTR, nh, 6, hubss) {
     AROS_LIBFUNC_INIT
 
     return(0);
@@ -226,10 +227,10 @@ AROS_LH3(LONG, usbSetAttrsA, AROS_LHA(ULONG, type, D0), AROS_LHA(APTR, usbstruct
 }
 
 /* /// "usbDoMethodA()" */
-AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, methoddata, A1), LIBBASETYPEPTR, nh, 7, hub) {
+AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, methoddata, A1), LIBBASETYPEPTR, nh, 7, hubss) {
     AROS_LIBFUNC_INIT
 
-    struct NepClassHub *nch;
+    struct NepClassHubSS *nch;
 
     KPRINTF(1, ("Do Method %ld\n", methodid));
     switch(methodid) {
@@ -240,7 +241,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
             return((IPTR) GM_UNIQUENAME(usbForceDeviceBinding)(nh, (struct PsdDevice *) methoddata[0]));
 
         case UCM_ReleaseDeviceBinding:
-            GM_UNIQUENAME(usbReleaseDeviceBinding)(nh, (struct NepClassHub *) methoddata[0]);
+            GM_UNIQUENAME(usbReleaseDeviceBinding)(nh, (struct NepClassHubSS *) methoddata[0]);
             return(TRUE);
 
         case UCM_HubPowerCyclePort:
@@ -254,7 +255,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
             }
 
             Forbid();
-            nch = (struct NepClassHub *) nh->nh_Bindings.lh_Head;
+            nch = (struct NepClassHubSS *) nh->nh_Bindings.lh_Head;
             while(nch->nch_Node.ln_Succ) {
                 if(nch->nch_Device == pd) {
                     KPRINTF(20, ("HubPowerCycle/DisablePort Dev found (port %ld)!\n", port));
@@ -271,7 +272,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
                     }
                     break;
                 }
-                nch = (struct NepClassHub *) nch->nch_Node.ln_Succ;
+                nch = (struct NepClassHubSS *) nch->nch_Node.ln_Succ;
             }
             Permit();
 
@@ -279,7 +280,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
             } /* case UCM_HubDisablePort */
 
         case UCM_HubClassScan: {
-            nch = (struct NepClassHub *) methoddata[0];
+            nch = (struct NepClassHubSS *) methoddata[0];
 
             Forbid();
             nch->nch_ClassScan = TRUE;
@@ -298,9 +299,9 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
         case UCM_HubReleaseDevBinding:
         case UCM_HubSuspendDevice:
         case UCM_HubResumeDevice: {
-            struct NepHubMsg nhm;
+            struct NepHubSSMsg nhm;
             struct Library *ps;
-            nch = (struct NepClassHub *) methoddata[0];
+            nch = (struct NepClassHubSS *) methoddata[0];
             nhm.nhm_Result = (IPTR) NULL;
             nhm.nhm_MethodID = methodid;
             nhm.nhm_Params = methoddata;
@@ -311,7 +312,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
                     GM_UNIQUENAME(nHandleHubMethod)(nch, &nhm);
                 } else {
                     nhm.nhm_Msg.mn_ReplyPort = CreateMsgPort();
-                    nhm.nhm_Msg.mn_Length = sizeof(struct NepHubMsg);
+                    nhm.nhm_Msg.mn_Length = sizeof(struct NepHubSSMsg);
 
                     Forbid();
                     if(nch->nch_Task && nhm.nhm_Msg.mn_ReplyPort) {
@@ -347,7 +348,7 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
 AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
     AROS_USERFUNC_INIT
 
-    struct NepClassHub *nch;
+    struct NepClassHubSS *nch;
     struct PsdPipe *pp;
     ULONG sigmask;
     ULONG sigs;
@@ -358,7 +359,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
     ULONG count;
     struct PsdDevice *pd;
     STRPTR devname;
-    struct NepHubMsg *nhm;
+    struct NepHubSSMsg *nhm;
 
     if((nch = GM_UNIQUENAME(nAllocHub)())) {
         Forbid();
@@ -397,7 +398,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
             }
             sigs = Wait(sigmask);
 
-            while((nhm = (struct NepHubMsg *) GetMsg(nch->nch_CtrlMsgPort))) {
+            while((nhm = (struct NepHubSSMsg *) GetMsg(nch->nch_CtrlMsgPort))) {
                 GM_UNIQUENAME(nHandleHubMethod)(nch, nhm);
                 ReplyMsg((struct Message *) nhm);
             }
@@ -686,11 +687,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubssTask)) {
 }
 
 /* /// "nAllocHub()" */
-struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
+struct NepClassHubSS * GM_UNIQUENAME(nAllocHub)(void) {
     struct UsbSSHubDesc *usshd;
     //struct UsbStdBOSDesc *usbosd;
     struct Task *thistask;
-    struct NepClassHub *nch;
+    struct NepClassHubSS *nch;
     struct UsbHubStatus uhhs;
     APTR parenthub;
     LONG ioerr;
@@ -925,7 +926,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void) {
 }
 
 /* /// "nFreeHub()" */
-void GM_UNIQUENAME(nFreeHub)(struct NepClassHub *nch) {
+void GM_UNIQUENAME(nFreeHub)(struct NepClassHubSS *nch) {
     UWORD num;
     LONG ioerr;
     struct PsdDevice *pd;
@@ -990,7 +991,7 @@ void GM_UNIQUENAME(nFreeHub)(struct NepClassHub *nch) {
 /* *** HUBSS Class *** */
 
 /* /// "nClearPortStatus()" */
-LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port) {
+LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHubSS *nch, UWORD port) {
     LONG ioerr;
 
     psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_OTHER, USR_CLEAR_FEATURE, UFS_C_PORT_CONNECTION, (ULONG) port);
@@ -1030,7 +1031,7 @@ LONG GM_UNIQUENAME(nClearPortStatus)(struct NepClassHub *nch, UWORD port) {
 }
 
 /* /// "nConfigurePort()" */
-struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD port) {
+struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHubSS *nch, UWORD port) {
     LONG ioerr;
     LONG delayretries;
     LONG resetretries;
@@ -1236,7 +1237,7 @@ struct PsdDevice * GM_UNIQUENAME(nConfigurePort)(struct NepClassHub *nch, UWORD 
 }
 
 /* /// "nHandleHubMethod()" */
-void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *nhm) {
+void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHubSS *nch, struct NepHubSSMsg *nhm) {
     ULONG num;
     struct PsdDevice *pd;
     nhm->nhm_Result = 0;
@@ -1305,7 +1306,7 @@ void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *
 }
 
 /* /// "nHubSuspendDevice()" */
-BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice *pd) {
+BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd) {
     APTR binding = NULL;
     APTR puc = NULL;
     ULONG num;
@@ -1334,7 +1335,7 @@ BOOL GM_UNIQUENAME(nHubSuspendDevice)(struct NepClassHub *nch, struct PsdDevice 
 }
 
 /* /// "nHubResumeDevice()" */
-BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHub *nch, struct PsdDevice *pd) {
+BOOL GM_UNIQUENAME(nHubResumeDevice)(struct NepClassHubSS *nch, struct PsdDevice *pd) {
     ULONG num;
     BOOL result = FALSE;
     LONG ioerr;
