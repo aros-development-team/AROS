@@ -259,7 +259,7 @@ struct PCIController
     ULONG                       hc_DoWorkSignal;
     UWORD                       hc_RootPortChanges;
     struct Task                 *hc_ReadySigTask, *hc_xHCTask;
-    struct pcisusbXHCIDevice    *hc_Devices[MAX_ROOT_PORTS];
+    struct pcisusbXHCIDevice    *hc_Devices[USB_DEV_MAX];
     volatile struct pciusbXHCITRBParams  hc_CmdResults[USB_DEV_MAX];
 #endif
 
