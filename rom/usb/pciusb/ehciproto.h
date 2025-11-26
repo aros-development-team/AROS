@@ -36,6 +36,12 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
+#if defined(PCIUSB_EHCI_DEBUG)
+#define pciusbEHCIDebug(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#else
+#define pciusbEHCIDebug(sub,fmt,args...)
+#endif
+
 #ifdef base
 #undef base
 #endif

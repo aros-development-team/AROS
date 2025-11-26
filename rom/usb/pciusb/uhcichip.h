@@ -101,4 +101,5 @@ struct UhciHCPrivate
 #define HCQB_UHCI_VIA_BABBLE    5
 #define HCQ_UHCI_VIA_BABBLE     (1 << HCQB_UHCI_VIA_BABBLE)
 
+
 #endif /* UHCICHIP_H */

@@ -88,7 +88,7 @@ static void ohciFreeTDChain(struct PCIController *hc, struct OhciTD *nextotd)
     struct OhciTD *otd;
 
     while (nextotd) {
-        pciusbDebug("OHCI", "FreeTD %p\n", nextotd);
+        pciusbOHCIDebug("OHCI", "FreeTD %p\n", nextotd);
         otd = nextotd;
         nextotd = (struct OhciTD *) otd->otd_Succ;
         ohciFreeTD(hc, otd);
@@ -103,7 +103,7 @@ static void ohciFreeEDContext(struct PCIController *hc, struct IOUsbHWReq *ioreq
     UWORD devadrep;
     UWORD dir;
 
-    pciusbDebug("OHCI", "Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq);
+    pciusbOHCIDebug("OHCI", "Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq);
 
     if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
         dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
@@ -160,17 +160,17 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
     ULONG donehead, nexttd;
     BOOL retire;
 
-    pciusbDebug("OHCI", "Checking for work done...\n");
+    pciusbOHCIDebug("OHCI", "Checking for work done...\n");
     Disable();
     donehead = ohcihcp->ohc_OhciDoneQueue;
     ohcihcp->ohc_OhciDoneQueue = 0UL;
     Enable();
     if(!donehead) {
-        pciusbDebug("OHCI", "Nothing to do!\n");
+        pciusbOHCIDebug("OHCI", "Nothing to do!\n");
         return;
     }
     otd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
-    pciusbDebug("OHCI", "DoneHead=%08lx, OTD=%p, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
+    pciusbOHCIDebug("OHCI", "DoneHead=%08lx, OTD=%p, Frame=%ld\n", donehead, otd, READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
     PrintTD("Done", donehead, hc); /* CHECKME: This can give inconsistent printout on cache-incoherent hardware */
     do {
         CacheClearE(&otd->otd_Ctrl, 16, CACRF_InvalidateD);
@@ -191,7 +191,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         }
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_InvalidateD);
         ctrlstatus = READMEM32_LE(&otd->otd_Ctrl);
-        pciusbDebug("OHCI", "TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
+        pciusbOHCIDebug("OHCI", "TD: %08lx - %08lx\n", READMEM32_LE(&otd->otd_BufferPtr),
                     READMEM32_LE(&otd->otd_BufferEnd));
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) {
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
@@ -215,7 +215,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
 
         ioreq = oed->oed_IOReq;
 
-        pciusbDebug("OHCI", "Examining TD %p for ED %p (IOReq=%p), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len);
+        pciusbOHCIDebug("OHCI", "Examining TD %p for ED %p (IOReq=%p), Status %08lx, len=%ld\n", otd, oed, ioreq, ctrlstatus, len);
         if(!ioreq) {
             /* You should never see this (very weird inconsistency), but who knows... */
             KPRINTF(1000, "OHCI: Came across a rogue ED 0x%p that already has been replied! TD 0x%p,\n", oed, otd);
@@ -262,7 +262,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 } */
         retire = FALSE;
         if((ctrlstatus & OTCM_DELAYINT) != OTCF_NOINT) {
-            pciusbDebug("OHCI", "TD 0x%p Terminator detected\n", otd);
+            pciusbOHCIDebug("OHCI", "TD 0x%p Terminator detected\n", otd);
             retire = TRUE;
         }
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) {
@@ -373,7 +373,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 break;
 
             case (OTCF_CC_SHORTPKT>>OTCS_COMPLETIONCODE):
-                pciusbDebug("OHCI", "Short packet %ld < %ld\n", len, otd->otd_Length);
+                pciusbOHCIDebug("OHCI", "Short packet %ld < %ld\n", len, otd->otd_Length);
                 if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS))) {
                     ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
                 }
@@ -913,14 +913,14 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
     ULONG startmask = 0;
 
     /* *** BULK Transfers *** */
-    pciusbDebug("OHCI", "Scheduling new BULK transfers...\n");
+    pciusbOHCIDebug("OHCI", "Scheduling new BULK transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ) {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        pciusbDebug("OHCI", "New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
+        pciusbOHCIDebug("OHCI", "New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbDebug("OHCI", "Endpoint %02lx in use!\n", devadrep);
+            pciusbOHCIDebug("OHCI", "Endpoint %02lx in use!\n", devadrep);
             ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
             continue;
         }
@@ -936,7 +936,7 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
         epcaps |= (ioreq->iouh_Dir == UHDIR_IN) ? OECF_DIRECTION_IN : OECF_DIRECTION_OUT;
 
         if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
-            pciusbDebug("OHCI", "*** LOW SPEED ***\n");
+            pciusbOHCIDebug("OHCI", "*** LOW SPEED ***\n");
             epcaps |= OECF_LOWSPEED;
         }
 
@@ -972,7 +972,7 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
                 len = OHCI_PAGE_SIZE;
             }
             otd->otd_Length = len;
-            pciusbDebug("OHCI", "TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1);
+            pciusbOHCIDebug("OHCI", "TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1);
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len) {
                 WRITEMEM32_LE(&otd->otd_BufferPtr, (IPTR)CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
@@ -1025,7 +1025,7 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
         CacheClearE(&oed->oed_Pred->oed_EPCaps, 16, CACRF_ClearD);
         SYNC;
 
-        pciusbDebug("OHCI", "Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
+        pciusbOHCIDebug("OHCI", "Activating BULK at %ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
         PrintED("Bulk", oed, hc);
 
         /* Similar to ohciScheduleCtrlTDs(), but use bulk queue */
@@ -1061,7 +1061,7 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
     struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
     ULONG restartmask = 0;
 
-    pciusbDebug("OHCI", "CompleteInt!\n");
+    pciusbOHCIDebug("OHCI", "CompleteInt!\n");
 
     ohciUpdateFrameCounter(hc);
 
@@ -1104,7 +1104,7 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
         SYNC;
     }
 
-    pciusbDebug("OHCI", "CompleteDone\n");
+    pciusbOHCIDebug("OHCI", "CompleteDone\n");
 
     return 0;
 
@@ -1139,17 +1139,17 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
 
         CONSTWRITEMEM32_LE(&ohcihcp->ohc_OhciHCCA->oha_DoneHead, 0);
 
-        pciusbDebug("OHCI", "New Donehead %08lx for old %08lx\n", donehead, ohcihcp->ohc_OhciDoneQueue);
+        pciusbOHCIDebug("OHCI", "New Donehead %08lx for old %08lx\n", donehead, ohcihcp->ohc_OhciDoneQueue);
     } else {
         intr = READREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS);
 
         if (intr & OISF_DONEHEAD) {
-            pciusbDebug("OHCI", "!!!!!!!!!!!!!!!!!!!!!!!DoneHead was empty!!!!!!!!!!!!!!!!!!!\n");
+            pciusbOHCIDebug("OHCI", "!!!!!!!!!!!!!!!!!!!!!!!DoneHead was empty!!!!!!!!!!!!!!!!!!!\n");
             CacheClearE(ohcihcp->ohc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_InvalidateD);
             donehead = READMEM32_LE(&ohcihcp->ohc_OhciHCCA->oha_DoneHead) & OHCI_PTRMASK;
             CONSTWRITEMEM32_LE(&ohcihcp->ohc_OhciHCCA->oha_DoneHead, 0);
 
-            pciusbDebug("OHCI", "New Donehead %08lx for old %08lx\n", donehead, ohcihcp->ohc_OhciDoneQueue);
+            pciusbOHCIDebug("OHCI", "New Donehead %08lx for old %08lx\n", donehead, ohcihcp->ohc_OhciDoneQueue);
         }
     }
     CacheClearE(ohcihcp->ohc_OhciHCCA, sizeof(struct OhciHCCA), CACRF_ClearD);
@@ -1157,7 +1157,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
     intr &= ~OISF_MASTERENABLE;
 
     if(intr & hc->hc_PCIIntEnMask) {
-        pciusbDebug("OHCI", "interrupts 0x%08lx, mask 0x%08lx\n", intr, hc->hc_PCIIntEnMask);
+        pciusbOHCIDebug("OHCI", "interrupts 0x%08lx, mask 0x%08lx\n", intr, hc->hc_PCIIntEnMask);
 
         // Acknowledge all interrupts, but process only those we want
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTSTATUS, intr);
@@ -1184,7 +1184,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
             hc->hc_FrameCounter |= 0x7fff;
             hc->hc_FrameCounter++;
             hc->hc_FrameCounter |= READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff;
-            pciusbDebug("OHCI", "HCI 0x%p: Frame Counter Rollover %ld\n", hc, hc->hc_FrameCounter);
+            pciusbOHCIDebug("OHCI", "HCI 0x%p: Frame Counter Rollover %ld\n", hc, hc->hc_FrameCounter);
         }
         if(intr & OISF_HUBCHANGE) {
             UWORD hciport;
@@ -1221,7 +1221,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_CONNECTCHANGE|OHPF_ENABLECHANGE|OHPF_RESUMEDTX|OHPF_OVERCURRENTCHG|OHPF_RESETCHANGE);
                 }
 
-                pciusbDebug("OHCI", "PCI Int Port %ld (glob %ld) Change %08lx\n", hciport, hc->hc_PortNum[hciport] + 1, oldval);
+                pciusbOHCIDebug("OHCI", "PCI Int Port %ld (glob %ld) Change %08lx\n", hciport, hc->hc_PortNum[hciport] + 1, oldval);
                 if(hc->hc_PortChangeMap[hciport]) {
                     unit->hu_RootPortChanges |= 1UL<<(hc->hc_PortNum[hciport] + 1);
                 }
@@ -1234,7 +1234,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
             }
         }
         if(intr & OISF_DONEHEAD) {
-            pciusbDebug("OHCI", "DoneHead Frame=%ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
+            pciusbOHCIDebug("OHCI", "DoneHead Frame=%ld\n", READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT));
 
             if(ohcihcp->ohc_OhciDoneQueue) {
                 struct OhciTD *donetd = (struct OhciTD *) ((IPTR)donehead - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
@@ -1247,7 +1247,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
                 WRITEMEM32_LE(&donetd->otd_NextTD, ohcihcp->ohc_OhciDoneQueue);
                 CacheClearE(&donetd->otd_Ctrl, 16, CACRF_ClearD);
 
-                pciusbDebug("OHCI", "Attached old DoneHead 0x%08lx to TD 0x%08lx\n", ohcihcp->ohc_OhciDoneQueue, donetd->otd_Self);
+                pciusbOHCIDebug("OHCI", "Attached old DoneHead 0x%08lx to TD 0x%08lx\n", ohcihcp->ohc_OhciDoneQueue, donetd->otd_Self);
             }
             ohcihcp->ohc_OhciDoneQueue = donehead;
         }
@@ -1264,7 +1264,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
             SureCause(base, &hc->hc_CompleteInt);
         }
 
-        pciusbDebug("OHCI", "Exiting ohciIntCode(0x%p)\n", unit);
+        pciusbOHCIDebug("OHCI", "Exiting ohciIntCode(0x%p)\n", unit);
     }
 
     /* Unlock interrupts  */
@@ -1360,7 +1360,7 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
 
-    pciusbDebug("OHCI", "%s()\n", __func__);
+    pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
     if(!rtn->rtn_PTDs || ptdcount < 2)
         return(UHIOERR_BADPARAMS);
@@ -1426,7 +1426,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD remaining;
     UWORD offset;
 
-    pciusbDebug("OHCI", "%s()\n", __func__);
+    pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
     dmabuffer = rtn->rtn_BufferReq.ubr_Buffer;
 #if __WORDSIZE == 64
@@ -1510,7 +1510,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD idx;
     struct OhciED *intoed;
 
-    pciusbDebug("OHCI", "%s()\n", __func__);
+    pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
     if(!oed)
         return;
@@ -1579,7 +1579,7 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD limit = (ptdcount < 2) ? ptdcount : 2;
     UWORD idx;
 
-    pciusbDebug("OHCI", "%s()\n", __func__);
+    pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
     if(oed && !(READMEM32_LE(&oed->oed_EPCaps) & OECF_SKIP)) {
         ohciDisableED(oed);
@@ -1606,7 +1606,7 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD ptdcount = rtn->rtn_PTDCount;
     UWORD limit = (ptdcount < 2) ? ptdcount : 2;
 
-    pciusbDebug("OHCI", "%s()\n", __func__);
+    pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
     ohciStopIsochIO(hc, rtn);
 
@@ -1995,18 +1995,18 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
     BOOL cmdgood = FALSE;
 
-    pciusbDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
+    pciusbOHCIDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val) {
     /* case UFS_PORT_CONNECTION: not possible */
     case UFS_PORT_ENABLE:
-        pciusbDebug("OHCI", "Enabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "already" : "ok");
+        pciusbOHCIDebug("OHCI", "Enabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "already" : "ok");
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTENABLE);
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_SUSPEND:
-        pciusbDebug("OHCI", "Suspending Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "already" : "ok");
+        pciusbOHCIDebug("OHCI", "Suspending Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "already" : "ok");
         //hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND; // manually fake suspend change
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTSUSPEND);
         cmdgood = TRUE;
@@ -2014,7 +2014,7 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
     /* case UFS_PORT_OVER_CURRENT: not possible */
     case UFS_PORT_RESET:
-        pciusbDebug("OHCI", "Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok");
+        pciusbOHCIDebug("OHCI", "Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok");
         // make sure we have at least 50ms of reset time here, as required for a root hub port
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
         uhwDelayMS(10, unit);
@@ -2027,12 +2027,12 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
         uhwDelayMS(15, unit);
         oldval = READREG32_LE(hc->hc_RegBase, portreg);
-        pciusbDebug("OHCI", "Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+        pciusbOHCIDebug("OHCI", "Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                     oldval & OHPF_PORTENABLE ? "enabled" : "not enabled");
         if(oldval & OHPF_PORTRESET) {
             uhwDelayMS(40, unit);
             oldval = READREG32_LE(hc->hc_RegBase, portreg);
-            pciusbDebug("OHCI", "Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+            pciusbOHCIDebug("OHCI", "Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                         oldval & OHPF_PORTENABLE ? "enabled" : "still not enabled");
         }
         // make enumeration possible
@@ -2041,7 +2041,7 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         break;
 
     case UFS_PORT_POWER:
-        pciusbDebug("OHCI", "Powering Port (%s)\n", oldval & OHPF_PORTPOWER ? "already" : "ok");
+        pciusbOHCIDebug("OHCI", "Powering Port (%s)\n", oldval & OHPF_PORTPOWER ? "already" : "ok");
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTPOWER);
         cmdgood = TRUE;
         break;
@@ -2062,24 +2062,24 @@ BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     ULONG __unused oldval = READREG32_LE(hc->hc_RegBase, portreg);
     BOOL cmdgood = FALSE;
 
-    pciusbDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
+    pciusbOHCIDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val) {
     case UFS_PORT_ENABLE:
-        pciusbDebug("OHCI", "Disabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "ok" : "already");
+        pciusbOHCIDebug("OHCI", "Disabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "ok" : "already");
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTDISABLE);
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_SUSPEND:
-        pciusbDebug("OHCI", "Resuming Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "ok" : "already");
+        pciusbOHCIDebug("OHCI", "Resuming Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "ok" : "already");
         //hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND; // manually fake suspend change
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_RESUME);
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_POWER:
-        pciusbDebug("OHCI", "Unpowering Port (%s)\n", oldval & OHPF_PORTPOWER ? "ok" : "already");
+        pciusbOHCIDebug("OHCI", "Unpowering Port (%s)\n", oldval & OHPF_PORTPOWER ? "ok" : "already");
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTUNPOWER);
         cmdgood = TRUE;
         break;
@@ -2122,7 +2122,7 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     UWORD portreg = OHCI_PORTSTATUS + (hciport<<2);
     ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
-    pciusbDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
+    pciusbOHCIDebug("OHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
 
     *mptr = 0;
     if(oldval & OHPF_PORTPOWER) *mptr |= AROS_WORD2LE(UPSF_PORT_POWER);
@@ -2133,8 +2133,8 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if(oldval & OHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
     if(oldval & OHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
-    pciusbDebug("OHCI", "Port %ld (glob. %ld) is %s\n", hciport, idx, oldval & OHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED");
-    pciusbDebug("OHCI", "Port %ld Status %08lx (%08lx)\n", idx, *mptr, oldval);
+    pciusbOHCIDebug("OHCI", "Port %ld (glob. %ld) is %s\n", hciport, idx, oldval & OHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED");
+    pciusbOHCIDebug("OHCI", "Port %ld Status %08lx (%08lx)\n", idx, *mptr, oldval);
 
     mptr++;
     if(oldval & OHPF_OVERCURRENTCHG) {
@@ -2155,7 +2155,7 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
 
-    pciusbDebug("OHCI", "Port %ld Change %08lx\n", idx, *mptr);
+    pciusbOHCIDebug("OHCI", "Port %ld Change %08lx\n", idx, *mptr);
 
     return TRUE;
 }

@@ -31,25 +31,17 @@
 #if defined(AROS_USE_LOGRES) && (DEBUG > 0)
 #define KPRINTF(l,fmt,args...)          if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | l), LogHandle, "", __func__, 0, fmt, ##args); }
 #define pciusbDebug(sub,fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
-#define pciusbDebugTRB(sub,fmt,args...) if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
-#define pciusbDebugEP(sub,fmt,args...)  if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
 #else
 #ifdef DEBUG
 #define KPRINTF(l,fmt,args...) do { if ((l) >= DB_LEVEL) \
      { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);} } while (0)
 #define pciusbDebug(sub,fmt,args...) \
      { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
-#define pciusbDebugTRB(sub,fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
-#define pciusbDebugEP(sub,fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
 #define DB(x) x
 void dumpmem_pciusb(void *mem, unsigned long int len);
 #else /* !DEBUG */
 #define KPRINTF(l,fmt,args...) ((void) 0)
 #define pciusbDebug(fmt,args...)
-#define pciusbDebugTRB(fmt,args...)
-#define pciusbDebugEP(fmt,args...)
 #define DB(x)
 #endif
 #endif /* DEBUG */
@@ -65,6 +57,13 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 #define pciusbError(sub, fmt,args...) \
      { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
 #endif
+
+#if defined(DEBUG)
+//#define PCIUSB_OHCI_DEBUG
+//#define PCIUSB_UHCI_DEBUG
+//#define PCIUSB_EHCI_DEBUG
 #if defined(PCIUSB_ENABLEXHCI)
+//#define PCIUSB_XHCI_DEBUG
 //#define XHCI_LONGDEBUGNAK
+#endif
 #endif

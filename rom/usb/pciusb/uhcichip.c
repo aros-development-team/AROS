@@ -48,7 +48,7 @@ void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh)
     struct UhciTD *utd = NULL;
     struct UhciTD *nextutd;
 
-    pciusbDebug("UHCI", "Unlinking QContext %08lx\n", uqh);
+    pciusbUHCIDebug("UHCI", "Unlinking QContext %08lx\n", uqh);
     // unlink from schedule
     uqh->uqh_Pred->uxx_Link = uqh->uqh_Succ->uxx_Self;
     SYNC;
@@ -59,7 +59,7 @@ void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh)
 
     nextutd = uqh->uqh_FirstTD;
     while(nextutd) {
-        pciusbDebug("UHCI", "UHCI: FreeTD %08lx\n", nextutd);
+        pciusbUHCIDebug("UHCI", "UHCI: FreeTD %08lx\n", nextutd);
         utd = nextutd;
         nextutd = (struct UhciTD *) utd->utd_Succ;
         uhciFreeTD(hc, utd);
@@ -170,21 +170,21 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
             portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
             oldval = READIO16_LE(hc->hc_RegBase, portreg);
             if(oldval & UHPF_ENABLECHANGE) {
-                pciusbDebug("UHCI", "Port %ld (%ld) Enable changed\n", idx, hciport);
+                pciusbUHCIDebug("UHCI", "Port %ld (%ld) Enable changed\n", idx, hciport);
                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
             }
             if(oldval & UHPF_CONNECTCHANGE) {
-                pciusbDebug("UHCI", "Port %ld (%ld) Connect changed\n", idx, hciport);
+                pciusbUHCIDebug("UHCI", "Port %ld (%ld) Connect changed\n", idx, hciport);
                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_CONNECTION;
                 if(!(oldval & UHPF_PORTCONNECTED)) {
                     if(unit->hu_PortMap20[idx]) {
-                        pciusbDebug("UHCI", "UHCI: Transferring Port %ld back to EHCI\n", idx);
+                        pciusbUHCIDebug("UHCI", "UHCI: Transferring Port %ld back to EHCI\n", idx);
                         unit->hu_PortOwner[idx] = HCITYPE_EHCI;
                     }
                 }
             }
             if(oldval & UHPF_RESUMEDTX) {
-                pciusbDebug("UHCI", "Port %ld (%ld) Resume changed\n", idx, hciport);
+                pciusbUHCIDebug("UHCI", "Port %ld (%ld) Resume changed\n", idx, hciport);
                 hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND|UPSF_PORT_ENABLE;
                 oldval &= ~UHPF_RESUMEDTX;
             }
@@ -219,17 +219,17 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
     BOOL updatetree = FALSE;
     BOOL fixsetupterm = FALSE;
 
-    pciusbDebug("UHCI", "UHCI: Checking for work done...\n");
+    pciusbUHCIDebug("UHCI", "UHCI: Checking for work done...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
     while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ)) {
         uqh = (struct UhciQH *) ioreq->iouh_DriverPrivate1;
         if(uqh) {
-            pciusbDebug("UHCI", "UHCI: Examining IOReq=%08lx with UQH=%08lx\n", ioreq, uqh);
+            pciusbUHCIDebug("UHCI", "UHCI: Examining IOReq=%08lx with UQH=%08lx\n", ioreq, uqh);
             linkelem = READMEM32_LE(&uqh->uqh_Element);
             inspect = 0;
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
             if(linkelem & UHCI_TERMINATE) {
-                pciusbDebug("UHCI", "UHCI: UQH terminated %08lx\n", linkelem);
+                pciusbUHCIDebug("UHCI", "UHCI: UQH terminated %08lx\n", linkelem);
                 inspect = 2;
             } else {
                 utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - UHCI_STRUCTURE_OFFSET); // struct UhciTD starts 16/32 bytes before physical TD depending on architecture
@@ -266,9 +266,9 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                    If so, disregard the gathered information and assume still active. */
                 if(READMEM32_LE(&uqh->uqh_Element) != linkelem) {
                     /* Oh well, probably still active */
-                    pciusbDebug("UHCI", "UHCI: Link Element changed, still active.\n");
+                    pciusbUHCIDebug("UHCI", "UHCI: Link Element changed, still active.\n");
                 } else if(!(ctrlstatus & UTCF_ACTIVE) && (nextutd == 0 || !(nextctrlstatus & UTCF_ACTIVE))) {
-                    pciusbDebug("UHCI", "UHCI: CtrlStatus inactive %08lx\n", ctrlstatus);
+                    pciusbUHCIDebug("UHCI", "UHCI: CtrlStatus inactive %08lx\n", ctrlstatus);
                     inspect = 1;
                 } else if(unit->hu_NakTimeoutFrame[devadrep] && (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
                     ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
@@ -296,7 +296,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                             break;
                         }
                         token = READMEM32_LE(&utd->utd_Token);
-                        pciusbDebug("UHCI", "UHCI: TD=%08lx CS=%08lx Token=%08lx\n", utd, ctrlstatus, token);
+                        pciusbUHCIDebug("UHCI", "UHCI: TD=%08lx CS=%08lx Token=%08lx\n", utd, ctrlstatus, token);
                         if(ctrlstatus & (UTSF_BABBLE|UTSF_STALLED|UTSF_CRCTIMEOUT|UTSF_DATABUFFERERR|UTSF_BITSTUFFERR)) {
                             if(ctrlstatus & UTSF_BABBLE) {
                                 pciusbError("UHCI", "Babble error %08lx/%08lx\n", ctrlstatus, token);
@@ -356,7 +356,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                         ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
                     }
                 } else {
-                    pciusbDebug("UHCI", "all %ld bytes transferred\n", uqh->uqh_Actual);
+                    pciusbUHCIDebug("UHCI", "all %ld bytes transferred\n", uqh->uqh_Actual);
                     actual = uqh->uqh_Actual;
                 }
                 ioreq->iouh_Actual += actual;
@@ -394,17 +394,17 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                         // fragmented, do some more work
                         switch(ioreq->iouh_Req.io_Command) {
                         case UHCMD_CONTROLXFER:
-                            pciusbDebug("UHCI", "Rescheduling CtrlTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
+                            pciusbUHCIDebug("UHCI", "Rescheduling CtrlTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
                             AddHead(&hc->hc_CtrlXFerQueue, (struct Node *) ioreq);
                             break;
 
                         case UHCMD_INTXFER:
-                            pciusbDebug("UHCI", "Rescheduling IntTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
+                            pciusbUHCIDebug("UHCI", "Rescheduling IntTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
                             AddHead(&hc->hc_IntXFerQueue, (struct Node *) ioreq);
                             break;
 
                         case UHCMD_BULKXFER:
-                            pciusbDebug("UHCI", "Rescheduling BulkTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
+                            pciusbUHCIDebug("UHCI", "Rescheduling BulkTransfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
                             AddHead(&hc->hc_BulkXFerQueue, (struct Node *) ioreq);
                             break;
 
@@ -426,12 +426,12 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                 }
             }
         } else {
-            pciusbDebug("UHCI", "UHCI: IOReq=%08lx has no UQH!\n", ioreq);
+            pciusbUHCIDebug("UHCI", "UHCI: IOReq=%08lx has no UQH!\n", ioreq);
         }
         ioreq = nextioreq;
     }
     if(updatetree) {
-        pciusbDebug("UHCI", "Updating Tree\n");
+        pciusbUHCIDebug("UHCI", "Updating Tree\n");
         uhciUpdateIntTree(hc);
     }
 }
@@ -455,11 +455,11 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
     BOOL cont;
 
     /* *** CTRL Transfers *** */
-    pciusbDebug("UHCI", "Scheduling new CTRL transfers...\n");
+    pciusbUHCIDebug("UHCI", "Scheduling new CTRL transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_CtrlXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ) {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint;
-        pciusbDebug("UHCI", "New CTRL transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
+        pciusbUHCIDebug("UHCI", "New CTRL transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
             pciusbWarn("UHCI", "Endpoint %02lx in use!\n", devadrep);
@@ -487,7 +487,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
 
         //termutd->utd_QueueHead = setuputd->utd_QueueHead = uqh;
 
-        pciusbDebug("UHCI", "SetupTD=%08lx, TermTD=%08lx\n", setuputd, termutd);
+        pciusbUHCIDebug("UHCI", "SetupTD=%08lx, TermTD=%08lx\n", setuputd, termutd);
 
         // fill setup td
         ctrlstatus = UTCF_ACTIVE|UTCF_3ERRORSLIMIT;
@@ -499,7 +499,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         //setuputd->utd_Pred = NULL;
         if(ioreq->iouh_Actual) {
             // this is a continuation of a fragmented ctrl transfer!
-            pciusbDebug("UHCI", "Continuing FRAGMENT at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
+            pciusbUHCIDebug("UHCI", "Continuing FRAGMENT at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
             cont = TRUE;
         } else {
             cont = FALSE;
@@ -557,7 +557,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
             }
             if(cont) {
                 // free Setup packet
-                pciusbDebug("UHCI", "Freeing setup\n");
+                pciusbUHCIDebug("UHCI", "Freeing setup\n");
                 uqh->uqh_FirstTD = (struct UhciTD *) setuputd->utd_Succ;
                 //uqh->uqh_FirstTD->utd_Pred = NULL;
                 uqh->uqh_Element = setuputd->utd_Succ->uxx_Self; // start of queue after setup packet
@@ -568,7 +568,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         } else {
             if(cont) {
                 // free Setup packet, assign termination as first packet (no data)
-                pciusbDebug("UHCI", "Freeing setup (term only)\n");
+                pciusbUHCIDebug("UHCI", "Freeing setup (term only)\n");
                 uqh->uqh_FirstTD = (struct UhciTD *) termutd;
                 uqh->uqh_Element = termutd->utd_Self; // start of queue after setup packet
                 uhciFreeTD(hc, setuputd);
@@ -579,7 +579,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         ctrlstatus |= UTCF_READYINTEN;
         if(actual == ioreq->iouh_Length) {
             // TERM packet
-            pciusbDebug("UHCI", "Activating TERM\n");
+            pciusbUHCIDebug("UHCI", "Activating TERM\n");
             token |= UTTF_DATA1;
             token ^= (PID_IN^PID_OUT)<<UTTS_PID;
 
@@ -594,7 +594,7 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
             termutd->utd_Succ = NULL;
             //uqh->uqh_LastTD = termutd;
         } else {
-            pciusbDebug("UHCI", "Setup data phase fragmented\n");
+            pciusbUHCIDebug("UHCI", "Setup data phase fragmented\n");
             // don't create TERM, we don't know the final data toggle bit
             // but mark the last data TD for interrupt generation
             WRITEMEM32_LE(&predutd->utd_CtrlStatus, ctrlstatus);
@@ -648,11 +648,11 @@ void uhciScheduleIntTDs(struct PCIController *hc)
     ULONG phyaddr;
 
     /* *** INT Transfers *** */
-    pciusbDebug("UHCI", "Scheduling new INT transfers...\n");
+    pciusbUHCIDebug("UHCI", "Scheduling new INT transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ) {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        pciusbDebug("UHCI", "New INT transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
+        pciusbUHCIDebug("UHCI", "New INT transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
             pciusbWarn("UHCI", "Endpoint %02lx in use!\n", devadrep);
@@ -680,10 +680,10 @@ void uhciScheduleIntTDs(struct PCIController *hc)
         phyaddr = (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_DataBuffer);
         if(unit->hu_DevDataToggle[devadrep]) {
             // continue with data toggle 1
-            pciusbDebug("UHCI", "Data1\n");
+            pciusbUHCIDebug("UHCI", "Data1\n");
             token |= UTTF_DATA1;
         } else {
-            pciusbDebug("UHCI", "Data0\n");
+            pciusbUHCIDebug("UHCI", "Data0\n");
         }
         do {
             utd = uhciAllocTD(hc);
@@ -725,9 +725,9 @@ void uhciScheduleIntTDs(struct PCIController *hc)
         unit->hu_DevDataToggle[devadrep] = (token & UTTF_DATA1) ? TRUE : FALSE;
         if(unit->hu_DevDataToggle[devadrep]) {
             // continue with data toggle 1
-            pciusbDebug("UHCI", "NewData1\n");
+            pciusbUHCIDebug("UHCI", "NewData1\n");
         } else {
-            pciusbDebug("UHCI", "NewData0\n");
+            pciusbUHCIDebug("UHCI", "NewData0\n");
         }
         ctrlstatus |= UTCF_READYINTEN;
         WRITEMEM32_LE(&predutd->utd_CtrlStatus, ctrlstatus);
@@ -742,7 +742,7 @@ void uhciScheduleIntTDs(struct PCIController *hc)
             do {
                 intuqh = uhcihcp->uhc_UhciIntQH[cnt++];
             } while(ioreq->iouh_Interval >= (1<<cnt));
-            pciusbDebug("UHCI", "Scheduled at level %ld\n", cnt);
+            pciusbUHCIDebug("UHCI", "Scheduled at level %ld\n", cnt);
         }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -790,11 +790,11 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
     BOOL forcezero;
 
     /* *** BULK Transfers *** */
-    pciusbDebug("UHCI", "Scheduling new BULK transfers...\n");
+    pciusbUHCIDebug("UHCI", "Scheduling new BULK transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
     while(((struct Node *) ioreq)->ln_Succ) {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        pciusbDebug("UHCI", "New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
+        pciusbUHCIDebug("UHCI", "New BULK transfer to %ld.%ld: %ld bytes\n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
             pciusbWarn("UHCI", "Endpoint %02lx in use!\n", devadrep);
@@ -912,7 +912,7 @@ void uhciUpdateFrameCounter(struct PCIController *hc)
         hc->hc_FrameCounter |= 0x07ff;
         hc->hc_FrameCounter++;
         hc->hc_FrameCounter |= framecnt;
-        pciusbDebug("UHCI", "Frame Counter Rollover %ld\n", hc->hc_FrameCounter);
+        pciusbUHCIDebug("UHCI", "Frame Counter Rollover %ld\n", hc->hc_FrameCounter);
     } else {
         hc->hc_FrameCounter = (hc->hc_FrameCounter & 0xfffff800)|framecnt;
     }
@@ -923,7 +923,7 @@ static AROS_INTH1(uhciCompleteInt, struct PCIController *,hc)
 {
     AROS_INTFUNC_INIT
 
-    pciusbDebug("UHCI", "CompleteInt!\n");
+    pciusbUHCIDebug("UHCI", "CompleteInt!\n");
     uhciUpdateFrameCounter(hc);
 
     /* **************** PROCESS DONE TRANSFERS **************** */
@@ -946,7 +946,7 @@ static AROS_INTH1(uhciCompleteInt, struct PCIController *,hc)
         uhciScheduleBulkTDs(hc);
     }
 
-    pciusbDebug("UHCI", "CompleteDone\n");
+    pciusbUHCIDebug("UHCI", "CompleteDone\n");
 
     return FALSE;
 
@@ -962,11 +962,11 @@ static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
 #endif
     UWORD intr;
 
-    pciusbDebug("UHCI", "pciUhciInt()\n");
+    pciusbUHCIDebug("UHCI", "pciUhciInt()\n");
     intr = READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS);
     if(intr & (UHSF_USBINT|UHSF_USBERRORINT|UHSF_RESUMEDTX|UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED)) {
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, intr);
-        pciusbDebug("UHCI", "INT=%04lx\n", intr);
+        pciusbUHCIDebug("UHCI", "INT=%04lx\n", intr);
         if(intr & (UHSF_HCSYSERROR|UHSF_HCPROCERROR|UHSF_HCHALTED)) {
             pciusbError("UHCI", "Host ERROR!\n");
             WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET|UHCF_GLOBALRESET|UHCF_MAXPACKET64|UHCF_CONFIGURE);
@@ -1018,7 +1018,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
 
     hc->hc_CPrivate = uhcihcp;
     hc->hc_NumPorts = 2; // UHCI always uses 2 ports per controller
-    pciusbDebug("UHCI", "Found UHCI Controller %08lx FuncNum=%ld with %ld ports\n", hc->hc_PCIDeviceObject, hc->hc_FunctionNum, hc->hc_NumPorts);
+    pciusbUHCIDebug("UHCI", "Found UHCI Controller %08lx FuncNum=%ld with %ld ports\n", hc->hc_PCIDeviceObject, hc->hc_FunctionNum, hc->hc_NumPorts);
     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
     hc->hc_CompleteInt.is_Node.ln_Name = "UHCI CompleteInt";
     hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
@@ -1040,12 +1040,12 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
         hc->hc_PCIVirtualAdjust = (IPTR)pciGetPhysical(hc, memptr) - (IPTR)memptr;
-        pciusbDebug("UHCI", "VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust);
+        pciusbUHCIDebug("UHCI", "VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust);
 
         // align memory
         memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + UHCI_FRAMELIST_ALIGNMENT) & (~UHCI_FRAMELIST_ALIGNMENT));
         uhcihcp->uhc_UhciFrameList = (ULONG *) memptr;
-        pciusbDebug("UHCI", "FrameListBase 0x%08lx\n", uhcihcp->uhc_UhciFrameList);
+        pciusbUHCIDebug("UHCI", "FrameListBase 0x%08lx\n", uhcihcp->uhc_UhciFrameList);
         memptr += sizeof(APTR) * UHCI_FRAMELIST_SIZE;
 
         uhcihcp->uhc_IsoHead = AllocMem(sizeof(struct PTDNode *) * UHCI_FRAMELIST_SIZE, MEMF_CLEAR);
@@ -1159,14 +1159,14 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         // time to initialize hardware...
         OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base4, (IPTR *) &hc->hc_RegBase);
         hc->hc_RegBase = (APTR) (((IPTR) hc->hc_RegBase) & (~0xf));
-        pciusbDebug("UHCI", "RegBase = 0x%08lx\n", hc->hc_RegBase);
+        pciusbUHCIDebug("UHCI", "RegBase = 0x%08lx\n", hc->hc_RegBase);
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateIO);
 
         // disable BIOS legacy support
-        pciusbDebug("UHCI", "Turning off BIOS legacy support (old value=%04lx)\n", READCONFIGWORD(hc, hc->hc_PCIDeviceObject,UHCI_USBLEGSUP));
+        pciusbUHCIDebug("UHCI", "Turning off BIOS legacy support (old value=%04lx)\n", READCONFIGWORD(hc, hc->hc_PCIDeviceObject,UHCI_USBLEGSUP));
         WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0x8f00);
 
-        pciusbDebug("UHCI", "Resetting UHCI HC\n");
+        pciusbUHCIDebug("UHCI", "Resetting UHCI HC\n");
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
         uhwDelayMS(15, hu);
 
@@ -1182,15 +1182,15 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         } while(--cnt);
 
         if(cnt == 0) {
-            pciusbDebug("UHCI", "Reset Timeout!\n");
+            pciusbUHCIDebug("UHCI", "Reset Timeout!\n");
             WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
             uhwDelayMS(15, hu);
         } else {
-            pciusbDebug("UHCI", "Reset finished after %ld ticks\n", 100-cnt);
+            pciusbUHCIDebug("UHCI", "Reset finished after %ld ticks\n", 100-cnt);
         }
 
         // stop controller and disable all interrupts first
-        pciusbDebug("UHCI", "Stopping controller and enabling busmaster\n");
+        pciusbUHCIDebug("UHCI", "Stopping controller and enabling busmaster\n");
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
 
@@ -1199,12 +1199,12 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         if (hc->hc_Quirks & HCQ_UHCI_VIA_BABBLE) {
             cnt = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40);
             if(!(cnt & 0x40)) {
-                pciusbDebug("UHCI", "Applying VIA Babble workaround\n");
+                pciusbUHCIDebug("UHCI", "Applying VIA Babble workaround\n");
                 WRITECONFIGBYTE(hc, hc->hc_PCIDeviceObject, 0x40, cnt|0x40);
             }
         }
 
-        pciusbDebug("UHCI", "Configuring UHCI HC\n");
+        pciusbUHCIDebug("UHCI", "Configuring UHCI HC\n");
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT, 0);
@@ -1236,19 +1236,19 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
 
         // enable PIRQ
-        pciusbDebug("UHCI", "Enabling PIRQ (old value=%04lx)\n", READCONFIGWORD(hc, hc->hc_PCIDeviceObject,UHCI_USBLEGSUP));
+        pciusbUHCIDebug("UHCI", "Enabling PIRQ (old value=%04lx)\n", READCONFIGWORD(hc, hc->hc_PCIDeviceObject,UHCI_USBLEGSUP));
         WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0x2000);
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE|UHCF_RUNSTOP);
         SYNC;
 
-        pciusbDebug("UHCI", "HW Init done\n");
+        pciusbUHCIDebug("UHCI", "HW Init done\n");
 
-        pciusbDebug("UHCI", "HW Regs USBCMD=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBCMD));
-        pciusbDebug("UHCI", "HW Regs USBSTS=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS));
-        pciusbDebug("UHCI", "HW Regs FRAMECOUNT=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT));
+        pciusbUHCIDebug("UHCI", "HW Regs USBCMD=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBCMD));
+        pciusbUHCIDebug("UHCI", "HW Regs USBSTS=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS));
+        pciusbUHCIDebug("UHCI", "HW Regs FRAMECOUNT=%04lx\n", READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT));
 
-        pciusbDebug("UHCI", "uhciInit returns TRUE...\n");
+        pciusbUHCIDebug("UHCI", "uhciInit returns TRUE...\n");
         return TRUE;
     }
 
@@ -1276,7 +1276,7 @@ init_fail:
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu)
 {
 
-    pciusbDebug("UHCI", "Shutting down UHCI %08lx\n", hc);
+    pciusbUHCIDebug("UHCI", "Shutting down UHCI %08lx\n", hc);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, 0);
     // disable PIRQ
     WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0);
@@ -1285,14 +1285,14 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu)
     uhwDelayMS(50, hu);
     //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
     //uhwDelayMS(50, hu);
-    pciusbDebug("UHCI", "Stopping UHCI %08lx\n", hc);
+    pciusbUHCIDebug("UHCI", "Stopping UHCI %08lx\n", hc);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
     SYNC;
 
     //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
     uhwDelayMS(10, hu);
 
-    pciusbDebug("UHCI", "Resetting UHCI %08lx\n", hc);
+    pciusbUHCIDebug("UHCI", "Resetting UHCI %08lx\n", hc);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
     SYNC;
 
@@ -1311,7 +1311,7 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu)
         FreeMem(uhcihcp, sizeof(struct UhciHCPrivate));
     }
 
-    pciusbDebug("UHCI", "Shutting down UHCI done.\n");
+    pciusbUHCIDebug("UHCI", "Shutting down UHCI done.\n");
 }
 
 /* ** Root hub support functions ** */
@@ -1324,12 +1324,12 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     ULONG cnt;
     BOOL cmdgood = FALSE;
 
-    pciusbDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
+    pciusbUHCIDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val) {
     /* case UFS_PORT_CONNECTION: not possible */
     case UFS_PORT_ENABLE:
-        pciusbDebug("UHCI", "Enabling Port (%s)\n", newval & UHPF_PORTENABLE ? "already" : "ok");
+        pciusbUHCIDebug("UHCI", "Enabling Port (%s)\n", newval & UHPF_PORTENABLE ? "already" : "ok");
         newval |= UHPF_PORTENABLE;
         cmdgood = TRUE;
         break;
@@ -1342,7 +1342,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
     /* case UFS_PORT_OVER_CURRENT: not possible */
     case UFS_PORT_RESET:
-        pciusbDebug("UHCI", "Resetting Port (%s)\n", newval & UHPF_PORTRESET ? "already" : "ok");
+        pciusbUHCIDebug("UHCI", "Resetting Port (%s)\n", newval & UHPF_PORTRESET ? "already" : "ok");
 
         // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
         newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
@@ -1350,13 +1350,13 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         uhwDelayMS(25, unit);
         newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
-        pciusbDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!");
+        pciusbUHCIDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!");
         // like windows does it
         newval &= ~UHPF_PORTRESET;
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         uhwDelayMicro(50, unit);
         newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-        pciusbDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD");
+        pciusbUHCIDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD");
         newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
         newval |= UHPF_PORTENABLE;
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
@@ -1368,7 +1368,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval = READIO16_LE(hc->hc_RegBase, portreg);
         } while(--cnt && (!(newval & UHPF_PORTENABLE)));
         if(cnt) {
-            pciusbDebug("UHCI", "Enabled after %ld ticks\n", 100-cnt);
+            pciusbUHCIDebug("UHCI", "Enabled after %ld ticks\n", 100-cnt);
         } else {
             pciusbWarn("UHCI", "Port refuses to be enabled!\n");
             *retval = UHIOERR_HOSTERROR;
@@ -1380,7 +1380,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         break;
 
     case UFS_PORT_POWER:
-        pciusbDebug("UHCI", "Powering Port\n");
+        pciusbUHCIDebug("UHCI", "Powering Port\n");
         // ignore for UHCI, is always powered
         cmdgood = TRUE;
         break;
@@ -1393,7 +1393,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         case UFS_C_PORT_RESET: */
     }
     if(cmdgood) {
-        pciusbDebug("UHCI", "Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval);
+        pciusbUHCIDebug("UHCI", "Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval);
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
     }
     return cmdgood;
@@ -1406,11 +1406,11 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     ULONG newval = oldval;
     BOOL cmdgood = FALSE;
 
-    pciusbDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
+    pciusbUHCIDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
     switch(val) {
     case UFS_PORT_ENABLE:
-        pciusbDebug("UHCI", "Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already");
+        pciusbUHCIDebug("UHCI", "Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already");
         newval &= ~UHPF_PORTENABLE;
         cmdgood = TRUE;
         // disable enumeration
@@ -1423,8 +1423,8 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
         break;
 
     case UFS_PORT_POWER: // ignore for UHCI, there's no power control here
-        pciusbDebug("UHCI", "Disabling Power\n");
-        pciusbDebug("UHCI", "Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already");
+        pciusbUHCIDebug("UHCI", "Disabling Power\n");
+        pciusbUHCIDebug("UHCI", "Disabling Port (%s)\n", newval & UHPF_PORTENABLE ? "ok" : "already");
         newval &= ~UHPF_PORTENABLE;
         cmdgood = TRUE;
         break;
@@ -1457,7 +1457,7 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
         break;
     }
     if(cmdgood) {
-        pciusbDebug("UHCI", "Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval);
+        pciusbUHCIDebug("UHCI", "Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval);
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         if(hc->hc_PortChangeMap[hciport]) {
             unit->hu_RootPortChanges |= 1UL<<idx;
@@ -1473,7 +1473,7 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     UWORD portreg = hciport ? UHCI_PORT2STSCTRL : UHCI_PORT1STSCTRL;
     UWORD oldval = READIO16_LE(hc->hc_RegBase, portreg);
 
-    pciusbDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
+    pciusbUHCIDebug("UHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
 
     *mptr = AROS_WORD2LE(UPSF_PORT_POWER);
 
@@ -1483,8 +1483,8 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     if(oldval & UHPF_PORTRESET) *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
     if(oldval & UHPF_PORTSUSPEND) *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
 
-    pciusbDebug("UHCI", "Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED");
-    pciusbDebug("UHCI", "Port %ld Status %08lx\n", idx, *mptr);
+    pciusbUHCIDebug("UHCI", "Port %ld is %s\n", idx, oldval & UHPF_LOWSPEED ? "LOWSPEED" : "FULLSPEED");
+    pciusbUHCIDebug("UHCI", "Port %ld Status %08lx\n", idx, *mptr);
 
     mptr++;
     if(oldval & UHPF_ENABLECHANGE) {
@@ -1500,7 +1500,7 @@ BOOL uhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
     WRITEIO16_LE(hc->hc_RegBase, portreg, oldval);
 
-    pciusbDebug("UHCI", "Port %ld Change %08lx\n", idx, *mptr);
+    pciusbUHCIDebug("UHCI", "Port %ld Change %08lx\n", idx, *mptr);
 
     return TRUE;
 }
@@ -1510,7 +1510,7 @@ WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
 
-    pciusbDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
     if(!rtn->rtn_PTDs || !ptdcount)
         return UHIOERR_BADPARAMS;
@@ -1555,7 +1555,7 @@ WORD uhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
 WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    pciusbDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
     rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
     rtn->rtn_BufferReq.ubr_Frame = (READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) + 1) & (UHCI_FRAMELIST_SIZE - 1);
@@ -1641,7 +1641,7 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD scheduled = 0;
     APTR dmabuffer;
 
-    pciusbDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
     if(!rtn->rtn_PTDs || !limit)
         return;
@@ -1720,7 +1720,7 @@ void uhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD idx;
     UWORD limit = rtn->rtn_PTDCount;
 
-    pciusbDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
     if(!rtn->rtn_PTDs || !limit)
         return;
@@ -1746,7 +1746,7 @@ void uhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     UWORD idx;
     UWORD limit = rtn->rtn_PTDCount;
 
-    pciusbDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
     uhciStopIsochIO(hc, rtn);
 

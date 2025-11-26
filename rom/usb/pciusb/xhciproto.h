@@ -59,8 +59,10 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 
 struct pcisusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 
-// xhcidebug.c
-#if defined(DEBUG) && (DEBUG > 0)
+#if defined(PCIUSB_XHCI_DEBUG)
+#define pciusbXHCIDebug(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugTRB(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugEP(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
 void xhciDumpIN(volatile struct xhci_inctx *in);
 void xhciDumpEP(volatile struct xhci_ep *ep);
 void xhciDumpSlot(volatile struct xhci_slot *slot);
@@ -70,6 +72,9 @@ void xhciDumpIR(volatile struct xhci_ir *xhciir);
 void xhciDumpPort(volatile struct xhci_pr *xhcipr);
 void xhciDumpCC(UBYTE completioncode);
 #else
+#define pciusbXHCIDebug(sub,fmt,args...)
+#define pciusbXHCIDebugTRB(sub,fmt,args...)
+#define pciusbXHCIDebugEP(sub,fmt,args...)
 #define xhciDumpIN(x)
 #define xhciDumpEP(x)
 #define xhciDumpSlot(x)

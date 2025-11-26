@@ -42,7 +42,7 @@
 
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     /* Deactivate the endpoint */
     xhciFinishRequest(hc, unit, ioreq);
@@ -93,21 +93,21 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
     UWORD devadrep;
     BOOL doCompletion = FALSE;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
 #if (1)
     struct Task * thisTask = FindTask(NULL);
-    pciusbDebug("xHCI", DEBUGCOLOR_SET "Task @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n", thisTask, thisTask->tc_IDNestCnt, thisTask->tc_TDNestCnt);
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Task @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n", thisTask, thisTask->tc_IDNestCnt, thisTask->tc_TDNestCnt);
 #endif
 
     /* *** Schedule Transfers *** */
-    pciusbDebug("xHCI", DEBUGCOLOR_SET "Scheduling new Async transfers (Type %x)..." DEBUGCOLOR_RESET" \n", txtype);
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Scheduling new Async transfers (Type %x)..." DEBUGCOLOR_RESET" \n", txtype);
     ForeachNodeSafe(txlist, ioreq, ionext) {
         devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint;
         if ((txtype == UHCMD_BULKXFER) && (ioreq->iouh_Dir == UHDIR_IN))
             devadrep += 0x10;
-        pciusbDebug("xHCI", DEBUGCOLOR_SET "New Async transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
-        pciusbDebug("xHCI", DEBUGCOLOR_SET "    IOReq @ 0x%p" DEBUGCOLOR_RESET" \n", ioreq);
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "New Async transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "    IOReq @ 0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
@@ -125,7 +125,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             struct pcisusbXHCIDevice *devCtx;
 
             devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
             if (devCtx != NULL) {
                 ULONG txep;
 
@@ -154,7 +154,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         volatile struct xhci_slot *islot = (volatile struct xhci_slot *)&in[ctxoff];
                         ep = (struct xhci_ep *)&in[ctxoff * (txep + 1)];
 
-                        pciusbDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
+                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
 
                         /* Send configure command. */
                         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);
@@ -169,7 +169,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                             return;
                         }
 
-                        pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: Endpoint configured" DEBUGCOLOR_RESET" \n", __func__);
+                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Endpoint configured" DEBUGCOLOR_RESET" \n", __func__);
 
                         ep->ctx[1] = ep->ctx[0] = 0;
                         ep->deq.addr_hi = ep->deq.addr_lo = 0;
@@ -215,18 +215,18 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
             Disable();
             BOOL txdone = FALSE;
             if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
                 // mark endpoint as busy
-                pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
+                pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
                 unit->hu_DevBusyReq[devadrep] = ioreq;
                 epring = driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
 
-                pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: EP ring @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, epring);
+                pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: EP ring @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, epring);
 
                 if (txtype == UHCMD_CONTROLXFER) {
                     // queue the setup
@@ -269,7 +269,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         }
                         if (queued != -1) {
                             AddTail(&hc->hc_TDQueue, (struct Node *) ioreq);
-                            pciusbDebug("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
+                            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                             txdone = TRUE;
                         }
                     }

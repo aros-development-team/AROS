@@ -35,7 +35,7 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
 {
     volatile struct xhci_dbr *xhcidb = (volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB);
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
     xhcidb[slot].db = value;
 }
 #endif
@@ -65,16 +65,16 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
             UBYTE port;
 
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p, ports @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot, xhciports);
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p, ports @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot, xhciports);
 
             port = (slot->ctx[1] >> 16) & 0xff;
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
 
             portsc = xhciports[port - 1].portsc;
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
-            pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected" DEBUGCOLOR_RESET" \n", __func__);
+            pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected" DEBUGCOLOR_RESET" \n", __func__);
 
             Enable();
             return -1;
@@ -109,12 +109,12 @@ LONG xhciCmdSlotEnable(struct PCIController *hc)
     volatile struct pcisusbXHCIRing *xring = (volatile struct pcisusbXHCIRing *)hc->hc_OPRp;
     ULONG trbflags = TRBF_FLAG_CRTYPE_ENABLE_SLOT, cmdflags;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     if (1 != xhciCmdSubmit(hc, NULL, trbflags, &cmdflags))
         return -1;
 
-    pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: flags = %08x" DEBUGCOLOR_RESET" \n", __func__, cmdflags);
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: flags = %08x" DEBUGCOLOR_RESET" \n", __func__, cmdflags);
 
     return (cmdflags >> 24) & 0XFF;
 }
@@ -128,7 +128,7 @@ LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, NULL, flags, NULL);
 }
@@ -138,7 +138,7 @@ LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, slot, dmaaddr);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, slot, dmaaddr);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }
@@ -147,7 +147,7 @@ LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG
 {
     ULONG flags = (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, NULL, flags, NULL);
 }
@@ -156,7 +156,7 @@ LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULON
 {
     ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9);
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, NULL, flags, NULL);
 }
@@ -165,7 +165,7 @@ LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }
@@ -174,7 +174,7 @@ LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }
@@ -183,7 +183,7 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr)
 {
     ULONG flags = TRBF_FLAG_TRTYPE_NOOP;
 
-    pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }
