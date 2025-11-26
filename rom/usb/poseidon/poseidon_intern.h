@@ -14,11 +14,11 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 4.4 (06.04.23)
+                | (__) ) Version: 4.4 (26.11.2025)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
-                |_____/  Copyright ©2002-2009 Chris Hodges. All rights reserved.
-
+                |_____/  Copyright ©2009-2025 The AROS Dev Team.
+                         Copyright ©2002-2009 Chris Hodges.
  ****************************************************************************/
 
 /*
