@@ -55,6 +55,10 @@ static void handleQuirks(struct PCIController *hc)
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_SubsystemVendorID, &subvendorid);
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_SubsystemID, &subproductid);
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Size0, &memsize);
+
+    hc->hc_VendID = (UWORD)vendorid & 0xFFFF;
+    hc->hc_ProdID = (UWORD)productid & 0xFFFF;
+
     if (vendorid == 0x8086 && productid == 0x265c && revisionid == 0
         && subvendorid == 0 && subproductid == 0 && memsize == 4096)
     {
@@ -314,15 +318,12 @@ BOOL pciInit(struct PCIDevice *hd)
                 {
                     struct TagItem usbc_tags[] =
                     {
-                        {aHidd_Name,                0       },
-                        {aHidd_HardwareName,        0       },
-                        {aHidd_Producer,            0       },
-                #define USB_TAG_VEND 2
-                        {aHidd_Product,             0       },
-                #define USB_TAG_PROD 3
-                        {aHidd_DriverData,          0       },
-                #define USB_TAG_DATA 4
-                        {TAG_DONE,                  0       }
+                        {aHidd_Name,                0               },
+                        {aHidd_HardwareName,        0               },
+                        {aHidd_Producer,            hc->hc_VendID   },
+                        {aHidd_Product,             hc->hc_ProdID   },
+                        {aHidd_DriverData,          0               },
+                        {TAG_DONE,                  0               }
                     };
                     char *usb_chipset = "UHCI";
                     int usb_min = -1, usb_maj = 1;
@@ -331,9 +332,6 @@ BOOL pciInit(struct PCIDevice *hd)
                     hc->hc_Node.ln_Pri = hc->hc_HCIType;
                     sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
-
-                    usbc_tags[USB_TAG_VEND].ti_Data = 0;
-                    usbc_tags[USB_TAG_PROD].ti_Data = hu->hu_DevID;
 
                     usbc_tags[1].ti_Data = (IPTR)&hc->hc_Node.ln_Name[16];
                     switch (hc->hc_HCIType)

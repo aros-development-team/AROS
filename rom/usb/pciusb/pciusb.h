@@ -182,6 +182,9 @@ struct PCIController
     OOP_Object                  *hc_PCIDeviceObject;
     OOP_Object                  *hc_PCIDriverObject;
 
+    UWORD                       hc_VendID;
+    UWORD                       hc_ProdID;
+
 #if defined(USE_FAST_PCICFG)
     OOP_MethodFunc              hc_ReadConfigByte;
     OOP_Class                   *hc_ReadConfigByte_Class;

@@ -610,11 +610,14 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             CopyMem((APTR) &RHDevDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
                             if(ioreq->iouh_Length >= sizeof(struct UsbStdDevDesc))
                             {
-#if defined(PCIUSB_ENABLEXHCI)
+                                struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
                                 hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+                                usdd->idVendor = WORD2LE(hc->hc_VendID);
+                                usdd->idProduct = WORD2LE(hc->hc_ProdID);
+
+#if defined(PCIUSB_ENABLEXHCI)
                                 if((hc->hc_HCIType == HCITYPE_XHCI) && (unit->hu_RootHubXPorts))
                                 {
-                                    struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
                                     KPRINTF(1, "RH: XHCI (USB3) Hub Descriptor\n");
                                     usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
                                     usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
@@ -626,7 +629,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 #endif
                                 if(unit->hu_RootHub20Ports)
                                 {
-                                    struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
                                     KPRINTF(1, "RH: USB2 Hub Descriptor\n");
                                     usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                     usdd->bDeviceProtocol = 1; // single TT
