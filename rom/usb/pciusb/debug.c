@@ -9,6 +9,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
 
   p = (unsigned char *) mem;
 
+#if !defined(AROS_USE_LOGRES)
   KPrintF("\n");
 
   do
@@ -33,6 +34,8 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
   } while (len);
 
   KPrintF("\n\n");
+#else
+#endif
 }
 
 #endif /* DEBUG */
