@@ -112,6 +112,8 @@ struct UHCIRegs
 #define UHCI_FRAMELIST_SIZE      1024
 #define UHCI_FRAMELIST_ALIGNMENT 0x0fff
 
+#define UHCI_ISO_MAXPKTSIZE      0x3ff
+
 #define UHCI_TDQH_ALIGNMENT      0x0007
 
 #define UHCI_QH_POOLSIZE         128

@@ -188,6 +188,42 @@
 #define EHCI_SPLITISOTD     0x00000004 /* split transaction isochronous TD */
 #define EHCI_FRAMESPAN      0x00000006 /* frame span traversal node */
 
+/* Isochronous Transfer Descriptor definitions */
+
+#define EITF_STATUS_ACTIVE       (1UL<<31)
+#define EITF_STATUS_DBE          (1UL<<30)
+#define EITF_STATUS_BABBLE       (1UL<<29)
+#define EITF_STATUS_XACTERR      (1UL<<28)
+#define EITF_LENGTH_MASK         0x0fff
+#define EITF_LENGTH_SHIFT        0
+#define EITF_IOC                 (1UL<<15)
+#define EITF_PAGESELECT_SHIFT    12
+
+#define EITM_BUFFER_BASE         0xfffff000
+#define EITM_BUFFER_OFFSET       0x00000fff
+#define EITM_DEVADDR(x)          ((x) & 0x7f)
+#define EITM_ENDPT(x)            (((x) & 0x0f) << 8)
+#define EITM_MAXPKTSIZE(x)       (((x) & 0x07ff) << 0)
+#define EITM_DIRECTION_IN        (1UL<<11)
+#define EITM_BUFFER_DIR(x)       ((x) ? EITM_DIRECTION_IN : 0)
+#define EITM_SMASK               0x000000ff
+#define EITM_CMASK               0x0000ff00
+
+#define ESIM_DEVADDR(x)          ((x) & 0x7f)
+#define ESIM_ENDPT(x)            (((x) & 0x0f) << 8)
+#define ESIM_DIRECTION_IN        (1UL<<11)
+#define ESIM_PORT(x)             (((x) & 0xff) << 16)
+#define ESIM_HUB(x)              (((x) & 0x7f) << 24)
+
+#define ESITF_STATUS_ACTIVE      (1UL<<31)
+#define ESITF_STATUS_ERR         (1UL<<30)
+#define ESITF_STATUS_BABBLE      (1UL<<29)
+#define ESITF_STATUS_XACTERR     (1UL<<28)
+#define ESITF_STATUS_MISSEDUF    (1UL<<27)
+#define ESITF_LENGTH_MASK        0x03ff
+#define ESITF_LENGTH_SHIFT       16
+#define ESITM_BP0_OFFSET_MASK    0x00000fff
+
 /* TD control and status word defines */
 
 #define ETSB_PING            0    /* PING state instead of OUT */

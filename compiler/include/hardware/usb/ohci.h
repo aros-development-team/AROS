@@ -187,6 +187,22 @@
 #define OHPF_OVERCURRENTCHG (1UL<<OHPB_OVERCURRENTCHG)
 #define OHPF_RESETCHANGE    (1UL<<OHPB_RESETCHANGE)
 
+#define OHCI_ISO_TD_POOLSIZE 128
+
+#define OITCS_STARTINGFRAME     0
+#define OITCS_DELAYINT          21
+#define OITCS_FRAMECOUNT        24
+#define OITCS_COMPLETIONCODE    28
+
+#define OITF_NOINT              (7UL<<OITCS_DELAYINT)
+#define OITF_CC_MASK            (0xFUL<<OITCS_COMPLETIONCODE)
+#define OITF_CC_NOERROR         (0UL<<OITCS_COMPLETIONCODE)
+#define OITF_CC_NOTACCESSED     (0xFUL<<OITCS_COMPLETIONCODE)
+
+#define OITM_PSW_CC             0xF000
+#define OITS_PSW_CC             12
+#define OITM_PSW_OFFSET         0x0FFF
+
 /* data structures */
 
 /* HCCA registers */

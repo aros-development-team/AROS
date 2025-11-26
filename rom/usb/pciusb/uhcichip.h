@@ -12,9 +12,6 @@
 #include <hardware/usb/uhci.h>
 #include "hccommon.h"
 
-#define UHCI_ISO_MAXPKTSIZE      0x3ff
-#define UHCI_ISO_PTD_PER_HANDLER 2
-
 /* PCI Class: PCI_CLASS_SERIAL_USB */
 
 /* Framelist stuff
