@@ -248,6 +248,7 @@ WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ri
 }
 
 ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
+                 struct IOUsbHWReq *ioreq,
                  UBYTE endpoint,
                  UBYTE dir,
                  ULONG type,
@@ -287,12 +288,49 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
 
     volatile struct xhci_inctx *in = (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
     in->acf |= (1 << epid);                                                                             // Add/Enable in the Add Context Flags
+    in->acf |= 0x01;                                                                                    // Always refresh slot context too
 
     UWORD ctxoff = 1;
     if (hc->hc_Flags & HCF_CTX64)
         ctxoff <<= 1;
 
     struct xhci_slot *islot = (void*)&in[ctxoff];
+    if (ioreq) {
+        ULONG slotctx0 = islot->ctx[0] & ~((SLOT_CTX_ROUTE_MASK) | (0xF << SLOTS_CTX_SPEED) | SLOTF_CTX_MTT);
+        ULONG route = (ULONG)(ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK);
+
+        slotctx0 |= route;
+        if (flags & UHFF_SUPERSPEED)
+            slotctx0 |= SLOTF_CTX_SUPERSPEED;
+        else if (flags & UHFF_HIGHSPEED)
+            slotctx0 |= SLOTF_CTX_HIGHSPEED;
+        else if (flags & UHFF_LOWSPEED)
+            slotctx0 |= SLOTF_CTX_LOWSPEED;
+        else
+            slotctx0 |= SLOTF_CTX_FULLSPEED;
+
+        if (flags & UHFF_TT_MULTI)
+            slotctx0 |= SLOTF_CTX_MTT;
+
+        slotctx0 |= (islot->ctx[0] & (~(SLOT_CTX_ROUTE_MASK | (0xF << SLOTS_CTX_SPEED) | SLOTF_CTX_MTT)));
+        islot->ctx[0] = slotctx0;
+
+        islot->ctx[1] &= ~(0xFF << 16);
+        islot->ctx[1] |= ((ULONG)(ioreq->iouh_HubPort & 0xFF) << 16);
+
+        if (flags & UHFF_SPLITTRANS) {
+            ULONG ttinfo = 0;
+            UWORD ttt = (UWORD)((flags >> UHFS_THINKTIME) & 0x3);
+
+            ttinfo |= ((ULONG)(ioreq->iouh_SplitHubAddr & 0xFF) << SLOT_CTX_TT_SLOT_SHIFT);
+            ttinfo |= ((ULONG)(ioreq->iouh_SplitHubPort & 0xFF) << SLOT_CTX_TT_PORT_SHIFT);
+            ttinfo |= ((ULONG)ttt << SLOT_CTX_TTT_SHIFT);
+
+            islot->ctx[2] = ttinfo;
+        } else {
+            islot->ctx[2] = 0;
+        }
+    }
     if (epid > ((islot->ctx[0] >> 27) & 0xF)) {
         islot->ctx[0] &= ~(0xF << 27);
         islot->ctx[0] |= (epid << 27);
@@ -324,13 +362,44 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
     }
     if (epid > 1) {
         ULONG avglen = maxpacket;
+        UBYTE multval = 0;
+
+        if (ioreq) {
+            if (flags & UHFF_SUPERSPEED)
+                multval = ioreq->iouh_SS_Mult;
+            else if ((flags & UHFF_HIGHSPEED) && ((flags & UHFF_MULTI_2) || (flags & UHFF_MULTI_3))) {
+                UBYTE transactions = 1;
+
+                if (flags & UHFF_MULTI_3)
+                    transactions = 3;
+                else if (flags & UHFF_MULTI_2)
+                    transactions = 2;
+
+                multval = transactions - 1;
+            }
+
+            ep->ctx[0] |= EPF_CTX_MULT(multval);
+
+            if (flags & UHFF_SUPERSPEED) {
+                ep->ctx[1] &= ~(0xFF << EPS_CTX_MAXBURST);
+                ep->ctx[1] |= EPF_CTX_MAXBURST(ioreq->iouh_SS_MaxBurst);
+
+                if ((type == UHCMD_ISOXFER) || (type == UHCMD_INTXFER)) {
+                    if (ioreq->iouh_SS_BytesPerInterval)
+                        avglen = ioreq->iouh_SS_BytesPerInterval;
+                }
+            } else if ((type == UHCMD_ISOXFER) || (type == UHCMD_INTXFER)) {
+                /* High-bandwidth HS endpoints: scale payload by Mult+1 */
+                avglen = maxpacket * (ULONG)(multval + 1);
+            }
+        }
 
         if (type == UHCMD_CONTROLXFER) {
             if (avglen < 8)
                 avglen = 8;                                                                             // Minimum control packet size
         }
 
-        ep->length = avglen;                                                                            // Avg TRB Length
+        ep->length = avglen;                                                                            // Avg TRB Length / Max ESIT payload
 
         UBYTE ival = xhciCalcInterval(interval, flags, type);
         if (ival)
@@ -974,6 +1043,7 @@ AROS_UFH0(void, xhciControllerTask)
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: Device slot configured - configering EP0" DEBUGCOLOR_RESET" \n", __func__);
                         /* initialize endpoint 0 for use .. */
                         ULONG epid = xhciInitEP(hc, devCtx,
+                                                NULL,
                                                 0, 0,
                                                 UHCMD_CONTROLXFER,
                                                 maxsize,

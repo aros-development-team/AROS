@@ -95,6 +95,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                     /* initialize the endpoint for use .. */
                     txep = xhciInitEP(hc, devCtx,
+                                      ioreq,
                                       ioreq->iouh_Endpoint,
                                       (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
                                       UHCMD_INTXFER,
@@ -108,26 +109,6 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "Interval %u = %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Interval, (ep->ctx[0] >> 16) & 0xFF);
-#if (0)
-                        if (ioreq->iouh_Flags & UHFF_SUPERSPEED) {
-                            islot->ctx[0] |= SLOT_CTX_SUPERSPEED;
-                        } else
-#endif
-                            if (ioreq->iouh_Flags & UHFF_HIGHSPEED) {
-                                islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
-                            } else if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
-                                islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
-                            } else {
-                                islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
-                            }
-
-                        if(ioreq->iouh_Flags & UHFF_SPLITTRANS) {
-                            pciusbDebug("xHCI", DEBUGCOLOR_SET "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld" DEBUGCOLOR_RESET" \n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
-                            islot->ctx[0]    |= ioreq->iouh_SplitHubAddr;
-                            islot->ctx[1]    |= (ioreq->iouh_SplitHubPort) << 16;
-                        } else {
-
-                        }
 
                         /* Send configure command. */
                         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);

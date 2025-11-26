@@ -407,6 +407,11 @@ struct xhci_slot
 #define SLOTF_CTX_HIGHSPEED     (SLOT_CTX_HIGHSPEED << SLOTS_CTX_SPEED)
 #define SLOT_CTX_SUPERSPEED     4
 #define SLOTF_CTX_SUPERSPEED    (SLOT_CTX_SUPERSPEED << SLOTS_CTX_SPEED)
+#define SLOT_CTX_ROUTE_MASK     0xFFFFF
+#define SLOTF_CTX_MTT           (1 << 25)
+#define SLOT_CTX_TT_SLOT_SHIFT  0
+#define SLOT_CTX_TT_PORT_SHIFT  8
+#define SLOT_CTX_TTT_SHIFT      16
 
 /* endpoint context */
 struct xhci_ep
@@ -428,6 +433,10 @@ struct xhci_ep
 #define EPF_CTX_TYPE_BULK_I     (6 << EPS_CTX_TYPE)
 #define EPF_CTX_TYPE_INTR_I     (7 << EPS_CTX_TYPE)
 #define EPS_CTX_PACKETMAX       16
+#define EPS_CTX_MULT            8
+#define EPF_CTX_MULT(x)         (((x) & 0x3) << EPS_CTX_MULT)
+#define EPS_CTX_MAXBURST        8
+#define EPF_CTX_MAXBURST(x)     (((x) & 0xFF) << EPS_CTX_MAXBURST)
 
 #define EPB_CTX_DEQ_DCS         0
 #define EPF_CTX_DEQ_DCS         (1 << EPB_CTX_DEQ_DCS)
