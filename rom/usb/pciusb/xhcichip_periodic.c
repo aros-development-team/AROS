@@ -79,11 +79,10 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL)
         {
             struct pcisusbXHCIDevice *devCtx;
-            UWORD hciport;
-            hciport = ioreq->iouh_HubPort - 1;
 
-            pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for port #%u = 0x%p" DEBUGCOLOR_RESET" \n", hciport + 1, hc->hc_Devices[hciport]);
-            if ((devCtx = hc->hc_Devices[hciport]) != NULL)
+            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+            pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
+            if (devCtx != NULL)
             {
                 ULONG txep;
 

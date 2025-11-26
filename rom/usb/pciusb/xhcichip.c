@@ -107,6 +107,55 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
     return (UBYTE)interval;
 }
 
+struct pcisusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr)
+{
+    struct pcisusbXHCIDevice *unassigned = NULL;
+    UWORD maxslot = hc->hc_NumSlots;
+
+    if (maxslot >= USB_DEV_MAX)
+        maxslot = USB_DEV_MAX - 1;
+
+    for (UWORD slot = 1; slot <= maxslot; slot++)
+    {
+        struct pcisusbXHCIDevice *devCtx = hc->hc_Devices[slot];
+
+        if (!devCtx)
+            continue;
+
+        if (devCtx->dc_DevAddr == devaddr)
+            return devCtx;
+
+        if ((devaddr != 0) && (devCtx->dc_DevAddr == 0))
+            unassigned = devCtx;
+    }
+
+    if (unassigned)
+    {
+        unassigned->dc_DevAddr = (UBYTE)devaddr;
+        return unassigned;
+    }
+
+    return NULL;
+}
+
+static struct pcisusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWORD hciport)
+{
+    UWORD maxslot = hc->hc_NumSlots;
+
+    if (maxslot >= USB_DEV_MAX)
+        maxslot = USB_DEV_MAX - 1;
+
+    for (UWORD slot = 1; slot <= maxslot; slot++)
+    {
+        struct pcisusbXHCIDevice *devCtx = hc->hc_Devices[slot];
+
+        if (devCtx && (devCtx->dc_RootPort == hciport))
+            return devCtx;
+    }
+
+    return NULL;
+}
+
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
 {
     ULONG last = (ring->end & ~RINGENDCFLAG);
@@ -662,8 +711,8 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     if(hc->hc_PortChangeMap[hciport])
                     {
                         hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
-                        if (((origportsc & XHCIF_PR_PORTSC_PED) && (!hc->hc_Devices[hciport])) ||
-                            ((!(origportsc & XHCIF_PR_PORTSC_PED)) && (hc->hc_Devices[hciport])))
+                        if (((origportsc & XHCIF_PR_PORTSC_PED) && (!xhciFindPortDevice(hc, hciport))) ||
+                            ((!(origportsc & XHCIF_PR_PORTSC_PED)) && (xhciFindPortDevice(hc, hciport))))
                         {
                             pciusbDebugTRB("xHCI", DEBUGCOLOR_SET "Signaling port change handler" DEBUGCOLOR_RESET" \n");
 
@@ -900,7 +949,8 @@ AROS_UFH0(void, xhciControllerTask)
             for (hciport = 0; hciport < hc->hc_NumPorts; hciport++)
             {
                 portsc = AROS_LE2LONG(xhciports[hciport].portsc);
-                if ((portsc & XHCIF_PR_PORTSC_PED) && (!hc->hc_Devices[hciport]))
+                devCtx = xhciFindPortDevice(hc, hciport);
+                if ((portsc & XHCIF_PR_PORTSC_PED) && (!devCtx))
                 {
                     pciusbDebug("xHCI", DEBUGCOLOR_SET "Connecting HCI Device on port #%u" DEBUGCOLOR_RESET" \n", hciport+1);
                     devCtx = AllocMem(sizeof(struct pcisusbXHCIDevice), MEMF_ANY|MEMF_CLEAR);
@@ -910,6 +960,9 @@ AROS_UFH0(void, xhciControllerTask)
                         ULONG maxsize = 8, ctxsize;
                         LONG slotid;
                         UWORD ctxoff = 1;
+
+                        devCtx->dc_RootPort = hciport;
+                        devCtx->dc_DevAddr = 0;
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "Device Ctx allocated @ 0x%p" DEBUGCOLOR_RESET" \n", devCtx);
 
@@ -1028,21 +1081,25 @@ AROS_UFH0(void, xhciControllerTask)
                         //TODO: If the hub supports Multiple TT's set this ..
                         islot->ctx[0] |= (1 << 25);
 #endif
-                        hc->hc_Devices[hciport] = devCtx;
+                        if ((slotid > 0) && (slotid < USB_DEV_MAX))
+                            hc->hc_Devices[slotid] = devCtx;
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: Device ready!" DEBUGCOLOR_RESET" \n", __func__);
                     }
                     hc->hc_Unit->hu_DevControllers[0] = hc;
                 }
-                else if ((!(portsc & XHCIF_PR_PORTSC_PED)) && (hc->hc_Devices[hciport]))
+                else if ((!(portsc & XHCIF_PR_PORTSC_PED)) && (devCtx))
                 {
-                    devCtx = hc->hc_Devices[hciport];
-                    hc->hc_Devices[hciport] = NULL;
+                    if ((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX))
+                        hc->hc_Devices[devCtx->dc_SlotID] = NULL;
 
                     pciusbDebug("xHCI", DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n", devCtx);
 
-                    //TODO : Free Endpoint allocations, devCtx->dc_Slot, and devCtx->dc_IN
-
+                    xhciSetPointer(hc, ((volatile struct xhci_address *)hc->hc_DCBAAp)[devCtx->dc_SlotID], 0);
+                    if (devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr)
+                        FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr);
+                    if (devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr)
+                        FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);
                     FreeMem(devCtx, sizeof(struct pcisusbXHCIDevice));
                 }
             }

@@ -55,6 +55,8 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 #define xhciCmdNoOp(hc,slot,dmaaddr)						xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL)
 #endif
 
+struct pcisusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
+
 // xhcidebug.c
 #if defined(DEBUG) && (DEBUG > 0)
 void xhciDumpIN(volatile struct xhci_inctx *in);

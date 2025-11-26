@@ -40,10 +40,12 @@ struct pcisusbXHCIRing
  */
 struct pcisusbXHCIDevice {
     struct pciusbXHCIDMAAlloc           dc_EPAllocs[MAX_DEVENDPOINTS];
-    struct pciusbXHCIDMAAlloc           dc_IN;                                      // Device Input context 
+    struct pciusbXHCIDMAAlloc           dc_IN;                                      // Device Input context
     struct pciusbXHCIDMAAlloc           dc_SlotCtx;                                 // Device Context (R/O)
     ULONG                               dx_TxMax;
     UBYTE                               dc_SlotID;
+    UBYTE                               dc_DevAddr;
+    UBYTE                               dc_RootPort;
 };
 
 struct pciusbXHCIIODevPrivate
