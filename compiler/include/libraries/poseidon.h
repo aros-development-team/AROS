@@ -151,6 +151,7 @@
 #define DA_InhibitClassBind  (DA_Dummy + 0x42)
 #define DA_OverridePowerInfo (DA_Dummy + 0x43)
 #define DA_IsSuperspeed      (DA_Dummy + 0x44)
+#define DA_IsMultiTT         (DA_Dummy + 0x45)
 
 /* Tags for psdGetAttrs(PGA_CONFIG,...) */
 #define CA_Dummy             (TAG_USER + 23)
