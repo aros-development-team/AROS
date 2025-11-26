@@ -163,6 +163,18 @@ struct EhciHCPrivate
     UWORD                       ehc_EhciTimeoutShift;
 };
 
+/* Support functions */
+#if __WORDSIZE == 64
+#define ehciSetPointer(hcpriv, baseptr, extptr, value) \
+    do { \
+        WRITEMEM32_LE(&(baseptr), (ULONG)((IPTR)(value) & 0xFFFFFFFF)); \
+        WRITEMEM32_LE(&(extptr), (hcpriv)->ehc_64BitCapable ? (ULONG)(((IPTR)(value) >> 32) & 0xFFFFFFFF) : 0); \
+    } while (0)
+#else
+#define ehciSetPointer(hcpriv, baseptr, extptr, value) \
+    WRITEMEM32_LE(&(baseptr), (ULONG)((IPTR)(value) & 0xFFFFFFFF))
+#endif
+
 /* hc_Quirks */
 #define HCQB_EHCI_OVERLAY_CTRL_FILL     0
 #define HCQ_EHCI_OVERLAY_CTRL_FILL      (1 << HCQB_EHCI_OVERLAY_CTRL_FILL)
