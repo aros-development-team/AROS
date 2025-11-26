@@ -116,6 +116,52 @@ static inline void ehciReleaseDMABuffer(APTR dmabuffer, APTR original, ULONG len
 #endif
 }
 
+static void ehciFillScatterGather(struct PCIController *hc, struct EhciHCPrivate *ehcihcp,
+                                  struct EhciTD *etd, APTR buffer, ULONG length)
+{
+    UBYTE *cursor = (UBYTE *)buffer;
+    IPTR phys;
+    ULONG remaining;
+    int idx;
+
+    /* First buffer pointer can include the offset inside the physical page */
+    phys = (IPTR)pciGetPhysical(hc, cursor);
+    ehciSetPointer(ehcihcp, etd->etd_BufferPtr[0], etd->etd_ExtBufferPtr[0], phys);
+
+    /* Calculate how much of the first page is actually used */
+    ULONG firstpage = EHCI_PAGE_SIZE - (phys & (EHCI_PAGE_SIZE - 1));
+    if(firstpage > length)
+        firstpage = length;
+
+    remaining = (length > firstpage) ? length - firstpage : 0;
+    cursor += firstpage;
+
+    for(idx = 1; idx < 5; idx++)
+    {
+        if(!remaining)
+        {
+            WRITEMEM32_LE(&etd->etd_BufferPtr[idx], 0);
+#if __WORDSIZE == 64
+            WRITEMEM32_LE(&etd->etd_ExtBufferPtr[idx], 0);
+#endif
+            continue;
+        }
+
+        phys = (IPTR)pciGetPhysical(hc, cursor) & EHCI_PAGE_MASK;
+        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[idx], etd->etd_ExtBufferPtr[idx], phys);
+
+        if(remaining > EHCI_PAGE_SIZE)
+        {
+            remaining -= EHCI_PAGE_SIZE;
+        }
+        else
+        {
+            remaining = 0;
+        }
+        cursor += EHCI_PAGE_SIZE;
+    }
+}
+
 static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
     struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
@@ -381,12 +427,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                         pciusbDebug("EHCI", "Reload Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
                                     etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr);
                         WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
-                        // FIXME need quark scatter gather mechanism here
-                        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[0], etd->etd_ExtBufferPtr[0], phyaddr);
-                        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[1], etd->etd_ExtBufferPtr[1], (phyaddr & EHCI_PAGE_MASK) + (1*EHCI_PAGE_SIZE));
-                        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[2], etd->etd_ExtBufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
-                        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[3], etd->etd_ExtBufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
-                        ehciSetPointer(ehcihcp, etd->etd_BufferPtr[4], etd->etd_ExtBufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+                        ehciFillScatterGather(hc, ehcihcp, etd, (UBYTE *)eqh->eqh_Buffer + eqh->eqh_Actual, len);
 
                         phyaddr += len;
                         eqh->eqh_Actual += len;
@@ -790,12 +831,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
                 }
                 dataetd->etd_Length = len;
                 WRITEMEM32_LE(&dataetd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
-                // FIXME need quark scatter gather mechanism here
-                ehciSetPointer(ehcihcp, dataetd->etd_BufferPtr[0], dataetd->etd_ExtBufferPtr[0], phyaddr);
-                ehciSetPointer(ehcihcp, dataetd->etd_BufferPtr[1], dataetd->etd_ExtBufferPtr[1], (phyaddr & EHCI_PAGE_MASK) + (1*EHCI_PAGE_SIZE));
-                ehciSetPointer(ehcihcp, dataetd->etd_BufferPtr[2], dataetd->etd_ExtBufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
-                ehciSetPointer(ehcihcp, dataetd->etd_BufferPtr[3], dataetd->etd_ExtBufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
-                ehciSetPointer(ehcihcp, dataetd->etd_BufferPtr[4], dataetd->etd_ExtBufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+                ehciFillScatterGather(hc, ehcihcp, dataetd, (UBYTE *)eqh->eqh_Buffer + eqh->eqh_Actual, len);
 
                 phyaddr += len;
                 eqh->eqh_Actual += len;
@@ -1013,12 +1049,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             }
             etd->etd_Length = len;
             WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
-            // FIXME need quark scatter gather mechanism here
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[0], etd->etd_ExtBufferPtr[0], phyaddr);
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[1], etd->etd_ExtBufferPtr[1], (phyaddr & EHCI_PAGE_MASK) + (1*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[2], etd->etd_ExtBufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[3], etd->etd_ExtBufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[4], etd->etd_ExtBufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+            ehciFillScatterGather(hc, ehcihcp, etd, (UBYTE *)eqh->eqh_Buffer + eqh->eqh_Actual, len);
 
             phyaddr += len;
             eqh->eqh_Actual += len;
@@ -1195,12 +1226,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             pciusbDebug("EHCI", "Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
                          etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr);
             WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
-            // FIXME need quark scatter gather mechanism here
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[0], etd->etd_ExtBufferPtr[0], phyaddr);
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[1], etd->etd_ExtBufferPtr[1], (phyaddr & EHCI_PAGE_MASK) + (1*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[2], etd->etd_ExtBufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[3], etd->etd_ExtBufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
-            ehciSetPointer(ehcihcp, etd->etd_BufferPtr[4], etd->etd_ExtBufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+            ehciFillScatterGather(hc, ehcihcp, etd, (UBYTE *)eqh->eqh_Buffer + eqh->eqh_Actual, len);
 
             phyaddr += len;
             eqh->eqh_Actual += len;
