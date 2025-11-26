@@ -2124,10 +2124,13 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
 
-        pciusbDebug("EHCI", "Found Controller @ 0x%p with %ld ports (%ld companions with %ld ports each)\n",
+        pciusbDebug("EHCI", "Found%sController @ 0x%p with %lu ports (%lu companions with %lu ports each)\n",
+                    (ehcihcp->ehc_64BitCapable) ? " 64bit " : " ",
                     hc->hc_PCIDeviceObject, hc->hc_NumPorts,
                     (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
                     (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP);
+
+        /* FIXME: implement 64-bit addressing */
 
         if(hcsparams & EHSF_EXTPORTROUTING)
         {
@@ -2163,8 +2166,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         if (hc->hc_Quirks & HCQ_EHCI_VBOX_FRAMEROOLOVER) {
             ehcihcp->ehc_EhciTimeoutShift += 2;
         }
-
-        /* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
 
         if(hccparams & EHCF_ASYNCSCHEDPARK)
         {
