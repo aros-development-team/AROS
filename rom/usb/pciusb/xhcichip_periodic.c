@@ -57,15 +57,13 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
     /* *** Schedule Transfers *** */
     pciusbDebug("xHCI", DEBUGCOLOR_SET "Scheduling new INT transfers ..." DEBUGCOLOR_RESET" \n");
-    ForeachNodeSafe(&hc->hc_IntXFerQueue, ioreq, ionext)
-    {
+    ForeachNodeSafe(&hc->hc_IntXFerQueue, ioreq, ionext) {
         devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
         pciusbDebug("xHCI", DEBUGCOLOR_SET "New INT transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
         pciusbDebug("xHCI", DEBUGCOLOR_SET "    IOReq @ 0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
         /* is endpoint already in use or do we have to wait for next transaction */
-        if(unit->hu_DevBusyReq[devadrep])
-        {
+        if(unit->hu_DevBusyReq[devadrep]) {
             pciusbDebug("xHCI", "DevEP %02lx in use!\n", devadrep);
             continue;
         }
@@ -76,22 +74,17 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         ULONG trbflags = 0;
         WORD queued = -1;
 
-        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL)
-        {
+        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
             struct pcisusbXHCIDevice *devCtx;
 
             devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
             pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
-            if (devCtx != NULL)
-            {
+            if (devCtx != NULL) {
                 ULONG txep;
 
-                if (ioreq->iouh_Endpoint == 0)
-                {
-                        txep = 1;
-                }
-                else
-                {
+                if (ioreq->iouh_Endpoint == 0) {
+                    txep = 1;
+                } else {
                     volatile struct xhci_inctx *in = (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
                     struct xhci_ep *ep;
                     in->acf = 0;
@@ -102,41 +95,33 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                     /* initialize the endpoint for use .. */
                     txep = xhciInitEP(hc, devCtx,
-                                ioreq->iouh_Endpoint,
-                                (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
-                                UHCMD_INTXFER,
-                                ioreq->iouh_MaxPktSize,
-                                ioreq->iouh_Interval,
-                                ioreq->iouh_Flags);
+                                      ioreq->iouh_Endpoint,
+                                      (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
+                                      UHCMD_INTXFER,
+                                      ioreq->iouh_MaxPktSize,
+                                      ioreq->iouh_Interval,
+                                      ioreq->iouh_Flags);
 
-                    if (txep > 0)
-                    {
+                    if (txep > 0) {
                         volatile struct xhci_slot *islot = (volatile struct xhci_slot *)&in[ctxoff];
                         ep = (struct xhci_ep *)&in[ctxoff * (txep + 1)];
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "Interval %u = %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Interval, (ep->ctx[0] >> 16) & 0xFF);
 #if (0)
-                        if (ioreq->iouh_Flags & UHFF_SUPERSPEED)
-                        {
+                        if (ioreq->iouh_Flags & UHFF_SUPERSPEED) {
                             islot->ctx[0] |= SLOT_CTX_SUPERSPEED;
                         } else
 #endif
-                        if (ioreq->iouh_Flags & UHFF_HIGHSPEED)
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
-                        }
-                        else if(ioreq->iouh_Flags & UHFF_LOWSPEED)
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
-                        }
-                        else
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
-                        }
+                            if (ioreq->iouh_Flags & UHFF_HIGHSPEED) {
+                                islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
+                            } else if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
+                                islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
+                            } else {
+                                islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
+                            }
 
-                        if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
-                        {
+                        if(ioreq->iouh_Flags & UHFF_SPLITTRANS) {
                             pciusbDebug("xHCI", DEBUGCOLOR_SET "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld" DEBUGCOLOR_RESET" \n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
                             islot->ctx[0]    |= ioreq->iouh_SplitHubAddr;
                             islot->ctx[1]    |= (ioreq->iouh_SplitHubPort) << 16;
@@ -146,12 +131,11 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                         /* Send configure command. */
                         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);
-                        if (cc != 1)
-                        {
+                        if (cc != 1) {
                             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to configure Endpoint (%u)" DEBUGCOLOR_RESET" \n", txep);
                             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Endpoint %u, Dir %s, MaxSize %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Endpoint,
-                                                                                                                                                                                            (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
-                                                                                                                                                                                            ioreq->iouh_MaxPktSize);
+                                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
+                                        ioreq->iouh_MaxPktSize);
                             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                             ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -167,10 +151,9 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 }
 
                 driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
-                if (!driprivate)
-                {
+                if (!driprivate) {
                     pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n", __func__);
-                    //TODO : 
+                    //TODO :
                     Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                     ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -178,9 +161,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 }
                 driprivate->dpDevice = devCtx;
                 driprivate->dpEPID = txep;
-            }
-            else
-            {
+            } else {
                 pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "xHCI: No device attached" DEBUGCOLOR_RESET" \n");
                 Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
@@ -194,26 +175,22 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
             if ((ioreq->iouh_Dir == UHDIR_IN) != 0)
                 trbflags |= (TRBF_FLAG_DS_DIR|TRBF_FLAG_ISP);
-            if ((ioreq->iouh_Data) &&  (ioreq->iouh_Length))
-            {
+            if ((ioreq->iouh_Data) &&  (ioreq->iouh_Length)) {
                 trbflags |= TRBF_FLAG_TRTYPE_NORMAL;
-            }
-            else if ((ioreq->iouh_Length))
-            {
+            } else if ((ioreq->iouh_Length)) {
                 trbflags |= TRBF_FLAG_TRTYPE_DATA;
             }
 
             /****** SETUP COMPLETE ************/
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
-                    (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
+                (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             pciusbDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
             Disable();
             BOOL txdone = FALSE;
-            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL)
-            {
+            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
                 // mark endpoint as busy
                 pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
                 unit->hu_DevBusyReq[devadrep] = ioreq;
@@ -227,8 +204,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                 // queue the transaction
                 queued = xhciQueueData(hc, epring, (UQUAD)(IPTR)ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_MaxPktSize, trbflags, TRUE);
-                if (queued != -1)
-                {
+                if (queued != -1) {
                     int cnt;
                     driprivate->dpTxSTRB = queued;
                     if (epring->next > driprivate->dpTxSTRB + 1)
@@ -247,8 +223,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
              * If we failed to get an endpoint,
              * or queue the transaction, requeue it
              */
-            if (!txdone)
-            {
+            if (!txdone) {
                 driprivate->dpSTRB = (UWORD)-1;
                 driprivate->dpTxSTRB = (UWORD)-1;
                 driprivate->dpTxETRB = (UWORD)-1;
@@ -279,37 +254,31 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     /* *** INT Transfers *** */
     pciusbDebug("xHCI", DEBUGCOLOR_SET "Scheduling new INT transfers..." DEBUGCOLOR_RESET" \n");
     ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
-    while(((struct Node *) ioreq)->ln_Succ)
-    {
+    while(((struct Node *) ioreq)->ln_Succ) {
         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
         pciusbDebug("xHCI", DEBUGCOLOR_SET "New INT transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
 
         /* is endpoint already in use or do we have to wait for next transaction */
-        if(unit->hu_DevBusyReq[devadrep])
-        {
+        if(unit->hu_DevBusyReq[devadrep]) {
             pciusbWarn("xHCI", DEBUGCOLOR_SET "Endpoint %02lx in use!" DEBUGCOLOR_RESET" \n", devadrep);
             ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
             continue;
         }
 
-        if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
-        {
+        if(ioreq->iouh_Flags & UHFF_SPLITTRANS) {
             pciusbDebug("xHCI", DEBUGCOLOR_SET "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld" DEBUGCOLOR_RESET" \n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
 
             // full speed and low speed handling
-            if(ioreq->iouh_Flags & UHFF_LOWSPEED)
-            {
+            if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
                 pciusbDebug("xHCI", DEBUGCOLOR_SET "*** LOW SPEED ***" DEBUGCOLOR_RESET" \n");
             }
 
-            if(ioreq->iouh_Interval >= 255)
-            {
+            if(ioreq->iouh_Interval >= 255) {
 
             } else {
 #if (0)
                 cnt = 0;
-                do
-                {
+                do {
 
                 } while(ioreq->iouh_Interval >= (1<<cnt));
 #endif

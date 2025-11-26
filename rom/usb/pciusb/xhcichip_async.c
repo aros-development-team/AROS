@@ -51,7 +51,7 @@ void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct
 static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype)
 {
     ULONG setupflags = tdflags & ~(TRB_FLAG_TYPE_MASK);
-    
+
     setupflags |= (TRBF_FLAG_TRTYPE_SETUP|TRBF_FLAG_IDT|TRBF_FLAG_CH);
     if (tdflags & TRBF_FLAG_DS_DIR)
         setupflags |= (3 << 16);
@@ -102,8 +102,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
     /* *** Schedule Transfers *** */
     pciusbDebug("xHCI", DEBUGCOLOR_SET "Scheduling new Async transfers (Type %x)..." DEBUGCOLOR_RESET" \n", txtype);
-    ForeachNodeSafe(txlist, ioreq, ionext)
-    {
+    ForeachNodeSafe(txlist, ioreq, ionext) {
         devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint;
         if ((txtype == UHCMD_BULKXFER) && (ioreq->iouh_Dir == UHDIR_IN))
             devadrep += 0x10;
@@ -111,8 +110,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         pciusbDebug("xHCI", DEBUGCOLOR_SET "    IOReq @ 0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
         /* is endpoint already in use or do we have to wait for next transaction */
-        if(unit->hu_DevBusyReq[devadrep])
-        {
+        if(unit->hu_DevBusyReq[devadrep]) {
             KPRINTF(5, "DevEP %02lx in use!\n", devadrep);
             continue;
         }
@@ -123,22 +121,17 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         ULONG trbflags = 0;
         WORD queued = -1;
 
-        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL)
-        {
+        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
             struct pcisusbXHCIDevice *devCtx;
 
             devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
             pciusbDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
-            if (devCtx != NULL)
-            {
+            if (devCtx != NULL) {
                 ULONG txep;
 
-                if (ioreq->iouh_Endpoint == 0)
-                {
-                        txep = 1;
-                }
-                else
-                {
+                if (ioreq->iouh_Endpoint == 0) {
+                    txep = 1;
+                } else {
                     volatile struct xhci_inctx *in = (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
                     struct xhci_ep *ep;
                     in->acf = 0;
@@ -149,40 +142,32 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
                     /* initialize the endpoint for use .. */
                     txep = xhciInitEP(hc, devCtx,
-                                ioreq->iouh_Endpoint,
-                                (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
-                                txtype,
-                                ioreq->iouh_MaxPktSize,
-                                ioreq->iouh_Interval,
-                                ioreq->iouh_Flags);
+                                      ioreq->iouh_Endpoint,
+                                      (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
+                                      txtype,
+                                      ioreq->iouh_MaxPktSize,
+                                      ioreq->iouh_Interval,
+                                      ioreq->iouh_Flags);
 
-                    if (txep > 0)
-                    {
+                    if (txep > 0) {
                         volatile struct xhci_slot *islot = (volatile struct xhci_slot *)&in[ctxoff];
                         ep = (struct xhci_ep *)&in[ctxoff * (txep + 1)];
 
                         pciusbDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
 #if (0)
-                        if (ioreq->iouh_Flags & UHFF_SUPERSPEED)
-                        {
+                        if (ioreq->iouh_Flags & UHFF_SUPERSPEED) {
                             islot->ctx[0] |= SLOT_CTX_SUPERSPEED;
                         } else
 #endif
-                        if (ioreq->iouh_Flags & UHFF_HIGHSPEED)
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
-                        }
-                        else if(ioreq->iouh_Flags & UHFF_LOWSPEED)
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
-                        }
-                        else
-                        {
-                            islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
-                        }
+                            if (ioreq->iouh_Flags & UHFF_HIGHSPEED) {
+                                islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
+                            } else if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
+                                islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
+                            } else {
+                                islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
+                            }
 
-                        if(ioreq->iouh_Flags & UHFF_SPLITTRANS)
-                        {
+                        if(ioreq->iouh_Flags & UHFF_SPLITTRANS) {
                             pciusbDebug("xHCI", DEBUGCOLOR_SET "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld" DEBUGCOLOR_RESET" \n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
                             islot->ctx[0]    |= ioreq->iouh_SplitHubAddr;
                             islot->ctx[1]    |= (ioreq->iouh_SplitHubPort) << 16;
@@ -192,12 +177,11 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
                         /* Send configure command. */
                         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);
-                        if (cc != 1)
-                        {
+                        if (cc != 1) {
                             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to configure Endpoint (%u)" DEBUGCOLOR_RESET" \n", txep);
                             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Endpoint %u, Dir %s, MaxSize %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Endpoint,
-                                                                                                                                                                                            (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
-                                                                                                                                                                                            ioreq->iouh_MaxPktSize);
+                                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
+                                        ioreq->iouh_MaxPktSize);
                             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                             ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -213,10 +197,9 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 }
 
                 driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
-                if (!driprivate)
-                {
+                if (!driprivate) {
                     pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n", __func__);
-                    //TODO : 
+                    //TODO :
                     Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                     ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -224,9 +207,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 }
                 driprivate->dpDevice = devCtx;
                 driprivate->dpEPID = txep;
-            }
-            else
-            {
+            } else {
                 pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "xHCI: No device attached" DEBUGCOLOR_RESET" \n");
                 Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
@@ -236,34 +217,29 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         }
 
         if ((txtype == UHCMD_BULKXFER) ||
-            (ioreq->iouh_SetupData.bmRequestType != (URTF_STANDARD|URTF_DEVICE)) ||
-            (ioreq->iouh_SetupData.bRequest != USR_SET_ADDRESS))
-        {
+                (ioreq->iouh_SetupData.bmRequestType != (URTF_STANDARD|URTF_DEVICE)) ||
+                (ioreq->iouh_SetupData.bRequest != USR_SET_ADDRESS)) {
             APTR txdata = ioreq->iouh_Data;
 
             if ((ioreq->iouh_Dir == UHDIR_IN) != 0)
                 trbflags |= TRBF_FLAG_DS_DIR;
 
-            if ((txtype == UHCMD_BULKXFER) || ((ioreq->iouh_Data) &&  (ioreq->iouh_Length)))
-            {
+            if ((txtype == UHCMD_BULKXFER) || ((ioreq->iouh_Data) &&  (ioreq->iouh_Length))) {
                 trbflags |= TRBF_FLAG_TRTYPE_NORMAL;
-            }
-            else if ((ioreq->iouh_Length))
-            {
+            } else if ((ioreq->iouh_Length)) {
                 trbflags |= TRBF_FLAG_TRTYPE_DATA;
             }
 
             /****** SETUP COMPLETE ************/
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
-                    (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
+                (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             pciusbDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
             Disable();
             BOOL txdone = FALSE;
-            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL)
-            {
+            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
                 // mark endpoint as busy
                 pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
                 unit->hu_DevBusyReq[devadrep] = ioreq;
@@ -271,34 +247,26 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
                 pciusbDebugEP("xHCI", DEBUGCOLOR_SET "%s: EP ring @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, epring);
 
-                if (txtype == UHCMD_CONTROLXFER)
-                {
+                if (txtype == UHCMD_CONTROLXFER) {
                     // queue the setup
                     UQUAD setupdata_inline;
                     xhciTDSetupInlinedata(&setupdata_inline, ioreq, txtype);
                     queued = xhciQueueTRB(hc, epring, setupdata_inline, sizeof(ioreq->iouh_SetupData), xhciTDSetupFlags(trbflags, txtype));
-                    if (queued != -1)
-                    {
+                    if (queued != -1) {
                         driprivate->dpSTRB = queued;
                         epring->ringio[queued] = &ioreq->iouh_Req;
                     }
-                }
-                else
-                {
+                } else {
                     driprivate->dpSTRB = (UWORD)-1;
                     queued = 0;
                 }
-                if (queued != -1)
-                {
+                if (queued != -1) {
                     // queue the transaction
-                    if (ioreq->iouh_Data && ioreq->iouh_Length)
-                    {
+                    if (ioreq->iouh_Data && ioreq->iouh_Length) {
                         queued = xhciQueueData(hc, epring, (UQUAD)(IPTR)ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_MaxPktSize, trbflags, (txtype == UHCMD_CONTROLXFER) ? FALSE : TRUE);
-                    }
-                    else
+                    } else
                         queued = driprivate->dpSTRB;
-                    if (queued != -1)
-                    {
+                    if (queued != -1) {
                         int cnt;
                         driprivate->dpTxSTRB = queued;
                         if (epring->next > driprivate->dpTxSTRB + 1)
@@ -307,23 +275,18 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                             driprivate->dpTxETRB = driprivate->dpTxSTRB;
                         for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt ++)
                             epring->ringio[cnt] = &ioreq->iouh_Req;
-                        if (txtype == UHCMD_CONTROLXFER)
-                        {
+                        if (txtype == UHCMD_CONTROLXFER) {
                             // finally queue the status
                             queued = xhciQueueTRB(hc, epring, 0, 0, xhciTDStatusFlags(trbflags));
-                            if (queued != -1)
-                            {
+                            if (queued != -1) {
                                 driprivate->dpSttTRB = queued;
                                 epring->ringio[queued] = &ioreq->iouh_Req;
                             }
-                        }
-                        else
-                        {
+                        } else {
                             driprivate->dpSttTRB = (UWORD)-1;
                             queued = 0;
                         }
-                        if (queued != -1)
-                        {
+                        if (queued != -1) {
                             AddTail(&hc->hc_TDQueue, (struct Node *) ioreq);
                             pciusbDebug("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                             txdone = TRUE;
@@ -336,8 +299,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
              * If we failed to get an endpoint,
              * or queue the transaction, requeue it
              */
-            if (!txdone)
-            {
+            if (!txdone) {
                 driprivate->dpSTRB = (UWORD)-1;
                 driprivate->dpTxSTRB = (UWORD)-1;
                 driprivate->dpTxETRB = (UWORD)-1;
@@ -350,21 +312,16 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             } else {
                 xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
             }
-        }
-        else
-        {
+        } else {
             // Ignore SET_ADDRESS
             Disable();
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
-                    (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL)
-            {
+                (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
+            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
                 driprivate->dpCC = 1;
                 AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
-            }
-            else
-            {
+            } else {
                 AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
             }
             Enable();

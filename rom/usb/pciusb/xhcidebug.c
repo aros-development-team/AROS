@@ -44,23 +44,22 @@ void xhciDumpIN(volatile struct xhci_inctx *in)
 void xhciDumpSlot(volatile struct xhci_slot *slot)
 {
 #if defined(XHCI_ENABLESLOTDEBUG)
-    switch ((slot->ctx[3] >> 27) & 0xF)
-    {
-        case 0:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Disabled/Enabled" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 1:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Default" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 2:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Addressed" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 3:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Configured" DEBUGCOLOR_RESET" \n"));
-            break;
-        default:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Unknown (%x)" DEBUGCOLOR_RESET" \n", (slot->ctx[3] >> 27) & 0xF));
-            break;
+    switch ((slot->ctx[3] >> 27) & 0xF) {
+    case 0:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Disabled/Enabled" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 1:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Default" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 2:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Addressed" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 3:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Configured" DEBUGCOLOR_RESET" \n"));
+        break;
+    default:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.STATE = Unknown (%x)" DEBUGCOLOR_RESET" \n", (slot->ctx[3] >> 27) & 0xF));
+        break;
     }
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.PORT         = %02x" DEBUGCOLOR_RESET" \n", (slot->ctx[1] >> 16) & 0xFF));
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: SLOT.TARGET      = %03x" DEBUGCOLOR_RESET" \n", (slot->ctx[3] >> 22) & 0x3FF));
@@ -72,26 +71,25 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
 #if defined(XHCI_ENABLEEPDEBUG)
     // Endpoint info..
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.STATE = %x" DEBUGCOLOR_RESET" \n", ep->ctx[0] & 0x7));
-    switch (ep->ctx[0] & 0x7)
-    {
-        case 0:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Disabled" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 1:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Running" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 2:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Halted" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 3:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Stopped" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 4:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Error" DEBUGCOLOR_RESET" \n"));
-            break;
-        default:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Unknown (%x)" DEBUGCOLOR_RESET" \n", ep->ctx[0] & 0x7));
-            break;
+    switch (ep->ctx[0] & 0x7) {
+    case 0:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Disabled" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 1:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Running" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 2:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Halted" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 3:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Stopped" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 4:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Error" DEBUGCOLOR_RESET" \n"));
+        break;
+    default:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Unknown (%x)" DEBUGCOLOR_RESET" \n", ep->ctx[0] & 0x7));
+        break;
     }
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.MULT = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 8) & 0x3));
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.MAXPSTREAMS = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 10) & 0xF));
@@ -100,32 +98,31 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.MAXESIT = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 24) & 0xFF));
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.CERR = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 1) & 0x3));
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.TYPE = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 3) & 0x7));
-    switch ((ep->ctx[1] >> 3) & 0x7)
-    {
-        case 1:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Isoch" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 2:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Bulk" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 3:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Int" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 4:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Control" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 5:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Isoch" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 6:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Bulk" DEBUGCOLOR_RESET" \n"));
-            break;
-        case 7:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Int" DEBUGCOLOR_RESET" \n"));
-            break;
-        default:
-            KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > INVALID" DEBUGCOLOR_RESET" \n"));
-            break;
+    switch ((ep->ctx[1] >> 3) & 0x7) {
+    case 1:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Isoch" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 2:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Bulk" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 3:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > OUT Int" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 4:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > Control" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 5:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Isoch" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 6:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Bulk" DEBUGCOLOR_RESET" \n"));
+        break;
+    case 7:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > IN Int" DEBUGCOLOR_RESET" \n"));
+        break;
+    default:
+        KPRINTF(10, (DEBUGCOLOR_SET "xHCI: > INVALID" DEBUGCOLOR_RESET" \n"));
+        break;
     }
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.HID = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 7) & 0x1));
     KPRINTF(10, (DEBUGCOLOR_SET "xHCI: EP.MAXBURST = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 8) & 0xFF));
@@ -143,7 +140,7 @@ void xhciDumpStatus(ULONG status)
     if (status & XHCIF_USBSTS_HSE)
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Host System Error" DEBUGCOLOR_RESET" \n"));
     if (status & XHCIF_USBSTS_PCD)
-        KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Port Change Detected" DEBUGCOLOR_RESET" \n"));    
+        KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Port Change Detected" DEBUGCOLOR_RESET" \n"));
 #endif
 }
 
@@ -167,7 +164,7 @@ void xhciDumpIMAN(ULONG iman)
     if (iman & XHCIF_IR_IMAN_IE)
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Interrupts enabled" DEBUGCOLOR_RESET" \n"));
     if (iman & XHCIF_IR_IMAN_IP)
-        KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Interrupts pending" DEBUGCOLOR_RESET" \n"));    
+        KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Interrupts pending" DEBUGCOLOR_RESET" \n"));
 #endif
 }
 
@@ -196,20 +193,13 @@ void xhciDumpPort(volatile struct xhci_pr *xhcipr)
     if (portsc & XHCIF_PR_PORTSC_CCS)
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Connected" DEBUGCOLOR_RESET" \n"));
 
-    if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_FULLSPEED)
-    {
+    if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_FULLSPEED) {
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Full Speed" DEBUGCOLOR_RESET" \n"));
-    }
-    else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_LOWSPEED)
-    {
+    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_LOWSPEED) {
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Low Speed" DEBUGCOLOR_RESET" \n"));
-    }
-    else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_HIGHSPEED)
-    {
+    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_HIGHSPEED) {
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > High Speed" DEBUGCOLOR_RESET" \n"));
-    }
-    else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_SUPERSPEED)
-    {
+    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_SUPERSPEED) {
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Super Speed" DEBUGCOLOR_RESET" \n"));
     }
 
@@ -267,8 +257,7 @@ void xhciDumpCC(UBYTE cc)
 {
 #if defined(XHCI_ENABLECCDEBUG)
     KPRINTF(20, (DEBUGCOLOR_SET "xHCI: CC = $%02x" DEBUGCOLOR_RESET" \n", cc));
-    switch (cc)
-    {
+    switch (cc) {
     case 0:
         KPRINTF(20, (DEBUGCOLOR_SET "xHCI: > Invalid" DEBUGCOLOR_RESET" \n"));
         break;

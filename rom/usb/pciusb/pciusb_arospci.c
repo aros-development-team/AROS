@@ -60,31 +60,26 @@ static void handleQuirks(struct PCIController *hc)
     hc->hc_ProdID = (UWORD)productid & 0xFFFF;
 
     if (vendorid == 0x8086 && productid == 0x265c && revisionid == 0
-        && subvendorid == 0 && subproductid == 0 && memsize == 4096)
-    {
+            && subvendorid == 0 && subproductid == 0 && memsize == 4096) {
         // This is needed for EHCI to work in VirtualBox
         hc->hc_Quirks &= ~(HCQ_EHCI_OVERLAY_CTRL_FILL|HCQ_EHCI_OVERLAY_INT_FILL|HCQ_EHCI_OVERLAY_BULK_FILL);
 
         // VirtualBox reports frame list size of 1024, but still issues interrupts at
         // speed of around 4 per second instead of every 1024 ms
         hc->hc_Quirks |= HCQ_EHCI_VBOX_FRAMEROOLOVER;
-    }
-    else if (vendorid == 0x9710)
-    {
+    } else if (vendorid == 0x9710) {
         /* Apply MosChip frame-counter register bug workaround */
         hc->hc_Quirks |= HCQ_EHCI_MOSC_FRAMECOUNTBUG;
-    }
-    else if (vendorid == 0x1106)
-    {
+    } else if (vendorid == 0x1106) {
         /* Apply fix for VIA Babble problem */
         switch(productid) {
-            case 0x3038:     // VT83C572 UHCI
-            case 0x3104:     // VT82C596 UHCI
-            case 0x3107:     // VT82C686 UHCI
-                if (revisionid < 0x10) {  // apply only to affected revisions
-                    hc->hc_Quirks |= HCQ_UHCI_VIA_BABBLE;
-                }
-                break;
+        case 0x3038:     // VT83C572 UHCI
+        case 0x3104:     // VT82C596 UHCI
+        case 0x3107:     // VT82C686 UHCI
+            if (revisionid < 0x10) {  // apply only to affected revisions
+                hc->hc_Quirks |= HCQ_UHCI_VIA_BABBLE;
+            }
+            break;
         }
     }
 }
@@ -115,21 +110,17 @@ AROS_UFH3(void, pciEnumerator,
 
     pciusbDebug("PCI", "Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline);
 
-    if(intline == 255)
-    {
+    if(intline == 255) {
         // we can't work without the correct interrupt line
         // BIOS needs plug & play os option disabled. Alternatively AROS must support ACPI reconfiguration
         pciusbDebug("PCI", "ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n");
-    }
-    else
-    {
-        switch (hcitype)
-        {
+    } else {
+        switch (hcitype) {
 #if defined(PCIUSB_ENABLEXHCI)
         case HCITYPE_XHCI:
             if (!(hd->hd_Flags & HDF_ENABLEXHCI))
                 break;
-            // fall through
+        // fall through
         case HCITYPE_OHCI:
 #else
         case HCITYPE_OHCI:
@@ -139,8 +130,7 @@ AROS_UFH3(void, pciEnumerator,
             pciusbDebug("PCI", "Setting up device...\n");
 
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
-            if (hc)
-            {
+            if (hc) {
                 hc->hc_IsoPTDCount = PCIUSB_ISO_PTD_COUNT;
                 hc->hc_Device = hd;
                 hc->hc_DevID = devid;
@@ -186,9 +176,7 @@ AROS_UFH3(void, pciEnumerator,
                 AddTail(&hd->hd_TempHCIList, &hc->hc_Node);
 
                 handleQuirks(hc);
-            }
-            else
-            {
+            } else {
                 pciusbDebug("PCI", "Failed to allocate storage for controller entry!\n");
             }
             break;
@@ -218,18 +206,15 @@ BOOL pciInit(struct PCIDevice *hd)
 
     NewList(&hd->hd_TempHCIList);
 
-    if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL)))
-    {
-        struct TagItem tags[] =
-        {
+    if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL))) {
+        struct TagItem tags[] = {
             { tHidd_PCI_Class,      (PCI_CLASS_SERIAL_USB>>8) & 0xff },
             { tHidd_PCI_SubClass,   (PCI_CLASS_SERIAL_USB & 0xff) },
             { TAG_DONE, 0UL }
         };
-        struct Hook findHook =
-        {
-             .h_Entry   = (IPTR (*)()) pciEnumerator,
-             .h_Data    = hd,
+        struct Hook findHook = {
+            .h_Entry   = (IPTR (*)()) pciEnumerator,
+            .h_Data    = hd,
         };
         pciusbDebug("PCI", "Searching for devices...\n");
 
@@ -247,8 +232,7 @@ BOOL pciInit(struct PCIDevice *hd)
     pciusbDebug("PCI", "USB Controller class @  0x%p\n", usbContrClass);
 
     // Create units with a list of host controllers having the same bus and device number.
-    while(hd->hd_TempHCIList.lh_Head->ln_Succ)
-    {
+    while(hd->hd_TempHCIList.lh_Head->ln_Succ) {
         BOOL    unitdone = FALSE, unithasv1 = FALSE, unithasv2 = FALSE;
 #if defined(PCIUSB_ENABLEXHCI)
         BOOL    unithasv3 = FALSE;
@@ -256,8 +240,7 @@ BOOL pciInit(struct PCIDevice *hd)
         int     cnt;
 
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
-        if(!hu)
-        {
+        if(!hu) {
             // actually, we should get rid of the allocated memory first, but I don't care as DeletePool() will take care of this eventually
             return FALSE;
         }
@@ -267,43 +250,39 @@ BOOL pciInit(struct PCIDevice *hd)
         NewList(&hu->hu_Controllers);
         NewList(&hu->hu_RHIOQueue);
         NewMinList(&hu->hu_FreeRTIsoNodes);
-        for(cnt = 0; cnt < MAX_ROOT_PORTS; cnt++)
-        {
+        for(cnt = 0; cnt < MAX_ROOT_PORTS; cnt++) {
             hu->hu_RTIsoNodes[cnt].rtn_PTDs = NULL;
             hu->hu_RTIsoNodes[cnt].rtn_PTDCount = 0;
             AddTail((struct List *) &hu->hu_FreeRTIsoNodes, (struct Node *)&hu->hu_RTIsoNodes[cnt].rtn_Node);
         }
 
         hu->hu_DevID = (ULONG)-1;
-        ForeachNodeSafe(&hd->hd_TempHCIList, hc, nexthc)
-        {
+        ForeachNodeSafe(&hd->hd_TempHCIList, hc, nexthc) {
             if (hu->hu_DevID == (ULONG)-1)
                 hu->hu_DevID = hc->hc_DevID;
 
-            if (hc->hc_DevID == hu->hu_DevID)
-            {
+            if (hc->hc_DevID == hu->hu_DevID) {
                 BOOL ignore = FALSE;
-                switch (hc->hc_HCIType)
-                {
-                    case HCITYPE_UHCI:
-                    case HCITYPE_OHCI:
-                        if (unithasv2)
-                            unitdone = TRUE;
-                        unithasv1 = TRUE;
-                        break;
-                    case HCITYPE_EHCI:
-                        if (unithasv2)
-                            unitdone = TRUE;
-                        unithasv2 = TRUE;
-                        break;
+                switch (hc->hc_HCIType) {
+                case HCITYPE_UHCI:
+                case HCITYPE_OHCI:
+                    if (unithasv2)
+                        unitdone = TRUE;
+                    unithasv1 = TRUE;
+                    break;
+                case HCITYPE_EHCI:
+                    if (unithasv2)
+                        unitdone = TRUE;
+                    unithasv2 = TRUE;
+                    break;
 #if defined(PCIUSB_ENABLEXHCI)
-                    case HCITYPE_XHCI:
-                        if ((unithasv1) || (unithasv2))
-                            unitdone = TRUE;
-                        if ((!(hd->hd_Flags & HDF_ENABLEXHCI)) || unithasv3)
-                            ignore = TRUE;
-                        unithasv3 = TRUE;
-                        break;
+                case HCITYPE_XHCI:
+                    if ((unithasv1) || (unithasv2))
+                        unitdone = TRUE;
+                    if ((!(hd->hd_Flags & HDF_ENABLEXHCI)) || unithasv3)
+                        ignore = TRUE;
+                    unithasv3 = TRUE;
+                    break;
 #endif
                 }
                 if (unitdone)
@@ -314,10 +293,8 @@ BOOL pciInit(struct PCIDevice *hd)
 
                 Remove(&hc->hc_Node);
 
-                if ((usbContrClass) && (root))
-                {
-                    struct TagItem usbc_tags[] =
-                    {
+                if ((usbContrClass) && (root)) {
+                    struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_HardwareName,        0               },
                         {aHidd_Producer,            hc->hc_VendID   },
@@ -334,32 +311,28 @@ BOOL pciInit(struct PCIDevice *hd)
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
 
                     usbc_tags[1].ti_Data = (IPTR)&hc->hc_Node.ln_Name[16];
-                    switch (hc->hc_HCIType)
-                    {
-                    case HCITYPE_OHCI:
-                        {
-                            usb_chipset = "OHCI";
-                            usb_min = 1;
-                            break;
-                        }
-
-                    case HCITYPE_EHCI:
-                        {
-                            usb_chipset = "EHCI";
-                            usb_maj = 2;
-                            usb_min = 0;
-                            break;
-                        }
-
-                    case HCITYPE_XHCI:
-                        {
-                            usb_chipset = "XHCI";
-                            usb_maj = 3;
-                            usb_min = -1;
-                            break;
-                        }
+                    switch (hc->hc_HCIType) {
+                    case HCITYPE_OHCI: {
+                        usb_chipset = "OHCI";
+                        usb_min = 1;
+                        break;
                     }
-                    
+
+                    case HCITYPE_EHCI: {
+                        usb_chipset = "EHCI";
+                        usb_maj = 2;
+                        usb_min = 0;
+                        break;
+                    }
+
+                    case HCITYPE_XHCI: {
+                        usb_chipset = "XHCI";
+                        usb_maj = 3;
+                        usb_min = -1;
+                        break;
+                    }
+                    }
+
                     sprintf((char *)usbc_tags[1].ti_Data, "PCI USB %u.",  usb_maj);
                     if (usb_min < 0)
                         sprintf((char *)(usbc_tags[1].ti_Data + 10), "x");
@@ -413,82 +386,70 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     pciusbDebug("PCI", "Unit @ %p\n", hu);
 
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
+    ForeachNode(&hu->hu_Controllers, hc) {
         CONST_STRPTR owner;
-        
+
         owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Device.dd_Library.lib_Node.ln_Name);
         if (!owner)
             hc->hc_Flags |= HCF_ALLOCATED;
-        else
-        {
+        else {
             pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
             allocgood = FALSE;
         }
     }
 
-    if(allocgood)
-    {
+    if(allocgood) {
         // allocate necessary memory
-        ForeachNode(&hu->hu_Controllers, hc)
-        {
-            switch(hc->hc_HCIType)
-            {
-                case HCITYPE_UHCI:
-                {
-                    allocgood = uhciInit(hc,hu);
-                    if(allocgood) {
-                        uhcicnt++;
-                    }
-                    break;
+        ForeachNode(&hu->hu_Controllers, hc) {
+            switch(hc->hc_HCIType) {
+            case HCITYPE_UHCI: {
+                allocgood = uhciInit(hc,hu);
+                if(allocgood) {
+                    uhcicnt++;
                 }
+                break;
+            }
 
-                case HCITYPE_OHCI:
-                {
-                    allocgood = ohciInit(hc,hu);
-                    if(allocgood) {
-                        ohcicnt++;
-                    }
-                    break;
+            case HCITYPE_OHCI: {
+                allocgood = ohciInit(hc,hu);
+                if(allocgood) {
+                    ohcicnt++;
                 }
+                break;
+            }
 
-                case HCITYPE_EHCI:
-                {
-                    if(usb20ports) {
-                        pciusbWarn("PCI", "More than one EHCI controller per board?!?\n");
-                    }
-                    allocgood = ehciInit(hc,hu);
-                    if(allocgood) {
-                        ehcicnt++;
-                        usb20ports = hc->hc_NumPorts;
-                    }
-                    break;
+            case HCITYPE_EHCI: {
+                if(usb20ports) {
+                    pciusbWarn("PCI", "More than one EHCI controller per board?!?\n");
                 }
+                allocgood = ehciInit(hc,hu);
+                if(allocgood) {
+                    ehcicnt++;
+                    usb20ports = hc->hc_NumPorts;
+                }
+                break;
+            }
 #if defined(PCIUSB_ENABLEXHCI)
-                case HCITYPE_XHCI:
-                {
-                    if(xhciports) {
-                        pciusbWarn("PCI", "More than one XHCI controller per board?!?\n");
-                    }
-                    allocgood = xhciInit(hc,hu);
-                    if(allocgood) {
-                        xhcicnt++;
-                        xhciports = hc->hc_NumPorts;
-                    }
-                    break;
+            case HCITYPE_XHCI: {
+                if(xhciports) {
+                    pciusbWarn("PCI", "More than one XHCI controller per board?!?\n");
                 }
+                allocgood = xhciInit(hc,hu);
+                if(allocgood) {
+                    xhcicnt++;
+                    xhciports = hc->hc_NumPorts;
+                }
+                break;
+            }
 #endif
             }
         }
     }
 
-    if(!allocgood)
-    {
+    if(!allocgood) {
         // free previously allocated boards
-        ForeachNode(&hu->hu_Controllers, hc)
-        {
-            if (hc->hc_Flags & HCF_ALLOCATED)
-            {
+        ForeachNode(&hu->hu_Controllers, hc) {
+            if (hc->hc_Flags & HCF_ALLOCATED) {
                 hc->hc_Flags &= ~HCF_ALLOCATED;
                 HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
             }
@@ -496,17 +457,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         return FALSE;
     }
 
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
-        if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI))
-        {
-            if(hc->hc_complexrouting)
-            {
+    ForeachNode(&hu->hu_Controllers, hc) {
+        if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI)) {
+            if(hc->hc_complexrouting) {
                 ULONG locport = 0;
-                for(cnt = 0; cnt < usb20ports; cnt++)
-                {
-                    if(((hc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum)
-                    {
+                for(cnt = 0; cnt < usb20ports; cnt++) {
+                    if(((hc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum) {
                         pciusbDebug("PCI", "CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt);
                         hu->hu_PortMap11[cnt] = hc;
                         hu->hu_PortNum11[cnt] = locport;
@@ -515,8 +471,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                     }
                 }
             } else {
-                for(cnt = usb11ports; cnt < usb11ports + hc->hc_NumPorts; cnt++)
-                {
+                for(cnt = usb11ports; cnt < usb11ports + hc->hc_NumPorts; cnt++) {
                     hu->hu_PortMap11[cnt] = hc;
                     hu->hu_PortNum11[cnt] = cnt - usb11ports;
                     hc->hc_PortNum[cnt - usb11ports] = cnt;
@@ -525,8 +480,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             usb11ports += hc->hc_NumPorts;
         }
     }
-    if((usb11ports != usb20ports) && usb20ports)
-    {
+    if((usb11ports != usb20ports) && usb20ports) {
         pciusbWarn("PCI", "EHCI Ports (%ld), do not match USB 1.1 Ports (%ld)!\n", usb20ports, usb11ports);
     }
 
@@ -539,13 +493,12 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         hu->hu_RootHubPorts = hu->hu_RootHubXPorts;
 #endif
 
-    for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++)
-    {
-        hu->hu_PortOwner[cnt] = 
+    for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++) {
+        hu->hu_PortOwner[cnt] =
 #if defined(PCIUSB_ENABLEXHCI)
-                                                hu->hu_PortMapX[cnt] ? HCITYPE_XHCI : 
+            hu->hu_PortMapX[cnt] ? HCITYPE_XHCI :
 #endif
-                                                hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
+            hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
     }
 
     pciusbDebug("PCI", "Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports);
@@ -561,8 +514,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     pciStrcat(prodname, "PCI ");
     if(ohcicnt + uhcicnt) {
         havetype = TRUE;
-        if(ohcicnt + uhcicnt >1)
-        {
+        if(ohcicnt + uhcicnt >1) {
             prodname[4] = ohcicnt + uhcicnt + '0';
             prodname[5] = 'x';
             prodname[6] = 0;
@@ -589,21 +541,16 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 #endif
 
     // put em online
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
+    ForeachNode(&hu->hu_Controllers, hc) {
         hc->hc_Flags |= HCF_ONLINE;
 #if defined(PCIUSB_ENABLEXHCI)
-        if (hc->hc_HCIType == HCITYPE_XHCI)
-        {
+        if (hc->hc_HCIType == HCITYPE_XHCI) {
 #if (0)
             UBYTE hcUSBVers = READCONFIGBYTE(hc, hc->hc_PCIDeviceObject, XHCI_SBRN);
-            if (((hcUSBVers & 0xF0) >> 4) > usbmaj)
-            {
+            if (((hcUSBVers & 0xF0) >> 4) > usbmaj) {
                 usbmaj = ((hcUSBVers & 0xF0) >> 4);
                 usbmin = (hcUSBVers & 0xF);
-            }
-            else if ((((hcUSBVers & 0xF0) >> 4) == usbmaj) && ((hcUSBVers & 0xF) > usbmin))
-            {
+            } else if ((((hcUSBVers & 0xF0) >> 4) == usbmaj) && ((hcUSBVers & 0xF) > usbmin)) {
                 usbmin = (hcUSBVers & 0xF);
             }
 #else
@@ -633,42 +580,38 @@ void pciFreeUnit(struct PCIUnit *hu)
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
 
-    struct TagItem pciDeactivate[] =
-    {
-            { aHidd_PCIDevice_isIO,     FALSE },
-            { aHidd_PCIDevice_isMEM,    FALSE },
-            { aHidd_PCIDevice_isMaster, FALSE },
-            { TAG_DONE, 0UL },
+    struct TagItem pciDeactivate[] = {
+        { aHidd_PCIDevice_isIO,     FALSE },
+        { aHidd_PCIDevice_isMEM,    FALSE },
+        { aHidd_PCIDevice_isMaster, FALSE },
+        { TAG_DONE, 0UL },
     };
 
     pciusbDebug("PCI", "Freeing unit @ 0x%p", hu);
 
     // put em offline
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
+    ForeachNode(&hu->hu_Controllers, hc) {
         hc->hc_Flags &= ~HCF_ONLINE;
-        switch (hc->hc_HCIType)
-        {
+        switch (hc->hc_HCIType) {
 #if defined(PCIUSB_ENABLEXHCI)
-            case HCITYPE_XHCI:
-                xhciFree(hc, hu);
-                break;
+        case HCITYPE_XHCI:
+            xhciFree(hc, hu);
+            break;
 #endif
-            case HCITYPE_EHCI:
-                ehciFree(hc, hu);
-                break;
-            case HCITYPE_OHCI:
-                ohciFree(hc, hu);
-                break;
-            case HCITYPE_UHCI:
-                uhciFree(hc, hu);
-                break;
+        case HCITYPE_EHCI:
+            ehciFree(hc, hu);
+            break;
+        case HCITYPE_OHCI:
+            ohciFree(hc, hu);
+            break;
+        case HCITYPE_UHCI:
+            uhciFree(hc, hu);
+            break;
         }
     }
 
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
+    ForeachNode(&hu->hu_Controllers, hc) {
         if(hc->hc_PCIMem.me_Un.meu_Addr) {
             HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
             hc->hc_PCIMem.me_Un.meu_Addr = NULL;
@@ -676,11 +619,9 @@ void pciFreeUnit(struct PCIUnit *hu)
     }
 
     // disable and free board
-    ForeachNode(&hu->hu_Controllers, hc)
-    {
+    ForeachNode(&hu->hu_Controllers, hc) {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
-        if(hc->hc_PCIIntHandler.is_Node.ln_Name)
-        {
+        if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
             HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
             hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
@@ -699,18 +640,15 @@ void pciExpunge(struct PCIDevice *hd)
 
     pciusbDebug("PCI", "Device @ 0x%p", hd);
 
-    ForeachNodeSafe(&hd->hd_Units, hu, ut)
-    {
+    ForeachNodeSafe(&hd->hd_Units, hu, ut) {
         Remove((struct Node *) hu);
-        ForeachNodeSafe(&hu->hu_Controllers, hc, ct)
-        {
+        ForeachNodeSafe(&hu->hu_Controllers, hc, ct) {
             Remove(&hc->hc_Node);
             FreePooled(hd->hd_MemPool, hc, sizeof(struct PCIController));
         }
         FreePooled(hd->hd_MemPool, hu, sizeof(struct PCIUnit));
     }
-    if(hd->hd_PCIHidd)
-    {
+    if(hd->hd_PCIHidd) {
         OOP_DisposeObject(hd->hd_PCIHidd);
     }
 }
@@ -735,8 +673,7 @@ APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Siz
     alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
     if (alloc->me_Un.meu_Addr) {
         IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align-1)) & ~(align-1));
-        if ((addrAligned & (bounds - 1)) != ((addrAligned + Size -1 ) & (bounds-1)))
-        {
+        if ((addrAligned & (bounds - 1)) != ((addrAligned + Size -1 ) & (bounds-1))) {
             pciusbDebug("PCI", "Re-allocating using bounds\n");
             FREEPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Un.meu_Addr);
             alloc->me_Length = bounds + Size;

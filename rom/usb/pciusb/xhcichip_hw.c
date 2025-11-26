@@ -45,15 +45,14 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
  * returns -1 on failure, or the completion code
  */
 LONG xhciCmdSubmit(struct PCIController *hc,
-                          APTR dmaaddr,
-                          ULONG trbflags, ULONG *resflags)
+                   APTR dmaaddr,
+                   ULONG trbflags, ULONG *resflags)
 {
     volatile struct xhci_inctx *inctx;
     WORD queued;
 
     Disable();
-    if (dmaaddr)
-    {
+    if (dmaaddr) {
         ULONG portsc = 0;
         UWORD ctxoff = 1;
         if (hc->hc_Flags & HCF_CTX64)
@@ -62,8 +61,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         inctx = (volatile struct xhci_inctx *)dmaaddr;
         volatile struct xhci_slot *slot = (void*)&inctx[ctxoff];
 
-        if (slot)
-        {
+        if (slot) {
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
             UBYTE port;
 
@@ -75,27 +73,23 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             portsc = xhciports[port - 1].portsc;
             pciusbDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
-        if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS))
-        {
+        if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
             pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected" DEBUGCOLOR_RESET" \n", __func__);
 
             Enable();
             return -1;
         }
         queued = xhciQueueTRB(hc, hc->hc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
-    }
-    else
+    } else
         queued = xhciQueueTRB(hc, hc->hc_OPRp, 0, 0, trbflags);
     if (queued != -1)
         hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
     Enable();
 
-    if (queued != -1)
-    {
+    if (queued != -1) {
         xhciRingDoorbell(hc, 0, 0);
         do {
-            if (hc->hc_CmdResults[queued].flags != 0xFFFFFFFF)
-            {
+            if (hc->hc_CmdResults[queued].flags != 0xFFFFFFFF) {
                 if (resflags)
                     *resflags = hc->hc_CmdResults[queued].flags;
 
@@ -118,7 +112,7 @@ LONG xhciCmdSlotEnable(struct PCIController *hc)
     pciusbDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     if (1 != xhciCmdSubmit(hc, NULL, trbflags, &cmdflags))
-      return -1;
+        return -1;
 
     pciusbDebug("xHCI", DEBUGCOLOR_SET "%s: flags = %08x" DEBUGCOLOR_RESET" \n", __func__, cmdflags);
 
@@ -140,7 +134,7 @@ LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot)
 }
 
 LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
-                                  APTR dmaaddr)
+                          APTR dmaaddr)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
@@ -158,7 +152,7 @@ LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG
     return xhciCmdSubmit(hc, NULL, flags, NULL);
 }
 
-LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve)
+LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULONG preserve)
 {
     ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9);
 

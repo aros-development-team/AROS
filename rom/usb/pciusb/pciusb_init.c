@@ -31,8 +31,7 @@ static int getArguments(struct PCIDevice *base)
     APTR LogResBase;
 #define LogHandle (base->hd_LogRHandle)
     base->hd_LogResBase = OpenResource("log.resource");
-    if (base->hd_LogResBase)
-    {
+    if (base->hd_LogResBase) {
         LogResBase = base->hd_LogResBase;
         base->hd_LogRHandle = logInitialise(&base->hd_Device.dd_Library.lib_Node);
     }
@@ -41,28 +40,22 @@ static int getArguments(struct PCIDevice *base)
 
     pciusbDebug("", "bootloader @ 0x%p\n", BootLoaderBase);
 
-    if (BootLoaderBase)
-    {
+    if (BootLoaderBase) {
         struct List *args = GetBootInfo(BL_Args);
 
-        if (args)
-        {
+        if (args) {
             struct Node *node;
 
-            ForeachNode(args, node)
-            {
-                if (strncmp(node->ln_Name, "USB=", 4) == 0)
-                {
+            ForeachNode(args, node) {
+                if (strncmp(node->ln_Name, "USB=", 4) == 0) {
                     const char *CmdLine = &node->ln_Name[3];
 
-                    if (strstr(CmdLine, "forcepower"))
-                    {
+                    if (strstr(CmdLine, "forcepower")) {
                         base->hd_Flags |= HDF_FORCEPOWER;
                         continue;
                     }
 #if defined(PCIUSB_ENABLEXHCI)
-                    if (strstr(CmdLine, "xhci"))
-                    {
+                    if (strstr(CmdLine, "xhci")) {
                         base->hd_Flags |= HDF_ENABLEXHCI;
                     }
 #endif
@@ -70,13 +63,11 @@ static int getArguments(struct PCIDevice *base)
             }
         }
     }
-    if (base->hd_Flags & HDF_FORCEPOWER)
-    {
+    if (base->hd_Flags & HDF_FORCEPOWER) {
         pciusbInfo("", "Forcing USB Power\n");
     }
 #if defined(PCIUSB_ENABLEXHCI)
-    if (base->hd_Flags & HDF_ENABLEXHCI)
-    {
+    if (base->hd_Flags & HDF_ENABLEXHCI) {
         pciusbInfo("", "Enabling experimental XHCI code\n");
     }
 #endif
