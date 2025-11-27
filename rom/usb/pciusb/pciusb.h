@@ -232,10 +232,18 @@ struct PCIController
 #if defined(PCIUSB_ENABLEXHCI)
     UWORD                       hc_NumSlots;
     UWORD                       hc_NumDevs;
+    UWORD                       hc_NumScratchPads;
     // Device Context Base Address Array
     struct MemEntry             hc_DCBAA;
     APTR                        hc_DCBAAp;
     APTR                        hc_DMADCBAA;
+    // Scratchpad Buffer Array and buffers
+    struct MemEntry             hc_SPBA;
+    APTR                        hc_SPBAp;
+    APTR                        hc_DMASPBA;
+    struct MemEntry             hc_SPBuffers;
+    APTR                        hc_SPBuffersp;
+    APTR                        hc_DMASPBuffers;
     // Event Ring Segment Table
     struct MemEntry             hc_ERST;
     APTR                        hc_ERSTp;

@@ -1445,6 +1445,7 @@ takeownership:
         hc->hc_DMADCBAA = hc->hc_DCBAAp;
 #endif
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n", hc->hc_DMADCBAA);
+        memset(hc->hc_DCBAAp, 0, sizeof(UQUAD) * (hc->hc_NumSlots + 1));
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate DCBAA DMA Memory" DEBUGCOLOR_RESET" \n");
         return FALSE;
@@ -1496,41 +1497,44 @@ takeownership:
         return FALSE;
     }
 
-#if (1)
     val = AROS_LE2LONG(xhciregs->hcsparams2);
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "SPB = %u" DEBUGCOLOR_RESET" \n", (val >> 21 & 0x1f) << 5 | val >> 27);
-#else
-    /* Chapter 4.20 Scratchpad Buffers */
-    reg = grub_xhci_read32(&x->caps->hcsparams2);
-    x->spb = (reg >> 21 & 0x1f) << 5 | reg >> 27;
-    if (x->spb) {
-        volatile grub_uint64_t *spba;
-        grub_dprintf("xhci", "XHCI init: set up %d scratch pad buffers" DEBUGCOLOR_RESET" \n",
-                     x->spb);
-        x->spba_dma = xhci_memalign_dma32(ALIGN_SPBA, sizeof(*spba) * x->spb,
-                                          x->pagesize);
-        if (!x->spba_dma)
-            goto fail;
+    hc->hc_NumScratchPads = ((val >> 21) & 0x1f) << 5 | (val >> 27);
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "SPB = %u" DEBUGCOLOR_RESET" \n", hc->hc_NumScratchPads);
 
-        x->spad_dma = xhci_memalign_dma32(x->pagesize, x->pagesize * x->spb,
-                                          x->pagesize);
-        if (!x->spad_dma) {
-            grub_dma_free(x->spba_dma);
-            goto fail;
+    if (hc->hc_NumScratchPads) {
+        ULONG pagesize = xhciPageSize(hc);
+        ULONG spba_size = sizeof(struct xhci_address) * hc->hc_NumScratchPads;
+        ULONG spb_size  = pagesize * hc->hc_NumScratchPads;
+
+        hc->hc_SPBAp = pciAllocAligned(hc, &hc->hc_SPBA, spba_size, ALIGN_SPBA, pagesize);
+        if (!hc->hc_SPBAp) {
+            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate SPBA DMA Memory" DEBUGCOLOR_RESET" \n");
+            return FALSE;
         }
 
-        spba = grub_dma_get_virt(x->spba_dma);
-        for (ULONG i = 0; i < x->spb; i++)
-            spba[i] = (grub_addr_t)grub_dma_get_phys(x->spad_dma) + (i * x->pagesize);
-        grub_arch_sync_dma_caches(x->spba_dma, sizeof(*spba) * x->spb);
+        hc->hc_DMASPBA = hc->hc_SPBAp;
+        memset(hc->hc_SPBAp, 0, spba_size);
 
-        x->devs[0].ptr_low = grub_dma_get_phys(x->spba_dma);
-        x->devs[0].ptr_high = 0;
-        grub_arch_sync_dma_caches(x->devs_dma, sizeof(x->devs[0]));
-        grub_dprintf ("xhci", "XHCI init: Allocated %d scratch buffers of size 0x%x" DEBUGCOLOR_RESET" \n",
-                      x->spb, x->pagesize);
+        hc->hc_SPBuffersp = pciAllocAligned(hc, &hc->hc_SPBuffers, spb_size, pagesize, pagesize);
+        if (!hc->hc_SPBuffersp) {
+            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate Scratchpad Buffers" DEBUGCOLOR_RESET" \n");
+            if (hc->hc_SPBA.me_Un.meu_Addr)
+                FREEPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_SPBA.me_Un.meu_Addr);
+            return FALSE;
+        }
+
+        hc->hc_DMASPBuffers = hc->hc_SPBuffersp;
+        memset(hc->hc_SPBuffersp, 0, spb_size);
+
+        volatile struct xhci_address *spba = (volatile struct xhci_address *)hc->hc_SPBAp;
+        for (ULONG i = 0; i < hc->hc_NumScratchPads; i++)
+            xhciSetPointer(hc, spba[i], (IPTR)hc->hc_DMASPBuffers + ((IPTR)pagesize * i));
+
+        xhciSetPointer(hc, ((volatile struct xhci_address *)hc->hc_DCBAAp)[0], hc->hc_DMASPBA);
+
+        pciusbXHCIDebug ("xHCI", DEBUGCOLOR_SET "XHCI init: Allocated %u scratch buffers of size 0x%x" DEBUGCOLOR_RESET" \n",
+                         hc->hc_NumScratchPads, pagesize);
     }
-#endif
 
     // install reset handler
     hc->hc_ResetInt.is_Node.ln_Name = "XHCI PCI (pciusb.device)";
