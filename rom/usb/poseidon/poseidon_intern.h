@@ -327,33 +327,47 @@ struct PsdAppBinding
 
 struct PsdHardware
 {
-    struct Node         phw_Node;         /* Node linkage */
-    struct PsdBase     *phw_Base;         /* Uplinking */
-    struct Task        *phw_ReadySigTask; /* Task to send ready signal to */
-    LONG                phw_ReadySignal;  /* Signal to send when ready */
-    struct Task        *phw_Task;         /* Device task */
-    STRPTR              phw_DevName;      /* Device name */
-    ULONG               phw_Unit;         /* Unit number */
+    struct Node         phw_Node;               /* Node linkage */
+    struct PsdBase     *phw_Base;               /* Uplinking */
+    struct Task        *phw_ReadySigTask;       /* Task to send ready signal to */
+    LONG                phw_ReadySignal;        /* Signal to send when ready */
+    struct Task        *phw_Task;               /* Device task */
+    STRPTR              phw_DevName;            /* Device name */
+    ULONG               phw_Unit;               /* Unit number */
 
-    STRPTR              phw_ProductName;  /* Product name */
-    STRPTR              phw_Manufacturer; /* Manufacturer name */
-    STRPTR              phw_Description;  /* Description string */
-    STRPTR              phw_Copyright;    /* Copyright string */
-    UWORD               phw_Version;      /* Version of device */
-    UWORD               phw_Revision;     /* Device revision */
-    UWORD               phw_DriverVers;   /* Driver version */
-    ULONG               phw_Capabilities; /* Driver/HW capabilities */
+    STRPTR              phw_ProductName;        /* Product name */
+    STRPTR              phw_Manufacturer;       /* Manufacturer name */
+    STRPTR              phw_Description;        /* Description string */
+    STRPTR              phw_Copyright;          /* Copyright string */
+    UWORD               phw_Version;            /* Version of device */
+    UWORD               phw_Revision;           /* Device revision */
+    UWORD               phw_DriverVers;         /* Driver version */
+    ULONG               phw_Capabilities;       /* Driver/HW capabilities */
 
-    struct IOUsbHWReq  *phw_RootIOReq;    /* First IO Request */
+    struct IOUsbHWReq  *phw_RootIOReq;          /* First IO Request */
 
-    struct PsdDevice   *phw_RootDevice;   /* Link to root hub of this hardware */
-    struct PsdDevice   *phw_DevArray[128]; /* DevAddress->Device mapping */
-    struct List         phw_Devices;      /* List of devices */
-    struct List         phw_DeadDevices;  /* List of disconnected devices */
-    BOOL                phw_RemoveMe;     /* Hardware scheduled for removal */
-    struct MsgPort      phw_DevMsgPort;   /* Quick device message port */
-    struct MsgPort      phw_TaskMsgPort;  /* Quick task message port */
-    volatile ULONG      phw_MsgCount;     /* Number of Messages pending */
+    struct PsdDevice   *phw_RootDevice;         /* Link to root hub of this hardware */
+    struct PsdDevice   *phw_DevArray[128];      /* DevAddress->Device mapping */
+    struct List         phw_Devices;            /* List of devices */
+    struct List         phw_DeadDevices;        /* List of disconnected devices */
+    BOOL                phw_RemoveMe;           /* Hardware scheduled for removal */
+    struct MsgPort      phw_DevMsgPort;         /* Quick device message port */
+    struct MsgPort      phw_TaskMsgPort;        /* Quick task message port */
+    volatile ULONG      phw_MsgCount;           /* Number of Messages pending */
+
+    /* BOS-derived capability summary */
+    BOOL                phw_Usb20LpmCapable;        /* Device supports USB 2.0 LPM (L1) */
+    BOOL                phw_Usb30LtmCapable;        /* Device supports USB 3.0 Latency Tolerance Messaging (LTM) */
+
+    UWORD               phw_SupportedSpeeds;        /* Bitmask of speeds (USB 3.0 wSpeedSupported) */
+    UBYTE               phw_Usb30U1ExitLat;         /* Exit latency to U0 from U1 */
+    UWORD               phw_Usb30U2ExitLat;         /* Exit latency to U0 from U2 */
+
+    UBYTE               phw_MaxUsbSpeed;            /* store our “chosen” max speed */
+                                                    /* e.g., 1=LS, 2=FS, 3=HS, 4=SS */
+
+    BOOL                phw_HasContainerId;
+    UBYTE               phw_ContainerId[16];
 };
 
 /* Flags for pd_Flags */
@@ -540,6 +554,26 @@ struct PsdRTIsoHandler
     struct PsdPipe     *prt_Pipe;         /* Pipe */
     struct Hook        *prt_ReleaseHook;  /* Hook to be called when device gets removed */
     struct IOUsbHWRTIso prt_RTIso;        /* RT Iso structure */
+};
+
+/* Summary of BOS capabilities for one device */
+struct PsdBosCaps
+{
+    BOOL   hasBos;
+
+    BOOL   hasUsb20Ext;
+    ULONG  usb20ExtBmAttributes;   /* raw bmAttributes from Usb20ExtDesc */
+    BOOL   usb20LpmCapable;        /* bit 1 of bmAttributes */
+
+    BOOL   hasSSCap;
+    UBYTE  ssBmAttributes;         /* bmAttributes from UsbSSDevCapDesc (LTM etc.) */
+    UWORD  ssSpeedsSupported;      /* wSpeedSupported bitmask */
+    UBYTE  ssLowestFullFuncSpeed;  /* bFunctionalitySupport */
+    UBYTE  ssU1DevExitLat;         /* raw U1 exit latency */
+    UWORD  ssU2DevExitLat;         /* raw U2 exit latency */
+
+    BOOL   hasContainerId;
+    UBYTE  containerId[16];        /* BOS Container ID GUID */
 };
 
 #endif /* _LIBRARIES_POSEIDON_H */

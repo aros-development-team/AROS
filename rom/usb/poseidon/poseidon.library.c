@@ -3012,6 +3012,106 @@ static void DumpPipe(struct PsdPipe *pp)
     Enable();
 }
 
+/*
+ * Map BOS-derived capabilities into poseidons hardware structure.
+  */
+static void
+pUpdateHardwareFromBos(struct PsdHardware *phw, const struct PsdBosCaps *caps)
+{
+    if (!phw || !caps || !caps->hasBos)
+        return;
+
+    /* USB 2.0 LPM (L1) */
+    if (caps->hasUsb20Ext) {
+        phw->phw_Usb20LpmCapable = caps->usb20LpmCapable;
+    }
+
+    /* SuperSpeed device capability */
+    if (caps->hasSSCap) {
+        phw->phw_Usb30LtmCapable   = (caps->ssBmAttributes & 0x02) ? TRUE : FALSE;
+        phw->phw_SupportedSpeeds  |= caps->ssSpeedsSupported;
+        phw->phw_Usb30U1ExitLat    = caps->ssU1DevExitLat;
+        phw->phw_Usb30U2ExitLat    = caps->ssU2DevExitLat;
+
+        /* Choose the highest supported speed */
+        if (caps->ssSpeedsSupported & (1U << 3)) {          /* SuperSpeed */
+            phw->phw_MaxUsbSpeed = 4;
+        } else if (caps->ssSpeedsSupported & (1U << 2)) {   /* High-speed */
+            phw->phw_MaxUsbSpeed = 3;
+        } else if (caps->ssSpeedsSupported & (1U << 1)) {   /* Full-speed */
+            phw->phw_MaxUsbSpeed = 2;
+        } else if (caps->ssSpeedsSupported & (1U << 0)) {   /* Low-speed */
+            phw->phw_MaxUsbSpeed = 1;
+        }
+    }
+
+    /* Container ID */
+    if (caps->hasContainerId) {
+        phw->phw_HasContainerId = TRUE;
+        CopyMem(caps->containerId, phw->phw_ContainerId, 16);
+    }
+}
+
+static UWORD
+pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
+                           struct PsdEndpoint *pep)
+{
+    UWORD policy = USBPWR_PROFILE_LEGACY;
+
+    /* Start with a balanced profile; HCD can change this based on global prefs */
+    policy &= ~USBPWR_POLICY_MASK;
+    policy |= USBPWR_POLICY_BALANCED;
+
+    /* USB 2.0 LPM (L1) */
+    if (phw->phw_Usb20LpmCapable &&
+        pd->pd_USBVers >= 0x0201) {
+        policy |= USBPWR_ALLOW_L1;
+    }
+
+    /* USB 3.x link states */
+    if (pd->pd_Flags & PDFF_SUPERSPEED) {
+        /* U1 is usually safe for most endpoints if U1 exit latency is low */
+        if (phw->phw_Usb30U1ExitLat != 0) {
+            policy |= USBPWR_ALLOW_U1;
+        }
+
+        /* U2 is deeper; be more conservative for time-sensitive endpoints */
+        if (phw->phw_Usb30U2ExitLat != 0 &&
+            pep && pep->pep_TransType != USEAF_ISOCHRONOUS) {
+            policy |= USBPWR_ALLOW_U2;
+        }
+
+        /* U3 (full suspend) is typically controlled by higher-level PM,
+           not per-transfer, so leave USBPWR_ALLOW_U3 off by default. */
+    }
+
+    /* Endpoint-specific adjustments */
+    if (pep) {
+        switch (pep->pep_TransType) {
+            case USEAF_ISOCHRONOUS:
+                /* Isochronous streams are latency-sensitive:
+                   - allow U1, but usually avoid U2/U3 */
+                policy &= ~(USBPWR_ALLOW_U2 | USBPWR_ALLOW_U3);
+                break;
+
+            case USEAF_INTERRUPT:
+                /* Interrupt IN devices (keyboards, mice) are good candidates
+                   for power saving – keep U1/U2 if supported */
+                /* Nothing special here; keep defaults. */
+                break;
+
+            case USEAF_BULK:
+            case USEAF_CONTROL:
+            default:
+                /* Bulk/control can tolerate deeper states except during high
+                   throughput; the HCD can downgrade to PERF on heavy traffic. */
+                break;
+        }
+    }
+
+    return policy;
+}
+
 /* /// "psdEnumerateDevice()" */
 AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
          AROS_LHA(struct PsdPipe *, pp, A1),
@@ -3079,6 +3179,14 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                            psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
             KPRINTF(15, ("%s/%ld GET_DESCRIPTOR (8) failed %ld!\n", pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, ioerr));
             DumpPipe(pp);
+        }
+
+        /* we have the first 8 bytes now, so bDeviceClass is valid */
+        if (!ioerr || ioerr == UHIOERR_RUNTPACKET) {
+            if (usdd.bDeviceClass == HUB_CLASSCODE) {
+                /* tell the HCD from now on */
+                pp->pp_IOReq.iouh_Flags |= UHFF_HUB;
+            }
         }
 
         KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
@@ -3168,77 +3276,173 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                 }
 
                 /*
-                    The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called the Binary Device Object Store (BOS)
-                    for a USB device, which reports a bcdUSB value greater than 0x0200 in their device descriptor
+                    The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called
+                    the Binary Device Object Store (BOS) for a USB device with bcdUSB > 0x0200.
                 */
-                if((pd->pd_USBVers > 0x200)) {
-                    UWORD bosTotalLength;
+                if (pd->pd_USBVers > 0x0200) {
+                    struct UsbStdBOSDesc bosHdr;
+                    struct PsdBosCaps    boscaps;
+                    UWORD                bosTotalLength;
+
+                    memset(&boscaps, 0, sizeof(boscaps));
 
                     /* First, read just the BOS header */
-                    psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
-                    ioerr_bos = psdDoPipe(pp, &usbosd, sizeof(struct UsbStdBOSDesc));
-                    if(!ioerr_bos) {
-                        XPRINTF(1, ("BOS descriptor header received...\n"));
+                    psdPipeSetup(pp,
+                                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                                 USR_GET_DESCRIPTOR,
+                                 UDT_BOS << 8,
+                                 0);
+                    ioerr_bos = psdDoPipe(pp, &bosHdr, sizeof(struct UsbStdBOSDesc));
+                    if (!ioerr_bos) {
+                        UBYTE bosbuf[256];
+                        UWORD toRead;
+                        UWORD offset;
 
-                        bosTotalLength = AROS_LE2WORD(usbosd.wTotalLength);
+                        boscaps.hasBos = TRUE;
+                        bosTotalLength = AROS_LE2WORD(bosHdr.wTotalLength);
 
-                        /*
-                            BOS descriptor bLength = sizeof(struct UsbStdBOSDesc)
-                            BOS descriptor bNumDeviceCaps != 0
-                            BOS descriptor wTotalLength >= bLength + (bNumDeviceCaps * sizeof(protocol specific capability descriptor))
-                        */
-                        if(usbosd.bLength != sizeof(struct UsbStdBOSDesc)) {
-                            XPRINTF(1, ("Invalid BOS descriptor bLength=%u (expected %u)!\n",
-                                        (unsigned)usbosd.bLength,
-                                        (unsigned)sizeof(struct UsbStdBOSDesc)));
-                        }
+                        XPRINTF(1, ("BOS header: len=%u, numCaps=%u, totalLen=%u\n",
+                                    (unsigned)bosHdr.bLength,
+                                    (unsigned)bosHdr.bNumDeviceCaps,
+                                    (unsigned)bosTotalLength));
 
-                        if(usbosd.bNumDeviceCaps == 0) {
-                            XPRINTF(1, ("Invalid BOS descriptor bNumDeviceCaps=0!\n"));
-                        } else if(bosTotalLength < (usbosd.bLength + (usbosd.bNumDeviceCaps * 2))) {
-                            XPRINTF(1, ("Invalid BOS descriptor wTotalLength=%u (bLength=%u, bNumDeviceCaps=%u)!\n",
+                        if (bosTotalLength < bosHdr.bLength) {
+                            XPRINTF(1, ("BOS wTotalLength=%u smaller than header %u, clamping\n",
                                         (unsigned)bosTotalLength,
-                                        (unsigned)usbosd.bLength,
-                                        (unsigned)usbosd.bNumDeviceCaps));
+                                        (unsigned)bosHdr.bLength));
+                            bosTotalLength = bosHdr.bLength;
                         }
 
-                        /*
-                            If the total length is larger than the header, fetch the full BOS descriptor.
-                            We bound the length to a reasonable maximum to avoid stack overflows.
-                        */
-                        if(bosTotalLength > sizeof(struct UsbStdBOSDesc)) {
-                            /* Reasonable upper bound for BOS size; adjust if you expect more */
-                            UBYTE bosbuf[256];
-                            UWORD toRead = bosTotalLength;
+                        /* Fetch the full BOS (bounded to bosbuf) */
+                        toRead = bosTotalLength;
+                        if (toRead > sizeof(bosbuf)) {
+                            XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
+                                        (unsigned)bosTotalLength,
+                                        (unsigned)sizeof(bosbuf)));
+                            toRead = sizeof(bosbuf);
+                        }
 
-                            if(toRead > sizeof(bosbuf)) {
-                                XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
-                                            (unsigned)bosTotalLength, (unsigned)sizeof(bosbuf)));
-                                toRead = sizeof(bosbuf);
+                        psdPipeSetup(pp,
+                                     URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                                     USR_GET_DESCRIPTOR,
+                                     UDT_BOS << 8,
+                                     0);
+                        ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
+                        if (!ioerr_bos) {
+                            UBYTE *p;
+
+                            XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
+                                        (unsigned)toRead));
+
+                            /* Ensure header is at the front of the buffer */
+                            memcpy(bosbuf, &bosHdr, sizeof(struct UsbStdBOSDesc));
+
+                            offset = bosHdr.bLength;
+                            while (offset + 3 < toRead) {
+                                UBYTE bLength         = bosbuf[offset + 0];
+                                UBYTE bDescriptorType = bosbuf[offset + 1];
+
+                                if (!bLength) {
+                                    XPRINTF(1, ("BOS: zero-length descriptor at offset %u, aborting\n",
+                                                (unsigned)offset));
+                                    break;
+                                }
+                                if (offset + bLength > toRead) {
+                                    XPRINTF(1, ("BOS: descriptor len %u overruns buffer (%u), aborting\n",
+                                                (unsigned)bLength,
+                                                (unsigned)toRead));
+                                    break;
+                                }
+
+                                p = &bosbuf[offset];
+
+                                if (bDescriptorType == UDT_DEVICE_CAPABILITY) {
+                                    UBYTE bDevCapType = p[2];
+
+                                    switch (bDevCapType) {
+
+                                        case UDC_USB20_EXTENSION:
+                                            if (bLength >= sizeof(struct Usb20ExtDesc)) {
+                                                struct Usb20ExtDesc *ext =
+                                                    (struct Usb20ExtDesc *)p;
+
+                                                boscaps.hasUsb20Ext          = TRUE;
+                                                boscaps.usb20ExtBmAttributes =
+                                                    AROS_LE2LONG(ext->bmAttributes);
+                                                boscaps.usb20LpmCapable =
+                                                    (boscaps.usb20ExtBmAttributes & (1UL << 1))
+                                                        ? TRUE : FALSE;
+
+                                                XPRINTF(2, ("BOS: USB2.0 ext: bmAttributes=0x%08lx, LPM=%ld\n",
+                                                            boscaps.usb20ExtBmAttributes,
+                                                            (LONG)boscaps.usb20LpmCapable));
+                                            } else {
+                                                XPRINTF(1, ("BOS: USB2.0 ext cap too small (len=%u)\n",
+                                                            (unsigned)bLength));
+                                            }
+                                            break;
+
+                                        case UDC_SUPERSPEED_USB:
+                                            if (bLength >= sizeof(struct UsbSSDevCapDesc)) {
+                                                struct UsbSSDevCapDesc *ss =
+                                                    (struct UsbSSDevCapDesc *)p;
+
+                                                boscaps.hasSSCap              = TRUE;
+                                                boscaps.ssBmAttributes        = ss->bmAttributes;
+                                                boscaps.ssSpeedsSupported     =
+                                                    AROS_LE2WORD(ss->wSpeedSupported);
+                                                boscaps.ssLowestFullFuncSpeed =
+                                                    ss->bFunctionalitySupport;
+                                                boscaps.ssU1DevExitLat        =
+                                                    ss->bU1DevExitLat;
+                                                boscaps.ssU2DevExitLat        =
+                                                    AROS_LE2WORD(ss->bU2DevExitLat);
+
+                                                XPRINTF(2, ("BOS: SS DevCap: speeds=0x%04x, attr=0x%02x, U1=%u, U2=%u\n",
+                                                            (unsigned)boscaps.ssSpeedsSupported,
+                                                            (unsigned)boscaps.ssBmAttributes,
+                                                            (unsigned)boscaps.ssU1DevExitLat,
+                                                            (unsigned)boscaps.ssU2DevExitLat));
+                                            } else {
+                                                XPRINTF(1, ("BOS: SS DevCap too small (len=%u)\n",
+                                                            (unsigned)bLength));
+                                            }
+                                            break;
+
+                                        case UDC_CONTAINER_ID:
+                                            /* Container ID is 16 bytes, descriptor is 20 bytes total */
+                                            if (bLength >= 20) {
+                                                boscaps.hasContainerId = TRUE;
+                                                CopyMem(p + 4, boscaps.containerId, 16);
+                                                XPRINTF(2, ("BOS: Container ID present\n"));
+                                            } else {
+                                                XPRINTF(1, ("BOS: Container ID cap too small (len=%u)\n",
+                                                            (unsigned)bLength));
+                                            }
+                                            break;
+
+                                        default:
+                                            XPRINTF(2, ("BOS: ignoring devcap type %u (len=%u)\n",
+                                                        (unsigned)bDevCapType,
+                                                        (unsigned)bLength));
+                                            break;
+                                    }
+                                }
+
+                                offset += bLength;
                             }
 
-                            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
-                            ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
-                            if(!ioerr_bos) {
-                                XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
-                                            (unsigned)toRead));
-
-                                /*
-                                    TODO: parse BOS capability descriptors from bosbuf
-                                    (SuperSpeed, SuperSpeedPlus, USB2/USB3 LPM, etc.)
-                                */
-                            } else {
-                                XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len %u) failed %ld!\n",
-                                            (unsigned)toRead, ioerr_bos));
+                            /* Feed parsed BOS info to hardware-level structure */
+                            if (pd->pd_Hardware) {
+                                pUpdateHardwareFromBos(pd->pd_Hardware, &boscaps);
                             }
+
                         } else {
-                            /* Header already contains the full BOS descriptor */
-                            XPRINTF(1, ("BOS descriptor total length %u fits in header\n",
-                                        (unsigned)bosTotalLength));
+                            XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len=%u) failed %ld\n",
+                                        (unsigned)toRead, ioerr_bos));
                         }
-
                     } else {
-                        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld!\n", ioerr_bos));
+                        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld\n", ioerr_bos));
                     }
                 }
 
@@ -4156,15 +4360,13 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
 
     if(pep &&
        (pep->pep_TransType == USEAF_ISOCHRONOUS) &&
-       (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO)))
-    {
+       (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO))) {
         psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                         "Your HW controller driver does not support iso transfers. Sorry.");
         return(NULL);
     }
 
-    if((pp = psdAllocVec(sizeof(struct PsdPipe))))
-    {
+    if((pp = psdAllocVec(sizeof(struct PsdPipe)))) {
         UWORD rootPort;
         ULONG routeString;
 
@@ -4199,18 +4401,17 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         pp->pp_IOReq.iouh_SS_BytesPerInterval   = 0;
         pp->pp_IOReq.iouh_MaxStreams            = 0;
         pp->pp_IOReq.iouh_StreamID              = 0;
-        pp->pp_IOReq.iouh_PowerPolicy           = 0;
+        pp->pp_IOReq.iouh_PowerPolicy =
+                    pBuildDefaultPowerPolicy(pd->pd_Hardware, pd, pep);
 
         /* Common speed flags */
         if(pd->pd_Flags & PDFF_LOWSPEED)
             pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
 
-        if(pd->pd_Flags & PDFF_HIGHSPEED)
-        {
+        if(pd->pd_Flags & PDFF_HIGHSPEED) {
             pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
             /* MULT for HS interrupt/isoch (transactions per microframe) */
-            if(pep)
-            {
+            if(pep) {
                 switch(pep->pep_NumTransMuFr)
                 {
                     case 2:
@@ -4233,8 +4434,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
 
             /* SuperSpeed endpoint companion information */
-            if (pep)
-            {
+            if (pep) {
                 /* bMaxBurst – spec is 5 bits, clamp to 8-bit field */
                 if (pep->pep_MaxBurst > 0xFF)
                     pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
@@ -4253,12 +4453,21 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 else
                     pp->pp_IOReq.iouh_SS_BytesPerInterval =
                         (UWORD)pep->pep_BytesPerInterval;
+
+                if (pep->pep_TransType == USEAF_BULK) {
+                    UWORD attr = pep->pep_CompAttributes;
+                    UBYTE n    = (UBYTE)(attr & 0x1F);   /* max streams exponent */
+
+                    if (n != 0) {
+                        /* Endpoint can support streams: 2^n streams max */
+                        pp->pp_IOReq.iouh_MaxStreams = (UWORD)(1U << n);
+                    }
+                }
             }
         }
 
         /* Split transactions / TT info for FS/LS behind HS hubs */
-        if(pd->pd_Flags & PDFF_NEEDSSPLIT)
-        {
+        if(pd->pd_Flags & PDFF_NEEDSSPLIT) {
             /* USB1.1 device connected to a USB2.0 hub */
             pp->pp_IOReq.iouh_Flags        |= UHFF_SPLITTRANS;
             pp->pp_IOReq.iouh_SplitHubAddr  = ttHubAddr;
@@ -4270,8 +4479,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             if(ttIsMulti)
                 pp->pp_IOReq.iouh_Flags |= UHFF_TT_MULTI;
 
-            if(!ttHubAddr)
-            {
+            if(!ttHubAddr) {
                 psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                 "Internal error obtaining split transaction hub!");
                 psdFreeVec(pp);
@@ -4280,10 +4488,8 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         }
 
         /* Endpoint / transfer type specific setup */
-        if(pep)
-        {
-            switch(pep->pep_TransType)
-            {
+        if(pep) {
+            switch(pep->pep_TransType) {
                 case USEAF_CONTROL:
                     pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                     break;
@@ -4309,9 +4515,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             pp->pp_IOReq.iouh_Endpoint   = pep->pep_EPNum;
             pp->pp_IOReq.iouh_MaxPktSize = pep->pep_MaxPktSize;
             pp->pp_IOReq.iouh_Interval   = pep->pep_Interval;
-        }
-        else
-        {
+        } else {
             /* Default pipe (EP0) */
             pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
             pp->pp_IOReq.iouh_Dir            = UHDIR_SETUP;
