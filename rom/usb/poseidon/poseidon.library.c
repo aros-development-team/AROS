@@ -2885,6 +2885,133 @@ AROS_LH2(BOOL, psdSetAltInterface,
 }
 /* \\\ */
 
+static void DumpPipe(struct PsdPipe *pp)
+{
+    struct PsdDevice   *pd  = pp ? pp->pp_Device   : NULL;
+    struct PsdEndpoint *pep = pp ? pp->pp_Endpoint : NULL;
+
+    Disable();
+    KPRINTF(15, ("--- PIPE DUMP ---\n"));
+    KPRINTF(15, ("Pipe:      %p\n", pp));
+    KPRINTF(15, ("  MsgPort: %p  Num=%lu  Flags=%04lx\n",
+                 pp ? pp->pp_MsgPort : NULL,
+                 pp ? (ULONG)pp->pp_Num : 0,
+                 pp ? (ULONG)pp->pp_Flags : 0));
+
+    if (pd) {
+        const STRPTR hwName  = (pd->pd_Hardware && pd->pd_Hardware->phw_DevName)
+                               ? pd->pd_Hardware->phw_DevName
+                               : (STRPTR)"(n/a)";
+        LONG hwUnit          = pd->pd_Hardware ? pd->pd_Hardware->phw_Unit : -1;
+        const STRPTR prodStr = pd->pd_ProductStr ? pd->pd_ProductStr : (STRPTR)"(no product)";
+        const STRPTR mnfStr  = pd->pd_MnfctrStr ? pd->pd_MnfctrStr  : (STRPTR)"(no mfg)";
+        const STRPTR idStr   = pd->pd_IDString ? pd->pd_IDString    : (STRPTR)"(no ID string)";
+
+        KPRINTF(15, ("Device:    %p  DevName=%s Unit=%ld\n",
+                     pd, hwName, hwUnit));
+        KPRINTF(15, ("  Addr=%lu  Hub=%p Port=%u Flags=%04x\n",
+                     (ULONG)pd->pd_DevAddr,
+                     pd->pd_Hub,
+                     (unsigned)pd->pd_HubPort,
+                     (unsigned)pd->pd_Flags));
+        KPRINTF(15, ("  USBVers=%04x  Class=%u SubClass=%u Proto=%u\n",
+                     (unsigned)pd->pd_USBVers,
+                     (unsigned)pd->pd_DevClass,
+                     (unsigned)pd->pd_DevSubClass,
+                     (unsigned)pd->pd_DevProto));
+        KPRINTF(15, ("  VID:PID=%04x:%04x  DevVers=%04x  MaxPkt0=%u\n",
+                     (unsigned)pd->pd_VendorID,
+                     (unsigned)pd->pd_ProductID,
+                     (unsigned)pd->pd_DevVers,
+                     (unsigned)pd->pd_MaxPktSize0));
+        KPRINTF(15, ("  Product=\"%s\"  Manufacturer=\"%s\"\n",
+                     prodStr, mnfStr));
+        KPRINTF(15, ("  IDString=\"%s\"\n", idStr));
+
+#ifdef HUB_CLASSCODE
+        if (pd->pd_DevClass == HUB_CLASSCODE) {
+            KPRINTF(15, ("  (This device is a HUB)\n"));
+        }
+#endif
+
+        /* Walk upstream hub chain to show physical location */
+        if (pd->pd_Hub) {
+            struct PsdDevice *child = pd;
+            struct PsdDevice *hub   = pd->pd_Hub;
+            UWORD             level = 0;
+
+            KPRINTF(15, ("Hub path (child -> root):\n"));
+            while (hub) {
+                const STRPTR hubName  = (hub->pd_Hardware && hub->pd_Hardware->phw_DevName)
+                                        ? hub->pd_Hardware->phw_DevName
+                                        : (STRPTR)"(n/a)";
+                LONG hubUnit          = hub->pd_Hardware ? hub->pd_Hardware->phw_Unit : -1;
+                const STRPTR hubProd  = hub->pd_ProductStr ? hub->pd_ProductStr : (STRPTR)"(no product)";
+
+                KPRINTF(15, (
+                    "  lvl %u: HUB=%p Addr=%lu DevName=%s Unit=%ld "
+                    "Port(child=%u) Prod=\"%s\"\n",
+                    (unsigned)level,
+                    hub,
+                    (ULONG)hub->pd_DevAddr,
+                    hubName,
+                    hubUnit,
+                    (unsigned)child->pd_HubPort,
+                    hubProd));
+
+                /* Move one level up: this hub is now the child of the next hub */
+                child = hub;
+                hub   = hub->pd_Hub;
+                level++;
+            }
+        } else {
+            KPRINTF(15, ("Hub path: (device is directly attached to root)\n"));
+        }
+
+    } else {
+        KPRINTF(15, ("Device:    (NULL)\n"));
+    }
+
+    KPRINTF(15, ("IOReq:\n"));
+    if (pp) {
+        KPRINTF(15, ("  DevAddr=%lu  MaxPktSize=%lu  Flags=%08lx  NakTimeout=%lu\n",
+                     (ULONG)pp->pp_IOReq.iouh_DevAddr,
+                     (ULONG)pp->pp_IOReq.iouh_MaxPktSize,
+                     (ULONG)pp->pp_IOReq.iouh_Flags,
+                     (ULONG)pp->pp_IOReq.iouh_NakTimeout));
+        KPRINTF(15, ("  HubPort(root)=%u  SplitHubAddr=%u  SplitHubPort=%u  RouteString=%05lx\n",
+                     (unsigned)pp->pp_IOReq.iouh_RootPort,
+                     (unsigned)pp->pp_IOReq.iouh_SplitHubAddr,
+                     (unsigned)pp->pp_IOReq.iouh_SplitHubPort,
+                     (ULONG)pp->pp_IOReq.iouh_RouteString));
+    } else {
+        KPRINTF(15, ("  (no IOReq, pipe is NULL)\n"));
+    }
+
+    if (pep) {
+        KPRINTF(15, ("Endpoint:\n"));
+        KPRINTF(15, ("  EPNum=%u  Dir=%u  Type=%u  MaxPktSize=%u  Interval=%u\n",
+                     (unsigned)pep->pep_EPNum,
+                     (unsigned)pep->pep_Direction,
+                     (unsigned)pep->pep_TransType,
+                     (unsigned)pep->pep_MaxPktSize,
+                     (unsigned)pep->pep_Interval));
+        KPRINTF(15, ("  NumTransMuFr=%u  SyncType=%u  UsageType=%u\n",
+                     (unsigned)pep->pep_NumTransMuFr,
+                     (unsigned)pep->pep_SyncType,
+                     (unsigned)pep->pep_UsageType));
+        KPRINTF(15, ("  MaxBurst=%u  CompAttr=%u  BytesPerInterval=%lu\n",
+                     (unsigned)pep->pep_MaxBurst,
+                     (unsigned)pep->pep_CompAttributes,
+                     (ULONG)pep->pep_BytesPerInterval));
+    } else {
+        KPRINTF(15, ("Endpoint:  default (EP0)\n"));
+    }
+
+    KPRINTF(15, ("--- END PIPE DUMP ---\n"));
+    Enable();
+}
+
 /* /// "psdEnumerateDevice()" */
 AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
          AROS_LHA(struct PsdPipe *, pp, A1),
@@ -2947,8 +3074,11 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
         ioerr = psdDoPipe(pp, &usdd, 8);
         if(ioerr && (ioerr != UHIOERR_RUNTPACKET)) {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "GET_DESCRIPTOR (8) failed: %s (%ld)", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            KPRINTF(15, ("GET_DESCRIPTOR (8) failed %ld!\n", ioerr));
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%s/%ld GET_DESCRIPTOR (8) failed: %s (%ld)",
+                           pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit,
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(15, ("%s/%ld GET_DESCRIPTOR (8) failed %ld!\n", pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, ioerr));
+            DumpPipe(pp);
         }
 
         KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
@@ -2993,8 +3123,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                         break;
                     }
                 default:
-                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal MaxPktSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
-                    KPRINTF(2, ("Illegal MaxPktSize0=%ld!\n", usdd.bMaxPacketSize0));
+                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Illegal bMaxPacketSize0=%ld for endpoint 0", (ULONG) usdd.bMaxPacketSize0);
+                    KPRINTF(2, ("Illegal bMaxPacketSize0=%ld!\n", usdd.bMaxPacketSize0));
                     //pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = 8;
                     ioerr = UHIOERR_CRCERROR;
                     break;
@@ -3030,7 +3160,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     pd->pd_Flags |= PDFF_HIGHSPEED;
                 }
 
-                if(((!pd->pd_Hub) && pd->pd_USBVers >= 0x300)) {
+                /* Mark SuperSpeed purely based on bcdUSB, regardless of whether it is behind a hub */
+                if(pd->pd_USBVers >= 0x300) {
                     pd->pd_Flags &= ~(PDFF_LOWSPEED|PDFF_HIGHSPEED);
                     pd->pd_Flags |= PDFF_SUPERSPEED;
                     pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
@@ -3041,10 +3172,15 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     for a USB device, which reports a bcdUSB value greater than 0x0200 in their device descriptor
                 */
                 if((pd->pd_USBVers > 0x200)) {
+                    UWORD bosTotalLength;
+
+                    /* First, read just the BOS header */
                     psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
                     ioerr_bos = psdDoPipe(pp, &usbosd, sizeof(struct UsbStdBOSDesc));
                     if(!ioerr_bos) {
-                        XPRINTF(1, ("BOS descriptor received...\n"));
+                        XPRINTF(1, ("BOS descriptor header received...\n"));
+
+                        bosTotalLength = AROS_LE2WORD(usbosd.wTotalLength);
 
                         /*
                             BOS descriptor bLength = sizeof(struct UsbStdBOSDesc)
@@ -3052,17 +3188,57 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                             BOS descriptor wTotalLength >= bLength + (bNumDeviceCaps * sizeof(protocol specific capability descriptor))
                         */
                         if(usbosd.bLength != sizeof(struct UsbStdBOSDesc)) {
-                            XPRINTF(1, ("Invalid BOS descriptor bLength!\n"));
+                            XPRINTF(1, ("Invalid BOS descriptor bLength=%u (expected %u)!\n",
+                                        (unsigned)usbosd.bLength,
+                                        (unsigned)sizeof(struct UsbStdBOSDesc)));
                         }
 
                         if(usbosd.bNumDeviceCaps == 0) {
-                            XPRINTF(1, ("Invalid BOS descriptor bNumDeviceCaps!\n"));
-                        }else if(usbosd.wTotalLength < (usbosd.bLength + (usbosd.bNumDeviceCaps * 2))) {
-                            XPRINTF(1, ("Invalid BOS descriptor wTotalLength!\n"));
+                            XPRINTF(1, ("Invalid BOS descriptor bNumDeviceCaps=0!\n"));
+                        } else if(bosTotalLength < (usbosd.bLength + (usbosd.bNumDeviceCaps * 2))) {
+                            XPRINTF(1, ("Invalid BOS descriptor wTotalLength=%u (bLength=%u, bNumDeviceCaps=%u)!\n",
+                                        (unsigned)bosTotalLength,
+                                        (unsigned)usbosd.bLength,
+                                        (unsigned)usbosd.bNumDeviceCaps));
+                        }
+
+                        /*
+                            If the total length is larger than the header, fetch the full BOS descriptor.
+                            We bound the length to a reasonable maximum to avoid stack overflows.
+                        */
+                        if(bosTotalLength > sizeof(struct UsbStdBOSDesc)) {
+                            /* Reasonable upper bound for BOS size; adjust if you expect more */
+                            UBYTE bosbuf[256];
+                            UWORD toRead = bosTotalLength;
+
+                            if(toRead > sizeof(bosbuf)) {
+                                XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
+                                            (unsigned)bosTotalLength, (unsigned)sizeof(bosbuf)));
+                                toRead = sizeof(bosbuf);
+                            }
+
+                            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_BOS<<8, 0);
+                            ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
+                            if(!ioerr_bos) {
+                                XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
+                                            (unsigned)toRead));
+
+                                /*
+                                    TODO: parse BOS capability descriptors from bosbuf
+                                    (SuperSpeed, SuperSpeedPlus, USB2/USB3 LPM, etc.)
+                                */
+                            } else {
+                                XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len %u) failed %ld!\n",
+                                            (unsigned)toRead, ioerr_bos));
+                            }
+                        } else {
+                            /* Header already contains the full BOS descriptor */
+                            XPRINTF(1, ("BOS descriptor total length %u fits in header\n",
+                                        (unsigned)bosTotalLength));
                         }
 
                     } else {
-                        XPRINTF(1, ("GET_DESCRIPTOR (5) failed %ld!\n", ioerr_bos));
+                        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld!\n", ioerr_bos));
                     }
                 }
 
@@ -3255,9 +3431,10 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
             }
         } else {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
-                           "SET_ADDRESS failed: %s (%ld)",
-                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            KPRINTF(15, ("SET_ADDRESS failed %ld!\n", ioerr));
+                           "SET_ADDRESS(%ld) failed: %s (%ld)",
+                           pd->pd_DevAddr, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(15, ("SET_ADDRESS(%ld) failed %ld!\n", pd->pd_DevAddr, ioerr));
+            DumpPipe(pp);
         }
         pp->pp_IOReq.iouh_Flags = oldflags;
         pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
@@ -3971,16 +4148,15 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
          LIBBASETYPEPTR, ps, 24, psd)
 {
     AROS_LIBFUNC_INIT
-    struct PsdPipe *pp;
-    struct PsdDevice *hubpd;
+    struct PsdPipe   *pp;
 
     KPRINTF(2, ("psdAllocPipe(%p, %p, %p)\n", pd, mp, pep));
     if(!mp || !pd)
         return(NULL);
 
-    if(pep && 
-        (pep->pep_TransType == USEAF_ISOCHRONOUS) &&
-        (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO)))
+    if(pep &&
+       (pep->pep_TransType == USEAF_ISOCHRONOUS) &&
+       (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO)))
     {
         psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
                         "Your HW controller driver does not support iso transfers. Sorry.");
@@ -3989,6 +4165,20 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
 
     if((pp = psdAllocVec(sizeof(struct PsdPipe))))
     {
+        UWORD rootPort;
+        ULONG routeString;
+
+        /* TT info (only used if PDFF_NEEDSSPLIT is set) */
+        UWORD ttHubAddr  = 0;
+        UWORD ttHubPort  = 0;
+        UWORD ttThink    = 0;
+        BOOL  ttIsMulti  = FALSE;
+
+        /* Compute topology-derived values up front */
+        rootPort    = pGetRootPort(pd);
+        routeString = pBuildRouteString(pd);
+        pGetTTInfo(pd, &ttHubAddr, &ttHubPort, &ttThink, &ttIsMulti);
+
         pp->pp_Msg.mn_Node.ln_Type = NT_FREEMSG;
         pp->pp_MsgPort = pp->pp_Msg.mn_ReplyPort = mp;
         pp->pp_Msg.mn_Length = sizeof(struct PsdPipe);
@@ -3999,18 +4189,19 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         pp->pp_IOReq                            = *(pd->pd_Hardware->phw_RootIOReq);
         pp->pp_IOReq.iouh_DevAddr               = pd->pd_DevAddr; /* Device address is per-pipe */
 
-        /* V3: always pass the root-hub port (1-based) */
-        pp->pp_IOReq.iouh_HubPort               = pd->pd_HubPort;
+        /* V3: root hub port (1-based) + route string */
+        pp->pp_IOReq.iouh_RootPort               = rootPort;
+        pp->pp_IOReq.iouh_RouteString           = routeString;
 
-        /* Initialise fields to safe defaults */
+        /* Initialise other V3 fields to safe defaults */
         pp->pp_IOReq.iouh_SS_MaxBurst           = 0;
         pp->pp_IOReq.iouh_SS_Mult               = 0;
         pp->pp_IOReq.iouh_SS_BytesPerInterval   = 0;
-        pp->pp_IOReq.iouh_RouteString           = 0;
         pp->pp_IOReq.iouh_MaxStreams            = 0;
         pp->pp_IOReq.iouh_StreamID              = 0;
         pp->pp_IOReq.iouh_PowerPolicy           = 0;
 
+        /* Common speed flags */
         if(pd->pd_Flags & PDFF_LOWSPEED)
             pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
 
@@ -4028,9 +4219,9 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                     case 3:
                         pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_3;
                         break;
-
                     default:
                         pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
+                        break;
                 }
             } else {
                 pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
@@ -4040,68 +4231,52 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
         if(pd->pd_Flags & PDFF_SUPERSPEED)
         {
             pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+
             /* SuperSpeed endpoint companion information */
             if (pep)
             {
-                /* bMaxBurst â€“ spec is 5 bits, we clamp to 8-bit field */
+                /* bMaxBurst – spec is 5 bits, clamp to 8-bit field */
                 if (pep->pep_MaxBurst > 0xFF)
                     pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
                 else
                     pp->pp_IOReq.iouh_SS_MaxBurst = (UBYTE)pep->pep_MaxBurst;
 
-                /* Mult: for isoch EPs, bits 1:0 of bmAttributes.
-                   We store the raw 0..3 value and let the HCD interpret it. */
+                /* Mult: for isoch EPs, bits 1:0 of bmAttributes */
                 if (pep->pep_TransType == USEAF_ISOCHRONOUS)
                     pp->pp_IOReq.iouh_SS_Mult = (UBYTE)(pep->pep_CompAttributes & 0x3);
                 else
                     pp->pp_IOReq.iouh_SS_Mult = 0;
 
-                /* wBytesPerInterval â€“ spec is 16 bits; struct uses ULONG.
-                   Clamp to 16 bits for the IOReq field. */
+                /* wBytesPerInterval – spec is 16 bits; field is UWORD */
                 if (pep->pep_BytesPerInterval > 0xFFFFUL)
                     pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
                 else
                     pp->pp_IOReq.iouh_SS_BytesPerInterval =
                         (UWORD)pep->pep_BytesPerInterval;
             }
-            /* USB3 topology (route string) */
-            /* once we add pd->pd_RouteString, copy it here.
-               For now, keep 0 for â€œdirect attach / not computed yetâ€. */
-            /* pp->pp_IOReq.iouh_RouteString = pd->pd_RouteString; */
         }
 
         /* Split transactions / TT info for FS/LS behind HS hubs */
         if(pd->pd_Flags & PDFF_NEEDSSPLIT)
         {
             /* USB1.1 device connected to a USB2.0 hub */
-            pp->pp_IOReq.iouh_Flags |= UHFF_SPLITTRANS;
+            pp->pp_IOReq.iouh_Flags        |= UHFF_SPLITTRANS;
+            pp->pp_IOReq.iouh_SplitHubAddr  = ttHubAddr;
+            pp->pp_IOReq.iouh_SplitHubPort  = ttHubPort;
 
-            hubpd = pd->pd_Hub;
-            pp->pp_IOReq.iouh_SplitHubPort = pd->pd_HubPort;
+            if(ttThink)
+                pp->pp_IOReq.iouh_Flags |= (ttThink << UHFS_THINKTIME);
 
-            /* Walk up to the high-speed hub that actually owns the TT */
-            while(hubpd && !(hubpd->pd_Flags & PDFF_HIGHSPEED))
-            {
-                pp->pp_IOReq.iouh_SplitHubPort = hubpd->pd_HubPort;
-                hubpd = hubpd->pd_Hub;
-            }
+            if(ttIsMulti)
+                pp->pp_IOReq.iouh_Flags |= UHFF_TT_MULTI;
 
-            if(!hubpd)
+            if(!ttHubAddr)
             {
                 psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
                                 "Internal error obtaining split transaction hub!");
                 psdFreeVec(pp);
                 return(NULL);
             }
-            /* Encode TT think time into flags */
-            pp->pp_IOReq.iouh_Flags |= (hubpd->pd_HubThinkTime << UHFS_THINKTIME);
-
-            /* Hub address that owns the TT */
-            pp->pp_IOReq.iouh_SplitHubAddr = hubpd->pd_DevAddr;
-
-            /* mark multi-TT hubs explicitly */
-            if (hubpd->pd_Flags & PDFF_MULTITT)
-                pp->pp_IOReq.iouh_Flags |= UHFF_TT_MULTI;
         }
 
         /* Endpoint / transfer type specific setup */
@@ -4128,21 +4303,26 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                     KPRINTF(20, ("Illegal transfer type for endpoint!"));
                     psdFreeVec(pp);
                     return(NULL);
-
             }
-            pp->pp_IOReq.iouh_Dir               = (pep->pep_Direction ? UHDIR_IN : UHDIR_OUT);
-            pp->pp_IOReq.iouh_Endpoint          = pep->pep_EPNum;
-            pp->pp_IOReq.iouh_MaxPktSize        = pep->pep_MaxPktSize;
-            pp->pp_IOReq.iouh_Interval          = pep->pep_Interval;
-        } else {
-            pp->pp_IOReq.iouh_Req.io_Command    = UHCMD_CONTROLXFER;
-            pp->pp_IOReq.iouh_Dir               = UHDIR_SETUP;
-            pp->pp_IOReq.iouh_Endpoint          = 0;
-            pp->pp_IOReq.iouh_MaxPktSize        = pd->pd_MaxPktSize0;
+
+            pp->pp_IOReq.iouh_Dir        = (pep->pep_Direction ? UHDIR_IN : UHDIR_OUT);
+            pp->pp_IOReq.iouh_Endpoint   = pep->pep_EPNum;
+            pp->pp_IOReq.iouh_MaxPktSize = pep->pep_MaxPktSize;
+            pp->pp_IOReq.iouh_Interval   = pep->pep_Interval;
         }
+        else
+        {
+            /* Default pipe (EP0) */
+            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+            pp->pp_IOReq.iouh_Dir            = UHDIR_SETUP;
+            pp->pp_IOReq.iouh_Endpoint       = 0;
+            pp->pp_IOReq.iouh_MaxPktSize     = pd->pd_MaxPktSize0;
+        }
+
         pd->pd_UseCnt++;
         return(pp);
     }
+
     return(NULL);
     AROS_LIBFUNC_EXIT
 }
@@ -7691,7 +7871,138 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 }
 /* \\\ */
 
-/* *** Configuration (non-library subroutines) *** */
+/* *** (non-library subroutines) *** */
+
+/* *** USB3 support functions *** */
+
+/* Build route string from Poseidon’s hub chain.
+ *
+ * RouteString is 20 bits, 4 bits per hub level, with:
+ *   nibble 0 = port on FIRST hub below root
+ *   nibble 1 = port on SECOND hub below root
+ *   ...
+ *
+ * IMPORTANT:
+ *   - Root port is NOT encoded here (that is iouh_RootPort).
+ *   - Only the ports on hubs *below* root are encoded.
+ */
+ULONG pBuildRouteString(struct PsdDevice *pd)
+{
+    ULONG route = 0;
+    int   depth = 0;
+
+    if (!pd)
+        return 0;
+
+    /*
+     * Walk from the leaf device upwards.
+     *
+     * At each step, pd->pd_HubPort is the port on the *parent hub*
+     * where this pd is attached.
+     *
+     * We want to encode the ports on hubs that themselves have a parent
+     * (i.e. hubs below root). The hub that is directly attached to the
+     * root has pd_Hub != NULL but pd_Hub->pd_Hub == NULL.
+     *
+     * Therefore, we stop when pd->pd_Hub->pd_Hub becomes NULL.
+     */
+    while (pd && pd->pd_Hub && pd->pd_Hub->pd_Hub && depth < 5) {
+        UWORD port = pd->pd_HubPort & 0x0F;
+
+        /* nibble 'depth' = port on hub at depth+1 below root.
+           First iteration (depth 0) => first hub below root. */
+        route |= ((ULONG)port << (depth * 4));
+        depth++;
+
+        /* Move up one level: this hub becomes the new device */
+        pd = pd->pd_Hub;
+    }
+
+    return route;
+}
+
+/* Compute the physical root-hub port number for the device.
+ *
+ * For a leaf device, pd->pd_HubPort is the port on its parent hub.
+ * We walk up until the parent hub has no parent (root), and return
+ * the last child->pd_HubPort we saw – that is the physical root port.
+ */
+UWORD pGetRootPort(struct PsdDevice *pd)
+{
+    struct PsdDevice *child;
+    struct PsdDevice *hub;
+    UWORD rootPort = 0;
+
+    if (!pd)
+        return 0;
+
+    child = pd;
+    hub   = pd->pd_Hub;
+
+    /* If there is no hub at all, pd is itself the root device; its
+       pd_HubPort should already reflect the root port, if used. */
+    if (!hub)
+        return pd->pd_HubPort;
+
+    while (hub) {
+        /* child is connected to 'hub' on child->pd_HubPort */
+        rootPort = child->pd_HubPort;
+
+        child = hub;
+        hub   = hub->pd_Hub;
+    }
+
+    return rootPort;
+}
+
+/* Determine split-transaction/TT information for FS/LS devices behind HS hubs.
+ *
+ * On success:
+ *   *ttHubAddr = address of the high-speed hub owning the TT
+ *   *ttHubPort = port on that hub to which the FS/LS device (or its parent hub) is attached
+ *   *thinkTime = hub->pd_HubThinkTime of the TT hub
+ *   *isMultiTT = TRUE if PDFF_MULTITT set on that hub
+ *
+ * On failure or “not needed” (e.g. HS/SS devices), fields are set to 0/FALSE.
+ */
+void pGetTTInfo(struct PsdDevice *pd,
+                         UWORD *ttHubAddr,
+                         UWORD *ttHubPort,
+                         UWORD *thinkTime,
+                         BOOL  *isMultiTT)
+{
+    struct PsdDevice *dev;
+    struct PsdDevice *hub;
+
+    if (ttHubAddr) *ttHubAddr = 0;
+    if (ttHubPort) *ttHubPort = 0;
+    if (thinkTime) *thinkTime = 0;
+    if (isMultiTT) *isMultiTT = FALSE;
+
+    if (!pd)
+        return;
+
+    /* Only FS/LS devices behind HS hubs need a TT; PDFF_NEEDSSPLIT already encodes this
+       in Poseidon’s logic, but this helper intentionally does not rely on that flag. */
+    dev = pd;
+    hub = pd->pd_Hub;
+
+    while (dev && hub) {
+        if (hub->pd_Flags & PDFF_HIGHSPEED) {
+            /* 'hub' is the HS hub owning the TT, 'dev' is the child of that hub */
+            if (ttHubAddr) *ttHubAddr = hub->pd_DevAddr;
+            if (ttHubPort) *ttHubPort = dev->pd_HubPort;
+            if (thinkTime) *thinkTime = hub->pd_HubThinkTime;
+            if (isMultiTT) *isMultiTT = ((hub->pd_Flags & PDFF_MULTITT) != 0);
+            return;
+        }
+
+        dev = hub;
+        hub = hub->pd_Hub;
+    }
+}
+
+/* *** Configuration *** */
 
 /* /// "pAllocForm()" */
 struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *parent, ULONG formid)

@@ -253,6 +253,199 @@ WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ri
     return firstqueued;
 }
 
+/*
+ * Page Size Register (PAGESIZE) - Chapter 5.4.3
+ */
+static ULONG xhciPageSize(struct PCIController *hc)
+{
+    volatile struct xhci_hcopr *hcopr = (volatile struct xhci_hcopr *)((IPTR)hc->hc_XHCIOpR);
+    int bit;
+    for (bit = 0; bit < 16; bit++) {
+        if (hcopr->pagesize & (1 << bit))
+            return 1 << (12 + bit);
+    }
+    return 0;
+}
+
+static struct pcisusbXHCIDevice *
+xhciCreateDeviceCtx(struct PCIController *hc,
+                    UWORD rootPortIndex,   /* 0-based */
+                    ULONG route,           /* 20-bit route string (0 for root) */
+                    ULONG flags,           /* UHFF_* speed flags */
+                    UWORD mps0)            /* initial EP0 max packet size */
+{
+    struct pcisusbXHCIDevice *devCtx;
+    UWORD ctxoff = 1;
+    ULONG ctxsize;
+    LONG  slotid;
+
+    devCtx = AllocMem(sizeof(struct pcisusbXHCIDevice), MEMF_ANY | MEMF_CLEAR);
+    if (!devCtx)
+        return NULL;
+
+    devCtx->dc_RootPort = rootPortIndex;
+    devCtx->dc_DevAddr  = 0;   /* default address until SET_ADDRESS */
+
+    ctxsize = (MAX_DEVENDPOINTS + 1) * sizeof(struct xhci_inctx);
+    if (hc->hc_Flags & HCF_CTX64) {
+        ctxsize <<= 1;
+        ctxoff <<= 1;
+    }
+
+    /* ---- Allocate slot context ---- */
+    devCtx->dc_SlotCtx.dmaa_Ptr = pciAllocAligned(
+        hc, &devCtx->dc_SlotCtx.dmaa_Entry,
+        ctxsize, ALIGN_CTX, xhciPageSize(hc));
+
+    if (!devCtx->dc_SlotCtx.dmaa_Ptr) {
+        pciusbError("xHCI",
+          DEBUGWARNCOLOR_SET "Unable to allocate Device Slot Ctx" DEBUGCOLOR_RESET "\n");
+        FreeMem(devCtx, sizeof(*devCtx));
+        return NULL;
+    }
+
+#if 0
+    devCtx->dc_SlotCtx.dmaa_DMA =
+        CPUTOPCI(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Ptr);
+#else
+    devCtx->dc_SlotCtx.dmaa_DMA = devCtx->dc_SlotCtx.dmaa_Ptr;
+#endif
+
+    /* ---- Allocate input context ---- */
+    devCtx->dc_IN.dmaa_Ptr = pciAllocAligned(
+        hc, &devCtx->dc_IN.dmaa_Entry,
+        ctxsize + sizeof(struct xhci_inctx),
+        ALIGN_CTX, xhciPageSize(hc));
+
+    if (!devCtx->dc_IN.dmaa_Ptr) {
+        pciusbError("xHCI",
+          DEBUGWARNCOLOR_SET "Unable to allocate Device IN Ctx" DEBUGCOLOR_RESET "\n");
+        /* TODO free slot ctx properly */
+        FreeMem(devCtx, sizeof(*devCtx));
+        return NULL;
+    }
+
+#if 0
+    devCtx->dc_IN.dmaa_DMA =
+        CPUTOPCI(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Ptr);
+#else
+    devCtx->dc_IN.dmaa_DMA = devCtx->dc_IN.dmaa_Ptr;
+#endif
+
+    struct xhci_inctx *inctx = (struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
+    volatile struct xhci_slot *islot = (volatile struct xhci_slot *)&inctx[ctxoff];
+
+    /* ---- Fill Slot Context ---- */
+
+    /* Root port (1-based) */
+    islot->ctx[1] |= (((rootPortIndex + 1) & 0xFF) << 16);
+
+    /* Route string */
+    islot->ctx[0] &= ~SLOT_CTX_ROUTE_MASK;
+    islot->ctx[0] |= (route & SLOT_CTX_ROUTE_MASK);
+
+    /* Speed bits */
+    islot->ctx[0] &= ~(0xF << SLOTS_CTX_SPEED);
+
+    if (flags & UHFF_SUPERSPEED)
+        islot->ctx[0] |= SLOTF_CTX_SUPERSPEED;
+    else if (flags & UHFF_HIGHSPEED)
+        islot->ctx[0] |= SLOTF_CTX_HIGHSPEED;
+    else if (flags & UHFF_LOWSPEED)
+        islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
+    else
+        islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
+
+    /* ---- Enable Slot ---- */
+    slotid = xhciCmdSlotEnable(hc);
+    if (slotid < 0) {
+        pciusbError("xHCI",
+          DEBUGWARNCOLOR_SET "Failed to enable slot" DEBUGCOLOR_RESET "\n");
+        /* TODO free ctx memory */
+        FreeMem(devCtx, sizeof(*devCtx));
+        return NULL;
+    }
+
+    devCtx->dc_SlotID = slotid;
+
+    volatile struct xhci_address *deviceslots =
+        (volatile struct xhci_address *)hc->hc_DCBAAp;
+
+    xhciSetPointer(hc, deviceslots[slotid], devCtx->dc_SlotCtx.dmaa_DMA);
+
+    inctx->acf = 0x01; /* Slot + EP0 */
+
+    /* ---- Initialize EP0 ---- */
+    ULONG epid = xhciInitEP(hc, devCtx,
+                            NULL,
+                            0, 0,
+                            UHCMD_CONTROLXFER,
+                            mps0,
+                            0,
+                            0);
+
+    /* ---- Address Device ---- */
+    if (1 != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, NULL)) {
+        pciusbError("xHCI",
+          DEBUGWARNCOLOR_SET "Address Device failed" DEBUGCOLOR_RESET "\n");
+
+        xhciCmdSlotDisable(hc, slotid);
+        xhciSetPointer(hc, deviceslots[slotid], 0);
+
+        devCtx->dc_SlotID = 0;
+        /* TODO free contexts */
+        FreeMem(devCtx, sizeof(*devCtx));
+        return NULL;
+    }
+
+    struct xhci_ep *ep =
+        (struct xhci_ep *)&inctx[ctxoff * (epid + 1)];
+    ep->ctx[0] = ep->ctx[1] = 0;
+    ep->deq.addr_hi = ep->deq.addr_lo = 0;
+    ep->length = 0;
+
+    /* Register in slot table */
+    if (slotid > 0 && slotid < USB_DEV_MAX)
+        hc->hc_Devices[slotid] = devCtx;
+
+    return devCtx;
+}
+
+struct pcisusbXHCIDevice *
+xhciObtainDeviceCtx(struct PCIController *hc,
+                    struct IOUsbHWReq *ioreq)
+{
+    UWORD devaddr       = ioreq->iouh_DevAddr;
+    ULONG route         = ioreq->iouh_RouteString;
+    UWORD rootPortIndex = (ioreq->iouh_RootPort > 0)
+                            ? (ioreq->iouh_RootPort - 1)
+                            : 0;
+
+    struct pcisusbXHCIDevice *devCtx;
+
+    /* Try your existing mapping first */
+    devCtx = xhciFindDeviceCtx(hc, devaddr);
+    if (devCtx)
+        return devCtx;
+
+    /* Non-zero address but no context = real error */
+    if (devaddr != 0)
+        return NULL;
+
+    /* devaddr == 0:
+     *   - route == 0  => root device, controller task MUST create it.
+     *   - route != 0  => child device, we must create the slot now.
+     */
+    if (route == 0)
+        return NULL;
+
+    return xhciCreateDeviceCtx(hc,
+                               rootPortIndex,
+                               route,
+                               ioreq->iouh_Flags,
+                               ioreq->iouh_MaxPktSize);
+}
+
 ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
                  struct IOUsbHWReq *ioreq,
                  UBYTE endpoint,
@@ -321,7 +514,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
         islot->ctx[0] = slotctx0;
 
         islot->ctx[1] &= ~(0xFF << 16);
-        islot->ctx[1] |= ((ULONG)(ioreq->iouh_HubPort & 0xFF) << 16);
+        islot->ctx[1] |= ((ULONG)(ioreq->iouh_RootPort & 0xFF) << 16);
 
         if (flags & UHFF_SPLITTRANS) {
             ULONG ttinfo = 0;
@@ -439,28 +632,16 @@ static AROS_INTH1(XhciResetHandler, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
-/*
- * Page Size Register (PAGESIZE) - Chapter 5.4.3
- */
-static ULONG xhciPageSize(struct PCIController *hc)
-{
-    volatile struct xhci_hcopr *hcopr = (volatile struct xhci_hcopr *)((IPTR)hc->hc_XHCIOpR);
-    int bit;
-    for (bit = 0; bit < 16; bit++) {
-        if (hcopr->pagesize & (1 << bit))
-            return 1 << (12 + bit);
-    }
-    return 0;
-}
-
 void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
     struct pciusbXHCIIODevPrivate *driprivate;
     UWORD devadrep;
 
-    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
 
+    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
     if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
+        ioreq->iouh_DriverPrivate1 = NULL;
         /* Deactivate the endpoint */
         if ((driprivate->dpEPID > 1) && (driprivate->dpDevice)) {
             struct pcisusbXHCIDevice *devCtx = driprivate->dpDevice;
@@ -486,9 +667,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
             devCtx->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr = NULL;
         }
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
-        ioreq->iouh_DriverPrivate1 = NULL;
     }
-    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
     devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
     pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
     unit->hu_DevBusyReq[devadrep] = NULL;
@@ -620,7 +799,12 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     struct pciusbXHCIIODevPrivate *driprivate = NULL;
     pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
-    if (ioreq && (driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
+    if (!ioreq) {
+        pciusbXHCIDebugTRB("xHCI", DEBUGWARNCOLOR_SET "IOReq missing for completion (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
+        return FALSE;
+    }
+
+    if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u\nIOReq Ring @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB, driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
         driprivate->dpCC = ccode;
@@ -630,7 +814,18 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
 
         return TRUE;
     }
-    return FALSE;
+
+    /*
+     * Command-ring submissions expect an IOReq but do not always
+     * carry driver-private transfer state. Treat these as completed so
+     * the higher layers can observe the result and progress.
+     */
+    ioreq->iouh_Req.io_Error = (ccode == TRB_CC_SUCCESS) ? 0 : UHIOERR_HOSTERROR;
+    ioreq->iouh_Actual += (ioreq->iouh_Length - remaining);
+
+    pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Completion w/o private state, treating as done (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
+
+    return TRUE;
 }
 
 static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
@@ -767,6 +962,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 ring->end |= (last & ~RINGENDCFLAG);
 
                 doCompletion = xhciIntWorkProcess(hc, (struct IOUsbHWReq *)ring->ringio[last], (evt->tparams & 0XFFFFFF), trbe_ccode);
+                ring->ringio[last] = NULL;
                 break;
             }
             case TRBB_FLAG_ERTYPE_COMMAND_COMPLETE: {
@@ -790,6 +986,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 hc->hc_CmdResults[last].tparams = evt->tparams;
 
                 doCompletion = xhciIntWorkProcess(hc, (struct IOUsbHWReq *)ring->ringio[last], (evt->tparams & 0XFFFFFF), trbe_ccode);
+                ring->ringio[last] = NULL;
                 break;
             }
             default: {
@@ -963,129 +1160,32 @@ AROS_UFH0(void, xhciControllerTask)
                 portsc = AROS_LE2LONG(xhciports[hciport].portsc);
                 devCtx = xhciFindPortDevice(hc, hciport);
                 if ((portsc & XHCIF_PR_PORTSC_PED) && (!devCtx)) {
-                    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Connecting HCI Device on port #%u" DEBUGCOLOR_RESET" \n", hciport+1);
-                    devCtx = AllocMem(sizeof(struct pcisusbXHCIDevice), MEMF_ANY|MEMF_CLEAR);
-                    if (devCtx) {
+                    UWORD rootPort = hciport;     /* 0-based */
+                    ULONG route    = 0;           /* root-attached */
+                    ULONG flags    = 0;
+                    UWORD mps0     = 8;           /* safe default */
 
-                        ULONG maxsize = 8, ctxsize;
-                        LONG slotid;
-                        UWORD ctxoff = 1;
+                    /* Decode port speed from PORTSC */
+                    ULONG speedBits = portsc & XHCI_PR_PORTSC_SPEED_MASK;
 
-                        devCtx->dc_RootPort = hciport;
-                        devCtx->dc_DevAddr = 0;
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device Ctx allocated @ 0x%p" DEBUGCOLOR_RESET" \n", devCtx);
-
-                        ctxsize = (MAX_DEVENDPOINTS + 1) * sizeof(struct xhci_inctx);
-                        if (hc->hc_Flags & HCF_CTX64) {
-                            ctxsize <<= 1;
-                            ctxoff <<= 1;
-                        }
-
-                        /*
-                         * Device/Slot initialization - see Chapter 4.3.3 (page 88) and 4.5.1 (page 96)
-                         * Allocate an input context...
-                         */
-
-                        devCtx->dc_SlotCtx.dmaa_Ptr = pciAllocAligned(hc, &devCtx->dc_SlotCtx.dmaa_Entry, ctxsize, ALIGN_CTX, xhciPageSize(hc));
-                        if (devCtx->dc_SlotCtx.dmaa_Ptr) {
-                            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated Device Slot Ctx @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", devCtx->dc_SlotCtx.dmaa_Ptr, hc->hc_ERS.me_Un.meu_Addr, hc->hc_ERS.me_Length);
-#if (0)
-                            devCtx->dc_SlotCtx.dmaa_DMA = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)devCtx->dc_SlotCtx.dmaa_Ptr);
-#else
-                            devCtx->dc_SlotCtx.dmaa_DMA = devCtx->dc_SlotCtx.dmaa_Ptr;
-#endif
-                            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n", devCtx->dc_SlotCtx.dmaa_DMA);
-                        } else {
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate Device Slot Ctx Memory" DEBUGCOLOR_RESET" \n");
-                            //TODO : Free devCtx->dc_IN, and devCtx
-                            continue;
-                        }
-
-                        devCtx->dc_IN.dmaa_Ptr = pciAllocAligned(hc, &devCtx->dc_IN.dmaa_Entry, ctxsize + sizeof(struct xhci_inctx), ALIGN_CTX, xhciPageSize(hc));
-                        if (devCtx->dc_IN.dmaa_Ptr) {
-                            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated IN @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", devCtx->dc_IN.dmaa_Ptr, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr, devCtx->dc_IN.dmaa_Entry.me_Length);
-#if (0)
-                            devCtx->dc_IN.dmaa_DMA = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)devCtx->dc_IN.dmaa_Ptr,);
-#else
-                            devCtx->dc_IN.dmaa_DMA = devCtx->dc_IN.dmaa_Ptr;
-#endif
-                            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n", devCtx->dc_IN.dmaa_DMA);
-                        } else {
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate device input ctx" DEBUGCOLOR_RESET" \n");
-                            //TODO : Free devCtx
-                            continue;
-                        }
-                        volatile const struct xhci_inctx *devctx;
-                        volatile struct xhci_slot *dslot;
-
-                        struct xhci_inctx *inctx = (struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
-                        struct xhci_slot *islot = (void*)&inctx[ctxoff];
-                        islot->ctx[1] |= (((hciport + 1) & 0xFF) << 16); // Fill in the root hub port number
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Sending CMD Enable Slot" DEBUGCOLOR_RESET" \n", __func__);
-                        slotid = xhciCmdSlotEnable(hc);
-                        if (slotid < 0) {
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to enable slot!" DEBUGCOLOR_RESET" \n", __func__);
-                            //TODO : Free devCtx->dc_Slot, devCtx->dc_IN, and devCtx
-                            continue;
-                        }
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: slotid = %u" DEBUGCOLOR_RESET" \n", __func__, slotid);
-                        ULONG size = (sizeof(struct xhci_slot) * MAX_DEVENDPOINTS);
-                        if (hc->hc_Flags & HCF_CTX64)
-                            size <<= 1;
-
-                        volatile struct xhci_address *deviceslots = (volatile struct xhci_address *)hc->hc_DCBAAp;
-                        xhciSetPointer(hc, deviceslots[slotid], ((IPTR)devCtx->dc_SlotCtx.dmaa_DMA));
-                        devCtx->dc_SlotID = slotid;
-#if (1)
-                        // TODO: Probe port max transfer size
-                        devCtx->dx_TxMax = 0;
-#endif
-
-                        inctx->acf = 0x01;
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Device slot configured - configering EP0" DEBUGCOLOR_RESET" \n", __func__);
-                        /* initialize endpoint 0 for use .. */
-                        ULONG epid = xhciInitEP(hc, devCtx,
-                                                NULL,
-                                                0, 0,
-                                                UHCMD_CONTROLXFER,
-                                                maxsize,
-                                                0,
-                                                0);
-
-                        /* Pass ownership of the Output Device Context to the xHC */
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Sending CMD Address Device" DEBUGCOLOR_RESET" \n", __func__);
-                        if (1 != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA)) {
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Address Device failed!" DEBUGCOLOR_RESET" \n", __func__);
-                            pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "%s: Sending CMD Disable Slot" DEBUGCOLOR_RESET" \n", __func__);
-                            if (1 == xhciCmdSlotDisable(hc, slotid)) {
-                                xhciSetPointer(hc, deviceslots[slotid], (0));
-                            } else {
-                                pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Slot Disable failed!" DEBUGCOLOR_RESET" \n", __func__);
-                            }
-                            devCtx->dc_SlotID = 0;
-
-                            //TODO : Free Endpoint allocations, devCtx->dc_Slot, devCtx->dc_IN, and devCtx
-                            continue;
-                        }
-                        struct xhci_ep *ep = (struct xhci_ep *)&inctx[ctxoff * (epid + 1)];
-                        ep->ctx[1] = ep->ctx[0] = 0;
-                        ep->deq.addr_hi = ep->deq.addr_lo = 0;
-                        ep->length = 0;
-#if (0)
-                        //TODO: Set if the device is a hub ..
-                        islot->ctx[0] |= (1 << 26);
-                        //TODO: If the hub supports Multiple TT's set this ..
-                        islot->ctx[0] |= (1 << 25);
-#endif
-                        if ((slotid > 0) && (slotid < USB_DEV_MAX))
-                            hc->hc_Devices[slotid] = devCtx;
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Device ready!" DEBUGCOLOR_RESET" \n", __func__);
+                    if (speedBits == XHCIF_PR_PORTSC_LOWSPEED) {
+                        flags |= UHFF_LOWSPEED;
+                        mps0   = 8;              /* LS EP0 = 8 bytes */
+                    } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
+                        /* Full speed: EP0 is 8,16,32,64 – use 8 until we see bMaxPacketSize0 */
+                        mps0   = 8;
+                    } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
+                        flags |= UHFF_HIGHSPEED;
+                        mps0   = 64;             /* HS EP0 typically 64 bytes */
+                    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
+                        flags |= UHFF_SUPERSPEED;
+                        mps0   = 512;            /* SS EP0 max packet size */
+                    } else {
+                        /* Unknown/invalid speed – leave defaults, let enumeration sort it out */
                     }
-                    hc->hc_Unit->hu_DevControllers[0] = hc;
+                    devCtx = xhciCreateDeviceCtx(hc, rootPort, route, flags, mps0);
+                    if (devCtx)
+                        hc->hc_Unit->hu_DevControllers[0] = hc;
                 } else if ((!(portsc & XHCIF_PR_PORTSC_PED)) && (devCtx)) {
                     if ((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX))
                         hc->hc_Devices[devCtx->dc_SlotID] = NULL;
@@ -1108,7 +1208,6 @@ AROS_UFH0(void, xhciControllerTask)
 
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu)
 {
-
     struct PCIDevice *hd = hu->hu_Device;
     volatile struct xhci_hccapr *xhciregs;
     UBYTE *memptr;

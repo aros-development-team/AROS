@@ -1,7 +1,7 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 3.0 (25.11.2025)
+**	$VER: usbhardware.h 3.1 (27.11.2025)
 **
 **	standard usb hardware device include file
 **
@@ -50,7 +50,7 @@
 
 /* V3 extension fields (for USB3/xHCI etc.) */
 #define IOUSBHWREQ_V3_FIELDS                                                                                                                          \
-    UWORD               iouh_HubPort;           /* root-hub port (1-based)                                                                          */\
+    UWORD               iouh_RootPort;           /* root-hub port (1-based)                                                                          */\
     /* SuperSpeed endpoint companion info */                                                                                                          \
     UBYTE               iouh_SS_MaxBurst;       /* bMaxBurst                                                                                        */\
     UBYTE               iouh_SS_Mult;           /* Mult for isoch                                                                                   */\

@@ -13,6 +13,8 @@
 
 #include <devices/usb_hub.h>
 
+#include <string.h>
+
 #include "uhwcmd.h"
 #include "xhciproto.h"
 
@@ -71,6 +73,21 @@ static ULONG xhciTDStatusFlags(ULONG tdflags)
     return statusflags;
 }
 
+static UBYTE xhciEndpointIDFromIndex(UWORD wIndex)
+{
+    UBYTE epid;
+    UBYTE endpoint = (wIndex & 0x0f);
+
+    if (endpoint == 0)
+        return 0;
+
+    epid = endpoint << 1;
+    if (wIndex & 0x80)
+        epid |= 0x01;
+
+    return epid;
+}
+
 static void xhciTDSetupInlinedata(UQUAD *inlinedata, struct IOUsbHWReq *ioreq, ULONG txtype)
 {
 #if AROS_BIG_ENDIAN
@@ -118,13 +135,12 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         /****** SETUP TRANSACTION ************/
         volatile struct pcisusbXHCIRing *epring = NULL;
         struct pciusbXHCIIODevPrivate *driprivate;
+        struct pcisusbXHCIDevice *devCtx = NULL;
         ULONG trbflags = 0;
         WORD queued = -1;
 
         if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
-            struct pcisusbXHCIDevice *devCtx;
-
-            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+            devCtx = xhciObtainDeviceCtx(hc, ioreq);
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
             if (devCtx != NULL) {
                 ULONG txep;
@@ -195,11 +211,17 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
                 return;
             }
+        } else {
+            devCtx = driprivate->dpDevice;
         }
 
         if ((txtype == UHCMD_BULKXFER) ||
-                (ioreq->iouh_SetupData.bmRequestType != (URTF_STANDARD|URTF_DEVICE)) ||
-                (ioreq->iouh_SetupData.bRequest != USR_SET_ADDRESS)) {
+                !((txtype == UHCMD_CONTROLXFER) &&
+                  (((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_DEVICE)) &&
+                    (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS)) ||
+                   ((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_ENDPOINT)) &&
+                    (ioreq->iouh_SetupData.bRequest == USR_CLEAR_FEATURE) &&
+                    (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_ENDPOINT_HALT)))))) {
             APTR txdata = ioreq->iouh_Data;
 
             if ((ioreq->iouh_Dir == UHDIR_IN) != 0)
@@ -293,20 +315,77 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             } else {
                 xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
             }
-        } else {
-            // Ignore SET_ADDRESS
+        } else if (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS) {
+            /* Handle SET_ADDRESS by short-circuiting in software for xHCI */
+
+            /* newaddr = wValue from setup packet */
+            UWORD newaddr = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+
+            pciusbXHCIDebug("xHCI",
+                "SET_ADDRESS: slot=%u new=%u devctx=%p (short-circuit)\n",
+                devCtx ? devCtx->dc_SlotID : 0, newaddr, devCtx);
+
+            /* We assume devCtx already has a valid slot and has been Addressed
+             * by the initial Address Device command during connect.
+             * Just record the new USB address in software. */
+            if (devCtx) {
+                devCtx->dc_DevAddr = newaddr;
+            }
+
             Disable();
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
-                driprivate->dpCC = 1;
+                driprivate->dpCC = TRB_CC_SUCCESS;
                 AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
             } else {
                 AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
             }
             Enable();
             doCompletion = TRUE;
+        } else {
+            /* Handle CLEAR_FEATURE(ENDPOINT_HALT) without passing to the device */
+            Disable();
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+            unit->hu_NakTimeoutFrame[devadrep] =
+                (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
+
+            if (devCtx) {
+                UWORD epid = xhciEndpointIDFromIndex(AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
+
+                if (epid > 0) {
+                    LONG cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+
+                    if (cc == TRB_CC_SUCCESS) {
+                        if (!driprivate) {
+                            driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
+                            if (driprivate) {
+                                driprivate->dpDevice = devCtx;
+                                driprivate->dpEPID = epid;
+                                ioreq->iouh_DriverPrivate1 = driprivate;
+                            }
+                        }
+
+                        if (driprivate) {
+                            driprivate->dpCC = TRB_CC_SUCCESS;
+                            AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
+                            doCompletion = TRUE;
+                        } else {
+                            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                            AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
+                        }
+                    } else {
+                        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                        AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
+                    }
+                } else {
+                    AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
+                }
+            } else {
+                AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
+            }
+            Enable();
         }
     }
     if (doCompletion)

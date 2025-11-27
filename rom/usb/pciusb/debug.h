@@ -10,6 +10,8 @@
 #define DEBUG 0
 #endif
 
+//#define PCIUSB_ANSI_DEBUG
+
 #if defined(AROS_USE_LOGRES)
 #ifndef __LOG_NOLIBBASE__
 #define __LOG_NOLIBBASE__
@@ -66,4 +68,17 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 //#define PCIUSB_XHCI_DEBUG
 //#define XHCI_LONGDEBUGNAK
 #endif
+
+#if !defined(AROS_USE_LOGRES) && defined(PCIUSB_ANSI_DEBUG)
+#define DEBUGCOLOR_SET                          "\033[32m"
+#define DEBUGWARNCOLOR_SET                      "\033[31m"
+#define DEBUGFUNCCOLOR_SET                      "\033[32;1m"
+#define DEBUGCOLOR_RESET                        "\033[0m"
+#else
+#define DEBUGCOLOR_SET
+#define DEBUGWARNCOLOR_SET
+#define DEBUGFUNCCOLOR_SET
+#define DEBUGCOLOR_RESET
+#endif
+
 #endif

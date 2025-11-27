@@ -11,6 +11,8 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct 
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
+struct pcisusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 
@@ -36,11 +38,12 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 
 // xhcihw.c
 LONG xhciCmdSubmit(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, ULONG *resflags);
+LONG xhciCmdSubmitAsync(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, struct IOUsbHWReq *ioreq);
 LONG xhciCmdSlotEnable(struct PCIController *hc);
 #if !defined(PCIUSB_INLINEXHCIOPS)
 void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value);
 LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot);
-LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr);
+LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, struct IOUsbHWReq *ioreq);
 LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend);
 LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve);
 LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr);
@@ -49,7 +52,15 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 #else
 #define xhciRingDoorbell(hc,slot,value)						((volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB))[slot].db = value;
 #define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
-#define xhciCmdDeviceAddress(hc,slot,dmaaddr)			xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE, NULL)
+static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, struct IOUsbHWReq *ioreq)
+{
+    ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
+
+    if (ioreq)
+        return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
+
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+}
 #define xhciCmdEndpointStop(hc,slot,epid,suspend)		xhciCmdSubmit(hc, NULL, (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT, NULL)
 #define xhciCmdEndpointReset(hc,slot,epid,preserve) 	xhciCmdSubmit(hc, NULL, (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9), NULL)
 #define xhciCmdEndpointConfigure(hc,slot,dmaaddr)	xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT, NULL)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver hw command support functions
 
@@ -74,16 +74,21 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
-            pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected" DEBUGCOLOR_RESET" \n", __func__);
+            pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
+                         __func__, (trbflags >> 24) & 0xFF, (UWORD)((slot ? ((slot->ctx[1] >> 16) & 0xFF) : 0)), (unsigned long)portsc);
 
             Enable();
             return -1;
         }
         queued = xhciQueueTRB(hc, hc->hc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
-    } else
+    } else {
         queued = xhciQueueTRB(hc, hc->hc_OPRp, 0, 0, trbflags);
-    if (queued != -1)
+    }
+    if (queued != -1) {
         hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
+    } else {
+	pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
+    }
     Enable();
 
     if (queued != -1) {
@@ -97,6 +102,57 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             }
         } while (1);
     }
+    return -1;
+}
+LONG xhciCmdSubmitAsync(struct PCIController *hc,
+                        APTR dmaaddr,
+                        ULONG trbflags,
+                        struct IOUsbHWReq *ioreq)
+{
+    volatile struct xhci_inctx *inctx;
+    WORD queued;
+    volatile struct pcisusbXHCIRing *cmdring = (volatile struct pcisusbXHCIRing *)hc->hc_OPRp;
+
+    if (!ioreq)
+        return -1;
+
+    Disable();
+    if (dmaaddr) {
+        ULONG portsc = 0;
+        UWORD ctxoff = 1;
+        if (hc->hc_Flags & HCF_CTX64)
+            ctxoff <<= 1;
+
+        inctx = (volatile struct xhci_inctx *)dmaaddr;
+        volatile struct xhci_slot *slot = (void*)&inctx[ctxoff];
+
+        if (slot) {
+            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+            UBYTE port;
+
+            port = (slot->ctx[1] >> 16) & 0xff;
+            portsc = xhciports[port - 1].portsc;
+        }
+        if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
+            Enable();
+            return -1;
+        }
+        queued = xhciQueueTRB(hc, cmdring, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
+    } else
+        queued = xhciQueueTRB(hc, cmdring, 0, 0, trbflags);
+
+    if (queued != -1) {
+        hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
+        cmdring->ringio[queued] = &ioreq->iouh_Req;
+    }
+
+    Enable();
+
+    if (queued != -1) {
+        xhciRingDoorbell(hc, 0, 0);
+        return 1;
+    }
+
     return -1;
 }
 
@@ -134,11 +190,14 @@ LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot)
 }
 
 LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
-                          APTR dmaaddr)
+                          APTR dmaaddr, struct IOUsbHWReq *ioreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, slot, dmaaddr);
+
+    if (ioreq)
+        return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }

@@ -61,18 +61,4 @@ struct pciusbXHCIIODevPrivate
 
 /* Misc Stuff */
 
-#define XHCIASCII_DEBUG
-
-#if (DEBUG > 0) && !defined(AROS_USE_LOGRES) && defined(XHCIASCII_DEBUG)
-#define DEBUGCOLOR_SET                          "\033[32m"
-#define DEBUGWARNCOLOR_SET                      "\033[31m"
-#define DEBUGFUNCCOLOR_SET                      "\033[32;1m"
-#define DEBUGCOLOR_RESET                        "\033[0m"
-#else
-#define DEBUGCOLOR_SET
-#define DEBUGWARNCOLOR_SET
-#define DEBUGFUNCCOLOR_SET
-#define DEBUGCOLOR_RESET
-#endif
-
 #endif /* XHCICHIP_H */
