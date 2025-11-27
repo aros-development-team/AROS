@@ -1532,7 +1532,7 @@ takeownership:
 
         xhciSetPointer(hc, ((volatile struct xhci_address *)hc->hc_DCBAAp)[0], hc->hc_DMASPBA);
 
-        pciusbXHCIDebug ("xHCI", DEBUGCOLOR_SET "XHCI init: Allocated %u scratch buffers of size 0x%x" DEBUGCOLOR_RESET" \n",
+        pciusbXHCIDebug ("xHCI", DEBUGCOLOR_SET "Scratch buffers allocated (%u x 0x%x)" DEBUGCOLOR_RESET" \n",
                          hc->hc_NumScratchPads, pagesize);
     }
 
