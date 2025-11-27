@@ -156,7 +156,8 @@ struct IOUsbHWBufferReq
 #define UHFB_MULTI_1            6               /* new for V2.1: Number of transactions per microframe bit 0                                        */
 #define UHFB_MULTI_2            7               /* new for V2.1: Number of transactions per microframe bit 1                                        */
 #define UHFS_THINKTIME          8               /* new for V2.2: Bit times required at most for intertransaction gap on LS/FS                       */
-#define UHFB_TT_MULTI           10              /* new for v3.0: hub is multi-TT                                                                    */
+#define UHFB_HUB                10              /* new for v3.0: device is a hub                                                                    */
+#define UHFB_TT_MULTI           11              /* new for v3.0: hub is multi-TT                                                                    */
 #define UHFB_SUPERSPEED         15              /* new for v3.0: Device operates at super speed (USB 3.0)                                           */
 
 #define UHTT_8                  (0)
@@ -177,6 +178,7 @@ struct IOUsbHWBufferReq
 #define UHFF_THINKTIME_16       (UHTT_16 << UHFS_THINKTIME)
 #define UHFF_THINKTIME_24       (UHTT_24 << UHFS_THINKTIME)
 #define UHFF_THINKTIME_32       (UHTT_32 << UHFS_THINKTIME)
+#define UHFF_HUB                (1 << UHFB_HUB)
 #define UHFF_TT_MULTI           (1 << UHFB_TT_MULTI)
 #define UHFF_SUPERSPEED         (1 << UHFB_SUPERSPEED)
 
@@ -203,7 +205,6 @@ struct IOUsbHWBufferReq
 #define UHCB_QUICKIO            3               /* BeginIO()/AbortIO() may be called from interrupts for less overhead                              */
 #define UHCB_USB2OTG            4               /* Host controller supports USB2OTG device mode                                                     */
 
-#define UHCB_USB40              30              /* Host controller supports USB 4.x SuperSpeed/+                                                    */
 #define UHCB_USB30              31              /* Host controller supports USB 3.x SuperSpeed/+                                                    */
 
 #define UHCF_USB20              (1 << UHCB_USB20)
@@ -212,7 +213,6 @@ struct IOUsbHWBufferReq
 #define UHCF_QUICKIO            (1 << UHCB_QUICKIO)
 #define UHCF_USB2OTG            (1 << UHCB_USB2OTG)
 #define UHCF_USB30              (1 << UHCB_USB30)
-#define UHCF_USB40              (1 << UHCB_USB40)
 
 /* Definitions for UHA_State/iouh_State */
 
@@ -225,5 +225,39 @@ struct IOUsbHWBufferReq
 #define UHSF_RESUMING           (1 << UHSB_RESUMING)
 #define UHSF_SUSPENDED          (1 << UHSB_SUSPENDED)
 #define UHSF_RESET              (1 << UHSB_RESET)
+
+/* -----------------------------------------------------------------------
+ * iouh_PowerPolicy (UWORD)
+ *
+ * Per-transfer / per-endpoint link power management hints.
+ *
+ * Lower 4 bits: which low-power link states are ALLOWED for this transfer.
+ * Next  3 bits: policy preference (power-save vs performance).
+ * Upper bits :  misc flags / future extensions.
+ * -------------------------------------------------------------------- */
+
+/* Allowed states / capabilities (bitwise OR) */
+#define USBPWR_ALLOW_L1         0x0001  /* Allow USB 2.0 LPM (L1) while active   */
+#define USBPWR_ALLOW_U1         0x0002  /* Allow USB 3.x U1 while active         */
+#define USBPWR_ALLOW_U2         0x0004  /* Allow USB 3.x U2 while active         */
+#define USBPWR_ALLOW_U3         0x0008  /* Allow USB 3.x U3 (device suspend)     */
+
+#define USBPWR_ALLOW_MASK       0x000F
+
+/* Policy preference (mutually exclusive “mode”) */
+#define USBPWR_POLICY_MASK      0x0070
+#define USBPWR_POLICY_DEFAULT   0x0000  /* Use controller’s / OS global default  */
+#define USBPWR_POLICY_PERF      0x0010  /* Prefer performance (less power save)  */
+#define USBPWR_POLICY_BALANCED  0x0020  /* Balanced power/performance (default)  */
+#define USBPWR_POLICY_POWERSAVE 0x0030  /* Prefer power saving (more L1/U1/U2)   */
+
+/* Behaviour flags */
+#define USBPWR_FLAG_NO_REMOTE_WAKE 0x0100 /* Don’t arm remote wake/signal resume */
+#define USBPWR_FLAG_NO_AUTOSUSPEND 0x0200 /* Don’t autosuspend this endpoint     */
+
+/* Predefined “profiles” (for convenience) */
+#define USBPWR_PROFILE_LEGACY    0x0000  /* No low power states, policy default  */
+#define USBPWR_PROFILE_USB2_LPM  (USBPWR_ALLOW_L1 | USBPWR_POLICY_BALANCED)
+#define USBPWR_PROFILE_USB3_LPM  (USBPWR_ALLOW_U1 | USBPWR_ALLOW_U2 | USBPWR_POLICY_BALANCED)
 
 #endif	/* DEVICES_USBHARDWARE_H */
