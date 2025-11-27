@@ -16,12 +16,60 @@
 #define ARGS_SHOWROOT 0
 #define ARGS_QUICK    1
 #define ARGS_STRINGS  2
-#define ARGS_SIZEOF   3
+#define ARGS_TOPOLOGY 3
+#define ARGS_SIZEOF   4
 
-static const char *template = "SHOWROOT/S,QUICK/S,STRINGS/S";
-const char *version = "$VER: PsdDevLister 4.0 (03.06.09) by Chris Hodges <chrisly@platon42.de>";
+static const char *template = "SHOWROOT/S,QUICK/S,STRINGS/S,TOPOLOGY/S";
+const char *version = "$VER: PsdDevLister 4.1 (27.11.2025) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
+
+struct TopologyEntry
+{
+    struct Node node;
+    APTR device;
+    APTR hub;
+    IPTR port;
+    STRPTR product;
+    STRPTR id;
+    IPTR address;
+    IPTR devclass;
+    IPTR devsubclass;
+    IPTR devproto;
+};
+
+static void PrintTopology(struct List *devices, APTR hub, LONG depth)
+{
+    struct Node *n = devices->lh_Head;
+
+    while(n->ln_Succ)
+    {
+        struct TopologyEntry *entry = (struct TopologyEntry *) n;
+
+        if(entry->hub == hub)
+        {
+            LONG idx;
+
+            for(idx = 0; idx < depth; idx++)
+            {
+                PutStr("  ");
+            }
+
+            Printf("%s%ld: %s (addr %ld, class/sub/proto %ld/%ld/%ld)\n",
+                   depth ? "Port " : "Root ",
+                   entry->port,
+                   entry->product ? entry->product : entry->id,
+                   entry->address,
+                   entry->devclass,
+                   entry->devsubclass,
+                   entry->devproto);
+
+            PrintTopology(devices, entry->device, depth + 1);
+        }
+
+        n = n->ln_Succ;
+    }
+}
 
 void fail(char *str)
 {
@@ -132,6 +180,9 @@ int main(int argc, char *argv[])
     STRPTR strdesc;
     STRPTR strthinktime;
 
+    struct List topology;
+    struct Node *topologynode;
+
     if(!(ArgsHook = ReadArgs(template, ArgsArray, NULL)))        
     {
         fail("Wrong arguments!\n");
@@ -141,10 +192,12 @@ int main(int argc, char *argv[])
     {
         pd = NULL;
         mp = CreateMsgPort();
+        NewList(&topology);
         psdLockReadPBase();
         while((pd = psdGetNextDevice(pd)))
         {
             psdLockReadDevice(pd);
+            devhub = NULL;
             devhubport = 0;
             devneedssplit = 0;
             devlowpower = 0;
@@ -193,6 +246,24 @@ int main(int argc, char *argv[])
                         DA_PowerSupply, &devpoweravail,
                         DA_DescriptorList, &descriptors,
                         TAG_END);
+            if(ArgsArray[ARGS_TOPOLOGY])
+            {
+                struct TopologyEntry *entry = AllocMem(sizeof(struct TopologyEntry), MEMF_CLEAR);
+
+                if(entry)
+                {
+                    entry->device = pd;
+                    entry->hub = devhub;
+                    entry->port = devhubport;
+                    entry->product = devprodname;
+                    entry->id = devidstr;
+                    entry->address = devadr;
+                    entry->devclass = devclass;
+                    entry->devsubclass = devsubclass;
+                    entry->devproto = devproto;
+                    AddTail(&topology, (struct Node *) entry);
+                }
+            }
             if(devhub)
             {
                 psdGetAttrs(PGA_DEVICE, devhub,
@@ -539,6 +610,16 @@ int main(int argc, char *argv[])
                    devvendorid, devprodid);
             psdUnlockDevice(pd);
             PutStr("---------------------------------------------------------------------------\n");
+        }
+        if(ArgsArray[ARGS_TOPOLOGY])
+        {
+            PutStr("USB device topology:\n");
+            PrintTopology(&topology, NULL, 0);
+            PutStr("---------------------------------------------------------------------------\n");
+        }
+        while((topologynode = RemHead(&topology)))
+        {
+            FreeMem(topologynode, sizeof(struct TopologyEntry));
         }
         psdUnlockPBase();
         DeleteMsgPort(mp);
