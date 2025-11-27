@@ -1,9 +1,9 @@
 #ifndef HARDWARE_XHCI_H
 #define HARDWARE_XHCI_H
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
  
-    Desc: XHCI USB Controllers specific definitions
+    Desc: xHCI USB Controllers specific definitions
 */
 
 #include <exec/types.h>
@@ -387,6 +387,48 @@ struct xhci_ce
     ULONG                       cparams;
     ULONG                       flags;
 }  __packed;
+
+/* TRB Completion Codes */
+enum {
+    TRB_CC_INVALID                        = 0,
+    TRB_CC_SUCCESS                        = 1,
+    TRB_CC_DATA_BUFFER_ERROR              = 2,
+    TRB_CC_BABBLE_DETECTED_ERROR          = 3,
+    TRB_CC_USB_TRANSACTION_ERROR          = 4,
+    TRB_CC_TRB_ERROR                      = 5,
+    TRB_CC_STALL_ERROR                    = 6,
+    TRB_CC_RESOURCE_ERROR                 = 7,
+    TRB_CC_BANDWIDTH_ERROR                = 8,
+    TRB_CC_NO_SLOTS_AVAILABLE_ERROR       = 9,
+    TRB_CC_INVALID_STREAM_TYPE_ERROR      = 10,
+    TRB_CC_SLOT_NOT_ENABLED_ERROR         = 11,
+    TRB_CC_ENDPOINT_NOT_ENABLED_ERROR     = 12,
+    TRB_CC_SHORT_PACKET                   = 13,
+    TRB_CC_RING_UNDERRUN                  = 14,
+    TRB_CC_RING_OVERRUN                   = 15,
+    TRB_CC_VF_EVENT_RING_FULL_ERROR       = 16,
+    TRB_CC_PARAMETER_ERROR                = 17,
+    TRB_CC_BANDWIDTH_OVERRUN_ERROR        = 18,
+    TRB_CC_CONTEXT_STATE_ERROR            = 19,
+    TRB_CC_NO_PING_RESPONSE_ERROR         = 20,
+    TRB_CC_EVENT_RING_FULL_ERROR          = 21,
+    TRB_CC_INCOMPATIBLE_DEVICE_ERROR      = 22,
+    TRB_CC_MISSED_SERVICE_ERROR           = 23,
+    TRB_CC_COMMAND_RING_STOPPED           = 24,
+    TRB_CC_COMMAND_ABORTED                = 25,
+    TRB_CC_STOPPED                        = 26,
+    TRB_CC_STOPPED_LENGTH_INVALID         = 27,
+    TRB_CC_STOPPED_SHORT_PACKET           = 28,
+    TRB_CC_MAX_EXIT_LATENCY_TOO_LARGE     = 29,
+    TRB_CC_ISOCH_BUFFER_OVERRUN           = 31,
+    TRB_CC_EVENT_LOST                     = 32,
+    TRB_CC_UNSUPPORTED_REQUEST_ERROR      = 33,
+    TRB_CC_PREVIOUS_STREAM_STOPPED        = 34,
+    TRB_CC_NEXT_STREAM_STOPPED            = 35,
+    TRB_CC_STREAM_ID_ERROR                = 36,
+    TRB_CC_SECONDARY_BANDWIDTH_ERROR      = 37,
+    TRB_CC_SPLIT_TRANSACTION_ERROR        = 38,
+};
 
 // Device related structures
 
