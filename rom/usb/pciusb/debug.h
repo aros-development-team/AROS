@@ -45,8 +45,8 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 #define KPRINTF(l,fmt,args...) ((void) 0)
 #define pciusbDebug(fmt,args...)
 #define DB(x)
-#endif
 #endif /* DEBUG */
+#endif
 #if defined(AROS_USE_LOGRES)
 #define pciusbInfo(sub, fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Information | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
 #define pciusbWarn(sub, fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Warn | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
@@ -68,17 +68,23 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 //#define PCIUSB_XHCI_DEBUG
 //#define XHCI_LONGDEBUGNAK
 #endif
-
 #if !defined(AROS_USE_LOGRES) && defined(PCIUSB_ANSI_DEBUG)
 #define DEBUGCOLOR_SET                          "\033[32m"
 #define DEBUGWARNCOLOR_SET                      "\033[31m"
 #define DEBUGFUNCCOLOR_SET                      "\033[32;1m"
 #define DEBUGCOLOR_RESET                        "\033[0m"
-#else
-#define DEBUGCOLOR_SET
-#define DEBUGWARNCOLOR_SET
-#define DEBUGFUNCCOLOR_SET
-#define DEBUGCOLOR_RESET
+#endif
 #endif
 
+#ifndef DEBUGCOLOR_SET
+#define DEBUGCOLOR_SET
+#endif
+#ifndef DEBUGWARNCOLOR_SET
+#define DEBUGWARNCOLOR_SET
+#endif
+#ifndef DEBUGFUNCCOLOR_SET
+#define DEBUGFUNCCOLOR_SET
+#endif
+#ifndef DEBUGCOLOR_RESET
+#define DEBUGCOLOR_RESET
 #endif
