@@ -237,26 +237,26 @@ struct IOUsbHWBufferReq
  * -------------------------------------------------------------------- */
 
 /* Allowed states / capabilities (bitwise OR) */
-#define USBPWR_ALLOW_L1         0x0001  /* Allow USB 2.0 LPM (L1) while active   */
-#define USBPWR_ALLOW_U1         0x0002  /* Allow USB 3.x U1 while active         */
-#define USBPWR_ALLOW_U2         0x0004  /* Allow USB 3.x U2 while active         */
-#define USBPWR_ALLOW_U3         0x0008  /* Allow USB 3.x U3 (device suspend)     */
+#define USBPWR_ALLOW_L1         0x0001          /* Allow USB 2.0 LPM (L1) while active                                                              */
+#define USBPWR_ALLOW_U1         0x0002          /* Allow USB 3.x U1 while active                                                                    */
+#define USBPWR_ALLOW_U2         0x0004          /* Allow USB 3.x U2 while active                                                                    */
+#define USBPWR_ALLOW_U3         0x0008          /* Allow USB 3.x U3 (device suspend)                                                                */
 
 #define USBPWR_ALLOW_MASK       0x000F
 
-/* Policy preference (mutually exclusive “mode”) */
+/* Policy preference (mutually exclusive "mode") */
 #define USBPWR_POLICY_MASK      0x0070
-#define USBPWR_POLICY_DEFAULT   0x0000  /* Use controller’s / OS global default  */
-#define USBPWR_POLICY_PERF      0x0010  /* Prefer performance (less power save)  */
-#define USBPWR_POLICY_BALANCED  0x0020  /* Balanced power/performance (default)  */
-#define USBPWR_POLICY_POWERSAVE 0x0030  /* Prefer power saving (more L1/U1/U2)   */
+#define USBPWR_POLICY_DEFAULT   0x0000          /* Use controller's / OS global default                                                             */
+#define USBPWR_POLICY_PERF      0x0010          /* Prefer performance (less power save)                                                             */
+#define USBPWR_POLICY_BALANCED  0x0020          /* Balanced power/performance (default)                                                             */
+#define USBPWR_POLICY_POWERSAVE 0x0030          /* Prefer power saving (more L1/U1/U2)                                                              */
 
 /* Behaviour flags */
-#define USBPWR_FLAG_NO_REMOTE_WAKE 0x0100 /* Don’t arm remote wake/signal resume */
-#define USBPWR_FLAG_NO_AUTOSUSPEND 0x0200 /* Don’t autosuspend this endpoint     */
+#define USBPWR_FLAG_NO_REMOTE_WAKE 0x0100       /* Don't arm remote wake/signal resume                                                              */
+#define USBPWR_FLAG_NO_AUTOSUSPEND 0x0200       /* Don't autosuspend this endpoint                                                                  */
 
-/* Predefined “profiles” (for convenience) */
-#define USBPWR_PROFILE_LEGACY    0x0000  /* No low power states, policy default  */
+/* Predefined "profiles" (for convenience) */
+#define USBPWR_PROFILE_LEGACY    0x0000         /* No low power states, policy default                                                              */
 #define USBPWR_PROFILE_USB2_LPM  (USBPWR_ALLOW_L1 | USBPWR_POLICY_BALANCED)
 #define USBPWR_PROFILE_USB3_LPM  (USBPWR_ALLOW_U1 | USBPWR_ALLOW_U2 | USBPWR_POLICY_BALANCED)
 
