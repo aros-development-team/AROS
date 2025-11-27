@@ -104,6 +104,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
     }
     return -1;
 }
+
 LONG xhciCmdSubmitAsync(struct PCIController *hc,
                         APTR dmaaddr,
                         ULONG trbflags,

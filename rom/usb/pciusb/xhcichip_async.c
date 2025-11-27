@@ -18,9 +18,6 @@
 #include "uhwcmd.h"
 #include "xhciproto.h"
 
-#undef base
-#define base (hc->hc_Device)
-
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
 #else
@@ -112,7 +109,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
-#if (1)
+#if defined(DEBUG) && (DEBUG > 1)
     struct Task * thisTask = FindTask(NULL);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Task @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n", thisTask, thisTask->tc_IDNestCnt, thisTask->tc_TDNestCnt);
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver hc port support functions
 */
@@ -14,9 +14,6 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
-
-#undef base
-#define base (hc->hc_Device)
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)

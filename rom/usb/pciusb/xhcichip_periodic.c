@@ -49,9 +49,6 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq, *ionext;
     UWORD devadrep;
-#if (0)
-    BOOL doCompletion = FALSE;
-#endif
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
@@ -219,76 +216,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             }
         }
     }
-#if (0)
-    if (doCompletion)
-        SureCause(base, &hc->hc_CompleteInt);
-#endif
 }
-#if (0)
-{
-    struct PCIUnit *unit = hc->hc_Unit;
-    struct IOUsbHWReq *ioreq;
-    UWORD devadrep;
-
-    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
-
-    /* *** INT Transfers *** */
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Scheduling new INT transfers..." DEBUGCOLOR_RESET" \n");
-    ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
-    while(((struct Node *) ioreq)->ln_Succ) {
-        devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "New INT transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
-
-        /* is endpoint already in use or do we have to wait for next transaction */
-        if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbWarn("xHCI", DEBUGCOLOR_SET "Endpoint %02lx in use!" DEBUGCOLOR_RESET" \n", devadrep);
-            ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
-            continue;
-        }
-
-        if(ioreq->iouh_Flags & UHFF_SPLITTRANS) {
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "*** SPLIT TRANSACTION to HubPort %ld at Addr %ld" DEBUGCOLOR_RESET" \n", ioreq->iouh_SplitHubPort, ioreq->iouh_SplitHubAddr);
-
-            // full speed and low speed handling
-            if(ioreq->iouh_Flags & UHFF_LOWSPEED) {
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "*** LOW SPEED ***" DEBUGCOLOR_RESET" \n");
-            }
-
-            if(ioreq->iouh_Interval >= 255) {
-
-            } else {
-#if (0)
-                cnt = 0;
-                do {
-
-                } while(ioreq->iouh_Interval >= (1<<cnt));
-#endif
-            }
-        } else {
-
-        }
-
-        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-//        ioreq->iouh_DriverPrivate1 = eqh;
-
-        // manage endpoint going busy
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
-        unit->hu_DevBusyReq[devadrep] = ioreq;
-        unit->hu_NakTimeoutFrame[devadrep] =
-            (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
-
-        Disable();
-        AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
-
-        /****** Insert the transfer ************/
-
-        Enable();
-
-        ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
-    }
-}
-#endif
 
 WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {

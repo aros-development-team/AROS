@@ -271,7 +271,7 @@ static struct pcisusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc,
                     UWORD rootPortIndex,   /* 0-based */
                     ULONG route,           /* 20-bit route string (0 for root) */
-                    ULONG flags,           /* UHFF_* speed flags */
+                    ULONG flags,           /* UHFF_* speed / hub flags */
                     UWORD mps0)            /* initial EP0 max packet size */
 {
     struct pcisusbXHCIDevice *devCtx;
@@ -338,14 +338,20 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     /* ---- Fill Slot Context ---- */
 
     /* Root port (1-based) */
+    islot->ctx[1] &= ~(0xFFUL << 16);
     islot->ctx[1] |= (((rootPortIndex + 1) & 0xFF) << 16);
 
-    /* Route string */
+    /* Route string (20 bits) */
     islot->ctx[0] &= ~SLOT_CTX_ROUTE_MASK;
     islot->ctx[0] |= (route & SLOT_CTX_ROUTE_MASK);
 
-    /* Speed bits */
-    islot->ctx[0] &= ~(0xF << SLOTS_CTX_SPEED);
+    /* Hub? */
+    if (flags & UHFF_HUB)
+        islot->ctx[0] |= (1 << 26);
+
+    /* Speed bits + MTT bit */
+    islot->ctx[0] &= ~(0xFUL << SLOTS_CTX_SPEED);
+    islot->ctx[0] &= ~SLOTF_CTX_MTT;
 
     if (flags & UHFF_SUPERSPEED)
         islot->ctx[0] |= SLOTF_CTX_SUPERSPEED;
@@ -355,6 +361,21 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         islot->ctx[0] |= SLOTF_CTX_LOWSPEED;
     else
         islot->ctx[0] |= SLOTF_CTX_FULLSPEED;
+
+    /* Multi-TT hub? */
+    if (flags & UHFF_TT_MULTI)
+        islot->ctx[0] |= SLOTF_CTX_MTT;
+
+    /* simple per-device max transfer tuning based on speed. */
+    if (flags & UHFF_SUPERSPEED) {
+        devCtx->dx_TxMax = 1024 * 16;   /* generous default for SS */
+    } else if (flags & UHFF_HIGHSPEED) {
+        devCtx->dx_TxMax = 512 * 13;    /* HS worst-case per microframe */
+    } else if (flags & UHFF_LOWSPEED) {
+        devCtx->dx_TxMax = 8 * 1;       /* LS: very small payloads */
+    } else {
+        devCtx->dx_TxMax = 64 * 19;     /* FS: conservative default */
+    }
 
     /* ---- Enable Slot ---- */
     slotid = xhciCmdSlotEnable(hc);
@@ -674,91 +695,159 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
     unit->hu_NakTimeoutFrame[devadrep] = 0;
 }
 
+static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
+{
+    switch (cc) {
+    case TRB_CC_SUCCESS:                                        /* Success */
+        ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR;
+        if (ioreq->iouh_Req.io_Command == UHCMD_INTXFER) {
+            /*
+             * For periodic transfers (INT/ISO), we usually care
+             * only that something arrived.
+             */
+            ioreq->iouh_Actual = ioreq->iouh_Length;
+        }
+        break;
+
+    case TRB_CC_BABBLE_DETECTED_ERROR:                          /* Data Buffer Error / Babble */
+        ioreq->iouh_Req.io_Error = UHIOERR_BABBLE;
+        break;
+
+    case TRB_CC_STALL_ERROR:                                    /* Stall */
+        ioreq->iouh_Req.io_Error = UHIOERR_STALL;
+        break;
+
+    case TRB_CC_PARAMETER_ERROR:                                /* Parameter Error */
+        ioreq->iouh_Req.io_Error = UHIOERR_BADPARAMS;
+        break;
+
+    case TRB_CC_NO_PING_RESPONSE_ERROR:                         /* No Ping Response / NAK timeout equivalent */
+        ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
+        break;
+
+    default:
+        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+        break;
+    }
+}
+
 void xhciHandleFinishedTDs(struct PCIController *hc)
 {
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq, *nextioreq;
     struct pciusbXHCIIODevPrivate *driprivate;
     UWORD devadrep;
-    ULONG actual;
     BOOL transactiondone;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
+    /* PERIODIC (INT/ISO) COMPLETIONS */
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Periodic work done..." DEBUGCOLOR_RESET" \n");
-    ioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
-    while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ)) {
+    ioreq = (struct IOUsbHWReq *)hc->hc_PeriodicTDQueue.lh_Head;
+    while ((nextioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
-#if (0)
-        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
-#endif
-            transactiondone = FALSE;
-            devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+        transactiondone = FALSE;
 
-            if(unit->hu_NakTimeoutFrame[devadrep] && (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
-                pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "xHCI: Periodic NAK timeout (%u)" DEBUGCOLOR_RESET" \n", unit->hu_NakTimeoutFrame[devadrep]);
-                ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                transactiondone = TRUE;
-            }
+        /* DevEP index for timeouts */
+        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint
+                   + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
 
-            if (transactiondone) {
-                ioreq->iouh_Actual += actual;
-                xhciFreePeriodicContext(hc, unit, ioreq);
-                ReplyMsg(&ioreq->iouh_Req.io_Message);
-            }
-#if (0)
+        /*
+         * Completion via TRB completion code (dpCC > 0).
+         * This is what happens for hub status-change interrupts.
+         */
+        if (driprivate && (driprivate->dpCC > TRB_CC_INVALID)) {
+            pciusbXHCIDebug("xHCI",
+                            DEBUGCOLOR_SET "Periodic IOReq Complete (completion code %u)!"
+                            DEBUGCOLOR_RESET" \n",
+                            driprivate->dpCC);
+            transactiondone = TRUE;
+
+            xhciIOErrfromCC(ioreq, driprivate->dpCC);
+
+            /* Clear the timeout slot once we have a completion */
+            unit->hu_NakTimeoutFrame[devadrep] = 0;
+
+        } else if (unit->hu_NakTimeoutFrame[devadrep] &&
+                   (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
+            /*
+             * Legacy NAK timeout handling for periodic transfers.
+             * This is the only path that previously fired.
+             */
+            pciusbWarn("xHCI",
+                       DEBUGWARNCOLOR_SET "xHCI: Periodic NAK timeout (%u)"
+                       DEBUGCOLOR_RESET" \n",
+                       unit->hu_NakTimeoutFrame[devadrep]);
+            ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
+            transactiondone = TRUE;
+            unit->hu_NakTimeoutFrame[devadrep] = 0;
         }
-#endif
+
+        if (transactiondone) {
+            if (!ioreq->iouh_Req.io_Error &&
+                ioreq->iouh_Req.io_Command == UHCMD_INTXFER &&
+                ioreq->iouh_Length > 0 &&
+                ioreq->iouh_Data) {
+                UBYTE *p = (UBYTE *)ioreq->iouh_Data;
+                pciusbXHCIDebug("xHCI",
+                    "Hub INT data (addr=%u, ep=%u): first byte = 0x%02x\n",
+                    ioreq->iouh_DevAddr,
+                    ioreq->iouh_Endpoint,
+                    p[0]);
+            }
+            /*
+             * Free periodic context (EP ring bookkeeping etc.) and
+             * notify the upper layers. Hub.class will typically
+             * resubmit the interrupt transfer if it wants continuous
+             * status change notifications.
+             */
+            xhciFreePeriodicContext(hc, unit, ioreq);
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+        }
+
         ioreq = nextioreq;
     }
 
+    /* ASYNC (CTRL/BULK) COMPLETIONS */
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Standard work done..." DEBUGCOLOR_RESET" \n");
-    ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-    while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ)) {
+    ioreq = (struct IOUsbHWReq *)hc->hc_TDQueue.lh_Head;
+    while ((nextioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
-        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
+        driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+        if (driprivate) {
             transactiondone = FALSE;
-            devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+            devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint
+                       + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
 
             if (driprivate->dpCC > 0) {
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "IOReq Complete (completion code %u)!" DEBUGCOLOR_RESET" \n", driprivate->dpCC);
+                pciusbXHCIDebug("xHCI",
+                                DEBUGCOLOR_SET "IOReq Complete (completion code %u)!"
+                                DEBUGCOLOR_RESET" \n",
+                                driprivate->dpCC);
                 transactiondone = TRUE;
-                switch (driprivate->dpCC) {
-                case 1:
-                    ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR;
-                    break;
+                
+                xhciIOErrfromCC(ioreq, driprivate->dpCC);
 
-                case 3:
-                    ioreq->iouh_Req.io_Error = UHIOERR_BABBLE;
-                    break;
+                unit->hu_NakTimeoutFrame[devadrep] = 0;
 
-                case 6:
-                    ioreq->iouh_Req.io_Error = UHIOERR_STALL;
-                    break;
-
-                case 17:
-                    ioreq->iouh_Req.io_Error = UHIOERR_BADPARAMS;                                       // Param Error
-                    break;
-
-                case 20:
-                    ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;                                      // No Ping Response
-                    break;
-
-                default:
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    break;
-                }
-            } else if(unit->hu_NakTimeoutFrame[devadrep] && (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
-                pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "xHCI: Async NAK timeout (%u)" DEBUGCOLOR_RESET" \n", unit->hu_NakTimeoutFrame[devadrep]);
+            } else if (unit->hu_NakTimeoutFrame[devadrep] &&
+                       (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
+                pciusbWarn("xHCI",
+                           DEBUGWARNCOLOR_SET "xHCI: Async NAK timeout (%u)"
+                           DEBUGCOLOR_RESET" \n",
+                           unit->hu_NakTimeoutFrame[devadrep]);
                 ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
                 transactiondone = TRUE;
+                unit->hu_NakTimeoutFrame[devadrep] = 0;
             }
 
             if (transactiondone) {
                 xhciFreeAsyncContext(hc, unit, ioreq);
-                if((!ioreq->iouh_Req.io_Error) && (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)) {
+                if ((!ioreq->iouh_Req.io_Error) &&
+                    (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)) {
                     uhwCheckSpecialCtrlTransfers(hc, ioreq);
                 }
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -1109,7 +1198,6 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     xhciDumpIR(xhciir);
 }
 
-
 AROS_UFH0(void, xhciControllerTask)
 {
     AROS_USERFUNC_INIT
@@ -1118,8 +1206,8 @@ AROS_UFH0(void, xhciControllerTask)
     struct PCIController *hc;
     struct Task *thistask;
     struct pcisusbXHCIDevice *devCtx;
-    ULONG	sigmask, portsc;
-    UWORD	hciport;
+    ULONG portsc;
+    UWORD hciport;
 
     thistask = FindTask(NULL);
     hc = thistask->tc_UserData;
@@ -1137,28 +1225,32 @@ AROS_UFH0(void, xhciControllerTask)
 
     for (;;) {
         ULONG xhcictsigs = Wait((1 << hc->hc_DoWorkSignal) | (1 << hc->hc_PortChangeSignal));
-#if (1)
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xhciControllerTask @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n", thistask, thistask->tc_IDNestCnt, thistask->tc_TDNestCnt);
+#if defined(DEBUG) && (DEBUG > 1)
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "xhciControllerTask @ 0x%p, IDnest %d TDNest %d"
+                        DEBUGCOLOR_RESET" \n",
+                        thistask, thistask->tc_IDNestCnt, thistask->tc_TDNestCnt);
 #endif
 
         if (xhcictsigs & (1 << hc->hc_DoWorkSignal)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
             xhciHandleFinishedTDs(hc);
 
-            if(hc->hc_IntXFerQueue.lh_Head->ln_Succ) {
+            if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);
-            }
-            if(hc->hc_CtrlXFerQueue.lh_Head->ln_Succ) {
+
+            if (hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleAsyncTDs(hc, &hc->hc_CtrlXFerQueue, UHCMD_CONTROLXFER);
-            }
-            if(hc->hc_BulkXFerQueue.lh_Head->ln_Succ) {
+
+            if (hc->hc_BulkXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleAsyncTDs(hc, &hc->hc_BulkXFerQueue, UHCMD_BULKXFER);
-            }
         }
+
         if (xhcictsigs & (1 << hc->hc_PortChangeSignal)) {
             for (hciport = 0; hciport < hc->hc_NumPorts; hciport++) {
                 portsc = AROS_LE2LONG(xhciports[hciport].portsc);
                 devCtx = xhciFindPortDevice(hc, hciport);
+
                 if ((portsc & XHCIF_PR_PORTSC_PED) && (!devCtx)) {
                     UWORD rootPort = hciport;     /* 0-based */
                     ULONG route    = 0;           /* root-attached */
@@ -1172,7 +1264,7 @@ AROS_UFH0(void, xhciControllerTask)
                         flags |= UHFF_LOWSPEED;
                         mps0   = 8;              /* LS EP0 = 8 bytes */
                     } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
-                        /* Full speed: EP0 is 8,16,32,64 – use 8 until we see bMaxPacketSize0 */
+                        /* FS EP0 is 8/16/32/64 – start with 8 until bMaxPacketSize0 is known */
                         mps0   = 8;
                     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
                         flags |= UHFF_HIGHSPEED;
@@ -1181,18 +1273,31 @@ AROS_UFH0(void, xhciControllerTask)
                         flags |= UHFF_SUPERSPEED;
                         mps0   = 512;            /* SS EP0 max packet size */
                     } else {
-                        /* Unknown/invalid speed – leave defaults, let enumeration sort it out */
+                        /* Unknown/invalid speed – leave defaults, enumeration will adjust */
                     }
-                    devCtx = xhciCreateDeviceCtx(hc, rootPort, route, flags, mps0);
-                    if (devCtx)
+
+                    /* Root hub device: always a hub from the HC’s perspective */
+                    devCtx = xhciCreateDeviceCtx(hc,
+                                                 rootPort,
+                                                 route,
+                                                 flags | UHFF_HUB,
+                                                 mps0);
+                    if (devCtx) {
+                        /* Root port “device” lives on this controller */
                         hc->hc_Unit->hu_DevControllers[0] = hc;
-                } else if ((!(portsc & XHCIF_PR_PORTSC_PED)) && (devCtx)) {
+                    }
+                } else if (!(portsc & XHCIF_PR_PORTSC_PED) && devCtx) {
                     if ((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX))
                         hc->hc_Devices[devCtx->dc_SlotID] = NULL;
 
-                    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n", devCtx);
+                    pciusbXHCIDebug("xHCI",
+                                    DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p"
+                                    DEBUGCOLOR_RESET" \n",
+                                    devCtx);
 
-                    xhciSetPointer(hc, ((volatile struct xhci_address *)hc->hc_DCBAAp)[devCtx->dc_SlotID], 0);
+                    xhciSetPointer(hc,
+                                   ((volatile struct xhci_address *)hc->hc_DCBAAp)[devCtx->dc_SlotID],
+                                   0);
                     if (devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr)
                         FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr);
                     if (devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr)
