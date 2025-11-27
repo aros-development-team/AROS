@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
     Desc: XHCI chipset driver debug functions
 */
@@ -15,6 +15,9 @@
 #include "uhwcmd.h"
 #include "xhciproto.h"
 
+/* Debug functions */
+#if defined(PCIUSB_XHCI_DEBUG)
+
 #undef base
 #define base (hc->hc_Device)
 
@@ -26,10 +29,6 @@
 //#define XHCI_ENABLEPORTDEBUG
 //#define XHCI_ENABLECCDEBUG
 #endif
-
-/* Debug functions */
-#if defined(DEBUG) && (DEBUG > 0)
-
 void xhciDumpIN(volatile struct xhci_inctx *in)
 {
 #if defined(XHCI_ENABLEINDEBUG)
@@ -327,5 +326,5 @@ void xhciDumpCC(UBYTE cc)
     };
 #endif
 }
-#endif
+#endif /* PCIUSB_XHCI_DEBUG */
 #endif /* PCIUSB_ENABLEXHCI */
