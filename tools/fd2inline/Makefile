@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CPPFLAGS := '-DVERSION="1.39"'
-USER_CFLAGS := -Wall -Wstrict-prototypes -g -O2
+USER_CFLAGS := -Wall -Wstrict-prototypes -std=c11 -g -O2
 
 all : $(FD2INLINE)
 
