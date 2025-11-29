@@ -1,7 +1,7 @@
 /*
  * wpa_supplicant/hostapd / OS specific functions for Amiga-like systems
  * Copyright (c) 2005-2006, Jouni Malinen <j@w1.fi>
- * Copyright (c) 2010-2011, Neil Cafferkey
+ * Copyright (c) 2010-2025, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -32,9 +32,11 @@ void os_sleep(os_time_t sec, os_time_t usec)
 
 int os_get_time(struct os_time *t)
 {
+	time_t sec;
 	struct DateStamp ds;
 	DateStamp(&ds);
-	time((time_t *)&t->sec);
+	time(&sec);
+	t->sec = sec;
 	t->usec = ds.ds_Tick % TICKS_PER_SECOND * 20000;
 	return 0;
 }

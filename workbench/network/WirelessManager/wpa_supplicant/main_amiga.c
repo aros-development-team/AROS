@@ -45,7 +45,7 @@ typedef LONG PINT;
 #endif
 
 static const TEXT template[] = "DEVICE/A,UNIT/K/N,CONFIG/K,VERBOSE/S,NOGUI/S";
-const TEXT version_string[] = "$VER: WirelessManager 1.7 (12.10.2025)";
+const TEXT version_string[] = "$VER: WirelessManager 1.8 (29.11.2025)";
 static const TEXT config_file_name[] = "ENV:Sys/Wireless.prefs";
 
 
@@ -139,7 +139,6 @@ int main(int argc, char *argv[])
 out:
 	os_free(ifaces);
 
-//	os_program_deinit();
 #ifdef MUI_GUI
 	stop_gui();
 #endif
@@ -152,6 +151,8 @@ out:
 
 	if (error != 0)
 		exitcode = RETURN_FAIL;
+
+	os_program_deinit();
 
 	return exitcode;
 }
