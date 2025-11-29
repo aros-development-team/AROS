@@ -1,0 +1,28 @@
+diff -ruN gmp-6.3.0/configure gmp-6.3.0.aros/configure
+--- gmp-6.3.0/configure	2023-07-29 15:42:22.000000000 +0200
++++ gmp-6.3.0.aros/configure	2025-11-28 18:43:53.234968323 +0100
+@@ -4088,8 +4088,8 @@
+ #
+ cclist="gcc cc"
+ 
+-gcc_cflags="-O2 -pedantic"
+-gcc_64_cflags="-O2 -pedantic"
++gcc_cflags="-O2 -pedantic -std=gnu11"
++gcc_64_cflags="-O2 -pedantic -std=gnu11"
+ cc_cflags="-O"
+ cc_64_cflags="-O"
+ 
+diff -ruN gmp-6.3.0/configure.ac gmp-6.3.0.aros/configure.ac
+--- gmp-6.3.0/configure.ac	2023-07-29 15:42:16.000000000 +0200
++++ gmp-6.3.0.aros/configure.ac	2025-11-28 21:02:27.965994714 +0100
+@@ -465,8 +465,8 @@
+ #
+ cclist="gcc cc"
+ 
+-gcc_cflags="-O2 -pedantic"
+-gcc_64_cflags="-O2 -pedantic"
++gcc_cflags="-O2 -pedantic -std=gnu11"
++gcc_64_cflags="-O2 -pedantic -std=gnu11"
+ cc_cflags="-O"
+ cc_64_cflags="-O"
+ 

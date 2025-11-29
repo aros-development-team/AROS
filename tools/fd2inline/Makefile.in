@@ -27,7 +27,7 @@ RANLIB =		@RANLIB@
 AWK =			@AWK@
 DEFS =			@DEFS@
 LIBS =			@LIBS@
-CFLAGS =		$(DEFS) -Wall -Wstrict-prototypes \
+CFLAGS =		$(DEFS) -Wall -Wstrict-prototypes -std=c11 \
 			'-DVERSION="$(VERSION)"' @CFLAGS@
 LDFLAGS =		@LDFLAGS@
 

@@ -200,7 +200,7 @@ tools-crosstools-gmp :
 
 %fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gmp" \
-	patch=no \
+	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
 
