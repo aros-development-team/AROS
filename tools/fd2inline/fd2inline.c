@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 /******************************************************************************
  * The program has a few sort of class definitions, which are the result of
