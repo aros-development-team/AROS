@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2013 Neil Cafferkey
+Copyright (C) 2004-2019 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -103,7 +103,6 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
       context->card = card =
          base->i_pci->FindDeviceTags(FDT_CandidateList, product_codes,
          FDT_Index, index, TAG_END);
-      context->id = card->ReadConfigWord(PCI_DEVICE_ID);
       if(card == NULL)
          success = FALSE;
    }
@@ -118,9 +117,10 @@ struct BusContext *AllocExpansionCard(ULONG index, struct DevBase *base)
       card->WriteConfigWord(PCI_COMMAND,
          PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER); /* For PegII */
 
-      /* Get the I/O base of the wireless chip */
+      /* Get the device ID and I/O base of the wireless chip */
 
       context->have_card = TRUE;
+      context->id = card->ReadConfigWord(PCI_DEVICE_ID);
       card->SetEndian(PCI_MODE_LITTLE_ENDIAN);
       io_range = card->GetResourceRange(BAR_NO);
       context->io_base = io_range->BaseAddress;

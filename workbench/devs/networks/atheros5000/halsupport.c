@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010-2012 Neil Cafferkey
+Copyright (C) 2010-2019 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ MA 02111-1307, USA.
 */
 
 
-#include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 

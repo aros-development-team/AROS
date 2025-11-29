@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2006-2008 Neil Cafferkey
+Copyright (C) 2006-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ BYTE DevOpen(REG(a1, struct IOSana2Req *request),
 APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
-APTR DevReserved(struct DevBase *dev_base);
+APTR DevReserved(REG(BASE_REG, struct DevBase *base));
 VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 VOID DevAbortIO(REG(a1, struct IOSana2Req *request),

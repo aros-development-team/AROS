@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,45 +32,23 @@ MA 02111-1307, USA.
 #include <devices/sana2wireless.h>
 #include <devices/timer.h>
 
-#include "wireless.h"
+#include "compatibility.h"
+#include "endian.h"
 #include "io.h"
+#include "ethernet.h"
+#include "wireless.h"
+#include "encryption.h"
 
 #define DEVICE_NAME "atheros5000.device"
 #define VERSION 1
-#define REVISION 5
-#define DATE "30.8.2013"
+#define REVISION 6
+#define DATE "28.11.2025"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
 #define EXPANSION_VERSION 50
 #define OPENPCI_VERSION 1
 #define DOS_VERSION 36
-
-#ifndef UPINT
-#ifdef __AROS__
-typedef IPTR UPINT;
-typedef SIPTR PINT;
-#else
-typedef ULONG UPINT;
-typedef LONG PINT;
-#endif
-#endif
-
-#ifndef REG
-#if defined(__mc68000) && !defined(__AROS__)
-#define _REG(A, B) B __asm(#A)
-#define REG(A, B) _REG(A, B)
-#else
-#define REG(A, B) B
-#endif
-#endif
-
-#define _STR(A) #A
-#define STR(A) _STR(A)
-
-#ifndef __AROS__
-#define USE_HACKS
-#endif
 
 
 struct DevBase
@@ -109,80 +87,16 @@ enum
 
 enum
 {
-   PCI_BUS,
+   PCI_BUS
 };
-
-#define ETH_ADDRESSSIZE 6
-#define ETH_HEADERSIZE 14
-#define ETH_MTU 1500
-#define ETH_MAXPACKETSIZE (ETH_HEADERSIZE + ETH_MTU)
-
-#define ETH_PACKET_DEST 0
-#define ETH_PACKET_SOURCE 6
-#define ETH_PACKET_TYPE 12
-#define ETH_PACKET_IEEELEN 12
-#define ETH_PACKET_DATA 14
-
-#define SNAP_HEADERSIZE 8
-
-#define SNAP_FRM_TYPE 6
-
-#define IV_SIZE 4
-#define EIV_SIZE 8
-#define ICV_SIZE 4
-#define MIC_SIZE 8
-#define FCS_SIZE 4
 
 #define STAT_COUNT 3
 #define ENC_COUNT 4
 
 #define FRAME_BUFFER_COUNT 10
-#define TX_SLOT_COUNT /* 200 */ 10
-#define MGMT_SLOT_COUNT 10
-#define RX_SLOT_COUNT /* 200 */ 10
-
-
-struct KeyUnion
-{
-   UWORD type;
-   union
-   {
-      struct WEPKey
-      {
-         UWORD length;
-         UBYTE key[13];
-         ULONG tx_iv;
-      }
-      wep;
-      struct TKIPKey
-      {
-         UWORD key[8];
-         ULONG tx_mic_key[2];
-         ULONG rx_mic_key[2];
-         UWORD tx_iv_low;
-         ULONG tx_iv_high;
-         UWORD rx_iv_low;
-         ULONG rx_iv_high;
-         UWORD tx_ttak[5];
-         BOOL tx_ttak_set;
-         UWORD rx_ttak[5];
-         BOOL rx_ttak_set;
-      }
-      tkip;
-      struct CCMPKey
-      {
-         UBYTE key[16];
-         BOOL stream_set;
-         ULONG stream[44];
-         UWORD tx_iv_low;
-         ULONG tx_iv_high;
-         UWORD rx_iv_low;
-         ULONG rx_iv_high;
-      }
-      ccmp;
-   }
-   u;
-};
+#define TX_SLOT_COUNT 2
+#define MGMT_SLOT_COUNT 2
+#define RX_SLOT_COUNT 40
 
 
 struct DevUnit
@@ -329,75 +243,14 @@ struct AddressRange
 #define UNITF_HARDWEP (1 << 6)
 #define UNITF_HARDTKIP (1 << 7)
 #define UNITF_HARDMIC (1 << 8)
-//#define UNITF_SPLITMIC (1 << 9)
-#define UNITF_HARDAESOCB (1 << 9)
-#define UNITF_ALLMCAST (1 << 10)
-#define UNITF_HASADHOC (1 << 11)
-#define UNITF_HARDCCMP (1 << 12)
-#define UNITF_SPLITMIC (1 << 13)
+#define UNITF_HARDCCMP (1 << 9)
+#define UNITF_SHORTPREAMBLE (1 << 10)
+#define UNITF_SLOWRETRIES (1 << 11)
+#define UNITF_ALLMCAST (1 << 12)
+#define UNITF_HASADHOC (1 << 13)
 #define UNITF_INTADDED (1 << 14)
-#define UNITF_RESETADDED (1 << 15)
-#define UNITF_SHORTPREAMBLE (1 << 16)
-#define UNITF_SLOWRETRIES (1 << 17)
-#define UNITF_TASKADDED (1 << 18)
-
-
-/* Endianness macros */
-
-#define FlipWord(A) \
-   ({ \
-      UWORD _FlipWord_A = (A); \
-      _FlipWord_A = (_FlipWord_A << 8) | (_FlipWord_A >> 8); \
-   })
-
-#define FlipLong(A) \
-   ({ \
-      ULONG _FlipLong_A = (A); \
-      _FlipLong_A = \
-         (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
-   })
-
-#ifndef __i386__ /* Big endian */
-
-#define BEWord(A) \
-   (A)
-
-#define BELong(A) \
-   (A)
-
-#define LEWord(A) \
-   FlipWord(A)
-
-#define LELong(A) \
-   FlipLong(A)
-
-#else
-
-#define BEWord(A) \
-   FlipWord(A)
-
-#define BELong(A) \
-   FlipLong(A)
-
-#define LEWord(A) \
-   (A)
-
-#define LELong(A) \
-   (A)
-
-#endif
-
-#define MakeBEWord(A) \
-   BEWord(A)
-
-#define MakeBELong(A) \
-   BELong(A)
-
-#define MakeLEWord(A) \
-   LEWord(A)
-
-#define MakeLELong(A) \
-   LELong(A)
+#define UNITF_TASKADDED (1 << 15)
+#define UNITF_RESETADDED (1 << 16)
 
 
 /* Library and device bases */
@@ -415,10 +268,6 @@ struct AddressRange
 #define IUtility (base->i_utility)
 #define IDOS (base->i_dos)
 #define ITimer (base->i_timer)
-#endif
-
-#ifndef BASE_REG
-#define BASE_REG a6
 #endif
 
 extern struct DevBase *hal_dev_base;

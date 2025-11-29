@@ -1919,6 +1919,7 @@ VOID RC4Encrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
 }
 
 
+
 /****i* prism2.device/RC4Decrypt *******************************************
 *
 *   NAME
@@ -1979,6 +1980,7 @@ BOOL RC4Decrypt(struct DevUnit *unit, const UBYTE *data, UWORD size,
 
    return ~crc == LELong(*(ULONG *)(q - 4));
 }
+
 
 
 /****i* prism2.device/EOREncrypt *******************************************
