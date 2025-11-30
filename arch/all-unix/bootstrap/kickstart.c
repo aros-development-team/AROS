@@ -41,7 +41,7 @@
  * Cold reboot is the same as before, re-running everything from scratch.
  * Shutdown is just plain exit.
  */
-int kick(int (*addr)(), struct TagItem *msg)
+int kick(kernel_entry_fun_t addr, struct TagItem *msg)
 {
     int i;
     
