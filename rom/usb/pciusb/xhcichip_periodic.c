@@ -265,12 +265,53 @@ WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
+    if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return UHIOERR_BADPARAMS;
+
+    for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+
+        if (ptd) {
+            if (ptd->ptd_Descriptor)
+                FreeMem(ptd->ptd_Descriptor, sizeof(struct pciusbXHCITRBParams));
+
+            FreeMem(ptd, sizeof(struct PTDNode));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
+
+        ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        if (!ptd)
+            goto fail;
+
+        ptd->ptd_Descriptor = AllocMem(sizeof(struct pciusbXHCITRBParams), MEMF_CLEAR);
+        if (!ptd->ptd_Descriptor) {
+            FreeMem(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[idx] = NULL;
+            goto fail;
+        }
+
+        rtn->rtn_PTDs[idx] = ptd;
+    }
+
+    rtn->rtn_NextPTD = 0;
+    rtn->rtn_BounceBuffer = NULL;
+
     return RC_OK;
+
+fail:
+    xhciFreeIsochIO(hc, rtn);
+    return UHIOERR_OUTOFMEMORY;
 }
 
 WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+
+    rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
+    rtn->rtn_BufferReq.ubr_Frame = hc->hc_FrameCounter + 1;
+    rtn->rtn_BufferReq.ubr_Flags = 0;
+
+    rtn->rtn_NextPTD = 0;
 
     return RC_OK;
 }
@@ -279,21 +320,60 @@ void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
-    return;
+    if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return;
+
+    /* Use the IOReq stored in the RTIso node for the actual transfer. */
+    struct IOUsbHWReq *ioreq = &rtn->rtn_IOReq;
+
+    if (!rtn->rtn_BufferReq.ubr_Buffer || !rtn->rtn_BufferReq.ubr_Length)
+        return;
+
+    ioreq->iouh_Data = rtn->rtn_BufferReq.ubr_Buffer;
+    ioreq->iouh_Length = rtn->rtn_BufferReq.ubr_Length;
+    ioreq->iouh_Req.io_Command = UHCMD_ISOXFER;
+    ioreq->iouh_Req.io_Error = 0;
+
+    /* Queue it like any other periodic transfer. */
+    AddTail(&hc->hc_IntXFerQueue, (struct Node *)&ioreq->iouh_Req.io_Message.mn_Node);
+    xhciScheduleIntTDs(hc);
 }
 
 void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
-    return;
+    if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return;
+
+    xhciFreePeriodicContext(hc, hc->hc_Unit, &rtn->rtn_IOReq);
+
+    if (rtn->rtn_BounceBuffer && rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
+        usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
+                         rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+        rtn->rtn_BounceBuffer = NULL;
+    }
 }
 
 void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
-    return;
+    xhciStopIsochIO(hc, rtn);
+
+    if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return;
+
+    for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if (ptd) {
+            if (ptd->ptd_Descriptor)
+                FreeMem(ptd->ptd_Descriptor, sizeof(struct pciusbXHCITRBParams));
+
+            FreeMem(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
+    }
 }
 
 #endif /* PCIUSB_ENABLEXHCI */
