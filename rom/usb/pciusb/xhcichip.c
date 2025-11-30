@@ -202,11 +202,21 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 
     if (xhciRingEntriesFree(ring) > 1) {
         if (ring->next >= USB_DEV_MAX - 1) {
+            UQUAD link_dma;
+#if !defined(PCIUSB_NO_CPUTOPCI)
+            link_dma = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, &ring->ring[0]);
+#else
+            link_dma = (IPTR)&ring->ring[0];
+#endif
+
             /*
              * If this is the last ring element, insert a link
              * back to the ring start - and update the cycle bit
              */
-            xhciInsertTRB(hc, ring, (UQUAD)&ring->ring[0], TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_ENT, 0);
+            xhciInsertTRB(hc, ring,
+                          link_dma,
+                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_ENT,
+                          0);
             ring->next = 0;
             if (ring->end & RINGENDCFLAG)
                 ring->end &= ~RINGENDCFLAG;
@@ -304,7 +314,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         return NULL;
     }
 
-#if 0
+#if !defined(PCIUSB_NO_CPUTOPCI)
     devCtx->dc_SlotCtx.dmaa_DMA =
         CPUTOPCI(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Ptr);
 #else
@@ -325,7 +335,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         return NULL;
     }
 
-#if 0
+#if !defined(PCIUSB_NO_CPUTOPCI)
     devCtx->dc_IN.dmaa_DMA =
         CPUTOPCI(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Ptr);
 #else
@@ -742,66 +752,100 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     /* PERIODIC (INT/ISO) COMPLETIONS */
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Periodic work done..." DEBUGCOLOR_RESET" \n");
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Periodic work done..." DEBUGCOLOR_RESET"\n");
+
     ioreq = (struct IOUsbHWReq *)hc->hc_PeriodicTDQueue.lh_Head;
     while ((nextioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "Examining Periodic IOReq=%p (dev=%u, ep=%u, dir=%s)" DEBUGCOLOR_RESET"\n",
+                        ioreq,
+                        ioreq->iouh_DevAddr,
+                        ioreq->iouh_Endpoint,
+                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
 
         driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
-        transactiondone = FALSE;
+        if (!driprivate) {
+            pciusbWarn("xHCI",
+                       DEBUGWARNCOLOR_SET "Periodic IOReq %p has no driver private, skipping" DEBUGCOLOR_RESET"\n",
+                       ioreq);
+            ioreq = nextioreq;
+            continue;
+        }
 
-        /* DevEP index for timeouts */
-        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint
-                   + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        transactiondone = FALSE;
+        devadrep = (ioreq->iouh_DevAddr << 5) +
+                   ioreq->iouh_Endpoint +
+                   ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
 
         /*
-         * Completion via TRB completion code (dpCC > 0).
-         * This is what happens for hub status-change interrupts.
+         * First, look at completion code from the event TRB
+         * (set in xhciIntWorkProcess).
          */
-        if (driprivate && (driprivate->dpCC > TRB_CC_INVALID)) {
+        if (driprivate->dpCC > 0) {
             pciusbXHCIDebug("xHCI",
-                            DEBUGCOLOR_SET "Periodic IOReq Complete (completion code %u)!"
-                            DEBUGCOLOR_RESET" \n",
-                            driprivate->dpCC);
-            transactiondone = TRUE;
+                            DEBUGCOLOR_SET "Periodic IOReq %p complete (CC=%u)" DEBUGCOLOR_RESET"\n",
+                            ioreq, driprivate->dpCC);
 
             xhciIOErrfromCC(ioreq, driprivate->dpCC);
 
-            /* Clear the timeout slot once we have a completion */
-            unit->hu_NakTimeoutFrame[devadrep] = 0;
-
-        } else if (unit->hu_NakTimeoutFrame[devadrep] &&
-                   (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
-            /*
-             * Legacy NAK timeout handling for periodic transfers.
-             * This is the only path that previously fired.
-             */
-            pciusbWarn("xHCI",
-                       DEBUGWARNCOLOR_SET "xHCI: Periodic NAK timeout (%u)"
-                       DEBUGCOLOR_RESET" \n",
-                       unit->hu_NakTimeoutFrame[devadrep]);
-            ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
             transactiondone = TRUE;
-            unit->hu_NakTimeoutFrame[devadrep] = 0;
+        } else {
+            /*
+             * No CC yet – check for software NAK timeout
+             */
+            if (unit->hu_NakTimeoutFrame[devadrep] &&
+                (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
+                pciusbWarn("xHCI",
+                           DEBUGWARNCOLOR_SET "xHCI: Periodic NAK timeout for DevEP %02x (frame %u > %u)" DEBUGCOLOR_RESET"\n",
+                           devadrep,
+                           hc->hc_FrameCounter,
+                           unit->hu_NakTimeoutFrame[devadrep]);
+                ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
+                transactiondone = TRUE;
+            }
         }
 
         if (transactiondone) {
-            if (!ioreq->iouh_Req.io_Error &&
-                ioreq->iouh_Req.io_Command == UHCMD_INTXFER &&
-                ioreq->iouh_Length > 0 &&
-                ioreq->iouh_Data) {
-                UBYTE *p = (UBYTE *)ioreq->iouh_Data;
-                pciusbXHCIDebug("xHCI",
-                    "Hub INT data (addr=%u, ep=%u): first byte = 0x%02x\n",
-                    ioreq->iouh_DevAddr,
-                    ioreq->iouh_Endpoint,
-                    p[0]);
-            }
             /*
-             * Free periodic context (EP ring bookkeeping etc.) and
-             * notify the upper layers. Hub.class will typically
-             * resubmit the interrupt transfer if it wants continuous
-             * status change notifications.
+             * At this point xhciIntWorkProcess should have set iouh_Actual.
+             * Log what we are about to return to hub.class (or any other client).
+             */
+            ULONG actual = ioreq->iouh_Actual;
+
+            pciusbXHCIDebug("xHCI",
+                            DEBUGCOLOR_SET "Periodic IOReq %p DONE: err=%ld, actual=%lu" DEBUGCOLOR_RESET"\n",
+                            ioreq,
+                            (LONG)ioreq->iouh_Req.io_Error,
+                            (unsigned long)actual);
+
+            if (!ioreq->iouh_Req.io_Error &&
+                ioreq->iouh_Data &&
+                actual > 0)
+            {
+                UBYTE *b = (UBYTE *)ioreq->iouh_Data;
+                pciusbXHCIDebug("xHCI",
+                                DEBUGCOLOR_SET "Periodic data (dev=%u,ep=%u): first byte=0x%02x len=%lu" DEBUGCOLOR_RESET"\n",
+                                ioreq->iouh_DevAddr,
+                                ioreq->iouh_Endpoint,
+                                b[0],
+                                (unsigned long)actual);
+
+                /* Optional: dump a few bytes if you need */
+#if 0
+                {
+                    int i, dump = (actual < 8) ? actual : 8;
+                    for (i = 0; i < dump; i++) {
+                        pciusbXHCIDebug("xHCI",
+                            "    [%d] = 0x%02x\n", i, b[i]);
+                    }
+                }
+#endif
+            }
+
+            /*
+             * Release hardware state and complete the IO.
+             * NOTE: do NOT adjust iouh_Actual here – that is done by
+             * xhciIntWorkProcess when it decodes the Event TRB.
              */
             xhciFreePeriodicContext(hc, unit, ioreq);
             ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -822,7 +866,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
             devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint
                        + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
 
-            if (driprivate->dpCC > 0) {
+            if (driprivate->dpCC > TRB_CC_INVALID) {
                 pciusbXHCIDebug("xHCI",
                                 DEBUGCOLOR_SET "IOReq Complete (completion code %u)!"
                                 DEBUGCOLOR_RESET" \n",
@@ -899,7 +943,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         driprivate->dpCC = ccode;
 
         ioreq->iouh_Actual += (ioreq->iouh_Length - remaining);
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Remaing work for IO = %u bytes" DEBUGCOLOR_RESET" \n", remaining);
+        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Remaining work for IO = %u bytes" DEBUGCOLOR_RESET" \n", remaining);
 
         return TRUE;
     }
@@ -1042,15 +1086,21 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
                 volatile struct xhci_trb  *evt = &ring->current;
                 ULONG last = txtrb - ring->ring;
+                ULONG event_rem = evt->tparams & 0x00FFFFFF;
 
-                pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "TRB  = <Ring 0x%p[%u] TRB 0x%p>" DEBUGCOLOR_RESET" \n", ring, last, txtrb);
+                pciusbXHCIDebugTRB("xHCI",
+                    DEBUGCOLOR_SET "TRANSFER EVT: ring=%p idx=%u slot=%u CC=%u rem=%lu" DEBUGCOLOR_RESET" \n",
+                    ring, last,
+                    (evt->flags >> 24) & 0xFF,
+                    trbe_ccode,
+                    (unsigned long)event_rem);
                 xhciDumpCC(trbe_ccode);
 
                 *evt = *etrb;
                 ring->end &= RINGENDCFLAG;
                 ring->end |= (last & ~RINGENDCFLAG);
 
-                doCompletion = xhciIntWorkProcess(hc, (struct IOUsbHWReq *)ring->ringio[last], (evt->tparams & 0XFFFFFF), trbe_ccode);
+                doCompletion = xhciIntWorkProcess(hc, (struct IOUsbHWReq *)ring->ringio[last], event_rem, trbe_ccode);
                 ring->ringio[last] = NULL;
                 break;
             }
@@ -1439,7 +1489,7 @@ takeownership:
     hc->hc_DCBAAp = pciAllocAligned(hc, &hc->hc_DCBAA, sizeof(UQUAD) * (hc->hc_NumSlots + 1), ALIGN_DCBAA, xhciPageSize(hc));
     if (hc->hc_DCBAAp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated DCBAA @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", hc->hc_DCBAAp, hc->hc_DCBAA.me_Un.meu_Addr, hc->hc_DCBAA.me_Length);
-#if (0)
+#if !defined(PCIUSB_NO_CPUTOPCI)
         hc->hc_DMADCBAA = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)hc->hc_DCBAAp);
 #else
         hc->hc_DMADCBAA = hc->hc_DCBAAp;
@@ -1455,7 +1505,7 @@ takeownership:
     hc->hc_ERSTp = pciAllocAligned(hc, &hc->hc_ERST, sizeof(struct xhci_er_seg), ALIGN_EVTRING_TBL, ALIGN_EVTRING_TBL);
     if (hc->hc_ERSTp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated ERST @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", hc->hc_ERSTp, hc->hc_ERST.me_Un.meu_Addr, hc->hc_ERST.me_Length);
-#if (0)
+#if !defined(PCIUSB_NO_CPUTOPCI)
         hc->hc_DMAERST = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)hc->hc_ERSTp);
 #else
         hc->hc_DMAERST = hc->hc_ERSTp;
@@ -1470,7 +1520,7 @@ takeownership:
     hc->hc_OPRp = pciAllocAligned(hc, &hc->hc_OPR, sizeof(struct pcisusbXHCIRing), ALIGN_CMDRING_SEG, (1 << 16));
     if (hc->hc_OPRp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated OPR @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", hc->hc_OPRp, hc->hc_OPR.me_Un.meu_Addr, hc->hc_OPR.me_Length);
-#if (0)
+#if !defined(PCIUSB_NO_CPUTOPCI)
         hc->hc_DMAOPR = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)hc->hc_OPRp);
 #else
         hc->hc_DMAOPR = hc->hc_OPRp;
@@ -1485,7 +1535,7 @@ takeownership:
     hc->hc_ERSp = pciAllocAligned(hc, &hc->hc_ERS, sizeof(struct pcisusbXHCIRing), ALIGN_EVTRING_SEG, (1 << 16));
     if (hc->hc_ERSp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated ERS @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", hc->hc_ERSp, hc->hc_ERS.me_Un.meu_Addr, hc->hc_ERS.me_Length);
-#if (0)
+#if !defined(PCIUSB_NO_CPUTOPCI)
         hc->hc_DMAERS = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)hc->hc_ERSp);
 #else
         hc->hc_DMAERS = hc->hc_ERSp;

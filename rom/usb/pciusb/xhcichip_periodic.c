@@ -56,8 +56,21 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Scheduling new INT transfers ..." DEBUGCOLOR_RESET" \n");
     ForeachNodeSafe(&hc->hc_IntXFerQueue, ioreq, ionext) {
         devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "New INT transfer to %ld.%ld: %ld bytes" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, ioreq->iouh_Length);
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "    IOReq @ 0x%p" DEBUGCOLOR_RESET" \n", ioreq);
+        pciusbXHCIDebug("xHCI",
+            DEBUGCOLOR_SET "New INT transfer to dev=%u ep=%u (DevEP=%02x): len=%lu dir=%s, cmd=%u" DEBUGCOLOR_RESET"\n",
+            ioreq->iouh_DevAddr,
+            ioreq->iouh_Endpoint,
+            devadrep,
+            (unsigned long)ioreq->iouh_Length,
+            (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
+            (unsigned)ioreq->iouh_Req.io_Command);
+        pciusbXHCIDebug("xHCI",
+            DEBUGCOLOR_SET "    IOReq=%p Flags=0x%08lx NakTO=%lu MaxPkt=%u Interval=%u" DEBUGCOLOR_RESET"\n",
+            ioreq,
+            (unsigned long)ioreq->iouh_Flags,
+            (unsigned long)ioreq->iouh_NakTimeout,
+            (unsigned)ioreq->iouh_MaxPktSize,
+            (unsigned)ioreq->iouh_Interval);
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
@@ -149,15 +162,14 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         }
 
         {
-            APTR txdata = ioreq->iouh_Data;
-
-            if ((ioreq->iouh_Dir == UHDIR_IN) != 0)
-                trbflags |= (TRBF_FLAG_DS_DIR|TRBF_FLAG_ISP);
-            if ((ioreq->iouh_Data) &&  (ioreq->iouh_Length)) {
-                trbflags |= TRBF_FLAG_TRTYPE_NORMAL;
-            } else if ((ioreq->iouh_Length)) {
-                trbflags |= TRBF_FLAG_TRTYPE_DATA;
+            /* Interrupt TD flags */
+            if (ioreq->iouh_Dir == UHDIR_IN) {
+                /* For INT endpoints, DS_DIR is not required; only ISP is meaningful here. */
+                trbflags |= TRBF_FLAG_ISP;          /* interrupt on short packet */
             }
+
+            /* All interrupt payload TRBs are NORMAL from xHCI’s POV */
+            trbflags |= TRBF_FLAG_TRTYPE_NORMAL;
 
             /****** SETUP COMPLETE ************/
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -181,10 +193,41 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 driprivate->dpSttTRB = (UWORD)-1;
 
                 // queue the transaction
-                queued = xhciQueueData(hc, epring, (UQUAD)(IPTR)ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_MaxPktSize, trbflags, TRUE);
+                UQUAD dma_addr;
+#if !defined(PCIUSB_NO_CPUTOPCI)
+                dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, ioreq->iouh_Data);
+#else
+                dma_addr = (IPTR)ioreq->iouh_Data;
+#endif
+                queued = xhciQueueData(
+                    hc, epring,
+                    dma_addr,
+                    ioreq->iouh_Length,
+                    ioreq->iouh_MaxPktSize,
+                    trbflags,
+                    TRUE);
                 if (queued != -1) {
-                    int cnt;
                     driprivate->dpTxSTRB = queued;
+                    {
+                        volatile struct xhci_trb *trb = &epring->ring[driprivate->dpTxSTRB];
+
+                        pciusbXHCIDebugTRB("xHCI",
+                            DEBUGCOLOR_SET "INT TD TRB: addr_lo=%08lx addr_hi=%08lx, tlen=%lu, flags=%08lx" DEBUGCOLOR_RESET" \n",
+                            (unsigned long)trb->dbp.addr_lo,
+                            (unsigned long)trb->dbp.addr_hi,
+                            (unsigned long)(trb->tparams & 0x00FFFFFF),
+                            (unsigned long)trb->flags);
+
+                        pciusbXHCIDebugTRB("xHCI",
+                            DEBUGCOLOR_SET "INT TD buffer ptr: trb=%p, ioreq->Data=%p (dma 0x%p)" DEBUGCOLOR_RESET" \n",
+                            (APTR)((IPTR)trb->dbp.addr_lo
+#if __WORDSIZE == 64
+                                  | ((UQUAD)trb->dbp.addr_hi << 32)
+#endif
+                            ),
+                            ioreq->iouh_Data, dma_addr);
+                    }
+                    int cnt;
                     if (epring->next > driprivate->dpTxSTRB + 1)
                         driprivate->dpTxETRB = epring->next - 1;
                     else
