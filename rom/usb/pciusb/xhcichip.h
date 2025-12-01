@@ -12,6 +12,21 @@
 #include <hardware/usb/xhci.h>
 #include "hccommon.h"
 
+#ifndef DMAFLAGS_PREREAD
+#define DMAFLAGS_PREREAD     0
+#endif
+
+#ifndef DMAFLAGS_PREWRITE
+#define DMAFLAGS_PREWRITE    DMA_ReadFromRAM
+#endif
+
+#ifndef DMAFLAGS_POSTREAD
+#define DMAFLAGS_POSTREAD    (1 << 31)
+#endif
+
+#ifndef DMAFLAGS_POSTWRITE
+#define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
+#endif
 
 struct pciusbXHCIDMAAlloc
 {

@@ -182,6 +182,9 @@ static void xhciInsertTRB(struct PCIController *hc, volatile struct pcisusbXHCIR
     xhciSetPointer(hc, dst->dbp, payload);
     dst->tparams = (plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
     dst->flags = trbflags;
+
+    /* Make sure the controller observes the freshly written TRB */
+    CacheClearE((APTR)dst, sizeof(*dst), CACRF_ClearD);
 }
 
 WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
@@ -961,6 +964,12 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
             transferred = ioreq->iouh_Length;
         }
 
+        if ((ccode == TRB_CC_SUCCESS) && ioreq->iouh_Data && transferred) {
+            ULONG postlen = transferred;
+            CachePostDMA(ioreq->iouh_Data, &postlen,
+                          (ioreq->iouh_Dir == UHDIR_IN) ? DMAFLAGS_POSTREAD : DMAFLAGS_POSTWRITE);
+        }
+
         ioreq->iouh_Actual = transferred;
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Remaining work for IO = %u bytes" DEBUGCOLOR_RESET" \n", remaining);
 
@@ -1022,6 +1031,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Processing events..." DEBUGCOLOR_RESET" \n");
 
         for (etrb = &ering->ring[idx]; (maxwork > 0) && xhciTRBCycleMatches(etrb->flags, cycle); maxwork--) {
+            CacheClearE((APTR)etrb, sizeof(*etrb), CACRF_InvalidateD);
             ULONG trbe_type = (etrb->flags >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
             ULONG trbe_ccode = (etrb->tparams >> 24) & 0XFF;
 

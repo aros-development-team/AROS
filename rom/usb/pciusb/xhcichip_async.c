@@ -399,14 +399,17 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                         (ULONG)ioreq->iouh_Length,
                                         ioreq->iouh_MaxPktSize);
                         UQUAD dma_addr;
+                        ULONG dmalen = ioreq->iouh_Length;
+                        APTR dmaptr = CachePreDMA(ioreq->iouh_Data, &dmalen,
+                                                  (ioreq->iouh_Dir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
 #if !defined(PCIUSB_NO_CPUTOPCI)
-                        dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, ioreq->iouh_Data);
+                        dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dmaptr);
 #else
-                        dma_addr = (IPTR)ioreq->iouh_Data;
+                        dma_addr = (IPTR)dmaptr;
 #endif
                         queued = xhciQueueData(hc, epring,
                                                dma_addr,
-                                               ioreq->iouh_Length,
+                                               dmalen,
                                                ioreq->iouh_MaxPktSize,
                                                trbflags,
                                                (txtype == UHCMD_CONTROLXFER) ? FALSE : TRUE);
