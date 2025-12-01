@@ -204,7 +204,7 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
         if (ring->next >= USB_DEV_MAX - 1) {
             UQUAD link_dma;
 #if !defined(PCIUSB_NO_CPUTOPCI)
-            link_dma = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, &ring->ring[0]);
+            link_dma = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)&ring->ring[0]);
 #else
             link_dma = (IPTR)&ring->ring[0];
 #endif
@@ -710,13 +710,14 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
     switch (cc) {
     case TRB_CC_SUCCESS:                                        /* Success */
         ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR;
-        if (ioreq->iouh_Req.io_Command == UHCMD_INTXFER) {
-            /*
-             * For periodic transfers (INT/ISO), we usually care
-             * only that something arrived.
-             */
+        /*
+         * For periodic transfers (INT/ISO), prefer the length derived from
+         * the Transfer Event. If the completion path never set iouh_Actual,
+         * fall back to the requested length for backwards compatibility.
+         */
+        if ((ioreq->iouh_Req.io_Command == UHCMD_INTXFER) &&
+            (ioreq->iouh_Actual == 0))
             ioreq->iouh_Actual = ioreq->iouh_Length;
-        }
         break;
 
     case TRB_CC_BABBLE_DETECTED_ERROR:                          /* Data Buffer Error / Babble */
@@ -942,7 +943,25 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
 
         driprivate->dpCC = ccode;
 
-        ioreq->iouh_Actual += (ioreq->iouh_Length - remaining);
+        ULONG transferred = (remaining <= ioreq->iouh_Length)
+                                ? (ioreq->iouh_Length - remaining)
+                                : ioreq->iouh_Length;
+
+        /*
+         * Some controllers report a full "remaining" count for INT IN
+         * completions even when data was delivered. Treat a successful
+         * completion with zero computed length as a short packet carrying
+         * the requested payload so the caller sees the status byte.
+         */
+        if ((ccode == TRB_CC_SUCCESS) &&
+            (transferred == 0) &&
+            (ioreq->iouh_Dir == UHDIR_IN) &&
+            (ioreq->iouh_Length > 0))
+        {
+            transferred = ioreq->iouh_Length;
+        }
+
+        ioreq->iouh_Actual = transferred;
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Remaining work for IO = %u bytes" DEBUGCOLOR_RESET" \n", remaining);
 
         return TRUE;

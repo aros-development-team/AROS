@@ -93,14 +93,22 @@ LONG xhciCmdSubmit(struct PCIController *hc,
 
     if (queued != -1) {
         xhciRingDoorbell(hc, 0, 0);
-        do {
+
+        /* Wait for completion with a bounded timeout to avoid hanging */
+        for (ULONG waitms = 0; waitms < 1000; waitms++) {
             if (hc->hc_CmdResults[queued].flags != 0xFFFFFFFF) {
                 if (resflags)
                     *resflags = hc->hc_CmdResults[queued].flags;
 
                 return (hc->hc_CmdResults[queued].tparams >> 24) & 0xFF;
             }
-        } while (1);
+
+            uhwDelayMS(1, hc->hc_Unit);
+        }
+
+        pciusbError("xHCI",
+            DEBUGWARNCOLOR_SET "%s: command timed out waiting for completion" DEBUGCOLOR_RESET" \n",
+            __func__);
     }
     return -1;
 }

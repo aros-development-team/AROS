@@ -554,7 +554,15 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                 epid);
 
                 if (epid > 0) {
-                    LONG cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+                    LONG cc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, FALSE);
+
+                    pciusbXHCIDebug("xHCI",
+                                    "CLEAR_FEATURE: EndpointStop slot=%u epid=%u -> cc=%ld\n",
+                                    devCtx->dc_SlotID, epid, cc);
+
+                    if (cc == TRB_CC_SUCCESS) {
+                        cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+                    }
 
                     pciusbXHCIDebug("xHCI",
                                     "CLEAR_FEATURE: EndpointReset slot=%u epid=%u -> cc=%ld\n",
