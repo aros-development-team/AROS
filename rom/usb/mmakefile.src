@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 # Build a complete disk-based Poseidon
 #MM- kernel-usb : \
 #MM      kernel-usb-poseidon \
-#MM      kernel-usb-shelltools \
+#MM      poseidon-usb-shellcommands \
 #MM      kernel-usb-classes \
 #MM      kernel-usb-shellapps \
 #MM      kernel-usb-trident \
@@ -15,7 +15,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-usb-nopci : \
 #MM      kernel-usb-poseidon \
-#MM      kernel-usb-shelltools \
+#MM      poseidon-usb-shellcommands \
 #MM      kernel-usb-classes \
 #MM      kernel-usb-shellapps \
 #MM      kernel-usb-trident
@@ -27,7 +27,7 @@ include $(SRCDIR)/config/aros.cfg
 # Clean up
 #MM- kernel-usb-clean : \
 #MM      kernel-usb-poseidon-clean \
-#MM      kernel-usb-shelltools-clean \
+#MM      poseidon-usb-shellcommands-clean \
 #MM      kernel-usb-classes-clean \
 #MM      kernel-usb-shellapps-clean \
 #MM      kernel-usb-trident-clean \
@@ -37,7 +37,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-usb-nopci-clean : \
 #MM      kernel-usb-poseidon-clean \
-#MM      kernel-usb-shelltools-clean \
+#MM      poseidon-usb-shellcommands-clean \
 #MM      kernel-usb-classes-clean \
 #MM      kernel-usb-shellapps-clean \
 #MM      kernel-usb-trident-clean
