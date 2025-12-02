@@ -505,7 +505,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx,
     devCtx->dc_EPAllocs[epid].dmaa_Ptr = pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry, sizeof(struct pcisusbXHCIRing), ALIGN_EVTRING_SEG, (1 << 16));
     if (devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
         pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n", devCtx->dc_EPAllocs[epid].dmaa_Ptr, hc->hc_ERS.me_Un.meu_Addr, hc->hc_ERS.me_Length);
-#if (0)
+#if !defined(PCIUSB_NO_CPUTOPCI)
         devCtx->dc_EPAllocs[epid].dmaa_DMA = CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)devCtx->dc_EPAllocs[epid].dmaa_Ptr);
 #else
         devCtx->dc_EPAllocs[epid].dmaa_DMA = devCtx->dc_EPAllocs[epid].dmaa_Ptr;
