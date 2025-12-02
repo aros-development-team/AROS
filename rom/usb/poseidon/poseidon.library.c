@@ -2856,6 +2856,182 @@ pUpdateHardwareFromBos(struct PsdHardware *phw, const struct PsdBosCaps *caps)
     }
 }
 
+static BOOL
+pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
+                    struct PsdBosCaps *boscaps)
+{
+    const struct UsbStdBOSDesc *bosHdr;
+    UWORD offset;
+
+    if (!bosbuf || !boscaps || bosbuflen < sizeof(struct UsbStdBOSDesc)) {
+        return FALSE;
+    }
+
+    memset(boscaps, 0, sizeof(*boscaps));
+    boscaps->hasBos = TRUE;
+
+    bosHdr = (const struct UsbStdBOSDesc *)bosbuf;
+    offset = bosHdr->bLength;
+    while (offset + 3 < bosbuflen) {
+        UBYTE bLength         = bosbuf[offset + 0];
+        UBYTE bDescriptorType = bosbuf[offset + 1];
+
+        if (!bLength) {
+            XPRINTF(1, ("BOS: zero-length descriptor at offset %u, aborting\n",
+                        (unsigned)offset));
+            break;
+        }
+        if (offset + bLength > bosbuflen) {
+            XPRINTF(1, ("BOS: descriptor len %u overruns buffer (%u), aborting\n",
+                        (unsigned)bLength,
+                        (unsigned)bosbuflen));
+            break;
+        }
+
+        if (bDescriptorType == UDT_DEVICE_CAPABILITY) {
+            UBYTE bDevCapType = bosbuf[offset + 2];
+            const UBYTE *p = &bosbuf[offset];
+
+            switch (bDevCapType) {
+
+            case UDC_USB20_EXTENSION:
+                if (bLength >= sizeof(struct Usb20ExtDesc)) {
+                    struct Usb20ExtDesc *ext = (struct Usb20ExtDesc *)p;
+
+                    boscaps->hasUsb20Ext          = TRUE;
+                    boscaps->usb20ExtBmAttributes =
+                        AROS_LE2LONG(ext->bmAttributes);
+                    boscaps->usb20LpmCapable =
+                        (boscaps->usb20ExtBmAttributes & (1UL << 1))
+                        ? TRUE : FALSE;
+
+                    XPRINTF(2, ("BOS: USB2.0 ext: bmAttributes=0x%08lx, LPM=%ld\n",
+                                boscaps->usb20ExtBmAttributes,
+                                (LONG)boscaps->usb20LpmCapable));
+                } else {
+                    XPRINTF(1, ("BOS: USB2.0 ext cap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            case UDC_SUPERSPEED_USB:
+                if (bLength >= sizeof(struct UsbSSDevCapDesc)) {
+                    struct UsbSSDevCapDesc *ss =
+                        (struct UsbSSDevCapDesc *)p;
+
+                    boscaps->hasSSCap              = TRUE;
+                    boscaps->ssBmAttributes        = ss->bmAttributes;
+                    boscaps->ssSpeedsSupported     =
+                        AROS_LE2WORD(ss->wSpeedSupported);
+                    boscaps->ssLowestFullFuncSpeed =
+                        ss->bFunctionalitySupport;
+                    boscaps->ssU1DevExitLat        = ss->bU1DevExitLat;
+                    boscaps->ssU2DevExitLat        =
+                        AROS_LE2WORD(ss->bU2DevExitLat);
+
+                    XPRINTF(2, ("BOS: SS DevCap: speeds=0x%04x, attr=0x%02x, U1=%u, U2=%u\n",
+                                (unsigned)boscaps->ssSpeedsSupported,
+                                (unsigned)boscaps->ssBmAttributes,
+                                (unsigned)boscaps->ssU1DevExitLat,
+                                (unsigned)boscaps->ssU2DevExitLat));
+                } else {
+                    XPRINTF(1, ("BOS: SS DevCap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            case UDC_CONTAINER_ID:
+                /* Container ID is 16 bytes, descriptor is 20 bytes total */
+                if (bLength >= 20) {
+                    boscaps->hasContainerId = TRUE;
+                    CopyMem(p + 4, boscaps->containerId, 16);
+                    XPRINTF(2, ("BOS: Container ID present\n"));
+                } else {
+                    XPRINTF(1, ("BOS: Container ID cap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            default:
+                XPRINTF(2, ("BOS: ignoring devcap type %u (len=%u)\n",
+                            (unsigned)bDevCapType,
+                            (unsigned)bLength));
+                break;
+            }
+        }
+
+        offset += bLength;
+    }
+
+    return TRUE;
+}
+
+static BOOL
+pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
+{
+    LIBBASETYPEPTR ps = pp->pp_Device->pd_Hardware->phw_Base;
+    struct UsbStdBOSDesc bosHdr;
+    LONG ioerr_bos;
+    UWORD bosTotalLength;
+    UWORD toRead;
+    UBYTE bosbuf[256];
+
+    /* First, read just the BOS header */
+    psdPipeSetup(pp,
+                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                 USR_GET_DESCRIPTOR,
+                 UDT_BOS << 8,
+                 0);
+    ioerr_bos = psdDoPipe(pp, &bosHdr, sizeof(struct UsbStdBOSDesc));
+    if (ioerr_bos) {
+        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld\n", ioerr_bos));
+        return FALSE;
+    }
+
+    bosTotalLength = AROS_LE2WORD(bosHdr.wTotalLength);
+
+    XPRINTF(1, ("BOS header: len=%u, numCaps=%u, totalLen=%u\n",
+                (unsigned)bosHdr.bLength,
+                (unsigned)bosHdr.bNumDeviceCaps,
+                (unsigned)bosTotalLength));
+
+    if (bosTotalLength < bosHdr.bLength) {
+        XPRINTF(1, ("BOS wTotalLength=%u smaller than header %u, clamping\n",
+                    (unsigned)bosTotalLength,
+                    (unsigned)bosHdr.bLength));
+        bosTotalLength = bosHdr.bLength;
+    }
+
+    /* Fetch the full BOS (bounded to bosbuf) */
+    toRead = bosTotalLength;
+    if (toRead > sizeof(bosbuf)) {
+        XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
+                    (unsigned)bosTotalLength,
+                    (unsigned)sizeof(bosbuf)));
+        toRead = sizeof(bosbuf);
+    }
+
+    psdPipeSetup(pp,
+                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                 USR_GET_DESCRIPTOR,
+                 UDT_BOS << 8,
+                 0);
+    ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
+    if (ioerr_bos) {
+        XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len=%u) failed %ld\n",
+                    (unsigned)toRead, ioerr_bos));
+        return FALSE;
+    }
+
+    XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
+                (unsigned)toRead));
+
+    /* Ensure header is at the front of the buffer */
+    memcpy(bosbuf, &bosHdr, sizeof(struct UsbStdBOSDesc));
+
+    return pParseBosDescriptor(bosbuf, toRead, boscaps);
+}
+
 static UWORD
 pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
                          struct PsdEndpoint *pep)
@@ -2949,9 +3125,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     struct PsdIFFContext *pic;
 
     ULONG *chnk;
-
-    struct UsbStdBOSDesc usbosd;
-    LONG ioerr_bos;
 
     KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
 
@@ -3080,169 +3253,9 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                     the Binary Device Object Store (BOS) for a USB device with bcdUSB > 0x0200.
                 */
                 if (pd->pd_USBVers > 0x0200) {
-                    struct UsbStdBOSDesc bosHdr;
-                    struct PsdBosCaps    boscaps;
-                    UWORD                bosTotalLength;
-
-                    memset(&boscaps, 0, sizeof(boscaps));
-
-                    /* First, read just the BOS header */
-                    psdPipeSetup(pp,
-                                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
-                                 USR_GET_DESCRIPTOR,
-                                 UDT_BOS << 8,
-                                 0);
-                    ioerr_bos = psdDoPipe(pp, &bosHdr, sizeof(struct UsbStdBOSDesc));
-                    if (!ioerr_bos) {
-                        UBYTE bosbuf[256];
-                        UWORD toRead;
-                        UWORD offset;
-
-                        boscaps.hasBos = TRUE;
-                        bosTotalLength = AROS_LE2WORD(bosHdr.wTotalLength);
-
-                        XPRINTF(1, ("BOS header: len=%u, numCaps=%u, totalLen=%u\n",
-                                    (unsigned)bosHdr.bLength,
-                                    (unsigned)bosHdr.bNumDeviceCaps,
-                                    (unsigned)bosTotalLength));
-
-                        if (bosTotalLength < bosHdr.bLength) {
-                            XPRINTF(1, ("BOS wTotalLength=%u smaller than header %u, clamping\n",
-                                        (unsigned)bosTotalLength,
-                                        (unsigned)bosHdr.bLength));
-                            bosTotalLength = bosHdr.bLength;
-                        }
-
-                        /* Fetch the full BOS (bounded to bosbuf) */
-                        toRead = bosTotalLength;
-                        if (toRead > sizeof(bosbuf)) {
-                            XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
-                                        (unsigned)bosTotalLength,
-                                        (unsigned)sizeof(bosbuf)));
-                            toRead = sizeof(bosbuf);
-                        }
-
-                        psdPipeSetup(pp,
-                                     URTF_IN|URTF_STANDARD|URTF_DEVICE,
-                                     USR_GET_DESCRIPTOR,
-                                     UDT_BOS << 8,
-                                     0);
-                        ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
-                        if (!ioerr_bos) {
-                            UBYTE *p;
-
-                            XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
-                                        (unsigned)toRead));
-
-                            /* Ensure header is at the front of the buffer */
-                            memcpy(bosbuf, &bosHdr, sizeof(struct UsbStdBOSDesc));
-
-                            offset = bosHdr.bLength;
-                            while (offset + 3 < toRead) {
-                                UBYTE bLength         = bosbuf[offset + 0];
-                                UBYTE bDescriptorType = bosbuf[offset + 1];
-
-                                if (!bLength) {
-                                    XPRINTF(1, ("BOS: zero-length descriptor at offset %u, aborting\n",
-                                                (unsigned)offset));
-                                    break;
-                                }
-                                if (offset + bLength > toRead) {
-                                    XPRINTF(1, ("BOS: descriptor len %u overruns buffer (%u), aborting\n",
-                                                (unsigned)bLength,
-                                                (unsigned)toRead));
-                                    break;
-                                }
-
-                                p = &bosbuf[offset];
-
-                                if (bDescriptorType == UDT_DEVICE_CAPABILITY) {
-                                    UBYTE bDevCapType = p[2];
-
-                                    switch (bDevCapType) {
-
-                                    case UDC_USB20_EXTENSION:
-                                        if (bLength >= sizeof(struct Usb20ExtDesc)) {
-                                            struct Usb20ExtDesc *ext =
-                                                (struct Usb20ExtDesc *)p;
-
-                                            boscaps.hasUsb20Ext          = TRUE;
-                                            boscaps.usb20ExtBmAttributes =
-                                                AROS_LE2LONG(ext->bmAttributes);
-                                            boscaps.usb20LpmCapable =
-                                                (boscaps.usb20ExtBmAttributes & (1UL << 1))
-                                                ? TRUE : FALSE;
-
-                                            XPRINTF(2, ("BOS: USB2.0 ext: bmAttributes=0x%08lx, LPM=%ld\n",
-                                                        boscaps.usb20ExtBmAttributes,
-                                                        (LONG)boscaps.usb20LpmCapable));
-                                        } else {
-                                            XPRINTF(1, ("BOS: USB2.0 ext cap too small (len=%u)\n",
-                                                        (unsigned)bLength));
-                                        }
-                                        break;
-
-                                    case UDC_SUPERSPEED_USB:
-                                        if (bLength >= sizeof(struct UsbSSDevCapDesc)) {
-                                            struct UsbSSDevCapDesc *ss =
-                                                (struct UsbSSDevCapDesc *)p;
-
-                                            boscaps.hasSSCap              = TRUE;
-                                            boscaps.ssBmAttributes        = ss->bmAttributes;
-                                            boscaps.ssSpeedsSupported     =
-                                                AROS_LE2WORD(ss->wSpeedSupported);
-                                            boscaps.ssLowestFullFuncSpeed =
-                                                ss->bFunctionalitySupport;
-                                            boscaps.ssU1DevExitLat        =
-                                                ss->bU1DevExitLat;
-                                            boscaps.ssU2DevExitLat        =
-                                                AROS_LE2WORD(ss->bU2DevExitLat);
-
-                                            XPRINTF(2, ("BOS: SS DevCap: speeds=0x%04x, attr=0x%02x, U1=%u, U2=%u\n",
-                                                        (unsigned)boscaps.ssSpeedsSupported,
-                                                        (unsigned)boscaps.ssBmAttributes,
-                                                        (unsigned)boscaps.ssU1DevExitLat,
-                                                        (unsigned)boscaps.ssU2DevExitLat));
-                                        } else {
-                                            XPRINTF(1, ("BOS: SS DevCap too small (len=%u)\n",
-                                                        (unsigned)bLength));
-                                        }
-                                        break;
-
-                                    case UDC_CONTAINER_ID:
-                                        /* Container ID is 16 bytes, descriptor is 20 bytes total */
-                                        if (bLength >= 20) {
-                                            boscaps.hasContainerId = TRUE;
-                                            CopyMem(p + 4, boscaps.containerId, 16);
-                                            XPRINTF(2, ("BOS: Container ID present\n"));
-                                        } else {
-                                            XPRINTF(1, ("BOS: Container ID cap too small (len=%u)\n",
-                                                        (unsigned)bLength));
-                                        }
-                                        break;
-
-                                    default:
-                                        XPRINTF(2, ("BOS: ignoring devcap type %u (len=%u)\n",
-                                                    (unsigned)bDevCapType,
-                                                    (unsigned)bLength));
-                                        break;
-                                    }
-                                }
-
-                                offset += bLength;
-                            }
-
-                            /* Feed parsed BOS info to hardware-level structure */
-                            if (pd->pd_Hardware) {
-                                pUpdateHardwareFromBos(pd->pd_Hardware, &boscaps);
-                            }
-
-                        } else {
-                            XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len=%u) failed %ld\n",
-                                        (unsigned)toRead, ioerr_bos));
-                        }
-                    } else {
-                        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld\n", ioerr_bos));
+                    struct PsdBosCaps boscaps;
+                    if (pFetchBosCaps(pp, &boscaps) && pd->pd_Hardware) {
+                        pUpdateHardwareFromBos(pd->pd_Hardware, &boscaps);
                     }
                 }
 
