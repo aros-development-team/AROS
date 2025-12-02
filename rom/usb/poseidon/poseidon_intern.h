@@ -14,7 +14,7 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 4.4 (26.11.2025)
+                | (__) ) Version: 5.0 (02.12.2025)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
                 |_____/  Copyright ©2009-2025 The AROS Dev Team.
@@ -344,6 +344,9 @@ struct PsdHardware
     UWORD               phw_DriverVers;         /* Driver version */
     ULONG               phw_Capabilities;       /* Driver/HW capabilities */
 
+    PsdPrepareEndpointFunc phw_PrepareEndpoint;  /* Optional: HCD prepares EP contexts */
+    PsdDestroyEndpointFunc phw_DestroyEndpoint;  /* Optional: HCD tears down EP contexts */
+
     struct IOUsbHWReq  *phw_RootIOReq;          /* First IO Request */
 
     struct PsdDevice   *phw_RootDevice;         /* Link to root hub of this hardware */
@@ -491,6 +494,8 @@ struct PsdEndpoint
     UWORD               pep_MaxBurst;     /* Superspeed companion: bursts per service interval */
     UWORD               pep_CompAttributes; /* Superspeed companion: bmAttributes */
     ULONG               pep_BytesPerInterval; /* Superspeed companion: bytes per service interval */
+
+    struct IOUsbHWReq  *pep_IOReq;        /* Optional HCD-owned endpoint context */
 };
 
 /* Flags for pp_Flags */

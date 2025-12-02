@@ -301,31 +301,69 @@ static const ULONG *PsdPTArray[PGA_LAST+1];
 
 /* *** Memory *** */
 
+struct psdMemHeader
+{
+    APTR  pmem_raw;  /* Pointer returned by AllocPooled() */
+    ULONG size;      /* Size requested by caller */
+};
+
 /* /// "psdAllocVec()" */
 AROS_LH1(APTR, psdAllocVec,
          AROS_LHA(ULONG, size, D0),
          LIBBASETYPEPTR, ps, 5, psd)
 {
     AROS_LIBFUNC_INIT
-    ULONG *pmem;
+    struct psdMemHeader *hdr;
+    APTR raw;
+    ULONG alloc_size;
+    UBYTE *p;
+    UBYTE *aligned;
+    IPTR mask;
+    APTR result;
+
     KPRINTF(1, ("psdAllocVec(%ld)\n", size));
-#ifndef MEMDEBUG
-    if((pmem = AllocPooled(ps->ps_MemPool, size + (1*sizeof(ULONG))))) {
+
+    /* Space = requested size + header + alignment slop + optional MEMDEBUG tail */
+#ifdef MEMDEBUG
+    alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1) + 1024;
 #else
-    if((pmem = AllocPooled(ps->ps_MemPool, size + (1*sizeof(ULONG)) + 1024))) {
-        ULONG upos = size + (1*sizeof(ULONG));
-        UWORD unum = 1024;
-        UBYTE *dbptr = (UBYTE *) pmem;
-        while(unum--) {
-            dbptr[upos] = upos;
-            upos++;
+    alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1);
+#endif
+
+    raw = AllocPooled(ps->ps_MemPool, alloc_size);
+    if (raw)
+    {
+        /* Start alignment after the header */
+        p    = (UBYTE *)raw + sizeof(struct psdMemHeader);
+        mask = (IPTR)AROS_WORSTALIGN - 1;
+
+        aligned = (UBYTE *)(((IPTR)p + mask) & ~mask);
+        hdr     = (struct psdMemHeader *)(aligned - sizeof(struct psdMemHeader));
+
+        hdr->pmem_raw = raw;
+        hdr->size     = size;
+
+#ifdef MEMDEBUG
+        {
+            /* Fill 1024 bytes after the user area for overrun detection */
+            ULONG upos = size;
+            UWORD unum = 1024;
+            UBYTE *dbptr = (UBYTE *)aligned;
+
+            while (unum--)
+            {
+                dbptr[upos] = (UBYTE)upos;
+                upos++;
+            }
         }
 #endif
-        *pmem++ = size;
+
         ps->ps_MemAllocated += size;
-        return((APTR) pmem);
+        result = (APTR)aligned;
+        return result;
     }
-    return(NULL);
+
+    return NULL;
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
@@ -336,19 +374,30 @@ AROS_LH1(void, psdFreeVec,
          LIBBASETYPEPTR, ps, 6, psd)
 {
     AROS_LIBFUNC_INIT
+    struct psdMemHeader *hdr;
     ULONG size;
+    ULONG alloc_size;
 
     KPRINTF(1, ("psdFreeVec(%p)\n", pmem));
-    if(pmem) {
-        size = ((ULONG *) pmem)[-1];
+
+    if (pmem)
+    {
+        /* Header is located immediately before the returned aligned pointer */
+        hdr  = ((struct psdMemHeader *)pmem) - 1;
+        size = hdr->size;
+
         ps->ps_MemAllocated -= size;
 
 #ifdef MEMDEBUG
-        FreePooled(ps->ps_MemPool, &((ULONG *) pmem)[-1], size + (1*sizeof(ULONG)) + 1024);
+        alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1) + 1024;
 #else
-        FreePooled(ps->ps_MemPool, &((ULONG *) pmem)[-1], size + (1*sizeof(ULONG)));
+        alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1);
 #endif
+
+        /* Free using the original pointer from AllocPooled() and the original size */
+        FreePooled(ps->ps_MemPool, hdr->pmem_raw, alloc_size);
     }
+
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
@@ -1536,11 +1585,71 @@ AROS_LH3(STRPTR, psdNumToStr,
 
 /* *** Endpoint *** */
 
+/* /// "pTearDownHWEndpoint()" */
+void pTearDownHWEndpoint(struct PsdEndpoint *pep)
+{
+    if(!pep || !pep->pep_IOReq) {
+        return;
+    }
+
+    struct PsdHardware *phw = pep->pep_Interface->pif_Config->pc_Device->pd_Hardware;
+    LIBBASETYPEPTR ps = phw->phw_Base;
+
+    if(phw->phw_DestroyEndpoint) {
+        phw->phw_DestroyEndpoint(pep->pep_IOReq);
+    }
+
+    psdFreeVec(pep->pep_IOReq);
+    pep->pep_IOReq = NULL;
+}
+/* \\\ */
+
+/* /// "pPrepareHWEndpoint()" */
+BOOL pPrepareHWEndpoint(struct PsdPipe *pp)
+{
+    struct PsdEndpoint *pep = pp->pp_Endpoint;
+    struct PsdHardware *phw = pp->pp_Device->pd_Hardware;
+
+    if(!pep || pep->pep_IOReq || !phw->phw_PrepareEndpoint) {
+        return(TRUE);
+    }
+
+    LIBBASETYPEPTR ps = phw->phw_Base;
+
+    pep->pep_IOReq = psdAllocVec(sizeof(struct IOUsbHWReq));
+    if(!pep->pep_IOReq) {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                       "AllocPipe(): Failed to allocate endpoint context for %s",
+                       pp->pp_Device->pd_ProductStr);
+        return(FALSE);
+    }
+
+    CopyMem(&pp->pp_IOReq, pep->pep_IOReq, sizeof(struct IOUsbHWReq));
+
+    LONG rc = phw->phw_PrepareEndpoint(pep->pep_IOReq);
+    if(!rc) {
+        return(TRUE);
+    }
+
+    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                   "Hardware refused to prepare endpoint %u on device %s: %s (%ld)",
+                   (unsigned)pep->pep_EPNum,
+                   pp->pp_Device->pd_ProductStr,
+                   psdNumToStr(NTS_IOERR, rc, "unknown"),
+                   rc);
+
+    psdFreeVec(pep->pep_IOReq);
+    pep->pep_IOReq = NULL;
+    return(FALSE);
+}
+/* \\\ */
+
 /* /// "pFreeEndpoint()" */
 void pFreeEndpoint(struct PsdEndpoint *pep)
 {
     LIBBASETYPEPTR ps = pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Base;
     KPRINTF(2, ("    FreeEndpoint()\n"));
+    pTearDownHWEndpoint(pep);
     Remove(&pep->pep_Node);
     psdFreeVec(pep);
 }
@@ -1553,6 +1662,7 @@ struct PsdEndpoint * pAllocEndpoint(struct PsdInterface *pif)
     struct PsdEndpoint *pep;
     if((pep = psdAllocVec(sizeof(struct PsdEndpoint)))) {
         pep->pep_Interface = pif;
+        pep->pep_IOReq = NULL;
         AddTail(&pif->pif_EPs, &pep->pep_Node);
         return(pep);
     }
@@ -4100,6 +4210,11 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
             pp->pp_IOReq.iouh_MaxPktSize     = pd->pd_MaxPktSize0;
         }
 
+        if(pep && !pPrepareHWEndpoint(pp)) {
+            psdFreeVec(pp);
+            return(NULL);
+        }
+
         pd->pd_UseCnt++;
         return(pp);
     }
@@ -4128,6 +4243,8 @@ AROS_LH1(void, psdFreePipe,
         psdAbortPipe(pp);
         psdWaitPipe(pp);
     }
+
+    pTearDownHWEndpoint(pp->pp_Endpoint);
 
     if(!(--pd->pd_UseCnt) && (pd->pd_Flags & PDFF_DELEXPUNGE)) {
         KPRINTF(20, ("Finally getting rid of device %s\n", pd->pd_ProductStr));
@@ -8509,7 +8626,7 @@ AROS_UFH0(void, pDeviceTask)
     ULONG sigs;
     ULONG sigmask;
     LONG ioerr;
-    struct TagItem taglist[11];
+    struct TagItem taglist[13];
     struct TagItem *tag;
     struct PsdPipe *pp;
     struct IOUsbHWReq *ioreq;
@@ -8522,6 +8639,8 @@ AROS_UFH0(void, pDeviceTask)
     ULONG  revision = 0;
     ULONG  driververs = 0x0100;
     ULONG  caps = UHCF_ISO;
+    PsdPrepareEndpointFunc prepareEndpoint = NULL;
+    PsdDestroyEndpointFunc destroyEndpoint = NULL;
     STRPTR devname;
     ULONG cnt;
 
@@ -8606,6 +8725,12 @@ AROS_UFH0(void, pDeviceTask)
             tag->ti_Tag = UHA_Capabilities;
             tag->ti_Data = (IPTR) &caps;
             ++tag;
+            tag->ti_Tag = UHA_PrepareEndpoint;
+            tag->ti_Data = (IPTR) &prepareEndpoint;
+            ++tag;
+            tag->ti_Tag = UHA_DestroyEndpoint;
+            tag->ti_Data = (IPTR) &destroyEndpoint;
+            ++tag;
             tag->ti_Tag = TAG_END;
             phw->phw_RootIOReq->iouh_Data = taglist;
             phw->phw_RootIOReq->iouh_Req.io_Command = UHCMD_QUERYDEVICE;
@@ -8621,6 +8746,8 @@ AROS_UFH0(void, pDeviceTask)
             phw->phw_Revision = revision;
             phw->phw_DriverVers = driververs;
             phw->phw_Capabilities = caps;
+            phw->phw_PrepareEndpoint = prepareEndpoint;
+            phw->phw_DestroyEndpoint = destroyEndpoint;
 
             sigmask = SIGBREAKF_CTRL_C;
             if(caps & UHCF_QUICKIO) {

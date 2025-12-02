@@ -1,7 +1,7 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 3.1 (27.11.2025)
+**	$VER: usbhardware.h 3.2 (02.12.2025)
 **
 **	standard usb hardware device include file
 **
@@ -84,6 +84,9 @@ struct IOUsbHWReq
     IOUSBHWREQ_V2_FIELDS;
     IOUSBHWREQ_V3_FIELDS;
 };
+
+typedef LONG (*PsdPrepareEndpointFunc)(struct IOUsbHWReq *ioreq);
+typedef void (*PsdDestroyEndpointFunc)(struct IOUsbHWReq *ioreq);
 
 /* Realtime ISO transfer structure as given in iouh_Data */
 struct IOUsbHWRTIso
@@ -194,6 +197,8 @@ struct IOUsbHWBufferReq
 #define UHA_Copyright           (UHA_Dummy + 0x15)
 #define UHA_DriverVersion       (UHA_Dummy + 0x20)
 #define UHA_Capabilities        (UHA_Dummy + 0x21)
+#define UHA_PrepareEndpoint     (UHA_Dummy + 0x22)
+#define UHA_DestroyEndpoint     (UHA_Dummy + 0x23)
 
 /*
  *  Capabilities as returned by UHA_Capabities
