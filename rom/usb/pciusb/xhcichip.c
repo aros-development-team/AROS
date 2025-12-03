@@ -488,12 +488,6 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         return NULL;
     }
 
-    struct xhci_ep *ep =
-        (struct xhci_ep *)&inctx[ctxoff * (epid + 1)];
-    ep->ctx[0] = ep->ctx[1] = 0;
-    ep->deq.addr_hi = ep->deq.addr_lo = 0;
-    ep->length = 0;
-
     /* Register in slot table */
     if (slotid > 0 && slotid < USB_DEV_MAX)
         hc->hc_Devices[slotid] = devCtx;
