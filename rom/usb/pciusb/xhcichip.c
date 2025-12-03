@@ -924,7 +924,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
             transactiondone = TRUE;
         } else {
             /*
-             * No CC yet – check for software NAK timeout
+             * No CC yet - check for software NAK timeout
              */
             if (unit->hu_NakTimeoutFrame[devadrep] &&
                 (hc->hc_FrameCounter > unit->hu_NakTimeoutFrame[devadrep])) {
@@ -977,7 +977,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
 
             /*
              * Release hardware state and complete the IO.
-             * NOTE: do NOT adjust iouh_Actual here – that is done by
+             * NOTE: do NOT adjust iouh_Actual here - that is done by
              * xhciIntWorkProcess when it decodes the Event TRB.
              */
             xhciFreePeriodicContext(hc, unit, ioreq);
@@ -1223,9 +1223,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 xhciports[hciport].portsc = AROS_LONG2LE(newportsc);
                 pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "RH Change $%08lx" DEBUGCOLOR_RESET" \n", hc->hc_PortChangeMap[hciport]);
                 if(hc->hc_PortChangeMap[hciport]) {
+                    BOOL signalTask = FALSE;
+
                     hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
-                    if (((origportsc & XHCIF_PR_PORTSC_PED) && (!xhciFindPortDevice(hc, hciport))) ||
-                            ((!(origportsc & XHCIF_PR_PORTSC_PED)) && (xhciFindPortDevice(hc, hciport)))) {
+
+                    if ((hc->hc_PortChangeMap[hciport] & UPSF_PORT_CONNECTION) ||
+                        ((origportsc & XHCIF_PR_PORTSC_PED) && (!xhciFindPortDevice(hc, hciport))) ||
+                        ((!(origportsc & XHCIF_PR_PORTSC_PED)) && (xhciFindPortDevice(hc, hciport)))) {
+                        signalTask = TRUE;
+                    }
+
+                    if (signalTask) {
                         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Signaling port change handler" DEBUGCOLOR_RESET" \n");
 
                         /* Connect/Disconnect the device */
@@ -1459,7 +1467,10 @@ AROS_UFH0(void, xhciControllerTask)
                 portsc = AROS_LE2LONG(xhciports[hciport].portsc);
                 devCtx = xhciFindPortDevice(hc, hciport);
 
-                if ((portsc & XHCIF_PR_PORTSC_PED) && (!devCtx)) {
+                BOOL connected = (portsc & XHCIF_PR_PORTSC_CCS) != 0;
+                BOOL enabled   = (portsc & XHCIF_PR_PORTSC_PED) != 0;
+
+                if (connected && enabled && (!devCtx)) {
                     UWORD rootPort = hciport;     /* 0-based */
                     ULONG route    = 0;           /* root-attached */
                     ULONG flags    = 0;
@@ -1472,7 +1483,7 @@ AROS_UFH0(void, xhciControllerTask)
                         flags |= UHFF_LOWSPEED;
                         mps0   = 8;              /* LS EP0 = 8 bytes */
                     } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
-                        /* FS EP0 is 8/16/32/64 – start with 8 until bMaxPacketSize0 is known */
+                        /* FS EP0 is 8/16/32/64 - start with 8 until bMaxPacketSize0 is known */
                         mps0   = 8;
                     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
                         flags |= UHFF_HIGHSPEED;
@@ -1481,26 +1492,27 @@ AROS_UFH0(void, xhciControllerTask)
                         flags |= UHFF_SUPERSPEED;
                         mps0   = 512;            /* SS EP0 max packet size */
                     } else {
-                        /* Unknown/invalid speed – leave defaults, enumeration will adjust */
+                        /* Unknown/invalid speed - leave defaults, enumeration will adjust */
                     }
 
-                    /* Root hub device: always a hub from the HC’s perspective */
+                    /* Root hub device: always a hub from the HC's perspective */
                     devCtx = xhciCreateDeviceCtx(hc,
                                                  rootPort,
                                                  route,
                                                  flags | UHFF_HUB,
                                                  mps0);
                     if (devCtx) {
-                        /* Root port “device” lives on this controller */
+                        /* Root port "device" lives on this controller */
                         hc->hc_Unit->hu_DevControllers[0] = hc;
                     }
-                } else if (!(portsc & XHCIF_PR_PORTSC_PED) && devCtx) {
+                } else if (!connected && devCtx) {
                     pciusbXHCIDebug("xHCI",
                                     DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p"
                                     DEBUGCOLOR_RESET" \n",
                                     devCtx);
 
                     xhciFreeDeviceCtx(hc, devCtx, TRUE);
+                    hc->hc_Unit->hu_DevControllers[0] = NULL;
                 }
             }
             uhwCheckRootHubChanges(hc->hc_Unit);
