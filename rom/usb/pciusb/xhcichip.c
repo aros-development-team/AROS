@@ -39,10 +39,31 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+#define XHCI_ROOT_HUB_HANDLE ((struct pciusbXHCIDevice *)-1)
+
 static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
                                     ULONG epid,
                                     BOOL stopEndpoint);
+
+static BOOL
+xhciIsRootHubRequest(struct IOUsbHWReq *ioreq, struct PCIUnit *unit)
+{
+    return (ioreq->iouh_RootPort == 0) ||
+           (unit && (ioreq->iouh_DevAddr == unit->hu_RootHubAddr));
+}
+
+static struct PCIController *xhciGetController(struct PCIUnit *unit)
+{
+    struct PCIController *hc;
+
+    ForeachNode(&unit->hu_Controllers, hc) {
+        if (hc->hc_HCIType == HCITYPE_XHCI)
+            return hc;
+    }
+
+    return NULL;
+}
 
 // See page 395 "EWE" - to enable rollover events.
 void xhciUpdateFrameCounter(struct PCIController *hc)
@@ -479,11 +500,15 @@ xhciObtainDeviceCtx(struct PCIController *hc,
                     struct IOUsbHWReq *ioreq,
                     BOOL allowCreate)
 {
+    struct PCIUnit *unit   = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     UWORD devaddr       = ioreq->iouh_DevAddr;
     ULONG route         = ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK;
     UWORD rootPortIndex = (ioreq->iouh_RootPort > 0)
                             ? (ioreq->iouh_RootPort - 1)
                             : 0;
+
+    if (xhciIsRootHubRequest(ioreq, unit))
+        return XHCI_ROOT_HUB_HANDLE;
 
     struct pciusbXHCIDevice *devCtx;
 
@@ -497,15 +522,7 @@ xhciObtainDeviceCtx(struct PCIController *hc,
         return devCtx;
 
     /* Non-zero address but no context = real error */
-    if (devaddr != 0)
-        return NULL;
-
-    /* devaddr == 0:
-     *   - route == 0  => root device, controller task MUST create it.
-     *   - route != 0  => child device, we create the slot when allowed to
-     *                    prepare the default endpoint.
-     */
-    if ((route == 0) || !allowCreate || (ioreq->iouh_Endpoint != 0))
+    if ((devaddr != 0) || !allowCreate)
         return NULL;
 
     return xhciCreateDeviceCtx(hc,
@@ -693,15 +710,22 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     struct PCIController *hc;
 
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
+
     if (!unit)
         return UHIOERR_BADPARAMS;
 
-    hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
-    if (!hc || (hc->hc_HCIType != HCITYPE_XHCI))
+    BOOL rootHubReq = xhciIsRootHubRequest(ioreq, unit);
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit);
+    hc = xhciGetController(unit);
+    if (!hc) {
         return UHIOERR_BADPARAMS;
+    } else if (rootHubReq) {
+        return 0;
+    }
 
-    BOOL allowCreate = (ioreq->iouh_Endpoint == 0);
-    struct pciusbXHCIDevice *devCtx = xhciObtainDeviceCtx(hc, ioreq, allowCreate);
+    struct pciusbXHCIDevice *devCtx = xhciObtainDeviceCtx(hc, ioreq, !rootHubReq);
     if (!devCtx)
         return UHIOERR_HOSTERROR;
 
@@ -749,7 +773,7 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         devCtx->dc_EPContexts[epid] = epctx;
     }
 
-    ioreq->iouh_DriverPrivate1 = epctx;
+    ioreq->iouh_DriverPrivate2 = epctx;
 
     return UHIOERR_NO_ERROR;
 }
@@ -759,14 +783,18 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     struct PCIController *hc;
     struct pciusbXHCIDevice *devCtx = NULL;
-    struct pciusbXHCIEndpointCtx *epctx = (struct pciusbXHCIEndpointCtx *)ioreq->iouh_DriverPrivate1;
+    struct pciusbXHCIEndpointCtx *epctx = (struct pciusbXHCIEndpointCtx *)ioreq->iouh_DriverPrivate2;
     ULONG epid;
+
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p, epctx @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit, epctx);
 
     if (!unit)
         return;
 
-    hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
-    if (!hc || (hc->hc_HCIType != HCITYPE_XHCI))
+    BOOL rootHubReq = xhciIsRootHubRequest(ioreq, unit);
+    hc = xhciGetController(unit);
+    if (!hc || rootHubReq)
         return;
 
     epid = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
@@ -783,7 +811,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
 
     xhciFreeEndpointContext(hc, devCtx, epid, TRUE);
 
-    ioreq->iouh_DriverPrivate1 = NULL;
+    ioreq->iouh_DriverPrivate2 = NULL;
 }
 
 /* Shutdown and Interrupt handlers */
@@ -1376,8 +1404,8 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
         uhwDelayMS(2, hu);
 
+    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbsts), (100 - cnt) << 1);
     xhciDumpStatus(AROS_LE2LONG(hcopr->usbsts));
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "after %ums" DEBUGCOLOR_RESET" \n", (100 - cnt) << 1);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Configuring DMA pointers..." DEBUGCOLOR_RESET" \n");
 
