@@ -884,11 +884,11 @@ void ehciScheduleIntTDs(struct PCIController *hc)
             } else {
                 splitctrl = EQSF_MULTI_1;
             }
-            if(ioreq->iouh_Interval < 2) { // 0-1 µFrames
+            if(ioreq->iouh_Interval < 2) { // 0-1 microframes
                 splitctrl |= (0xff<<EQSS_MUSOFACTIVE);
-            } else if(ioreq->iouh_Interval < 4) { // 2-3 µFrames
+            } else if(ioreq->iouh_Interval < 4) { // 2-3 microframes
                 splitctrl |= (0x55<<EQSS_MUSOFACTIVE);
-            } else if(ioreq->iouh_Interval < 8) { // 4-7 µFrames
+            } else if(ioreq->iouh_Interval < 8) { // 4-7 microframes
                 splitctrl |= (0x22<<EQSS_MUSOFACTIVE);
             } else if(ioreq->iouh_Interval > 511) { // 64ms and higher
                 splitctrl |= (0x10<<EQSS_MUSOFACTIVE);
@@ -897,7 +897,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
             }
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
             if(ioreq->iouh_Interval >= 1024) {
-                inteqh = ehcihcp->ehc_EhciIntQH[10]; // 1024 µFrames interval
+                inteqh = ehcihcp->ehc_EhciIntQH[10]; // 1024 microframes interval
             } else {
                 cnt = 0;
                 do {
