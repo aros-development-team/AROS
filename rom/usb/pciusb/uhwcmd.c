@@ -25,18 +25,6 @@
 #define WORD2LE(w) (w)
 #endif
 
-//#define XHCIASCII_DEBUG
-#if (DEBUG > 0) && !defined(AROS_USE_LOGRES) && defined(XHCIASCII_DEBUG)
-#define DEBUGCOLOR_SET       "\033[32m"
-#define DEBUGWARNCOLOR_SET       "\033[31m"
-#define DEBUGFUNCCOLOR_SET   "\033[32;1m"
-#define DEBUGCOLOR_RESET     "\033[0m"
-#else
-#define DEBUGCOLOR_SET
-#define DEBUGFUNCCOLOR_SET
-#define DEBUGCOLOR_RESET
-#endif
-
 #if defined(AROS_USE_LOGRES)
 #ifdef LogHandle
 #undef LogHandle
@@ -520,6 +508,22 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         *((ULONG *) tag->ti_Data) = caps;
         count++;
     }
+#if defined(PCIUSB_ENABLEXHCI)
+    if((tag = FindTagItem(UHA_PrepareEndpoint, taglist))) {
+        struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+        if(hc->hc_HCIType == HCITYPE_XHCI) {
+            *((APTR *) tag->ti_Data) = xhciPrepareEndpoint;
+            count++;
+        }
+    }
+    if((tag = FindTagItem(UHA_DestroyEndpoint, taglist))) {
+        struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+        if(hc->hc_HCIType == HCITYPE_XHCI) {
+            *((APTR *) tag->ti_Data) = xhciDestroyEndpoint;
+            count++;
+        }
+    }
+#endif
     ioreq->iouh_Actual = count;
     return RC_OK;
 }
@@ -540,6 +544,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
     UWORD hciport;
     ULONG numports = unit->hu_RootHubPorts;
 
+    KPRINTF(10, "cmdControlXFerRootHub(0x%p, 0x%p, 0x%p)\n", ioreq, unit, base);
+    
     if(ioreq->iouh_Endpoint) {
         return(UHIOERR_STALL);
     }
@@ -1029,6 +1035,8 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
                        struct PCIUnit *unit,
                        struct PCIDevice *base)
 {
+    KPRINTF(10, "cmdIntXFerRootHub(0x%p, 0x%p, 0x%p)\n", ioreq, unit, base);
+
     if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
         return(UHIOERR_STALL);
     }
@@ -1738,9 +1746,9 @@ WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
                       struct PCIUnit *unit,
                       struct PCIDevice *base)
 {
-    struct my_NSDeviceQueryResult *query;
+    struct NSDeviceQueryResult *query;
 
-    query = (struct my_NSDeviceQueryResult *) ioreq->io_Data;
+    query = (struct NSDeviceQueryResult *) ioreq->io_Data;
 
     KPRINTF(10, "NSCMD_DEVICEQUERY ioreq: 0x%p query: 0x%p\n", ioreq, query);
 
@@ -1749,7 +1757,7 @@ WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
        Valid request?
     */
     if((!query) ||
-            (ioreq->io_Length < sizeof(struct my_NSDeviceQueryResult)) ||
+            (ioreq->io_Length < sizeof(struct NSDeviceQueryResult)) ||
             (query->DevQueryFormat != 0) ||
             (query->SizeAvailable != 0)) {
         /* Return error. This is special handling, since iorequest is only
@@ -1766,10 +1774,10 @@ WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
     }
 
     ioreq->io_Actual         = query->SizeAvailable
-                               = sizeof(struct my_NSDeviceQueryResult);
+                               = sizeof(struct NSDeviceQueryResult);
     query->DeviceType        = NSDEVTYPE_USBHARDWARE;
     query->DeviceSubType     = 0;
-    query->SupportedCommands = NSDSupported;
+    query->SupportedCommands = (UWORD *)NSDSupported;
 
     /* Return success (note that this will NOT poke ios2_WireError).
     */

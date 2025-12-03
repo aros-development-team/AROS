@@ -28,6 +28,8 @@
 #define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 #endif
 
+struct pciusbXHCIEndpointCtx;
+
 struct pciusbXHCIDMAAlloc
 {
     struct MemEntry                     dmaa_Entry;
@@ -53,8 +55,9 @@ struct pcisusbXHCIRing
 /*
  * Private USB Device Context
  */
-struct pcisusbXHCIDevice {
+struct pciusbXHCIDevice {
     struct pciusbXHCIDMAAlloc           dc_EPAllocs[MAX_DEVENDPOINTS];
+    struct pciusbXHCIEndpointCtx       *dc_EPContexts[MAX_DEVENDPOINTS];
     struct pciusbXHCIDMAAlloc           dc_IN;                                      // Device Input context
     struct pciusbXHCIDMAAlloc           dc_SlotCtx;                                 // Device Context (R/O)
     ULONG                               dx_TxMax;
@@ -63,9 +66,15 @@ struct pcisusbXHCIDevice {
     UBYTE                               dc_RootPort;
 };
 
+struct pciusbXHCIEndpointCtx
+{
+    struct pciusbXHCIDevice            *ectx_Device;
+    ULONG                               ectx_EPID;
+};
+
 struct pciusbXHCIIODevPrivate
 {
-    struct pcisusbXHCIDevice            *dpDevice;
+    struct pciusbXHCIDevice            *dpDevice;
     ULONG                               dpEPID;
     UWORD                               dpSTRB;                                     // Setup TRB
     UWORD                               dpTxSTRB;                                   // Transaction TRB

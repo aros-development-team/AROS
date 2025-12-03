@@ -501,7 +501,18 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
     }
 
-    pciusbDebug("PCI", "Unit %ld: USB Board %08lx has %ld USB1.1 and %ld USB2.0 ports!\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID, hu->hu_RootHub11Ports, hu->hu_RootHub20Ports);
+    pciusbDebug("PCI", "Unit %ld: USB Board %08lx:\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID);
+    if (hu->hu_RootHub11Ports) {
+        pciusbDebug("PCI", "Unit %ld: - %ld USB1.1 port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_RootHub11Ports);
+    }
+    if (hu->hu_RootHub20Ports) {
+        pciusbDebug("PCI", "Unit %ld: - %ld USB2.0 port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_RootHub20Ports);
+    }
+#if defined(PCIUSB_ENABLEXHCI)
+    if (hu->hu_RootHubXPorts) {
+        pciusbDebug("PCI", "Unit %ld: - %ld USB3.x+ port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_RootHubXPorts);
+    }
+#endif
 
     hu->hu_FrameCounter = 1;
     hu->hu_RootHubAddr = 0;

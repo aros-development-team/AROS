@@ -6,12 +6,26 @@
 struct IOUsbHWReq;
 
 WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
+LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq);
+void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq);
+
+static inline UBYTE xhciEndpointID(UBYTE endpoint, UBYTE dir)
+{
+    UBYTE epid = 1;
+
+    if (endpoint > 0) {
+        epid = (endpoint & 0x0F) * 2;
+        epid += dir;
+    }
+
+    return epid;
+}
 
 // xhcichip.c
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
-struct pcisusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
@@ -23,7 +37,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 BOOL xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
 WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast);
 
-ULONG xhciInitEP(struct PCIController *hc, struct pcisusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
+ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
@@ -68,7 +82,7 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 #define xhciCmdNoOp(hc,slot,dmaaddr)						xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL)
 #endif
 
-struct pcisusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
+struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 
 #if defined(PCIUSB_XHCI_DEBUG)
 #define pciusbXHCIDebug(sub,fmt,args...) pciusbDebug(sub,fmt,##args)

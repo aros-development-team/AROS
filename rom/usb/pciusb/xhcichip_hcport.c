@@ -36,7 +36,7 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
-static struct pcisusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWORD hciport)
+static struct pciusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWORD hciport)
 {
     UWORD maxslot = hc->hc_NumSlots;
 
@@ -44,7 +44,7 @@ static struct pcisusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UW
         maxslot = USB_DEV_MAX - 1;
 
     for (UWORD slot = 1; slot <= maxslot; slot++) {
-        struct pcisusbXHCIDevice *devCtx = hc->hc_Devices[slot];
+        struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slot];
 
         if (devCtx && (devCtx->dc_RootPort == hciport))
             return devCtx;
@@ -101,7 +101,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         if (AROS_LE2LONG(xhciports[hciport].portsc) & XHCIF_PR_PORTSC_PED) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: PED still asserted?!?!" DEBUGCOLOR_RESET" \n");
         } else if (xhciFindPortDevice(hc, hciport)) {
-            struct pcisusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
+            struct pciusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
 
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.." DEBUGCOLOR_RESET" \n", devCtx->dc_SlotID);
 
@@ -119,7 +119,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             }
             FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);
             FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr);
-            FreeMem(devCtx, sizeof(struct pcisusbXHCIDevice));
+            FreeMem(devCtx, sizeof(struct pciusbXHCIDevice));
 #endif
         }
         newval |= XHCIF_PR_PORTSC_PR;

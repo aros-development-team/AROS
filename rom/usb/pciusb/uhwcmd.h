@@ -70,14 +70,5 @@ BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt);
 
 void uhwDelayMicro(ULONG micro, struct PCIUnit *unit);
 
-struct my_NSDeviceQueryResult
-{
-    ULONG   DevQueryFormat;         /* this is type 0               */
-    ULONG   SizeAvailable;          /* bytes available              */
-    UWORD   DeviceType;             /* what the device does         */
-    UWORD   DeviceSubType;          /* depends on the main type     */
-    const UWORD *SupportedCommands; /* 0 terminated list of cmd's   */
-};
-
 #endif /* UHWCMD_H */
 

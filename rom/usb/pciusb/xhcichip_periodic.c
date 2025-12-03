@@ -85,60 +85,18 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         WORD queued = -1;
 
         if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
-            struct pcisusbXHCIDevice *devCtx;
+            struct pciusbXHCIDevice *devCtx;
 
             devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
             if (devCtx != NULL) {
-                ULONG txep;
+                ULONG txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
-                if (ioreq->iouh_Endpoint == 0) {
-                    txep = 1;
-                } else {
-                    volatile struct xhci_inctx *in = (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
-                    struct xhci_ep *ep;
-                    in->acf = 0;
-
-                    UWORD ctxoff = 1;
-                    if (hc->hc_Flags & HCF_CTX64)
-                        ctxoff <<= 1;
-
-                    /* initialize the endpoint for use .. */
-                    txep = xhciInitEP(hc, devCtx,
-                                      ioreq,
-                                      ioreq->iouh_Endpoint,
-                                      (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0,
-                                      UHCMD_INTXFER,
-                                      ioreq->iouh_MaxPktSize,
-                                      ioreq->iouh_Interval,
-                                      ioreq->iouh_Flags);
-
-                    if (txep > 0) {
-                        volatile struct xhci_slot *islot = (volatile struct xhci_slot *)&in[ctxoff];
-                        ep = (struct xhci_ep *)&in[ctxoff * (txep + 1)];
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "EPID %u initialized" DEBUGCOLOR_RESET" \n", txep);
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Interval %u = %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Interval, (ep->ctx[0] >> 16) & 0xFF);
-
-                        /* Send configure command. */
-                        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);
-                        if (cc != 1) {
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to configure Endpoint (%u)" DEBUGCOLOR_RESET" \n", txep);
-                            pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Endpoint %u, Dir %s, MaxSize %u" DEBUGCOLOR_RESET" \n", ioreq->iouh_Endpoint,
-                                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
-                                        ioreq->iouh_MaxPktSize);
-                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                            ReplyMsg(&ioreq->iouh_Req.io_Message);
-                            return;
-                        }
-
-                        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: Endpoint configured" DEBUGCOLOR_RESET" \n", __func__);
-
-                        ep->ctx[1] = ep->ctx[0] = 0;
-                        ep->deq.addr_hi = ep->deq.addr_lo = 0;
-                        ep->length = 0;
-                    }
+                if ((txep == 0) || (txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                    ReplyMsg(&ioreq->iouh_Req.io_Message);
+                    return;
                 }
 
                 driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
@@ -184,7 +142,24 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 // mark endpoint as busy
                 pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
                 unit->hu_DevBusyReq[devadrep] = ioreq;
+
+                if (!driprivate->dpDevice) {
+                    Enable();
+                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                    ReplyMsg(&ioreq->iouh_Req.io_Message);
+                    return;
+                }
+
                 epring = driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
+
+                if (!epring) {
+                    Enable();
+                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                    ReplyMsg(&ioreq->iouh_Req.io_Message);
+                    return;
+                }
 
                 pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: EP ring @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, epring);
 
