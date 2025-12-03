@@ -175,13 +175,42 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         WORD queued = -1;
 
         if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
+            BOOL autoCreated = FALSE;
+
             devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+
+            if ((!devCtx) && (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
+                devCtx = xhciObtainDeviceCtx(hc, ioreq, TRUE);
+                if (devCtx)
+                    autoCreated = TRUE;
+            }
 
             if (devCtx != NULL) {
                 ULONG txep = xhciEndpointID(ioreq->iouh_Endpoint,
                                             (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
-                if ((txep == 0) || (txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+                if (txep == 0) {
+                    if (!devCtx->dc_EPAllocs[0].dmaa_Ptr) {
+                        ULONG initep = xhciInitEP(hc, devCtx,
+                                                  ioreq,
+                                                  0, 0,
+                                                  UHCMD_CONTROLXFER,
+                                                  ioreq->iouh_MaxPktSize,
+                                                  ioreq->iouh_Interval,
+                                                  ioreq->iouh_Flags);
+
+                        if ((initep == 0) || !devCtx->dc_EPAllocs[0].dmaa_Ptr) {
+                            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                            ReplyMsg(&ioreq->iouh_Req.io_Message);
+
+                            pciusbXHCIDebug("xHCI",
+                                            "Leaving %s early: failed to initialise EP0\n",
+                                            __func__);
+                            return;
+                        }
+                    }
+                } else if ((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
                     Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                     ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -190,6 +219,11 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                     "Leaving %s early: endpoint not prepared\n",
                                     __func__);
                     return;
+                }
+
+                if (autoCreated) {
+                    pciusbWarn("xHCI",
+                        DEBUGCOLOR_SET "xHCI: Auto-created DevAddr0/EP0 context for pending transfer" DEBUGCOLOR_RESET" \n");
                 }
 
                 driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate),
