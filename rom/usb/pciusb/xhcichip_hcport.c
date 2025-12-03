@@ -59,7 +59,11 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
     BOOL cmdgood = FALSE;
     ULONG oldval = AROS_LE2LONG(xhciports[hciport].portsc);
-    ULONG newval = 0, tmpval;
+    ULONG newval = oldval & ~(XHCIF_PR_PORTSC_OCC | XHCIF_PR_PORTSC_PRC |
+                              XHCIF_PR_PORTSC_WRC | XHCIF_PR_PORTSC_PEC |
+                              XHCIF_PR_PORTSC_CSC | XHCIF_PR_PORTSC_PLC |
+                              XHCIF_PR_PORTSC_CEC);
+    ULONG tmpval;
     struct pciusbXHCIDevice *devCtx;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, unit, hc, hciport, idx, val, retval);
@@ -72,7 +76,8 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         if (!(oldval & XHCIF_PR_PORTSC_PED)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: >Setting Reset to enable port" DEBUGCOLOR_RESET" \n");
             /* Reset the port */
-            newval |= XHCIF_PR_PORTSC_PR;
+            if (oldval & XHCIF_PR_PORTSC_CCS)
+                newval |= XHCIF_PR_PORTSC_PR;
         } else {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port allready enabled" DEBUGCOLOR_RESET" \n");
         }
@@ -88,20 +93,8 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
     case UFS_PORT_RESET:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Performing Port Reset-:" DEBUGCOLOR_RESET" \n");
-#if (1)
-        if (oldval & XHCIF_PR_PORTSC_PED) {
+        if ((oldval & XHCIF_PR_PORTSC_PED) && xhciFindPortDevice(hc, hciport)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI:     >Setting Port Power Off" DEBUGCOLOR_RESET" \n");
-            newval |= XHCIF_PR_PORTSC_PED;
-            do {
-                xhciports[hciport].portsc = AROS_LONG2LE(newval);
-                tmpval = AROS_LE2LONG(xhciports[hciport].portsc);
-                uhwDelayMS(100, unit);
-            } while (tmpval & XHCIF_PR_PORTSC_PED);
-            newval &= ~XHCIF_PR_PORTSC_PED;
-        }
-        if (AROS_LE2LONG(xhciports[hciport].portsc) & XHCIF_PR_PORTSC_PED) {
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: PED still asserted?!?!" DEBUGCOLOR_RESET" \n");
-        } else if (xhciFindPortDevice(hc, hciport)) {
             devCtx = xhciFindPortDevice(hc, hciport);
 
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.." DEBUGCOLOR_RESET"\n", devCtx->dc_SlotID);
@@ -110,7 +103,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         }
         newval |= XHCIF_PR_PORTSC_PR;
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI:     >Setting Reset" DEBUGCOLOR_RESET" \n");
-#endif
+        unit->hu_DevControllers[0] = hc;
         cmdgood = TRUE;
         break;
 
@@ -123,10 +116,9 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         break;
     }
     if(cmdgood) {
-        if (newval)
-            xhciports[hciport].portsc = AROS_LONG2LE(newval);
-        newval = AROS_LE2LONG(xhciports[hciport].portsc);
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE $%08lx->$%08lx" DEBUGCOLOR_RESET" \n", idx, oldval, newval);
+        xhciports[hciport].portsc = AROS_LONG2LE(newval);
+        tmpval = AROS_LE2LONG(xhciports[hciport].portsc);
+        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE $%08lx->$%08lx" DEBUGCOLOR_RESET" \n", idx, oldval, tmpval);
     }
     return cmdgood;
 }
@@ -136,7 +128,11 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     volatile struct xhci_hccapr *xhciregs = (volatile struct xhci_hccapr *)hc->hc_RegBase;
     volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
     ULONG oldval = AROS_LE2LONG(xhciports[hciport].portsc);
-    ULONG newval = 0;
+    ULONG newval = oldval & ~(XHCIF_PR_PORTSC_OCC | XHCIF_PR_PORTSC_PRC |
+                              XHCIF_PR_PORTSC_WRC | XHCIF_PR_PORTSC_PEC |
+                              XHCIF_PR_PORTSC_CSC | XHCIF_PR_PORTSC_PLC |
+                              XHCIF_PR_PORTSC_CEC);
+    ULONG clearbits = 0;
     BOOL cmdgood = FALSE;
     struct pciusbXHCIDevice *devCtx;
 
@@ -148,7 +144,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     case UFS_PORT_ENABLE:
         // Setting PED disables the port.
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Disabling Port" DEBUGCOLOR_RESET" \n");
-        newval |= XHCIF_PR_PORTSC_PED;
+        newval &= ~XHCIF_PR_PORTSC_PED;
         cmdgood = TRUE;
         // disable enumeration
         unit->hu_DevControllers[0] = NULL;
@@ -173,37 +169,46 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     case UFS_C_PORT_CONNECTION:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Clearing Connection Change" DEBUGCOLOR_RESET" \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
+        clearbits |= XHCIF_PR_PORTSC_CSC;
         cmdgood = TRUE;
         break;
 
     case UFS_C_PORT_ENABLE:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Clearing Enable Change" DEBUGCOLOR_RESET" \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
+        clearbits |= XHCIF_PR_PORTSC_PEC;
         cmdgood = TRUE;
         break;
 
     case UFS_C_PORT_SUSPEND:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Clearing Suspend Change" DEBUGCOLOR_RESET" \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND;
+        clearbits |= XHCIF_PR_PORTSC_PLC;
         cmdgood = TRUE;
         break;
 
     case UFS_C_PORT_OVER_CURRENT:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Clearing Over-Current Change" DEBUGCOLOR_RESET" \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT;
+        clearbits |= XHCIF_PR_PORTSC_OCC;
         cmdgood = TRUE;
         break;
 
     case UFS_C_PORT_RESET:
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Clearing Reset Change" DEBUGCOLOR_RESET" \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET;
+        clearbits |= (XHCIF_PR_PORTSC_PRC | XHCIF_PR_PORTSC_WRC);
         cmdgood = TRUE;
         break;
     }
     if(cmdgood) {
-        if (newval)
-            xhciports[hciport].portsc = AROS_LONG2LE(newval);
+        newval |= clearbits;
+        xhciports[hciport].portsc = AROS_LONG2LE(newval);
         newval = AROS_LE2LONG(xhciports[hciport].portsc);
+        if (hc->hc_PortChangeMap[hciport])
+            hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
+        else
+            hc->hc_Unit->hu_RootPortChanges &= ~(1UL << (hciport + 1));
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port %ld CLEAR_FEATURE $%08lx->$%08lx" DEBUGCOLOR_RESET" \n", idx, oldval, newval);
     }
     return cmdgood;
