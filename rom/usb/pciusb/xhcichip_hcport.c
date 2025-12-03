@@ -60,6 +60,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     BOOL cmdgood = FALSE;
     ULONG oldval = AROS_LE2LONG(xhciports[hciport].portsc);
     ULONG newval = 0, tmpval;
+    struct pciusbXHCIDevice *devCtx;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, unit, hc, hciport, idx, val, retval);
 
@@ -101,26 +102,11 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         if (AROS_LE2LONG(xhciports[hciport].portsc) & XHCIF_PR_PORTSC_PED) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: PED still asserted?!?!" DEBUGCOLOR_RESET" \n");
         } else if (xhciFindPortDevice(hc, hciport)) {
-            struct pciusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
+            devCtx = xhciFindPortDevice(hc, hciport);
 
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.." DEBUGCOLOR_RESET" \n", devCtx->dc_SlotID);
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.." DEBUGCOLOR_RESET"\n", devCtx->dc_SlotID);
 
-            xhciCmdSlotDisable(hc, devCtx->dc_SlotID);
-            if ((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX))
-                hc->hc_Devices[devCtx->dc_SlotID] = NULL;
-#if (1)
-            int epn;
-            //TODO: Offload to support task..
-            for (epn = 0; epn < MAX_DEVENDPOINTS; epn ++) {
-                if (devCtx->dc_EPAllocs[epn].dmaa_Ptr) {
-                    // Free Endpoint resources ...
-                    FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_EPAllocs[epn].dmaa_Entry.me_Un.meu_Addr);
-                }
-            }
-            FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);
-            FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_SlotCtx.dmaa_Entry.me_Un.meu_Addr);
-            FreeMem(devCtx, sizeof(struct pciusbXHCIDevice));
-#endif
+            xhciFreeDeviceCtx(hc, devCtx, TRUE);
         }
         newval |= XHCIF_PR_PORTSC_PR;
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI:     >Setting Reset" DEBUGCOLOR_RESET" \n");
@@ -152,6 +138,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     ULONG oldval = AROS_LE2LONG(xhciports[hciport].portsc);
     ULONG newval = 0;
     BOOL cmdgood = FALSE;
+    struct pciusbXHCIDevice *devCtx;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, unit, hc, hciport, idx, val, retval);
 
@@ -165,6 +152,9 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
         cmdgood = TRUE;
         // disable enumeration
         unit->hu_DevControllers[0] = NULL;
+        devCtx = xhciFindPortDevice(hc, hciport);
+        if (devCtx)
+            xhciFreeDeviceCtx(hc, devCtx, TRUE);
         break;
 
     case UFS_PORT_SUSPEND:

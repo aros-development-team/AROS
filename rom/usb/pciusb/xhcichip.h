@@ -61,6 +61,7 @@ struct pciusbXHCIDevice {
     struct pciusbXHCIDMAAlloc           dc_IN;                                      // Device Input context
     struct pciusbXHCIDMAAlloc           dc_SlotCtx;                                 // Device Context (R/O)
     ULONG                               dx_TxMax;
+    ULONG                               dc_RouteString;
     UBYTE                               dc_SlotID;
     UBYTE                               dc_DevAddr;
     UBYTE                               dc_RootPort;

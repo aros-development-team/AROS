@@ -25,7 +25,9 @@ static inline UBYTE xhciEndpointID(UBYTE endpoint, UBYTE dir)
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
-struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
+struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq, BOOL allowCreate);
+void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, BOOL disableSlot);
 
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
