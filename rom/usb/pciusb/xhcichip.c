@@ -78,7 +78,7 @@ void xhciUpdateFrameCounter(struct PCIController *hc)
     UWORD framecnt;
 
     Disable();
-    framecnt = rrs->mfindex & 0x3FFF;
+    framecnt = AROS_LE2LONG(rrs->mfindex) & 0x3FFF;
     if(framecnt < (hc->hc_FrameCounter & 0x3FFF)) {
         hc->hc_FrameCounter |= 0x3FFF;
         hc->hc_FrameCounter++;

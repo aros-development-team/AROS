@@ -85,7 +85,7 @@ LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr
 LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 #else
-#define xhciRingDoorbell(hc,slot,value)						((volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB))[slot].db = value;
+#define xhciRingDoorbell(hc,slot,value)						((volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB))[slot].db = AROS_LONG2LE(value);
 #define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
 static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, struct IOUsbHWReq *ioreq)
 {

@@ -36,7 +36,7 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
     volatile struct xhci_dbr *xhcidb = (volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB);
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
-    xhcidb[slot].db = value;
+    xhcidb[slot].db = AROS_LONG2LE(value);
 }
 #endif
 
@@ -90,7 +90,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             }
 
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
-            portsc = xhciports[port - 1].portsc;
+            portsc = AROS_LE2LONG(xhciports[port - 1].portsc);
 
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
@@ -176,7 +176,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
             port = (slotctx1 >> 16) & 0xff;
 
             if (port > 0 && port <= hc->hc_NumPorts)
-                portsc = xhciports[port - 1].portsc;
+                portsc = AROS_LE2LONG(xhciports[port - 1].portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
             Enable();
