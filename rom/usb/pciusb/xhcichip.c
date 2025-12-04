@@ -1337,11 +1337,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
             switch (trbe_type) {
             case TRBB_FLAG_ERTYPE_PORT_STATUS_CHANGE: {
-#if __WORDSIZE == 64
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)(((IPTR)etrb->dbp.addr_hi << 32) | (IPTR)etrb->dbp.addr_lo);
-#else
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)etrb->dbp.addr_lo;
-#endif
+                struct xhci_trb  *txtrb = xhciTRBPointer(hc, etrb);
                 volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
                 volatile struct xhci_trb_port_status *evt = (volatile struct xhci_trb_port_status *)&ering->current;
 
@@ -1409,11 +1405,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 break;
             }
             case TRBB_FLAG_ERTYPE_TRANSFER: {
-#if __WORDSIZE == 64
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)(((IPTR)etrb->dbp.addr_hi << 32) | (IPTR)etrb->dbp.addr_lo);
-#else
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)etrb->dbp.addr_lo;
-#endif
+                struct xhci_trb  *txtrb = xhciTRBPointer(hc, etrb);
                 struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
                 volatile struct xhci_trb  *evt = &ring->current;
                 ULONG last = txtrb - ring->ring;
@@ -1436,11 +1428,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 break;
             }
             case TRBB_FLAG_ERTYPE_COMMAND_COMPLETE: {
-#if __WORDSIZE == 64
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)(((IPTR)etrb->dbp.addr_hi << 32) | (IPTR)etrb->dbp.addr_lo);
-#else
-                struct xhci_trb  *txtrb = (struct xhci_trb  *)etrb->dbp.addr_lo;
-#endif
+                struct xhci_trb  *txtrb = xhciTRBPointer(hc, etrb);
                 struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
                 volatile struct xhci_trb  *evt = &ring->current;
                 ULONG last = txtrb - ring->ring;

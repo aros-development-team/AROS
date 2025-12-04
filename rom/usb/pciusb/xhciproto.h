@@ -139,13 +139,27 @@ void xhciDumpCC(UBYTE completioncode);
     else \
     { \
         y.addr_lo = AROS_LONG2LE((ULONG)((IPTR)(z) & 0xFFFFFFFF)); \
-        y.addr_hi = AROS_LONG2LE((ULONG)(((IPTR)(z) >> 32) & 0xFFFFFFFF)); \
+        y.addr_hi = 0; \
     } \
-    
+
 #else
 #define xhciSetPointer(x,y,z) \
     y.addr_lo = AROS_LONG2LE((ULONG)((IPTR)(z) & 0xFFFFFFFF)); \
     y.addr_hi = 0
 #endif
+
+static inline struct xhci_trb *
+xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
+{
+#if __WORDSIZE == 64
+    if ((hc->hc_Flags & HCF_ADDR64) && trb)
+        return (struct xhci_trb *)(((UQUAD)trb->dbp.addr_hi << 32) |
+                                   (UQUAD)trb->dbp.addr_lo);
+#else
+    /* 32-bit addressing (or non-64-bit host) relies solely on the low dword. */
+    (void)hc;
+#endif
+    return (struct xhci_trb *)(IPTR)(trb ? trb->dbp.addr_lo : 0);
+}
 
 #endif /* XHCIPROTO_H */

@@ -201,11 +201,10 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                         pciusbXHCIDebugTRB("xHCI",
                             DEBUGCOLOR_SET "INT TD buffer ptr: trb=%p, ioreq->Data=%p (dma 0x%p)" DEBUGCOLOR_RESET" \n",
-                            (APTR)((IPTR)trb->dbp.addr_lo
-#if __WORDSIZE == 64
-                                  | ((UQUAD)trb->dbp.addr_hi << 32)
-#endif
-                            ),
+                            (APTR)((IPTR)trb->dbp.addr_lo |
+                                  ((hc->hc_Flags & HCF_ADDR64)
+                                       ? ((UQUAD)trb->dbp.addr_hi << 32)
+                                       : 0)),
                             ioreq->iouh_Data, dma_addr);
                     }
                     int cnt;
