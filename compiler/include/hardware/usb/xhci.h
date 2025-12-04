@@ -247,9 +247,10 @@ struct xhci_ir
  * USB Legacy Support Control/Status (USBLEGCTLSTS)
  */
 #define XHCIB_USBLEGCTLSTS_SMI_ENABLE           0
-#define XHCIF_USBLEGCTLSTS_SMI_ENABLE           (1 << XHCIB_SMI_ENABLE)
+#define XHCIF_USBLEGCTLSTS_SMI_ENABLE           (1u << XHCIB_USBLEGCTLSTS_SMI_ENABLE)
+
 #define XHCIB_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE 4
-#define XHCIF_USBLEGCTLSTS_SMI_ONHOSTERR        (1 << XHCIB_SMI_ONHOSTERR)
+#define XHCIF_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE (1u << XHCIB_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE)
 
 
 /*
@@ -359,9 +360,9 @@ struct xhci_trb
 
 /* Data Stage TRB params & Flags */
 #define TRBS_TPARAMS_DS_TRBLEN                  0
-#define TRB_TPARAMS_DS_TRBLEN_SMASK             0xFFFF
+#define TRB_TPARAMS_DS_TRBLEN_SMASK             0x1FFFFu                                        /* 17 bits      */
 #define TRBS_TPARAMS_DS_TDSIZE                  17
-#define TRB_TPARAMS_DS_TDSIZE_SMASK             0xF
+#define TRB_TPARAMS_DS_TDSIZE_SMASK             0x1Fu                                           /* 5 bits       */
 #define TRB_TPARAMS_DS_TDSIZE_MASK              (TRB_TPARAMS_DS_TDSIZE_SMASK << TRBS_TPARAMS_DS_TDSIZE)
 #define TRBB_FLAG_DS_DIR                        16
 #define TRBF_FLAG_DS_DIR                        (1 << TRBB_FLAG_DS_DIR)
@@ -374,9 +375,9 @@ struct xhci_trb_port_status
     UBYTE                       rsvd1[3];
     UBYTE                       port;
     UBYTE                       rsvd2[7];
-    UBYTE                       code;                                                         // Completion code
-    UBYTE                       flags;                                                        // Flags
-    UBYTE                       type;                                                         // Type
+    UBYTE                       code;                                                           // Completion code
+    UBYTE                       flags;                                                          // Flags
+    UBYTE                       type;                                                           // Type
     UWORD                       rsvd3;
 }  __packed;
 
@@ -464,8 +465,8 @@ struct xhci_ep
     ULONG                       rsvd1[3];
 }  __packed;
 
-#define EPS_CTX_CERR            1
-#define EP_CTX_CERR_MASK        0x3
+#define EPS_CTX_CERR            0   /* starting bit */
+#define EP_CTX_CERR_MASK        0x3 /* value 3 => 3 retries */
 #define EPS_CTX_TYPE            3
 #define EPF_CTX_TYPE_ISOCH_O    (1 << EPS_CTX_TYPE)
 #define EPF_CTX_TYPE_BULK_O     (2 << EPS_CTX_TYPE)
