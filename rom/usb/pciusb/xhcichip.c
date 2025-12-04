@@ -351,7 +351,7 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
              */
             xhciInsertTRB(hc, ring,
                           link_dma,
-                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_ENT,
+                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC,
                           0);
             ring->next = 0;
             if (ring->end & RINGENDCFLAG)

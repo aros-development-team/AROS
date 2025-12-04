@@ -401,10 +401,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                     if (queued != -1) {
                         int cnt;
                         driprivate->dpTxSTRB = queued;
-                        if (epring->next > driprivate->dpTxSTRB + 1)
-                            driprivate->dpTxETRB = epring->next - 1;
-                        else
-                            driprivate->dpTxETRB = driprivate->dpTxSTRB;
+                        driprivate->dpTxETRB =
+                            (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
 
                         pciusbXHCIDebug("xHCI",
                                         "TX TRB range: STRB=%u ETRB=%u, epring->next=%u\n",
@@ -412,10 +410,22 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                         driprivate->dpTxETRB,
                                         epring->next);
 
-                        for (cnt = driprivate->dpTxSTRB;
-                             cnt < (driprivate->dpTxETRB + 1);
-                             cnt ++) {
-                            epring->ringio[cnt] = &ioreq->iouh_Req;
+                        if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
+                            for (cnt = driprivate->dpTxSTRB;
+                                 cnt < (driprivate->dpTxETRB + 1);
+                                 cnt ++) {
+                                epring->ringio[cnt] = &ioreq->iouh_Req;
+                            }
+                        } else {
+                            /* Wrapped: capture TRBs before and after the link TRB */
+                            for (cnt = driprivate->dpTxSTRB;
+                                 cnt < (XHCI_EVENT_RING_TRBS - 1);
+                                 cnt ++) {
+                                epring->ringio[cnt] = &ioreq->iouh_Req;
+                            }
+                            for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt ++) {
+                                epring->ringio[cnt] = &ioreq->iouh_Req;
+                            }
                         }
 
                         if (txtype == UHCMD_CONTROLXFER) {
