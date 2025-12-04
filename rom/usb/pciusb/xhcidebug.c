@@ -49,9 +49,10 @@ void xhciDumpIN(volatile struct xhci_inctx *in)
 void xhciDumpSlot(volatile struct xhci_slot *slot)
 {
 #if defined(XHCI_ENABLESLOTDEBUG)
-    switch ((slot->ctx[3] >> 27) & 0xF) {
+    ULONG state = (slot->ctx[3] >> 27) & 0x1F;
+    switch (state) {
     case 0:
-        KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Disabled/Enabled" DEBUGCOLOR_RESET" \n");
+        KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Disabled" DEBUGCOLOR_RESET" \n");
         break;
     case 1:
         KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Default" DEBUGCOLOR_RESET" \n");
@@ -63,7 +64,7 @@ void xhciDumpSlot(volatile struct xhci_slot *slot)
         KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Configured" DEBUGCOLOR_RESET" \n");
         break;
     default:
-        KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Unknown (%x)" DEBUGCOLOR_RESET" \n", (slot->ctx[3] >> 27) & 0xF);
+        KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.STATE = Unknown (%02x)" DEBUGCOLOR_RESET" \n", state);
         break;
     }
     KPrintF(DEBUGCOLOR_SET "xHCI: SLOT.PORT         = %02x" DEBUGCOLOR_RESET" \n", (slot->ctx[1] >> 16) & 0xFF);

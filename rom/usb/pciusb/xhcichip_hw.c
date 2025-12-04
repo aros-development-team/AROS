@@ -49,33 +49,52 @@ LONG xhciCmdSubmit(struct PCIController *hc,
                    ULONG trbflags, ULONG *resflags)
 {
     volatile struct xhci_inctx *inctx;
+    volatile struct xhci_slot *slot = NULL;
     WORD queued;
 
     Disable();
     if (dmaaddr) {
         ULONG portsc = 0;
+        UBYTE port = 0;
         UWORD ctxoff = 1;
         if (hc->hc_Flags & HCF_CTX64)
             ctxoff <<= 1;
 
-        inctx = (volatile struct xhci_inctx *)dmaaddr;
-        volatile struct xhci_slot *slot = (void*)&inctx[ctxoff];
+        UBYTE slotid = (trbflags >> 24) & 0xFF;
+        if ((slotid > 0) && (slotid < USB_DEV_MAX)) {
+            struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slotid];
+
+            if (devCtx && devCtx->dc_SlotCtx.dmaa_Ptr)
+                slot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
+        }
+
+        if (!slot) {
+            inctx = (volatile struct xhci_inctx *)dmaaddr;
+            slot = xhciInputSlotCtx(inctx, ctxoff);
+
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot);
+        }
 
         if (slot) {
-            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
-            UBYTE port;
-
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p, ports @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot, xhciports);
-
             port = (slot->ctx[1] >> 16) & 0xff;
+
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
 
+            if (port == 0 || port > hc->hc_NumPorts) {
+                pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: invalid port in slot context (slot=%u port=%u)" DEBUGCOLOR_RESET" \n",
+                            __func__, (trbflags >> 24) & 0xFF, port);
+                Enable();
+                return -1;
+            }
+
+            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
             portsc = xhciports[port - 1].portsc;
+
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
             pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
-                         __func__, (trbflags >> 24) & 0xFF, (UWORD)((slot ? ((slot->ctx[1] >> 16) & 0xFF) : 0)), (unsigned long)portsc);
+                         __func__, (trbflags >> 24) & 0xFF, (UWORD)port, (unsigned long)portsc);
 
             Enable();
             return -1;
@@ -87,7 +106,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
     if (queued != -1) {
         hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
     } else {
-	pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
+        pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
     }
     Enable();
 
@@ -119,6 +138,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
                         struct IOUsbHWReq *ioreq)
 {
     volatile struct xhci_inctx *inctx;
+    volatile struct xhci_slot *slot = NULL;
     WORD queued;
     volatile struct pcisusbXHCIRing *cmdring = (volatile struct pcisusbXHCIRing *)hc->hc_OPRp;
 
@@ -128,19 +148,31 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
     Disable();
     if (dmaaddr) {
         ULONG portsc = 0;
+        UBYTE port = 0;
         UWORD ctxoff = 1;
         if (hc->hc_Flags & HCF_CTX64)
             ctxoff <<= 1;
 
-        inctx = (volatile struct xhci_inctx *)dmaaddr;
-        volatile struct xhci_slot *slot = (void*)&inctx[ctxoff];
+        UBYTE slotid = (trbflags >> 24) & 0xFF;
+        if ((slotid > 0) && (slotid < USB_DEV_MAX)) {
+            struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slotid];
+
+            if (devCtx && devCtx->dc_SlotCtx.dmaa_Ptr)
+                slot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
+        }
+
+        if (!slot) {
+            inctx = (volatile struct xhci_inctx *)dmaaddr;
+            slot = xhciInputSlotCtx(inctx, ctxoff);
+        }
 
         if (slot) {
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
-            UBYTE port;
 
             port = (slot->ctx[1] >> 16) & 0xff;
-            portsc = xhciports[port - 1].portsc;
+
+            if (port > 0 && port <= hc->hc_NumPorts)
+                portsc = xhciports[port - 1].portsc;
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
             Enable();

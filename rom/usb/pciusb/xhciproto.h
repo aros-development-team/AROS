@@ -21,6 +21,24 @@ static inline UBYTE xhciEndpointID(UBYTE endpoint, UBYTE dir)
     return epid;
 }
 
+static inline volatile struct xhci_slot *
+xhciInputSlotCtx(volatile struct xhci_inctx *inctx, UWORD ctxoff)
+{
+    return (volatile struct xhci_slot *)&inctx[ctxoff];
+}
+
+static inline volatile struct xhci_ep *
+xhciInputEndpointCtx(volatile struct xhci_inctx *inctx, UWORD ctxoff, ULONG epid)
+{
+    /*
+     * Input contexts include the control context at index 0 and the slot
+     * context at index 1, so endpoint contexts begin at index 2. The endpoint
+     * ID numbering already accounts for the slot context; adjust by one more
+     * to skip the control context when calculating the offset.
+     */
+    return (volatile struct xhci_ep *)&inctx[ctxoff * (epid + 1)];
+}
+
 // xhcichip.c
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
