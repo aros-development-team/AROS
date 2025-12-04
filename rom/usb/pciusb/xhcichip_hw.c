@@ -76,7 +76,9 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         }
 
         if (slot) {
-            port = (slot->ctx[1] >> 16) & 0xff;
+            ULONG slotctx1 = AROS_LE2LONG(slot->ctx[1]);
+
+            port = (slotctx1 >> 16) & 0xff;
 
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
 
@@ -169,7 +171,9 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
         if (slot) {
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
 
-            port = (slot->ctx[1] >> 16) & 0xff;
+            ULONG slotctx1 = AROS_LE2LONG(slot->ctx[1]);
+
+            port = (slotctx1 >> 16) & 0xff;
 
             if (port > 0 && port <= hc->hc_NumPorts)
                 portsc = xhciports[port - 1].portsc;
