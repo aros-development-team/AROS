@@ -156,7 +156,7 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
     KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXPACKET = %x" DEBUGCOLOR_RESET" \n", maxpacket);
 
     /* Dequeue pointer DCS bit */
-    ULONG deq_lo = ep->deq.addr_lo; /* little-endian on x86/x86_64 is fine */
+    ULONG deq_lo = AROS_LE2LONG(ep->deq.addr_lo);
     KPrintF(DEBUGCOLOR_SET "xHCI: EP.DCS = %x" DEBUGCOLOR_RESET" \n",
             deq_lo & EPF_CTX_DEQ_DCS);
 #endif
