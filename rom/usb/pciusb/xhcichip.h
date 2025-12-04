@@ -28,6 +28,9 @@
 #define DMAFLAGS_POSTWRITE   (1 << 31) | DMA_ReadFromRAM
 #endif
 
+/* Number of TRBs in the single event ring segment. */
+#define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* choose 128/256/512 as you prefer */
+
 struct pciusbXHCIEndpointCtx;
 
 struct pciusbXHCIDMAAlloc
@@ -42,8 +45,8 @@ struct pciusbXHCIDMAAlloc
  */
 struct pcisusbXHCIRing
 {
-    struct xhci_trb                     ring[USB_DEV_MAX];                          // (!!) volatile area accessed by the controller (!!)
-    struct IORequest                    *ringio[USB_DEV_MAX];
+    struct xhci_trb                     ring[XHCI_EVENT_RING_TRBS];                 // (!!) volatile area accessed by the controller (!!)
+    struct IORequest                    *ringio[XHCI_EVENT_RING_TRBS];
     struct pciusbXHCIDMAAlloc           rnext;                                      // Next ring in this sequence
     struct xhci_trb                     current;                                    // cached copy of the current trb
     volatile UWORD                      next, end;                                  // current queue locations

@@ -53,6 +53,59 @@ static struct pciusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWO
     return NULL;
 }
 
+static void xhciLogPortState(struct PCIController *hc,
+                             volatile struct xhci_pr *xhciports,
+                             UWORD hciport,
+                             const char *context)
+{
+    ULONG portsc   = AROS_LE2LONG(xhciports[hciport].portsc);
+    ULONG portpmsc = AROS_LE2LONG(xhciports[hciport].portpmsc);
+    ULONG portli   = AROS_LE2LONG(xhciports[hciport].portli);
+    ULONG hlpmc    = AROS_LE2LONG(xhciports[hciport].porthlpmc);
+
+    ULONG linkState = (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
+    ULONG speedBits = portsc & XHCI_PR_PORTSC_SPEED_MASK;
+    BOOL isUsb3 = (speedBits == XHCIF_PR_PORTSC_SUPERSPEED);
+
+    struct pciusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
+    ULONG routeString = devCtx ? devCtx->dc_RouteString : 0;
+
+    const char *speedDesc = "Unknown";
+    if (speedBits == XHCIF_PR_PORTSC_LOWSPEED) {
+        speedDesc = "USB2-LS";
+    } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
+        speedDesc = "USB2-FS";
+    } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
+        speedDesc = "USB2-HS";
+    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
+        speedDesc = "USB3";
+    }
+
+    pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI: Port %u %s route 0x%05lx link %lu speed %s" DEBUGCOLOR_RESET" \n",
+                    hciport + 1,
+                    context,
+                    routeString,
+                    linkState,
+                    speedDesc);
+
+    if (isUsb3) {
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PORTLI $%08lx" DEBUGCOLOR_RESET" \n",
+                        hciport + 1,
+                        context,
+                        portpmsc,
+                        portli);
+    } else {
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PPM $%08lx" DEBUGCOLOR_RESET" \n",
+                        hciport + 1,
+                        context,
+                        portpmsc,
+                        hlpmc);
+    }
+}
+
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
     volatile struct xhci_hccapr *xhciregs = (volatile struct xhci_hccapr *)hc->hc_RegBase;
@@ -69,6 +122,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, unit, hc, hciport, idx, val, retval);
 
     xhciDumpPort(&xhciports[hciport]);
+    xhciLogPortState(hc, xhciports, hciport, "before SET_FEATURE");
 
     switch(val) {
     case UFS_PORT_ENABLE:
@@ -119,6 +173,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         xhciports[hciport].portsc = AROS_LONG2LE(newval);
         tmpval = AROS_LE2LONG(xhciports[hciport].portsc);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE $%08lx->$%08lx" DEBUGCOLOR_RESET" \n", idx, oldval, tmpval);
+        xhciLogPortState(hc, xhciports, hciport, "after SET_FEATURE");
     }
     return cmdgood;
 }
@@ -139,6 +194,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, unit, hc, hciport, idx, val, retval);
 
     xhciDumpPort(&xhciports[hciport]);
+    xhciLogPortState(hc, xhciports, hciport, "before CLEAR_FEATURE");
 
     switch(val) {
     case UFS_PORT_ENABLE:
@@ -210,6 +266,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
         else
             hc->hc_Unit->hu_RootPortChanges &= ~(1UL << (hciport + 1));
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "xHCI: Port %ld CLEAR_FEATURE $%08lx->$%08lx" DEBUGCOLOR_RESET" \n", idx, oldval, newval);
+        xhciLogPortState(hc, xhciports, hciport, "after CLEAR_FEATURE");
     }
     return cmdgood;
 }

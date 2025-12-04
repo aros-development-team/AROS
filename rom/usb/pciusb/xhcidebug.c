@@ -75,9 +75,14 @@ void xhciDumpSlot(volatile struct xhci_slot *slot)
 void xhciDumpEP(volatile struct xhci_ep *ep)
 {
 #if defined(XHCI_ENABLEEPDEBUG)
-    // Endpoint info..
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.STATE = %x" DEBUGCOLOR_RESET" \n", ep->ctx[0] & 0x7);
-    switch (ep->ctx[0] & 0x7) {
+    ULONG ctx0 = ep->ctx[0];
+    ULONG ctx1 = ep->ctx[1];
+
+    /* Endpoint state (DW0 bits [2:0]) */
+    UBYTE state = (ctx0 & 0x7);
+
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.STATE = %x" DEBUGCOLOR_RESET" \n", state);
+    switch (state) {
     case 0:
         KPrintF(DEBUGCOLOR_SET "xHCI: > Disabled" DEBUGCOLOR_RESET" \n");
         break;
@@ -94,17 +99,32 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Error" DEBUGCOLOR_RESET" \n");
         break;
     default:
-        KPrintF(DEBUGCOLOR_SET "xHCI: > Unknown (%x)" DEBUGCOLOR_RESET" \n", ep->ctx[0] & 0x7);
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Unknown (%x)" DEBUGCOLOR_RESET" \n", state);
         break;
     }
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MULT = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 8) & 0x3);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXPSTREAMS = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 10) & 0xF);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.LSA = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 15) & 0x1);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.INTERVAL = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 16) & 0xFF);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXESIT = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[0] >> 24) & 0xFF);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.CERR = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 1) & 0x3);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.TYPE = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 3) & 0x7);
-    switch ((ep->ctx[1] >> 3) & 0x7) {
+
+    /* DW0 fields */
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MULT = %x" DEBUGCOLOR_RESET" \n",
+            (ctx0 >> EPS_CTX_MULT) & 0x3);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXPSTREAMS = %x" DEBUGCOLOR_RESET" \n",
+            (ctx0 >> 10) & 0x1F);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.LSA = %x" DEBUGCOLOR_RESET" \n",
+            (ctx0 >> 15) & 0x1);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.INTERVAL = %x" DEBUGCOLOR_RESET" \n",
+            (ctx0 >> 16) & 0xFF);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXESIT = %x" DEBUGCOLOR_RESET" \n",
+            (ctx0 >> 24) & 0xFF);
+
+    /* DW1: CErr, Type, HID, MaxBurst, MaxPacketSize */
+    UBYTE cerr = (ctx1 >> EPS_CTX_CERR) & EP_CTX_CERR_MASK;
+    UBYTE type = (ctx1 >> EPS_CTX_TYPE) & 0x7;
+    UBYTE hid  = (ctx1 >> 7) & 0x1;
+    UBYTE maxburst = (ctx1 >> 8) & 0xFF;
+    UWORD maxpacket = (ctx1 >> EPS_CTX_PACKETMAX) & 0xFFFF;
+
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.CERR = %x" DEBUGCOLOR_RESET" \n", cerr);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.TYPE = %x" DEBUGCOLOR_RESET" \n", type);
+    switch (type) {
     case 1:
         KPrintF(DEBUGCOLOR_SET "xHCI: > OUT Isoch" DEBUGCOLOR_RESET" \n");
         break;
@@ -130,23 +150,41 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
         KPrintF(DEBUGCOLOR_SET "xHCI: > INVALID" DEBUGCOLOR_RESET" \n");
         break;
     }
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.HID = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 7) & 0x1);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXBURST = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 8) & 0xFF);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXPACKET = %x" DEBUGCOLOR_RESET" \n", (ep->ctx[1] >> 16) & 0xFF);
-    KPrintF(DEBUGCOLOR_SET "xHCI: EP.DCS = %x" DEBUGCOLOR_RESET" \n", ep->deq.addr_lo  & 0x1);
+
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.HID = %x" DEBUGCOLOR_RESET" \n", hid);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXBURST = %x" DEBUGCOLOR_RESET" \n", maxburst);
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.MAXPACKET = %x" DEBUGCOLOR_RESET" \n", maxpacket);
+
+    /* Dequeue pointer DCS bit */
+    ULONG deq_lo = ep->deq.addr_lo; /* little-endian on x86/x86_64 is fine */
+    KPrintF(DEBUGCOLOR_SET "xHCI: EP.DCS = %x" DEBUGCOLOR_RESET" \n",
+            deq_lo & EPF_CTX_DEQ_DCS);
 #endif
 }
 
 void xhciDumpStatus(ULONG status)
 {
 #if defined(XHCI_ENABLESTATUSDEBUG)
-    KPrintF(DEBUGCOLOR_SET "xHCI: OPR.STATUS: %08x" DEBUGCOLOR_RESET" \n", status);
-    if (status & XHCIF_USBSTS_HCE)
-        KPrintF(DEBUGCOLOR_SET "xHCI: > Host Controller Error" DEBUGCOLOR_RESET" \n");
+    KPrintF(DEBUGCOLOR_SET "xHCI: OPR.STATUS: %08lx" DEBUGCOLOR_RESET" \n", status);
+
+    if (status & XHCIF_USBSTS_HCH)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Host Controller Halted" DEBUGCOLOR_RESET" \n");
     if (status & XHCIF_USBSTS_HSE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Host System Error" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_HCE)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Host Controller Error" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_EINT)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Event Interrupt Pending" DEBUGCOLOR_RESET" \n");
     if (status & XHCIF_USBSTS_PCD)
-        KPrintF(DEBUGCOLOR_SET "xHCI: > Port Change Detected" DEBUGCOLOR_RESET" \n");
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Port Change Detect" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_SSS)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Save State Status" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_RSS)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Restore State Status" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_SRE)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Save/Restore Error" DEBUGCOLOR_RESET" \n");
+    if (status & XHCIF_USBSTS_CNR)
+        KPrintF(DEBUGCOLOR_SET "xHCI: > Controller Not Ready" DEBUGCOLOR_RESET" \n");
 #endif
 }
 
@@ -331,6 +369,108 @@ void xhciDumpCC(UBYTE cc)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Unknown CC" DEBUGCOLOR_RESET" \n");
         break;
     };
+#endif
+}
+
+static UQUAD xhciDebugReadAddress(const volatile struct xhci_address *addr)
+{
+    UQUAD value = 0;
+
+    if (!addr)
+        return value;
+
+    value |= ((UQUAD)AROS_LE2LONG(addr->addr_hi) << 32);
+    value |= (UQUAD)AROS_LE2LONG(addr->addr_lo);
+
+    return value;
+}
+
+void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
+{
+    if (!hc || !hc->hc_DCBAAp)
+        return;
+
+    if (slotid > hc->hc_NumSlots)
+        return;
+
+    volatile struct xhci_address *dcbaa = (volatile struct xhci_address *)hc->hc_DCBAAp;
+    UQUAD ptr = xhciDebugReadAddress(&dcbaa[slotid]);
+
+    pciusbXHCIDebug("xHCI",
+        DEBUGCOLOR_SET "DCBAA[%lu] -> 0x%08lx%08lx" DEBUGCOLOR_RESET" \n",
+        slotid,
+        (ULONG)(ptr >> 32),
+        (ULONG)(ptr & 0xFFFFFFFF));
+}
+
+void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot)
+{
+    if (!hc || !slot)
+        return;
+
+    ULONG ctx0 = AROS_LE2LONG(slot->ctx[0]);
+    ULONG ctx1 = AROS_LE2LONG(slot->ctx[1]);
+    ULONG ctx3 = AROS_LE2LONG(slot->ctx[3]);
+    ULONG route = ctx0 & SLOT_CTX_ROUTE_MASK;
+    ULONG speed = (ctx0 >> SLOTS_CTX_SPEED) & 0xF;
+    ULONG port = (ctx1 >> 16) & 0xFF;
+    ULONG target = (ctx3 >> 22) & 0x3FF;
+    ULONG state = (ctx3 >> 27) & 0x1F;
+
+    pciusbXHCIDebug("xHCI",
+        DEBUGCOLOR_SET
+        "Slot Ctx: route=0x%05lx port=%lu speed=%lu target=0x%03lx state=%lu"
+        DEBUGCOLOR_RESET" \n",
+        route,
+        port,
+        speed,
+        target,
+        state);
+}
+
+void xhciDebugDumpEndpointContext(struct PCIController *hc,
+                                  volatile struct xhci_ep *ep,
+                                  ULONG epid)
+{
+#if defined(PCIUSB_XHCI_DEBUG)
+    if (!hc || !ep)
+        return;
+
+    ULONG ctx0   = AROS_LE2LONG(ep->ctx[0]);
+    ULONG ctx1   = AROS_LE2LONG(ep->ctx[1]);
+    ULONG length = AROS_LE2LONG(ep->length);
+    UQUAD deq    = xhciDebugReadAddress(&ep->deq);
+
+    ULONG ep_state = ctx0 & 0x7;
+    ULONG mult     = (ctx0 >> EPS_CTX_MULT) & 0x3;       /* DW0[9:8] */
+    ULONG interval = (ctx0 >> 16) & 0xFF;                /* DW0[23:16] */
+    ULONG maxesit  = (ctx0 >> 24) & 0xFF;                /* DW0[31:24] */
+
+    ULONG cerr     = (ctx1 >> EPS_CTX_CERR) & EP_CTX_CERR_MASK; /* DW1[1:0] */
+    ULONG type     = (ctx1 >> EPS_CTX_TYPE) & 0x7;               /* DW1[4:2] */
+    ULONG maxpkt   = (ctx1 >> EPS_CTX_PACKETMAX) & 0xFFFF;       /* DW1[31:16] */
+
+    pciusbXHCIDebug("xHCI",
+        DEBUGCOLOR_SET
+        "EP Ctx %lu: state=%lu type=%lu mult=%lu interval=%lu maxESIT=%lu "
+        "CErr=%lu maxpkt=%lu\n"
+        "          deq=0x%08lx%08lx length=0x%08lx"
+        DEBUGCOLOR_RESET" \n",
+        epid,
+        ep_state,
+        type,
+        mult,
+        interval,
+        maxesit,
+        cerr,
+        maxpkt,
+        (ULONG)(deq >> 32),
+        (ULONG)(deq & 0xFFFFFFFF),
+        length);
+#else
+    (void)hc;
+    (void)ep;
+    (void)epid;
 #endif
 }
 #endif /* PCIUSB_XHCI_DEBUG */

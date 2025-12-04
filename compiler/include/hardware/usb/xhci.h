@@ -240,7 +240,14 @@ struct xhci_ir
  * Extended Capabilities
  */
 
-/* 
+/* Extended Capability Header */
+#define XHCIS_EXT_CAP_NEXT                      8
+#define XHCI_EXT_CAP_NEXT_MASK                  0xFF
+
+/* Extended Capability IDs */
+#define XHCI_EXT_CAP_ID_LEGACY_SUPPORT          0x01
+
+/*
  * USB Legacy Support Capability (USBLEGSUP)
  */
 #define XHCIB_USBLEGSUP_BIOSOWNED               16
@@ -483,8 +490,6 @@ struct xhci_ep
 #define EPS_CTX_PACKETMAX       16
 #define EPS_CTX_MULT            8
 #define EPF_CTX_MULT(x)         (((x) & 0x3) << EPS_CTX_MULT)
-#define EPS_CTX_MAXBURST        8
-#define EPF_CTX_MAXBURST(x)     (((x) & 0xFF) << EPS_CTX_MAXBURST)
 
 #define EPB_CTX_DEQ_DCS         0
 #define EPF_CTX_DEQ_DCS         (1 << EPB_CTX_DEQ_DCS)
