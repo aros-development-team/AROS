@@ -282,6 +282,9 @@ struct xhci_trb
 #define TRBF_FLAG_C                             (1 << TRBB_FLAG_C)
 #define TRBB_FLAG_ENT                           1
 #define TRBF_FLAG_ENT                           (1 << TRBB_FLAG_ENT)
+/* Link TRBs reuse the ENT bit position as the Toggle Cycle flag */
+#define TRBB_FLAG_TC                            TRBB_FLAG_ENT
+#define TRBF_FLAG_TC                            TRBF_FLAG_ENT
 #define TRBB_FLAG_ISP                           2
 #define TRBF_FLAG_ISP                           (1 << TRBB_FLAG_ISP)
 #define TRBB_FLAG_NS                            3
