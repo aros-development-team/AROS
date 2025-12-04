@@ -119,6 +119,9 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             }
         }
 
+        if (driprivate && driprivate->dpDevice)
+            xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "interrupt schedule");
+
         {
             /* Interrupt TD flags */
             if (ioreq->iouh_Dir == UHDIR_IN) {

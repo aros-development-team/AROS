@@ -261,6 +261,9 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                             driprivate, devCtx, driprivate->dpEPID);
         }
 
+        if (driprivate && driprivate->dpDevice)
+            xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "async schedule");
+
         /*
          * Normal transfer path vs special-case control handling
          */

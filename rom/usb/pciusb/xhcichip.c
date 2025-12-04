@@ -335,6 +335,40 @@ static ULONG xhciPageSize(struct PCIController *hc)
     return 0;
 }
 
+void xhciDumpEndpointCtx(struct PCIController *hc,
+                         struct pciusbXHCIDevice *devCtx,
+                         ULONG epid,
+                         const char *reason)
+{
+#if defined(PCIUSB_XHCI_DEBUG)
+    if (!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    UWORD ctxoff = 1;
+    if (hc->hc_Flags & HCF_CTX64)
+        ctxoff <<= 1;
+
+    volatile struct xhci_inctx *outctx = (volatile struct xhci_inctx *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    volatile struct xhci_slot *slot = (volatile struct xhci_slot *)&outctx[ctxoff];
+    volatile struct xhci_ep *ep = (volatile struct xhci_ep *)&outctx[ctxoff * (epid + 1)];
+
+    pciusbXHCIDebugEP("xHCI",
+        DEBUGCOLOR_SET "Dumping output ctx for EPID %lu (%s) slot @ 0x%p, ep @ 0x%p" DEBUGCOLOR_RESET" \n",
+        epid,
+        reason ? reason : "current",
+        slot,
+        ep);
+
+    xhciDumpSlot(slot);
+    xhciDumpEP(ep);
+#else
+    (void)hc;
+    (void)devCtx;
+    (void)epid;
+    (void)reason;
+#endif
+}
+
 static struct pciusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc,
                     UWORD rootPortIndex,   /* 0-based */
@@ -487,6 +521,8 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         FreeMem(devCtx, sizeof(*devCtx));
         return NULL;
     }
+
+    xhciDumpEndpointCtx(hc, devCtx, xhciGetEPID(0, 0), "post-address");
 
     /* Register in slot table */
     if (slotid > 0 && slotid < USB_DEV_MAX)
@@ -1099,7 +1135,8 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     }
 
     if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u\nIOReq Ring @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB, driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
+        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB);
+        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
         driprivate->dpCC = ccode;
 
@@ -1128,7 +1165,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         }
 
         ioreq->iouh_Actual = transferred;
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Remaining work for IO = %u bytes" DEBUGCOLOR_RESET" \n", remaining);
+        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Transfer IO done/remaining = %u/%u bytes" DEBUGCOLOR_RESET" \n", transferred, remaining);
 
         return TRUE;
     }
