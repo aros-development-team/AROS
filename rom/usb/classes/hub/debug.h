@@ -1,11 +1,12 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#ifndef DB_LEVEL
-#define DB_LEVEL 2
-#endif
+#undef KPRINTF
+#undef DB
 
-//#define DEBUG 1
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 
 #include <proto/debug.h>
 
@@ -17,6 +18,9 @@
 #endif
 
 #ifdef DEBUG
+#ifndef DB_LEVEL
+#define DB_LEVEL 1
+#endif
 #define KPRINTF(l, x) do { if ((l) >= DB_LEVEL) \
      { KPrintF("%s:%s/%lu: ", __FILE__, __FUNCTION__, __LINE__); KPrintF x;} } while (0)
 #define DB(x) x
