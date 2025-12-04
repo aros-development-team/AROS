@@ -718,34 +718,32 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: EPID %u" DEBUGCOLOR_RESET" \n", __func__, epid);
 
     /* Test if already prepared */
-    if (devCtx->dc_EPAllocs[epid].dmaa_Ptr != NULL)
-        return epid;
-
-    devCtx->dc_EPAllocs[epid].dmaa_Ptr =
-        pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry,
-                        sizeof(struct pcisusbXHCIRing),
-                        ALIGN_EVTRING_SEG, (1 << 16));
-    if (devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
-        pciusbXHCIDebugEP("xHCI",
-                          DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
-                          devCtx->dc_EPAllocs[epid].dmaa_Ptr,
-                          devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr,
-                          devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Length);
-#if !defined(PCIUSB_NO_CPUTOPCI)
-        devCtx->dc_EPAllocs[epid].dmaa_DMA =
-            CPUTOPCI(hc, hc->hc_PCIDriverObject,
-                     (APTR)devCtx->dc_EPAllocs[epid].dmaa_Ptr);
-#else
-        devCtx->dc_EPAllocs[epid].dmaa_DMA = devCtx->dc_EPAllocs[epid].dmaa_Ptr;
-#endif
-        pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n",
-                          devCtx->dc_EPAllocs[epid].dmaa_DMA);
-    } else {
-        pciusbError("xHCI",
-                    DEBUGWARNCOLOR_SET "Unable to allocate EP Ring Memory" DEBUGCOLOR_RESET" \n");
-        return 0;
+    if (devCtx->dc_EPAllocs[epid].dmaa_Ptr == NULL) {
+        devCtx->dc_EPAllocs[epid].dmaa_Ptr =
+            pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry,
+                            sizeof(struct pcisusbXHCIRing),
+                            ALIGN_EVTRING_SEG, (1 << 16));
+        if (devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
+            pciusbXHCIDebugEP("xHCI",
+                              DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
+                              devCtx->dc_EPAllocs[epid].dmaa_Ptr,
+                              devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr,
+                              devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Length);
+    #if !defined(PCIUSB_NO_CPUTOPCI)
+            devCtx->dc_EPAllocs[epid].dmaa_DMA =
+                CPUTOPCI(hc, hc->hc_PCIDriverObject,
+                         (APTR)devCtx->dc_EPAllocs[epid].dmaa_Ptr);
+    #else
+            devCtx->dc_EPAllocs[epid].dmaa_DMA = devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+    #endif
+            pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n",
+                              devCtx->dc_EPAllocs[epid].dmaa_DMA);
+        } else {
+            pciusbError("xHCI",
+                        DEBUGWARNCOLOR_SET "Unable to allocate EP Ring Memory" DEBUGCOLOR_RESET" \n");
+            return 0;
+        }
     }
-
     epring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
     xhciInitRing((struct pcisusbXHCIRing *)epring);
 
@@ -840,15 +838,15 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     ep->ctx[1] &= ~((ULONG)7 << EPS_CTX_TYPE);
     switch (type) {
     case UHCMD_ISOXFER:
-        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_ISOCH_I : EPF_CTX_TYPE_ISOCH_O;
+        ep->ctx[1] |= (dir == 1) ? EPF_CTX_TYPE_ISOCH_I : EPF_CTX_TYPE_ISOCH_O;
         break;
 
     case UHCMD_BULKXFER:
-        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_BULK_I : EPF_CTX_TYPE_BULK_O;
+        ep->ctx[1] |= (dir == 1) ? EPF_CTX_TYPE_BULK_I : EPF_CTX_TYPE_BULK_O;
         break;
 
     case UHCMD_INTXFER:
-        ep->ctx[1] |= (dir == UHDIR_IN) ? EPF_CTX_TYPE_INTR_I : EPF_CTX_TYPE_INTR_O;
+        ep->ctx[1] |= (dir == 1) ? EPF_CTX_TYPE_INTR_I : EPF_CTX_TYPE_INTR_O;
         break;
 
     case UHCMD_CONTROLXFER:
@@ -942,7 +940,7 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIController *hc;
 
     pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
-    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
+    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: Dev %u Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
 
     if (!unit)
         return UHIOERR_BADPARAMS;

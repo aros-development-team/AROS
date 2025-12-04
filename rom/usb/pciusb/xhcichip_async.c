@@ -129,9 +129,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         DEBUGCOLOR_SET "---- IOReq start: %p ----" DEBUGCOLOR_RESET" \n",
                         ioreq);
 
-        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint;
-        if ((txtype == UHCMD_BULKXFER) && (ioreq->iouh_Dir == UHDIR_IN))
-            devadrep += 0x10;
+        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint +
+                   ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
 
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "New Async transfer to dev=%u ep=%u (DevEP=%02lx): len=%lu, dir=%s, cmd=%u" DEBUGCOLOR_RESET" \n",
@@ -255,9 +254,27 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 return;
             }
         } else {
-            devCtx = driprivate->dpDevice;
+            ULONG txep;
+
+            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+            txep = xhciEndpointID(ioreq->iouh_Endpoint,
+                                  (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
+
+            if ((!devCtx) || (txep >= MAX_DEVENDPOINTS) ||
+                !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+                pciusbXHCIDebug("xHCI",
+                                "Reusing driprivate=%p: invalid devCtx=%p or EPID=%u, failing\n",
+                                driprivate, devCtx, txep);
+                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                ReplyMsg(&ioreq->iouh_Req.io_Message);
+                return;
+            }
+
+            driprivate->dpDevice = devCtx;
+            driprivate->dpEPID   = txep;
             pciusbXHCIDebug("xHCI",
-                            "Reusing existing driver private=%p, devCtx=%p, EPID=%u\n",
+                            "Reusing existing driver private=%p, devCtx=%p, refreshed EPID=%u\n",
                             driprivate, devCtx, driprivate->dpEPID);
         }
 

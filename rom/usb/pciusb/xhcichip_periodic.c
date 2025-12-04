@@ -117,6 +117,24 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
                 return;
             }
+        } else {
+            struct pciusbXHCIDevice *devCtx;
+            ULONG txep;
+
+            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+            txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
+
+            if ((!devCtx) || (txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+                pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Reusing driprivate=%p failed: devCtx=%p EPID=%u" DEBUGCOLOR_RESET" \n",
+                                driprivate, devCtx, txep);
+                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                ReplyMsg(&ioreq->iouh_Req.io_Message);
+                return;
+            }
+
+            driprivate->dpDevice = devCtx;
+            driprivate->dpEPID   = txep;
         }
 
         if (driprivate && driprivate->dpDevice)
