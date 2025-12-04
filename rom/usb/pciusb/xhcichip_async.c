@@ -220,10 +220,12 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                     return;
                 }
 
+#if defined(DEBUG)
                 if (autoCreated) {
                     pciusbWarn("xHCI",
                         DEBUGCOLOR_SET "xHCI: Auto-created DevAddr0/EP0 context for pending transfer" DEBUGCOLOR_RESET" \n");
                 }
+#endif
 
                 driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate),
                                       MEMF_ANY|MEMF_CLEAR);
