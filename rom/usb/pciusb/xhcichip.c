@@ -523,7 +523,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                      flags);
 
     /* ---- Address Device ---- */
-    if (1 != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, NULL)) {
+    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, NULL)) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Address Device failed" DEBUGCOLOR_RESET "\n");
 
@@ -542,7 +542,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
      * explicit Configure Endpoint the controller will still see EP0 as
      * disabled even though the input context is populated.
      */
-    if (1 != xhciCmdEndpointConfigure(hc, slotid, devCtx->dc_IN.dmaa_DMA)) {
+    if (TRB_CC_SUCCESS != xhciCmdEndpointConfigure(hc, slotid, devCtx->dc_IN.dmaa_DMA)) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Configure Endpoint (EP0) failed" DEBUGCOLOR_RESET "\n");
 
@@ -895,7 +895,7 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
          * commits the new state.
          */
         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_DMA);
-        if (cc != 1)
+       if (cc != TRB_CC_SUCCESS)
             return UHIOERR_HOSTERROR;
     }
 
@@ -1442,6 +1442,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 hc->hc_CmdResults[last].flags = evt->flags;
                 hc->hc_CmdResults[last].tparams = evt->tparams;
+                hc->hc_CmdResults[last].status = trbe_ccode;
 
                 doCompletion = xhciIntWorkProcess(hc, (struct IOUsbHWReq *)ring->ringio[last], (evt->tparams & 0XFFFFFF), trbe_ccode);
                 ring->ringio[last] = NULL;

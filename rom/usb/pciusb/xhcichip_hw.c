@@ -107,6 +107,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
     }
     if (queued != -1) {
         hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
+        hc->hc_CmdResults[queued].status = 0xFFFFFFFF;
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
     }
@@ -117,11 +118,11 @@ LONG xhciCmdSubmit(struct PCIController *hc,
 
         /* Wait for completion with a bounded timeout to avoid hanging */
         for (ULONG waitms = 0; waitms < 1000; waitms++) {
-            if (hc->hc_CmdResults[queued].flags != 0xFFFFFFFF) {
+            if (hc->hc_CmdResults[queued].status != 0xFFFFFFFF) {
                 if (resflags)
                     *resflags = hc->hc_CmdResults[queued].flags;
 
-                return (hc->hc_CmdResults[queued].tparams >> 24) & 0xFF;
+                return hc->hc_CmdResults[queued].status;
             }
 
             uhwDelayMS(1, hc->hc_Unit);
@@ -188,6 +189,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
 
     if (queued != -1) {
         hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
+        hc->hc_CmdResults[queued].status = 0xFFFFFFFF;
         cmdring->ringio[queued] = &ioreq->iouh_Req;
     }
 
@@ -207,17 +209,23 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
  */
 LONG xhciCmdSlotEnable(struct PCIController *hc)
 {
-    volatile struct pcisusbXHCIRing *xring = (volatile struct pcisusbXHCIRing *)hc->hc_OPRp;
     ULONG trbflags = TRBF_FLAG_CRTYPE_ENABLE_SLOT, cmdflags;
+    LONG cc;
+    UBYTE slotid;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
-
-    if (1 != xhciCmdSubmit(hc, NULL, trbflags, &cmdflags))
+    cc = xhciCmdSubmit(hc, NULL, trbflags, &cmdflags);
+    if (cc != TRB_CC_SUCCESS)
         return -1;
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: flags = %08x" DEBUGCOLOR_RESET" \n", __func__, cmdflags);
 
-    return (cmdflags >> 24) & 0XFF;
+    slotid = (cmdflags >> 24) & 0XFF;
+
+    if (slotid == 0 || slotid >= USB_DEV_MAX)
+        return -1;
+
+    return slotid;
 }
 
 #if !defined(PCIUSB_INLINEXHCIOPS)

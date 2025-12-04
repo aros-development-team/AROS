@@ -98,6 +98,7 @@ struct pciusbXHCITRBParams
 {
     ULONG                       tparams;
     ULONG                       flags;
+    ULONG                       status;
 };
 #endif
 
