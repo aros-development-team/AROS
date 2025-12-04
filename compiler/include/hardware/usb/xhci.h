@@ -68,6 +68,11 @@ struct xhci_hccapr {
 #define XHCI_HCCPARAMS1_ECP_SMASK               0xFFFF
 #define XHCI_HCCPARAMS1_ECP_MASK                (XHCI_HCCPARAMS1_ECP_SMASK << XHCIS_HCCPARAMS1_ECP)
 
+#define XHCIB_HCCPARAMS2_CPSM                   30
+#define XHCIF_HCCPARAMS2_CPSM                   (1 << XHCIB_HCCPARAMS2_CPSM)
+#define XHCIB_HCCPARAMS2_PRS                    31
+#define XHCIF_HCCPARAMS2_PRS                    (1 << XHCIB_HCCPARAMS2_PRS)
+
 /*
  * Host Controller Operational Registers
  * See eXtendible Host Controller Interface
