@@ -1930,7 +1930,8 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu)
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Extended Capabilties Pointer = %04x" DEBUGCOLOR_RESET" \n", xhciECPOff);
 
     while (xhciECPOff >= 0x40) {
-        ULONG caphdr = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff);
+        volatile ULONG *capreg = (volatile ULONG *)((IPTR)xhciregs + xhciECPOff);
+        ULONG caphdr = AROS_LE2LONG(*capreg);
         ULONG nextcap = (caphdr >> XHCIS_EXT_CAP_NEXT) & XHCI_EXT_CAP_NEXT_MASK;
         UBYTE capid = caphdr & 0xFF;
 
@@ -1950,19 +1951,19 @@ takeownership:
                 /*
                  * Change the ownership flag and read back to ensure it is written
                  */
-                WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff, ownershipval);
-                READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff);
+                *capreg = AROS_LONG2LE(ownershipval);
+                (void)*capreg;
 
                 /*
                  * Wait for ownership change to take place.
                  * XHCI specification doesn't say how long it can take...
                  */
-                while ((READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
+                while ((AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Waiting for ownership to change..." DEBUGCOLOR_RESET" \n");
                     uhwDelayMS(10, hu);
                 }
                 if ((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
-                    (READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff) & XHCIF_USBLEGSUP_BIOSOWNED)) {
+                    (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership of XHCI still with BIOS" DEBUGCOLOR_RESET" \n");
 
                     /* Try to force ownership */
@@ -1974,13 +1975,14 @@ takeownership:
             } else {
                 pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Forcing ownership of XHCI from (unknown)" DEBUGCOLOR_RESET" \n");
                 /* Try to force ownership */
-                WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff, XHCIF_USBLEGSUP_OSOWNED);
-                READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff);
+                *capreg = AROS_LONG2LE(XHCIF_USBLEGSUP_OSOWNED);
+                (void)*capreg;
             }
 
             /* Clear the SMI control bits */
-            WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff + 4, 0);
-            READCONFIGLONG(hc, hc->hc_PCIDeviceObject, xhciECPOff + 4);
+            volatile ULONG *smictl = (volatile ULONG *)((IPTR)capreg + 4);
+            *smictl = AROS_LONG2LE(0);
+            (void)*smictl;
 
             break;
         }
