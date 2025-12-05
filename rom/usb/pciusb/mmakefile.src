@@ -12,6 +12,7 @@ FILES := \
         xhcichip \
         xhcichip_periodic \
         xhcichip_async \
+        xhcichip_schedule \
         xhcichip_hcport \
         xhcichip_hw \
         xhcidevice \

@@ -14,6 +14,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
+#include "xhcichip_schedule.h"
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
@@ -84,71 +85,16 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         ULONG trbflags = 0;
         WORD queued = -1;
 
-        if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) == NULL) {
-            struct pciusbXHCIDevice *devCtx;
-
-            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
-            if (devCtx != NULL) {
-                ULONG txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
-
-                if ((txep == 0) || (txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
-                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    ReplyMsg(&ioreq->iouh_Req.io_Message);
-                    return;
-                }
-
-                driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
-                if (!driprivate) {
-                    pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n", __func__);
-                    //TODO :
-                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    ReplyMsg(&ioreq->iouh_Req.io_Message);
-                    return;
-                }
-                driprivate->dpDevice = devCtx;
-                driprivate->dpEPID = txep;
-            } else {
-                pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "xHCI: No device attached" DEBUGCOLOR_RESET" \n");
-                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                ReplyMsg(&ioreq->iouh_Req.io_Message);
-                return;
-            }
-        } else {
-            struct pciusbXHCIDevice *devCtx;
-            ULONG txep;
-
-            devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
-            txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
-
-            if ((!devCtx) || (txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
-                pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Reusing driprivate=%p failed: devCtx=%p EPID=%u" DEBUGCOLOR_RESET" \n",
-                                driprivate, devCtx, txep);
-                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                ReplyMsg(&ioreq->iouh_Req.io_Message);
-                return;
-            }
-
-            driprivate->dpDevice = devCtx;
-            driprivate->dpEPID   = txep;
-        }
-
-        if (driprivate && driprivate->dpDevice)
-            xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "interrupt schedule");
+        if (!xhciInitIOTRBTransfer(hc, ioreq, &hc->hc_IntXFerQueue, ioreq->iouh_Req.io_Command, FALSE, &driprivate))
+            continue;
 
         {
             /* Interrupt TD flags */
+            trbflags |= xhciBuildDataTRBFlags(ioreq, ioreq->iouh_Req.io_Command);
             if (ioreq->iouh_Dir == UHDIR_IN) {
                 /* For INT endpoints, DS_DIR is not required; only ISP is meaningful here. */
                 trbflags |= TRBF_FLAG_ISP;          /* interrupt on short packet */
             }
-
-            /* All interrupt payload TRBs are NORMAL from xHCI’s POV */
-            trbflags |= TRBF_FLAG_TRTYPE_NORMAL;
 
             /****** SETUP COMPLETE ************/
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -157,87 +103,20 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
-            Disable();
             BOOL txdone = FALSE;
-            if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
-                // mark endpoint as busy
-                pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: using DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
-                unit->hu_DevBusyReq[devadrep] = ioreq;
+            driprivate->dpSTRB = (UWORD)-1;
+            driprivate->dpSttTRB = (UWORD)-1;
 
-                if (!driprivate->dpDevice) {
-                    Enable();
-                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    ReplyMsg(&ioreq->iouh_Req.io_Message);
-                    return;
-                }
+            if (xhciActivateEndpointTransfer(hc, unit, ioreq, driprivate, devadrep, &epring)) {
+                queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, TRUE);
 
-                epring = driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
-
-                if (!epring) {
-                    Enable();
-                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    ReplyMsg(&ioreq->iouh_Req.io_Message);
-                    return;
-                }
-
-                pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: EP ring @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, epring);
-
-                // No setup or status TRB's
-                driprivate->dpSTRB = (UWORD)-1;
-                driprivate->dpSttTRB = (UWORD)-1;
-
-                // queue the transaction
-                UQUAD dma_addr;
-                ULONG dmalen = ioreq->iouh_Length;
-                APTR dmaptr = CachePreDMA(ioreq->iouh_Data, &dmalen,
-                                          (ioreq->iouh_Dir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
-#if !defined(PCIUSB_NO_CPUTOPCI)
-                dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dmaptr);
-#else
-                dma_addr = (IPTR)dmaptr;
-#endif
-                queued = xhciQueueData(
-                    hc, epring,
-                    dma_addr,
-                    dmalen,
-                    ioreq->iouh_MaxPktSize,
-                    trbflags,
-                    TRUE);
                 if (queued != -1) {
-                    driprivate->dpTxSTRB = queued;
-                    {
-                        volatile struct xhci_trb *trb = &epring->ring[driprivate->dpTxSTRB];
-
-                        pciusbXHCIDebugTRB("xHCI",
-                            DEBUGCOLOR_SET "INT TD TRB: addr_lo=%08lx addr_hi=%08lx, tlen=%lu, flags=%08lx" DEBUGCOLOR_RESET" \n",
-                            (unsigned long)trb->dbp.addr_lo,
-                            (unsigned long)trb->dbp.addr_hi,
-                            (unsigned long)(trb->tparams & 0x00FFFFFF),
-                            (unsigned long)trb->flags);
-
-                        pciusbXHCIDebugTRB("xHCI",
-                            DEBUGCOLOR_SET "INT TD buffer ptr: trb=%p, ioreq->Data=%p (dma 0x%p)" DEBUGCOLOR_RESET" \n",
-                            (APTR)((IPTR)trb->dbp.addr_lo |
-                                  ((hc->hc_Flags & HCF_ADDR64)
-                                       ? ((UQUAD)trb->dbp.addr_hi << 32)
-                                       : 0)),
-                            ioreq->iouh_Data, dma_addr);
-                    }
-                    int cnt;
-                    if (epring->next > driprivate->dpTxSTRB + 1)
-                        driprivate->dpTxETRB = epring->next - 1;
-                    else
-                        driprivate->dpTxETRB = driprivate->dpTxSTRB;
-                    for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt ++)
-                        epring->ringio[cnt] = &ioreq->iouh_Req;
                     AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                     txdone = TRUE;
                 }
             }
-            Enable();
+
             /*
              * If we failed to get an endpoint,
              * or queue the transaction, requeue it
