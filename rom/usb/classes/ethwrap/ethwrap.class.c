@@ -146,8 +146,13 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
 {
     struct Library *ps;
     struct AutoBindData *abd = ClassBinds;
+    struct PsdInterface *pif;
     IPTR prodid;
     IPTR vendid;
+    IPTR ifclass;
+    IPTR subclass;
+    BOOL hascdccomm = FALSE;
+    BOOL hascdcdata = FALSE;
 
     KPRINTF(1, ("nepEthAttemptDeviceBinding(%08lx)\n", pd));
 
@@ -157,7 +162,33 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
                     DA_VendorID, &vendid,
                     DA_ProductID, &prodid,
                     TAG_END);
+
+        pif = NULL;
+        while((pif = psdFindInterface(pd, pif, TAG_END)))
+        {
+            psdGetAttrs(PGA_INTERFACE, pif,
+                        IFA_Class, &ifclass,
+                        IFA_SubClass, &subclass,
+                        TAG_DONE);
+
+            if((ifclass == CDCCTRL_CLASSCODE) &&
+               ((subclass == 0x06) || (subclass == 0x0c) || (subclass == 0x0d)))
+            {
+                hascdccomm = TRUE;
+            }
+            else if(ifclass == CDCDATA_CLASSCODE)
+            {
+                hascdcdata = TRUE;
+            }
+        }
+
         CloseLibrary(ps);
+
+        if(hascdccomm && hascdcdata)
+        {
+            return(usbForceDeviceBinding(nh, pd));
+        }
+
         while(abd->abd_VendID)
         {
             if((vendid == abd->abd_VendID) && (prodid == abd->abd_ProdID))
@@ -774,7 +805,14 @@ struct NepClassEth * nAllocEth(void)
         }
 
         ncp->ncp_Interface = psdFindInterface(ncp->ncp_Device, NULL,
+                                              IFA_Class, CDCDATA_CLASSCODE,
                                               TAG_END);
+
+        if(!ncp->ncp_Interface)
+        {
+            ncp->ncp_Interface = psdFindInterface(ncp->ncp_Device, NULL,
+                                                  TAG_END);
+        }
 
         if(!ncp->ncp_Interface)
         {
