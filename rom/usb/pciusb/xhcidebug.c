@@ -162,6 +162,46 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
 #endif
 }
 
+void xhciDumpEndpointCtx(struct PCIController *hc,
+                         struct pciusbXHCIDevice *devCtx,
+                         ULONG epid,
+                         const char *reason)
+{
+    if (!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    /* epid 0 is "no endpoint"; EP contexts start at EPID 1 */
+    if (epid == 0 || epid > MAX_DEVENDPOINTS)
+        return;
+
+    /* Device (output) context:
+     *   ctx[0] = Slot Context
+     *   ctx[1] = Endpoint 1
+     *   ctx[2] = Endpoint 2
+     *   ...
+     */
+    UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+
+    volatile UBYTE *sbase =
+        (volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr;
+
+    volatile struct xhci_slot *slot =
+        (volatile struct xhci_slot *)(sbase + 0 * ctxsize);
+    volatile struct xhci_ep *ep =
+        (volatile struct xhci_ep  *)(sbase + epid * ctxsize);
+
+    pciusbXHCIDebugEP("xHCI",
+        DEBUGCOLOR_SET "Dumping output ctx for EPID %lu (%s) slot @ 0x%p, ep @ 0x%p"
+        DEBUGCOLOR_RESET" \n",
+        epid,
+        reason ? reason : "current",
+        slot,
+        ep);
+
+    xhciDumpSlot(slot);
+    xhciDumpEP(ep);
+}
+
 void xhciDumpStatus(ULONG status)
 {
 #if defined(XHCI_ENABLESTATUSDEBUG)
@@ -432,7 +472,6 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc,
                                   volatile struct xhci_ep *ep,
                                   ULONG epid)
 {
-#if defined(PCIUSB_XHCI_DEBUG)
     if (!hc || !ep)
         return;
 
@@ -467,11 +506,6 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc,
         (ULONG)(deq >> 32),
         (ULONG)(deq & 0xFFFFFFFF),
         length);
-#else
-    (void)hc;
-    (void)ep;
-    (void)epid;
-#endif
 }
 #endif /* PCIUSB_XHCI_DEBUG */
 #endif /* PCIUSB_ENABLEXHCI */

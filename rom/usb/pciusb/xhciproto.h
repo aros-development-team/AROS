@@ -49,7 +49,6 @@ void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx
 
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
-void xhciDumpEndpointCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, ULONG epid, const char *reason);
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
@@ -112,11 +111,15 @@ struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devad
 void xhciDumpIN(volatile struct xhci_inctx *in);
 void xhciDumpEP(volatile struct xhci_ep *ep);
 void xhciDumpSlot(volatile struct xhci_slot *slot);
+void xhciDumpEndpointCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, ULONG epid, const char *reason);
 void xhciDumpStatus(ULONG status);
 void xhciDumpOpR(volatile struct xhci_hcopr *hcopr);
 void xhciDumpIR(volatile struct xhci_ir *xhciir);
 void xhciDumpPort(volatile struct xhci_pr *xhcipr);
 void xhciDumpCC(UBYTE completioncode);
+void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid);
+void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot);
+void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci_ep *ep, ULONG epid);
 #else
 #define pciusbXHCIDebug(sub,fmt,args...)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)
@@ -124,11 +127,15 @@ void xhciDumpCC(UBYTE completioncode);
 #define xhciDumpIN(x)
 #define xhciDumpEP(x)
 #define xhciDumpSlot(x)
+#define xhciDumpEndpointCtx(a,b,c,d)
 #define xhciDumpStatus(x)
 #define xhciDumpOpR(x)
 #define xhciDumpIR(x)
 #define xhciDumpPort(x)
 #define xhciDumpCC(x)
+#define xhciDebugDumpDCBAAEntry(a,b)
+#define xhciDebugDumpSlotContext(a,b)
+#define xhciDebugDumpEndpointContext(a,b,c)
 #endif
 
 /* Support functions */
