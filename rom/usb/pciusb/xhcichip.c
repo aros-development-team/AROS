@@ -2158,10 +2158,14 @@ takeownership:
 #endif
         memset(hc->hc_SPBuffersp, 0, spb_size);
 
-        volatile struct xhci_address *spba = (volatile struct xhci_address *)hc->hc_SPBAp;
-        for (ULONG i = 0; i < hc->hc_NumScratchPads; i++)
-            xhciSetPointer(hc, spba[i],
-                           (IPTR)hc->hc_DMASPBuffers + ((IPTR)pagesize * i));
+        {
+            volatile struct xhci_address *spba = (volatile struct xhci_address *)hc->hc_SPBAp;
+            ULONG i;
+            for (i = 0; i < hc->hc_NumScratchPads; i++) {
+                xhciSetPointer(hc, spba[i],
+                               (IPTR)hc->hc_DMASPBuffers + ((IPTR)pagesize * i));
+            }
+        }
 
         xhciSetPointer(hc,
                        ((volatile struct xhci_address *)hc->hc_DCBAAp)[0],
