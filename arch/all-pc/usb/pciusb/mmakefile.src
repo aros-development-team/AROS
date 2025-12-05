@@ -10,6 +10,8 @@ PCIUSBDIR := rom/usb/pciusb
 USER_LDFLAGS := -static
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(PCIUSBDIR)
 
+#MM kernel-usb-pciusb-pc : kernel-acpica-sharedlib-includes
+
 %build_archspecific \
   mainmmake=kernel-usb-pciusb maindir=$(PCIUSBDIR) \
   arch=pc modname=pciusb \
