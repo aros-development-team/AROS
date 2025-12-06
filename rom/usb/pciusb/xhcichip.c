@@ -1663,11 +1663,35 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
-
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 {
-    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, hc, ioreq);
-    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+    struct PCIUnit *unit;
+
+    pciusbXHCIDebug("xHCI",
+        DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n",
+        __func__, hc, ioreq);
+
+    if (!ioreq)
+        return;
+
+    /* Get the host’s root unit for this controller */
+    unit = hc->hc_Unit;
+
+    /*
+     * 1. Free controller-side async context and release DevEP.
+     *    This will:
+     *      - Deactivate the endpoint for this IOReq
+     *      - Clear hu->hu_DevBusyReq[DevEP]
+     *      - Clear hu->hu_NakTimeoutFrame[DevEP]
+     *      - Remove the IOReq from the HC’s internal queue
+     */
+    xhciFreeAsyncContext(hc, unit, ioreq);
+
+    /*
+     * 2. Return the IOReq to the caller.
+     *    The NAK timeout logic in uhw should already have set
+     *    iouh_Req.io_Error appropriately (e.g. timeout / aborted).
+     */
     ReplyMsg(&ioreq->iouh_Req.io_Message);
 }
 
