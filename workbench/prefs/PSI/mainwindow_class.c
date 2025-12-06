@@ -217,12 +217,27 @@ IPTR MainWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
             WindowContents, VGroup,
                 Child, PA_Screens = NewObject(CL_ScreenPanel->mcc_Class, NULL, TAG_DONE),
                 Child, MUI_MakeObject(MUIO_HBar, 2),
-                Child, HGroup, MUIA_Group_SameSize, TRUE,
+                Child, HGroup,
+#if defined(__AROS__)
+                    MUIA_Group_SameSize, FALSE,
+                    Child, (IPTR) RectangleObject,
+                        MUIA_Weight, 50,
+                    End,
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        MUIA_Weight,             0,
+                        Child, (IPTR) (BT_Save = ImageButton(GetStr(MSG_BUTTON_SAVE), "THEME:Images/Gadgets/Save")),
+                        Child, (IPTR) (BT_Use = ImageButton(GetStr(MSG_BUTTON_USE), "THEME:Images/Gadgets/Use")),
+                        Child, (IPTR) (BT_Cancel = ImageButton(GetStr(MSG_BUTTON_CANCEL), "THEME:Images/Gadgets/Cancel")),
+                    End,
+#else
+                    MUIA_Group_SameSize, TRUE,
                     Child, BT_Save = MakeButton(MSG_BUTTON_SAVE),
                     Child, HSpace(0),
                     Child, BT_Use = MakeButton(MSG_BUTTON_USE),
                     Child, HSpace(0),
                     Child, BT_Cancel = MakeButton(MSG_BUTTON_CANCEL),
+#endif
                 End,
             End,
             TAG_MORE, msg->ops_AttrList)))
