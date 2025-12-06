@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-1997 Stefan Stuntz.
-    Copyright (C) 2009-2020, The AROS Development Team.
+    Copyright (C) 2009-2025, The AROS Development Team.
     All rights reserved.
 
 */
@@ -120,7 +120,7 @@ LONG ScreenList_DisplayFunc(struct Hook *hook, char **array, struct MUI_PubScree
         if (desc->Foreign)
         {
             strcpy(ni.Name,GetStr(MSG_LIST_FOREIGNSCREEN));
-            sprintf(buf2,"\33O[%08lx]",data->iforeign[TestPubScreen(desc->Name) ? 1 : 0]);
+            sprintf(buf2,"\33O[%p]", (void *)data->iforeign[TestPubScreen(desc->Name) ? 1 : 0]);
         }
         else
         */
@@ -128,7 +128,7 @@ LONG ScreenList_DisplayFunc(struct Hook *hook, char **array, struct MUI_PubScree
             if (!GetDisplayInfoData(0, (UBYTE *)&ni, sizeof(ni), DTAG_NAME, desc->DisplayID))
                 strcpy(ni.Name, GetStr(MSG_LIST_UNKNOWNMODE));
 
-            sprintf(buf2, "\33O[%08lx]", (unsigned long)(IPTR)data->inormal[TestPubScreen(desc->Name) ? 1 : 0]);
+            sprintf(buf2, "\33O[%p]", (void *)data->inormal[TestPubScreen(desc->Name) ? 1 : 0]);
         }
 
         *array++ = buf2;

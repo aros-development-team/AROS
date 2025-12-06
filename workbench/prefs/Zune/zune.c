@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2016, The AROS Development Team.
+    Copyright  2002-2025, The AROS Development Team.
     All rights reserved.
 
 */
@@ -153,7 +153,7 @@ static void main_page_list_display(struct Hook *h, char **strings, struct page_e
 {
     if (entry)
     {
-        sprintf(entry->mcp_imagespec, "\33O[%08lx]", (long unsigned)entry->mcp_listimage);
+        sprintf(entry->mcp_imagespec, "\33O[%p]", (void *)entry->mcp_listimage);
         *strings++ = entry->mcp_imagespec;
         *strings   = entry->name;
     }

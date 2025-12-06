@@ -2408,7 +2408,7 @@ NList.mcc/MUIM_NList_UseImage
         the object.
 
         The only thing you should do with it is to include it in
-        \33O[%08lx]. The result may be NULL in which case NList
+        \33O[%p]. The result may be NULL in which case NList
         was unable to create the image, but the \33O[] combination
         simply draws nothing when receiving a NULL.
 

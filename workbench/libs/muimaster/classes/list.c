@@ -1788,6 +1788,12 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
             data->multiselect = MUIV_Listview_MultiSelect_Always;
     }
 
+    struct ListImage *li;
+    ForeachNode((struct List *)&data->images, li) {
+        DoMethod(li->obj, MUIM_ConnectParent, (IPTR) obj);
+        DoSetupMethod(li->obj, muiRenderInfo(obj));
+    }
+
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
 
     return 1;
@@ -3170,7 +3176,7 @@ IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
 *       can be displayed by embedding its hexadecimal representation within
 *       any of the list's display strings (provided either statically or by
 *       the list's display hook. The format string to be used is
-*       "\330[%08lx]".
+*       "\330[%p]".
 *
 *       It is recommended that lists that embed images are instances of a
 *       custom subclass so that this method can be called in the list's
@@ -3217,19 +3223,18 @@ IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
     if (!msg->obj)
         return 0;
 
-    /* List must be already setup in Setup of your subclass */
-    if (!(_flags(obj) & MADF_SETUP))
-        return 0;
     li = AllocPooled(data->pool, sizeof(struct ListImage));
     if (!li)
         return 0;
     li->obj = msg->obj;
 
     AddTail((struct List *)&data->images, (struct Node *)li);
-    DoMethod(li->obj, MUIM_ConnectParent, (IPTR) obj);
-    DoSetupMethod(li->obj, muiRenderInfo(obj));
 
-
+    /* If the list is already setup, connect the object */
+    if ((_flags(obj) & MADF_SETUP)) {
+        DoMethod(li->obj, MUIM_ConnectParent, (IPTR) obj);
+        DoSetupMethod(li->obj, muiRenderInfo(obj));
+    }
     return (IPTR) li;
 }
 

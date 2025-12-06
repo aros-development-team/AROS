@@ -1,5 +1,5 @@
 /* 
-    Copyright (C) 2003, The AROS Development Team.
+    Copyright (C) 2003-2025, The AROS Development Team.
     All rights reserved.
 
 */
@@ -7,7 +7,7 @@
 #ifndef MUI_LISTIMAGE_H
 #define MUI_LISTIMAGE_H
 
-/* Structure to display images in the List class using \33O[%lx]
+/* Structure to display images in the List class using \33O[%p]
  * Included both by the text engine (the one parsing List entries)
  * and the List class.
  */

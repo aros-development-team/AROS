@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2020, The AROS Development Team.
+    Copyright (C) 2002-2025, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -351,8 +351,8 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             if (*s != '[')
                 break;
             s++;
-            /* s points on the first char of pointer printed as %08lx.
-             *  Extract it to the trailing ']'.
+            /* s points on the first char of the hex-encoded pointer created
+             * by MUIM_List_CreateImage. Extract it to the trailing ']'.
              */
             t = strchr(s, ']');
             if (t == NULL)
@@ -391,8 +391,8 @@ static CONST_STRPTR parse_escape_code(ZTextLine * ztl,
             if (*s != '[')
                 break;
             s++;
-            /* s points on the first char of pointer printed as %08lx.
-             *  Extract it to the trailing ']'.
+            /* s points on the first char of the hex-encoded pointer created
+             * by MUIM_List_CreateImage. Extract it to the trailing ']'.
              */
             t = strchr(s, ']');
             if (t == NULL)
