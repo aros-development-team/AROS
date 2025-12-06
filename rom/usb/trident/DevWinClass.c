@@ -141,7 +141,7 @@ AROS_UFH3(LONG, InterfaceListDisplayHook,
                 clsimg++;
         }
 
-        psdSafeRawDoFmt(buf3, 48, "\33O[%08lx] %ld (%s)",
+        psdSafeRawDoFmt(buf3, 48, "\33O[%p] %ld (%s)",
                         data->mimainlist[clsimg],
                         ifclass,
                         psdNumToStr(NTS_COMBOCLASS, (ifclass<<NTSCCS_CLASS)|(ifsubclass<<NTSCCS_SUBCLASS)|(ifproto<<NTSCCS_PROTO)|
