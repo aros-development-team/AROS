@@ -29,7 +29,7 @@
 #endif
 
 /* Number of TRBs in the single event ring segment. */
-#define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* choose 128/256/512 as you prefer */
+#define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* 128/256/512 */
 
 struct pciusbXHCIEndpointCtx;
 
