@@ -291,7 +291,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 
     case UFS_PORT_POWER:
         /*
-         * If no PPC, ports are “always powered” and PORT_POWER clear
+         * If no PPC, ports are "always powered" and PORT_POWER clear
          * is a NOP.
          */
         if (!(hc->hc_Flags & HCF_PPC)) {
@@ -461,7 +461,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
         *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
     }
 
-    /* Port indicator control: bits 14..15 if your stack uses it. */
+    /* Port indicator control: bits 14..15 */
     if ((oldportsc >> 14) & 0x3) {
         *mptr |= AROS_WORD2LE(UPSF_PORT_INDICATOR);
     }

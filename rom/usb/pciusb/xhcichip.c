@@ -1018,9 +1018,10 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
 
-    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
     if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
         ioreq->iouh_DriverPrivate1 = NULL;
+        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
         /* Deactivate the endpoint */
         if (driprivate->dpDevice) {
             struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
@@ -1175,8 +1176,8 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                                 b[0],
                                 (unsigned long)actual);
 
-                /* Optional: dump a few bytes if you need */
-#if 0
+                /* Optional: dump a few bytes */
+#if defined(DEBUG) && (DEBUG > 1)
                 {
                     int i, dump = (actual < 8) ? actual : 8;
                     for (i = 0; i < dump; i++) {

@@ -223,7 +223,9 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
         return;
 
+    Disable();
     xhciFreePeriodicContext(hc, hc->hc_Unit, &rtn->rtn_IOReq);
+    Enable();
 
     if (rtn->rtn_BounceBuffer && rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
         usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
