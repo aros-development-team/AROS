@@ -114,7 +114,13 @@ const struct  UsbSSHubDesc    RHHubSSDesc = {
     1                                               // 10 DeviceRemovable
 };
 
-const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
+
+const CONST_STRPTR strStandardConfig = "Standard Config";
+const CONST_STRPTR strHubInterface = "Hub interface";
+const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", strStandardConfig, strHubInterface };
+#if defined(PCIUSB_ENABLEXHCI)
+const CONST_STRPTR RHxStrings[] = { "The AROS Dev Team", "PCI Superspeed Root Hub Unit x", strStandardConfig, strHubInterface };
+#endif
 
 /* /// "SureCause()" */
 void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
@@ -649,20 +655,28 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case UDT_STRING:
                 if(val & 0xff) { /* get lang array */
-                    CONST_STRPTR source = NULL;
+                    CONST_STRPTR source = NULL, rhstring;
                     UWORD *mptr = ioreq->iouh_Data;
                     UWORD slen = 1;
                     KPRINTF(1, "RH: GetString %04lx (%ld)\n", val, len);
                     if((val & 0xff) > 4) { /* index too high? */
                         return(UHIOERR_STALL);
                     }
-                    source = RHStrings[(val & 0xff)-1];
+#if defined(PCIUSB_ENABLEXHCI)
+                    hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+                    if(hc->hc_HCIType == HCITYPE_XHCI) {
+                        rhstring = RHxStrings[(val & 0xff)-1];
+                    }
+                    else
+#endif
+                    rhstring = RHStrings[(val & 0xff)-1];
+                    source = rhstring;
                     if(len > 1) {
                         ioreq->iouh_Actual = 2;
                         while(*source++) {
                             slen++;
                         }
-                        source = RHStrings[(val & 0xff)-1];
+                        source = rhstring;
                         *mptr++ = AROS_WORD2BE((slen<<9)|UDT_STRING);
                         while(ioreq->iouh_Actual+1 < len) {
                             // special hack for unit number in root hub string
