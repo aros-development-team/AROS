@@ -483,7 +483,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
 #if defined(PCIUSB_ENABLEXHCI)
         struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
         if(hc->hc_HCIType == HCITYPE_XHCI) {
-            *((STRPTR *) tag->ti_Data) ="\xA9""2014-2025 The AROS Dev Team";
+            *((STRPTR *) tag->ti_Data) ="\xA9""2023-2025 The AROS Dev Team";
         }
         else
 #endif
