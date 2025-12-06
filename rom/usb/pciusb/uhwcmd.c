@@ -461,6 +461,13 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Manufacturer, taglist))) {
+#if defined(PCIUSB_ENABLEXHCI)
+        struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+        if(hc->hc_HCIType == HCITYPE_XHCI) {
+            *((STRPTR *) tag->ti_Data) = "The AROS Dev Team";
+        }
+        else
+#endif
         *((STRPTR *) tag->ti_Data) = "Chris Hodges";
         count++;
     }
@@ -473,6 +480,13 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Copyright, taglist))) {
+#if defined(PCIUSB_ENABLEXHCI)
+        struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+        if(hc->hc_HCIType == HCITYPE_XHCI) {
+            *((STRPTR *) tag->ti_Data) ="\xA9""2014-2025 The AROS Dev Team";
+        }
+        else
+#endif
         *((STRPTR *) tag->ti_Data) ="\xA9""2007-2009 Chris Hodges";
         count++;
     }
@@ -491,9 +505,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     if((tag = FindTagItem(UHA_Capabilities, taglist))) {
         ULONG caps = 0;
 #if defined(PCIUSB_ENABLEXHCI)
-        struct PCIController *hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
-        if(hc->hc_HCIType == HCITYPE_XHCI) {
-            // check for the usb3 root hub, before saying we do support usb3
+        if(unit->hu_RootHubXPorts > 0) {
             caps |= UHCF_USB30;
         }
 #endif
@@ -502,7 +514,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
 #if defined(PCIUSB_WIP_ISO)
         caps |= UHCF_ISO|UHCF_RT_ISO;
 #endif
-#if (0)
+#if defined(PCIUSB_QUICKIO)
         caps |= UHCF_QUICKIO;
 #endif
         *((ULONG *) tag->ti_Data) = caps;
