@@ -14,7 +14,9 @@ endif
 
 GRUB2PACKAGE    := grub
 GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
-GRUB2REPOS      := ftp://ftp.gnu.org/gnu/grub
+GRUB2REPOS      := \
+    cache:// \
+    ftp://ftp.gnu.org/gnu/grub
 
 CONFIG_OPTS := \
 		--with-platform=$(GRUB_ARCH)        \
