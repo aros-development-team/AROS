@@ -5,12 +5,15 @@ FUNCS := \
       	 clearrexxmsg \
 	 createargstring \
 	 createrexxmsg \
+	 cva2i \
 	 deleteargstring \
 	 deleterexxmsg \
 	 fillrexxmsg \
 	 isrexxmsg \
 	 lengthargstring \
 	 lockrexxbase \
+	 strcmpn \
+	 strlen \
 	 unlockrexxbase
 
 #MM- workbench-libs-rexxsyslib-includes : kernel-exec-includes includes-copy
