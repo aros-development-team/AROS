@@ -2,7 +2,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 ZSTDVERSION=1.5.7
-ZSTDREPOSITORIES = https://github.com/facebook/zstd/releases/download/v$(ZSTDVERSION)
+ZSTDREPOSITORIES =  \
+    cache:// \
+    https://github.com/facebook/zstd/releases/download/v$(ZSTDVERSION)
 ZSTDARCHBASE     := zstd-$(ZSTDVERSION)
 ZSTDARCHSUFFIX := "tar.gz"
 #ZSTDATCHSPEC := $(ZSTDARCHBASE)-aros.diff:$(ZSTDARCHBASE):-f,-p1

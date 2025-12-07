@@ -4,7 +4,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM- includes-copy : libtiff-fetch
 
 LIBTIFFVERSION=4.7.0
-REPOSITORIES = http://download.osgeo.org/libtiff
+REPOSITORIES =  \
+    cache:// \
+    http://download.osgeo.org/libtiff
 ARCHBASE     := tiff-$(LIBTIFFVERSION)
 ARCHSUFFIX := "tar.xz"
 #PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1

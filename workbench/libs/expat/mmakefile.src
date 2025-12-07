@@ -3,7 +3,9 @@ include $(SRCDIR)/config/aros.cfg
 
 EXPATVERSION=2.7.3
 EXPATVRS=2_7_3
-EXPATREPOSITORIES = https://github.com/libexpat/libexpat/releases/download/R_$(EXPATVRS)
+EXPATREPOSITORIES =  \
+    cache:// \
+    https://github.com/libexpat/libexpat/releases/download/R_$(EXPATVRS)
 EXPATARCHBASE     := expat-$(EXPATVERSION)
 EXPATARCHSUFFIX := "tar.bz2"
 #EXPATATCHSPEC := $(EXPATARCHBASE)-aros.diff:$(EXPATARCHBASE):-f,-p1

@@ -2,7 +2,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 JPEGVERSION=9f
-REPOSITORIES := https://ijg.org/files
+REPOSITORIES :=  \
+    cache:// \
+    https://ijg.org/files
 ARCHBASE     := jpegsrc.v$(JPEGVERSION)
 ARCHDIR     := jpeg-$(JPEGVERSION)
 ARCHSUFFIX := "tar.gz"

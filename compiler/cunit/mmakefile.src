@@ -5,7 +5,9 @@
 include $(SRCDIR)/config/aros.cfg
 
 CUNITVERSION=3.5.2
-REPOSITORIES := https://gitlab.com/cunity/cunit/-/archive/$(CUNITVERSION)
+REPOSITORIES :=  \
+    cache:// \
+    https://gitlab.com/cunity/cunit/-/archive/$(CUNITVERSION)
 ARCHBASE     := cunit-$(CUNITVERSION)
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 

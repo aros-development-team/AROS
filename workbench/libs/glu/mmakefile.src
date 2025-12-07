@@ -14,8 +14,10 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-copy : workbench-libs-glu-includes
 
-REPOSITORIES = https://archive.mesa3d.org/glu/ \
- ftp://ftp.embeddedarm.com/mirror/yocto/
+REPOSITORIES =  \
+    cache:// \
+    https://archive.mesa3d.org/glu/ \
+    ftp://ftp.embeddedarm.com/mirror/yocto/
 ARCHBASE := glu-9.0.2
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
 GLU_SUFFIXES := tar.xz tar.bz2 tar.gz

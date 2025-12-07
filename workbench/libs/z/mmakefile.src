@@ -5,7 +5,9 @@
 include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/$(CURDIR)/make.opt
 
-REPOSITORIES := https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
+REPOSITORIES :=  \
+    cache:// \
+    https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
 ARCHSUFFIX := "tar.gz"
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
 
