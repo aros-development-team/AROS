@@ -114,9 +114,8 @@ const struct  UsbSSHubDesc    RHHubSSDesc = {
     1                                               // 10 DeviceRemovable
 };
 
-
-const CONST_STRPTR strStandardConfig = "Standard Config";
-const CONST_STRPTR strHubInterface = "Hub interface";
+static const char strStandardConfig[] = "Standard Config";
+static const char strHubInterface[] = "Hub interface";
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", strStandardConfig, strHubInterface };
 #if defined(PCIUSB_ENABLEXHCI)
 const CONST_STRPTR RHxStrings[] = { "The AROS Dev Team", "PCI Superspeed Root Hub Unit x", strStandardConfig, strHubInterface };
