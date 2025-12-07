@@ -15,7 +15,9 @@ CLASSFILES := webpclass
 #MM datatypes-webp-linklibs-webputils
 
 LIBWEBPVERSION=1.5.0
-WEBPREPOSITORIES = https://storage.googleapis.com/downloads.webmproject.org/releases/webp
+WEBPREPOSITORIES = \
+    cache:// \
+    https://storage.googleapis.com/downloads.webmproject.org/releases/webp
 WEBPARCHBASE     := libwebp-$(LIBWEBPVERSION)
 WEBPARCHSUFFIX := "tar.gz"
 #WEBPPATCHSPEC := $(WEBPARCHBASE)-aros.diff:$(WEBPARCHBASE):-f,-p1
