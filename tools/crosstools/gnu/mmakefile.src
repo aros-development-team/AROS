@@ -151,8 +151,12 @@ GCC_REPOSITORY := $(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION) ftp://ftp.mirrorservi
 else
 GCC_REPOSITORY := ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/snapshots/$(GCC_VERSION)
 endif
-ISL_REPOSITORY := https://libisl.sourceforge.io/ ftp://gcc.gnu.org/pub/gcc/infrastructure
-MPC_REPOSITORY := ftp://ftp.gnu.org/gnu/mpc http://ftp.vim.org/ftp/gnu/mpc
+ISL_REPOSITORY := \
+    cache:// \
+    https://libisl.sourceforge.io/ ftp://gcc.gnu.org/pub/gcc/infrastructure
+MPC_REPOSITORY := \
+    cache:// \
+    ftp://ftp.gnu.org/gnu/mpc http://ftp.vim.org/ftp/gnu/mpc
 
 binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
 gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
@@ -199,7 +203,7 @@ tools-crosstools-gmp :
 	fi
 
 %fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
-	package_repo="$(GNU_REPOSITORY)/gmp" \
+	package_repo="cache:// $(GNU_REPOSITORY)/gmp" \
 	patch=yes \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
@@ -235,7 +239,7 @@ tools-crosstools-mpfr :
 	fi
 
 %fetch_and_build mmake=crosstools-mpfr package=mpfr version=$(MPFR_VERSION) compiler=host \
-	package_repo="$(GNU_REPOSITORY)/mpfr" \
+	package_repo="cache:// $(GNU_REPOSITORY)/mpfr" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
