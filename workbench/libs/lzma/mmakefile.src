@@ -7,7 +7,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes 
 
 VERSION := 5.8.1
-REPOSITORIES := https://tukaani.org/xz
+REPOSITORIES := \
+    cache:// \
+    https://tukaani.org/xz
 ARCHBASE     := xz-$(VERSION)
 ARCHSUFFIX := "tar.gz"
 ##PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
