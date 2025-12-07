@@ -36,6 +36,30 @@ fetch_mirrored()
     $ret
 }
 
+cache_base="https://github.com/aros-development-team/external-sources/raw/refs/heads/main"
+
+fetch_ghcache()
+{
+    local origin="$1" file="$2" destination="$3"
+    local ret=true
+
+    # `origin` here is the path after "cache://"
+    # Normalize away any leading slash
+    local rel="${origin#/}"
+
+    # Build a new HTTPS origin and reuse `fetch()` for actual HTTP handling
+    local new_origin="$cache_base"
+    if [ -n "$rel" ]; then
+        new_origin="$cache_base/$rel"
+    fi
+
+    if ! fetch "$new_origin" "$file" "$destination"; then
+        ret=false
+    fi
+
+    $ret
+}
+
 gnu_mirrors="http://mirror.netcologne.de/gnu http://ftpmirror.gnu.org http://ftp.gnu.org/pub/gnu"
 
 fetch_gnu()
@@ -63,7 +87,6 @@ fetch_archives()
 
     $ret
 }
-
 
 # Note: at time of writing, the main SF download server redirects to mirrors
 # and corrects moved paths, so we retry this server multiple times (in one
@@ -241,6 +264,11 @@ fetch()
             ;;
         github)
             if ! fetch_github "${origin:${#protocol}+3}" "$file" "$destination"; then
+                ret=false
+            fi
+            ;;
+        cache)
+            if ! fetch_ghcache "${origin:${#protocol}+3}" "$file" "$destination"; then
                 ret=false
             fi
             ;;
