@@ -3,7 +3,7 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH1(ULONG, StrcmpN,
+        AROS_LH3(ULONG, StrcmpN,
 
 /*  SYNOPSIS */
         AROS_LHA(UBYTE *, string1, A0),
