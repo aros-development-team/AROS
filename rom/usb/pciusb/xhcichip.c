@@ -1234,6 +1234,40 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                 unit->hu_NakTimeoutFrame[devadrep] = 0;
             }
 
+            /*
+             * If we see a STALL on a control endpoint (EP0), the xHC will place
+             * that endpoint into the Halted state and will not execute further
+             * TDs until software issues Reset Endpoint / Set TR Dequeue.
+             *
+             * During enumeration, upper layers (Poseidon hubss.class) do not
+             * send CLEAR_FEATURE(ENDPOINT_HALT) on EP0, so a stalled
+             * SET_CONFIGURATION would permanently wedge control traffic for
+             * that device. To prevent the hang, we automatically reset EP0
+             * here for non-root devices when a STALL is reported.
+             */
+            if (driprivate->dpCC == TRB_CC_STALL_ERROR &&
+                ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+                ioreq->iouh_Endpoint == 0)
+            {
+                struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
+
+                if (devCtx && devCtx != XHCI_ROOT_HUB_HANDLE) {
+                    ULONG epid = driprivate->dpEPID;
+                    if (!epid) {
+                        /* Fallback: EP0 is EPID 1 by spec */
+                        epid = xhciGetEPID(0, 0);
+                    }
+
+                    pciusbXHCIDebug("xHCI",
+                        DEBUGWARNCOLOR_SET
+                        "STALL on Dev %u EP0 (CC=6), resetting EPID=%lu"
+                        DEBUGCOLOR_RESET"\n",
+                        ioreq->iouh_DevAddr, epid);
+
+                    xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+                }
+            }
+
             if (transactiondone) {
                 xhciFreeAsyncContext(hc, unit, ioreq);
                 if ((!ioreq->iouh_Req.io_Error) &&
