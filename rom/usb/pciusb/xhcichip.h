@@ -31,6 +31,9 @@
 /* Number of TRBs in the single event ring segment. */
 #define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* 128/256/512 */
 
+#define SLOT_CTX_ENTRIES_SHIFT 27
+#define SLOT_CTX_ENTRIES_MASK  0x1F
+
 struct pciusbXHCIEndpointCtx;
 
 struct pciusbXHCIDMAAlloc

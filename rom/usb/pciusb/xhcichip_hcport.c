@@ -432,24 +432,51 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
         *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
     }
 
-    /* Speed mapping */
-    if ((oldportsc &
-         (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) ==
-        XHCIF_PR_PORTSC_LOWSPEED)
-    {
+    /*
+     * Speed mapping.
+     *
+     * xHCI encodes the link speed as a 4-bit field starting at
+     * XHCIS_PR_PORTSC_SPEED.  Poseidon provides pre-shifted constants for the
+     * three non-FS speeds (XHCIF_PR_PORTSC_{LOW,HIGH,SUPER}SPEED), so we
+     * compare the masked value directly against those.
+     *
+     * Full-speed is represented as 0 in the speed field and therefore
+     * falls through the switch without setting an explicit speed flag.
+     */
+    switch (oldportsc & XHCI_PR_PORTSC_SPEED_MASK) {
+    case XHCIF_PR_PORTSC_LOWSPEED:
         *mptr |= AROS_WORD2LE(UPSF_PORT_LOW_SPEED);
-    } else if ((oldportsc &
-                (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) ==
-               XHCIF_PR_PORTSC_HIGHSPEED)
-    {
+        break;
+
+    case XHCIF_PR_PORTSC_HIGHSPEED:
         *mptr |= AROS_WORD2LE(UPSF_PORT_HIGH_SPEED);
-    } else if ((oldportsc &
-                (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) ==
-               XHCIF_PR_PORTSC_SUPERSPEED)
-    {
-        *mptr |= AROS_WORD2LE(UPSF_PORT_SUPER_SPEED);
-    } else {
-        /* Fullspeed: default, no extra flag needed. */
+        break;
+
+    case XHCIF_PR_PORTSC_SUPERSPEED:
+        {
+            *mptr |= AROS_WORD2LE(UPSF_PORT_SUPER_SPEED);
+            /*
+             * xHCI quirk: for SuperSpeed ports, the classic PED (Port Enabled/Disabled)
+             * bit is not used in the same way as on USB2. The hub-class API, however,
+             * still expects an "enabled" indication via UPSF_PORT_ENABLE.
+             *
+             * For SS ports, treat a connected port with link state U0 as "enabled"
+             * from the hub's perspective, even if PED is clear.
+             */
+            ULONG pls =
+                (oldportsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
+
+            if ((oldportsc & XHCIF_PR_PORTSC_CCS) &&
+                (pls == 0))          /* U0 link state */
+            {
+                *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+            }
+        }
+        break;
+
+    default:
+        /* Full-speed: default, no extra flag needed. */
+        break;
     }
 
     if (oldportsc & XHCIF_PR_PORTSC_PR) {
