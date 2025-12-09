@@ -48,15 +48,32 @@ void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct
     xhciFinishRequest(hc, unit, ioreq);
 }
 
-static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype)
+static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype, ULONG has_data)
 {
-    ULONG setupflags = tdflags & ~(TRB_FLAG_TYPE_MASK);
+    ULONG setupflags;
 
-    setupflags |= (TRBF_FLAG_TRTYPE_SETUP|TRBF_FLAG_IDT|TRBF_FLAG_CH);
-    if (tdflags & TRBF_FLAG_DS_DIR)
-        setupflags |= (3 << 16);
-    else
-        setupflags |= (2 << 16);
+    setupflags = tdflags & ~(TRB_FLAG_TYPE_MASK);
+    setupflags |= (TRBF_FLAG_TRTYPE_SETUP | TRBF_FLAG_IDT | TRBF_FLAG_CH);
+
+    /*
+     * TRB Transfer Type (TRT) bits:
+     *
+     * - No DATA stage: TRT = 0
+     * - DATA OUT stage: TRT = 2
+     * - DATA IN stage:  TRT = 3
+     *
+     * We derive the DATA direction from TRBF_FLAG_DS_DIR (set for IN).
+     */
+    if (!has_data) {
+        /* No data stage. Make sure TRT is "no data". */
+        setupflags &= ~(3UL << 16);
+    } else if (tdflags & TRBF_FLAG_DS_DIR) {
+        /* DATA IN */
+        setupflags |= (3UL << 16);
+    } else {
+        /* DATA OUT */
+        setupflags |= (2UL << 16);
+    }
 
     return setupflags;
 }
@@ -101,6 +118,7 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
     ULONG trbflags)
 {
+    ULONG has_data = (ioreq->iouh_Data && ioreq->iouh_Length) ? 1 : 0;
     WORD queued;
 
     UQUAD setupdata_inline;
@@ -110,9 +128,10 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
                     (unsigned long long)setupdata_inline,
                     (unsigned)sizeof(ioreq->iouh_SetupData));
 
+    /* SETUP stage */
     queued = xhciQueueTRB(hc, epring, setupdata_inline,
                           sizeof(ioreq->iouh_SetupData),
-                          xhciTDSetupFlags(trbflags, UHCMD_CONTROLXFER));
+                          xhciTDSetupFlags(trbflags, UHCMD_CONTROLXFER, has_data));
     pciusbXHCIDebug("xHCI",
                     "xhciQueueTRB (SETUP) -> queued=%d\n",
                     (int)queued);
@@ -123,7 +142,8 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     driprivate->dpSTRB = queued;
     epring->ringio[queued] = &ioreq->iouh_Req;
 
-    if (ioreq->iouh_Data && ioreq->iouh_Length) {
+    /* DATA stage (if any) */
+    if (has_data) {
         queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, FALSE);
         pciusbXHCIDebug("xHCI",
                         "xhciQueuePayloadTRBs (DATA) -> queued=%d\n",
@@ -140,13 +160,34 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     if (queued == -1)
         return FALSE;
 
-    pciusbXHCIDebug("xHCI",
-                    "Queueing STATUS TRB\n");
-    queued = xhciQueueTRB(hc, epring, 0, 0,
-                          xhciTDStatusFlags(trbflags));
-    pciusbXHCIDebug("xHCI",
-                    "xhciQueueTRB (STATUS) -> queued=%d\n",
-                    (int)queued);
+    /*
+     * Status stage direction rules:
+     *
+     * - If there is a DATA stage, Status direction is the opposite of the
+     *   DATA stage direction (TRBF_FLAG_DS_DIR).
+     * - If there is no DATA stage, Status direction is always IN.
+     *
+     * TRBF_FLAG_DS_DIR is already used to describe DATA direction in trbflags.
+     */
+    {
+        ULONG status_tdflags = trbflags;
+
+        if (has_data) {
+            /* Opposite of DATA direction. */
+            status_tdflags ^= TRBF_FLAG_DS_DIR;
+        } else {
+            /* No DATA stage: Status is always IN. */
+            status_tdflags |= TRBF_FLAG_DS_DIR;
+        }
+
+        pciusbXHCIDebug("xHCI",
+                        "Queueing STATUS TRB\n");
+        queued = xhciQueueTRB(hc, epring, 0, 0,
+                              xhciTDStatusFlags(status_tdflags));
+        pciusbXHCIDebug("xHCI",
+                        "xhciQueueTRB (STATUS) -> queued=%d\n",
+                        (int)queued);
+    }
 
     if (queued != -1) {
         driprivate->dpSttTRB = queued;
