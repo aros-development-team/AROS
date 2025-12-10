@@ -322,20 +322,20 @@ struct UsbAudioExtensionUnitDesc10
 /* USB Audio Spec 2.0 stuff */
 struct UsbAudioHeaderDesc20
 {
-    UBYTE bLength;
-    UBYTE bDescriptorType;
-    UBYTE bDescriptorSubtype;
-    UBYTE bcdADC0;
-    UBYTE bcdADC1;
-    UBYTE bCategory;
+    UBYTE bLength;             /* Size of this descriptor */
+    UBYTE bDescriptorType;     /* Descriptor Type (0x24) */
+    UBYTE bDescriptorSubtype;  /* Subtype (0x01) */
+    UBYTE bcdADC0;             /* Low byte of spec version (0x00)*/
+    UBYTE bcdADC1;             /* High byte of spec version (0x02) */
+    UBYTE bCategory;           /* Primary use of the audio function */
     union {
-        UWORD wTotalLength;        /* Total length of all descriptors */
+        UWORD wTotalLength;    /* Total length of all descriptors */
         struct {
             UBYTE wTotalLength0;
             UBYTE wTotalLength1;
         };
     };
-    UBYTE bmControls;
+    UBYTE bmControls;          /* Latency control (%00=n/a,%01=read only, %11=r/w) */
     UBYTE bInCollection;
     UBYTE baInterfaceNr[1];
 };
