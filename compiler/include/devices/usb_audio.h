@@ -1,10 +1,11 @@
 #ifndef DEVICES_USB_AUDIO_H
 #define DEVICES_USB_AUDIO_H
 /*
-**	$VER: usb_audio.h 2.0 (15.12.07)
+**	$VER: usb_audio.h 2.1 (10.12.2025)
 **
 **	usb definitions include file
 **
+**	(C) Copyright 2007-2025 The AROS Dev Team.
 **	(C) Copyright 2002-2007 Chris Hodges
 **	    All Rights Reserved
 */
@@ -321,14 +322,22 @@ struct UsbAudioExtensionUnitDesc10
 /* USB Audio Spec 2.0 stuff */
 struct UsbAudioHeaderDesc20
 {
-    UBYTE bLength;             /* Size of this descriptor */
-    UBYTE bDescriptorType;     /* Descriptor Type (0x24) */
-    UBYTE bDescriptorSubType;  /* Subtype (0x01) */
-    UBYTE bcdADC0;             /* Low byte of spec version (0x00)*/
-    UBYTE bcdADC1;             /* High byte of spec version (0x02) */
-    UBYTE bCategory;           /* Primary use of the audio function */
-    UWORD wTotalLength;        /* Total length of all descriptors */
-    UBYTE bmControls;          /* Latency control (%00=n/a,%01=read only, %11=r/w) */
+    UBYTE bLength;
+    UBYTE bDescriptorType;
+    UBYTE bDescriptorSubtype;
+    UBYTE bcdADC0;
+    UBYTE bcdADC1;
+    UBYTE bCategory;
+    union {
+        UWORD wTotalLength;        /* Total length of all descriptors */
+        struct {
+            UBYTE wTotalLength0;
+            UBYTE wTotalLength1;
+        };
+    };
+    UBYTE bmControls;
+    UBYTE bInCollection;
+    UBYTE baInterfaceNr[1];
 };
 
 struct UsbAudioInputTermDesc20
@@ -345,6 +354,20 @@ struct UsbAudioInputTermDesc20
     UBYTE iChannelNames;       /* String descriptor */
     UBYTE bmControls;          /* Various controls */
     UBYTE iTerminal;           /* String descriptor */
+};
+
+struct UsbAudio2ASGeneralDesc
+{
+    UBYTE bLength;             /* Size of this descriptor */
+    UBYTE bDescriptorType;     /* Descriptor Type (0x24) */
+    UBYTE bDescriptorSubtype;  /* Subtype (0x01) */
+    UBYTE bTerminalLink;       /* Terminal linked to this interface */
+    UBYTE bmControls;          /* Active Alternate setting; valid alt settings */
+    UBYTE bFormatType;         /* Format type code */
+    ULONG bmFormats;           /* Format bitmap */
+    UBYTE bNrChannels;         /* Number of physical channels */
+    ULONG bmChannelConfig;     /* Spatial location */
+    UBYTE iChannelNames;       /* String descriptor */
 };
 
 /* generic audio stuff */
@@ -370,6 +393,18 @@ struct UsbAudioType1FormatDesc
     UBYTE bBitResolution;      /* Number of bits used in a subframe */
     UBYTE bSamFreqType;        /* 0 = continuous freq, otherwise number of discrete freqs */
     UBYTE tSamFreq0[3];        /* first sampling freq (or lower range) */
+};
+
+struct UsbAudio2Type1FormatDesc
+{
+    UBYTE bLength;             /* Size of this descriptor */
+    UBYTE bDescriptorType;     /* Descriptor Type (0x24) */
+    UBYTE bDescriptorSubtype;  /* Subtype (0x02) */
+    UBYTE bFormatType;         /* Format Type I (0x01) */
+    UBYTE bSubslotSize;        /* Subslot size in bytes */
+    UBYTE bBitResolution;      /* Number of bits used in a subslot */
+    UBYTE bSamFreqType;        /* 0 = continuous freq, otherwise number of discrete freqs */
+    UBYTE tSamFreq[0];         /* Sampling frequencies */
 };
 
 struct UsbAudioGeneralEPDesc
