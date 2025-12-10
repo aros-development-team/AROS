@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        dev \
+        uhwcmd \
+        debug
+
+#FILES += \
+#        DenebClockport
+
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
+
+#MM
+usb-poseidon-deneb-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM- usb-poseidon-deneb : usb-poseidon-deneb-directories usb-poseidon-denebdmausb usb-poseidon-denebusb usb-poseidon-denebz2usb
+#MM- usb-poseidon-deneb-quick : usb-poseidon-denebdmausb-quick usb-poseidon-denebusb-quick usb-poseidon-denebz2usb-quick
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := 
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=usb-poseidon-denebdmausb \
+    modname=denebdmausb modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" conffile=denebusb.conf \
+    objdir=$(OBJDIR)/dma uselibs="hiddstubs debug"
+
+USER_CPPFLAGS := -DNODMA -DZORRO_II
+
+%build_module mmake=usb-poseidon-denebz2usb \
+    modname=denebz2usb modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" conffile=denebusb.conf \
+    objdir=$(OBJDIR)/z2 uselibs="hiddstubs debug"
+
+USER_CPPFLAGS := -DNODMA
+
+%build_module mmake=usb-poseidon-denebusb \
+    modname=denebusb modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" conffile=denebusb.conf \
+    uselibs="hiddstubs debug"
+
+%common
