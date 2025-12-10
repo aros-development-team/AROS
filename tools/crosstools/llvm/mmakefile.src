@@ -135,9 +135,9 @@ else
 LLVM_BIN_DIR            :=$(CROSSTOOLSDIR)
 LLVM_CONFIG_OPT         :=-DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config
 endif
+LLVM_CONFIG_OPT         += -Wno-dev
 
-LLVM_CMAKETARGET        :=
-LLVM_CMAKEOPTIONS       :=                                                                                                              \
+LLVM_CMAKEOPTIONS       := -Wno-dev                                                                                                     \
     -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)"                                                                                               \
     -DCMAKE_INSTALL_BINDIR="$(LLVM_BIN_DIR)"                                                                                           \
     -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)                                                                                             \
@@ -193,8 +193,6 @@ LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_LLD_SOURCE_DIR="$(LLVMLLD_BUILDBASE)"
 LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_BUILDBASE)"
 
 #LLVM_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
-
-LLVM_INSTALLCMD         :=$(MAKE) -j1 install/strip
 
 LLVM_TARGET_FLAGS       :=--target=$(AROS_TARGET_CPU)-unknown-aros
 
@@ -285,8 +283,8 @@ tools-crosstools-llvm-libcxx : | $(HOSTGENDIR)/$(CURDIR)/libcxx
             -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
             $(LLVM_LIBCXX_CMAKEOPTIONS)                                                                                                 \
             -S $(LIBCXX_BUILDBASE)                                                                                                      \
-        && $(MAKE)                                                                                                                      \
-        && $(MAKE) -j1 install/strip                                                                                                    \
+        && cmake --build   .                                                                                                            \
+        && cmake --install . --strip                                                                                                    \
         && $(TOUCH) $(llvm-libcxx-installflag) ;                                                                                        \
 	fi
 
@@ -303,8 +301,8 @@ tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
             -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
             $(LLVM_LIBCXXABI_CMAKEOPTIONS)                                                                                              \
             -S $(LIBCXXABI_BUILDBASE)                                                                                                   \
-        && $(MAKE)                                                                                                                      \
-        && $(MAKE) -j1 install/strip                                                                                                    \
+        && cmake --build   .                                                                                                            \
+        && cmake --install . --strip                                                                                                    \
         && $(TOUCH) $(llvm-libcxxabi-installflag) ;                                                                                     \
 	fi
 
@@ -325,8 +323,7 @@ LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                  
 #LLVM_LIBUNWIND_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 %build_with_cmake mmake=crosstools-libunwind package=libunwind srcdir=$(LIBUNWIND_BUILDBASE)                                            \
-    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
-    extraoptions="$(LLVM_LIBUNWIND_CMAKEOPTIONS)" compiler=host usecppflags=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_LIBUNWIND_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 LLVM_COMPILER_RT_CMAKEBASE :=                                                                                                           \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
@@ -358,8 +355,7 @@ LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                
 #LLVM_COMPILER_RT_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 %build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(COMPILER_RT_BUILDBASE)                                      \
-    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
-    extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 ifneq ($(AROS_TARGET_CPU32),)
 LLVM_COMPILER_RT32_CMAKEOPTIONS :=                                                                                                      \
@@ -375,8 +371,7 @@ LLVM_COMPILER_RT32_CMAKEOPTIONS :=                                              
 #LLVM_COMPILER_RT32_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
 %build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(COMPILER_RT_BUILDBASE)                                  \
-    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
-    extraoptions="$(LLVM_COMPILER_RT32_CMAKEOPTIONS)" compiler=host usecppflags=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT32_CMAKEOPTIONS)" compiler=host usecppflags=no
 endif
 
 %fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)                                                                           \
@@ -469,50 +464,20 @@ LLVM_TOOL_INSTTARGETS := install-llvm-ar-stripped install-llvm-nm-stripped insta
                          install-llvm-objdump-stripped install-llvm-ranlib-stripped install-llvm-strip-stripped
 
 #MM
-tools-crosstools-llvm-toolchain : $(LLLVM_EXTRA_DEPS)
-ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
-	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                                                                                    \
-        $(ECHO) "Building llvm/LLVM.so" &&                                                                                              \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm LLVM $(crosstools-llvm-make-env) &&                                           \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-LLVM-stripped &&                                                            \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(ECHO) "Building llvm/lld" &&                                                                                                  \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm lld $(crosstools-llvm-make-env) &&                                            \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-lld-stripped $(crosstools-llvm-install-env) &&                              \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(ECHO) "Building llvm/Clang" &&                                                                                                \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang $(crosstools-llvm-make-env) &&                                          \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-stripped $(crosstools-llvm-install-env) &&                            \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-libraries-stripped $(crosstools-llvm-install-env) &&                  \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install-clang-resource-headers-stripped $(crosstools-llvm-install-env) &&           \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(ECHO) "Building llvm tools" &&                                                                                                \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm $(LLVM_TOOL_TARGETS) $(crosstools-llvm-make-env) &&                           \
-        $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm $(LLVM_TOOL_INSTTARGETS) $(crosstools-llvm-install-env) &&                          \
-        $(ECHO) "Installing llvm-as" && \
-        cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&                                                            \
-        $(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-as &&                                                                                   \
-        $(ECHO) "Installing llvm-config" && \
-        cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&                                                        \
-        $(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config &&                                                                               \
-        $(ECHO) "Installing llvm cmake files" && \
-        $(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm && \
-        cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/*.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/ &&                                      \
-        $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean &&                                                                                \
-        $(TOUCH) $(llvm-installflag);                                                                                                   \
-        fi
-else
-	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag) ; then                                                                                   \
-        $(MAKE) -j$(JOBS) -C $(HOSTGENDIR)/$(CURDIR)/llvm clang lld $(crosstools-llvm-make-env)                                         \
-        && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/llvm install/strip $(crosstools-llvm-install-env)                                     \
-        && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/llvm clean                                                                                \
-        && $(TOUCH) $(llvm-installflag) ;                                                                                               \
-        fi
-endif
+tools-crosstools-llvm-toolchain: $(llvm-installflag)
+
+$(llvm-installflag): CMAKE := $(crosstools-llvm-make-env) cmake
+$(llvm-installflag): $(LLLVM_EXTRA_DEPS)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                        \
+	$(ECHO) "Building LLVM" &&                                              \
+	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm &&                      \
+	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --strip &&              \
+	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm --target clean &&       \
+	$(TOUCH) $(llvm-installflag);                                           \
+	fi
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
-    prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
-    extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no
 
 #
 # Rules to setup the monotree
