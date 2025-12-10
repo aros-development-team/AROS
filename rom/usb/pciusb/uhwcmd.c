@@ -1244,6 +1244,23 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
+#if (0)
+    switch(hc->hc_HCIType) {
+    case HCITYPE_XHCI:
+        retval = xhciQueueIsochIO(hc, rtn);
+        break;
+    case HCITYPE_EHCI:
+        retval = ehciQueueIsochIO(hc, rtn);
+        break;
+    case HCITYPE_UHCI:
+        retval = uhciQueueIsochIO(hc, rtn);
+        break;
+    default:
+        retval = ohciQueueIsochIO(hc, rtn);
+        break;
+    };
+#endif
+    
     KPRINTF(10, "UHCMD_ISOXFER processed ioreq: 0x%p\n", ioreq);
     return(RC_DONTREPLY);
 }
@@ -1475,6 +1492,10 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn = (struct RTIsoNode *) RemHead((struct List *) &unit->hu_FreeRTIsoNodes);
     Enable();
 
+    if(!rtn) {
+        return UHIOERR_OUTOFMEMORY;
+    }
+
     requested_ptds = hc->hc_IsoPTDCount ? hc->hc_IsoPTDCount : PCIUSB_ISO_PTD_COUNT;
     if(requested_ptds < 2)
         requested_ptds = 2;
@@ -1491,9 +1512,41 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     }
 
     if(!rtn->rtn_PTDs) {
+        Disable();
         AddTail((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
+        Enable();
         return UHIOERR_OUTOFMEMORY;
     }
+
+    for(UWORD ptdidx = 0; ptdidx < rtn->rtn_PTDCount; ptdidx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[ptdidx];
+
+        if(!ptd) {
+            ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+            if(!ptd) {
+                for(UWORD freectr = 0; freectr < ptdidx; freectr++) {
+                    if(rtn->rtn_PTDs[freectr])
+                        FreeMem(rtn->rtn_PTDs[freectr], sizeof(struct PTDNode));
+                    rtn->rtn_PTDs[freectr] = NULL;
+                }
+                Disable();
+                AddTail((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
+                Enable();
+                return UHIOERR_OUTOFMEMORY;
+            }
+            rtn->rtn_PTDs[ptdidx] = ptd;
+        } else {
+            bzero(ptd, sizeof(*ptd));
+            rtn->rtn_PTDs[ptdidx] = ptd;
+        }
+
+        ptd->ptd_Length = ioreq->iouh_MaxPktSize;
+        ptd->ptd_PktCount = 1;
+        ptd->ptd_PktLength[0] = ioreq->iouh_MaxPktSize;
+        ptd->ptd_Flags = (ioreq->iouh_Flags & UHFF_SPLITTRANS) ? PTDF_SITD : 0;
+    }
+
+    rtn->rtn_PTDCount = requested_ptds;
 
     /* copy some variables */
     rtn->rtn_IOReq.iouh_Flags = ioreq->iouh_Flags;
@@ -1506,6 +1559,12 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_IOReq.iouh_SplitHubPort = ioreq->iouh_SplitHubPort;
 
     rtn->rtn_RTIso = (struct IOUsbHWRTIso *) ioreq->iouh_Data;
+    rtn->rtn_RTIso->urti_DriverPrivate1 = rtn; // backlink
+    rtn->rtn_NextPTD = 0;
+    rtn->rtn_BufferReq.ubr_Buffer = NULL;
+    rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_MaxPktSize;
+    rtn->rtn_BufferReq.ubr_Frame = 0;
+    rtn->rtn_BufferReq.ubr_Flags = 0;
 
     switch(hc->hc_HCIType) {
     case HCITYPE_XHCI:
@@ -1531,21 +1590,6 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_RTIso->urti_DriverPrivate1 = rtn; // backlink
 
     Disable();
-    switch(hc->hc_HCIType) {
-    case HCITYPE_XHCI:
-        retval = xhciQueueIsochIO(hc, rtn);
-        break;
-    case HCITYPE_EHCI:
-        retval = ehciQueueIsochIO(hc, rtn);
-        break;
-    case HCITYPE_UHCI:
-        retval = uhciQueueIsochIO(hc, rtn);
-        break;
-    default:
-        retval = ohciQueueIsochIO(hc, rtn);
-        break;
-    };
-
     if (retval == RC_OK)
         AddTail((struct List *) &hc->hc_RTIsoHandlers, (struct Node *) &rtn->rtn_Node);
     else
