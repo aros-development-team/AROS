@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
  
     Desc: VESA BIOS information structures
 */
@@ -20,19 +20,28 @@
 #define VBE_RC_NOHW	 0x0200 /* The given parameters are not supported by the hardware		*/
 #define VBE_RC_NOMODE	 0X0300	/* The given parameters are not supported by the current video mode	*/
 
+#define VBE_FARPTR(name) \
+    union { \
+        unsigned int name; \
+        struct { \
+            unsigned short name##_off; \
+            unsigned short name##_seg; \
+        }; \
+    }
+
 /* VBE controller information */
 struct vbe_controller
 {
     unsigned char  signature[4];	/* 'VESA' string				*/
     unsigned short version;		/* VBE version number				*/
-    unsigned int   oem_string;		/* 16-bit far pointer to OEM string pointer	*/
+    VBE_FARPTR(oem_string);		/* 16-bit far pointer to OEM string pointer	*/
     unsigned int   capabilities;	/* Capabilities flags, see below		*/
-    unsigned int   video_mode;		/* 16-bit far pointer to video mode table	*/
+    VBE_FARPTR(video_mode);		/* 16-bit far pointer to video mode table	*/
     unsigned short total_memory;	/* Total amount of VRAM	in 64KB units		*/
     unsigned short oem_software_rev;	/* ROM version number				*/
-    unsigned int   oem_vendor_name;	/* 16-bit far pointer to hardware vendor string	*/
-    unsigned int   oem_product_name;	/* 16-bit far pointer to name string		*/
-    unsigned int   oem_product_rev;	/* 16-bit far pointer to version string		*/
+    VBE_FARPTR(oem_vendor_name);	/* 16-bit far pointer to hardware vendor string	*/
+    VBE_FARPTR(oem_product_name);	/* 16-bit far pointer to name string		*/
+    VBE_FARPTR(oem_product_rev);	/* 16-bit far pointer to version string		*/
     unsigned char  reserved[222];	/* BIOS scratchpad				*/
     unsigned char  oem_data[256];	/* Strings can be copied here			*/
 } __attribute__ ((packed));
