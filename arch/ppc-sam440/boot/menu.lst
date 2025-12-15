@@ -27,6 +27,7 @@ title AROS on Sam4x0
     module Devs/Drivers/gfx.hidd
     module Libs/graphics.library
     module Devs/Drivers/hiddclass.hidd
+    module Devs/Drivers/inputclass.hidd
     module Classes/USB/hid.class
     module Classes/USB/hub.class
     module Devs/Drivers/i2c.hidd
@@ -86,6 +87,7 @@ title AROS on Sam4x0 Debug
     module Devs/Drivers/gfx.hidd
     module Libs/graphics.library
     module Devs/Drivers/hiddclass.hidd
+    module Devs/Drivers/inputclass.hidd
     module Classes/USB/hid.class
     module Classes/USB/hub.class
     module Devs/Drivers/i2c.hidd

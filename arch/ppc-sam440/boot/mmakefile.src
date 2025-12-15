@@ -40,7 +40,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-afs \
 #MM     kernel-bootloader \
 #MM     kernel-dos \
-#MM	kernel-lddemon \
+#MM     kernel-lddemon \
 #MM     kernel-dosboot \
 #MM     kernel-debug \
 #MM     kernel-ata \
@@ -56,6 +56,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-ram \
 #MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-hidd-bus \

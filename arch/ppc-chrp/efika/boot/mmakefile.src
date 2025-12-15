@@ -39,17 +39,18 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-fs-con \
 #MM     kernel-fs-ram \
 #MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
 #MM     kernel-hidd \
 #MM     hidd-i2c \
 #MM     kernel-hidd-pci
 
+PKG_GEN_DEVS 	:=  console input gameport keyboard
+PKG_GEN_HANDLERS:= ram con
+PKG_GEN_HIDDS	:= hiddclass gfx inputclass keyboard mouse i2c pci
 PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
 PKG_GEN_RSRC 	:= dosboot bestcomm lddemon task
-PKG_GEN_DEVS 	:= input gameport keyboard console
-PKG_GEN_HANDLERS:= con ram
-PKG_GEN_HIDDS	:= graphics keyboard mouse hiddclass i2c pci
 
 %make_package mmake=kernel-package-chrp-ppc-generic \
     file=$(AROSDIR)/boot/modules/aros-ppc-generic.pkg \
