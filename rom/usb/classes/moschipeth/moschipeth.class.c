@@ -56,7 +56,7 @@ static int libInit(LIBBASETYPEPTR nh)
                 ret = nh;
             }
         } else {
-            KPRINTF(20, ("failed to create usbparallel.device\n"));
+            KPRINTF(20, ("failed to create %s\n", DEVNAME));
         }
         if(!ret)
         {
