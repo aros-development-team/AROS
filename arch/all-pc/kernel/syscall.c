@@ -28,8 +28,9 @@
 #if (__WORDSIZE != 64)
 extern void core_Kick(struct TagItem *, void *);
 extern void kernel_cstart(const struct TagItem *);
-#endif
+#else
 extern IPTR core_BSPReconfigure(struct KernBootPrivate *, UWORD);
+#endif
 
 int core_SysCallHandler(struct ExceptionContext *regs, struct KernelBase *KernelBase, void *HandlerData2)
 {
@@ -96,15 +97,12 @@ BOOL krnAddSysCallHandler(struct PlatformData *pdata, struct syscallx86_Handler 
     return TRUE;
 }
 
+#if (__WORDSIZE==64)
 /* BSP syscall */
 void X86_HandleBSPUpdateSC(struct ExceptionContext *regs)
 {
     UWORD max =
-#if (__WORDSIZE==64)
         (UWORD)regs->rbx;
-#else
-        (UWORD)regs->ebx;
-#endif
 
     D(bug("[Kernel] %s(%d)\n", __func__, max));
     core_BSPReconfigure(__KernBootPrivate, max);
@@ -117,7 +115,7 @@ struct syscallx86_Handler x86_SCBSPUpdateHandler =
     },
     (APTR)X86_HandleBSPUpdateSC
 };
-
+#endif
 
 /* Default x86 syscall handlers */
 

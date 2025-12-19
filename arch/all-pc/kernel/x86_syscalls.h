@@ -12,7 +12,6 @@
 #define SC_X86SWITCH            0xFC
 #define SC_X86RESCHEDTASK       0xFB
 #define SC_X86SYSHALT           0xFA
-#define SC_X86BSPUPDATE         0xF0
 
 #define krnSysCallSystemHalt() 				                                                        \
 ({								                                                                    \
@@ -50,6 +49,17 @@
     __value;						                                                                \
 })
 
+extern void X86_HandleSysHaltSC(struct ExceptionContext *);
+extern void X86_HandleChangePMStateSC(struct ExceptionContext *);
+extern void X86_HandleBSPUpdateSC(struct ExceptionContext *);
+extern struct syscallx86_Handler x86_SCRebootHandler;
+extern struct syscallx86_Handler x86_SCChangePMStateHandler;
+extern struct syscallx86_Handler x86_SCSysHaltHandler;
+
+#if (__WORDSIZE==64)
+
+#define SC_X86BSPUPDATE         0xF0
+
 #define krnSysCallBSPUpdate(max)                                                                    \
 ({                                                                                                  \
     register UWORD _max16 = (UWORD)(max);                                                           \
@@ -59,13 +69,7 @@
         : "a"(SC_X86BSPUPDATE), "b"(_max16)                                                         \
         : "memory");                                                                                \
 })
-
-extern void X86_HandleSysHaltSC(struct ExceptionContext *);
-extern void X86_HandleChangePMStateSC(struct ExceptionContext *);
-extern void X86_HandleBSPUpdateSC(struct ExceptionContext *);
-extern struct syscallx86_Handler x86_SCRebootHandler;
-extern struct syscallx86_Handler x86_SCChangePMStateHandler;
-extern struct syscallx86_Handler x86_SCSysHaltHandler;
 extern struct syscallx86_Handler x86_SCBSPUpdateHandler;
+#endif
 
 #endif /* !X86_SYSCALLS_H */
