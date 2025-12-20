@@ -105,9 +105,9 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 
 #if defined(PCIUSB_XHCI_DEBUG)
-#define pciusbXHCIDebug(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
-#define pciusbXHCIDebugTRB(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
-#define pciusbXHCIDebugEP(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebug(sub,fmt,args...)                pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugTRB(sub,fmt,args...)             pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugEP(sub,fmt,args...)              pciusbDebug(sub,fmt,##args)
 void xhciDumpIN(volatile struct xhci_inctx *in);
 void xhciDumpEP(volatile struct xhci_ep *ep);
 void xhciDumpSlot(volatile struct xhci_slot *slot);
@@ -158,15 +158,20 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci
 static inline struct xhci_trb *
 xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 {
+    if (!trb)
+        return (struct xhci_trb *)0;
 #if __WORDSIZE == 64
-    if ((hc->hc_Flags & HCF_ADDR64) && trb)
-        return (struct xhci_trb *)(((UQUAD)trb->dbp.addr_hi << 32) |
-                                   (UQUAD)trb->dbp.addr_lo);
+    if ((hc->hc_Flags & HCF_ADDR64) && trb) {
+        ULONG lo = AROS_LE2LONG(trb->dbp.addr_lo);
+        ULONG hi = AROS_LE2LONG(trb->dbp.addr_hi);
+
+        return (struct xhci_trb *)(((UQUAD)hi << 32) | (UQUAD)lo);
+    }
 #else
     /* 32-bit addressing (or non-64-bit host) relies solely on the low dword. */
     (void)hc;
 #endif
-    return (struct xhci_trb *)(IPTR)(trb ? trb->dbp.addr_lo : 0);
+    return (struct xhci_trb *)(IPTR)AROS_LE2LONG(trb->dbp.addr_lo);
 }
 
 #endif /* XHCIPROTO_H */

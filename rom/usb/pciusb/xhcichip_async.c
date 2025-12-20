@@ -451,9 +451,13 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 driprivate->dpTxETRB = (UWORD)-1;
                 driprivate->dpSttTRB = (UWORD)-1;
 
-                Disable();
-                AddHead(txlist, (struct Node *) ioreq);
-                Enable();
+                if (ioreq->iouh_Req.io_Error) {
+                    ReplyMsg(&ioreq->iouh_Req.io_Message);
+                } else {
+                    Disable();
+                    AddHead(txlist, (struct Node *) ioreq);
+                    Enable();
+                }
             } else {
                 pciusbXHCIDebug("xHCI",
                                 "Ringing doorbell: slot=%u epid=%u\n",

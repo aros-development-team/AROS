@@ -262,12 +262,12 @@ struct PCIController
     APTR                        hc_XHCIDB;
     APTR                        hc_XHCIPorts;
     APTR                        hc_XHCIIntR;
-    
-    ULONG                       hc_ReadySignal;
-    ULONG                       hc_PortChangeSignal;
-    ULONG                       hc_DoWorkSignal;
+
+    BYTE                        hc_ReadySignal;
+    BYTE                        hc_PortChangeSignal;
+    BYTE                        hc_DoWorkSignal;
     UWORD                       hc_RootPortChanges;
-    struct Task                 *hc_ReadySigTask, *hc_xHCTask;
+    struct Task                 *hc_ReadySigTask, *hc_xHCERTask, *hc_xHCPortTask;
     struct pciusbXHCIDevice    *hc_Devices[USB_DEV_MAX];
     volatile struct pciusbXHCITRBParams  hc_CmdResults[USB_DEV_MAX];
 #endif

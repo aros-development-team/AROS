@@ -157,6 +157,11 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     if (driprivate && driprivate->dpDevice)
         xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "shared schedule");
 
+
+    /* Mark IO as prepared for scheduling; activation/busy tracking is done later
+     * in xhciActivateEndpointTransfer().
+     */
+    ioreq->iouh_DriverPrivate1 = driprivate;
     *outPrivate = driprivate;
     return TRUE;
 }
@@ -166,8 +171,11 @@ ULONG xhciBuildDataTRBFlags(const struct IOUsbHWReq *ioreq, ULONG txtype)
     ULONG trbflags = 0;
 
     if (txtype == UHCMD_CONTROLXFER) {
-        if (ioreq->iouh_Data && ioreq->iouh_Length) {
-            if (ioreq->iouh_Dir == UHDIR_IN)
+        UWORD wLength = AROS_LE2WORD(ioreq->iouh_SetupData.wLength);
+        BOOL  setup_in = (ioreq->iouh_SetupData.bmRequestType & 0x80) != 0;
+
+        if (wLength != 0) {
+            if (setup_in)
                 trbflags |= TRBF_FLAG_DS_DIR;
 
             trbflags |= TRBF_FLAG_TRTYPE_DATA;
