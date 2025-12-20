@@ -81,12 +81,19 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
         /****** SETUP TRANSACTION ************/
         volatile struct pcisusbXHCIRing *epring = NULL;
-        struct pciusbXHCIIODevPrivate *driprivate;
+        struct pciusbXHCIIODevPrivate *driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
         ULONG trbflags = 0;
         WORD queued = -1;
 
-        if (!xhciInitIOTRBTransfer(hc, ioreq, &hc->hc_IntXFerQueue, ioreq->iouh_Req.io_Command, FALSE, &driprivate))
+        if (!driprivate || !driprivate->dpDevice) {
+            pciusbError("xHCI",
+                        DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
+                        ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
             continue;
+        }
 
         {
             /* Interrupt TD flags */

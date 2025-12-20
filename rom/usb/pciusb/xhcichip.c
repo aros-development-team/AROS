@@ -50,19 +50,6 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
                                     ULONG epid,
                                     BOOL stopEndpoint);
 
-static BOOL
-xhciIsRootHubRequest(struct IOUsbHWReq *ioreq, struct PCIUnit *unit)
-{
-    BOOL devIsRootHub = unit && (ioreq->iouh_DevAddr == unit->hu_RootHubAddr);
-
-    /* Only treat the request as a roothub transfer when no routing info is
-       present. Requests carrying a route string are for downstream devices. */
-    BOOL noRoutingInfo = (ioreq->iouh_RootPort == 0) &&
-                         (ioreq->iouh_RouteString == 0);
-
-    return devIsRootHub && noRoutingInfo;
-}
-
 static struct PCIController *xhciGetController(struct PCIUnit *unit)
 {
     struct PCIController *hc;

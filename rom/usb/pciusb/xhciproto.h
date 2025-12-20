@@ -39,6 +39,19 @@ xhciInputEndpointCtx(volatile struct xhci_inctx *inctx, UWORD ctxoff, ULONG epid
     return (volatile struct xhci_ep *)&inctx[ctxoff * (epid + 1)];
 }
 
+static inline BOOL
+xhciIsRootHubRequest(struct IOUsbHWReq *ioreq, struct PCIUnit *unit)
+{
+    BOOL devIsRootHub = unit && (ioreq->iouh_DevAddr == unit->hu_RootHubAddr);
+
+    /* Only treat the request as a roothub transfer when no routing info is
+       present. Requests carrying a route string are for downstream devices. */
+    BOOL noRoutingInfo = (ioreq->iouh_RootPort == 0) &&
+                         (ioreq->iouh_RouteString == 0);
+
+    return devIsRootHub && noRoutingInfo;
+}
+
 // xhcichip.c
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
@@ -120,6 +133,7 @@ void xhciDumpCC(UBYTE completioncode);
 void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid);
 void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot);
 void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci_ep *ep, ULONG epid);
+void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq);
 #else
 #define pciusbXHCIDebug(sub,fmt,args...)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)
@@ -136,6 +150,7 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci
 #define xhciDebugDumpDCBAAEntry(a,b)
 #define xhciDebugDumpSlotContext(a,b)
 #define xhciDebugDumpEndpointContext(a,b,c)
+#define xhciDebugControlTransfer(a)
 #endif
 
 /* Support functions */

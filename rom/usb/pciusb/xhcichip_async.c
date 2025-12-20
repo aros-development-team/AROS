@@ -390,16 +390,23 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         }
 
         volatile struct pcisusbXHCIRing *epring = NULL;
-        struct pciusbXHCIIODevPrivate *driprivate;
+        struct pciusbXHCIIODevPrivate *driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
         struct pciusbXHCIDevice *devCtx = NULL;
         ULONG trbflags = 0;
         WORD queued = -1;
         BOOL txdone = FALSE;
 
-        if (!xhciInitIOTRBTransfer(hc, ioreq, txlist, txtype, TRUE, &driprivate))
+        if (!driprivate || !driprivate->dpDevice) {
+            pciusbError("xHCI",
+                        DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
+                        ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
             continue;
+        }
 
-        devCtx = driprivate ? driprivate->dpDevice : NULL;
+        devCtx = driprivate->dpDevice;
 
         if (isStandardTRBTransfer(ioreq, txtype)) {
             pciusbXHCIDebug("xHCI",

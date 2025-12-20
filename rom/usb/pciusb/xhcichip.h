@@ -56,7 +56,9 @@ struct pcisusbXHCIRing
                                                                                     // NB: the cycle bit is cached in the highest bit of end
 };
 #define RINGENDCFLAG                            (1 << 15)
-#define RINGFROMTRB(x)                          ((struct pcisusbXHCIRing*)((IPTR)(x) & ~(sizeof(ering->ring)-1)))
+/* Derive the ring base from an in-ring TRB pointer (ring size is power-of-two). */
+#define XHCI_RING_BYTES   (sizeof(((struct pcisusbXHCIRing *)0)->ring))
+#define RINGFROMTRB(x)    ((struct pcisusbXHCIRing *)((IPTR)(x) & ~(XHCI_RING_BYTES - 1)))
 
 /*
  * Private USB Device Context

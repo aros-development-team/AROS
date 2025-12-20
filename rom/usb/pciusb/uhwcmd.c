@@ -638,13 +638,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 if(hc->hc_HCIType == HCITYPE_XHCI) {
                     struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
                     KPRINTF(1, "RH: XHCI EndPoint Config\n");
-                    usepd->bInterval = 12; // * 1ms, or 125µs, = 2048 µFrames
+                    usepd->bInterval = 12; // * 1ms, or 125 microseconds, = 2048 microframes
                     usepd->wMaxPacketSize = AROS_WORD2LE(64);
                 } else
 #endif
                     if(unit->hu_RootHub20Ports) {
                         struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
-                        usepd->bInterval = 12; // 2048 µFrames
+                        usepd->bInterval = 12; // 2048 microframes
                         usepd->wMaxPacketSize = AROS_WORD2LE(64);
                     }
                 ioreq->iouh_Actual = (len > sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) ? (sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) : len;
@@ -968,7 +968,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         shd->wHubCharacteristics = WORD2LE(characteristics);
                     }
 
-                    /* bPwrOn2PwrGood – USB3 spec suggests up to 20ms typical for xHCI */
+                    /* bPwrOn2PwrGood - USB3 spec suggests up to 20ms typical for xHCI */
                     shd->bPwrOn2PwrGood = 10; /* 10 * 2ms = 20ms */
 
                     /* wHubDelay / bHubHdrDecLat left at 0 for now */
@@ -1127,8 +1127,11 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
 
 #if defined(PCIUSB_ENABLEXHCI)
-    if (hc->hc_HCIType == HCITYPE_XHCI)
-        xhciPrepareTransfer(ioreq, unit, base);
+    if (hc->hc_HCIType == HCITYPE_XHCI) {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 #endif
 
     Disable();
@@ -1181,8 +1184,11 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
 
 #if defined(PCIUSB_ENABLEXHCI)
-    if (hc->hc_HCIType == HCITYPE_XHCI)
-        xhciPrepareTransfer(ioreq, unit, base);
+    if (hc->hc_HCIType == HCITYPE_XHCI) {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 #endif
 
     Disable();
@@ -1235,8 +1241,11 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
 
 #if defined(PCIUSB_ENABLEXHCI)
-    if (hc->hc_HCIType == HCITYPE_XHCI)
-        xhciPrepareTransfer(ioreq, unit, base);
+    if (hc->hc_HCIType == HCITYPE_XHCI) {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 #endif
 
     Disable();
@@ -1308,8 +1317,11 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
 
 #if defined(PCIUSB_ENABLEXHCI)
-    if (hc->hc_HCIType == HCITYPE_XHCI)
-        xhciPrepareTransfer(ioreq, unit, base);
+    if (hc->hc_HCIType == HCITYPE_XHCI) {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 #endif
 
     Disable();
@@ -2335,4 +2347,3 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     AROS_INTFUNC_EXIT
 }
 /* \\\ */
-

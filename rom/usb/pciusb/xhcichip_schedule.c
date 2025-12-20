@@ -68,9 +68,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
         pciusbWarn("xHCI",
             DEBUGWARNCOLOR_SET "xHCI: No device attached for DevAddr=%u, EP=%u" DEBUGCOLOR_RESET" \n",
             ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
-        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-        ReplyMsg(&ioreq->iouh_Req.io_Message);
         return FALSE;
     }
 
@@ -87,9 +85,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                                       ioreq->iouh_Flags);
 
             if ((initep == 0) || !devCtx->dc_EPAllocs[0].dmaa_Ptr) {
-                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                ReplyMsg(&ioreq->iouh_Req.io_Message);
 
                 pciusbXHCIDebug("xHCI",
                                 "Leaving %s early: failed to initialise EP0\n",
@@ -98,9 +94,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
             }
         }
     } else if ((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
-        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-        ReplyMsg(&ioreq->iouh_Req.io_Message);
 
         pciusbXHCIDebug("xHCI",
                         "Leaving %s early: endpoint not prepared (txep=%u)\n",
@@ -135,9 +129,7 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
             pciusbError("xHCI",
                 DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n",
                 __func__);
-            Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-            ReplyMsg(&ioreq->iouh_Req.io_Message);
             return FALSE;
         }
 
