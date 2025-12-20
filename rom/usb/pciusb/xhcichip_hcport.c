@@ -25,6 +25,7 @@
 #undef base
 #endif
 #define base (hc->hc_Device)
+
 #if defined(AROS_USE_LOGRES)
 #ifdef LogHandle
 #undef LogHandle
@@ -35,6 +36,47 @@
 #define LogHandle (hc->hc_LogRHandle)
 #define LogResBase (base->hd_LogResBase)
 #endif
+
+static inline ULONG xhciPortSpeedBits(ULONG portsc)
+{
+    return portsc & XHCI_PR_PORTSC_SPEED_MASK;
+}
+
+static inline BOOL xhciIsUsb3(ULONG portsc)
+{
+    ULONG sb = xhciPortSpeedBits(portsc);
+    return (sb == XHCIF_PR_PORTSC_SUPERSPEED) || (sb == XHCIF_PR_PORTSC_SUPERSPEEDPLUS);
+}
+
+static inline ULONG xhciPortLinkState(ULONG portsc)
+{
+    return (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
+}
+
+/*
+ * For SS/SS+ ports, "operational" from a hub-model point of view is:
+ * connected + link in U0.
+ *
+ * We intentionally do NOT key this off PED for USB3; PED semantics on
+ * SS ports are not reliably equivalent to a USB2 "enabled" indication.
+ */
+static inline BOOL xhciUsb3Operational(ULONG portsc)
+{
+    return (portsc & XHCIF_PR_PORTSC_CCS) && (xhciPortLinkState(portsc) == 0 /* U0 */);
+}
+
+/* RW1C helper: change bits we commonly clear around reset/state transitions */
+static inline ULONG xhciPortscClearChangeBits(ULONG v)
+{
+    v |= XHCIF_PR_PORTSC_CSC;
+    v |= XHCIF_PR_PORTSC_PEC;
+    v |= XHCIF_PR_PORTSC_PLC;
+    v |= XHCIF_PR_PORTSC_OCC;
+    v |= XHCIF_PR_PORTSC_PRC;
+    v |= XHCIF_PR_PORTSC_WRC;
+    v |= XHCIF_PR_PORTSC_CEC;
+    return v;
+}
 
 static struct pciusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWORD hciport)
 {
@@ -63,9 +105,9 @@ static void xhciLogPortState(struct PCIController *hc,
     ULONG portli   = AROS_LE2LONG(xhciports[hciport].portli);
     ULONG hlpmc    = AROS_LE2LONG(xhciports[hciport].porthlpmc);
 
-    ULONG linkState = (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
-    ULONG speedBits = portsc & XHCI_PR_PORTSC_SPEED_MASK;
-    BOOL isUsb3 = (speedBits == XHCIF_PR_PORTSC_SUPERSPEED);
+    ULONG linkState = xhciPortLinkState(portsc);
+    ULONG speedBits = xhciPortSpeedBits(portsc);
+    BOOL  isUsb3    = xhciIsUsb3(portsc);
 
     struct pciusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
     ULONG routeString = devCtx ? devCtx->dc_RouteString : 0;
@@ -78,11 +120,13 @@ static void xhciLogPortState(struct PCIController *hc,
     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
         speedDesc = "USB2-HS";
     } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
-        speedDesc = "USB3";
+        speedDesc = "USB3-SS";
+    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEEDPLUS) {
+        speedDesc = "USB3-SS+";
     }
 
     pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "xHCI: Port %u %s route 0x%05lx link %lu speed %s" DEBUGCOLOR_RESET" \n",
+                    DEBUGCOLOR_SET "xHCI: Port %u %s route 0x%05lx link %lu speed %s" DEBUGCOLOR_RESET " \n",
                     hciport + 1,
                     context,
                     routeString,
@@ -91,19 +135,38 @@ static void xhciLogPortState(struct PCIController *hc,
 
     if (isUsb3) {
         pciusbXHCIDebug("xHCI",
-                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PORTLI $%08lx" DEBUGCOLOR_RESET" \n",
+                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PORTLI $%08lx" DEBUGCOLOR_RESET " \n",
                         hciport + 1,
                         context,
                         portpmsc,
                         portli);
     } else {
         pciusbXHCIDebug("xHCI",
-                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PPM $%08lx" DEBUGCOLOR_RESET" \n",
+                        DEBUGCOLOR_SET "xHCI: Port %u %s PORTPMSC $%08lx PPM $%08lx" DEBUGCOLOR_RESET " \n",
                         hciport + 1,
                         context,
                         portpmsc,
                         hlpmc);
     }
+}
+
+/* Issue a reset appropriate to USB2 vs USB3, with change-bit cleanup. */
+static inline void xhciComposePortReset(ULONG oldportsc, ULONG *newportsc)
+{
+    ULONG v = *newportsc;
+
+    /* Clear stale change bits before starting a new reset cycle. */
+    v = xhciPortscClearChangeBits(v);
+
+    if (xhciIsUsb3(oldportsc)) {
+        v |= XHCIF_PR_PORTSC_WPR;
+        v &= ~XHCIF_PR_PORTSC_PR;
+    } else {
+        v |= XHCIF_PR_PORTSC_PR;
+        v &= ~XHCIF_PR_PORTSC_WPR;
+    }
+
+    *newportsc = v;
 }
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
@@ -129,70 +192,97 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
 
     case UFS_PORT_ENABLE:
         /*
-         * Only the HC can truly enable the port, but from the hub model
-         * perspective we trigger a reset if the port is connected and
-         * not yet enabled.
+         * Hub-class "ENABLE" request:
+         * - USB2: if connected and not enabled, a PR reset is the usual way
+         *         to transition the port into enabled state.
+         * - USB3: do NOT key on PED. Treat "operational" as CCS + PLS==U0.
+         *         If connected but not operational, issue WPR.
          */
-        if (!(oldval & XHCIF_PR_PORTSC_PED)) {
+        if (!(oldval & XHCIF_PR_PORTSC_CCS)) {
             pciusbXHCIDebug("xHCI",
-                DEBUGCOLOR_SET "xHCI: >Setting Reset to enable port"
+                DEBUGCOLOR_SET "xHCI: PORT_ENABLE ignored (not connected)"
                 DEBUGCOLOR_RESET " \n");
-            if (oldval & XHCIF_PR_PORTSC_CCS) {
-                newval |= XHCIF_PR_PORTSC_PR;
+            cmdgood = TRUE;
+            break;
+        }
+
+        if (xhciIsUsb3(oldval)) {
+            if (xhciUsb3Operational(oldval)) {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) already operational (U0)"
+                    DEBUGCOLOR_RESET " \n");
+            } else {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) issuing Warm Reset (WPR)"
+                    DEBUGCOLOR_RESET " \n");
+                xhciComposePortReset(oldval, &newval);
             }
         } else {
-            pciusbXHCIDebug("xHCI",
-                DEBUGCOLOR_SET "xHCI: Port already enabled"
-                DEBUGCOLOR_RESET " \n");
+            if (oldval & XHCIF_PR_PORTSC_PED) {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) already enabled"
+                    DEBUGCOLOR_RESET " \n");
+            } else {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) issuing Reset (PR)"
+                    DEBUGCOLOR_RESET " \n");
+                xhciComposePortReset(oldval, &newval);
+            }
         }
+
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_SUSPEND:
         /*
-         * Proper suspend would manipulate PLS; for now we just log and
-         * pretend success.
+         * Proper suspend/resume would manipulate PLS (USB3 U-states vs USB2 suspend)
+         * and requires careful sequencing and feature support checks.
+         * For now, remain a no-op beyond logging.
          */
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI: Suspending Port"
+            DEBUGCOLOR_SET "xHCI: Suspending Port (NOP)"
             DEBUGCOLOR_RESET " \n");
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_RESET:
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI: Performing Port Reset-:"
+            DEBUGCOLOR_SET "xHCI: Performing Port Reset"
             DEBUGCOLOR_RESET " \n");
 
         /*
-         * If there was a device and the port was enabled, free
-         * its context before reset.
+         * If there was a device and we own a slot for it, free its context before reset.
          */
-        if ((oldval & XHCIF_PR_PORTSC_PED) &&
-            xhciFindPortDevice(hc, hciport))
-        {
+        devCtx = xhciFindPortDevice(hc, hciport);
+        if (devCtx) {
             pciusbXHCIDebug("xHCI",
-                DEBUGCOLOR_SET "xHCI:     >Setting Port Power Off"
-                DEBUGCOLOR_RESET " \n");
-            devCtx = xhciFindPortDevice(hc, hciport);
+                DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.."
+                DEBUGCOLOR_RESET "\n",
+                devCtx->dc_SlotID);
 
-            if (devCtx) {
-                pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.."
-                    DEBUGCOLOR_RESET "\n",
-                    devCtx->dc_SlotID);
-
-                xhciFreeDeviceCtx(hc, devCtx, TRUE);
-            }
+            xhciFreeDeviceCtx(hc, devCtx, TRUE);
         }
 
-        newval |= XHCIF_PR_PORTSC_PR;
-        pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI:     >Setting Reset"
-            DEBUGCOLOR_RESET " \n");
+        if (oldval & XHCIF_PR_PORTSC_CCS) {
+            if (xhciIsUsb3(oldval)) {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI:     >Warm Reset (WPR) for USB3"
+                    DEBUGCOLOR_RESET " \n");
+            } else {
+                pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "xHCI:     >Reset (PR) for USB2"
+                    DEBUGCOLOR_RESET " \n");
+            }
 
-        /* Enable enumeration again on this port. */
-        unit->hu_DevControllers[0] = hc;
+            xhciComposePortReset(oldval, &newval);
+
+            /* Enable enumeration again on this port. */
+            unit->hu_DevControllers[0] = hc;
+        } else {
+            pciusbXHCIDebug("xHCI",
+                DEBUGCOLOR_SET "xHCI: PORT_RESET ignored (not connected)"
+                DEBUGCOLOR_RESET " \n");
+        }
 
         cmdgood = TRUE;
         break;
@@ -263,7 +353,10 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
     case UFS_PORT_ENABLE:
         /*
          * ClearFeature(PORT_ENABLE) disables the port.
-         * For xHCI, clearing PED via PORTSC is sufficient.
+         * For xHCI, clearing PED via PORTSC is sufficient for USB2 semantics.
+         * For USB3, disabling is primarily achieved by tearing down the slot
+         * and stopping enumeration. We keep the existing behavior and free
+         * resources.
          */
         pciusbXHCIDebug("xHCI",
             DEBUGCOLOR_SET "xHCI: Disabling Port"
@@ -284,15 +377,14 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
     case UFS_PORT_SUSPEND:
         /* Currently treated as a no-op beyond logging. */
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI: Suspending Port"
+            DEBUGCOLOR_SET "xHCI: Clearing Suspend (NOP)"
             DEBUGCOLOR_RESET " \n");
         cmdgood = TRUE;
         break;
 
     case UFS_PORT_POWER:
         /*
-         * If no PPC, ports are "always powered" and PORT_POWER clear
-         * is a NOP.
+         * If no PPC, ports are "always powered" and PORT_POWER clear is a NOP.
          */
         if (!(hc->hc_Flags & HCF_PPC)) {
             pciusbXHCIDebug("xHCI",
@@ -356,6 +448,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
             DEBUGCOLOR_SET "xHCI: Clearing Reset Change"
             DEBUGCOLOR_RESET " \n");
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET;
+        /* Clear both USB2 (PRC) and USB3 (WRC) reset-change bits */
         clearbits |= (XHCIF_PR_PORTSC_PRC | XHCIF_PR_PORTSC_WRC);
         cmdgood = TRUE;
         break;
@@ -363,8 +456,8 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 
     if (cmdgood) {
         /*
-         * For xHCI RW1C bits, writing 1 clears them. We OR clearbits
-         * into the current value to clear only the requested change bits.
+         * For xHCI RW1C bits, writing 1 clears them. We OR clearbits into
+         * the current value to clear only the requested change bits.
          */
         newval |= clearbits;
         xhciports[hciport].portsc = AROS_LONG2LE(newval);
@@ -428,20 +521,27 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
     if (oldportsc & XHCIF_PR_PORTSC_CCS) {
         *mptr |= AROS_WORD2LE(UPSF_PORT_CONNECTION);
     }
-    if (oldportsc & XHCIF_PR_PORTSC_PED) {
-        *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+
+    /*
+     * Enable reporting:
+     * - USB2: use PED.
+     * - USB3: treat CCS+U0 as enabled/operational for hub model.
+     */
+    if (xhciIsUsb3(oldportsc)) {
+        if (xhciUsb3Operational(oldportsc)) {
+            *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+        }
+    } else {
+        if (oldportsc & XHCIF_PR_PORTSC_PED) {
+            *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
+        }
     }
 
     /*
-     * Speed mapping.
-     *
-     * xHCI encodes the link speed as a 4-bit field starting at
-     * XHCIS_PR_PORTSC_SPEED.  Poseidon provides pre-shifted constants for the
-     * three non-FS speeds (XHCIF_PR_PORTSC_{LOW,HIGH,SUPER}SPEED), so we
-     * compare the masked value directly against those.
-     *
-     * Full-speed is represented as 0 in the speed field and therefore
-     * falls through the switch without setting an explicit speed flag.
+     * Speed mapping:
+     * - FS is the default (no explicit FS flag in UPSF model)
+     * - LS/HS set the corresponding USB2 flags
+     * - SS/SS+ map to UPSF_PORT_SUPER_SPEED (no distinct SS+ flag)
      */
     switch (oldportsc & XHCI_PR_PORTSC_SPEED_MASK) {
     case XHCIF_PR_PORTSC_LOWSPEED:
@@ -453,39 +553,33 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
         break;
 
     case XHCIF_PR_PORTSC_SUPERSPEED:
-        {
-            *mptr |= AROS_WORD2LE(UPSF_PORT_SUPER_SPEED);
-            /*
-             * xHCI quirk: for SuperSpeed ports, the classic PED (Port Enabled/Disabled)
-             * bit is not used in the same way as on USB2. The hub-class API, however,
-             * still expects an "enabled" indication via UPSF_PORT_ENABLE.
-             *
-             * For SS ports, treat a connected port with link state U0 as "enabled"
-             * from the hub's perspective, even if PED is clear.
-             */
-            ULONG pls =
-                (oldportsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
-
-            if ((oldportsc & XHCIF_PR_PORTSC_CCS) &&
-                (pls == 0))          /* U0 link state */
-            {
-                *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
-            }
-        }
+    case XHCIF_PR_PORTSC_SUPERSPEEDPLUS:
+        *mptr |= AROS_WORD2LE(UPSF_PORT_SUPER_SPEED);
         break;
 
     default:
-        /* Full-speed: default, no extra flag needed. */
+        /* Full-speed or unknown encoding: no extra flags. */
         break;
     }
 
-    if (oldportsc & XHCIF_PR_PORTSC_PR) {
+    /*
+     * Reset in progress:
+     * - USB2 uses PR.
+     * - USB3 uses WPR.
+     */
+    if ((oldportsc & XHCIF_PR_PORTSC_PR) ||
+        (oldportsc & XHCIF_PR_PORTSC_WPR))
+    {
         *mptr |= AROS_WORD2LE(UPSF_PORT_RESET);
     }
 
-    /* PLS == 2 (U1) is used here as SUSPEND indication. */
-    if (((oldportsc >> XHCIS_PR_PORTSC_PLS) & XHCI_PR_PORTSC_PLS_SMASK) == 2) {
-        *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+    /*
+     * Suspend:
+     */
+    if (!xhciIsUsb3(oldportsc)) {
+        if (((oldportsc >> XHCIS_PR_PORTSC_PLS) & XHCI_PR_PORTSC_PLS_SMASK) == 2) {
+            *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
+        }
     }
 
     /* Port indicator control: bits 14..15 */
