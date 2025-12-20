@@ -1036,7 +1036,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
         }
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
     }
-    devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+    devadrep = xhciDevEPKey(ioreq);
     pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
     unit->hu_DevBusyReq[devadrep] = NULL;
     unit->hu_NakTimeoutFrame[devadrep] = 0;
@@ -1111,9 +1111,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
         }
 
         transactiondone = FALSE;
-        devadrep = (ioreq->iouh_DevAddr << 5) +
-                   ioreq->iouh_Endpoint +
-                   ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        devadrep = xhciDevEPKey(ioreq);
 
         /*
          * First, look at completion code from the event TRB

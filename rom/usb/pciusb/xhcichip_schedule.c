@@ -222,8 +222,9 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     ULONG dmalen = ioreq->iouh_Length;
     WORD queued;
 
+    UWORD effdir = xhciEffectiveDataDir(ioreq);
     APTR dmaptr = CachePreDMA(ioreq->iouh_Data, &dmalen,
-                              (ioreq->iouh_Dir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
+                              (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
 #if !defined(PCIUSB_NO_CPUTOPCI)
     dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dmaptr);
 #else

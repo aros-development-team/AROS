@@ -56,7 +56,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     /* *** Schedule Transfers *** */
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Scheduling new INT transfers ..." DEBUGCOLOR_RESET" \n");
     ForeachNodeSafe(&hc->hc_IntXFerQueue, ioreq, ionext) {
-        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        devadrep = xhciDevEPKey(ioreq);
         pciusbXHCIDebug("xHCI",
             DEBUGCOLOR_SET "New INT transfer to dev=%u ep=%u (DevEP=%02x): len=%lu dir=%s, cmd=%u" DEBUGCOLOR_RESET"\n",
             ioreq->iouh_DevAddr,

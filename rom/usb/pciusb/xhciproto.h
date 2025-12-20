@@ -52,6 +52,40 @@ xhciIsRootHubRequest(struct IOUsbHWReq *ioreq, struct PCIUnit *unit)
     return devIsRootHub && noRoutingInfo;
 }
 
+/*
+ * Derive the effective DATA direction for a transfer.
+ *
+ * Poseidon uses UHDIR_SETUP for control transfers. For control transfers with a
+ * DATA stage (wLength != 0), the direction is determined by bmRequestType (bit 7).
+ * For non-control transfers, iouh_Dir is authoritative.
+ */
+static inline UWORD xhciEffectiveDataDir(const struct IOUsbHWReq *ioreq)
+{
+    UWORD effdir = ioreq->iouh_Dir;
+
+    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) {
+        UWORD wLength = AROS_LE2WORD(ioreq->iouh_SetupData.wLength);
+        if (wLength != 0) {
+            effdir = (ioreq->iouh_SetupData.bmRequestType & 0x80) ? UHDIR_IN : UHDIR_OUT;
+        }
+    }
+
+    return effdir;
+}
+
+static inline UWORD xhciDevEPKey(const struct IOUsbHWReq *ioreq)
+{
+    UWORD key = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint;
+
+    /* EP0 is bidirectional: treat it as a single busy slot */
+    if (ioreq->iouh_Endpoint != 0) {
+        UWORD effdir = xhciEffectiveDataDir(ioreq);
+        if (effdir == UHDIR_IN)
+            key |= 0x10;
+    }
+    return key;
+}
+
 // xhcichip.c
 BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);

@@ -207,18 +207,15 @@ static BOOL xhciHandleSetAddress(struct PCIController *hc, struct pciusbXHCIDevi
     UWORD newaddr = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
 
     pciusbXHCIDebug("xHCI",
-        "SET_ADDRESS short-circuit: slot=%u new=%u devctx=%p, DevAddr(before)=%u\n",
+        "SET_ADDRESS short-circuit: port=%u slot=%u devctx=%p <DevAddr=%u->%u>\n",
+        devCtx ? devCtx->dc_RootPort + 1 : 0,
         devCtx ? devCtx->dc_SlotID : 0,
-        newaddr,
         devCtx,
-        ioreq->iouh_DevAddr);
+        ioreq->iouh_DevAddr, newaddr);
 
     /* Record the new USB address in software only */
     if (devCtx) {
         devCtx->dc_DevAddr = newaddr;
-        pciusbXHCIDebug("xHCI",
-                        "SET_ADDRESS: devCtx->dc_DevAddr now %u\n",
-                        devCtx->dc_DevAddr);
     } else {
         pciusbXHCIDebug("xHCI",
                         "SET_ADDRESS: WARNING: devCtx is NULL\n");
@@ -352,8 +349,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         DEBUGCOLOR_SET "---- IOReq start: %p ----" DEBUGCOLOR_RESET" \n",
                         ioreq);
 
-        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint +
-                   ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        UWORD effdir = xhciEffectiveDataDir(ioreq);
+        devadrep = xhciDevEPKey(ioreq);
 
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "New Async transfer to dev=%u ep=%u (DevEP=%02lx): len=%lu, dir=%s, cmd=%u" DEBUGCOLOR_RESET" \n",
@@ -361,7 +358,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         ioreq->iouh_Endpoint,
                         devadrep,
                         (ULONG)ioreq->iouh_Length,
-                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
+                        (effdir == UHDIR_IN) ? "IN" : "OUT",
                         ioreq->iouh_Req.io_Command);
 
         pciusbXHCIDebug("xHCI",
