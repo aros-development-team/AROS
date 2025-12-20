@@ -207,10 +207,16 @@ struct xhci_pr
 #define XHCIS_PR_PORTSC_SPEED                   10
 #define XHCI_PR_PORTSC_SPEED_SMASK              0xF
 #define XHCI_PR_PORTSC_SPEED_MASK               (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)
-#define XHCIF_PR_PORTSC_FULLSPEED               (1 << XHCIS_PR_PORTSC_SPEED)
-#define XHCIF_PR_PORTSC_LOWSPEED                (2 << XHCIS_PR_PORTSC_SPEED)
-#define XHCIF_PR_PORTSC_HIGHSPEED               (3 << XHCIS_PR_PORTSC_SPEED)
-#define XHCIF_PR_PORTSC_SUPERSPEED              (4 << XHCIS_PR_PORTSC_SPEED)
+#define XHCIB_PR_PORTSC_FULLSPEED               1
+#define XHCIF_PR_PORTSC_FULLSPEED               (XHCIB_PR_PORTSC_FULLSPEED << XHCIS_PR_PORTSC_SPEED)
+#define XHCIB_PR_PORTSC_LOWSPEED                2
+#define XHCIF_PR_PORTSC_LOWSPEED                (XHCIB_PR_PORTSC_LOWSPEED << XHCIS_PR_PORTSC_SPEED)
+#define XHCIB_PR_PORTSC_HIGHSPEED               3
+#define XHCIF_PR_PORTSC_HIGHSPEED               (XHCIB_PR_PORTSC_HIGHSPEED << XHCIS_PR_PORTSC_SPEED)
+#define XHCIB_PR_PORTSC_SUPERSPEED              4
+#define XHCIF_PR_PORTSC_SUPERSPEED              (XHCIB_PR_PORTSC_SUPERSPEED << XHCIS_PR_PORTSC_SPEED)
+#define XHCIB_PR_PORTSC_SUPERSPEEDPLUS          5
+#define XHCIF_PR_PORTSC_SUPERSPEEDPLUS          (XHCIB_PR_PORTSC_SUPERSPEEDPLUS << XHCIS_PR_PORTSC_SPEED)
 
 /*
  * interrupter registers
@@ -331,6 +337,11 @@ struct xhci_trb
 #define TRBF_FLAG_CRTYPE_DISABLE_SLOT           (TRBB_FLAG_CRTYPE_DISABLE_SLOT << TRBS_FLAG_TYPE)
 #define TRBB_FLAG_CRTYPE_ADDRESS_DEVICE         11
 #define TRBF_FLAG_CRTYPE_ADDRESS_DEVICE         (TRBB_FLAG_CRTYPE_ADDRESS_DEVICE << TRBS_FLAG_TYPE)
+/*
+ * Bit 9 is repurposed as BSR for ADDRESS_DEVICE command TRBs; it shares the
+ * same bit position as BEI on transfer TRBs.
+ */
+#define TRBF_FLAG_ADDRDEV_BSR                   TRBF_FLAG_BEI
 #define TRBB_FLAG_CRTYPE_CONFIGURE_ENDPOINT     12
 #define TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT     (TRBB_FLAG_CRTYPE_CONFIGURE_ENDPOINT << TRBS_FLAG_TYPE)
 #define TRBB_FLAG_CRTYPE_EVALUATE_CONTEXT       13
@@ -444,6 +455,14 @@ enum {
     TRB_CC_STREAM_ID_ERROR                = 36,
     TRB_CC_SECONDARY_BANDWIDTH_ERROR      = 37,
     TRB_CC_SPLIT_TRANSACTION_ERROR        = 38,
+    /*
+     * Some host controllers report a distinct USB Disconnect completion
+     * code when an endpoint stops because the device vanished. Map this
+     * symbolic name to the generic USB Transaction Error value when the
+     * explicit code is not defined in the specification so callers can
+     * key on a stable identifier.
+     */
+    TRB_CC_USB_DISCONNECT_ERROR           = TRB_CC_USB_TRANSACTION_ERROR,
 };
 
 // Device related structures
