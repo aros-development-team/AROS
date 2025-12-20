@@ -3115,7 +3115,9 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 
     ULONG devclass;
 
-    IPTR islowspeed;
+    IPTR islowspeed = 0;
+    IPTR ishighspeed = 0;
+    IPTR issuperspeed = 0;
 
     BOOL hasprodname;
     BOOL haspopupinhibit;
@@ -3138,13 +3140,35 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         pp->pp_IOReq.iouh_DevAddr = 0;
 
         /*
-            64 bytes is the maximum packet size for control transfers in fullspeed and highspeed devices
-        */
-        psdGetAttrs(PGA_DEVICE, pd, DA_IsLowspeed, &islowspeed, TAG_END);
-        if(islowspeed) {
-            pp->pp_IOReq.iouh_MaxPktSize = 8;
-        } else {
+         * Initial EP0 max packet size depends on device speed:
+         *
+         *  - Low-Speed (USB 1.x):        8 bytes (fixed)
+         *  - Full-Speed (USB 1.x):       Start with 8 bytes; actual size
+         *                                (8/16/32/64) is learned from
+         *                                bMaxPacketSize0 after the first
+         *                                GET_DESCRIPTOR(8)
+         *  - High-Speed (USB 2.0):       64 bytes (fixed for EP0)
+         *  - SuperSpeed / SuperSpeed+:   512 bytes (fixed for EP0)
+         *
+         * Using an incorrect initial max packet size (for example assuming
+         * 64 bytes for SuperSpeed devices) will cause control transfers
+         * such as GET_DESCRIPTOR to stall or never complete.
+         */
+        psdGetAttrs(PGA_DEVICE, pd,
+                    DA_IsLowspeed,  &islowspeed,
+                    DA_IsHighspeed, &ishighspeed,
+                    DA_IsSuperspeed,&issuperspeed,
+                    TAG_END);
+
+        if (issuperspeed) {
+            pp->pp_IOReq.iouh_MaxPktSize = 512;
+            pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+        } else if (ishighspeed) {
             pp->pp_IOReq.iouh_MaxPktSize = 64;
+            pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+        } else {
+            /* FS or LS initial */
+            pp->pp_IOReq.iouh_MaxPktSize = islowspeed ? 8 : 8;
         }
 
         psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
