@@ -1199,8 +1199,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
         driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
         if (driprivate) {
             transactiondone = FALSE;
-            devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint
-                       + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+            devadrep = xhciDevEPKey(ioreq);
 
             if (driprivate->dpCC > TRB_CC_INVALID) {
                 pciusbXHCIDebug("xHCI",
