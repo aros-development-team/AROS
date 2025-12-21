@@ -80,7 +80,11 @@ static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype, ULONG has_data)
 
 static ULONG xhciTDStatusFlags(ULONG tdflags)
 {
-    ULONG statusflags = tdflags & ~(TRB_FLAG_TYPE_MASK);
+    ULONG statusflags = 0;
+
+    /* Status stage only needs the direction bit (IN=1, OUT=0) */
+    if (tdflags & TRBF_FLAG_DS_DIR)
+        statusflags |= TRBF_FLAG_DS_DIR;
 
     statusflags |= TRBF_FLAG_TRTYPE_STATUS;
     statusflags |= TRBF_FLAG_IOC;
@@ -118,20 +122,22 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
     ULONG trbflags)
 {
+    UQUAD setupdata_inline;
     ULONG has_data = (ioreq->iouh_Data && ioreq->iouh_Length) ? 1 : 0;
     WORD queued;
 
-    UQUAD setupdata_inline;
     xhciTDSetupInlinedata(&setupdata_inline, ioreq, UHCMD_CONTROLXFER);
+    ULONG sf = xhciTDSetupFlags(trbflags, UHCMD_CONTROLXFER, has_data);
+    sf |= TRBF_FLAG_IDT;  /* Force IDT for Setup Stage TRB */
     pciusbXHCIDebug("xHCI",
-                    "Queueing SETUP TRB: inline=0x%llx, len=%u\n",
-                    (unsigned long long)setupdata_inline,
+                    "Queueing SETUP TRB: inline=0x%08lx%08lx, len=%u\n",
+                    (ULONG)((setupdata_inline >> 32) & 0xffffffffUL),
+                    (ULONG)( setupdata_inline        & 0xffffffffUL),
                     (unsigned)sizeof(ioreq->iouh_SetupData));
-
     /* SETUP stage */
     queued = xhciQueueTRB(hc, epring, setupdata_inline,
                           sizeof(ioreq->iouh_SetupData),
-                          xhciTDSetupFlags(trbflags, UHCMD_CONTROLXFER, has_data));
+                          sf);
     pciusbXHCIDebug("xHCI",
                     "xhciQueueTRB (SETUP) -> queued=%d\n",
                     (int)queued);
@@ -144,7 +150,11 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
 
     /* DATA stage (if any) */
     if (has_data) {
-        queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, FALSE);
+        /*
+         * Control TD must be chained: Setup -> Data -> Status.
+         * Therefore Data Stage TRB(s) must have CH=1 when Status follows.
+         */
+        queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags | TRBF_FLAG_CH, FALSE);
         pciusbXHCIDebug("xHCI",
                         "xhciQueuePayloadTRBs (DATA) -> queued=%d\n",
                         (int)queued);
@@ -172,6 +182,9 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     {
         ULONG status_tdflags = trbflags;
 
+        /* Status Stage must terminate the TD: never chained. */
+        status_tdflags &= ~TRBF_FLAG_CH;
+
         if (has_data) {
             /* Opposite of DATA direction. */
             status_tdflags ^= TRBF_FLAG_DS_DIR;
@@ -182,8 +195,9 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
 
         pciusbXHCIDebug("xHCI",
                         "Queueing STATUS TRB\n");
+        ULONG stf = xhciTDStatusFlags(status_tdflags);
         queued = xhciQueueTRB(hc, epring, 0, 0,
-                              xhciTDStatusFlags(status_tdflags));
+                              stf);
         pciusbXHCIDebug("xHCI",
                         "xhciQueueTRB (STATUS) -> queued=%d\n",
                         (int)queued);
@@ -197,135 +211,11 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     return queued != -1;
 }
 
-static BOOL xhciHandleSetAddress(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
-    struct IOUsbHWReq *ioreq, struct pciusbXHCIIODevPrivate *driprivate, struct List *txlist,
-    struct PCIUnit *unit, UWORD devadrep)
-{
-    BOOL doCompletion = FALSE;
-
-    /* newaddr = wValue from setup packet */
-    UWORD newaddr = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-
-    pciusbXHCIDebug("xHCI",
-        "SET_ADDRESS short-circuit: port=%u slot=%u devctx=%p <DevAddr=%u->%u>\n",
-        devCtx ? devCtx->dc_RootPort + 1 : 0,
-        devCtx ? devCtx->dc_SlotID : 0,
-        devCtx,
-        ioreq->iouh_DevAddr, newaddr);
-
-    /* Record the new USB address in software only */
-    if (devCtx) {
-        devCtx->dc_DevAddr = newaddr;
-    } else {
-        pciusbXHCIDebug("xHCI",
-                        "SET_ADDRESS: WARNING: devCtx is NULL\n");
-    }
-
-    Disable();
-    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-    unit->hu_NakTimeoutFrame[devadrep] =
-        (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-    if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
-        driprivate->dpCC = TRB_CC_SUCCESS;
-        AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
-        pciusbXHCIDebug("xHCI",
-                        "SET_ADDRESS: queued SW completion on TDQueue, dpCC=SUCCESS\n");
-        doCompletion = TRUE;
-    } else {
-        pciusbXHCIDebug("xHCI",
-                        "SET_ADDRESS: no driprivate, requeuing on txlist\n");
-        AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
-    }
-    Enable();
-
-    return doCompletion;
-}
-
-static BOOL xhciHandleClearFeature(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
-    struct IOUsbHWReq *ioreq, struct pciusbXHCIIODevPrivate *driprivate, struct List *txlist,
-    struct PCIUnit *unit, UWORD devadrep)
-{
-    BOOL doCompletion = FALSE;
-
-    Disable();
-    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-    unit->hu_NakTimeoutFrame[devadrep] =
-        (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-
-    if (devCtx) {
-        UWORD epid = xhciEndpointIDFromIndex(
-            AROS_WORD2LE(ioreq->iouh_SetupData.wIndex));
-
-        pciusbXHCIDebug("xHCI",
-                        "CLEAR_FEATURE: mapped index to EPID=%u\n",
-                        epid);
-
-        if (epid > 0) {
-            LONG cc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, FALSE);
-
-            pciusbXHCIDebug("xHCI",
-                            "CLEAR_FEATURE: EndpointStop slot=%u epid=%u -> cc=%ld\n",
-                            devCtx->dc_SlotID, epid, cc);
-
-            if (cc == TRB_CC_SUCCESS) {
-                cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
-            }
-
-            pciusbXHCIDebug("xHCI",
-                            "CLEAR_FEATURE: EndpointReset slot=%u epid=%u -> cc=%ld\n",
-                            devCtx->dc_SlotID, epid, cc);
-
-            if (cc == TRB_CC_SUCCESS) {
-                if (!driprivate) {
-                    driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate),
-                                          MEMF_ANY|MEMF_CLEAR);
-                    if (driprivate) {
-                        driprivate->dpDevice = devCtx;
-                        driprivate->dpEPID   = epid;
-                        ioreq->iouh_DriverPrivate1 = driprivate;
-                    }
-                }
-
-                if (driprivate) {
-                    driprivate->dpCC = TRB_CC_SUCCESS;
-                    AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
-                    pciusbXHCIDebug("xHCI",
-                                    "CLEAR_FEATURE: queued SW completion on TDQueue\n");
-                    doCompletion = TRUE;
-                } else {
-                    pciusbError("xHCI",
-                        DEBUGWARNCOLOR_SET "CLEAR_FEATURE: no driprivate, reporting HOSTERROR" DEBUGCOLOR_RESET"\n");
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
-                }
-            } else {
-                pciusbError("xHCI",
-                    DEBUGWARNCOLOR_SET "CLEAR_FEATURE: EndpointReset failed cc=%ld, HOSTERROR" DEBUGCOLOR_RESET"\n",
-                    cc);
-                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
-            }
-        } else {
-            pciusbXHCIDebug("xHCI",
-                            "CLEAR_FEATURE: epid==0, requeuing\n");
-            AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
-        }
-    } else {
-        pciusbXHCIDebug("xHCI",
-                        "CLEAR_FEATURE: no devCtx, requeuing\n");
-        AddHead(txlist, &ioreq->iouh_Req.io_Message.mn_Node);
-    }
-    Enable();
-
-    return doCompletion;
-}
-
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype)
 {
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq, *ionext;
     UWORD devadrep;
-    BOOL doCompletion = FALSE;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" txtype=%lx, txlist=%p\n",
                     __func__, txtype, txlist);
@@ -469,20 +359,10 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                                 driprivate->dpEPID);
                 xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
             }
-        } else if (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS) {
-            doCompletion |= xhciHandleSetAddress(hc, devCtx, ioreq, driprivate, txlist, unit, devadrep);
-        } else {
-            doCompletion |= xhciHandleClearFeature(hc, devCtx, ioreq, driprivate, txlist, unit, devadrep);
         }
 
         pciusbXHCIDebug("xHCI",
                         "---- IOReq done: %p ----\n", ioreq);
-    }
-
-    if (doCompletion) {
-        pciusbXHCIDebug("xHCI",
-                        "doCompletion=TRUE -> SureCause(hc_CompleteInt)\n");
-        SureCause(base, &hc->hc_CompleteInt);
     }
 
     pciusbXHCIDebug("xHCI", "%s: exit\n", __func__);

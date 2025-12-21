@@ -65,16 +65,45 @@ static inline BOOL xhciUsb3Operational(ULONG portsc)
     return (portsc & XHCIF_PR_PORTSC_CCS) && (xhciPortLinkState(portsc) == 0 /* U0 */);
 }
 
+/*
+ * PORTSC write handling:
+ *
+ * Do NOT write back the full PORTSC value as read: it contains RO fields and
+ * link/speed state. Writing those back (even unchanged) can cause undefined
+ * behavior on some controllers/VMs.
+ *
+ * Instead, only write:
+ *  - RW fields we deliberately change (PP/PR/WPR and, for legacy disable, PED)
+ *  - RW1C change bits we want to clear
+ *
+ * Note: Some controllers tolerate writing PED=0 to "disable"; others may ignore
+ * it. We keep this behavior for now, but still mask to avoid disturbing RO bits.
+ */
+#define XHCI_PORTSC_RW_MASK \
+    (XHCIF_PR_PORTSC_PP | XHCIF_PR_PORTSC_PR | XHCIF_PR_PORTSC_WPR | XHCIF_PR_PORTSC_PED)
+
+#define XHCI_PORTSC_RW1C_MASK \
+    (XHCIF_PR_PORTSC_CSC | XHCIF_PR_PORTSC_PEC | XHCIF_PR_PORTSC_PLC | \
+     XHCIF_PR_PORTSC_OCC | XHCIF_PR_PORTSC_PRC | XHCIF_PR_PORTSC_WRC | \
+     XHCIF_PR_PORTSC_CEC)
+
+/* Compose a masked PORTSC write: preserve only the RW bits, plus requested RW1C clears. */
+static inline ULONG xhciPortscComposeWrite(ULONG oldportsc, ULONG set_rw_bits, ULONG clear_rw_bits, ULONG rw1c_bits)
+{
+    ULONG v = oldportsc & XHCI_PORTSC_RW_MASK;
+    v |= (set_rw_bits & XHCI_PORTSC_RW_MASK);
+    v &= ~(clear_rw_bits & XHCI_PORTSC_RW_MASK);
+
+    /* RW1C bits are cleared by writing 1s. */
+    v |= (rw1c_bits & XHCI_PORTSC_RW1C_MASK);
+
+    return v;
+}
+
 /* RW1C helper: change bits we commonly clear around reset/state transitions */
 static inline ULONG xhciPortscClearChangeBits(ULONG v)
 {
-    v |= XHCIF_PR_PORTSC_CSC;
-    v |= XHCIF_PR_PORTSC_PEC;
-    v |= XHCIF_PR_PORTSC_PLC;
-    v |= XHCIF_PR_PORTSC_OCC;
-    v |= XHCIF_PR_PORTSC_PRC;
-    v |= XHCIF_PR_PORTSC_WRC;
-    v |= XHCIF_PR_PORTSC_CEC;
+    v |= XHCI_PORTSC_RW1C_MASK;
     return v;
 }
 
@@ -151,22 +180,17 @@ static void xhciLogPortState(struct PCIController *hc,
 }
 
 /* Issue a reset appropriate to USB2 vs USB3, with change-bit cleanup. */
-static inline void xhciComposePortReset(ULONG oldportsc, ULONG *newportsc)
+static inline ULONG xhciComposePortResetWrite(ULONG oldportsc)
 {
-    ULONG v = *newportsc;
-
-    /* Clear stale change bits before starting a new reset cycle. */
-    v = xhciPortscClearChangeBits(v);
+    ULONG rw1c = XHCI_PORTSC_RW1C_MASK;
 
     if (xhciIsUsb3(oldportsc)) {
-        v |= XHCIF_PR_PORTSC_WPR;
-        v &= ~XHCIF_PR_PORTSC_PR;
-    } else {
-        v |= XHCIF_PR_PORTSC_PR;
-        v &= ~XHCIF_PR_PORTSC_WPR;
+        /* Warm Port Reset for SS/SS+ */
+        return xhciPortscComposeWrite(oldportsc, XHCIF_PR_PORTSC_WPR, XHCIF_PR_PORTSC_PR, rw1c);
     }
 
-    *newportsc = v;
+    /* Port Reset for USB2 */
+    return xhciPortscComposeWrite(oldportsc, XHCIF_PR_PORTSC_PR, XHCIF_PR_PORTSC_WPR, rw1c);
 }
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
@@ -176,7 +200,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
         (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
     BOOL  cmdgood = FALSE;
     ULONG oldval  = AROS_LE2LONG(xhciports[hciport].portsc);
-    ULONG newval  = oldval;
+    ULONG writeval = 0;
     ULONG tmpval;
     struct pciusbXHCIDevice *devCtx;
 
@@ -211,26 +235,30 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                 pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) already operational (U0)"
                     DEBUGCOLOR_RESET " \n");
-            } else {
-                pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) issuing Warm Reset (WPR)"
-                    DEBUGCOLOR_RESET " \n");
-                xhciComposePortReset(oldval, &newval);
+                cmdgood = TRUE;
+                break;
             }
+
+            pciusbXHCIDebug("xHCI",
+                DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) issuing Warm Reset (WPR)"
+                DEBUGCOLOR_RESET " \n");
+            writeval = xhciComposePortResetWrite(oldval);
+            cmdgood = TRUE;
         } else {
             if (oldval & XHCIF_PR_PORTSC_PED) {
                 pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) already enabled"
                     DEBUGCOLOR_RESET " \n");
-            } else {
-                pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) issuing Reset (PR)"
-                    DEBUGCOLOR_RESET " \n");
-                xhciComposePortReset(oldval, &newval);
+                cmdgood = TRUE;
+                break;
             }
-        }
 
-        cmdgood = TRUE;
+            pciusbXHCIDebug("xHCI",
+                DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) issuing Reset (PR)"
+                DEBUGCOLOR_RESET " \n");
+            writeval = xhciComposePortResetWrite(oldval);
+            cmdgood = TRUE;
+        }
         break;
 
     case UFS_PORT_SUSPEND:
@@ -274,7 +302,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                     DEBUGCOLOR_RESET " \n");
             }
 
-            xhciComposePortReset(oldval, &newval);
+            writeval = xhciComposePortResetWrite(oldval);
 
             /* Enable enumeration again on this port. */
             unit->hu_DevControllers[0] = hc;
@@ -304,26 +332,33 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: Powering Port"
                 DEBUGCOLOR_RESET " \n");
-            newval |= XHCIF_PR_PORTSC_PP;
+            writeval = xhciPortscComposeWrite(oldval, XHCIF_PR_PORTSC_PP, 0, 0);
         } else {
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: Port power already on"
                 DEBUGCOLOR_RESET " \n");
+            /* No write required. */
+            writeval = 0;
         }
         cmdgood = TRUE;
         break;
     }
 
-    if (cmdgood) {
-        xhciports[hciport].portsc = AROS_LONG2LE(newval);
+    if (cmdgood && writeval) {
+        xhciports[hciport].portsc = AROS_LONG2LE(writeval);
         tmpval = AROS_LE2LONG(xhciports[hciport].portsc);
 
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE $%08lx->$%08lx"
+            DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE write $%08lx (old $%08lx, now $%08lx)"
             DEBUGCOLOR_RESET " \n",
-            idx, oldval, tmpval);
+            idx, writeval, oldval, tmpval);
 
         xhciLogPortState(hc, xhciports, hciport, "after SET_FEATURE");
+    } else if (cmdgood) {
+        pciusbXHCIDebug("xHCI",
+            DEBUGCOLOR_SET "xHCI: Port %ld SET_FEATURE no-write (old $%08lx)"
+            DEBUGCOLOR_RESET " \n",
+            idx, oldval);
     }
 
     return cmdgood;
@@ -335,7 +370,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
     volatile struct xhci_pr *xhciports =
         (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
     ULONG oldval    = AROS_LE2LONG(xhciports[hciport].portsc);
-    ULONG newval    = oldval;
+    ULONG writeval  = 0;
     ULONG clearbits = 0;
     BOOL  cmdgood   = FALSE;
     struct pciusbXHCIDevice *devCtx;
@@ -353,17 +388,12 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
     case UFS_PORT_ENABLE:
         /*
          * ClearFeature(PORT_ENABLE) disables the port.
-         * For xHCI, clearing PED via PORTSC is sufficient for USB2 semantics.
-         * For USB3, disabling is primarily achieved by tearing down the slot
-         * and stopping enumeration. We keep the existing behavior and free
-         * resources.
+         * For xHCI, "port disable" semantics are controller-defined; we keep the
+         * existing behavior of clearing PED plus tearing down the slot.
          */
         pciusbXHCIDebug("xHCI",
             DEBUGCOLOR_SET "xHCI: Disabling Port"
             DEBUGCOLOR_RESET " \n");
-
-        newval &= ~XHCIF_PR_PORTSC_PED;
-        cmdgood = TRUE;
 
         /* Stop enumeration on this port and free any context. */
         unit->hu_DevControllers[0] = NULL;
@@ -372,6 +402,10 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         if (devCtx) {
             xhciFreeDeviceCtx(hc, devCtx, TRUE);
         }
+
+        /* Attempt to clear PED via masked write (won't disturb RO fields). */
+        writeval = xhciPortscComposeWrite(oldval, 0, XHCIF_PR_PORTSC_PED, 0);
+        cmdgood = TRUE;
         break;
 
     case UFS_PORT_SUSPEND:
@@ -398,11 +432,12 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: Powering Down Port"
                 DEBUGCOLOR_RESET " \n");
-            newval &= ~XHCIF_PR_PORTSC_PP;
+            writeval = xhciPortscComposeWrite(oldval, 0, XHCIF_PR_PORTSC_PP, 0);
         } else {
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: Port power already off"
                 DEBUGCOLOR_RESET " \n");
+            writeval = 0;
         }
         cmdgood = TRUE;
         break;
@@ -456,12 +491,26 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 
     if (cmdgood) {
         /*
-         * For xHCI RW1C bits, writing 1 clears them. We OR clearbits into
-         * the current value to clear only the requested change bits.
+         * For RW1C change bits, write 1 to clear. Do not write back the full
+         * PORTSC; use a masked write.
          */
-        newval |= clearbits;
-        xhciports[hciport].portsc = AROS_LONG2LE(newval);
-        newval = AROS_LE2LONG(xhciports[hciport].portsc);
+        if (clearbits) {
+            ULONG rw1c = clearbits & XHCI_PORTSC_RW1C_MASK;
+            ULONG v = xhciPortscComposeWrite(oldval, 0, 0, rw1c);
+            /* If we also had a direct writeval request, merge it (still masked). */
+            if (writeval) {
+                v = xhciPortscComposeWrite(oldval,
+                                           (writeval & XHCI_PORTSC_RW_MASK),
+                                           (~writeval) & XHCI_PORTSC_RW_MASK,
+                                           rw1c);
+            }
+            writeval = v;
+        }
+
+        if (writeval) {
+            xhciports[hciport].portsc = AROS_LONG2LE(writeval);
+            writeval = AROS_LE2LONG(xhciports[hciport].portsc);
+        }
 
         if (hc->hc_PortChangeMap[hciport]) {
             hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
@@ -470,9 +519,9 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         }
 
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "xHCI: Port %ld CLEAR_FEATURE $%08lx->$%08lx"
+            DEBUGCOLOR_SET "xHCI: Port %ld CLEAR_FEATURE old $%08lx write $%08lx"
             DEBUGCOLOR_RESET " \n",
-            idx, oldval, newval);
+            idx, oldval, writeval);
 
         xhciLogPortState(hc, xhciports, hciport, "after CLEAR_FEATURE");
     }
@@ -575,6 +624,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
 
     /*
      * Suspend:
+     * Keep the legacy USB2 heuristic only; USB3 PLS encodes U-states.
      */
     if (!xhciIsUsb3(oldportsc)) {
         if (((oldportsc >> XHCIS_PR_PORTSC_PLS) & XHCI_PR_PORTSC_PLS_SMASK) == 2) {
@@ -622,7 +672,101 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
         DEBUGCOLOR_RESET " \n",
         idx, *mptr);
 
-    /* Preserve legacy behavior: return FALSE. */
     return FALSE;
 }
+
+AROS_UFH0(void, xhciPortTask)
+{
+    AROS_USERFUNC_INIT
+
+    volatile struct xhci_pr *xhciports;
+    struct PCIController *hc;
+    struct pciusbXHCIDevice *devCtx;
+
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+
+    {
+        struct Task *thistask;
+        thistask = FindTask(NULL);
+        hc = thistask->tc_UserData;
+        hc->hc_xHCPortTask = thistask;
+        SetTaskPri(thistask, 99);
+    }
+    hc->hc_PortChangeSignal = AllocSignal(-1);
+
+    pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "'%s' @ 0x%p, PortChangeSignal=%d"
+                    DEBUGCOLOR_RESET" \n",
+                    ((struct Node *)hc->hc_xHCPortTask)->ln_Name, hc->hc_xHCPortTask, hc->hc_PortChangeSignal);
+
+    if (hc->hc_ReadySigTask)
+        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
+
+    xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+
+    for (;;) {
+        ULONG xhcictsigs = Wait(1 << hc->hc_PortChangeSignal);
+        if (xhcictsigs & (1 << hc->hc_PortChangeSignal)) {
+            UWORD hciport;
+            pciusbXHCIDebug("xHCI",
+                            DEBUGCOLOR_SET "Port change detected" DEBUGCOLOR_RESET" \n");
+            for (hciport = 0; hciport < hc->hc_NumPorts; hciport++) {
+                ULONG portsc  = AROS_LE2LONG(xhciports[hciport].portsc);
+                devCtx = xhciFindPortDevice(hc, hciport);
+
+                BOOL connected = (portsc & XHCIF_PR_PORTSC_CCS) != 0;
+                BOOL enabled   = (portsc & XHCIF_PR_PORTSC_PED) != 0;
+
+                if (connected && enabled && (!devCtx)) {
+                    UWORD rootPort = hciport;     /* 0-based */
+                    ULONG route    = 0;           /* root-attached */
+                    ULONG flags    = 0;
+                    UWORD mps0     = 8;           /* safe default */
+
+                    /* Decode port speed from PORTSC */
+                    ULONG speedBits = portsc & XHCI_PR_PORTSC_SPEED_MASK;
+
+                    if (speedBits == XHCIF_PR_PORTSC_LOWSPEED) {
+                        flags |= UHFF_LOWSPEED;
+                        mps0   = 8;              /* LS EP0 = 8 bytes */
+                    } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
+                        /* FS EP0 is 8/16/32/64 - start with 8 until bMaxPacketSize0 is known */
+                        mps0   = 8;
+                    } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
+                        flags |= UHFF_HIGHSPEED;
+                        mps0   = 64;             /* HS EP0 typically 64 bytes */
+                    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
+                        flags |= UHFF_SUPERSPEED;
+                        mps0   = 512;            /* SS EP0 max packet size */
+                    } else {
+                        /* Unknown/invalid speed - leave defaults, enumeration will adjust */
+                    }
+
+                    devCtx = xhciCreateDeviceCtx(hc,
+                                                 rootPort,
+                                                 route,
+                                                 flags,
+                                                 mps0);
+                    if (devCtx) {
+                        /* Root port "device" lives on this controller */
+                        hc->hc_Unit->hu_DevControllers[0] = hc;
+                    } else {
+                        pciusbXHCIDebug("xHCI",
+                                        DEBUGCOLOR_SET "Failed to create a device context" DEBUGCOLOR_RESET" \n");
+                    }
+                } else if (!connected && devCtx) {
+                    pciusbXHCIDebug("xHCI",
+                                    DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n",
+                                    devCtx);
+
+                    xhciFreeDeviceCtx(hc, devCtx, TRUE);
+                    hc->hc_Unit->hu_DevControllers[0] = NULL;
+                }
+            }
+            uhwCheckRootHubChanges(hc->hc_Unit);
+        }
+    }
+    AROS_USERFUNC_EXIT
+}
+
 #endif /* PCIUSB_ENABLEXHCI */

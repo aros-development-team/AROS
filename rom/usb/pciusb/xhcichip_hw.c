@@ -243,9 +243,12 @@ LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot)
 }
 
 LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
-                          APTR dmaaddr, struct IOUsbHWReq *ioreq)
+                          APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
+    /* Address Device Command TRB: bit 9 = BSR (Block SetAddress Request) */
+    if (bsr)
+        flags |= (1UL << 9);
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, slot, dmaaddr);
 
@@ -300,4 +303,56 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr)
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
 }
 #endif /* !PCIUSB_INLINEXHCIOPS */
+
+AROS_UFH0(void, xhciEventRingTask)
+{
+    AROS_USERFUNC_INIT
+
+    struct PCIController *hc;
+
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+
+    {
+        struct Task *thistask;
+        thistask = FindTask(NULL);
+        hc = thistask->tc_UserData;
+        hc->hc_xHCERTask = thistask;
+        SetTaskPri(thistask, 100);
+    }
+    hc->hc_DoWorkSignal = AllocSignal(-1);
+
+    pciusbXHCIDebug("xHCI",
+                    DEBUGCOLOR_SET "'%s' @ 0x%p, DoWorkSignal=%d"
+                    DEBUGCOLOR_RESET" \n",
+                    ((struct Node *)hc->hc_xHCERTask)->ln_Name, hc->hc_xHCERTask, hc->hc_DoWorkSignal);
+
+    if (hc->hc_ReadySigTask)
+        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
+
+    for (;;) {
+        ULONG xhcictsigs = Wait(1 << hc->hc_DoWorkSignal);
+#if defined(DEBUG) && (DEBUG > 1)
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "IDnest %d TDNest %d"
+                        DEBUGCOLOR_RESET" \n",
+                        hc->hc_xHCERTask->tc_IDNestCnt, hc->hc_xHCERTask->tc_TDNestCnt);
+#endif
+
+        if (xhcictsigs & (1 << hc->hc_DoWorkSignal)) {
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
+            xhciHandleFinishedTDs(hc);
+
+            if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
+                xhciScheduleIntTDs(hc);
+
+            if (hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
+                xhciScheduleAsyncTDs(hc, &hc->hc_CtrlXFerQueue, UHCMD_CONTROLXFER);
+
+            if (hc->hc_BulkXFerQueue.lh_Head->ln_Succ)
+                xhciScheduleAsyncTDs(hc, &hc->hc_BulkXFerQueue, UHCMD_BULKXFER);
+        }
+    }
+    AROS_USERFUNC_EXIT
+}
+
 #endif /* PCIUSB_ENABLEXHCI */

@@ -286,24 +286,45 @@ static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
            : (XHCI_EVENT_RING_TRBS - 1) - idx + last;
 }
 
-static void xhciInsertTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG trflags, ULONG plen)
+static void xhciInsertTRB(struct PCIController *hc,
+                          volatile struct pcisusbXHCIRing *ring,
+                          UQUAD payload, ULONG trflags, ULONG plen)
 {
     volatile struct xhci_trb *dst;
-    ULONG trbflags = (trflags & ~TRBF_FLAG_C);
+    ULONG trbflags;
 
-    // Set the cycle bit
+    /* Start from caller flags, but never copy the cycle bit verbatim */
+    trbflags = (trflags & ~TRBF_FLAG_C);
+
+    /* Apply the current producer cycle state */
     if (ring->end & RINGENDCFLAG)
         trbflags |= TRBF_FLAG_C;
 
-    // Get the next available ring entry
+    /* Next available TRB slot */
     dst = &ring->ring[ring->next];
 
-    //... And populate it
-    xhciSetPointer(hc, dst->dbp, payload);
-    dst->tparams = (plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
-    dst->flags = trbflags;
+    /*
+     * Parameter field handling:
+     *  - IDT set: payload is immediate data (8 bytes), not an address.
+     *  - IDT clear: payload is a CPU pointer that must become a bus address.
+     */
+    if (trflags & TRBF_FLAG_IDT) {
+        dst->dbp.addr_lo = AROS_LONG2LE((ULONG)(payload & 0xffffffffUL));
+        dst->dbp.addr_hi = AROS_LONG2LE((ULONG)((payload >> 32) & 0xffffffffUL));
+    } else {
+        UQUAD dma_payload = payload;
+#if !defined(PCIUSB_NO_CPUTOPCI)
+        if (payload != 0) {
+            dma_payload = (UQUAD)(IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)(IPTR)payload);
+        }
+#endif
+        xhciSetPointer(hc, dst->dbp, dma_payload);
+    }
 
-    /* Make sure the controller observes the freshly written TRB */
+    dst->tparams = (plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
+    dst->flags   = trbflags;
+
+    /* Ensure the controller observes the freshly written TRB */
     CacheClearE((APTR)dst, sizeof(*dst), CACRF_ClearD);
 }
 
@@ -311,12 +332,12 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
                   ULONG plen, ULONG trbflags)
 {
     if (trbflags & TRBF_FLAG_IDT) {
-        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, $%02x %02x %02x%02x %02x%02x %02x%02x, %u, $%08x)" DEBUGCOLOR_RESET" \n", ring,
+        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, $%02x %02x %02x%02x %02x%02x %02x%02x, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring,
                        ((UBYTE *)&payload)[0], ((UBYTE *)&payload)[1], ((UBYTE *)&payload)[3], ((UBYTE *)&payload)[2],
                        ((UBYTE *)&payload)[5], ((UBYTE *)&payload)[4], ((UBYTE *)&payload)[7], ((UBYTE *)&payload)[6],
                        plen, trbflags);
     } else
-        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, 0x%p, %u, $%08x)" DEBUGCOLOR_RESET" \n", ring, payload, plen, trbflags);
+        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, 0x%p, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring, payload, plen, trbflags);
 
     if (!ring) {
         pciusbXHCIDebugTRB("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
@@ -363,12 +384,43 @@ WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ri
                    ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast)
 {
     ULONG remaining = plen;
-    WORD queued, firstqueued = -1;
+    WORD  queued, firstqueued = -1;
 
+    /*
+     * For BULK/INT transfers we typically want a single TD completion on the
+     * final TRB (IOC on last). If we emit multiple TRBs without chaining, some
+     * controllers/emulators may complete the TD early on a short packet and not
+     * generate an event because the completing TRB lacked IOC/ISP.
+     *
+     * When the caller did not explicitly request chaining (TRBF_FLAG_CH),
+     * auto-chain intermediate TRBs and set ISP to ensure an event is raised if
+     * a short packet terminates the TD before the last TRB.
+     *
+     * Control transfers explicitly manage CH/IOC across Setup/Data/Status, so
+     * we only apply this auto-chaining when CH is not already set and IOC-on-last
+     * is requested.
+     */
+    const BOOL auto_chain = (ioconlast && ((trbflags & TRBF_FLAG_CH) == 0));
+
+    (void)pmax; /* pmax splitting is not required for xHCI; transfer length is per-TRB. */
     do {
-        ULONG trblen = remaining, txflags = trbflags;
-        if (remaining > pmax)
-            trblen = pmax;
+        ULONG trblen = remaining;
+        ULONG txflags = trbflags;
+
+        /* Limit to the TRB Transfer Length field width (17 bits). */
+        if (trblen > XHCI_TRB_MAX_XFER)
+            trblen = XHCI_TRB_MAX_XFER;
+
+        if (auto_chain) {
+            /* Chain all but the final TRB of this TD. */
+            if (remaining > trblen)
+                txflags |= TRBF_FLAG_CH;
+            else
+                txflags &= ~TRBF_FLAG_CH;
+
+            /* Ensure we get an event if a short packet ends the TD early. */
+            txflags |= TRBF_FLAG_ISP;
+        }
 
         if (ioconlast && ((remaining - trblen) == 0))
             txflags |= TRBF_FLAG_IOC;
@@ -400,7 +452,7 @@ static ULONG xhciPageSize(struct PCIController *hc)
     return 0;
 }
 
-static struct pciusbXHCIDevice *
+struct pciusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc,
                     UWORD rootPortIndex,   /* 0-based */
                     ULONG route,           /* 20-bit route string (0 for root) */
@@ -520,13 +572,13 @@ xhciCreateDeviceCtx(struct PCIController *hc,
 
     /* simple per-device max transfer tuning based on speed. */
     if (flags & UHFF_SUPERSPEED) {
-        devCtx->dx_TxMax = 1024 * 16;   /* generous default for SS */
+        devCtx->dc_TxMax = 1024 * 16;   /* generous default for SS */
     } else if (flags & UHFF_HIGHSPEED) {
-        devCtx->dx_TxMax = 512 * 13;    /* HS worst-case per microframe */
+        devCtx->dc_TxMax = 512 * 13;    /* HS worst-case per microframe */
     } else if (flags & UHFF_LOWSPEED) {
-        devCtx->dx_TxMax = 8 * 1;       /* LS: very small payloads */
+        devCtx->dc_TxMax = 8 * 1;       /* LS: very small payloads */
     } else {
-        devCtx->dx_TxMax = 64 * 19;     /* FS: conservative default */
+        devCtx->dc_TxMax = 64 * 19;     /* FS: conservative default */
     }
 
     /* ---- Enable Slot ---- */
@@ -565,28 +617,9 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                      flags);
 
     /* ---- Address Device ---- */
-    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, NULL)) {
+    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, 1, NULL)) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Address Device failed" DEBUGCOLOR_RESET "\n");
-
-        xhciCmdSlotDisable(hc, slotid);
-        xhciSetPointer(hc, deviceslots[slotid], 0);
-
-        devCtx->dc_SlotID = 0;
-        /* TODO free contexts */
-        FreeMem(devCtx, sizeof(*devCtx));
-        return NULL;
-    }
-
-    /*
-     * Commit the freshly built EP0 context. The Address Device command does
-     * not push the endpoint state into the output context, so without an
-     * explicit Configure Endpoint the controller will still see EP0 as
-     * disabled even though the input context is populated.
-     */
-    if (TRB_CC_SUCCESS != xhciCmdEndpointConfigure(hc, slotid, devCtx->dc_IN.dmaa_DMA)) {
-        pciusbError("xHCI",
-          DEBUGWARNCOLOR_SET "Configure Endpoint (EP0) failed" DEBUGCOLOR_RESET "\n");
 
         xhciCmdSlotDisable(hc, slotid);
         xhciSetPointer(hc, deviceslots[slotid], 0);
@@ -854,7 +887,8 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         UBYTE ival = xhciCalcInterval(interval, flags, type);
         if (ival)
             ep->ctx[0] |= ((ULONG)ival << 16);
-    }
+    } else
+        devCtx->dc_EP0MaxPacket = maxpacket;
 
     /* Set CErr = 3 (2-bit field starting at bit 0) */
     ep->ctx[1] |= (EP_CTX_CERR_MASK << EPS_CTX_CERR);
@@ -1305,6 +1339,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     }
 
     if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
+        UWORD effdir = xhciEffectiveDataDir(ioreq);
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB);
         pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
@@ -1315,15 +1350,21 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
                                 : ioreq->iouh_Length;
 
         /*
-         * Some controllers report a full "remaining" count for INT IN
-         * completions even when data was delivered. Treat a successful
-         * completion with zero computed length as a short packet carrying
-         * the requested payload so the caller sees the status byte.
+         * VirtualBox xHCI occasionally reports "remaining == requested length"
+         * on successful CONTROL/INT IN completions, even though the device
+         * delivered data into the buffer. If we leave transferred as zero in
+         * that case, upper layers will ignore the data and we may also skip
+         * CachePostDMA() depending on the logic below.
+         *
+         * Restrict the workaround to CONTROL and INT transfers to avoid
+         * perturbing BULK/ISO semantics (where a ZLP is legitimate).
          */
         if ((ccode == TRB_CC_SUCCESS) &&
-            (transferred == 0) &&
-            (ioreq->iouh_Dir == UHDIR_IN) &&
-            (ioreq->iouh_Length > 0))
+            (effdir == UHDIR_IN) &&
+            (ioreq->iouh_Length > 0) &&
+            (remaining == ioreq->iouh_Length) &&
+            ((ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) ||
+             (ioreq->iouh_Req.io_Command == UHCMD_INTXFER)))
         {
             transferred = ioreq->iouh_Length;
         }
@@ -1373,6 +1414,10 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
     if (status & XHCIF_USBSTS_HCH) {
         pciusbXHCIDebugTRB("xHCI",
             DEBUGCOLOR_SET "Host Controller Halted" DEBUGCOLOR_RESET" \n");
+    }
+    if (status & XHCIF_USBSTS_HCE) {
+        pciusbXHCIDebugTRB("xHCI",
+            DEBUGCOLOR_SET "Host Controller Error detected" DEBUGCOLOR_RESET" \n");
     }
     if (status & XHCIF_USBSTS_HSE) {
         pciusbXHCIDebugTRB("xHCI",
@@ -1664,10 +1709,13 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             {
                 volatile struct xhci_ir *ir =
                     (volatile struct xhci_ir *)hc->hc_XHCIIntR;
-                struct xhci_trb *next_trb =
-                    (struct xhci_trb *)&ering->ring[ering->next];
+                UQUAD next_dma;
+
+                next_dma  = (UQUAD)(IPTR)hc->hc_DMAERS;
+                next_dma += (UQUAD)ering->next * (UQUAD)sizeof(struct xhci_trb);
+
                 xhciSetPointer(hc, ir->erdp,
-                               ((IPTR)next_trb) | XHCIF_IR_ERDP_EHB);
+                               (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
             }
         }
 
@@ -1805,149 +1853,6 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
 
     xhciDumpOpR(hcopr);
     xhciDumpIR(xhciir);
-}
-
-
-AROS_UFH0(void, xhciPortTask)
-{
-    AROS_USERFUNC_INIT
-
-    volatile struct xhci_pr *xhciports;
-    struct PCIController *hc;
-    struct pciusbXHCIDevice *devCtx;
-
-    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
-
-    {
-        struct Task *thistask;
-        thistask = FindTask(NULL);
-        hc = thistask->tc_UserData;
-        hc->hc_xHCPortTask = thistask;
-        SetTaskPri(thistask, 99);
-    }
-    hc->hc_PortChangeSignal = AllocSignal(-1);
-
-    pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "'%s' @ 0x%p, PortChangeSignal=%d"
-                    DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)hc->hc_xHCPortTask)->ln_Name, hc->hc_xHCPortTask, hc->hc_PortChangeSignal);
-
-    if (hc->hc_ReadySigTask)
-        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
-
-    xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
-
-    for (;;) {
-        ULONG xhcictsigs = Wait(1 << hc->hc_PortChangeSignal);
-        if (xhcictsigs & (1 << hc->hc_PortChangeSignal)) {
-            UWORD hciport;
-            pciusbXHCIDebug("xHCI",
-                            DEBUGCOLOR_SET "Port change detected" DEBUGCOLOR_RESET" \n");
-            for (hciport = 0; hciport < hc->hc_NumPorts; hciport++) {
-                ULONG portsc  = AROS_LE2LONG(xhciports[hciport].portsc);
-                devCtx = xhciFindPortDevice(hc, hciport);
-
-                BOOL connected = (portsc & XHCIF_PR_PORTSC_CCS) != 0;
-                BOOL enabled   = (portsc & XHCIF_PR_PORTSC_PED) != 0;
-
-                if (connected && enabled && (!devCtx)) {
-                    UWORD rootPort = hciport;     /* 0-based */
-                    ULONG route    = 0;           /* root-attached */
-                    ULONG flags    = 0;
-                    UWORD mps0     = 8;           /* safe default */
-
-                    /* Decode port speed from PORTSC */
-                    ULONG speedBits = portsc & XHCI_PR_PORTSC_SPEED_MASK;
-
-                    if (speedBits == XHCIF_PR_PORTSC_LOWSPEED) {
-                        flags |= UHFF_LOWSPEED;
-                        mps0   = 8;              /* LS EP0 = 8 bytes */
-                    } else if (speedBits == XHCIF_PR_PORTSC_FULLSPEED) {
-                        /* FS EP0 is 8/16/32/64 - start with 8 until bMaxPacketSize0 is known */
-                        mps0   = 8;
-                    } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
-                        flags |= UHFF_HIGHSPEED;
-                        mps0   = 64;             /* HS EP0 typically 64 bytes */
-                    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
-                        flags |= UHFF_SUPERSPEED;
-                        mps0   = 512;            /* SS EP0 max packet size */
-                    } else {
-                        /* Unknown/invalid speed - leave defaults, enumeration will adjust */
-                    }
-
-                    devCtx = xhciCreateDeviceCtx(hc,
-                                                 rootPort,
-                                                 route,
-                                                 flags,
-                                                 mps0);
-                    if (devCtx) {
-                        /* Root port "device" lives on this controller */
-                        hc->hc_Unit->hu_DevControllers[0] = hc;
-                    }
-                } else if (!connected && devCtx) {
-                    pciusbXHCIDebug("xHCI",
-                                    DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n",
-                                    devCtx);
-
-                    xhciFreeDeviceCtx(hc, devCtx, TRUE);
-                    hc->hc_Unit->hu_DevControllers[0] = NULL;
-                }
-            }
-            uhwCheckRootHubChanges(hc->hc_Unit);
-        }
-    }
-    AROS_USERFUNC_EXIT
-}
-
-AROS_UFH0(void, xhciEventRingTask)
-{
-    AROS_USERFUNC_INIT
-
-    struct PCIController *hc;
-
-    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
-
-    {
-        struct Task *thistask;
-        thistask = FindTask(NULL);
-        hc = thistask->tc_UserData;
-        hc->hc_xHCERTask = thistask;
-        SetTaskPri(thistask, 100);
-    }
-    hc->hc_DoWorkSignal = AllocSignal(-1);
-
-    pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "'%s' @ 0x%p, DoWorkSignal=%d"
-                    DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)hc->hc_xHCERTask)->ln_Name, hc->hc_xHCERTask, hc->hc_DoWorkSignal);
-
-    if (hc->hc_ReadySigTask)
-        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
-
-    for (;;) {
-        ULONG xhcictsigs = Wait(1 << hc->hc_DoWorkSignal);
-#if defined(DEBUG) && (DEBUG > 1)
-        pciusbXHCIDebug("xHCI",
-                        DEBUGCOLOR_SET "IDnest %d TDNest %d"
-                        DEBUGCOLOR_RESET" \n",
-                        hc->hc_xHCERTask->tc_IDNestCnt, hc->hc_xHCERTask->tc_TDNestCnt);
-#endif
-
-        if (xhcictsigs & (1 << hc->hc_DoWorkSignal)) {
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
-            xhciHandleFinishedTDs(hc);
-
-            if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
-                xhciScheduleIntTDs(hc);
-
-            if (hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
-                xhciScheduleAsyncTDs(hc, &hc->hc_CtrlXFerQueue, UHCMD_CONTROLXFER);
-
-            if (hc->hc_BulkXFerQueue.lh_Head->ln_Succ)
-                xhciScheduleAsyncTDs(hc, &hc->hc_BulkXFerQueue, UHCMD_BULKXFER);
-        }
-    }
-    AROS_USERFUNC_EXIT
 }
 
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu)
@@ -2377,6 +2282,8 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
                                     ULONG epid,
                                     BOOL stopEndpoint)
 {
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p, %u)" DEBUGCOLOR_RESET" \n", __func__, hc, devCtx, epid);
+
     if (!devCtx || (epid >= MAX_DEVENDPOINTS))
         return;
 
@@ -2400,6 +2307,8 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
                               struct pciusbXHCIDevice *devCtx,
                               BOOL disableSlot)
 {
+    pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET" \n", __func__, hc, devCtx);
+
     if (!devCtx)
         return;
 

@@ -31,6 +31,14 @@
 /* Number of TRBs in the single event ring segment. */
 #define XHCI_EVENT_RING_TRBS  USB_DEV_MAX    /* 128/256/512 */
 
+/*
+ * Maximum TRB transfer length (Transfer Length field is 17 bits).
+ * Keeping large payloads in fewer TRBs improves robustness on controllers/emulators
+ * that are sensitive to missing ISP/chain semantics.
+ */
+#define XHCI_TRB_MAX_XFER      0x1FFFFUL
+
+
 #define SLOT_CTX_ENTRIES_SHIFT 27
 #define SLOT_CTX_ENTRIES_MASK  0x1F
 
@@ -68,7 +76,8 @@ struct pciusbXHCIDevice {
     struct pciusbXHCIEndpointCtx       *dc_EPContexts[MAX_DEVENDPOINTS];
     struct pciusbXHCIDMAAlloc           dc_IN;                                      // Device Input context
     struct pciusbXHCIDMAAlloc           dc_SlotCtx;                                 // Device Context (R/O)
-    ULONG                               dx_TxMax;
+    ULONG                               dc_EP0MaxPacket;
+    ULONG                               dc_TxMax;
     ULONG                               dc_RouteString;
     UBYTE                               dc_SlotID;
     UBYTE                               dc_DevAddr;
