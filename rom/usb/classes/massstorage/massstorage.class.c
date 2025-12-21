@@ -16,6 +16,12 @@ static inline BOOL nIsBulkTransport(ULONG proto)
     return (proto == MS_PROTO_BULK) || (proto == MS_PROTO_UAS);
 }
 
+static void nUasFillLun(UBYTE *lun, UWORD lunnum)
+{
+    memset(lun, 0, 8);
+    lun[0] = (UBYTE) (lunnum & 0x3f);
+}
+
 /* /// "Lib Stuff" */
 static const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
@@ -536,7 +542,7 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                         }
                     }
 
-                    if(!(patchflags & PFF_SINGLE_LUN))
+                    if((!(patchflags & PFF_SINGLE_LUN)) && (proto != MS_PROTO_UAS))
                     {
                         retry = 3;
                         maxlun = 0;
@@ -1395,6 +1401,102 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
 }
 /* \\\ */
 
+static BOOL nUasCollectEndpoints(struct NepClassMS *ncm)
+{
+    struct PsdDescriptor *pdd = NULL;
+    struct PsdEndpoint *pep;
+    UBYTE *data;
+    UWORD dtype;
+    UWORD len;
+    IPTR  eptype;
+    IPTR  is_in;
+    UBYTE pipe_id;
+
+    while((pdd = psdFindDescriptor(ncm->ncm_Device, pdd,
+                                   DDA_Interface, ncm->ncm_Interface,
+                                   TAG_END)))
+    {
+        psdGetAttrs(PGA_DESCRIPTOR, pdd,
+                    DDA_DescriptorType, &dtype,
+                    DDA_DescriptorData, &data,
+                    DDA_DescriptorLength, &len,
+                    DDA_Endpoint, &pep,
+                    TAG_END);
+        if((!pep) || (!data) || (len < 3))
+        {
+            continue;
+        }
+        if((dtype != UAS_DESC_PIPE_USAGE) && (dtype != UAS_DESC_CS_ENDPOINT))
+        {
+            continue;
+        }
+        pipe_id = 0;
+        if(dtype == UAS_DESC_PIPE_USAGE)
+        {
+            pipe_id = data[2];
+        } else if(len >= 4) {
+            pipe_id = data[3];
+        }
+        if(!pipe_id)
+        {
+            continue;
+        }
+        psdGetAttrs(PGA_ENDPOINT, pep,
+                    EA_TransferType, &eptype,
+                    EA_IsIn, &is_in,
+                    TAG_END);
+        if(eptype != USEAF_BULK)
+        {
+            continue;
+        }
+        switch(pipe_id)
+        {
+            case UAS_PIPE_ID_COMMAND:
+                if(is_in)
+                {
+                    break;
+                }
+                if(!ncm->ncm_EPCmd)
+                {
+                    ncm->ncm_EPCmd = pep;
+                }
+                break;
+            case UAS_PIPE_ID_STATUS:
+                if(!is_in)
+                {
+                    break;
+                }
+                if(!ncm->ncm_EPStatus)
+                {
+                    ncm->ncm_EPStatus = pep;
+                }
+                break;
+            case UAS_PIPE_ID_DATA_IN:
+                if(!is_in)
+                {
+                    break;
+                }
+                if(!ncm->ncm_EPIn)
+                {
+                    ncm->ncm_EPIn = pep;
+                }
+                break;
+            case UAS_PIPE_ID_DATA_OUT:
+                if(is_in)
+                {
+                    break;
+                }
+                if(!ncm->ncm_EPOut)
+                {
+                    ncm->ncm_EPOut = pep;
+                }
+                break;
+        }
+    }
+
+    return ncm->ncm_EPCmd && ncm->ncm_EPStatus && ncm->ncm_EPIn && ncm->ncm_EPOut;
+}
+
 /* /// "nAllocMS()" */
 struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
 {
@@ -1411,41 +1513,74 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
             Alert(AG_OpenLib | AO_Unknown);
             break;
         }
-        ncm->ncm_EPInt = psdFindEndpoint(ncm->ncm_Interface, NULL,
-                                         EA_IsIn, TRUE,
-                                         EA_TransferType, USEAF_INTERRUPT,
-                                         TAG_END);
-        ncm->ncm_EPIn = psdFindEndpoint(ncm->ncm_Interface, NULL,
-                                        EA_IsIn, TRUE,
-                                        EA_TransferType, USEAF_BULK,
-                                        TAG_END);
-        ncm->ncm_EPOut = psdFindEndpoint(ncm->ncm_Interface, NULL,
-                                         EA_IsIn, FALSE,
-                                         EA_TransferType, USEAF_BULK,
-                                         TAG_END);
-        if(!(ncm->ncm_EPIn && ncm->ncm_EPOut))
+        if(ncm->ncm_TPType == MS_PROTO_UAS)
         {
-            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "IN or OUT endpoint missing!");
-            break;
+            ncm->ncm_EPInt = NULL;
+            if(!nUasCollectEndpoints(ncm))
+            {
+                psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UAS endpoints missing or incomplete!");
+                break;
+            }
+        } else {
+            ncm->ncm_EPInt = psdFindEndpoint(ncm->ncm_Interface, NULL,
+                                             EA_IsIn, TRUE,
+                                             EA_TransferType, USEAF_INTERRUPT,
+                                             TAG_END);
+            ncm->ncm_EPIn = psdFindEndpoint(ncm->ncm_Interface, NULL,
+                                            EA_IsIn, TRUE,
+                                            EA_TransferType, USEAF_BULK,
+                                            TAG_END);
+            ncm->ncm_EPOut = psdFindEndpoint(ncm->ncm_Interface, NULL,
+                                             EA_IsIn, FALSE,
+                                             EA_TransferType, USEAF_BULK,
+                                             TAG_END);
+            if(!(ncm->ncm_EPIn && ncm->ncm_EPOut))
+            {
+                psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "IN or OUT endpoint missing!");
+                break;
+            }
         }
         if((!ncm->ncm_EPInt) && (ncm->ncm_TPType == MS_PROTO_CBI))
         {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "INT endpoint missing!");
             break;
-        } else {
+        } else if(ncm->ncm_EPOut) {
             psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
                         EA_EndpointNum, &epnum,
                         TAG_END);
             ncm->ncm_EPIntNum = epnum;
         }
-        psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
-                    EA_EndpointNum, &epnum,
-                    TAG_END);
-        ncm->ncm_EPInNum = epnum;
-        psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
-                    EA_EndpointNum, &epnum,
-                    TAG_END);
-        ncm->ncm_EPOutNum = epnum;
+        if(ncm->ncm_EPIn)
+        {
+            psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
+                        EA_EndpointNum, &epnum,
+                        TAG_END);
+            ncm->ncm_EPInNum = epnum;
+        }
+        if(ncm->ncm_EPOut)
+        {
+            psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
+                        EA_EndpointNum, &epnum,
+                        TAG_END);
+            ncm->ncm_EPOutNum = epnum;
+        }
+        if(ncm->ncm_TPType == MS_PROTO_UAS)
+        {
+            if(ncm->ncm_EPCmd)
+            {
+                psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPCmd,
+                            EA_EndpointNum, &epnum,
+                            TAG_END);
+                ncm->ncm_EPCmdNum = epnum;
+            }
+            if(ncm->ncm_EPStatus)
+            {
+                psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPStatus,
+                            EA_EndpointNum, &epnum,
+                            TAG_END);
+                ncm->ncm_EPStatusNum = epnum;
+            }
+        }
 
         ncm->ncm_BulkResetBorks = FALSE;
         ncm->ncm_GeoChangeCount = 0xffffffff;
@@ -1463,6 +1598,27 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                 {
                     if((ncm->ncm_EPInPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPIn)))
                     {
+                        if(ncm->ncm_TPType == MS_PROTO_UAS)
+                        {
+                            if(!(ncm->ncm_EPCmdPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPCmd)))
+                            {
+                                psdFreePipe(ncm->ncm_EPInPipe);
+                                psdFreePipe(ncm->ncm_EPOutPipe);
+                                psdFreePipe(ncm->ncm_EP0Pipe);
+                                DeleteMsgPort(ncm->ncm_TaskMsgPort);
+                                goto alloc_fail;
+                            }
+                            if(!(ncm->ncm_EPStatusPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPStatus)))
+                            {
+                                psdFreePipe(ncm->ncm_EPCmdPipe);
+                                ncm->ncm_EPCmdPipe = NULL;
+                                psdFreePipe(ncm->ncm_EPInPipe);
+                                psdFreePipe(ncm->ncm_EPOutPipe);
+                                psdFreePipe(ncm->ncm_EP0Pipe);
+                                DeleteMsgPort(ncm->ncm_TaskMsgPort);
+                                goto alloc_fail;
+                            }
+                        }
                         if(ncm->ncm_CDC->cdc_NakTimeout)
                         {
                             psdSetAttrs(PGA_PIPE, ncm->ncm_EP0Pipe,
@@ -1477,10 +1633,36 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                                         PPA_NakTimeout, TRUE,
                                         PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
                                         TAG_END);
+                            if(ncm->ncm_EPCmdPipe)
+                            {
+                                psdSetAttrs(PGA_PIPE, ncm->ncm_EPCmdPipe,
+                                            PPA_NakTimeout, TRUE,
+                                            PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
+                                            TAG_END);
+                            }
+                            if(ncm->ncm_EPStatusPipe)
+                            {
+                                psdSetAttrs(PGA_PIPE, ncm->ncm_EPStatusPipe,
+                                            PPA_NakTimeout, TRUE,
+                                            PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
+                                            TAG_END);
+                            }
                         }
                         psdSetAttrs(PGA_PIPE, ncm->ncm_EPOutPipe,
                                     PPA_NoShortPackets, TRUE,
                                     TAG_END);
+                        if(ncm->ncm_EPCmdPipe)
+                        {
+                            psdSetAttrs(PGA_PIPE, ncm->ncm_EPCmdPipe,
+                                        PPA_NoShortPackets, TRUE,
+                                        TAG_END);
+                        }
+                        if(ncm->ncm_EPStatusPipe)
+                        {
+                            psdSetAttrs(PGA_PIPE, ncm->ncm_EPStatusPipe,
+                                        PPA_AllowRuntPackets, TRUE,
+                                        TAG_END);
+                        }
                         if(ncm->ncm_EPInt)
                         {
                             if((ncm->ncm_EPIntPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPInt)))
@@ -1499,6 +1681,8 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                             ncm->ncm_Task = thistask;
                             return(ncm);
                         }
+                        psdFreePipe(ncm->ncm_EPStatusPipe);
+                        psdFreePipe(ncm->ncm_EPCmdPipe);
                         psdFreePipe(ncm->ncm_EPInPipe);
                     }
                     psdFreePipe(ncm->ncm_EPOutPipe);
@@ -1507,6 +1691,7 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
             }
             DeleteMsgPort(ncm->ncm_TaskMsgPort);
         }
+alloc_fail:
         FreeSignal((LONG) ncm->ncm_Unit.unit_MsgPort.mp_SigBit);
     } while(FALSE);
     CloseLibrary(ncm->ncm_Base);
@@ -1538,6 +1723,8 @@ void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm)
     Permit();
 
     psdFreePipe(ncm->ncm_EPIntPipe);
+    psdFreePipe(ncm->ncm_EPStatusPipe);
+    psdFreePipe(ncm->ncm_EPCmdPipe);
     psdFreePipe(ncm->ncm_EPInPipe);
     psdFreePipe(ncm->ncm_EPOutPipe);
     psdFreePipe(ncm->ncm_EP0Pipe);
@@ -2946,7 +3133,6 @@ LONG nBulkReset(struct NepClassMS *ncm)
     switch(ncm->ncm_TPType)
     {
         case MS_PROTO_BULK:
-        case MS_PROTO_UAS:
             if(!ncm->ncm_BulkResetBorks)
             {
                  psdPipeSetup(ncm->ncm_EP0Pipe, URTF_CLASS|URTF_INTERFACE,
@@ -2989,6 +3175,55 @@ LONG nBulkReset(struct NepClassMS *ncm)
                 psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
                                ncm->ncm_EPOutNum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            }
+            return(ioerr2 ? ioerr2 : ioerr);
+
+        case MS_PROTO_UAS:
+            psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPInNum|URTF_IN);
+            ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+            if(ioerr)
+            {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
+                               ncm->ncm_EPInNum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            }
+            if(ncm->ncm_DenyRequests)
+            {
+                return ioerr;
+            }
+            psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPOutNum);
+            ioerr2 = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+            if(ioerr2)
+            {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
+                               ncm->ncm_EPOutNum, psdNumToStr(NTS_IOERR, ioerr2, "unknown"), ioerr2);
+            }
+            if(ncm->ncm_EPCmdNum)
+            {
+                psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                             USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPCmdNum);
+                ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+                if(ioerr)
+                {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
+                                   ncm->ncm_EPCmdNum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                }
+            }
+            if(ncm->ncm_EPStatusNum)
+            {
+                psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                             USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPStatusNum|URTF_IN);
+                ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+                if(ioerr)
+                {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
+                                   ncm->ncm_EPStatusNum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                }
             }
             return(ioerr2 ? ioerr2 : ioerr);
 
@@ -3071,6 +3306,21 @@ LONG nBulkClear(struct NepClassMS *ncm)
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "CLEAR_ENDPOINT_HALT %ld failed: %s (%ld)",
                        ncm->ncm_EPOutNum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+    }
+    if(ncm->ncm_TPType == MS_PROTO_UAS)
+    {
+        if(ncm->ncm_EPCmdNum)
+        {
+            psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPCmdNum);
+            ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+        }
+        if(ncm->ncm_EPStatusNum)
+        {
+            psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
+                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPStatusNum|URTF_IN);
+            ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+        }
     }
     return(ioerr);
 }
@@ -3503,8 +3753,11 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     switch(ncm->ncm_TPType)
     {
         case MS_PROTO_BULK:
-        case MS_PROTO_UAS:
             res = nScsiDirectBulk(ncm, usecmd10 ? &scsicmd10 : scsicmd);
+            break;
+
+        case MS_PROTO_UAS:
+            res = nScsiDirectUAS(ncm, usecmd10 ? &scsicmd10 : scsicmd);
             break;
 
         case MS_PROTO_CB:
@@ -3698,6 +3951,197 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     return(res);
 }
 /* \\\ */
+
+static LONG nUasDoCommand(struct NepClassMS *ncm, const UBYTE *cdb, UWORD cdb_len,
+                           UBYTE *data, ULONG data_len, BOOL read,
+                           ULONG *actual, UBYTE *status, UBYTE *iu_id,
+                           UBYTE *sense_data, ULONG sense_len, UWORD *sense_actual)
+{
+    struct UasCommandIU cmdiu;
+    UBYTE statusbuf[64];
+    struct PsdPipe *pp;
+    ULONG cmdlen;
+    ULONG actual_len;
+    LONG ioerr;
+
+    if(actual)
+    {
+        *actual = 0;
+    }
+    if(status)
+    {
+        *status = SCSI_GOOD;
+    }
+    if(iu_id)
+    {
+        *iu_id = 0;
+    }
+    if(sense_actual)
+    {
+        *sense_actual = 0;
+    }
+
+    memset(&cmdiu, 0, sizeof(cmdiu));
+    cmdiu.iu_Id = UAS_IU_ID_COMMAND;
+    cmdiu.iu_TaskAttr = 0;
+    cmdiu.iu_Tag = AROS_LONG2LE(++ncm->ncm_TagCount);
+    nUasFillLun(cmdiu.iu_Lun, ncm->ncm_UnitLUN);
+    cmdlen = (cdb_len > 16) ? 16 : cdb_len;
+    if(cmdlen)
+    {
+        CopyMem(cdb, cmdiu.iu_Cdb, cmdlen);
+    }
+
+    ioerr = psdDoPipe(ncm->ncm_EPCmdPipe, &cmdiu, sizeof(cmdiu));
+    if(ioerr)
+    {
+        return ioerr;
+    }
+
+    if(data_len)
+    {
+        pp = read ? ncm->ncm_EPInPipe : ncm->ncm_EPOutPipe;
+        ioerr = psdDoPipe(pp, data, data_len);
+        if(actual)
+        {
+            *actual = psdGetPipeActual(pp);
+        }
+        if((ioerr == UHIOERR_OVERFLOW) || (ioerr == UHIOERR_RUNTPACKET))
+        {
+            ioerr = 0;
+        }
+        if(ioerr)
+        {
+            return ioerr;
+        }
+    }
+
+    ioerr = psdDoPipe(ncm->ncm_EPStatusPipe, statusbuf, sizeof(statusbuf));
+    if(ioerr && (ioerr != UHIOERR_RUNTPACKET) && (ioerr != UHIOERR_OVERFLOW))
+    {
+        return ioerr;
+    }
+    actual_len = psdGetPipeActual(ncm->ncm_EPStatusPipe);
+    if(iu_id)
+    {
+        *iu_id = statusbuf[0];
+    }
+    if(status)
+    {
+        if(actual_len >= sizeof(struct UasStatusIU))
+        {
+            *status = ((struct UasStatusIU *) statusbuf)->iu_Status;
+        } else if(actual_len >= 3) {
+            *status = statusbuf[2];
+        }
+    }
+    if(iu_id && (*iu_id == UAS_IU_ID_SENSE) && sense_data && sense_actual)
+    {
+        ULONG header = offsetof(struct UasSenseIU, iu_Sense);
+        ULONG copy_len = 0;
+
+        if(actual_len > header)
+        {
+            struct UasSenseIU *senseiu = (struct UasSenseIU *) statusbuf;
+            ULONG sense_avail = actual_len - header;
+            ULONG sense_reported = AROS_LE2WORD(senseiu->iu_SenseLength);
+
+            copy_len = sense_reported;
+            if(copy_len > sense_avail)
+            {
+                copy_len = sense_avail;
+            }
+            if(copy_len > sense_len)
+            {
+                copy_len = sense_len;
+            }
+            if(copy_len)
+            {
+                CopyMem(&statusbuf[header], sense_data, copy_len);
+                *sense_actual = (UWORD) copy_len;
+            }
+        }
+    }
+    return 0;
+}
+
+/* /// "nScsiDirectUAS()" */
+LONG nScsiDirectUAS(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
+{
+    LONG ioerr;
+    LONG rioerr = 0;
+    ULONG datalen;
+    UBYTE status = SCSI_GOOD;
+    UBYTE iu_id = 0;
+
+    datalen = scsicmd->scsi_Length;
+    scsicmd->scsi_Status = SCSI_GOOD;
+    scsicmd->scsi_Actual = 0;
+    scsicmd->scsi_CmdActual = (scsicmd->scsi_CmdLength > 16) ? 16 : scsicmd->scsi_CmdLength;
+    scsicmd->scsi_SenseActual = 0;
+
+    nLockXFer(ncm);
+    do
+    {
+        if(ncm->ncm_DenyRequests)
+        {
+            rioerr = HFERR_Phase;
+            break;
+        }
+
+        ioerr = nUasDoCommand(ncm, scsicmd->scsi_Command, scsicmd->scsi_CmdLength,
+                              (UBYTE *) scsicmd->scsi_Data, datalen,
+                              (scsicmd->scsi_Flags & SCSIF_READ) != 0,
+                              &scsicmd->scsi_Actual, &status, &iu_id,
+                              (scsicmd->scsi_Flags & SCSIF_AUTOSENSE) ? scsicmd->scsi_SenseData : NULL,
+                              scsicmd->scsi_SenseLength, &scsicmd->scsi_SenseActual);
+        if(ioerr)
+        {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                           "UAS command transfer failed: %s (%ld)",
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+            rioerr = HFERR_Phase;
+            break;
+        }
+
+        scsicmd->scsi_Status = status;
+        if(status)
+        {
+            rioerr = HFERR_BadStatus;
+            if((scsicmd->scsi_Flags & SCSIF_AUTOSENSE) && (!scsicmd->scsi_SenseActual))
+            {
+                UBYTE sensecmd[6];
+                UBYTE sense_status = SCSI_GOOD;
+                ULONG sense_actual = 0;
+
+                sensecmd[0] = SCSI_REQUEST_SENSE;
+                sensecmd[1] = 0;
+                sensecmd[2] = 0;
+                sensecmd[3] = 0;
+                sensecmd[4] = (UBYTE) scsicmd->scsi_SenseLength;
+                sensecmd[5] = 0;
+
+                ioerr = nUasDoCommand(ncm, sensecmd, 6,
+                                      scsicmd->scsi_SenseData, scsicmd->scsi_SenseLength,
+                                      TRUE, &sense_actual, &sense_status, NULL,
+                                      NULL, 0, NULL);
+                if(!ioerr)
+                {
+                    scsicmd->scsi_SenseActual = (UWORD) sense_actual;
+                } else {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "UAS request sense failed: %s (%ld)",
+                                   psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                }
+            }
+        }
+
+    } while(FALSE);
+    nUnlockXFer(ncm);
+    return(rioerr);
+}
+/* \\ */
 
 /* /// "nScsiDirectBulk()" */
 LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)

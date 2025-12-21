@@ -60,6 +60,7 @@ BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm);
 LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
+LONG nScsiDirectUAS(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nBulkReset(struct NepClassMS *ncm);
 void nLockXFer(struct NepClassMS *ncm);
 void nUnlockXFer(struct NepClassMS *ncm);

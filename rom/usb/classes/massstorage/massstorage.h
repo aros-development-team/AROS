@@ -148,10 +148,16 @@ struct NepClassMS
     struct PsdPipe     *ncm_EPOutPipe;    /* Endpoint OUT pipe */
     struct PsdEndpoint *ncm_EPIn;         /* Endpoint IN */
     struct PsdPipe     *ncm_EPInPipe;     /* Endpoint IN pipe */
+    struct PsdEndpoint *ncm_EPCmd;        /* UAS Command Endpoint */
+    struct PsdPipe     *ncm_EPCmdPipe;    /* UAS Command pipe */
+    struct PsdEndpoint *ncm_EPStatus;     /* UAS Status Endpoint */
+    struct PsdPipe     *ncm_EPStatusPipe; /* UAS Status pipe */
     struct PsdEndpoint *ncm_EPInt;        /* Optional Endpoint INT */
     struct PsdPipe     *ncm_EPIntPipe;    /* Optional Endpoint INT pipe */
     UWORD               ncm_EPOutNum;     /* Endpoint OUT number */
     UWORD               ncm_EPInNum;      /* Endpoint IN number */
+    UWORD               ncm_EPCmdNum;     /* UAS Command endpoint number */
+    UWORD               ncm_EPStatusNum;  /* UAS Status endpoint number */
     UWORD               ncm_EPIntNum;     /* Endpoint INT number */
     struct MsgPort     *ncm_DevMsgPort;   /* Message Port for IOParReq */
     UWORD               ncm_UnitProdID;   /* ProductID of unit */
