@@ -4,7 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
 USER_LDFLAGS := -static
 
-FILES :=    massstorage.class dev debug partitions
+FILES := \
+    massstorage.class \
+    massstorage_bulk \
+    massstorage_cbi \
+    massstorage_uas \
+    dev \
+    debug \
+    partitions
 
 #MM- kernel-usb-classes-massstorage : kernel-usb-usbclass kernel-usb-poseidon-includes
 

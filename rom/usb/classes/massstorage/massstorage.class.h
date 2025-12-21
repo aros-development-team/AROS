@@ -57,11 +57,14 @@ LONG GM_UNIQUENAME(nOpenBindingCfgWindow)(struct NepMSBase *nh, struct NepClassM
 void GM_UNIQUENAME(nGUITaskCleanup)(struct NepClassMS *ncm);
 BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm);
 
+void GM_UNIQUENAME(nHexString)(UBYTE *src, ULONG len, UBYTE *buf);
+
 LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectCBI(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nScsiDirectUAS(struct NepClassMS *ncm, struct SCSICmd *scsicmd);
 LONG nBulkReset(struct NepClassMS *ncm);
+LONG nBulkClear(struct NepClassMS *ncm);
 void nLockXFer(struct NepClassMS *ncm);
 void nUnlockXFer(struct NepClassMS *ncm);
 LONG nRead64(struct NepClassMS *ncm, struct IOStdReq *ioreq);
