@@ -11,6 +11,11 @@
 
 #define DEF_NAKTIMEOUT  (100)
 
+static inline BOOL nIsBulkTransport(ULONG proto)
+{
+    return (proto == MS_PROTO_BULK) || (proto == MS_PROTO_UAS);
+}
+
 /* /// "Lib Stuff" */
 static const STRPTR GM_UNIQUENAME(libname) = MOD_NAME_STRING;
 
@@ -206,7 +211,8 @@ struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *
             (subclass == MS_UFI_SUBCLASS)) &&
            ((proto == MS_PROTO_BULK) ||
             (proto == MS_PROTO_CB) ||
-            (proto == MS_PROTO_CBI)))
+            (proto == MS_PROTO_CBI) ||
+            (proto == MS_PROTO_UAS)))
         {
             return(GM_UNIQUENAME(usbForceInterfaceBinding)(nh, pif));
         }
@@ -274,7 +280,8 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                     TAG_END);
         maxlun = 0;
         /* Patches and fixes */
-        if((proto != MS_PROTO_BULK) && (proto != MS_PROTO_CB) && (proto != MS_PROTO_CBI))
+        if((proto != MS_PROTO_BULK) && (proto != MS_PROTO_CB) &&
+           (proto != MS_PROTO_CBI) && (proto != MS_PROTO_UAS))
         {
             proto = MS_PROTO_BULK;
         }
@@ -287,7 +294,7 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
             subclass = MS_SCSI_SUBCLASS;
         }
 
-        if(proto == MS_PROTO_BULK)
+        if(nIsBulkTransport(proto))
         {
             if(vendid == 0x05e3) /* 2.5 HD Wrapper by Eagle Tec */
             {
@@ -2939,6 +2946,7 @@ LONG nBulkReset(struct NepClassMS *ncm)
     switch(ncm->ncm_TPType)
     {
         case MS_PROTO_BULK:
+        case MS_PROTO_UAS:
             if(!ncm->ncm_BulkResetBorks)
             {
                  psdPipeSetup(ncm->ncm_EP0Pipe, URTF_CLASS|URTF_INTERFACE,
@@ -3495,6 +3503,7 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     switch(ncm->ncm_TPType)
     {
         case MS_PROTO_BULK:
+        case MS_PROTO_UAS:
             res = nScsiDirectBulk(ncm, usecmd10 ? &scsicmd10 : scsicmd);
             break;
 
@@ -7101,4 +7110,3 @@ AROS_UFH3(LONG, GM_UNIQUENAME(LUNListDisplayHook),
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
-
