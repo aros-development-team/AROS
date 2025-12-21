@@ -1,7 +1,7 @@
 #ifndef DEVICES_USB_MASSSTORAGE_H
 #define DEVICES_USB_MASSSTORAGE_H
 /*
-**	$VER: usb_massstorage.h 2.0 (15.12.07)
+**	$VER: usb_massstorage.h 2.1 (21.12.2025)
 **
 **	usb definitions include file
 **
@@ -34,6 +34,7 @@
 #define MS_PROTO_CBI          0x00 /* Control/Bulk/Interrupt transport with command completion interrupt */
 #define MS_PROTO_CB           0x01 /* Control/Bulk/Interrupt transport without command completion interrupt */
 #define MS_PROTO_BULK         0x50 /* Bulk-only transport */
+#define MS_PROTO_UAS          0x62 /* USB Attached SCSI (UASP) */
 
 /* Usb Mass Storage Class specific stuff */
 
