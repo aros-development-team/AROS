@@ -218,20 +218,14 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
     ULONG trbflags, BOOL iocOnLast)
 {
-    UQUAD dma_addr;
     ULONG dmalen = ioreq->iouh_Length;
     WORD queued;
 
     UWORD effdir = xhciEffectiveDataDir(ioreq);
     APTR dmaptr = CachePreDMA(ioreq->iouh_Data, &dmalen,
                               (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
-#if !defined(PCIUSB_NO_CPUTOPCI)
-    dma_addr = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dmaptr);
-#else
-    dma_addr = (IPTR)dmaptr;
-#endif
     queued = xhciQueueData(hc, epring,
-                           dma_addr,
+                           (UQUAD)(IPTR)dmaptr,
                            dmalen,
                            ioreq->iouh_MaxPktSize,
                            trbflags,
