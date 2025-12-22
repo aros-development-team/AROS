@@ -31,33 +31,71 @@
 #endif
 
 #if defined(AROS_USE_LOGRES) && (DEBUG > 0)
-#define KPRINTF(l,fmt,args...)          if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | l), LogHandle, "", __func__, 0, fmt, ##args); }
-#define pciusbDebug(sub,fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
+#define KPRINTF(l,fmt,args...) do { \
+    if (LogHandle) { \
+        logAddEntry((LOGF_Flag_Type_Debug | l), LogHandle, "", __func__, 0, fmt, ##args); \
+    } else if ((l) >= DB_LEVEL) { \
+        KPrintF("%s/%lu: ", __func__, __LINE__); \
+        KPrintF(fmt, ##args); \
+    } \
+} while (0)
+#define pciusbDebug(sub,fmt,args...) do { \
+    if (LogHandle) { \
+        logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); \
+    } else { \
+        KPrintF("%s/%lu: ", __func__, __LINE__); \
+        KPrintF(fmt, ##args); \
+    } \
+} while (0)
 #else
 #ifdef DEBUG
-#define KPRINTF(l,fmt,args...) do { if ((l) >= DB_LEVEL) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);} } while (0)
-#define pciusbDebug(sub,fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
+#define KPRINTF(l,fmt,args...) do { \
+    if ((l) >= DB_LEVEL) { \
+        KPrintF("%s/%lu: ", __func__, __LINE__); \
+        KPrintF(fmt, ##args); \
+    } \
+} while (0)
+#define pciusbDebug(sub,fmt,args...) do { \
+    KPrintF("%s/%lu: ", __func__, __LINE__); \
+    KPrintF(fmt, ##args); \
+} while (0)
 #define DB(x) x
 void dumpmem_pciusb(void *mem, unsigned long int len);
 #else /* !DEBUG */
 #define KPRINTF(l,fmt,args...) ((void) 0)
-#define pciusbDebug(fmt,args...)
+#define pciusbDebug(sub,fmt,args...) ((void) 0)
 #define DB(x)
 #endif /* DEBUG */
 #endif
 #if defined(AROS_USE_LOGRES)
-#define pciusbInfo(sub, fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Information | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
-#define pciusbWarn(sub, fmt,args...)    if (LogHandle){ logAddEntry((LOGF_Flag_Type_Warn | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
-#define pciusbError(sub, fmt,args...)   if (LogHandle){ logAddEntry((LOGF_Flag_Type_Error | 20), LogHandle, sub, __func__, 0, fmt, ##args); }
+#define pciusbInfo(sub, fmt,args...) do { \
+    if (LogHandle){ \
+       logAddEntry((LOGF_Flag_Type_Information | 20), LogHandle, sub, __func__, 0, fmt, ##args); \
+    } \
+} while (0)
+#define pciusbWarn(sub, fmt,args...) do { \
+    if (LogHandle){ \
+       logAddEntry((LOGF_Flag_Type_Warn | 20), LogHandle, sub, __func__, 0, fmt, ##args); \
+    } \
+} while (0)
+#define pciusbError(sub, fmt,args...) do { \
+    if (LogHandle){ \
+       logAddEntry((LOGF_Flag_Type_Error | 20), LogHandle, sub, __func__, 0, fmt, ##args); \
+    } \
+} while (0)
 #else
-#define pciusbInfo(sub, fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
-#define pciusbWarn(sub, fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
-#define pciusbError(sub, fmt,args...) \
-     { KPrintF("%s/%lu: ", __func__, __LINE__); KPrintF(fmt, ##args);}
+#define pciusbInfo(sub, fmt,args...) do { \
+    KPrintF("%s/%lu: ", __func__, __LINE__); \
+    KPrintF(fmt, ##args); \
+} while (0)
+#define pciusbWarn(sub, fmt,args...) do { \
+    KPrintF("%s/%lu: ", __func__, __LINE__); \
+    KPrintF(fmt, ##args); \
+} while (0)
+#define pciusbError(sub, fmt,args...) do { \
+    KPrintF("%s/%lu: ", __func__, __LINE__); \
+    KPrintF(fmt, ##args); \
+} while (0)
 #endif
 
 #if defined(DEBUG)
