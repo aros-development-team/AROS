@@ -252,6 +252,7 @@ struct xhci_ir
 
 /* Extended Capability IDs */
 #define XHCI_EXT_CAP_ID_LEGACY_SUPPORT          0x01
+#define XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL      0x02
 
 /*
  * USB Legacy Support Capability (USBLEGSUP)
@@ -270,6 +271,20 @@ struct xhci_ir
 #define XHCIB_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE 4
 #define XHCIF_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE (1u << XHCIB_USBLEGCTLSTS_SMI_ONHOSTERR_ENABLE)
 
+/*
+ * Supported Protocol Capability
+ */
+#define XHCIS_XCP_NAMESTRING                    0
+#define XHCI_XCP_NAMESTRING_MASK                0xFFFF
+#define XHCIS_XCP_REV_MINOR                     16
+#define XHCI_XCP_REV_MINOR_MASK                 0xFF
+#define XHCIS_XCP_REV_MAJOR                     24
+#define XHCI_XCP_REV_MAJOR_MASK                 0xFF
+
+#define XHCIS_XCP_PORT_OFFSET                   0
+#define XHCI_XCP_PORT_OFFSET_MASK               0xFF
+#define XHCIS_XCP_PORT_COUNT                    8
+#define XHCI_XCP_PORT_COUNT_MASK                0xFF
 
 /*
  * Transfer Request Block
