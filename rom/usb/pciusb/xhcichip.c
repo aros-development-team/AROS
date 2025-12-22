@@ -375,52 +375,81 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
     return -1;
 }
 
-WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
-                   ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast)
+WORD xhciQueueData(struct PCIController *hc,
+                   volatile struct pcisusbXHCIRing *ring,
+                   UQUAD payload,
+                   ULONG plen,
+                   ULONG pmax,
+                   ULONG trbflags,
+                   BOOL  ioconlast)
 {
     ULONG remaining = plen;
     WORD  queued, firstqueued = -1;
 
-    /*
-     * For BULK/INT transfers we typically want a single TD completion on the
-     * final TRB (IOC on last). If we emit multiple TRBs without chaining, some
-     * controllers/emulators may complete the TD early on a short packet and not
-     * generate an event because the completing TRB lacked IOC/ISP.
-     *
-     * When the caller did not explicitly request chaining (TRBF_FLAG_CH),
-     * auto-chain intermediate TRBs and set ISP to ensure an event is raised if
-     * a short packet terminates the TD before the last TRB.
-     *
-     * Control transfers explicitly manage CH/IOC across Setup/Data/Status, so
-     * we only apply this auto-chaining when CH is not already set and IOC-on-last
-     * is requested.
-     */
-    const BOOL auto_chain = (ioconlast && ((trbflags & TRBF_FLAG_CH) == 0));
+    const ULONG base_type = (trbflags & TRB_FLAG_TYPE_MASK);
 
-    (void)pmax; /* pmax splitting is not required for xHCI; transfer length is per-TRB. */
-    do {
-        ULONG trblen = remaining;
-        ULONG txflags = trbflags;
+    ULONG base_flags = (trbflags & ~TRB_FLAG_TYPE_MASK);
 
-        /* Limit to the TRB Transfer Length field width (17 bits). */
-        if (trblen > XHCI_TRB_MAX_XFER)
-            trblen = XHCI_TRB_MAX_XFER;
+    /* Preserve caller intent to chain beyond this helper (e.g. Control DATA -> STATUS). */
+    const BOOL force_chain_last = (base_flags & TRBF_FLAG_CH) != 0;
 
-        if (auto_chain) {
-            /* Chain all but the final TRB of this TD. */
-            if (remaining > trblen)
-                txflags |= TRBF_FLAG_CH;
-            else
-                txflags &= ~TRBF_FLAG_CH;
+    /* Manage CH/IOC locally; also disallow IDT leakage into Data/Normal TRBs. */
+    base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC | TRBF_FLAG_IDT);
 
-            /* Ensure we get an event if a short packet ends the TD early. */
-            txflags |= TRBF_FLAG_ISP;
-        }
+    const BOOL is_ctl_data_stage = (base_type == TRBF_FLAG_TRTYPE_DATA);
 
-        if (ioconlast && ((remaining - trblen) == 0))
+    /* Do not split by MaxPacketSize; xHCI TRBs are not packet-sized. */
+    (void)pmax;
+    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK; /* 17-bit length */
+
+    /* Zero-length payload: queue a single TRB with len=0 (ZLP). */
+    if (remaining == 0) {
+        ULONG txflags = base_flags | base_type;
+
+        if (force_chain_last)
+            txflags |= TRBF_FLAG_CH;
+
+        if (ioconlast)
             txflags |= TRBF_FLAG_IOC;
 
-        queued = xhciQueueTRB(hc, ring, payload + (plen - remaining), trblen, txflags);
+        return xhciQueueTRB(hc, ring, payload, 0, txflags);
+    }
+
+    while (remaining > 0) {
+        const ULONG offset = (plen - remaining);
+        ULONG trblen = remaining;
+        ULONG txflags;
+
+        if (trblen > segmax)
+            trblen = segmax;
+
+        /* Select TRB type for this segment. */
+        if (is_ctl_data_stage) {
+            if (offset == 0) {
+                txflags = base_flags | TRBF_FLAG_TRTYPE_DATA;
+            } else {
+                /* Subsequent segments: Normal TRBs; DS_DIR is only valid on Data Stage TRB. */
+                txflags = (base_flags & ~TRBF_FLAG_DS_DIR) | TRBF_FLAG_TRTYPE_NORMAL;
+            }
+        } else {
+            txflags = base_flags | base_type;
+        }
+
+        /* CH on all but the last segment, and optionally on the last if the caller requested it. */
+        if (remaining > trblen)
+            txflags |= TRBF_FLAG_CH;
+        else if (force_chain_last)
+            txflags |= TRBF_FLAG_CH;
+        else
+            txflags &= ~TRBF_FLAG_CH;
+
+        /* IOC only on the last segment if requested. */
+        if (ioconlast && (remaining == trblen))
+            txflags |= TRBF_FLAG_IOC;
+        else
+            txflags &= ~TRBF_FLAG_IOC;
+
+        queued = xhciQueueTRB(hc, ring, payload + offset, trblen, txflags);
         if (queued == -1)
             return queued;
 
@@ -428,7 +457,7 @@ WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ri
             firstqueued = queued;
 
         remaining -= trblen;
-    } while (remaining > 0);
+    }
 
     return firstqueued;
 }
