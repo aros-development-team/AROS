@@ -321,6 +321,28 @@ static void xhciInsertTRB(struct PCIController *hc,
         xhciSetPointer(hc, dst->dbp, dma_payload);
     }
 
+    /*
+     * Sanitize TRB control flags for control transfer stage TRBs.
+     *
+     * The xHCI specification requires that:
+     *  - Setup Stage TRB has bits [4:1] reserved and they must be zero.
+     *  - Control transfer stages are separate TDs; stage TRBs must not be chained
+     *    together using the Chain bit.
+     *
+     * Some build environments define TRB type constants that inadvertently include
+     * the Chain bit for Setup/Data Stage TRBs. VirtualBox's xHCI emulation is strict
+     * here and will not return IN data if these reserved/illegal bits are set.
+     */
+    {
+        const ULONG type = (trbflags >> 10) & 0x3f;
+        if (type == 2) {
+            /* Setup Stage TRB: clear reserved bits [4:1]. */
+            trbflags &= ~0x1eUL;
+        } else if (type == 3) {
+            /* Data Stage TRB: do not chain into the Status Stage TRB. */
+            trbflags &= ~TRBF_FLAG_CH;
+        }
+    }
     dst->tparams = (plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
     dst->flags   = trbflags;
 
@@ -346,12 +368,7 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 
     if (xhciRingEntriesFree(ring) > 1) {
         if (ring->next >= XHCI_EVENT_RING_TRBS - 1) {
-            UQUAD link_dma;
-#if !defined(PCIUSB_NO_CPUTOPCI)
-            link_dma = (IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)&ring->ring[0]);
-#else
-            link_dma = (IPTR)&ring->ring[0];
-#endif
+            UQUAD link_dma = (UQUAD)(IPTR)&ring->ring[0];
 
             /*
              * If this is the last ring element, insert a link
@@ -617,7 +634,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                      flags);
 
     /* ---- Address Device ---- */
-    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, 1, NULL)) {
+    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_DMA, 0, NULL)) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Address Device failed" DEBUGCOLOR_RESET "\n");
 
@@ -1745,7 +1762,7 @@ void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     if (!ioreq)
         return;
 
-    /* Get the host’s root unit for this controller */
+    /* Get the host's root unit for this controller */
     unit = hc->hc_Unit;
 
     /*
@@ -1754,7 +1771,7 @@ void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
      *      - Deactivate the endpoint for this IOReq
      *      - Clear hu->hu_DevBusyReq[DevEP]
      *      - Clear hu->hu_NakTimeoutFrame[DevEP]
-     *      - Remove the IOReq from the HC’s internal queue
+     *      - Remove the IOReq from the HC's internal queue
      */
     xhciFreeAsyncContext(hc, unit, ioreq);
 
@@ -1914,6 +1931,14 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu)
     ULONG hcsparams3 = AROS_LE2LONG(xhciregs->hcsparams3);
     ULONG hccparams1 = AROS_LE2LONG(xhciregs->hccparams1);
     ULONG hccparams2 = AROS_LE2LONG(xhciregs->hccparams2);
+    UWORD xhciPortLimit = (UWORD)((hcsparams1 >> 24) & 0xFF);
+
+    if (xhciPortLimit > MAX_ROOT_PORTS) {
+        xhciPortLimit = MAX_ROOT_PORTS;
+    }
+
+    memset(hc->hc_PortProtocol, XHCI_PORT_PROTOCOL_UNKNOWN, sizeof(hc->hc_PortProtocol));
+    hc->hc_PortProtocolValid = FALSE;
 
     /* Extended Capabilities Pointer comes from HCCPARAMS1 (DWORD offset) */
     xhciECPOff = ((hccparams1 >> XHCIS_HCCPARAMS1_ECP) & XHCI_HCCPARAMS1_ECP_SMASK) << 2;
@@ -1973,8 +1998,42 @@ takeownership:
             volatile ULONG *smictl = (volatile ULONG *)((IPTR)capreg + 4);
             *smictl = AROS_LONG2LE(0);
             (void)*smictl;
+        } else if (capid == XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL) {
+            ULONG capprot = AROS_LE2LONG(*(capreg + 1));
+            ULONG capports = AROS_LE2LONG(*(capreg + 2));
+            UBYTE major = (capprot >> XHCIS_XCP_REV_MAJOR) & XHCI_XCP_REV_MAJOR_MASK;
+            UBYTE minor = (capprot >> XHCIS_XCP_REV_MINOR) & XHCI_XCP_REV_MINOR_MASK;
+            UWORD name = (UWORD)(capprot & XHCI_XCP_NAMESTRING_MASK);
+            UBYTE portOffset = (capports >> XHCIS_XCP_PORT_OFFSET) & XHCI_XCP_PORT_OFFSET_MASK;
+            UBYTE portCount = (capports >> XHCIS_XCP_PORT_COUNT) & XHCI_XCP_PORT_COUNT_MASK;
 
-            break;
+            pciusbXHCIDebug("xHCI",
+                            DEBUGCOLOR_SET "  XCP protocol '%c%c' rev %u.%u ports %u..%u"
+                            DEBUGCOLOR_RESET" \n",
+                            (name & 0xFF),
+                            (name >> 8) & 0xFF,
+                            major, minor,
+                            portOffset,
+                            (UWORD)(portOffset + portCount - 1));
+
+            if (portOffset > 0 && portCount > 0) {
+                UWORD start = (UWORD)(portOffset - 1);
+                UWORD end = (UWORD)(start + portCount);
+                UBYTE proto = XHCI_PORT_PROTOCOL_UNKNOWN;
+
+                if (major >= XHCI_PORT_PROTOCOL_USB3) {
+                    proto = XHCI_PORT_PROTOCOL_USB3;
+                } else if (major == XHCI_PORT_PROTOCOL_USB2) {
+                    proto = XHCI_PORT_PROTOCOL_USB2;
+                }
+
+                if (proto != XHCI_PORT_PROTOCOL_UNKNOWN) {
+                    for (UWORD port = start; port < end && port < xhciPortLimit; port++) {
+                        hc->hc_PortProtocol[port] = proto;
+                    }
+                    hc->hc_PortProtocolValid = TRUE;
+                }
+            }
         }
 
         if (nextcap == 0) {

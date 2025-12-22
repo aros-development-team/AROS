@@ -48,6 +48,21 @@ static inline BOOL xhciIsUsb3(ULONG portsc)
     return (sb == XHCIF_PR_PORTSC_SUPERSPEED) || (sb == XHCIF_PR_PORTSC_SUPERSPEEDPLUS);
 }
 
+static inline BOOL xhciPortIsUsb3(struct PCIController *hc, UWORD hciport, ULONG portsc)
+{
+    ULONG sb = xhciPortSpeedBits(portsc);
+
+    if (sb != 0) {
+        return xhciIsUsb3(portsc);
+    }
+
+    if (!hc->hc_PortProtocolValid || hciport >= MAX_ROOT_PORTS) {
+        return FALSE;
+    }
+
+    return hc->hc_PortProtocol[hciport] >= XHCI_PORT_PROTOCOL_USB3;
+}
+
 static inline ULONG xhciPortLinkState(ULONG portsc)
 {
     return (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
@@ -136,7 +151,7 @@ static void xhciLogPortState(struct PCIController *hc,
 
     ULONG linkState = xhciPortLinkState(portsc);
     ULONG speedBits = xhciPortSpeedBits(portsc);
-    BOOL  isUsb3    = xhciIsUsb3(portsc);
+    BOOL  isUsb3    = xhciPortIsUsb3(hc, hciport, portsc);
 
     struct pciusbXHCIDevice *devCtx = xhciFindPortDevice(hc, hciport);
     ULONG routeString = devCtx ? devCtx->dc_RouteString : 0;
@@ -180,11 +195,11 @@ static void xhciLogPortState(struct PCIController *hc,
 }
 
 /* Issue a reset appropriate to USB2 vs USB3, with change-bit cleanup. */
-static inline ULONG xhciComposePortResetWrite(ULONG oldportsc)
+static inline ULONG xhciComposePortResetWrite(struct PCIController *hc, UWORD hciport, ULONG oldportsc)
 {
     ULONG rw1c = XHCI_PORTSC_RW1C_MASK;
 
-    if (xhciIsUsb3(oldportsc)) {
+    if (xhciPortIsUsb3(hc, hciport, oldportsc)) {
         /* Warm Port Reset for SS/SS+ */
         return xhciPortscComposeWrite(oldportsc, XHCIF_PR_PORTSC_WPR, XHCIF_PR_PORTSC_PR, rw1c);
     }
@@ -230,7 +245,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
             break;
         }
 
-        if (xhciIsUsb3(oldval)) {
+        if (xhciPortIsUsb3(hc, hciport, oldval)) {
             if (xhciUsb3Operational(oldval)) {
                 pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) already operational (U0)"
@@ -242,7 +257,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB3) issuing Warm Reset (WPR)"
                 DEBUGCOLOR_RESET " \n");
-            writeval = xhciComposePortResetWrite(oldval);
+            writeval = xhciComposePortResetWrite(hc, hciport, oldval);
             cmdgood = TRUE;
         } else {
             if (oldval & XHCIF_PR_PORTSC_PED) {
@@ -256,7 +271,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
             pciusbXHCIDebug("xHCI",
                 DEBUGCOLOR_SET "xHCI: PORT_ENABLE (USB2) issuing Reset (PR)"
                 DEBUGCOLOR_RESET " \n");
-            writeval = xhciComposePortResetWrite(oldval);
+            writeval = xhciComposePortResetWrite(hc, hciport, oldval);
             cmdgood = TRUE;
         }
         break;
@@ -292,7 +307,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
         }
 
         if (oldval & XHCIF_PR_PORTSC_CCS) {
-            if (xhciIsUsb3(oldval)) {
+            if (xhciPortIsUsb3(hc, hciport, oldval)) {
                 pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "xHCI:     >Warm Reset (WPR) for USB3"
                     DEBUGCOLOR_RESET " \n");
@@ -302,7 +317,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                     DEBUGCOLOR_RESET " \n");
             }
 
-            writeval = xhciComposePortResetWrite(oldval);
+            writeval = xhciComposePortResetWrite(hc, hciport, oldval);
 
             /* Enable enumeration again on this port. */
             unit->hu_DevControllers[0] = hc;
@@ -576,7 +591,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
      * - USB2: use PED.
      * - USB3: treat CCS+U0 as enabled/operational for hub model.
      */
-    if (xhciIsUsb3(oldportsc)) {
+    if (xhciPortIsUsb3(hc, hciport, oldportsc)) {
         if (xhciUsb3Operational(oldportsc)) {
             *mptr |= AROS_WORD2LE(UPSF_PORT_ENABLE);
         }
@@ -626,7 +641,7 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
      * Suspend:
      * Keep the legacy USB2 heuristic only; USB3 PLS encodes U-states.
      */
-    if (!xhciIsUsb3(oldportsc)) {
+    if (!xhciPortIsUsb3(hc, hciport, oldportsc)) {
         if (((oldportsc >> XHCIS_PR_PORTSC_PLS) & XHCI_PR_PORTSC_PLS_SMASK) == 2) {
             *mptr |= AROS_WORD2LE(UPSF_PORT_SUSPEND);
         }

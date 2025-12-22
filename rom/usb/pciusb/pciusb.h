@@ -270,6 +270,8 @@ struct PCIController
     struct Task                 *hc_ReadySigTask, *hc_xHCERTask, *hc_xHCPortTask;
     struct pciusbXHCIDevice    *hc_Devices[USB_DEV_MAX];
     volatile struct pciusbXHCITRBParams  hc_CmdResults[USB_DEV_MAX];
+    UBYTE                       hc_PortProtocol[MAX_ROOT_PORTS];
+    BOOL                        hc_PortProtocolValid;
 #endif
 
     ULONG                       hc_FrameCounter;
