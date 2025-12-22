@@ -19,6 +19,12 @@ const struct PsdWStringMap usbclasscodestr[] =
     { BLUETOOTH_CLASSCODE, "Bluetooth" },
     { FWUPGRADE_CLASSCODE, "Firmware upgrade" },
     { VENDOR_CLASSCODE,    "Vendor" },
+    { 0x0F,               "Personal Healthcare" },
+    { 0x10,               "Audio/Video Devices" },
+    { 0x11,               "Billboard" },
+    { 0x12,               "USB Type-C Bridge" },
+    { 0xDC,               "Diagnostic Device" },
+
     { 0, NULL }
 };
 /* \\\ */
@@ -48,6 +54,8 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (3<<24)|(CDC_DEVMANGM_SUBCLASS<<8)|CDCCTRL_CLASSCODE  , "Device Management" },
     { (3<<24)|(CDC_MDLM_SUBCLASS    <<8)|CDCCTRL_CLASSCODE  , "Mobile Direct Line" },
     { (3<<24)|(CDC_OBEX_SUBCLASS    <<8)|CDCCTRL_CLASSCODE  , "OBEX" },
+    { (3<<24)|(0x0D<<8)                 |CDCCTRL_CLASSCODE  , "Network Control Model (NCM)" },
+    { (3<<24)|(0x0E<<8)                 |CDCCTRL_CLASSCODE  , "Mobile Broadband (MBIM)" },
     { (1<<24)                           |CDCCTRL_CLASSCODE  , "CDC Control" },
 
     { (1<<24)                           |CDCDATA_CLASSCODE  , "CDC Data" },
@@ -73,11 +81,13 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (7<<24)|(MS_PROTO_CB  <<16)|(MS_FDDATAPI_SUBCLASS<<8)|MASSSTORE_CLASSCODE, "Floppy" },
     { (7<<24)|(MS_PROTO_BULK<<16)|(MS_ATAPI_SUBCLASS   <<8)|MASSSTORE_CLASSCODE, "MassStorage (CD/DVD)" },
     { (7<<24)|(MS_PROTO_BULK<<16)|(MS_SCSI_SUBCLASS    <<8)|MASSSTORE_CLASSCODE, "MassStorage (SCSI)" },
+    { (7<<24)|(MS_PROTO_UAS <<16)|(MS_SCSI_SUBCLASS    <<8)|MASSSTORE_CLASSCODE, "MassStorage (UAS/UASP)" },
     { (3<<24)                    |(MS_RBC_SUBCLASS     <<8)|MASSSTORE_CLASSCODE, "MassStorage (Flash)" },
     { (5<<24)|(MS_PROTO_CBI <<16)                          |MASSSTORE_CLASSCODE, "MassStorage (CBI)" },
     { (5<<24)|(MS_PROTO_CB  <<16)                          |MASSSTORE_CLASSCODE, "MassStorage (CB)" },
     { (1<<24)                                              |MASSSTORE_CLASSCODE, "MassStorage" },
 
+    { (7<<24)|(0<<16)                   |HUB_CLASSCODE      , "Hub (Full-speed)" },
     { (7<<24)|(1<<16)                   |HUB_CLASSCODE      , "Hub (Hi-speed, Single TT)" },
     { (7<<24)|(2<<16)                   |HUB_CLASSCODE      , "Hub (Hi-speed, Multi TT)" },
     { (7<<24)|(3<<16)                   |HUB_CLASSCODE      , "Hub (SuperSpeed)" },
@@ -87,6 +97,7 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
 
     { (1<<24)                           |SMARTCARD_CLASSCODE, "Chip-/Smartcard" },
     { (1<<24)                           |SECURITY_CLASSCODE , "Content security" },
+    { (7<<24)|(1<<16)|(MISC_COMMON_SUBCLASS<<8)|MISC_CLASSCODE, "Misc (Interface Association)" },
     { (1<<24)                           |MISC_CLASSCODE     , "Miscellaneous Device" },
 
     { (3<<24)|(1<<8)                    |VIDEO_CLASSCODE    , "Video Control" },
@@ -95,6 +106,7 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (1<<24)                           |VIDEO_CLASSCODE    , "Video Device" },
 
     { (7<<24)|(1<<16)|(1<<8)            |BLUETOOTH_CLASSCODE, "Bluetooth" },
+    { (7<<24)|(3<<16)|(1<<8)            |BLUETOOTH_CLASSCODE, "RNDIS (Remote NDIS)" },
     { (3<<24)|(1<<8)                    |BLUETOOTH_CLASSCODE, "Wireless Radio" },
     { (3<<24)|(2<<8)                    |BLUETOOTH_CLASSCODE, "Wireless USB Wire Adapter" },
     { (1<<24)                           |BLUETOOTH_CLASSCODE, "Wireless" },
@@ -104,6 +116,9 @@ const struct PsdULStringMap usbcomboclasscodestr[] =
     { (3<<24)|(3<<8)                    |FWUPGRADE_CLASSCODE, "Test and Measurement" },
     { (1<<24)                           |FWUPGRADE_CLASSCODE, "Application Specific" },
 
+    { (1<<24)                           | 0x0F              , "Personal Healthcare" },
+    { (1<<24)                           | 0x11              , "Billboard" },
+    { (1<<24)                           | 0xDC              , "Diagnostic Device" },
     { (1<<24)                           |VENDOR_CLASSCODE   , "Vendor" },
 
     { 0, NULL }
