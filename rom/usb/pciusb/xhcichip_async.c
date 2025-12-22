@@ -40,6 +40,13 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+/* Setup Stage TRB - TRT (Transfer Type) field (bits 17:16 in dword3). */
+#define TRBS_FLAG_SETUP_TRT                     16
+#define TRB_FLAG_SETUP_TRT_MASK                 (3UL << TRBS_FLAG_SETUP_TRT)
+#define TRBF_FLAG_SETUP_TRT_NONE                (0UL << TRBS_FLAG_SETUP_TRT)
+#define TRBF_FLAG_SETUP_TRT_OUT                 (2UL << TRBS_FLAG_SETUP_TRT)
+#define TRBF_FLAG_SETUP_TRT_IN                  (3UL << TRBS_FLAG_SETUP_TRT)
+
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
@@ -50,29 +57,37 @@ void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct
 
 static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype, ULONG has_data)
 {
-    ULONG setupflags;
+    ULONG setupflags = 0;
 
-    setupflags = tdflags & ~(TRB_FLAG_TYPE_MASK);
-    setupflags |= (TRBF_FLAG_TRTYPE_SETUP | TRBF_FLAG_IDT | TRBF_FLAG_CH);
+     /*
+     * A Setup Stage TD consists of a single Setup Stage TRB.  The Setup Stage
+     * TRB does not define ENT/ISP/NS/CH fields, so those bit positions are
+     * reserved and must be kept clear.
+     *
+     * Keep only bits that are valid for Setup Stage TRBs (e.g. BEI),
+     * then add TYPE/IDT/TRT.
+     */
+    if (tdflags & TRBF_FLAG_BEI)
+        setupflags |= TRBF_FLAG_BEI;
+
+    setupflags |= (TRBF_FLAG_TRTYPE_SETUP | TRBF_FLAG_IDT);
 
     /*
-     * TRB Transfer Type (TRT) bits:
-     *
-     * - No DATA stage: TRT = 0
-     * - DATA OUT stage: TRT = 2
-     * - DATA IN stage:  TRT = 3
+     * TRT (Transfer Type):
+     *  - No DATA stage: TRT = 0
+     *  - DATA OUT stage: TRT = 2
+     *  - DATA IN stage:  TRT = 3
      *
      * We derive the DATA direction from TRBF_FLAG_DS_DIR (set for IN).
      */
+    setupflags &= ~TRB_FLAG_SETUP_TRT_MASK;
+
     if (!has_data) {
-        /* No data stage. Make sure TRT is "no data". */
-        setupflags &= ~(3UL << 16);
+        setupflags |= TRBF_FLAG_SETUP_TRT_NONE;
     } else if (tdflags & TRBF_FLAG_DS_DIR) {
-        /* DATA IN */
-        setupflags |= (3UL << 16);
+        setupflags |= TRBF_FLAG_SETUP_TRT_IN;
     } else {
-        /* DATA OUT */
-        setupflags |= (2UL << 16);
+        setupflags |= TRBF_FLAG_SETUP_TRT_OUT;
     }
 
     return setupflags;
@@ -151,10 +166,14 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     /* DATA stage (if any) */
     if (has_data) {
         /*
-         * Control TD must be chained: Setup -> Data -> Status.
-         * Therefore Data Stage TRB(s) must have CH=1 when Status follows.
+         * Control transfers use separate TDs:
+         *  - Setup Stage TD:   single Setup Stage TRB (no Chain bit)
+         *  - Data Stage TD:    Data Stage TRB optionally chained to Normal/Event Data TRBs
+         *  - Status Stage TD:  Status Stage TRB (optionally chained to Event Data TRB)
+         *
+         * Therefore, do not chain the DATA stage to the STATUS stage.
          */
-        queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags | TRBF_FLAG_CH, FALSE);
+        queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, FALSE);
         pciusbXHCIDebug("xHCI",
                         "xhciQueuePayloadTRBs (DATA) -> queued=%d\n",
                         (int)queued);

@@ -321,28 +321,6 @@ static void xhciInsertTRB(struct PCIController *hc,
         xhciSetPointer(hc, dst->dbp, dma_payload);
     }
 
-    /*
-     * Sanitize TRB control flags for control transfer stage TRBs.
-     *
-     * The xHCI specification requires that:
-     *  - Setup Stage TRB has bits [4:1] reserved and they must be zero.
-     *  - Control transfer stages are separate TDs; stage TRBs must not be chained
-     *    together using the Chain bit.
-     *
-     * Some build environments define TRB type constants that inadvertently include
-     * the Chain bit for Setup/Data Stage TRBs. VirtualBox's xHCI emulation is strict
-     * here and will not return IN data if these reserved/illegal bits are set.
-     */
-    {
-        const ULONG type = (trbflags >> 10) & 0x3f;
-        if (type == 2) {
-            /* Setup Stage TRB: clear reserved bits [4:1]. */
-            trbflags &= ~0x1eUL;
-        } else if (type == 3) {
-            /* Data Stage TRB: do not chain into the Status Stage TRB. */
-            trbflags &= ~TRBF_FLAG_CH;
-        }
-    }
     dst->tparams = (plen & TRB_TPARAMS_DS_TRBLEN_SMASK);
     dst->flags   = trbflags;
 
