@@ -2,6 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+#USER_CPPFLAGS += -DDEBUG=1
 USER_LDFLAGS := -static
 
 FILES := \
@@ -17,6 +18,7 @@ FILES := \
 
 %build_module_library mmake=kernel-usb-classes-massstorage \
     modname=massstorage modtype=usbclass modsuffix="class" \
-    files="$(FILES)"
+    files="$(FILES)" \
+    uselibs="debug"
 
 %common
