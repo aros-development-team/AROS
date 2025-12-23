@@ -32,7 +32,7 @@ EndIf
 
 If EXISTS "SYS:Classes/USB"
     Assign "USBCLASSES:" "SYS:Classes/USB"
-    AddUSBClasses >NIL:
+    Run <NIL: >NIL: QUIET AddUSBClasses
 EndIf
 
 If EXISTS "SYS:DiskImages"
