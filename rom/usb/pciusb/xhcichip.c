@@ -18,6 +18,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
+#include "xhcichip_schedule.h"
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
@@ -1094,6 +1095,15 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
         ioreq->iouh_DriverPrivate1 = NULL;
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
 
+        if (driprivate->dpBounceBuf) {
+            xhciReleaseDMABuffer(hc, ioreq, 0, driprivate->dpBounceDir,
+                                 driprivate->dpBounceBuf);
+            driprivate->dpBounceBuf = NULL;
+            driprivate->dpBounceData = NULL;
+            driprivate->dpBounceLen = 0;
+            driprivate->dpBounceDir = 0;
+        }
+
         /* Deactivate the endpoint */
         if (driprivate->dpDevice) {
             struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
@@ -1437,10 +1447,12 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
             transferred = ioreq->iouh_Length;
         }
 
-        if ((ccode == TRB_CC_SUCCESS) && ioreq->iouh_Data && transferred) {
-            ULONG postlen = transferred;
-            CachePostDMA(ioreq->iouh_Data, &postlen,
-                          (ioreq->iouh_Dir == UHDIR_IN) ? DMAFLAGS_POSTREAD : DMAFLAGS_POSTWRITE);
+        if ((ccode == TRB_CC_SUCCESS) && ioreq->iouh_Data) {
+            xhciReleaseDMABuffer(hc, ioreq, transferred, effdir, driprivate->dpBounceBuf);
+            driprivate->dpBounceBuf = NULL;
+            driprivate->dpBounceData = NULL;
+            driprivate->dpBounceLen = 0;
+            driprivate->dpBounceDir = 0;
         }
 
         ioreq->iouh_Actual = transferred;

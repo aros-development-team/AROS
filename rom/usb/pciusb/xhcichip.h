@@ -111,6 +111,10 @@ struct pciusbXHCIIODevPrivate
     UWORD                               dpTxSTRB;                                   // Transaction TRB
     UWORD                               dpTxETRB;                                   // Transaction TRB
     UWORD                               dpSttTRB;                                   // Status TRB
+    APTR                                dpBounceBuf;
+    APTR                                dpBounceData;
+    ULONG                               dpBounceLen;
+    UWORD                               dpBounceDir;
     BYTE                                dpCC;
 };
 

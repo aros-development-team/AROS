@@ -10,6 +10,7 @@
 #include <proto/poseidon.h>
 
 #include <devices/usb_hub.h>
+#include <exec/memory.h>
 
 #include "uhwcmd.h"
 #include "xhcichip_schedule.h"
@@ -42,6 +43,60 @@ UBYTE xhciEndpointIDFromIndex(UWORD wIndex)
         epid |= 0x01;
 
     return epid;
+}
+
+APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+    ULONG *dmalen, UWORD effdir, APTR *bounceOut)
+{
+    APTR data = ioreq->iouh_Data;
+    APTR bounce = NULL;
+
+    if (bounceOut)
+        *bounceOut = NULL;
+
+    if (!data || !dmalen || (*dmalen == 0))
+        return data;
+
+#if __WORDSIZE == 64
+    if (!(hc->hc_Flags & HCF_ADDR64)) {
+        if ((((IPTR)data + *dmalen - 1) >> 32) != 0) {
+            bounce = AllocVec(*dmalen, MEMF_31BIT|MEMF_PUBLIC);
+            if (!bounce)
+                return NULL;
+
+            if (effdir == UHDIR_OUT)
+                CopyMem(data, bounce, *dmalen);
+
+            if (bounceOut)
+                *bounceOut = bounce;
+        }
+    }
+    data = bounce ? bounce : data;
+#endif
+    CachePreDMA(data, dmalen,
+                (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
+
+    return data;
+}
+
+void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+    ULONG actual, UWORD effdir, APTR bounceBuf)
+{
+    APTR data = bounceBuf ? bounceBuf : ioreq->iouh_Data;
+    ULONG postlen = actual;
+
+    if (data && actual) {
+        CachePostDMA(data, &postlen,
+                     (effdir == UHDIR_IN) ? DMAFLAGS_POSTREAD : DMAFLAGS_POSTWRITE);
+    }
+
+    if (bounceBuf) {
+        if ((effdir == UHDIR_IN) && actual)
+            CopyMem(bounceBuf, ioreq->iouh_Data, actual);
+        FreeVec(bounceBuf);
+    }
+
+    (void)hc;
 }
 
 static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *ioreq,
@@ -141,6 +196,10 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
         driprivate->dpDevice = devCtx;
         driprivate->dpEPID   = txep;
+        driprivate->dpBounceBuf = NULL;
+        driprivate->dpBounceData = NULL;
+        driprivate->dpBounceLen = 0;
+        driprivate->dpBounceDir = 0;
         pciusbXHCIDebugV("xHCI",
                         "Reusing existing driver private=%p, devCtx=%p, refreshed EPID=%u\n",
                         driprivate, devCtx, driprivate->dpEPID);
@@ -223,8 +282,17 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     WORD queued;
 
     UWORD effdir = xhciEffectiveDataDir(ioreq);
-    APTR dmaptr = CachePreDMA(ioreq->iouh_Data, &dmalen,
-                              (effdir == UHDIR_IN) ? DMAFLAGS_PREREAD : DMAFLAGS_PREWRITE);
+    APTR bounce = NULL;
+    APTR dmaptr = xhciPrepareDMABuffer(hc, ioreq, &dmalen, effdir, &bounce);
+    if (!dmaptr && dmalen) {
+        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+        return -1;
+    }
+
+    driprivate->dpBounceBuf = bounce;
+    driprivate->dpBounceData = bounce ? ioreq->iouh_Data : NULL;
+    driprivate->dpBounceLen = dmalen;
+    driprivate->dpBounceDir = effdir;
     queued = xhciQueueData(hc, epring,
                            (UQUAD)(IPTR)dmaptr,
                            dmalen,
@@ -246,6 +314,12 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
             for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt++)
                 epring->ringio[cnt] = &ioreq->iouh_Req;
         }
+    } else if (driprivate->dpBounceBuf) {
+        xhciReleaseDMABuffer(hc, ioreq, 0, effdir, driprivate->dpBounceBuf);
+        driprivate->dpBounceBuf = NULL;
+        driprivate->dpBounceData = NULL;
+        driprivate->dpBounceLen = 0;
+        driprivate->dpBounceDir = 0;
     }
 
     return queued;

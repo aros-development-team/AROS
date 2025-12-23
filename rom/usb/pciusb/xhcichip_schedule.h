@@ -6,6 +6,11 @@
 
 UBYTE xhciEndpointIDFromIndex(UWORD wIndex);
 
+APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+        ULONG *dmalen, UWORD effdir, APTR *bounceOut);
+void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+        ULONG actual, UWORD effdir, APTR bounceBuf);
+
 BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
         struct pciusbXHCIIODevPrivate **outPrivate);
