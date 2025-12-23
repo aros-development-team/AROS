@@ -55,7 +55,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
     (void)ownerList;
 
     devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
+    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
 
     if ((!devCtx) && allowEp0AutoCreate &&
         (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
@@ -87,7 +87,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
             if ((initep == 0) || !devCtx->dc_EPAllocs[0].dmaa_Ptr) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
-                pciusbXHCIDebug("xHCI",
+                pciusbXHCIDebugV("xHCI",
                                 "Leaving %s early: failed to initialise EP0\n",
                                 __func__);
                 return FALSE;
@@ -96,7 +96,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
     } else if ((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
-        pciusbXHCIDebug("xHCI",
+        pciusbXHCIDebugV("xHCI",
                         "Leaving %s early: endpoint not prepared (txep=%u)\n",
                         __func__, (unsigned)txep);
         return FALSE;
@@ -141,14 +141,15 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
         driprivate->dpDevice = devCtx;
         driprivate->dpEPID   = txep;
-        pciusbXHCIDebug("xHCI",
+        pciusbXHCIDebugV("xHCI",
                         "Reusing existing driver private=%p, devCtx=%p, refreshed EPID=%u\n",
                         driprivate, devCtx, driprivate->dpEPID);
     }
 
+#if defined(DEBUG) && (DEBUG > 1)
     if (driprivate && driprivate->dpDevice)
         xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "shared schedule");
-
+#endif
 
     /* Mark IO as prepared for scheduling; activation/busy tracking is done later
      * in xhciActivateEndpointTransfer().
@@ -207,7 +208,7 @@ BOOL xhciActivateEndpointTransfer(struct PCIController *hc, struct PCIUnit *unit
         return FALSE;
     }
 
-    pciusbXHCIDebugEP("xHCI",
+    pciusbXHCIDebugEPV("xHCI",
                       DEBUGCOLOR_SET "%s: EP ring @ 0x%p (EPID=%u)" DEBUGCOLOR_RESET" \n",
                       __func__, *epringOut, driprivate->dpEPID);
 

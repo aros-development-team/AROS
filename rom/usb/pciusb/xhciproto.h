@@ -160,6 +160,15 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 #define pciusbXHCIDebug(sub,fmt,args...)                pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)             pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugEP(sub,fmt,args...)              pciusbDebug(sub,fmt,##args)
+#if defined(DEBUG) && (DEBUG > 1)
+#define pciusbXHCIDebugV(sub,fmt,args...)         pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugTRBV(sub,fmt,args...)      pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugEPV(sub,fmt,args...)       pciusbDebug(sub,fmt,##args)
+#else
+#define pciusbXHCIDebugV(sub,fmt,args...)
+#define pciusbXHCIDebugTRBV(sub,fmt,args...)
+#define pciusbXHCIDebugEPV(sub,fmt,args...)
+#endif
 void xhciDumpIN(volatile struct xhci_inctx *in);
 void xhciDumpEP(volatile struct xhci_ep *ep);
 void xhciDumpSlot(volatile struct xhci_slot *slot);
@@ -177,6 +186,9 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq);
 #define pciusbXHCIDebug(sub,fmt,args...)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)
 #define pciusbXHCIDebugEP(sub,fmt,args...)
+#define pciusbXHCIDebugV(sub,fmt,args...)
+#define pciusbXHCIDebugTRBV(sub,fmt,args...)
+#define pciusbXHCIDebugEPV(sub,fmt,args...)
 #define xhciDumpIN(x)
 #define xhciDumpEP(x)
 #define xhciDumpSlot(x)

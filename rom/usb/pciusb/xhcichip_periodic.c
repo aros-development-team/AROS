@@ -66,7 +66,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             (unsigned long)ioreq->iouh_Length,
             (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
             (unsigned)ioreq->iouh_Req.io_Command);
-        pciusbXHCIDebug("xHCI",
+        pciusbXHCIDebugV("xHCI",
             DEBUGCOLOR_SET "    IOReq=%p Flags=0x%08lx NakTO=%lu MaxPkt=%u Interval=%u" DEBUGCOLOR_RESET"\n",
             ioreq,
             (unsigned long)ioreq->iouh_Flags,
@@ -76,7 +76,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbXHCIDebug("xHCI", "DevEP %02lx in use!\n", devadrep);
+            pciusbXHCIDebugV("xHCI", "DevEP %02lx in use!\n", devadrep);
             continue;
         }
 
@@ -108,7 +108,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
+            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
             BOOL txdone = FALSE;
@@ -120,7 +120,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
                 if (queued != -1) {
                     AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
-                    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
+                    pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                     txdone = TRUE;
                 }
             }

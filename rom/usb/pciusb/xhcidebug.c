@@ -35,6 +35,9 @@
 #endif
 #endif
 
+#define XHCI_ENABLESLOTDEBUG
+#define XHCI_ENABLEEPDEBUG
+
 void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 {
     if (ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)

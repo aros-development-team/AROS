@@ -73,7 +73,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             inctx = (volatile struct xhci_inctx *)dmaaddr;
             slot = xhciInputSlotCtx(inctx, ctxoff);
 
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot);
+            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: slot input context @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, slot);
         }
 
         if (slot) {
@@ -81,7 +81,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
 
             port = (slotctx1 >> 16) & 0xff;
 
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
+            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
 
             if (port == 0 || port > hc->hc_NumPorts) {
                 pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: invalid port in slot context (slot=%u port=%u)" DEBUGCOLOR_RESET" \n",
@@ -93,7 +93,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
             portsc = AROS_LE2LONG(xhciports[port - 1].portsc);
 
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
+            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
             pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
@@ -333,7 +333,7 @@ AROS_UFH0(void, xhciEventRingTask)
     for (;;) {
         ULONG xhcictsigs = Wait(1 << hc->hc_DoWorkSignal);
 #if defined(DEBUG) && (DEBUG > 1)
-        pciusbXHCIDebug("xHCI",
+        pciusbXHCIDebugV("xHCI",
                         DEBUGCOLOR_SET "IDnest %d TDNest %d"
                         DEBUGCOLOR_RESET" \n",
                         hc->hc_xHCERTask->tc_IDNestCnt, hc->hc_xHCERTask->tc_TDNestCnt);

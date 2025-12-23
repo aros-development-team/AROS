@@ -345,15 +345,15 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
                   ULONG plen, ULONG trbflags)
 {
     if (trbflags & TRBF_FLAG_IDT) {
-        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, $%02x %02x %02x%02x %02x%02x %02x%02x, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring,
+        pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, $%02x %02x %02x%02x %02x%02x %02x%02x, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring,
                        ((UBYTE *)&payload)[0], ((UBYTE *)&payload)[1], ((UBYTE *)&payload)[3], ((UBYTE *)&payload)[2],
                        ((UBYTE *)&payload)[5], ((UBYTE *)&payload)[4], ((UBYTE *)&payload)[7], ((UBYTE *)&payload)[6],
                        plen, trbflags);
     } else
-        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, 0x%p, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring, payload, plen, trbflags);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, 0x%p, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring, payload, plen, trbflags);
 
     if (!ring) {
-        pciusbXHCIDebugTRB("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
+        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
         return FALSE;
     }
 
@@ -374,15 +374,15 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
                 ring->end &= ~RINGENDCFLAG;
             else
                 ring->end |= RINGENDCFLAG;
-            pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Ring Re-Linked!!" DEBUGCOLOR_RESET" \n");
+            pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Ring Re-Linked!!" DEBUGCOLOR_RESET" \n");
         }
 
         xhciInsertTRB(hc, ring, payload, trbflags, plen);
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
         return ring->next++;
     }
 
-    pciusbXHCIDebugTRB("xHCI", DEBUGWARNCOLOR_SET "NO SPACE ON RING!!\nnext = %u\nlast = %u" DEBUGCOLOR_RESET" \n", ring->next, (ring->end & ~RINGENDCFLAG));
+    pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO SPACE ON RING!!\nnext = %u\nlast = %u" DEBUGCOLOR_RESET" \n", ring->next, (ring->end & ~RINGENDCFLAG));
     return -1;
 }
 
@@ -739,7 +739,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
 
     epid = xhciGetEPID(endpoint, dir);
 
-    pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: EPID %u" DEBUGCOLOR_RESET" \n", __func__, epid);
+    pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "%s: EPID %u" DEBUGCOLOR_RESET" \n", __func__, epid);
 
     /* Test if already prepared */
     if (devCtx->dc_EPAllocs[epid].dmaa_Ptr == NULL) {
@@ -748,7 +748,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
                             sizeof(struct pcisusbXHCIRing),
                             XHCI_RING_ALIGN, (1 << 16));
         if (devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
-            pciusbXHCIDebugEP("xHCI",
+            pciusbXHCIDebugEPV("xHCI",
                               DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
                               devCtx->dc_EPAllocs[epid].dmaa_Ptr,
                               devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr,
@@ -760,7 +760,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     #else
             devCtx->dc_EPAllocs[epid].dmaa_DMA = devCtx->dc_EPAllocs[epid].dmaa_Ptr;
     #endif
-            pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n",
+            pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n",
                               devCtx->dc_EPAllocs[epid].dmaa_DMA);
         } else {
             pciusbError("xHCI",
@@ -857,7 +857,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     /* Reset the endpoint context so we don't inherit stale controller values. */
     memset((void *)ep, 0, sizeof(*ep));
 
-    pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "EP input Ctx @ 0x%p" DEBUGCOLOR_RESET" \n", ep);
+    pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "EP input Ctx @ 0x%p" DEBUGCOLOR_RESET" \n", ep);
 
     ep->ctx[1] &= ~((ULONG)7 << EPS_CTX_TYPE);
     switch (type) {
@@ -942,7 +942,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     /* wMaxPacketSize field */
     ep->ctx[1] |= (maxpacket << EPS_CTX_PACKETMAX);
 
-    pciusbXHCIDebugEP("xHCI",
+    pciusbXHCIDebugEPV("xHCI",
                       DEBUGCOLOR_SET "Setting de-queue ptr to 0x%p" DEBUGCOLOR_RESET" \n",
                       devCtx->dc_EPAllocs[epid].dmaa_DMA);
 
@@ -965,13 +965,13 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIController *hc;
 
     pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
-    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: Dev %u Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
+    pciusbXHCIDebugEPV("xHCI", DEBUGFUNCCOLOR_SET "%s: Dev %u Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
 
     if (!unit)
         return UHIOERR_BADPARAMS;
 
     BOOL rootHubReq = xhciIsRootHubRequest(ioreq, unit);
-    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit);
+    pciusbXHCIDebugEPV("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit);
     hc = xhciGetController(unit);
     if (!hc) {
         return UHIOERR_BADPARAMS;
@@ -1043,7 +1043,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     ULONG epid;
 
     pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
-    pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p, epctx @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit, epctx);
+    pciusbXHCIDebugEPV("xHCI", DEBUGFUNCCOLOR_SET "%s: unit @ 0x%p, epctx @ 0x%p" DEBUGCOLOR_RESET" \n", __func__, unit, epctx);
 
     if (!unit)
         return;
@@ -1117,7 +1117,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
     }
     devadrep = xhciDevEPKey(ioreq);
-    pciusbXHCIDebugEP("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
+    pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
     unit->hu_DevBusyReq[devadrep] = NULL;
     unit->hu_NakTimeoutFrame[devadrep] = 0;
 }
@@ -1174,7 +1174,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
 
     ioreq = (struct IOUsbHWReq *)hc->hc_PeriodicTDQueue.lh_Head;
     while ((nextioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
-        pciusbXHCIDebug("xHCI",
+        pciusbXHCIDebugV("xHCI",
                         DEBUGCOLOR_SET "Examining Periodic IOReq=%p (dev=%u, ep=%u, dir=%s)" DEBUGCOLOR_RESET"\n",
                         ioreq,
                         ioreq->iouh_DevAddr,
@@ -1198,7 +1198,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
          * (set in xhciIntWorkProcess).
          */
         if (driprivate->dpCC > 0) {
-            pciusbXHCIDebug("xHCI",
+            pciusbXHCIDebugV("xHCI",
                             DEBUGCOLOR_SET "Periodic IOReq %p complete (CC=%u)" DEBUGCOLOR_RESET"\n",
                             ioreq, driprivate->dpCC);
 
@@ -1261,7 +1261,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                 actual > 0)
             {
                 UBYTE *b = (UBYTE *)ioreq->iouh_Data;
-                pciusbXHCIDebug("xHCI",
+                pciusbXHCIDebugV("xHCI",
                                 DEBUGCOLOR_SET "Periodic data (dev=%u,ep=%u): first byte=0x%02x len=%lu" DEBUGCOLOR_RESET"\n",
                                 ioreq->iouh_DevAddr,
                                 ioreq->iouh_Endpoint,
@@ -1293,10 +1293,10 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
     }
 
     /* ASYNC (CTRL/BULK) COMPLETIONS */
-    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Checking for Standard work done..." DEBUGCOLOR_RESET" \n");
+    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Checking for Standard work done..." DEBUGCOLOR_RESET" \n");
     ioreq = (struct IOUsbHWReq *)hc->hc_TDQueue.lh_Head;
     while ((nextioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
+        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
         driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
         if (driprivate) {
@@ -1304,7 +1304,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
             devadrep = xhciDevEPKey(ioreq);
 
             if (driprivate->dpCC > TRB_CC_INVALID) {
-                pciusbXHCIDebug("xHCI",
+                pciusbXHCIDebugV("xHCI",
                                 DEBUGCOLOR_SET "IOReq Complete (completion code %u)!"
                                 DEBUGCOLOR_RESET" \n",
                                 driprivate->dpCC);
@@ -1399,17 +1399,17 @@ static BOOL xhciTRBCycleMatches(ULONG trbflags, ULONG cycle)
 BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULONG remaining, ULONG ccode)
 {
     struct pciusbXHCIIODevPrivate *driprivate = NULL;
-    pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
+    pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
     if (!ioreq) {
-        pciusbXHCIDebugTRB("xHCI", DEBUGWARNCOLOR_SET "IOReq missing for completion (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "IOReq missing for completion (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
         return FALSE;
     }
 
     if ((driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1) != NULL) {
         UWORD effdir = xhciEffectiveDataDir(ioreq);
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB);
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
         driprivate->dpCC = ccode;
 
@@ -1444,7 +1444,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         }
 
         ioreq->iouh_Actual = transferred;
-        pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Transfer IO done/remaining = %u/%u bytes" DEBUGCOLOR_RESET" \n", transferred, remaining);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Transfer IO done/remaining = %u/%u bytes" DEBUGCOLOR_RESET" \n", transferred, remaining);
 
         return TRUE;
     }
@@ -1457,7 +1457,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     ioreq->iouh_Req.io_Error = (ccode == TRB_CC_SUCCESS) ? 0 : UHIOERR_HOSTERROR;
     ioreq->iouh_Actual += (ioreq->iouh_Length - remaining);
 
-    pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Completion w/o private state, treating as done (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
+    pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Completion w/o private state, treating as done (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
 
     return TRUE;
 }
@@ -1480,23 +1480,23 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
     /* Check if anything interesting happened.... */
     if (status & XHCIF_USBSTS_HCH) {
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
             DEBUGCOLOR_SET "Host Controller Halted" DEBUGCOLOR_RESET" \n");
     }
     if (status & XHCIF_USBSTS_HCE) {
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
             DEBUGCOLOR_SET "Host Controller Error detected" DEBUGCOLOR_RESET" \n");
     }
     if (status & XHCIF_USBSTS_HSE) {
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
             DEBUGCOLOR_SET "Host System Error detected" DEBUGCOLOR_RESET" \n");
     }
     if (status & XHCIF_USBSTS_EINT) {
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
             DEBUGCOLOR_SET "Event Interrupt Pending" DEBUGCOLOR_RESET" \n");
     }
     if (status & XHCIF_USBSTS_PCD) {
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
             DEBUGCOLOR_SET "Port Change Detect" DEBUGCOLOR_RESET" \n");
     }
 
@@ -1518,7 +1518,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
 
-        pciusbXHCIDebugTRB("xHCI",
+        pciusbXHCIDebugTRBV("xHCI",
                            DEBUGCOLOR_SET "Processing events..." DEBUGCOLOR_RESET" \n");
 
         for (etrb = &ering->ring[idx]; maxwork > 0; maxwork--) {
@@ -1536,7 +1536,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             ULONG trbe_ccode = (dw2 >> 24) & 0xFF;
             ULONG event_rem  = dw2 & 0x00FFFFFF;
 
-            pciusbXHCIDebugTRB("xHCI",
+            pciusbXHCIDebugTRBV("xHCI",
                 DEBUGCOLOR_SET "Event Ring 0x%p[%u] = <%sTRB 0x%p, type %u>\n       slot %u"
                 DEBUGCOLOR_RESET" \n",
                 ering, idx,
@@ -1557,7 +1557,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 *evt = *(volatile struct xhci_trb_port_status *)etrb;
 
-                pciusbXHCIDebugTRB("xHCI",
+                pciusbXHCIDebugTRBV("xHCI",
                     DEBUGCOLOR_SET
                     "Port Status Change detected <Port=#%u>\nPort Status Change TRB = <%p>"
                     DEBUGCOLOR_RESET" \n",
@@ -1599,7 +1599,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 /* Acknowledge the change bits we observed */
                 xhciports[hciport].portsc = AROS_LONG2LE(newportsc);
 
-                pciusbXHCIDebugTRB("xHCI",
+                pciusbXHCIDebugTRBV("xHCI",
                     DEBUGCOLOR_SET "RH Change $%08lx" DEBUGCOLOR_RESET" \n",
                     hc->hc_PortChangeMap[hciport]);
 
@@ -1617,7 +1617,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     }
 
                     if (signalTask) {
-                        pciusbXHCIDebugTRB("xHCI", DEBUGFUNCCOLOR_SET "%s: Signaling port change handler <0x%p, %d (%08x)>..." DEBUGCOLOR_RESET" \n", __func__, hc->hc_xHCPortTask, hc->hc_PortChangeSignal, 1L << hc->hc_PortChangeSignal);
+                        pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "%s: Signaling port change handler <0x%p, %d (%08x)>..." DEBUGCOLOR_RESET" \n", __func__, hc->hc_xHCPortTask, hc->hc_PortChangeSignal, 1L << hc->hc_PortChangeSignal);
                         /* Connect/Disconnect the device */
                         Signal(hc->hc_xHCPortTask, 1L << hc->hc_PortChangeSignal);
                     } else {
@@ -1636,7 +1636,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 /* Cache the event TRB before using its fields. */
                 *evt = *etrb;
 
-                pciusbXHCIDebugTRB("xHCI",
+                pciusbXHCIDebugTRBV("xHCI",
                     DEBUGCOLOR_SET "TRANSFER EVT: ring=%p idx=%u slot=%u CC=%u rem=%lu"
                     DEBUGCOLOR_RESET" \n",
                     ring, last,
@@ -1670,7 +1670,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     (slotid < USB_DEV_MAX) ? hc->hc_Devices[slotid] : NULL;
                 ULONG port = devCtx ? (devCtx->dc_RootPort + 1) : 0;
 
-                pciusbXHCIDebugTRB("xHCI",
+                pciusbXHCIDebugTRBV("xHCI",
                     DEBUGCOLOR_SET
                     "Cmd TRB  = <Cmd Ring 0x%p[%u] TRB 0x%p> type %lu (%s) slot %lu ep %lu port %lu"
                     DEBUGCOLOR_RESET" \n",
@@ -1694,7 +1694,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     ULONG erst_lo = AROS_LE2LONG(ir->erstba.addr_lo);
                     ULONG erst_hi = AROS_LE2LONG(ir->erstba.addr_hi);
 
-                    pciusbXHCIDebugTRB("xHCI",
+                    pciusbXHCIDebugTRBV("xHCI",
                         DEBUGWARNCOLOR_SET
                         "Command %s completion code %lu (slot %lu ep %lu port %lu)\n"
                         "CRCR=0x%08lx%08lx ERDP=0x%08lx%08lx ERSTBA=0x%08lx%08lx"
@@ -1789,7 +1789,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         }
 
         if (maxwork == 0) {
-            pciusbXHCIDebugTRB("xHCI",
+            pciusbXHCIDebugTRBV("xHCI",
                                DEBUGWARNCOLOR_SET
                                "Event ring processing budget exhausted; possible backlog or ring stall"
                                DEBUGCOLOR_RESET" \n");
@@ -2453,7 +2453,7 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
                                                   devCtx->dc_SlotID,
                                                   devCtx->dc_IN.dmaa_DMA);
                 if (cc != TRB_CC_SUCCESS) {
-                    pciusbXHCIDebugTRB("xHCI",
+                    pciusbXHCIDebugTRBV("xHCI",
                         DEBUGWARNCOLOR_SET
                         "Configure Endpoint (drop EPID %lu) failed, cc=%ld"
                         DEBUGCOLOR_RESET" \n",
