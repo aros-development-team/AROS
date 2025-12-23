@@ -13,6 +13,7 @@ void ehciHandleIsochTDs(struct PCIController *hc);
 void ehciScheduleCtrlTDs(struct PCIController *hc);
 void ehciScheduleIntTDs(struct PCIController *hc);
 void ehciScheduleBulkTDs(struct PCIController *hc);
+void ehciScheduleIsoTDs(struct PCIController *hc);
 void ehciUpdateFrameCounter(struct PCIController *hc);
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ehciFree(struct PCIController *hc, struct PCIUnit *hu);

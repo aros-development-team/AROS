@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
-    Desc: XHCI chipset driver debug functions
+    Desc: xHCI chipset driver debug functions
 */
 
 #if defined(PCIUSB_ENABLEXHCI)

@@ -18,6 +18,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc);
 void uhciScheduleCtrlTDs(struct PCIController *hc);
 void uhciScheduleIntTDs(struct PCIController *hc);
 void uhciScheduleBulkTDs(struct PCIController *hc);
+void uhciScheduleIsoTDs(struct PCIController *hc);
 void uhciUpdateFrameCounter(struct PCIController *hc);
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu);

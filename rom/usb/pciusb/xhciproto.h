@@ -108,6 +108,7 @@ WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ri
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
+void xhciScheduleIsoTDs(struct PCIController *hc);
 void xhciHandleFinishedTDs(struct PCIController *hc);
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 void xhciFreePeriodicContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
@@ -133,7 +134,11 @@ LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr
 LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 #else
-#define xhciRingDoorbell(hc,slot,value)						((volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB))[slot].db = AROS_LONG2LE(value);
+#define xhciRingDoorbell(hc,slot,value) \
+     do { \
+        XHCI_MMIO_BARRIER(); \
+         ((volatile struct xhci_dbr *)((IPTR)(hc)->hc_XHCIDB))[(slot)].db = AROS_LONG2LE(value); \
+     } while (0)
 #define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
 static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)
 {

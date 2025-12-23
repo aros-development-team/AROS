@@ -84,7 +84,9 @@ struct RTIsoNode
 {
     struct MinNode              rtn_Node;
     struct IOUsbHWRTIso         *rtn_RTIso;
+    struct IOUsbHWReq           *rtn_StdReq;
     ULONG                       rtn_NextPTD;
+    ULONG                       rtn_NextFrame;
     UWORD                       rtn_PTDCount;
     struct PTDNode              **rtn_PTDs;
     struct IOUsbHWBufferReq     rtn_BufferReq;
@@ -92,6 +94,11 @@ struct RTIsoNode
     struct IOUsbHWReq           rtn_IOReq;
     UWORD                       rtn_Dummy;
 };
+
+static inline struct IOUsbHWReq *pciusbIsoGetIOReq(struct RTIsoNode *rtn)
+{
+    return rtn->rtn_StdReq ? rtn->rtn_StdReq : &rtn->rtn_IOReq;
+}
 
 #if defined(PCIUSB_ENABLEXHCI)
 struct pciusbXHCITRBParams

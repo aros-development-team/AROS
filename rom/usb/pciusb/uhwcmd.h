@@ -70,5 +70,7 @@ BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt);
 
 void uhwDelayMicro(ULONG micro, struct PCIUnit *unit);
 
-#endif /* UHWCMD_H */
+struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn);
 
+#endif /* UHWCMD_H */

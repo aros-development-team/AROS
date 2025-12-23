@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
-    Desc: XHCI chipset driver hw command support functions
+    Desc: xHCI chipset driver hw command support functions
 
     NB - do not use in the interrupt handler(s)
 */
@@ -36,6 +36,7 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
     volatile struct xhci_dbr *xhcidb = (volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB);
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
+    XHCI_MMIO_BARRIER();
     xhcidb[slot].db = AROS_LONG2LE(value);
 }
 #endif
@@ -344,6 +345,9 @@ AROS_UFH0(void, xhciEventRingTask)
 
             if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);
+
+            if (hc->hc_IsoXFerQueue.lh_Head->ln_Succ)
+                xhciScheduleIsoTDs(hc);
 
             if (hc->hc_CtrlXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleAsyncTDs(hc, &hc->hc_CtrlXFerQueue, UHCMD_CONTROLXFER);

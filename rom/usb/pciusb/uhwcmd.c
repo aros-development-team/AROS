@@ -266,6 +266,54 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
 }
 /* \\\ */
 
+struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq)
+{
+    struct RTIsoNode *rtn;
+    UWORD ptdcount;
+
+    if (!hc || !ioreq)
+        return NULL;
+
+    rtn = AllocMem(sizeof(*rtn), MEMF_CLEAR);
+    if (!rtn)
+        return NULL;
+
+    ptdcount = hc->hc_IsoPTDCount ? hc->hc_IsoPTDCount : 2;
+    if (ptdcount < 2)
+        ptdcount = 2;
+
+    rtn->rtn_PTDCount = ptdcount;
+    rtn->rtn_PTDs = AllocMem(sizeof(*rtn->rtn_PTDs) * ptdcount, MEMF_CLEAR);
+    if (!rtn->rtn_PTDs) {
+        FreeMem(rtn, sizeof(*rtn));
+        return NULL;
+    }
+
+    rtn->rtn_StdReq = ioreq;
+    CopyMem(ioreq, &rtn->rtn_IOReq, sizeof(*ioreq));
+    rtn->rtn_BufferReq.ubr_Buffer = ioreq->iouh_Data;
+    rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+    rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
+    rtn->rtn_BufferReq.ubr_Flags = 0;
+    rtn->rtn_NextFrame = ioreq->iouh_Frame;
+
+    return rtn;
+}
+
+void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn)
+{
+    (void)hc;
+    if (!rtn)
+        return;
+
+    if (rtn->rtn_PTDs) {
+        FreeMem(rtn->rtn_PTDs, sizeof(*rtn->rtn_PTDs) * rtn->rtn_PTDCount);
+        rtn->rtn_PTDs = NULL;
+    }
+
+    FreeMem(rtn, sizeof(*rtn));
+}
+
 /* /// "Close_Unit()" */
 void Close_Unit(struct PCIDevice *base,
                 struct PCIUnit *unit,
@@ -1573,6 +1621,8 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_RTIso = (struct IOUsbHWRTIso *) ioreq->iouh_Data;
     rtn->rtn_RTIso->urti_DriverPrivate1 = rtn; // backlink
     rtn->rtn_NextPTD = 0;
+    rtn->rtn_NextFrame = 0;
+    rtn->rtn_StdReq = NULL;
     rtn->rtn_BufferReq.ubr_Buffer = NULL;
     rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_MaxPktSize;
     rtn->rtn_BufferReq.ubr_Frame = 0;
@@ -1722,6 +1772,24 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
     if(!rtn->rtn_Node.mln_Succ) {
         Enable();
         return(UHIOERR_BADPARAMS);
+    }
+
+    UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
+    for (UWORD cnt = 0; cnt < prefill; cnt++) {
+        switch(hc->hc_HCIType) {
+        case HCITYPE_XHCI:
+            xhciQueueIsochIO(hc, rtn);
+            break;
+        case HCITYPE_EHCI:
+            ehciQueueIsochIO(hc, rtn);
+            break;
+        case HCITYPE_UHCI:
+            uhciQueueIsochIO(hc, rtn);
+            break;
+        default:
+            ohciQueueIsochIO(hc, rtn);
+            break;
+        };
     }
 
     switch(hc->hc_HCIType) {

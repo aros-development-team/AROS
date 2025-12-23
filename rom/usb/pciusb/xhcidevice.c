@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
-    Desc: XHCI chipset driver main pciusb interface
+    Desc: xHCI chipset driver transfer preparation and special case handling
 */
 
 #if defined(PCIUSB_ENABLEXHCI)

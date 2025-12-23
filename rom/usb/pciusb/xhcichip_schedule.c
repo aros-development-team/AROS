@@ -1,7 +1,7 @@
 /*
     Copyright (C) 2025, The AROS Development Team. All rights reserved
 
-    Desc: Shared helper routines for xHCI scheduling
+    Desc:  xHCI chipset driver shared scheduling helper routines
 */
 
 #if defined(PCIUSB_ENABLEXHCI)

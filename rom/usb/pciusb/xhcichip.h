@@ -3,7 +3,7 @@
 
 /*
  *----------------------------------------------------------------------------
- *             XHCI Controller Private definitions
+ *             xHCI Controller Private definitions
  *----------------------------------------------------------------------------
  *
  */
@@ -69,6 +69,16 @@ struct pcisusbXHCIRing
 #define RINGENDCFLAG                            (1 << 15)
 /* Derive the ring base from an in-ring TRB pointer (ring size is power-of-two). */
 #define XHCI_RING_BYTES   (sizeof(((struct pcisusbXHCIRing *)0)->ring))
+
+/*
+ * RINGFROMTRB() is used as a fast-path in the interrupt handler to map an
+ * in-ring TRB pointer (reported by Transfer Event TRBs) back to its containing
+ * ring. This is only valid if the ring allocation is aligned to XHCI_RING_BYTES.
+ *
+ * xHCI itself only mandates 64-byte ring segment alignment, so we explicitly
+ * enforce the stronger alignment for all rings allocated by this driver.
+ */
+#define XHCI_RING_ALIGN   (XHCI_RING_BYTES)
 #define RINGFROMTRB(x)    ((struct pcisusbXHCIRing *)((IPTR)(x) & ~(XHCI_RING_BYTES - 1)))
 
 /*
@@ -105,5 +115,37 @@ struct pciusbXHCIIODevPrivate
 };
 
 /* Misc Stuff */
+
+/*
+ * Memory barrier before MMIO doorbells:
+  * ensure TRB contents and software bookkeeping (ringio[]) are globally visible
+  * before we notify the controller. This prevents "fast completion" races on
+  * some hypervisors/emulators (e.g. VirtualBox) where an interrupt may be raised
+  * immediately after the doorbell is written.
+  *
+ * On ARM/RISC-V we use an explicit device-capable barrier. On x86, a release
+ * fence typically compiles to a compiler barrier (store->store ordering holds).
+  */
+#if defined(__GNUC__) || defined(__clang__)
+  /* ARM (AArch64 / ARMv7+): ensure all prior writes are observable before MMIO. */
+# if defined(__aarch64__) || defined(__arm__)
+#  define XHCI_MMIO_BARRIER() __asm__ __volatile__("dmb ishst" ::: "memory")
+
+  /* RISC-V: order all IO + memory accesses around MMIO stores. */
+# elif defined(__riscv)
+   /*
+    * "iorw, iorw" is the conservative form for device/MMIO.
+    * If your assembler/toolchain rejects iorw, switch to "fence rw, rw".
+    */
+#  define XHCI_MMIO_BARRIER() __asm__ __volatile__("fence iorw, iorw" ::: "memory")
+
+  /* Other architectures: use a release fence (compiler + arch barrier as needed). */
+# else
+#  define XHCI_MMIO_BARRIER() __atomic_thread_fence(__ATOMIC_RELEASE)
+# endif
+#else
+  /* Fallback: at least prevent compiler reordering if nothing better exists. */
+# define XHCI_MMIO_BARRIER() do { } while (0)
+#endif
 
 #endif /* XHCICHIP_H */

@@ -540,9 +540,11 @@ void ehciHandleIsochTDs(struct PCIController *hc)
 {
     struct RTIsoNode *rtn;
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    struct PCIUnit *unit = hc->hc_Unit;
 
     rtn = (struct RTIsoNode *)hc->hc_RTIsoHandlers.mlh_Head;
     while(rtn->rtn_Node.mln_Succ) {
+        struct RTIsoNode *next = (struct RTIsoNode *)rtn->rtn_Node.mln_Succ;
         struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
         UWORD idx;
         UWORD ptdcount = rtn->rtn_PTDCount;
@@ -558,6 +560,7 @@ void ehciHandleIsochTDs(struct PCIController *hc)
             if(!ptd || !(ptd->ptd_Flags & PTDF_ACTIVE))
                 continue;
 
+            struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
             if(ptd->ptd_Flags & PTDF_SITD) {
                 struct EhciSiTD *sitd = (struct EhciSiTD *)ptd->ptd_Descriptor;
                 ULONG token;
@@ -573,8 +576,8 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 if(token & (ESITF_STATUS_ERR|ESITF_STATUS_BABBLE|ESITF_STATUS_XACTERR|ESITF_STATUS_MISSEDUF))
                     error = TRUE;
 
-                rtn->rtn_IOReq.iouh_Actual = (ptd->ptd_Length > remaining) ? (ptd->ptd_Length - remaining) : 0;
-                rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
+                ioreq->iouh_Actual = (ptd->ptd_Length > remaining) ? (ptd->ptd_Length - remaining) : 0;
+                ioreq->iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
                 ehciUnlinkIsoDescriptor(ehcihcp, ptd);
                 ehciFreeSiTD(hc, sitd);
                 ptd->ptd_Descriptor = NULL;
@@ -606,15 +609,16 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 if(pkt < ptd->ptd_PktCount)
                     continue;
 
-                rtn->rtn_IOReq.iouh_Actual = actual;
-                rtn->rtn_IOReq.iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
+                ioreq->iouh_Actual = actual;
+                ioreq->iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
                 ehciUnlinkIsoDescriptor(ehcihcp, ptd);
                 ehciFreeITD(hc, itd);
                 ptd->ptd_Descriptor = NULL;
                 ptd->ptd_NextPTD = NULL;
             }
 
-            rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Actual;
+            rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Actual;
+            rtn->rtn_BufferReq.ubr_Frame = ptd->ptd_FrameIdx;
 
             if(rtn->rtn_BounceBuffer &&
                     rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
@@ -636,9 +640,22 @@ void ehciHandleIsochTDs(struct PCIController *hc)
             }
 
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+
+            if (rtn->rtn_StdReq == ioreq) {
+                UWORD devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint +
+                                 ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+                Remove((struct Node *)&rtn->rtn_Node);
+                unit->hu_DevBusyReq[devadrep] = NULL;
+                ReplyMsg(&ioreq->iouh_Req.io_Message);
+                ehciFreeIsochIO(hc, rtn);
+                pciusbFreeStdIsoNode(hc, rtn);
+            } else if (urti) {
+                if (ehciQueueIsochIO(hc, rtn) == RC_OK)
+                    ehciStartIsochIO(hc, rtn);
+            }
         }
 
-        rtn = (struct RTIsoNode *) rtn->rtn_Node.mln_Succ;
+        rtn = next;
     }
 }
 
@@ -1005,6 +1022,45 @@ void ehciScheduleIntTDs(struct PCIController *hc)
     }
 }
 
+void ehciScheduleIsoTDs(struct PCIController *hc)
+{
+    struct PCIUnit *unit = hc->hc_Unit;
+    struct IOUsbHWReq *ioreq;
+    UWORD devadrep;
+
+    pciusbEHCIDebug("EHCI", "Scheduling new ISO transfers...\n");
+    ioreq = (struct IOUsbHWReq *)hc->hc_IsoXFerQueue.lh_Head;
+    while (((struct Node *)ioreq)->ln_Succ) {
+        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint +
+                   ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+        if (unit->hu_DevBusyReq[devadrep]) {
+            ioreq = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ;
+            continue;
+        }
+
+        struct RTIsoNode *rtn = pciusbAllocStdIsoNode(hc, ioreq);
+        if (!rtn)
+            break;
+
+        Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+
+        if (ehciInitIsochIO(hc, rtn) != RC_OK) {
+            pciusbFreeStdIsoNode(hc, rtn);
+            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+            ReplyMsg(&ioreq->iouh_Req.io_Message);
+            ioreq = (struct IOUsbHWReq *)hc->hc_IsoXFerQueue.lh_Head;
+            continue;
+        }
+
+        ehciQueueIsochIO(hc, rtn);
+        AddTail((struct List *)&hc->hc_RTIsoHandlers, (struct Node *)&rtn->rtn_Node);
+        unit->hu_DevBusyReq[devadrep] = ioreq;
+        ehciStartIsochIO(hc, rtn);
+
+        ioreq = (struct IOUsbHWReq *)hc->hc_IsoXFerQueue.lh_Head;
+    }
+}
+
 void ehciScheduleBulkTDs(struct PCIController *hc)
 {
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
@@ -1223,6 +1279,10 @@ static AROS_INTH1(ehciCompleteInt, struct PCIController *, hc)
         ehciScheduleIntTDs(hc);
     }
 
+    if(hc->hc_IsoXFerQueue.lh_Head->ln_Succ) {
+        ehciScheduleIsoTDs(hc);
+    }
+
     if(hc->hc_BulkXFerQueue.lh_Head->ln_Succ) {
         ehciScheduleBulkTDs(hc);
     }
@@ -1359,11 +1419,38 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
 WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+    struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
+    struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+    struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
+    ULONG interval;
+
     pciusbEHCIDebug("EHCI", "%s()\n", __func__);
 
-    rtn->rtn_BufferReq.ubr_Length = rtn->rtn_IOReq.iouh_Length;
-    rtn->rtn_BufferReq.ubr_Frame = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) + 1;
-    rtn->rtn_BufferReq.ubr_Flags = 0;
+    if (urti) {
+        if (ioreq->iouh_Dir == UHDIR_IN) {
+            if (urti->urti_InReqHook)
+                CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+        } else {
+            if (urti->urti_OutReqHook)
+                CallHookPkt(urti->urti_OutReqHook, rtn, &rtn->rtn_BufferReq);
+        }
+    } else {
+        rtn->rtn_BufferReq.ubr_Buffer = ioreq->iouh_Data;
+        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+        rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
+        rtn->rtn_BufferReq.ubr_Flags = 0;
+    }
+
+    if (!rtn->rtn_BufferReq.ubr_Length)
+        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+
+    interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
+    if (!rtn->rtn_BufferReq.ubr_Frame) {
+        ULONG frameidx = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & ehcihcp->ehc_FrameListMask;
+        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : ((frameidx + interval) & ehcihcp->ehc_FrameListMask);
+        rtn->rtn_BufferReq.ubr_Frame = next;
+    }
+    rtn->rtn_NextFrame = (rtn->rtn_BufferReq.ubr_Frame + interval) & ehcihcp->ehc_FrameListMask;
 
     return RC_OK;
 }
@@ -1371,7 +1458,6 @@ WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
-    ULONG frameidx;
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
     APTR dmabuffer;
@@ -1397,9 +1483,6 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 #endif
     rtn->rtn_BounceBuffer = (dmabuffer != rtn->rtn_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
 
-    /* EHCI frame counter shares the FRINDEX layout; shift off microframes */
-    frameidx = (READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT) >> 3) & ehcihcp->ehc_FrameListMask;
-
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct EhciITD *itd;
@@ -1416,6 +1499,9 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         BOOL is_split;
 
         if(!ptd)
+            continue;
+
+        if(ptd->ptd_Flags & PTDF_ACTIVE)
             continue;
 
         if(!ptd->ptd_Descriptor) {
@@ -1441,7 +1527,7 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             continue;
 
         is_split = (ptd->ptd_Flags & PTDF_SITD) != 0;
-        slot = (frameidx + rtn->rtn_BufferReq.ubr_Frame + idx) & framemask;
+        slot = (rtn->rtn_BufferReq.ubr_Frame + idx) & framemask;
         phys = (IPTR)pciGetPhysical(hc, buffer);
         ptd->ptd_PktCount = 0;
         for(pktidx = 0; pktidx < 8; pktidx++)

@@ -11,6 +11,7 @@ FILES := \
         ehcichip \
         xhcichip \
         xhcichip_periodic \
+        xhcichip_isoch \
         xhcichip_async \
         xhcichip_schedule \
         xhcichip_hcport \

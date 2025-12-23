@@ -1,12 +1,13 @@
 /*
     Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
 
-    Desc: XHCI chipset driver main pciusb interface
+    Desc: xHCI chipset driver main pciusb interface
 */
 
 #if defined(PCIUSB_ENABLEXHCI)
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
@@ -168,6 +169,18 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
 
 static void xhciInitRing(struct pcisusbXHCIRing *ring)
 {
+#if defined(DEBUG)
+    /*
+     * The interrupt handler uses RINGFROMTRB() (masking) to map a TRB pointer
+     * back to the containing ring. That requires ring allocations to be
+     * aligned to XHCI_RING_ALIGN (see xhcichip.h).
+     */
+    if (((IPTR)ring & (XHCI_RING_ALIGN - 1)) != 0) {
+        pciusbError("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: ring %p is misaligned (need %lu)" DEBUGCOLOR_RESET "\n",
+                    ring, (ULONG)XHCI_RING_ALIGN);
+    }
+#endif
     memset(ring, 0, sizeof(*ring));
     ring->end = RINGENDCFLAG; /* set initial cycle bit */
 }
@@ -733,7 +746,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         devCtx->dc_EPAllocs[epid].dmaa_Ptr =
             pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry,
                             sizeof(struct pcisusbXHCIRing),
-                            ALIGN_EVTRING_SEG, (1 << 16));
+                            XHCI_RING_ALIGN, (1 << 16));
         if (devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
             pciusbXHCIDebugEP("xHCI",
                               DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
@@ -1220,6 +1233,28 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                             ioreq,
                             (LONG)ioreq->iouh_Req.io_Error,
                             (unsigned long)actual);
+
+            struct RTIsoNode *rtn = (struct RTIsoNode *)ioreq->iouh_DriverPrivate2;
+            if (rtn && rtn->rtn_RTIso) {
+                struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+                rtn->rtn_BufferReq.ubr_Length = actual;
+                rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
+                if (ioreq->iouh_Dir == UHDIR_IN) {
+                    if (urti->urti_InDoneHook)
+                        CallHookPkt(urti->urti_InDoneHook, rtn, &rtn->rtn_BufferReq);
+                } else {
+                    if (urti->urti_OutDoneHook)
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
+                }
+
+                xhciFreePeriodicContext(hc, unit, ioreq);
+                ioreq->iouh_Actual = 0;
+                ioreq->iouh_Req.io_Error = 0;
+                if (xhciQueueIsochIO(hc, rtn) == RC_OK)
+                    xhciStartIsochIO(hc, rtn);
+                ioreq = nextioreq;
+                continue;
+            }
 
             if (!ioreq->iouh_Req.io_Error &&
                 ioreq->iouh_Data &&
@@ -2148,7 +2183,7 @@ takeownership:
     /* Command Ring */
     hc->hc_OPRp = pciAllocAligned(hc, &hc->hc_OPR,
                                   sizeof(struct pcisusbXHCIRing),
-                                  ALIGN_CMDRING_SEG,
+                                  XHCI_RING_ALIGN,
                                   (1 << 16));
     if (hc->hc_OPRp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated OPR @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
@@ -2168,7 +2203,7 @@ takeownership:
     /* Event Ring */
     hc->hc_ERSp = pciAllocAligned(hc, &hc->hc_ERS,
                                   sizeof(struct pcisusbXHCIRing),
-                                  ALIGN_EVTRING_SEG,
+                                  XHCI_RING_ALIGN,
                                   (1 << 16));
     if (hc->hc_ERSp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated ERS @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
