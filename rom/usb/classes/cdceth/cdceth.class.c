@@ -9,10 +9,16 @@
 
 #include "cdceth.class.h"
 
+#include <devices/usb_cdc.h>
+
 static void cdceth_seed_mac(struct NepClassEth *ncp);
+static BOOL cdceth_mac_is_valid(const UBYTE *mac);
+static BOOL cdceth_parse_mac_string(const STRPTR macstr, UBYTE *mac);
+static BOOL cdceth_load_mac(struct NepClassEth *ncp);
 static void cdceth_dump_interface(struct NepClassEth *ncp);
 static void cdceth_log_pipe_attrs(struct PsdPipe *pipe, BOOL allow_short, BOOL nak_timeout, ULONG nak_time, BOOL allow_runt);
-static BOOL cdceth_set_packet_filter(struct NepClassEth *ncp);
+static UWORD cdceth_build_packet_filter(struct NepClassEth *ncp);
+static BOOL cdceth_set_packet_filter(struct NepClassEth *ncp, UWORD filter);
 static void cdceth_complete_write(struct NepClassEth *ncp, LONG ioerr, ULONG actual);
 
 /* /// "Lib Stuff" */
@@ -151,7 +157,7 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
                     DA_ConfigList, &cfgs,
                     TAG_END);
 
-        /* Only bind to devices exposing a CDC control or data interface on any config. */
+        //* Only bind to devices exposing a CDC Ethernet control interface on any config. */
         for(pc = (struct PsdConfig *) (cfgs ? cfgs->lh_Head : NULL);
             pc && pc->pc_Node.ln_Succ;
             pc = (struct PsdConfig *) pc->pc_Node.ln_Succ)
@@ -845,6 +851,10 @@ struct NepClassEth * nAllocEth(void)
             struct List *cfgs = NULL;
             IPTR ifcls = 0, ifsub = 0, ifproto = 0;
             IPTR altifnum = 0;
+            IPTR dataifnum = -1;
+            BOOL have_dataifnum = FALSE;
+            struct PsdDescriptor *pdd;
+            UBYTE *descdata = NULL;
 
             psdGetAttrs(PGA_DEVICE, ncp->ncp_Device,
                         DA_ConfigList, &cfgs,
@@ -859,6 +869,8 @@ struct NepClassEth * nAllocEth(void)
                 struct PsdInterface *pif;
 
                 ctrl_if = NULL;
+                dataifnum = -1;
+                have_dataifnum = FALSE;
 
                 psdGetAttrs(PGA_CONFIG, best_cfg,
                             CA_InterfaceList, &ifs,
@@ -875,17 +887,79 @@ struct NepClassEth * nAllocEth(void)
                                 IFA_Class, &ifcls,
                                 IFA_SubClass, &ifsub,
                                 IFA_Protocol, &ifproto,
-                                IFA_AlternateNum, &altifnum,
                                 IFA_AlternateIfList, &altlist,
                                 TAG_DONE);
 
-                    if(!ctrl_if && ifcls == CDC_CLASS_COMMUNICATION &&
-                       cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
+                    if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
                     {
                         ctrl_if = pif;
+                        break;
                     }
 
-                    if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
+                    for(altpif = altlist ? (struct PsdInterface *) altlist->lh_Head : NULL;
+                        altpif && altpif->pif_Node.ln_Succ;
+                        altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
+                    {
+                        psdGetAttrs(PGA_INTERFACE, altpif,
+                                    IFA_Class, &ifcls,
+                                    IFA_SubClass, &ifsub,
+                                    IFA_Protocol, &ifproto,
+                                    TAG_DONE);
+
+                        if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
+                        {
+                            ctrl_if = altpif;
+                            break;
+                        }
+                    }
+
+                    if(ctrl_if)
+                    {
+                        break;
+                    }
+                }
+
+                if(!ctrl_if)
+                {
+                    continue;
+                }
+
+                pdd = psdFindDescriptor(ncp->ncp_Device, NULL,
+                                        DDA_Interface, ctrl_if,
+                                        DDA_DescriptorType, UDT_CS_INTERFACE,
+                                        DDA_CS_SubType, UDST_CDC_UNION,
+                                        TAG_END);
+                if(pdd)
+                {
+                    psdGetAttrs(PGA_DESCRIPTOR, pdd,
+                                DDA_DescriptorData, &descdata,
+                                TAG_END);
+                    dataifnum = ((struct UsbCDCUnionDesc *) descdata)->bSlaveInterface0;
+                    have_dataifnum = TRUE;
+                    KPRINTF(5, ("CDC union descriptor selects data interface %ld\n", (long) dataifnum));
+                }
+
+                for(pif = ifs ? (struct PsdInterface *) ifs->lh_Head : NULL;
+                    pif && pif->pif_Node.ln_Succ;
+                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ)
+                {
+                    struct PsdInterface *altpif;
+                    struct List *altlist = NULL;
+                    IPTR ifnum = -1;
+
+                    psdGetAttrs(PGA_INTERFACE, pif,
+                                IFA_Class, &ifcls,
+                                IFA_SubClass, &ifsub,
+                                IFA_Protocol, &ifproto,
+                                IFA_AlternateNum, &altifnum,
+                                IFA_InterfaceNum, &ifnum,
+                                IFA_AlternateIfList, &altlist,
+                                TAG_DONE);
+
+                    if((ifcls == CDC_CLASS_DATA) &&
+                       (!have_dataifnum || ifnum == dataifnum) &&
+                       (ifsub == 0) &&
+                       ((ifproto == 0) || (ifproto == 1) || (ifproto == 7)))
                     {
                         struct PsdEndpoint *in = psdFindEndpoint(pif, NULL,
                                                                  EA_IsIn, TRUE,
@@ -911,21 +985,21 @@ struct NepClassEth * nAllocEth(void)
                         altpif && altpif->pif_Node.ln_Succ;
                         altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
                     {
+                        ifnum = -1;
                         psdGetAttrs(PGA_INTERFACE, altpif,
                                     IFA_Class, &ifcls,
                                     IFA_SubClass, &ifsub,
                                     IFA_Protocol, &ifproto,
                                     IFA_AlternateNum, &altifnum,
+                                    IFA_InterfaceNum, &ifnum,
                                     TAG_DONE);
 
-                        if(!ctrl_if && ifcls == CDC_CLASS_COMMUNICATION &&
-                           cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
+                        if((ifcls != CDC_CLASS_DATA) || (ifsub != 0) ||
+                           (ifproto != 0 && ifproto != 1 && ifproto != 7) ||
+                           (have_dataifnum && ifnum != dataifnum))
                         {
-                            ctrl_if = altpif;
-                        }
-
-                        if(!cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
                             continue;
+                        }
 
                         struct PsdEndpoint *in = psdFindEndpoint(altpif, NULL,
                                                                  EA_IsIn, TRUE,
@@ -948,25 +1022,27 @@ struct NepClassEth * nAllocEth(void)
                     }
 
                     if(best_if)
+                    {
                         break;
+                    }
                 }
 
                 if(best_if)
                     break;
             }
 
-                    if(best_if)
-                    {
-                        KPRINTF(5, ("Selected CDC interface %p in config %p (alt %ld) class/sub/proto %ld/%ld/%ld\n",
-                                    (void *) best_if, (void *) best_cfg, altifnum, ifcls, ifsub, ifproto));
-                        ncp->ncp_ControlInterface = ctrl_if;
-                        if(best_cfg && (cur_cfg != best_cfg))
-                        {
-                            KPRINTF(5, ("Switching device to configuration %p\n", (void *) best_cfg));
-                            psdSetAttrs(PGA_DEVICE, ncp->ncp_Device,
-                                        DA_Config, best_cfg,
-                                        TAG_END);
-                        }
+            if(best_if)
+            {
+                KPRINTF(5, ("Selected CDC interface %p in config %p (alt %ld) class/sub/proto %ld/%ld/%ld\n",
+                            (void *) best_if, (void *) best_cfg, altifnum, ifcls, ifsub, ifproto));
+                ncp->ncp_ControlInterface = ctrl_if;
+                if(best_cfg && (cur_cfg != best_cfg))
+                {
+                    KPRINTF(5, ("Switching device to configuration %p\n", (void *) best_cfg));
+                    psdSetAttrs(PGA_DEVICE, ncp->ncp_Device,
+                                DA_Config, best_cfg,
+                                TAG_END);
+                }
 
                 psdSetAttrs(PGA_INTERFACE, best_if,
                             IFA_AlternateNum, altifnum,
@@ -1026,7 +1102,7 @@ struct NepClassEth * nAllocEth(void)
                         if(nInitCDC(ncp))
                         {
                             cdceth_dump_interface(ncp);
-                            cdceth_set_packet_filter(ncp);
+                            cdceth_set_packet_filter(ncp, cdceth_build_packet_filter(ncp));
                             return(ncp);
                         }
                         psdFreePipe(ncp->ncp_EPInPipe);
@@ -1101,11 +1177,145 @@ static void cdceth_seed_mac(struct NepClassEth *ncp)
     fallback[4] = (UBYTE) (ncp->ncp_UnitProdID & 0xff);
     fallback[5] = (UBYTE) (ncp->ncp_UnitNo & 0xff);
 
-    if(!(ncp->ncp_StateFlags & DDF_CONFIGURED))
+    if(cdceth_mac_is_valid(ncp->ncp_ROMAddress))
     {
-        CopyMem(fallback, ncp->ncp_ROMAddress, ETHER_ADDR_SIZE);
-        CopyMem(fallback, ncp->ncp_MacAddress, ETHER_ADDR_SIZE);
+        if(!cdceth_mac_is_valid(ncp->ncp_MacAddress))
+        {
+            CopyMem(ncp->ncp_ROMAddress, ncp->ncp_MacAddress, ETHER_ADDR_SIZE);
+        }
+        return;
     }
+
+    CopyMem(fallback, ncp->ncp_ROMAddress, ETHER_ADDR_SIZE);
+    CopyMem(fallback, ncp->ncp_MacAddress, ETHER_ADDR_SIZE);
+}
+/* \\\ */
+
+static BOOL cdceth_mac_is_valid(const UBYTE *mac)
+{
+    BOOL all_zero = TRUE;
+    int idx;
+
+    if(!mac)
+    {
+        return(FALSE);
+    }
+
+    for(idx = 0; idx < ETHER_ADDR_SIZE; idx++)
+    {
+        if(mac[idx] != 0)
+        {
+            all_zero = FALSE;
+            break;
+        }
+    }
+
+    if(all_zero)
+    {
+        return(FALSE);
+    }
+
+    if(mac[0] & 1)
+    {
+        return(FALSE);
+    }
+
+    return(TRUE);
+}
+/* \\\ */
+
+static BOOL cdceth_parse_mac_string(const STRPTR macstr, UBYTE *mac)
+{
+    int hi = -1;
+    int count = 0;
+    int idx;
+    char ch;
+
+    if(!macstr || !mac)
+    {
+        return(FALSE);
+    }
+
+    for(idx = 0; (ch = macstr[idx]) != '\0'; idx++)
+    {
+        int val = -1;
+
+        if((ch >= '0') && (ch <= '9'))
+            val = ch - '0';
+        else if((ch >= 'a') && (ch <= 'f'))
+            val = 10 + (ch - 'a');
+        else if((ch >= 'A') && (ch <= 'F'))
+            val = 10 + (ch - 'A');
+        else
+            continue;
+
+        if(hi < 0)
+        {
+            hi = val;
+        } else {
+            if(count >= ETHER_ADDR_SIZE)
+            {
+                break;
+            }
+            mac[count++] = (UBYTE) ((hi << 4) | val);
+            hi = -1;
+        }
+    }
+    
+    if(count != ETHER_ADDR_SIZE)
+    {
+        return(FALSE);
+    }
+
+    return(cdceth_mac_is_valid(mac));
+}
+/* \\\ */
+
+static BOOL cdceth_load_mac(struct NepClassEth *ncp)
+{
+    struct PsdDescriptor *pdd;
+    struct UsbCDCEthernetDesc *ethdesc = NULL;
+    STRPTR macstr = NULL;
+    UBYTE mac[ETHER_ADDR_SIZE];
+
+    if(!(ncp->ncp_ControlInterface && ncp->ncp_EP0Pipe))
+    {
+        return(FALSE);
+    }
+
+    pdd = psdFindDescriptor(ncp->ncp_Device, NULL,
+                            DDA_Interface, ncp->ncp_ControlInterface,
+                            DDA_DescriptorType, UDT_CS_INTERFACE,
+                            DDA_CS_SubType, UDST_CDC_ETHERNET,
+                            TAG_END);
+    if(!pdd)
+    {
+        return(FALSE);
+    }
+
+    psdGetAttrs(PGA_DESCRIPTOR, pdd,
+                DDA_DescriptorData, &ethdesc,
+                TAG_END);
+
+    if(!ethdesc || !ethdesc->iMACAddress)
+    {
+        return(FALSE);
+    }
+
+    macstr = psdGetStringDescriptor(ncp->ncp_EP0Pipe, ethdesc->iMACAddress);
+    if(macstr)
+    {
+        if(cdceth_parse_mac_string(macstr, mac))
+        {
+            CopyMem(mac, ncp->ncp_ROMAddress, ETHER_ADDR_SIZE);
+            CopyMem(mac, ncp->ncp_MacAddress, ETHER_ADDR_SIZE);
+            psdFreeVec(macstr);
+            return(TRUE);
+        }
+        psdFreeVec(macstr);
+    }
+
+    return(FALSE);
 }
 /* \\\ */
 
@@ -1116,12 +1326,25 @@ static void cdceth_log_pipe_attrs(struct PsdPipe *pipe, BOOL allow_short, BOOL n
 }
 /* \\\ */
 
-static BOOL cdceth_set_packet_filter(struct NepClassEth *ncp)
+static UWORD cdceth_build_packet_filter(struct NepClassEth *ncp)
+{
+    UWORD filter = USB_CDC_PACKET_TYPE_DIRECTED | USB_CDC_PACKET_TYPE_BROADCAST;
+
+    if(ncp->ncp_OpenFlags & SANA2OPF_PROM)
+    {
+        filter |= USB_CDC_PACKET_TYPE_PROMISCUOUS | USB_CDC_PACKET_TYPE_ALLMULTI;
+        filter |= USB_CDC_PACKET_TYPE_MULTICAST;
+    } else if(ncp->ncp_Multicasts.lh_Head->ln_Succ) {
+        filter |= USB_CDC_PACKET_TYPE_MULTICAST;
+    }
+
+    return(filter);
+}
+/* \\\ */
+
+static BOOL cdceth_set_packet_filter(struct NepClassEth *ncp, UWORD filter)
 {
     IPTR ifnum = 0;
-    UWORD filter = USB_CDC_PACKET_TYPE_DIRECTED |
-                   USB_CDC_PACKET_TYPE_BROADCAST |
-                   USB_CDC_PACKET_TYPE_MULTICAST;
     UBYTE filter_payload[2];
     LONG ioerr;
 
@@ -1233,14 +1456,17 @@ static void cdceth_dump_interface(struct NepClassEth *ncp)
 
 BOOL nInitCDC(struct NepClassEth *ncp)
 {
-    cdceth_seed_mac(ncp);
+    if(!cdceth_load_mac(ncp))
+    {
+        cdceth_seed_mac(ncp);
+    }
     return(TRUE);
 }
 /* \\\ */
 
 void nUpdateRXMode(struct NepClassEth *ncp)
 {
-    (void) ncp;
+    cdceth_set_packet_filter(ncp, cdceth_build_packet_filter(ncp));
 }
 /* \\\ */
 
@@ -1534,119 +1760,101 @@ BOOL nReadPacket(struct NepClassEth *ncp, UBYTE *pktptr, ULONG pktlen)
     UWORD flags;
     UWORD datasize;
     BOOL ret = FALSE;
-    UWORD statusbyte;
 
     KPRINTF(20, ("PktIn [%ld] %ld\n", ncp->ncp_ReadBufNum, pktlen));
 
-    // loop over packet buffer for multiple packets on AX88178 and AX88772
-    if(pktlen < 1)
+    if(pktlen < sizeof(struct EtherPacketHeader))
     {
         ncp->ncp_DeviceStats.BadData++;
         return FALSE;
     }
-    --pktlen;
-    statusbyte = pktptr[pktlen];
+
     ncp->ncp_DeviceStats.PacketsReceived++;
-    if(statusbyte != PKSF_NO_ERROR)
+    eph = (struct EtherPacketHeader *) pktptr;
+    stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
+    flags = DROPPED|PACKETFILTER;
+
+    /* Calculate size of the actual data */
+    datasize = pktlen - sizeof(struct EtherPacketHeader);
+
+    /* Is the packet datasize valid? */
+    if((pktlen >= ETHER_MIN_LEN) && (pktlen <= ETHER_MAX_LEN))
     {
-        if(statusbyte & PKSF_OVERRUN)
+        /* Update the packet statistics */
+        if(stats)
         {
-            ncp->ncp_DeviceStats.Overruns++;
+            stats->PacketsReceived++;
+            stats->BytesReceived += datasize;  /* NOTE: don't include headers */
         }
-        else if(statusbyte & (PKSF_UNDERRUN|PKSF_LENGTH_ERROR|PKSF_ALIGNMENT_ERROR|PKSF_CRC_ERROR))
+        /* For each device user (bufman)
+           NOTE: We absolutely *MUST* try to offer the packet to *all*
+           different device users (SANA-II V2 spec requirement). */
+        Forbid();
+        bufman = (struct BufMan *) ncp->ncp_BufManList.lh_Head;
+        while(((struct Node *) bufman)->ln_Succ)
         {
-            ncp->ncp_DeviceStats.BadData++;
-        } else {
-            ncp->ncp_DeviceStats.BadData++;
-        }
-    } else {
-        eph = (struct EtherPacketHeader *) pktptr;
-        stats = FindPacketTypeStats(ncp, (ULONG) AROS_BE2WORD(eph->eph_Type));
-        flags = DROPPED|PACKETFILTER;
-
-        /* Calculate size of the actual data */
-        datasize = pktlen - sizeof(struct EtherPacketHeader);
-
-        /* Is the packet datasize valid? */
-        if((pktlen >= ETHER_MIN_LEN) && (pktlen <= ETHER_MAX_LEN))
-        {
-            /* Update the packet statistics */
-            if(stats)
+            /* For each queued read request (ioreq) */
+            worknode = (struct IOSana2Req *) bufman->bm_RXQueue.lh_Head;
+            while((nextnode = (struct IOSana2Req *) (((struct Node *) worknode)->ln_Succ)))
             {
-                stats->PacketsReceived++;
-                stats->BytesReceived += datasize;  /* NOTE: don't include headers */
-            }
-
-            /* For each device user (bufman)
-               NOTE: We absolutely *MUST* try to offer the packet to *all*
-               different device users (SANA-II V2 spec requirement). */
-            Forbid();
-            bufman = (struct BufMan *) ncp->ncp_BufManList.lh_Head;
-            while(((struct Node *) bufman)->ln_Succ)
-            {
-                /* For each queued read request (ioreq) */
-                worknode = (struct IOSana2Req *) bufman->bm_RXQueue.lh_Head;
-                while((nextnode = (struct IOSana2Req *) (((struct Node *) worknode)->ln_Succ)))
+                /* Check the packet type. Also handles 802.3 packets. */
+                if((worknode->ios2_PacketType == AROS_BE2WORD(eph->eph_Type)) ||
+                   ((AROS_BE2WORD(eph->eph_Type) < ETHERPKT_SIZE) && (worknode->ios2_PacketType < ETHERPKT_SIZE)))
                 {
-                    /* Check the packet type. Also handles 802.3 packets. */
-                    if((worknode->ios2_PacketType == AROS_BE2WORD(eph->eph_Type)) ||
-                       ((AROS_BE2WORD(eph->eph_Type) < ETHERPKT_SIZE) && (worknode->ios2_PacketType < ETHERPKT_SIZE)))
-                    {
-                        flags = nReadIOReq(ncp, eph, datasize, worknode, flags);
-                        /* Break out - let other callers get the packet too */
-                        break;
-                    }
-                    worknode = nextnode;
+                    flags = nReadIOReq(ncp, eph, datasize, worknode, flags);
+                    /* Break out - let other callers get the packet too */
+                    break;
                 }
-                bufman = (struct BufMan *) (((struct Node *) bufman)->ln_Succ);
+                worknode = nextnode;
+            }
+            bufman = (struct BufMan *) (((struct Node *) bufman)->ln_Succ);
+        }
+        Permit();
+        /* Now we've tried to give the packet to every CMD_READ caller.
+           If DROPPED is set at this point no-one wanted this packet. */
+        if(flags & DROPPED)
+        {
+            /* So there were no outstanding CMD_READs or the packet wasn't
+               accepted by any of them. Okay, check if we have any pending
+               S2_READORPHAN ioreq in list and if we have return this packet
+               with it. Note that packet filter must not be used for this
+               time!
+
+               NOTE: orphanlist is global, ie. only one caller will get the
+               packet if multiple users have pending S2_READORPHANs.
+            */
+
+            /* Process pending orphanread iorequs */
+            Forbid();
+            worknode = (struct IOSana2Req *) ncp->ncp_OrphanQueue.lh_Head;
+            while((nextnode = (struct IOSana2Req *) (((struct Node *) worknode)->ln_Succ)))
+            {
+                nReadIOReq(ncp, eph, datasize, worknode, 0);
+                worknode = nextnode;
             }
             Permit();
-            /* Now we've tried to give the packet to every CMD_READ caller.
-               If DROPPED is set at this point no-one wanted this packet. */
-            if(flags & DROPPED)
-            {
-                /* So there were no outstanding CMD_READs or the packet wasn't
-                   accepted by any of them. Okay, check if we have any pending
-                   S2_READORPHAN ioreq in list and if we have return this packet
-                   with it. Note that packet filter must not be used for this
-                   time!
-
-                   NOTE: orphanlist is global, ie. only one caller will get the
-                   packet if multiple users have pending S2_READORPHANs.
-                */
-
-                /* Process pending orphanread iorequs */
-                Forbid();
-                worknode = (struct IOSana2Req *) ncp->ncp_OrphanQueue.lh_Head;
-                while((nextnode = (struct IOSana2Req *) (((struct Node *) worknode)->ln_Succ)))
-                {
-                    nReadIOReq(ncp, eph, datasize, worknode, 0);
-                    worknode = nextnode;
-                }
-                Permit();
-            } else {
-                /* Packet not dropped - return ok */
-                ret = TRUE;
-            }
         } else {
-            KPRINTF(20, ("Pktlen %ld invalid!\n", pktlen));
-            ncp->ncp_DeviceStats.BadData++;
+            /* Packet not dropped - return ok */
+            ret = TRUE;
         }
-        if(!ret)
+    } else {
+        KPRINTF(20, ("Pktlen %ld invalid!\n", pktlen));
+        ncp->ncp_DeviceStats.BadData++;
+    }
+    if(!ret)
+    {
+        /* Update global dropped packet counter. */
+        ncp->ncp_DeviceStats.UnknownTypesReceived++;
+
+        /* Update dropped packet statistics. */
+        if(stats)
         {
-            /* Update global dropped packet counter. */
-            ncp->ncp_DeviceStats.UnknownTypesReceived++;
-
-            /* Update dropped packet statistics. */
-            if(stats)
-            {
-                stats->PacketsDropped++;
-            }
-            KPRINTF(9, ("readpacket: packet type %lu dropped\n", AROS_BE2WORD(eph->eph_Type)));
-
-            /* Trigger any rx or generic error events */
-            nDoEvent(ncp, S2EVENT_ERROR|S2EVENT_RX);
+            stats->PacketsDropped++;
         }
+        KPRINTF(9, ("readpacket: packet type %lu dropped\n", AROS_BE2WORD(eph->eph_Type)));
+
+        /* Trigger any rx or generic error events */
+        nDoEvent(ncp, S2EVENT_ERROR|S2EVENT_RX);
     }
     return ret;
 }
@@ -1934,24 +2142,24 @@ void nGUITaskCleanup(struct NepClassEth *ncp)
 
 BOOL cdceth_is_cdc_ethernet(uint8_t cls, uint8_t subcls, uint8_t proto)
 {
-    if(cls != CDC_CLASS_COMMUNICATION && cls != CDC_CLASS_DATA)
-        return(FALSE);
-
     switch(subcls)
     {
         case CDC_SUBCLASS_ETHERNET:   /* ECM */
         case CDC_SUBCLASS_EEM:        /* EEM */
         case CDC_SUBCLASS_NCM:        /* NCM */
-            return(TRUE);
-        default:
             break;
+        default:
+            return(FALSE);
     }
 
-    /* Protocol byte varies between ECM (0), NCM (0/1), and EEM (7). */
-    if(proto == 0 || proto == 1 || proto == 7)
-        return(TRUE);
+    if(cls != CDC_CLASS_COMMUNICATION)
+        return(FALSE);
 
-    return(FALSE);
+    /* Protocol byte varies between ECM (0), NCM (0/1), and EEM (7). */
+    if(proto != 0 && proto != 1 && proto != 7)
+        return(FALSE);
+
+    return(TRUE);
 }
 
 /* \\\ */
