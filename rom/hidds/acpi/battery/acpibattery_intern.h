@@ -9,6 +9,7 @@
 
 #include <hidd/hidd.h>
 #include <hidd/power.h>
+#include <hidd/telemetry.h>
 #include <hidd/acpibattery.h>
 
 #include <acpica/acnames.h>
@@ -61,7 +62,7 @@ struct acpibatteryclass_staticdata
 
     OOP_AttrBase                hwAB;
     OOP_AttrBase                hiddAB;
-    OOP_AttrBase                hiddPowerAB;
+    OOP_AttrBase                hiddTelemetryAB;
     OOP_AttrBase                hwACPIBatteryAB;
 };
 
@@ -80,7 +81,7 @@ struct HWACPIBatteryIntBase
 #define __IHW_ACPIBattery        (_csd->hwACPIBatteryAB)
 #define __IHW 	                (_csd->hwAB)
 #define __IHidd	                (_csd->hiddAB)
-#define __IHidd_Power           (_csd->hiddPowerAB)
+#define __IHidd_Telemetry       (_csd->hiddTelemetryAB)
 
 #define OOPBase                 (_csd->cs_OOPBase)
 

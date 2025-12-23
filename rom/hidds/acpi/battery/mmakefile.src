@@ -13,7 +13,7 @@ USER_CPPFLAGS      := -D__OOP_NOLIBBASE__ \
 USER_LDFLAGS := -static
 #USER_CPPFLAGS += -DDEBUG=1
 
-#MM kernel-hidd-acpibattery : kernel-hidd-power-includes
+#MM kernel-hidd-acpibattery : kernel-hidd-power-includes kernel-hidd-telemetry-includes
 
 %build_module mmake=kernel-hidd-acpibattery \
   modname=acpibattery modtype=hidd \

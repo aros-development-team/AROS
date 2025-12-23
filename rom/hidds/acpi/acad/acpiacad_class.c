@@ -51,6 +51,13 @@ OOP_Object *ACPIACAd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         data->acpiacad_Flags = vHW_PowerFlag_Unknown;
 
         data->acpiacad_Handle = acpiHandle;
+
+        OOP_SetAttrsTags(acadO,
+            aHidd_Telemetry_Value, (IPTR)0,
+            aHidd_Telemetry_Min, (IPTR)0,
+            aHidd_Telemetry_Max, (IPTR)1,
+            aHidd_Telemetry_Units, (IPTR)vHW_TelemetryUnit_Boolean,
+            TAG_DONE);
     }
     return acadO;
 }
@@ -72,21 +79,6 @@ VOID ACPIACAd__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     case aoHW_ACPIACAd_Handle:
         *msg->storage = (IPTR)data->acpiacad_Handle;
-        return;
-    }
-
-    Hidd_Power_Switch(msg->attrID, idx)
-    {
-    case aoHidd_Power_Type:
-        *msg->storage = (IPTR)vHW_PowerType_AC;
-        return;
-
-    case aoHidd_Power_State:
-        *msg->storage = (IPTR)data->acpiacad_State;
-        return;
-
-    case aoHidd_Power_Flags:
-        *msg->storage = (IPTR)data->acpiacad_Flags;
         return;
     }
 

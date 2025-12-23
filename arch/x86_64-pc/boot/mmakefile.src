@@ -3,54 +3,65 @@ include $(SRCDIR)/config/aros.cfg
 
 # The "core" AROS components for a bootable system
 
-#MM- boot-pc-x86_64        : bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 kernel-bootstrap-pc-compress
-#MM- kernel-link-pc-x86_64 : kernel-pc-x86_64-kernel-compress \
-#MM                          kernel-bsp-pc-x86_64-compress kernel-legacy-pc-x86_64-compress \
-#MM                          kernel-package-base-compress  kernel-package-usb-compress      \
-#MM                          kernel-package-fs-compress
-#MM- workbench-pc-x86_64   : workbench-drivers kernel-pc-i386-trackdisk
+#MM- boot-pc-x86_64        :                                    \
+#MM                     bootloader-$(AROS_TARGET_BOOTLOADER)-pc-x86_64 \
+#MM                     kernel-bootstrap-pc-compress
+#MM- kernel-link-pc-x86_64 :                                    \
+#MM                     kernel-pc-x86_64-kernel-compress        \
+#MM                     kernel-bsp-pc-x86_64-compress           \
+#MM                     kernel-legacy-pc-x86_64-compress        \
+#MM                     kernel-package-base-compress            \
+#MM                     kernel-package-usb-compress             \
+#MM                     kernel-package-fs-compress
+#MM- workbench-pc-x86_64   :                                    \
+#MM                     workbench-drivers                       \
+#MM                     kernel-pc-i386-trackdisk
 
 # -------- x86_64-pc kernel --------
 
-#MM- kernel-pc-x86_64-kernel: kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+#MM- kernel-pc-x86_64-kernel:                                   \
+#MM                     kernel-kernel-kobj                      \
+#MM                     kernel-exec-kobj                        \
+#MM                     kernel-task-kobj
 
 %link_kickstart mmake=kernel-pc-x86_64-kernel file=$(AROSARCHDIR)/kernel \
 	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- x86_64-pc board support package --------
 
-#MM kernel-bsp-pc-x86_64 :	\
-#MM			   linklibs-bootconsole		\
-#MM			   kernel-log				\
-#MM			   kernel-log-serial		\
-#MM			   kernel-hidd-bus			\
-#MM			   kernel-hidd-base			\
-#MM			   kernel-ata				\
-#MM			   kernel-hidd-pciata		\
-#MM			   kernel-ahci				\
-#MM			   kernel-nvme				\
-#MM			   kernel-battclock			\
-#MM			   kernel-efi				\
-#MM			   kernel-timer				\
-#MM			   kernel-expansion			\
-#MM			   kernel-pc-acpica  		\
-#MM			   kernel-pc-hpet    		\
-#MM			   kernel-hidd-i8042    	\
-#MM			   kernel-pc-i386-serial    \
-#MM			   kernel-pc-i386-parallel  \
-#MM			   kernel-hidd-vgagfx    	\
-#MM			   kernel-hidd-vesagfx    	\
-#MM			   kernel-hidd-pci    		\
-#MM			   kernel-hidd-pci-pcipc    \
-#MM			   kernel-processor
+#MM kernel-bsp-pc-x86_64 :                                      \
+#MM                     linklibs-bootconsole                    \
+#MM                     kernel-log                              \
+#MM                     kernel-log-serial                       \
+#MM                     kernel-hidd-bus                         \
+#MM                     kernel-hidd-base                        \
+#MM                     kernel-ata                              \
+#MM                     kernel-hidd-pciata                      \
+#MM                     kernel-ahci                             \
+#MM                     kernel-nvme                             \
+#MM                     kernel-battclock                        \
+#MM                     kernel-efi                              \
+#MM                     kernel-timer                            \
+#MM                     kernel-expansion                        \
+#MM                     kernel-pc-acpica                        \
+#MM                     kernel-pc-hpet                          \
+#MM                     kernel-hidd-i8042                       \
+#MM                     kernel-pc-i386-serial                   \
+#MM                     kernel-pc-i386-parallel                 \
+#MM                     kernel-hidd-vgagfx                      \
+#MM                     kernel-hidd-vesagfx                     \
+#MM                     kernel-hidd-pci                         \
+#MM                     kernel-hidd-pci-pcipc                   \
+#MM                     kernel-processor                        \
+#MM                     kernel-libs-x86emu
 
 KRSRCS      := efi hpet log
 KRSRCS_ARCH := battclock processor
-KLIBS       := acpica
+KLIBS       := acpica x86emu
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 parallel pci pcipc power serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 parallel pci pcipc telemetry power serial vesagfx vgagfx storage system
 
 LOG_RESOURCES := serial.logger
 BSP_MISC := \
@@ -63,21 +74,22 @@ BSP_MISC := \
 # -------- ACPI drivers package --------
 
 #MM- kernel-link-pc-x86_64 : kernel-acpi-compress
-#MM kernel-acpi :	        \
-#MM     kernel-hidd-acpibutton	        \
-#MM     kernel-hidd-acpiacad	        \
+#MM kernel-acpi :                       \
+#MM     kernel-hidd-acpibutton          \
+#MM     kernel-hidd-acpifan             \
+#MM     kernel-hidd-acpiacad            \
 #MM     kernel-hidd-acpibattery
 
 ACPIDEVS        :=
 ACPIRSRCS      :=
-ACPIHIDDS      := acpiacad acpibattery acpibutton
+ACPIHIDDS      := acpiacad acpibattery acpifan acpibutton
 
 %make_package mmake=kernel-acpi file=$(AROSARCHDIR)/aros-acpi.pkg \
 	 devs=$(ACPIDEVS) res=$(ACPIRSRCS) hidds=$(ACPIHIDDS) packfmt=$(AROS_PACKAGE_FMT)
 
 # -------- x86_64-pc legacy drivers package --------
 
-#MM- kernel-legacy-pc-x86_64 :	        \
+#MM- kernel-legacy-pc-x86_64 :          \
 #MM     kernel-hidd-serialmouse         \
 #MM     kernel-devs-trackdisk
 

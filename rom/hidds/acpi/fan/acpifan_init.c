@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -19,13 +19,13 @@
 
 #include <limits.h>
 
-#include "acpibattery_intern.h"
+#include "acpifan_intern.h"
 
 #include LC_LIBDEFS_FILE
 
 #define DSCAN(x)
 
-BOOL ACPIBattery_MatchDeviceID(ACPI_DEVICE_INFO *acpiDevInfo, char *deviceID)
+BOOL ACPIFan_MatchDeviceID(ACPI_DEVICE_INFO *acpiDevInfo, char *deviceID)
 {
     ACPI_PNP_DEVICE_ID_LIST *cIdList;
     ACPI_PNP_DEVICE_ID *hwId;
@@ -46,16 +46,16 @@ BOOL ACPIBattery_MatchDeviceID(ACPI_DEVICE_INFO *acpiDevInfo, char *deviceID)
 
 #undef _csd
 
-static ACPI_STATUS ACPIBattery_DeviceQuery(ACPI_HANDLE handle,
+static ACPI_STATUS ACPIFan_DeviceQuery(ACPI_HANDLE handle,
                                 UINT32 level,
                                 void *context,
                                 void **retval)
 {
-    struct acpibatteryclass_staticdata    *_csd = (struct acpibatteryclass_staticdata *)context;
+    struct acpifanclass_staticdata    *_csd = (struct acpifanclass_staticdata *)context;
     ACPI_DEVICE_INFO            *acpiDevInfo = NULL;
     ACPI_STATUS                 acpiStatus;
 
-    DSCAN(bug("[HWACPIBattery] %s(0x%p)\n", __func__, handle));
+    DSCAN(bug("[HWACPIFan] %s(0x%p)\n", __func__, handle));
 
     acpiStatus = AcpiGetObjectInfo(handle, &acpiDevInfo);
     if (ACPI_FAILURE(acpiStatus)) {
@@ -65,17 +65,17 @@ static ACPI_STATUS ACPIBattery_DeviceQuery(ACPI_HANDLE handle,
         return acpiStatus;
     }
 
-    if (ACPIBattery_MatchDeviceID(acpiDevInfo, "PNP0C0A"))
+    if (ACPIFan_MatchDeviceID(acpiDevInfo, "PNP0C0B"))
     {
-        struct ACPIBatNode *newBatt = AllocVec(sizeof(struct ACPIBatNode), MEMF_CLEAR);
-        D(bug("[HWACPIBattery] %s: Battery Device PNP0C0A Found @ 0x%p\n", __func__, handle));
-        if (!newBatt)
+        struct ACPIFanNode *newFan = AllocVec(sizeof(struct ACPIFanNode), MEMF_CLEAR);
+        D(bug("[HWACPIFan] %s: Fan Device PNP0C0B Found @ 0x%p\n", __func__, handle));
+        if (!newFan)
         {
             FreeVec(acpiDevInfo);
             return AE_NO_MEMORY;
         }
-        newBatt->abn_Handle = handle;
-        AddTail(&_csd->cs_Batteries, &newBatt->abn_Node);
+        newFan->afann_Handle = handle;
+        AddTail(&_csd->cs_Fans, &newFan->afann_Node);
     }
 
     FreeVec(acpiDevInfo);
@@ -83,16 +83,16 @@ static ACPI_STATUS ACPIBattery_DeviceQuery(ACPI_HANDLE handle,
     return AE_OK;
 }
 
-static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
+static int ACPIFan_Init(LIBBASETYPEPTR LIBBASE)
 {
-    struct acpibatteryclass_staticdata    *_csd = &LIBBASE->hsi_csd;
+    struct acpifanclass_staticdata    *_csd = &LIBBASE->hsi_csd;
     OOP_Object                  *root;
-    int                         batteryCount = 0;
+    int                         fanCount = 0;
     int                         retVal = FALSE;
     __unused ACPI_STATUS        acpiStatus;
 
-    D(bug("[HWACPIBattery] %s()\n", __func__));
-    D(bug("[HWACPIBattery] %s: OOPBase @ 0x%p\n", __func__, OOPBase));
+    D(bug("[HWACPIFan] %s()\n", __func__));
+    D(bug("[HWACPIFan] %s: OOPBase @ 0x%p\n", __func__, OOPBase));
 
     _csd->cs_ACPICABase = OpenLibrary("acpica.library", 0);
     if (!_csd->cs_ACPICABase)
@@ -107,7 +107,7 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->hsi_LibNode.lib_OpenCnt += 1;
 
-    NEWLIST(&_csd->cs_Batteries);
+    NEWLIST(&_csd->cs_Fans);
 
     root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
     if (!root)
@@ -123,38 +123,36 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
     _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
     _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
     _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
-    _csd->hwACPIBatteryAB = OOP_ObtainAttrBase(IID_HW_ACPIBattery);
+    _csd->hwACPIFanAB = OOP_ObtainAttrBase(IID_HW_ACPIFan);
 
     {
         struct TagItem instanceTags[] =
         {
-            { _csd->hwACPIBatteryAB + aoHW_ACPIBattery_Handle,    0},
-            { TAG_DONE,                                         0}
+            { _csd->hwACPIFanAB + aoHW_ACPIFan_Handle,    0},
+            { TAG_DONE,                                       0}
         };
-        ACPI_TABLE_FADT *fadt;
 
-        /* check for battery devices .. */
-        acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, INT_MAX, ACPIBattery_DeviceQuery, NULL, _csd, NULL);
+        acpiStatus = AcpiWalkNamespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT, INT_MAX, ACPIFan_DeviceQuery, NULL, _csd, NULL);
         if (acpiStatus == AE_OK)
         {
-            struct ACPIBatNode *newBatt, *tmpNode;
-            ForeachNodeSafe(&_csd->cs_Batteries, newBatt, tmpNode)
+            struct ACPIFanNode *newFan, *tmpNode;
+            ForeachNodeSafe(&_csd->cs_Fans, newFan, tmpNode)
             {
-                instanceTags[0].ti_Data = (IPTR)newBatt->abn_Handle;
-                if ((newBatt->abn_Object = HW_AddDriver(root, _csd->oopclass, instanceTags)))
+                instanceTags[0].ti_Data = (IPTR)newFan->afann_Handle;
+                if ((newFan->afann_Object = HW_AddDriver(root, _csd->oopclass, instanceTags)))
                 {
-                    D(bug("[HWACPIBattery] %s: ACPIBattery instance @ 0x%pp\n", __func__, newBatt->abn_Object));
-                    batteryCount++;
+                    D(bug("[HWACPIFan] %s: ACPIFan instance @ 0x%pp\n", __func__, newFan->afann_Object));
+                    fanCount++;
                 }
                 else
                 {
-                    // TODO: Free the node
+                    /* TODO: Free the node */
                 }
             }
         }
     }
 
-    if (batteryCount > 0)
+    if (fanCount > 0)
         retVal = TRUE;
     else
     {
@@ -163,22 +161,22 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
         CloseLibrary(_csd->cs_ACPICABase);
     }
 
-    D(bug("[HWACPIBattery] %s: Finished\n", __func__));
+    D(bug("[HWACPIFan] %s: Finished\n", __func__));
 
     return retVal;
 }
 
-static int ACPIBattery_Expunge(LIBBASETYPEPTR LIBBASE)
+static int ACPIFan_Expunge(LIBBASETYPEPTR LIBBASE)
 {
-    D(struct acpibatteryclass_staticdata *_csd = &LIBBASE->hsi_csd;)
+    D(struct acpifanclass_staticdata *_csd = &LIBBASE->hsi_csd;)
 
     D(
-        bug("[HWACPIBattery] %s()\n", __func__);
-        bug("[HWACPIBattery] %s: csd @ %p\n", __func__, _csd);
+        bug("[HWACPIFan] %s()\n", __func__);
+        bug("[HWACPIFan] %s: csd @ %p\n", __func__, _csd);
     )
 
     return TRUE;
 }
 
-ADD2INITLIB(ACPIBattery_Init, -2)
-ADD2EXPUNGELIB(ACPIBattery_Expunge, -2)
+ADD2INITLIB(ACPIFan_Init, -2)
+ADD2EXPUNGELIB(ACPIFan_Expunge, -2)

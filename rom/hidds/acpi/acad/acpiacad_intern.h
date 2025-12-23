@@ -9,6 +9,7 @@
 
 #include <hidd/hidd.h>
 #include <hidd/power.h>
+#include <hidd/telemetry.h>
 #include <hidd/acpiacad.h>
 
 #include <acpica/acnames.h>
@@ -41,7 +42,7 @@ struct acpiacadclass_staticdata
 
     OOP_AttrBase                hwAB;
     OOP_AttrBase                hiddAB;
-    OOP_AttrBase                hiddPowerAB;
+    OOP_AttrBase                hiddTelemetryAB;
     OOP_AttrBase                hwACPIACAdAB;
 };
 
@@ -60,7 +61,7 @@ struct HWACPIACAdIntBase
 #define __IHW_ACPIACAd          (_csd->hwACPIACAdAB)
 #define __IHW 	                (_csd->hwAB)
 #define __IHidd	                (_csd->hiddAB)
-#define __IHidd_Power           (_csd->hiddPowerAB)
+#define __IHidd_Telemetry       (_csd->hiddTelemetryAB)
 
 #define OOPBase                 (_csd->cs_OOPBase)
 

@@ -15,6 +15,7 @@
 #include <aros/symbolsets.h>
 #include <hidd/hidd.h>
 #include <hidd/system.h>
+#include <hidd/telemetry.h>
 
 #include <limits.h>
 
@@ -121,7 +122,7 @@ static int ACPIACAd_Init(LIBBASETYPEPTR LIBBASE)
 
     _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
     _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    _csd->hiddPowerAB = OOP_ObtainAttrBase(IID_Hidd_Power);
+    _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
     _csd->hwACPIACAdAB = OOP_ObtainAttrBase(IID_HW_ACPIACAd);
 
     {

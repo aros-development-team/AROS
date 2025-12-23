@@ -51,6 +51,13 @@ OOP_Object *ACPIBattery__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         data->acpib_Flags = vHW_PowerFlag_Unknown;
 
         data->acpib_Handle = acpiHandle;
+
+        OOP_SetAttrsTags(batteryO,
+            aHidd_Telemetry_Value, (IPTR)0,
+            aHidd_Telemetry_Min, (IPTR)0,
+            aHidd_Telemetry_Max, (IPTR)100,
+            aHidd_Telemetry_Units, (IPTR)vHW_TelemetryUnit_Percent,
+            TAG_DONE);
     }
     return batteryO;
 }
@@ -72,21 +79,6 @@ VOID ACPIBattery__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     case aoHW_ACPIBattery_Handle:
         *msg->storage = (IPTR)data->acpib_Handle;
-        return;
-    }
-
-    Hidd_Power_Switch(msg->attrID, idx)
-    {
-    case aoHidd_Power_Type:
-        *msg->storage = (IPTR)vHW_PowerType_Battery;
-        return;
-
-    case aoHidd_Power_State:
-        *msg->storage = (IPTR)data->acpib_State;
-        return;
-
-    case aoHidd_Power_Flags:
-        *msg->storage = (IPTR)data->acpib_Flags;
         return;
     }
 
