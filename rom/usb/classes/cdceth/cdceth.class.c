@@ -157,7 +157,7 @@ struct NepClassEth * usbAttemptDeviceBinding(struct NepEthBase *nh, struct PsdDe
                     DA_ConfigList, &cfgs,
                     TAG_END);
 
-        //* Only bind to devices exposing a CDC Ethernet control interface on any config. */
+        /* Only bind to devices exposing a CDC Ethernet control interface on any config. */
         for(pc = (struct PsdConfig *) (cfgs ? cfgs->lh_Head : NULL);
             pc && pc->pc_Node.ln_Succ;
             pc = (struct PsdConfig *) pc->pc_Node.ln_Succ)
