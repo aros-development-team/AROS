@@ -68,6 +68,11 @@ static ACPI_STATUS ACPIACAd_DeviceQuery(ACPI_HANDLE handle,
     {
         struct ACPIACAdNode *newBatt = AllocVec(sizeof(struct ACPIACAdNode), MEMF_CLEAR);
         D(bug("[HWACPIACAd] %s: AC Adaptor Device ACPI0003 Found @ 0x%p\n", __func__, handle));
+        if (!newBatt)
+        {
+            FreeVec(acpiDevInfo);
+            return AE_NO_MEMORY;
+        }
         newBatt->aacadn_Handle = handle;
         AddTail(&_csd->cs_Batteries, &newBatt->aacadn_Node);
     }

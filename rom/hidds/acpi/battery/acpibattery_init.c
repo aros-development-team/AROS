@@ -68,6 +68,11 @@ static ACPI_STATUS ACPIBattery_DeviceQuery(ACPI_HANDLE handle,
     {
         struct ACPIBatNode *newBatt = AllocVec(sizeof(struct ACPIBatNode), MEMF_CLEAR);
         D(bug("[HWACPIBattery] %s: Battery Device PNP0C0A Found @ 0x%p\n", __func__, handle));
+        if (!newBatt)
+        {
+            FreeVec(acpiDevInfo);
+            return AE_NO_MEMORY;
+        }
         newBatt->abn_Handle = handle;
         AddTail(&_csd->cs_Batteries, &newBatt->abn_Node);
     }
