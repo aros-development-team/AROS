@@ -49,7 +49,6 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     ULONG *dmalen, UWORD effdir, APTR *bounceOut)
 {
     APTR data = ioreq->iouh_Data;
-    APTR bounce = NULL;
 
     if (bounceOut)
         *bounceOut = NULL;
@@ -58,6 +57,7 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         return data;
 
 #if __WORDSIZE == 64
+    APTR bounce = NULL;
     if (!(hc->hc_Flags & HCF_ADDR64)) {
         if ((((IPTR)data + *dmalen - 1) >> 32) != 0) {
             bounce = AllocVec(*dmalen, MEMF_31BIT|MEMF_PUBLIC);
