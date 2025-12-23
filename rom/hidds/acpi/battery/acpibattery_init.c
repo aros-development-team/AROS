@@ -106,6 +106,13 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
     root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
     if (!root)
         root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
+    if (!root)
+    {
+        LIBBASE->hsi_LibNode.lib_OpenCnt -= 1;
+        CloseLibrary(_csd->cs_UtilityBase);
+        CloseLibrary(_csd->cs_ACPICABase);
+        return FALSE;
+    }
 
     _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
     _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
