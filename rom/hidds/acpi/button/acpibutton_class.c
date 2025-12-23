@@ -36,13 +36,30 @@ CONST_STRPTR    acpiFButton_str = "ACPI Fixed Button Device";
 void ACPIButtonServiceTask(struct ExecBase *SysBase)
 {
     ULONG signals = 0;
+    LONG sigPower;
+    LONG sigSleep;
+    LONG sigLid;
 
     D(bug("[ACPI:Button] %s()\n", __func__));
 
-    acpiButton_Service.acpist_SigPower = AllocSignal(-1);
-    acpiButton_Service.acpist_SigSleep = AllocSignal(-1);
-    acpiButton_Service.acpist_SigLid = AllocSignal(-1);
-    
+    sigPower = AllocSignal(-1);
+    sigSleep = AllocSignal(-1);
+    sigLid = AllocSignal(-1);
+    if (sigPower == -1 || sigSleep == -1 || sigLid == -1)
+    {
+        if (sigPower != -1)
+            FreeSignal(sigPower);
+        if (sigSleep != -1)
+            FreeSignal(sigSleep);
+        if (sigLid != -1)
+            FreeSignal(sigLid);
+        return;
+    }
+
+    acpiButton_Service.acpist_SigPower = (BYTE)sigPower;
+    acpiButton_Service.acpist_SigSleep = (BYTE)sigSleep;
+    acpiButton_Service.acpist_SigLid = (BYTE)sigLid;
+
     while (signals = Wait((1 << acpiButton_Service.acpist_SigPower) | (1 << acpiButton_Service.acpist_SigSleep) | (1 << acpiButton_Service.acpist_SigLid)))
     {
         if (signals & (1 << acpiButton_Service.acpist_SigPower))

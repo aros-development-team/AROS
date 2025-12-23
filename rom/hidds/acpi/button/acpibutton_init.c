@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -240,17 +240,20 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 instanceTags[1].ti_Data = 0;
 
                 buttonHook = AllocMem(sizeof(struct Hook), MEMF_CLEAR);
-                buttonHook->h_Entry = (HOOKFUNC)ACPIButton_PowerEventHandle;
-                buttonHook->h_Data = 0;
-                instanceTags[2].ti_Data = (IPTR)buttonHook;
-
-                if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                if (buttonHook)
                 {
-                    D(bug("[HWACPIButton] %s: Fixed Power-Button initialised\n", __func__));
-                    buttonCount++;
+                    buttonHook->h_Entry = (HOOKFUNC)ACPIButton_PowerEventHandle;
+                    buttonHook->h_Data = 0;
+                    instanceTags[2].ti_Data = (IPTR)buttonHook;
+
+                    if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                    {
+                        D(bug("[HWACPIButton] %s: Fixed Power-Button initialised\n", __func__));
+                        buttonCount++;
+                    }
+                    else
+                        FreeMem(buttonHook, sizeof(struct Hook));
                 }
-                else
-                    FreeMem(buttonHook, sizeof(struct Hook));
             }
             if ((!(fadt->Flags & ACPI_FADT_SLEEP_BUTTON)) && (!_csd->sleepButtonObj))
             {
@@ -262,17 +265,20 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 instanceTags[1].ti_Data = 0;
 
                 buttonHook = AllocMem(sizeof(struct Hook), MEMF_CLEAR);
-                buttonHook->h_Entry = (HOOKFUNC)ACPIButton_SleepEventHandle;
-                buttonHook->h_Data = 0;
-                instanceTags[2].ti_Data = (IPTR)buttonHook;
-
-                if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                if (buttonHook)
                 {
-                    D(bug("[HWACPIButton] %s: Fixed Sleep-Button initialised\n", __func__));
-                    buttonCount++;
+                    buttonHook->h_Entry = (HOOKFUNC)ACPIButton_SleepEventHandle;
+                    buttonHook->h_Data = 0;
+                    instanceTags[2].ti_Data = (IPTR)buttonHook;
+
+                    if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                    {
+                        D(bug("[HWACPIButton] %s: Fixed Sleep-Button initialised\n", __func__));
+                        buttonCount++;
+                    }
+                    else
+                        FreeMem(buttonHook, sizeof(struct Hook));
                 }
-                else
-                    FreeMem(buttonHook, sizeof(struct Hook));
             }
         }
 
@@ -286,17 +292,20 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 instanceTags[1].ti_Data = (IPTR)_csd->acpiPowerBHandle;
 
                 buttonHook = AllocMem(sizeof(struct Hook), MEMF_CLEAR);
-                buttonHook->h_Entry = (HOOKFUNC)ACPIButton_PowerEventHandle;
-                buttonHook->h_Data = 0;
-                instanceTags[2].ti_Data = (IPTR)buttonHook;
-
-                if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                if (buttonHook)
                 {
-                    D(bug("[HWACPIButton] %s: Power-Button initialised\n", __func__));
-                    buttonCount++;
+                    buttonHook->h_Entry = (HOOKFUNC)ACPIButton_PowerEventHandle;
+                    buttonHook->h_Data = 0;
+                    instanceTags[2].ti_Data = (IPTR)buttonHook;
+
+                    if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                    {
+                        D(bug("[HWACPIButton] %s: Power-Button initialised\n", __func__));
+                        buttonCount++;
+                    }
+                    else
+                        FreeMem(buttonHook, sizeof(struct Hook));
                 }
-                else
-                    FreeMem(buttonHook, sizeof(struct Hook));
             }
 
             if ((_csd->acpiSleepBHandle != NULL) && (!_csd->sleepButtonObj))
@@ -305,17 +314,20 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 instanceTags[1].ti_Data = (IPTR)_csd->acpiSleepBHandle;
 
                 buttonHook = AllocMem(sizeof(struct Hook), MEMF_CLEAR);
-                buttonHook->h_Entry = (HOOKFUNC)ACPIButton_SleepEventHandle;
-                buttonHook->h_Data = 0;
-                instanceTags[2].ti_Data = (IPTR)buttonHook;
-
-                if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                if (buttonHook)
                 {
-                    D(bug("[HWACPIButton] %s: Sleep-Button initialised\n", __func__));
-                    buttonCount++;
+                    buttonHook->h_Entry = (HOOKFUNC)ACPIButton_SleepEventHandle;
+                    buttonHook->h_Data = 0;
+                    instanceTags[2].ti_Data = (IPTR)buttonHook;
+
+                    if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                    {
+                        D(bug("[HWACPIButton] %s: Sleep-Button initialised\n", __func__));
+                        buttonCount++;
+                    }
+                    else
+                        FreeMem(buttonHook, sizeof(struct Hook));
                 }
-                else
-                    FreeMem(buttonHook, sizeof(struct Hook));
             }
 
             if ((_csd->acpibLidBHandle != NULL) && (!_csd->lidButtonObj))
@@ -324,17 +336,20 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
                 instanceTags[1].ti_Data = (IPTR)_csd->acpibLidBHandle;
 
                 buttonHook = AllocMem(sizeof(struct Hook), MEMF_CLEAR);
-                buttonHook->h_Entry = (HOOKFUNC)ACPIButton_LidEventHandle;
-                buttonHook->h_Data = 0;
-                instanceTags[2].ti_Data = (IPTR)buttonHook;
-
-                if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                if (buttonHook)
                 {
-                    D(bug("[HWACPIButton] %s: Lid-Button initialised\n", __func__));
-                    buttonCount++;
+                    buttonHook->h_Entry = (HOOKFUNC)ACPIButton_LidEventHandle;
+                    buttonHook->h_Data = 0;
+                    instanceTags[2].ti_Data = (IPTR)buttonHook;
+
+                    if (HW_AddDriver(root, _csd->oopclass, instanceTags))
+                    {
+                        D(bug("[HWACPIButton] %s: Lid-Button initialised\n", __func__));
+                        buttonCount++;
+                    }
+                    else
+                        FreeMem(buttonHook, sizeof(struct Hook));
                 }
-                else
-                    FreeMem(buttonHook, sizeof(struct Hook));
             }
         }
     }
