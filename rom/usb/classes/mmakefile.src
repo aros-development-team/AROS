@@ -13,6 +13,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-bluetooth            \
 #MM     kernel-usb-classes-camdusbmidi          \
 #MM     kernel-usb-classes-cdcacm               \
+#MM     kernel-usb-classes-cdceth               \
 #MM     kernel-usb-classes-dm9601eth            \
 #MM     kernel-usb-classes-dfu                  \
 #MM     kernel-usb-classes-egalaxtouch          \
@@ -31,21 +32,21 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-felsunxi
 
 # Build complete set of classes on disk
-#MM kernel-usb-classes :		                \
-#MM	kernel-usb-classes-common	                \
+#MM kernel-usb-classes :                        \
+#MM     kernel-usb-classes-common               \
 #MM     kernel-usb-classes-bootkeyboard         \
-#MM     kernel-usb-classes-bootmouse	        \
-#MM     kernel-usb-classes-hid		            \
-#MM     kernel-usb-classes-hub		            \
+#MM     kernel-usb-classes-bootmouse            \
+#MM     kernel-usb-classes-hid                  \
+#MM     kernel-usb-classes-hub                  \
 #MM     kernel-usb-classes-hubss                \
 #MM     kernel-usb-classes-massstorage
 
 # Build a set of kickstart-resident classes for ELF packaging
-#MM kernel-usb-classes-kobj :			        \
+#MM kernel-usb-classes-kobj :                   \
 #MM     kernel-usb-classes-bootkeyboard-kobj    \
-#MM     kernel-usb-classes-bootmouse-kobj	    \
-#MM     kernel-usb-classes-hid-kobj		        \
-#MM     kernel-usb-classes-hub-kobj		        \
+#MM     kernel-usb-classes-bootmouse-kobj       \
+#MM     kernel-usb-classes-hid-kobj             \
+#MM     kernel-usb-classes-hub-kobj             \
 #MM     kernel-usb-classes-hubss-kobj           \
 #MM     kernel-usb-classes-massstorage-kobj
 
@@ -57,6 +58,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     kernel-usb-classes-bootmouse-clean      \
 #MM     kernel-usb-classes-camdusbmidi-clean    \
 #MM     kernel-usb-classes-cdcacm-clean         \
+#MM     kernel-usb-classes-cdceth-clean         \
 #MM     kernel-usb-classes-dm9601eth-clean      \
 #MM     kernel-usb-classes-dfu-clean            \
 #MM     kernel-usb-classes-egalaxtouch-clean    \

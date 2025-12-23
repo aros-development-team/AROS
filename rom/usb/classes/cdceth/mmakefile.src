@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+
+FILES :=    cdceth.class dev debug
+
+#MM- kernel-usb-classes-cdceth : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module_library mmake=kernel-usb-classes-cdceth \
+    modname=cdceth modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="debug"
+
+%common
