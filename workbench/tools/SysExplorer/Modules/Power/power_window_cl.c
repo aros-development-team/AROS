@@ -42,10 +42,20 @@ struct PowerWindow_DATA
     Class           *cl;
     OOP_Object *dev;
     char            *winTitle;
-    Object          *status;
-    Object          *level;
+    Object          *type;
+    Object          *state;
+    Object          *flags;
+    Object          *capacity;
+    Object          *rate;
+    Object          *units;
+    char            capacityText[32];
+    char            rateText[32];
     struct Hook     graphReadHook;
 };
+
+CONST_STRPTR    typeUnknown = "Unknown";
+CONST_STRPTR    typeBattery = "Battery";
+CONST_STRPTR    typeAC = "AC Adapter";
 
 CONST_STRPTR    stateMissing = "Not Present";
 CONST_STRPTR    stateCharging = "Charging";
@@ -56,57 +66,122 @@ CONST_STRPTR    levelHigh = "High";
 CONST_STRPTR    levelCrit = "Critical";
 CONST_STRPTR    levelUnknown = " --- --- ";
 
+CONST_STRPTR    unitsMilliAmp = "mA";
+CONST_STRPTR    unitsMilliWatt = "mW";
+
+static CONST_STRPTR PowerWindow_GetTypeString(IPTR value)
+{
+    switch (value)
+    {
+        case vHW_PowerType_Battery:
+            return typeBattery;
+        case vHW_PowerType_AC:
+            return typeAC;
+        case vHW_PowerType_Unknown:
+        default:
+            return typeUnknown;
+    }
+}
+
+static CONST_STRPTR PowerWindow_GetStateString(IPTR value)
+{
+    switch (value)
+    {
+        case vHW_PowerState_Discharging:
+            return stateDisacharging;
+        case vHW_PowerState_Charging:
+            return stateCharging;
+        case vHW_PowerState_NotPresent:
+        default:
+            return stateMissing;
+    }
+}
+
+static CONST_STRPTR PowerWindow_GetFlagsString(IPTR value)
+{
+    switch (value)
+    {
+        case vHW_PowerFlag_Low:
+            return levelLow;
+        case vHW_PowerFlag_High:
+            return levelHigh;
+        case vHW_PowerFlag_Critical:
+            return levelCrit;
+        case vHW_PowerFlag_Unknown:
+        default:
+            return levelUnknown;
+    }
+}
+
+static CONST_STRPTR PowerWindow_GetUnitsString(IPTR value)
+{
+    switch (value)
+    {
+        case vHW_PowerUnit_mA:
+            return unitsMilliAmp;
+        case vHW_PowerUnit_mW:
+            return unitsMilliWatt;
+        default:
+            return typeUnknown;
+    }
+}
+
+static void PowerWindow_UpdateDetails(struct PowerWindow_DATA *data)
+{
+    struct SysexpPowerBase *PowerBase = (struct SysexpPowerBase *)data->cl->cl_UserData;
+    IPTR val = 0;
+    IPTR type = vHW_PowerType_Unknown;
+    IPTR units = 0;
+
+    OOP_GetAttr(data->dev, aHidd_Power_Type, &type);
+    if (data->type)
+        SET(data->type, MUIA_Text_Contents, PowerWindow_GetTypeString(type));
+
+    OOP_GetAttr(data->dev, aHidd_Power_State, &val);
+    if (data->state)
+        SET(data->state, MUIA_Text_Contents, PowerWindow_GetStateString(val));
+
+    OOP_GetAttr(data->dev, aHidd_Power_Flags, &val);
+    if (data->flags)
+        SET(data->flags, MUIA_Text_Contents, PowerWindow_GetFlagsString(val));
+
+    OOP_GetAttr(data->dev, aHidd_Power_Units, &units);
+    if (data->units)
+        SET(data->units, MUIA_Text_Contents, PowerWindow_GetUnitsString(units));
+
+    if (type == vHW_PowerType_AC)
+    {
+        snprintf(data->capacityText, sizeof(data->capacityText), "n/a");
+        snprintf(data->rateText, sizeof(data->rateText), "n/a");
+    }
+    else
+    {
+        OOP_GetAttr(data->dev, aHidd_Power_Capacity, &val);
+        snprintf(data->capacityText, sizeof(data->capacityText), "%ld", (long)val);
+
+        OOP_GetAttr(data->dev, aHidd_Power_Rate, &val);
+        snprintf(data->rateText, sizeof(data->rateText), "%ld", (long)val);
+    }
+
+    if (data->capacity)
+        SET(data->capacity, MUIA_Text_Contents, data->capacityText);
+    if (data->rate)
+        SET(data->rate, MUIA_Text_Contents, data->rateText);
+}
+
 AROS_UFH3(IPTR, GraphUpdateFunc,
         AROS_UFHA(struct Hook *, procHook, A0),
         AROS_UFHA(IPTR *, storage, A2),
         AROS_UFHA(struct PowerWindow_DATA *, data, A1))
 {
     AROS_USERFUNC_INIT
+    
     struct SysexpPowerBase *PowerBase = (struct SysexpPowerBase *)data->cl->cl_UserData;
-    CONST_STRPTR pwrState, pwrLevel;
     IPTR val = 0;
 
     D(bug("[power:sysexp] %s()\n", __func__);)
 
-    if (data->status)
-    {
-        OOP_GetAttr(data->dev, aHidd_Power_State, &val);
-        switch (val)
-        {
-            case vHW_PowerState_Discharging:
-                pwrState = stateDisacharging;
-                break;
-            case vHW_PowerState_Charging:
-                pwrState = stateCharging;
-                break;
-            case vHW_PowerState_NotPresent:
-            default:
-                pwrState = stateMissing;
-                break;
-        }
-        SET(data->status, MUIA_Text_Contents, pwrState);
-    }
-    if (data->level)
-    {
-        OOP_GetAttr(data->dev, aHidd_Power_Flags, &val);
-        switch (val)
-        {
-            case vHW_PowerFlag_Low:
-                pwrLevel = levelLow;
-                break;
-            case vHW_PowerFlag_High:
-                pwrLevel = levelHigh;
-                break;
-            case vHW_PowerFlag_Critical:
-                pwrLevel = levelCrit;
-                break;
-            case vHW_PowerFlag_Unknown:
-            default:
-                pwrLevel = levelUnknown;
-                break;
-        }
-        SET(data->level, MUIA_Text_Contents, pwrLevel);
-    }
+    PowerWindow_UpdateDetails(data);
 
     OOP_GetAttr(data->dev, aHidd_Power_Capacity, &val);
     *storage = val;
@@ -122,7 +197,9 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
 {
     struct SysexpPowerBase *PowerBase = (struct SysexpPowerBase *)cl->cl_UserData;
     OOP_Object *dev = (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
-    Object *winObj, *windowObjGrp = NULL, *battGraphObj = NULL, *statusObj = NULL, *levelObj = NULL;
+    Object *winObj, *windowObjGrp = NULL, *battGraphObj = NULL;
+    Object *typeObj = NULL, *stateObj = NULL, *flagsObj = NULL;
+    Object *capacityObj = NULL, *rateObj = NULL, *unitsObj = NULL;
     char title_str[32], *typestr = NULL, *wintitle;
     IPTR val;
 
@@ -136,7 +213,7 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     {
         case vHW_PowerType_Battery:
             {
-                typestr = "Battery";
+                typestr = (char *)typeBattery;
                 windowObjGrp = VGroup,
                     Child, (IPTR)(battGraphObj = GraphObject,
                         MUIA_Graph_InfoText,        (IPTR)"",
@@ -148,18 +225,46 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                     End),
                     Child, (IPTR)(ColGroup(2),
                         MUIA_Group_SameSize, TRUE,
-                        MUIA_FrameTitle, (IPTR)typestr,
+                        MUIA_FrameTitle, (IPTR)"Power Details",
                         GroupFrame,
                         MUIA_Background, MUII_GroupBack,
-                        Child, (IPTR)Label("Status"),
-                        Child, (IPTR)(statusObj = TextObject,
+                        Child, (IPTR)Label("Type"),
+                        Child, (IPTR)(typeObj = TextObject,
                             TextFrame,
                             MUIA_Background, MUII_TextBack,
                             MUIA_CycleChain, 1,
                             MUIA_Text_Contents, (IPTR)"",
                         End),
-                        Child, (IPTR)Label("Level"),
-                        Child, (IPTR)(levelObj = TextObject,
+                        Child, (IPTR)Label("State"),
+                        Child, (IPTR)(stateObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Text_Contents, (IPTR)"",
+                        End),
+                        Child, (IPTR)Label("Flags"),
+                        Child, (IPTR)(flagsObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Text_Contents, (IPTR)"",
+                        End),
+                        Child, (IPTR)Label("Capacity"),
+                        Child, (IPTR)(capacityObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Text_Contents, (IPTR)"",
+                        End),
+                        Child, (IPTR)Label("Rate"),
+                        Child, (IPTR)(rateObj = TextObject,
+                            TextFrame,
+                            MUIA_Background, MUII_TextBack,
+                            MUIA_CycleChain, 1,
+                            MUIA_Text_Contents, (IPTR)"",
+                        End),
+                        Child, (IPTR)Label("Units"),
+                        Child, (IPTR)(unitsObj = TextObject,
                             TextFrame,
                             MUIA_Background, MUII_TextBack,
                             MUIA_CycleChain, 1,
@@ -170,14 +275,49 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             }
             break;
         case vHW_PowerType_AC:
-            typestr = "AC Adapter";
+            typestr = (char *)typeAC;
             windowObjGrp = ColGroup(2),
                 MUIA_Group_SameSize, TRUE,
                 MUIA_FrameTitle, (IPTR)typestr,
                 GroupFrame,
                 MUIA_Background, MUII_GroupBack,
-                Child, (IPTR)Label("Status"),
-                Child, (IPTR)(TextObject,
+                Child, (IPTR)Label("Type"),
+                Child, (IPTR)(typeObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)"",
+                End),
+                Child, (IPTR)Label("State"),
+                Child, (IPTR)(stateObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)"",
+                End),
+                Child, (IPTR)Label("Flags"),
+                Child, (IPTR)(flagsObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)"",
+                End),
+                Child, (IPTR)Label("Capacity"),
+                Child, (IPTR)(capacityObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)"",
+                End),
+                Child, (IPTR)Label("Rate"),
+                Child, (IPTR)(rateObj = TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)"",
+                End),
+                Child, (IPTR)Label("Units"),
+                Child, (IPTR)(unitsObj = TextObject,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
                     MUIA_CycleChain, 1,
@@ -224,8 +364,12 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         data->cl = cl;
         data->dev = dev;
         data->winTitle = wintitle;
-        data->status = statusObj;
-        data->level = levelObj;
+        data->type = typeObj;
+        data->state = stateObj;
+        data->flags = flagsObj;
+        data->capacity = capacityObj;
+        data->rate = rateObj;
+        data->units = unitsObj;
         if (battGraphObj)
         {
             APTR graphDataSource = (APTR)DoMethod(battGraphObj, MUIM_Graph_GetSourceHandle, 0);
@@ -233,6 +377,7 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
             data->graphReadHook.h_Data = (APTR)data;
             DoMethod(battGraphObj, MUIM_Graph_SetSourceAttrib, graphDataSource, MUIV_Graph_Source_ReadHook, &data->graphReadHook);
         }
+        PowerWindow_UpdateDetails(data);
     }
     return winObj;
 }
