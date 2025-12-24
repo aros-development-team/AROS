@@ -12,6 +12,8 @@ USER_CPPFLAGS := \
 #USER_CPPFLAGS += -DDEBUG
 USER_LDFLAGS := -static
 
+#MM kernel-hidd-power : kernel-hidd-telemetry-includes
+
 %build_module mmake=kernel-hidd-power \
     modname=power modtype=hidd \
     files="$(FILES)"
