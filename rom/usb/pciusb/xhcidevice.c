@@ -43,6 +43,10 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
     struct pciusbXHCIIODevPrivate *driprivate = NULL;
     ULONG txtype = ioreq->iouh_Req.io_Command;
     BOOL allowEp0AutoCreate = FALSE;
+    const UBYTE bmRequestType = ioreq->iouh_SetupData.bmRequestType;
+    const UBYTE bRequest      = ioreq->iouh_SetupData.bRequest;
+    const UWORD wValue        = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
+    const UWORD wIndex        = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
 
     xhciDebugControlTransfer(ioreq);
 
@@ -95,11 +99,6 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
      */
 
     if (txtype == UHCMD_CONTROLXFER && driprivate && driprivate->dpDevice) {
-        const UBYTE bmRequestType = ioreq->iouh_SetupData.bmRequestType;
-        const UBYTE bRequest      = ioreq->iouh_SetupData.bRequest;
-        const UWORD wValue        = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
-        const UWORD wIndex        = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
-
         /* Standard SET_ADDRESS (device request) */
         if ((bmRequestType == (URTF_STANDARD | URTF_DEVICE)) &&
             (bRequest == USR_SET_ADDRESS))
@@ -165,6 +164,49 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
 
             SureCause(base, &hc->hc_CompleteInt);
             return RC_DONTREPLY;
+        }
+    }
+
+    /*
+     * Hub port connection change handling (downstream disconnects).
+     *
+     * When a hub clears C_PORT_CONNECTION for a downstream port, the device
+     * on that port may have disappeared. Build the child route string and
+     * drop any matching xHCI device context to release slot/resources.
+     */
+    if ((txtype == UHCMD_CONTROLXFER) &&
+        (ioreq->iouh_Flags & UHFF_HUB)) {
+        if ((bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
+            (bRequest == USR_CLEAR_FEATURE) &&
+            (wValue == UFS_C_PORT_CONNECTION))
+        {
+            UWORD port = wIndex & 0xFF;
+
+            if (port > 0 && port <= 0x0F) {
+                ULONG route = ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK;
+                int depth;
+
+                for (depth = 0; depth < 5; depth++) {
+                    if (((route >> (depth * 4)) & 0xF) == 0)
+                        break;
+                }
+
+                if (depth < 5) {
+                    route |= ((ULONG)port << (depth * 4));
+
+                    UWORD rootPortIndex = (ioreq->iouh_RootPort > 0)
+                                              ? (ioreq->iouh_RootPort - 1)
+                                              : 0;
+                    struct pciusbXHCIDevice *child =
+                        xhciFindRouteDevice(hc, route, rootPortIndex);
+                    if (child) {
+                        pciusbXHCIDebug("xHCI",
+                            "Hub port %u cleared C_PORT_CONNECTION, disconnecting route 0x%05lx\n",
+                            (unsigned)port, route);
+                        xhciDisconnectDevice(hc, child);
+                    }
+                }
+            }
         }
     }
 

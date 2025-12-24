@@ -303,7 +303,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                 DEBUGCOLOR_RESET "\n",
                 devCtx->dc_SlotID);
 
-            xhciFreeDeviceCtx(hc, devCtx, TRUE);
+            xhciDisconnectDevice(hc, devCtx);
         }
 
         if (oldval & XHCIF_PR_PORTSC_CCS) {
@@ -415,7 +415,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 
         devCtx = xhciFindPortDevice(hc, hciport);
         if (devCtx) {
-            xhciFreeDeviceCtx(hc, devCtx, TRUE);
+            xhciDisconnectDevice(hc, devCtx);
         }
 
         /* Attempt to clear PED via masked write (won't disturb RO fields). */
@@ -774,8 +774,7 @@ AROS_UFH0(void, xhciPortTask)
                                     DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n",
                                     devCtx);
 
-                    xhciFreeDeviceCtx(hc, devCtx, TRUE);
-                    hc->hc_Unit->hu_DevControllers[0] = NULL;
+                    xhciDisconnectDevice(hc, devCtx);
                 }
             }
             uhwCheckRootHubChanges(hc->hc_Unit);

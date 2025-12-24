@@ -397,6 +397,7 @@ void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *dev
 
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
 {
+    /* Caller must hold the ring lock. */
     ULONG last = (ring->end & ~RINGENDCFLAG);
     ULONG idx = ring->next;
 
@@ -449,6 +450,8 @@ static void xhciInsertTRB(struct PCIController *hc,
 WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
                   ULONG plen, ULONG trbflags)
 {
+    WORD queued = -1;
+
     if (trbflags & TRBF_FLAG_IDT) {
         pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, $%02x %02x %02x%02x %02x%02x %02x%02x, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring,
                        ((UBYTE *)&payload)[0], ((UBYTE *)&payload)[1], ((UBYTE *)&payload)[3], ((UBYTE *)&payload)[2],
@@ -462,6 +465,7 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
         return FALSE;
     }
 
+    xhciRingLock();
     if (xhciRingEntriesFree(ring) > 1) {
         if (ring->next >= XHCI_EVENT_RING_TRBS - 1) {
             UQUAD link_dma = (UQUAD)(IPTR)&ring->ring[0];
@@ -484,11 +488,13 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 
         xhciInsertTRB(hc, ring, payload, trbflags, plen);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
-        return ring->next++;
+        queued = ring->next++;
+    } else {
+        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO SPACE ON RING!!\nnext = %u\nlast = %u" DEBUGCOLOR_RESET" \n", ring->next, (ring->end & ~RINGENDCFLAG));
     }
+    xhciRingUnlock();
 
-    pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO SPACE ON RING!!\nnext = %u\nlast = %u" DEBUGCOLOR_RESET" \n", ring->next, (ring->end & ~RINGENDCFLAG));
-    return -1;
+    return queued;
 }
 
 WORD xhciQueueData(struct PCIController *hc,
@@ -1226,6 +1232,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
             int cnt;
 
             if (epRing) {
+                xhciRingLock();
                 if (driprivate->dpSTRB != (UWORD)-1) {
                     epRing->ringio[driprivate->dpSTRB] = NULL;
                 }
@@ -1237,6 +1244,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
                 if (driprivate->dpSttTRB != (UWORD)-1) {
                     epRing->ringio[driprivate->dpSttTRB] = NULL;
                 }
+                xhciRingUnlock();
             }
         }
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
@@ -1772,15 +1780,14 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     (unsigned long)event_rem);
                 xhciDumpCC(trbe_ccode);
 
+                struct IOUsbHWReq *req;
+
+                req = (struct IOUsbHWReq *)ring->ringio[last];
                 ring->end &= RINGENDCFLAG;
                 ring->end |= (last & ~RINGENDCFLAG);
-
-                doCompletion = xhciIntWorkProcess(
-                    hc,
-                    (struct IOUsbHWReq *)ring->ringio[last],
-                    event_rem,
-                    trbe_ccode);
                 ring->ringio[last] = NULL;
+
+                doCompletion |= xhciIntWorkProcess(hc, req, event_rem, trbe_ccode);
                 break;
             }
 
@@ -1860,19 +1867,19 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
 
                 *evt = *etrb;
-                ring->end &= RINGENDCFLAG;
-                ring->end |= (last & ~RINGENDCFLAG);
 
                 hc->hc_CmdResults[last].flags   = AROS_LE2LONG(evt->flags);
                 hc->hc_CmdResults[last].tparams = AROS_LE2LONG(evt->tparams);
                 hc->hc_CmdResults[last].status  = trbe_ccode;
 
-                doCompletion = xhciIntWorkProcess(
-                    hc,
-                    (struct IOUsbHWReq *)ring->ringio[last],
-                    event_rem,
-                    trbe_ccode);
+                struct IOUsbHWReq *req;
+
+                req = (struct IOUsbHWReq *)ring->ringio[last];
+                ring->end &= RINGENDCFLAG;
+                ring->end |= (last & ~RINGENDCFLAG);
                 ring->ringio[last] = NULL;
+
+                doCompletion |= xhciIntWorkProcess(hc, req, event_rem, trbe_ccode);
                 break;
             }
 

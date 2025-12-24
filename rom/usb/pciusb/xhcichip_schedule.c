@@ -305,6 +305,7 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpTxSTRB = queued;
         driprivate->dpTxETRB = (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
 
+        xhciRingLock();
         if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
             for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt++)
                 epring->ringio[cnt] = &ioreq->iouh_Req;
@@ -314,6 +315,7 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
             for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt++)
                 epring->ringio[cnt] = &ioreq->iouh_Req;
         }
+        xhciRingUnlock();
     } else if (driprivate->dpBounceBuf) {
         xhciReleaseDMABuffer(hc, ioreq, 0, effdir, driprivate->dpBounceBuf);
         driprivate->dpBounceBuf = NULL;
