@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team.
+    Copyright (C) 2022-2025, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -15,6 +15,7 @@
 #include <proto/intuition.h>
 
 #include <exec/memory.h>
+#include <hidd/telemetry.h>
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
 #include <zune/graph.h>
@@ -28,13 +29,10 @@
 #include "power_intern.h"
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#if (0) // TODO : Move into libbase
-extern OOP_AttrBase HiddPowerAB;
-#endif
 
 /*** Instance Data **********************************************************/
 struct PowerWindow_DATA
@@ -51,6 +49,16 @@ struct PowerWindow_DATA
     char            capacityText[32];
     char            rateText[32];
     struct Hook     graphReadHook;
+};
+
+struct PowerTelemetryEntry
+{
+    CONST_STRPTR id;
+    LONG value;
+    LONG min;
+    LONG max;
+    ULONG units;
+    BOOL readOnly;
 };
 
 CONST_STRPTR    typeUnknown = "Unknown";
@@ -125,6 +133,180 @@ static CONST_STRPTR PowerWindow_GetUnitsString(IPTR value)
             return typeUnknown;
     }
 }
+static char *PowerWindow_AllocString(const char *fmt, ...)
+{
+    va_list args;
+    char buffer[128];
+    char *out;
+
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
+    out = AllocVec(strlen(buffer) + 1, MEMF_PUBLIC);
+    if (!out)
+        return NULL;
+
+    strcpy(out, buffer);
+    return out;
+}
+
+static CONST_STRPTR PowerWindow_TelemetryUnitToString(ULONG units)
+{
+    switch (units)
+    {
+        case vHW_TelemetryUnit_Boolean:
+            return "Boolean";
+        case vHW_TelemetryUnit_Raw:
+            return "Raw";
+        case vHW_TelemetryUnit_Percent:
+            return "%";
+        case vHW_TelemetryUnit_RPM:
+            return "RPM";
+        case vHW_TelemetryUnit_Celsius:
+            return "Celsius";
+        case vHW_TelemetryUnit_Volts:
+            return "Volts";
+        case vHW_TelemetryUnit_Amps:
+            return "Amps";
+        case vHW_TelemetryUnit_Watts:
+            return "Watts";
+        case vHW_TelemetryUnit_Unknown:
+        default:
+            return NULL;
+    }
+}
+
+static char *PowerWindow_FormatTelemetryValue(LONG value, ULONG units)
+{
+    CONST_STRPTR unitStr = PowerWindow_TelemetryUnitToString(units);
+
+    if (unitStr)
+    {
+        if (units <= vHW_TelemetryUnit_Raw)
+            return PowerWindow_AllocString("%ld (%s)", value, unitStr);
+        return PowerWindow_AllocString("%ld%s", value, unitStr);
+    }
+
+    return PowerWindow_AllocString("%ld", value);
+}
+
+static BOOL PowerWindow_GetTelemetryEntry(OOP_Object *dev, struct SysexpPowerBase *PowerBase, ULONG index,
+    struct PowerTelemetryEntry *entry)
+{
+    struct TagItem entryTags[] =
+    {
+        { tHidd_Telemetry_EntryID, (IPTR)&entry->id },
+        { tHidd_Telemetry_EntryUnits, (IPTR)&entry->units },
+        { tHidd_Telemetry_EntryMin, (IPTR)&entry->min },
+        { tHidd_Telemetry_EntryMax, (IPTR)&entry->max },
+        { tHidd_Telemetry_EntryValue, (IPTR)&entry->value },
+        { tHidd_Telemetry_EntryReadOnly, (IPTR)&entry->readOnly },
+        { TAG_DONE, 0 }
+    };
+
+    entry->id = NULL;
+    entry->units = vHW_TelemetryUnit_Unknown;
+    entry->min = 0;
+    entry->max = 0;
+    entry->value = 0;
+    entry->readOnly = TRUE;
+
+    return HIDD_Telemetry_GetEntryAttribs(dev, index, entryTags);
+}
+
+static BOOL PowerWindow_FindTelemetryEntry(struct PowerWindow_DATA *data, CONST_STRPTR id,
+    struct PowerTelemetryEntry *entry)
+{
+    struct SysexpPowerBase *PowerBase = (struct SysexpPowerBase *)data->cl->cl_UserData;
+    OOP_Object *dev = data->dev;
+    IPTR count = 0;
+    ULONG i;
+
+    OOP_GetAttr(dev, aHidd_Telemetry_EntryCount, &count);
+    for (i = 0; i < (ULONG)count; i++)
+    {
+        if (!PowerWindow_GetTelemetryEntry(dev, PowerBase, i, entry))
+            continue;
+        if (entry->id && strcmp(entry->id, id) == 0)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static Object *PowerWindow_CreateTelemetryGroup(OOP_Object *dev, struct SysexpPowerBase *PowerBase)
+{
+    Object *telemetryGroup;
+    IPTR count = 0;
+    ULONG i;
+
+    OOP_GetAttr(dev, aHidd_Telemetry_EntryCount, &count);
+    if (count == 0)
+        return NULL;
+
+    telemetryGroup = MUI_NewObject(MUIC_Group,
+        MUIA_Group_Horiz, TRUE,
+        MUIA_Group_Columns, 2,
+        MUIA_Group_SameSize, TRUE,
+        MUIA_FrameTitle, (IPTR)"Telemetry",
+        GroupFrame,
+        MUIA_Background, MUII_GroupBack,
+        TAG_DONE);
+
+    if (!telemetryGroup)
+        return NULL;
+
+    if (DoMethod(telemetryGroup, MUIM_Group_InitChange))
+    {
+        for (i = 0; i < (ULONG)count; i++)
+        {
+            struct PowerTelemetryEntry entry;
+            char *valueStr;
+            char *minmaxStr;
+
+            if (!PowerWindow_GetTelemetryEntry(dev, PowerBase, i, &entry))
+                continue;
+
+            if (entry.id)
+            {
+                DoMethod(telemetryGroup, OM_ADDMEMBER, Label(entry.id));
+            }
+            else
+            {
+                char *label = PowerWindow_AllocString("Entry %lu", (unsigned long)(i + 1));
+                DoMethod(telemetryGroup, OM_ADDMEMBER, Label(label ? label : (char *)"Entry"));
+            }
+
+            valueStr = PowerWindow_FormatTelemetryValue(entry.value, entry.units);
+            if (!valueStr)
+                valueStr = (char *)"";
+            DoMethod(telemetryGroup, OM_ADDMEMBER,
+                TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)valueStr,
+                End);
+
+            minmaxStr = PowerWindow_AllocString("%ld / %ld", entry.min, entry.max);
+            if (!minmaxStr)
+                minmaxStr = (char *)"";
+            DoMethod(telemetryGroup, OM_ADDMEMBER, Label("Min/Max"));
+            DoMethod(telemetryGroup, OM_ADDMEMBER,
+                TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_CycleChain, 1,
+                    MUIA_Text_Contents, (IPTR)minmaxStr,
+                End);
+        }
+
+        DoMethod(telemetryGroup, MUIM_Group_ExitChange);
+    }
+
+    return telemetryGroup;
+}
 
 static void PowerWindow_UpdateDetails(struct PowerWindow_DATA *data)
 {
@@ -149,18 +331,18 @@ static void PowerWindow_UpdateDetails(struct PowerWindow_DATA *data)
     if (data->units)
         SET(data->units, MUIA_Text_Contents, PowerWindow_GetUnitsString(units));
 
-    if (type == vHW_PowerType_AC)
     {
-        snprintf(data->capacityText, sizeof(data->capacityText), "n/a");
-        snprintf(data->rateText, sizeof(data->rateText), "n/a");
-    }
-    else
-    {
-        OOP_GetAttr(data->dev, aHidd_Power_Capacity, &val);
-        snprintf(data->capacityText, sizeof(data->capacityText), "%ld", (long)val);
+        struct PowerTelemetryEntry entry;
 
-        OOP_GetAttr(data->dev, aHidd_Power_Rate, &val);
-        snprintf(data->rateText, sizeof(data->rateText), "%ld", (long)val);
+        if (PowerWindow_FindTelemetryEntry(data, "Capacity", &entry))
+            snprintf(data->capacityText, sizeof(data->capacityText), "%ld", (long)entry.value);
+        else
+            snprintf(data->capacityText, sizeof(data->capacityText), "n/a");
+
+        if (PowerWindow_FindTelemetryEntry(data, "Rate", &entry))
+            snprintf(data->rateText, sizeof(data->rateText), "%ld", (long)entry.value);
+        else
+            snprintf(data->rateText, sizeof(data->rateText), "n/a");
     }
 
     if (data->capacity)
@@ -183,8 +365,14 @@ AROS_UFH3(IPTR, GraphUpdateFunc,
 
     PowerWindow_UpdateDetails(data);
 
-    OOP_GetAttr(data->dev, aHidd_Power_Capacity, &val);
-    *storage = val;
+    {
+        struct PowerTelemetryEntry entry;
+
+        if (PowerWindow_FindTelemetryEntry(data, "Charge", &entry))
+            *storage = entry.value;
+        else
+            *storage = 0;
+    }
 
     D(bug("[power:sysexp] %s: 0x%p = %d\n", __func__, storage, *storage);)
 
@@ -200,6 +388,7 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     Object *winObj, *windowObjGrp = NULL, *battGraphObj = NULL;
     Object *typeObj = NULL, *stateObj = NULL, *flagsObj = NULL;
     Object *capacityObj = NULL, *rateObj = NULL, *unitsObj = NULL;
+    Object *telemetryGroup = NULL;
     char title_str[32], *typestr = NULL, *wintitle;
     IPTR val;
 
@@ -332,6 +521,15 @@ static Object *PowerWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                 Child, (IPTR)HVSpace,
             End;
            break;
+    }
+
+    telemetryGroup = PowerWindow_CreateTelemetryGroup(dev, PowerBase);
+    if (telemetryGroup && windowObjGrp)
+    {
+        windowObjGrp = (Object *)VGroup,
+            Child, (IPTR)windowObjGrp,
+            Child, (IPTR)telemetryGroup,
+        End;
     }
     if (typestr)
     {

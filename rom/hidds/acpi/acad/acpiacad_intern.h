@@ -20,6 +20,7 @@ struct HWACPIACAdData
     ACPI_HANDLE                 acpiacad_Handle;
     ULONG                       acpiacad_State;
     ULONG                       acpiacad_Flags;
+    ULONG                       acpiacad_TelemetryCount;
 };
 
 struct ACPIACAdNode

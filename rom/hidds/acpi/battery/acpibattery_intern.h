@@ -20,6 +20,7 @@ struct HWACPIBatteryData
     ACPI_HANDLE                 acpib_Handle;
     ULONG                       acpib_State;
     ULONG                       acpib_Flags;
+    ULONG                       acpib_TelemetryCount;
 
     /* old */
     struct Task                 *acpib_ServiceTask;

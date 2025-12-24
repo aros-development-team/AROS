@@ -10,10 +10,7 @@
 
 struct HIDDTelemetryData
 {
-    LONG telemetry_Value;
-    LONG telemetry_Min;
-    LONG telemetry_Max;
-    ULONG telemetry_Units;
+    ULONG telemetry_Dummy;
 };
 
 struct class_static_data

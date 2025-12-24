@@ -14,6 +14,7 @@
 #include "acpiacad_intern.h"
 
 CONST_STRPTR    acpiACAd_str = "ACPI AC Adapter Device";
+static CONST_STRPTR    acpiACAd_telemetryId = "AC Present";
 
 static ULONG ACPIACAd_ReadPowerPresent(struct HWACPIACAdData *data)
 {
@@ -73,15 +74,9 @@ OOP_Object *ACPIACAd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
         data->acpiacad_State = vHW_PowerState_NotPresent;
         data->acpiacad_Flags = vHW_PowerFlag_Unknown;
+        data->acpiacad_TelemetryCount = 1;
 
         data->acpiacad_Handle = acpiHandle;
-
-        OOP_SetAttrsTags(acadO,
-            aHidd_Telemetry_Value, (IPTR)0,
-            aHidd_Telemetry_Min, (IPTR)0,
-            aHidd_Telemetry_Max, (IPTR)1,
-            aHidd_Telemetry_Units, (IPTR)vHW_TelemetryUnit_Boolean,
-            TAG_DONE);
     }
     return acadO;
 }
@@ -102,8 +97,8 @@ VOID ACPIACAd__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     Hidd_Telemetry_Switch(msg->attrID, idx)
     {
-    case aoHidd_Telemetry_Value:
-        *msg->storage = (IPTR)ACPIACAd_ReadPowerPresent(data);
+    case aoHidd_Telemetry_EntryCount:
+        *msg->storage = (IPTR)data->acpiacad_TelemetryCount;
         return;
     }
 
@@ -120,12 +115,6 @@ VOID ACPIACAd__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         present = ACPIACAd_ReadPowerPresent(data);
         *msg->storage = (IPTR)(present ? vHW_PowerFlag_High : vHW_PowerFlag_Unknown);
         return;
-    case aoHidd_Power_Capacity:
-        *msg->storage = (IPTR)0;
-        return;
-    case aoHidd_Power_Rate:
-        *msg->storage = (IPTR)0;
-        return;
     case aoHidd_Power_Units:
         *msg->storage = (IPTR)vHW_PowerUnit_mW;
         return;
@@ -139,4 +128,57 @@ VOID ACPIACAd__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
+}
+
+BOOL ACPIACAd__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Telemetry_GetEntryAttribs *msg)
+{
+    struct HWACPIACAdData *data = OOP_INST_DATA(cl, o);
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct TagItem *tstate;
+    struct TagItem *tag;
+    LONG value;
+    ULONG units;
+    LONG minValue;
+    LONG maxValue;
+    BOOL readOnly;
+    CONST_STRPTR entryId;
+
+    if (msg->index >= data->acpiacad_TelemetryCount)
+        return FALSE;
+
+    entryId = acpiACAd_telemetryId;
+    units = vHW_TelemetryUnit_Boolean;
+    minValue = 0;
+    maxValue = 1;
+    value = (LONG)ACPIACAd_ReadPowerPresent(data);
+    readOnly = TRUE;
+
+    tstate = msg->tags;
+    while ((tag = NextTagItem(&tstate)))
+    {
+        switch (tag->ti_Tag)
+        {
+        case tHidd_Telemetry_EntryID:
+            *(CONST_STRPTR *)tag->ti_Data = entryId;
+            break;
+        case tHidd_Telemetry_EntryUnits:
+            *(ULONG *)tag->ti_Data = units;
+            break;
+        case tHidd_Telemetry_EntryMin:
+            *(LONG *)tag->ti_Data = minValue;
+            break;
+        case tHidd_Telemetry_EntryMax:
+            *(LONG *)tag->ti_Data = maxValue;
+            break;
+        case tHidd_Telemetry_EntryValue:
+            *(LONG *)tag->ti_Data = value;
+            break;
+        case tHidd_Telemetry_EntryReadOnly:
+            *(BOOL *)tag->ti_Data = readOnly;
+            break;
+        }
+    }
+
+    return TRUE;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team.
+    Copyright (C) 2022-2025, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -19,16 +19,18 @@ static int powerenum_init(struct SysexpPowerBase *PowerBase)
 {
     const struct OOP_ABDescr power_abd[] =
     {
-        {IID_Hidd                   , &HiddAttrBase         },
-        {IID_HW                     , &HWAttrBase           },
-        {IID_Hidd_Power       , &HiddPowerAB    },
-        {NULL                       , NULL                  }
+        {IID_Hidd,              &HiddAttrBase           },
+        {IID_HW,                &HWAttrBase             },
+        {IID_Hidd_Telemetry,    &HiddTelemetryAB        },
+        {IID_Hidd_Power,        &HiddPowerAB            },
+        {NULL,                  NULL                    }
     };
     D(bug("[power.sysexp] %s()\n", __func__));
 
     OOP_ObtainAttrBases(power_abd);
 
     HWBase = OOP_GetMethodID(IID_HW, 0);
+    HiddTelemetryBase = OOP_GetMethodID(IID_Hidd_Telemetry, 0);
     HiddPowerBase = OOP_GetMethodID(IID_Hidd_Power, 0);
 
    return 2;

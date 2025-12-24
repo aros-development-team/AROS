@@ -17,6 +17,7 @@
 struct HWACPIFanData
 {
     ACPI_HANDLE                 acpifan_Handle;
+    ULONG                       acpifan_TelemetryCount;
 };
 
 struct ACPIFanNode
