@@ -11,7 +11,7 @@
 # In contrast to gimmearos.sh this script creates the toolchain
 # in external directories.
 
-# $VER: gimmearos-ext.sh 1.19 (11.08.2025)
+# $VER: gimmearos-ext.sh 1.20 (24.12.2025)
 
 curdir="`pwd`"
 srcdir="aros-src"
@@ -32,7 +32,7 @@ configopts="$configopts --with-paranoia=yes"
 #configopts="$configopts --with-gcc-version=8.3.0"
 #configopts="$configopts --with-gcc-version=6.5.0"
 #configopts="$configopts --with-gcc-version=11.2.0"
-configopts="$configopts --with-gcc-version=15.1.0"
+configopts="$configopts --with-gcc-version=15.2.0"
 
 #configopts="$configopts --with-logresource"
 #configopts="$configopts --enable-unit-tests=yes"
