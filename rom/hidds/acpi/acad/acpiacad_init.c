@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -120,10 +120,17 @@ static int ACPIACAd_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
-    _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
-    _csd->hwACPIACAdAB = OOP_ObtainAttrBase(IID_HW_ACPIACAd);
+    struct OOP_ABDescr attrbases[] =
+    {
+        { (STRPTR) IID_HW,                  &_csd->hwAB },
+        { (STRPTR) IID_Hidd,                &_csd->hiddAB },
+        { (STRPTR) IID_Hidd_Telemetry,      &_csd->hiddTelemetryAB },
+        { (STRPTR) IID_Hidd_Power,          &_csd->hiddPowerAB },
+        { (STRPTR) IID_HW_ACPIACAd,         &_csd->hwACPIACAdAB },
+        { NULL, NULL }
+    };
+
+    OOP_ObtainAttrBases(attrbases);
 
     {
         struct TagItem instanceTags[] =
@@ -159,6 +166,9 @@ static int ACPIACAd_Init(LIBBASETYPEPTR LIBBASE)
     else
     {
         LIBBASE->hsi_LibNode.lib_OpenCnt -= 1;
+        
+        OOP_ReleaseAttrBases(attrbases);
+
         CloseLibrary(_csd->cs_UtilityBase);
         CloseLibrary(_csd->cs_ACPICABase);
     }
