@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2025, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -14,6 +14,64 @@
 #include "acpibattery_intern.h"
 
 CONST_STRPTR    acpiBattery_str = "ACPI Generic Battery Device";
+
+static BOOL ACPIBattery_ReadPackageInteger(ACPI_OBJECT *obj, ULONG index, ULONG *value)
+{
+    if (!obj || obj->Type != ACPI_TYPE_PACKAGE)
+        return FALSE;
+
+    if (index >= obj->Package.Count)
+        return FALSE;
+
+    if (obj->Package.Elements[index].Type != ACPI_TYPE_INTEGER)
+        return FALSE;
+
+    *value = (ULONG)obj->Package.Elements[index].Integer.Value;
+    return TRUE;
+}
+
+static BOOL ACPIBattery_EvaluatePackageInteger(ACPI_HANDLE handle, const char *method, ULONG index, ULONG *value)
+{
+    ACPI_BUFFER buffer = { ACPI_ALLOCATE_BUFFER, NULL };
+    ACPI_STATUS status;
+    BOOL ok = FALSE;
+
+    status = AcpiEvaluateObject(handle, (ACPI_STRING)method, NULL, &buffer);
+    if (ACPI_SUCCESS(status))
+    {
+        ok = ACPIBattery_ReadPackageInteger((ACPI_OBJECT *)buffer.Pointer, index, value);
+    }
+
+    if (buffer.Pointer)
+        FreeVec(buffer.Pointer);
+
+    return ok;
+}
+
+static LONG ACPIBattery_ReadTelemetryValue(struct HWACPIBatteryData *data)
+{
+    ULONG remaining = 0;
+    ULONG full = 0;
+    ULONG percent = 0;
+
+    if (!data->acpib_Handle)
+        return 0;
+
+    if (!ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BST", 2, &remaining))
+        return 0;
+
+    if (!ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIX", 3, &full))
+        ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIF", 2, &full);
+
+    if (full > 0)
+    {
+        percent = (remaining * 100) / full;
+        if (percent > 100)
+            percent = 100;
+    }
+
+    return (LONG)percent;
+}
 
 OOP_Object *ACPIBattery__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -74,6 +132,13 @@ VOID ACPIBattery__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     ULONG idx;
 
     D(bug("[ACPI:Battery] %s()\n", __func__));
+
+    Hidd_Telemetry_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Telemetry_Value:
+        *msg->storage = (IPTR)ACPIBattery_ReadTelemetryValue(data);
+        return;
+    }
 
     HW_ACPIBattery_Switch(msg->attrID, idx)
     {
