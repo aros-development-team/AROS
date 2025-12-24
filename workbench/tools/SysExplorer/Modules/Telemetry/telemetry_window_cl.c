@@ -58,7 +58,7 @@ static CONST_STRPTR TelemetryUnitToString(ULONG units)
             return "Watts";
         case vHW_TelemetryUnit_Unknown:
         default:
-            return "Unknown";
+            return NULL;
     }
 }
 
@@ -71,9 +71,8 @@ static Object *TelemetryWindow__OM_NEW(Class *cl, Object *self, struct opSet *ms
     IPTR min = 0;
     IPTR max = 0;
     IPTR units = 0;
-    char valueStr[32];
-    char minStr[32];
-    char maxStr[32];
+    char valueStr[64];
+    char minmaxStr[70];
 
     if (!dev)
         return NULL;
@@ -82,16 +81,21 @@ static Object *TelemetryWindow__OM_NEW(Class *cl, Object *self, struct opSet *ms
     OOP_GetAttr(dev, aHidd_Telemetry_Min, &min);
     OOP_GetAttr(dev, aHidd_Telemetry_Max, &max);
     OOP_GetAttr(dev, aHidd_Telemetry_Units, &units);
-
-    sprintf(valueStr, "%ld", (LONG)value);
-    sprintf(minStr, "%ld", (LONG)min);
-    sprintf(maxStr, "%ld", (LONG)max);
     unitStr = TelemetryUnitToString((ULONG)units);
+    if (unitStr) {
+        if (units <= vHW_TelemetryUnit_Raw)
+            sprintf(valueStr, "%ld (%s)", (LONG)value, unitStr);
+        else
+            sprintf(valueStr, "%ld%s", (LONG)value, unitStr);
+    } else {
+        sprintf(valueStr, "%ld", (LONG)value);
+    }
+    sprintf(minmaxStr, "%ld / %ld", (LONG)min, (LONG)max);
 
     self = (Object *) DoSuperNewTags
     (
         cl, self, NULL,
-        MUIA_Window_Title, (IPTR)"Telemetry Properties",
+        MUIA_Window_Title, (IPTR)"Device Properties",
         MUIA_Window_ID, MAKE_ID('T', 'E', 'L', 'M'),
         WindowContents, (IPTR)(VGroup,
             Child, (IPTR)(BOOPSIOBJMACRO_START(SeTelemetryBase->sesb_DevicePageCLASS->mcc_Class),
@@ -109,26 +113,12 @@ static Object *TelemetryWindow__OM_NEW(Class *cl, Object *self, struct opSet *ms
                     MUIA_CycleChain, 1,
                     MUIA_Text_Contents, (IPTR)valueStr,
                 End),
-                Child, (IPTR)Label("Minimum"),
+                Child, (IPTR)Label("Min/Max"),
                 Child, (IPTR)(TextObject,
                     TextFrame,
                     MUIA_Background, MUII_TextBack,
                     MUIA_CycleChain, 1,
-                    MUIA_Text_Contents, (IPTR)minStr,
-                End),
-                Child, (IPTR)Label("Maximum"),
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_CycleChain, 1,
-                    MUIA_Text_Contents, (IPTR)maxStr,
-                End),
-                Child, (IPTR)Label("Units"),
-                Child, (IPTR)(TextObject,
-                    TextFrame,
-                    MUIA_Background, MUII_TextBack,
-                    MUIA_CycleChain, 1,
-                    MUIA_Text_Contents, (IPTR)unitStr,
+                    MUIA_Text_Contents, (IPTR)minmaxStr,
                 End),
             End),
             TAG_MORE, (IPTR)msg->ops_AttrList,
