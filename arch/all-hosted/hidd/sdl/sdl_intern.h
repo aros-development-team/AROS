@@ -67,7 +67,7 @@ VOID Hidd_Mouse_SDL_HandleEvent(OOP_Object *o, SDL_Event *e);
 #define IID_Hidd_Kbd_SDL     "hidd.kbd.sdl"
 
 struct kbddata {
-    VOID (*callback)(APTR, UWORD);
+    VOID (*callback)(APTR, APTR);
     APTR callbackdata;
 };
 
