@@ -52,6 +52,13 @@ POWERFILES := \
         $(POWERMODDIR)/power_enum \
         $(POWERMODDIR)/power_window_cl
 
+TELEMETRYMODDIR := Modules/Telemetry
+TELEMETRYFILES := \
+        sysexp_locale \
+        $(TELEMETRYMODDIR)/telemetry_init \
+        $(TELEMETRYMODDIR)/telemetry_enum \
+        $(TELEMETRYMODDIR)/telemetry_window_cl
+
 # disabled until a later date ;)
 GFXMODDIR := Modules/Gfx
 GFXFILES := \
@@ -90,6 +97,16 @@ USER_LDFLAGS := -static
     modname=power modtype=library modsuffix=sysexp \
     files="$(POWERFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
     uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(POWERMODDIR)/power.conf
+
+#MM workbench-tools-sysexplorer-module-telemetry : workbench-tools-sysexplorer-includes kernel-hidd-telemetry-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-telemetry
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-telemetry-quick
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(TELEMETRYMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-telemetry \
+    modname=telemetry modtype=library modsuffix=sysexp \
+    files="$(TELEMETRYFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(TELEMETRYMODDIR)/telemetry.conf
 
 ##MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes
 ##MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx

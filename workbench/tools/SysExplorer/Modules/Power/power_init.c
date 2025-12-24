@@ -15,15 +15,6 @@
 
 extern void PowerStartup(struct SysexpBase *);
 
-#if (0) // TODO : Move into libbase
-OOP_AttrBase HiddAttrBase;
-OOP_AttrBase HWAttrBase;
-OOP_AttrBase HiddPowerAB;
-
-OOP_MethodID HWBase;
-OOP_MethodID HiddPowerBase;
-#endif
-
 static int powerenum_init(struct SysexpPowerBase *PowerBase)
 {
     const struct OOP_ABDescr power_abd[] =
