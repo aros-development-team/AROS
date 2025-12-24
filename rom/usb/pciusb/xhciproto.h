@@ -92,8 +92,10 @@ BOOL xhciInit(struct PCIController *, struct PCIUnit *);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
 struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
+struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc, ULONG route, UWORD rootPortIndex);
 struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq, BOOL allowCreate);
 void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, BOOL disableSlot);
+void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx);
 
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
@@ -102,7 +104,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
-BOOL xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
+WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
 WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast);
 
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
@@ -138,6 +140,7 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
      do { \
         XHCI_MMIO_BARRIER(); \
          ((volatile struct xhci_dbr *)((IPTR)(hc)->hc_XHCIDB))[(slot)].db = AROS_LONG2LE(value); \
+         (void)((volatile struct xhci_dbr *)((IPTR)(hc)->hc_XHCIDB))[(slot)].db; \
      } while (0)
 #define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
 static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)

@@ -38,6 +38,8 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
     XHCI_MMIO_BARRIER();
     xhcidb[slot].db = AROS_LONG2LE(value);
+    /* Read back to flush posted MMIO write (helps some hypervisors). */
+    (void)xhcidb[slot].db;
 }
 #endif
 

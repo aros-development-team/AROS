@@ -10,6 +10,7 @@
 #include <proto/utility.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
+#include <exec/errors.h>
 #include <hidd/pci.h>
 
 #include <devices/usb_hub.h>
@@ -51,6 +52,19 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
                                     ULONG epid,
                                     BOOL stopEndpoint);
+
+static BOOL xhciDeviceHasEndpoints(const struct pciusbXHCIDevice *devCtx)
+{
+    if (!devCtx)
+        return FALSE;
+
+    for (ULONG epid = 0; epid < MAX_DEVENDPOINTS; epid++) {
+        if (devCtx->dc_EPAllocs[epid].dmaa_Ptr || devCtx->dc_EPContexts[epid])
+            return TRUE;
+    }
+
+    return FALSE;
+}
 
 static struct PCIController *xhciGetController(struct PCIUnit *unit)
 {
@@ -251,7 +265,7 @@ struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devad
     return NULL;
 }
 
-static struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc,
+struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc,
                                                     ULONG route,
                                                     UWORD rootPortIndex)
 {
@@ -289,6 +303,96 @@ static struct pciusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWO
     }
 
     return NULL;
+}
+
+static BOOL xhciIOReqMatchesDevice(const struct IOUsbHWReq *ioreq,
+                                   const struct pciusbXHCIDevice *devCtx)
+{
+    if (!ioreq || !devCtx)
+        return FALSE;
+
+    struct pciusbXHCIIODevPrivate *driprivate =
+        (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
+
+    if (driprivate && driprivate->dpDevice == devCtx)
+        return TRUE;
+
+    if (devCtx->dc_DevAddr && (ioreq->iouh_DevAddr == devCtx->dc_DevAddr))
+        return TRUE;
+
+    if (ioreq->iouh_RootPort &&
+        (devCtx->dc_RootPort == (ioreq->iouh_RootPort - 1)) &&
+        ((ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK) == devCtx->dc_RouteString))
+        return TRUE;
+
+    return FALSE;
+}
+
+static void xhciAbortDeviceQueue(struct PCIController *hc,
+                                 struct PCIUnit *unit,
+                                 struct List *queue,
+                                 struct pciusbXHCIDevice *devCtx,
+                                 BOOL periodic)
+{
+    struct IOUsbHWReq *ioreq, *ionext;
+
+    ioreq = (struct IOUsbHWReq *)queue->lh_Head;
+    while ((ionext = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
+        if (!xhciIOReqMatchesDevice(ioreq, devCtx)) {
+            ioreq = ionext;
+            continue;
+        }
+
+        pciusbXHCIDebug("xHCI",
+                        DEBUGCOLOR_SET "Aborting pending IOReq %p for dev %u"
+                        DEBUGCOLOR_RESET " \n",
+                        ioreq,
+                        ioreq->iouh_DevAddr);
+
+        ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+        ioreq->iouh_Actual = 0;
+
+        if (periodic)
+            xhciFreePeriodicContext(hc, unit, ioreq);
+        else
+            xhciFreeAsyncContext(hc, unit, ioreq);
+
+        ReplyMsg(&ioreq->iouh_Req.io_Message);
+
+        ioreq = ionext;
+    }
+}
+
+void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx)
+{
+    struct PCIUnit *unit;
+
+    if (!hc || !devCtx)
+        return;
+
+    unit = hc->hc_Unit;
+
+    pciusbXHCIDebug("xHCI",
+                    DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET" \n",
+                    __func__, hc, devCtx);
+
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_CtrlXFerQueue, devCtx, FALSE);
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_BulkXFerQueue, devCtx, FALSE);
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_IntXFerQueue, devCtx, TRUE);
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_IsoXFerQueue, devCtx, TRUE);
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_TDQueue, devCtx, FALSE);
+    xhciAbortDeviceQueue(hc, unit, &hc->hc_PeriodicTDQueue, devCtx, TRUE);
+
+    if (devCtx->dc_DevAddr < USB_DEV_MAX &&
+        unit->hu_DevControllers[devCtx->dc_DevAddr] == hc) {
+        unit->hu_DevControllers[devCtx->dc_DevAddr] = NULL;
+    }
+    if (devCtx->dc_RouteString == 0 &&
+        unit->hu_DevControllers[0] == hc) {
+        unit->hu_DevControllers[0] = NULL;
+    }
+
+    xhciFreeDeviceCtx(hc, devCtx, TRUE);
 }
 
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
@@ -1069,6 +1173,17 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     xhciFreeEndpointContext(hc, devCtx, epid, TRUE);
 
     ioreq->iouh_DriverPrivate2 = NULL;
+
+    /*
+     * Downstream devices (route string != 0) do not generate root hub port
+     * disconnect events. When their EP0 is torn down and no endpoints remain,
+     * assume the device is gone and release the slot/resources.
+     */
+    if (devCtx->dc_RouteString != 0 &&
+        epid == xhciEndpointID(0, 0) &&
+        !xhciDeviceHasEndpoints(devCtx)) {
+        xhciDisconnectDevice(hc, devCtx);
+    }
 }
 
 /* Shutdown and Interrupt handlers */
@@ -1870,7 +1985,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
         hcopr->usbcmd = AROS_LONG2LE(reg);
 
         // Wait for the controller to indicate it is finished ...
-        while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
+        while (!(AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
             uhwDelayMS(1, hu);
     }
 
@@ -1930,7 +2045,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     xhciir->erstsz = AROS_LONG2LE(1);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting ERDP to 0x%p" DEBUGCOLOR_RESET" \n", hc->hc_DMAERS);
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting ERSTBA to 0x%p" DEBUGCOLOR_RESET" \n", hc->hc_DMAERST);
-    xhciSetPointer(hc, xhciir->erdp, ((IPTR)hc->hc_DMAERS));
+    xhciSetPointer(hc, xhciir->erdp, ((IPTR)hc->hc_DMAERS | (IPTR)XHCIF_IR_ERDP_EHB));
     xhciSetPointer(hc, xhciir->erstba, ((IPTR)hc->hc_DMAERST));
 
     xring = (volatile struct pcisusbXHCIRing *)hc->hc_ERSp;
