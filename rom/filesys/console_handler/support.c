@@ -767,30 +767,21 @@ void do_paste(struct filehandle * fh)
     replyport.mp_SigTask = FindTask(NULL);
     NEWLIST(&replyport.mp_MsgList);
 
+    /* ConClip only ever looks at MaxChars in StringInfo */
+    sinfo.MaxChars = PASTEBUFSIZE;
+
+    memset( &sgw, 0, sizeof( struct SGWork ) );
+    sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
+    sgw.Code = CODE_PASTE;
+    sgw.EditOp = EO_BIGCHANGE;
+    sgw.StringInfo = &sinfo;
+
     msg.msg.mn_Node.ln_Type = NT_MESSAGE;
     msg.msg.mn_ReplyPort = &replyport;
     msg.msg.mn_Length = sizeof(msg);
 
     msg.code = CODE_PASTE;
     msg.sgw = &sgw;
-
-    /* FIXME: Ensure no fields are left uninitialized */
-
-    sgw.Gadget = 0;
-    sgw.WorkBuffer = AllocMem(PASTEBUFSIZE, MEMF_CLEAR | MEMF_ANY);
-    sgw.PrevBuffer = 0;
-    sgw.IEvent = 0;
-    sgw.Code = CODE_PASTE;
-    sgw.Actions = 0;
-    sgw.LongInt = 0;
-    sgw.GadgetInfo = 0;
-    sgw.EditOp = EO_BIGCHANGE;
-    sgw.BufferPos = 0;
-    sgw.NumChars = 0;
-
-    /* ConClip only ever looks at MaxChars in StringInfo */
-    sinfo.MaxChars = PASTEBUFSIZE;
-    sgw.StringInfo = &sinfo;
 
     SetSignal(0, SIGF_SINGLE);
     PutMsg(port, &msg.msg);
