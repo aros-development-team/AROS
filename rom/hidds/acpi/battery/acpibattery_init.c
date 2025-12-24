@@ -120,10 +120,17 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
-    _csd->hwAB = OOP_ObtainAttrBase(IID_HW);
-    _csd->hiddAB = OOP_ObtainAttrBase(IID_Hidd);
-    _csd->hiddTelemetryAB = OOP_ObtainAttrBase(IID_Hidd_Telemetry);
-    _csd->hwACPIBatteryAB = OOP_ObtainAttrBase(IID_HW_ACPIBattery);
+    struct OOP_ABDescr attrbases[] =
+    {
+        { (STRPTR) IID_HW,                  &_csd->hwAB },
+        { (STRPTR) IID_Hidd,                &_csd->hiddAB },
+        { (STRPTR) IID_Hidd_Telemetry,      &_csd->hiddTelemetryAB },
+        { (STRPTR) IID_Hidd_Power,          &_csd->hiddPowerAB },
+        { (STRPTR) IID_HW_ACPIBattery,      &_csd->hwACPIBatteryAB },
+        { NULL, NULL }
+    };
+
+    OOP_ObtainAttrBases(attrbases);
 
     {
         struct TagItem instanceTags[] =
@@ -159,6 +166,7 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
     else
     {
         LIBBASE->hsi_LibNode.lib_OpenCnt -= 1;
+        OOP_ReleaseAttrBases(attrbases);
         CloseLibrary(_csd->cs_UtilityBase);
         CloseLibrary(_csd->cs_ACPICABase);
     }
