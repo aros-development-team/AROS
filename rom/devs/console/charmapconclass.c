@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Code for CONU_CHARMAP console units.
 */
@@ -1087,24 +1087,18 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
         replyport.mp_SigTask = FindTask(NULL);
         NewList(&replyport.mp_MsgList);
 
+        memset( &sgw, 0, sizeof( struct SGWork ) );
+        sgw.WorkBuffer = buf;
+        sgw.Code = CODE_COPY;
+        sgw.EditOp = EO_BIGCHANGE;
+        sgw.NumChars = size;
+
         msg.msg.mn_Node.ln_Type = NT_MESSAGE;
         msg.msg.mn_ReplyPort = &replyport;
         msg.msg.mn_Length = sizeof(msg);
 
         msg.code = CODE_COPY;
         msg.sgw = &sgw;
-
-        sgw.Gadget = 0;
-        sgw.WorkBuffer = buf;
-        sgw.PrevBuffer = 0;
-        sgw.IEvent = 0;
-        sgw.Code = CODE_COPY;
-        sgw.Actions = 0;
-        sgw.LongInt = 0;
-        sgw.GadgetInfo = 0;
-        sgw.EditOp = EO_BIGCHANGE;
-        sgw.BufferPos = 0;
-        sgw.NumChars = size;
 
         SetSignal(0, SIGF_SINGLE);
         PutMsg(port, &msg.msg);
