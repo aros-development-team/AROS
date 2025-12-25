@@ -130,7 +130,7 @@ static char *BSTR2C(BSTR srcs)
     UBYTE *src = AROS_BSTR_ADDR(srcs);
     char *dst;
 
-    dst = AllocVec(len, MEMF_ANY);
+    dst = AllocVec(len + 1, MEMF_ANY);
     if (!dst)
         return NULL;
     memcpy(dst, src, len);
