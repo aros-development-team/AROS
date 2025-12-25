@@ -52,12 +52,11 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-hidd-vesagfx                     \
 #MM                     kernel-hidd-pci                         \
 #MM                     kernel-hidd-pci-pcipc                   \
-#MM                     kernel-processor                        \
-#MM                     kernel-libs-x86emu
+#MM                     kernel-processor
 
 KRSRCS      := efi hpet log
 KRSRCS_ARCH := battclock processor
-KLIBS       := acpica x86emu
+KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
