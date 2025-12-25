@@ -50,17 +50,18 @@ static inline BOOL xhciIsUsb3(ULONG portsc)
 
 static inline BOOL xhciPortIsUsb3(struct PCIController *hc, UWORD hciport, ULONG portsc)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     ULONG sb = xhciPortSpeedBits(portsc);
 
     if (sb != 0) {
         return xhciIsUsb3(portsc);
     }
 
-    if (!hc->hc_PortProtocolValid || hciport >= MAX_ROOT_PORTS) {
+    if (!xhcic->xhc_PortProtocolValid || hciport >= MAX_ROOT_PORTS) {
         return FALSE;
     }
 
-    return hc->hc_PortProtocol[hciport] >= XHCI_PORT_PROTOCOL_USB3;
+    return xhcic->xhc_PortProtocol[hciport] >= XHCI_PORT_PROTOCOL_USB3;
 }
 
 static inline ULONG xhciPortLinkState(ULONG portsc)
@@ -124,13 +125,14 @@ static inline ULONG xhciPortscClearChangeBits(ULONG v)
 
 static struct pciusbXHCIDevice *xhciFindPortDevice(struct PCIController *hc, UWORD hciport)
 {
-    UWORD maxslot = hc->hc_NumSlots;
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    UWORD maxslot = xhcic->xhc_NumSlots;
 
     if (maxslot >= USB_DEV_MAX)
         maxslot = USB_DEV_MAX - 1;
 
     for (UWORD slot = 1; slot <= maxslot; slot++) {
-        struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slot];
+        struct pciusbXHCIDevice *devCtx = xhcic->xhc_Devices[slot];
 
         if (devCtx && (devCtx->dc_RootPort == hciport))
             return devCtx;
@@ -211,8 +213,9 @@ static inline ULONG xhciComposePortResetWrite(struct PCIController *hc, UWORD hc
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                     UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_pr *xhciports =
-        (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+        (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
     BOOL  cmdgood = FALSE;
     ULONG oldval  = AROS_LE2LONG(xhciports[hciport].portsc);
     ULONG writeval = 0;
@@ -382,8 +385,9 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
 BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
                       UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_pr *xhciports =
-        (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+        (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
     ULONG oldval    = AROS_LE2LONG(xhciports[hciport].portsc);
     ULONG writeval  = 0;
     ULONG clearbits = 0;
@@ -547,8 +551,9 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
                    UWORD hciport, UWORD idx, WORD *retval)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_pr *xhciports =
-        (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+        (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
     ULONG oldportsc = AROS_LE2LONG(xhciports[hciport].portsc);
 
     pciusbXHCIDebug("xHCI",
@@ -697,6 +702,7 @@ AROS_UFH0(void, xhciPortTask)
     volatile struct xhci_pr *xhciports;
     struct PCIController *hc;
     struct pciusbXHCIDevice *devCtx;
+    struct XhciHCPrivate *xhcic;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
@@ -704,24 +710,25 @@ AROS_UFH0(void, xhciPortTask)
         struct Task *thistask;
         thistask = FindTask(NULL);
         hc = thistask->tc_UserData;
-        hc->hc_xHCPortTask = thistask;
+        xhcic = xhciGetHCPrivate(hc);
+        xhcic->xhc_xHCPortTask = thistask;
         SetTaskPri(thistask, 99);
     }
-    hc->hc_PortChangeSignal = AllocSignal(-1);
+    xhcic->xhc_PortChangeSignal = AllocSignal(-1);
 
     pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "'%s' @ 0x%p, PortChangeSignal=%d"
                     DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)hc->hc_xHCPortTask)->ln_Name, hc->hc_xHCPortTask, hc->hc_PortChangeSignal);
+                    ((struct Node *)xhcic->xhc_xHCPortTask)->ln_Name, xhcic->xhc_xHCPortTask, xhcic->xhc_PortChangeSignal);
 
-    if (hc->hc_ReadySigTask)
-        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
+    if (xhcic->xhc_ReadySigTask)
+        Signal(xhcic->xhc_ReadySigTask, 1L << xhcic->xhc_ReadySignal);
 
-    xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+    xhciports = (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
 
     for (;;) {
-        ULONG xhcictsigs = Wait(1 << hc->hc_PortChangeSignal);
-        if (xhcictsigs & (1 << hc->hc_PortChangeSignal)) {
+        ULONG xhcictsigs = Wait(1 << xhcic->xhc_PortChangeSignal);
+        if (xhcictsigs & (1 << xhcic->xhc_PortChangeSignal)) {
             UWORD hciport;
             pciusbXHCIDebug("xHCI",
                             DEBUGCOLOR_SET "Port change detected" DEBUGCOLOR_RESET" \n");

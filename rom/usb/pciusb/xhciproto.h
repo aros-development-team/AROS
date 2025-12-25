@@ -138,9 +138,10 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
 #else
 #define xhciRingDoorbell(hc,slot,value) \
      do { \
+        struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc); \
         XHCI_MMIO_BARRIER(); \
-         ((volatile struct xhci_dbr *)((IPTR)(hc)->hc_XHCIDB))[(slot)].db = AROS_LONG2LE(value); \
-         (void)((volatile struct xhci_dbr *)((IPTR)(hc)->hc_XHCIDB))[(slot)].db; \
+         ((volatile struct xhci_dbr *)((IPTR)xhcic->xhc_XHCIDB))[(slot)].db = AROS_LONG2LE(value); \
+         (void)((volatile struct xhci_dbr *)((IPTR)xhcic->xhc_XHCIDB))[(slot)].db; \
      } while (0)
 #define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
 static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)

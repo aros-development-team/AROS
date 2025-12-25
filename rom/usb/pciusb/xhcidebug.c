@@ -729,13 +729,18 @@ static UQUAD xhciDebugReadAddress(const volatile struct xhci_address *addr)
 
 void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
 {
-    if (!hc || !hc->hc_DCBAAp)
+    if (!hc)
         return;
 
-    if (slotid > hc->hc_NumSlots)
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+
+    if (!xhcic || !xhcic->xhc_DCBAAp)
         return;
 
-    volatile struct xhci_address *dcbaa = (volatile struct xhci_address *)hc->hc_DCBAAp;
+    if (slotid > xhcic->xhc_NumSlots)
+        return;
+
+    volatile struct xhci_address *dcbaa = (volatile struct xhci_address *)xhcic->xhc_DCBAAp;
     UQUAD ptr = xhciDebugReadAddress(&dcbaa[slotid]);
 
     pciusbXHCIDebug("xHCI",

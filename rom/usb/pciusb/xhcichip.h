@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <hardware/usb/xhci.h>
+#include "pciusb.h"
 #include "hccommon.h"
 
 #ifndef DMAFLAGS_PREREAD
@@ -53,6 +54,58 @@ struct pciusbXHCIDMAAlloc
     APTR                                dmaa_Ptr;
     APTR                                dmaa_DMA;
 };
+
+struct XhciHCPrivate
+{
+    UWORD                               xhc_NumSlots;
+    UWORD                               xhc_NumDevs;
+    UWORD                               xhc_NumScratchPads;
+    /* Device Context Base Address Array */
+    struct MemEntry                     xhc_DCBAA;
+    APTR                                xhc_DCBAAp;
+    APTR                                xhc_DMADCBAA;
+    /* Scratchpad Buffer Array and buffers */
+    struct MemEntry                     xhc_SPBA;
+    APTR                                xhc_SPBAp;
+    APTR                                xhc_DMASPBA;
+    struct MemEntry                     xhc_SPBuffers;
+    APTR                                xhc_SPBuffersp;
+    APTR                                xhc_DMASPBuffers;
+    /* Event Ring Segment Table */
+    struct MemEntry                     xhc_ERST;
+    APTR                                xhc_ERSTp;
+    APTR                                xhc_DMAERST;
+    /* Command Ring */
+    struct MemEntry                     xhc_OPR;
+    APTR                                xhc_OPRp;
+    APTR                                xhc_DMAOPR;
+    /* Event Ring */
+    struct MemEntry                     xhc_ERS;
+    APTR                                xhc_ERSp;
+    APTR                                xhc_DMAERS;
+
+    APTR                                xhc_XHCIOpR;
+    APTR                                xhc_XHCIDB;
+    APTR                                xhc_XHCIPorts;
+    APTR                                xhc_XHCIIntR;
+
+    BYTE                                xhc_ReadySignal;
+    BYTE                                xhc_PortChangeSignal;
+    BYTE                                xhc_DoWorkSignal;
+    UWORD                               xhc_RootPortChanges;
+    struct Task                        *xhc_ReadySigTask;
+    struct Task                        *xhc_xHCERTask;
+    struct Task                        *xhc_xHCPortTask;
+    struct pciusbXHCIDevice            *xhc_Devices[USB_DEV_MAX];
+    volatile struct pciusbXHCITRBParams xhc_CmdResults[USB_DEV_MAX];
+    UBYTE                               xhc_PortProtocol[MAX_ROOT_PORTS];
+    BOOL                                xhc_PortProtocolValid;
+};
+
+static inline struct XhciHCPrivate *xhciGetHCPrivate(struct PCIController *hc)
+{
+    return (struct XhciHCPrivate *)hc->hc_CPrivate;
+}
 
 /*
  * Private Transfer Request Block Ring desciption

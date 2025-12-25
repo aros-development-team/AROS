@@ -237,50 +237,6 @@ struct PCIController
     struct Interrupt            hc_PCIIntHandler;
     ULONG                       hc_PCIIntEnMask;
 
-#if defined(PCIUSB_ENABLEXHCI)
-    UWORD                       hc_NumSlots;
-    UWORD                       hc_NumDevs;
-    UWORD                       hc_NumScratchPads;
-    // Device Context Base Address Array
-    struct MemEntry             hc_DCBAA;
-    APTR                        hc_DCBAAp;
-    APTR                        hc_DMADCBAA;
-    // Scratchpad Buffer Array and buffers
-    struct MemEntry             hc_SPBA;
-    APTR                        hc_SPBAp;
-    APTR                        hc_DMASPBA;
-    struct MemEntry             hc_SPBuffers;
-    APTR                        hc_SPBuffersp;
-    APTR                        hc_DMASPBuffers;
-    // Event Ring Segment Table
-    struct MemEntry             hc_ERST;
-    APTR                        hc_ERSTp;
-    APTR                        hc_DMAERST;
-    // Command Ring
-    struct MemEntry             hc_OPR;
-    APTR                        hc_OPRp;
-    APTR                        hc_DMAOPR;
-    // Event Ring
-    struct MemEntry             hc_ERS;
-    APTR                        hc_ERSp;
-    APTR                        hc_DMAERS;
-
-    APTR                        hc_XHCIOpR;
-    APTR                        hc_XHCIDB;
-    APTR                        hc_XHCIPorts;
-    APTR                        hc_XHCIIntR;
-
-    BYTE                        hc_ReadySignal;
-    BYTE                        hc_PortChangeSignal;
-    BYTE                        hc_DoWorkSignal;
-    UWORD                       hc_RootPortChanges;
-    struct Task                 *hc_ReadySigTask, *hc_xHCERTask, *hc_xHCPortTask;
-    struct pciusbXHCIDevice    *hc_Devices[USB_DEV_MAX];
-    volatile struct pciusbXHCITRBParams  hc_CmdResults[USB_DEV_MAX];
-    UBYTE                       hc_PortProtocol[MAX_ROOT_PORTS];
-    BOOL                        hc_PortProtocolValid;
-#endif
-
     ULONG                       hc_FrameCounter;
     struct List                 hc_TDQueue;
     struct List                 hc_AbortQueue;

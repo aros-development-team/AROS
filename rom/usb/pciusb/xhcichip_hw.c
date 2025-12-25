@@ -33,7 +33,8 @@
 #if !defined(PCIUSB_INLINEXHCIOPS)
 void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
 {
-    volatile struct xhci_dbr *xhcidb = (volatile struct xhci_dbr *)((IPTR)hc->hc_XHCIDB);
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+    volatile struct xhci_dbr *xhcidb = (volatile struct xhci_dbr *)((IPTR)xhcic->xhc_XHCIDB);
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u, %08x)" DEBUGCOLOR_RESET" \n", __func__, slot, value);
     XHCI_MMIO_BARRIER();
@@ -51,6 +52,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
                    APTR dmaaddr,
                    ULONG trbflags, ULONG *resflags)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_inctx *inctx;
     volatile struct xhci_slot *slot = NULL;
     WORD queued;
@@ -65,7 +67,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
 
         UBYTE slotid = (trbflags >> 24) & 0xFF;
         if ((slotid > 0) && (slotid < USB_DEV_MAX)) {
-            struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slotid];
+            struct pciusbXHCIDevice *devCtx = xhcic->xhc_Devices[slotid];
 
             if (devCtx && devCtx->dc_SlotCtx.dmaa_Ptr)
                 slot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
@@ -92,7 +94,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
                 return -1;
             }
 
-            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
             portsc = AROS_LE2LONG(xhciports[port - 1].portsc);
 
             pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
@@ -104,13 +106,13 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             Enable();
             return -1;
         }
-        queued = xhciQueueTRB(hc, hc->hc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
+        queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
     } else {
-        queued = xhciQueueTRB(hc, hc->hc_OPRp, 0, 0, trbflags);
+        queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, 0, 0, trbflags);
     }
     if (queued != -1) {
-        hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
-        hc->hc_CmdResults[queued].status = 0xFFFFFFFF;
+        xhcic->xhc_CmdResults[queued].flags = 0xFFFFFFFF;
+        xhcic->xhc_CmdResults[queued].status = 0xFFFFFFFF;
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
     }
@@ -121,11 +123,11 @@ LONG xhciCmdSubmit(struct PCIController *hc,
 
         /* Wait for completion with a bounded timeout to avoid hanging */
         for (ULONG waitms = 0; waitms < 1000; waitms++) {
-            if (hc->hc_CmdResults[queued].status != 0xFFFFFFFF) {
+            if (xhcic->xhc_CmdResults[queued].status != 0xFFFFFFFF) {
                 if (resflags)
-                    *resflags = hc->hc_CmdResults[queued].flags;
+                    *resflags = xhcic->xhc_CmdResults[queued].flags;
 
-                return hc->hc_CmdResults[queued].status;
+                return xhcic->xhc_CmdResults[queued].status;
             }
 
             uhwDelayMS(1, hc->hc_Unit);
@@ -143,10 +145,11 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
                         ULONG trbflags,
                         struct IOUsbHWReq *ioreq)
 {
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_inctx *inctx;
     volatile struct xhci_slot *slot = NULL;
     WORD queued;
-    volatile struct pcisusbXHCIRing *cmdring = (volatile struct pcisusbXHCIRing *)hc->hc_OPRp;
+    volatile struct pcisusbXHCIRing *cmdring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_OPRp;
 
     if (!ioreq)
         return -1;
@@ -161,7 +164,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
 
         UBYTE slotid = (trbflags >> 24) & 0xFF;
         if ((slotid > 0) && (slotid < USB_DEV_MAX)) {
-            struct pciusbXHCIDevice *devCtx = hc->hc_Devices[slotid];
+            struct pciusbXHCIDevice *devCtx = xhcic->xhc_Devices[slotid];
 
             if (devCtx && devCtx->dc_SlotCtx.dmaa_Ptr)
                 slot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
@@ -173,7 +176,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
         }
 
         if (slot) {
-            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)hc->hc_XHCIPorts);
+            volatile struct xhci_pr *xhciports = (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
 
             ULONG slotctx1 = AROS_LE2LONG(slot->ctx[1]);
 
@@ -191,8 +194,8 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
         queued = xhciQueueTRB(hc, cmdring, 0, 0, trbflags);
 
     if (queued != -1) {
-        hc->hc_CmdResults[queued].flags = 0xFFFFFFFF;
-        hc->hc_CmdResults[queued].status = 0xFFFFFFFF;
+        xhcic->xhc_CmdResults[queued].flags = 0xFFFFFFFF;
+        xhcic->xhc_CmdResults[queued].status = 0xFFFFFFFF;
         xhciRingLock();
         cmdring->ringio[queued] = &ioreq->iouh_Req;
         xhciRingUnlock();
@@ -314,6 +317,7 @@ AROS_UFH0(void, xhciEventRingTask)
     AROS_USERFUNC_INIT
 
     struct PCIController *hc;
+    struct XhciHCPrivate *xhcic;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
@@ -321,29 +325,30 @@ AROS_UFH0(void, xhciEventRingTask)
         struct Task *thistask;
         thistask = FindTask(NULL);
         hc = thistask->tc_UserData;
-        hc->hc_xHCERTask = thistask;
+        xhcic = xhciGetHCPrivate(hc);
+        xhcic->xhc_xHCERTask = thistask;
         SetTaskPri(thistask, 100);
     }
-    hc->hc_DoWorkSignal = AllocSignal(-1);
+    xhcic->xhc_DoWorkSignal = AllocSignal(-1);
 
     pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "'%s' @ 0x%p, DoWorkSignal=%d"
                     DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)hc->hc_xHCERTask)->ln_Name, hc->hc_xHCERTask, hc->hc_DoWorkSignal);
+                    ((struct Node *)xhcic->xhc_xHCERTask)->ln_Name, xhcic->xhc_xHCERTask, xhcic->xhc_DoWorkSignal);
 
-    if (hc->hc_ReadySigTask)
-        Signal(hc->hc_ReadySigTask, 1L << hc->hc_ReadySignal);
+    if (xhcic->xhc_ReadySigTask)
+        Signal(xhcic->xhc_ReadySigTask, 1L << xhcic->xhc_ReadySignal);
 
     for (;;) {
-        ULONG xhcictsigs = Wait(1 << hc->hc_DoWorkSignal);
+        ULONG xhcictsigs = Wait(1 << xhcic->xhc_DoWorkSignal);
 #if defined(DEBUG) && (DEBUG > 1)
         pciusbXHCIDebugV("xHCI",
                         DEBUGCOLOR_SET "IDnest %d TDNest %d"
                         DEBUGCOLOR_RESET" \n",
-                        hc->hc_xHCERTask->tc_IDNestCnt, hc->hc_xHCERTask->tc_TDNestCnt);
+                        xhcic->xhc_xHCERTask->tc_IDNestCnt, xhcic->xhc_xHCERTask->tc_TDNestCnt);
 #endif
 
-        if (xhcictsigs & (1 << hc->hc_DoWorkSignal)) {
+        if (xhcictsigs & (1 << xhcic->xhc_DoWorkSignal)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
             xhciHandleFinishedTDs(hc);
 

@@ -212,6 +212,8 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
 {
     struct PCIUnit *unit = NULL;
 
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, %u)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unitnr);
+
     if(!base->hd_ScanDone) {
         base->hd_ScanDone = TRUE;
         if(!pciInit(base)) {
@@ -271,6 +273,8 @@ struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHW
     struct RTIsoNode *rtn;
     UWORD ptdcount;
 
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, ioreq);
+
     if (!hc || !ioreq)
         return NULL;
 
@@ -303,6 +307,9 @@ struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHW
 void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     (void)hc;
+
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, rtn);
+
     if (!rtn)
         return;
 
@@ -359,7 +366,7 @@ WORD cmdReset(struct IOUsbHWReq *ioreq,
               struct PCIUnit *unit,
               struct PCIDevice *base)
 {
-    KPRINTF(10, "CMD_RESET ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
     uhwDelayMS(1, unit);
     uhwGetUsbState(ioreq, unit, base);
@@ -388,7 +395,7 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq,
                  struct PCIUnit *unit,
                  struct PCIDevice *base)
 {
-    KPRINTF(10, "UHCMD_USBRESET ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -420,7 +427,8 @@ WORD cmdUsbResume(struct IOUsbHWReq *ioreq,
                   struct PCIUnit *unit,
                   struct PCIDevice *base)
 {
-    KPRINTF(10, "UHCMD_USBRESUME ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -448,7 +456,7 @@ WORD cmdUsbSuspend(struct IOUsbHWReq *ioreq,
                    struct PCIUnit *unit,
                    struct PCIDevice *base)
 {
-    KPRINTF(10, "UHCMD_USBSUSPEND ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -476,7 +484,7 @@ WORD cmdUsbOper(struct IOUsbHWReq *ioreq,
                 struct PCIUnit *unit,
                 struct PCIDevice *base)
 {
-    KPRINTF(10, "UHCMD_USBOPER ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
     /* FIXME */
     uhwGetUsbState(ioreq, unit, base);
@@ -507,7 +515,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     struct TagItem *tag;
     ULONG count = 0;
 
-    KPRINTF(10, "UHCMD_QUERYDEVICE ioreq: 0x%p, taglist: 0x%p\n", ioreq, taglist);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
     if((tag = FindTagItem(UHA_State, taglist))) {
         *((ULONG *) tag->ti_Data) = (ULONG) uhwGetUsbState(ioreq, unit, base);
@@ -609,8 +617,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
     UWORD hciport;
     ULONG numports = unit->hu_RootHubPorts;
 
-    KPRINTF(10, "cmdControlXFerRootHub(0x%p, 0x%p, 0x%p)\n", ioreq, unit, base);
-    
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
     if(ioreq->iouh_Endpoint) {
         return(UHIOERR_STALL);
     }
@@ -1108,7 +1116,9 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
                        struct PCIUnit *unit,
                        struct PCIDevice *base)
 {
-    KPRINTF(10, "cmdIntXFerRootHub(0x%p, 0x%p, 0x%p)\n", ioreq, unit, base);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
+
 
     if((ioreq->iouh_Endpoint != 1) || (!ioreq->iouh_Length)) {
         return(UHIOERR_STALL);
@@ -1155,7 +1165,9 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, "UHCMD_CONTROLXFER ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
+
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
         return(UHIOERR_USBOFFLINE);
@@ -1212,7 +1224,9 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, "UHCMD_BULKXFER ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
+
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
         return(UHIOERR_USBOFFLINE);
@@ -1269,7 +1283,9 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, "UHCMD_ISOXFER ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
+
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
         return(UHIOERR_USBOFFLINE);
@@ -1343,7 +1359,9 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
 
-    KPRINTF(10, "UHCMD_INTXFER ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
+
     //uhwDelayMS(1000, unit); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
@@ -1402,7 +1420,8 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
     struct PCIController *hc;
     UWORD devadrep;
 
-    KPRINTF(10, "CMD_FLUSH ioreq: 0x%p\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     Disable();
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
@@ -1525,7 +1544,8 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     WORD retval;
     UWORD requested_ptds;
 
-    KPRINTF(10, "UHCMD_ADDISOHANDLER ioreq: 0x%08lx\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     //uhwDelayMS(1000, unit); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
@@ -1682,7 +1702,8 @@ WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq,
     struct PCIController *hc;
     struct RTIsoNode *rtn;
 
-    KPRINTF(10, "UHCMD_REMISOHANDLER ioreq: 0x%08lx\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
@@ -1754,7 +1775,9 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
 {
     struct PCIController *hc;
     struct RTIsoNode *rtn;
-    KPRINTF(10, "UHCMD_STARTRTISO ioreq: 0x%08lx\n", ioreq);
+
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
@@ -1832,7 +1855,8 @@ WORD cmdStopRTIso(struct IOUsbHWReq *ioreq,
     struct PCIController *hc;
     struct RTIsoNode *rtn;
 
-    KPRINTF(10, "UHCMD_STOPRTISO ioreq: 0x%08lx\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
+
 
     hc = unit->hu_DevControllers[ioreq->iouh_DevAddr];
     if(!hc) {
@@ -1899,7 +1923,9 @@ WORD cmdNSDeviceQuery(struct IOStdReq *ioreq,
 
     query = (struct NSDeviceQueryResult *) ioreq->io_Data;
 
-    KPRINTF(10, "NSCMD_DEVICEQUERY ioreq: 0x%p query: 0x%p\n", ioreq, query);
+
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, base);
+    KPRINTF(10, "NSCMD_DEVICEQUERY query: 0x%p\n", query);
 
     /* NULL ptr?
        Enough data?
@@ -1966,7 +1992,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
     UWORD devadrep;
     BOOL foundit = FALSE;
 
-    KPRINTF(10, "cmdAbort(%p)\n", ioreq);
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq);
 
     Disable();
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
@@ -2140,6 +2166,8 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
     struct PCIDevice *base = unit->hu_Device;
     struct IOUsbHWReq *ioreq;
 
+    pciusbDebugV("UHW", DEBUGCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, unit);
+
     if(unit->hu_RootPortChanges && unit->hu_RHIOQueue.lh_Head->ln_Succ) {
         KPRINTF(1, "Portchange map %04lx\n", unit->hu_RootPortChanges);
         Disable();
@@ -2168,6 +2196,8 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
 {
     struct PCIUnit *unit = hc->hc_Unit;
     struct PCIDevice *base = unit->hu_Device;
+
+    pciusbDebug("UHW", DEBUGCOLOR_SET "%s()" DEBUGCOLOR_RESET "\n", __func__);
 
     /* Clear Feature(Endpoint halt) */
     if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_ENDPOINT)) &&
@@ -2214,7 +2244,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     ULONG ctrlstatus;
     BOOL causeint;
 
-//    KPRINTF(1, "Enter NakTimeoutInt(0x%p)\n", unit);
+    pciusbDebugV("UHW", DEBUGCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, unit);
 
     // check for port status change for UHCI and frame rollovers and NAK Timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
