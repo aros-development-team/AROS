@@ -106,6 +106,69 @@ static inline struct XhciHCPrivate *xhciGetHCPrivate(struct PCIController *hc)
 {
     return (struct XhciHCPrivate *)hc->hc_CPrivate;
 }
+ 
+/*
+ * Root port state helpers
+ *
+ * Poseidon's hub model expects USB2-style PORT_ENABLE semantics. On SuperSpeed
+ * ports, the xHCI PED bit is not a reliable equivalent, so we treat a USB3
+ * port as "enabled" when it is connected and in U0 (operational).
+ */
+static inline ULONG xhciPortSpeedBits(ULONG portsc)
+{
+    return (portsc & XHCI_PR_PORTSC_SPEED_MASK);
+}
+
+static inline ULONG xhciPortLinkState(ULONG portsc)
+{
+    return (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
+}
+
+static inline BOOL xhciIsUsb3SpeedBits(ULONG portsc)
+{
+    ULONG speedBits = xhciPortSpeedBits(portsc);
+    return (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) ||
+           (speedBits == XHCIF_PR_PORTSC_SUPERSPEEDPLUS);
+}
+
+/*
+ * Identify whether a given port register represents a USB3 protocol port.
+ *
+ * When speed bits are zero (disconnected, RxDetect, etc.), consult the
+ * Supported Protocol capability-derived table built during init.
+ */
+static inline BOOL xhciPortIsUsb3(struct PCIController *hc, UWORD hciport, ULONG portsc)
+{
+    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
+
+    if (xhcic && xhcic->xhc_PortProtocolValid && (hciport < MAX_ROOT_PORTS)) {
+        if (xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB3)
+            return TRUE;
+        if (xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB2)
+            return FALSE;
+    }
+
+    return xhciIsUsb3SpeedBits(portsc);
+}
+
+static inline BOOL xhciUsb3Operational(ULONG portsc)
+{
+    /* USB3 ports do not use PED; treat U0 + CCS as "enabled". */
+    return ((portsc & XHCIF_PR_PORTSC_CCS) != 0) && (xhciPortLinkState(portsc) == 0);
+}
+
+static inline BOOL xhciHubPortEnabled(struct PCIController *hc, UWORD hciport, ULONG portsc)
+{
+    if (xhciPortIsUsb3(hc, hciport, portsc))
+        return xhciUsb3Operational(portsc);
+
+    return (portsc & XHCIF_PR_PORTSC_PED) != 0;
+}
+
+static inline BOOL xhciHubPortConnected(ULONG portsc)
+{
+    return (portsc & XHCIF_PR_PORTSC_CCS) != 0;
+}
 
 /*
  * Private Transfer Request Block Ring desciption

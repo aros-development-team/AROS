@@ -1752,12 +1752,21 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                     hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
 
-                    if ((hc->hc_PortChangeMap[hciport] & UPSF_PORT_CONNECTION) ||
-                        ((origportsc & XHCIF_PR_PORTSC_PED) &&
-                         (!xhciFindPortDevice(hc, hciport))) ||
-                        ((!(origportsc & XHCIF_PR_PORTSC_PED)) &&
-                         (xhciFindPortDevice(hc, hciport)))) {
-                        signalTask = TRUE;
+                    {
+                        const BOOL enabled = xhciHubPortEnabled(hc, hciport, origportsc);
+                        const BOOL haveDev = (xhciFindPortDevice(hc, hciport) != NULL);
+
+                        /*
+                         * For USB3 ports, don't key off PED. Treat "enabled" as
+                         * "connected and operational (U0)" so SS/SS+ devices can
+                         * trigger the port-change task.
+                         */
+                        if ((hc->hc_PortChangeMap[hciport] & UPSF_PORT_CONNECTION) ||
+                            (enabled && !haveDev) ||
+                            (!enabled && haveDev))
+                        {
+                            signalTask = TRUE;
+                        }
                     }
 
                     if (signalTask) {

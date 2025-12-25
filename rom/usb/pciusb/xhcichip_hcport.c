@@ -37,50 +37,6 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
-static inline ULONG xhciPortSpeedBits(ULONG portsc)
-{
-    return portsc & XHCI_PR_PORTSC_SPEED_MASK;
-}
-
-static inline BOOL xhciIsUsb3(ULONG portsc)
-{
-    ULONG sb = xhciPortSpeedBits(portsc);
-    return (sb == XHCIF_PR_PORTSC_SUPERSPEED) || (sb == XHCIF_PR_PORTSC_SUPERSPEEDPLUS);
-}
-
-static inline BOOL xhciPortIsUsb3(struct PCIController *hc, UWORD hciport, ULONG portsc)
-{
-    struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
-    ULONG sb = xhciPortSpeedBits(portsc);
-
-    if (sb != 0) {
-        return xhciIsUsb3(portsc);
-    }
-
-    if (!xhcic->xhc_PortProtocolValid || hciport >= MAX_ROOT_PORTS) {
-        return FALSE;
-    }
-
-    return xhcic->xhc_PortProtocol[hciport] >= XHCI_PORT_PROTOCOL_USB3;
-}
-
-static inline ULONG xhciPortLinkState(ULONG portsc)
-{
-    return (portsc & XHCI_PR_PORTSC_PLS_MASK) >> XHCIS_PR_PORTSC_PLS;
-}
-
-/*
- * For SS/SS+ ports, "operational" from a hub-model point of view is:
- * connected + link in U0.
- *
- * We intentionally do NOT key this off PED for USB3; PED semantics on
- * SS ports are not reliably equivalent to a USB2 "enabled" indication.
- */
-static inline BOOL xhciUsb3Operational(ULONG portsc)
-{
-    return (portsc & XHCIF_PR_PORTSC_CCS) && (xhciPortLinkState(portsc) == 0 /* U0 */);
-}
-
 /*
  * PORTSC write handling:
  *
@@ -297,14 +253,21 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
             DEBUGCOLOR_RESET " \n");
 
         /*
-         * If there was a device and we own a slot for it, free its context before reset.
+         * If there was a device and we own a slot for it...
+         *
+         * - During initial bring-up, this driver creates a slot at address 0
+         *   (Address Device command) before the stack issues SET_ADDRESS.
+         *   A hub-driver PORT_RESET in that window is part of normal
+         *   enumeration; do not tear down the slot.
+         *
+         * - For an already addressed device (dc_DevAddr != 0), PORT_RESET is
+         *   treated as a re-enumeration trigger; drop the old context.
          */
         devCtx = xhciFindPortDevice(hc, hciport);
-        if (devCtx) {
+        if (devCtx && devCtx->dc_DevAddr != 0) {
             pciusbXHCIDebug("xHCI",
-                DEBUGCOLOR_SET "xHCI: Disabling device slot (%u) and freeing resources.."
-                DEBUGCOLOR_RESET "\n",
-                devCtx->dc_SlotID);
+                DEBUGCOLOR_SET "xHCI: PORT_RESET: disabling device slot (%u) for re-enumeration"
+                DEBUGCOLOR_RESET "\n", devCtx->dc_SlotID);
 
             xhciDisconnectDevice(hc, devCtx);
         }
@@ -736,8 +699,12 @@ AROS_UFH0(void, xhciPortTask)
                 ULONG portsc  = AROS_LE2LONG(xhciports[hciport].portsc);
                 devCtx = xhciFindPortDevice(hc, hciport);
 
-                BOOL connected = (portsc & XHCIF_PR_PORTSC_CCS) != 0;
-                BOOL enabled   = (portsc & XHCIF_PR_PORTSC_PED) != 0;
+                /*
+                 * USB3 ports do not use PED semantics reliably; treat "enabled"
+                 * as "operational" (CCS + U0) for SS/SS+.
+                 */
+                BOOL connected = xhciHubPortConnected(portsc);
+                BOOL enabled   = xhciHubPortEnabled(hc, hciport, portsc);
 
                 if (connected && enabled && (!devCtx)) {
                     UWORD rootPort = hciport;     /* 0-based */

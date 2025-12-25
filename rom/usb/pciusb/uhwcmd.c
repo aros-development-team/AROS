@@ -2203,14 +2203,14 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
     if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_ENDPOINT)) &&
             (ioreq->iouh_SetupData.bRequest == USR_CLEAR_FEATURE) &&
             (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_ENDPOINT_HALT))) {
-        KPRINTF(10, "Resetting toggle bit for endpoint %ld\n", AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf);
+        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bit for endpoint %ld" DEBUGCOLOR_RESET "\n", __func__, AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf);
         unit->hu_DevDataToggle[(ioreq->iouh_DevAddr<<5)|(AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf)|((AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0x80)>>3)] = 0;
     } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_DEVICE)) &&
               (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS)) {
         /* Set Address -> clear all endpoints */
         ULONG epnum;
         ULONG adr = AROS_WORD2BE(ioreq->iouh_SetupData.wValue)>>3;
-        KPRINTF(10, "Resetting toggle bits for device address %ld\n", adr>>5);
+        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bits for device address %ld" DEBUGCOLOR_RESET "\n", __func__, adr>>5);
         for(epnum = 0; epnum < 31; epnum++) {
             unit->hu_DevDataToggle[adr+epnum] = 0;
         }
@@ -2221,7 +2221,7 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
               (ioreq->iouh_SetupData.bRequest == USR_SET_FEATURE) &&
               (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_PORT_RESET))) {
         // a hub will be enumerating a device on this host controller soon!
-        KPRINTF(10, "Hub RESET caught, assigning Dev0 to %p!\n", hc);
+        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Hub RESET caught, assigning Dev0 to %p!" DEBUGCOLOR_RESET "\n", __func__, hc);
         unit->hu_DevControllers[0] = hc;
     }
 }
