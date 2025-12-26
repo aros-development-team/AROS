@@ -18,6 +18,11 @@ struct HWACPIFanData
 {
     ACPI_HANDLE                 acpifan_Handle;
     ULONG                       acpifan_TelemetryCount;
+    ULONG                       acpifan_FpsMin;
+    ULONG                       acpifan_FpsMax;
+    BOOL                        acpifan_HasFps;
+    BOOL                        acpifan_HasStatus;
+    BOOL                        acpifan_HasControl;
 };
 
 struct ACPIFanNode
