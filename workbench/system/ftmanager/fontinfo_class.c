@@ -459,12 +459,16 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
         DoMethod(stem_weight_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
                 stem_weight_cycle, 5, MUIM_CallHook, &CycleToStringHook,
                 stem_weight, sizeof(stem_weight_values), stem_weight_values);
+        DoMethod(stem_weight_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
         DoMethod(stem_weight, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                 stem_weight, 4, MUIM_CallHook, &IntegerBoundsHook, 0, 255);
 
         DoMethod(horiz_style_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
                 horiz_style_cycle, 5, MUIM_CallHook, &CycleToStringHook,
                 horiz_style, sizeof(horiz_style_values), horiz_style_values);
+        DoMethod(horiz_style_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
         DoMethod(horiz_style, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                 horiz_style, 4, MUIM_CallHook, &IntegerBoundsHook, 0, 255);
 
@@ -478,14 +482,42 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
                 o, 1, MUIM_FontInfo_UpdatePreview);
         DoMethod(gray, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
                 o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(family, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(attached_file, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(face_num, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(size_factor_low, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(size_factor_high, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(space_width, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(fixed, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(serif, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(stem_weight, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(slant_style, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(horiz_style, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
 
         DoMethod(bbox_ymin, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                 bbox_ymin, 4, MUIM_CallHook, &IntegerBoundsHook, -32768, 32767);
         DoMethod(bbox_ymax, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
                 bbox_ymax, 4, MUIM_CallHook, &IntegerBoundsHook, -32768, 32767);
+        DoMethod(bbox_ymin, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
+        DoMethod(bbox_ymax, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
 
         DoMethod(metric, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
                 metric, 6, MUIM_CallHook, &MetricHook, bbox_ymin, bbox_ymax);
+        DoMethod(metric, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                o, 1, MUIM_FontInfo_UpdatePreview);
 
         set(metric, MUIA_Cycle_Active, metric_default);
 
