@@ -81,6 +81,22 @@ static BOOL ACPIBattery_ReadBSTValue(struct HWACPIBatteryData *data, ULONG index
     return ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BST", index, value);
 }
 
+static BOOL ACPIBattery_ReadCapacityThresholds(struct HWACPIBatteryData *data, ULONG *warning, ULONG *low)
+{
+    if (!data->acpib_Handle)
+        return FALSE;
+
+    if (ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIX", 6, warning) &&
+        ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIX", 7, low))
+        return TRUE;
+
+    if (ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIF", 5, warning) &&
+        ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIF", 6, low))
+        return TRUE;
+
+    return FALSE;
+}
+
 static ULONG ACPIBattery_ReadRemainingCapacity(struct HWACPIBatteryData *data)
 {
     ULONG remaining = 0;
@@ -116,6 +132,82 @@ static ULONG ACPIBattery_ReadFullCapacity(struct HWACPIBatteryData *data)
         ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIF", 2, &full);
 
     return full;
+}
+static ULONG ACPIBattery_ReadPowerUnits(struct HWACPIBatteryData *data)
+{
+    ULONG units = 0;
+
+    if (!data->acpib_Handle)
+        return vHW_PowerUnit_mW;
+
+    if (!ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIX", 1, &units))
+        ACPIBattery_EvaluatePackageInteger(data->acpib_Handle, "_BIF", 0, &units);
+
+    return (units == 1) ? vHW_PowerUnit_mA : vHW_PowerUnit_mW;
+}
+
+static ULONG ACPIBattery_ReadPowerState(struct HWACPIBatteryData *data)
+{
+    ULONG state = 0;
+    ULONG remaining = 0;
+    ULONG full = 0;
+
+    if (!ACPIBattery_ReadBSTValue(data, 0, &state))
+        return vHW_PowerState_NotPresent;
+
+    if (state & 0x2)
+        return vHW_PowerState_Charging;
+    if (state & 0x1)
+        return vHW_PowerState_Discharging;
+
+    remaining = ACPIBattery_ReadRemainingCapacity(data);
+    full = ACPIBattery_ReadFullCapacity(data);
+
+    if (remaining > 0 || full > 0)
+        return vHW_PowerState_Discharging;
+
+    return vHW_PowerState_NotPresent;
+}
+
+static ULONG ACPIBattery_ReadPowerFlags(struct HWACPIBatteryData *data)
+{
+    ULONG state = 0;
+    ULONG warning = 0;
+    ULONG low = 0;
+    ULONG remaining = 0;
+    ULONG full = 0;
+    ULONG percent = 0;
+
+    if (!ACPIBattery_ReadBSTValue(data, 0, &state))
+        return vHW_PowerFlag_Unknown;
+
+    if (state & 0x4)
+        return vHW_PowerFlag_Critical;
+
+    remaining = ACPIBattery_ReadRemainingCapacity(data);
+    if (remaining == 0)
+        return vHW_PowerFlag_Unknown;
+
+    if (ACPIBattery_ReadCapacityThresholds(data, &warning, &low) && warning > 0 && low > 0)
+    {
+        if (remaining <= low)
+            return vHW_PowerFlag_Critical;
+        if (remaining <= warning)
+            return vHW_PowerFlag_Low;
+        return vHW_PowerFlag_High;
+    }
+
+    full = ACPIBattery_ReadFullCapacity(data);
+    if (full == 0)
+        return vHW_PowerFlag_Unknown;
+
+    percent = (remaining * 100) / full;
+    if (percent <= 5)
+        return vHW_PowerFlag_Critical;
+    if (percent <= 20)
+        return vHW_PowerFlag_Low;
+
+    return vHW_PowerFlag_High;
 }
 
 OOP_Object *ACPIBattery__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -176,6 +268,22 @@ VOID ACPIBattery__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
     case aoHidd_Telemetry_EntryCount:
         *msg->storage = (IPTR)data->acpib_TelemetryCount;
+        return;
+    }
+
+    Hidd_Power_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Power_Type:
+        *msg->storage = (IPTR)vHW_PowerType_Battery;
+        return;
+    case aoHidd_Power_State:
+        *msg->storage = (IPTR)ACPIBattery_ReadPowerState(data);
+        return;
+    case aoHidd_Power_Flags:
+        *msg->storage = (IPTR)ACPIBattery_ReadPowerFlags(data);
+        return;
+    case aoHidd_Power_Units:
+        *msg->storage = (IPTR)ACPIBattery_ReadPowerUnits(data);
         return;
     }
 
