@@ -133,6 +133,17 @@ static CONST_STRPTR PowerWindow_GetUnitsString(IPTR value)
             return typeUnknown;
     }
 }
+
+static BOOL PowerWindow_IsPowerRawEntry(CONST_STRPTR id)
+{
+    if (!id)
+        return FALSE;
+
+    return (strcmp(id, "Capacity") == 0) ||
+        (strcmp(id, "Full Capacity") == 0) ||
+        (strcmp(id, "Rate") == 0);
+}
+
 static char *PowerWindow_AllocString(const char *fmt, ...)
 {
     va_list args;
@@ -191,6 +202,20 @@ static char *PowerWindow_FormatTelemetryValue(LONG value, ULONG units)
     return PowerWindow_AllocString("%ld", value);
 }
 
+static char *PowerWindow_FormatTelemetryValueWithPowerUnits(LONG value, ULONG units, IPTR powerUnits,
+    BOOL usePowerUnits)
+{
+    if (usePowerUnits && units == vHW_TelemetryUnit_Raw)
+    {
+        CONST_STRPTR unitStr = PowerWindow_GetUnitsString(powerUnits);
+
+        if (unitStr && unitStr != typeUnknown)
+            return PowerWindow_AllocString("%ld%s", value, unitStr);
+    }
+
+    return PowerWindow_FormatTelemetryValue(value, units);
+}
+
 static BOOL PowerWindow_GetTelemetryEntry(OOP_Object *dev, struct SysexpPowerBase *PowerBase, ULONG index,
     struct PowerTelemetryEntry *entry)
 {
@@ -239,11 +264,14 @@ static Object *PowerWindow_CreateTelemetryGroup(OOP_Object *dev, struct SysexpPo
 {
     Object *telemetryGroup;
     IPTR count = 0;
+    IPTR powerUnits = 0;
     ULONG i;
 
     OOP_GetAttr(dev, aHidd_Telemetry_EntryCount, &count);
     if (count == 0)
         return NULL;
+
+    OOP_GetAttr(dev, aHidd_Power_Units, &powerUnits);
 
     telemetryGroup = MUI_NewObject(MUIC_Group,
         MUIA_Group_Horiz, TRUE,
@@ -278,7 +306,11 @@ static Object *PowerWindow_CreateTelemetryGroup(OOP_Object *dev, struct SysexpPo
                 DoMethod(telemetryGroup, OM_ADDMEMBER, Label(label ? label : (char *)"Entry"));
             }
 
-            valueStr = PowerWindow_FormatTelemetryValue(entry.value, entry.units);
+            valueStr = PowerWindow_FormatTelemetryValueWithPowerUnits(
+                entry.value,
+                entry.units,
+                powerUnits,
+                PowerWindow_IsPowerRawEntry(entry.id));
             if (!valueStr)
                 valueStr = (char *)"";
             DoMethod(telemetryGroup, OM_ADDMEMBER,
@@ -314,6 +346,7 @@ static void PowerWindow_UpdateDetails(struct PowerWindow_DATA *data)
     IPTR val = 0;
     IPTR type = vHW_PowerType_Unknown;
     IPTR units = 0;
+    CONST_STRPTR unitsStr = NULL;
 
     OOP_GetAttr(data->dev, aHidd_Power_Type, &type);
     if (data->type)
@@ -330,17 +363,28 @@ static void PowerWindow_UpdateDetails(struct PowerWindow_DATA *data)
     OOP_GetAttr(data->dev, aHidd_Power_Units, &units);
     if (data->units)
         SET(data->units, MUIA_Text_Contents, PowerWindow_GetUnitsString(units));
+    unitsStr = PowerWindow_GetUnitsString(units);
 
     {
         struct PowerTelemetryEntry entry;
 
         if (PowerWindow_FindTelemetryEntry(data, "Capacity", &entry))
-            snprintf(data->capacityText, sizeof(data->capacityText), "%ld", (long)entry.value);
+        {
+            if (unitsStr && unitsStr != typeUnknown)
+                snprintf(data->capacityText, sizeof(data->capacityText), "%ld%s", (long)entry.value, unitsStr);
+            else
+                snprintf(data->capacityText, sizeof(data->capacityText), "%ld", (long)entry.value);
+        }
         else
             snprintf(data->capacityText, sizeof(data->capacityText), "n/a");
 
         if (PowerWindow_FindTelemetryEntry(data, "Rate", &entry))
-            snprintf(data->rateText, sizeof(data->rateText), "%ld", (long)entry.value);
+        {
+            if (unitsStr && unitsStr != typeUnknown)
+                snprintf(data->rateText, sizeof(data->rateText), "%ld%s", (long)entry.value, unitsStr);
+            else
+                snprintf(data->rateText, sizeof(data->rateText), "%ld", (long)entry.value);
+        }
         else
             snprintf(data->rateText, sizeof(data->rateText), "n/a");
     }

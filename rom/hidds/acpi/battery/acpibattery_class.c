@@ -133,6 +133,7 @@ static ULONG ACPIBattery_ReadFullCapacity(struct HWACPIBatteryData *data)
 
     return full;
 }
+
 static ULONG ACPIBattery_ReadPowerUnits(struct HWACPIBatteryData *data)
 {
     ULONG units = 0;
@@ -244,7 +245,7 @@ OOP_Object *ACPIBattery__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
         data->acpib_State = vHW_PowerState_NotPresent;
         data->acpib_Flags = vHW_PowerFlag_Unknown;
-        data->acpib_TelemetryCount = 5;
+        data->acpib_TelemetryCount = 6;
         
         data->acpib_Handle = acpiHandle;
     }
@@ -314,6 +315,8 @@ BOOL ACPIBattery__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
     ULONG remainingCapacity = 0;
     ULONG rate = 0;
     ULONG voltage = 0;
+    ULONG bstState = 0;
+    LONG chargeState = -1;
 
     if (msg->index >= data->acpib_TelemetryCount)
         return FALSE;
@@ -322,6 +325,16 @@ BOOL ACPIBattery__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
     fullCapacity = ACPIBattery_ReadFullCapacity(data);
     rate = ACPIBattery_ReadRate(data);
     voltage = ACPIBattery_ReadVoltage(data);
+
+    if (ACPIBattery_ReadBSTValue(data, 0, &bstState))
+    {
+        if (bstState & 0x2)
+            chargeState = 2;
+        else if (bstState & 0x1)
+            chargeState = 1;
+        else
+            chargeState = 0;
+    }
 
     switch (msg->index)
     {
@@ -348,7 +361,7 @@ BOOL ACPIBattery__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
         break;
     case 3:
         entryId = "Rate";
-        units = vHW_TelemetryUnit_Watts;
+        units = vHW_TelemetryUnit_Raw;
         minValue = 0;
         maxValue = (LONG)rate;
         value = (LONG)rate;
