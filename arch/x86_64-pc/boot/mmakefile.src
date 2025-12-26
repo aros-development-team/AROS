@@ -77,11 +77,12 @@ BSP_MISC := \
 #MM     kernel-hidd-acpibutton          \
 #MM     kernel-hidd-acpifan             \
 #MM     kernel-hidd-acpiacad            \
-#MM     kernel-hidd-acpibattery
+#MM     kernel-hidd-acpibattery         \
+#MM     kernel-hidd-acpithermal
 
 ACPIDEVS        :=
 ACPIRSRCS      :=
-ACPIHIDDS      := acpiacad acpibattery acpifan acpibutton
+ACPIHIDDS      := acpiacad acpibattery acpifan acpibutton acpithermal
 
 %make_package mmake=kernel-acpi file=$(AROSARCHDIR)/aros-acpi.pkg \
 	 devs=$(ACPIDEVS) res=$(ACPIRSRCS) hidds=$(ACPIHIDDS) packfmt=$(AROS_PACKAGE_FMT)
