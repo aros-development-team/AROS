@@ -2502,8 +2502,9 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
 #endif
     } else {
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                       "SET_CONFIGURATION failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                                "SET_CONFIGURATION for %s/%ld Addr=%lu failed: %s (%ld)",
+                                pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, (ULONG)pd->pd_DevAddr,
+                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         KPRINTF(15, ("SET_CONFIGURATION failed %ld!\n", ioerr));
     }
     // update direct link
@@ -3904,6 +3905,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
 {
     AROS_LIBFUNC_INIT
     struct PsdDevice *pd = NULL;
+    struct PsdDevice *rootpd = NULL;
     struct PsdPipe *pp;
     struct MsgPort *mp;
     LONG ioerr;
@@ -3935,23 +3937,58 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                 if(psdEnumerateDevice(pp)) {
                     KPRINTF(1, ("Enumeration finished!\n"));
                     psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
-                    psdFreePipe(pp);
-                    DeleteMsgPort(mp);
                     phw->phw_RootDevice = pd;
                     psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
-                    return(pd);
+                    rootpd = pd;
                 }
                 psdFreePipe(pp);
             }
-            pFreeBindings(ps, pd);
-            pFreeDevice(ps, pd);
+            if (!rootpd) {
+                pFreeBindings(ps, pd);
+                pFreeDevice(ps, pd);
+            }
         } else {
             Permit();
         }
         DeleteMsgPort(mp);
     }
-    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
-    return(NULL);
+
+    if (!rootpd) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
+        return(NULL);
+    }
+
+    if (phw->phw_Capabilities & UHCF_USB30) {
+        struct PsdDevice *sspd = NULL;
+        struct MsgPort *ssmp = CreateMsgPort();
+
+        if (ssmp) {
+            Forbid();
+            sspd = psdAllocDevice(phw);
+            Permit();
+            if (sspd) {
+                if ((pp = psdAllocPipe(sspd, ssmp, NULL))) {
+                    sspd->pd_Flags |= (PDFF_CONNECTED | PDFF_SUPERSPEED);
+                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+                    psdDelayMS(100);
+                    if (psdEnumerateDevice(pp)) {
+                        KPRINTF(1, ("SuperSpeed root hub enumerated!\n"));
+                        psdSendEvent(EHMB_ADDDEVICE, sspd, NULL);
+                    } else {
+                        pFreeBindings(ps, sspd);
+                        pFreeDevice(ps, sspd);
+                    }
+                    psdFreePipe(pp);
+                } else {
+                    pFreeBindings(ps, sspd);
+                    pFreeDevice(ps, sspd);
+                }
+            }
+            DeleteMsgPort(ssmp);
+        }
+    }
+
+    return(rootpd);
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
@@ -4085,27 +4122,22 @@ AROS_LH1(void, psdCalculatePower,
     struct PsdDevice *pd;
 
     psdLockReadPBase();
-    /* goto root */
+    /* process each root device */
     pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
     while(pd->pd_Node.ln_Succ) {
         if(!pd->pd_Hub) {
             roothub = pd;
-            break;
+            roothub->pd_PowerDrain = 0;
+            roothub->pd_PowerSupply = 500;
+
+            /* calculate drain */
+            pPowerRecurseDrain(ps, roothub);
+
+            /* calculate supply */
+            pPowerRecurseSupply(ps, roothub);
         }
         pd = (struct PsdDevice *) pd->pd_Node.ln_Succ;
     }
-    if(!roothub) {
-        psdUnlockPBase();
-        return;
-    }
-    roothub->pd_PowerDrain = 0;
-    roothub->pd_PowerSupply = 500;
-
-    /* calculate drain */
-    pPowerRecurseDrain(ps, roothub);
-
-    /* calculate supply */
-    pPowerRecurseSupply(ps, roothub);
     psdUnlockPBase();
     AROS_LIBFUNC_EXIT
 }
@@ -5583,9 +5615,13 @@ AROS_LH0(void, psdClassScan,
 
     phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
     while(phw->phw_Node.ln_Succ) {
-        if((pd = phw->phw_RootDevice)) {
-            // for the root, do it ourselves, the rest is done by each hub task
-            psdHubClassScan(pd);
+        pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+        while (pd->pd_Node.ln_Succ) {
+            if (!pd->pd_Hub) {
+                // for the root, do it ourselves, the rest is done by each hub task
+                psdHubClassScan(pd);
+            }
+            pd = (struct PsdDevice *) pd->pd_Node.ln_Succ;
         }
         phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
     }
