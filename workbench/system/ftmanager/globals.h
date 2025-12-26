@@ -49,6 +49,25 @@
 #define METRIC_BMSIZE		6
 #endif
 
+static inline ULONG PreferredMetricSource(FT_Face face, TT_OS2 *os2)
+{
+    if (FT_IS_FIXED_WIDTH(face))
+        return METRIC_RAW_EM;
+
+    if (os2)
+    {
+        if (os2->sTypoAscender || os2->sTypoDescender)
+            return METRIC_TYPOASCEND;
+        if (os2->usWinAscent || os2->usWinDescent)
+            return METRIC_USWINASCEND;
+    }
+
+    if (face->ascender || face->descender)
+        return METRIC_ASCEND;
+
+    return METRIC_GLOBALBBOX;
+}
+
 #define UFHN(func)	((IPTR (*)())&func)
 
 #ifndef __AROS__

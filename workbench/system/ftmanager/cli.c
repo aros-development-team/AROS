@@ -317,9 +317,12 @@ int ftmanager_cli(void)
     tag->ti_Data = (IPTR)dat->Filename;
     ++tag;
 
+    tag->ti_Tag = OT_Spec4_Metric;
+    tag->ti_Data = PreferredMetricSource(dat->Face, os2);
+    ++tag;
+
     /* use default for:
     tag->ti_Tag = OT_Spec3_AFMFile;
-    tag->ti_Tag = OT_Spec4_Metric;
     tag->ti_Tag = OT_Spec5_BBox;
     */
 
@@ -346,4 +349,3 @@ int ftmanager_cli(void)
 
     return RETURN_OK;
 }
-

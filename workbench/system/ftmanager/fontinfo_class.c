@@ -136,6 +136,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
     Object *family, *fixed, /**algo_style,*/ *face_num, *preview, *preview_group;
     Object *gray, *test_string, *test_size, *serif, *space_width;
     Object *metric, *bbox_ymin, *bbox_ymax;
+    ULONG metric_default;
     char name_buf[50];
 
     static CONST_STRPTR stem_weight_names[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
@@ -227,6 +228,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 
     postscript = FT_Get_Sfnt_Table(face, ft_sfnt_post);
     os2 = FT_Get_Sfnt_Table(face, ft_sfnt_os2);
+    metric_default = PreferredMetricSource(face, os2);
 
     tags[0].ti_Tag = MUIA_Group_Child;
     tags[0].ti_Data = (IPTR)ColGroup(2),
@@ -268,7 +270,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
         Child, Label2(_(MSG_LABEL_METRIC)),
         Child, metric = CycleObject,
             MUIA_Cycle_Entries, metric_names,
-            MUIA_Cycle_Active, 1,
+            MUIA_Cycle_Active, metric_default,
             MUIA_CycleChain, TRUE,
             End,
         Child, Label2(_(MSG_LABEL_BOUNDINGBOX)),
@@ -485,7 +487,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
         DoMethod(metric, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
                 metric, 6, MUIM_CallHook, &MetricHook, bbox_ymin, bbox_ymax);
 
-        set(metric, MUIA_Cycle_Active, 0);
+        set(metric, MUIA_Cycle_Active, metric_default);
 
         if (//!(face->face_flags & FT_FACE_FLAG_FIXED_WIDTH) &&
             FT_Set_Char_Size(face, 250 * 64, 250 * 64, 2540, 2540) == 0 &&

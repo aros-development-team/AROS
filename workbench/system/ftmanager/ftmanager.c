@@ -24,7 +24,7 @@
 #include "globals.h"
 #include "locale.h"
 
-#define VERSION "$VER: FTManager 1.6 (12.1.2020) (C) 2011-2020 The AROS Development Team"
+#define VERSION "$VER: FTManager 1.7 (26.12.2025) (C) 2011-2020 The AROS Development Team"
 
 /***********************************************************************/
 /*                      Global variables                               */
