@@ -152,18 +152,38 @@ static void xhciLogPortState(struct PCIController *hc,
     }
 }
 
-/* Issue a reset appropriate to USB2 vs USB3, with change-bit cleanup. */
+static inline BOOL xhciPortIsSuperSpeedLink(ULONG portsc)
+{
+    ULONG speed = portsc & XHCI_PR_PORTSC_SPEED_MASK;
+    return (speed == XHCIF_PR_PORTSC_SUPERSPEED) ||
+           (speed == XHCIF_PR_PORTSC_SUPERSPEEDPLUS);
+}
+
+/* Issue a reset appropriate to negotiated speed (SS => WPR, otherwise PR). */
 static inline ULONG xhciComposePortResetWrite(struct PCIController *hc, UWORD hciport, ULONG oldportsc)
 {
     ULONG rw1c = XHCI_PORTSC_RW1C_MASK;
 
-    if (xhciPortIsUsb3(hc, hciport, oldportsc)) {
-        /* Warm Port Reset for SS/SS+ */
-        return xhciPortscComposeWrite(oldportsc, XHCIF_PR_PORTSC_WPR, XHCIF_PR_PORTSC_PR, rw1c);
+    /* If not connected, don't try to reset (caller usually already checks CCS). */
+    if (!(oldportsc & XHCIF_PR_PORTSC_CCS))
+        return 0;
+
+    /*
+     * Choose by negotiated speed, not "port kind".
+     * This avoids issuing WPR when a USB2 device is attached on a port that
+     * the platform considers "USB3-capable".
+     */
+    if (xhciPortIsSuperSpeedLink(oldportsc)) {
+        return xhciPortscComposeWrite(oldportsc,
+                                      XHCIF_PR_PORTSC_WPR,   /* set */
+                                      XHCIF_PR_PORTSC_PR,    /* clear */
+                                      rw1c);
     }
 
-    /* Port Reset for USB2 */
-    return xhciPortscComposeWrite(oldportsc, XHCIF_PR_PORTSC_PR, XHCIF_PR_PORTSC_WPR, rw1c);
+    return xhciPortscComposeWrite(oldportsc,
+                                  XHCIF_PR_PORTSC_PR,      /* set */
+                                  XHCIF_PR_PORTSC_WPR,     /* clear */
+                                  rw1c);
 }
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
@@ -705,6 +725,9 @@ AROS_UFH0(void, xhciPortTask)
                  */
                 BOOL connected = xhciHubPortConnected(portsc);
                 BOOL enabled   = xhciHubPortEnabled(hc, hciport, portsc);
+
+                pciusbDebug("xHCI",
+                            DEBUGCOLOR_SET "port %d, connected = %d, enabled = %d" DEBUGCOLOR_RESET" \n", hciport, connected, enabled);
 
                 if (connected && enabled && (!devCtx)) {
                     UWORD rootPort = hciport;     /* 0-based */

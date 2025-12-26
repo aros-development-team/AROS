@@ -47,6 +47,18 @@
         KPrintF(fmt, ##args); \
     } \
 } while (0)
+#if (DEBUG > 1)
+#define pciusbDebugV(sub,fmt,args...) do { \
+    if (LogHandle) { \
+        logAddEntry((LOGF_Flag_Type_Debug | 20), LogHandle, sub, __func__, 0, fmt, ##args); \
+    } else { \
+        KPrintF("%s/%lu: ", __func__, __LINE__); \
+        KPrintF(fmt, ##args); \
+    } \
+} while (0)
+#else
+#define pciusbDebugV(sub,fmt,args...) ((void) 0)
+#endif
 #else
 #ifdef DEBUG
 #define KPRINTF(l,fmt,args...) do { \
@@ -59,11 +71,20 @@
     KPrintF("%s/%lu: ", __func__, __LINE__); \
     KPrintF(fmt, ##args); \
 } while (0)
+#if (DEBUG > 1)
+#define pciusbDebugV(sub,fmt,args...) do { \
+    KPrintF("%s/%lu: ", __func__, __LINE__); \
+    KPrintF(fmt, ##args); \
+} while (0)
+#else
+#define pciusbDebugV(sub,fmt,args...) ((void) 0)
+#endif
 #define DB(x) x
 void dumpmem_pciusb(void *mem, unsigned long int len);
 #else /* !DEBUG */
 #define KPRINTF(l,fmt,args...) ((void) 0)
 #define pciusbDebug(sub,fmt,args...) ((void) 0)
+#define pciusbDebugV(sub,fmt,args...) ((void) 0)
 #define DB(x)
 #endif /* DEBUG */
 #endif
