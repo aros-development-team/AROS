@@ -289,7 +289,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbXHCIDebugV("xHCI",
+            pciusbWarn("xHCI",
                             DEBUGWARNCOLOR_SET "DevEP %02lx in use, IOReq=%p requeued/left in list" DEBUGCOLOR_RESET" \n",
                             devadrep, ioreq);
             continue;

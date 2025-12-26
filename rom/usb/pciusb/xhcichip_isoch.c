@@ -45,7 +45,7 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
         devadrep = xhciDevEPKey(ioreq);
 
         if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbXHCIDebug("xHCI", "DevEP %02lx in use!\n", devadrep);
+            pciusbWarn("xHCI", "DevEP %02lx in use!\n", devadrep);
             continue;
         }
 

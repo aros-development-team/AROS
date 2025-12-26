@@ -466,7 +466,7 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
         pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "(0x%p, 0x%p, %u, $%08lx)" DEBUGCOLOR_RESET" \n", ring, payload, plen, trbflags);
 
     if (!ring) {
-        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
+        pciusbError("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
         return FALSE;
     }
 
@@ -495,7 +495,9 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
         queued = ring->next++;
     } else {
-        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "NO SPACE ON RING!!\nnext = %u\nlast = %u" DEBUGCOLOR_RESET" \n", ring->next, (ring->end & ~RINGENDCFLAG));
+        pciusbError("xHCI",
+                            DEBUGWARNCOLOR_SET "NO SPACE ON RING!! <next = %u, last = %u>" DEBUGCOLOR_RESET" \n",
+                            ring->next, (ring->end & ~RINGENDCFLAG));
     }
     xhciRingUnlock();
 
@@ -1489,7 +1491,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                         epid = xhciGetEPID(0, 0);
                     }
 
-                    pciusbXHCIDebug("xHCI",
+                    pciusbWarn("xHCI",
                         DEBUGWARNCOLOR_SET
                         "STALL on Dev %u EP0 (CC=6), resetting EPID=%lu"
                         DEBUGCOLOR_RESET"\n",
@@ -1543,7 +1545,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Examining IOReq=0x%p" DEBUGCOLOR_RESET" \n", ioreq);
 
     if (!ioreq) {
-        pciusbXHCIDebugTRBV("xHCI", DEBUGWARNCOLOR_SET "IOReq missing for completion (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "IOReq missing for completion (cc=%lu)" DEBUGCOLOR_RESET" \n", (ULONG)ccode);
         return FALSE;
     }
 
@@ -1941,7 +1943,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         }
 
         if (maxwork == 0) {
-            pciusbXHCIDebugTRBV("xHCI",
+            pciusbWarn("xHCI",
                                DEBUGWARNCOLOR_SET
                                "Event ring processing budget exhausted; possible backlog or ring stall"
                                DEBUGCOLOR_RESET" \n");
@@ -2019,7 +2021,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Resetting Controller (pre-reset status $%08x)..." DEBUGCOLOR_RESET" \n", status);
     xhciDumpStatus(status);
     if (status & (XHCIF_USBSTS_HCE | XHCIF_USBSTS_HSE))
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Pre-reset controller error bits set:%s%s" DEBUGCOLOR_RESET" \n",
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Pre-reset controller error bits set:%s%s" DEBUGCOLOR_RESET" \n",
                         (status & XHCIF_USBSTS_HCE) ? " HCE" : "",
                         (status & XHCIF_USBSTS_HSE) ? " HSE" : "");
 
@@ -2037,7 +2039,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS after HCRST write = $%08x" DEBUGCOLOR_RESET" \n", status);
     xhciDumpStatus(status);
     if (status & (XHCIF_USBSTS_HCE | XHCIF_USBSTS_HSE))
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Post-reset write detected controller error bits:%s%s" DEBUGCOLOR_RESET" \n",
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Post-reset write detected controller error bits:%s%s" DEBUGCOLOR_RESET" \n",
                         (status & XHCIF_USBSTS_HCE) ? " HCE" : "",
                         (status & XHCIF_USBSTS_HSE) ? " HSE" : "");
 
@@ -2505,13 +2507,13 @@ takeownership:
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS after interrupt enable = $%08x" DEBUGCOLOR_RESET" \n", val);
     xhciDumpStatus(val);
     if (val & (XHCIF_USBSTS_HCE | XHCIF_USBSTS_HSE)) {
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Controller reports fatal error (USBSTS=%08x), aborting init" DEBUGCOLOR_RESET" \n", val);
+        pciusbError("xHCI", DEBUGWARNCOLOR_SET "Controller reports fatal error (USBSTS=%08x), aborting init" DEBUGCOLOR_RESET" \n", val);
         goto init_fail;
     }
     if (val & XHCIF_USBSTS_HCH)
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Controller in halted state after interrupt enable" DEBUGCOLOR_RESET" \n");
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Controller in halted state after interrupt enable" DEBUGCOLOR_RESET" \n");
     if (val & XHCIF_USBSTS_CNR)
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET "Warning: controller is not ready after reset" DEBUGCOLOR_RESET" \n");
+        pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "Warning: controller is not ready after reset" DEBUGCOLOR_RESET" \n");
 
 #if (1)
     ULONG sigmask = SIGF_SINGLE;
@@ -2627,7 +2629,7 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
                                                   devCtx->dc_SlotID,
                                                   devCtx->dc_IN.dmaa_DMA);
                 if (cc != TRB_CC_SUCCESS) {
-                    pciusbXHCIDebugTRBV("xHCI",
+                    pciusbWarn("xHCI",
                         DEBUGWARNCOLOR_SET
                         "Configure Endpoint (drop EPID %lu) failed, cc=%ld"
                         DEBUGCOLOR_RESET" \n",

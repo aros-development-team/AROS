@@ -88,7 +88,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: port #%u" DEBUGCOLOR_RESET" \n", __func__, port);
 
             if (port == 0 || port > hc->hc_NumPorts) {
-                pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: invalid port in slot context (slot=%u port=%u)" DEBUGCOLOR_RESET" \n",
+                pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "%s: invalid port in slot context (slot=%u port=%u)" DEBUGCOLOR_RESET" \n",
                             __func__, (trbflags >> 24) & 0xFF, port);
                 Enable();
                 return -1;
@@ -100,7 +100,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s:     portsc=%08x" DEBUGCOLOR_RESET" \n", __func__, portsc);
         }
         if (!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
-            pciusbDebug("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
+            pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
                          __func__, (trbflags >> 24) & 0xFF, (UWORD)port, (unsigned long)portsc);
 
             Enable();
