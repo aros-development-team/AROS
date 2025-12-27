@@ -6,6 +6,8 @@ FUNCS := \
 	 createargstring \
 	 createrexxmsg \
 	 cva2i \
+	 cvi2a \
+	 cvi2arg \
 	 deleteargstring \
 	 deleterexxmsg \
 	 fillrexxmsg \
