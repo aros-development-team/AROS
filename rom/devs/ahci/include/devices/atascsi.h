@@ -105,12 +105,16 @@ struct ata_identify {
 	u_int16_t	reserved5[2];	/*  73 */
 	u_int16_t	qdepth;		/*  75 */
 	u_int16_t	satacap;	/*  76 */
+#define SATA_CAP_SUP_HIPM		0x0200
+#define SATA_CAP_SUP_HOSTAPST		0x2000
+#define SATA_CAP_SUP_DEVAPST		0x4000
 	u_int16_t	satacap2;	/*  77 */
 #define SATA_CAP2_SNDRCV_FPDMA		(1 << 6)
 	u_int16_t	satafsup;	/*  78 */
 #define SATA_FEATURE_SUP_DEVIPS		0x0008
 #define SATA_FEATURE_SUP_DEVSLEEP	0x0100
 	u_int16_t	satafen;	/*  79 */
+#define SATA_FEATURE_EN_DEVAPST		0x0080
 	u_int16_t	majver;		/*  80 */
 	u_int16_t	minver;		/*  81 */
 	u_int16_t	cmdset82;	/*  82 */

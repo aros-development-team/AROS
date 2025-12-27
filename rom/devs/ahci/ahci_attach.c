@@ -829,6 +829,10 @@ ahci_pci_detach(device_t dev)
                              sc->sc_rid_irq, sc->sc_irq);
         sc->sc_irq = NULL;
     }
+#if (0)
+    if (sc->sc_irq_type == PCI_INTR_TYPE_MSI)
+        pci_release_msi(dev);
+#endif
     if (sc->sc_regs) {
         bus_release_resource(dev, SYS_RES_MEMORY,
                              sc->sc_rid_regs, sc->sc_regs);

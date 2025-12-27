@@ -178,18 +178,17 @@ ahci_init(struct ahci_softc *sc)
         ahci_os_sleep(10);
         ahci_write(sc, AHCI_REG_GHC, AHCI_REG_GHC_AE);
         ahci_os_sleep(10);
-
         ahci_read(sc, AHCI_REG_GHC);		/* flush */
 
 #if !defined(__AROS__)
         bios_cap |= AHCI_REG_CAP_SSS;
         ahci_write(sc, AHCI_REG_CAP, ahci_read(sc, AHCI_REG_CAP) | bios_cap);
         ahci_write(sc, AHCI_REG_PI, pi);
+        ahci_read(sc, AHCI_REG_GHC);		/* flush */
 #else
         /* AHCI_REG_CAP/AHCI_REG_PI are read-only! */
         (void)bios_cap;
 #endif
-        ahci_read(sc, AHCI_REG_GHC);		/* flush */
 
         /*
          * Intel hocus pocus in case the BIOS has not set the chip up
@@ -585,6 +584,39 @@ ahci_port_interrupt_enable(struct ahci_port *ap)
         ahci_pwrite(ap, AHCI_PREG_IE, ap->ap_intmask);
 }
 
+static int
+ahci_port_can_dipm(struct ahci_port *ap)
+{
+	return (ap->ap_type != ATA_PORT_T_PM) &&
+	       (ap->ap_ata[0]->at_identify.satafsup & SATA_FEATURE_SUP_DEVIPS);
+}
+
+/* Check for automatic partial-to-slumber states (device-initiated). */
+static int
+ahci_port_can_devapst(struct ahci_port *ap)
+{
+	return ahci_port_can_dipm(ap) &&
+	       (ap->ap_sc->sc_cap2 & AHCI_REG_CAP2_APST) &&
+	       (ap->ap_ata[0]->at_identify.satacap & SATA_CAP_SUP_DEVAPST);
+}
+
+static int
+ahci_port_can_hipm(struct ahci_port *ap)
+{
+	return (ap->ap_type != ATA_PORT_T_PM) &&
+	       (ap->ap_sc->sc_cap & AHCI_REG_CAP_SALP) &&
+	       (ap->ap_ata[0]->at_identify.satacap & SATA_CAP_SUP_HIPM);
+}
+
+/* Check for automatic partial-to-slumber states (host-initiated). */
+static int
+ahci_port_can_hostapst(struct ahci_port *ap)
+{
+	return ahci_port_can_hipm(ap) &&
+	       (ap->ap_sc->sc_cap2 & AHCI_REG_CAP2_APST) &&
+	       (ap->ap_ata[0]->at_identify.satacap & SATA_CAP_SUP_HOSTAPST);
+}
+
 /*
  * Manage the agressive link power management capability.
  */
@@ -598,7 +630,7 @@ ahci_port_link_pwr_mgmt(struct ahci_port *ap, int link_pwr_mgmt)
     if (link_pwr_mgmt == ap->link_pwr_mgmt)
         return;
 
-    if ((ap->ap_sc->sc_cap & AHCI_REG_CAP_SALP) == 0) {
+    if (!ahci_port_can_hipm(ap) && !ahci_port_can_dipm(ap)) {
         ahciInfo("%s: link power management not supported.\n",
                 PORTNAME(ap));
         return;
@@ -618,28 +650,51 @@ ahci_port_link_pwr_mgmt(struct ahci_port *ap, int link_pwr_mgmt)
 
         sctl = ahci_pread(ap, AHCI_PREG_SCTL);
         sctl &= ~(AHCI_PREG_SCTL_IPM);
+        // Disables DevSleep for now.
         if (ap->ap_sc->sc_cap2 & AHCI_REG_CAP2_SDS)
-                sctl |= AHCI_PREG_SCTL_IPM_NODEVSLP;
+            sctl |= AHCI_PREG_SCTL_IPM_NODEVSLP;
         ahci_pwrite(ap, AHCI_PREG_SCTL, sctl);
 
+        cmd = ahci_pread(ap, AHCI_PREG_CMD);
+        cmd &= ~AHCI_PREG_CMD_APSTE;
         /*
          * Enable device initiated link power management for
          * directly attached devices that support it.
          */
-        if (ap->ap_type != ATA_PORT_T_PM &&
-            (ap->ap_ata[0]->at_identify.satafsup &
-            SATA_FEATURE_SUP_DEVIPS)) {
-                if (ahci_set_feature(ap, NULL, ATA_SATAFT_DEVIPS, 1))
-                        ahciWarn("%s: Could not enable device initiated "
-                            "link power management.\n",
-                            PORTNAME(ap));
+        if (ahci_port_can_dipm(ap)) {
+            if (ahci_set_feature(ap, NULL, ATA_SATAFT_DEVIPS, 1)) {
+                ahciWarn("%s: Could not enable device initiated "
+                        "link power management.\n",
+                        PORTNAME(ap));
+                goto fail_dipm;
+            }
+            ahciInfo("%s: Enabled SATA DIPM.\n",
+                PORTNAME(ap));
         }
-
-        cmd = ahci_pread(ap, AHCI_PREG_CMD);
-        cmd |= AHCI_PREG_CMD_ASP;
-        cmd |= AHCI_PREG_CMD_ALPE;
+        if (ahci_port_can_devapst(ap)) {
+            if (ahci_set_feature(ap, NULL, ATA_SATAFT_DEVAPS, 1)) {
+                ahciWarn("%s: Failed to enable device automatic "
+                                "partial-to-slumber state.\n",
+                                PORTNAME(ap));
+            } else {
+                cmd |= AHCI_PREG_CMD_APSTE;
+            }
+        }
+fail_dipm:
+        /*
+         * Enable host initiated link power management for
+         * directly attached devices that support it.
+         */
+        if (ahci_port_can_hipm(ap)) {
+            cmd |= AHCI_PREG_CMD_ASP;
+            cmd |= AHCI_PREG_CMD_ALPE;
+            ahciInfo("%s: Enabled SATA HIPM.",
+                     PORTNAME(ap));
+        }
+        if (ahci_port_can_hostapst(ap)) {
+            cmd |= AHCI_PREG_CMD_APSTE;
+        }
         ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
-
     } else if (link_pwr_mgmt == AHCI_LINK_PWR_MGMT_MEDIUM &&
            (ap->ap_sc->sc_cap & AHCI_REG_CAP_PSC)) {
         if (bootverbose)
@@ -659,18 +714,49 @@ ahci_port_link_pwr_mgmt(struct ahci_port *ap, int link_pwr_mgmt)
         ahci_pwrite(ap, AHCI_PREG_SCTL, sctl);
 
         cmd = ahci_pread(ap, AHCI_PREG_CMD);
+        cmd &= ~AHCI_PREG_CMD_APSTE;
+        /*
+         * Enable device initiated link power management for
+         * directly attached devices that support it.
+         */
+        if (ahci_port_can_dipm(ap)) {
+            if (ahci_set_feature(ap, NULL, ATA_SATAFT_DEVIPS, 1)) {
+                ahciWarn("%s: Failed to enable DIPM.\n",
+                        PORTNAME(ap));
+            } else {
+                ahciWarn("%s: Enabled SATA DIPM.\n",
+                        PORTNAME(ap));
+            }
+        }
+        if (ahci_port_can_devapst(ap)) {
+            if (ahci_set_feature(ap, NULL, ATA_SATAFT_DEVAPS, 0)) {
+                ahciWarn("%s: Failed to disable device automatic"
+                        " partial-to-slumber state.\n",
+                        PORTNAME(ap));
+            }
+        }
+
+        /*
+         * Enable host initiated link power management for
+         * directly attached devices that support it.
+         */
+        if (ahci_port_can_hipm(ap)) {
+            cmd |= AHCI_PREG_CMD_ALPE;
+            ahciInfo("%s: Enabled SATA HIPM.\n",
+                        PORTNAME(ap));
+        }
         cmd &= ~AHCI_PREG_CMD_ASP;
-        cmd |= AHCI_PREG_CMD_ALPE;
         ahci_pwrite(ap, AHCI_PREG_CMD, cmd);
     } else if (link_pwr_mgmt == AHCI_LINK_PWR_MGMT_NONE) {
         if (bootverbose)
             ahciInfo("%s: disabling link power management.\n", PORTNAME(ap));
 
         /* Disable device initiated link power management */
-        if (ap->ap_type != ATA_PORT_T_PM &&
-            (ap->ap_ata[0]->at_identify.satafsup &
-                SATA_FEATURE_SUP_DEVIPS)) {
+        if (ahci_port_can_dipm(ap)) {
             ahci_set_feature(ap, NULL, ATA_SATAFT_DEVIPS, 0);
+        }
+        if (ahci_port_can_devapst(ap)) {
+                ahci_set_feature(ap, NULL, ATA_SATAFT_DEVAPS, 0);
         }
 
         cmd = ahci_pread(ap, AHCI_PREG_CMD);
