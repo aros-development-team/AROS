@@ -2,7 +2,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_AFLAGS := -I$(GENINCDIR)
 
-AFILES := cva2i strcmpn strlen
+AFILES := cva2i cvi2a cvi2arg strcmpn strlen
 
 %build_archspecific \
   mainmmake=workbench-libs-rexxsyslib modname=rexxsyslib maindir=workbench/libs/rexxsyslib arch=m68k \
