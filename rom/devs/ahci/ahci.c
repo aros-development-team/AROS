@@ -181,9 +181,14 @@ ahci_init(struct ahci_softc *sc)
 
         ahci_read(sc, AHCI_REG_GHC);		/* flush */
 
+#if !defined(__AROS__)
         bios_cap |= AHCI_REG_CAP_SSS;
         ahci_write(sc, AHCI_REG_CAP, ahci_read(sc, AHCI_REG_CAP) | bios_cap);
         ahci_write(sc, AHCI_REG_PI, pi);
+#else
+        /* AHCI_REG_CAP/AHCI_REG_PI are read-only! */
+        (void)bios_cap;
+#endif
         ahci_read(sc, AHCI_REG_GHC);		/* flush */
 
         /*
