@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2025, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -55,7 +55,6 @@ typedef unsigned int u_int;
 
 /* Kernel stuff */
 
-
 int kvsnrprintf(char *str, size_t size, int radix, const char *format, va_list ap);
 int kvsnprintf(char *str, size_t size, const char *format, va_list ap);
 int ksnprintf(char *buff, size_t len, const char *fmt, ...);
@@ -93,14 +92,14 @@ int kvcprintf(char const *fmt, void (*func)(int, void*), void *arg, int radix, v
         Disable(); \
         for (;;); \
     } while (0);
-#else
+#else /* ! AROS_USE_LOGRES */
 #define KKASSERT(expr)  ASSERT(expr)
 static inline void bug_c(int c, void *info)
 {
     RawPutChar(c);
 }
 
-static inline int device_printf(device_t dev, const char *fmt, ...)
+static inline int ahci_printf(device_t dev, const char *fmt, ...)
 {
     va_list args;
     int err;
@@ -110,13 +109,18 @@ static inline int device_printf(device_t dev, const char *fmt, ...)
     return err;
 }
 #undef kprintf
-#define kprintf(fmt, args...) device_printf(NULL, fmt ,##args)
-#define ahciInfo(fmt,args...) device_printf(NULL, fmt ,##args)
-#define ahciCrit(fmt,args...) device_printf(NULL, fmt ,##args)
-#define ahciError(fmt,args...) device_printf(NULL, fmt ,##args)
-#define ahciWarn(fmt,args...) device_printf(NULL, fmt ,##args)
-#define panic(fmt, args...) do { Forbid(); device_printf(NULL, fmt ,##args); Disable(); for (;;); } while (0);
+#if defined(DEBUG) && (DEBUG > 0)
+#define device_printf(dev, fmt, args...) ahci_printf(dev, fmt ,##args)
+#else
+#define device_printf(dev, fmt, args...) ((void) 0)
 #endif
+#define kprintf(fmt, args...) ahci_printf(NULL, fmt ,##args)
+#define ahciInfo(fmt,args...) device_printf(NULL, fmt ,##args)
+#define ahciCrit(fmt,args...) ahci_printf(NULL, fmt ,##args)
+#define ahciError(fmt,args...) ahci_printf(NULL, fmt ,##args)
+#define ahciWarn(fmt,args...) ahci_printf(NULL, fmt ,##args)
+#define panic(fmt, args...) do { Forbid(); ahci_printf(NULL, fmt ,##args); Disable(); for (;;); } while (0);
+#endif /* AROS_USE_LOGRES */
 
 #if defined(AROS_USE_LOGRES) && (DEBUG > 0)
 #if (DEBUG > 1)
@@ -138,7 +142,7 @@ static inline int device_printf(device_t dev, const char *fmt, ...)
         APTR LogResBase = AHCIBase->ahci_LogResBase; \
         logAddEntry((LOGF_Flag_Type_Debug | 50), AHCIBase->ahci_LogHandle, "", __func__, 0, fmt, ##args); \
     }
-#else
+#else /* ! AROS_USE_LOGRES && DEBUG > 0 */
 #if (DEBUG > 1)
 #define ahciDebugVerb(fmt,args...) device_printf(NULL, fmt ,##args)
 #else
@@ -151,7 +155,7 @@ static inline int device_printf(device_t dev, const char *fmt, ...)
 #define ahciDebug(fmt,args...)
 #define ahciDMADebug(fmt,args...)
 #endif
-#endif
+#endif /* AROS_USE_LOGRES && DEBUG > 0 */
 
 static inline void *kmalloc(size_t size, unsigned where, unsigned flags)
 {
