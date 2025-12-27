@@ -3,7 +3,7 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH2(UBYTE *, CVi2arg,
+        AROS_LH1(UBYTE *, CVi2arg,
 
 /*  SYNOPSIS */
         AROS_LHA(LONG,  value,  D0),
