@@ -1960,29 +1960,41 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
     int y)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListEntry *entry = data->entries[entry_pos];
+    int row_height = data->entry_maxheight;
+    int y_offset = y;
     int col, x1, x2;
 
     /* To be sure we don't draw anything if there is no title */
-    if (entry_pos == ENTRY_TITLE && !data->title)
-        return;
+    if (entry_pos == ENTRY_TITLE) {
+        if (!data->title)
+            return;
+        row_height = entry ? entry->height : 0;
+    }
 
     DisplayEntry(cl, obj, entry_pos);
     x1 = _mleft(data->area);
 
-    for (col = 0; col < data->columns; col++)
-    {
+    for (col = 0; col < data->columns; col++) {
         ZText *text;
         x2 = x1 + data->ci[col].entries_width;
 
         if ((text =
                 zune_text_new(data->preparses[col], data->strings[col],
-                    ZTEXT_ARG_NONE, 0)))
-        {
-            /* Could be made simpler, as we don't really need the bounds */
+                    ZTEXT_ARG_NONE, 0))) {
+            /*
+             * We need the bounds so that embedded
+             * images are (correctly) rendered and to
+             * vertically align the entry.
+             */
             zune_text_get_bounds(text, obj);
+            y_offset = y + (row_height - text->height) / 2;
+            if (y_offset < y)
+                y_offset = y;
             /* Note, this was MPEN_SHADOW before */
             SetAPen(_rp(obj), muiRenderInfo(obj)->mri_Pens[MPEN_TEXT]);
-            zune_text_draw(text, obj, x1, x2, y);       /* totally wrong! */
+
+            zune_text_draw(text, obj, x1, x2, y_offset);
             zune_text_destroy(text);
         }
         x1 = x2 + data->ci[col].delta + (data->ci[col].bar ? BAR_WIDTH : 0);
