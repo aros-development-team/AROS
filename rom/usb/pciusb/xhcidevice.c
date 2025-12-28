@@ -34,6 +34,22 @@
 #define XHCI_NAKTOSHIFT         (3)
 #endif
 
+static inline const char *xhciSlotStateName(UBYTE state)
+{
+    switch (state) {
+    case XHCI_SLOT_STATE_DISABLED_OR_ENABLED: return "Disabled/Enabled";
+    case XHCI_SLOT_STATE_DEFAULT:             return "Default";
+    case XHCI_SLOT_STATE_ADDRESSED:           return "Addressed";
+    case XHCI_SLOT_STATE_CONFIGURED:          return "Configured";
+    default:                                  return "Unknown";
+    }
+}
+
+static inline UBYTE xhciSlotStateFromDW3(ULONG dw3)
+{
+    return (UBYTE)((dw3 >> XHCI_SLOTCTX3_SLOTSTATE_SHIFT) & 0x1FUL);
+}
+
 WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
                          struct PCIUnit *unit,
                          struct PCIDevice *base)
@@ -50,8 +66,11 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
 
     xhciDebugControlTransfer(ioreq);
 
-    if (!hc)
+    if (!hc) {
+        pciusbError("xHCI",
+               DEBUGWARNCOLOR_SET "xHCI: hc = NULL" DEBUGCOLOR_RESET"\n");
         return UHIOERR_HOSTERROR;
+    }
 
     switch (txtype) {
     case UHCMD_CONTROLXFER:
@@ -83,6 +102,8 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
      * configured here because the port-change task only handles root ports.
      */
     if (!xhciInitIOTRBTransfer(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, &driprivate)) {
+        pciusbError("xHCI",
+               DEBUGWARNCOLOR_SET "xHCI: xhciInitIOTRBTransfer failed" DEBUGCOLOR_RESET"\n");
         if (ioreq->iouh_Req.io_Error)
             return ioreq->iouh_Req.io_Error;
         return UHIOERR_HOSTERROR;
@@ -104,29 +125,118 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             (bRequest == USR_SET_ADDRESS))
         {
             const UWORD newaddr = wValue;
+            struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
+            volatile struct xhci_slot *oslot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
+            volatile struct xhci_inctx *in = (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
+            volatile struct xhci_slot *islot;
+            volatile struct xhci_ep *oep0;
+            volatile struct xhci_ep *iep0;
+            UWORD ctxoff = 1;
+            const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+            LONG cc = TRB_CC_INVALID;
+            ULONG odw3;
+            ULONG s3;
+            ULONG e0;
+            UBYTE state;
 
-            pciusbXHCIDebug("xHCI",
+            if (hc->hc_Flags & HCF_CTX64)
+                ctxoff <<= 1;
+
+            pciusbXHCIDebugV("xHCI",
                 "SET_ADDRESS short-circuit (PrepareTransfer): slot=%u addr %u->%u ioreq=%p\n",
-                driprivate->dpDevice->dc_SlotID,
-                (unsigned)driprivate->dpDevice->dc_DevAddr,
+                devCtx->dc_SlotID,
+                (unsigned)devCtx->dc_DevAddr,
                 (unsigned)newaddr,
                 ioreq);
 
-            /*
-             * Do NOT send SET_ADDRESS on the wire for xHCI.
-             * The xHC Address Device command is performed elsewhere during bring-up.
-             */
-            driprivate->dpDevice->dc_DevAddr = (UBYTE)newaddr;
-            unit->hu_DevControllers[newaddr] = hc;
+            if (!oslot || !in) {
+                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                driprivate->dpCC = TRB_CC_INVALID;
+                goto _xhci_setaddr_complete;
+            }
 
-            /* Queue a successful completion via the standard completion path. */
+            /* Ensure we see the controller's latest output context state (Slot + EP0). */
+            CacheClearE((APTR)oslot, ctxsize * 2, CACRF_InvalidateD);
+
+            odw3 = AROS_LE2LONG(oslot->ctx[3]);
+            state = (odw3 & XHCI_SLOTCTX3_SLOTSTATE_MASK) >> XHCI_SLOTCTX3_SLOTSTATE_SHIFT;
+
+            pciusbXHCIDebugV("xHCI",
+                "SET_ADDRESS: current slot state = %u (%s)\n",
+                (unsigned)state,
+               xhciSlotStateName(state));
+
+            /* Prepare input pointers */
+            islot = xhciInputSlotCtx((struct xhci_inctx *)in, ctxoff);
+            iep0  = xhciInputEndpointCtx((struct xhci_inctx *)in, ctxoff, 1);
+            oep0  = (volatile struct xhci_ep *)((UBYTE *)oslot + ctxsize);
+
+#define BUILD_INPUT_CTX(_devaddr_)                                           \
+            do {                                                             \
+                /* Only Slot + EP0, no drops */                              \
+                in->dcf = 0;                                                 \
+                in->acf = (1UL << 0) | (1UL << 1);                           \
+                                                                             \
+                /* Slot: copy output -> input, scrub state, set devaddr */   \
+                CopyMem((const void *)oslot, (void *)islot, ctxsize);        \
+                s3 = AROS_LE2LONG(islot->ctx[3]);                            \
+                s3 &= ~XHCI_SLOTCTX3_SLOTSTATE_MASK;                        \
+                s3 &= ~XHCI_SLOTCTX3_DEVADDR_MASK;                          \
+                s3 |= ((ULONG)((_devaddr_) & 0xFFU) << XHCI_SLOTCTX3_DEVADDR_SHIFT); \
+                islot->ctx[3] = AROS_LONG2LE(s3);                            \
+                                                                             \
+                /* EP0: copy output -> input, force EPSTATE=Disabled */      \
+                CacheClearE((APTR)oep0, ctxsize, CACRF_InvalidateD);         \
+                CopyMem((const void *)oep0, (void *)iep0, ctxsize);          \
+                e0 = AROS_LE2LONG(iep0->ctx[0]);                             \
+                e0 &= ~0x7UL;                                               \
+                iep0->ctx[0] = AROS_LONG2LE(e0);                             \
+                                                                             \
+                /* Flush updated input context */                            \
+                CacheClearE((APTR)in, devCtx->dc_IN.dmaa_Entry.me_Length, CACRF_ClearD); \
+            } while (0)
+
+            /*
+             * xHCI never forwards SET_ADDRESS on EP0; translate it into an Address Device
+             * Command (BSR=0). Do not attempt a redundant "Enabled->Default" transition:
+             * Slot State value 1 is Default (not Enabled), and issuing BSR=1 from Default
+             * causes Context State Error (CC=19).
+             */
+            if (state == XHCI_SLOT_STATE_ADDRESSED || state == XHCI_SLOT_STATE_CONFIGURED) {
+                /* Already addressed/configured; do not re-address. */
+                cc = TRB_CC_SUCCESS;
+            } else {
+                BUILD_INPUT_CTX(newaddr);
+                cc = xhciCmdDeviceAddress(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr, 0, NULL);
+                if (cc == TRB_CC_SUCCESS) {
+                    /* Verify what address the controller actually selected. */
+                    CacheClearE((APTR)oslot, ctxsize, CACRF_InvalidateD);
+                    odw3 = AROS_LE2LONG(oslot->ctx[3]);
+                    const UBYTE hcaddr = (UBYTE)(odw3 & 0xFFu);
+                    if (hcaddr != (UBYTE)newaddr) {
+                        pciusbXHCIDebugV("xHCI",
+                            "SET_ADDRESS: xHC selected address %u (stack requested %u); enumeration may fail if the stack does not adapt\n",
+                            (unsigned)hcaddr, (unsigned)(UBYTE)newaddr);
+                    }
+                }
+            }
+
+#undef BUILD_INPUT_CTX
+
+            if ((driprivate->dpCC = (UBYTE)cc) == TRB_CC_SUCCESS) {
+                devCtx->dc_DevAddr = (UBYTE)newaddr;
+                unit->hu_DevControllers[newaddr] = hc;
+            } else {
+                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+            }
+
+_xhci_setaddr_complete:
             Disable();
-            driprivate->dpCC = TRB_CC_SUCCESS;
             AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
             Enable();
 
             SureCause(base, &hc->hc_CompleteInt);
-            return RC_DONTREPLY; /* tell caller: already queued for completion */
+            return RC_DONTREPLY;
         }
 
         /* Standard CLEAR_FEATURE(ENDPOINT_HALT) (endpoint request) */
@@ -138,7 +248,7 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             const UWORD epid = xhciEndpointIDFromIndex(wIndex);
             LONG cc = TRB_CC_INVALID;
 
-            pciusbXHCIDebug("xHCI",
+            pciusbXHCIDebugV("xHCI",
                 "CLEAR_FEATURE(ENDPOINT_HALT) short-circuit (PrepareTransfer): slot=%u wIndex=%u -> EPID=%u ioreq=%p\n",
                 devCtx->dc_SlotID, (unsigned)wIndex, (unsigned)epid, ioreq);
 
@@ -151,11 +261,10 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
                     cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
             }
 
-            if (cc == TRB_CC_SUCCESS) {
-                driprivate->dpCC = TRB_CC_SUCCESS;
-            } else {
+            if ((driprivate->dpCC = (UBYTE)cc) != TRB_CC_SUCCESS) {
+                pciusbError("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: ep stop/reset failed (cc=%ld)" DEBUGCOLOR_RESET"\n", cc);
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                driprivate->dpCC = (UBYTE)cc;
             }
 
             Disable();
@@ -163,6 +272,7 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             Enable();
 
             SureCause(base, &hc->hc_CompleteInt);
+
             return RC_DONTREPLY;
         }
     }

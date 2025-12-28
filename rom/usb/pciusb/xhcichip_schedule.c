@@ -131,11 +131,20 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 
     if ((txep == 0) && allowEp0AutoCreate) {
         if (!devCtx->dc_EPAllocs[0].dmaa_Ptr) {
+            ULONG mps0 = ioreq->iouh_MaxPktSize;
+            if (mps0 == 0) {
+                if (ioreq->iouh_Flags & UHFF_SUPERSPEED)
+                    mps0 = 512;
+                else if (ioreq->iouh_Flags & UHFF_HIGHSPEED)
+                    mps0 = 64;
+                else
+                    mps0 = 8;
+            }
             ULONG initep = xhciInitEP(hc, devCtx,
                                       ioreq,
                                       0, 0,
                                       txtype,
-                                      ioreq->iouh_MaxPktSize,
+                                      mps0,
                                       ioreq->iouh_Interval,
                                       ioreq->iouh_Flags);
 
@@ -158,7 +167,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
     }
 
     if (autoCreated) {
-        pciusbWarn("xHCI",
+        pciusbXHCIDebugV("xHCI",
             DEBUGCOLOR_SET "xHCI: Auto-created DevAddr0/EP0 context for pending transfer" DEBUGCOLOR_RESET" \n");
     }
 

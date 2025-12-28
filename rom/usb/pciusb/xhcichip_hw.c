@@ -106,6 +106,11 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             Enable();
             return -1;
         }
+        /* Flush the input context to memory before writing to command ring */
+        if (dmaaddr) {
+            /* Assume typical input context size; adjust if needed */
+            CacheClearE(dmaaddr, 2048, CACRF_ClearD);
+        }
         queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
     } else {
         queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, 0, 0, trbflags);
@@ -124,6 +129,12 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         /* Wait for completion with a bounded timeout to avoid hanging */
         for (ULONG waitms = 0; waitms < 1000; waitms++) {
             if (xhcic->xhc_CmdResults[queued].status != 0xFFFFFFFF) {
+                /* Invalidate any output contexts that may have been updated */
+                if (dmaaddr) {
+                    /* For commands that update contexts, invalidate cache */
+                    CacheClearE(dmaaddr, 2048, CACRF_InvalidateD);
+                }
+                
                 if (resflags)
                     *resflags = xhcic->xhc_CmdResults[queued].flags;
 

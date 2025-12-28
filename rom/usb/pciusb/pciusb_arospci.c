@@ -633,7 +633,17 @@ void pciFreeUnit(struct PCIUnit *hu)
     ForeachNode(&hu->hu_Controllers, hc) {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
         if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
-            HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
+#if defined(HCF_MSI)
+            if (hc->hc_Flags & HCF_MSI) {
+                RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+                HIDD_PCIDevice_ReleaseVectors(hc->hc_PCIDeviceObject);
+                hc->hc_Flags &= ~HCF_MSI;
+            } else {
+#endif
+                HIDD_PCIDevice_RemoveInterrupt(hc->hc_PCIDeviceObject, &hc->hc_PCIIntHandler);
+#if defined(HCF_MSI)
+            }
+#endif
             hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
 

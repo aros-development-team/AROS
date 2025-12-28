@@ -505,6 +505,30 @@ struct xhci_slot
 #define SLOT_CTX_TT_PORT_SHIFT  8
 #define SLOT_CTX_TTT_SHIFT      16
 
+/* Slot Context DWORD3 fields (USB Device Address + Slot State) */
+#define XHCI_SLOTCTX3_DEVADDR_SHIFT   0
+#define XHCI_SLOTCTX3_DEVADDR_MASK    0xFFu
+#define XHCI_SLOTCTX3_SLOTSTATE_SHIFT 27
+#define XHCI_SLOTCTX3_SLOTSTATE_MASK  (0x1Fu << XHCI_SLOTCTX3_SLOTSTATE_SHIFT)
+
+/*
+ * Slot State field numeric encoding (Slot Context DW3[31:27]).
+ *
+ * The xHC maintains an internal "Enabled" slot state, but the Slot State
+ * field does not encode it distinctly. A value of 0 means "Disabled or
+ * Enabled" depending on controller internal state.
+ *
+ * Encoding:
+ *   0 = Disabled or Enabled
+ *   1 = Default
+ *   2 = Addressed
+ *   3 = Configured
+ */
+#define XHCI_SLOT_STATE_DISABLED_OR_ENABLED 0
+#define XHCI_SLOT_STATE_DEFAULT             1
+#define XHCI_SLOT_STATE_ADDRESSED           2
+#define XHCI_SLOT_STATE_CONFIGURED          3
+
 /* endpoint context */
 struct xhci_ep
 {

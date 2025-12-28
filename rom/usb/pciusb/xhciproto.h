@@ -4,6 +4,20 @@
 #if defined(PCIUSB_ENABLEXHCI)
 #include "xhcichip.h"
 
+#if !defined(AROS_USE_LOGRES)
+#if defined(DEBUG) && (DEBUG > 1)
+#define XHCI_ENABLEINDEBUG
+//#define XHCI_ENABLESLOTDEBUG
+#define XHCI_ENABLEEPDEBUG
+#define XHCI_ENABLESTATUSDEBUG
+//#define XHCI_ENABLEOPRDEBUG
+//#define XHCI_ENABLEIMANDEBUG
+//#define XHCI_ENABLEIRDEBUG
+#define XHCI_ENABLEPORTDEBUG
+//#define XHCI_ENABLECCDEBUG
+#endif
+#endif
+
 struct IOUsbHWReq;
 struct pciusbXHCIDevice *
 xhciCreateDeviceCtx(struct PCIController *hc, UWORD rootPortIndex, ULONG route, ULONG flags, UWORD mps0);
@@ -149,6 +163,10 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
+    /* Address Device Command TRB: bit 9 = BSR (Block SetAddress Request) */
+    if (bsr)
+        flags |= TRBF_FLAG_ADDRDEV_BSR;
+
     if (ioreq)
         return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
 
@@ -164,49 +182,80 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 #if defined(PCIUSB_XHCI_DEBUG)
 #define pciusbXHCIDebug(sub,fmt,args...)                pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)             pciusbDebug(sub,fmt,##args)
-#define pciusbXHCIDebugEP(sub,fmt,args...)              pciusbDebug(sub,fmt,##args)
 #if defined(DEBUG) && (DEBUG > 1)
 #define pciusbXHCIDebugV(sub,fmt,args...)         pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugTRBV(sub,fmt,args...)      pciusbDebug(sub,fmt,##args)
-#define pciusbXHCIDebugEPV(sub,fmt,args...)       pciusbDebug(sub,fmt,##args)
 #else
 #define pciusbXHCIDebugV(sub,fmt,args...)
 #define pciusbXHCIDebugTRBV(sub,fmt,args...)
-#define pciusbXHCIDebugEPV(sub,fmt,args...)
 #endif
-void xhciDumpIN(volatile struct xhci_inctx *in);
-void xhciDumpEP(volatile struct xhci_ep *ep);
-void xhciDumpSlot(volatile struct xhci_slot *slot);
-void xhciDumpEndpointCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, ULONG epid, const char *reason);
-void xhciDumpStatus(ULONG status);
-void xhciDumpOpR(volatile struct xhci_hcopr *hcopr);
-void xhciDumpIR(volatile struct xhci_ir *xhciir);
-void xhciDumpPort(volatile struct xhci_pr *xhcipr);
-void xhciDumpCC(UBYTE completioncode);
 void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid);
-void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot);
-void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci_ep *ep, ULONG epid);
 void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq);
 #else
 #define pciusbXHCIDebug(sub,fmt,args...)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)
-#define pciusbXHCIDebugEP(sub,fmt,args...)
 #define pciusbXHCIDebugV(sub,fmt,args...)
 #define pciusbXHCIDebugTRBV(sub,fmt,args...)
-#define pciusbXHCIDebugEPV(sub,fmt,args...)
-#define xhciDumpIN(x)
-#define xhciDumpEP(x)
-#define xhciDumpSlot(x)
-#define xhciDumpEndpointCtx(a,b,c,d)
-#define xhciDumpStatus(x)
-#define xhciDumpOpR(x)
-#define xhciDumpIR(x)
-#define xhciDumpPort(x)
-#define xhciDumpCC(x)
 #define xhciDebugDumpDCBAAEntry(a,b)
-#define xhciDebugDumpSlotContext(a,b)
-#define xhciDebugDumpEndpointContext(a,b,c)
 #define xhciDebugControlTransfer(a)
+#endif
+
+#if defined(XHCI_ENABLEINDEBUG)
+void xhciDumpIN(volatile struct xhci_inctx *in);
+#else
+#define xhciDumpIN(x)
+#endif
+#if defined(XHCI_ENABLESLOTDEBUG)
+void xhciDumpSlot(volatile struct xhci_slot *slot, int);
+void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot);
+#else
+#define xhciDumpSlot(x,y)
+#define xhciDebugDumpSlotContext(a,b)
+#endif
+#if defined(XHCI_ENABLEEPDEBUG)
+#define pciusbXHCIDebugEP(sub,fmt,args...)              pciusbDebug(sub,fmt,##args)
+#if defined(DEBUG) && (DEBUG > 1)
+#define pciusbXHCIDebugEPV(sub,fmt,args...)       pciusbDebug(sub,fmt,##args)
+#else
+#define pciusbXHCIDebugEPV(sub,fmt,args...)
+#endif
+void xhciDumpEP(volatile struct xhci_ep *ep);
+void xhciDumpEndpointCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, ULONG epid, const char *reason);
+void xhciDebugDumpEndpointContext(struct PCIController *hc, volatile struct xhci_ep *ep, ULONG epid);
+#else
+#define pciusbXHCIDebugEP(sub,fmt,args...)
+#define pciusbXHCIDebugEPV(sub,fmt,args...)
+#define xhciDumpEP(x)
+#define xhciDumpEndpointCtx(a,b,c,d)
+#define xhciDebugDumpEndpointContext(a,b,c)
+#endif
+#if defined(XHCI_ENABLESTATUSDEBUG)
+void xhciDumpStatus(ULONG status);
+#else
+#define xhciDumpStatus(x)
+#endif
+#if defined(XHCI_ENABLEOPRDEBUG)
+void xhciDumpOpR(volatile struct xhci_hcopr *hcopr);
+#else
+#define xhciDumpOpR(x)
+#endif
+#if defined(XHCI_ENABLEIMANDEBUG)
+#else
+#endif
+#if defined(XHCI_ENABLEIRDEBUG)
+void xhciDumpIR(volatile struct xhci_ir *xhciir);
+#else
+#define xhciDumpIR(x)
+#endif
+#if defined(XHCI_ENABLEPORTDEBUG)
+void xhciDumpPort(volatile struct xhci_pr *xhcipr);
+#else
+#define xhciDumpPort(x)
+#endif
+#if defined(XHCI_ENABLECCDEBUG)
+void xhciDumpCC(UBYTE completioncode);
+#else
+#define xhciDumpCC(x)
 #endif
 
 /* Support functions */
