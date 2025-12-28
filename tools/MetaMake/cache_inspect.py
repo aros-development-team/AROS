@@ -8,7 +8,7 @@ import dataclasses
 import os
 import struct
 import sys
-from typing import BinaryIO, Dict, List, Optional, Set
+from typing import BinaryIO, Dict, List, Optional
 
 CACHE_ID_MAJOR = 0
 CACHE_ID_MINOR = 9
@@ -180,19 +180,24 @@ def format_target_report(targets: Dict[str, dict]) -> str:
     return "\n".join(lines)
 
 
-def parse_actions(actions: List[str]) -> tuple[bool, Optional[str]]:
+def parse_actions(actions: List[str]) -> tuple[bool, Optional[str], Optional[str]]:
     show_list = False
     target_name: Optional[str] = None
+    dep_name: Optional[str] = None
     for action in actions:
         if action == "list":
             show_list = True
             continue
         if action.startswith("target="):
-            target_name = action.split("=", 1)[1]
             show_list = True
+            target_name = action.split("=", 1)[1]
+            continue
+        if action.startswith("dep="):
+            show_list = True
+            dep_name = action.split("=", 1)[1]
             continue
         raise ValueError(f"unknown action: {action}")
-    return show_list, target_name
+    return show_list, target_name, dep_name
 
 
 def main() -> int:
@@ -208,7 +213,7 @@ def main() -> int:
     parser.add_argument(
         "args",
         nargs="*",
-        help="Optional cache path and actions: list, target=<name>",
+        help="Optional cache path and actions: list, target=<name>, dep=<name>",
     )
     args = parser.parse_args()
 
@@ -219,7 +224,7 @@ def main() -> int:
         if os.path.isfile(candidate):
             cache_path = candidate
             raw_args = raw_args[1:]
-        elif candidate == "list" or candidate.startswith("target="):
+        elif candidate == "list" or candidate.startswith("target=") or candidate.startswith("dep="):
             cache_path = "mmake.cache"
         else:
             cache_path = candidate
@@ -229,7 +234,7 @@ def main() -> int:
         cache_path = "mmake.cache"
 
     try:
-        show_list, target_name = parse_actions(raw_args)
+        show_list, target_name, dep_name = parse_actions(raw_args)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -253,7 +258,6 @@ def main() -> int:
 
     unique_targets = len(stats["targets"])
     print("Cache statistics:")
-    print(f"  added files: {len(added_files)}")
     print(f"  directories: {stats['dir_count']}")
     print(f"  makefiles: {stats['makefile_count']}")
     print(
@@ -266,16 +270,30 @@ def main() -> int:
 
     if show_list:
         print("\nMeta-target relationships:")
-        if target_name:
-            targets = stats["targets"]
-            if target_name in targets:
-                print(format_target_report({target_name: targets[target_name]}))
-            else:
-                print(f"  (target not found: {target_name})")
-        elif unique_targets == 0:
+        targets = stats["targets"]
+        if unique_targets == 0:
             print("  (none)")
         else:
-            print(format_target_report(stats["targets"]))
+            filtered = targets
+            if target_name:
+                if target_name in targets:
+                    filtered = {target_name: targets[target_name]}
+                else:
+                    filtered = {}
+            if dep_name:
+                filtered = {
+                    name: info
+                    for name, info in filtered.items()
+                    if dep_name in info["deps"]
+                }
+            if filtered:
+                print(format_target_report(filtered))
+            elif target_name and target_name not in targets:
+                print(f"  (target not found: {target_name})")
+            elif dep_name:
+                print(f"  (no targets depend on: {dep_name})")
+            else:
+                print("  (none)")
 
     return 0
 
