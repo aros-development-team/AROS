@@ -33,7 +33,7 @@
 #ifndef _NETINET_IP_H_
 #define	_NETINET_IP_H_
 
-#include <sys/types.h>
+#include <bsdsocket/types.h>
 #include <netinet/in.h>
 
 /*

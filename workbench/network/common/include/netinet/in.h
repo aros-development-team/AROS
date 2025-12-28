@@ -55,7 +55,7 @@
 #ifndef IN_H
 #define IN_H
 
-#include <sys/types.h>
+#include <bsdsocket/types.h>
 #include <stdint.h>
 #include <endian.h>
 

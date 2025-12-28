@@ -32,7 +32,7 @@
 #ifndef _NETINET_TCP_H_
 #define _NETINET_TCP_H_
 
-#include <sys/types.h>
+#include <bsdsocket/types.h>
 
 #if __BSD_VISIBLE
 

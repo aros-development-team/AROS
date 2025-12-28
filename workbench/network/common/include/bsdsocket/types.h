@@ -12,6 +12,8 @@
 
 #include <aros/cpu.h>
 
+#include <sys/types.h>
+
 #if __BSD_VISIBLE
 #ifndef _GID_T_DECLARED
 #include <aros/types/gid_t.h>

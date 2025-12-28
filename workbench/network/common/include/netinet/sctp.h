@@ -35,7 +35,7 @@
 #ifndef _NETINET_SCTP_H_
 #define _NETINET_SCTP_H_
 
-#include <sys/types.h>
+#include <bsdsocket/types.h>
 
 #define SCTP_PACKED __attribute__((packed))
 
