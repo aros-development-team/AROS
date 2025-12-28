@@ -31,6 +31,7 @@
 #include <usb/usb_core.h>
 #include <usb/hid.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "storage.h"
 

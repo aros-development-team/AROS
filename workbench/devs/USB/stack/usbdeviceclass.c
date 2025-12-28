@@ -33,6 +33,8 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #include "usb.h"
 #include "misc.h"
 

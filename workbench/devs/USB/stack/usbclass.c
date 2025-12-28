@@ -35,6 +35,7 @@
 #include <proto/dos.h>
 
 #include <stdint.h>
+#include <string.h>
 
 #include "usb.h"
 #include "misc.h"

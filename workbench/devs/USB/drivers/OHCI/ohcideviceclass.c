@@ -36,6 +36,7 @@
 #include <proto/utility.h>
 
 #include <stdio.h>
+#include <string.h>
 
 #include "ohci.h"
 

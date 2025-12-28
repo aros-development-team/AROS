@@ -39,6 +39,7 @@
 
 #include <aros/debug.h>
 #include <proto/exec.h>
+#include <string.h>
 
 #include "hid.h"
 
