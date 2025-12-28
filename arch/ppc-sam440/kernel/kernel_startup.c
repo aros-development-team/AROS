@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 1
@@ -16,7 +16,7 @@
 #include <utility/tagitem.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
-#include <strings.h>
+#include <string.h>
 
 #include <proto/exec.h>
 
