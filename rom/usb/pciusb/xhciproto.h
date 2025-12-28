@@ -1,6 +1,7 @@
 #ifndef XHCIPROTO_H
 #define XHCIPROTO_H
 
+#if defined(PCIUSB_ENABLEXHCI)
 #include "xhcichip.h"
 
 struct IOUsbHWReq;
@@ -246,5 +247,5 @@ xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 
 AROS_UFP0(void, xhciPortTask);
 AROS_UFP0(void, xhciEventRingTask);
-
+#endif
 #endif /* XHCIPROTO_H */

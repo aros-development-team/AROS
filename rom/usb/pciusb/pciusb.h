@@ -100,15 +100,6 @@ static inline struct IOUsbHWReq *pciusbIsoGetIOReq(struct RTIsoNode *rtn)
     return rtn->rtn_StdReq ? rtn->rtn_StdReq : &rtn->rtn_IOReq;
 }
 
-#if defined(PCIUSB_ENABLEXHCI)
-struct pciusbXHCITRBParams
-{
-    ULONG                       tparams;
-    ULONG                       flags;
-    ULONG                       status;
-};
-#endif
-
 /* The unit node - private */
 struct PCIUnit
 {
@@ -273,6 +264,8 @@ struct PCIController
 #define HCB_ABORT	                    4	                    /* Aborted requests available	*/
 #define HCF_ABORT	                    (1 << HCB_ABORT)
 #if defined(PCIUSB_ENABLEXHCI)
+#define HCB_MSI	                        12	                    /* MSI interrupt in use         */
+#define HCF_MSI	                        (1 << HCB_MSI)
 #define HCB_PPC	                        13	                    /* Per-Port Power	            */
 #define HCF_PPC	                        (1 << HCB_PPC)
 #define HCB_ADDR64	                    14	                    /* 64Bit addressing	            */

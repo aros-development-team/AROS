@@ -7,7 +7,7 @@
  *----------------------------------------------------------------------------
  *
  */
-
+#if defined(PCIUSB_ENABLEXHCI)
 #include <exec/types.h>
 #include <hardware/usb/xhci.h>
 #include "pciusb.h"
@@ -53,6 +53,13 @@ struct pciusbXHCIDMAAlloc
     struct MemEntry                     dmaa_Entry;
     APTR                                dmaa_Ptr;
     APTR                                dmaa_DMA;
+};
+
+struct pciusbXHCITRBParams
+{
+    ULONG                       tparams;
+    ULONG                       flags;
+    ULONG                       status;
 };
 
 struct XhciHCPrivate
@@ -278,5 +285,5 @@ struct pciusbXHCIIODevPrivate
   /* Fallback: at least prevent compiler reordering if nothing better exists. */
 # define XHCI_MMIO_BARRIER() do { } while (0)
 #endif
-
+#endif
 #endif /* XHCICHIP_H */
