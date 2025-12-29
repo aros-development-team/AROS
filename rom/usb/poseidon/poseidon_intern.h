@@ -343,6 +343,7 @@ struct PsdHardware
     UWORD               phw_Revision;           /* Device revision */
     UWORD               phw_DriverVers;         /* Driver version */
     ULONG               phw_Capabilities;       /* Driver/HW capabilities */
+    UWORD               phw_NumRootHubs;        /* Number of root hubs */
 
     PsdPrepareEndpointFunc phw_PrepareEndpoint;  /* Optional: HCD prepares EP contexts */
     PsdDestroyEndpointFunc phw_DestroyEndpoint;  /* Optional: HCD tears down EP contexts */

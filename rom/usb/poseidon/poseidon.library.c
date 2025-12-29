@@ -3934,12 +3934,15 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
 
                 pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                 psdDelayMS(100); // wait for root hub to settle
+                KPRINTF(20, ("Enumerating RootHub...\n"));
                 if(psdEnumerateDevice(pp)) {
-                    KPRINTF(1, ("Enumeration finished!\n"));
+                    KPRINTF(1, ("RootHub Enumeration finished!\n"));
                     psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
                     phw->phw_RootDevice = pd;
                     psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
                     rootpd = pd;
+                } else {
+                    KPRINTF(1, ("Failed to find a RootHub\n"));
                 }
                 psdFreePipe(pp);
             }
@@ -3953,12 +3956,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
         DeleteMsgPort(mp);
     }
 
-    if (!rootpd) {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
-        return(NULL);
-    }
-
-    if (phw->phw_Capabilities & UHCF_USB30) {
+    if ((phw->phw_Capabilities & UHCF_USB30) &&
+        (!rootpd || phw->phw_NumRootHubs > 1)) {
         struct PsdDevice *sspd = NULL;
         struct MsgPort *ssmp = CreateMsgPort();
 
@@ -3971,10 +3970,18 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
                     sspd->pd_Flags |= (PDFF_CONNECTED | PDFF_SUPERSPEED);
                     pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                     psdDelayMS(100);
+                    KPRINTF(1, ("Enumerating SuperSpeed RootHub...\n"));
                     if (psdEnumerateDevice(pp)) {
-                        KPRINTF(1, ("SuperSpeed root hub enumerated!\n"));
+                        KPRINTF(1, ("SuperSpeed RootHub Enumeration finished!\n"));
                         psdSendEvent(EHMB_ADDDEVICE, sspd, NULL);
+                        if (!rootpd) {
+                            phw->phw_RootDevice = sspd;
+                            rootpd = sspd;
+                            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                           "SuperSpeed root hub has been enumerated.");
+                        }
                     } else {
+                        KPRINTF(1, ("Failed to find a SuperSpeed RootHub\n"));
                         pFreeBindings(ps, sspd);
                         pFreeDevice(ps, sspd);
                     }
@@ -3986,6 +3993,11 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
             }
             DeleteMsgPort(ssmp);
         }
+    }
+
+    if (!rootpd) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
+        return(NULL);
     }
 
     return(rootpd);
@@ -4082,6 +4094,7 @@ AROS_LH2(struct PsdHardware *,psdAddHardware,
         NewList(&phw->phw_DeadDevices);
         phw->phw_Unit = unit;
         phw->phw_Base = ps;
+        phw->phw_NumRootHubs = 1;
         if((phw->phw_Node.ln_Name = phw->phw_DevName = psdCopyStr(name))) {
             psdSafeRawDoFmt(buf, 64, "usbhw<%s/%ld>", name, unit);
             phw->phw_ReadySignal = SIGB_SINGLE;
@@ -9177,6 +9190,7 @@ static const ULONG PsdHardwarePT[] = {
     PACK_ENTRY(HA_Dummy, HA_Version, PsdHardware, phw_Version, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_Revision, PsdHardware, phw_Revision, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(HA_Dummy, HA_DriverVersion, PsdHardware, phw_DriverVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_NumRootHubs, PsdHardware, phw_NumRootHubs, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
     PACK_ENDTABLE
 };
 

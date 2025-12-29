@@ -101,6 +101,7 @@
 #define HA_Description       (HA_Dummy + 0x16)
 #define HA_Copyright         (HA_Dummy + 0x17)
 #define HA_DriverVersion     (HA_Dummy + 0x18)
+#define HA_NumRootHubs       (HA_Dummy + 0x19)
 #define HA_DeviceList        (HA_Dummy + 0x20)
 
 /* Tags for psdGetAttrs(PGA_DEVICE,...) */
