@@ -73,4 +73,10 @@ void uhwDelayMicro(ULONG micro, struct PCIUnit *unit);
 struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn);
 
+#if defined(DEBUG_ROOTHUB)
+#define pciusbRHDebug(sub,fmt,args...)                pciusbDebug(sub,fmt,##args)
+#else
+#define pciusbRHDebug(sub,fmt,args...)
+#endif
+
 #endif /* UHWCMD_H */

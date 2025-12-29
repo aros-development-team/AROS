@@ -16,6 +16,15 @@
 #include "ehciproto.h"
 #include "xhciproto.h"
 
+static inline BOOL uhwIsRootHubIOReq(const struct IOUsbHWReq *ioreq,
+                                     const struct PCIUnit *unit)
+{
+    /* Root hub “device” is not behind any port/hub route. */
+    return (ioreq->iouh_DevAddr == unit->hu_RootHubAddr) &&
+           (ioreq->iouh_RouteString == 0) &&
+           (ioreq->iouh_RootPort == 0);
+}
+
 #define NewList NEWLIST
 
 /* we cannot use AROS_WORD2LE in struct initializer */
@@ -623,32 +632,55 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         return(UHIOERR_STALL);
     }
 
-    if(len != ioreq->iouh_Length) {
-        KPRINTF(20, "RH: Len (%ld != %ld) mismatch!\n", len != ioreq->iouh_Length);
+    if(ioreq->iouh_Length < len) {
+        pciusbRHDebug("RH", "Len (%lu > %lu) mismatch!\n",
+                      (ULONG)len, (ULONG)ioreq->iouh_Length);
         return(UHIOERR_STALL);
     }
     switch(rt) {
     case (URTF_STANDARD|URTF_DEVICE):
         switch(req) {
         case USR_SET_ADDRESS:
-            KPRINTF(1, "RH: SetAddress = %ld\n", val);
+            pciusbRHDebug("RH", "SetAddress = %ld\n", val);
             unit->hu_RootHubAddr = val;
             ioreq->iouh_Actual = len;
             return(0);
 
         case USR_SET_CONFIGURATION:
-            KPRINTF(1, "RH: SetConfiguration=%ld\n", val);
+            pciusbRHDebug("RH", "SetConfiguration=%ld\n", val);
             ioreq->iouh_Actual = len;
             return(0);
         }
         break;
 
     case (URTF_IN|URTF_STANDARD|URTF_DEVICE):
-        switch(req) {
+       switch(req) {
+        case USR_GET_STATUS:
+            {
+                /*
+                 * USB device status (2 bytes):
+                 * bit0 = self-powered, bit1 = remote-wakeup.
+                 * Keep this consistent with the root hub config descriptor.
+                 */
+                if (len < 2) {
+                    return(UHIOERR_STALL);
+                }
+
+                UWORD st = 0;
+                if (RHCfgDesc.bmAttributes & USCAF_SELF_POWERED)
+                    st |= 0x0001;
+                if (RHCfgDesc.bmAttributes & USCAF_REMOTE_WAKEUP)
+                    st |= 0x0002;
+
+                st = AROS_WORD2LE(st);
+                CopyMem(&st, ioreq->iouh_Data, 2);
+                ioreq->iouh_Actual = 2;
+                return(0);
+            }
         case USR_GET_DESCRIPTOR:
             switch(val>>8) {
             case UDT_DEVICE:
-                KPRINTF(1, "RH: GetDeviceDescriptor (%ld)\n", len);
+                pciusbRHDebug("RH", "GetDeviceDescriptor (%ld)\n", len);
                 ioreq->iouh_Actual = (len > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : len;
                 CopyMem((APTR) &RHDevDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
                 if(ioreq->iouh_Length >= sizeof(struct UsbStdDevDesc)) {
@@ -659,7 +691,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
 #if defined(PCIUSB_ENABLEXHCI)
                     if((hc->hc_HCIType == HCITYPE_XHCI) && (unit->hu_RootHubXPorts)) {
-                        KPRINTF(1, "RH: XHCI (USB3) Hub Descriptor\n");
+                        pciusbRHDebug("RH", "XHCI (USB3) Hub Descriptor\n");
                         usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
                         usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
                         usdd->bDeviceSubClass= 0;
@@ -668,7 +700,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     } else
 #endif
                         if(unit->hu_RootHub20Ports) {
-                            KPRINTF(1, "RH: USB2 Hub Descriptor\n");
+                            pciusbRHDebug("RH", "USB2 Hub Descriptor\n");
                             usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                             usdd->bDeviceProtocol = 1; // single TT
                             usdd->bMaxPacketSize0 = 64;
@@ -679,7 +711,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case UDT_CONFIGURATION: {
                 UBYTE tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)];
-                KPRINTF(1, "RH: GetConfigDescriptor (%ld)\n", len);
+                pciusbRHDebug("RH", "GetConfigDescriptor (%ld)\n", len);
                 CopyMem((APTR) &RHCfgDesc,
                         tmpbuf,
                         sizeof(struct UsbStdCfgDesc));
@@ -693,7 +725,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
                 if(hc->hc_HCIType == HCITYPE_XHCI) {
                     struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
-                    KPRINTF(1, "RH: XHCI EndPoint Config\n");
+                    pciusbRHDebug("RH", "XHCI EndPoint Config\n");
                     usepd->bInterval = 12; // * 1ms, or 125 microseconds, = 2048 microframes
                     usepd->wMaxPacketSize = AROS_WORD2LE(64);
                 } else
@@ -713,7 +745,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     CONST_STRPTR source = NULL, rhstring;
                     UWORD *mptr = ioreq->iouh_Data;
                     UWORD slen = 1;
-                    KPRINTF(1, "RH: GetString %04lx (%ld)\n", val, len);
+                    pciusbRHDebug("RH", "GetString %04lx (%ld)\n", val, len);
                     if((val & 0xff) > 4) { /* index too high? */
                         return(UHIOERR_STALL);
                     }
@@ -749,7 +781,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     }
                 } else {
                     UWORD *mptr = ioreq->iouh_Data;
-                    KPRINTF(1, "RH: GetLangArray %04lx (%ld)\n", val, len);
+                    pciusbRHDebug("RH", "GetLangArray %04lx (%ld)\n", val, len);
                     if(len > 1) {
                         ioreq->iouh_Actual = 2;
                         mptr[0] = AROS_WORD2BE((4<<8)|UDT_STRING);
@@ -762,13 +794,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 return(0);
 
             default:
-                KPRINTF(1, "RH: Unsupported Descriptor %04lx\n", idx);
+                pciusbRHDebug("RH", "Unsupported Descriptor %04lx\n", idx);
             }
             break;
 
         case USR_GET_CONFIGURATION:
             if(len == 1) {
-                KPRINTF(1, "RH: GetConfiguration\n");
+                pciusbRHDebug("RH", "GetConfiguration\n");
                 ((UBYTE *) ioreq->iouh_Data)[0] = 1;
                 ioreq->iouh_Actual = len;
                 return(0);
@@ -782,7 +814,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         case USR_SET_FEATURE: {
             WORD retval = 0;
             if((!idx) || (idx > numports)) {
-                KPRINTF(20, "Port %ld out of range\n", idx);
+                pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
             chc = unit->hu_PortMap11[idx - 1];
@@ -799,7 +831,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     hc = chc;
                     hciport = unit->hu_PortNum11[idx - 1];
                 }
-            KPRINTF(10, "Set Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
+            pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
 #if defined(PCIUSB_ENABLEXHCI)
                     (unit->hu_PortOwner[idx - 1] == HCITYPE_XHCI) ? "XHCI" :
 #endif
@@ -807,7 +839,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             switch(hc->hc_HCIType) {
             case HCITYPE_UHCI: {
                 if (uhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "uhciSetFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "uhciSetFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -815,7 +847,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_OHCI: {
                 if (ohciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "ohciSetFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ohciSetFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -823,7 +855,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_EHCI: {
                 if (ehciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "ehciSetFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ehciSetFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -832,7 +864,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 #if defined(PCIUSB_ENABLEXHCI)
             case HCITYPE_XHCI: {
                 if (xhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "xhciSetFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "xhciSetFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -845,7 +877,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         case USR_CLEAR_FEATURE: {
             WORD retval = 0;
             if((!idx) || (idx > numports)) {
-                KPRINTF(20, "Port %ld out of range\n", idx);
+                pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
 #if defined(PCIUSB_ENABLEXHCI)
@@ -861,7 +893,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     hc = unit->hu_PortMap11[idx - 1];
                     hciport = unit->hu_PortNum11[idx - 1];
                 }
-            KPRINTF(10, "Clear Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
+            pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
 #if defined(PCIUSB_ENABLEXHCI)
                     (unit->hu_PortOwner[idx - 1] == HCITYPE_XHCI) ? "XHCI" :
 #endif
@@ -869,7 +901,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             switch(hc->hc_HCIType) {
             case HCITYPE_UHCI: {
                 if (uhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "uhciClearFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "uhciClearFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -877,7 +909,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_OHCI: {
                 if (ohciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "ohciClearFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ohciClearFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -885,7 +917,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_EHCI: {
                 if (ehciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "ehciClearFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ehciClearFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -893,7 +925,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 #if defined(PCIUSB_ENABLEXHCI)
             case HCITYPE_XHCI: {
                 if (xhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    KPRINTF(5, "xhciClearFeature returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "xhciClearFeature returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -915,7 +947,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 return(UHIOERR_STALL);
             }
             if((!idx) || (idx > numports)) {
-                KPRINTF(20, "Port %ld out of range\n", idx);
+                pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
 #if defined(PCIUSB_ENABLEXHCI)
@@ -924,17 +956,17 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 hciport = idx - 1;
             } else
 #endif
-                if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
-                    hc = unit->hu_PortMap20[idx - 1];
-                    hciport = idx - 1;
-                } else {
-                    hc = unit->hu_PortMap11[idx - 1];
-                    hciport = unit->hu_PortNum11[idx - 1];
-                }
+            if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
+                hc = unit->hu_PortMap20[idx - 1];
+                hciport = idx - 1;
+            } else {
+                hc = unit->hu_PortMap11[idx - 1];
+                hciport = unit->hu_PortNum11[idx - 1];
+            }
             switch(hc->hc_HCIType) {
             case HCITYPE_UHCI: {
                 if (uhciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    KPRINTF(5, "uhciGetStatus returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "uhciGetStatus returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -942,7 +974,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_OHCI: {
                 if (ohciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    KPRINTF(5, "ohciGetStatus returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ohciGetStatus returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -950,7 +982,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
             case HCITYPE_EHCI: {
                 if (ehciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    KPRINTF(5, "ehciGetStatus returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "ehciGetStatus returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -958,7 +990,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 #if defined(PCIUSB_ENABLEXHCI)
             case HCITYPE_XHCI: {
                 if (xhciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    KPRINTF(5, "xhciGetStatus returned (retval %04x)\n", retval);
+                    pciusbRHDebug("RH", "xhciGetStatus returned (retval %04x)\n", retval);
                     return(retval);
                 }
             }
@@ -976,7 +1008,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         case USR_GET_STATUS: {
             UWORD *mptr = ioreq->iouh_Data;
 
-            KPRINTF(1, "RH: GetHubStatus (%ld)\n", len);
+            pciusbRHDebug("RH", "GetHubStatus (%ld)\n", len);
 
             if(len < sizeof(struct UsbHubStatus)) {
                 return(UHIOERR_STALL);
@@ -993,7 +1025,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 struct UsbSSHubDesc *shd;
                 UWORD sslen = sizeof(struct UsbSSHubDesc);
 
-                KPRINTF(1, "RH: GetSuperSpeedHubDescriptor (%ld)\n", len);
+                pciusbRHDebug("RH", "GetSuperSpeedHubDescriptor (%ld)\n", len);
 
 #if !defined(PCIUSB_ENABLEXHCI)
                 /* No xHCI -> no SuperSpeed hub */
@@ -1040,7 +1072,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 UBYTE powergood = 1;
 
                 struct UsbHubDesc *uhd = (struct UsbHubDesc *) ioreq->iouh_Data;
-                KPRINTF(1, "RH: GetHubDescriptor (%ld)\n", len);
+                pciusbRHDebug("RH", "GetHubDescriptor (%ld)\n", len);
 
                 if(unit->hu_RootHubPorts > 7) { // needs two bytes for port masks
                     hubdesclen += 2;
@@ -1077,7 +1109,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
                     if(ioreq->iouh_Length >= 6) {
                         if (powergood > 1) {
-                            KPRINTF(10, "Increasing power good time to %ld\n", powergood);
+                            pciusbRHDebug("RH", "Increasing power good time to %ld\n", powergood);
                         }
                         uhd->bPwrOn2PwrGood = powergood;
                     }
@@ -1100,7 +1132,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
 
             default:
-                KPRINTF(20, "RH: Unsupported Descriptor %04lx\n", idx);
+                pciusbRHDebug("RH", "Unsupported Descriptor %04lx\n", idx);
             }
             break;
         }
@@ -1173,7 +1205,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
         return(UHIOERR_USBOFFLINE);
     }
     /* Root hub emulation */
-    if(ioreq->iouh_DevAddr == unit->hu_RootHubAddr) {
+    if(uhwIsRootHubIOReq(ioreq, unit)) {
         return(cmdControlXFerRootHub(ioreq, unit, base));
     }
 
@@ -1369,7 +1401,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
     }
 
     /* Root Hub Emulation */
-    if(ioreq->iouh_DevAddr == unit->hu_RootHubAddr) {
+    if(uhwIsRootHubIOReq(ioreq, unit)) {
         return(cmdIntXFerRootHub(ioreq, unit, base));
     }
 
@@ -1554,7 +1586,7 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     }
 
     /* Root Hub Emulation */
-    if(ioreq->iouh_DevAddr == unit->hu_RootHubAddr) {
+    if(uhwIsRootHubIOReq(ioreq, unit)) {
         return(UHIOERR_BADPARAMS);
     }
 
