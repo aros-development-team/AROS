@@ -1795,6 +1795,14 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
     return TRUE;
 }
 
+static inline ULONG ring_advance_idx(ULONG idx)
+{
+    idx++;
+    if (idx == XHCI_EVENT_RING_TRBS)
+        idx = 0;
+    return idx;
+}
+
 static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
@@ -1975,6 +1983,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
                 volatile struct xhci_trb  *evt = &ring->current;
                 ULONG last = (ULONG)(txtrb - ring->ring);
+                ULONG new_end = ring_advance_idx(last);
 
                 /* Cache the event TRB before using its fields. */
                 *evt = *etrb;
@@ -1990,8 +1999,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 struct IOUsbHWReq *req;
                 req = (struct IOUsbHWReq *)ring->ringio[last];
-                ring->end &= RINGENDCFLAG;
-                ring->end |= (last & ~RINGENDCFLAG);
+                ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
                 ring->ringio[last] = NULL;
                 if (!req) {
                     pciusbWarn("xHCI",
@@ -2009,6 +2017,8 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
                 volatile struct xhci_trb  *evt = &ring->current;
                 ULONG last = (ULONG)(txtrb - ring->ring);
+                ULONG new_end = ring_advance_idx(last);
+
                 ULONG txdw3    = AROS_LE2LONG(txtrb->flags);
                 ULONG cmd_type = (txdw3 >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
                 ULONG slotid   = (txdw3 >> 24) & 0xFF;
@@ -2089,8 +2099,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 struct IOUsbHWReq *req;
                 req = (struct IOUsbHWReq *)ring->ringio[last];
-                ring->end &= RINGENDCFLAG;
-                ring->end |= (last & ~RINGENDCFLAG);
+                ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
                 ring->ringio[last] = NULL;
 
                 if (!req) {
