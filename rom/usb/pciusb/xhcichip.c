@@ -1463,6 +1463,10 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
         break;
 
     default: {
+#if defined(AROS_USE_LOGRES)
+            struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
+            struct PCIController *hc = xhciGetController(unit);
+#endif
             pciusbWarn("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - UHIOERR_HOSTERROR (cc=%ld)" DEBUGCOLOR_RESET" \n", __func__, ioreq, cc);
             {
                 UWORD rt  = ioreq->iouh_SetupData.bmRequestType;
