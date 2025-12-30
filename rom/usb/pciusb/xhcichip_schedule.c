@@ -103,14 +103,29 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
     struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
     struct pciusbXHCIDevice **devCtxOut, ULONG *txepOut)
 {
-    struct pciusbXHCIDevice *devCtx;
+    struct pciusbXHCIDevice *devCtx = NULL;
     ULONG txep;
     BOOL autoCreated = FALSE;
 
     (void)ownerList;
 
-    devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+    /*
+     * DevAddr 0 is ambiguous when multiple devices are in the Default state.
+     * Prefer the roothub-port + route-string mapping provided by Poseidon.
+     */
+    if ((ioreq->iouh_DevAddr == 0) && ioreq->iouh_RootPort) {
+        devCtx = xhciFindRouteDevice(hc,
+                                     ioreq->iouh_RouteString,
+                                     (UWORD)(ioreq->iouh_RootPort - 1));
+    }
+    if (!devCtx)
+        devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
+    if (devCtx) {
+        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "    slot=%d rootport=%d" DEBUGCOLOR_RESET" \n", devCtx->dc_SlotID, devCtx->dc_RootPort);
+        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "    ioreq rootport=%d" DEBUGCOLOR_RESET" \n", ioreq->iouh_RootPort);
+    }
 
     if ((!devCtx) && allowEp0AutoCreate &&
         (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
@@ -129,8 +144,8 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 
     txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
-    if ((txep == 0) && allowEp0AutoCreate) {
-        if (!devCtx->dc_EPAllocs[0].dmaa_Ptr) {
+    if ((txep == xhciEndpointID(0, 0)) && allowEp0AutoCreate) {
+        if (!devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
             ULONG mps0 = ioreq->iouh_MaxPktSize;
             if (mps0 == 0) {
                 if (ioreq->iouh_Flags & UHFF_SUPERSPEED)
@@ -139,6 +154,9 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                     mps0 = 64;
                 else
                     mps0 = 8;
+                pciusbXHCIDebugV("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: corrected mps0 = %d" DEBUGCOLOR_RESET" \n",
+                    mps0);
             }
             ULONG initep = xhciInitEP(hc, devCtx,
                                       ioreq,
@@ -148,12 +166,22 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                                       ioreq->iouh_Interval,
                                       ioreq->iouh_Flags);
 
-            if ((initep == 0) || !devCtx->dc_EPAllocs[0].dmaa_Ptr) {
+            if ((initep == 0) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
                 pciusbXHCIDebugV("xHCI",
                                 "Leaving %s early: failed to initialise EP0\n",
                                 __func__);
+                return FALSE;
+            }
+
+            LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr);
+            if (cc != TRB_CC_SUCCESS) {
+                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+
+                pciusbXHCIDebugV("xHCI",
+                                "Leaving %s early: EP0 configure failed (cc=%ld)\n",
+                                __func__, (LONG)cc);
                 return FALSE;
             }
         }
@@ -316,13 +344,16 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
         xhciRingLock();
         if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
-            for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt++)
+            for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt++) {
                 epring->ringio[cnt] = &ioreq->iouh_Req;
+            }
         } else {
-            for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++)
+            for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++) {
                 epring->ringio[cnt] = &ioreq->iouh_Req;
-            for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt++)
+            }
+            for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt++) {
                 epring->ringio[cnt] = &ioreq->iouh_Req;
+            }
         }
         xhciRingUnlock();
     } else if (driprivate->dpBounceBuf) {

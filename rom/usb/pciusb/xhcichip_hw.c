@@ -211,7 +211,6 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
         cmdring->ringio[queued] = &ioreq->iouh_Req;
         xhciRingUnlock();
     }
-
     Enable();
 
     if (queued != -1) {

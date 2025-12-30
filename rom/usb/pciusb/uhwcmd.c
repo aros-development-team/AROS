@@ -696,7 +696,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
                         usdd->bDeviceSubClass= 0;
                         usdd->bDeviceProtocol= 3;                    /* USB3 hub */
-                        usdd->bMaxPacketSize0 = 64;                  /* 512 bytes (2^9) encoded as 64 here  */
+                        usdd->bMaxPacketSize0 = 9;  /* SS EP0 is 512 bytes (2^9) */
                     } else
 #endif
                         if(unit->hu_RootHub20Ports) {
