@@ -1850,30 +1850,6 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
                                 ? (ioreq->iouh_Length - remaining)
                                 : ioreq->iouh_Length;
 
-        /*
-         * VirtualBox xHCI quirk:
-         * Some successful *interrupt IN* transfers report
-         *   remaining == requested length
-         * even though data was delivered. If we leave transferred as zero,
-         * the USB stack may retry the request indefinitely.
-         *
-         * IMPORTANT: Do NOT apply this workaround to CONTROL transfers.
-         * During enumeration, treating a zero-length IN data stage as a full
-         * transfer causes the stack to parse stale/zeroed buffers as valid
-         * descriptors (e.g. VID=0000/PID=6000 as seen in the logs).
-         */
-        if ((ccode == TRB_CC_SUCCESS) &&
-            (effdir == UHDIR_IN) &&
-            (ioreq->iouh_Req.io_Command == UHCMD_INTXFER) &&
-            (ioreq->iouh_Length > 0) &&
-            (remaining == ioreq->iouh_Length))
-        {
-            pciusbXHCIDebugTRBV("xHCI",
-                               DEBUGCOLOR_SET "VirtualBox quirk: INT IN success but remaining==len; forcing transferred=%lu (IOReq 0x%p)" DEBUGCOLOR_RESET "\n",
-                               (ULONG)ioreq->iouh_Length, ioreq);
-            transferred = ioreq->iouh_Length;
-        }
-
         if ((ccode == TRB_CC_SUCCESS) && ioreq->iouh_Data) {
             xhciReleaseDMABuffer(hc, ioreq, transferred, effdir, driprivate->dpBounceBuf);
             driprivate->dpBounceBuf = NULL;
@@ -1883,7 +1859,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         }
 
         ioreq->iouh_Actual = transferred;
-        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Transfer IO done/remaining = %u/%u bytes" DEBUGCOLOR_RESET" \n", transferred, remaining);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "IOReq Transfer done, %u bytes <io length %u, %u remaining>" DEBUGCOLOR_RESET" \n", transferred, ioreq->iouh_Length, remaining);
 
         return TRUE;
     }
