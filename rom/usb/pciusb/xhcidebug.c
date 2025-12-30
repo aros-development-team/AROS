@@ -55,7 +55,6 @@ void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
         (ULONG)(ptr >> 32),
         (ULONG)(ptr & 0xFFFFFFFF));
 }
-#endif
 
 void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 {
@@ -358,6 +357,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
                 "Device: Unknown command!"
                 DEBUGCOLOR_RESET "\n");
 }
+#endif
 
 #if defined(XHCI_ENABLEINDEBUG)
 void xhciDumpIN(volatile struct xhci_inctx *in)
