@@ -94,7 +94,7 @@ char *FormatMMContext(char *buffer, struct MMContext *ctx, struct ExecBase *SysB
             buffer = NewRawDoFmt("\n- First chunk (0x%p) below lower address", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_First) - 1;
 
         if (((APTR)ctx->mh->mh_First + ctx->mh->mh_Free > ctx->mh->mh_Upper))
-            buffer = NewRawDoFmt("\n- Free space count too large (%lu, first chunk 0x%xp)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free, ctx->mh->mh_First) - 1;
+            buffer = NewRawDoFmt("\n- Free space count too large (%lu, first chunk 0x%p)", (VOID_FUNC)RAWFMTFUNC_STRING, buffer, ctx->mh->mh_Free, ctx->mh->mh_First) - 1;
     }
 
     return buffer;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Close a device.
 */
@@ -60,7 +60,7 @@
     AROS_LIBFUNC_INIT
     BPTR dc_ret;
 
-    D(bug("CloseDevice $%lx $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
+    D(bug("CloseDevice 0x%p $%lx (\"%s\") by \"%s\"\n", iORequest, iORequest->io_Device,
         iORequest->io_Device ? iORequest->io_Device->dd_Library.lib_Node.ln_Name : "(null)",
         GET_THIS_TASK->tc_Node.ln_Name));
 

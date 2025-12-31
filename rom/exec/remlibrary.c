@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Remove a library from the list of public libraries.
 */
@@ -57,7 +57,7 @@
     AROS_LIBFUNC_INIT
     BPTR seglist;
 
-    D(bug("RemLibrary $%lx (\"%s\") by \"%s\"\n", library,
+    D(bug("RemLibrary 0x%p (\"%s\") by \"%s\"\n", library,
         library ? library->lib_Node.ln_Name : "(null)",
         GET_THIS_TASK->tc_Node.ln_Name));
 

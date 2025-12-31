@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Free memory allocated by AllocMem()
 */
@@ -59,7 +59,7 @@
 
     struct TraceLocation tp = CURRENT_LOCATION("FreeMem");
 
-    D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
+    D(bug("Call FreeMem (0x%p, %ld)\n", memoryBlock, byteSize));
 
     /* If there is nothing to free do nothing. */
     if(!byteSize || !memoryBlock)

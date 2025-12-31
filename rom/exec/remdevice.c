@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Remove a device from the public list of devices.
 */
@@ -58,7 +58,7 @@
     AROS_LIBFUNC_INIT
     BPTR seglist;
 
-    D(bug("RemDevice $%lx (\"%s\") by \"%s\"\n", device,
+    D(bug("RemDevice 0x%p (\"%s\") by \"%s\"\n", device,
         device ? device->dd_Library.lib_Node.ln_Name : "(null)",
         GET_THIS_TASK->tc_Node.ln_Name));
 

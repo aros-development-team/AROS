@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Allocate memory.
 */
@@ -70,7 +70,7 @@
     struct MemList *ret;
     ULONG           mlsize, i;
 
-    D(bug("NewAllocEntry $%lx num=%d\ttask=\"%s\"\n", entry, entry->ml_NumEntries, GET_THIS_TASK->tc_Node.ln_Name));
+    D(bug("NewAllocEntry 0x%p num=%d\ttask=\"%s\"\n", entry, entry->ml_NumEntries, GET_THIS_TASK->tc_Node.ln_Name));
 
     D(
       for(i = 0; i < entry->ml_NumEntries; i++)
