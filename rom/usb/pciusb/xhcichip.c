@@ -153,8 +153,8 @@ static const char *xhciCmdTypeName(ULONG trbtype)
 
 static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
 {
-    BOOL superspeed = (flags & UHFF_SUPERSPEED) != 0;
-    BOOL highspeed  = (flags & UHFF_HIGHSPEED)  != 0;
+    const BOOL superspeed = (flags & UHFF_SUPERSPEED) != 0;
+    const BOOL highspeed  = (flags & UHFF_HIGHSPEED)  != 0;
 
     if ((type != UHCMD_INTXFER) && (type != UHCMD_ISOXFER))
         return 0;
@@ -163,22 +163,34 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
         return 0;
 
     /*
-     * For SuperSpeed/HighSpeed endpoints the interval is an exponent in
-     * microframes. For full/low-speed interrupt endpoints the field uses the
-     * frame-count value directly.
+     * xHCI EP Context Interval semantics depend on speed and endpoint type:
+     *
+     * - HS/SS Interrupt & Isoch: Interval is an exponent in microframes, where
+     *   the service interval is 2^(Interval) microframes.  USB bInterval is in
+     *   the range 1..16 and directly encodes that exponent (bInterval - 1).
+     *
+     * - FS Isoch: bInterval is 1..16 and encodes 2^(bInterval-1) frames.
+     *   Convert frames to microframes (x8) => exponent = (bInterval - 1) + 3.
+     *
+     * - FS/LS Interrupt: Interval is the frame count 1..255.
      */
     if (superspeed || highspeed) {
-        UWORD microframes = interval;
-        UBYTE exp = 0;
+        if (interval > 16)
+            interval = 16;
+        return (UBYTE)(interval - 1); /* 0..15 */
+    }
 
-        while (((1U << exp) < microframes) && (exp < 10))
-            exp++;
+    if (type == UHCMD_ISOXFER) {
+        UWORD exp;
 
-        /* Interval exponents below 3 mean "every microframe". */
-        if (exp < 3)
-            exp = 3;
+        if (interval > 16)
+            interval = 16;
 
-        return exp;
+        exp = (interval - 1) + 3; /* frames -> microframes */
+        if (exp > 15)
+            exp = 15;
+
+        return (UBYTE)exp;
     }
 
     if (interval > 255)

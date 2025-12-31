@@ -332,20 +332,27 @@ void xhciDumpCC(UBYTE completioncode);
 static inline struct xhci_trb *
 xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 {
-    if (!trb)
-        return (struct xhci_trb *)0;
-#if __WORDSIZE == 64
-    if ((hc->hc_Flags & HCF_ADDR64) && trb) {
-        ULONG lo = AROS_LE2LONG(trb->dbp.addr_lo);
-        ULONG hi = AROS_LE2LONG(trb->dbp.addr_hi);
+    UQUAD dma;
 
-        return (struct xhci_trb *)(((UQUAD)hi << 32) | (UQUAD)lo);
-    }
+    if (!trb)
+        return (struct xhci_trb *)NULL;
+
+    /*
+     * Event TRBs report TRB pointers in DMA/bus address space.  Convert those
+     * addresses back into a CPU pointer before using them for ring lookups or
+     * IOReq association.
+     *
+     * This is required regardless of whether the controller supports 64-bit
+     * addressing: the pointer is still a DMA address.
+     */
+    dma  = (UQUAD)AROS_LE2LONG(trb->dbp.addr_lo);
+    dma |= ((UQUAD)AROS_LE2LONG(trb->dbp.addr_hi)) << 32;
+
+#if !defined(PCIUSB_NO_CPUTOPCI)
+    return (struct xhci_trb *)PCITOCPU(hc, hc->hc_PCIDriverObject, (APTR)(IPTR)dma);
 #else
-    /* 32-bit addressing (or non-64-bit host) relies solely on the low dword. */
-    (void)hc;
+    return (struct xhci_trb *)(IPTR)dma;
 #endif
-    return (struct xhci_trb *)(IPTR)AROS_LE2LONG(trb->dbp.addr_lo);
 }
 
 AROS_UFP0(void, xhciPortTask);

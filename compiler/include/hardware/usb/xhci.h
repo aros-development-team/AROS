@@ -321,6 +321,16 @@ struct xhci_trb
 #define TRBB_FLAG_SIA                           31
 #define TRBF_FLAG_SIA                           (1u << TRBB_FLAG_SIA)
 
+/* Transfer Burst Count (TBC) - 2 bits */
+#define TRBS_FLAG_TBC                           16
+#define TRB_FLAG_TBC_SMASK                      0x3
+#define TRBF_FLAG_TBC(x)                        (((ULONG)(x) & TRB_FLAG_TBC_SMASK) << TRBS_FLAG_TBC)
+
+/* Frame ID (11 bits) */
+#define TRBS_FLAG_FRAMEID                       20
+#define TRB_FLAG_FRAMEID_SMASK                  0x7FF
+#define TRBF_FLAG_FRAMEID(x)                    (((ULONG)(x) & TRB_FLAG_FRAMEID_SMASK) << TRBS_FLAG_FRAMEID)
+
 #define TRBS_FLAG_TYPE                          10
 #define TRB_FLAG_TYPE_SMASK                     0x3F
 #define TRB_FLAG_TYPE_MASK                      (TRB_FLAG_TYPE_SMASK << TRBS_FLAG_TYPE)
