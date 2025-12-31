@@ -377,7 +377,7 @@ WORD cmdReset(struct IOUsbHWReq *ioreq,
 {
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
-    uhwDelayMS(1, unit);
+    uhwDelayMS(1, unit->hu_TimerReq);
     uhwGetUsbState(ioreq, unit, base);
 
     if(ioreq->iouh_State & UHSF_OPERATIONAL) {
@@ -1393,8 +1393,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
-
-    //uhwDelayMS(1000, unit); /* Wait 200 ms */
+    //uhwDelayMS(1000, unit->hu_TimerReq); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
         return(UHIOERR_USBOFFLINE);
@@ -1579,7 +1578,7 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
 
-    //uhwDelayMS(1000, unit); /* Wait 200 ms */
+    //uhwDelayMS(1000, unit->hu_TimerReq); /* Wait 200 ms */
     uhwGetUsbState(ioreq, unit, base);
     if(!(ioreq->iouh_State & UHSF_OPERATIONAL)) {
         return(UHIOERR_USBOFFLINE);
