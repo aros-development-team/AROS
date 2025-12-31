@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2022, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2025, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -61,8 +61,8 @@ static const char *str_unabletoident = "%s: Detected %s device but unable to IDE
 static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct cam_sim *unit)
 {
     struct AHCIBase *AHCIBase = unit->sim_Port->ap_sc->sc_dev->dev_Base;
-    struct MsgPort *mp;
-    struct IORequest *tmr;
+    struct MsgPort *mp = NULL;
+    struct IORequest *tmr = NULL;
 
     ahciDebug("%s %d: Monitor Start\n", ((struct Node *)device)->ln_Name, unit->sim_Unit);
 
@@ -71,11 +71,13 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
 
     tmr = ahci_OpenTimer();
     if (!tmr)
-        return;
+        goto cleanup;
 
-    if ((mp = CreateMsgPort())) {
-        struct IORequest *io;
-        if ((io = CreateIORequest(mp, sizeof(struct IOStdReq)))) {
+    mp = CreateMsgPort();
+    if (mp) {
+        struct IORequest *io = NULL;
+        io = CreateIORequest(mp, sizeof(struct IOStdReq));
+        if (io) {
             BOOL media_present = FALSE;
 
             struct scsi_generic test_unit_ready = { .opcode = SCSI_TEST_UNIT_READY, };
@@ -142,6 +144,11 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
         }
         DeleteMsgPort(mp);
     }
+    ahci_CloseTimer(tmr);
+    tmr = NULL;
+cleanup:
+    if (tmr)
+        ahci_CloseTimer(tmr);
     AROS_ATOMIC_DEC(unit->sim_UseCount);
     ahciDebug("%s %d: Monitor End\n", ((struct Node *)device)->ln_Name, unit->sim_Unit);
 }
