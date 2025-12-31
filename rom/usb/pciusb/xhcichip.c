@@ -1664,6 +1664,20 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
         ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
         break;
 
+    case TRB_CC_RING_UNDERRUN:
+        /*
+         * Ring Underrun (commonly observed on ISO OUT when no TD is
+         * available in time) is not fatal. Return success and 0 bytes so
+         * the client can continue streaming.
+         */
+        if (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER) {
+            ioreq->iouh_Req.io_Error = UHIOERR_NO_ERROR;
+            ioreq->iouh_Actual = 0;
+        } else {
+            ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+        }
+        break;
+
     default: {
 #if defined(AROS_USE_LOGRES)
             struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
@@ -1944,18 +1958,38 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "IOReq TRB(s) = #%u:#%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB, driprivate->dpTxETRB);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n", driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
-        if ((driprivate->dpCC = ccode) != TRB_CC_SUCCESS) {
+        driprivate->dpCC = ccode;
+
+        /* Avoid log storms for expected ISO conditions */
+        if ((ccode != TRB_CC_SUCCESS) &&
+            !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET
                        "cc=%d for IOReq 0x%p"
-                       DEBUGCOLOR_RESET" \n", driprivate->dpCC, ioreq);
+                       DEBUGCOLOR_RESET" \n", (int)ccode, ioreq);
         }
 
         ULONG transferred = (remaining <= ioreq->iouh_Length)
                                 ? (ioreq->iouh_Length - remaining)
                                 : ioreq->iouh_Length;
 
-        if ((ccode == TRB_CC_SUCCESS) && ioreq->iouh_Data) {
+        /*
+         * For periodic ISO OUT, Ring Underrun indicates that no data was
+         * serviced in time. Report 0 bytes to the client and continue.
+         */
+        if ((ccode == TRB_CC_RING_UNDERRUN) &&
+            (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER) &&
+            (ioreq->iouh_Dir == UHDIR_OUT))
+        {
+            transferred = 0;
+            remaining   = ioreq->iouh_Length;
+        }
+
+        /*
+         * Release any bounce buffer regardless of completion code to avoid
+         * leaks and to complete CachePostDMA on partial transfers.
+         */
+        if (ioreq->iouh_Data) {
             xhciReleaseDMABuffer(hc, ioreq, transferred, effdir, driprivate->dpBounceBuf);
             driprivate->dpBounceBuf = NULL;
             driprivate->dpBounceData = NULL;
@@ -1988,6 +2022,82 @@ static inline ULONG ring_advance_idx(ULONG idx)
     if (idx == XHCI_EVENT_RING_TRBS)
         idx = 0;
     return idx;
+}
+
+/*
+ * Event TRBs carry physical (bus) addresses in their Parameter field.
+ * When CPUTOPCI is not an identity mapping, we must translate these
+ * pointers back into the driver's CPU address space before we can
+ * locate the owning ring and its ringio bookkeeping.
+ *
+ * Transfer Event TRBs also include the Slot ID and Endpoint ID, so we
+ * prefer those for robust endpoint-ring selection (and to handle cases
+ * where the TRB pointer is reported as 0, e.g. Ring Underrun).
+ */
+static inline UQUAD xhciEventTRBDMA(volatile struct xhci_trb *etrb)
+{
+    /* Event TRB Parameter field is a 64-bit pointer */
+    UQUAD lo = (UQUAD)AROS_LE2LONG(etrb->dbp.addr_lo);
+    UQUAD hi = (UQUAD)AROS_LE2LONG(etrb->dbp.addr_hi);
+    return (hi << 32) | lo;
+}
+
+static inline BOOL xhciRingAndIndexFromDMA(struct PCIController *hc,
+                                           struct pciusbXHCIDevice *devCtx,
+                                           UBYTE epid,
+                                           UQUAD trb_dma,
+                                           volatile struct pcisusbXHCIRing **outRing,
+                                           ULONG *outIdx)
+{
+    (void)hc;
+
+    if (!outRing || !outIdx)
+        return FALSE;
+
+    *outRing = NULL;
+    *outIdx  = 0;
+
+    if (!devCtx || (epid >= MAX_DEVENDPOINTS))
+        return FALSE;
+
+    if (!devCtx->dc_EPAllocs[epid].dmaa_Ptr || !devCtx->dc_EPAllocs[epid].dmaa_DMA)
+        return FALSE;
+
+    volatile struct pcisusbXHCIRing *ring =
+        (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+
+    UQUAD ring_dma = (UQUAD)(IPTR)devCtx->dc_EPAllocs[epid].dmaa_DMA;
+
+    /* TRB pointer can be 0 for certain endpoint-level conditions */
+    if (trb_dma == 0)
+        return FALSE;
+
+    if (trb_dma < ring_dma)
+        return FALSE;
+
+    UQUAD off = trb_dma - ring_dma;
+    ULONG idx = (ULONG)(off / (UQUAD)sizeof(struct xhci_trb));
+
+    if (idx >= XHCI_EVENT_RING_TRBS)
+        return FALSE;
+
+    *outRing = ring;
+    *outIdx  = idx;
+    return TRUE;
+}
+
+static inline struct IOUsbHWReq *xhciBusyReqFromSlotEpid(struct PCIController *hc,
+                                                         struct pciusbXHCIDevice *devCtx,
+                                                         UBYTE epid)
+{
+    if (!hc || !hc->hc_Unit || !devCtx)
+        return NULL;
+
+    UBYTE endpoint = (epid > 1) ? (epid >> 1) : 0;
+    UBYTE dirbit   = (epid & 0x01) ? 0x10 : 0x00; /* match xhciDevEPKey() encoding */
+    UWORD devadrep = (devCtx->dc_DevAddr << 5) + endpoint + dirbit;
+
+    return (struct IOUsbHWReq *)hc->hc_Unit->hu_DevBusyReq[devadrep];
 }
 
 static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
@@ -2177,45 +2287,105 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             }
 
             case TRBB_FLAG_ERTYPE_TRANSFER: {
-                struct xhci_trb  *txtrb = xhciTRBPointer(hc, etrb);
-                struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
-                volatile struct xhci_trb  *evt = &ring->current;
-                ULONG last = (ULONG)(txtrb - ring->ring);
-                ULONG new_end = ring_advance_idx(last);
+                /* Transfer Event TRB */
+                UBYTE trbe_epid = (UBYTE)((dw3 >> 16) & 0x1f);
+                UQUAD trb_dma = xhciEventTRBDMA(etrb);
 
-                /* Cache the event TRB before using its fields. */
-                *evt = *etrb;
+                struct pciusbXHCIDevice *devCtx = NULL;
+                volatile struct pcisusbXHCIRing *ring = NULL;
+                ULONG last = 0;
+                BOOL have_idx = FALSE;
+
+                if (trbe_slot && (trbe_slot < USB_DEV_MAX))
+                    devCtx = xhcic->xhc_Devices[trbe_slot];
+
+                if (devCtx && (trbe_epid < MAX_DEVENDPOINTS) &&
+                    devCtx->dc_EPAllocs[trbe_epid].dmaa_Ptr)
+                {
+                    ring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[trbe_epid].dmaa_Ptr;
+                }
+
+                if (ring && xhciRingAndIndexFromDMA(hc, devCtx, trbe_epid, trb_dma, &ring, &last)) {
+                    have_idx = TRUE;
+                }
 
                 pciusbXHCIDebugTRBV("xHCI",
-                    DEBUGCOLOR_SET "TRANSFER EVT: ring=%p idx=%u slot=%u CC=%u rem=%lu"
+                    DEBUGCOLOR_SET "TRANSFER EVT: slot=%u epid=%u trb_dma=%p CC=%u rem=%lu"
                     DEBUGCOLOR_RESET" \n",
-                    ring, last,
-                    trbe_slot,
-                    trbe_ccode,
+                    trbe_slot, trbe_epid, (APTR)(IPTR)trb_dma, trbe_ccode,
                     (unsigned long)event_rem);
                 xhciDumpCC(trbe_ccode);
 
-                struct IOUsbHWReq *req;
-                req = (struct IOUsbHWReq *)ring->ringio[last];
-                ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
+                struct IOUsbHWReq *req = NULL;
+
+                if (have_idx) {
+                    req = (struct IOUsbHWReq *)ring->ringio[last];
+
+                    /* Advance the software view of the ring only for valid TRB pointers. */
+                    ULONG new_end = ring_advance_idx(last);
+                    ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
+                } else if (trbe_ccode == TRB_CC_RING_UNDERRUN) {
+                    /*
+                     * Ring Underrun does not reliably report a TRB pointer.
+                     * Complete the currently active request for this endpoint.
+                     */
+                    req = xhciBusyReqFromSlotEpid(hc, devCtx, trbe_epid);
+                    if (req) {
+                        /* Report 0 bytes transferred */
+                        event_rem = req->iouh_Length;
+                    }
+                }
 
                 if (!req) {
-                    pciusbWarn("xHCI",
-                               DEBUGWARNCOLOR_SET
-                               "ring=%p transfer TRB idx %d with completion code %lu missing ioreq\n"
-                               DEBUGCOLOR_RESET" \n",
-                               ring, last, trbe_ccode);
+                    /* Avoid log storms for expected endpoint-level ISO conditions */
+                    if (trbe_ccode != TRB_CC_RING_UNDERRUN) {
+                        pciusbWarn("xHCI",
+                                   DEBUGWARNCOLOR_SET
+                                   "TRANSFER EVT: slot=%u epid=%u idx=%lu cc=%lu missing ioreq"
+                                   DEBUGCOLOR_RESET" \n",
+                                   trbe_slot, trbe_epid,
+                                   (unsigned long)(have_idx ? last : 0),
+                                   (unsigned long)trbe_ccode);
+                    }
+                    break;
                 }
-                doCompletion |= xhciIntWorkProcess(hc, req, event_rem, trbe_ccode);
+
+                doCompletion = xhciIntWorkProcess(hc, req, event_rem, trbe_ccode);
                 break;
             }
 
             case TRBB_FLAG_ERTYPE_COMMAND_COMPLETE: {
-                struct xhci_trb  *txtrb = xhciTRBPointer(hc, etrb);
-                struct pcisusbXHCIRing *ring = RINGFROMTRB(txtrb);
-                volatile struct xhci_trb  *evt = &ring->current;
-                ULONG last = (ULONG)(txtrb - ring->ring);
-                ULONG new_end = ring_advance_idx(last);
+                /* Command Completion Event TRB */
+                UQUAD trb_dma = xhciEventTRBDMA(etrb);
+
+                volatile struct pcisusbXHCIRing *ring =
+                    (volatile struct pcisusbXHCIRing *)xhcic->xhc_OPRp;
+                volatile struct xhci_trb *evt = &ring->current;
+
+                ULONG last = 0;
+                ULONG new_end = 0;
+
+                if (trb_dma && xhcic->xhc_DMAOPR) {
+                    UQUAD base_dma = (UQUAD)(IPTR)xhcic->xhc_DMAOPR;
+                    if (trb_dma >= base_dma) {
+                        UQUAD off = trb_dma - base_dma;
+                        last = (ULONG)(off / (UQUAD)sizeof(struct xhci_trb));
+                    }
+                }
+
+                if (last >= XHCI_EVENT_RING_TRBS) {
+                    pciusbWarn("xHCI",
+                               DEBUGWARNCOLOR_SET
+                               "COMMAND COMPLETE: bad TRB ptr %p (idx=%lu)"
+                               DEBUGCOLOR_RESET" \n",
+                               (APTR)(IPTR)trb_dma, (unsigned long)last);
+                    break;
+                }
+
+                volatile struct xhci_trb *txtrb = &ring->ring[last];
+                CacheClearE((APTR)txtrb, sizeof(*txtrb), CACRF_InvalidateD);
+
+                new_end = ring_advance_idx(last);
 
                 ULONG txdw3    = AROS_LE2LONG(txtrb->flags);
                 ULONG cmd_type = (txdw3 >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
@@ -2317,6 +2487,29 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 }
                 break;
             }
+
+
+            case TRBB_FLAG_ERTYPE_HOST_CONTROLLER:
+                /*
+                 * Host Controller Event TRB (type 37). VMware and some hardware
+                 * use this to report controller-level conditions, most notably
+                 * Event Ring Full Error (cc=21). We consume the event and keep
+                 * going.
+                 */
+                if (trbe_ccode == TRB_CC_EVENT_RING_FULL_ERROR) {
+                    pciusbWarn("xHCI",
+                               DEBUGWARNCOLOR_SET
+                               "Host Controller Event: Event Ring Full (cc=%lu)"
+                               DEBUGCOLOR_RESET" \n",
+                               (unsigned long)trbe_ccode);
+                } else {
+                    pciusbXHCIDebugTRBV("xHCI",
+                        DEBUGCOLOR_SET
+                        "Host Controller Event (cc=%lu) consumed"
+                        DEBUGCOLOR_RESET" \n",
+                        (unsigned long)trbe_ccode);
+                }
+                break;
 
             default:
                 pciusbWarn("xHCI",

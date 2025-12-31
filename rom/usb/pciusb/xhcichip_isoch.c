@@ -172,7 +172,12 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
     if (!rtn->rtn_BufferReq.ubr_Frame) {
-        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : (hc->hc_FrameCounter + interval);
+        /*
+         * xHCI needs ISO TDs queued sufficiently ahead of the service
+         * interval. A single-interval lead is often too tight on VMware.
+         */
+        ULONG lead = interval ? (interval * 2) : 2;
+        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : (hc->hc_FrameCounter + lead);
         rtn->rtn_BufferReq.ubr_Frame = next;
     }
     rtn->rtn_NextFrame = rtn->rtn_BufferReq.ubr_Frame + interval;
