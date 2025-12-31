@@ -65,6 +65,7 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
         }
 
         trbflags |= TRBF_FLAG_TRTYPE_ISOCH;
+        trbflags |= TRBF_FLAG_SIA;
         if (ioreq->iouh_Dir == UHDIR_IN)
             trbflags |= TRBF_FLAG_ISP;
 
