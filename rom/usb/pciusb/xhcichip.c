@@ -1466,6 +1466,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIController *hc;
     struct pciusbXHCIDevice *devCtx = NULL;
     struct pciusbXHCIEndpointCtx *epctx = (struct pciusbXHCIEndpointCtx *)ioreq->iouh_DriverPrivate2;
+    struct pciusbXHCIEndpointCtx *epctx_free = NULL;
     struct timerequest *timerreq = NULL;
     ULONG epid;
 
@@ -1495,15 +1496,10 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
         return;
 
     xhciFreeEndpointContext(hc, devCtx, epid, TRUE, timerreq);
-    if (devCtx->dc_EPContexts[epid]) {
-        if (devCtx->dc_EPContexts[epid]->ectx_TimerReq ||
-            devCtx->dc_EPContexts[epid]->ectx_TimerPort) {
-            xhciCloseTaskTimer(&devCtx->dc_EPContexts[epid]->ectx_TimerPort,
-                               &devCtx->dc_EPContexts[epid]->ectx_TimerReq);
-        }
-        FreeMem(devCtx->dc_EPContexts[epid], sizeof(*devCtx->dc_EPContexts[epid]));
-        devCtx->dc_EPContexts[epid] = NULL;
-    }
+    epctx_free = devCtx->dc_EPContexts[epid];
+    if (!epctx_free)
+        epctx_free = epctx;
+    devCtx->dc_EPContexts[epid] = NULL;
 
     ioreq->iouh_DriverPrivate2 = NULL;
 
@@ -1516,6 +1512,14 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
         epid == xhciEndpointID(0, 0) &&
         !xhciDeviceHasEndpoints(devCtx)) {
         xhciDisconnectDevice(hc, devCtx, timerreq);
+    }
+
+    if (epctx_free) {
+        if (epctx_free->ectx_TimerReq || epctx_free->ectx_TimerPort) {
+            xhciCloseTaskTimer(&epctx_free->ectx_TimerPort,
+                               &epctx_free->ectx_TimerReq);
+        }
+        FreeMem(epctx_free, sizeof(*epctx_free));
     }
 }
 
