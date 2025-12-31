@@ -27,6 +27,41 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct 
 LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq);
 void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq);
 
+static inline BOOL xhciOpenTaskTimer(struct MsgPort **msgport,
+                                     struct timerequest **timerreq,
+                                     const char *name)
+{
+    if ((*msgport = CreateMsgPort())) {
+        *timerreq = (struct timerequest *)CreateIORequest(*msgport, sizeof(struct timerequest));
+        if (*timerreq) {
+            if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)*timerreq, 0)) {
+                (*timerreq)->tr_node.io_Message.mn_Node.ln_Name = (STRPTR)name;
+                (*timerreq)->tr_node.io_Command = TR_ADDREQUEST;
+                return TRUE;
+            }
+            DeleteIORequest((struct IORequest *)*timerreq);
+            *timerreq = NULL;
+        }
+        DeleteMsgPort(*msgport);
+        *msgport = NULL;
+    }
+
+    return FALSE;
+}
+
+static inline void xhciCloseTaskTimer(struct MsgPort **msgport, struct timerequest **timerreq)
+{
+    if (*timerreq) {
+        CloseDevice((APTR)*timerreq);
+        DeleteIORequest((struct IORequest *)*timerreq);
+        *timerreq = NULL;
+    }
+    if (*msgport) {
+        DeleteMsgPort(*msgport);
+        *msgport = NULL;
+    }
+}
+
 static inline UBYTE xhciEndpointID(UBYTE endpoint, UBYTE dir)
 {
     UBYTE epid = 1;

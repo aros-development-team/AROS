@@ -1820,7 +1820,8 @@ static AROS_INTH1(xhciCompleteInt, struct PCIController *, hc)
 
     uhwCheckRootHubChanges(hc->hc_Unit);
 
-    Signal(xhcic->xhc_xHCERTask, 1L << xhcic->xhc_DoWorkSignal);
+    Signal(xhcic->xhc_EventTask.xet_Task,
+           1L << xhcic->xhc_EventTask.xet_ProcessEventsSignal);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%s Done" DEBUGCOLOR_RESET" \n", __func__);
 
@@ -2064,9 +2065,16 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     }
 
                     if (signalTask) {
-                        pciusbXHCIDebugTRBV("xHCI", DEBUGFUNCCOLOR_SET "%s: Signaling port change handler <0x%p, %d (%08x)>..." DEBUGCOLOR_RESET" \n", __func__, xhcic->xhc_xHCPortTask, xhcic->xhc_PortChangeSignal, 1L << xhcic->xhc_PortChangeSignal);
+                        pciusbXHCIDebugTRBV("xHCI",
+                            DEBUGFUNCCOLOR_SET "%s: Signaling port change handler <0x%p, %d (%08x)>..."
+                            DEBUGCOLOR_RESET" \n",
+                            __func__,
+                            xhcic->xhc_PortTask.xpt_Task,
+                            xhcic->xhc_PortTask.xpt_PortChangeSignal,
+                            1L << xhcic->xhc_PortTask.xpt_PortChangeSignal);
                         /* Connect/Disconnect the device */
-                        Signal(xhcic->xhc_xHCPortTask, 1L << xhcic->xhc_PortChangeSignal);
+                        Signal(xhcic->xhc_PortTask.xpt_Task,
+                               1L << xhcic->xhc_PortTask.xpt_PortChangeSignal);
                     } else {
                         checkRHchanges = TRUE;
                     }
@@ -2892,13 +2900,15 @@ takeownership:
     if ((tmptask = psdSpawnSubTask(buf, xhciEventRingTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Event Ring Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
-                        xhcic->xhc_xHCERTask, xhcic->xhc_DoWorkSignal);
+                        xhcic->xhc_EventTask.xet_Task,
+                        xhcic->xhc_EventTask.xet_ProcessEventsSignal);
     }
     psdSafeRawDoFmt(buf, 64, "usbhw<pciusb.device/%ld> Port Task", hu->hu_UnitNo);
     if ((tmptask = psdSpawnSubTask(buf, xhciPortTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Port Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
-                        xhcic->xhc_xHCPortTask, xhcic->xhc_PortChangeSignal);
+                        xhcic->xhc_PortTask.xpt_Task,
+                        xhcic->xhc_PortTask.xpt_PortChangeSignal);
     }
     xhcic->xhc_ReadySigTask = NULL;
 #endif

@@ -340,34 +340,49 @@ AROS_UFH0(void, xhciEventRingTask)
 
     {
         struct Task *thistask;
+        BOOL timer_ok;
+
         thistask = FindTask(NULL);
         hc = thistask->tc_UserData;
         xhcic = xhciGetHCPrivate(hc);
-        xhcic->xhc_xHCERTask = thistask;
+        xhcic->xhc_EventTask.xet_Task = thistask;
         SetTaskPri(thistask, 100);
+
+        timer_ok = xhciOpenTaskTimer(&xhcic->xhc_EventTask.xet_TimerPort,
+                                     &xhcic->xhc_EventTask.xet_TimerReq,
+                                     "xHCI event task");
+        if (!timer_ok) {
+            pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: unable to open timer.device" DEBUGCOLOR_RESET" \n", __func__);
+        }
     }
-    xhcic->xhc_DoWorkSignal = AllocSignal(-1);
+    xhcic->xhc_EventTask.xet_ProcessEventsSignal = AllocSignal(-1);
 
     pciusbXHCIDebug("xHCI",
-                    DEBUGCOLOR_SET "'%s' @ 0x%p, DoWorkSignal=%d"
+                    DEBUGCOLOR_SET "'%s' @ 0x%p, ProcessEventsSignal=%d"
                     DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)xhcic->xhc_xHCERTask)->ln_Name, xhcic->xhc_xHCERTask, xhcic->xhc_DoWorkSignal);
+                    ((struct Node *)xhcic->xhc_EventTask.xet_Task)->ln_Name,
+                    xhcic->xhc_EventTask.xet_Task,
+                    xhcic->xhc_EventTask.xet_ProcessEventsSignal);
 
     if (xhcic->xhc_ReadySigTask)
         Signal(xhcic->xhc_ReadySigTask, 1L << xhcic->xhc_ReadySignal);
 
+    if (!xhcic->xhc_EventTask.xet_TimerReq || xhcic->xhc_EventTask.xet_ProcessEventsSignal == -1)
+        goto task_cleanup;
+
     for (;;) {
-        ULONG xhcictsigs = Wait(1 << xhcic->xhc_DoWorkSignal);
+        ULONG xhcictsigs = Wait(1 << xhcic->xhc_EventTask.xet_ProcessEventsSignal);
 #if defined(DEBUG) && (DEBUG > 1)
         pciusbXHCIDebugV("xHCI",
                         DEBUGCOLOR_SET "IDnest %d TDNest %d"
                         DEBUGCOLOR_RESET" \n",
-                        xhcic->xhc_xHCERTask->tc_IDNestCnt, xhcic->xhc_xHCERTask->tc_TDNestCnt);
+                        xhcic->xhc_EventTask.xet_Task->tc_IDNestCnt,
+                        xhcic->xhc_EventTask.xet_Task->tc_TDNestCnt);
 #endif
 
-        if (xhcictsigs & (1 << xhcic->xhc_DoWorkSignal)) {
+        if (xhcictsigs & (1 << xhcic->xhc_EventTask.xet_ProcessEventsSignal)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
-            xhciHandleFinishedTDs(hc, hc->hc_Unit->hu_TimerReq);
+            xhciHandleFinishedTDs(hc, xhcic->xhc_EventTask.xet_TimerReq);
 
             if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);
@@ -382,6 +397,14 @@ AROS_UFH0(void, xhciEventRingTask)
                 xhciScheduleAsyncTDs(hc, &hc->hc_BulkXFerQueue, UHCMD_BULKXFER);
         }
     }
+
+task_cleanup:
+    if (xhcic->xhc_EventTask.xet_ProcessEventsSignal != -1) {
+        FreeSignal(xhcic->xhc_EventTask.xet_ProcessEventsSignal);
+        xhcic->xhc_EventTask.xet_ProcessEventsSignal = -1;
+    }
+    xhciCloseTaskTimer(&xhcic->xhc_EventTask.xet_TimerPort,
+                       &xhcic->xhc_EventTask.xet_TimerReq);
     AROS_USERFUNC_EXIT
 }
 

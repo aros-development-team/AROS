@@ -691,27 +691,41 @@ AROS_UFH0(void, xhciPortTask)
 
     {
         struct Task *thistask;
+        BOOL timer_ok;
+
         thistask = FindTask(NULL);
         hc = thistask->tc_UserData;
         xhcic = xhciGetHCPrivate(hc);
-        xhcic->xhc_xHCPortTask = thistask;
+        xhcic->xhc_PortTask.xpt_Task = thistask;
         SetTaskPri(thistask, 99);
+
+        timer_ok = xhciOpenTaskTimer(&xhcic->xhc_PortTask.xpt_TimerPort,
+                                     &xhcic->xhc_PortTask.xpt_TimerReq,
+                                     "xHCI port task");
+        if (!timer_ok) {
+            pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: unable to open timer.device" DEBUGCOLOR_RESET" \n", __func__);
+        }
     }
-    xhcic->xhc_PortChangeSignal = AllocSignal(-1);
+    xhcic->xhc_PortTask.xpt_PortChangeSignal = AllocSignal(-1);
 
     pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "'%s' @ 0x%p, PortChangeSignal=%d"
                     DEBUGCOLOR_RESET" \n",
-                    ((struct Node *)xhcic->xhc_xHCPortTask)->ln_Name, xhcic->xhc_xHCPortTask, xhcic->xhc_PortChangeSignal);
+                    ((struct Node *)xhcic->xhc_PortTask.xpt_Task)->ln_Name,
+                    xhcic->xhc_PortTask.xpt_Task,
+                    xhcic->xhc_PortTask.xpt_PortChangeSignal);
 
     if (xhcic->xhc_ReadySigTask)
         Signal(xhcic->xhc_ReadySigTask, 1L << xhcic->xhc_ReadySignal);
 
+    if (!xhcic->xhc_PortTask.xpt_TimerReq || xhcic->xhc_PortTask.xpt_PortChangeSignal == -1)
+        goto task_cleanup;
+
     xhciports = (volatile struct xhci_pr *)((IPTR)xhcic->xhc_XHCIPorts);
 
     for (;;) {
-        ULONG xhcictsigs = Wait(1 << xhcic->xhc_PortChangeSignal);
-        if (xhcictsigs & (1 << xhcic->xhc_PortChangeSignal)) {
+        ULONG xhcictsigs = Wait(1 << xhcic->xhc_PortTask.xpt_PortChangeSignal);
+        if (xhcictsigs & (1 << xhcic->xhc_PortTask.xpt_PortChangeSignal)) {
             UWORD hciport;
             pciusbXHCIDebug("xHCI",
                             DEBUGCOLOR_SET "Port change detected" DEBUGCOLOR_RESET" \n");
@@ -759,7 +773,7 @@ AROS_UFH0(void, xhciPortTask)
                                                  route,
                                                  flags,
                                                  mps0,
-                                                 hc->hc_Unit->hu_TimerReq);
+                                                 xhcic->xhc_PortTask.xpt_TimerReq);
                     if (devCtx) {
                         /* Root port "device" lives on this controller */
                         hc->hc_Unit->hu_DevControllers[0] = hc;
@@ -772,12 +786,19 @@ AROS_UFH0(void, xhciPortTask)
                                     DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n",
                                     devCtx);
 
-                    xhciDisconnectDevice(hc, devCtx, hc->hc_Unit->hu_TimerReq);
+                    xhciDisconnectDevice(hc, devCtx, xhcic->xhc_PortTask.xpt_TimerReq);
                 }
             }
             uhwCheckRootHubChanges(hc->hc_Unit);
         }
     }
+
+task_cleanup:
+    if (xhcic->xhc_PortTask.xpt_PortChangeSignal != -1) {
+        FreeSignal(xhcic->xhc_PortTask.xpt_PortChangeSignal);
+        xhcic->xhc_PortTask.xpt_PortChangeSignal = -1;
+    }
+    xhciCloseTaskTimer(&xhcic->xhc_PortTask.xpt_TimerPort, &xhcic->xhc_PortTask.xpt_TimerReq);
     AROS_USERFUNC_EXIT
 }
 

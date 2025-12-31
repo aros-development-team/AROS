@@ -13,6 +13,9 @@
 #include "pciusb.h"
 #include "hccommon.h"
 
+struct MsgPort;
+struct timerequest;
+
 #ifndef DMAFLAGS_PREREAD
 #define DMAFLAGS_PREREAD     0
 #endif
@@ -62,6 +65,22 @@ struct pciusbXHCITRBParams
     ULONG                       status;
 };
 
+struct XhciPortTaskPrivate
+{
+    struct Task                    *xpt_Task;
+    BYTE                            xpt_PortChangeSignal;
+    struct MsgPort                 *xpt_TimerPort;
+    struct timerequest             *xpt_TimerReq;
+};
+
+struct XhciEventTaskPrivate
+{
+    struct Task                    *xet_Task;
+    BYTE                            xet_ProcessEventsSignal;
+    struct MsgPort                 *xet_TimerPort;
+    struct timerequest             *xet_TimerReq;
+};
+
 struct XhciHCPrivate
 {
     UWORD                               xhc_NumSlots;
@@ -97,12 +116,10 @@ struct XhciHCPrivate
     APTR                                xhc_XHCIIntR;
 
     BYTE                                xhc_ReadySignal;
-    BYTE                                xhc_PortChangeSignal;
-    BYTE                                xhc_DoWorkSignal;
     UWORD                               xhc_RootPortChanges;
     struct Task                        *xhc_ReadySigTask;
-    struct Task                        *xhc_xHCERTask;
-    struct Task                        *xhc_xHCPortTask;
+    struct XhciPortTaskPrivate         xhc_PortTask;
+    struct XhciEventTaskPrivate        xhc_EventTask;
     struct pciusbXHCIDevice            *xhc_Devices[USB_DEV_MAX];
     volatile struct pciusbXHCITRBParams xhc_CmdResults[USB_DEV_MAX];
     UBYTE                               xhc_PortProtocol[MAX_ROOT_PORTS];
