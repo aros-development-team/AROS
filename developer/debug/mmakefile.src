@@ -4,14 +4,6 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-tools : debug-tools
-#MM- debug-tools : debug-tools-commands
-
-FILES := \
-    FindAddr
-
-%build_progs mmake=debug-tools-commands \
-    files="$(FILES)" targetdir=$(AROS_DEBUG) \
-    uselibs="debug" coverageinstr=no
 
 %common
 
