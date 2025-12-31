@@ -1211,14 +1211,14 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
 
         pciusbUHCIDebug("UHCI", "Resetting UHCI HC\n");
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_GLOBALRESET);
-        uhwDelayMS(15, hu);
+        uhwDelayMS(15, hu->hu_TimerReq);
 
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
         cnt = 100;
         do {
-            uhwDelayMS(10, hu);
+            uhwDelayMS(10, hu->hu_TimerReq);
             if(!(READIO16_LE(hc->hc_RegBase, UHCI_USBCMD) & UHCF_HCRESET)) {
                 break;
             }
@@ -1227,7 +1227,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         if(cnt == 0) {
             pciusbUHCIDebug("UHCI", "Reset Timeout!\n");
             WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
-            uhwDelayMS(15, hu);
+            uhwDelayMS(15, hu->hu_TimerReq);
         } else {
             pciusbUHCIDebug("UHCI", "Reset finished after %ld ticks\n", 100-cnt);
         }
@@ -1325,21 +1325,21 @@ void uhciFree(struct PCIController *hc, struct PCIUnit *hu)
     WRITECONFIGWORD(hc, hc->hc_PCIDeviceObject, UHCI_USBLEGSUP, 0);
     // disable all ports
     WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
-    uhwDelayMS(50, hu);
+    uhwDelayMS(50, hu->hu_TimerReq);
     //WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_MAXPACKET64|UHCF_CONFIGURE);
-    //uhwDelayMS(50, hu);
+    //uhwDelayMS(50, hu->hu_TimerReq);
     pciusbUHCIDebug("UHCI", "Stopping UHCI %08lx\n", hc);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
     SYNC;
 
     //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-    uhwDelayMS(10, hu);
+    uhwDelayMS(10, hu->hu_TimerReq);
 
     pciusbUHCIDebug("UHCI", "Resetting UHCI %08lx\n", hc);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, UHCF_HCRESET);
     SYNC;
 
-    uhwDelayMS(50, hu);
+    uhwDelayMS(50, hu->hu_TimerReq);
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
     SYNC;
 
@@ -1391,7 +1391,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
         newval |= UHPF_PORTRESET;
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-        uhwDelayMS(25, unit);
+        uhwDelayMS(25, unit->hu_TimerReq);
         newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
         pciusbUHCIDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!");
         // like windows does it
@@ -1407,7 +1407,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
         cnt = 100;
         do {
-            uhwDelayMS(1, unit);
+            uhwDelayMS(1, unit->hu_TimerReq);
             newval = READIO16_LE(hc->hc_RegBase, portreg);
         } while(--cnt && (!(newval & UHPF_PORTENABLE)));
         if(cnt) {

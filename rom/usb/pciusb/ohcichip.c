@@ -1942,7 +1942,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
                     KPRINTF(10, "BIOS gave up on OHCI. Pwned!\n");
                     break;
                 }
-                uhwDelayMS(10, hu);
+                uhwDelayMS(10, hu->hu_TimerReq);
             } while(--timeout);
             if(!timeout) {
                 KPRINTF(10, "BIOS didn't release OHCI. Forcing and praying...\n");
@@ -1960,7 +1960,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
             if(!(READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS) & OCSF_HCRESET)) {
                 break;
             }
-            uhwDelayMS(1, hu);
+            uhwDelayMS(1, hu->hu_TimerReq);
         } while(--cnt);
 
 #ifdef DEBUG
@@ -2037,7 +2037,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu)
             WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, ((2<<hc->hc_NumPorts)-2)<<OHBS_PORTPOWERCTRL);
         }
 
-        uhwDelayMS(50, hu);
+        uhwDelayMS(50, hu->hu_TimerReq);
         WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA, hubdesca);
 
         CacheClearE(ohcihcp->ohc_OhciHCCA,   sizeof(struct OhciHCCA),          CACRF_ClearD);
@@ -2069,18 +2069,18 @@ void ohciFree(struct PCIController *hc, struct PCIUnit *hu)
     WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBDESCB, 0);
     WRITEREG32_LE(hc->hc_RegBase, OHCI_HUBSTATUS, OHSF_UNPOWERHUB);
 
-    uhwDelayMS(50, hu);
+    uhwDelayMS(50, hu->hu_TimerReq);
     KPRINTF(20, "Stopping OHCI %p\n", hc);
     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, 0);
     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, 0);
     SYNC;
 
     //KPRINTF(20, ("Reset done UHCI %08lx\n", hc));
-    uhwDelayMS(10, hu);
+    uhwDelayMS(10, hu->hu_TimerReq);
     KPRINTF(20, "Resetting OHCI %p\n", hc);
     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
     SYNC;
-    uhwDelayMS(50, hu);
+    uhwDelayMS(50, hu->hu_TimerReq);
 
     struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
     hc->hc_CPrivate = NULL;
@@ -2120,20 +2120,20 @@ BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         pciusbOHCIDebug("OHCI", "Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok");
         // make sure we have at least 50ms of reset time here, as required for a root hub port
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-        uhwDelayMS(10, unit);
+        uhwDelayMS(10, unit->hu_TimerReq);
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-        uhwDelayMS(10, unit);
+        uhwDelayMS(10, unit->hu_TimerReq);
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-        uhwDelayMS(10, unit);
+        uhwDelayMS(10, unit->hu_TimerReq);
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-        uhwDelayMS(10, unit);
+        uhwDelayMS(10, unit->hu_TimerReq);
         WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
-        uhwDelayMS(15, unit);
+        uhwDelayMS(15, unit->hu_TimerReq);
         oldval = READREG32_LE(hc->hc_RegBase, portreg);
         pciusbOHCIDebug("OHCI", "Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                     oldval & OHPF_PORTENABLE ? "enabled" : "not enabled");
         if(oldval & OHPF_PORTRESET) {
-            uhwDelayMS(40, unit);
+            uhwDelayMS(40, unit->hu_TimerReq);
             oldval = READREG32_LE(hc->hc_RegBase, portreg);
             pciusbOHCIDebug("OHCI", "Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                         oldval & OHPF_PORTENABLE ? "enabled" : "still not enabled");

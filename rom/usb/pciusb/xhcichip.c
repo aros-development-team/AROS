@@ -230,7 +230,7 @@ static void xhciPowerOnRootPorts(struct PCIController *hc, struct PCIUnit *hu)
         for (ULONG waitms = 0; waitms < 20; waitms++) {
             if (AROS_LE2LONG(xhciports[hciport].portsc) & XHCIF_PR_PORTSC_PP)
                 break;
-            uhwDelayMS(1, hu);
+            uhwDelayMS(1, hu->hu_TimerReq);
         }
 
         pciusbXHCIDebug("xHCI",
@@ -2317,7 +2317,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
 
         // Wait for the controller to indicate it is finished ...
         while (!(AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
-            uhwDelayMS(1, hu);
+            uhwDelayMS(1, hu->hu_TimerReq);
     }
 
     status = AROS_LE2LONG(hcopr->usbsts);
@@ -2334,7 +2334,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     // Wait for the command to be accepted..
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_HCRST) && (--cnt > 0))
-        uhwDelayMS(2, hu);
+        uhwDelayMS(2, hu->hu_TimerReq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "COMMAND = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbcmd), (100 - cnt) << 1);
 
@@ -2349,7 +2349,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     // Wait for the reset to complete..
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
-        uhwDelayMS(2, hu);
+        uhwDelayMS(2, hu->hu_TimerReq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbsts), (100 - cnt) << 1);
     xhciDumpStatus(AROS_LE2LONG(hcopr->usbsts));
@@ -2510,7 +2510,7 @@ takeownership:
                  */
                 while ((AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Waiting for ownership to change..." DEBUGCOLOR_RESET" \n");
-                    uhwDelayMS(10, hu);
+                    uhwDelayMS(10, hu->hu_TimerReq);
                 }
                 if ((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
                     (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
@@ -2842,7 +2842,7 @@ takeownership:
     /* Wait for the interrupt enable bit to be visible (defensive) */
     cnt = 100;
     while (!(AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_INTE) && (--cnt > 0))
-        uhwDelayMS(2, hu);
+        uhwDelayMS(2, hu->hu_TimerReq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "COMMAND = $%08x, after %ums" DEBUGCOLOR_RESET" \n",
                     AROS_LE2LONG(hcopr->usbcmd), (100 - cnt) << 1);
@@ -2850,7 +2850,7 @@ takeownership:
     /* Wait for the controller to finish coming out of reset (CNR=0) */
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
-        uhwDelayMS(2, hu);
+        uhwDelayMS(2, hu->hu_TimerReq);
 
     /*
      * Check controller health before letting it run so that fatal errors

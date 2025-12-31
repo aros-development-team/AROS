@@ -141,7 +141,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
                 return xhcic->xhc_CmdResults[queued].status;
             }
 
-            uhwDelayMS(1, hc->hc_Unit);
+            uhwDelayMS(1, hc->hc_Unit->hu_TimerReq);
         }
 
         pciusbError("xHCI",

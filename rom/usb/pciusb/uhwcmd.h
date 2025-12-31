@@ -24,7 +24,7 @@ void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit, struct IOUsbHWReq 
 
 void SureCause(struct PCIDevice *base, struct Interrupt *interrupt);
 BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base);
-void uhwDelayMS(ULONG milli, struct PCIUnit *unit);
+void uhwDelayMS(ULONG milli, struct timerequest *timerreq);
 void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 void uhwCheckRootHubChanges(struct PCIUnit *unit);
 
@@ -68,7 +68,7 @@ APTR pciGetPhysical(struct PCIController *hc, APTR virtaddr);
 
 BOOL PCIXAddInterrupt(struct PCIController *hc, struct Interrupt *interrupt);
 
-void uhwDelayMicro(ULONG micro, struct PCIUnit *unit);
+void uhwDelayMicro(ULONG micro, struct timerequest *timerreq);
 
 struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn);

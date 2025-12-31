@@ -181,20 +181,20 @@ BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base)
 /* \\\ */
 
 /* /// "uhwDelayMS()" */
-void uhwDelayMS(ULONG milli, struct PCIUnit *unit)
+void uhwDelayMS(ULONG milli, struct timerequest *timerreq)
 {
-    unit->hu_TimerReq->tr_time.tv_secs  = 0;
-    unit->hu_TimerReq->tr_time.tv_micro = milli * 1000;
-    DoIO((struct IORequest *) unit->hu_TimerReq);
+    timerreq->tr_time.tv_secs  = 0;
+    timerreq->tr_time.tv_micro = milli * 1000;
+    DoIO((struct IORequest *) timerreq);
 }
 /* \\\ */
 
 /* /// "uhwDelayMicro()" */
-void uhwDelayMicro(ULONG micro, struct PCIUnit *unit)
+void uhwDelayMicro(ULONG micro, struct timerequest *timerreq)
 {
-    unit->hu_TimerReq->tr_time.tv_secs  = 0;
-    unit->hu_TimerReq->tr_time.tv_micro = micro;
-    DoIO((struct IORequest *) unit->hu_TimerReq);
+    timerreq->tr_time.tv_secs  = 0;
+    timerreq->tr_time.tv_micro = micro;
+    DoIO((struct IORequest *) timerreq);
 }
 /* \\\ */
 

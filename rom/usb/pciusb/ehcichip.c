@@ -1923,7 +1923,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
                             pciusbEHCIDebug("EHCI", "BIOS gave up on EHCI. Pwned!\n");
                             break;
                         }
-                        uhwDelayMS(10, hu);
+                        uhwDelayMS(10, hu->hu_TimerReq);
                     } while(--timeout);
                     if(!timeout) {
                         pciusbWarn("EHCI", "BIOS didn't release EHCI. Forcing and praying...\n");
@@ -1955,7 +1955,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         /* Step 2. Wait for the controller to halt */
         cnt = 100;
         do {
-            uhwDelayMS(10, hu);
+            uhwDelayMS(10, hu->hu_TimerReq);
             if(READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS) & EHSF_HCHALTED) {
                 break;
             }
@@ -1970,7 +1970,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         /* Step 4. Wait for the reset bit to clear */
         cnt = 100;
         do {
-            uhwDelayMS(10, hu);
+            uhwDelayMS(10, hu->hu_TimerReq);
             if(!(READREG32_LE(hc->hc_RegBase, EHCI_USBCMD) & EHUF_HCRESET)) {
                 break;
             }
@@ -2124,16 +2124,16 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu)
         WRITEREG32_LE(hc->hc_RegBase, portreg, 0);
     }
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
-    uhwDelayMS(10, hu);
+    uhwDelayMS(10, hu->hu_TimerReq);
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_CONFIGFLAG, 0);
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
     SYNC;
 
-    uhwDelayMS(50, hu);
+    uhwDelayMS(50, hu->hu_TimerReq);
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, 1UL<<EHUS_INTTHRESHOLD);
     SYNC;
 
-    uhwDelayMS(10, hu);
+    uhwDelayMS(10, hu->hu_TimerReq);
 
     struct EhciHCPrivate *ehcihcp = (struct EhciHCPrivate *)hc->hc_CPrivate;
     hc->hc_CPrivate = NULL;
@@ -2187,7 +2187,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         // Wait for reset to complete (spec is 50ms, FreeBSD source suggests 200ms, but
         // we compromise to help USB volumes become available in time to be chosen as
         // the boot device)
-        uhwDelayMS(125, unit);
+        uhwDelayMS(125, unit->hu_TimerReq);
 
         newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
         pciusbEHCIDebug("EHCI", "Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD");
@@ -2195,7 +2195,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval &= ~EHPF_PORTRESET;
             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
         }
-        uhwDelayMS(10, unit);
+        uhwDelayMS(10, unit->hu_TimerReq);
         newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
         pciusbEHCIDebug("EHCI", "Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD");
         pciusbEHCIDebug("EHCI", "Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO");
@@ -2229,7 +2229,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 pciusbEHCIDebug("EHCI", "OHCI Port status before handover=%08lx\n", ohcioldval);
                 pciusbEHCIDebug("EHCI", "OHCI Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok");
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
-                uhwDelayMS(10, unit);
+                uhwDelayMS(10, unit->hu_TimerReq);
                 pciusbEHCIDebug("EHCI", "OHCI Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg));
                 break;
             }
@@ -2239,7 +2239,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval |= EHPF_NOTPORTOWNER;
             unit->hu_PortOwner[idx - 1] = HCITYPE_UHCI;
             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
-            uhwDelayMS(90, unit);
+            uhwDelayMS(90, unit->hu_TimerReq);
             pciusbEHCIDebug("EHCI", "Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND));
             // enable companion controller port
             switch(chc->hc_HCIType) {
@@ -2256,12 +2256,12 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                     uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                     uhcinewval |= UHPF_PORTRESET;
                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                    uhwDelayMS(50, unit);
+                    uhwDelayMS(50, unit->hu_TimerReq);
                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                     pciusbEHCIDebug("EHCI", "UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!");
                     uhcinewval &= ~UHPF_PORTRESET;
                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
-                    uhwDelayMicro(50, unit);
+                    uhwDelayMicro(50, unit->hu_TimerReq);
                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
                     pciusbEHCIDebug("EHCI", "UHCI Re-Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD");
                 }
@@ -2269,10 +2269,10 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 uhcinewval |= UHPF_PORTENABLE;
                 WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                 chc->hc_PortChangeMap[uhcihciport] |= UPSF_PORT_RESET|UPSF_PORT_ENABLE; // manually fake reset change
-                uhwDelayMS(5, unit);
+                uhwDelayMS(5, unit->hu_TimerReq);
                 cnt = 100;
                 do {
-                    uhwDelayMS(1, unit);
+                    uhwDelayMS(1, unit->hu_TimerReq);
                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg);
                 } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                 if(cnt) {
@@ -2292,20 +2292,20 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
                 pciusbEHCIDebug("EHCI", "OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok");
                 // make sure we have at least 50ms of reset time here, as required for a root hub port
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                uhwDelayMS(10, unit);
+                uhwDelayMS(10, unit->hu_TimerReq);
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                uhwDelayMS(10, unit);
+                uhwDelayMS(10, unit->hu_TimerReq);
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                uhwDelayMS(10, unit);
+                uhwDelayMS(10, unit->hu_TimerReq);
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                uhwDelayMS(10, unit);
+                uhwDelayMS(10, unit->hu_TimerReq);
                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
-                uhwDelayMS(15, unit);
+                uhwDelayMS(15, unit->hu_TimerReq);
                 ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
                 pciusbEHCIDebug("EHCI", "OHCI Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                             ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled");
                 if(ohcioldval & OHPF_PORTRESET) {
-                    uhwDelayMS(40, unit);
+                    uhwDelayMS(40, unit->hu_TimerReq);
                     ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
                     pciusbEHCIDebug("EHCI", "OHCI Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                 ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled");
@@ -2321,10 +2321,10 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval &= ~EHPF_PORTRESET;
             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
             hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET; // manually fake reset change
-            uhwDelayMS(10, unit);
+            uhwDelayMS(10, unit->hu_TimerReq);
             cnt = 100;
             do {
-                uhwDelayMS(1, unit);
+                uhwDelayMS(1, unit->hu_TimerReq);
                 newval = READREG32_LE(hc->hc_RegBase, portreg);
             } while(--cnt && (!(newval & EHPF_PORTENABLE)));
             if(cnt) {
