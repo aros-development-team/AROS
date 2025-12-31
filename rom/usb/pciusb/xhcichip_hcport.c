@@ -289,7 +289,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                 DEBUGCOLOR_SET "xHCI: PORT_RESET: disabling device slot (%u) for re-enumeration"
                 DEBUGCOLOR_RESET "\n", devCtx->dc_SlotID);
 
-            xhciDisconnectDevice(hc, devCtx);
+            xhciDisconnectDevice(hc, devCtx, unit->hu_TimerReq);
         }
 
         if (oldval & XHCIF_PR_PORTSC_CCS) {
@@ -402,7 +402,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
 
         devCtx = xhciFindPortDevice(hc, hciport);
         if (devCtx) {
-            xhciDisconnectDevice(hc, devCtx);
+            xhciDisconnectDevice(hc, devCtx, unit->hu_TimerReq);
         }
 
         /* Attempt to clear PED via masked write (won't disturb RO fields). */
@@ -758,7 +758,8 @@ AROS_UFH0(void, xhciPortTask)
                                                  rootPort,
                                                  route,
                                                  flags,
-                                                 mps0);
+                                                 mps0,
+                                                 hc->hc_Unit->hu_TimerReq);
                     if (devCtx) {
                         /* Root port "device" lives on this controller */
                         hc->hc_Unit->hu_DevControllers[0] = hc;
@@ -771,7 +772,7 @@ AROS_UFH0(void, xhciPortTask)
                                     DEBUGCOLOR_SET "Detaching HCI Device Ctx @ 0x%p" DEBUGCOLOR_RESET" \n",
                                     devCtx);
 
-                    xhciDisconnectDevice(hc, devCtx);
+                    xhciDisconnectDevice(hc, devCtx, hc->hc_Unit->hu_TimerReq);
                 }
             }
             uhwCheckRootHubChanges(hc->hc_Unit);

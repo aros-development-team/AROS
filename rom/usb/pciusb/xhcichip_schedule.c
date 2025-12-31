@@ -101,6 +101,7 @@ void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
 static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
+    struct timerequest *timerreq,
     struct pciusbXHCIDevice **devCtxOut, ULONG *txepOut)
 {
     struct pciusbXHCIDevice *devCtx = NULL;
@@ -129,7 +130,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 
     if ((!devCtx) && allowEp0AutoCreate &&
         (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
-        devCtx = xhciObtainDeviceCtx(hc, ioreq, TRUE);
+        devCtx = xhciObtainDeviceCtx(hc, ioreq, TRUE, timerreq);
         if (devCtx)
             autoCreated = TRUE;
     }
@@ -175,7 +176,8 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                 return FALSE;
             }
 
-            LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr);
+            LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
+                                               timerreq);
             if (cc != TRB_CC_SUCCESS) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
@@ -206,6 +208,7 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 
 BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
+    struct timerequest *timerreq,
     struct pciusbXHCIIODevPrivate **outPrivate)
 {
     struct pciusbXHCIDevice *devCtx = NULL;
@@ -213,7 +216,8 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     struct pciusbXHCIIODevPrivate *driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
 
     if (!driprivate) {
-        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, &devCtx, &txep))
+        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
+                                  &devCtx, &txep))
             return FALSE;
 
         driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
@@ -228,7 +232,8 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpDevice = devCtx;
         driprivate->dpEPID   = txep;
     } else {
-        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, &devCtx, &txep))
+        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
+                                  &devCtx, &txep))
             return FALSE;
 
         driprivate->dpDevice = devCtx;

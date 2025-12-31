@@ -12,8 +12,9 @@ void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         ULONG actual, UWORD effdir, APTR bounceBuf);
 
 BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-        struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
-        struct pciusbXHCIIODevPrivate **outPrivate);
+    struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
+    struct timerequest *timerreq,
+    struct pciusbXHCIIODevPrivate **outPrivate);
 
 ULONG xhciBuildDataTRBFlags(const struct IOUsbHWReq *ioreq, ULONG txtype);
 

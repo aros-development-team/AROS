@@ -19,8 +19,10 @@
 #endif
 
 struct IOUsbHWReq;
+struct timerequest;
 struct pciusbXHCIDevice *
-xhciCreateDeviceCtx(struct PCIController *hc, UWORD rootPortIndex, ULONG route, ULONG flags, UWORD mps0);
+xhciCreateDeviceCtx(struct PCIController *hc, UWORD rootPortIndex, ULONG route, ULONG flags, UWORD mps0,
+                    struct timerequest *timerreq);
 WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq);
 void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq);
@@ -103,14 +105,17 @@ static inline UWORD xhciDevEPKey(const struct IOUsbHWReq *ioreq)
 }
 
 // xhcichip.c
-BOOL xhciInit(struct PCIController *, struct PCIUnit *);
+BOOL xhciInit(struct PCIController *, struct PCIUnit *, struct timerequest *timerreq);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
 struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc, ULONG route, UWORD rootPortIndex);
-struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq, BOOL allowCreate);
-void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, BOOL disableSlot);
-void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx);
+struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq,
+                                             BOOL allowCreate, struct timerequest *timerreq);
+void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, BOOL disableSlot,
+                       struct timerequest *timerreq);
+void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
+                          struct timerequest *timerreq);
 
 void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
@@ -126,7 +131,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, stru
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
 void xhciScheduleIsoTDs(struct PCIController *hc);
-void xhciHandleFinishedTDs(struct PCIController *hc);
+void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq);
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 void xhciFreePeriodicContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
@@ -138,18 +143,25 @@ void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 
 // xhcihw.c
-LONG xhciCmdSubmit(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, ULONG *resflags);
+LONG xhciCmdSubmit(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, ULONG *resflags,
+                   struct timerequest *timerreq);
 LONG xhciCmdSubmitAsync(struct PCIController *hc, APTR inctx_dma, ULONG trbflags, struct IOUsbHWReq *ioreq);
-LONG xhciCmdSlotEnable(struct PCIController *hc);
+LONG xhciCmdSlotEnable(struct PCIController *hc, struct timerequest *timerreq);
 #if !defined(PCIUSB_INLINEXHCIOPS)
 void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value);
-LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot);
-LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq);
-LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend);
-LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve);
-LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr);
-LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr);
-LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
+LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot, struct timerequest *timerreq);
+LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr,
+                          struct IOUsbHWReq *ioreq, struct timerequest *timerreq);
+LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend,
+                         struct timerequest *timerreq);
+LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve,
+                          struct timerequest *timerreq);
+LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                              struct timerequest *timerreq);
+LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                            struct timerequest *timerreq);
+LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                 struct timerequest *timerreq);
 #else
 #define xhciRingDoorbell(hc,slot,value) \
      do { \
@@ -158,8 +170,10 @@ LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr);
          ((volatile struct xhci_dbr *)((IPTR)xhcic->xhc_XHCIDB))[(slot)].db = AROS_LONG2LE(value); \
          (void)((volatile struct xhci_dbr *)((IPTR)xhcic->xhc_XHCIDB))[(slot)].db; \
      } while (0)
-#define xhciCmdSlotDisable(hc,slot)							xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL)
-static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)
+#define xhciCmdSlotDisable(hc,slot,timerreq) \
+    xhciCmdSubmit(hc, NULL, (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT, NULL, timerreq)
+static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, ULONG bsr,
+                                        struct IOUsbHWReq *ioreq, struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
@@ -170,13 +184,18 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
     if (ioreq)
         return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
 
-    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
 }
-#define xhciCmdEndpointStop(hc,slot,epid,suspend)		xhciCmdSubmit(hc, NULL, (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT, NULL)
-#define xhciCmdEndpointReset(hc,slot,epid,preserve) 	xhciCmdSubmit(hc, NULL, (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9), NULL)
-#define xhciCmdEndpointConfigure(hc,slot,dmaaddr)	xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT, NULL)
-#define xhciCmdContextEvaluate(hc,slot,dmaaddr)		xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT, NULL)
-#define xhciCmdNoOp(hc,slot,dmaaddr)						xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL)
+#define xhciCmdEndpointStop(hc,slot,epid,suspend,timerreq) \
+    xhciCmdSubmit(hc, NULL, (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT, NULL, timerreq)
+#define xhciCmdEndpointReset(hc,slot,epid,preserve,timerreq) \
+    xhciCmdSubmit(hc, NULL, (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9), NULL, timerreq)
+#define xhciCmdEndpointConfigure(hc,slot,dmaaddr,timerreq) \
+    xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT, NULL, timerreq)
+#define xhciCmdContextEvaluate(hc,slot,dmaaddr,timerreq) \
+    xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT, NULL, timerreq)
+#define xhciCmdNoOp(hc,slot,dmaaddr,timerreq) \
+    xhciCmdSubmit(hc, dmaaddr, TRBF_FLAG_TRTYPE_NOOP, NULL, timerreq)
 #endif
 
 #if defined(PCIUSB_XHCI_DEBUG)

@@ -434,7 +434,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
                 if(xhciports) {
                     pciusbWarn("PCI", "More than one XHCI controller per board?!?\n");
                 }
-                allocgood = xhciInit(hc,hu);
+                allocgood = xhciInit(hc, hu, hu->hu_TimerReq);
                 if(allocgood) {
                     xhcicnt++;
                     xhciports = hc->hc_NumPorts;

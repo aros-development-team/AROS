@@ -101,7 +101,8 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
      * For downstream devices (non-roothub requests), EP0 may need to be
      * configured here because the port-change task only handles root ports.
      */
-    if (!xhciInitIOTRBTransfer(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, &driprivate)) {
+    if (!xhciInitIOTRBTransfer(hc, ioreq, ownerList, txtype, allowEp0AutoCreate,
+                               unit->hu_TimerReq, &driprivate)) {
         pciusbError("xHCI",
                DEBUGWARNCOLOR_SET "xHCI: xhciInitIOTRBTransfer failed" DEBUGCOLOR_RESET"\n");
         if (ioreq->iouh_Req.io_Error)
@@ -207,7 +208,8 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
                 cc = TRB_CC_SUCCESS;
             } else {
                 BUILD_INPUT_CTX(newaddr);
-                cc = xhciCmdDeviceAddress(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr, 0, NULL);
+                cc = xhciCmdDeviceAddress(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr, 0, NULL,
+                                          unit->hu_TimerReq);
                 if (cc == TRB_CC_SUCCESS) {
                     /* Verify what address the controller actually selected. */
                     CacheClearE((APTR)oslot, ctxsize, CACRF_InvalidateD);
@@ -256,9 +258,9 @@ _xhci_setaddr_complete:
                 /* EP0 halt clear is not expected; treat as success. */
                 cc = TRB_CC_SUCCESS;
             } else {
-                cc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, FALSE);
+                cc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, FALSE, unit->hu_TimerReq);
                 if (cc == TRB_CC_SUCCESS)
-                    cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+                    cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, unit->hu_TimerReq);
             }
 
             if ((driprivate->dpCC = (UBYTE)cc) != TRB_CC_SUCCESS) {
@@ -313,7 +315,7 @@ _xhci_setaddr_complete:
                         pciusbXHCIDebug("xHCI",
                             "Hub port %u cleared C_PORT_CONNECTION, disconnecting route 0x%05lx\n",
                             (unsigned)port, route);
-                        xhciDisconnectDevice(hc, child);
+                        xhciDisconnectDevice(hc, child, unit->hu_TimerReq);
                     }
                 }
             }

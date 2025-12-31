@@ -51,7 +51,8 @@
 static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
                                     ULONG epid,
-                                    BOOL stopEndpoint);
+                                    BOOL stopEndpoint,
+                                    struct timerequest *timerreq);
 
 static BOOL xhciDeviceHasEndpoints(const struct pciusbXHCIDevice *devCtx)
 {
@@ -204,7 +205,8 @@ static void xhciInitRing(struct pcisusbXHCIRing *ring)
     ring->end = RINGENDCFLAG; /* set initial cycle bit */
 }
 
-static void xhciPowerOnRootPorts(struct PCIController *hc, struct PCIUnit *hu)
+static void xhciPowerOnRootPorts(struct PCIController *hc, struct PCIUnit *hu,
+                                 struct timerequest *timerreq)
 {
     if (!(hc->hc_Flags & HCF_PPC))
         return;
@@ -230,7 +232,7 @@ static void xhciPowerOnRootPorts(struct PCIController *hc, struct PCIUnit *hu)
         for (ULONG waitms = 0; waitms < 20; waitms++) {
             if (AROS_LE2LONG(xhciports[hciport].portsc) & XHCIF_PR_PORTSC_PP)
                 break;
-            uhwDelayMS(1, hu->hu_TimerReq);
+            uhwDelayMS(1, timerreq);
         }
 
         pciusbXHCIDebug("xHCI",
@@ -368,7 +370,8 @@ static void xhciAbortDeviceQueue(struct PCIController *hc,
     }
 }
 
-void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx)
+void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
+                          struct timerequest *timerreq)
 {
     struct PCIUnit *unit;
 
@@ -397,7 +400,7 @@ void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *dev
         unit->hu_DevControllers[0] = NULL;
     }
 
-    xhciFreeDeviceCtx(hc, devCtx, TRUE);
+    xhciFreeDeviceCtx(hc, devCtx, TRUE, timerreq);
 }
 
 static int xhciRingEntriesFree(volatile struct pcisusbXHCIRing *ring)
@@ -629,7 +632,8 @@ xhciCreateDeviceCtx(struct PCIController *hc,
                     UWORD rootPortIndex,   /* 0-based */
                     ULONG route,           /* 20-bit route string (0 for root) */
                     ULONG flags,           /* UHFF_* speed / hub flags */
-                    UWORD mps0)            /* initial EP0 max packet size */
+                    UWORD mps0,            /* initial EP0 max packet size */
+                    struct timerequest *timerreq)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     struct pciusbXHCIDevice *devCtx;
@@ -756,7 +760,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     }
 
     /* ---- Enable Slot ---- */
-    slotid = xhciCmdSlotEnable(hc);
+    slotid = xhciCmdSlotEnable(hc, timerreq);
     if (slotid < 0) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Failed to enable slot" DEBUGCOLOR_RESET "\n");
@@ -808,11 +812,12 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     CacheClearE((APTR)devCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
 
     /* ---- Address Device ---- */
-    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 1, NULL)) {
+    if (TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 1, NULL,
+                                               timerreq)) {
         pciusbError("xHCI",
           DEBUGWARNCOLOR_SET "Address Device (BSR=1) failed" DEBUGCOLOR_RESET "\n");
 
-        xhciCmdSlotDisable(hc, slotid);
+        xhciCmdSlotDisable(hc, slotid, timerreq);
         xhciSetPointer(hc, deviceslots[slotid], 0);
 
         devCtx->dc_SlotID = 0;
@@ -939,7 +944,8 @@ static BOOL xhciDerivePortFlagsAndMps0(struct PCIController *hc,
 struct pciusbXHCIDevice *
 xhciObtainDeviceCtx(struct PCIController *hc,
                     struct IOUsbHWReq *ioreq,
-                    BOOL allowCreate)
+                    BOOL allowCreate,
+                    struct timerequest *timerreq)
 {
     struct PCIUnit *unit   = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     UWORD devaddr       = ioreq->iouh_DevAddr;
@@ -1010,7 +1016,8 @@ xhciObtainDeviceCtx(struct PCIController *hc,
                                rootPortIndex,
                                route,
                                flags,
-                               mps0);
+                               mps0,
+                               timerreq);
 }
 
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
@@ -1290,7 +1297,8 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         return 0;
     }
 
-    struct pciusbXHCIDevice *devCtx = xhciObtainDeviceCtx(hc, ioreq, !rootHubReq);
+    struct pciusbXHCIDevice *devCtx =
+        xhciObtainDeviceCtx(hc, ioreq, !rootHubReq, unit->hu_TimerReq);
     if (!devCtx) {
         pciusbWarn("xHCI",
                    DEBUGWARNCOLOR_SET "no device context" DEBUGCOLOR_RESET"\n");
@@ -1322,7 +1330,8 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
                          0,
                          ioreq->iouh_Flags);
 
-        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr);
+        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
+                                           unit->hu_TimerReq);
         if (cc != TRB_CC_SUCCESS) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET "EP0 reconfigure failed (cc=%d)" DEBUGCOLOR_RESET"\n", cc);
@@ -1361,7 +1370,8 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
          * endpoints, including EP0, after initialization so the controller
          * commits the new state.
          */
-        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr);
+        LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
+                                           unit->hu_TimerReq);
         if (cc != TRB_CC_SUCCESS) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET "EndpointConfigure failed (cc=%d)" DEBUGCOLOR_RESET"\n", cc);
@@ -1415,7 +1425,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     if (!devCtx || (epid >= MAX_DEVENDPOINTS))
         return;
 
-    xhciFreeEndpointContext(hc, devCtx, epid, TRUE);
+    xhciFreeEndpointContext(hc, devCtx, epid, TRUE, unit->hu_TimerReq);
 
     ioreq->iouh_DriverPrivate2 = NULL;
 
@@ -1427,7 +1437,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     if (devCtx->dc_RouteString != 0 &&
         epid == xhciEndpointID(0, 0) &&
         !xhciDeviceHasEndpoints(devCtx)) {
-        xhciDisconnectDevice(hc, devCtx);
+        xhciDisconnectDevice(hc, devCtx, unit->hu_TimerReq);
     }
 }
 
@@ -1586,7 +1596,7 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
     }
 }
 
-void xhciHandleFinishedTDs(struct PCIController *hc)
+void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq)
 {
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq, *nextioreq;
@@ -1782,7 +1792,7 @@ void xhciHandleFinishedTDs(struct PCIController *hc)
                         DEBUGCOLOR_RESET"\n",
                         ioreq->iouh_DevAddr, epid);
 
-                    xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+                    xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
                 }
             }
 
@@ -2299,7 +2309,8 @@ void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     ReplyMsg(&ioreq->iouh_Req.io_Message);
 }
 
-void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
+void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
+               struct timerequest *timerreq)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_hcopr *hcopr = (volatile struct xhci_hcopr *)((IPTR)xhcic->xhc_XHCIOpR);
@@ -2317,7 +2328,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
 
         // Wait for the controller to indicate it is finished ...
         while (!(AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_HCH) && (--cnt > 0))
-            uhwDelayMS(1, hu->hu_TimerReq);
+            uhwDelayMS(1, timerreq);
     }
 
     status = AROS_LE2LONG(hcopr->usbsts);
@@ -2334,7 +2345,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     // Wait for the command to be accepted..
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_HCRST) && (--cnt > 0))
-        uhwDelayMS(2, hu->hu_TimerReq);
+        uhwDelayMS(2, timerreq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "COMMAND = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbcmd), (100 - cnt) << 1);
 
@@ -2349,7 +2360,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     // Wait for the reset to complete..
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
-        uhwDelayMS(2, hu->hu_TimerReq);
+        uhwDelayMS(2, timerreq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "USBSTS = $%08x, after %ums" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->usbsts), (100 - cnt) << 1);
     xhciDumpStatus(AROS_LE2LONG(hcopr->usbsts));
@@ -2398,7 +2409,8 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu)
     xhciDumpIR(xhciir);
 }
 
-BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu)
+BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
+              struct timerequest *timerreq)
 {
     struct PCIDevice *hd = hu->hu_Device;
     struct XhciHCPrivate *xhcic = NULL;
@@ -2510,7 +2522,7 @@ takeownership:
                  */
                 while ((AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Waiting for ownership to change..." DEBUGCOLOR_RESET" \n");
-                    uhwDelayMS(10, hu->hu_TimerReq);
+                    uhwDelayMS(10, timerreq);
                 }
                 if ((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
                     (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
@@ -2817,10 +2829,10 @@ takeownership:
         hc->hc_PortNum[cnt]  = cnt;
     }
 
-    xhciReset(hc, hu);
+    xhciReset(hc, hu, timerreq);
 
     /* Ensure ports are powered per xHCI spec before enabling interrupts */
-    xhciPowerOnRootPorts(hc, hu);
+    xhciPowerOnRootPorts(hc, hu, timerreq);
 
     /* Enable interrupts in the xhci */
     {
@@ -2842,7 +2854,7 @@ takeownership:
     /* Wait for the interrupt enable bit to be visible (defensive) */
     cnt = 100;
     while (!(AROS_LE2LONG(hcopr->usbcmd) & XHCIF_USBCMD_INTE) && (--cnt > 0))
-        uhwDelayMS(2, hu->hu_TimerReq);
+        uhwDelayMS(2, timerreq);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "COMMAND = $%08x, after %ums" DEBUGCOLOR_RESET" \n",
                     AROS_LE2LONG(hcopr->usbcmd), (100 - cnt) << 1);
@@ -2850,7 +2862,7 @@ takeownership:
     /* Wait for the controller to finish coming out of reset (CNR=0) */
     cnt = 100;
     while ((AROS_LE2LONG(hcopr->usbsts) & XHCIF_USBSTS_CNR) && (--cnt > 0))
-        uhwDelayMS(2, hu->hu_TimerReq);
+        uhwDelayMS(2, timerreq);
 
     /*
      * Check controller health before letting it run so that fatal errors
@@ -2927,7 +2939,8 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu)
 static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
                                     ULONG epid,
-                                    BOOL stopEndpoint)
+                                    BOOL stopEndpoint,
+                                    struct timerequest *timerreq)
 {
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p, 0x%p, %u)" DEBUGCOLOR_RESET" \n", __func__, hc, devCtx, epid);
 
@@ -2942,8 +2955,8 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
          * This avoids controllers/emulators fetching TRBs from freed memory.
          */
         if (stopEndpoint && devCtx->dc_SlotID) {
-            (void)xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, TRUE);
-            (void)xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0);
+            (void)xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, TRUE, timerreq);
+            (void)xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
 
             /*
              * EP0 (EPID=1) is mandatory and must not be dropped via Configure
@@ -2980,7 +2993,8 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
 
                 LONG cc = xhciCmdEndpointConfigure(hc,
                                                   devCtx->dc_SlotID,
-                                                  devCtx->dc_IN.dmaa_Ptr);
+                                                  devCtx->dc_IN.dmaa_Ptr,
+                                                  timerreq);
                 if (cc != TRB_CC_SUCCESS) {
                     pciusbWarn("xHCI",
                         DEBUGWARNCOLOR_SET
@@ -3005,7 +3019,8 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
 
 void xhciFreeDeviceCtx(struct PCIController *hc,
                               struct pciusbXHCIDevice *devCtx,
-                              BOOL disableSlot)
+                              BOOL disableSlot,
+                              struct timerequest *timerreq)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
 
@@ -3015,7 +3030,7 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
         return;
 
     if (disableSlot && devCtx->dc_SlotID)
-        xhciCmdSlotDisable(hc, devCtx->dc_SlotID);
+        xhciCmdSlotDisable(hc, devCtx->dc_SlotID, timerreq);
 
     if ((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX)) {
         if (xhcic->xhc_Devices[devCtx->dc_SlotID] == devCtx)
@@ -3026,7 +3041,7 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
         xhciSetPointer(hc, ((volatile struct xhci_address *)xhcic->xhc_DCBAAp)[devCtx->dc_SlotID], 0);
 
     for (ULONG epid = 0; epid < MAX_DEVENDPOINTS; epid++)
-        xhciFreeEndpointContext(hc, devCtx, epid, FALSE);
+        xhciFreeEndpointContext(hc, devCtx, epid, FALSE, timerreq);
 
     if (devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr) {
         FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);

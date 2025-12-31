@@ -50,7 +50,8 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
  */
 LONG xhciCmdSubmit(struct PCIController *hc,
                    APTR dmaaddr,
-                   ULONG trbflags, ULONG *resflags)
+                   ULONG trbflags, ULONG *resflags,
+                   struct timerequest *timerreq)
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
     volatile struct xhci_inctx *inctx;
@@ -141,7 +142,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
                 return xhcic->xhc_CmdResults[queued].status;
             }
 
-            uhwDelayMS(1, hc->hc_Unit->hu_TimerReq);
+            uhwDelayMS(1, timerreq);
         }
 
         pciusbError("xHCI",
@@ -225,14 +226,14 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
  * Submit a command to the xHCI command TRB
  * returns -1 on failure, or the slotid
  */
-LONG xhciCmdSlotEnable(struct PCIController *hc)
+LONG xhciCmdSlotEnable(struct PCIController *hc, struct timerequest *timerreq)
 {
     ULONG trbflags = TRBF_FLAG_CRTYPE_ENABLE_SLOT, cmdflags;
     LONG cc;
     UBYTE slotid;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
-    cc = xhciCmdSubmit(hc, NULL, trbflags, &cmdflags);
+    cc = xhciCmdSubmit(hc, NULL, trbflags, &cmdflags, timerreq);
     if (cc != TRB_CC_SUCCESS)
         return -1;
 
@@ -251,17 +252,18 @@ LONG xhciCmdSlotEnable(struct PCIController *hc)
  * Remaining functions return
  * -1 on failure, or the completion code
  */
-LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot)
+LONG xhciCmdSlotDisable(struct PCIController *hc, ULONG slot, struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_DISABLE_SLOT;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, NULL, flags, NULL);
+    return xhciCmdSubmit(hc, NULL, flags, NULL, timerreq);
 }
 
 LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
-                          APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq)
+                          APTR dmaaddr, ULONG bsr, struct IOUsbHWReq *ioreq,
+                          struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
     /* Address Device Command TRB: bit 9 = BSR (Block SetAddress Request) */
@@ -273,52 +275,57 @@ LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot,
     if (ioreq)
         return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
 
-    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
 }
 
-LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend)
+LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend,
+                         struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, NULL, flags, NULL);
+    return xhciCmdSubmit(hc, NULL, flags, NULL, timerreq);
 }
 
-LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULONG preserve)
+LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULONG preserve,
+                          struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9);
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, NULL, flags, NULL);
+    return xhciCmdSubmit(hc, NULL, flags, NULL, timerreq);
 }
 
-LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr)
+LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                              struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
 }
 
-LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr)
+LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                            struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_EVALUATE_CONTEXT;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
 }
 
-LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr)
+LONG xhciCmdNoOp(struct PCIController *hc, ULONG slot, APTR dmaaddr,
+                 struct timerequest *timerreq)
 {
     ULONG flags = TRBF_FLAG_TRTYPE_NOOP;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
-    return xhciCmdSubmit(hc, dmaaddr, flags, NULL);
+    return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
 }
 #endif /* !PCIUSB_INLINEXHCIOPS */
 
@@ -360,7 +367,7 @@ AROS_UFH0(void, xhciEventRingTask)
 
         if (xhcictsigs & (1 << xhcic->xhc_DoWorkSignal)) {
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Processing pending HC work" DEBUGCOLOR_RESET" \n");
-            xhciHandleFinishedTDs(hc);
+            xhciHandleFinishedTDs(hc, hc->hc_Unit->hu_TimerReq);
 
             if (hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);

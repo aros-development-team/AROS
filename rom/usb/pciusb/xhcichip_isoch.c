@@ -201,7 +201,8 @@ void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     if (!ioreq->iouh_DriverPrivate1) {
         struct pciusbXHCIIODevPrivate *driprivate = NULL;
-        if (!xhciInitIOTRBTransfer(hc, ioreq, &hc->hc_IsoXFerQueue, UHCMD_ISOXFER, FALSE, &driprivate))
+        if (!xhciInitIOTRBTransfer(hc, ioreq, &hc->hc_IsoXFerQueue, UHCMD_ISOXFER, FALSE,
+                                   hc->hc_Unit->hu_TimerReq, &driprivate))
             return;
     }
 
