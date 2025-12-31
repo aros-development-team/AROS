@@ -252,6 +252,8 @@ struct pciusbXHCIEndpointCtx
 {
     struct pciusbXHCIDevice            *ectx_Device;
     ULONG                               ectx_EPID;
+    struct MsgPort                     *ectx_TimerPort;
+    struct timerequest                 *ectx_TimerReq;
 };
 
 struct pciusbXHCIIODevPrivate

@@ -1281,6 +1281,9 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
 {
     struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     struct PCIController *hc;
+    struct pciusbXHCIEndpointCtx *epctx = (struct pciusbXHCIEndpointCtx *)ioreq->iouh_DriverPrivate2;
+    struct timerequest *timerreq = NULL;
+    BOOL epctx_allocated = FALSE;
 
     pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
     pciusbXHCIDebugEPV("xHCI", DEBUGFUNCCOLOR_SET "%s: Dev %u Endpoint %u %s" DEBUGCOLOR_RESET" \n", __func__, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT");
@@ -1297,11 +1300,35 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         return 0;
     }
 
+    if (!epctx) {
+        epctx = AllocMem(sizeof(*epctx), MEMF_ANY|MEMF_CLEAR);
+        if (!epctx)
+            return UHIOERR_OUTOFMEMORY;
+
+        epctx_allocated = TRUE;
+    }
+
+    if (!epctx->ectx_TimerReq) {
+        if (!xhciOpenTaskTimer(&epctx->ectx_TimerPort,
+                               &epctx->ectx_TimerReq,
+                               "xHCI endpoint")) {
+            if (epctx_allocated)
+                FreeMem(epctx, sizeof(*epctx));
+            return UHIOERR_HOSTERROR;
+        }
+    }
+
+    timerreq = epctx->ectx_TimerReq;
+
     struct pciusbXHCIDevice *devCtx =
-        xhciObtainDeviceCtx(hc, ioreq, !rootHubReq, unit->hu_TimerReq);
+        xhciObtainDeviceCtx(hc, ioreq, !rootHubReq, timerreq);
     if (!devCtx) {
         pciusbWarn("xHCI",
                    DEBUGWARNCOLOR_SET "no device context" DEBUGCOLOR_RESET"\n");
+        if (epctx_allocated) {
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
+        }
         return UHIOERR_HOSTERROR;
     }
 
@@ -1331,10 +1358,14 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
                          ioreq->iouh_Flags);
 
         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
-                                           unit->hu_TimerReq);
+                                           timerreq);
         if (cc != TRB_CC_SUCCESS) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET "EP0 reconfigure failed (cc=%d)" DEBUGCOLOR_RESET"\n", cc);
+            if (epctx_allocated) {
+                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+                FreeMem(epctx, sizeof(*epctx));
+            }
             return UHIOERR_HOSTERROR;
         }
     }
@@ -1342,10 +1373,15 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     ULONG epid = xhciEndpointID(ioreq->iouh_Endpoint,
                                 (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
-    if (epid >= MAX_DEVENDPOINTS)
+    if (epid >= MAX_DEVENDPOINTS) {
+        if (epctx_allocated) {
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
+        }
         return UHIOERR_BADPARAMS;
+    }
 
-    struct pciusbXHCIEndpointCtx *epctx = devCtx->dc_EPContexts[epid];
+    struct pciusbXHCIEndpointCtx *dev_epctx = devCtx->dc_EPContexts[epid];
 
     if (!devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
         ULONG txep = xhciInitEP(hc, devCtx,
@@ -1357,13 +1393,23 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
                                 ioreq->iouh_Interval,
                                 ioreq->iouh_Flags);
 
-        if (txep == 0)
+        if (txep == 0) {
+            if (epctx_allocated) {
+                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+                FreeMem(epctx, sizeof(*epctx));
+            }
             return UHIOERR_OUTOFMEMORY;
+        }
 
         epid = txep;
 
-        if (epid >= MAX_DEVENDPOINTS)
+        if (epid >= MAX_DEVENDPOINTS) {
+            if (epctx_allocated) {
+                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+                FreeMem(epctx, sizeof(*epctx));
+            }
             return UHIOERR_BADPARAMS;
+        }
 
         /*
          * Push the updated input context to hardware. Configure all
@@ -1371,22 +1417,42 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
          * commits the new state.
          */
         LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
-                                           unit->hu_TimerReq);
+                                           timerreq);
         if (cc != TRB_CC_SUCCESS) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET "EndpointConfigure failed (cc=%d)" DEBUGCOLOR_RESET"\n", cc);
+            if (epctx_allocated) {
+                xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+                FreeMem(epctx, sizeof(*epctx));
+            }
             return UHIOERR_HOSTERROR;
         }
     }
 
-    if (!epctx) {
-        epctx = AllocMem(sizeof(*epctx), MEMF_ANY|MEMF_CLEAR);
-        if (!epctx)
-            return UHIOERR_OUTOFMEMORY;
+    if (dev_epctx && dev_epctx != epctx) {
+        if (epctx_allocated) {
+            xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
+            FreeMem(epctx, sizeof(*epctx));
+        }
+        epctx = dev_epctx;
+        epctx_allocated = FALSE;
+    }
 
+    if (epctx && !epctx->ectx_TimerReq) {
+        if (!xhciOpenTaskTimer(&epctx->ectx_TimerPort,
+                               &epctx->ectx_TimerReq,
+                               "xHCI endpoint")) {
+            if (epctx_allocated)
+                FreeMem(epctx, sizeof(*epctx));
+            return UHIOERR_HOSTERROR;
+        }
+    }
+
+    if (epctx) {
         epctx->ectx_Device = devCtx;
         epctx->ectx_EPID = epid;
-        devCtx->dc_EPContexts[epid] = epctx;
+        if (!dev_epctx)
+            devCtx->dc_EPContexts[epid] = epctx;
     }
 
     ioreq->iouh_DriverPrivate2 = epctx;
@@ -1400,6 +1466,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     struct PCIController *hc;
     struct pciusbXHCIDevice *devCtx = NULL;
     struct pciusbXHCIEndpointCtx *epctx = (struct pciusbXHCIEndpointCtx *)ioreq->iouh_DriverPrivate2;
+    struct timerequest *timerreq = NULL;
     ULONG epid;
 
     pciusbXHCIDebugEP("xHCI", DEBUGFUNCCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET" \n", __func__, ioreq);
@@ -1418,14 +1485,25 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     if (epctx) {
         devCtx = epctx->ectx_Device;
         epid = epctx->ectx_EPID;
+        timerreq = epctx->ectx_TimerReq;
     } else {
         devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
+        timerreq = unit->hu_TimerReq;
     }
 
     if (!devCtx || (epid >= MAX_DEVENDPOINTS))
         return;
 
-    xhciFreeEndpointContext(hc, devCtx, epid, TRUE, unit->hu_TimerReq);
+    xhciFreeEndpointContext(hc, devCtx, epid, TRUE, timerreq);
+    if (devCtx->dc_EPContexts[epid]) {
+        if (devCtx->dc_EPContexts[epid]->ectx_TimerReq ||
+            devCtx->dc_EPContexts[epid]->ectx_TimerPort) {
+            xhciCloseTaskTimer(&devCtx->dc_EPContexts[epid]->ectx_TimerPort,
+                               &devCtx->dc_EPContexts[epid]->ectx_TimerReq);
+        }
+        FreeMem(devCtx->dc_EPContexts[epid], sizeof(*devCtx->dc_EPContexts[epid]));
+        devCtx->dc_EPContexts[epid] = NULL;
+    }
 
     ioreq->iouh_DriverPrivate2 = NULL;
 
@@ -1437,7 +1515,7 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
     if (devCtx->dc_RouteString != 0 &&
         epid == xhciEndpointID(0, 0) &&
         !xhciDeviceHasEndpoints(devCtx)) {
-        xhciDisconnectDevice(hc, devCtx, unit->hu_TimerReq);
+        xhciDisconnectDevice(hc, devCtx, timerreq);
     }
 }
 
@@ -3021,10 +3099,6 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
         devCtx->dc_EPAllocs[epid].dmaa_DMA = NULL;
     }
 
-    if (devCtx->dc_EPContexts[epid]) {
-        FreeMem(devCtx->dc_EPContexts[epid], sizeof(*devCtx->dc_EPContexts[epid]));
-        devCtx->dc_EPContexts[epid] = NULL;
-    }
 }
 
 void xhciFreeDeviceCtx(struct PCIController *hc,
@@ -3050,8 +3124,18 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
     if (devCtx->dc_SlotID)
         xhciSetPointer(hc, ((volatile struct xhci_address *)xhcic->xhc_DCBAAp)[devCtx->dc_SlotID], 0);
 
-    for (ULONG epid = 0; epid < MAX_DEVENDPOINTS; epid++)
+    for (ULONG epid = 0; epid < MAX_DEVENDPOINTS; epid++) {
         xhciFreeEndpointContext(hc, devCtx, epid, FALSE, timerreq);
+        if (devCtx->dc_EPContexts[epid]) {
+            if (devCtx->dc_EPContexts[epid]->ectx_TimerReq ||
+                devCtx->dc_EPContexts[epid]->ectx_TimerPort) {
+                xhciCloseTaskTimer(&devCtx->dc_EPContexts[epid]->ectx_TimerPort,
+                                   &devCtx->dc_EPContexts[epid]->ectx_TimerReq);
+            }
+            FreeMem(devCtx->dc_EPContexts[epid], sizeof(*devCtx->dc_EPContexts[epid]));
+            devCtx->dc_EPContexts[epid] = NULL;
+        }
+    }
 
     if (devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr) {
         FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_IN.dmaa_Entry.me_Un.meu_Addr);
