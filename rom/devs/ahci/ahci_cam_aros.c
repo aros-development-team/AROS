@@ -144,8 +144,6 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
         }
         DeleteMsgPort(mp);
     }
-    ahci_CloseTimer(tmr);
-    tmr = NULL;
 cleanup:
     if (tmr)
         ahci_CloseTimer(tmr);
