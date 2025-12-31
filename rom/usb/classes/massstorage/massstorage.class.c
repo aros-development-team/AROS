@@ -254,7 +254,7 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
     ULONG patchflags = 0;
     BOOL delayedstore = FALSE;
 
-    KPRINTF(1, ("nepMSAttemptInterfaceBinding(%08lx)\n", pif));
+    KPRINTF(1, ("nepMSForceInterfaceBinding(%08lx)\n", pif));
     if(!(mp = CreateMsgPort()))
     {
         return(NULL);
