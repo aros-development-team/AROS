@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
 
     Desc: Sets up the ExecBase a bit. (Mostly clearing).
 */
@@ -61,7 +61,7 @@ static void Exec_TaskFinaliser(void)
 
 void _aros_not_implemented(char *X)
 {
-    kprintf("Unsupported function at offset -0x%h in %s\n",
+    kprintf("Unsupported function at offset -0x%04x in %s\n",
             ABS(*(WORD *)((&X)[-1]-2)),
             ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
