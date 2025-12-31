@@ -1397,7 +1397,7 @@ BOOL uhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
         // like windows does it
         newval &= ~UHPF_PORTRESET;
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
-        uhwDelayMicro(50, unit);
+        uhwDelayMicro(50, unit->hu_TimerReq);
         newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
         pciusbUHCIDebug("UHCI", "Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD");
         newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
