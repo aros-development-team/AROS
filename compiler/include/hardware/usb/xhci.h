@@ -318,6 +318,8 @@ struct xhci_trb
 #define TRBF_FLAG_IDT                           (1 << TRBB_FLAG_IDT)
 #define TRBB_FLAG_BEI                           9
 #define TRBF_FLAG_BEI                           (1 << TRBB_FLAG_BEI)
+#define TRBB_FLAG_SIA                           31
+#define TRBF_FLAG_SIA                           (1u << TRBB_FLAG_SIA)
 
 #define TRBS_FLAG_TYPE                          10
 #define TRB_FLAG_TYPE_SMASK                     0x3F
