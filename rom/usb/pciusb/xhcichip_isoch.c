@@ -148,7 +148,7 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
-    ULONG interval;
+    ULONG interval_uf;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
@@ -170,17 +170,39 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if (!rtn->rtn_BufferReq.ubr_Length)
         rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
 
-    interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
+    {
+        UWORD interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
+        BOOL superspeed = (ioreq->iouh_Flags & UHFF_SUPERSPEED) != 0;
+        BOOL highspeed = (ioreq->iouh_Flags & UHFF_HIGHSPEED) != 0;
+
+        if (interval > 16)
+            interval = 16;
+
+        if (superspeed || highspeed) {
+            interval_uf = 1UL << (interval - 1);
+        } else {
+            UWORD exp = (interval - 1) + 3;
+
+            if (exp > 15)
+                exp = 15;
+
+            interval_uf = 1UL << exp;
+        }
+
+        if (interval_uf < 1)
+            interval_uf = 1;
+    }
+
     if (!rtn->rtn_BufferReq.ubr_Frame) {
         /*
          * xHCI needs ISO TDs queued sufficiently ahead of the service
          * interval. A single-interval lead is often too tight on VMware.
          */
-        ULONG lead = interval ? (interval * 2) : 2;
+        ULONG lead = interval_uf * 2;
         ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : (hc->hc_FrameCounter + lead);
         rtn->rtn_BufferReq.ubr_Frame = next;
     }
-    rtn->rtn_NextFrame = rtn->rtn_BufferReq.ubr_Frame + interval;
+    rtn->rtn_NextFrame = rtn->rtn_BufferReq.ubr_Frame + interval_uf;
 
     rtn->rtn_NextPTD = 0;
 
