@@ -4251,7 +4251,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 if (pep->pep_MaxBurst > 0xFF)
                     pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
                 else
-                    pp->pp_IOReq.iouh_SS_MaxBurst = (UBYTE)pep->pep_MaxBurst;
+                    pp->pp_IOReq.iouh_SS_MaxBurst = (pep->pep_MaxBurst > 0) ? (UBYTE)(pep->pep_MaxBurst - 1) : 0;
 
                 /* Mult: for isoch EPs, bits 1:0 of bmAttributes */
                 if (pep->pep_TransType == USEAF_ISOCHRONOUS)
