@@ -123,6 +123,12 @@ ADD2LIBS("gadgets/tapedeck.gadget", -40, struct Library *, TapeDeckBase)
 #define ID_Copyright        MAKE_ID( '(', 'c', ')', ' ' )
 #endif
 
+#ifdef __AROS__
+#define SOUNDDT_AHI_UNIT AHI_NO_UNIT
+#else
+#define SOUNDDT_AHI_UNIT AHI_DEFAULT_UNIT
+#endif
+
 #define TEMPLATE            "VOLUME/N/K,BUFFERSIZE/N/K,AHI/S,AHIMODEID/K,FAM=FORCEAHIMODE/S,AMF=AHIMIXFREQ/N/K,AIFF16/S,C=COMPRESS/S," \
                             "W=WIDTH/N/K,H=HEIGHT/N/K,BG=BACKGROUNDCOLOR/K,WF=WAVEFORMCOLOR/K,CP=CONTROLPANEL/T,NOGTSLIDER/S"
 
@@ -3402,7 +3408,7 @@ static struct Library * __regargs OpenAHI( struct MsgPort **mpp, struct AHIReque
     mp = CreateMsgPort();
     if( ( ahir = (struct AHIRequest *) CreateIORequest( mp, sizeof( struct AHIRequest ) ) ) ) {
         ahir->ahir_Version = 4;
-        if( ! OpenDevice( "ahi.device", AHI_NO_UNIT, (struct IORequest *)ahir, 0L ) ) {
+        if( ! OpenDevice( "ahi.device", SOUNDDT_AHI_UNIT, (struct IORequest *)ahir, 0L ) ) {
             *mpp = mp;
             *iop = ahir;
             dbug(
