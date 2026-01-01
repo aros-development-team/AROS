@@ -24,20 +24,17 @@ extern void banm_ShowFrame(struct Screen *scr, BOOL init, struct DOSBootBase *DO
 #define STATEF_OOPATTRIBS               (1 << 1)
 #define STATEF_POINTERHIDE              (1 << 2)
 
-#if defined(__OOP_NOATTRBASES__)
 static CONST_STRPTR const attrbaseIDs[] =
 {
     IID_Hidd_BitMap,
     NULL
 };
-#endif
-#if defined(__OOP_NOMETHODBASES__)
+
 static CONST_STRPTR const methBaseIDs[] =
 {
     IID_Hidd_Gfx,
     NULL
 };
-#endif
 
 void WriteChunkRegion(struct DOSBootBase *DOSBootBase,
                                     struct RastPort *rp, UWORD x, UWORD y, UWORD width,
@@ -60,49 +57,37 @@ APTR anim_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
         D(bug("[dosboot] %s: ad @ 0x%p\n", __func__, ad);)
         if ((ad->OOPBase = OpenLibrary("oop.library",0)) != NULL)
         {
-#if defined(__OOP_NOATTRBASES__) || defined(__OOP_NOMETHODBASES__)
             int fcount;
-#endif
             #define OOPBase ad->OOPBase
             D(bug("[dosboot] %s: OOPBase @ 0x%p\n", __func__, OOPBase);)
             D(bug("[dosboot] %s: Bitmap @ 0x%p, hidd obj @ 0x%p\n", __func__, scr->RastPort.BitMap, HIDD_BM_OBJ(scr->RastPort.BitMap));)
-#if defined(__OOP_NOATTRBASES__)
             if ((fcount = OOP_ObtainAttrBasesArray(&ad->bitMapAttrBase, attrbaseIDs)) == 0)
             {
                 ad->ad_State |= STATEF_OOPATTRIBS;
-#endif
-#if defined(__OOP_NOMETHODBASES__)
                 if ((fcount = OOP_ObtainMethodBasesArray(&ad->gfxMethodBase, methBaseIDs)) == 0)
                 {
-#endif
                     #undef HiddBitMapAttrBase
                     #define HiddBitMapAttrBase (ad->bitMapAttrBase)
                     OOP_GetAttr(HIDD_BM_OBJ(scr->RastPort.BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&ad->gfxhidd);
                     if (ad->gfxhidd){
                         D(bug("[dosboot] %s: Gfx hidd @ 0x%p\n", __func__, ad->gfxhidd);)
                         struct pHidd_Gfx_SetCursorVisible p;
-#if defined(__OOP_NOMETHODBASES__)
                         p.mID = ad->gfxMethodBase;
-#endif
                         p.mID += moHidd_Gfx_SetCursorVisible;
                         p.visible = FALSE;
                         (VOID)OOP_DoMethod(ad->gfxhidd, &p.mID);
                         ad->ad_State |= STATEF_POINTERHIDE;
                     }
-#if defined(__OOP_NOMETHODBASES__)
                 }
                 else
                 {
                     D(bug("[dosboot] %s: Failed to obtain %u Method Base(s)\n", __func__, fcount);)
                 }
-#endif
-#if defined(__OOP_NOATTRBASES__)
             }
             else
             {
                 D(bug("[dosboot] %s: Failed to obtain %u Attibute Base(s)\n", __func__, fcount);)
             }
-#endif
         }
 
         SetAPen(&scr->RastPort, 0);
@@ -133,12 +118,10 @@ void anim_Stop(struct DOSBootBase *DOSBootBase)
     struct AnimData *ad = DOSBootBase->animData;
     if (ad)
     {
-#if defined(__OOP_NOATTRBASES__)
         if (ad->ad_State & STATEF_OOPATTRIBS)
         {
             OOP_ReleaseAttrBasesArray(&ad->bitMapAttrBase, attrbaseIDs);
         }
-#endif
         banm_Dispose(DOSBootBase);
     }
 }
