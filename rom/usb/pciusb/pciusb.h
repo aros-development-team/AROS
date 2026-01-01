@@ -92,8 +92,10 @@ struct RTIsoNode
     struct IOUsbHWBufferReq     rtn_BufferReq;
     APTR                        rtn_BounceBuffer;
     struct IOUsbHWReq           rtn_IOReq;
-    UWORD                       rtn_Dummy;
+    UWORD                       rtn_Flags;
 };
+
+#define RTISO_FLAG_EXPLICIT_FRAME (1 << 0)
 
 static inline struct IOUsbHWReq *pciusbIsoGetIOReq(struct RTIsoNode *rtn)
 {

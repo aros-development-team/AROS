@@ -68,7 +68,15 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
         if (ioreq->iouh_Dir == UHDIR_IN)
             trbflags |= TRBF_FLAG_ISP;
 
-        trbflags |= TRBF_FLAG_SIA;
+        BOOL explicit_frame = FALSE;
+        struct RTIsoNode *rtn = (struct RTIsoNode *)ioreq->iouh_DriverPrivate2;
+        if (rtn)
+            explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
+        else
+            explicit_frame = (ioreq->iouh_Frame != 0);
+
+        if (!explicit_frame)
+            trbflags |= TRBF_FLAG_SIA;
         trbflags |= TRBF_FLAG_FRAMEID(ioreq->iouh_Frame);
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -169,6 +177,11 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     if (!rtn->rtn_BufferReq.ubr_Length)
         rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+
+    if (rtn->rtn_BufferReq.ubr_Frame)
+        rtn->rtn_Flags |= RTISO_FLAG_EXPLICIT_FRAME;
+    else
+        rtn->rtn_Flags &= ~RTISO_FLAG_EXPLICIT_FRAME;
 
     {
         UWORD interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
