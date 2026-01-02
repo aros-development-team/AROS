@@ -373,6 +373,7 @@ void ScanFile(Class *cl, Object *obj, struct AmigaGuideFile *agf)
 	       case CMD_WORDWRAP:
 		  DB(("set wordwrap !\n"));
 		  agf->agf_Flags.WordWrap  = TRUE;
+		  break;
 	       case CMD_SMARTWRAP:
 		  DB(("set smartwrap !\n"));
 		  agf->agf_Flags.SmartWrap = TRUE;
