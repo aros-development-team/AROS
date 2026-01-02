@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved
 
     Desc: xHCI chipset driver main pciusb interface
 */
@@ -2099,8 +2099,10 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
     }
     devadrep = xhciDevEPKey(ioreq);
     pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
-    unit->hu_DevBusyReq[devadrep] = NULL;
-    unit->hu_NakTimeoutFrame[devadrep] = 0;
+    if (unit->hu_DevBusyReq[devadrep] == ioreq)
+        unit->hu_DevBusyReq[devadrep] = NULL;
+    if (ioreq->iouh_Req.io_Command != UHCMD_ISOXFER)
+        unit->hu_NakTimeoutFrame[devadrep] = 0;
 }
 
 static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
@@ -2387,24 +2389,41 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                             (LONG)ioreq->iouh_Req.io_Error,
                             (unsigned long)actual);
 
-            struct RTIsoNode *rtn = (struct RTIsoNode *)ioreq->iouh_DriverPrivate2;
+            struct PTDNode *ptd = (struct PTDNode *)ioreq->iouh_DriverPrivate2;
+            struct RTIsoNode *rtn = ptd ? ptd->ptd_RTIsoNode : NULL;
             if (rtn && rtn->rtn_RTIso) {
                 struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
-                rtn->rtn_BufferReq.ubr_Length = actual;
-                rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
+                struct IOUsbHWBufferReq *bufreq = ptd ? &ptd->ptd_BufferReq : &rtn->rtn_BufferReq;
+                bufreq->ubr_Length = actual;
+                bufreq->ubr_Frame = ioreq->iouh_Frame;
                 if (ioreq->iouh_Dir == UHDIR_IN) {
                     if (urti->urti_InDoneHook)
-                        CallHookPkt(urti->urti_InDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
                 } else {
                     if (urti->urti_OutDoneHook)
-                        CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
                 }
 
                 xhciFreePeriodicContext(hc, unit, ioreq);
                 ioreq->iouh_Actual = 0;
                 ioreq->iouh_Req.io_Error = 0;
-                if (xhciQueueIsochIO(hc, rtn) == RC_OK)
+                if (ptd)
+                    ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
+
+                UWORD pending = 0;
+                UWORD target = (rtn->rtn_PTDCount > 1) ? 2 : 1;
+                for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+                    struct PTDNode *scan = rtn->rtn_PTDs[idx];
+                    if (scan && (scan->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID)))
+                        pending++;
+                }
+
+                while (pending < target) {
+                    if (xhciQueueIsochIO(hc, rtn) != RC_OK)
+                        break;
                     xhciStartIsochIO(hc, rtn);
+                    pending++;
+                }
                 ioreq = nextioreq;
                 continue;
             }

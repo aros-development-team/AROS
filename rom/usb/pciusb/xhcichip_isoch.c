@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved
 
     Desc: xHCI chipset driver isochronous transfer support functions
 */
@@ -32,6 +32,27 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+static struct PTDNode *xhciNextIsoPTD(struct RTIsoNode *rtn)
+{
+    if (!rtn || !rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return NULL;
+
+    for (UWORD offset = 0; offset < rtn->rtn_PTDCount; offset++) {
+        UWORD idx = (rtn->rtn_NextPTD + offset) % rtn->rtn_PTDCount;
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+
+        if (!ptd)
+            continue;
+
+        if (!(ptd->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID))) {
+            rtn->rtn_NextPTD = (idx + 1) % rtn->rtn_PTDCount;
+            return ptd;
+        }
+    }
+
+    return NULL;
+}
+
 void xhciScheduleIsoTDs(struct PCIController *hc)
 {
     struct PCIUnit *unit = hc->hc_Unit;
@@ -44,7 +65,8 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
     ForeachNodeSafe(&hc->hc_IsoXFerQueue, ioreq, ionext) {
         devadrep = xhciDevEPKey(ioreq);
 
-        if(unit->hu_DevBusyReq[devadrep]) {
+        if (unit->hu_DevBusyReq[devadrep] &&
+            unit->hu_DevBusyReq[devadrep]->iouh_Req.io_Command != UHCMD_ISOXFER) {
             pciusbWarn("xHCI", "DevEP %02lx in use!\n", devadrep);
             continue;
         }
@@ -58,6 +80,8 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
             pciusbError("xHCI",
                         DEBUGWARNCOLOR_SET "xHCI: Missing prepared ISO transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+            if (ioreq->iouh_DriverPrivate2)
+                ((struct PTDNode *)ioreq->iouh_DriverPrivate2)->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID | PTDF_QUEUED);
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
             ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -69,9 +93,9 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
             trbflags |= TRBF_FLAG_ISP;
 
         BOOL explicit_frame = FALSE;
-        struct RTIsoNode *rtn = (struct RTIsoNode *)ioreq->iouh_DriverPrivate2;
-        if (rtn)
-            explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
+        struct PTDNode *ptd = (struct PTDNode *)ioreq->iouh_DriverPrivate2;
+        if (ptd)
+            explicit_frame = (ptd->ptd_BufferReq.ubr_Frame != 0);
         else
             explicit_frame = (ioreq->iouh_Frame != 0);
 
@@ -80,6 +104,8 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
         trbflags |= TRBF_FLAG_FRAMEID(ioreq->iouh_Frame);
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+        if (ptd)
+            ptd->ptd_Flags &= ~PTDF_QUEUED;
 
         BOOL txdone = FALSE;
         driprivate->dpSTRB = (UWORD)-1;
@@ -90,6 +116,10 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
 
             if (queued != -1) {
                 AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
+                if (ptd) {
+                    ptd->ptd_Flags |= PTDF_ACTIVE;
+                    ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
+                }
                 txdone = TRUE;
             }
         }
@@ -139,6 +169,13 @@ WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             goto fail;
         }
 
+        CopyMem(&rtn->rtn_IOReq, &ptd->ptd_IOReq, sizeof(ptd->ptd_IOReq));
+        ptd->ptd_IOReq.iouh_DriverPrivate1 = NULL;
+        ptd->ptd_IOReq.iouh_DriverPrivate2 = NULL;
+        ptd->ptd_IOReq.iouh_Req.io_Message.mn_Node.ln_Succ = NULL;
+        ptd->ptd_IOReq.iouh_Req.io_Message.mn_Node.ln_Pred = NULL;
+        ptd->ptd_RTIsoNode = rtn;
+
         rtn->rtn_PTDs[idx] = ptd;
     }
 
@@ -155,30 +192,38 @@ fail:
 WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
+    struct PTDNode *ptd = xhciNextIsoPTD(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
     ULONG interval_uf;
+    ULONG interval_frames;
 
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
+
+    if (!ptd)
+        return UHIOERR_NAKTIMEOUT;
+
+    struct IOUsbHWBufferReq *bufreq = &ptd->ptd_BufferReq;
+    *bufreq = rtn->rtn_BufferReq;
 
     if (urti) {
         if (ioreq->iouh_Dir == UHDIR_IN) {
             if (urti->urti_InReqHook)
-                CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
         } else {
             if (urti->urti_OutReqHook)
-                CallHookPkt(urti->urti_OutReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_OutReqHook, rtn, bufreq);
         }
     } else {
-        rtn->rtn_BufferReq.ubr_Buffer = ioreq->iouh_Data;
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
-        rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
-        rtn->rtn_BufferReq.ubr_Flags = 0;
+        bufreq->ubr_Buffer = ioreq->iouh_Data;
+        bufreq->ubr_Length = ioreq->iouh_Length;
+        bufreq->ubr_Frame = ioreq->iouh_Frame;
+        bufreq->ubr_Flags = 0;
     }
 
-    if (!rtn->rtn_BufferReq.ubr_Length)
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+    if (!bufreq->ubr_Length)
+        bufreq->ubr_Length = ioreq->iouh_Length;
 
-    if (rtn->rtn_BufferReq.ubr_Frame)
+    if (bufreq->ubr_Frame)
         rtn->rtn_Flags |= RTISO_FLAG_EXPLICIT_FRAME;
     else
         rtn->rtn_Flags &= ~RTISO_FLAG_EXPLICIT_FRAME;
@@ -206,18 +251,26 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             interval_uf = 1;
     }
 
-    if (!rtn->rtn_BufferReq.ubr_Frame) {
+    interval_frames = (interval_uf + 7) >> 3;
+    if (interval_frames < 1)
+        interval_frames = 1;
+
+    if (!bufreq->ubr_Frame) {
         /*
          * xHCI needs ISO TDs queued sufficiently ahead of the service
          * interval. A single-interval lead is often too tight on VMware.
          */
-        ULONG lead = interval_uf * 2;
-        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : (hc->hc_FrameCounter + lead);
-        rtn->rtn_BufferReq.ubr_Frame = next;
+        ULONG lead_uf = interval_uf * 2;
+        ULONG lead_frames = (lead_uf + 7) >> 3;
+        ULONG base_frame = hc->hc_FrameCounter >> 3;
+        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : (base_frame + lead_frames);
+        bufreq->ubr_Frame = next;
     }
-    rtn->rtn_NextFrame = rtn->rtn_BufferReq.ubr_Frame + interval_uf;
+    rtn->rtn_NextFrame = bufreq->ubr_Frame + interval_frames;
 
-    rtn->rtn_NextPTD = 0;
+    ptd->ptd_FrameIdx = bufreq->ubr_Frame;
+    ptd->ptd_Flags |= PTDF_BUFFER_VALID;
+    rtn->rtn_BufferReq = *bufreq;
 
     return RC_OK;
 }
@@ -229,18 +282,33 @@ void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if (!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
         return;
 
-    /* Use the IOReq stored in the RTIso node for the actual transfer. */
-    struct IOUsbHWReq *ioreq = &rtn->rtn_IOReq;
+    struct PTDNode *ptd = NULL;
+    for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *candidate = rtn->rtn_PTDs[idx];
+        if (candidate && (candidate->ptd_Flags & PTDF_BUFFER_VALID) &&
+            !(candidate->ptd_Flags & PTDF_QUEUED) &&
+            !(candidate->ptd_Flags & PTDF_ACTIVE)) {
+            ptd = candidate;
+            break;
+        }
+    }
 
-    if (!rtn->rtn_BufferReq.ubr_Buffer || !rtn->rtn_BufferReq.ubr_Length)
+    if (!ptd)
         return;
 
-    ioreq->iouh_Data = rtn->rtn_BufferReq.ubr_Buffer;
-    ioreq->iouh_Length = rtn->rtn_BufferReq.ubr_Length;
-    ioreq->iouh_Frame = rtn->rtn_BufferReq.ubr_Frame;
+    /* Use the IOReq stored per PTD for the actual transfer. */
+    struct IOUsbHWReq *ioreq = &ptd->ptd_IOReq;
+
+    if (!ptd->ptd_BufferReq.ubr_Buffer || !ptd->ptd_BufferReq.ubr_Length)
+        return;
+
+    ioreq->iouh_Data = ptd->ptd_BufferReq.ubr_Buffer;
+    ioreq->iouh_Length = ptd->ptd_BufferReq.ubr_Length;
+    ioreq->iouh_Frame = ptd->ptd_BufferReq.ubr_Frame;
     ioreq->iouh_Req.io_Command = UHCMD_ISOXFER;
     ioreq->iouh_Req.io_Error = 0;
-    ioreq->iouh_DriverPrivate2 = rtn;
+    ioreq->iouh_Actual = 0;
+    ioreq->iouh_DriverPrivate2 = ptd;
 
     if (!ioreq->iouh_DriverPrivate1) {
         struct pciusbXHCIIODevPrivate *driprivate = NULL;
@@ -250,6 +318,7 @@ void xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     }
 
     /* Queue it on the ISO path. */
+    ptd->ptd_Flags |= PTDF_QUEUED;
     AddTail(&hc->hc_IsoXFerQueue, (struct Node *)&ioreq->iouh_Req.io_Message.mn_Node);
     xhciScheduleIsoTDs(hc);
 }
@@ -262,13 +331,23 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         return;
 
     Disable();
-    xhciFreePeriodicContext(hc, hc->hc_Unit, &rtn->rtn_IOReq);
+    for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if (ptd && ptd->ptd_IOReq.iouh_DriverPrivate1)
+            xhciFreePeriodicContext(hc, hc->hc_Unit, &ptd->ptd_IOReq);
+    }
     Enable();
 
     if (rtn->rtn_BounceBuffer && rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
         usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
                          rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
         rtn->rtn_BounceBuffer = NULL;
+    }
+
+    for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if (ptd)
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
     }
 }
 

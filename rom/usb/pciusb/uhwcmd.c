@@ -19,7 +19,7 @@
 static inline BOOL uhwIsRootHubIOReq(const struct IOUsbHWReq *ioreq,
                                      const struct PCIUnit *unit)
 {
-    /* Root hub “device” is not behind any port/hub route. */
+    /* Root hub "device" is not behind any port/hub route. */
     return (ioreq->iouh_DevAddr == unit->hu_RootHubAddr) &&
            (ioreq->iouh_RouteString == 0) &&
            (ioreq->iouh_RootPort == 0);
@@ -1848,7 +1848,8 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
 
     switch(hc->hc_HCIType) {
     case HCITYPE_XHCI:
-        xhciStartIsochIO(hc, rtn);
+        for (UWORD cnt = 0; cnt < prefill; cnt++)
+            xhciStartIsochIO(hc, rtn);
         break;
     case HCITYPE_EHCI:
         ehciStartIsochIO(hc, rtn);

@@ -60,6 +60,8 @@
 #define USB_DEV_MAX                     128
 #define USB_DEVEP_CNT                   (USB_DEV_MAX * MAX_DEVENDPOINTS)
 
+struct RTIsoNode;
+
 struct PTDNode
 {
     struct MinNode              ptd_Node;
@@ -72,11 +74,15 @@ struct PTDNode
     UWORD                       ptd_PktLength[8];
     UWORD                       ptd_Flags;
     struct PTDNode             *ptd_NextPTD;
+    struct IOUsbHWReq           ptd_IOReq;
+    struct IOUsbHWBufferReq     ptd_BufferReq;
+    struct RTIsoNode           *ptd_RTIsoNode;
 };
 
 #define PTDF_ACTIVE             (1<<0)
 #define PTDF_BUFFER_VALID       (1<<1)
 #define PTDF_SITD               (1<<2)
+#define PTDF_QUEUED             (1<<3)
 
 #define PCIUSB_ISO_PTD_COUNT    8
 
