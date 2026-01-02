@@ -355,7 +355,7 @@ copy_mono( WORD* src, WORD* dst, int count, int stride, BOOL src32, BOOL flush_c
 
   if( flush_caches )
   {
-    CacheClearE( first, (ULONG) last - (ULONG) first, CACRF_ClearD );
+    CacheClearE( first, (IPTR) last - (IPTR) first, CACRF_ClearD );
   }
 
   return last;
@@ -391,7 +391,7 @@ copy_stereo( WORD* lsrc, WORD* rsrc, WORD* dst, int count, int stride, BOOL src3
 
   if( flush_caches )
   {
-    CacheClearE( first, (ULONG) last - (ULONG) first, CACRF_ClearD );
+    CacheClearE( first, (IPTR) last - (IPTR) first, CACRF_ClearD );
   }
 
   return last;
@@ -473,5 +473,3 @@ RecordInterrupt( struct EMU10kxData* dd )
 
   dd->record_interrupt_enabled = TRUE;
 }
-
-
