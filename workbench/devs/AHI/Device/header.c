@@ -32,6 +32,10 @@
 #if defined(__AROS__)
 #include <proto/stdc.h>
 #endif
+#if defined(__AROS__) && (defined(__i386__) || defined(__x86_64__))
+#include <resources/processor.h>
+#include <proto/processor.h>
+#endif
 
 #include "ahi_def.h"
 #include "debug.h"
@@ -71,6 +75,48 @@ CloseLibs ( void );
 /******************************************************************************
 ** Device entry ***************************************************************
 ******************************************************************************/
+
+#if defined(__AROS__) && (defined(__i386__) || defined(__x86_64__))
+static BOOL
+AHIHasAVX2(void)
+{
+  ULONG eax = 0;
+  ULONG ebx = 0;
+  ULONG ecx = 0;
+  ULONG edx = 0;
+
+#if defined(__i386__) && defined(__PIC__)
+  __asm__ volatile("xchgl %%ebx, %1\n\t"
+                   "cpuid\n\t"
+                   "xchgl %%ebx, %1\n\t"
+                   : "=a"(eax), "=&r"(ebx), "=c"(ecx), "=d"(edx)
+                   : "0"(0), "2"(0));
+#else
+  __asm__ volatile("cpuid"
+                   : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+                   : "0"(0), "2"(0));
+#endif
+
+  if (eax < 7)
+  {
+    return FALSE;
+  }
+
+#if defined(__i386__) && defined(__PIC__)
+  __asm__ volatile("xchgl %%ebx, %1\n\t"
+                   "cpuid\n\t"
+                   "xchgl %%ebx, %1\n\t"
+                   : "=a"(eax), "=&r"(ebx), "=c"(ecx), "=d"(edx)
+                   : "0"(7), "2"(0));
+#else
+  __asm__ volatile("cpuid"
+                   : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
+                   : "0"(7), "2"(0));
+#endif
+
+  return (ebx & (1U << 5)) != 0;
+}
+#endif
 
 #if defined( __amithlon__ )
 __asm( "\n\
@@ -179,6 +225,20 @@ const ULONG               __LIB_Revision = REVISION;
 #endif
 
 enum MixBackend_t          MixBackend     = MB_NATIVE;
+
+#if defined(__SSE4_1__) && (defined(__i386__) || defined(__x86_64__))
+LONG AddLongMono_SSE41( ADDARGS );
+LONG AddLongStereo_SSE41( ADDARGS );
+LONG AddLongsMono_SSE41( ADDARGS );
+LONG AddLongsStereo_SSE41( ADDARGS );
+#endif
+
+#if defined(__AVX2__) && (defined(__i386__) || defined(__x86_64__))
+LONG AddLongMono_AVX2( ADDARGS );
+LONG AddLongStereo_AVX2( ADDARGS );
+LONG AddLongsMono_AVX2( ADDARGS );
+LONG AddLongsStereo_AVX2( ADDARGS );
+#endif
 
 ADDFUNC* AddByteMonoPtr                   = AddByteMono;
 ADDFUNC* AddByteStereoPtr                 = AddByteStereo;
@@ -878,6 +938,46 @@ OpenLibs ( void )
   {
     //MixBackend = MB_NATIVE;
   }
+
+#if defined(__AROS__) && (defined(__i386__) || defined(__x86_64__))
+  {
+    struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
+
+    if (ProcessorBase != NULL)
+    {
+      BOOL hasSSE41 = FALSE;
+      BOOL hasAVX = FALSE;
+      struct TagItem tags[] =
+      {
+        { GCIT_SupportsSSE41, (IPTR)&hasSSE41 },
+        { GCIT_SupportsAVX, (IPTR)&hasAVX },
+        { TAG_DONE, 0 }
+      };
+
+      GetCPUInfo(tags);
+
+#if defined(__SSE4_1__)
+      if (hasSSE41)
+      {
+        AddLongMonoPtr = AddLongMono_SSE41;
+        AddLongStereoPtr = AddLongStereo_SSE41;
+        AddLongsMonoPtr = AddLongsMono_SSE41;
+        AddLongsStereoPtr = AddLongsStereo_SSE41;
+      }
+#endif
+
+#if defined(__AVX2__)
+      if (hasAVX && AHIHasAVX2())
+      {
+        AddLongMonoPtr = AddLongMono_AVX2;
+        AddLongStereoPtr = AddLongStereo_AVX2;
+        AddLongsMonoPtr = AddLongsMono_AVX2;
+        AddLongsStereoPtr = AddLongsStereo_AVX2;
+      }
+#endif
+    }
+  }
+#endif
 
   OpenahiCatalog(NULL, NULL);
 

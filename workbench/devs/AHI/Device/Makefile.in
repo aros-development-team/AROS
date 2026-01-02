@@ -158,7 +158,8 @@ $(EXECUTABLE):		$(OBJECTS) libaddroutines.a
 	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
 libaddroutines.a:	addroutines_hifi.o addroutines_lofi.o \
-			addroutines_32bit.o addroutines_71.o dspechofuncs.o
+			addroutines_32bit.o addroutines_71.o addroutines_sse.o \
+			addroutines_avx.o dspechofuncs.o
 	$(AR) $(ARFLAGS) $@ $^
 	$(RANLIB) $@
 
