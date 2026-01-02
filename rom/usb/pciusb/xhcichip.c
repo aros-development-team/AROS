@@ -214,6 +214,17 @@ static void xhciInitRing(struct pcisusbXHCIRing *ring)
     }
 #endif
     memset(ring, 0, sizeof(*ring));
+
+    ring->ringio = AllocMem(sizeof(*ring->ringio) * XHCI_EVENT_RING_TRBS, MEMF_ANY | MEMF_CLEAR);
+    if (!ring->ringio) {
+        pciusbError("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: unable to allocate ringio for ring %p" DEBUGCOLOR_RESET "\n",
+                    ring);
+        /* ring remains usable for sync/diagnostic paths, but IO correlation will suffer */
+    }
+    pciusbXHCIDebugRIO("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: ringio @ 0x%p" DEBUGCOLOR_RESET "\n",
+                    ring->ringio);
     ring->end = RINGENDCFLAG; /* set initial cycle bit */
 }
 
@@ -452,11 +463,18 @@ static void xhciInsertTRB(struct PCIController *hc,
         dst->dbp.addr_hi = AROS_LONG2LE((ULONG)((payload >> 32) & 0xffffffffUL));
     } else {
         UQUAD dma_payload = payload;
+        const ULONG trbtype = (trflags >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
+        const BOOL raw_dma  = (trbtype == TRBB_FLAG_CRTYPE_SET_TR_DEQUEUE_PTR);
+
 #if !defined(PCIUSB_NO_CPUTOPCI)
-        if (payload != 0) {
+        if (!raw_dma && payload != 0) {
             dma_payload = (UQUAD)(IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, (APTR)(IPTR)payload);
         }
 #endif
+        /*
+         * Set TR Dequeue Pointer uses a DMA address with embedded flag bits
+         * (e.g. DCS in bit 0). Do not treat that value as a CPU pointer.
+         */
         xhciSetPointer(hc, dst->dbp, dma_payload);
     }
 
@@ -469,9 +487,282 @@ static void xhciInsertTRB(struct PCIController *hc,
 
 static inline BOOL xhciRingioMatchesIOReq(volatile struct pcisusbXHCIRing *ring, UWORD idx, APTR ioreq)
 {
-    APTR p = ring->ringio[idx];
+    if (!ring || !ring->ringio)
+        return FALSE;
 
-    return (p == ioreq);
+    return (ring->ringio[idx] == ioreq);
+}
+
+/* ------------------------------------------------------------------------- */
+/* Diagnostics (rate-limited)                                                */
+/* ------------------------------------------------------------------------- */
+
+#define XHCI_DIAG_DUMP_RADIUS  4
+#define XHCI_DIAG_DUMP_LIMIT   3
+
+static UBYTE xhci_diag_missing_ioreq[USB_DEV_MAX][MAX_DEVENDPOINTS];
+static UBYTE xhci_diag_cc_err[USB_DEV_MAX][MAX_DEVENDPOINTS];
+
+static const char *xhciDiagCCName(ULONG cc)
+{
+    switch (cc) {
+    case TRB_CC_SUCCESS:               return "SUCCESS";
+    case TRB_CC_USB_TRANSACTION_ERROR: return "USB_TRANSACTION_ERROR";
+    case TRB_CC_TRB_ERROR:             return "TRB_ERROR";
+    case TRB_CC_STALL_ERROR:           return "STALL_ERROR";
+    case TRB_CC_RING_UNDERRUN:         return "RING_UNDERRUN";
+    case TRB_CC_RING_OVERRUN:          return "RING_OVERRUN";
+    case TRB_CC_EVENT_RING_FULL_ERROR: return "EVENT_RING_FULL";
+    default:                           return "OTHER";
+    }
+}
+
+static void xhciDiagDumpRingWindow(struct PCIController *hc,
+                                  volatile struct pcisusbXHCIRing *ring,
+                                  ULONG center,
+                                  ULONG radius,
+                                  const char *tag)
+{
+    (void)hc;
+
+    if (!ring)
+        return;
+
+    ULONG start = (center > radius) ? (center - radius) : 0;
+    ULONG end   = center + radius;
+    if (end >= XHCI_EVENT_RING_TRBS)
+        end = XHCI_EVENT_RING_TRBS - 1;
+
+    ULONG ccs = (ring->end & RINGENDCFLAG) ? 1 : 0;
+
+    pciusbWarn("xHCI",
+               DEBUGWARNCOLOR_SET
+               "DIAG[%s]: ring=%p next=%u end=%u(cyc=%lu) window=[%lu..%lu]"
+               DEBUGCOLOR_RESET" \n",
+               tag ? tag : "",
+               ring,
+               (unsigned)ring->next,
+               (unsigned)(ring->end & ~RINGENDCFLAG),
+               (unsigned long)ccs,
+               (unsigned long)start,
+               (unsigned long)end);
+
+    for (ULONG i = start; i <= end; i++) {
+        volatile struct xhci_trb *t = &ring->ring[i];
+        CacheClearE((APTR)t, sizeof(*t), CACRF_InvalidateD);
+
+        ULONG a0 = AROS_LE2LONG(t->dbp.addr_lo);
+        ULONG a1 = AROS_LE2LONG(t->dbp.addr_hi);
+        ULONG p2 = AROS_LE2LONG(t->tparams);
+        ULONG f3 = AROS_LE2LONG(t->flags);
+
+        ULONG type = (f3 >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
+        ULONG cyc  = (f3 & TRBF_FLAG_C)   ? 1 : 0;
+        ULONG ioc  = (f3 & TRBF_FLAG_IOC) ? 1 : 0;
+        ULONG ch   = (f3 & TRBF_FLAG_CH)  ? 1 : 0;
+        ULONG idt  = (f3 & TRBF_FLAG_IDT) ? 1 : 0;
+        ULONG isp  = (f3 & TRBF_FLAG_ISP) ? 1 : 0;
+        ULONG len  = (p2 & TRB_TPARAMS_DS_TRBLEN_SMASK);
+
+        pciusbWarn("xHCI",
+                   DEBUGWARNCOLOR_SET
+                   "  TRB[%3lu] io=%p addr=%08lx:%08lx p2=%08lx f3=%08lx type=%lu cyc=%lu ioc=%lu ch=%lu idt=%lu isp=%lu len=%lu"
+                   DEBUGCOLOR_RESET" \n",
+                   (unsigned long)i,
+                   (ring->ringio ? ring->ringio[i] : NULL),
+                   (unsigned long)a1, (unsigned long)a0,
+                   (unsigned long)p2,
+                   (unsigned long)f3,
+                   (unsigned long)type,
+                   (unsigned long)cyc,
+                   (unsigned long)ioc,
+                   (unsigned long)ch,
+                   (unsigned long)idt,
+                   (unsigned long)isp,
+                   (unsigned long)len);
+    }
+}
+
+static void xhciDiagDumpOutputCtx(struct PCIController *hc,
+                                 struct pciusbXHCIDevice *devCtx,
+                                 UBYTE epid,
+                                 const char *tag)
+{
+    if (!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    const ULONG ndw = (ULONG)(ctxsize / 4);
+
+    volatile UBYTE *obase = (volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    volatile ULONG *slot  = (volatile ULONG *)obase;
+    volatile ULONG *ep    = (volatile ULONG *)(obase + ((UWORD)epid * ctxsize));
+
+    CacheClearE((APTR)slot, ctxsize, CACRF_InvalidateD);
+    CacheClearE((APTR)ep,   ctxsize, CACRF_InvalidateD);
+
+    pciusbWarn("xHCI",
+               DEBUGWARNCOLOR_SET
+               "DIAG[%s]: OutputCtx slot=%u devaddr=%u epid=%u ctxsize=%u"
+               DEBUGCOLOR_RESET" \n",
+               tag ? tag : "",
+               (unsigned)devCtx->dc_SlotID,
+               (unsigned)devCtx->dc_DevAddr,
+               (unsigned)epid,
+               (unsigned)ctxsize);
+
+    /* Slot context (raw dwords) */
+    for (ULONG i = 0; i < ndw; i += 4) {
+        pciusbWarn("xHCI",
+                   DEBUGWARNCOLOR_SET
+                   "  SLOT[%2lu..%2lu]=%08lx %08lx %08lx %08lx"
+                   DEBUGCOLOR_RESET" \n",
+                   (unsigned long)i, (unsigned long)(i + 3),
+                   (unsigned long)AROS_LE2LONG(slot[i + 0]),
+                   (unsigned long)AROS_LE2LONG(slot[i + 1]),
+                   (unsigned long)AROS_LE2LONG(slot[i + 2]),
+                   (unsigned long)AROS_LE2LONG(slot[i + 3]));
+    }
+
+    /* Endpoint context (raw dwords) */
+    for (ULONG i = 0; i < ndw; i += 4) {
+        pciusbWarn("xHCI",
+                   DEBUGWARNCOLOR_SET
+                   "  EP%u[%2lu..%2lu]=%08lx %08lx %08lx %08lx"
+                   DEBUGCOLOR_RESET" \n",
+                   (unsigned)epid,
+                   (unsigned long)i, (unsigned long)(i + 3),
+                   (unsigned long)AROS_LE2LONG(ep[i + 0]),
+                   (unsigned long)AROS_LE2LONG(ep[i + 1]),
+                   (unsigned long)AROS_LE2LONG(ep[i + 2]),
+                   (unsigned long)AROS_LE2LONG(ep[i + 3]));
+    }
+}
+
+#define XHCI_EP_STATE_DISABLED 0
+#define XHCI_EP_STATE_RUNNING  1
+#define XHCI_EP_STATE_HALTED   2
+#define XHCI_EP_STATE_STOPPED  3
+#define XHCI_EP_STATE_ERROR    4
+
+static inline UBYTE xhciEndpointState(volatile struct xhci_ep *epctx)
+{
+    return (UBYTE)(AROS_LE2LONG(epctx->ctx[0]) & 0x7U);
+}
+
+static const char *xhciEPStateName(UBYTE st)
+{
+    switch (st) {
+        case XHCI_EP_STATE_DISABLED: return "Disabled";
+        case XHCI_EP_STATE_RUNNING:  return "Running";
+        case XHCI_EP_STATE_HALTED:   return "Halted";
+        case XHCI_EP_STATE_STOPPED:  return "Stopped";
+        case XHCI_EP_STATE_ERROR:    return "Error";
+        default:                     return "Unknown";
+    }
+}
+
+static void xhciDiagDumpEndpointBrief(struct PCIController *hc,
+                                      struct pciusbXHCIDevice *devCtx,
+                                      UBYTE epid,
+                                      const char *reason)
+{
+    if (!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    if (epid >= MAX_DEVENDPOINTS)
+        return;
+
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    volatile UBYTE *obase = (volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    volatile struct xhci_ep *epctx = (volatile struct xhci_ep *)(obase + ((UWORD)epid * ctxsize));
+
+    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+
+    const ULONG dw0 = AROS_LE2LONG(epctx->ctx[0]);
+    const ULONG dw1 = AROS_LE2LONG(epctx->ctx[1]);
+    const ULONG dw2 = AROS_LE2LONG(epctx->ctx[2]);
+    const ULONG dw3 = AROS_LE2LONG(epctx->ctx[3]);
+
+    const UBYTE epstate   = (UBYTE)(dw0 & 0x7U);
+    const UBYTE mult      = (UBYTE)((dw0 >> 8) & 0x3U);
+    const UBYTE maxps     = (UBYTE)((dw0 >> 10) & 0x1FU);
+    const UBYTE interval  = (UBYTE)((dw0 >> 16) & 0xFFU);
+
+    const UBYTE eptype    = (UBYTE)((dw1 >> 3) & 0x7U);
+    const UBYTE maxburst  = (UBYTE)((dw1 >> 8) & 0xFFU);
+    const UWORD maxpkt    = (UWORD)((dw1 >> 16) & 0xFFFFU);
+
+    const UQUAD dq_raw = ((UQUAD)dw3 << 32) | (UQUAD)dw2;
+    const UQUAD dq_ptr = dq_raw & ~0xFULL;
+    const UBYTE dcs    = (UBYTE)(dq_raw & 0x1U);
+
+    pciusbWarn("xHCI",
+               DEBUGWARNCOLOR_SET
+               "DIAG: EP ctx %s: slot=%u devaddr=%u epid=%u state=%u/%s type=%u maxpkt=%u maxburst=%u mult=%u maxps=%u interval=%u dq=%08lx:%08lx (dcs=%u)"
+               DEBUGCOLOR_RESET" \n",
+               reason ? reason : "?",
+               devCtx->dc_SlotID,
+               devCtx->dc_DevAddr,
+               epid,
+               (unsigned)epstate,
+               xhciEPStateName(epstate),
+               (unsigned)eptype,
+               (unsigned)maxpkt,
+               (unsigned)maxburst,
+               (unsigned)mult,
+               (unsigned)maxps,
+               (unsigned)interval,
+               (ULONG)((dq_ptr >> 32) & 0xffffffffUL),
+               (ULONG)( dq_ptr        & 0xffffffffUL),
+               (unsigned)dcs);
+
+    (void)maxps;
+}
+
+static BOOL xhciResetEndpointRing(struct PCIController *hc,
+                                  struct pciusbXHCIDevice *devCtx,
+                                  UBYTE epid,
+                                  APTR *dequeue_ptr_out,
+                                  BOOL *dcs_out)
+{
+    (void)hc;
+
+    if (!devCtx || (epid >= MAX_DEVENDPOINTS))
+        return FALSE;
+
+    volatile struct pcisusbXHCIRing *ring =
+        (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+
+    if (!ring)
+        return FALSE;
+
+    xhciRingLock();
+    
+    /*
+     * Reset the transfer ring content.  Do not clear ringio here: correlation
+     * teardown is handled by the completion paths and by explicit abort logic.
+     */
+    memset((void *)ring->ring, 0, sizeof(ring->ring));
+    
+    /*
+     * After clearing, TRBs have C=0. Program the dequeue cycle state to 1 so
+     * cleared TRBs are observed as empty until new TRBs are produced with C=1.
+     */
+    ring->next = 0;
+    ring->end &= RINGENDCFLAG;
+    ring->end |= RINGENDCFLAG;
+
+    xhciRingUnlock();
+
+    CacheClearE((APTR)ring->ring, sizeof(ring->ring), CACRF_ClearD);
+
+    if (dequeue_ptr_out)
+        *dequeue_ptr_out = (APTR)&ring->ring[0];
+    if (dcs_out)
+        *dcs_out = TRUE;
+
+    return TRUE;
 }
 
 WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
@@ -489,7 +780,14 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 
     if (!ring) {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
-        return FALSE;
+        return -1;
+    }
+
+    if (!ring->ringio) {
+        pciusbError("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: ring %p has no ringio bookkeeping" DEBUGCOLOR_RESET" \n",
+                    ring);
+        return -1;
     }
 
     xhciRingLock();
@@ -501,6 +799,10 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
              * If this is the last ring element, insert a link
              * back to the ring start - and update the cycle bit
              */
+            pciusbXHCIDebugRIO("xHCI",
+                        DEBUGWARNCOLOR_SET "xHCI: setting link ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
+                        ring->next);
+            ring->ringio[ring->next] = NULL;
             xhciInsertTRB(hc, ring,
                           link_dma,
                           TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC,
@@ -513,9 +815,73 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
             pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Ring Re-Linked!!" DEBUGCOLOR_RESET" \n");
         }
 
+        queued = ring->next;
+        pciusbXHCIDebugRIO("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
+                    queued);
+        ring->ringio[queued] = NULL;
         xhciInsertTRB(hc, ring, payload, trbflags, plen);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
-        queued = ring->next++;
+        ring->next++;
+    } else {
+        pciusbError("xHCI",
+                            DEBUGWARNCOLOR_SET "NO SPACE ON RING!! <next = %u, last = %u>" DEBUGCOLOR_RESET" \n",
+                            ring->next, (ring->end & ~RINGENDCFLAG));
+    }
+    xhciRingUnlock();
+
+    return queued;
+}
+
+WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
+                     ULONG plen, ULONG trbflags, struct IORequest *ioreq)
+{
+    WORD queued = -1;
+
+    if (!ring) {
+        pciusbError("xHCI", DEBUGWARNCOLOR_SET "NO RINGSPECIFIED!!" DEBUGCOLOR_RESET" \n");
+        return -1;
+    }
+
+    if (!ring->ringio) {
+        pciusbError("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: ring %p has no ringio bookkeeping" DEBUGCOLOR_RESET" \n",
+                    ring);
+        return -1;
+    }
+
+    xhciRingLock();
+    if (xhciRingEntriesFree(ring) > 1) {
+        if (ring->next >= XHCI_EVENT_RING_TRBS - 1) {
+            UQUAD link_dma = (UQUAD)(IPTR)&ring->ring[0];
+
+            pciusbXHCIDebugRIO("xHCI",
+                        DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
+                        ring->next);
+            ring->ringio[ring->next] = NULL;
+            xhciInsertTRB(hc, ring,
+                          link_dma,
+                          TRBF_FLAG_TRTYPE_LINK | TRBF_FLAG_TC,
+                          0);
+            ring->next = 0;
+            if (ring->end & RINGENDCFLAG)
+                ring->end &= ~RINGENDCFLAG;
+            else
+                ring->end |= RINGENDCFLAG;
+            pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "Ring Re-Linked!!" DEBUGCOLOR_RESET" \n");
+        }
+
+        queued = ring->next;
+        pciusbXHCIDebugRIO("xHCI",
+                    DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = 0x%p" DEBUGCOLOR_RESET "\n",
+                    queued, ioreq);
+        ring->ringio[queued] = ioreq;
+        xhciInsertTRB(hc, ring, payload, trbflags, plen);
+        pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
+        ring->next++;
+        pciusbXHCIDebugTRBV("xHCI",
+                            DEBUGCOLOR_SET "ringio[%d] = %p (ring %p)" DEBUGCOLOR_RESET" \n",
+                            (int)queued, ioreq, ring);
     } else {
         pciusbError("xHCI",
                             DEBUGWARNCOLOR_SET "NO SPACE ON RING!! <next = %u, last = %u>" DEBUGCOLOR_RESET" \n",
@@ -610,6 +976,76 @@ WORD xhciQueueData(struct PCIController *hc,
             txflags |= TRBF_FLAG_IOC;
 
         queued = xhciQueueTRB(hc, ring, payload + offset, trblen, txflags);
+        if (queued == -1)
+            return queued;
+
+        if (firstqueued == -1)
+            firstqueued = queued;
+
+        remaining -= trblen;
+    }
+
+    return firstqueued;
+}
+
+WORD xhciQueueData_IO(struct PCIController *hc,
+                      volatile struct pcisusbXHCIRing *ring,
+                      UQUAD payload,
+                      ULONG plen,
+                      ULONG pmax,
+                      ULONG trbflags,
+                      BOOL  ioconlast,
+                      struct IORequest *ioreq)
+{
+    ULONG remaining = plen;
+    WORD  queued, firstqueued = -1;
+
+    const ULONG base_type = (trbflags & TRB_FLAG_TYPE_MASK);
+    ULONG base_flags = (trbflags & ~TRB_FLAG_TYPE_MASK);
+    const BOOL chain_beyond = (base_flags & TRBF_FLAG_CH) != 0;
+
+    base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
+
+    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
+    (void)pmax;
+
+    const BOOL is_ctl_data_stage = (base_type == TRBF_FLAG_TRTYPE_DATA);
+
+    if (remaining == 0) {
+        ULONG txflags = base_flags | base_type;
+
+        if (chain_beyond)
+            txflags |= TRBF_FLAG_CH;
+
+        if (ioconlast)
+            txflags |= TRBF_FLAG_IOC;
+
+        return xhciQueueTRB_IO(hc, ring, payload, 0, txflags, ioreq);
+    }
+
+    while (remaining > 0) {
+        const ULONG offset = (plen - remaining);
+        ULONG trblen = remaining;
+        ULONG txflags;
+
+        if (trblen > segmax)
+            trblen = segmax;
+
+        if (is_ctl_data_stage && offset != 0) {
+            txflags = (base_flags & ~TRBF_FLAG_DS_DIR) | TRBF_FLAG_TRTYPE_NORMAL;
+        } else {
+            txflags = base_flags | base_type;
+        }
+
+        if (remaining > trblen)
+            txflags |= TRBF_FLAG_CH;
+        else if (chain_beyond)
+            txflags |= TRBF_FLAG_CH;
+
+        if (ioconlast && (remaining == trblen))
+            txflags |= TRBF_FLAG_IOC;
+
+        queued = xhciQueueTRB_IO(hc, ring, payload + offset, trblen, txflags, ioreq);
         if (queued == -1)
             return queued;
 
@@ -1203,15 +1639,25 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         break;
     }
 
+    /* Keep SS MaxBurst available for DW1 programming below. */
+    UBYTE ssMaxBurst = 0;
+
     if (epid > 1) {
-        ULONG avglen = maxpacket;
+        /*
+         * Endpoint Context DWORD4 ("tx_info") packing (xHCI spec):
+         *   bits 15:0  = Average TRB Length (bytes)
+         *   bits 31:16 = Max ESIT Payload (lo) (bytes; periodic endpoints only)
+         *
+         * For bulk/control endpoints Max ESIT Payload must be 0.
+         */
+        ULONG avg_trb_len      = maxpacket;
+        ULONG max_esit_payload = 0;
         UBYTE multval = 0;
-        UBYTE maxBurst = 0;
 
         if (ioreq) {
             if (flags & UHFF_SUPERSPEED) {
                 multval  = ioreq->iouh_SS_Mult;
-                maxBurst = ioreq->iouh_SS_MaxBurst;
+                ssMaxBurst = ioreq->iouh_SS_MaxBurst;
             } else if ((flags & UHFF_HIGHSPEED) &&
                        ((flags & UHFF_MULTI_2) || (flags & UHFF_MULTI_3))) {
                 UBYTE transactions = 1;
@@ -1231,29 +1677,35 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
                 if ((type == UHCMD_ISOXFER) || (type == UHCMD_INTXFER)) {
                     if (ioreq->iouh_SS_BytesPerInterval) {
                         /* Preferred: device provides BytesPerInterval directly. */
-                        avglen = ioreq->iouh_SS_BytesPerInterval;
+                        max_esit_payload = ioreq->iouh_SS_BytesPerInterval;
                     } else {
-                        /* Fallback: compute Max ESIT payload from descriptors. */
-                        ULONG multPlus1 = (ULONG)(multval + 1);
-                        avglen = maxpacket * (ULONG)(maxBurst + 1) * multPlus1;
+                        /* Fallback: payload = MaxPkt * (MaxBurst+1) * (Mult+1) */
+                        max_esit_payload = maxpacket * (ssMaxBurst + 1) * (multval + 1);
                     }
                 } else {
                     /* Non-periodic SS: use wMaxPacketSize */
-                    avglen = maxpacket;
+                    avg_trb_len = maxpacket;
                 }
             } else if ((type == UHCMD_ISOXFER) || (type == UHCMD_INTXFER)) {
-                /* High-bandwidth HS endpoints: scale payload by Mult+1 */
-                avglen = maxpacket * (ULONG)(multval + 1);
+                 /* High-bandwidth HS endpoints: scale payload by Mult+1 */
+                max_esit_payload = maxpacket * (ULONG)(multval + 1);
             }
         }
 
         if (type == UHCMD_CONTROLXFER) {
-            if (avglen < 8)
-                avglen = 8; /* Minimum control packet size */
+            if (avg_trb_len < 8)
+                avg_trb_len = 8; /* Minimum control packet size */
         }
 
-        /* Avg TRB Length / Max ESIT payload */
-        ep->length = avglen;
+        /* Program DWORD4 with correct field packing */
+        if ((type == UHCMD_ISOXFER) || (type == UHCMD_INTXFER)) {
+            if (avg_trb_len > 0xFFFFUL) avg_trb_len = 0xFFFFUL;
+            if (max_esit_payload > 0xFFFFUL) max_esit_payload = 0xFFFFUL;
+            ep->length = (avg_trb_len & 0xFFFFUL) | ((max_esit_payload & 0xFFFFUL) << 16);
+        } else {
+            if (avg_trb_len > 0xFFFFUL) avg_trb_len = 0xFFFFUL;
+            ep->length = (avg_trb_len & 0xFFFFUL);
+        }
 
         UBYTE ival = xhciCalcInterval(interval, flags, type);
         if (ival)
@@ -1261,11 +1713,29 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     } else
         devCtx->dc_EP0MaxPacket = maxpacket;
 
-    /* Set CErr = 3 (2-bit field starting at bit 0) */
-    ep->ctx[1] |= (EP_CTX_CERR_MASK << EPS_CTX_CERR);
+    /*
+     * Endpoint Context DW1 programming:
+     *   bit0      : reserved (must be 0)
+     *   bits2:1   : CErr (must be 3 for normal operation)
+     *   bits15:8  : MaxBurst (SuperSpeed only; 0 for others)
+     *   bits31:16 : Max Packet Size
+     */
+    {
+        ULONG dw1 = ep->ctx[1];
+        ULONG maxburst = 0;
 
-    /* wMaxPacketSize field */
-    ep->ctx[1] |= (maxpacket << EPS_CTX_PACKETMAX);
+        if ((flags & UHFF_SUPERSPEED) && ioreq && (epid > 1))
+            maxburst = (ULONG)(ioreq->iouh_SS_MaxBurst & 0xFF);
+
+        dw1 &= ~0x1UL;
+        dw1 &= ~(0x3UL << 1);
+        dw1 |= (3UL << 1);
+        dw1 &= ~(0xFFUL << 8);
+        dw1 |= (maxburst & 0xFFUL) << 8;
+        dw1 &= ~(0xFFFFUL << 16);
+        dw1 |= ((ULONG)maxpacket & 0xFFFFUL) << 16;
+        ep->ctx[1] = dw1;
+    }
 
     pciusbXHCIDebugEPV("xHCI",
                       DEBUGCOLOR_SET "Setting de-queue ptr to 0x%p" DEBUGCOLOR_RESET" \n",
@@ -1577,7 +2047,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
                 xhciRingLock();
                 if (driprivate->dpSTRB != (UWORD)-1) {
                     if (xhciRingioMatchesIOReq(epRing, driprivate->dpSTRB, ioreq)) {
-                        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] setup (was 0x%p)" DEBUGCOLOR_RESET" \n",
+                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] setup (was 0x%p)" DEBUGCOLOR_RESET" \n",
                                    __func__, ioreq, epRing->ringio, driprivate->dpSTRB,
                                    epRing->ringio[driprivate->dpSTRB]);
                         epRing->ringio[driprivate->dpSTRB] = NULL;
@@ -1589,7 +2059,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
                     if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
                         for (cnt = driprivate->dpTxSTRB; cnt <= driprivate->dpTxETRB; cnt++) {
                             if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
                                            __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
                                 epRing->ringio[cnt] = NULL;
                             }
@@ -1598,14 +2068,14 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
                         /* Wrapped range */
                         for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++) {
                             if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
                                            __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
                                 epRing->ringio[cnt] = NULL;
                             }
                         }
                         for (cnt = 0; cnt <= driprivate->dpTxETRB; cnt++) {
                             if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
                                            __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
                                 epRing->ringio[cnt] = NULL;
                             }
@@ -1615,7 +2085,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
 
                 if (driprivate->dpSttTRB != (UWORD)-1) {
                     if (xhciRingioMatchesIOReq(epRing, driprivate->dpSttTRB, ioreq)) {
-                        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - clearing ringio 0x%p [%d] status (was 0x%p)" DEBUGCOLOR_RESET" \n",
+                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - clearing ringio 0x%p [%d] status (was 0x%p)" DEBUGCOLOR_RESET" \n",
                                    __func__, ioreq, epRing->ringio, driprivate->dpSttTRB,
                                    epRing->ringio[driprivate->dpSttTRB]);
                         epRing->ringio[driprivate->dpSttTRB] = NULL;
@@ -1687,21 +2157,159 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
             {
                 UWORD rt  = ioreq->iouh_SetupData.bmRequestType;
                 UWORD req = ioreq->iouh_SetupData.bRequest;
-                UWORD idx = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-                UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-                UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+                /* SetupData is stored little-endian */
+                UWORD val = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
+                UWORD idx = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
+                UWORD len = AROS_LE2WORD(ioreq->iouh_SetupData.wLength);
 
                 pciusbWarn("xHCI",
                             DEBUGWARNCOLOR_SET
-                            "Device[%u]: Command %02lx %02lx %04lx %04lx %04lx!"
+                            "Device[%u]: Setup %02lx %02lx wValue=%04lx wIndex=%04lx wLength=%04lx!"
                             DEBUGCOLOR_RESET "\n",
                             ioreq->iouh_DevAddr,
-                            (ULONG)rt, (ULONG)req, (ULONG)idx, (ULONG)val, (ULONG)len);
+                            (ULONG)rt, (ULONG)req, (ULONG)val, (ULONG)idx, (ULONG)len);
             }
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
         }
         break;
     }
+}
+
+static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
+                                               struct IOUsbHWReq *ioreq,
+                                               struct pciusbXHCIDevice *devCtx,
+                                               struct timerequest *timerreq)
+{
+    if (!hc || !ioreq || !devCtx)
+        return;
+
+    if (ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)
+        return;
+
+    if (ioreq->iouh_Req.io_Error != UHIOERR_NO_ERROR)
+        return;
+
+    const UBYTE bmRequestType = ioreq->iouh_SetupData.bmRequestType;
+    const UBYTE bRequest = ioreq->iouh_SetupData.bRequest;
+    const UWORD wValue = AROS_LE2WORD(ioreq->iouh_SetupData.wValue);
+    const UWORD wIndex = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
+
+    if ((bmRequestType != (URTF_STANDARD | URTF_ENDPOINT)) ||
+        (bRequest != USR_CLEAR_FEATURE) ||
+        (wValue != UFS_ENDPOINT_HALT))
+        return;
+
+    if (devCtx == XHCI_ROOT_HUB_HANDLE)
+        return;
+
+    const UBYTE epid = xhciEndpointIDFromIndex(wIndex);
+    if (epid == 0 || epid >= MAX_DEVENDPOINTS)
+        return;
+
+#if (0)
+    /* First, find and complete any pending IOReq on this endpoint */
+    struct PCIUnit *unit = hc->hc_Unit;
+    UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
+    if (wIndex & 0x80) devadrep |= 0x10;
+    
+    struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
+    if (pending) {
+        /* Complete the failed request first */
+        pending->iouh_Req.io_Error = UHIOERR_STALL;
+        pending->iouh_Actual = 0;
+        xhciFinishRequest(hc, unit, pending);
+        /* Don't ReplyMsg - let the caller handle it */
+    }
+#endif
+
+    pciusbXHCIDebugV("xHCI",
+        DEBUGCOLOR_SET "CLEAR_FEATURE(ENDPOINT_HALT) completed: dev=%u wIndex=0x%04x -> EPID=%u"
+        DEBUGCOLOR_RESET" \n",
+        (unsigned)devCtx->dc_DevAddr,
+        (unsigned)wIndex,
+        (unsigned)epid);
+
+    if (!devCtx->dc_SlotCtx.dmaa_Ptr)
+        return;
+
+    const UWORD ctxsize = (hc->hc_Flags & HCF_CTX64) ? 64 : 32;
+    volatile UBYTE *obase = (volatile UBYTE *)devCtx->dc_SlotCtx.dmaa_Ptr;
+    volatile struct xhci_ep *epctx = (volatile struct xhci_ep *)(obase + (epid * ctxsize));
+
+    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+    UBYTE epstate = xhciEndpointState(epctx);
+
+    if (epstate != XHCI_EP_STATE_HALTED) {
+        pciusbXHCIDebugV("xHCI",
+            DEBUGCOLOR_SET "Skip endpoint reset: EPID=%u state=%u (not halted)" DEBUGCOLOR_RESET" \n",
+            (unsigned)epid, (unsigned)epstate);
+        return;
+    }
+
+    pciusbXHCIDebug("xHCI",
+        DEBUGCOLOR_SET "Reset Endpoint: slot=%u epid=%u" DEBUGCOLOR_RESET"\n",
+        devCtx->dc_SlotID, epid);
+
+    /* Step 1: Reset Endpoint */
+    LONG cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, timerreq);
+    if (cc != TRB_CC_SUCCESS) {
+        pciusbWarn("xHCI", "Reset Endpoint failed: cc=%ld\n", cc);
+        return;
+    }
+
+    /* Step 2: Reset the transfer ring */
+    APTR deqptr = NULL;
+    BOOL dcs = FALSE;
+    if (!xhciResetEndpointRing(hc, devCtx, epid, &deqptr, &dcs))
+        return;
+
+    /* Step 3: Set TR Dequeue Pointer */
+    cc = xhciCmdSetTRDequeuePtr(hc, devCtx->dc_SlotID, epid, deqptr, dcs, timerreq);
+    if (cc != TRB_CC_SUCCESS) {
+        pciusbWarn("xHCI", "Set TR Dequeue failed: cc=%ld\n", cc);
+        return;
+    }
+
+    /* Step 4: CRITICAL - Verify endpoint is no longer halted */
+    /* Invalidate cache to see controller's updated state */
+    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+
+    ULONG edw0 = AROS_LE2LONG(epctx->ctx[0]);
+    epstate = (edw0 & 0x7U);
+
+    pciusbXHCIDebug("xHCI",
+        "After Set TR Dequeue: epid=%u state=%u (%s)\n",
+        epid, epstate,
+        (epstate == 0) ? "Disabled" :
+        (epstate == 1) ? "Running" :
+        (epstate == 2) ? "Halted" :
+        (epstate == 3) ? "Stopped" :
+        (epstate == 4) ? "Error" : "Unknown");
+
+    /* Endpoint should be in Stopped (3) state after Set TR Dequeue */
+    if (epstate == 2) {
+        pciusbWarn("xHCI",
+            DEBUGWARNCOLOR_SET
+            "Endpoint still Halted after reset sequence! Aborting recovery."
+            DEBUGCOLOR_RESET"\n");
+        return;
+    }
+
+    /* Step 5: Ring doorbell to transition Stopped -> Running */
+    xhciRingDoorbell(hc, devCtx->dc_SlotID, epid);
+
+    /* Step 6: Wait briefly and verify it transitioned to Running */
+    uhwDelayMS(1, timerreq);
+    
+    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
+    edw0 = AROS_LE2LONG(epctx->ctx[0]);
+    epstate = (edw0 & 0x7U);
+
+    pciusbXHCIDebug("xHCI",
+        "After doorbell: epid=%u state=%u (%s)\n",
+        epid, epstate,
+        (epstate == 1) ? "Running" :
+        (epstate == 3) ? "Stopped" : "Other");
 }
 
 void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq)
@@ -1905,9 +2513,11 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
             }
 
             if (transactiondone) {
+                struct pciusbXHCIDevice *clear_dev = driprivate ? driprivate->dpDevice : NULL;
                 xhciFreeAsyncContext(hc, unit, ioreq);
                 if ((!ioreq->iouh_Req.io_Error) &&
                     (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)) {
+                    xhciHandleClearFeatureEndpointHalt(hc, ioreq, clear_dev, timerreq);
                     uhwCheckSpecialCtrlTransfers(hc, ioreq);
                 }
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -1967,6 +2577,17 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
                        DEBUGWARNCOLOR_SET
                        "cc=%d for IOReq 0x%p"
                        DEBUGCOLOR_RESET" \n", (int)ccode, ioreq);
+        }
+
+        /*
+         * On error completions, dump a concise view of the endpoint context.
+         * This is particularly useful to spot endpoints that remain HALTED /
+         * STOPPED while new TDs are being submitted.
+         */
+        if ((ccode != TRB_CC_SUCCESS) &&
+            !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
+            xhciDiagDumpEndpointBrief(hc, driprivate->dpDevice, (UBYTE)driprivate->dpEPID, "completion-error");
+            xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "completion-error");
         }
 
         ULONG transferred = (remaining <= ioreq->iouh_Length)
@@ -2093,8 +2714,15 @@ static inline struct IOUsbHWReq *xhciBusyReqFromSlotEpid(struct PCIController *h
     if (!hc || !hc->hc_Unit || !devCtx)
         return NULL;
 
+    /* Match xhciDevEPKey():
+     *  - EP0 is a single bidirectional busy slot (no dir bit)
+     *  - other EPs use 0x10 to distinguish IN
+     */
     UBYTE endpoint = (epid > 1) ? (epid >> 1) : 0;
-    UBYTE dirbit   = (epid & 0x01) ? 0x10 : 0x00; /* match xhciDevEPKey() encoding */
+    UBYTE dirbit   = 0x00;
+    if (endpoint != 0) {
+        dirbit = (epid & 0x01) ? 0x10 : 0x00;
+    }
     UWORD devadrep = (devCtx->dc_DevAddr << 5) + endpoint + dirbit;
 
     return (struct IOUsbHWReq *)hc->hc_Unit->hu_DevBusyReq[devadrep];
@@ -2321,9 +2949,16 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 if (have_idx) {
                     req = (struct IOUsbHWReq *)ring->ringio[last];
 
-                    /* Advance the software view of the ring only for valid TRB pointers. */
-                    ULONG new_end = ring_advance_idx(last);
-                    ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
+                    /* Only advance ring on SUCCESS or recoverable short packets */
+                    if (trbe_ccode == TRB_CC_SUCCESS || 
+                        trbe_ccode == TRB_CC_SHORT_PACKET) {
+                        ULONG new_end = ring_advance_idx(last);
+                        ring->end = (ring->end & RINGENDCFLAG) | (new_end & ~RINGENDCFLAG);
+                    }
+                    /* On error, DO NOT advance - let reset/recovery handle it */
+                    pciusbXHCIDebugTRBV("xHCI",
+                        DEBUGCOLOR_SET "TRANSFER EVT idx=%lu ringio=%p ring=%p" DEBUGCOLOR_RESET" \n",
+                        (unsigned long)last, req, ring);
                 } else if (trbe_ccode == TRB_CC_RING_UNDERRUN) {
                     /*
                      * Ring Underrun does not reliably report a TRB pointer.
@@ -2333,6 +2968,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     if (req) {
                         /* Report 0 bytes transferred */
                         event_rem = req->iouh_Length;
+                    }
+                }
+
+                if (!req && devCtx && (trbe_epid < MAX_DEVENDPOINTS)) {
+                    req = xhciBusyReqFromSlotEpid(hc, devCtx, trbe_epid);
+                    if (req) {
+                        pciusbXHCIDebugTRBV("xHCI",
+                            DEBUGCOLOR_SET
+                            "TRANSFER EVT: fallback to busy req %p (slot=%u epid=%u)"
+                            DEBUGCOLOR_RESET" \n",
+                            req, trbe_slot, trbe_epid);
                     }
                 }
 
@@ -2346,8 +2992,52 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                                    trbe_slot, trbe_epid,
                                    (unsigned long)(have_idx ? last : 0),
                                    (unsigned long)trbe_ccode);
+                        if (trbe_slot < USB_DEV_MAX && trbe_epid < MAX_DEVENDPOINTS) {
+                            UBYTE *cnt = &xhci_diag_missing_ioreq[trbe_slot][trbe_epid];
+                            if (*cnt < XHCI_DIAG_DUMP_LIMIT && devCtx && ring && have_idx) {
+                                (*cnt)++;
+                                pciusbWarn("xHCI",
+                                           DEBUGWARNCOLOR_SET
+                                           "DIAG: missing IOReq dump #%u (slot=%u epid=%u idx=%lu cc=%lu/%s trb_dma=%p ring=%p)"
+                                           DEBUGCOLOR_RESET" \n",
+                                           (unsigned)*cnt,
+                                           trbe_slot, trbe_epid,
+                                           (unsigned long)last,
+                                           (unsigned long)trbe_ccode,
+                                           xhciDiagCCName(trbe_ccode),
+                                           (APTR)(IPTR)trb_dma,
+                                           ring);
+                                xhciDiagDumpRingWindow(hc, ring, last, XHCI_DIAG_DUMP_RADIUS, "missing-ioreq");
+                                xhciDiagDumpOutputCtx(hc, devCtx, trbe_epid, "missing-ioreq");
+                            }
+                        }
                     }
                     break;
+                }
+ 
+                if (trbe_ccode != TRB_CC_SUCCESS &&
+                    trbe_slot < USB_DEV_MAX && trbe_epid < MAX_DEVENDPOINTS &&
+                    devCtx && ring && have_idx)
+                {
+                    UBYTE *cnt = &xhci_diag_cc_err[trbe_slot][trbe_epid];
+                    if (*cnt < XHCI_DIAG_DUMP_LIMIT) {
+                        (*cnt)++;
+                        pciusbWarn("xHCI",
+                                   DEBUGWARNCOLOR_SET
+                                   "DIAG: error completion dump #%u (slot=%u epid=%u idx=%lu cc=%lu/%s rem=%lu req=%p trb_dma=%p ring=%p)"
+                                   DEBUGCOLOR_RESET" \n",
+                                   (unsigned)*cnt,
+                                   trbe_slot, trbe_epid,
+                                   (unsigned long)last,
+                                   (unsigned long)trbe_ccode,
+                                   xhciDiagCCName(trbe_ccode),
+                                   (unsigned long)event_rem,
+                                   req,
+                                   (APTR)(IPTR)trb_dma,
+                                   ring);
+                        xhciDiagDumpRingWindow(hc, ring, last, XHCI_DIAG_DUMP_RADIUS, "cc-error");
+                        xhciDiagDumpOutputCtx(hc, devCtx, trbe_epid, "cc-error");
+                    }
                 }
 
                 doCompletion = xhciIntWorkProcess(hc, req, event_rem, trbe_ccode);
@@ -3302,6 +3992,16 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
             }
         }
 
+        /* Free software-only ring bookkeeping (not DMA-visible) */
+        {
+            volatile struct pcisusbXHCIRing *ring =
+                (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+            if (ring && ring->ringio) {
+                FreeMem((APTR)ring->ringio, sizeof(*ring->ringio) * XHCI_EVENT_RING_TRBS);
+                ring->ringio = NULL;
+            }
+        }
+ 
         FREEPCIMEM(hc, hc->hc_PCIDriverObject, devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr);
         devCtx->dc_EPAllocs[epid].dmaa_Entry.me_Un.meu_Addr = NULL;
         devCtx->dc_EPAllocs[epid].dmaa_Ptr = NULL;

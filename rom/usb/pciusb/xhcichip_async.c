@@ -124,13 +124,20 @@ static void xhciTDSetupInlinedata(UQUAD *inlinedata, struct IOUsbHWReq *ioreq, U
 
 static BOOL isStandardTRBTransfer(struct IOUsbHWReq *ioreq, ULONG txtype)
 {
-    return (txtype == UHCMD_BULKXFER) ||
-        !((txtype == UHCMD_CONTROLXFER) &&
-          (((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_DEVICE)) &&
-            (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS)) ||
-           ((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_ENDPOINT)) &&
-            (ioreq->iouh_SetupData.bRequest == USR_CLEAR_FEATURE) &&
-            (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_ENDPOINT_HALT)))));
+    const UBYTE bm = ioreq->iouh_SetupData.bmRequestType;
+    const UBYTE br = ioreq->iouh_SetupData.bRequest;
+
+    if (txtype != UHCMD_CONTROLXFER)
+        return TRUE;
+
+    /* Special-case: Standard Device request: SET_ADDRESS */
+    if (bm == (URTF_STANDARD | URTF_DEVICE) &&
+        br == USR_SET_ADDRESS)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *ioreq,
@@ -150,9 +157,9 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
                     (ULONG)( setupdata_inline        & 0xffffffffUL),
                     (unsigned)sizeof(ioreq->iouh_SetupData));
     /* SETUP stage */
-    queued = xhciQueueTRB(hc, epring, setupdata_inline,
-                          sizeof(ioreq->iouh_SetupData),
-                          sf);
+    queued = xhciQueueTRB_IO(hc, epring, setupdata_inline,
+                             sizeof(ioreq->iouh_SetupData),
+                             sf, &ioreq->iouh_Req);
     pciusbXHCIDebugV("xHCI",
                     "xhciQueueTRB (SETUP) -> queued=%d\n",
                     (int)queued);
@@ -161,7 +168,6 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
         return FALSE;
 
     driprivate->dpSTRB = queued;
-    epring->ringio[queued] = &ioreq->iouh_Req;
 
     /* DATA stage (if any) */
     if (has_data) {
@@ -215,8 +221,8 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
         pciusbXHCIDebugTRBV("xHCI",
                         "Queueing STATUS TRB\n");
         ULONG stf = xhciTDStatusFlags(status_tdflags);
-        queued = xhciQueueTRB(hc, epring, 0, 0,
-                              stf);
+        queued = xhciQueueTRB_IO(hc, epring, 0, 0,
+                                 stf, &ioreq->iouh_Req);
         pciusbXHCIDebugTRBV("xHCI",
                         "xhciQueueTRB (STATUS) -> queued=%d\n",
                         (int)queued);
@@ -224,7 +230,6 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
 
     if (queued != -1) {
         driprivate->dpSttTRB = queued;
-        epring->ringio[queued] = &ioreq->iouh_Req;
     }
 
     return queued != -1;

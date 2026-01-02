@@ -200,7 +200,7 @@ static inline BOOL xhciHubPortConnected(ULONG portsc)
 struct pcisusbXHCIRing
 {
     struct xhci_trb                     ring[XHCI_EVENT_RING_TRBS];                 // (!!) volatile area accessed by the controller (!!)
-    struct IORequest                    *ringio[XHCI_EVENT_RING_TRBS];
+    struct IORequest                    **ringio;                                    /* non-DMA bookkeeping */
     struct pciusbXHCIDMAAlloc           rnext;                                      // Next ring in this sequence
     struct xhci_trb                     current;                                    // cached copy of the current trb
     volatile UWORD                      next, end;                                  // current queue locations

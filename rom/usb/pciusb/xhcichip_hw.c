@@ -57,9 +57,14 @@ LONG xhciCmdSubmit(struct PCIController *hc,
     volatile struct xhci_inctx *inctx;
     volatile struct xhci_slot *slot = NULL;
     WORD queued;
+    ULONG cmd_type = (trbflags >> TRBS_FLAG_TYPE) & TRB_FLAG_TYPE_SMASK;
+    BOOL needs_context =
+        (cmd_type == TRBB_FLAG_CRTYPE_ADDRESS_DEVICE) ||
+        (cmd_type == TRBB_FLAG_CRTYPE_CONFIGURE_ENDPOINT) ||
+        (cmd_type == TRBB_FLAG_CRTYPE_EVALUATE_CONTEXT);
 
     Disable();
-    if (dmaaddr) {
+    if (dmaaddr && needs_context) {
         ULONG portsc = 0;
         UBYTE port = 0;
         UWORD ctxoff = 1;
@@ -112,6 +117,8 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             /* Assume typical input context size; adjust if needed */
             CacheClearE(dmaaddr, 2048, CACRF_ClearD);
         }
+        queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
+    } else if (dmaaddr) {
         queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
     } else {
         queued = xhciQueueTRB(hc, xhcic->xhc_OPRp, 0, 0, trbflags);
@@ -201,16 +208,14 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
             Enable();
             return -1;
         }
-        queued = xhciQueueTRB(hc, cmdring, (UQUAD)(IPTR)dmaaddr, 0, trbflags);
+        queued = xhciQueueTRB_IO(hc, cmdring, (UQUAD)(IPTR)dmaaddr, 0, trbflags,
+                                 &ioreq->iouh_Req);
     } else
-        queued = xhciQueueTRB(hc, cmdring, 0, 0, trbflags);
+        queued = xhciQueueTRB_IO(hc, cmdring, 0, 0, trbflags, &ioreq->iouh_Req);
 
     if (queued != -1) {
         xhcic->xhc_CmdResults[queued].flags = 0xFFFFFFFF;
         xhcic->xhc_CmdResults[queued].status = 0xFFFFFFFF;
-        xhciRingLock();
-        cmdring->ringio[queued] = &ioreq->iouh_Req;
-        xhciRingUnlock();
     }
     Enable();
 
@@ -296,6 +301,39 @@ LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULON
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s(%u)" DEBUGCOLOR_RESET" \n", __func__, slot);
 
     return xhciCmdSubmit(hc, NULL, flags, NULL, timerreq);
+}
+
+LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, ULONG epid, APTR dequeue_ptr,
+                            BOOL dcs, struct timerequest *timerreq)
+{
+    ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_SET_TR_DEQUEUE_PTR;
+    UQUAD dma = 0;
+    /*
+     * The Set TR Dequeue Pointer command parameter is a DMA address with bit 0
+     * carrying the Dequeue Cycle State (DCS). Do NOT OR flag bits into a CPU
+     * pointer and then run it through CPU->PCI translation; translate first,
+     * then apply DCS.
+     */
+    if (dequeue_ptr) {
+#if !defined(PCIUSB_NO_CPUTOPCI)
+        dma = (UQUAD)(IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dequeue_ptr);
+#else
+        dma = (UQUAD)(IPTR)dequeue_ptr;
+#endif
+    }
+
+    if (dcs)
+        dma |= 0x1ULL;
+
+    pciusbXHCIDebug("xHCI",
+                    DEBUGFUNCCOLOR_SET "%s(slot=%u, epid=%u, ptr=0x%p, dma=%08lx:%08lx, dcs=%u)" DEBUGCOLOR_RESET" \n",
+                    __func__, slot, epid, dequeue_ptr,
+                    (ULONG)((dma >> 32) & 0xffffffffUL),
+                    (ULONG)( dma        & 0xffffffffUL),
+                    dcs ? 1U : 0U);
+
+    /* Pass the DMA value (with DCS encoded in bit 0) through to the command TRB. */
+    return xhciCmdSubmit(hc, (APTR)(IPTR)dma, flags, NULL, timerreq);
 }
 
 LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr,

@@ -49,7 +49,7 @@ void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
     volatile struct xhci_address *dcbaa = (volatile struct xhci_address *)xhcic->xhc_DCBAAp;
     UQUAD ptr = xhciDebugReadAddress(&dcbaa[slotid]);
 
-    pciusbXHCIDebug("xHCI",
+    pciusbDebug("xHCI",
         DEBUGCOLOR_SET "DCBAA[%lu] -> 0x%08lx%08lx" DEBUGCOLOR_RESET" \n",
         slotid,
         (ULONG)(ptr >> 32),
@@ -67,7 +67,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     UWORD val = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
     UWORD len = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 
-    pciusbXHCIDebug("xHCI",
+    pciusbDebug("xHCI",
                 DEBUGWARNCOLOR_SET
                 "Device[%u]: Command %02lx %02lx %04lx %04lx %04lx!"
                 DEBUGCOLOR_RESET "\n",
@@ -81,31 +81,31 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_STANDARD | URTF_DEVICE):
         switch (req) {
         case USR_SET_ADDRESS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: SetAddress = %ld"
                         DEBUGCOLOR_RESET "\n", (LONG)val);
             return;
 
         case USR_SET_CONFIGURATION:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: SetConfiguration = %ld"
                         DEBUGCOLOR_RESET "\n", (LONG)val);
             return;
 
         case USR_CLEAR_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: ClearFeature (feature=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val);
             return;
 
         case USR_SET_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: SetFeature (feature=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val);
             return;
 
         case USR_SET_DESCRIPTOR:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: SetDescriptor (type=%ld index=%ld len=%ld)"
                         DEBUGCOLOR_RESET "\n",
                         (LONG)(val >> 8), (LONG)(val & 0xff), (LONG)len);
@@ -116,7 +116,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_STANDARD | URTF_DEVICE):
         switch (req) {
         case USR_GET_STATUS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: GetStatus (len=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)len);
             return;
@@ -124,25 +124,25 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         case USR_GET_DESCRIPTOR:
             switch (val >> 8) {
             case UDT_DEVICE:
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+                pciusbDebug("xHCI", DEBUGCOLOR_SET
                             "Std Dev: GetDescriptor>Device (len=%ld)"
                             DEBUGCOLOR_RESET "\n", (LONG)len);
                 return;
 
             case UDT_CONFIGURATION:
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+                pciusbDebug("xHCI", DEBUGCOLOR_SET
                             "Std Dev: GetDescriptor>Configuration (len=%ld)"
                             DEBUGCOLOR_RESET "\n", (LONG)len);
                 return;
 
             case UDT_STRING:
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+                pciusbDebug("xHCI", DEBUGCOLOR_SET
                             "Std Dev: GetDescriptor>String (len=%ld)"
                             DEBUGCOLOR_RESET "\n", (LONG)len);
                 return;
 
             default:
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+                pciusbDebug("xHCI", DEBUGCOLOR_SET
                             "Std Dev: GetDescriptor>Unsupported type=%02lx index=%02lx"
                             DEBUGCOLOR_RESET "\n",
                             (ULONG)(val >> 8), (ULONG)(val & 0xff));
@@ -151,7 +151,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
             break;
 
         case USR_GET_CONFIGURATION:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: GetConfiguration()"
                         DEBUGCOLOR_RESET "\n");
             return;
@@ -164,19 +164,19 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_STANDARD | URTF_INTERFACE):
         switch (req) {
         case USR_CLEAR_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: ClearFeature (feature=%ld, interface=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (LONG)idx);
             return;
 
         case USR_SET_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: SetFeature (feature=%ld, interface=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (LONG)idx);
             return;
 
         case USR_SET_INTERFACE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: SetInterface (interface=%ld, alt=%ld)"
                         DEBUGCOLOR_RESET "\n",
                         (LONG)idx, (LONG)val);
@@ -187,13 +187,13 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_STANDARD | URTF_INTERFACE):
         switch (req) {
         case USR_GET_STATUS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: GetStatus (interface=%ld, len=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)idx, (LONG)len);
             return;
 
         case USR_GET_INTERFACE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: GetInterface (interface=%ld, len=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)idx, (LONG)len);
             return;
@@ -206,13 +206,13 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_STANDARD | URTF_ENDPOINT):
         switch (req) {
         case USR_CLEAR_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: ClearFeature (feature=%ld, ep=0x%02lx)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (ULONG)idx);
             return;
 
         case USR_SET_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: SetFeature (feature=%ld, ep=0x%02lx)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (ULONG)idx);
             return;
@@ -222,13 +222,13 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_STANDARD | URTF_ENDPOINT):
         switch (req) {
         case USR_GET_STATUS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: GetStatus (ep=0x%02lx, len=%ld)"
                         DEBUGCOLOR_RESET "\n", (ULONG)idx, (LONG)len);
             return;
 
         case USR_SYNCH_FRAME:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: SynchFrame (ep=0x%02lx, len=%ld)"
                         DEBUGCOLOR_RESET "\n", (ULONG)idx, (LONG)len);
             return;
@@ -243,13 +243,13 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_CLASS | URTF_OTHER):
         switch (req) {
         case USR_SET_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: SetFeature (feature=%ld, index=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (LONG)idx);
             return;
 
         case USR_CLEAR_FEATURE:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: ClearFeature (feature=%ld, index=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)val, (LONG)idx);
             return;
@@ -259,13 +259,13 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_CLASS | URTF_OTHER):
         switch (req) {
         case USR_GET_STATUS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: GetStatus (index=%ld, len=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)idx, (LONG)len);
             return;
 
         case USR_GET_DESCRIPTOR:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: GetDescriptor (index=%ld, type=%ld, len=%ld)"
                         DEBUGCOLOR_RESET "\n",
                         (LONG)idx, (LONG)(val >> 8), (LONG)len);
@@ -275,7 +275,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 
     /* Class, device */
     case (URTF_CLASS | URTF_DEVICE):
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+        pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class Dev: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
                     (ULONG)req, (ULONG)val, (ULONG)idx, (LONG)len);
@@ -284,20 +284,20 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_CLASS | URTF_DEVICE):
         switch (req) {
         case USR_GET_STATUS:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Dev: GetStatus (len=%ld)"
                         DEBUGCOLOR_RESET "\n", (LONG)len);
             return;
 
         case USR_GET_DESCRIPTOR:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Dev: GetDescriptor (type=%ld idx=%ld len=%ld)"
                         DEBUGCOLOR_RESET "\n",
                         (LONG)(val >> 8), (LONG)(val & 0xff), (LONG)len);
             return;
 
         default:
-            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+            pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Dev: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                         DEBUGCOLOR_RESET "\n",
                         (ULONG)req, (ULONG)val, (ULONG)idx, (LONG)len);
@@ -307,7 +307,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     /* Class, interface */
     case (URTF_CLASS | URTF_INTERFACE):
     case (URTF_CLASS | URTF_ENDPOINT):
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+        pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class %s: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
                     (rt & URTF_INTERFACE) ? "If" : "Ep",
@@ -316,7 +316,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 
     case (URTF_IN | URTF_CLASS | URTF_INTERFACE):
     case (URTF_IN | URTF_CLASS | URTF_ENDPOINT):
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+        pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class IN %s: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
                     (rt & URTF_INTERFACE) ? "If" : "Ep",
@@ -334,7 +334,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     case (URTF_IN | URTF_VENDOR | URTF_INTERFACE):
     case (URTF_IN | URTF_VENDOR | URTF_ENDPOINT):
     case (URTF_IN | URTF_VENDOR | URTF_OTHER):
-        pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET
+        pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Vendor req: rt=%02lx bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
                     (ULONG)rt, (ULONG)req, (ULONG)val, (ULONG)idx, (LONG)len);
@@ -344,7 +344,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
      * Fallback
      * ========================= */
     default:
-        pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET
+        pciusbDebug("xHCI", DEBUGWARNCOLOR_SET
                     "Device: Unhandled setup: rt=%02lx req=%02lx idx=%04lx val=%04lx len=%04lx"
                     DEBUGCOLOR_RESET "\n",
                     (ULONG)rt, (ULONG)req,
@@ -353,7 +353,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     }
 
     /* If we somehow fall out of the switch on a known rt */
-    pciusbXHCIDebug("xHCI", DEBUGWARNCOLOR_SET
+    pciusbDebug("xHCI", DEBUGWARNCOLOR_SET
                 "Device: Unknown command!"
                 DEBUGCOLOR_RESET "\n");
 }
@@ -409,7 +409,7 @@ void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slo
     ULONG target = (ctx3 >> 22) & 0x3FF;
     ULONG state = (ctx3 >> 27) & 0x1F;
 
-    pciusbXHCIDebug("xHCI",
+    pciusbDebug("xHCI",
         DEBUGCOLOR_SET
         "Slot Ctx: route=0x%05lx port=%lu speed=%lu target=0x%03lx state=%lu"
         DEBUGCOLOR_RESET" \n",
@@ -571,7 +571,7 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc,
     ULONG type     = (ctx1 >> EPS_CTX_TYPE) & 0x7;               /* DW1[4:2] */
     ULONG maxpkt   = (ctx1 >> EPS_CTX_PACKETMAX) & 0xFFFF;       /* DW1[31:16] */
 
-    pciusbXHCIDebug("xHCI",
+    pciusbDebug("xHCI",
         DEBUGCOLOR_SET
         "EP Ctx %lu: state=%lu type=%lu mult=%lu interval=%lu maxESIT=%lu "
         "CErr=%lu maxpkt=%lu\n"

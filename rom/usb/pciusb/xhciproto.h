@@ -160,7 +160,11 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
 BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
 WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
+WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
+                     ULONG plen, ULONG trbflags, struct IORequest *ioreq);
 WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast);
+WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
+                      ULONG pmax, ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
 
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
@@ -191,6 +195,8 @@ LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG
                          struct timerequest *timerreq);
 LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve,
                           struct timerequest *timerreq);
+LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, ULONG epid, APTR dequeue_ptr,
+                            BOOL dcs, struct timerequest *timerreq);
 LONG xhciCmdEndpointConfigure(struct PCIController *hc, ULONG slot, APTR dmaaddr,
                               struct timerequest *timerreq);
 LONG xhciCmdContextEvaluate(struct PCIController *hc, ULONG slot, APTR dmaaddr,
@@ -225,6 +231,25 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
     xhciCmdSubmit(hc, NULL, (slot << 24) | (suspend << 23) | (epid << 16) | TRBF_FLAG_CRTYPE_STOP_ENDPOINT, NULL, timerreq)
 #define xhciCmdEndpointReset(hc,slot,epid,preserve,timerreq) \
     xhciCmdSubmit(hc, NULL, (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9), NULL, timerreq)
+static inline LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, ULONG epid, APTR dequeue_ptr,
+                                          BOOL dcs, struct timerequest *timerreq)
+{
+    ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_SET_TR_DEQUEUE_PTR;
+    UQUAD dma = 0;
+
+    if (dequeue_ptr) {
+#if !defined(PCIUSB_NO_CPUTOPCI)
+        dma = (UQUAD)(IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dequeue_ptr);
+#else
+        dma = (UQUAD)(IPTR)dequeue_ptr;
+#endif
+    }
+
+    if (dcs)
+        dma |= 0x1ULL;
+
+    return xhciCmdSubmit(hc, (APTR)(IPTR)dma, flags, NULL, timerreq);
+}
 #define xhciCmdEndpointConfigure(hc,slot,dmaaddr,timerreq) \
     xhciCmdSubmit(hc, dmaaddr, (slot << 24) | TRBF_FLAG_CRTYPE_CONFIGURE_ENDPOINT, NULL, timerreq)
 #define xhciCmdContextEvaluate(hc,slot,dmaaddr,timerreq) \
@@ -236,6 +261,7 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 #if defined(PCIUSB_XHCI_DEBUG)
 #define pciusbXHCIDebug(sub,fmt,args...)                pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugTRB(sub,fmt,args...)             pciusbDebug(sub,fmt,##args)
+#define pciusbXHCIDebugRIO(sub,fmt,args...)             pciusbDebug(sub,fmt,##args)
 #if defined(DEBUG) && (DEBUG > 1)
 #define pciusbXHCIDebugV(sub,fmt,args...)         pciusbDebug(sub,fmt,##args)
 #define pciusbXHCIDebugTRBV(sub,fmt,args...)      pciusbDebug(sub,fmt,##args)
@@ -250,6 +276,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq);
 #define pciusbXHCIDebugTRB(sub,fmt,args...)
 #define pciusbXHCIDebugV(sub,fmt,args...)
 #define pciusbXHCIDebugTRBV(sub,fmt,args...)
+#define pciusbXHCIDebugRIO(sub,fmt,args...)
 #define xhciDebugDumpDCBAAEntry(a,b)
 #define xhciDebugControlTransfer(a)
 #endif

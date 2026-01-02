@@ -335,32 +335,18 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     driprivate->dpBounceData = bounce ? ioreq->iouh_Data : NULL;
     driprivate->dpBounceLen = dmalen;
     driprivate->dpBounceDir = effdir;
-    queued = xhciQueueData(hc, epring,
-                           (UQUAD)(IPTR)dmaptr,
-                           dmalen,
-                           ioreq->iouh_MaxPktSize,
-                           trbflags,
-                           iocOnLast);
-    if (queued != -1) {
-        int cnt;
 
+    queued = xhciQueueData_IO(hc, epring,
+                              (UQUAD)(IPTR)dmaptr,
+                              dmalen,
+                              ioreq->iouh_MaxPktSize,
+                              trbflags,
+                              iocOnLast,
+                              &ioreq->iouh_Req);
+    if (queued != -1) {
         driprivate->dpTxSTRB = queued;
         driprivate->dpTxETRB = (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
 
-        xhciRingLock();
-        if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
-            for (cnt = driprivate->dpTxSTRB; cnt < (driprivate->dpTxETRB + 1); cnt++) {
-                epring->ringio[cnt] = &ioreq->iouh_Req;
-            }
-        } else {
-            for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++) {
-                epring->ringio[cnt] = &ioreq->iouh_Req;
-            }
-            for (cnt = 0; cnt < (driprivate->dpTxETRB + 1); cnt++) {
-                epring->ringio[cnt] = &ioreq->iouh_Req;
-            }
-        }
-        xhciRingUnlock();
     } else if (driprivate->dpBounceBuf) {
         xhciReleaseDMABuffer(hc, ioreq, 0, effdir, driprivate->dpBounceBuf);
         driprivate->dpBounceBuf = NULL;

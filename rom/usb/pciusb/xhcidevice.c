@@ -241,42 +241,6 @@ _xhci_setaddr_complete:
             return RC_DONTREPLY;
         }
 
-        /* Standard CLEAR_FEATURE(ENDPOINT_HALT) (endpoint request) */
-        if ((bmRequestType == (URTF_STANDARD | URTF_ENDPOINT)) &&
-            (bRequest == USR_CLEAR_FEATURE) &&
-            (wValue == UFS_ENDPOINT_HALT))
-        {
-            struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
-            const UWORD epid = xhciEndpointIDFromIndex(wIndex);
-            LONG cc = TRB_CC_INVALID;
-
-            pciusbXHCIDebugV("xHCI",
-                "CLEAR_FEATURE(ENDPOINT_HALT) short-circuit (PrepareTransfer): slot=%u wIndex=%u -> EPID=%u ioreq=%p\n",
-                devCtx->dc_SlotID, (unsigned)wIndex, (unsigned)epid, ioreq);
-
-            if (epid == 0) {
-                /* EP0 halt clear is not expected; treat as success. */
-                cc = TRB_CC_SUCCESS;
-            } else {
-                cc = xhciCmdEndpointStop(hc, devCtx->dc_SlotID, epid, FALSE, unit->hu_TimerReq);
-                if (cc == TRB_CC_SUCCESS)
-                    cc = xhciCmdEndpointReset(hc, devCtx->dc_SlotID, epid, 0, unit->hu_TimerReq);
-            }
-
-            if ((driprivate->dpCC = (UBYTE)cc) != TRB_CC_SUCCESS) {
-                pciusbError("xHCI",
-                    DEBUGWARNCOLOR_SET "xHCI: ep stop/reset failed (cc=%ld)" DEBUGCOLOR_RESET"\n", cc);
-                ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-            }
-
-            Disable();
-            AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
-            Enable();
-
-            SureCause(base, &hc->hc_CompleteInt);
-
-            return RC_DONTREPLY;
-        }
     }
 
     /*
