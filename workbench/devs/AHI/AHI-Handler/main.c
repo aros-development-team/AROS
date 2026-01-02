@@ -56,6 +56,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(__AROS__)
+#include <aros/cpu.h>
+#endif
+
 #include "main.h"
 #include "version.h"
 
@@ -106,6 +110,37 @@ void UnInitialize (void);
 #define BTOC(bptr)  BADDR(bptr)
 #define CTOB(cptr)  MKBADDR(cptr)
 #endif
+
+static inline UWORD HostToBE16(UWORD value)
+{
+#if !defined(__AROS__) || AROS_BIG_ENDIAN
+  return value;
+#else
+  return (UWORD)((value << 8) | (value >> 8));
+#endif
+}
+
+static inline ULONG HostToBE32(ULONG value)
+{
+#if !defined(__AROS__) || AROS_BIG_ENDIAN
+  return value;
+#else
+  return ((value & 0x000000FFUL) << 24) |
+         ((value & 0x0000FF00UL) << 8) |
+         ((value & 0x00FF0000UL) >> 8) |
+         ((value & 0xFF000000UL) >> 24);
+#endif
+}
+
+static inline UWORD BE16ToHost(UWORD value)
+{
+  return HostToBE16(value);
+}
+
+static inline ULONG BE32ToHost(ULONG value)
+{
+  return HostToBE32(value);
+}
 
 #if !defined(__AROS__)
 /*
@@ -830,13 +865,14 @@ void ulong2extended (ULONG in, extended *ex)
 
 void FillAIFFheader(struct HandlerData *data) {
 
-  AIFFHeader.FORMsize = data->totallength - 8;
-  AIFFHeader.COMMchunk.numChannels = data->channels;
-  AIFFHeader.COMMchunk.numSampleFrames = 
-      data->totallength / AHI_SampleFrameSize(data->type);
-  AIFFHeader.COMMchunk.sampleSize = data->bits;
+  AIFFHeader.FORMsize = HostToBE32(data->totallength - 8);
+  AIFFHeader.COMMchunk.numChannels = HostToBE16(data->channels);
+  AIFFHeader.COMMchunk.numSampleFrames =
+      HostToBE32(data->totallength / AHI_SampleFrameSize(data->type));
+  AIFFHeader.COMMchunk.sampleSize = HostToBE16(data->bits);
   ulong2extended(data->freq, &AIFFHeader.COMMchunk.sampleRate);
-  AIFFHeader.SSNDsize = sizeof(SampledSoundHeader) + data->totallength - sizeof(AIFFHeader);
+  AIFFHeader.SSNDsize = HostToBE32(sizeof(SampledSoundHeader) +
+      data->totallength - sizeof(AIFFHeader));
 }
 
 
@@ -846,13 +882,14 @@ void FillAIFFheader(struct HandlerData *data) {
 
 void FillAIFCheader(struct HandlerData *data) {
 
-  AIFCHeader.FORMsize = data->totallength - 8;
-  AIFCHeader.COMMchunk.numChannels = data->channels;
-  AIFCHeader.COMMchunk.numSampleFrames = 
-      data->totallength / AHI_SampleFrameSize(data->type);
-  AIFCHeader.COMMchunk.sampleSize = data->bits;
+  AIFCHeader.FORMsize = HostToBE32(data->totallength - 8);
+  AIFCHeader.COMMchunk.numChannels = HostToBE16(data->channels);
+  AIFCHeader.COMMchunk.numSampleFrames =
+      HostToBE32(data->totallength / AHI_SampleFrameSize(data->type));
+  AIFCHeader.COMMchunk.sampleSize = HostToBE16(data->bits);
   ulong2extended(data->freq, &AIFCHeader.COMMchunk.sampleRate);
-  AIFCHeader.SSNDsize = sizeof(SampledSoundHeader) + data->totallength - sizeof(AIFFHeader);
+  AIFCHeader.SSNDsize = HostToBE32(sizeof(SampledSoundHeader) +
+      data->totallength - sizeof(AIFFHeader));
 }
 
 
@@ -868,9 +905,9 @@ LONG ReadCOMMchunk(struct HandlerData *data, UBYTE *buffer, LONG length) {
   while(len > 0) {
     if(((ULONG *) src)[0] == ID_COMM) {
       common = (ExtCommonChunk *) (src + 4);
-      data->channels    = common->numChannels;
-      data->bits        = common->sampleSize;
-      data->totallength = common->numSampleFrames * common->numChannels *
+      data->channels    = BE16ToHost(common->numChannels);
+      data->bits        = BE16ToHost(common->sampleSize);
+      data->totallength = BE32ToHost(common->numSampleFrames) * data->channels *
           (data->bits <= 8 ? 1 : (data->bits <= 16 ? 2 : (data->bits <= 32 ? 4 : 0)));
       data->freq = extended2long(&common->sampleRate);
 
