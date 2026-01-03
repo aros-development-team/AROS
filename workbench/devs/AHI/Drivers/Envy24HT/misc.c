@@ -1319,7 +1319,7 @@ Linear2MixerGain(Fixed  linear,
 
     int v = 0;
 
-    while(linear > gain[ v ] && v < 255) {
+    while(v < 255 && linear > gain[ v ]) {
         ++v;
     }
 
@@ -1440,7 +1440,7 @@ Linear2AKMGain(Fixed  linear,
 
     int v = 0;
 
-    while(linear > gain[ v ] && v < 100) {
+    while(v < 100 && linear > gain[ v ]) {
         ++v;
     }
 
@@ -1492,7 +1492,7 @@ Linear2RecordGain(Fixed  linear,
 
     int v = 0;
 
-    while(linear > gain[ v ] && v < 32) {
+    while(v < 32 && linear > gain[ v ]) {
         ++v;
     }
 
