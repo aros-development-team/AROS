@@ -1,7 +1,7 @@
 #ifndef KERNEL_IOAPIC_H
 #define KERNEL_IOAPIC_H
 /*
-    Copyright © 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS IOAPIC definitions.
@@ -51,7 +51,7 @@ struct IOAPICCfgData
     UBYTE       ioapic_Ver;
     UBYTE       ioapic_IRQCount;
     UBYTE       ioapic_SCI;
-    UBYTE       ioapic_GSI;
+    ULONG       ioapic_GSI;
     UQUAD       *ioapic_RouteTable;
 };
 

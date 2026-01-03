@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     
     http://download.intel.com/design/chipsets/datashts/29056601.pdf
 */
@@ -33,18 +33,6 @@
 #define DPARSE(x)
 
 #define ACPI_MODPRIO_IOAPIC       50
-
-#ifndef MIN
-#if defined(__GNUC__) || defined(__clang__)
-#define MIN(a, b) ({ \
-    __typeof__(a) _a = (a); \
-    __typeof__(b) _b = (b); \
-    _a < _b ? _a : _b; \
-})
-#else
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif
-#endif
 
 /************************************************************************************************
                                     ACPI IO-APIC RELATED FUNCTIONS
@@ -172,7 +160,7 @@ icid_t IOAPICInt_Register(struct KernelBase *KernelBase)
 /*
  *
  */
-void IOAPIC_IntDeliveryOptions(UBYTE base, UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, UBYTE *rtTrig)
+void IOAPIC_IntDeliveryOptions(ULONG base, UBYTE pin, UBYTE pol, UBYTE trig, UBYTE *rtPol, UBYTE *rtTrig)
 {
     if (pol == 0)
     {
@@ -206,13 +194,32 @@ void IOAPIC_IntDeliveryOptions(UBYTE base, UBYTE pin, UBYTE pol, UBYTE trig, UBY
     }
 }
 
+static BOOL IOAPIC_IntToPin(struct IOAPICCfgData *ioapicData,
+    struct IntrMapping *intrMap, icid_t intNum, UBYTE *ioapic_pin)
+{
+    ULONG intGsi = intrMap ? intrMap->im_Int : (ULONG)intNum;
+
+    if (intGsi < ioapicData->ioapic_GSI ||
+        intGsi >= (ioapicData->ioapic_GSI + ioapicData->ioapic_IRQCount))
+    {
+        bug("[Kernel:IOAPIC] %s: IRQ %u outside IOAPIC [GSI %u-%u)\n",
+            __func__, intGsi, ioapicData->ioapic_GSI,
+            ioapicData->ioapic_GSI + ioapicData->ioapic_IRQCount);
+        return FALSE;
+    }
+
+    *ioapic_pin = (UBYTE)(intGsi - ioapicData->ioapic_GSI);
+    return TRUE;
+}
+
 BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
 {
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICCfgData *ioapicData;
     struct IOAPICData *ioapicPrivate = kernPlatD->kb_IOAPIC;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
-    int instance, irq = 0, ioapic_irqbase;
+    int instance;
+    ULONG irq = 0, ioapic_irqbase, max_irq;
     struct IntrController *xtpicIC;
     ACPI_TABLE_FADT *fadt = NULL;
     BYTE sciIRQ = 0;
@@ -238,6 +245,12 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         ULONG ioapicval;
     
         ioapic_irqbase = ioapicData->ioapic_GSI;
+        if (ioapic_irqbase >= HW_IRQ_COUNT)
+        {
+            bug("[Kernel:IOAPIC] %s: IOAPIC GSI base %u outside supported IRQ range\n",
+                __func__, ioapic_irqbase);
+            continue;
+        }
 
         if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
         {
@@ -301,12 +314,19 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         if ((ioapicData->ioapic_RouteTable = AllocMem(ioapicData->ioapic_IRQCount * sizeof(UQUAD), MEMF_ANY)) != NULL)
         {
             DINT(bug("[Kernel:IOAPIC] %s: Routing Data @ 0x%p\n", __func__, ioapicData->ioapic_RouteTable));
-            for (irq = ioapic_irqbase; irq < MIN((ioapic_irqbase + ioapicData->ioapic_IRQCount), APIC_IRQ_MAX); irq++)
+            max_irq = ioapic_irqbase + ioapicData->ioapic_IRQCount;
+            if (max_irq > HW_IRQ_COUNT)
+            {
+                bug("[Kernel:IOAPIC] %s: IOAPIC IRQ range %u-%u exceeds supported IRQs\n",
+                    __func__, ioapic_irqbase, max_irq);
+                max_irq = HW_IRQ_COUNT;
+            }
+            for (irq = ioapic_irqbase; irq < max_irq; irq++)
             {
                 struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, irq);
                 struct IntrMapping *intrTgt = krnInterruptMapped(KernelBase, irq);
                 struct acpi_ioapic_route *irqRoute;
-                UBYTE ioapic_pin = irq - ioapic_irqbase;
+                UBYTE ioapic_pin = (UBYTE)(irq - ioapic_irqbase);
                 UBYTE rtPol, rtTrig;
                 BOOL enabled = FALSE;
                 APTR ssp = NULL;
@@ -451,12 +471,10 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
         bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum);
     }
 
-    if (intrMap)
+    if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
-        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
+        return FALSE;
     }
-    else
-        ioapic_pin = intNum - ioapicData->ioapic_GSI;
 
     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
     {
@@ -492,12 +510,10 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
         bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum);
     }
 
-    if (intrMap)
+    if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
-        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
+        return FALSE;
     }
-    else
-         ioapic_pin = intNum - ioapicData->ioapic_GSI;
 
     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
     {
@@ -549,12 +565,10 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
 
     /* write IOAPIC EIO if necessary .. */
-    if (intrMap)
+    if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))if (intrMap)
     {
-        ioapic_pin = (intrMap->im_Int - ioapicData->ioapic_GSI);
+         return FALSE;
     }
-    else
-         ioapic_pin = intNum - ioapicData->ioapic_GSI;
 
     DINT(bug("[Kernel:IOAPIC] %s(%u): IOAPIC Pin %02X\n", __func__, intNum, ioapic_pin);)
     irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
