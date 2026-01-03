@@ -40,6 +40,7 @@
 #include <proto/ahi_sub.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "ahi_def.h"
 #include "database.h"
@@ -64,6 +65,10 @@ struct TagItem32 {
     ULONG ti_Tag;
     ULONG ti_Data;
 };
+
+#define DRIVERNAME_BUF  128
+#define DRIVERNAME_MAX  100
+#define DRIVERTAGS_MAX  128
 
 struct TagItem32 *AHINextTagItem(struct TagItem32 **tagListPtr)
 {
@@ -723,7 +728,7 @@ AddModeFile(UBYTE *filename)
                         ahibug("[AHI:Device] %s: ci @ 0x%p, name @ 0x%p, data @ 0x%p\n", __func__, ci, name, data);
 
                         if(name != NULL) {
-                            char            driver_name[ 128 ];
+                            char            driver_name[ DRIVERNAME_BUF ];
                             struct Library *driver_base;
 
                             rc = FALSE;
@@ -754,10 +759,8 @@ AddModeFile(UBYTE *filename)
                             extratags[0].ti_Data = (IPTR) name->sp_Data;
 
                             // Now verify that the driver can really be opened
-
-                            strcpy( driver_name, AHIDBDRIVERBASENAME );
-                            strncat( driver_name, "/", 100 );
-                            strncat(driver_name, name->sp_Data, 100);
+                            snprintf(driver_name, DRIVERNAME_MAX, "%s/", AHIDBDRIVERBASENAME);
+                            strncat(driver_name, name->sp_Data, DRIVERNAME_MAX);
                             strcat(driver_name, ".audio");
 
                             driver_base = OpenLibrary(driver_name, DriverVersion);
@@ -804,7 +807,7 @@ AddModeFile(UBYTE *filename)
                             tstate = (struct TagItem32 *) ci->ci_Data;
 
 #if __WORDSIZE==64
-                            driverTags = AllocVec(sizeof(struct TagItem) * 128, MEMF_CLEAR);
+                            driverTags = AllocVec(sizeof(struct TagItem) * DRIVERTAGS_MAX, MEMF_CLEAR);
                             dstTag = driverTags;
 #else
                             driverTags = ci->ci_Data;
