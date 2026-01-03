@@ -1,6 +1,6 @@
 /*
      AHI - Hardware independent audio subsystem
-     Copyright (C) 2017 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This library is free software; you can redistribute it and/or
@@ -759,10 +759,7 @@ AddModeFile(UBYTE *filename)
                             extratags[0].ti_Data = (IPTR) name->sp_Data;
 
                             // Now verify that the driver can really be opened
-                            snprintf(driver_name, DRIVERNAME_MAX, "%s/", AHIDBDRIVERBASENAME);
-                            strncat(driver_name, name->sp_Data, DRIVERNAME_MAX);
-                            strcat(driver_name, ".audio");
-
+                            snprintf(driver_name, DRIVERNAME_MAX, "%s/%s.audio", AHIDBDRIVERBASENAME, name->sp_Data);
                             driver_base = OpenLibrary(driver_name, DriverVersion);
                             if(driver_base == NULL) {
 #ifdef __MORPHOS__
