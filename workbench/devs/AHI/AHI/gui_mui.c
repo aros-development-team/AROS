@@ -524,12 +524,25 @@ static Object *SpecialSlider(LONG min, LONG max, LONG value)
        End);
 }
 
+#if defined(__AROS__)
+Object *MakeCheck (CONST_STRPTR label)
+{
+    Object *obj = MUI_MakeObject(MUIO_Checkmark, (IPTR)label);
+    if (obj)
+        set(obj, MUIA_CycleChain, 1);
+    return obj;
+}
+#endif
+
 BOOL BuildGUI(char *screenname)
 {
     Object *MUISave, *MUIUse, *MUICancel;
     Object *page1, *page2;
     Object *MUITFreq, *MUITChannels, *MUITOutvol, *MUITMonvol, *MUITGain, *MUITInput, *MUITOutput, *MUITDebug, *MUITEcho,
            *MUITSurround, *MUITClipvol, *MUITCpu, *MUITACTime, *MUITScalemode;
+#if defined(__AROS__)
+    Object *MUIUseforSDT, *MUILUseforSDT;
+#endif
 
     D(bug("[AHI:Prefs] %s()\n", __func__);)
 
@@ -607,6 +620,12 @@ BOOL BuildGUI(char *screenname)
                 Child, MUIOutput = SpecialSlider(0,max(state.Outputs-1,0),state.OutputSelected),
                 Child, MUILOutput = SpecialLabel(getOutput()),
             End,
+#if defined(__AROS__)
+            Child, ColGroup(2),
+                Child, MUIUseforSDT = MakeCheck(NULL),
+                Child, MUILUseforSDT = SpecialLabel(msgSystemSound),
+            End,
+#endif
             Child, MUIPlay = SimpleButton(msgButtonPlay),
             Child, HVSpace,
         End,
