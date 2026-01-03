@@ -158,7 +158,7 @@ diff -ruN grub-2.12/Makefile.in grub-2.12.aros/Makefile.in
  @COND_GRUB_MOUNT_TRUE@grub_mount_SOURCES = grub-core/disk/host.c grub-core/kern/emu/hostfs.c grub-core/osdep/init.c util/grub-mount.c 
  @COND_GRUB_MOUNT_TRUE@nodist_grub_mount_SOURCES = grub_fstest_init.c 
 -@COND_GRUB_MOUNT_TRUE@grub_mount_LDADD = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) $(FUSE_LIBS) 
-+@COND_GRUB_MOUNT_TRUE@grub_mount_LDADD = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) -lpthread$(FUSE_LIBS) 
++@COND_GRUB_MOUNT_TRUE@grub_mount_LDADD = libgrubmods.a libgrubgcry.a libgrubkern.a grub-core/lib/gnulib/libgnu.a $(LIBINTL) $(LIBDEVMAPPER) $(LIBZFS) $(LIBNVPAIR) $(LIBGEOM) -lpthread $(FUSE_LIBS)
  @COND_GRUB_MOUNT_TRUE@grub_mount_CFLAGS = $(AM_CFLAGS) $(CFLAGS_PROGRAM) $(FUSE_CFLAGS) 
  @COND_GRUB_MOUNT_TRUE@grub_mount_LDFLAGS = $(AM_LDFLAGS) $(LDFLAGS_PROGRAM) 
  @COND_GRUB_MOUNT_TRUE@grub_mount_CPPFLAGS = $(AM_CPPFLAGS) $(CPPFLAGS_PROGRAM) 
