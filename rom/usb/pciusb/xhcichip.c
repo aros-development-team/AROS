@@ -199,7 +199,7 @@ static UBYTE xhciCalcInterval(UWORD interval, ULONG flags, ULONG type)
     return (UBYTE)interval;
 }
 
-static void xhciInitRing(struct pcisusbXHCIRing *ring)
+static void xhciInitRing(struct PCIController *hc, struct pcisusbXHCIRing *ring)
 {
 #if defined(DEBUG)
     /*
@@ -1519,7 +1519,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
     }
     epring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
     if (ring_new)
-        xhciInitRing((struct pcisusbXHCIRing *)epring);
+        xhciInitRing(hc, (struct pcisusbXHCIRing *)epring);
 
     volatile struct xhci_inctx *in =
         (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
@@ -3379,7 +3379,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
     xhciSetPointer(hc, hcopr->crcr, ((IPTR)xhcic->xhc_DMAOPR | 1));
 
     volatile struct pcisusbXHCIRing *xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_OPRp;
-    xhciInitRing((struct pcisusbXHCIRing *)xring);
+    xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);
 
     volatile struct xhci_er_seg *erseg = (volatile struct xhci_er_seg *)xhcic->xhc_ERSTp;
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Setting Event Segment Pointer to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAERS);
@@ -3395,7 +3395,7 @@ void xhciReset(struct PCIController *hc, struct PCIUnit *hu,
     xhciSetPointer(hc, xhciir->erstba, ((IPTR)xhcic->xhc_DMAERST));
 
     xring = (volatile struct pcisusbXHCIRing *)xhcic->xhc_ERSp;
-    xhciInitRing((struct pcisusbXHCIRing *)xring);
+    xhciInitRing(hc, (struct pcisusbXHCIRing *)xring);
     /*
      * MSI/MSI-X is edge-triggered in practice: if IP/EINT are already set
      * when USBCMD.INTE becomes 1, some controllers will not emit a new MSI.
@@ -3686,7 +3686,7 @@ takeownership:
         xhcic->xhc_DMAOPR = xhcic->xhc_OPRp;
 #endif
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAOPR);
-        xhciInitRing((struct pcisusbXHCIRing *)xhcic->xhc_OPRp);
+        xhciInitRing(hc, (struct pcisusbXHCIRing *)xhcic->xhc_OPRp);
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate OPR DMA Memory" DEBUGCOLOR_RESET" \n");
         goto init_fail;
@@ -3706,7 +3706,7 @@ takeownership:
         xhcic->xhc_DMAERS = xhcic->xhc_ERSp;
 #endif
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Mapped to 0x%p" DEBUGCOLOR_RESET" \n", xhcic->xhc_DMAERS);
-        xhciInitRing((struct pcisusbXHCIRing *)xhcic->xhc_ERSp);
+        xhciInitRing(hc, (struct pcisusbXHCIRing *)xhcic->xhc_ERSp);
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate ERS DMA Memory" DEBUGCOLOR_RESET" \n");
         goto init_fail;
