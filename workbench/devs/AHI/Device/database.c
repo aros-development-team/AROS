@@ -50,9 +50,13 @@
 static ULONG AddModeFile(UBYTE *filename);
 
 #ifdef __MORPHOS__
-#define IS_MORPHOS 1
+const char *AHIDBDRIVERBASENAME = "MOSSYS:DEVS/AHI";
 #else
-#define IS_MORPHOS 0
+const char *AHIDBDRIVERBASENAME = "DEVS:AHI";
+#endif
+
+#if !defined(__AROS__)
+# define __WORDSIZE 32
 #endif
 
 #if !defined( WORDS_BIGENDIAN )
@@ -356,7 +360,7 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
     struct TagItem *tstate = DBtags, *tp, *tag;
     ULONG rc = FALSE;
 
-    ahibug("[AHI:Device] %s()\n", __func__);
+    ahibug("[AHI:Device] %s(0x%p)\n", __func__, DBtags);
 
     if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH) {
         Debug_AddAudioMode(DBtags);
@@ -368,7 +372,6 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
 // Now add the new mode
 
     audiodb = LockDatabaseWrite();
-
     if(audiodb != NULL) {
 
 // Find total size
@@ -419,16 +422,19 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
                     case AHIDB_Name:
                         tp->ti_Data = ((IPTR) &node->ahidbn_Tags[tagitems]) + datalength;
                         strcpy((UBYTE *)tp->ti_Data, (UBYTE *)tag->ti_Data);
+                        ahibug("[AHI:Device] %s: Name '%s'\n", __func__, (char *)tag->ti_Data);
                         break;
 
                     case AHIDB_Driver:
                         tp->ti_Data = ((IPTR) &node->ahidbn_Tags[tagitems]) + datalength + namelength;
                         strcpy((UBYTE *)tp->ti_Data, (UBYTE *)tag->ti_Data);
+                        ahibug("[AHI:Device] %s: Driver '%s'\n", __func__, (char *)tag->ti_Data);
                         break;
 
                     case AHIDB_DriverBaseName:
                         tp->ti_Data = ((IPTR) &node->ahidbn_Tags[tagitems]) + datalength + namelength + driverlength;
                         strcpy((UBYTE *)tp->ti_Data, (UBYTE *)tag->ti_Data);
+                        ahibug("[AHI:Device] %s: BaseName '%s'\n", __func__, (char *)tag->ti_Data);
                         break;
 
                     default:
@@ -440,6 +446,7 @@ _AHI_AddAudioMode(struct TagItem *DBtags,
             }
             tp->ti_Tag = TAG_DONE;
 
+            ahibug("[AHI:Device] %s: adding node @ 0x%p\n", __func__, node);
             AddHead((struct List *) &audiodb->ahidb_AudioModes, (struct Node *) node);
             rc = TRUE;
         }
@@ -676,16 +683,16 @@ AddModeFile(UBYTE *filename)
     struct StoredProperty *name, *data;
     struct CollectionItem *ci;
     struct TagItem32 *tag, *tstate;
-#if defined(__AROS__) && (__WORDSIZE==64)
+#if __WORDSIZE==64
     struct TagItem *dstTag;
 #else
 #define dstTag tag
 #endif
     struct TagItem extratags[] = {
-        { AHIDB_Driver,         0 },
-        { AHIDB_Data,           0 },
-        { AHIDB_DriverBaseName, (IPTR)(IS_MORPHOS ? "MOSSYS:DEVS/AHI" : "DEVS:AHI") },
-        { TAG_MORE,             0 }
+        { AHIDB_Driver,         0                         },
+        { AHIDB_Data,           0                         },
+        { AHIDB_DriverBaseName, (IPTR)AHIDBDRIVERBASENAME },
+        { TAG_MORE,             0                         }
     };
     ULONG rc = FALSE;
 
@@ -748,33 +755,32 @@ AddModeFile(UBYTE *filename)
 
                             // Now verify that the driver can really be opened
 
-                            strcpy(driver_name, IS_MORPHOS ? "MOSSYS:DEVS/AHI/" : "DEVS:AHI/");
+                            strcpy( driver_name, AHIDBDRIVERBASENAME );
+                            strncat( driver_name, "/", 100 );
                             strncat(driver_name, name->sp_Data, 100);
                             strcat(driver_name, ".audio");
 
                             driver_base = OpenLibrary(driver_name, DriverVersion);
                             if(driver_base == NULL) {
-                                if(IS_MORPHOS == 0) {
+#ifdef __MORPHOS__
+                                // Make it MOSSYS:DEVS:AHI/...
+                                //                    ^
+                                driver_name[7 + 4] = ':';
+
+                                // Try "DEVS:AHI/...."
+                                //
+                                driver_base = OpenLibrary(driver_name + 7, DriverVersion);
+                                if(driver_base == NULL) {
                                     rc = FALSE;
                                 } else {
-                                    // Make it MOSSYS:DEVS:AHI/...
-                                    //                    ^
-                                    driver_name[7 + 4] = ':';
+                                    // It is a DEVS:AHI driver!
+                                    extratags[2].ti_Data = (IPTR) "DEVS:AHI";
 
-                                    // Try "DEVS:AHI/...."
-                                    //
-                                    driver_base = OpenLibrary(driver_name + 7, DriverVersion);
-                                    if(driver_base == NULL) {
-                                        rc = FALSE;
-                                    } else {
-                                        // It is a DEVS:AHI driver!
-                                        extratags[2].ti_Data = (IPTR) "DEVS:AHI";
-
-                                        CloseLibrary(driver_base);
-                                    }
+                                    CloseLibrary(driver_base);
                                 }
-                            } else {
-                                CloseLibrary(driver_base);
+#else
+                                rc = FALSE;
+#endif
                             }
                         }
 
@@ -797,14 +803,14 @@ AddModeFile(UBYTE *filename)
 
                             tstate = (struct TagItem32 *) ci->ci_Data;
 
-#if defined(__AROS__) && (__WORDSIZE==64)
+#if __WORDSIZE==64
                             driverTags = AllocVec(sizeof(struct TagItem) * 128, MEMF_CLEAR);
                             dstTag = driverTags;
 #else
                             driverTags = ci->ci_Data;
 #endif
                             while(rc && (tag = AHINextTagItem(&tstate)) != NULL) {
-#if defined(__AROS__) && (__WORDSIZE==64)
+#if __WORDSIZE==64
                                 dstTag->ti_Tag = (IPTR)tag->ti_Tag;
                                 dstTag->ti_Data = (IPTR)tag->ti_Data;
 #endif
@@ -851,7 +857,7 @@ AddModeFile(UBYTE *filename)
                                     Req("%s:\nAUDM chunk contains a string that is not "
                                         "NUL-terminated.", (IPTR)filename);
                                 }
-#if defined(__AROS__) && (__WORDSIZE==64)
+#if __WORDSIZE==64
                                 dstTag++;
 #endif
                             }
@@ -865,7 +871,7 @@ AddModeFile(UBYTE *filename)
 
                                 ci = ci->ci_Next;
                             }
-#if defined(__AROS__) && (__WORDSIZE==64)
+#if __WORDSIZE==64
                             FreeVec(driverTags);
 #endif
                         }
