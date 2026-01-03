@@ -1,11 +1,11 @@
 
 #include <devices/ahi.h>
 
-extern __asm BOOL mt_init( register __a2 struct PTData * );
-extern __asm BOOL mt_start( register __a2 struct PTData * );
-extern __asm void mt_stop( register __a2 struct PTData * );
-extern __asm void mt_end( register __a2 struct PTData * );
-extern __asm void mt_music( register __a2 struct PTData * );
+extern __asm BOOL mt_init(register __a2 struct PTData *);
+extern __asm BOOL mt_start(register __a2 struct PTData *);
+extern __asm void mt_stop(register __a2 struct PTData *);
+extern __asm void mt_end(register __a2 struct PTData *);
+extern __asm void mt_music(register __a2 struct PTData *);
 
 #define	n_note		0
 #define	n_cmd		2
@@ -35,50 +35,48 @@ extern __asm void mt_music( register __a2 struct PTData * );
 #define	n_reallength	40
 #define	n_SIZEOF	42
 
-struct PaulaEmul
-{
-	BOOL	pe_NewSample;			/* Flag				 */
-	ULONG	pe_Offset;			/* Offset from sample start	 */
-	UWORD	pe_Length;			/* Length in *WORDS* (like Paula)*/
-	BOOL	pe_NewLoopSample;		/* Flag				 */
-	ULONG	pe_LoopOffset;			/* Offset from sample start	 */
-	UWORD	pe_LoopLength;			/* Length in *WORDS* (like Paula)*/
-	BOOL	pe_NewPeriod;			/* Flag				 */
-	UWORD	pe_Period;			/* Paula period			 */
-	BOOL	pe_NewVolume;			/* Flag				 */
-	UWORD	pe_Volume;			/* Paula volume, 0-64		 */
+struct PaulaEmul {
+    BOOL	pe_NewSample;			/* Flag				 */
+    ULONG	pe_Offset;			/* Offset from sample start	 */
+    UWORD	pe_Length;			/* Length in *WORDS* (like Paula)*/
+    BOOL	pe_NewLoopSample;		/* Flag				 */
+    ULONG	pe_LoopOffset;			/* Offset from sample start	 */
+    UWORD	pe_LoopLength;			/* Length in *WORDS* (like Paula)*/
+    BOOL	pe_NewPeriod;			/* Flag				 */
+    UWORD	pe_Period;			/* Paula period			 */
+    BOOL	pe_NewVolume;			/* Flag				 */
+    UWORD	pe_Volume;			/* Paula volume, 0-64		 */
 };
 
-struct PTData
-{
-	struct AHIBase		*ptd_AHIBase;		/* Must be initialized!	 */
-	struct AHIAudioCtrl	*ptd_AudioCtrl;		/* Must be initialized!	 */
-	APTR			 ptd_ModuleAddress;	/* Must be initialized!	 */
+struct PTData {
+    struct AHIBase		*ptd_AHIBase;		/* Must be initialized!	 */
+    struct AHIAudioCtrl	*ptd_AudioCtrl;		/* Must be initialized!	 */
+    APTR			 ptd_ModuleAddress;	/* Must be initialized!	 */
 
-	struct PaulaEmul	 ptd_Ch2;		/* Ch2 (left)		 */
-	struct PaulaEmul	 ptd_Ch1;		/* Ch1 (right)		 */
-	struct PaulaEmul	 ptd_Ch3;		/* Ch3 (left)		 */
-	struct PaulaEmul	 ptd_Ch4;		/* Ch4 (right)		 */
+    struct PaulaEmul	 ptd_Ch2;		/* Ch2 (left)		 */
+    struct PaulaEmul	 ptd_Ch1;		/* Ch1 (right)		 */
+    struct PaulaEmul	 ptd_Ch3;		/* Ch3 (left)		 */
+    struct PaulaEmul	 ptd_Ch4;		/* Ch4 (right)		 */
 
-	ULONG			 ptd_SampleStarts[31];
-	UBYTE			 ptd_chan1temp[n_SIZEOF];
-	UBYTE			 ptd_chan2temp[n_SIZEOF];
-	UBYTE			 ptd_chan3temp[n_SIZEOF];
-	UBYTE			 ptd_chan4temp[n_SIZEOF];
+    ULONG			 ptd_SampleStarts[31];
+    UBYTE			 ptd_chan1temp[n_SIZEOF];
+    UBYTE			 ptd_chan2temp[n_SIZEOF];
+    UBYTE			 ptd_chan3temp[n_SIZEOF];
+    UBYTE			 ptd_chan4temp[n_SIZEOF];
 
-	UWORD			ptd_NewTempo;
-	UWORD			ptd_Tempo;
+    UWORD			ptd_NewTempo;
+    UWORD			ptd_Tempo;
 
-	UBYTE			ptd_speed;
-	UBYTE			ptd_counter;
-	UBYTE			ptd_SongPos;
-	UBYTE			ptd_PBreakPos;
-	UBYTE			ptd_PosJumpFlag;
-	UBYTE			ptd_PBreakFlag;
-	UBYTE			ptd_LowMask;
-	UBYTE			ptd_PattDelTime;
-	UBYTE			ptd_PattDelTime2;
-	UBYTE			ptd_Enable;
-	UWORD			ptd_PatternPos;
-	UWORD			ptd_DMACONtemp;
+    UBYTE			ptd_speed;
+    UBYTE			ptd_counter;
+    UBYTE			ptd_SongPos;
+    UBYTE			ptd_PBreakPos;
+    UBYTE			ptd_PosJumpFlag;
+    UBYTE			ptd_PBreakFlag;
+    UBYTE			ptd_LowMask;
+    UBYTE			ptd_PattDelTime;
+    UBYTE			ptd_PattDelTime2;
+    UBYTE			ptd_Enable;
+    UWORD			ptd_PatternPos;
+    UWORD			ptd_DMACONtemp;
 };

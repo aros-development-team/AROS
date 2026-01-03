@@ -2,17 +2,17 @@
      AHI - Hardware independent audio subsystem
      Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -59,48 +59,46 @@
 ** RecalcBuff *****************************************************************
 ******************************************************************************/
 
-// Calculates how many samples to mix each mixer pass. The result it 
+// Calculates how many samples to mix each mixer pass. The result it
 // both returned and stored in ahiac_BuffSamples.
 // ahiac_BuffSizeNow will also be updated (For mixing routine)
 
 static ULONG
-RecalcBuff ( Fixed freq, struct AHIPrivAudioCtrl *audioctrl )
+RecalcBuff(Fixed freq, struct AHIPrivAudioCtrl *audioctrl)
 {
-  int length;
+    int length;
 
-  // If ULONG, convert to Fixed
+    // If ULONG, convert to Fixed
 //  if(freq < 65536) freq <<= 16;
 
-  // Sanity check
-  if(freq == 0) return 0;
+    // Sanity check
+    if(freq == 0) return 0;
 
-  audioctrl->ac.ahiac_BuffSamples = (audioctrl->ac.ahiac_MixFreq << 8) /
-                                    (freq >> 8);
+    audioctrl->ac.ahiac_BuffSamples = (audioctrl->ac.ahiac_MixFreq << 8) /
+                                      (freq >> 8);
 
-  // ahiac_BuffSamples *must* fit a WORD according to the driver autodocs!
-  if(audioctrl->ac.ahiac_BuffSamples > 65535)
-  {
-    audioctrl->ac.ahiac_BuffSamples = 65535;
-  }
+    // ahiac_BuffSamples *must* fit a WORD according to the driver autodocs!
+    if(audioctrl->ac.ahiac_BuffSamples > 65535) {
+        audioctrl->ac.ahiac_BuffSamples = 65535;
+    }
 
-  // Now, calculate the required mixing buffer size.
+    // Now, calculate the required mixing buffer size.
 
-  length = audioctrl->ac.ahiac_BuffSamples * 
-           AHI_SampleFrameSize(audioctrl->ac.ahiac_BuffType);
+    length = audioctrl->ac.ahiac_BuffSamples *
+             AHI_SampleFrameSize(audioctrl->ac.ahiac_BuffType);
 
-  if(audioctrl->ac.ahiac_Flags & AHIACF_POSTPROC)
-  {
-    length <<= 1;  // 2 buffers
-  }
+    if(audioctrl->ac.ahiac_Flags & AHIACF_POSTPROC) {
+        length <<= 1;  // 2 buffers
+    }
 
-  // Pad to even 8 and add some more (because of an old Mungwall hit, but I
-  // think that bug was fixed a long, long time ago..?)
+    // Pad to even 8 and add some more (because of an old Mungwall hit, but I
+    // think that bug was fixed a long, long time ago..?)
 
-  length = ((length + 7) & (~7) ) + 80;
+    length = ((length + 7) & (~7)) + 80;
 
-  audioctrl->ahiac_BuffSizeNow = length;
+    audioctrl->ahiac_BuffSizeNow = length;
 
-  return audioctrl->ac.ahiac_BuffSamples;
+    return audioctrl->ac.ahiac_BuffSamples;
 
 }
 
@@ -112,178 +110,169 @@ RecalcBuff ( Fixed freq, struct AHIPrivAudioCtrl *audioctrl )
 #define DEFPLAYERFREQ (50<<16)
 
 static IPTR
-DummyHook( void )
+DummyHook(void)
 {
-  return 0;
+    return 0;
 }
 
 
-static const struct Hook DefPlayerHook =
-{
-  {0, 0},
-  (HOOKFUNC) HookEntry,
-  (HOOKFUNC) DummyHook,
-  0
+static const struct Hook DefPlayerHook = {
+    {0, 0},
+    (HOOKFUNC) HookEntry,
+    (HOOKFUNC) DummyHook,
+    0
 };
 
 
-static const struct TagItem boolmap[] =
-{
-  { AHIDB_Volume,    AHIACF_VOL },
-  { AHIDB_Panning,   AHIACF_PAN },
-  { AHIDB_Stereo,    AHIACF_STEREO },
-  { AHIDB_HiFi,      AHIACF_HIFI },
-  { AHIDB_PingPong,  AHIACF_PINGPONG },
-  { AHIDB_Record,    AHIACF_RECORD },
-  { AHIDB_MultTable, AHIACF_MULTTAB },
-  { AHIDB_MultiChannel, AHIACF_MULTICHANNEL },
-  { TAG_DONE,        0 }
+static const struct TagItem boolmap[] = {
+    { AHIDB_Volume,    AHIACF_VOL },
+    { AHIDB_Panning,   AHIACF_PAN },
+    { AHIDB_Stereo,    AHIACF_STEREO },
+    { AHIDB_HiFi,      AHIACF_HIFI },
+    { AHIDB_PingPong,  AHIACF_PINGPONG },
+    { AHIDB_Record,    AHIACF_RECORD },
+    { AHIDB_MultTable, AHIACF_MULTTAB },
+    { AHIDB_MultiChannel, AHIACF_MULTICHANNEL },
+    { TAG_DONE,        0 }
 };
 
 
 struct AHIPrivAudioCtrl *
 CreateAudioCtrl(struct TagItem *tags)
 {
-  struct AHIPrivAudioCtrl *audioctrl;
-  struct AHI_AudioDatabase *audiodb;
-  struct TagItem *dbtags;
-  BOOL   error=TRUE;
+    struct AHIPrivAudioCtrl *audioctrl;
+    struct AHI_AudioDatabase *audiodb;
+    struct TagItem *dbtags;
+    BOOL   error = TRUE;
 
-  ULONG data_flags = MEMF_ANY;
-  
-  switch( MixBackend )
-  {
+    ULONG data_flags = MEMF_ANY;
+
+    switch(MixBackend) {
     case MB_NATIVE:
-      data_flags = MEMF_PUBLIC | MEMF_CLEAR;
-      break;
-      
+        data_flags = MEMF_PUBLIC | MEMF_CLEAR;
+        break;
+
 #if defined( ENABLE_WARPUP )
     case MB_WARPUP:
-      // Non-cached from both the PPC and m68k side
-      data_flags = MEMF_PUBLIC | MEMF_CLEAR | MEMF_CHIP;
-      break;
+        // Non-cached from both the PPC and m68k side
+        data_flags = MEMF_PUBLIC | MEMF_CLEAR | MEMF_CHIP;
+        break;
 #endif
-  }
-
-  audioctrl = AHIAllocVec( sizeof( struct AHIPrivAudioCtrl ),
-                           data_flags );
-
-  if( audioctrl != NULL )
-  {
-    audioctrl->ac.ahiac_AudioCtrl.ahiac_UserData =
-      (APTR)GetTagData(AHIA_UserData,0,tags);
-    audioctrl->ahiac_AudioID =
-      (ULONG)GetTagData(AHIA_AudioID,AHI_DEFAULT_ID,tags);
-    audioctrl->ac.ahiac_MixFreq =
-      (ULONG)GetTagData(AHIA_MixFreq,AHI_DEFAULT_FREQ,tags);
-    audioctrl->ac.ahiac_Channels =
-      (UWORD)GetTagData(AHIA_Channels,0,tags);
-    audioctrl->ac.ahiac_Sounds =
-      (UWORD)GetTagData(AHIA_Sounds,0,tags);
-    audioctrl->ac.ahiac_SoundFunc =
-      (struct Hook *)GetTagData(AHIA_SoundFunc,0,tags);
-    audioctrl->ahiac_RecordFunc =
-      (struct Hook *)GetTagData(AHIA_RecordFunc,0,tags);
-    audioctrl->ac.ahiac_PlayerFunc =
-      (struct Hook *)GetTagData(AHIA_PlayerFunc,0,tags);
-    audioctrl->ac.ahiac_PlayerFreq =
-      (Fixed)GetTagData(AHIA_PlayerFreq,0,tags);
-    audioctrl->ac.ahiac_MinPlayerFreq =
-      (Fixed)GetTagData(AHIA_MinPlayerFreq,0,tags);
-    audioctrl->ac.ahiac_MaxPlayerFreq =
-      (Fixed)GetTagData(AHIA_MaxPlayerFreq,0,tags);
-    audioctrl->ac.ahiac_AntiClickSamples = 
-      (ULONG)GetTagData(AHIA_AntiClickSamples,~0UL,tags);
-
-    audioctrl->ahiac_MasterVolume=0x00010000;
-    audioctrl->ahiac_SetMasterVolume=0x00010000;
-    audioctrl->ahiac_EchoMasterVolume=0x00010000;
-
-    if(audioctrl->ahiac_AudioID == AHI_DEFAULT_ID)
-      audioctrl->ahiac_AudioID = AHIBase->ahib_AudioMode;
-
-    if(audioctrl->ac.ahiac_MixFreq == AHI_DEFAULT_FREQ)
-      audioctrl->ac.ahiac_MixFreq = AHIBase->ahib_Frequency;
-
-    if(audioctrl->ac.ahiac_PlayerFunc == NULL)
-      audioctrl->ac.ahiac_PlayerFunc=(struct Hook *)&DefPlayerHook;
-
-    if(audioctrl->ac.ahiac_PlayerFreq == 0)
-      audioctrl->ac.ahiac_PlayerFreq = DEFPLAYERFREQ;
-    if(audioctrl->ac.ahiac_MinPlayerFreq == 0)
-      audioctrl->ac.ahiac_MinPlayerFreq = DEFPLAYERFREQ;
-    if(audioctrl->ac.ahiac_MaxPlayerFreq == 0)
-      audioctrl->ac.ahiac_MaxPlayerFreq = DEFPLAYERFREQ;
-
-    if(audioctrl->ac.ahiac_PlayerFreq < 65536)
-      audioctrl->ac.ahiac_PlayerFreq <<= 16;
-    if(audioctrl->ac.ahiac_MinPlayerFreq < 65536)
-      audioctrl->ac.ahiac_MinPlayerFreq <<= 16;
-    if(audioctrl->ac.ahiac_MaxPlayerFreq < 65536)
-      audioctrl->ac.ahiac_MaxPlayerFreq <<= 16;
-
-    if(audioctrl->ac.ahiac_AntiClickSamples == 0xFFFFFFFF)
-      audioctrl->ac.ahiac_AntiClickSamples = 
-          ( AHIBase->ahib_AntiClickTime * audioctrl->ac.ahiac_MixFreq ) >> 16;
-
-    if((audiodb=LockDatabase()))
-    {
-      if((dbtags=GetDBTagList(audiodb,audioctrl->ahiac_AudioID)))
-      {
-        char driver_name[128];
-
-        audioctrl->ac.ahiac_Flags=PackBoolTags(GetTagData(AHIDB_Flags,0,
-            dbtags),dbtags,(struct TagItem *)boolmap);
-
-        if(AHIBase->ahib_Flags & AHIBF_CLIPPING)
-        {
-          audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
-        }
-
-        strcpy( audioctrl->ahiac_DriverName,
-                (char *) GetTagData( AHIDB_DriverBaseName, (IPTR) "DEVS:AHI", dbtags) );
-
-        strcpy( driver_name,
-                (char *) GetTagData( AHIDB_Driver, (IPTR) "", dbtags ) );
-        strcat( driver_name, ".audio" );
-
-        AddPart(audioctrl->ahiac_DriverName, driver_name, sizeof(audioctrl->ahiac_DriverName));
-
-        error=FALSE;
-      }
-      UnlockDatabase(audiodb);
     }
-  }
 
-  if(error)
-  {
-    AHIFreeVec(audioctrl);
-    return NULL;
-  }
-  else
-    return audioctrl;
+    audioctrl = AHIAllocVec(sizeof(struct AHIPrivAudioCtrl),
+                            data_flags);
+
+    if(audioctrl != NULL) {
+        audioctrl->ac.ahiac_AudioCtrl.ahiac_UserData =
+            (APTR)GetTagData(AHIA_UserData, 0, tags);
+        audioctrl->ahiac_AudioID =
+            (ULONG)GetTagData(AHIA_AudioID, AHI_DEFAULT_ID, tags);
+        audioctrl->ac.ahiac_MixFreq =
+            (ULONG)GetTagData(AHIA_MixFreq, AHI_DEFAULT_FREQ, tags);
+        audioctrl->ac.ahiac_Channels =
+            (UWORD)GetTagData(AHIA_Channels, 0, tags);
+        audioctrl->ac.ahiac_Sounds =
+            (UWORD)GetTagData(AHIA_Sounds, 0, tags);
+        audioctrl->ac.ahiac_SoundFunc =
+            (struct Hook *)GetTagData(AHIA_SoundFunc, 0, tags);
+        audioctrl->ahiac_RecordFunc =
+            (struct Hook *)GetTagData(AHIA_RecordFunc, 0, tags);
+        audioctrl->ac.ahiac_PlayerFunc =
+            (struct Hook *)GetTagData(AHIA_PlayerFunc, 0, tags);
+        audioctrl->ac.ahiac_PlayerFreq =
+            (Fixed)GetTagData(AHIA_PlayerFreq, 0, tags);
+        audioctrl->ac.ahiac_MinPlayerFreq =
+            (Fixed)GetTagData(AHIA_MinPlayerFreq, 0, tags);
+        audioctrl->ac.ahiac_MaxPlayerFreq =
+            (Fixed)GetTagData(AHIA_MaxPlayerFreq, 0, tags);
+        audioctrl->ac.ahiac_AntiClickSamples =
+            (ULONG)GetTagData(AHIA_AntiClickSamples, ~0UL, tags);
+
+        audioctrl->ahiac_MasterVolume = 0x00010000;
+        audioctrl->ahiac_SetMasterVolume = 0x00010000;
+        audioctrl->ahiac_EchoMasterVolume = 0x00010000;
+
+        if(audioctrl->ahiac_AudioID == AHI_DEFAULT_ID)
+            audioctrl->ahiac_AudioID = AHIBase->ahib_AudioMode;
+
+        if(audioctrl->ac.ahiac_MixFreq == AHI_DEFAULT_FREQ)
+            audioctrl->ac.ahiac_MixFreq = AHIBase->ahib_Frequency;
+
+        if(audioctrl->ac.ahiac_PlayerFunc == NULL)
+            audioctrl->ac.ahiac_PlayerFunc = (struct Hook *)&DefPlayerHook;
+
+        if(audioctrl->ac.ahiac_PlayerFreq == 0)
+            audioctrl->ac.ahiac_PlayerFreq = DEFPLAYERFREQ;
+        if(audioctrl->ac.ahiac_MinPlayerFreq == 0)
+            audioctrl->ac.ahiac_MinPlayerFreq = DEFPLAYERFREQ;
+        if(audioctrl->ac.ahiac_MaxPlayerFreq == 0)
+            audioctrl->ac.ahiac_MaxPlayerFreq = DEFPLAYERFREQ;
+
+        if(audioctrl->ac.ahiac_PlayerFreq < 65536)
+            audioctrl->ac.ahiac_PlayerFreq <<= 16;
+        if(audioctrl->ac.ahiac_MinPlayerFreq < 65536)
+            audioctrl->ac.ahiac_MinPlayerFreq <<= 16;
+        if(audioctrl->ac.ahiac_MaxPlayerFreq < 65536)
+            audioctrl->ac.ahiac_MaxPlayerFreq <<= 16;
+
+        if(audioctrl->ac.ahiac_AntiClickSamples == 0xFFFFFFFF)
+            audioctrl->ac.ahiac_AntiClickSamples =
+                (AHIBase->ahib_AntiClickTime * audioctrl->ac.ahiac_MixFreq) >> 16;
+
+        if((audiodb = LockDatabase())) {
+            if((dbtags = GetDBTagList(audiodb, audioctrl->ahiac_AudioID))) {
+                char driver_name[128];
+
+                audioctrl->ac.ahiac_Flags = PackBoolTags(GetTagData(AHIDB_Flags, 0,
+                                            dbtags), dbtags, (struct TagItem *)boolmap);
+
+                if(AHIBase->ahib_Flags & AHIBF_CLIPPING) {
+                    audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
+                }
+
+                strcpy(audioctrl->ahiac_DriverName,
+                       (char *) GetTagData(AHIDB_DriverBaseName, (IPTR) "DEVS:AHI", dbtags));
+
+                strcpy(driver_name,
+                       (char *) GetTagData(AHIDB_Driver, (IPTR) "", dbtags));
+                strcat(driver_name, ".audio");
+
+                AddPart(audioctrl->ahiac_DriverName, driver_name, sizeof(audioctrl->ahiac_DriverName));
+
+                error = FALSE;
+            }
+            UnlockDatabase(audiodb);
+        }
+    }
+
+    if(error) {
+        AHIFreeVec(audioctrl);
+        return NULL;
+    } else
+        return audioctrl;
 }
 
 static void
 UpdateAudioCtrl(struct AHIPrivAudioCtrl *audioctrl)
 {
-  ULONG  temp;
+    ULONG  temp;
 
-  temp=audioctrl->ac.ahiac_MinPlayerFreq;
-  if(temp>=65536)
-    temp >>=16;
-  if(temp)
-    audioctrl->ac.ahiac_MaxBuffSamples=audioctrl->ac.ahiac_MixFreq/temp;
-  else
-    audioctrl->ac.ahiac_MaxBuffSamples=AHIBase->ahib_Frequency/audioctrl->ac.ahiac_PlayerFreq;
+    temp = audioctrl->ac.ahiac_MinPlayerFreq;
+    if(temp >= 65536)
+        temp >>= 16;
+    if(temp)
+        audioctrl->ac.ahiac_MaxBuffSamples = audioctrl->ac.ahiac_MixFreq / temp;
+    else
+        audioctrl->ac.ahiac_MaxBuffSamples = AHIBase->ahib_Frequency / audioctrl->ac.ahiac_PlayerFreq;
 
-  temp=audioctrl->ac.ahiac_MaxPlayerFreq;
-  if(temp>=65536)
-    temp = (temp + 65535) >> 16;
-  if(temp)
-    audioctrl->ac.ahiac_MinBuffSamples=audioctrl->ac.ahiac_MixFreq/temp;
-  else
-    audioctrl->ac.ahiac_MinBuffSamples=AHIBase->ahib_Frequency/audioctrl->ac.ahiac_PlayerFreq;
+    temp = audioctrl->ac.ahiac_MaxPlayerFreq;
+    if(temp >= 65536)
+        temp = (temp + 65535) >> 16;
+    if(temp)
+        audioctrl->ac.ahiac_MinBuffSamples = audioctrl->ac.ahiac_MixFreq / temp;
+    else
+        audioctrl->ac.ahiac_MinBuffSamples = AHIBase->ahib_Frequency / audioctrl->ac.ahiac_PlayerFreq;
 }
 
 
@@ -294,14 +283,13 @@ UpdateAudioCtrl(struct AHIPrivAudioCtrl *audioctrl)
 
 
 static void
-SamplerFunc( struct Hook*             hook,
-             struct AHIPrivAudioCtrl* actrl,
-             struct AHIRecordMessage* recmsg )
+SamplerFunc(struct Hook             *hook,
+            struct AHIPrivAudioCtrl *actrl,
+            struct AHIRecordMessage *recmsg)
 {
-  if(actrl->ahiac_RecordFunc)
-  {
-    CallHookPkt(actrl->ahiac_RecordFunc, actrl, recmsg);
-  }
+    if(actrl->ahiac_RecordFunc) {
+        CallHookPkt(actrl->ahiac_RecordFunc, actrl, recmsg);
+    }
 }
 
 /******************************************************************************
@@ -449,11 +437,11 @@ SamplerFunc( struct Hook*             hook,
 *
 *   BUGS
 *       For compability reasons with some really old applications,
-*       AHIA_PlayerFreq, AHIA_MinPlayerFreq and AHIA_MaxPlayerFreq 
+*       AHIA_PlayerFreq, AHIA_MinPlayerFreq and AHIA_MaxPlayerFreq
 *       interpret values lower than 0x10000 as integers, not Fixed.
 *       This means that the lowest frequency possible is 1 Hz. However,
 *       you should *never* use a value than say 10-20 Hz anyway, because
-*       of the high latency and the impact on multitasking. 
+*       of the high latency and the impact on multitasking.
 *
 *       This kludge will be removed some day. Always use Fixed!
 *
@@ -465,221 +453,210 @@ SamplerFunc( struct Hook*             hook,
 *
 */
 
-struct AHIAudioCtrl*
-_AHI_AllocAudioA( struct TagItem* tags,
-		  struct AHIBase* AHIBase )
+struct AHIAudioCtrl *
+_AHI_AllocAudioA(struct TagItem *tags,
+                 struct AHIBase *AHIBase)
 {
-  struct AHIPrivAudioCtrl* audioctrl;
-  struct Library *AHIsubBase;
-  struct AHI_AudioDatabase *audiodb;
-  struct TagItem *dbtags;
+    struct AHIPrivAudioCtrl *audioctrl;
+    struct Library *AHIsubBase;
+    struct AHI_AudioDatabase *audiodb;
+    struct TagItem *dbtags;
 #ifdef __AMIGAOS4__
-  struct AHIsubIFace* IAHIsub;
+    struct AHIsubIFace *IAHIsub;
 #endif
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_AllocAudioA(tags);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_AllocAudioA(tags);
+    }
 
-  audioctrl = CreateAudioCtrl( tags );
-  if(!audioctrl)
-    goto error;
+    audioctrl = CreateAudioCtrl(tags);
+    if(!audioctrl)
+        goto error;
 
-  AHIBase->ahib_AudioCtrl=audioctrl;                      // Save latest (for KillAudio)
+    AHIBase->ahib_AudioCtrl = audioctrl;                    // Save latest (for KillAudio)
 
-  if(!audioctrl->ac.ahiac_Channels || !audioctrl->ac.ahiac_Sounds)
-    goto error;
+    if(!audioctrl->ac.ahiac_Channels || !audioctrl->ac.ahiac_Sounds)
+        goto error;
 
-  audioctrl->ahiac_SubAllocRC = AHISF_ERROR;
-  audioctrl->ahiac_SubLib=
-  AHIsubBase = OpenLibrary(audioctrl->ahiac_DriverName,DriverVersion);
+    audioctrl->ahiac_SubAllocRC = AHISF_ERROR;
+    audioctrl->ahiac_SubLib =
+        AHIsubBase = OpenLibrary(audioctrl->ahiac_DriverName, DriverVersion);
 //KPrintF("Opened AHIsubBase()\n");
 
 #ifdef __AMIGAOS4__
-  audioctrl->ahiac_IAHIsub = NULL;
+    audioctrl->ahiac_IAHIsub = NULL;
 #endif
 
-  if(!AHIsubBase)
-    goto error;
+    if(!AHIsubBase)
+        goto error;
 
 #ifdef __AMIGAOS4__
-  if ((audioctrl->ahiac_IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) == NULL)
-  {    
-       goto error;
-  }
-  IAHIsub = audioctrl->ahiac_IAHIsub;
-#endif
-
-  // Never allow drivers that are newer than ahi.device.
-  if(AHIsubBase->lib_Version > AHIBase->ahib_Library.lib_Version)
-    goto error;
-
-  audiodb=LockDatabase();
-  if(!audiodb)
-    goto error;
-
-  dbtags=GetDBTagList(audiodb,audioctrl->ahiac_AudioID);
-  if(dbtags)
-    audioctrl->ahiac_SubAllocRC=AHIsub_AllocAudio(dbtags,(struct AHIAudioCtrlDrv *)audioctrl);
-//KPrintF("Called AHIsub_AllocAudio()\n");
-  UnlockDatabase(audiodb);
-
-  if(!dbtags)
-    goto error;
-
-  UpdateAudioCtrl(audioctrl);
-
-  if(audioctrl->ahiac_SubAllocRC & AHISF_ERROR)
-    goto error;
-
-// Mixing
-  if(!(audioctrl->ahiac_SubAllocRC & AHISF_MIXING))
-    audioctrl->ac.ahiac_Flags |= AHIACF_NOMIXING;
-
-// Timing    
-  if(!(audioctrl->ahiac_SubAllocRC & AHISF_TIMING))
-    audioctrl->ac.ahiac_Flags |= AHIACF_NOTIMING;
-
-// Stereo
-  if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWSTEREO))
-    audioctrl->ac.ahiac_Flags &= ~AHIACF_STEREO;
-
-// Multichannel 7.1
-  if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWMULTICHANNEL))
-    audioctrl->ac.ahiac_Flags &= ~AHIACF_MULTICHANNEL;
-  
-// HiFi
-
-  if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWHIFI))
-    audioctrl->ac.ahiac_Flags &= ~AHIACF_HIFI;
-
-// Post-processing
-  if(audioctrl->ahiac_SubAllocRC & AHISF_CANPOSTPROCESS)
-    audioctrl->ac.ahiac_Flags |= AHIACF_POSTPROC;
-
-  if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING))
-  {
-    switch(audioctrl->ac.ahiac_Flags & (AHIACF_STEREO | AHIACF_HIFI | AHIACF_MULTICHANNEL))
-    {
-      case 0:
-        audioctrl->ac.ahiac_BuffType=AHIST_M16S;
-        break;
-      case AHIACF_STEREO:
-        audioctrl->ac.ahiac_BuffType=AHIST_S16S;
-        break;
-      case AHIACF_HIFI:
-        audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
-        audioctrl->ac.ahiac_BuffType=AHIST_M32S;
-        break;
-      case (AHIACF_STEREO | AHIACF_HIFI):
-        audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
-        audioctrl->ac.ahiac_BuffType=AHIST_S32S;
-        break;
-      case (AHIACF_STEREO | AHIACF_HIFI | AHIACF_MULTICHANNEL):
-        audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
-        audioctrl->ac.ahiac_BuffType=AHIST_L7_1;
-        break;
-      default:
-        Alert(AT_Recovery|AG_BadParm);
+    if((audioctrl->ahiac_IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1,
+                                   NULL)) == NULL) {
         goto error;
     }
+    IAHIsub = audioctrl->ahiac_IAHIsub;
+#endif
 
-/* Max channels/2 channels per hardware channel if stereo w/o pan */
-    if((audioctrl->ac.ahiac_Flags & (AHIACF_STEREO | AHIACF_PAN)) == AHIACF_STEREO)
-      audioctrl->ahiac_Channels2=(audioctrl->ac.ahiac_Channels+1)/2;
-    else
-      audioctrl->ahiac_Channels2=audioctrl->ac.ahiac_Channels;
+    // Never allow drivers that are newer than ahi.device.
+    if(AHIsubBase->lib_Version > AHIBase->ahib_Library.lib_Version)
+        goto error;
 
-    if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOTIMING))
-    {
-      RecalcBuff(audioctrl->ac.ahiac_MinPlayerFreq,audioctrl);
-      audioctrl->ac.ahiac_BuffSize=audioctrl->ahiac_BuffSizeNow;
-      RecalcBuff(audioctrl->ac.ahiac_PlayerFreq,audioctrl);
+    audiodb = LockDatabase();
+    if(!audiodb)
+        goto error;
+
+    dbtags = GetDBTagList(audiodb, audioctrl->ahiac_AudioID);
+    if(dbtags)
+        audioctrl->ahiac_SubAllocRC = AHIsub_AllocAudio(dbtags, (struct AHIAudioCtrlDrv *)audioctrl);
+//KPrintF("Called AHIsub_AllocAudio()\n");
+    UnlockDatabase(audiodb);
+
+    if(!dbtags)
+        goto error;
+
+    UpdateAudioCtrl(audioctrl);
+
+    if(audioctrl->ahiac_SubAllocRC & AHISF_ERROR)
+        goto error;
+
+// Mixing
+    if(!(audioctrl->ahiac_SubAllocRC & AHISF_MIXING))
+        audioctrl->ac.ahiac_Flags |= AHIACF_NOMIXING;
+
+// Timing
+    if(!(audioctrl->ahiac_SubAllocRC & AHISF_TIMING))
+        audioctrl->ac.ahiac_Flags |= AHIACF_NOTIMING;
+
+// Stereo
+    if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWSTEREO))
+        audioctrl->ac.ahiac_Flags &= ~AHIACF_STEREO;
+
+// Multichannel 7.1
+    if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWMULTICHANNEL))
+        audioctrl->ac.ahiac_Flags &= ~AHIACF_MULTICHANNEL;
+
+// HiFi
+
+    if(!(audioctrl->ahiac_SubAllocRC & AHISF_KNOWHIFI))
+        audioctrl->ac.ahiac_Flags &= ~AHIACF_HIFI;
+
+// Post-processing
+    if(audioctrl->ahiac_SubAllocRC & AHISF_CANPOSTPROCESS)
+        audioctrl->ac.ahiac_Flags |= AHIACF_POSTPROC;
+
+    if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING)) {
+        switch(audioctrl->ac.ahiac_Flags & (AHIACF_STEREO | AHIACF_HIFI | AHIACF_MULTICHANNEL)) {
+        case 0:
+            audioctrl->ac.ahiac_BuffType = AHIST_M16S;
+            break;
+        case AHIACF_STEREO:
+            audioctrl->ac.ahiac_BuffType = AHIST_S16S;
+            break;
+        case AHIACF_HIFI:
+            audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
+            audioctrl->ac.ahiac_BuffType = AHIST_M32S;
+            break;
+        case(AHIACF_STEREO | AHIACF_HIFI):
+            audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
+            audioctrl->ac.ahiac_BuffType = AHIST_S32S;
+            break;
+        case(AHIACF_STEREO | AHIACF_HIFI | AHIACF_MULTICHANNEL):
+            audioctrl->ac.ahiac_Flags |= AHIACF_CLIPPING;
+            audioctrl->ac.ahiac_BuffType = AHIST_L7_1;
+            break;
+        default:
+            Alert(AT_Recovery | AG_BadParm);
+            goto error;
+        }
+
+        /* Max channels/2 channels per hardware channel if stereo w/o pan */
+        if((audioctrl->ac.ahiac_Flags & (AHIACF_STEREO | AHIACF_PAN)) == AHIACF_STEREO)
+            audioctrl->ahiac_Channels2 = (audioctrl->ac.ahiac_Channels + 1) / 2;
+        else
+            audioctrl->ahiac_Channels2 = audioctrl->ac.ahiac_Channels;
+
+        if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOTIMING)) {
+            RecalcBuff(audioctrl->ac.ahiac_MinPlayerFreq, audioctrl);
+            audioctrl->ac.ahiac_BuffSize = audioctrl->ahiac_BuffSizeNow;
+            RecalcBuff(audioctrl->ac.ahiac_PlayerFreq, audioctrl);
+        } else { // No timing
+            ULONG size;
+
+            size = audioctrl->ac.ahiac_BuffSamples*\
+                   AHI_SampleFrameSize(audioctrl->ac.ahiac_BuffType)*\
+                   (audioctrl->ac.ahiac_Flags & AHIACF_POSTPROC ? 2 : 1);
+
+            size += 7;
+            size &= ~7;  // byte align
+
+            audioctrl->ahiac_BuffSizeNow = size;
+        }
+
+        audioctrl->ac.ahiac_MixerFunc = AllocVec(sizeof(struct Hook), MEMF_PUBLIC | MEMF_CLEAR);
+        if(!audioctrl->ac.ahiac_MixerFunc)
+            goto error;
+
+
+        audioctrl->ac.ahiac_MixerFunc->h_Entry    = (HOOKFUNC) HookEntryPreserveAllRegs;
+        audioctrl->ac.ahiac_MixerFunc->h_SubEntry = (HOOKFUNC) MixerFunc;
+
+        if((AHIBase->ahib_MaxCPU >= 0x10000) || (AHIBase->ahib_MaxCPU <= 0x0)) {
+            audioctrl->ahiac_MaxCPU = 0x100;
+        } else {
+            audioctrl->ahiac_MaxCPU = AHIBase->ahib_MaxCPU >> 8;
+        }
+
+        audioctrl->ac.ahiac_PreTimer  = (AHIPreTimerHook) PreTimerPreserveAllRegs;
+        audioctrl->ac.ahiac_PostTimer = (AHIPostTimerHook) PostTimerPreserveAllRegs;
+
+        audioctrl->ac.ahiac_PreTimerFunc = AllocVec(sizeof(struct Hook), MEMF_PUBLIC | MEMF_CLEAR);
+        if(!audioctrl->ac.ahiac_PreTimerFunc)
+            goto error;
+
+        audioctrl->ac.ahiac_PostTimerFunc = AllocVec(sizeof(struct Hook), MEMF_PUBLIC | MEMF_CLEAR);
+        if(!audioctrl->ac.ahiac_PostTimerFunc)
+            goto error;
+
+        audioctrl->ac.ahiac_PreTimerFunc->h_Entry    = (HOOKFUNC) HookEntry;
+        audioctrl->ac.ahiac_PreTimerFunc->h_SubEntry = (HOOKFUNC) PreTimerFunc;
+
+        audioctrl->ac.ahiac_PostTimerFunc->h_Entry    = (HOOKFUNC) HookEntry;
+        audioctrl->ac.ahiac_PostTimerFunc->h_SubEntry = (HOOKFUNC) PostTimerFunc;
+
+        if(!InitMixroutine(audioctrl)) goto error;
     }
-    else // No timing
-    {
-      ULONG size;
 
-      size=audioctrl->ac.ahiac_BuffSamples*\
-           AHI_SampleFrameSize(audioctrl->ac.ahiac_BuffType)*\
-           (audioctrl->ac.ahiac_Flags & AHIACF_POSTPROC ? 2 : 1);
+    audioctrl->ac.ahiac_SamplerFunc = AllocVec(sizeof(struct Hook),
+                                      MEMF_PUBLIC | MEMF_CLEAR);
+    if(!audioctrl->ac.ahiac_SamplerFunc)
+        goto error;
 
-      size +=7;
-      size &= ~7;  // byte align
+    audioctrl->ac.ahiac_SamplerFunc->h_Entry    = (HOOKFUNC) HookEntry;
+    audioctrl->ac.ahiac_SamplerFunc->h_SubEntry = (HOOKFUNC) SamplerFunc;
 
-      audioctrl->ahiac_BuffSizeNow=size;
+    /* Set default hardware properties, only if AHI_DEFAULT_ID was used!*/
+    if(GetTagData(AHIA_AudioID, AHI_DEFAULT_ID, tags) == AHI_DEFAULT_ID) {
+        AHI_ControlAudio((struct AHIAudioCtrl *)audioctrl,
+                         AHIC_MonitorVolume,   AHIBase->ahib_MonitorVolume,
+                         AHIC_InputGain,       AHIBase->ahib_InputGain,
+                         AHIC_OutputVolume,    AHIBase->ahib_OutputVolume,
+                         AHIC_Input,           AHIBase->ahib_Input,
+                         AHIC_Output,          AHIBase->ahib_Output,
+                         TAG_DONE);
     }
-
-    audioctrl->ac.ahiac_MixerFunc=AllocVec(sizeof(struct Hook),MEMF_PUBLIC|MEMF_CLEAR);
-    if(!audioctrl->ac.ahiac_MixerFunc)
-      goto error;
-
-
-    audioctrl->ac.ahiac_MixerFunc->h_Entry    = (HOOKFUNC) HookEntryPreserveAllRegs;
-    audioctrl->ac.ahiac_MixerFunc->h_SubEntry = (HOOKFUNC) MixerFunc;
-
-    if((AHIBase->ahib_MaxCPU >= 0x10000) || (AHIBase->ahib_MaxCPU <= 0x0))
-    {
-      audioctrl->ahiac_MaxCPU = 0x100;
-    }
-    else
-    {
-      audioctrl->ahiac_MaxCPU = AHIBase->ahib_MaxCPU >> 8;
-    }
-
-    audioctrl->ac.ahiac_PreTimer  = (AHIPreTimerHook) PreTimerPreserveAllRegs;
-    audioctrl->ac.ahiac_PostTimer = (AHIPostTimerHook) PostTimerPreserveAllRegs;
-
-    audioctrl->ac.ahiac_PreTimerFunc=AllocVec(sizeof(struct Hook),MEMF_PUBLIC|MEMF_CLEAR);
-    if(!audioctrl->ac.ahiac_PreTimerFunc)
-      goto error;
-
-    audioctrl->ac.ahiac_PostTimerFunc=AllocVec(sizeof(struct Hook),MEMF_PUBLIC|MEMF_CLEAR);
-    if(!audioctrl->ac.ahiac_PostTimerFunc)
-      goto error;
-
-    audioctrl->ac.ahiac_PreTimerFunc->h_Entry    = (HOOKFUNC) HookEntry;
-    audioctrl->ac.ahiac_PreTimerFunc->h_SubEntry = (HOOKFUNC) PreTimerFunc;
-    
-    audioctrl->ac.ahiac_PostTimerFunc->h_Entry    = (HOOKFUNC) HookEntry;
-    audioctrl->ac.ahiac_PostTimerFunc->h_SubEntry = (HOOKFUNC) PostTimerFunc;
-    
-    if( !InitMixroutine( audioctrl ) ) goto error;
-  }
-
-  audioctrl->ac.ahiac_SamplerFunc = AllocVec(sizeof(struct Hook),
-      MEMF_PUBLIC|MEMF_CLEAR);
-  if(!audioctrl->ac.ahiac_SamplerFunc)
-    goto error;
-
-  audioctrl->ac.ahiac_SamplerFunc->h_Entry    = (HOOKFUNC) HookEntry;
-  audioctrl->ac.ahiac_SamplerFunc->h_SubEntry = (HOOKFUNC) SamplerFunc;
-
-  /* Set default hardware properties, only if AHI_DEFAULT_ID was used!*/
-  if(GetTagData(AHIA_AudioID, AHI_DEFAULT_ID, tags) == AHI_DEFAULT_ID)
-  {
-    AHI_ControlAudio((struct AHIAudioCtrl *)audioctrl,
-        AHIC_MonitorVolume,   AHIBase->ahib_MonitorVolume,
-        AHIC_InputGain,       AHIBase->ahib_InputGain,
-        AHIC_OutputVolume,    AHIBase->ahib_OutputVolume,
-        AHIC_Input,           AHIBase->ahib_Input,
-        AHIC_Output,          AHIBase->ahib_Output,
-        TAG_DONE);
-  }
 
 exit:
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    KPrintF("=>0x%08lx\n", (IPTR) audioctrl);
-  }
-  return (struct AHIAudioCtrl *) audioctrl;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        KPrintF("=>0x%08lx\n", (IPTR) audioctrl);
+    }
+    return (struct AHIAudioCtrl *) audioctrl;
 
 
 error:
-  AHI_FreeAudio((struct AHIAudioCtrl *)audioctrl);
-  audioctrl=NULL;
-  goto exit;
+    AHI_FreeAudio((struct AHIAudioCtrl *)audioctrl);
+    audioctrl = NULL;
+    goto exit;
 }
 
 
@@ -722,59 +699,53 @@ error:
 */
 
 ULONG
-_AHI_FreeAudio( struct AHIPrivAudioCtrl* audioctrl,
-		struct AHIBase*          AHIBase )
+_AHI_FreeAudio(struct AHIPrivAudioCtrl *audioctrl,
+               struct AHIBase          *AHIBase)
 {
-  struct Library *AHIsubBase;
-  int i;
+    struct Library *AHIsubBase;
+    int i;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_FreeAudio(audioctrl);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_FreeAudio(audioctrl);
+    }
 
-  if(audioctrl)
-  {
-    if((AHIsubBase=audioctrl->ahiac_SubLib))
-    {
+    if(audioctrl) {
+        if((AHIsubBase = audioctrl->ahiac_SubLib)) {
 #ifdef __AMIGAOS4__
-      struct AHIsubIFace* IAHIsub = audioctrl->ahiac_IAHIsub;
+            struct AHIsubIFace *IAHIsub = audioctrl->ahiac_IAHIsub;
 #endif
 
-      if(!(audioctrl->ahiac_SubAllocRC & AHISF_ERROR))
-      {
+            if(!(audioctrl->ahiac_SubAllocRC & AHISF_ERROR)) {
 //KPrintF("Called AHIsub_Stop(play|record)\n");
-        AHIsub_Stop(AHISF_PLAY|AHISF_RECORD,(struct AHIAudioCtrlDrv *)audioctrl);
+                AHIsub_Stop(AHISF_PLAY | AHISF_RECORD, (struct AHIAudioCtrlDrv *)audioctrl);
 
-        for(i=audioctrl->ac.ahiac_Sounds-1;i>=0;i--)
-        {
-          AHI_UnloadSound(i,(struct AHIAudioCtrl *)audioctrl);
-        }
-      }
+                for(i = audioctrl->ac.ahiac_Sounds - 1; i >= 0; i--) {
+                    AHI_UnloadSound(i, (struct AHIAudioCtrl *)audioctrl);
+                }
+            }
 //KPrintF("Called AHIsub_FreeAudio()\n");
-      AHIsub_FreeAudio((struct AHIAudioCtrlDrv *) audioctrl);
+            AHIsub_FreeAudio((struct AHIAudioCtrlDrv *) audioctrl);
 //KPrintF("Closed AHIsubbase\n");
 #ifdef __AMIGAOS4__
-      DropInterface((struct Interface *) IAHIsub);
-      IAHIsub = NULL;
+            DropInterface((struct Interface *) IAHIsub);
+            IAHIsub = NULL;
 #endif
-      
-      CloseLibrary(AHIsubBase);
+
+            CloseLibrary(AHIsubBase);
+        }
+
+        if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING)) {
+            CleanUpMixroutine(audioctrl);
+        }
+
+        FreeVec(audioctrl->ac.ahiac_SamplerFunc);
+        FreeVec(audioctrl->ac.ahiac_MixerFunc);
+        FreeVec(audioctrl->ac.ahiac_PreTimerFunc);
+        FreeVec(audioctrl->ac.ahiac_PostTimerFunc);
+
+        AHIFreeVec(audioctrl);
     }
-
-    if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING))
-    {
-      CleanUpMixroutine( audioctrl );
-    }
-
-    FreeVec( audioctrl->ac.ahiac_SamplerFunc );
-    FreeVec( audioctrl->ac.ahiac_MixerFunc );
-    FreeVec( audioctrl->ac.ahiac_PreTimerFunc );
-    FreeVec( audioctrl->ac.ahiac_PostTimerFunc );
-
-    AHIFreeVec( audioctrl );
-  }
-  return 0;
+    return 0;
 }
 
 
@@ -819,23 +790,21 @@ _AHI_FreeAudio( struct AHIPrivAudioCtrl* audioctrl,
 */
 
 ULONG
-_AHI_KillAudio( struct AHIBase* AHIBase )
+_AHI_KillAudio(struct AHIBase *AHIBase)
 {
-  UWORD i;
+    UWORD i;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_KillAudio();
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_KillAudio();
+    }
 
-  for(i=0xffff;i != 0; i--)
-  {
-    *((UWORD *) 0xdff102)=i;
-  }
+    for(i = 0xffff; i != 0; i--) {
+        *((UWORD *) 0xdff102) = i;
+    }
 
-  AHI_FreeAudio(AHIBase->ahib_AudioCtrl);
-  AHIBase->ahib_AudioCtrl=NULL;
-  return 0;
+    AHI_FreeAudio(AHIBase->ahib_AudioCtrl);
+    AHIBase->ahib_AudioCtrl = NULL;
+    return 0;
 }
 
 
@@ -943,124 +912,111 @@ _AHI_KillAudio( struct AHIBase* AHIBase )
 */
 
 ULONG
-_AHI_ControlAudioA( struct AHIPrivAudioCtrl* audioctrl,
-		    struct TagItem*          tags,
-		    struct AHIBase*          AHIBase )
+_AHI_ControlAudioA(struct AHIPrivAudioCtrl *audioctrl,
+                   struct TagItem          *tags,
+                   struct AHIBase          *AHIBase)
 {
-  ULONG *ptr, playflags=0, stopflags=0, rc=AHIE_OK;
-  UBYTE update=FALSE;
-  struct TagItem *tag,*tstate=tags;
-  struct Library *AHIsubBase=audioctrl->ahiac_SubLib;
+    ULONG *ptr, playflags = 0, stopflags = 0, rc = AHIE_OK;
+    UBYTE update = FALSE;
+    struct TagItem *tag, *tstate = tags;
+    struct Library *AHIsubBase = audioctrl->ahiac_SubLib;
 #ifdef __AMIGAOS4__
-  struct AHIsubIFace* IAHIsub = audioctrl->ahiac_IAHIsub;
+    struct AHIsubIFace *IAHIsub = audioctrl->ahiac_IAHIsub;
 #endif
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_ControlAudioA(audioctrl,tags);
-  }
-
-  while((tag=NextTagItem(&tstate)))
-  {
-    ptr=(ULONG *)tag->ti_Data;  // For ..._Query tags
-    switch(tag->ti_Tag)
-    {
-    case AHIA_SoundFunc:
-      audioctrl->ac.ahiac_SoundFunc=(struct Hook *) tag->ti_Data;
-      update=TRUE;
-      break;
-    case AHIA_RecordFunc:
-      audioctrl->ahiac_RecordFunc=(struct Hook *) tag->ti_Data;
-      update=TRUE;
-      break;
-    case AHIA_PlayerFunc:
-      audioctrl->ac.ahiac_PlayerFunc=(struct Hook *) tag->ti_Data;
-      update=TRUE;
-      break;
-    case AHIA_PlayerFreq:
-      audioctrl->ac.ahiac_PlayerFreq=tag->ti_Data;
-
-      if(audioctrl->ac.ahiac_PlayerFreq < 65536)
-        audioctrl->ac.ahiac_PlayerFreq <<= 16;
-
-      if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOTIMING)) // Dont call unless timing is used.
-        RecalcBuff(audioctrl->ac.ahiac_PlayerFreq,audioctrl);
-      update=TRUE;
-      break;
-    case AHIA_UserData:
-      audioctrl->ac.ahiac_AudioCtrl.ahiac_UserData=(void *)tag->ti_Data;
-      break;
-    case AHIC_Play:
-      if(tag->ti_Data)
-      {
-        playflags |= AHISF_PLAY;
-        stopflags &= ~AHISF_PLAY;
-      }
-      else
-      {
-        playflags &= ~AHISF_PLAY;
-        stopflags |= AHISF_PLAY;
-      }
-      update=FALSE;
-      break;
-    case AHIC_Record:
-      if(tag->ti_Data)
-      {
-        playflags |= AHISF_RECORD;
-        stopflags &= ~AHISF_RECORD;
-      }
-      else
-      {
-        playflags &= ~AHISF_RECORD;
-        stopflags |= AHISF_RECORD;
-      }
-      update=FALSE;
-      break;
-    case AHIC_MixFreq_Query:
-      *ptr=audioctrl->ac.ahiac_MixFreq;
-      break;
-    case AHIC_MonitorVolume:
-    case AHIC_InputGain:
-    case AHIC_OutputVolume:
-    case AHIC_Input:
-    case AHIC_Output:
-      AHIsub_HardwareControl(tag->ti_Tag, tag->ti_Data, (struct AHIAudioCtrlDrv *)audioctrl);
-//KPrintF("Called AHIsub_HardwareControl(%08lx:%08lx)\n",tag->ti_Tag, tag->ti_Data);
-      break;
-    case AHIC_MonitorVolume_Query:
-    case AHIC_InputGain_Query:
-    case AHIC_OutputVolume_Query:
-    case AHIC_Input_Query:
-    case AHIC_Output_Query:
-      *ptr=AHIsub_HardwareControl(tag->ti_Tag, 0, (struct AHIAudioCtrlDrv *)audioctrl);
-//KPrintF("Called AHIsub_HardwareControl(%08lx:NULL)\n",tag->ti_Tag);
-      break;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_ControlAudioA(audioctrl, tags);
     }
-  }
+
+    while((tag = NextTagItem(&tstate))) {
+        ptr = (ULONG *)tag->ti_Data; // For ..._Query tags
+        switch(tag->ti_Tag) {
+        case AHIA_SoundFunc:
+            audioctrl->ac.ahiac_SoundFunc = (struct Hook *) tag->ti_Data;
+            update = TRUE;
+            break;
+        case AHIA_RecordFunc:
+            audioctrl->ahiac_RecordFunc = (struct Hook *) tag->ti_Data;
+            update = TRUE;
+            break;
+        case AHIA_PlayerFunc:
+            audioctrl->ac.ahiac_PlayerFunc = (struct Hook *) tag->ti_Data;
+            update = TRUE;
+            break;
+        case AHIA_PlayerFreq:
+            audioctrl->ac.ahiac_PlayerFreq = tag->ti_Data;
+
+            if(audioctrl->ac.ahiac_PlayerFreq < 65536)
+                audioctrl->ac.ahiac_PlayerFreq <<= 16;
+
+            if(!(audioctrl->ac.ahiac_Flags & AHIACF_NOTIMING)) // Dont call unless timing is used.
+                RecalcBuff(audioctrl->ac.ahiac_PlayerFreq, audioctrl);
+            update = TRUE;
+            break;
+        case AHIA_UserData:
+            audioctrl->ac.ahiac_AudioCtrl.ahiac_UserData = (void *)tag->ti_Data;
+            break;
+        case AHIC_Play:
+            if(tag->ti_Data) {
+                playflags |= AHISF_PLAY;
+                stopflags &= ~AHISF_PLAY;
+            } else {
+                playflags &= ~AHISF_PLAY;
+                stopflags |= AHISF_PLAY;
+            }
+            update = FALSE;
+            break;
+        case AHIC_Record:
+            if(tag->ti_Data) {
+                playflags |= AHISF_RECORD;
+                stopflags &= ~AHISF_RECORD;
+            } else {
+                playflags &= ~AHISF_RECORD;
+                stopflags |= AHISF_RECORD;
+            }
+            update = FALSE;
+            break;
+        case AHIC_MixFreq_Query:
+            *ptr = audioctrl->ac.ahiac_MixFreq;
+            break;
+        case AHIC_MonitorVolume:
+        case AHIC_InputGain:
+        case AHIC_OutputVolume:
+        case AHIC_Input:
+        case AHIC_Output:
+            AHIsub_HardwareControl(tag->ti_Tag, tag->ti_Data, (struct AHIAudioCtrlDrv *)audioctrl);
+//KPrintF("Called AHIsub_HardwareControl(%08lx:%08lx)\n",tag->ti_Tag, tag->ti_Data);
+            break;
+        case AHIC_MonitorVolume_Query:
+        case AHIC_InputGain_Query:
+        case AHIC_OutputVolume_Query:
+        case AHIC_Input_Query:
+        case AHIC_Output_Query:
+            *ptr = AHIsub_HardwareControl(tag->ti_Tag, 0, (struct AHIAudioCtrlDrv *)audioctrl);
+//KPrintF("Called AHIsub_HardwareControl(%08lx:NULL)\n",tag->ti_Tag);
+            break;
+        }
+    }
 
 // Let's act!
-  if(update)
-  {
-    AHIsub_Update(0,(struct AHIAudioCtrlDrv *)audioctrl);
+    if(update) {
+        AHIsub_Update(0, (struct AHIAudioCtrlDrv *)audioctrl);
 //KPrintF("Called AHIsub_Update()\n");
-  }
-  
-  if(playflags)
-  {
-    rc=AHIsub_Start(playflags,(struct AHIAudioCtrlDrv *)audioctrl);
+    }
+
+    if(playflags) {
+        rc = AHIsub_Start(playflags, (struct AHIAudioCtrlDrv *)audioctrl);
 //KPrintF("Called AHIsub_Start(%08lx)=>%ld\n",playflags,rc);
-  }
-  
-  if(stopflags)
-  {
-    AHIsub_Stop(stopflags,(struct AHIAudioCtrlDrv *)audioctrl);
+    }
+
+    if(stopflags) {
+        AHIsub_Stop(stopflags, (struct AHIAudioCtrlDrv *)audioctrl);
 //KPrintF("Called AHIsub_Stop(%08lx)\n",stopflags);
-  }
+    }
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    KPrintF("=>%ld\n",rc);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        KPrintF("=>%ld\n", rc);
+    }
 
-  return rc;
+    return rc;
 }

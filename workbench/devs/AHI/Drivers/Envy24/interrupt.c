@@ -25,91 +25,79 @@
 
 AROS_INTH1(CardInterrupt, struct CardData *, card)
 {
-  AROS_INTFUNC_INIT
+    AROS_INTFUNC_INIT
 
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
 
-  unsigned char intreq;
-  LONG  handled = 0;
+    unsigned char intreq;
+    LONG  handled = 0;
 
-  //DebugPrintF("INT\n");
-  while ( ( intreq = ( pci_inb(CCS_INTR_STATUS, card) ) ) != 0 )
-  {
-    //DebugPrintF("INT %x\n", intreq);
-    
-    if (intreq & CCS_INTR_PRO_MACRO)
-    {
-       unsigned char mtstatus = pci_inb_mt(MT_INTR_MASK_STATUS, card);
-       
-       //DebugPrintF("CCS_INTR_PRO_MACRO, mtstatus = %x\n", mtstatus);
-       
-       if( (mtstatus & MT_PLAY_STATUS) && AudioCtrl != NULL )
-       {
-         pci_outb_mt(mtstatus | MT_PLAY_STATUS, MT_INTR_MASK_STATUS, card); // clear interrupt
-        
-         if (card->flip == 0) // just played buf 1
-         {
-            card->flip = 1;
-            card->current_buffer = card->playback_buffer;
+    //DebugPrintF("INT\n");
+    while((intreq = (pci_inb(CCS_INTR_STATUS, card))) != 0) {
+        //DebugPrintF("INT %x\n", intreq);
+
+        if(intreq & CCS_INTR_PRO_MACRO) {
+            unsigned char mtstatus = pci_inb_mt(MT_INTR_MASK_STATUS, card);
+
+            //DebugPrintF("CCS_INTR_PRO_MACRO, mtstatus = %x\n", mtstatus);
+
+            if((mtstatus & MT_PLAY_STATUS) && AudioCtrl != NULL) {
+                pci_outb_mt(mtstatus | MT_PLAY_STATUS, MT_INTR_MASK_STATUS, card); // clear interrupt
+
+                if(card->flip == 0) { // just played buf 1
+                    card->flip = 1;
+                    card->current_buffer = card->playback_buffer;
+                } else { // just played buf 2
+                    card->flip = 0;
+                    card->current_buffer = (APTR)((long) card->playback_buffer + card->current_bytesize);
+                }
+
+                card->playback_interrupt_enabled = FALSE;
+                Cause(&card->playback_interrupt);
             }
-         else  // just played buf 2
-         {
-            card->flip = 0;
-            card->current_buffer = (APTR) ((long) card->playback_buffer + card->current_bytesize);
-         }
-         
-         card->playback_interrupt_enabled = FALSE;
-         Cause( &card->playback_interrupt );
-       }
-   
-       if( (mtstatus & MT_REC_STATUS) && AudioCtrl != NULL )
-       {
-         pci_outb_mt(mtstatus | MT_REC_STATUS, MT_INTR_MASK_STATUS, card); // clear interrupt
-         //DebugPrintF("rec\n");
-   
-         if( card->record_interrupt_enabled )
-         {
-            const unsigned long diff = pci_inl_mt(MT_DMA_REC_ADDRESS, card) - (unsigned long) card->record_buffer_32bit_phys;
-            
-            //DebugPrintF("%lu\n", diff % card->current_record_bytesize_32bit);
-            
-            /* Invoke softint to convert and feed AHI with the new sample data */
-   
-            if (diff >= card->current_record_bytesize_32bit) // just played buf 1
-            {
-               if (card->recflip == 1)
-                   DebugPrintF("A: Missed IRQ!\n");
-               
-               card->recflip = 1;
-               card->current_record_buffer = card->record_buffer;
-               card->current_record_buffer_32bit = card->record_buffer_32bit;
-               }
-            else  // just played buf 2
-            {
-               if (card->recflip == 0)
-                   DebugPrintF("B: Missed IRQ!\n");
-                 
-               card->recflip = 0;
-               card->current_record_buffer = (APTR) ((unsigned long) card->record_buffer + card->current_record_bytesize_target);
-               card->current_record_buffer_32bit = (APTR) ((unsigned long) card->record_buffer_32bit + card->current_record_bytesize_32bit);
+
+            if((mtstatus & MT_REC_STATUS) && AudioCtrl != NULL) {
+                pci_outb_mt(mtstatus | MT_REC_STATUS, MT_INTR_MASK_STATUS, card); // clear interrupt
+                //DebugPrintF("rec\n");
+
+                if(card->record_interrupt_enabled) {
+                    const unsigned long diff = pci_inl_mt(MT_DMA_REC_ADDRESS, card) - (unsigned long) card->record_buffer_32bit_phys;
+
+                    //DebugPrintF("%lu\n", diff % card->current_record_bytesize_32bit);
+
+                    /* Invoke softint to convert and feed AHI with the new sample data */
+
+                    if(diff >= card->current_record_bytesize_32bit) { // just played buf 1
+                        if(card->recflip == 1)
+                            DebugPrintF("A: Missed IRQ!\n");
+
+                        card->recflip = 1;
+                        card->current_record_buffer = card->record_buffer;
+                        card->current_record_buffer_32bit = card->record_buffer_32bit;
+                    } else { // just played buf 2
+                        if(card->recflip == 0)
+                            DebugPrintF("B: Missed IRQ!\n");
+
+                        card->recflip = 0;
+                        card->current_record_buffer = (APTR)((unsigned long) card->record_buffer + card->current_record_bytesize_target);
+                        card->current_record_buffer_32bit = (APTR)((unsigned long) card->record_buffer_32bit +
+                                                            card->current_record_bytesize_32bit);
+                    }
+                    card->record_interrupt_enabled = FALSE;
+                    Cause(&card->record_interrupt);
+                }
             }
-            card->record_interrupt_enabled = FALSE;
-            Cause( &card->record_interrupt );
-         }
-       }
-       
-    }
-    else
-    {
-       DebugPrintF("Oh dear, it's not CCS_INTR_PLAYREC!\n");
+
+        } else {
+            DebugPrintF("Oh dear, it's not CCS_INTR_PLAYREC!\n");
+        }
+
+        handled = 1;
     }
 
-    handled = 1;
-  }
+    return handled;
 
-  return handled;
-
-  AROS_INTFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 
@@ -119,82 +107,76 @@ AROS_INTH1(CardInterrupt, struct CardData *, card)
 
 AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
 {
-  AROS_INTFUNC_INIT
+    AROS_INTFUNC_INIT
 
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
-  BOOL stereo = (AudioCtrl->ahiac_Flags & AHIACF_STEREO) != 0;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) card->ahisubbase;
+    BOOL stereo = (AudioCtrl->ahiac_Flags & AHIACF_STEREO) != 0;
 
-  if( card->mix_buffer != NULL && card->current_buffer != NULL )
-  {
-    BOOL   skip_mix;
+    if(card->mix_buffer != NULL && card->current_buffer != NULL) {
+        BOOL   skip_mix;
 
-    WORD*  src;
-    int    i;
-    LONG *srclong, *dstlong, left, right;
-    int frames = card->current_frames;
-    
-    skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );
-    CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
+        WORD  *src;
+        int    i;
+        LONG *srclong, *dstlong, left, right;
+        int frames = card->current_frames;
 
-    //DebugPrintF("skip_mix = %d\n", skip_mix);
+        skip_mix = CallHookPkt(AudioCtrl->ahiac_PreTimerFunc, (Object *) AudioCtrl, 0);
+        CallHookPkt(AudioCtrl->ahiac_PlayerFunc, (Object *) AudioCtrl, NULL);
 
-    if( ! skip_mix )
-    {
-      CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
+        //DebugPrintF("skip_mix = %d\n", skip_mix);
+
+        if(! skip_mix) {
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object *) AudioCtrl, card->mix_buffer);
+        }
+
+        /* Now translate and transfer to the DMA buffer */
+
+        src     = card->mix_buffer;
+        srclong = (LONG *) card->mix_buffer;
+        dstlong = (LONG *) card->current_buffer;
+
+        i = frames;
+
+        while(i > 0) {
+            if(AudioCtrl->ahiac_Flags & AHIACF_HIFI) {
+                left = AROS_LONG2LE(*srclong++);
+                if(stereo)
+                    right = AROS_LONG2LE(*srclong++);
+                else
+                    right = left;
+            } else {
+                left = AROS_LONG2LE(*src++ << 16);
+                if(stereo)
+                    right = AROS_LONG2LE(*src++ << 16);
+                else
+                    right = left;
+            }
+
+            *dstlong++ = left;  // out 1 - 2
+            *dstlong++ = right;
+
+            *dstlong++ = left;
+            *dstlong++ = right;
+
+            dstlong += 4;
+
+            // S/PDIF
+            *dstlong++ = left;
+            *dstlong++ = right;
+
+            --i;
+        }
+
+        CacheClearE(card->current_buffer, (ULONG) dstlong - (ULONG) card->current_buffer, CACRF_ClearD);
+        CallHookPkt(AudioCtrl->ahiac_PostTimerFunc, (Object *) AudioCtrl, 0);
     }
-    
-    /* Now translate and transfer to the DMA buffer */
 
-    src     = card->mix_buffer;
-    srclong = (LONG*) card->mix_buffer;
-    dstlong = (LONG*) card->current_buffer;
+    card->playback_interrupt_enabled = TRUE;
 
-    i = frames;
+    return FALSE;
 
-      while( i > 0 )
-      {
-        if (AudioCtrl->ahiac_Flags & AHIACF_HIFI)
-        {
-          left = AROS_LONG2LE(*srclong++);
-          if (stereo)
-            right = AROS_LONG2LE(*srclong++);
-          else
-            right = left;
-        }
-        else
-        {
-          left = AROS_LONG2LE(*src++ << 16);
-          if (stereo)
-            right = AROS_LONG2LE(*src++ << 16);
-          else
-            right = left;
-        }
-
-        *dstlong++ = left;  // out 1 - 2
-        *dstlong++ = right;
-
-        *dstlong++ = left;
-        *dstlong++ = right;
-
-        dstlong+= 4;
-
-        // S/PDIF
-        *dstlong++ = left;
-        *dstlong++ = right;
-
-        --i;
-      }
-
-    CacheClearE(card->current_buffer, (ULONG) dstlong - (ULONG) card->current_buffer, CACRF_ClearD);
-    CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
-  }
-
-  card->playback_interrupt_enabled = TRUE;
-
-  return FALSE;
-
-  AROS_INTFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 
@@ -204,79 +186,69 @@ AROS_INTH1(PlaybackInterrupt, struct CardData *, card)
 
 AROS_INTH1(RecordInterrupt, struct CardData *, card)
 {
-  AROS_INTFUNC_INIT
+    AROS_INTFUNC_INIT
 
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) card->ahisubbase;
 
-  struct AHIRecordMessage rm =
-  {
-    AHIST_S16S,
-    card->current_record_buffer,
-    RECORD_BUFFER_SAMPLES
-  };
+    struct AHIRecordMessage rm = {
+        AHIST_S16S,
+        card->current_record_buffer,
+        RECORD_BUFFER_SAMPLES
+    };
 
-     long *src = card->current_record_buffer_32bit;
-     WORD* dst = card->current_record_buffer;
-     int i = 0, frames = RECORD_BUFFER_SAMPLES;
+    long *src = card->current_record_buffer_32bit;
+    WORD *dst = card->current_record_buffer;
+    int i = 0, frames = RECORD_BUFFER_SAMPLES;
 
-     CacheClearE( card->current_record_buffer, card->current_record_bytesize_target, CACRF_ClearD);
-     CacheClearE( card->current_record_buffer_32bit, card->current_record_bytesize_32bit, CACRF_ClearD);
+    CacheClearE(card->current_record_buffer, card->current_record_bytesize_target, CACRF_ClearD);
+    CacheClearE(card->current_record_buffer_32bit, card->current_record_bytesize_32bit, CACRF_ClearD);
 
-     i = frames;
+    i = frames;
 
-     if (card->SubType == PHASE88 || card->SubType == MAUDIO_1010LT)
-     {
+    if(card->SubType == PHASE88 || card->SubType == MAUDIO_1010LT) {
         src += card->input * 2;
-        while( i > 0 )
-        {
-          *dst++ = AROS_LE2LONG(*src++) >> 16;
-          *dst++ = AROS_LE2LONG(*src) >> 16;
+        while(i > 0) {
+            *dst++ = AROS_LE2LONG(*src++) >> 16;
+            *dst++ = AROS_LE2LONG(*src) >> 16;
 
-          src+=11;
+            src += 11;
 
-          i--;
+            i--;
         }
-     }
-     else
-     {
-        if (card->input != 1)
-        {
-           while( i > 0 )
-           {
-             *dst++ = AROS_LE2LONG(*src++) >> 16;
-             *dst++ = AROS_LE2LONG(*src) >> 16;
+    } else {
+        if(card->input != 1) {
+            while(i > 0) {
+                *dst++ = AROS_LE2LONG(*src++) >> 16;
+                *dst++ = AROS_LE2LONG(*src) >> 16;
 
-             src+=11;
-              
-             i--;
-           }
+                src += 11;
+
+                i--;
+            }
+        } else {
+            while(i > 0) {
+                src += 2;
+
+                *dst++ = AROS_LE2LONG(*src++) >> 16;
+                *dst++ = AROS_LE2LONG(*src) >> 16;
+
+                src += 9;
+
+                i--;
+            }
         }
-        else
-        {
-           while( i > 0 )
-           {
-             src+=2;
+    }
 
-             *dst++ = AROS_LE2LONG(*src++) >> 16;
-             *dst++ = AROS_LE2LONG(*src) >> 16;
+    CallHookPkt(AudioCtrl->ahiac_SamplerFunc, (Object *) AudioCtrl, &rm);
+    CacheClearE(card->current_record_buffer, card->current_record_bytesize_target, CACRF_ClearD);
+    CacheClearE(card->current_record_buffer_32bit, card->current_record_bytesize_32bit, CACRF_ClearD);
 
-             src+=9;
+    card->record_interrupt_enabled = TRUE;
 
-             i--;
-           }
-        }
-     }
-  
-  CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
-  CacheClearE( card->current_record_buffer, card->current_record_bytesize_target, CACRF_ClearD);
-  CacheClearE( card->current_record_buffer_32bit, card->current_record_bytesize_32bit, CACRF_ClearD);
+    return FALSE;
 
-  card->record_interrupt_enabled = TRUE;
-
-  return FALSE;
-
-  AROS_INTFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 

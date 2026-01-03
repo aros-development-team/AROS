@@ -2,17 +2,17 @@
      AHI - Hardware independent audio subsystem
      Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -53,20 +53,19 @@
 // NUL-terminating string copy
 
 static int
-stccpy( char *to, const char *from, int n )
+stccpy(char *to, const char *from, int n)
 {
-  int i = 1;
+    int i = 1;
 
-  if( n == 0 ) return 0;
+    if(n == 0) return 0;
 
-  while( *from && i < n )
-  {
-    *to++ = *from++;
-    i++;
-  }
-  *to = '\0';
-  
-  return i;
+    while(*from && i < n) {
+        *to++ = *from++;
+        i++;
+    }
+    *to = '\0';
+
+    return i;
 }
 
 /******************************************************************************
@@ -75,143 +74,139 @@ stccpy( char *to, const char *from, int n )
 
 // tags may be NULL
 
-Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags )
+Fixed DizzyTestAudioID(ULONG id, struct TagItem *tags)
 {
-  ULONG volume=0,stereo=0,panning=0,hifi=0,pingpong=0,record=0,realtime=0,
-        fullduplex=0,bits=0,channels=0,minmix=0,maxmix=0,multichannel=0;
-  ULONG total=0,hits=0;
-  struct TagItem *tstate, *tag;
-  
-  if(tags == NULL)
-  {
-    return (Fixed) 0x10000;
-  }
+    ULONG volume = 0, stereo = 0, panning = 0, hifi = 0, pingpong = 0, record = 0, realtime = 0,
+          fullduplex = 0, bits = 0, channels = 0, minmix = 0, maxmix = 0, multichannel = 0;
+    ULONG total = 0, hits = 0;
+    struct TagItem *tstate, *tag;
 
-  if(id == AHI_DEFAULT_ID)
-  {
-    id = AHIBase->ahib_AudioMode;
-  }
+    if(tags == NULL) {
+        return (Fixed) 0x10000;
+    }
 
-  AHI_GetAudioAttrs( id, NULL,
-                     AHIDB_Volume,       (IPTR)&volume,
-                     AHIDB_Stereo,       (IPTR)&stereo,
-                     AHIDB_Panning,      (IPTR)&panning,
-                     AHIDB_MultiChannel, (IPTR)&multichannel,
-                     AHIDB_HiFi,         (IPTR)&hifi,
-                     AHIDB_PingPong,     (IPTR)&pingpong,
-                     AHIDB_Record,       (IPTR)&record,
-                     AHIDB_Bits,         (IPTR)&bits,
-                     AHIDB_MaxChannels,  (IPTR)&channels,
-                     AHIDB_MinMixFreq,   (IPTR)&minmix,
-                     AHIDB_MaxMixFreq,   (IPTR)&maxmix,
-                     AHIDB_Realtime,     (IPTR)&realtime,
-                     AHIDB_FullDuplex,   (IPTR)&fullduplex,
-                     TAG_DONE );
+    if(id == AHI_DEFAULT_ID) {
+        id = AHIBase->ahib_AudioMode;
+    }
 
-  tstate = tags;
+    AHI_GetAudioAttrs(id, NULL,
+                      AHIDB_Volume, (IPTR)&volume,
+                      AHIDB_Stereo, (IPTR)&stereo,
+                      AHIDB_Panning, (IPTR)&panning,
+                      AHIDB_MultiChannel, (IPTR)&multichannel,
+                      AHIDB_HiFi, (IPTR)&hifi,
+                      AHIDB_PingPong, (IPTR)&pingpong,
+                      AHIDB_Record, (IPTR)&record,
+                      AHIDB_Bits, (IPTR)&bits,
+                      AHIDB_MaxChannels, (IPTR)&channels,
+                      AHIDB_MinMixFreq, (IPTR)&minmix,
+                      AHIDB_MaxMixFreq, (IPTR)&maxmix,
+                      AHIDB_Realtime, (IPTR)&realtime,
+                      AHIDB_FullDuplex, (IPTR)&fullduplex,
+                      TAG_DONE);
 
-  while ((tag = NextTagItem(&tstate)))
-  {
-    switch (tag->ti_Tag)
-    {
-      // Check source mode
+    tstate = tags;
 
-      case AHIDB_AudioID:
-	// Give two points for this
-        total+=2;
-        if( ((tag->ti_Data)&0xffff0000) == (id & 0xffff0000) )
-          hits+=2;
-        break;
+    while((tag = NextTagItem(&tstate))) {
+        switch(tag->ti_Tag) {
+        // Check source mode
 
-      // Boolean tags
+        case AHIDB_AudioID:
+            // Give two points for this
+            total += 2;
+            if(((tag->ti_Data) & 0xffff0000) == (id & 0xffff0000))
+                hits += 2;
+            break;
 
-      case AHIDB_Volume:
-        total++;
-        if(XNOR(tag->ti_Data, volume))
-          hits++;
-        break;
+        // Boolean tags
 
-      case AHIDB_Stereo:
-        total++;
-        if(XNOR(tag->ti_Data, stereo))
-          hits++;
-        break;
-      case AHIDB_Panning:
-        total++;
-        if(XNOR(tag->ti_Data, panning))
-          hits++;
-        break;
-      case AHIDB_MultiChannel:
-        total++;
-        if(XNOR(tag->ti_Data, multichannel))
-          hits++;
-        break;
-      case AHIDB_HiFi:
-        total++;
-        if(XNOR(tag->ti_Data, hifi))
-          hits++;
-        break;
-      case AHIDB_PingPong:
-        total++;
-        if(XNOR(tag->ti_Data, pingpong))
-          hits++;
-        break;
-      case AHIDB_Record:
-        total++;
-        if(XNOR(tag->ti_Data, record))
-          hits++;
-        break;
-      case AHIDB_Realtime:
-        total++;
-        if(XNOR(tag->ti_Data, realtime))
-          hits++;
-        break;
-      case AHIDB_FullDuplex:
-        total++;
-        if(XNOR(tag->ti_Data, fullduplex))
-          hits++;
-        break;
+        case AHIDB_Volume:
+            total++;
+            if(XNOR(tag->ti_Data, volume))
+                hits++;
+            break;
 
-      // The rest
+        case AHIDB_Stereo:
+            total++;
+            if(XNOR(tag->ti_Data, stereo))
+                hits++;
+            break;
+        case AHIDB_Panning:
+            total++;
+            if(XNOR(tag->ti_Data, panning))
+                hits++;
+            break;
+        case AHIDB_MultiChannel:
+            total++;
+            if(XNOR(tag->ti_Data, multichannel))
+                hits++;
+            break;
+        case AHIDB_HiFi:
+            total++;
+            if(XNOR(tag->ti_Data, hifi))
+                hits++;
+            break;
+        case AHIDB_PingPong:
+            total++;
+            if(XNOR(tag->ti_Data, pingpong))
+                hits++;
+            break;
+        case AHIDB_Record:
+            total++;
+            if(XNOR(tag->ti_Data, record))
+                hits++;
+            break;
+        case AHIDB_Realtime:
+            total++;
+            if(XNOR(tag->ti_Data, realtime))
+                hits++;
+            break;
+        case AHIDB_FullDuplex:
+            total++;
+            if(XNOR(tag->ti_Data, fullduplex))
+                hits++;
+            break;
 
-      case AHIDB_Bits:
-        total++;
-        if(tag->ti_Data <= bits)
-          hits++;
-        break;
-      case AHIDB_MaxChannels:
-        total++;
-        if(tag->ti_Data <= channels )
-          hits++;
-        break;
-      case AHIDB_MinMixFreq:
-        total++;
-        if(tag->ti_Data >= minmix)
-          hits++;
-        break;
-      case AHIDB_MaxMixFreq:
-        total++;
-        if(tag->ti_Data <= maxmix)
-          hits++;
-        break;
-    } /* switch */
-  } /* while */
+        // The rest
+
+        case AHIDB_Bits:
+            total++;
+            if(tag->ti_Data <= bits)
+                hits++;
+            break;
+        case AHIDB_MaxChannels:
+            total++;
+            if(tag->ti_Data <= channels)
+                hits++;
+            break;
+        case AHIDB_MinMixFreq:
+            total++;
+            if(tag->ti_Data >= minmix)
+                hits++;
+            break;
+        case AHIDB_MaxMixFreq:
+            total++;
+            if(tag->ti_Data <= maxmix)
+                hits++;
+            break;
+        } /* switch */
+    } /* while */
 
 
-  if(total)
-    return (Fixed) ((hits<<16)/total);
-  else
-    return (Fixed) 0x10000;
+    if(total)
+        return (Fixed)((hits << 16) / total);
+    else
+        return (Fixed) 0x10000;
 }
 
 // tags may be NULL
 
-BOOL TestAudioID(ULONG id, struct TagItem *tags )
+BOOL TestAudioID(ULONG id, struct TagItem *tags)
 {
-  if(DizzyTestAudioID(id, tags) != 0x10000)
-    return FALSE;
-  else
-    return TRUE;
+    if(DizzyTestAudioID(id, tags) != 0x10000)
+        return FALSE;
+    else
+        return TRUE;
 }
 
 
@@ -325,7 +320,7 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 *           AHIDB_Input and AHIDB_Output will do nothing.
 *
 *       AHIDB_Driver (STRPTR) - Name of driver (excluding path and
-*           extension). 
+*           extension).
 *           NOTE: ti_Data is a pointer to an UBYTE array where the name
 *           will be stored. See AHIDB_BufferLen.
 *
@@ -416,182 +411,167 @@ BOOL TestAudioID(ULONG id, struct TagItem *tags )
 */
 
 ULONG
-_AHI_GetAudioAttrsA( ULONG                    id,
-		     struct AHIPrivAudioCtrl* actrl,
-		     struct TagItem*          tags,
-		     struct AHIBase*          AHIBase )
+_AHI_GetAudioAttrsA(ULONG                    id,
+                    struct AHIPrivAudioCtrl *actrl,
+                    struct TagItem          *tags,
+                    struct AHIBase          *AHIBase)
 {
-  struct AHI_AudioDatabase *audiodb;
-  struct TagItem *dbtags,*tag1,*tag2,*tstate=tags;
-  ULONG *ptr;
-  ULONG stringlen;
-  struct Library *AHIsubBase=NULL;
-  struct AHIAudioCtrlDrv *audioctrl=NULL;
-  BOOL rc=TRUE; // TRUE == _everything_ went well
-  struct TagItem idtag[2] = { {AHIA_AudioID, 0} , {TAG_DONE, 0} };
+    struct AHI_AudioDatabase *audiodb;
+    struct TagItem *dbtags, *tag1, *tag2, *tstate = tags;
+    ULONG *ptr;
+    ULONG stringlen;
+    struct Library *AHIsubBase = NULL;
+    struct AHIAudioCtrlDrv *audioctrl = NULL;
+    BOOL rc = TRUE; // TRUE == _everything_ went well
+    struct TagItem idtag[2] = { {AHIA_AudioID, 0}, {TAG_DONE, 0} };
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
-  {
-    Debug_GetAudioAttrsA(id, actrl, tags);
-  }
-
-  if((audiodb=LockDatabase()))
-  {
-    if(id == AHI_INVALID_ID)
-    {
-      if(!(audioctrl= (struct AHIAudioCtrlDrv*) actrl))
-        rc=FALSE;
-      else
-        idtag[0].ti_Data=((struct AHIPrivAudioCtrl *)actrl)->ahiac_AudioID;
-    }
-    else
-    {
-      idtag[0].ti_Data = (id == AHI_DEFAULT_ID ? AHIBase->ahib_AudioMode : id);
-      audioctrl=(struct AHIAudioCtrlDrv *)CreateAudioCtrl(idtag);
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH) {
+        Debug_GetAudioAttrsA(id, actrl, tags);
     }
 
-    if(audioctrl && rc )
-    {
-      if((dbtags=GetDBTagList(audiodb, idtag[0].ti_Data)))
-      {
-        stringlen=GetTagData(AHIDB_BufferLen,0,tags);
-        if((AHIsubBase=OpenLibrary(((struct AHIPrivAudioCtrl *)audioctrl)->ahiac_DriverName,DriverVersion)))
-        {
-#ifdef __AMIGAOS4__
-          struct AHIsubIFace *IAHIsub;
-          if ((IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) != NULL)
-          {
-#endif
-
-          while((tag1=NextTagItem(&tstate)))
-          {
-            ptr=(ULONG *)tag1->ti_Data;
-            switch(tag1->ti_Tag)
-            {
-            case AHIDB_Driver:
-            case AHIDB_Name:
-              if((tag2=FindTagItem(tag1->ti_Tag,dbtags)))
-                stccpy((char *)tag1->ti_Data,(char *)tag2->ti_Data,stringlen);
-              break;
-// Skip these!
-            case AHIDB_FrequencyArg:
-            case AHIDB_IndexArg:
-            case AHIDB_InputArg:
-            case AHIDB_OutputArg:
-              break;
-// Strings
-            case AHIDB_Author:
-            case AHIDB_Copyright:
-            case AHIDB_Version:
-            case AHIDB_Annotation:
-              stccpy((char *)tag1->ti_Data,(char *)AHIsub_GetAttr(tag1->ti_Tag,0, (IPTR)"",dbtags,audioctrl),stringlen);
-              break;
-// Input & Output strings
-            case AHIDB_Input:
-              stccpy((char *)tag1->ti_Data,(char *)AHIsub_GetAttr(tag1->ti_Tag,
-                  GetTagData(AHIDB_InputArg,0,tags),
-                  (IPTR) GetahiString(msgDefault),dbtags,audioctrl),stringlen);
-              break;
-            case AHIDB_Output:
-              stccpy((char *)tag1->ti_Data,(char *)AHIsub_GetAttr(tag1->ti_Tag,
-                  GetTagData(AHIDB_OutputArg,0,tags),
-                  (IPTR) GetahiString(msgDefault),dbtags,audioctrl),stringlen);
-              break;
-// Other
-            case AHIDB_Bits:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,0,dbtags,audioctrl);
-              break;
-            case AHIDB_MaxChannels:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,128,dbtags,audioctrl);
-              break;
-            case AHIDB_MinMixFreq:
-              *ptr=AHIsub_GetAttr(AHIDB_Frequency,0,0,dbtags,audioctrl);
-              break;
-            case AHIDB_MaxMixFreq:
-              *ptr=AHIsub_GetAttr(AHIDB_Frequency,(AHIsub_GetAttr(AHIDB_Frequencies,1,0,dbtags,audioctrl)-1),0,dbtags,audioctrl);
-              break;
-            case AHIDB_Frequencies:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,1,dbtags,audioctrl);
-              break;
-            case AHIDB_Frequency:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,GetTagData(AHIDB_FrequencyArg,0,tags),0,dbtags,audioctrl);
-              break;
-            case AHIDB_Index:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,GetTagData(AHIDB_IndexArg,0,tags),0,dbtags,audioctrl);
-              break;
-            case AHIDB_MaxPlaySamples:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,audioctrl->ahiac_MaxBuffSamples,dbtags,audioctrl);
-              break;
-            case AHIDB_MaxRecordSamples:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,0,dbtags,audioctrl);
-              break;
-            case AHIDB_MinMonitorVolume:
-            case AHIDB_MaxMonitorVolume:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,0x00000,dbtags,audioctrl);
-              break;
-            case AHIDB_MinInputGain:
-            case AHIDB_MaxInputGain:
-            case AHIDB_MinOutputVolume:
-            case AHIDB_MaxOutputVolume:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,0x10000,dbtags,audioctrl);
-              break;
-            case AHIDB_Inputs:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,0,dbtags,audioctrl);
-              break;
-            case AHIDB_Outputs:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,1,dbtags,audioctrl);
-              break;
-// Booleans that defaults to FALSE
-            case AHIDB_Realtime:
-            case AHIDB_Record:
-            case AHIDB_FullDuplex:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,FALSE,dbtags,audioctrl);
-              break;
-// Booleans that defaults to TRUE
-            case AHIDB_PingPong:
-              *ptr=AHIsub_GetAttr(tag1->ti_Tag,0,
-				  audioctrl->ahiac_BuffType != AHIST_L7_1,
-				  dbtags,audioctrl);
-              break;
-// Tags from the database.
-            default:
-              if((tag2=FindTagItem(tag1->ti_Tag,dbtags)))
-                *ptr=tag2->ti_Data;
-              break;
-            }
-          }
-#ifdef __AMIGAOS4__
-          if (IAHIsub) {
-             DropInterface((struct Interface *) IAHIsub);
-             IAHIsub = NULL;
-             }
-          }
-#endif
-
+    if((audiodb = LockDatabase())) {
+        if(id == AHI_INVALID_ID) {
+            if(!(audioctrl = (struct AHIAudioCtrlDrv *) actrl))
+                rc = FALSE;
+            else
+                idtag[0].ti_Data = ((struct AHIPrivAudioCtrl *)actrl)->ahiac_AudioID;
+        } else {
+            idtag[0].ti_Data = (id == AHI_DEFAULT_ID ? AHIBase->ahib_AudioMode : id);
+            audioctrl = (struct AHIAudioCtrlDrv *)CreateAudioCtrl(idtag);
         }
-        else // no AHIsubBase
-          rc=FALSE;
-      }
-      else // no database taglist
-        rc=FALSE;
+
+        if(audioctrl && rc) {
+            if((dbtags = GetDBTagList(audiodb, idtag[0].ti_Data))) {
+                stringlen = GetTagData(AHIDB_BufferLen, 0, tags);
+                if((AHIsubBase = OpenLibrary(((struct AHIPrivAudioCtrl *)audioctrl)->ahiac_DriverName, DriverVersion))) {
+#ifdef __AMIGAOS4__
+                    struct AHIsubIFace *IAHIsub;
+                    if((IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) != NULL) {
+#endif
+
+                        while((tag1 = NextTagItem(&tstate))) {
+                            ptr = (ULONG *)tag1->ti_Data;
+                            switch(tag1->ti_Tag) {
+                            case AHIDB_Driver:
+                            case AHIDB_Name:
+                                if((tag2 = FindTagItem(tag1->ti_Tag, dbtags)))
+                                    stccpy((char *)tag1->ti_Data, (char *)tag2->ti_Data, stringlen);
+                                break;
+// Skip these!
+                            case AHIDB_FrequencyArg:
+                            case AHIDB_IndexArg:
+                            case AHIDB_InputArg:
+                            case AHIDB_OutputArg:
+                                break;
+// Strings
+                            case AHIDB_Author:
+                            case AHIDB_Copyright:
+                            case AHIDB_Version:
+                            case AHIDB_Annotation:
+                                stccpy((char *)tag1->ti_Data, (char *)AHIsub_GetAttr(tag1->ti_Tag, 0, (IPTR)"", dbtags, audioctrl), stringlen);
+                                break;
+// Input & Output strings
+                            case AHIDB_Input:
+                                stccpy((char *)tag1->ti_Data, (char *)AHIsub_GetAttr(tag1->ti_Tag,
+                                        GetTagData(AHIDB_InputArg, 0, tags),
+                                        (IPTR) GetahiString(msgDefault), dbtags, audioctrl), stringlen);
+                                break;
+                            case AHIDB_Output:
+                                stccpy((char *)tag1->ti_Data, (char *)AHIsub_GetAttr(tag1->ti_Tag,
+                                        GetTagData(AHIDB_OutputArg, 0, tags),
+                                        (IPTR) GetahiString(msgDefault), dbtags, audioctrl), stringlen);
+                                break;
+// Other
+                            case AHIDB_Bits:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MaxChannels:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 128, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MinMixFreq:
+                                *ptr = AHIsub_GetAttr(AHIDB_Frequency, 0, 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MaxMixFreq:
+                                *ptr = AHIsub_GetAttr(AHIDB_Frequency, (AHIsub_GetAttr(AHIDB_Frequencies, 1, 0, dbtags, audioctrl) - 1), 0, dbtags,
+                                                      audioctrl);
+                                break;
+                            case AHIDB_Frequencies:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 1, dbtags, audioctrl);
+                                break;
+                            case AHIDB_Frequency:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, GetTagData(AHIDB_FrequencyArg, 0, tags), 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_Index:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, GetTagData(AHIDB_IndexArg, 0, tags), 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MaxPlaySamples:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, audioctrl->ahiac_MaxBuffSamples, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MaxRecordSamples:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MinMonitorVolume:
+                            case AHIDB_MaxMonitorVolume:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 0x00000, dbtags, audioctrl);
+                                break;
+                            case AHIDB_MinInputGain:
+                            case AHIDB_MaxInputGain:
+                            case AHIDB_MinOutputVolume:
+                            case AHIDB_MaxOutputVolume:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 0x10000, dbtags, audioctrl);
+                                break;
+                            case AHIDB_Inputs:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 0, dbtags, audioctrl);
+                                break;
+                            case AHIDB_Outputs:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, 1, dbtags, audioctrl);
+                                break;
+// Booleans that defaults to FALSE
+                            case AHIDB_Realtime:
+                            case AHIDB_Record:
+                            case AHIDB_FullDuplex:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0, FALSE, dbtags, audioctrl);
+                                break;
+// Booleans that defaults to TRUE
+                            case AHIDB_PingPong:
+                                *ptr = AHIsub_GetAttr(tag1->ti_Tag, 0,
+                                                      audioctrl->ahiac_BuffType != AHIST_L7_1,
+                                                      dbtags, audioctrl);
+                                break;
+// Tags from the database.
+                            default:
+                                if((tag2 = FindTagItem(tag1->ti_Tag, dbtags)))
+                                    * ptr = tag2->ti_Data;
+                                break;
+                            }
+                        }
+#ifdef __AMIGAOS4__
+                        if(IAHIsub) {
+                            DropInterface((struct Interface *) IAHIsub);
+                            IAHIsub = NULL;
+                        }
+                    }
+#endif
+
+                } else // no AHIsubBase
+                    rc = FALSE;
+            } else // no database taglist
+                rc = FALSE;
+        } else // no valid audioctrl
+            rc = FALSE;
+        if(id != AHI_INVALID_ID)
+            AHIFreeVec(audioctrl);
+        if(AHIsubBase)
+            CloseLibrary(AHIsubBase);
+        UnlockDatabase(audiodb);
+    } else // unable to lock database
+        rc = FALSE;
+
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH) {
+        KPrintF("=>%s\n", (IPTR)(rc ? "TRUE" : "FALSE"));
     }
-    else // no valid audioctrl
-       rc=FALSE;
-    if(id != AHI_INVALID_ID)
-      AHIFreeVec(audioctrl);
-    if(AHIsubBase)
-      CloseLibrary(AHIsubBase);
-    UnlockDatabase(audiodb);
-  }
-  else // unable to lock database
-    rc=FALSE;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_HIGH)
-  {
-    KPrintF("=>%s\n", (IPTR) (rc ? "TRUE" : "FALSE"));
-  }
-
-  return (ULONG) rc;
+    return (ULONG) rc;
 }
 
 
@@ -639,7 +619,7 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 *           If FALSE: mode must not have 7.1 channel output (=mono or stereo).
 *
 *       AHIDB_Panning (BOOL) - If TRUE: mode must support volume panning.
-*           If FALSE: mode must not support volume panning. 
+*           If FALSE: mode must not support volume panning.
 *
 *       AHIDB_HiFi (BOOL) - If TRUE: mode must have HiFi output.
 *           If FALSE: mode must not have HiFi output.
@@ -697,71 +677,60 @@ _AHI_GetAudioAttrsA( ULONG                    id,
 */
 
 ULONG
-_AHI_BestAudioIDA( struct TagItem* tags,
-		   struct AHIBase* AHIBase )
+_AHI_BestAudioIDA(struct TagItem *tags,
+                  struct AHIBase *AHIBase)
 {
-  ULONG id = AHI_INVALID_ID, bestid = 0;
-  Fixed score, bestscore = 0;
-  struct TagItem *dizzytags;
-  static const struct TagItem const_defdizzy[] =
-  {
-    { AHIDB_Volume,     TRUE },
-    { AHIDB_Stereo,     TRUE },
-    { AHIDB_MultiChannel, FALSE },
-    { AHIDB_Panning,    TRUE },
-    { AHIDB_HiFi,       TRUE  },
-    { AHIDB_Realtime,   TRUE  },
-    // And we don't care about the rest...
-    { TAG_DONE,         0     }
-  };
-  
-  const struct TagItem defdizzy[] =
-  {
-    // Give the user's preferred sound card extra points
-    { AHIDB_AudioID,    AHIBase->ahib_AudioMode },
-    { TAG_MORE,         (IPTR) &const_defdizzy }
-  };
+    ULONG id = AHI_INVALID_ID, bestid = 0;
+    Fixed score, bestscore = 0;
+    struct TagItem *dizzytags;
+    static const struct TagItem const_defdizzy[] = {
+        { AHIDB_Volume,     TRUE },
+        { AHIDB_Stereo,     TRUE },
+        { AHIDB_MultiChannel, FALSE },
+        { AHIDB_Panning,    TRUE },
+        { AHIDB_HiFi,       TRUE  },
+        { AHIDB_Realtime,   TRUE  },
+        // And we don't care about the rest...
+        { TAG_DONE,         0     }
+    };
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_BestAudioIDA(tags);
-  }
+    const struct TagItem defdizzy[] = {
+        // Give the user's preferred sound card extra points
+        { AHIDB_AudioID,    AHIBase->ahib_AudioMode },
+        { TAG_MORE, (IPTR) &const_defdizzy }
+    };
 
-  dizzytags = (struct TagItem *) GetTagData(AHIB_Dizzy, (IPTR) defdizzy,tags);
-
-  while(AHI_INVALID_ID != (id=AHI_NextAudioID(id)))
-  {
-    if(!TestAudioID(id, tags))
-    {
-      continue;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_BestAudioIDA(tags);
     }
 
-    // Check if this id the better than the last one
-    score = DizzyTestAudioID(id, dizzytags);
-    if(score > bestscore)
-    {
-      bestscore = score;
-      bestid = id;
+    dizzytags = (struct TagItem *) GetTagData(AHIB_Dizzy, (IPTR) defdizzy, tags);
+
+    while(AHI_INVALID_ID != (id = AHI_NextAudioID(id))) {
+        if(!TestAudioID(id, tags)) {
+            continue;
+        }
+
+        // Check if this id the better than the last one
+        score = DizzyTestAudioID(id, dizzytags);
+        if(score > bestscore) {
+            bestscore = score;
+            bestid = id;
+        } else if(score == bestscore) {
+            if(id > bestid) {
+                bestid = id;    // Return the highest suitable audio id.
+            }
+        }
     }
-    else if(score == bestscore)
-    {
-      if(id > bestid)
-      {
-        bestid = id;    // Return the highest suitable audio id.
-      }
+
+    if(bestid == 0) {
+        bestid = AHI_INVALID_ID;
     }
-  }
 
-  if(bestid == 0)
-  {
-    bestid = AHI_INVALID_ID;
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        KPrintF("=>0x%08lx\n", bestid);
+    }
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    KPrintF("=>0x%08lx\n",bestid);
-  }
-
-  return bestid;
+    return bestid;
 }
 

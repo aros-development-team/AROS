@@ -12,17 +12,17 @@ extern const UWORD LibVersion;
 extern const UWORD LibRevision;
 
 void
-ReqA( const char*        text,
-      APTR               args,
-      struct DriverBase* AHIsubBase );
+ReqA(const char        *text,
+     APTR               args,
+     struct DriverBase *AHIsubBase);
 
 #define Req(a0, args...) \
         ({IPTR _args[] = { args }; ReqA((a0), (APTR)_args, AHIsubBase);})
 
 void
-MyKPrintFArgs( UBYTE*           fmt, 
-	       IPTR*           args,
-	       struct DriverBase* AHIsubBase );
+MyKPrintFArgs(UBYTE           *fmt,
+              IPTR           *args,
+              struct DriverBase *AHIsubBase);
 
 #if !defined(__AMIGAOS4__)
 #define KPrintF( fmt, ... )        \

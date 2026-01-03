@@ -40,7 +40,7 @@ LONG CardInterrupt(struct CardData *card)
     intreq = pci_inl(VIA_REG_SGD_SHADOW, card);
 
     // DebugPrintF("INT %lx\n", intreq);
-    if (intreq & 0x33) {
+    if(intreq & 0x33) {
         unsigned char play_status = pci_inb(VIA_REG_OFFSET_STATUS, card),
                       rec_status =
                           pci_inb(VIA_REG_OFFSET_STATUS + RECORD, card);
@@ -48,13 +48,13 @@ LONG CardInterrupt(struct CardData *card)
         play_status &=
             (VIA_REG_STAT_EOL | VIA_REG_STAT_FLAG | VIA_REG_STAT_STOPPED);
 
-        if (play_status) {
+        if(play_status) {
             pci_outb(play_status, VIA_REG_OFFSET_STATUS, card);
 
-            if (play_status & VIA_REG_STAT_FLAG) {
+            if(play_status & VIA_REG_STAT_FLAG) {
                 card->flip           = 0;
                 card->current_buffer = card->playback_buffer1;
-            } else if (play_status & VIA_REG_STAT_EOL) {
+            } else if(play_status & VIA_REG_STAT_EOL) {
                 card->flip           = 1;
                 card->current_buffer = card->playback_buffer2;
             }
@@ -65,14 +65,14 @@ LONG CardInterrupt(struct CardData *card)
 
         rec_status &=
             (VIA_REG_STAT_EOL | VIA_REG_STAT_FLAG | VIA_REG_STAT_STOPPED);
-        if (rec_status) {
+        if(rec_status) {
             // DebugPrintF("REC!\n");
             pci_outb(rec_status, VIA_REG_OFFSET_STATUS + RECORD, card);
 
-            if (rec_status & VIA_REG_STAT_FLAG) {
+            if(rec_status & VIA_REG_STAT_FLAG) {
                 card->flip                  = 0;
                 card->current_record_buffer = card->record_buffer1;
-            } else if (rec_status & VIA_REG_STAT_EOL) {
+            } else if(rec_status & VIA_REG_STAT_EOL) {
                 card->flip                  = 1;
                 card->current_record_buffer = card->record_buffer2;
             }
@@ -101,13 +101,13 @@ void PlaybackInterrupt(struct CardData *card)
     struct AHIAudioCtrlDrv *AudioCtrl;
     struct DriverBase *AHIsubBase;
 
-    if (card == NULL)
+    if(card == NULL)
         return;
 
     AudioCtrl  = card->audioctrl;
     AHIsubBase = (struct DriverBase *)card->ahisubbase;
 
-    if (card->mix_buffer != NULL && card->current_buffer != NULL) {
+    if(card->mix_buffer != NULL && card->current_buffer != NULL) {
         BOOL skip_mix;
 
         WORD *src;
@@ -122,7 +122,7 @@ void PlaybackInterrupt(struct CardData *card)
 
         // DebugPrintF("skip_mix = %d\n", skip_mix);
 
-        if (!skip_mix) {
+        if(!skip_mix) {
             CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object *)AudioCtrl,
                         card->mix_buffer);
         }
@@ -134,14 +134,14 @@ void PlaybackInterrupt(struct CardData *card)
 
         src = card->mix_buffer;
 #if !defined(__amigaos4__) && !AROS_BIG_ENDIAN
-        if (skip == 2)
+        if(skip == 2)
             src++;
 #endif
         dst = card->current_buffer;
 
         i = samples;
 
-        while (i > 0) {
+        while(i > 0) {
 #ifdef __amigaos4__
             *dst = ((*src & 0xff) << 8) | ((*src & 0xff00) >> 8);
 #else
@@ -176,12 +176,13 @@ void RecordInterrupt(struct CardData *card)
     struct DriverBase *AHIsubBase     = (struct DriverBase *)card->ahisubbase;
 
     struct AHIRecordMessage rm = {AHIST_S16S, card->current_record_buffer,
-                                  RECORD_BUFFER_SAMPLES};
+               RECORD_BUFFER_SAMPLES
+    };
 
     int i = 0, shorts = card->current_record_bytesize / 2;
     WORD *ptr = card->current_record_buffer;
 
-    while (i < shorts) {
+    while(i < shorts) {
 #if defined(__AMIGAOS4__) || AROS_BIG_ENDIAN
         *ptr = ((*ptr & 0xff) << 8) | ((*ptr & 0xff00) >> 8);
 #endif

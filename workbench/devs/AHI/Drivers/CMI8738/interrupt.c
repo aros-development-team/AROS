@@ -39,7 +39,8 @@ int z = 0;
 ** Hardware interrupt handler *************************************************
 ******************************************************************************/
 
-LONG CardInterrupt(struct CMI8738_DATA *card) {
+LONG CardInterrupt(struct CMI8738_DATA *card)
+{
     struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
     struct PCIDevice *dev             = (struct PCIDevice *)card->pci_dev;
 
@@ -49,19 +50,19 @@ LONG CardInterrupt(struct CMI8738_DATA *card) {
     D(bug("[CMI8738]: %s(card @ 0x%p)\n", __func__, card);
       bug("[CMI8738] %s: AHIAudioCtrlDrv @ 0x%p\n", __func__, AudioCtrl);)
 
-    for (;;)
-    //  while (((intreq = pci_inl(CMPCI_REG_INTR_STATUS, card)) &
-    //  CMPCI_REG_ANY_INTR) != 0)
+    for(;;)
+        //  while (((intreq = pci_inl(CMPCI_REG_INTR_STATUS, card)) &
+        //  CMPCI_REG_ANY_INTR) != 0)
     {
         intreq = pci_inl(CMPCI_REG_INTR_STATUS, card);
 
         D(bug("[CMI8738] %s: INTR_STATUS = %08x\n", __func__, intreq);)
 
-        if (((intreq & CMPCI_REG_ANY_INTR) == 0) || (AudioCtrl == NULL))
+        if(((intreq & CMPCI_REG_ANY_INTR) == 0) || (AudioCtrl == NULL))
             break;
 
         // DebugPrintF("INT %lx\n", intreq);
-        if (intreq & CMPCI_REG_CH0_INTR) {
+        if(intreq & CMPCI_REG_CH0_INTR) {
             ULONG diff = (ULONG)((IPTR)pci_inl(CMPCI_REG_DMA0_BASE, card) -
                                  (IPTR)card->playback_buffer_phys);
 
@@ -82,18 +83,16 @@ LONG CardInterrupt(struct CMI8738_DATA *card) {
                card->current_bytesize)) DebugPrintF("Delayed IRQ %lu %lu\n",
                diff % card->current_bytesize, card->current_bytesize);*/
 
-            if (diff >=
-                card->current_bytesize) // card->flip == 0) // just played buf 1
-            {
-                if (card->flip == 1) {
+            if(diff >=
+                    card->current_bytesize) { // card->flip == 0) // just played buf 1
+                if(card->flip == 1) {
                     DebugPrintF("A:Missed IRQ! diff = %lu\n", diff);
                 }
 
                 card->flip           = 1;
                 card->current_buffer = card->playback_buffer;
-            } else // just played buf 2
-            {
-                if (card->flip == 0) {
+            } else { // just played buf 2
+                if(card->flip == 0) {
                     DebugPrintF("B:Missed IRQ! diff = %lu\n", diff);
                 }
 
@@ -110,7 +109,7 @@ LONG CardInterrupt(struct CMI8738_DATA *card) {
             Cause(&card->playback_interrupt);
         }
 
-        if (intreq & CMPCI_REG_CH1_INTR) {
+        if(intreq & CMPCI_REG_CH1_INTR) {
             ClearMask(dev, card, CMPCI_REG_INTR_CTRL,
                       CMPCI_REG_CH1_INTR_ENABLE);
 
@@ -120,16 +119,14 @@ LONG CardInterrupt(struct CMI8738_DATA *card) {
             /*if (z == 30)
               z = 0;*/
 
-            if (card->record_interrupt_enabled) {
+            if(card->record_interrupt_enabled) {
                 /* Invoke softint to convert and feed AHI with the new sample
                  * data */
 
-                if (card->recflip == 0) // just played buf 1
-                {
+                if(card->recflip == 0) { // just played buf 1
                     card->recflip               = 1;
                     card->current_record_buffer = card->record_buffer;
-                } else // just played buf 2
-                {
+                } else { // just played buf 2
                     card->recflip = 0;
                     card->current_record_buffer =
                         (APTR)((long)card->record_buffer +
@@ -151,14 +148,15 @@ LONG CardInterrupt(struct CMI8738_DATA *card) {
 ** Playback interrupt handler *************************************************
 ******************************************************************************/
 
-void PlaybackInterrupt(struct CMI8738_DATA *card) {
+void PlaybackInterrupt(struct CMI8738_DATA *card)
+{
     struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
     struct DriverBase *AHIsubBase     = (struct DriverBase *)card->ahisubbase;
     struct PCIDevice *dev             = (struct PCIDevice *)card->pci_dev;
 
     D(bug("[CMI8738]: %s()\n", __func__);)
 
-    if (card->mix_buffer != NULL && card->current_buffer != NULL) {
+    if(card->mix_buffer != NULL && card->current_buffer != NULL) {
         BOOL skip_mix;
 
         WORD *src;
@@ -173,7 +171,7 @@ void PlaybackInterrupt(struct CMI8738_DATA *card) {
 
         // DebugPrintF("skip_mix = %d\n", skip_mix);
 
-        if (!skip_mix) {
+        if(!skip_mix) {
             CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object *)AudioCtrl,
                         card->mix_buffer);
         }
@@ -185,14 +183,14 @@ void PlaybackInterrupt(struct CMI8738_DATA *card) {
 
         src = card->mix_buffer;
 #if !defined(__AMIGAOS4__) && !AROS_BIG_ENDIAN
-        if (skip == 2)
+        if(skip == 2)
             src++;
 #endif
         dst = card->current_buffer;
 
         i = samples;
 
-        while (i > 0) {
+        while(i > 0) {
 #ifdef __AMIGAOS4__
             *dst = ((*src & 0xff) << 8) | ((*src & 0xff00) >> 8);
 #else
@@ -219,7 +217,8 @@ void PlaybackInterrupt(struct CMI8738_DATA *card) {
 ** Record interrupt handler ***************************************************
 ******************************************************************************/
 
-void RecordInterrupt(struct CMI8738_DATA *card) {
+void RecordInterrupt(struct CMI8738_DATA *card)
+{
     struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
     struct DriverBase *AHIsubBase     = (struct DriverBase *)card->ahisubbase;
     struct PCIDevice *dev             = (struct PCIDevice *)card->pci_dev;
@@ -227,7 +226,8 @@ void RecordInterrupt(struct CMI8738_DATA *card) {
     D(bug("[CMI8738]: %s()\n", __func__);)
 
     struct AHIRecordMessage rm = {AHIST_S16S, card->current_record_buffer,
-                                  RECORD_BUFFER_SAMPLES};
+               RECORD_BUFFER_SAMPLES
+    };
 
     int i = 0, shorts = card->current_record_bytesize / 2;
     WORD *ptr = (WORD *)card->current_record_buffer;
@@ -235,7 +235,7 @@ void RecordInterrupt(struct CMI8738_DATA *card) {
     CacheClearE(card->current_record_buffer, card->current_record_bytesize,
                 CACRF_ClearD);
 
-    while (i < shorts) {
+    while(i < shorts) {
 #if defined(__AMIGAOS4__) || AROS_BIG_ENDIAN
         *ptr = ((*ptr & 0xff) << 8) | ((*ptr & 0xff00) >> 8);
 #endif

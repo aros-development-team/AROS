@@ -11,11 +11,11 @@
 #define udelay micro_delay
 
 
-struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase);
-void FreeDriverData(struct HDAudioChip* dd, struct DriverBase*  AHIsubBase);
+struct HDAudioChip *AllocDriverData(APTR dev, struct DriverBase *AHIsubBase);
+void FreeDriverData(struct HDAudioChip *dd, struct DriverBase  *AHIsubBase);
 
 void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary);
-void pci_free_consistent(void* addr);
+void pci_free_consistent(void *addr);
 
 void micro_delay(unsigned int val);
 

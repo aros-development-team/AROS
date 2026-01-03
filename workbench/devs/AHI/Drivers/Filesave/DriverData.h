@@ -12,17 +12,16 @@
 
 #include "DriverBase.h"
 
-struct FilesaveBase
-{
+struct FilesaveBase {
     struct DriverBase driverbase;
-    struct Library*   aslbase;
-    struct DosLibrary*   dosbase;
-    struct Library*   dtsbase;
-    struct GfxBase*   gfxbase;
+    struct Library   *aslbase;
+    struct DosLibrary   *dosbase;
+    struct Library   *dtsbase;
+    struct GfxBase   *gfxbase;
 #ifdef __AMIGAOS4__
-    struct AslIFace*       iasl;
-    struct DOSIFace*       idos;
-    struct DataTypesIFace* idatatypes;
+    struct AslIFace       *iasl;
+    struct DOSIFace       *idos;
+    struct DataTypesIFace *idatatypes;
 #endif
 };
 
@@ -40,28 +39,27 @@ struct FilesaveBase
 #endif
 
 
-struct FilesaveData
-{
-	struct DriverData	 fs_DriverData;
-	UBYTE			 fs_Flags;
-	UBYTE			 fs_Pad1;
-	BYTE			 fs_MasterSignal;
-	BYTE			 fs_SlaveSignal;
-	struct Process		*fs_MasterTask;
-	struct Process		*fs_SlaveTask;
-	struct FileRequester	*fs_FileReq;
-	struct DriverBase	*fs_AHIsubBase;
-	ULONG			 fs_Format;
-	APTR			 fs_MixBuffer;
-	APTR			 fs_SaveBuffer;
-	APTR			 fs_SaveBuffer2;
-	ULONG			 fs_SaveBufferSize;
+struct FilesaveData {
+    struct DriverData	 fs_DriverData;
+    UBYTE			 fs_Flags;
+    UBYTE			 fs_Pad1;
+    BYTE			 fs_MasterSignal;
+    BYTE			 fs_SlaveSignal;
+    struct Process		*fs_MasterTask;
+    struct Process		*fs_SlaveTask;
+    struct FileRequester	*fs_FileReq;
+    struct DriverBase	*fs_AHIsubBase;
+    ULONG			 fs_Format;
+    APTR			 fs_MixBuffer;
+    APTR			 fs_SaveBuffer;
+    APTR			 fs_SaveBuffer2;
+    ULONG			 fs_SaveBufferSize;
 
-	BYTE			 fs_RecMasterSignal;
-	BYTE			 fs_RecSlaveSignal;
-	struct Process		*fs_RecSlaveTask;
-	struct FileRequester	*fs_RecFileReq;
-	WORD			*fs_RecBuffer;
+    BYTE			 fs_RecMasterSignal;
+    BYTE			 fs_RecSlaveSignal;
+    struct Process		*fs_RecSlaveTask;
+    struct FileRequester	*fs_RecFileReq;
+    WORD			*fs_RecBuffer;
 };
 
 #define AHIDB_FileSaveFormat	(AHIDB_UserBase+0)	/* Private tag */

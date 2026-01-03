@@ -57,13 +57,15 @@ static const ULONG Frequencies[FREQUENCIES] = {
 #define INPUTS 8
 
 static const STRPTR Inputs[INPUTS] = {
-    "Line in", "Mic", "CD", "Video", "Aux", "Mixer", "Mixer (mono)", "Phone"};
+    "Line in", "Mic", "CD", "Video", "Aux", "Mixer", "Mixer (mono)", "Phone"
+};
 
 /* Not static since it's used in misc.c too */
 const UWORD InputBits[INPUTS] = {AC97_RECMUX_LINE,     AC97_RECMUX_MIC,
                                  AC97_RECMUX_CD,       AC97_RECMUX_VIDEO,
                                  AC97_RECMUX_AUX,      AC97_RECMUX_STEREO_MIX,
-                                 AC97_RECMUX_MONO_MIX, AC97_RECMUX_PHONE};
+                                 AC97_RECMUX_MONO_MIX, AC97_RECMUX_PHONE
+                                };
 
 #define OUTPUTS 1
 
@@ -73,21 +75,24 @@ static const STRPTR Outputs[OUTPUTS] = {
     "Line",
 };
 
-inline unsigned int codec_xread(struct CardData *card) {
+inline unsigned int codec_xread(struct CardData *card)
+{
     return pci_inl(VIA_REG_AC97, card);
 }
 
-inline void codec_xwrite(struct CardData *card, unsigned int val) {
+inline void codec_xwrite(struct CardData *card, unsigned int val)
+{
     pci_outl(val, VIA_REG_AC97, card);
 }
 
-int codec_ready(struct CardData *card) {
+int codec_ready(struct CardData *card)
+{
     unsigned int timeout = 100; /* 1ms */
     unsigned int val;
 
-    while (--timeout) {
+    while(--timeout) {
         val = codec_xread(card);
-        if (!(val & VIA_REG_AC97_BUSY))
+        if(!(val & VIA_REG_AC97_BUSY))
             return val & 0xffff;
         udelay(1000);
     }
@@ -96,28 +101,31 @@ int codec_ready(struct CardData *card) {
     return -1;
 }
 
-int codec_valid(struct CardData *card) {
+int codec_valid(struct CardData *card)
+{
     unsigned int timeout = 1000; /* 1ms */
     unsigned int val, val1;
     unsigned int stat = VIA_REG_AC97_PRIMARY_VALID;
 
-    while (timeout-- > 0) {
+    while(timeout-- > 0) {
         val  = codec_xread(card);
         val1 = val & (VIA_REG_AC97_BUSY | stat);
-        if (val1 == stat)
+        if(val1 == stat)
             return val & 0xffff;
         udelay(1);
     }
     return -1;
 }
 
-void codec_wait(struct CardData *card) {
+void codec_wait(struct CardData *card)
+{
     codec_ready(card);
     udelay(500);
 }
 
 void codec_write(struct CardData *card, unsigned short reg,
-                 unsigned short val) {
+                 unsigned short val)
+{
     unsigned int xval;
 
     xval = VIA_REG_AC97_CODEC_ID_PRIMARY;
@@ -129,12 +137,13 @@ void codec_write(struct CardData *card, unsigned short reg,
     codec_ready(card);
 }
 
-BOOL ac97_wait_idle(struct CardData *card) {
+BOOL ac97_wait_idle(struct CardData *card)
+{
     unsigned long tul = 0;
     int cnt           = 10000;
 
-    while (--cnt) {
-        if (!((tul = pci_inl(VIA_REG_AC97, card)) & VIA_REG_AC97_BUSY))
+    while(--cnt) {
+        if(!((tul = pci_inl(VIA_REG_AC97, card)) & VIA_REG_AC97_BUSY))
             return TRUE;
         MicroDelay(100);
     }
@@ -143,7 +152,8 @@ BOOL ac97_wait_idle(struct CardData *card) {
     return FALSE;
 }
 
-unsigned short codec_read(struct CardData *card, unsigned char reg) {
+unsigned short codec_read(struct CardData *card, unsigned char reg)
+{
     unsigned long xval;
     unsigned short data;
 
@@ -160,7 +170,7 @@ unsigned short codec_read(struct CardData *card, unsigned char reg) {
 
     data = (xval & 0xFFFF);
 
-    if (!(xval & VIA_REG_AC97_PRIMARY_VALID)) {
+    if(!(xval & VIA_REG_AC97_PRIMARY_VALID)) {
         DebugPrintF("Codec read failed!\n");
     }
 
@@ -184,12 +194,13 @@ static const unsigned long VIA_AC97_RX_READ =
 static const unsigned char VIA_AC97_RX_SHIFT     = 0x10;   // register shift
 static const unsigned long VIA_AC97_RX_DATA_MASK = 0xffff; // data mask
 
-BOOL ac97_wait_idle2(struct CardData *card) {
+BOOL ac97_wait_idle2(struct CardData *card)
+{
     unsigned long tul = 0;
     int cnt           = 26; //..about half a second, for no good reason
 
-    while (--cnt) {
-        if (!((tul = pci_inl(VIA_AC97_RX, card)) & VIA_AC97_RX_BUSY))
+    while(--cnt) {
+        if(!((tul = pci_inl(VIA_AC97_RX, card)) & VIA_AC97_RX_BUSY))
             return TRUE;
         MicroDelay(1000);
     }
@@ -201,7 +212,8 @@ BOOL ac97_wait_idle2(struct CardData *card) {
 
 // note: this only reads the primary codec
 BOOL ac97_read_reg(struct CardData *card, unsigned char reg,
-                   unsigned short *data) {
+                   unsigned short *data)
+{
     // set up with required codec register, read mode, and clear the primary
     // codec valid flag
     unsigned long tul = ((reg << VIA_AC97_RX_SHIFT) | VIA_AC97_RX_READ |
@@ -217,7 +229,7 @@ BOOL ac97_read_reg(struct CardData *card, unsigned char reg,
     *data = (tul & VIA_AC97_RX_DATA_MASK);
 
     // complain if the data/register etc. is invalid...
-    if (!(tul & VIA_AC97_RX_PRIMARY_VALID)) {
+    if(!(tul & VIA_AC97_RX_PRIMARY_VALID)) {
         DebugPrintF("Info: (ac97_read_reg) Primary codec operation failed!\n");
         return (FALSE);
     }
@@ -225,7 +237,8 @@ BOOL ac97_read_reg(struct CardData *card, unsigned char reg,
     return (TRUE);
 }
 
-static void set_table_ptr(struct CardData *card, BOOL Play) {
+static void set_table_ptr(struct CardData *card, BOOL Play)
+{
     IPTR idx_table;
     ULONG phys_addr;
 #ifdef __amigaos4__
@@ -233,7 +246,7 @@ static void set_table_ptr(struct CardData *card, BOOL Play) {
 #endif
 
     codec_ready(card);
-    if (Play) {
+    if(Play) {
         idx_table = (IPTR)card->play_idx_table;
 #ifdef __amigaos4__
         stack     = IExec->SuperState();
@@ -277,7 +290,8 @@ static void set_table_ptr(struct CardData *card, BOOL Play) {
 
 static int build_via_table(struct CardData *card, APTR sgbuf1, APTR sgbuf2,
                            int OneBufferSize, struct snd_via_sg_table **idx,
-                           APTR *idx_nonaligned) {
+                           APTR *idx_nonaligned)
+{
     IPTR _sgbuf1 = (IPTR)sgbuf1;
     IPTR _sgbuf2 = (IPTR)sgbuf2;
     ULONG phys_addr;
@@ -325,7 +339,8 @@ static int build_via_table(struct CardData *card, APTR sgbuf1, APTR sgbuf2,
 
 ULONG
 _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
-                   struct DriverBase *AHIsubBase) {
+                   struct DriverBase *AHIsubBase)
+{
     struct CardBase *CardBase = (struct CardBase *)AHIsubBase;
 
     int card_num;
@@ -334,8 +349,8 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
 
     card_num = (GetTagData(AHIDB_AudioID, 0, taglist) & 0x0000f000) >> 12;
 
-    if (card_num >= CardBase->cards_found ||
-        CardBase->driverdatas[card_num] == NULL) {
+    if(card_num >= CardBase->cards_found ||
+            CardBase->driverdatas[card_num] == NULL) {
         DebugPrintF("no date for card = %ld\n", card_num);
         Req("No CardData for card %ld.", card_num);
         return AHISF_ERROR;
@@ -348,12 +363,12 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
 
         ObtainSemaphore(&CardBase->semaphore);
         in_use = (card->audioctrl != NULL);
-        if (!in_use) {
+        if(!in_use) {
             card->audioctrl = AudioCtrl;
         }
         ReleaseSemaphore(&CardBase->semaphore);
 
-        if (in_use) {
+        if(in_use) {
             return AHISF_ERROR;
         }
 
@@ -363,8 +378,8 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
 
     ret = AHISF_KNOWHIFI | AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
 
-    for (i = 0; i < FREQUENCIES; ++i) {
-        if (AudioCtrl->ahiac_MixFreq == Frequencies[i]) {
+    for(i = 0; i < FREQUENCIES; ++i) {
+        if(AudioCtrl->ahiac_MixFreq == Frequencies[i]) {
             ret |= AHISF_CANRECORD;
             break;
         }
@@ -378,13 +393,14 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
 ******************************************************************************/
 
 void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl,
-                       struct DriverBase *AHIsubBase) {
+                       struct DriverBase *AHIsubBase)
+{
     struct CardBase *CardBase = (struct CardBase *)AHIsubBase;
     struct CardData *card     = (struct CardData *)AudioCtrl->ahiac_DriverData;
 
-    if (card != NULL) {
+    if(card != NULL) {
         ObtainSemaphore(&CardBase->semaphore);
-        if (card->audioctrl == AudioCtrl) {
+        if(card->audioctrl == AudioCtrl) {
             // Release it if we own it.
             card->audioctrl = NULL;
         }
@@ -399,7 +415,8 @@ void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl,
 ******************************************************************************/
 
 void _AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl,
-                     struct DriverBase *AHIsubBase) {
+                     struct DriverBase *AHIsubBase)
+{
     // V6 drivers do not have to preserve all registers
 
     Disable();
@@ -410,7 +427,8 @@ void _AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl,
 ******************************************************************************/
 
 void _AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl,
-                    struct DriverBase *AHIsubBase) {
+                    struct DriverBase *AHIsubBase)
+{
     // V6 drivers do not have to preserve all registers
 
     Enable();
@@ -422,7 +440,8 @@ void _AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl,
 
 ULONG
 _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
-              struct DriverBase *AHIsubBase) {
+              struct DriverBase *AHIsubBase)
+{
     struct CardData *card = (struct CardData *)AudioCtrl->ahiac_DriverData;
     ULONG dma_buffer_size = 0;
     unsigned short uval;
@@ -437,14 +456,14 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
     codec_write(card, 0x2A, uval | 0x1); // enable VRA
     codec_write(card, 0x2C, AudioCtrl->ahiac_MixFreq);
 
-    if (flags & AHISF_PLAY) {
+    if(flags & AHISF_PLAY) {
 
         ULONG dma_sample_frame_size;
 
         card->mix_buffer =
             AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
 
-        if (card->mix_buffer == NULL) {
+        if(card->mix_buffer == NULL) {
             Req("Unable to allocate %ld bytes for mixing buffer.",
                 AudioCtrl->ahiac_BuffSize);
             return AHIE_NOMEM;
@@ -453,7 +472,7 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         /* Allocate a buffer large enough for 16-bit double-buffered
            playback (mono or stereo) */
 
-        if (AudioCtrl->ahiac_Flags & AHIACF_STEREO) {
+        if(AudioCtrl->ahiac_Flags & AHIACF_STEREO) {
             dma_sample_frame_size = 4;
             dma_buffer_size =
                 AudioCtrl->ahiac_MaxBuffSamples * dma_sample_frame_size;
@@ -467,11 +486,11 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         // dma_buffer_size);
 
         card->playback_buffer1 = pci_alloc_consistent(
-            dma_buffer_size, &card->playback_buffer1_nonaligned);
+                                     dma_buffer_size, &card->playback_buffer1_nonaligned);
         card->playback_buffer2 = pci_alloc_consistent(
-            dma_buffer_size, &card->playback_buffer2_nonaligned);
+                                     dma_buffer_size, &card->playback_buffer2_nonaligned);
 
-        if (!card->playback_buffer1) {
+        if(!card->playback_buffer1) {
             Req("Unable to allocate playback buffer.");
             return AHIE_NOMEM;
         }
@@ -490,8 +509,8 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         set_table_ptr(card, TRUE);
 
         pci_outb(VIA_REG_TYPE_AUTOSTART | 0x40 | VIA_REG_TYPE_16BIT |
-                     VIA_REG_TYPE_STEREO | VIA_REG_TYPE_INT_LSAMPLE |
-                     VIA_REG_TYPE_INT_EOL | VIA_REG_TYPE_INT_FLAG,
+                 VIA_REG_TYPE_STEREO | VIA_REG_TYPE_INT_LSAMPLE |
+                 VIA_REG_TYPE_INT_EOL | VIA_REG_TYPE_INT_FLAG,
                  VIA_REG_OFFSET_TYPE, card);
 
         card->flip = 0;
@@ -499,16 +518,16 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         card->is_playing = TRUE;
     }
 
-    if (flags & AHISF_RECORD) {
+    if(flags & AHISF_RECORD) {
         card->current_record_bytesize = RECORD_BUFFER_SAMPLES * 4;
 
         /* Allocate a new recording buffer (page aligned!) */
         card->record_buffer1 = pci_alloc_consistent(
-            card->current_record_bytesize, &card->record_buffer1_nonaligned);
+                                   card->current_record_bytesize, &card->record_buffer1_nonaligned);
         card->record_buffer2 = pci_alloc_consistent(
-            card->current_record_bytesize, &card->record_buffer2_nonaligned);
+                                   card->current_record_bytesize, &card->record_buffer2_nonaligned);
 
-        if (card->record_buffer1 == NULL) {
+        if(card->record_buffer1 == NULL) {
             Req("Unable to allocate %ld bytes for the recording buffer.",
                 card->current_record_bytesize);
             return AHIE_NOMEM;
@@ -527,22 +546,22 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         set_table_ptr(card, FALSE);
 
         pci_outb(VIA_REG_TYPE_AUTOSTART | 0x40 | VIA_REG_TYPE_16BIT |
-                     VIA_REG_TYPE_STEREO | VIA_REG_TYPE_INT_EOL |
-                     VIA_REG_TYPE_INT_FLAG,
+                 VIA_REG_TYPE_STEREO | VIA_REG_TYPE_INT_EOL |
+                 VIA_REG_TYPE_INT_FLAG,
                  VIA_REG_OFFSET_TYPE + RECORD, card);
 
         card->is_recording          = TRUE;
         card->current_record_buffer = card->record_buffer1;
     }
 
-    if (flags & AHISF_PLAY) {
+    if(flags & AHISF_PLAY) {
         unsigned char val;
 
         val = VIA_REG_CTRL_START;
         pci_outb(val, VIA_REG_OFFSET_CONTROL, card);
     }
 
-    if (flags & AHISF_RECORD) {
+    if(flags & AHISF_RECORD) {
         unsigned char val;
 
         val = VIA_REG_CTRL_START;
@@ -557,12 +576,13 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
 ******************************************************************************/
 
 void _AHIsub_Update(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
-                    struct DriverBase *AHIsubBase) {
+                    struct DriverBase *AHIsubBase)
+{
     struct CardData *card = (struct CardData *)AudioCtrl->ahiac_DriverData;
 
     card->current_frames = AudioCtrl->ahiac_BuffSamples;
 
-    if (AudioCtrl->ahiac_Flags & AHIACF_STEREO) {
+    if(AudioCtrl->ahiac_Flags & AHIACF_STEREO) {
         card->current_bytesize = card->current_frames * 4;
     } else {
         card->current_bytesize = card->current_frames * 2;
@@ -574,18 +594,19 @@ void _AHIsub_Update(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
 ******************************************************************************/
 
 void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
-                  struct DriverBase *AHIsubBase) {
+                  struct DriverBase *AHIsubBase)
+{
     struct CardData *card = (struct CardData *)AudioCtrl->ahiac_DriverData;
 
     unsigned char val;
 
     val = VIA_REG_CTRL_TERMINATE;
 
-    if (flags & AHISF_PLAY && card->is_playing) {
+    if(flags & AHISF_PLAY && card->is_playing) {
         pci_outb(val, VIA_REG_OFFSET_CONTROL, card);
         card->is_playing = FALSE;
 
-        if (card->current_bytesize > 0) {
+        if(card->current_bytesize > 0) {
             /* checkme: this probably should be done on playback_bufferX_unaligned pointers */
             pci_free_consistent(card->playback_buffer1);
             pci_free_consistent(card->playback_buffer2);
@@ -595,26 +616,26 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
         card->current_frames   = 0;
         card->current_buffer   = NULL;
 
-        if (card->mix_buffer)
+        if(card->mix_buffer)
             FreeVec(card->mix_buffer);
         card->mix_buffer                 = NULL;
         card->playback_interrupt_enabled = FALSE;
 
-        if (card->play_idx_table_nonaligned) {
+        if(card->play_idx_table_nonaligned) {
             /* checkme: this probably should be done via pci_free_consistent */
             FreeVec(card->play_idx_table_nonaligned);
         }
         card->play_idx_table = NULL;
     }
 
-    if (flags & AHISF_RECORD && card->is_recording) {
+    if(flags & AHISF_RECORD && card->is_recording) {
         pci_outb(val, VIA_REG_OFFSET_CONTROL + RECORD, card);
-        if (card->is_recording) {
+        if(card->is_recording) {
             // Do not restore mixer unless they have been saved
             RestoreMixerState(card);
         }
 
-        if (card->record_buffer1 != NULL) {
+        if(card->record_buffer1 != NULL) {
             /* checkme: this probably should be done on record_bufferX_unaligned pointers */
             pci_free_consistent(card->record_buffer1);
             pci_free_consistent(card->record_buffer2);
@@ -642,10 +663,11 @@ void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl,
 SIPTR
 _AHIsub_GetAttr(ULONG attribute, LONG argument, LONG def,
                 struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl,
-                struct DriverBase *AHIsubBase) {
+                struct DriverBase *AHIsubBase)
+{
     int i;
 
-    switch (attribute) {
+    switch(attribute) {
     case AHIDB_Bits:
         return 16;
 
@@ -656,18 +678,18 @@ _AHIsub_GetAttr(ULONG attribute, LONG argument, LONG def,
         return (SIPTR)Frequencies[argument];
 
     case AHIDB_Index: // Frequency->Index
-        if (argument <= (LONG)Frequencies[0]) {
+        if(argument <= (LONG)Frequencies[0]) {
             return 0;
         }
 
-        if (argument >= (LONG)Frequencies[FREQUENCIES - 1]) {
+        if(argument >= (LONG)Frequencies[FREQUENCIES - 1]) {
             return FREQUENCIES - 1;
         }
 
-        for (i = 1; i < FREQUENCIES; i++) {
-            if ((LONG)Frequencies[i] > argument) {
-                if ((argument - (LONG)Frequencies[i - 1]) <
-                    ((LONG)Frequencies[i] - argument)) {
+        for(i = 1; i < FREQUENCIES; i++) {
+            if((LONG)Frequencies[i] > argument) {
+                if((argument - (LONG)Frequencies[i - 1]) <
+                        ((LONG)Frequencies[i] - argument)) {
                     return i - 1;
                 } else {
                     return i;
@@ -701,13 +723,13 @@ _AHIsub_GetAttr(ULONG attribute, LONG argument, LONG def,
     case AHIDB_MaxRecordSamples:
         return RECORD_BUFFER_SAMPLES;
 
-        /* formula's:
-        #include <math.h>
+    /* formula's:
+    #include <math.h>
 
-        unsigned long res = (unsigned long) (0x10000 * pow (10.0, dB / 20.0));
-        double dB = 20.0 * log10(0xVALUE / 65536.0);
+    unsigned long res = (unsigned long) (0x10000 * pow (10.0, dB / 20.0));
+    double dB = 20.0 * log10(0xVALUE / 65536.0);
 
-        printf("dB = %f, res = %lx\n", dB, res);*/
+    printf("dB = %f, res = %lx\n", dB, res);*/
 
     case AHIDB_MinMonitorVolume:
         return 0x00000;
@@ -751,14 +773,15 @@ _AHIsub_GetAttr(ULONG attribute, LONG argument, LONG def,
 ULONG
 _AHIsub_HardwareControl(ULONG attribute, LONG argument,
                         struct AHIAudioCtrlDrv *AudioCtrl,
-                        struct DriverBase *AHIsubBase) {
+                        struct DriverBase *AHIsubBase)
+{
     struct CardData *card = (struct CardData *)AudioCtrl->ahiac_DriverData;
 
-    switch (attribute) {
+    switch(attribute) {
     case AHIC_MonitorVolume:
         card->monitor_volume =
             Linear2MixerGain((Fixed)argument, &card->monitor_volume_bits);
-        if (card->is_recording) {
+        if(card->is_recording) {
             UpdateMonitorMixer(card);
         }
         return TRUE;
@@ -788,7 +811,7 @@ _AHIsub_HardwareControl(ULONG attribute, LONG argument,
         card->input = argument;
         codec_write(card, AC97_RECORD_SELECT, InputBits[card->input]);
 
-        if (card->is_recording) {
+        if(card->is_recording) {
             UpdateMonitorMixer(card);
         }
 

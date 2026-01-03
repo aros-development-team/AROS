@@ -26,32 +26,32 @@
 #include <DriverData.h>
 
 
-struct EMU10kxData*
-AllocDriverData( APTR               dev,
-		 struct DriverBase* AHIsubBase );
+struct EMU10kxData *
+AllocDriverData(APTR               dev,
+                struct DriverBase *AHIsubBase);
 
 void
-FreeDriverData( struct EMU10kxData* dd,
-		struct DriverBase*  AHIsubBase );
+FreeDriverData(struct EMU10kxData *dd,
+               struct DriverBase  *AHIsubBase);
 
 void
-SaveMixerState( struct EMU10kxData* dd );
+SaveMixerState(struct EMU10kxData *dd);
 
 void
-RestoreMixerState( struct EMU10kxData* dd );
+RestoreMixerState(struct EMU10kxData *dd);
 
 void
-UpdateMonitorMixer( struct EMU10kxData* dd );
+UpdateMonitorMixer(struct EMU10kxData *dd);
 
 Fixed
-Linear2MixerGain( Fixed  linear,
-		  UWORD* bits );
+Linear2MixerGain(Fixed  linear,
+                 UWORD *bits);
 
 Fixed
-Linear2RecordGain( Fixed  linear,
-		   UWORD* bits );
+Linear2RecordGain(Fixed  linear,
+                  UWORD *bits);
 
 ULONG
-SamplerateToLinearPitch( ULONG samplingrate );
+SamplerateToLinearPitch(ULONG samplingrate);
 
 #endif /* AHI_Drivers_EMU10kx_emu10kx_misc_h */

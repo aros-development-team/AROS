@@ -27,16 +27,16 @@ All Rights Reserved.
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetVol( UWORD                   channel,
-		Fixed                   volume,
-		sposition               pan,
-		struct AHIAudioCtrlDrv* AudioCtrl,
-		ULONG                   flags,
-		struct DriverBase*      AHIsubBase )
+_AHIsub_SetVol(UWORD                   channel,
+               Fixed                   volume,
+               sposition               pan,
+               struct AHIAudioCtrlDrv *AudioCtrl,
+               ULONG                   flags,
+               struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -45,15 +45,15 @@ _AHIsub_SetVol( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetFreq( UWORD                   channel,
-		 ULONG                   freq,
-		 struct AHIAudioCtrlDrv* AudioCtrl,
-		 ULONG                   flags,
-		 struct DriverBase*      AHIsubBase )
+_AHIsub_SetFreq(UWORD                   channel,
+                ULONG                   freq,
+                struct AHIAudioCtrlDrv *AudioCtrl,
+                ULONG                   flags,
+                struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -62,17 +62,17 @@ _AHIsub_SetFreq( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetSound( UWORD                   channel,
-		  UWORD                   sound,
-		  ULONG                   offset,
-		  LONG                    length,
-		  struct AHIAudioCtrlDrv* AudioCtrl,
-		  ULONG                   flags,
-		  struct DriverBase*      AHIsubBase )
+_AHIsub_SetSound(UWORD                   channel,
+                 UWORD                   sound,
+                 ULONG                   offset,
+                 LONG                    length,
+                 struct AHIAudioCtrlDrv *AudioCtrl,
+                 ULONG                   flags,
+                 struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -81,13 +81,13 @@ _AHIsub_SetSound( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetEffect( APTR                    effect,
-		   struct AHIAudioCtrlDrv* AudioCtrl,
-		   struct DriverBase*      AHIsubBase )
+_AHIsub_SetEffect(APTR                    effect,
+                  struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -96,15 +96,15 @@ _AHIsub_SetEffect( APTR                    effect,
 ******************************************************************************/
 
 ULONG
-_AHIsub_LoadSound( UWORD                   sound,
-		   ULONG                   type,
-		   APTR                    info,
-		   struct AHIAudioCtrlDrv* AudioCtrl,
-		   struct DriverBase*      AHIsubBase )
+_AHIsub_LoadSound(UWORD                   sound,
+                  ULONG                   type,
+                  APTR                    info,
+                  struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -113,11 +113,11 @@ _AHIsub_LoadSound( UWORD                   sound,
 ******************************************************************************/
 
 ULONG
-_AHIsub_UnloadSound( UWORD                   sound,
-		     struct AHIAudioCtrlDrv* AudioCtrl,
-		     struct DriverBase*      AHIsubBase )
+_AHIsub_UnloadSound(UWORD                   sound,
+                    struct AHIAudioCtrlDrv *AudioCtrl,
+                    struct DriverBase      *AHIsubBase)
 {
     D(bug("[SB128]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }

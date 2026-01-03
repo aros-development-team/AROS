@@ -9,24 +9,23 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-struct DriverBase
-{
+struct DriverBase {
     struct Library  library;
     UWORD           pad;
     BPTR            seglist;
 #ifndef DRIVER_NEEDS_GLOBAL_EXECBASE
-    struct ExecBase* execbase;
+    struct ExecBase *execbase;
 #endif
-    struct IntuitionBase* intuitionbase;
-    struct UtilityBase* utilitybase;
+    struct IntuitionBase *intuitionbase;
+    struct UtilityBase *utilitybase;
 
 #ifdef __AMIGAOS4__
 # ifndef DRIVER_NEEDS_GLOBAL_EXECBASE
-    struct ExecIFace*      iexec;
+    struct ExecIFace      *iexec;
 # endif
-    struct AHIsubIFace*    iahisub;
-    struct IntuitionIFace* iintuition;
-    struct UtilityIFace*   iutility;
+    struct AHIsubIFace    *iahisub;
+    struct IntuitionIFace *iintuition;
+    struct UtilityIFace   *iutility;
 #endif
 };
 
@@ -49,15 +48,14 @@ struct DriverBase
 #endif
 
 
-struct DriverData
-{
+struct DriverData {
 };
 
 
 BOOL
-DriverInit( struct DriverBase* AHIsubBase );
+DriverInit(struct DriverBase *AHIsubBase);
 
 VOID
-DriverCleanup( struct DriverBase* AHIsubBase );
+DriverCleanup(struct DriverBase *AHIsubBase);
 
 #endif /* AHI_Drivers_Common_DriverBase_h */

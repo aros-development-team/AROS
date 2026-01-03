@@ -7,12 +7,11 @@
 
 #include "DriverBase.h"
 
-struct VoidBase
-{
+struct VoidBase {
     struct DriverBase driverbase;
-    struct DosLibrary*   dosbase;
+    struct DosLibrary   *dosbase;
 #ifdef __AMIGAOS4__
-    struct DOSIFace*  idos;
+    struct DOSIFace  *idos;
 #endif
 };
 
@@ -24,16 +23,15 @@ struct VoidBase
 # define IDOS (VoidBase->idos)
 #endif
 
-struct VoidData
-{
+struct VoidData {
     struct DriverData   driverdata;
     UBYTE		flags;
     UBYTE		pad1;
     BYTE		mastersignal;
     BYTE		slavesignal;
-    struct Process*	mastertask;
-    struct Process*	slavetask;
-    struct VoidBase*	ahisubbase;
+    struct Process	*mastertask;
+    struct Process	*slavetask;
+    struct VoidBase	*ahisubbase;
     APTR		mixbuffer;
 };
 

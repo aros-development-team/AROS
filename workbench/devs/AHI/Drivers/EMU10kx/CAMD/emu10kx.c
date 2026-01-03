@@ -28,8 +28,7 @@
 #include "camdstubs.h"
 #include "version.h"
 
-struct PortInfo
-{
+struct PortInfo {
     struct Hook TransmitHook;
     struct Hook ReceiveHook;
     APTR        TransmitFunc;
@@ -41,55 +40,53 @@ struct PortInfo
 /*** Module entry (exactly 4 bytes!!) *****************************************/
 
 __asm(
-"  moveq #-1,%d0\n"
-"  rts\n"
+    "  moveq #-1,%d0\n"
+    "  rts\n"
 );
 
 /*** Identification data must follow directly *********************************/
 
-static struct MidiDeviceData MidiDeviceData =
-{
-  MDD_Magic,
-  "emu10kx",
-  "emu10kx CAMD MIDI driver " VERS,
-  VERSION, REVISION,
-  gwInit,
-  gwExpunge,
-  gwOpenPort,
-  gwClosePort,
-  4,        // For some braindamaged reason, camd.library V40 reads
-	    // this value BEFORE calling Init(). :-(
-  1         // Use new-style if using camd.library V40
+static struct MidiDeviceData MidiDeviceData = {
+    MDD_Magic,
+    "emu10kx",
+    "emu10kx CAMD MIDI driver " VERS,
+    VERSION, REVISION,
+    gwInit,
+    gwExpunge,
+    gwOpenPort,
+    gwClosePort,
+    4,        // For some braindamaged reason, camd.library V40 reads
+    // this value BEFORE calling Init(). :-(
+    1         // Use new-style if using camd.library V40
 };
 
 
 /*** Global data **************************************************************/
 
 #ifndef __AROS__
-static struct ExecBase*    SysBase         = NULL;
+static struct ExecBase    *SysBase         = NULL;
 #endif
-static struct Library*     EMU10kxBase     = NULL;
-static struct EMU10kxCamd* EMU10kxCamd     = NULL;
-static struct PortInfo*    PortInfos       = NULL;
+static struct Library     *EMU10kxBase     = NULL;
+static struct EMU10kxCamd *EMU10kxCamd     = NULL;
+static struct PortInfo    *PortInfos       = NULL;
 static ULONG               CAMDv40         = FALSE;
 static const char          VersionString[] = "$VER: emu10kx " VERS "\r\n";
 
 
 /*** Debug code ***************************************************************/
 
-static UWORD rawputchar_m68k[] = 
-{
-  0x2C4B,             // MOVEA.L A3,A6
-  0x4EAE, 0xFDFC,     // JSR     -$0204(A6)
-  0x4E75              // RTS
+static UWORD rawputchar_m68k[] = {
+    0x2C4B,             // MOVEA.L A3,A6
+    0x4EAE, 0xFDFC,     // JSR     -$0204(A6)
+    0x4E75              // RTS
 };
 
 
 static void
-KPrintFArgs( UBYTE* fmt, 
-             IPTR* args )
+KPrintFArgs(UBYTE *fmt,
+            IPTR *args)
 {
-  RawDoFmt( fmt, args, (void(*)(void)) rawputchar_m68k, SysBase );
+    RawDoFmt(fmt, args, (void(*)(void)) rawputchar_m68k, SysBase);
 }
 
 #define KPrintF( fmt, ... )        \
@@ -103,65 +100,65 @@ KPrintFArgs( UBYTE* fmt,
 
 #ifdef __AROS__
 static AROS_UFH3(ULONG, TransmitFunc,
-	AROS_UFHA(struct Hook *, hook, A0),
-	AROS_UFHA(struct Library *, emu10kxbase, A2),
-	AROS_UFHA(APTR, null, A1))
+                 AROS_UFHA(struct Hook *, hook, A0),
+                 AROS_UFHA(struct Library *, emu10kxbase, A2),
+                 AROS_UFHA(APTR, null, A1))
 {
     AROS_USERFUNC_INIT
 #else
 static ULONG
-TransmitFunc( struct Hook*    hook         __asm( "a0" ),
-	      struct Library* emu10kxbase  __asm( "a2" ),
-	      APTR            null         __asm( "a1" ) )
+TransmitFunc(struct Hook    *hook         __asm("a0"),
+             struct Library *emu10kxbase  __asm("a2"),
+             APTR            null         __asm("a1"))
 {
 #endif
-  struct PortInfo* pi = (struct PortInfo*) hook->h_Data;
-  ULONG            res;
+    struct PortInfo *pi = (struct PortInfo *) hook->h_Data;
+    ULONG            res;
 
-  __asm volatile (
-      "movel %1,%%a2\n"
-      "movel %2,%%a0\n"
-      "jsr   (%%a0)\n"
-      "swapw %%d0\n"
-      "movew %%d1,%%d0\n"
-      "swapw %%d0\n"
-    : "=r"(res)
-    : "m" (pi->UserData), "m" (pi->TransmitFunc)
-    : "a0", "a2" );
+    __asm volatile(
+        "movel %1,%%a2\n"
+        "movel %2,%%a0\n"
+        "jsr   (%%a0)\n"
+        "swapw %%d0\n"
+        "movew %%d1,%%d0\n"
+        "swapw %%d0\n"
+        : "=r"(res)
+        : "m"(pi->UserData), "m"(pi->TransmitFunc)
+        : "a0", "a2");
 
-  return res;
+    return res;
 #ifdef __AROS__
-  AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 #endif
 }
 
 
 #ifdef __AROS__
 static AROS_UFH3(VOID, ReceiveFunc,
-	AROS_UFHA(struct Hook *, hook, A0),
-	AROS_UFHA(struct Library *, emu10kxbase, A2),
-	AROS_UFHA(struct ReceiveMessage*, msg, A1))
+                 AROS_UFHA(struct Hook *, hook, A0),
+                 AROS_UFHA(struct Library *, emu10kxbase, A2),
+                 AROS_UFHA(struct ReceiveMessage *, msg, A1))
 {
     AROS_USERFUNC_INIT
 #else
 static VOID
-ReceiveFunc( struct Hook*           hook        __asm( "a0" ),
-	     struct Library*        emu10kxbase __asm( "a2" ),
-	     struct ReceiveMessage* msg         __asm( "a1" ) )
+ReceiveFunc(struct Hook           *hook        __asm("a0"),
+            struct Library        *emu10kxbase __asm("a2"),
+            struct ReceiveMessage *msg         __asm("a1"))
 {
 #endif
-  struct PortInfo* pi = (struct PortInfo*) hook->h_Data;
+    struct PortInfo *pi = (struct PortInfo *) hook->h_Data;
 
-  __asm volatile (
-    "movel %0,%%d0\n"
-    "movel %1,%%a2\n"
-    "movel %2,%%a0\n"
-    "jsr   (%%a0)\n"
-    : 
-    : "m" (msg->InputByte), "m" (pi->UserData), "m" (pi->ReceiveFunc)
-    : "d0", "a0", "a2" );
+    __asm volatile(
+        "movel %0,%%d0\n"
+        "movel %1,%%a2\n"
+        "movel %2,%%a0\n"
+        "jsr   (%%a0)\n"
+        :
+        : "m"(msg->InputByte), "m"(pi->UserData), "m"(pi->ReceiveFunc)
+        : "d0", "a0", "a2");
 #ifdef __AROS__
-  AROS_USERFUNC_EXIT
+    AROS_USERFUNC_EXIT
 #endif
 }
 
@@ -169,36 +166,31 @@ ReceiveFunc( struct Hook*           hook        __asm( "a0" ),
 /*** ActivateXmit *************************************************************/
 
 VOID
-_ActivateXmit( APTR  userdata,
-	       ULONG portnum )
+_ActivateXmit(APTR  userdata,
+              ULONG portnum)
 {
-  // In the original CAMD, there is no port number :-(
+    // In the original CAMD, there is no port number :-(
 
 //  KPrintF( "ActiavteXmit( %08lx, %ld )\n", userdata, portnum & 255 );
 
-  if( !CAMDv40 )
-  {
-    for( portnum = 0; portnum < MidiDeviceData.NPorts; ++portnum )
-    {
-      if( userdata == PortInfos[ portnum ].UserData )
-      {
-	break;
-      }
+    if(!CAMDv40) {
+        for(portnum = 0; portnum < MidiDeviceData.NPorts; ++portnum) {
+            if(userdata == PortInfos[ portnum ].UserData) {
+                break;
+            }
+        }
+
+        if(portnum == MidiDeviceData.NPorts) {
+            return;
+        }
     }
 
-    if( portnum == MidiDeviceData.NPorts )
-    {
-      return;
-    }
-  }
-
-  CallHook( &EMU10kxCamd->ActivateXmitFunc, (Object*) EMU10kxBase,
-	    portnum & 255 );
+    CallHook(&EMU10kxCamd->ActivateXmitFunc, (Object *) EMU10kxBase,
+             portnum & 255);
 }
 
-struct MidiPortData MidiPortData =
-{
-  gwActivateXmit
+struct MidiPortData MidiPortData = {
+    gwActivateXmit
 };
 
 
@@ -214,132 +206,124 @@ DEFINESET(EXIT)
 #endif
 
 VOID
-_Expunge( ULONG dummy );
+_Expunge(ULONG dummy);
 
 BOOL
-_Init( struct ExecBase* sysbase )
+_Init(struct ExecBase *sysbase)
 {
-  struct Library* camdlib;
-  
+    struct Library *camdlib;
+
 #ifdef __AROS__
-  SysBase = sysbase;
+    SysBase = sysbase;
 #else
-  // sysbase is not valid in the original CAMD anyway
-  SysBase = *(struct ExecBase**) 4;
+    // sysbase is not valid in the original CAMD anyway
+    SysBase = *(struct ExecBase **) 4;
 #endif
 
 #ifdef __AROS__
-  if (!set_call_funcs(SETNAME(INIT), 1, 1))
-      return NULL;
+    if(!set_call_funcs(SETNAME(INIT), 1, 1))
+        return NULL;
 #endif
 
-  EMU10kxBase = OpenLibrary( "DEVS:AHI/emu10kx.audio", VERSION );
+    EMU10kxBase = OpenLibrary("DEVS:AHI/emu10kx.audio", VERSION);
 
-  if( EMU10kxBase == NULL )
-  {
-    return FALSE;
-  }
+    if(EMU10kxBase == NULL) {
+        return FALSE;
+    }
 
-  Forbid();
-  EMU10kxCamd = (struct EMU10kxCamd*) FindSemaphore( EMU10KX_CAMD_SEMAPHORE );
-  if( EMU10kxCamd != NULL )
-  {
-    ObtainSemaphore( &EMU10kxCamd->Semaphore );
-  }
-  Permit();
+    Forbid();
+    EMU10kxCamd = (struct EMU10kxCamd *) FindSemaphore(EMU10KX_CAMD_SEMAPHORE);
+    if(EMU10kxCamd != NULL) {
+        ObtainSemaphore(&EMU10kxCamd->Semaphore);
+    }
+    Permit();
 
-  if( EMU10kxCamd == NULL )
-  {
-    _Expunge( 0 );
-    return FALSE;
-  }
+    if(EMU10kxCamd == NULL) {
+        _Expunge(0);
+        return FALSE;
+    }
 
-  MidiDeviceData.NPorts = EMU10kxCamd->Cards;
+    MidiDeviceData.NPorts = EMU10kxCamd->Cards;
 
-  PortInfos = AllocVec( sizeof( struct PortInfo ) * EMU10kxCamd->Cards,
-			MEMF_PUBLIC );
+    PortInfos = AllocVec(sizeof(struct PortInfo) * EMU10kxCamd->Cards,
+                         MEMF_PUBLIC);
 
-  if( PortInfos == NULL )
-  {
-    _Expunge( 0 );
-    return FALSE;
-  }
+    if(PortInfos == NULL) {
+        _Expunge(0);
+        return FALSE;
+    }
 
-  return TRUE;
+    return TRUE;
 }
 
 
 /*** Expunge ******************************************************************/
 
 VOID
-_Expunge( ULONG dummy )
+_Expunge(ULONG dummy)
 {
-  FreeVec( PortInfos );
+    FreeVec(PortInfos);
 
-  if( EMU10kxCamd != NULL )
-  {
-    ReleaseSemaphore( &EMU10kxCamd->Semaphore );
-  }
+    if(EMU10kxCamd != NULL) {
+        ReleaseSemaphore(&EMU10kxCamd->Semaphore);
+    }
 
 #ifdef __AROS__
-  set_call_funcs(SETNAME(EXIT), -1, 0);
+    set_call_funcs(SETNAME(EXIT), -1, 0);
 #endif
 
-  CloseLibrary( EMU10kxBase );
+    CloseLibrary(EMU10kxBase);
 }
 
 
 /*** OpenPort *****************************************************************/
 
-struct MidiPortData*
-_OpenPort( struct MidiDeviceData* data,
-	   LONG                   portnum,
-	   APTR                   transmitfunc,
-	   APTR                   receivefunc,
-	   APTR                   userdata )
+struct MidiPortData *
+_OpenPort(struct MidiDeviceData *data,
+          LONG                   portnum,
+          APTR                   transmitfunc,
+          APTR                   receivefunc,
+          APTR                   userdata)
 {
-  static struct Library* camdbase = NULL;
-  
-  struct PortInfo* pi = &PortInfos[ portnum & 255 ];
+    static struct Library *camdbase = NULL;
 
-  pi->TransmitHook.h_Entry = (HOOKFUNC) TransmitFunc;
-  pi->TransmitHook.h_Data  = pi;
-  pi->ReceiveHook.h_Entry  = (HOOKFUNC) ReceiveFunc;
-  pi->ReceiveHook.h_Data   = pi;
-  pi->TransmitFunc         = transmitfunc;
-  pi->ReceiveFunc          = receivefunc;
-  pi->UserData             = userdata;
+    struct PortInfo *pi = &PortInfos[ portnum & 255 ];
 
-  if( camdbase == NULL )
-  {
-    camdbase = OpenLibrary( "camd.library", 0 );
+    pi->TransmitHook.h_Entry = (HOOKFUNC) TransmitFunc;
+    pi->TransmitHook.h_Data  = pi;
+    pi->ReceiveHook.h_Entry  = (HOOKFUNC) ReceiveFunc;
+    pi->ReceiveHook.h_Data   = pi;
+    pi->TransmitFunc         = transmitfunc;
+    pi->ReceiveFunc          = receivefunc;
+    pi->UserData             = userdata;
 
-    if( camdbase != NULL )
-    {
-      CAMDv40 = ( camdbase->lib_Version >= 40 );
+    if(camdbase == NULL) {
+        camdbase = OpenLibrary("camd.library", 0);
+
+        if(camdbase != NULL) {
+            CAMDv40 = (camdbase->lib_Version >= 40);
+        }
+
+        // Close library but leave pointer set, so we never execute this
+        // code again.
+        CloseLibrary(camdbase);
     }
 
-    // Close library but leave pointer set, so we never execute this
-    // code again.
-    CloseLibrary( camdbase );
-  }
-  
-  if( !CallHook( &EMU10kxCamd->OpenPortFunc, (Object*) EMU10kxBase,
-		 portnum & 255, CAMDv40, &pi->TransmitHook, &pi->ReceiveHook ) )
-  {
-    return NULL;
-  }
+    if(!CallHook(&EMU10kxCamd->OpenPortFunc, (Object *) EMU10kxBase,
+                 portnum & 255, CAMDv40, &pi->TransmitHook, &pi->ReceiveHook)) {
+        return NULL;
+    }
 
-  return &MidiPortData;
+    return &MidiPortData;
 }
 
 
 /*** ClosePort ****************************************************************/
 
 VOID
-_ClosePort( struct MidiDeviceData *data, LONG portnum )
+_ClosePort(struct MidiDeviceData *data, LONG portnum)
 {
-  CallHook( &EMU10kxCamd->ClosePortFunc, (Object*) EMU10kxBase,
-	    portnum & 255 );
+    CallHook(&EMU10kxCamd->ClosePortFunc, (Object *) EMU10kxBase,
+             portnum & 255);
 }
 

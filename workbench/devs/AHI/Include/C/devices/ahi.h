@@ -42,110 +42,100 @@ typedef Fixed	sposition;
 
 /*** STRUCTURES */
 
- /* AHIAudioCtrl */
-struct AHIAudioCtrl
-{
-	APTR	ahiac_UserData;
-	/* Lots of private data follows! */
+/* AHIAudioCtrl */
+struct AHIAudioCtrl {
+    APTR	ahiac_UserData;
+    /* Lots of private data follows! */
 };
 
- /* AHISoundMessage */
-struct AHISoundMessage
-{
- 	UWORD	ahism_Channel;
+/* AHISoundMessage */
+struct AHISoundMessage {
+    UWORD	ahism_Channel;
 };
 
- /* AHIRecordMessage */
-struct AHIRecordMessage
-{
-	ULONG	ahirm_Type;			/* Format of buffer (object) */
-	APTR	ahirm_Buffer;			/* Pointer to the sample array */
-	ULONG	ahirm_Length;			/* Number of sample frames in buffer */
+/* AHIRecordMessage */
+struct AHIRecordMessage {
+    ULONG	ahirm_Type;			/* Format of buffer (object) */
+    APTR	ahirm_Buffer;			/* Pointer to the sample array */
+    ULONG	ahirm_Length;			/* Number of sample frames in buffer */
 };
 
- /* AHISampleInfo */
-struct AHISampleInfo
-{
-	ULONG	ahisi_Type;			/* Format of samples */
-	APTR	ahisi_Address;			/* Address to array of samples */
-	ULONG	ahisi_Length;			/* Number of samples in array */
+/* AHISampleInfo */
+struct AHISampleInfo {
+    ULONG	ahisi_Type;			/* Format of samples */
+    APTR	ahisi_Address;			/* Address to array of samples */
+    ULONG	ahisi_Length;			/* Number of samples in array */
 };
 
 
- /* AHIAudioModeRequester */
-struct AHIAudioModeRequester
-{
-	ULONG	ahiam_AudioID;			/* Selected audio mode */
-	ULONG	ahiam_MixFreq;			/* Selected mixing/sampling frequency */
-	
-	WORD	ahiam_LeftEdge;			/* Coordinates of requester on exit */
-	WORD	ahiam_TopEdge;
-	WORD	ahiam_Width;
-	WORD	ahiam_Height;
+/* AHIAudioModeRequester */
+struct AHIAudioModeRequester {
+    ULONG	ahiam_AudioID;			/* Selected audio mode */
+    ULONG	ahiam_MixFreq;			/* Selected mixing/sampling frequency */
 
-	BOOL	ahiam_InfoOpened;		/* Info window opened on exit? */
-	WORD	ahiam_InfoLeftEdge;		/* Last coordinates of Info window */
-	WORD	ahiam_InfoTopEdge;
-	WORD	ahiam_InfoWidth;
-	WORD	ahiam_InfoHeight;
+    WORD	ahiam_LeftEdge;			/* Coordinates of requester on exit */
+    WORD	ahiam_TopEdge;
+    WORD	ahiam_Width;
+    WORD	ahiam_Height;
 
-	UWORD	ahiam_ObsoleteUserData[2];
-	UWORD	ahiam_Pad;
-	APTR	ahiam_UserData;			/* You can store your own data here (V6) */
-	/* Lots of private data follows! */
+    BOOL	ahiam_InfoOpened;		/* Info window opened on exit? */
+    WORD	ahiam_InfoLeftEdge;		/* Last coordinates of Info window */
+    WORD	ahiam_InfoTopEdge;
+    WORD	ahiam_InfoWidth;
+    WORD	ahiam_InfoHeight;
+
+    UWORD	ahiam_ObsoleteUserData[2];
+    UWORD	ahiam_Pad;
+    APTR	ahiam_UserData;			/* You can store your own data here (V6) */
+    /* Lots of private data follows! */
 };
 
- /* AHIEffMasterVolume */
-struct AHIEffMasterVolume
-{
-	ULONG	ahie_Effect;			/* Set to AHIET_MASTERVOLUME */
-	Fixed	ahiemv_Volume;			/* See autodocs for range! */
+/* AHIEffMasterVolume */
+struct AHIEffMasterVolume {
+    ULONG	ahie_Effect;			/* Set to AHIET_MASTERVOLUME */
+    Fixed	ahiemv_Volume;			/* See autodocs for range! */
 };
 
- /* AHIEffOutputBuffer */
-struct AHIEffOutputBuffer
-{
-	ULONG		 ahie_Effect;		/* Set to AHIET_OUTPUTBUFFER */
-	struct Hook	*ahieob_Func;
- /* These fields are filled by AHI */
-	ULONG		 ahieob_Type;		/* Format of buffer */
-	APTR		 ahieob_Buffer;		/* Pointer to the sample array */
-	ULONG		 ahieob_Length;		/* Number of sample frames in buffer */
+/* AHIEffOutputBuffer */
+struct AHIEffOutputBuffer {
+    ULONG		 ahie_Effect;		/* Set to AHIET_OUTPUTBUFFER */
+    struct Hook	*ahieob_Func;
+    /* These fields are filled by AHI */
+    ULONG		 ahieob_Type;		/* Format of buffer */
+    APTR		 ahieob_Buffer;		/* Pointer to the sample array */
+    ULONG		 ahieob_Length;		/* Number of sample frames in buffer */
 };
 
- /* AHIEffDSPMask (V4) */
-struct AHIEffDSPMask
-{
-	ULONG	ahie_Effect;			/* Set to AHIET_DSPMASK */
-	UWORD	ahiedm_Channels;		/* Number of elements in array */
-	UBYTE	ahiedm_Mask[0];			/* Here follows the array */
+/* AHIEffDSPMask (V4) */
+struct AHIEffDSPMask {
+    ULONG	ahie_Effect;			/* Set to AHIET_DSPMASK */
+    UWORD	ahiedm_Channels;		/* Number of elements in array */
+    UBYTE	ahiedm_Mask[0];			/* Here follows the array */
 };
 
 #define AHIEDM_WET		(0)
 #define AHIEDM_DRY		(1)
 
- /* AHIEffDSPEcho (V4) */
-struct AHIEffDSPEcho
-{
-	ULONG	ahie_Effect;			/* Set to AHIET_DSPECHO */
-	ULONG	ahiede_Delay;			/* In samples */
-	Fixed	ahiede_Feedback;
-	Fixed	ahiede_Mix;
-	Fixed	ahiede_Cross;
+/* AHIEffDSPEcho (V4) */
+struct AHIEffDSPEcho {
+    ULONG	ahie_Effect;			/* Set to AHIET_DSPECHO */
+    ULONG	ahiede_Delay;			/* In samples */
+    Fixed	ahiede_Feedback;
+    Fixed	ahiede_Mix;
+    Fixed	ahiede_Cross;
 };
 
 #define AHIDSPEcho AHIEffDSPEcho		/* Fix for error in V4 includes	*/
 
- /* AHIEffChannelInfo (V4) */
+/* AHIEffChannelInfo (V4) */
 
-struct AHIEffChannelInfo
-{
-	ULONG		 ahie_Effect;		/* Set to AHIET_CHANNELINFO */
-	struct Hook	*ahieci_Func;
-	UWORD		 ahieci_Channels;
-	UWORD		 ahieci_Pad;
- /* The rest is filled by AHI */
- 	ULONG		 ahieci_Offset[0];	/* The array follows */
+struct AHIEffChannelInfo {
+    ULONG		 ahie_Effect;		/* Set to AHIET_CHANNELINFO */
+    struct Hook	*ahieci_Func;
+    UWORD		 ahieci_Channels;
+    UWORD		 ahieci_Pad;
+    /* The rest is filled by AHI */
+    ULONG		 ahieci_Offset[0];	/* The array follows */
 };
 
 /*** TAGS */
@@ -153,7 +143,7 @@ struct AHIEffChannelInfo
 #define AHI_TagBase		(TAG_USER)
 #define AHI_TagBaseR		(AHI_TagBase|0x8000)
 
- /* AHI_AllocAudioA tags */
+/* AHI_AllocAudioA tags */
 #define AHIA_AudioID		(AHI_TagBase+1)		/* Desired audio mode */
 #define AHIA_MixFreq		(AHI_TagBase+2)		/* Suggested mixing frequency */
 #define AHIA_Channels		(AHI_TagBase+3)		/* Suggested number of channels */
@@ -167,7 +157,7 @@ struct AHIEffChannelInfo
 #define AHIA_UserData		(AHI_TagBase+11)	/* What to put in ahiac_UserData */
 #define AHIA_AntiClickSamples	(AHI_TagBase+13)	/* # of samples to smooth (V6)	*/
 
-  /* AHI_PlayA tags (V4) */
+/* AHI_PlayA tags (V4) */
 #define AHIP_BeginChannel	(AHI_TagBase+40)	/* All command tags should be... */
 #define AHIP_EndChannel		(AHI_TagBase+41)	/* ... enclosed by these tags. */
 #define AHIP_Freq		(AHI_TagBase+50)
@@ -183,7 +173,7 @@ struct AHIEffChannelInfo
 #define AHIP_LoopOffset		(AHI_TagBase+64)
 #define AHIP_LoopLength		(AHI_TagBase+65)
 
- /* AHI_ControlAudioA tags */
+/* AHI_ControlAudioA tags */
 #define AHIC_Play		(AHI_TagBase+80)	/* Boolean */
 #define AHIC_Record		(AHI_TagBase+81)	/* Boolean */
 #define AHIC_MonitorVolume	(AHI_TagBase+82)
@@ -199,7 +189,7 @@ struct AHIEffChannelInfo
 #define AHIC_Output		(AHI_TagBase+91)
 #define AHIC_Output_Query	(AHI_TagBase+92)	/* ti_Data is pointer to ULONG */
 
- /* AHI_GetAudioAttrsA tags */
+/* AHI_GetAudioAttrsA tags */
 #define AHIDB_AudioID		(AHI_TagBase+100)
 #define AHIDB_Driver		(AHI_TagBaseR+101)	/* Pointer to name of driver */
 #define AHIDB_Flags		(AHI_TagBase+102)	/* Private! */
@@ -248,12 +238,12 @@ struct AHIEffChannelInfo
 /* --- New for V6, they will be ignored by V4 and earlier --- */
 #define AHIDB_MultiChannel	(AHI_TagBase+144)	/* Boolean */
 
- /* AHI_BestAudioIDA tags */
+/* AHI_BestAudioIDA tags */
 /* --- New for V4, they will be ignored by V2 and earlier --- */
 #define AHIB_Dizzy		(AHI_TagBase+190)
 
- /* AHI_AudioRequestA tags */
-	/* Window control */
+/* AHI_AudioRequestA tags */
+/* Window control */
 #define AHIR_Window		(AHI_TagBase+200)	/* Parent window */
 #define AHIR_Screen		(AHI_TagBase+201)	/* Screen to open on if no window */
 #define AHIR_PubScreenName	(AHI_TagBase+202)	/* Name of public screen */
@@ -262,13 +252,13 @@ struct AHIEffChannelInfo
 #define AHIR_SleepWindow	(AHI_TagBase+205)	/* Block input in AHIR_Window? */
 #define AHIR_ObsoleteUserData	(AHI_TagBase+206)	/* V4 UserData */
 #define AHIR_UserData		(AHI_TagBase+207)	/* What to put in ahiam_UserData (V6) */
-	/* Text display */
+/* Text display */
 #define AHIR_TextAttr		(AHI_TagBase+220)	/* Text font to use for gadget text */
 #define AHIR_Locale		(AHI_TagBase+221)	/* Locale to use for text */
 #define AHIR_TitleText		(AHI_TagBase+222)	/* Title of requester */
 #define AHIR_PositiveText	(AHI_TagBase+223)	/* Positive gadget text */
 #define AHIR_NegativeText	(AHI_TagBase+224)	/* Negative gadget text */
-	/* Initial settings */
+/* Initial settings */
 #define AHIR_InitialLeftEdge	(AHI_TagBase+240)	/* Initial requester coordinates */
 #define AHIR_InitialTopEdge	(AHI_TagBase+241)
 #define AHIR_InitialWidth	(AHI_TagBase+242)	/* Initial requester dimensions */
@@ -280,10 +270,10 @@ struct AHIEffChannelInfo
 #define AHIR_InitialInfoTopEdge (AHI_TagBase+248)
 #define AHIR_InitialInfoWidth	(AHI_TagBase+249)	/* Not used! */
 #define AHIR_InitialInfoHeight	(AHI_TagBase+250)	/* Not used! */
-	/* Options */
+/* Options */
 #define AHIR_DoMixFreq		(AHI_TagBase+260)	/* Allow selection of mixing frequency? */
 #define AHIR_DoDefaultMode	(AHI_TagBase+261)	/* Allow selection of default mode? (V4) */
-	/* Filtering */
+/* Filtering */
 #define AHIR_FilterTags		(AHI_TagBase+270)	/* Pointer to filter taglist */
 #define AHIR_FilterFunc		(AHI_TagBase+271)	/* Function to filter mode id's */
 
@@ -297,7 +287,7 @@ struct AHIEffChannelInfo
 #define AHI_MIXFREQ		(~0U)			/* Special frequency for AHI_SetFreq() */
 #define AHI_NOSOUND		(0xffffU)		/* Turns a channel off */
 
- /* Set#? Flags */
+/* Set#? Flags */
 #define AHISF_IMM		(1U<<0)	/* Trigger action immediately	*/
 #define AHISF_NODELAY		(1U<<1)	/* Don't wait for zero-crossing */
 
@@ -306,7 +296,7 @@ struct AHIEffChannelInfo
 #define AHISB_IMM		(0U)
 #define AHISB_NODELAY		(1U)
 
- /* Effect Types */
+/* Effect Types */
 #define AHIET_CANCEL		(1U<<31)		/* OR with effect to disable */
 #define AHIET_MASTERVOLUME	(1U)
 #define AHIET_OUTPUTBUFFER	(2U)
@@ -315,14 +305,14 @@ struct AHIEffChannelInfo
 #define AHIET_DSPECHO		(4U)
 #define AHIET_CHANNELINFO	(5U)
 
- /* Sound Types */
+/* Sound Types */
 #define AHIST_NOTYPE		(~0U)			/* Private */
 #define AHIST_SAMPLE		(0U)			/* 8 or 16 bit sample */
 #define AHIST_DYNAMICSAMPLE	(1U)			/* Dynamic sample */
 #define AHIST_INPUT		(1U<<29)		/* The input from your sampler */
 #define AHIST_BW		(1U<<30)		/* Private */
 
- /* Sample types */
+/* Sample types */
 /* Note that only AHIST_M8S, AHIST_S8S, AHIST_M16S and AHIST_S16S
    (plus AHIST_M32S, AHIST_S32S and AHIST_L7_1 in V6)
    are supported by AHI_LoadSound(). */
@@ -336,7 +326,7 @@ struct AHIEffChannelInfo
 #define AHIST_M8U		(4U)			/* OBSOLETE! */
 #define AHIST_L7_1		(0x00c3000aU)		/* 7.1, 32 bit signed (8×LONG) */
 
- /* Error codes */
+/* Error codes */
 #define AHIE_OK			(0U)			/* No error */
 #define AHIE_NOMEM		(1U)			/* Out of memory */
 #define AHIE_BADSOUNDTYPE	(2U)			/* Unknown sound type */
@@ -349,75 +339,72 @@ struct AHIEffChannelInfo
 
 /* DEVICE INTERFACE DEFINITIONS FOLLOWS ************************************/
 
- /* Device units */
+/* Device units */
 
 #define AHI_DEFAULT_UNIT	(0U)
 #define AHI_NO_UNIT		(255U)
 
 
- /* The preference file */
+/* The preference file */
 
 #define ID_AHIU MAKE_ID('A','H','I','U')
 #define ID_AHIG MAKE_ID('A','H','I','G')
 
-struct AHIUnitPrefs
-{
-	UBYTE	ahiup_Unit;
-	UBYTE   ahiup_Obsolete;                         /* Was ahiup_ScaleMode */
-        UWORD	ahiup_Channels;
-        ULONG	ahiup_AudioMode;
-        ULONG	ahiup_Frequency;
-        Fixed	ahiup_MonitorVolume;
-        Fixed	ahiup_InputGain;
-        Fixed	ahiup_OutputVolume;
-        ULONG	ahiup_Input;
-        ULONG	ahiup_Output;
+struct AHIUnitPrefs {
+    UBYTE	ahiup_Unit;
+    UBYTE   ahiup_Obsolete;                         /* Was ahiup_ScaleMode */
+    UWORD	ahiup_Channels;
+    ULONG	ahiup_AudioMode;
+    ULONG	ahiup_Frequency;
+    Fixed	ahiup_MonitorVolume;
+    Fixed	ahiup_InputGain;
+    Fixed	ahiup_OutputVolume;
+    ULONG	ahiup_Input;
+    ULONG	ahiup_Output;
 };
 
-struct AHIGlobalPrefs
-{
-	UWORD	ahigp_DebugLevel;			/* Range: 0-3 (for None, Low,
+struct AHIGlobalPrefs {
+    UWORD	ahigp_DebugLevel;			/* Range: 0-3 (for None, Low,
 							   High and All) */
-	BOOL	ahigp_DisableSurround;
-	BOOL	ahigp_DisableEcho;
-	BOOL	ahigp_FastEcho;
-	Fixed	ahigp_MaxCPU;
-	BOOL	ahigp_ClipMasterVolume;
-	UWORD	ahigp_Pad;
-	Fixed	ahigp_AntiClickTime;			/* In seconds (V6) */
-	UWORD   ahigp_ScaleMode;			/* See below (V6) */
+    BOOL	ahigp_DisableSurround;
+    BOOL	ahigp_DisableEcho;
+    BOOL	ahigp_FastEcho;
+    Fixed	ahigp_MaxCPU;
+    BOOL	ahigp_ClipMasterVolume;
+    UWORD	ahigp_Pad;
+    Fixed	ahigp_AntiClickTime;			/* In seconds (V6) */
+    UWORD   ahigp_ScaleMode;			/* See below (V6) */
 };
 
- /* Debug levels */
+/* Debug levels */
 #define AHI_DEBUG_NONE		(0U)
 #define AHI_DEBUG_LOW		(1U)
 #define AHI_DEBUG_HIGH		(2U)
 #define AHI_DEBUG_ALL		(3U)
 
- /* Scale modes */
+/* Scale modes */
 #define AHI_SCALE_FIXED_SAFE	(0U)			/* x=y*1/max(ch)	*/
 #define AHI_SCALE_DYNAMIC_SAFE	(1U)			/* x=y*1/ch		*/
 #define AHI_SCALE_FIXED_0_DB	(2U)			/* x=y			*/
 #define AHI_SCALE_FIXED_3_DB	(3U)			/* x=y*1/sqrt(2)	*/
 #define AHI_SCALE_FIXED_6_DB	(4U)			/* x=y*1/2		*/
 
- /* AHIRequest */
+/* AHIRequest */
 
-struct AHIRequest
-{
-	struct	IOStdReq	 ahir_Std;		/* Standard IO request */
-	UWORD			 ahir_Version;		/* Needed version */
-/* --- New for V4, they will be ignored by V2 and earlier --- */
-	UWORD			 ahir_Pad1;
-	IPTR			 ahir_Private[2];	/* Hands off! */
-	ULONG			 ahir_Type;		/* Sample format */
-	ULONG			 ahir_Frequency;	/* Sample/Record frequency */
-	Fixed			 ahir_Volume;		/* Sample volume */
-	Fixed			 ahir_Position;		/* Stereo position */
-	struct AHIRequest 	*ahir_Link;		/* For double buffering */
+struct AHIRequest {
+    struct	IOStdReq	 ahir_Std;		/* Standard IO request */
+    UWORD			 ahir_Version;		/* Needed version */
+    /* --- New for V4, they will be ignored by V2 and earlier --- */
+    UWORD			 ahir_Pad1;
+    IPTR			 ahir_Private[2];	/* Hands off! */
+    ULONG			 ahir_Type;		/* Sample format */
+    ULONG			 ahir_Frequency;	/* Sample/Record frequency */
+    Fixed			 ahir_Volume;		/* Sample volume */
+    Fixed			 ahir_Position;		/* Stereo position */
+    struct AHIRequest 	*ahir_Link;		/* For double buffering */
 };
 
- /* Flags for OpenDevice() */
+/* Flags for OpenDevice() */
 
 #define	AHIDF_NOMODESCAN	(1U<<0)
 #define	AHIDB_NOMODESCAN	(0U)

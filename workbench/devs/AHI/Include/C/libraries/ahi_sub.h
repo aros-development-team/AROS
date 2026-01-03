@@ -39,37 +39,36 @@ typedef BOOL (*AHIPreTimerHook)(void *);
 typedef void (*AHIPostTimerHook)(void *);
 
 /* AHIAudioCtrlDrv */
-struct AHIAudioCtrlDrv
-{
-	struct AHIAudioCtrl ahiac_AudioCtrl;
-	ULONG	     		ahiac_Flags;			/* See below for definition	*/
-	struct Hook 		*ahiac_SoundFunc;		/* AHIA_SoundFunc		*/
-	struct Hook 		*ahiac_PlayerFunc;		/* AHIA_PlayerFunc		*/
-	Fixed	     		ahiac_PlayerFreq;		/* AHIA_PlayerFreq		*/
-	Fixed	     		ahiac_MinPlayerFreq;	/* AHIA_MinPlayerFreq		*/
-	Fixed	     		ahiac_MaxPlayerFreq;	/* AHIA_MaxPlayerFreq		*/
-	ULONG	     		ahiac_MixFreq;			/* AHIA_MixFreq			*/
-	UWORD	     		ahiac_Channels;			/* AHIA_Channels		*/
-	UWORD	     		ahiac_Sounds;			/* AHIA_Sounds			*/
+struct AHIAudioCtrlDrv {
+    struct AHIAudioCtrl ahiac_AudioCtrl;
+    ULONG	     		ahiac_Flags;			/* See below for definition	*/
+    struct Hook 		*ahiac_SoundFunc;		/* AHIA_SoundFunc		*/
+    struct Hook 		*ahiac_PlayerFunc;		/* AHIA_PlayerFunc		*/
+    Fixed	     		ahiac_PlayerFreq;		/* AHIA_PlayerFreq		*/
+    Fixed	     		ahiac_MinPlayerFreq;	/* AHIA_MinPlayerFreq		*/
+    Fixed	     		ahiac_MaxPlayerFreq;	/* AHIA_MaxPlayerFreq		*/
+    ULONG	     		ahiac_MixFreq;			/* AHIA_MixFreq			*/
+    UWORD	     		ahiac_Channels;			/* AHIA_Channels		*/
+    UWORD	     		ahiac_Sounds;			/* AHIA_Sounds			*/
 
-	APTR	     		ahiac_DriverData;		/* Unused. Store whatever you want here. */
+    APTR	     		ahiac_DriverData;		/* Unused. Store whatever you want here. */
 
-	struct Hook 		*ahiac_MixerFunc;		/* Mixing routine Hook		*/
-	struct Hook 		*ahiac_SamplerFunc;		/* Sampler routine Hook		*/
-	ULONG	     		ahiac_Obsolete;
-	ULONG	     		ahiac_BuffSamples;		/* Samples to mix this pass.	*/
-	ULONG	     		ahiac_MinBuffSamples;	/* Min. samples to mix each pass. */
-	ULONG	     		ahiac_MaxBuffSamples;	/* Max. samples to mix each pass. */
-	ULONG	     		ahiac_BuffSize;			/* Buffer size ahiac_MixerFunc needs. */
-	ULONG	     		ahiac_BuffType;			/* Buffer format (V2)		*/
-	AHIPreTimerHook		ahiac_PreTimer;			/* Call before mixing (V4)	*/
-	AHIPostTimerHook	ahiac_PostTimer;		/* Call after mixing (V4)	*/
-	ULONG	     		ahiac_AntiClickSamples;	/* AntiClick samples (V6)	*/
-	struct Hook 		*ahiac_PreTimerFunc;    /* A Hook wrapper for ahiac_PreTimer (V6) */
-	struct Hook 		*ahiac_PostTimerFunc;   /* A Hook wrapper for ahiac_PostTimer (V6) */
+    struct Hook 		*ahiac_MixerFunc;		/* Mixing routine Hook		*/
+    struct Hook 		*ahiac_SamplerFunc;		/* Sampler routine Hook		*/
+    ULONG	     		ahiac_Obsolete;
+    ULONG	     		ahiac_BuffSamples;		/* Samples to mix this pass.	*/
+    ULONG	     		ahiac_MinBuffSamples;	/* Min. samples to mix each pass. */
+    ULONG	     		ahiac_MaxBuffSamples;	/* Max. samples to mix each pass. */
+    ULONG	     		ahiac_BuffSize;			/* Buffer size ahiac_MixerFunc needs. */
+    ULONG	     		ahiac_BuffType;			/* Buffer format (V2)		*/
+    AHIPreTimerHook		ahiac_PreTimer;			/* Call before mixing (V4)	*/
+    AHIPostTimerHook	ahiac_PostTimer;		/* Call after mixing (V4)	*/
+    ULONG	     		ahiac_AntiClickSamples;	/* AntiClick samples (V6)	*/
+    struct Hook 		*ahiac_PreTimerFunc;    /* A Hook wrapper for ahiac_PreTimer (V6) */
+    struct Hook 		*ahiac_PostTimerFunc;   /* A Hook wrapper for ahiac_PostTimer (V6) */
 
-/* The rest is PRIVATE! Hands off! They may change any time.
-	[lots of private stuff] */
+    /* The rest is PRIVATE! Hands off! They may change any time.
+    	[lots of private stuff] */
 };
 
 /*** TAGS */
@@ -79,7 +78,7 @@ struct AHIAudioCtrlDrv
 
 /*** DEFS */
 
- /* AHIsub_AllocAudio return flags */
+/* AHIsub_AllocAudio return flags */
 #define AHISF_ERROR		(1<<0)
 #define AHISF_MIXING		(1<<1)
 #define AHISF_TIMING		(1<<2)
@@ -98,14 +97,14 @@ struct AHIAudioCtrlDrv
 #define AHISB_CANPOSTPROCESS	(6)
 #define AHISB_KNOWMULTICHANNEL	(7)
 
- /* AHIsub_Start() and AHIsub_Stop() flags */
+/* AHIsub_Start() and AHIsub_Stop() flags */
 #define	AHISF_PLAY		(1<<0)
 #define	AHISF_RECORD		(1<<1)
 
 #define	AHISB_PLAY		(0)
 #define	AHISB_RECORD		(1)
 
- /* ahiac_Flags */
+/* ahiac_Flags */
 #define	AHIACF_VOL		(1<<0)
 #define	AHIACF_PAN		(1<<1)
 #define	AHIACF_STEREO		(1<<2)
@@ -124,10 +123,10 @@ struct AHIAudioCtrlDrv
 #define AHIACB_MULTTAB  	(6)			/* Private!		*/
 #define	AHIACB_MULTICHANNEL	(7)
 
- /* AHIsub_Set#? and AHIsub_(Un)LoadSound return code */
+/* AHIsub_Set#? and AHIsub_(Un)LoadSound return code */
 #define AHIS_UNKNOWN		(~0U)
 
- /* IFF chunk names for the audio mode file */
+/* IFF chunk names for the audio mode file */
 #define ID_AHIM		MAKE_ID('A','H','I','M')	/* AHI Modes		*/
 #define ID_AUDN		MAKE_ID('A','U','D','N')	/* AUDio driver Name	*/
 #define ID_AUDD		MAKE_ID('A','U','D','D')	/* AUDio driver Data	*/

@@ -2,17 +2,17 @@
      AHI - The AHI preferences program
      Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation; either version 2
      of the License, or (at your option) any later version.
-     
+
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-     
+
      You should have received a copy of the GNU General Public License
      along with this program; if not, write to the Free Software
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -25,58 +25,56 @@
 #include <devices/ahi.h>
 
 struct UnitNode {
-  struct Node           node;
-  char                  name[32];
-  struct AHIUnitPrefs   prefs;
+    struct Node           node;
+    char                  name[32];
+    struct AHIUnitPrefs   prefs;
 };
 
 struct ModeNode {
-  struct Node           node;
-  ULONG                 ID;
-  char                  name[80];
+    struct Node           node;
+    ULONG                 ID;
+    char                  name[80];
 };
 
 #define HELPFILE    "ahi.guide"
 #define ENVARCFILE  "ENVARC:Sys/ahi.prefs"
 #define ENVFILE     "ENV:Sys/ahi.prefs"
 
-struct state 
-{
-  LONG UnitSelected;
-  LONG ModeSelected;
-  LONG FreqSelected;
-  LONG ChannelsSelected;
-  LONG InputSelected;
-  LONG OutputSelected;
-  LONG OutVolSelected;
-  LONG MonVolSelected;
-  LONG GainSelected;
+struct state {
+    LONG UnitSelected;
+    LONG ModeSelected;
+    LONG FreqSelected;
+    LONG ChannelsSelected;
+    LONG InputSelected;
+    LONG OutputSelected;
+    LONG OutVolSelected;
+    LONG MonVolSelected;
+    LONG GainSelected;
 
-  LONG Frequencies;
-  LONG Channels;
-  LONG Inputs;
-  LONG Outputs;
-  LONG OutVols;
-  LONG MonVols;
-  LONG Gains;
+    LONG Frequencies;
+    LONG Channels;
+    LONG Inputs;
+    LONG Outputs;
+    LONG OutVols;
+    LONG MonVols;
+    LONG Gains;
 
-  BOOL ChannelsDisabled;
-  BOOL OutVolMute;
-  BOOL MonVolMute;
-  BOOL GainMute;
+    BOOL ChannelsDisabled;
+    BOOL OutVolMute;
+    BOOL MonVolMute;
+    BOOL GainMute;
 
-  float OutVolOffset;
-  float MonVolOffset;
-  float GainOffset;
+    float OutVolOffset;
+    float MonVolOffset;
+    float GainOffset;
 };
 
-struct args
-{
-  STRPTR  from;
-  IPTR   edit;
-  IPTR   use;
-  IPTR   save;
-  STRPTR  pubscreen;
+struct args {
+    STRPTR  from;
+    IPTR   edit;
+    IPTR   use;
+    IPTR   save;
+    STRPTR  pubscreen;
 };
 
 extern char const *Version;
@@ -95,9 +93,9 @@ extern struct args args;
 
 extern BOOL SaveIcons;
 
-void NewSettings(char * );
-void NewUnit(int );
-void NewMode(int );
+void NewSettings(char *);
+void NewUnit(int);
+void NewMode(int);
 
 void FillUnit(void);
 

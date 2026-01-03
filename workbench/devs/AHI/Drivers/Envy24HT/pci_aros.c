@@ -29,25 +29,22 @@ static OOP_Object *pciobj;
 static OOP_MethodID mid_RB;
 static OOP_MethodID mid_RW;
 static OOP_MethodID mid_RL;
-        
+
 static OOP_MethodID mid_WB;
 static OOP_MethodID mid_WW;
 static OOP_MethodID mid_WL;
 
 static BOOL inthandler_added;
 
-BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
+BOOL ahi_pci_init(struct DriverBase *AHIsubBase)
 {
     OOPBase = OpenLibrary(AROSOOP_NAME, 0);
-    if (OOPBase)
-    {
+    if(OOPBase) {
         __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-        if (__IHidd_PCIDev)
-        {
+        if(__IHidd_PCIDev) {
             pciobj = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-            if (pciobj)
-            {
+            if(pciobj) {
                 mid_RB = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
                 mid_RW = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
                 mid_RL = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong);
@@ -60,22 +57,21 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
             }
         }
     }
-    
+
     return FALSE;
 }
 
 void ahi_pci_exit(void)
 {
-    if (pciobj)
+    if(pciobj)
         OOP_DisposeObject(pciobj);
-    if (__IHidd_PCIDev)
+    if(__IHidd_PCIDev)
         OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-    if (OOPBase)
+    if(OOPBase)
         CloseLibrary(OOPBase);
 }
 
-struct enum_data
-{
+struct enum_data {
     OOP_Object *prev_dev;
     OOP_Object *found_dev;
 };
@@ -89,8 +85,7 @@ static AROS_UFH3(void, Enumerator,
 
     struct enum_data *ed = (struct enum_data *)hook->h_Data;
 
-    if ((ed->found_dev == 0) && (device != ed->prev_dev))
-    {
+    if((ed->found_dev == 0) && (device != ed->prev_dev)) {
         ed->found_dev = device;
     }
 
@@ -102,28 +97,30 @@ APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev)
 {
     struct enum_data ed;
 
-    struct Hook FindHook =
-    {
-      h_Entry:    (HOOKFUNC)Enumerator,
-      h_Data:       &ed,
+    struct Hook FindHook = {
+h_Entry:
+        (HOOKFUNC)Enumerator,
+h_Data:
+        &ed,
     };
 
-    struct TagItem Reqs[] =
-    {
+    struct TagItem Reqs[] = {
 #if 0
-      { tHidd_PCI_Class         , 0x04      }, /* Multimedia */
-      { tHidd_PCI_SubClass      , 0x01      }, /* Audio */
+        { tHidd_PCI_Class, 0x04      },          /* Multimedia */
+        { tHidd_PCI_SubClass, 0x01      },       /* Audio */
 #endif
-      { tHidd_PCI_VendorID      , vendorid  },
-      { tHidd_PCI_ProductID     , deviceid  },
-      { TAG_DONE                , 0         },
+        { tHidd_PCI_VendorID, vendorid  },
+        { tHidd_PCI_ProductID, deviceid  },
+        { TAG_DONE, 0         },
     };
 
-    struct pHidd_PCI_EnumDevices enummsg =
-    {
-      mID:              OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
-      callback: &FindHook,
-      requirements:     (struct TagItem *)&Reqs,
+    struct pHidd_PCI_EnumDevices enummsg = {
+mID:
+        OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+callback:
+        &FindHook,
+requirements:
+        (struct TagItem *) &Reqs,
     }, *msg = &enummsg;
 
     ed.prev_dev = (OOP_Object *)dev;
@@ -307,14 +304,13 @@ BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 
 void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
 {
-    if (inthandler_added)
-    {
+    if(inthandler_added) {
         IPTR val;
 
         OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
 
         RemIntServer(INTB_KERNEL + val, i);
-                
+
         inthandler_added = FALSE;
     }
 
@@ -327,34 +323,33 @@ APTR ahi_pci_get_base_address(WORD which, APTR dev)
     OOP_AttrID attr = 0;
     IPTR val = 0;
 
-    switch(which)
-    {
-        case 0:
-          attr = aHidd_PCIDevice_Base0;
-          break;
-            
-        case 1:
-          attr = aHidd_PCIDevice_Base1;
-          break;
-            
-        case 2:
-          attr = aHidd_PCIDevice_Base2;
-          break;
-            
-        case 3:
-          attr = aHidd_PCIDevice_Base3;
-          break;
-            
-        case 4:
-          attr = aHidd_PCIDevice_Base4;
-          break;
-            
-        case 5:
-          attr = aHidd_PCIDevice_Base5;
-          break;
-            
-        default:
-          return 0;
+    switch(which) {
+    case 0:
+        attr = aHidd_PCIDevice_Base0;
+        break;
+
+    case 1:
+        attr = aHidd_PCIDevice_Base1;
+        break;
+
+    case 2:
+        attr = aHidd_PCIDevice_Base2;
+        break;
+
+    case 3:
+        attr = aHidd_PCIDevice_Base3;
+        break;
+
+    case 4:
+        attr = aHidd_PCIDevice_Base4;
+        break;
+
+    case 5:
+        attr = aHidd_PCIDevice_Base5;
+        break;
+
+    default:
+        return 0;
     }
 
     OOP_GetAttr((OOP_Object *)dev, attr, &val);
@@ -369,34 +364,33 @@ ULONG ahi_pci_get_base_size(WORD which, APTR dev)
     OOP_AttrID attr = 0;
     IPTR val = 0;
 
-    switch(which)
-    {
-        case 0:
-          attr = aHidd_PCIDevice_Size0;
-          break;
-            
-        case 1:
-          attr = aHidd_PCIDevice_Size1;
-          break;
-            
-        case 2:
-          attr = aHidd_PCIDevice_Size2;
-          break;
-            
-        case 3:
-          attr = aHidd_PCIDevice_Size3;
-          break;
-            
-        case 4:
-          attr = aHidd_PCIDevice_Size4;
-          break;
-            
-        case 5:
-          attr = aHidd_PCIDevice_Size5;
-          break;
-            
-        default:
-          return 0;
+    switch(which) {
+    case 0:
+        attr = aHidd_PCIDevice_Size0;
+        break;
+
+    case 1:
+        attr = aHidd_PCIDevice_Size1;
+        break;
+
+    case 2:
+        attr = aHidd_PCIDevice_Size2;
+        break;
+
+    case 3:
+        attr = aHidd_PCIDevice_Size3;
+        break;
+
+    case 4:
+        attr = aHidd_PCIDevice_Size4;
+        break;
+
+    case 5:
+        attr = aHidd_PCIDevice_Size5;
+        break;
+
+    default:
+        return 0;
     }
 
     OOP_GetAttr((OOP_Object *)dev, attr, &val);
@@ -411,42 +405,41 @@ ULONG ahi_pci_get_base_size(WORD which, APTR dev)
 
 ULONG ahi_pci_get_type(WORD which, APTR dev)
 {
-  OOP_AttrID attr = 0;
-  IPTR val = 0;
-    
-  switch(which)
-  {
-    case 0:
-      attr = aHidd_PCIDevice_Type0;
-      break;
-            
-    case 1:
-      attr = aHidd_PCIDevice_Type1;
-      break;
-            
-    case 2:
-      attr = aHidd_PCIDevice_Type2;
-      break;
-            
-    case 3:
-      attr = aHidd_PCIDevice_Type3;
-      break;
-            
-    case 4:
-      attr = aHidd_PCIDevice_Type4;
-      break;
-            
-    case 5:
-      attr = aHidd_PCIDevice_Type5;
-      break;
-            
-    default:
-      return 0;
-  }
-    
-  OOP_GetAttr((OOP_Object *)dev, attr, &val);
+    OOP_AttrID attr = 0;
+    IPTR val = 0;
 
-  //KPrintF("ahi_pci_get_type. Result %lx\n", val);
-    
-  return (ULONG) val;
+    switch(which) {
+    case 0:
+        attr = aHidd_PCIDevice_Type0;
+        break;
+
+    case 1:
+        attr = aHidd_PCIDevice_Type1;
+        break;
+
+    case 2:
+        attr = aHidd_PCIDevice_Type2;
+        break;
+
+    case 3:
+        attr = aHidd_PCIDevice_Type3;
+        break;
+
+    case 4:
+        attr = aHidd_PCIDevice_Type4;
+        break;
+
+    case 5:
+        attr = aHidd_PCIDevice_Type5;
+        break;
+
+    default:
+        return 0;
+    }
+
+    OOP_GetAttr((OOP_Object *)dev, attr, &val);
+
+    //KPrintF("ahi_pci_get_type. Result %lx\n", val);
+
+    return (ULONG) val;
 }

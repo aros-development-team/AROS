@@ -5,8 +5,7 @@
 #include <alsa/asoundlib.h>
 #include <exec/types.h>
 
-struct alsa_func
-{
+struct alsa_func {
     int (*snd_pcm_open)(snd_pcm_t **pcmp, const char *name, snd_pcm_stream_t stream, int mode);
     int (*snd_pcm_close)(snd_pcm_t *pcm);
     int (*snd_pcm_hw_params_malloc)(snd_pcm_hw_params_t **ptr);
@@ -34,13 +33,12 @@ struct alsa_func
     void (*snd_mixer_selem_id_free)(snd_mixer_selem_id_t *obj);
     void (*snd_mixer_selem_id_set_index)(snd_mixer_selem_id_t *obj, unsigned int val);
     void (*snd_mixer_selem_id_set_name)(snd_mixer_selem_id_t *obj, const char *val);
-    int  (*snd_mixer_selem_get_playback_volume_range)(snd_mixer_elem_t *elem, long *min, long *max);
-    int  (*snd_mixer_selem_get_playback_volume)(snd_mixer_elem_t *elem, snd_mixer_selem_channel_id_t channel, long *value);
-    int  (*snd_mixer_selem_set_playback_volume_all)(snd_mixer_elem_t *elem, long value);
+    int (*snd_mixer_selem_get_playback_volume_range)(snd_mixer_elem_t *elem, long *min, long *max);
+    int (*snd_mixer_selem_get_playback_volume)(snd_mixer_elem_t *elem, snd_mixer_selem_channel_id_t channel, long *value);
+    int (*snd_mixer_selem_set_playback_volume_all)(snd_mixer_elem_t *elem, long value);
 };
 
-struct libc_func
-{
+struct libc_func {
     int (*sigfillset)(sigset_t *set);
     int (*sigprocmask)(int how, const sigset_t *set, sigset_t *oldset);
 };

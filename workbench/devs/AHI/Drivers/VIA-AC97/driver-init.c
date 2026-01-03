@@ -26,13 +26,12 @@
 
 #include "pci_wrapper.h"
 
-struct DriverBase* AHIsubBase;
+struct DriverBase *AHIsubBase;
 
-struct DosLibrary* DOSBase;
-struct Library*             ExpansionBase = NULL;
+struct DosLibrary *DOSBase;
+struct Library             *ExpansionBase = NULL;
 
-struct VendorDevice
-{
+struct VendorDevice {
     UWORD vendor;
     UWORD device;
 };
@@ -50,9 +49,9 @@ static int vendor_device_list_size = 0;
 ******************************************************************************/
 
 BOOL
-DriverInit( struct DriverBase* ahisubbase )
+DriverInit(struct DriverBase *ahisubbase)
 {
-    struct CardBase  *CardBase = (struct CardBase*) ahisubbase;
+    struct CardBase  *CardBase = (struct CardBase *) ahisubbase;
     struct PCIDevice    *dev;
     int                 card_no, i;
     struct List         foundCards;
@@ -66,31 +65,29 @@ DriverInit( struct DriverBase* ahisubbase )
 
     NewList(&foundCards);
 
-    DOSBase  = (struct DosLibrary *)OpenLibrary( DOSNAME, 37 );
+    DOSBase  = (struct DosLibrary *)OpenLibrary(DOSNAME, 37);
 
-    if( DOSBase == NULL )
-    {
-        Req( "VIA-AC97: Unable to open 'dos.library' version 37.\n" );
+    if(DOSBase == NULL) {
+        Req("VIA-AC97: Unable to open 'dos.library' version 37.\n");
         return FALSE;
     }
 
-    ExpansionBase = OpenLibrary( "expansion.library", 1 );
-    if( ExpansionBase == NULL )
-    {
-        Req( "VIA-AC97: Unable to open 'expansion.library' version 1.\n" );
+    ExpansionBase = OpenLibrary("expansion.library", 1);
+    if(ExpansionBase == NULL) {
+        Req("VIA-AC97: Unable to open 'expansion.library' version 1.\n");
         return FALSE;
     }
 
-    if (!ahi_pci_init(ahisubbase))
-    {
+    if(!ahi_pci_init(ahisubbase)) {
         return FALSE;
     }
 
-    InitSemaphore( &CardBase->semaphore );
+    InitSemaphore(&CardBase->semaphore);
 
     /*** Count cards ***********************************************************/
 
-    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
+    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS,
+                         MEMF_PUBLIC | MEMF_CLEAR);
 
     vendor_device_list[0].vendor = VENDOR_ID;
     vendor_device_list[0].device = DEVICE_ID;
@@ -101,13 +98,12 @@ DriverInit( struct DriverBase* ahisubbase )
     CardBase->cards_found = 0;
     dev = NULL;
 
-    for (i = 0; i < vendor_device_list_size; i++)
-    {
+    for(i = 0; i < vendor_device_list_size; i++) {
         dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
-        
-        if (dev != NULL)
-        {
-            D(bug("[VIA-AC97] %s: Found VIA-AC97 #%d [%4x:%4x] pci obj @ 0x%p\n", __func__, i, vendor_device_list[i].vendor, vendor_device_list[i].device, dev);)
+
+        if(dev != NULL) {
+            D(bug("[VIA-AC97] %s: Found VIA-AC97 #%d [%4x:%4x] pci obj @ 0x%p\n", __func__, i, vendor_device_list[i].vendor,
+                  vendor_device_list[i].device, dev);)
             ++CardBase->cards_found;
 
             devTmp = AllocVec(sizeof(struct Node), MEMF_CLEAR);
@@ -119,38 +115,35 @@ DriverInit( struct DriverBase* ahisubbase )
     // Fail if no hardware is present (prevents the audio modes from being added to
     // the database if the driver cannot be used).
 
-    if(CardBase->cards_found == 0 )
-    {
+    if(CardBase->cards_found == 0) {
         D(DebugPrintF("No VIA-AC97 found! :-(\n");)
 #if defined(VERBOSE_REQ)
-        Req( "No card present.\n" );
+        Req("No card present.\n");
 #endif
         return FALSE;
     }
 
     /*** Allocate and init all cards *******************************************/
 
-    CardBase->driverdatas = AllocVec( sizeof( *CardBase->driverdatas ) *
-                   CardBase->cards_found,
-                   MEMF_PUBLIC | MEMF_CLEAR);
+    CardBase->driverdatas = AllocVec(sizeof(*CardBase->driverdatas) *
+                                     CardBase->cards_found,
+                                     MEMF_PUBLIC | MEMF_CLEAR);
 
-    if( CardBase->driverdatas == NULL )
-    {
-        Req( "Out of memory." );
+    if(CardBase->driverdatas == NULL) {
+        Req("Out of memory.");
         return FALSE;
     }
 
     card_no = 0;
 
     struct Node *scratchNode;
-    ForeachNodeSafe(&foundCards, devTmp, scratchNode)
-    {
+    ForeachNodeSafe(&foundCards, devTmp, scratchNode) {
         Remove(devTmp);
 
         dev = (struct PCIDevice *)devTmp->ln_Name;
         D(bug("[VIA-AC97] %s: Preparing card #%d pci obj @ 0x%p\n", __func__, card_no, dev);)
-        CardBase->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
-        
+        CardBase->driverdatas[ card_no ] = AllocDriverData(dev, AHIsubBase);
+
         FreeVec(devTmp);
         ++card_no;
     }
@@ -166,29 +159,28 @@ DriverInit( struct DriverBase* ahisubbase )
 ******************************************************************************/
 
 VOID
-DriverCleanup( struct DriverBase* AHIsubBase )
+DriverCleanup(struct DriverBase *AHIsubBase)
 {
-  struct CardBase* CardBase = (struct CardBase*) AHIsubBase;
-  int i;
+    struct CardBase *CardBase = (struct CardBase *) AHIsubBase;
+    int i;
 
     D(bug("[VIA-AC97]: %s()\n", __func__);)
 
-  for( i = 0; i < CardBase->cards_found; ++i )
-  {
-    FreeDriverData( CardBase->driverdatas[ i ], AHIsubBase );
-  }
+    for(i = 0; i < CardBase->cards_found; ++i) {
+        FreeDriverData(CardBase->driverdatas[ i ], AHIsubBase);
+    }
 
-  FreeVec( CardBase->driverdatas );
+    FreeVec(CardBase->driverdatas);
 
-  ahi_pci_exit();
+    ahi_pci_exit();
 
-  if (ExpansionBase)
-    CloseLibrary( (struct Library*) ExpansionBase);
+    if(ExpansionBase)
+        CloseLibrary((struct Library *) ExpansionBase);
 
-  if (UtilityBase)
-    CloseLibrary( (struct Library*) UtilityBase);
+    if(UtilityBase)
+        CloseLibrary((struct Library *) UtilityBase);
 
-  if (DOSBase)
-    CloseLibrary( (struct Library*) DOSBase);
+    if(DOSBase)
+        CloseLibrary((struct Library *) DOSBase);
 }
 

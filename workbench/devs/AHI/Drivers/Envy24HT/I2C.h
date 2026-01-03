@@ -11,18 +11,19 @@ struct I2C;
 struct CardData;
 
 struct I2C_bit_ops {
-	void (*Start)(struct CardData *card);
-	void (*Stop)(struct CardData *card);
-	void (*SetDir_CLK_SDA)(struct CardData *card, int clock, int data);  /* set line direction (0 = write, 1 = read) */
-	void (*Write_CLK_SDA)(struct CardData *card, int clock, int data);
-	int (*GetData)(struct CardData *card, int ack);
+    void (*Start)(struct CardData *card);
+    void (*Stop)(struct CardData *card);
+    void (*SetDir_CLK_SDA)(struct CardData *card, int clock, int data);  /* set line direction (0 = write, 1 = read) */
+    void (*Write_CLK_SDA)(struct CardData *card, int clock, int data);
+    int (*GetData)(struct CardData *card, int ack);
 };
 
 struct I2C {
-	unsigned short flags; // some private data
-	unsigned short addr;
-   
-   struct I2C_bit_ops *bit; // with a pointer, the specific card information can be put in a struct and assigned to this attribute
+    unsigned short flags; // some private data
+    unsigned short addr;
+
+    struct I2C_bit_ops
+        *bit; // with a pointer, the specific card information can be put in a struct and assigned to this attribute
 };
 
 

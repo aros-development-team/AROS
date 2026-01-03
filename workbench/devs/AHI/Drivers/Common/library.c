@@ -43,23 +43,23 @@ extern void _etext;
 ** Function prototypes ********************************************************
 ******************************************************************************/
 
-struct DriverBase*
-_LibInit( struct DriverBase* AHIsubBase,
-	  BPTR               seglist,
-	  struct ExecBase*   sysbase );
+struct DriverBase *
+_LibInit(struct DriverBase *AHIsubBase,
+         BPTR               seglist,
+         struct ExecBase   *sysbase);
 
 BPTR
-_LibExpunge( struct DriverBase* AHIsubBase );
+_LibExpunge(struct DriverBase *AHIsubBase);
 
-struct DriverBase*
-_LibOpen( ULONG              version,
-	  struct DriverBase* AHIsubBase );
+struct DriverBase *
+_LibOpen(ULONG              version,
+         struct DriverBase *AHIsubBase);
 
 BPTR
-_LibClose( struct DriverBase* AHIsubBase );
+_LibClose(struct DriverBase *AHIsubBase);
 
 ULONG
-_LibNull( struct DriverBase* AHIsubBase );
+_LibNull(struct DriverBase *AHIsubBase);
 
 
 /******************************************************************************
@@ -67,21 +67,21 @@ _LibNull( struct DriverBase* AHIsubBase );
 ******************************************************************************/
 
 #if defined( __amithlon__ )
-__asm( "\n\
+__asm("\n\
          .text;\n\
          .byte 0x4e, 0xfa, 0x00, 0x03\n\
-         jmp _start" );
+         jmp _start");
 #endif
 
 int
-_start( void )
+_start(void)
 {
-  return -1;
+    return -1;
 }
 
 #if defined( __MORPHOS__ )
-ULONG   __abox__=1;
-ULONG   __amigappc__=1;  // deprecated, used in MOS 0.4
+ULONG   __abox__ = 1;
+ULONG   __amigappc__ = 1; // deprecated, used in MOS 0.4
 #endif
 
 /******************************************************************************
@@ -96,30 +96,29 @@ static const APTR InitTable[4];
 
 // This structure must reside in the text segment or the read-only
 // data segment!  "const" makes it happen.
-const struct Resident RomTag __attribute__((used)) =
-{
-  RTC_MATCHWORD,
-  (struct Resident *) &RomTag,
-  (struct Resident *) &_etext,
-#if defined( __MORPHOS__ ) 
-  RTF_EXTENDED | RTF_PPC | RTF_AUTOINIT,
+const struct Resident RomTag __attribute__((used)) = {
+    RTC_MATCHWORD,
+    (struct Resident *) &RomTag,
+    (struct Resident *) &_etext,
+#if defined( __MORPHOS__ )
+    RTF_EXTENDED | RTF_PPC | RTF_AUTOINIT,
 #elif defined( __AROS__ )
-  RTF_EXTENDED | RTF_AUTOINIT,
+    RTF_EXTENDED | RTF_AUTOINIT,
 #elif defined( __amithlon__ )
-  RTF_NATIVE | RTF_AUTOINIT,
+    RTF_NATIVE | RTF_AUTOINIT,
 #elif defined( __AMIGAOS4__ )
-  RTF_NATIVE | RTF_AUTOINIT,
+    RTF_NATIVE | RTF_AUTOINIT,
 #else
-  RTF_AUTOINIT,
+    RTF_AUTOINIT,
 #endif
-  VERSION,
-  NT_LIBRARY,
-  0,                      /* priority */
-  (BYTE *) LibName,
-  (BYTE *) LibIDString,
-  (APTR) &InitTable
+    VERSION,
+    NT_LIBRARY,
+    0,                      /* priority */
+    (BYTE *) LibName,
+    (BYTE *) LibIDString,
+    (APTR) &InitTable
 #if defined( __MORPHOS__ ) || defined( __AROS__ )
-  , REVISION, NULL
+    , REVISION, NULL
 #endif
 };
 
@@ -140,46 +139,44 @@ const UWORD LibRevision   = REVISION;
 
 #ifndef __AMIGAOS4__
 
-static const APTR FuncTable[] =
-{
+static const APTR FuncTable[] = {
 #if defined( __MORPHOS__ ) || defined( __amithlon__ )
-  (APTR) FUNCARRAY_32BIT_NATIVE,
+    (APTR) FUNCARRAY_32BIT_NATIVE,
 #endif
 
-  gwLibOpen,
-  gwLibClose,
-  gwLibExpunge,
-  gwLibNull,
+    gwLibOpen,
+    gwLibClose,
+    gwLibExpunge,
+    gwLibNull,
 
-  gwAHIsub_AllocAudio,
-  gwAHIsub_FreeAudio,
-  gwAHIsub_Disable,
-  gwAHIsub_Enable,
-  gwAHIsub_Start,
-  gwAHIsub_Update,
-  gwAHIsub_Stop,
-  gwAHIsub_SetVol,
-  gwAHIsub_SetFreq,
-  gwAHIsub_SetSound,
-  gwAHIsub_SetEffect,
-  gwAHIsub_LoadSound,
-  gwAHIsub_UnloadSound,
-  gwAHIsub_GetAttr,
-  gwAHIsub_HardwareControl,
+    gwAHIsub_AllocAudio,
+    gwAHIsub_FreeAudio,
+    gwAHIsub_Disable,
+    gwAHIsub_Enable,
+    gwAHIsub_Start,
+    gwAHIsub_Update,
+    gwAHIsub_Stop,
+    gwAHIsub_SetVol,
+    gwAHIsub_SetFreq,
+    gwAHIsub_SetSound,
+    gwAHIsub_SetEffect,
+    gwAHIsub_LoadSound,
+    gwAHIsub_UnloadSound,
+    gwAHIsub_GetAttr,
+    gwAHIsub_HardwareControl,
 
-  (APTR) -1
+    (APTR) - 1
 };
 
 
-static const APTR InitTable[4] =
-{
-  (APTR) DRIVERBASE_SIZEOF,
-  (APTR) &FuncTable,
-  NULL,
+static const APTR InitTable[4] = {
+    (APTR) DRIVERBASE_SIZEOF,
+    (APTR) &FuncTable,
+    NULL,
 #if defined( __MORPHOS__ ) || defined( __amithlon__ )
-  (APTR) _LibInit
+    (APTR) _LibInit
 #else
-  (APTR) gwLibInit
+    (APTR) gwLibInit
 #endif
 };
 
@@ -187,116 +184,111 @@ static const APTR InitTable[4] =
 
 static ULONG generic_Obtain(struct Interface *Self)
 {
-  return Self->Data.RefCount++;
+    return Self->Data.RefCount++;
 }
 
 
 static ULONG generic_Release(struct Interface *Self)
 {
-  return Self->Data.RefCount--;
+    return Self->Data.RefCount--;
 }
 
 
-static const CONST_APTR LibManagerVectors[] =
-{
-  generic_Obtain,
-  generic_Release,
-  NULL,
-  NULL,
-  
-  gwLibOpen,
-  gwLibClose,
-  gwLibExpunge,
-  NULL,
+static const CONST_APTR LibManagerVectors[] = {
+    generic_Obtain,
+    generic_Release,
+    NULL,
+    NULL,
 
-  (CONST_APTR) -1,
+    gwLibOpen,
+    gwLibClose,
+    gwLibExpunge,
+    NULL,
+
+    (CONST_APTR) - 1,
 };
 
-static const struct TagItem LibManagerTags[] =
-{
-  { MIT_Name,             (ULONG) "__library"       },
-  { MIT_VectorTable,      (ULONG) LibManagerVectors },
-  { MIT_Version,          1                         },
-  { TAG_DONE,             0                         }
+static const struct TagItem LibManagerTags[] = {
+    { MIT_Name, (ULONG) "__library"       },
+    { MIT_VectorTable, (ULONG) LibManagerVectors },
+    { MIT_Version,          1                         },
+    { TAG_DONE,             0                         }
 };
 
 
 static const CONST_APTR MainVectors[] = {
-  generic_Obtain,
-  generic_Release,
-  NULL,
-  NULL,
-  
-  gwAHIsub_AllocAudio,
-  gwAHIsub_FreeAudio,
-  gwAHIsub_Disable,
-  gwAHIsub_Enable,
-  gwAHIsub_Start,
-  gwAHIsub_Update,
-  gwAHIsub_Stop,
-  gwAHIsub_SetVol,
-  gwAHIsub_SetFreq,
-  gwAHIsub_SetSound,
-  gwAHIsub_SetEffect,
-  gwAHIsub_LoadSound,
-  gwAHIsub_UnloadSound,
-  gwAHIsub_GetAttr,
-  gwAHIsub_HardwareControl,
+    generic_Obtain,
+    generic_Release,
+    NULL,
+    NULL,
 
-  (CONST_APTR) -1
+    gwAHIsub_AllocAudio,
+    gwAHIsub_FreeAudio,
+    gwAHIsub_Disable,
+    gwAHIsub_Enable,
+    gwAHIsub_Start,
+    gwAHIsub_Update,
+    gwAHIsub_Stop,
+    gwAHIsub_SetVol,
+    gwAHIsub_SetFreq,
+    gwAHIsub_SetSound,
+    gwAHIsub_SetEffect,
+    gwAHIsub_LoadSound,
+    gwAHIsub_UnloadSound,
+    gwAHIsub_GetAttr,
+    gwAHIsub_HardwareControl,
+
+    (CONST_APTR) - 1
 };
 
-static const struct TagItem MainTags[] =
-{
-  { MIT_Name,              (ULONG) "main"      },
-  { MIT_VectorTable,       (ULONG) MainVectors },
-  { MIT_Version,           1                   },
-  { TAG_DONE,              0                   }
+static const struct TagItem MainTags[] = {
+    { MIT_Name, (ULONG) "main"      },
+    { MIT_VectorTable, (ULONG) MainVectors },
+    { MIT_Version,           1                   },
+    { TAG_DONE,              0                   }
 };
 
 
 /* MLT_INTERFACES array */
-static const CONST_APTR Interfaces[] =
-{
-  LibManagerTags,
-  MainTags,
-  NULL
+static const CONST_APTR Interfaces[] = {
+    LibManagerTags,
+    MainTags,
+    NULL
 };
 
 /* m68k library vectors */
 static const CONST_APTR VecTable68K[] = {
-  (CONST_APTR) &m68kgwLibOpen,
-  (CONST_APTR) &m68kgwLibClose,
-  (CONST_APTR) &m68kgwLibExpunge,
-  (CONST_APTR) &m68kgwLibNull,
+    (CONST_APTR) &m68kgwLibOpen,
+    (CONST_APTR) &m68kgwLibClose,
+    (CONST_APTR) &m68kgwLibExpunge,
+    (CONST_APTR) &m68kgwLibNull,
 
-  (CONST_APTR) &m68kgwAHIsub_AllocAudio,
-  (CONST_APTR) &m68kgwAHIsub_FreeAudio,
-  (CONST_APTR) &m68kgwAHIsub_Disable,
-  (CONST_APTR) &m68kgwAHIsub_Enable,
-  (CONST_APTR) &m68kgwAHIsub_Start,
-  (CONST_APTR) &m68kgwAHIsub_Update,
-  (CONST_APTR) &m68kgwAHIsub_Stop,
-  (CONST_APTR) &m68kgwAHIsub_SetVol,
-  (CONST_APTR) &m68kgwAHIsub_SetFreq,
-  (CONST_APTR) &m68kgwAHIsub_SetSound,
-  (CONST_APTR) &m68kgwAHIsub_SetEffect,
-  (CONST_APTR) &m68kgwAHIsub_LoadSound,
-  (CONST_APTR) &m68kgwAHIsub_UnloadSound,
-  (CONST_APTR) &m68kgwAHIsub_GetAttr,
-  (CONST_APTR) &m68kgwAHIsub_HardwareControl,
+    (CONST_APTR) &m68kgwAHIsub_AllocAudio,
+    (CONST_APTR) &m68kgwAHIsub_FreeAudio,
+    (CONST_APTR) &m68kgwAHIsub_Disable,
+    (CONST_APTR) &m68kgwAHIsub_Enable,
+    (CONST_APTR) &m68kgwAHIsub_Start,
+    (CONST_APTR) &m68kgwAHIsub_Update,
+    (CONST_APTR) &m68kgwAHIsub_Stop,
+    (CONST_APTR) &m68kgwAHIsub_SetVol,
+    (CONST_APTR) &m68kgwAHIsub_SetFreq,
+    (CONST_APTR) &m68kgwAHIsub_SetSound,
+    (CONST_APTR) &m68kgwAHIsub_SetEffect,
+    (CONST_APTR) &m68kgwAHIsub_LoadSound,
+    (CONST_APTR) &m68kgwAHIsub_UnloadSound,
+    (CONST_APTR) &m68kgwAHIsub_GetAttr,
+    (CONST_APTR) &m68kgwAHIsub_HardwareControl,
 
-  (CONST_APTR) -1
+    (CONST_APTR) - 1
 };
 
 /* CreateLibrary() tag list */
-static const struct TagItem InitTable[] =
-{
-  { CLT_DataSize,         DRIVERBASE_SIZEOF   },
-  { CLT_Interfaces,       (ULONG) Interfaces  },
-  { CLT_Vector68K,        (ULONG) VecTable68K },
-  { CLT_InitFunc,         (ULONG) gwLibInit   },
-  { TAG_DONE,             0                   }
+static const struct TagItem InitTable[] = {
+    { CLT_DataSize,         DRIVERBASE_SIZEOF   },
+    { CLT_Interfaces, (ULONG) Interfaces  },
+    { CLT_Vector68K, (ULONG) VecTable68K },
+    { CLT_InitFunc, (ULONG) gwLibInit   },
+    { TAG_DONE,             0                   }
 };
 
 #endif // __AMIGAOS4__
@@ -307,24 +299,23 @@ static const struct TagItem InitTable[] =
 ******************************************************************************/
 
 void
-ReqA( const char*        text,
-      APTR               args,
-      struct DriverBase* AHIsubBase )
+ReqA(const char        *text,
+     APTR               args,
+     struct DriverBase *AHIsubBase)
 {
-  struct IntuitionBase *IntuitionBase = AHIsubBase->intuitionbase;
-  struct EasyStruct es = 
-  {
-    sizeof (struct EasyStruct),
-    0,
-    (STRPTR) LibName,
-    (STRPTR) text,
-    "OK"
+    struct IntuitionBase *IntuitionBase = AHIsubBase->intuitionbase;
+    struct EasyStruct es = {
+        sizeof(struct EasyStruct),
+        0,
+        (STRPTR) LibName,
+        (STRPTR) text,
+        "OK"
 #ifdef __AMIGAOS4__
-    , NULL, NULL
+        , NULL, NULL
 #endif
-  };
+    };
 
-  EasyRequestArgs( NULL, &es, NULL, args );
+    EasyRequestArgs(NULL, &es, NULL, args);
 }
 
 /******************************************************************************
@@ -337,35 +328,34 @@ ReqA( const char*        text,
 
 #include <aros/asmcall.h>
 
-AROS_UFH2( void,
-	   rawputchar_m68k,
-	   AROS_UFHA( UBYTE,            c,       D0 ),
-	   AROS_UFHA( struct ExecBase*, sysbase, A3 ) )
+AROS_UFH2(void,
+          rawputchar_m68k,
+          AROS_UFHA(UBYTE,            c,       D0),
+          AROS_UFHA(struct ExecBase *, sysbase, A3))
 {
-  AROS_USERFUNC_INIT
-  
-  AROS_LC1NR(void, RawPutChar, AROS_LCA(UBYTE, c, D0), struct ExecBase *, sysbase, 86, Exec);
+    AROS_USERFUNC_INIT
 
-  AROS_USERFUNC_EXIT  
+    AROS_LC1NR(void, RawPutChar, AROS_LCA(UBYTE, c, D0), struct ExecBase *, sysbase, 86, Exec);
+
+    AROS_USERFUNC_EXIT
 }
 
 #else
 
-static const UWORD rawputchar_m68k[] = 
-{
-  0x2C4B,             // MOVEA.L A3,A6
-  0x4EAE, 0xFDFC,     // JSR     -$0204(A6)
-  0x4E75              // RTS
+static const UWORD rawputchar_m68k[] = {
+    0x2C4B,             // MOVEA.L A3,A6
+    0x4EAE, 0xFDFC,     // JSR     -$0204(A6)
+    0x4E75              // RTS
 };
 
 #endif
 
 void
-MyKPrintFArgs( UBYTE*           fmt, 
-	       IPTR *           args,
-	       struct DriverBase* AHIsubBase )
+MyKPrintFArgs(UBYTE           *fmt,
+              IPTR            *args,
+              struct DriverBase *AHIsubBase)
 {
-  RawDoFmt( fmt, (RAWARG)args, (void(*)(void)) rawputchar_m68k, SysBase );
+    RawDoFmt(fmt, (RAWARG)args, (void(*)(void)) rawputchar_m68k, SysBase);
 }
 
 #endif
@@ -379,21 +369,20 @@ MyKPrintFArgs( UBYTE*           fmt,
 /* Should be in libamiga, but isn't? */
 
 static ULONG
-gw_HookEntry( void )
+gw_HookEntry(void)
 {
-  struct Hook* h   = (struct Hook*) REG_A0;
-  void*        o   = (void*)        REG_A2; 
-  void*        msg = (void*)        REG_A1;
+    struct Hook *h   = (struct Hook *) REG_A0;
+    void        *o   = (void *)        REG_A2;
+    void        *msg = (void *)        REG_A1;
 
-  return ( ( (ULONG(*)(struct Hook*, void*, void*)) *h->h_SubEntry)( h, o, msg ) );
+    return (((ULONG(*)(struct Hook *, void *, void *)) * h->h_SubEntry)(h, o, msg));
 }
 
-struct EmulLibEntry _HookEntry =
-{
-  TRAP_LIB, 0, (void (*)(void)) &gw_HookEntry
+struct EmulLibEntry _HookEntry = {
+    TRAP_LIB, 0, (void (*)(void)) &gw_HookEntry
 };
 
-__asm( ".globl HookEntry;HookEntry=_HookEntry" );
+__asm(".globl HookEntry;HookEntry=_HookEntry");
 
 #endif
 
@@ -410,77 +399,73 @@ DEFINESET(INIT)
 DEFINESET(EXIT)
 #endif
 
-struct DriverBase*
-_LibInit( struct DriverBase* AHIsubBase,
-	  BPTR               seglist,
-	  struct ExecBase*   sysbase )
+struct DriverBase *
+_LibInit(struct DriverBase *AHIsubBase,
+         BPTR               seglist,
+         struct ExecBase   *sysbase)
 {
-  SysBase = sysbase;
+    SysBase = sysbase;
 
 #ifdef __AROS__
-  if (!set_call_funcs(SETNAME(INIT), 1, 1))
-      return NULL;
+    if(!set_call_funcs(SETNAME(INIT), 1, 1))
+        return NULL;
 #endif
 
 #ifdef __AMIGAOS4__
-  IExec = (struct ExecIFace*) SysBase->MainInterface; 
-#endif
-  
-  AHIsubBase->library.lib_Node.ln_Type = NT_LIBRARY;
-  AHIsubBase->library.lib_Node.ln_Name = (STRPTR) LibName;
-  AHIsubBase->library.lib_Flags        = LIBF_SUMUSED | LIBF_CHANGED;
-  AHIsubBase->library.lib_Version      = VERSION;
-  AHIsubBase->library.lib_Revision     = REVISION;
-  AHIsubBase->library.lib_IdString     = (STRPTR) LibIDString;
-  AHIsubBase->seglist                  = seglist;
-
-  AHIsubBase->intuitionbase = (struct IntuitionBase *)OpenLibrary( INTUITIONNAME, 37 );
-  AHIsubBase->utilitybase   = (struct UtilityBase *)OpenLibrary( UTILITYNAME, 37 );
-
-  if( AHIsubBase->intuitionbase == NULL )
-  {
-    Alert( AN_Unknown|AG_OpenLib|AO_Intuition );
-    goto error;
-  }
-  
-#ifdef __AMIGAOS4__
-  if ((IIntuition = (struct IntuitionIFace *) GetInterface((struct Library*) AHIsubBase->intuitionbase, "main", 1, NULL)) == NULL)
-  {
-    Alert( AN_Unknown|AG_OpenLib|AO_Intuition );
-    goto error;
-  }
+    IExec = (struct ExecIFace *) SysBase->MainInterface;
 #endif
 
-  if( AHIsubBase->utilitybase == NULL )
-  {
-    Req( "Unable to open 'utility.library' version 37.\n" );
-    goto error;
-  }
+    AHIsubBase->library.lib_Node.ln_Type = NT_LIBRARY;
+    AHIsubBase->library.lib_Node.ln_Name = (STRPTR) LibName;
+    AHIsubBase->library.lib_Flags        = LIBF_SUMUSED | LIBF_CHANGED;
+    AHIsubBase->library.lib_Version      = VERSION;
+    AHIsubBase->library.lib_Revision     = REVISION;
+    AHIsubBase->library.lib_IdString     = (STRPTR) LibIDString;
+    AHIsubBase->seglist                  = seglist;
+
+    AHIsubBase->intuitionbase = (struct IntuitionBase *)OpenLibrary(INTUITIONNAME, 37);
+    AHIsubBase->utilitybase   = (struct UtilityBase *)OpenLibrary(UTILITYNAME, 37);
+
+    if(AHIsubBase->intuitionbase == NULL) {
+        Alert(AN_Unknown | AG_OpenLib | AO_Intuition);
+        goto error;
+    }
 
 #ifdef __AMIGAOS4__
-  if ((IUtility = (struct UtilityIFace *) GetInterface((struct Library*) AHIsubBase->utilitybase, "main", 1, NULL)) == NULL)
-  {
-    Req("Couldn't open IUtility interface!\n");
-    goto error;
-  }
-
-  if ((IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) == NULL)
-  {
-    Req("Couldn't open IAHIsub interface!\n");
-    return FALSE;
-  }
+    if((IIntuition = (struct IntuitionIFace *) GetInterface((struct Library *) AHIsubBase->intuitionbase, "main", 1,
+                     NULL)) == NULL) {
+        Alert(AN_Unknown | AG_OpenLib | AO_Intuition);
+        goto error;
+    }
 #endif
-  
-  if( ! DriverInit( AHIsubBase ) )
-  {
-    goto error;
-  }
 
-  return AHIsubBase;
+    if(AHIsubBase->utilitybase == NULL) {
+        Req("Unable to open 'utility.library' version 37.\n");
+        goto error;
+    }
+
+#ifdef __AMIGAOS4__
+    if((IUtility = (struct UtilityIFace *) GetInterface((struct Library *) AHIsubBase->utilitybase, "main", 1,
+                   NULL)) == NULL) {
+        Req("Couldn't open IUtility interface!\n");
+        goto error;
+    }
+
+    if((IAHIsub = (struct AHIsubIFace *) GetInterface((struct Library *) AHIsubBase, "main", 1, NULL)) == NULL) {
+        Req("Couldn't open IAHIsub interface!\n");
+        return FALSE;
+    }
+#endif
+
+    if(! DriverInit(AHIsubBase)) {
+        goto error;
+    }
+
+    return AHIsubBase;
 
 error:
-  _LibExpunge( AHIsubBase );
-  return NULL;
+    _LibExpunge(AHIsubBase);
+    return NULL;
 }
 
 
@@ -496,46 +481,42 @@ error:
 #endif
 
 BPTR
-_LibExpunge( struct DriverBase* AHIsubBase )
+_LibExpunge(struct DriverBase *AHIsubBase)
 {
-  BPTR seglist = 0;
+    BPTR seglist = 0;
 
-  if( AHIsubBase->library.lib_OpenCnt == 0 )
-  {
-    seglist = AHIsubBase->seglist;
+    if(AHIsubBase->library.lib_OpenCnt == 0) {
+        seglist = AHIsubBase->seglist;
 
-    /* Since LibInit() calls us on failure, we have to check if we're
-       really added to the library list before removing us. */
+        /* Since LibInit() calls us on failure, we have to check if we're
+           really added to the library list before removing us. */
 
-    if( AHIsubBase->library.lib_Node.ln_Succ != NULL )
-    {
-      Remove( (struct Node *) AHIsubBase );
-    }
+        if(AHIsubBase->library.lib_Node.ln_Succ != NULL) {
+            Remove((struct Node *) AHIsubBase);
+        }
 
-    DriverCleanup( AHIsubBase );
+        DriverCleanup(AHIsubBase);
 
 #ifdef __AMIGAOS4__
-    DropInterface((struct Interface *) IAHIsub);
-    DropInterface((struct Interface *) IIntuition);
-    DropInterface((struct Interface *) IUtility);
+        DropInterface((struct Interface *) IAHIsub);
+        DropInterface((struct Interface *) IIntuition);
+        DropInterface((struct Interface *) IUtility);
 #endif
-    
-    /* Close libraries */
-    CloseLibrary(&AHIsubBase->intuitionbase->LibNode );
-    CloseLibrary(&AHIsubBase->utilitybase->ub_LibNode );
+
+        /* Close libraries */
+        CloseLibrary(&AHIsubBase->intuitionbase->LibNode);
+        CloseLibrary(&AHIsubBase->utilitybase->ub_LibNode);
 
 #ifdef __AROS__
-    set_call_funcs(SETNAME(EXIT), -1, 0);
+        set_call_funcs(SETNAME(EXIT), -1, 0);
 #endif
 
-    DeleteLibrary(&AHIsubBase->library);
-  }
-  else
-  {
-    AHIsubBase->library.lib_Flags |= LIBF_DELEXP;
-  }
+        DeleteLibrary(&AHIsubBase->library);
+    } else {
+        AHIsubBase->library.lib_Flags |= LIBF_DELEXP;
+    }
 
-  return seglist;
+    return seglist;
 }
 
 
@@ -543,14 +524,14 @@ _LibExpunge( struct DriverBase* AHIsubBase )
 ** Library opening ************************************************************
 ******************************************************************************/
 
-struct DriverBase*
-_LibOpen( ULONG              version,
-	  struct DriverBase* AHIsubBase )
+struct DriverBase *
+_LibOpen(ULONG              version,
+         struct DriverBase *AHIsubBase)
 {
-  AHIsubBase->library.lib_Flags &= ~LIBF_DELEXP;
-  AHIsubBase->library.lib_OpenCnt++;
+    AHIsubBase->library.lib_Flags &= ~LIBF_DELEXP;
+    AHIsubBase->library.lib_OpenCnt++;
 
-  return AHIsubBase;
+    return AHIsubBase;
 }
 
 
@@ -559,21 +540,19 @@ _LibOpen( ULONG              version,
 ******************************************************************************/
 
 BPTR
-_LibClose( struct DriverBase* AHIsubBase )
+_LibClose(struct DriverBase *AHIsubBase)
 {
-  BPTR seglist = 0;
+    BPTR seglist = 0;
 
-  AHIsubBase->library.lib_OpenCnt--;
+    AHIsubBase->library.lib_OpenCnt--;
 
-  if( AHIsubBase->library.lib_OpenCnt == 0 )
-  {
-    if( AHIsubBase->library.lib_Flags & LIBF_DELEXP )
-    {
-      seglist = _LibExpunge( AHIsubBase );
+    if(AHIsubBase->library.lib_OpenCnt == 0) {
+        if(AHIsubBase->library.lib_Flags & LIBF_DELEXP) {
+            seglist = _LibExpunge(AHIsubBase);
+        }
     }
-  }
 
-  return seglist;
+    return seglist;
 }
 
 
@@ -582,7 +561,7 @@ _LibClose( struct DriverBase* AHIsubBase )
 ******************************************************************************/
 
 ULONG
-_LibNull( struct DriverBase* AHIsubBase )
+_LibNull(struct DriverBase *AHIsubBase)
 {
-  return 0;
+    return 0;
 }

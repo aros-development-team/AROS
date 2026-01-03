@@ -17,11 +17,10 @@
 
 struct HDAudioChip;
 
-struct HDAudioBase
-{
+struct HDAudioBase {
     struct DriverBase      driverbase;
 
-    
+
     /** A sempahore used for locking */
     struct SignalSemaphore semaphore;
 
@@ -29,7 +28,7 @@ struct HDAudioBase
     int                    cards_found;
 
     /** A HDAudioChip structure for each card found */
-    struct HDAudioChip**   driverdatas;
+    struct HDAudioChip   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct HDAudioBase))
@@ -48,19 +47,17 @@ struct HDAudioBase
         }; \
     };
 
-struct BDLE // Buffer Descriptor List (3.6.2)
-{
+struct BDLE { // Buffer Descriptor List (3.6.2)
     HDAADDR(address);
     ULONG length; // in bytes
     ULONG reserved_ioc; // bit 0 is Interrupt on Completion
 };
 
-struct Stream
-{
+struct Stream {
     struct BDLE *bdl;
     APTR bdl_nonaligned;
     APTR *bdl_nonaligned_addresses;
-    
+
     ULONG sd_reg_offset; // 3.3.35 offset 0x80 + (ISS) * 0x20
     ULONG index;
     ULONG tag; // index + 1
@@ -69,8 +66,7 @@ struct Stream
 
 
 // Verb - Set Converter Format (Verb ID=2h)
-struct Freq
-{
+struct Freq {
     ULONG frequency;
     UBYTE base44100; // 1 if base= 44.1kHz, 0 if base=48kHz
     UBYTE mult; // multiplier 3 bits
@@ -79,8 +75,7 @@ struct Freq
 
 
 
-struct HDAudioChip
-{
+struct HDAudioChip {
     struct PCIDevice *pci_dev;
     APTR iobase;
     unsigned long length;
@@ -88,24 +83,24 @@ struct HDAudioChip
     int flip;
     int recflip;
     unsigned char chiprev;
-    
+
     UWORD codecbits;
     UWORD codecnr;
-    
+
     ULONG *corb;
     ULONG corb_entries;
     ULONG *rirb;
     ULONG rirb_entries;
     ULONG rirb_rp; // software read pointer
     LONG rirb_irq;
-    
+
     APTR dma_position_buffer;
-    
+
     struct Stream *streams;
     UBYTE nr_of_streams;
     UBYTE nr_of_input_streams;
     UBYTE nr_of_output_streams;
-    
+
     // important node IDs
     UBYTE function_group;
     UBYTE dac_nid; // front L&R
@@ -118,12 +113,12 @@ struct HDAudioChip
     UBYTE headphone_nid;
 
     BOOL speaker_active;
-    
+
     UBYTE line_in_nid;
     UBYTE mic1_nid;
     UBYTE mic2_nid;
     UBYTE cd_nid;
-    
+
     UBYTE adc_mixer_indices[5]; //0 = Line in, 1 = Mic in 1, 2 = Mic in 2, 3 = CD, 4 = Monitor Mixer
 
     float adc_min_gain;
@@ -132,7 +127,7 @@ struct HDAudioChip
     float dac_min_gain;
     float dac_max_gain;
     float dac_step_gain;
-    
+
     // sample rate
     struct Freq *frequencies;
     ULONG nr_of_frequencies;
@@ -157,14 +152,14 @@ struct HDAudioChip
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -182,7 +177,7 @@ struct HDAudioChip
 
     /** The recording software interrupt */
     struct Interrupt    record_interrupt;
-    
+
     /*** Card structures **************************************************/
     HDAADDR(playback_buffer1);
     HDAADDR(playback_buffer2);

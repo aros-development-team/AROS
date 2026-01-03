@@ -20,7 +20,7 @@
 /* sCompression: Choice of compression algorithm applied to the samples. */
 #define sCmpNone       0	/* not compressed */
 #define sCmpFibDelta   1	/* Fibonacci-delta encoding (Appendix C) */
-				/* Could be more kinds in the future. */
+/* Could be more kinds in the future. */
 typedef struct {
     ULONG oneShotHiSamples,	/* # samples in the high octave 1-shot part */
           repeatHiSamples,	/* # samples in the high octave repeat part */
@@ -32,7 +32,7 @@ typedef struct {
 				 * (full volume). Map this value into
 				 * the output hardware's dynamic range.
 				 */
-    } Voice8Header;
+} Voice8Header;
 
 /******************************************************************************
 ** AIFF and AIFC defs *********************************************************
@@ -40,14 +40,14 @@ typedef struct {
 
 /* AIFF and AIFC defines were taken from Olaf `Olsen' Barthel's AIFF DataType. */
 
-	// 80 bit IEEE Standard 754 floating point number
+// 80 bit IEEE Standard 754 floating point number
 
 typedef struct {
-	unsigned short	exponent;		// Exponent, bit #15 is sign bit for mantissa
-	unsigned long	mantissa[2];		// 64 bit mantissa
+    unsigned short	exponent;		// Exponent, bit #15 is sign bit for mantissa
+    unsigned long	mantissa[2];		// 64 bit mantissa
 } extended;
 
-	// Audio Interchange Format chunk data
+// Audio Interchange Format chunk data
 
 #define ID_AIFF MAKE_ID('A','I','F','F')
 #define ID_AIFC MAKE_ID('A','I','F','C')
@@ -56,88 +56,88 @@ typedef struct {
 #define ID_COMM MAKE_ID('C','O','M','M')
 #define ID_SSND MAKE_ID('S','S','N','D')
 
-	// "COMM" chunk header
+// "COMM" chunk header
 
 typedef struct {
-	short		numChannels;		// Number of channels
-	unsigned long	numSampleFrames;	// Number of sample frames
-	short		sampleSize;		// Number of bits per sample point
-	extended	sampleRate;		// Replay rate in samples per second
+    short		numChannels;		// Number of channels
+    unsigned long	numSampleFrames;	// Number of sample frames
+    short		sampleSize;		// Number of bits per sample point
+    extended	sampleRate;		// Replay rate in samples per second
 } CommonChunk;
 
-	// The same for "AIFC" type files
+// The same for "AIFC" type files
 
 #define NO_COMPRESSION MAKE_ID('N','O','N','E') // No sound compression
 
 typedef struct {
-	short		numChannels;		// Number of channels
-	unsigned long	numSampleFrames;	// Number of sample frames
-	short		sampleSize;		// Number of bits per sample point
-	extended	sampleRate;		// Replay rate in samples per second
-	unsigned long	compressionType;	// Compression type
-	char		compressionName[(sizeof("not compressed")+1)&(~1)];
+    short		numChannels;		// Number of channels
+    unsigned long	numSampleFrames;	// Number of sample frames
+    short		sampleSize;		// Number of bits per sample point
+    extended	sampleRate;		// Replay rate in samples per second
+    unsigned long	compressionType;	// Compression type
+    char		compressionName[(sizeof("not compressed") + 1) & (~1)];
 } ExtCommonChunk;
 
 
-	// "SSND" chunk header
+// "SSND" chunk header
 
 typedef struct {
-	unsigned long	offset, 		// Offset to sound data, for block alignment
-			blockSize;		// Size of block data is aligned to
+    unsigned long	offset, 		// Offset to sound data, for block alignment
+               blockSize;		// Size of block data is aligned to
 } SampledSoundHeader;
 
-	// "FVER" chunk header
+// "FVER" chunk header
 
 typedef struct {
-	long		timestamp;		// Format version creation date
+    long		timestamp;		// Format version creation date
 } FormatVersionHeader;
 
 #define AIFCVersion1 0xA2805140 		// "AIFC" file format version #1
 
 
 struct AIFCheader {
-  ULONG                 FORMid;
-  ULONG                 FORMsize;
-  ULONG                 AIFCid;
+    ULONG                 FORMid;
+    ULONG                 FORMsize;
+    ULONG                 AIFCid;
 
-  ULONG                 FVERid;
-  ULONG                 FVERsize;
-  FormatVersionHeader   FVERchunk;
+    ULONG                 FVERid;
+    ULONG                 FVERsize;
+    FormatVersionHeader   FVERchunk;
 
-  ULONG                 COMMid;
-  ULONG                 COMMsize;
-  ExtCommonChunk        COMMchunk;
+    ULONG                 COMMid;
+    ULONG                 COMMsize;
+    ExtCommonChunk        COMMchunk;
 
-  ULONG                 SSNDid;
-  ULONG                 SSNDsize;
-  SampledSoundHeader    SSNDchunk;
+    ULONG                 SSNDid;
+    ULONG                 SSNDsize;
+    SampledSoundHeader    SSNDchunk;
 };
 
 struct AIFFheader {
-  ULONG                 FORMid;
-  ULONG                 FORMsize;
-  ULONG                 AIFFid;
+    ULONG                 FORMid;
+    ULONG                 FORMsize;
+    ULONG                 AIFFid;
 
-  ULONG                 COMMid;
-  ULONG                 COMMsize;
-  CommonChunk           COMMchunk;
+    ULONG                 COMMid;
+    ULONG                 COMMsize;
+    CommonChunk           COMMchunk;
 
-  ULONG                 SSNDid;
-  ULONG                 SSNDsize;
-  SampledSoundHeader    SSNDchunk;
+    ULONG                 SSNDid;
+    ULONG                 SSNDsize;
+    SampledSoundHeader    SSNDchunk;
 };
 
 struct EIGHTSVXheader {
-  ULONG                 FORMid;
-  ULONG                 FORMsize;
-  ULONG                 EIGHTSVXid;
+    ULONG                 FORMid;
+    ULONG                 FORMsize;
+    ULONG                 EIGHTSVXid;
 
-  ULONG                 VHDRid;
-  ULONG                 VHDRsize;
-  Voice8Header          VHDRchunk;
+    ULONG                 VHDRid;
+    ULONG                 VHDRsize;
+    Voice8Header          VHDRchunk;
 
-  ULONG                 BODYid;
-  ULONG                 BODYsize;
+    ULONG                 BODYid;
+    ULONG                 BODYsize;
 };
 
 
@@ -152,28 +152,28 @@ struct EIGHTSVXheader {
 
 
 typedef struct {
-	unsigned short	formatTag;
-	unsigned short	numChannels;
-	unsigned long	samplesPerSec;
-	unsigned long	avgBytesPerSec;
-	unsigned short	blockAlign;
-	unsigned short	bitsPerSample;
+    unsigned short	formatTag;
+    unsigned short	numChannels;
+    unsigned long	samplesPerSec;
+    unsigned long	avgBytesPerSec;
+    unsigned short	blockAlign;
+    unsigned short	bitsPerSample;
 } FormatChunk;
 
 #define WAVE_PCM 1
 
 
 struct WAVEheader {
-  ULONG                 FORMid;
-  ULONG                 FORMsize;
-  ULONG                 WAVEid;
+    ULONG                 FORMid;
+    ULONG                 FORMsize;
+    ULONG                 WAVEid;
 
-  ULONG                 FORMATid;
-  ULONG                 FORMATsize;
-  FormatChunk           FORMATchunk;
-  
-  ULONG                 DATAid;
-  ULONG                 DATAsize;
+    ULONG                 FORMATid;
+    ULONG                 FORMATsize;
+    FormatChunk           FORMATchunk;
+
+    ULONG                 DATAid;
+    ULONG                 DATAsize;
 };
 
 /******************************************************************************

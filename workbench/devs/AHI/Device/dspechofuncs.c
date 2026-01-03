@@ -1,17 +1,17 @@
 /*
      AHI - Hardware independent audio subsystem
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -77,227 +77,222 @@
 
 
 void
-EchoMono16( LONG          loops,
-            struct Echo  *es,
-            void        **buffer,
-            void        **srcptr,
-            void        **dstptr)
+EchoMono16(LONG          loops,
+           struct Echo  *es,
+           void        **buffer,
+           void        **srcptr,
+           void        **dstptr)
 {
-  WORD *buf;
-  WORD *src, *dst;
-  LONG sample, delaysample;
+    WORD *buf;
+    WORD *src, *dst;
+    LONG sample, delaysample;
 
-  buf = *buffer;
-  src = *srcptr;
-  dst = *dstptr;
+    buf = *buffer;
+    src = *srcptr;
+    dst = *dstptr;
 
-  while(loops > 0)
-  {
-    sample      = *buf;
-    delaysample = *src++;
+    while(loops > 0) {
+        sample      = *buf;
+        delaysample = *src++;
 
-    *buf++ = ( es->ahiecho_MixN * sample + es->ahiecho_MixD * delaysample ) >> 16;
+        *buf++ = (es->ahiecho_MixN * sample + es->ahiecho_MixD * delaysample) >> 16;
 
-    sample = es->ahiecho_FeedbackNS * sample + 
-             es->ahiecho_FeedbackDS * (delaysample + 1);
-    
-    *dst++ = sample >> 16;
+        sample = es->ahiecho_FeedbackNS * sample +
+                 es->ahiecho_FeedbackDS * (delaysample + 1);
 
-    loops--;
-  }
+        *dst++ = sample >> 16;
 
-  *buffer = buf;
-  *srcptr = src;
-  *dstptr = dst;
+        loops--;
+    }
+
+    *buffer = buf;
+    *srcptr = src;
+    *dstptr = dst;
 }
 
 
 void
-EchoStereo16( LONG          loops,
-              struct Echo  *es,
-              void        **buffer,
-              void        **srcptr,
-              void        **dstptr)
-{
-  WORD *buf;
-  WORD *src, *dst;
-  LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
-  
-  buf = *buffer;
-  src = *srcptr;
-  dst = *dstptr;
-
-  while(loops > 0)
-  {
-    sampleL      = *buf;
-    delaysampleL = *src++;
-
-    *buf++ = ( es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL ) >> 16;
-
-    sampleR      = *buf;
-    delaysampleR = *src++;
-
-    *buf++ = ( es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR ) >> 16;
-
-    sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDO * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNS * sampleL +
-             es->ahiecho_FeedbackNO * sampleR;
-
-    *dst++ = sample >> 16;
-
-    sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDS * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNO * sampleL +
-             es->ahiecho_FeedbackNS * sampleR;
-
-    *dst++ = sample >> 16;
-
-    loops--;
-  }
-
-  *buffer = buf;
-  *srcptr = src;
-  *dstptr = dst;
-}
-
-
-void
-EchoMono32 ( LONG          loops,
+EchoStereo16(LONG          loops,
              struct Echo  *es,
              void        **buffer,
              void        **srcptr,
              void        **dstptr)
 {
-  LONG *buf;
-  WORD *src, *dst;
-  LONG sample, delaysample;
+    WORD *buf;
+    WORD *src, *dst;
+    LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
 
-  buf = *buffer;
-  src = *srcptr;
-  dst = *dstptr;
+    buf = *buffer;
+    src = *srcptr;
+    dst = *dstptr;
 
-  while(loops > 0)
-  {
-    sample      = *buf >> 16;
-    delaysample = *src++;
+    while(loops > 0) {
+        sampleL      = *buf;
+        delaysampleL = *src++;
 
-    *buf++ = es->ahiecho_MixN * sample + es->ahiecho_MixD * delaysample;
+        *buf++ = (es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL) >> 16;
 
-    sample = es->ahiecho_FeedbackNS * sample + 
-             es->ahiecho_FeedbackDS * (delaysample + 1);
-    
-    *dst++ = sample >> 16;
+        sampleR      = *buf;
+        delaysampleR = *src++;
 
-    loops--;
-  }
+        *buf++ = (es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR) >> 16;
 
-  *buffer = buf;
-  *srcptr = src;
-  *dstptr = dst;
+        sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDO * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNS * sampleL +
+                 es->ahiecho_FeedbackNO * sampleR;
+
+        *dst++ = sample >> 16;
+
+        sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDS * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNO * sampleL +
+                 es->ahiecho_FeedbackNS * sampleR;
+
+        *dst++ = sample >> 16;
+
+        loops--;
+    }
+
+    *buffer = buf;
+    *srcptr = src;
+    *dstptr = dst;
 }
 
 
 void
-EchoStereo32 ( LONG          loops,
-               struct Echo  *es,
-               void        **buffer,
-               void        **srcptr,
-               void        **dstptr)
+EchoMono32(LONG          loops,
+           struct Echo  *es,
+           void        **buffer,
+           void        **srcptr,
+           void        **dstptr)
 {
-  LONG *buf;
-  WORD *src, *dst;
-  LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
-  
-  buf = *buffer;
-  src = *srcptr;
-  dst = *dstptr;
+    LONG *buf;
+    WORD *src, *dst;
+    LONG sample, delaysample;
 
-  while(loops > 0)
-  {
-    sampleL      = *buf >> 16;
-    delaysampleL = *src++;
+    buf = *buffer;
+    src = *srcptr;
+    dst = *dstptr;
 
-    *buf++ = es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL;
+    while(loops > 0) {
+        sample      = *buf >> 16;
+        delaysample = *src++;
 
-    sampleR      = *buf >> 16;
-    delaysampleR = *src++;
+        *buf++ = es->ahiecho_MixN * sample + es->ahiecho_MixD * delaysample;
 
-    *buf++ = es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR;
+        sample = es->ahiecho_FeedbackNS * sample +
+                 es->ahiecho_FeedbackDS * (delaysample + 1);
 
-    sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDO * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNS * sampleL +
-             es->ahiecho_FeedbackNO * sampleR;
+        *dst++ = sample >> 16;
 
-    *dst++ = sample >> 16;
+        loops--;
+    }
 
-    sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDS * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNO * sampleL +
-             es->ahiecho_FeedbackNS * sampleR;
-
-    *dst++ = sample >> 16;
-
-    loops--;
-  }
-
-  *buffer = buf;
-  *srcptr = src;
-  *dstptr = dst;
+    *buffer = buf;
+    *srcptr = src;
+    *dstptr = dst;
 }
 
 
 void
-EchoMulti32 ( LONG          loops,
-	      struct Echo  *es,
-	      void        **buffer,
-	      void        **srcptr,
-	      void        **dstptr)
+EchoStereo32(LONG          loops,
+             struct Echo  *es,
+             void        **buffer,
+             void        **srcptr,
+             void        **dstptr)
 {
-  LONG *buf;
-  WORD *src, *dst;
-  LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
-  
-  buf = *buffer;
-  src = *srcptr;
-  dst = *dstptr;
+    LONG *buf;
+    WORD *src, *dst;
+    LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
 
-  while(loops > 0)
-  {
-    sampleL      = *buf >> 16;
-    delaysampleL = *src++;
+    buf = *buffer;
+    src = *srcptr;
+    dst = *dstptr;
 
-    *buf++ = es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL;
+    while(loops > 0) {
+        sampleL      = *buf >> 16;
+        delaysampleL = *src++;
 
-    sampleR      = *buf >> 16;
-    delaysampleR = *src++;
+        *buf++ = es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL;
 
-    *buf++ = es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR;
+        sampleR      = *buf >> 16;
+        delaysampleR = *src++;
 
-    sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDO * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNS * sampleL +
-             es->ahiecho_FeedbackNO * sampleR;
+        *buf++ = es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR;
 
-    *dst++ = sample >> 16;
+        sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDO * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNS * sampleL +
+                 es->ahiecho_FeedbackNO * sampleR;
 
-    sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
-             es->ahiecho_FeedbackDS * (delaysampleR + 1) +
-             es->ahiecho_FeedbackNO * sampleL +
-             es->ahiecho_FeedbackNS * sampleR;
+        *dst++ = sample >> 16;
 
-    *dst++ = sample >> 16;
+        sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDS * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNO * sampleL +
+                 es->ahiecho_FeedbackNS * sampleR;
 
-    // Skip unused channels
-    buf += 6;
-    src += 6;
-    dst += 6;
-    
-    loops--;
-  }
+        *dst++ = sample >> 16;
 
-  *buffer = buf;
-  *srcptr = src;
-  *dstptr = dst;
+        loops--;
+    }
+
+    *buffer = buf;
+    *srcptr = src;
+    *dstptr = dst;
+}
+
+
+void
+EchoMulti32(LONG          loops,
+            struct Echo  *es,
+            void        **buffer,
+            void        **srcptr,
+            void        **dstptr)
+{
+    LONG *buf;
+    WORD *src, *dst;
+    LONG sample, sampleL, sampleR, delaysampleL, delaysampleR;
+
+    buf = *buffer;
+    src = *srcptr;
+    dst = *dstptr;
+
+    while(loops > 0) {
+        sampleL      = *buf >> 16;
+        delaysampleL = *src++;
+
+        *buf++ = es->ahiecho_MixN * sampleL + es->ahiecho_MixD * delaysampleL;
+
+        sampleR      = *buf >> 16;
+        delaysampleR = *src++;
+
+        *buf++ = es->ahiecho_MixN * sampleR + es->ahiecho_MixD * delaysampleR;
+
+        sample = es->ahiecho_FeedbackDS * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDO * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNS * sampleL +
+                 es->ahiecho_FeedbackNO * sampleR;
+
+        *dst++ = sample >> 16;
+
+        sample = es->ahiecho_FeedbackDO * (delaysampleL + 1) +
+                 es->ahiecho_FeedbackDS * (delaysampleR + 1) +
+                 es->ahiecho_FeedbackNO * sampleL +
+                 es->ahiecho_FeedbackNS * sampleR;
+
+        *dst++ = sample >> 16;
+
+        // Skip unused channels
+        buf += 6;
+        src += 6;
+        dst += 6;
+
+        loops--;
+    }
+
+    *buffer = buf;
+    *srcptr = src;
+    *dstptr = dst;
 }

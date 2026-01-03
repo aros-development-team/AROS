@@ -1,17 +1,17 @@
 /*
      emu10kx.audio - AHI driver for SoundBlaster Live! series
      Copyright (C) 2002-2005 Martin Blom <martin@blom.org>
-     
+
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation; either version 2
      of the License, or (at your option) any later version.
-     
+
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-     
+
      You should have received a copy of the GNU General Public License
      along with this program; if not, write to the Free Software
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -96,35 +96,35 @@ typedef unsigned int   dma_addr_t;
 
 
 unsigned long
-__get_free_page( unsigned int gfp_mask );
-  
-void
-free_page( unsigned long addr );
-
-void*
-pci_alloc_consistent( void* pci_dev, size_t size, dma_addr_t* dma_handle );
+__get_free_page(unsigned int gfp_mask);
 
 void
-pci_free_consistent( void* pci_dev, size_t size, void* arrd, dma_addr_t dma_handle );
+free_page(unsigned long addr);
+
+void *
+pci_alloc_consistent(void *pci_dev, size_t size, dma_addr_t *dma_handle);
+
+void
+pci_free_consistent(void *pci_dev, size_t size, void *arrd, dma_addr_t dma_handle);
 
 
-static __inline__ int test_bit(int nr, const volatile void * addr)
+static __inline__ int test_bit(int nr, const volatile void *addr)
 {
-  return ((1UL << (nr & 31)) & (((const volatile unsigned int *) addr)[nr >> 5])) != 0;
+    return ((1UL << (nr & 31)) & (((const volatile unsigned int *) addr)[nr >> 5])) != 0;
 }
 
-static __inline__ void set_bit(int nr, volatile void * addr)
+static __inline__ void set_bit(int nr, volatile void *addr)
 {
-  (((volatile unsigned int *) addr)[nr >> 5]) |= (1UL << (nr & 31));
+    (((volatile unsigned int *) addr)[nr >> 5]) |= (1UL << (nr & 31));
 }
 
 #ifdef WORDS_BIGENDIAN
-static __inline__ u32 cpu_to_le32( u32 x )
+static __inline__ u32 cpu_to_le32(u32 x)
 {
-  u32 res = ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
-	     (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24));
+    u32 res = ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
+               (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24));
 
-  return res;
+    return res;
 }
 #else
 #define cpu_to_le32(x)  x

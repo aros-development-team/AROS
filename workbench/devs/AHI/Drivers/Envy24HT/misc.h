@@ -20,7 +20,8 @@ void ClearMask8(struct CardData *card, unsigned long base, unsigned char reg, un
 void WriteMask8(struct CardData *card, unsigned long base, unsigned char reg, unsigned char mask);
 
 
-void WritePartialMask(struct CardData *card, unsigned long base, unsigned char reg, unsigned long shift, unsigned long mask, unsigned long val);
+void WritePartialMask(struct CardData *card, unsigned long base, unsigned char reg, unsigned long shift,
+                      unsigned long mask, unsigned long val);
 void MicroDelay(unsigned int val);
 
 void revo_i2s_mclk_changed(struct CardData *card);
@@ -30,47 +31,48 @@ void wm_put(struct CardData *card, unsigned long base, unsigned short reg, unsig
 void update_spdif_bits(struct CardData *card, unsigned short val);
 void update_spdif_rate(struct CardData *card, unsigned short rate);
 
-void WriteI2C(struct PCIDevice *dev, struct CardData *card, unsigned chip_address, unsigned char reg, unsigned char data);
+void WriteI2C(struct PCIDevice *dev, struct CardData *card, unsigned chip_address, unsigned char reg,
+              unsigned char data);
 
-void SaveGPIO(struct PCIDevice *dev, struct CardData* card);
-void RestoreGPIO(struct PCIDevice *dev, struct CardData* card);
-void SetGPIODir(struct PCIDevice *dev, struct CardData* card, unsigned long data);
+void SaveGPIO(struct PCIDevice *dev, struct CardData *card);
+void RestoreGPIO(struct PCIDevice *dev, struct CardData *card);
+void SetGPIODir(struct PCIDevice *dev, struct CardData *card, unsigned long data);
 
 
-struct CardData*
-AllocDriverData( struct PCIDevice*    dev,
-		 struct DriverBase* AHIsubBase );
-
-void
-FreeDriverData( struct CardData* card,
-		struct DriverBase*  AHIsubBase );
+struct CardData *
+AllocDriverData(struct PCIDevice    *dev,
+                struct DriverBase *AHIsubBase);
 
 void
-SaveMixerState( struct CardData* card );
+FreeDriverData(struct CardData *card,
+               struct DriverBase  *AHIsubBase);
 
 void
-RestoreMixerState( struct CardData* card );
+SaveMixerState(struct CardData *card);
 
 void
-UpdateMonitorMixer( struct CardData* card );
+RestoreMixerState(struct CardData *card);
+
+void
+UpdateMonitorMixer(struct CardData *card);
 
 Fixed
-Linear2MixerGain( Fixed  linear,
-		  UWORD* bits );
+Linear2MixerGain(Fixed  linear,
+                 UWORD *bits);
 
 Fixed
-Linear2AKMGain( Fixed  linear,
-		  UWORD* bits );
+Linear2AKMGain(Fixed  linear,
+               UWORD *bits);
 
 Fixed
-Linear2RecordGain( Fixed  linear,
-		   UWORD* bits );
+Linear2RecordGain(Fixed  linear,
+                  UWORD *bits);
 
 ULONG
-SamplerateToLinearPitch( ULONG samplingrate );
+SamplerateToLinearPitch(ULONG samplingrate);
 
 void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary);
 
-void pci_free_consistent(void* addr);
+void pci_free_consistent(void *addr);
 
 #endif /* AHI_Drivers_Envy24HT_misc_h */

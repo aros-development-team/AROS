@@ -21,11 +21,10 @@ enum Model {PHASE88, MAUDIO_2496, MAUDIO_1010LT, MAUDIO_DELTA44, MAUDIO_DELTA66}
 
 
 
-   
+
 struct CardData;
 
-struct CardBase
-{
+struct CardBase {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -38,33 +37,32 @@ struct CardBase
     int                    cards_found;
 
     /** A CardData structure for each card found */
-    struct CardData**   driverdatas;
+    struct CardData   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct CardBase))
 #define RECORD_BUFFER_SAMPLES     1764
 
 
-struct CardData
-{
+struct CardData {
     /*** PCI/Card initialization progress *********************************/
 
-   struct PCIDevice    *pci_dev;
-	unsigned long       iobase;
-   unsigned long       mtbase;
-	unsigned short		model;
-   unsigned char       chiprev;
-   unsigned char       gpio_dir;
-   unsigned char       gpio_data;
-   struct I2C_bit_ops  *bit_ops;
-   struct I2C          *i2c_cs8404;
-   struct I2C          *i2c_in_addr;
-   struct I2C          *i2c_out_addr;
-   enum akm_types      akm_type;
-   struct akm_codec    codec[4];
-   
-   enum Model          SubType;
-   
+    struct PCIDevice    *pci_dev;
+    unsigned long       iobase;
+    unsigned long       mtbase;
+    unsigned short		model;
+    unsigned char       chiprev;
+    unsigned char       gpio_dir;
+    unsigned char       gpio_data;
+    struct I2C_bit_ops  *bit_ops;
+    struct I2C          *i2c_cs8404;
+    struct I2C          *i2c_in_addr;
+    struct I2C          *i2c_out_addr;
+    enum akm_types      akm_type;
+    struct akm_codec    codec[4];
+
+    enum Model          SubType;
+
 
     /** TRUE if bus mastering is activated */
     BOOL                pci_master_enabled;
@@ -78,17 +76,17 @@ struct CardData
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
 
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -118,15 +116,15 @@ struct CardData
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
 
-    
+
 
     /*** Playback interrupt variables ****************************************/
 
@@ -143,7 +141,7 @@ struct CardData
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
@@ -168,11 +166,11 @@ struct CardData
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
     APTR                current_record_buffer_32bit;
-    
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize_32bit;
     ULONG               current_record_bytesize_target;
-    
+
     int                 recflip;
 
 
@@ -208,16 +206,16 @@ struct CardData
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 vide */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
 };

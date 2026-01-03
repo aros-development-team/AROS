@@ -28,8 +28,7 @@ All Rights Reserved.
 
 struct SB128_DATA;
 
-struct SB128Base
-{
+struct SB128Base {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -42,7 +41,7 @@ struct SB128Base
     int                    cards_found;
 
     /** A SB128_DATA structure for each card found */
-    struct SB128_DATA**   driverdatas;
+    struct SB128_DATA   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct SB128Base))
@@ -50,16 +49,15 @@ struct SB128Base
 #define RECORD_BUFFER_SAMPLES     1024
 
 
-struct SB128_DATA
-{
+struct SB128_DATA {
     /*** PCI/Card initialization progress *********************************/
 
-  struct PCIDevice    *pci_dev;
-  APTR       iobase;
-  unsigned long		    length;
-  unsigned short		  model;
-  unsigned char       chiprev;
-  unsigned int        irq;
+    struct PCIDevice    *pci_dev;
+    APTR       iobase;
+    unsigned long		    length;
+    unsigned short		  model;
+    unsigned char       chiprev;
+    unsigned int        irq;
 
     /** TRUE if bus mastering is activated */
     BOOL                pci_master_enabled;
@@ -78,16 +76,16 @@ struct SB128_DATA
 
     /** This field is also used as a lock and access to it is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
-    
+
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -117,15 +115,15 @@ struct SB128_DATA
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
 
-    
+
 
     /*** Playback interrupt variables ****************************************/
 
@@ -138,7 +136,7 @@ struct SB128_DATA
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
@@ -158,10 +156,10 @@ struct SB128_DATA
 
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
-    
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize;
-    
+
     int                 recflip;
 
 
@@ -197,16 +195,16 @@ struct SB128_DATA
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 video */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
 
@@ -215,10 +213,10 @@ struct SB128_DATA
 
     /** Saved state of AK4531 Output Register 1 */
     char                ak4531_output_2;
-    
+
     /** The current Playback Frequency */
     int                 currentPlayFreq;
-    
+
     /** The current Record Frequency */
     int                 currentRecFreq;
 };

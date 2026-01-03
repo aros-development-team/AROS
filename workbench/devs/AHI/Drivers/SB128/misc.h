@@ -29,36 +29,36 @@ unsigned short codec_read(struct SB128_DATA *card, unsigned short reg);
 
 void ak4531_ac97_write(struct SB128_DATA *card, unsigned short reg, unsigned short val);
 
-struct SB128_DATA*
-AllocDriverData( struct PCIDevice*    dev,
-		 struct DriverBase* AHIsubBase );
+struct SB128_DATA *
+AllocDriverData(struct PCIDevice    *dev,
+                struct DriverBase *AHIsubBase);
 
 void
-FreeDriverData( struct SB128_DATA* card,
-		struct DriverBase*  AHIsubBase );
+FreeDriverData(struct SB128_DATA *card,
+               struct DriverBase  *AHIsubBase);
 
 void
-SaveMixerState( struct SB128_DATA* card );
+SaveMixerState(struct SB128_DATA *card);
 
 void
-RestoreMixerState( struct SB128_DATA* card );
+RestoreMixerState(struct SB128_DATA *card);
 
 void
-UpdateMonitorMixer( struct SB128_DATA* card );
+UpdateMonitorMixer(struct SB128_DATA *card);
 
 Fixed
-Linear2MixerGain( Fixed  linear,
-		  UWORD* bits );
+Linear2MixerGain(Fixed  linear,
+                 UWORD *bits);
 
 Fixed
-Linear2RecordGain( Fixed  linear,
-		   UWORD* bits );
+Linear2RecordGain(Fixed  linear,
+                  UWORD *bits);
 
 ULONG
-SamplerateToLinearPitch( ULONG samplingrate );
+SamplerateToLinearPitch(ULONG samplingrate);
 
 void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress, unsigned int boundary);
 
-void pci_free_consistent(void* addr);
+void pci_free_consistent(void *addr);
 
 #endif /* AHI_Drivers_misc_h */

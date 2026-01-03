@@ -19,109 +19,107 @@ void printlist(struct MinList *);
 
 int main(void)
 {
-  struct AHIBase *AHIBase;
-  struct AHIDevUnit *iounit;
+    struct AHIBase *AHIBase;
+    struct AHIDevUnit *iounit;
 
 #if defined(__AROSPLATFORM_SMP__)
-  void *ExecLockBase = OpenResource("execlock.resource");
+    void *ExecLockBase = OpenResource("execlock.resource");
 
-  if (ExecLockBase)
-    ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_DISABLE);
-  else
+    if(ExecLockBase)
+        ObtainSystemLock(&SysBase->DeviceList, SPINLOCK_MODE_READ, LOCKF_DISABLE);
+    else
+        Disable();
+#else
     Disable();
-#else
-  Disable();
 #endif
-  AHIBase = (struct AHIBase *) FindName(& SysBase->DeviceList, AHINAME);
+    AHIBase = (struct AHIBase *) FindName(& SysBase->DeviceList, AHINAME);
 #if defined(__AROSPLATFORM_SMP__)
-  if (ExecLockBase)
-    ReleaseSystemLock(&SysBase->DeviceList, LOCKF_DISABLE);
-  else
-    Enable();
+    if(ExecLockBase)
+        ReleaseSystemLock(&SysBase->DeviceList, LOCKF_DISABLE);
+    else
+        Enable();
 #else
-  Enable();
+    Enable();
 #endif
 
 
-  printf("Base: 0x%08lx\n", AHIBase);
-  if(AHIBase == NULL)
-    return -1;
+    printf("Base: 0x%08lx\n", AHIBase);
+    if(AHIBase == NULL)
+        return -1;
 
-  iounit = AHIBase->ahib_DevUnits[0];
-  printf("iounit 0: 0x%08lx\n", iounit);
-  if(iounit != NULL) {
+    iounit = AHIBase->ahib_DevUnits[0];
+    printf("iounit 0: 0x%08lx\n", iounit);
+    if(iounit != NULL) {
 
-    if(iounit->IsPlaying)
-      printf("Is playing.\n");
-    
-    if(iounit->IsRecording)
-      printf("Is recording.\n");
+        if(iounit->IsPlaying)
+            printf("Is playing.\n");
 
-    printf("ReadList\n");
-    printlist(&iounit->ReadList);
-    printf("PlayingList\n");
-    printlist(&iounit->PlayingList);
-    printf("SilentList\n");
-    printlist(&iounit->SilentList);
-    printf("WaitingList\n");
-    printlist(&iounit->WaitingList);
+        if(iounit->IsRecording)
+            printf("Is recording.\n");
 
-    printf("S: %ld, R: %ld, R:%ld\n", iounit->SampleSignal,
-        iounit->RecordSignal, iounit->PlaySignal);
-  }
+        printf("ReadList\n");
+        printlist(&iounit->ReadList);
+        printf("PlayingList\n");
+        printlist(&iounit->PlayingList);
+        printf("SilentList\n");
+        printlist(&iounit->SilentList);
+        printf("WaitingList\n");
+        printlist(&iounit->WaitingList);
 
-  iounit = AHIBase->ahib_DevUnits[1];
-  printf("iounit 1: 0x%08lx\n", iounit);
-  if(iounit != NULL) {
+        printf("S: %ld, R: %ld, R:%ld\n", iounit->SampleSignal,
+               iounit->RecordSignal, iounit->PlaySignal);
+    }
 
-    if(iounit->IsPlaying)
-      printf("Is playing.\n");
-    
-    if(iounit->IsRecording)
-      printf("Is recording.\n");
+    iounit = AHIBase->ahib_DevUnits[1];
+    printf("iounit 1: 0x%08lx\n", iounit);
+    if(iounit != NULL) {
 
-    printf("ReadList\n");
-    printlist(&iounit->ReadList);
-    printf("PlayingList\n");
-    printlist(&iounit->PlayingList);
-    printf("SilentList\n");
-    printlist(&iounit->SilentList);
-    printf("WaitingList\n");
-    printlist(&iounit->WaitingList);
+        if(iounit->IsPlaying)
+            printf("Is playing.\n");
 
-    printf("S: %ld, R: %ld, R:%ld\n", iounit->SampleSignal,
-        iounit->RecordSignal, iounit->PlaySignal);
-  }
+        if(iounit->IsRecording)
+            printf("Is recording.\n");
 
-  return 0;
+        printf("ReadList\n");
+        printlist(&iounit->ReadList);
+        printf("PlayingList\n");
+        printlist(&iounit->PlayingList);
+        printf("SilentList\n");
+        printlist(&iounit->SilentList);
+        printf("WaitingList\n");
+        printlist(&iounit->WaitingList);
+
+        printf("S: %ld, R: %ld, R:%ld\n", iounit->SampleSignal,
+               iounit->RecordSignal, iounit->PlaySignal);
+    }
+
+    return 0;
 }
 
-const static char * commands[] =
-{
-  "CMD_INVALID",
-  "CMD_RESET",
-  "CMD_READ",
-  "CMD_WRITE",
-  "CMD_UPDATE",
-  "CMD_CLEAR",
-  "CMD_STOP",
-  "CMD_START",
-  "CMD_FLUSH"
+const static char *commands[] = {
+    "CMD_INVALID",
+    "CMD_RESET",
+    "CMD_READ",
+    "CMD_WRITE",
+    "CMD_UPDATE",
+    "CMD_CLEAR",
+    "CMD_STOP",
+    "CMD_START",
+    "CMD_FLUSH"
 };
 
 void printlist(struct MinList *list)
 {
-  struct AHIRequest *ioreq;
+    struct AHIRequest *ioreq;
 
-  ioreq = (struct AHIRequest *) list->mlh_Head;
-  while (ioreq->ahir_Std.io_Message.mn_Node.ln_Succ)
-  {
-    printf("iorequest: 0x%08lx\n", ioreq);
-    printf("command  : %s (0x%lx)\n",
-        (ioreq->ahir_Std.io_Command < CMD_NONSTD ?
-            commands[ioreq->ahir_Std.io_Command] :
-            "Annan..."),
-        ioreq->ahir_Std.io_Command);
-    ioreq = (struct AHIRequest *) ioreq->ahir_Std.io_Message.mn_Node.ln_Succ;
-  }
+    ioreq = (struct AHIRequest *) list->mlh_Head;
+    while(ioreq->ahir_Std.io_Message.mn_Node.ln_Succ) {
+        printf("iorequest: 0x%08lx\n", ioreq);
+        printf("command  : %s (0x%lx)\n",
+               (ioreq->ahir_Std.io_Command < CMD_NONSTD ?
+                commands[ioreq->ahir_Std.io_Command] :
+                "Annan..."),
+               ioreq->ahir_Std.io_Command);
+        ioreq = (struct AHIRequest *) ioreq->ahir_Std.io_Message.mn_Node.ln_Succ;
+    }
 }

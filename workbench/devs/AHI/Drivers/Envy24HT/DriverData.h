@@ -41,8 +41,7 @@ extern unsigned long Dirs[];
 
 struct CardData;
 
-struct CardBase
-{
+struct CardBase {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -55,26 +54,25 @@ struct CardBase
     int                    cards_found;
 
     /** A CardData structure for each card found */
-    struct CardData**   driverdatas;
+    struct CardData   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct CardBase))
 #define RECORD_BUFFER_SAMPLES     1764
 
 
-struct CardData
-{
+struct CardData {
     /*** PCI/Card initialization progress *********************************/
 
-   struct PCIDevice  *pci_dev;
-	unsigned long     iobase;
-   unsigned long     mtbase;
-	unsigned short		model;
-   unsigned char     chiprev;
-	unsigned int      irq;
-   BOOL              input_is_24bits;
-   unsigned long    SavedDir;
-   unsigned short   SavedMask;
+    struct PCIDevice  *pci_dev;
+    unsigned long     iobase;
+    unsigned long     mtbase;
+    unsigned short		model;
+    unsigned char     chiprev;
+    unsigned int      irq;
+    BOOL              input_is_24bits;
+    unsigned long    SavedDir;
+    unsigned short   SavedMask;
 
     /** TRUE if bus mastering is activated */
     BOOL                pci_master_enabled;
@@ -94,17 +92,17 @@ struct CardData
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
 
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -134,15 +132,15 @@ struct CardData
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
 
-    
+
 
     /*** Playback interrupt variables ****************************************/
 
@@ -158,7 +156,7 @@ struct CardData
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
@@ -183,10 +181,10 @@ struct CardData
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
     APTR                current_record_buffer_32bit;
-    
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize_32bit;
-    
+
     int                 recflip;
 
     /** Analog mixer variables ***********************************************/
@@ -220,24 +218,24 @@ struct CardData
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 vide */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
-    
+
     // For revo71
     struct akm_codec    *RevoFrontCodec;
     struct akm_codec    *RevoSurroundCodec;
     struct akm_codec    *RevoRecCodec;
-    
+
     struct akm_codec    *JuliaDAC;
     struct akm_codec    *JuliaRCV; // digital receiver
 };

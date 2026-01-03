@@ -2,17 +2,17 @@
      AHI - Hardware independent audio subsystem
      Copyright (C) 2017 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -201,42 +201,42 @@ typedef unsigned long uint32;
 
 
 struct Elf32_Ehdr {
-  unsigned char e_ident[EI_NIDENT];
-  uint16 e_type;
-  uint16 e_machine;
-  uint32 e_version;
-  uint32 e_entry;
-  uint32 e_phoff;
-  uint32 e_shoff;
-  uint32 e_flags;
-  uint16 e_ehsize;
-  uint16 e_phentsize;
-  uint16 e_phnum;
-  uint16 e_shentsize;
-  uint16 e_shnum;
-  uint16 e_shstrndx;
+    unsigned char e_ident[EI_NIDENT];
+    uint16 e_type;
+    uint16 e_machine;
+    uint32 e_version;
+    uint32 e_entry;
+    uint32 e_phoff;
+    uint32 e_shoff;
+    uint32 e_flags;
+    uint16 e_ehsize;
+    uint16 e_phentsize;
+    uint16 e_phnum;
+    uint16 e_shentsize;
+    uint16 e_shnum;
+    uint16 e_shstrndx;
 };
 
 struct Elf32_Shdr {
-  uint32 sh_name;
-  uint32 sh_type;
-  uint32 sh_flags;
-  uint32 sh_addr;
-  uint32 sh_offset;
-  uint32 sh_size;
-  uint32 sh_link;
-  uint32 sh_info;
-  uint32 sh_addralign;
-  uint32 sh_entsize;
+    uint32 sh_name;
+    uint32 sh_type;
+    uint32 sh_flags;
+    uint32 sh_addr;
+    uint32 sh_offset;
+    uint32 sh_size;
+    uint32 sh_link;
+    uint32 sh_info;
+    uint32 sh_addralign;
+    uint32 sh_entsize;
 };
 
 struct Elf32_Sym {
-  uint32 st_name;
-  uint32 st_value;
-  uint32 st_size;
-  uint8 st_info;
-  uint8 st_other;
-  uint16 st_shndx;
+    uint32 st_name;
+    uint32 st_value;
+    uint32 st_size;
+    uint8 st_info;
+    uint8 st_other;
+    uint16 st_shndx;
 };
 
 /* st_info */
@@ -245,14 +245,14 @@ struct Elf32_Sym {
 #define ELF32_ST_INFO(b,t) (((b)<<4)+((t)&0xf))
 
 struct Elf32_Rel {
-  uint32 r_offset;
-  uint32 r_info;
+    uint32 r_offset;
+    uint32 r_info;
 };
 
 struct Elf32_Rela {
-  uint32 r_offset;
-  uint32 r_info;
-  uint32 r_addend;
+    uint32 r_offset;
+    uint32 r_info;
+    uint32 r_addend;
 };
 
 /* r_info */
@@ -263,14 +263,14 @@ struct Elf32_Rela {
 /*** elfobject.h *************************************************************/
 
 struct ELFSection {                     /* prog. sections for new tasks */
-  char *name;
-  APTR address;                         /* physical RAM address or NULL */
-  UWORD flags;
-  UWORD alignment;
-  long offset;                          /* file offset and section size */
-  ULONG size;
-  int nrel;                             /* number of relocs */
-  struct Elf32_Rela *relocs;            /* array of Elf32_Rela structs */
+    char *name;
+    APTR address;                         /* physical RAM address or NULL */
+    UWORD flags;
+    UWORD alignment;
+    long offset;                          /* file offset and section size */
+    ULONG size;
+    int nrel;                             /* number of relocs */
+    struct Elf32_Rela *relocs;            /* array of Elf32_Rela structs */
 };
 
 #define ElfSecB_NOBITS          0       /* bss section */
@@ -281,21 +281,21 @@ struct ELFSection {                     /* prog. sections for new tasks */
 
 struct ElfObject {
 //  struct Node n;                        /* contains object's name ptr */
-  UWORD flags;
+    UWORD flags;
 //  struct PPCLibBase *ppcbase;
 //  void *pool;                           /* pooled memory for object data */
-  BPTR handle;                          /* ELF file handle */
+    BPTR handle;                          /* ELF file handle */
 //  APTR handle;                          /* ELF file handle */
 //  struct Hook *hook;                    /* hook functions for read/seek */
 //  struct Hook defaultHook;
-  char *secnames;                       /* .shstrtab - section names */
-  char *symnames;                       /* .strtab - symbol mames */
-  struct Elf32_Ehdr *header;            /* the ELF file header */
-  struct Elf32_Sym *symtab;             /* .symtab - symbol table */
-  uint32 nsyms;                         /* number of symbols */
-  uint32 gsyms;                         /* first global symbol */
-  struct ELFSection **sections;         /* ELFSection pointers */
-  uint32 nsects;                        /* number of sections */
+    char *secnames;                       /* .shstrtab - section names */
+    char *symnames;                       /* .strtab - symbol mames */
+    struct Elf32_Ehdr *header;            /* the ELF file header */
+    struct Elf32_Sym *symtab;             /* .symtab - symbol table */
+    uint32 nsyms;                         /* number of symbols */
+    uint32 gsyms;                         /* first global symbol */
+    struct ELFSection **sections;         /* ELFSection pointers */
+    uint32 nsects;                        /* number of sections */
 //  struct SignalSemaphore ElfSS;         /* ElfObject access arbitration */
 };
 
@@ -305,43 +305,43 @@ struct ElfObject {
 /*** relocnames.c ************************************************************/
 
 const char *reloc_name[] = {
-  "R_NONE",
-  "R_PPC_ADDR32",
-  "R_PPC_ADDR24",
-  "R_PPC_ADDR16",
-  "R_PPC_ADDR16_LO",
-  "R_PPC_ADDR16_HI",
-  "R_PPC_ADDR16_HA",
-  "R_PPC_ADDR14",
-  "R_PPC_ADDR14_BRTAKEN",
-  "R_PPC_ADDR14_BRNTAKEN",
-  "R_PPC_REL24",
-  "R_PPC_REL14",
-  "R_PPC_REL14_BRTAKEN",
-  "R_PPC_REL14_BRNTAKEN",
-  "R_PPC_GOT16",
-  "R_PPC_GOT16_LO",
-  "R_PPC_GOT16_HI",
-  "R_PPC_GOT16_HA",
-  "R_PPC_PLTREL24",
-  "R_PPC_COPY",
-  "R_PPC_GLOB_DAT",
-  "R_PPC_JMP_SLOT",
-  "R_PPC_RELATIVE",
-  "R_PPC_LOCAL24PC",
-  "R_PPC_UADDR32",
-  "R_PPC_UADDR16",
-  "R_PPC_REL32",
-  "R_PPC_PLT32",
-  "R_PPC_PLTREL32",
-  "R_PPC_PLT16_LO",
-  "R_PPC_PLT16_HI",
-  "R_PPC_PLT16_HA",
-  "R_PPC_SDAREL16",
-  "R_PPC_SECTOFF",
-  "R_PPC_SECTOFF_LO",
-  "R_PPC_SECTOFF_HI",
-  "R_PPC_SECTOFF_HA"
+    "R_NONE",
+    "R_PPC_ADDR32",
+    "R_PPC_ADDR24",
+    "R_PPC_ADDR16",
+    "R_PPC_ADDR16_LO",
+    "R_PPC_ADDR16_HI",
+    "R_PPC_ADDR16_HA",
+    "R_PPC_ADDR14",
+    "R_PPC_ADDR14_BRTAKEN",
+    "R_PPC_ADDR14_BRNTAKEN",
+    "R_PPC_REL24",
+    "R_PPC_REL14",
+    "R_PPC_REL14_BRTAKEN",
+    "R_PPC_REL14_BRNTAKEN",
+    "R_PPC_GOT16",
+    "R_PPC_GOT16_LO",
+    "R_PPC_GOT16_HI",
+    "R_PPC_GOT16_HA",
+    "R_PPC_PLTREL24",
+    "R_PPC_COPY",
+    "R_PPC_GLOB_DAT",
+    "R_PPC_JMP_SLOT",
+    "R_PPC_RELATIVE",
+    "R_PPC_LOCAL24PC",
+    "R_PPC_UADDR32",
+    "R_PPC_UADDR16",
+    "R_PPC_REL32",
+    "R_PPC_PLT32",
+    "R_PPC_PLTREL32",
+    "R_PPC_PLT16_LO",
+    "R_PPC_PLT16_HI",
+    "R_PPC_PLT16_HA",
+    "R_PPC_SDAREL16",
+    "R_PPC_SECTOFF",
+    "R_PPC_SECTOFF_LO",
+    "R_PPC_SECTOFF_HI",
+    "R_PPC_SECTOFF_HA"
 };
 
 /*** ppcobject.c *************************************************************/
@@ -358,14 +358,14 @@ static void
 freeelfobj(struct ElfObject *elfobj);
 
 static BOOL
-loadelf32(struct ElfObject *eo,struct Elf32_Shdr *shdrs);
+loadelf32(struct ElfObject *eo, struct Elf32_Shdr *shdrs);
 
 static BOOL
-scanElfSymbols(struct ElfObject *eo,struct PPCObjectInfo *info,
-                      BOOL relmode);
+scanElfSymbols(struct ElfObject *eo, struct PPCObjectInfo *info,
+               BOOL relmode);
 
 static BOOL
-getsyminfo(struct ElfObject *eo,struct PPCObjectInfo *info,
+getsyminfo(struct ElfObject *eo, struct PPCObjectInfo *info,
            struct Elf32_Sym *stab);
 
 static APTR
@@ -377,604 +377,582 @@ freeprogram(struct ElfObject *eo);
 static BOOL
 relocate(struct ElfObject *eo);
 
-static void*
-allocstr( const char* string );
+static void *
+allocstr(const char *string);
 
-static void*
-alloc32c( size_t size );
+static void *
+alloc32c(size_t size);
 
-static void*
-alloc32( size_t size );
+static void *
+alloc32(size_t size);
 
 void
-free32( void* addr );
+free32(void *addr);
 
 static BPTR
-opstream(struct ElfObject *eo, const char* name );
+opstream(struct ElfObject *eo, const char *name);
 
 static BOOL
 clstream(struct ElfObject *eo);
 
 static BOOL
-rdstream(struct ElfObject *eo,void *buf,long len);
+rdstream(struct ElfObject *eo, void *buf, long len);
 
 static long
-skstream(struct ElfObject *eo,long offs,long mode);
+skstream(struct ElfObject *eo, long offs, long mode);
 
 static BOOL
-prstream(struct ElfObject *eo,long offs,void *buf,long len);
+prstream(struct ElfObject *eo, long offs, void *buf, long len);
 
-static void*
-readsection(struct ElfObject *eo,struct Elf32_Shdr *sh);
+static void *
+readsection(struct ElfObject *eo, struct Elf32_Shdr *sh);
 
-static struct ELFSection*
+static struct ELFSection *
 progsection(struct ElfObject *eo, struct Elf32_Shdr *sh);
 
 static BOOL
 common_symbols(struct ElfObject *eo);
 
 static BOOL
-getrelocs(struct ElfObject *eo,struct Elf32_Shdr *sh);
+getrelocs(struct ElfObject *eo, struct Elf32_Shdr *sh);
 
 static const char ELFid[4] = {
-  0x7f,'E','L','F'
+    0x7f, 'E', 'L', 'F'
 };
 
-void*
-ELFLoadObject( const char* objname )
+void *
+ELFLoadObject(const char *objname)
 {
-  struct ElfObject *elfobj = NULL;
+    struct ElfObject *elfobj = NULL;
 
-  /* allocate ElfObject structure */
+    /* allocate ElfObject structure */
 
-  elfobj = alloc32( sizeof( struct ElfObject ) );
+    elfobj = alloc32(sizeof(struct ElfObject));
 
-  if( elfobj != NULL )
-  {
-    memset(elfobj,0,sizeof(struct ElfObject));
+    if(elfobj != NULL) {
+        memset(elfobj, 0, sizeof(struct ElfObject));
 
-    elfobj->header = alloc32( sizeof( struct Elf32_Ehdr ) );
+        elfobj->header = alloc32(sizeof(struct Elf32_Ehdr));
 
-    if( elfobj->header != NULL )
-    {
-      /* open ELF stream for reading */
+        if(elfobj->header != NULL) {
+            /* open ELF stream for reading */
 
-      elfobj->handle = opstream( elfobj, objname );
+            elfobj->handle = opstream(elfobj, objname);
 
-      if( elfobj->handle != NULL )
-      {
-        /* read and identify ELF 32bit PowerPC BigEndian header */
+            if(elfobj->handle != NULL) {
+                /* read and identify ELF 32bit PowerPC BigEndian header */
 
-        if( rdstream( elfobj, elfobj->header, sizeof(struct Elf32_Ehdr) ) )
-        {
-          struct Elf32_Ehdr *hdr = elfobj->header;
+                if(rdstream(elfobj, elfobj->header, sizeof(struct Elf32_Ehdr))) {
+                    struct Elf32_Ehdr *hdr = elfobj->header;
 
-          if (!strncmp(hdr->e_ident,ELFid,4) &&
-              hdr->e_ident[EI_CLASS]==ELFCLASS32 &&
-              hdr->e_ident[EI_DATA]==ELFDATA2MSB &&
-              hdr->e_ident[EI_VERSION]==1 && hdr->e_version==1 &&
-              (hdr->e_machine==EM_PPC || hdr->e_machine==EM_PPC_OLD ||
-               hdr->e_machine==EM_CYGNUS_POWERPC) && hdr->e_type==ET_REL)
-          {
-            struct Elf32_Shdr *shdrs;
-            ULONG shdrsize = (ULONG) hdr->e_shnum * (ULONG) hdr->e_shentsize;
+                    if(!strncmp(hdr->e_ident, ELFid, 4) &&
+                            hdr->e_ident[EI_CLASS] == ELFCLASS32 &&
+                            hdr->e_ident[EI_DATA] == ELFDATA2MSB &&
+                            hdr->e_ident[EI_VERSION] == 1 && hdr->e_version == 1 &&
+                            (hdr->e_machine == EM_PPC || hdr->e_machine == EM_PPC_OLD ||
+                             hdr->e_machine == EM_CYGNUS_POWERPC) && hdr->e_type == ET_REL) {
+                        struct Elf32_Shdr *shdrs;
+                        ULONG shdrsize = (ULONG) hdr->e_shnum * (ULONG) hdr->e_shentsize;
 
 //            KPrintF("elf32ppcbe format recognized\n");
 
-            shdrs = alloc32( shdrsize );
+                        shdrs = alloc32(shdrsize);
 
-            if( shdrs != NULL )
-            {
-              /* read section header table and parse rest of object */
+                        if(shdrs != NULL) {
+                            /* read section header table and parse rest of object */
 
-              if( prstream( elfobj, hdr->e_shoff, shdrs, shdrsize ) )
-              {
-                if( loadelf32( elfobj, shdrs ) )
-                {
-                  void* start;
+                            if(prstream(elfobj, hdr->e_shoff, shdrs, shdrsize)) {
+                                if(loadelf32(elfobj, shdrs)) {
+                                    void *start;
 //                  KPrintF("ELF object loaded (0x%08lx)\n", elfobj );
-                  start = loadprogram( elfobj );
+                                    start = loadprogram(elfobj);
 //                  KPrintF("Start of PPC code: 0x%08lx\n", start );
-                  free32( shdrs );
-                  return (elfobj);
+                                    free32(shdrs);
+                                    return (elfobj);
+                                }
+                            }
+                            free32(shdrs);
+                        }
+                    } else
+                        KPrintF("Not an ELF32-PPC-BE\nrelocatable object.");
                 }
-              }
-              free32( shdrs );
             }
-          }
-          else
-            KPrintF( "Not an ELF32-PPC-BE\nrelocatable object.");
+            freeelfobj(elfobj);
         }
-      }
-      freeelfobj(elfobj);
     }
-  }
 
-  return (NULL);
+    return (NULL);
 }
 
 
 void
-ELFUnLoadObject( void* obj )
+ELFUnLoadObject(void *obj)
 {
-  struct ElfObject* elfobj = (struct ElfObject*) obj;
+    struct ElfObject *elfobj = (struct ElfObject *) obj;
 
-  if(elfobj->sections != NULL && elfobj->nsects > 0 )
-  {
-    freeprogram(elfobj);
-  }
+    if(elfobj->sections != NULL && elfobj->nsects > 0) {
+        freeprogram(elfobj);
+    }
 
-  freeelfobj(elfobj);
+    freeelfobj(elfobj);
 }
 
 BOOL
-ELFGetSymbol( void* obj,
-              const char* name, 
-              void** ptr )
+ELFGetSymbol(void *obj,
+             const char *name,
+             void **ptr)
 {
-  struct PPCObjectInfo oi =
-  {
-    0,
-    NULL,
-    PPCELFINFOTYPE_SYMBOL,
-    STT_SECTION,
-    STB_GLOBAL,
-    0
-  };
+    struct PPCObjectInfo oi = {
+        0,
+        NULL,
+        PPCELFINFOTYPE_SYMBOL,
+        STT_SECTION,
+        STB_GLOBAL,
+        0
+    };
 
-  BOOL rc;
+    BOOL rc;
 
-  oi.Name = (char*) name;
-  rc = scanElfSymbols( (struct ElfObject*) obj, &oi, FALSE );
+    oi.Name = (char *) name;
+    rc = scanElfSymbols((struct ElfObject *) obj, &oi, FALSE);
 
-  if( rc )
-  {
-    *ptr = (void*) oi.Address;
-  }
+    if(rc) {
+        *ptr = (void *) oi.Address;
+    }
 
-  return rc;
+    return rc;
 }
 
 
 static void freeelfobj(struct ElfObject *elfobj)
 /* free all memory connected to an ElfObject */
 {
-  if (elfobj) {
-    if (elfobj->handle)
-      clstream(elfobj);
-    free32(elfobj);
-  }
+    if(elfobj) {
+        if(elfobj->handle)
+            clstream(elfobj);
+        free32(elfobj);
+    }
 }
 
 
-static BOOL loadelf32(struct ElfObject *eo,struct Elf32_Shdr *shdrs)
+static BOOL loadelf32(struct ElfObject *eo, struct Elf32_Shdr *shdrs)
 /* parse ELF object, initialize ElfObject structure */
 {
-  struct Elf32_Ehdr *hdr = eo->header;
-  struct ELFSection *s;
-  uint16 i;
+    struct Elf32_Ehdr *hdr = eo->header;
+    struct ELFSection *s;
+    uint16 i;
 
-  if ((eo->secnames = readsection(eo,&shdrs[hdr->e_shstrndx])) &&
-      (eo->sections = alloc32((hdr->e_shnum+1)*sizeof(void *)))) {
-    memset(eo->sections,0,(hdr->e_shnum+1)*sizeof(void *));
-    eo->nsects = hdr->e_shnum + 1;  /* +1 section for COMMON symbols */
-    for (i=1; i<hdr->e_shnum; i++) {
-      switch (shdrs[i].sh_type) {
-        case SHT_PROGBITS:
-        case SHT_NOBITS:
-          if (!(eo->sections[i] = progsection(eo,&shdrs[i])))
-            return (FALSE);
-          break;
-        case SHT_SYMTAB:
-          if (!(eo->symnames = readsection(eo,&shdrs[shdrs[i].sh_link]))
-              || !(eo->symtab = readsection(eo,&shdrs[i])))
-            return (FALSE);
-          eo->nsyms = shdrs[i].sh_size / sizeof(struct Elf32_Sym);
-          eo->gsyms = shdrs[i].sh_info;
-          break;
-        default:
-          break;
-      }
+    if((eo->secnames = readsection(eo, &shdrs[hdr->e_shstrndx])) &&
+            (eo->sections = alloc32((hdr->e_shnum + 1) * sizeof(void *)))) {
+        memset(eo->sections, 0, (hdr->e_shnum + 1)*sizeof(void *));
+        eo->nsects = hdr->e_shnum + 1;  /* +1 section for COMMON symbols */
+        for(i = 1; i < hdr->e_shnum; i++) {
+            switch(shdrs[i].sh_type) {
+            case SHT_PROGBITS:
+            case SHT_NOBITS:
+                if(!(eo->sections[i] = progsection(eo, &shdrs[i])))
+                    return (FALSE);
+                break;
+            case SHT_SYMTAB:
+                if(!(eo->symnames = readsection(eo, &shdrs[shdrs[i].sh_link]))
+                        || !(eo->symtab = readsection(eo, &shdrs[i])))
+                    return (FALSE);
+                eo->nsyms = shdrs[i].sh_size / sizeof(struct Elf32_Sym);
+                eo->gsyms = shdrs[i].sh_info;
+                break;
+            default:
+                break;
+            }
+        }
+        for(i = 1; i < hdr->e_shnum; i++) {
+            switch(shdrs[i].sh_type) {
+            case SHT_REL:
+            case SHT_RELA:
+                if(!getrelocs(eo, &shdrs[i]))
+                    return (FALSE);
+                break;
+            default:
+                break;
+            }
+        }
+        /* allocate space for Common symbols */
+        return (common_symbols(eo));
     }
-    for (i=1; i<hdr->e_shnum; i++) {
-      switch (shdrs[i].sh_type) {
-        case SHT_REL:
-        case SHT_RELA:
-          if (!getrelocs(eo,&shdrs[i]))
-            return (FALSE);
-          break;
-        default:
-          break;
-      }
-    }
-    /* allocate space for Common symbols */
-    return (common_symbols(eo));
-  }
-  return (FALSE);
+    return (FALSE);
 }
 
 
-static BOOL scanElfSymbols(struct ElfObject *eo,struct PPCObjectInfo *info,
+static BOOL scanElfSymbols(struct ElfObject *eo, struct PPCObjectInfo *info,
                            BOOL relmode)
 /* Find an ELF symbol by its name or address and return all infos  */
 /* in the supplied PPCObjectInfo structure. Return FALSE if symbol */
 /* doesn't exist. */
 /* ATTENTION: PPCLibBase may be locked at that stage! */
 {
-  IPTR addr = info->Address;
-  char *name = info->Name;
+    IPTR addr = info->Address;
+    char *name = info->Name;
 //KPrintF( "scanElfSymbols( 0x%08lx, 0x%08lx, %ld\n", eo, info, relmode );
-  if (relmode) {
-    unsigned int i;
-    int j;
-    struct ELFSection *es;
-    struct Elf32_Rela *r;
+    if(relmode) {
+        unsigned int i;
+        int j;
+        struct ELFSection *es;
+        struct Elf32_Rela *r;
 
-    for (i=1; i<(eo->nsects-1); i++) {
-      if( (es = eo->sections[i]) != NULL ) {
-        for (j=0,r=es->relocs; j<es->nrel; j++,r++) {
-          if (getsyminfo(eo,info,&eo->symtab[ELF32_R_SYM(r->r_info)])) {
-            info->Address = (IPTR)es->address + r->r_offset;
-            info->Type = PPCELFINFOTYPE_RELOC;
-            info->SubType = (ULONG)ELF32_R_TYPE(r->r_info);
-            if (info->Address == addr) {
-              if (name) {
-                if (!strcmp(name,info->Name))
-                  return (TRUE);
-              }
-              else
-                return (TRUE);
+        for(i = 1; i < (eo->nsects - 1); i++) {
+            if((es = eo->sections[i]) != NULL) {
+                for(j = 0, r = es->relocs; j < es->nrel; j++, r++) {
+                    if(getsyminfo(eo, info, &eo->symtab[ELF32_R_SYM(r->r_info)])) {
+                        info->Address = (IPTR)es->address + r->r_offset;
+                        info->Type = PPCELFINFOTYPE_RELOC;
+                        info->SubType = (ULONG)ELF32_R_TYPE(r->r_info);
+                        if(info->Address == addr) {
+                            if(name) {
+                                if(!strcmp(name, info->Name))
+                                    return (TRUE);
+                            } else
+                                return (TRUE);
+                        }
+                    }
+                }
             }
-          }
         }
-      }
     }
-  }
 
-  else {
-    struct Elf32_Sym *stab = eo->symtab;
-    int i = eo->nsyms;
-    while (--i) {
+    else {
+        struct Elf32_Sym *stab = eo->symtab;
+        int i = eo->nsyms;
+        while(--i) {
 //KPrintF( "i=%ld\n", i );
-      if (getsyminfo(eo,info,++stab)) {
-        if (!name) {
-          if (info->Size) {
-            if (addr>=info->Address && addr<(info->Address+info->Size))
-              return (TRUE);
-          }
-          else {
-            if (addr == info->Address)
-              return (TRUE);
-          }
-        }
-        else {
+            if(getsyminfo(eo, info, ++stab)) {
+                if(!name) {
+                    if(info->Size) {
+                        if(addr >= info->Address && addr < (info->Address + info->Size))
+                            return (TRUE);
+                    } else {
+                        if(addr == info->Address)
+                            return (TRUE);
+                    }
+                } else {
 //KPrintF( "comparing %s and %s\n", name,info->Name );
-          if (!strcmp(name,info->Name))
-            return (TRUE);
+                    if(!strcmp(name, info->Name))
+                        return (TRUE);
+                }
+            }
         }
-      }
     }
-  }
-  return (FALSE);
+    return (FALSE);
 }
 
 
-static BOOL getsyminfo(struct ElfObject *eo,struct PPCObjectInfo *info,
+static BOOL getsyminfo(struct ElfObject *eo, struct PPCObjectInfo *info,
                        struct Elf32_Sym *stab)
 {
-  struct ELFSection *es;
-  ULONG subtype;
+    struct ELFSection *es;
+    ULONG subtype;
 
-  subtype = (ULONG)ELF32_ST_TYPE(stab->st_info);
-  if (subtype < STT_FILE) {
-    info->Type = subtype==STT_SECTION ? PPCELFINFOTYPE_SECTION
-                                      : PPCELFINFOTYPE_SYMBOL;
-    switch (stab->st_shndx) {
-      case SHN_UNDEF:
+    subtype = (ULONG)ELF32_ST_TYPE(stab->st_info);
+    if(subtype < STT_FILE) {
+        info->Type = subtype == STT_SECTION ? PPCELFINFOTYPE_SECTION
+                     : PPCELFINFOTYPE_SYMBOL;
+        switch(stab->st_shndx) {
+        case SHN_UNDEF:
         /* undefined symbols will disappear after relocation */
-      case SHN_ABS:
-        info->Address = stab->st_value;
-        break;
-      case SHN_COMMON:
-        /* @@@ common symbols should have disappeared after common_symbols() */
-        info->Type = PPCELFINFOTYPE_COMSYMBOL;
-        info->Address = 0;
-        break;
-      default:
-        if( (es = eo->sections[stab->st_shndx]) != NULL )
-          info->Address = (IPTR)es->address + stab->st_value;
-        else
-          info->Address = stab->st_value;
-        break;
+        case SHN_ABS:
+            info->Address = stab->st_value;
+            break;
+        case SHN_COMMON:
+            /* @@@ common symbols should have disappeared after common_symbols() */
+            info->Type = PPCELFINFOTYPE_COMSYMBOL;
+            info->Address = 0;
+            break;
+        default:
+            if((es = eo->sections[stab->st_shndx]) != NULL)
+                info->Address = (IPTR)es->address + stab->st_value;
+            else
+                info->Address = stab->st_value;
+            break;
+        }
+        info->Name = eo->symnames + stab->st_name;
+        info->SubType = subtype;
+        info->Binding = (ULONG)ELF32_ST_BIND(stab->st_info);
+        info->Size = stab->st_size;
+        return (TRUE);
     }
-    info->Name = eo->symnames + stab->st_name;
-    info->SubType = subtype;
-    info->Binding = (ULONG)ELF32_ST_BIND(stab->st_info);
-    info->Size = stab->st_size;
-    return (TRUE);
-  }
-  return (FALSE);
+    return (FALSE);
 }
 
 static APTR loadprogram(struct ElfObject *eo)
 /* load all sections into memory and relocate them */
 {
-  static const char *FN = "loadprogram(): ";
-  struct ELFSection *s;
-  uint8 *p,*entry=NULL;
-  unsigned int i;
+    static const char *FN = "loadprogram(): ";
+    struct ELFSection *s;
+    uint8 *p, *entry = NULL;
+    unsigned int i;
 
-  for (i=0; i<(eo->nsects-1); i++) {
-    if( (s = eo->sections[i]) != NULL ) {
-      BOOL text = !strcmp(s->name,".text");   /* .text section flag */
-      ULONG size = s->size;
+    for(i = 0; i < (eo->nsects - 1); i++) {
+        if((s = eo->sections[i]) != NULL) {
+            BOOL text = !strcmp(s->name, ".text");  /* .text section flag */
+            ULONG size = s->size;
 
-      /* align to 32 bytes and allocate 32-byte aligned memory */
-      size = (size+31)&~31;
-      if( (p = alloc32c(size)) != NULL ) {
-        s->address = (APTR)p;  /* store section's base address */
-        if (!(s->flags & ElfSecF_NOBITS)) {
-          /* a PROGBITS section - load it from file */
+            /* align to 32 bytes and allocate 32-byte aligned memory */
+            size = (size + 31) & ~31;
+            if((p = alloc32c(size)) != NULL) {
+                s->address = (APTR)p;  /* store section's base address */
+                if(!(s->flags & ElfSecF_NOBITS)) {
+                    /* a PROGBITS section - load it from file */
 
 //          KPrintF("%sreading section %s\n",FN,s->name);
-          if (prstream(eo,s->offset,p,s->size)) {
-            if (text) {
-              /* get start address of PPC program in .text */
-              entry = p;
-              if ((*entry & 0xfc) == 0) {
+                    if(prstream(eo, s->offset, p, s->size)) {
+                        if(text) {
+                            /* get start address of PPC program in .text */
+                            entry = p;
+                            if((*entry & 0xfc) == 0) {
 //                KPrintF("%sgcc traceback status word "
 //                        "detected\n",FN);
-                entry += 4;  /* 1st long reserved for gcc traceback word */
-              }
-              /* copy kernel stubs */
-/*
-               KPrintF("%sentry=0x%08lx, "
-                       "invoking dynamic linker\n",FN,entry);
-              if (!dynamic_linker(i,eo,p)) {
+                                entry += 4;  /* 1st long reserved for gcc traceback word */
+                            }
+                            /* copy kernel stubs */
+                            /*
+                                           KPrintF("%sentry=0x%08lx, "
+                                                   "invoking dynamic linker\n",FN,entry);
+                                          if (!dynamic_linker(i,eo,p)) {
+                                            entry = NULL;
+                                            break;
+                                          }
+                            */
+                        }
+                    } else {
+                        entry = NULL;
+                        break;
+                    }
+                }
+            } else {
+                KPrintF("Failed to allocate %ld bytes\n"
+                        "for PPC %s section.", size, s->name);
                 entry = NULL;
                 break;
-              }
-*/
             }
-          }
-          else {
-            entry = NULL;
-            break;
-          }
         }
-      }
-      else {
-        KPrintF("Failed to allocate %ld bytes\n"
-               "for PPC %s section.",size,s->name);
-        entry = NULL;
-        break;
-      }
     }
-  }
 
-  if (entry) {
-    if (!relocate(eo)) {  /* relocate sections */
-      entry = NULL;
-      freeprogram(eo);
-    }
-  }
-  else
-    freeprogram(eo);
+    if(entry) {
+        if(!relocate(eo)) {   /* relocate sections */
+            entry = NULL;
+            freeprogram(eo);
+        }
+    } else
+        freeprogram(eo);
 
 //  KPrintF("%sreturning with entry=0x%08lx\n",FN,entry);
-  return (entry);
+    return (entry);
 }
 
 
 static void freeprogram(struct ElfObject *eo)
 {
-  struct ELFSection *s;
-  unsigned int i;
+    struct ELFSection *s;
+    unsigned int i;
 
-  for (i=0; i<eo->nsects; i++) {
-    if( (s = eo->sections[i]) != NULL ) {
-      if (s->address) {
-        free32(s->address);
-        s->address = NULL;
-      }
+    for(i = 0; i < eo->nsects; i++) {
+        if((s = eo->sections[i]) != NULL) {
+            if(s->address) {
+                free32(s->address);
+                s->address = NULL;
+            }
+        }
     }
-  }
 }
 
 
 static BOOL relocate(struct ElfObject *eo)
 {
-  struct ELFSection *es;
-  unsigned int shndx;
+    struct ELFSection *es;
+    unsigned int shndx;
 
-  for (shndx=0; shndx<(eo->nsects-1); shndx++) {
-    if( (es = eo->sections[shndx]) != NULL ) {
-      BOOL rela = (es->flags & ElfSecF_RELA) != 0;
-      struct Elf32_Rela *r;
-      int i;
+    for(shndx = 0; shndx < (eo->nsects - 1); shndx++) {
+        if((es = eo->sections[shndx]) != NULL) {
+            BOOL rela = (es->flags & ElfSecF_RELA) != 0;
+            struct Elf32_Rela *r;
+            int i;
 
 //      KPrintF("relocate(): relocating section %s "
 //              "at 0x%08lx\n",es->name,es->address);
-      for (i=0,r=es->relocs; i<es->nrel; i++,r++) {
-        struct Elf32_Sym *sym = &eo->symtab[ELF32_R_SYM(r->r_info)];
-        long s = (long)eo->sections[sym->st_shndx]->address + sym->st_value;
-        uint8 *p = (uint8 *)es->address + r->r_offset;
+            for(i = 0, r = es->relocs; i < es->nrel; i++, r++) {
+                struct Elf32_Sym *sym = &eo->symtab[ELF32_R_SYM(r->r_info)];
+                long s = (long)eo->sections[sym->st_shndx]->address + sym->st_value;
+                uint8 *p = (uint8 *)es->address + r->r_offset;
 
-        switch (ELF32_R_TYPE(r->r_info)) {
-          case R_PPC_NONE:
-            break;
+                switch(ELF32_R_TYPE(r->r_info)) {
+                case R_PPC_NONE:
+                    break;
 
-          case R_PPC_ADDR32:
-            if (rela)
-              *(long *)p = s + r->r_addend;
-            else
-              *(long *)p += s;
-            break;
+                case R_PPC_ADDR32:
+                    if(rela)
+                        *(long *)p = s + r->r_addend;
+                    else
+                        *(long *)p += s;
+                    break;
 
-          case R_PPC_ADDR16:
-            if (rela)
-              *(short *)p = s + r->r_addend;
-            else
-              *(short *)p += s;
-            break;
+                case R_PPC_ADDR16:
+                    if(rela)
+                        *(short *)p = s + r->r_addend;
+                    else
+                        *(short *)p += s;
+                    break;
 
-          case R_PPC_ADDR16_LO:
-            if (rela)
-              *(short *)p = (s + r->r_addend) & 0xffff;
-            else
-              *(short *)p = (s + *(short *)p) & 0xffff;
-            break;
+                case R_PPC_ADDR16_LO:
+                    if(rela)
+                        *(short *)p = (s + r->r_addend) & 0xffff;
+                    else
+                        *(short *)p = (s + * (short *)p) & 0xffff;
+                    break;
 
-          case R_PPC_ADDR16_HI:
-            if (rela)
-              *(short *)p = (s + r->r_addend) >> 16;
-            else
-              *(short *)p = (s + *(short *)p) >> 16;
-            break;
+                case R_PPC_ADDR16_HI:
+                    if(rela)
+                        *(short *)p = (s + r->r_addend) >> 16;
+                    else
+                        *(short *)p = (s + * (short *)p) >> 16;
+                    break;
 
-          case R_PPC_ADDR16_HA:
-            if (rela)
-              s += r->r_addend;
-            else
-              s += *(short *)p;
-            *(short *)p = (s>>16) + ((s&0x8000) ? 1 : 0);
-            break;
+                case R_PPC_ADDR16_HA:
+                    if(rela)
+                        s += r->r_addend;
+                    else
+                        s += *(short *)p;
+                    *(short *)p = (s >> 16) + ((s & 0x8000) ? 1 : 0);
+                    break;
 
-          case R_PPC_REL24:
-            if (rela) {
-              s = (s + r->r_addend) - (long)p;
+                case R_PPC_REL24:
+                    if(rela) {
+                        s = (s + r->r_addend) - (long)p;
+                    } else {
+                        if(*p & 0x02)
+                            s = (s + ((*(long *)p & 0x03fffffc) - 0x04000000)) - (long)p;
+                        else
+                            s = (s + (*(long *)p & 0x03fffffc)) - (long)p;
+                    }
+                    *(unsigned long *)p = (*(unsigned long *)p & 0xfc000003) |
+                                          ((unsigned long)s & 0x03fffffc);
+                    break;
+
+                case R_PPC_REL32:
+                    if(rela)
+                        *(long *)p = (s + r->r_addend) - (long)p;
+                    else
+                        *(long *)p = (s + * (long *)p) - (long)p;
+                    break;
+
+                default:
+                    KPrintF("Relocation type %s\nat %s+%ld referencing\n"
+                            "symbol %s+%ld\nis not supported.",
+                            reloc_name[ELF32_R_TYPE(r->r_info)], es->name, r->r_offset,
+                            eo->symnames + sym->st_name, sym->st_value);
+                    return (FALSE);
+                }
             }
-            else {
-              if (*p & 0x02)
-                s = (s + ((*(long *)p & 0x03fffffc) - 0x04000000)) - (long)p;
-              else
-                s = (s + (*(long *)p & 0x03fffffc)) - (long)p;
-            }
-            *(unsigned long *)p = (*(unsigned long *)p & 0xfc000003) |
-                                  ((unsigned long)s & 0x03fffffc);
-            break;
-
-          case R_PPC_REL32:
-            if (rela)
-              *(long *)p = (s + r->r_addend) - (long)p;
-            else
-              *(long *)p = (s + *(long *)p) - (long)p;
-            break;
-
-          default:
-            KPrintF("Relocation type %s\nat %s+%ld referencing\n"
-                   "symbol %s+%ld\nis not supported.",
-                   reloc_name[ELF32_R_TYPE(r->r_info)],es->name,r->r_offset,
-                   eo->symnames+sym->st_name,sym->st_value);
-            return (FALSE);
         }
-      }
     }
-  }
-  return (TRUE);
+    return (TRUE);
 }
 
-static void*
-alloc32( size_t size )
+static void *
+alloc32(size_t size)
 {
-  return AHIAllocVec( size, MEMF_ANY );
+    return AHIAllocVec(size, MEMF_ANY);
 }
 
-static void*
-alloc32c( size_t size )
+static void *
+alloc32c(size_t size)
 {
-  return AHIAllocVec( size, MEMF_ANY | MEMF_CLEAR );
+    return AHIAllocVec(size, MEMF_ANY | MEMF_CLEAR);
 }
 
 void
-free32( void* addr )
+free32(void *addr)
 {
-  AHIFreeVec( addr );
+    AHIFreeVec(addr);
 }
 
 
-static void*
-allocstr( const char* string )
+static void *
+allocstr(const char *string)
 {
-  void* mem;
+    void *mem;
 
-  mem = AllocVec( strlen( string ) + 1, MEMF_ANY );
+    mem = AllocVec(strlen(string) + 1, MEMF_ANY);
 
-  if( mem != NULL )
-  {
-    strcpy( mem, string );
-  }
+    if(mem != NULL) {
+        strcpy(mem, string);
+    }
 
-  return mem;
+    return mem;
 }
 
 
 static BPTR
-opstream(struct ElfObject *eo, const char* name )
+opstream(struct ElfObject *eo, const char *name)
 {
-  BPTR handle = NULL;
+    BPTR handle = NULL;
 
-  if( name != NULL )
-  {
-    handle = Open( (char*) name, MODE_OLDFILE );
-  }
+    if(name != NULL) {
+        handle = Open((char *) name, MODE_OLDFILE);
+    }
 
-  return (handle);
+    return (handle);
 }
 
 
 static BOOL
 clstream(struct ElfObject *eo)
 {
-  Close( eo->handle );
-  return TRUE;
+    Close(eo->handle);
+    return TRUE;
 }
 
 
 static BOOL
-rdstream(struct ElfObject *eo,void *buf,long len)
+rdstream(struct ElfObject *eo, void *buf, long len)
 {
-  long r;
-  
-  r = Read( eo->handle, buf, len );
+    long r;
 
-  if( r != len )
-  {
-    return (FALSE);
-  }
-  return (TRUE);
+    r = Read(eo->handle, buf, len);
+
+    if(r != len) {
+        return (FALSE);
+    }
+    return (TRUE);
 }
 
 
 static long
-skstream(struct ElfObject *eo,long offs,long mode)
+skstream(struct ElfObject *eo, long offs, long mode)
 {
-  long r;
+    long r;
 
-  r = Seek( eo->handle, offs, mode );
-  return (r);
+    r = Seek(eo->handle, offs, mode);
+    return (r);
 }
 
 
 static BOOL
-prstream(struct ElfObject *eo,long offs,void *buf,long len)
+prstream(struct ElfObject *eo, long offs, void *buf, long len)
 /* position and read stream */
 {
-  if (skstream(eo,offs,OFFSET_BEGINNING) != -1)
-    return (rdstream(eo,buf,len));
-  return FALSE;
+    if(skstream(eo, offs, OFFSET_BEGINNING) != -1)
+        return (rdstream(eo, buf, len));
+    return FALSE;
 }
 
 
-static void *readsection(struct ElfObject *eo,struct Elf32_Shdr *sh)
+static void *readsection(struct ElfObject *eo, struct Elf32_Shdr *sh)
 /* allocate memory and read section contents */
 {
-  void *p;
+    void *p;
 
-  if( (p = AllocVec(sh->sh_size,MEMF_ANY)) != NULL )
-    if (prstream(eo,sh->sh_offset,p,sh->sh_size))
-      return (p);
-  return (NULL);
+    if((p = AllocVec(sh->sh_size, MEMF_ANY)) != NULL)
+        if(prstream(eo, sh->sh_offset, p, sh->sh_size))
+            return (p);
+    return (NULL);
 }
 
 
@@ -984,109 +962,106 @@ static struct ELFSection *progsection(struct ElfObject *eo,
 /* sections will be loaded and relocated on demand, e.g. if a new task */
 /* is created. */
 {
-  struct ELFSection *s;
+    struct ELFSection *s;
 
-  if( (s = AllocVec(sizeof(struct ELFSection),MEMF_ANY)) != NULL ) {
-    memset(s,0,sizeof(struct ELFSection));
-    s->name = eo->secnames + sh->sh_name;
-    s->flags = sh->sh_type==SHT_NOBITS ? ElfSecF_NOBITS:0;
-    s->alignment = (uint8)sh->sh_addralign;
-    s->offset = sh->sh_offset;
-    s->size = sh->sh_size;
-    return (s);
-  }
-  return (NULL);
+    if((s = AllocVec(sizeof(struct ELFSection), MEMF_ANY)) != NULL) {
+        memset(s, 0, sizeof(struct ELFSection));
+        s->name = eo->secnames + sh->sh_name;
+        s->flags = sh->sh_type == SHT_NOBITS ? ElfSecF_NOBITS : 0;
+        s->alignment = (uint8)sh->sh_addralign;
+        s->offset = sh->sh_offset;
+        s->size = sh->sh_size;
+        return (s);
+    }
+    return (NULL);
 }
 
 
 static BOOL common_symbols(struct ElfObject *eo)
 /* Create a and initialize Section structure for Common symbols. */
 {
-  static const char *FN = "common_symbols(): ";
-  static const char *bssname = ".bss";
-  struct ELFSection *s = NULL;
-  struct Elf32_Sym *sym;
-  uint16 *relocp;
-  uint32 offset = 0,idx = 0,cnt=0;
-  unsigned int i;
+    static const char *FN = "common_symbols(): ";
+    static const char *bssname = ".bss";
+    struct ELFSection *s = NULL;
+    struct Elf32_Sym *sym;
+    uint16 *relocp;
+    uint32 offset = 0, idx = 0, cnt = 0;
+    unsigned int i;
 
-  /* First try to find a .bss, where Common symbols could be appended */
-  for (i=0; i<(eo->nsects-1); i++) {
-    if( (s = eo->sections[i]) != NULL ) {
-      if (!strcmp(s->name,bssname) && (s->flags & ElfSecF_NOBITS)) {
-        idx = i;
-        offset = s->size;
+    /* First try to find a .bss, where Common symbols could be appended */
+    for(i = 0; i < (eo->nsects - 1); i++) {
+        if((s = eo->sections[i]) != NULL) {
+            if(!strcmp(s->name, bssname) && (s->flags & ElfSecF_NOBITS)) {
+                idx = i;
+                offset = s->size;
 //        KPrintF("%sfound %s at index %ld with size=%ld\n",
 //                FN,bssname,idx,offset);
-        break;
-      }
-      else
-        s = NULL;
+                break;
+            } else
+                s = NULL;
+        }
     }
-  }
 
-  if (!s) {
-    /* No .bss section present, allocate an own one */
-    if( (s = AllocVec(sizeof(struct ELFSection),MEMF_ANY)) != NULL ) {
-      memset(s,0,sizeof(struct ELFSection));
-      s->name = allocstr((char *)bssname);
-      s->flags = ElfSecF_NOBITS;
-      s->alignment = 32;
-      offset = 0;
-      idx = eo->nsects-1;
-      eo->sections[idx] = s;
+    if(!s) {
+        /* No .bss section present, allocate an own one */
+        if((s = AllocVec(sizeof(struct ELFSection), MEMF_ANY)) != NULL) {
+            memset(s, 0, sizeof(struct ELFSection));
+            s->name = allocstr((char *)bssname);
+            s->flags = ElfSecF_NOBITS;
+            s->alignment = 32;
+            offset = 0;
+            idx = eo->nsects - 1;
+            eo->sections[idx] = s;
 //      KPrintF("%screated new %s at index %ld\n",FN,bssname,idx);
+        } else
+            return (FALSE);
     }
-    else
-      return (FALSE);
-  }
 
-  /* Ok, search for COMMON symbols now */
-  for (i=1,sym=&eo->symtab[1]; i<eo->nsyms; i++,sym++) {
-    if (sym->st_shndx == SHN_COMMON) {
-      offset = (offset + sym->st_value-1) & ~(sym->st_value-1);
-      sym->st_value = offset;
-      sym->st_shndx = idx;
-      offset += sym->st_size;
-      cnt++;
+    /* Ok, search for COMMON symbols now */
+    for(i = 1, sym = &eo->symtab[1]; i < eo->nsyms; i++, sym++) {
+        if(sym->st_shndx == SHN_COMMON) {
+            offset = (offset + sym->st_value - 1) & ~(sym->st_value - 1);
+            sym->st_value = offset;
+            sym->st_shndx = idx;
+            offset += sym->st_size;
+            cnt++;
+        }
     }
-  }
 //  KPrintF("%sassigned %ld common symbols (%ld bytes)\n",
 //          FN,cnt,offset-s->size);
-  s->size = offset;  /* set new .bss section size */
+    s->size = offset;  /* set new .bss section size */
 
-  return (TRUE);
+    return (TRUE);
 }
 
 
-static BOOL getrelocs(struct ElfObject *eo,struct Elf32_Shdr *sh)
+static BOOL getrelocs(struct ElfObject *eo, struct Elf32_Shdr *sh)
 /* read relocation entries for a section */
 {
-  uint32 rsize = sh->sh_entsize;
-  int nrelocs = (int)(sh->sh_size/rsize);
-  struct ELFSection *s = eo->sections[sh->sh_info];
+    uint32 rsize = sh->sh_entsize;
+    int nrelocs = (int)(sh->sh_size / rsize);
+    struct ELFSection *s = eo->sections[sh->sh_info];
 
 
-  s->nrel = nrelocs;
-  if (sh->sh_type == SHT_RELA) {
-    s->flags |= ElfSecF_RELA;
-    if( (s->relocs = readsection(eo,sh)) != NULL )
-      return (TRUE);
-  }
-  else {
-    struct Elf32_Rela *r;
+    s->nrel = nrelocs;
+    if(sh->sh_type == SHT_RELA) {
+        s->flags |= ElfSecF_RELA;
+        if((s->relocs = readsection(eo, sh)) != NULL)
+            return (TRUE);
+    } else {
+        struct Elf32_Rela *r;
 
-    if ((r = s->relocs = AllocVec(nrelocs*sizeof(struct Elf32_Rela),
-                                  MEMF_ANY)) &&
-        (skstream(eo,sh->sh_offset,OFFSET_BEGINNING) != -1)) {
-      while (nrelocs--) {
-        r->r_addend = 0;
-        if (!rdstream(eo,r,sizeof(struct Elf32_Rel)))
-          return (FALSE);
-        r++;
-      }
-      return (TRUE);
-    }        
-  }
-  return (FALSE);
+        if((r = s->relocs = AllocVec(nrelocs * sizeof(struct Elf32_Rela),
+                                     MEMF_ANY)) &&
+                (skstream(eo, sh->sh_offset, OFFSET_BEGINNING) != -1)) {
+            while(nrelocs--) {
+                r->r_addend = 0;
+                if(!rdstream(eo, r, sizeof(struct Elf32_Rel)))
+                    return (FALSE);
+                r++;
+            }
+            return (TRUE);
+        }
+    }
+    return (FALSE);
 }

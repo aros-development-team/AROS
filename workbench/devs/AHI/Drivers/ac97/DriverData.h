@@ -14,12 +14,11 @@
 #define ALIGN_AC97OUT 8
 #define ALIGN_AC97(x) ((x + ALIGN_AC97OUT) & ~(ALIGN_AC97OUT-1))
 
-struct ac97Base
-{
+struct ac97Base {
     struct DriverBase	driverbase;
-    struct Library*	dosbase;
-    struct OOPBase*	oopbase;
-    struct ExecBase*	sysbase;
+    struct Library	*dosbase;
+    struct OOPBase	*oopbase;
+    struct ExecBase	*sysbase;
 #if defined(__AROS__) && (__WORDSIZE==64)
     APTR                buffer;
 #endif
@@ -35,12 +34,12 @@ struct ac97Base
     /* card specific data ends */
 
     struct {
-	ULONG		sample_address;
-	ULONG		sample_size;
+        ULONG		sample_address;
+        ULONG		sample_size;
     }			*PCM_out;
 
-    void		(*mixer_set_reg)(struct ac97Base *, ULONG reg, UWORD value);
-    UWORD		(*mixer_get_reg)(struct ac97Base *, ULONG reg);
+    void	(*mixer_set_reg)(struct ac97Base *, ULONG reg, UWORD value);
+    UWORD(*mixer_get_reg)(struct ac97Base *, ULONG reg);
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct ac97Base))
@@ -48,19 +47,18 @@ struct ac97Base
 #define DOSBase         ((struct DosLibrary*)ac97Base->dosbase)
 #define OOPBase		((struct OOPBase *)ac97Base->oopbase)
 
-struct AC97Data
-{
+struct AC97Data {
     struct DriverData   driverdata;
     UBYTE		flags;
     UBYTE		pad1;
     BYTE		mastersignal;
     BYTE		slavesignal;
-    struct Process*	mastertask;
-    struct Process*	slavetask;
-    struct ac97Base*	ahisubbase;
+    struct Process	*mastertask;
+    struct Process	*slavetask;
+    struct ac97Base	*ahisubbase;
     APTR		mixbuffer;
     UWORD		old_SR;
-    
+
     struct Interrupt 	irq;
 
     ULONG		out_volume;

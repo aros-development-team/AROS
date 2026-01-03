@@ -1,17 +1,17 @@
 /*
      emu10kx.audio - AHI driver for SoundBlaster Live! series
      Copyright (C) 2002-2005 Martin Blom <martin@blom.org>
-     
+
      This program is free software; you can redistribute it and/or
      modify it under the terms of the GNU General Public License
      as published by the Free Software Foundation; either version 2
      of the License, or (at your option) any later version.
-     
+
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-     
+
      You should have received a copy of the GNU General Public License
      along with this program; if not, write to the Free Software
      Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -37,8 +37,7 @@
 
 struct EMU10kxData;
 
-struct EMU10kxBase
-{
+struct EMU10kxBase {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -46,7 +45,7 @@ struct EMU10kxBase
 
     /** The driver's global data *********************************************/
 
-    
+
     /** A sempahore used for locking */
     struct SignalSemaphore semaphore;
 
@@ -54,7 +53,7 @@ struct EMU10kxBase
     int                    cards_found;
 
     /** A EMU10kxData structure for each card found */
-    struct EMU10kxData**   driverdatas;
+    struct EMU10kxData   **driverdatas;
 
     /** The public CAMD interface */
     struct EMU10kxCamd     camd;
@@ -77,8 +76,7 @@ struct EMU10kxBase
 #endif
 
 
-struct EMU10kxData
-{
+struct EMU10kxData {
     /** Skeleton's variables *************************************************/
 
     struct DriverData   driverdata;
@@ -95,14 +93,14 @@ struct EMU10kxData
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -130,16 +128,16 @@ struct EMU10kxData
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
-    
+
     /*** EMU10kx structures **************************************************/
-    
+
     struct emu10k1_card card;
     struct emu_voice    voices[4];
 
@@ -148,7 +146,7 @@ struct EMU10kxData
     UWORD               voices_started;
     UWORD               pad;
 
-    
+
     /*** Playback interrupt variables ****************************************/
 
     /** The mixing buffer (a cyclic buffer filled by AHI) */
@@ -156,7 +154,7 @@ struct EMU10kxData
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_length;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_size;
 
@@ -177,7 +175,7 @@ struct EMU10kxData
 
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
-    
+
     /** Analog mixer variables ***********************************************/
 
     /** The currently selected input */
@@ -209,16 +207,16 @@ struct EMU10kxData
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 vide */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
 };

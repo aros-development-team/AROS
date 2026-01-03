@@ -1,43 +1,43 @@
-/*     
+/*
  **********************************************************************
  *     sblive_fx.h
- *     Copyright 1999, 2000 Creative Labs, Inc. 
- * 
- ********************************************************************** 
- * 
- *     Date                 Author          Summary of changes 
- *     ----                 ------          ------------------ 
- *     October 20, 1999     Bertrand Lee    base code release 
- * 
- ********************************************************************** 
- * 
- *     This program is free software; you can redistribute it and/or 
- *     modify it under the terms of the GNU General Public License as 
- *     published by the Free Software Foundation; either version 2 of 
- *     the License, or (at your option) any later version. 
- * 
- *     This program is distributed in the hope that it will be useful, 
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of 
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the 
- *     GNU General Public License for more details. 
- * 
- *     You should have received a copy of the GNU General Public 
- *     License along with this program; if not, write to the Free 
- *     Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, 
- *     USA. 
- * 
- ********************************************************************** 
+ *     Copyright 1999, 2000 Creative Labs, Inc.
+ *
+ **********************************************************************
+ *
+ *     Date                 Author          Summary of changes
+ *     ----                 ------          ------------------
+ *     October 20, 1999     Bertrand Lee    base code release
+ *
+ **********************************************************************
+ *
+ *     This program is free software; you can redistribute it and/or
+ *     modify it under the terms of the GNU General Public License as
+ *     published by the Free Software Foundation; either version 2 of
+ *     the License, or (at your option) any later version.
+ *
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ *
+ *     You should have received a copy of the GNU General Public
+ *     License along with this program; if not, write to the Free
+ *     Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139,
+ *     USA.
+ *
+ **********************************************************************
  */
 
 #ifndef _EFXMGR_H
 #define _EFXMGR_H
 
-struct emu_efx_info_t{
-	int opcode_shift;
-	int high_operand_shift;
-	int instruction_start;
-	int gpr_base;
-	int output_base;
+struct emu_efx_info_t {
+    int opcode_shift;
+    int high_operand_shift;
+    int instruction_start;
+    int gpr_base;
+    int output_base;
 };
 
 
@@ -60,53 +60,53 @@ struct emu_efx_info_t{
 #define PATCH_NAME_SIZE 32
 
 struct dsp_rpatch {
-	char name[PATCH_NAME_SIZE];
-	u16 code_start;
-	u16 code_size;
+    char name[PATCH_NAME_SIZE];
+    u16 code_start;
+    u16 code_size;
 
-	unsigned long gpr_used[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
-	unsigned long gpr_input[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
-	unsigned long route[NUM_OUTPUTS];
-	unsigned long route_v[NUM_OUTPUTS];
+    unsigned long gpr_used[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
+    unsigned long gpr_input[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
+    unsigned long route[NUM_OUTPUTS];
+    unsigned long route_v[NUM_OUTPUTS];
 };
 
 struct dsp_patch {
-	char name[PATCH_NAME_SIZE];
-	u8 id;
-	unsigned long input;                      /* bitmap of the lines used as inputs */
-	unsigned long output;                     /* bitmap of the lines used as outputs */
-	u16 code_start;
-	u16 code_size;
+    char name[PATCH_NAME_SIZE];
+    u8 id;
+    unsigned long input;                      /* bitmap of the lines used as inputs */
+    unsigned long output;                     /* bitmap of the lines used as outputs */
+    u16 code_start;
+    u16 code_size;
 
-	unsigned long gpr_used[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];    /* bitmap of used gprs */
-	unsigned long gpr_input[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
-	u8 traml_istart;  /* starting address of the internal tram lines used */
-	u8 traml_isize;   /* number of internal tram lines used */
+    unsigned long gpr_used[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];    /* bitmap of used gprs */
+    unsigned long gpr_input[NUM_GPRS / (sizeof(unsigned long) * 8) + 1];
+    u8 traml_istart;  /* starting address of the internal tram lines used */
+    u8 traml_isize;   /* number of internal tram lines used */
 
-	u8 traml_estart;
-	u8 traml_esize;
+    u8 traml_estart;
+    u8 traml_esize;
 
-	u16 tramb_istart;        /* starting address of the internal tram memory used */
-	u16 tramb_isize;         /* amount of internal memory used */
-	u32 tramb_estart;
-	u32 tramb_esize;
+    u16 tramb_istart;        /* starting address of the internal tram memory used */
+    u16 tramb_isize;         /* amount of internal memory used */
+    u32 tramb_estart;
+    u32 tramb_esize;
 };
 
 struct dsp_gpr {
-	u8 type;                      /* gpr type, STATIC, DYNAMIC, INPUT, OUTPUT, CONTROL */
-	char name[GPR_NAME_SIZE];       /* gpr value, only valid for control gprs */
-	s32 min, max;         /* value range for this gpr, only valid for control gprs */
-	u8 line;                    /* which input/output line is the gpr attached, only valid for input/output gprs */
-	u8 usage;
+    u8 type;                      /* gpr type, STATIC, DYNAMIC, INPUT, OUTPUT, CONTROL */
+    char name[GPR_NAME_SIZE];       /* gpr value, only valid for control gprs */
+    s32 min, max;         /* value range for this gpr, only valid for control gprs */
+    u8 line;                    /* which input/output line is the gpr attached, only valid for input/output gprs */
+    u8 usage;
 };
 
 enum {
-	GPR_TYPE_NULL = 0,
-	GPR_TYPE_IO,
-	GPR_TYPE_STATIC,
-	GPR_TYPE_DYNAMIC,
-	GPR_TYPE_CONTROL,
-	GPR_TYPE_CONSTANT
+    GPR_TYPE_NULL = 0,
+    GPR_TYPE_IO,
+    GPR_TYPE_STATIC,
+    GPR_TYPE_DYNAMIC,
+    GPR_TYPE_CONTROL,
+    GPR_TYPE_CONSTANT
 };
 
 #define GPR_BASE 0x100
@@ -118,12 +118,12 @@ enum {
 #define MAX_PATCHES_PAGES 32
 
 struct patch_manager {
-	void *patch[MAX_PATCHES_PAGES];
-	int current_pages;
-	struct dsp_rpatch rpatch;
-	struct dsp_gpr gpr[NUM_GPRS];   /* gpr usage table */
+    void *patch[MAX_PATCHES_PAGES];
+    int current_pages;
+    struct dsp_rpatch rpatch;
+    struct dsp_gpr gpr[NUM_GPRS];   /* gpr usage table */
 //	spinlock_t lock;
-	s16 ctrl_gpr[SOUND_MIXER_NRDEVICES][2];
+    s16 ctrl_gpr[SOUND_MIXER_NRDEVICES][2];
 };
 
 #define PATCHES_PER_PAGE (PAGE_SIZE / sizeof(struct dsp_patch))

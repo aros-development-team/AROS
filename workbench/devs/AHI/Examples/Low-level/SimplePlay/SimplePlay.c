@@ -21,14 +21,14 @@ char *ID = "$VER: SimplePlay 1.3 (23.4.97)\r\n";
 APTR samples[MAXSAMPLES] = { 0 };
 
 struct {
-  BOOL      FadeVolume;
-  Fixed     Volume;
-  sposition Position;
+    BOOL      FadeVolume;
+    Fixed     Volume;
+    sposition Position;
 } channelstate[CHANNELS];
 
 struct {
-  struct AHIEffDSPMask mask;
-  UBYTE                mode[CHANNELS];
+    struct AHIEffDSPMask mask;
+    UBYTE                mode[CHANNELS];
 } maskeffect = {0};
 struct AHIEffDSPEcho   echoeffect = {0};
 
@@ -46,8 +46,8 @@ BOOL  OpenAHI(void);
 void  CloseAHI(void);
 BOOL  AllocAudio(void);
 void  FreeAudio(void);
-UWORD LoadSample(unsigned char * , ULONG );
-void  UnloadSample(UWORD );
+UWORD LoadSample(unsigned char *, ULONG);
+void  UnloadSample(UWORD);
 int   main(void);
 
 /******************************************************************************
@@ -57,32 +57,33 @@ int   main(void);
 __asm __interrupt __saveds static void PlayerFunc(
     register __a0 struct Hook *hook,
     register __a2 struct AHIAudioCtrl *actrl,
-    register __a1 APTR ignored) {
+    register __a1 APTR ignored)
+{
 
-  int i;
-  
-  for(i = 0; i < CHANNELS; i++) {
+    int i;
 
-    if(channelstate[i].FadeVolume) {
+    for(i = 0; i < CHANNELS; i++) {
 
-      channelstate[i].Volume = (channelstate[i].Volume * 90) / 100; // Fade volume
+        if(channelstate[i].FadeVolume) {
 
-      if(channelstate[i].Volume == 0) {
-        channelstate[i].FadeVolume = FALSE;
-      }
+            channelstate[i].Volume = (channelstate[i].Volume * 90) / 100; // Fade volume
 
-      AHI_SetVol(i, channelstate[i].Volume, channelstate[i].Position,
-          actrl, AHISF_IMM);
+            if(channelstate[i].Volume == 0) {
+                channelstate[i].FadeVolume = FALSE;
+            }
+
+            AHI_SetVol(i, channelstate[i].Volume, channelstate[i].Position,
+                       actrl, AHISF_IMM);
+        }
     }
-  }
-  return;
+    return;
 }
 
 struct Hook PlayerHook = {
-  0,0,
-  (ULONG (* )()) PlayerFunc,
-  NULL,
-  NULL,
+    0, 0,
+    (ULONG(*)()) PlayerFunc,
+    NULL,
+    NULL,
 };
 
 /******************************************************************************
@@ -91,27 +92,28 @@ struct Hook PlayerHook = {
 
 /* Open the device for low-level usage */
 
-BOOL OpenAHI(void) {
+BOOL OpenAHI(void)
+{
 
-  if(AHImp = CreateMsgPort()) {
-    if(AHIio = (struct AHIRequest *)CreateIORequest(
-        AHImp,sizeof(struct AHIRequest))) {
+    if(AHImp = CreateMsgPort()) {
+        if(AHIio = (struct AHIRequest *)CreateIORequest(
+                       AHImp, sizeof(struct AHIRequest))) {
 
 #if USE_AHI_V4
-      AHIio->ahir_Version = 4;
+            AHIio->ahir_Version = 4;
 #else
-      AHIio->ahir_Version = 2;
+            AHIio->ahir_Version = 2;
 #endif
 
-      if(!(AHIDevice = OpenDevice(AHINAME, AHI_NO_UNIT,
-          (struct IORequest *) AHIio,NULL))) {
-        AHIBase = (struct Library *) AHIio->ahir_Std.io_Device;
-        return TRUE;
-      }
+            if(!(AHIDevice = OpenDevice(AHINAME, AHI_NO_UNIT,
+                                        (struct IORequest *) AHIio, NULL))) {
+                AHIBase = (struct Library *) AHIio->ahir_Std.io_Device;
+                return TRUE;
+            }
+        }
     }
-  }
-  FreeAudio();
-  return FALSE;
+    FreeAudio();
+    return FALSE;
 }
 
 
@@ -121,15 +123,16 @@ BOOL OpenAHI(void) {
 
 /* Close the device */
 
-void CloseAHI(void) {
+void CloseAHI(void)
+{
 
-  if(! AHIDevice)
-    CloseDevice((struct IORequest *)AHIio);
-  AHIDevice=-1;
-  DeleteIORequest((struct IORequest *)AHIio);
-  AHIio=NULL;
-  DeleteMsgPort(AHImp);
-  AHImp=NULL;
+    if(! AHIDevice)
+        CloseDevice((struct IORequest *)AHIio);
+    AHIDevice = -1;
+    DeleteIORequest((struct IORequest *)AHIio);
+    AHIio = NULL;
+    DeleteMsgPort(AHImp);
+    AHImp = NULL;
 }
 
 
@@ -139,37 +142,38 @@ void CloseAHI(void) {
 
 /* Ask user for an audio mode and allocate it */
 
-BOOL AllocAudio(void) {
-  struct AHIAudioModeRequester *req;
-  BOOL   rc = FALSE;
+BOOL AllocAudio(void)
+{
+    struct AHIAudioModeRequester *req;
+    BOOL   rc = FALSE;
 
-  req = AHI_AllocAudioRequest(
-      AHIR_PubScreenName, NULL,
-      AHIR_TitleText,     "Select a mode and rate",
-      AHIR_DoMixFreq,     TRUE,
-      TAG_DONE);
+    req = AHI_AllocAudioRequest(
+              AHIR_PubScreenName, NULL,
+              AHIR_TitleText,     "Select a mode and rate",
+              AHIR_DoMixFreq,     TRUE,
+              TAG_DONE);
 
-  if(req) {
-    if(AHI_AudioRequest(req, TAG_DONE)) {
-      actrl = AHI_AllocAudio(
-          AHIA_AudioID,         req->ahiam_AudioID,
-          AHIA_MixFreq,         req->ahiam_MixFreq,
-          AHIA_Channels,        CHANNELS,
-          AHIA_Sounds,          MAXSAMPLES,
-          AHIA_PlayerFunc,      &PlayerHook,
-          AHIA_PlayerFreq,      INT_FREQ<<16,
-          AHIA_MinPlayerFreq,   INT_FREQ<<16,
-          AHIA_MaxPlayerFreq,   INT_FREQ<<16,
-          TAG_DONE);
-      if(actrl) {
-        // Get real mixing frequency
-        AHI_ControlAudio(actrl, AHIC_MixFreq_Query, &mixfreq, TAG_DONE);
-        rc = TRUE;
-      }
+    if(req) {
+        if(AHI_AudioRequest(req, TAG_DONE)) {
+            actrl = AHI_AllocAudio(
+                        AHIA_AudioID,         req->ahiam_AudioID,
+                        AHIA_MixFreq,         req->ahiam_MixFreq,
+                        AHIA_Channels,        CHANNELS,
+                        AHIA_Sounds,          MAXSAMPLES,
+                        AHIA_PlayerFunc,      &PlayerHook,
+                        AHIA_PlayerFreq,      INT_FREQ << 16,
+                        AHIA_MinPlayerFreq,   INT_FREQ << 16,
+                        AHIA_MaxPlayerFreq,   INT_FREQ << 16,
+                        TAG_DONE);
+            if(actrl) {
+                // Get real mixing frequency
+                AHI_ControlAudio(actrl, AHIC_MixFreq_Query, &mixfreq, TAG_DONE);
+                rc = TRUE;
+            }
+        }
+        AHI_FreeAudioRequest(req);
     }
-    AHI_FreeAudioRequest(req);
-  }
-  return rc;
+    return rc;
 }
 
 
@@ -179,10 +183,11 @@ BOOL AllocAudio(void) {
 
 /* Release the audio hardware */
 
-void FreeAudio() {
+void FreeAudio()
+{
 
-  AHI_FreeAudio(actrl);
-  actrl = NULL;
+    AHI_FreeAudio(actrl);
+    actrl = NULL;
 }
 
 /******************************************************************************
@@ -192,47 +197,48 @@ void FreeAudio() {
 /* Load a (raw) 8 or 16 bit sample from disk. The sample ID is returned
    (or AHI_NOSOUND on error). */
 
-UWORD LoadSample(char *filename, ULONG type) {
-  struct AHISampleInfo sample;
-  APTR *samplearray = samples;
-  UWORD id = 0, rc = AHI_NOSOUND;
-  BPTR file;
+UWORD LoadSample(char *filename, ULONG type)
+{
+    struct AHISampleInfo sample;
+    APTR *samplearray = samples;
+    UWORD id = 0, rc = AHI_NOSOUND;
+    BPTR file;
 
-  // Find a free sample slot
+    // Find a free sample slot
 
-  while(*samplearray) {
-    id++;
-    samplearray++;
-    if(id >= MAXSAMPLES) {
-      return AHI_NOSOUND;
+    while(*samplearray) {
+        id++;
+        samplearray++;
+        if(id >= MAXSAMPLES) {
+            return AHI_NOSOUND;
+        }
     }
-  }
 
-  file = Open(filename, MODE_OLDFILE);
-  
-  if(file) {
-    int length;
+    file = Open(filename, MODE_OLDFILE);
 
-    Seek(file, 0, OFFSET_END);
-    length = Seek(file, 0, OFFSET_BEGINNING);
-    *samplearray = AllocVec(length, MEMF_PUBLIC);
-    if(*samplearray) {
-      Read(file, *samplearray, length);
+    if(file) {
+        int length;
 
-      sample.ahisi_Type = type;
-      sample.ahisi_Address = *samplearray;
+        Seek(file, 0, OFFSET_END);
+        length = Seek(file, 0, OFFSET_BEGINNING);
+        *samplearray = AllocVec(length, MEMF_PUBLIC);
+        if(*samplearray) {
+            Read(file, *samplearray, length);
+
+            sample.ahisi_Type = type;
+            sample.ahisi_Address = *samplearray;
 #if USE_AHI_V4
-      sample.ahisi_Length = length / AHI_SampleFrameSize(type);
+            sample.ahisi_Length = length / AHI_SampleFrameSize(type);
 #else
-      sample.ahisi_Length = length / (type == AHIST_M16S ? 2 : 1);
+            sample.ahisi_Length = length / (type == AHIST_M16S ? 2 : 1);
 #endif
-      if(! AHI_LoadSound(id, AHIST_SAMPLE, &sample, actrl)) {
-        rc = id;
-      }
+            if(! AHI_LoadSound(id, AHIST_SAMPLE, &sample, actrl)) {
+                rc = id;
+            }
+        }
+        Close(file);
     }
-    Close(file);
-  }
-  return rc;
+    return rc;
 }
 
 
@@ -240,156 +246,157 @@ UWORD LoadSample(char *filename, ULONG type) {
 **** UnloadSample *************************************************************
 ******************************************************************************/
 
-void UnloadSample(UWORD id) {
+void UnloadSample(UWORD id)
+{
 
-  AHI_UnloadSound(id, actrl);
-  FreeVec(samples[id]);
-  samples[id] = NULL;
+    AHI_UnloadSound(id, actrl);
+    FreeVec(samples[id]);
+    samples[id] = NULL;
 }
 
 /******************************************************************************
 **** main *********************************************************************
 ******************************************************************************/
 
-int main() {
-  UWORD sample, ahem, louise;
-  int i;
+int main()
+{
+    UWORD sample, ahem, louise;
+    int i;
 
-  for(i = 0; i < CHANNELS; i++) {
-    channelstate[i].FadeVolume = FALSE;
-  }
+    for(i = 0; i < CHANNELS; i++) {
+        channelstate[i].FadeVolume = FALSE;
+    }
 
-  if(OpenAHI()) {
-    if(AllocAudio()) {
-      ahem   = LoadSample("Projekt:ahi/samples/ASS-14.sb", AHIST_M8S);
-      louise = LoadSample("Projekt:ahi/samples/LouiseR.sw", AHIST_M16S);
-      if((ahem != AHI_NOSOUND) && (louise != AHI_NOSOUND)) {
+    if(OpenAHI()) {
+        if(AllocAudio()) {
+            ahem   = LoadSample("Projekt:ahi/samples/ASS-14.sb", AHIST_M8S);
+            louise = LoadSample("Projekt:ahi/samples/LouiseR.sw", AHIST_M16S);
+            if((ahem != AHI_NOSOUND) && (louise != AHI_NOSOUND)) {
 
-        // Start feeding samples to sound hardware
-        if(!(AHI_ControlAudio(actrl,
-            AHIC_Play, TRUE,
-            TAG_DONE)))
-        {
+                // Start feeding samples to sound hardware
+                if(!(AHI_ControlAudio(actrl,
+                                      AHIC_Play, TRUE,
+                                      TAG_DONE))) {
 
 #if USE_AHI_V4
-          Printf("Playing two samples, one with echo and one without.\n");
+                    Printf("Playing two samples, one with echo and one without.\n");
 
-          // Turn on echo on channel 1
-          // No error checking here, but you should do that.
-          maskeffect.mask.ahie_Effect = AHIET_DSPMASK;
-          maskeffect.mask.ahiedm_Channels = CHANNELS;
-          maskeffect.mode[0] = AHIEDM_DRY;
-          maskeffect.mode[1] = AHIEDM_WET;
-          AHI_SetEffect( &maskeffect, actrl );
-          
-          echoeffect.ahie_Effect     = AHIET_DSPECHO;
-          echoeffect.ahiede_Delay    = mixfreq / 4; // 250 ms
-          echoeffect.ahiede_Feedback = 0x8000;      // 50 %
-          echoeffect.ahiede_Mix      = 0x10000;     // 100% and...
-          echoeffect.ahiede_Cross    = 0;           // ...0% gives faster echo code.
-          AHI_SetEffect( &echoeffect, actrl );
+                    // Turn on echo on channel 1
+                    // No error checking here, but you should do that.
+                    maskeffect.mask.ahie_Effect = AHIET_DSPMASK;
+                    maskeffect.mask.ahiedm_Channels = CHANNELS;
+                    maskeffect.mode[0] = AHIEDM_DRY;
+                    maskeffect.mode[1] = AHIEDM_WET;
+                    AHI_SetEffect(&maskeffect, actrl);
 
-          AHI_Play(actrl,
-            // A forever-looping sample on channel 0
-            AHIP_BeginChannel,  0,
-            AHIP_Freq,          17640,
-            AHIP_Vol,           0x10000,
-            AHIP_Pan,           0xc000,
-            AHIP_Sound,         louise,
-            AHIP_EndChannel,    NULL,
+                    echoeffect.ahie_Effect     = AHIET_DSPECHO;
+                    echoeffect.ahiede_Delay    = mixfreq / 4; // 250 ms
+                    echoeffect.ahiede_Feedback = 0x8000;      // 50 %
+                    echoeffect.ahiede_Mix      = 0x10000;     // 100% and...
+                    echoeffect.ahiede_Cross    = 0;           // ...0% gives faster echo code.
+                    AHI_SetEffect(&echoeffect, actrl);
 
-            // A oneshot sample on channel 1
-            AHIP_BeginChannel,  1,
-            AHIP_Freq,          22254,
-            AHIP_Vol,           0x10000,
-            AHIP_Pan,           0x4000,
-            AHIP_Sound,         ahem,
-            AHIP_LoopSound,     AHI_NOSOUND,
-            AHIP_EndChannel,    NULL,
+                    AHI_Play(actrl,
+                             // A forever-looping sample on channel 0
+                             AHIP_BeginChannel,  0,
+                             AHIP_Freq,          17640,
+                             AHIP_Vol,           0x10000,
+                             AHIP_Pan,           0xc000,
+                             AHIP_Sound,         louise,
+                             AHIP_EndChannel,    NULL,
 
-            TAG_DONE);
+                             // A oneshot sample on channel 1
+                             AHIP_BeginChannel,  1,
+                             AHIP_Freq,          22254,
+                             AHIP_Vol,           0x10000,
+                             AHIP_Pan,           0x4000,
+                             AHIP_Sound,         ahem,
+                             AHIP_LoopSound,     AHI_NOSOUND,
+                             AHIP_EndChannel,    NULL,
+
+                             TAG_DONE);
 #else
-          Printf("Playing two samples.\n");
+                    Printf("Playing two samples.\n");
 
-          // A forever-looping sample on channel 0
-          AHI_SetFreq(0, 17640, actrl, AHISF_IMM);
-          AHI_SetVol(0, 0x10000, 0xc000, actrl, AHISF_IMM);
-          AHI_SetSound(0, louise, 0, 0, actrl, AHISF_IMM);
+                    // A forever-looping sample on channel 0
+                    AHI_SetFreq(0, 17640, actrl, AHISF_IMM);
+                    AHI_SetVol(0, 0x10000, 0xc000, actrl, AHISF_IMM);
+                    AHI_SetSound(0, louise, 0, 0, actrl, AHISF_IMM);
 
-          // A oneshot sample on channel 1
-          AHI_SetFreq(1, 22254, actrl, AHISF_IMM);
-          AHI_SetVol(1, 0x10000, 0x4000, actrl, AHISF_IMM);
-          AHI_SetSound(1, ahem, 0, 0, actrl, AHISF_IMM);
-          AHI_SetSound(1, AHI_NOSOUND, 0, 0, actrl, 0);
+                    // A oneshot sample on channel 1
+                    AHI_SetFreq(1, 22254, actrl, AHISF_IMM);
+                    AHI_SetVol(1, 0x10000, 0x4000, actrl, AHISF_IMM);
+                    AHI_SetSound(1, ahem, 0, 0, actrl, AHISF_IMM);
+                    AHI_SetSound(1, AHI_NOSOUND, 0, 0, actrl, 0);
 #endif
-          channelstate[0].Volume   = 0x10000;
-          channelstate[0].Position = 0xc000;
-          channelstate[1].Volume   = 0x10000;
-          channelstate[1].Position = 0x4000;
+                    channelstate[0].Volume   = 0x10000;
+                    channelstate[0].Position = 0xc000;
+                    channelstate[1].Volume   = 0x10000;
+                    channelstate[1].Position = 0x4000;
 
-          // Wait 5 seconds
-          
-          Delay(5 * TICKS_PER_SECOND);
+                    // Wait 5 seconds
+
+                    Delay(5 * TICKS_PER_SECOND);
 
 #if USE_AHI_V4
-          Printf("Turning on echo on channel 0.\n");
+                    Printf("Turning on echo on channel 0.\n");
 
-          // Turn on echo on channel 0, turn off channel 1
-          // No error checking here, but you should do that.
-          maskeffect.mode[0] = AHIEDM_WET;
-          maskeffect.mode[1] = AHIEDM_DRY;
-          AHI_SetEffect( &maskeffect, actrl );
+                    // Turn on echo on channel 0, turn off channel 1
+                    // No error checking here, but you should do that.
+                    maskeffect.mode[0] = AHIEDM_WET;
+                    maskeffect.mode[1] = AHIEDM_DRY;
+                    AHI_SetEffect(&maskeffect, actrl);
 #endif
 
-          // Wait 5 seconds
-          
-          Delay(5 * TICKS_PER_SECOND);
+                    // Wait 5 seconds
 
-          Printf("Fading away the sound on channel 0... ");
-          Flush(Output());
+                    Delay(5 * TICKS_PER_SECOND);
 
-          // Fade away channel 0
-          
-          channelstate[0].FadeVolume = TRUE;
+                    Printf("Fading away the sound on channel 0... ");
+                    Flush(Output());
 
-          while(channelstate[0].FadeVolume) {
-            Delay(1);
-          }
+                    // Fade away channel 0
 
-          Printf("Done!\n");
+                    channelstate[0].FadeVolume = TRUE;
 
-          // Wait a sec...
+                    while(channelstate[0].FadeVolume) {
+                        Delay(1);
+                    }
 
-          Delay(TICKS_PER_SECOND);
+                    Printf("Done!\n");
 
-          // Stop sounds
-          AHI_ControlAudio(actrl,
-              AHIC_Play, FALSE,
-              TAG_DONE);
+                    // Wait a sec...
+
+                    Delay(TICKS_PER_SECOND);
+
+                    // Stop sounds
+                    AHI_ControlAudio(actrl,
+                                     AHIC_Play, FALSE,
+                                     TAG_DONE);
 
 
 #if USE_AHI_V4
-          // Cancel effects
+                    // Cancel effects
 
-          maskeffect.mask.ahie_Effect = AHIET_DSPMASK | AHIET_CANCEL;
-          AHI_SetEffect( &maskeffect, actrl );
-          
-          echoeffect.ahie_Effect     = AHIET_DSPECHO | AHIET_CANCEL;
-          AHI_SetEffect( &echoeffect, actrl );
+                    maskeffect.mask.ahie_Effect = AHIET_DSPMASK | AHIET_CANCEL;
+                    AHI_SetEffect(&maskeffect, actrl);
+
+                    echoeffect.ahie_Effect     = AHIET_DSPECHO | AHIET_CANCEL;
+                    AHI_SetEffect(&echoeffect, actrl);
 #endif
+
+                }
+            }
+
+            // Ask AHI to unload all loaded samples and free the memory for them
+            for(sample = 0; sample < MAXSAMPLES; sample++) {
+                UnloadSample(sample);
+            }
 
         }
-      }
-
-      // Ask AHI to unload all loaded samples and free the memory for them 
-      for(sample = 0; sample < MAXSAMPLES; sample++) {
-        UnloadSample(sample);
-      }
-
+        FreeAudio();
     }
-    FreeAudio();
-  }
-  CloseAHI();
+    CloseAHI();
 
-  return 0;
+    return 0;
 }

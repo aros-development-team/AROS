@@ -1,17 +1,17 @@
 /*
      AHI - Hardware independent audio subsystem
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -159,7 +159,7 @@
 *   IF Offset >= (MaxBuffSamples + Delay) THEN Offset = Offset - (MaxBuffSamples + Delay)
 *
 *   IF Offset < MaxBuffSamples THEN LoopTimes = MaxBuffSamples-Offset : GOTO Echo
-*   IF Offset <= Delay THEN LoopTimes = MaxBuffSamples : GOTO Echo 
+*   IF Offset <= Delay THEN LoopTimes = MaxBuffSamples : GOTO Echo
 *   LoopTimes = MaxBuffSamples+Delay-Offset
 * Echo:
 *   LoopTimes = min(LoopTimes,LoopsLeft)
@@ -175,68 +175,59 @@
 */
 
 static void
-do_DSPEcho ( struct Echo *es,
-             void *buf,
-             struct AHIPrivAudioCtrl *audioctrl,
-             void (*echofunc)(LONG, struct Echo *, void **, void **, void **) )
+do_DSPEcho(struct Echo *es,
+           void *buf,
+           struct AHIPrivAudioCtrl *audioctrl,
+           void (*echofunc)(LONG, struct Echo *, void **, void **, void **))
 {
-  LONG  samples, loops;
-  ULONG offset;
-  void *srcptr, *dstptr;
+    LONG  samples, loops;
+    ULONG offset;
+    void *srcptr, *dstptr;
 
-  samples = audioctrl->ac.ahiac_BuffSamples;
-  offset  = es->ahiecho_Offset;
-  srcptr  = es->ahiecho_SrcPtr;
-  dstptr  = es->ahiecho_DstPtr;
+    samples = audioctrl->ac.ahiac_BuffSamples;
+    offset  = es->ahiecho_Offset;
+    srcptr  = es->ahiecho_SrcPtr;
+    dstptr  = es->ahiecho_DstPtr;
 
-  while(samples > 0)
-  {
-    /* Circular buffer stuff */  
-    
-    if(srcptr >= es->ahiecho_EndPtr)
-    {
-      srcptr = (char *) srcptr - es->ahiecho_BufferSize;
-    }
+    while(samples > 0) {
+        /* Circular buffer stuff */
 
-    if(dstptr >= es->ahiecho_EndPtr)
-    {
-      dstptr = (char *) dstptr - es->ahiecho_BufferSize;
-    }
+        if(srcptr >= es->ahiecho_EndPtr) {
+            srcptr = (char *) srcptr - es->ahiecho_BufferSize;
+        }
 
-    if(offset >= es->ahiecho_BufferLength)
-    {
-      offset -= es->ahiecho_BufferLength;
-    }
+        if(dstptr >= es->ahiecho_EndPtr) {
+            dstptr = (char *) dstptr - es->ahiecho_BufferSize;
+        }
+
+        if(offset >= es->ahiecho_BufferLength) {
+            offset -= es->ahiecho_BufferLength;
+        }
 
 
 
-    if(offset < audioctrl->ac.ahiac_MaxBuffSamples)
-    {
-      loops = audioctrl->ac.ahiac_MaxBuffSamples - offset;
-    }
-    else if(offset <= es->ahiecho_Delay)
-    {
-      loops = audioctrl->ac.ahiac_MaxBuffSamples;
-    }
-    else
-    {
-      loops = audioctrl->ac.ahiac_MaxBuffSamples + es->ahiecho_Delay - offset;
-    }
+        if(offset < audioctrl->ac.ahiac_MaxBuffSamples) {
+            loops = audioctrl->ac.ahiac_MaxBuffSamples - offset;
+        } else if(offset <= es->ahiecho_Delay) {
+            loops = audioctrl->ac.ahiac_MaxBuffSamples;
+        } else {
+            loops = audioctrl->ac.ahiac_MaxBuffSamples + es->ahiecho_Delay - offset;
+        }
 
-    loops = min(loops, samples);
-    
-    samples -= loops;
-    offset  += loops;
+        loops = min(loops, samples);
 
-    /* Call echo function */
+        samples -= loops;
+        offset  += loops;
 
-    echofunc(loops, es, &buf, &srcptr, &dstptr);
+        /* Call echo function */
 
-  } // while(samples > 0)
+        echofunc(loops, es, &buf, &srcptr, &dstptr);
 
-  es->ahiecho_Offset = offset;
-  es->ahiecho_SrcPtr = srcptr;
-  es->ahiecho_DstPtr = dstptr;
+    } // while(samples > 0)
+
+    es->ahiecho_Offset = offset;
+    es->ahiecho_SrcPtr = srcptr;
+    es->ahiecho_DstPtr = dstptr;
 }
 
 
@@ -245,46 +236,46 @@ do_DSPEcho ( struct Echo *es,
 /* Entry points **************************************************************/
 
 void
-do_DSPEchoMono16( struct Echo *es,
-                  void *buf,
-                  struct AHIPrivAudioCtrl *audioctrl )
+do_DSPEchoMono16(struct Echo *es,
+                 void *buf,
+                 struct AHIPrivAudioCtrl *audioctrl)
 {
-  do_DSPEcho( es, buf, audioctrl, EchoMono16 );
+    do_DSPEcho(es, buf, audioctrl, EchoMono16);
 }
 
 
 void
-do_DSPEchoStereo16( struct Echo *es,
-                    void *buf,
-                    struct AHIPrivAudioCtrl *audioctrl )
-{ 
-  do_DSPEcho( es, buf, audioctrl, EchoStereo16 );
-}
-
-
-void
-do_DSPEchoMono32 ( struct Echo *es,
+do_DSPEchoStereo16(struct Echo *es,
                    void *buf,
-                   struct AHIPrivAudioCtrl *audioctrl )
+                   struct AHIPrivAudioCtrl *audioctrl)
 {
-  do_DSPEcho( es, buf, audioctrl, EchoMono32 );
+    do_DSPEcho(es, buf, audioctrl, EchoStereo16);
 }
 
 
 void
-do_DSPEchoStereo32( struct Echo *es,
-                    void *buf,
-                    struct AHIPrivAudioCtrl *audioctrl )
-{ 
-  do_DSPEcho( es, buf, audioctrl, EchoStereo32 );
+do_DSPEchoMono32(struct Echo *es,
+                 void *buf,
+                 struct AHIPrivAudioCtrl *audioctrl)
+{
+    do_DSPEcho(es, buf, audioctrl, EchoMono32);
 }
 
 
 void
-do_DSPEchoMulti32( struct Echo *es,
-		   void *buf,
-		   struct AHIPrivAudioCtrl *audioctrl )
-{ 
-  do_DSPEcho( es, buf, audioctrl, EchoMulti32 );
+do_DSPEchoStereo32(struct Echo *es,
+                   void *buf,
+                   struct AHIPrivAudioCtrl *audioctrl)
+{
+    do_DSPEcho(es, buf, audioctrl, EchoStereo32);
+}
+
+
+void
+do_DSPEchoMulti32(struct Echo *es,
+                  void *buf,
+                  struct AHIPrivAudioCtrl *audioctrl)
+{
+    do_DSPEcho(es, buf, audioctrl, EchoMulti32);
 }
 

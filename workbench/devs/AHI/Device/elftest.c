@@ -7,25 +7,25 @@
 int TimerBase;
 int MixGeneric;
 int MixPowerUp;
-void* PPCObject;
+void *PPCObject;
 
-void main( void )
+void main(void)
 {
-  PPCObject = ELFLoadObject( "devs:ahi.elf" );
+    PPCObject = ELFLoadObject("devs:ahi.elf");
 
-  printf( "PPCObject: 0x%08x\n", PPCObject );
+    printf("PPCObject: 0x%08x\n", PPCObject);
 
-  ELFUnLoadObject( PPCObject );
+    ELFUnLoadObject(PPCObject);
 }
 
 APTR
-AHIAllocVec( ULONG byteSize, ULONG requirements )
+AHIAllocVec(ULONG byteSize, ULONG requirements)
 {
-  return AllocVec( byteSize, requirements );
+    return AllocVec(byteSize, requirements);
 }
 
 void
-AHIFreeVec( APTR memoryBlock )
+AHIFreeVec(APTR memoryBlock)
 {
-  FreeVec( memoryBlock );
+    FreeVec(memoryBlock);
 }

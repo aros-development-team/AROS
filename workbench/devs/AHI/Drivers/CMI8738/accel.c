@@ -1,10 +1,10 @@
 /*
 The contents of this file are subject to the AROS Public License Version 1.1 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy of the License at 
-http://www.aros.org/license.html 
-Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF 
-ANY KIND, either express or implied. See the License for the specific language governing rights and 
-limitations under the License. 
+you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
 
 The Original Code is written by Davy Wentzler.
 */
@@ -25,16 +25,16 @@ The Original Code is written by Davy Wentzler.
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetVol( UWORD                   channel,
-		Fixed                   volume,
-		sposition               pan,
-		struct AHIAudioCtrlDrv* AudioCtrl,
-		ULONG                   flags,
-		struct DriverBase*      AHIsubBase )
+_AHIsub_SetVol(UWORD                   channel,
+               Fixed                   volume,
+               sposition               pan,
+               struct AHIAudioCtrlDrv *AudioCtrl,
+               ULONG                   flags,
+               struct DriverBase      *AHIsubBase)
 {
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -43,15 +43,15 @@ _AHIsub_SetVol( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetFreq( UWORD                   channel,
-		 ULONG                   freq,
-		 struct AHIAudioCtrlDrv* AudioCtrl,
-		 ULONG                   flags,
-		 struct DriverBase*      AHIsubBase )
+_AHIsub_SetFreq(UWORD                   channel,
+                ULONG                   freq,
+                struct AHIAudioCtrlDrv *AudioCtrl,
+                ULONG                   flags,
+                struct DriverBase      *AHIsubBase)
 {
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -60,17 +60,17 @@ _AHIsub_SetFreq( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetSound( UWORD                   channel,
-		  UWORD                   sound,
-		  ULONG                   offset,
-		  LONG                    length,
-		  struct AHIAudioCtrlDrv* AudioCtrl,
-		  ULONG                   flags,
-		  struct DriverBase*      AHIsubBase )
+_AHIsub_SetSound(UWORD                   channel,
+                 UWORD                   sound,
+                 ULONG                   offset,
+                 LONG                    length,
+                 struct AHIAudioCtrlDrv *AudioCtrl,
+                 ULONG                   flags,
+                 struct DriverBase      *AHIsubBase)
 {
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -79,13 +79,13 @@ _AHIsub_SetSound( UWORD                   channel,
 ******************************************************************************/
 
 ULONG
-_AHIsub_SetEffect( APTR                    effect,
-		   struct AHIAudioCtrlDrv* AudioCtrl,
-		   struct DriverBase*      AHIsubBase )
+_AHIsub_SetEffect(APTR                    effect,
+                  struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase      *AHIsubBase)
 {
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -94,15 +94,15 @@ _AHIsub_SetEffect( APTR                    effect,
 ******************************************************************************/
 
 ULONG
-_AHIsub_LoadSound( UWORD                   sound,
-		   ULONG                   type,
-		   APTR                    info,
-		   struct AHIAudioCtrlDrv* AudioCtrl,
-		   struct DriverBase*      AHIsubBase )
-{ 
+_AHIsub_LoadSound(UWORD                   sound,
+                  ULONG                   type,
+                  APTR                    info,
+                  struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase      *AHIsubBase)
+{
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }
 
 
@@ -111,11 +111,11 @@ _AHIsub_LoadSound( UWORD                   sound,
 ******************************************************************************/
 
 ULONG
-_AHIsub_UnloadSound( UWORD                   sound,
-		     struct AHIAudioCtrlDrv* AudioCtrl,
-		     struct DriverBase*      AHIsubBase )
+_AHIsub_UnloadSound(UWORD                   sound,
+                    struct AHIAudioCtrlDrv *AudioCtrl,
+                    struct DriverBase      *AHIsubBase)
 {
     D(bug("[CMI8738]: %s()\n", __PRETTY_FUNCTION__));
 
-  return AHIS_UNKNOWN;
+    return AHIS_UNKNOWN;
 }

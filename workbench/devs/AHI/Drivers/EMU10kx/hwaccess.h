@@ -56,17 +56,16 @@
 #define NUM_FXSENDS     4               /* don't change */
 /* setting this to other than a power of two may break some applications */
 #define MAXBUFSIZE	524288 // 65536
-#define MAXPAGES	8192 
+#define MAXPAGES	8192
 #define BUFMAXPAGES     (MAXBUFSIZE / PAGE_SIZE)
 
 #define FLAGS_AVAILABLE     0x0001
 #define FLAGS_READY         0x0002
 
-struct memhandle
-{
-	dma_addr_t dma_handle;
-	void *addr;
-	u32 size;
+struct memhandle {
+    dma_addr_t dma_handle;
+    void *addr;
+    u32 size;
 };
 
 #define DEBUG_LEVEL 2
@@ -84,15 +83,14 @@ struct memhandle
 #ifndef AHI
 /* DATA STRUCTURES */
 
-struct emu10k1_waveout
-{
-	u32 send_routing[3];
-	// audigy only:
-	u32 send_routing2[3];
+struct emu10k1_waveout {
+    u32 send_routing[3];
+    // audigy only:
+    u32 send_routing2[3];
 
-	u32 send_dcba[3];
-	// audigy only:
-	u32 send_hgfe[3];
+    u32 send_dcba[3];
+    // audigy only:
+    u32 send_hgfe[3];
 };
 #define ROUTE_PCM 0
 #define ROUTE_PT 1
@@ -102,38 +100,37 @@ struct emu10k1_waveout
 #define SEND_LEFT 1
 #define SEND_RIGHT 2
 
-struct emu10k1_wavein
-{
-        struct wiinst *ac97;
-        struct wiinst *mic;
-        struct wiinst *fx;
+struct emu10k1_wavein {
+    struct wiinst *ac97;
+    struct wiinst *mic;
+    struct wiinst *fx;
 
-        u8 recsrc;
-        u32 fxwc;
+    u8 recsrc;
+    u32 fxwc;
 };
 
 #define CMD_READ 1
 #define CMD_WRITE 2
 
 struct mixer_private_ioctl {
-        u32 cmd;
-        u32 val[90];
+    u32 cmd;
+    u32 val[90];
 };
 
 /* bogus ioctls numbers to escape from OSS mixer limitations */
 #define CMD_WRITEFN0            _IOW('D', 0, struct mixer_private_ioctl)
-#define CMD_READFN0		_IOR('D', 1, struct mixer_private_ioctl) 
-#define CMD_WRITEPTR		_IOW('D', 2, struct mixer_private_ioctl) 
-#define CMD_READPTR		_IOR('D', 3, struct mixer_private_ioctl) 
-#define CMD_SETRECSRC		_IOW('D', 4, struct mixer_private_ioctl) 
-#define CMD_GETRECSRC		_IOR('D', 5, struct mixer_private_ioctl) 
-#define CMD_GETVOICEPARAM	_IOR('D', 6, struct mixer_private_ioctl) 
-#define CMD_SETVOICEPARAM	_IOW('D', 7, struct mixer_private_ioctl) 
-#define CMD_GETPATCH		_IOR('D', 8, struct mixer_private_ioctl) 
-#define CMD_GETGPR		_IOR('D', 9, struct mixer_private_ioctl) 
+#define CMD_READFN0		_IOR('D', 1, struct mixer_private_ioctl)
+#define CMD_WRITEPTR		_IOW('D', 2, struct mixer_private_ioctl)
+#define CMD_READPTR		_IOR('D', 3, struct mixer_private_ioctl)
+#define CMD_SETRECSRC		_IOW('D', 4, struct mixer_private_ioctl)
+#define CMD_GETRECSRC		_IOR('D', 5, struct mixer_private_ioctl)
+#define CMD_GETVOICEPARAM	_IOR('D', 6, struct mixer_private_ioctl)
+#define CMD_SETVOICEPARAM	_IOW('D', 7, struct mixer_private_ioctl)
+#define CMD_GETPATCH		_IOR('D', 8, struct mixer_private_ioctl)
+#define CMD_GETGPR		_IOR('D', 9, struct mixer_private_ioctl)
 #define CMD_GETCTLGPR           _IOR('D', 10, struct mixer_private_ioctl)
-#define CMD_SETPATCH		_IOW('D', 11, struct mixer_private_ioctl) 
-#define CMD_SETGPR		_IOW('D', 12, struct mixer_private_ioctl) 
+#define CMD_SETPATCH		_IOW('D', 11, struct mixer_private_ioctl)
+#define CMD_SETGPR		_IOW('D', 12, struct mixer_private_ioctl)
 #define CMD_SETCTLGPR		_IOW('D', 13, struct mixer_private_ioctl)
 #define CMD_SETGPOUT		_IOW('D', 14, struct mixer_private_ioctl)
 #define CMD_GETGPR2OSS		_IOR('D', 15, struct mixer_private_ioctl)
@@ -147,70 +144,69 @@ struct mixer_private_ioctl {
 #define PRIVATE3_VERSION 2
 #endif // AHI
 
-struct emu10k1_card 
-{
+struct emu10k1_card {
 #ifndef AHI
-	struct list_head list;
+    struct list_head list;
 #endif
-	struct memhandle	virtualpagetable;
-	struct memhandle	tankmem;
-	struct memhandle	silentpage;
+    struct memhandle	virtualpagetable;
+    struct memhandle	tankmem;
+    struct memhandle	silentpage;
 #ifndef AHI
-	spinlock_t		lock;
+    spinlock_t		lock;
 #endif
-	u8			voicetable[NUM_G];
-	u16			emupagetable[MAXPAGES];
+    u8			voicetable[NUM_G];
+    u16			emupagetable[MAXPAGES];
 #ifndef AHI
-	struct list_head	timers;
-	u16			timer_delay;
-	spinlock_t		timer_lock;
+    struct list_head	timers;
+    u16			timer_delay;
+    spinlock_t		timer_lock;
 #endif
 
 #ifdef AHI
-	APTR			pci_dev;
+    APTR			pci_dev;
 #else
-	struct pci_dev		*pci_dev;
+    struct pci_dev		*pci_dev;
 #endif
-	unsigned long           iobase;
-	unsigned long		length;
-	unsigned short		model;
-	unsigned int irq; 
+    unsigned long           iobase;
+    unsigned long		length;
+    unsigned short		model;
+    unsigned int irq;
 
 #ifndef AHI
-	int	audio_dev;
-	int	audio_dev1;
-	int	midi_dev;
+    int	audio_dev;
+    int	audio_dev1;
+    int	midi_dev;
 #ifdef EMU10K1_SEQUENCER
-	int seq_dev;
-	struct emu10k1_mididevice *seq_mididev;
+    int seq_dev;
+    struct emu10k1_mididevice *seq_mididev;
 #endif
 
-	struct ac97_codec ac97;
-	int ac97_supported_mixers;
-	int ac97_stereo_mixers;
+    struct ac97_codec ac97;
+    int ac97_supported_mixers;
+    int ac97_stereo_mixers;
 
-	/* Number of first fx voice for multichannel output */
-	u8 mchannel_fx;
-	struct emu10k1_waveout	waveout;
-	struct emu10k1_wavein	wavein;
-	struct emu10k1_mpuout	*mpuout;
-	struct emu10k1_mpuin	*mpuin;
+    /* Number of first fx voice for multichannel output */
+    u8 mchannel_fx;
+    struct emu10k1_waveout	waveout;
+    struct emu10k1_wavein	wavein;
+    struct emu10k1_mpuout	*mpuout;
+    struct emu10k1_mpuin	*mpuin;
 
-	struct semaphore	open_sem;
-	mode_t			open_mode;
-	wait_queue_head_t	open_wait;
+    struct semaphore	open_sem;
+    mode_t			open_mode;
+    wait_queue_head_t	open_wait;
 
-	u32	    mpuacqcount;	  // Mpu acquire count
+    u32	    mpuacqcount;	  // Mpu acquire count
 #endif // AHI
-	u32	    has_toslink;	       // TOSLink detection
+    u32	    has_toslink;	       // TOSLink detection
 
-	u8 chiprev;                    /* Chip revision                */
-	u8 is_audigy;
-	u8 is_aps;
+    u8 chiprev;                    /* Chip revision                */
+    u8 is_audigy;
+    u8 is_aps;
 
-	struct patch_manager mgr;
+    struct patch_manager mgr;
 #ifndef AHI
-	struct pt_data pt;
+    struct pt_data pt;
 #endif
 };
 
@@ -218,7 +214,7 @@ int emu10k1_addxmgr_alloc(u32, struct emu10k1_card *);
 void emu10k1_addxmgr_free(struct emu10k1_card *, int);
 
 int emu10k1_find_control_gpr(struct patch_manager *, const char *, const char *);
-void emu10k1_set_control_gpr(struct emu10k1_card *, int , s32, int );
+void emu10k1_set_control_gpr(struct emu10k1_card *, int, s32, int);
 
 void emu10k1_set_volume_gpr(struct emu10k1_card *, int, s32, int);
 
@@ -248,7 +244,7 @@ void sblive_writeptr(struct emu10k1_card *, u32, u32, u32);
 void sblive_writeptr_tag(struct emu10k1_card *, u32, ...);
 #define TAGLIST_END	0
 
-u32 sblive_readptr(struct emu10k1_card *, u32 , u32 );
+u32 sblive_readptr(struct emu10k1_card *, u32, u32);
 
 void emu10k1_irq_enable(struct emu10k1_card *, u32);
 void emu10k1_irq_disable(struct emu10k1_card *, u32);

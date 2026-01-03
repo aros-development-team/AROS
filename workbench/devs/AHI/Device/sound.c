@@ -2,17 +2,17 @@
      AHI - Hardware independent audio subsystem
      Copyright (C) 2017-2023 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -109,100 +109,92 @@
 *
 *   SEE ALSO
 *       AHI_SetEffect(), AHI_SetFreq(), AHI_SetSound(), AHI_LoadSound()
-*       
+*
 *
 ****************************************************************************
 *
 */
 
 ULONG
-_AHI_SetVol ( UWORD                    channel,
-	      Fixed                    volume,
-	      sposition                pan,
-	      struct AHIPrivAudioCtrl* audioctrl,
-	      ULONG                    flags,
-	      struct AHIBase*          AHIBase )
+_AHI_SetVol(UWORD                    channel,
+            Fixed                    volume,
+            sposition                pan,
+            struct AHIPrivAudioCtrl *audioctrl,
+            ULONG                    flags,
+            struct AHIBase          *AHIBase)
 {
-  struct AHIChannelData *cd;
-  struct Library        *AHIsubBase;
-  ULONG                  rc;
+    struct AHIChannelData *cd;
+    struct Library        *AHIsubBase;
+    ULONG                  rc;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL)
-  {
-    Debug_SetVol(channel, volume, pan, audioctrl, flags);
-  }
-
-  AHIsubBase = audioctrl->ahiac_SubLib;
-
-  rc = AHIsub_SetVol(channel, volume, pan, &audioctrl->ac, flags);
-
-  if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
-     || rc != AHIS_UNKNOWN)
-  {
-    return 0;   /* We're done! */
-  }
-
-  cd = &audioctrl->ahiac_ChannelDatas[channel];
-
-  if((audioctrl->ac.ahiac_Flags & AHIACF_VOL) == 0)
-  {
-    volume = volume & 0x10000;  /* |volume|=0 or 0x10000 */
-  }
-
-  if((audioctrl->ac.ahiac_Flags & AHIACF_PAN) == 0)
-  {
-    pan = (channel & 1) << 16;  /* pan = 0 or 0x10000 */
-  }
-
-  AHIsub_Disable(&audioctrl->ac);
-
-  cd->cd_NextVolumeLeft  = ((volume >> 1) * ((0x10000 - abs(pan)) >> 1)) >> (16 - 2);
-  cd->cd_NextVolumeRight = ((volume >> 1) * (pan >> 1)) >> (16 - 2);
-
-  SelectAddRoutine( cd->cd_NextVolumeLeft,
-                    cd->cd_NextVolumeRight,
-                    cd->cd_NextType,
-                    audioctrl,
-                   &cd->cd_NextScaleLeft,
-                   &cd->cd_NextScaleRight,
-       (ADDFUNC**) &cd->cd_NextAddRoutine );
-
-  if(flags & AHISF_IMM)
-  {
-    cd->cd_DelayedVolumeLeft  = cd->cd_NextVolumeLeft;
-    cd->cd_DelayedVolumeRight = cd->cd_NextVolumeRight;
-
-    SelectAddRoutine( cd->cd_DelayedVolumeLeft,
-                      cd->cd_DelayedVolumeRight, 
-                      cd->cd_DelayedType, 
-                      audioctrl,
-                     &cd->cd_DelayedScaleLeft,
-                     &cd->cd_DelayedScaleRight, 
-         (ADDFUNC**) &cd->cd_DelayedAddRoutine );
-
-    /* Enable anti-click routine */
-    cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
-
-    if( ( flags & AHISF_NODELAY ) || 
-          ( cd->cd_AntiClickCount == 0 ) ||
-           !cd->cd_FreqOK || !cd->cd_SoundOK )
-    {
-      cd->cd_VolumeLeft  = cd->cd_DelayedVolumeLeft;
-      cd->cd_VolumeRight = cd->cd_DelayedVolumeRight;
-      cd->cd_ScaleLeft   = cd->cd_DelayedScaleLeft;
-      cd->cd_ScaleRight  = cd->cd_DelayedScaleRight;
-      cd->cd_AddRoutine  = cd->cd_DelayedAddRoutine;
-
-      cd->cd_AntiClickCount = 0;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL) {
+        Debug_SetVol(channel, volume, pan, audioctrl, flags);
     }
-    else
-    {
-      cd->cd_VolDelayed = TRUE;
-    }
-  }
 
-  AHIsub_Enable(&audioctrl->ac);
-  return 0;
+    AHIsubBase = audioctrl->ahiac_SubLib;
+
+    rc = AHIsub_SetVol(channel, volume, pan, &audioctrl->ac, flags);
+
+    if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
+            || rc != AHIS_UNKNOWN) {
+        return 0;   /* We're done! */
+    }
+
+    cd = &audioctrl->ahiac_ChannelDatas[channel];
+
+    if((audioctrl->ac.ahiac_Flags & AHIACF_VOL) == 0) {
+        volume = volume & 0x10000;  /* |volume|=0 or 0x10000 */
+    }
+
+    if((audioctrl->ac.ahiac_Flags & AHIACF_PAN) == 0) {
+        pan = (channel & 1) << 16;  /* pan = 0 or 0x10000 */
+    }
+
+    AHIsub_Disable(&audioctrl->ac);
+
+    cd->cd_NextVolumeLeft  = ((volume >> 1) * ((0x10000 - abs(pan)) >> 1)) >> (16 - 2);
+    cd->cd_NextVolumeRight = ((volume >> 1) * (pan >> 1)) >> (16 - 2);
+
+    SelectAddRoutine(cd->cd_NextVolumeLeft,
+                     cd->cd_NextVolumeRight,
+                     cd->cd_NextType,
+                     audioctrl,
+                     &cd->cd_NextScaleLeft,
+                     &cd->cd_NextScaleRight,
+                     (ADDFUNC **) &cd->cd_NextAddRoutine);
+
+    if(flags & AHISF_IMM) {
+        cd->cd_DelayedVolumeLeft  = cd->cd_NextVolumeLeft;
+        cd->cd_DelayedVolumeRight = cd->cd_NextVolumeRight;
+
+        SelectAddRoutine(cd->cd_DelayedVolumeLeft,
+                         cd->cd_DelayedVolumeRight,
+                         cd->cd_DelayedType,
+                         audioctrl,
+                         &cd->cd_DelayedScaleLeft,
+                         &cd->cd_DelayedScaleRight,
+                         (ADDFUNC **) &cd->cd_DelayedAddRoutine);
+
+        /* Enable anti-click routine */
+        cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
+
+        if((flags & AHISF_NODELAY) ||
+                (cd->cd_AntiClickCount == 0) ||
+                !cd->cd_FreqOK || !cd->cd_SoundOK) {
+            cd->cd_VolumeLeft  = cd->cd_DelayedVolumeLeft;
+            cd->cd_VolumeRight = cd->cd_DelayedVolumeRight;
+            cd->cd_ScaleLeft   = cd->cd_DelayedScaleLeft;
+            cd->cd_ScaleRight  = cd->cd_DelayedScaleRight;
+            cd->cd_AddRoutine  = cd->cd_DelayedAddRoutine;
+
+            cd->cd_AntiClickCount = 0;
+        } else {
+            cd->cd_VolDelayed = TRUE;
+        }
+    }
+
+    AHIsub_Enable(&audioctrl->ac);
+    return 0;
 }
 
 
@@ -256,107 +248,94 @@ _AHI_SetVol ( UWORD                    channel,
 */
 
 ULONG
-_AHI_SetFreq ( UWORD                    channel,
-	       ULONG                    freq,
-	       struct AHIPrivAudioCtrl* audioctrl,
-	       ULONG                    flags,
-	       struct AHIBase*          AHIBase )
+_AHI_SetFreq(UWORD                    channel,
+             ULONG                    freq,
+             struct AHIPrivAudioCtrl *audioctrl,
+             ULONG                    flags,
+             struct AHIBase          *AHIBase)
 {
-  struct AHIChannelData *cd;
-  struct Library        *AHIsubBase;
-  ULONG                  rc;
-  ULONG                  add;
+    struct AHIChannelData *cd;
+    struct Library        *AHIsubBase;
+    ULONG                  rc;
+    ULONG                  add;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL)
-  {
-    Debug_SetFreq(channel, freq, audioctrl, flags);
-  }
-
-  AHIsubBase = audioctrl->ahiac_SubLib;
-
-  rc = AHIsub_SetFreq(channel, freq, &audioctrl->ac, flags);
-
-  if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
-     || rc != AHIS_UNKNOWN)
-  {
-    return 0;   /* We're done! */
-  }
-
-  cd = &audioctrl->ahiac_ChannelDatas[channel];
-
-  if(freq == 0)
-  {
-    cd->cd_NextFreqOK = FALSE;
-
-    add = 0;
-  }
-  else
-  {
-    cd->cd_NextFreqOK = TRUE;
-
-    if(freq == AHI_MIXFREQ)
-    {
-      add = 0x10000;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL) {
+        Debug_SetFreq(channel, freq, audioctrl, flags);
     }
-    else
-    {
-      int shift = 0;
-      
-      while(freq >= 65536)
-      {
-        shift++;
-        freq >>= 1;
-      }
 
-      add = ((freq << 16) / audioctrl->ac.ahiac_MixFreq) << shift;
+    AHIsubBase = audioctrl->ahiac_SubLib;
+
+    rc = AHIsub_SetFreq(channel, freq, &audioctrl->ac, flags);
+
+    if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
+            || rc != AHIS_UNKNOWN) {
+        return 0;   /* We're done! */
     }
-  }
-  
-  AHIsub_Disable(&audioctrl->ac);
 
-  cd->cd_NextAdd = (Fixed64) add << 16;
+    cd = &audioctrl->ahiac_ChannelDatas[channel];
 
-  if(flags & AHISF_IMM)
-  {
-    cd->cd_DelayedAdd     = cd->cd_NextAdd;
-    cd->cd_DelayedFreqOK  = cd->cd_NextFreqOK;
+    if(freq == 0) {
+        cd->cd_NextFreqOK = FALSE;
 
-    // cd->cd_Samples is also calculated when it actually happens¹...
+        add = 0;
+    } else {
+        cd->cd_NextFreqOK = TRUE;
 
-    cd->cd_DelayedSamples = CalcSamples( cd->cd_DelayedAdd,
-                                         cd->cd_DelayedType,
-                                         cd->cd_DelayedLastOffset,
-                                         cd->cd_DelayedOffset );
+        if(freq == AHI_MIXFREQ) {
+            add = 0x10000;
+        } else {
+            int shift = 0;
 
-    /* Enable anti-click routine */
-    cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
+            while(freq >= 65536) {
+                shift++;
+                freq >>= 1;
+            }
 
-    if( ( flags & AHISF_NODELAY ) || 
-        ( cd->cd_AntiClickCount == 0 ) ||
-        !cd->cd_FreqOK || !cd->cd_SoundOK )
-    {
-      cd->cd_Add     = cd->cd_DelayedAdd;
-      cd->cd_FreqOK  = cd->cd_DelayedFreqOK;
-
-      // ¹) Unless we're not using any delay, in which case it's recalculated
-      //    here instead.
-
-      cd->cd_Samples = CalcSamples( cd->cd_Add,
-                                    cd->cd_Type,
-                                    cd->cd_LastOffset,
-                                    cd->cd_Offset );
-
-      cd->cd_AntiClickCount = 0;
+            add = ((freq << 16) / audioctrl->ac.ahiac_MixFreq) << shift;
+        }
     }
-    else
-    {
-      cd->cd_FreqDelayed = TRUE;
+
+    AHIsub_Disable(&audioctrl->ac);
+
+    cd->cd_NextAdd = (Fixed64) add << 16;
+
+    if(flags & AHISF_IMM) {
+        cd->cd_DelayedAdd     = cd->cd_NextAdd;
+        cd->cd_DelayedFreqOK  = cd->cd_NextFreqOK;
+
+        // cd->cd_Samples is also calculated when it actually happens¹...
+
+        cd->cd_DelayedSamples = CalcSamples(cd->cd_DelayedAdd,
+                                            cd->cd_DelayedType,
+                                            cd->cd_DelayedLastOffset,
+                                            cd->cd_DelayedOffset);
+
+        /* Enable anti-click routine */
+        cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
+
+        if((flags & AHISF_NODELAY) ||
+                (cd->cd_AntiClickCount == 0) ||
+                !cd->cd_FreqOK || !cd->cd_SoundOK) {
+            cd->cd_Add     = cd->cd_DelayedAdd;
+            cd->cd_FreqOK  = cd->cd_DelayedFreqOK;
+
+            // ¹) Unless we're not using any delay, in which case it's recalculated
+            //    here instead.
+
+            cd->cd_Samples = CalcSamples(cd->cd_Add,
+                                         cd->cd_Type,
+                                         cd->cd_LastOffset,
+                                         cd->cd_Offset);
+
+            cd->cd_AntiClickCount = 0;
+        } else {
+            cd->cd_FreqDelayed = TRUE;
+        }
     }
-  }
 
-  AHIsub_Enable(&audioctrl->ac);
+    AHIsub_Enable(&audioctrl->ac);
 
-  return 0;
+    return 0;
 }
 
 
@@ -421,144 +400,131 @@ _AHI_SetFreq ( UWORD                    channel,
 */
 
 ULONG
-_AHI_SetSound ( UWORD                    channel,
-		UWORD                    sound,
-		ULONG                    offset,
-		LONG                     length,
-		struct AHIPrivAudioCtrl* audioctrl,
-		ULONG                    flags,
-		struct AHIBase*          AHIBase )
+_AHI_SetSound(UWORD                    channel,
+              UWORD                    sound,
+              ULONG                    offset,
+              LONG                     length,
+              struct AHIPrivAudioCtrl *audioctrl,
+              ULONG                    flags,
+              struct AHIBase          *AHIBase)
 {
-  struct AHIChannelData *cd;
-  struct AHISoundData   *sd;
-  struct Library        *AHIsubBase;
-  ULONG                  rc;
+    struct AHIChannelData *cd;
+    struct AHISoundData   *sd;
+    struct Library        *AHIsubBase;
+    ULONG                  rc;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL)
-  {
-    Debug_SetSound(channel, sound, offset, length, audioctrl, flags);
-  }
-
-  AHIsubBase = audioctrl->ahiac_SubLib;
-
-  rc = AHIsub_SetSound(channel, sound, offset, length, &audioctrl->ac, flags);
-
-  if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
-     || rc != AHIS_UNKNOWN)
-  {
-    return 0;   /* We're done! */
-  }
-
-  cd = &audioctrl->ahiac_ChannelDatas[channel];
-  sd = &audioctrl->ahiac_SoundDatas[sound];
-
-  AHIsub_Disable(&audioctrl->ac);
-
-  if(sound == AHI_NOSOUND)
-  {
-    cd->cd_NextSoundOK    = FALSE;
-
-    if(flags & AHISF_IMM)
-    {
-      cd->cd_EOS          = TRUE;  /* Signal End-Of-Sample */
-      cd->cd_SoundOK      = FALSE;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL) {
+        Debug_SetSound(channel, sound, offset, length, audioctrl, flags);
     }
-  }
-  else if(sd->sd_Type != AHIST_NOTYPE) /* This is a user error, shouldn't happen! */
-  {
-    if(length == 0) length = sd->sd_Length;
 
-    cd->cd_NextDataStart = sd->sd_Addr;
-    cd->cd_NextType      = sd->sd_Type;
-    cd->cd_NextOffset    = (Fixed64) offset << 32 ;
+    AHIsubBase = audioctrl->ahiac_SubLib;
 
-    cd->cd_NextSoundOK   = TRUE;
+    rc = AHIsub_SetSound(channel, sound, offset, length, &audioctrl->ac, flags);
 
-    if(length < 0)
-    {
-      cd->cd_NextType         |= AHIST_BW;
-      cd->cd_NextLastOffset    = (Fixed64) ( offset + length + 1 ) << 32;
+    if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
+            || rc != AHIS_UNKNOWN) {
+        return 0;   /* We're done! */
+    }
+
+    cd = &audioctrl->ahiac_ChannelDatas[channel];
+    sd = &audioctrl->ahiac_SoundDatas[sound];
+
+    AHIsub_Disable(&audioctrl->ac);
+
+    if(sound == AHI_NOSOUND) {
+        cd->cd_NextSoundOK    = FALSE;
+
+        if(flags & AHISF_IMM) {
+            cd->cd_EOS          = TRUE;  /* Signal End-Of-Sample */
+            cd->cd_SoundOK      = FALSE;
+        }
+    } else if(sd->sd_Type != AHIST_NOTYPE) { /* This is a user error, shouldn't happen! */
+        if(length == 0) length = sd->sd_Length;
+
+        cd->cd_NextDataStart = sd->sd_Addr;
+        cd->cd_NextType      = sd->sd_Type;
+        cd->cd_NextOffset    = (Fixed64) offset << 32 ;
+
+        cd->cd_NextSoundOK   = TRUE;
+
+        if(length < 0) {
+            cd->cd_NextType         |= AHIST_BW;
+            cd->cd_NextLastOffset    = (Fixed64)(offset + length + 1) << 32;
 //      cd->cd_NextOffset       |= 0xffffffffLL;
-      *(ULONG*) ((char*) (&cd->cd_NextOffset)+4) = 0xffffffffUL;
-    }
-    else
-    {
+            *(ULONG *)((char *)(&cd->cd_NextOffset) + 4) = 0xffffffffUL;
+        } else {
 #if !defined( __mc68000__ )
-      cd->cd_NextLastOffset    = ( (Fixed64) ( offset + length - 1 ) << 32 )
-                                 | (Fixed64) 0xffffffffLL;
+            cd->cd_NextLastOffset    = ((Fixed64)(offset + length - 1) << 32)
+                                       | (Fixed64) 0xffffffffLL;
 #else
-      // Fix for m68k compiler bug! :-(
-      *(ULONG*) &cd->cd_NextLastOffset = offset + length - 1;
-      *(ULONG*) ((char*) (&cd->cd_NextLastOffset)+4) = 0xffffffffUL;
+            // Fix for m68k compiler bug! :-(
+            *(ULONG *) &cd->cd_NextLastOffset = offset + length - 1;
+            *(ULONG *)((char *)(&cd->cd_NextLastOffset) + 4) = 0xffffffffUL;
 #endif
 
-      /* Low cd->cd_NextOffset already 0 */
+            /* Low cd->cd_NextOffset already 0 */
+        }
+
+        SelectAddRoutine(cd->cd_NextVolumeLeft,
+                         cd->cd_NextVolumeRight,
+                         cd->cd_NextType,
+                         audioctrl,
+                         &cd->cd_NextScaleLeft,
+                         &cd->cd_NextScaleRight,
+                         (ADDFUNC **) &cd->cd_NextAddRoutine);
+
+        if(flags & AHISF_IMM) {
+            cd->cd_DelayedOffset        = cd->cd_NextOffset;
+            cd->cd_DelayedFirstOffsetI  = cd->cd_NextOffset >> 32; /* for linear interpol. */
+            cd->cd_DelayedLastOffset    = cd->cd_NextLastOffset;
+            cd->cd_DelayedDataStart     = cd->cd_NextDataStart;
+            cd->cd_DelayedType          = cd->cd_NextType;
+            cd->cd_DelayedSoundOK       = cd->cd_NextSoundOK;
+
+            SelectAddRoutine(cd->cd_DelayedVolumeLeft,
+                             cd->cd_DelayedVolumeRight,
+                             cd->cd_DelayedType,
+                             audioctrl,
+                             &cd->cd_DelayedScaleLeft,
+                             &cd->cd_DelayedScaleRight,
+                             (ADDFUNC **) &cd->cd_DelayedAddRoutine);
+
+            cd->cd_DelayedSamples = CalcSamples(cd->cd_DelayedAdd,
+                                                cd->cd_DelayedType,
+                                                cd->cd_DelayedLastOffset,
+                                                cd->cd_DelayedOffset);
+
+            /* Enable anti-click routine */
+            cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
+
+            if((flags & AHISF_NODELAY) ||
+                    (cd->cd_AntiClickCount == 0) ||
+                    !cd->cd_FreqOK || !cd->cd_SoundOK) {
+                cd->cd_StartPointL   = 0;
+                cd->cd_StartPointR   = 0;
+
+                cd->cd_Offset        = cd->cd_DelayedOffset;
+                cd->cd_FirstOffsetI  = cd->cd_DelayedFirstOffsetI;
+                cd->cd_LastOffset    = cd->cd_DelayedLastOffset;
+                cd->cd_DataStart     = cd->cd_DelayedDataStart;
+                cd->cd_Type          = cd->cd_DelayedType;
+                cd->cd_SoundOK       = cd->cd_DelayedSoundOK;
+                cd->cd_ScaleLeft     = cd->cd_DelayedScaleLeft;
+                cd->cd_ScaleRight    = cd->cd_DelayedScaleRight;
+                cd->cd_AddRoutine    = cd->cd_DelayedAddRoutine;
+                cd->cd_Samples       = cd->cd_DelayedSamples;
+                cd->cd_AntiClickCount = 0;
+            } else {
+                cd->cd_SoundDelayed = TRUE;
+            }
+
+            cd->cd_EOS = TRUE;  /* Signal End-Of-Sample */
+        }
     }
 
-    SelectAddRoutine( cd->cd_NextVolumeLeft,
-                      cd->cd_NextVolumeRight,
-                      cd->cd_NextType,
-                      audioctrl,
-                     &cd->cd_NextScaleLeft,
-                     &cd->cd_NextScaleRight,
-         (ADDFUNC**) &cd->cd_NextAddRoutine );
+    AHIsub_Enable(&audioctrl->ac);
 
-    if(flags & AHISF_IMM)
-    {
-      cd->cd_DelayedOffset        = cd->cd_NextOffset;
-      cd->cd_DelayedFirstOffsetI  = cd->cd_NextOffset >> 32; /* for linear interpol. */
-      cd->cd_DelayedLastOffset    = cd->cd_NextLastOffset;
-      cd->cd_DelayedDataStart     = cd->cd_NextDataStart;
-      cd->cd_DelayedType          = cd->cd_NextType;
-      cd->cd_DelayedSoundOK       = cd->cd_NextSoundOK;
-
-      SelectAddRoutine( cd->cd_DelayedVolumeLeft,
-                        cd->cd_DelayedVolumeRight,
-                        cd->cd_DelayedType,
-                        audioctrl,
-                       &cd->cd_DelayedScaleLeft,
-                       &cd->cd_DelayedScaleRight,
-           (ADDFUNC**) &cd->cd_DelayedAddRoutine );
-
-      cd->cd_DelayedSamples = CalcSamples( cd->cd_DelayedAdd,
-                                           cd->cd_DelayedType,
-                                           cd->cd_DelayedLastOffset,
-                                           cd->cd_DelayedOffset );
-
-      /* Enable anti-click routine */
-      cd->cd_AntiClickCount = audioctrl->ac.ahiac_AntiClickSamples;
-
-      if( ( flags & AHISF_NODELAY ) || 
-          ( cd->cd_AntiClickCount == 0 ) ||
-           !cd->cd_FreqOK || !cd->cd_SoundOK )
-      {
-        cd->cd_StartPointL   = 0;
-        cd->cd_StartPointR   = 0;
-
-        cd->cd_Offset        = cd->cd_DelayedOffset;
-        cd->cd_FirstOffsetI  = cd->cd_DelayedFirstOffsetI;
-        cd->cd_LastOffset    = cd->cd_DelayedLastOffset;
-        cd->cd_DataStart     = cd->cd_DelayedDataStart;
-        cd->cd_Type          = cd->cd_DelayedType;
-        cd->cd_SoundOK       = cd->cd_DelayedSoundOK;
-        cd->cd_ScaleLeft     = cd->cd_DelayedScaleLeft;
-        cd->cd_ScaleRight    = cd->cd_DelayedScaleRight;
-        cd->cd_AddRoutine    = cd->cd_DelayedAddRoutine;
-        cd->cd_Samples       = cd->cd_DelayedSamples;
-        cd->cd_AntiClickCount = 0;
-      }
-      else
-      {
-        cd->cd_SoundDelayed = TRUE;
-      }
-
-      cd->cd_EOS = TRUE;  /* Signal End-Of-Sample */
-    }
-  }
-
-  AHIsub_Enable(&audioctrl->ac);
-
-  return 0;
+    return 0;
 }
 
 
@@ -643,13 +609,13 @@ _AHI_SetSound ( UWORD                    channel,
 *
 *           If the user has enabled "Fast Echo", AHI may take several short-
 *           cuts to increase the performance. This could include rounding the
-*           parameters to a power of two, or even to the extremes. 
+*           parameters to a power of two, or even to the extremes.
 *
 *           If you set ahiede_Mix to 0x10000 and ahiede_Cross to 0x0, much
 *           faster mixing routines will be used, and "Fast Echo" will improve
 *           that even more.
 *
-*           Otherwise, even with "Fast Echo" turned on, this effect will 
+*           Otherwise, even with "Fast Echo" turned on, this effect will
 *           probably suck some major CPU cycles on most sound hardware. (V4)
 *
 *       AHIET_CHANNELINFO - Effect is a struct AHIEffChannelInfo, where
@@ -710,116 +676,110 @@ _AHI_SetSound ( UWORD                    channel,
 
 
 ULONG
-_AHI_SetEffect( APTR                   effect,
-		struct AHIPrivAudioCtrl* audioctrl,
-		struct AHIBase*          AHIBase )
+_AHI_SetEffect(APTR                   effect,
+               struct AHIPrivAudioCtrl *audioctrl,
+               struct AHIBase          *AHIBase)
 {
-  struct Library        *AHIsubBase;
-  ULONG                  rc;
+    struct Library        *AHIsubBase;
+    ULONG                  rc;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL)
-  {
-    Debug_SetEffect(effect, audioctrl);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL) {
+        Debug_SetEffect(effect, audioctrl);
+    }
 
-  AHIsubBase = audioctrl->ahiac_SubLib;
+    AHIsubBase = audioctrl->ahiac_SubLib;
 
-  rc = AHIsub_SetEffect(effect, &audioctrl->ac);
+    rc = AHIsub_SetEffect(effect, &audioctrl->ac);
 
-  if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
-     || rc != AHIS_UNKNOWN)
-  {
-    return rc;   /* We're done! */
-  }
+    if(audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING
+            || rc != AHIS_UNKNOWN) {
+        return rc;   /* We're done! */
+    }
 
 
-  switch(*((ULONG *)effect))
-  {
+    switch(*((ULONG *)effect)) {
 
-  /*
-   *  MASTERVOLUME
-   */
+    /*
+     *  MASTERVOLUME
+     */
 
-    case AHIET_MASTERVOLUME:
-    {
-      struct AHIEffMasterVolume *emv = (struct AHIEffMasterVolume *) effect;
-      
-      if(audioctrl->ahiac_SetMasterVolume != emv->ahiemv_Volume)
-      {
-        audioctrl->ahiac_SetMasterVolume = emv->ahiemv_Volume;
-        rc = update_MasterVolume( audioctrl );
-      }
-      break;
+    case AHIET_MASTERVOLUME: {
+        struct AHIEffMasterVolume *emv = (struct AHIEffMasterVolume *) effect;
+
+        if(audioctrl->ahiac_SetMasterVolume != emv->ahiemv_Volume) {
+            audioctrl->ahiac_SetMasterVolume = emv->ahiemv_Volume;
+            rc = update_MasterVolume(audioctrl);
+        }
+        break;
     }
 
     case AHIET_MASTERVOLUME|AHIET_CANCEL:
 
-      if(audioctrl->ahiac_SetMasterVolume != 0x10000)
-      {
-        audioctrl->ahiac_SetMasterVolume = 0x10000;
-        rc = update_MasterVolume( audioctrl );
-      }
-      break;    
+        if(audioctrl->ahiac_SetMasterVolume != 0x10000) {
+            audioctrl->ahiac_SetMasterVolume = 0x10000;
+            rc = update_MasterVolume(audioctrl);
+        }
+        break;
 
-  /*
-   *  OUTPUTBUFFER
-   */
+    /*
+     *  OUTPUTBUFFER
+     */
 
     case AHIET_OUTPUTBUFFER:
-      audioctrl->ahiac_EffOutputBufferStruct = (struct AHIEffOutputBuffer *) effect;
-      rc = AHIE_OK;
-      break;
+        audioctrl->ahiac_EffOutputBufferStruct = (struct AHIEffOutputBuffer *) effect;
+        rc = AHIE_OK;
+        break;
 
     case AHIET_OUTPUTBUFFER|AHIET_CANCEL:
-      audioctrl->ahiac_EffOutputBufferStruct = NULL;
-      rc = AHIE_OK;
-      break;
+        audioctrl->ahiac_EffOutputBufferStruct = NULL;
+        rc = AHIE_OK;
+        break;
 
 
-  /*
-   *  DSPMASK
-   */
+    /*
+     *  DSPMASK
+     */
 
     case AHIET_DSPMASK:
-      rc = update_DSPMask( (struct AHIEffDSPMask *) effect, audioctrl );
-      break;
-      
+        rc = update_DSPMask((struct AHIEffDSPMask *) effect, audioctrl);
+        break;
+
     case AHIET_DSPMASK|AHIET_CANCEL:
-      clear_DSPMask( audioctrl );
-      rc = AHIE_OK;
-      break;
+        clear_DSPMask(audioctrl);
+        rc = AHIE_OK;
+        break;
 
 
-  /*
-   *  DSPECHO
-   */
+    /*
+     *  DSPECHO
+     */
 
     case AHIET_DSPECHO:
-      rc = update_DSPEcho( (struct AHIEffDSPEcho *) effect, audioctrl );
-      break;
-      
+        rc = update_DSPEcho((struct AHIEffDSPEcho *) effect, audioctrl);
+        break;
+
     case AHIET_DSPECHO|AHIET_CANCEL:
-      free_DSPEcho( audioctrl );
-      rc = AHIE_OK;
-      break;
+        free_DSPEcho(audioctrl);
+        rc = AHIE_OK;
+        break;
 
 
-  /*
-   *  CHANNELINFO
-   */
+    /*
+     *  CHANNELINFO
+     */
 
     case AHIET_CHANNELINFO:
-      audioctrl->ahiac_EffChannelInfoStruct = (struct AHIEffChannelInfo *) effect;
-      rc = AHIE_OK;
-      break;
-      
-    case AHIET_CHANNELINFO|AHIET_CANCEL:
-      audioctrl->ahiac_EffChannelInfoStruct = NULL;
-      rc = AHIE_OK;
-      break;
-  }
+        audioctrl->ahiac_EffChannelInfoStruct = (struct AHIEffChannelInfo *) effect;
+        rc = AHIE_OK;
+        break;
 
-  return rc;
+    case AHIET_CHANNELINFO|AHIET_CANCEL:
+        audioctrl->ahiac_EffChannelInfoStruct = NULL;
+        rc = AHIE_OK;
+        break;
+    }
+
+    return rc;
 }
 
 
@@ -863,7 +823,7 @@ _AHI_SetEffect( APTR                   effect,
 *           AHIST_SAMPLE - A pointer to a struct AHISampleInfo, filled with:
 *               ahisi_Type - Format of samples (four formats are supported).
 *                   AHIST_M8S: Mono, 8 bit signed (BYTEs).
-*                   AHIST_S8S: Stereo, 8 bit signed (2×BYTEs) (V4). 
+*                   AHIST_S8S: Stereo, 8 bit signed (2×BYTEs) (V4).
 *                   AHIST_M16S: Mono, 16 bit signed (WORDs).
 *                   AHIST_S16S: Stereo, 16 bit signed (2×WORDs) (V4).
 *                   AHIST_M32S: Mono, 32 bit signed (LONGs). (V6)
@@ -893,7 +853,7 @@ _AHI_SetEffect( APTR                   effect,
 *   NOTES
 *       There is no need to place a sample array in Chip memory, but it
 *       MUST NOT be swapped out! Allocate your sample memory with the
-*       MEMF_PUBLIC flag set. 
+*       MEMF_PUBLIC flag set.
 *
 *   BUGS
 *       AHIST_L7_1 can only be played using 7.1 audio modes -- it will NOT
@@ -908,79 +868,72 @@ _AHI_SetEffect( APTR                   effect,
 */
 
 ULONG
-_AHI_LoadSound( UWORD                    sound,
-		ULONG                    type,
-		APTR                     info,
-		struct AHIPrivAudioCtrl* audioctrl,
-		struct AHIBase*          AHIBase )
+_AHI_LoadSound(UWORD                    sound,
+               ULONG                    type,
+               APTR                     info,
+               struct AHIPrivAudioCtrl *audioctrl,
+               struct AHIBase          *AHIBase)
 {
 
-  struct Library *AHIsubBase;
-  ULONG rc;
+    struct Library *AHIsubBase;
+    ULONG rc;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_LoadSound(sound, type, info, audioctrl);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_LoadSound(sound, type, info, audioctrl);
+    }
 
-  AHIsubBase = audioctrl->ahiac_SubLib;
+    AHIsubBase = audioctrl->ahiac_SubLib;
 
-  rc = AHIsub_LoadSound(sound, type, info, (struct AHIAudioCtrlDrv *) audioctrl);
+    rc = AHIsub_LoadSound(sound, type, info, (struct AHIAudioCtrlDrv *) audioctrl);
 
-  if((audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING) || (rc != AHIS_UNKNOWN))
-  {
-    return rc;
-  }
+    if((audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING) || (rc != AHIS_UNKNOWN)) {
+        return rc;
+    }
 
-  rc = AHIE_OK;
+    rc = AHIE_OK;
 
-  switch(type)
-  {
+    switch(type) {
     case AHIST_DYNAMICSAMPLE:
-    case AHIST_SAMPLE:
-    {
-      struct AHISampleInfo *si = (struct AHISampleInfo *) info;
+    case AHIST_SAMPLE: {
+        struct AHISampleInfo *si = (struct AHISampleInfo *) info;
 
-      switch(si->ahisi_Type)
-      {
+        switch(si->ahisi_Type) {
         case AHIST_L7_1:
-	  if( (audioctrl->ac.ahiac_Flags & AHIACF_HIFI) == 0 )
-	  {
-	    rc = AHIE_BADSAMPLETYPE;
-	    break;
-	  }
-	  // fall through
+            if((audioctrl->ac.ahiac_Flags & AHIACF_HIFI) == 0) {
+                rc = AHIE_BADSAMPLETYPE;
+                break;
+            }
+        // fall through
         case AHIST_M8S:
         case AHIST_M16S:
         case AHIST_S8S:
         case AHIST_S16S:
         case AHIST_M32S:
         case AHIST_S32S:
-          /* AHI_FreeAudio() will deallocate...  */
+            /* AHI_FreeAudio() will deallocate...  */
 
-          audioctrl->ahiac_SoundDatas[sound].sd_Type   = si->ahisi_Type;
-          audioctrl->ahiac_SoundDatas[sound].sd_Addr   = si->ahisi_Address;
-          audioctrl->ahiac_SoundDatas[sound].sd_Length = si->ahisi_Length;
-          break;
+            audioctrl->ahiac_SoundDatas[sound].sd_Type   = si->ahisi_Type;
+            audioctrl->ahiac_SoundDatas[sound].sd_Addr   = si->ahisi_Address;
+            audioctrl->ahiac_SoundDatas[sound].sd_Length = si->ahisi_Length;
+            break;
 
         default:
-          rc = AHIE_BADSAMPLETYPE;
-	  break;
-      }
-      
-      break;
-    }
- 
-    default:
-      rc = AHIE_BADSOUNDTYPE;
-      break;
-  }
+            rc = AHIE_BADSAMPLETYPE;
+            break;
+        }
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    KPrintF("=>%ld\n", rc);
-  }
-  return rc;
+        break;
+    }
+
+    default:
+        rc = AHIE_BADSOUNDTYPE;
+        break;
+    }
+
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        KPrintF("=>%ld\n", rc);
+    }
+    return rc;
 }
 
 
@@ -1023,30 +976,28 @@ _AHI_LoadSound( UWORD                    sound,
 */
 
 ULONG
-_AHI_UnloadSound( UWORD                    sound,
-		  struct AHIPrivAudioCtrl* audioctrl,
-		  struct AHIBase*          AHIBase )
+_AHI_UnloadSound(UWORD                    sound,
+                 struct AHIPrivAudioCtrl *audioctrl,
+                 struct AHIBase          *AHIBase)
 {
-  struct Library *AHIsubBase;
-  ULONG rc;
+    struct Library *AHIsubBase;
+    ULONG rc;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_UnloadSound(sound, audioctrl);
-  }
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_UnloadSound(sound, audioctrl);
+    }
 
-  AHIsubBase = audioctrl->ahiac_SubLib;
+    AHIsubBase = audioctrl->ahiac_SubLib;
 
-  rc = AHIsub_UnloadSound(sound, (struct AHIAudioCtrlDrv *) audioctrl);
+    rc = AHIsub_UnloadSound(sound, (struct AHIAudioCtrlDrv *) audioctrl);
 
-  if((audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING) || (rc != AHIS_UNKNOWN))
-  {
+    if((audioctrl->ac.ahiac_Flags & AHIACF_NOMIXING) || (rc != AHIS_UNKNOWN)) {
+        return 0;
+    }
+
+    audioctrl->ahiac_SoundDatas[sound].sd_Type = AHIST_NOTYPE;
+
     return 0;
-  }
-  
-  audioctrl->ahiac_SoundDatas[sound].sd_Type = AHIST_NOTYPE;
-  
-  return 0;
 }
 
 
@@ -1140,109 +1091,106 @@ _AHI_UnloadSound( UWORD                    sound,
 */
 
 ULONG
-_AHI_PlayA( struct AHIPrivAudioCtrl* audioctrl,
-	    struct TagItem*          tags,
-	    struct AHIBase*          AHIBase )
+_AHI_PlayA(struct AHIPrivAudioCtrl *audioctrl,
+           struct TagItem          *tags,
+           struct AHIBase          *AHIBase)
 {
-  struct TagItem *tag,*tstate=tags;
-  struct Library *AHIsubBase;
-  BOOL  setfreq = FALSE, setvol = FALSE, setsound = FALSE,
-        loopsetfreq = FALSE, loopsetvol = FALSE, loopsetsound = FALSE;
-  ULONG channel = 0,
-        freq = 0, vol = 0, pan = 0, sound = 0, offset = 0, length = 0;
-  ULONG loopfreq = 0, loopvol = 0, looppan = 0, loopsound = 0,
-        loopoffset = 0, looplength = 0;
+    struct TagItem *tag, *tstate = tags;
+    struct Library *AHIsubBase;
+    BOOL  setfreq = FALSE, setvol = FALSE, setsound = FALSE,
+          loopsetfreq = FALSE, loopsetvol = FALSE, loopsetsound = FALSE;
+    ULONG channel = 0,
+          freq = 0, vol = 0, pan = 0, sound = 0, offset = 0, length = 0;
+    ULONG loopfreq = 0, loopvol = 0, looppan = 0, loopsound = 0,
+          loopoffset = 0, looplength = 0;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL)
-  {
-    Debug_PlayA(audioctrl,tags);
-  }
-
-  AHIsubBase = ((struct AHIPrivAudioCtrl *)audioctrl)->ahiac_SubLib;
-
-  AHIsub_Disable((struct AHIAudioCtrlDrv *)audioctrl);
-
-  for( tag = NextTagItem( &tstate );
-       tag != NULL;
-       tag = NextTagItem( &tstate ) )
-  {
-    switch(tag->ti_Tag)
-    {
-    case AHIP_BeginChannel:
-      channel=tag->ti_Data;
-      setfreq=setvol=setsound=loopsetfreq=loopsetvol=loopsetsound= \
-      vol=pan=offset=length=loopvol=looppan=loopoffset=looplength=0;
-      break;
-    case AHIP_Freq:
-      loopfreq=
-      freq=tag->ti_Data;
-      setfreq=TRUE;
-      break;
-    case AHIP_Vol:
-      loopvol=
-      vol=tag->ti_Data;
-      setvol=TRUE;
-      break;
-    case AHIP_Pan:
-      looppan=
-      pan=tag->ti_Data;
-      setvol=TRUE;
-      break;
-    case AHIP_Sound:
-      loopsound=
-      sound=tag->ti_Data;
-      setsound=TRUE;
-      break;
-    case AHIP_Offset:
-      loopoffset=
-      offset=tag->ti_Data;
-      break;
-    case AHIP_Length:
-      looplength=
-      length=tag->ti_Data;
-      break;
-    case AHIP_LoopFreq:
-      loopfreq=tag->ti_Data;
-      loopsetfreq=TRUE;
-      break;
-    case AHIP_LoopVol:
-      loopvol=tag->ti_Data;
-      loopsetvol=TRUE;
-      break;
-    case AHIP_LoopPan:
-      looppan=tag->ti_Data;
-      loopsetvol=TRUE;
-      break;
-    case AHIP_LoopSound:
-      loopsound=tag->ti_Data;
-      loopsetsound=TRUE;
-      break;
-    case AHIP_LoopOffset:
-      loopoffset=tag->ti_Data;
-      loopsetsound=TRUE;           // AHIP_LoopSound: doesn't have to be present
-      break;
-    case AHIP_LoopLength:
-      looplength=tag->ti_Data;
-      break;
-    case AHIP_EndChannel:
-      if(setfreq)
-        AHI_SetFreq( channel, freq, (struct AHIAudioCtrl*) audioctrl, AHISF_IMM );
-      if(loopsetfreq)
-        AHI_SetFreq( channel, loopfreq, (struct AHIAudioCtrl*) audioctrl, AHISF_NONE );
-      if(setvol)
-        AHI_SetVol( channel, vol, pan, (struct AHIAudioCtrl*) audioctrl, AHISF_IMM );
-      if(loopsetvol)
-        AHI_SetVol( channel, loopvol, looppan, (struct AHIAudioCtrl*) audioctrl, AHISF_NONE );
-      if(setsound)
-        AHI_SetSound( channel, sound, offset, length, (struct AHIAudioCtrl*) audioctrl, AHISF_IMM );
-      if(loopsetsound)
-        AHI_SetSound( channel, loopsound, loopoffset, looplength, (struct AHIAudioCtrl*) audioctrl, AHISF_NONE);
-      break;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_ALL) {
+        Debug_PlayA(audioctrl, tags);
     }
-  }
 
-  AHIsub_Enable((struct AHIAudioCtrlDrv *)audioctrl);
-  return 0;
+    AHIsubBase = ((struct AHIPrivAudioCtrl *)audioctrl)->ahiac_SubLib;
+
+    AHIsub_Disable((struct AHIAudioCtrlDrv *)audioctrl);
+
+    for(tag = NextTagItem(&tstate);
+            tag != NULL;
+            tag = NextTagItem(&tstate)) {
+        switch(tag->ti_Tag) {
+        case AHIP_BeginChannel:
+            channel = tag->ti_Data;
+            setfreq = setvol = setsound = loopsetfreq = loopsetvol = loopsetsound = \
+                                          vol = pan = offset = length = loopvol = looppan = loopoffset = looplength = 0;
+            break;
+        case AHIP_Freq:
+            loopfreq =
+                freq = tag->ti_Data;
+            setfreq = TRUE;
+            break;
+        case AHIP_Vol:
+            loopvol =
+                vol = tag->ti_Data;
+            setvol = TRUE;
+            break;
+        case AHIP_Pan:
+            looppan =
+                pan = tag->ti_Data;
+            setvol = TRUE;
+            break;
+        case AHIP_Sound:
+            loopsound =
+                sound = tag->ti_Data;
+            setsound = TRUE;
+            break;
+        case AHIP_Offset:
+            loopoffset =
+                offset = tag->ti_Data;
+            break;
+        case AHIP_Length:
+            looplength =
+                length = tag->ti_Data;
+            break;
+        case AHIP_LoopFreq:
+            loopfreq = tag->ti_Data;
+            loopsetfreq = TRUE;
+            break;
+        case AHIP_LoopVol:
+            loopvol = tag->ti_Data;
+            loopsetvol = TRUE;
+            break;
+        case AHIP_LoopPan:
+            looppan = tag->ti_Data;
+            loopsetvol = TRUE;
+            break;
+        case AHIP_LoopSound:
+            loopsound = tag->ti_Data;
+            loopsetsound = TRUE;
+            break;
+        case AHIP_LoopOffset:
+            loopoffset = tag->ti_Data;
+            loopsetsound = TRUE;         // AHIP_LoopSound: doesn't have to be present
+            break;
+        case AHIP_LoopLength:
+            looplength = tag->ti_Data;
+            break;
+        case AHIP_EndChannel:
+            if(setfreq)
+                AHI_SetFreq(channel, freq, (struct AHIAudioCtrl *) audioctrl, AHISF_IMM);
+            if(loopsetfreq)
+                AHI_SetFreq(channel, loopfreq, (struct AHIAudioCtrl *) audioctrl, AHISF_NONE);
+            if(setvol)
+                AHI_SetVol(channel, vol, pan, (struct AHIAudioCtrl *) audioctrl, AHISF_IMM);
+            if(loopsetvol)
+                AHI_SetVol(channel, loopvol, looppan, (struct AHIAudioCtrl *) audioctrl, AHISF_NONE);
+            if(setsound)
+                AHI_SetSound(channel, sound, offset, length, (struct AHIAudioCtrl *) audioctrl, AHISF_IMM);
+            if(loopsetsound)
+                AHI_SetSound(channel, loopsound, loopoffset, looplength, (struct AHIAudioCtrl *) audioctrl, AHISF_NONE);
+            break;
+        }
+    }
+
+    AHIsub_Enable((struct AHIAudioCtrlDrv *)audioctrl);
+    return 0;
 }
 
 
@@ -1286,41 +1234,36 @@ _AHI_PlayA( struct AHIPrivAudioCtrl* audioctrl,
 *
 */
 
-static const UBYTE type2bytes[]=
-{
-  1,    // AHIST_M8S  (0)
-  2,    // AHIST_M16S (1)
-  2,    // AHIST_S8S  (2)
-  4,    // AHIST_S16S (3)
-  1,    // AHIST_M8U  (4)
-  0,
-  0,
-  0,
-  4,    // AHIST_M32S (8)
-  0,
-  8     // AHIST_S32S (10)
+static const UBYTE type2bytes[] = {
+    1,    // AHIST_M8S  (0)
+    2,    // AHIST_M16S (1)
+    2,    // AHIST_S8S  (2)
+    4,    // AHIST_S16S (3)
+    1,    // AHIST_M8U  (4)
+    0,
+    0,
+    0,
+    4,    // AHIST_M32S (8)
+    0,
+    8     // AHIST_S32S (10)
 };
 
 ULONG
-_AHI_SampleFrameSize( ULONG           sampletype,
-		      struct AHIBase* AHIBase )
+_AHI_SampleFrameSize(ULONG           sampletype,
+                     struct AHIBase *AHIBase)
 {
-  ULONG result = 0;
-  
-  if(sampletype <= AHIST_S32S )
-  {
-    result = type2bytes[sampletype];
-  }
-  else if(sampletype == AHIST_L7_1)
-  {
-    result = 32;
-  }
+    ULONG result = 0;
 
-  if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW)
-  {
-    Debug_SampleFrameSize(sampletype);
-    KPrintF("=>%ld\n",type2bytes[sampletype]);
-  }
+    if(sampletype <= AHIST_S32S) {
+        result = type2bytes[sampletype];
+    } else if(sampletype == AHIST_L7_1) {
+        result = 32;
+    }
 
-  return result;
+    if(AHIBase->ahib_DebugLevel >= AHI_DEBUG_LOW) {
+        Debug_SampleFrameSize(sampletype);
+        KPrintF("=>%ld\n", type2bytes[sampletype]);
+    }
+
+    return result;
 }

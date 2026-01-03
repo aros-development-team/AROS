@@ -39,67 +39,57 @@ unsigned long z = 0;
 
 
 LONG
-CardInterrupt( struct SB128_DATA* card )
+CardInterrupt(struct SB128_DATA *card)
 {
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
 
-  ULONG intreq;
-  LONG  handled = 0;
-    
-  D(bug("[SB128]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card));
+    ULONG intreq;
+    LONG  handled = 0;
 
-  while (((intreq = (pci_inl(SB128_STATUS, card))) & SB128_INT_PENDING) != 0)
-  {
-    if( intreq & SB128_INT_DAC2 && AudioCtrl != NULL )
-    {
-      /* Clear interrupt pending bit(s) and re-enable playback interrupts */
-      pci_outl((pci_inl(SB128_SCON, card) & ~SB128_DAC2_INTEN), SB128_SCON, card);
-      pci_outl((pci_inl(SB128_SCON, card) | SB128_DAC2_INTEN), SB128_SCON, card);
+    D(bug("[SB128]: %s(card @ 0x%p)\n", __PRETTY_FUNCTION__, card));
 
-      if (card->flip == 0) /* just played buf 1 */
-      {
-         card->flip = 1;
-         card->current_buffer = card->playback_buffer;
-      }
-      else  /* just played buf 2 */
-      {
-         card->flip = 0;
-         card->current_buffer = (APTR) ((IPTR) card->playback_buffer + card->current_bytesize);
-      }
-      
-      card->playback_interrupt_enabled = FALSE;
-      Cause( &card->playback_interrupt );
-    }
+    while(((intreq = (pci_inl(SB128_STATUS, card))) & SB128_INT_PENDING) != 0) {
+        if(intreq & SB128_INT_DAC2 && AudioCtrl != NULL) {
+            /* Clear interrupt pending bit(s) and re-enable playback interrupts */
+            pci_outl((pci_inl(SB128_SCON, card) & ~SB128_DAC2_INTEN), SB128_SCON, card);
+            pci_outl((pci_inl(SB128_SCON, card) | SB128_DAC2_INTEN), SB128_SCON, card);
 
-    if( intreq & SB128_INT_ADC && AudioCtrl != NULL )
-    {
-      /* Clear interrupt pending bit(s) and re-enable record interrupts */
-      pci_outl((pci_inl(SB128_SCON, card) & ~SB128_ADC_INTEN), SB128_SCON, card);
-      pci_outl((pci_inl(SB128_SCON, card) | SB128_ADC_INTEN), SB128_SCON, card);
-
-      if( card->record_interrupt_enabled )
-      {
-         /* Invoke softint to convert and feed AHI with the new sample data */
-
-         if (card->recflip == 0) /* just filled buf 1 */
-         {
-            card->recflip = 1;
-            card->current_record_buffer = card->record_buffer;
+            if(card->flip == 0) { /* just played buf 1 */
+                card->flip = 1;
+                card->current_buffer = card->playback_buffer;
+            } else { /* just played buf 2 */
+                card->flip = 0;
+                card->current_buffer = (APTR)((IPTR) card->playback_buffer + card->current_bytesize);
             }
-         else  /* just filled buf 2 */
-         {
-            card->recflip = 0;
-            card->current_record_buffer = (APTR) ((unsigned long) card->record_buffer + card->current_record_bytesize);
-         }
-         card->record_interrupt_enabled = FALSE;
-         Cause( &card->record_interrupt );
-      }
+
+            card->playback_interrupt_enabled = FALSE;
+            Cause(&card->playback_interrupt);
+        }
+
+        if(intreq & SB128_INT_ADC && AudioCtrl != NULL) {
+            /* Clear interrupt pending bit(s) and re-enable record interrupts */
+            pci_outl((pci_inl(SB128_SCON, card) & ~SB128_ADC_INTEN), SB128_SCON, card);
+            pci_outl((pci_inl(SB128_SCON, card) | SB128_ADC_INTEN), SB128_SCON, card);
+
+            if(card->record_interrupt_enabled) {
+                /* Invoke softint to convert and feed AHI with the new sample data */
+
+                if(card->recflip == 0) { /* just filled buf 1 */
+                    card->recflip = 1;
+                    card->current_record_buffer = card->record_buffer;
+                } else { /* just filled buf 2 */
+                    card->recflip = 0;
+                    card->current_record_buffer = (APTR)((unsigned long) card->record_buffer + card->current_record_bytesize);
+                }
+                card->record_interrupt_enabled = FALSE;
+                Cause(&card->record_interrupt);
+            }
+        }
+        handled = 1;
+
     }
-    handled = 1;
-    
-  }
-  
-  return handled;
+
+    return handled;
 }
 
 
@@ -108,63 +98,60 @@ CardInterrupt( struct SB128_DATA* card )
 ******************************************************************************/
 
 void
-PlaybackInterrupt( struct SB128_DATA* card )
+PlaybackInterrupt(struct SB128_DATA *card)
 {
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) card->ahisubbase;
 
-  if( card->mix_buffer != NULL && card->current_buffer != NULL )
-  {
-    BOOL   skip_mix;
+    if(card->mix_buffer != NULL && card->current_buffer != NULL) {
+        BOOL   skip_mix;
 
-    WORD*  src;
-    WORD*  dst;
-    size_t skip;
-    size_t samples;
-    int    i;
-    
-  	skip_mix = CallHookPkt( AudioCtrl->ahiac_PreTimerFunc, (Object*) AudioCtrl, 0 );  
-    CallHookPkt( AudioCtrl->ahiac_PlayerFunc, (Object*) AudioCtrl, NULL );
+        WORD  *src;
+        WORD  *dst;
+        size_t skip;
+        size_t samples;
+        int    i;
 
-  if( ! skip_mix )
-    {
-      CallHookPkt( AudioCtrl->ahiac_MixerFunc, (Object*) AudioCtrl, card->mix_buffer );
-    }
-    
-    /* Now translate and transfer to the DMA buffer */
+        skip_mix = CallHookPkt(AudioCtrl->ahiac_PreTimerFunc, (Object *) AudioCtrl, 0);
+        CallHookPkt(AudioCtrl->ahiac_PlayerFunc, (Object *) AudioCtrl, NULL);
 
-    skip    = ( AudioCtrl->ahiac_Flags & AHIACF_HIFI ) ? 2 : 1;
-    samples = card->current_bytesize >> 1;
+        if(! skip_mix) {
+            CallHookPkt(AudioCtrl->ahiac_MixerFunc, (Object *) AudioCtrl, card->mix_buffer);
+        }
 
-    src     = card->mix_buffer;
+        /* Now translate and transfer to the DMA buffer */
+
+        skip    = (AudioCtrl->ahiac_Flags & AHIACF_HIFI) ? 2 : 1;
+        samples = card->current_bytesize >> 1;
+
+        src     = card->mix_buffer;
 #if !AROS_BIG_ENDIAN
-    if(skip == 2)
-        src++;
+        if(skip == 2)
+            src++;
 #endif
-    dst     = card->current_buffer;
+        dst     = card->current_buffer;
 
-    i = samples;
+        i = samples;
 
-    while( i > 0 )
-    {
+        while(i > 0) {
 #ifdef __AMIGAOS4__
-      *dst = ( ( *src & 0xff ) << 8 ) | ( ( *src & 0xff00 ) >> 8 );
+            *dst = ((*src & 0xff) << 8) | ((*src & 0xff00) >> 8);
 #else
-      *dst = *src;
+            *dst = *src;
 #endif
 
-      src += skip;
-      dst += 1;
+            src += skip;
+            dst += 1;
 
-      --i;
+            --i;
+        }
+
+        //Flush cache so that data is completely written to the DMA buffer - Articia hack
+        CacheClearE(card->current_buffer, card->current_bytesize, CACRF_ClearD);
+
+        CallHookPkt(AudioCtrl->ahiac_PostTimerFunc, (Object *) AudioCtrl, 0);
     }
-    
-    //Flush cache so that data is completely written to the DMA buffer - Articia hack
-    CacheClearE(card->current_buffer, card->current_bytesize, CACRF_ClearD);
-    
-    CallHookPkt( AudioCtrl->ahiac_PostTimerFunc, (Object*) AudioCtrl, 0 );
-  }
-  card->playback_interrupt_enabled = TRUE;
+    card->playback_interrupt_enabled = TRUE;
 }
 
 
@@ -173,40 +160,38 @@ PlaybackInterrupt( struct SB128_DATA* card )
 ******************************************************************************/
 
 void
-RecordInterrupt( struct SB128_DATA* card )
+RecordInterrupt(struct SB128_DATA *card)
 {
-  struct AHIAudioCtrlDrv* AudioCtrl = card->audioctrl;
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) card->ahisubbase;
+    struct AHIAudioCtrlDrv *AudioCtrl = card->audioctrl;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) card->ahisubbase;
 
-  struct AHIRecordMessage rm =
-  {
-    AHIST_S16S,
-    card->current_record_buffer,
-    RECORD_BUFFER_SAMPLES
-  };
-
-#ifdef __AMIGAOS4__
-  int   i   = 0, shorts = card->current_record_bytesize / 2;
-  WORD* ptr = card->current_record_buffer;
-#endif
-
-  //Invalidate cache so that data read from DMA buffer is correct - Articia hack
-  CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
+    struct AHIRecordMessage rm = {
+        AHIST_S16S,
+        card->current_record_buffer,
+        RECORD_BUFFER_SAMPLES
+    };
 
 #ifdef __AMIGAOS4__
-  while( i < shorts )
-  {
-    *ptr = ( ( *ptr & 0xff ) << 8 ) | ( ( *ptr & 0xff00 ) >> 8 );
-
-    ++i;
-    ++ptr;
-  }
+    int   i   = 0, shorts = card->current_record_bytesize / 2;
+    WORD *ptr = card->current_record_buffer;
 #endif
 
-  CallHookPkt( AudioCtrl->ahiac_SamplerFunc, (Object*) AudioCtrl, &rm );
+    //Invalidate cache so that data read from DMA buffer is correct - Articia hack
+    CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
 
-  //Invalidate cache so that data read from DMA buffer is correct - Articia hack
-  CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
+#ifdef __AMIGAOS4__
+    while(i < shorts) {
+        *ptr = ((*ptr & 0xff) << 8) | ((*ptr & 0xff00) >> 8);
 
-  card->record_interrupt_enabled = TRUE;
+        ++i;
+        ++ptr;
+    }
+#endif
+
+    CallHookPkt(AudioCtrl->ahiac_SamplerFunc, (Object *) AudioCtrl, &rm);
+
+    //Invalidate cache so that data read from DMA buffer is correct - Articia hack
+    CacheClearE(card->current_record_buffer, card->current_record_bytesize, CACRF_InvalidateD);
+
+    card->record_interrupt_enabled = TRUE;
 }

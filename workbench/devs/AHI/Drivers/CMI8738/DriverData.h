@@ -1,10 +1,10 @@
 /*
 The contents of this file are subject to the AROS Public License Version 1.1 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy of the License at 
-http://www.aros.org/license.html 
-Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF 
-ANY KIND, either express or implied. See the License for the specific language governing rights and 
-limitations under the License. 
+you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
 
 The Original Code is written by Davy Wentzler.
 */
@@ -23,8 +23,7 @@ The Original Code is written by Davy Wentzler.
 
 struct CMI8738_DATA;
 
-struct tester
-{
+struct tester {
     unsigned long diff;
     int flip;
     int oldflip;
@@ -32,8 +31,7 @@ struct tester
     int Missed;
 };
 
-struct CMI8738Base
-{
+struct CMI8738Base {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -46,7 +44,7 @@ struct CMI8738Base
     int                    cards_found;
 
     /** A CMI8738_DATA structure for each card found */
-    struct CMI8738_DATA**   driverdatas;
+    struct CMI8738_DATA   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct CMI8738Base))
@@ -54,8 +52,7 @@ struct CMI8738Base
 #define RECORD_BUFFER_SAMPLES     1024
 
 
-struct CMI8738_DATA
-{
+struct CMI8738_DATA {
     /*** PCI/Card initialization progress *********************************/
 
     struct PCIDevice    *pci_dev;
@@ -79,17 +76,17 @@ struct CMI8738_DATA
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
 
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -119,15 +116,15 @@ struct CMI8738_DATA
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
 
-    
+
 
     /*** Playback interrupt variables ****************************************/
 
@@ -140,7 +137,7 @@ struct CMI8738_DATA
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
@@ -161,18 +158,18 @@ struct CMI8738_DATA
 
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
-    
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize;
-    
+
     int                 recflip;
 
 
 
     /** Analog mixer variables ***********************************************/
-    
+
     unsigned char       mixerstate;
-    
+
 
     /** The currently selected input */
     UWORD               input;
@@ -203,16 +200,16 @@ struct CMI8738_DATA
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 vide */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
 };

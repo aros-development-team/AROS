@@ -1,17 +1,17 @@
 /*
      AHI - Hardware independent audio subsystem
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
-     
+
      This library is free software; you can redistribute it and/or
      modify it under the terms of the GNU Library General Public
      License as published by the Free Software Foundation; either
      version 2 of the License, or (at your option) any later version.
-     
+
      This library is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
      Library General Public License for more details.
-     
+
      You should have received a copy of the GNU Library General Public
      License along with this library; if not, write to the
      Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
@@ -26,21 +26,20 @@
 
 #include "ahi_def.h"
 
-struct PowerPCContext
-{
-  volatile int              Command;
-  volatile void*            Argument;
+struct PowerPCContext {
+    volatile int              Command;
+    volatile void            *Argument;
 
-  int                       Active;
-  struct Hook*              Hook;
-  void*	                    Dst;
-  void*                     XLock;
+    int                       Active;
+    struct Hook              *Hook;
+    void	                    *Dst;
+    void                     *XLock;
 
-  struct AHIPrivAudioCtrl*  AudioCtrl;
-  struct Library*           PowerPCBase;
-  
-  struct Interrupt*         MixInterrupt;
-  void*                     MixBuffer;
+    struct AHIPrivAudioCtrl  *AudioCtrl;
+    struct Library           *PowerPCBase;
+
+    struct Interrupt         *MixInterrupt;
+    void                     *MixBuffer;
 };
 
 #define PPCC_COM_NONE          0
@@ -54,17 +53,17 @@ struct PowerPCContext
 #define PPCC_COM_FINISHED      8
 
 BOOL
-WarpUpInit( struct AHIPrivAudioCtrl* audioctrl );
+WarpUpInit(struct AHIPrivAudioCtrl *audioctrl);
 
 void
-WarpUpCallMixer( struct AHIPrivAudioCtrl* audioctrl,
-                 void* dst );
+WarpUpCallMixer(struct AHIPrivAudioCtrl *audioctrl,
+                void *dst);
 
 void
-WarpUpCallSoundHook( struct AHIPrivAudioCtrl *audioctrl,
-                     void* arg );
+WarpUpCallSoundHook(struct AHIPrivAudioCtrl *audioctrl,
+                    void *arg);
 
 void
-WarpUpCleanUp( struct AHIPrivAudioCtrl* audioctrl );
+WarpUpCleanUp(struct AHIPrivAudioCtrl *audioctrl);
 
 #endif /* ahi_warpup_h */

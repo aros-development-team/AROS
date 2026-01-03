@@ -31,48 +31,45 @@
 ******************************************************************************/
 
 ULONG
-OpenCAMDPort( struct Hook*        hook,
-	      struct EMU10kxBase* EMU10kxBase,
-	      struct OpenMessage* msg )
+OpenCAMDPort(struct Hook        *hook,
+             struct EMU10kxBase *EMU10kxBase,
+             struct OpenMessage *msg)
 {
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) EMU10kxBase;
-  struct EMU10kxData* dd;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) EMU10kxBase;
+    struct EMU10kxData *dd;
 
-  BOOL in_use;
+    BOOL in_use;
 
 //  KPrintF( "OpenCAMDPort(%ld,%ld)\n", msg->PortNum, msg->V40Mode );
 
-  if( msg->PortNum >= EMU10kxBase->cards_found ||
-      EMU10kxBase->driverdatas[ msg->PortNum ] == NULL )
-  {
-    Req( "No valid EMU10kxData for CAMD port %ld.", msg->PortNum );
-    return FALSE;
-  }
+    if(msg->PortNum >= EMU10kxBase->cards_found ||
+            EMU10kxBase->driverdatas[ msg->PortNum ] == NULL) {
+        Req("No valid EMU10kxData for CAMD port %ld.", msg->PortNum);
+        return FALSE;
+    }
 
-  dd = EMU10kxBase->driverdatas[ msg->PortNum ];
-  
-  ObtainSemaphore( &EMU10kxBase->semaphore );
-  in_use = ( dd->camd_transmitfunc != NULL ||
-	     dd->camd_receivefunc != NULL );
-  if( !in_use )
-  {
-    dd->camd_v40          = msg->V40Mode;
-    dd->camd_transmitfunc = msg->TransmitFunc;
-    dd->camd_receivefunc  = msg->ReceiveFunc;
-  }
-  ReleaseSemaphore( &EMU10kxBase->semaphore );
+    dd = EMU10kxBase->driverdatas[ msg->PortNum ];
 
-  if( in_use )
-  {
-    return FALSE;
-  }
+    ObtainSemaphore(&EMU10kxBase->semaphore);
+    in_use = (dd->camd_transmitfunc != NULL ||
+              dd->camd_receivefunc != NULL);
+    if(!in_use) {
+        dd->camd_v40          = msg->V40Mode;
+        dd->camd_transmitfunc = msg->TransmitFunc;
+        dd->camd_receivefunc  = msg->ReceiveFunc;
+    }
+    ReleaseSemaphore(&EMU10kxBase->semaphore);
 
-  emu10k1_irq_disable( &dd->card, INTE_MIDIRXENABLE );
-  emu10k1_irq_disable( &dd->card, INTE_MIDITXENABLE );
-  emu10k1_mpu_reset( &dd->card );
-  emu10k1_irq_enable( &dd->card, INTE_MIDIRXENABLE );
+    if(in_use) {
+        return FALSE;
+    }
 
-  return TRUE;
+    emu10k1_irq_disable(&dd->card, INTE_MIDIRXENABLE);
+    emu10k1_irq_disable(&dd->card, INTE_MIDITXENABLE);
+    emu10k1_mpu_reset(&dd->card);
+    emu10k1_irq_enable(&dd->card, INTE_MIDIRXENABLE);
+
+    return TRUE;
 }
 
 
@@ -81,20 +78,20 @@ OpenCAMDPort( struct Hook*        hook,
 ******************************************************************************/
 
 VOID
-CloseCAMDPort( struct Hook*         hook,
-	       struct EMU10kxBase*  EMU10kxBase,
-	       struct CloseMessage* msg )
+CloseCAMDPort(struct Hook         *hook,
+              struct EMU10kxBase  *EMU10kxBase,
+              struct CloseMessage *msg)
 {
-  struct EMU10kxData* dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
+    struct EMU10kxData *dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
 
-  emu10k1_irq_disable( &dd->card, INTE_MIDIRXENABLE );
-  emu10k1_irq_disable( &dd->card, INTE_MIDITXENABLE );
-  emu10k1_mpu_reset( &dd->card );
-  
-  ObtainSemaphore( &EMU10kxBase->semaphore );
-  dd->camd_transmitfunc = NULL;
-  dd->camd_receivefunc  = NULL;
-  ReleaseSemaphore( &EMU10kxBase->semaphore );
+    emu10k1_irq_disable(&dd->card, INTE_MIDIRXENABLE);
+    emu10k1_irq_disable(&dd->card, INTE_MIDITXENABLE);
+    emu10k1_mpu_reset(&dd->card);
+
+    ObtainSemaphore(&EMU10kxBase->semaphore);
+    dd->camd_transmitfunc = NULL;
+    dd->camd_receivefunc  = NULL;
+    ReleaseSemaphore(&EMU10kxBase->semaphore);
 }
 
 
@@ -103,15 +100,15 @@ CloseCAMDPort( struct Hook*         hook,
 ******************************************************************************/
 
 VOID
-ActivateCAMDXmit( struct Hook*            hook,
-		  struct EMU10kxBase*     EMU10kxBase,
-		  struct ActivateMessage* msg )
+ActivateCAMDXmit(struct Hook            *hook,
+                 struct EMU10kxBase     *EMU10kxBase,
+                 struct ActivateMessage *msg)
 {
-  struct EMU10kxData* dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
+    struct EMU10kxData *dd         = EMU10kxBase->driverdatas[ msg->PortNum ];
 
 //  KPrintF( "ActivateCAMDXmit(%08lx)\n", msg->PortNum );
 
-  emu10k1_irq_enable( &dd->card, INTE_MIDITXENABLE );
+    emu10k1_irq_enable(&dd->card, INTE_MIDITXENABLE);
 
-  // The interrupt handler will now fetch the bytes and transmit them.
+    // The interrupt handler will now fetch the bytes and transmit them.
 }

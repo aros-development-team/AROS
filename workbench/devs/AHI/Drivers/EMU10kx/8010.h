@@ -12,7 +12,7 @@
  *					    line endings
  *     December 8, 1999     Jon Taylor	    Added lots of new register info
  *     May 16, 2001         Daniel Bertrand Added unofficial DBG register info
- *     Oct-Nov 2001         D.B.            Added unofficial Audigy registers 
+ *     Oct-Nov 2001         D.B.            Added unofficial Audigy registers
  *
  **********************************************************************
  *
@@ -54,19 +54,19 @@
 /************************************************************************************************/
 
 #define PTR			0x00		/* Indexed register set pointer register	*/
-						/* NOTE: The CHANNELNUM and ADDRESS words can	*/
-						/* be modified independently of each other.	*/
+/* NOTE: The CHANNELNUM and ADDRESS words can	*/
+/* be modified independently of each other.	*/
 #define PTR_CHANNELNUM_MASK	0x0000003f	/* For each per-channel register, indicates the	*/
-						/* channel number of the register to be		*/
-						/* accessed.  For non per-channel registers the	*/
-						/* value should be set to zero.			*/
+/* channel number of the register to be		*/
+/* accessed.  For non per-channel registers the	*/
+/* value should be set to zero.			*/
 #define PTR_ADDRESS_MASK	0x07ff0000	/* Register index				*/
 
 #define DATA			0x04		/* Indexed register set data register		*/
 
 #define IPR			0x08		/* Global interrupt pending register		*/
-						/* Clear pending interrupts by writing a 1 to	*/
-						/* the relevant bits and zero to the other bits	*/
+/* Clear pending interrupts by writing a 1 to	*/
+/* the relevant bits and zero to the other bits	*/
 
 /* The next two interrupts are for the midi port on the Audigy Drive (A_MPU1)			*/
 #define A_IPR_MIDITRANSBUFEMPTY2	0x10000000	/* MIDI UART transmit buffer empty		*/
@@ -92,10 +92,10 @@
 #define IPR_MIDIRECVBUFEMPTY	0x00000080	/* MIDI UART receive buffer empty		*/
 #define IPR_CHANNELLOOP		0x00000040	/* One or more channel loop interrupts pending	*/
 #define IPR_CHANNELNUMBERMASK	0x0000003f	/* When IPR_CHANNELLOOP is set, indicates the	*/
-						/* Highest set channel in CLIPL or CLIPH.  When	*/
-						/* IP is written with CL set, the bit in CLIPL	*/
-						/* or CLIPH corresponding to the CIN value 	*/
-						/* written will be cleared.			*/
+/* Highest set channel in CLIPL or CLIPH.  When	*/
+/* IP is written with CL set, the bit in CLIPL	*/
+/* or CLIPH corresponding to the CIN value 	*/
+/* written will be cleared.			*/
 #define A_IPR_MIDITRANSBUFEMPTY1	IPR_MIDITRANSBUFEMPTY	/* MIDI UART transmit buffer empty		*/
 #define A_IPR_MIDIRECVBUFEMPTY1	IPR_MIDIRECVBUFEMPTY	/* MIDI UART receive buffer empty		*/
 
@@ -122,10 +122,10 @@
 #define INTE_FORCEINT		0x00100000	/* Continuously assert INTAN			*/
 
 #define INTE_MRHANDENABLE	0x00080000	/* Enable the "Mr. Hand" logic			*/
-						/* NOTE: There is no reason to use this under	*/
-						/* Linux, and it will cause odd hardware 	*/
-						/* behavior and possibly random segfaults and	*/
-						/* lockups if enabled.				*/
+/* NOTE: There is no reason to use this under	*/
+/* Linux, and it will cause odd hardware 	*/
+/* behavior and possibly random segfaults and	*/
+/* lockups if enabled.				*/
 
 /* The next two interrupts are for the midi port on the Audigy Drive (A_MPU1)			*/
 #define A_INTE_MIDITXENABLE2	0x00020000	/* Enable MIDI transmit-buffer-empty interrupts	*/
@@ -133,7 +133,7 @@
 
 
 #define INTE_SAMPLERATETRACKER	0x00002000	/* Enable sample rate tracker interrupts	*/
-						/* NOTE: This bit must always be enabled       	*/
+/* NOTE: This bit must always be enabled       	*/
 #define INTE_FXDSPENABLE	0x00001000	/* Enable FX DSP interrupts			*/
 #define INTE_PCIERRORENABLE	0x00000800	/* Enable PCI bus error interrupts		*/
 #define INTE_VOLINCRENABLE	0x00000400	/* Enable volume increment button interrupts	*/
@@ -156,14 +156,14 @@
 #define WC_SAMPLECOUNTER_MASK	0x03FFFFC0	/* Sample periods elapsed since reset		*/
 #define WC_SAMPLECOUNTER	0x14060010
 #define WC_CURRENTCHANNEL	0x0000003F	/* Channel [0..63] currently being serviced	*/
-						/* NOTE: Each channel takes 1/64th of a sample	*/
-						/* period to be serviced.			*/
+/* NOTE: Each channel takes 1/64th of a sample	*/
+/* period to be serviced.			*/
 
 #define HCFG			0x14		/* Hardware config register			*/
-						/* NOTE: There is no reason to use the legacy	*/
-						/* SoundBlaster emulation stuff described below	*/
-						/* under Linux, and all kinds of weird hardware	*/
-						/* behavior can result if you try.  Don't.	*/
+/* NOTE: There is no reason to use the legacy	*/
+/* SoundBlaster emulation stuff described below	*/
+/* under Linux, and all kinds of weird hardware	*/
+/* behavior can result if you try.  Don't.	*/
 #define HCFG_LEGACYFUNC_MASK	0xe0000000	/* Legacy function number 			*/
 #define HCFG_LEGACYFUNC_MPU	0x00000000	/* Legacy MPU	 				*/
 #define HCFG_LEGACYFUNC_SB	0x40000000	/* Legacy SB					*/
@@ -176,8 +176,8 @@
 #define HCFG_LEGACYWRITE	0x00800000	/* 1 = write, 0 = read 				*/
 #define HCFG_LEGACYWORD		0x00400000	/* 1 = word, 0 = byte 				*/
 #define HCFG_LEGACYINT		0x00200000	/* 1 = legacy event captured. Write 1 to clear.	*/
-						/* NOTE: The rest of the bits in this register	*/
-						/* _are_ relevant under Linux.			*/
+/* NOTE: The rest of the bits in this register	*/
+/* _are_ relevant under Linux.			*/
 #define HCFG_CODECFORMAT_MASK	0x00070000	/* CODEC format					*/
 #define HCFG_CODECFORMAT_AC97	0x00000000	/* AC97 CODEC format -- Primary Output		*/
 #define HCFG_CODECFORMAT_I2S	0x00010000	/* I2S CODEC format -- Secondary (Rear) Output	*/
@@ -189,30 +189,30 @@
 
 #define HCFG_JOYENABLE      	0x00000200	/* Internal joystick enable    			*/
 #define HCFG_PHASETRACKENABLE	0x00000100	/* Phase tracking enable			*/
-						/* 1 = Force all 3 async digital inputs to use	*/
-						/* the same async sample rate tracker (ZVIDEO)	*/
+/* 1 = Force all 3 async digital inputs to use	*/
+/* the same async sample rate tracker (ZVIDEO)	*/
 #define HCFG_AC3ENABLE_MASK	0x0x0000e0	/* AC3 async input control - Not implemented	*/
 #define HCFG_AC3ENABLE_ZVIDEO	0x00000080	/* Channels 0 and 1 replace ZVIDEO		*/
 #define HCFG_AC3ENABLE_CDSPDIF	0x00000040	/* Channels 0 and 1 replace CDSPDIF		*/
 #define HCFG_AC3ENABLE_GPSPDIF  0x00000020      /* Channels 0 and 1 replace GPSPDIF             */
 #define HCFG_AUTOMUTE		0x00000010	/* When set, the async sample rate convertors	*/
-						/* will automatically mute their output when	*/
-						/* they are not rate-locked to the external	*/
-						/* async audio source  				*/
+/* will automatically mute their output when	*/
+/* they are not rate-locked to the external	*/
+/* async audio source  				*/
 #define HCFG_LOCKSOUNDCACHE	0x00000008	/* 1 = Cancel bustmaster accesses to soundcache */
-						/* NOTE: This should generally never be used.  	*/
+/* NOTE: This should generally never be used.  	*/
 #define HCFG_LOCKTANKCACHE_MASK	0x00000004	/* 1 = Cancel bustmaster accesses to tankcache	*/
-						/* NOTE: This should generally never be used.  	*/
+/* NOTE: This should generally never be used.  	*/
 #define HCFG_LOCKTANKCACHE	0x01020014
 #define HCFG_MUTEBUTTONENABLE	0x00000002	/* 1 = Master mute button sets AUDIOENABLE = 0.	*/
-						/* NOTE: This is a 'cheap' way to implement a	*/
-						/* master mute function on the mute button, and	*/
-						/* in general should not be used unless a more	*/
-						/* sophisticated master mute function has not	*/
-						/* been written.       				*/
+/* NOTE: This is a 'cheap' way to implement a	*/
+/* master mute function on the mute button, and	*/
+/* in general should not be used unless a more	*/
+/* sophisticated master mute function has not	*/
+/* been written.       				*/
 #define HCFG_AUDIOENABLE	0x00000001	/* 0 = CODECs transmit zero-valued samples	*/
-						/* Should be set to 1 when the EMU10K1 is	*/
-						/* completely initialized.			*/
+/* Should be set to 1 when the EMU10K1 is	*/
+/* completely initialized.			*/
 
 //For Audigy, MPU port move to 0x70-0x74 ptr register
 
@@ -221,7 +221,7 @@
 #define MUCMD			0x19		/* MPU401 command register (8 bits)    		*/
 #define MUCMD_RESET		0xff		/* RESET command				*/
 #define MUCMD_ENTERUARTMODE	0x3f		/* Enter_UART_mode command			*/
-						/* NOTE: All other commands are ignored		*/
+/* NOTE: All other commands are ignored		*/
 
 #define MUSTAT			MUCMD		/* MPU401 status register (8 bits)     		*/
 #define MUSTAT_IRDYN		0x80		/* 0 = MIDI data or command ACK			*/
@@ -232,11 +232,11 @@
 #define A_GPOUTPUT_MASK		0x00ff
 
 #define TIMER			0x1a		/* Timer terminal count register (16-bit)	*/
-						/* NOTE: After the rate is changed, a maximum	*/
-						/* of 1024 sample periods should be allowed	*/
-						/* before the new rate is guaranteed accurate.	*/
+/* NOTE: After the rate is changed, a maximum	*/
+/* of 1024 sample periods should be allowed	*/
+/* before the new rate is guaranteed accurate.	*/
 #define TIMER_RATE_MASK		0x03ff		/* Timer interrupt rate in sample periods	*/
-						/* 0 == 1024 periods, [1..4] are not useful	*/
+/* 0 == 1024 periods, [1..4] are not useful	*/
 
 #define AC97DATA		0x1c		/* AC97 register set data register (16 bit)	*/
 
@@ -296,11 +296,11 @@
 #define CCCA			0x08		/* Filter Q, interp. ROM, byte size, cur. addr register */
 #define CCCA_RESONANCE		0xf0000000	/* Lowpass filter resonance (Q) height			*/
 #define CCCA_INTERPROMMASK	0x0e000000	/* Selects passband of interpolation ROM		*/
-						/* 1 == full band, 7 == lowpass				*/
-						/* ROM 0 is used when pitch shifting downward or less	*/
-						/* then 3 semitones upward.  Increasingly higher ROM	*/
-						/* numbers are used, typically in steps of 3 semitones,	*/
-						/* as upward pitch shifting is performed.		*/
+/* 1 == full band, 7 == lowpass				*/
+/* ROM 0 is used when pitch shifting downward or less	*/
+/* then 3 semitones upward.  Increasingly higher ROM	*/
+/* numbers are used, typically in steps of 3 semitones,	*/
+/* as upward pitch shifting is performed.		*/
 #define CCCA_INTERPROM_0	0x00000000	/* Select interpolation ROM 0				*/
 #define CCCA_INTERPROM_1	0x02000000	/* Select interpolation ROM 1				*/
 #define CCCA_INTERPROM_2	0x04000000	/* Select interpolation ROM 2				*/
@@ -322,17 +322,17 @@
 #define CCR_READADDRESS		0x06100009
 #define CCR_READADDRESS_MASK	0x003f0000	/* Location of cache just beyond current cache service	*/
 #define CCR_LOOPINVALSIZE	0x0000fe00	/* Number of invalid samples in cache prior to loop	*/
-						/* NOTE: This is valid only if CACHELOOPFLAG is set	*/
+/* NOTE: This is valid only if CACHELOOPFLAG is set	*/
 #define CCR_LOOPFLAG		0x00000100	/* Set for a single sample period when a loop occurs	*/
 #define CCR_CACHELOOPADDRHI	0x000000ff	/* DSL_LOOPSTARTADDR's hi byte if CACHELOOPFLAG is set	*/
 
 #define CLP			0x0a		/* Cache loop register (valid if CCR_CACHELOOPFLAG = 1) */
-						/* NOTE: This register is normally not used		*/
+/* NOTE: This register is normally not used		*/
 #define CLP_CACHELOOPADDR	0x0000ffff	/* Cache loop address (DSL_LOOPSTARTADDR [0..15])	*/
 
 #define FXRT			0x0b		/* Effects send routing register			*/
-						/* NOTE: It is illegal to assign the same routing to	*/
-						/* two effects sends.					*/
+/* NOTE: It is illegal to assign the same routing to	*/
+/* two effects sends.					*/
 #define FXRT_CHANNELA		0x000f0000	/* Effects send bus number for channel's effects send A	*/
 #define FXRT_CHANNELB		0x00f00000	/* Effects send bus number for channel's effects send B	*/
 #define FXRT_CHANNELC		0x0f000000	/* Effects send bus number for channel's effects send C	*/
@@ -346,57 +346,57 @@
 #define MAP_PTI_MASK		0x00001fff	/* The 13 bit index to one of the 8192 PTE dwords      	*/
 
 #define ENVVOL			0x10		/* Volume envelope register				*/
-#define ENVVOL_MASK		0x0000ffff	/* Current value of volume envelope state variable	*/  
-						/* 0x8000-n == 666*n usec delay	       			*/
+#define ENVVOL_MASK		0x0000ffff	/* Current value of volume envelope state variable	*/
+/* 0x8000-n == 666*n usec delay	       			*/
 
 #define ATKHLDV 		0x11		/* Volume envelope hold and attack register		*/
 #define ATKHLDV_PHASE0		0x00008000	/* 0 = Begin attack phase				*/
 #define ATKHLDV_HOLDTIME_MASK	0x00007f00	/* Envelope hold time (127-n == n*88.2msec)		*/
 #define ATKHLDV_ATTACKTIME_MASK	0x0000007f	/* Envelope attack time, log encoded			*/
-						/* 0 = infinite, 1 = 10.9msec, ... 0x7f = 5.5msec	*/
+/* 0 = infinite, 1 = 10.9msec, ... 0x7f = 5.5msec	*/
 
 #define DCYSUSV 		0x12		/* Volume envelope sustain and decay register		*/
 #define DCYSUSV_PHASE1_MASK	0x00008000	/* 0 = Begin attack phase, 1 = begin release phase	*/
 #define DCYSUSV_SUSTAINLEVEL_MASK 0x00007f00	/* 127 = full, 0 = off, 0.75dB increments		*/
 #define DCYSUSV_CHANNELENABLE_MASK 0x00000080	/* 1 = Inhibit envelope engine from writing values in	*/
-						/* this channel and from writing to pitch, filter and	*/
-						/* volume targets.					*/
+/* this channel and from writing to pitch, filter and	*/
+/* volume targets.					*/
 #define DCYSUSV_DECAYTIME_MASK	0x0000007f	/* Volume envelope decay time, log encoded     		*/
-						/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
+/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
 
 #define LFOVAL1 		0x13		/* Modulation LFO value					*/
 #define LFOVAL_MASK		0x0000ffff	/* Current value of modulation LFO state variable	*/
-						/* 0x8000-n == 666*n usec delay				*/
+/* 0x8000-n == 666*n usec delay				*/
 
 #define ENVVAL			0x14		/* Modulation envelope register				*/
 #define ENVVAL_MASK		0x0000ffff	/* Current value of modulation envelope state variable 	*/
-						/* 0x8000-n == 666*n usec delay				*/
+/* 0x8000-n == 666*n usec delay				*/
 
 #define ATKHLDM			0x15		/* Modulation envelope hold and attack register		*/
 #define ATKHLDM_PHASE0		0x00008000	/* 0 = Begin attack phase				*/
 #define ATKHLDM_HOLDTIME	0x00007f00	/* Envelope hold time (127-n == n*42msec)		*/
 #define ATKHLDM_ATTACKTIME	0x0000007f	/* Envelope attack time, log encoded			*/
-						/* 0 = infinite, 1 = 11msec, ... 0x7f = 5.5msec		*/
+/* 0 = infinite, 1 = 11msec, ... 0x7f = 5.5msec		*/
 
 #define DCYSUSM			0x16		/* Modulation envelope decay and sustain register	*/
 #define DCYSUSM_PHASE1_MASK	0x00008000	/* 0 = Begin attack phase, 1 = begin release phase	*/
 #define DCYSUSM_SUSTAINLEVEL_MASK 0x00007f00	/* 127 = full, 0 = off, 0.75dB increments		*/
 #define DCYSUSM_DECAYTIME_MASK	0x0000007f	/* Envelope decay time, log encoded			*/
-						/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
+/* 0 = 43.7msec, 1 = 21.8msec, 0x7f = 22msec		*/
 
 #define LFOVAL2 		0x17		/* Vibrato LFO register					*/
 #define LFOVAL2_MASK		0x0000ffff	/* Current value of vibrato LFO state variable 		*/
-						/* 0x8000-n == 666*n usec delay				*/
+/* 0x8000-n == 666*n usec delay				*/
 
 #define IP			0x18		/* Initial pitch register				*/
 #define IP_MASK			0x0000ffff	/* Exponential initial pitch shift			*/
-						/* 4 bits of octave, 12 bits of fractional octave	*/
+/* 4 bits of octave, 12 bits of fractional octave	*/
 #define IP_UNITY		0x0000e000	/* Unity pitch shift					*/
 
 #define IFATN			0x19		/* Initial filter cutoff and attenuation register	*/
 #define IFATN_FILTERCUTOFF_MASK	0x0000ff00	/* Initial filter cutoff frequency in exponential units	*/
-						/* 6 most significant bits are semitones		*/
-						/* 2 least significant bits are fractions		*/
+/* 6 most significant bits are semitones		*/
+/* 2 least significant bits are fractions		*/
 #define IFATN_FILTERCUTOFF	0x08080019
 #define IFATN_ATTENUATION_MASK	0x000000ff	/* Initial attenuation in 0.375dB steps			*/
 #define IFATN_ATTENUATION	0x08000019
@@ -404,34 +404,34 @@
 
 #define PEFE			0x1a		/* Pitch envelope and filter envelope amount register	*/
 #define PEFE_PITCHAMOUNT_MASK	0x0000ff00	/* Pitch envlope amount					*/
-						/* Signed 2's complement, +/- one octave peak extremes	*/
+/* Signed 2's complement, +/- one octave peak extremes	*/
 #define PEFE_PITCHAMOUNT	0x0808001a
 #define PEFE_FILTERAMOUNT_MASK	0x000000ff	/* Filter envlope amount				*/
-						/* Signed 2's complement, +/- six octaves peak extremes */
+/* Signed 2's complement, +/- six octaves peak extremes */
 #define PEFE_FILTERAMOUNT	0x0800001a
 #define FMMOD			0x1b		/* Vibrato/filter modulation from LFO register		*/
 #define FMMOD_MODVIBRATO	0x0000ff00	/* Vibrato LFO modulation depth				*/
-						/* Signed 2's complement, +/- one octave extremes	*/
+/* Signed 2's complement, +/- one octave extremes	*/
 #define FMMOD_MOFILTER		0x000000ff	/* Filter LFO modulation depth				*/
-						/* Signed 2's complement, +/- three octave extremes	*/
+/* Signed 2's complement, +/- three octave extremes	*/
 
 
 #define TREMFRQ 		0x1c		/* Tremolo amount and modulation LFO frequency register	*/
 #define TREMFRQ_DEPTH		0x0000ff00	/* Tremolo depth					*/
-						/* Signed 2's complement, with +/- 12dB extremes	*/
+/* Signed 2's complement, with +/- 12dB extremes	*/
 #define TREMFRQ_FREQUENCY	0x000000ff	/* Tremolo LFO frequency				*/
-						/* ??Hz steps, maximum of ?? Hz.			*/
+/* ??Hz steps, maximum of ?? Hz.			*/
 
 #define FM2FRQ2 		0x1d		/* Vibrato amount and vibrato LFO frequency register	*/
 #define FM2FRQ2_DEPTH		0x0000ff00	/* Vibrato LFO vibrato depth				*/
-						/* Signed 2's complement, +/- one octave extremes	*/
+/* Signed 2's complement, +/- one octave extremes	*/
 #define FM2FRQ2_FREQUENCY	0x000000ff	/* Vibrato LFO frequency				*/
-						/* 0.039Hz steps, maximum of 9.85 Hz.			*/
+/* 0.039Hz steps, maximum of 9.85 Hz.			*/
 
 #define TEMPENV 		0x1e		/* Tempory envelope register				*/
 #define TEMPENV_MASK		0x0000ffff	/* 16-bit value						*/
-						/* NOTE: All channels contain internal variables; do	*/
-						/* not write to these locations.			*/
+/* NOTE: All channels contain internal variables; do	*/
+/* not write to these locations.			*/
 
 #define CD0			0x20		/* Cache data 0 register				*/
 #define CD1			0x21		/* Cache data 1 register				*/
@@ -459,8 +459,8 @@
 #define ADCCR			0x42		/* ADC sample rate/stereo control register		*/
 #define ADCCR_RCHANENABLE	0x00000010	/* Enables right channel for writing to the host       	*/
 #define ADCCR_LCHANENABLE	0x00000008	/* Enables left channel for writing to the host		*/
-						/* NOTE: To guarantee phase coherency, both channels	*/
-						/* must be disabled prior to enabling both channels.	*/
+/* NOTE: To guarantee phase coherency, both channels	*/
+/* must be disabled prior to enabling both channels.	*/
 #define A_ADCCR_RCHANENABLE	0x00000020
 #define A_ADCCR_LCHANENABLE	0x00000010
 
@@ -481,11 +481,11 @@
 #define A_ADCCR_SAMPLERATE_8	0x00000008	/* 8kHz sample rate					*/
 
 #define FXWC			0x43		/* FX output write channels register			*/
-						/* When set, each bit enables the writing of the	*/
-						/* corresponding FX output channel (internal registers  */
-						/* 0x20-0x3f) into host memory. This mode of recording	*/
-						/* is 16bit, 48KHz only. All 32	channels can be enabled */
-						/* simultaneously.					*/
+/* When set, each bit enables the writing of the	*/
+/* corresponding FX output channel (internal registers  */
+/* 0x20-0x3f) into host memory. This mode of recording	*/
+/* is 16bit, 48KHz only. All 32	channels can be enabled */
+/* simultaneously.					*/
 #define TCBS			0x44		/* Tank cache buffer size register			*/
 #define TCBS_MASK		0x00000007	/* Tank cache buffer size field				*/
 #define TCBS_BUFFSIZE_16K	0x00000000
@@ -627,8 +627,8 @@
 #define GPSRCS			0x61		/* General Purpose SPDIF sample rate cvt status */
 
 #define ZVSRCS			0x62		/* ZVideo sample rate converter status		*/
-						/* NOTE: This one has no SPDIFLOCKED field	*/
-						/* Assumes sample lock				*/
+/* NOTE: This one has no SPDIFLOCKED field	*/
+/* Assumes sample lock				*/
 
 /* These three bitfields apply to CDSRCS, GPSRCS, and (except as noted) ZVSRCS.			*/
 #define SRCS_SPDIFLOCKED	0x02000000	/* SPDIF stream locked				*/
@@ -664,7 +664,7 @@
 /* This is the MPU port on the Audigy Drive 							*/
 #define A_MUDATA2		0x72
 #define A_MUCMD2		0x73
-#define A_MUSTAT2		A_MUCMD2	
+#define A_MUSTAT2		A_MUCMD2
 
 /* The next two are the Audigy equivalent of FXWC						*/
 /* the Audigy can record any output (16bit, 48kHz, up to 64 channel simultaneously) 		*/
@@ -727,7 +727,7 @@
 
 /* Audigy Soundcard have a different instruction format */
 #define AUDIGY_CODEBASE		0x600
-#define A_LOWORD_OPY_MASK	0x000007ff		
+#define A_LOWORD_OPY_MASK	0x000007ff
 #define A_LOWORD_OPX_MASK	0x007ff000
 #define A_HIWORD_OPCODE_MASK	0x0f000000
 #define A_HIWORD_RESULT_MASK	0x007ff000

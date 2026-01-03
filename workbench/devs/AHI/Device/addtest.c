@@ -10,7 +10,7 @@
 ** StartPointRight  Sample value from last session, for interpolation. Update!
 ** Src              Pointer to source samples.
 ** Dst              Pointer to pointer to destination buffer. Update!
-** FirstOffsetI     The offset value of the first sample (when StartPoint* 
+** FirstOffsetI     The offset value of the first sample (when StartPoint*
 **                  should be used).
 ** Offset           The offset (fix-point). Update!
 ** Add              Add value (fix-point).
@@ -39,47 +39,46 @@
                                                         &dstptr,
                                                          cd->cd_FirstOffsetI,
                                                          cd->cd_Add,
-                                                        &cd->cd_Offset, 
+                                                        &cd->cd_Offset,
                                                          TRUE );
 */
 
 //#include <stdio.h>
 //#include <string.h>
 
-ULONG __amigappc__=1;
+ULONG __amigappc__ = 1;
 
 static long outbuffer[ 4096 ];
-static char sample[16] =
-{
-  0, 16, 32, 48, 64, 48, 32, 16, 0, -16, -32, -48, -64, -48, -32, -16
+static char sample[16] = {
+    0, 16, 32, 48, 64, 48, 32, 16, 0, -16, -32, -48, -64, -48, -32, -16
 };
 
 int
-main( void )
+main(void)
 {
-  int       i;
-  int       num              = 10;
-  long      startpointleft   = 0;
-  long      startpointright  = 0;
-  void*     dst              = outbuffer;
-  long long offset           = 0x00000000;
+    int       i;
+    int       num              = 10;
+    long      startpointleft   = 0;
+    long      startpointright  = 0;
+    void     *dst              = outbuffer;
+    long long offset           = 0x00000000;
 
-  ADDFUNC* af = AddByteMono;
+    ADDFUNC *af = AddByteMono;
 
 //  memset( outbuffer, 0x00, sizeof( outbuffer ) );
 
 //  printf( "spl: %08x, spr: %08x, dst: %08lx, offset: %ld\n",
 //          startpointleft, startpointright, dst, offset );
 
-  num = (*af)( num, 0x1, 0x00000,
-         &startpointleft,
-         &startpointright,
-         sample,
-         &dst,
-         0,
-         0x080000000,
-         &offset,
-         FALSE );
+    num = (*af)(num, 0x1, 0x00000,
+                &startpointleft,
+                &startpointright,
+                sample,
+                &dst,
+                0,
+                0x080000000,
+                &offset,
+                FALSE);
 
 //  printf( "Iterations: %d\n", num );
 
@@ -91,19 +90,19 @@ main( void )
 //  printf( "spl: %08x, spr: %08x, dst: %08lx, offset: %ld\n",
 //          startpointleft, startpointright, dst, offset );
 
-  startpointleft = startpointright = 0;
-  dst            = outbuffer;
-  offset         = 0;
+    startpointleft = startpointright = 0;
+    dst            = outbuffer;
+    offset         = 0;
 
-  num = (*af)( num, 0x0, 0x00000,
-         &startpointleft,
-         &startpointright,
-         sample,
-         &dst,
-         0,
-         0x080000000,
-         &offset,
-         TRUE );
+    num = (*af)(num, 0x0, 0x00000,
+                &startpointleft,
+                &startpointright,
+                sample,
+                &dst,
+                0,
+                0x080000000,
+                &offset,
+                TRUE);
 
 //  printf( "Iterations: %d\n", num );
 
@@ -115,6 +114,6 @@ main( void )
 //  printf( "spl: %08x, spr: %08x, dst: %08lx, offset: %ld\n",
 //          startpointleft, startpointright, dst, offset );
 
-  return 0;
+    return 0;
 }
 

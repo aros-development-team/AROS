@@ -12,23 +12,23 @@ extern int i, j;
 //}
 
 long long
- test2( long long* offset, long long add, unsigned long samples )
+test2(long long *offset, long long add, unsigned long samples)
 {
-  *offset += add * samples;
-  return offset;
+    *offset += add * samples;
+    return offset;
 }
 
 int
-compare( int a, int b )
+compare(int a, int b)
 {
-  return( a < 0 && b >= 0 || a > 0 && b <= 0 );
+    return(a < 0 && b >= 0 || a > 0 && b <= 0);
 }
 
 int
-main( void )
+main(void)
 {
-  return test( 0x00000, 0x10000, 0x20000, 0x30000, 0x40000, 0x50000,
-               0x60000, 0x70000, 0x800808000, 0x90000, 0x1000 );
+    return test(0x00000, 0x10000, 0x20000, 0x30000, 0x40000, 0x50000,
+                0x60000, 0x70000, 0x800808000, 0x90000, 0x1000);
 }
 
 /* m68k:
@@ -59,5 +59,5 @@ r7     long       0x00040000           StartPointRight
 r8     long       0x00050000           Src
 r9     long       0x00060000           Dst
 r10    long       0x00070000           FirstOffsetI
-       
+
 */

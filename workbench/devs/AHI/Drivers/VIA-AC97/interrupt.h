@@ -11,18 +11,18 @@
 #include "DriverData.h"
 
 #ifdef __AMIGAOS4__
-ULONG CardInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd);
+ULONG CardInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData *dd);
 
-void PlaybackInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd);
+void PlaybackInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData *dd);
 
-void RecordInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData* dd);
+void RecordInterrupt(struct ExceptionContext *pContext, struct ExecBase *SysBase, struct CardData *dd);
 #else
 
-LONG CardInterrupt(struct CardData* card);
+LONG CardInterrupt(struct CardData *card);
 
-void PlaybackInterrupt(struct CardData* card);
+void PlaybackInterrupt(struct CardData *card);
 
-void RecordInterrupt(struct CardData* card);
+void RecordInterrupt(struct CardData *card);
 
 #endif
 

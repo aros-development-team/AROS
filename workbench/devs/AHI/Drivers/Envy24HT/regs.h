@@ -21,48 +21,48 @@
 
 
 #define CCS_CTRL                0x0000
-    #define CCS_RESET_ALL           0x80
+#define CCS_RESET_ALL           0x80
 
 #define CCS_INTR_MASK           0x0001
-    #define CCS_ENABLE_PLAYREC      0x10
+#define CCS_ENABLE_PLAYREC      0x10
 
 #define CCS_INTR_STATUS         0x0002
-    #define CCS_INTR_PLAYREC        0x10 // Macro interrupt for any PDMAx and RDMAx.
-    #define CCS_INTR_MIDI_IN        0x80
-    #define CCS_INTR_MIDI_OUT       0x20
-    
-                                         // To clear individual bits: write a 1 to a bit in MT00 reg
+#define CCS_INTR_PLAYREC        0x10 // Macro interrupt for any PDMAx and RDMAx.
+#define CCS_INTR_MIDI_IN        0x80
+#define CCS_INTR_MIDI_OUT       0x20
+
+// To clear individual bits: write a 1 to a bit in MT00 reg
 #define CCS_SYSTEM_CONFIG       0x0004
-    #define CCS_CONFIG_ADC_MASK     0x03 // 00: 1 stereo adc, 01: 2, 10: 1 + 1 S/PDIF, 11: none
-    #define CCS_CONFIG_ADC_SHIFT    2
-    #define CCS_CONFIG_DAC_MASK     0x03 // 00: 1 stereo adc, 01: 2, 10: 3, 11: 4
-    #define CCS_CONFIG_DAC_SHIFT    0
+#define CCS_CONFIG_ADC_MASK     0x03 // 00: 1 stereo adc, 01: 2, 10: 1 + 1 S/PDIF, 11: none
+#define CCS_CONFIG_ADC_SHIFT    2
+#define CCS_CONFIG_DAC_MASK     0x03 // 00: 1 stereo adc, 01: 2, 10: 3, 11: 4
+#define CCS_CONFIG_DAC_SHIFT    0
 
 #define CCS_ACLINK_CONFIG       0x0005
-    #define CCS_ACLINK_I2S          0x80 // 0: AC97, 1:I2S
-    #define CCS_ACLINK_MODE         0x02 // 0: split mode, 1: packed mode
-    
+#define CCS_ACLINK_I2S          0x80 // 0: AC97, 1:I2S
+#define CCS_ACLINK_MODE         0x02 // 0: split mode, 1: packed mode
+
 
 #define CCS_I2S_FEATURES        0x0006   // when CCS_ACLINK_CONFIG:CCS_ACLINK_TYPE == 1
-    #define CCS_I2S_VOLMUTE         0x80 // 1 when true
-    #define CCS_I2S_96KHZ           0X40 // 1 when supported
-    #define CCS_I2S_24BIT           0x30 // bit(5:4) 00:16, 01:18, 10:20, 11:24
-    #define CCS_I2S_192KHZ          0X08 // 1 when supported
+#define CCS_I2S_VOLMUTE         0x80 // 1 when true
+#define CCS_I2S_96KHZ           0X40 // 1 when supported
+#define CCS_I2S_24BIT           0x30 // bit(5:4) 00:16, 01:18, 10:20, 11:24
+#define CCS_I2S_192KHZ          0X08 // 1 when supported
 
 
 #define CCS_SPDIF_CONFIG        0x0007
-    #define CCS_SPDIF_INTEGRATED    0x80 // 1 enable integrated SPDIF transmitter. Only valid when bit 6 is '1'
-    #define CCS_SPDIF_INTERNAL_OUT  0X40 // 1 when implemented (read-only)
-    #define CCS_SPDIF_ID_MASK       0xF  // SPDIF chip ID's
-    #define CCS_SPDIF_ID_SHIFT      2
-    #define CCS_SPDIF_IN_PRESENT    0x02 // 1 when present
-    #define CCS_SPDIF_EXTERNAL_OUT  0x01 // 1 when present (default)
+#define CCS_SPDIF_INTEGRATED    0x80 // 1 enable integrated SPDIF transmitter. Only valid when bit 6 is '1'
+#define CCS_SPDIF_INTERNAL_OUT  0X40 // 1 when implemented (read-only)
+#define CCS_SPDIF_ID_MASK       0xF  // SPDIF chip ID's
+#define CCS_SPDIF_ID_SHIFT      2
+#define CCS_SPDIF_IN_PRESENT    0x02 // 1 when present
+#define CCS_SPDIF_EXTERNAL_OUT  0x01 // 1 when present (default)
 
 #define CCS_UART_TX_STATUS      0x000A   // number of bytes in transmit queue
-    #define UART_TX_QUEUE_MASK      0x1F
+#define UART_TX_QUEUE_MASK      0x1F
 
 #define CCS_UART_RX_STATUS      0x000B   // number of bytes in receive queue
-    #define UART_RX_QUEUE_MASK      0x1F
+#define UART_RX_QUEUE_MASK      0x1F
 
 #define CCS_UART_DATA           0x000C
 #define CCS_UART_COMMAND        0x000D   // MIDI command/status
@@ -71,16 +71,16 @@
 
 
 #define CCS_I2C_DEV_ADDRESS     0x0010   // check CCS13 before accessing
-    #define CCS_ADDRESS_MASK        0xFE // I2C device address (bit 7:1)
-    #define CCS_ADDRESS_SHIFT       1
-    #define CCS_ADDRESS_WRITE       0x01 // 0: read, 1:write
+#define CCS_ADDRESS_MASK        0xFE // I2C device address (bit 7:1)
+#define CCS_ADDRESS_SHIFT       1
+#define CCS_ADDRESS_WRITE       0x01 // 0: read, 1:write
 
 
 #define CCS_I2C_ADDR            0x0011   // byte address to read/write
 #define CCS_I2C_DATA            0x0012
 #define CCS_I2C_STATUS          0X0013
-    #define CCS_I2C_EPROM           0x80 // 1: E2PROM connected
-    #define CCS_I2C_BUSY            0x01 // 0: idle, 1: busy
+#define CCS_I2C_EPROM           0x80 // 1: E2PROM connected
+#define CCS_I2C_BUSY            0x01 // 0: idle, 1: busy
 
 #define CCS_GPIO_DATA           0x0014 // word: GPIO 0 - 15
 #define CCS_GPIO_MASK           0x0016 // 0 in mask means CCS14 register bit can be written, GPIO 0 - 15
@@ -92,69 +92,69 @@
 
 // ----------MT regs-------------------
 #define MT_INTR_STATUS          0x0000   // masks:
-    #define MT_PDMA4                0x80 // SPDIF out pair playback
-    #define MT_PDMA3                0x40 // pair playback
-    #define MT_PDMA2                0x20
-    #define MT_PDMA1                0x10
-    #define MT_DMA_FIFO             0x08 // see MT1A
-    #define MT_RDMA1                0x04 // SPDIF in
-    #define MT_RDMA0                0x02 // ADC
-    #define MT_PDMA0                0x01 // multi-channel interleaved/PDMA0 pair playback
+#define MT_PDMA4                0x80 // SPDIF out pair playback
+#define MT_PDMA3                0x40 // pair playback
+#define MT_PDMA2                0x20
+#define MT_PDMA1                0x10
+#define MT_DMA_FIFO             0x08 // see MT1A
+#define MT_RDMA1                0x04 // SPDIF in
+#define MT_RDMA0                0x02 // ADC
+#define MT_PDMA0                0x01 // multi-channel interleaved/PDMA0 pair playback
 
 #define MT_SAMPLERATE           0x0001   // in slave mode (SPDIF is master): 256X master clock alone selects rate
-    #define MT_SPDIF_MASTER         0x10 // when SPDIF is master, set primary codec to slave mode!
-    #define MT_RATE_MASK            0x0F // ignored if MT_SPDIF_MASTER = 
+#define MT_SPDIF_MASTER         0x10 // when SPDIF is master, set primary codec to slave mode!
+#define MT_RATE_MASK            0x0F // ignored if MT_SPDIF_MASTER = 
 
 #define MT_I2S_FORMAT           0x0002
-    #define MT_CLOCK_128x           0x8  // 0: 256x (default), 1: 128x
+#define MT_CLOCK_128x           0x8  // 0: 256x (default), 1: 128x
 
 #define MT_INTR_MASK            0x0003   // default: all are off = '1'
-    #define MT_PDMA4_MASK           0x80 // SPDIF out pair playback
-    #define MT_PDMA3_MASK           0x40 // valid when MT19 > 0
-    #define MT_PDMA2_MASK           0x20 // valid when MT19 > 1
-    #define MT_PDMA1_MASK           0x10 // valid when MT19 = 3
-    #define MT_DMA_FIFO_MASK        0x08 // MT1A reports offending channel
-    #define MT_RDMA1_MASK           0x04 // SPDIF in
-    #define MT_RDMA0_MASK           0x02 // ADC
-    #define MT_PDMA0_MASK           0x01 // multi-channel interleaved/PDMA0 pair playback
+#define MT_PDMA4_MASK           0x80 // SPDIF out pair playback
+#define MT_PDMA3_MASK           0x40 // valid when MT19 > 0
+#define MT_PDMA2_MASK           0x20 // valid when MT19 > 1
+#define MT_PDMA1_MASK           0x10 // valid when MT19 = 3
+#define MT_DMA_FIFO_MASK        0x08 // MT1A reports offending channel
+#define MT_RDMA1_MASK           0x04 // SPDIF in
+#define MT_RDMA0_MASK           0x02 // ADC
+#define MT_PDMA0_MASK           0x01 // multi-channel interleaved/PDMA0 pair playback
 
 
 #define MT_AC97_REG             0x0004 // AC'97 register index
 #define MT_AC97_CMD_STATUS      0x0005 // valid when CCS_ACLINK_TYPE == 0
-    #define MT_AC97_RESET           0x80 // cold reset (alone will put it into master mode)
-    #define MT_AC97_WARM_RESET      0X40 // when used together with MT_AC97_RESET, will set external VIA AC'97 to slave mode
-    #define MT_AC97_WRITE           0X20 // write 1 for write mode, reading a 1 is WIP
-    #define MT_AC97_READ            0x10 // write 1 for read mode, reading a 1 is RIP
-    #define MT_AC97_READY           0x08 // codec ready status
-    #define MT_AC97_ID_MASK         0x03 // bit 0:1 is ID mode when is split mode.
+#define MT_AC97_RESET           0x80 // cold reset (alone will put it into master mode)
+#define MT_AC97_WARM_RESET      0X40 // when used together with MT_AC97_RESET, will set external VIA AC'97 to slave mode
+#define MT_AC97_WRITE           0X20 // write 1 for write mode, reading a 1 is WIP
+#define MT_AC97_READ            0x10 // write 1 for read mode, reading a 1 is RIP
+#define MT_AC97_READY           0x08 // codec ready status
+#define MT_AC97_ID_MASK         0x03 // bit 0:1 is ID mode when is split mode.
 #define MT_AC97_DATA            0x0006
-    
+
 #define MT_DMAI_PB_ADDRESS      0x0010 // long: start address of interleaved playback buffer (long boundary)
 #define MT_DMAI_PB_LENGTH       0X0014 // long, but 3 bytes (0x14-0x16), DMA size - 1, read: counter
 
 #define MT_DMA_CONTROL          0x0018 // start/stop (use read-modify-write)
-    #define MT_PDMA4_START           0x80 // SPDIF out / PDMA4 pair playback
-    #define MT_PDMA3_START           0x40 // valid when MT19 > 0
-    #define MT_PDMA2_START           0x20 // valid when MT19 > 1
-    #define MT_PDMA1_START           0x10 // valid when MT19 = 3
-    #define MT_RDMA1_START           0x04 // SPDIF in
-    #define MT_RDMA0_START           0x02 // ADC
-    #define MT_PDMA0_START           0x01 // multi-channel interleaved/PDMA0 pair playback
+#define MT_PDMA4_START           0x80 // SPDIF out / PDMA4 pair playback
+#define MT_PDMA3_START           0x40 // valid when MT19 > 0
+#define MT_PDMA2_START           0x20 // valid when MT19 > 1
+#define MT_PDMA1_START           0x10 // valid when MT19 = 3
+#define MT_RDMA1_START           0x04 // SPDIF in
+#define MT_RDMA0_START           0x02 // ADC
+#define MT_PDMA0_START           0x01 // multi-channel interleaved/PDMA0 pair playback
 
 #define MT_DMAI_BURSTSIZE       0x0019 // bits 0 and 1 only:
-                                       // 00: default 8 ch. on PDMAi
-                                       // 01: 6 ch on PDMAi, PDMA3 is available independently
-                                       // 10: 4 ch on PDMAi, PDMA3 and PDMA2 are available independently
-                                       // 11: 2 ch on PDMA0: 4 stereo pairs
+// 00: default 8 ch. on PDMAi
+// 01: 6 ch on PDMAi, PDMA3 is available independently
+// 10: 4 ch on PDMAi, PDMA3 and PDMA2 are available independently
+// 11: 2 ch on PDMA0: 4 stereo pairs
 
 #define MT_DMA_UNDERRUN         0x001A // FIFO overrun/underrun register
-    #define MT_PDMA4_UNDERRUN       0x80 // SPDIF out / PDMA4 pair playback
-    #define MT_PDMA3_UNDERRUN       0x40 // valid when MT19 > 0
-    #define MT_PDMA2_UNDERRUN       0x20 // valid when MT19 > 1
-    #define MT_PDMA1_UNDERRUN       0x10 // valid when MT19 = 3
-    #define MT_RDMA1_OVERRUN        0x04 // SPDIF in
-    #define MT_RDMA0_OVERRUN        0x02 // ADC
-    #define MT_PDMA0_UNDERRUN       0x01 // multi-channel interleaved/PDMA0 pair playback
+#define MT_PDMA4_UNDERRUN       0x80 // SPDIF out / PDMA4 pair playback
+#define MT_PDMA3_UNDERRUN       0x40 // valid when MT19 > 0
+#define MT_PDMA2_UNDERRUN       0x20 // valid when MT19 > 1
+#define MT_PDMA1_UNDERRUN       0x10 // valid when MT19 = 3
+#define MT_RDMA1_OVERRUN        0x04 // SPDIF in
+#define MT_RDMA0_OVERRUN        0x02 // ADC
+#define MT_PDMA0_UNDERRUN       0x01 // multi-channel interleaved/PDMA0 pair playback
 
 #define MT_DMA_PAUSE            0x001B
 

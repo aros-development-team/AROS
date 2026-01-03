@@ -11,8 +11,7 @@
 #define LIBPULSE_SOFILE        "libpulse.so.0"
 #define LIBC_SOFILE      "libc.so.6"
 
-static const char *pulse_simple_func_names[] =
-{
+static const char *pulse_simple_func_names[] = {
     "pa_simple_new",
     "pa_simple_free",
     "pa_simple_write",
@@ -22,8 +21,7 @@ static const char *pulse_simple_func_names[] =
 struct pulse_simple_func pulse_simple_func;
 static void *libpulsesimplehandle;
 
-static const char *pulse_func_names[] =
-{
+static const char *pulse_func_names[] = {
     "pa_mainloop_new",
     "pa_mainloop_get_api",
     "pa_mainloop_iterate",
@@ -45,8 +43,7 @@ static const char *pulse_func_names[] =
 struct pulse_func pulse_func;
 static void *libpulsehandle;
 
-static const char *libc_func_names[] =
-{
+static const char *libc_func_names[] = {
     "sigfillset",
     "sigprocmask",
     "calloc",
@@ -60,20 +57,20 @@ static void *libchandle;
 APTR HostLibBase;
 
 static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
-        void **funcptr)
+                             void **funcptr)
 {
     void *handle;
     char *err;
     int i;
 
-    if ((handle = HostLib_Open(sofile, &err)) == NULL) {
+    if((handle = HostLib_Open(sofile, &err)) == NULL) {
         D(bug("[PULSEA] failed to open '%s': %s\n", sofile, err));
         return NULL;
     }
 
-    for (i = 0; i < nfuncs; i++) {
+    for(i = 0; i < nfuncs; i++) {
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
-        if (err != NULL) {
+        if(err != NULL) {
             bug("[PULSEA] failed to get symbol '%s' (%s)\n", names[i], err);
             HostLib_Close(handle, NULL);
             return NULL;
@@ -87,44 +84,41 @@ BOOL PULSEA_HostLib_Init()
 {
     HostLibBase = OpenResource("hostlib.resource");
 
-    if (!HostLibBase)
-    {
+    if(!HostLibBase) {
         D(bug("[PULSEA] failed to open hostlib.resource\n"));
         return FALSE;
     }
 
     libpulsesimplehandle = hostlib_load_so(LIBPULSE_SIMPLE_SOFILE, pulse_simple_func_names,
-            PULSE_SIMPLE_NUM_FUNCS, (void **)&pulse_simple_func);
+                                           PULSE_SIMPLE_NUM_FUNCS, (void **)&pulse_simple_func);
 
-    if (!libpulsesimplehandle)
-    {
+    if(!libpulsesimplehandle) {
         bug("[PULSEA] failed to open " LIBPULSE_SIMPLE_SOFILE "\n");
         return FALSE;
     }
 
     libpulsehandle = hostlib_load_so(LIBPULSE_SOFILE, pulse_func_names,
-            PULSE_NUM_FUNCS, (void **)&pulse_func);
+                                     PULSE_NUM_FUNCS, (void **)&pulse_func);
 
-    if (!libpulsehandle)
-    {
+    if(!libpulsehandle) {
         bug("[PULSEA] failed to open " LIBPULSE_SOFILE "\n");
         return FALSE;
     }
 
     libchandle = hostlib_load_so(LIBC_SOFILE, libc_func_names,
-            LIBC_NUM_FUNCS, (void **)&libc_func);
+                                 LIBC_NUM_FUNCS, (void **)&libc_func);
 
     return TRUE;
 }
 
 VOID PULSEA_HostLib_Cleanup()
 {
-    if (libpulsesimplehandle != NULL)
+    if(libpulsesimplehandle != NULL)
         HostLib_Close(libpulsesimplehandle, NULL);
 
-    if (libpulsehandle != NULL)
+    if(libpulsehandle != NULL)
         HostLib_Close(libpulsehandle, NULL);
 
-    if (libchandle != NULL)
+    if(libchandle != NULL)
         HostLib_Close(libchandle, NULL);
 }

@@ -20,8 +20,7 @@
 
 struct CardData;
 
-struct CardBase
-{
+struct CardBase {
     /** Skeleton's variables *************************************************/
 
     struct DriverBase      driverbase;
@@ -29,7 +28,7 @@ struct CardBase
 
     /** The driver's global data *********************************************/
 
-    
+
     /** A sempahore used for locking */
     struct SignalSemaphore semaphore;
 
@@ -37,7 +36,7 @@ struct CardBase
     int                    cards_found;
 
     /** A CardData structure for each card found */
-    struct CardData**   driverdatas;
+    struct CardData   **driverdatas;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct CardBase))
@@ -47,42 +46,41 @@ struct CardBase
 
 
 struct snd_dma_device {
-	int type;			/* SNDRV_DMA_TYPE_XXX */
+    int type;			/* SNDRV_DMA_TYPE_XXX */
 //	struct device *dev;		/* generic device */
 };
 
 struct snd_dma_buffer {
-	struct snd_dma_device dev;	/* device type */
-	unsigned char *area;	/* virtual pointer */
-	void *addr;	/* physical address */
-	int bytes;		/* buffer size in bytes */
-	void *private_data;	/* private for allocator; don't touch */
+    struct snd_dma_device dev;	/* device type */
+    unsigned char *area;	/* virtual pointer */
+    void *addr;	/* physical address */
+    int bytes;		/* buffer size in bytes */
+    void *private_data;	/* private for allocator; don't touch */
 };
 
 struct snd_via_sg_table { // scatter/gather format. Oh joy, the docs talk about EOL, base counts etc...
-        APTR offset;
-        unsigned int size;
+    APTR offset;
+    unsigned int size;
 };
 
-struct CardData
-{
+struct CardData {
 
     struct PCIDevice			*pci_dev;
-	unsigned long           iobase;
-	unsigned long		length;
-	unsigned short		model;
-	unsigned int irq; 
+    unsigned long           iobase;
+    unsigned long		length;
+    unsigned short		model;
+    unsigned int irq;
     int flip;
     int recflip;
     UBYTE chiprev;
-    
+
     struct snd_dma_buffer table;
     struct snd_via_sg_table *play_idx_table;
     struct snd_via_sg_table *rec_idx_table;
-    
+
     APTR play_idx_table_nonaligned;
     APTR rec_idx_table_nonaligned;
-    
+
     /*** PCI/Card initialization progress *********************************/
 
     /** TRUE if bus mastering is activated */
@@ -95,14 +93,14 @@ struct CardData
 
     /** This field is also used as a lock and access to is is
      * semaphore protected. */
-    struct DriverBase*  ahisubbase;
+    struct DriverBase  *ahisubbase;
 
     /*** The AudioCtrl currently using this DriverData structure *************/
 
-    struct AHIAudioCtrlDrv* audioctrl;
+    struct AHIAudioCtrlDrv *audioctrl;
 
     /*** Playback/recording interrupts ***************************************/
-    
+
     /** TRUE when playback is enabled */
     BOOL                is_playing;
 
@@ -136,22 +134,22 @@ struct CardData
     /*** CAMD support functions **********************************************/
 
     /** CAMD transmitter function wrapped as a Hook */
-    struct Hook*        camd_transmitfunc;
+    struct Hook        *camd_transmitfunc;
 
     /** CAMD receiver function wrapped as a Hook */
-    struct Hook*        camd_receivefunc;
+    struct Hook        *camd_receivefunc;
 
     /** True if CMAD V40 mode */
     ULONG               camd_v40;
-    
+
     /*** Card structures **************************************************/
-    
+
     APTR                playback_buffer1;
     APTR                playback_buffer2;
     APTR                playback_buffer1_nonaligned;
     APTR                playback_buffer2_nonaligned;
 
-    
+
     /*** Playback interrupt variables ****************************************/
 
     /** The mixing buffer (a cyclic buffer filled by AHI) */
@@ -159,7 +157,7 @@ struct CardData
 
     /** The length of each playback buffer in sample frames */
     ULONG               current_frames;
-    
+
     /** The length of each playback buffer in sample bytes */
     ULONG               current_bytesize;
 
@@ -178,10 +176,10 @@ struct CardData
 
     /** Were (inside the recording buffer) the current data is */
     APTR                current_record_buffer;
-    
+
     /** The length of each record buffer in sample bytes */
     ULONG               current_record_bytesize;
-    
+
     /** Analog mixer variables ***********************************************/
 
     /** The currently selected input */
@@ -213,16 +211,16 @@ struct CardData
 
     /** Saved state for AC97 cd */
     UWORD               ac97_cd;
-    
+
     /** Saved state for AC97 vide */
     UWORD               ac97_video;
-    
+
     /** Saved state for AC97 aux */
     UWORD               ac97_aux;
-    
+
     /** Saved state for AC97 line in */
     UWORD               ac97_linein;
-    
+
     /** Saved state for AC97 phone */
     UWORD               ac97_phone;
 };

@@ -65,30 +65,31 @@ INTGW(static, void, recordinterrupt, RecordInterrupt);
 INTGW(static, ULONG, cardinterrupt, CardInterrupt);
 #endif
 
-void MicroDelay(unsigned int val) {
+void MicroDelay(unsigned int val)
+{
     replymp = (struct MsgPort *)CreateMsgPort();
-    if (!replymp) {
+    if(!replymp) {
         DebugPrintF("Could not create the reply port!\n");
         return;
     }
 
     TimerIO = (struct timerequest *)CreateIORequest(replymp,
-                                                    sizeof(struct timerequest));
+              sizeof(struct timerequest));
 
-    if (TimerIO == NULL) {
+    if(TimerIO == NULL) {
         DebugPrintF("Out of memory.\n");
         return;
     }
 
-    if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO,
-                   0) != 0) {
+    if(OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)TimerIO,
+                  0) != 0) {
         DebugPrintF("Unable to open 'timer.device'.\n");
         return;
     } else {
         TimerBase = (struct Device *)TimerIO->tr_node.io_Device;
     }
 
-    if (TimerIO) {
+    if(TimerIO) {
         TimerIO->tr_node.io_Command = TR_ADDREQUEST; /* Add a request.   */
         TimerIO->tr_time.tv_secs    = 0;             /* 0 seconds.      */
         TimerIO->tr_time.tv_micro   = val;           /* 'val' micro seconds. */
@@ -98,7 +99,7 @@ void MicroDelay(unsigned int val) {
         TimerIO = NULL;
     }
 
-    if (replymp)
+    if(replymp)
         DeleteMsgPort(replymp);
 }
 
@@ -111,13 +112,14 @@ void MicroDelay(unsigned int val) {
 // time.
 
 struct CardData *AllocDriverData(struct PCIDevice *dev,
-                                 struct DriverBase *AHIsubBase) {
+                                 struct DriverBase *AHIsubBase)
+{
     struct CardData *dd;
 
     // FIXME: This should be non-cachable, DMA-able memory
     dd = AllocVec(sizeof(*dd), MEMF_PUBLIC | MEMF_CLEAR);
 
-    if (dd == NULL) {
+    if(dd == NULL) {
         Req("Unable to allocate driver structure.");
         return NULL;
     }
@@ -165,19 +167,19 @@ struct CardData *AllocDriverData(struct PCIDevice *dev,
     //    this in Linux sometime...
     unsigned long tula =
         (inl_config(PCI_BASE_ADDRESS_0, dd->pci_dev) & 0xfffffffc);
-    if ((tula == 0) || (tula & 0xffff0000)) {
+    if((tula == 0) || (tula & 0xffff0000)) {
         outl_config(PCI_BASE_ADDRESS_0, IO_SGD, dd->pci_dev);
         DBGL("configured audio SGD IO base", IO_SGD);
     }
 
     tula = (inl_config(PCI_BASE_ADDRESS_1, dd->pci_dev) & 0xfffffffc);
-    if ((tula == 0) || (tula & 0xffff0000)) {
+    if((tula == 0) || (tula & 0xffff0000)) {
         outl_config(PCI_BASE_ADDRESS_1, IO_FM, dd->pci_dev);
         // DBGL( "configured audio FM IO base", IO_FM );
     }
 
     tula = (inl_config(PCI_BASE_ADDRESS_2, dd->pci_dev) & 0xfffffffc);
-    if ((tula == 0) || (tula & 0xffff0000)) {
+    if((tula == 0) || (tula & 0xffff0000)) {
         outl_config(PCI_BASE_ADDRESS_2, IO_MIDI, dd->pci_dev);
         // DBGL( "configured audio MIDI IO base", IO_MIDI );
     }
@@ -201,7 +203,7 @@ struct CardData *AllocDriverData(struct PCIDevice *dev,
     dd->rec_idx_table  = NULL;
 
     /* Initialize chip */
-    if (card_init(dd) < 0) {
+    if(card_init(dd) < 0) {
         DebugPrintF("Unable to initialize Card subsystem.\n");
 
         FreeVec(dd);
@@ -230,14 +232,15 @@ struct CardData *AllocDriverData(struct PCIDevice *dev,
 
 // And this code used to be in _AHIsub_FreeAudio().
 
-void FreeDriverData(struct CardData *dd, struct DriverBase *AHIsubBase) {
-    if (dd != NULL) {
-        if (dd->pci_dev != NULL) {
-            if (dd->card_initialized) {
+void FreeDriverData(struct CardData *dd, struct DriverBase *AHIsubBase)
+{
+    if(dd != NULL) {
+        if(dd->pci_dev != NULL) {
+            if(dd->card_initialized) {
                 card_cleanup(dd);
             }
 
-            if (dd->pci_master_enabled) {
+            if(dd->pci_master_enabled) {
                 UWORD cmd;
 
                 cmd = inw_config(PCI_COMMAND, dd->pci_dev);
@@ -246,11 +249,11 @@ void FreeDriverData(struct CardData *dd, struct DriverBase *AHIsubBase) {
             }
         }
 
-        if (dd->reset_handler_added) {
+        if(dd->reset_handler_added) {
             RemResetCallback(&dd->reset_handler);
         }
 
-        if (dd->interrupt_added) {
+        if(dd->interrupt_added) {
             ahi_pci_rem_intserver(&dd->interrupt, dd->pci_dev);
         }
 
@@ -258,7 +261,8 @@ void FreeDriverData(struct CardData *dd, struct DriverBase *AHIsubBase) {
     }
 }
 
-void channel_reset(struct CardData *card) {
+void channel_reset(struct CardData *card)
+{
     pci_outb(VIA_REG_CTRL_TERMINATE /*| VIA_REG_CTRL_RESET*/,
              VIA_REG_OFFSET_CONTROL, card);
     pci_inb(VIA_REG_OFFSET_CONTROL, card);
@@ -272,7 +276,8 @@ void channel_reset(struct CardData *card) {
 }
 
 // reset/init ac97 codec. Returns false if the primary codec isn't found/ready.
-BOOL ac97_reset(struct PCIDevice *via686b_audio) {
+BOOL ac97_reset(struct PCIDevice *via686b_audio)
+{
     static const unsigned long reset_delay =
         100; // link operation delay, should be some uS..
     static const unsigned long codec_timeout =
@@ -301,14 +306,14 @@ BOOL ac97_reset(struct PCIDevice *via686b_audio) {
     // SB- De-assert reset, enable VRA/PCM etc.
     outb_config(VIA_ACLINK_CTRL,
                 VIA_ACLINK_CTRL_ENABLE | VIA_ACLINK_CTRL_RESET |
-                    VIA_ACLINK_CTRL_VRA | VIA_ACLINK_CTRL_PCM,
+                VIA_ACLINK_CTRL_VRA | VIA_ACLINK_CTRL_PCM,
                 via686b_audio);
     MicroDelay(reset_delay);
 
     // SB- Check primary codec...
     unsigned long delay = codec_timeout;
-    while (delay--) {
-        if (inb_config(VIA_ACLINK_STAT, via686b_audio) & VIA_ACLINK_C00_READY) {
+    while(delay--) {
+        if(inb_config(VIA_ACLINK_STAT, via686b_audio) & VIA_ACLINK_C00_READY) {
             // DBG( "AC-Link reset ok." );
             return TRUE;
         }
@@ -320,13 +325,14 @@ BOOL ac97_reset(struct PCIDevice *via686b_audio) {
     return FALSE;
 }
 
-int card_init(struct CardData *card) {
+int card_init(struct CardData *card)
+{
     struct PCIDevice *dev = (struct PCIDevice *)card->pci_dev;
 #if 0
-   unsigned short cod, uval;
-   unsigned char pval, byt;
-   long *ptr;
-   int teller = 0;
+    unsigned short cod, uval;
+    unsigned char pval, byt;
+    long *ptr;
+    int teller = 0;
 #endif
     ULONG val;
     struct PCIDevice *via686b_ACPI;
@@ -339,8 +345,7 @@ int card_init(struct CardData *card) {
     via686b_ACPI                   = ahi_pci_find_device(0x1106, 0x3057, NULL);
 #endif
 
-    if (via686b_ACPI == NULL) // try device 0x3058
-    {
+    if(via686b_ACPI == NULL) { // try device 0x3058
 #ifdef __amigaos4__
         via686b_ACPI = IPCI->FindDeviceTags(FDT_VendorID, 0x1106, FDT_DeviceID,
                                             0x3058, FDT_Index, 0x00, TAG_DONE);
@@ -349,18 +354,18 @@ int card_init(struct CardData *card) {
 #endif
     }
 
-    if (via686b_ACPI) {
+    if(via686b_ACPI) {
 #ifdef __amigaos4__
         BOOL lock;
 
         lock = via686b_ACPI->Lock(PCI_LOCK_SHARED);
-        if (lock == FALSE) {
+        if(lock == FALSE) {
             DBG("couldn't lock the ACPI! Trying anyway...");
         }
 #endif
 
         // SB- Configure power management, if it isn't already.
-        if (!(inl_config(0x48, via686b_ACPI) & 0xfffffffe)) {
+        if(!(inl_config(0x48, via686b_ACPI) & 0xfffffffe)) {
             outl_config(0x48, IO_PWR_MANAGEMENT, via686b_ACPI);
             DBGL("configured power management IO", IO_PWR_MANAGEMENT);
         } else {
@@ -375,7 +380,7 @@ int card_init(struct CardData *card) {
                     via686b_ACPI);
 
         // SB- Power up the 686b, if it isn't already.
-        if (!(inb_config(0x42, via686b_ACPI) & 0x40)) {
+        if(!(inb_config(0x42, via686b_ACPI) & 0x40)) {
             // Cause a soft resume event...
             outb(inb(IO_PWR_MANAGEMENT + 0x05) | 0x80,
                  IO_PWR_MANAGEMENT + 0x05);
@@ -386,8 +391,8 @@ int card_init(struct CardData *card) {
             //..1/10th of a second wasn't long enough
             unsigned long delay = 25; // 1/2 a second, or so
 
-            while (--delay) {
-                if ((inb_config(0x42, via686b_ACPI) & 0x40)) {
+            while(--delay) {
+                if((inb_config(0x42, via686b_ACPI) & 0x40)) {
                     DBG("powered up the 686b.");
                     break; // SUSC# state
                 }
@@ -395,14 +400,14 @@ int card_init(struct CardData *card) {
                 Delay(1);
             }
 
-            if (delay == 0)
+            if(delay == 0)
                 ERR("soft resume timed out!");
         } else {
             DBG("VIA already powered up");
         }
 
 #ifdef __amigaos4__
-        if (lock)
+        if(lock)
             via686b_ACPI->Unlock();
 
         IPCI->FreeDevice(via686b_ACPI);
@@ -424,7 +429,7 @@ int card_init(struct CardData *card) {
     // reset
     //          every time. Only reason not to is 'pop' avoidance on soft reboot
     //          and in case UBoot did the reset.
-    if (!aclink) {
+    if(!aclink) {
         aclink = ac97_reset(dev);
     } else {
         // SB- Make sure VRA/PCM are enabled if we didn't use our own reset
@@ -432,11 +437,11 @@ int card_init(struct CardData *card) {
 
         outb_config(VIA_ACLINK_CTRL,
                     VIA_ACLINK_CTRL_ENABLE | VIA_ACLINK_CTRL_RESET |
-                        VIA_ACLINK_CTRL_VRA | VIA_ACLINK_CTRL_PCM,
+                    VIA_ACLINK_CTRL_VRA | VIA_ACLINK_CTRL_PCM,
                     dev);
     }
 
-    if (aclink) {
+    if(aclink) {
         // INF( "initialized AC'97 codec." );
     } else {
         ERR("sorry, you don't seem to have the AC'97 codec!");
@@ -483,7 +488,7 @@ int card_init(struct CardData *card) {
         }
     */
 
-    if ((val = pci_inl(VIA_CODEC_CMD, card)) & VIA_REG_AC97_BUSY)
+    if((val = pci_inl(VIA_CODEC_CMD, card)) & VIA_REG_AC97_BUSY)
         snd_printk("AC97 codec is not ready!\n");
 
     outb_config(VIA_FM_NMI_CTRL, 0, card->pci_dev);
@@ -521,7 +526,8 @@ void card_cleanup(struct CardData *card) {}
 ** Misc. **********************************************************************
 ******************************************************************************/
 
-void SaveMixerState(struct CardData *dd) {
+void SaveMixerState(struct CardData *dd)
+{
     dd->ac97_mic    = codec_read(dd, AC97_MIC_VOL);
     dd->ac97_cd     = codec_read(dd, AC97_CD_VOL);
     dd->ac97_video  = codec_read(dd, AC97_VIDEO_VOL);
@@ -530,7 +536,8 @@ void SaveMixerState(struct CardData *dd) {
     dd->ac97_phone  = codec_read(dd, AC97_PHONE_VOL);
 }
 
-void RestoreMixerState(struct CardData *dd) {
+void RestoreMixerState(struct CardData *dd)
+{
     codec_write(dd, AC97_MIC_VOL, dd->ac97_mic);
     codec_write(dd, AC97_CD_VOL, dd->ac97_cd);
     codec_write(dd, AC97_VIDEO_VOL, dd->ac97_video);
@@ -539,14 +546,15 @@ void RestoreMixerState(struct CardData *dd) {
     codec_write(dd, AC97_PHONE_VOL, dd->ac97_phone);
 }
 
-void UpdateMonitorMixer(struct CardData *dd) {
+void UpdateMonitorMixer(struct CardData *dd)
+{
     int i    = InputBits[dd->input];
     UWORD m  = dd->monitor_volume_bits & 0x801f;
     UWORD s  = dd->monitor_volume_bits;
     UWORD mm = AC97_MUTE | 0x0008;
     UWORD sm = AC97_MUTE | 0x0808;
 
-    if (i == AC97_RECMUX_STEREO_MIX || i == AC97_RECMUX_MONO_MIX) {
+    if(i == AC97_RECMUX_STEREO_MIX || i == AC97_RECMUX_MONO_MIX) {
         // Use the original mixer settings
         RestoreMixerState(dd);
     } else {
@@ -564,7 +572,8 @@ void UpdateMonitorMixer(struct CardData *dd) {
     }
 }
 
-Fixed Linear2MixerGain(Fixed linear, UWORD *bits) {
+Fixed Linear2MixerGain(Fixed linear, UWORD *bits)
+{
     static const Fixed gain[33] = {
         260904, // +12.0 dB
         219523, // +10.5 dB
@@ -603,11 +612,11 @@ Fixed Linear2MixerGain(Fixed linear, UWORD *bits) {
 
     int v = 0;
 
-    while (linear < gain[v]) {
+    while(linear < gain[v]) {
         ++v;
     }
 
-    if (v == 32) {
+    if(v == 32) {
         *bits = 0x8000; // Mute
     } else {
         *bits = (v << 8) | v;
@@ -617,7 +626,8 @@ Fixed Linear2MixerGain(Fixed linear, UWORD *bits) {
     return gain[v];
 }
 
-Fixed Linear2RecordGain(Fixed linear, UWORD *bits) {
+Fixed Linear2RecordGain(Fixed linear, UWORD *bits)
+{
     static const Fixed gain[17] = {
         873937, // +22.5 dB
         735326, // +21.0 dB
@@ -640,11 +650,11 @@ Fixed Linear2RecordGain(Fixed linear, UWORD *bits) {
 
     int v = 0;
 
-    while (linear < gain[v]) {
+    while(linear < gain[v]) {
         ++v;
     }
 
-    if (v == 16) {
+    if(v == 16) {
         *bits = 0x8000; // Mute
     } else {
         *bits = ((15 - v) << 8) | (15 - v);
@@ -654,19 +664,21 @@ Fixed Linear2RecordGain(Fixed linear, UWORD *bits) {
 }
 
 ULONG
-SamplerateToLinearPitch(ULONG samplingrate) {
+SamplerateToLinearPitch(ULONG samplingrate)
+{
     samplingrate = (samplingrate << 8) / 375;
     return (samplingrate >> 1) + (samplingrate & 1);
 }
 
 #define CACHELINE_SIZE 32
 
-void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress) {
+void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress)
+{
     void *address;
     unsigned long a;
 
 #ifdef __amigaos4__
-    if (OpenResource("newmemory.resource")) {
+    if(OpenResource("newmemory.resource")) {
         address = AllocVecTags(size, AVT_Type, MEMF_SHARED, AVT_Contiguous,
                                TRUE, AVT_Lock, TRUE, AVT_PhysicalAlignment, 32,
                                AVT_Clear, 0, TAG_DONE);
@@ -686,7 +698,7 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress) {
         address = AllocVec(size + CACHELINE_SIZE, allocflags);
         *NonAlignedAddress = address;
 
-        if (address != NULL) {
+        if(address != NULL) {
             a       = (unsigned long)address;
             a       = (a + CACHELINE_SIZE - 1) & ~((unsigned long)CACHELINE_SIZE - 1);
             address = (void *)a;
@@ -696,7 +708,10 @@ void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress) {
     return address;
 }
 
-void pci_free_consistent(void *addr) { FreeVec(addr); }
+void pci_free_consistent(void *addr)
+{
+    FreeVec(addr);
+}
 
 #ifdef __amigaos4__
 static ULONG ResetHandler(struct ExceptionContext *ctx,
@@ -715,7 +730,8 @@ static ULONG ResetHandler(struct CardData *card)
     return 0UL;
 }
 
-void AddResetHandler(struct CardData *card) {
+void AddResetHandler(struct CardData *card)
+{
     struct Interrupt *handler = &card->reset_handler;
 
     handler->is_Code        = (APTR)ResetHandler;

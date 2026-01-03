@@ -58,7 +58,7 @@ typedef struct {
 static void _sink_info_cb(pa_context *c, const pa_sink_info *i, int eol, void *userdata)
 {
     pulse_mixer_t *pm = userdata;
-    if (eol > 0 || !i) return;
+    if(eol > 0 || !i) return;
     pm->sink_idx = i->index;
     pm->vol = i->volume;
 }
@@ -78,8 +78,8 @@ pa_volume_t pa_sw_volume_from_dB(double f)
     /* Scale by PA_VOLUME_NORM (the library's "normal" volume) */
     double v = lin * (double)PA_VOLUME_NORM;
 
-    if (v < 0.0) v = 0.0;
-    if (v > (double)PA_VOLUME_MAX) v = (double)PA_VOLUME_MAX;
+    if(v < 0.0) v = 0.0;
+    if(v > (double)PA_VOLUME_MAX) v = (double)PA_VOLUME_MAX;
 
     /* Round to nearest integer pa_volume_t */
     return (pa_volume_t)(v + 0.5);
@@ -87,32 +87,33 @@ pa_volume_t pa_sw_volume_from_dB(double f)
 
 // This callback gets called when our context changes state.  We really only
 // care about when it's ready or if it has failed
-void pa_state_cb(pa_context *c, void *userdata) {
-  pa_context_state_t state;
-  int *pa_ready = userdata;
-  state = PULSEACALL(pa_context_get_state, c);
-  switch  (state) {
+void pa_state_cb(pa_context *c, void *userdata)
+{
+    pa_context_state_t state;
+    int *pa_ready = userdata;
+    state = PULSEACALL(pa_context_get_state, c);
+    switch(state) {
     // These are just here for reference
-  case PA_CONTEXT_UNCONNECTED:
-  case PA_CONTEXT_CONNECTING:
-  case PA_CONTEXT_AUTHORIZING:
-  case PA_CONTEXT_SETTING_NAME:
-  default:
-    break;
-  case PA_CONTEXT_FAILED:
-  case PA_CONTEXT_TERMINATED:
-    *pa_ready = 2;
-    break;
-  case PA_CONTEXT_READY:
-    *pa_ready = 1;
-    break;
-  }
+    case PA_CONTEXT_UNCONNECTED:
+    case PA_CONTEXT_CONNECTING:
+    case PA_CONTEXT_AUTHORIZING:
+    case PA_CONTEXT_SETTING_NAME:
+    default:
+        break;
+    case PA_CONTEXT_FAILED:
+    case PA_CONTEXT_TERMINATED:
+        *pa_ready = 2;
+        break;
+    case PA_CONTEXT_READY:
+        *pa_ready = 1;
+        break;
+    }
 }
 
 VOID PULSEA_MixerInit(APTR *handle, APTR *elem, LONG *min, LONG *max)
 {
     pulse_mixer_t *pm = CLIBCALL(calloc, 1, sizeof(*pm));
-    if (!pm) return;
+    if(!pm) return;
 
     *handle = NULL;
     *elem   = NULL;
@@ -126,12 +127,12 @@ VOID PULSEA_MixerInit(APTR *handle, APTR *elem, LONG *min, LONG *max)
     _prepare_kernel_for_new_host_pthread(&_current);
 
     pm->ml = PULSEACALL(pa_mainloop_new);
-    if (!pm->ml) goto fail;
+    if(!pm->ml) goto fail;
 
     bug("[PAUDIO] %s: ml @ 0x%p\n", __func__, pm->ml);
 
     pm->ctx = PULSEACALL(pa_context_new, PULSEACALL(pa_mainloop_get_api, pm->ml), APP_NAME);
-    if (!pm->ctx) goto fail_ml;
+    if(!pm->ctx) goto fail_ml;
 
     bug("[PAUDIO] %s: ctx @ 0x%p\n", __func__, pm->ctx);
 
@@ -141,7 +142,7 @@ VOID PULSEA_MixerInit(APTR *handle, APTR *elem, LONG *min, LONG *max)
 
     PULSEACALL(pa_context_set_state_callback, pm->ctx, pa_state_cb, &pa_ready);
 
-    while (pa_ready == 0) {
+    while(pa_ready == 0) {
         PULSEACALL(pa_mainloop_iterate, pm->ml, 1, NULL);
     }
 
@@ -155,8 +156,8 @@ VOID PULSEA_MixerInit(APTR *handle, APTR *elem, LONG *min, LONG *max)
 
     bug("[PAUDIO] %s: op @ 0x%p\n", __func__, op);
 
-    if (op) {
-        while (PULSEACALL(pa_operation_get_state, op) == PA_OPERATION_RUNNING)
+    if(op) {
+        while(PULSEACALL(pa_operation_get_state, op) == PA_OPERATION_RUNNING)
             PULSEACALL(pa_mainloop_iterate, pm->ml, 1, NULL);
         PULSEACALL(pa_operation_unref, op);
     }
@@ -180,7 +181,7 @@ fail:
 VOID PULSEA_MixerCleanup(APTR handle)
 {
     pulse_mixer_t *pm = handle;
-    if (!pm) return;
+    if(!pm) return;
     PULSEACALL(pa_context_disconnect, pm->ctx);
     PULSEACALL(pa_context_unref, pm->ctx);
     PULSEACALL(pa_mainloop_free, pm->ml);
@@ -190,18 +191,18 @@ VOID PULSEA_MixerCleanup(APTR handle)
 LONG PULSEA_MixerGetVolume(APTR elem)
 {
     pulse_mixer_t *pm = elem;
-    if (!pm) return 0;
+    if(!pm) return 0;
     return (LONG)PULSEACALL(pa_cvolume_avg, &pm->vol);
 }
 
 VOID PULSEA_MixerSetVolume(APTR elem, LONG volume)
 {
     pulse_mixer_t *pm = elem;
-    if (!pm) return;
+    if(!pm) return;
     PULSEACALL(pa_cvolume_set, &pm->vol, pm->vol.channels, (pa_volume_t)volume);
     pa_operation *op = PULSEACALL(pa_context_set_sink_volume_by_index, pm->ctx, pm->sink_idx, &pm->vol, NULL, NULL);
-    if (op) {
-        while (PULSEACALL(pa_operation_get_state, op) == PA_OPERATION_RUNNING)
+    if(op) {
+        while(PULSEACALL(pa_operation_get_state, op) == PA_OPERATION_RUNNING)
             PULSEACALL(pa_mainloop_iterate, pm->ml, 1, NULL);
         PULSEACALL(pa_operation_unref, op);
     }
@@ -234,8 +235,7 @@ APTR PULSEA_Open(void)
 
     _restore_kernel_after_new_host_pthread(&_current);
 
-    if (!s)
-    {
+    if(!s) {
         bug("[PulseA] %s: pa_simple_new failed error code %x\n", __func__, error);
     }
     return s;
@@ -243,7 +243,7 @@ APTR PULSEA_Open(void)
 
 VOID PULSEA_DropAndClose(APTR handle)
 {
-    if (handle) {
+    if(handle) {
         PULSEASCALL(pa_simple_free, handle);
     }
 }
@@ -257,15 +257,15 @@ BOOL PULSEA_SetHWParams(APTR handle, ULONG *rate)
 
 LONG PULSEA_Write(APTR handle, APTR buffer, ULONG size)
 {
-    if (!handle) return -1;
-    if (!buffer || size == 0) {
+    if(!handle) return -1;
+    if(!buffer || size == 0) {
         // No data provided, return zero frames written
         return 0;
     }
 
     int error = 0;
-    if (PULSEASCALL(pa_simple_write, handle, buffer, size, &error) < 0) {
-        if (error == PA_ERR_WOULD_BLOCK) {
+    if(PULSEASCALL(pa_simple_write, handle, buffer, size, &error) < 0) {
+        if(error == PA_ERR_WOULD_BLOCK) {
             // Stream not ready to accept data yet — just return 0 frames, not failure
             return 0;
         }

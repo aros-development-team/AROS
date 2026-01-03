@@ -7,12 +7,11 @@
 
 #include "DriverBase.h"
 
-struct DeviceBase
-{
+struct DeviceBase {
     struct DriverBase driverbase;
-    struct DosLibrary*   dosbase;
+    struct DosLibrary   *dosbase;
 #ifdef __AMIGAOS4__
-    struct DOSIFace*  idos;
+    struct DOSIFace  *idos;
 #endif
 };
 
@@ -24,14 +23,13 @@ struct DeviceBase
 # define IDOS (DeviceBase->idos)
 #endif
 
-struct DeviceData
-{
+struct DeviceData {
     struct DriverData   driverdata;
     BYTE		mastersignal;
     BYTE		slavesignal;
-    struct Process*	mastertask;
-    struct Process*	slavetask;
-    struct DeviceBase*	ahisubbase;
+    struct Process	*mastertask;
+    struct Process	*slavetask;
+    struct DeviceBase	*ahisubbase;
     APTR                mixbuffers[ 2 ];
     ULONG               unit;
 };

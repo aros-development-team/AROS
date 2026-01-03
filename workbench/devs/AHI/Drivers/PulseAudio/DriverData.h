@@ -8,8 +8,7 @@
 #define DRIVER_NEEDS_GLOBAL_EXECBASE
 #include "DriverBase.h"
 
-struct PulseABase
-{
+struct PulseABase {
     struct DriverBase   driverbase;
     struct DosLibrary   *dosbase;
 
@@ -24,8 +23,7 @@ struct PulseABase
 
 #define DOSBase (*(struct DosLibrary**) &PulseABase->dosbase)
 
-struct PulseAData
-{
+struct PulseAData {
     struct DriverData   driverdata;
     UBYTE               flags;
     UBYTE               pad1;

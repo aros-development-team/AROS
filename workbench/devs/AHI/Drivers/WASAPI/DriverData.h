@@ -8,10 +8,9 @@
 #define DRIVER_NEEDS_GLOBAL_EXECBASE
 #include "DriverBase.h"
 
-struct WASAPIBase
-{
+struct WASAPIBase {
     struct DriverBase driverbase;
-    struct DosLibrary*   dosbase;
+    struct DosLibrary   *dosbase;
 
     /* Mixer properties */
     APTR    al_MixerHandle;
@@ -24,16 +23,15 @@ struct WASAPIBase
 
 #define DOSBase (*(struct DosLibrary**) &WASAPIBase->dosbase)
 
-struct WASAPIData
-{
+struct WASAPIData {
     struct DriverData   driverdata;
     UBYTE               flags;
     UBYTE               pad1;
     BYTE                mastersignal;
     BYTE                slavesignal;
-    struct Process*     mastertask;
-    struct Process*     slavetask;
-    struct WASAPIBase*    ahisubbase;
+    struct Process     *mastertask;
+    struct Process     *slavetask;
+    struct WASAPIBase    *ahisubbase;
     APTR                mixbuffer;
 
     APTR                WASAPIPlaybackCtrl;

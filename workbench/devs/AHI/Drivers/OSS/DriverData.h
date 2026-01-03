@@ -8,23 +8,21 @@
 
 #include "DriverBase.h"
 
-struct OSSBase
-{
+struct OSSBase {
     struct DriverBase driverbase;
 };
 
 #define DRIVERBASE_SIZEOF (sizeof (struct OSSBase))
 
-struct OSSData
-{
+struct OSSData {
     struct DriverData   driverdata;
     UBYTE		flags;
     UBYTE		pad1;
     BYTE		mastersignal;
     BYTE		slavesignal;
-    struct Process*	mastertask;
-    struct Process*	slavetask;
-    struct OSSBase*	ahisubbase;
+    struct Process	*mastertask;
+    struct Process	*slavetask;
+    struct OSSBase	*ahisubbase;
     APTR		mixbuffer;
 };
 

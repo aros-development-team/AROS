@@ -1,4 +1,4 @@
-/* 
+/*
 
 The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 http://www.aros.org/license.html
@@ -46,16 +46,16 @@ All Rights Reserved.
 #define SB128_PAGE_DAC      0x0C
 #define SB128_PAGE_ADC      0x0D
 
-#define SB128_DAC1_FRAME    0x30 
+#define SB128_DAC1_FRAME    0x30
 #define SB128_DAC1_COUNT    0x34
 #define SB128_DAC2_FRAME    0x38
 #define SB128_DAC2_COUNT    0x3C
 #define SB128_ADC_FRAME     0x30
 #define SB128_ADC_COUNT     0x34
 
-  /* ES1370 specific, not present on other chips */
+/* ES1370 specific, not present on other chips */
 
-  #define ES1370_SB128_CODEC  0x10
+#define ES1370_SB128_CODEC  0x10
 
 
 
@@ -65,16 +65,16 @@ All Rights Reserved.
 #define CTRL_DAC2_EN    0x00000020 /* Enable DAC2 */
 #define CTRL_ADC_EN     0x00000010 /* Enable ADC */
 
-  /* ES1370 specific, not present on other chips */
+/* ES1370 specific, not present on other chips */
 
-  #define CTRL_CDC_EN    0x00000002 /* Enable Codec Control */
- 
-    /* Magical formula for DAC2 frequency */
-  #define DAC2_SRTODIV(x) (((1411200 + (x) / 2) / (x) - 2) & 0x1fff)
+#define CTRL_CDC_EN    0x00000002 /* Enable Codec Control */
 
-  #define DAC2_DIV_SHIFT 16
+/* Magical formula for DAC2 frequency */
+#define DAC2_SRTODIV(x) (((1411200 + (x) / 2) / (x) - 2) & 0x1fff)
 
-  #define DAC2_DIV_MASK  0x1fff0000
+#define DAC2_DIV_SHIFT 16
+
+#define DAC2_DIV_MASK  0x1fff0000
 
 
 /* Codec Control */
@@ -88,11 +88,11 @@ All Rights Reserved.
 #define CODEC_ADD_MASK  0x007F0000
 #define CODEC_READ      0x00800000
 
-  /* ES1370 specific, not present on other chips */
+/* ES1370 specific, not present on other chips */
 
-  #define CODEC_CSTAT            0x00000200
+#define CODEC_CSTAT            0x00000200
 
-  #define ES1370_CODEC_ADD_SHIFT 8
+#define ES1370_CODEC_ADD_SHIFT 8
 
 /* Sample Rate Converter */
 
@@ -142,14 +142,14 @@ All Rights Reserved.
 
 /* ES1370 specific - AK4531 registers */
 
-  /* Output volumes */
+/* Output volumes */
 
-#define AK4531_MASTER_VOL_L     0x00 /* -62 dB to 0 dB attentuation */ 
-#define AK4531_MASTER_VOL_R     0x01 /* -62 dB to 0 dB attentuation */ 
+#define AK4531_MASTER_VOL_L     0x00 /* -62 dB to 0 dB attentuation */
+#define AK4531_MASTER_VOL_R     0x01 /* -62 dB to 0 dB attentuation */
 
-#define AK4531_MASTER_VOL_MONO  0x0F /* -28 dB to 0 dB attentuation */ 
+#define AK4531_MASTER_VOL_MONO  0x0F /* -28 dB to 0 dB attentuation */
 
-  /* Input gain */
+/* Input gain */
 
 #define AK4531_PCMOUT_VOL_L     0x02 /* Adjustable gain from -50 dB to +12 dB for all below */
 #define AK4531_PCMOUT_VOL_R     0x03
@@ -163,7 +163,7 @@ All Rights Reserved.
 #define AK4531_PHONE_VOL_R      0x0D
 #define AK4531_MIC_VOL          0x0E
 
-  /* Mixer registers */
+/* Mixer registers */
 
 #define AK4531_OUTPUT_MUX_1     0x10
 #define AK4531_OUTPUT_MUX_2     0x11
@@ -174,13 +174,13 @@ All Rights Reserved.
 #define AK4531_INPUT_MUX_L_2    0x14
 #define AK4531_INPUT_MUX_R_2    0x15
 
-  /* Output MUX bits */
+/* Output MUX bits */
 
 #define AK4531_OUTPUT_CD        0x06
 #define AK4531_OUTPUT_LINE      0x18
 #define AK4531_OUTPUT_AUX       0x30
 
-  /* Other stuff */
+/* Other stuff */
 
 #define AK4531_MUTE             0x80
 

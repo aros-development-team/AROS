@@ -26,7 +26,7 @@ All Rights Reserved.
 #include <proto/exec.h>
 #include <clib/alib_protos.h>
 #ifdef __AROS__
-struct DosLibrary* DOSBase;
+struct DosLibrary *DOSBase;
 struct Library *StdCBase = NULL;
 #endif
 #include <stdlib.h>
@@ -38,11 +38,10 @@ struct Library *StdCBase = NULL;
 
 
 
-struct DriverBase* AHIsubBase;
+struct DriverBase *AHIsubBase;
 
 
-struct VendorDevice
-{
+struct VendorDevice {
     UWORD vendor;
     UWORD device;
 };
@@ -60,9 +59,9 @@ static int hex_char_to_int(char c);
 ** Custom driver init *********************************************************
 ******************************************************************************/
 
-BOOL DriverInit(struct DriverBase* ahisubbase)
+BOOL DriverInit(struct DriverBase *ahisubbase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) ahisubbase;
+    struct HDAudioBase *card_base = (struct HDAudioBase *) ahisubbase;
     struct PCIDevice *dev;
     int card_no;
     int i;
@@ -72,23 +71,20 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 
     DOSBase = (struct DosLibrary *) OpenLibrary(DOSNAME, 37);
 
-    if (DOSBase == NULL)
-    {
+    if(DOSBase == NULL) {
         Req("Unable to open 'dos.library' version 37.\n");
         return FALSE;
     }
 
 #ifdef __AROS__
     StdCBase = OpenLibrary("stdc.library", 0);
-    if (StdCBase == NULL)
-    {
+    if(StdCBase == NULL) {
         Req("Unable to open 'stdc.library'.\n");
         return FALSE;
     }
 #endif
 
-    if (!ahi_pci_init(ahisubbase))
-    {
+    if(!ahi_pci_init(ahisubbase)) {
         return FALSE;
     }
 
@@ -96,7 +92,8 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 
     /*** Count cards ***********************************************************/
 
-    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS, MEMF_PUBLIC | MEMF_CLEAR);
+    vendor_device_list = (struct VendorDevice *) AllocVec(sizeof(struct VendorDevice) * MAX_DEVICE_VENDORS,
+                         MEMF_PUBLIC | MEMF_CLEAR);
 
     // Add Intel ICH7 (used in iMica)
     vendor_device_list[0].vendor = 0x8086;
@@ -111,13 +108,12 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     card_base->cards_found = 0;
     dev = NULL;
 
-    for (i = 0; i < vendor_device_list_size; i++)
-    {
+    for(i = 0; i < vendor_device_list_size; i++) {
         dev = ahi_pci_find_device(vendor_device_list[i].vendor, vendor_device_list[i].device, dev);
 
-        if (dev != NULL)
-        {
-            D(bug("[HDAudio] Found device with vendor ID = %x, device ID = %x!(i = %d)\n", vendor_device_list[i].vendor, vendor_device_list[i].device, i));
+        if(dev != NULL) {
+            D(bug("[HDAudio] Found device with vendor ID = %x, device ID = %x!(i = %d)\n", vendor_device_list[i].vendor,
+                  vendor_device_list[i].device, i));
             ++card_base->cards_found;
             break; // stop at first found controller
         }
@@ -129,8 +125,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     // Fail if no hardware (prevents the audio modes from being added to
     // the database if the driver cannot be used).
 
-    if (card_base->cards_found == 0)
-    {
+    if(card_base->cards_found == 0) {
         D(bug("[HDAudio] No HDaudio controller found! :-(\n"));
         return FALSE;
     }
@@ -139,22 +134,19 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     /*** Allocate and init all cards *******************************************/
 
     card_base->driverdatas = (struct HDAudioChip **) AllocVec(
-        sizeof(*card_base->driverdatas) * card_base->cards_found,
-        MEMF_PUBLIC | MEMF_CLEAR);
+                                 sizeof(*card_base->driverdatas) * card_base->cards_found,
+                                 MEMF_PUBLIC | MEMF_CLEAR);
 
-    if (card_base->driverdatas == NULL)
-    {
+    if(card_base->driverdatas == NULL) {
         D(bug("[HDAudio] Out of memory.\n"));
         return FALSE;
     }
 
     card_no = 0;
 
-    if (dev)
-    {
+    if(dev) {
         card_base->driverdatas[card_no] = AllocDriverData(dev, AHIsubBase);
-        if (card_base->driverdatas[card_no] == NULL)
-        {
+        if(card_base->driverdatas[card_no] == NULL) {
             FreeVec(card_base->driverdatas);
             return FALSE;
         }
@@ -171,13 +163,12 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
 ** Custom driver clean-up *****************************************************
 ******************************************************************************/
 
-VOID DriverCleanup(struct DriverBase* AHIsubBase)
+VOID DriverCleanup(struct DriverBase *AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
+    struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
     int i;
 
-    for(i = 0; i < card_base->cards_found; ++i)
-    {
+    for(i = 0; i < card_base->cards_found; ++i) {
         FreeDriverData(card_base->driverdatas[i], AHIsubBase);
     }
 
@@ -186,15 +177,13 @@ VOID DriverCleanup(struct DriverBase* AHIsubBase)
     ahi_pci_exit();
 
 #ifdef __AROS__
-    if (StdCBase)
-    {
+    if(StdCBase) {
         CloseLibrary(StdCBase);
     }
 #endif
 
-    if (DOSBase)
-    {
-        CloseLibrary((struct Library*) DOSBase);
+    if(DOSBase) {
+        CloseLibrary((struct Library *) DOSBase);
     }
 }
 
@@ -205,43 +194,38 @@ static void parse_config_file(void)
     BPTR handle;
 
     handle = Lock("ENVARC:hdaudio.config", SHARED_LOCK);
-  
-    if (handle == 0)
-    {
+
+    if(handle == 0) {
         bug("No handle found. IoErr()=%d\n", IoErr());
         return;
     }
-    
+
     UnLock(handle);
 
     config_file = Open("ENVARC:hdaudio.config", MODE_OLDFILE);
 
-    if (config_file)
-    {   
+    if(config_file) {
         BOOL Continue = TRUE;
         bug("Opened config file\n");
-        
-        while (Continue)
-        {
+
+        while(Continue) {
             char *line = (char *) AllocVec(512, MEMF_CLEAR);
             char *ret;
-            
+
             ret = FGets(config_file, line, 512);
 
-            if (ret == NULL)
-            {
+            if(ret == NULL) {
                 FreeVec(line);
                 break;
             }
 
-            if (ret[0] == '0' &&
-                ret[1] == 'x' &&
-                ret[6] == ',' &&
-                ret[7] == ' ' &&
-                ret[8] == '0' &&
-                ret[9] == 'x' &&
-                ret[15] == '\0')
-            {
+            if(ret[0] == '0' &&
+                    ret[1] == 'x' &&
+                    ret[6] == ',' &&
+                    ret[7] == ' ' &&
+                    ret[8] == '0' &&
+                    ret[9] == 'x' &&
+                    ret[15] == '\0') {
                 int value;
                 UWORD vendor, device;
                 char *tmp = (char *) AllocVec(16, MEMF_CLEAR);
@@ -251,11 +235,13 @@ static void parse_config_file(void)
                 tmp[4] = '\0';
 
                 // convert hex to decimal
-                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(tmp[2]) * 16 + hex_char_to_int(tmp[3]);
+                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(
+                            tmp[2]) * 16 + hex_char_to_int(tmp[3]);
                 vendor = (UWORD) value;
 
                 CopyMem(line + 10, tmp, 4);
-                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(tmp[2]) * 16 + hex_char_to_int(tmp[3]);
+                value = hex_char_to_int(tmp[0]) * 16 * 16 * 16 + hex_char_to_int(tmp[1]) * 16 * 16 + hex_char_to_int(
+                            tmp[2]) * 16 + hex_char_to_int(tmp[3]);
                 device = (UWORD) value;
                 //bug("Adding vendor = %x, device = %x to list, size = %ld\n", vendor, device, vendor_device_list_size);
 
@@ -263,27 +249,21 @@ static void parse_config_file(void)
                 vendor_device_list[vendor_device_list_size].device = device;
                 vendor_device_list_size++;
 
-                if (vendor_device_list_size >= MAX_DEVICE_VENDORS)
-                {
+                if(vendor_device_list_size >= MAX_DEVICE_VENDORS) {
                     bug("Exceeded MAX_DEVICE_VENDORS\n");
                     break;
                 }
 
                 FreeVec(tmp);
                 FreeVec(tmp2);
-            }
-            else if (ret[0] == 'Q' && ret[1] == 'U' && ret[2] == 'E' && ret[3] == 'R' && ret[4] == 'Y')
-            {
+            } else if(ret[0] == 'Q' && ret[1] == 'U' && ret[2] == 'E' && ret[3] == 'R' && ret[4] == 'Y') {
                 bug("QUERY found!\n");
                 setForceQuery();
 
-                if (ret[5] == 'D') // debug
-                {
+                if(ret[5] == 'D') { // debug
                     setDumpAll();
                 }
-            }
-            else if (Strnicmp(ret, "speaker=0x", 10) == 0)
-            {
+            } else if(Strnicmp(ret, "speaker=0x", 10) == 0) {
                 int speaker = 0;
                 char *tmp = (char *) AllocVec(16, MEMF_CLEAR);
 
@@ -302,9 +282,7 @@ static void parse_config_file(void)
         }
 
         Close(config_file);
-    }
-    else
-    {
+    } else {
         bug("Couldn't open config file!\n");
     }
 }
@@ -312,20 +290,13 @@ static void parse_config_file(void)
 
 static int hex_char_to_int(char c)
 {
-    if (c >= '0' && c <= '9')
-    {
+    if(c >= '0' && c <= '9') {
         return (c - '0');
-    }
-    else if (c >= 'A' && c <= 'F')
-    {
+    } else if(c >= 'A' && c <= 'F') {
         return 10 + (c - 'A');
-    }
-    else if (c >= 'a' && c <= 'f')
-    {
+    } else if(c >= 'a' && c <= 'f') {
         return 10 + (c - 'a');
-    }
-    else
-    {
+    } else {
         bug("Error in hex_char_to_int: char was %c\n", c);
         return 0;
     }

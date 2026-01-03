@@ -10,8 +10,7 @@
 #define LIBASOUND_SOFILE "libasound.so.2"
 #define LIBC_SOFILE      "libc.so.6"
 
-static const char *alsa_func_names[] =
-{
+static const char *alsa_func_names[] = {
     "snd_pcm_open",
     "snd_pcm_close",
     "snd_pcm_hw_params_malloc",
@@ -48,8 +47,7 @@ static const char *alsa_func_names[] =
 struct alsa_func alsa_func;
 static void *libasoundhandle;
 
-static const char *libc_func_names[] =
-{
+static const char *libc_func_names[] = {
     "sigfillset",
     "sigprocmask",
 };
@@ -61,20 +59,20 @@ static void *libchandle;
 APTR HostLibBase;
 
 static void *hostlib_load_so(const char *sofile, const char **names, int nfuncs,
-        void **funcptr)
+                             void **funcptr)
 {
     void *handle;
     char *err;
     int i;
 
-    if ((handle = HostLib_Open(sofile, &err)) == NULL) {
+    if((handle = HostLib_Open(sofile, &err)) == NULL) {
         D(bug("[ALSA] failed to open '%s': %s\n", sofile, err));
         return NULL;
     }
 
-    for (i = 0; i < nfuncs; i++) {
+    for(i = 0; i < nfuncs; i++) {
         funcptr[i] = HostLib_GetPointer(handle, names[i], &err);
-        if (err != NULL) {
+        if(err != NULL) {
             bug("[ALSA] failed to get symbol '%s' (%s)\n", names[i], err);
             HostLib_Close(handle, NULL);
             return NULL;
@@ -88,32 +86,30 @@ BOOL ALSA_HostLib_Init()
 {
     HostLibBase = OpenResource("hostlib.resource");
 
-    if (!HostLibBase)
-    {
+    if(!HostLibBase) {
         D(bug("[ALSA] failed to open hostlib.resource\n"));
         return FALSE;
     }
 
     libasoundhandle = hostlib_load_so(LIBASOUND_SOFILE, alsa_func_names,
-            ALSA_NUM_FUNCS, (void **)&alsa_func);
+                                      ALSA_NUM_FUNCS, (void **)&alsa_func);
 
-    if (!libasoundhandle)
-    {
+    if(!libasoundhandle) {
         bug("[ALSA] failed to open "LIBASOUND_SOFILE"\n");
         return FALSE;
     }
 
     libchandle = hostlib_load_so(LIBC_SOFILE, libc_func_names,
-            LIBC_NUM_FUNCS, (void **)&libc_func);
+                                 LIBC_NUM_FUNCS, (void **)&libc_func);
 
     return TRUE;
 }
 
 VOID ALSA_HostLib_Cleanup()
 {
-    if (libasoundhandle != NULL)
+    if(libasoundhandle != NULL)
         HostLib_Close(libasoundhandle, NULL);
 
-    if (libchandle != NULL)
+    if(libchandle != NULL)
         HostLib_Close(libchandle, NULL);
 }

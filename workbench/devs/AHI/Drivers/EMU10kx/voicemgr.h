@@ -43,58 +43,56 @@
 #define VOICE_FLAGS_STEREO		0x02
 #define VOICE_FLAGS_16BIT		0x04
 
-struct voice_param
-{
-	/* FX bus amount send */
+struct voice_param {
+    /* FX bus amount send */
 
-	u32 send_routing;
-	// audigy only:
-	u32 send_routing2;
+    u32 send_routing;
+    // audigy only:
+    u32 send_routing2;
 
-	u32 send_dcba;
-	// audigy only:
-	u32 send_hgfe;
+    u32 send_dcba;
+    // audigy only:
+    u32 send_hgfe;
 
 
-	u32 initial_fc;
-	u32 fc_target;
+    u32 initial_fc;
+    u32 fc_target;
 
-	u32 initial_attn;
-	u32 volume_target;
+    u32 initial_attn;
+    u32 volume_target;
 
-	u32 byampl_env_sustain;
-	u32 byampl_env_decay;
+    u32 byampl_env_sustain;
+    u32 byampl_env_decay;
 };
 
 struct voice_mem {
-	int emupageindex;
+    int emupageindex;
 #ifdef AHI
-	void *addr;
-	dma_addr_t dma_handle;
+    void *addr;
+    dma_addr_t dma_handle;
 #else
-	void *addr[BUFMAXPAGES];
-	dma_addr_t dma_handle[BUFMAXPAGES];
+    void *addr[BUFMAXPAGES];
+    dma_addr_t dma_handle[BUFMAXPAGES];
 #endif
-	u32 pages;
+    u32 pages;
 };
 
-struct emu_voice
-{
-	struct emu10k1_card *card;
-	u8 usage;		/* Free, MIDI, playback */
-	u8 num;			/* Voice ID */
-	u8 flags;		/* Stereo/mono, 8/16 bit */
+struct emu_voice {
+    struct emu10k1_card *card;
+    u8 usage;		/* Free, MIDI, playback */
+    u8 num;			/* Voice ID */
+    u8 flags;		/* Stereo/mono, 8/16 bit */
 
-	u32 startloop;
-	u32 endloop;
-	u32 start;
+    u32 startloop;
+    u32 endloop;
+    u32 start;
 
-	u32 initial_pitch;
-	u32 pitch_target;
+    u32 initial_pitch;
+    u32 pitch_target;
 
-	struct voice_param params[2];
+    struct voice_param params[2];
 
-	struct voice_mem mem;
+    struct voice_mem mem;
 };
 
 int emu10k1_voice_alloc_buffer(struct emu10k1_card *, struct voice_mem *, u32);

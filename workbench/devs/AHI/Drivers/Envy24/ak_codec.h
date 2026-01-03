@@ -11,19 +11,18 @@
 
 enum akm_types {AKM4524, AKM4528, AKM4529, AKM4355, AKM4381};
 
-struct akm_codec
-{
+struct akm_codec {
     unsigned int caddr;
     unsigned int cif;
     unsigned int data_mask;
     unsigned int clk_mask;
-    
+
     unsigned int cs_mask;
     unsigned int cs_addr;
     unsigned int cs_none;
     unsigned int add_flags;
     unsigned int mask_flags;
-    
+
     enum akm_types type;
 };
 

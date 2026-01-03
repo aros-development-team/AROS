@@ -19,10 +19,10 @@
 #include "DriverData.h"
 
 void
-SlaveEntry( void );
+SlaveEntry(void);
 
 #ifdef PROCGW
-PROCGW( static, void,  slaveentry, SlaveEntry );
+PROCGW(static, void,  slaveentry, SlaveEntry);
 #else
 #define slaveentry SlaveEntry
 #endif
@@ -34,9 +34,8 @@ PROCGW( static, void,  slaveentry, SlaveEntry );
  *  few common ones.
  */
 
-static const LONG frequencies[] =
-{
-  48000,    // DAT
+static const LONG frequencies[] = {
+    48000,    // DAT
 };
 
 #define FREQUENCIES (sizeof frequencies / sizeof frequencies[ 0 ])
@@ -80,14 +79,12 @@ static UWORD LinToLog(ULONG vol)
 {
     int i;
 
-    if (!vol) return 0x20;
-    
-    for (i=0; i < 32; i++)
-    {
-	if (vol > table_5bit[i])
-	{
-	    return i;
-	}
+    if(!vol) return 0x20;
+
+    for(i = 0; i < 32; i++) {
+        if(vol > table_5bit[i]) {
+            return i;
+        }
     }
     return 0x1f;
 }
@@ -100,55 +97,51 @@ static AROS_INTP(play_int);
 ******************************************************************************/
 
 ULONG
-_AHIsub_AllocAudio( struct TagItem*         taglist,
-		    struct AHIAudioCtrlDrv* AudioCtrl,
-		    struct DriverBase*      AHIsubBase )
+_AHIsub_AllocAudio(struct TagItem         *taglist,
+                   struct AHIAudioCtrlDrv *AudioCtrl,
+                   struct DriverBase      *AHIsubBase)
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
- 
-  AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AC97Data ),
-		 MEMF_CLEAR | MEMF_PUBLIC );
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
+
+    AudioCtrl->ahiac_DriverData = AllocVec(sizeof(struct AC97Data),
+                                           MEMF_CLEAR | MEMF_PUBLIC);
 
 #define dd ((struct AC97Data *) AudioCtrl->ahiac_DriverData)
 
-D(bug("AHI: AllocAudio: dd=%08x\n", dd));
+    D(bug("AHI: AllocAudio: dd=%08x\n", dd));
 
-  if( dd != NULL )
-  {
-    dd->slavesignal      = -1;
-    dd->mastersignal     = AllocSignal( -1 );
-    dd->mastertask       = (struct Process*) FindTask( NULL );
-    dd->ahisubbase       = ac97Base;
-    dd->out_volume	 = 0x10000;
-  }
-  else
-  {
-    return AHISF_ERROR;
-  }
+    if(dd != NULL) {
+        dd->slavesignal      = -1;
+        dd->mastersignal     = AllocSignal(-1);
+        dd->mastertask       = (struct Process *) FindTask(NULL);
+        dd->ahisubbase       = ac97Base;
+        dd->out_volume	 = 0x10000;
+    } else {
+        return AHISF_ERROR;
+    }
 
-  {
-	dd->irq.is_Node.ln_Type = NT_INTERRUPT;
-	dd->irq.is_Node.ln_Pri = 0;
-	dd->irq.is_Node.ln_Name = "AHI Int";
-	dd->irq.is_Code = (APTR)play_int;
-	dd->irq.is_Data = AudioCtrl;
+    {
+        dd->irq.is_Node.ln_Type = NT_INTERRUPT;
+        dd->irq.is_Node.ln_Pri = 0;
+        dd->irq.is_Node.ln_Name = "AHI Int";
+        dd->irq.is_Code = (APTR)play_int;
+        dd->irq.is_Data = AudioCtrl;
 
-	AddIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
-  }
-  
-D(bug("AHI: AllocAudio: Everything OK\n"));
- 
-  if( dd->mastersignal == -1 )
-  {
-    return AHISF_ERROR;
-  }
+        AddIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
+    }
 
-  /* Setting the only working frequency for AC97 */
-  AudioCtrl->ahiac_MixFreq = 48000;
+    D(bug("AHI: AllocAudio: Everything OK\n"));
 
-  return ( AHISF_KNOWSTEREO |
-	   AHISF_MIXING |
-	   AHISF_TIMING );
+    if(dd->mastersignal == -1) {
+        return AHISF_ERROR;
+    }
+
+    /* Setting the only working frequency for AC97 */
+    AudioCtrl->ahiac_MixFreq = 48000;
+
+    return (AHISF_KNOWSTEREO |
+            AHISF_MIXING |
+            AHISF_TIMING);
 }
 
 
@@ -157,29 +150,28 @@ D(bug("AHI: AllocAudio: Everything OK\n"));
 ******************************************************************************/
 
 void
-_AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
-		   struct DriverBase*      AHIsubBase )
+_AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase      *AHIsubBase)
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
 
-D(bug("AHI: FreeAudio\n"));
+    D(bug("AHI: FreeAudio\n"));
 
-  RemIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
+    RemIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
 
-D(bug("AHI: FreeAudio: IRQ removed\n"));
+    D(bug("AHI: FreeAudio: IRQ removed\n"));
 
-  if( AudioCtrl->ahiac_DriverData != NULL )
-  {
-    FreeSignal( dd->mastersignal );
+    if(AudioCtrl->ahiac_DriverData != NULL) {
+        FreeSignal(dd->mastersignal);
 
-D(bug("AHI: FreeAudio: Signal freed\n"));
+        D(bug("AHI: FreeAudio: Signal freed\n"));
 
-    FreeVec( AudioCtrl->ahiac_DriverData );
+        FreeVec(AudioCtrl->ahiac_DriverData);
 
-D(bug("AHI: FreeAudio: DriverData freed\n"));
+        D(bug("AHI: FreeAudio: DriverData freed\n"));
 
-    AudioCtrl->ahiac_DriverData = NULL;
-  }
+        AudioCtrl->ahiac_DriverData = NULL;
+    }
 }
 
 
@@ -188,12 +180,12 @@ D(bug("AHI: FreeAudio: DriverData freed\n"));
 ******************************************************************************/
 
 void
-_AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
-		 struct DriverBase*      AHIsubBase )
+_AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl,
+                struct DriverBase      *AHIsubBase)
 {
-  // V6 drivers do not have to preserve all registers
+    // V6 drivers do not have to preserve all registers
 
-  Disable();
+    Disable();
 }
 
 
@@ -202,12 +194,12 @@ _AHIsub_Disable( struct AHIAudioCtrlDrv* AudioCtrl,
 ******************************************************************************/
 
 void
-_AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
-		struct DriverBase*      AHIsubBase )
+_AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl,
+               struct DriverBase      *AHIsubBase)
 {
-  // V6 drivers do not have to preserve all registers
+    // V6 drivers do not have to preserve all registers
 
-  Enable();
+    Enable();
 }
 
 
@@ -216,75 +208,67 @@ _AHIsub_Enable( struct AHIAudioCtrlDrv* AudioCtrl,
 ******************************************************************************/
 
 ULONG
-_AHIsub_Start( ULONG                   flags,
-	       struct AHIAudioCtrlDrv* AudioCtrl,
-	       struct DriverBase*      AHIsubBase )
+_AHIsub_Start(ULONG                   flags,
+              struct AHIAudioCtrlDrv *AudioCtrl,
+              struct DriverBase      *AHIsubBase)
 {
-  struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
 
-D(bug("AHI: Start\n"));
+    D(bug("AHI: Start\n"));
 
-  AHIsub_Stop( flags, AudioCtrl );
+    AHIsub_Stop(flags, AudioCtrl);
 
-D(bug("AHI: Start: Stop called\n"));
+    D(bug("AHI: Start: Stop called\n"));
 
-  if(flags & AHISF_PLAY)
-  {
-    struct TagItem proctags[] =
-    {
-      { NP_Entry,     (IPTR) &slaveentry },
-      { NP_Name,      (IPTR) LibName     },
-      { NP_Priority,  -1                  },
-      { TAG_DONE,     0                   }
-    };
-    
-    dd->mixbuffer = AllocVec( AudioCtrl->ahiac_BuffSize,
-				MEMF_ANY | MEMF_PUBLIC );
+    if(flags & AHISF_PLAY) {
+        struct TagItem proctags[] = {
+            { NP_Entry, (IPTR) &slaveentry },
+            { NP_Name, (IPTR) LibName     },
+            { NP_Priority,  -1                  },
+            { TAG_DONE,     0                   }
+        };
 
-D(bug("AHI: Start: Mixing buffer = %08x\n",dd->mixbuffer));
+        dd->mixbuffer = AllocVec(AudioCtrl->ahiac_BuffSize,
+                                 MEMF_ANY | MEMF_PUBLIC);
 
-    if( dd->mixbuffer == NULL ) return AHIE_NOMEM;
+        D(bug("AHI: Start: Mixing buffer = %08x\n", dd->mixbuffer));
 
-    Forbid();
+        if(dd->mixbuffer == NULL) return AHIE_NOMEM;
 
-    dd->slavetask = CreateNewProc( proctags );
+        Forbid();
 
-D(bug("AHI: Start: Slave task = %08x\n",dd->slavetask));
+        dd->slavetask = CreateNewProc(proctags);
 
-    if( dd->slavetask != NULL )
-    {
-      dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
+        D(bug("AHI: Start: Slave task = %08x\n", dd->slavetask));
+
+        if(dd->slavetask != NULL) {
+            dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
+        }
+
+        D(bug("AHI: Start: Slave task UserData set\n"));
+
+        Permit();
+
+        if(dd->slavetask != NULL) {
+            Wait(1L << dd->mastersignal);    // Wait for slave to come alive
+
+            D(bug("AHI: Start: Slave task UP and running\n"));
+
+            if(dd->slavetask == NULL) {      // Is slave alive or dead?
+                return AHIE_UNKNOWN;
+            }
+        } else {
+            return AHIE_NOMEM;                 // Well, out of memory or whatever...
+        }
     }
 
-D(bug("AHI: Start: Slave task UserData set\n"));
-
-    Permit();
-
-    if( dd->slavetask != NULL )
-    {
-      Wait( 1L << dd->mastersignal );  // Wait for slave to come alive
-
-D(bug("AHI: Start: Slave task UP and running\n"));
-
-      if( dd->slavetask == NULL )      // Is slave alive or dead?
-      {
+    if(flags & AHISF_RECORD) {
         return AHIE_UNKNOWN;
-      }
     }
-    else
-    {
-      return AHIE_NOMEM;                 // Well, out of memory or whatever...
-    }
-  }
 
-  if( flags & AHISF_RECORD )
-  {
-    return AHIE_UNKNOWN;
-  }
+    D(bug("AHI: Start: Everything OK\n"));
 
-D(bug("AHI: Start: Everything OK\n"));
-
-  return AHIE_OK;
+    return AHIE_OK;
 }
 
 
@@ -293,11 +277,11 @@ D(bug("AHI: Start: Everything OK\n"));
 ******************************************************************************/
 
 void
-_AHIsub_Update( ULONG                   flags,
-		struct AHIAudioCtrlDrv* AudioCtrl,
-		struct DriverBase*      AHIsubBase )
+_AHIsub_Update(ULONG                   flags,
+               struct AHIAudioCtrlDrv *AudioCtrl,
+               struct DriverBase      *AHIsubBase)
 {
-  // Empty function
+    // Empty function
 }
 
 
@@ -306,31 +290,27 @@ _AHIsub_Update( ULONG                   flags,
 ******************************************************************************/
 
 void
-_AHIsub_Stop( ULONG                   flags,
-	      struct AHIAudioCtrlDrv* AudioCtrl,
-	      struct DriverBase*      AHIsubBase )
+_AHIsub_Stop(ULONG                   flags,
+             struct AHIAudioCtrlDrv *AudioCtrl,
+             struct DriverBase      *AHIsubBase)
 {
-  if( flags & AHISF_PLAY )
-  {
-    if( dd->slavetask != NULL )
-    {
-      if( dd->slavesignal != -1 )
-      {
-        Signal( (struct Task*) dd->slavetask,
-                1L << dd->slavesignal );         // Kill him!
-      }
+    if(flags & AHISF_PLAY) {
+        if(dd->slavetask != NULL) {
+            if(dd->slavesignal != -1) {
+                Signal((struct Task *) dd->slavetask,
+                       1L << dd->slavesignal);          // Kill him!
+            }
 
-      Wait( 1L << dd->mastersignal );            // Wait for slave to die
+            Wait(1L << dd->mastersignal);              // Wait for slave to die
+        }
+
+        FreeVec(dd->mixbuffer);
+        dd->mixbuffer = NULL;
     }
 
-    FreeVec( dd->mixbuffer );
-    dd->mixbuffer = NULL;
-  }
-
-  if(flags & AHISF_RECORD)
-  {
-    // Do nothing
-  }
+    if(flags & AHISF_RECORD) {
+        // Do nothing
+    }
 }
 
 
@@ -339,92 +319,84 @@ _AHIsub_Stop( ULONG                   flags,
 ******************************************************************************/
 
 IPTR
-_AHIsub_GetAttr( ULONG                   attribute,
-		 LONG                    argument,
-		 IPTR                    def,
-		 struct TagItem*         taglist,
-		 struct AHIAudioCtrlDrv* AudioCtrl,
-		 struct DriverBase*      AHIsubBase )
+_AHIsub_GetAttr(ULONG                   attribute,
+                LONG                    argument,
+                IPTR                    def,
+                struct TagItem         *taglist,
+                struct AHIAudioCtrlDrv *AudioCtrl,
+                struct DriverBase      *AHIsubBase)
 {
-  size_t i;
+    size_t i;
 
-  switch( attribute )
-  {
+    switch(attribute) {
     case AHIDB_Bits:
-      return 16;
+        return 16;
 
     case AHIDB_Frequencies:
-      return FREQUENCIES;
+        return FREQUENCIES;
 
     case AHIDB_Frequency: // Index->Frequency
-      return (LONG) frequencies[ argument ];
+        return (LONG) frequencies[ argument ];
 
     case AHIDB_Index: // Frequency->Index
-      if( argument <= frequencies[ 0 ] )
-      {
-        return 0;
-      }
-
-      if( argument >= frequencies[ FREQUENCIES - 1 ] )
-      {
-        return FREQUENCIES - 1;
-      }
-
-      for( i = 1; i < FREQUENCIES; i++ )
-      {
-        if( frequencies[ i ] > argument )
-        {
-          if( ( argument - frequencies[ i - 1 ] ) <
-	      ( frequencies[ i ] - argument ) )
-          {
-            return i-1;
-          }
-          else
-          {
-            return i;
-          }
+        if(argument <= frequencies[ 0 ]) {
+            return 0;
         }
-      }
 
-      return 0;  // Will not happen
+        if(argument >= frequencies[ FREQUENCIES - 1 ]) {
+            return FREQUENCIES - 1;
+        }
+
+        for(i = 1; i < FREQUENCIES; i++) {
+            if(frequencies[ i ] > argument) {
+                if((argument - frequencies[ i - 1 ]) <
+                        (frequencies[ i ] - argument)) {
+                    return i - 1;
+                } else {
+                    return i;
+                }
+            }
+        }
+
+        return 0;  // Will not happen
 
     case AHIDB_Author:
-      return (IPTR) "Michal Schulz";
+        return (IPTR) "Michal Schulz";
 
     case AHIDB_Copyright:
-      return (IPTR) "APL";
+        return (IPTR) "APL";
 
     case AHIDB_Version:
-      return (IPTR) LibIDString;
+        return (IPTR) LibIDString;
 
     case AHIDB_Record:
-      return FALSE;
+        return FALSE;
 
     case AHIDB_Realtime:
-      return TRUE;
+        return TRUE;
 
     case AHIDB_Outputs:
-      return 1;
+        return 1;
 
-/*
-    case AHIDB_MinMonitorVolume:
-      return 0x00000;
+    /*
+        case AHIDB_MinMonitorVolume:
+          return 0x00000;
 
-    case AHIDB_MaxMonitorVolume:
-      return 0x10000;
-*/
+        case AHIDB_MaxMonitorVolume:
+          return 0x10000;
+    */
     case AHIDB_MinOutputVolume:
-      return 0x00000;
+        return 0x00000;
 
     case AHIDB_MaxOutputVolume:
-      return 0x10000;
+        return 0x10000;
 
     case AHIDB_Output:
-      return (IPTR) "Default";    // We have only one "output"!
+        return (IPTR) "Default";    // We have only one "output"!
 
     default:
-      return def;
-  }
+        return def;
+    }
 }
 
 
@@ -433,30 +405,29 @@ _AHIsub_GetAttr( ULONG                   attribute,
 ******************************************************************************/
 
 ULONG
-_AHIsub_HardwareControl( ULONG                   attribute,
-			 LONG                    argument,
-			 struct AHIAudioCtrlDrv* AudioCtrl,
-			 struct DriverBase*      AHIsubBase )
+_AHIsub_HardwareControl(ULONG                   attribute,
+                        LONG                    argument,
+                        struct AHIAudioCtrlDrv *AudioCtrl,
+                        struct DriverBase      *AHIsubBase)
 {
-    struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
     UWORD vol;
 
-    switch(attribute)
-    {
-	case AHIC_OutputVolume:
-	    vol = LinToLog(argument);
+    switch(attribute) {
+    case AHIC_OutputVolume:
+        vol = LinToLog(argument);
 
-	    if (vol == 0x20) vol = 0x8000;
-	    else vol = vol | vol << 8;
+        if(vol == 0x20) vol = 0x8000;
+        else vol = vol | vol << 8;
 
-	    D(bug("SetVol %05x translated to %04x\n", argument, vol));
-	    dd->out_volume = argument;
-	    if (ac97Base->mixer_set_reg)
-		ac97Base->mixer_set_reg(ac97Base, AC97_PCM_VOL, vol);
-	    return TRUE;
-	    
-	case AHIC_OutputVolume_Query:
-	    return dd->out_volume;
+        D(bug("SetVol %05x translated to %04x\n", argument, vol));
+        dd->out_volume = argument;
+        if(ac97Base->mixer_set_reg)
+            ac97Base->mixer_set_reg(ac97Base, AC97_PCM_VOL, vol);
+        return TRUE;
+
+    case AHIC_OutputVolume_Query:
+        return dd->out_volume;
     }
 
     return 0;
@@ -468,17 +439,16 @@ static AROS_INTH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
 {
     AROS_INTFUNC_INIT
 
-    struct DriverBase*      AHIsubBase;
-    struct ac97Base*        ac97Base;
+    struct DriverBase      *AHIsubBase;
+    struct ac97Base        *ac97Base;
 
-    AHIsubBase = (struct DriverBase*) dd->ahisubbase;
-    ac97Base   = (struct ac97Base*) AHIsubBase;
+    AHIsubBase = (struct DriverBase *) dd->ahisubbase;
+    ac97Base   = (struct ac97Base *) AHIsubBase;
 
     dd->old_SR = inw((IPTR)ac97Base->dmabase + ac97Base->off_po_sr);
     outw(dd->old_SR & 0x1c, (IPTR)ac97Base->dmabase + ac97Base->off_po_sr);
-    
-    if ((dd->old_SR & 0x1c) && dd->slavetask)
-    {
+
+    if((dd->old_SR & 0x1c) && dd->slavetask) {
         /* Signaling the slave task */
         Signal((struct Task *)dd->slavetask, SIGBREAKF_CTRL_E);
     }

@@ -23,12 +23,12 @@ All Rights Reserved.
 #include "DriverData.h"
 
 LONG
-CardInterrupt(  struct SB128_DATA* dd );
+CardInterrupt(struct SB128_DATA *dd);
 
 void
-PlaybackInterrupt(  struct SB128_DATA* dd );
+PlaybackInterrupt(struct SB128_DATA *dd);
 
 void
-RecordInterrupt(  struct SB128_DATA* dd );
+RecordInterrupt(struct SB128_DATA *dd);
 
 #endif /* AHI_Drivers_SB128_interrupt_h */

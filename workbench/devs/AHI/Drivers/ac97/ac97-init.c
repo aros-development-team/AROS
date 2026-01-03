@@ -19,39 +19,39 @@ static const struct {
     { 0x8086, 0x2485, "Intel ICH3"	},
     { 0x8086, 0x24c5, "Intel ICH4"	},
     { 0x8086, 0x24d5, "Intel ICH5"	},
-        { 0x8086, 0x25a6, "ESB"         },
+    { 0x8086, 0x25a6, "ESB"         },
     { 0x8086, 0x266e, "Intel ICH6"	},
     { 0x8086, 0x27de, "Intel ICH7"	},
-        { 0x8086, 0x2698, "ESB2"        },
+    { 0x8086, 0x2698, "ESB2"        },
     { 0x8086, 0x7195, "Intel 440MX"	},
     { 0x1039, 0x7012, "SIS 7012"	},
     { 0x10de, 0x01b1, "NVIDIA nForce"	},
-        { 0x10de, 0x003a, "MCP04"       },
+    { 0x10de, 0x003a, "MCP04"       },
     { 0x10de, 0x006a, "NVIDIA nForce2"	},
-        { 0x10de, 0x0059, "CK804"       },
+    { 0x10de, 0x0059, "CK804"       },
     { 0x10de, 0x008a, "MCP2S AC'97 Audio Controller" },
     { 0x10de, 0x00da, "NVIDIA nForce3"	},
-        { 0x10de, 0x00ea, "CK8S"        },
-        { 0x10de, 0x026b, "MCP51"       },
+    { 0x10de, 0x00ea, "CK8S"        },
+    { 0x10de, 0x026b, "MCP51"       },
     { 0x1022, 0x746d, "AMD 8111"	},
     { 0x1022, 0x7445, "AMD 768"		},
     { 0x10b9, 0x5455, "Ali 5455"	},
-    {0,0,NULL},
+    {0, 0, NULL},
 };
 
 static void i8x0_set_reg(struct ac97Base *ac97Base, ULONG reg, UWORD value)
 {
-    int count=1000000;
-    
+    int count = 1000000;
+
     while(count-- && (inb((IPTR)ac97Base->dmabase + ACC_SEMA) & 1));
-    
+
     outw(value, (IPTR)ac97Base->mixerbase + reg);
 }
 
 static UWORD i8x0_get_reg(struct ac97Base *ac97Base, ULONG reg)
 {
-    int count=1000000;
-    
+    int count = 1000000;
+
     while(count-- && (inb((IPTR)ac97Base->dmabase + ACC_SEMA) & 1));
 
     return inw((IPTR)ac97Base->mixerbase + reg);
@@ -63,9 +63,9 @@ static UWORD i8x0_get_reg(struct ac97Base *ac97Base, ULONG reg)
 #define ac97Base ((struct ac97Base *)hook->h_Data)
 #define AHIsubBase ((struct DriverBase *)hook->h_Data)
 static AROS_UFH3(void, Enumerator,
-    AROS_UFHA(struct Hook *,    hook,   A0),
-    AROS_UFHA(OOP_Object *,     device, A2),
-    AROS_UFHA(APTR,             msg,    A1))
+                 AROS_UFHA(struct Hook *,    hook,   A0),
+                 AROS_UFHA(OOP_Object *,     device, A2),
+                 AROS_UFHA(APTR,             msg,    A1))
 {
     AROS_USERFUNC_INIT
 
@@ -79,15 +79,13 @@ static AROS_UFH3(void, Enumerator,
 
     D(bug("[AHI:AC97] %s: Querying PCI 'audio' device %04x:%04x\n", __func__, VendorID, ProductID));
 
-    for (i=0; support[i].VendorID; i++)
-    {
-        if (VendorID == support[i].VendorID && ProductID == support[i].ProductID)
-        {
+    for(i = 0; support[i].VendorID; i++) {
+        if(VendorID == support[i].VendorID && ProductID == support[i].ProductID) {
             struct TagItem attrs[] = {
                 { aHidd_PCIDevice_isIO,	    TRUE },
                 { aHidd_PCIDevice_isMEM,    FALSE },
                 { aHidd_PCIDevice_isMaster, TRUE },
-                { TAG_DONE, 0UL },	
+                { TAG_DONE, 0UL },
             };
 
             D(bug("[AHI:AC97] %s: Detected supported '%s' card\n", __func__, support[i].Model));
@@ -109,15 +107,12 @@ static AROS_UFH3(void, Enumerator,
                 bug("[AHI:AC97] %s: DMA IO base @ %p\n", __func__, ac97Base->dmabase);
             )
 
-            if (VendorID == 0x1039 && ProductID == 0x7012)
-            {
+            if(VendorID == 0x1039 && ProductID == 0x7012) {
                 /* SIS 7012 */
                 ac97Base->off_po_sr     = DEFAULT_PO_PICB; /* swap registers */
                 ac97Base->off_po_picb   = DEFAULT_PO_SR;
                 ac97Base->size_shift    = 1; /* chip requires size in bytes, not samples */
-            }
-            else
-            {
+            } else {
                 /* All other cards */
                 ac97Base->off_po_sr     = DEFAULT_PO_SR; /* swap registers */
                 ac97Base->off_po_picb   = DEFAULT_PO_PICB;
@@ -127,8 +122,7 @@ static AROS_UFH3(void, Enumerator,
 #if defined(__AROS__) && (__WORDSIZE==64)
             ac97Base->buffer = CreatePool(MEMF_CLEAR | MEMF_31BIT, 131072, 65536);
 #endif
-            if ((value = (IPTR)AllocMem((8*32) + ALIGN_AC97OUT, MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR)) != 0)
-            {
+            if((value = (IPTR)AllocMem((8 * 32) + ALIGN_AC97OUT, MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR)) != 0) {
                 ac97Base->PCM_out = (APTR)ALIGN_AC97(value);
                 D(bug("[AHI:AC97] %s: PCM_out base @ %p\n", __func__, ac97Base->PCM_out));
 
@@ -151,13 +145,13 @@ static AROS_UFH3(void, Enumerator,
                     bug("[AHI:AC97] %s:    GLOB_STA = %08x\n", __func__, inl((IPTR)ac97Base->dmabase + GLOB_STA));
                 )
 
-    /*
-                int i;
-                for (i=0; i < 64; i+=2)
-                {
-                    D(bug("[AHI:AC97] reg %02x = %04x\n", i, ac97Base->mixer_get_reg(ac97Base, i)));
-                }
-    */
+                /*
+                            int i;
+                            for (i=0; i < 64; i+=2)
+                            {
+                                D(bug("[AHI:AC97] reg %02x = %04x\n", i, ac97Base->mixer_get_reg(ac97Base, i)));
+                            }
+                */
                 outl((ULONG)(IPTR)ac97Base->PCM_out, (IPTR)ac97Base->dmabase + PO_BDBAR);
 
                 D(
@@ -176,71 +170,63 @@ static AROS_UFH3(void, Enumerator,
 #undef ac97Base
 #undef AHIsubBase
 
-BOOL DriverInit( struct DriverBase* AHIsubBase )
+BOOL DriverInit(struct DriverBase *AHIsubBase)
 {
-    struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
 
-    ac97Base->dosbase = OpenLibrary( DOSNAME, 37 );
+    ac97Base->dosbase = OpenLibrary(DOSNAME, 37);
     ac97Base->sysbase = SysBase;
 
     D(bug("[AHI:AC97] %s()\n", __func__));
 
-    if(DOSBase)
-    {
+    if(DOSBase) {
         ac97Base->oopbase = (APTR)OpenLibrary(AROSOOP_NAME, 0);
-        if (OOPBase)
-        {
+        if(OOPBase) {
             __IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
             D(bug("[AHI:AC97] %s: Libraries opened\n", __func__));
 
-            if (__IHidd_PCIDev)
-            {
-            OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-            
-            D(bug("[AHI:AC97] %s: PCIDevice AttrBase = %x\n", __func__, __IHidd_PCIDev));
-            
-            if (pci)
-            {
-                struct Hook FindHook = {
-                    .h_Entry            = (IPTR(*)())Enumerator,
-                    .h_Data             = ac97Base,
-                };
+            if(__IHidd_PCIDev) {
+                OOP_Object *pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 
-                struct TagItem Reqs[] = {
-                    { tHidd_PCI_Class,	        0x04 },
-                    { tHidd_PCI_SubClass,       0x01 },
-                    { TAG_DONE,                 0UL },
-                };
+                D(bug("[AHI:AC97] %s: PCIDevice AttrBase = %x\n", __func__, __IHidd_PCIDev));
 
-                struct pHidd_PCI_EnumDevices enummsg = {
-                    .mID                = OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
-                    .callback           = &FindHook,
-                    .requirements       = (struct TagItem *)&Reqs,
-                }, *msg = &enummsg;
+                if(pci) {
+                    struct Hook FindHook = {
+                        .h_Entry            = (IPTR(*)())Enumerator,
+                        .h_Data             = ac97Base,
+                    };
 
-                D(bug("[AHI:AC97] %s: Got PCI object\n", __func__));
+                    struct TagItem Reqs[] = {
+                        { tHidd_PCI_Class,	        0x04 },
+                        { tHidd_PCI_SubClass,       0x01 },
+                        { TAG_DONE,                 0UL },
+                    };
 
-                ac97Base->cardfound = FALSE;
+                    struct pHidd_PCI_EnumDevices enummsg = {
+                        .mID                = OOP_GetMethodID(CLID_Hidd_PCI, moHidd_PCI_EnumDevices),
+                        .callback           = &FindHook,
+                        .requirements       = (struct TagItem *) &Reqs,
+                    }, *msg = &enummsg;
 
-                OOP_DoMethod(pci, (OOP_Msg)msg);
+                    D(bug("[AHI:AC97] %s: Got PCI object\n", __func__));
 
-                OOP_DisposeObject(pci);
+                    ac97Base->cardfound = FALSE;
 
-                return ac97Base->cardfound;
+                    OOP_DoMethod(pci, (OOP_Msg)msg);
+
+                    OOP_DisposeObject(pci);
+
+                    return ac97Base->cardfound;
+                }
             }
-            }
-        }
-        else
-        {
+        } else {
             Req("Unable to open 'oop.library'\n");
         }
+    } else {
+        Req("Unable to open 'dos.library' version 37.\n");
     }
-    else
-    {
-        Req( "Unable to open 'dos.library' version 37.\n" );
-    }
-  
+
     return FALSE;
 }
 
@@ -249,12 +235,12 @@ BOOL DriverInit( struct DriverBase* AHIsubBase )
 ** Custom driver clean-up *****************************************************
 ******************************************************************************/
 
-VOID DriverCleanup( struct DriverBase* AHIsubBase )
+VOID DriverCleanup(struct DriverBase *AHIsubBase)
 {
-    struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
+    struct ac97Base *ac97Base = (struct ac97Base *) AHIsubBase;
 
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-    CloseLibrary( (struct Library*) DOSBase );
-    CloseLibrary( (struct Library*) ac97Base->oopbase);
+    CloseLibrary((struct Library *) DOSBase);
+    CloseLibrary((struct Library *) ac97Base->oopbase);
 }
 

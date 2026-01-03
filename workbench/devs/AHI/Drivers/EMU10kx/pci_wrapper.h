@@ -30,7 +30,7 @@
 #define PCI_DEVICE_ID	    	    2
 #define PCI_SUBSYSTEM_VENDOR_ID     0x2c
 
-BOOL ahi_pci_init(struct DriverBase* AHIsubBase);
+BOOL ahi_pci_init(struct DriverBase *AHIsubBase);
 void ahi_pci_exit(void);
 
 APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev);

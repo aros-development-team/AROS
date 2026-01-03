@@ -24,22 +24,21 @@ extern const APTR FuncTable[];
 extern const char LibName[];
 extern const char ID[];
 
-AROS_UFP3 (struct Library *, InitLib,
-    AROS_UFPA(struct Library *, LIBBASE, D0),
-    AROS_UFPA(BPTR, segList, A0),
-    AROS_UFPA(struct ExecBase *, sysBase, A6)
-);
-__section(".text.romtag") struct Resident const ROMTag =
-{
+AROS_UFP3(struct Library *, InitLib,
+          AROS_UFPA(struct Library *, LIBBASE, D0),
+          AROS_UFPA(BPTR, segList, A0),
+          AROS_UFPA(struct ExecBase *, sysBase, A6)
+         );
+__section(".text.romtag") struct Resident const ROMTag = {
     RTC_MATCHWORD,
-    (struct Resident *)&ROMTag,
-    (APTR)&End,
+    (struct Resident *) &ROMTag,
+    (APTR) &End,
     RTF_COLDSTART,
     VERSION,
     NT_RESOURCE,
     -1,
-    (CONST_STRPTR)&LibName[0],
-    (CONST_STRPTR)&ID[6],
+    (CONST_STRPTR) &LibName[0],
+    (CONST_STRPTR) &ID[6],
     (APTR)InitLib
 #if defined(__AROS__)
     , 0, NULL
@@ -68,9 +67,9 @@ __startup AROS_PROCH(Handler, argptr, argsize, SysBase)
 
     LONG ret = RETURN_FAIL;
 
-    if (!SysBase || SysBase->LibNode.lib_Version < __aros_libreq_SysBase)
+    if(!SysBase || SysBase->LibNode.lib_Version < __aros_libreq_SysBase)
         return ERROR_INVALID_RESIDENT_LIBRARY;
-    if (set_call_funcs(SETNAME(INIT), 1, 1)) {
+    if(set_call_funcs(SETNAME(INIT), 1, 1)) {
         ret = handler(SysBase);
         set_call_funcs(SETNAME(EXIT), -1, 0);
     }
@@ -82,11 +81,11 @@ __startup AROS_PROCH(Handler, argptr, argsize, SysBase)
 
 extern const LONG __aros_libreq_SysBase __attribute__((weak));
 
-AROS_UFH3 (struct Library *, InitLib,
-    AROS_UFHA(struct Library *, LIBBASE, D0),
-    AROS_UFHA(BPTR, segList, A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+AROS_UFH3(struct Library *, InitLib,
+          AROS_UFHA(struct Library *, LIBBASE, D0),
+          AROS_UFHA(BPTR, segList, A0),
+          AROS_UFHA(struct ExecBase *, sysBase, A6)
+         )
 {
     AROS_USERFUNC_INIT
 

@@ -23,7 +23,7 @@
 #define   VIA_REG_CTRL_TERMINATE        0x40    /* WO */
 #define   VIA_REG_CTRL_AUTOSTART        0x20
 #define   VIA_REG_CTRL_PAUSE            0x08    /* RW */
-#define   VIA_REG_CTRL_INT_STOP         0x04            
+#define   VIA_REG_CTRL_INT_STOP         0x04
 #define   VIA_REG_CTRL_INT_EOL          0x02
 #define   VIA_REG_CTRL_INT_FLAG         0x01
 #define   VIA_REG_CTRL_RESET            0x01    /* RW - probably reset? undocumented */

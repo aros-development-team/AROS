@@ -29,27 +29,26 @@
 
 /* I am no C programmer so please let me know if this one is incorrect: */
 
-struct STUDIO16FILE
-{
-	ULONG	S16F_ID;		/* FILE HEADER ID (K16FID) */
-	ULONG	S16F_RATE;		/* sample rate */
-	ULONG	S16F_FILTER;		/* Init with $1 (K16FINIT) */
-	UWORD	S16F_VOLUME;		/* sample volume */
-	ULONG	S16F_SMPTE;		/* SMPTE timecode (H:B M:B S:B F:B) */
-	ULONG	S16F_SMPTEFLOAT;	/* SMPTE sampling rate */
-	ULONG	S16F_PAN;		/* pan setting */
-	LONG	S16F_FLAGS;		/* misc flags */
-	LONG	S16F_RESERVED;
+struct STUDIO16FILE {
+    ULONG	S16F_ID;		/* FILE HEADER ID (K16FID) */
+    ULONG	S16F_RATE;		/* sample rate */
+    ULONG	S16F_FILTER;		/* Init with $1 (K16FINIT) */
+    UWORD	S16F_VOLUME;		/* sample volume */
+    ULONG	S16F_SMPTE;		/* SMPTE timecode (H:B M:B S:B F:B) */
+    ULONG	S16F_SMPTEFLOAT;	/* SMPTE sampling rate */
+    ULONG	S16F_PAN;		/* pan setting */
+    LONG	S16F_FLAGS;		/* misc flags */
+    LONG	S16F_RESERVED;
 
-/* here follows the sampleclips */
+    /* here follows the sampleclips */
 
-	ULONG	S16F_SAMPLES0;		/* number of samples (bytesize/2) */
-	ULONG	S16F_SAMPLES1;		/* number of samples */
-	ULONG	S16F_0;			/* start of first range [main] */
-	ULONG	S16F_SAMPLES2;		/* number of samples-1  (end) */
-	ULONG	S16F_EDITSTATUS;	/* if =null then no edits in file */
-	char	S16F_1[3636];
-/*	LABEL	S16F_SIZEOF	*/	/* =3690 */
+    ULONG	S16F_SAMPLES0;		/* number of samples (bytesize/2) */
+    ULONG	S16F_SAMPLES1;		/* number of samples */
+    ULONG	S16F_0;			/* start of first range [main] */
+    ULONG	S16F_SAMPLES2;		/* number of samples-1  (end) */
+    ULONG	S16F_EDITSTATUS;	/* if =null then no edits in file */
+    char	S16F_1[3636];
+    /*	LABEL	S16F_SIZEOF	*/	/* =3690 */
 };
 
 /* Sample rates for Studio 16: */

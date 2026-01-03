@@ -71,11 +71,11 @@ extern struct Library *UtilityBase;
 extern struct LocaleBase *LocaleBase;
 extern struct Catalog *HardDiskRecord_Catalog;
 
-extern void RendWindowWin0( struct Window *Win, void *vi );
-extern int OpenWindowWin0( STRPTR ScrName);
-extern void CloseWindowWin0( void );
-extern int OpenLibs( void );
-extern void CloseLibs( void );
+extern void RendWindowWin0(struct Window *Win, void *vi);
+extern int OpenWindowWin0(STRPTR ScrName);
+extern void CloseWindowWin0(void);
+extern int OpenLibs(void);
+extern void CloseLibs(void);
 extern STRPTR GetString(LONG strnum);
 extern void CloseHardDiskRecordCatalog(void);
 extern void OpenHardDiskRecordCatalog(struct Locale *loc, STRPTR language);

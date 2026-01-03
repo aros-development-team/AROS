@@ -8,10 +8,9 @@
 #define DRIVER_NEEDS_GLOBAL_EXECBASE
 #include "DriverBase.h"
 
-struct AlsaBase
-{
+struct AlsaBase {
     struct DriverBase driverbase;
-    struct DosLibrary*   dosbase;
+    struct DosLibrary   *dosbase;
 
     /* Mixer properties */
     APTR    al_MixerHandle;
@@ -24,16 +23,15 @@ struct AlsaBase
 
 #define DOSBase (*(struct DosLibrary**) &AlsaBase->dosbase)
 
-struct AlsaData
-{
+struct AlsaData {
     struct DriverData   driverdata;
     UBYTE               flags;
     UBYTE               pad1;
     BYTE                mastersignal;
     BYTE                slavesignal;
-    struct Process*     mastertask;
-    struct Process*     slavetask;
-    struct AlsaBase*    ahisubbase;
+    struct Process     *mastertask;
+    struct Process     *slavetask;
+    struct AlsaBase    *ahisubbase;
     APTR                mixbuffer;
 
     APTR                alsahandle;

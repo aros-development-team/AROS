@@ -12,7 +12,7 @@
 BOOL WASAPI_Init();
 VOID WASAPI_Cleanup();
 
-VOID WASAPI_MixerInit(APTR * handle, APTR * elem, LONG * min, LONG * max);
+VOID WASAPI_MixerInit(APTR *handle, APTR *elem, LONG *min, LONG *max);
 VOID WASAPI_MixerCleanup(APTR handle);
 LONG WASAPI_MixerGetVolume(APTR elem);
 VOID WASAPI_MixerSetVolume(APTR elem, LONG volume);
@@ -20,7 +20,7 @@ VOID WASAPI_MixerSetVolume(APTR elem, LONG volume);
 APTR WASAPI_Open();
 VOID WASAPI_DropAndClose(APTR handle);
 
-BOOL WASAPI_SetHWParams(APTR handle, ULONG * rate);
+BOOL WASAPI_SetHWParams(APTR handle, ULONG *rate);
 
 IPTR WASAPI_Start(APTR handle);
 IPTR WASAPI_Stop(APTR handle);

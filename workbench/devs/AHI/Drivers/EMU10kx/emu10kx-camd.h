@@ -28,9 +28,8 @@
 /* This is the global, public data structure used to communicate with
  * the CAMD part of emu10kx.audio. Find it, lock it, use it and then
  * release it. */
-   
-struct EMU10kxCamd
-{
+
+struct EMU10kxCamd {
     struct SignalSemaphore  Semaphore;
     UWORD                   Cards;
     UWORD                   Version;
@@ -42,29 +41,25 @@ struct EMU10kxCamd
 
 
 /* Message for OpenPortFunc */
-struct OpenMessage
-{
+struct OpenMessage {
     LONG          PortNum;
     ULONG         V40Mode;
-    struct Hook*  TransmitFunc;
-    struct Hook*  ReceiveFunc;
+    struct Hook  *TransmitFunc;
+    struct Hook  *ReceiveFunc;
 };
 
 /* Message for ClosePortFunc */
-struct CloseMessage
-{
+struct CloseMessage {
     LONG PortNum;
 };
 
 /* Message for ActivateXmitFunc */
-struct ActivateMessage
-{
+struct ActivateMessage {
     LONG PortNum;
 };
 
 /* Message for ReceiveFunc */
-struct ReceiveMessage
-{
+struct ReceiveMessage {
     ULONG InputByte;
 };
 
@@ -72,19 +67,19 @@ struct ReceiveMessage
 struct EMU10kxBase;
 
 ULONG
-OpenCAMDPort( struct Hook*        hook,
-	      struct EMU10kxBase* EMU10kxBase,
-	      struct OpenMessage* msg );
+OpenCAMDPort(struct Hook        *hook,
+             struct EMU10kxBase *EMU10kxBase,
+             struct OpenMessage *msg);
 
 VOID
-CloseCAMDPort( struct Hook*         hook,
-	       struct EMU10kxBase*  EMU10kxBase,
-	       struct CloseMessage* msg );
+CloseCAMDPort(struct Hook         *hook,
+              struct EMU10kxBase  *EMU10kxBase,
+              struct CloseMessage *msg);
 
 VOID
-ActivateCAMDXmit( struct Hook*            hook,
-		  struct EMU10kxBase*     EMU10kxBase,
-		  struct ActivateMessage* msg );
+ActivateCAMDXmit(struct Hook            *hook,
+                 struct EMU10kxBase     *EMU10kxBase,
+                 struct ActivateMessage *msg);
 
 #endif /* AHI_Drivers_EMU10kx_emu10kx_camd_h */
 

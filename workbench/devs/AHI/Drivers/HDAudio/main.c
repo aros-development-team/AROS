@@ -47,28 +47,27 @@ extern int z, timer;
 ** Globals ********************************************************************
 ******************************************************************************/
 
-static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size, struct Stream *stream);
+static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size,
+        struct Stream *stream);
 static void free_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, struct Stream *stream);
 static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card);
 void set_converter_format(struct HDAudioChip *card, UBYTE nid);
 
 
-static const char *Inputs[INPUTS] =
-{
-  "Line in",
-  "Mic 1",
-  "Mic 2",
-  "CD",
-  "Mixer"
+static const char *Inputs[INPUTS] = {
+    "Line in",
+    "Mic 1",
+    "Mic 2",
+    "CD",
+    "Mixer"
 };
 
 
 #define OUTPUTS 1
 
 
-static const char *Outputs[OUTPUTS] =
-{
-  "Line",
+static const char *Outputs[OUTPUTS] = {
+    "Line",
 };
 
 
@@ -81,11 +80,11 @@ static const ULONG nr_of_playback_buffers = 2;
 ** AHIsub_AllocAudio **********************************************************
 ******************************************************************************/
 
-ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
-                         struct AHIAudioCtrlDrv* AudioCtrl,
-                         struct DriverBase* AHIsubBase)
+ULONG _AHIsub_AllocAudio(struct TagItem *taglist,
+                         struct AHIAudioCtrlDrv *AudioCtrl,
+                         struct DriverBase *AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
+    struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
 
     int   card_num;
     ULONG ret;
@@ -93,15 +92,12 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
 
     card_num = (GetTagData(AHIDB_AudioID, 0, taglist) & 0x0000f000) >> 12;
 
-    if (card_num >= card_base->cards_found ||
-        card_base->driverdatas[card_num] == NULL)
-    {
+    if(card_num >= card_base->cards_found ||
+            card_base->driverdatas[card_num] == NULL) {
         D(bug("[HDAudio] no data for card = %ld\n", card_num));
         Req("No HDAudioChip for card %ld.", card_num);
         return AHISF_ERROR;
-    }
-    else
-    {
+    } else {
         BOOL in_use;
         struct HDAudioChip *card;
 
@@ -110,34 +106,27 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
 
         ObtainSemaphore(&card_base->semaphore);
         in_use = (card->audioctrl != NULL);
-        if (!in_use)
-        {
+        if(!in_use) {
             card->audioctrl = AudioCtrl;
         }
         ReleaseSemaphore(&card_base->semaphore);
 
-        if (in_use)
-        {
+        if(in_use) {
             return AHISF_ERROR;
         }
 
         //bug("AudioCtrl->ahiac_MixFreq = %lu\n", AudioCtrl->ahiac_MixFreq);
-        if (AudioCtrl->ahiac_MixFreq < card->frequencies[0].frequency)
+        if(AudioCtrl->ahiac_MixFreq < card->frequencies[0].frequency)
             AudioCtrl->ahiac_MixFreq = card->frequencies[0].frequency;
 
         card->selected_freq_index = 0;
-        for (i = 1; i < card->nr_of_frequencies; i++)
-        {
-            if ((ULONG) card->frequencies[i].frequency >= AudioCtrl->ahiac_MixFreq)
-            {
-                if ((AudioCtrl->ahiac_MixFreq - (LONG) card->frequencies[i - 1].frequency)
-                    < ((LONG) card->frequencies[i].frequency - AudioCtrl->ahiac_MixFreq))
-                {
+        for(i = 1; i < card->nr_of_frequencies; i++) {
+            if((ULONG) card->frequencies[i].frequency >= AudioCtrl->ahiac_MixFreq) {
+                if((AudioCtrl->ahiac_MixFreq - (LONG) card->frequencies[i - 1].frequency)
+                        < ((LONG) card->frequencies[i].frequency - AudioCtrl->ahiac_MixFreq)) {
                     card->selected_freq_index = i - 1;
                     break;
-                }
-                else
-                {
+                } else {
                     card->selected_freq_index = i;
                     break;
                 }
@@ -148,16 +137,14 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
 
         ret = AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING;
 
-        for (i = 0; i < card->nr_of_frequencies; i++)
-        {
-            if (AudioCtrl->ahiac_MixFreq == card->frequencies[i].frequency)
-            {
+        for(i = 0; i < card->nr_of_frequencies; i++) {
+            if(AudioCtrl->ahiac_MixFreq == card->frequencies[i].frequency) {
                 ret |= AHISF_CANRECORD;
                 break;
             }
         }
 
-        if (card->bitsizes[card->selected_bitsize_index] == 24)
+        if(card->bitsizes[card->selected_bitsize_index] == 24)
             ret |= AHISF_KNOWHIFI;
 
         return ret;
@@ -170,17 +157,15 @@ ULONG _AHIsub_AllocAudio(struct TagItem* taglist,
 ** AHIsub_FreeAudio ***********************************************************
 ******************************************************************************/
 
-void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv* AudioCtrl,
-                       struct DriverBase* AHIsubBase)
+void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl,
+                       struct DriverBase *AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
-    struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
+    struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
+    struct HDAudioChip *card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
 
-    if (card != NULL)
-    {
+    if(card != NULL) {
         ObtainSemaphore(&card_base->semaphore);
-        if (card->audioctrl == AudioCtrl)
-        {
+        if(card->audioctrl == AudioCtrl) {
             // Release it if we own it.
             card->audioctrl = NULL;
         }
@@ -196,8 +181,8 @@ void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv* AudioCtrl,
 ** AHIsub_Disable *************************************************************
 ******************************************************************************/
 
-void _AHIsub_Disable(struct AHIAudioCtrlDrv* AudioCtrl,
-                     struct DriverBase* AHIsubBase)
+void _AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl,
+                     struct DriverBase *AHIsubBase)
 {
     // V6 drivers do not have to preserve all registers
 
@@ -209,8 +194,8 @@ void _AHIsub_Disable(struct AHIAudioCtrlDrv* AudioCtrl,
 ** AHIsub_Enable **************************************************************
 ******************************************************************************/
 
-void _AHIsub_Enable(struct AHIAudioCtrlDrv* AudioCtrl,
-                    struct DriverBase* AHIsubBase)
+void _AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl,
+                    struct DriverBase *AHIsubBase)
 {
     // V6 drivers do not have to preserve all registers
 
@@ -223,24 +208,22 @@ void _AHIsub_Enable(struct AHIAudioCtrlDrv* AudioCtrl,
 ******************************************************************************/
 
 ULONG _AHIsub_Start(ULONG flags,
-                    struct AHIAudioCtrlDrv* AudioCtrl,
-                    struct DriverBase* AHIsubBase)
+                    struct AHIAudioCtrlDrv *AudioCtrl,
+                    struct DriverBase *AHIsubBase)
 {
-    struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
+    struct HDAudioChip *card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
     ULONG dma_buffer_size = 0;
     struct Stream *input_stream = &(card->streams[0]);
     struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
 
-    if (flags & AHISF_PLAY)
-    {
+    if(flags & AHISF_PLAY) {
         ULONG dma_sample_frame_size = 2; /* 16-bit */;
         APTR    bufftmp;
 
         detect_headphone_change(card);
 
         bufftmp = AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_PUBLIC | MEMF_CLEAR);
-        if (bufftmp == NULL)
-        {
+        if(bufftmp == NULL) {
             D(bug("[HDAudio] Unable to allocate %ld bytes for mixing buffer.", AudioCtrl->ahiac_BuffSize));
             return AHIE_NOMEM;
         }
@@ -253,30 +236,30 @@ ULONG _AHIsub_Start(ULONG flags,
 #endif
 
         /* Allocate a buffer large enough for 16-bit or 32-bit double-buffered playback (mono or stereo) */
-        if (card->bitsizes[card->selected_bitsize_index] == 24)
+        if(card->bitsizes[card->selected_bitsize_index] == 24)
             dma_sample_frame_size = 4; /* 32-bit */
 
-        if (AudioCtrl->ahiac_Flags & AHIACF_STEREO)
+        if(AudioCtrl->ahiac_Flags & AHIACF_STEREO)
             dma_sample_frame_size *= 2; /* STEREO */
 
         dma_buffer_size = AudioCtrl->ahiac_MaxBuffSamples * dma_sample_frame_size;
 
 
         D(bug("dma_sample_frame_size = %ld, dma_buffer_size = %ld, freq = %d\n",
-            dma_sample_frame_size, dma_buffer_size, AudioCtrl->ahiac_MixFreq));
+              dma_sample_frame_size, dma_buffer_size, AudioCtrl->ahiac_MixFreq));
         build_buffer_descriptor_list(card, nr_of_playback_buffers, dma_buffer_size, output_stream);
 
         card->playback_buffer1 = output_stream->bdl[0].address;
         card->playback_buffer2 = output_stream->bdl[1].address;
 
         //bug("BDLE[0] = %lx, BDLE[1] = %lx\n", output_stream->bdl[0].lower_address, output_stream->bdl[1].lower_address);
-        if (stream_reset(output_stream, card) == FALSE)
-        {
+        if(stream_reset(output_stream, card) == FALSE) {
             return AHISF_ERROR;
         }
 
         // 4.5.3 Starting Streams
-        outb_setbits((output_stream->tag << 4), output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2, card); // set stream number
+        outb_setbits((output_stream->tag << 4), output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2,
+                     card); // set stream number
         pci_outl(dma_buffer_size * nr_of_playback_buffers, output_stream->sd_reg_offset + HD_SD_OFFSET_CYCLIC_BUFFER_LEN, card);
         pci_outw(1, output_stream->sd_reg_offset + HD_SD_OFFSET_LAST_VALID_INDEX, card); // 2 buffers, last valid index = 1
 
@@ -286,15 +269,18 @@ ULONG _AHIsub_Start(ULONG flags,
 
         // set BDL for scatter/gather
 #if defined(__AROS__) && (__WORDSIZE==64)
-        pci_outl((ULONG)((IPTR)output_stream->bdl & 0xFFFFFFFF), output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
-        pci_outl((ULONG)(((IPTR)output_stream->bdl >> 32) & 0xFFFFFFFF), output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
+        pci_outl((ULONG)((IPTR)output_stream->bdl & 0xFFFFFFFF), output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW,
+                 card);
+        pci_outl((ULONG)(((IPTR)output_stream->bdl >> 32) & 0xFFFFFFFF),
+                 output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
 #else
         pci_outl((ULONG) output_stream->bdl, output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
         pci_outl(0, output_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
 #endif
 
         // set stream ID and channel for DAC
-        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (output_stream->tag << 4), card); // stream 1, channel 0
+        send_command_12(card->codecnr, card->dac_nid, VERB_SET_CONVERTER_STREAM_CHANNEL, (output_stream->tag << 4),
+                        card); // stream 1, channel 0
 
         card->current_bytesize = dma_buffer_size;
         card->current_frames = AudioCtrl->ahiac_MaxBuffSamples;
@@ -303,8 +289,7 @@ ULONG _AHIsub_Start(ULONG flags,
         card->is_playing = TRUE;
     }
 
-    if (flags & AHISF_RECORD)
-    {
+    if(flags & AHISF_RECORD) {
         dma_buffer_size = RECORD_BUFFER_SAMPLES * 4;
 
         build_buffer_descriptor_list(card, 2, dma_buffer_size, input_stream);
@@ -312,35 +297,36 @@ ULONG _AHIsub_Start(ULONG flags,
         card->record_buffer1 = input_stream->bdl[0].address;
         card->record_buffer2 = input_stream->bdl[1].address;
 
-        if (stream_reset(input_stream, card) == FALSE)
-        {
+        if(stream_reset(input_stream, card) == FALSE) {
             return AHISF_ERROR;
         }
 
         // 4.5.3 Starting Streams
-        outb_setbits((input_stream->tag << 4), input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2, card); // set stream number
+        outb_setbits((input_stream->tag << 4), input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL + 2,
+                     card); // set stream number
         pci_outl(dma_buffer_size * 2, input_stream->sd_reg_offset + HD_SD_OFFSET_CYCLIC_BUFFER_LEN, card);
         pci_outw(1, input_stream->sd_reg_offset + HD_SD_OFFSET_LAST_VALID_INDEX, card); // 2 buffers, last valid index = 1
 
         // set sample rate and format
         pci_outw(((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-            FORMAT_16BITS | // set to 16-bit for now
-            FORMAT_STEREO,
-        input_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
+                 (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
+                 (card->frequencies[card->selected_freq_index].div << 8) | // divisor
+                 FORMAT_16BITS | // set to 16-bit for now
+                 FORMAT_STEREO,
+                 input_stream->sd_reg_offset + HD_SD_OFFSET_FORMAT, card);
 
         send_command_4(card->codecnr, card->adc_nid, VERB_SET_CONVERTER_FORMAT,
-            ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
-            (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
-            (card->frequencies[card->selected_freq_index].div << 8) | // divisor
-            FORMAT_16BITS | // set to 16-bit for now
-            FORMAT_STEREO , card); // stereo
+                       ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
+                       (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
+                       (card->frequencies[card->selected_freq_index].div << 8) | // divisor
+                       FORMAT_16BITS | // set to 16-bit for now
+                       FORMAT_STEREO, card);  // stereo
 
         // set BDL for scatter/gather
 #if defined(__AROS__) && (__WORDSIZE==64)
         pci_outl((ULONG)((IPTR)input_stream->bdl & 0xFFFFFFFF), input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
-        pci_outl((ULONG)(((IPTR)input_stream->bdl >> 32) & 0xFFFFFFFF), input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
+        pci_outl((ULONG)(((IPTR)input_stream->bdl >> 32) & 0xFFFFFFFF),
+                 input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
 #else
         pci_outl((ULONG) input_stream->bdl, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_LOW, card);
         pci_outl(0, input_stream->sd_reg_offset + HD_SD_OFFSET_BDL_ADDR_HIGH, card);
@@ -357,23 +343,23 @@ ULONG _AHIsub_Start(ULONG flags,
         card->is_recording = TRUE;
     }
 
-    if (flags & AHISF_PLAY)
-    {
+    if(flags & AHISF_PLAY) {
         // enable irq's
         z = 0;
         timer = 0; // for demo/test
-        
+
         //bug("GOING TO PLAY\n");
         outl_setbits((1 << output_stream->index), HD_INTCTL, card);
-        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // Stream Run
+        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL,
+                     card); // Stream Run
     }
 
 
-    if (flags & AHISF_RECORD)
-    {
+    if(flags & AHISF_RECORD) {
         // enable irq's
         outl_setbits((1 << input_stream->index), HD_INTCTL, card);
-        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // Stream Run
+        outl_setbits(HD_SD_CONTROL_STREAM_RUN | HD_SD_STATUS_MASK, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL,
+                     card); // Stream Run
 
     }
 
@@ -386,19 +372,16 @@ ULONG _AHIsub_Start(ULONG flags,
 ******************************************************************************/
 
 void _AHIsub_Update(ULONG flags,
-                    struct AHIAudioCtrlDrv* AudioCtrl,
-                    struct DriverBase* AHIsubBase)
+                    struct AHIAudioCtrlDrv *AudioCtrl,
+                    struct DriverBase *AHIsubBase)
 {
-    struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
+    struct HDAudioChip *card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
 
     card->current_frames = AudioCtrl->ahiac_BuffSamples;
 
-    if (AudioCtrl->ahiac_Flags & AHIACF_STEREO)
-    {
+    if(AudioCtrl->ahiac_Flags & AHIACF_STEREO) {
         card->current_bytesize = card->current_frames * 4;
-    }
-    else
-    {
+    } else {
         card->current_bytesize = card->current_frames * 2;
     }
 }
@@ -409,15 +392,14 @@ void _AHIsub_Update(ULONG flags,
 ******************************************************************************/
 
 void _AHIsub_Stop(ULONG flags,
-                  struct AHIAudioCtrlDrv* AudioCtrl,
-                  struct DriverBase* AHIsubBase)
+                  struct AHIAudioCtrlDrv *AudioCtrl,
+                  struct DriverBase *AHIsubBase)
 {
-    struct HDAudioChip* card = (struct HDAudioChip*) AudioCtrl->ahiac_DriverData;
+    struct HDAudioChip *card = (struct HDAudioChip *) AudioCtrl->ahiac_DriverData;
 
     //bug("Stop\n");
 
-    if ((flags & AHISF_PLAY) && card->is_playing)
-    {
+    if((flags & AHISF_PLAY) && card->is_playing) {
         struct Stream *output_stream = &(card->streams[card->nr_of_input_streams]);
         outl_clearbits(HD_SD_CONTROL_STREAM_RUN, output_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
         card->is_playing = FALSE;
@@ -426,8 +408,7 @@ void _AHIsub_Stop(ULONG flags,
         card->current_frames = 0;
         card->current_buffer = 0;
 
-        if (card->mix_buffer)
-        {
+        if(card->mix_buffer) {
             FreeVec((APTR)(IPTR)card->mix_buffer);
         }
         card->mix_buffer = 0;
@@ -437,8 +418,7 @@ void _AHIsub_Stop(ULONG flags,
         D(bug("[HDAudio] IRQ's received was %d\n", z));
     }
 
-    if ((flags & AHISF_RECORD) && card->is_recording)
-    {
+    if((flags & AHISF_RECORD) && card->is_recording) {
         struct Stream *input_stream = &(card->streams[0]);
         outl_clearbits(HD_SD_CONTROL_STREAM_RUN, input_stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
 
@@ -460,123 +440,113 @@ void _AHIsub_Stop(ULONG flags,
 ******************************************************************************/
 
 IPTR _AHIsub_GetAttr(ULONG attribute,
-		             LONG argument,
-		             IPTR def,
-		             struct TagItem* taglist,
-		             struct AHIAudioCtrlDrv* AudioCtrl,
-		             struct DriverBase* AHIsubBase)
+                     LONG argument,
+                     IPTR def,
+                     struct TagItem *taglist,
+                     struct AHIAudioCtrlDrv *AudioCtrl,
+                     struct DriverBase *AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
-    struct HDAudioChip* card = card_base->driverdatas[0];
+    struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
+    struct HDAudioChip *card = card_base->driverdatas[0];
     ULONG i;
 
-    switch(attribute)
-    {
-        case AHIDB_Bits:
-          return 16;
+    switch(attribute) {
+    case AHIDB_Bits:
+        return 16;
 
-        case AHIDB_Frequencies:
-        {
-          return card->nr_of_frequencies;
-        }
+    case AHIDB_Frequencies: {
+        return card->nr_of_frequencies;
+    }
 
-        case AHIDB_Frequency: // Index->Frequency
-          return (LONG) card->frequencies[argument].frequency;
+    case AHIDB_Frequency: // Index->Frequency
+        return (LONG) card->frequencies[argument].frequency;
 
-        case AHIDB_Index: // Frequency->Index
-        {
-          if (argument <= (LONG) card->frequencies[0].frequency)
-          {
+    case AHIDB_Index: { // Frequency->Index
+        if(argument <= (LONG) card->frequencies[0].frequency) {
             return 0;
-          }
-
-          if (argument >= (LONG) card->frequencies[card->nr_of_frequencies - 1].frequency)
-          {
-            return card->nr_of_frequencies - 1;
-          }
-
-          for (i = 1; i < card->nr_of_frequencies; i++)
-          {
-            if ((LONG) card->frequencies[i].frequency > argument)
-            {
-              if ((argument - (LONG) card->frequencies[i - 1].frequency) < ((LONG) card->frequencies[i].frequency - argument))
-              {
-                return (IPTR)i-1;
-              }
-              else
-              {
-                return (IPTR)i;
-              }
-            }
-          }
-
-          return 0;  // Will not happen
         }
 
-        case AHIDB_Author:
-          return (IPTR) "Davy Wentzler";
+        if(argument >= (LONG) card->frequencies[card->nr_of_frequencies - 1].frequency) {
+            return card->nr_of_frequencies - 1;
+        }
 
-        case AHIDB_Copyright:
-          return (IPTR) "(C) 2010 Stephen Jones, (C) 2010-2017 The AROS Dev Team";
+        for(i = 1; i < card->nr_of_frequencies; i++) {
+            if((LONG) card->frequencies[i].frequency > argument) {
+                if((argument - (LONG) card->frequencies[i - 1].frequency) < ((LONG) card->frequencies[i].frequency - argument)) {
+                    return (IPTR)i - 1;
+                } else {
+                    return (IPTR)i;
+                }
+            }
+        }
 
-        case AHIDB_Version:
-          return (IPTR) LibIDString;
+        return 0;  // Will not happen
+    }
 
-        case AHIDB_Annotation:
-          return (IPTR) "HD Audio driver";
+    case AHIDB_Author:
+        return (IPTR) "Davy Wentzler";
 
-        case AHIDB_Record:
-          return TRUE;
+    case AHIDB_Copyright:
+        return (IPTR) "(C) 2010 Stephen Jones, (C) 2010-2017 The AROS Dev Team";
 
-        case AHIDB_FullDuplex:
-          return TRUE;
+    case AHIDB_Version:
+        return (IPTR) LibIDString;
 
-        case AHIDB_Realtime:
-          return TRUE;
+    case AHIDB_Annotation:
+        return (IPTR) "HD Audio driver";
 
-        case AHIDB_MaxRecordSamples:
-          return RECORD_BUFFER_SAMPLES;
+    case AHIDB_Record:
+        return TRUE;
 
-        /* formula's:
-        #include <math.h>
+    case AHIDB_FullDuplex:
+        return TRUE;
 
-        unsigned long res = (unsigned long) (0x10000 * pow (10.0, dB / 20.0));
-        double dB = 20.0 * log10(0xVALUE / 65536.0);
+    case AHIDB_Realtime:
+        return TRUE;
 
-        printf("dB = %f, res = %lx\n", dB, res);*/
+    case AHIDB_MaxRecordSamples:
+        return RECORD_BUFFER_SAMPLES;
 
-        case AHIDB_MinMonitorVolume:
-          return (unsigned long) (0x10000 * pow (10.0, -34.5 / 20.0)); // -34.5 dB
+    /* formula's:
+    #include <math.h>
 
-        case AHIDB_MaxMonitorVolume:
-          return (unsigned long) (0x10000 * pow (10.0, 12.0 / 20.0)); // 12 dB
+    unsigned long res = (unsigned long) (0x10000 * pow (10.0, dB / 20.0));
+    double dB = 20.0 * log10(0xVALUE / 65536.0);
 
-        case AHIDB_MinInputGain:
-          return (unsigned long) (0x10000 * pow (10.0, card->adc_min_gain / 20.0));
+    printf("dB = %f, res = %lx\n", dB, res);*/
 
-        case AHIDB_MaxInputGain:
-          return (unsigned long) (0x10000 * pow (10.0, card->adc_max_gain / 20.0));
+    case AHIDB_MinMonitorVolume:
+        return (unsigned long)(0x10000 * pow(10.0, -34.5 / 20.0));   // -34.5 dB
 
-        case AHIDB_MinOutputVolume:
-          return  (unsigned long) (0x10000 * pow (10.0, card->dac_min_gain / 20.0));
+    case AHIDB_MaxMonitorVolume:
+        return (unsigned long)(0x10000 * pow(10.0, 12.0 / 20.0));   // 12 dB
 
-        case AHIDB_MaxOutputVolume:
-          return  (unsigned long) (0x10000 * pow (10.0, card->dac_max_gain / 20.0));
+    case AHIDB_MinInputGain:
+        return (unsigned long)(0x10000 * pow(10.0, card->adc_min_gain / 20.0));
 
-        case AHIDB_Inputs:
-          return INPUTS;
+    case AHIDB_MaxInputGain:
+        return (unsigned long)(0x10000 * pow(10.0, card->adc_max_gain / 20.0));
 
-        case AHIDB_Input:
-          return (IPTR) Inputs[argument];
+    case AHIDB_MinOutputVolume:
+        return (unsigned long)(0x10000 * pow(10.0, card->dac_min_gain / 20.0));
 
-        case AHIDB_Outputs:
-          return OUTPUTS;
+    case AHIDB_MaxOutputVolume:
+        return (unsigned long)(0x10000 * pow(10.0, card->dac_max_gain / 20.0));
 
-        case AHIDB_Output:
-          return (IPTR) Outputs[argument];
+    case AHIDB_Inputs:
+        return INPUTS;
 
-        default:
-          return def;
+    case AHIDB_Input:
+        return (IPTR) Inputs[argument];
+
+    case AHIDB_Outputs:
+        return OUTPUTS;
+
+    case AHIDB_Output:
+        return (IPTR) Outputs[argument];
+
+    default:
+        return def;
     }
 }
 
@@ -587,86 +557,81 @@ IPTR _AHIsub_GetAttr(ULONG attribute,
 
 ULONG _AHIsub_HardwareControl(ULONG attribute,
                               LONG argument,
-                              struct AHIAudioCtrlDrv* AudioCtrl,
-                              struct DriverBase* AHIsubBase)
+                              struct AHIAudioCtrlDrv *AudioCtrl,
+                              struct DriverBase *AHIsubBase)
 {
-    struct HDAudioBase* card_base = (struct HDAudioBase*) AHIsubBase;
-    struct HDAudioChip* card = card_base->driverdatas[0];
+    struct HDAudioBase *card_base = (struct HDAudioBase *) AHIsubBase;
+    struct HDAudioChip *card = card_base->driverdatas[0];
 
-    switch(attribute)
-    {
-        case AHIC_MonitorVolume:
-        {
-            double dB = 20.0 * log10(argument / 65536.0);
+    switch(attribute) {
+    case AHIC_MonitorVolume: {
+        double dB = 20.0 * log10(argument / 65536.0);
 
-            card->monitor_volume = argument;
-            set_monitor_volumes(card, dB);
+        card->monitor_volume = argument;
+        set_monitor_volumes(card, dB);
 
-            return TRUE;
-        }
+        return TRUE;
+    }
 
-        case AHIC_MonitorVolume_Query:
-        {
-            return card->monitor_volume;
-        }
+    case AHIC_MonitorVolume_Query: {
+        return card->monitor_volume;
+    }
 
-        case AHIC_InputGain:
-        {
-            double dB = 20.0 * log10(argument / 65536.0);
-            card->input_gain = argument;
+    case AHIC_InputGain: {
+        double dB = 20.0 * log10(argument / 65536.0);
+        card->input_gain = argument;
 
-            set_adc_gain(card, dB);
-            return TRUE;
-        }
+        set_adc_gain(card, dB);
+        return TRUE;
+    }
 
-        case AHIC_InputGain_Query:
-            return card->input_gain;
+    case AHIC_InputGain_Query:
+        return card->input_gain;
 
-        case AHIC_OutputVolume:
-        {
-            double dB = 20.0 * log10(argument / 65536.0);
-            card->output_volume = argument;
+    case AHIC_OutputVolume: {
+        double dB = 20.0 * log10(argument / 65536.0);
+        card->output_volume = argument;
 
-            set_dac_gain(card, dB);
+        set_dac_gain(card, dB);
 
-            return TRUE;
-        }
+        return TRUE;
+    }
 
-        case AHIC_OutputVolume_Query:
-            return card->output_volume;
+    case AHIC_OutputVolume_Query:
+        return card->output_volume;
 
-        case AHIC_Input:
-            card->input = argument;
-            set_adc_input(card);
+    case AHIC_Input:
+        card->input = argument;
+        set_adc_input(card);
 
-          return TRUE;
+        return TRUE;
 
-        case AHIC_Input_Query:
-            return card->input;
+    case AHIC_Input_Query:
+        return card->input;
 
-        case AHIC_Output:
-            card->output = argument;
+    case AHIC_Output:
+        card->output = argument;
 
-            return TRUE;
+        return TRUE;
 
-        case AHIC_Output_Query:
-            return card->output;
+    case AHIC_Output_Query:
+        return card->output;
 
-        default:
-            return FALSE;
+    default:
+        return FALSE;
     }
 }
 
 
-static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size, struct Stream *stream)
+static BOOL build_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_buffers, ULONG buffer_size,
+        struct Stream *stream)
 {
     unsigned int entry;
 
     stream->bdl = pci_alloc_consistent(nr_of_buffers * sizeof(struct BDLE), &(stream->bdl_nonaligned), 128);
     stream->bdl_nonaligned_addresses = (APTR) AllocVec(nr_of_buffers * 8, MEMF_PUBLIC | MEMF_CLEAR);
 
-    for (entry = 0; entry < nr_of_buffers; entry++)
-    {
+    for(entry = 0; entry < nr_of_buffers; entry++) {
         APTR non_aligned_address = 0;
         APTR buffer;
 
@@ -696,8 +661,7 @@ static void free_buffer_descriptor_list(struct HDAudioChip *card, ULONG nr_of_bu
 {
     unsigned int entry;
 
-    for (entry = 0; entry < nr_of_buffers; entry++)
-    {
+    for(entry = 0; entry < nr_of_buffers; entry++) {
         pci_free_consistent(stream->bdl_nonaligned_addresses[entry]);
         stream->bdl[entry].lower_address = 0;
         stream->bdl_nonaligned_addresses[entry] = NULL;
@@ -722,45 +686,38 @@ static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
     outb_setbits(0x1C, stream->sd_reg_offset + HD_SD_OFFSET_STATUS, card);
     outb_setbits(0x1, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stream reset
 
-    for (i = 0; i < 1000; i++)
-    {
-        if ((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x1)
-        {
+    for(i = 0; i < 1000; i++) {
+        if((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x1) {
             break;
         }
 
         udelay(100);
     }
 
-    if (i == 1000)
-    {
+    if(i == 1000) {
         D(bug("[HDAudio] Stream reset not ok\n"));
         return FALSE;
     }
 
     outb_clearbits(0x1, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stream reset
     udelay(10);
-    for (i = 0; i < 1000; i++)
-    {
-        if ((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x0)
-        {
+    for(i = 0; i < 1000; i++) {
+        if((pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card) & 0x1) == 0x0) {
             break;
         }
 
         udelay(100);
     }
 
-    if (i == 1000)
-    {
-       D(bug("[HDAudio] Stream reset 2 not ok\n"));
-       return FALSE;
+    if(i == 1000) {
+        D(bug("[HDAudio] Stream reset 2 not ok\n"));
+        return FALSE;
     }
 
     outb_clearbits(HD_SD_CONTROL_STREAM_RUN, stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card); // stop stream run
 
     control = pci_inb(stream->sd_reg_offset + HD_SD_OFFSET_CONTROL, card);
-    if ((control & 0x1) == 1)
-    {
+    if((control & 0x1) == 1) {
         return FALSE;
     }
 
@@ -770,6 +727,7 @@ static BOOL stream_reset(struct Stream *stream, struct HDAudioChip *card)
 
 void set_converter_format(struct HDAudioChip *card, UBYTE nid)
 {
-    send_command_4(card->codecnr, nid, VERB_SET_CONVERTER_FORMAT, (1 << 14) | (0x3 << 4) | 1, card); // 44.1kHz 24-bits stereo
+    send_command_4(card->codecnr, nid, VERB_SET_CONVERTER_FORMAT, (1 << 14) | (0x3 << 4) | 1,
+                   card); // 44.1kHz 24-bits stereo
 }
 

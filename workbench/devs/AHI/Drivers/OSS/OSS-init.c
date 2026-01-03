@@ -16,49 +16,46 @@ struct Library *OSSBase = NULL;
 ******************************************************************************/
 
 BOOL
-DriverInit( struct DriverBase* AHIsubBase )
+DriverInit(struct DriverBase *AHIsubBase)
 {
-  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
+    struct OSSBase *OSSBase = (struct OSSBase *) AHIsubBase;
 
-  DOSBase = OpenLibrary( DOSNAME, 37 );
+    DOSBase = OpenLibrary(DOSNAME, 37);
 
-  if( DOSBase == NULL )
-  {
+    if(DOSBase == NULL) {
 #ifndef AHI_AROSQUIET
-    Req( "Unable to open 'dos.library' version 37.\n" );
+        Req("Unable to open 'dos.library' version 37.\n");
 #else
-    D(bug("Unable to open 'dos.library' version 37.\n" ));
+        D(bug("Unable to open 'dos.library' version 37.\n"));
 #endif
-    return FALSE;
-  }
+        return FALSE;
+    }
 
-  OSSBase = OpenLibrary( "oss.library", 0 );
+    OSSBase = OpenLibrary("oss.library", 0);
 
-  if( OSSBase == NULL )
-  {
+    if(OSSBase == NULL) {
 #ifndef AHI_AROSQUIET
-    Req( "Unable to open 'oss.library'.\n" );
+        Req("Unable to open 'oss.library'.\n");
 #endif
-    return FALSE;
-  }
-  
-  // Fail if no hardware is present (this check prevents the audio
-  // modes from being added to the database if the driver cannot be
-  // used).
+        return FALSE;
+    }
 
-  if( ! OSS_Open( "/dev/dsp", FALSE, TRUE, FALSE ) )
-  {
+    // Fail if no hardware is present (this check prevents the audio
+    // modes from being added to the database if the driver cannot be
+    // used).
+
+    if(! OSS_Open("/dev/dsp", FALSE, TRUE, FALSE)) {
 #ifndef AHI_AROSQUIET
-    Req( "No sound card present.\n" );
+        Req("No sound card present.\n");
 #else
-    D(bug( "No sound card present.\n" ));
+        D(bug("No sound card present.\n"));
 #endif
-    return FALSE;
-  }
+        return FALSE;
+    }
 
-  OSS_Close();
+    OSS_Close();
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -67,10 +64,10 @@ DriverInit( struct DriverBase* AHIsubBase )
 ******************************************************************************/
 
 VOID
-DriverCleanup( struct DriverBase* AHIsubBase )
+DriverCleanup(struct DriverBase *AHIsubBase)
 {
-  struct OSSBase* OSSBase = (struct OSSBase*) AHIsubBase;
+    struct OSSBase *OSSBase = (struct OSSBase *) AHIsubBase;
 
-  CloseLibrary( (struct Library*) DOSBase );
-  CloseLibrary( OSSBase );
+    CloseLibrary((struct Library *) DOSBase);
+    CloseLibrary(OSSBase);
 }

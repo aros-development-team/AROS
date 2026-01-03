@@ -52,30 +52,29 @@
 
 /******************************************************************************/
 
-	// Our custom library structure
+// Our custom library structure
 
-struct ClassBase
-{
-	struct Library		 LibNode;		// Exec link
-	UWORD			 Pad;			// Longword alignment
-	Class			*SoundClass;		// The class this library implemnts
+struct ClassBase {
+    struct Library		 LibNode;		// Exec link
+    UWORD			 Pad;			// Longword alignment
+    Class			*SoundClass;		// The class this library implemnts
 
-	struct ExecBase		*SysBase;		// Exec library
-	struct DosLibrary	*DOSBase;		// Dos library
-	struct Library		*IntuitionBase,		// Intuition library
-				*UtilityBase,		// Utility library
-				*DataTypesBase,		// DataTypes library
-				*SuperClassBase;	// Sound datatype
-	struct MsgPort		*AHImp;
-	struct AHIRequest	*AHIio;
-	BYTE			 AHIDevice, Pad2;
-	struct AHIBase		*AHIBase;
+    struct ExecBase		*SysBase;		// Exec library
+    struct DosLibrary	*DOSBase;		// Dos library
+    struct Library		*IntuitionBase,		// Intuition library
+                   *UtilityBase,		// Utility library
+                   *DataTypesBase,		// DataTypes library
+                   *SuperClassBase;	// Sound datatype
+    struct MsgPort		*AHImp;
+    struct AHIRequest	*AHIio;
+    BYTE			 AHIDevice, Pad2;
+    struct AHIBase		*AHIBase;
 
-	struct SignalSemaphore	 LockSemaphore;		// Shared access semaphore
-	BPTR			 Segment;		// Library segment pointer
+    struct SignalSemaphore	 LockSemaphore;		// Shared access semaphore
+    BPTR			 Segment;		// Library segment pointer
 };
 
-	// Redirect references to global data into the library base
+// Redirect references to global data into the library base
 
 #define SysBase		ClassBase->SysBase
 #define DOSBase		ClassBase->DOSBase
@@ -99,20 +98,19 @@ struct ClassBase
 #define COMMAND_QUIT		(5)
 
 
-struct ObjectData
-{
-	struct Message		 Message;
-	UWORD			 Command;
-	struct Process		*Slave;			// Makes the mt_#? calls
-	BYTE			 ModInitialized;
-	struct Hook		 PlayerHook;
-	struct PTData		 ptdata;
+struct ObjectData {
+    struct Message		 Message;
+    UWORD			 Command;
+    struct Process		*Slave;			// Makes the mt_#? calls
+    BYTE			 ModInitialized;
+    struct Hook		 PlayerHook;
+    struct PTData		 ptdata;
 };
 
 
 /******************************************************************************/
 
-	// Preprocessor tricks
+// Preprocessor tricks
 
 #define LIBENT			__asm
 #define REG(x)			register __ ## x

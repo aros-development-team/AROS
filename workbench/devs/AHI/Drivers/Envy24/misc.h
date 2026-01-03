@@ -28,27 +28,27 @@ void codec_write(struct CardData *card, unsigned short reg, unsigned short val);
 unsigned short codec_read(struct CardData *card, unsigned short reg);
 
 
-struct CardData*
-AllocDriverData( struct PCIDevice*    dev,
-		 struct DriverBase* AHIsubBase );
+struct CardData *
+AllocDriverData(struct PCIDevice    *dev,
+                struct DriverBase *AHIsubBase);
 
 void
-FreeDriverData( struct CardData* card,
-		struct DriverBase*  AHIsubBase );
+FreeDriverData(struct CardData *card,
+               struct DriverBase  *AHIsubBase);
 
 Fixed
-Linear2MixerGain( Fixed  linear,
-		  UWORD* bits );
+Linear2MixerGain(Fixed  linear,
+                 UWORD *bits);
 
 Fixed
-Linear2RecordGain( Fixed  linear,
-		   UWORD* bits );
+Linear2RecordGain(Fixed  linear,
+                  UWORD *bits);
 
 ULONG
-SamplerateToLinearPitch( ULONG samplingrate );
+SamplerateToLinearPitch(ULONG samplingrate);
 
 void *pci_alloc_consistent(size_t size, APTR *NonAlignedAddress,
-  struct DriverBase* AHIsubBase);
-void pci_free_consistent(void* addr, struct DriverBase* AHIsubBase);
+                           struct DriverBase *AHIsubBase);
+void pci_free_consistent(void *addr, struct DriverBase *AHIsubBase);
 
 #endif /* AHI_Drivers_misc_h */

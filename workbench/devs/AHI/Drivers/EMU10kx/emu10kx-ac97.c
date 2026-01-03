@@ -27,51 +27,51 @@
 #include "hwaccess.h"
 
 static ULONG dsp_register[] = {
-  /* Input volume GPR */
-  VOL_AHI_FRONT_L,
-  VOL_AHI_FRONT_R,
-  VOL_AHI_REAR_L,
-  VOL_AHI_REAR_R,
-  VOL_AHI_SURROUND_L,
-  VOL_AHI_SURROUND_R,
-  VOL_AHI_CENTER,
-  VOL_AHI_LFE,
+    /* Input volume GPR */
+    VOL_AHI_FRONT_L,
+    VOL_AHI_FRONT_R,
+    VOL_AHI_REAR_L,
+    VOL_AHI_REAR_R,
+    VOL_AHI_SURROUND_L,
+    VOL_AHI_SURROUND_R,
+    VOL_AHI_CENTER,
+    VOL_AHI_LFE,
 
-  VOL_SPDIF_CD_L,
-  VOL_SPDIF_CD_R,
-  VOL_SPDIF_IN_L,
-  VOL_SPDIF_IN_R,
+    VOL_SPDIF_CD_L,
+    VOL_SPDIF_CD_R,
+    VOL_SPDIF_IN_L,
+    VOL_SPDIF_IN_R,
 
-  /* Output volume GPR */
-  VOL_SPDIF_FRONT_L,
-  VOL_SPDIF_FRONT_R,
-  VOL_SPDIF_REAR_L,
-  VOL_SPDIF_REAR_R,
-  VOL_SPDIF_SURROUND_L,
-  VOL_SPDIF_SURROUND_R,
-  VOL_SPDIF_CENTER,
-  VOL_SPDIF_LFE,
+    /* Output volume GPR */
+    VOL_SPDIF_FRONT_L,
+    VOL_SPDIF_FRONT_R,
+    VOL_SPDIF_REAR_L,
+    VOL_SPDIF_REAR_R,
+    VOL_SPDIF_SURROUND_L,
+    VOL_SPDIF_SURROUND_R,
+    VOL_SPDIF_CENTER,
+    VOL_SPDIF_LFE,
 
-  VOL_ANALOG_FRONT_L,
-  VOL_ANALOG_FRONT_R,
-  VOL_ANALOG_REAR_L,
-  VOL_ANALOG_REAR_R,
-  VOL_ANALOG_SURROUND_L,
-  VOL_ANALOG_SURROUND_R,
-  VOL_ANALOG_CENTER,
-  VOL_ANALOG_LFE,
+    VOL_ANALOG_FRONT_L,
+    VOL_ANALOG_FRONT_R,
+    VOL_ANALOG_REAR_L,
+    VOL_ANALOG_REAR_R,
+    VOL_ANALOG_SURROUND_L,
+    VOL_ANALOG_SURROUND_R,
+    VOL_ANALOG_CENTER,
+    VOL_ANALOG_LFE,
 
-  /* AHI_FRONT-to-rear GPR */
-  VOL_FRONT_REAR_L,
-  VOL_FRONT_REAR_R,
+    /* AHI_FRONT-to-rear GPR */
+    VOL_FRONT_REAR_L,
+    VOL_FRONT_REAR_R,
 
-  /* AHI_SURROUND-to-rear GPR */
-  VOL_SURROUND_REAR_L,
-  VOL_SURROUND_REAR_R,
+    /* AHI_SURROUND-to-rear GPR */
+    VOL_SURROUND_REAR_L,
+    VOL_SURROUND_REAR_R,
 
-  /* AHI_FRONT-to-center and AHI_FRONT-to-LFE GPRs */
-  VOL_FRONT_CENTER,
-  VOL_FRONT_LFE
+    /* AHI_FRONT-to-center and AHI_FRONT-to-LFE GPRs */
+    VOL_FRONT_CENTER,
+    VOL_FRONT_LFE
 };
 
 /******************************************************************************
@@ -79,34 +79,32 @@ static ULONG dsp_register[] = {
 ******************************************************************************/
 
 ULONG
-AC97GetFunc( struct Hook*           hook,
-	     struct EMU10kxBase*    EMU10kxBase,
-	     struct AC97GetMessage* msg )
+AC97GetFunc(struct Hook           *hook,
+            struct EMU10kxBase    *EMU10kxBase,
+            struct AC97GetMessage *msg)
 {
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) EMU10kxBase;
-  struct EMU10kxData* dd;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) EMU10kxBase;
+    struct EMU10kxData *dd;
 
-  if( msg->CardNum >= (ULONG) EMU10kxBase->cards_found ||
-      EMU10kxBase->driverdatas[ msg->CardNum ] == NULL )
-  {
-    Req( "No valid EMU10kxData for AC97 card %ld.", msg->CardNum );
-    return ~0UL;
-  }
+    if(msg->CardNum >= (ULONG) EMU10kxBase->cards_found ||
+            EMU10kxBase->driverdatas[ msg->CardNum ] == NULL) {
+        Req("No valid EMU10kxData for AC97 card %ld.", msg->CardNum);
+        return ~0UL;
+    }
 
-  dd = EMU10kxBase->driverdatas[ msg->CardNum ];
+    dd = EMU10kxBase->driverdatas[ msg->CardNum ];
 
-  if (msg->Register >= emu10kx_dsp_first &&
-      msg->Register < emu10kx_dsp_last) {
+    if(msg->Register >= emu10kx_dsp_first &&
+            msg->Register < emu10kx_dsp_last) {
 #if 0
-    ULONG reg = dsp_register[msg->Register - emu10kx_dsp_first];
+        ULONG reg = dsp_register[msg->Register - emu10kx_dsp_first];
 #endif
 
-    // Reading is not supported yet ...
-    return ~0UL;
-  }
-  else {
-    return emu10k1_readac97( &dd->card, msg->Register );
-  }
+        // Reading is not supported yet ...
+        return ~0UL;
+    } else {
+        return emu10k1_readac97(&dd->card, msg->Register);
+    }
 }
 
 
@@ -115,29 +113,27 @@ AC97GetFunc( struct Hook*           hook,
 ******************************************************************************/
 
 VOID
-AC97SetFunc( struct Hook*           hook,
-	     struct EMU10kxBase*    EMU10kxBase,
-	     struct AC97SetMessage* msg )
+AC97SetFunc(struct Hook           *hook,
+            struct EMU10kxBase    *EMU10kxBase,
+            struct AC97SetMessage *msg)
 {
-  struct DriverBase*  AHIsubBase = (struct DriverBase*) EMU10kxBase;
-  struct EMU10kxData* dd;
+    struct DriverBase  *AHIsubBase = (struct DriverBase *) EMU10kxBase;
+    struct EMU10kxData *dd;
 
-  if( msg->CardNum >= (ULONG) EMU10kxBase->cards_found ||
-      EMU10kxBase->driverdatas[ msg->CardNum ] == NULL )
-  {
-    Req( "No valid EMU10kxData for AC97 card %ld.", msg->CardNum );
-    return;
-  }
+    if(msg->CardNum >= (ULONG) EMU10kxBase->cards_found ||
+            EMU10kxBase->driverdatas[ msg->CardNum ] == NULL) {
+        Req("No valid EMU10kxData for AC97 card %ld.", msg->CardNum);
+        return;
+    }
 
-  dd = EMU10kxBase->driverdatas[ msg->CardNum ];
+    dd = EMU10kxBase->driverdatas[ msg->CardNum ];
 
-  if (msg->Register >= emu10kx_dsp_first &&
-      msg->Register < emu10kx_dsp_last) {
-    ULONG reg = dsp_register[msg->Register - emu10kx_dsp_first];
-    
-    emu10k1_set_volume_gpr( &dd->card, reg, 100, VOL_5BIT);
-  }
-  else {
-    emu10k1_writeac97( &dd->card, msg->Register, msg->Value );
-  }
+    if(msg->Register >= emu10kx_dsp_first &&
+            msg->Register < emu10kx_dsp_last) {
+        ULONG reg = dsp_register[msg->Register - emu10kx_dsp_first];
+
+        emu10k1_set_volume_gpr(&dd->card, reg, 100, VOL_5BIT);
+    } else {
+        emu10k1_writeac97(&dd->card, msg->Register, msg->Value);
+    }
 }

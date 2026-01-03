@@ -16,37 +16,34 @@ struct StdCBase *StdCBase = NULL;
 ******************************************************************************/
 
 BOOL
-DriverInit( struct DriverBase* AHIsubBase )
+DriverInit(struct DriverBase *AHIsubBase)
 {
-  struct DeviceBase* DeviceBase = (struct DeviceBase*) AHIsubBase;
+    struct DeviceBase *DeviceBase = (struct DeviceBase *) AHIsubBase;
 
-  DOSBase = (struct DosLibrary*) OpenLibrary( "dos.library", 37 );
+    DOSBase = (struct DosLibrary *) OpenLibrary("dos.library", 37);
 
-  if( DOSBase == NULL )
-  {
-    Req( "Unable to open 'dos.library' version 37.\n" );
-    return FALSE;
-  }
+    if(DOSBase == NULL) {
+        Req("Unable to open 'dos.library' version 37.\n");
+        return FALSE;
+    }
 
 #ifdef __AMIGAOS4__
-  if ((IDOS = (struct DOSIFace *) GetInterface((struct Library *) DOSBase, "main", 1, NULL)) == NULL)
-  {
-    Req("Couldn't open IDOS interface!\n");
-    return FALSE;
-  }
+    if((IDOS = (struct DOSIFace *) GetInterface((struct Library *) DOSBase, "main", 1, NULL)) == NULL) {
+        Req("Couldn't open IDOS interface!\n");
+        return FALSE;
+    }
 #endif
 
 #ifdef __AROS__
-  StdCBase = (struct StdCBase *) OpenLibrary( "stdc.library", 0 ); 
+    StdCBase = (struct StdCBase *) OpenLibrary("stdc.library", 0);
 
-  if( StdCBase == NULL )
-  {
-    Req( "Unable to open 'stdc.library'.\n" );
-    return FALSE;
-  }
+    if(StdCBase == NULL) {
+        Req("Unable to open 'stdc.library'.\n");
+        return FALSE;
+    }
 #endif
 
-  return TRUE;
+    return TRUE;
 }
 
 
@@ -55,17 +52,17 @@ DriverInit( struct DriverBase* AHIsubBase )
 ******************************************************************************/
 
 VOID
-DriverCleanup( struct DriverBase* AHIsubBase )
+DriverCleanup(struct DriverBase *AHIsubBase)
 {
-  struct DeviceBase* DeviceBase = (struct DeviceBase*) AHIsubBase;
+    struct DeviceBase *DeviceBase = (struct DeviceBase *) AHIsubBase;
 
 #ifdef __AROS__
-  CloseLibrary( (struct Library*) StdCBase );
+    CloseLibrary((struct Library *) StdCBase);
 #endif
 
 #ifdef __AMIGAOS4__
-  DropInterface( (struct Interface *) IDOS);
+    DropInterface((struct Interface *) IDOS);
 #endif
 
-  CloseLibrary( (struct Library*) DOSBase );
+    CloseLibrary((struct Library *) DOSBase);
 }

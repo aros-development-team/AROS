@@ -119,7 +119,7 @@
 
 #define WRITECONFIGWORD(reg, val) outw_config((reg), (val), dev)
 
-BOOL ahi_pci_init(struct DriverBase* AHIsubBase);
+BOOL ahi_pci_init(struct DriverBase *AHIsubBase);
 void ahi_pci_exit(void);
 
 APTR ahi_pci_find_device(ULONG vendorid, ULONG deviceid, APTR dev);
