@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017-2023 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or
@@ -117,6 +117,9 @@ enum actionIDs {
     SHOWID_INPUT, SHOWID_OUTPUT,
 
     ACTID_PLAY,
+#if defined(__AROS__)
+    ACTID_USEFORSDT,
+#endif
 
     ACTID_DEBUG, ACTID_SURROUND, ACTID_ECHO, ACTID_CLIPMV,
     ACTID_CPULIMIT, SHOWID_CPULIMIT,
@@ -270,6 +273,9 @@ static Object *MUIWindow, *MUIList, *MUIInfos, *MUIUnit;
 static Object *MUIFreq, *MUIChannels, *MUIOutvol, *MUIMonvol, *MUIGain, *MUIInput, *MUIOutput;
 static Object *MUILFreq, *MUILChannels, *MUILOutvol, *MUILMonvol, *MUILGain, *MUILInput, *MUILOutput, *MUIPlay;
 static Object *MUIDebug, *MUIEcho, *MUISurround, *MUIClipvol, *MUICpu, *MUIACTime, *MUIScalemode;
+#if defined(__AROS__)
+static Object *MUIUseforSDT;
+#endif
 
 SIPTR xget(Object *obj, ULONG attribute)
 {
@@ -415,6 +421,22 @@ static void GUINewMode(void)
     }
     set(MUILOutput, MUIA_Text_Contents, (IPTR) getOutput());
 
+#if defined(__AROS__)
+    if(MUIUseforSDT != NULL) {
+        const struct SoundDT41Prefs *prefs = GetSoundDT41Prefs();
+        struct UnitNode *unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);
+        BOOL match = FALSE;
+
+        if(unit != NULL && prefs->has_ahimodeid &&
+           prefs->ahimodeid == unit->prefs.ahiup_AudioMode) {
+            match = TRUE;
+        }
+
+        set(MUIUseforSDT, MUIA_NoNotify, TRUE);
+        set(MUIUseforSDT, MUIA_Selected, match);
+        set(MUIUseforSDT, MUIA_NoNotify, FALSE);
+    }
+#endif
 
     set(MUIPlay, MUIA_Disabled, getAudioMode() == AHI_INVALID_ID);
 }
@@ -541,7 +563,7 @@ BOOL BuildGUI(char *screenname)
     Object *MUITFreq, *MUITChannels, *MUITOutvol, *MUITMonvol, *MUITGain, *MUITInput, *MUITOutput, *MUITDebug, *MUITEcho,
            *MUITSurround, *MUITClipvol, *MUITCpu, *MUITACTime, *MUITScalemode;
 #if defined(__AROS__)
-    Object *MUIUseforSDT, *MUILUseforSDT;
+    Object *MUILUseforSDT;
 #endif
 
     D(bug("[AHI:Prefs] %s()\n", __func__);)
@@ -623,7 +645,7 @@ BOOL BuildGUI(char *screenname)
 #if defined(__AROS__)
             Child, ColGroup(2),
                 Child, MUIUseforSDT = MakeCheck(NULL),
-                Child, MUILUseforSDT = SpecialLabel(msgSystemSound),
+                Child, MUILUseforSDT = SpecialLabel((STRPTR)msgSystemSound),
             End,
 #endif
             Child, MUIPlay = SimpleButton(msgButtonPlay),
@@ -785,6 +807,10 @@ BOOL BuildGUI(char *screenname)
                  MUIV_TriggerValue);
         DoMethod(MUIOutput, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, MUIV_Notify_Self, 3, MUIM_CallHook, &hookSlider,
                  MUIV_TriggerValue);
+#if defined(__AROS__)
+        DoMethod(MUIUseforSDT, MUIM_Notify, MUIA_Selected, MUIV_EveryTime, MUIApp, 2, MUIM_Application_ReturnID,
+                 ACTID_USEFORSDT);
+#endif
         set(MUIWindow, MUIA_Window_Open, TRUE);
         GUINewUnit();
         return TRUE;
@@ -976,6 +1002,21 @@ void EventLoop(void)
             GUINewMode();
             break;
 
+#if defined(__AROS__)
+        case ACTID_USEFORSDT: {
+            IPTR selected = FALSE;
+            struct UnitNode *unit;
+
+            get(MUIUseforSDT, MUIA_Selected, &selected);
+            unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);
+            if(unit != NULL) {
+                SetSoundDT41UseMode(selected, unit->prefs.ahiup_AudioMode);
+            } else {
+                SetSoundDT41UseMode(FALSE, AHI_INVALID_ID);
+            }
+            break;
+        }
+#endif
         case ACTID_PLAY: {
             int              unit_id;
             struct UnitNode *unit;
@@ -1026,4 +1067,3 @@ void EventLoop(void)
         }
     }
 }
-

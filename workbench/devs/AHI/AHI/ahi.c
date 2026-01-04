@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017-2025 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or
@@ -220,6 +220,10 @@ void NewSettings(char *name)
     globalprefs.ahigp_ClipMasterVolume = FALSE;
     globalprefs.ahigp_AntiClickTime    = 0;
     globalprefs.ahigp_ScaleMode        = AHI_SCALE_FIXED_0_DB;
+
+#if defined(__AROS__)
+    LoadSoundDT41Prefs();
+#endif
 
     UnitList = GetUnits(name);
     Units = List2Array((struct List *) UnitList);

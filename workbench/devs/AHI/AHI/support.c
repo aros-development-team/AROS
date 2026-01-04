@@ -1,6 +1,6 @@
 /*
      AHI - The AHI preferences program
-     Copyright (C) 2017-2025 The AROS Dev Team
+     Copyright (C) 2017-2026 The AROS Dev Team
      Copyright (C) 1996-2005 Martin Blom <martin@blom.org>
 
      This program is free software; you can redistribute it and/or
@@ -50,7 +50,11 @@
 static BOOL AddUnit(struct List *, int);
 static void FillUnitName(struct UnitNode *);
 
+#define SOUND_DT41_VAR "datatypes/sounddt41.prefs"
+
 struct AHIGlobalPrefs     globalprefs;
+static struct SoundDT41Prefs sounddtprefs;
+static STRPTR sounddtprefs_raw;
 
 #ifdef __AMIGAOS4__
 struct Library           *GadToolsBase = NULL;
@@ -136,6 +140,357 @@ static struct DiskObject projIcon = {
     4096                            /* Stack Size */
 };
 
+static BOOL IsSoundDTSeparator(char c)
+{
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ',';
+}
+
+static BOOL ParseSoundDTHex(const char *value, size_t len, ULONG *out_value)
+{
+    char buffer[32];
+    char *end = NULL;
+
+    if(len == 0 || len >= sizeof(buffer)) {
+        return FALSE;
+    }
+
+    CopyMem(value, buffer, len);
+    buffer[len] = '\0';
+
+    *out_value = strtoul(buffer, &end, 0);
+    return end != buffer;
+}
+
+static STRPTR LoadSoundDT41Var(LONG *out_len)
+{
+    TEXT dummy[4];
+    LONG size;
+    LONG ret;
+    STRPTR buffer;
+
+    ret = GetVar(SOUND_DT41_VAR, dummy, sizeof(dummy), GVF_GLOBAL_ONLY);
+    if(ret == -1) {
+        return NULL;
+    }
+
+    size = IoErr();
+    if(size <= 0) {
+        size = ret;
+    }
+
+    if(size <= 0) {
+        return NULL;
+    }
+
+    buffer = AllocVec(size + 2, MEMF_ANY);
+    if(buffer == NULL) {
+        return NULL;
+    }
+
+    buffer[size] = '\0';
+    buffer[size + 1] = '\0';
+
+    if(GetVar(SOUND_DT41_VAR, buffer, size + 1, GVF_GLOBAL_ONLY) == -1) {
+        FreeVec(buffer);
+        return NULL;
+    }
+
+    if(out_len != NULL) {
+        *out_len = size;
+    }
+
+    return buffer;
+}
+
+static STRPTR RewriteSoundDT41Prefs(const char *prefs, ULONG mode_id, BOOL use_mode)
+{
+    size_t prefs_len = strlen(prefs);
+    size_t buffer_len = prefs_len + 64;
+    STRPTR out = AllocVec(buffer_len, MEMF_ANY);
+    const char *cursor = prefs;
+    char *dst;
+    BOOL saw_ahimodeid = FALSE;
+    BOOL saw_force = FALSE;
+    BOOL skip_mode_value = FALSE;
+
+    if(out == NULL) {
+        return NULL;
+    }
+
+    dst = out;
+
+    while(*cursor != '\0') {
+        const char *token_start;
+        size_t token_len;
+
+        if(IsSoundDTSeparator(*cursor)) {
+            *dst++ = *cursor++;
+            continue;
+        }
+
+        token_start = cursor;
+        while(*cursor != '\0' && !IsSoundDTSeparator(*cursor)) {
+            cursor++;
+        }
+        token_len = (size_t)(cursor - token_start);
+
+        if(skip_mode_value) {
+            skip_mode_value = FALSE;
+            if(!use_mode) {
+                continue;
+            }
+        }
+
+        if(token_len == 9 && Strnicmp(token_start, "AHIMODEID", 9) == 0) {
+            if(use_mode) {
+                char replacement[32];
+                int written = snprintf(replacement, sizeof(replacement), "AHIMODEID=0x%08lx", mode_id);
+
+                CopyMem(replacement, dst, written);
+                dst += written;
+                saw_ahimodeid = TRUE;
+            }
+            skip_mode_value = TRUE;
+            continue;
+        }
+
+        if(token_len >= 9 && Strnicmp(token_start, "AHIMODEID", 9) == 0 &&
+           (token_len == 9 || token_start[9] == '=')) {
+            if(use_mode) {
+                char replacement[32];
+                int written = snprintf(replacement, sizeof(replacement), "AHIMODEID=0x%08lx", mode_id);
+
+                CopyMem(replacement, dst, written);
+                dst += written;
+                saw_ahimodeid = TRUE;
+            }
+            continue;
+        }
+
+        if(token_len == 12 && Strnicmp(token_start, "FORCEAHIMODE", 12) == 0) {
+            saw_force = TRUE;
+            if(!use_mode) {
+                continue;
+            }
+        } else if(token_len == 3 && Strnicmp(token_start, "FAM", 3) == 0) {
+            saw_force = TRUE;
+            if(!use_mode) {
+                continue;
+            }
+        }
+
+        CopyMem(token_start, dst, token_len);
+        dst += token_len;
+    }
+
+    if(use_mode && !saw_ahimodeid) {
+        dst += sprintf(dst, "%sAHIMODEID=0x%08lx", (dst > out && !IsSoundDTSeparator(dst[-1])) ? " " : "", mode_id);
+    }
+
+    if(use_mode && !saw_force) {
+        dst += sprintf(dst, "%sFORCEAHIMODE", (dst > out && !IsSoundDTSeparator(dst[-1])) ? " " : "");
+    }
+
+    *dst = '\0';
+    return out;
+}
+
+static BOOL ReadSoundDT41Prefs(struct SoundDT41Prefs *prefs, STRPTR buffer)
+{
+    BOOL expect_mode = FALSE;
+
+    if(prefs == NULL) {
+        return FALSE;
+    }
+
+    memset(prefs, 0, sizeof(*prefs));
+
+    if(buffer == NULL) {
+        return FALSE;
+    }
+
+    prefs->has_prefs = TRUE;
+
+    {
+        const char *cursor = buffer;
+        while(*cursor != '\0') {
+            const char *token_start;
+            size_t token_len;
+
+            while(*cursor != '\0' && IsSoundDTSeparator(*cursor)) {
+                cursor++;
+            }
+
+            if(*cursor == '\0') {
+                break;
+            }
+
+            token_start = cursor;
+            while(*cursor != '\0' && !IsSoundDTSeparator(*cursor)) {
+                cursor++;
+            }
+            token_len = (size_t)(cursor - token_start);
+
+            if(expect_mode) {
+                if(ParseSoundDTHex(token_start, token_len, &prefs->ahimodeid)) {
+                    prefs->has_ahimodeid = TRUE;
+                }
+                expect_mode = FALSE;
+                continue;
+            }
+
+            if(token_len == 3 && Strnicmp(token_start, "AHI", 3) == 0) {
+                prefs->ahi_present = TRUE;
+                continue;
+            }
+
+            if(token_len == 12 && Strnicmp(token_start, "FORCEAHIMODE", 12) == 0) {
+                prefs->force_ahimode = TRUE;
+                continue;
+            }
+
+            if(token_len == 3 && Strnicmp(token_start, "FAM", 3) == 0) {
+                prefs->force_ahimode = TRUE;
+                continue;
+            }
+
+            if(token_len == 9 && Strnicmp(token_start, "AHIMODEID", 9) == 0) {
+                expect_mode = TRUE;
+                continue;
+            }
+
+            if(token_len > 9 && Strnicmp(token_start, "AHIMODEID", 9) == 0 && token_start[9] == '=') {
+                if(ParseSoundDTHex(token_start + 10, token_len - 10, &prefs->ahimodeid)) {
+                    prefs->has_ahimodeid = TRUE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL LoadSoundDT41Prefs(void)
+{
+    STRPTR buffer = NULL;
+
+    if(sounddtprefs_raw != NULL) {
+        FreeVec(sounddtprefs_raw);
+        sounddtprefs_raw = NULL;
+    }
+
+    memset(&sounddtprefs, 0, sizeof(sounddtprefs));
+
+    buffer = LoadSoundDT41Var(NULL);
+    if(buffer == NULL) {
+        return FALSE;
+    }
+
+    ReadSoundDT41Prefs(&sounddtprefs, buffer);
+    sounddtprefs_raw = buffer;
+    return TRUE;
+}
+
+const struct SoundDT41Prefs *GetSoundDT41Prefs(void)
+{
+    return &sounddtprefs;
+}
+
+void SetSoundDT41UseMode(BOOL use_mode, ULONG mode_id)
+{
+    if(use_mode && mode_id != AHI_INVALID_ID) {
+        sounddtprefs.has_prefs = TRUE;
+        sounddtprefs.has_ahimodeid = TRUE;
+        sounddtprefs.force_ahimode = TRUE;
+        sounddtprefs.ahimodeid = mode_id;
+        return;
+    }
+
+    sounddtprefs.has_ahimodeid = FALSE;
+    sounddtprefs.force_ahimode = FALSE;
+}
+
+/* Ensure the directory exists; returns TRUE if it exists or was created. */
+static BOOL EnsureDirExists(CONST_STRPTR path)
+{
+    BPTR lock;
+
+    lock = Lock(path, SHARED_LOCK);
+    if (lock != (BPTR)0)
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+
+    lock = CreateDir(path);
+    if (lock != (BPTR)0)
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL UpdateSoundDT41Prefs(BOOL save_to_envarc)
+{
+    STRPTR updated = NULL;
+    BOOL success;
+    ULONG flags = GVF_GLOBAL_ONLY;
+
+    if (sounddtprefs.has_ahimodeid && sounddtprefs.ahimodeid == AHI_INVALID_ID)
+        return FALSE;
+
+    if (sounddtprefs_raw != NULL)
+    {
+        updated = RewriteSoundDT41Prefs(sounddtprefs_raw,
+                                        sounddtprefs.ahimodeid,
+                                        sounddtprefs.has_ahimodeid);
+    }
+    else if (sounddtprefs.has_ahimodeid)
+    {
+        updated = AllocVec(64, MEMF_ANY);
+        if (updated != NULL)
+            sprintf(updated, "AHI AHIMODEID=0x%08lx FORCEAHIMODE", sounddtprefs.ahimodeid);
+    }
+    else
+    {
+        return TRUE;
+    }
+
+    if (updated == NULL)
+        return FALSE;
+
+    if (save_to_envarc)
+        flags |= GVF_SAVE_VAR;
+
+    /* First attempt */
+    success = SetVar(SOUND_DT41_VAR, updated, strlen(updated), flags);
+
+    /*
+     * If SetVar() failed, ensure ENV:datatypes exists, then retry.
+     * If we are also saving to ENVARC:, ensure ENVARC:datatypes exists too.
+     */
+    if (!success)
+    {
+        BOOL ok_env = EnsureDirExists("ENV:datatypes");
+        BOOL ok_envarc = TRUE;
+
+        if (save_to_envarc)
+            ok_envarc = EnsureDirExists("ENVARC:datatypes");
+
+        if (ok_env && ok_envarc)
+            success = SetVar(SOUND_DT41_VAR, updated, strlen(updated), flags);
+    }
+
+    /* Keep the updated raw prefs string regardless; it is still the latest content. */
+    if (sounddtprefs_raw != NULL)
+        FreeVec(sounddtprefs_raw);
+
+    sounddtprefs_raw = updated;
+
+    return success;
+}
 
 /******************************************************************************
 **** Endian support code. *****************************************************
@@ -758,6 +1113,14 @@ BOOL SaveSettings(char *name, struct List *list)
         }
         FreeIFF(iff);
     }
+
+#if defined(__AROS__)
+    if(success && name != NULL &&
+       (strcmp(name, ENVFILE) == 0 || strcmp(name, ENVARCFILE) == 0)) {
+        UpdateSoundDT41Prefs(strcmp(name, ENVARCFILE) == 0);
+    }
+#endif
+
     return success;
 }
 
