@@ -1,0 +1,18 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+          ipmi_init \
+          ipmi_class
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOATTRBASES__
+#USER_CPPFLAGS += -DDEBUG
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-ipmi-smbios \
+    modname=smbios-ipmi modtype=hidd \
+    files="$(FILES)"
+
+%common

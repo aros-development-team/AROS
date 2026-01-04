@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=  ipmi_init ipmi_class
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOATTRBASES__
+#USER_CPPFLAGS += -DDEBUG
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-ipmi \
+    modname=ipmi modtype=hidd \
+    files="$(FILES)"
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+
+%copy_includes path=hidd dir=include
+
+%common

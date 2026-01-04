@@ -35,6 +35,8 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-log-serial                       \
 #MM                     kernel-hidd-bus                         \
 #MM                     kernel-hidd-base                        \
+#MM                     kernel-hidd-ipmi                        \
+#MM                     kernel-hidd-ipmi-smbios                 \
 #MM                     kernel-ata                              \
 #MM                     kernel-hidd-pciata                      \
 #MM                     kernel-ahci                             \
@@ -60,7 +62,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 parallel pci pcipc telemetry power serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 ipmi smbios-ipmi parallel pci pcipc telemetry power serial vesagfx vgagfx storage system
 
 LOG_RESOURCES := serial.logger
 BSP_MISC := \
