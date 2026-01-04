@@ -7,6 +7,7 @@
 #include <exec/libraries.h>
 #include <graphics/gfxbase.h>
 #include <graphics/modeid.h>
+#include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -73,11 +74,35 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
     /* Boot anim requires 16+ color screen and 1:1 pixels */
     struct Screen *scr = OpenBootScreenType(DOSBootBase, 4, TRUE);
 
-    if (!anim_Init(scr, DOSBootBase))
+    if (scr)
     {
-        SetAPen(&scr->RastPort, 1);
-        Move(&scr->RastPort, 215, 120);
-        Text(&scr->RastPort, "No bootable media found...", 26);
+        /* Having a window allows us to control the shape of the mouse cursor
+           through Intuition functions. */
+        struct NewWindow nw =
+        {
+            0, 0,
+            scr->Width, scr->Height,
+            0, 0,
+            0,
+            WFLG_ACTIVATE | WFLG_BORDERLESS | WFLG_BACKDROP,
+            NULL,
+            NULL,
+            NULL,
+            scr,
+            NULL,
+            0, 0,
+            scr->Width, scr->Height,
+            CUSTOMSCREEN
+        };
+
+        DOSBootBase->bm_Window = OpenWindow(&nw);
+
+        if (!anim_Init(scr, DOSBootBase))
+        {
+            SetAPen(&scr->RastPort, 1);
+            Move(&scr->RastPort, 215, 120);
+            Text(&scr->RastPort, "No bootable media found...", 26);
+        }
     }
 
     return scr;
@@ -85,6 +110,12 @@ struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
 
 void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase)
 {
+    /* Close the window if it was created */
+    if (DOSBootBase->bm_Window)
+    {
+        CloseWindow(DOSBootBase->bm_Window);
+    }
+
     CloseScreen(scr);
 
     CloseLibrary(&IntuitionBase->LibNode);
