@@ -60,15 +60,15 @@ const char *AHIDBDRIVERBASENAME = "DEVS:AHI";
 # define __WORDSIZE 32
 #endif
 
+#define DRIVERNAME_BUF  128
+#define DRIVERNAME_MAX  100
+#define DRIVERTAGS_MAX  128
+
 #if !defined( WORDS_BIGENDIAN )
 struct TagItem32 {
     ULONG ti_Tag;
     ULONG ti_Data;
 };
-
-#define DRIVERNAME_BUF  128
-#define DRIVERNAME_MAX  100
-#define DRIVERTAGS_MAX  128
 
 struct TagItem32 *AHINextTagItem(struct TagItem32 **tagListPtr)
 {
