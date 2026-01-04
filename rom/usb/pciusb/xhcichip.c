@@ -800,8 +800,8 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
              * back to the ring start - and update the cycle bit
              */
             pciusbXHCIDebugRIO("xHCI",
-                        DEBUGWARNCOLOR_SET "xHCI: setting link ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
-                        ring->next);
+                        DEBUGWARNCOLOR_SET "xHCI: link <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET "\n",
+                        ring->ringio, ring->next, ring->ringio[ring->next]);
             ring->ringio[ring->next] = NULL;
             xhciInsertTRB(hc, ring,
                           link_dma,
@@ -817,8 +817,8 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 
         queued = ring->next;
         pciusbXHCIDebugRIO("xHCI",
-                    DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
-                    queued);
+                    DEBUGWARNCOLOR_SET "xHCI: setting <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET "\n",
+                    ring->ringio, queued, ring->ringio[queued]);
         ring->ringio[queued] = NULL;
         xhciInsertTRB(hc, ring, payload, trbflags, plen);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
@@ -856,8 +856,8 @@ WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *
             UQUAD link_dma = (UQUAD)(IPTR)&ring->ring[0];
 
             pciusbXHCIDebugRIO("xHCI",
-                        DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = NULL" DEBUGCOLOR_RESET "\n",
-                        ring->next);
+                        DEBUGWARNCOLOR_SET "xHCI: <ringio %p>[%d]  0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET "\n",
+                        ring->ringio, ring->next, ring->ringio[ring->next]);
             ring->ringio[ring->next] = NULL;
             xhciInsertTRB(hc, ring,
                           link_dma,
@@ -873,15 +873,12 @@ WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *
 
         queued = ring->next;
         pciusbXHCIDebugRIO("xHCI",
-                    DEBUGWARNCOLOR_SET "xHCI: setting ringio[%d] = 0x%p" DEBUGCOLOR_RESET "\n",
-                    queued, ioreq);
+                    DEBUGWARNCOLOR_SET "xHCI: <ringio %p>[%d] 0x%p -> 0x%p" DEBUGCOLOR_RESET "\n",
+                    ring->ringio, queued, ring->ringio[queued], ioreq);
         ring->ringio[queued] = ioreq;
         xhciInsertTRB(hc, ring, payload, trbflags, plen);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "ring %p <idx %d, %dbytes>" DEBUGCOLOR_RESET" \n", ring, ring->next, plen);
         ring->next++;
-        pciusbXHCIDebugTRBV("xHCI",
-                            DEBUGCOLOR_SET "ringio[%d] = %p (ring %p)" DEBUGCOLOR_RESET" \n",
-                            (int)queued, ioreq, ring);
     } else {
         pciusbError("xHCI",
                             DEBUGWARNCOLOR_SET "NO SPACE ON RING!! <next = %u, last = %u>" DEBUGCOLOR_RESET" \n",
@@ -2037,64 +2034,6 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
             driprivate->dpBounceLen = 0;
             driprivate->dpBounceDir = 0;
         }
-        /* Deactivate the endpoint */
-        if (driprivate->dpDevice) {
-            struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
-            struct pcisusbXHCIRing *epRing = devCtx->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
-            int cnt;
-
-            if (epRing) {
-                xhciRingLock();
-                if (driprivate->dpSTRB != (UWORD)-1) {
-                    if (xhciRingioMatchesIOReq(epRing, driprivate->dpSTRB, ioreq)) {
-                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] setup (was 0x%p)" DEBUGCOLOR_RESET" \n",
-                                   __func__, ioreq, epRing->ringio, driprivate->dpSTRB,
-                                   epRing->ringio[driprivate->dpSTRB]);
-                        epRing->ringio[driprivate->dpSTRB] = NULL;
-                    }
-                }
-
-                /* dpTxSTRB/dpTxETRB can legally be -1 (no data stage). */
-                if ((driprivate->dpTxSTRB != (UWORD)-1) && (driprivate->dpTxETRB != (UWORD)-1)) {
-                    if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
-                        for (cnt = driprivate->dpTxSTRB; cnt <= driprivate->dpTxETRB; cnt++) {
-                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
-                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
-                                epRing->ringio[cnt] = NULL;
-                            }
-                        }
-                    } else {
-                        /* Wrapped range */
-                        for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++) {
-                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
-                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
-                                epRing->ringio[cnt] = NULL;
-                            }
-                        }
-                        for (cnt = 0; cnt <= driprivate->dpTxETRB; cnt++) {
-                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
-                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - clearing ringio 0x%p [%d] data (was 0x%p)" DEBUGCOLOR_RESET" \n",
-                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
-                                epRing->ringio[cnt] = NULL;
-                            }
-                        }
-                    }
-                }
-
-                if (driprivate->dpSttTRB != (UWORD)-1) {
-                    if (xhciRingioMatchesIOReq(epRing, driprivate->dpSttTRB, ioreq)) {
-                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - clearing ringio 0x%p [%d] status (was 0x%p)" DEBUGCOLOR_RESET" \n",
-                                   __func__, ioreq, epRing->ringio, driprivate->dpSttTRB,
-                                   epRing->ringio[driprivate->dpSttTRB]);
-                        epRing->ringio[driprivate->dpSttTRB] = NULL;
-                    }
-                }
-
-                xhciRingUnlock();
-            }
-        }
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
     }
     devadrep = xhciDevEPKey(ioreq);
@@ -2625,6 +2564,62 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
             remaining   = ioreq->iouh_Length;
         }
 
+        /* Clear ringio bookkeeping */
+        if (driprivate->dpDevice) {
+            struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
+            struct pcisusbXHCIRing *epRing = devCtx->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
+            int cnt;
+
+            if (epRing) {
+                if (driprivate->dpSTRB != (UWORD)-1) {
+                    if (xhciRingioMatchesIOReq(epRing, driprivate->dpSTRB, ioreq)) {
+                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - setup <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET" \n",
+                                   __func__, ioreq, epRing->ringio, driprivate->dpSTRB,
+                                   epRing->ringio[driprivate->dpSTRB]);
+                        epRing->ringio[driprivate->dpSTRB] = NULL;
+                    }
+                }
+
+                /* dpTxSTRB/dpTxETRB can legally be -1 (no data stage). */
+                if ((driprivate->dpTxSTRB != (UWORD)-1) && (driprivate->dpTxETRB != (UWORD)-1)) {
+                    if (driprivate->dpTxETRB >= driprivate->dpTxSTRB) {
+                        for (cnt = driprivate->dpTxSTRB; cnt <= driprivate->dpTxETRB; cnt++) {
+                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - data <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET" \n",
+                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
+                                epRing->ringio[cnt] = NULL;
+                            }
+                        }
+                    } else {
+                        /* Wrapped range */
+                        for (cnt = driprivate->dpTxSTRB; cnt < (XHCI_EVENT_RING_TRBS - 1); cnt++) {
+                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - data <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET" \n",
+                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
+                                epRing->ringio[cnt] = NULL;
+                            }
+                        }
+                        for (cnt = 0; cnt <= driprivate->dpTxETRB; cnt++) {
+                            if (xhciRingioMatchesIOReq(epRing, (UWORD)cnt, ioreq)) {
+                                pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s: IOReq 0x%p - data <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET" \n",
+                                           __func__, ioreq, epRing->ringio, cnt, epRing->ringio[cnt]);
+                                epRing->ringio[cnt] = NULL;
+                            }
+                        }
+                    }
+                }
+
+                if (driprivate->dpSttTRB != (UWORD)-1) {
+                    if (xhciRingioMatchesIOReq(epRing, driprivate->dpSttTRB, ioreq)) {
+                        pciusbXHCIDebugRIO("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - status <ringio %p>[%d] 0x%p -> 0x0000000000000000" DEBUGCOLOR_RESET" \n",
+                                   __func__, ioreq, epRing->ringio, driprivate->dpSttTRB,
+                                   epRing->ringio[driprivate->dpSttTRB]);
+                        epRing->ringio[driprivate->dpSttTRB] = NULL;
+                    }
+                }
+            }
+        }
+
         /*
          * Release any bounce buffer regardless of completion code to avoid
          * leaks and to complete CachePostDMA on partial transfers.
@@ -3017,7 +3012,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                                 (*cnt)++;
                                 pciusbWarn("xHCI",
                                            DEBUGWARNCOLOR_SET
-                                           "DIAG: missing IOReq dump #%u (slot=%u epid=%u idx=%lu cc=%lu/%s trb_dma=%p ring=%p)"
+                                           "DIAG: missing IOReq dump #%u (slot=%u epid=%u idx=%lu cc=%lu/%s trb_dma=%p ring=%p, ringio=%p)"
                                            DEBUGCOLOR_RESET" \n",
                                            (unsigned)*cnt,
                                            trbe_slot, trbe_epid,
@@ -3025,7 +3020,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                                            (unsigned long)trbe_ccode,
                                            xhciDiagCCName(trbe_ccode),
                                            (APTR)(IPTR)trb_dma,
-                                           ring);
+                                           ring, ring->ringio);
                                 xhciDiagDumpRingWindow(hc, ring, last, XHCI_DIAG_DUMP_RADIUS, "missing-ioreq");
                                 xhciDiagDumpOutputCtx(hc, devCtx, trbe_epid, "missing-ioreq");
                             }
