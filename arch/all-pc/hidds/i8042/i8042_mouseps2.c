@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: PS/2 mouse driver.
 */
@@ -342,13 +342,16 @@ static AROS_INTH1(PS2KBMResetHandler, struct i8042base *, i8042Base)
 
     DRESET(bug("[i8042:PS2Mouse] %s(0x%p)\n", __func__, i8042Base);)
 
-    struct mouse_data *data = OOP_INST_DATA(i8042Base->csd.mouseclass, i8042Base->csd.mousehidd);
-    DRESET(bug("[i8042:PS2Mouse] %s: mouse_data @ 0x%p, timer request @ 0x%p\n", __func__, data, data->hwdata.ioTimer);)
-
-    i8042Base->csd.cs_intbits &= ~KBD_MODE_MOUSE_INT;
-    i8042_write_mode(data->hwdata.ioTimer, (KBD_MODE_KCC | KBD_MODE_SYS) | i8042Base->csd.cs_intbits);
-
-    DRESET(bug("[i8042:PS2Mouse] %s: mouse interrupts disabled\n", __func__);)
+    /*
+     * Turn off interrupts in the simplest way possible as this is an
+     * interrupt handler and the system is going down. So we want to avoid
+     * calling the timer for example and we don't care about preserving any
+     * state
+     */
+    while(i8042_read_status_port() & KBD_STATUS_IBF);
+    i8042_write_command_port(KBD_CTRLCMD_WRITE_MODE);
+    while(i8042_read_status_port() & KBD_STATUS_IBF);
+    i8042_write_data_port(0);
 
     return FALSE;
 
