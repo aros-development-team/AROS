@@ -317,6 +317,7 @@ static void GUINewUnit(void)
 static void GUINewMode(void)
 {
     IPTR Max, Sel, Dis;
+    ULONG modeid;
     char *buffer;
     char *arg1 = getRecord();
     char *arg2 = getAuthor();
@@ -336,9 +337,10 @@ static void GUINewMode(void)
                       128,
                       MEMF_ANY);
 
+    modeid = getAudioMode();
     if(buffer != NULL) {
         sprintf(buffer, "0x%08x\n%s\n%s\n%s\nDevs:AHI/%s.audio\n%s\n%s",
-                (ULONG)getAudioMode(),
+                modeid,
                 arg1,
                 arg2,
                 arg3,
@@ -422,23 +424,20 @@ static void GUINewMode(void)
     set(MUILOutput, MUIA_Text_Contents, (IPTR) getOutput());
 
 #if defined(__AROS__)
-    if(MUIUseforSDT != NULL) {
-        const struct SoundDT41Prefs *prefs = GetSoundDT41Prefs();
-        struct UnitNode *unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);
-        BOOL match = FALSE;
+    const struct SoundDT41Prefs *prefs = GetSoundDT41Prefs();
+    BOOL match = FALSE;
 
-        if(unit != NULL && prefs->has_ahimodeid &&
-           prefs->ahimodeid == unit->prefs.ahiup_AudioMode) {
-            match = TRUE;
-        }
-
-        set(MUIUseforSDT, MUIA_NoNotify, TRUE);
-        set(MUIUseforSDT, MUIA_Selected, match);
-        set(MUIUseforSDT, MUIA_NoNotify, FALSE);
+    if(prefs->has_ahimodeid &&
+       prefs->ahimodeid == modeid) {
+        match = TRUE;
     }
+
+    set(MUIUseforSDT, MUIA_NoNotify, TRUE);
+    set(MUIUseforSDT, MUIA_Selected, match);
+    set(MUIUseforSDT, MUIA_NoNotify, FALSE);
 #endif
 
-    set(MUIPlay, MUIA_Disabled, getAudioMode() == AHI_INVALID_ID);
+    set(MUIPlay, MUIA_Disabled, modeid == AHI_INVALID_ID);
 }
 
 static VOID
@@ -1005,15 +1004,8 @@ void EventLoop(void)
 #if defined(__AROS__)
         case ACTID_USEFORSDT: {
             IPTR selected = FALSE;
-            struct UnitNode *unit;
-
             get(MUIUseforSDT, MUIA_Selected, &selected);
-            unit = (struct UnitNode *) GetNode(state.UnitSelected, UnitList);
-            if(unit != NULL) {
-                SetSoundDT41UseMode(selected, unit->prefs.ahiup_AudioMode);
-            } else {
-                SetSoundDT41UseMode(FALSE, AHI_INVALID_ID);
-            }
+            SetSoundDT41UseMode(selected, getAudioMode());
             break;
         }
 #endif

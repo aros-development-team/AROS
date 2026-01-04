@@ -284,11 +284,11 @@ static STRPTR RewriteSoundDT41Prefs(const char *prefs, ULONG mode_id, BOOL use_m
     }
 
     if(use_mode && !saw_ahimodeid) {
-        dst += sprintf(dst, "%sAHIMODEID=0x%08lx", (dst > out && !IsSoundDTSeparator(dst[-1])) ? " " : "", mode_id);
+        dst += sprintf(dst, "%sAHIMODEID=0x%08lx", ((IPTR)dst > (IPTR)out && !IsSoundDTSeparator(dst[-1])) ? " " : "", mode_id);
     }
 
     if(use_mode && !saw_force) {
-        dst += sprintf(dst, "%sFORCEAHIMODE", (dst > out && !IsSoundDTSeparator(dst[-1])) ? " " : "");
+        dst += sprintf(dst, "%sFORCEAHIMODE", ((IPTR)dst > (IPTR)out && !IsSoundDTSeparator(dst[-1])) ? " " : "");
     }
 
     *dst = '\0';
