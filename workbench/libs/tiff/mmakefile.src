@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- includes-copy : libtiff-fetch
 
-LIBTIFFVERSION=4.7.0
+LIBTIFFVERSION=4.7.1
 REPOSITORIES =  \
     cache:// \
     http://download.osgeo.org/libtiff
