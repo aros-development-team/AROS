@@ -2,7 +2,7 @@
 #define DOSBOOT_INTERN_H
 
 /*
-   Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2026, The AROS Development Team. All rights reserved.
    $Id$
 
    Desc: Internal definitions for dosboot
