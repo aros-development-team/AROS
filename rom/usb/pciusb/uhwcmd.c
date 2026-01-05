@@ -1830,20 +1830,25 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
 
     UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
     for (UWORD cnt = 0; cnt < prefill; cnt++) {
+        WORD queueresult = RC_OK;
         switch(hc->hc_HCIType) {
         case HCITYPE_XHCI:
-            xhciQueueIsochIO(hc, rtn);
+            queueresult = xhciQueueIsochIO(hc, rtn);
             break;
         case HCITYPE_EHCI:
-            ehciQueueIsochIO(hc, rtn);
+            queueresult = ehciQueueIsochIO(hc, rtn);
             break;
         case HCITYPE_UHCI:
-            uhciQueueIsochIO(hc, rtn);
+            queueresult = uhciQueueIsochIO(hc, rtn);
             break;
         default:
-            ohciQueueIsochIO(hc, rtn);
+            queueresult = ohciQueueIsochIO(hc, rtn);
             break;
         };
+        if (queueresult != RC_OK) {
+            Enable();
+            return queueresult;
+        }
     }
 
     switch(hc->hc_HCIType) {
