@@ -8,6 +8,7 @@
 
 #include <hidd/pci.h>
 #include <utility/hooks.h>
+#include <exec/memory.h>
 
 #include <devices/usb_hub.h>
 
@@ -105,6 +106,31 @@ static inline void ehciReleaseDMABuffer(APTR dmabuffer, APTR original, ULONG len
     (void)length;
     (void)dir;
 #endif
+}
+
+static BOOL ehciScheduleSegmentValid(struct PCIController *hc, APTR addr, ULONG size, ULONG *segment)
+{
+#if __WORDSIZE == 64
+    UQUAD phys_base = (UQUAD)(IPTR)pciGetPhysical(hc, addr);
+    UQUAD phys_end = phys_base + (UQUAD)size - 1;
+    ULONG seg = (ULONG)(phys_base >> 32);
+
+    if ((phys_end >> 32) != seg) {
+        return FALSE;
+    }
+
+    if (segment) {
+        *segment = seg;
+    }
+#else
+    (void)hc;
+    (void)addr;
+    (void)size;
+    if (segment) {
+        *segment = 0;
+    }
+#endif
+    return TRUE;
 }
 
 static void ehciFillScatterGather(struct PCIController *hc, struct EhciHCPrivate *ehcihcp,
@@ -1710,6 +1736,9 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     ULONG timeout;
     ULONG tmp;
     ULONG fls;
+    ULONG schedule_bytes;
+    ULONG schedule_segment = 0;
+    BOOL schedule_ok = TRUE;
 
     ULONG cnt;
 
@@ -1778,6 +1807,12 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         Frame list size was determined from HCCPARAMS/USBCMD when programmable,
         falling back to EHCI_FRAMELIST_SIZE when not.
     */
+    schedule_bytes = sizeof(ULONG) * ehcihcp->ehc_FrameListSize;
+    schedule_bytes += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
+    schedule_bytes += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
+    schedule_bytes += sizeof(struct EhciITD) * EHCI_ITD_POOLSIZE;
+    schedule_bytes += sizeof(struct EhciSiTD) * EHCI_SITD_POOLSIZE;
+
     hc->hc_PCIMem.me_Length = sizeof(ULONG) * ehcihcp->ehc_FrameListSize + EHCI_FRAMELIST_ALIGNMENT + 1;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
@@ -1789,15 +1824,41 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     */
     memptr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Length);
     hc->hc_PCIMem.me_Un.meu_Addr = (APTR) memptr;
+    hc->hc_PCIMemIsExec = FALSE;
 
     if(memptr) {
-        // PhysicalAddress - VirtualAdjust = VirtualAddress
-        // VirtualAddress  + VirtualAdjust = PhysicalAddress
-        hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, memptr) - (APTR)memptr;
-        pciusbEHCIDebug("EHCI", "VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust);
-
         // align memory
         memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
+#if __WORDSIZE == 64
+        schedule_ok = ehciScheduleSegmentValid(hc, memptr, schedule_bytes, &schedule_segment);
+        if(schedule_ok && !(hccparams & EHCF_64BITS) && schedule_segment != 0) {
+            schedule_ok = FALSE;
+        }
+        if(!schedule_ok) {
+            pciusbWarn("EHCI", "Schedule allocation crosses 4GB boundary, retrying in low memory\n");
+            FREEPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
+            hc->hc_PCIMem.me_Un.meu_Addr = NULL;
+            hc->hc_PCIMemIsExec = TRUE;
+            memptr = AllocMem(hc->hc_PCIMem.me_Length, MEMF_31BIT | MEMF_CLEAR);
+            hc->hc_PCIMem.me_Un.meu_Addr = (APTR)memptr;
+            if(memptr) {
+                memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
+                schedule_ok = ehciScheduleSegmentValid(hc, memptr, schedule_bytes, &schedule_segment);
+                if(schedule_ok && !(hccparams & EHCF_64BITS) && schedule_segment != 0) {
+                    schedule_ok = FALSE;
+                }
+            }
+        }
+#endif
+        if(!memptr || !schedule_ok) {
+            goto init_fail;
+        }
+
+        // PhysicalAddress - VirtualAdjust = VirtualAddress
+        // VirtualAddress  + VirtualAdjust = PhysicalAddress
+        hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, hc->hc_PCIMem.me_Un.meu_Addr) - (APTR)hc->hc_PCIMem.me_Un.meu_Addr;
+        pciusbEHCIDebug("EHCI", "VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust);
+
         ehcihcp->ehc_EhciFrameList = (ULONG *) memptr;
         pciusbEHCIDebug("EHCI", "FrameListBase 0x%p\n", ehcihcp->ehc_EhciFrameList);
         memptr += sizeof(ULONG) * ehcihcp->ehc_FrameListSize;
@@ -2049,7 +2110,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
 #if __WORDSIZE == 64
         if(ehcihcp->ehc_64BitCapable) {
             IPTR framelistphys = (IPTR)pciGetPhysical(hc, ehcihcp->ehc_EhciFrameList);
-            WRITEREG32_LE(hc->hc_RegBase, EHCI_CTRLDSSEGMENT, AROS_LONG2LE((ULONG)(framelistphys >> 32)));
+            WRITEREG32_LE(hc->hc_RegBase, EHCI_CTRLDSSEGMENT, AROS_LONG2LE(schedule_segment));
             WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, framelistphys);
         } else {
             WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR)pciGetPhysical(hc, ehcihcp->ehc_EhciFrameList));
@@ -2105,6 +2166,25 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     /*
         FIXME: What would the appropriate debug level be?
     */
+init_fail:
+    if(hc->hc_PCIMem.me_Un.meu_Addr) {
+        if(hc->hc_PCIMemIsExec)
+            FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
+        else
+            FREEPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
+        hc->hc_PCIMem.me_Un.meu_Addr = NULL;
+        hc->hc_PCIMemIsExec = FALSE;
+    }
+    if(ehcihcp) {
+        if(ehcihcp->ehc_IsoAnchor)
+            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * ehcihcp->ehc_FrameListSize);
+        if(ehcihcp->ehc_IsoHead)
+            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
+        if(ehcihcp->ehc_IsoTail)
+            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
+        FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
+    }
+    hc->hc_CPrivate = NULL;
     KPRINTF(1000, "ehciInit returns FALSE...\n");
     return FALSE;
 }

@@ -231,6 +231,7 @@ struct PCIController
     volatile APTR               hc_RegBase;
 
     struct MemEntry             hc_PCIMem;
+    BOOL                        hc_PCIMemIsExec;
     IPTR                        hc_PCIVirtualAdjust;
     IPTR                        hc_PCIIntLine;
     struct Interrupt            hc_PCIIntHandler;

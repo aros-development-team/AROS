@@ -138,6 +138,7 @@ AROS_UFH3(void, pciEnumerator,
                 hc->hc_HCIType = hcitype;
                 hc->hc_PCIDeviceObject = pciDevice;
                 hc->hc_PCIIntLine = intline;
+                hc->hc_PCIMemIsExec = FALSE;
 
                 OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (IPTR *) &hc->hc_PCIDriverObject);
 
@@ -624,7 +625,12 @@ void pciFreeUnit(struct PCIUnit *hu)
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     ForeachNode(&hu->hu_Controllers, hc) {
         if(hc->hc_PCIMem.me_Un.meu_Addr) {
-            HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
+            if (hc->hc_PCIMemIsExec) {
+                FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
+                hc->hc_PCIMemIsExec = FALSE;
+            } else {
+                HIDD_PCIDriver_FreePCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Un.meu_Addr);
+            }
             hc->hc_PCIMem.me_Un.meu_Addr = NULL;
         }
     }
