@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved
+    Copyright (C) 2026, The AROS Development Team. All rights reserved
 
     Desc: UHCI chipset driver root hub/port support functions
 */
