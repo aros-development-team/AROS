@@ -1659,9 +1659,9 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct PTDNode *ptd = uhciNextIsoPTD(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
     ULONG interval;
-    ULONG lead;
 
-    pciusbUHCIDebug("UHCI", "%s()\n", __func__);
+    pciusbUHCIDebug("UHCI", "%s(0x%p, 0x%p)\n", __func__, hc, rtn);
+    pciusbUHCIDebug("UHCI", "%s: IOReq 0x%p\n", __func__, ioreq);
 
     if (!ptd)
         return UHIOERR_NAKTIMEOUT;
@@ -1688,9 +1688,9 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         bufreq->ubr_Length = ioreq->iouh_Length;
 
     interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
-    lead = interval * 2;
     if (!bufreq->ubr_Frame) {
         ULONG current_frame;
+        ULONG lead = interval * 2;
         ULONG next = 0;
 
         uhciUpdateFrameCounter(hc);
@@ -1704,6 +1704,9 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         bufreq->ubr_Frame = next;
         pciusbUHCIDebug("UHCI", "ISO schedule current=%ld next=%ld lead=%ld interval=%ld\n",
                         current_frame, bufreq->ubr_Frame, lead, interval);
+    } else {
+        pciusbUHCIDebug("UHCI", "ISO schedule current=%ld interval=%ld\n",
+                        bufreq->ubr_Frame, interval);
     }
     rtn->rtn_NextFrame = bufreq->ubr_Frame + interval;
 
@@ -1855,16 +1858,21 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(len > UHCI_ISO_MAXPKTSIZE)
             len = UHCI_ISO_MAXPKTSIZE;
         if(!len)
+            phys = 0;
+        if(len && !dmabuffer) {
+            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
             continue;
+        }
 
         utd = (struct UhciTD *)ptd->ptd_Descriptor;
         slot = ptd->ptd_BufferReq.ubr_Frame & (UHCI_FRAMELIST_SIZE - 1);
-        phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
+        if(len)
+            phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
 
         ctrlstatus = UTCF_ACTIVE | UTCF_ISOCHRONOUS | UTCF_READYINTEN;
         token = (rtn->rtn_IOReq.iouh_DevAddr << UTTS_DEVADDR) |
                 (rtn->rtn_IOReq.iouh_Endpoint << UTTS_ENDPOINT) |
-                ((len - 1) << UTTS_TRANSLENGTH) |
+                (((len ? (len - 1) : 0x7ff) & 0x7ff) << UTTS_TRANSLENGTH) |
                 ((rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) ? (PID_IN << UTTS_PID) : (PID_OUT << UTTS_PID));
 
         WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
