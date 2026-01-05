@@ -1732,23 +1732,40 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     if (!ehcihcp)
         return FALSE;
 
-    ehcihcp->ehc_IsoAnchor = AllocMem(sizeof(ULONG) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
-    ehcihcp->ehc_IsoHead = AllocMem(sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
-    ehcihcp->ehc_IsoTail = AllocMem(sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE, MEMF_CLEAR);
+    OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // activate memory
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
+    pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
+
+    // we use the operational registers as RegBase.
+    hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
+    pciusbEHCIDebug("EHCI", "RegBase = 0x%p\n", hc->hc_RegBase);
+
+    hccparams = READREG32_LE(pciregbase, EHCI_HCCPARAMS);
+    fls = 0;
+    if(hccparams & EHCF_PROGFRAMELIST) {
+        fls = (READREG32_LE(hc->hc_RegBase, EHCI_USBCMD) & EHUM_FRAMELISTSIZE) >> EHUS_FRAMELISTSIZE;
+        if(fls > 2)
+            fls = 0;
+    }
+
+    ehcihcp->ehc_FrameListSize = EHCI_FRAMELIST_SIZE >> fls;
+    ehcihcp->ehc_FrameListMask = ehcihcp->ehc_FrameListSize - 1;
+
+    ehcihcp->ehc_IsoAnchor = AllocMem(sizeof(ULONG) * ehcihcp->ehc_FrameListSize, MEMF_CLEAR);
+    ehcihcp->ehc_IsoHead = AllocMem(sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize, MEMF_CLEAR);
+    ehcihcp->ehc_IsoTail = AllocMem(sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize, MEMF_CLEAR);
     if(!ehcihcp->ehc_IsoAnchor || !ehcihcp->ehc_IsoHead || !ehcihcp->ehc_IsoTail) {
         if(ehcihcp->ehc_IsoAnchor)
-            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * ehcihcp->ehc_FrameListSize);
         if(ehcihcp->ehc_IsoHead)
-            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
         if(ehcihcp->ehc_IsoTail)
-            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
         FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
         return FALSE;
     }
 
     hc->hc_CPrivate = ehcihcp;
-    ehcihcp->ehc_FrameListSize = EHCI_FRAMELIST_SIZE;
-    ehcihcp->ehc_FrameListMask = EHCI_FRAMELIST_SIZE - 1;
     hc->hc_portroute = 0;
 
     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
@@ -1758,18 +1775,17 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
     hc->hc_CompleteInt.is_Code = (VOID_FUNC)ehciCompleteInt;
 
     /*
-        FIXME: Check the real size from USBCMD Frame List Size field (bits3:2)
-        and set the value accordingly if Frame List Flag in the HCCPARAMS indicates RW for the field
-        else use default value of EHCI_FRAMELIST_SIZE (1024)
+        Frame list size was determined from HCCPARAMS/USBCMD when programmable,
+        falling back to EHCI_FRAMELIST_SIZE when not.
     */
-    hc->hc_PCIMem.me_Length = sizeof(ULONG) * EHCI_FRAMELIST_SIZE + EHCI_FRAMELIST_ALIGNMENT + 1;
+    hc->hc_PCIMem.me_Length = sizeof(ULONG) * ehcihcp->ehc_FrameListSize + EHCI_FRAMELIST_ALIGNMENT + 1;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciQH) * EHCI_QH_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciTD) * EHCI_TD_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciITD) * EHCI_ITD_POOLSIZE;
     hc->hc_PCIMem.me_Length += sizeof(struct EhciSiTD) * EHCI_SITD_POOLSIZE;
 
     /*
-        FIXME: We should be able to read some EHCI registers before allocating memory
+        EHCI registers are read before allocating memory to size the periodic list.
     */
     memptr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, hc->hc_PCIMem.me_Length);
     hc->hc_PCIMem.me_Un.meu_Addr = (APTR) memptr;
@@ -1784,7 +1800,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
         ehcihcp->ehc_EhciFrameList = (ULONG *) memptr;
         pciusbEHCIDebug("EHCI", "FrameListBase 0x%p\n", ehcihcp->ehc_EhciFrameList);
-        memptr += sizeof(ULONG) * EHCI_FRAMELIST_SIZE;
+        memptr += sizeof(ULONG) * ehcihcp->ehc_FrameListSize;
 
         // build up QH pool
         eqh = (struct EhciQH *) memptr;
@@ -1902,12 +1918,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         CONSTWRITEMEM32_LE(&etd->etd_CtrlStatus, 0);
 
         // time to initialize hardware...
-        OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *) &pciregbase);
-        pciregbase = (APTR) (((IPTR) pciregbase) & (~0xf));
-        OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciActivateMem); // activate memory
-
         extcapoffset = (READREG32_LE(pciregbase, EHCI_HCCPARAMS) & EHCM_EXTCAPOFFSET)>>EHCS_EXTCAPOFFSET;
-
         while(extcapoffset >= 0x40) {
             pciusbEHCIDebug("EHCI", "Extended Caps at 0x%08lx\n", extcapoffset);
             legsup = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, extcapoffset);
@@ -1942,9 +1953,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivateBusmaster); // no busmaster yet
 
         // we use the operational registers as RegBase.
-        hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
-        pciusbEHCIDebug("EHCI", "RegBase = 0x%p\n", hc->hc_RegBase);
-
         pciusbEHCIDebug("EHCI", "Resetting HC\n");
         pciusbEHCIDebug("EHCI", "CMD: 0x%08x STS: 0x%08x\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD), READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS));
         /* Step 1: Stop the HC */
@@ -1988,7 +1996,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
 
         // Read HCSPARAMS register to obtain number of downstream ports
         hcsparams = READREG32_LE(pciregbase, EHCI_HCSPARAMS);
-        hccparams = READREG32_LE(pciregbase, EHCI_HCCPARAMS);
         ehcihcp->ehc_64BitCapable = (hccparams & EHCF_64BITS) != 0;
 
         hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
@@ -2023,16 +2030,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
                     (hccparams & EHCF_64BITS) ? "Yes" : "No",
                     (hccparams & EHCF_PROGFRAMELIST) ? "Yes" : "No",
                     (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No");
-
-        fls = 0;
-        if(hccparams & EHCF_PROGFRAMELIST) {
-            fls = (READREG32_LE(pciregbase, EHCI_USBCMD) & EHUM_FRAMELISTSIZE) >> EHUS_FRAMELISTSIZE;
-            if(fls > 2)
-                fls = 0;
-        }
-
-        ehcihcp->ehc_FrameListSize = EHCI_FRAMELIST_SIZE >> fls;
-        ehcihcp->ehc_FrameListMask = ehcihcp->ehc_FrameListSize - 1;
 
         ehcihcp->ehc_EhciUsbCmd = (fls << EHUS_FRAMELISTSIZE) | (1UL<<EHUS_INTTHRESHOLD);
         ehcihcp->ehc_EhciTimeoutShift = 3;
@@ -2139,11 +2136,11 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu)
     hc->hc_CPrivate = NULL;
     if (ehcihcp) {
         if(ehcihcp->ehc_IsoAnchor)
-            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoAnchor, sizeof(ULONG) * ehcihcp->ehc_FrameListSize);
         if(ehcihcp->ehc_IsoHead)
-            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoHead, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
         if(ehcihcp->ehc_IsoTail)
-            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * EHCI_FRAMELIST_SIZE);
+            FreeMem(ehcihcp->ehc_IsoTail, sizeof(struct PTDNode *) * ehcihcp->ehc_FrameListSize);
         FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
     }
 
