@@ -44,7 +44,6 @@ static AROS_INTH1(UhciResetHandler, struct PCIController *, hc)
 
 void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh)
 {
-
     struct UhciTD *utd = NULL;
     struct UhciTD *nextutd;
 
@@ -76,7 +75,7 @@ void uhciUpdateIntTree(struct PCIController *hc)
     UWORD cnt;
 
     // optimize linkage between queue heads
-    preduxx = lastuseduxx = (struct UhciXX *) uhcihcp->uhc_UhciCtrlQH; //uhcihcp->uhc_UhciIsoTD;
+    preduxx = lastuseduxx = (struct UhciXX *) uhcihcp->uhc_UhciIsoTD;
     for(cnt = 0; cnt < 9; cnt++) {
         uxx = (struct UhciXX *) uhcihcp->uhc_UhciIntQH[cnt];
         if(uxx->uxx_Succ != preduxx) {
@@ -176,7 +175,6 @@ static struct PTDNode *uhciNextIsoPTD(struct RTIsoNode *rtn)
 
 void uhciCheckPortStatusChange(struct PCIController *hc)
 {
-
     struct PCIUnit *unit = hc->hc_Unit;
     UWORD oldval;
     UWORD hciport;
@@ -221,7 +219,6 @@ void uhciCheckPortStatusChange(struct PCIController *hc)
 
 void uhciHandleFinishedTDs(struct PCIController *hc)
 {
-
     struct PCIUnit *unit = hc->hc_Unit;
     struct IOUsbHWReq *ioreq;
     struct IOUsbHWReq *nextioreq;
@@ -1213,7 +1210,7 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         uhcihcp->uhc_UhciIntQH[0] = uqh = uhciAllocQH(hc);
         uqh->uqh_Succ = (struct UhciXX *) utd;
         uqh->uqh_Pred = NULL; // who knows...
-        //uqh->uqh_Link = utd->utd_Self; // link to ISO
+        uqh->uqh_Link = utd->utd_Self; // link to ISO
         CONSTWRITEMEM32_LE(&uqh->uqh_Element, UHCI_TERMINATE);
         preduqh = uqh;
 
