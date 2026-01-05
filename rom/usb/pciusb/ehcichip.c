@@ -797,8 +797,9 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
             } while(eqh->eqh_Actual < ioreq->iouh_Length);
             if(!dataetd) {
                 // not enough dataetds? try again later
-                ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
-                ehciReleaseDMABuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 0, 0);
+                ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Length,
+                    (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+                ehciReleaseDMABuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 8, UHDIR_OUT);
                 ehciFreeQHandTDs(hc, eqh);
                 ehciFreeTD(hc, termetd); // this one's not linked yet
                 break;
@@ -989,7 +990,7 @@ void ehciScheduleIntTDs(struct PCIController *hc)
 
         if(!etd) {
             // not enough etds? try again later
-            ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
+            ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
             ehciFreeQHandTDs(hc, eqh);
             break;
         }
@@ -1191,7 +1192,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
 
         if(!etd) {
             // not enough etds? try again later
-            ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
+            ehciReleaseDMABuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
             ehciFreeQHandTDs(hc, eqh);
             break;
         }
