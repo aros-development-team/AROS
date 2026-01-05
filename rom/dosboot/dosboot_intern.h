@@ -49,6 +49,7 @@ struct DOSBootBase
 
     WORD                  devicesCount;
     BOOL                 *devicesEnabled;
+    UWORD                *blank_pointer;
     struct List           bootList;
     struct List           devicesList;
 };

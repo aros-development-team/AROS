@@ -841,6 +841,7 @@ static WORD initWindow(LIBBASETYPEPTR LIBBASE, struct BootConfig *bcfg, WORD pag
             freeGadgets(LIBBASE, page);
         }
         CloseWindow(LIBBASE->bm_Window);
+        LIBBASE->bm_Window = NULL;
     }
 
     FreeGadgets(gadlist);
