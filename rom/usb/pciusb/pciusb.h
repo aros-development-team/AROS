@@ -76,6 +76,7 @@ struct PTDNode
     struct PTDNode             *ptd_NextPTD;
     struct IOUsbHWReq           ptd_IOReq;
     struct IOUsbHWBufferReq     ptd_BufferReq;
+    APTR                        ptd_BounceBuffer;
     struct RTIsoNode           *ptd_RTIsoNode;
 };
 
