@@ -119,7 +119,7 @@ static void uhciInsertIsoPTD(struct PCIController *hc, struct PTDNode *ptd, ULON
 static void uhciUnlinkIsoPTD(struct PCIController *hc, struct PTDNode *ptd)
 {
     struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
-    ULONG slot = ptd->ptd_FrameIdx;
+    ULONG slot = ptd->ptd_FrameIdx & (UHCI_FRAMELIST_SIZE - 1);
     struct PTDNode *prev = NULL;
     struct PTDNode *head = uhcihcp->uhc_IsoHead[slot];
 
@@ -1662,6 +1662,7 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct PTDNode *ptd = uhciNextIsoPTD(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
     ULONG interval;
+    ULONG lead;
 
     pciusbUHCIDebug("UHCI", "%s()\n", __func__);
 
@@ -1690,12 +1691,24 @@ WORD uhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         bufreq->ubr_Length = ioreq->iouh_Length;
 
     interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
+    lead = interval * 2;
     if (!bufreq->ubr_Frame) {
-        ULONG frame = READIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT) & (UHCI_FRAMELIST_SIZE - 1);
-        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : ((frame + interval) & (UHCI_FRAMELIST_SIZE - 1));
+        ULONG current_frame;
+        ULONG next = 0;
+
+        uhciUpdateFrameCounter(hc);
+        current_frame = hc->hc_FrameCounter;
+
+        if (rtn->rtn_NextFrame > current_frame)
+            next = rtn->rtn_NextFrame;
+        else
+            next = current_frame + lead;
+
         bufreq->ubr_Frame = next;
+        pciusbUHCIDebug("UHCI", "ISO schedule current=%ld next=%ld lead=%ld interval=%ld\n",
+                        current_frame, bufreq->ubr_Frame, lead, interval);
     }
-    rtn->rtn_NextFrame = (bufreq->ubr_Frame + interval) & (UHCI_FRAMELIST_SIZE - 1);
+    rtn->rtn_NextFrame = bufreq->ubr_Frame + interval;
 
     ptd->ptd_FrameIdx = bufreq->ubr_Frame;
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
@@ -1861,7 +1874,7 @@ void uhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         WRITEMEM32_LE(&utd->utd_Token, token);
         WRITEMEM32_LE(&utd->utd_BufferPtr, phys);
 
-        ptd->ptd_FrameIdx = slot;
+        ptd->ptd_FrameIdx = ptd->ptd_BufferReq.ubr_Frame;
         ptd->ptd_Length = len;
         ptd->ptd_Flags |= PTDF_ACTIVE;
         ptd->ptd_NextPTD = NULL;
