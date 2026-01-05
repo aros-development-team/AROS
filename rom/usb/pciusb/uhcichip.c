@@ -518,8 +518,8 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
         if(ioreq->iouh_Length - actual) {
             ctrlstatus |= UTCF_SHORTPACKET;
             if(cont) {
-                if(!unit->hu_DevDataToggle[devadrep]) {
-                    // continue with data toggle 0
+                if(unit->hu_DevDataToggle[devadrep]) {
+                    // continue with data toggle 1
                     token |= UTTF_DATA1;
                 }
             } else {
@@ -550,6 +550,18 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
             } while((actual < ioreq->iouh_Length) && (actual - ioreq->iouh_Actual < UHCI_TD_CTRL_LIMIT));
             if(actual == ioreq->iouh_Actual) {
                 // not at least one data TD? try again later
+                if(uqh->uqh_DataBuffer) {
+                    usbReleaseBuffer(uqh->uqh_DataBuffer,
+                        &(((UBYTE *)ioreq->iouh_Data)[ioreq->iouh_Actual]),
+                        ioreq->iouh_Length - actual,
+                        (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+                    uqh->uqh_DataBuffer = NULL;
+                }
+                if(uqh->uqh_SetupBuffer) {
+                    usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData,
+                        sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
+                    uqh->uqh_SetupBuffer = NULL;
+                }
                 uhciFreeTD(hc, setuputd);
                 uhciFreeTD(hc, termutd);
                 uhciFreeQH(hc, uqh);
@@ -716,6 +728,13 @@ void uhciScheduleIntTDs(struct PCIController *hc)
 
         if(!utd) {
             // not at least one data TD? try again later
+            if(uqh->uqh_DataBuffer) {
+                usbReleaseBuffer(uqh->uqh_DataBuffer,
+                    &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]),
+                    ioreq->iouh_Length - actual,
+                    ioreq->iouh_Dir);
+                uqh->uqh_DataBuffer = NULL;
+            }
             uhciFreeQH(hc, uqh);
             break;
         }
@@ -902,6 +921,13 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
 
         if(!utd) {
             // not at least one data TD? try again later
+            if(uqh->uqh_DataBuffer) {
+                usbReleaseBuffer(uqh->uqh_DataBuffer,
+                    &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]),
+                    ioreq->iouh_Length - actual,
+                    ioreq->iouh_Dir);
+                uqh->uqh_DataBuffer = NULL;
+            }
             uhciFreeQH(hc, uqh);
             break;
         }
@@ -1274,6 +1300,19 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu)
         PCIXAddInterrupt(hc, &hc->hc_PCIIntHandler);
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBINTEN, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
+
+        /*
+         * Flush initial schedule structures so non-coherent caches do not
+         * hide frame list and QH/TD updates from the controller.
+         */
+        CacheClearE(uhcihcp->uhc_UhciFrameList, sizeof(ULONG) * UHCI_FRAMELIST_SIZE, CACRF_ClearD);
+        CacheClearE(uhcihcp->uhc_UhciTermQH, sizeof(*uhcihcp->uhc_UhciTermQH), CACRF_ClearD);
+        CacheClearE(uhcihcp->uhc_UhciBulkQH, sizeof(*uhcihcp->uhc_UhciBulkQH), CACRF_ClearD);
+        CacheClearE(uhcihcp->uhc_UhciCtrlQH, sizeof(*uhcihcp->uhc_UhciCtrlQH), CACRF_ClearD);
+        CacheClearE(uhcihcp->uhc_UhciIsoTD, sizeof(*uhcihcp->uhc_UhciIsoTD), CACRF_ClearD);
+        for(cnt = 0; cnt < 9; cnt++) {
+            CacheClearE(uhcihcp->uhc_UhciIntQH[cnt], sizeof(*uhcihcp->uhc_UhciIntQH[cnt]), CACRF_ClearD);
+        }
 
         // clear all port bits (both ports)
         WRITEIO32_LE(hc->hc_RegBase, UHCI_PORT1STSCTRL, 0);
