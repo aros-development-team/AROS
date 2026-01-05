@@ -245,12 +245,12 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
     while((nextioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ)) {
         uqh = (struct UhciQH *) ioreq->iouh_DriverPrivate1;
         if(uqh) {
-            pciusbUHCIDebug("UHCI", "UHCI: Examining IOReq=%08lx with UQH=%08lx\n", ioreq, uqh);
+            pciusbUHCIDebug("UHCI", "UHCI: Examining IOReq=0x%p with UQH=%08lx\n", ioreq, uqh);
             linkelem = READMEM32_LE(&uqh->uqh_Element);
             inspect = 0;
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
             if(linkelem & UHCI_TERMINATE) {
-                pciusbUHCIDebug("UHCI", "UHCI: UQH terminated %08lx\n", linkelem);
+                pciusbUHCIDebug("UHCI", "UHCI: UQH %08lx terminated %08lx\n", uqh, linkelem);
                 inspect = 2;
             } else {
                 utd = (struct UhciTD *) ((linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - UHCI_STRUCTURE_OFFSET); // struct UhciTD starts 16/32 bytes before physical TD depending on architecture
@@ -327,7 +327,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                                 inspect = 3;
                                 break;
                             } else if(ctrlstatus & UTSF_CRCTIMEOUT) {
-                                pciusbError("UHCI", "CRC/Timeout error IOReq=%08lx DIR=%ld\n", ioreq, ioreq->iouh_Dir);
+                                pciusbError("UHCI", "CRC/Timeout error IOReq=0x%p DIR=%ld\n", ioreq, ioreq->iouh_Dir);
                                 if(ctrlstatus & UTSF_STALLED) {
                                     ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
                                 } else {
@@ -447,7 +447,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc)
                 }
             }
         } else {
-            pciusbUHCIDebug("UHCI", "UHCI: IOReq=%08lx has no UQH!\n", ioreq);
+            pciusbUHCIDebug("UHCI", "UHCI: IOReq=0x%p has no UQH!\n", ioreq);
         }
         ioreq = nextioreq;
     }
