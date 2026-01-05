@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -1784,7 +1784,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem.me_Un.meu_Addr) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
         ehcihcp->ehc_EhciFrameList = (ULONG *) memptr;
         pciusbEHCIDebug("EHCI", "FrameListBase 0x%p\n", ehcihcp->ehc_EhciFrameList);
-        memptr += sizeof(APTR) * EHCI_FRAMELIST_SIZE;
+        memptr += sizeof(ULONG) * EHCI_FRAMELIST_SIZE;
 
         // build up QH pool
         eqh = (struct EhciQH *) memptr;
