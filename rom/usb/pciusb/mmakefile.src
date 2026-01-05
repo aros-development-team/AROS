@@ -15,7 +15,7 @@ FILES := \
         ehci/ehci_hcd \
         ehci/ehci_hcport \
         ehci/ehci_isoch \
-        xhci/xhcichip \
+        xhci/xhci_hcd \
         xhci/xhci_periodic \
         xhci/xhci_isoch \
         xhci/xhci_async \
