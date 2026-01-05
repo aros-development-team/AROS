@@ -1852,7 +1852,10 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
             xhciStartIsochIO(hc, rtn);
         break;
     case HCITYPE_EHCI:
-        ehciStartIsochIO(hc, rtn);
+        if(!ehciStartIsochIO(hc, rtn)) {
+            Enable();
+            return UHIOERR_OUTOFMEMORY;
+        }
         break;
     case HCITYPE_UHCI:
         uhciStartIsochIO(hc, rtn);

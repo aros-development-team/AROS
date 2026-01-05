@@ -21,7 +21,7 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
 WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
-void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ehciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 
 static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
