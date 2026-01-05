@@ -6,18 +6,18 @@ FILES := \
         pciusb_arospci \
         pciusb_dev \
         buffer \
-        ohcichip \
-        uhcichip \
-        ehcichip \
-        xhcichip \
-        xhcichip_periodic \
-        xhcichip_isoch \
-        xhcichip_async \
-        xhcichip_schedule \
-        xhcichip_hcport \
-        xhcichip_hw \
-        xhcidevice \
-        xhcidebug \
+        ohci/ohcichip \
+        uhci/uhcichip \
+        ehci/ehcichip \
+        xhci/xhcichip \
+        xhci/xhcichip_periodic \
+        xhci/xhcichip_isoch \
+        xhci/xhcichip_async \
+        xhci/xhcichip_schedule \
+        xhci/xhcichip_hcport \
+        xhci/xhcichip_hw \
+        xhci/xhcidevice \
+        xhci/xhcidebug \
         uhwcmd \
         debug
 

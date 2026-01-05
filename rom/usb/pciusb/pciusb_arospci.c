@@ -17,10 +17,10 @@
 #include <string.h>
 
 #include "uhwcmd.h"
-#include "ohciproto.h"
-#include "uhciproto.h"
-#include "ehciproto.h"
-#include "xhciproto.h"
+#include "ohci/ohciproto.h"
+#include "uhci/uhciproto.h"
+#include "ehci/ehciproto.h"
+#include "xhci/xhciproto.h"
 
 #define NewList NEWLIST
 

@@ -14,8 +14,8 @@
 
 #include "uhwcmd.h"
 #include "ehciproto.h"
-#include "ohcichip.h"
-#include "uhcichip.h"
+#include "ohci/ohcichip.h"
+#include "uhci/uhcichip.h"
 
 #ifdef base
 #undef base
