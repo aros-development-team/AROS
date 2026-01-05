@@ -5,6 +5,7 @@
 
 void ohciUpdateFrameCounter(struct PCIController *hc);
 void ohciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+void ohciUpdateIntTree(struct PCIController *hc);
 BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ohciFree(struct PCIController *hc, struct PCIUnit *hu);
 
@@ -13,6 +14,9 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
+void ohciScheduleIsoTDs(struct PCIController *hc);
+
+void ohciCheckPortStatusChange(struct PCIController *hc);
 
 BOOL ohciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
 BOOL ohciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
