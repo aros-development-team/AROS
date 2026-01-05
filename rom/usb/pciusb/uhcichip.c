@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved
 */
 
 #include <proto/exec.h>
@@ -1503,9 +1503,9 @@ BOOL uhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
         pciusbUHCIDebug("UHCI", "Port %ld CLEAR_FEATURE %04lx->%04lx\n", idx, oldval, newval);
         WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
         if(hc->hc_PortChangeMap[hciport]) {
-            unit->hu_RootPortChanges |= 1UL<<idx;
+            unit->hu_RootPortChanges |= 1UL<<(idx + 1);
         } else {
-            unit->hu_RootPortChanges &= ~(1UL<<idx);
+            unit->hu_RootPortChanges &= ~(1UL<<(idx + 1));
         }
     }
     return cmdgood;
@@ -1669,7 +1669,8 @@ void uhciHandleIsochTDs(struct PCIController *hc)
             if(ctrl & (UTSF_BITSTUFFERR|UTSF_CRCTIMEOUT|UTSF_BABBLE|UTSF_DATABUFFERERR))
                 error = TRUE;
 
-            actual = ((ctrl & UTSM_ACTUALLENGTH) >> UTSS_ACTUALLENGTH) + 1;
+            actual = (ctrl & UTSM_ACTUALLENGTH) >> UTSS_ACTUALLENGTH;
+            actual = (actual == 0x7ff) ? 0 : actual + 1;
             ioreq->iouh_Actual = actual;
             ioreq->iouh_Req.io_Error = error ? UHIOERR_HOSTERROR : UHIOERR_NO_ERROR;
             rtn->rtn_BufferReq.ubr_Length = actual;
