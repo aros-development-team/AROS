@@ -181,7 +181,7 @@ static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
     UWORD dir;
 
     // unlink from schedule
-    eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
+    WRITEMEM32_LE(&eqh->eqh_Pred->eqh_NextQH, eqh->eqh_Succ->eqh_Self);
     CacheClearE(&eqh->eqh_Pred->eqh_NextQH, 32, CACRF_ClearD);
     SYNC;
 
@@ -212,10 +212,10 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
 
     pciusbEHCIDebug("EHCI", "Freeing AsyncContext 0x%p\n", eqh);
-    ehciFinishRequest(hc->hc_Unit, ioreq);
 
-    // need to wait until an async schedule rollover before freeing these
     Disable();
+    ehciFinishRequest(hc->hc_Unit, ioreq);
+    // need to wait until an async schedule rollover before freeing these
     eqh->eqh_Succ = ehcihcp->ehc_EhciAsyncFreeQH;
     ehcihcp->ehc_EhciAsyncFreeQH = eqh;
     // activate doorbell
@@ -230,9 +230,9 @@ void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
     struct EhciTD *nextetd;
 
     pciusbEHCIDebug("EHCI", "Freeing PeriodicContext 0x%p\n", eqh);
-    ehciFinishRequest(hc->hc_Unit, ioreq);
 
     Disable(); // avoid race condition with interrupt
+    ehciFinishRequest(hc->hc_Unit, ioreq);
     nextetd = eqh->eqh_FirstTD;
     while((etd = nextetd)) {
         pciusbEHCIDebug("EHCI", "FreeTD 0x%p\n", nextetd);
@@ -409,6 +409,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
                     CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, EHCI_TERMINATE);
                     CONSTWRITEMEM32_LE(&eqh->eqh_NextTD, EHCI_TERMINATE);
                     CONSTWRITEMEM32_LE(&eqh->eqh_AltNextTD, EHCI_TERMINATE);
+                    CacheClearE(&eqh->eqh_CurrTD, 16, CACRF_ClearD);
                     do {
                         len = ioreq->iouh_Length - eqh->eqh_Actual;
                         if(len > 4*EHCI_PAGE_SIZE) {
@@ -446,7 +447,8 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
                     CONSTWRITEMEM32_LE(&predetd->etd_AltNextTD, EHCI_TERMINATE);
                     SYNC;
                     etd = eqh->eqh_FirstTD;
-                    eqh->eqh_NextTD = etd->etd_Self;
+                    WRITEMEM32_LE(&eqh->eqh_NextTD, etd->etd_Self);
+                    CacheClearE(&eqh->eqh_NextTD, 16, CACRF_ClearD);
                     SYNC;
                     unit->hu_NakTimeoutFrame[devadrep] =
                         (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<ehcihcp->ehc_EhciTimeoutShift) : 0;
@@ -749,8 +751,12 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
             epcaps |= EQEF_HIGHSPEED;
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
-        eqh->eqh_AltNextTD = eqh->eqh_NextTD = setupetd->etd_Self;
+        CONSTWRITEMEM32_LE(&eqh->eqh_CtrlStatus, 0);
+        CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, 0);
+        WRITEMEM32_LE(&eqh->eqh_AltNextTD, setupetd->etd_Self);
+        WRITEMEM32_LE(&eqh->eqh_NextTD, setupetd->etd_Self);
+        CacheClearE(&eqh->eqh_CurrTD, 16, CACRF_ClearD);
+        CacheClearE(&eqh->eqh_NextTD, 16, CACRF_ClearD);
 
         //termetd->etd_QueueHead = setupetd->etd_QueueHead = eqh;
 
@@ -825,16 +831,17 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
 
         if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_CTRL_FILL) {
             // due to sillicon bugs, we fill in the first overlay ourselves.
-            eqh->eqh_CurrTD = setupetd->etd_Self;
-            eqh->eqh_NextTD = setupetd->etd_NextTD;
-            eqh->eqh_AltNextTD = setupetd->etd_AltNextTD;
-            eqh->eqh_CtrlStatus = setupetd->etd_CtrlStatus;
-            eqh->eqh_BufferPtr[0] = setupetd->etd_BufferPtr[0];
-            eqh->eqh_BufferPtr[1] = setupetd->etd_BufferPtr[1];
-            eqh->eqh_BufferPtr[2] = 0;
-            eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
-            eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
-            eqh->eqh_ExtBufferPtr[2] = 0;
+            WRITEMEM32_LE(&eqh->eqh_CurrTD, setupetd->etd_Self);
+            WRITEMEM32_LE(&eqh->eqh_NextTD, setupetd->etd_NextTD);
+            WRITEMEM32_LE(&eqh->eqh_AltNextTD, setupetd->etd_AltNextTD);
+            WRITEMEM32_LE(&eqh->eqh_CtrlStatus, setupetd->etd_CtrlStatus);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[0], setupetd->etd_BufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[1], setupetd->etd_BufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[2], 0);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[0], setupetd->etd_ExtBufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[1], setupetd->etd_ExtBufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[2], 0);
+            CacheClearE(&eqh->eqh_CurrTD, 32, CACRF_ClearD);
         }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -950,7 +957,8 @@ void ehciScheduleIntTDs(struct PCIController *hc)
             }
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
+        CONSTWRITEMEM32_LE(&eqh->eqh_CtrlStatus, 0);
+        CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, 0);
         eqh->eqh_FirstTD = NULL; // clear for ehciFreeQHandTDs()
 
         ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
@@ -972,7 +980,10 @@ void ehciScheduleIntTDs(struct PCIController *hc)
                 predetd->etd_AltNextTD = ehcihcp->ehc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
-                eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
+                WRITEMEM32_LE(&eqh->eqh_AltNextTD, etd->etd_Self);
+                WRITEMEM32_LE(&eqh->eqh_NextTD, etd->etd_Self);
+                CacheClearE(&eqh->eqh_CurrTD, 16, CACRF_ClearD);
+                CacheClearE(&eqh->eqh_NextTD, 16, CACRF_ClearD);
             }
 
             len = ioreq->iouh_Length - eqh->eqh_Actual;
@@ -1004,20 +1015,21 @@ void ehciScheduleIntTDs(struct PCIController *hc)
         if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_INT_FILL) {
             // due to sillicon bugs, we fill in the first overlay ourselves.
             etd = eqh->eqh_FirstTD;
-            eqh->eqh_CurrTD = etd->etd_Self;
-            eqh->eqh_NextTD = etd->etd_NextTD;
-            eqh->eqh_AltNextTD = etd->etd_AltNextTD;
-            eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
-            eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
-            eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
-            eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
-            eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
-            eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-            eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-            eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-            eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-            eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-            eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+            WRITEMEM32_LE(&eqh->eqh_CurrTD, etd->etd_Self);
+            WRITEMEM32_LE(&eqh->eqh_NextTD, etd->etd_NextTD);
+            WRITEMEM32_LE(&eqh->eqh_AltNextTD, etd->etd_AltNextTD);
+            WRITEMEM32_LE(&eqh->eqh_CtrlStatus, etd->etd_CtrlStatus);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[0], etd->etd_BufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[1], etd->etd_BufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[2], etd->etd_BufferPtr[2]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[3], etd->etd_BufferPtr[3]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[4], etd->etd_BufferPtr[4]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[0], etd->etd_ExtBufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[1], etd->etd_ExtBufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[2], etd->etd_ExtBufferPtr[2]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[3], etd->etd_ExtBufferPtr[3]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[4], etd->etd_ExtBufferPtr[4]);
+            CacheClearE(&eqh->eqh_CurrTD, 32, CACRF_ClearD);
         }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -1145,7 +1157,8 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
             WRITEMEM32_LE(&eqh->eqh_SplitCtrl, splitctrl);
         }
         WRITEMEM32_LE(&eqh->eqh_EPCaps, epcaps);
-        eqh->eqh_CtrlStatus = eqh->eqh_CurrTD = 0;
+        CONSTWRITEMEM32_LE(&eqh->eqh_CtrlStatus, 0);
+        CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, 0);
         eqh->eqh_FirstTD = NULL; // clear for ehciFreeQHandTDs()
 
         ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
@@ -1171,7 +1184,10 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
                 predetd->etd_AltNextTD = ehcihcp->ehc_ShortPktEndTD->etd_Self;
             } else {
                 eqh->eqh_FirstTD = etd;
-                eqh->eqh_AltNextTD = eqh->eqh_NextTD = etd->etd_Self;
+                WRITEMEM32_LE(&eqh->eqh_AltNextTD, etd->etd_Self);
+                WRITEMEM32_LE(&eqh->eqh_NextTD, etd->etd_Self);
+                CacheClearE(&eqh->eqh_CurrTD, 16, CACRF_ClearD);
+                CacheClearE(&eqh->eqh_NextTD, 16, CACRF_ClearD);
             }
 
             len = ioreq->iouh_Length - eqh->eqh_Actual;
@@ -1206,20 +1222,21 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
         if (hc->hc_Quirks & HCQ_EHCI_OVERLAY_BULK_FILL) {
             // due to sillicon bugs, we fill in the first overlay ourselves.
             etd = eqh->eqh_FirstTD;
-            eqh->eqh_CurrTD = etd->etd_Self;
-            eqh->eqh_NextTD = etd->etd_NextTD;
-            eqh->eqh_AltNextTD = etd->etd_AltNextTD;
-            eqh->eqh_CtrlStatus = etd->etd_CtrlStatus;
-            eqh->eqh_BufferPtr[0] = etd->etd_BufferPtr[0];
-            eqh->eqh_BufferPtr[1] = etd->etd_BufferPtr[1];
-            eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
-            eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
-            eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
-            eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
-            eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
-            eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
-            eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
-            eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
+            WRITEMEM32_LE(&eqh->eqh_CurrTD, etd->etd_Self);
+            WRITEMEM32_LE(&eqh->eqh_NextTD, etd->etd_NextTD);
+            WRITEMEM32_LE(&eqh->eqh_AltNextTD, etd->etd_AltNextTD);
+            WRITEMEM32_LE(&eqh->eqh_CtrlStatus, etd->etd_CtrlStatus);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[0], etd->etd_BufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[1], etd->etd_BufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[2], etd->etd_BufferPtr[2]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[3], etd->etd_BufferPtr[3]);
+            WRITEMEM32_LE(&eqh->eqh_BufferPtr[4], etd->etd_BufferPtr[4]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[0], etd->etd_ExtBufferPtr[0]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[1], etd->etd_ExtBufferPtr[1]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[2], etd->etd_ExtBufferPtr[2]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[3], etd->etd_ExtBufferPtr[3]);
+            WRITEMEM32_LE(&eqh->eqh_ExtBufferPtr[4], etd->etd_ExtBufferPtr[4]);
+            CacheClearE(&eqh->eqh_CurrTD, 32, CACRF_ClearD);
         }
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -1574,8 +1591,9 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                           ((len & ESITF_LENGTH_MASK) << ESITF_LENGTH_SHIFT));
 
             ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[0], sitd->sitd_ExtBufferPtr[0],
-                           ((ULONG)phys & EITM_BUFFER_BASE) | ((ULONG)phys & ESITM_BP0_OFFSET_MASK));
-            ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[1], sitd->sitd_ExtBufferPtr[1], ((ULONG)phys & EITM_BUFFER_BASE) | EITM_SMASK | (0x1c << 8));
+                           (phys & EITM_BUFFER_BASE) | (phys & ESITM_BP0_OFFSET_MASK));
+            ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[1], sitd->sitd_ExtBufferPtr[1],
+                           (phys & EITM_BUFFER_BASE) | EITM_SMASK | (0x1c << 8));
             WRITEMEM32_LE(&sitd->sitd_BackPointer, EHCI_TERMINATE);
 
             ptd->ptd_PktCount = 1;
@@ -1592,19 +1610,19 @@ void ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 pktcnt = 8;
 
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[0], itd->itd_ExtBufferPtr[0],
-                           ((ULONG)phys & EITM_BUFFER_BASE) |
+                           (phys & EITM_BUFFER_BASE) |
                            EITM_DEVADDR(rtn->rtn_IOReq.iouh_DevAddr) |
                            EITM_ENDPT(rtn->rtn_IOReq.iouh_Endpoint));
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[1], itd->itd_ExtBufferPtr[1],
-                           (((ULONG)(phys + 4096)) & EITM_BUFFER_BASE) |
+                           ((phys + 4096) & EITM_BUFFER_BASE) |
                            EITM_MAXPKTSIZE(rtn->rtn_IOReq.iouh_MaxPktSize));
             ehciSetPointer(ehcihcp, itd->itd_BufferPtr[2], itd->itd_ExtBufferPtr[2],
-                           (((ULONG)(phys + 8192)) & EITM_BUFFER_BASE) |
+                           ((phys + 8192) & EITM_BUFFER_BASE) |
                            EITM_BUFFER_DIR(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN));
-            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[3], itd->itd_ExtBufferPtr[3], ((ULONG)(phys + 12288)) & EITM_BUFFER_BASE);
-            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[4], itd->itd_ExtBufferPtr[4], ((ULONG)(phys + 16384)) & EITM_BUFFER_BASE);
-            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[5], itd->itd_ExtBufferPtr[5], ((ULONG)(phys + 20480)) & EITM_BUFFER_BASE);
-            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[6], itd->itd_ExtBufferPtr[6], ((ULONG)(phys + 24576)) & EITM_BUFFER_BASE);
+            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[3], itd->itd_ExtBufferPtr[3], (phys + 12288) & EITM_BUFFER_BASE);
+            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[4], itd->itd_ExtBufferPtr[4], (phys + 16384) & EITM_BUFFER_BASE);
+            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[5], itd->itd_ExtBufferPtr[5], (phys + 20480) & EITM_BUFFER_BASE);
+            ehciSetPointer(ehcihcp, itd->itd_BufferPtr[6], itd->itd_ExtBufferPtr[6], (phys + 24576) & EITM_BUFFER_BASE);
 
             offset = phys & EITM_BUFFER_OFFSET;
             for(pktidx = 0; pktidx < pktcnt; pktidx++) {
