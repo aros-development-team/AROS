@@ -1,7 +1,7 @@
 #ifndef XHCIPROTO_H
 #define XHCIPROTO_H
 
-#include "xhcichip.h"
+#include "xhci_hcd.h"
 
 #if !defined(AROS_USE_LOGRES)
 #if defined(DEBUG) && (DEBUG > 1)

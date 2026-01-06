@@ -203,7 +203,7 @@ static void xhciInitRing(struct PCIController *hc, struct pcisusbXHCIRing *ring)
     /*
      * The interrupt handler uses RINGFROMTRB() (masking) to map a TRB pointer
      * back to the containing ring. That requires ring allocations to be
-     * aligned to XHCI_RING_ALIGN (see xhcichip.h).
+     * aligned to XHCI_RING_ALIGN (see xhci_hcd.h).
      */
     if (((IPTR)ring & (XHCI_RING_ALIGN - 1)) != 0) {
         pciusbError("xHCI",

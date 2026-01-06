@@ -2,7 +2,7 @@
 #define XHCICHIP_SCHEDULE_H
 
 #include "xhciproto.h"
-#include "xhcichip.h"
+#include "xhci_hcd.h"
 
 UBYTE xhciEndpointIDFromIndex(UWORD wIndex);
 
