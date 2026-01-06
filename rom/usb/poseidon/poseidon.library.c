@@ -8,7 +8,7 @@
                  \______)                                   ~%%/WM"    \||
  _____    ___     ______  _____  __  _____     ___  __  __/~~__ ~~\    _||
 |"("  \()/\" \ ()/"_    )|"(___) ) )|"("  \ ()/\" \(__)/" ) /" ) " \  /_)O
-|  )   )/" \  \ (_/"\__/ |  )_  ( ( |  )_  ) /" \  \  /  /|/  / ·\  \/ ,|O
+|  )   )/" \  \ (_/"\__/ |  )_  ( ( |  )_  ) /" \  \  /  /|/  / Â·\  \/ ,|O
 | (___/(  (_\__) _\  \_  | (__)  ) )| (__) |(  (_\__)/  /"/  /   |\   '_|O
 |  |  _ \  /  / /" \_/ ) | ")__ ( ( |  )"  ) \  /  //  /|/  / . .|/\__/ ||
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
@@ -17,8 +17,8 @@
                 | (__) )
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
-                |_____/  Copyright ©2009-2025 The AROS Dev Team.
-                         Copyright ©2002-2009 Chris Hodges.
+                |_____/  Copyright Â©2009-2025 The AROS Dev Team.
+                         Copyright Â©2002-2009 Chris Hodges.
  ****************************************************************************/
 
 /*
@@ -2336,7 +2336,7 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                 if(len < 4) {
                     len = 4;
                     *tmpbuf++ = 0;
-                    *tmpbuf = AROS_WORD2LE(0x0409);
+                    *tmpbuf = 0x0409;
                     /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                    "Language array descriptor too small (len %ld), using dummy.",
                                    len);*/
@@ -2347,8 +2347,8 @@ AROS_LH2(STRPTR, psdGetStringDescriptor,
                 if(!ioerr) {
                     len >>= 1;
                     while(--len) {
-                        KPRINTF(1, ("LangID: %04lx\n", AROS_WORD2LE(*tmpbuf)));
-                        *tmpptr++ = AROS_WORD2LE(*tmpbuf);
+                        KPRINTF(1, ("LangID: %04lx\n", AROS_LE2WORD(*tmpbuf)));
+                        *tmpptr++ = AROS_LE2WORD(*tmpbuf);
                         tmpbuf++;
                     }
                     *tmpptr = 0;
@@ -3077,7 +3077,7 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
 
         case USEAF_INTERRUPT:
             /* Interrupt IN devices (keyboards, mice) are good candidates
-               for power saving – keep U1/U2 if supported */
+               for power saving Â– keep U1/U2 if supported */
             /* Nothing special here; keep defaults. */
             break;
 
@@ -3298,13 +3298,13 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
 
     pAllocDescriptor(pd, (UBYTE *) &usdd);
     pd->pd_Flags |= PDFF_HASDEVDESC;
-    pd->pd_USBVers = AROS_WORD2LE(usdd.bcdUSB);
+    pd->pd_USBVers = AROS_LE2WORD(usdd.bcdUSB);
     pd->pd_DevClass = usdd.bDeviceClass;
     pd->pd_DevSubClass = usdd.bDeviceSubClass;
     pd->pd_DevProto = usdd.bDeviceProtocol;
-    pd->pd_VendorID = AROS_WORD2LE(usdd.idVendor);
-    pd->pd_ProductID = AROS_WORD2LE(usdd.idProduct);
-    pd->pd_DevVers = AROS_WORD2LE(usdd.bcdDevice);
+    pd->pd_VendorID = AROS_LE2WORD(usdd.idVendor);
+    pd->pd_ProductID = AROS_LE2WORD(usdd.idProduct);
+    pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
     /* Hub is atleast highspeed is the USB version is > 2.0 and proto > 0 */
@@ -4247,7 +4247,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
 
             /* SuperSpeed endpoint companion information */
             if (pep) {
-                /* bMaxBurst – spec is 5 bits, clamp to 8-bit field */
+                /* bMaxBurst Â– spec is 5 bits, clamp to 8-bit field */
                 if (pep->pep_MaxBurst > 0xFF)
                     pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
                 else
@@ -4259,7 +4259,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 else
                     pp->pp_IOReq.iouh_SS_Mult = 0;
 
-                /* wBytesPerInterval – spec is 16 bits; field is UWORD */
+                /* wBytesPerInterval Â– spec is 16 bits; field is UWORD */
                 if (pep->pep_BytesPerInterval > 0xFFFFUL)
                     pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
                 else
@@ -7490,7 +7490,7 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 
 /* *** USB3 support functions *** */
 
-/* Build route string from Poseidon’s hub chain.
+/* Build route string from PoseidonÂ’s hub chain.
  *
  * RouteString is 20 bits, 4 bits per hub level, with:
  *   nibble 0 = port on FIRST hub below root
@@ -7540,7 +7540,7 @@ ULONG pBuildRouteString(struct PsdDevice *pd)
  *
  * For a leaf device, pd->pd_HubPort is the port on its parent hub.
  * We walk up until the parent hub has no parent (root), and return
- * the last child->pd_HubPort we saw – that is the physical root port.
+ * the last child->pd_HubPort we saw Â– that is the physical root port.
  */
 UWORD pGetRootPort(struct PsdDevice *pd)
 {
@@ -7578,7 +7578,7 @@ UWORD pGetRootPort(struct PsdDevice *pd)
  *   *thinkTime = hub->pd_HubThinkTime of the TT hub
  *   *isMultiTT = TRUE if PDFF_MULTITT set on that hub
  *
- * On failure or “not needed” (e.g. HS/SS devices), fields are set to 0/FALSE.
+ * On failure or Â“not neededÂ” (e.g. HS/SS devices), fields are set to 0/FALSE.
  */
 void pGetTTInfo(struct PsdDevice *pd,
                 UWORD *ttHubAddr,
@@ -7598,7 +7598,7 @@ void pGetTTInfo(struct PsdDevice *pd,
         return;
 
     /* Only FS/LS devices behind HS hubs need a TT; PDFF_NEEDSSPLIT already encodes this
-       in Poseidon’s logic, but this helper intentionally does not rely on that flag. */
+       in PoseidonÂ’s logic, but this helper intentionally does not rely on that flag. */
     dev = pd;
     hub = pd->pd_Hub;
 
@@ -7973,7 +7973,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
         ioerr = psdDoPipe(pp, &uscd, 9);//sizeof(struct UsbStdCfgDesc));
         if(!ioerr) {
             KPRINTF(1, ("Config type: %ld\n", (ULONG) uscd.bDescriptorType));
-            len = (ULONG) AROS_WORD2LE(uscd.wTotalLength);
+            len = (ULONG) AROS_LE2WORD(uscd.wTotalLength);
             KPRINTF(1, ("Configsize %ld, total size %ld\n", (ULONG) uscd.bLength, len));
             if((tempbuf = psdAllocVec(len)))
                 //if(1)
@@ -8108,10 +8108,10 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                     pep->pep_UsageType = (usep->bmAttributes>>4) & 0x03;
                                     eptype = (pep->pep_TransType == USEAF_INTERRUPT) ? "int" : "iso";
 
-                                    pep->pep_MaxPktSize = AROS_WORD2LE(usep->wMaxPacketSize) & 0x07ff;
-                                    pep->pep_NumTransMuFr = ((AROS_WORD2LE(usep->wMaxPacketSize)>>11) & 3) + 1;
+                                    pep->pep_MaxPktSize = AROS_LE2WORD(usep->wMaxPacketSize) & 0x07ff;
+                                    pep->pep_NumTransMuFr = ((AROS_LE2WORD(usep->wMaxPacketSize)>>11) & 3) + 1;
                                     if(pep->pep_NumTransMuFr == 4) {
-                                        psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains illegal Num Trans ï¿½Frame value!");
+                                        psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains illegal Num Trans Ã¯Â¿Â½Frame value!");
                                         pep->pep_NumTransMuFr = 1;
                                     }
 
@@ -8264,7 +8264,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                             if(pep) {
                                 pep->pep_MaxBurst = comp->bMaxBurst + 1;
                                 pep->pep_CompAttributes = comp->bmAttributes;
-                                pep->pep_BytesPerInterval = AROS_WORD2LE(comp->wBytesPerInterval);
+                                pep->pep_BytesPerInterval = AROS_LE2WORD(comp->wBytesPerInterval);
                                 if((pd->pd_Flags & PDFF_SUPERSPEED) && (pep->pep_TransType == USEAF_ISOCHRONOUS)) {
                                     pep->pep_NumTransMuFr = (comp->bmAttributes & 0x03) + 1;
                                 }
@@ -8277,7 +8277,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                         case UDT_SUPERSPEED_ISO_COMP: {
                             struct UsbSSPIsochEndpointCompDesc *comp = (struct UsbSSPIsochEndpointCompDesc *) dbuf;
                             if(pep) {
-                                pep->pep_BytesPerInterval = AROS_LONG2LE(comp->dwBytesPerInterval);
+                                pep->pep_BytesPerInterval = AROS_LE2LONG(comp->dwBytesPerInterval);
                             } else {
                                 psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed isoch companion without prior endpoint descriptor!");
                             }
@@ -8376,7 +8376,7 @@ ULONG pPowerRecurseDrain(LIBBASETYPEPTR ps, struct PsdDevice *pd)
     /* look at config */
     if((pc = pd->pd_CurrentConfig)) {
 
-        /* if suspended, no more than 500ï¿½A are drained */
+        /* if suspended, no more than 500Ã¯Â¿Â½A are drained */
         if(pd->pd_Flags & PDFF_SUSPENDED) {
             pd->pd_PowerDrain = (pc->pc_MaxPower >= 100) ? 3 : 1;
             return(pd->pd_PowerDrain);
