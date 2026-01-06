@@ -3077,7 +3077,7 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
 
         case USEAF_INTERRUPT:
             /* Interrupt IN devices (keyboards, mice) are good candidates
-               for power saving  keep U1/U2 if supported */
+               for power saving - keep U1/U2 if supported */
             /* Nothing special here; keep defaults. */
             break;
 
@@ -4247,7 +4247,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
 
             /* SuperSpeed endpoint companion information */
             if (pep) {
-                /* bMaxBurst  spec is 5 bits, clamp to 8-bit field */
+                /* bMaxBurst - spec is 5 bits, clamp to 8-bit field */
                 if (pep->pep_MaxBurst > 0xFF)
                     pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
                 else
@@ -4259,7 +4259,7 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 else
                     pp->pp_IOReq.iouh_SS_Mult = 0;
 
-                /* wBytesPerInterval  spec is 16 bits; field is UWORD */
+                /* wBytesPerInterval - spec is 16 bits; field is UWORD */
                 if (pep->pep_BytesPerInterval > 0xFFFFUL)
                     pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
                 else
@@ -7490,7 +7490,7 @@ AROS_LH2(STRPTR, psdGetStringChunk,
 
 /* *** USB3 support functions *** */
 
-/* Build route string from Poseidons hub chain.
+/* Build route string from Poseidon's hub chain.
  *
  * RouteString is 20 bits, 4 bits per hub level, with:
  *   nibble 0 = port on FIRST hub below root
@@ -7540,7 +7540,7 @@ ULONG pBuildRouteString(struct PsdDevice *pd)
  *
  * For a leaf device, pd->pd_HubPort is the port on its parent hub.
  * We walk up until the parent hub has no parent (root), and return
- * the last child->pd_HubPort we saw  that is the physical root port.
+ * the last child->pd_HubPort we saw - that is the physical root port.
  */
 UWORD pGetRootPort(struct PsdDevice *pd)
 {
@@ -7578,7 +7578,7 @@ UWORD pGetRootPort(struct PsdDevice *pd)
  *   *thinkTime = hub->pd_HubThinkTime of the TT hub
  *   *isMultiTT = TRUE if PDFF_MULTITT set on that hub
  *
- * On failure or not needed (e.g. HS/SS devices), fields are set to 0/FALSE.
+ * On failure or "not needed" (e.g. HS/SS devices), fields are set to 0/FALSE.
  */
 void pGetTTInfo(struct PsdDevice *pd,
                 UWORD *ttHubAddr,
@@ -7598,7 +7598,7 @@ void pGetTTInfo(struct PsdDevice *pd,
         return;
 
     /* Only FS/LS devices behind HS hubs need a TT; PDFF_NEEDSSPLIT already encodes this
-       in Poseidons logic, but this helper intentionally does not rely on that flag. */
+       in Poseidon's logic, but this helper intentionally does not rely on that flag. */
     dev = pd;
     hub = pd->pd_Hub;
 
@@ -8376,7 +8376,7 @@ ULONG pPowerRecurseDrain(LIBBASETYPEPTR ps, struct PsdDevice *pd)
     /* look at config */
     if((pc = pd->pd_CurrentConfig)) {
 
-        /* if suspended, no more than 500ï¿½A are drained */
+        /* if suspended, no more than 500 microamps are drained */
         if(pd->pd_Flags & PDFF_SUSPENDED) {
             pd->pd_PowerDrain = (pc->pc_MaxPower >= 100) ? 3 : 1;
             return(pd->pd_PowerDrain);
