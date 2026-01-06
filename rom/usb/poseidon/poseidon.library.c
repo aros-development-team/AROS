@@ -3043,9 +3043,11 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
     policy &= ~USBPWR_POLICY_MASK;
     policy |= USBPWR_POLICY_BALANCED;
 
-    /* USB 2.0 LPM (L1) */
+    /* USB 2.0 LPM (L1) applies only to HS USB 2.x links; avoid SS where U-states apply. */
     if (pd->pd_Usb20LpmCapable &&
-            pd->pd_USBVers >= 0x0201) {
+            pd->pd_USBVers >= 0x0201 &&
+            (pd->pd_Flags & PDFF_HIGHSPEED) &&
+            !(pd->pd_Flags & PDFF_SUPERSPEED)) {
         policy |= USBPWR_ALLOW_L1;
     }
 
