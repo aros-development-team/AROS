@@ -215,7 +215,7 @@ BOOL pciInit(struct PCIDevice *hd)
                         {aHidd_HardwareName,        0               },
                         {aHidd_Producer,            hc->hc_VendID   },
                         {aHidd_Product,             hc->hc_ProdID   },
-                        {aHidd_DriverData,          0               },
+                        {aHidd_DriverData,          (IPTR)hc        },
                         {TAG_DONE,                  0               }
                     };
                     char *usb_chipset = "xHCI";

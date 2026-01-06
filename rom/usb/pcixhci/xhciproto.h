@@ -25,6 +25,8 @@ xhciCreateDeviceCtx(struct PCIController *hc, UWORD rootPortIndex, ULONG route, 
 WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq, struct PCIUnit *unit, struct PCIDevice *base);
 LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq);
 void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq);
+ULONG xhciPageSize(struct PCIController *hc);
+void xhciInitRing(struct PCIController *hc, struct pcisusbXHCIRing *ring);
 
 static inline BOOL xhciOpenTaskTimer(struct MsgPort **msgport,
                                      struct timerequest **timerreq,
