@@ -110,18 +110,6 @@ const struct UsbHubDesc    RHHubDesc = {
     0                                               // x PortPwrCtrlMask (size is variable)
 };
 
-const struct  UsbSSHubDesc    RHHubSSDesc = {
-    sizeof(struct UsbSSHubDesc),                    // 0 Number of bytes in this descriptor, including this byte
-    UDT_SSHUB,                                      // 1 Descriptor Type, value: 29H for hub descriptor
-    0,                                              // 2 Number of downstream facing ports that this hub supports
-    0,                                              // 3 wHubCharacteristics
-    0,                                              // 5 bPwrOn2PwrGood
-    1,                                              // 6 bHubContrCurrent
-    0,                                              // 7 bHubHdrDecLat
-    0,                                              // 8 wHubDelay
-    1                                               // 10 DeviceRemovable
-};
-
 static const char strStandardConfig[] = "Standard Config";
 static const char strHubInterface[] = "Hub interface";
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", strStandardConfig, strHubInterface };
