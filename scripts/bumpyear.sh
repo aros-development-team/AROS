@@ -17,19 +17,19 @@ sed -i "$SUB" $SOURCE_PATH/arch/m68k-amiga/boot/rom_entry.S
 sed -i "$SUB" $SOURCE_PATH/rom/dos/boot.c
 sed -i "$SUB" $SOURCE_PATH/rom/exec/taggedopenlibrary.c
 
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/cs
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/de
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/el
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/en
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/es
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fi
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fr
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/it
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/nl
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pl
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pt
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/ru
-sed -i "$SUB" $DOC_PATH/targets/www/template/languages/sv
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/cs.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/de.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/el.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/en.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/es.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fi.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/fr.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/it.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/nl.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pl.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/pt.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/ru.txt
+sed -i "$SUB" $DOC_PATH/targets/www/template/languages/sv.txt
 
 # warning: the following are within a submodule
 sed -i "$SUB" $SOURCE_PATH/workbench/system/AboutAROS/catalogs/aboutaros.cd
