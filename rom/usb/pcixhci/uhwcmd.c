@@ -1,6 +1,7 @@
 /* uhwcmd.c - pcixhci.device by Chris Hodges
 */
 
+#include <devices/usb.h>
 #include <devices/usb_hub.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
@@ -655,38 +656,95 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
                     usdd->idVendor = WORD2LE(hc->hc_VendID);
                     usdd->idProduct = WORD2LE(hc->hc_ProdID);
-
-                    if(unit->hu_RootHubXPorts) {
-                        pciusbRHDebug("RH", "XHCI (USB3) Hub Descriptor\n");
+                    if((unit->hu_RootHubXPorts) && (ioreq->iouh_Flags & UHFF_SUPERSPEED)) {
+                        pciusbRHDebug("RH", "xHCI (USB3) Hub Descriptor\n");
                         usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
                         usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
                         usdd->bDeviceSubClass= 0;
                         usdd->bDeviceProtocol= 3;                    /* USB3 hub */
                         usdd->bMaxPacketSize0 = 9;  /* SS EP0 is 512 bytes (2^9) */
                     }
-
                 }
                 return(0);
 
             case UDT_CONFIGURATION: {
-                UBYTE tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)];
-                pciusbRHDebug("RH", "GetConfigDescriptor (%ld)\n", len);
-                CopyMem((APTR) &RHCfgDesc,
-                        tmpbuf,
-                        sizeof(struct UsbStdCfgDesc));
-                CopyMem((APTR) &RHIfDesc,
+                /*
+                 * For SuperSpeed, periodic endpoints must be followed by a
+                 * SuperSpeed Endpoint Companion descriptor.
+                 */
+                UBYTE tmpbuf[sizeof(struct UsbStdCfgDesc) +
+                             sizeof(struct UsbStdIfDesc) +
+                             sizeof(struct UsbStdEPDesc) +
+                             sizeof(struct UsbSSEndpointCompDesc)];
+
+                const ULONG base_len = sizeof(struct UsbStdCfgDesc) +
+                                       sizeof(struct UsbStdIfDesc) +
+                                       sizeof(struct UsbStdEPDesc);
+
+                const BOOL is_ss_rh = (unit->hu_RootHubXPorts != 0) &&
+                                      (ioreq->iouh_Flags & UHFF_SUPERSPEED);
+
+                ULONG total_len = base_len;
+
+                /* Start from the USB2-style template. */
+                CopyMem((APTR)&RHCfgDesc, tmpbuf, sizeof(struct UsbStdCfgDesc));
+                CopyMem((APTR)&RHIfDesc,
                         &tmpbuf[sizeof(struct UsbStdCfgDesc)],
                         sizeof(struct UsbStdIfDesc));
-                CopyMem((APTR) &RHEPDesc,
+                CopyMem((APTR)&RHEPDesc,
                         &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)],
                         sizeof(struct UsbStdEPDesc));
-                {
-                    struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
-                    pciusbRHDebug("RH", "XHCI EndPoint Config\n");
-                    usepd->bInterval = 12; // * 1ms, or 125 microseconds, = 2048 microframes
-                    usepd->wMaxPacketSize = AROS_WORD2LE(64);
+
+                if (is_ss_rh) {
+                    struct UsbStdCfgDesc *uscd = (struct UsbStdCfgDesc *)tmpbuf;
+                    struct UsbStdIfDesc *usifd =
+                        (struct UsbStdIfDesc *)&tmpbuf[sizeof(struct UsbStdCfgDesc)];
+                    struct UsbStdEPDesc *usepd =
+                        (struct UsbStdEPDesc *)&tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
+                    struct UsbSSEndpointCompDesc *ussec =
+                        (struct UsbSSEndpointCompDesc *)&tmpbuf[base_len];
+
+                    ULONG nports = unit->hu_RootHubXPorts;
+                    UWORD mps;
+
+                    /* SuperSpeed hub interface protocol. */
+                    usifd->bInterfaceProtocol = 3;
+
+                    /*
+                     * Hub interrupt IN endpoint payload is the change bitmap:
+                     * 1 bit for the hub + 1 bit per downstream port.
+                     * bytes = ceil((nports + 1) / 8)
+                     */
+                    mps = (UWORD)((nports + 1 + 7) / 8);
+                    if (mps == 0)
+                        mps = 1;
+
+                    pciusbRHDebug("RH", "xHCI SS EndPoint Config (ports=%lu mps=%u)\n",
+                                  nports, (unsigned)mps);
+
+                    /*
+                     * HS/SS: interval = 2^(bInterval-1) * 125us.
+                     * 12 => 2^11 * 125us = 256ms.
+                     */
+                    usepd->bInterval = 12;
+                    usepd->wMaxPacketSize = AROS_WORD2LE(mps);
+
+                    /* SuperSpeed Endpoint Companion descriptor. */
+                    ussec->bLength           = sizeof(struct UsbSSEndpointCompDesc);
+                    ussec->bDescriptorType   = UDT_SUPERSPEED_EP_COMP;
+                    ussec->bMaxBurst         = 0;
+                    ussec->bmAttributes      = 0;
+                    ussec->wBytesPerInterval = AROS_WORD2LE(mps);
+
+                    total_len = base_len + sizeof(struct UsbSSEndpointCompDesc);
+                    uscd->wTotalLength = AROS_WORD2LE(total_len);
+                } else {
+                    /* Ensure wTotalLength matches what we actually return. */
+                    struct UsbStdCfgDesc *uscd = (struct UsbStdCfgDesc *)tmpbuf;
+                    uscd->wTotalLength = AROS_WORD2LE(base_len);
                 }
-                ioreq->iouh_Actual = (len > sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) ? (sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) : len;
+
+                ioreq->iouh_Actual = (len > total_len) ? total_len : len;
                 CopyMem(tmpbuf, ioreq->iouh_Data, ioreq->iouh_Actual);
                 return(0);
             }
@@ -763,7 +821,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             hc = unit->hu_PortMapX[idx - 1];
             hciport = idx - 1;
-            pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (XHCI)\n", val, idx, hciport);
+            pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (xHCI)\n", val, idx, hciport);
             if (xhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
                 pciusbRHDebug("RH", "xhciSetFeature returned (retval %04x)\n", retval);
                 return(retval);
@@ -779,7 +837,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             hc = unit->hu_PortMapX[idx - 1];
             hciport = idx - 1;
-            pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (XHCI)\n", val, idx, hciport);
+            pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (xHCI)\n", val, idx, hciport);
             if (xhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
                 pciusbRHDebug("RH", "xhciClearFeature returned (retval %04x)\n", retval);
                 return(retval);
@@ -833,39 +891,42 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         case USR_GET_DESCRIPTOR:
             switch(val>>8) {
             case UDT_SSHUB: {
-                struct UsbSSHubDesc *shd;
-                UWORD sslen = sizeof(struct UsbSSHubDesc);
+                if((unit->hu_RootHubXPorts) && (ioreq->iouh_Flags & UHFF_SUPERSPEED)) {
+                    struct UsbSSHubDesc *shd;
+                    UWORD sslen = sizeof(struct UsbSSHubDesc);
 
-                pciusbRHDebug("RH", "GetSuperSpeedHubDescriptor (%ld)\n", len);
+                    pciusbRHDebug("RH", "GetSuperSpeedHubDescriptor (%ld)\n", len);
 
-                ioreq->iouh_Actual = (len > sslen) ? sslen : len;
-                CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+                    ioreq->iouh_Actual = (len > sslen) ? sslen : len;
+                    CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                if (ioreq->iouh_Length >= sslen) {
-                    shd = (struct UsbSSHubDesc *)ioreq->iouh_Data;
+                    if (ioreq->iouh_Length >= sslen) {
+                        shd = (struct UsbSSHubDesc *)ioreq->iouh_Data;
 
-                    /* Number of SS ports */
-                    shd->bNbrPorts = unit->hu_RootHubXPorts;
+                        /* Number of SS ports */
+                        shd->bNbrPorts = unit->hu_RootHubXPorts;
 
-                    /* wHubCharacteristics: at least indicate per-port power if PPC set */
-                    {
-                        UWORD characteristics = 0;
-                        hc = (struct PCIController *)unit->hu_Controllers.lh_Head;
-                        while (hc->hc_Node.ln_Succ) {
-                            if (hc->hc_Flags & HCF_PPC)
-                                characteristics |= UHCF_INDIVID_POWER;
-                            hc = (struct PCIController *)hc->hc_Node.ln_Succ;
+                        /* wHubCharacteristics: at least indicate per-port power if PPC set */
+                        {
+                            UWORD characteristics = 0;
+                            hc = (struct PCIController *)unit->hu_Controllers.lh_Head;
+                            while (hc->hc_Node.ln_Succ) {
+                                if (hc->hc_Flags & HCF_PPC)
+                                    characteristics |= UHCF_INDIVID_POWER;
+                                hc = (struct PCIController *)hc->hc_Node.ln_Succ;
+                            }
+                            shd->wHubCharacteristics = WORD2LE(characteristics);
                         }
-                        shd->wHubCharacteristics = WORD2LE(characteristics);
+
+                        /* bPwrOn2PwrGood - USB3 spec suggests up to 20ms typical for xHCI */
+                        shd->bPwrOn2PwrGood = 10; /* 10 * 2ms = 20ms */
+
+                        /* wHubDelay / bHubHdrDecLat left at 0 for now */
                     }
 
-                    /* bPwrOn2PwrGood - USB3 spec suggests up to 20ms typical for xHCI */
-                    shd->bPwrOn2PwrGood = 10; /* 10 * 2ms = 20ms */
-
-                    /* wHubDelay / bHubHdrDecLat left at 0 for now */
+                    return 0;
                 }
-
-                return 0;
+                return UHIOERR_STALL;
             }
 
             case UDT_HUB: {
@@ -1906,7 +1967,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                                 devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                                 if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
                                     // give the thing the chance to exit gracefully
-                                    KPRINTF(200, "XHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
+                                    KPRINTF(200, "xHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                                     causeint = TRUE;
                                 }
                             }
@@ -1915,7 +1976,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                         // Timeout failed pending transfers
                         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                         if ((unit->hu_NakTimeoutFrame[devadrep]) && (framecnt > unit->hu_NakTimeoutFrame[devadrep])) {
-                            KPRINTF(200, "XHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
+                            KPRINTF(200, "xHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                             ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
                             xhciAbortRequest(hc, ioreq);
                         } else if (unit->hu_NakTimeoutFrame[devadrep])

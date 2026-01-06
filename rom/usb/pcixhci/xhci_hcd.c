@@ -47,6 +47,12 @@
 #define XHCI_CMDFAIL_LOGGING 1
 #endif
 
+static char xhciCompleteIntName[] = "xHCI CompleteInt";
+static char xhciResetIntName[] = "xHCI PCI (pcixhci.device)";
+static char xhciEndpointTimerName[] = "xHCI endpoint";
+static char xhciEventRingTaskNameFmt[] = "usbhw<pcixhci.device/%ld> Event Ring Task";
+static char xhciPortTaskNameFmt[] = "usbhw<pcixhci.device/%ld> Port Task";
+
 static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
                                     ULONG epid,
@@ -1373,8 +1379,7 @@ static BOOL xhciDerivePortFlagsAndMps0(struct PCIController *hc,
     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
         *flags |= UHFF_HIGHSPEED;
         if (*mps0 == 0) *mps0 = 64;
-    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED ||
-               speedBits == XHCIF_PR_PORTSC_SUPERSPEEDPLUS) {
+    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
         *flags |= UHFF_SUPERSPEED;
         if (*mps0 == 0) *mps0 = 512;
     } else {
@@ -1789,7 +1794,7 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     if (!epctx->ectx_TimerReq) {
         if (!xhciOpenTaskTimer(&epctx->ectx_TimerPort,
                                &epctx->ectx_TimerReq,
-                               "xHCI endpoint")) {
+                               xhciEndpointTimerName)) {
             if (epctx_allocated)
                 FreeMem(epctx, sizeof(*epctx));
             return UHIOERR_HOSTERROR;
@@ -1919,7 +1924,7 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     if (epctx && !epctx->ectx_TimerReq) {
         if (!xhciOpenTaskTimer(&epctx->ectx_TimerPort,
                                &epctx->ectx_TimerReq,
-                               "xHCI endpoint")) {
+                               xhciEndpointTimerName)) {
             if (epctx_allocated)
                 FreeMem(epctx, sizeof(*epctx));
             return UHIOERR_HOSTERROR;
@@ -3417,6 +3422,10 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     ULONG cnt;
     UBYTE usbMajor = 0;
     UBYTE usbMinor = 0;
+    UBYTE usbBestMajor = 0;
+    UBYTE usbBestMinor = 0;
+    UBYTE usb3Major = 0;
+    UBYTE usb3Minor = 0;
 
     struct TagItem pciMemEnableAttrs[] = {
         { aHidd_PCIDevice_isMEM,    TRUE },
@@ -3442,7 +3451,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     hc->hc_CPrivate = xhcic;
 
     hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
-    hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
+    hc->hc_CompleteInt.is_Node.ln_Name = xhciCompleteIntName;
     hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
     hc->hc_CompleteInt.is_Data = hc;
     hc->hc_CompleteInt.is_Code = (VOID_FUNC)xhciCompleteInt;
@@ -3504,7 +3513,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
             if (xhciUSBLegSup & XHCIF_USBLEGSUP_BIOSOWNED) {
                 ULONG ownershipval = xhciUSBLegSup | XHCIF_USBLEGSUP_OSOWNED;
 
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Taking ownership of XHCI from BIOS" DEBUGCOLOR_RESET" \n");
+                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Taking ownership of xHCI from BIOS" DEBUGCOLOR_RESET" \n");
 takeownership:
                 cnt = 100;
                 /*
@@ -3523,7 +3532,7 @@ takeownership:
                 }
                 if ((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
                     (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
-                    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership of XHCI still with BIOS" DEBUGCOLOR_RESET" \n");
+                    pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership of xHCI still with BIOS" DEBUGCOLOR_RESET" \n");
 
                     /* Try to force ownership */
                     ownershipval = XHCIF_USBLEGSUP_OSOWNED;
@@ -3532,7 +3541,7 @@ takeownership:
             } else if (xhciUSBLegSup & XHCIF_USBLEGSUP_OSOWNED) {
                 pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership already with OS!" DEBUGCOLOR_RESET" \n");
             } else {
-                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Forcing ownership of XHCI from (unknown)" DEBUGCOLOR_RESET" \n");
+                pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Forcing ownership of xHCI from (unknown)" DEBUGCOLOR_RESET" \n");
                 /* Try to force ownership */
                 *capreg = AROS_LONG2LE(XHCIF_USBLEGSUP_OSOWNED);
                 (void)*capreg;
@@ -3543,15 +3552,21 @@ takeownership:
             *smictl = AROS_LONG2LE(0);
             (void)*smictl;
         } else if (capid == XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL) {
-            ULONG capprot = AROS_LE2LONG(*(capreg + 1));
-            ULONG capports = AROS_LE2LONG(*(capreg + 2));
-            UBYTE major = (capprot >> XHCIS_XCP_REV_MAJOR) & XHCI_XCP_REV_MAJOR_MASK;
-            UBYTE minor = (capprot >> XHCIS_XCP_REV_MINOR) & XHCI_XCP_REV_MINOR_MASK;
-            UWORD name = (UWORD)(capprot & XHCI_XCP_NAMESTRING_MASK);
+            ULONG caprev   = AROS_LE2LONG(*(capreg + 0));  /* DWORD0: revision */
+            ULONG capname  = AROS_LE2LONG(*(capreg + 1));  /* DWORD1: name string */
+            ULONG capports = AROS_LE2LONG(*(capreg + 2));  /* DWORD2: ports */
+
+            UBYTE major = (caprev >> XHCIS_XCP_REV_MAJOR) & XHCI_XCP_REV_MAJOR_MASK;
+            UBYTE minor_bcd = (caprev >> XHCIS_XCP_REV_MINOR) & XHCI_XCP_REV_MINOR_MASK;
+            UBYTE minor = (minor_bcd >> 4) & 0x0F;
+            if (minor == 0)
+                minor = minor_bcd & 0x0F;
+
+            UWORD name = (UWORD)(capname & XHCI_XCP_NAMESTRING_MASK);
             UBYTE portOffset = (capports >> XHCIS_XCP_PORT_OFFSET) & XHCI_XCP_PORT_OFFSET_MASK;
             UBYTE portCount = (capports >> XHCIS_XCP_PORT_COUNT) & XHCI_XCP_PORT_COUNT_MASK;
 
-            pciusbXHCIDebug("xHCI",
+            pciusbWarn("xHCI",
                             DEBUGCOLOR_SET "  XCP protocol '%c%c' rev %u.%u ports %u..%u"
                             DEBUGCOLOR_RESET" \n",
                             (name & 0xFF),
@@ -3560,9 +3575,15 @@ takeownership:
                             portOffset,
                             (UWORD)(portOffset + portCount - 1));
 
-            if ((major > usbMajor) || ((major == usbMajor) && (minor > usbMinor))) {
-                usbMajor = major;
-                usbMinor = minor;
+            if ((major > usbBestMajor) || ((major == usbBestMajor) && (minor > usbBestMinor))) {
+                usbBestMajor = major;
+                usbBestMinor = minor;
+            }
+            if (major >= XHCI_PORT_PROTOCOL_USB3) {
+                if ((major > usb3Major) || ((major == usb3Major) && (minor > usb3Minor))) {
+                    usb3Major = major;
+                    usb3Minor = minor;
+                }
             }
 
             if (portOffset > 0 && portCount > 0) {
@@ -3597,6 +3618,17 @@ takeownership:
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", xhciversion);
     hc->hc_HCIVersionMajor = (UBYTE)((xhciversion >> 8) & 0xFF);
     hc->hc_HCIVersionMinor = (UBYTE)((xhciversion >> 4) & 0x0F);
+    if (usb3Major > 0) {
+        usbMajor = usb3Major;
+        usbMinor = usb3Minor;
+    } else {
+        usbMajor = usbBestMajor;
+        usbMinor = usbBestMinor;
+    }
+    if (usbMajor == 0) {
+        usbMajor = 3;
+        usbMinor = 0xFF;
+    }
     hc->hc_USBVersionMajor = usbMajor;
     hc->hc_USBVersionMinor = usbMinor;
     if (xhciversion == 0x0090)
@@ -3780,7 +3812,7 @@ takeownership:
     }
 
     /* install reset handler */
-        hc->hc_ResetInt.is_Node.ln_Name = "XHCI PCI (pcixhci.device)";
+    hc->hc_ResetInt.is_Node.ln_Name = xhciResetIntName;
     hc->hc_ResetInt.is_Code = (VOID_FUNC)XhciResetHandler;
     hc->hc_ResetInt.is_Data = hc;
     AddResetCallback(&hc->hc_ResetInt);
@@ -3894,14 +3926,14 @@ takeownership:
 
     struct Task *tmptask;
     char buf[64];
-    psdSafeRawDoFmt(buf, 64, "usbhw<pcixhci.device/%ld> Event Ring Task", hu->hu_UnitNo);
+    psdSafeRawDoFmt(buf, 64, xhciEventRingTaskNameFmt, hu->hu_UnitNo);
     if ((tmptask = psdSpawnSubTask(buf, xhciEventRingTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Event Ring Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_EventTask.xet_Task,
                         xhcic->xhc_EventTask.xet_ProcessEventsSignal);
     }
-    psdSafeRawDoFmt(buf, 64, "usbhw<pcixhci.device/%ld> Port Task", hu->hu_UnitNo);
+    psdSafeRawDoFmt(buf, 64, xhciPortTaskNameFmt, hu->hu_UnitNo);
     if ((tmptask = psdSpawnSubTask(buf, xhciPortTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Port Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
