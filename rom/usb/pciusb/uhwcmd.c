@@ -18,10 +18,7 @@
 static inline BOOL uhwIsRootHubIOReq(const struct IOUsbHWReq *ioreq,
                                      const struct PCIUnit *unit)
 {
-    /* Root hub "device" is not behind any port/hub route. */
-    return (ioreq->iouh_DevAddr == unit->hu_RootHubAddr) &&
-           (ioreq->iouh_RouteString == 0) &&
-           (ioreq->iouh_RootPort == 0);
+    return (ioreq->iouh_DevAddr == unit->hu_RootHubAddr);
 }
 
 #define NewList NEWLIST
