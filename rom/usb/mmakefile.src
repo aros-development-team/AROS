@@ -23,7 +23,7 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- kernel-usb-amiga-m68k : kernel-usb-amiga-m68k-$(AROS_TARGET_VARIANT)
 
-#MM- kernel-usb-amiga-m68k- : kernel-usb-nopci
+#MM- kernel-usb-amiga-m68k- : kernel-usb-nopci usb-poseidon-deneb
 
 # Clean up
 #MM- kernel-usb-clean : \

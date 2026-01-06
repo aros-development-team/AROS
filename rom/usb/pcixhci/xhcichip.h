@@ -303,5 +303,4 @@ struct pciusbXHCIIODevPrivate
   /* Fallback: at least prevent compiler reordering if nothing better exists. */
 # define XHCI_MMIO_BARRIER() do { } while (0)
 #endif
-#endif
 #endif /* XHCICHIP_H */

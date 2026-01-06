@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved
 
     Desc: xHCI chipset driver transfer preparation and special case handling
 */
@@ -287,5 +287,3 @@ _xhci_setaddr_complete:
 
     return 0;
 }
-
-#endif

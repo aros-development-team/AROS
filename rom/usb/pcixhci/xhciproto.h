@@ -383,5 +383,4 @@ xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 
 AROS_UFP0(void, xhciPortTask);
 AROS_UFP0(void, xhciEventRingTask);
-#endif
 #endif /* XHCIPROTO_H */
