@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved
 
     Desc:  xHCI chipset driver shared scheduling helper routines
 */
@@ -12,7 +12,7 @@
 #include <exec/memory.h>
 
 #include "uhwcmd.h"
-#include "xhcichip_schedule.h"
+#include "xhci_schedule.h"
 
 #ifdef base
 #undef base
@@ -356,4 +356,3 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 
     return queued;
 }
-

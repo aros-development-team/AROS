@@ -13,7 +13,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
-#include "xhcichip_schedule.h"
+#include "xhci_schedule.h"
 
 #if defined(AROS_USE_LOGRES)
 #ifdef LogHandle

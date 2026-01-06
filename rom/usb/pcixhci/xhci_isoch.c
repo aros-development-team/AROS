@@ -14,7 +14,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
-#include "xhcichip_schedule.h"
+#include "xhci_schedule.h"
 
 #ifdef base
 #undef base
@@ -370,4 +370,3 @@ void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         }
     }
 }
-

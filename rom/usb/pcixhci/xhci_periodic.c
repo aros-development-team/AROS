@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved
 
     Desc: xHCI chipset driver periodic transfer support functions
 */
@@ -14,7 +14,7 @@
 
 #include "uhwcmd.h"
 #include "xhciproto.h"
-#include "xhcichip_schedule.h"
+#include "xhci_schedule.h"
 
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
@@ -144,4 +144,3 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         }
     }
 }
-
