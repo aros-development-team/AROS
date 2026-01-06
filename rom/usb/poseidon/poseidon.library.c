@@ -3394,6 +3394,14 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     pAllocDescriptor(pd, (UBYTE *) &usdd);
     pd->pd_Flags |= PDFF_HASDEVDESC;
     pd->pd_USBVers = AROS_LE2WORD(usdd.bcdUSB);
+    pd->pd_DevClass = usdd.bDeviceClass;
+    pd->pd_DevSubClass = usdd.bDeviceSubClass;
+    pd->pd_DevProto = usdd.bDeviceProtocol;
+    pd->pd_VendorID = AROS_LE2WORD(usdd.idVendor);
+    pd->pd_ProductID = AROS_LE2WORD(usdd.idProduct);
+    pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
+    vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
+
     /* RootHub is atleast highspeed if -:
      *    it ISNT superspeed,
      *    USB version is > 2.0,
@@ -3406,13 +3414,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         pd->pd_Flags &= ~PDFF_LOWSPEED;
         pd->pd_Flags |= PDFF_HIGHSPEED;
     }
-    pd->pd_DevClass = usdd.bDeviceClass;
-    pd->pd_DevSubClass = usdd.bDeviceSubClass;
-    pd->pd_DevProto = usdd.bDeviceProtocol;
-    pd->pd_VendorID = AROS_LE2WORD(usdd.idVendor);
-    pd->pd_ProductID = AROS_LE2WORD(usdd.idProduct);
-    pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
-    vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
     /*
         The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called
