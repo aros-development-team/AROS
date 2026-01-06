@@ -11,6 +11,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM      kernel-usb-shellapps \
 #MM      kernel-usb-trident \
 #MM      kernel-usb-pciusb \
+#MM      kernel-usb-pcixhci \
 #MM      kernel-usb-usbromstartup
 
 #MM- kernel-usb-nopci : \
@@ -32,6 +33,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM      kernel-usb-shellapps-clean \
 #MM      kernel-usb-trident-clean \
 #MM      kernel-usb-pciusb-clean \
+#MM      kernel-usb-pcixhci-clean \
 #MM      kernel-usb-usbclass-clean \
 #MM      kernel-usb-usbromstartup-clean 
 
@@ -53,7 +55,7 @@ include $(SRCDIR)/config/aros.cfg
 
 # This is kickstart package contents
 USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hubss USB/hub USB/hid USB/massstorage
-USB_DEVS    := USBHardware/pciusb
+USB_DEVS    := USBHardware/pciusb USBHardware/pcixhci
 USB_LIBS    := poseidon
 USB_RES     := usbromstartup
 

@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver async transfer support functions
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
@@ -391,4 +390,3 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
     pciusbXHCIDebugV("xHCI", "%s: exit\n", __func__);
 }
-#endif /* PCIUSB_ENABLEXHCI */

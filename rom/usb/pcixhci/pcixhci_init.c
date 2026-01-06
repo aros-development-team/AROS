@@ -1,4 +1,4 @@
-/* pciusb_init.c - generic pciusb init code for AROS
+/* pcixhci_init.c - generic pcixhci init code for AROS
 */
 
 #include <aros/bootloader.h>
@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#include "pciusb.h"
+#include "pcixhci.h"
 
 /*
  * Process some AROS-specific arguments.
@@ -50,16 +50,12 @@ static int getArguments(struct PCIDevice *base)
                 if (strncmp(node->ln_Name, "USB=", 4) == 0) {
                     const char *CmdLine = &node->ln_Name[3];
 
-                    if (strstr(CmdLine, "forcepower")) {
-                        base->hd_Flags |= HDF_FORCEPOWER;
-                        continue;
+                    if (strstr(CmdLine, "forcepower") || strstr(CmdLine, "xhci")) {
+                        pciusbDebug("", "Ignoring legacy USB boot argument: %s\n", CmdLine);
                     }
                 }
             }
         }
-    }
-    if (base->hd_Flags & HDF_FORCEPOWER) {
-        pciusbInfo("", "Forcing USB Power\n");
     }
     return TRUE;
 }

@@ -1,4 +1,4 @@
-/* uhwcmd.c - pciusb.device by Chris Hodges
+/* uhwcmd.c - pcixhci.device by Chris Hodges
 */
 
 #include <devices/usb_hub.h>
@@ -11,9 +11,7 @@
 #include LC_LIBDEFS_FILE
 
 #include "uhwcmd.h"
-#include "ohci/ohciproto.h"
-#include "uhci/uhciproto.h"
-#include "ehci/ehciproto.h"
+#include "xhciproto.h"
 
 static inline BOOL uhwIsRootHubIOReq(const struct IOUsbHWReq *ioreq,
                                      const struct PCIUnit *unit)
@@ -124,7 +122,7 @@ const struct  UsbSSHubDesc    RHHubSSDesc = {
 
 static const char strStandardConfig[] = "Standard Config";
 static const char strHubInterface[] = "Hub interface";
-const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", strStandardConfig, strHubInterface };
+const CONST_STRPTR RHStrings[] = { "The AROS Dev Team", "PCI Superspeed Root Hub Unit x", strStandardConfig, strHubInterface };
 
 /* /// "SureCause()" */
 void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
@@ -527,7 +525,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Manufacturer, taglist))) {
-        *((STRPTR *) tag->ti_Data) = "Chris Hodges";
+        *((STRPTR *) tag->ti_Data) = "The AROS Dev Team";
         count++;
     }
     if((tag = FindTagItem(UHA_ProductName, taglist))) {
@@ -539,7 +537,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Copyright, taglist))) {
-        *((STRPTR *) tag->ti_Data) ="\xA9""2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="\xA9""2023-2025 The AROS Dev Team";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist))) {
@@ -556,8 +554,9 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Capabilities, taglist))) {
         ULONG caps = 0;
-        if (unit->hu_RootHub20Ports > 0)
-            caps |= UHCF_USB20;
+        if(unit->hu_RootHubXPorts > 0) {
+            caps |= UHCF_USB30;
+        }
 #if defined(PCIUSB_WIP_ISO)
         caps |= UHCF_ISO|UHCF_RT_ISO;
 #endif
@@ -565,6 +564,14 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         caps |= UHCF_QUICKIO;
 #endif
         *((ULONG *) tag->ti_Data) = caps;
+        count++;
+    }
+    if((tag = FindTagItem(UHA_PrepareEndpoint, taglist))) {
+        *((APTR *) tag->ti_Data) = xhciPrepareEndpoint;
+        count++;
+    }
+    if((tag = FindTagItem(UHA_DestroyEndpoint, taglist))) {
+        *((APTR *) tag->ti_Data) = xhciDestroyEndpoint;
         count++;
     }
     ioreq->iouh_Actual = count;
@@ -578,7 +585,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                            struct PCIDevice *base)
 {
     struct PCIController *hc;
-    struct PCIController *chc;
     UWORD rt = ioreq->iouh_SetupData.bmRequestType;
     UWORD req = ioreq->iouh_SetupData.bRequest;
     UWORD idx = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
@@ -650,11 +656,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     usdd->idVendor = WORD2LE(hc->hc_VendID);
                     usdd->idProduct = WORD2LE(hc->hc_ProdID);
 
-                    if(unit->hu_RootHub20Ports) {
-                        pciusbRHDebug("RH", "USB2 Hub Descriptor\n");
-                        usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
-                        usdd->bDeviceProtocol = 1; // single TT
-                        usdd->bMaxPacketSize0 = 64;
+                    if(unit->hu_RootHubXPorts) {
+                        pciusbRHDebug("RH", "XHCI (USB3) Hub Descriptor\n");
+                        usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
+                        usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
+                        usdd->bDeviceSubClass= 0;
+                        usdd->bDeviceProtocol= 3;                    /* USB3 hub */
+                        usdd->bMaxPacketSize0 = 9;  /* SS EP0 is 512 bytes (2^9) */
                     }
 
                 }
@@ -672,9 +680,10 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 CopyMem((APTR) &RHEPDesc,
                         &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)],
                         sizeof(struct UsbStdEPDesc));
-                if(unit->hu_RootHub20Ports) {
+                {
                     struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
-                    usepd->bInterval = 12; // 2048 microframes
+                    pciusbRHDebug("RH", "XHCI EndPoint Config\n");
+                    usepd->bInterval = 12; // * 1ms, or 125 microseconds, = 2048 microframes
                     usepd->wMaxPacketSize = AROS_WORD2LE(64);
                 }
                 ioreq->iouh_Actual = (len > sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) ? (sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc) + sizeof(struct UsbStdEPDesc)) : len;
@@ -752,40 +761,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
-            chc = unit->hu_PortMap11[idx - 1];
-            if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
-                hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
-            } else {
-                hc = chc;
-                hciport = unit->hu_PortNum11[idx - 1];
-            }
-            pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
-                    (unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) ? "EHCI" : "U/OHCI");
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "uhciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_OHCI: {
-                if (ohciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ohciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_EHCI: {
-                if (ehciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ehciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
+            hc = unit->hu_PortMapX[idx - 1];
+            hciport = idx - 1;
+            pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (XHCI)\n", val, idx, hciport);
+            if (xhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
+                pciusbRHDebug("RH", "xhciSetFeature returned (retval %04x)\n", retval);
+                return(retval);
             }
         }
         break;
@@ -796,39 +777,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
-            if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
-                hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
-            } else {
-                hc = unit->hu_PortMap11[idx - 1];
-                hciport = unit->hu_PortNum11[idx - 1];
-            }
-            pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
-                    (unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) ? "EHCI" : "U/OHCI");
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "uhciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_OHCI: {
-                if (ohciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ohciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_EHCI: {
-                if (ehciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ehciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
+            hc = unit->hu_PortMapX[idx - 1];
+            hciport = idx - 1;
+            pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (XHCI)\n", val, idx, hciport);
+            if (xhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
+                pciusbRHDebug("RH", "xhciClearFeature returned (retval %04x)\n", retval);
+                return(retval);
             }
         }
         break;
@@ -848,37 +802,11 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 pciusbRHDebug("RH", "Port %ld out of range\n", idx);
                 return(UHIOERR_STALL);
             }
-            if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
-                hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
-            } else {
-                hc = unit->hu_PortMap11[idx - 1];
-                hciport = unit->hu_PortNum11[idx - 1];
-            }
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "uhciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_OHCI: {
-                if (ohciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "ohciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
-
-            case HCITYPE_EHCI: {
-                if (ehciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "ehciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
-                }
-            }
-            break;
+            hc = unit->hu_PortMapX[idx - 1];
+            hciport = idx - 1;
+            if (xhciGetStatus(hc, mptr, hciport, idx, &retval)) {
+                pciusbRHDebug("RH", "xhciGetStatus returned (retval %04x)\n", retval);
+                return(retval);
             }
             return(0);
         }
@@ -904,6 +832,46 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
         case USR_GET_DESCRIPTOR:
             switch(val>>8) {
+            case UDT_SSHUB: {
+                struct UsbSSHubDesc *shd;
+                UWORD sslen = sizeof(struct UsbSSHubDesc);
+
+                pciusbRHDebug("RH", "GetSuperSpeedHubDescriptor (%ld)\n", len);
+
+                /* Only make sense if we actually have an xHCI root */
+                hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
+                if (!hc)
+                    return UHIOERR_STALL;
+
+
+                ioreq->iouh_Actual = (len > sslen) ? sslen : len;
+                CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                if (ioreq->iouh_Length >= sslen) {
+                    shd = (struct UsbSSHubDesc *)ioreq->iouh_Data;
+
+                    /* Number of SS ports */
+                    shd->bNbrPorts = unit->hu_RootHubXPorts;
+
+                    /* wHubCharacteristics: at least indicate per-port power if PPC set */
+                    {
+                        UWORD characteristics = 0;
+
+                        if (hc->hc_Flags & HCF_PPC)
+                            characteristics |= UHCF_INDIVID_POWER;
+
+                        shd->wHubCharacteristics = WORD2LE(characteristics);
+                    }
+
+                    /* bPwrOn2PwrGood - USB3 spec suggests up to 20ms typical for xHCI */
+                    shd->bPwrOn2PwrGood = 10; /* 10 * 2ms = 20ms */
+
+                    /* wHubDelay / bHubHdrDecLat left at 0 for now */
+                }
+
+                return 0;
+            }
+
             case UDT_HUB: {
                 UWORD hubdesclen = 9;
                 UWORD characteristics = UHCF_INDIVID_OVP;
@@ -926,14 +894,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 if(ioreq->iouh_Length >= 5) {
                     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
                     while(hc->hc_Node.ln_Succ) {
-                        if(hc->hc_HCIType == HCITYPE_OHCI) {
-                            ULONG localpwgood = (READREG32_LE(hc->hc_RegBase, OHCI_HUBDESCA) & OHAM_POWERGOOD) >> OHAS_POWERGOOD;
+                        powergood = 10; /* 20ms max (Section 5.4.9) */
+                        if (hc->hc_Flags & HCF_PPC)
                             characteristics |= UHCF_INDIVID_POWER;
-                            if(localpwgood > powergood)
-                                powergood = localpwgood;
-                        } else {
-                            characteristics |= UHCF_INDIVID_POWER;
-                        }
 
                         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
                     }
@@ -1050,6 +1013,12 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
+    {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
+
     Disable();
     AddTail(&hc->hc_CtrlXFerQueue, (struct Node *) ioreq);
     Enable();
@@ -1100,6 +1069,12 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
+
+    {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 
     Disable();
     AddTail(&hc->hc_BulkXFerQueue, (struct Node *) ioreq);
@@ -1152,13 +1127,17 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
+    {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
+
     Disable();
     AddTail(&hc->hc_IsoXFerQueue, (struct Node *) ioreq);
     Enable();
     SureCause(base, &hc->hc_CompleteInt);
 
-
-    
     KPRINTF(10, "UHCMD_ISOXFER processed ioreq: 0x%p\n", ioreq);
     return(RC_DONTREPLY);
 }
@@ -1205,6 +1184,12 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
+
+    {
+        WORD prep = xhciPrepareTransfer(ioreq, unit, base);
+        if (prep != RC_OK)
+            return prep;
+    }
 
     Disable();
     AddTail(&hc->hc_IntXFerQueue, (struct Node *) ioreq);
@@ -1277,37 +1262,18 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
             ReplyMsg(&cmpioreq->iouh_Req.io_Message);
             cmpioreq = (struct IOUsbHWReq *) hc->hc_BulkXFerQueue.lh_Head;
         }
-        switch(hc->hc_HCIType) {
-        case HCITYPE_UHCI:
+        while(((struct Node *) cmpioreq)->ln_Succ) {
+            xhciFreeAsyncContext(hc, unit, cmpioreq);
+            cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
+            ReplyMsg(&cmpioreq->iouh_Req.io_Message);
             cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            while(((struct Node *) cmpioreq)->ln_Succ) {
-                Remove(&cmpioreq->iouh_Req.io_Message.mn_Node);
-                devadrep = (cmpioreq->iouh_DevAddr<<5) + cmpioreq->iouh_Endpoint + ((cmpioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                unit->hu_DevBusyReq[devadrep] = NULL;
-                uhciFreeQContext(hc, (struct UhciQH *) cmpioreq->iouh_DriverPrivate1);
-                cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                ReplyMsg(&cmpioreq->iouh_Req.io_Message);
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            }
-            break;
-
-        case HCITYPE_EHCI:
-            cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            while(((struct Node *) cmpioreq)->ln_Succ) {
-                ehciFreeAsyncContext(hc, cmpioreq);
-                cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                ReplyMsg(&cmpioreq->iouh_Req.io_Message);
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            }
+        }
+        cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
+        while(((struct Node *) cmpioreq)->ln_Succ) {
+            xhciFreePeriodicContext(hc, unit, cmpioreq);
+            cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
+            ReplyMsg(&cmpioreq->iouh_Req.io_Message);
             cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
-            while(((struct Node *) cmpioreq)->ln_Succ) {
-                ehciFreePeriodicContext(hc, cmpioreq);
-                cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                ReplyMsg(&cmpioreq->iouh_Req.io_Message);
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
-            }
-            break;
-
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -1447,17 +1413,7 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_BufferReq.ubr_Frame = 0;
     rtn->rtn_BufferReq.ubr_Flags = 0;
 
-    switch(hc->hc_HCIType) {
-    case HCITYPE_EHCI:
-        retval = ehciInitIsochIO(hc, rtn);
-        break;
-    case HCITYPE_UHCI:
-        retval = uhciInitIsochIO(hc, rtn);
-        break;
-    default:
-        retval = ohciInitIsochIO(hc, rtn);
-        break;
-    };
+    retval = xhciInitIsochIO(hc, rtn);
 
     if (retval != RC_OK) {
         Disable();
@@ -1524,17 +1480,7 @@ WORD cmdRemIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_RTIso->urti_DriverPrivate1 = NULL;
     rtn->rtn_RTIso = NULL;
 
-    switch(hc->hc_HCIType) {
-    case HCITYPE_EHCI:
-        ehciFreeIsochIO(hc, rtn);
-        break;
-    case HCITYPE_UHCI:
-        uhciFreeIsochIO(hc, rtn);
-        break;
-    default:
-        ohciFreeIsochIO(hc, rtn);
-        break;
-    };
+    xhciFreeIsochIO(hc, rtn);
 
     if(rtn->rtn_PTDs) {
         FreeMem(rtn->rtn_PTDs, rtn->rtn_PTDCount * sizeof(struct PTDNode *));
@@ -1591,39 +1537,17 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
     }
 
     UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
-        for (UWORD cnt = 0; cnt < prefill; cnt++) {
-            WORD queueresult = RC_OK;
-            switch(hc->hc_HCIType) {
-        case HCITYPE_EHCI:
-            queueresult = ehciQueueIsochIO(hc, rtn);
-            break;
-        case HCITYPE_UHCI:
-            queueresult = uhciQueueIsochIO(hc, rtn);
-            break;
-        default:
-            queueresult = ohciQueueIsochIO(hc, rtn);
-            break;
-        };
+    for (UWORD cnt = 0; cnt < prefill; cnt++) {
+        WORD queueresult = RC_OK;
+        queueresult = xhciQueueIsochIO(hc, rtn);
         if (queueresult != RC_OK) {
             Enable();
             return queueresult;
         }
     }
 
-    switch(hc->hc_HCIType) {
-    case HCITYPE_EHCI:
-        if(!ehciStartIsochIO(hc, rtn)) {
-            Enable();
-            return UHIOERR_OUTOFMEMORY;
-        }
-        break;
-    case HCITYPE_UHCI:
-        uhciStartIsochIO(hc, rtn);
-        break;
-    default:
-        ohciStartIsochIO(hc, rtn);
-        break;
-    };
+    for (UWORD cnt = 0; cnt < prefill; cnt++)
+        xhciStartIsochIO(hc, rtn);
 
     Enable();
 
@@ -1671,17 +1595,7 @@ WORD cmdStopRTIso(struct IOUsbHWReq *ioreq,
         return(UHIOERR_BADPARAMS);
     }
 
-    switch(hc->hc_HCIType) {
-    case HCITYPE_EHCI:
-        ehciStopIsochIO(hc, rtn);
-        break;
-    case HCITYPE_UHCI:
-        uhciStopIsochIO(hc, rtn);
-        break;
-    default:
-        ohciStopIsochIO(hc, rtn);
-        break;
-    };
+    xhciStopIsochIO(hc, rtn);
 
     Enable();
 
@@ -1840,68 +1754,27 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
         if(!foundit) {
             // IOReq is probably pending in some transfer structure
             devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI:
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-                while(((struct Node *) cmpioreq)->ln_Succ) {
-                    if(ioreq == cmpioreq) {
-                        foundit = TRUE;
-                        unit->hu_DevBusyReq[devadrep] = NULL;
-                        uhciFreeQContext(hc, (struct UhciQH *) ioreq->iouh_DriverPrivate1);
-                        break;
-                    }
-                    cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+            cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
+            while(((struct Node *) cmpioreq)->ln_Succ) {
+                if(ioreq == cmpioreq) {
+                    xhciFreeAsyncContext(hc, unit, ioreq);
+                    Enable();
+                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                    TermIO(ioreq, base);
+                    return TRUE;
                 }
-                break;
-
-            case HCITYPE_OHCI:
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-                while(((struct Node *) cmpioreq)->ln_Succ) {
-                    if(ioreq == cmpioreq) {
-                        /*
-                         * Request's ED is in use by the HC, as well as its TDs and
-                         * data buffers.
-                         * Schedule abort on the HC driver and reply the request
-                         * only when done. However return success.
-                         */
-                        ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                        ohciAbortRequest(hc, ioreq);
-                        Enable();
-                        return TRUE;
-                    }
-                    cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+                cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
+            }
+            cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
+            while(((struct Node *) cmpioreq)->ln_Succ) {
+                if(ioreq == cmpioreq) {
+                    xhciFreePeriodicContext(hc, unit, ioreq);
+                    Enable();
+                    ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                    TermIO(ioreq, base);
+                    return TRUE;
                 }
-                break;
-
-            case HCITYPE_EHCI:
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-                while(((struct Node *) cmpioreq)->ln_Succ) {
-                    if(ioreq == cmpioreq) {
-                        /*
-                         * CHECKME: Perhaps immediate freeing can cause issues similar to OHCI.
-                         * Should synchronized abort routine be implemented here too ?
-                         */
-                        ehciFreeAsyncContext(hc, ioreq);
-                        Enable();
-                        ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                        TermIO(ioreq, base);
-                        return TRUE;
-                    }
-                    cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
-                }
-                cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
-                while(((struct Node *) cmpioreq)->ln_Succ) {
-                    if(ioreq == cmpioreq) {
-                        ehciFreePeriodicContext(hc, ioreq);
-                        Enable();
-                        ioreq->iouh_Req.io_Error = IOERR_ABORTED;
-                        TermIO(ioreq, base);
-                        return TRUE;
-                    }
-                    cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
-                }
-                break;
-
+                cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
             }
         }
         if(foundit) {
@@ -1997,18 +1870,13 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     struct PCIDevice *base = unit->hu_Device;
     struct PCIController *hc;
     struct IOUsbHWReq *ioreq;
-    struct UhciQH *uqh;
-    struct UhciTD *utd;
-    struct EhciQH *eqh;
     UWORD devadrep;
     UWORD cnt;
-    ULONG linkelem;
-    ULONG ctrlstatus;
     BOOL causeint;
 
     pciusbDebugV("UHW", DEBUGCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, unit);
 
-    // check for port status change for UHCI and frame rollovers and NAK Timeouts
+    // check for frame rollovers and NAK timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ) {
         if (!(hc->hc_Flags & HCF_ONLINE)) {
@@ -2017,129 +1885,48 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
         }
         ULONG framecnt;
         causeint = FALSE;
-        switch(hc->hc_HCIType) {
-        case HCITYPE_UHCI: {
-            uhciUpdateFrameCounter(hc);
+        {
+            struct List *TOList;
+            xhciUpdateFrameCounter(hc);
             framecnt = hc->hc_FrameCounter;
 
-            // NakTimeout
-            ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            while(((struct Node *) ioreq)->ln_Succ) {
-                if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
-                    uqh = (struct UhciQH *) ioreq->iouh_DriverPrivate1;
-                    if(uqh) {
-                        KPRINTF(1, "UHCI: Examining IOReq=%p with UQH=%p\n", ioreq, uqh);
-                        devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                        linkelem = READMEM32_LE(&uqh->uqh_Element);
-                        if(linkelem & UHCI_TERMINATE) {
-                            KPRINTF(1, "UHCI: UQH terminated %08lx\n", linkelem);
-                            if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
-                                // give the thing the chance to exit gracefully
-                                KPRINTF(20, "UHCI: Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq);
-                                causeint = TRUE;
-                            }
-                        } else {
-                            utd = (struct UhciTD *) (((IPTR)linkelem & UHCI_PTRMASK) - hc->hc_PCIVirtualAdjust - 16); // struct UhciTD starts 16 before physical TD
-                            ctrlstatus = READMEM32_LE(&utd->utd_CtrlStatus);
-                            if(ctrlstatus & UTCF_ACTIVE) {
+            for(cnt = 0; cnt < 3; cnt++) {
+                switch(cnt) {
+                case 2:
+                    TOList = &hc->hc_CtrlXFerQueue;
+                    break;
+                case 1:
+                    TOList = &hc->hc_TDQueue;
+                    break;
+                default:
+                    TOList = &hc->hc_PeriodicTDQueue;
+                    break;
+                }
+                // Timeout active transfers
+                ForeachNode(TOList, ioreq) {
+                    if (cnt < 1) {
+                        if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
+                            if (ioreq->iouh_DriverPrivate1) {
+                                devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                                 if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
                                     // give the thing the chance to exit gracefully
-                                    KPRINTF(20, "UHCI: NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq);
-                                    ctrlstatus &= ~UTCF_ACTIVE;
-                                    WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
-                                    causeint = TRUE;
-                                }
-                            } else {
-                                if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
-                                    // give the thing the chance to exit gracefully
-                                    KPRINTF(20, "UHCI: Terminated? NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq);
+                                    KPRINTF(200, "XHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                                     causeint = TRUE;
                                 }
                             }
                         }
-                    }
-                }
-                ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
-            }
-
-            uhciCheckPortStatusChange(hc);
-            break;
-        }
-
-        case HCITYPE_OHCI: {
-            struct OhciHCPrivate *ohcihcp = (struct OhciHCPrivate *)hc->hc_CPrivate;
-            ohciUpdateFrameCounter(hc);
-            framecnt = hc->hc_FrameCounter;
-            // NakTimeout
-            ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
-            while(((struct Node *) ioreq)->ln_Succ) {
-                // Remember the successor because ohciAbortRequest() will move the request to another list
-                struct IOUsbHWReq *succ = (struct IOUsbHWReq *)ioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
-
-                if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
-                    KPRINTF(1, "OHCI: Examining IOReq=%p with OED=%p\n", ioreq, ioreq->iouh_DriverPrivate1);
-                    if (ioreq->iouh_DriverPrivate1) {
-                        KPRINTF(1, "OHCI: CTRL=%04lx, CMD=%01lx, F=%ld, hccaDH=%08lx, hcDH=%08lx, CH=%08lx, CCH=%08lx, IntEn=%08lx\n",
-                                READREG32_LE(hc->hc_RegBase, OHCI_CONTROL),
-                                READREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS),
-                                READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT),
-                                READMEM32_LE(&ohcihcp->ohc_OhciHCCA->oha_DoneHead),
-                                READREG32_LE(hc->hc_RegBase, OHCI_DONEHEAD),
-                                READREG32_LE(hc->hc_RegBase, OHCI_CTRL_HEAD_ED),
-                                READREG32_LE(hc->hc_RegBase, OHCI_CTRL_ED),
-                                READREG32_LE(hc->hc_RegBase, OHCI_INTEN));
-
+                    } else {
+                        // Timeout failed pending transfers
                         devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                        if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
-                            // give the thing the chance to exit gracefully
-                            KPRINTF(200, "OHCI: HC 0x%p NAK timeout %ld > %ld, IOReq=%p\n", hc, framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq);
+                        if ((unit->hu_NakTimeoutFrame[devadrep]) && (framecnt > unit->hu_NakTimeoutFrame[devadrep])) {
+                            KPRINTF(200, "XHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                             ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
-                            ohciAbortRequest(hc, ioreq);
-                        }
+                            xhciAbortRequest(hc, ioreq);
+                        } else if (unit->hu_NakTimeoutFrame[devadrep])
+                            causeint = TRUE;
                     }
                 }
-                ioreq = succ;
             }
-            break;
-        }
-
-        case HCITYPE_EHCI: {
-            ehciUpdateFrameCounter(hc);
-            framecnt = hc->hc_FrameCounter;
-            // NakTimeout
-            for(cnt = 0; cnt < 2; cnt++) {
-                ioreq = (struct IOUsbHWReq *) (cnt ? hc->hc_PeriodicTDQueue.lh_Head : hc->hc_TDQueue.lh_Head);
-                while(((struct Node *) ioreq)->ln_Succ) {
-                    if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
-                        eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
-                        if(eqh) {
-                            KPRINTF(1, "EHCI: Examining IOReq=%p with EQH=%p\n", ioreq, eqh);
-                            devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                            ctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
-                            if(ctrlstatus & ETCF_ACTIVE) {
-                                if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
-                                    // give the thing the chance to exit gracefully
-                                    KPRINTF(20, "EHCI: NAK timeout %ld > %ld, IOReq=%p\n", framecnt, unit->hu_NakTimeoutFrame[devadrep], ioreq);
-                                    ctrlstatus &= ~ETCF_ACTIVE;
-                                    ctrlstatus |= ETSF_HALTED;
-                                    WRITEMEM32_LE(&eqh->eqh_CtrlStatus, ctrlstatus);
-                                    causeint = TRUE;
-                                }
-                            } else {
-                                if(ctrlstatus & ETCF_READYINTEN) {
-                                    KPRINTF(10, "EHCI: INT missed?!? Manually causing it! %08lx, IOReq=%p\n",
-                                            ctrlstatus, ioreq);
-                                    causeint = TRUE;
-                                }
-                            }
-                        }
-                    }
-                    ioreq = (struct IOUsbHWReq *) ((struct Node *) ioreq)->ln_Succ;
-                }
-            }
-            break;
-        }
-
         }
         if(causeint) {
             SureCause(base, &hc->hc_CompleteInt);

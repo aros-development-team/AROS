@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver hc port support functions
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
@@ -802,4 +801,3 @@ task_cleanup:
     AROS_USERFUNC_EXIT
 }
 
-#endif /* PCIUSB_ENABLEXHCI */

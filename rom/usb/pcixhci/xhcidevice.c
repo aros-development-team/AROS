@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver transfer preparation and special case handling
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>

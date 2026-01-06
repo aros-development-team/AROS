@@ -94,8 +94,6 @@ AROS_UFH3(static IPTR, usbromstartup_early,
 
         D(bug("[USBROMStartup] %s: Adding early ROM classes...\n", __func__));
 
-        if (!(bootflags & USBROMSTART_FLAG_NOUSB3))
-            psdAddClass("hubss.class", 0);
         psdAddClass("hub.class", 0);
         if (!(bootflags & USBROMSTART_FLAG_NOBOOTMS))
             msdclass = psdAddClass("massstorage.class", 0);
@@ -106,28 +104,17 @@ AROS_UFH3(static IPTR, usbromstartup_early,
             psdEnumerateHardware(phw);
             cnt++;
         }
-#if (1)
-        if (cnt == 0) {
-            /* now this finds all other usb hardware pci cards */
-            while((phw = psdAddHardware("ehci.device", cnt))) {
-                D(bug("[USBROMStartup] %s: Added ehci.device unit %u\n", __func__, cnt));
-                psdEnumerateHardware(phw);
-                cnt++;
-            }
+
+        if (!(bootflags & USBROMSTART_FLAG_NOUSB3)) {
+            psdAddClass("hubss.class", 0);
             cnt = 0;
-            while((phw = psdAddHardware("ohci.device", cnt))) {
-                D(bug("[USBROMStartup] %s: Added ohci.device unit %u\n", __func__, cnt));
-                psdEnumerateHardware(phw);
-                cnt++;
-            }
-            cnt = 0;
-            while((phw = psdAddHardware("uhci.device", cnt))) {
-                D(bug("[USBROMStartup] %s: Added uhci.device unit %u\n", __func__, cnt));
+            while((phw = psdAddHardware("pcixhci.device", cnt))) {
+                D(bug("[USBROMStartup] %s: Added pcixhci.device unit %u\n", __func__, cnt));
                 psdEnumerateHardware(phw);
                 cnt++;
             }
         }
-#endif
+
         D(bug("[USBROMStartup] %s: Binding classes...\n", __func__));
         psdClassScan();
 

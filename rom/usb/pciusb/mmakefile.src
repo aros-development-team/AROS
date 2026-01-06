@@ -15,15 +15,6 @@ FILES := \
         ehci/ehci_hcd \
         ehci/ehci_hcport \
         ehci/ehci_isoch \
-        xhci/xhci_hcd \
-        xhci/xhci_periodic \
-        xhci/xhci_isoch \
-        xhci/xhci_async \
-        xhci/xhci_schedule \
-        xhci/xhci_hcport \
-        xhci/xhci_hw \
-        xhci/xhcidevice \
-        xhci/xhcidebug \
         uhwcmd \
         debug
 

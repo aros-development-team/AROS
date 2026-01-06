@@ -1,9 +1,9 @@
-#ifndef PCIUSB_H
-#define PCIUSB_H
+#ifndef PCIXHCI_H
+#define PCIXHCI_H
 
 /*
  *----------------------------------------------------------------------------
- *			   Includes for pciusb.device
+ *			   Includes for pcixhci.device
  *----------------------------------------------------------------------------
  *		     By Chris Hodges <chrisly@platon42.de>
  */
@@ -137,26 +137,22 @@ struct PCIUnit
     UWORD                       hu_RootPortChanges;                 /* Merged root hub changes                                      */
     struct List                 hu_RHIOQueue;                       /* Root Hub Pending IO Requests                                 */
 
-    UBYTE                       hu_PortOwner[MAX_ROOT_PORTS];       /* contains the HCITYPE of the ports current owner              */
     UBYTE                       hu_ProductName[80];                 /* for Query device                                             */
     struct PCIController        *hu_DevControllers[USB_DEV_MAX];    /* maps from Device address to controller                       */
 
     struct RTIsoNode            hu_RTIsoNodes[MAX_ROOT_PORTS];
     struct MinList              hu_FreeRTIsoNodes;
 
-    UWORD                       hu_RootHub11Ports;
-    UWORD                       hu_RootHub20Ports;
+    UWORD                       hu_RootHubXPorts;
 
-    struct PCIController        *hu_PortMap11[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 1.1 controller                  */
-    struct PCIController        *hu_PortMap20[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 2.0 controller                  */
-    UBYTE                       hu_PortNum11[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 1.1 companion controller port   */
+    struct PCIController        *hu_PortMapX[MAX_ROOT_PORTS];       /* Maps from Global Port to XHCI controller                     */
 #if (1)
-    //TODO: This needs adjusted to handle >16 EPs
+    //TODO: This needs adjusted to handle >16 EP's in XHCI
     struct IOUsbHWReq *volatile hu_DevBusyReq[USB_DEVEP_CNT];       /* pointer to io assigned to the Endpoint                       */
     volatile ULONG              hu_NakTimeoutFrame[USB_DEVEP_CNT];  /* Nak Timeout framenumber                                      */
     UBYTE                       hu_DevDataToggle[USB_DEVEP_CNT];    /* Data toggle bit for endpoints                                */
 #else
-    //TODO: This needs adjusted to handle >16 EPs
+    //TODO: This needs adjusted to handle >16 EP's in XHCI
     struct IOUsbHWReq           **hu_DevBusyReq;                    /* pointer to io assigned to the Endpoint                       */
     ULONG                       *hu_NakTimeoutFrame;                /* Nak Timeout framenumber                                      */
     UBYTE                       *hu_DevDataToggle;                  /* Data toggle bit for endpoints                                */
@@ -164,9 +160,7 @@ struct PCIUnit
 };
 
 /* HCITYPE_xxx, is the pci device interface */
-#define HCITYPE_UHCI                    0x00
-#define HCITYPE_OHCI                    0x10
-#define HCITYPE_EHCI                    0x20
+#define HCITYPE_XHCI                    0x30
 
 struct PCIController
 {
@@ -196,11 +190,20 @@ struct PCIController
     OOP_Class                   *hc_WriteConfigWord_Class;
     OOP_MethodFunc              hc_WriteConfigLong;
     OOP_Class                   *hc_WriteConfigLong_Class;
+    OOP_MethodFunc              hc_AllocPCIMem;
+    OOP_Class                   *hc_AllocPCIMem_Class;
+    OOP_MethodFunc              hc_FreePCIMem;
+    OOP_Class                   *hc_FreePCIMem_Class;
+    OOP_MethodFunc              hc_MapPCI;
+    OOP_Class                   *hc_MapPCI_Class;
+    OOP_MethodFunc              hc_CPUtoPCI;
+    OOP_Class                   *hc_CPUtoPCI_Class;
+    OOP_MethodFunc              hc_PCItoCPU;
+    OOP_Class                   *hc_PCItoCPU_Class;
 #endif
 
     ULONG                       hc_DevID;
     UWORD                       hc_FunctionNum;
-    UWORD                       hc_HCIType;
     UWORD                       hc_NumPorts;
     UWORD                       hc_Flags;                           /* See below */
     ULONG                       hc_Quirks;                          /* See below */
@@ -251,6 +254,14 @@ struct PCIController
 #define HCF_STOP_CTRL	                (1 << HCB_STOP_CTRL)
 #define HCB_ABORT	                    4	                    /* Aborted requests available	*/
 #define HCF_ABORT	                    (1 << HCB_ABORT)
+#define HCB_MSI	                        12	                    /* MSI interrupt in use         */
+#define HCF_MSI	                        (1 << HCB_MSI)
+#define HCB_PPC	                        13	                    /* Per-Port Power	            */
+#define HCF_PPC	                        (1 << HCB_PPC)
+#define HCB_ADDR64	                    14	                    /* 64Bit addressing	            */
+#define HCF_ADDR64	                    (1 << HCB_ADDR64)
+#define HCB_CTX64	                    15	                    /* 64Byte context               */
+#define HCF_CTX64	                    (1 << HCB_CTX64)
 
 /*
  * The device node - private
@@ -287,10 +298,6 @@ struct PCIDevice
 
     struct List                 hd_Units;                           /* List of units */
 };
-
-/* hd_Flags */
-#define HDB_FORCEPOWER	                0
-#define HDF_FORCEPOWER	                (1 << HDB_FORCEPOWER)
 
 /** OOP Related **/
 
@@ -494,6 +501,151 @@ static inline void WRITECONFIGLONG(struct PCIController *hc, OOP_Object *o, ULON
 #endif
 }
 
+static inline APTR ALLOCPCIMEM(struct PCIController *hc, OOP_Object *o, ULONG Size)
+{
+    struct pHidd_PCIDriver_AllocPCIMem apm_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    apm_p.mID           = hc->hc_Device->hd_HiddPCIDriverMB + moHidd_PCIDriver_AllocPCIMem;
+#else
+    apm_p.mID           = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_AllocPCIMem);
+#endif
+    apm_p.Size          = Size;
+    return (APTR)hc->hc_AllocPCIMem(hc->hc_AllocPCIMem_Class, o, &apm_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline APTR FREEPCIMEM(struct PCIController *hc, OOP_Object *o, APTR Address)
+{
+    struct pHidd_PCIDriver_FreePCIMem fpm_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    fpm_p.mID           = hc->hc_Device->hd_HiddPCIDriverMB + moHidd_PCIDriver_FreePCIMem;
+#else
+    fpm_p.mID           = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_FreePCIMem);
+#endif
+    fpm_p.Address       = Address;
+    return (APTR)hc->hc_FreePCIMem(hc->hc_FreePCIMem_Class, o, &fpm_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline APTR MAPPCI(struct PCIController *hc, OOP_Object *o, APTR PCIAddress, ULONG Length)
+{
+    struct pHidd_PCIDriver_MapPCI mpci_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    mpci_p.mID          = hc->hc_Device->hd_HiddPCIDriverMB + moHidd_PCIDriver_MapPCI;
+#else
+    mpci_p.mID          = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_MapPCI);
+#endif
+    mpci_p.PCIAddress   = PCIAddress;
+    mpci_p.Length       = Length;
+    return (APTR)hc->hc_MapPCI(hc->hc_MapPCI_Class, o, &mpci_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline APTR CPUTOPCI(struct PCIController *hc, OOP_Object *o, APTR address)
+{
+    struct pHidd_PCIDriver_CPUtoPCI cputopci_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    cputopci_p.mID          = hc->hc_Device->hd_HiddPCIDriverMB + moHidd_PCIDriver_CPUtoPCI;
+#else
+    cputopci_p.mID          = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_CPUtoPCI);
+#endif
+    cputopci_p.address   = address;
+    return (APTR)hc->hc_CPUtoPCI(hc->hc_CPUtoPCI_Class, o, &cputopci_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
+
+static inline APTR PCITOCPU(struct PCIController *hc, OOP_Object *o, APTR address)
+{
+    struct pHidd_PCIDriver_PCItoCPU pcitocpu_p;
+#if defined(__OOP_NOLIBBASE__)
+# ifdef base
+#  undef base
+# endif
+# define base (hc->hc_Device)
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  define __obj o
+# endif
+#endif /* __OOP_NO_LIBBASE__ */
+#if defined(__OOP_NOMETHODBASES__)
+    pcitocpu_p.mID          = hc->hc_Device->hd_HiddPCIDriverMB + moHidd_PCIDriver_PCItoCPU;
+#else
+    pcitocpu_p.mID          = OOP_GetMethodID(IID_Hidd_PCIDriver, moHidd_PCIDriver_PCItoCPU);
+#endif
+    pcitocpu_p.address   = address;
+    return (APTR)hc->hc_PCItoCPU(hc->hc_PCItoCPU_Class, o, &pcitocpu_p.mID);
+#if defined(__OOP_NOLIBBASE__)
+# undef base
+#else
+# if !defined(__OOP_NOMETHODBASES__)
+#  undef __obj
+# endif
+#endif
+}
 #else
 #define READCONFIGBYTE(hc, obj, reg)    HIDD_PCIDevice_ReadConfigByte(obj, reg)
 #define READCONFIGWORD(hc, obj, reg)    HIDD_PCIDevice_ReadConfigWord(obj, reg)
@@ -502,9 +654,11 @@ static inline void WRITECONFIGLONG(struct PCIController *hc, OOP_Object *o, ULON
 #define WRITECONFIGWORD(hc, obj, reg, val) HIDD_PCIDevice_WriteConfigWord(obj, reg, val)
 #define WRITECONFIGLONG(hc, obj, reg, val) HIDD_PCIDevice_WriteConfigLong(obj, reg, val)
 #endif /* USE_FAST_PCICFG */
+#if !defined(USE_FAST_PCICFG)
 #define ALLOCPCIMEM(hc, obj, size)      HIDD_PCIDriver_AllocPCIMem(obj, size)
 #define FREEPCIMEM(hc, obj, address)    HIDD_PCIDriver_FreePCIMem(obj, address)
 #define MAPPCI(hc, obj, pciaddress, length) HIDD_PCIDriver_MapPCI(obj, pciaddress, length)
 #define CPUTOPCI(hc, obj, pciaddress) HIDD_PCIDriver_CPUtoPCI(obj, pciaddress)
 #define PCITOCPU(hc, obj, pciaddress) HIDD_PCIDriver_PCItoCPU(obj, pciaddress)
-#endif /* PCIUSB_H */
+#endif
+#endif /* PCIXHCI_H */

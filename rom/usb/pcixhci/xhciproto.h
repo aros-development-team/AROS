@@ -1,7 +1,6 @@
 #ifndef XHCIPROTO_H
 #define XHCIPROTO_H
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include "xhcichip.h"
 
 #if !defined(AROS_USE_LOGRES)

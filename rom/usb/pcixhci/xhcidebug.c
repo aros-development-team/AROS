@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver debug functions
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
@@ -800,4 +799,3 @@ void xhciDumpCC(UBYTE cc)
     };
 }
 #endif
-#endif /* PCIUSB_ENABLEXHCI */

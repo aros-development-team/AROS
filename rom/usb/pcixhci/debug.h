@@ -120,9 +120,8 @@ void dumpmem_pciusb(void *mem, unsigned long int len);
 #endif
 
 #if defined(DEBUG)
-//#define PCIUSB_OHCI_DEBUG
-//#define PCIUSB_UHCI_DEBUG
-//#define PCIUSB_EHCI_DEBUG
+//#define PCIUSB_XHCI_DEBUG
+//#define XHCI_LONGDEBUGNAK
 #if !defined(AROS_USE_LOGRES) && defined(PCIUSB_ANSI_DEBUG)
 #define DEBUGCOLOR_SET                          "\033[32m"
 #define DEBUGWARNCOLOR_SET                      "\033[31m"

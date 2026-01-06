@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver isochronous transfer support functions
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/poseidon.h>
@@ -372,4 +371,3 @@ void xhciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     }
 }
 
-#endif /* PCIUSB_ENABLEXHCI */

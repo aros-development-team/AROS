@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver periodic transfer support functions
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/poseidon.h>
@@ -146,4 +145,3 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     }
 }
 
-#endif /* PCIUSB_ENABLEXHCI */

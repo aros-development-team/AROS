@@ -6,7 +6,6 @@
     NB - do not use in the interrupt handler(s)
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <proto/exec.h>
 #include <proto/poseidon.h>
 #include <proto/oop.h>
@@ -446,4 +445,3 @@ task_cleanup:
     AROS_USERFUNC_EXIT
 }
 
-#endif /* PCIUSB_ENABLEXHCI */

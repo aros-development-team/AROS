@@ -7,10 +7,9 @@
  *----------------------------------------------------------------------------
  *
  */
-#if defined(PCIUSB_ENABLEXHCI)
 #include <exec/types.h>
 #include <hardware/usb/xhci.h>
-#include "pciusb.h"
+#include "pcixhci.h"
 #include "hccommon.h"
 
 struct MsgPort;

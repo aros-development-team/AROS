@@ -4,7 +4,6 @@
     Desc:  xHCI chipset driver shared scheduling helper routines
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 
 #include <proto/exec.h>
 #include <proto/poseidon.h>
@@ -358,4 +357,3 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     return queued;
 }
 
-#endif /* PCIUSB_ENABLEXHCI */

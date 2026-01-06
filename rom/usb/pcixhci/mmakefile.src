@@ -1,0 +1,51 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        pcixhci_init \
+        pcixhci_arospci \
+        pcixhci_dev \
+        buffer \
+        xhci_hcd \
+        xhci_periodic \
+        xhci_isoch \
+        xhci_async \
+        xhci_schedule \
+        xhci_hcport \
+        xhci_hw \
+        xhcidevice \
+        xhcidebug \
+        uhwcmd \
+        debug
+
+USBHARDWAREPATH := Devs/USBHardware
+WBUSBHARDWAREDIR := $(AROSDIR)/$(USBHARDWAREPATH)
+
+#MM
+kernel-usb-pcixhci-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM kernel-usb-pcixhci : kernel-usb-pcixhci-directories  kernel-$(TARGET_USELOGRES)-log-includes
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/usb/pcixhci/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/usb/pcixhci/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/usb/pcixhci/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pcixhci/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pcixhci/make.opts
+endif
+-include $(SRCDIR)/$(CURDIR)/make.opts
+
+#FIXME: Currently pcixhci.device is different when compiled for pc or not.
+#       It should thus normally be in SYS:Arch but it is not ATM.
+USER_LDFLAGS := -static
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-usb-pcixhci \
+    modname=pcixhci modtype=device \
+    moduledir=$(USBHARDWAREPATH) \
+    files="$(FILES)" \
+    uselibs="hiddstubs debug"
+
+%common

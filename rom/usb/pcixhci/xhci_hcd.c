@@ -4,7 +4,6 @@
     Desc: xHCI chipset driver main pciusb interface
 */
 
-#if defined(PCIUSB_ENABLEXHCI)
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -72,8 +71,7 @@ static struct PCIController *xhciGetController(struct PCIUnit *unit)
     struct PCIController *hc;
 
     ForeachNode(&unit->hu_Controllers, hc) {
-        if (hc->hc_HCIType == HCITYPE_XHCI)
-            return hc;
+        return hc;
     }
 
     return NULL;
@@ -2853,9 +2851,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                 xhciDumpPort(&xhciports[hciport]);
                 origportsc = AROS_LE2LONG(xhciports[hciport].portsc);
 
-                /* reflect port ownership (shortcut without hc->hc_PortNum[evt->port]) */
-                hc->hc_Unit->hu_PortOwner[hciport] = HCITYPE_XHCI;
-
                 if (origportsc & XHCIF_PR_PORTSC_OCC) {
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
                     newportsc |= XHCIF_PR_PORTSC_OCC;
@@ -3773,7 +3768,7 @@ takeownership:
     }
 
     /* install reset handler */
-    hc->hc_ResetInt.is_Node.ln_Name = "XHCI PCI (pciusb.device)";
+        hc->hc_ResetInt.is_Node.ln_Name = "XHCI PCI (pcixhci.device)";
     hc->hc_ResetInt.is_Code = (VOID_FUNC)XhciResetHandler;
     hc->hc_ResetInt.is_Data = hc;
     AddResetCallback(&hc->hc_ResetInt);
@@ -3887,14 +3882,14 @@ takeownership:
 
     struct Task *tmptask;
     char buf[64];
-    psdSafeRawDoFmt(buf, 64, "usbhw<pciusb.device/%ld> Event Ring Task", hu->hu_UnitNo);
+    psdSafeRawDoFmt(buf, 64, "usbhw<pcixhci.device/%ld> Event Ring Task", hu->hu_UnitNo);
     if ((tmptask = psdSpawnSubTask(buf, xhciEventRingTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Event Ring Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_EventTask.xet_Task,
                         xhcic->xhc_EventTask.xet_ProcessEventsSignal);
     }
-    psdSafeRawDoFmt(buf, 64, "usbhw<pciusb.device/%ld> Port Task", hu->hu_UnitNo);
+    psdSafeRawDoFmt(buf, 64, "usbhw<pcixhci.device/%ld> Port Task", hu->hu_UnitNo);
     if ((tmptask = psdSpawnSubTask(buf, xhciPortTask, hc))) {
         sigmask = Wait(sigmask);
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Port Task @ 0x%p, Sig = %u" DEBUGCOLOR_RESET" \n",
@@ -4077,4 +4072,3 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
     FreeMem(devCtx, sizeof(struct pciusbXHCIDevice));
 }
 
-#endif /* PCIUSB_ENABLEXHCI */
