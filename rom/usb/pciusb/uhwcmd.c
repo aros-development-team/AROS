@@ -658,7 +658,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)],
                         sizeof(struct UsbStdEPDesc));
                 if(unit->hu_RootHub20Ports) {
+                    struct UsbStdIfDesc *usid = (struct UsbStdIfDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc)];
                     struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)];
+                    usid->bInterfaceProtocol = 1; // single TT for high-speed root hub
                     usepd->bInterval = 12; // 2048 microframes
                     usepd->wMaxPacketSize = AROS_WORD2LE(64);
                 }
