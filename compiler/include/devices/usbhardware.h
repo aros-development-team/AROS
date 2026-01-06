@@ -1,12 +1,12 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 3.2 (02.12.2025)
+**	$VER: usbhardware.h 3.3 (06.01.2026)
 **
 **	standard usb hardware device include file
 **
 **	(C) Copyright 2002-2007 Chris Hodges
-**	(C) Copyright 2007-2025 AROS Development Team
+**	(C) Copyright 2007-2026 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -58,7 +58,6 @@
     /* Topology */                                                                                                                                    \
     ULONG               iouh_RouteString;       /* 20-bit USB3 route string                                                                         */\
     /* Optional fields */                                                                                                                             \
-    UWORD               iouh_MaxStreams;        /* 0 = no streams                                                                                   */\
     UWORD               iouh_StreamID;          /* per-transfer (usually)                                                                           */\
     UWORD               iouh_PowerPolicy        /* link power / policy hints                                                                        */
 

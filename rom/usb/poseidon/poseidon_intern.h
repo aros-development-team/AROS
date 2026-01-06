@@ -14,7 +14,7 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 5.0 (02.12.2025)
+                | (__) ) Version: 5.1 (06.01.2026)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
                 |_____/  Copyright (c) 2009-2026 The AROS Dev Team.
@@ -493,6 +493,8 @@ struct PsdEndpoint
     UWORD               pep_MaxBurst;     /* Superspeed companion: bursts per service interval */
     UWORD               pep_CompAttributes; /* Superspeed companion: bmAttributes */
     ULONG               pep_BytesPerInterval; /* Superspeed companion: bytes per service interval */
+    UWORD               pep_StreamBase;   /* USB3 stream base (0 = default stream) */
+    UWORD               pep_MaxStreams;   /* USB3 stream count (0 = not supported) */
 
     struct IOUsbHWReq  *pep_IOReq;        /* Optional HCD-owned endpoint context */
 };
@@ -508,6 +510,7 @@ struct PsdPipe
     struct MsgPort     *pp_MsgPort;       /* Msg Port of task allocated pipe */
     struct PsdPipe     *pp_AbortPipe;     /* Pipe to abort */
     ULONG               pp_Num;           /* internal pipe number (used for streams) */
+    UWORD               pp_StreamID;      /* USB3 StreamID (0 = default) */
     UWORD               pp_Flags;         /* internal flags (used for streams) */
     struct IOUsbHWReq   pp_IOReq;         /* IO Request allocated for this pipe */
 };

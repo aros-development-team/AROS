@@ -14,7 +14,7 @@
 |__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
                  _____
                 |" __ \  Poseidon -- The divine USB stack for Amiga computers
-                | (__) ) Version: 4.6 (25.11.2025)
+                | (__) ) Version: 5.0 (06.01.2026)
                 |  __ (  Designed and written by
                 |"(__) )   Chris Hodges <chrisly@platon42.de>
                 |_____/  Copyright (c) 2009-2026 The AROS Dev Team.
@@ -208,6 +208,8 @@
 #define EA_MaxBurst          (EA_Dummy + 0x18)
 #define EA_BytesPerInterval  (EA_Dummy + 0x19)
 #define EA_CompAttributes    (EA_Dummy + 0x1a)
+#define EA_StreamBase        (EA_Dummy + 0x1b)
+#define EA_MaxStreams        (EA_Dummy + 0x1c)
 
 /* Tags for psdGetAttrs(PGA_PIPE,...) */
 #define PPA_Dummy            (TAG_USER  + 1234)
