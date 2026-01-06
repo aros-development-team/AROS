@@ -210,6 +210,11 @@ struct PCIController
 
     UWORD                       hc_IsoPTDCount;
 
+    UBYTE                       hc_HCIVersionMajor;
+    UBYTE                       hc_HCIVersionMinor;
+    UBYTE                       hc_USBVersionMajor;
+    UBYTE                       hc_USBVersionMinor;
+
     volatile APTR               hc_RegBase;
 
     struct MemEntry             hc_PCIMem;

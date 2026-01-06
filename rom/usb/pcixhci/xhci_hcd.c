@@ -3414,6 +3414,8 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     ULONG xhciECPOff;
     ULONG val;
     ULONG cnt;
+    UBYTE usbMajor = 0;
+    UBYTE usbMinor = 0;
 
     struct TagItem pciMemEnableAttrs[] = {
         { aHidd_PCIDevice_isMEM,    TRUE },
@@ -3557,6 +3559,11 @@ takeownership:
                             portOffset,
                             (UWORD)(portOffset + portCount - 1));
 
+            if ((major > usbMajor) || ((major == usbMajor) && (minor > usbMinor))) {
+                usbMajor = major;
+                usbMinor = minor;
+            }
+
             if (portOffset > 0 && portCount > 0) {
                 UWORD start = (UWORD)(portOffset - 1);
                 UWORD end = (UWORD)(start + portCount);
@@ -3587,6 +3594,10 @@ takeownership:
     char *controllername = &hc->hc_Node.ln_Name[16];
     xhciversion = AROS_LE2LONG(xhciregs->hciversion) & 0xFFFF;
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", xhciversion);
+    hc->hc_HCIVersionMajor = (UBYTE)((xhciversion >> 8) & 0xFF);
+    hc->hc_HCIVersionMinor = (UBYTE)((xhciversion >> 4) & 0x0F);
+    hc->hc_USBVersionMajor = usbMajor;
+    hc->hc_USBVersionMinor = usbMinor;
     if (xhciversion == 0x0090)
         controllername[10] = '0';
     else if (xhciversion == 0x0100)

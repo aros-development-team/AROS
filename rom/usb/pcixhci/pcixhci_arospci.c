@@ -252,6 +252,23 @@ STRPTR pciStrcat(STRPTR d, STRPTR s)
 }
 /* \\\ */
 
+static void pciusbUpdateVersion(UBYTE major, UBYTE minor, UBYTE *bestMajor, UBYTE *bestMinor)
+{
+    if ((major > *bestMajor) || ((major == *bestMajor) && (minor > *bestMinor))) {
+        *bestMajor = major;
+        *bestMinor = minor;
+    }
+}
+
+static void pciusbAppendVersion(STRPTR dest, UBYTE major, UBYTE minor)
+{
+    STRPTR vers = pciStrcat(dest, "");
+    vers[0] = (char)('0' + (major % 10));
+    vers[1] = '.';
+    vers[2] = (char)('0' + (minor % 10));
+    vers[3] = 0;
+}
+
 /* /// "pciAllocUnit()" */
 BOOL pciAllocUnit(struct PCIUnit *hu)
 {
@@ -263,6 +280,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     ULONG cnt;
 
     ULONG xhcicnt = 0;
+    UBYTE hciMajor = 0;
+    UBYTE hciMinor = 0;
+    UBYTE usbMajor = 0;
+    UBYTE usbMinor = 0;
     STRPTR prodname;
 
     pciusbDebug("PCI", "Unit @ %p\n", hu);
@@ -289,6 +310,10 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             if(allocgood) {
                 xhcicnt++;
                 xhciports += hc->hc_NumPorts;
+                pciusbUpdateVersion(hc->hc_HCIVersionMajor, hc->hc_HCIVersionMinor,
+                                    &hciMajor, &hciMinor);
+                pciusbUpdateVersion(hc->hc_USBVersionMajor, hc->hc_USBVersionMinor,
+                                    &usbMajor, &usbMinor);
             }
         }
     }
@@ -325,13 +350,11 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hu->hu_RootHubAddr = 0;
 
     // create product name of device
-    int usbmaj = 3, usbmin = 0;
     prodname = hu->hu_ProductName;
     *prodname = 0;
     pciStrcat(prodname, "PCI ");
-    if (xhcicnt) {
-        pciStrcat(prodname, "XHCI");
-    }
+    pciStrcat(prodname, "XHCI ");
+    pciusbAppendVersion(prodname, hciMajor, hciMinor);
 
     // put em online
     ForeachNode(&hu->hu_Controllers, hc) {
@@ -339,11 +362,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
 
     // now add the USB version information to the product name.
-    STRPTR prodversstr = pciStrcat(prodname, " USB ");
-    prodversstr[0] = usbmaj + '0';
-    prodversstr[1] = '.';
-    prodversstr[2] = usbmin + '0';
-    prodversstr[3] = 0;
+    pciStrcat(prodname, " USB ");
+    pciusbAppendVersion(prodname, usbMajor, usbMinor);
     pciStrcat(prodname, " Host Controller");
     pciusbDebug("PCI", "Unit allocated!\n");
 
