@@ -359,19 +359,6 @@ struct PsdHardware
     struct MsgPort      phw_TaskMsgPort;        /* Quick task message port */
     volatile ULONG      phw_MsgCount;           /* Number of Messages pending */
 
-    /* BOS-derived capability summary */
-    BOOL                phw_Usb20LpmCapable;        /* Device supports USB 2.0 LPM (L1) */
-    BOOL                phw_Usb30LtmCapable;        /* Device supports USB 3.0 Latency Tolerance Messaging (LTM) */
-
-    UWORD               phw_SupportedSpeeds;        /* Bitmask of speeds (USB 3.0 wSpeedSupported) */
-    UBYTE               phw_Usb30U1ExitLat;         /* Exit latency to U0 from U1 */
-    UWORD               phw_Usb30U2ExitLat;         /* Exit latency to U0 from U2 */
-
-    UBYTE               phw_MaxUsbSpeed;            /* store our “chosen” max speed */
-                                                    /* e.g., 1=LS, 2=FS, 3=HS, 4=SS */
-
-    BOOL                phw_HasContainerId;
-    UBYTE               phw_ContainerId[16];
 };
 
 /* Flags for pd_Flags */
@@ -433,6 +420,17 @@ struct PsdDevice
     struct PsdPoPoCfg   pd_PoPoCfg;       /* Inhibit PopUp and Class scan Config */
     struct List         pd_Descriptors;   /* Descriptors collected */
     struct List         pd_RTIsoHandlers; /* List of RTIsoHandlers */
+
+    /* BOS-derived capability summary */
+    BOOL                pd_Usb20LpmCapable;        /* Device supports USB 2.0 LPM (L1) */
+    BOOL                pd_Usb30LtmCapable;        /* Device supports USB 3.0 Latency Tolerance Messaging (LTM) */
+    UWORD               pd_SupportedSpeeds;        /* Bitmask of speeds (USB 3.0 wSpeedSupported) */
+    UBYTE               pd_Usb30U1ExitLat;         /* Exit latency to U0 from U1 */
+    UWORD               pd_Usb30U2ExitLat;         /* Exit latency to U0 from U2 */
+    UBYTE               pd_MaxUsbSpeed;            /* store our chosen max speed */
+                                                   /* e.g., 1=LS, 2=FS, 3=HS, 4=SS */
+    BOOL                pd_HasContainerId;
+    UBYTE               pd_ContainerId[16];
 };
 
 struct PsdDescriptor
@@ -488,7 +486,7 @@ struct PsdEndpoint
     UWORD               pep_Direction;    /* Direction (0=OUT, 1=IN) */
     UWORD               pep_TransType;    /* TransferType, see USEA-Flags */
     UWORD               pep_MaxPktSize;   /* Maximum packet size for EP */
-    UWORD               pep_NumTransMuFr; /* Number of transactions per µFrame */
+    UWORD               pep_NumTransMuFr; /* Number of transactions per ÂµFrame */
     UWORD               pep_Interval;     /* Interval for polling in ms */
     UWORD               pep_SyncType;     /* Iso Synchronization Type */
     UWORD               pep_UsageType;    /* Iso Usage Type */

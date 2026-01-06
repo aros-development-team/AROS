@@ -2821,39 +2821,39 @@ static void DumpPipe(struct PsdPipe *pp)
  * Map BOS-derived capabilities into poseidons hardware structure.
   */
 static void
-pUpdateHardwareFromBos(struct PsdHardware *phw, const struct PsdBosCaps *caps)
+pApplyDeviceBosCapabilities(struct PsdDevice *pd, const struct PsdBosCaps *caps)
 {
-    if (!phw || !caps || !caps->hasBos)
+    if (!pd || !caps || !caps->hasBos)
         return;
 
     /* USB 2.0 LPM (L1) */
     if (caps->hasUsb20Ext) {
-        phw->phw_Usb20LpmCapable = caps->usb20LpmCapable;
+        pd->pd_Usb20LpmCapable = caps->usb20LpmCapable;
     }
 
     /* SuperSpeed device capability */
     if (caps->hasSSCap) {
-        phw->phw_Usb30LtmCapable   = (caps->ssBmAttributes & 0x02) ? TRUE : FALSE;
-        phw->phw_SupportedSpeeds  |= caps->ssSpeedsSupported;
-        phw->phw_Usb30U1ExitLat    = caps->ssU1DevExitLat;
-        phw->phw_Usb30U2ExitLat    = caps->ssU2DevExitLat;
+        pd->pd_Usb30LtmCapable   = (caps->ssBmAttributes & 0x02) ? TRUE : FALSE;
+        pd->pd_SupportedSpeeds  |= caps->ssSpeedsSupported;
+        pd->pd_Usb30U1ExitLat    = caps->ssU1DevExitLat;
+        pd->pd_Usb30U2ExitLat    = caps->ssU2DevExitLat;
 
         /* Choose the highest supported speed */
         if (caps->ssSpeedsSupported & (1U << 3)) {          /* SuperSpeed */
-            phw->phw_MaxUsbSpeed = 4;
+            pd->pd_MaxUsbSpeed = 4;
         } else if (caps->ssSpeedsSupported & (1U << 2)) {   /* High-speed */
-            phw->phw_MaxUsbSpeed = 3;
+            pd->pd_MaxUsbSpeed = 3;
         } else if (caps->ssSpeedsSupported & (1U << 1)) {   /* Full-speed */
-            phw->phw_MaxUsbSpeed = 2;
+            pd->pd_MaxUsbSpeed = 2;
         } else if (caps->ssSpeedsSupported & (1U << 0)) {   /* Low-speed */
-            phw->phw_MaxUsbSpeed = 1;
+            pd->pd_MaxUsbSpeed = 1;
         }
     }
 
     /* Container ID */
     if (caps->hasContainerId) {
-        phw->phw_HasContainerId = TRUE;
-        CopyMem(caps->containerId, phw->phw_ContainerId, 16);
+        pd->pd_HasContainerId = TRUE;
+        CopyMem(caps->containerId, pd->pd_ContainerId, 16);
     }
 }
 
@@ -3044,7 +3044,7 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
     policy |= USBPWR_POLICY_BALANCED;
 
     /* USB 2.0 LPM (L1) */
-    if (phw->phw_Usb20LpmCapable &&
+    if (pd->pd_Usb20LpmCapable &&
             pd->pd_USBVers >= 0x0201) {
         policy |= USBPWR_ALLOW_L1;
     }
@@ -3052,12 +3052,12 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
     /* USB 3.x link states */
     if (pd->pd_Flags & PDFF_SUPERSPEED) {
         /* U1 is usually safe for most endpoints if U1 exit latency is low */
-        if (phw->phw_Usb30U1ExitLat != 0) {
+        if (pd->pd_Usb30U1ExitLat != 0) {
             policy |= USBPWR_ALLOW_U1;
         }
 
         /* U2 is deeper; be more conservative for time-sensitive endpoints */
-        if (phw->phw_Usb30U2ExitLat != 0 &&
+        if (pd->pd_Usb30U2ExitLat != 0 &&
                 pep && pep->pep_TransType != USEAF_ISOCHRONOUS) {
             policy |= USBPWR_ALLOW_U2;
         }
@@ -3328,8 +3328,8 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     */
     if (pd->pd_USBVers > 0x0200) {
         struct PsdBosCaps boscaps;
-        if (pFetchBosCaps(pp, &boscaps) && pd->pd_Hardware) {
-            pUpdateHardwareFromBos(pd->pd_Hardware, &boscaps);
+        if (pFetchBosCaps(pp, &boscaps)) {
+            pApplyDeviceBosCapabilities(pd, &boscaps);
         }
     }
 
@@ -9427,4 +9427,3 @@ static const ULONG *PsdPTArray[] = {
     PsdRTIsoHandlerPT
 };
 /* \\\ */
-
