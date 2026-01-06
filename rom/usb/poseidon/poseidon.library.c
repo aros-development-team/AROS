@@ -3402,21 +3402,6 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
-    /* Hub is atleast highspeed is the USB version is > 2.0 and proto > 0 */
-    if ((!pd->pd_Hub) &&
-        (pd->pd_USBVers >= 0x200) &&
-        (pd->pd_DevProto > 0)) {
-        pd->pd_Flags &= ~PDFF_LOWSPEED;
-        pd->pd_Flags |= PDFF_HIGHSPEED;
-    }
-
-    /* Mark SuperSpeed purely based on bcdUSB, regardless of whether it is behind a hub */
-    if(pd->pd_USBVers >= 0x300) {
-        pd->pd_Flags &= ~(PDFF_LOWSPEED|PDFF_HIGHSPEED);
-        pd->pd_Flags |= PDFF_SUPERSPEED;
-        pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
-    }
-
     /*
         The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called
         the Binary Device Object Store (BOS) for a USB device with bcdUSB > 0x0200.
@@ -4004,89 +3989,105 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     struct PsdPipe *pp;
     struct MsgPort *mp;
     LONG ioerr;
+    BOOL resetdone = FALSE;
 
     KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
 
-    if((mp = CreateMsgPort())) {
-        Forbid();
-        if((pd = psdAllocDevice(phw))) {
-            Permit();
-            if((pp = psdAllocPipe(pd, mp, NULL))) {
-                //pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
-                //pp->pp_IOReq.iouh_NakTimeout = 1000;
-                pd->pd_Flags |= PDFF_CONNECTED;
-
-                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-                ioerr = psdDoPipe(pp, NULL, 0);
-                if(ioerr == UHIOERR_HOSTERROR) {
-                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
-                    psdFreePipe(pp);
-                    pFreeBindings(ps, pd);
-                    pFreeDevice(ps, pd);
-                    DeleteMsgPort(mp);
-                    return(NULL);
-                }
-
-                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
-                psdDelayMS(100); // wait for root hub to settle
-                KPRINTF(20, ("Enumerating RootHub...\n"));
-                if(psdEnumerateDevice(pp)) {
-                    KPRINTF(1, ("RootHub Enumeration finished!\n"));
-                    psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
-                    phw->phw_RootDevice = pd;
-                    psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
-                    rootpd = pd;
-                } else {
-                    KPRINTF(1, ("Failed to find a RootHub\n"));
-                }
-                psdFreePipe(pp);
-            }
-            if (!rootpd) {
-                pFreeBindings(ps, pd);
-                pFreeDevice(ps, pd);
-            }
-        } else {
-            Permit();
-        }
-        DeleteMsgPort(mp);
-    }
-
-    if ((phw->phw_Capabilities & UHCF_USB30) &&
-        (!rootpd || phw->phw_NumRootHubs > 1)) {
+    if (phw->phw_Capabilities & UHCF_USB30) {
         struct PsdDevice *sspd = NULL;
-        struct MsgPort *ssmp = CreateMsgPort();
-
-        if (ssmp) {
+        if((mp = CreateMsgPort())) {
             Forbid();
             sspd = psdAllocDevice(phw);
             Permit();
             if (sspd) {
-                if ((pp = psdAllocPipe(sspd, ssmp, NULL))) {
+                BOOL hubconnect = FALSE;
+                if ((pp = psdAllocPipe(sspd, mp, NULL))) {
                     sspd->pd_Flags |= (PDFF_CONNECTED | PDFF_SUPERSPEED);
-                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+
+                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+                    ioerr = psdDoPipe(pp, NULL, 0);
+                    if(ioerr == UHIOERR_HOSTERROR) {
+                        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
+                        psdFreePipe(pp);
+                        pFreeBindings(ps, pd);
+                        pFreeDevice(ps, pd);
+                        DeleteMsgPort(mp);
+                        return(NULL);
+                    }
                     psdDelayMS(100);
+                    resetdone = TRUE;
+                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
                     KPRINTF(1, ("Enumerating SuperSpeed RootHub...\n"));
                     if (psdEnumerateDevice(pp)) {
+                        hubconnect = TRUE;
                         KPRINTF(1, ("SuperSpeed RootHub Enumeration finished!\n"));
+                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "SuperSpeed root hub has been enumerated.");
+                        phw->phw_RootDevice = sspd;
+                        rootpd = sspd;
                         psdSendEvent(EHMB_ADDDEVICE, sspd, NULL);
-                        if (!rootpd) {
-                            phw->phw_RootDevice = sspd;
-                            rootpd = sspd;
-                            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                           "SuperSpeed root hub has been enumerated.");
-                        }
                     } else {
                         KPRINTF(1, ("Failed to find a SuperSpeed RootHub\n"));
                         pFreeBindings(ps, sspd);
                         pFreeDevice(ps, sspd);
                     }
                     psdFreePipe(pp);
-                } else {
+                }
+                if (!hubconnect) {
                     pFreeBindings(ps, sspd);
                     pFreeDevice(ps, sspd);
                 }
             }
-            DeleteMsgPort(ssmp);
+            DeleteMsgPort(mp);
+        }
+    }
+
+    if (!(phw->phw_Capabilities & UHCF_USB30) ||
+        !phw->phw_RootDevice ||
+        phw->phw_NumRootHubs > 1) {
+        if((mp = CreateMsgPort())) {
+            Forbid();
+            pd = psdAllocDevice(phw);
+            Permit();
+            if (pd) {
+                BOOL hubconnect = FALSE;
+                if((pp = psdAllocPipe(pd, mp, NULL))) {
+                    pd->pd_Flags |= PDFF_CONNECTED;
+                    if (!resetdone) {
+                        pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+                        ioerr = psdDoPipe(pp, NULL, 0);
+                        if(ioerr == UHIOERR_HOSTERROR) {
+                            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
+                            psdFreePipe(pp);
+                            pFreeBindings(ps, pd);
+                            pFreeDevice(ps, pd);
+                            DeleteMsgPort(mp);
+                            return(NULL);
+                        }
+                        psdDelayMS(100); // wait for root hub to settle
+                    }
+                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+                    KPRINTF(20, ("Enumerating RootHub...\n"));
+                    if(psdEnumerateDevice(pp)) {
+                        hubconnect = TRUE;
+                        KPRINTF(1, ("RootHub Enumeration finished!\n"));
+                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
+                        if (!rootpd) {
+                            phw->phw_RootDevice = pd;
+                            rootpd = pd;
+                        }
+                        psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
+                    } else {
+                        KPRINTF(1, ("Failed to find a RootHub\n"));
+                    }
+                    psdFreePipe(pp);
+                }
+                if (!hubconnect) {
+                    pFreeBindings(ps, pd);
+                    pFreeDevice(ps, pd);
+                }
+            }
+            DeleteMsgPort(mp);
         }
     }
 
