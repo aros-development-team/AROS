@@ -37,8 +37,6 @@ ifneq ($(AROS_TARGET_VARIANT),)
 endif
 -include $(SRCDIR)/$(CURDIR)/make.opts
 
-#FIXME: Currently pcixhci.device is different when compiled for pc or not.
-#       It should thus normally be in SYS:Arch but it is not ATM.
 USER_LDFLAGS := -static
 #USER_CPPFLAGS += -DDEBUG=1
 
