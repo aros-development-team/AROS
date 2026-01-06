@@ -13,6 +13,7 @@ FILES := \
         xhci_schedule \
         xhci_hcport \
         xhci_hw \
+        xhci_controllerclass \
         xhcidevice \
         xhcidebug \
         uhwcmd \

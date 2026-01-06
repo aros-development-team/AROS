@@ -159,6 +159,11 @@ struct PCIUnit
 #endif
 };
 
+struct XHCIController
+{
+    ULONG                       xc_Reserved;
+};
+
 /* HCITYPE_xxx, is the pci device interface */
 #define HCITYPE_XHCI                    0x30
 
@@ -283,6 +288,7 @@ struct PCIDevice
 #if defined(__OOP_NOLIBBASE__)
     struct Library              *hd_OOPBase;
 #endif
+    OOP_Class                   *hd_USBXHCIControllerClass;
 #if defined(__OOP_NOATTRBASES__)
     OOP_AttrBase                hd_HiddAB;
     OOP_AttrBase                hd_HiddPCIDeviceAB;

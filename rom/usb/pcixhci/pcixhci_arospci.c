@@ -38,6 +38,9 @@
 #define LogHandle (hd->hd_LogRHandle)
 #define LogResBase (base->hd_LogResBase)
 #endif
+
+extern int XHCIControllerOOPStartup(struct PCIDevice *hd);
+
 AROS_UFH3(void, pciEnumerator,
           AROS_UFHA(struct Hook *, hook, A0),
           AROS_UFHA(OOP_Object *, pciDevice, A2),
@@ -143,7 +146,6 @@ AROS_UFH3(void, pciEnumerator,
 BOOL pciInit(struct PCIDevice *hd)
 {
     OOP_Object                  *root;
-    OOP_Class	       *usbContrClass;
     struct PCIController *hc;
     struct PCIController *nexthc;
     struct PCIUnit *hu;
@@ -175,8 +177,8 @@ BOOL pciInit(struct PCIDevice *hd)
     if (!root)
         root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     pciusbDebug("PCI", "HW Root @  0x%p\n", root);
-    usbContrClass = OOP_FindClass(CLID_Hidd_USBController);
-    pciusbDebug("PCI", "USB Controller class @  0x%p\n", usbContrClass);
+    XHCIControllerOOPStartup(hd);
+    pciusbDebug("PCI", "xHCI USB Controller class @  0x%p\n", hd->hd_USBXHCIControllerClass);
 
     // Create units with a list of host controllers having the same bus and device number.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ) {
@@ -207,7 +209,7 @@ BOOL pciInit(struct PCIDevice *hd)
             if (hc->hc_DevID == hu->hu_DevID) {
                 Remove(&hc->hc_Node);
 
-                if ((usbContrClass) && (root)) {
+                if ((hd->hd_USBXHCIControllerClass) && (root)) {
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_HardwareName,        0               },
@@ -216,7 +218,7 @@ BOOL pciInit(struct PCIDevice *hd)
                         {aHidd_DriverData,          0               },
                         {TAG_DONE,                  0               }
                     };
-                    char *usb_chipset = "XHCI";
+                    char *usb_chipset = "xHCI";
                     int usb_min = -1, usb_maj = 3;
 
                     hc->hc_Node.ln_Name = AllocVec(16 + 34, MEMF_CLEAR);
@@ -233,7 +235,8 @@ BOOL pciInit(struct PCIDevice *hd)
                         sprintf((char *)(usbc_tags[1].ti_Data + 10), "%u", usb_min);
                     sprintf((char *)(usbc_tags[1].ti_Data + 11), " %s Host controller",  usb_chipset);
 
-                    HW_AddDriver(root, usbContrClass, usbc_tags);
+					pciusbWarn("PCI", "Registering '%s'\n", (char *)usbc_tags[1].ti_Data);
+                    HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
                 }
                 hc->hc_Unit = hu;
                 Enqueue(&hu->hu_Controllers, &hc->hc_Node);
@@ -307,7 +310,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         // allocate necessary memory
         ForeachNode(&hu->hu_Controllers, hc) {
             if(xhciports) {
-                pciusbWarn("PCI", "More than one XHCI controller per board?!?\n");
+                pciusbWarn("PCI", "More than one xHCI controller per board?!?\n");
             }
             allocgood = xhciInit(hc, hu, hu->hu_TimerReq);
             if(allocgood) {
@@ -346,7 +349,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 
     pciusbDebug("PCI", "Unit %ld: USB Board %08lx:\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID);
     if (hu->hu_RootHubXPorts) {
-        pciusbDebug("PCI", "Unit %ld: - %ld USB3.x+ port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_RootHubXPorts);
+        pciusbDebug("PCI", "Unit %ld: - %ld USB%u.%u+ port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), usbMajor, usbMinor, hu->hu_RootHubXPorts);
     }
 
     hu->hu_FrameCounter = 1;
@@ -356,7 +359,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     prodname = hu->hu_ProductName;
     *prodname = 0;
     pciStrcat(prodname, "PCI ");
-    pciStrcat(prodname, "XHCI ");
+    pciStrcat(prodname, "xHCI ");
     pciusbAppendVersion(prodname, hciMajor, hciMinor);
 
     // put em online
