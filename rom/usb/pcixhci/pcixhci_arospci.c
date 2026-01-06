@@ -1,4 +1,7 @@
-/* pci_aros.c - pci access abstraction for AROS by Chris Hodges
+/*
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved
+
+    Desc: PCI access abstraction for AROS
 */
 
 #include <proto/exec.h>
