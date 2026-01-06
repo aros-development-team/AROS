@@ -486,7 +486,7 @@ struct PsdEndpoint
     UWORD               pep_Direction;    /* Direction (0=OUT, 1=IN) */
     UWORD               pep_TransType;    /* TransferType, see USEA-Flags */
     UWORD               pep_MaxPktSize;   /* Maximum packet size for EP */
-    UWORD               pep_NumTransMuFr; /* Number of transactions per µFrame */
+    UWORD               pep_NumTransMuFr; /* Number of transactions per microframe */
     UWORD               pep_Interval;     /* Interval for polling in ms */
     UWORD               pep_SyncType;     /* Iso Synchronization Type */
     UWORD               pep_UsageType;    /* Iso Usage Type */
