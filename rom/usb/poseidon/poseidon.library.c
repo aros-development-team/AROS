@@ -4261,12 +4261,17 @@ AROS_LH3(struct PsdPipe *, psdAllocPipe,
                 else
                     pp->pp_IOReq.iouh_SS_Mult = 0;
 
-                /* wBytesPerInterval - spec is 16 bits; field is UWORD */
-                if (pep->pep_BytesPerInterval > 0xFFFFUL)
-                    pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
-                else
-                    pp->pp_IOReq.iouh_SS_BytesPerInterval =
-                        (UWORD)pep->pep_BytesPerInterval;
+                /* wBytesPerInterval - only valid for isoch/interrupt endpoints */
+                if (pep->pep_TransType == USEAF_ISOCHRONOUS ||
+                    pep->pep_TransType == USEAF_INTERRUPT) {
+                    if (pep->pep_BytesPerInterval > 0xFFFFUL)
+                        pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
+                    else
+                        pp->pp_IOReq.iouh_SS_BytesPerInterval =
+                            (UWORD)pep->pep_BytesPerInterval;
+                } else {
+                    pp->pp_IOReq.iouh_SS_BytesPerInterval = 0;
+                }
 
                 if (pep->pep_TransType == USEAF_BULK) {
                     UWORD attr = pep->pep_CompAttributes;
@@ -8120,7 +8125,7 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                                     pep->pep_Interval = usep->bInterval;
                                     pep->pep_MaxBurst = 1;
                                     pep->pep_CompAttributes = 0;
-                                    pep->pep_BytesPerInterval = pep->pep_MaxPktSize;
+                                    pep->pep_BytesPerInterval = 0;
                                     if(pd->pd_Flags & PDFF_SUPERSPEED) {
                                         switch(pep->pep_TransType) {
                                         case USEAF_CONTROL:
@@ -8264,14 +8269,25 @@ BOOL pGetDevConfig(struct PsdPipe *pp)
                         case UDT_SUPERSPEED_EP_COMP: {
                             struct UsbSSEndpointCompDesc *comp = (struct UsbSSEndpointCompDesc *) dbuf;
                             if(pep) {
+                                if (dlen < sizeof(struct UsbSSEndpointCompDesc)) {
+                                    psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                    "Superspeed companion descriptor too small!");
+                                    break;
+                                }
                                 pep->pep_MaxBurst = comp->bMaxBurst + 1;
                                 pep->pep_CompAttributes = comp->bmAttributes;
-                                pep->pep_BytesPerInterval = AROS_LE2WORD(comp->wBytesPerInterval);
+                                if (pep->pep_TransType == USEAF_INTERRUPT ||
+                                    pep->pep_TransType == USEAF_ISOCHRONOUS) {
+                                    pep->pep_BytesPerInterval = AROS_LE2WORD(comp->wBytesPerInterval);
+                                } else {
+                                    pep->pep_BytesPerInterval = 0;
+                                }
                                 if((pd->pd_Flags & PDFF_SUPERSPEED) && (pep->pep_TransType == USEAF_ISOCHRONOUS)) {
                                     pep->pep_NumTransMuFr = (comp->bmAttributes & 0x03) + 1;
                                 }
                             } else {
-                                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed companion without prior endpoint descriptor!");
+                                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                "Superspeed companion without prior endpoint descriptor!");
                             }
                             break;
                         }
