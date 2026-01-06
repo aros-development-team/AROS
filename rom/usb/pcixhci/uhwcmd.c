@@ -838,12 +838,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
                 pciusbRHDebug("RH", "GetSuperSpeedHubDescriptor (%ld)\n", len);
 
-                /* Only make sense if we actually have an xHCI root */
-                hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
-                if (!hc)
-                    return UHIOERR_STALL;
-
-
                 ioreq->iouh_Actual = (len > sslen) ? sslen : len;
                 CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
@@ -856,10 +850,12 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     /* wHubCharacteristics: at least indicate per-port power if PPC set */
                     {
                         UWORD characteristics = 0;
-
-                        if (hc->hc_Flags & HCF_PPC)
-                            characteristics |= UHCF_INDIVID_POWER;
-
+                        hc = (struct PCIController *)unit->hu_Controllers.lh_Head;
+                        while (hc->hc_Node.ln_Succ) {
+                            if (hc->hc_Flags & HCF_PPC)
+                                characteristics |= UHCF_INDIVID_POWER;
+                            hc = (struct PCIController *)hc->hc_Node.ln_Succ;
+                        }
                         shd->wHubCharacteristics = WORD2LE(characteristics);
                     }
 
