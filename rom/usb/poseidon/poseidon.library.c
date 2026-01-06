@@ -3394,6 +3394,18 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     pAllocDescriptor(pd, (UBYTE *) &usdd);
     pd->pd_Flags |= PDFF_HASDEVDESC;
     pd->pd_USBVers = AROS_LE2WORD(usdd.bcdUSB);
+    /* RootHub is atleast highspeed if -:
+     *    it ISNT superspeed,
+     *    USB version is > 2.0,
+     *    proto > 0
+     */
+    if ((!pd->pd_Hub) &&
+        (!(pd->pd_Flags & PDFF_SUPERSPEED)) &&
+        (pd->pd_USBVers >= 0x200) &&
+        (pd->pd_DevProto > 0)) {
+        pd->pd_Flags &= ~PDFF_LOWSPEED;
+        pd->pd_Flags |= PDFF_HIGHSPEED;
+    }
     pd->pd_DevClass = usdd.bDeviceClass;
     pd->pd_DevSubClass = usdd.bDeviceSubClass;
     pd->pd_DevProto = usdd.bDeviceProtocol;
