@@ -760,7 +760,8 @@ AROS_UFH0(void, xhciPortTask)
                     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
                         flags |= UHFF_HIGHSPEED;
                         mps0   = 64;             /* HS EP0 typically 64 bytes */
-                    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
+                    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED ||
+                               speedBits == XHCIF_PR_PORTSC_SUPERSPEEDPLUS) {
                         flags |= UHFF_SUPERSPEED;
                         mps0   = 512;            /* SS EP0 max packet size */
                     } else {
@@ -800,4 +801,3 @@ task_cleanup:
     xhciCloseTaskTimer(&xhcic->xhc_PortTask.xpt_TimerPort, &xhcic->xhc_PortTask.xpt_TimerReq);
     AROS_USERFUNC_EXIT
 }
-

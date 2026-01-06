@@ -1373,7 +1373,8 @@ static BOOL xhciDerivePortFlagsAndMps0(struct PCIController *hc,
     } else if (speedBits == XHCIF_PR_PORTSC_HIGHSPEED) {
         *flags |= UHFF_HIGHSPEED;
         if (*mps0 == 0) *mps0 = 64;
-    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED) {
+    } else if (speedBits == XHCIF_PR_PORTSC_SUPERSPEED ||
+               speedBits == XHCIF_PR_PORTSC_SUPERSPEEDPLUS) {
         *flags |= UHFF_SUPERSPEED;
         if (*mps0 == 0) *mps0 = 512;
     } else {
