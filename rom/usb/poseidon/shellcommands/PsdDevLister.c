@@ -20,7 +20,7 @@
 #define ARGS_SIZEOF   4
 
 static const char *template = "SHOWROOT/S,QUICK/S,STRINGS/S,TOPOLOGY/S";
-const char *version = "$VER: PsdDevLister 4.1 (27.11.2025) by Chris Hodges <chrisly@platon42.de>";
+const char *version = "$VER: PsdDevLister 4.2 (07.01.2026) by Chris Hodges <chrisly@platon42.de>";
 static IPTR ArgsArray[ARGS_SIZEOF];
 static struct RDArgs *ArgsHook = NULL;
 
@@ -176,6 +176,8 @@ int main(int argc, char *argv[])
     IPTR epmaxburst;
     IPTR epcompattrs;
     IPTR epbytesperint;
+    IPTR epstreambase;
+    IPTR epmaxstreams;
 
     STRPTR strdesc;
     STRPTR strthinktime;
@@ -458,6 +460,8 @@ int main(int argc, char *argv[])
                                 epmaxburst = 0;
                                 epcompattrs = 0;
                                 epbytesperint = 0;
+                                epstreambase = 0;
+                                epmaxstreams = 0;
                                 psdGetAttrs(PGA_ENDPOINT, pep,
                                             EA_IsIn, &episin,
                                             EA_EndpointNum, &epnum,
@@ -470,6 +474,8 @@ int main(int argc, char *argv[])
                                             EA_MaxBurst, &epmaxburst,
                                             EA_CompAttributes, &epcompattrs,
                                             EA_BytesPerInterval, &epbytesperint,
+                                            EA_StreamBase, &epstreambase,
+                                            EA_MaxStreams, &epmaxstreams,
                                             TAG_END);
                                 Printf("      · Endpoint %ld (%s %s)\n"
                                        "        MaxPktSize: %s%ld\n",
@@ -489,6 +495,17 @@ int main(int argc, char *argv[])
                                 {
                                     Printf("        Superspeed : bursts=%ld, attr=0x%02lx, bytes/interval=%ld\n",
                                            epmaxburst, epcompattrs, epbytesperint);
+                                }
+                                if(epmaxstreams)
+                                {
+                                    if(epstreambase)
+                                    {
+                                        Printf("        USB3 Streams: max=%ld, base=%ld\n",
+                                               epmaxstreams, epstreambase);
+                                    } else {
+                                        Printf("        USB3 Streams: max=%ld (disabled)\n",
+                                               epmaxstreams);
+                                    }
                                 }
                                 if(eptranstype == USEAF_ISOCHRONOUS)
                                 {
@@ -631,4 +648,3 @@ int main(int argc, char *argv[])
     fail(errmsg);
     return(0); // never gets here, just to shut the compiler up
 }
-
