@@ -3,6 +3,8 @@
 
 #include "xhci_hcd.h"
 
+static const char xhciTimerDeviceName[] = "timer.device";
+
 #if !defined(AROS_USE_LOGRES)
 #if defined(DEBUG) && (DEBUG > 1)
 #define XHCI_ENABLEINDEBUG
@@ -35,7 +37,7 @@ static inline BOOL xhciOpenTaskTimer(struct MsgPort **msgport,
     if ((*msgport = CreateMsgPort())) {
         *timerreq = (struct timerequest *)CreateIORequest(*msgport, sizeof(struct timerequest));
         if (*timerreq) {
-            if (!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)*timerreq, 0)) {
+            if (!OpenDevice(xhciTimerDeviceName, UNIT_MICROHZ, (struct IORequest *)*timerreq, 0)) {
                 (*timerreq)->tr_node.io_Message.mn_Node.ln_Name = (STRPTR)name;
                 (*timerreq)->tr_node.io_Command = TR_ADDREQUEST;
                 return TRUE;

@@ -17,6 +17,8 @@
 #define NewList NEWLIST
 
 const char devname[]     = MOD_NAME_STRING;
+static const char strOopLibraryName[] = "oop.library";
+static const char strUtilityLibraryName[] = "utility.library";
 
 #if defined(__OOP_NOATTRBASES__)
 /* Keep order the same as order of IDs in struct e1000Base! */
@@ -55,7 +57,7 @@ static int devInit(LIBBASETYPEPTR base)
             base, SysBase);
 
 #if defined(__OOP_NOLIBBASE__)
-    if ((base->hd_OOPBase = OpenLibrary("oop.library",0)) == NULL) {
+    if ((base->hd_OOPBase = OpenLibrary(strOopLibraryName, 0)) == NULL) {
         KPRINTF(10, "devInit: Failed to open oop.library!\n");
         return FALSE;
     }
@@ -82,7 +84,7 @@ static int devInit(LIBBASETYPEPTR base)
     }
 #endif
 
-    base->hd_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
+    base->hd_UtilityBase = (struct UtilityBase *) OpenLibrary(strUtilityLibraryName, 39);
 
 #define	UtilityBase	base->hd_UtilityBase
 

@@ -29,6 +29,8 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+static const char strXhciEventTaskName[] = "xHCI event task";
+
 #if !defined(PCIUSB_INLINEXHCIOPS)
 void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
 {
@@ -387,7 +389,7 @@ AROS_UFH0(void, xhciEventRingTask)
 
         timer_ok = xhciOpenTaskTimer(&xhcic->xhc_EventTask.xet_TimerPort,
                                      &xhcic->xhc_EventTask.xet_TimerReq,
-                                     "xHCI event task");
+                                     strXhciEventTaskName);
         if (!timer_ok) {
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: unable to open timer.device" DEBUGCOLOR_RESET" \n", __func__);
         }
@@ -444,4 +446,3 @@ task_cleanup:
                        &xhcic->xhc_EventTask.xet_TimerReq);
     AROS_USERFUNC_EXIT
 }
-

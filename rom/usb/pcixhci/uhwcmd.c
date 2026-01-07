@@ -123,7 +123,14 @@ const struct  UsbSSHubDesc    RHHubSSDesc = {
 
 static const char strStandardConfig[] = "Standard Config";
 static const char strHubInterface[] = "Hub interface";
-const CONST_STRPTR RHStrings[] = { "The AROS Dev Team", "PCI Superspeed Root Hub Unit x", strStandardConfig, strHubInterface };
+static const char strTimerDeviceName[] = "timer.device";
+static const char strTimerHardwareName[] = "PCI hardware";
+static const char strNakTimeoutName[] = "PCIUSB NakTimeout";
+static const char strArosDevTeam[] = "The AROS Dev Team";
+static const char strRootHubProduct[] = "PCI Superspeed Root Hub Unit x";
+static const char strXhciDescription[] = "xHCI host controller driver for PCI cards";
+static const char strXhciCopyright[] = "\xA9""2023-2026 The AROS Dev Team";
+const CONST_STRPTR RHStrings[] = { strArosDevTeam, strRootHubProduct, strStandardConfig, strHubInterface };
 
 /* /// "SureCause()" */
 void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
@@ -158,8 +165,8 @@ BOOL uhwOpenTimer(struct PCIUnit *unit, struct PCIDevice *base)
 {
     if((unit->hu_MsgPort = CreateMsgPort())) {
         if((unit->hu_TimerReq = (struct timerequest *) CreateIORequest(unit->hu_MsgPort, sizeof(struct timerequest)))) {
-            if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) unit->hu_TimerReq, 0)) {
-                unit->hu_TimerReq->tr_node.io_Message.mn_Node.ln_Name = "PCI hardware";
+            if(!OpenDevice(strTimerDeviceName, UNIT_MICROHZ, (struct IORequest *) unit->hu_TimerReq, 0)) {
+                unit->hu_TimerReq->tr_node.io_Message.mn_Node.ln_Name = (char *)strTimerHardwareName;
                 unit->hu_TimerReq->tr_node.io_Command = TR_ADDREQUEST;
                 KPRINTF(1, "opened timer device\n");
                 return(TRUE);
@@ -247,7 +254,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             unit->hu_UnitNo |= PCIUSBUNIT_MASK;                                                 // Mark the unit as allocated/opened
 
             unit->hu_NakTimeoutInt.is_Node.ln_Type = NT_INTERRUPT;
-            unit->hu_NakTimeoutInt.is_Node.ln_Name = "PCIUSB NakTimeout";
+            unit->hu_NakTimeoutInt.is_Node.ln_Name = (char *)strNakTimeoutName;
             unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
             unit->hu_NakTimeoutInt.is_Data = unit;
             unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)uhwNakTimeoutInt;
@@ -526,7 +533,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Manufacturer, taglist))) {
-        *((STRPTR *) tag->ti_Data) = "The AROS Dev Team";
+        *((STRPTR *) tag->ti_Data) = (STRPTR)strArosDevTeam;
         count++;
     }
     if((tag = FindTagItem(UHA_ProductName, taglist))) {
@@ -534,11 +541,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Description, taglist))) {
-        *((STRPTR *) tag->ti_Data) = "xHCI host controller driver for PCI cards";
+        *((STRPTR *) tag->ti_Data) = (STRPTR)strXhciDescription;
         count++;
     }
     if((tag = FindTagItem(UHA_Copyright, taglist))) {
-        *((STRPTR *) tag->ti_Data) ="\xA9""2023-2026 The AROS Dev Team";
+        *((STRPTR *) tag->ti_Data) = (STRPTR)strXhciCopyright;
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist))) {

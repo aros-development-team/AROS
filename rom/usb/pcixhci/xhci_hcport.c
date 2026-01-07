@@ -14,6 +14,8 @@
 #include "uhwcmd.h"
 #include "xhciproto.h"
 
+static const char strXhciPortTaskName[] = "xHCI port task";
+
 #if defined(DEBUG) && defined(XHCI_LONGDEBUGNAK)
 #define XHCI_NAKTOSHIFT         (8)
 #else
@@ -700,7 +702,7 @@ AROS_UFH0(void, xhciPortTask)
 
         timer_ok = xhciOpenTaskTimer(&xhcic->xhc_PortTask.xpt_TimerPort,
                                      &xhcic->xhc_PortTask.xpt_TimerReq,
-                                     "xHCI port task");
+                                     strXhciPortTaskName);
         if (!timer_ok) {
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: unable to open timer.device" DEBUGCOLOR_RESET" \n", __func__);
         }

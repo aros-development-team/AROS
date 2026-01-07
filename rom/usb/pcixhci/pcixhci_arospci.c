@@ -39,6 +39,14 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+static const char strPcixhciDevicePrefix[] = "pcixhci.device/";
+static const char strPcixhciDeviceFormat[] = "pcixhci.device/%u";
+static const char strProductPciPrefix[] = "PCI ";
+static const char strProductXhci[] = "xHCI ";
+static const char strProductUsb[] = " USB ";
+static const char strProductHostController[] = " Host Controller";
+static const char strEmpty[] = "";
+
 extern int XHCIControllerOOPStartup(struct PCIDevice *hd);
 
 AROS_UFH3(void, pciEnumerator,
@@ -217,10 +225,11 @@ BOOL pciInit(struct PCIDevice *hd)
                         {aHidd_DriverData,          (IPTR)hc        },
                         {TAG_DONE,                  0               }
                     };
-                    int name_len = sizeof("pcixhci.device/") - 1 + 10 + 1;
+                    int name_len = sizeof(strPcixhciDevicePrefix) - 1 + 10 + 1;
                     hc->hc_Node.ln_Name = AllocVec(name_len, MEMF_CLEAR);
                     hc->hc_Node.ln_Pri = HCITYPE_XHCI;
-                    sprintf(hc->hc_Node.ln_Name, "pcixhci.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
+                    sprintf(hc->hc_Node.ln_Name, strPcixhciDeviceFormat,
+                            (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
                     pciusbWarn("PCI", "Instantiating xHCI controller class for '%s'\n", hc->hc_Node.ln_Name);
                     HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
@@ -255,7 +264,7 @@ static void pciusbUpdateVersion(UBYTE major, UBYTE minor, UBYTE *bestMajor, UBYT
 
 static void pciusbAppendVersion(STRPTR dest, UBYTE major, UBYTE minor)
 {
-    STRPTR vers = pciStrcat(dest, "");
+    STRPTR vers = pciStrcat(dest, (char *)strEmpty);
     vers[0] = (char)('0' + (major % 10));
     vers[1] = '.';
     vers[2] = (char)('0' + (minor % 10));
@@ -345,8 +354,8 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     // create product name of device
     prodname = hu->hu_ProductName;
     *prodname = 0;
-    pciStrcat(prodname, "PCI ");
-    pciStrcat(prodname, "xHCI ");
+    pciStrcat(prodname, (char *)strProductPciPrefix);
+    pciStrcat(prodname, (char *)strProductXhci);
     pciusbAppendVersion(prodname, hciMajor, hciMinor);
 
     // put em online
@@ -355,9 +364,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
 
     // now add the USB version information to the product name.
-    pciStrcat(prodname, " USB ");
+    pciStrcat(prodname, (char *)strProductUsb);
     pciusbAppendVersion(prodname, usbMajor, usbMinor);
-    pciStrcat(prodname, " Host Controller");
+    pciStrcat(prodname, (char *)strProductHostController);
     pciusbDebug("PCI", "Unit allocated!\n");
 
     return TRUE;

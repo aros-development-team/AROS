@@ -52,6 +52,7 @@ static char xhciResetIntName[] = "xHCI PCI (pcixhci.device)";
 static char xhciEndpointTimerName[] = "xHCI endpoint";
 static char xhciEventRingTaskNameFmt[] = "usbhw<pcixhci.device/%ld> Event Ring Task";
 static char xhciPortTaskNameFmt[] = "usbhw<pcixhci.device/%ld> Port Task";
+static const char strPoseidonLibraryName[] = "poseidon.library";
 
 static void xhciFreeEndpointContext(struct PCIController *hc,
                                     struct pciusbXHCIDevice *devCtx,
@@ -3419,7 +3420,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
 
 
     struct Library *ps;
-    if ((ps = OpenLibrary("poseidon.library", 5)) == NULL) {
+    if ((ps = OpenLibrary(strPoseidonLibraryName, 5)) == NULL) {
         return FALSE;
     }
     if (!xhcic) {

@@ -23,6 +23,12 @@
 #endif
 #define base (hc->hc_Device)
 
+static const char strXhciInitTaskName[] = "xHCI init";
+static const char strHardwareNamePrefixFmt[] = "PCI USB %u.";
+static const char strHardwareNameMinorUnknown[] = "x";
+static const char strHardwareNameMinorFmt[] = "%u";
+static const char strHardwareNameSuffix[] = " xHCI Host controller";
+
 static BOOL XHCIController__Init(struct PCIController *hc)
 {
     struct XhciHCPrivate *xhcic = NULL;
@@ -46,7 +52,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         { TAG_DONE, 0UL },
     };
 
-    if (!xhciOpenTaskTimer(&timerport, &timerreq, "xHCI init")) {
+    if (!xhciOpenTaskTimer(&timerport, &timerreq, strXhciInitTaskName)) {
         return FALSE;
     }
 
@@ -458,12 +464,12 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
         char name_buf[64];
         char *hardware_name = NULL;
 
-        sprintf(name_buf, "PCI USB %u.", hc->hc_USBVersionMajor);
+        sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
         if (hc->hc_USBVersionMinor == 0xFF)
-            sprintf(name_buf + 10, "x");
+            sprintf(name_buf + 10, strHardwareNameMinorUnknown);
         else
-            sprintf(name_buf + 10, "%u", hc->hc_USBVersionMinor);
-        sprintf(name_buf + 11, " xHCI Host controller");
+            sprintf(name_buf + 10, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
+        sprintf(name_buf + 11, strHardwareNameSuffix);
 
         hardware_name = AllocVec(strlen(name_buf) + 1, MEMF_CLEAR);
         if (hardware_name != NULL) {
