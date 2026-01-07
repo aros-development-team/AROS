@@ -57,13 +57,13 @@ static int devInit(LIBBASETYPEPTR base)
             base, SysBase);
 
 #if defined(__OOP_NOLIBBASE__)
-    if ((base->hd_OOPBase = OpenLibrary(strOopLibraryName, 0)) == NULL) {
+    if((base->hd_OOPBase = OpenLibrary(strOopLibraryName, 0)) == NULL) {
         KPRINTF(10, "devInit: Failed to open oop.library!\n");
         return FALSE;
     }
 #endif
 #if defined(__OOP_NOATTRBASES__)
-    if (OOP_ObtainAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs))) {
+    if(OOP_ObtainAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs))) {
         KPRINTF(10, "devInit: Failed to obtain OOP AttrBases!\n");
 #if defined(__OOP_NOLIBBASE__)
         CloseLibrary(base->hd_OOPBase);
@@ -72,7 +72,7 @@ static int devInit(LIBBASETYPEPTR base)
     }
 #endif
 #if defined(__OOP_NOMETHODBASES__)
-    if (OOP_ObtainMethodBasesArray(&base->hd_HiddPCIMB, GM_UNIQUENAME(MethBaseIDs))) {
+    if(OOP_ObtainMethodBasesArray(&base->hd_HiddPCIMB, GM_UNIQUENAME(MethBaseIDs))) {
         KPRINTF(10, "devInit: Failed to obtain OOP MethodBases!\n");
 #if defined(__OOP_NOATTRBASES__)
         OOP_ReleaseAttrBasesArray(&base->hd_HiddAB, GM_UNIQUENAME(AttrBaseIDs));
@@ -164,8 +164,8 @@ static int devClose(LIBBASETYPEPTR base, struct IOUsbHWReq *ioreq)
 
     Close_Unit(base, (struct PCIUnit *) ioreq->iouh_Req.io_Unit, ioreq);
 
-    ioreq->iouh_Req.io_Unit   = (APTR) -1;
-    ioreq->iouh_Req.io_Device = (APTR) -1;
+    ioreq->iouh_Req.io_Unit   = (APTR)-1;
+    ioreq->iouh_Req.io_Device = (APTR)-1;
     return TRUE;
 }
 
@@ -209,8 +209,8 @@ AROS_LH1(void, devBeginIO,
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     ioreq->iouh_Req.io_Error                   = UHIOERR_NO_ERROR;
 
-    if (ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY) {
-        switch (ioreq->iouh_Req.io_Command) {
+    if(ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY) {
+        switch(ioreq->iouh_Req.io_Command) {
         case CMD_RESET:
             ret = cmdReset(ioreq, unit, base);
             break;
@@ -290,7 +290,7 @@ AROS_LH1(void, devBeginIO,
     }
 
     if(ret != RC_DONTREPLY) {
-        if (ret != RC_OK) {
+        if(ret != RC_OK) {
             KPRINTF(1, "TermIO <err %04x>\n", ret);
             /* Set error codes */
             ioreq->iouh_Req.io_Error = ret & 0xff;
@@ -319,7 +319,8 @@ AROS_LH1(LONG, devAbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    KPRINTF(50, "devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command, ioreq->iouh_Req.io_Message.mn_Node.ln_Type);
+    KPRINTF(50, "devAbortIO ioreq: 0x%p, command %ld, status %ld\n", ioreq, ioreq->iouh_Req.io_Command,
+            ioreq->iouh_Req.io_Message.mn_Node.ln_Type);
 
     /* Is it pending? */
     if(ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) {

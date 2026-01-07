@@ -29,7 +29,7 @@ static int getArguments(struct PCIDevice *base)
     APTR LogResBase;
 #define LogHandle (base->hd_LogRHandle)
     base->hd_LogResBase = OpenResource("log.resource");
-    if (base->hd_LogResBase) {
+    if(base->hd_LogResBase) {
         LogResBase = base->hd_LogResBase;
         base->hd_LogRHandle = logInitialise(&base->hd_Device.dd_Library.lib_Node);
     }

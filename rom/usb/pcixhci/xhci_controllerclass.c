@@ -52,12 +52,12 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         { TAG_DONE, 0UL },
     };
 
-    if (!xhciOpenTaskTimer(&timerport, &timerreq, strXhciInitTaskName)) {
+    if(!xhciOpenTaskTimer(&timerport, &timerreq, strXhciInitTaskName)) {
         return FALSE;
     }
 
     xhcic = AllocMem(sizeof(*xhcic), MEMF_CLEAR);
-    if (!xhcic) {
+    if(!xhcic) {
         xhciCloseTaskTimer(&timerport, &timerreq);
         return FALSE;
     }
@@ -67,7 +67,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_Base0, (IPTR *)&hc->hc_RegBase);
     xhciregs = (volatile struct xhci_hccapr *)hc->hc_RegBase;
 
-    if (hc->hc_Unit) {
+    if(hc->hc_Unit) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Initializing hardware for unit #%d" DEBUGCOLOR_RESET" \n",
                         hc->hc_Unit->hu_UnitNo);
     } else {
@@ -98,7 +98,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     ULONG xhciMaxIntrs = (hcsparams1 >> 8) & 0x7FF;
     UWORD xhciPortLimit = (UWORD)((hcsparams1 >> 24) & 0xFF);
 
-    if (xhciPortLimit > MAX_ROOT_PORTS) {
+    if(xhciPortLimit > MAX_ROOT_PORTS) {
         xhciPortLimit = MAX_ROOT_PORTS;
     }
 
@@ -109,7 +109,7 @@ static BOOL XHCIController__Init(struct PCIController *hc)
     xhciECPOff = ((hccparams1 >> XHCIS_HCCPARAMS1_ECP) & XHCI_HCCPARAMS1_ECP_SMASK) << 2;
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  Extended Capabilties Pointer = %04x" DEBUGCOLOR_RESET" \n", xhciECPOff);
 
-    while (xhciECPOff >= 0x40) {
+    while(xhciECPOff >= 0x40) {
         volatile ULONG *capreg = (volatile ULONG *)((IPTR)xhciregs + xhciECPOff);
         ULONG caphdr = AROS_LE2LONG(*capreg);
         ULONG nextcap = (caphdr >> XHCIS_EXT_CAP_NEXT) & XHCI_EXT_CAP_NEXT_MASK;
@@ -118,11 +118,11 @@ static BOOL XHCIController__Init(struct PCIController *hc)
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  ExtCap @%04lx: ID=%02x next=%02lx" DEBUGCOLOR_RESET" \n",
                         xhciECPOff, capid, nextcap);
 
-        if (capid == XHCI_EXT_CAP_ID_LEGACY_SUPPORT) {
+        if(capid == XHCI_EXT_CAP_ID_LEGACY_SUPPORT) {
             xhciUSBLegSup = caphdr;
             pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  xhciUSBLegSup = $%08x" DEBUGCOLOR_RESET" \n", xhciUSBLegSup);
 
-            if (xhciUSBLegSup & XHCIF_USBLEGSUP_BIOSOWNED) {
+            if(xhciUSBLegSup & XHCIF_USBLEGSUP_BIOSOWNED) {
                 ULONG ownershipval = xhciUSBLegSup | XHCIF_USBLEGSUP_OSOWNED;
 
                 pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Taking ownership of xHCI from BIOS" DEBUGCOLOR_RESET" \n");
@@ -138,19 +138,19 @@ takeownership:
                  * Wait for ownership change to take place.
                  * XHCI specification doesn't say how long it can take...
                  */
-                while ((AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
+                while((AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED) && (--cnt > 0)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Waiting for ownership to change..." DEBUGCOLOR_RESET" \n");
                     uhwDelayMS(10, timerreq);
                 }
-                if ((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
-                    (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
+                if((ownershipval != XHCIF_USBLEGSUP_OSOWNED) &&
+                        (AROS_LE2LONG(*capreg) & XHCIF_USBLEGSUP_BIOSOWNED)) {
                     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership of xHCI still with BIOS" DEBUGCOLOR_RESET" \n");
 
                     /* Try to force ownership */
                     ownershipval = XHCIF_USBLEGSUP_OSOWNED;
                     goto takeownership;
                 }
-            } else if (xhciUSBLegSup & XHCIF_USBLEGSUP_OSOWNED) {
+            } else if(xhciUSBLegSup & XHCIF_USBLEGSUP_OSOWNED) {
                 pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Ownership already with OS!" DEBUGCOLOR_RESET" \n");
             } else {
                 pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Forcing ownership of xHCI from (unknown)" DEBUGCOLOR_RESET" \n");
@@ -163,7 +163,7 @@ takeownership:
             volatile ULONG *smictl = (volatile ULONG *)((IPTR)capreg + 4);
             *smictl = AROS_LONG2LE(0);
             (void)*smictl;
-        } else if (capid == XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL) {
+        } else if(capid == XHCI_EXT_CAP_ID_SUPPORTED_PROTOCOL) {
             ULONG caprev   = AROS_LE2LONG(*(capreg + 0));  /* DWORD0: revision */
             ULONG capname  = AROS_LE2LONG(*(capreg + 1));  /* DWORD1: name string */
             ULONG capports = AROS_LE2LONG(*(capreg + 2));  /* DWORD2: ports */
@@ -171,7 +171,7 @@ takeownership:
             UBYTE major = (caprev >> XHCIS_XCP_REV_MAJOR) & XHCI_XCP_REV_MAJOR_MASK;
             UBYTE minor_bcd = (caprev >> XHCIS_XCP_REV_MINOR) & XHCI_XCP_REV_MINOR_MASK;
             UBYTE minor = (minor_bcd >> 4) & 0x0F;
-            if (minor == 0)
+            if(minor == 0)
                 minor = minor_bcd & 0x0F;
 
             UWORD name = (UWORD)(capname & XHCI_XCP_NAMESTRING_MASK);
@@ -179,38 +179,38 @@ takeownership:
             UBYTE portCount = (capports >> XHCIS_XCP_PORT_COUNT) & XHCI_XCP_PORT_COUNT_MASK;
 
             pciusbWarn("xHCI",
-                            DEBUGCOLOR_SET "  XCP protocol '%c%c' rev %u.%u ports %u..%u"
-                            DEBUGCOLOR_RESET" \n",
-                            (name & 0xFF),
-                            (name >> 8) & 0xFF,
-                            major, minor,
-                            portOffset,
-                            (UWORD)(portOffset + portCount - 1));
+                       DEBUGCOLOR_SET "  XCP protocol '%c%c' rev %u.%u ports %u..%u"
+                       DEBUGCOLOR_RESET" \n",
+                       (name & 0xFF),
+                       (name >> 8) & 0xFF,
+                       major, minor,
+                       portOffset,
+                       (UWORD)(portOffset + portCount - 1));
 
-            if ((major > usbBestMajor) || ((major == usbBestMajor) && (minor > usbBestMinor))) {
+            if((major > usbBestMajor) || ((major == usbBestMajor) && (minor > usbBestMinor))) {
                 usbBestMajor = major;
                 usbBestMinor = minor;
             }
-            if (major >= XHCI_PORT_PROTOCOL_USB3) {
-                if ((major > usb3Major) || ((major == usb3Major) && (minor > usb3Minor))) {
+            if(major >= XHCI_PORT_PROTOCOL_USB3) {
+                if((major > usb3Major) || ((major == usb3Major) && (minor > usb3Minor))) {
                     usb3Major = major;
                     usb3Minor = minor;
                 }
             }
 
-            if (portOffset > 0 && portCount > 0) {
+            if(portOffset > 0 && portCount > 0) {
                 UWORD start = (UWORD)(portOffset - 1);
                 UWORD end = (UWORD)(start + portCount);
                 UBYTE proto = XHCI_PORT_PROTOCOL_UNKNOWN;
 
-                if (major >= XHCI_PORT_PROTOCOL_USB3) {
+                if(major >= XHCI_PORT_PROTOCOL_USB3) {
                     proto = XHCI_PORT_PROTOCOL_USB3;
-                } else if (major == XHCI_PORT_PROTOCOL_USB2) {
+                } else if(major == XHCI_PORT_PROTOCOL_USB2) {
                     proto = XHCI_PORT_PROTOCOL_USB2;
                 }
 
-                if (proto != XHCI_PORT_PROTOCOL_UNKNOWN) {
-                    for (UWORD port = start; port < end && port < xhciPortLimit; port++) {
+                if(proto != XHCI_PORT_PROTOCOL_UNKNOWN) {
+                    for(UWORD port = start; port < end && port < xhciPortLimit; port++) {
                         xhcic->xhc_PortProtocol[port] = proto;
                     }
                     xhcic->xhc_PortProtocolValid = TRUE;
@@ -218,7 +218,7 @@ takeownership:
             }
         }
 
-        if (nextcap == 0) {
+        if(nextcap == 0) {
             break;
         }
         xhciECPOff = nextcap << 2;
@@ -229,30 +229,32 @@ takeownership:
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", xhciversion);
     hc->hc_HCIVersionMajor = (UBYTE)((xhciversion >> 8) & 0xFF);
     hc->hc_HCIVersionMinor = (UBYTE)((xhciversion >> 4) & 0x0F);
-    if (usb3Major > 0) {
+    if(usb3Major > 0) {
         usbMajor = usb3Major;
         usbMinor = usb3Minor;
     } else {
         usbMajor = usbBestMajor;
         usbMinor = usbBestMinor;
     }
-    if (usbMajor == 0) {
+    if(usbMajor == 0) {
         usbMajor = 3;
         usbMinor = 0xFF;
     }
     hc->hc_USBVersionMajor = usbMajor;
     hc->hc_USBVersionMinor = usbMinor;
 
-    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS1: 0x%08x (MaxIntr %lu)" DEBUGCOLOR_RESET" \n", hcsparams1, xhciMaxIntrs);
+    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS1: 0x%08x (MaxIntr %lu)" DEBUGCOLOR_RESET" \n", hcsparams1,
+                     xhciMaxIntrs);
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS2: 0x%08x" DEBUGCOLOR_RESET" \n", hcsparams2);
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS3: 0x%08x" DEBUGCOLOR_RESET" \n", hcsparams3);
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCCPARAMS1: 0x%08x" DEBUGCOLOR_RESET" \n", hccparams1);
     pciusbXHCIDebugV("xHCI",
-                    DEBUGCOLOR_SET "  HCCPARAMS2: 0x%08x (PRS=%u CPSM=%u)" DEBUGCOLOR_RESET" \n",
-                    hccparams2,
-                    (hccparams2 & XHCIF_HCCPARAMS2_PRS) ? 1 : 0,
-                    (hccparams2 & XHCIF_HCCPARAMS2_CPSM) ? 1 : 0);
-    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  OPR.CONFIG: 0x%08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(((volatile struct xhci_hcopr *)xhcic->xhc_XHCIOpR)->config));
+                     DEBUGCOLOR_SET "  HCCPARAMS2: 0x%08x (PRS=%u CPSM=%u)" DEBUGCOLOR_RESET" \n",
+                     hccparams2,
+                     (hccparams2 & XHCIF_HCCPARAMS2_PRS) ? 1 : 0,
+                     (hccparams2 & XHCIF_HCCPARAMS2_CPSM) ? 1 : 0);
+    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  OPR.CONFIG: 0x%08x" DEBUGCOLOR_RESET" \n",
+                     AROS_LE2LONG(((volatile struct xhci_hcopr *)xhcic->xhc_XHCIOpR)->config));
 
     hc->hc_NumPorts = (ULONG)((hcsparams1 >> 24) & 0xFF);
     xhcic->xhc_NumSlots = (ULONG)(hcsparams1 & 0xFF);
@@ -260,11 +262,11 @@ takeownership:
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%d ports, %d slots" DEBUGCOLOR_RESET" \n",
                     hc->hc_NumPorts, xhcic->xhc_NumSlots);
 
-    if (hccparams1 & XHCIF_HCCPARAMS1_CSZ)
+    if(hccparams1 & XHCIF_HCCPARAMS1_CSZ)
         hc->hc_Flags |= HCF_CTX64;
-    if (hccparams1 & XHCIF_HCCPARAMS1_AC64)
+    if(hccparams1 & XHCIF_HCCPARAMS1_AC64)
         hc->hc_Flags |= HCF_ADDR64;
-    if (hccparams1 & XHCIF_HCCPARAMS1_PPC)
+    if(hccparams1 & XHCIF_HCCPARAMS1_PPC)
         hc->hc_Flags |= HCF_PPC;
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%d byte context(s), %ubit addressing" DEBUGCOLOR_RESET" \n",
@@ -273,10 +275,10 @@ takeownership:
 
     /* Device Context Base Address Array (Chapter 6.1) */
     xhcic->xhc_DCBAAp = pciAllocAligned(hc, &xhcic->xhc_DCBAA,
-                                    sizeof(UQUAD) * (xhcic->xhc_NumSlots + 1),
-                                    ALIGN_DCBAA,
-                                    xhciPageSize(hc));
-    if (xhcic->xhc_DCBAAp) {
+                                        sizeof(UQUAD) * (xhcic->xhc_NumSlots + 1),
+                                        ALIGN_DCBAA,
+                                        xhciPageSize(hc));
+    if(xhcic->xhc_DCBAAp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated DCBAA @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_DCBAAp, xhcic->xhc_DCBAA.me_Un.meu_Addr, xhcic->xhc_DCBAA.me_Length);
 #if !defined(PCIUSB_NO_CPUTOPCI)
@@ -293,10 +295,10 @@ takeownership:
 
     /* Event Ring Segment Table (Chapter 6.5) */
     xhcic->xhc_ERSTp = pciAllocAligned(hc, &xhcic->xhc_ERST,
-                                   sizeof(struct xhci_er_seg),
-                                   ALIGN_EVTRING_TBL,
-                                   ALIGN_EVTRING_TBL);
-    if (xhcic->xhc_ERSTp) {
+                                       sizeof(struct xhci_er_seg),
+                                       ALIGN_EVTRING_TBL,
+                                       ALIGN_EVTRING_TBL);
+    if(xhcic->xhc_ERSTp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated ERST @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_ERSTp, xhcic->xhc_ERST.me_Un.meu_Addr, xhcic->xhc_ERST.me_Length);
 #if !defined(PCIUSB_NO_CPUTOPCI)
@@ -313,10 +315,10 @@ takeownership:
 
     /* Command Ring */
     xhcic->xhc_OPRp = pciAllocAligned(hc, &xhcic->xhc_OPR,
-                                  sizeof(struct pcisusbXHCIRing),
-                                  XHCI_RING_ALIGN,
-                                  (1 << 16));
-    if (xhcic->xhc_OPRp) {
+                                      sizeof(struct pcisusbXHCIRing),
+                                      XHCI_RING_ALIGN,
+                                      (1 << 16));
+    if(xhcic->xhc_OPRp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated OPR @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_OPRp, xhcic->xhc_OPR.me_Un.meu_Addr, xhcic->xhc_OPR.me_Length);
 #if !defined(PCIUSB_NO_CPUTOPCI)
@@ -333,10 +335,10 @@ takeownership:
 
     /* Event Ring */
     xhcic->xhc_ERSp = pciAllocAligned(hc, &xhcic->xhc_ERS,
-                                  sizeof(struct pcisusbXHCIRing),
-                                  XHCI_RING_ALIGN,
-                                  (1 << 16));
-    if (xhcic->xhc_ERSp) {
+                                      sizeof(struct pcisusbXHCIRing),
+                                      XHCI_RING_ALIGN,
+                                      (1 << 16));
+    if(xhcic->xhc_ERSp) {
         pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "Allocated ERS @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
                         xhcic->xhc_ERSp, xhcic->xhc_ERS.me_Un.meu_Addr, xhcic->xhc_ERS.me_Length);
 #if !defined(PCIUSB_NO_CPUTOPCI)
@@ -360,16 +362,16 @@ takeownership:
     }
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "SPB = %u" DEBUGCOLOR_RESET" \n", xhcic->xhc_NumScratchPads);
 
-    if (xhcic->xhc_NumScratchPads) {
+    if(xhcic->xhc_NumScratchPads) {
         ULONG pagesize   = xhciPageSize(hc);
         ULONG spba_size  = sizeof(struct xhci_address) * xhcic->xhc_NumScratchPads;
         ULONG spb_size   = pagesize * xhcic->xhc_NumScratchPads;
 
         xhcic->xhc_SPBAp = pciAllocAligned(hc, &xhcic->xhc_SPBA,
-                                       spba_size,
-                                       ALIGN_SPBA,
-                                       pagesize);
-        if (!xhcic->xhc_SPBAp) {
+                                           spba_size,
+                                           ALIGN_SPBA,
+                                           pagesize);
+        if(!xhcic->xhc_SPBAp) {
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate SPBA DMA Memory" DEBUGCOLOR_RESET" \n");
             goto init_fail;
         }
@@ -382,12 +384,12 @@ takeownership:
         memset(xhcic->xhc_SPBAp, 0, spba_size);
 
         xhcic->xhc_SPBuffersp = pciAllocAligned(hc, &xhcic->xhc_SPBuffers,
-                                            spb_size,
-                                            pagesize,
-                                            pagesize);
-        if (!xhcic->xhc_SPBuffersp) {
+                                                spb_size,
+                                                pagesize,
+                                                pagesize);
+        if(!xhcic->xhc_SPBuffersp) {
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Unable to allocate Scratchpad Buffers" DEBUGCOLOR_RESET" \n");
-            if (xhcic->xhc_SPBA.me_Un.meu_Addr)
+            if(xhcic->xhc_SPBA.me_Un.meu_Addr)
                 FREEPCIMEM(hc, hc->hc_PCIDriverObject, xhcic->xhc_SPBA.me_Un.meu_Addr);
             goto init_fail;
         }
@@ -402,7 +404,7 @@ takeownership:
         {
             volatile struct xhci_address *spba = (volatile struct xhci_address *)xhcic->xhc_SPBAp;
             ULONG i;
-            for (i = 0; i < xhcic->xhc_NumScratchPads; i++) {
+            for(i = 0; i < xhcic->xhc_NumScratchPads; i++) {
                 xhciSetPointer(hc, spba[i],
                                (IPTR)xhcic->xhc_DMASPBuffers + ((IPTR)pagesize * i));
             }
@@ -420,7 +422,7 @@ takeownership:
     return TRUE;
 
 init_fail:
-    if (xhcic) {
+    if(xhcic) {
         FreeMem(xhcic, sizeof(*xhcic));
         hc->hc_CPrivate = NULL;
     }
@@ -443,18 +445,18 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
     struct pRoot_New xcNewMsg;
     xcNewMsg.mID = msg->mID;
     xcNewMsg.attrList = &xhcic_tags[0];
-    if ((xhcic_tags[1].ti_Data = (IPTR)msg->attrList) == 0)
+    if((xhcic_tags[1].ti_Data = (IPTR)msg->attrList) == 0)
         xhcic_tags[1].ti_Tag = TAG_DONE;
 
-    if (!hc)
+    if(!hc)
         return NULL;
 
-    if (!hc->hc_CPrivate) {
+    if(!hc->hc_CPrivate) {
         /*
          * Initialize the controllers structures,
          * and query supported features
          */
-        if (!XHCIController__Init(hc)) {
+        if(!XHCIController__Init(hc)) {
             return NULL;
         }
     }
@@ -465,14 +467,14 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
         char *hardware_name = NULL;
 
         sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
-        if (hc->hc_USBVersionMinor == 0xFF)
+        if(hc->hc_USBVersionMinor == 0xFF)
             sprintf(name_buf + 10, strHardwareNameMinorUnknown);
         else
             sprintf(name_buf + 10, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
         sprintf(name_buf + 11, strHardwareNameSuffix);
 
         hardware_name = AllocVec(strlen(name_buf) + 1, MEMF_CLEAR);
-        if (hardware_name != NULL) {
+        if(hardware_name != NULL) {
             strcpy(hardware_name, name_buf);
             xhcic_tags[0].ti_Data = (IPTR)hardware_name;
         }
@@ -500,7 +502,7 @@ void XHCIController__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *m
 
 int XHCIControllerOOPStartup(struct PCIDevice *hd)
 {
-    if (!hd->hd_USBXHCIControllerClass) {
+    if(!hd->hd_USBXHCIControllerClass) {
         OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
         OOP_Class *cl = NULL;
 
@@ -510,7 +512,7 @@ int XHCIControllerOOPStartup(struct PCIDevice *hd)
             {(OOP_MethodFunc)XHCIController__Root__Get, moRoot_Get},
             {NULL, 0}
         };
-    #define NUM_XHCIController_Root_METHODS 3
+#define NUM_XHCIController_Root_METHODS 3
 
         struct OOP_InterfaceDescr XHCIController_ifdescr[] = {
             {XHCIController_Root_descr, IID_Root, NUM_XHCIController_Root_METHODS},
@@ -524,11 +526,11 @@ int XHCIControllerOOPStartup(struct PCIDevice *hd)
             {TAG_DONE, (IPTR)0}
         };
 
-        if (MetaAttrBase == 0)
+        if(MetaAttrBase == 0)
             return FALSE;
 
         cl = OOP_NewObject(NULL, CLID_HiddMeta, XHCIController_tags);
-        if (cl != NULL) {
+        if(cl != NULL) {
             cl->UserData = (APTR)hd;
             hd->hd_USBXHCIControllerClass = cl;
             OOP_AddClass(cl);
@@ -541,7 +543,7 @@ int XHCIControllerOOPStartup(struct PCIDevice *hd)
 
 static void XHCIControllerOOPShutdown(struct PCIDevice *hd)
 {
-    if (hd->hd_USBXHCIControllerClass != NULL) {
+    if(hd->hd_USBXHCIControllerClass != NULL) {
         OOP_RemoveClass(hd->hd_USBXHCIControllerClass);
         OOP_DisposeObject((OOP_Object *)hd->hd_USBXHCIControllerClass);
     }

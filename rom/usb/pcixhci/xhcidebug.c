@@ -22,7 +22,7 @@ static UQUAD xhciDebugReadAddress(const volatile struct xhci_address *addr)
 {
     UQUAD value = 0;
 
-    if (!addr)
+    if(!addr)
         return value;
 
     value |= ((UQUAD)AROS_LE2LONG(addr->addr_hi) << 32);
@@ -34,30 +34,30 @@ static UQUAD xhciDebugReadAddress(const volatile struct xhci_address *addr)
 #if defined(PCIUSB_XHCI_DEBUG)
 void xhciDebugDumpDCBAAEntry(struct PCIController *hc, ULONG slotid)
 {
-    if (!hc)
+    if(!hc)
         return;
 
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
 
-    if (!xhcic || !xhcic->xhc_DCBAAp)
+    if(!xhcic || !xhcic->xhc_DCBAAp)
         return;
 
-    if (slotid > xhcic->xhc_NumSlots)
+    if(slotid > xhcic->xhc_NumSlots)
         return;
 
     volatile struct xhci_address *dcbaa = (volatile struct xhci_address *)xhcic->xhc_DCBAAp;
     UQUAD ptr = xhciDebugReadAddress(&dcbaa[slotid]);
 
     pciusbDebug("xHCI",
-        DEBUGCOLOR_SET "DCBAA[%lu] -> 0x%08lx%08lx" DEBUGCOLOR_RESET" \n",
-        slotid,
-        (ULONG)(ptr >> 32),
-        (ULONG)(ptr & 0xFFFFFFFF));
+                DEBUGCOLOR_SET "DCBAA[%lu] -> 0x%08lx%08lx" DEBUGCOLOR_RESET" \n",
+                slotid,
+                (ULONG)(ptr >> 32),
+                (ULONG)(ptr & 0xFFFFFFFF));
 }
 
 void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
 {
-    if (ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)
+    if(ioreq->iouh_Req.io_Command != UHCMD_CONTROLXFER)
         return;
 
     UWORD rt  = ioreq->iouh_SetupData.bmRequestType;
@@ -73,12 +73,12 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
                 ioreq->iouh_DevAddr,
                 (ULONG)rt, (ULONG)req, (ULONG)idx, (ULONG)val, (ULONG)len);
 
-    switch (rt) {
+    switch(rt) {
     /* =========================
      * STANDARD, DEVICE
      * ========================= */
-    case (URTF_STANDARD | URTF_DEVICE):
-        switch (req) {
+    case(URTF_STANDARD | URTF_DEVICE):
+        switch(req) {
         case USR_SET_ADDRESS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: SetAddress = %ld"
@@ -112,8 +112,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         }
         break;
 
-    case (URTF_IN | URTF_STANDARD | URTF_DEVICE):
-        switch (req) {
+    case(URTF_IN | URTF_STANDARD | URTF_DEVICE):
+        switch(req) {
         case USR_GET_STATUS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Dev: GetStatus (len=%ld)"
@@ -121,7 +121,7 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
             return;
 
         case USR_GET_DESCRIPTOR:
-            switch (val >> 8) {
+            switch(val >> 8) {
             case UDT_DEVICE:
                 pciusbDebug("xHCI", DEBUGCOLOR_SET
                             "Std Dev: GetDescriptor>Device (len=%ld)"
@@ -160,8 +160,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     /* =========================
      * STANDARD, INTERFACE
      * ========================= */
-    case (URTF_STANDARD | URTF_INTERFACE):
-        switch (req) {
+    case(URTF_STANDARD | URTF_INTERFACE):
+        switch(req) {
         case USR_CLEAR_FEATURE:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: ClearFeature (feature=%ld, interface=%ld)"
@@ -183,8 +183,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         }
         break;
 
-    case (URTF_IN | URTF_STANDARD | URTF_INTERFACE):
-        switch (req) {
+    case(URTF_IN | URTF_STANDARD | URTF_INTERFACE):
+        switch(req) {
         case USR_GET_STATUS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std If: GetStatus (interface=%ld, len=%ld)"
@@ -202,8 +202,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     /* =========================
      * STANDARD, ENDPOINT
      * ========================= */
-    case (URTF_STANDARD | URTF_ENDPOINT):
-        switch (req) {
+    case(URTF_STANDARD | URTF_ENDPOINT):
+        switch(req) {
         case USR_CLEAR_FEATURE:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: ClearFeature (feature=%ld, ep=0x%02lx)"
@@ -218,8 +218,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         }
         break;
 
-    case (URTF_IN | URTF_STANDARD | URTF_ENDPOINT):
-        switch (req) {
+    case(URTF_IN | URTF_STANDARD | URTF_ENDPOINT):
+        switch(req) {
         case USR_GET_STATUS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Std Ep: GetStatus (ep=0x%02lx, len=%ld)"
@@ -239,8 +239,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
      * ========================= */
 
     /* Class request to ?Other? recipient (as you already had) */
-    case (URTF_CLASS | URTF_OTHER):
-        switch (req) {
+    case(URTF_CLASS | URTF_OTHER):
+        switch(req) {
         case USR_SET_FEATURE:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: SetFeature (feature=%ld, index=%ld)"
@@ -255,8 +255,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         }
         break;
 
-    case (URTF_IN | URTF_CLASS | URTF_OTHER):
-        switch (req) {
+    case(URTF_IN | URTF_CLASS | URTF_OTHER):
+        switch(req) {
         case USR_GET_STATUS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Other: GetStatus (index=%ld, len=%ld)"
@@ -273,15 +273,15 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         break;
 
     /* Class, device */
-    case (URTF_CLASS | URTF_DEVICE):
+    case(URTF_CLASS | URTF_DEVICE):
         pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class Dev: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
                     (ULONG)req, (ULONG)val, (ULONG)idx, (LONG)len);
         return;
 
-    case (URTF_IN | URTF_CLASS | URTF_DEVICE):
-        switch (req) {
+    case(URTF_IN | URTF_CLASS | URTF_DEVICE):
+        switch(req) {
         case USR_GET_STATUS:
             pciusbDebug("xHCI", DEBUGCOLOR_SET
                         "Class Dev: GetStatus (len=%ld)"
@@ -304,8 +304,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
         }
 
     /* Class, interface */
-    case (URTF_CLASS | URTF_INTERFACE):
-    case (URTF_CLASS | URTF_ENDPOINT):
+    case(URTF_CLASS | URTF_INTERFACE):
+    case(URTF_CLASS | URTF_ENDPOINT):
         pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class %s: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
@@ -313,8 +313,8 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
                     (ULONG)req, (ULONG)val, (ULONG)idx, (LONG)len);
         return;
 
-    case (URTF_IN | URTF_CLASS | URTF_INTERFACE):
-    case (URTF_IN | URTF_CLASS | URTF_ENDPOINT):
+    case(URTF_IN | URTF_CLASS | URTF_INTERFACE):
+    case(URTF_IN | URTF_CLASS | URTF_ENDPOINT):
         pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Class IN %s: bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
@@ -325,14 +325,14 @@ void xhciDebugControlTransfer(struct IOUsbHWReq *ioreq)
     /* =========================
      * VENDOR requests (generic logging)
      * ========================= */
-    case (URTF_VENDOR | URTF_DEVICE):
-    case (URTF_VENDOR | URTF_INTERFACE):
-    case (URTF_VENDOR | URTF_ENDPOINT):
-    case (URTF_VENDOR | URTF_OTHER):
-    case (URTF_IN | URTF_VENDOR | URTF_DEVICE):
-    case (URTF_IN | URTF_VENDOR | URTF_INTERFACE):
-    case (URTF_IN | URTF_VENDOR | URTF_ENDPOINT):
-    case (URTF_IN | URTF_VENDOR | URTF_OTHER):
+    case(URTF_VENDOR | URTF_DEVICE):
+    case(URTF_VENDOR | URTF_INTERFACE):
+    case(URTF_VENDOR | URTF_ENDPOINT):
+    case(URTF_VENDOR | URTF_OTHER):
+    case(URTF_IN | URTF_VENDOR | URTF_DEVICE):
+    case(URTF_IN | URTF_VENDOR | URTF_INTERFACE):
+    case(URTF_IN | URTF_VENDOR | URTF_ENDPOINT):
+    case(URTF_IN | URTF_VENDOR | URTF_OTHER):
         pciusbDebug("xHCI", DEBUGCOLOR_SET
                     "Vendor req: rt=%02lx bReq=%02lx val=%04lx idx=%04lx len=%ld"
                     DEBUGCOLOR_RESET "\n",
@@ -373,7 +373,7 @@ void xhciDumpIN(volatile struct xhci_inctx *in)
 void xhciDumpSlot(volatile struct xhci_slot *slot, int slotid)
 {
     ULONG state = (slot->ctx[3] >> 27) & 0x1F;
-    switch (state) {
+    switch(state) {
     case 0:
         KPrintF(DEBUGCOLOR_SET "xHCI: SLOT[%d].STATE = Disabled" DEBUGCOLOR_RESET" \n", slotid);
         break;
@@ -396,7 +396,7 @@ void xhciDumpSlot(volatile struct xhci_slot *slot, int slotid)
 
 void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slot *slot)
 {
-    if (!hc || !slot)
+    if(!hc || !slot)
         return;
 
     ULONG ctx0 = AROS_LE2LONG(slot->ctx[0]);
@@ -409,14 +409,14 @@ void xhciDebugDumpSlotContext(struct PCIController *hc, volatile struct xhci_slo
     ULONG state = (ctx3 >> 27) & 0x1F;
 
     pciusbDebug("xHCI",
-        DEBUGCOLOR_SET
-        "Slot Ctx: route=0x%05lx port=%lu speed=%lu target=0x%03lx state=%lu"
-        DEBUGCOLOR_RESET" \n",
-        route,
-        port,
-        speed,
-        target,
-        state);
+                DEBUGCOLOR_SET
+                "Slot Ctx: route=0x%05lx port=%lu speed=%lu target=0x%03lx state=%lu"
+                DEBUGCOLOR_RESET" \n",
+                route,
+                port,
+                speed,
+                target,
+                state);
 }
 #endif
 
@@ -430,7 +430,7 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
     UBYTE state = (ctx0 & 0x7);
 
     KPrintF(DEBUGCOLOR_SET "xHCI: EP.STATE = %x" DEBUGCOLOR_RESET" \n", state);
-    switch (state) {
+    switch(state) {
     case 0:
         KPrintF(DEBUGCOLOR_SET "xHCI: > Disabled" DEBUGCOLOR_RESET" \n");
         break;
@@ -472,7 +472,7 @@ void xhciDumpEP(volatile struct xhci_ep *ep)
 
     KPrintF(DEBUGCOLOR_SET "xHCI: EP.CERR = %x" DEBUGCOLOR_RESET" \n", cerr);
     KPrintF(DEBUGCOLOR_SET "xHCI: EP.TYPE = %x" DEBUGCOLOR_RESET" \n", type);
-    switch (type) {
+    switch(type) {
     case 1:
         KPrintF(DEBUGCOLOR_SET "xHCI: > OUT Isoch" DEBUGCOLOR_RESET" \n");
         break;
@@ -514,11 +514,11 @@ void xhciDumpEndpointCtx(struct PCIController *hc,
                          ULONG epid,
                          const char *reason)
 {
-    if (!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
+    if(!hc || !devCtx || !devCtx->dc_SlotCtx.dmaa_Ptr)
         return;
 
     /* epid 0 is "no endpoint"; EP contexts start at EPID 1 */
-    if (epid == 0 || epid > MAX_DEVENDPOINTS)
+    if(epid == 0 || epid > MAX_DEVENDPOINTS)
         return;
 
     /* Device (output) context:
@@ -535,15 +535,15 @@ void xhciDumpEndpointCtx(struct PCIController *hc,
     volatile struct xhci_slot *slot =
         (volatile struct xhci_slot *)(sbase + 0 * ctxsize);
     volatile struct xhci_ep *ep =
-        (volatile struct xhci_ep  *)(sbase + epid * ctxsize);
+        (volatile struct xhci_ep *)(sbase + epid * ctxsize);
 
     pciusbXHCIDebugEP("xHCI",
-        DEBUGCOLOR_SET "Dumping output ctx for EPID %lu (%s) slot @ 0x%p, ep @ 0x%p"
-        DEBUGCOLOR_RESET" \n",
-        epid,
-        reason ? reason : "current",
-        slot,
-        ep);
+                      DEBUGCOLOR_SET "Dumping output ctx for EPID %lu (%s) slot @ 0x%p, ep @ 0x%p"
+                      DEBUGCOLOR_RESET" \n",
+                      epid,
+                      reason ? reason : "current",
+                      slot,
+                      ep);
 
     xhciDumpSlot(slot, devCtx->dc_SlotID);
     xhciDumpEP(ep);
@@ -553,7 +553,7 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc,
                                   volatile struct xhci_ep *ep,
                                   ULONG epid)
 {
-    if (!hc || !ep)
+    if(!hc || !ep)
         return;
 
     ULONG ctx0   = AROS_LE2LONG(ep->ctx[0]);
@@ -571,22 +571,22 @@ void xhciDebugDumpEndpointContext(struct PCIController *hc,
     ULONG maxpkt   = (ctx1 >> EPS_CTX_PACKETMAX) & 0xFFFF;       /* DW1[31:16] */
 
     pciusbDebug("xHCI",
-        DEBUGCOLOR_SET
-        "EP Ctx %lu: state=%lu type=%lu mult=%lu interval=%lu maxESIT=%lu "
-        "CErr=%lu maxpkt=%lu\n"
-        "          deq=0x%08lx%08lx length=0x%08lx"
-        DEBUGCOLOR_RESET" \n",
-        epid,
-        ep_state,
-        type,
-        mult,
-        interval,
-        maxesit,
-        cerr,
-        maxpkt,
-        (ULONG)(deq >> 32),
-        (ULONG)(deq & 0xFFFFFFFF),
-        length);
+                DEBUGCOLOR_SET
+                "EP Ctx %lu: state=%lu type=%lu mult=%lu interval=%lu maxESIT=%lu "
+                "CErr=%lu maxpkt=%lu\n"
+                "          deq=0x%08lx%08lx length=0x%08lx"
+                DEBUGCOLOR_RESET" \n",
+                epid,
+                ep_state,
+                type,
+                mult,
+                interval,
+                maxesit,
+                cerr,
+                maxpkt,
+                (ULONG)(deq >> 32),
+                (ULONG)(deq & 0xFFFFFFFF),
+                length);
 }
 #endif
 
@@ -595,23 +595,23 @@ void xhciDumpStatus(ULONG status)
 {
     KPrintF(DEBUGCOLOR_SET "xHCI: OPR.STATUS: %08lx" DEBUGCOLOR_RESET" \n", status);
 
-    if (status & XHCIF_USBSTS_HCH)
+    if(status & XHCIF_USBSTS_HCH)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Host Controller Halted" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_HSE)
+    if(status & XHCIF_USBSTS_HSE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Host System Error" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_HCE)
+    if(status & XHCIF_USBSTS_HCE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Host Controller Error" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_EINT)
+    if(status & XHCIF_USBSTS_EINT)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Event Interrupt Pending" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_PCD)
+    if(status & XHCIF_USBSTS_PCD)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Port Change Detect" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_SSS)
+    if(status & XHCIF_USBSTS_SSS)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Save State Status" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_RSS)
+    if(status & XHCIF_USBSTS_RSS)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Restore State Status" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_SRE)
+    if(status & XHCIF_USBSTS_SRE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Save/Restore Error" DEBUGCOLOR_RESET" \n");
-    if (status & XHCIF_USBSTS_CNR)
+    if(status & XHCIF_USBSTS_CNR)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Controller Not Ready" DEBUGCOLOR_RESET" \n");
 }
 #endif
@@ -624,7 +624,8 @@ void xhciDumpOpR(volatile struct xhci_hcopr *hcopr)
     KPrintF(DEBUGCOLOR_SET "xHCI: OPR.PAGESIZE: %08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->pagesize));
     KPrintF(DEBUGCOLOR_SET "xHCI: OPR.DNCTRL: %08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->dnctl));
     KPrintF(DEBUGCOLOR_SET "xHCI: OPR.CRCR: %08x%08x" DEBUGCOLOR_RESET" \n", hcopr->crcr.addr_hi, hcopr->crcr.addr_lo);
-    KPrintF(DEBUGCOLOR_SET "xHCI: OPR.DCBAAP: %08x%08x" DEBUGCOLOR_RESET" \n", hcopr->dcbaap.addr_hi, hcopr->dcbaap.addr_lo);
+    KPrintF(DEBUGCOLOR_SET "xHCI: OPR.DCBAAP: %08x%08x" DEBUGCOLOR_RESET" \n", hcopr->dcbaap.addr_hi,
+            hcopr->dcbaap.addr_lo);
     KPrintF(DEBUGCOLOR_SET "xHCI: OPR.CONFIG: %08x" DEBUGCOLOR_RESET" \n", AROS_LE2LONG(hcopr->config));
 }
 #endif
@@ -633,9 +634,9 @@ void xhciDumpOpR(volatile struct xhci_hcopr *hcopr)
 void xhciDumpIMAN(ULONG iman)
 {
     KPrintF(DEBUGCOLOR_SET "xHCI: IR.IMAN: %08x" DEBUGCOLOR_RESET" \n", iman);
-    if (iman & XHCIF_IR_IMAN_IE)
+    if(iman & XHCIF_IR_IMAN_IE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Interrupts enabled" DEBUGCOLOR_RESET" \n");
-    if (iman & XHCIF_IR_IMAN_IP)
+    if(iman & XHCIF_IR_IMAN_IP)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Interrupts pending" DEBUGCOLOR_RESET" \n");
 }
 #endif
@@ -647,7 +648,8 @@ void xhciDumpIR(volatile struct xhci_ir *xhciir)
     KPrintF(DEBUGCOLOR_SET "xHCI: IR.IMOD: %08x" DEBUGCOLOR_RESET" \n", xhciir->imod);
     KPrintF(DEBUGCOLOR_SET "xHCI: IR.ERSTSZ: %08x" DEBUGCOLOR_RESET" \n", xhciir->erstsz);
     KPrintF(DEBUGCOLOR_SET "xHCI: IR.ERDP: %08x%08x" DEBUGCOLOR_RESET" \n", xhciir->erdp.addr_hi, xhciir->erdp.addr_lo);
-    KPrintF(DEBUGCOLOR_SET "xHCI: IR.ERSTBA: %08x%08x" DEBUGCOLOR_RESET" \n", xhciir->erstba.addr_hi, xhciir->erstba.addr_lo);
+    KPrintF(DEBUGCOLOR_SET "xHCI: IR.ERSTBA: %08x%08x" DEBUGCOLOR_RESET" \n", xhciir->erstba.addr_hi,
+            xhciir->erstba.addr_lo);
 }
 #endif
 
@@ -656,71 +658,71 @@ void xhciDumpPort(volatile struct xhci_pr *xhcipr)
 {
     ULONG portsc = AROS_LE2LONG(xhcipr->portsc);
     KPrintF(DEBUGCOLOR_SET "xHCI: PR.PORTSC = $%08x" DEBUGCOLOR_RESET" \n", portsc);
-    if (portsc & XHCIF_PR_PORTSC_PP)
+    if(portsc & XHCIF_PR_PORTSC_PP)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Powered" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_PED)
+    if(portsc & XHCIF_PR_PORTSC_PED)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Enabled" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_CCS)
+    if(portsc & XHCIF_PR_PORTSC_CCS)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Connected" DEBUGCOLOR_RESET" \n");
 
-    if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_FULLSPEED) {
+    if((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_FULLSPEED) {
         KPrintF(DEBUGCOLOR_SET "xHCI: > Full Speed" DEBUGCOLOR_RESET" \n");
-    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_LOWSPEED) {
+    } else if((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_LOWSPEED) {
         KPrintF(DEBUGCOLOR_SET "xHCI: > Low Speed" DEBUGCOLOR_RESET" \n");
-    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_HIGHSPEED) {
+    } else if((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_HIGHSPEED) {
         KPrintF(DEBUGCOLOR_SET "xHCI: > High Speed" DEBUGCOLOR_RESET" \n");
-    } else if ((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_SUPERSPEED) {
+    } else if((portsc & (XHCI_PR_PORTSC_SPEED_SMASK << XHCIS_PR_PORTSC_SPEED)) == XHCIF_PR_PORTSC_SUPERSPEED) {
         KPrintF(DEBUGCOLOR_SET "xHCI: > Super Speed" DEBUGCOLOR_RESET" \n");
     }
 
-    if (portsc & XHCIF_PR_PORTSC_OCA)
+    if(portsc & XHCIF_PR_PORTSC_OCA)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Over Current Active" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_PR)
+    if(portsc & XHCIF_PR_PORTSC_PR)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Port Reset" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_LWS)
+    if(portsc & XHCIF_PR_PORTSC_LWS)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Link State Write Strobe" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_CSC)
+    if(portsc & XHCIF_PR_PORTSC_CSC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Connect Status Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_PEC)
+    if(portsc & XHCIF_PR_PORTSC_PEC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Enable/Disable Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_WRC)
+    if(portsc & XHCIF_PR_PORTSC_WRC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Warm Reset Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_OCC)
+    if(portsc & XHCIF_PR_PORTSC_OCC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Over Current Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_PRC)
+    if(portsc & XHCIF_PR_PORTSC_PRC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Reset Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_PLC)
+    if(portsc & XHCIF_PR_PORTSC_PLC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Link State Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_CEC)
+    if(portsc & XHCIF_PR_PORTSC_CEC)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Config Error Changed" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_CAS)
+    if(portsc & XHCIF_PR_PORTSC_CAS)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Cold Attach Status" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_WCE)
+    if(portsc & XHCIF_PR_PORTSC_WCE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Wake on Connect" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_WDE)
+    if(portsc & XHCIF_PR_PORTSC_WDE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Wake on Disconnect" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_WOE)
+    if(portsc & XHCIF_PR_PORTSC_WOE)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Wake on Over Current" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_DR)
+    if(portsc & XHCIF_PR_PORTSC_DR)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Device Removable" DEBUGCOLOR_RESET" \n");
 
-    if (portsc & XHCIF_PR_PORTSC_WPR)
+    if(portsc & XHCIF_PR_PORTSC_WPR)
         KPrintF(DEBUGCOLOR_SET "xHCI: > Warm Reset" DEBUGCOLOR_RESET" \n");
 }
 #endif
@@ -729,7 +731,7 @@ void xhciDumpPort(volatile struct xhci_pr *xhcipr)
 void xhciDumpCC(UBYTE cc)
 {
     KPrintF(DEBUGCOLOR_SET "xHCI: CC = $%02x" DEBUGCOLOR_RESET" \n", cc);
-    switch (cc) {
+    switch(cc) {
     case 0:
         KPrintF(DEBUGCOLOR_SET "xHCI: > Invalid" DEBUGCOLOR_RESET" \n");
         break;

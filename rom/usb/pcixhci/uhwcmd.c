@@ -70,7 +70,7 @@ const struct UsbStdCfgDesc RHCfgDesc = {
     1,                                              // bNumInterfaces
     1,                                              // bConfigurationValue
     3,                                              // iConfiguration
-    USCAF_ONE|USCAF_SELF_POWERED,                   // bmAttributes
+    USCAF_ONE | USCAF_SELF_POWERED,                 // bmAttributes
     0                                               // MaxPower
 };
 
@@ -91,7 +91,7 @@ const struct UsbStdIfDesc  RHIfDesc  = {
 const struct UsbStdEPDesc  RHEPDesc  = {
     sizeof(struct UsbStdEPDesc),
     UDT_ENDPOINT,
-    URTF_IN|1,                                      // bEndpointAddress
+    URTF_IN | 1,                                    // bEndpointAddress
     USEAF_INTERRUPT,                                // bmAttributes
     WORD2LE(8),                                     // wMaxPacketSize
     255                                             // bInterval
@@ -217,9 +217,9 @@ void uhwCloseTimer(struct PCIUnit *unit, struct PCIDevice *base)
 /* \\\ */
 
 /* /// "Open_Unit()" */
-struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
-                        LONG unitnr,
-                        struct PCIDevice *base)
+struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
+                       LONG unitnr,
+                       struct PCIDevice *base)
 {
     struct PCIUnit *unit = NULL;
 
@@ -236,7 +236,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
         if((unit->hu_UnitNo & ~PCIUSBUNIT_MASK) == unitnr) {
             break;
         }
-        unit = (struct PCIUnit *) ((struct Node *) unit)->ln_Succ;
+        unit = (struct PCIUnit *)((struct Node *) unit)->ln_Succ;
     }
     if(!((struct Node *) unit)->ln_Succ) {
         KPRINTF(20, "Unit %ld does not exist!\n", unitnr);
@@ -260,7 +260,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)uhwNakTimeoutInt;
 
             CopyMem(unit->hu_TimerReq, &unit->hu_NakTimeoutReq, sizeof(struct timerequest));
-            memset( &unit->hu_NakTimeoutMsgPort, 0, sizeof( unit->hu_NakTimeoutMsgPort ) );
+            memset(&unit->hu_NakTimeoutMsgPort, 0, sizeof(unit->hu_NakTimeoutMsgPort));
             unit->hu_NakTimeoutMsgPort.mp_Node.ln_Type = NT_MSGPORT;
             unit->hu_NakTimeoutMsgPort.mp_Flags = PA_SOFTINT;
             unit->hu_NakTimeoutMsgPort.mp_SigTask = &unit->hu_NakTimeoutInt;
@@ -286,20 +286,20 @@ struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHW
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, ioreq);
 
-    if (!hc || !ioreq)
+    if(!hc || !ioreq)
         return NULL;
 
     rtn = AllocMem(sizeof(*rtn), MEMF_CLEAR);
-    if (!rtn)
+    if(!rtn)
         return NULL;
 
     ptdcount = hc->hc_IsoPTDCount ? hc->hc_IsoPTDCount : 2;
-    if (ptdcount < 2)
+    if(ptdcount < 2)
         ptdcount = 2;
 
     rtn->rtn_PTDCount = ptdcount;
     rtn->rtn_PTDs = AllocMem(sizeof(*rtn->rtn_PTDs) * ptdcount, MEMF_CLEAR);
-    if (!rtn->rtn_PTDs) {
+    if(!rtn->rtn_PTDs) {
         FreeMem(rtn, sizeof(*rtn));
         return NULL;
     }
@@ -321,10 +321,10 @@ void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn)
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, rtn);
 
-    if (!rtn)
+    if(!rtn)
         return;
 
-    if (rtn->rtn_PTDs) {
+    if(rtn->rtn_PTDs) {
         FreeMem(rtn->rtn_PTDs, sizeof(*rtn->rtn_PTDs) * rtn->rtn_PTDCount);
         rtn->rtn_PTDs = NULL;
     }
@@ -566,7 +566,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
             caps |= UHCF_USB30;
         }
 #if defined(PCIUSB_WIP_ISO)
-        caps |= UHCF_ISO|UHCF_RT_ISO;
+        caps |= UHCF_ISO | UHCF_RT_ISO;
 #endif
 #if defined(PCIUSB_QUICKIO)
         caps |= UHCF_QUICKIO;
@@ -613,7 +613,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         return(UHIOERR_STALL);
     }
     switch(rt) {
-    case (URTF_STANDARD|URTF_DEVICE):
+    case(URTF_STANDARD|URTF_DEVICE):
         switch(req) {
         case USR_SET_ADDRESS:
             pciusbRHDebug("RH", "SetAddress = %ld\n", val);
@@ -628,32 +628,31 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
         break;
 
-    case (URTF_IN|URTF_STANDARD|URTF_DEVICE):
-       switch(req) {
-        case USR_GET_STATUS:
-            {
-                /*
-                 * USB device status (2 bytes):
-                 * bit0 = self-powered, bit1 = remote-wakeup.
-                 * Keep this consistent with the root hub config descriptor.
-                 */
-                if (len < 2) {
-                    return(UHIOERR_STALL);
-                }
-
-                UWORD st = 0;
-                if (RHCfgDesc.bmAttributes & USCAF_SELF_POWERED)
-                    st |= 0x0001;
-                if (RHCfgDesc.bmAttributes & USCAF_REMOTE_WAKEUP)
-                    st |= 0x0002;
-
-                st = AROS_WORD2LE(st);
-                CopyMem(&st, ioreq->iouh_Data, 2);
-                ioreq->iouh_Actual = 2;
-                return(0);
+    case(URTF_IN|URTF_STANDARD|URTF_DEVICE):
+        switch(req) {
+        case USR_GET_STATUS: {
+            /*
+             * USB device status (2 bytes):
+             * bit0 = self-powered, bit1 = remote-wakeup.
+             * Keep this consistent with the root hub config descriptor.
+             */
+            if(len < 2) {
+                return(UHIOERR_STALL);
             }
+
+            UWORD st = 0;
+            if(RHCfgDesc.bmAttributes & USCAF_SELF_POWERED)
+                st |= 0x0001;
+            if(RHCfgDesc.bmAttributes & USCAF_REMOTE_WAKEUP)
+                st |= 0x0002;
+
+            st = AROS_WORD2LE(st);
+            CopyMem(&st, ioreq->iouh_Data, 2);
+            ioreq->iouh_Actual = 2;
+            return(0);
+        }
         case USR_GET_DESCRIPTOR:
-            switch(val>>8) {
+            switch(val >> 8) {
             case UDT_DEVICE:
                 pciusbRHDebug("RH", "GetDeviceDescriptor (%ld)\n", len);
                 ioreq->iouh_Actual = (len > sizeof(struct UsbStdDevDesc)) ? sizeof(struct UsbStdDevDesc) : len;
@@ -667,8 +666,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         pciusbRHDebug("RH", "xHCI (USB3) Hub Descriptor\n");
                         usdd->bcdUSB         = AROS_WORD2LE(0x0300);  /* USB 3.0 */
                         usdd->bDeviceClass   = HUB_CLASSCODE;        /* 9 */
-                        usdd->bDeviceSubClass= 0;
-                        usdd->bDeviceProtocol= 3;                    /* USB3 hub */
+                        usdd->bDeviceSubClass = 0;
+                        usdd->bDeviceProtocol = 3;                   /* USB3 hub */
                         usdd->bMaxPacketSize0 = 9;  /* SS EP0 is 512 bytes (2^9) */
                     }
                 }
@@ -680,9 +679,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                  * SuperSpeed Endpoint Companion descriptor.
                  */
                 UBYTE tmpbuf[sizeof(struct UsbStdCfgDesc) +
-                             sizeof(struct UsbStdIfDesc) +
-                             sizeof(struct UsbStdEPDesc) +
-                             sizeof(struct UsbSSEndpointCompDesc)];
+                                           sizeof(struct UsbStdIfDesc) +
+                                           sizeof(struct UsbStdEPDesc) +
+                                           sizeof(struct UsbSSEndpointCompDesc)];
 
                 const ULONG base_len = sizeof(struct UsbStdCfgDesc) +
                                        sizeof(struct UsbStdIfDesc) +
@@ -702,7 +701,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         &tmpbuf[sizeof(struct UsbStdCfgDesc) + sizeof(struct UsbStdIfDesc)],
                         sizeof(struct UsbStdEPDesc));
 
-                if (is_ss_rh) {
+                if(is_ss_rh) {
                     struct UsbStdCfgDesc *uscd = (struct UsbStdCfgDesc *)tmpbuf;
                     struct UsbStdIfDesc *usifd =
                         (struct UsbStdIfDesc *)&tmpbuf[sizeof(struct UsbStdCfgDesc)];
@@ -723,7 +722,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                      * bytes = ceil((nports + 1) / 8)
                      */
                     mps = (UWORD)((nports + 1 + 7) / 8);
-                    if (mps == 0)
+                    if(mps == 0)
                         mps = 1;
 
                     pciusbRHDebug("RH", "xHCI SS EndPoint Config (ports=%lu mps=%u)\n",
@@ -765,7 +764,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     if((val & 0xff) > 4) { /* index too high? */
                         return(UHIOERR_STALL);
                     }
-                    rhstring = RHStrings[(val & 0xff)-1];
+                    rhstring = RHStrings[(val & 0xff) - 1];
                     source = rhstring;
                     if(len > 1) {
                         ioreq->iouh_Actual = 2;
@@ -773,8 +772,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             slen++;
                         }
                         source = rhstring;
-                        *mptr++ = AROS_WORD2BE((slen<<9)|UDT_STRING);
-                        while(ioreq->iouh_Actual+1 < len) {
+                        *mptr++ = AROS_WORD2BE((slen << 9) | UDT_STRING);
+                        while(ioreq->iouh_Actual + 1 < len) {
                             // special hack for unit number in root hub string
                             if(((val & 0xff) == 2) && (source[1] == 0)) {
                                 *mptr++ = AROS_WORD2LE('0' + (unit->hu_UnitNo & ~PCIUSBUNIT_MASK));
@@ -793,7 +792,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     pciusbRHDebug("RH", "GetLangArray %04lx (%ld)\n", val, len);
                     if(len > 1) {
                         ioreq->iouh_Actual = 2;
-                        mptr[0] = AROS_WORD2BE((4<<8)|UDT_STRING);
+                        mptr[0] = AROS_WORD2BE((4 << 8) | UDT_STRING);
                         if(len > 3) {
                             ioreq->iouh_Actual += 2;
                             mptr[1] = AROS_WORD2LE(0x0409);
@@ -818,7 +817,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
         break;
 
-    case (URTF_CLASS|URTF_OTHER):
+    case(URTF_CLASS|URTF_OTHER):
         switch(req) {
         case USR_SET_FEATURE: {
             WORD retval = 0;
@@ -829,7 +828,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             hc = unit->hu_PortMapX[idx - 1];
             hciport = idx - 1;
             pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (xHCI)\n", val, idx, hciport);
-            if (xhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
+            if(xhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
                 pciusbRHDebug("RH", "xhciSetFeature returned (retval %04x)\n", retval);
                 return(retval);
             }
@@ -845,7 +844,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             hc = unit->hu_PortMapX[idx - 1];
             hciport = idx - 1;
             pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (xHCI)\n", val, idx, hciport);
-            if (xhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
+            if(xhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
                 pciusbRHDebug("RH", "xhciClearFeature returned (retval %04x)\n", retval);
                 return(retval);
             }
@@ -854,7 +853,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
         break;
 
-    case (URTF_IN|URTF_CLASS|URTF_OTHER):
+    case(URTF_IN|URTF_CLASS|URTF_OTHER):
         switch(req) {
         case USR_GET_STATUS: {
             UWORD *mptr = ioreq->iouh_Data;
@@ -869,7 +868,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             hc = unit->hu_PortMapX[idx - 1];
             hciport = idx - 1;
-            if (xhciGetStatus(hc, mptr, hciport, idx, &retval)) {
+            if(xhciGetStatus(hc, mptr, hciport, idx, &retval)) {
                 pciusbRHDebug("RH", "xhciGetStatus returned (retval %04x)\n", retval);
                 return(retval);
             }
@@ -879,7 +878,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
         break;
 
-    case (URTF_IN|URTF_CLASS|URTF_DEVICE):
+    case(URTF_IN|URTF_CLASS|URTF_DEVICE):
         switch(req) {
         case USR_GET_STATUS: {
             UWORD *mptr = ioreq->iouh_Data;
@@ -896,7 +895,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
 
         case USR_GET_DESCRIPTOR:
-            switch(val>>8) {
+            switch(val >> 8) {
             case UDT_SSHUB: {
                 if((unit->hu_RootHubXPorts) && (ioreq->iouh_Flags & UHFF_SUPERSPEED)) {
                     struct UsbSSHubDesc *shd;
@@ -907,7 +906,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     ioreq->iouh_Actual = (len > sslen) ? sslen : len;
                     CopyMem((APTR)&RHHubSSDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
 
-                    if (ioreq->iouh_Length >= sslen) {
+                    if(ioreq->iouh_Length >= sslen) {
                         shd = (struct UsbSSHubDesc *)ioreq->iouh_Data;
 
                         /* Number of SS ports */
@@ -917,8 +916,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         {
                             UWORD characteristics = 0;
                             hc = (struct PCIController *)unit->hu_Controllers.lh_Head;
-                            while (hc->hc_Node.ln_Succ) {
-                                if (hc->hc_Flags & HCF_PPC)
+                            while(hc->hc_Node.ln_Succ) {
+                                if(hc->hc_Flags & HCF_PPC)
                                     characteristics |= UHCF_INDIVID_POWER;
                                 hc = (struct PCIController *)hc->hc_Node.ln_Succ;
                             }
@@ -959,7 +958,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
                     while(hc->hc_Node.ln_Succ) {
                         powergood = 10; /* 20ms max (Section 5.4.9) */
-                        if (hc->hc_Flags & HCF_PPC)
+                        if(hc->hc_Flags & HCF_PPC)
                             characteristics |= UHCF_INDIVID_POWER;
 
                         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
@@ -967,7 +966,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     uhd->wHubCharacteristics = WORD2LE(characteristics);
 
                     if(ioreq->iouh_Length >= 6) {
-                        if (powergood > 1) {
+                        if(powergood > 1) {
                             pciusbRHDebug("RH", "Increasing power good time to %ld\n", powergood);
                         }
                         uhd->bPwrOn2PwrGood = powergood;
@@ -978,13 +977,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     uhd->bNbrPorts = unit->hu_RootHubPorts;
                     if(hubdesclen == 9) {
                         uhd->DeviceRemovable = 0;
-                        uhd->PortPwrCtrlMask = (1<<(unit->hu_RootHubPorts+2))-2;
+                        uhd->PortPwrCtrlMask = (1 << (unit->hu_RootHubPorts + 2)) - 2;
                     } else {
                         // each field is now 16 bits wide
                         uhd->DeviceRemovable = 0;
                         uhd->PortPwrCtrlMask = 0;
-                        ((UBYTE *) ioreq->iouh_Data)[9] = (1<<(unit->hu_RootHubPorts+2))-2;
-                        ((UBYTE *) ioreq->iouh_Data)[10] = ((1<<(unit->hu_RootHubPorts+2))-2)>>8;
+                        ((UBYTE *) ioreq->iouh_Data)[9] = (1 << (unit->hu_RootHubPorts + 2)) - 2;
+                        ((UBYTE *) ioreq->iouh_Data)[10] = ((1 << (unit->hu_RootHubPorts + 2)) - 2) >> 8;
                     }
                 }
                 return(0);
@@ -997,7 +996,8 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
         }
 
     }
-    KPRINTF(20, DEBUGWARNCOLOR_SET "RH: Unsupported command %02lx %02lx %04lx %04lx %04lx!" DEBUGCOLOR_RESET "\n", rt, req, idx, val, len);
+    KPRINTF(20, DEBUGWARNCOLOR_SET "RH: Unsupported command %02lx %02lx %04lx %04lx %04lx!" DEBUGCOLOR_RESET "\n", rt, req,
+            idx, val, len);
     return(UHIOERR_STALL);
 }
 /* \\\ */
@@ -1022,7 +1022,7 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
             ioreq->iouh_Actual = 1;
         } else {
             ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
-            ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges>>8;
+            ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
             ioreq->iouh_Actual = 2;
         }
         unit->hu_RootPortChanges = 0;
@@ -1079,7 +1079,7 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
 
     {
         WORD prep = xhciPrepareTransfer(ioreq, unit, base);
-        if (prep != RC_OK)
+        if(prep != RC_OK)
             return prep;
     }
 
@@ -1136,7 +1136,7 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
 
     {
         WORD prep = xhciPrepareTransfer(ioreq, unit, base);
-        if (prep != RC_OK)
+        if(prep != RC_OK)
             return prep;
     }
 
@@ -1193,7 +1193,7 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
 
     {
         WORD prep = xhciPrepareTransfer(ioreq, unit, base);
-        if (prep != RC_OK)
+        if(prep != RC_OK)
             return prep;
     }
 
@@ -1251,7 +1251,7 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
 
     {
         WORD prep = xhciPrepareTransfer(ioreq, unit, base);
-        if (prep != RC_OK)
+        if(prep != RC_OK)
             return prep;
     }
 
@@ -1479,7 +1479,7 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
 
     retval = xhciInitIsochIO(hc, rtn);
 
-    if (retval != RC_OK) {
+    if(retval != RC_OK) {
         Disable();
         AddTail((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
         Enable();
@@ -1488,7 +1488,7 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
     rtn->rtn_RTIso->urti_DriverPrivate1 = rtn; // backlink
 
     Disable();
-    if (retval == RC_OK)
+    if(retval == RC_OK)
         AddTail((struct List *) &hc->hc_RTIsoHandlers, (struct Node *) &rtn->rtn_Node);
     else
         AddTail((struct List *) &unit->hu_FreeRTIsoNodes, (struct Node *) &rtn->rtn_Node);
@@ -1601,16 +1601,16 @@ WORD cmdStartRTIso(struct IOUsbHWReq *ioreq,
     }
 
     UWORD prefill = (rtn->rtn_PTDCount > 1) ? 2 : 1;
-    for (UWORD cnt = 0; cnt < prefill; cnt++) {
+    for(UWORD cnt = 0; cnt < prefill; cnt++) {
         WORD queueresult = RC_OK;
         queueresult = xhciQueueIsochIO(hc, rtn);
-        if (queueresult != RC_OK) {
+        if(queueresult != RC_OK) {
             Enable();
             return queueresult;
         }
     }
 
-    for (UWORD cnt = 0; cnt < prefill; cnt++)
+    for(UWORD cnt = 0; cnt < prefill; cnt++)
         xhciStartIsochIO(hc, rtn);
 
     Enable();
@@ -1817,7 +1817,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
         }
         if(!foundit) {
             // IOReq is probably pending in some transfer structure
-            devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+            devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
             cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
             while(((struct Node *) cmpioreq)->ln_Succ) {
                 if(ioreq == cmpioreq) {
@@ -1849,7 +1849,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
     }
     Enable();
 
-    if (foundit) {
+    if(foundit) {
         ioreq->iouh_Req.io_Error = IOERR_ABORTED;
         TermIO(ioreq, base);
     } else {
@@ -1878,7 +1878,7 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
                 ioreq->iouh_Actual = 1;
             } else {
                 ((UBYTE *) ioreq->iouh_Data)[0] = unit->hu_RootPortChanges;
-                ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges>>8;
+                ((UBYTE *) ioreq->iouh_Data)[1] = unit->hu_RootPortChanges >> 8;
                 ioreq->iouh_Actual = 2;
             }
             ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -1899,24 +1899,27 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s()" DEBUGCOLOR_RESET "\n", __func__);
 
     /* Clear Feature(Endpoint halt) */
-    if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_ENDPOINT)) &&
+    if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD | URTF_ENDPOINT)) &&
             (ioreq->iouh_SetupData.bRequest == USR_CLEAR_FEATURE) &&
             (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_ENDPOINT_HALT))) {
-        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bit for endpoint %ld" DEBUGCOLOR_RESET "\n", __func__, AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf);
-        unit->hu_DevDataToggle[(ioreq->iouh_DevAddr<<5)|(AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf)|((AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0x80)>>3)] = 0;
-    } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD|URTF_DEVICE)) &&
+        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bit for endpoint %ld" DEBUGCOLOR_RESET "\n", __func__,
+                    AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf);
+        unit->hu_DevDataToggle[(ioreq->iouh_DevAddr << 5) | (AROS_WORD2LE(ioreq->iouh_SetupData.wIndex) & 0xf) | ((AROS_WORD2LE(
+                                                              ioreq->iouh_SetupData.wIndex) & 0x80) >> 3)] = 0;
+    } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_STANDARD | URTF_DEVICE)) &&
               (ioreq->iouh_SetupData.bRequest == USR_SET_ADDRESS)) {
         /* Set Address -> clear all endpoints */
         ULONG epnum;
-        ULONG adr = AROS_WORD2BE(ioreq->iouh_SetupData.wValue)>>3;
-        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bits for device address %ld" DEBUGCOLOR_RESET "\n", __func__, adr>>5);
+        ULONG adr = AROS_WORD2BE(ioreq->iouh_SetupData.wValue) >> 3;
+        pciusbDebug("UHW", DEBUGCOLOR_SET "%s: Resetting toggle bits for device address %ld" DEBUGCOLOR_RESET "\n", __func__,
+                    adr >> 5);
         for(epnum = 0; epnum < 31; epnum++) {
-            unit->hu_DevDataToggle[adr+epnum] = 0;
+            unit->hu_DevDataToggle[adr + epnum] = 0;
         }
         // transfer host controller ownership
         unit->hu_DevControllers[ioreq->iouh_DevAddr] = NULL;
-        unit->hu_DevControllers[adr>>5] = hc;
-    } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_CLASS|URTF_OTHER)) &&
+        unit->hu_DevControllers[adr >> 5] = hc;
+    } else if((ioreq->iouh_SetupData.bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
               (ioreq->iouh_SetupData.bRequest == USR_SET_FEATURE) &&
               (ioreq->iouh_SetupData.wValue == AROS_WORD2LE(UFS_PORT_RESET))) {
         // a hub will be enumerating a device on this host controller soon!
@@ -1943,7 +1946,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
     // check for frame rollovers and NAK timeouts
     hc = (struct PCIController *) unit->hu_Controllers.lh_Head;
     while(hc->hc_Node.ln_Succ) {
-        if (!(hc->hc_Flags & HCF_ONLINE)) {
+        if(!(hc->hc_Flags & HCF_ONLINE)) {
             hc = (struct PCIController *) hc->hc_Node.ln_Succ;
             continue;
         }
@@ -1968,10 +1971,10 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                 }
                 // Timeout active transfers
                 ForeachNode(TOList, ioreq) {
-                    if (cnt < 1) {
+                    if(cnt < 1) {
                         if(ioreq->iouh_Flags & UHFF_NAKTIMEOUT) {
-                            if (ioreq->iouh_DriverPrivate1) {
-                                devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+                            if(ioreq->iouh_DriverPrivate1) {
+                                devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
                                 if(framecnt > unit->hu_NakTimeoutFrame[devadrep]) {
                                     // give the thing the chance to exit gracefully
                                     KPRINTF(200, "xHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
@@ -1981,12 +1984,12 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                         }
                     } else {
                         // Timeout failed pending transfers
-                        devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                        if ((unit->hu_NakTimeoutFrame[devadrep]) && (framecnt > unit->hu_NakTimeoutFrame[devadrep])) {
+                        devadrep = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+                        if((unit->hu_NakTimeoutFrame[devadrep]) && (framecnt > unit->hu_NakTimeoutFrame[devadrep])) {
                             KPRINTF(200, "xHCI: HC 0x%p NAK timeout %ld, IOReq=%p\n", hc, unit->hu_NakTimeoutFrame[devadrep], ioreq);
                             ioreq->iouh_Req.io_Error = UHIOERR_NAKTIMEOUT;
                             xhciAbortRequest(hc, ioreq);
-                        } else if (unit->hu_NakTimeoutFrame[devadrep])
+                        } else if(unit->hu_NakTimeoutFrame[devadrep])
                             causeint = TRUE;
                     }
                 }
@@ -2001,7 +2004,7 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
 
     uhwCheckRootHubChanges(unit);
 
-    unit->hu_NakTimeoutReq.tr_time.tv_micro = 150*1000;
+    unit->hu_NakTimeoutReq.tr_time.tv_micro = 150 * 1000;
     SendIO((APTR) &unit->hu_NakTimeoutReq);
 
 //    KPRINTF(1, "Exit NakTimeoutInt(0x%p)\n", unit);

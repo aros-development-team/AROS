@@ -34,39 +34,39 @@ UBYTE xhciEndpointIDFromIndex(UWORD wIndex)
     UBYTE epid;
     UBYTE endpoint = (wIndex & 0x0f);
 
-    if (endpoint == 0)
+    if(endpoint == 0)
         return 0;
 
     epid = endpoint << 1;
-    if (wIndex & 0x80)
+    if(wIndex & 0x80)
         epid |= 0x01;
 
     return epid;
 }
 
 APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    ULONG *dmalen, UWORD effdir, APTR *bounceOut)
+                          ULONG *dmalen, UWORD effdir, APTR *bounceOut)
 {
     APTR data = ioreq->iouh_Data;
 
-    if (bounceOut)
+    if(bounceOut)
         *bounceOut = NULL;
 
-    if (!data || !dmalen || (*dmalen == 0))
+    if(!data || !dmalen || (*dmalen == 0))
         return data;
 
 #if __WORDSIZE == 64
     APTR bounce = NULL;
-    if (!(hc->hc_Flags & HCF_ADDR64)) {
-        if ((((IPTR)data + *dmalen - 1) >> 32) != 0) {
-            bounce = AllocVec(*dmalen, MEMF_31BIT|MEMF_PUBLIC);
-            if (!bounce)
+    if(!(hc->hc_Flags & HCF_ADDR64)) {
+        if((((IPTR)data + *dmalen - 1) >> 32) != 0) {
+            bounce = AllocVec(*dmalen, MEMF_31BIT | MEMF_PUBLIC);
+            if(!bounce)
                 return NULL;
 
-            if (effdir == UHDIR_OUT)
+            if(effdir == UHDIR_OUT)
                 CopyMem(data, bounce, *dmalen);
 
-            if (bounceOut)
+            if(bounceOut)
                 *bounceOut = bounce;
         }
     }
@@ -79,18 +79,18 @@ APTR xhciPrepareDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 }
 
 void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    ULONG actual, UWORD effdir, APTR bounceBuf)
+                          ULONG actual, UWORD effdir, APTR bounceBuf)
 {
     APTR data = bounceBuf ? bounceBuf : ioreq->iouh_Data;
     ULONG postlen = actual;
 
-    if (data && actual) {
+    if(data && actual) {
         CachePostDMA(data, &postlen,
                      (effdir == UHDIR_IN) ? DMAFLAGS_POSTREAD : DMAFLAGS_POSTWRITE);
     }
 
-    if (bounceBuf) {
-        if ((effdir == UHDIR_IN) && actual)
+    if(bounceBuf) {
+        if((effdir == UHDIR_IN) && actual)
             CopyMem(bounceBuf, ioreq->iouh_Data, actual);
         FreeVec(bounceBuf);
     }
@@ -99,9 +99,9 @@ void xhciReleaseDMABuffer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
 }
 
 static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
-    struct timerequest *timerreq,
-    struct pciusbXHCIDevice **devCtxOut, ULONG *txepOut)
+                                 struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
+                                 struct timerequest *timerreq,
+                                 struct pciusbXHCIDevice **devCtxOut, ULONG *txepOut)
 {
     struct pciusbXHCIDevice *devCtx = NULL;
     ULONG txep;
@@ -113,50 +113,52 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
      * DevAddr 0 is ambiguous when multiple devices are in the Default state.
      * Prefer the roothub-port + route-string mapping provided by Poseidon.
      */
-    if ((ioreq->iouh_DevAddr == 0) && ioreq->iouh_RootPort) {
+    if((ioreq->iouh_DevAddr == 0) && ioreq->iouh_RootPort) {
         devCtx = xhciFindRouteDevice(hc,
                                      ioreq->iouh_RouteString,
                                      (UWORD)(ioreq->iouh_RootPort - 1));
     }
-    if (!devCtx)
+    if(!devCtx)
         devCtx = xhciFindDeviceCtx(hc, ioreq->iouh_DevAddr);
 
-    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr, devCtx);
-    if (devCtx) {
-        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "    slot=%d rootport=%d" DEBUGCOLOR_RESET" \n", devCtx->dc_SlotID, devCtx->dc_RootPort);
+    pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "Device context for addr %u = 0x%p" DEBUGCOLOR_RESET" \n", ioreq->iouh_DevAddr,
+                     devCtx);
+    if(devCtx) {
+        pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "    slot=%d rootport=%d" DEBUGCOLOR_RESET" \n", devCtx->dc_SlotID,
+                         devCtx->dc_RootPort);
         pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "    ioreq rootport=%d" DEBUGCOLOR_RESET" \n", ioreq->iouh_RootPort);
     }
 
-    if ((!devCtx) && allowEp0AutoCreate &&
-        (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
+    if((!devCtx) && allowEp0AutoCreate &&
+            (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0)) {
         devCtx = xhciObtainDeviceCtx(hc, ioreq, TRUE, timerreq);
-        if (devCtx)
+        if(devCtx)
             autoCreated = TRUE;
     }
 
-    if (!devCtx) {
+    if(!devCtx) {
         pciusbWarn("xHCI",
-            DEBUGWARNCOLOR_SET "xHCI: No device attached for DevAddr=%u, EP=%u" DEBUGCOLOR_RESET" \n",
-            ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+                   DEBUGWARNCOLOR_SET "xHCI: No device attached for DevAddr=%u, EP=%u" DEBUGCOLOR_RESET" \n",
+                   ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
         return FALSE;
     }
 
     txep = xhciEndpointID(ioreq->iouh_Endpoint, (ioreq->iouh_Dir == UHDIR_IN) ? 1 : 0);
 
-    if ((txep == xhciEndpointID(0, 0)) && allowEp0AutoCreate) {
-        if (!devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+    if((txep == xhciEndpointID(0, 0)) && allowEp0AutoCreate) {
+        if(!devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
             ULONG mps0 = ioreq->iouh_MaxPktSize;
-            if (mps0 == 0) {
-                if (ioreq->iouh_Flags & UHFF_SUPERSPEED)
+            if(mps0 == 0) {
+                if(ioreq->iouh_Flags & UHFF_SUPERSPEED)
                     mps0 = 512;
-                else if (ioreq->iouh_Flags & UHFF_HIGHSPEED)
+                else if(ioreq->iouh_Flags & UHFF_HIGHSPEED)
                     mps0 = 64;
                 else
                     mps0 = 8;
                 pciusbXHCIDebugV("xHCI",
-                    DEBUGWARNCOLOR_SET "xHCI: corrected mps0 = %d" DEBUGCOLOR_RESET" \n",
-                    mps0);
+                                 DEBUGWARNCOLOR_SET "xHCI: corrected mps0 = %d" DEBUGCOLOR_RESET" \n",
+                                 mps0);
             }
             ULONG initep = xhciInitEP(hc, devCtx,
                                       ioreq,
@@ -166,38 +168,38 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
                                       ioreq->iouh_Interval,
                                       ioreq->iouh_Flags);
 
-            if ((initep == 0) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+            if((initep == 0) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
                 pciusbXHCIDebugV("xHCI",
-                                "Leaving %s early: failed to initialise EP0\n",
-                                __func__);
+                                 "Leaving %s early: failed to initialise EP0\n",
+                                 __func__);
                 return FALSE;
             }
 
             LONG cc = xhciCmdEndpointConfigure(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr,
                                                timerreq);
-            if (cc != TRB_CC_SUCCESS) {
+            if(cc != TRB_CC_SUCCESS) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
                 pciusbXHCIDebugV("xHCI",
-                                "Leaving %s early: EP0 configure failed (cc=%ld)\n",
-                                __func__, (LONG)cc);
+                                 "Leaving %s early: EP0 configure failed (cc=%ld)\n",
+                                 __func__, (LONG)cc);
                 return FALSE;
             }
         }
-    } else if ((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
+    } else if((txep >= MAX_DEVENDPOINTS) || !devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
 
         pciusbXHCIDebugV("xHCI",
-                        "Leaving %s early: endpoint not prepared (txep=%u)\n",
-                        __func__, (unsigned)txep);
+                         "Leaving %s early: endpoint not prepared (txep=%u)\n",
+                         __func__, (unsigned)txep);
         return FALSE;
     }
 
-    if (autoCreated) {
+    if(autoCreated) {
         pciusbXHCIDebugV("xHCI",
-            DEBUGCOLOR_SET "xHCI: Auto-created DevAddr0/EP0 context for pending transfer" DEBUGCOLOR_RESET" \n");
+                         DEBUGCOLOR_SET "xHCI: Auto-created DevAddr0/EP0 context for pending transfer" DEBUGCOLOR_RESET" \n");
     }
 
     *devCtxOut = devCtx;
@@ -206,24 +208,24 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 }
 
 BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
-    struct timerequest *timerreq,
-    struct pciusbXHCIIODevPrivate **outPrivate)
+                           struct List *ownerList, ULONG txtype, BOOL allowEp0AutoCreate,
+                           struct timerequest *timerreq,
+                           struct pciusbXHCIIODevPrivate **outPrivate)
 {
     struct pciusbXHCIDevice *devCtx = NULL;
     ULONG txep = 0;
     struct pciusbXHCIIODevPrivate *driprivate = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
 
-    if (!driprivate) {
-        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
-                                  &devCtx, &txep))
+    if(!driprivate) {
+        if(!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
+                                 &devCtx, &txep))
             return FALSE;
 
-        driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY|MEMF_CLEAR);
-        if (!driprivate) {
+        driprivate = AllocMem(sizeof(struct pciusbXHCIIODevPrivate), MEMF_ANY | MEMF_CLEAR);
+        if(!driprivate) {
             pciusbError("xHCI",
-                DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n",
-                __func__);
+                        DEBUGWARNCOLOR_SET "%s: Failed to allocate IO Driver Data!" DEBUGCOLOR_RESET" \n",
+                        __func__);
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
             return FALSE;
         }
@@ -231,8 +233,8 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpDevice = devCtx;
         driprivate->dpEPID   = txep;
     } else {
-        if (!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
-                                  &devCtx, &txep))
+        if(!xhciObtainHWEndpoint(hc, ioreq, ownerList, txtype, allowEp0AutoCreate, timerreq,
+                                 &devCtx, &txep))
             return FALSE;
 
         driprivate->dpDevice = devCtx;
@@ -242,12 +244,12 @@ BOOL xhciInitIOTRBTransfer(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpBounceLen = 0;
         driprivate->dpBounceDir = 0;
         pciusbXHCIDebugV("xHCI",
-                        "Reusing existing driver private=%p, devCtx=%p, refreshed EPID=%u\n",
-                        driprivate, devCtx, driprivate->dpEPID);
+                         "Reusing existing driver private=%p, devCtx=%p, refreshed EPID=%u\n",
+                         driprivate, devCtx, driprivate->dpEPID);
     }
 
 #if defined(DEBUG) && (DEBUG > 1)
-    if (driprivate && driprivate->dpDevice)
+    if(driprivate && driprivate->dpDevice)
         xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "shared schedule");
 #endif
 
@@ -263,12 +265,12 @@ ULONG xhciBuildDataTRBFlags(const struct IOUsbHWReq *ioreq, ULONG txtype)
 {
     ULONG trbflags = 0;
 
-    if (txtype == UHCMD_CONTROLXFER) {
+    if(txtype == UHCMD_CONTROLXFER) {
         UWORD wLength = AROS_LE2WORD(ioreq->iouh_SetupData.wLength);
         BOOL  setup_in = (ioreq->iouh_SetupData.bmRequestType & 0x80) != 0;
 
-        if (wLength != 0) {
-            if (setup_in)
+        if(wLength != 0) {
+            if(setup_in)
                 trbflags |= TRBF_FLAG_DS_DIR;
 
             trbflags |= TRBF_FLAG_TRTYPE_DATA;
@@ -283,25 +285,25 @@ ULONG xhciBuildDataTRBFlags(const struct IOUsbHWReq *ioreq, ULONG txtype)
 }
 
 BOOL xhciActivateEndpointTransfer(struct PCIController *hc, struct PCIUnit *unit,
-    struct IOUsbHWReq *ioreq, struct pciusbXHCIIODevPrivate *driprivate,
-    UWORD devadrep, volatile struct pcisusbXHCIRing **epringOut)
+                                  struct IOUsbHWReq *ioreq, struct pciusbXHCIIODevPrivate *driprivate,
+                                  UWORD devadrep, volatile struct pcisusbXHCIRing **epringOut)
 {
     BOOL ok = FALSE;
 
     Disable();
-    if ((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
+    if((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
         unit->hu_DevBusyReq[devadrep] = ioreq;
 
-        if (driprivate->dpDevice) {
+        if(driprivate->dpDevice) {
             *epringOut = driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr;
 
-            if (*epringOut)
+            if(*epringOut)
                 ok = TRUE;
         }
     }
     Enable();
 
-    if (!ok) {
+    if(!ok) {
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
         ReplyMsg(&ioreq->iouh_Req.io_Message);
@@ -309,15 +311,15 @@ BOOL xhciActivateEndpointTransfer(struct PCIController *hc, struct PCIUnit *unit
     }
 
     pciusbXHCIDebugEPV("xHCI",
-                      DEBUGCOLOR_SET "%s: EP ring @ 0x%p (EPID=%u)" DEBUGCOLOR_RESET" \n",
-                      __func__, *epringOut, driprivate->dpEPID);
+                       DEBUGCOLOR_SET "%s: EP ring @ 0x%p (EPID=%u)" DEBUGCOLOR_RESET" \n",
+                       __func__, *epringOut, driprivate->dpEPID);
 
     return TRUE;
 }
 
 WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
-    ULONG trbflags, BOOL iocOnLast)
+                          struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
+                          ULONG trbflags, BOOL iocOnLast)
 {
     ULONG dmalen = ioreq->iouh_Length;
     WORD queued;
@@ -325,7 +327,7 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     UWORD effdir = xhciEffectiveDataDir(ioreq);
     APTR bounce = NULL;
     APTR dmaptr = xhciPrepareDMABuffer(hc, ioreq, &dmalen, effdir, &bounce);
-    if (!dmaptr && dmalen) {
+    if(!dmaptr && dmalen) {
         ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
         return -1;
     }
@@ -342,11 +344,11 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
                               trbflags,
                               iocOnLast,
                               &ioreq->iouh_Req);
-    if (queued != -1) {
+    if(queued != -1) {
         driprivate->dpTxSTRB = queued;
         driprivate->dpTxETRB = (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
 
-    } else if (driprivate->dpBounceBuf) {
+    } else if(driprivate->dpBounceBuf) {
         xhciReleaseDMABuffer(hc, ioreq, 0, effdir, driprivate->dpBounceBuf);
         driprivate->dpBounceBuf = NULL;
         driprivate->dpBounceData = NULL;

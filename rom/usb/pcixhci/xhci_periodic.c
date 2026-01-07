@@ -58,20 +58,20 @@ void xhciScheduleIntTDs(struct PCIController *hc)
     ForeachNodeSafe(&hc->hc_IntXFerQueue, ioreq, ionext) {
         devadrep = xhciDevEPKey(ioreq);
         pciusbXHCIDebug("xHCI",
-            DEBUGCOLOR_SET "New INT transfer to dev=%u ep=%u (DevEP=%02x): len=%lu dir=%s, cmd=%u" DEBUGCOLOR_RESET"\n",
-            ioreq->iouh_DevAddr,
-            ioreq->iouh_Endpoint,
-            devadrep,
-            (unsigned long)ioreq->iouh_Length,
-            (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
-            (unsigned)ioreq->iouh_Req.io_Command);
+                        DEBUGCOLOR_SET "New INT transfer to dev=%u ep=%u (DevEP=%02x): len=%lu dir=%s, cmd=%u" DEBUGCOLOR_RESET"\n",
+                        ioreq->iouh_DevAddr,
+                        ioreq->iouh_Endpoint,
+                        devadrep,
+                        (unsigned long)ioreq->iouh_Length,
+                        (ioreq->iouh_Dir == UHDIR_IN) ? "IN" : "OUT",
+                        (unsigned)ioreq->iouh_Req.io_Command);
         pciusbXHCIDebugV("xHCI",
-            DEBUGCOLOR_SET "    IOReq=%p Flags=0x%08lx NakTO=%lu MaxPkt=%u Interval=%u" DEBUGCOLOR_RESET"\n",
-            ioreq,
-            (unsigned long)ioreq->iouh_Flags,
-            (unsigned long)ioreq->iouh_NakTimeout,
-            (unsigned)ioreq->iouh_MaxPktSize,
-            (unsigned)ioreq->iouh_Interval);
+                         DEBUGCOLOR_SET "    IOReq=%p Flags=0x%08lx NakTO=%lu MaxPkt=%u Interval=%u" DEBUGCOLOR_RESET"\n",
+                         ioreq,
+                         (unsigned long)ioreq->iouh_Flags,
+                         (unsigned long)ioreq->iouh_NakTimeout,
+                         (unsigned)ioreq->iouh_MaxPktSize,
+                         (unsigned)ioreq->iouh_Interval);
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
@@ -85,7 +85,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         ULONG trbflags = 0;
         WORD queued = -1;
 
-        if (!driprivate || !driprivate->dpDevice) {
+        if(!driprivate || !driprivate->dpDevice) {
             pciusbError("xHCI",
                         DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
@@ -98,7 +98,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
         {
             /* Interrupt TD flags */
             trbflags |= xhciBuildDataTRBFlags(ioreq, ioreq->iouh_Req.io_Command);
-            if (ioreq->iouh_Dir == UHDIR_IN) {
+            if(ioreq->iouh_Dir == UHDIR_IN) {
                 /* For INT endpoints, DS_DIR is not required; only ISP is meaningful here. */
                 trbflags |= TRBF_FLAG_ISP;          /* interrupt on short packet */
             }
@@ -107,17 +107,18 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
-            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter, (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
+            pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter,
+                             (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT));
 
             /****** INSERT TRANSACTION ************/
             BOOL txdone = FALSE;
             driprivate->dpSTRB = (UWORD)-1;
             driprivate->dpSttTRB = (UWORD)-1;
 
-            if (xhciActivateEndpointTransfer(hc, unit, ioreq, driprivate, devadrep, &epring)) {
+            if(xhciActivateEndpointTransfer(hc, unit, ioreq, driprivate, devadrep, &epring)) {
                 queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, TRUE);
 
-                if (queued != -1) {
+                if(queued != -1) {
                     AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
                     pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                     txdone = TRUE;
@@ -128,7 +129,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
              * If we failed to get an endpoint,
              * or queue the transaction, requeue it
              */
-            if (!txdone) {
+            if(!txdone) {
                 driprivate->dpSTRB = (UWORD)-1;
                 driprivate->dpTxSTRB = (UWORD)-1;
                 driprivate->dpTxETRB = (UWORD)-1;

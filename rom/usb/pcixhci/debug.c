@@ -5,7 +5,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
 {
     unsigned char *p;
 
-    if (!mem || !len) {
+    if(!mem || !len) {
         return;
     }
 
@@ -17,20 +17,20 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
     do {
         unsigned char b, c, str[17];
 
-        for (b = 0; b < 16; b++) {
+        for(b = 0; b < 16; b++) {
             c = *p++;
             str[b] = ((c >= ' ') && (c <= 'z')) ? c : '.';
             str[b + 1] = 0;
             KPrintF("%02lx ", c);
-            if (--len == 0) break;
+            if(--len == 0) break;
         }
 
-        while (++b < 16) {
+        while(++b < 16) {
             KPrintF("   ");
         }
 
         KPrintF("  %s\n", str);
-    } while (len);
+    } while(len);
 
     KPrintF("\n\n");
 #else

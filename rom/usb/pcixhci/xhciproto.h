@@ -34,10 +34,10 @@ static inline BOOL xhciOpenTaskTimer(struct MsgPort **msgport,
                                      struct timerequest **timerreq,
                                      const char *name)
 {
-    if ((*msgport = CreateMsgPort())) {
+    if((*msgport = CreateMsgPort())) {
         *timerreq = (struct timerequest *)CreateIORequest(*msgport, sizeof(struct timerequest));
-        if (*timerreq) {
-            if (!OpenDevice(xhciTimerDeviceName, UNIT_MICROHZ, (struct IORequest *)*timerreq, 0)) {
+        if(*timerreq) {
+            if(!OpenDevice(xhciTimerDeviceName, UNIT_MICROHZ, (struct IORequest *)*timerreq, 0)) {
                 (*timerreq)->tr_node.io_Message.mn_Node.ln_Name = (STRPTR)name;
                 (*timerreq)->tr_node.io_Command = TR_ADDREQUEST;
                 return TRUE;
@@ -54,12 +54,12 @@ static inline BOOL xhciOpenTaskTimer(struct MsgPort **msgport,
 
 static inline void xhciCloseTaskTimer(struct MsgPort **msgport, struct timerequest **timerreq)
 {
-    if (*timerreq) {
+    if(*timerreq) {
         CloseDevice((APTR)*timerreq);
         DeleteIORequest((struct IORequest *)*timerreq);
         *timerreq = NULL;
     }
-    if (*msgport) {
+    if(*msgport) {
         DeleteMsgPort(*msgport);
         *msgport = NULL;
     }
@@ -69,7 +69,7 @@ static inline UBYTE xhciEndpointID(UBYTE endpoint, UBYTE dir)
 {
     UBYTE epid = 1;
 
-    if (endpoint > 0) {
+    if(endpoint > 0) {
         epid = (endpoint & 0x0F) * 2;
         epid += dir;
     }
@@ -119,9 +119,9 @@ static inline UWORD xhciEffectiveDataDir(const struct IOUsbHWReq *ioreq)
 {
     UWORD effdir = ioreq->iouh_Dir;
 
-    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) {
+    if(ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) {
         UWORD wLength = AROS_LE2WORD(ioreq->iouh_SetupData.wLength);
-        if (wLength != 0) {
+        if(wLength != 0) {
             effdir = (ioreq->iouh_SetupData.bmRequestType & 0x80) ? UHDIR_IN : UHDIR_OUT;
         }
     }
@@ -134,9 +134,9 @@ static inline UWORD xhciDevEPKey(const struct IOUsbHWReq *ioreq)
     UWORD key = (ioreq->iouh_DevAddr << 5) + ioreq->iouh_Endpoint;
 
     /* EP0 is bidirectional: treat it as a single busy slot */
-    if (ioreq->iouh_Endpoint != 0) {
+    if(ioreq->iouh_Endpoint != 0) {
         UWORD effdir = xhciEffectiveDataDir(ioreq);
-        if (effdir == UHDIR_IN)
+        if(effdir == UHDIR_IN)
             key |= 0x10;
     }
     return key;
@@ -149,7 +149,7 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
 struct pciusbXHCIDevice *xhciFindDeviceCtx(struct PCIController *hc, UWORD devaddr);
 struct pciusbXHCIDevice *xhciFindRouteDevice(struct PCIController *hc, ULONG route, UWORD rootPortIndex);
 struct pciusbXHCIDevice *xhciObtainDeviceCtx(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-                                             BOOL allowCreate, struct timerequest *timerreq);
+        BOOL allowCreate, struct timerequest *timerreq);
 void xhciFreeDeviceCtx(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, BOOL disableSlot,
                        struct timerequest *timerreq);
 void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
@@ -159,17 +159,21 @@ void xhciUpdateFrameCounter(struct PCIController *hc);
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 
 BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
-BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval);
+BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val,
+                      WORD *retval);
 BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval);
 
-WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG trbflags);
+WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
+                  ULONG trbflags);
 WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
                      ULONG plen, ULONG trbflags, struct IORequest *ioreq);
-WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen, ULONG pmax, ULONG trbflags, BOOL ioconlast);
+WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
+                   ULONG pmax, ULONG trbflags, BOOL ioconlast);
 WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
                       ULONG pmax, ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
 
-ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint, UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
+ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint,
+                 UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
 void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG txtype);
 void xhciScheduleIntTDs(struct PCIController *hc);
 void xhciScheduleIsoTDs(struct PCIController *hc);
@@ -196,7 +200,7 @@ LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, APTR dmaaddr, UL
                           struct IOUsbHWReq *ioreq, struct timerequest *timerreq);
 LONG xhciCmdEndpointStop(struct PCIController *hc, ULONG slot, ULONG epid, ULONG suspend,
                          struct timerequest *timerreq);
-LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid , ULONG preserve,
+LONG xhciCmdEndpointReset(struct PCIController *hc, ULONG slot, ULONG epid, ULONG preserve,
                           struct timerequest *timerreq);
 LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, ULONG epid, APTR dequeue_ptr,
                             BOOL dcs, struct timerequest *timerreq);
@@ -222,10 +226,10 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
     ULONG flags = (slot << 24) | TRBF_FLAG_CRTYPE_ADDRESS_DEVICE;
 
     /* Address Device Command TRB: bit 9 = BSR (Block SetAddress Request) */
-    if (bsr)
+    if(bsr)
         flags |= TRBF_FLAG_ADDRDEV_BSR;
 
-    if (ioreq)
+    if(ioreq)
         return xhciCmdSubmitAsync(hc, dmaaddr, flags, ioreq);
 
     return xhciCmdSubmit(hc, dmaaddr, flags, NULL, timerreq);
@@ -235,12 +239,12 @@ static inline LONG xhciCmdDeviceAddress(struct PCIController *hc, ULONG slot, AP
 #define xhciCmdEndpointReset(hc,slot,epid,preserve,timerreq) \
     xhciCmdSubmit(hc, NULL, (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_RESET_ENDPOINT | (preserve << 9), NULL, timerreq)
 static inline LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, ULONG epid, APTR dequeue_ptr,
-                                          BOOL dcs, struct timerequest *timerreq)
+        BOOL dcs, struct timerequest *timerreq)
 {
     ULONG flags = (slot << 24) | (epid << 16) | TRBF_FLAG_CRTYPE_SET_TR_DEQUEUE_PTR;
     UQUAD dma = 0;
 
-    if (dequeue_ptr) {
+    if(dequeue_ptr) {
 #if !defined(PCIUSB_NO_CPUTOPCI)
         dma = (UQUAD)(IPTR)CPUTOPCI(hc, hc->hc_PCIDriverObject, dequeue_ptr);
 #else
@@ -248,7 +252,7 @@ static inline LONG xhciCmdSetTRDequeuePtr(struct PCIController *hc, ULONG slot, 
 #endif
     }
 
-    if (dcs)
+    if(dcs)
         dma |= 0x1ULL;
 
     return xhciCmdSubmit(hc, (APTR)(IPTR)dma, flags, NULL, timerreq);
@@ -364,7 +368,7 @@ xhciTRBPointer(struct PCIController *hc, volatile struct xhci_trb *trb)
 {
     UQUAD dma;
 
-    if (!trb)
+    if(!trb)
         return (struct xhci_trb *)NULL;
 
     /*

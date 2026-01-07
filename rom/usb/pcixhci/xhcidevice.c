@@ -35,12 +35,17 @@
 
 static inline const char *xhciSlotStateName(UBYTE state)
 {
-    switch (state) {
-    case XHCI_SLOT_STATE_DISABLED_OR_ENABLED: return "Disabled/Enabled";
-    case XHCI_SLOT_STATE_DEFAULT:             return "Default";
-    case XHCI_SLOT_STATE_ADDRESSED:           return "Addressed";
-    case XHCI_SLOT_STATE_CONFIGURED:          return "Configured";
-    default:                                  return "Unknown";
+    switch(state) {
+    case XHCI_SLOT_STATE_DISABLED_OR_ENABLED:
+        return "Disabled/Enabled";
+    case XHCI_SLOT_STATE_DEFAULT:
+        return "Default";
+    case XHCI_SLOT_STATE_ADDRESSED:
+        return "Addressed";
+    case XHCI_SLOT_STATE_CONFIGURED:
+        return "Configured";
+    default:
+        return "Unknown";
     }
 }
 
@@ -65,21 +70,21 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
 
     xhciDebugControlTransfer(ioreq);
 
-    if (!hc) {
+    if(!hc) {
         pciusbError("xHCI",
-               DEBUGWARNCOLOR_SET "xHCI: hc = NULL" DEBUGCOLOR_RESET"\n");
+                    DEBUGWARNCOLOR_SET "xHCI: hc = NULL" DEBUGCOLOR_RESET"\n");
         return UHIOERR_HOSTERROR;
     }
 
-    switch (txtype) {
+    switch(txtype) {
     case UHCMD_CONTROLXFER:
         ownerList = &hc->hc_CtrlXFerQueue;
-        if (!xhciIsRootHubRequest(ioreq, unit))
+        if(!xhciIsRootHubRequest(ioreq, unit))
             allowEp0AutoCreate = TRUE;
         break;
     case UHCMD_BULKXFER:
         ownerList = &hc->hc_BulkXFerQueue;
-        if (!xhciIsRootHubRequest(ioreq, unit))
+        if(!xhciIsRootHubRequest(ioreq, unit))
             allowEp0AutoCreate = TRUE;
         break;
     case UHCMD_INTXFER:
@@ -100,11 +105,11 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
      * For downstream devices (non-roothub requests), EP0 may need to be
      * configured here because the port-change task only handles root ports.
      */
-    if (!xhciInitIOTRBTransfer(hc, ioreq, ownerList, txtype, allowEp0AutoCreate,
-                               unit->hu_TimerReq, &driprivate)) {
+    if(!xhciInitIOTRBTransfer(hc, ioreq, ownerList, txtype, allowEp0AutoCreate,
+                              unit->hu_TimerReq, &driprivate)) {
         pciusbError("xHCI",
-               DEBUGWARNCOLOR_SET "xHCI: xhciInitIOTRBTransfer failed" DEBUGCOLOR_RESET"\n");
-        if (ioreq->iouh_Req.io_Error)
+                    DEBUGWARNCOLOR_SET "xHCI: xhciInitIOTRBTransfer failed" DEBUGCOLOR_RESET"\n");
+        if(ioreq->iouh_Req.io_Error)
             return ioreq->iouh_Req.io_Error;
         return UHIOERR_HOSTERROR;
     }
@@ -119,11 +124,10 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
      * MUST be handled here (not in the scheduler), so uhwcmd.c can stay generic.
      */
 
-    if (txtype == UHCMD_CONTROLXFER && driprivate && driprivate->dpDevice) {
+    if(txtype == UHCMD_CONTROLXFER && driprivate && driprivate->dpDevice) {
         /* Standard SET_ADDRESS (device request) */
-        if ((bmRequestType == (URTF_STANDARD | URTF_DEVICE)) &&
-            (bRequest == USR_SET_ADDRESS))
-        {
+        if((bmRequestType == (URTF_STANDARD | URTF_DEVICE)) &&
+                (bRequest == USR_SET_ADDRESS)) {
             const UWORD newaddr = wValue;
             struct pciusbXHCIDevice *devCtx = driprivate->dpDevice;
             volatile struct xhci_slot *oslot = (volatile struct xhci_slot *)devCtx->dc_SlotCtx.dmaa_Ptr;
@@ -139,17 +143,17 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             ULONG e0;
             UBYTE state;
 
-            if (hc->hc_Flags & HCF_CTX64)
+            if(hc->hc_Flags & HCF_CTX64)
                 ctxoff <<= 1;
 
             pciusbXHCIDebugV("xHCI",
-                "SET_ADDRESS short-circuit (PrepareTransfer): slot=%u addr %u->%u ioreq=%p\n",
-                devCtx->dc_SlotID,
-                (unsigned)devCtx->dc_DevAddr,
-                (unsigned)newaddr,
-                ioreq);
+                             "SET_ADDRESS short-circuit (PrepareTransfer): slot=%u addr %u->%u ioreq=%p\n",
+                             devCtx->dc_SlotID,
+                             (unsigned)devCtx->dc_DevAddr,
+                             (unsigned)newaddr,
+                             ioreq);
 
-            if (!oslot || !in) {
+            if(!oslot || !in) {
                 ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
                 driprivate->dpCC = TRB_CC_INVALID;
                 goto _xhci_setaddr_complete;
@@ -162,9 +166,9 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             state = (odw3 & XHCI_SLOTCTX3_SLOTSTATE_MASK) >> XHCI_SLOTCTX3_SLOTSTATE_SHIFT;
 
             pciusbXHCIDebugV("xHCI",
-                "SET_ADDRESS: current slot state = %u (%s)\n",
-                (unsigned)state,
-               xhciSlotStateName(state));
+                             "SET_ADDRESS: current slot state = %u (%s)\n",
+                             (unsigned)state,
+                             xhciSlotStateName(state));
 
             /* Prepare input pointers */
             islot = xhciInputSlotCtx((struct xhci_inctx *)in, ctxoff);
@@ -202,29 +206,29 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
              * Slot State value 1 is Default (not Enabled), and issuing BSR=1 from Default
              * causes Context State Error (CC=19).
              */
-            if (state == XHCI_SLOT_STATE_ADDRESSED || state == XHCI_SLOT_STATE_CONFIGURED) {
+            if(state == XHCI_SLOT_STATE_ADDRESSED || state == XHCI_SLOT_STATE_CONFIGURED) {
                 /* Already addressed/configured; do not re-address. */
                 cc = TRB_CC_SUCCESS;
             } else {
                 BUILD_INPUT_CTX(newaddr);
                 cc = xhciCmdDeviceAddress(hc, devCtx->dc_SlotID, devCtx->dc_IN.dmaa_Ptr, 0, NULL,
                                           unit->hu_TimerReq);
-                if (cc == TRB_CC_SUCCESS) {
+                if(cc == TRB_CC_SUCCESS) {
                     /* Verify what address the controller actually selected. */
                     CacheClearE((APTR)oslot, ctxsize, CACRF_InvalidateD);
                     odw3 = AROS_LE2LONG(oslot->ctx[3]);
                     const UBYTE hcaddr = (UBYTE)(odw3 & 0xFFu);
-                    if (hcaddr != (UBYTE)newaddr) {
+                    if(hcaddr != (UBYTE)newaddr) {
                         pciusbXHCIDebugV("xHCI",
-                            "SET_ADDRESS: xHC selected address %u (stack requested %u); enumeration may fail if the stack does not adapt\n",
-                            (unsigned)hcaddr, (unsigned)(UBYTE)newaddr);
+                                         "SET_ADDRESS: xHC selected address %u (stack requested %u); enumeration may fail if the stack does not adapt\n",
+                                         (unsigned)hcaddr, (unsigned)(UBYTE)newaddr);
                     }
                 }
             }
 
 #undef BUILD_INPUT_CTX
 
-            if ((driprivate->dpCC = (UBYTE)cc) == TRB_CC_SUCCESS) {
+            if((driprivate->dpCC = (UBYTE)cc) == TRB_CC_SUCCESS) {
                 devCtx->dc_DevAddr = (UBYTE)newaddr;
                 unit->hu_DevControllers[newaddr] = hc;
             } else {
@@ -249,35 +253,34 @@ _xhci_setaddr_complete:
      * on that port may have disappeared. Build the child route string and
      * drop any matching xHCI device context to release slot/resources.
      */
-    if ((txtype == UHCMD_CONTROLXFER) &&
-        (ioreq->iouh_Flags & UHFF_HUB)) {
-        if ((bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
-            (bRequest == USR_CLEAR_FEATURE) &&
-            (wValue == UFS_C_PORT_CONNECTION))
-        {
+    if((txtype == UHCMD_CONTROLXFER) &&
+            (ioreq->iouh_Flags & UHFF_HUB)) {
+        if((bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
+                (bRequest == USR_CLEAR_FEATURE) &&
+                (wValue == UFS_C_PORT_CONNECTION)) {
             UWORD port = wIndex & 0xFF;
 
-            if (port > 0 && port <= 0x0F) {
+            if(port > 0 && port <= 0x0F) {
                 ULONG route = ioreq->iouh_RouteString & SLOT_CTX_ROUTE_MASK;
                 int depth;
 
-                for (depth = 0; depth < 5; depth++) {
-                    if (((route >> (depth * 4)) & 0xF) == 0)
+                for(depth = 0; depth < 5; depth++) {
+                    if(((route >> (depth * 4)) & 0xF) == 0)
                         break;
                 }
 
-                if (depth < 5) {
+                if(depth < 5) {
                     route |= ((ULONG)port << (depth * 4));
 
                     UWORD rootPortIndex = (ioreq->iouh_RootPort > 0)
-                                              ? (ioreq->iouh_RootPort - 1)
-                                              : 0;
+                                          ? (ioreq->iouh_RootPort - 1)
+                                          : 0;
                     struct pciusbXHCIDevice *child =
                         xhciFindRouteDevice(hc, route, rootPortIndex);
-                    if (child) {
+                    if(child) {
                         pciusbXHCIDebug("xHCI",
-                            "Hub port %u cleared C_PORT_CONNECTION, disconnecting route 0x%05lx\n",
-                            (unsigned)port, route);
+                                        "Hub port %u cleared C_PORT_CONNECTION, disconnecting route 0x%05lx\n",
+                                        (unsigned)port, route);
                         xhciDisconnectDevice(hc, child, unit->hu_TimerReq);
                     }
                 }

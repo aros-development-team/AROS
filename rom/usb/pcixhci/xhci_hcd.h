@@ -50,38 +50,33 @@ struct timerequest;
 
 struct pciusbXHCIEndpointCtx;
 
-struct pciusbXHCIDMAAlloc
-{
+struct pciusbXHCIDMAAlloc {
     struct MemEntry                     dmaa_Entry;
     APTR                                dmaa_Ptr;
     APTR                                dmaa_DMA;
 };
 
-struct pciusbXHCITRBParams
-{
+struct pciusbXHCITRBParams {
     ULONG                       tparams;
     ULONG                       flags;
     ULONG                       status;
 };
 
-struct XhciPortTaskPrivate
-{
+struct XhciPortTaskPrivate {
     struct Task                    *xpt_Task;
     BYTE                            xpt_PortChangeSignal;
     struct MsgPort                 *xpt_TimerPort;
     struct timerequest             *xpt_TimerReq;
 };
 
-struct XhciEventTaskPrivate
-{
+struct XhciEventTaskPrivate {
     struct Task                    *xet_Task;
     BYTE                            xet_ProcessEventsSignal;
     struct MsgPort                 *xet_TimerPort;
     struct timerequest             *xet_TimerReq;
 };
 
-struct XhciHCPrivate
-{
+struct XhciHCPrivate {
     UWORD                               xhc_NumSlots;
     UWORD                               xhc_NumDevs;
     UWORD                               xhc_NumScratchPads;
@@ -129,7 +124,7 @@ static inline struct XhciHCPrivate *xhciGetHCPrivate(struct PCIController *hc)
 {
     return (struct XhciHCPrivate *)hc->hc_CPrivate;
 }
- 
+
 /*
  * Root port state helpers
  *
@@ -164,10 +159,10 @@ static inline BOOL xhciPortIsUsb3(struct PCIController *hc, UWORD hciport, ULONG
 {
     struct XhciHCPrivate *xhcic = xhciGetHCPrivate(hc);
 
-    if (xhcic && xhcic->xhc_PortProtocolValid && (hciport < MAX_ROOT_PORTS)) {
-        if (xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB3)
+    if(xhcic && xhcic->xhc_PortProtocolValid && (hciport < MAX_ROOT_PORTS)) {
+        if(xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB3)
             return TRUE;
-        if (xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB2)
+        if(xhcic->xhc_PortProtocol[hciport] == XHCI_PORT_PROTOCOL_USB2)
             return FALSE;
     }
 
@@ -182,7 +177,7 @@ static inline BOOL xhciUsb3Operational(ULONG portsc)
 
 static inline BOOL xhciHubPortEnabled(struct PCIController *hc, UWORD hciport, ULONG portsc)
 {
-    if (xhciPortIsUsb3(hc, hciport, portsc))
+    if(xhciPortIsUsb3(hc, hciport, portsc))
         return xhciUsb3Operational(portsc);
 
     return (portsc & XHCIF_PR_PORTSC_PED) != 0;
@@ -196,14 +191,13 @@ static inline BOOL xhciHubPortConnected(ULONG portsc)
 /*
  * Private Transfer Request Block Ring desciption
  */
-struct pcisusbXHCIRing
-{
+struct pcisusbXHCIRing {
     struct xhci_trb                     ring[XHCI_EVENT_RING_TRBS];                 // (!!) volatile area accessed by the controller (!!)
-    struct IORequest                    **ringio;                                    /* non-DMA bookkeeping */
+    struct IORequest                    **ringio;                                   // non-DMA bookkeeping
     struct pciusbXHCIDMAAlloc           rnext;                                      // Next ring in this sequence
     struct xhci_trb                     current;                                    // cached copy of the current trb
     volatile UWORD                      next, end;                                  // current queue locations
-                                                                                    // NB: the cycle bit is cached in the highest bit of end
+    // NB: the cycle bit is cached in the highest bit of end
 };
 #define RINGENDCFLAG                            (1 << 15)
 
@@ -247,16 +241,14 @@ struct pciusbXHCIDevice {
     UBYTE                               dc_RootPort;
 };
 
-struct pciusbXHCIEndpointCtx
-{
+struct pciusbXHCIEndpointCtx {
     struct pciusbXHCIDevice            *ectx_Device;
     ULONG                               ectx_EPID;
     struct MsgPort                     *ectx_TimerPort;
     struct timerequest                 *ectx_TimerReq;
 };
 
-struct pciusbXHCIIODevPrivate
-{
+struct pciusbXHCIIODevPrivate {
     struct pciusbXHCIDevice            *dpDevice;
     ULONG                               dpEPID;
     UWORD                               dpSTRB;                                     // Setup TRB
@@ -283,24 +275,24 @@ struct pciusbXHCIIODevPrivate
  * fence typically compiles to a compiler barrier (store->store ordering holds).
   */
 #if defined(__GNUC__) || defined(__clang__)
-  /* ARM (AArch64 / ARMv7+): ensure all prior writes are observable before MMIO. */
+/* ARM (AArch64 / ARMv7+): ensure all prior writes are observable before MMIO. */
 # if defined(__aarch64__) || defined(__arm__)
 #  define XHCI_MMIO_BARRIER() __asm__ __volatile__("dmb ishst" ::: "memory")
 
-  /* RISC-V: order all IO + memory accesses around MMIO stores. */
+/* RISC-V: order all IO + memory accesses around MMIO stores. */
 # elif defined(__riscv)
-   /*
-    * "iorw, iorw" is the conservative form for device/MMIO.
-    * If your assembler/toolchain rejects iorw, switch to "fence rw, rw".
-    */
+/*
+ * "iorw, iorw" is the conservative form for device/MMIO.
+ * If your assembler/toolchain rejects iorw, switch to "fence rw, rw".
+ */
 #  define XHCI_MMIO_BARRIER() __asm__ __volatile__("fence iorw, iorw" ::: "memory")
 
-  /* Other architectures: use a release fence (compiler + arch barrier as needed). */
+/* Other architectures: use a release fence (compiler + arch barrier as needed). */
 # else
 #  define XHCI_MMIO_BARRIER() __atomic_thread_fence(__ATOMIC_RELEASE)
 # endif
 #else
-  /* Fallback: at least prevent compiler reordering if nothing better exists. */
+/* Fallback: at least prevent compiler reordering if nothing better exists. */
 # define XHCI_MMIO_BARRIER() do { } while (0)
 #endif
 #endif /* XHCICHIP_H */

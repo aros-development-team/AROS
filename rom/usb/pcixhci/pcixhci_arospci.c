@@ -73,7 +73,7 @@ AROS_UFH3(void, pciEnumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Sub, &sub);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_INTLine, &intline);
 
-    devid = (bus<<16)|dev;
+    devid = (bus << 16) | dev;
 
     pciusbDebug("PCI", "Found PCI device 0x%lx of type %ld, Intline=%ld\n", devid, hcitype, intline);
 
@@ -82,12 +82,12 @@ AROS_UFH3(void, pciEnumerator,
         // BIOS needs plug & play os option disabled. Alternatively AROS must support ACPI reconfiguration
         pciusbDebug("PCI", "ERROR: PCI card has no interrupt line assigned by BIOS, disable Plug & Play OS!\n");
     } else {
-        switch (hcitype) {
+        switch(hcitype) {
         case HCITYPE_XHCI:
             pciusbDebug("PCI", "Setting up device...\n");
 
             hc = AllocPooled(hd->hd_MemPool, sizeof(struct PCIController));
-            if (hc) {
+            if(hc) {
                 hc->hc_IsoPTDCount = PCIUSB_ISO_PTD_COUNT;
                 hc->hc_Device = hd;
                 hc->hc_DevID = devid;
@@ -118,17 +118,28 @@ AROS_UFH3(void, pciEnumerator,
 # if !defined(__OOP_NOLIBBASE__) && !defined(__OOP_NOMETHODBASES__)
 #  define __obj hc->hc_PCIDeviceObject
 # endif
-                hc->hc_ReadConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte, &hc->hc_ReadConfigByte_Class);
-                hc->hc_ReadConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord, &hc->hc_ReadConfigWord_Class);
-                hc->hc_ReadConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong, &hc->hc_ReadConfigLong_Class);
-                hc->hc_WriteConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigByte, &hc->hc_WriteConfigByte_Class);
-                hc->hc_WriteConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord, &hc->hc_WriteConfigWord_Class);
-                hc->hc_WriteConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong, &hc->hc_WriteConfigLong_Class);
-                hc->hc_AllocPCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_AllocPCIMem, &hc->hc_AllocPCIMem_Class);
-                hc->hc_FreePCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_FreePCIMem, &hc->hc_FreePCIMem_Class);
-                hc->hc_MapPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_MapPCI, &hc->hc_MapPCI_Class);
-                hc->hc_CPUtoPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_CPUtoPCI, &hc->hc_CPUtoPCI_Class);
-                hc->hc_PCItoCPU = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_PCItoCPU, &hc->hc_PCItoCPU_Class);
+                hc->hc_ReadConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigByte,
+                                                      &hc->hc_ReadConfigByte_Class);
+                hc->hc_ReadConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord,
+                                                      &hc->hc_ReadConfigWord_Class);
+                hc->hc_ReadConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong,
+                                                      &hc->hc_ReadConfigLong_Class);
+                hc->hc_WriteConfigByte = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigByte,
+                                                       &hc->hc_WriteConfigByte_Class);
+                hc->hc_WriteConfigWord = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigWord,
+                                                       &hc->hc_WriteConfigWord_Class);
+                hc->hc_WriteConfigLong = OOP_GetMethod(hc->hc_PCIDeviceObject, HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong,
+                                                       &hc->hc_WriteConfigLong_Class);
+                hc->hc_AllocPCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_AllocPCIMem,
+                                                   &hc->hc_AllocPCIMem_Class);
+                hc->hc_FreePCIMem = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_FreePCIMem,
+                                                  &hc->hc_FreePCIMem_Class);
+                hc->hc_MapPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_MapPCI,
+                                              &hc->hc_MapPCI_Class);
+                hc->hc_CPUtoPCI = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_CPUtoPCI,
+                                                &hc->hc_CPUtoPCI_Class);
+                hc->hc_PCItoCPU = OOP_GetMethod(hc->hc_PCIDriverObject, HiddPCIDriverBase + moHidd_PCIDriver_PCItoCPU,
+                                                &hc->hc_PCItoCPU_Class);
 # if !defined(__OOP_NOLIBBASE__) && !defined(__OOP_NOMETHODBASES__)
 #  undef __obj
 # endif
@@ -144,7 +155,7 @@ AROS_UFH3(void, pciEnumerator,
         }
     }
 
-    if (!hc)
+    if(!hc)
         pciusbDebug("PCI", "Unsupported HCI type %ld\n", hcitype);
 
     AROS_USERFUNC_EXIT
@@ -165,12 +176,12 @@ BOOL pciInit(struct PCIDevice *hd)
 
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL))) {
         struct TagItem tags[] = {
-            { tHidd_PCI_Class,      (PCI_CLASS_SERIAL_USB>>8) & 0xff },
-            { tHidd_PCI_SubClass,   (PCI_CLASS_SERIAL_USB & 0xff) },
+            { tHidd_PCI_Class,    (PCI_CLASS_SERIAL_USB >> 8) & 0xff },
+            { tHidd_PCI_SubClass, (PCI_CLASS_SERIAL_USB & 0xff) },
             { TAG_DONE, 0UL }
         };
         struct Hook findHook = {
-            .h_Entry   = (IPTR (*)()) pciEnumerator,
+            .h_Entry   = (IPTR(*)()) pciEnumerator,
             .h_Data    = hd,
         };
         pciusbDebug("PCI", "Searching for devices...\n");
@@ -182,7 +193,7 @@ BOOL pciInit(struct PCIDevice *hd)
     }
 
     root = OOP_NewObject(NULL, CLID_Hidd_System, NULL);
-    if (!root)
+    if(!root)
         root = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     pciusbDebug("PCI", "HW Root @  0x%p\n", root);
     XHCIControllerOOPStartup(hd);
@@ -211,18 +222,18 @@ BOOL pciInit(struct PCIDevice *hd)
 
         hu->hu_DevID = (ULONG)-1;
         ForeachNodeSafe(&hd->hd_TempHCIList, hc, nexthc) {
-            if (hu->hu_DevID == (ULONG)-1)
+            if(hu->hu_DevID == (ULONG)-1)
                 hu->hu_DevID = hc->hc_DevID;
 
-            if (hc->hc_DevID == hu->hu_DevID) {
+            if(hc->hc_DevID == hu->hu_DevID) {
                 Remove(&hc->hc_Node);
 
-                if ((hd->hd_USBXHCIControllerClass) && (root)) {
+                if((hd->hd_USBXHCIControllerClass) && (root)) {
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
                         {aHidd_Producer,            hc->hc_VendID   },
                         {aHidd_Product,             hc->hc_ProdID   },
-                        {aHidd_DriverData,          (IPTR)hc        },
+                        {aHidd_DriverData, (IPTR)hc        },
                         {TAG_DONE,                  0               }
                     };
                     int name_len = sizeof(strPcixhciDevicePrefix) - 1 + 10 + 1;
@@ -256,7 +267,7 @@ STRPTR pciStrcat(STRPTR d, STRPTR s)
 
 static void pciusbUpdateVersion(UBYTE major, UBYTE minor, UBYTE *bestMajor, UBYTE *bestMinor)
 {
-    if ((major > *bestMajor) || ((major == *bestMajor) && (minor > *bestMinor))) {
+    if((major > *bestMajor) || ((major == *bestMajor) && (minor > *bestMinor))) {
         *bestMajor = major;
         *bestMinor = minor;
     }
@@ -294,7 +305,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         CONST_STRPTR owner;
 
         owner = HIDD_PCIDevice_Obtain(hc->hc_PCIDeviceObject, hd->hd_Device.dd_Library.lib_Node.ln_Name);
-        if (!owner)
+        if(!owner)
             hc->hc_Flags |= HCF_ALLOCATED;
         else {
             pciusbWarn("PCI", "PCI Device already allocated <owner='%s'>\n", owner);
@@ -323,7 +334,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     if(!allocgood) {
         // free previously allocated boards
         ForeachNode(&hu->hu_Controllers, hc) {
-            if (hc->hc_Flags & HCF_ALLOCATED) {
+            if(hc->hc_Flags & HCF_ALLOCATED) {
                 hc->hc_Flags &= ~HCF_ALLOCATED;
                 HIDD_PCIDevice_Release(hc->hc_PCIDeviceObject);
             }
@@ -344,8 +355,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hu->hu_RootHubPorts = xhciports;
 
     pciusbDebug("PCI", "Unit %ld: USB Board %08lx:\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID);
-    if (hu->hu_RootHubXPorts) {
-        pciusbDebug("PCI", "Unit %ld: - %ld USB%u.%u+ port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), usbMajor, usbMinor, hu->hu_RootHubXPorts);
+    if(hu->hu_RootHubXPorts) {
+        pciusbDebug("PCI", "Unit %ld: - %ld USB%u.%u+ port(s)\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), usbMajor, usbMinor,
+                    hu->hu_RootHubXPorts);
     }
 
     hu->hu_FrameCounter = 1;
@@ -397,7 +409,7 @@ void pciFreeUnit(struct PCIUnit *hu)
     //FIXME: (x/e/o/u)hciFree routines actually ONLY stops the chip NOT free anything as below...
     ForeachNode(&hu->hu_Controllers, hc) {
         if(hc->hc_PCIMem.me_Un.meu_Addr) {
-            if (hc->hc_PCIMemIsExec) {
+            if(hc->hc_PCIMemIsExec) {
                 FreeMem(hc->hc_PCIMem.me_Un.meu_Addr, hc->hc_PCIMem.me_Length);
                 hc->hc_PCIMemIsExec = FALSE;
             } else {
@@ -412,7 +424,7 @@ void pciFreeUnit(struct PCIUnit *hu)
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
         if(hc->hc_PCIIntHandler.is_Node.ln_Name) {
 #if defined(HCF_MSI)
-            if (hc->hc_Flags & HCF_MSI) {
+            if(hc->hc_Flags & HCF_MSI) {
                 RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
                 HIDD_PCIDevice_ReleaseVectors(hc->hc_PCIDeviceObject);
                 hc->hc_Flags &= ~HCF_MSI;
@@ -470,16 +482,16 @@ APTR pciAllocAligned(struct PCIController *hc, struct MemEntry *alloc, ULONG Siz
 {
     alloc->me_Length = align + Size;
     alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
-    if (alloc->me_Un.meu_Addr) {
-        IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align-1)) & ~(align-1));
-        if ((addrAligned & (bounds - 1)) != ((addrAligned + Size -1 ) & (bounds-1))) {
+    if(alloc->me_Un.meu_Addr) {
+        IPTR addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (align - 1)) & ~(align - 1));
+        if((addrAligned & (bounds - 1)) != ((addrAligned + Size - 1) & (bounds - 1))) {
             pciusbDebug("PCI", "Re-allocating using bounds\n");
             FREEPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Un.meu_Addr);
             alloc->me_Length = bounds + Size;
             alloc->me_Un.meu_Addr = ALLOCPCIMEM(hc, hc->hc_PCIDriverObject, alloc->me_Length);
-            addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (bounds-1)) & ~(bounds-1));
+            addrAligned = (((IPTR)alloc->me_Un.meu_Addr + (bounds - 1)) & ~(bounds - 1));
         }
-        if (alloc->me_Un.meu_Addr) {
+        if(alloc->me_Un.meu_Addr) {
             pciusbDebug("PCI", "Allocated @ %p <0x%p, %u>\n", addrAligned, alloc->me_Un.meu_Addr, alloc->me_Length);
             return (APTR)addrAligned;
         }

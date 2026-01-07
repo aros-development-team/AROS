@@ -62,8 +62,7 @@
 
 struct RTIsoNode;
 
-struct PTDNode
-{
+struct PTDNode {
     struct MinNode              ptd_Node;
     APTR                        ptd_Descriptor;
     ULONG                       ptd_Phys;
@@ -87,8 +86,7 @@ struct PTDNode
 
 #define PCIUSB_ISO_PTD_COUNT    8
 
-struct RTIsoNode
-{
+struct RTIsoNode {
     struct MinNode              rtn_Node;
     struct IOUsbHWRTIso         *rtn_RTIso;
     struct IOUsbHWReq           *rtn_StdReq;
@@ -110,8 +108,7 @@ static inline struct IOUsbHWReq *pciusbIsoGetIOReq(struct RTIsoNode *rtn)
 }
 
 /* The unit node - private */
-struct PCIUnit
-{
+struct PCIUnit {
     struct Unit                 hu_Unit;
     LONG                        hu_UnitNo;
 #define PCIUSBUNIT_MASK     (1 << 31)                           /* Indicates if the unit is opened/allocated                    */
@@ -159,16 +156,14 @@ struct PCIUnit
 #endif
 };
 
-struct XHCIController
-{
+struct XHCIController {
     ULONG                       xc_Reserved;
 };
 
 /* HCITYPE_xxx, is the pci device interface */
 #define HCITYPE_XHCI                    0x30
 
-struct PCIController
-{
+struct PCIController {
     struct Node                 hc_Node;
     struct PCIDevice            *hc_Device;                         /* Uplink */
     struct PCIUnit              *hc_Unit;                           /* Uplink */
@@ -232,14 +227,14 @@ struct PCIController
     ULONG                       hc_FrameCounter;
     struct List                 hc_TDQueue;
     struct List                 hc_AbortQueue;
-    
+
     struct List                 hc_PeriodicTDQueue;
     struct List                 hc_CtrlXFerQueue;
     struct List                 hc_IntXFerQueue;
     struct List                 hc_IsoXFerQueue;
     struct List                 hc_BulkXFerQueue;
     struct MinList              hc_RTIsoHandlers;
-    
+
     struct Interrupt            hc_CompleteInt;
     struct Interrupt            hc_ResetInt;
 
@@ -248,7 +243,7 @@ struct PCIController
     UWORD                       hc_PortChangeMap[MAX_ROOT_PORTS];   /* Port Change Map                                                  */
     UWORD                       hc_PortChangeMask;                  /* mask of enabled change notifications                             */
     ULONG                       hc_portroute;
-    
+
     APTR                        hc_CPrivate;
     BOOL                        hc_complexrouting;
 };
@@ -276,8 +271,7 @@ struct PCIController
 /*
  * The device node - private
  */
-struct PCIDevice
-{
+struct PCIDevice {
     struct Device               hd_Device;                          /* standard */
     UWORD                       hd_Flags;                           /* various flags */
 #if defined(AROS_USE_LOGRES)

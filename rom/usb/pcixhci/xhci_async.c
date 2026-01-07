@@ -58,15 +58,15 @@ static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype, ULONG has_data)
 {
     ULONG setupflags = 0;
 
-     /*
-     * A Setup Stage TD consists of a single Setup Stage TRB.  The Setup Stage
-     * TRB does not define ENT/ISP/NS/CH fields, so those bit positions are
-     * reserved and must be kept clear.
-     *
-     * Keep only bits that are valid for Setup Stage TRBs (e.g. BEI),
-     * then add TYPE/IDT/TRT.
-     */
-    if (tdflags & TRBF_FLAG_BEI)
+    /*
+    * A Setup Stage TD consists of a single Setup Stage TRB.  The Setup Stage
+    * TRB does not define ENT/ISP/NS/CH fields, so those bit positions are
+    * reserved and must be kept clear.
+    *
+    * Keep only bits that are valid for Setup Stage TRBs (e.g. BEI),
+    * then add TYPE/IDT/TRT.
+    */
+    if(tdflags & TRBF_FLAG_BEI)
         setupflags |= TRBF_FLAG_BEI;
 
     setupflags |= (TRBF_FLAG_TRTYPE_SETUP | TRBF_FLAG_IDT);
@@ -81,9 +81,9 @@ static ULONG xhciTDSetupFlags(ULONG tdflags, ULONG txtype, ULONG has_data)
      */
     setupflags &= ~TRB_FLAG_SETUP_TRT_MASK;
 
-    if (!has_data) {
+    if(!has_data) {
         setupflags |= TRBF_FLAG_SETUP_TRT_NONE;
-    } else if (tdflags & TRBF_FLAG_DS_DIR) {
+    } else if(tdflags & TRBF_FLAG_DS_DIR) {
         setupflags |= TRBF_FLAG_SETUP_TRT_IN;
     } else {
         setupflags |= TRBF_FLAG_SETUP_TRT_OUT;
@@ -97,7 +97,7 @@ static ULONG xhciTDStatusFlags(ULONG tdflags)
     ULONG statusflags = 0;
 
     /* Status stage only needs the direction bit (IN=1, OUT=0) */
-    if (tdflags & TRBF_FLAG_DS_DIR)
+    if(tdflags & TRBF_FLAG_DS_DIR)
         statusflags |= TRBF_FLAG_DS_DIR;
 
     statusflags |= TRBF_FLAG_TRTYPE_STATUS;
@@ -113,9 +113,9 @@ static void xhciTDSetupInlinedata(UQUAD *inlinedata, struct IOUsbHWReq *ioreq, U
     outdatab[0] = ioreq->iouh_SetupData.bmRequestType;
     outdatab[1] = ioreq->iouh_SetupData.bRequest;
     UWORD *outdataw = (UWORD *)&outdatab[2];
-    outdataw[0]= AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
-    outdataw[1]= AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
-    outdataw[2]= AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
+    outdataw[0] = AROS_WORD2LE(ioreq->iouh_SetupData.wValue);
+    outdataw[1] = AROS_WORD2LE(ioreq->iouh_SetupData.wIndex);
+    outdataw[2] = AROS_WORD2LE(ioreq->iouh_SetupData.wLength);
 #else
     CopyMem(&ioreq->iouh_SetupData, inlinedata, sizeof(UQUAD));
 #endif
@@ -126,13 +126,12 @@ static BOOL isStandardTRBTransfer(struct IOUsbHWReq *ioreq, ULONG txtype)
     const UBYTE bm = ioreq->iouh_SetupData.bmRequestType;
     const UBYTE br = ioreq->iouh_SetupData.bRequest;
 
-    if (txtype != UHCMD_CONTROLXFER)
+    if(txtype != UHCMD_CONTROLXFER)
         return TRUE;
 
     /* Special-case: Standard Device request: SET_ADDRESS */
-    if (bm == (URTF_STANDARD | URTF_DEVICE) &&
-        br == USR_SET_ADDRESS)
-    {
+    if(bm == (URTF_STANDARD | URTF_DEVICE) &&
+            br == USR_SET_ADDRESS) {
         return FALSE;
     }
 
@@ -140,8 +139,8 @@ static BOOL isStandardTRBTransfer(struct IOUsbHWReq *ioreq, ULONG txtype)
 }
 
 static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *ioreq,
-    struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
-    ULONG trbflags)
+                                   struct pciusbXHCIIODevPrivate *driprivate, volatile struct pcisusbXHCIRing *epring,
+                                   ULONG trbflags)
 {
     UQUAD setupdata_inline;
     ULONG has_data = (ioreq->iouh_Data && ioreq->iouh_Length) ? 1 : 0;
@@ -151,25 +150,25 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
     ULONG sf = xhciTDSetupFlags(trbflags, UHCMD_CONTROLXFER, has_data);
     sf |= TRBF_FLAG_IDT;  /* Force IDT for Setup Stage TRB */
     pciusbXHCIDebugTRBV("xHCI",
-                    "Queueing SETUP TRB: inline=0x%08lx%08lx, len=%u\n",
-                    (ULONG)((setupdata_inline >> 32) & 0xffffffffUL),
-                    (ULONG)( setupdata_inline        & 0xffffffffUL),
-                    (unsigned)sizeof(ioreq->iouh_SetupData));
+                        "Queueing SETUP TRB: inline=0x%08lx%08lx, len=%u\n",
+                        (ULONG)((setupdata_inline >> 32) & 0xffffffffUL),
+                        (ULONG)(setupdata_inline        & 0xffffffffUL),
+                        (unsigned)sizeof(ioreq->iouh_SetupData));
     /* SETUP stage */
     queued = xhciQueueTRB_IO(hc, epring, setupdata_inline,
                              sizeof(ioreq->iouh_SetupData),
                              sf, &ioreq->iouh_Req);
     pciusbXHCIDebugV("xHCI",
-                    "xhciQueueTRB (SETUP) -> queued=%d\n",
-                    (int)queued);
+                     "xhciQueueTRB (SETUP) -> queued=%d\n",
+                     (int)queued);
 
-    if (queued == -1)
+    if(queued == -1)
         return FALSE;
 
     driprivate->dpSTRB = queued;
 
     /* DATA stage (if any) */
-    if (has_data) {
+    if(has_data) {
         /*
          * Control transfers use separate TDs:
          *  - Setup Stage TD:   single Setup Stage TRB (no Chain bit)
@@ -180,18 +179,18 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
          */
         queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, FALSE);
         pciusbXHCIDebugTRBV("xHCI",
-                        "xhciQueuePayloadTRBs (DATA) -> queued=%d\n",
-                        (int)queued);
+                            "xhciQueuePayloadTRBs (DATA) -> queued=%d\n",
+                            (int)queued);
     } else {
         driprivate->dpTxSTRB = driprivate->dpSTRB;
         driprivate->dpTxETRB = (epring->next > 0) ? (epring->next - 1) : (XHCI_EVENT_RING_TRBS - 1);
         queued = driprivate->dpSTRB;
         pciusbXHCIDebugTRBV("xHCI",
-                        "No DATA stage, using dpSTRB=%d\n",
-                        (int)queued);
+                            "No DATA stage, using dpSTRB=%d\n",
+                            (int)queued);
     }
 
-    if (queued == -1)
+    if(queued == -1)
         return FALSE;
 
     /*
@@ -209,7 +208,7 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
         /* Status Stage must terminate the TD: never chained. */
         status_tdflags &= ~TRBF_FLAG_CH;
 
-        if (has_data) {
+        if(has_data) {
             /* Opposite of DATA direction. */
             status_tdflags ^= TRBF_FLAG_DS_DIR;
         } else {
@@ -218,16 +217,16 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
         }
 
         pciusbXHCIDebugTRBV("xHCI",
-                        "Queueing STATUS TRB\n");
+                            "Queueing STATUS TRB\n");
         ULONG stf = xhciTDStatusFlags(status_tdflags);
         queued = xhciQueueTRB_IO(hc, epring, 0, 0,
                                  stf, &ioreq->iouh_Req);
         pciusbXHCIDebugTRBV("xHCI",
-                        "xhciQueueTRB (STATUS) -> queued=%d\n",
-                        (int)queued);
+                            "xhciQueueTRB (STATUS) -> queued=%d\n",
+                            (int)queued);
     }
 
-    if (queued != -1) {
+    if(queued != -1) {
         driprivate->dpSttTRB = queued;
     }
 
@@ -245,10 +244,10 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
 #if defined(DEBUG) && (DEBUG > 1)
     {
-        struct Task * thisTask = FindTask(NULL);
+        struct Task *thisTask = FindTask(NULL);
         pciusbXHCIDebugV("xHCI",
-                        DEBUGCOLOR_SET "Task @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n",
-                        thisTask, thisTask->tc_IDNestCnt, thisTask->tc_TDNestCnt);
+                         DEBUGCOLOR_SET "Task @ 0x%p, IDnest %d TDNest %d" DEBUGCOLOR_RESET" \n",
+                         thisTask, thisTask->tc_IDNestCnt, thisTask->tc_TDNestCnt);
     }
 #endif
 
@@ -259,8 +258,8 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
     ForeachNodeSafe(txlist, ioreq, ionext) {
         pciusbXHCIDebugV("xHCI",
-                        DEBUGCOLOR_SET "---- IOReq start: %p ----" DEBUGCOLOR_RESET" \n",
-                        ioreq);
+                         DEBUGCOLOR_SET "---- IOReq start: %p ----" DEBUGCOLOR_RESET" \n",
+                         ioreq);
 
         UWORD effdir = xhciEffectiveDataDir(ioreq);
         devadrep = xhciDevEPKey(ioreq);
@@ -275,27 +274,27 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                         ioreq->iouh_Req.io_Command);
 
         pciusbXHCIDebugV("xHCI",
-                        "    Flags=0x%08lx, NakTO=%u, MaxPkt=%u, Interval=%u\n",
-                        ioreq->iouh_Flags,
-                        ioreq->iouh_NakTimeout,
-                        ioreq->iouh_MaxPktSize,
-                        ioreq->iouh_Interval);
+                         "    Flags=0x%08lx, NakTO=%u, MaxPkt=%u, Interval=%u\n",
+                         ioreq->iouh_Flags,
+                         ioreq->iouh_NakTimeout,
+                         ioreq->iouh_MaxPktSize,
+                         ioreq->iouh_Interval);
 
-        if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) {
+        if(ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER) {
             pciusbXHCIDebugV("xHCI",
-                            "    SETUP: bmReqType=0x%02x bReq=0x%02x wValue=0x%04x wIndex=0x%04x wLength=%u\n",
-                            ioreq->iouh_SetupData.bmRequestType,
-                            ioreq->iouh_SetupData.bRequest,
-                            (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
-                            (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wIndex),
-                            (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wLength));
+                             "    SETUP: bmReqType=0x%02x bReq=0x%02x wValue=0x%04x wIndex=0x%04x wLength=%u\n",
+                             ioreq->iouh_SetupData.bmRequestType,
+                             ioreq->iouh_SetupData.bRequest,
+                             (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
+                             (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wIndex),
+                             (unsigned)AROS_LE2WORD(ioreq->iouh_SetupData.wLength));
         }
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
             pciusbWarn("xHCI",
-                            DEBUGWARNCOLOR_SET "DevEP %02lx in use, IOReq=%p requeued/left in list" DEBUGCOLOR_RESET" \n",
-                            devadrep, ioreq);
+                       DEBUGWARNCOLOR_SET "DevEP %02lx in use, IOReq=%p requeued/left in list" DEBUGCOLOR_RESET" \n",
+                       devadrep, ioreq);
             continue;
         }
 
@@ -306,7 +305,7 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
         WORD queued = -1;
         BOOL txdone = FALSE;
 
-        if (!driprivate || !driprivate->dpDevice) {
+        if(!driprivate || !driprivate->dpDevice) {
             pciusbError("xHCI",
                         DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
@@ -318,10 +317,10 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
 
         devCtx = driprivate->dpDevice;
 
-        if (isStandardTRBTransfer(ioreq, txtype)) {
+        if(isStandardTRBTransfer(ioreq, txtype)) {
             pciusbXHCIDebugV("xHCI",
-                            "Normal transfer path: txtype=%lx, DevAddr=%u, EP=%u\n",
-                            txtype, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+                             "Normal transfer path: txtype=%lx, DevAddr=%u, EP=%u\n",
+                             txtype, ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
 
             trbflags |= xhciBuildDataTRBFlags(ioreq, txtype);
 
@@ -329,46 +328,46 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             pciusbXHCIDebugV("xHCI",
-                            DEBUGCOLOR_SET "Frame=%u: Nak timeout for DevEP=%02lx set to %u" DEBUGCOLOR_RESET" \n",
-                            hc->hc_FrameCounter, devadrep,
-                            unit->hu_NakTimeoutFrame[devadrep]);
+                             DEBUGCOLOR_SET "Frame=%u: Nak timeout for DevEP=%02lx set to %u" DEBUGCOLOR_RESET" \n",
+                             hc->hc_FrameCounter, devadrep,
+                             unit->hu_NakTimeoutFrame[devadrep]);
 
-            if (txtype != UHCMD_CONTROLXFER) {
+            if(txtype != UHCMD_CONTROLXFER) {
                 driprivate->dpSTRB = (UWORD)-1;
                 driprivate->dpSttTRB = (UWORD)-1;
             }
 
-            if (xhciActivateEndpointTransfer(hc, unit, ioreq, driprivate, devadrep, &epring)) {
-                if (txtype == UHCMD_CONTROLXFER) {
+            if(xhciActivateEndpointTransfer(hc, unit, ioreq, driprivate, devadrep, &epring)) {
+                if(txtype == UHCMD_CONTROLXFER) {
                     txdone = xhciQueueControlStages(hc, ioreq, driprivate, epring, trbflags);
                 } else {
                     queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, TRUE);
-                    if (queued != -1)
+                    if(queued != -1)
                         txdone = TRUE;
                 }
 
-                if (txdone) {
+                if(txdone) {
                     AddTail(&hc->hc_TDQueue,
                             (struct Node *) ioreq);
                     pciusbXHCIDebugTRB("xHCI",
-                                    DEBUGCOLOR_SET "Transaction queued in TRB #%u (Dev=%u EP=%u)" DEBUGCOLOR_RESET" \n",
-                                    driprivate->dpTxSTRB,
-                                    ioreq->iouh_DevAddr,
-                                    ioreq->iouh_Endpoint);
+                                       DEBUGCOLOR_SET "Transaction queued in TRB #%u (Dev=%u EP=%u)" DEBUGCOLOR_RESET" \n",
+                                       driprivate->dpTxSTRB,
+                                       ioreq->iouh_DevAddr,
+                                       ioreq->iouh_Endpoint);
                 }
             }
 
-            if (!txdone) {
+            if(!txdone) {
                 pciusbError("xHCI",
-                    DEBUGWARNCOLOR_SET "xHCI: txdone=FALSE, failed to submit transaction (Dev=%u EP=%u, txtype=%lx)" DEBUGCOLOR_RESET" \n",
-                    ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, txtype);
+                            DEBUGWARNCOLOR_SET "xHCI: txdone=FALSE, failed to submit transaction (Dev=%u EP=%u, txtype=%lx)" DEBUGCOLOR_RESET" \n",
+                            ioreq->iouh_DevAddr, ioreq->iouh_Endpoint, txtype);
 
                 driprivate->dpSTRB   = (UWORD)-1;
                 driprivate->dpTxSTRB = (UWORD)-1;
                 driprivate->dpTxETRB = (UWORD)-1;
                 driprivate->dpSttTRB = (UWORD)-1;
 
-                if (ioreq->iouh_Req.io_Error) {
+                if(ioreq->iouh_Req.io_Error) {
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
                 } else {
                     Disable();
@@ -377,15 +376,15 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 }
             } else {
                 pciusbXHCIDebugV("xHCI",
-                                "Ringing doorbell: slot=%u epid=%u\n",
-                                driprivate->dpDevice->dc_SlotID,
-                                driprivate->dpEPID);
+                                 "Ringing doorbell: slot=%u epid=%u\n",
+                                 driprivate->dpDevice->dc_SlotID,
+                                 driprivate->dpEPID);
                 xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
             }
         }
 
         pciusbXHCIDebugV("xHCI",
-                        "---- IOReq done: %p ----\n", ioreq);
+                         "---- IOReq done: %p ----\n", ioreq);
     }
 
     pciusbXHCIDebugV("xHCI", "%s: exit\n", __func__);
