@@ -63,6 +63,9 @@ extern const struct PsdUWStringMap usbvendorids[];
 extern struct ExecBase *SysBase;
 #endif
 
+// Define the following to disable "legacy" driver support.
+//#define POSEIDON_NOLEGACYDRIVERS
+
 /* Static data */
 const char GM_UNIQUENAME(libname)[]     = MOD_NAME_STRING;
 
@@ -3402,19 +3405,17 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
-    /* For legacy drivers, the RootHub is highspeed if -:
-     *    it ISNT superspeed,
-     *    USB version is > 2.0,
-     *    proto > 0
+#if !defined(POSEIDON_NOLEGACYDRIVERS)
+    /* For legacy drivers, the RootHub is highspeed if
+     * the USB version is > 2.0,
      */
     if ((!pd->pd_Hub) &&
         (pd->pd_Hardware->phw_DriverVers < 0x300) &&
-        (!(pd->pd_Flags & PDFF_SUPERSPEED)) &&
-        (pd->pd_USBVers >= 0x200) &&
-        (pd->pd_DevProto > 0)) {
+        (pd->pd_USBVers >= 0x200)) {
         pd->pd_Flags &= ~PDFF_LOWSPEED;
         pd->pd_Flags |= PDFF_HIGHSPEED;
     }
+#endif
 
     /*
         The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called
