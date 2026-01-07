@@ -22,6 +22,16 @@
 #undef base
 #endif
 #define base (hc->hc_Device)
+#if defined(AROS_USE_LOGRES)
+#ifdef LogHandle
+#undef LogHandle
+#endif
+#ifdef LogResBase
+#undef LogResBase
+#endif
+#define LogHandle (hc->hc_LogRHandle)
+#define LogResBase (base->hd_LogResBase)
+#endif
 
 static const char strXhciInitTaskName[] = "xHCI init";
 static const char strHardwareNamePrefixFmt[] = "PCI USB %u.";
