@@ -11,6 +11,7 @@
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
+#include <stdio.h>
 #include <string.h>
 
 #include "uhwcmd.h"
@@ -218,7 +219,6 @@ takeownership:
     }
 
     UWORD xhciversion;
-    char *controllername = &hc->hc_Node.ln_Name[16];
     xhciversion = AROS_LE2LONG(xhciregs->hciversion) & 0xFFFF;
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "  HCIVERSION: 0x%04x" DEBUGCOLOR_RESET" \n", xhciversion);
     hc->hc_HCIVersionMajor = (UBYTE)((xhciversion >> 8) & 0xFF);
@@ -236,12 +236,6 @@ takeownership:
     }
     hc->hc_USBVersionMajor = usbMajor;
     hc->hc_USBVersionMinor = usbMinor;
-    if (xhciversion == 0x0090)
-        controllername[10] = '0';
-    else if (xhciversion == 0x0100)
-        controllername[10] = '1';
-    else if (xhciversion == 0x0320)
-        controllername[10] = '2';
 
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS1: 0x%08x (MaxIntr %lu)" DEBUGCOLOR_RESET" \n", hcsparams1, xhciMaxIntrs);
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  HCSPARAMS2: 0x%08x" DEBUGCOLOR_RESET" \n", hcsparams2);
@@ -437,17 +431,48 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
 {
     struct PCIController *hc = (struct PCIController *)GetTagData(aHidd_DriverData, 0, msg->attrList);
     struct TagItem xhcic_tags[] = {
-        {aHidd_HardwareName,    0                       },
-        {TAG_MORE,              (IPTR)msg->attrList     }
+        {aHidd_HardwareName,    0       },
+        {TAG_MORE,              0       }
     };
+    struct pRoot_New xcNewMsg;
+    xcNewMsg.mID = msg->mID;
+    xcNewMsg.attrList = &xhcic_tags[0];
+    if ((xhcic_tags[1].ti_Data = (IPTR)msg->attrList) == 0)
+        xhcic_tags[1].ti_Tag = TAG_DONE;
 
-    if (hc && !hc->hc_CPrivate) {
+    if (!hc)
+        return NULL;
+
+    if (!hc->hc_CPrivate) {
+        /*
+         * Initialize the controllers structures,
+         * and query supported features
+         */
         if (!XHCIController__Init(hc)) {
             return NULL;
         }
     }
 
-    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    /* Construct the hardware name ... */
+    {
+        char name_buf[64];
+        char *hardware_name = NULL;
+
+        sprintf(name_buf, "PCI USB %u.", hc->hc_USBVersionMajor);
+        if (hc->hc_USBVersionMinor == 0xFF)
+            sprintf(name_buf + 10, "x");
+        else
+            sprintf(name_buf + 10, "%u", hc->hc_USBVersionMinor);
+        sprintf(name_buf + 11, " xHCI Host controller");
+
+        hardware_name = AllocVec(strlen(name_buf) + 1, MEMF_CLEAR);
+        if (hardware_name != NULL) {
+            strcpy(hardware_name, name_buf);
+            xhcic_tags[0].ti_Data = (IPTR)hardware_name;
+        }
+    }
+
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&xcNewMsg);
 }
 
 VOID XHCIController__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
@@ -508,7 +533,7 @@ int XHCIControllerOOPStartup(struct PCIDevice *hd)
     return hd->hd_USBXHCIControllerClass != NULL;
 }
 
-static void OOP_XHCIController_Shutdown(struct PCIDevice *hd)
+static void XHCIControllerOOPShutdown(struct PCIDevice *hd)
 {
     if (hd->hd_USBXHCIControllerClass != NULL) {
         OOP_RemoveClass(hd->hd_USBXHCIControllerClass);

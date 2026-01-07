@@ -212,30 +212,17 @@ BOOL pciInit(struct PCIDevice *hd)
                 if ((hd->hd_USBXHCIControllerClass) && (root)) {
                     struct TagItem usbc_tags[] = {
                         {aHidd_Name,                0               },
-                        {aHidd_HardwareName,        0               },
                         {aHidd_Producer,            hc->hc_VendID   },
                         {aHidd_Product,             hc->hc_ProdID   },
                         {aHidd_DriverData,          (IPTR)hc        },
                         {TAG_DONE,                  0               }
                     };
-                    char *usb_chipset = "xHCI";
-                    int usb_min = -1, usb_maj = 3;
-
-                    hc->hc_Node.ln_Name = AllocVec(16 + 34, MEMF_CLEAR);
+                    int name_len = sizeof("pcixhci.device/") - 1 + 10 + 1;
+                    hc->hc_Node.ln_Name = AllocVec(name_len, MEMF_CLEAR);
                     hc->hc_Node.ln_Pri = HCITYPE_XHCI;
                     sprintf(hc->hc_Node.ln_Name, "pcixhci.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
                     usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
-
-                    usbc_tags[1].ti_Data = (IPTR)&hc->hc_Node.ln_Name[16];
-
-                    sprintf((char *)usbc_tags[1].ti_Data, "PCI USB %u.",  usb_maj);
-                    if (usb_min < 0)
-                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "x");
-                    else
-                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "%u", usb_min);
-                    sprintf((char *)(usbc_tags[1].ti_Data + 11), " %s Host controller",  usb_chipset);
-
-					pciusbWarn("PCI", "Registering '%s'\n", (char *)usbc_tags[1].ti_Data);
+                    pciusbWarn("PCI", "Instantiating xHCI controller class for '%s'\n", hc->hc_Node.ln_Name);
                     HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
                 }
                 hc->hc_Unit = hu;
