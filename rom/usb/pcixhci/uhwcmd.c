@@ -534,11 +534,11 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_Description, taglist))) {
-        *((STRPTR *) tag->ti_Data) = "Generic adaptive host controller driver for PCI cards";
+        *((STRPTR *) tag->ti_Data) = "xHCI host controller driver for PCI cards";
         count++;
     }
     if((tag = FindTagItem(UHA_Copyright, taglist))) {
-        *((STRPTR *) tag->ti_Data) ="\xA9""2023-2025 The AROS Dev Team";
+        *((STRPTR *) tag->ti_Data) ="\xA9""2023-2026 The AROS Dev Team";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist))) {
