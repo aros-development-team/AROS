@@ -478,7 +478,7 @@ int main(int argc, char *argv[])
                                             EA_MaxStreams, &epmaxstreams,
                                             TAG_END);
                                 Printf("      · Endpoint %ld (%s %s)\n"
-                                       "        MaxPktSize: %s%ld\n",
+                                       "          MaxPktSize: %s%ld\n",
                                        epnum, psdNumToStr(NTS_TRANSTYPE, eptranstype, "?"),
                                        episin ? "<-[ IN" : "OUT ]->",
                                        (epnumtransmu == 2) ? "2x " : ((epnumtransmu == 3) ? "3x " : ""),
@@ -486,31 +486,31 @@ int main(int argc, char *argv[])
 
                                 if(devishighspeed || devissuperspeed || ((eptranstype != USEAF_CONTROL) && (eptranstype != USEAF_BULK)))
                                 {
-                                    Printf("        %s  : %ld %s\n",
+                                    Printf("          %s  : %ld %s\n",
                                            (((eptranstype == USEAF_CONTROL) || (eptranstype == USEAF_BULK)) && (devishighspeed || devissuperspeed)) ? "NAK-Rate" : "Interval",
                                            epinterval,
                                            (devishighspeed || devissuperspeed) ? "µFrames" : "ms");
                                 }
                                 if(devissuperspeed)
                                 {
-                                    Printf("        Superspeed : bursts=%ld, attr=0x%02lx, bytes/interval=%ld\n",
+                                    Printf("          Superspeed : bursts=%ld, attr=0x%02lx, bytes/interval=%ld\n",
                                            epmaxburst, epcompattrs, epbytesperint);
                                 }
                                 if(epmaxstreams)
                                 {
                                     if(epstreambase)
                                     {
-                                        Printf("        USB3 Streams: max=%ld, base=%ld\n",
+                                        Printf("          USB3 Streams: max=%ld, base=%ld\n",
                                                epmaxstreams, epstreambase);
                                     } else {
-                                        Printf("        USB3 Streams: max=%ld (disabled)\n",
+                                        Printf("          USB3 Streams: max=%ld (disabled)\n",
                                                epmaxstreams);
                                     }
                                 }
                                 if(eptranstype == USEAF_ISOCHRONOUS)
                                 {
-                                     Printf("        SyncType  : %s\n"
-                                            "        UsageType : %s\n",
+                                     Printf("          SyncType  : %s\n"
+                                            "          UsageType : %s\n",
                                             psdNumToStr(NTS_SYNCTYPE, epsynctype, "?"),
                                             psdNumToStr(NTS_USAGETYPE, epusagetype, "?"));
                                 }
