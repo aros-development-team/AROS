@@ -70,7 +70,7 @@ BOOL uhwOpenTimer(struct DenebUnit *unit, struct DenebDevice *base)
         {
             if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) unit->hu_TimerReq, 0))
             {
-                unit->hu_TimerReq->tr_node.io_Message.mn_Node.ln_Name = "ReplayUSB hardware";
+                unit->hu_TimerReq->tr_node.io_Message.mn_Node.ln_Name = "DenebUSB hardware";
                 unit->hu_TimerReq->tr_node.io_Command = TR_ADDREQUEST;
                 KPRINTF(1, ("opened timer device\n"));
                 return(TRUE);
@@ -429,7 +429,7 @@ struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
                 unit->hu_IsoBusy = 0x00000000; // none active
 
                 unit->hu_Level6Int.is_Node.ln_Type = NT_INTERRUPT;
-                unit->hu_Level6Int.is_Node.ln_Name = "ReplayUSB Rocks";
+                unit->hu_Level6Int.is_Node.ln_Name = "DenebUSB Rocks";
 #ifndef ZORRO_II
                 unit->hu_Level6Int.is_Node.ln_Pri  = 127;
 #else
@@ -439,13 +439,13 @@ struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
                 unit->hu_Level6Int.is_Code = (void (*)(void)) &uhwLevel6Int;
 
                 unit->hu_SoftInt.is_Node.ln_Type = NT_INTERRUPT;
-                unit->hu_SoftInt.is_Node.ln_Name = "ReplayUSB Control";
+                unit->hu_SoftInt.is_Node.ln_Name = "DenebUSB Control";
                 unit->hu_SoftInt.is_Node.ln_Pri  = 0;
                 unit->hu_SoftInt.is_Data = unit;
                 unit->hu_SoftInt.is_Code = (void (*)(void)) &uhwSoftInt;
 
                 unit->hu_NakTimeoutInt.is_Node.ln_Type = NT_INTERRUPT;
-                unit->hu_NakTimeoutInt.is_Node.ln_Name = "ReplayUSB NakTimeout";
+                unit->hu_NakTimeoutInt.is_Node.ln_Name = "DenebUSB NakTimeout";
                 unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
                 unit->hu_NakTimeoutInt.is_Data = unit;
                 unit->hu_NakTimeoutInt.is_Code = (void (*)(void)) &uhwNakTimeoutInt;
@@ -463,9 +463,9 @@ struct Unit *Open_Unit(struct IOUsbHWReq *ioreq,
                 uhwHWInit(unit);
 
 #ifndef NODMA
-                nt->tc_Node.ln_Name = "ReplayUSB DMA Handler";
+                nt->tc_Node.ln_Name = "DenebUSB DMA Handler";
 #else
-                nt->tc_Node.ln_Name = "ReplayUSB PIO Transfer";
+                nt->tc_Node.ln_Name = "DenebUSB PIO Transfer";
 #endif
                 nt->tc_Node.ln_Type = NT_TASK;
                 nt->tc_Node.ln_Pri = 12;
@@ -732,15 +732,15 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if(tag = FindTagItem(UHA_Manufacturer, taglist))
     {
-        *((STRPTR *) tag->ti_Data) = "Chris Hodges; adapted to FPGAArcade Replay by Erik Hemming";
+        *((STRPTR *) tag->ti_Data) = "Chris Hodges; FPGAArcade Replay adaptations by Erik Hemming";
         count++;
     }
     if(tag = FindTagItem(UHA_ProductName, taglist))
     {
 #ifndef __MORPHOS__
-        *((STRPTR *) tag->ti_Data) = "ReplayUSB EHCI USB Host Controller";
+        *((STRPTR *) tag->ti_Data) = "DenebUSB EHCI USB Host Controller";
 #else
-        *((STRPTR *) tag->ti_Data) = "ReplayUSB EHCI USB Host Controller (MorphOS)";
+        *((STRPTR *) tag->ti_Data) = "DenebUSB EHCI USB Host Controller (MorphOS)";
 #endif
         count++;
     }
@@ -764,7 +764,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if(tag = FindTagItem(UHA_Copyright, taglist))
     {
-        *((STRPTR *) tag->ti_Data) = "Based on denebusb  2007-2014 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) = "2007-2014 Chris Hodges";
         count++;
     }
 #if (0)

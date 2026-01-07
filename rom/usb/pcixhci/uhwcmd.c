@@ -415,6 +415,9 @@ WORD cmdUsbReset(struct IOUsbHWReq *ioreq,
     unit->hu_RootHubAddr = 0;
 
     if(ioreq->iouh_State & UHSF_OPERATIONAL) {
+        /* for poseidon 5/UHA_DriverVersion 0x300 we need to return the root port speed after UHCMD_USBRESET */
+        ioreq->iouh_Flags &= ~(UHFF_HIGHSPEED | UHFF_LOWSPEED);
+        ioreq->iouh_Flags |= UHFF_SUPERSPEED;
         return RC_OK;
     }
     return UHIOERR_USBOFFLINE;
@@ -557,7 +560,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
         count++;
     }
     if((tag = FindTagItem(UHA_DriverVersion, taglist))) {
-        *((ULONG *) tag->ti_Data) = 0x220;
+        *((ULONG *) tag->ti_Data) = 0x300;
         count++;
     }
     if((tag = FindTagItem(UHA_Capabilities, taglist))) {

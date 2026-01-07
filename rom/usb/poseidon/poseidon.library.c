@@ -3402,12 +3402,13 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
     vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
 
-    /* RootHub is atleast highspeed if -:
+    /* For legacy drivers, the RootHub is highspeed if -:
      *    it ISNT superspeed,
      *    USB version is > 2.0,
      *    proto > 0
      */
     if ((!pd->pd_Hub) &&
+        (pd->pd_Hardware->phw_DriverVers < 0x300) &&
         (!(pd->pd_Flags & PDFF_SUPERSPEED)) &&
         (pd->pd_USBVers >= 0x200) &&
         (pd->pd_DevProto > 0)) {
@@ -3991,125 +3992,267 @@ struct PsdHardware * pFindHardware(LIBBASETYPEPTR ps, STRPTR name, ULONG unit)
 }
 /* \\\ */
 
+/* Helpers: map the post-reset IOReq speed flags into the PsdDevice flags
+ * that psdEnumerateDevice() reads via DA_Is*speed attributes.
+ *
+ * force_usb2_view:
+ *   - FALSE: keep the real link speed (SS/HS/LS as reported by the HCD).
+ *   - TRUE : when the HCD reports SS, treat it as at least HS for the
+ *            “normal” (USB2) root hub enumeration path.
+ */
+
+/* TODO: Document UHCMD_USBRESET for poseidon 5
+ * controllers device driver is expected to leave the ioreq flags
+ * in the state defining the port speed for the root hub connection
+ */
+static VOID pApplySpeedFromReset(struct PsdDevice *pd,
+                                 struct PsdPipe *pp,
+                                 BOOL force_usb2_view)
+{
+    ULONG f = pp->pp_IOReq.iouh_Flags;
+
+    /* Clear any previous classification on the device */
+    pd->pd_Flags &= ~(PDFF_SUPERSPEED | PDFF_HIGHSPEED | PDFF_LOWSPEED);
+
+    if (force_usb2_view && (f & UHFF_SUPERSPEED)) {
+        /* USB2 roothub behind a USB3 link: treat as at least HS */
+        pd->pd_Flags |= PDFF_HIGHSPEED;
+    } else {
+        if (f & UHFF_SUPERSPEED)       pd->pd_Flags |= PDFF_SUPERSPEED;
+        else if (f & UHFF_HIGHSPEED)   pd->pd_Flags |= PDFF_HIGHSPEED;
+        else if (f & UHFF_LOWSPEED)    pd->pd_Flags |= PDFF_LOWSPEED;
+        /* else: Full-Speed (no PDFF_* speed bit set) */
+    }
+
+    /* Keep iouh_Flags coherent with the chosen PDFF_* speed (some HCDs look here). */
+    pp->pp_IOReq.iouh_Flags &= ~(UHFF_SUPERSPEED | UHFF_HIGHSPEED | UHFF_LOWSPEED);
+
+    if (pd->pd_Flags & PDFF_SUPERSPEED)      pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+    else if (pd->pd_Flags & PDFF_HIGHSPEED)  pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+    else if (pd->pd_Flags & PDFF_LOWSPEED)   pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
+}
+
+static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    if (pd) {
+        pFreeBindings(ps, pd);
+        pFreeDevice(ps, pd);
+    }
+}
+
 /* /// "psdEnumerateHardware()" */
 AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
          AROS_LHA(struct PsdHardware *, phw, A0),
          LIBBASETYPEPTR, ps, 14, psd)
 {
     AROS_LIBFUNC_INIT
-    struct PsdDevice *pd = NULL;
+
     struct PsdDevice *rootpd = NULL;
-    struct PsdPipe *pp;
-    struct MsgPort *mp;
-    LONG ioerr;
-    BOOL resetdone = FALSE;
+
+    struct MsgPort   *mp = NULL;
+
+    /* “Probe” device/pipe used to run USBRESET and (maybe) enumerate SS hub */
+    struct PsdDevice *probe_pd = NULL;
+    struct PsdPipe   *probe_pp = NULL;
+
+    ULONG reset_flags = 0;
+    LONG  ioerr = 0;
+    BOOL  resetdone = FALSE;
+    BOOL  ss_ok = FALSE;
 
     KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
 
-    if (phw->phw_Capabilities & UHCF_USB30) {
-        struct PsdDevice *sspd = NULL;
-        if((mp = CreateMsgPort())) {
-            Forbid();
-            sspd = psdAllocDevice(phw);
-            Permit();
-            if (sspd) {
-                BOOL hubconnect = FALSE;
-                if ((pp = psdAllocPipe(sspd, mp, NULL))) {
-                    sspd->pd_Flags |= (PDFF_CONNECTED | PDFF_SUPERSPEED);
+    mp = CreateMsgPort();
+    if(!mp) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Could not create MsgPort for root hub enumeration.");
+        return NULL;
+    }
 
-                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-                    ioerr = psdDoPipe(pp, NULL, 0);
-                    if(ioerr == UHIOERR_HOSTERROR) {
-                        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
-                        psdFreePipe(pp);
-                        pFreeBindings(ps, pd);
-                        pFreeDevice(ps, pd);
-                        DeleteMsgPort(mp);
-                        return(NULL);
-                    }
-                    psdDelayMS(100);
-                    resetdone = TRUE;
-                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
-                    KPRINTF(1, ("Enumerating SuperSpeed RootHub...\n"));
-                    if (psdEnumerateDevice(pp)) {
-                        hubconnect = TRUE;
-                        KPRINTF(1, ("SuperSpeed RootHub Enumeration finished!\n"));
-                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                                       "SuperSpeed root hub has been enumerated.");
-                        phw->phw_RootDevice = sspd;
-                        rootpd = sspd;
-                        psdSendEvent(EHMB_ADDDEVICE, sspd, NULL);
-                    } else {
-                        KPRINTF(1, ("Failed to find a SuperSpeed RootHub\n"));
-                        pFreeBindings(ps, sspd);
-                        pFreeDevice(ps, sspd);
-                    }
-                    psdFreePipe(pp);
-                }
-                if (!hubconnect) {
-                    pFreeBindings(ps, sspd);
-                    pFreeDevice(ps, sspd);
-                }
-            }
-            DeleteMsgPort(mp);
+    /* ------------------------------------------------------------
+     * 1) Create a device + pipe and run USBRESET once.
+     *    v0x300 HCD drivers leave iouh_Flags in a state
+     *    that indicates link speed (notably UHFF_SUPERSPEED).
+     * ------------------------------------------------------------ */
+    Forbid();
+    probe_pd = psdAllocDevice(phw);
+    Permit();
+
+    if(!probe_pd) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Could not allocate probe device for root hub enumeration.");
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    probe_pp = psdAllocPipe(probe_pd, mp, NULL);
+    if(!probe_pp) {
+        pFreeDevAndBindings(ps, probe_pd);
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    probe_pd->pd_Flags |= PDFF_CONNECTED;
+
+    probe_pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+    ioerr = psdDoPipe(probe_pp, NULL, 0);
+    if(ioerr == UHIOERR_HOSTERROR) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "UHCMD_USBRESET reset failed.");
+        psdFreePipe(probe_pp);
+        pFreeDevAndBindings(ps, probe_pd);
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    psdDelayMS(100);
+    resetdone = TRUE;
+
+    /* Capture post-reset flags. */
+    reset_flags = probe_pp->pp_IOReq.iouh_Flags;
+
+    /* Apply “true” speed view to the probe device/pipe first. */
+    pApplySpeedFromReset(probe_pd, probe_pp, FALSE);
+
+    /* ------------------------------------------------------------
+     * 2) If reset indicates SuperSpeed and the HCD is USB3-capable,
+     *    try to enumerate the SuperSpeed root hub.
+     * ------------------------------------------------------------ */
+    if ((phw->phw_Capabilities & UHCF_USB30) &&
+        (reset_flags & UHFF_SUPERSPEED))
+    {
+        KPRINTF(1, ("Reset indicates SuperSpeed; attempting SS RootHub...\n"));
+
+        probe_pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+
+        if (psdEnumerateDevice(probe_pp)) {
+            ss_ok = TRUE;
+
+            KPRINTF(1, ("SuperSpeed RootHub Enumeration finished!\n"));
+            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                            "SuperSpeed root hub has been enumerated.");
+
+            phw->phw_RootDevice = probe_pd;
+            rootpd = probe_pd;
+
+            psdSendEvent(EHMB_ADDDEVICE, probe_pd, NULL);
+        } else {
+            KPRINTF(1, ("SuperSpeed RootHub enumeration failed; will try normal hub.\n"));
+
+            psdFreePipe(probe_pp);
+            probe_pp = NULL;
+
+            pFreeDevAndBindings(ps, probe_pd);
+            probe_pd = NULL;
         }
     }
 
-    if (!(phw->phw_Capabilities & UHCF_USB30) ||
-        !phw->phw_RootDevice ||
-        phw->phw_NumRootHubs > 1) {
-        if((mp = CreateMsgPort())) {
+    /* If SS enumeration succeeded, the probe pipe is no longer needed. */
+    if (ss_ok && probe_pp) {
+        psdFreePipe(probe_pp);
+        probe_pp = NULL;
+        /* probe_pd is now owned/managed as a live enumerated device */
+    }
+
+    /* ------------------------------------------------------------
+     * 3) Enumerate the “normal” root hub if:
+     *    (a) link is not SS, or SS hub not found, OR
+     *    (b) SS hub found but driver reports >1 root hub.
+     * ------------------------------------------------------------ */
+    if (!ss_ok || (phw->phw_NumRootHubs > 1))
+    {
+        struct PsdDevice *pd = NULL;
+        struct PsdPipe   *pp = NULL;
+        BOOL hubconnect = FALSE;
+
+        /* Reuse probe device/pipe if SS was not enumerated and we still have them. */
+        if (!ss_ok && probe_pd && probe_pp) {
+            pd = probe_pd;
+            pp = probe_pp;
+        } else {
             Forbid();
             pd = psdAllocDevice(phw);
             Permit();
+
             if (pd) {
-                BOOL hubconnect = FALSE;
-                if((pp = psdAllocPipe(pd, mp, NULL))) {
-                    pd->pd_Flags |= PDFF_CONNECTED;
-                    if (!resetdone) {
-                        pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
-                        ioerr = psdDoPipe(pp, NULL, 0);
-                        if(ioerr == UHIOERR_HOSTERROR) {
-                            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "UHCMD_USBRESET reset failed.");
-                            psdFreePipe(pp);
-                            pFreeBindings(ps, pd);
-                            pFreeDevice(ps, pd);
-                            DeleteMsgPort(mp);
-                            return(NULL);
-                        }
-                        psdDelayMS(100); // wait for root hub to settle
-                    }
-                    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
-                    KPRINTF(20, ("Enumerating RootHub...\n"));
-                    if(psdEnumerateDevice(pp)) {
-                        hubconnect = TRUE;
-                        KPRINTF(1, ("RootHub Enumeration finished!\n"));
-                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Root hub has been enumerated.");
-                        if (!rootpd) {
-                            phw->phw_RootDevice = pd;
-                            rootpd = pd;
-                        }
-                        psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
-                    } else {
-                        KPRINTF(1, ("Failed to find a RootHub\n"));
-                    }
-                    psdFreePipe(pp);
-                }
-                if (!hubconnect) {
-                    pFreeBindings(ps, pd);
-                    pFreeDevice(ps, pd);
+                pp = psdAllocPipe(pd, mp, NULL);
+                if (!pp) {
+                    pFreeDevAndBindings(ps, pd);
+                    pd = NULL;
                 }
             }
-            DeleteMsgPort(mp);
+        }
+
+        if (pd && pp) {
+            pd->pd_Flags |= PDFF_CONNECTED;
+
+            /* Ensure normal-hub enumeration sees correct speed via DA_Is*speed:
+             * - Use post-reset speed flags; if SS is indicated, force HS view.
+             */
+            if (pp != probe_pp) {
+                /* Seed this new pipe with the speed bits learned from reset. */
+                pp->pp_IOReq.iouh_Flags |= (reset_flags & (UHFF_SUPERSPEED | UHFF_HIGHSPEED | UHFF_LOWSPEED));
+            }
+            pApplySpeedFromReset(pd, pp, TRUE);
+
+            /* If, for any reason, reset was not done above, do it now. */
+            if (!resetdone) {
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+                ioerr = psdDoPipe(pp, NULL, 0);
+                if(ioerr == UHIOERR_HOSTERROR) {
+                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                                    "UHCMD_USBRESET reset failed.");
+                    psdFreePipe(pp);
+                    pFreeDevAndBindings(ps, pd);
+                    DeleteMsgPort(mp);
+                    return NULL;
+                }
+                psdDelayMS(100);
+                resetdone = TRUE;
+
+                /* Re-apply speed after reset in case the HCD updated iouh_Flags. */
+                pApplySpeedFromReset(pd, pp, TRUE);
+            }
+
+            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+
+            KPRINTF(1, ("Enumerating normal RootHub...\n"));
+            if (psdEnumerateDevice(pp)) {
+                hubconnect = TRUE;
+
+                KPRINTF(1, ("RootHub Enumeration finished!\n"));
+                psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                "Root hub has been enumerated.");
+
+                /* Preserve SS root device as phw_RootDevice if present; only set if none. */
+                if (!rootpd) {
+                    phw->phw_RootDevice = pd;
+                    rootpd = pd;
+                }
+
+                psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
+            } else {
+                KPRINTF(1, ("Failed to enumerate normal RootHub\n"));
+            }
+
+            psdFreePipe(pp);
+
+            if (!hubconnect) {
+                pFreeDevAndBindings(ps, pd);
+            }
         }
     }
 
+    DeleteMsgPort(mp);
+
     if (!rootpd) {
-        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Root hub enumeration failed. Blame your hardware driver programmer.");
-        return(NULL);
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Root hub enumeration failed. Blame your hardware driver programmer.");
+        return NULL;
     }
 
-    return(rootpd);
+    return rootpd;
+
     AROS_LIBFUNC_EXIT
 }
 /* \\\ */
