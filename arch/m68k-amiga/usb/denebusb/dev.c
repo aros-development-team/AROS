@@ -2,7 +2,6 @@
 */
 
 #include "debug.h"
-#include "denebusb.device_VERSION.h"
 
 #include <proto/exec.h>
 #include <proto/expansion.h>
@@ -24,12 +23,12 @@
 
 #ifndef ZORRO_II
 #ifndef NODMA
-#define DEVNAME             "replaydmausb.device"
+#define DEVNAME             "denebdmausb.device"
 #else
-#define DEVNAME             "replayusb.device"
+#define DEVNAME             "denebusb.device"
 #endif
 #else
-#define DEVNAME             "replayz2usb.device"
+#define DEVNAME             "denebz2usb.device"
 #endif
 
 #if !defined(__AROS__)
