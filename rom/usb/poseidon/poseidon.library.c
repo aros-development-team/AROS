@@ -3998,7 +3998,7 @@ struct PsdHardware * pFindHardware(LIBBASETYPEPTR ps, STRPTR name, ULONG unit)
  * force_usb2_view:
  *   - FALSE: keep the real link speed (SS/HS/LS as reported by the HCD).
  *   - TRUE : when the HCD reports SS, treat it as at least HS for the
- *            “normal” (USB2) root hub enumeration path.
+ *            "normal" (USB2) root hub enumeration path.
  */
 
 /* TODO: Document UHCMD_USBRESET for poseidon 5
@@ -4051,7 +4051,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
 
     struct MsgPort   *mp = NULL;
 
-    /* “Probe” device/pipe used to run USBRESET and (maybe) enumerate SS hub */
+    /* "Probe" device/pipe used to run USBRESET and (maybe) enumerate SS hub */
     struct PsdDevice *probe_pd = NULL;
     struct PsdPipe   *probe_pp = NULL;
 
@@ -4111,7 +4111,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     /* Capture post-reset flags. */
     reset_flags = probe_pp->pp_IOReq.iouh_Flags;
 
-    /* Apply “true” speed view to the probe device/pipe first. */
+    /* Apply "true" speed view to the probe device/pipe first. */
     pApplySpeedFromReset(probe_pd, probe_pp, FALSE);
 
     /* ------------------------------------------------------------
@@ -4155,7 +4155,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
     }
 
     /* ------------------------------------------------------------
-     * 3) Enumerate the “normal” root hub if:
+     * 3) Enumerate the "normal" root hub if:
      *    (a) link is not SS, or SS hub not found, OR
      *    (b) SS hub found but driver reports >1 root hub.
      * ------------------------------------------------------------ */
