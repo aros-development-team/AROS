@@ -260,12 +260,16 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
 
 struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 {
+#if defined(AROS_USE_LOGRES)
+    struct PCIDevice *base = hc->hc_Device;
+#endif
+
     struct RTIsoNode *rtn;
     UWORD ptdcount;
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, ioreq);
 
-    if (!hc || !ioreq)
+    if (!ioreq)
         return NULL;
 
     rtn = AllocMem(sizeof(*rtn), MEMF_CLEAR);
@@ -296,7 +300,11 @@ struct RTIsoNode *pciusbAllocStdIsoNode(struct PCIController *hc, struct IOUsbHW
 
 void pciusbFreeStdIsoNode(struct PCIController *hc, struct RTIsoNode *rtn)
 {
+#if defined(AROS_USE_LOGRES)
+    struct PCIDevice *base = hc->hc_Device;
+#else
     (void)hc;
+#endif
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, hc, rtn);
 

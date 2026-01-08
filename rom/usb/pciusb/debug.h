@@ -20,8 +20,8 @@
 #include <resources/log.h>
 #else
 #include <aros/debug.h>
-#include <proto/debug.h>
 #endif
+#include <proto/debug.h>
 
 // DEBUG 0 should equal undefined DEBUG
 #ifdef DEBUG
