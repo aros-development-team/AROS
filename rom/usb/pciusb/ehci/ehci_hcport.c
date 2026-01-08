@@ -44,7 +44,12 @@ void ehciCheckPortStatusChange(struct PCIController *hc)
     for(hciport = 0; hciport < hc->hc_NumPorts; hciport++, portreg += 4) {
         oldval = READREG32_LE(hc->hc_RegBase, portreg);
         // reflect port ownership (shortcut without hc->hc_PortNum[hciport], as usb 2.0 maps 1:1)
-        unit->hu_PortOwner[hciport] = (oldval & EHPF_NOTPORTOWNER) ? HCITYPE_UHCI : HCITYPE_EHCI;
+        {
+            struct PCIController *chc = unit->hu_PortMap11[hciport];
+            unit->hu_PortOwner[hciport] = (oldval & EHPF_NOTPORTOWNER)
+                ? (chc ? chc->hc_HCIType : HCITYPE_UHCI)
+                : HCITYPE_EHCI;
+        }
         if(oldval & EHPF_ENABLECHANGE) {
             hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
         }
@@ -154,7 +159,7 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
             newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
             pciusbEHCIDebug("EHCI", "Port status (reread)=%08lx\n", newval);
             newval |= EHPF_NOTPORTOWNER;
-            unit->hu_PortOwner[idx - 1] = HCITYPE_UHCI;
+            unit->hu_PortOwner[idx - 1] = chc ? chc->hc_HCIType : HCITYPE_UHCI;
             WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
             uhwDelayMS(90, unit->hu_TimerReq);
             pciusbEHCIDebug("EHCI", "Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND));

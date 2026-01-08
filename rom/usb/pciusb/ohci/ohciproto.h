@@ -24,8 +24,14 @@ BOOL ohciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD i
 
 #if defined(PCIUSB_OHCI_DEBUG)
 #define pciusbOHCIDebug(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#if defined(DEBUG) && (DEBUG > 1)
+#define pciusbOHCIDebugV(sub,fmt,args...) pciusbDebug(sub,fmt,##args)
+#else
+#define pciusbOHCIDebugV(sub,fmt,args...)
+#endif
 #else
 #define pciusbOHCIDebug(sub,fmt,args...)
+#define pciusbOHCIDebugV(sub,fmt,args...)
 #endif
 
 #ifdef base

@@ -217,8 +217,12 @@ BOOL pciInit(struct PCIDevice *hd)
     pciusbDebug("PCI", "USB Controller class @  0x%p\n", usbContrClass);
 
     // Create units with a list of host controllers having the same bus and device number.
+    //
+    // NOTE:
+    //   EHCI companions (UHCI/OHCI) may be enumerated in any order by the PCI HIDD.
+    //   Do not stop unit construction early just because an EHCI controller has been seen;
+    //   we must aggregate *all* USB HCIs for the same (bus,dev) into the same unit.
     while(hd->hd_TempHCIList.lh_Head->ln_Succ) {
-        BOOL    unitdone = FALSE, unithasv1 = FALSE, unithasv2 = FALSE;
         int     cnt;
 
         hu = AllocPooled(hd->hd_MemPool, sizeof(struct PCIUnit));
@@ -244,25 +248,6 @@ BOOL pciInit(struct PCIDevice *hd)
                 hu->hu_DevID = hc->hc_DevID;
 
             if (hc->hc_DevID == hu->hu_DevID) {
-                BOOL ignore = FALSE;
-                switch (hc->hc_HCIType) {
-                case HCITYPE_UHCI:
-                case HCITYPE_OHCI:
-                    if (unithasv2)
-                        unitdone = TRUE;
-                    unithasv1 = TRUE;
-                    break;
-                case HCITYPE_EHCI:
-                    if (unithasv2)
-                        unitdone = TRUE;
-                    unithasv2 = TRUE;
-                    break;
-                }
-                if (unitdone)
-                    break;
-
-                if (ignore)
-                    continue;
 
                 Remove(&hc->hc_Node);
 
@@ -334,6 +319,7 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 {
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
+    struct PCIController *ehcihc = NULL;
 
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
@@ -405,12 +391,24 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
         return FALSE;
     }
 
+    /*
+     * If an EHCI controller is present and it reports extended port routing,
+     * the port-to-companion mapping must be derived from the EHCI capability
+     * PORTROUTE register (hc_portroute / hc_complexrouting are set by ehciInit()).
+     */
+    ForeachNode(&hu->hu_Controllers, hc) {
+        if (hc->hc_HCIType == HCITYPE_EHCI) {
+            ehcihc = hc;
+            break;
+        }
+    }
+
     ForeachNode(&hu->hu_Controllers, hc) {
         if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI)) {
-            if(hc->hc_complexrouting) {
+            if(usb20ports && ehcihc && ehcihc->hc_complexrouting) {
                 ULONG locport = 0;
                 for(cnt = 0; cnt < usb20ports; cnt++) {
-                    if(((hc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum) {
+                    if(((ehcihc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum) {
                         pciusbDebug("PCI", "CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt);
                         hu->hu_PortMap11[cnt] = hc;
                         hu->hu_PortNum11[cnt] = locport;
@@ -437,8 +435,21 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     hu->hu_RootHubPorts = (usb11ports > usb20ports) ? usb11ports : usb20ports;
 
     for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++) {
-        hu->hu_PortOwner[cnt] =
-            hu->hu_PortMap20[cnt] ? HCITYPE_EHCI : HCITYPE_UHCI;
+        if (hu->hu_PortMap20[cnt] && ehcihc) {
+            ULONG portsc = READREG32_LE(ehcihc->hc_RegBase, EHCI_PORTSC1 + (cnt<<2));
+            if (portsc & EHPF_NOTPORTOWNER) {
+                struct PCIController *chc = hu->hu_PortMap11[cnt];
+                hu->hu_PortOwner[cnt] = chc ? chc->hc_HCIType : HCITYPE_UHCI;
+            } else {
+                hu->hu_PortOwner[cnt] = HCITYPE_EHCI;
+            }
+        } else if (hu->hu_PortMap20[cnt]) {
+            hu->hu_PortOwner[cnt] = HCITYPE_EHCI;
+        } else if (hu->hu_PortMap11[cnt]) {
+            hu->hu_PortOwner[cnt] = hu->hu_PortMap11[cnt]->hc_HCIType;
+        } else {
+            hu->hu_PortOwner[cnt] = HCITYPE_UHCI;
+        }
     }
 
     pciusbDebug("PCI", "Unit %ld: USB Board %08lx:\n", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK), hu->hu_DevID);

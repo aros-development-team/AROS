@@ -391,7 +391,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc)
                             // rare case where the zero packet would be lost, allocate etd and append zero packet.
                             etd = ehciAllocTD(hc);
                             if(!etd) {
-                                KPRINTF(200, "INTERNAL ERROR! This should not happen! Could not allocate zero packet TD\n");
+                                pciusbWarn("EHCI", "INTERNAL ERROR! This should not happen! Could not allocate zero packet TD\n");
                                 break;
                             }
                             predetd->etd_Succ = etd;
@@ -1568,7 +1568,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
             hc->hc_portroute = READREG32_LE(pciregbase, EHCI_HCSPPORTROUTE);
 #ifdef DEBUG
             for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
-                KPRINTF(100, "Port %ld maps to controller %ld\n", cnt, ((hc->hc_portroute >> (cnt<<2)) & 0xf));
+                pciusbEHCIDebug("EHCI", "Port %ld maps to controller %ld\n", cnt, ((hc->hc_portroute >> (cnt<<2)) & 0xf));
             }
 #endif
         } else {
@@ -1637,6 +1637,22 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, ehcihcp->ehc_EhciUsbCmd);
         SYNC;
 
+        /*
+         * VirtualBox (and some BIOSes) may leave the per-port Port Owner (PO) bit set,
+         * even after CONFIGFLAG is asserted. With PO=1, the EHCI controller will not
+         * report connect status for full/low-speed devices on those ports, because the
+         * companion controller owns them. Clear PO here to ensure EHCI initially owns
+         * all ports; the EHCI root-hub code will hand ports back to companions as needed.
+         */
+        for (cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
+            UWORD portreg = EHCI_PORTSC1 + (cnt << 2);
+            ULONG ps = READREG32_LE(hc->hc_RegBase, portreg);
+            if (ps & 0x00002000UL) { /* PO bit */
+                WRITEREG32_LE(hc->hc_RegBase, portreg, ps & ~0x00002000UL);
+                SYNC;
+            }
+        }
+
         pciusbEHCIDebug("EHCI", "HW Init done\n");
 
         pciusbEHCIDebug("EHCI", "HW Regs USBCMD=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD));
@@ -1652,9 +1668,6 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         return TRUE;
     }
 
-    /*
-        FIXME: What would the appropriate debug level be?
-    */
 init_fail:
     if(hc->hc_PCIMem.me_Un.meu_Addr) {
         if(hc->hc_PCIMemIsExec)
@@ -1674,7 +1687,7 @@ init_fail:
         FreeMem(ehcihcp, sizeof(struct EhciHCPrivate));
     }
     hc->hc_CPrivate = NULL;
-    KPRINTF(1000, "ehciInit returns FALSE...\n");
+    pciusbEHCIDebug("EHCI", "ehciInit returns FALSE...\n");
     return FALSE;
 }
 
@@ -1715,4 +1728,3 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu)
 
     pciusbEHCIDebug("EHCI", "Shut down complete\n");
 }
-
