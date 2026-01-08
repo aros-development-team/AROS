@@ -41,21 +41,26 @@ void ehciCheckPortStatusChange(struct PCIController *hc)
     ULONG oldval;
     UWORD portreg = EHCI_PORTSC1;
 
-    for(hciport = 0; hciport < hc->hc_NumPorts; hciport++, portreg += 4) {
-        UWORD gport = hc->hc_PortNum[hciport];
-        if (gport == 0xFF || gport >= MAX_ROOT_PORTS) {
-            /* Fallback: mapping not built yet; preserve historic 1:1 behavior */
-            gport = hciport;
-        }
+    /*
+     * Port-change handling operates on controller-local ports (hciport) but
+     * reports changes in the unit-global root-hub port space.
+     *
+     * With multi-controller devices (multiple EHCI instances per PCI device,
+     * and/or truncated global port tables), the local->global mapping may be
+     * absent for some ports. Guard against unmapped ports to avoid accessing
+     * unit-global arrays out of bounds.
+     */
+    UWORD maxports = hc->hc_NumPorts;
+    if (maxports > MAX_ROOT_PORTS)
+        maxports = MAX_ROOT_PORTS;
+
+    for(hciport = 0; hciport < maxports; hciport++, portreg += 4) {
+        UWORD gport;
 
         oldval = READREG32_LE(hc->hc_RegBase, portreg);
-        /* Reflect port ownership using global mapping. */
-        {
-            struct PCIController *chc = unit->hu_PortMap11[gport];
-            unit->hu_PortOwner[gport] = (oldval & EHPF_NOTPORTOWNER)
-                ? (chc ? chc->hc_HCIType : HCITYPE_UHCI)
-                : HCITYPE_EHCI;
-        }
+        gport = hc->hc_PortNum[hciport];
+
+        /* Always ACK clear-on-write change bits. */
         if(oldval & EHPF_ENABLECHANGE) {
             hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
         }
@@ -69,7 +74,22 @@ void ehciCheckPortStatusChange(struct PCIController *hc)
             hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
         }
         WRITEREG32_LE(hc->hc_RegBase, portreg, oldval);
-        pciusbEHCIDebug("EHCI", "PCI Int Port %ld (global %ld) Change %08lx\n", hciport + 1, gport + 1, oldval);
+
+        /* Skip unit-global reporting for unmapped ports. */
+        if ((gport == 0xFF) || (gport >= MAX_ROOT_PORTS)) {
+            pciusbEHCIDebug("EHCI", "PCI Int Port <unmapped> (local %ld) Change %08lx\n", hciport + 1, oldval);
+            continue;
+        }
+
+        /* Reflect port ownership (EHCI vs. companion) for this global port. */
+        {
+            struct PCIController *chc = unit->hu_PortMap11[gport];
+            unit->hu_PortOwner[gport] = (oldval & EHPF_NOTPORTOWNER)
+                ? (chc ? chc->hc_HCIType : HCITYPE_UHCI)
+                : HCITYPE_EHCI;
+        }
+
+        pciusbEHCIDebug("EHCI", "PCI Int Port %ld (local %ld) Change %08lx\n", gport + 1, hciport + 1, oldval);
         if(hc->hc_PortChangeMap[hciport]) {
             unit->hu_RootPortChanges |= 1UL<<(gport + 1);
         }
@@ -78,41 +98,14 @@ void ehciCheckPortStatusChange(struct PCIController *hc)
     uhwCheckRootHubChanges(unit);
 }
 
-static inline UWORD ehciResolveLocalPort(struct PCIController *hc, UWORD hciport, UWORD idx)
-{
-    UWORD gport;
-    UWORD lp;
-
-    if (idx == 0)
-        return hciport;
-
-    gport = idx - 1;
-
-    if (hciport < hc->hc_NumPorts && hc->hc_PortNum[hciport] == gport)
-        return hciport;
-
-    for (lp = 0; lp < hc->hc_NumPorts && lp < MAX_ROOT_PORTS; lp++) {
-        if (hc->hc_PortNum[lp] == gport)
-            return lp;
-    }
-
-    return hciport;
-}
-
 BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
-    struct PCIController *chc;
-    UWORD portreg;
-    ULONG oldval;
-    ULONG newval;
+    struct PCIController *chc = unit->hu_PortMap11[idx - 1];
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
     ULONG cnt;
     BOOL cmdgood = FALSE;
-
-    hciport = ehciResolveLocalPort(hc, hciport, idx);
-    chc = unit->hu_PortMap11[idx - 1];
-    portreg = EHCI_PORTSC1 + (hciport<<2);
-    oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
-    newval = oldval;
 
     pciusbEHCIDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
@@ -317,15 +310,10 @@ BOOL ehciSetFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcipor
 
 BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hciport, UWORD idx, UWORD val, WORD *retval)
 {
-    UWORD portreg;
-    ULONG oldval;
-    ULONG newval;
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
+    ULONG newval = oldval;
     BOOL cmdgood = FALSE;
-
-    hciport = ehciResolveLocalPort(hc, hciport, idx);
-    portreg = EHCI_PORTSC1 + (hciport<<2);
-    oldval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE); // these are clear-on-write!
-    newval = oldval;
 
     pciusbEHCIDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)\n", __func__, unit, hc, hciport, idx, val, retval);
 
@@ -392,12 +380,8 @@ BOOL ehciClearFeature(struct PCIUnit *unit, struct PCIController *hc, UWORD hcip
 
 BOOL ehciGetStatus(struct PCIController *hc, UWORD *mptr, UWORD hciport, UWORD idx, WORD *retval)
 {
-    UWORD portreg;
-    ULONG oldval;
-
-    hciport = ehciResolveLocalPort(hc, hciport, idx);
-    portreg = EHCI_PORTSC1 + (hciport<<2);
-    oldval = READREG32_LE(hc->hc_RegBase, portreg);
+    UWORD portreg = EHCI_PORTSC1 + (hciport<<2);
+    ULONG oldval = READREG32_LE(hc->hc_RegBase, portreg);
 
     pciusbEHCIDebug("EHCI", "%s(0x%p, 0x%p, %04x, %04x, 0x%p)\n", __func__, hc, mptr, hciport, idx, retval);
 
