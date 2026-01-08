@@ -1555,16 +1555,20 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
 #else
         str64bit = " ";
 #endif
+        /* Cache companion/routing information for later unit-level port mapping. */
+        ehcihcp->ehc_EhciNumCompanions = (UWORD)((hcsparams & EHSM_NUM_COMPANIONS) >> EHSS_NUM_COMPANIONS);
+        ehcihcp->ehc_EhciPortsPerComp  = (UWORD)((hcsparams & EHSM_PORTS_PER_COMP) >> EHSS_PORTS_PER_COMP);
+
         pciusbEHCIDebug("EHCI", "Found%sController @ 0x%p with %lu ports (%lu companions with %lu ports each)\n",
                     (ehcihcp->ehc_64BitCapable) ? str64bit : " ",
                     hc->hc_PCIDeviceObject, hc->hc_NumPorts,
-                    (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
-                    (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP);
+                    ehcihcp->ehc_EhciNumCompanions,
+                    ehcihcp->ehc_EhciPortsPerComp);
 
         /* Ensure schedule allocations stay within a 4GB segment when needed. */
 
         if(hcsparams & EHSF_EXTPORTROUTING) {
-            hc->hc_complexrouting = TRUE;
+            ehcihcp->ehc_ComplexRouting = TRUE;
             hc->hc_portroute = READREG32_LE(pciregbase, EHCI_HCSPPORTROUTE);
 #ifdef DEBUG
             for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
@@ -1572,7 +1576,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
             }
 #endif
         } else {
-            hc->hc_complexrouting = FALSE;
+            ehcihcp->ehc_ComplexRouting = FALSE;
         }
 
         pciusbEHCIDebug("EHCI", "HCCParams: 64 Bit=%s, ProgFrameList=%s, AsyncSchedPark=%s\n",
@@ -1659,9 +1663,12 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu)
         pciusbEHCIDebug("EHCI", "HW Regs USBSTS=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS));
         pciusbEHCIDebug("EHCI", "HW Regs FRAMECOUNT=%04lx\n", READREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT));
 
-        for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
-            hu->hu_PortMap20[cnt] = hc;
-            hc->hc_PortNum[cnt] = cnt;
+        /* Global port mapping is unit-level and may span multiple EHCI instances.
+         * It is constructed in pciAllocUnit() once all controllers for the PCI
+         * device are initialized.
+         */
+        for (cnt = 0; cnt < hc->hc_NumPorts && cnt < MAX_ROOT_PORTS; cnt++) {
+            hc->hc_PortNum[cnt] = 0xFF;
         }
 
         pciusbEHCIDebug("EHCI", "ehciInit returns TRUE...\n");

@@ -319,12 +319,18 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
 {
     struct PCIDevice *hd = hu->hu_Device;
     struct PCIController *hc;
-    struct PCIController *ehcihc = NULL;
+    struct PCIController *ehci_list[16];
+    struct PCIController *comp_list[16];
+    struct PCIController *comp_by_func[16];
+    UBYTE comp_used_ports[16];
+    ULONG ehci_count = 0;
+    ULONG comp_count = 0;
 
     BOOL allocgood = TRUE;
     ULONG usb11ports = 0;
     ULONG usb20ports = 0;
     ULONG cnt;
+    ULONG i;
 
     ULONG ohcicnt = 0;
     ULONG uhcicnt = 0;
@@ -366,13 +372,9 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
             }
 
             case HCITYPE_EHCI: {
-                if(usb20ports) {
-                    pciusbWarn("PCI", "More than one EHCI controller per board?!?\n");
-                }
                 allocgood = ehciInit(hc,hu);
                 if(allocgood) {
                     ehcicnt++;
-                    usb20ports = hc->hc_NumPorts;
                 }
                 break;
             }
@@ -392,59 +394,249 @@ BOOL pciAllocUnit(struct PCIUnit *hu)
     }
 
     /*
-     * If an EHCI controller is present and it reports extended port routing,
-     * the port-to-companion mapping must be derived from the EHCI capability
-     * PORTROUTE register (hc_portroute / hc_complexrouting are set by ehciInit()).
+     * Build global port mapping.
      */
-    ForeachNode(&hu->hu_Controllers, hc) {
-        if (hc->hc_HCIType == HCITYPE_EHCI) {
-            ehcihc = hc;
-            break;
-        }
+
+    /* Clear per-unit root port maps. */
+    for (cnt = 0; cnt < MAX_ROOT_PORTS; cnt++) {
+        hu->hu_PortMap11[cnt] = NULL;
+        hu->hu_PortMap20[cnt] = NULL;
+        hu->hu_PortNum11[cnt] = 0xFF;
+        hu->hu_PortNum20[cnt] = 0xFF;
+        hu->hu_PortOwner[cnt] = HCITYPE_UHCI;
+    }
+    hu->hu_RootPortChanges = 0;
+
+    for (i = 0; i < 16; i++) {
+        comp_by_func[i] = NULL;
+        comp_used_ports[i] = 0;
     }
 
+    /* Collect controllers and reset per-controller coverage fields. */
     ForeachNode(&hu->hu_Controllers, hc) {
-        if((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI)) {
-            if(usb20ports && ehcihc && ehcihc->hc_complexrouting) {
-                ULONG locport = 0;
-                for(cnt = 0; cnt < usb20ports; cnt++) {
-                    if(((ehcihc->hc_portroute >> (cnt<<2)) & 0xf) == hc->hc_FunctionNum) {
-                        pciusbDebug("PCI", "CHC %ld Port %ld assigned to global Port %ld\n", hc->hc_FunctionNum, locport, cnt);
-                        hu->hu_PortMap11[cnt] = hc;
-                        hu->hu_PortNum11[cnt] = locport;
-                        hc->hc_PortNum[locport] = cnt;
-                        locport++;
-                    }
-                }
-            } else {
-                for(cnt = usb11ports; cnt < usb11ports + hc->hc_NumPorts; cnt++) {
-                    hu->hu_PortMap11[cnt] = hc;
-                    hu->hu_PortNum11[cnt] = cnt - usb11ports;
-                    hc->hc_PortNum[cnt - usb11ports] = cnt;
-                }
-            }
+        hc->hc_GlobalPortMask = 0;
+        hc->hc_GlobalPortFirst = 0xFFFF;
+        hc->hc_GlobalPortLast = 0;
+        if (hc->hc_HCIType == HCITYPE_EHCI) {
+            if (ehci_count < 16)
+                ehci_list[ehci_count++] = hc;
+        } else if ((hc->hc_HCIType == HCITYPE_UHCI) || (hc->hc_HCIType == HCITYPE_OHCI)) {
+            if (comp_count < 16)
+                comp_list[comp_count++] = hc;
+            comp_by_func[hc->hc_FunctionNum & 0xF] = hc;
             usb11ports += hc->hc_NumPorts;
         }
     }
-    if((usb11ports != usb20ports) && usb20ports) {
+
+    /* Deterministic ordering: sort by PCI function number. */
+    for (i = 0; i + 1 < ehci_count; i++) {
+        ULONG j;
+        for (j = i + 1; j < ehci_count; j++) {
+            if (ehci_list[j]->hc_FunctionNum < ehci_list[i]->hc_FunctionNum) {
+                struct PCIController *tmp = ehci_list[i];
+                ehci_list[i] = ehci_list[j];
+                ehci_list[j] = tmp;
+            }
+        }
+    }
+    for (i = 0; i + 1 < comp_count; i++) {
+        ULONG j;
+        for (j = i + 1; j < comp_count; j++) {
+            if (comp_list[j]->hc_FunctionNum < comp_list[i]->hc_FunctionNum) {
+                struct PCIController *tmp = comp_list[i];
+                comp_list[i] = comp_list[j];
+                comp_list[j] = tmp;
+            }
+        }
+    }
+
+    /* USB 2.0 (EHCI) global port layout. */
+    usb20ports = 0;
+    for (i = 0; i < ehci_count; i++) {
+        UWORD lp;
+        struct PCIController *ehc = ehci_list[i];
+        for (lp = 0; lp < ehc->hc_NumPorts && usb20ports < MAX_ROOT_PORTS; lp++) {
+            ULONG gport = usb20ports++;
+            hu->hu_PortMap20[gport] = ehc;
+            hu->hu_PortNum20[gport] = (UBYTE)lp;
+            ehc->hc_PortNum[lp] = (UBYTE)gport;
+
+            ehc->hc_GlobalPortMask |= (1UL << gport);
+            if (ehc->hc_GlobalPortFirst == 0xFFFF)
+                ehc->hc_GlobalPortFirst = (UWORD)gport;
+            ehc->hc_GlobalPortLast = (UWORD)gport;
+        }
+        if (ehc->hc_NumPorts && usb20ports >= MAX_ROOT_PORTS) {
+            pciusbWarn("PCI", "EHCI function %ld: root-hub ports exceed MAX_ROOT_PORTS (%d); extra ports ignored\n",
+                       ehc->hc_FunctionNum, MAX_ROOT_PORTS);
+        }
+    }
+
+    /* Cap total USB1.1 port count to our table size. */
+    if (usb11ports > MAX_ROOT_PORTS)
+        usb11ports = MAX_ROOT_PORTS;
+
+    /* USB 1.1 mapping: first derive from EHCI PORTROUTE where available. */
+    for (cnt = 0; cnt < usb20ports; cnt++) {
+        struct PCIController *ehc = hu->hu_PortMap20[cnt];
+        struct EhciHCPrivate *ehp = ehc ? (struct EhciHCPrivate *)ehc->hc_CPrivate : NULL;
+        UWORD lp;
+        UWORD func;
+        UBYTE clp;
+        struct PCIController *chc;
+
+        if (!ehc || !ehp || !ehp->ehc_ComplexRouting)
+            continue;
+
+        lp = hu->hu_PortNum20[cnt];
+        func = (UWORD)((ehc->hc_portroute >> (lp << 2)) & 0xF);
+        chc = comp_by_func[func];
+        if (!chc)
+            continue;
+
+        clp = comp_used_ports[func];
+        if (clp >= chc->hc_NumPorts) {
+            pciusbWarn("PCI", "Companion function %ld: PORTROUTE wants port %ld but controller has only %ld port(s)\n",
+                       (ULONG)func, (ULONG)clp, (ULONG)chc->hc_NumPorts);
+            continue;
+        }
+
+        hu->hu_PortMap11[cnt] = chc;
+        hu->hu_PortNum11[cnt] = clp;
+        chc->hc_PortNum[clp] = (UBYTE)cnt;
+        comp_used_ports[func] = clp + 1;
+
+        chc->hc_GlobalPortMask |= (1UL << cnt);
+        if (chc->hc_GlobalPortFirst == 0xFFFF)
+            chc->hc_GlobalPortFirst = (UWORD)cnt;
+        chc->hc_GlobalPortLast = (UWORD)cnt;
+    }
+
+    /*
+     * Non-extended routing case (no PORTROUTE): use per-EHCI HCSPARAMS companion
+     * information when available. This preserves correct port range assignment
+     * for common integrated multi-function devices.
+     */
+    {
+        ULONG comp_base = 0;
+
+        for (i = 0; i < ehci_count; i++) {
+            struct PCIController *ehc = ehci_list[i];
+            struct EhciHCPrivate *ehp = ehc ? (struct EhciHCPrivate *)ehc->hc_CPrivate : NULL;
+            UWORD ppc;
+            UWORD ncc;
+            UWORD lp;
+
+            if (!ehc || !ehp || ehp->ehc_ComplexRouting)
+                continue;
+
+            ncc = ehp->ehc_EhciNumCompanions;
+            ppc = ehp->ehc_EhciPortsPerComp;
+            if (!ncc || !ppc)
+                continue;
+
+            if (comp_base >= comp_count)
+                break;
+
+            for (lp = 0; lp < ehc->hc_NumPorts && lp < MAX_ROOT_PORTS; lp++) {
+                UBYTE gport = ehc->hc_PortNum[lp];
+                UWORD comp_index;
+                struct PCIController *chc;
+                UBYTE clp;
+                UBYTE func;
+
+                if (gport == 0xFF || gport >= MAX_ROOT_PORTS)
+                    continue;
+                if (hu->hu_PortMap11[gport] != NULL)
+                    continue;
+
+                comp_index = (UWORD)(lp / ppc);
+                if (comp_index >= ncc)
+                    continue;
+                if ((comp_base + comp_index) >= comp_count)
+                    continue;
+
+                chc = comp_list[comp_base + comp_index];
+                clp = (UBYTE)(lp % ppc);
+
+                if (clp >= chc->hc_NumPorts) {
+                    pciusbWarn("PCI", "Companion function %ld: expected port %ld (ppc=%ld) but controller has only %ld port(s)\n",
+                               (ULONG)chc->hc_FunctionNum, (ULONG)clp, (ULONG)ppc, (ULONG)chc->hc_NumPorts);
+                    continue;
+                }
+
+                hu->hu_PortMap11[gport] = chc;
+                hu->hu_PortNum11[gport] = clp;
+                chc->hc_PortNum[clp] = gport;
+
+                func = (UBYTE)(chc->hc_FunctionNum & 0xF);
+                if (comp_used_ports[func] <= clp)
+                    comp_used_ports[func] = clp + 1;
+
+                chc->hc_GlobalPortMask |= (1UL << gport);
+                if (chc->hc_GlobalPortFirst == 0xFFFF)
+                    chc->hc_GlobalPortFirst = (UWORD)gport;
+                chc->hc_GlobalPortLast = (UWORD)gport;
+            }
+
+            comp_base += ncc;
+        }
+    }
+
+    /* Fill any remaining USB 1.1 global ports sequentially across companions (fallback). */
+    {
+        ULONG gport = 0;
+        for (i = 0; i < comp_count && gport < MAX_ROOT_PORTS; i++) {
+            struct PCIController *chc = comp_list[i];
+            UBYTE func = (UBYTE)(chc->hc_FunctionNum & 0xF);
+            UBYTE lp = comp_used_ports[func];
+
+            while (gport < MAX_ROOT_PORTS && hu->hu_PortMap11[gport] != NULL)
+                gport++;
+
+            for (; lp < chc->hc_NumPorts && gport < MAX_ROOT_PORTS; lp++) {
+                while (gport < MAX_ROOT_PORTS && hu->hu_PortMap11[gport] != NULL)
+                    gport++;
+                if (gport >= MAX_ROOT_PORTS)
+                    break;
+
+                hu->hu_PortMap11[gport] = chc;
+                hu->hu_PortNum11[gport] = lp;
+                chc->hc_PortNum[lp] = (UBYTE)gport;
+
+                chc->hc_GlobalPortMask |= (1UL << gport);
+                if (chc->hc_GlobalPortFirst == 0xFFFF)
+                    chc->hc_GlobalPortFirst = (UWORD)gport;
+                chc->hc_GlobalPortLast = (UWORD)gport;
+
+                gport++;
+            }
+            comp_used_ports[func] = lp;
+        }
+    }
+
+    if ((usb11ports != usb20ports) && usb20ports) {
         pciusbWarn("PCI", "EHCI Ports (%ld), do not match USB 1.1 Ports (%ld)!\n", usb20ports, usb11ports);
     }
 
-    hu->hu_RootHub11Ports = usb11ports;
-    hu->hu_RootHub20Ports = usb20ports;
-    hu->hu_RootHubPorts = (usb11ports > usb20ports) ? usb11ports : usb20ports;
+    hu->hu_RootHub11Ports = (UWORD)usb11ports;
+    hu->hu_RootHub20Ports = (UWORD)usb20ports;
+    hu->hu_RootHubPorts = (hu->hu_RootHub11Ports > hu->hu_RootHub20Ports) ? hu->hu_RootHub11Ports : hu->hu_RootHub20Ports;
+    if (hu->hu_RootHubPorts > MAX_ROOT_PORTS)
+        hu->hu_RootHubPorts = MAX_ROOT_PORTS;
 
-    for(cnt = 0; cnt < hu->hu_RootHubPorts; cnt++) {
-        if (hu->hu_PortMap20[cnt] && ehcihc) {
-            ULONG portsc = READREG32_LE(ehcihc->hc_RegBase, EHCI_PORTSC1 + (cnt<<2));
+    /* Initial port ownership. */
+    for (cnt = 0; cnt < hu->hu_RootHubPorts; cnt++) {
+        struct PCIController *ehc = hu->hu_PortMap20[cnt];
+        if (ehc) {
+            UWORD lp = hu->hu_PortNum20[cnt];
+            ULONG portsc = READREG32_LE(ehc->hc_RegBase, EHCI_PORTSC1 + (lp<<2));
             if (portsc & EHPF_NOTPORTOWNER) {
                 struct PCIController *chc = hu->hu_PortMap11[cnt];
                 hu->hu_PortOwner[cnt] = chc ? chc->hc_HCIType : HCITYPE_UHCI;
             } else {
                 hu->hu_PortOwner[cnt] = HCITYPE_EHCI;
             }
-        } else if (hu->hu_PortMap20[cnt]) {
-            hu->hu_PortOwner[cnt] = HCITYPE_EHCI;
         } else if (hu->hu_PortMap11[cnt]) {
             hu->hu_PortOwner[cnt] = hu->hu_PortMap11[cnt]->hc_HCIType;
         } else {

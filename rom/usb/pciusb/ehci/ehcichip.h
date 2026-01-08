@@ -107,8 +107,11 @@ struct EhciQH
 
 struct EhciHCPrivate
 {
-    ULONG                       ehc_EhciUsbCmd;
     ULONG                       *ehc_EhciFrameList;
+    ULONG                       *ehc_IsoAnchor;
+    struct PTDNode             **ehc_IsoHead;
+    struct PTDNode             **ehc_IsoTail;
+
     struct EhciQH               *ehc_EhciQHPool;
     struct EhciTD               *ehc_EhciTDPool;
     struct EhciITD              *ehc_EhciITDPool;
@@ -117,16 +120,28 @@ struct EhciHCPrivate
     struct EhciQH               *ehc_EhciAsyncQH;
     struct EhciQH               *ehc_EhciIntQH[11];
     struct EhciQH               *ehc_EhciTermQH;
-    ULONG                       *ehc_IsoAnchor;
-    struct PTDNode             **ehc_IsoHead;
-    struct PTDNode             **ehc_IsoTail;
-    volatile BOOL               ehc_AsyncAdvanced;
-    BOOL                        ehc_64BitCapable;
+
     struct EhciQH               *ehc_EhciAsyncFreeQH;
     struct EhciTD               *ehc_ShortPktEndTD;
+
+    ULONG                       ehc_EhciUsbCmd;
+
+    /* EHCI companion routing information (decoded from HCSPARAMS).
+     * These values are required to correctly map global root-hub ports to
+     * companion controllers when multiple HCI functions exist on a single
+     * PCI device.
+     */
+    UWORD                       ehc_EhciNumCompanions;
+    UWORD                       ehc_EhciPortsPerComp;
+
+    UWORD                       ehc_EhciTimeoutShift;
+
     UWORD                       ehc_FrameListSize;
     UWORD                       ehc_FrameListMask;
-    UWORD                       ehc_EhciTimeoutShift;
+
+    volatile BOOL               ehc_AsyncAdvanced;
+    BOOL                        ehc_64BitCapable;
+    BOOL                        ehc_ComplexRouting;
 };
 
 /* Support functions */

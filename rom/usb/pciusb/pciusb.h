@@ -150,6 +150,7 @@ struct PCIUnit
     struct PCIController        *hu_PortMap11[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 1.1 controller                  */
     struct PCIController        *hu_PortMap20[MAX_ROOT_PORTS];      /* Maps from Global Port to USB 2.0 controller                  */
     UBYTE                       hu_PortNum11[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 1.1 companion controller port   */
+    UBYTE                       hu_PortNum20[MAX_ROOT_PORTS];       /* Maps from Global Port to USB 2.0 controller local port       */
 #if (1)
     //TODO: This needs adjusted to handle >16 EPs
     struct IOUsbHWReq *volatile hu_DevBusyReq[USB_DEVEP_CNT];       /* pointer to io assigned to the Endpoint                       */
@@ -232,12 +233,16 @@ struct PCIController
 
     UBYTE                       hc_PortNum[MAX_ROOT_PORTS];	        /* Global Port number the local controller port corresponds with    */
 
+    /* Global port coverage (root hub) implemented by this controller */
+    ULONG                       hc_GlobalPortMask;
+    UWORD                       hc_GlobalPortFirst;
+    UWORD                       hc_GlobalPortLast;
+
     UWORD                       hc_PortChangeMap[MAX_ROOT_PORTS];   /* Port Change Map                                                  */
     UWORD                       hc_PortChangeMask;                  /* mask of enabled change notifications                             */
     ULONG                       hc_portroute;
     
     APTR                        hc_CPrivate;
-    BOOL                        hc_complexrouting;
 };
 
 /* hc_Flags */
