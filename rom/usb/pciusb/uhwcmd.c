@@ -653,7 +653,6 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                         usdd->bDeviceProtocol = 1; // single TT
                         usdd->bMaxPacketSize0 = 64;
                     }
-
                 }
                 return(0);
 
@@ -754,7 +753,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             chc = unit->hu_PortMap11[idx - 1];
             if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
                 hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
+                hciport = unit->hu_PortNum20[idx - 1];
             } else {
                 hc = chc;
                 hciport = unit->hu_PortNum11[idx - 1];
@@ -797,7 +796,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
                 hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
+                hciport = unit->hu_PortNum20[idx - 1];
             } else {
                 hc = unit->hu_PortMap11[idx - 1];
                 hciport = unit->hu_PortNum11[idx - 1];
@@ -849,7 +848,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             if(unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) {
                 hc = unit->hu_PortMap20[idx - 1];
-                hciport = idx - 1;
+                hciport = unit->hu_PortNum20[idx - 1];
             } else {
                 hc = unit->hu_PortMap11[idx - 1];
                 hciport = unit->hu_PortNum11[idx - 1];
