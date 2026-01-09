@@ -21,6 +21,13 @@
 
 struct PTDNode;
 
+struct EhciPTDPrivate
+{
+    ULONG           ptd_NextPhys;
+    UWORD           ptd_PktCount;
+    UWORD           ptd_PktLength[8];
+};
+
 struct EhciTD
 {
     struct EhciTD  *etd_Succ;

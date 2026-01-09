@@ -29,6 +29,11 @@
 
 #define NewList NEWLIST
 
+static inline struct OhciPTDPrivate *ohciPTDPrivate(struct PTDNode *ptd)
+{
+    return (struct OhciPTDPrivate *)ptd->ptd_Chipset;
+}
+
 #ifdef DEBUG_TD
 
 static void PrintTD(const char *txt, ULONG ptd, struct PCIController *hc)
@@ -381,7 +386,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                     struct PTDNode *scan = rtn->rtn_PTDs[idx];
                     if (scan && scan->ptd_Descriptor == oitd) {
                         ptd = scan;
-                        bufreq = &scan->ptd_BufferReq;
+                        bufreq = &ohciPTDPrivate(scan)->ptd_BufferReq;
                         break;
                     }
                 }
@@ -450,11 +455,14 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             if (bufreq)
                 bufreq->ubr_Length = ioreq->iouh_Actual;
 
-            if (ptd && ptd->ptd_BounceBuffer &&
-                    ptd->ptd_BounceBuffer != ptd->ptd_BufferReq.ubr_Buffer) {
-                usbReleaseBuffer(ptd->ptd_BounceBuffer, ptd->ptd_BufferReq.ubr_Buffer,
-                                 ptd->ptd_BufferReq.ubr_Length, ioreq->iouh_Dir);
-                ptd->ptd_BounceBuffer = NULL;
+            if (ptd) {
+                struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
+                if (ptdpriv->ptd_BounceBuffer &&
+                        ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
+                    usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
+                                     ptdpriv->ptd_BufferReq.ubr_Length, ioreq->iouh_Dir);
+                    ptdpriv->ptd_BounceBuffer = NULL;
+                }
             }
 
             if (rtiso && rtn && rtn->rtn_RTIso) {

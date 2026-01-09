@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <hardware/usb/ohci.h>
+#include <devices/usbhardware.h>
 #include "hccommon.h"
 
 /* PCI Class: PCI_CLASS_SERIAL_USB */
@@ -75,6 +76,15 @@ struct OhciIsoTD
     ULONG                   oitd_NextTD;     /* LE PHYSICAL Next TD */
     ULONG                   oitd_BufferEnd;  /* LE PHYSICAL End of buffer */
     ULONG                   oitd_Offset[8];  /* PSWs */
+};
+
+struct RTIsoNode;
+
+struct OhciPTDPrivate
+{
+    struct IOUsbHWBufferReq     ptd_BufferReq;
+    APTR                        ptd_BounceBuffer;
+    struct RTIsoNode           *ptd_RTIsoNode;
 };
 
 struct OhciHCPrivate

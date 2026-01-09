@@ -32,6 +32,11 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+static inline struct OhciPTDPrivate *ohciPTDPrivate(struct PTDNode *ptd)
+{
+    return (struct OhciPTDPrivate *)ptd->ptd_Chipset;
+}
+
 void ohciScheduleIsoTDs(struct PCIController *hc)
 {
     struct PCIUnit *unit = hc->hc_Unit;
@@ -105,9 +110,12 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     for(idx = 0; idx < ptdcount; idx++) {
         if(rtn->rtn_PTDs[idx]) {
-            if(rtn->rtn_PTDs[idx]->ptd_Descriptor)
-                ohciFreeIsoTD(hc, (struct OhciIsoTD *)rtn->rtn_PTDs[idx]->ptd_Descriptor);
-            FreeMem(rtn->rtn_PTDs[idx], sizeof(*rtn->rtn_PTDs[idx]));
+            struct PTDNode *old = rtn->rtn_PTDs[idx];
+            if(old->ptd_Descriptor)
+                ohciFreeIsoTD(hc, (struct OhciIsoTD *)old->ptd_Descriptor);
+            if(old->ptd_Chipset)
+                FreeMem(old->ptd_Chipset, sizeof(struct OhciPTDPrivate));
+            FreeMem(old, sizeof(*old));
             rtn->rtn_PTDs[idx] = NULL;
         }
     }
@@ -118,9 +126,12 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        struct OhciPTDPrivate *ptdpriv = ptd ? AllocMem(sizeof(*ptdpriv), MEMF_CLEAR) : NULL;
         struct OhciIsoTD *oitd = ptd ? ohciAllocIsoTD(hc) : NULL;
 
-        if(!ptd || !oitd) {
+        if(!ptd || !ptdpriv || !oitd) {
+            if(ptdpriv)
+                FreeMem(ptdpriv, sizeof(*ptdpriv));
             if(ptd)
                 FreeMem(ptd, sizeof(*ptd));
 
@@ -128,6 +139,8 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 struct PTDNode *old = rtn->rtn_PTDs[freeidx];
                 if(old->ptd_Descriptor)
                     ohciFreeIsoTD(hc, (struct OhciIsoTD *)old->ptd_Descriptor);
+                if(old->ptd_Chipset)
+                    FreeMem(old->ptd_Chipset, sizeof(struct OhciPTDPrivate));
                 FreeMem(old, sizeof(*old));
                 rtn->rtn_PTDs[freeidx] = NULL;
             }
@@ -138,7 +151,8 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         ptd->ptd_Descriptor = oitd;
         ptd->ptd_Phys = READMEM32_LE(&oitd->oitd_Self);
-        ptd->ptd_RTIsoNode = rtn;
+        ptd->ptd_Chipset = ptdpriv;
+        ptdpriv->ptd_RTIsoNode = rtn;
         rtn->rtn_PTDs[idx] = ptd;
     }
 
@@ -169,7 +183,8 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if (!ptd)
         return UHIOERR_NAKTIMEOUT;
 
-    bufreq = &ptd->ptd_BufferReq;
+    struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
+    bufreq = &ptdpriv->ptd_BufferReq;
     *bufreq = rtn->rtn_BufferReq;
     explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
 
@@ -254,7 +269,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     ptd->ptd_FrameIdx = bufreq->ubr_Frame;
     ptd->ptd_Length = bufreq->ubr_Length;
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
-    ptd->ptd_BounceBuffer = NULL;
+    ptdpriv->ptd_BounceBuffer = NULL;
     rtn->rtn_BufferReq = *bufreq;
 
     return RC_OK;
@@ -300,6 +315,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        struct OhciPTDPrivate *ptdpriv;
         struct OhciIsoTD *oitd;
         APTR dmabuffer;
         ULONG phys;
@@ -317,37 +333,38 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(ptd->ptd_Flags & PTDF_ACTIVE)
             continue;
 
+        ptdpriv = ohciPTDPrivate(ptd);
         oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
         if(!oitd)
             continue;
 
-        dmabuffer = ptd->ptd_BufferReq.ubr_Buffer;
+        dmabuffer = ptdpriv->ptd_BufferReq.ubr_Buffer;
 #if __WORDSIZE == 64
         if(dmabuffer) {
-            dmabuffer = usbGetBuffer(dmabuffer, ptd->ptd_BufferReq.ubr_Length,
+            dmabuffer = usbGetBuffer(dmabuffer, ptdpriv->ptd_BufferReq.ubr_Length,
                                      rtn->rtn_IOReq.iouh_Dir);
             if(!dmabuffer) {
                 ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
                 continue;
             }
 
-            if(dmabuffer != ptd->ptd_BufferReq.ubr_Buffer &&
+            if(dmabuffer != ptdpriv->ptd_BufferReq.ubr_Buffer &&
                     rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT) {
-                CopyMem(ptd->ptd_BufferReq.ubr_Buffer, dmabuffer, ptd->ptd_BufferReq.ubr_Length);
+                CopyMem(ptdpriv->ptd_BufferReq.ubr_Buffer, dmabuffer, ptdpriv->ptd_BufferReq.ubr_Length);
             }
         }
 #endif
-        ptd->ptd_BounceBuffer = (dmabuffer != ptd->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
+        ptdpriv->ptd_BounceBuffer = (dmabuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
 
-        if(!dmabuffer || !ptd->ptd_BufferReq.ubr_Length) {
+        if(!dmabuffer || !ptdpriv->ptd_BufferReq.ubr_Length) {
             ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
             continue;
         }
 
         phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
-        frame = ptd->ptd_BufferReq.ubr_Frame;
+        frame = ptdpriv->ptd_BufferReq.ubr_Frame;
 
-        pktcnt = (ptd->ptd_BufferReq.ubr_Length + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
+        pktcnt = (ptdpriv->ptd_BufferReq.ubr_Length + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
                  rtn->rtn_IOReq.iouh_MaxPktSize;
         if(pktcnt > 8)
             pktcnt = 8;
@@ -357,12 +374,12 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         oitd->oitd_Succ = NULL;
         oitd->oitd_ED = oed;
-        oitd->oitd_Length = ptd->ptd_BufferReq.ubr_Length;
+        oitd->oitd_Length = ptdpriv->ptd_BufferReq.ubr_Length;
         WRITEMEM32_LE(&oitd->oitd_Ctrl, ctrl);
         WRITEMEM32_LE(&oitd->oitd_BufferPage0, phys & ~0xfff);
         WRITEMEM32_LE(&oitd->oitd_NextTD, ohcihcp->ohc_OhciTermTD->otd_Self);
 
-        remaining = ptd->ptd_BufferReq.ubr_Length;
+        remaining = ptdpriv->ptd_BufferReq.ubr_Length;
         offset = (UWORD)(phys & 0xfff);
         bus_end_off = offset;
 
@@ -384,7 +401,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             oitd->oitd_Offset[pktidx++] = OITM_PSW_CC;
         }
 
-        WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + ptd->ptd_BufferReq.ubr_Length - 1);
+        WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + ptdpriv->ptd_BufferReq.ubr_Length - 1);
 
         CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
         SYNC;
@@ -454,12 +471,13 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd) {
+            struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
             ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
-            if(ptd->ptd_BounceBuffer &&
-                    ptd->ptd_BounceBuffer != ptd->ptd_BufferReq.ubr_Buffer) {
-                usbReleaseBuffer(ptd->ptd_BounceBuffer, ptd->ptd_BufferReq.ubr_Buffer,
-                                 ptd->ptd_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-                ptd->ptd_BounceBuffer = NULL;
+            if(ptdpriv->ptd_BounceBuffer &&
+                    ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
+                usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
+                                 ptdpriv->ptd_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+                ptdpriv->ptd_BounceBuffer = NULL;
             }
         }
     }
@@ -485,6 +503,8 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(ptd) {
             if(ptd->ptd_Descriptor)
                 ohciFreeIsoTD(hc, (struct OhciIsoTD *)ptd->ptd_Descriptor);
+            if(ptd->ptd_Chipset)
+                FreeMem(ptd->ptd_Chipset, sizeof(struct OhciPTDPrivate));
             FreeMem(ptd, sizeof(*ptd));
             rtn->rtn_PTDs[idx] = NULL;
         }

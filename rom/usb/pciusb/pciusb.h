@@ -67,17 +67,12 @@ struct PTDNode
     struct MinNode              ptd_Node;
     APTR                        ptd_Descriptor;
     ULONG                       ptd_Phys;
-    ULONG                       ptd_NextPhys;
     ULONG                       ptd_FrameIdx;
     UWORD                       ptd_Length;
-    UWORD                       ptd_PktCount;
-    UWORD                       ptd_PktLength[8];
     UWORD                       ptd_Flags;
     struct PTDNode             *ptd_NextPTD;
     struct IOUsbHWReq           ptd_IOReq;
-    struct IOUsbHWBufferReq     ptd_BufferReq;
-    APTR                        ptd_BounceBuffer;
-    struct RTIsoNode           *ptd_RTIsoNode;
+    APTR                        ptd_Chipset;
 };
 
 #define PTDF_ACTIVE             (1<<0)

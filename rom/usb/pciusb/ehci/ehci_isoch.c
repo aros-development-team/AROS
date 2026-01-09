@@ -34,6 +34,11 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
+static inline struct EhciPTDPrivate *ehciPTDPrivate(struct PTDNode *ptd)
+{
+    return (struct EhciPTDPrivate *)ptd->ptd_Chipset;
+}
+
 #define EHCI_FRAME_NUMBER_MASK  0x1fff
 #define EHCI_MICROFRAME_BW_MAX  6000
 
@@ -62,8 +67,11 @@ static void ehciIsoAccumulateBandwidth(struct PTDNode *ptd, ULONG usage[8])
         return;
     }
 
-    for (UWORD idx = 0; idx < ptd->ptd_PktCount; idx++)
-        usage[idx] += ptd->ptd_PktLength[idx];
+    {
+        struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
+        for (UWORD idx = 0; idx < ptdpriv->ptd_PktCount; idx++)
+            usage[idx] += ptdpriv->ptd_PktLength[idx];
+    }
 }
 
 static BOOL ehciIsoBandwidthAvailable(struct EhciHCPrivate *ehcihcp, ULONG slot, BOOL is_split,
@@ -172,6 +180,7 @@ void ehciHandleIsochTDs(struct PCIController *hc)
             if(!ptd || !(ptd->ptd_Flags & PTDF_ACTIVE))
                 continue;
 
+            struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
             struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
             if(ptd->ptd_Flags & PTDF_SITD) {
                 struct EhciSiTD *sitd = (struct EhciSiTD *)ptd->ptd_Descriptor;
@@ -201,10 +210,10 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                 UWORD pkt;
 
                 CacheClearE(itd, sizeof(*itd), CACRF_InvalidateD);
-                for(pkt = 0; pkt < ptd->ptd_PktCount; pkt++) {
+                for(pkt = 0; pkt < ptdpriv->ptd_PktCount; pkt++) {
                     ULONG trans = READMEM32_LE(&itd->itd_Transaction[pkt]);
                     UWORD residual = (trans >> EITF_LENGTH_SHIFT) & EITF_LENGTH_MASK;
-                    UWORD pktlen = ptd->ptd_PktLength[pkt];
+                    UWORD pktlen = ptdpriv->ptd_PktLength[pkt];
 
                     if(trans & EITF_STATUS_ACTIVE) {
                         error = FALSE;
@@ -218,7 +227,7 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                         actual += pktlen - residual;
                 }
 
-                if(pkt < ptd->ptd_PktCount)
+                if(pkt < ptdpriv->ptd_PktCount)
                     continue;
 
                 ioreq->iouh_Actual = actual;
@@ -330,7 +339,13 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         rtn->rtn_PTDs[idx] = NULL;
         ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        struct EhciPTDPrivate *ptdpriv = ptd ? AllocMem(sizeof(*ptdpriv), MEMF_CLEAR) : NULL;
         if(!ptd) {
+            ehciFreeIsochIO(hc, rtn);
+            return(UHIOERR_OUTOFMEMORY);
+        }
+        if(!ptdpriv) {
+            FreeMem(ptd, sizeof(*ptd));
             ehciFreeIsochIO(hc, rtn);
             return(UHIOERR_OUTOFMEMORY);
         }
@@ -338,6 +353,7 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(split) {
             struct EhciSiTD *sitd = ehciAllocSiTD(hc);
             if(!sitd) {
+                FreeMem(ptdpriv, sizeof(*ptdpriv));
                 FreeMem(ptd, sizeof(*ptd));
                 ehciFreeIsochIO(hc, rtn);
                 return(UHIOERR_OUTOFMEMORY);
@@ -349,6 +365,7 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         } else {
             struct EhciITD *itd = ehciAllocITD(hc);
             if(!itd) {
+                FreeMem(ptdpriv, sizeof(*ptdpriv));
                 FreeMem(ptd, sizeof(*ptd));
                 ehciFreeIsochIO(hc, rtn);
                 return(UHIOERR_OUTOFMEMORY);
@@ -358,6 +375,7 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             ptd->ptd_Phys = READMEM32_LE(&itd->itd_Self);
         }
 
+        ptd->ptd_Chipset = ptdpriv;
         rtn->rtn_PTDs[idx] = ptd;
     }
 
@@ -518,6 +536,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(!remaining)
             break;
 
+        struct EhciPTDPrivate *ptdpriv = ehciPTDPrivate(ptd);
         buffer = (UBYTE *)dmabuffer + offset;
         len = ptd->ptd_Length ? ptd->ptd_Length : remaining;
         if(len > remaining)
@@ -530,9 +549,9 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         is_split = (ptd->ptd_Flags & PTDF_SITD) != 0;
         slot = (rtn->rtn_BufferReq.ubr_Frame + scheduled) & framemask;
         phys = (IPTR)pciGetPhysical(hc, buffer);
-        ptd->ptd_PktCount = 0;
+        ptdpriv->ptd_PktCount = 0;
         for(pktidx = 0; pktidx < 8; pktidx++)
-            ptd->ptd_PktLength[pktidx] = 0;
+            ptdpriv->ptd_PktLength[pktidx] = 0;
 
         if(is_split) {
             sitd = (struct EhciSiTD *)ptd->ptd_Descriptor;
@@ -557,12 +576,12 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                            (phys & EITM_BUFFER_BASE) | smask | ((ULONG)cmask << 8));
             WRITEMEM32_LE(&sitd->sitd_BackPointer, EHCI_TERMINATE);
 
-            ptd->ptd_PktCount = 1;
-            ptd->ptd_PktLength[0] = (UWORD)ptdlen;
+            ptdpriv->ptd_PktCount = 1;
+            ptdpriv->ptd_PktLength[0] = (UWORD)ptdlen;
 
-            ptd->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
+            ptdpriv->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
             ptd->ptd_NextPTD = NULL;
-            WRITEMEM32_LE(&sitd->sitd_Next, ptd->ptd_NextPhys);
+            WRITEMEM32_LE(&sitd->sitd_Next, ptdpriv->ptd_NextPhys);
             CacheClearE(sitd, sizeof(*sitd), CACRF_ClearD);
         } else {
             itd = (struct EhciITD *) ptd->ptd_Descriptor;
@@ -588,18 +607,18 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             pktoffset = phys & EITM_BUFFER_OFFSET;
             for(pktidx = 0; pktidx < pktcnt; pktidx++) {
                 pktlen = (len > rtn->rtn_IOReq.iouh_MaxPktSize) ? rtn->rtn_IOReq.iouh_MaxPktSize : len;
-                ptd->ptd_PktLength[pktidx] = pktlen;
+                ptdpriv->ptd_PktLength[pktidx] = pktlen;
                 len -= pktlen;
                 pktoffset += pktlen;
             }
 
-            if (!ehciIsoBandwidthAvailable(ehcihcp, slot, FALSE, ptd->ptd_PktLength, pktcnt, 0, 0, 0))
+            if (!ehciIsoBandwidthAvailable(ehcihcp, slot, FALSE, ptdpriv->ptd_PktLength, pktcnt, 0, 0, 0))
                 break;
 
             pktoffset = phys & EITM_BUFFER_OFFSET;
             len = ptdlen;
             for(pktidx = 0; pktidx < pktcnt; pktidx++) {
-                pktlen = ptd->ptd_PktLength[pktidx];
+                pktlen = ptdpriv->ptd_PktLength[pktidx];
                 WRITEMEM32_LE(&itd->itd_Transaction[pktidx],
                               EITF_STATUS_ACTIVE |
                               ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
@@ -612,11 +631,11 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 itd->itd_Transaction[pktidx++] = 0;
             }
 
-            ptd->ptd_PktCount = pktcnt;
+            ptdpriv->ptd_PktCount = pktcnt;
 
-            ptd->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
+            ptdpriv->ptd_NextPhys = ehcihcp->ehc_IsoAnchor[slot];
             ptd->ptd_NextPTD = NULL;
-            WRITEMEM32_LE(&itd->itd_Next, ptd->ptd_NextPhys);
+            WRITEMEM32_LE(&itd->itd_Next, ptdpriv->ptd_NextPhys);
 
             CacheClearE(itd, sizeof(*itd), CACRF_ClearD);
         }
@@ -704,6 +723,8 @@ void ehciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 else
                     ehciFreeITD(hc, (struct EhciITD *)ptd->ptd_Descriptor);
             }
+            if(ptd->ptd_Chipset)
+                FreeMem(ptd->ptd_Chipset, sizeof(struct EhciPTDPrivate));
             FreeMem(ptd, sizeof(*ptd));
             rtn->rtn_PTDs[idx] = NULL;
         }

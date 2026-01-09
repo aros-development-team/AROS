@@ -10,6 +10,7 @@
 
 #include <exec/types.h>
 #include <hardware/usb/uhci.h>
+#include <devices/usbhardware.h>
 #include "hccommon.h"
 
 /* PCI Class: PCI_CLASS_SERIAL_USB */
@@ -96,6 +97,13 @@ struct UhciHCPrivate
     struct UhciQH               *uhc_UhciIntQH[9];
     struct UhciTD               *uhc_UhciIsoTD;
     struct UhciQH               *uhc_UhciTermQH;
+};
+
+struct UhciPTDPrivate
+{
+    ULONG                       ptd_NextPhys;
+    struct IOUsbHWBufferReq     ptd_BufferReq;
+    APTR                        ptd_BounceBuffer;
 };
 
 #define HCQB_UHCI_VIA_BABBLE    5

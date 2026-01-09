@@ -15,6 +15,25 @@
 #include "uhci/uhciproto.h"
 #include "ehci/ehciproto.h"
 
+static inline void pciusbFreePTDChipset(struct PCIController *hc, struct PTDNode *ptd)
+{
+    if(!ptd || !ptd->ptd_Chipset)
+        return;
+
+    switch(hc->hc_HCIType) {
+    case HCITYPE_EHCI:
+        FreeMem(ptd->ptd_Chipset, sizeof(struct EhciPTDPrivate));
+        break;
+    case HCITYPE_UHCI:
+        FreeMem(ptd->ptd_Chipset, sizeof(struct UhciPTDPrivate));
+        break;
+    default:
+        FreeMem(ptd->ptd_Chipset, sizeof(struct OhciPTDPrivate));
+        break;
+    }
+    ptd->ptd_Chipset = NULL;
+}
+
 static inline BOOL uhwIsRootHubIOReq(const struct IOUsbHWReq *ioreq,
                                      const struct PCIUnit *unit)
 {
@@ -1417,8 +1436,10 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
             ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
             if(!ptd) {
                 for(UWORD freectr = 0; freectr < ptdidx; freectr++) {
-                    if(rtn->rtn_PTDs[freectr])
+                    if(rtn->rtn_PTDs[freectr]) {
+                        pciusbFreePTDChipset(hc, rtn->rtn_PTDs[freectr]);
                         FreeMem(rtn->rtn_PTDs[freectr], sizeof(struct PTDNode));
+                    }
                     rtn->rtn_PTDs[freectr] = NULL;
                 }
                 Disable();
@@ -1428,14 +1449,13 @@ WORD cmdAddIsoHandler(struct IOUsbHWReq *ioreq,
             }
             rtn->rtn_PTDs[ptdidx] = ptd;
         } else {
+            APTR descriptor = ptd->ptd_Descriptor;
+            APTR chipset = ptd->ptd_Chipset;
             bzero(ptd, sizeof(*ptd));
+            ptd->ptd_Descriptor = descriptor;
+            ptd->ptd_Chipset = chipset;
             rtn->rtn_PTDs[ptdidx] = ptd;
         }
-
-        ptd->ptd_Length = ioreq->iouh_MaxPktSize;
-        ptd->ptd_PktCount = 1;
-        ptd->ptd_PktLength[0] = ioreq->iouh_MaxPktSize;
-        ptd->ptd_Flags = (ioreq->iouh_Flags & UHFF_SPLITTRANS) ? PTDF_SITD : 0;
     }
 
     rtn->rtn_PTDCount = requested_ptds;
