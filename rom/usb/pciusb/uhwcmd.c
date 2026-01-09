@@ -760,30 +760,35 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             pciusbRHDebug("RH", "Set Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
                     (unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) ? "EHCI" : "U/OHCI");
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "uhciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
+            if (hc) {
+                switch(hc->hc_HCIType) {
+                case HCITYPE_UHCI: {
+                    if (uhciSetFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "uhciSetFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_OHCI: {
-                if (ohciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ohciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_OHCI: {
+                    if (ohciSetFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "ohciSetFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_EHCI: {
-                if (ehciSetFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ehciSetFeature returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_EHCI: {
+                    if (ehciSetFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "ehciSetFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
+                }
+            } else {
+                pciusbRHDebug("RH", "port controller not set\n");
+                return(UHIOERR_STALL);
             }
         }
         break;
@@ -803,30 +808,35 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
             }
             pciusbRHDebug("RH", "Clear Feature %ld maps from glob. Port %ld to local Port %ld (%s)\n", val, idx, hciport,
                     (unit->hu_PortOwner[idx - 1] == HCITYPE_EHCI) ? "EHCI" : "U/OHCI");
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "uhciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
+            if (hc) {
+                switch(hc->hc_HCIType) {
+                case HCITYPE_UHCI: {
+                    if (uhciClearFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "uhciClearFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_OHCI: {
-                if (ohciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ohciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_OHCI: {
+                    if (ohciClearFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "ohciClearFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_EHCI: {
-                if (ehciClearFeature(unit, hc, hciport, idx, val, &retval)) {
-                    pciusbRHDebug("RH", "ehciClearFeature returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_EHCI: {
+                    if (ehciClearFeature(unit, hc, hciport, idx, val, &retval)) {
+                        pciusbRHDebug("RH", "ehciClearFeature returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
+                }
+            } else {
+                pciusbRHDebug("RH", "port controller not set\n");
+                return(UHIOERR_STALL);
             }
         }
         break;
@@ -853,30 +863,35 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 hc = unit->hu_PortMap11[idx - 1];
                 hciport = unit->hu_PortNum11[idx - 1];
             }
-            switch(hc->hc_HCIType) {
-            case HCITYPE_UHCI: {
-                if (uhciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "uhciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
+            if (hc) {
+                switch(hc->hc_HCIType) {
+                case HCITYPE_UHCI: {
+                    if (uhciGetStatus(hc, mptr, hciport, idx, &retval)) {
+                        pciusbRHDebug("RH", "uhciGetStatus returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_OHCI: {
-                if (ohciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "ohciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_OHCI: {
+                    if (ohciGetStatus(hc, mptr, hciport, idx, &retval)) {
+                        pciusbRHDebug("RH", "ohciGetStatus returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
 
-            case HCITYPE_EHCI: {
-                if (ehciGetStatus(hc, mptr, hciport, idx, &retval)) {
-                    pciusbRHDebug("RH", "ehciGetStatus returned (retval %04x)\n", retval);
-                    return(retval);
+                case HCITYPE_EHCI: {
+                    if (ehciGetStatus(hc, mptr, hciport, idx, &retval)) {
+                        pciusbRHDebug("RH", "ehciGetStatus returned (retval %04x)\n", retval);
+                        return(retval);
+                    }
                 }
-            }
-            break;
+                break;
+                }
+            } else {
+                pciusbRHDebug("RH", "port controller not set\n");
+                return(UHIOERR_STALL);
             }
             return(0);
         }
