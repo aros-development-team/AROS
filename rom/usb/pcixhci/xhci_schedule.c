@@ -148,23 +148,17 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
 
     if((txep == xhciEndpointID(0, 0)) && allowEp0AutoCreate) {
         if(!devCtx->dc_EPAllocs[txep].dmaa_Ptr) {
-            ULONG mps0 = ioreq->iouh_MaxPktSize;
-            if(mps0 == 0) {
-                if(ioreq->iouh_Flags & UHFF_SUPERSPEED)
-                    mps0 = 512;
-                else if(ioreq->iouh_Flags & UHFF_HIGHSPEED)
-                    mps0 = 64;
-                else
-                    mps0 = 8;
-                pciusbXHCIDebugV("xHCI",
-                                 DEBUGWARNCOLOR_SET "xHCI: corrected mps0 = %d" DEBUGCOLOR_RESET" \n",
-                                 mps0);
+            if(ioreq->iouh_MaxPktSize == 0) {
+                ioreq->iouh_Req.io_Error = UHIOERR_BADPARAMS;
+                pciusbWarn("xHCI",
+                           DEBUGWARNCOLOR_SET "xHCI: missing EP0 MaxPktSize from stack" DEBUGCOLOR_RESET" \n");
+                return FALSE;
             }
             ULONG initep = xhciInitEP(hc, devCtx,
                                       ioreq,
                                       0, 0,
                                       txtype,
-                                      mps0,
+                                      ioreq->iouh_MaxPktSize,
                                       ioreq->iouh_Interval,
                                       ioreq->iouh_Flags);
 
