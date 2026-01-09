@@ -1,5 +1,5 @@
 diff -ruN acpica-unix-20251212/source/include/achware.h acpica-unix-20251212.aros/source/include/achware.h
---- acpica-unix-20251212/source/include/achware.h	2025-08-07 22:30:36.000000000 +0000
+--- acpica-unix-20251212/source/include/achware.h	2025-12-13 01:26:00.000000000 +0000
 +++ acpica-unix-20251212.aros/source/include/achware.h	2023-03-18 11:54:42.470656947 +0000
 @@ -161,6 +161,7 @@
  #define ACPI_SST_SLEEPING       3
@@ -17,7 +17,7 @@ diff -ruN acpica-unix-20251212/source/include/achware.h acpica-unix-20251212.aro
  
  #endif /* __ACHWARE_H__ */
 diff -ruN acpica-unix-20251212/source/include/acpixf.h acpica-unix-20251212.aros/source/include/acpixf.h
---- acpica-unix-20251212/source/include/acpixf.h	2025-08-07 22:30:36.000000000 +0000
+--- acpica-unix-20251212/source/include/acpixf.h	2025-12-13 01:26:01.000000000 +0000
 +++ acpica-unix-20251212.aros/source/include/acpixf.h	2023-03-18 13:26:30.190657550 +0000
 @@ -551,7 +551,8 @@
  
@@ -54,7 +54,7 @@ diff -ruN acpica-unix-20251212/source/include/acpixf.h acpica-unix-20251212.aros
 +
  #endif /* __ACXFACE_H__ */
 diff -ruN acpica-unix-20251212/source/include/acutils.h acpica-unix-20251212.aros/source/include/acutils.h
---- acpica-unix-20251212/source/include/acutils.h	2025-08-07 22:30:36.000000000 +0000
+--- acpica-unix-20251212/source/include/acutils.h	2025-12-13 01:26:01.000000000 +0000
 +++ acpica-unix-20251212.aros/source/include/acutils.h	2023-03-18 11:55:30.040657010 +0000
 @@ -299,6 +299,7 @@
  #define DB_QWORD_DISPLAY     0x08
@@ -162,7 +162,7 @@ diff -ruN acpica-unix-20251212/source/include/platform/acaros.h acpica-unix-2025
 +
 +#endif /* __ACAROS_H__ */
 diff -ruN acpica-unix-20251212/source/include/platform/acenv.h acpica-unix-20251212.aros/source/include/platform/acenv.h
---- acpica-unix-20251212/source/include/platform/acenv.h	2025-08-07 22:30:36.000000000 +0000
+--- acpica-unix-20251212/source/include/platform/acenv.h	2025-12-13 01:26:01.000000000 +0000
 +++ acpica-unix-20251212.aros/source/include/platform/acenv.h	2019-02-21 10:24:26.133912600 +0000
 @@ -350,6 +350,9 @@
  #elif defined(__QNX__)
