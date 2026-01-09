@@ -31,11 +31,6 @@
 #define LogResBase (base->hd_LogResBase)
 #endif
 
-static inline void uhciIsoWriteBarrier(void)
-{
-    __asm__ volatile("" ::: "memory");
-}
-
 static void uhciInsertIsoPTD(struct PCIController *hc, struct PTDNode *ptd, ULONG slot)
 {
     struct UhciHCPrivate *uhcihcp = (struct UhciHCPrivate *)hc->hc_CPrivate;
@@ -48,12 +43,12 @@ static void uhciInsertIsoPTD(struct PCIController *hc, struct PTDNode *ptd, ULON
     if(!head) {
         ptd->ptd_NextPhys = READMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot]);
         WRITEMEM32_LE(&utd->utd_Link, ptd->ptd_NextPhys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(utd, sizeof(*utd), CACRF_ClearD);
 
         uhcihcp->uhc_IsoHead[slot] = uhcihcp->uhc_IsoTail[slot] = ptd;
         WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], ptd->ptd_Phys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
         pciusbUHCIDebug("UHCI", "ISO insert slot=%ld head prev=%08lx new=%08lx\n",
                         slot, prev_entry, ptd->ptd_Phys);
@@ -63,11 +58,11 @@ static void uhciInsertIsoPTD(struct PCIController *hc, struct PTDNode *ptd, ULON
 
         ptd->ptd_NextPhys = head->ptd_NextPhys;
         WRITEMEM32_LE(&utd->utd_Link, nextphys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(utd, sizeof(*utd), CACRF_ClearD);
 
         WRITEMEM32_LE(&tailtd->utd_Link, ptd->ptd_Phys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(tailtd, sizeof(*tailtd), CACRF_ClearD);
         tail->ptd_NextPTD = ptd;
         uhcihcp->uhc_IsoTail[slot] = ptd;
@@ -96,7 +91,7 @@ static void uhciUnlinkIsoPTD(struct PCIController *hc, struct PTDNode *ptd)
     if(prev) {
         struct UhciTD *prevtd = (struct UhciTD *)prev->ptd_Descriptor;
         WRITEMEM32_LE(&prevtd->utd_Link, next ? next->ptd_Phys : head->ptd_NextPhys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(prevtd, sizeof(*prevtd), CACRF_ClearD);
         prev->ptd_NextPTD = next;
     } else {
@@ -104,7 +99,7 @@ static void uhciUnlinkIsoPTD(struct PCIController *hc, struct PTDNode *ptd)
             next->ptd_NextPhys = head->ptd_NextPhys;
 
         WRITEMEM32_LE(&uhcihcp->uhc_UhciFrameList[slot], next ? next->ptd_Phys : head->ptd_NextPhys);
-        uhciIsoWriteBarrier();
+        SYNC;
         CacheClearE(&uhcihcp->uhc_UhciFrameList[slot], sizeof(ULONG), CACRF_ClearD);
         uhcihcp->uhc_IsoHead[slot] = next;
     }
