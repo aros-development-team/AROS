@@ -137,7 +137,7 @@ struct EhciHCPrivate
     UWORD                       ehc_EhciTimeoutShift;
 
     UWORD                       ehc_FrameListSize;
-    UWORD                       ehc_FrameListMask;
+    ULONG                       ehc_FrameListMask;
 
     volatile BOOL               ehc_AsyncAdvanced;
     BOOL                        ehc_64BitCapable;
