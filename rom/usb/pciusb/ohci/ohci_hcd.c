@@ -71,6 +71,63 @@ static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *h
 #define PrintED(txt, oed, hc)
 #endif
 
+
+/*
+ * Prepare a DMA buffer for the OHCI controller.
+ *
+ * CachePreDMA/CachePostDMA operate on CPU-visible addresses. OHCI TD fields
+ * must contain the bus (PCI) address. Do not mix these address domains.
+ */
+static inline ULONG ohciPrepareDMABuffer(struct PCIController *hc, struct OhciTD *otd,
+                                        APTR cpu_buf, ULONG len, ULONG dma_flags)
+{
+    ULONG l = len;
+
+    if (l == 0) {
+        CONSTWRITEMEM32_LE(&otd->otd_BufferPtr, 0);
+        CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
+        return 0;
+    }
+
+    APTR dma_buf = CachePreDMA(cpu_buf, &l, dma_flags);
+    ULONG phys = (ULONG)(IPTR)pciGetPhysical(hc, dma_buf);
+
+    WRITEMEM32_LE(&otd->otd_BufferPtr, phys);
+    WRITEMEM32_LE(&otd->otd_BufferEnd, phys + l - 1);
+
+    return l;
+}
+
+
+
+/*
+ * Isochronous PSW helpers.
+ *
+ * OHCI ISO PSW Offset field contains the offset of the last byte of each packet
+ * relative to BufferPage0, modulo 4 KiB. When the offset wraps, the packet end
+ * has crossed into the next page.
+ */
+static inline UWORD ohciIsoTDStartOffset(struct OhciIsoTD *oitd)
+{
+    ULONG bufend = READMEM32_LE(&oitd->oitd_BufferEnd);
+    ULONG len = (ULONG)oitd->oitd_Length;
+    ULONG start = bufend - len + 1;
+    return (UWORD)(start & 0xfff);
+}
+
+static inline ULONG ohciIsoPSWPktLen(UWORD raw_end, UWORD *prev_raw, ULONG *page_add, LONG *prev_end)
+{
+    if(raw_end < *prev_raw)
+        *page_add += 0x1000;
+
+    ULONG end = (ULONG)raw_end + *page_add;
+    ULONG pktlen = end - (ULONG)(*prev_end);
+
+    *prev_raw = raw_end;
+    *prev_end = (LONG)end;
+
+    return pktlen;
+}
 static AROS_INTH1(OhciResetHandler, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
@@ -196,16 +253,47 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                     READMEM32_LE(&otd->otd_BufferEnd));
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) {
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
-            UWORD pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
+            UWORD pktcount;
             UWORD pktidx;
+            UWORD base_off;
+            UWORD prev_raw;
+            ULONG page_add;
+            LONG prev_end;
+
+            /*
+             * HC writes ISO PSWs beyond the first 16 bytes of the common TD header.
+             * Invalidate the PSW area before reading it on cache-incoherent systems.
+             */
+            CacheClearE(&oitd->oitd_Ctrl, 16 + sizeof(oitd->oitd_Offset), CACRF_InvalidateD);
+
+            pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
 
             len = 0;
+            base_off = ohciIsoTDStartOffset(oitd);
+            prev_raw = base_off;
+            page_add = 0;
+            prev_end = (LONG)base_off - 1;
+
             for(pktidx = 0; pktidx < pktcount; pktidx++) {
                 UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
-                if(!(psw & OITM_PSW_OFFSET))
-                    continue;
+                UWORD ccfield = psw & OITM_PSW_CC;
+                UWORD pswcc;
+                ULONG pktlen;
 
-                len += (psw & OITM_PSW_OFFSET) + 1;
+                if(ccfield == OITM_PSW_CC)
+                    continue; /* Not accessed / unused */
+
+                pswcc = ccfield >> OITS_PSW_CC;
+                pktlen = ohciIsoPSWPktLen((UWORD)(psw & OITM_PSW_OFFSET), &prev_raw, &page_add, &prev_end);
+
+                switch(pswcc << OTCS_COMPLETIONCODE) {
+                case OTCF_CC_NOERROR:
+                case OTCF_CC_SHORTPKT:
+                    len += pktlen;
+                    break;
+                default:
+                    break;
+                }
             }
         } else if(otd->otd_BufferPtr) {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
@@ -231,14 +319,12 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         }
 
         if((READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) == 0) {
-            if (len) {
-                epcaps = READMEM32_LE(&oed->oed_EPCaps);
-                direction_in = ((epcaps & OECM_DIRECTION) == OECF_DIRECTION_TD)
-                               ? (ioreq->iouh_SetupData.bmRequestType & URTF_IN)
-                               : (epcaps & OECF_DIRECTION_IN);
-                CachePostDMA((APTR)(IPTR)READMEM32_LE(&otd->otd_BufferEnd) - len + 1, &len, direction_in ? 0 : DMA_ReadFromRAM);
-            }
-
+            /*
+             * Cache maintenance must operate on CPU-visible addresses.
+             * We defer CachePostDMA() until the IOReq is retired so we can use
+             * oed->oed_Buffer (the CPU pointer / bounce buffer), rather than
+             * deriving an address from OHCI TD physical fields.
+             */
             ioreq->iouh_Actual += len;
         }
         /*
@@ -270,17 +356,37 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         }
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) {
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
-            UWORD pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
+            UWORD pktcount;
             UWORD pktidx;
+            UWORD base_off;
+            UWORD prev_raw;
+            ULONG page_add;
+            LONG prev_end;
+
+            /* Invalidate ISO PSWs written by the HC */
+            CacheClearE(&oitd->oitd_Ctrl, 16 + sizeof(oitd->oitd_Offset), CACRF_InvalidateD);
+
+            pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
+            base_off = ohciIsoTDStartOffset(oitd);
+            prev_raw = base_off;
+            page_add = 0;
+            prev_end = (LONG)base_off - 1;
 
             for(pktidx = 0; pktidx < pktcount; pktidx++) {
                 UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
-                UWORD pswcc = (psw & OITM_PSW_CC) >> OITS_PSW_CC;
+                UWORD ccfield = psw & OITM_PSW_CC;
+                UWORD pswcc;
+                ULONG pktlen;
+
+                if(ccfield == OITM_PSW_CC)
+                    continue; /* Not accessed / unused */
+
+                pswcc = ccfield >> OITS_PSW_CC;
+                pktlen = ohciIsoPSWPktLen((UWORD)(psw & OITM_PSW_OFFSET), &prev_raw, &page_add, &prev_end);
 
                 switch(pswcc << OTCS_COMPLETIONCODE) {
                 case OTCF_CC_NOERROR:
-                    if(psw & OITM_PSW_OFFSET)
-                        ioreq->iouh_Actual += (psw & OITM_PSW_OFFSET) + 1;
+                    ioreq->iouh_Actual += pktlen;
                     break;
 
                 case OTCF_CC_CRCERROR:
@@ -302,6 +408,7 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                     break;
 
                 case OTCF_CC_SHORTPKT:
+                    ioreq->iouh_Actual += pktlen;
                     if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
                         ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
                     retire = TRUE;
@@ -446,13 +553,10 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             if(oed->oed_Continue) {
                 ULONG actual = ioreq->iouh_Actual;
                 ULONG oldenables;
-                ULONG phyaddr;
                 struct OhciTD *predotd = NULL;
 
                 pciusbOHCIDebug("OHCI", "Reloading Bulk transfer at %ld of %ld\n", ioreq->iouh_Actual, ioreq->iouh_Length);
                 otd = oed->oed_FirstTD;
-
-                phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer + actual);
                 do {
                     len = ioreq->iouh_Length - actual;
                     if(len > OHCI_PAGE_SIZE) {
@@ -466,16 +570,20 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                     }
                     predotd = otd;
                     otd->otd_Length = len;
-                    pciusbOHCIDebug("OHCI", "TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1);
+                    pciusbOHCIDebug("OHCI", "TD with %ld bytes\n", len);
                     CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
                     if(otd->otd_Succ) {
                         otd->otd_NextTD = otd->otd_Succ->otd_Self;
                     }
                     if(len) {
-                        WRITEMEM32_LE(&otd->otd_BufferPtr, (IPTR)CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
-                        phyaddr += len - 1;
-                        WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
-                        phyaddr++;
+                        len = ohciPrepareDMABuffer(hc, otd,
+                                                  (APTR)((UBYTE *)oed->oed_Buffer + actual),
+                                                  len,
+                                                  (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM);
+                        otd->otd_Length = len;
+                        pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n",
+                                        READMEM32_LE(&otd->otd_BufferPtr),
+                                        READMEM32_LE(&otd->otd_BufferEnd));
                     } else {
                         CONSTWRITEMEM32_LE(&otd->otd_BufferPtr, 0);
                         CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
@@ -510,6 +618,19 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 // disable ED
                 ohciDisableED(oed);
                 PrintED("Completed", oed, hc);
+
+                /* Final cache maintenance for completed non-isochronous transfers */
+                if(((READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) == 0) && ioreq->iouh_Actual) {
+                    BOOL direction_in;
+                    ULONG post_len = (ULONG)ioreq->iouh_Actual;
+
+                    if(ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                        direction_in = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? TRUE : FALSE;
+                    else
+                        direction_in = (ioreq->iouh_Dir == UHDIR_IN);
+
+                    CachePostDMA(oed->oed_Buffer, &post_len, direction_in ? 0 : DMA_ReadFromRAM);
+                }
 
                 {
                     struct RTIsoNode *rtn = (struct RTIsoNode *)ioreq->iouh_DriverPrivate2;
@@ -602,7 +723,6 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
     ULONG epcaps;
     ULONG ctrl;
     ULONG len;
-    ULONG phyaddr;
     ULONG oldenables;
     ULONG startmask = 0;
 
@@ -660,8 +780,7 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
 
         /* CHECKME: As i can understand, setup packet is always sent TO the device. Is this true? */
         oed->oed_SetupData = usbGetBuffer(&ioreq->iouh_SetupData, len, UHDIR_OUT);
-        WRITEMEM32_LE(&setupotd->otd_BufferPtr, (IPTR) CachePreDMA(pciGetPhysical(hc, oed->oed_SetupData), &len, DMA_ReadFromRAM));
-        WRITEMEM32_LE(&setupotd->otd_BufferEnd, (IPTR) pciGetPhysical(hc, ((UBYTE *)oed->oed_SetupData) + 7));
+        ohciPrepareDMABuffer(hc, setupotd, oed->oed_SetupData, len, DMA_ReadFromRAM);
 
         pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n", READMEM32_LE(&setupotd->otd_BufferPtr),
                 READMEM32_LE(&setupotd->otd_BufferEnd));
@@ -671,7 +790,6 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
         predotd = setupotd;
         if (ioreq->iouh_Length) {
             oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
-            phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
             actual = 0;
             do {
                 dataotd = ohciAllocTD(hc);
@@ -689,20 +807,16 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
                 dataotd->otd_Length = len;
                 pciusbOHCIDebug("OHCI", "TD with %ld bytes\n", len);
                 WRITEMEM32_LE(&dataotd->otd_Ctrl, ctrl);
-                /*
-                 * CHECKME: Here and there we feed phyaddr to CachePreDMA(), however it expects a logical address.
-                 * Perhaps the whole thing works only because HIDD_PCIDriver_CPUtoPCI() actually doesn't do any
-                 * translation.
-                 */
-                WRITEMEM32_LE(&dataotd->otd_BufferPtr, (IPTR)CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? 0 : DMA_ReadFromRAM));
-                phyaddr += len - 1;
-                WRITEMEM32_LE(&dataotd->otd_BufferEnd, phyaddr);
+                len = ohciPrepareDMABuffer(hc, dataotd,
+                                          (APTR)((UBYTE *)oed->oed_Buffer + actual),
+                                          len,
+                                          (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? 0 : DMA_ReadFromRAM);
+                dataotd->otd_Length = len;
 
                 pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n", READMEM32_LE(&dataotd->otd_BufferPtr),
                         READMEM32_LE(&dataotd->otd_BufferEnd));
 
                 CacheClearE(&dataotd->otd_Ctrl, 16, CACRF_ClearD);
-                phyaddr++;
                 actual += len;
                 predotd = dataotd;
             } while(actual < ioreq->iouh_Length);
@@ -728,13 +842,15 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
         CacheClearE(&setupotd->otd_Ctrl, 16, CACRF_ClearD);
         CacheClearE(&predotd->otd_Ctrl, 16, CACRF_ClearD);
 
-        ctrl ^= (OTCF_PIDCODE_IN^OTCF_PIDCODE_OUT)|OTCF_NOINT|OTCF_DATA1|OTCF_TOGGLEFROMTD;
+        /* Status stage: opposite direction, DATA1, interrupt on completion */
+        ULONG term_ctrl = ((ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? OTCF_PIDCODE_OUT : OTCF_PIDCODE_IN) |
+                          OTCF_CC_INVALID | OTCF_DATA1 | OTCF_TOGGLEFROMTD;
 
         termotd->otd_Length = 0;
         termotd->otd_ED = oed;
         termotd->otd_Succ = NULL;
         termotd->otd_NextTD = ohcihcp->ohc_OhciTermTD->otd_Self;
-        CONSTWRITEMEM32_LE(&termotd->otd_Ctrl, ctrl);
+        CONSTWRITEMEM32_LE(&termotd->otd_Ctrl, term_ctrl);
         CONSTWRITEMEM32_LE(&termotd->otd_BufferPtr, 0);
         CONSTWRITEMEM32_LE(&termotd->otd_BufferEnd, 0);
         CacheClearE(&termotd->otd_Ctrl, 16, CACRF_ClearD);
@@ -801,8 +917,6 @@ static void ohciScheduleIntTDs(struct PCIController *hc)
     ULONG actual;
     ULONG epcaps;
     ULONG len;
-    ULONG phyaddr;
-
     /* *** INT Transfers *** */
     pciusbOHCIDebug("OHCI", "Scheduling new INT transfers...\n");
     ioreq = (struct IOUsbHWReq *) hc->hc_IntXFerQueue.lh_Head;
@@ -836,7 +950,6 @@ static void ohciScheduleIntTDs(struct PCIController *hc)
 
         predotd = NULL;
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
-        phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
         actual = 0;
         do {
             otd = ohciAllocTD(hc);
@@ -860,10 +973,14 @@ static void ohciScheduleIntTDs(struct PCIController *hc)
             pciusbOHCIDebugV("OHCI", "Control TD 0x%p with %ld bytes\n", otd, len);
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len) {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, (IPTR)CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
-                phyaddr += len - 1;
-                WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
-                phyaddr++;
+                len = ohciPrepareDMABuffer(hc, otd,
+                                          (APTR)((UBYTE *)oed->oed_Buffer + actual),
+                                          len,
+                                          (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM);
+                otd->otd_Length = len;
+                pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n",
+                                READMEM32_LE(&otd->otd_BufferPtr),
+                                READMEM32_LE(&otd->otd_BufferEnd));
             } else {
                 CONSTWRITEMEM32_LE(&otd->otd_BufferPtr, 0);
                 CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);
@@ -940,7 +1057,6 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
     ULONG actual;
     ULONG epcaps;
     ULONG len;
-    ULONG phyaddr;
     ULONG oldenables;
     ULONG startmask = 0;
 
@@ -977,7 +1093,6 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
 
         predotd = NULL;
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
-        phyaddr = (IPTR)pciGetPhysical(hc, oed->oed_Buffer);
         actual = 0;
         do {
             if((actual >= OHCI_TD_BULK_LIMIT) && (actual < ioreq->iouh_Length)) {
@@ -1004,13 +1119,17 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
                 len = OHCI_PAGE_SIZE;
             }
             otd->otd_Length = len;
-            pciusbOHCIDebug("OHCI", "TD with %ld bytes: %08x-%08x\n", len, phyaddr, phyaddr+len-1);
+            pciusbOHCIDebug("OHCI", "TD with %ld bytes\n", len);
             CONSTWRITEMEM32_LE(&otd->otd_Ctrl, OTCF_CC_INVALID|OTCF_NOINT);
             if(len) {
-                WRITEMEM32_LE(&otd->otd_BufferPtr, (IPTR)CachePreDMA((APTR)(IPTR)phyaddr, &len, (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM));
-                phyaddr += len - 1;
-                WRITEMEM32_LE(&otd->otd_BufferEnd, phyaddr);
-                phyaddr++;
+                len = ohciPrepareDMABuffer(hc, otd,
+                                          (APTR)((UBYTE *)oed->oed_Buffer + actual),
+                                          len,
+                                          (ioreq->iouh_Dir == UHDIR_IN) ? 0 : DMA_ReadFromRAM);
+                otd->otd_Length = len;
+                pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n",
+                                READMEM32_LE(&otd->otd_BufferPtr),
+                                READMEM32_LE(&otd->otd_BufferEnd));
             } else {
                 CONSTWRITEMEM32_LE(&otd->otd_BufferPtr, 0);
                 CONSTWRITEMEM32_LE(&otd->otd_BufferEnd, 0);

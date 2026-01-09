@@ -225,25 +225,33 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     WRITEMEM32_LE(&oitd->oitd_NextTD, 0);
 
     remaining = rtn->rtn_BufferReq.ubr_Length;
-    offset = phys & 0xfff;
+    offset = (UWORD)(phys & 0xfff);
+    ULONG bus_end_off = offset;
+
+    /*
+     * OHCI ISO PSW Offset field contains the offset of the last byte of each
+     * packet relative to BufferPage0, modulo 4 KiB. The HC will advance to the
+     * next page when the offset wraps.
+     */
     for(pktidx = 0; pktidx < pktcnt; pktidx++) {
         UWORD pktlen = remaining;
         if(pktlen > rtn->rtn_IOReq.iouh_MaxPktSize)
             pktlen = rtn->rtn_IOReq.iouh_MaxPktSize;
 
-        oitd->oitd_Offset[pktidx] = offset | OITM_PSW_CC;
-        offset += pktlen;
+        bus_end_off += pktlen;
+        oitd->oitd_Offset[pktidx] = ((bus_end_off - 1) & 0xfff) | OITM_PSW_CC;
         remaining -= pktlen;
     }
     while(pktidx < 8) {
         oitd->oitd_Offset[pktidx++] = OITM_PSW_CC;
     }
 
-    WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + offset - 1);
+    WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + rtn->rtn_BufferReq.ubr_Length - 1);
 
     CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
+    SYNC;
 
-    ptd->ptd_Length = offset;
+    ptd->ptd_Length = rtn->rtn_BufferReq.ubr_Length;
     ptd->ptd_FrameIdx = frame;
     ptd->ptd_Flags = PTDF_BUFFER_VALID;
 
@@ -287,11 +295,13 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         WRITEMEM32_LE(&oitd->oitd_NextTD, ohcihcp->ohc_OhciTermTD->otd_Self);
         oitd->oitd_ED = oed;
         CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
+        SYNC;
 
         oed->oed_FirstTD = (struct OhciTD *)oitd;
         WRITEMEM32_LE(&oed->oed_TailPtr, ohcihcp->ohc_OhciTermTD->otd_Self);
         WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oitd->oitd_Self));
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        SYNC;
 
         ptd->ptd_Flags |= PTDF_ACTIVE;
     }
@@ -314,13 +324,16 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         intoed->oed_Succ = oed;
         intoed->oed_NextED = oed->oed_Self;
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        SYNC;
         CacheClearE(&intoed->oed_EPCaps, 16, CACRF_ClearD);
+        SYNC;
         ohciUpdateIntTree(hc);
         Enable();
     }
 
     WRITEMEM32_LE(&oed->oed_EPCaps, READMEM32_LE(&oed->oed_EPCaps) & ~OECF_SKIP);
     CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+    SYNC;
 }
 
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)

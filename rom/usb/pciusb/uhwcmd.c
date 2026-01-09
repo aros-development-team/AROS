@@ -787,7 +787,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 break;
                 }
             } else {
-                pciusbRHDebug("RH", "port controller not set\n");
+                pciusbWarn("RH", "port %ld controller not set\n", idx);
                 return(UHIOERR_STALL);
             }
         }
@@ -835,7 +835,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 break;
                 }
             } else {
-                pciusbRHDebug("RH", "port controller not set\n");
+                pciusbWarn("RH", "port %ld controller not set\n", idx);
                 return(UHIOERR_STALL);
             }
         }
@@ -890,7 +890,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 break;
                 }
             } else {
-                pciusbRHDebug("RH", "port controller not set\n");
+                pciusbWarn("RH", "port %ld controller not set\n", idx);
                 return(UHIOERR_STALL);
             }
             return(0);
