@@ -2534,7 +2534,6 @@ AROS_LH2(BOOL, psdSetDeviceConfig,
     AROS_LIBFUNC_INIT
     struct PsdConfig *pc;
     struct PsdDevice *pd = pp->pp_Device;
-    //UBYTE buf[8]; // VIA babble bug safety buffer (8 instead of 2)
     LONG ioerr;
     BOOL res = FALSE;
 
@@ -2881,6 +2880,60 @@ static void DumpPipe(struct PsdPipe *pp)
     }
 
     KPRINTF(15, ("--- END PIPE DUMP ---\n"));
+    Enable();
+}
+
+
+static void pLogPipe(struct PsdPipe *pp)
+{
+    Disable();
+    if (pp) {
+        struct PsdDevice   *pd  = pp->pp_Device;
+        struct PsdEndpoint *pep = pp->pp_Endpoint;
+
+        LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "Pipe %lu flags %04x",
+	                   (ULONG)pp->pp_Num,
+	                   (ULONG)pp->pp_Flags);
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  DevAddr=%lu  MaxPktSize=%lu  Flags=%08lx  NakTimeout=%lu\n",
+                       (ULONG)pp->pp_IOReq.iouh_DevAddr,
+                       (ULONG)pp->pp_IOReq.iouh_MaxPktSize,
+                       (ULONG)pp->pp_IOReq.iouh_Flags,
+                       (ULONG)pp->pp_IOReq.iouh_NakTimeout);
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  HubPort(root)=%u  SplitHubAddr=%u  SplitHubPort=%u  RouteString=%05lx\n",
+                       (unsigned)pp->pp_IOReq.iouh_RootPort,
+                       (unsigned)pp->pp_IOReq.iouh_SplitHubAddr,
+                       (unsigned)pp->pp_IOReq.iouh_SplitHubPort,
+                       (ULONG)pp->pp_IOReq.iouh_RouteString);
+
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "Device MaxPktSize0=%u",
+	                   (unsigned)pd->pd_MaxPktSize0);
+
+        if (pep) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "Endpoint %u  Dir=%u  Type=%u  MaxPktSize=%u  Interval=%u\n",
+                       (unsigned)pep->pep_EPNum,
+                       (unsigned)pep->pep_Direction,
+                       (unsigned)pep->pep_TransType,
+                       (unsigned)pep->pep_MaxPktSize,
+                       (unsigned)pep->pep_Interval);
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  NumTransMuFr=%u  SyncType=%u  UsageType=%u\n",
+                       (unsigned)pep->pep_NumTransMuFr,
+                       (unsigned)pep->pep_SyncType,
+                       (unsigned)pep->pep_UsageType);
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  MaxBurst=%u  CompAttr=%u  BytesPerInterval=%lu\n",
+                       (unsigned)pep->pep_MaxBurst,
+                       (unsigned)pep->pep_CompAttributes,
+                       (ULONG)pep->pep_BytesPerInterval);
+        }
+    }
     Enable();
 }
 
@@ -3288,6 +3341,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
                        psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
         KPRINTF(15, ("%s/%ld GET_DESCRIPTOR (8) failed %ld!\n",
                      pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, ioerr));
+        pLogPipe(pp);
         DumpPipe(pp);
 
         /*
@@ -3387,12 +3441,11 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
     ioerr = psdDoPipe(pp, &usdd, sizeof(struct UsbStdDevDesc));
     if(ioerr) {
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                       "GET_DESCRIPTOR (len 18) failed: %s (%ld)",
-                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-        KPRINTF(15, ("GET_DESCRIPTOR (18) failed %ld!\n", ioerr));
+                       "GET_DESCRIPTOR (len %u) failed: %s (%ld)",
+                       sizeof(struct UsbStdDevDesc), psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("GET_DESCRIPTOR (%u) failed %ld!\n", sizeof(struct UsbStdDevDesc), ioerr));
         goto fail_restore;
     }
-
 
     pAllocDescriptor(pd, (UBYTE *) &usdd);
     pd->pd_Flags |= PDFF_HASDEVDESC;
