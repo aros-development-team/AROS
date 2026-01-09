@@ -352,7 +352,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(pktcnt > 8)
             pktcnt = 8;
 
-        ctrl = (frame << OITCS_STARTINGFRAME) | OITF_NOINT |
+        ctrl = (frame << OITCS_STARTINGFRAME) |
                ((pktcnt - 1) << OITCS_FRAMECOUNT) | OITF_CC_NOTACCESSED;
 
         oitd->oitd_Succ = NULL;
