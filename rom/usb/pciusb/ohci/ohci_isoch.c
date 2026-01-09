@@ -71,53 +71,76 @@ void ohciScheduleIsoTDs(struct PCIController *hc)
     }
 }
 
+static struct PTDNode *ohciNextIsoPTD(struct RTIsoNode *rtn)
+{
+    if (!rtn || !rtn->rtn_PTDs || !rtn->rtn_PTDCount)
+        return NULL;
+
+    for (UWORD offset = 0; offset < rtn->rtn_PTDCount; offset++) {
+        UWORD idx = (rtn->rtn_NextPTD + offset) % rtn->rtn_PTDCount;
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+
+        if (!ptd)
+            continue;
+
+        if (!(ptd->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID))) {
+            rtn->rtn_NextPTD = (idx + 1) % rtn->rtn_PTDCount;
+            return ptd;
+        }
+    }
+
+    return NULL;
+}
+
 WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd0 = NULL;
-    struct PTDNode *ptd1 = NULL;
-    struct OhciIsoTD *oitd0 = NULL;
-    struct OhciIsoTD *oitd1 = NULL;
     struct OhciED *oed = NULL;
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
-    if(!rtn->rtn_PTDs || ptdcount < 2)
+    if(!rtn->rtn_PTDs || !ptdcount)
         return(UHIOERR_BADPARAMS);
 
-    for(idx = 0; idx < ptdcount; idx++)
-        rtn->rtn_PTDs[idx] = NULL;
-
-    ptd0 = AllocMem(sizeof(*ptd0), MEMF_CLEAR);
-    ptd1 = AllocMem(sizeof(*ptd1), MEMF_CLEAR);
-    if(!ptd0 || !ptd1) {
-        if(ptd0)
-            FreeMem(ptd0, sizeof(*ptd0));
-        if(ptd1)
-            FreeMem(ptd1, sizeof(*ptd1));
-        return(UHIOERR_OUTOFMEMORY);
+    for(idx = 0; idx < ptdcount; idx++) {
+        if(rtn->rtn_PTDs[idx]) {
+            if(rtn->rtn_PTDs[idx]->ptd_Descriptor)
+                ohciFreeIsoTD(hc, (struct OhciIsoTD *)rtn->rtn_PTDs[idx]->ptd_Descriptor);
+            FreeMem(rtn->rtn_PTDs[idx], sizeof(*rtn->rtn_PTDs[idx]));
+            rtn->rtn_PTDs[idx] = NULL;
+        }
     }
 
-    oitd0 = ohciAllocIsoTD(hc);
-    oitd1 = ohciAllocIsoTD(hc);
     oed = ohciAllocED(hc);
-    if(!oitd0 || !oitd1 || !oed) {
-        if(oitd0)
-            ohciFreeIsoTD(hc, oitd0);
-        if(oitd1)
-            ohciFreeIsoTD(hc, oitd1);
-        if(oed)
-            ohciFreeED(hc, oed);
-        FreeMem(ptd0, sizeof(*ptd0));
-        FreeMem(ptd1, sizeof(*ptd1));
+    if(!oed)
         return(UHIOERR_OUTOFMEMORY);
-    }
 
-    ptd0->ptd_Descriptor = oitd0;
-    ptd0->ptd_Phys = READMEM32_LE(&oitd0->oitd_Self);
-    ptd1->ptd_Descriptor = oitd1;
-    ptd1->ptd_Phys = READMEM32_LE(&oitd1->oitd_Self);
+    for(idx = 0; idx < ptdcount; idx++) {
+        struct PTDNode *ptd = AllocMem(sizeof(*ptd), MEMF_CLEAR);
+        struct OhciIsoTD *oitd = ptd ? ohciAllocIsoTD(hc) : NULL;
+
+        if(!ptd || !oitd) {
+            if(ptd)
+                FreeMem(ptd, sizeof(*ptd));
+
+            for(UWORD freeidx = 0; freeidx < idx; freeidx++) {
+                struct PTDNode *old = rtn->rtn_PTDs[freeidx];
+                if(old->ptd_Descriptor)
+                    ohciFreeIsoTD(hc, (struct OhciIsoTD *)old->ptd_Descriptor);
+                FreeMem(old, sizeof(*old));
+                rtn->rtn_PTDs[freeidx] = NULL;
+            }
+
+            ohciFreeED(hc, oed);
+            return(UHIOERR_OUTOFMEMORY);
+        }
+
+        ptd->ptd_Descriptor = oitd;
+        ptd->ptd_Phys = READMEM32_LE(&oitd->oitd_Self);
+        ptd->ptd_RTIsoNode = rtn;
+        rtn->rtn_PTDs[idx] = ptd;
+    }
 
     CONSTWRITEMEM32_LE(&oed->oed_EPCaps, OECF_SKIP|OECF_ISO);
     WRITEMEM32_LE(&oed->oed_HeadPtr, 0);
@@ -126,8 +149,6 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     oed->oed_IOReq = &rtn->rtn_IOReq;
 
     rtn->rtn_IOReq.iouh_DriverPrivate1 = oed;
-    rtn->rtn_PTDs[0] = ptd0;
-    rtn->rtn_PTDs[1] = ptd1;
     rtn->rtn_NextPTD = 0;
     rtn->rtn_BounceBuffer = NULL;
 
@@ -136,126 +157,105 @@ WORD ohciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
 WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
-    struct PTDNode *ptd;
-    struct OhciIsoTD *oitd;
-    APTR dmabuffer;
-    ULONG phys;
-    ULONG frame;
-    ULONG ctrl;
-    UWORD pktcnt;
-    UWORD pktidx;
-    UWORD remaining;
-    UWORD offset;
     struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
     struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+    struct PTDNode *ptd = ohciNextIsoPTD(rtn);
+    struct IOUsbHWBufferReq *bufreq;
     ULONG interval;
+    BOOL explicit_frame = FALSE;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
+
+    if (!ptd)
+        return UHIOERR_NAKTIMEOUT;
+
+    bufreq = &ptd->ptd_BufferReq;
+    *bufreq = rtn->rtn_BufferReq;
+    explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
+
+    if (urti && !explicit_frame)
+        bufreq->ubr_Frame = 0;
 
     if (urti) {
         if (ioreq->iouh_Dir == UHDIR_IN) {
             if (urti->urti_InReqHook)
-                CallHookPkt(urti->urti_InReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
         } else {
             if (urti->urti_OutReqHook)
-                CallHookPkt(urti->urti_OutReqHook, rtn, &rtn->rtn_BufferReq);
+                CallHookPkt(urti->urti_OutReqHook, rtn, bufreq);
         }
+        if (bufreq->ubr_Frame)
+            explicit_frame = TRUE;
     } else {
-        rtn->rtn_BufferReq.ubr_Buffer = ioreq->iouh_Data;
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
-        rtn->rtn_BufferReq.ubr_Frame = ioreq->iouh_Frame;
-        rtn->rtn_BufferReq.ubr_Flags = 0;
+        bufreq->ubr_Buffer = ioreq->iouh_Data;
+        bufreq->ubr_Length = ioreq->iouh_Length;
+        bufreq->ubr_Frame = ioreq->iouh_Frame;
+        bufreq->ubr_Flags = 0;
     }
 
-    if (!rtn->rtn_BufferReq.ubr_Length)
-        rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Length;
+    if (!bufreq->ubr_Length)
+        bufreq->ubr_Length = ioreq->iouh_Length;
+
+    if (urti) {
+        if (explicit_frame)
+            rtn->rtn_Flags |= RTISO_FLAG_EXPLICIT_FRAME;
+        else
+            rtn->rtn_Flags &= ~RTISO_FLAG_EXPLICIT_FRAME;
+    }
+
+    if (urti && !(rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME))
+        bufreq->ubr_Frame = 0;
 
     interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
-    if (!rtn->rtn_BufferReq.ubr_Frame) {
-        ULONG framecnt = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff;
-        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : ((framecnt + interval) & 0xffff);
-        rtn->rtn_BufferReq.ubr_Frame = next;
-    }
-    rtn->rtn_NextFrame = (rtn->rtn_BufferReq.ubr_Frame + interval) & 0xffff;
+    if (!bufreq->ubr_Frame) {
+        ULONG current_frame;
+        ULONG lead = interval * 8;
+        ULONG next = 0;
 
-    dmabuffer = rtn->rtn_BufferReq.ubr_Buffer;
-#if __WORDSIZE == 64
-    if(!dmabuffer)
-        return RC_OK;
+        if (lead < 8)
+            lead = 8;
 
-    dmabuffer = usbGetBuffer(dmabuffer, rtn->rtn_BufferReq.ubr_Length,
-                             rtn->rtn_IOReq.iouh_Dir);
-    if(!dmabuffer)
-        return UHIOERR_OUTOFMEMORY;
+        current_frame = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff;
 
-    if(dmabuffer != rtn->rtn_BufferReq.ubr_Buffer &&
-            rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT) {
-        CopyMem(rtn->rtn_BufferReq.ubr_Buffer, dmabuffer, rtn->rtn_BufferReq.ubr_Length);
-    }
-#endif
-    rtn->rtn_BounceBuffer = (dmabuffer != rtn->rtn_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
+        if (rtn->rtn_NextFrame) {
+            LONG delta = (LONG)rtn->rtn_NextFrame - (LONG)current_frame;
+            if (delta > 0 && delta < (LONG)(0x10000 - lead))
+                next = rtn->rtn_NextFrame;
+        }
 
-    ptd = rtn->rtn_PTDs[rtn->rtn_NextPTD];
-    if(!ptd)
-        return(UHIOERR_BADPARAMS);
+        if (!next)
+            next = (current_frame + lead) & 0xffff;
 
-    oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
-    if(!oitd)
-        return(UHIOERR_BADPARAMS);
+        bufreq->ubr_Frame = next;
+        pciusbOHCIDebug("OHCI", "ISO schedule current=%ld next=%ld lead=%ld interval=%ld\n",
+                        current_frame, bufreq->ubr_Frame, lead, interval);
+    } else {
+        ULONG current_frame;
+        ULONG lead = interval * 8;
+        LONG delta;
 
-    if(!dmabuffer || !rtn->rtn_BufferReq.ubr_Length)
-        return RC_OK;
+        if (lead < 8)
+            lead = 8;
 
-    phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
-    frame = rtn->rtn_BufferReq.ubr_Frame;
-
-    pktcnt = (rtn->rtn_BufferReq.ubr_Length + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
-             rtn->rtn_IOReq.iouh_MaxPktSize;
-    if(pktcnt > 8)
-        pktcnt = 8;
-
-    ctrl = (frame << OITCS_STARTINGFRAME) | OITF_NOINT |
-           ((pktcnt - 1) << OITCS_FRAMECOUNT) | OITF_CC_NOTACCESSED;
-
-    oitd->oitd_Succ = NULL;
-    oitd->oitd_ED = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
-    oitd->oitd_Length = rtn->rtn_BufferReq.ubr_Length;
-    WRITEMEM32_LE(&oitd->oitd_Ctrl, ctrl);
-    WRITEMEM32_LE(&oitd->oitd_BufferPage0, phys & ~0xfff);
-    WRITEMEM32_LE(&oitd->oitd_NextTD, 0);
-
-    remaining = rtn->rtn_BufferReq.ubr_Length;
-    offset = (UWORD)(phys & 0xfff);
-    ULONG bus_end_off = offset;
-
-    /*
-     * OHCI ISO PSW Offset field contains the offset of the last byte of each
-     * packet relative to BufferPage0, modulo 4 KiB. The HC will advance to the
-     * next page when the offset wraps.
-     */
-    for(pktidx = 0; pktidx < pktcnt; pktidx++) {
-        UWORD pktlen = remaining;
-        if(pktlen > rtn->rtn_IOReq.iouh_MaxPktSize)
-            pktlen = rtn->rtn_IOReq.iouh_MaxPktSize;
-
-        bus_end_off += pktlen;
-        oitd->oitd_Offset[pktidx] = ((bus_end_off - 1) & 0xfff) | OITM_PSW_CC;
-        remaining -= pktlen;
-    }
-    while(pktidx < 8) {
-        oitd->oitd_Offset[pktidx++] = OITM_PSW_CC;
+        current_frame = READREG32_LE(hc->hc_RegBase, OHCI_FRAMECOUNT) & 0xffff;
+        delta = (LONG)bufreq->ubr_Frame - (LONG)current_frame;
+        if (delta <= 0 || delta >= (LONG)(0x10000 - lead)) {
+            bufreq->ubr_Frame = (current_frame + lead) & 0xffff;
+            pciusbOHCIDebug("OHCI", "ISO schedule adjusted current=%ld next=%ld lead=%ld interval=%ld\n",
+                            current_frame, bufreq->ubr_Frame, lead, interval);
+        } else {
+            pciusbOHCIDebug("OHCI", "ISO schedule current=%ld interval=%ld\n",
+                            bufreq->ubr_Frame, interval);
+        }
     }
 
-    WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + rtn->rtn_BufferReq.ubr_Length - 1);
+    rtn->rtn_NextFrame = (bufreq->ubr_Frame + interval) & 0xffff;
 
-    CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
-    SYNC;
-
-    ptd->ptd_Length = rtn->rtn_BufferReq.ubr_Length;
-    ptd->ptd_FrameIdx = frame;
-    ptd->ptd_Flags = PTDF_BUFFER_VALID;
-
-    rtn->rtn_NextPTD ^= 1;
+    ptd->ptd_FrameIdx = bufreq->ubr_Frame;
+    ptd->ptd_Length = bufreq->ubr_Length;
+    ptd->ptd_Flags |= PTDF_BUFFER_VALID;
+    ptd->ptd_BounceBuffer = NULL;
+    rtn->rtn_BufferReq = *bufreq;
 
     return RC_OK;
 }
@@ -266,7 +266,10 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct IOUsbHWReq *ioreq = pciusbIsoGetIOReq(rtn);
     struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
     UWORD idx;
+    UWORD ptdcount = rtn->rtn_PTDCount;
     struct OhciED *intoed;
+    struct OhciTD *lasttd = NULL;
+    ULONG headphys;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
@@ -281,29 +284,128 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     oed->oed_IOReq = ioreq;
     ioreq->iouh_DriverPrivate2 = rtn;
 
-    for(idx = 0; idx < 2; idx++) {
+    headphys = READMEM32_LE(&oed->oed_HeadPtr) & OHCI_PTRMASK;
+    if (headphys && headphys != ohcihcp->ohc_OhciTermTD->otd_Self) {
+        struct OhciTD *scan = (struct OhciTD *)((IPTR)headphys - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+        ULONG nextphys;
+
+        while(scan) {
+            nextphys = READMEM32_LE(&scan->otd_NextTD) & OHCI_PTRMASK;
+            if(!nextphys || nextphys == ohcihcp->ohc_OhciTermTD->otd_Self)
+                break;
+            scan = (struct OhciTD *)((IPTR)nextphys - hc->hc_PCIVirtualAdjust - offsetof(struct OhciTD, otd_Ctrl));
+        }
+        lasttd = scan;
+    }
+
+    for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct OhciIsoTD *oitd;
+        APTR dmabuffer;
+        ULONG phys;
+        ULONG frame;
+        ULONG ctrl;
+        UWORD pktcnt;
+        UWORD pktidx;
+        UWORD remaining;
+        UWORD offset;
+        ULONG bus_end_off;
 
         if(!ptd || !(ptd->ptd_Flags & PTDF_BUFFER_VALID))
+            continue;
+
+        if(ptd->ptd_Flags & PTDF_ACTIVE)
             continue;
 
         oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
         if(!oitd)
             continue;
 
-        WRITEMEM32_LE(&oitd->oitd_NextTD, ohcihcp->ohc_OhciTermTD->otd_Self);
+        dmabuffer = ptd->ptd_BufferReq.ubr_Buffer;
+#if __WORDSIZE == 64
+        if(dmabuffer) {
+            dmabuffer = usbGetBuffer(dmabuffer, ptd->ptd_BufferReq.ubr_Length,
+                                     rtn->rtn_IOReq.iouh_Dir);
+            if(!dmabuffer) {
+                ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
+                continue;
+            }
+
+            if(dmabuffer != ptd->ptd_BufferReq.ubr_Buffer &&
+                    rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT) {
+                CopyMem(ptd->ptd_BufferReq.ubr_Buffer, dmabuffer, ptd->ptd_BufferReq.ubr_Length);
+            }
+        }
+#endif
+        ptd->ptd_BounceBuffer = (dmabuffer != ptd->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
+
+        if(!dmabuffer || !ptd->ptd_BufferReq.ubr_Length) {
+            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
+            continue;
+        }
+
+        phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
+        frame = ptd->ptd_BufferReq.ubr_Frame;
+
+        pktcnt = (ptd->ptd_BufferReq.ubr_Length + rtn->rtn_IOReq.iouh_MaxPktSize - 1) /
+                 rtn->rtn_IOReq.iouh_MaxPktSize;
+        if(pktcnt > 8)
+            pktcnt = 8;
+
+        ctrl = (frame << OITCS_STARTINGFRAME) | OITF_NOINT |
+               ((pktcnt - 1) << OITCS_FRAMECOUNT) | OITF_CC_NOTACCESSED;
+
+        oitd->oitd_Succ = NULL;
         oitd->oitd_ED = oed;
+        oitd->oitd_Length = ptd->ptd_BufferReq.ubr_Length;
+        WRITEMEM32_LE(&oitd->oitd_Ctrl, ctrl);
+        WRITEMEM32_LE(&oitd->oitd_BufferPage0, phys & ~0xfff);
+        WRITEMEM32_LE(&oitd->oitd_NextTD, ohcihcp->ohc_OhciTermTD->otd_Self);
+
+        remaining = ptd->ptd_BufferReq.ubr_Length;
+        offset = (UWORD)(phys & 0xfff);
+        bus_end_off = offset;
+
+        /*
+         * OHCI ISO PSW Offset field contains the offset of the last byte of each
+         * packet relative to BufferPage0, modulo 4 KiB. The HC will advance to the
+         * next page when the offset wraps.
+         */
+        for(pktidx = 0; pktidx < pktcnt; pktidx++) {
+            UWORD pktlen = remaining;
+            if(pktlen > rtn->rtn_IOReq.iouh_MaxPktSize)
+                pktlen = rtn->rtn_IOReq.iouh_MaxPktSize;
+
+            bus_end_off += pktlen;
+            oitd->oitd_Offset[pktidx] = ((bus_end_off - 1) & 0xfff) | OITM_PSW_CC;
+            remaining -= pktlen;
+        }
+        while(pktidx < 8) {
+            oitd->oitd_Offset[pktidx++] = OITM_PSW_CC;
+        }
+
+        WRITEMEM32_LE(&oitd->oitd_BufferEnd, phys + ptd->ptd_BufferReq.ubr_Length - 1);
+
         CacheClearE(oitd, sizeof(*oitd), CACRF_ClearD);
         SYNC;
 
-        oed->oed_FirstTD = (struct OhciTD *)oitd;
-        WRITEMEM32_LE(&oed->oed_TailPtr, ohcihcp->ohc_OhciTermTD->otd_Self);
-        WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oitd->oitd_Self));
-        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
-        SYNC;
+        if(lasttd) {
+            WRITEMEM32_LE(&lasttd->otd_NextTD, READMEM32_LE(&oitd->oitd_Self));
+            CacheClearE(lasttd, sizeof(*lasttd), CACRF_ClearD);
+        } else {
+            WRITEMEM32_LE(&oed->oed_HeadPtr, READMEM32_LE(&oitd->oitd_Self));
+            oed->oed_FirstTD = (struct OhciTD *)oitd;
+        }
+
+        lasttd = (struct OhciTD *)oitd;
 
         ptd->ptd_Flags |= PTDF_ACTIVE;
+    }
+
+    if(lasttd) {
+        WRITEMEM32_LE(&oed->oed_TailPtr, ohcihcp->ohc_OhciTermTD->otd_Self);
+        CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
+        SYNC;
     }
 
     if(!oed->oed_Pred) {
@@ -340,7 +442,6 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
     UWORD ptdcount = rtn->rtn_PTDCount;
-    UWORD limit = (ptdcount < 2) ? ptdcount : 2;
     UWORD idx;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
@@ -350,16 +451,17 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         ohciEnableInt(hc, OISF_SOF);
     }
 
-    for(idx = 0; idx < limit; idx++) {
-        if(rtn->rtn_PTDs[idx])
-            rtn->rtn_PTDs[idx]->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
-    }
-
-    if(rtn->rtn_BounceBuffer &&
-            rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
-        usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
-                         rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
-        rtn->rtn_BounceBuffer = NULL;
+    for(idx = 0; idx < ptdcount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd) {
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+            if(ptd->ptd_BounceBuffer &&
+                    ptd->ptd_BounceBuffer != ptd->ptd_BufferReq.ubr_Buffer) {
+                usbReleaseBuffer(ptd->ptd_BounceBuffer, ptd->ptd_BufferReq.ubr_Buffer,
+                                 ptd->ptd_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
+                ptd->ptd_BounceBuffer = NULL;
+            }
+        }
     }
 }
 
@@ -368,7 +470,6 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciED *oed = (struct OhciED *)rtn->rtn_IOReq.iouh_DriverPrivate1;
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
-    UWORD limit = (ptdcount < 2) ? ptdcount : 2;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
@@ -379,7 +480,7 @@ void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         rtn->rtn_IOReq.iouh_DriverPrivate1 = NULL;
     }
 
-    for(idx = 0; idx < limit; idx++) {
+    for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd) {
             if(ptd->ptd_Descriptor)

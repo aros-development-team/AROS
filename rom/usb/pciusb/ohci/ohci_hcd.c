@@ -356,12 +356,15 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
         }
         if(READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO) {
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
+            struct PTDNode *ptd = NULL;
+            struct IOUsbHWBufferReq *bufreq = rtn ? &rtn->rtn_BufferReq : NULL;
             UWORD pktcount;
             UWORD pktidx;
             UWORD base_off;
             UWORD prev_raw;
             ULONG page_add;
             LONG prev_end;
+            ULONG frame;
 
             /* Invalidate ISO PSWs written by the HC */
             CacheClearE(&oitd->oitd_Ctrl, 16 + sizeof(oitd->oitd_Offset), CACRF_InvalidateD);
@@ -371,6 +374,25 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             prev_raw = base_off;
             page_add = 0;
             prev_end = (LONG)base_off - 1;
+            frame = (READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_STARTINGFRAME) & 0xffff;
+
+            if (rtn && rtn->rtn_PTDs) {
+                for (UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+                    struct PTDNode *scan = rtn->rtn_PTDs[idx];
+                    if (scan && scan->ptd_Descriptor == oitd) {
+                        ptd = scan;
+                        bufreq = &scan->ptd_BufferReq;
+                        break;
+                    }
+                }
+            }
+
+            if (bufreq) {
+                bufreq->ubr_Frame = frame;
+                bufreq->ubr_Length = 0;
+            }
+
+            ioreq->iouh_Actual = 0;
 
             for(pktidx = 0; pktidx < pktcount; pktidx++) {
                 UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
@@ -425,21 +447,52 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 }
             }
             retire = TRUE;
+            if (bufreq)
+                bufreq->ubr_Length = ioreq->iouh_Actual;
+
+            if (ptd && ptd->ptd_BounceBuffer &&
+                    ptd->ptd_BounceBuffer != ptd->ptd_BufferReq.ubr_Buffer) {
+                usbReleaseBuffer(ptd->ptd_BounceBuffer, ptd->ptd_BufferReq.ubr_Buffer,
+                                 ptd->ptd_BufferReq.ubr_Length, ioreq->iouh_Dir);
+                ptd->ptd_BounceBuffer = NULL;
+            }
+
             if (rtiso && rtn && rtn->rtn_RTIso) {
                 struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
-                rtn->rtn_BufferReq.ubr_Length = ioreq->iouh_Actual;
-                rtn->rtn_BufferReq.ubr_Frame = (READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_STARTINGFRAME) & 0xffff;
+                struct IOUsbHWBufferReq *donebuf = bufreq ? bufreq : &rtn->rtn_BufferReq;
+
                 if (ioreq->iouh_Dir == UHDIR_IN) {
                     if (urti->urti_InDoneHook)
-                        CallHookPkt(urti->urti_InDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_InDoneHook, rtn, donebuf);
                 } else {
                     if (urti->urti_OutDoneHook)
-                        CallHookPkt(urti->urti_OutDoneHook, rtn, &rtn->rtn_BufferReq);
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, donebuf);
                 }
+
+                if (ptd)
+                    ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+
                 ioreq->iouh_Actual = 0;
                 ioreq->iouh_Req.io_Error = 0;
-                if (ohciQueueIsochIO(hc, rtn) == RC_OK)
-                    ohciStartIsochIO(hc, rtn);
+
+                {
+                    UWORD pending = 0;
+                    UWORD target = (rtn->rtn_PTDCount > 1) ? 2 : 1;
+
+                    for (UWORD scan = 0; scan < rtn->rtn_PTDCount; scan++) {
+                        struct PTDNode *ptdscan = rtn->rtn_PTDs[scan];
+                        if (ptdscan && (ptdscan->ptd_Flags & (PTDF_ACTIVE | PTDF_BUFFER_VALID)))
+                            pending++;
+                    }
+
+                    while (pending < target) {
+                        if (ohciQueueIsochIO(hc, rtn) != RC_OK)
+                            break;
+                        ohciStartIsochIO(hc, rtn);
+                        pending++;
+                    }
+                }
+
                 retire = FALSE;
             }
         } else switch((ctrlstatus & OTCM_COMPLETIONCODE)>>OTCS_COMPLETIONCODE) {
@@ -1815,4 +1868,3 @@ void ohciFree(struct PCIController *hc, struct PCIUnit *hu)
 
     pciusbOHCIDebug("OHCI", "Shutting down OHCI done.\n");
 }
-
