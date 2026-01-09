@@ -2885,7 +2885,7 @@ static void DumpPipe(struct PsdPipe *pp)
 }
 
 /*
- * Map BOS-derived capabilities into poseidons hardware structure.
+ * Map BOS-derived capabilities into poseidons device structure.
   */
 static void
 pApplyDeviceBosCapabilities(struct PsdDevice *pd, const struct PsdBosCaps *caps)
