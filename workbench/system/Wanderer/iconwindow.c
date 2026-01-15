@@ -54,6 +54,8 @@
 #include "iconwindow_iconlist.h"
 #include "iconwindowbackfill.h"
 
+#include "panel_statusbar.h"
+
 #include "version.h"
 
 #if defined(ICONWINDOW_NODETAILVIEWCLASS)
@@ -1275,6 +1277,35 @@ IPTR IconWindow__MUIM_IconWindow_Clicked
         msg.isroot   = (data->iwd_Flags & IWDFLAG_ISROOT);
         GET(data->iwd_IconListObj, MUIA_IconList_Clicked, &msg.click);
         CallHookPkt(data->iwd_ActionHook, self, &msg);
+        if (msg.click != NULL) {
+            char *status_str;
+            UBYTE new_status_str[1024];
+            struct panel_StatusBar_DATA *panelStatusBarPrivate = NULL;
+            panelStatusBarPrivate = (struct panel_StatusBar_DATA *)data->iwd_BottomPanel.iwp_PanelPrivate;
+            if ( panelStatusBarPrivate != NULL) {
+                GET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, &status_str);
+                struct IconList_Click *ic_entry = msg.click;
+                if (ic_entry != NULL) {
+                    struct IconList_Entry *il_entry = ic_entry->entry;
+                    char *selected_substring = strstr(status_str, "Selected");
+                    int position = selected_substring - status_str;
+                    if (selected_substring != NULL) {
+                        strncpy((char *) new_status_str, status_str, position - 1);
+                        if (il_entry != NULL) {
+                            sprintf(&new_status_str[position-1], " Selected: %s", il_entry->label);                            
+                        }
+                        SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)new_status_str);
+                    } else {
+                        if (il_entry != NULL) {
+                            sprintf(new_status_str, "%s Selected: %s", status_str, il_entry->label);
+                            SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)new_status_str);
+                        } else {                            
+                            SET(panelStatusBarPrivate->iwp_StatusBar_StatusTextObj, MUIA_Text_Contents, (IPTR)status_str);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return TRUE;
