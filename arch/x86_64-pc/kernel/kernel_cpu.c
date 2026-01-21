@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -23,6 +23,8 @@
 
 #include "apic.h"
 #include "apic_ia32.h"
+
+#include "cpu_freq.h"
 
 #define AROS_NO_ATOMIC_OPERATIONS
 #include <exec_platform.h>
@@ -359,4 +361,102 @@ SAVE_XMM_AND_CHECK
         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: INVALID STATE!!" DEBUGCOLOR_RESET "\n", cpunum, __func__);)
     }
     core_Switch();
+}
+
+/* x86_64 CPU frequency control */
+
+static BOOL x86_64_is_intel(void)
+{
+    unsigned int eax, ebx, ecx, edx;
+
+    cpuid2(0, 0, &eax, &ebx, &ecx, &edx);
+
+    /* Vendor string is EBX, EDX, ECX for CPUID leaf 0 */
+    return (ebx == 0x756e6547u) && /* "Genu" */
+           (edx == 0x49656e69u) && /* "ineI" */
+           (ecx == 0x6c65746eu);   /* "ntel" */
+}
+
+static BOOL x86_64_cpu_perf_init_core(struct PlatformData *pdata, apicid_t cpuNum)
+{
+    struct APICData *apicData = pdata->kb_APIC;
+    struct CPUData *core;
+    UQUAD platform_info;
+    UQUAD perf_status;
+    UBYTE max_ratio;
+    UBYTE min_ratio;
+
+    if (!apicData || cpuNum >= apicData->apic_count)
+        return FALSE;
+
+    core = &apicData->cores[cpuNum];
+    if (core->cpu_PerfCapable)
+        return TRUE;
+
+    platform_info = rdmsrq(MSR_PLATFORM_INFO);
+    max_ratio = (platform_info >> 8) & 0xff;
+    min_ratio = (platform_info >> 40) & 0xff;
+
+    if (!max_ratio)
+        return FALSE;
+    if (!min_ratio)
+        min_ratio = max_ratio;
+
+    perf_status = rdmsrq(MSR_IA32_PERF_STATUS);
+
+    core->cpu_PerfMaxRatio = max_ratio;
+    core->cpu_PerfMinRatio = min_ratio;
+    core->cpu_PerfCurRatio = (perf_status >> 8) & 0xff;
+    core->cpu_PerfCapable = 1;
+
+    return TRUE;
+}
+
+static BOOL x86_64_CPUFreqSet(struct PlatformData *pdata, apicid_t cpuNum, UBYTE ratio)
+{
+    struct APICData *apicData;
+    struct CPUData *core;
+    UQUAD perf_ctl;
+
+    if (!pdata || !(pdata->kb_PDFlags & PLATFORMF_CPUFREQ))
+        return FALSE;
+
+    if (!x86_64_cpu_perf_init_core(pdata, cpuNum))
+        return FALSE;
+
+    apicData = pdata->kb_APIC;
+    core = &apicData->cores[cpuNum];
+
+    if (ratio < core->cpu_PerfMinRatio)
+        ratio = core->cpu_PerfMinRatio;
+    if (ratio > core->cpu_PerfMaxRatio)
+        ratio = core->cpu_PerfMaxRatio;
+
+    perf_ctl = rdmsrq(MSR_IA32_PERF_CTL);
+    perf_ctl = (perf_ctl & ~PERF_CTL_RATIO_MASK) | ((UQUAD)ratio << 8);
+    wrmsrq(MSR_IA32_PERF_CTL, perf_ctl);
+
+    return TRUE;
+}
+
+void core_CPUFreqInit(struct PlatformData *pdata)
+{
+    unsigned int eax, ebx, ecx, edx;
+
+    if (!pdata)
+        return;
+
+    if (!x86_64_is_intel())
+        return;
+
+    cpuid2(1, 0, &eax, &ebx, &ecx, &edx);
+    if (!(edx & CPUID_FEAT_EDX_MSR))
+        return;
+    if (!(ecx & CPUID_FEAT_ECX_EIST))
+        return;
+
+    pdata->kb_CPUFreqSet = x86_64_CPUFreqSet;
+    pdata->kb_CPUFreqPolicy.up_threshold = CPUFREQ_LOAD_HIGH;
+    pdata->kb_CPUFreqPolicy.down_threshold = CPUFREQ_LOAD_LOW;
+    pdata->kb_PDFlags |= PLATFORMF_CPUFREQ;
 }

@@ -1,7 +1,7 @@
 #ifndef APIC_IA32_H
 #define APIC_IA32_H
 /*
-    Copyright © 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IA-32 APIC hardware definitions.
@@ -53,6 +53,49 @@ enum
 
 #define APIC_BOOTSTRAP          (1 << 8)
 #define APIC_ENABLE             (1 << 11)
+
+/*
+ * CPUID feature bits (CPUID leaf 0x00000001)
+ */
+#ifndef CPUID_FEAT_EDX_MSR
+#define CPUID_FEAT_EDX_MSR     (1U << 5)        /* MSR instructions (RDMSR/WRMSR) available */
+#endif
+
+#ifndef CPUID_FEAT_ECX_EIST
+#define CPUID_FEAT_ECX_EIST    (1U << 7)        /* Enhanced Intel SpeedStep Technology (EIST) */
+#endif
+
+/*
+ * IA-32 MSR definitions (power management / performance state control)
+ */
+#ifndef MSR_PLATFORM_INFO
+#define MSR_PLATFORM_INFO      0x000000CE
+#endif
+
+#ifndef MSR_IA32_PERF_STATUS
+#define MSR_IA32_PERF_STATUS   0x00000198
+#endif
+
+#ifndef MSR_IA32_PERF_CTL
+#define MSR_IA32_PERF_CTL      0x00000199
+#endif
+
+#ifndef MSR_IA32_MISC_ENABLE
+#define MSR_IA32_MISC_ENABLE   0x000001A0
+#endif
+
+/* Common ratio fields (bits 15:8) */
+#define PERF_RATIO_SHIFT       8
+
+#ifndef PERF_CTL_RATIO_MASK
+#define PERF_CTL_RATIO_MASK    0x0000FF00ULL
+#endif
+
+#define PERF_STATUS_RATIO_MASK PERF_CTL_RATIO_MASK
+#define PLATFORM_INFO_MAX_RATIO_MASK PERF_CTL_RATIO_MASK
+
+/* IA32_MISC_ENABLE bits */
+#define IA32_MISC_ENABLE_EIST  (1ULL << 16)     /* EIST enable */
 
 /* APIC hardware registers */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -234,6 +234,8 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     D(bug("[Kernel:x86_64] %s: Platform Data allocated @ 0x%p\n", __func__, pdata));
 
     LIBBASE->kb_PlatformData = pdata;
+
+    core_CPUFreqInit(pdata);
 
     /*
      * Setup the base syscall handler(s) ...

@@ -1,7 +1,7 @@
 #ifndef KERNEL_APIC_H
 #define KERNEL_APIC_H
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Generic AROS APIC definitions.
@@ -9,6 +9,7 @@
 */
 
 #include <asm/cpu.h>
+#include <exec/types.h>
 
 #define APIC_MSI_BASE   0x7FFFFFFF
 
@@ -43,6 +44,10 @@ struct CPUData
     UQUAD                       cpu_LastCPULoadTime;
     UQUAD                       cpu_SleepTime;
     ULONG                       cpu_Load;
+    UBYTE                       cpu_PerfMinRatio;
+    UBYTE                       cpu_PerfMaxRatio;
+    UBYTE                       cpu_PerfCurRatio;
+    UBYTE                       cpu_PerfCapable;
 };
 
 struct APICData

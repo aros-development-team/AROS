@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -17,6 +17,7 @@
 #include "kernel_intern.h"
 
 #include "intservers.h"
+#include "cpu_freq.h"
 
 /*
  * Unlike the VBlankServer, we might not run at a fixed 60Hz.
@@ -124,6 +125,7 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
             D(bug("[Kernel:APIC.%03u] %s() cpu load %08x\n", cpuNum, __func__, (ULONG)apicData->cores[cpuNum].cpu_Load));
             apicData->cores[cpuNum].cpu_SleepTime = 0;
             apicData->cores[cpuNum].cpu_LastCPULoadTime = now;
+            core_CPUFreqUpdate(pdata, cpuNum);
         }
 
         D(bug("[Kernel:APIC.%03u] %s(), tick=%08x:%08x\n", cpuNum, __func__, (ULONG)(apicData->cores[cpuNum].cpu_LAPICTick >> 32),

@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERN_H_
 #define KERNEL_INTERN_H_
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 64bit x86 kernel_intern.h
@@ -86,6 +86,8 @@ void core_InitMMU(struct CPUMMUConfig *);
 void core_LoadMMU(struct CPUMMUConfig *);
 
 void core_CPUSetup(apicid_t, APTR, IPTR);
+
+void core_CPUFreqInit(struct PlatformData *pdata);
 
 /* */
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);

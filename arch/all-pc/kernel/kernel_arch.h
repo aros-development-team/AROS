@@ -1,7 +1,7 @@
 #ifndef _KERNEL_ARCH_H_
 #define _KERNEL_ARCH_H_
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Machine-specific definitions for IBM PC hardware
@@ -25,6 +25,15 @@
  */
 /*#define EMULATE_SYSBASE*/
 
+struct CPUFreqPolicy
+{
+    ULONG               up_threshold;
+    ULONG               down_threshold;
+};
+
+struct PlatformData;
+typedef BOOL (*cpufreq_setter_t)(struct PlatformData *, apicid_t, UBYTE);
+
 /* Platform-specific part of KernelBase */
 struct PlatformData
 {
@@ -40,6 +49,10 @@ struct PlatformData
     struct List         kb_BusyIPIHooks;
     spinlock_t          kb_FreeIPIHooksLock;
     spinlock_t          kb_BusyIPIHooksLock;
+
+    struct CPUFreqPolicy kb_CPUFreqPolicy;
+    cpufreq_setter_t    kb_CPUFreqSet;
+    
     ULONG               kb_LastException;
     ULONG               kb_LastExceptionError;
     union {
@@ -59,6 +72,9 @@ struct PlatformData
 #define PLATFORMF_HAVEHEARTBEAT (1 << PLATFORMB_HAVEHEARTBEAT)
 #define PLATFORMB_HAVEMSI       2
 #define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
+#define PLATFORMB_CPUFREQ       3
+#define PLATFORMF_CPUFREQ       (1 << PLATFORMB_CPUFREQ)
+
 /*
  * State flags used to express the current running "context"
  * used in both kb_PDFlags & kb_StateCtx
