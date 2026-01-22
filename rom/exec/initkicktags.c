@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id: initkicktags.c
 
     Desc: Handle CoolCapture and KickTags (reset proof residents)
@@ -99,31 +99,80 @@ static int CountResidents(IPTR *list)
     return cnt;
 }
 
+static void InsertionSortResidents(struct Resident **RomTag, int num)
+{
+    int i;
+
+    for (i = 1; i < num; i++)
+    {
+        struct Resident *current = RomTag[i];
+        int j = i - 1;
+
+        while (j >= 0 && RomTag[j]->rt_Pri < current->rt_Pri)
+        {
+            RomTag[j + 1] = RomTag[j];
+            j--;
+        }
+        RomTag[j + 1] = current;
+    }
+}
+
+static void MergeResidents(struct Resident **RomTag, struct Resident **tmp, int left, int mid, int right)
+{
+    int i = left;
+    int j = mid;
+    int k = left;
+
+    while (i < mid && j < right)
+    {
+        if (RomTag[i]->rt_Pri >= RomTag[j]->rt_Pri)
+            tmp[k++] = RomTag[i++];
+        else
+            tmp[k++] = RomTag[j++];
+    }
+
+    while (i < mid)
+        tmp[k++] = RomTag[i++];
+
+    while (j < right)
+        tmp[k++] = RomTag[j++];
+
+    for (i = left; i < right; i++)
+        RomTag[i] = tmp[i];
+}
+
+static void MergeSortResidents(struct Resident **RomTag, struct Resident **tmp, int left, int right)
+{
+    int mid;
+
+    if (right - left < 2)
+        return;
+
+    mid = left + (right - left) / 2;
+    MergeSortResidents(RomTag, tmp, left, mid);
+    MergeSortResidents(RomTag, tmp, mid, right);
+    MergeResidents(RomTag, tmp, left, mid, right);
+}
+
 static void SortResidents(IPTR *list)
 {
-    BOOL sorted;
-    int i, num;
+    int num = CountResidents(list);
     struct Resident **RomTag = (struct Resident**)list;
+    struct Resident **tmp;
 
-    num = CountResidents(list);
-    do
+    if (num < 2)
+        return;
+
+    tmp = AllocMem(num * sizeof(*tmp), MEMF_PUBLIC);
+    if (tmp)
     {
-        sorted = TRUE;
-
-        for (i = 0; i < num - 1; i++)
-        {
-            if (RomTag[i]->rt_Pri < RomTag[i+1]->rt_Pri)
-            {
-                struct Resident *tmp;
-
-                tmp = RomTag[i+1];
-                RomTag[i+1] = RomTag[i];
-                RomTag[i] = tmp;
-
-                sorted = FALSE;
-            }
-        }
-    } while (!sorted);
+        MergeSortResidents(RomTag, tmp, 0, num);
+        FreeMem(tmp, num * sizeof(*tmp));
+    }
+    else
+    {
+        InsertionSortResidents(RomTag, num);
+    }
 }
 
 /*
