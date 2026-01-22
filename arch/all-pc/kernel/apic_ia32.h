@@ -66,6 +66,13 @@ enum
 #endif
 
 /*
+ * Extended CPUID power management bits (0x80000007)
+ */
+#ifndef CPUID_EXT_PM_EDX_HW_PSTATE
+#define CPUID_EXT_PM_EDX_HW_PSTATE (1U << 7)    /* Hardware P-state control */
+#endif
+
+/*
  * IA-32 MSR definitions (power management / performance state control)
  */
 #ifndef MSR_PLATFORM_INFO
@@ -96,6 +103,26 @@ enum
 
 /* IA32_MISC_ENABLE bits */
 #define IA32_MISC_ENABLE_EIST  (1ULL << 16)     /* EIST enable */
+
+/*
+ * AMD P-state MSRs
+ */
+#ifndef MSR_AMD_PSTATE_CTL
+#define MSR_AMD_PSTATE_CTL     0xC0010062
+#endif
+#ifndef MSR_AMD_PSTATE_STATUS
+#define MSR_AMD_PSTATE_STATUS  0xC0010063
+#endif
+#ifndef MSR_AMD_PSTATE_0
+#define MSR_AMD_PSTATE_0       0xC0010064
+#endif
+#ifndef MSR_AMD_PSTATE_MAX
+#define MSR_AMD_PSTATE_MAX     0xC001006B
+#endif
+
+#define AMD_PSTATE_CTL_MASK    0x7
+#define AMD_PSTATE_STATUS_MASK 0x7
+#define AMD_PSTATE_ENABLED     (1ULL << 63)
 
 /* APIC hardware registers */
 
