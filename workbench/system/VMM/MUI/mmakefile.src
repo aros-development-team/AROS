@@ -1,4 +1,4 @@
-# Copyright (C) 2025, The AROS Development Team. All rights reserved.
+# Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -15,6 +15,7 @@ FILES := \
 	 locale
 
 #MM workbench-system-vmm-app : workbench-system-vmm-app-catalogs
+#MM- workbench-system : workbench-system-vmm-app
 
 #MM- workbench-system-vmm : \
 #MM     workbench-system-vmm-app
