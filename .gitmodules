@@ -211,3 +211,9 @@
 [submodule "workbench/prefs/asl/catalogs"]
 	path = workbench/prefs/asl/catalogs
 	url = https://github.com/aros-translation-team/asl-prefs.git
+[submodule "workbench/system/VMM/MUI/cat"]
+	path = workbench/system/VMM/MUI/cat
+	url = https://github.com/aros-translation-team/vmm-app.git
+[submodule "workbench/system/VMM/cat"]
+	path = workbench/system/VMM/cat
+	url = https://github.com/aros-translation-team/vmm-handler.git
