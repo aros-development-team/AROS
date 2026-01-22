@@ -1,0 +1,28 @@
+                                                       18-Aug-1999
+
+VMM source code package
+
+I  have finally decided  to release  the sources  of VMM,  the virtual
+memory manager for the Amiga, to the public. Every now and then people
+asked if  I would develop VMM  any further, but  unfortunately I don´t
+have the time anymore. I intended to release the sources much earlier,
+but anyway, here they are...
+
+The sources are for version 3.3a, the latest released version. You can
+do with them whatever you like as long as the conditions stated in the
+COPYING file (GNU public license) are regarded.
+
+I´m  not  even  sure  that  the source  code  still  compiles  without
+problems, but  then, it  should be fairly  easy to get  things running
+again.  GCC has been used to do the latest compiling.
+
+There are translations for quite a number of languages which have been
+contributed  by  several  people.  I  recommend to  read  through  the
+documentation to understand how VMM works.
+
+If somebody decides to do any  further development I would be happy to
+hear  about it.  If  you need  help  do not  hesitate  to contact  me,
+although it´s quite some time ago,  since I last looked into the code,
+so I might not remember very many details.
+
+Martin Apel (apel@tecmath.de)

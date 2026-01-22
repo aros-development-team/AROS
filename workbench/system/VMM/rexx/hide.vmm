@@ -1,0 +1,6 @@
+/* Check VMM ARexx port */
+
+address 'VMM'
+HIDE
+exit
+end

@@ -1,0 +1,42 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := \
+	 allocvmem \
+	 freevmem \
+	 availvmem \
+	 allocvvec \
+	 freevvec	     
+
+#MM workbench-system-vmm-library-includes : \
+#MM     kernel-exec-includes \
+#MM     includes-copy
+
+#MM workbench-system-vmm-library : \
+#MM     linklibs
+
+#MM test-system-vmm-library : \
+#MM     workbench-system-vmm-library-includes
+
+#MM- workbench-libs-complete : \
+#MM     workbench-system-vmm-library
+
+#MM- workbench-system-vmm : \
+#MM     workbench-system-vmm-handler
+
+##MM- workbench-system : workbench-system-vmm
+
+USER_LDFLAGS :=
+
+%build_prog mmake=test-system-vmm-library \
+     progname=vmm targetdir="$(AROS_TESTS)" \
+     objdir=$(GENDIR)/$(CURDIR)/test \
+     files="test_vmmlib" uselibs=""
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-system-vmm-library \
+    modname=vmm modtype=library \
+    files="vmm_init $(FUNCS)" \
+    uselibs=""
+

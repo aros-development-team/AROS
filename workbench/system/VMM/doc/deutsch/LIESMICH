@@ -1,0 +1,11 @@
+Short: Virueller Speicher für Amigas mit MMU
+Uploader: apel@tecmath.de (Martin Apel)
+Author:   apel@tecmath.de (Martin Apel)
+Type: util/misc
+
+VMM  ist  eine  virtuelle Speicherverwaltung für alle Amigas mit einer
+MMU.   Es existiert eine Benutzeroberfläche in verschiedenen Sprachen,
+mit   der   alle   Parameter   eingetragen  werden  können.   Für  die
+Benutzeroberfläche wird MUI 2.3 benötigt.
+V3.3a  enthält  außer  anderen  kleinen  Verbesserungen  endlich  eine
+deutsche Dokumentation.

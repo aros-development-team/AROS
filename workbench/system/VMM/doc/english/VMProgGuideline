@@ -1,0 +1,82 @@
+                             $Date: 96/07/24 20:27:44 $
+
+If  you  are  writing programs, which use a lot of memory, such as ray
+tracers,  compilers,...   the  following guidelines will enable you to
+take advantage of virtual memory in a safe way:
+
+*********************************************************************
+
+Don't  access  virtual memory inside forbidden/disabled sections.  The
+following example shows you, why this is necessary:
+
+/* This example should read the names of all currently waiting tasks */
+
+UBYTE *buffer;
+UBYTE *buffer_ptr;
+struct Task *tmpTask;
+
+/* The following request is allocated as VM */
+if ((buffer = AllocMem (SOME_SIZE, MEMF_ANY)) == NULL)      
+  return (FALSE);
+
+buffer_ptr = buffer;
+
+Forbid ();
+for (tmpTask = (struct Task*)SysBase->TaskWait.lh_Head;
+     tmpTask->tc_Node.ln_Succ != NULL;
+     tmpTask = tmpTask->tc_Node.ln_Succ)
+  {
+  strcpy (buffer_ptr, tmpTask->tc_Node.ln_Name);  /* can cause page-fault */
+  buffer_ptr += strlen (tmpTask->tc_Node.ln_Name) + 1);
+  }
+Permit ();
+
+The  preceding example might produce a page-fault while copying a task
+name  to  the internal buffer.  A page-fault results in task switching
+and  subsequently  the ln_Next pointer is invalid, when the page-fault
+has completed. A crash may result.
+
+*********************************************************************
+
+Don't  allocate  messages,  IORequests,  task  structures etc.  on the
+stack,  if  you  are  not absolutely sure that your stack is in public
+memory.
+E.g.,  if  you  allocate an IORequest on your stack, which might be in
+virtual  memory,  and you send this IORequest to the timer.device, the
+machine  might  crash,  because the timer.device accesses its requests
+from  an  interrupt routine.  Page-faults while in supervisor mode are
+deadly.
+
+*********************************************************************
+
+Don't  access  virtual  memory  from  supervisor  mode.  This includes
+interrupt  and trap-handling routines.  Because the task producing the
+page-fault  is  put  into  the  wait  state,  a page-fault may only be
+invoked   by   a   task   using  its  standard  user  stack,  not  the
+(system-global) supervisor stack.
+
+*********************************************************************
+
+Don't   allocate   or   free   non-public   memory   from   inside   a
+forbidden/disabled   section.    Requests   inside  forbidden/disabled
+sections are simply not granted virtual memory, freeing virtual memory
+is  postponed  until  that  section  is  over.   It does not crash the
+machine, it simply isn't recommended.
+
+*********************************************************************
+
+Memory  allocated  with  the  MEMF_PUBLIC  flag  cleared should not be
+accessed  by  tasks  not  belonging to your program.  I.e.  don't read
+from a file using a buffer of virtual memory.  You never know in which
+way  another task or program accesses your buffer.  It might access it
+from within an interrupt.
+
+*********************************************************************
+
+Localize  your  data.  This means, if you are writing a program, which
+consists  of  several passes, try to put the data needed for each pass
+together in address space.  This greatly reduces the page-fault rate.
+
+*********************************************************************
+
+Apart from this, always follow Commodore's programming guideline.

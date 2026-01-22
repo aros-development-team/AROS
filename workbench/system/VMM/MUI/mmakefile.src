@@ -1,0 +1,29 @@
+# Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	 main \
+	 task_page \
+	 memory_page \
+	 misc_page \
+	 globals \
+	 mui \
+	 config \
+	 aloha \
+	 menus \
+	 locale
+
+#MM workbench-system-vmm-app : workbench-system-vmm-app-catalogs
+
+#MM- workbench-system-vmm : \
+#MM     workbench-system-vmm-app
+
+USER_CPPFLAGS := -DMUI_OBSOLETE
+
+%build_prog mmake=workbench-system-vmm-app \
+    progname=VMM targetdir=$(AROS_SYSTEM) \
+    files="$(FILES)" \
+    detach=no
+
+%common

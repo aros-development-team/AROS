@@ -1,0 +1,230 @@
+@database doc/VMM_Rexx.guide
+
+@Width 72
+
+@Node Main "doc/VMM_Rexx.guide"
+This  document  describes  VMM's  ARexx  functions.   VMM  supports 18
+functions  for use in ARexx scripts.  Each function is listed with its
+parameters and the results it can produce.
+
+Supported commands:
+  @{"ADD_PROG   "   Link "Add_Prog"}
+  @{"DISABLE    "   Link "Disable"}
+  @{"ENABLE     "   Link "Enable"}
+  @{"HELP       "   Link "Help"}
+  @{"HIDE       "   Link "Hide"}
+  @{"INFO       "   Link "Info"}
+  @{"MEM        "   Link "Mem"}
+  @{"MEMTRACK   "   Link "MemTrack"}
+  @{"MEMTYPE    "   Link "MemType"}
+  @{"MINVMALLOC "   Link "MinVMAlloc"}
+  @{"PATCHWB    "   Link "PatchWB"}
+  @{"REM_PROG   "   Link "Rem_Prog"}
+  @{"SHOW       "   Link "Show"}
+  @{"STAT       "   Link "Stat"}
+  @{"VMPRIORITY "   Link "VMPriority"}
+  @{"WRITEBUFFER"   Link "WriteBuffer"}
+  @{"QUIT       "   Link "Quit"}
+  @{"ZOOM       "   Link "Zoom"}
+
+The  return codes used by those commands are the same as those used by
+the standard MUI ARexx-Interface.  These are:
+
+  -2     Not enough memory to carry out command
+
+  -3     Unknown ARexx command
+
+  -4     Syntax error in command's parameters
+
+@EndNode
+
+@Node Add_Prog "doc/VMM_Rexx.guide"
+
+Command: ADD_PROG "task name" <MinPublic> <MinNonPublic> "ON" | "OFF"
+
+The ADD_PROG command adds a task to VMM's task list with the specified
+settings.  The MinPublic and MinNonPublic parameters correspond to the
+advanced  options  section  in VMM's GUI.
+If  you like to specify "Use VM", set MinPublic to -1 and MinNonPublic
+to  0;  if you like to specify "Don't use VM", set MinPublic to -1 and
+MinNonPublic to -1.
+ON  or  OFF  determines the type of code paging used for the specified
+program.
+
+@EndNode
+
+@Node Disable "doc/VMM_Rexx.guide"
+
+Command: DISABLE
+
+The  command disables allocation of virtual memory until it is enabled
+again  using  either  the  corresponding  ARexx  command or the enable
+hotkey.
+
+@EndNode
+
+@Node Enable "doc/VMM_Rexx.guide"
+
+Command: ENABLE
+
+The  command enables allocation of virtual memory until it is disabled
+by invoking the hotkey or specifying the Arexx command DISABLE.
+
+@EndNode
+
+@Node Help "doc/VMM_Rexx.guide"
+
+Command: HELP "file"
+
+This  command  prints  a  list  of  all  available  ARexx  commands to
+"filename".   The  filename  specified  should  contain  a  full path,
+otherwise the file may be written into a directory you don't expect.
+
+@EndNode
+
+@Node Hide "doc/VMM_Rexx.guide"
+
+Command: HIDE
+
+This command causes VMM to hide its user interface.
+
+@EndNode
+
+@Node Info "doc/VMM_Rexx.guide"
+
+Command: INFO "title" | "author" | "copyright" | "description" | 
+              "version" | "base" | "screen"
+
+This  is  a standard MUI Arexx command.  Depending on the argument the
+result string will be filled with the following information:
+
+           "title"            Name of the program (VMM)
+
+           "author"           Author of the program
+
+           "copyright"        Copyright status
+
+           "description"      A short description of the program
+
+           "version"          version string
+
+           "base"             Name of the ARexx-port
+
+           "screen"           Name of the public-screen used (NULL)
+
+@EndNode
+
+@Node Mem "doc/VMM_Rexx.guide"
+
+Command: MEM ("FIXED" <size>) | "DYNAMIC" | ("RESTRICTED" <min> <max>)
+
+This  command  changes  the  way  and/or the amount of physical memory
+dedicated to virtual memory.
+size,  min  and  max  are  specified  in  bytes.  These values will be
+rounded to multiples of the current pagesize automatically.  If either
+of these values is too small it will be adjusted.
+
+@EndNode
+
+@Node MemTrack "doc/VMM_Rexx.guide"
+
+Command: MEMTRACK "ON" | "OFF"
+
+This command enables or disables memory tracking.
+
+@EndNode
+
+@Node MemType "doc/VMM_Rexx.guide"
+
+Command: MEMTYPE "FAST" | "CHIP" | "ANY"
+
+This  command specifies the type of memory used for paging.  This only
+influences page frames allocated after this command has executed.
+
+@EndNode
+
+@Node MinVMAlloc "doc/VMM_Rexx.guide"
+
+Command: MINVMALLOC <num_bytes>
+
+This  command  specifies  the  minimum request size to go into virtual
+memory.   Requests  smaller  than  this  value will be put into public
+memory.
+
+@EndNode
+
+@Node PatchWB "doc/VMM_Rexx.guide"
+
+Command: PATCHWB "ON" | "OFF"
+
+This  command  specifies  whether  to  patch  Workbench to display the
+amount of free virtual memory in its titlebar.
+
+@EndNode
+
+@Node Rem_Prog "doc/VMM_Rexx.guide"
+
+Command: REM_PROG "taskname"
+
+This command removes the specified task from VMM's task list.  If this
+program isn't found in the list nothing will be done.
+
+@EndNode
+
+@Node Show "doc/VMM_Rexx.guide"
+
+Command: SHOW
+
+This command causes VMM to display its user interface.
+
+@EndNode
+
+@Node Stat "doc/VMM_Rexx.guide"
+
+Command: STAT "ON" | "OFF"
+
+This command causes the statistics window to be turned on or off.
+
+@EndNode
+
+@Node VMPriority "doc/VMM_Rexx.guide"
+
+Command: VMPRIORITY <prio>
+
+This  command  causes  the  priority of virtual memory to be adjusted.
+This  can  influence  whether  virtual  or  physical memory is used up
+first.
+
+@EndNode
+
+@Node WriteBuffer "doc/VMM_Rexx.guide"
+
+Command: WRITEBUFFER <size>
+
+This  command specifies the size of the write buffer used to write out
+pages to disk.  It will be automatically rounded down to a multiple of
+the current page size.
+
+@EndNode
+
+@Node Quit "doc/VMM_Rexx.guide"
+
+Command: QUIT
+
+This  causes  VMM  to  quit if possible.  If there is too much virtual
+memory  allocated,  so  it  does not fit into physical memory, VMM may
+refuse to quit.
+
+@EndNode
+
+@Node Zoom "doc/VMM_Rexx.guide"
+
+Command: ZOOM "ON" | "OFF"
+
+This  command  causes  the zoomed state of the statistics window to be
+changed.   If  the statistics window is not currently opened the state
+will  be saved for later usage.  Thus opening the statistics window in
+zoomed state should first use ZOOM ON and then STAT ON.
+
+@EndNode
+
