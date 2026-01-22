@@ -247,9 +247,8 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
         ioapic_irqbase = ioapicData->ioapic_GSI;
         if (ioapic_irqbase >= HW_IRQ_COUNT)
         {
-            bug("[Kernel:IOAPIC] %s: IOAPIC GSI base %u outside supported IRQ range\n",
-                __func__, ioapic_irqbase);
-            continue;
+            bug("[Kernel:IOAPIC] %s: IOAPIC GSI base %u at/above supported IRQ limit %u\n",
+                __func__, ioapic_irqbase, HW_IRQ_COUNT);
         }
 
         if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
@@ -317,8 +316,8 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
             max_irq = ioapic_irqbase + ioapicData->ioapic_IRQCount;
             if (max_irq > HW_IRQ_COUNT)
             {
-                bug("[Kernel:IOAPIC] %s: IOAPIC IRQ range %u-%u exceeds supported IRQs\n",
-                    __func__, ioapic_irqbase, max_irq);
+                bug("[Kernel:IOAPIC] %s: IOAPIC IRQ range %u-%u exceeds supported IRQs (capping at %u)\n",
+                    __func__, ioapic_irqbase, max_irq, HW_IRQ_COUNT);
                 max_irq = HW_IRQ_COUNT;
             }
             for (irq = ioapic_irqbase; irq < max_irq; irq++)
@@ -393,9 +392,29 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icid_t instanceCount)
                 irqRoute->dm = IOAPIC_DELMOD_FIXED;
                 irqRoute->dstm = IOAPIC_DESTMOD_PHYS;
                 if (apicPrivate)
-                     irqRoute->dst = apicPrivate->cores[0].cpu_LocalID;
+                {
+                    ULONG targetCpu = 0;
+                    if (intrMap)
+                    {
+                        targetCpu = intrMap->im_CPU;
+                        if (targetCpu >= apicPrivate->apic_count)
+                        {
+                            bug("[Kernel:IOAPIC] %s: IRQ %u affinity CPU %u invalid (max %u), using CPU0\n",
+                                __func__, irq, targetCpu, apicPrivate->apic_count - 1);
+                            targetCpu = 0;
+                        }
+                        intrMap->im_CPU = targetCpu;
+                    }
+                    irqRoute->dst = apicPrivate->cores[targetCpu].cpu_LocalID;
+                }
                 else
+                {
+                    if (intrMap)
+                    {
+                        intrMap->im_CPU = 0;
+                    }
                     irqRoute->dst = 0;
+                }
 
                 if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
                 {
@@ -526,7 +545,21 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icid_t icInstance, icid_t intNum)
      * otherwise use the pre-configured one. */
     if (apicPrivate)
     {
-        apicid_t cpuNo = KrnGetCPUNumber();
+        ULONG cpuNo = KrnGetCPUNumber();
+        if (intrMap)
+        {
+            cpuNo = intrMap->im_CPU;
+        }
+        if (cpuNo >= apicPrivate->apic_count)
+        {
+            bug("[Kernel:IOAPIC] %s: IRQ %u affinity CPU %u invalid (max %u), using CPU0\n",
+                __func__, intNum, cpuNo, apicPrivate->apic_count - 1);
+            cpuNo = 0;
+        }
+        if (intrMap)
+        {
+            intrMap->im_CPU = cpuNo;
+        }
         irqRoute->dst = apicPrivate->cores[cpuNo].cpu_LocalID;
     }
 
@@ -762,6 +795,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
 
         intrMap->im_Node.ln_Pri = intsrc->SourceIrq;
+        intrMap->im_CPU = KrnGetCPUNumber();
     }
     else
     {
@@ -824,6 +858,7 @@ AROS_UFH3(IPTR, ACPI_hook_Table_NMI_Src_Parse,
         newRt = TRUE;
 
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
+        intrMap->im_CPU = KrnGetCPUNumber();
     }
     else
     {

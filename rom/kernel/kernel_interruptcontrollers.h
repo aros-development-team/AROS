@@ -1,7 +1,7 @@
 #ifndef KERNEL_INTERRUPTCONTROLLERS_H
 #define KERNEL_INTERRUPTCONTROLLERS_H
 /*
-    Copyright © 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright © 2017-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -48,7 +48,8 @@ struct IntrMapping
      * as used by KrnAddIRQHandler();
      */
     struct Node im_Node;
-    UBYTE       im_Int;                                                         /* controller specific hardware interrupt to use        */
+    ULONG       im_Int;                                                         /* controller specific hardware interrupt to use        */
+    ULONG       im_CPU;                                                         /* target CPU for interrupt delivery                    */
     UBYTE       im_Polarity;                                                    /* 0 = Default, 1 = HIGH, 2 = LOW                       */
     UBYTE       im_Trig;                                                        /* 0 = Default, 1 = LEVEL, 2 = EDGE                     */
 };
@@ -81,7 +82,7 @@ struct IntrController *krnFindInterruptController(struct KernelBase *, ULONG);
 int krnInitInterruptControllers(struct KernelBase *);
 BOOL krnInitInterrupt(struct KernelBase *, icid_t, icid_t, icid_t);
 struct IntrMapping *krnInterruptMapping(struct KernelBase *, icid_t);
-struct IntrMapping *krnInterruptMapped(struct KernelBase *, icid_t);
+struct IntrMapping *krnInterruptMapped(struct KernelBase *, ULONG);
 
 #endif /* KERNELIRQ_NEEDSCONTROLLERS */
 #endif /* !KERNEL_INTERRUPTCONTROLLERS_H */

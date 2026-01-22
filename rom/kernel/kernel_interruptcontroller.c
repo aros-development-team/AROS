@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -109,7 +109,7 @@ struct IntrMapping *krnInterruptMapping(struct KernelBase *KernelBase, icid_t ir
 }
 
 /* Returns a mapping node for a requested controller Hardware Interrupt */
-struct IntrMapping *krnInterruptMapped(struct KernelBase *KernelBase, icid_t irq)
+struct IntrMapping *krnInterruptMapped(struct KernelBase *KernelBase, ULONG irq)
 {
     struct IntrMapping *intrMap;
 

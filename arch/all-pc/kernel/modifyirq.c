@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -50,6 +50,7 @@ AROS_LH2(ULONG, KrnModifyIRQA,
             irqMap = AllocMem(sizeof(struct IntrMapping), MEMF_CLEAR);
             irqMap->im_Node.ln_Pri = irq;
             irqMap->im_Int = irq;
+            irqMap->im_CPU = KrnGetCPUNumber();
             newMp = TRUE;
         }
         if (irqPol != (UBYTE)-1)
