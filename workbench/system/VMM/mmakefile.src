@@ -26,7 +26,15 @@ FILES := \
         version \
         locale
 
+ifeq ($(AROS_TARGET_CPU),i386)
 FILES += traphandler_x86
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+FILES += traphandler_x86
+endif
+ifeq ($(AROS_TARGET_CPU),m68k)
+FILES += traphandler_m68k
+endif
 
 USER_CPPFLAGS := \
                -D__NOLIBBASE__ \
