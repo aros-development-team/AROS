@@ -12,6 +12,8 @@
 
 #include <proto/ahi.h>
 
+#include <stdlib.h>
+
 #define SUBLIBNAME          "usbaudio.audio"
 
 /* /// "Lib Stuff" */
@@ -41,6 +43,18 @@ const APTR SubLibFuncTable[] =
     &AROS_SLIB_ENTRY(subLibHardwareControl, nep, 19),
     (APTR) -1,
 };
+
+static int compare_frequencies(const void *left, const void *right)
+{
+    ULONG left_value = *(const ULONG *)left;
+    ULONG right_value = *(const ULONG *)right;
+
+    if (left_value < right_value)
+        return -1;
+    if (left_value > right_value)
+        return 1;
+    return 0;
+}
 
 static int libInit(LIBBASETYPEPTR nh)
 {
@@ -1205,7 +1219,6 @@ void nExamineAudioDescriptors(struct NepClassAudio *nch)
                                 if(uat1f->bSamFreqType)
                                 {
                                     UWORD cnt;
-                                    UWORD cnt2;
                                     ULONG freq;
                                     UBYTE *fptr = uat1f->tSamFreq0;
                                     nam->nam_MinFreq = 100000;
@@ -1233,19 +1246,10 @@ void nExamineAudioDescriptors(struct NepClassAudio *nch)
                                         nam->nam_FreqArray[cnt] = freq;
                                         fptr += 3;
                                     }
-                                    /* sort array (yeah, lazy bubble sort) */
-                                    for(cnt = 0; cnt < nam->nam_NumFrequencies; cnt++)
-                                    {
-                                        for(cnt2 = cnt + 1; cnt2 < nam->nam_NumFrequencies; cnt2++)
-                                        {
-                                            if(nam->nam_FreqArray[cnt] > nam->nam_FreqArray[cnt2])
-                                            {
-                                                freq = nam->nam_FreqArray[cnt2];
-                                                nam->nam_FreqArray[cnt2] = nam->nam_FreqArray[cnt];
-                                                nam->nam_FreqArray[cnt] = freq;
-                                            }
-                                        }
-                                    }
+                                    qsort(nam->nam_FreqArray,
+                                          nam->nam_NumFrequencies,
+                                          sizeof(nam->nam_FreqArray[0]),
+                                          compare_frequencies);
                                 } else {
                                     const ULONG *freqtab = commonFreqs;
                                     nam->nam_MinFreq = uat1f->tSamFreq0[0]|(uat1f->tSamFreq0[1]<<8)|(uat1f->tSamFreq0[2]<<16);

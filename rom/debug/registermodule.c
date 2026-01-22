@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 #include <clib/alib_protos.h>
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <aros/crt_replacement.h>
 
@@ -24,6 +25,7 @@ static inline char *getstrtab(struct sheader *sh);
 static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR value);
 static void HandleModuleSegments(module_t *mod, struct MinList * list);
 static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType, APTR DebugInfo, struct Library *DebugBase);
+static int compare_segments(const void *left, const void *right);
 
 /*****************************************************************************
 
@@ -208,42 +210,18 @@ static void addsymbol(module_t *mod, dbg_sym_t *sym, struct symbol *st, APTR val
     mod->m_symcnt++;
 }
 
-/* quick sort */
-#define SWAPIDX(a, b)                           \
-    do                                          \
-    {                                           \
-        struct segment * tmp    = segments[b];  \
-        segments[b]             = segments[a];  \
-        segments[a]             = tmp;          \
-    }                                           \
-    while(0);                                   \
-
-static LONG partition(struct segment  **segments, LONG left, LONG right, LONG pivotidx)
+static int compare_segments(const void *left, const void *right)
 {
-    void * pivotval = segments[pivotidx]->s_lowest;
-    LONG storeidx = left;
-    LONG i;
-    SWAPIDX(right, pivotidx)
+    const struct segment *const *left_seg = left;
+    const struct segment *const *right_seg = right;
+    IPTR left_lowest = (IPTR)(*left_seg)->s_lowest;
+    IPTR right_lowest = (IPTR)(*right_seg)->s_lowest;
 
-    for (i = left; i < right; i++)
-        if (segments[i]->s_lowest < pivotval)
-        {
-            SWAPIDX(i, storeidx);
-            storeidx++;
-        }
-    SWAPIDX(storeidx, right);
-    return storeidx;
-}
-
-static VOID qsort(struct segment **segments, LONG left, LONG right)
-{
-    if (left > right)
-        return;
-
-    LONG pivotidx = (right + left) / 2;
-    pivotidx = partition(segments, left, right, pivotidx);
-    qsort(segments, left, pivotidx - 1);
-    qsort(segments, pivotidx + 1, right);
+    if (left_lowest < right_lowest)
+        return -1;
+    if (left_lowest > right_lowest)
+        return 1;
+    return 0;
 }
 
 static void HandleModuleSegments(module_t *mod, struct MinList * list)
@@ -302,7 +280,7 @@ static void HandleModuleSegments(module_t *mod, struct MinList * list)
 
 
     /* Sort the symbols by their address so that searching can be faster */
-    qsort(mod->m_segments, 0, mod->m_segcnt - 1);
+    qsort(mod->m_segments, mod->m_segcnt, sizeof(*mod->m_segments), compare_segments);
 
     /* Set module address range information */
     mod->m_lowest = mod->m_segments[0]->s_lowest;
