@@ -377,7 +377,19 @@ static BOOL x86_64_is_intel(void)
            (ecx == 0x6c65746eu);   /* "ntel" */
 }
 
-static BOOL x86_64_cpu_perf_init_core(struct PlatformData *pdata, apicid_t cpuNum)
+static BOOL x86_64_is_amd(void)
+{
+    unsigned int eax, ebx, ecx, edx;
+
+    cpuid2(0, 0, &eax, &ebx, &ecx, &edx);
+
+    /* Vendor string is EBX, EDX, ECX for CPUID leaf 0 */
+    return (ebx == 0x68747541u) && /* "Auth" */
+           (edx == 0x69746e65u) && /* "enti" */
+           (ecx == 0x444d4163u);   /* "cAMD" */
+}
+
+static BOOL x86_64_cpu_perf_init_core_intel(struct PlatformData *pdata, apicid_t cpuNum)
 {
     struct APICData *apicData = pdata->kb_APIC;
     struct CPUData *core;
@@ -412,7 +424,47 @@ static BOOL x86_64_cpu_perf_init_core(struct PlatformData *pdata, apicid_t cpuNu
     return TRUE;
 }
 
-static BOOL x86_64_CPUFreqSet(struct PlatformData *pdata, apicid_t cpuNum, UBYTE ratio)
+static BOOL x86_64_cpu_perf_init_core_amd(struct PlatformData *pdata, apicid_t cpuNum)
+{
+    struct APICData *apicData = pdata->kb_APIC;
+    struct CPUData *core;
+    UQUAD perf_status;
+    UBYTE lowest_pstate = 0xff;
+    UBYTE highest_pstate = 0;
+
+    if (!apicData || cpuNum >= apicData->apic_count)
+        return FALSE;
+
+    core = &apicData->cores[cpuNum];
+    if (core->cpu_PerfCapable)
+        return TRUE;
+
+    for (UBYTE pstate = 0; pstate <= (MSR_AMD_PSTATE_MAX - MSR_AMD_PSTATE_0); pstate++)
+    {
+        UQUAD msr = rdmsrq(MSR_AMD_PSTATE_0 + pstate);
+        if (msr & AMD_PSTATE_ENABLED)
+        {
+            if (pstate < lowest_pstate)
+                lowest_pstate = pstate;
+            if (pstate > highest_pstate)
+                highest_pstate = pstate;
+        }
+    }
+
+    if (lowest_pstate == 0xff)
+        return FALSE;
+
+    perf_status = rdmsrq(MSR_AMD_PSTATE_STATUS);
+
+    core->cpu_PerfMaxRatio = lowest_pstate;
+    core->cpu_PerfMinRatio = highest_pstate;
+    core->cpu_PerfCurRatio = perf_status & AMD_PSTATE_STATUS_MASK;
+    core->cpu_PerfCapable = 1;
+
+    return TRUE;
+}
+
+static BOOL x86_64_CPUFreqSet_intel(struct PlatformData *pdata, apicid_t cpuNum, UBYTE ratio)
 {
     struct APICData *apicData;
     struct CPUData *core;
@@ -421,7 +473,7 @@ static BOOL x86_64_CPUFreqSet(struct PlatformData *pdata, apicid_t cpuNum, UBYTE
     if (!pdata || !(pdata->kb_PDFlags & PLATFORMF_CPUFREQ))
         return FALSE;
 
-    if (!x86_64_cpu_perf_init_core(pdata, cpuNum))
+    if (!x86_64_cpu_perf_init_core_intel(pdata, cpuNum))
         return FALSE;
 
     apicData = pdata->kb_APIC;
@@ -439,6 +491,33 @@ static BOOL x86_64_CPUFreqSet(struct PlatformData *pdata, apicid_t cpuNum, UBYTE
     return TRUE;
 }
 
+static BOOL x86_64_CPUFreqSet_amd(struct PlatformData *pdata, apicid_t cpuNum, UBYTE pstate)
+{
+    struct APICData *apicData;
+    struct CPUData *core;
+    UQUAD pstate_ctl;
+
+    if (!pdata || !(pdata->kb_PDFlags & PLATFORMF_CPUFREQ))
+        return FALSE;
+
+    if (!x86_64_cpu_perf_init_core_amd(pdata, cpuNum))
+        return FALSE;
+
+    apicData = pdata->kb_APIC;
+    core = &apicData->cores[cpuNum];
+
+    if (pstate < core->cpu_PerfMaxRatio)
+        pstate = core->cpu_PerfMaxRatio;
+    if (pstate > core->cpu_PerfMinRatio)
+        pstate = core->cpu_PerfMinRatio;
+
+    pstate_ctl = rdmsrq(MSR_AMD_PSTATE_CTL);
+    pstate_ctl = (pstate_ctl & ~AMD_PSTATE_CTL_MASK) | (pstate & AMD_PSTATE_CTL_MASK);
+    wrmsrq(MSR_AMD_PSTATE_CTL, pstate_ctl);
+
+    return TRUE;
+}
+
 void core_CPUFreqInit(struct PlatformData *pdata)
 {
     unsigned int eax, ebx, ecx, edx;
@@ -446,16 +525,39 @@ void core_CPUFreqInit(struct PlatformData *pdata)
     if (!pdata)
         return;
 
-    if (!x86_64_is_intel())
-        return;
-
     cpuid2(1, 0, &eax, &ebx, &ecx, &edx);
     if (!(edx & CPUID_FEAT_EDX_MSR))
         return;
-    if (!(ecx & CPUID_FEAT_ECX_EIST))
-        return;
 
-    pdata->kb_CPUFreqSet = x86_64_CPUFreqSet;
+    if (x86_64_is_intel())
+    {
+        if (!(ecx & CPUID_FEAT_ECX_EIST))
+        {
+            if (!x86_64_cpu_perf_init_core_intel(pdata, 0))
+                return;
+        }
+        pdata->kb_CPUFreqSet = x86_64_CPUFreqSet_intel;
+    }
+    else if (x86_64_is_amd())
+    {
+        cpuid2(0x80000000, 0, &eax, &ebx, &ecx, &edx);
+        if (eax < 0x80000007)
+            return;
+
+        cpuid2(0x80000007, 0, &eax, &ebx, &ecx, &edx);
+        if (!(edx & CPUID_EXT_PM_EDX_HW_PSTATE))
+            return;
+
+        if (!x86_64_cpu_perf_init_core_amd(pdata, 0))
+            return;
+
+        pdata->kb_CPUFreqSet = x86_64_CPUFreqSet_amd;
+    }
+    else
+    {
+        return;
+    }
+
     pdata->kb_CPUFreqPolicy.up_threshold = CPUFREQ_LOAD_HIGH;
     pdata->kb_CPUFreqPolicy.down_threshold = CPUFREQ_LOAD_LOW;
     pdata->kb_PDFlags |= PLATFORMF_CPUFREQ;
