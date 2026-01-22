@@ -13,6 +13,7 @@
 
 #define CPUFREQ_LOAD_HIGH ((ULONG)((70ULL << 32) / 100))
 #define CPUFREQ_LOAD_LOW  ((ULONG)((20ULL << 32) / 100))
+#define CPUFREQ_LEVELS_DEFAULT 4
 
 void core_CPUFreqUpdate(struct PlatformData *pdata, apicid_t cpuNum);
 

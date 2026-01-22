@@ -555,5 +555,6 @@ void core_CPUFreqInit(struct PlatformData *pdata)
 
     pdata->kb_CPUFreqPolicy.up_threshold = CPUFREQ_LOAD_HIGH;
     pdata->kb_CPUFreqPolicy.down_threshold = CPUFREQ_LOAD_LOW;
+    pdata->kb_CPUFreqPolicy.levels = CPUFREQ_LEVELS_DEFAULT;
     pdata->kb_PDFlags |= PLATFORMF_CPUFREQ;
 }

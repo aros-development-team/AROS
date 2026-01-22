@@ -29,6 +29,7 @@ struct CPUFreqPolicy
 {
     ULONG               up_threshold;
     ULONG               down_threshold;
+    UBYTE               levels;
 };
 
 struct PlatformData;
