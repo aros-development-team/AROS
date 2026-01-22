@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I.
+
+#MM
+includes-copy : $(AROS_INCLUDES)/hidd/thunderbolt.h $(GENINCDIR)/hidd/thunderbolt.h
+
+$(AROS_INCLUDES)/hidd/thunderbolt.h: include/thunderbolt_hidd.h
+	$(CP) $< $(AROS_INCLUDES)/hidd/thunderbolt.h
+
+$(GENINCDIR)/hidd/thunderbolt.h: include/thunderbolt_hidd.h
+	$(CP) $< $(GENINCDIR)/hidd/thunderbolt.h
