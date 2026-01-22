@@ -372,7 +372,9 @@ GLOBAL UWORD ProcessorType;
 GLOBAL ULONG InstructionFaults;
 #endif
 
-#include "mmu_bits30.h"
+#if defined(__mc68000__)
+#include "m68k/mmu_bits30.h"
+#endif
 #include "protos.h"
 
 #ifdef DEBUG
