@@ -365,28 +365,23 @@ SAVE_XMM_AND_CHECK
 
 /* x86_64 CPU frequency control */
 
-static BOOL x86_64_is_intel(void)
+#define CPUID_VEND_EBX_INTEL 0x756e6547u /* "Genu" */
+#define CPUID_VEND_EDX_INTEL 0x49656e69u /* "ineI" */
+#define CPUID_VEND_ECX_INTEL 0x6c65746eu /* "ntel" */
+#define CPUID_VEND_EBX_AMD   0x68747541u /* "Auth" */
+#define CPUID_VEND_EDX_AMD   0x69746e65u /* "enti" */
+#define CPUID_VEND_ECX_AMD   0x444d4163u /* "cAMD" */
+
+static BOOL core_x86VendorMatches(unsigned int vendor_ebx, unsigned int vendor_edx, unsigned int vendor_ecx)
 {
     unsigned int eax, ebx, ecx, edx;
 
     cpuid2(0, 0, &eax, &ebx, &ecx, &edx);
 
     /* Vendor string is EBX, EDX, ECX for CPUID leaf 0 */
-    return (ebx == 0x756e6547u) && /* "Genu" */
-           (edx == 0x49656e69u) && /* "ineI" */
-           (ecx == 0x6c65746eu);   /* "ntel" */
-}
-
-static BOOL x86_64_is_amd(void)
-{
-    unsigned int eax, ebx, ecx, edx;
-
-    cpuid2(0, 0, &eax, &ebx, &ecx, &edx);
-
-    /* Vendor string is EBX, EDX, ECX for CPUID leaf 0 */
-    return (ebx == 0x68747541u) && /* "Auth" */
-           (edx == 0x69746e65u) && /* "enti" */
-           (ecx == 0x444d4163u);   /* "cAMD" */
+    return (ebx == vendor_ebx) &&
+           (edx == vendor_edx) &&
+           (ecx == vendor_ecx);
 }
 
 static BOOL x86_64_cpu_perf_init_core_intel(struct PlatformData *pdata, apicid_t cpuNum)
@@ -529,7 +524,7 @@ void core_CPUFreqInit(struct PlatformData *pdata)
     if (!(edx & CPUID_FEAT_EDX_MSR))
         return;
 
-    if (x86_64_is_intel())
+    if (core_x86VendorMatches(CPUID_VEND_EBX_INTEL, CPUID_VEND_EDX_INTEL, CPUID_VEND_ECX_INTEL))
     {
         if (!(ecx & CPUID_FEAT_ECX_EIST))
         {
@@ -538,7 +533,7 @@ void core_CPUFreqInit(struct PlatformData *pdata)
         }
         pdata->kb_CPUFreqSet = x86_64_CPUFreqSet_intel;
     }
-    else if (x86_64_is_amd())
+    else if (core_x86VendorMatches(CPUID_VEND_EBX_AMD, CPUID_VEND_EDX_AMD, CPUID_VEND_ECX_AMD))
     {
         cpuid2(0x80000000, 0, &eax, &ebx, &ecx, &edx);
         if (eax < 0x80000007)
