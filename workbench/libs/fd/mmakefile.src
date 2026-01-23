@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES:= fd_alloc fd_init
+
+USER_LDFLAGS := -static
+
+#MM- workbench-libs : workbench-libs-fd
+%build_module mmake=workbench-libs-fd \
+    modname=fd modtype=library \
+    files="$(FILES)"
+
+#MM includes-copy
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=libraries dir=include
+
+%common
