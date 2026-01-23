@@ -52,6 +52,7 @@ INCSUBDIRS :=	aros				\
 		SDI				\
 		scsi				\
 		utility				\
+                vhi                             \
 		workbench
 
 # clib & proto are handled above.
