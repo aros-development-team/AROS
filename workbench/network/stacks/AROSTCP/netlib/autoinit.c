@@ -15,6 +15,8 @@
 #include <proto/socket.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/fd.h>
+#include <libraries/fd.h>
 
 #include <stdlib.h>
 #include <errno.h>
@@ -22,6 +24,7 @@
 #include "conf.h"
 
 struct Library *SocketBase = NULL;
+struct Library *FDBase = NULL;
 
 static const char SOCKETNAME[] = "bsdsocket.library";
 
@@ -117,6 +120,7 @@ LONG STDARGS CONSTRUCTOR _STI_200_openSockets(void)
    * Open bsdsocket.library
    */
   if ((SocketBase = OpenLibrary((STRPTR)SOCKETNAME, SOCKETVERSION)) != NULL) {
+    FDBase = OpenLibrary("fd.library", 0);
     /*
      * Succesfull. Now tell bsdsocket.library:
      * - the address of our errno
@@ -153,6 +157,10 @@ void STDARGS DESTRUCTOR _STD_200_closeSockets(void)
   if (SocketBase) {
     CloseLibrary(SocketBase);
     SocketBase = NULL;
+  }
+  if (FDBase) {
+    CloseLibrary(FDBase);
+    FDBase = NULL;
   }
 }
 

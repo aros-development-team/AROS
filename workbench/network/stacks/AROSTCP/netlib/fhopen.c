@@ -16,6 +16,9 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+#include <libraries/fd.h>
+#include <proto/fd.h>
+
 #include <bsdsocket.h>
 
 extern int (*__closefunc)(int);
@@ -38,7 +41,7 @@ fhopen(long file, int mode)
   /*
    * find first free ufb
    */
-  ufb = __allocufb(&fd);
+  ufb = __allocufb(&fd, FD_OWNER_POSIXC);
   if (ufb == NULL)
     return -1; /* errno is set by the __allocufb() */
 
@@ -49,6 +52,8 @@ fhopen(long file, int mode)
   case O_RDONLY:
     if (mode & (O_APPEND | O_CREAT | O_TRUNC | O_EXCL)) {
       errno = EINVAL;
+      if (FDBase)
+        FD_Free(fd, FD_OWNER_POSIXC);
       return -1;
     }
     flags = UFB_RA;
@@ -61,6 +66,8 @@ fhopen(long file, int mode)
     break;
   default:
     errno = EINVAL;
+    if (FDBase)
+      FD_Free(fd, FD_OWNER_POSIXC);
     return -1;
   }
   if (mode & O_APPEND)

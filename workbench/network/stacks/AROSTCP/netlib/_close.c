@@ -14,11 +14,14 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include <bsdsocket.h>
+#include <libraries/fd.h>
+#include <proto/fd.h>
 
 int 
 __close(int fd)
 {
   struct UFB *ufb;
+  int is_socket;
 
   /*
    * Check for the break signals
@@ -69,11 +72,17 @@ __close(int fd)
     ufb->ufbfn = NULL;
   }
 
+  is_socket = (ufb->ufbflg & UFB_SOCK);
+
   /*
    * Clear the flags to free this ufb
    */
   ufb->ufbflg = 0;
   ufb->ufbfh = NULL; /* just in case */
+
+  if (!is_socket && FDBase) {
+    FD_Free(fd, FD_OWNER_POSIXC);
+  }
 
   /* 
    * closes the socket OR the file mark

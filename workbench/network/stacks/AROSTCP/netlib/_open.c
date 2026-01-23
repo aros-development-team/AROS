@@ -19,6 +19,9 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+#include <libraries/fd.h>
+#include <proto/fd.h>
+
 #include <bsdsocket.h>
 
 #include "netlib.h"
@@ -47,7 +50,7 @@ __open(const char *name, int mode, ...)
   /*
    * find first free ufb
    */
-  ufb = __allocufb(&fd);
+  ufb = __allocufb(&fd, FD_OWNER_POSIXC);
   if (ufb == NULL)
     return -1; /* errno is set by the __allocufb() */
 
@@ -57,6 +60,8 @@ __open(const char *name, int mode, ...)
   if ((ufb->ufbfn = malloc(strlen(name)+1)) == NULL) {
     SET_OSERR(ERROR_NO_FREE_STORE);
     errno = ENOMEM;
+    if (FDBase)
+      FD_Free(fd, FD_OWNER_POSIXC);
     return -1;
   }
   strcpy(ufb->ufbfn, name);
@@ -67,6 +72,10 @@ __open(const char *name, int mode, ...)
   case O_RDONLY:
     if (mode & (O_APPEND | O_CREAT | O_TRUNC | O_EXCL)) {
       errno = EINVAL;
+      free(ufb->ufbfn);
+      ufb->ufbfn = NULL;
+      if (FDBase)
+        FD_Free(fd, FD_OWNER_POSIXC);
       return -1;
     }
     flags = UFB_RA;
@@ -79,6 +88,10 @@ __open(const char *name, int mode, ...)
     break;
   default:
     errno = EINVAL;
+    free(ufb->ufbfn);
+    ufb->ufbfn = NULL;
+    if (FDBase)
+      FD_Free(fd, FD_OWNER_POSIXC);
     return -1;
   }
   if (mode & O_APPEND)
@@ -94,6 +107,9 @@ __open(const char *name, int mode, ...)
 	UnLock(lock);
 	errno = EEXIST;
 	free(ufb->ufbfn);
+	ufb->ufbfn = NULL;
+	if (FDBase)
+	  FD_Free(fd, FD_OWNER_POSIXC);
 	return -1;
       }
 
@@ -141,6 +157,8 @@ osfail:
     int code = IoErr();
     if (ufb->ufbfn)
       free(ufb->ufbfn);
+    if (FDBase)
+      FD_Free(fd, FD_OWNER_POSIXC);
     set_errno(code);
   }
   return -1;

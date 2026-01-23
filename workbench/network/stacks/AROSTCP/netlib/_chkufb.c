@@ -13,6 +13,8 @@
 #include <bsdsocket.h>
 #include <sys/cdefs.h>
 #include <amitcp/socketbasetags.h>
+#include <libraries/fd.h>
+#include <proto/fd.h>
 #include <syslog.h>
 
 extern unsigned long __fmask;
@@ -54,6 +56,7 @@ fdCallback(REG(d0) int fd, REG(d1) int action)
 {
   struct UFB *ufb;
   int fd2;
+  int error;
 
 #ifdef DEBUG
   syslog(LOG_INFO, "fdCallback(fd: %d, action: %d)", fd, action);
@@ -73,11 +76,16 @@ fdCallback(REG(d0) int fd, REG(d1) int action)
     }
 
     ufb->ufbflg = 0;
+    if (FDBase) {
+      error = FD_Free(fd, FD_OWNER_BSDSOCKET);
+      if (error)
+        return error;
+    }
     return 0;
 
   case FDCB_ALLOC:
     do {
-      ufb = __allocufb(&fd2);
+      ufb = __allocufb(&fd2, FD_OWNER_BSDSOCKET);
       if (ufb == NULL)
 	return ENOMEM;
 #ifdef DEBUG
@@ -93,6 +101,9 @@ fdCallback(REG(d0) int fd, REG(d1) int action)
     return 0;
 
   case FDCB_CHECK:
+    if (FDBase && FD_Check(fd) != 0)
+      return EBADF;
+
     ufb = __chkufb(fd);
     if (ufb != NULL && ufb->ufbflg != 0) 
       return EBADF;
