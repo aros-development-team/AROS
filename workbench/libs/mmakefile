@@ -18,7 +18,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-diskfont \
 #MM     workbench-libs-egl \
 #MM     workbench-libs-expat \
-#MM     workbench-libs-fd \
 #MM     workbench-libs-freetype-complete \
 #MM     workbench-libs-gadtools \
 #MM     workbench-libs-gallium \
@@ -58,6 +57,9 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-z \
 #MM     workbench-libs-zstd
 
+##MM- workbench-libs-complete : \
+##MM     workbench-libs-fd
+
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
 #MM     workbench-libs-asl-includes \
@@ -71,7 +73,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-diskfont-includes \
 #MM     workbench-libs-egl-includes \
 #MM     workbench-libs-expat-includes \
-#MM     workbench-libs-fd-includes \
 #MM     workbench-libs-gadtools-includes \
 #MM     workbench-libs-gallium-includes \
 #MM     workbench-libs-glu-includes \
@@ -109,3 +110,6 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-libs-workbench-includes \
 #MM     workbench-libs-z-includes \
 #MM     workbench-libs-zstd-includes
+
+##MM- includes-generate : \
+##MM     workbench-libs-fd-includes
