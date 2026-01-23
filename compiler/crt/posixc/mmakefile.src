@@ -1,7 +1,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 #MM- AROS : compiler-posixc
-#MM compiler-posixc : includes linklibs
+#MM compiler-posixc : includes linklibs workbench-libs-fd-includes
 
 POSIXC := \
     __exec \

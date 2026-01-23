@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -36,6 +36,10 @@ int __optionallibs_close(struct PosixCIntBase *PosixCBase)
     if (PosixCBase->PosixCUserGroupBase) {
         CloseLibrary(PosixCBase->PosixCUserGroupBase);
         PosixCBase->PosixCUserGroupBase = NULL;
+    }
+    if (PosixCBase->PosixCFDBase) {
+        CloseLibrary(PosixCBase->PosixCFDBase);
+        PosixCBase->PosixCFDBase = NULL;
     }
 }
 

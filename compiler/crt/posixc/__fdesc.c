@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     File descriptor handling internals.
 */
@@ -15,6 +15,8 @@
 #include <dos/dos.h>
 #include <dos/stdio.h>
 #include <aros/symbolsets.h>
+#include <libraries/fd.h>
+#include <proto/fd.h>
 
 #include <string.h>
 #include <fcntl.h>
@@ -24,6 +26,17 @@
 
 #include "__fdesc.h"
 #include "__upath.h"
+
+struct Library *FDBase = NULL;
+
+static int __fdlib_available(struct PosixCIntBase *PosixCBase)
+{
+    if (PosixCBase->PosixCFDBase == NULL)
+        PosixCBase->PosixCFDBase = OpenLibrary("fd.library", 0);
+
+    FDBase = PosixCBase->PosixCFDBase;
+    return FDBase != NULL;
+}
 
 /* TODO: Add locking to make filedesc usage thread safe
    Using vfork()+exec*() filedescriptors may be shared between different
@@ -83,6 +96,13 @@ void __setfdesc(register int fd, fdesc *desc)
 
     /* FIXME: Check if fd is in valid range... */
     PosixCBase->fd_array[fd] = desc;
+
+    if (__fdlib_available(PosixCBase)) {
+        if (desc)
+            FD_SetData(fd, FD_OWNER_POSIXC, desc);
+        else
+            FD_Free(fd, FD_OWNER_POSIXC);
+    }
 }
 
 int __getfirstfd(register int startfd)
@@ -91,19 +111,32 @@ int __getfirstfd(register int startfd)
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
     /* FIXME: Check if fd is in valid range... */
-    for (
-        ;
-        startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
-        startfd++
-    );
+    if (!__fdlib_available(PosixCBase)) {
+        for (
+            ;
+            startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd];
+            startfd++
+        );
 
-    return startfd;
+        return startfd;
+    }
+
+    for (;;) {
+        if (startfd < PosixCBase->fd_slots && PosixCBase->fd_array[startfd]) {
+            startfd++;
+            continue;
+        }
+        if (FD_Check(startfd) == 0)
+            return startfd;
+        startfd++;
+    }
 }
 
 int __getfdslot(int wanted_fd)
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    LONG error;
 
     if (wanted_fd>=PosixCBase->fd_slots)
     {
@@ -131,6 +164,14 @@ int __getfdslot(int wanted_fd)
     else if (PosixCBase->fd_array[wanted_fd])
     {
         close(wanted_fd);
+    }
+
+    if (__fdlib_available(PosixCBase)) {
+        error = FD_Reserve(wanted_fd, FD_OWNER_POSIXC, NULL);
+        if (error) {
+            errno = error;
+            return -1;
+        }
     }
     
     return wanted_fd;
@@ -183,6 +224,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     BPTR fh = BNULL, lock = BNULL;
     fdesc *currdesc = NULL;
+    int reserved_fd = 0;
     fcb *cblock = NULL;
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
@@ -215,6 +257,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 
     wanted_fd = __getfdslot(wanted_fd);
     if (wanted_fd == -1) { D(bug("__open: no free fd\n")); goto err; }
+    reserved_fd = 1;
 
     /*
      * In case of file system, test existance of file. Non-file system handlers (i.e CON:)
@@ -373,6 +416,8 @@ err:
     if (currdesc) __free_fdesc(currdesc);
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
+    if (reserved_fd)
+        __setfdesc(wanted_fd, NULL);
 
     D(bug("__open: exiting with error %d\n", errno ));
 
@@ -599,4 +644,3 @@ void __updatestdio(void)
 
 ADD2OPENLIB(__init_fd, 2);
 ADD2CLOSELIB(__exit_fd, 2);
-
