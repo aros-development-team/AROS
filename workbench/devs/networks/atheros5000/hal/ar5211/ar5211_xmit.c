@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_xmit.c,v 1.1.1.1 2008/12/11 04:46:34 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5211
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -362,23 +360,6 @@ ar5211ResetTxQueue(struct ath_hal *ah, u_int q)
 		break;
 	}
 
-#ifndef AH_DISABLE_WME
-	/*
-	 * This is a really not the right way to do it, but
-	 * it does get the lockout bits and backoff set for the
-	 * high-pri WME queues for testing.  We need to either extend
-	 * the meaning of queueInfo->mode, or create something like
-	 * queueInfo->dcumode.
-	 */
-	if (qi->tqi_intFlags & HAL_TXQ_USE_LOCKOUT_BKOFF_DIS) {
-		OS_REG_WRITE(ah, AR_DMISC(q),
-			 OS_REG_READ(ah, AR_DMISC(q)) |
-			 SM(AR_D_MISC_ARB_LOCKOUT_CNTRL_GLOBAL,
-			    AR_D_MISC_ARB_LOCKOUT_CNTRL)|
-			 AR_D_MISC_POST_FR_BKOFF_DIS);
-	}
-#endif
-
 	/*
 	 * Always update the secondary interrupt mask registers - this
 	 * could be a new queue getting enabled in a running system or
@@ -679,4 +660,3 @@ ar5211GetTxIntrQueue(struct ath_hal *ah, uint32_t *txqs)
 {
 	return;
 }
-#endif /* AH_SUPPORT_AR5211 */

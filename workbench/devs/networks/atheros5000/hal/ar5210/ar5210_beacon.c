@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210_beacon.c,v 1.1.1.1 2008/12/11 04:46:27 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5210
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -191,4 +189,3 @@ ar5210SetStaBeaconTimers(struct ath_hal *ah, const HAL_BEACON_STATE *bs)
 	OS_REG_WRITE(ah, AR_RSSI_THR, ahp->ah_rssiThr);
 #undef BMISS_MAX
 }
-#endif /* AH_SUPPORT_AR5210 */

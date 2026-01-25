@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_interrupts.c,v 1.1.1.1 2008/12/11 04:46:31 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5211
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -67,7 +65,9 @@ ar5211GetPendingInterrupts(struct ath_hal *ah, HAL_INT *masked)
 	if (isr & (AR_ISR_TXOK | AR_ISR_TXDESC | AR_ISR_TXERR | AR_ISR_TXEOL))
 		*masked |= HAL_INT_TX;
 	/*
-	 * RXORN can hang the receive path so we force a hardware
+	 * Receive overrun is usually non-fatal on Oahu/Spirit.
+	 * BUT on some parts rx could fail and the chip must be reset.
+	 * So we force a hardware reset in all cases.
 	 */
 	if ((isr & AR_ISR_RXORN) && AH_PRIVATE(ah)->ah_rxornIsFatal) {
 		HALDEBUG(ah, HAL_DEBUG_ANY,
@@ -158,4 +158,3 @@ ar5211SetInterrupts(struct ath_hal *ah, HAL_INT ints)
 
 	return omask;
 }
-#endif /* AH_SUPPORT_AR5211 */

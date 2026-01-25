@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_recv.c,v 1.1.1.1 2008/12/11 04:46:33 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5211
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -245,4 +243,3 @@ ar5211ProcRxDesc(struct ath_hal *ah, struct ath_desc *ds,
 
 	return HAL_OK;
 }
-#endif /* AH_SUPPORT_AR5211 */

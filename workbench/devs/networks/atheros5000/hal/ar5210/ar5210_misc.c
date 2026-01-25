@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210_misc.c,v 1.2 2011/03/07 11:25:42 cegger Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5210
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -26,6 +24,8 @@
 #include "ar5210/ar5210.h"
 #include "ar5210/ar5210reg.h"
 #include "ar5210/ar5210phy.h"
+
+#include "ah_eeprom_v1.h"
 
 #define	AR_NUM_GPIO	6		/* 6 GPIO bits */
 #define	AR_GPIOD_MASK	0x2f		/* 6-bit mask */
@@ -78,6 +78,46 @@ ar5210EepromRead(struct ath_hal *ah, u_int off, uint16_t *data)
 	return AH_TRUE;
 }
 
+#ifdef AH_SUPPORT_WRITE_EEPROM
+/*
+ * Write 16 bits of data to the specified EEPROM offset.
+ */
+HAL_BOOL
+ar5210EepromWrite(struct ath_hal *ah, u_int off, uint16_t data)
+{
+	return AH_FALSE;
+}
+#endif /* AH_SUPPORT_WRITE_EEPROM */
+
+/*
+ * Attempt to change the cards operating regulatory domain to the given value
+ */
+HAL_BOOL
+ar5210SetRegulatoryDomain(struct ath_hal *ah,
+	uint16_t regDomain, HAL_STATUS *status)
+{
+	HAL_STATUS ecode;
+
+	if (AH_PRIVATE(ah)->ah_currentRD == regDomain) {
+		ecode = HAL_EINVAL;
+		goto bad;
+	}
+	/*
+	 * Check if EEPROM is configured to allow this; must
+	 * be a proper version and the protection bits must
+	 * permit re-writing that segment of the EEPROM.
+	 */
+	if (ath_hal_eepromGetFlag(ah, AR_EEP_WRITEPROTECT)) {
+		ecode = HAL_EEWRITE;
+		goto bad;
+	}
+	ecode = HAL_EIO;		/* disallow all writes */
+bad:
+	if (status)
+		*status = ecode;
+	return AH_FALSE;
+}
+
 /*
  * Return the wireless modes (a,b,g,t) supported by hardware.
  *
@@ -118,7 +158,7 @@ ar5210EnableRfKill(struct ath_hal *ah)
  * Configure GPIO Output lines
  */
 HAL_BOOL
-ar5210GpioCfgOutput(struct ath_hal *ah, uint32_t gpio)
+ar5210GpioCfgOutput(struct ath_hal *ah, uint32_t gpio, HAL_GPIO_MUX_TYPE type)
 {
 	HALASSERT(gpio < AR_NUM_GPIO);
 
@@ -302,11 +342,10 @@ ar5210GetTsf64(struct ath_hal *ah)
 		 * then we re-reading AR_TSF_U32 does no good as the
 		 * low bits will be meaningless.  Likewise reading
 		 * L32, U32, U32, then comparing the last two reads
-		 * to check for rollover
-		 * doesn't help if preempted--so we take this approach
-		 * as it costs one less PCI read which can be noticeable
-		 * when doing things like timestamping packets in
-		 * monitor mode.
+		 * to check for rollover doesn't help if preempted--so
+		 * we take this approach as it costs one less PCI
+		 * read which can be noticeable when doing things
+		 * like timestamping packets in monitor mode.
 		 */
 		u32++;
 	}
@@ -601,4 +640,3 @@ ar5210GetDiagState(struct ath_hal *ah, int request,
 	return ath_hal_getdiagstate(ah, request,
 		args, argsize, result, resultsize);
 }
-#endif /* AH_SUPPORT_AR5210 */

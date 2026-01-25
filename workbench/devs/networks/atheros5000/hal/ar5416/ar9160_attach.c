@@ -14,18 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar9160_attach.c,v 1.2 2011/02/20 11:21:04 jmcneill Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR9160
-
-#if !defined(AH_SUPPORT_AR5416)
-#error "No 5416 support defined"
-#endif
-#if !defined(AH_SUPPORT_2133)
-#error "No 2133 RF support defined"
-#endif
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -129,11 +120,11 @@ ar9160Attach(uint16_t devid, HAL_SOFTC sc,
 	/* override 5416 methods for our needs */
 	ah->ah_detach			= ar9160Detach;
 
-	AH5416(ah)->ah_iqCalData.calData = &ar9160_iq_cal;
-	AH5416(ah)->ah_adcGainCalData.calData = &ar9160_adc_gain_cal;
-	AH5416(ah)->ah_adcDcCalData.calData = &ar9160_adc_dc_cal;
-	AH5416(ah)->ah_adcDcCalInitData.calData = &ar9160_adc_init_dc_cal;
-	AH5416(ah)->ah_suppCals = ADC_GAIN_CAL | ADC_DC_CAL | IQ_MISMATCH_CAL;
+	AH5416(ah)->ah_cal.iqCalData.calData = &ar9160_iq_cal;
+	AH5416(ah)->ah_cal.adcGainCalData.calData = &ar9160_adc_gain_cal;
+	AH5416(ah)->ah_cal.adcDcCalData.calData = &ar9160_adc_dc_cal;
+	AH5416(ah)->ah_cal.adcDcCalInitData.calData = &ar9160_adc_init_dc_cal;
+	AH5416(ah)->ah_cal.suppCals = ADC_GAIN_CAL | ADC_DC_CAL | IQ_MISMATCH_CAL;
 
 	if (!ar5416SetResetReg(ah, HAL_RESET_POWER_ON)) {
 		/* reset chip */
@@ -159,7 +150,7 @@ ar9160Attach(uint16_t devid, HAL_SOFTC sc,
 	AH_PRIVATE(ah)->ah_macVersion =
 	    (val & AR_XSREV_VERSION) >> AR_XSREV_TYPE_S;
 	AH_PRIVATE(ah)->ah_macRev = MS(val, AR_XSREV_REVISION);
-	/* XXX extract pcie info */
+	AH_PRIVATE(ah)->ah_ispcie = (val & AR_XSREV_TYPE_HOST_MODE) == 0;
 
 	/* setup common ini data; rf backends handle remainder */
 	HAL_INI_INIT(&ahp->ah_ini_modes, ar9160Modes, 6);
@@ -176,6 +167,9 @@ ar9160Attach(uint16_t devid, HAL_SOFTC sc,
 		HAL_INI_INIT(&AH5416(ah)->ah_ini_addac, ar9160Addac_1_1, 2);
 	else
 		HAL_INI_INIT(&AH5416(ah)->ah_ini_addac, ar9160Addac, 2);
+
+	HAL_INI_INIT(&AH5416(ah)->ah_ini_pcieserdes, ar9160PciePhy, 2);
+	ar5416AttachPCIE(ah);
 
 	if (!ar5416ChipReset(ah, AH_NULL)) {	/* reset chip */
 		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: chip reset failed\n", __func__);
@@ -255,14 +249,13 @@ ar9160Attach(uint16_t devid, HAL_SOFTC sc,
 	 * ah_miscMode is populated by ar5416FillCapabilityInfo()
 	 * starting from griffin. Set here to make sure that
 	 * AR_MISC_MODE_MIC_NEW_LOC_ENABLE is set before a GTK is
-	 * placed into hardware
+	 * placed into hardware.
 	 */
 	if (ahp->ah_miscMode != 0)
 		OS_REG_WRITE(ah, AR_MISC_MODE, ahp->ah_miscMode);
 
-	ar5212InitializeGainValues(ah);		/* gain ladder */
 	ar9160AniSetup(ah);			/* Anti Noise Immunity */
-	ar5416InitNfHistBuff(AH5416(ah)->ah_nfCalHist);
+	ar5416InitNfHistBuff(AH5416(ah)->ah_cal.nfCalHist);
 
 	HALDEBUG(ah, HAL_DEBUG_ATTACH, "%s: return\n", __func__);
 
@@ -306,4 +299,12 @@ ar9160FillCapabilityInfo(struct ath_hal *ah)
 	pCap->halAutoSleepSupport = AH_FALSE;	/* XXX? */
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_AR9160 */
+
+static const char*
+ar9160Probe(uint16_t vendorid, uint16_t devid)
+{
+	if (vendorid == ATHEROS_VENDOR_ID && devid == AR9160_DEVID_PCI)
+		return "Atheros 9160";
+	return AH_NULL;
+}
+AH_CHIP(AR9160, ar9160Probe, ar9160Attach);

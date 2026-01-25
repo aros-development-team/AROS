@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010-2019 Neil Cafferkey
+Copyright (C) 2010-2026 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ MA 02111-1307, USA.
 */
 
 
+#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -36,13 +37,42 @@ MA 02111-1307, USA.
 #include "device.h"
 
 
+extern struct ath_hal_chip AR5211_chip, AR5212_chip, AR5416_chip,
+   AR9160_chip, AR9280_chip, AR9285_chip;
+extern struct ath_hal_rf RF2316_rf, RF2317_rf, RF2413_rf, RF2425_rf,
+   RF5111_rf, RF5112_rf, RF5413_rf;
+
+
 #ifdef AH_DEBUG
-static   int ath_hal_debug = 1;
+static int ath_hal_debug = 1;
 #endif
 
 int   ath_hal_dma_beacon_response_time = 2;   /* in TU's */
 int   ath_hal_sw_beacon_response_time = 10;   /* in TU's */
 int   ath_hal_additional_swba_backoff = 0;   /* in TU's */
+
+struct ath_hal_chip *ah_chips[] =
+{
+   &AR5211_chip,
+   &AR5212_chip,
+   &AR5416_chip,
+   &AR9160_chip,
+   &AR9280_chip,
+   &AR9285_chip,
+   NULL
+};
+
+struct ath_hal_rf *ah_rfs[] =
+{
+   &RF2316_rf,
+   &RF2317_rf,
+   &RF2413_rf,
+   &RF2425_rf,
+   &RF5111_rf,
+   &RF5112_rf,
+   &RF5413_rf,
+   NULL
+};
 
 struct DevBase *hal_dev_base;
 
@@ -66,7 +96,7 @@ void HALDEBUG(APTR ah, unsigned int mask, const char* fmt, ...)
    va_list ap;
    va_start(ap, fmt);
 #ifdef __AROS__
-   kprintf("[atheros] ");
+   kprintf("[atheros5000] ");
    vkprintf(fmt, ap);
 #else
    ath_hal_vprintf(ah, fmt, ap);

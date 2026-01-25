@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah_internal.h,v 1.6 2011/03/07 11:25:42 cegger Exp $
  */
 #ifndef _ATH_AH_INTERAL_H_
 #define _ATH_AH_INTERAL_H_
@@ -49,14 +49,7 @@
  * Note that uintptr_t is C99.
  */
 #ifndef __DECONST
-#ifndef _UINTPTR_T
-#if AH_WORDSIZE == 64
-typedef unsigned long int uintptr_t;
-#else
-typedef unsigned int uintptr_t;
-#endif
-#endif
-#define	__DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
+#define	__DECONST(type, var)	((type)(unsigned long)(const void *)(var))
 #endif
 
 typedef struct {
@@ -64,8 +57,16 @@ typedef struct {
 	uint16_t	end;		/* ending register or zero */
 } HAL_REGRANGE;
 
+typedef struct {
+	uint32_t	addr;		/* register address/offset */
+	uint32_t	value;		/* value to write */
+} HAL_REGWRITE;
+
 /*
  * Transmit power scale factor.
+ *
+ * NB: This is not public because we want to discourage the use of
+ *     scaling; folks should use the tx power limit interface.
  */
 typedef enum {
 	HAL_TP_SCALE_MAX	= 0,		/* no scaling (default) */
@@ -80,6 +81,46 @@ typedef enum {
  	HAL_CAP_AR		= 1,		/* AR capability */
 } HAL_PHYDIAG_CAPS;
 
+/*
+ * Each chip or class of chips registers to offer support.
+ */
+struct ath_hal_chip {
+	const char	*name;
+	const char	*(*probe)(uint16_t vendorid, uint16_t devid);
+	struct ath_hal	*(*attach)(uint16_t devid, HAL_SOFTC,
+			    HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS *error);
+};
+#ifndef AH_CHIP
+#define	AH_CHIP(_name, _probe, _attach)				\
+struct ath_hal_chip _name##_chip = {				\
+	.name		= #_name,				\
+	.probe		= _probe,				\
+	.attach		= _attach				\
+};								\
+OS_DATA_SET(ah_chips, _name##_chip)
+#endif
+
+/*
+ * Each RF backend registers to offer support; this is mostly
+ * used by multi-chip 5212 solutions.  Single-chip solutions
+ * have a fixed idea about which RF to use.
+ */
+struct ath_hal_rf {
+	const char	*name;
+	HAL_BOOL	(*probe)(struct ath_hal *ah);
+	HAL_BOOL	(*attach)(struct ath_hal *ah, HAL_STATUS *ecode);
+};
+#ifndef AH_RF
+#define	AH_RF(_name, _probe, _attach)				\
+struct ath_hal_rf _name##_rf = {				\
+	.name		= #_name,				\
+	.probe		= _probe,				\
+	.attach		= _attach				\
+};								\
+OS_DATA_SET(ah_rfs, _name##_rf)
+#endif
+
+struct ath_hal_rf *ath_hal_rfprobe(struct ath_hal *ah, HAL_STATUS *ecode);
 
 /*
  * Internal form of a HAL_CHANNEL.  Note that the structure
@@ -148,7 +189,8 @@ typedef struct {
 			halExtChanDfsSupport		: 1,
 			halForcePpmSupport		: 1,
 			halEnhancedPmSupport		: 1,
-			halMbssidAggrSupport		: 1;
+			halMbssidAggrSupport		: 1,
+			halBssidMatchSupport		: 1;
 	uint32_t	halWirelessModes;
 	uint16_t	halTotalQueues;
 	uint16_t	halKeyCacheSize;
@@ -161,11 +203,28 @@ typedef struct {
 	uint8_t		halNumGpioPins;
 	uint8_t		halNumAntCfg2GHz;
 	uint8_t		halNumAntCfg5GHz;
+	uint32_t	halIntrMask;
 } HAL_CAPABILITIES;
 
 /*
  * The ``private area'' follows immediately after the ``public area''
- * in the data structure returned by ath_hal_attach.
+ * in the data structure returned by ath_hal_attach.  Private data are
+ * used by device-independent code such as the regulatory domain support.
+ * In general, code within the HAL should never depend on data in the
+ * public area.  Instead any public data needed internally should be
+ * shadowed here.
+ *
+ * When declaring a device-specific ath_hal data structure this structure
+ * is assumed to at the front; e.g.
+ *
+ *	struct ath_hal_5212 {
+ *		struct ath_hal_private	ah_priv;
+ *		...
+ *	};
+ *
+ * It might be better to manage the method pointers in this structure
+ * using an indirect pointer to a read-only data structure but this would
+ * disallow class-style method overriding.
  */
 struct ath_hal_private {
 	struct ath_hal	h;			/* public area */
@@ -179,7 +238,8 @@ struct ath_hal_private {
 				uint16_t *data);
 	HAL_BOOL	(*ah_eepromWrite)(struct ath_hal *, u_int off,
 				uint16_t data);
-	HAL_BOOL	(*ah_gpioCfgOutput)(struct ath_hal *, uint32_t gpio);
+	HAL_BOOL	(*ah_gpioCfgOutput)(struct ath_hal *,
+				uint32_t gpio, HAL_GPIO_MUX_TYPE);
 	HAL_BOOL	(*ah_gpioCfgInput)(struct ath_hal *, uint32_t gpio);
 	uint32_t	(*ah_gpioGet)(struct ath_hal *, uint32_t gpio);
 	HAL_BOOL	(*ah_gpioSet)(struct ath_hal *,
@@ -189,6 +249,8 @@ struct ath_hal_private {
 				HAL_CHANNEL *, uint32_t);
 	int16_t		(*ah_getNfAdjust)(struct ath_hal *,
 				const HAL_CHANNEL_INTERNAL*);
+	void		(*ah_getNoiseFloor)(struct ath_hal *,
+				int16_t nfarray[]);
 
 	void		*ah_eeprom;		/* opaque EEPROM state */
 	uint16_t	ah_eeversion;		/* EEPROM version */
@@ -210,6 +272,7 @@ struct ath_hal_private {
 	uint16_t	ah_phyRev;		/* PHY revision */
 	uint16_t	ah_analog5GhzRev;	/* 2GHz radio revision */
 	uint16_t	ah_analog2GhzRev;	/* 5GHz radio revision */
+	uint8_t		ah_ispcie;		/* PCIE, special treatment */
 
 
 	HAL_OPMODE	ah_opmode;		/* operating mode from reset */
@@ -253,8 +316,8 @@ struct ath_hal_private {
 	AH_PRIVATE(_ah)->ah_eepromRead(_ah, _off, _data)
 #define	ath_hal_eepromWrite(_ah, _off, _data) \
 	AH_PRIVATE(_ah)->ah_eepromWrite(_ah, _off, _data)
-#define	ath_hal_gpioCfgOutput(_ah, _gpio) \
-	AH_PRIVATE(_ah)->ah_gpioCfgOutput(_ah, _gpio)
+#define	ath_hal_gpioCfgOutput(_ah, _gpio, _type) \
+	AH_PRIVATE(_ah)->ah_gpioCfgOutput(_ah, _gpio, _type)
 #define	ath_hal_gpioCfgInput(_ah, _gpio) \
 	AH_PRIVATE(_ah)->ah_gpioCfgInput(_ah, _gpio)
 #define	ath_hal_gpioGet(_ah, _gpio) \
@@ -267,9 +330,20 @@ struct ath_hal_private {
 	AH_PRIVATE(_ah)->ah_getChipPowerLimits(_ah, _chans, _nchan)
 #define ath_hal_getNfAdjust(_ah, _c) \
 	AH_PRIVATE(_ah)->ah_getNfAdjust(_ah, _c)
+#define	ath_hal_getNoiseFloor(_ah, _nfArray) \
+	AH_PRIVATE(_ah)->ah_getNoiseFloor(_ah, _nfArray)
+#define	ath_hal_configPCIE(_ah, _reset) \
+	(_ah)->ah_configPCIE(_ah, _reset)
+#define	ath_hal_disablePCIE(_ah) \
+	(_ah)->ah_disablePCIE(_ah)
+#define	ath_hal_setInterrupts(_ah, _mask) \
+	(_ah)->ah_setInterrupts(_ah, _mask)
 
-#define	ath_hal_eepromDetach(_ah) \
-	AH_PRIVATE(_ah)->ah_eepromDetach(_ah)
+#define	ath_hal_eepromDetach(_ah)			\
+do {							\
+	if (AH_PRIVATE(_ah)->ah_eepromDetach != NULL)	\
+		AH_PRIVATE(_ah)->ah_eepromDetach(_ah);	\
+} while (/*CONSTCOND*/0)
 #define	ath_hal_eepromGet(_ah, _param, _val) \
 	AH_PRIVATE(_ah)->ah_eepromGet(_ah, _param, _val)
 #define	ath_hal_eepromSet(_ah, _param, _val) \
@@ -486,7 +560,7 @@ extern	uint32_t ath_hal_reverseBits(uint32_t val, uint32_t n);
 /* printf interfaces */
 extern	void ath_hal_printf(struct ath_hal *, const char*, ...)
 		__printflike(2,3);
-extern	void ath_hal_vprintf(struct ath_hal *, const char*, __va_list)
+extern	void ath_hal_vprintf(struct ath_hal *, const char*, va_list)
 		__printflike(2, 0);
 extern	const char* ath_hal_ether_sprintf(const uint8_t *mac);
 
@@ -528,6 +602,17 @@ extern	void ath_hal_assert_failed(const char* filename,
 #else
 #define	HALASSERT(_x)
 #endif /* AH_ASSERT */
+
+/*
+ * Return the h/w frequency for a channel. This may be
+ * different from ic_freq if this is a GSM device that
+ * takes 2.4GHz frequencies and down-converts them.
+ */
+static OS_INLINE uint16_t
+ath_hal_gethwchannel(struct ath_hal *ah, const HAL_CHANNEL_INTERNAL *c)
+{
+	return ath_hal_checkchannel(ah, (const HAL_CHANNEL *)c)->channel;
+}
 
 /*
  * Convert between microseconds and core system clocks.

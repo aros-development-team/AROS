@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5312.h,v 1.3 2011/03/07 11:25:43 cegger Exp $
  */
 #ifndef _ATH_AR5312_H_
 #define _ATH_AR5312_H_
@@ -30,29 +30,27 @@
 	(((const struct ar531x_config *)((_ah)->ah_st))->radio)
 
 #define	IS_5312_2_X(ah) \
-	(((AH_PRIVATE(ah)->ah_macVersion) == AR_SREV_VERSION_VENICE) && \
-	 (((AH_PRIVATE(ah)->ah_macRev) == 2) || ((AH_PRIVATE(ah)->ah_macRev) == 7)))
-
+	(AH_PRIVATE(ah)->ah_macVersion == AR_SREV_VERSION_VENICE && \
+	 (AH_PRIVATE(ah)->ah_macRev == 2 || AH_PRIVATE(ah)->ah_macRev == 7))
 #define IS_5315(ah) \
-	((AH_PRIVATE(ah)->ah_devid == AR5212_AR2315_REV6) || \
-	 (AH_PRIVATE(ah)->ah_devid == AR5212_AR2315_REV7) || \
-	 (AH_PRIVATE(ah)->ah_devid == AR5212_AR2317_REV1) || \
-	 (AH_PRIVATE(ah)->ah_devid == AR5212_AR2317_REV2))
+	(AH_PRIVATE(ah)->ah_devid == AR5212_AR2315_REV6 || \
+	 AH_PRIVATE(ah)->ah_devid == AR5212_AR2315_REV7 || \
+	 AH_PRIVATE(ah)->ah_devid == AR5212_AR2317_REV1 || \
+	 AH_PRIVATE(ah)->ah_devid == AR5212_AR2317_REV2)
 
-
-extern	struct ath_hal * ar5312Attach(uint16_t devid, HAL_SOFTC sc,
-				      HAL_BUS_TAG st, HAL_BUS_HANDLE sh, HAL_STATUS *status);
 extern  HAL_BOOL ar5312IsInterruptPending(struct ath_hal *ah);
 
 /* AR5312 */
-extern	HAL_BOOL ar5312GpioCfgOutput(struct ath_hal *, uint32_t gpio);
+extern	HAL_BOOL ar5312GpioCfgOutput(struct ath_hal *, uint32_t gpio,
+		HAL_GPIO_MUX_TYPE);
 extern	HAL_BOOL ar5312GpioCfgInput(struct ath_hal *, uint32_t gpio);
 extern	HAL_BOOL ar5312GpioSet(struct ath_hal *, uint32_t gpio, uint32_t val);
 extern	uint32_t ar5312GpioGet(struct ath_hal *ah, uint32_t gpio);
 extern	void ar5312GpioSetIntr(struct ath_hal *ah, u_int, uint32_t ilevel);
 
 /* AR2315+ */
-extern	HAL_BOOL ar5315GpioCfgOutput(struct ath_hal *, uint32_t gpio);
+extern	HAL_BOOL ar5315GpioCfgOutput(struct ath_hal *, uint32_t gpio,
+		HAL_GPIO_MUX_TYPE);
 extern	HAL_BOOL ar5315GpioCfgInput(struct ath_hal *, uint32_t gpio);
 extern	HAL_BOOL ar5315GpioSet(struct ath_hal *, uint32_t gpio, uint32_t val);
 extern	uint32_t ar5315GpioGet(struct ath_hal *ah, uint32_t gpio);
@@ -76,5 +74,6 @@ extern  HAL_BOOL ar5312GetPowerStatus(struct ath_hal *ah);
 
 /* BSP functions */
 extern	HAL_BOOL ar5312EepromRead(struct ath_hal *, u_int off, uint16_t *data);
+extern	HAL_BOOL ar5312EepromWrite(struct ath_hal *, u_int off, uint16_t data);
 
 #endif	/* _ATH_AR3212_H_ */

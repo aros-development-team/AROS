@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $FreeBSD: src/sys/dev/ath/ath_hal/ar5212/ar5212reg.h,v 1.4 2010/01/29 10:10:14 rpaulo Exp $
  */
 #ifndef _DEV_ATH_AR5212REG_H_
 #define _DEV_ATH_AR5212REG_H_
@@ -463,7 +463,8 @@
 #define	AR_ISR_S2_BCNTO		0x08000000 /* BCNTO */
 #define	AR_ISR_S2_CABTO		0x10000000 /* CABTO */
 #define	AR_ISR_S2_DTIM		0x20000000 /* DTIM */
-#define	AR_ISR_S2_RESV0		0xE0F8FC00 /* Reserved */
+#define	AR_ISR_S2_TSFOOR	0x40000000 /* TSF OOR */
+#define	AR_ISR_S2_TBTT		0x80000000 /* TBTT timer */
 
 #define	AR_ISR_S3_QCU_QCBROVF	0x000003FF /* Mask for QCBROVF (QCU 0-9) */
 #define	AR_ISR_S3_QCU_QCBRURN	0x03FF0000 /* Mask for QCBRURN (QCU 0-9) */
@@ -531,8 +532,14 @@
 #define	AR_IMR_S2_BCNTO		0x08000000 /* BCNTO */
 #define	AR_IMR_S2_CABTO		0x10000000 /* CABTO */
 #define	AR_IMR_S2_DTIM		0x20000000 /* DTIM */
-#define	AR_IMR_S2_TSFOOR	0x80000000 /* TSF OOR */
-#define	AR_IMR_S2_RESV0		0xE0F8FC00 /* Reserved */
+#define	AR_IMR_S2_TSFOOR	0x40000000 /* TSF OOR */
+#define	AR_IMR_S2_TBTT		0x80000000 /* TBTT timer */
+
+/* AR_IMR_SR2 bits that correspond to AR_IMR_BCNMISC */
+#define	AR_IMR_SR2_BCNMISC \
+	(AR_IMR_S2_TIM | AR_IMR_S2_DTIM | AR_IMR_S2_DTIMSYNC | \
+	 AR_IMR_S2_CABEND | AR_IMR_S2_CABTO  | AR_IMR_S2_TSFOOR | \
+	 AR_IMR_S2_TBTT)
 
 #define	AR_IMR_S3_QCU_QCBROVF	0x000003FF /* Mask for QCBROVF (QCU 0-9) */
 #define	AR_IMR_S3_QCU_QCBRURN	0x03FF0000 /* Mask for QCBRURN (QCU 0-9) */
@@ -693,6 +700,7 @@
 #define	AR_SCR_SLDWP		0x00080000 /* sleep duration write policy */
 #define	AR_SCR_SLEPOL		0x00100000 /* sleep policy mode */
 #define	AR_SCR_MIBIE		0x00200000 /* sleep perf cntrs MIB intr ena */
+#define	AR_SCR_UNKNOWN		0x00400000
 
 #define	AR_INTPEND_TRUE		0x00000001 /* interrupt pending */
 
@@ -762,9 +770,9 @@
 #define	AR_SREV_CRETE_MS	5	/* FCS metal spin */
 #define	AR_SREV_CRETE_MS23	7	/* 2.3 metal spin (6 skipped) */
 #define	AR_SREV_CRETE_23	8	/* 2.3 full tape out */
-#define AR_SREV_GRIFFIN_LITE    8
-#define	AR_SREV_HAINAN  	9
-#define AR_SREV_CONDOR		11
+#define	AR_SREV_GRIFFIN_LITE	8
+#define	AR_SREV_HAINAN		9
+#define	AR_SREV_CONDOR		11
 #define	AR_SREV_VERSION	0x000000F0 /* Mask for Chip version */
 #define	AR_SREV_VERSION_CRETE	0
 #define	AR_SREV_VERSION_MAUI_1	1
@@ -773,38 +781,39 @@
 #define	AR_SREV_VERSION_OAHU	4
 #define	AR_SREV_VERSION_VENICE	5
 #define	AR_SREV_VERSION_GRIFFIN	7
-#define AR_SREV_VERSION_CONDOR	9
-#define AR_SREV_VERSION_EAGLE	10
+#define	AR_SREV_VERSION_CONDOR	9
+#define	AR_SREV_VERSION_EAGLE	10
 #define	AR_SREV_VERSION_COBRA	11	
 #define	AR_SREV_2413		AR_SREV_VERSION_GRIFFIN
-#define AR_SREV_5413	        AR_SREV_VERSION_EAGLE
+#define	AR_SREV_5413	        AR_SREV_VERSION_EAGLE
 #define	AR_SREV_2415		AR_SREV_VERSION_COBRA
-#define AR_SREV_5424		AR_SREV_VERSION_CONDOR
-#define AR_SREV_2425		14	/* SWAN */
-#define AR_SREV_2417		15	/* Nala */
+#define	AR_SREV_5424		AR_SREV_VERSION_CONDOR
+#define	AR_SREV_2425		14	/* SWAN */
+#define	AR_SREV_2417		15	/* Nala */
 #define	AR_SREV_OAHU_ES		0	/* Engineering Sample */
 #define	AR_SREV_OAHU_PROD	2	/* Production */
 
-#define AR_PHYREV_HAINAN	0x43
-#define AR_ANALOG5REV_HAINAN	0x46
+#define	AR_PHYREV_HAINAN	0x43
+#define	AR_ANALOG5REV_HAINAN	0x46
 
-#define AR_RADIO_SREV_MAJOR	0xF0
+#define	AR_RADIO_SREV_MAJOR	0xF0
+#define	AR_RADIO_SREV_MINOR	0x0F
 #define	AR_RAD5111_SREV_MAJOR	0x10	/* All current supported ar5211 5 GHz
 					   radios are rev 0x10 */
 #define	AR_RAD5111_SREV_PROD	0x15	/* Current production level radios */
 #define	AR_RAD2111_SREV_MAJOR	0x20	/* All current supported ar5211 2 GHz
 					   radios are rev 0x10 */
 #define	AR_RAD5112_SREV_MAJOR	0x30	/* 5112 Major Rev */
+#define AR_RAD5112_SREV_2_0     0x35    /* AR5112 Revision 2.0 */
+#define AR_RAD5112_SREV_2_1     0x36    /* AR5112 Revision 2.1 */
 #define	AR_RAD2112_SREV_MAJOR	0x40	/* 2112 Major Rev */
+#define AR_RAD2112_SREV_2_0     0x45    /* AR2112 Revision 2.0 */
+#define AR_RAD2112_SREV_2_1     0x46    /* AR2112 Revision 2.1 */
 #define AR_RAD2413_SREV_MAJOR	0x50	/* 2413 Major Rev */
 #define AR_RAD5413_SREV_MAJOR   0x60    /* 5413 Major Rev */
-#define AR_RAD5424_SREV_MAJOR   0xa0    /* Mostly same as 5413 Major Rev */
 #define AR_RAD2316_SREV_MAJOR	0x70	/* 2316 Major Rev */
 #define AR_RAD2317_SREV_MAJOR	0x80	/* 2317 Major Rev */
-#define AR_RAD5112_SREV_2_0     0x35    /* AR5112 Revision 2.0 */
-#define AR_RAD2112_SREV_2_0     0x45    /* AR2112 Revision 2.0 */
-#define AR_RAD5112_SREV_2_1     0x36    /* AR5112 Revision 2.1 */
-#define AR_RAD2112_SREV_2_1     0x46    /* AR2112 Revision 2.1 */
+#define AR_RAD5424_SREV_MAJOR   0xa0    /* Mostly same as 5413 Major Rev */
 
 #define	AR_PCIE_PMC_ENA_L1	0x01	/* enable PCIe core enter L1 when
 					   d2_sleep_en is asserted */

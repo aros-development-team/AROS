@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5416_beacon.c,v 1.2 2013/09/12 12:08:49 martin Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5416
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -32,7 +30,7 @@
 /*
  * Initialize all of the hardware registers used to
  * send beacons.  Note that for station operation the
- * driver calls ar5212SetStaBeaconTimers instead.
+ * driver calls ar5416SetStaBeaconTimers instead.
  */
 void
 ar5416SetBeaconTimers(struct ath_hal *ah, const HAL_BEACON_TIMERS *bt)
@@ -140,7 +138,7 @@ ar5416ResetStaBeaconTimers(struct ath_hal *ah)
 void
 ar5416SetStaBeaconTimers(struct ath_hal *ah, const HAL_BEACON_STATE *bs)
 {
-	uint32_t nextTbtt, beaconintval, dtimperiod;
+	uint32_t nextTbtt,beaconintval, dtimperiod;
 
 	HALASSERT(bs->bs_intval != 0);
 	
@@ -245,4 +243,3 @@ ar5416SetStaBeaconTimers(struct ath_hal *ah, const HAL_BEACON_STATE *bs)
 #undef BEACON_TIMEOUT_VAL
 #undef SLEEP_SLOP
 }
-#endif /* AH_SUPPORT_AR5416 */

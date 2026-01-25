@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5212_xmit.c,v 1.4 2021/04/13 03:27:13 mrg Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5212
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -50,16 +48,19 @@ ar5212UpdateTxTrigLevel(struct ath_hal *ah, HAL_BOOL bIncTrigLevel)
 	uint32_t txcfg, curLevel, newLevel;
 	HAL_INT omask;
 
+	if (ahp->ah_txTrigLev >= ahp->ah_maxTxTrigLev)
+		return AH_FALSE;
+
 	/*
 	 * Disable interrupts while futzing with the fifo level.
 	 */
-	omask = ar5212SetInterrupts(ah, ahp->ah_maskReg &~ HAL_INT_GLOBAL);
+	omask = ath_hal_setInterrupts(ah, ahp->ah_maskReg &~ HAL_INT_GLOBAL);
 
 	txcfg = OS_REG_READ(ah, AR_TXCFG);
 	curLevel = MS(txcfg, AR_FTRIG);
 	newLevel = curLevel;
 	if (bIncTrigLevel) {		/* increase the trigger level */
-		if (curLevel < MAX_TX_FIFO_THRESHOLD)
+		if (curLevel < ahp->ah_maxTxTrigLev)
 			newLevel++;
 	} else if (curLevel > MIN_TX_FIFO_THRESHOLD)
 		newLevel--;
@@ -68,8 +69,10 @@ ar5212UpdateTxTrigLevel(struct ath_hal *ah, HAL_BOOL bIncTrigLevel)
 		OS_REG_WRITE(ah, AR_TXCFG,
 			(txcfg &~ AR_FTRIG) | SM(newLevel, AR_FTRIG));
 
+	ahp->ah_txTrigLev = newLevel;
+
 	/* re-enable chip interrupts */
-	ar5212SetInterrupts(ah, omask);
+	ath_hal_setInterrupts(ah, omask);
 
 	return (newLevel != curLevel);
 }
@@ -425,20 +428,6 @@ ar5212ResetTxQueue(struct ath_hal *ah, u_int q)
 		break;
 	}
 
-#ifndef AH_DISABLE_WME
-	/*
-	 * Yes, this is a hack and not the right way to do it, but
-	 * it does get the lockout bits and backoff set for the
-	 * high-pri WME queues for testing.  We need to either extend
-	 * the meaning of queueInfo->mode, or create something like
-	 * queueInfo->dcumode.
-	 */
-	if (qi->tqi_intFlags & HAL_TXQ_USE_LOCKOUT_BKOFF_DIS) {
-		dmisc |= SM(AR_D_MISC_ARB_LOCKOUT_CNTRL_GLOBAL,
-			    AR_D_MISC_ARB_LOCKOUT_CNTRL)
-		      |  AR_D_MISC_POST_FR_BKOFF_DIS;
-	}
-#endif
 	OS_REG_WRITE(ah, AR_QMISC(q), qmisc);
 	OS_REG_WRITE(ah, AR_DMISC(q), dmisc);
 
@@ -564,15 +553,6 @@ ar5212NumTxPending(struct ath_hal *ah, u_int q)
 		if (OS_REG_READ(ah, AR_Q_TXE) & (1 << q))
 			npend = 1;		/* arbitrarily return 1 */
 	}
-#ifdef DEBUG
-	if (npend && (AH5212(ah)->ah_txq[q].tqi_type == HAL_TX_QUEUE_CAB)) {
-		if (OS_REG_READ(ah, AR_Q_RDYTIMESHDN) & (1 << q)) {
-			isrPrintf("RTSD on CAB queue\n");
-			/* Clear the ReadyTime shutdown status bits */
-			OS_REG_WRITE(ah, AR_Q_RDYTIMESHDN, 1 << q);
-		}
-	}
-#endif
 	return npend;
 }
 
@@ -922,7 +902,9 @@ ar5212ProcTxDesc(struct ath_hal *ah,
 	 */
 	switch (ts->ts_finaltsi) {
 	case 3: ts->ts_longretry += MS(ads->ds_ctl2, AR_XmitDataTries2);
+		/* FALLTHRU */
 	case 2: ts->ts_longretry += MS(ads->ds_ctl2, AR_XmitDataTries1);
+		/* FALLTHRU */
 	case 1: ts->ts_longretry += MS(ads->ds_ctl2, AR_XmitDataTries0);
 	}
 	ts->ts_virtcol = MS(ads->ds_txstatus0, AR_VirtCollCnt);
@@ -941,4 +923,3 @@ ar5212GetTxIntrQueue(struct ath_hal *ah, uint32_t *txqs)
 	*txqs &= ahp->ah_intrTxqs;
 	ahp->ah_intrTxqs &= ~(*txqs);
 }
-#endif /* AH_SUPPORT_AR5212 */

@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5212_ani.c,v 1.2 2011/03/07 11:25:43 cegger Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5212
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -269,7 +267,7 @@ ar5212AniControl(struct ath_hal *ah, HAL_ANI_CMD cmd, int param)
 	case HAL_ANI_NOISE_IMMUNITY_LEVEL: {
 		u_int level = param;
 
-		if (level >= params->maxNoiseImmunityLevel) {
+		if (level > params->maxNoiseImmunityLevel) {
 			HALDEBUG(ah, HAL_DEBUG_ANY,
 			    "%s: level out of range (%u > %u)\n",
 			    __func__, level, params->maxNoiseImmunityLevel);
@@ -317,14 +315,12 @@ ar5212AniControl(struct ath_hal *ah, HAL_ANI_CMD cmd, int param)
 		if (on) {
 			OS_REG_SET_BIT(ah, AR_PHY_SFCORR_LOW,
 				AR_PHY_SFCORR_LOW_USE_SELF_CORR_LOW);
+			ahp->ah_stats.ast_ani_ofdmon++;
 		} else {
 			OS_REG_CLR_BIT(ah, AR_PHY_SFCORR_LOW,
 				AR_PHY_SFCORR_LOW_USE_SELF_CORR_LOW);
-		}
-		if (on)
-			ahp->ah_stats.ast_ani_ofdmon++;
-		else
 			ahp->ah_stats.ast_ani_ofdmoff++;
+		}
 		aniState->ofdmWeakSigDetectOff = !on;
 		break;
 	}
@@ -344,7 +340,7 @@ ar5212AniControl(struct ath_hal *ah, HAL_ANI_CMD cmd, int param)
 	case HAL_ANI_FIRSTEP_LEVEL: {
 		u_int level = param;
 
-		if (level >= params->maxFirstepLevel) {
+		if (level > params->maxFirstepLevel) {
 			HALDEBUG(ah, HAL_DEBUG_ANY,
 			    "%s: level out of range (%u > %u)\n",
 			    __func__, level, params->maxFirstepLevel);
@@ -362,7 +358,7 @@ ar5212AniControl(struct ath_hal *ah, HAL_ANI_CMD cmd, int param)
 	case HAL_ANI_SPUR_IMMUNITY_LEVEL: {
 		u_int level = param;
 
-		if (level >= params->maxSpurImmunityLevel) {
+		if (level > params->maxSpurImmunityLevel) {
 			HALDEBUG(ah, HAL_DEBUG_ANY,
 			    "%s: level out of range (%u > %u)\n",
 			    __func__, level, params->maxSpurImmunityLevel);
@@ -435,13 +431,17 @@ ar5212AniOfdmErrTrigger(struct ath_hal *ah)
 	aniState = ahp->ah_curani;
 	params = aniState->params;
 	/* First, raise noise immunity level, up to max */
-	if (aniState->noiseImmunityLevel < params->maxNoiseImmunityLevel) {
+	if (aniState->noiseImmunityLevel+1 <= params->maxNoiseImmunityLevel) {
+		HALDEBUG(ah, HAL_DEBUG_ANI, "%s: raise NI to %u\n", __func__,
+		    aniState->noiseImmunityLevel + 1);
 		ar5212AniControl(ah, HAL_ANI_NOISE_IMMUNITY_LEVEL, 
 				 aniState->noiseImmunityLevel + 1);
 		return;
 	}
 	/* then, raise spur immunity level, up to max */
-	if (aniState->spurImmunityLevel < params->maxSpurImmunityLevel) {
+	if (aniState->spurImmunityLevel+1 <= params->maxSpurImmunityLevel) {
+		HALDEBUG(ah, HAL_DEBUG_ANI, "%s: raise SI to %u\n", __func__,
+		    aniState->spurImmunityLevel + 1);
 		ar5212AniControl(ah, HAL_ANI_SPUR_IMMUNITY_LEVEL,
 				 aniState->spurImmunityLevel + 1);
 		return;
@@ -455,6 +455,8 @@ ar5212AniOfdmErrTrigger(struct ath_hal *ah)
 			 * weak sig detect.
 			 */
 			if (!aniState->ofdmWeakSigDetectOff) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d OWSD off\n", __func__, rssi);
 				ar5212AniControl(ah,
 				    HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION,
 				    AH_FALSE);
@@ -466,7 +468,10 @@ ar5212AniOfdmErrTrigger(struct ath_hal *ah)
 			 * If weak sig detect is already off, as last resort,
 			 * raise firstep level 
 			 */
-			if (aniState->firstepLevel < params->maxFirstepLevel) {
+			if (aniState->firstepLevel+1 <= params->maxFirstepLevel) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d raise ST %u\n", __func__, rssi,
+				    aniState->firstepLevel+1);
 				ar5212AniControl(ah, HAL_ANI_FIRSTEP_LEVEL,
 						 aniState->firstepLevel + 1);
 				return;
@@ -476,13 +481,20 @@ ar5212AniOfdmErrTrigger(struct ath_hal *ah)
 			 * Beacon rssi in mid range, need ofdm weak signal
 			 * detect, but we can raise firststepLevel.
 			 */
-			if (aniState->ofdmWeakSigDetectOff)
+			if (aniState->ofdmWeakSigDetectOff) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d OWSD on\n", __func__, rssi);
 				ar5212AniControl(ah,
 				    HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION,
 				    AH_TRUE);
-			if (aniState->firstepLevel < params->maxFirstepLevel)
+			}
+			if (aniState->firstepLevel+1 <= params->maxFirstepLevel) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d raise ST %u\n", __func__, rssi,
+				    aniState->firstepLevel+1);
 				ar5212AniControl(ah, HAL_ANI_FIRSTEP_LEVEL,
 				     aniState->firstepLevel + 1);
+			}
 			return;
 		} else {
 			/* 
@@ -492,13 +504,22 @@ ar5212AniOfdmErrTrigger(struct ath_hal *ah)
 			 */
 			/* XXX can optimize */
 			if (IS_CHAN_B(chan) || IS_CHAN_G(chan)) {
-				if (!aniState->ofdmWeakSigDetectOff)
+				if (!aniState->ofdmWeakSigDetectOff) {
+					HALDEBUG(ah, HAL_DEBUG_ANI,
+					    "%s: rssi %d OWSD off\n",
+					    __func__, rssi);
 					ar5212AniControl(ah,
 					    HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION,
 					    AH_FALSE);
-				if (aniState->firstepLevel > 0)
+				}
+				if (aniState->firstepLevel > 0) {
+					HALDEBUG(ah, HAL_DEBUG_ANI,
+					    "%s: rssi %d zero ST (was %u)\n",
+					    __func__, rssi,
+					    aniState->firstepLevel);
 					ar5212AniControl(ah,
 					     HAL_ANI_FIRSTEP_LEVEL, 0);
+				}
 				return;
 			}
 		}
@@ -521,7 +542,9 @@ ar5212AniCckErrTrigger(struct ath_hal *ah)
 	/* first, raise noise immunity level, up to max */
 	aniState = ahp->ah_curani;
 	params = aniState->params;
-	if (aniState->noiseImmunityLevel < params->maxNoiseImmunityLevel) {
+	if (aniState->noiseImmunityLevel+1 <= params->maxNoiseImmunityLevel) {
+		HALDEBUG(ah, HAL_DEBUG_ANI, "%s: raise NI to %u\n", __func__,
+		    aniState->noiseImmunityLevel + 1);
 		ar5212AniControl(ah, HAL_ANI_NOISE_IMMUNITY_LEVEL,
 				 aniState->noiseImmunityLevel + 1);
 		return;
@@ -534,9 +557,13 @@ ar5212AniCckErrTrigger(struct ath_hal *ah)
 			 * Beacon signal in mid and high range,
 			 * raise firstep level.
 			 */
-			if (aniState->firstepLevel < params->maxFirstepLevel)
+			if (aniState->firstepLevel+1 < params->maxFirstepLevel) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d raise ST %u\n", __func__, rssi,
+				    aniState->firstepLevel+1);
 				ar5212AniControl(ah, HAL_ANI_FIRSTEP_LEVEL,
 						 aniState->firstepLevel + 1);
+			}
 		} else {
 			/*
 			 * Beacon rssi is low, zero firstep level to maximize
@@ -544,9 +571,14 @@ ar5212AniCckErrTrigger(struct ath_hal *ah)
 			 */
 			/* XXX can optimize */
 			if (IS_CHAN_B(chan) || IS_CHAN_G(chan)) {
-				if (aniState->firstepLevel > 0)
+				if (aniState->firstepLevel > 0) {
+					HALDEBUG(ah, HAL_DEBUG_ANI,
+					    "%s: rssi %d zero ST (was %u)\n",
+					    __func__, rssi,
+					    aniState->firstepLevel);
 					ar5212AniControl(ah,
 					    HAL_ANI_FIRSTEP_LEVEL, 0);
+				}
 			}
 		}
 	}
@@ -564,9 +596,6 @@ ar5212AniRestart(struct ath_hal *ah, struct ar5212AniState *aniState)
 		 * NB: these are written on reset based on the
 		 *     ini so we must re-write them!
 		 */
-		HALDEBUG(ah, HAL_DEBUG_ANI,
-		    "%s: Writing ofdmbase=%u   cckbase=%u\n", __func__,
-		    params->ofdmPhyErrBase, params->cckPhyErrBase);
 		OS_REG_WRITE(ah, AR_PHYCNT1, params->ofdmPhyErrBase);
 		OS_REG_WRITE(ah, AR_PHYCNT2, params->cckPhyErrBase);
 		OS_REG_WRITE(ah, AR_PHYCNTMASK1, AR_PHY_ERR_OFDM_TIMING);
@@ -781,12 +810,17 @@ ar5212AniLowerImmunity(struct ath_hal *ah)
 			 * detection or lower firstep level.
 			 */
 			if (aniState->ofdmWeakSigDetectOff) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d OWSD on\n", __func__, rssi);
 				ar5212AniControl(ah,
 				    HAL_ANI_OFDM_WEAK_SIGNAL_DETECTION,
 				    AH_TRUE);
 				return;
 			}
 			if (aniState->firstepLevel > 0) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d lower ST %u\n", __func__, rssi,
+				    aniState->firstepLevel-1);
 				ar5212AniControl(ah, HAL_ANI_FIRSTEP_LEVEL,
 						 aniState->firstepLevel - 1);
 				return;
@@ -796,6 +830,9 @@ ar5212AniLowerImmunity(struct ath_hal *ah)
 			 * Beacon rssi is low, reduce firstep level.
 			 */
 			if (aniState->firstepLevel > 0) {
+				HALDEBUG(ah, HAL_DEBUG_ANI,
+				    "%s: rssi %d lower ST %u\n", __func__, rssi,
+				    aniState->firstepLevel-1);
 				ar5212AniControl(ah, HAL_ANI_FIRSTEP_LEVEL,
 						 aniState->firstepLevel - 1);
 				return;
@@ -804,6 +841,8 @@ ar5212AniLowerImmunity(struct ath_hal *ah)
 	}
 	/* then lower spur immunity level, down to zero */
 	if (aniState->spurImmunityLevel > 0) {
+		HALDEBUG(ah, HAL_DEBUG_ANI, "%s: lower SI %u\n",
+		    __func__, aniState->spurImmunityLevel-1);
 		ar5212AniControl(ah, HAL_ANI_SPUR_IMMUNITY_LEVEL,
 				 aniState->spurImmunityLevel - 1);
 		return;
@@ -813,6 +852,8 @@ ar5212AniLowerImmunity(struct ath_hal *ah)
 	 * zero for now
 	 */
 	if (aniState->noiseImmunityLevel > 0) {
+		HALDEBUG(ah, HAL_DEBUG_ANI, "%s: lower NI %u\n",
+		    __func__, aniState->noiseImmunityLevel-1);
 		ar5212AniControl(ah, HAL_ANI_NOISE_IMMUNITY_LEVEL,
 				 aniState->noiseImmunityLevel - 1);
 		return;
@@ -956,13 +997,18 @@ ar5212AniPoll(struct ath_hal *ah, const HAL_NODE_STATS *stats,
 		/* check to see if need to raise immunity */
 		if (aniState->ofdmPhyErrCount > aniState->listenTime *
 		    params->ofdmTrigHigh / 1000) {
+			HALDEBUG(ah, HAL_DEBUG_ANI,
+			    "%s: OFDM err %u listenTime %u\n", __func__,
+			    aniState->ofdmPhyErrCount, aniState->listenTime);
 			ar5212AniOfdmErrTrigger(ah);
 			ar5212AniRestart(ah, aniState);
 		} else if (aniState->cckPhyErrCount > aniState->listenTime *
 			   params->cckTrigHigh / 1000) {
+			HALDEBUG(ah, HAL_DEBUG_ANI,
+			    "%s: CCK err %u listenTime %u\n", __func__,
+			    aniState->cckPhyErrCount, aniState->listenTime);
 			ar5212AniCckErrTrigger(ah);
 			ar5212AniRestart(ah, aniState);
 		}
 	}
 }
-#endif /* AH_SUPPORT_AR5212 */

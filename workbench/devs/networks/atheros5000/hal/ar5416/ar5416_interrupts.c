@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5416_interrupts.c,v 1.3 2011/11/28 00:30:17 jmcneill Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5416
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -57,6 +55,8 @@ ar5416IsInterruptPending(struct ath_hal *ah)
  * values.  The value returned is mapped to abstract the hw-specific bit
  * locations in the Interrupt Status Register.
  *
+ * (*masked) is cleared on initial call.
+ *
  * Returns: A hardware-abstracted bitmap of all non-masked-out
  *          interrupts pending, as well as an unmasked value
  */
@@ -75,10 +75,9 @@ ar5416GetPendingInterrupts(struct ath_hal *ah, HAL_INT *masked)
 		isr = 0;
 	sync_cause = OS_REG_READ(ah, AR_INTR_SYNC_CAUSE);
 	sync_cause &= AR_INTR_SYNC_DEFAULT;
-	if (isr == 0 && sync_cause == 0) {
-		*masked = 0;
+	*masked = 0;
+	if (isr == 0 && sync_cause == 0)
 		return AH_FALSE;
-	}
 
 	if (isr != 0) {
 		struct ath_hal_5212 *ahp = AH5212(ah);
@@ -106,7 +105,7 @@ ar5416GetPendingInterrupts(struct ath_hal *ah, HAL_INT *masked)
 		isr = OS_REG_READ(ah, AR_ISR_RAC);
 		if (isr == 0xffffffff) {
 			*masked = 0;
-			return AH_FALSE;;
+			return AH_FALSE;
 		}
 
 		*masked = isr & HAL_INT_COMMON;
@@ -120,6 +119,13 @@ ar5416GetPendingInterrupts(struct ath_hal *ah, HAL_INT *masked)
 			isr1 = OS_REG_READ(ah, AR_ISR_S1_S);
 			ahp->ah_intrTxqs |= MS(isr1, AR_ISR_S1_QCU_TXERR);
 			ahp->ah_intrTxqs |= MS(isr1, AR_ISR_S1_QCU_TXEOL);
+		}
+
+		if (AR_SREV_MERLIN(ah) || AR_SREV_KITE(ah)) {
+			uint32_t isr5;
+			isr5 = OS_REG_READ(ah, AR_ISR_S5_S);
+			if (isr5 & AR_ISR_S5_TIM_TIMER)
+				*masked |= HAL_INT_TIM_TIMER;
 		}
 
 		/* Interrupt Mitigation on AR5416 */
@@ -169,7 +175,7 @@ ar5416SetInterrupts(struct ath_hal *ah, HAL_INT ints)
 {
 	struct ath_hal_5212 *ahp = AH5212(ah);
 	uint32_t omask = ahp->ah_maskReg;
-	uint32_t mask,mask2;
+	uint32_t mask, mask2;
 
 	HALDEBUG(ah, HAL_DEBUG_INTERRUPT, "%s: 0x%x => 0x%x\n",
 	    __func__, omask, ints);
@@ -259,4 +265,3 @@ ar5416SetInterrupts(struct ath_hal *ah, HAL_INT ints)
 
 	return omask;
 }
-#endif /* AH_SUPPORT_AR5416 */

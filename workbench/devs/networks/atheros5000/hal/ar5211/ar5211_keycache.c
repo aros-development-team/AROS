@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_keycache.c,v 1.1.1.1 2008/12/11 04:46:31 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5211
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -178,4 +176,3 @@ ar5211SetKeyCacheEntry(struct ath_hal *ah, uint16_t entry,
 	OS_REG_WRITE(ah, AR_KEYTABLE_TYPE(entry), keyType);
 	return ar5211SetKeyCacheEntryMac(ah, entry, mac);
 }
-#endif /* AH_SUPPORT_AR5211 */

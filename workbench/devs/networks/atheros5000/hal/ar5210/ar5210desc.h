@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210desc.h,v 1.1.1.1 2008/12/11 04:46:29 alc Exp $
  */
 #ifndef _DEV_ATH_AR5210DESC_H
 #define _DEV_ATH_AR5210DESC_H
@@ -68,7 +68,7 @@ struct ar5210_desc {
 /* TX ds_ctl1 */
 #define	AR_BufLen		0x00000fff	/* data buffer length */
 #define	AR_More			0x00001000	/* more desc in this frame */
-#define	AR_EncryptKeyIdx	0x0007e000	/* encrypt key table index */
+#define	AR_EncryptKeyIdx	0x0007e000	/* ecnrypt key table index */
 #define	AR_EncryptKeyIdx_S	13
 #define	AR_RTSDuration		0xfff80000	/* lower 13bit of duration */
 
