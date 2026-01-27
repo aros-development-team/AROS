@@ -21,32 +21,32 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct rtFileList *, selfile, A0),
+        AROS_LHA(struct rtFileList *, selfile, A0),
 
 /*  LOCATION */
 
-	struct ReqToolsBase *, ReqToolsBase, 10, ReqTools)
+        struct ReqToolsBase *, ReqToolsBase, 10, ReqTools)
 
 /*  FUNCTION
 
-	Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
-	flag was set.  Call this after you have scanned the filelist and you no
-	longer need it.
+        Frees a filelist returned by rtFileRequest() when the FREQF_MULTISELECT
+        flag was set.  Call this after you have scanned the filelist and you no
+        longer need it.
 
     INPUTS
 
-	filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
+        filelist  --  pointer to rtFileList structure, returned by rtFileRequest();
                       may be NULL.
 
     RESULT
-	none
+        none
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	none known
+        none known
 
     SEE ALSO
 

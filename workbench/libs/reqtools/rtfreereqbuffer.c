@@ -22,36 +22,36 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(APTR, req, A1),
+        AROS_LHA(APTR, req, A1),
 
 /*  LOCATION */
 
-	struct ReqToolsBase *, ReqToolsBase, 7, ReqTools)
+        struct ReqToolsBase *, ReqToolsBase, 7, ReqTools)
 
 /*  FUNCTION
-	Frees the buffer associated with 'req'. In case of a file requester
-	this function will deallocate the directory buffer, in case of a
-	font requester the font list.
+        Frees the buffer associated with 'req'. In case of a file requester
+        this function will deallocate the directory buffer, in case of a
+        font requester the font list.
 
-	It is safe to call this function for requesters that have no
-	buffer, so you may call this for all requesters to free as much
-	memory as possible.
+        It is safe to call this function for requesters that have no
+        buffer, so you may call this for all requesters to free as much
+        memory as possible.
 
     INPUTS
-	req - pointer to requester.
+        req - pointer to requester.
 
     RESULT
-	none
+        none
 
     NOTES
 
     EXAMPLE
 
     BUGS
-	none known
+        none known
 
     SEE ALSO
-	rtFileRequestA(), rtFontRequestA()
+        rtFileRequestA(), rtFontRequestA()
 
     INTERNALS
 
