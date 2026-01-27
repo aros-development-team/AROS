@@ -77,25 +77,25 @@ static int scrollpens[] =
 
 int REGARGS SetupReqWindow (GlobData *glob, int resized)
 {
-    struct NewGadget 		ng;
-    struct Gadget 		*gad;
-    struct Image 		*img;
-    struct ReqDefaults 		*reqdefs;
-    struct ReqToolsPrefs 	*reqtoolsprefs;
-    int 			top, val, val2, buttonheight, spacing, winheight;
-    int 			scrwidth, scrheight, createpatgad, createstyle, winwidth, start_top;
-    int 			i, width1, width2, num1, num2;
-    int 			firsttime = TRUE;
-    int 			isfilereq, isfontreq, isvolreq, isscreenmodereq, checkboxcount;
-    int 			stdgadheight, defaultheight, dotinfowidth;
-    int 			gadlen[8], gadpos[8], reqdefnum = 0, maxpen;
-    int 			overscanstrlen = 0, widthstrlen = 0, heightstrlen = 0, widthheightlen = 0, dimgadwidth = 0;
-    int 			reqpos, check, led_off = 0, do_led;
-    int 			checkw, checkh, checkskip, checktopoff;
-    int 			leftoff, rightoff, totaloff;
-    char 			**gadtxt = glob->gadtxt, *str, *dotinfostr;
-    char 			*overscanstr = NULL, *widthstr = NULL, *heightstr = NULL, *defaultstr = NULL;
-    ULONG 			mask;
+    struct NewGadget        ng;
+    struct Gadget           *gad;
+    struct Image            *img;
+    struct ReqDefaults      *reqdefs;
+    struct ReqToolsPrefs    *reqtoolsprefs;
+    int                     top, val, val2, buttonheight, spacing, winheight;
+    int                     scrwidth, scrheight, createpatgad, createstyle, winwidth, start_top;
+    int                     i, width1, width2, num1, num2;
+    int                     firsttime = TRUE;
+    int                     isfilereq, isfontreq, isvolreq, isscreenmodereq, checkboxcount;
+    int                     stdgadheight, defaultheight, dotinfowidth;
+    int                     gadlen[8], gadpos[8], reqdefnum = 0, maxpen;
+    int                     overscanstrlen = 0, widthstrlen = 0, heightstrlen = 0, widthheightlen = 0, dimgadwidth = 0;
+    int                     reqpos, check, led_off = 0, do_led;
+    int                     checkw, checkh, checkskip, checktopoff;
+    int                     leftoff, rightoff, totaloff;
+    char                    **gadtxt = glob->gadtxt, *str, *dotinfostr;
+    char                    *overscanstr = NULL, *widthstr = NULL, *heightstr = NULL, *defaultstr = NULL;
+    ULONG                   mask;
 
 
 

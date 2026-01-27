@@ -32,15 +32,15 @@ char *REGARGS GetStr (struct Catalog *cat, char *idstr)
 /****************************************************************************************/
 
 #undef ThisProcess
-#define ThisProcess()		((struct Process *)FindTask(NULL))
+#define ThisProcess()   ((struct Process *)FindTask(NULL))
 
 /****************************************************************************************/
 
 struct Catalog *REGARGS RT_OpenCatalog (struct Locale *locale)
 {
-    struct Process 	*proc;
-    struct Catalog 	*cat;
-    APTR 		oldwinptr;
+    struct Process  *proc;
+    struct Catalog  *cat;
+    APTR            oldwinptr;
 
     if (!LocaleBase) return (NULL);
 

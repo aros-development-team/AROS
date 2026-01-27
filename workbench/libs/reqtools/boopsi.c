@@ -63,10 +63,10 @@ ULONG myTextLength(const char *str, struct TextAttr *attr, UBYTE *underscore,
     }
 
     if (str) {
-        struct LocalObjData 	*lod = (struct LocalObjData *)0xDEADBEAF;
-        char			c;
-        const char		*str2;
-        WORD 			len = strlen(str), underoff;
+        struct LocalObjData *lod = (struct LocalObjData *)0xDEADBEAF;
+        char                c;
+        const char          *str2;
+        WORD                len = strlen(str), underoff;
 
         if (do_lod) {
             im->PlaneOnOff = 0;
@@ -90,10 +90,10 @@ ULONG myTextLength(const char *str, struct TextAttr *attr, UBYTE *underscore,
                 pixellen -= TextLength(&temprp, underscore, 1);
 
                 if (do_lod) {
-                    im->PlaneOnOff = *str2; 			/* store code of underscored key */
-                    lod->lod_UnderOff = underoff;		/* store offset of underscore */
-                    lod->lod_RestLen = len - underoff - 1;	/* store len of remaining string */
-                    lod->lod_UnderY = temprp.TxBaseline + 2;    /* Y position of underscore */
+                    im->PlaneOnOff = *str2;                 /* store code of underscored key */
+                    lod->lod_UnderOff = underoff;           /* store offset of underscore */
+                    lod->lod_RestLen = len - underoff - 1;  /* store len of remaining string */
+                    lod->lod_UnderY = temprp.TxBaseline + 2;/* Y position of underscore */
 
                     lod->lod_UnderWidth = TextLength(&temprp, str2, 1);
                 }
@@ -126,12 +126,12 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 {
 #endif
     struct LocalObjData *data;
-    struct TextFont	*font, *oldfont;
-    struct RastPort	*rp;
-    struct Gadget 	*gad;
-    UWORD 		*pens;
-    WORD 		xpos, ypos;
-    IPTR 		retval = 0;
+    struct TextFont     *font, *oldfont;
+    struct RastPort     *rp;
+    struct Gadget       *gad;
+    UWORD               *pens;
+    WORD                xpos, ypos;
+    IPTR                retval = 0;
 
     switch(msg->MethodID) {
     case OM_NEW:
@@ -157,7 +157,7 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
                                      data->lod_IData.idata_TextAttr,
                                      &underscorechar,
                                      im,
-                                     cl->cl_InstOffset	/* for C Routines its not really more than a flag */
+                                     cl->cl_InstOffset    /* for C Routines its not really more than a flag */
                                     );
 
             /* Calculate text position if we have a gadget */
@@ -239,9 +239,9 @@ IPTR myBoopsiDispatch(REGPARAM(a0, Class *, cl),
 
         if (gad) {
             struct TagItem beveltags[] = {
-                {GT_VisualInfo	, (IPTR)data->lod_IData.idata_VisualInfo	},
-                {GTBB_Recessed  	, TRUE	    	    	    	    	    	},
-                {TAG_DONE								}
+                { GT_VisualInfo    , (IPTR)data->lod_IData.idata_VisualInfo  },
+                { GTBB_Recessed      , TRUE                                  },
+                { TAG_DONE                                                   }
             };
 
             if (imsg->imp_State != IDS_SELECTED) beveltags[1].ti_Tag = TAG_IGNORE;

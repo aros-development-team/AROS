@@ -54,19 +54,19 @@ extern ULONG ASM myGetDisplayInfoData (
 
 /****************************************************************************************/
 
-#define RED_ID		0		/* DO NOT CHANGE !!! */
-#define GREEN_ID	1		/* DO NOT CHANGE !!! */
-#define BLUE_ID		2		/* DO NOT CHANGE !!! */
+#define RED_ID      0        /* DO NOT CHANGE !!! */
+#define GREEN_ID    1        /* DO NOT CHANGE !!! */
+#define BLUE_ID     2        /* DO NOT CHANGE !!! */
 
-#define PALETTE_ID	3
-#define COPY_ID		4
-#define SWAP_ID		5
-#define SPREAD_ID	6
-#define OK_ID		7
-#define UNDO_ID		8
-#define CANCEL_ID	9
-#define SLIDER_ID	10
-#define WHEEL_ID	11
+#define PALETTE_ID  3
+#define COPY_ID     4
+#define SWAP_ID     5
+#define SPREAD_ID   6
+#define OK_ID       7
+#define UNDO_ID     8
+#define CANCEL_ID   9
+#define SLIDER_ID   10
+#define WHEEL_ID    11
 
 /****************************************************************************************/
 
@@ -78,90 +78,90 @@ STRPTR ModeTitles[] = {
 
 /****************************************************************************************/
 
-#define MODE_TITLE_OFFSET	COPY_ID
+#define MODE_TITLE_OFFSET    COPY_ID
 
 
-#define LOWGRADPENS		4
-#define HIGHGRADPENS		8
-#define FREEFORHIGH		32
+#define LOWGRADPENS     4
+#define HIGHGRADPENS    8
+#define FREEFORHIGH     32
 
-#define NO_TITLE		( ( STRPTR ) ~0 )
-
-/****************************************************************************************/
-
-extern struct Library 		*GadToolsBase;
-extern struct IntuitionBase 	*IntuitionBase;
-extern struct GfxBase 		*GfxBase;
-
-extern struct TextAttr 		topaz80;
+#define NO_TITLE        ( ( STRPTR ) ~0 )
 
 /****************************************************************************************/
 
-typedef struct RealHandlerInfo			GlobData;
+extern struct Library       *GadToolsBase;
+extern struct IntuitionBase *IntuitionBase;
+extern struct GfxBase       *GfxBase;
+
+extern struct TextAttr      topaz80;
+
+/****************************************************************************************/
+
+typedef struct RealHandlerInfo            GlobData;
 
 struct RealHandlerInfo {
-    LONG 				(*func)();     	/* private */
-    ULONG 				rthi_WaitMask;
-    ULONG 				rthi_DoNotWait;
+    LONG                    (*func)();         /* private */
+    ULONG                   rthi_WaitMask;
+    ULONG                   rthi_DoNotWait;
 
     /* PRIVATE */
-    ULONG 				cols[3];	/* DO NOT MOVE, see cols offset in misc.asm */
-    struct ViewPort 			*vp;		/* DO NOT MOVE, see vp offset in misc.asm */
+    ULONG                   cols[3];    /* DO NOT MOVE, see cols offset in misc.asm */
+    struct ViewPort         *vp;        /* DO NOT MOVE, see vp offset in misc.asm */
     union {
         /* DO NOT MOVE, see offsets in misc.asm */
         struct {
-            ULONG 			red, green, blue;
-        } 				bits;
-        ULONG 				colbits[3];
-    } 					col;
-    struct NewWindow 			newpalwin;
-    struct KeyButtonInfo 		buttoninfo;
-    struct Screen 			*scr, *frontscr;
-    struct Gadget 			*colgad[3], *palgad;
-    struct Window 			*palwin, *win, *prwin;
-    struct ColorMap 			*cm;
-    struct TextAttr 			font;
-    struct TextFont 			*reqfont;
-    struct DrawInfo 			*drinfo;
-    struct Image 			labelimages;
-    struct rtReqInfo 			*reqinfo;
-    struct Hook 			*imsghook, backfillhook;
-    struct Catalog 			*catalog;
-    struct IntuiText			itxt;
-    long 				color, coldepth, colcount, reqpos, leftedge, topedge;
-    int 				waitpointer, lockwindow, shareidcmp, noscreenpop;
-    int 				fontwidth, fontheight, mode, os30, maxcolval[3];
-    char 				key[3], palettekey;
-    APTR 				colormap, undomap;
-    APTR 				visinfo, winlock;
-    WORD				zoom[4];
+            ULONG red, green, blue;
+        } bits;
+        ULONG colbits[3];
+    }                       col;
+    struct NewWindow        newpalwin;
+    struct KeyButtonInfo    buttoninfo;
+    struct Screen           *scr, *frontscr;
+    struct Gadget           *colgad[3], *palgad;
+    struct Window           *palwin, *win, *prwin;
+    struct ColorMap         *cm;
+    struct TextAttr         font;
+    struct TextFont         *reqfont;
+    struct DrawInfo         *drinfo;
+    struct Image            labelimages;
+    struct rtReqInfo        *reqinfo;
+    struct Hook             *imsghook, backfillhook;
+    struct Catalog          *catalog;
+    struct IntuiText        itxt;
+    long                    color, coldepth, colcount, reqpos, leftedge, topedge;
+    int                     waitpointer, lockwindow, shareidcmp, noscreenpop;
+    int                     fontwidth, fontheight, mode, os30, maxcolval[3];
+    char                    key[3], palettekey;
+    APTR                    colormap, undomap;
+    APTR                    visinfo, winlock;
+    WORD                    zoom[4];
 
 #ifdef COLORWHEEL
     /* Color wheel */
-    struct Library 			*ColorWheelBase;
-    struct Library 			*GradientSliderBase;
-    struct ColorWheelRGB 		wheel_rgb;
-    struct ColorWheelHSB 		wheel_hsb;
-    struct Gadget 			*wheel;
-    struct Gadget 			*wheel_slider;
-    ULONG 				wheel_colortable[3];
+    struct Library          *ColorWheelBase;
+    struct Library          *GradientSliderBase;
+    struct ColorWheelRGB    wheel_rgb;
+    struct ColorWheelHSB    wheel_hsb;
+    struct Gadget           *wheel;
+    struct Gadget           *wheel_slider;
+    ULONG                   wheel_colortable[3];
 
 #ifdef GRADIENT
-    UWORD				wheel_pens[ HIGHGRADPENS + 1 ];
-    UWORD				numgradpens;
+    UWORD                   wheel_pens[ HIGHGRADPENS + 1 ];
+    UWORD                   numgradpens;
 #endif
-    WORD				dowheel, fancywheel;
-    Point				screenres;
+    WORD                    dowheel, fancywheel;
+    Point                   screenres;
 #endif
 };
 
 /****************************************************************************************/
 
-#define redbits			col.bits.red
-#define greenbits		col.bits.green
-#define bluebits		col.bits.blue
+#define redbits         col.bits.red
+#define greenbits       col.bits.green
+#define bluebits        col.bits.blue
 
-#define ThisProcess()		( ( struct Process * ) FindTask( NULL ) )
+#define ThisProcess()   ( ( struct Process * ) FindTask( NULL ) )
 
 /****************************************************************************************/
 
@@ -184,8 +184,8 @@ static LONG ASM SAVEDS PalReqHandler (
 /****************************************************************************************/
 
 #ifdef COLORWHEEL
-#define ColorWheelBase		glob->ColorWheelBase
-#define GradientSliderBase	glob->GradientSliderBase
+#define ColorWheelBase        glob->ColorWheelBase
+#define GradientSliderBase    glob->GradientSliderBase
 #endif
 
 
@@ -265,7 +265,7 @@ void REGARGS SpreadColors (GlobData *glob, int from, int to, ULONG *rgb2)
 static int
 ColBits( int num )
 {
-    int	i, j;
+    int    i, j;
 
     if( num < 2 ) {
         return( 1 );
@@ -288,15 +288,15 @@ LONG ASM SAVEDS PaletteRequestA (
     REGPARAM(a3, struct rtReqInfo *, reqinfo),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    GlobData 		*glob;
-    struct DisplayInfo 	displayinfo;
-    struct TagItem 	*tag, *tstate = taglist;
-    struct TextFont 	*deffont = NULL;
-    struct TextAttr 	*fontattr = NULL;
-    struct Locale 	*locale = NULL;
-    char 		*pubname = NULL;
-    IPTR 		tagdata;
-    BOOL		reqhandler = FALSE;
+    GlobData            *glob;
+    struct DisplayInfo  displayinfo;
+    struct TagItem      *tag, *tstate = taglist;
+    struct TextFont     *deffont = NULL;
+    struct TextAttr     *fontattr = NULL;
+    struct Locale       *locale = NULL;
+    char                *pubname = NULL;
+    IPTR                tagdata;
+    BOOL                reqhandler = FALSE;
 
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
         return (-1);
@@ -511,14 +511,14 @@ static LONG ASM SAVEDS PalReqHandler (
     REGPARAM(a0, struct TagItem *, taglist))
 {
     struct IntuiMessage *palmsg;
-    struct Gadget 	*gad;
-    struct TagItem 	*tag;
-    struct TagItem *tstate = taglist;
-    ULONG 		rgb[3], rgbcol;
-    ULONG 		tagdata, class;
-    UWORD 		code, qual;
-    int 		i, gadid, shifted, alt;
-    char 		key;
+    struct Gadget       *gad;
+    struct TagItem      *tag;
+    struct TagItem      *tstate = taglist;
+    ULONG               rgb[3], rgbcol;
+    ULONG               tagdata, class;
+    UWORD               code, qual;
+    int                 i, gadid, shifted, alt;
+    char                key;
 
     /* uncomment if sigs is no longer ignored */
     //if (glob->rthi_DoNotWait) sigs = 0;
@@ -725,7 +725,7 @@ static void REGARGS
 UpdateGrad( GlobData *glob )
 {
     if( glob->numgradpens ) {
-        LONG	i;
+        LONG i;
 
         GetAttr( WHEEL_HSB, (Object *)glob->wheel, ( IPTR * ) &glob->wheel_hsb );
 
@@ -772,14 +772,14 @@ SetWheelColor( GlobData *glob, struct TagItem *tag )
 
         GetAttr( WHEEL_HSB, (Object *)glob->wheel, ( IPTR * ) &glob->wheel_hsb );
         ConvertHSBToRGB( &glob->wheel_hsb, &glob->wheel_rgb );
-        glob->cols[ RED_ID ]	= glob->wheel_rgb.cw_Red >> ( 32 - glob->redbits );
-        glob->cols[ GREEN_ID ]	= glob->wheel_rgb.cw_Green >> ( 32 - glob->greenbits );
-        glob->cols[ BLUE_ID ]	= glob->wheel_rgb.cw_Blue >> ( 32 - glob->bluebits );
+        glob->cols[ RED_ID ]    = glob->wheel_rgb.cw_Red >> ( 32 - glob->redbits );
+        glob->cols[ GREEN_ID ]  = glob->wheel_rgb.cw_Green >> ( 32 - glob->greenbits );
+        glob->cols[ BLUE_ID ]   = glob->wheel_rgb.cw_Blue >> ( 32 - glob->bluebits );
         SetColor( glob, glob->color, glob->cols );
 
         for( i = 0; i < 3; ++i ) {
             if( glob->colgad[ i ] ) {
-                myGT_SetGadgetAttrs( glob->colgad[ i ], glob->palwin, NULL, GTSL_Level,	glob->cols[ i ],
+                myGT_SetGadgetAttrs( glob->colgad[ i ], glob->palwin, NULL, GTSL_Level, glob->cols[ i ],
                                      TAG_END );
             }
         }
@@ -832,7 +832,7 @@ static void REGARGS FreeAll (GlobData *glob)
 {
 #ifdef COLORWHEEL
 #ifdef GRADIENT
-    LONG	i;
+    LONG i;
 #endif
 #endif
     if (glob->newpalwin.Type == PUBLICSCREEN) UnlockPubScreen (NULL, glob->scr);
@@ -883,19 +883,19 @@ char *gadtxt[] = { MSG_COPY, MSG_SWAP, MSG_SPREAD, MSG_OK, MSG_UNDO, MSG_CANCEL 
 
 static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 {
-    struct NewGadget 	ng;
-    struct Gadget 	*gad;
-    struct Image 	*img;
-    int 		val, i, top, buttonheight, winheight;
-    int 		spacing, scrwidth, scrheight, maxwidth;
-    int 		winwidth, width1, width2, reqpos, levelwidth;
+    struct NewGadget    ng;
+    struct Gadget     * gad;
+    struct Image        *img;
+    int                 val, i, top, buttonheight, winheight;
+    int                 spacing, scrwidth, scrheight, maxwidth;
+    int                 winwidth, width1, width2, reqpos, levelwidth;
 #ifdef COLORWHEEL
-    int 		wheelwidth = 0, wheelheight = 0, wheeltopoff;
+    int                 wheelwidth = 0, wheelheight = 0, wheeltopoff;
 #endif
-    int 		wheeloff = 0;
-    int 		leftoff, rightoff;
-    ULONG 		gadlen[6], gadpos[6];
-    char 		*str, *string[6];
+    int                 wheeloff = 0;
+    int                 leftoff, rightoff;
+    ULONG               gadlen[6], gadpos[6];
+    char                *str, *string[6];
 
 
     spacing = rtGetVScreenSize (glob->scr, (ULONG *)&scrwidth, (ULONG *)&scrheight);
@@ -943,7 +943,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 
 #ifdef COLORWHEEL
     if( glob->dowheel && glob->screenres.x && glob->screenres.y && ColorWheelBase && GradientSliderBase ) {
-        LONG	maxheight = 120;
+        LONG maxheight = 120;
 
         if( scrheight > 600 ) {
             maxheight = 160;
@@ -1130,22 +1130,22 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 
         {
             struct TagItem slider_tags[] = {
-                {GA_ID	    	, SLIDER_ID     	    	    	},
-                {GA_Top     	, wheeltop + wheelheight + spacing	},
-                {GA_Left    	, leftoff	    	    	    	},
-                {GA_Width   	, wheelwidth    	    	    	},
-                {GA_Height  	, glob->fontheight + 3  	    	},
+                {GA_ID          , SLIDER_ID                         },
+                {GA_Top         , wheeltop + wheelheight + spacing  },
+                {GA_Left        , leftoff                           },
+                {GA_Width       , wheelwidth                        },
+                {GA_Height      , glob->fontheight + 3              },
 #ifdef GRADIENT
                 {
                     glob->numgradpens ?
                     GRAD_PenArray :
-                    TAG_IGNORE 	, (IPTR)glob->wheel_pens
+                    TAG_IGNORE     , (IPTR)glob->wheel_pens
                 },
 #endif
-                {GRAD_KnobPixels, 8     	    	    	    	},
-                {PGA_Freedom	, LORIENT_HORIZ 	    	    	},
-                {ICA_TARGET 	, ICTARGET_IDCMP	    	    	},
-                {TAG_END    	    	    	    	    	    	}
+                {GRAD_KnobPixels, 8                                 },
+                {PGA_Freedom    , LORIENT_HORIZ                     },
+                {ICA_TARGET     , ICTARGET_IDCMP                    },
+                {TAG_END                                            }
             };
 
             glob->wheel_slider = (struct Gadget *)NewObjectA(NULL, "gradientslider.gadget", slider_tags);
@@ -1154,28 +1154,28 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 
         if( glob->wheel_slider ) {
             struct TagItem wheel_tags[] = {
-                {GA_Top    	    	, wheeltop  	    	    },
-                {GA_Left   	    	, leftoff   	    	    },
-                {GA_Width  	    	, wheelwidth	    	    },
-                {GA_Height 	    	, wheelheight	    	    },
-                {GA_ID     	    	, WHEEL_ID  	    	    },
-                {WHEEL_Screen	    	, (IPTR)glob->scr     	    },
+                {GA_Top                , wheeltop                  },
+                {GA_Left               , leftoff                   },
+                {GA_Width              , wheelwidth                },
+                {GA_Height             , wheelheight               },
+                {GA_ID                 , WHEEL_ID                  },
+                {WHEEL_Screen          , (IPTR)glob->scr           },
                 {
                     glob->fancywheel ?
                     TAG_IGNORE :
-                    WHEEL_MaxPens     	, 0
+                    WHEEL_MaxPens         , 0
                 },
-                {WHEEL_GradientSlider	, (IPTR)glob->wheel_slider  },
+                {WHEEL_GradientSlider  , (IPTR)glob->wheel_slider  },
 #ifdef __AROS__
                 /* Need this, because without BevelBox AROS colorwheel gadget renders through mask
                 which because of bugs in gfx library functions (!?) does not work yet and instead
                 causes mem trashes/crashes/etc (in AmigaOS the AROS colorwheel gadget works fine
                 even without BevelBox, that is: with mask rendering) */
-                {WHEEL_BevelBox    	, TRUE	    	    	    },
+                {WHEEL_BevelBox        , TRUE                       },
 #endif
-                {GA_Previous	    	, (IPTR)glob->wheel_slider  },
-                {ICA_TARGET	    	, ICTARGET_IDCMP    	    },
-                {TAG_END   	    	    	    	    	    }
+                {GA_Previous           , (IPTR)glob->wheel_slider   },
+                {ICA_TARGET            , ICTARGET_IDCMP             },
+                {TAG_END                                            }
             };
 
             glob->wheel = (struct Gadget *)NewObjectA(NULL, "colorwheel.gadget", wheel_tags);

@@ -68,8 +68,8 @@ void REGARGS ScrollerMoved (GlobData *glob, int code)
 
 static void REGARGS MarkHidden (GlobData *glob)
 {
-    struct ReqEntry 	*entry;
-    int 		skipflags;
+    struct ReqEntry *entry;
+    int             skipflags;
 
     if (glob->nodir) return;
 
@@ -111,8 +111,8 @@ void REGARGS ClearDisplayList (GlobData *glob)
 
 void REGARGS UpdateDisplayList (GlobData *glob)
 {
-    struct ReqEntry 	*entry;
-    int 		i;
+    struct ReqEntry *entry;
+    int             i;
 
     i = 0;
 
@@ -161,12 +161,12 @@ static void REGARGS Ghost (struct RastPort *rp, UWORD pen, UWORD x, UWORD y, UWO
 
 void REGARGS PrintEntry (GlobData *glob, int i)
 {
-    struct TextExtent 	extent;
-    struct ReqEntry 	*entry;
-    struct RastPort 	*reqrp = glob->reqrp;
-    char 		sizestr[16], tempstr[108], *volname = NULL, *str;
-    int 		apen = 0, bpen = 0, top, len = 0, sizelen = 0, sizelenpix = 0, type, rectpen, left, entrytop;
-    LONG 		size;
+    struct TextExtent   extent;
+    struct ReqEntry     *entry;
+    struct RastPort     *reqrp = glob->reqrp;
+    char                sizestr[16], tempstr[108], *volname = NULL, *str;
+    int                 apen = 0, bpen = 0, top, len = 0, sizelen = 0, sizelenpix = 0, type, rectpen, left, entrytop;
+    LONG                size;
 
     mySetWriteMask (glob->reqrp, glob->entrymask);
     rectpen = BACKGROUNDPEN;
@@ -207,8 +207,7 @@ void REGARGS PrintEntry (GlobData *glob, int i)
             len = strlen (tempstr);
 
         sizelen = strlen (sizestr);
-        /* Cache the pixel size for each entry so
-        	we only have to calculate this once. */
+        /* Cache the pixel size for each entry so we only have to calculate this once. */
         if (entry->re_SizeLenPix)
             sizelenpix = entry->re_SizeLenPix;
         else {
@@ -323,9 +322,9 @@ static UBYTE *REGARGS SkipDevName (UBYTE *entryname)
 struct ReqEntry *REGARGS FindEntry (struct BufferData *buff, char *name, int size,
                                     int ctype, int *pos, ULONG flags)
 {
-    struct ReqEntry 	*curr, *lastname;
-    int 		lastcmp, cmp, i = 0, cmptype;
-    UBYTE 		*entryname;
+    struct ReqEntry *curr, *lastname;
+    int             lastcmp, cmp, i = 0, cmptype;
+    UBYTE           *entryname;
 
     lastname = buff->firstname;
     curr = (struct ReqEntry *)lastname->re_Next;
@@ -381,9 +380,9 @@ struct ReqEntry *REGARGS FindEntry (struct BufferData *buff, char *name, int siz
 struct ReqEntry *REGARGS AddEntry (GlobData *glob, struct BufferData *buff,
                                    char *name, int size, int ctype)
 {
-    struct ReqEntry	*lastname, *newentry;
-    int			pos, len = strlen( name ) + 1, currnum, skipflags;
-    STRPTR		str, findname = name;
+    struct ReqEntry *lastname, *newentry;
+    int             pos, len = strlen( name ) + 1, currnum, skipflags;
+    STRPTR          str, findname = name;
 
     if( ctype == VOLUME ) {
         findname = SkipDevName( findname );
@@ -509,8 +508,8 @@ static int REGARGS SkipEntry (GlobData *glob, struct ReqEntry *entry)
 
 int REGARGS CountAllDeselect (GlobData *glob, int dirsonly)
 {
-    struct ReqEntry 	*entry;
-    int 		count = 0;
+    struct ReqEntry *entry;
+    int             count = 0;
 
     for (entry = (struct ReqEntry *)glob->firstentry->re_Next;
             entry;
@@ -533,9 +532,9 @@ int REGARGS CountAllDeselect (GlobData *glob, int dirsonly)
 
 void REGARGS SelectAll (GlobData *glob, char *pattern)
 {
-    struct ReqEntry 	*entry;
-    char 		*selpat;
-    LONG    	    	pattern_len;
+    struct ReqEntry *entry;
+    char            *selpat;
+    LONG            pattern_len;
 
     pattern_len = strlen(pattern) * 2 + 2;
     selpat = AllocVec(pattern_len, MEMF_PUBLIC);
@@ -583,8 +582,8 @@ void REGARGS UnLockReqLock (GlobData *glob)
 
 BOOL REGARGS FindVolume (GlobData *glob, UBYTE *str, struct ReqEntry *curr)
 {
-    struct ReqEntry 	*entry;
-    UBYTE 		*s;
+    struct ReqEntry *entry;
+    UBYTE           *s;
 
     for (entry = (struct ReqEntry *)glob->firstentry->re_Next;
             entry;
@@ -605,7 +604,7 @@ BOOL REGARGS FindVolume (GlobData *glob, UBYTE *str, struct ReqEntry *curr)
 static BOOL
 IsDosVolume(struct DosList *dlist)
 {
-    BOOL	isdev = FALSE;
+    BOOL    isdev = FALSE;
     D_S( struct InfoData,id );
 
     if( !dlist->dol_Task || DoPkt1( dlist->dol_Task, ACTION_DISK_INFO, (SIPTR)MKBADDR( id ) ) ) {
@@ -656,16 +655,16 @@ IsDosDevice( struct DosList *dlist )
 /****************************************************************************************/
 
 struct DeviceEntry {
-    struct DeviceEntry	*next;
-    struct MsgPort	*task;
-    BOOL		resolved;
-    UBYTE		name[ 42 ];
+    struct DeviceEntry  *next;
+    struct MsgPort      *task;
+    BOOL                resolved;
+    UBYTE               name[ 42 ];
 };
 
 /****************************************************************************************/
 
-#define SIZE_NONE	( ( ULONG ) -1 )
-#define SIZE_CALCULATE	( ( ULONG ) -2 )
+#define SIZE_NONE       ( ( ULONG ) -1 )
+#define SIZE_CALCULATE  ( ( ULONG ) -2 )
 
 /****************************************************************************************/
 
@@ -677,10 +676,10 @@ AddDisk(
     ULONG size,
     ULONG volreqflags )
 {
-    struct rtVolumeEntry	volentry;
-    struct ReqEntry		*entry;
-    UBYTE			buffer[80];
-    int 			i, addentry;
+    struct rtVolumeEntry    volentry;
+    struct ReqEntry         *entry;
+    UBYTE                   buffer[80];
+    int                     i, addentry;
 
     D_S( struct InfoData, infodata );
 
@@ -723,7 +722,7 @@ AddDisk(
 static struct DeviceEntry *
 AllocDevEntry( GlobData *glob, struct DosList *dlist, STRPTR name )
 {
-    struct DeviceEntry	*deventry;
+    struct DeviceEntry  *deventry;
 
     if( ( deventry = ( struct DeviceEntry * ) AllocVecPooled(
                          glob->buff->pool, sizeof( struct DeviceEntry ) ) ) ) {
@@ -746,7 +745,7 @@ GetVolName( BSTR bstr, STRPTR cstr )
 
     if (bstr != BNULL) {
         LONG    length = AROS_BSTR_strlen(bstr);
-        LONG    i;		/* Loop variable */
+        LONG    i; /* Loop variable */
 
         for (i = 0; i < length; i++) {
             cstr[i] = AROS_BSTR_getchar(bstr, i);
@@ -781,12 +780,12 @@ GetVolName( BSTR bstr, STRPTR cstr )
 void REGARGS
 AddDiskNames( GlobData *glob, ULONG volreqflags )
 {
-    struct ReqEntry		*entry, *temp;
-    struct DosList		*dlist;
-    struct DeviceEntry		*deventry, *lastdeventry = NULL;
-    struct rtVolumeEntry	volentry;
-    UBYTE			/* *bstr, *cstr, */ name[ 42 ], devname[ 36 ];
-    /* WORD			i; */
+    struct ReqEntry         *entry, *temp;
+    struct DosList          *dlist;
+    struct DeviceEntry      *deventry, *lastdeventry = NULL;
+    struct rtVolumeEntry    volentry;
+    UBYTE            /* *bstr, *cstr, */ name[ 42 ], devname[ 36 ];
+    /* WORD            i; */
 
     *glob->winaddr = ( APTR ) -1;
     glob->maxvolwidth = 0;
@@ -822,7 +821,7 @@ AddDiskNames( GlobData *glob, ULONG volreqflags )
     dlist = LockDosList( LDF_DEVICES | LDF_READ );
 
     while( ( dlist = NextDosEntry( dlist, LDF_DEVICES | LDF_READ ) ) ) {
-        BOOL	devmatch;
+        BOOL devmatch;
 
         deventry = lastdeventry;
         devmatch = FALSE;
@@ -1006,13 +1005,13 @@ static struct Region *MyInstallRegion (struct Window *win, struct Region *reg, i
 void REGARGS ShowFontSample (GlobData *glob, int refresh, int dowait)
 {
     struct DiskfontBase *DiskfontBase = glob->diskfontbase;
-    struct TextFont 	*font;
-    struct Rectangle 	rect;
-    struct Region 	*oldregion, *region;
-    char 		*message = "0123 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
-    UWORD 		*cmap = NULL;
-    ULONG 		style = glob->fontstyle, count = glob->colcount;
-    APTR 		winlock = NULL;
+    struct TextFont     *font;
+    struct Rectangle    rect;
+    struct Region       *oldregion, *region;
+    char                *message = "0123 aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
+    UWORD               *cmap = NULL;
+    ULONG               style = glob->fontstyle, count = glob->colcount;
+    APTR                winlock = NULL;
 
     if (dowait) winlock = rtLockWindow (glob->reqwin);
 
@@ -1096,10 +1095,10 @@ ULONG ASM myGetDisplayInfoData (
 
 int REGARGS GetModeData (GlobData *glob, ULONG id, int *mon)
 {
-    struct MonitorInfo 	monitorinfo;
-    ULONG 		propflags;
-    int 		modewidth, stdmode = TRUE;
-    char 		*str, *monstr;
+    struct MonitorInfo  monitorinfo;
+    ULONG               propflags;
+    int                 modewidth, stdmode = TRUE;
+    char                *str, *monstr;
 
     if ((myGetDisplayInfoData ((UBYTE *)&glob->diminfo,
                                sizeof (struct DimensionInfo), DTAG_DIMS, id) <= 0) ||
