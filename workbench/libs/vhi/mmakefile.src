@@ -1,0 +1,26 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs-vhi : includes workbench-libs-vhi-includes
+
+#
+# use genmodule to generate the AROS VHI Driver API headers
+#
+
+#MM
+workbench-libs-vhi-includes: $(GENDIR)/$(CURDIR)/.includes-generated
+
+##	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/vhi.conf -d $(GENDIR)/$(CURDIR)/include writeincludes vhi library
+##	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/vhi.conf -d $(GENDIR)/$(CURDIR)/include writelibdefs vhi library
+
+$(GENDIR)/$(CURDIR):
+	%mkdir_q dir="$@"
+
+$(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE) | $(GENDIR)/$(CURDIR)
+	@$(ECHO) "Generating VHI Driver API headers..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/vhi.conf -d $(GENDIR)/include writeincludes vhi library
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/vhi.conf -d $(AROS_INCLUDES) writeincludes vhi library
+	@$(TOUCH) $@
+
+%common
