@@ -32,7 +32,7 @@
 
     INPUTS
         rp     = pointer to a valid RastPort structure
-        maxpen = longword pen value
+        maxpen = longword pen value (valid range here: 0..255)
 
     RESULT
 
@@ -53,32 +53,59 @@
 {
     AROS_LIBFUNC_INIT
 
-    BYTE Mask;
-
     /* maxpen==0 is nonsense */
-    if(0 == maxpen)
+    if (maxpen == 0)
         return;
 
-    /* calculate the Mask */
-    /* maxpen   | Mask   | highest bit
-     * 1        | 1      | 0
-     * 2..3     | 3      | 1
-     * 4..7     | 7      | 2
-     * 8..15    | 15     | 3
-     * 16..31   | 31     | 4
-     * 31..63   | 63     | 5
-     * 63..127  | 127    | 6
-     * 128..255 | 255    | 7
+    /*
+     * Compute rp->Mask so that all bits up to the highest set bit in maxpen
+     * are set:
+     *   mask = (1<<(floor(log2(maxpen))+1)) - 1
+     *
+     * maxpen is guaranteed to be <= 255, so the result always fits in 8 bits.
+     *
+     * You can choose the implementation:
+     *   - default: builtin clz-based (fast, clear)
+     *   - define SETMAXPEN_USE_SMEAR to use the portable "bit smear" method
      */
+#if defined(SETMAXPEN_USE_SMEAR)
 
-    /* look for the highest bit */
-    Mask = 0x0;
-    while((BYTE)maxpen != 0) {
-        maxpen >>= 1;
-        Mask = (Mask << 1) | 0x01;
+    /* Portable, very fast, no builtins required */
+    {
+        ULONG v = maxpen;    /* 1..255 */
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        rp->Mask = (UBYTE)v;
     }
 
-    rp->Mask = Mask;
+#else /* !SETMAXPEN_USE_SMEAR */
+
+# if defined(__GNUC__) || defined(__clang__)
+
+    /* Builtin-based: highest bit via count-leading-zeros */
+    {
+        unsigned k = 31u - (unsigned)__builtin_clz((unsigned)maxpen); /* maxpen != 0 */
+        rp->Mask = (UBYTE)((1u << (k + 1u)) - 1u);
+    }
+
+# else
+
+    /* Fallback for non-GNU/Clang compilers */
+    {
+        UBYTE mask = 0;
+        ULONG v = maxpen;    /* 1..255 */
+        while (v != 0)
+        {
+            v >>= 1;
+            mask = (UBYTE)((mask << 1) | 1u);
+        }
+        rp->Mask = mask;
+    }
+
+# endif /* compiler */
+
+#endif /* SETMAXPEN_USE_SMEAR */
 
     AROS_LIBFUNC_EXIT
 } /* SetMaxPen */
