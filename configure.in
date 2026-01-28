@@ -1,4 +1,4 @@
-dnl Copyright (C) 1997-2025, The AROS Development Team. All rights reserved.
+dnl Copyright (C) 1997-2026, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -199,6 +199,8 @@ AC_MSG_RESULT($HOST_TOOLCHAIN_FAMILY)
 AC_CHECK_PROGS(AWK,[gawk nawk])
 AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
+
+AC_PATH_PROG([CMAKE],[cmake])
 
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
