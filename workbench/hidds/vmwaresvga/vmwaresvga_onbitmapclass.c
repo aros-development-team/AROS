@@ -116,11 +116,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             InitSemaphore(&data->bmsem);
             data->VideoData = data->data->vrambase;
             XSD(cl)->visible = o;
-#if !defined(VMWAREGFX_UPDATEFBONSHOWVP)
             setModeVMWareSVGA(&XSD(cl)->data, XSD(cl)->prefWidth, XSD(cl)->prefHeight);
-#else
-            initDisplayVMWareSVGA(&XSD(cl)->data);
-#endif
         }
     } /* if created object */
 
@@ -132,7 +128,7 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct BitmapData *data =OOP_INST_DATA(cl, o);
 
-    if (!XSD(cl)->hwCursor && FindTagItem(aHidd_BitMap_ModeID, msg->attrList))
+    if (FindTagItem(aHidd_BitMap_ModeID, msg->attrList))
     {
         HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         OOP_Object *sync, *pixfmt;
@@ -147,10 +143,23 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
-        setModeVMWareSVGA(&XSD(cl)->data, width, height);
-        syncfenceVMWareSVGAFIFO(&XSD(cl)->data, fenceVMWareSVGAFIFO(&XSD(cl)->data));
-        data->width = width;
-        data->height = height;
+        if (data->width != width || data->height != height)
+        {
+            if ((XSD(cl)->mouse.visible))
+                displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_HIDE);
+
+            setModeVMWareSVGA(&XSD(cl)->data, width, height);
+            syncfenceVMWareSVGAFIFO(&XSD(cl)->data, fenceVMWareSVGAFIFO(&XSD(cl)->data));
+            data->width = width;
+            data->height = height;
+
+            if (XSD(cl)->mouse.visible)
+            {
+                defineCursorVMWareSVGA(&XSD(cl)->data, &XSD(cl)->mouse);
+                moveCursorVMWareSVGA(&XSD(cl)->data, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
+                displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_SHOW);
+            }
+        }
     }
 
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

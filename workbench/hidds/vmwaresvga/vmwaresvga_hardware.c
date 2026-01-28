@@ -1027,7 +1027,7 @@ VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *hwdata, struct Box *box)
         hwdata->delta_damage.y2 = box->y2;
     }
 #if defined(VMWAREGFX_IMMEDIATEDRAW)
-    if (hwdata->shown)
+    if (TRUE /* hwdata->shown */)
     {
         refreshAreaVMWareSVGA(hwdata, &hwdata->delta_damage);
         VMWareSVGA_Damage_Reset(hwdata);
