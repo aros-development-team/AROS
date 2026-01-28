@@ -4186,14 +4186,26 @@ endif
 #MM
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
+ifeq (%(maketarget),)
+%(mmake)-buildtarget :=  --build
+else
+%(mmake)-buildtarget :=  %(maketarget)
+endif
+
 ifeq (%(cmakebuildcmd),)
-%(mmake)-cmakecmdbuild := $(MAKE) -C $(%(mmake)-pkgdir) %(maketarget)
+%(mmake)-cmakecmdbuild := $(CMAKE) $(%(mmake)-buildtarget) $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdbuild := %(cmakebuildcmd)
 endif
 
+ifeq (%(installoptions),)
+%(mmake)-installtarget :=  --install
+else
+%(mmake)-installtarget :=  %(installoptions)
+endif
+
 ifeq (%(cmakeinstallcmd),)
-%(mmake)-cmakecmdinstall := cmake %(installoptions) -P cmake_install.cmake
+%(mmake)-cmakecmdinstall := $(CMAKE) $(%(mmake)-installtarget) $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
 endif
@@ -4240,7 +4252,7 @@ $(%(mmake)-cmakeflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(%(mmake)-pkgdir)
 	$(Q)cd $(%(mmake)-pkgdir) && \
 	$(RM) -Rf CMakeCache.txt CMakeFiles \; && \
-	$(%(mmake)-cmake-env) cmake $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
+	$(%(mmake)-cmake-env) $(CMAKE) $(%(mmake)-cmake_opts) %(extraoptions) $(TMP_SRCDIR) && \
 	$(TOUCH) $@
 
 #MM
