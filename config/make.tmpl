@@ -4187,25 +4187,25 @@ endif
 %(mmake)-build_and_install-quick :  $(%(mmake)-installflag)
 
 ifeq (%(maketarget),)
-%(mmake)-buildtarget :=  --build
+%(mmake)-buildargs :=  --build
 else
-%(mmake)-buildtarget :=  %(maketarget)
+%(mmake)-buildargs :=  %(maketarget)
 endif
 
 ifeq (%(cmakebuildcmd),)
-%(mmake)-cmakecmdbuild := $(CMAKE) $(%(mmake)-buildtarget) $(%(mmake)-pkgdir)
+%(mmake)-cmakecmdbuild := $(CMAKE) $(%(mmake)-buildargs) $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdbuild := %(cmakebuildcmd)
 endif
 
 ifeq (%(installoptions),)
-%(mmake)-installtarget :=  --install
+%(mmake)-installargs :=  --install
 else
-%(mmake)-installtarget :=  %(installoptions)
+%(mmake)-installargs :=  %(installoptions)
 endif
 
 ifeq (%(cmakeinstallcmd),)
-%(mmake)-cmakecmdinstall := $(CMAKE) $(%(mmake)-installtarget) $(%(mmake)-pkgdir)
+%(mmake)-cmakecmdinstall := $(CMAKE) $(%(mmake)-installargs) $(%(mmake)-pkgdir)
 else
 %(mmake)-cmakecmdinstall := %(cmakeinstallcmd)
 endif
