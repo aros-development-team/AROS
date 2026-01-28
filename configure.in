@@ -36,7 +36,6 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
-target_grub2_version=$default_grub2_version
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -2366,6 +2365,14 @@ fi
 
 case "$target_bootloader" in
     grub2*)
+        AC_MSG_CHECKING([which version of grub2 to build])
+        AC_ARG_WITH(grub2-version,AS_HELP_STRING([--with-grub2-version=VERSION],[Use Grub2-VERSION for building AROS]),use_grub2_version="$withval",use_grub2_version="")
+        if test "$use_grub2_version" = ""; then
+                target_grub2_version="$default_grub2_version"
+        else
+            target_grub2_version="$use_grub2_version"
+        fi
+        AC_MSG_RESULT($target_grub2_version)
         if test "$target_bootloader" = "grub2gfx"; then
             AC_MSG_CHECKING([which grub2 splash screen to use])
             AC_ARG_WITH(grub2-splash,AS_HELP_STRING([--with-grub2-splash=...],[Specify the splash image to use for grub2 (defaults to 'orig')]),grub2_splash="$withval",grub2_splash="")

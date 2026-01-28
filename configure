@@ -1026,6 +1026,7 @@ enable_amigaos_compliance
 with_kernel_toolchain_prefix
 with_elf_toolchain_prefix
 with_aros_toolchain
+with_grub2_version
 with_grub2_splash
 enable_lzma
 enable_crosstools
@@ -1816,6 +1817,8 @@ Optional Packages:
   --with-aros-toolchain=PREFIX
                           Specify prebuilt AROS toolchain. Use yes for default
                           name
+  --with-grub2-version=VERSION
+                          Use Grub2-VERSION for building AROS
   --with-grub2-splash=... Specify the splash image to use for grub2 (defaults
                           to 'orig')
   --with-aros-toolchain-install=DIR
@@ -3555,7 +3558,6 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
-target_grub2_version=$default_grub2_version
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -11462,6 +11464,24 @@ fi
 
 case "$target_bootloader" in
     grub2*)
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which version of grub2 to build" >&5
+printf %s "checking which version of grub2 to build... " >&6; }
+
+# Check whether --with-grub2-version was given.
+if test ${with_grub2_version+y}
+then :
+  withval=$with_grub2_version; use_grub2_version="$withval"
+else $as_nop
+  use_grub2_version=""
+fi
+
+        if test "$use_grub2_version" = ""; then
+                target_grub2_version="$default_grub2_version"
+        else
+            target_grub2_version="$use_grub2_version"
+        fi
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $target_grub2_version" >&5
+printf "%s\n" "$target_grub2_version" >&6; }
         if test "$target_bootloader" = "grub2gfx"; then
             { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking which grub2 splash screen to use" >&5
 printf %s "checking which grub2 splash screen to use... " >&6; }
