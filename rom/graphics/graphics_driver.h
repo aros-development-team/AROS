@@ -16,30 +16,25 @@ static inline OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *d
 
     OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&dest_gfxhidd);
 
-    if (driver == (struct monitor_driverdata *)CDD(GfxBase))
-    {
-	/*
-	 * If source bitmap is generic software one, we select destination bitmap.
-	 * It can be either fakegfx or accelerated hardware driver.
-	 */
-    	return dest_gfxhidd;
-    }
-    else if (OOP_OCLASS(dest_gfxhidd) == CDD(GfxBase)->fakegfxclass)
-    {
-	/*
-	 * If destination bitmap is fakegfx bitmap, we use its driver.
-	 * Source one might be not fakegfx.
-	 */
-    	return dest_gfxhidd;
-    }
-    else
-    {
-	/*
-	 * If both tests failed, we use source driver. We know that source it not a
-	 * generic software driver, and destination is not fakegfx. So, source
-	 * can be either fakegfx or hardware driver.
-	 */
-	return gfxhidd;
+    if(driver == (struct monitor_driverdata *)CDD(GfxBase)) {
+        /*
+         * If source bitmap is generic software one, we select destination bitmap.
+         * It can be either fakegfx or accelerated hardware driver.
+         */
+        return dest_gfxhidd;
+    } else if(OOP_OCLASS(dest_gfxhidd) == CDD(GfxBase)->fakegfxclass) {
+        /*
+         * If destination bitmap is fakegfx bitmap, we use its driver.
+         * Source one might be not fakegfx.
+         */
+        return dest_gfxhidd;
+    } else {
+        /*
+         * If both tests failed, we use source driver. We know that source it not a
+         * generic software driver, and destination is not fakegfx. So, source
+         * can be either fakegfx or hardware driver.
+         */
+        return gfxhidd;
     }
 }
 
@@ -72,28 +67,22 @@ static inline OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *Gfx
      * Now fill in attributes. We could perfectly use OOP_SetAttrs(), but why?
      * It's our own object, let's go fast!
      */
-    if (!(rp->Flags & RPF_NO_PENS))
-    {
-    	/* If PenMode is disabled, FG and BG are already set */
-    	GC_FG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->FgPen & PEN_MASK) : rp->FgPen;
-    	GC_BG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->BgPen & PEN_MASK) : rp->BgPen;
+    if(!(rp->Flags & RPF_NO_PENS)) {
+        /* If PenMode is disabled, FG and BG are already set */
+        GC_FG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->FgPen & PEN_MASK) : rp->FgPen;
+        GC_BG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->BgPen & PEN_MASK) : rp->BgPen;
     }
     GC_DRMD(gc)   = vHidd_GC_DrawMode_Copy;
     GC_COLEXP(gc) = 0;
     GC_COLMASK(gc) = ~0;
 
     /* Now set GC's DrawMode (effectively ROP) and color expansion (actually transparency) flags */
-    if (rp->DrawMode & JAM2)
-    {
-	GC_COLEXP(gc) = vHidd_GC_ColExp_Opaque;
-    }
-    else if (rp->DrawMode & COMPLEMENT)
-    {
-	GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
-    }
-    else if ((rp->DrawMode & (~INVERSVID)) == JAM1)
-    {
-	GC_COLEXP(gc) = vHidd_GC_ColExp_Transparent;
+    if(rp->DrawMode & JAM2) {
+        GC_COLEXP(gc) = vHidd_GC_ColExp_Opaque;
+    } else if(rp->DrawMode & COMPLEMENT) {
+        GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
+    } else if((rp->DrawMode & (~INVERSVID)) == JAM1) {
+        GC_COLEXP(gc) = vHidd_GC_ColExp_Transparent;
     }
 
     /* FIXME: Handle INVERSVID by swapping apen and bpen ? */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetExtSpriteA()
 */
@@ -54,12 +54,12 @@
     WORD pick = -1;
     UBYTE SearchMask;
 
-    for (struct TagItem *tag = tags; tag->ti_Tag != TAG_END; ++tag) {
-        if (tag->ti_Tag == GSTAG_SPRITE_NUM) {
+    for(struct TagItem *tag = tags; tag->ti_Tag != TAG_END; ++tag) {
+        if(tag->ti_Tag == GSTAG_SPRITE_NUM) {
             pick = tag->ti_Data;
         }
     }
-    if (pick > 7) {
+    if(pick > 7) {
         pick = -1;
     } else {
         /*  let nobody else interrupt us while we're looking for a free
@@ -67,7 +67,7 @@
          */
         Disable();
 
-        if (-1 == pick) {
+        if(-1 == pick) {
             LONG Count = 1;
             /* user just wants the next available sprite.
              * Since AROS does not set up the Intuition pointer through the
@@ -75,12 +75,12 @@
             SearchMask = 0x02;
 
             /* look for the first not allocated sprite */
-            while (0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
+            while(0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
                 SearchMask <<= 1;
                 Count++;
             }
 
-            if (8 != Count) {
+            if(8 != Count) {
                 /* we were able to allocated a free sprite */
                 /* mark the sprite as reserved for the user */
                 GfxBase->SpriteReserved |= SearchMask;
@@ -96,7 +96,7 @@
             SearchMask = 0x01 << pick;
 
             /* is that sprite still available? */
-            if (0 == (GfxBase->SpriteReserved & SearchMask) ) {
+            if(0 == (GfxBase->SpriteReserved & SearchMask)) {
                 /* yes -> mark it as reserved for the user */
                 GfxBase->SpriteReserved |= SearchMask;
                 GfxBase->ExtSprites |= SearchMask;

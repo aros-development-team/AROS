@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeCopList()
 */
@@ -44,19 +44,18 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct CopList * NextCopList = coplist;
-  while (NULL != NextCopList)
-  {
-    coplist = NextCopList;
-    /*  get the pointer to the next CopList BEFORE we return it to free
-     *  memory
-     */
-    NextCopList = coplist -> Next;
-    FreeMem(coplist->CopIns, sizeof(struct CopIns) * coplist->MaxCount);
-    FreeMem(coplist, sizeof(struct CopList));
-  }
+    struct CopList *NextCopList = coplist;
+    while(NULL != NextCopList) {
+        coplist = NextCopList;
+        /*  get the pointer to the next CopList BEFORE we return it to free
+         *  memory
+         */
+        NextCopList = coplist -> Next;
+        FreeMem(coplist->CopIns, sizeof(struct CopIns) * coplist->MaxCount);
+        FreeMem(coplist, sizeof(struct CopList));
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeCopList */

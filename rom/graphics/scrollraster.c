@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$        $Log
 
     Desc: Graphics function ScrollRaster()
@@ -38,7 +38,7 @@
       After this operation the Flags bit of the layer associated
       with this rastport, if there is any layer, should be tested
       for simple layers in case there has any damage been created.
-      
+
 
     INPUTS
       rp    - pointer to rastport
@@ -74,9 +74,9 @@
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
-    
-    if ((xMin > xMax) || (yMin > yMax)) return;
-    
+
+    if((xMin > xMax) || (yMin > yMax)) return;
+
     /*
        This function will simply call ScrollRaster() and fill the empty
        space with calls to RectFill
@@ -87,26 +87,23 @@
        the rastport
     */
     /* Is it a window's rastport ? */
-    if (NULL != rp->Layer)
-    {
-        struct Layer * L = rp->Layer;
-        
-        if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
+    if(NULL != rp->Layer) {
+        struct Layer *L = rp->Layer;
+
+        if(xMax > (L->bounds.MaxX - L->bounds.MinX))
             xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-            
-        if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
+
+        if(yMax > (L->bounds.MaxY - L->bounds.MinY))
             yMax = (L->bounds.MaxY - L->bounds.MinY) ;
 
-    }
-    else
-    {
+    } else {
         /* this one belongs to a screen */
-        struct BitMap * bm = rp->BitMap;
+        struct BitMap *bm = rp->BitMap;
         ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
         ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-        if ((ULONG)xMax >= width )
+        if((ULONG)xMax >= width)
             xMax = width - 1;
-        if ((ULONG)yMax >= height)
+        if((ULONG)yMax >= height)
             yMax = height - 1;
     }
 
@@ -116,19 +113,18 @@
     width  = xMax - xMin + 1;
     height = yMax - yMin + 1;
 
-    if ((width < 1) || (height < 1)) return;
+    if((width < 1) || (height < 1)) return;
 
-    if ((absdx >= width) || (absdy >= height))
-    {
+    if((absdx >= width) || (absdy >= height)) {
         SetDrMd(rp, old_drmd ^ INVERSVID);
         RectFill(rp, xMin, yMin, xMax, yMax);
         SetDrMd(rp, old_drmd);
-        
+
         return;
     }
 
-    if (!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
-         return;
+    if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
+        return;
 
     /*
        The raster is scrolled and I fill the empty area with the
@@ -138,51 +134,43 @@
     SetDrMd(rp, old_drmd ^ INVERSVID);
 
     /* was it scrolled left or right? */
-    if (0 != dx)
-    {
-        if (dx > 0)
-        {
+    if(0 != dx) {
+        if(dx > 0) {
             /* scrolled towards left, clearing on the right */
-            RectFill (rp,
-                      xMax - dx + 1,
-                      yMin,
-                      xMax,
-                      yMax);
-        }
-        else
-        {
+            RectFill(rp,
+                     xMax - dx + 1,
+                     yMin,
+                     xMax,
+                     yMax);
+        } else {
             /* scrolled towards right, clearing on the left */
-            RectFill (rp,
-                      xMin,
-                      yMin,
-                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
-                      yMax);
+            RectFill(rp,
+                     xMin,
+                     yMin,
+                     xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */
+                     yMax);
         }
     }
 
-    if (0 != dy)
-    {
-        if (dy > 0)
-        {
+    if(0 != dy) {
+        if(dy > 0) {
             /* scrolled up, clearing on the bottom */
-            RectFill (rp,
-                      xMin,
-                      yMax - dy + 1,
-                      xMax,
-                      yMax);
-        }
-        else
-        {
+            RectFill(rp,
+                     xMin,
+                     yMax - dy + 1,
+                     xMax,
+                     yMax);
+        } else {
             /* scrolled down, clearing on the top */
-            RectFill (rp,
-                      xMin,
-                      yMin,
-                      xMax,
-                      yMin - dy - 1);
+            RectFill(rp,
+                     xMin,
+                     yMin,
+                     xMax,
+                     yMin - dy - 1);
         }
     }
 
     SetDrMd(rp, old_drmd);
-  
+
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRectRegion()
 */
@@ -56,24 +56,21 @@
 
     struct Region *Res = NewRegion();
 
-    if (!Res)
+    if(!Res)
         return NULL;
 
-    if (!Reg->RegionRectangle        ||
-        IS_RECT_EVIL(Rect)           ||
-        !overlap(*Rect, Reg->bounds))
-    {
+    if(!Reg->RegionRectangle        ||
+            IS_RECT_EVIL(Rect)           ||
+            !overlap(*Rect, Reg->bounds)) {
         /* Nothing to clear. Make a plain copy. */
-        if (!_CopyRegionRectangles(Reg, Res, GfxBase))
-        {
+        if(!_CopyRegionRectangles(Reg, Res, GfxBase)) {
             DisposeRegion(Res);
             Res = NULL;
         }
     }
 
-    else if (Rect->MinX > MinX(Reg) || Rect->MinY > MinY(Reg) ||
-             Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg))
-    {
+    else if(Rect->MinX > MinX(Reg) || Rect->MinY > MinY(Reg) ||
+            Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg)) {
         /* Partial overlapping detected. Do the complete algorithm. */
         struct RegionRectangle rr;
 
@@ -96,12 +93,9 @@
                 &Res->bounds,
                 GfxBase
             )
-        )
-        {
+        ) {
             _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-        }
-        else
-        {
+        } else {
             DisposeRegion(Res);
             Res = NULL;
         }

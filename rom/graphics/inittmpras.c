@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$        $Log
 
     Desc: Graphics function InitRastPort()
@@ -57,12 +57,12 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  tmpras->RasPtr = buffer;
-  tmpras->Size   = size;
+    tmpras->RasPtr = buffer;
+    tmpras->Size   = size;
 
-  return tmpras;
+    return tmpras;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitTmpRas */

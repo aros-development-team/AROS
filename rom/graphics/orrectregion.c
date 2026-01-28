@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function OrRectRegion()
 */
@@ -59,10 +59,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (IS_RECT_EVIL(Rect)) return TRUE;
+    if(IS_RECT_EVIL(Rect)) return TRUE;
 
-    if (Reg->RegionRectangle)
-    {
+    if(Reg->RegionRectangle) {
         /* Region is not empty. Do the complete algorithm. */
         struct Region Res;
         struct RegionRectangle rr;
@@ -73,10 +72,9 @@
         rr.Next   = NULL;
         rr.Prev   = NULL;
 
-        if (_DoOperationBandBand(_OrBandBand,
-                                 MinX(Reg), 0, MinY(Reg), 0,
-                                 Reg->RegionRectangle, &rr, &Res.RegionRectangle, &Res.bounds, GfxBase))
-        {
+        if(_DoOperationBandBand(_OrBandBand,
+                                MinX(Reg), 0, MinY(Reg), 0,
+                                Reg->RegionRectangle, &rr, &Res.RegionRectangle, &Res.bounds, GfxBase)) {
             ClearRegion(Reg);
 
             *Reg = Res;
@@ -84,14 +82,11 @@
 
             return TRUE;
         }
-    }
-    else
-    {
+    } else {
         /* Optimized version for empty destination Region. Just add a single rectangle. */
         struct RegionRectangle *rr = _NewRegionRectangle(&Reg->RegionRectangle, GfxBase);
 
-        if (rr)
-        {
+        if(rr) {
             Reg->bounds = *Rect;
 
             rr->bounds.MinX = 0;
@@ -102,7 +97,7 @@
             return TRUE;
         }
     }
-    
+
     return FALSE;
 
     AROS_LIBFUNC_EXIT

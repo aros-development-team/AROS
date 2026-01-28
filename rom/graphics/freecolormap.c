@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetColorMap()
 */
@@ -53,22 +53,20 @@
     AROS_LIBFUNC_INIT
 
     /* if colormap != NULL return the memory */
-    if (NULL != colormap)
-    {
+    if(NULL != colormap) {
         /* free the ColorTable */
-        FreeMem(colormap->ColorTable  , (colormap->Count) * sizeof(UWORD));
+        FreeMem(colormap->ColorTable, (colormap->Count) * sizeof(UWORD));
 
         /* free the LowColorBits */
         FreeMem(colormap->LowColorBits, (colormap->Count) * sizeof(UWORD));
 
         /* free a ViewPortExtra structure that might be connected to this one */
-        if (NULL != colormap->cm_vpe)
+        if(NULL != colormap->cm_vpe)
             GfxFree((struct ExtendedNode *)colormap->cm_vpe);
 
         /* free a PaletteExtra structure that might be connected to this */
-        if (NULL != colormap->PalExtra)
-        {
-            FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count * sizeof(PalExtra_RefCnt_Type));
+        if(NULL != colormap->PalExtra) {
+            FreeMem(colormap->PalExtra->pe_RefCnt, colormap->Count * sizeof(PalExtra_RefCnt_Type));
             FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count * sizeof(PalExtra_AllocList_Type));
             FreeMem(colormap->PalExtra, sizeof(struct PaletteExtra));
         }
@@ -77,5 +75,5 @@
     }
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* FreeColorMap */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics library
 */
@@ -30,8 +30,8 @@
 
 #include <stdio.h>
 
-extern int  driver_init (struct GfxBase *);
-extern void driver_expunge (struct GfxBase *);
+extern int  driver_init(struct GfxBase *);
+extern void driver_expunge(struct GfxBase *);
 
 AROS_INTP(TOF_VBlank);
 
@@ -56,10 +56,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
-    InitSemaphore( &PrivGBase(GfxBase)->hashtab_sema );
-    InitSemaphore( &PrivGBase(GfxBase)->view_sema );
-    InitSemaphore( &PrivGBase(GfxBase)->tfe_hashtab_sema );
-    InitSemaphore( &PrivGBase(GfxBase)->fontsem );
+    InitSemaphore(&PrivGBase(GfxBase)->hashtab_sema);
+    InitSemaphore(&PrivGBase(GfxBase)->view_sema);
+    InitSemaphore(&PrivGBase(GfxBase)->tfe_hashtab_sema);
+    InitSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     NEWLIST(&LIBBASE->MonitorList);
     LIBBASE->MonitorList.lh_Type = MONITOR_SPEC_TYPE;
@@ -67,9 +67,9 @@ static int GfxInit(struct GfxBase *LIBBASE)
     InitSemaphore(GfxBase->MonitorListSemaphore);
 
     D(bug("[graphics.library] %s: semaphores initialized\n", __func__));
-    
-    LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR|MEMF_PUBLIC);
-    if (!LIBBASE->hash_table)
+
+    LIBBASE->hash_table = AllocMem(GFXASSOCIATE_HASHSIZE * sizeof(APTR), MEMF_CLEAR | MEMF_PUBLIC);
+    if(!LIBBASE->hash_table)
         return FALSE;
 
     LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
@@ -84,11 +84,10 @@ static int GfxInit(struct GfxBase *LIBBASE)
     D(bug("[graphics.library] %s: BitMap class @ 0x%p\n", __func__, PrivGBase(LIBBASE)->basebm));
 
 #if REGIONS_USE_MEMPOOL
-    InitSemaphore( &PrivGBase(GfxBase)->regionsem );
-    if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
-                                                      sizeof(struct Region) * 20,
-                                                      sizeof(struct Region) * 20)))
-    {
+    InitSemaphore(&PrivGBase(GfxBase)->regionsem);
+    if(!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
+                                          sizeof(struct Region) * 20,
+                                          sizeof(struct Region) * 20))) {
         return FALSE;
     }
 
@@ -97,7 +96,7 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     D(bug("[graphics.library] %s: Initialise ROMFont...\n", __func__));
 
-    if (!InitROMFont(LIBBASE)) return FALSE;
+    if(!InitROMFont(LIBBASE)) return FALSE;
 
     D(bug("[graphics.library] %s: Obtaining Gfx HW Root..\n", __func__));
 
@@ -107,39 +106,37 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     D(bug("[graphics.library] %s: Initialise driver...\n", __func__));
 
-    return driver_init (LIBBASE);
+    return driver_init(LIBBASE);
 }
 
 static int GfxOpen(struct GfxBase *LIBBASE)
 {
-    struct TextFont * def;
+    struct TextFont *def;
 
-    if (!LIBBASE->DefaultFont)
-    {
+    if(!LIBBASE->DefaultFont) {
         struct TextAttr sysTA;
         sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
         sysTA.ta_YSize = 8;
         sysTA.ta_Style = FS_NORMAL;
         sysTA.ta_Flags = 0;
 
-        def = OpenFont (&sysTA);
+        def = OpenFont(&sysTA);
 
-        if (!def)
+        if(!def)
             return 0;
 
         LIBBASE->DefaultFont = def;
         sysTA.ta_YSize = def->tf_YSize;
     }
 
-    if(! LIBBASE->VBlank)
-    {
+    if(! LIBBASE->VBlank) {
         NEWLIST(&LIBBASE->TOF_WaitQ);
         LIBBASE->vbsrv.is_Code         = (VOID_FUNC)TOF_VBlank;
         LIBBASE->vbsrv.is_Data         = LIBBASE;
         LIBBASE->vbsrv.is_Node.ln_Name = "Graphics TOF server";
         LIBBASE->vbsrv.is_Node.ln_Pri  = 10;
         LIBBASE->vbsrv.is_Node.ln_Type = NT_INTERRUPT;
-        
+
         /* Add a VBLANK server to take care of TOF waiting tasks. */
         AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
         LIBBASE->VBlank = 50;
@@ -160,10 +157,8 @@ AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
     struct Node *tNode;
 
     GfxBase->VBCounter++;
-    if(!IsListEmpty(&GfxBase->TOF_WaitQ))
-    {
-        ForeachNode(&GfxBase->TOF_WaitQ, tNode)
-        {
+    if(!IsListEmpty(&GfxBase->TOF_WaitQ)) {
+        ForeachNode(&GfxBase->TOF_WaitQ, tNode) {
             Signal((struct Task *)tNode->ln_Name, SIGF_SINGLE);
         }
     }

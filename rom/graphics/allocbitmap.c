@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Create a new BitMap
 */
@@ -24,8 +24,7 @@
 #define SET_BM_TAG(tags, idx, tag, val) \
     SET_TAG(tags, idx, aHidd_BitMap_ ## tag, val)
 
-static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
-{
+static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
     vHidd_StdPixFmt_LUT8,
     vHidd_StdPixFmt_RGB15,
     vHidd_StdPixFmt_BGR15,
@@ -67,12 +66,12 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
     INPUTS
         sizex, sizey - The width and height in pixels
-        
+
         depth - The depth of the bitmap. A depth of 1 will allocate a
             bitmap for two colors, a depth of 24 will allocate a bitmap for
             16 million colors. Pixels with AT LEAST this many bits will be
             allocated.
-        
+
         flags - One of these flags:
 
             BMF_CLEAR: Fill the bitmap with color 0.
@@ -135,7 +134,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
               - BMATags_NoMemory (BOOL)
                     Tells AllocBitMap() not to allocate actual bitmap storage. Only
                     header is allocated and set up. Default value is FALSE.
-        
+
               - BMATags_DisplayID (ULONG)
                     Allocate a displayable bitmap for specified display mode.
 
@@ -166,7 +165,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         Intuition Custom BitMaps or as RasInfo->BitMaps.  They may be
         blitted to a BMF_DISPLAYABLE BitMap, using one of the BltBitMap()
         family of functions.
-        
+
         When allocating a displayable bitmap, make sure that its size is
         within limits allowed by the display driver. Use GetDisplayInfoData()
         with DTAG_DIMS in order to obtain the needed information.
@@ -195,15 +194,13 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
     ULONG clear = flags & BMF_CLEAR;
     BOOL alloc = TRUE;
 
-    if (BITMAPFLAGS_ARE_EXTENDED(flags))
-    {
+    if(BITMAPFLAGS_ARE_EXTENDED(flags)) {
         struct TagItem *tag, *tstate = (struct TagItem *)friend_bitmap;
 
         friend_bitmap = NULL;
 
-        while ((tag = NextTagItem(&tstate)))
-        {
-            switch (tag->ti_Tag) {
+        while((tag = NextTagItem(&tstate))) {
+            switch(tag->ti_Tag) {
             case BMATags_Friend:
                 friend_bitmap = (struct BitMap *)tag->ti_Data;
                 break;
@@ -222,7 +219,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
             case BMATags_DisplayID:
                 dh = FindDisplayInfo(tag->ti_Data);
-                if (!dh)
+                if(!dh)
                     return NULL;
 
                 drv      = dh->drv;
@@ -243,25 +240,23 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         there is a friend_bitmap bitmap and that's not a normal bitmap, then
         call the RTG driver.
     */
-    if ((depth > 8) || (hiddmode != vHidd_ModeID_Invalid) ||
-        (friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
-        (friend_bitmap && (friend_bitmap->pad == HIDD_BM_PAD_MAGIC)) ||
-        (flags & BMF_SPECIALFMT) ||
-        (flags & BMF_DISPLAYABLE))
-    {
+    if((depth > 8) || (hiddmode != vHidd_ModeID_Invalid) ||
+            (friend_bitmap && (friend_bitmap->Flags & BMF_SPECIALFMT)) ||
+            (friend_bitmap && (friend_bitmap->pad == HIDD_BM_PAD_MAGIC)) ||
+            (flags & BMF_SPECIALFMT) ||
+            (flags & BMF_DISPLAYABLE)) {
         struct TagItem bm_tags[8];
         HIDDT_StdPixFmt stdpf = vHidd_StdPixFmt_Unknown;
 
         D(bug("[AllocBitMap] Allocating HIDD bitmap\n"));
 
         /* Set size */
-        SET_BM_TAG( bm_tags, 0, Width,  sizex   );
-        SET_BM_TAG( bm_tags, 1, Height, sizey   );
+        SET_BM_TAG(bm_tags, 0, Width,  sizex);
+        SET_BM_TAG(bm_tags, 1, Height, sizey);
 
         /* Set friend bitmap */
         SET_TAG(bm_tags, 3, TAG_IGNORE, 0);
-        if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
-        {
+        if(friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
             OOP_Object *friend_obj = HIDD_BM_OBJ(friend_bitmap);
 
             D(bug("[AllocBitMap] Setting friend bitmap 0x%p, object 0x%p\n", friend_bitmap, friend_obj));
@@ -272,8 +267,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
              * software mouse pointer implementation. Graphics drivers do (and must)
              * not know about fakegfx, so we need to de-masquerade such objects.
              */
-            if (OOP_OCLASS(friend_obj) == CDD(GfxBase)->fakefbclass)
-            {
+            if(OOP_OCLASS(friend_obj) == CDD(GfxBase)->fakefbclass) {
                 OOP_GetAttr(friend_obj, aHidd_FakeFB_RealBitMap, (IPTR *)&friend_obj);
                 D(bug("[AllocBitMap] Fakefb friend de-masqueraded to 0x%p\n", friend_obj));
             }
@@ -287,37 +281,34 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
              * of displayable ones. In this case they may simply check against ModeID != vHidd_ModeID_Invalid,
              * and don't have to check friend object by themselves.
              */
-            if (hiddmode == vHidd_ModeID_Invalid)
+            if(hiddmode == vHidd_ModeID_Invalid)
                 hiddmode = HIDD_BM_HIDDMODE(friend_bitmap);
 
-            if (depth <= 8) /* CHECKME: only set depth if planar? */
+            if(depth <= 8)  /* CHECKME: only set depth if planar? */
                 depth = HIDD_BM_REALDEPTH(friend_bitmap);
 
             /* Obtain also GFX driver from friend bitmap */
             drv = HIDD_BM_DRVDATA(friend_bitmap);
         }
 
-        SET_BM_TAG( bm_tags, 2, Depth,  depth   );
+        SET_BM_TAG(bm_tags, 2, Depth,  depth);
 
         /* Now let's deal with pixelformat */
-        if (flags & BMF_SPECIALFMT)
-        {
+        if(flags & BMF_SPECIALFMT) {
             ULONG cgxpf = DOWNSHIFT_PIXFMT(flags);
-            
-            if (cgxpf <= PIXFMT_RGBA32)
+
+            if(cgxpf <= PIXFMT_RGBA32)
                 stdpf = cyber2hidd_pixfmt[cgxpf];
-        }
-        else if ((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid))
-        {
+        } else if((!friend_bitmap) && (hiddmode == vHidd_ModeID_Invalid)) {
             /* If there is neither pixelformat nor friend bitmap nor ModeID specified,
                we have to use some default pixelformat depending on the depth */
-            if (depth > 24)
+            if(depth > 24)
                 stdpf = vHidd_StdPixFmt_ARGB32;
-            else if (depth > 16)
+            else if(depth > 16)
                 stdpf = vHidd_StdPixFmt_RGB24;
-            else if (depth > 15)
+            else if(depth > 15)
                 stdpf = vHidd_StdPixFmt_RGB16;
-            else if (depth > 8)
+            else if(depth > 8)
                 stdpf = vHidd_StdPixFmt_RGB15;
             else
                 stdpf = vHidd_StdPixFmt_LUT8;
@@ -325,19 +316,14 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         /* If we have a friend bitmap, pixelformat will be
            picked up from it */
 
-        if (stdpf != vHidd_StdPixFmt_Unknown)
-        {
+        if(stdpf != vHidd_StdPixFmt_Unknown) {
             D(bug("[AllocBitMap] Setting pixelformat to %d\n", stdpf));
             SET_BM_TAG(bm_tags, 4, StdPixFmt, stdpf);
             hiddmode = vHidd_ModeID_Invalid;
-        }
-        else if (hiddmode != vHidd_ModeID_Invalid)
-        {
+        } else if(hiddmode != vHidd_ModeID_Invalid) {
             D(bug("[AllocBitMap] Setting ModeID to 0x%08lX\n", hiddmode));
             SET_BM_TAG(bm_tags, 4, ModeID, hiddmode);
-        }
-        else
-        {
+        } else {
             /*
              * SET_TAG() is TWO operators, so we absolutely need parenthesis here.
              * Remember this!
@@ -347,42 +333,39 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
         }
 
         /* Set Displayable attribute */
-        SET_BM_TAG(bm_tags, 5, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM) || ((flags & BMF_DISPLAYABLE) == BMF_DISPLAYABLE));
+        SET_BM_TAG(bm_tags, 5, Displayable, ((flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM)
+                   || ((flags & BMF_DISPLAYABLE) == BMF_DISPLAYABLE));
         D(bug("[AllocBitMap] Displayable: %d\n", bm_tags[5].ti_Data));
 
-        
+
         SET_TAG(bm_tags, 7, TAG_DONE, 0);
 
         /* Allocate an extra planes for HIDD bitmap info */
-        nbm = AllocMem (sizeof (struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY|MEMF_CLEAR);
+        nbm = AllocMem(sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES, MEMF_ANY | MEMF_CLEAR);
         D(bug("[AllocBitMap] Allocated bitmap structure: 0x%p\n", nbm));
-        
-        if (nbm)
-        {
+
+        if(nbm) {
             OOP_Object *bm_obj = NULL;
             BOOL ok = TRUE;
 
             SET_BM_TAG(bm_tags, 6, BMStruct, nbm);
- 
+
             /* Use the memory driver if we didn't get another object in any way */
-            if (!drv)
+            if(!drv)
                 drv = (struct monitor_driverdata *)CDD(GfxBase);
 
-            if (alloc)
-            {
+            if(alloc) {
                 bm_obj = HIDD_Gfx_CreateObject(drv->gfxhidd, PrivGBase(GfxBase)->basebm, bm_tags);
                 D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
-                if (!bm_obj)
+                if(!bm_obj)
                     ok = FALSE;
             }
 
-            if (ok)
-            {
+            if(ok) {
                 ULONG            align  = 15;
                 HIDDT_ColorModel colmod = -1;
 
-                if (alloc)
-                {
+                if(alloc) {
                     OOP_Object *pf;
 
                     /*
@@ -407,9 +390,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                     HIDD_BM_COLMOD(nbm)     = colmod;
                     HIDD_BM_COLMAP(nbm)     = (OOP_Object *)OOP_GET(bm_obj, aHidd_BitMap_ColorMap);
                     HIDD_BM_REALDEPTH(nbm)  = depth;
-                }
-                else
-                {
+                } else {
                     /* There's nothing to clear if we don't allocate an object */
                     clear = FALSE;
                 }
@@ -428,22 +409,20 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                 nbm->Flags       = (flags & ~BMF_INTERLEAVED) | BMF_SPECIALFMT;
 
                 /* If this is a displayable bitmap, create a color table for it */
-                if (bm_obj && (friend_bitmap ||
-                    (flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM))
-                {
+                if(bm_obj && (friend_bitmap ||
+                              (flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM)) {
                     HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
 
-                    if (friend_bitmap && IS_HIDD_BM(friend_bitmap))
-                    {
+                    if(friend_bitmap && IS_HIDD_BM(friend_bitmap)) {
                         /* We got a friend_bitmap bitmap. We inherit its
                            colormap.
                            !!! NOTE !!! If this is used after the
                            friend_bitmap bitmap is freed it means trouble,
                            as the colortab mem will no longer be valid */
                         OOP_Object *oldcolmap;
-                            
+
                         oldcolmap = HIDD_BM_SetColorMap(bm_obj, HIDD_BM_COLMAP(friend_bitmap));
-                        if (oldcolmap)
+                        if(oldcolmap)
                             OOP_DisposeObject(oldcolmap);
 
                         HIDD_BM_COLMAP(nbm)     = HIDD_BM_COLMAP(friend_bitmap);
@@ -452,14 +431,11 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                         HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
 
                         HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SHARED_PIXTAB;
-                    }
-                    else
-                    {
+                    } else {
                         /* Allocate a pixtab */
-                        HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
+                        HIDD_BM_PIXTAB(nbm) = AllocVec(sizeof(HIDDT_Pixel) * AROS_PALETTE_SIZE, MEMF_ANY);
 
-                        if (HIDD_BM_PIXTAB(nbm))
-                        {
+                        if(HIDD_BM_PIXTAB(nbm)) {
                             /* Set this palette to all black by default */
 
                             HIDDT_Color col;
@@ -470,15 +446,13 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                             col.blue    = 0;
                             col.alpha   = 0;
 
-                            if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod)
-                            {
+                            if(vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
                                 ULONG numcolors;
 
                                 numcolors = 1L << ((depth <= 8) ? depth : 8);
 
                                 /* Set palette to all black */
-                                for (i = 0; i < numcolors; i ++)
-                                {
+                                for(i = 0; i < numcolors; i ++) {
                                     HIDD_BM_SetColors(bm_obj, &col, i, 1);
                                     HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
                                 }
@@ -489,18 +463,17 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                     }
                 }
 
-                if (ok)
-                {
+                if(ok) {
                     struct BitMap *pbm = NULL;
 
-                    if (clear)
+                    if(clear)
                         BltBitMap(nbm, 0, 0, nbm, 0, 0, sizex, sizey, 0x00, 0xFF, NULL);
 
                     /* Is there a planar memory map? */
                     OOP_GetAttr(bm_obj, aHidd_PlanarBM_BitMap, (IPTR *)&pbm);
-                    if (pbm) {
+                    if(pbm) {
                         int i;
-                        for (i = 0; i < 8; i++)
+                        for(i = 0; i < 8; i++)
                             nbm->Planes[i] = pbm->Planes[i];
                         /* Mark this as a 'standard' bitmap */
                         nbm->Flags &= ~BMF_SPECIALFMT;
@@ -516,63 +489,59 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                 OOP_DisposeObject(bm_obj);
             } /* if (bitmap object allocated) */
 
-            FreeMem(nbm, sizeof (struct BitMap));
+            FreeMem(nbm, sizeof(struct BitMap));
             nbm = NULL;
 
         } /* if (nbm) */
-        
-    }
-    else /* Otherwise init a plain Amiga bitmap. TODO: BMF_INTERLEAVED support */
-    {
-        nbm = AllocMem (sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
-                        MEMF_ANY | MEMF_CLEAR);
 
-        if (nbm) {
+    } else { /* Otherwise init a plain Amiga bitmap. TODO: BMF_INTERLEAVED support */
+        nbm = AllocMem(sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
+                       MEMF_ANY | MEMF_CLEAR);
+
+        if(nbm) {
             nbm->BytesPerRow = ((sizex + 15) >> 4) * 2;
             nbm->Rows        = sizey;
             nbm->Flags       = flags | BMF_STANDARD;
             nbm->Depth       = depth;
             nbm->pad         = 0;
 
-            if (alloc) {
+            if(alloc) {
                 LONG plane = 0;
 
                 /* Interleaved Bitmap? */
-                if(flags & BMF_INTERLEAVED)
-                {
-                    if((nbm->Planes[plane++] = AllocRaster(sizex*depth, sizey)) != NULL)
-                    {
-                        if (clear)
-                          SetMem (nbm->Planes[0], 0, RASSIZE(sizex*depth,sizey));
+                if(flags & BMF_INTERLEAVED) {
+                    if((nbm->Planes[plane++] = AllocRaster(sizex * depth, sizey)) != NULL) {
+                        if(clear)
+                            SetMem(nbm->Planes[0], 0, RASSIZE(sizex * depth, sizey));
 
                         /* Set the plane pointers, and clear remaining entries.. */
                         for(; plane < depth; plane++) {
-                            nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane-1]) + RASSIZE(sizex,sizey));
+                            nbm->Planes[plane] = (void *)((IPTR)(nbm->Planes[plane - 1]) + RASSIZE(sizex, sizey));
                         }
                         for(++plane; plane < 8; plane++) {
                             nbm->Planes[plane] = NULL;
                         }
                     } else {
                         /* Failed to allocate plane data storage ... */
-                        FreeMem (nbm, sizeof (struct BitMap));
+                        FreeMem(nbm, sizeof(struct BitMap));
                         nbm = NULL;
                     }
                 } else {
-                    for (; plane < depth; plane++) {
-                        nbm->Planes[plane] = AllocRaster (sizex, sizey);
+                    for(; plane < depth; plane++) {
+                        nbm->Planes[plane] = AllocRaster(sizex, sizey);
 
-                        if (!nbm->Planes[plane])
+                        if(!nbm->Planes[plane])
                             break;
 
-                        if (clear)
-                            SetMem (nbm->Planes[plane], 0, RASSIZE(sizex, sizey));
+                        if(clear)
+                            SetMem(nbm->Planes[plane], 0, RASSIZE(sizex, sizey));
                     }
-                    if (plane != depth) {
-                        for (--plane; plane >= 0; plane--)
-                            if (nbm->Planes[plane])
-                                FreeRaster (nbm->Planes[plane], sizex, sizey);
+                    if(plane != depth) {
+                        for(--plane; plane >= 0; plane--)
+                            if(nbm->Planes[plane])
+                                FreeRaster(nbm->Planes[plane], sizex, sizey);
 
-                        FreeMem (nbm, sizeof (struct BitMap));
+                        FreeMem(nbm, sizeof(struct BitMap));
                         nbm = NULL;
                     } else {
                         /* Clear remaining entries.. */

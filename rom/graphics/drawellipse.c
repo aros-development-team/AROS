@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function DrawEllipse
@@ -15,15 +15,14 @@
 
 /****************************************************************************************/
 
-struct ellipse_render_data
-{
+struct ellipse_render_data {
     struct render_special_info rsi;
     WORD a, b;
 };
 
 static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
-                           OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-                           struct Rectangle *rect, struct GfxBase *GfxBase)
+                            OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                            struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct ellipse_render_data *erd = ellipse_rd;
 
@@ -34,7 +33,7 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
     GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + rect->MinX - srcx, erd->b + rect->MinY - srcy,
-                                           erd->a, erd->b);
+                        erd->a, erd->b);
 
     /*
      * After we exit this routine, 'rect' will be not valid any more.
@@ -99,7 +98,7 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
     FIX_GFXCOORD(yCenter);
     FIX_GFXCOORD(a);
     FIX_GFXCOORD(b);
-    
+
     /* bug("driver_DrawEllipse(%d %d %d %d)\n", xCenter, yCenter, a, b);
     */
     rr.MinX = xCenter - a;
@@ -109,9 +108,9 @@ static ULONG ellipse_render(APTR ellipse_rd, WORD srcx, WORD srcy,
 
     erd.a = a;
     erd.b = b;
-    
+
     do_render_func(rp, NULL, &rr, ellipse_render, &erd, TRUE, TRUE, GfxBase);
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* DrawEllipse */

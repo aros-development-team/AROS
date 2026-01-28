@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "graphics_intern.h"
@@ -8,8 +8,8 @@
 /* Private lowlevel functions needed by cybergraphics.library */
 
 AROS_LH9(LONG, WritePixels8,
-         AROS_LHA(struct RastPort *,rp, A0),
-         AROS_LHA(UBYTE *,array, A1),
+         AROS_LHA(struct RastPort *, rp, A0),
+         AROS_LHA(UBYTE *, array, A1),
          AROS_LHA(ULONG, modulo, D0),
          AROS_LHA(LONG, xstart, D1),
          AROS_LHA(LONG, ystart, D2),

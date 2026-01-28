@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AreaMove()
 */
@@ -57,20 +57,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct AreaInfo * areainfo = rp->AreaInfo;
+    struct AreaInfo *areainfo = rp->AreaInfo;
 
     /* Is there still enough storage area in the areainfo-buffer?
      * We just need room for one entry.
      */
 
-    if (areainfo->Count + 1 <= areainfo->MaxCount)
-    {
+    if(areainfo->Count + 1 <= areainfo->MaxCount) {
         FIX_GFXCOORD(x);
         FIX_GFXCOORD(y);
-        
+
         /* is this the very first entry in the vector collection matrix */
-        if (0 == areainfo->Count)
-        {
+        if(0 == areainfo->Count) {
             areainfo->FirstX = x;
             areainfo->FirstY = y;
 
@@ -83,33 +81,28 @@
             areainfo->FlagPtr++;
 
             areainfo->Count++;
-        }
-        else
-        {
+        } else {
             /* if the previous command was also an AreaMove() then we will replace
              * that one ...
              */
-            if ( AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1])
-            {
+            if(AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1]) {
                 areainfo->FirstX = x;
                 areainfo->FirstY = y;
 
                 /* replace the previous point */
                 areainfo->VctrPtr[-2] = x;
                 areainfo->VctrPtr[-1] = y;
-            }
-            else /* it's not the first command and the previous command wasn't AreaMove() */
-            {
+            } else { /* it's not the first command and the previous command wasn't AreaMove() */
                 /* ... otherwise close the polygon if necessary */
-                
+
                 areaclosepolygon(areainfo);
-                
+
                 /* Need to check again, if there is enough room, because
                    areaclosepolygon might have eaten one vector!! */
-                   
-                if (areainfo->Count + 1 > areainfo->MaxCount)
+
+                if(areainfo->Count + 1 > areainfo->MaxCount)
                     return -1;
-                    
+
                 areainfo->FirstX = x;
                 areainfo->FirstY = y;
 
@@ -123,7 +116,7 @@
 
                 areainfo->Count++;
             }
-            
+
         } /* if (0 == areainfo->Count) */
 
     } /* if (areainfo->Count + 1 <= areainfo->MaxCount) */
@@ -133,5 +126,5 @@
     return 0;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* AreaMove */

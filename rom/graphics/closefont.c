@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$        $Log
 
     Desc: Graphics function CloseFont()
@@ -48,18 +48,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (!textFont) return;
+    if(!textFont) return;
 
     ASSERT_VALID_PTR(textFont);
 
     Forbid();
     textFont->tf_Accessors--;
-    if ((textFont->tf_Accessors == 0) && !(textFont->tf_Flags & FPF_ROMFONT))
-    {
+    if((textFont->tf_Accessors == 0) && !(textFont->tf_Flags & FPF_ROMFONT)) {
         RemFont(textFont);
     }
     Permit();
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* CloseFont */

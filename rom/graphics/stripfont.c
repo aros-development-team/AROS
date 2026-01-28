@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function StripFont()
 */
@@ -51,38 +51,36 @@
 
     struct TextFontExtension *tfe;
     struct tfe_hashnode *hn;
-        
+
     /* Valid parameter ? */
-    if (font == NULL)
+    if(font == NULL)
         return;
-                
+
     /* Does the font have an extension ? */
 
     ObtainSemaphore(&PrivGBase(GfxBase)->fontsem);
-    
+
     hn = tfe_hashlookup(font, GfxBase);
-    if (NULL != hn)
-    {
+    if(NULL != hn) {
         tfe = hn->ext;
-        
-        if (hn->chunky_colorfont) FreeVec(hn->chunky_colorfont);
-        
+
+        if(hn->chunky_colorfont) FreeVec(hn->chunky_colorfont);
+
         /* Remove the hashitem (tfe_hashdelete() has semaphore protection) */
         tfe_hashdelete(font, GfxBase);
-        
-        if (NULL != tfe)
-        {
+
+        if(NULL != tfe) {
             font->tf_Extension = tfe->tfe_OrigReplyPort;
 
             /* Font is not tagged anymore */
             font->tf_Style &= ~FSF_TAGGED;
-                
+
             FreeTagItems(tfe->tfe_Tags);
-            FreeMem(tfe, sizeof (struct TextFontExtension_intern));
+            FreeMem(tfe, sizeof(struct TextFontExtension_intern));
         }
-                
+
     }
-    
+
     ReleaseSemaphore(&PrivGBase(GfxBase)->fontsem);
 
     return;

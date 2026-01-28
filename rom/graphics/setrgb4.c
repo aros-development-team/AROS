@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set one color register for this Viewport
 */
@@ -61,12 +61,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (!vp)
+    if(!vp)
         return;
 
     SetRGB32(vp, n, r * 0x11111111,
-                    g * 0x11111111,
-                    b * 0x11111111);
+             g * 0x11111111,
+             b * 0x11111111);
 
     /************************************************************
     / This is the code that works correctly on the real thing
@@ -92,5 +92,5 @@
     ************************************************************/
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* SetRGB4 */

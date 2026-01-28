@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -13,7 +13,7 @@
 ** algorithms.
 */
 
-ULONG color_distance(struct ColorMap * cm,
+ULONG color_distance(struct ColorMap *cm,
                      ULONG r,
                      ULONG g,
                      ULONG b,
@@ -37,14 +37,14 @@ ULONG color_distance(struct ColorMap * cm,
     **   Note that fields below ColorTable are present only if Type > COLORMAP_TYPE_V1_2
     */
 
-    WORD dr,dg,db;
+    WORD dr, dg, db;
 
     UWORD c1 = cm->ColorTable[index];
     LONG r1 = (LONG)(c1 >> 4) & 0x00f0;
     LONG g1 = (LONG)(c1 >> 0) & 0x00f0;
     LONG b1 = (LONG)(c1 << 4) & 0x00f0;
 
-    if (cm->Type > COLORMAP_TYPE_V1_2) {
+    if(cm->Type > COLORMAP_TYPE_V1_2) {
         UWORD c2 = cm->LowColorBits[index];
 
         r1 |= (c2 >> 8) & 0x000f;
@@ -52,11 +52,11 @@ ULONG color_distance(struct ColorMap * cm,
         b1 |= (c2 >> 0) & 0x000f;
     }
 
-    dr = (WORD)(r >> (32-8)) - (WORD)r1;
-    dg = (WORD)(g >> (32-8)) - (WORD)g1;
-    db = (WORD)(b >> (32-8)) - (WORD)b1;
+    dr = (WORD)(r >> (32 - 8)) - (WORD)r1;
+    dg = (WORD)(g >> (32 - 8)) - (WORD)g1;
+    db = (WORD)(b >> (32 - 8)) - (WORD)b1;
 
-    return (UWORD)(dr*dr)+(UWORD)(dg*dg)+(UWORD)(db*db);
+    return (UWORD)(dr * dr) + (UWORD)(dg * dg) + (UWORD)(db * db);
 }
 
 
@@ -64,31 +64,31 @@ ULONG color_distance(struct ColorMap * cm,
 ** Test whether the entry in the color map equals the given
 ** color
 */
-BOOL color_equal(struct ColorMap * cm,
+BOOL color_equal(struct ColorMap *cm,
                  ULONG r,
                  ULONG g,
                  ULONG b,
                  ULONG index)
 {
-    if (cm->ColorTable[index] != (((r >> 20) & 0x0f00) |
-                                              ((g >> 24) & 0x00f0) |
-                                              ((b >> 28) & 0x000f)))
+    if(cm->ColorTable[index] != (((r >> 20) & 0x0f00) |
+                                 ((g >> 24) & 0x00f0) |
+                                 ((b >> 28) & 0x000f)))
         return FALSE;
 
-    if ((cm->Type > COLORMAP_TYPE_V1_2) &&
-       cm->LowColorBits[index] != (((r >> 16) & 0x0f00) |
-                                                ((g >> 20) & 0x00f0) |
-                                                ((b >> 24) & 0x000f)))
+    if((cm->Type > COLORMAP_TYPE_V1_2) &&
+            cm->LowColorBits[index] != (((r >> 16) & 0x0f00) |
+                                        ((g >> 20) & 0x00f0) |
+                                        ((b >> 24) & 0x000f)))
         return FALSE;
 
     return TRUE;
 }
 
 VOID color_get(struct ColorMap *cm,
-                ULONG *r,
-                ULONG *g,
-                ULONG *b,
-                ULONG index)
+               ULONG *r,
+               ULONG *g,
+               ULONG *b,
+               ULONG index)
 {
     UWORD hibits = cm->ColorTable[index];
 
@@ -96,7 +96,7 @@ VOID color_get(struct ColorMap *cm,
     ULONG green8 = (hibits & 0x00f0);
     ULONG blue8  = (hibits & 0x000f) << 4;
 
-    if (cm->Type > COLORMAP_TYPE_V1_2) {
+    if(cm->Type > COLORMAP_TYPE_V1_2) {
         UWORD lobits = cm->LowColorBits[index];
 
         red8   |= (lobits & 0x0f00) >> 8;

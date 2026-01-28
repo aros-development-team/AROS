@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FindDisplayInfo()
 */
@@ -59,23 +59,23 @@
     D(bug("FindDisplayInfo(id=%x)\n", ID));
 
     /* The database may fail on INVALID_ID, so handle this explicitly */
-    if (ID == INVALID_ID)
+    if(ID == INVALID_ID)
         return NULL;
 
     /* Find display driver data */
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-        if (mdd->id == (ID & mdd->mask))
+    for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+        if(mdd->id == (ID & mdd->mask))
             break;
     }
-    if (!mdd)
+    if(!mdd)
         return NULL;
 
     /* Calculate HIDD part of ModeID */
     hiddmode = ID & (~mdd->mask);
 
     /* Go through all mode records of this driver */
-    for (ret = mdd->modes; ret->id != vHidd_ModeID_Invalid; ret++) {
-        if (ret->id == hiddmode)
+    for(ret = mdd->modes; ret->id != vHidd_ModeID_Invalid; ret++) {
+        if(ret->id == hiddmode)
             return ret;
     }
 

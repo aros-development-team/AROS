@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -62,13 +62,13 @@
     FIX_GFXCOORD(ystart);
     FIX_GFXCOORD(xstop);
     FIX_GFXCOORD(ystop);
-    
-    if ((xstart > xstop) || (ystart > ystop)) return;
 
-    write_pixels_8(rp, array , bytesperrow,
+    if((xstart > xstop) || (ystart > ystop)) return;
+
+    write_pixels_8(rp, array, bytesperrow,
                    xstart, ystart, xstop, ystop,
                    NULL, TRUE, GfxBase);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* WriteChunkyPixels */

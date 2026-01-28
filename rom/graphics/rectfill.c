@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function RectFill()
 */
@@ -57,26 +57,22 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     FIX_GFXCOORD(xMin);
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
 
-    if ((xMax >= xMin) && (yMax >= yMin))
-    {
-        if (rp->AreaPtrn)
-        {
+    if((xMax >= xMin) && (yMax >= yMin)) {
+        if(rp->AreaPtrn) {
             /* When rastport has areaptrn, let BltPattern do the job */
             BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
-        }
-        else
-        {
+        } else {
             OOP_Object *gc  = GetDriverData(rp, GfxBase);
             struct Rectangle rr;
             HIDDT_Pixel oldfg = 0;
 
-            if (rp->DrawMode & INVERSVID) {
+            if(rp->DrawMode & INVERSVID) {
                 oldfg = GC_FG(gc);
                 GC_FG(gc) = GC_BG(gc);
             }
@@ -90,12 +86,12 @@
 
             do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
 
-            if (rp->DrawMode & INVERSVID) {
+            if(rp->DrawMode & INVERSVID) {
                 GC_FG(gc) = oldfg;
             }
         }
     } /* if ((xMax >= xMin) && (yMax >= yMin)) */
-    
+
     AROS_LIBFUNC_EXIT
 
 } /* RectFill */

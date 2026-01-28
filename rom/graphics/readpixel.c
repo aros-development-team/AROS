@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ReadPixel()
 */
@@ -13,8 +13,7 @@
 
 #include <aros/debug.h>
 
-struct prlut8_render_data
-{
+struct prlut8_render_data {
     ULONG pen;
     HIDDT_PixelLUT *pixlut;
 };
@@ -67,7 +66,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 
 *****************************************************************************/
 {
-   AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
     struct prlut8_render_data prlrd;
     LONG                       ret;
@@ -77,7 +76,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
 
-    if (IS_HIDD_BM(rp->BitMap))
+    if(IS_HIDD_BM(rp->BitMap))
         prlrd.pixlut = &pixlut;
     else
         prlrd.pixlut = NULL;
@@ -86,16 +85,15 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 
     ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, FALSE, GfxBase);
 
-    if (-1 == ret || -1 == (LONG)prlrd.pen)
-    {
+    if(-1 == ret || -1 == (LONG)prlrd.pen) {
         D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
-        return (ULONG)-1;
+        return (ULONG) - 1;
     }
 
     return prlrd.pen;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* ReadPixel */
 
 static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
@@ -103,15 +101,12 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 {
     struct prlut8_render_data *prlrd;
     UBYTE pen;
-       
+
     prlrd = (struct prlut8_render_data *)prlr_data;
-    
-    if (NULL != prlrd->pixlut)
-    {
+
+    if(NULL != prlrd->pixlut) {
         HIDD_BM_GetImageLUT(bm, &pen, 1, x, y, 1, 1, prlrd->pixlut);
-    }
-    else
-    {
+    } else {
         pen = HIDD_BM_GetPixel(bm, x, y);
     }
 

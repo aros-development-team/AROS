@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CWait()
 */
@@ -52,12 +52,12 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct CopIns * copIns = ucl->CopList->CopPtr;
-  copIns->OpCode = COPPER_WAIT;
-  copIns->u3.u4.u1.VWaitPos = v;
-  copIns->u3.u4.u2.HWaitPos = h;
+    struct CopIns *copIns = ucl->CopList->CopPtr;
+    copIns->OpCode = COPPER_WAIT;
+    copIns->u3.u4.u1.VWaitPos = v;
+    copIns->u3.u4.u2.HWaitPos = h;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CMove */

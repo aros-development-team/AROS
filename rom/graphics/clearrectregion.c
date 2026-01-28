@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ClearRectRegion()
 */
@@ -56,7 +56,7 @@
     struct RegionRectangle rr;
 
     /* If the rectangle and the region don't overlap just return */
-    if (IS_RECT_EVIL(Rect) || !overlap(*Rect, Reg->bounds))
+    if(IS_RECT_EVIL(Rect) || !overlap(*Rect, Reg->bounds))
         return TRUE;
 
     /* if the rectangle completely covers the region just clear the region and return */
@@ -66,8 +66,7 @@
         Rect->MinY <= MinY(Reg) &&
         Rect->MaxX >= MaxX(Reg) &&
         Rect->MaxY >= MaxY(Reg)
-    )
-    {
+    ) {
         ClearRegion(Reg);
         return TRUE;
     }
@@ -93,8 +92,7 @@
             &Res.bounds,
             GfxBase
         )
-    )
-    {
+    ) {
         ClearRegion(Reg);
 
         *Reg = Res;

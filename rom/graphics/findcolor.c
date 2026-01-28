@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Find the closest matching color in a colormap
 */
@@ -56,25 +56,21 @@
 
     ULONG retval = 0;
 
-    if (NULL != cm)
-    {
+    if(NULL != cm) {
         ULONG index = 0;
-        ULONG best_distance = (ULONG)-1;
+        ULONG best_distance = (ULONG) - 1;
         ULONG distance;
 
-        if (-1 == maxpen && NULL != cm->PalExtra)
-        {
+        if(-1 == maxpen && NULL != cm->PalExtra) {
             /* pe_SharableColors is not the number of colors but the last color index! */
             maxpen = cm->PalExtra->pe_SharableColors;
         }
-        
-        if (maxpen >= cm->Count) maxpen = cm->Count - 1;
-        
-        while (index <= maxpen)
-        {
-            distance = color_distance(cm,r,g,b,index);
-            if (distance < best_distance)
-            {
+
+        if(maxpen >= cm->Count) maxpen = cm->Count - 1;
+
+        while(index <= maxpen) {
+            distance = color_distance(cm, r, g, b, index);
+            if(distance < best_distance) {
                 best_distance = distance;
                 retval = index;
             }

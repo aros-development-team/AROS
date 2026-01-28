@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRectRegion()
 */
@@ -55,27 +55,22 @@
     AROS_LIBFUNC_INIT
 
     struct Region *Res = NewRegion();
-    
-    if (Res)
-    {
-        if (IS_RECT_EVIL(Rect))
-        {
+
+    if(Res) {
+        if(IS_RECT_EVIL(Rect)) {
             /* Source Rect is empty. Make a plain copy of Reg. */
-            if (_CopyRegionRectangles(Reg, Res, GfxBase))
+            if(_CopyRegionRectangles(Reg, Res, GfxBase))
                 return Res;
-        }
-        else
-        {
+        } else {
             struct RegionRectangle rr;
 
             rr.bounds = *Rect;
             rr.Next   = NULL;
             rr.Prev   = NULL;
 
-            if (_DoOperationBandBand(_OrBandBand,
-                                     MinX(Reg), 0, MinY(Reg), 0,
-                                     Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase))
-            {
+            if(_DoOperationBandBand(_OrBandBand,
+                                    MinX(Reg), 0, MinY(Reg), 0,
+                                    Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase)) {
                 _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
 
                 return Res;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetSprite()
 */
@@ -30,7 +30,7 @@
         If you want a 15 color sprite, you must allocate both sprites
         (see the manual!) and set the SPRITE_ATTACHED bit in the
         odd sprite's posctldata array.
-        
+
 
     INPUTS
         sprite - pointer to a SimpleSprite structure
@@ -62,59 +62,59 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  UBYTE SearchMask;
+    UBYTE SearchMask;
 
-  if (pick > 7 && pick != -1) {
-    pick = -1;
-  } else {
-    /*  let nobody else interrupt us while we're looking for a free
-     *  sprite
-     */
-    Disable();
-
-    if (-1 == pick) {
-      LONG Count = 1;
-      /* user just wants the next available sprite.
-       * Since AROS does not set up the Intuition pointer through the
-       * sprite API, we skip sprite 0 when searching for a sprite slot. */
-      SearchMask = 0x02;
-
-      /* look for the first not allocated sprite */
-      while (0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
-        SearchMask <<= 1;
-        Count++;
-      }
-
-      if (8 != Count) {
-        /* we were able to allocated a free sprite */
-        /* mark the sprite as reserved for the user */
-        GfxBase->SpriteReserved |= SearchMask;
-        pick = Count;
-      } else {
-        /* no sprite was available for the user */
+    if(pick > 7 && pick != -1) {
         pick = -1;
-      }
-
     } else {
-      /* user wants one specific sprite */
-      SearchMask = 0x01 << pick;
+        /*  let nobody else interrupt us while we're looking for a free
+         *  sprite
+         */
+        Disable();
 
-      /* is that sprite still available? */
-      if (0 == (GfxBase->SpriteReserved & SearchMask) ) {
-        /* yes -> mark it as reserved for the user */
-        GfxBase->SpriteReserved |= SearchMask;
-      } else {
-        /* no, it's not available any more */
-        pick = -1;
-      }
+        if(-1 == pick) {
+            LONG Count = 1;
+            /* user just wants the next available sprite.
+             * Since AROS does not set up the Intuition pointer through the
+             * sprite API, we skip sprite 0 when searching for a sprite slot. */
+            SearchMask = 0x02;
+
+            /* look for the first not allocated sprite */
+            while(0 != (GfxBase->SpriteReserved & SearchMask)  &&  Count < 8) {
+                SearchMask <<= 1;
+                Count++;
+            }
+
+            if(8 != Count) {
+                /* we were able to allocated a free sprite */
+                /* mark the sprite as reserved for the user */
+                GfxBase->SpriteReserved |= SearchMask;
+                pick = Count;
+            } else {
+                /* no sprite was available for the user */
+                pick = -1;
+            }
+
+        } else {
+            /* user wants one specific sprite */
+            SearchMask = 0x01 << pick;
+
+            /* is that sprite still available? */
+            if(0 == (GfxBase->SpriteReserved & SearchMask)) {
+                /* yes -> mark it as reserved for the user */
+                GfxBase->SpriteReserved |= SearchMask;
+            } else {
+                /* no, it's not available any more */
+                pick = -1;
+            }
+        }
+        Enable();
     }
-    Enable();
-  }
-  
-  sprite->num = pick;
 
-  return pick;
-  AROS_LIBFUNC_EXIT
+    sprite->num = pick;
+
+    return pick;
+    AROS_LIBFUNC_EXIT
 } /* GetSprite */

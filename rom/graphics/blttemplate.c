@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -13,8 +13,7 @@
 
 /****************************************************************************************/
 
-struct bt_render_data
-{
+struct bt_render_data {
     UBYTE *template;
     ULONG  modulo;
     WORD   srcx;
@@ -30,13 +29,13 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
     WORD                   height = rect->MaxY - rect->MinY + 1;
     WORD                   x = srcx + btrd->srcx;
     UBYTE                 *template = btrd->template + btrd->modulo * srcy;
-    
+
     HIDD_BM_PutTemplate(dstbm_obj, dst_gc, template, btrd->modulo,
                         x, rect->MinX, rect->MinY, width, height, btrd->inverttemplate);
 
     return width * height;
 }
-                         
+
 /*****************************************************************************
 
     NAME */
@@ -90,13 +89,13 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     struct bt_render_data btrd;
     struct Rectangle      rr;
 
     EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
-        , xSrc, srcMod, xDest, yDest, xSize, ySize));
-        
+                  , xSrc, srcMod, xDest, yDest, xSize, ySize));
+
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
 
@@ -104,7 +103,7 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
     btrd.srcx            = xSrc;
     btrd.modulo          = srcMod;
     btrd.inverttemplate = (destRP->DrawMode & INVERSVID) ? TRUE : FALSE;
-    
+
     rr.MinX = xDest;
     rr.MinY = yDest;
     rr.MaxX = xDest + xSize  - 1;
@@ -112,7 +111,7 @@ static ULONG blttemplate_render(APTR btr_data, WORD srcx, WORD srcy,
 
     do_render_func(destRP, NULL, &rr, blttemplate_render, &btrd, TRUE, FALSE, GfxBase);
     ReturnVoid("driver_BltTemplate");
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* BltTemplate */

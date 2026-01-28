@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AddVSprite()
 */
@@ -49,42 +49,41 @@
 
 *****************************************************************************/
 {
-        AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-        struct VSprite * CurVSprite;
-        /* the Y-coordinate is most significant! */
-        LONG Koord = JOIN_XY_COORDS(vs->X, vs->Y);
+    struct VSprite *CurVSprite;
+    /* the Y-coordinate is most significant! */
+    LONG Koord = JOIN_XY_COORDS(vs->X, vs->Y);
 
-        /* Reset the Flags for this VSprite and set OldX/Y */
-        vs -> Flags &= 0xFF;
-        vs -> OldY = vs -> Y;
-        vs -> OldX = vs -> X;
+    /* Reset the Flags for this VSprite and set OldX/Y */
+    vs -> Flags &= 0xFF;
+    vs -> OldY = vs -> Y;
+    vs -> OldX = vs -> X;
 
-        CurVSprite = rp->GelsInfo->gelHead;
+    CurVSprite = rp->GelsInfo->gelHead;
 
-        /* look for the appropriate place to insert the VSprite into the
-           list of VSprites which is connected to the GelsInfo which was
-           previously found in the rastport */
+    /* look for the appropriate place to insert the VSprite into the
+       list of VSprites which is connected to the GelsInfo which was
+       previously found in the rastport */
 
-        while ((CurVSprite->NextVSprite) && (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord))
-                CurVSprite = CurVSprite->NextVSprite;
+    while((CurVSprite->NextVSprite) && (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord))
+        CurVSprite = CurVSprite->NextVSprite;
 
-        /* insert the new VSprite *after* CurVSprite */
+    /* insert the new VSprite *after* CurVSprite */
 
-        if (CurVSprite -> NextVSprite)
-        {
-            CurVSprite -> NextVSprite -> PrevVSprite = vs;
-            vs -> NextVSprite = CurVSprite -> NextVSprite;
-        }
-        vs -> PrevVSprite = CurVSprite;
-        CurVSprite -> NextVSprite = vs;
+    if(CurVSprite -> NextVSprite) {
+        CurVSprite -> NextVSprite -> PrevVSprite = vs;
+        vs -> NextVSprite = CurVSprite -> NextVSprite;
+    }
+    vs -> PrevVSprite = CurVSprite;
+    CurVSprite -> NextVSprite = vs;
 
-        /*
-         * Create he IntVSprite structure for improved handling of
-         * the VSprite ImageData.
-         */
-        vs -> IntVSprite = _CreateIntVSprite(vs, rp, GfxBase);
+    /*
+     * Create he IntVSprite structure for improved handling of
+     * the VSprite ImageData.
+     */
+    vs -> IntVSprite = _CreateIntVSprite(vs, rp, GfxBase);
 
-        AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* AddVSprite */

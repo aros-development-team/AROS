@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitView()
 */
@@ -8,14 +8,13 @@
 #include <graphics/view.h>
 #include <proto/exec.h>
 
-static const struct View defaultView =
-{
-  NULL, /* ViewPort */
-  NULL, /* LOFCprList */
-  NULL, /* SHFCprList */
-  0,    /* DyOffset */
-  0,    /* DxOffset */
-  0     /* Modes */
+static const struct View defaultView = {
+    NULL, /* ViewPort */
+    NULL, /* LOFCprList */
+    NULL, /* SHFCprList */
+    0,    /* DyOffset */
+    0,    /* DxOffset */
+    0     /* Modes */
 };
 
 /*****************************************************************************
@@ -59,9 +58,9 @@ static const struct View defaultView =
     AROS_LIBFUNC_INIT
 
     ASSERT_VALID_PTR(view);
-    
-    CopyMem ((UBYTE *)&defaultView, view, sizeof (struct View));
+
+    CopyMem((UBYTE *)&defaultView, view, sizeof(struct View));
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* InitView */

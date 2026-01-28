@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Calculate the size a text needs in a specific rastport.
 */
@@ -77,9 +77,8 @@
     /* MinX/MaxX can be a bit more complicated if there are kerning/space
      * tables */
 
-    if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
-        || tf->tf_CharSpace)
-    {
+    if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
+            || tf->tf_CharSpace) {
         WORD  idx;
         WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is default glyph */
         WORD  x, x2;
@@ -89,22 +88,17 @@
         textExtent->te_Extent.MaxX = 0;
         x = 0;
 
-        if (count)
-        {
-            while(count--)
-            {
+        if(count) {
+            while(count--) {
                 c = *string++;
 
-                if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
-                {
+                if(c < tf->tf_LoChar || c > tf->tf_HiChar) {
                     idx = defaultidx;
-                }
-                else
-                {
+                } else {
                     idx = c - tf->tf_LoChar;
                 }
 
-                #define CHECK_MINMAX(x) \
+#define CHECK_MINMAX(x) \
                     if ((x) < textExtent->te_Extent.MinX) \
                         textExtent->te_Extent.MinX = (x); \
                     if ((x) > textExtent->te_Extent.MaxX) \
@@ -113,7 +107,7 @@
                 x += ((WORD *)tf->tf_CharKern)[idx];
                 CHECK_MINMAX(x);
 
-                x2 = x + ( ( ((ULONG *)tf->tf_CharLoc)[idx] ) & 0xFFFF);
+                x2 = x + ((((ULONG *)tf->tf_CharLoc)[idx]) & 0xFFFF);
                 CHECK_MINMAX(x2);
 
                 x += ((WORD *)tf->tf_CharSpace)[idx];
@@ -130,20 +124,17 @@
 
     } /* if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
        * || tf->tf_CharSpace) */
-    else
-    {
+    else {
         /* Normal non-proportional Font */
         textExtent->te_Extent.MinX = 0;
         textExtent->te_Extent.MaxX = textExtent->te_Width - 1;
     }
 
-    if (rp->AlgoStyle & FSF_BOLD)
-    {
+    if(rp->AlgoStyle & FSF_BOLD) {
         textExtent->te_Extent.MaxX += tf->tf_BoldSmear;
     }
 
-    if (rp->AlgoStyle & FSF_ITALIC)
-    {
+    if(rp->AlgoStyle & FSF_ITALIC) {
         /*  ######            ######
         **  ##  ##            ##  ##
         **  ##  ##           ##  ##

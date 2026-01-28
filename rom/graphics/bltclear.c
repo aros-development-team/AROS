@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function BltClear()
 */
@@ -54,23 +54,23 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  ULONG count, end;
+    ULONG count, end;
 
-  if (0 != (flags & 2) )
-    /* use row/bytesperrow */
-    bytecount = (bytecount & 0xFFFF) * (bytecount >> 16);
+    if(0 != (flags & 2))
+        /* use row/bytesperrow */
+        bytecount = (bytecount & 0xFFFF) * (bytecount >> 16);
 
-  /* we have an even number of BYTES to clear here */
-  /* but use LONGS for clearing the block */
-  count = 0;
-  end = bytecount >> 2;
-  while(count < end)
-    ((ULONG *)memBlock)[count++] = 0;
-  /* see whether we had an odd number of WORDS */
-  if (0 != (bytecount & 2))
-    ((UWORD *)memBlock)[(count * 2)] = 0;
+    /* we have an even number of BYTES to clear here */
+    /* but use LONGS for clearing the block */
+    count = 0;
+    end = bytecount >> 2;
+    while(count < end)
+        ((ULONG *)memBlock)[count++] = 0;
+    /* see whether we had an odd number of WORDS */
+    if(0 != (bytecount & 2))
+        ((UWORD *)memBlock)[(count * 2)] = 0;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* BltClear */

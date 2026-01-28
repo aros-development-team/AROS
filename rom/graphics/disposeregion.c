@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function DisposeRegion()
 */
@@ -56,7 +56,7 @@
     ASSERT_VALID_PTR(region);
 
     ClearRegion(region);
-    
+
 #if REGIONS_USE_MEMPOOL
     ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
     FreePooled(PrivGBase(GfxBase)->regionpool, region, sizeof(struct Region));

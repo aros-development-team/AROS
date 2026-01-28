@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetRPAttrsA()
 */
@@ -92,114 +92,104 @@
 
     struct TagItem *tag, *tstate = tags;
     struct gfx_driverdata *driverdata;
-    
-    while ((tag = NextTagItem (&tstate)))
-    {
-        switch (tag->ti_Tag)
-        {
-            case RPTAG_Font:
-                SetFont (rp, (struct TextFont *)(tag->ti_Data));
-                break;
 
-            case RPTAG_APen:
-                SetAPen (rp, tag->ti_Data);
-                break;
+    while((tag = NextTagItem(&tstate))) {
+        switch(tag->ti_Tag) {
+        case RPTAG_Font:
+            SetFont(rp, (struct TextFont *)(tag->ti_Data));
+            break;
 
-            case RPTAG_BPen:
-                SetBPen (rp, tag->ti_Data);
-                break;
+        case RPTAG_APen:
+            SetAPen(rp, tag->ti_Data);
+            break;
 
-            case RPTAG_DrMd:
-                SetDrMd (rp, tag->ti_Data);
-                break;
+        case RPTAG_BPen:
+            SetBPen(rp, tag->ti_Data);
+            break;
 
-            case RPTAG_OutlinePen:
-                SetOutlinePen (rp, tag->ti_Data);
-                break;
+        case RPTAG_DrMd:
+            SetDrMd(rp, tag->ti_Data);
+            break;
 
-            case RPTAG_WriteMask:
-                SetWriteMask (rp, tag->ti_Data);
-                break;
+        case RPTAG_OutlinePen:
+            SetOutlinePen(rp, tag->ti_Data);
+            break;
 
-            case RPTAG_MaxPen:
-                break;
+        case RPTAG_WriteMask:
+            SetWriteMask(rp, tag->ti_Data);
+            break;
 
-            case RPTAG_DrawBounds:
-                break;
+        case RPTAG_MaxPen:
+            break;
 
-            case RPTAG_PenMode:
-                D(bug("[SetRPAttrs] RastPort 0x%p, PenMode set to %ld\n", rp, tag->ti_Data));
-                if (tag->ti_Data)
-                    rp->Flags &= ~RPF_NO_PENS;
+        case RPTAG_DrawBounds:
+            break;
+
+        case RPTAG_PenMode:
+            D(bug("[SetRPAttrs] RastPort 0x%p, PenMode set to %ld\n", rp, tag->ti_Data));
+            if(tag->ti_Data)
+                rp->Flags &= ~RPF_NO_PENS;
+            else
+                rp->Flags |= RPF_NO_PENS;
+            break;
+
+        case RPTAG_FgColor:
+        case RPTAG_BgColor:
+            D(bug("[SetRPAttrs] RastPort 0x%p, setting %sColor to 0x%08lX\n", rp, (tag->ti_Tag == RPTAG_FgColor) ? "Fg" : "Bg",
+                  tag->ti_Data));
+
+            if(rp->BitMap && IS_HIDD_BM(rp->BitMap)) {
+                /* Map ARGB8888 color value to bitmap's format */
+                HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+                HIDDT_Color col;
+                HIDDT_Pixel pixval;
+                ULONG rgb = (ULONG)tag->ti_Data;
+
+                /* HIDDT_ColComp are 16 Bit */
+                col.alpha   = (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
+                col.red     = (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
+                col.green   = (HIDDT_ColComp)(rgb & 0x0000FF00);
+                col.blue    = (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
+
+                pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+
+                if(tag->ti_Tag == RPTAG_FgColor)
+                    _gc->fg = pixval;
                 else
-                    rp->Flags |= RPF_NO_PENS;
-                break;
+                    _gc->bg = pixval;
+            }
+            break;
 
-            case RPTAG_FgColor:
-            case RPTAG_BgColor:
-                D(bug("[SetRPAttrs] RastPort 0x%p, setting %sColor to 0x%08lX\n", rp, (tag->ti_Tag == RPTAG_FgColor) ? "Fg" : "Bg", tag->ti_Data));
-
-                if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
-                {
-                    /* Map ARGB8888 color value to bitmap's format */
-                    HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
-                    HIDDT_Color col;
-                    HIDDT_Pixel pixval;
-                    ULONG rgb = (ULONG)tag->ti_Data;
-
-                    /* HIDDT_ColComp are 16 Bit */
-                    col.alpha   = (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
-                    col.red     = (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
-                    col.green   = (HIDDT_ColComp)(rgb & 0x0000FF00);
-                    col.blue    = (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
-
-                    pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
-
-                    if (tag->ti_Tag == RPTAG_FgColor)
-                        _gc->fg = pixval;
-                    else
-                        _gc->bg = pixval;
+        case RPTAG_ClipRectangle:
+            driverdata = AllocDriverData(rp, tag->ti_Data, GfxBase);
+            if(driverdata) {
+                if(tag->ti_Data) {
+                    driverdata->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
+                    driverdata->dd_ClipRectangleFlags |= RPCRF_VALID;
+                } else {
+                    driverdata->dd_ClipRectangleFlags &= ~RPCRF_VALID;
                 }
-                break;
+            }
+            break;
 
-            case RPTAG_ClipRectangle:
-                driverdata = AllocDriverData(rp, tag->ti_Data, GfxBase);
-                if (driverdata)
-                {
-                    if (tag->ti_Data)
-                    {
-                        driverdata->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
-                        driverdata->dd_ClipRectangleFlags |= RPCRF_VALID;
-                    }
-                    else
-                    {
-                        driverdata->dd_ClipRectangleFlags &= ~RPCRF_VALID;
-                    }
-                }
-                break;
+        case RPTAG_ClipRectangleFlags:
+            driverdata = AllocDriverData(rp, TRUE, GfxBase);
+            if(driverdata) {
+                driverdata->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
+                driverdata->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
+            }
+            break;
 
-            case RPTAG_ClipRectangleFlags:
-                driverdata = AllocDriverData(rp, TRUE, GfxBase);
-                if (driverdata)
-                {
-                    driverdata->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
-                    driverdata->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
-                }
-                break;
+        case RPTAG_RemapColorFonts:
+            if(tag->ti_Data) {
+                rp->Flags |= RPF_REMAP_COLORFONTS;
+            } else {
+                rp->Flags &= ~RPF_REMAP_COLORFONTS;
+            }
+            break;
 
-            case RPTAG_RemapColorFonts:
-                if (tag->ti_Data)
-                {
-                    rp->Flags |= RPF_REMAP_COLORFONTS;
-                }
-                else
-                {
-                    rp->Flags &= ~RPF_REMAP_COLORFONTS;
-                }
-                break;
-                
         } /* switch (tag) */
-        
+
     } /* while (tag) */
 
     AROS_LIBFUNC_EXIT

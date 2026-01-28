@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef FAKEGFXHIDD_H
@@ -14,7 +14,7 @@
 
 enum {
     aoHidd_FakeGfxHidd_RealGfxHidd,	/* [I..] Object *	*/
-    
+
     num_Hidd_FakeGfxHidd_Attrs
 };
 
@@ -24,9 +24,9 @@ enum {
 enum {
     aoHidd_FakeFB_RealBitMap,
     aoHidd_FakeFB_FakeGfxHidd,
-    
+
     num_Hidd_FakeFB_Attrs
-};    
+};
 
 #define aHidd_FakeFB_RealBitMap	(HiddFakeFBAttrBase + aoHidd_FakeFB_RealBitMap	)
 #define aHidd_FakeFB_FakeGfxHidd	(HiddFakeFBAttrBase + aoHidd_FakeFB_FakeGfxHidd	)

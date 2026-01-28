@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AttachPalExtra()
 */
@@ -30,7 +30,7 @@
     INPUTS
         cm  - Pointer to a color map structure
         vp  - Pointer to the viewport associated with the ColorMap
-  
+
     RESULT
         0 - success
         1 - out of memory
@@ -51,14 +51,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct PaletteExtra * pe;
+    struct PaletteExtra *pe;
 
-    if (NULL != cm->PalExtra)
+    if(NULL != cm->PalExtra)
         return 0;
 
-    pe = AllocMem(sizeof(struct PaletteExtra), MEMF_CLEAR|MEMF_PUBLIC);
-    if (NULL != pe)
-    {
+    pe = AllocMem(sizeof(struct PaletteExtra), MEMF_CLEAR | MEMF_PUBLIC);
+    if(NULL != pe) {
         /*
         ** if you change the number of byte allocated here then you
         ** must also make chnages to FreeColorMap()!
@@ -66,33 +65,29 @@
         pe->pe_RefCnt    = AllocMem(cm->Count * sizeof(PalExtra_RefCnt_Type), MEMF_CLEAR);
         pe->pe_AllocList = AllocMem(cm->Count * sizeof(PalExtra_AllocList_Type), MEMF_ANY);
 
-        if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList)
-        {
+        if(NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) {
             UWORD sharablecolors, bmdepth;
-            
+
             sharablecolors = cm->Count;
 
             /* cm->Count may contain more entries than 2 ^ bitmapdepth,
                for pointer sprite colors, etc. Sharablecolors OTOH is
                limited to 2 ^ bitmapdepth */
-                 
+
             bmdepth = GetBitMapAttr(vp->RasInfo->BitMap, BMA_DEPTH);
-            if (bmdepth < 8)
-            {
-                if ((1L << bmdepth) < sharablecolors)
-                {
+            if(bmdepth < 8) {
+                if((1L << bmdepth) < sharablecolors) {
                     sharablecolors = 1L << bmdepth;
                 }
             }
-                    
+
             /* initialize the AllocList BYTE-array */
             ULONG i = 0;
 
             /* CHECKME: Should probably say "i < sharablecolors", but might
                not actually cause anything bad either, even if it doesn't. */
-            while (i < cm->Count)
-            {
-                PALEXTRA_ALLOCLIST(pe, i) = (PalExtra_AllocList_Type)i-1;
+            while(i < cm->Count) {
+                PALEXTRA_ALLOCLIST(pe, i) = (PalExtra_AllocList_Type)i - 1;
                 i++;
             }
 
@@ -103,28 +98,27 @@
             InitSemaphore(&pe->pe_Semaphore);
             pe->pe_ViewPort = vp;
 
-            pe->pe_FirstFree   = sharablecolors-1;
+            pe->pe_FirstFree   = sharablecolors - 1;
             pe->pe_NFree       = sharablecolors;
-            pe->pe_FirstShared = (UWORD)-1;
+            pe->pe_FirstShared = (UWORD) - 1;
             pe->pe_NShared     = 0;
 
             /* set all entries in the color table to be shareable
                pe_SharableColors is not the number of colors but the last color index! */
 
             pe->pe_SharableColors = sharablecolors - 1;
-            
+
         } /* if (NULL != pe->pe_RefCnt && NULL != pe->pe_AllocList) */
-        else
-        {
+        else {
             /* some memory allocation failed */
-            if (pe->pe_RefCnt)
+            if(pe->pe_RefCnt)
                 FreeMem(pe->pe_RefCnt, cm->Count * sizeof(PalExtra_RefCnt_Type));
-            if (pe->pe_AllocList)
-                FreeMem(pe->pe_AllocList, cm->Count* sizeof(PalExtra_AllocList_Type));
+            if(pe->pe_AllocList)
+                FreeMem(pe->pe_AllocList, cm->Count * sizeof(PalExtra_AllocList_Type));
             FreeMem(pe, sizeof(struct PaletteExtra));
             return 1;
         }
-        
+
     } /* if (NULL != pe) */
     else
         return 1;
@@ -132,5 +126,5 @@
     return 0;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* AttachPalExtra */

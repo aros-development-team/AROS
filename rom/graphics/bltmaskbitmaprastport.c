@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -14,8 +14,7 @@
 
 /****************************************************************************************/
 
-struct bltmask_render_data
-{
+struct bltmask_render_data {
     struct render_special_info rsi;
     struct BitMap              *srcbm;
     OOP_Object                 *srcbm_obj;
@@ -33,7 +32,8 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     BOOL ok;
 
     gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
-    ok = HIDD_Gfx_CopyBoxMasked(gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, rect->MinX, rect->MinY, width, height, brd->mask, dst_gc);
+    ok = HIDD_Gfx_CopyBoxMasked(gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, rect->MinX, rect->MinY, width, height,
+                                brd->mask, dst_gc);
 
     return ok ? width * height : 0;
 }
@@ -99,26 +99,25 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     struct bltmask_render_data  brd;
     struct Rectangle            rr;
     OOP_Object                  *gc;
     Point                       src;
 
     EnterFunc(bug("BltMaskBitMapRastPort(%p (%d*%d), %d*%d, %p, %d*%d, %d*%d, %02x, %p)\n",
-        srcBitMap, srcBitMap->BytesPerRow, srcBitMap->Rows, xSrc, ySrc,
-        destRP, xDest, yDest, xSize, ySize, minterm, bltMask));
+                  srcBitMap, srcBitMap->BytesPerRow, srcBitMap->Rows, xSrc, ySrc,
+                  destRP, xDest, yDest, xSize, ySize, minterm, bltMask));
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
 
-    if ((xSize < 1) || (ySize < 1)) return;
+    if((xSize < 1) || (ySize < 1)) return;
 
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
-    if (NULL == brd.srcbm_obj)
-    {
+    if(NULL == brd.srcbm_obj) {
         return;
     }
 
@@ -142,5 +141,5 @@ static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     ReturnVoid("BltBitMapRastPort");
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* BltMaskBitMapRastPort */

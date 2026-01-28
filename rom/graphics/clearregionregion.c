@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: (AROS only) Graphics function ClearRegionRegion()
 */
@@ -56,7 +56,7 @@
     struct Region R3;
 
     /* If the regions don't overlap just return */
-    if (!overlap(R1->bounds, R2->bounds))
+    if(!overlap(R1->bounds, R2->bounds))
         return TRUE;
 
     InitRegion(&R3);
@@ -76,8 +76,7 @@
             &R3.bounds,
             GfxBase
         )
-    )
-    {
+    ) {
         ClearRegion(R2);
 
         *R2 = R3;

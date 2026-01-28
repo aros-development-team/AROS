@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetDisplayInfoData()
 */
@@ -18,8 +18,7 @@
 
 /****************************************************************************************/
 
-static const ULONG size_checks[] =
-{
+static const ULONG size_checks[] = {
     sizeof(struct DisplayInfo),
     sizeof(struct DimensionInfo),
     sizeof(struct MonitorInfo),
@@ -77,7 +76,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
-    res->x = (1280 * 11 * mspc->ratioh / width ) >> RATIO_FIXEDPART;
+    res->x = (1280 * 11 * mspc->ratioh / width) >> RATIO_FIXEDPART;
     res->y = (1024 * 11 * mspc->ratiov / height) >> RATIO_FIXEDPART;
 }
 
@@ -143,13 +142,10 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     struct HIDD_ModeProperties HIDDProps = {0};
     IPTR maxdwidth, maxdheight;
 
-    if (NULL == handle)
-    {
+    if(NULL == handle) {
         /* FindDisplayInfo() handles INVALID_ID itself */
         handle = FindDisplayInfo(ID);
-    }
-    else
-    {
+    } else {
         /*
          * ID is likely INVALID_ID, but we need its value.
          * Get it from the handle.
@@ -157,8 +153,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
         ID = DIH(handle)->id | DIH(handle)->drv->id;
     }
 
-    if (NULL == handle)
-    {
+    if(NULL == handle) {
         D(bug("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n"));
         return 0;
     }
@@ -167,21 +162,20 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     hiddmode = DIH(handle)->id;
 
     /* Get mode info from the HIDD */
-    if (!HIDD_Gfx_GetMode(gfxhidd, hiddmode, &sync, &pf))
-    {
+    if(!HIDD_Gfx_GetMode(gfxhidd, hiddmode, &sync, &pf)) {
         D(bug("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n"));
         return 0;
     }
 
     D(bug("GetDisplayInfoData(handle=%p, tagID=%x)\n"
-        , handle, tagID));
+          , handle, tagID));
 
     /* Build the queryheader */
     structsize = check_sizes(tagID, size, GfxBase);
-    if (!structsize)
+    if(!structsize)
         return 0;
     qh = AllocMem(structsize, MEMF_CLEAR);
-    if (!qh)
+    if(!qh)
         return 0;
 
     /* Fill in the queryheader */
@@ -194,334 +188,316 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
     OOP_GetAttr(sync, aHidd_Sync_HDispMax,   &maxdwidth);
     OOP_GetAttr(sync, aHidd_Sync_VDispMax,   &maxdheight);
 
-    switch (tagID)
-    {
-        case DTAG_DISP:
-        {
-            struct DisplayInfo *di;
-            const struct MonitorSpec *ms;
-            IPTR redmask, greenmask, bluemask;
-            IPTR val = 0;
+    switch(tagID) {
+    case DTAG_DISP: {
+        struct DisplayInfo *di;
+        const struct MonitorSpec *ms;
+        IPTR redmask, greenmask, bluemask;
+        IPTR val = 0;
 
-            HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+        HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
-            di = (struct DisplayInfo *)qh;
+        di = (struct DisplayInfo *)qh;
 
-            /* All modes returned from the HIDD are available */
-            di->NotAvailable = FALSE;
+        /* All modes returned from the HIDD are available */
+        di->NotAvailable = FALSE;
 
-            /*
-             * Set the propertyflags. We always set DIPF_IS_SPRITES because we always emulate
-             * one sprite for mouse pointer.
-             */
-            di->PropertyFlags = DIPF_IS_SPRITES | HIDDProps.DisplayInfoFlags;
+        /*
+         * Set the propertyflags. We always set DIPF_IS_SPRITES because we always emulate
+         * one sprite for mouse pointer.
+         */
+        di->PropertyFlags = DIPF_IS_SPRITES | HIDDProps.DisplayInfoFlags;
 
-            /*
-             * Some more tweaks.
-             * All non-planar modes are considered Workbench-compatible. This is done
-             * for compatibility with existing RTG drivers which never set this flag themselves.
-             * This can be considered historical, in initial API design HIDD_Gfx_ModeProperties()
-             * did not exist at all and this flag was simply always set.
-             * In fact all modes can be considered Workbench-compatible. This flag is
-             * known to be used by original AmigaOS screenmode prefs program to filter out
-             * some modes. This program has many replacement which do not obey this flag,
-             * enabling opening Workbench on HAM screen for example.
-             * But we delegate setting this flag to the driver for planar modes. We do it
-             * for 100% compatibility of chipset driver. What if some m68k program has its own
-             * weird assumptions about this bit ?
-             * One more thing to note: we don't set DIPF_IS_FOREIGN bit. It is actually used
-             * only by Picasso96 and only for modes that are not graphics.library compatible.
-             * Many m68k RTG games rely on this flag not being set.
-             */
-            OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &val);
-            if (val != vHidd_StdPixFmt_Plane)
-                di->PropertyFlags |= DIPF_IS_WB;
+        /*
+         * Some more tweaks.
+         * All non-planar modes are considered Workbench-compatible. This is done
+         * for compatibility with existing RTG drivers which never set this flag themselves.
+         * This can be considered historical, in initial API design HIDD_Gfx_ModeProperties()
+         * did not exist at all and this flag was simply always set.
+         * In fact all modes can be considered Workbench-compatible. This flag is
+         * known to be used by original AmigaOS screenmode prefs program to filter out
+         * some modes. This program has many replacement which do not obey this flag,
+         * enabling opening Workbench on HAM screen for example.
+         * But we delegate setting this flag to the driver for planar modes. We do it
+         * for 100% compatibility of chipset driver. What if some m68k program has its own
+         * weird assumptions about this bit ?
+         * One more thing to note: we don't set DIPF_IS_FOREIGN bit. It is actually used
+         * only by Picasso96 and only for modes that are not graphics.library compatible.
+         * Many m68k RTG games rely on this flag not being set.
+         */
+        OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &val);
+        if(val != vHidd_StdPixFmt_Plane)
+            di->PropertyFlags |= DIPF_IS_WB;
 
-            /* Compute red green and blue bits */
-            OOP_GetAttr(pf, aHidd_PixFmt_RedMask,   &redmask);
-            OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
-            OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
+        /* Compute red green and blue bits */
+        OOP_GetAttr(pf, aHidd_PixFmt_RedMask,   &redmask);
+        OOP_GetAttr(pf, aHidd_PixFmt_GreenMask, &greenmask);
+        OOP_GetAttr(pf, aHidd_PixFmt_BlueMask,  &bluemask);
 
 #ifdef HAVE_BUILTIN_POPCOUNT
-            /* Use builtin popcount function */
-            di->RedBits   = __builtin_popcount(redmask);
-            di->GreenBits = __builtin_popcount(greenmask);
-            di->BlueBits  = __builtin_popcount(bluemask);
+        /* Use builtin popcount function */
+        di->RedBits   = __builtin_popcount(redmask);
+        di->GreenBits = __builtin_popcount(greenmask);
+        di->BlueBits  = __builtin_popcount(bluemask);
 #else
-            di->RedBits   = popcount(redmask);
-            di->GreenBits = popcount(greenmask);
-            di->BlueBits  = popcount(bluemask);
+        di->RedBits   = popcount(redmask);
+        di->GreenBits = popcount(greenmask);
+        di->BlueBits  = popcount(bluemask);
 #endif
-            /*
-             * If number of colors is too large, PaletteRange is set to 65535.
-             * This is the behavior of original AmigaOS(tm).
-             */
-            val = 1 << (di->RedBits + di->GreenBits + di->BlueBits);
-            di->PaletteRange = (val > 65535) ? 65535 : val;
+        /*
+         * If number of colors is too large, PaletteRange is set to 65535.
+         * This is the behavior of original AmigaOS(tm).
+         */
+        val = 1 << (di->RedBits + di->GreenBits + di->BlueBits);
+        di->PaletteRange = (val > 65535) ? 65535 : val;
 
-            /* Display resolution in ticks */
-            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&ms);
-            CalcScreenResolution(&di->Resolution, ms, sync, GfxBase);
+        /* Display resolution in ticks */
+        OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&ms);
+        CalcScreenResolution(&di->Resolution, ms, sync, GfxBase);
 
-            OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
-            if (val)
-                di->PixelSpeed = 1000000000 / val;
+        OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
+        if(val)
+            di->PixelSpeed = 1000000000 / val;
 
-            /*
-             * If the driver says it does not support sprites, we return one sprite.
-             * We emulate it by software in such a case because it's necessary for
-             * the mouse pointer.
-             */
-            di->NumStdSprites = (HIDDProps.DisplayInfoFlags & DIPF_IS_SPRITES) ? HIDDProps.NumHWSprites : 1;
+        /*
+         * If the driver says it does not support sprites, we return one sprite.
+         * We emulate it by software in such a case because it's necessary for
+         * the mouse pointer.
+         */
+        di->NumStdSprites = (HIDDProps.DisplayInfoFlags & DIPF_IS_SPRITES) ? HIDDProps.NumHWSprites : 1;
 
-            /* At the moment sprites always have the same resolution as display */
-            di->SpriteResolution = di->Resolution;
+        /* At the moment sprites always have the same resolution as display */
+        di->SpriteResolution = di->Resolution;
 
-            /*
-                    AROS extensions to allow querying if a hidd bitmap can be displayed
-                    via the display compositor, and to enable it.
-                    e.g openscreen uses these to determine if a custombitmap may be displayed.
-                */
-            di->reserved[0] = (IPTR)compositor_IsBMCompositable;
-            di->reserved[1] = (IPTR)compositor_SetBMCompositable;
-
-            break;
-        }
-
-        case DTAG_DIMS:
-        {
-            struct DimensionInfo *di;
-            IPTR depth, width, height;
-            IPTR maxwidth, maxheight;
-            IPTR minwidth, minheight;
-            
-            OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
-            OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
-            OOP_GetAttr(sync, aHidd_Sync_VDisp,   &height);
-            OOP_GetAttr(sync, aHidd_Sync_HMin,   &minwidth);
-            OOP_GetAttr(sync, aHidd_Sync_VMin,   &minheight);
-            OOP_GetAttr(sync, aHidd_Sync_HMax,   &maxwidth);
-            OOP_GetAttr(sync, aHidd_Sync_VMax,   &maxheight);
-
-            di = (struct DimensionInfo *)qh;
-            di->MaxDepth = depth;
-            
-            di->MinRasterWidth  = minwidth;
-            di->MinRasterHeight = minheight;
-            di->MaxRasterWidth  = maxwidth;
-            di->MaxRasterHeight = maxheight;
-            
-            di->Nominal.MinX    = 0;
-            di->Nominal.MinY    = 0;
-            di->Nominal.MaxX    = width  - 1;
-            di->Nominal.MaxY    = height - 1;
-
-            di->TxtOScan        = di->Nominal;
-            di->StdOScan        = di->Nominal;
-            
-            if ((width == maxdwidth) && (height == maxdheight))
-            {
-                di->MaxOScan    = di->Nominal;
-                di->VideoOScan  = di->Nominal;
-            }
-            else
-            {
-                di->MaxOScan.MinX       = di->Nominal.MinX;
-                di->MaxOScan.MinY       = di->Nominal.MinY;
-                di->MaxOScan.MaxX       = di->Nominal.MinX + maxdwidth - 1;
-                di->MaxOScan.MaxY       = di->Nominal.MinY + maxdheight - 1;
-
-                di->VideoOScan.MinX     = di->Nominal.MinX;
-                di->VideoOScan.MinY     = di->Nominal.MinY;
-                di->VideoOScan.MaxX     = di->Nominal.MinX + maxdwidth - 1;
-                di->VideoOScan.MaxY     = di->Nominal.MinY + maxdheight - 1;
-            }
-
-            /*
-             * reserved[0] is HIDD composition flags for intuition.library/OpenScreen().
-             * It can't be done in another way because only we (graphics.library) know about existence
-             * of software screen composition.
-             */
-            if (DIH(handle)->drv->compositor)
-            {
-                IPTR capabilities, state;
-                OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &capabilities);
-                OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_State, &state);
-                di->reserved[0] = (capabilities << 16) | state;
-            }
-            else
-            {
-                HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-                di->reserved[0] = (HIDDProps.CompositionFlags << 16) | HIDDProps.CompositionFlags;
-            }
-
-            /* This is for cybergraphics.library */
-            di->reserved[1] = (IPTR)pf;
-
-            break;
-        }
-
-        case DTAG_MNTR:
-        {
-            struct MonitorInfo *mi = (struct MonitorInfo *)qh;
-            IPTR tmpval;
-
-            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
-            OOP_GetAttr(sync, aHidd_Sync_Flags, &tmpval);
-            /*
-            mi->ViewPosition.X = ?;
-            mi->ViewPosition.Y = ?;
-            mi->MouseTicks.X = ?;
-            mi->MouseTicks.Y = ?;
-            mi->DefaultViewPosition.X = ?;
-            mi->DefaultViewPosition.Y = ?;
+        /*
+                AROS extensions to allow querying if a hidd bitmap can be displayed
+                via the display compositor, and to enable it.
+                e.g openscreen uses these to determine if a custombitmap may be displayed.
             */
+        di->reserved[0] = (IPTR)compositor_IsBMCompositable;
+        di->reserved[1] = (IPTR)compositor_SetBMCompositable;
 
-            /* Resolution in ticks */
-            CalcScreenResolution(&mi->ViewResolution, mi->Mspc, sync, GfxBase);
-
-            mi->TotalRows         = mi->Mspc->total_rows;
-            if (tmpval & vHidd_Sync_Interlaced)
-                mi->MinRow = mi->Mspc->total_rows - (maxdheight >> 1);
-            else
-                mi->MinRow = mi->Mspc->total_rows - maxdheight;
-            mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
-            mi->ViewPositionRange = mi->Mspc->ms_LegalView;
-
-            /*
-             * FIXME: For now we don't have a concept of preferred ModeID.
-             * However, see graphics_driver.c/driver_Setup(), it can be useful.
-             */
-            mi->PreferredModeID = ID;
-
-            if (DIH(handle)->drv->compositor)
-            {
-                /*
-                 * If we have software screen composition, we know we can compose.
-                 * We use MCOMPAT_MIXED here because of changed understanding of what is "monitor".
-                 * In AmigaOS(tm) a "monitor" is actually a sync (video mode). Different "monitors"
-                 * are actually different modes of the same display (PAL, NTSC, VGA, etc).
-                 * In AROS a "monitor" is a single physical display device. Of course we can do
-                 * composition only on a single display, but we can compose together different
-                 * syncs.
-                 */
-                mi->Compatibility = MCOMPAT_MIXED;
-            }
-            else
-            {
-                /* Otherwise query the driver */
-                HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
-
-                if (HIDDProps.CompositionFlags)
-                    mi->Compatibility = (HIDDProps.CompositionFlags & COMPF_SAME) ? MCOMPAT_SELF : MCOMPAT_MIXED;
-                else
-                    mi->Compatibility = MCOMPAT_NOBODY;
-            }
-
-            break;
-        }
-
-        case DTAG_NAME:
-        {
-            struct NameInfo *ni;
-            IPTR depth, stdpixfmt;
-            STRPTR sync_description;
-            
-            OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-            OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpixfmt);
-
-            OOP_GetAttr(sync, aHidd_Sync_Description, (IPTR *)&sync_description);
-            ni = (struct NameInfo *)qh;
-
-            if (sync_description && sync_description[0] &&
-                (IS_REAL_STDPIXFMT(stdpixfmt) || (stdpixfmt == vHidd_StdPixFmt_Unknown)))
-            {
-                STRPTR pixfmt_name = "";
-
-                switch(stdpixfmt)
-                {
-                    case vHidd_StdPixFmt_LUT8:
-                        pixfmt_name = "CLUT";
-                        break;
-
-                    case vHidd_StdPixFmt_RGB16:
-                    case vHidd_StdPixFmt_RGB15:
-                    case vHidd_StdPixFmt_RGB24:
-                        pixfmt_name = "RGB";
-                        break;
-
-                    case vHidd_StdPixFmt_RGB16_LE:
-                    case vHidd_StdPixFmt_RGB15_LE:
-                        pixfmt_name = "RGB PC";
-                        break;
-                        
-                    case vHidd_StdPixFmt_BGR24:
-                    case vHidd_StdPixFmt_BGR16:
-                    case vHidd_StdPixFmt_BGR15:
-                        pixfmt_name = "BGR";
-                        break;
-
-                    case vHidd_StdPixFmt_BGR16_LE:
-                    case vHidd_StdPixFmt_BGR15_LE:
-                        pixfmt_name = "BGR PC";
-                        break;
-                        
-                    case vHidd_StdPixFmt_ARGB32:
-                        pixfmt_name = "ARGB";
-                        break;
-                        
-                    case vHidd_StdPixFmt_BGRA32:
-                        pixfmt_name = "BGRA";
-                        break;
-                        
-                    case vHidd_StdPixFmt_RGBA32:
-                        pixfmt_name = "RGBA";
-                        break;
-                        
-                    case vHidd_StdPixFmt_0RGB32:
-                        pixfmt_name = "0RGB";
-                        break;
-                        
-                    case vHidd_StdPixFmt_BGR032:
-                        pixfmt_name = "BGR0";
-                        break;
-                        
-                    case vHidd_StdPixFmt_RGB032:
-                        pixfmt_name = "RGB0";
-                        break;
-                        
-                }
-                if (stdpixfmt != vHidd_StdPixFmt_Plane)
-                    snprintf(ni->Name, DISPLAYNAMELEN, "%sx%2u %s",
-                         sync_description, depth, pixfmt_name);
-                else
-                    strncpy(ni->Name, sync_description, DISPLAYNAMELEN - 1);
-            }
-            else
-            {
-                IPTR width = 0;
-                IPTR height = 0;
-
-                OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
-                OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
-                snprintf(ni->Name, DISPLAYNAMELEN, "AROS: %ldx%ldx%ld", width, height, depth);
-            }
-            break;
-        }
-
-        default:
-            D(bug("!!! UNKNOWN tagID IN CALL TO GetDisplayInfoData() !!!\n"));
-            break;
+        break;
     }
-    
+
+    case DTAG_DIMS: {
+        struct DimensionInfo *di;
+        IPTR depth, width, height;
+        IPTR maxwidth, maxheight;
+        IPTR minwidth, minheight;
+
+        OOP_GetAttr(pf,   aHidd_PixFmt_Depth, &depth);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp,   &width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp,   &height);
+        OOP_GetAttr(sync, aHidd_Sync_HMin,   &minwidth);
+        OOP_GetAttr(sync, aHidd_Sync_VMin,   &minheight);
+        OOP_GetAttr(sync, aHidd_Sync_HMax,   &maxwidth);
+        OOP_GetAttr(sync, aHidd_Sync_VMax,   &maxheight);
+
+        di = (struct DimensionInfo *)qh;
+        di->MaxDepth = depth;
+
+        di->MinRasterWidth  = minwidth;
+        di->MinRasterHeight = minheight;
+        di->MaxRasterWidth  = maxwidth;
+        di->MaxRasterHeight = maxheight;
+
+        di->Nominal.MinX    = 0;
+        di->Nominal.MinY    = 0;
+        di->Nominal.MaxX    = width  - 1;
+        di->Nominal.MaxY    = height - 1;
+
+        di->TxtOScan        = di->Nominal;
+        di->StdOScan        = di->Nominal;
+
+        if((width == maxdwidth) && (height == maxdheight)) {
+            di->MaxOScan    = di->Nominal;
+            di->VideoOScan  = di->Nominal;
+        } else {
+            di->MaxOScan.MinX       = di->Nominal.MinX;
+            di->MaxOScan.MinY       = di->Nominal.MinY;
+            di->MaxOScan.MaxX       = di->Nominal.MinX + maxdwidth - 1;
+            di->MaxOScan.MaxY       = di->Nominal.MinY + maxdheight - 1;
+
+            di->VideoOScan.MinX     = di->Nominal.MinX;
+            di->VideoOScan.MinY     = di->Nominal.MinY;
+            di->VideoOScan.MaxX     = di->Nominal.MinX + maxdwidth - 1;
+            di->VideoOScan.MaxY     = di->Nominal.MinY + maxdheight - 1;
+        }
+
+        /*
+         * reserved[0] is HIDD composition flags for intuition.library/OpenScreen().
+         * It can't be done in another way because only we (graphics.library) know about existence
+         * of software screen composition.
+         */
+        if(DIH(handle)->drv->compositor) {
+            IPTR capabilities, state;
+            OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &capabilities);
+            OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_State, &state);
+            di->reserved[0] = (capabilities << 16) | state;
+        } else {
+            HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+            di->reserved[0] = (HIDDProps.CompositionFlags << 16) | HIDDProps.CompositionFlags;
+        }
+
+        /* This is for cybergraphics.library */
+        di->reserved[1] = (IPTR)pf;
+
+        break;
+    }
+
+    case DTAG_MNTR: {
+        struct MonitorInfo *mi = (struct MonitorInfo *)qh;
+        IPTR tmpval;
+
+        OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
+        OOP_GetAttr(sync, aHidd_Sync_Flags, &tmpval);
+        /*
+        mi->ViewPosition.X = ?;
+        mi->ViewPosition.Y = ?;
+        mi->MouseTicks.X = ?;
+        mi->MouseTicks.Y = ?;
+        mi->DefaultViewPosition.X = ?;
+        mi->DefaultViewPosition.Y = ?;
+        */
+
+        /* Resolution in ticks */
+        CalcScreenResolution(&mi->ViewResolution, mi->Mspc, sync, GfxBase);
+
+        mi->TotalRows         = mi->Mspc->total_rows;
+        if(tmpval & vHidd_Sync_Interlaced)
+            mi->MinRow = mi->Mspc->total_rows - (maxdheight >> 1);
+        else
+            mi->MinRow = mi->Mspc->total_rows - maxdheight;
+        mi->TotalColorClocks  = mi->Mspc->total_colorclocks;
+        mi->ViewPositionRange = mi->Mspc->ms_LegalView;
+
+        /*
+         * FIXME: For now we don't have a concept of preferred ModeID.
+         * However, see graphics_driver.c/driver_Setup(), it can be useful.
+         */
+        mi->PreferredModeID = ID;
+
+        if(DIH(handle)->drv->compositor) {
+            /*
+             * If we have software screen composition, we know we can compose.
+             * We use MCOMPAT_MIXED here because of changed understanding of what is "monitor".
+             * In AmigaOS(tm) a "monitor" is actually a sync (video mode). Different "monitors"
+             * are actually different modes of the same display (PAL, NTSC, VGA, etc).
+             * In AROS a "monitor" is a single physical display device. Of course we can do
+             * composition only on a single display, but we can compose together different
+             * syncs.
+             */
+            mi->Compatibility = MCOMPAT_MIXED;
+        } else {
+            /* Otherwise query the driver */
+            HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+
+            if(HIDDProps.CompositionFlags)
+                mi->Compatibility = (HIDDProps.CompositionFlags & COMPF_SAME) ? MCOMPAT_SELF : MCOMPAT_MIXED;
+            else
+                mi->Compatibility = MCOMPAT_NOBODY;
+        }
+
+        break;
+    }
+
+    case DTAG_NAME: {
+        struct NameInfo *ni;
+        IPTR depth, stdpixfmt;
+        STRPTR sync_description;
+
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpixfmt);
+
+        OOP_GetAttr(sync, aHidd_Sync_Description, (IPTR *)&sync_description);
+        ni = (struct NameInfo *)qh;
+
+        if(sync_description && sync_description[0] &&
+                (IS_REAL_STDPIXFMT(stdpixfmt) || (stdpixfmt == vHidd_StdPixFmt_Unknown))) {
+            STRPTR pixfmt_name = "";
+
+            switch(stdpixfmt) {
+            case vHidd_StdPixFmt_LUT8:
+                pixfmt_name = "CLUT";
+                break;
+
+            case vHidd_StdPixFmt_RGB16:
+            case vHidd_StdPixFmt_RGB15:
+            case vHidd_StdPixFmt_RGB24:
+                pixfmt_name = "RGB";
+                break;
+
+            case vHidd_StdPixFmt_RGB16_LE:
+            case vHidd_StdPixFmt_RGB15_LE:
+                pixfmt_name = "RGB PC";
+                break;
+
+            case vHidd_StdPixFmt_BGR24:
+            case vHidd_StdPixFmt_BGR16:
+            case vHidd_StdPixFmt_BGR15:
+                pixfmt_name = "BGR";
+                break;
+
+            case vHidd_StdPixFmt_BGR16_LE:
+            case vHidd_StdPixFmt_BGR15_LE:
+                pixfmt_name = "BGR PC";
+                break;
+
+            case vHidd_StdPixFmt_ARGB32:
+                pixfmt_name = "ARGB";
+                break;
+
+            case vHidd_StdPixFmt_BGRA32:
+                pixfmt_name = "BGRA";
+                break;
+
+            case vHidd_StdPixFmt_RGBA32:
+                pixfmt_name = "RGBA";
+                break;
+
+            case vHidd_StdPixFmt_0RGB32:
+                pixfmt_name = "0RGB";
+                break;
+
+            case vHidd_StdPixFmt_BGR032:
+                pixfmt_name = "BGR0";
+                break;
+
+            case vHidd_StdPixFmt_RGB032:
+                pixfmt_name = "RGB0";
+                break;
+
+            }
+            if(stdpixfmt != vHidd_StdPixFmt_Plane)
+                snprintf(ni->Name, DISPLAYNAMELEN, "%sx%2u %s",
+                         sync_description, depth, pixfmt_name);
+            else
+                strncpy(ni->Name, sync_description, DISPLAYNAMELEN - 1);
+        } else {
+            IPTR width = 0;
+            IPTR height = 0;
+
+            OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+            OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+            snprintf(ni->Name, DISPLAYNAMELEN, "AROS: %ldx%ldx%ld", width, height, depth);
+        }
+        break;
+    }
+
+    default:
+        D(bug("!!! UNKNOWN tagID IN CALL TO GetDisplayInfoData() !!!\n"));
+        break;
+    }
+
     D(bug("GDID: %d\n", structsize));
-    
-    if (size > structsize)
+
+    if(size > structsize)
         size = structsize;
     CopyMem(qh, buf, size);
     FreeMem(qh, structsize);
     /* NULL-terminate the name in case if it was trimmed */
-    if (tagID == DTAG_NAME)
+    if(tagID == DTAG_NAME)
         buf[size - 1] = 0;
 
     return size;
@@ -538,8 +514,7 @@ static ULONG check_sizes(ULONG tagID, ULONG size, struct GfxBase *GfxBase)
 
     idx = DTAG_TO_IDX(tagID);
 
-    if (idx >= KNOWN_IDS)
-    {
+    if(idx >= KNOWN_IDS) {
         D(bug("[GetDisplayInfoData] INVALID tagID 0x%lx (idx=%ld)!\n", tagID, idx));
         return 0;
     }
@@ -548,9 +523,10 @@ static ULONG check_sizes(ULONG tagID, ULONG size, struct GfxBase *GfxBase)
 }
 
 /* taken from http://en.wikipedia.org/wiki/Hamming_weight */
-static UBYTE popcount(IPTR x) {
+static UBYTE popcount(IPTR x)
+{
     UBYTE count;
-    for (count=0; x; count++)
-        x &= x-1;
+    for(count = 0; x; count++)
+        x &= x - 1;
     return count;
 }

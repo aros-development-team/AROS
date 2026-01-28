@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function PolyDraw()
@@ -56,8 +56,7 @@
     WORD x, y;
 
     cnt = (UWORD)count; /* see NOTES */
-    for(i = 0; i < cnt; i++)
-    {
+    for(i = 0; i < cnt; i++) {
         x = *polyTable++;
         y = *polyTable++;
 
@@ -65,5 +64,5 @@
     }
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* PolyDraw */

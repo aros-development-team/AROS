@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -12,8 +12,7 @@
 /****************************************************************************************/
 
 
-struct rp8_render_data
-{
+struct rp8_render_data {
     UBYTE *array;
     ULONG modulo;
     HIDDT_PixelLUT *pixlut;
@@ -26,7 +25,7 @@ static ULONG rp8_render(APTR rp8r_data, WORD srcx, WORD srcy,
     struct rp8_render_data *rp8rd  = rp8r_data;
     WORD                    width  = rect->MaxX - rect->MinX + 1;
     WORD                    height = rect->MaxY - rect->MinY + 1;
-    
+
     HIDD_BM_GetImageLUT(srcbm_obj, rp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, rp8rd->modulo), rp8rd->modulo,
                         rect->MinX, rect->MinY, width, height, rp8rd->pixlut);
 
@@ -94,16 +93,16 @@ static ULONG rp8_render(APTR rp8r_data, WORD srcx, WORD srcy,
     struct Rectangle        rr;
     HIDDT_PixelLUT          pixlut;
     LONG                    pixread = 0;
-    
+
     EnterFunc(bug("ReadPixelArray8(%p, %d, %d, %d, %d)\n",
-        rp, xstart, ystart, xstop, ystop));
-    
+                  rp, xstart, ystart, xstop, ystop));
+
     FIX_GFXCOORD(xstart);
     FIX_GFXCOORD(ystart);
     FIX_GFXCOORD(xstop);
     FIX_GFXCOORD(ystop);
-    
-    if ((xstart > xstop) || (ystart > ystop)) return 0;
+
+    if((xstart > xstop) || (ystart > ystop)) return 0;
 
     /* FIXME: ReadPixelArray8 on hi/truecolor screens or
      * a LUT for it does not really make sense
@@ -111,11 +110,11 @@ static ULONG rp8_render(APTR rp8r_data, WORD srcx, WORD srcy,
 
     pixlut.entries = AROS_PALETTE_SIZE;
     pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
-     
+
     rp8rd.array  = array;
     rp8rd.modulo = ((xstop - xstart + 1) + 15) & ~15;
     rp8rd.pixlut = &pixlut;
-    
+
     rr.MinX = xstart;
     rr.MinY = ystart;
     rr.MaxX = xstop;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeVPortCopLists()
 */
@@ -58,13 +58,11 @@
 
     vpe = (struct ViewPortExtra *)GfxLookUp(vp);
     D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
-    if (vpe)
-    {
+    if(vpe) {
         /* Free the associated DriverData */
         struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
 
-        if (vpd)
-        {
+        if(vpd) {
             /* Do driver-specific cleanup */
             HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
 
@@ -73,8 +71,7 @@
             vpe->DriverData[0] = NULL;
         }
 
-        if (vpe->Flags & VPXF_FREE_ME)
-        {
+        if(vpe->Flags & VPXF_FREE_ME) {
             D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
             GfxFree(&vpe->n);
         }

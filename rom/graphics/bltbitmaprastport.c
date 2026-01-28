@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -12,8 +12,7 @@
 
 /****************************************************************************************/
 
-struct bitmap_render_data
-{
+struct bitmap_render_data {
     struct render_special_info rsi;
     ULONG                      minterm;
     struct BitMap             *srcbm;
@@ -41,7 +40,7 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
                         brd->rsi.curbm, dstbm_obj, rect->MinX, rect->MinY,
                         width, height, brd->minterm, gfxhidd, dst_gc, GfxBase);
 
-   return res ? width * height : 0;
+    return res ? width * height : 0;
 }
 
 /*****************************************************************************
@@ -100,14 +99,14 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-     
+
     struct bitmap_render_data   brd;
     struct Rectangle            rr;
     OOP_Object                  *gc;
     Point                       src;
 
     EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d, %x, %p, %p)\n"
-        , xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
+                  , xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
@@ -115,8 +114,7 @@ static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
     FIX_GFXCOORD(yDest);
 
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
-    if (NULL == brd.srcbm_obj)
-    {
+    if(NULL == brd.srcbm_obj) {
         return;
     }
 

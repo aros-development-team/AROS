@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ChangeExtSpriteA()
 */
@@ -63,7 +63,7 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     OOP_Object *bitmap;
     struct monitor_driverdata *mdd;
     LONG res;
@@ -71,7 +71,7 @@
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
 
     /* We have only sprite #0 for the mouse pointer */
-    if (newsprite->es_SimpleSprite.num)
+    if(newsprite->es_SimpleSprite.num)
         return 0;
 
     /* Pick up position from old sprite */
@@ -82,11 +82,11 @@
     bitmap = OBTAIN_HIDD_BM(newsprite->es_BitMap);
     D(bug("HIDD bitmap object: 0x%p\n", bitmap));
 
-    if (vp) {
+    if(vp) {
         /* Pick up display driver from ViewPort's bitmap */
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
         res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
-        if (res)
+        if(res)
             HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
     } else
         /* TODO: NULL ViewPort means Amiga(tm) chipset display */

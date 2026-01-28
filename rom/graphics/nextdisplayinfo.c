@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function NextDisplayInfo()
 */
@@ -54,25 +54,25 @@
     struct monitor_driverdata *mdd = NULL;
     struct DisplayInfoHandle *dh = NULL;
 
-    if (last_ID == INVALID_ID)
+    if(last_ID == INVALID_ID)
         /* Start from the beginning */
         mdd = CDD(GfxBase)->monitors;
     else {
         /* Find handle and driver of current mode */
         dh = FindDisplayInfo(last_ID);
-        if (dh)
+        if(dh)
             mdd = dh->drv;
     }
 
-    while (mdd) {
+    while(mdd) {
         /* Take next (or first) mode handle */
-        if (dh)
+        if(dh)
             dh++;
         else
             dh = mdd->modes;
 
         /* If it's not the last handle, return it */
-        if (dh->id != vHidd_ModeID_Invalid)
+        if(dh->id != vHidd_ModeID_Invalid)
             return dh->drv->id | dh->id;
 
         /* Next driver, first handle */

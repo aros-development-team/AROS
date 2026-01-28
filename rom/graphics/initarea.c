@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitArea()
 */
@@ -51,14 +51,14 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  areainfo->VctrTbl  = buffer;
-  areainfo->VctrPtr  = buffer;
-  areainfo->FlagTbl  = (BYTE *)(((IPTR)buffer)+(2*sizeof(WORD)*maxvectors));
-  areainfo->FlagPtr  = (BYTE *)(((IPTR)buffer)+(2*sizeof(WORD)*maxvectors));
-  areainfo->Count    = 0;
-  areainfo->MaxCount = maxvectors;
+    areainfo->VctrTbl  = buffer;
+    areainfo->VctrPtr  = buffer;
+    areainfo->FlagTbl  = (BYTE *)(((IPTR)buffer) + (2 * sizeof(WORD) * maxvectors));
+    areainfo->FlagPtr  = (BYTE *)(((IPTR)buffer) + (2 * sizeof(WORD) * maxvectors));
+    areainfo->Count    = 0;
+    areainfo->MaxCount = maxvectors;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitArea */

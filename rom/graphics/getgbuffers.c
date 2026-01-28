@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetGBuffers()
 */
@@ -69,75 +69,71 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct AnimComp * CurAnimComp = anOb -> HeadComp;
+    struct AnimComp *CurAnimComp = anOb -> HeadComp;
 
-  /* visit all the components of this AnimOb */
-  while (NULL != CurAnimComp)
-  {
-    /* visit all the sequences of a component
-       the sequences are connected like a ring!! */
-    struct AnimComp * CurSeqAnimComp = CurAnimComp;
-    do
-    {
-      struct Bob * CurBob = CurSeqAnimComp -> AnimBob;
-      struct VSprite * CurVSprite = CurBob -> BobVSprite;
-      long memsize;
+    /* visit all the components of this AnimOb */
+    while(NULL != CurAnimComp) {
+        /* visit all the sequences of a component
+           the sequences are connected like a ring!! */
+        struct AnimComp *CurSeqAnimComp = CurAnimComp;
+        do {
+            struct Bob *CurBob = CurSeqAnimComp -> AnimBob;
+            struct VSprite *CurVSprite = CurBob -> BobVSprite;
+            long memsize;
 
-      /* Attention: width of a Bob/VSprite is the number of *words* it
-         uses for it's width */
+            /* Attention: width of a Bob/VSprite is the number of *words* it
+               uses for it's width */
 
 
-      /* allocate height*(width*2) bytes of Chip-Ram for the ImageShadow */
-      memsize =  (CurVSprite -> Height) *
-                 (CurVSprite -> Width) * 2;
-      if (NULL ==(CurBob -> ImageShadow = AllocMem(memsize, MEMF_CHIP|MEMF_CLEAR)))
-        return FALSE;
+            /* allocate height*(width*2) bytes of Chip-Ram for the ImageShadow */
+            memsize = (CurVSprite -> Height) *
+                      (CurVSprite -> Width) * 2;
+            if(NULL == (CurBob -> ImageShadow = AllocMem(memsize, MEMF_CHIP | MEMF_CLEAR)))
+                return FALSE;
 
-      /* CollMask points to the same memory as ImageShadow */
-      CurVSprite -> CollMask = CurBob -> ImageShadow;
+            /* CollMask points to the same memory as ImageShadow */
+            CurVSprite -> CollMask = CurBob -> ImageShadow;
 
-      /* allocate height*(width*2)*depth bytes of Chip-Ram for
-         the SaveBuffer */
-      memsize *= (CurVSprite -> Depth);
-      if (NULL ==(CurBob -> SaveBuffer =  AllocMem(memsize, MEMF_CHIP|MEMF_CLEAR)))
-        return FALSE;
+            /* allocate height*(width*2)*depth bytes of Chip-Ram for
+               the SaveBuffer */
+            memsize *= (CurVSprite -> Depth);
+            if(NULL == (CurBob -> SaveBuffer =  AllocMem(memsize, MEMF_CHIP | MEMF_CLEAR)))
+                return FALSE;
 
 
-      /* allocate width*2 bytes = width words for BorderLine
-       * !!! this is more than enough for VSprites as for a real VSprite
-       * its size in pixels is given in CurVSprite->Width
-       */
-      if (NULL ==(CurVSprite -> BorderLine = AllocMem(CurVSprite -> Width * 2,
-                                                      MEMF_CHIP|MEMF_CLEAR)))
-        return FALSE;
+            /* allocate width*2 bytes = width words for BorderLine
+             * !!! this is more than enough for VSprites as for a real VSprite
+             * its size in pixels is given in CurVSprite->Width
+             */
+            if(NULL == (CurVSprite -> BorderLine = AllocMem(CurVSprite -> Width * 2,
+                                                   MEMF_CHIP | MEMF_CLEAR)))
+                return FALSE;
 
-      /* are we using double buffering for this AnimOb? */
-      if (db)
-      {
-        /* allocate a DBufPacket structure */
-        if (NULL ==(CurBob -> DBuffer = AllocMem(sizeof(struct DBufPacket),
-                                                 MEMF_CLEAR)))
-          return FALSE;
+            /* are we using double buffering for this AnimOb? */
+            if(db) {
+                /* allocate a DBufPacket structure */
+                if(NULL == (CurBob -> DBuffer = AllocMem(sizeof(struct DBufPacket),
+                                                MEMF_CLEAR)))
+                    return FALSE;
 
-        /* BufBuffer needs as much memory as SaveBuffer */
-        /* memsize still contains the size of memory required for SaveBuffer */
-        if (NULL ==(CurBob -> DBuffer -> BufBuffer =
-                    AllocMem(memsize, MEMF_CHIP|MEMF_CLEAR)))
-          return FALSE;
-      }
+                /* BufBuffer needs as much memory as SaveBuffer */
+                /* memsize still contains the size of memory required for SaveBuffer */
+                if(NULL == (CurBob -> DBuffer -> BufBuffer =
+                                AllocMem(memsize, MEMF_CHIP | MEMF_CLEAR)))
+                    return FALSE;
+            }
 
-      /* go to the next sequence of this component */
-      CurSeqAnimComp = CurSeqAnimComp -> NextSeq;
+            /* go to the next sequence of this component */
+            CurSeqAnimComp = CurSeqAnimComp -> NextSeq;
+        } while(CurAnimComp != CurSeqAnimComp);
+
+        /* go to next component */
+        CurAnimComp = CurAnimComp -> NextComp;
     }
-    while (CurAnimComp != CurSeqAnimComp);
+    /* all allocations went OK */
+    return TRUE;
 
-    /* go to next component */
-    CurAnimComp = CurAnimComp -> NextComp;
-  }
-  /* all allocations went OK */
-  return TRUE;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetGBuffers */

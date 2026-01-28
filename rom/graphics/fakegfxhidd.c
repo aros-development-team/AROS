@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -39,12 +39,11 @@
 /******************************************************************************/
 
 static OOP_Class *init_fakefbclass(struct GfxBase *GfxBase);
-static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase);
+static OOP_Class *init_fakegfxhiddclass(struct GfxBase *GfxBase);
 
 /******************************************************************************/
 
-struct gfx_data
-{
+struct gfx_data {
     OOP_Object              *gfxhidd;
     OOP_Object              *framebuffer;
     OOP_Object              *fakefb;
@@ -91,9 +90,9 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
                                         struct GfxBase *GfxBase)
 {
     struct Task *me;
-    
+
     /* Get pointer to current task */
-    me=FindTask(NULL);
+    me = FindTask(NULL);
 
     /* Arbitrate for the semaphore structure */
     Forbid();
@@ -106,16 +105,14 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
         Note: This will need protection for SMP machines.
     */
     sigSem->ss_QueueCount++;
-    if( sigSem->ss_QueueCount == 0 )
-    {
+    if(sigSem->ss_QueueCount == 0) {
         /* We now own the semaphore. This is quick. */
         sigSem->ss_Owner = me;
         sigSem->ss_NestCount++;
     }
 
     /* The semaphore was in use, but was it by us? */
-    else if( sigSem->ss_Owner == me )
-    {
+    else if(sigSem->ss_Owner == me) {
         /* Yes, just increase the nesting count */
         sigSem->ss_NestCount++;
     }
@@ -124,8 +121,7 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
         Else, some other task must own it. We have
         to set a waiting request here.
     */
-    else
-    {
+    else {
         /*
             We need a node to mark our semaphore request. Lets use some
             stack memory.
@@ -141,13 +137,10 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
         */
 
         AROS_ATOMIC_AND(me->tc_SigRecvd, ~SIGF_SINGLE);
-        
-        if (urgent)
-        {
+
+        if(urgent) {
             AddHead((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
-        }
-        else
-        {
+        } else {
             AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
         }
 
@@ -166,17 +159,16 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
 /******************************************************************************/
 
 static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
-                                         struct GfxBase *GfxBase)
+        struct GfxBase *GfxBase)
 {
-   /* Protect the semaphore structure from multiple access. */
+    /* Protect the semaphore structure from multiple access. */
     Forbid();
 
     /* Release one on the nest count */
     sigSem->ss_NestCount--;
     sigSem->ss_QueueCount--;
 
-    if(sigSem->ss_NestCount == 0)
-    {
+    if(sigSem->ss_NestCount == 0) {
         /*
             There are two cases here. Either we are a shared
             semaphore, or not. If we are not, make sure that the
@@ -190,9 +182,8 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
         */
         if(
             sigSem->ss_QueueCount >= 0
-         && sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL
-        )
-        {
+            && sigSem->ss_WaitQueue.mlh_Head->mln_Succ != NULL
+        ) {
             struct SemaphoreRequest *sr, *srn;
 
             /*
@@ -208,18 +199,15 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
                 If the sr_Waiter field is != NULL, then this is a
                 task waiting, otherwise it is a message.
             */
-            if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
-            {
+            if(((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED) {
                 /* This is a shared lock, so ss_Owner == NULL */
                 sigSem->ss_Owner = NULL;
 
                 /* Go through all the nodes to find the shared ones */
-                ForeachNodeSafe(&sigSem->ss_WaitQueue, sr, srn)
-                {
+                ForeachNodeSafe(&sigSem->ss_WaitQueue, sr, srn) {
                     srn = (struct SemaphoreRequest *)sr->sr_Link.mln_Succ;
 
-                    if( ((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED )
-                    {
+                    if(((IPTR)sr->sr_Waiter & SM_SHARED) == SM_SHARED) {
                         Remove((struct Node *)sr);
 
                         /* Clear the bit, and update the owner count */
@@ -233,8 +221,7 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
             }
 
             /*  This is an exclusive lock - awaken first node */
-            else
-            {
+            else {
                 /* Only awaken the first of the nodes */
                 Remove((struct Node *)sr);
                 sigSem->ss_NestCount++;
@@ -242,27 +229,24 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
                 sigSem->ss_Owner = sr->sr_Waiter;
                 Signal(sr->sr_Waiter, SIGF_SINGLE);
             }
-            
+
         } /* there are waiters */
         /*  Otherwise, there are not tasks waiting. */
-        else
-        {
+        else {
             sigSem->ss_Owner = NULL;
             sigSem->ss_QueueCount = -1;
         }
-    }
-    else if(sigSem->ss_NestCount < 0)
-    {
+    } else if(sigSem->ss_NestCount < 0) {
         /*
             This can't happen. It means that somebody has released
             more times than they have obtained.
         */
-        Alert( AN_SemCorrupt );
+        Alert(AN_SemCorrupt);
     }
 
     /* All done. */
     Permit();
-    
+
 }
 
 /******************************************************************************/
@@ -294,11 +278,11 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     realgfxhidd = (OOP_Object *)GetTagData(aHidd_FakeGfxHidd_RealGfxHidd, (IPTR)NULL, msg->attrList);
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (NULL == o)
+    if(NULL == o)
         return NULL;
 
     data = OOP_INST_DATA(cl, o);
-    SetMem(data, 0, sizeof (*data));
+    SetMem(data, 0, sizeof(*data));
     InitSemaphore(&data->fbsema);
 
     data->basegc = OOP_FindClass(CLID_Hidd_GC);
@@ -317,47 +301,41 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     data->gfxhidd = realgfxhidd;
 
-    if (NULL != data->gfxhidd)
-    {
-        struct TagItem gctags[] =
-        {
+    if(NULL != data->gfxhidd) {
+        struct TagItem gctags[] = {
             { TAG_DONE, 0UL }
         };
 
         data->gc = HIDD_Gfx_CreateObject(data->gfxhidd, data->basegc, gctags);
-        if (NULL != data->gc)
-        {
+        if(NULL != data->gc) {
             ok = TRUE;
         }
     }
 
-    if (!ok)
-    {
+    if(!ok) {
         OOP_MethodID mid;
 
         mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
         OOP_CoerceMethod(cl, o, (OOP_Msg)&mid);
     }
-    
+
     return o;
 }
 
 static VOID gfx_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct gfx_data *data;
-    
+
     data = OOP_INST_DATA(cl, o);
-    if (NULL != data->curs_backup)
-    {
+    if(NULL != data->curs_backup) {
         OOP_DisposeObject(data->curs_backup);
         data->curs_backup = NULL;
     }
-    
-    if (data->curs_pixels)
+
+    if(data->curs_pixels)
         FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
-    
-    if (NULL != data->gc)
-    {
+
+    if(NULL != data->gc) {
         OOP_DisposeObject(data->gc);
         data->gc = NULL;
     }
@@ -367,8 +345,8 @@ static void gfx_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct gfx_data *data = OOP_INST_DATA(cl, o);
 
-    if (msg->attrID == aHidd_Gfx_HWSpriteTypes) {
-        *msg->storage = vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor;
+    if(msg->attrID == aHidd_Gfx_HWSpriteTypes) {
+        *msg->storage = vHidd_SpriteType_3Plus1 | vHidd_SpriteType_DirectColor;
         return;
     }
 
@@ -387,8 +365,7 @@ static OOP_Object *gfx_createobject(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     struct gfx_data *data = OOP_INST_DATA(cl, o);
     OOP_Object      *object = NULL;
 
-    if (msg->cl == data->basebm)
-    {
+    if(msg->cl == data->basebm) {
         /* Is the user about to create a framebuffer ? */
         BOOL                 create_fb;
         OOP_Object      *realfb;
@@ -397,17 +374,13 @@ static OOP_Object *gfx_createobject(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
         realfb = HIDD_Gfx_CreateObject(data->gfxhidd, msg->cl, msg->attrList);
 
-        if (realfb && create_fb)
-        {
+        if(realfb && create_fb) {
             object = create_fake_fb(realfb, data, GfxBase);
-            if (!object)
+            if(!object)
                 OOP_DisposeObject(realfb);
-        }
-        else
+        } else
             object = realfb;
-    }
-    else
-    {
+    } else {
         object = (OOP_Object *)gfx_fwd(cl, o, (OOP_Msg)msg);
     }
 
@@ -425,8 +398,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     D(bug("[FakeGfx] SetCursorShape(0x%p)\n", shape));
 
     /* Bitmap changed */
-    if (NULL == shape)
-    {
+    if(NULL == shape) {
         /* Erase the old cursor */
         draw_cursor(data, FALSE, TRUE, GfxBase);
         data->curs_on = FALSE;
@@ -437,18 +409,15 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
         data->curs_xoffset = 0;
         data->curs_yoffset = 0;
 
-        if (NULL != data->curs_backup)
-        {
+        if(NULL != data->curs_backup) {
             OOP_DisposeObject(data->curs_backup);
             data->curs_backup = NULL;
         }
-        if (data->curs_pixels) {
+        if(data->curs_pixels) {
             FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
             data->curs_pixels = NULL;
         }
-    }
-    else
-    {
+    } else {
         IPTR curs_width, curs_height;
         APTR new_curs_pixels;
         ULONG curs_pixels_len;
@@ -457,26 +426,26 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
         OOP_GetAttr(shape, aHidd_BitMap_Height, &curs_height);
 
         DCURS(bug("[FakeGfx] New cursor size: %lu x %lu, framebuffer 0x%p\n", curs_width, curs_height, data->framebuffer));
-        
+
         /* Create new cursor pixelbuffer. We multiply size by 4 because we want ARGB data
            to fit in. */
         curs_pixels_len = curs_width * curs_height * 4;
-        new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY|MEMF_CLEAR);
-        if (!new_curs_pixels)
+        new_curs_pixels = AllocMem(curs_pixels_len, MEMF_ANY | MEMF_CLEAR);
+        if(!new_curs_pixels)
             return FALSE;
-        
+
         LFB(data);
 
         /* Erase the old cursor */
         draw_cursor(data, FALSE, TRUE, GfxBase);
-            
+
         /* Now that we have disposed the old image using the old
            backup bm, we can install the new image and backup bm before
            rendering the new cursor.
            Backup bitmap is recreated in rethink_cursor()
         */
 
-        if (data->curs_pixels)
+        if(data->curs_pixels)
             FreeMem(data->curs_pixels, data->curs_width * data->curs_height * 4);
 
         data->curs_bm     = shape;
@@ -490,10 +459,10 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 
         ok = rethink_cursor(data, GfxBase);
         UFB(data);
-        
+
         draw_cursor(data, TRUE, TRUE, GfxBase);
     }
-    
+
     return ok;
 }
 
@@ -502,18 +471,18 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     struct gfx_data *data;
     IPTR xoffset = 0;
     IPTR yoffset = 0;
-    
+
     data = OOP_INST_DATA(cl, o);
     DPOS(bug("[FakeGfx] SetCursorPos(%d, %d)\n", msg->x, msg->y));
 
-    if (!data->framebuffer)
+    if(!data->framebuffer)
         return TRUE;
 
     /* We draw our cursor on the bitmap, so we have to convert back
        from physical to logical coordinates */
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_LeftEdge, &xoffset);
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_TopEdge, &yoffset);
-    
+
     LFB_QUICK(data);
     /* erase the old cursor */
     draw_cursor(data, FALSE, TRUE, GfxBase);
@@ -525,7 +494,7 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     data->curs_y += data->curs_yoffset;
     data->curs_maxx = data->curs_x + data->curs_width  - 1;
     data->curs_maxy = data->curs_y + data->curs_height - 1;
-    
+
     draw_cursor(data, TRUE, TRUE, GfxBase);
     UFB_QUICK(data);
     return TRUE;
@@ -534,30 +503,25 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
 static VOID gfx_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
     struct gfx_data *data;
-    
+
     data = OOP_INST_DATA(cl, o);
 
-LFB_QUICK(data);
-    
-    if (msg->visible)
-    {
-        if (!data->curs_on)
-        {
+    LFB_QUICK(data);
+
+    if(msg->visible) {
+        if(!data->curs_on) {
             data->curs_on = TRUE;
             draw_cursor(data, TRUE, TRUE, GfxBase);
         }
-    }
-    else
-    {
-        if (data->curs_on)
-        {
+    } else {
+        if(data->curs_on) {
             draw_cursor(data, FALSE, TRUE, GfxBase);
             data->curs_on = FALSE;
         }
     }
-    
-UFB_QUICK(data);
-  
+
+    UFB_QUICK(data);
+
 }
 
 #define PIXEL_INSIDE(fgh, x, y) \
@@ -565,14 +529,14 @@ UFB_QUICK(data);
           && ( (y) >= (fgh)->curs_y     )       \
           && ( (x) <= (fgh)->curs_maxx  )       \
           && ( (y) <= (fgh)->curs_maxy  )       )
-          
+
 /* NOTE: x1, y1, x2, y2 MUST be sorted */
 #define RECT_INSIDE(fgh, x1, y1, x2, y2)        \
         (    ( (x1) <= fgh->curs_maxx   )       \
           && ( (x2) >= fgh->curs_x      )       \
           && ( (y1) <= fgh->curs_maxy   )       \
           && ( (y2) >= fgh->curs_y      )       )
-          
+
 #define WRECT_INSIDE(fgh, x1, y1, width, height)        \
         RECT_INSIDE(fgh, x1, y1, (x1) + (width) - 1, (y1) + (height) - 1)
 
@@ -589,27 +553,27 @@ static void gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     /* De-masquerade bitmap objects, every of which can be fakefb object */
     OOP_GetAttr(msg->src, aHidd_FakeFB_RealBitMap, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_FakeFB_RealBitMap, (IPTR *)&dest);
-    if (!src)
+    if(!src)
         src = msg->src;
-    if (!dest)
+    if(!dest)
         dest = msg->dest;
 
     /* FIXME: other bitmap may belong to another instance of fakegfx which can be on
               display on another monitor. In this case mouse cursor should be handled also
               there. Needs further reengineering. */
-    if ((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
+    if((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
         inside = TRUE;
 
-    if ((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
+    if((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
         inside = TRUE;
 
-    if (inside)
+    if(inside)
         draw_cursor(data, FALSE, FALSE, GfxBase);
 
     HIDD_Gfx_CopyBox(data->gfxhidd, src, msg->srcX, msg->srcY,
                      dest, msg->destX, msg->destY, msg->width, msg->height, msg->gc);
 
-    if (inside)
+    if(inside)
         draw_cursor(data, TRUE, FALSE, GfxBase);
 
     UFB(data);
@@ -629,9 +593,9 @@ static IPTR gfx_copyboxmasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
     /* De-masquerade bitmap objects, every of which can be fakefb object */
     OOP_GetAttr(msg->src, aHidd_FakeFB_RealBitMap, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_FakeFB_RealBitMap, (IPTR *)&dest);
-    if (!src)
+    if(!src)
         src = msg->src;
-    if (!dest)
+    if(!dest)
         dest = msg->dest;
 
     /*
@@ -639,19 +603,19 @@ static IPTR gfx_copyboxmasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
      *        display on another monitor. In this case mouse cursor should be handled also
      *        there. Needs further reengineering.
      */
-    if ((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
+    if((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
         inside = TRUE;
 
-    if ((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
+    if((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
         inside = TRUE;
 
-    if (inside)
+    if(inside)
         draw_cursor(data, FALSE, FALSE, GfxBase);
 
     ret = HIDD_Gfx_CopyBoxMasked(data->gfxhidd, src, msg->srcX, msg->srcY,
                                  dest, msg->destX, msg->destY, msg->width, msg->height, msg->mask, msg->gc);
 
-    if (inside)
+    if(inside)
         draw_cursor(data, TRUE, FALSE, GfxBase);
 
     UFB(data);
@@ -663,7 +627,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
 {
     OOP_Object *ret;
     struct gfx_data *data;
-    
+
     data = OOP_INST_DATA(cl, o);
     ret = msg->bitMap;
 
@@ -674,8 +638,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
      * in NoFrameBuffer mode where each displayable bitmap is
      * intercepted by us
      */
-    if (ret && (OOP_OCLASS(ret) == CDD(GfxBase)->fakefbclass))
-    {
+    if(ret && (OOP_OCLASS(ret) == CDD(GfxBase)->fakefbclass)) {
         data->fakefb = ret;
         OOP_GetAttr(msg->bitMap, aHidd_FakeFB_RealBitMap, (IPTR *)&ret);
         D(bug("[FakeGfx] Bitmap is a fakefb object, real bitmap is 0x%p\n", ret));
@@ -687,7 +650,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
     ret = HIDD_Gfx_Show(data->gfxhidd, ret, msg->flags);
     D(bug("[FakeGfx] Real framebuffer object 0x%p\n", ret));
     gfx_setFrameBuffer(GfxBase, data, ret);
-    if (NULL != ret)
+    if(NULL != ret)
         ret = data->fakefb;
     /* FIXME: temporary workaround: at this point Intuition has already destroyed
        the sprite image (since the last screen was closed) but we have no information
@@ -697,7 +660,7 @@ static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show 
         data->curs_bm = NULL;*/
     rethink_cursor(data, GfxBase);
     draw_cursor(data, TRUE, TRUE, GfxBase);
-    
+
     UFB(data);
 
     D(bug("[FakeGfx] Returning 0x%p\n", ret));
@@ -712,7 +675,7 @@ static ULONG gfx_showviewports(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 static BOOL gfx_getmaxspritesize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMaxSpriteSize *msg)
 {
-    if (msg->Type & (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor)) {
+    if(msg->Type & (vHidd_SpriteType_3Plus1 | vHidd_SpriteType_DirectColor)) {
         /* I hope these values are enough for everyone :) */
         *msg->Width  = 65535;
         *msg->Height = 65535;
@@ -743,8 +706,7 @@ static BOOL FakeGfx_UpdateFrameBuffer(OOP_Object *o)
     return ok;
 }
 
-struct fakefb_data
-{
+struct fakefb_data {
     OOP_Object *framebuffer;
     OOP_Object *fakegfxhidd;
 };
@@ -755,8 +717,8 @@ struct fakefb_data
 
 #define RENDER_CURSOR(data)     \
         draw_cursor(FGH(data), TRUE, FALSE, GfxBase)
-        
-        
+
+
 #define BITMAP_METHOD_INIT      \
     struct fakefb_data *data;   \
     BOOL inside = FALSE;        \
@@ -765,7 +727,7 @@ struct fakefb_data
     data = OOP_INST_DATA(cl, o);        \
     fgh = FGH(data);            \
 LFB(fgh);
-    
+
 #define FORWARD_METHOD                  \
     retval = OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
 
@@ -775,7 +737,7 @@ LFB(fgh);
     }                           \
 UFB(fgh);                       \
     return retval;
-        
+
 static OOP_Object *fakefb_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object *framebuffer;
@@ -784,15 +746,13 @@ static OOP_Object *fakefb_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     framebuffer = (OOP_Object *)GetTagData(aHidd_FakeFB_RealBitMap,     0, msg->attrList);
     fakegfxhidd = (OOP_Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,    0, msg->attrList);
 
-    if (NULL == framebuffer || NULL == fakegfxhidd)
-    {
+    if(NULL == framebuffer || NULL == fakegfxhidd) {
         D(bug("!!! FakeBM::New(): MISSING FRAMEBUFFER OR FAKE GFX HIDD !!!\n"));
         return NULL;
     }
-        
+
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (NULL != o)
-    {
+    if(NULL != o) {
         struct fakefb_data *data;
         data = OOP_INST_DATA(cl, o);
         data->framebuffer = framebuffer;
@@ -805,8 +765,7 @@ static VOID fakefb_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct fakefb_data *data;
     data = OOP_INST_DATA(cl, o);
-    if (NULL != data->framebuffer)
-    {
+    if(NULL != data->framebuffer) {
         OOP_DisposeObject(data->framebuffer);
         data->framebuffer = NULL;
     }
@@ -816,17 +775,13 @@ static void fakefb_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct fakefb_data *data = OOP_INST_DATA(cl, o);
 
-    if (msg->attrID == aHidd_FakeFB_RealBitMap)
-    {
+    if(msg->attrID == aHidd_FakeFB_RealBitMap) {
         *msg->storage = (IPTR)data->framebuffer;
         return;
-    }
-    else if (msg->attrID == aHidd_BitMap_GfxHidd)
-    {
+    } else if(msg->attrID == aHidd_BitMap_GfxHidd) {
         *msg->storage = (IPTR)data->fakegfxhidd;
         return;
-    }
-    else
+    } else
         OOP_DoMethod(data->framebuffer, (OOP_Msg)msg);
 }
 
@@ -837,8 +792,7 @@ static IPTR fakefb_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     IPTR ret = OOP_DoMethod(data->framebuffer, &msg->mID);
     struct TagItem *modeid = FindTagItem(aHidd_BitMap_ModeID, msg->attrList);
 
-    if (modeid && ret)
-    {
+    if(modeid && ret) {
         /* Framebuffer mode change succeeded. Update fakegfx' information */
         ret = FakeGfx_UpdateFrameBuffer(data->fakegfxhidd);
     }
@@ -849,45 +803,42 @@ static IPTR fakefb_set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 static IPTR fakefb_getpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (PIXEL_INSIDE(fgh, msg->x, msg->y))
-    {
+
+    if(PIXEL_INSIDE(fgh, msg->x, msg->y)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (PIXEL_INSIDE(fgh, msg->x, msg->y))
-    {
+
+    if(PIXEL_INSIDE(fgh, msg->x, msg->y)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_drawpixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (PIXEL_INSIDE(fgh, msg->x, msg->y))
-    {
+
+    if(PIXEL_INSIDE(fgh, msg->x, msg->y)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -896,168 +847,156 @@ static IPTR fakefb_drawline(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
 
-    if (msg->x1 < msg->x2)
-    {
-        x1 = msg->x1; x2 = msg->x2;
-    }
-    else
-    {
-        x2 = msg->x1; x1 = msg->x2;
+    if(msg->x1 < msg->x2) {
+        x1 = msg->x1;
+        x2 = msg->x2;
+    } else {
+        x2 = msg->x1;
+        x1 = msg->x2;
     }
 
-    if (msg->y1 < msg->y2)
-    {
-        y1 = msg->y1; y2 = msg->y2;
-    }
-    else
-    {
-        y2 = msg->y1; y1 = msg->y2;
+    if(msg->y1 < msg->y2) {
+        y1 = msg->y1;
+        y2 = msg->y2;
+    } else {
+        y2 = msg->y1;
+        y1 = msg->y2;
     }
 
     /* FIXME: Maybe do some more intelligent checking for DrawLine */
-    if (RECT_INSIDE(fgh, x1, y1, x2, y2))
-    {
+    if(RECT_INSIDE(fgh, x1, y1, x2, y2)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putalphaimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaImage *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_puttemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putalphatemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaTemplate *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putpattern(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutPattern *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_getimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_putimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_puttranspimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTranspImageLUT *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1066,14 +1005,13 @@ static IPTR fakefb_drawrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
     BITMAP_METHOD_INIT
 
     /* FIXME: Maybe do something clever here to see if the rectangle is drawn around the cursor     */
-    if (RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY))
-    {
+    if(RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1081,22 +1019,21 @@ static IPTR fakefb_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 {
     BITMAP_METHOD_INIT
 
- /* bug("BITMAP FILLRECT(%d, %d, %d, %d), (%d, %d, %d, %d, %d, %d)\n"
-        , msg->minX, msg->minY, msg->maxX, msg->maxY
-        , fgh->curs_x, fgh->curs_y, fgh->curs_maxx, fgh->curs_maxy
-        , fgh->curs_width, fgh->curs_height);
-*/
-    if (RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY))
-    {
-/*  bug("FILLRECT: REMOVING CURSOR\n");
-*/
+    /* bug("BITMAP FILLRECT(%d, %d, %d, %d), (%d, %d, %d, %d, %d, %d)\n"
+           , msg->minX, msg->minY, msg->maxX, msg->maxY
+           , fgh->curs_x, fgh->curs_y, fgh->curs_maxx, fgh->curs_maxy
+           , fgh->curs_width, fgh->curs_height);
+    */
+    if(RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY)) {
+        /*  bug("FILLRECT: REMOVING CURSOR\n");
+        */
         REMOVE_CURSOR(data);
-        
+
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1104,21 +1041,20 @@ static IPTR fakefb_drawellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 {
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
-    
+
     x1 = msg->x - msg->rx;
     y1 = msg->y - msg->ry;
     x2 = msg->x + msg->rx;
     y2 = msg->y + msg->ry;
     /* FIXME: Maybe do something clever here to see if the rectangle is drawn around the cursor     */
-    
-    if (RECT_INSIDE(fgh, x1, y1, x2, y2))
-    {
+
+    if(RECT_INSIDE(fgh, x1, y1, x2, y2)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1126,20 +1062,19 @@ static IPTR fakefb_fillellipse(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 {
     register LONG x1, y1, x2, y2;
     BITMAP_METHOD_INIT
-    
+
     x1 = msg->x - msg->rx;
     y1 = msg->y - msg->ry;
     x2 = msg->x + msg->rx;
     y2 = msg->y + msg->ry;
-    
-    if (RECT_INSIDE(fgh, x1, y1, x2, y2))
-    {
+
+    if(RECT_INSIDE(fgh, x1, y1, x2, y2)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1149,9 +1084,9 @@ static IPTR fakefb_drawpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     /* FIXME: Maybe do checking here, but it probably is not worth it     */
     REMOVE_CURSOR(data);
     inside = TRUE;
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1161,9 +1096,9 @@ static IPTR fakefb_fillpolygon(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     /* FIXME: Maybe do checking here, but it probably is not worth it     */
     REMOVE_CURSOR(data);
     inside = TRUE;
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1174,9 +1109,9 @@ static IPTR fakefb_drawtext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 
     /* FIXME: Maybe do testing here, but probably not wirth it     */
     REMOVE_CURSOR(data);
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1186,35 +1121,34 @@ static IPTR fakefb_drawfilltext(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
     /* FIXME: Maybe do testing here, but probably not worth it     */
     REMOVE_CURSOR(data);
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_blitcolexp(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
 {
     BITMAP_METHOD_INIT
-    
-    if (WRECT_INSIDE(fgh, msg->destX, msg->destY, msg->width, msg->height))
-    {
+
+    if(WRECT_INSIDE(fgh, msg->destX, msg->destY, msg->width, msg->height)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
 static IPTR fakefb_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *msg)
 {
     BITMAP_METHOD_INIT
-    
+
     inside = TRUE;
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1222,12 +1156,12 @@ static IPTR fakefb_clear(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
 static IPTR fakefb_fillspan(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     BITMAP_METHOD_INIT
-    
+
     REMOVE_CURSOR(data);
     inside = TRUE;
-    
+
     FORWARD_METHOD
-    
+
     BITMAP_METHOD_EXIT
 }
 
@@ -1236,8 +1170,7 @@ static IPTR fakefb_scale(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_BitMa
     /* FIXME: should check both source and destination, similar to gfx_copybox() */
     BITMAP_METHOD_INIT
 
-    if (WRECT_INSIDE(fgh, msg->bsa->bsa_SrcX, msg->bsa->bsa_SrcY, msg->bsa->bsa_SrcWidth, msg->bsa->bsa_SrcHeight))
-    {
+    if(WRECT_INSIDE(fgh, msg->bsa->bsa_SrcX, msg->bsa->bsa_SrcY, msg->bsa->bsa_SrcWidth, msg->bsa->bsa_SrcHeight)) {
         REMOVE_CURSOR(data);
         inside = TRUE;
     }
@@ -1265,10 +1198,10 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
     UWORD       curs_base = 16;
 
     struct TagItem bmtags[] = {
-        { aHidd_BitMap_Width , data->curs_width       },
+        { aHidd_BitMap_Width, data->curs_width       },
         { aHidd_BitMap_Height, data->curs_height      },
         { aHidd_BitMap_Friend, (IPTR)data->framebuffer},
-        { TAG_DONE           , 0UL                     }
+        { TAG_DONE, 0UL                     }
     };
 
     D(bug("rethink_cursor(), curs_bm is 0x%p, framebuffer is 0x%p\n", data->curs_bm, data->framebuffer));
@@ -1279,7 +1212,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
        object may dynamically change its characteristics.
 
        Delete the old backup bitmap first */
-    if (NULL != data->curs_backup) {
+    if(NULL != data->curs_backup) {
         OOP_DisposeObject(data->curs_backup);
         D(bug("[FakeGfx] Disposed old backup bitmap\n"));
         data->curs_backup = NULL;
@@ -1287,18 +1220,18 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
 
     /* If we have no cursor, we have nothing more to do.
        We also don't need new backup bitmap */
-    if (!data->curs_bm)
+    if(!data->curs_bm)
         return TRUE;
 
     /* We may also have no framebuffer (empty display on
        non-framebuffer driver). Also NOP in this case */
-    if (!data->framebuffer)
+    if(!data->framebuffer)
         return TRUE;
 
     /* Create new backup bitmap */
     data->curs_backup = HIDD_Gfx_CreateObject(data->gfxhidd, data->basebm, bmtags);
     D(bug("[FakeGfx] New backup bitmap is 0x%p\n", data->curs_backup));
-    if (!data->curs_backup)
+    if(!data->curs_backup)
         return FALSE;
 
     OOP_GetAttr(data->framebuffer, aHidd_BitMap_PixFmt, (IPTR *)&pf);
@@ -1321,7 +1254,7 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
           In this case colormap should contain ARGB values for actual
           colors.
        Of course having ARGB data makes sense only on truecolor screens. */
-    if ((fbdepth > 8) && ((curdepth > 8) || cmap)) {
+    if((fbdepth > 8) && ((curdepth > 8) || cmap)) {
         data->curs_pixfmt = vHidd_StdPixFmt_ARGB32;
         data->curs_bpp    = 4;
     } else
@@ -1334,14 +1267,13 @@ static BOOL rethink_cursor(struct gfx_data *data, struct GfxBase *GfxBase)
     }
     /* If we have some good bitmap->bitmap blitting function with alpha channel support,
        we would not need this extra buffer and conversion for truecolor screens. */
-    HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width, data->curs_height, data->curs_pixfmt);
+    HIDD_BM_GetImage(data->curs_bm, data->curs_pixels, data->curs_width * data->curs_bpp, 0, 0, data->curs_width,
+                     data->curs_height, data->curs_pixfmt);
     D(bug("[FakeGfx] Obtained cursor sprite data @ 0x%p\n", data->curs_pixels));
 
-    if (data->curs_pixfmt == vHidd_StdPixFmt_LUT8)
-    {
-        for (i = 0; i < data->curs_width * data->curs_height; i++)
-        {
-            if (data->curs_pixels[i])
+    if(data->curs_pixfmt == vHidd_StdPixFmt_LUT8) {
+        for(i = 0; i < data->curs_width * data->curs_height; i++) {
+            if(data->curs_pixels[i])
                 data->curs_pixels[i] += curs_base;
         }
     }
@@ -1356,18 +1288,16 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     LONG w2end, h2end;
     ULONG xoffset = 0;
     ULONG yoffset = 0;
-    
-    struct TagItem gctags[] =
-    {
-        { aHidd_GC_DrawMode , vHidd_GC_DrawMode_Copy    },
-        { TAG_DONE          , 0UL                       }
+
+    struct TagItem gctags[] = {
+        { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy    },
+        { TAG_DONE, 0UL                       }
     };
-    
-    if (!data->curs_on)
+
+    if(!data->curs_on)
         return;
-    
-    if (NULL == data->curs_bm || NULL == data->framebuffer)
-    {
+
+    if(NULL == data->curs_bm || NULL == data->framebuffer) {
         DB2(bug("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n"));
         DB2(bug("CURS BM: 0x%p, FB: 0x%p\n", data->curs_bm, data->framebuffer));
         return;
@@ -1381,23 +1311,23 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     y        = data->curs_y;
 
     /* Do nothing if sprite went outside of bitmap */
-    if ((x < -width) || (y < -height)) {
+    if((x < -width) || (y < -height)) {
         DCURS(bug("[FakeGfx] Cursor is beyond left or top edge\n"));
         return;
     }
-    if ((x >= fbwidth) || (y >= fbheight)) {
+    if((x >= fbwidth) || (y >= fbheight)) {
         DCURS(bug("[FakeGfx] Cursor is beyond right or bottom edge\n"));
         return;
     }
 
     /* Do some clipping */
-    if (x < 0) {
+    if(x < 0) {
         xoffset = -x;
         width += x;
         x = 0;
     }
-    
-    if (y < 0) {
+
+    if(y < 0) {
         yoffset = -y;
         height += y;
         y = 0;
@@ -1406,14 +1336,12 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     w2end = data->fb_width - width;
     h2end = data->fb_height - height;
 
-    if (x > w2end)
-    {
+    if(x > w2end) {
         width -= (x - w2end);
         DCLIP(bug("[FakeGfx] Clipped sprite width to %d\n", width));
     }
 
-    if (y > h2end)
-    {
+    if(y > h2end) {
         height -= (y - h2end);
         DCLIP(bug("[FakeGfx] Clipped sprite height to %d\n", height));
     }
@@ -1421,9 +1349,8 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
     /* FIXME: clip negative coordinates */
 
     OOP_SetAttrs(data->gc, gctags);
-    
-    if (draw)
-    {
+
+    if(draw) {
         /* Calculate origin of sprite image according to offsets */
         ULONG modulo = data->curs_width * data->curs_bpp;
         UBYTE *pixels = data->curs_pixels + yoffset * modulo + xoffset * data->curs_bpp;
@@ -1431,44 +1358,41 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, BOOL updaterect, struc
         /* Backup under the new cursor image */
         // bug("BACKING UP RENDERED AREA\n");
         HIDD_Gfx_CopyBox(data->gfxhidd
-            , data->framebuffer
-            , x, y
-            , data->curs_backup
-            , 0, 0
-            , width, height
-            , data->gc
-        );
+                         , data->framebuffer
+                         , x, y
+                         , data->curs_backup
+                         , 0, 0
+                         , width, height
+                         , data->gc
+                        );
 
         data->backup_done = TRUE;
 
         DB2(bug("[FakeGfx] Rendering cursor, framebuffer 0x%p\n", data->framebuffer));
         /* Render the cursor image */
-        if (data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
+        if(data->curs_pixfmt == vHidd_StdPixFmt_ARGB32)
             HIDD_BM_PutAlphaImage(data->framebuffer, data->gc, pixels, modulo, x, y, width, height);
         else
             /* data->curs_bpp is always 1 here so we safely ignore it */
             HIDD_BM_PutTranspImageLUT(data->framebuffer, data->gc, pixels, modulo, x, y, width, height, NULL, 0);
 
-        if (updaterect)
+        if(updaterect)
             HIDD_BM_UpdateRect(data->framebuffer, x, y, width, height);
-    
-    }
-    else
-    {
+
+    } else {
         /* Erase the old cursor image */
-        if (data->backup_done)
-        {
+        if(data->backup_done) {
             DB2(bug("[FakeGfx] Restoring cursor area, framebuffer 0x%p\n", data->framebuffer));
             HIDD_Gfx_CopyBox(data->gfxhidd
-                , data->curs_backup
-                , 0, 0
-                , data->framebuffer
-                , x, y
-                , width, height
-                , data->gc
-            );
+                             , data->curs_backup
+                             , 0, 0
+                             , data->framebuffer
+                             , x, y
+                             , width, height
+                             , data->gc
+                            );
 
-            if (updaterect)
+            if(updaterect)
                 HIDD_BM_UpdateRect(data->framebuffer, x, y, width, height);
         }
     }
@@ -1479,8 +1403,7 @@ static void gfx_setFrameBuffer(struct GfxBase *GfxBase, struct gfx_data *data, O
 {
     data->framebuffer = fb;
 
-    if (fb)
-    {
+    if(fb) {
         /* Cache framebuffer size, needed by sprite rendering routine */
         OOP_GetAttr(fb, aHidd_BitMap_Width, &data->fb_width);
         OOP_GetAttr(fb, aHidd_BitMap_Height, &data->fb_height);
@@ -1503,8 +1426,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
        a fakefb object so we remember it right now */
     fakebm = OOP_NewObject(CDD(GfxBase)->fakefbclass, NULL, fakebmtags);
 
-    if (data->fakefb_attr == aHidd_BitMap_FrameBuffer)
-    {
+    if(data->fakefb_attr == aHidd_BitMap_FrameBuffer) {
         data->fakefb      = fakebm;
         gfx_setFrameBuffer(GfxBase, data, framebuffer);
     }
@@ -1512,7 +1434,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
     return fakebm;
 }
 
-static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
+static OOP_Class *init_fakegfxhiddclass(struct GfxBase *GfxBase)
 {
     OOP_Class *cl = NULL;
 
@@ -1563,7 +1485,7 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
         {gfxhidd_descr  , IID_Hidd_Gfx  , num_Hidd_Gfx_Methods  },
         {NULL           , NULL          , 0                     }
     };
-    
+
     OOP_AttrBase MetaAttrBase = OOP_GetAttrBase(IID_Meta);
         
     struct TagItem tags[] =
@@ -1573,24 +1495,22 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
         { aMeta_InstSize        , (IPTR)sizeof (struct gfx_data)    },
         {TAG_DONE               , 0UL                               }
     };
-    
-    
+
+
     D(bug("INIT FAKEGFXCLASS\n"));
 
-    if ((__IHidd_FakeFB = OOP_ObtainAttrBase(IID_Hidd_FakeFB)))
-    {
+    if((__IHidd_FakeFB = OOP_ObtainAttrBase(IID_Hidd_FakeFB))) {
         cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if(NULL != cl)
-        {
+        if(NULL != cl) {
             D(bug("FAKE GFX CLASS INITED\n"));
             cl->UserData = GfxBase;
 
             return cl;
         }
-        
+
         OOP_ReleaseAttrBase(IID_Hidd_FakeFB);
     }
-    
+
     return NULL;
 }
 
@@ -1688,13 +1608,12 @@ static OOP_Class *init_fakefbclass(struct GfxBase *GfxBase)
         {aMeta_InstSize         , (IPTR) sizeof(struct fakefb_data) },
         {TAG_DONE               , 0UL                               }
     };
-    
+
     OOP_Class *cl = NULL;
-    
-    if (MetaAttrBase)
-    {
+
+    if(MetaAttrBase) {
         cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-        if (NULL != cl)
+        if(NULL != cl)
             cl->UserData = GfxBase;
     } /* if(MetaAttrBase) */
 
@@ -1705,18 +1624,16 @@ OOP_Object *init_fakegfxhidd(OOP_Object *gfxhidd, struct GfxBase *GfxBase)
 {
     struct common_driverdata *csd = CDD(GfxBase);
 
-    if (!csd->fakegfxclass)
-    {
+    if(!csd->fakegfxclass) {
         /* Lazy class initialization */
         csd->fakegfxclass       = init_fakegfxhiddclass(GfxBase);
         csd->fakefbclass        = init_fakefbclass(GfxBase);
 
-        if (!csd->fakegfxclass || !csd->fakefbclass)
-        {
+        if(!csd->fakegfxclass || !csd->fakefbclass) {
             cleanup_fakegfxhidd(GfxBase);
             return NULL;
         }
-        
+
     }
 
     return OOP_NewObjectTags(csd->fakegfxclass, NULL, aHidd_FakeGfxHidd_RealGfxHidd, gfxhidd, TAG_DONE);
@@ -1726,14 +1643,12 @@ VOID cleanup_fakegfxhidd(struct GfxBase *GfxBase)
 {
     struct common_driverdata *csd = CDD(GfxBase);
 
-    if (NULL != csd->fakefbclass)
-    {
+    if(NULL != csd->fakefbclass) {
         OOP_DisposeObject((OOP_Object *)csd->fakefbclass);
         csd->fakefbclass = NULL;
     }
 
-    if (NULL != csd->fakegfxclass)
-    {
+    if(NULL != csd->fakegfxclass) {
         OOP_DisposeObject((OOP_Object *)csd->fakegfxclass);
         OOP_ReleaseAttrBase(IID_Hidd_FakeFB);
         csd->fakegfxclass = NULL;

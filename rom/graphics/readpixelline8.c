@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -65,5 +65,5 @@
                            tempRP);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* ReadPixelLine8 */

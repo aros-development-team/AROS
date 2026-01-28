@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRegionRegion()
 */
@@ -51,8 +51,7 @@
 
     struct Region *R3 = NewRegion();
 
-    if (R3)
-    {
+    if(R3) {
         if
         (
             _DoOperationBandBand
@@ -68,8 +67,7 @@
                 &R3->bounds,
                 GfxBase
             )
-        )
-        {
+        ) {
 
             _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
 

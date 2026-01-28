@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitGels()
 */
@@ -54,34 +54,34 @@
 
 *****************************************************************************/
 {
-        AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-        /* initilize the head's coordinates with the lowest possible values */
-        head -> OldY = 0x8000;
-        head -> OldX = 0x8000;
-        head -> Y    = 0x8000;
-        head -> X    = 0x8000;
+    /* initilize the head's coordinates with the lowest possible values */
+    head -> OldY = 0x8000;
+    head -> OldX = 0x8000;
+    head -> Y    = 0x8000;
+    head -> X    = 0x8000;
 
-        /* initilize the tail's coordinates with the highest possible values */
-        tail -> OldY = 0x7FFF;
-        tail -> OldX = 0x7FFF;
-        tail -> Y    = 0x7FFF;
-        tail -> X    = 0x7FFF;
+    /* initilize the tail's coordinates with the highest possible values */
+    tail -> OldY = 0x7FFF;
+    tail -> OldX = 0x7FFF;
+    tail -> Y    = 0x7FFF;
+    tail -> X    = 0x7FFF;
 
-        /* now link it to the gelsinfo and interconnect them */
-        GInfo -> gelHead = head;
-        GInfo -> gelTail = tail;
+    /* now link it to the gelsinfo and interconnect them */
+    GInfo -> gelHead = head;
+    GInfo -> gelTail = tail;
 
-        head -> NextVSprite = tail;
-        head -> ClearPath   = tail;
-        tail -> PrevVSprite = head;
+    head -> NextVSprite = tail;
+    head -> ClearPath   = tail;
+    tail -> PrevVSprite = head;
 
-        head -> IntVSprite = NULL;
-        tail -> IntVSprite = NULL;
-        head -> PrevVSprite = NULL;
-        tail -> NextVSprite = NULL;
+    head -> IntVSprite = NULL;
+    tail -> IntVSprite = NULL;
+    head -> PrevVSprite = NULL;
+    tail -> NextVSprite = NULL;
 
-        if(GInfo->collHandler) GInfo->collHandler->collPtrs[0] = 0;
+    if(GInfo->collHandler) GInfo->collHandler->collPtrs[0] = 0;
 
-        AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitGels */

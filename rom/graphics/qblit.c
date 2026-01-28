@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Queue a Blit
 */
@@ -60,55 +60,52 @@
 
 ******************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  /* this function uses the simple FIFO queue blthd (blttl) */
-  
-  /* I am accessing a public structure and there's no semaphore...
-   * Interrupts disabled because this is accessed from blitter interrupt.
-   */
-  Disable();
-  
-  if (NULL == GfxBase->blthd)
-  {
-    /* OwnBlitter() only if both lists are empty */
-    if (NULL == GfxBase->bsblthd)
-      OwnBlitter();
+    /* this function uses the simple FIFO queue blthd (blttl) */
 
-    /* it's the first one in the list */
-    GfxBase->blthd = bn;
-    GfxBase->blttl = bn;
+    /* I am accessing a public structure and there's no semaphore...
+     * Interrupts disabled because this is accessed from blitter interrupt.
+     */
+    Disable();
 
-    /* In this case the following also has to happen:
-       It is my understanding that at the end of every blit an interrupt
-       occurs that can take care of any blits in this queue or allow
-       a taks to wake up when it was blocked due to a call to OwnBlitter.
-       But in this case there might not be such an interrupt for a long
-       time if no calls to blitterfunctions are made. Therefore this
-       blit might be queued forever. To avoid this I have to cause
-       a Blitter interrupt, if no task owns the blitter right now.
-       (BlitOwner)
-    */
-    /*
-      !!! missing code here!! See explanation above!
-    */
+    if(NULL == GfxBase->blthd) {
+        /* OwnBlitter() only if both lists are empty */
+        if(NULL == GfxBase->bsblthd)
+            OwnBlitter();
+
+        /* it's the first one in the list */
+        GfxBase->blthd = bn;
+        GfxBase->blttl = bn;
+
+        /* In this case the following also has to happen:
+           It is my understanding that at the end of every blit an interrupt
+           occurs that can take care of any blits in this queue or allow
+           a taks to wake up when it was blocked due to a call to OwnBlitter.
+           But in this case there might not be such an interrupt for a long
+           time if no calls to blitterfunctions are made. Therefore this
+           blit might be queued forever. To avoid this I have to cause
+           a Blitter interrupt, if no task owns the blitter right now.
+           (BlitOwner)
+        */
+        /*
+          !!! missing code here!! See explanation above!
+        */
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    {
-      /* Trigger blitter interrupt */
-      volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
-      custom->intreq = INTF_SETCLR | INTF_BLIT;
-      custom->intena = INTF_SETCLR | INTF_BLIT;
-    }
+        {
+            /* Trigger blitter interrupt */
+            volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
+            custom->intreq = INTF_SETCLR | INTF_BLIT;
+            custom->intena = INTF_SETCLR | INTF_BLIT;
+        }
 #endif
-  }
-  else
-  {
-    /* queue it at the end */
-    GfxBase->blttl->n = bn;
-    GfxBase->blttl    = bn;
-  }
+    } else {
+        /* queue it at the end */
+        GfxBase->blttl->n = bn;
+        GfxBase->blttl    = bn;
+    }
 
-  Enable();
+    Enable();
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* QBlit */

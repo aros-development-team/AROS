@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$        $Log
 
     Desc: Graphics function InitRastPort()
@@ -68,8 +68,8 @@
 
     GenMinterms(rp);
 
-    SetFont (rp, GfxBase->DefaultFont);
+    SetFont(rp, GfxBase->DefaultFont);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* InitRastPort */

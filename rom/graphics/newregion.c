@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -62,13 +62,13 @@
 #else
     new = AllocMem(sizeof(struct Region), MEMF_ANY);
 #endif
- 
-    if (new) InitRegion(new);
+
+    if(new) InitRegion(new);
 
     return new;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* NewRegion */
 
 

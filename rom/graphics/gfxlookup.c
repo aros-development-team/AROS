@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -55,32 +55,31 @@
 
 ******************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  IPTR *Hash = GfxBase -> hash_table;
-  ULONG Index = CalcHashIndex((IPTR)pointer, GFXASSOCIATE_HASHSIZE);
+    IPTR *Hash = GfxBase -> hash_table;
+    ULONG Index = CalcHashIndex((IPTR)pointer, GFXASSOCIATE_HASHSIZE);
 
-  /* Whatever structure we get as node we put the pointer in the space
-     following immediately after the ExtendedNode structure.
-     ViewExtra -> View
-     ViewPortExtra -> ViewPort
-  */
+    /* Whatever structure we get as node we put the pointer in the space
+       following immediately after the ExtendedNode structure.
+       ViewExtra -> View
+       ViewPortExtra -> ViewPort
+    */
 
-  ObtainSemaphoreShared(GfxBase->HashTableSemaphore);
+    ObtainSemaphoreShared(GfxBase->HashTableSemaphore);
 
-  struct ExtendedNode * node = (struct ExtendedNode *)(Hash[Index]);
-  while (NULL != node)
-  {
-    if (pointer == (void *) ((struct ViewExtra *)node)->View )
-      break;
-    else
-      /* examine the next element */
-      node = (struct ExtendedNode *)node -> xln_Succ;
-  }
-  
-  ReleaseSemaphore(GfxBase->HashTableSemaphore);
-  return node;
+    struct ExtendedNode *node = (struct ExtendedNode *)(Hash[Index]);
+    while(NULL != node) {
+        if(pointer == (void *)((struct ViewExtra *)node)->View)
+            break;
+        else
+            /* examine the next element */
+            node = (struct ExtendedNode *)node -> xln_Succ;
+    }
 
-  AROS_LIBFUNC_EXIT
+    ReleaseSemaphore(GfxBase->HashTableSemaphore);
+    return node;
+
+    AROS_LIBFUNC_EXIT
 } /* GfxFree */
 

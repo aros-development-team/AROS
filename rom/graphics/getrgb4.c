@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetRGB4()
 */
@@ -50,10 +50,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    UWORD * CT;
+    UWORD *CT;
 
     /* anything invalid?  */
-    if ( (NULL == colormap) || (entry >= colormap->Count) )
+    if((NULL == colormap) || (entry >= colormap->Count))
         return -1L;
 
     /* All we're currently doing is read the entry and return it. */
@@ -61,5 +61,5 @@
     return CT[entry];
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* GetRGB4 */

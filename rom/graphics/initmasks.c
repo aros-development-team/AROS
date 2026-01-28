@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitMasks()
 */
@@ -44,46 +44,41 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  LONG depth, WordsPerPlane, WordsPerLine, count;
-  /* is this a Bob or a VSprite? */
-  if (0 != (vs -> Flags & VSPRITE))
-  {
-    /* assumption: vs -> Widtht = 16 (or 32 on a better chipset??)*/
-    WordsPerLine = vs -> Width >> 4; /* Width:16 */
-    depth = 2; /* standard */
-  }
-  else
-  {
-    WordsPerLine = vs -> Width;
-    depth = vs -> Depth;
-  }
-  WordsPerPlane = (vs -> Height) * WordsPerLine;
+    LONG depth, WordsPerPlane, WordsPerLine, count;
+    /* is this a Bob or a VSprite? */
+    if(0 != (vs -> Flags & VSPRITE)) {
+        /* assumption: vs -> Widtht = 16 (or 32 on a better chipset??)*/
+        WordsPerLine = vs -> Width >> 4; /* Width:16 */
+        depth = 2; /* standard */
+    } else {
+        WordsPerLine = vs -> Width;
+        depth = vs -> Depth;
+    }
+    WordsPerPlane = (vs -> Height) * WordsPerLine;
 
 
-  /* create the standard collision mask by or'ing all bitplanes */
-  for (count = 0; count < WordsPerPlane; count++)
-  {
-    WORD * PlaneData = vs -> ImageData;
-    WORD Data = PlaneData[count];
-    LONG z;
-    for (z = 1; z < depth; z++)
-        Data |= PlaneData[count + z*WordsPerPlane];
-    (vs -> CollMask)[count] = Data;
-  }
+    /* create the standard collision mask by or'ing all bitplanes */
+    for(count = 0; count < WordsPerPlane; count++) {
+        WORD *PlaneData = vs -> ImageData;
+        WORD Data = PlaneData[count];
+        LONG z;
+        for(z = 1; z < depth; z++)
+            Data |= PlaneData[count + z * WordsPerPlane];
+        (vs -> CollMask)[count] = Data;
+    }
 
-  /* create the standard BorderLine from the collision mask by or'ing all
-     lines */
-  for (count = 0 ; count < WordsPerLine; count++)
-  {
-        WORD * CollMask = vs -> CollMask;
+    /* create the standard BorderLine from the collision mask by or'ing all
+       lines */
+    for(count = 0 ; count < WordsPerLine; count++) {
+        WORD *CollMask = vs -> CollMask;
         WORD Data = CollMask[count];
         LONG z;
-        for (z = 1; z < vs-> Height; z++)
-          Data |= CollMask[count + z*WordsPerLine];
+        for(z = 1; z < vs-> Height; z++)
+            Data |= CollMask[count + z * WordsPerLine];
         (vs -> BorderLine)[count] = Data;
-  }
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitMasks */

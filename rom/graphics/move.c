@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$        $Log
 
     Desc: Graphics function Move()
@@ -53,11 +53,11 @@
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
-    
+
     rp->cp_x = x;
     rp->cp_y = y;
     rp->linpatcnt = 15;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* Move */

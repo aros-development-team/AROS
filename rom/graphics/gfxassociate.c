@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -77,7 +77,7 @@
 
     /* Insert the structure into a hash_list which is to be found
        in the gfxlibrary */
-    if (0 != Hash[Index])
+    if(0 != Hash[Index])
         ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
     node -> xln_Succ = (struct Node *)Hash[Index];
     node -> xln_Pred = (struct Node *)&Hash[Index];

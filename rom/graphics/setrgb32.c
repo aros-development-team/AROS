@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set one color register for this Viewport
 */
@@ -72,8 +72,7 @@
     OOP_Object *pf;
     HIDDT_ColorModel colmod;
 
-    if (vp->ColorMap)
-    {
+    if(vp->ColorMap) {
         SetRGB32CM(vp->ColorMap, n, r, g, b);
         /* If we have a colormap, we can find ViewPortExtra faster */
         vpe = vp->ColorMap->cm_vpe;
@@ -88,16 +87,15 @@
      * should be changed. It's likely MakeVPort()'s job to load ColorMap
      * data into the driver.
      */
-    if (IS_HIDD_BM(vp->RasInfo->BitMap))
+    if(IS_HIDD_BM(vp->RasInfo->BitMap))
         /* HIDD bitmap, just take object pointer */
         bm = HIDD_BM_OBJ(vp->RasInfo->BitMap);
-    else
-    {
+    else {
         /* Planar bitmap. Take object from ViewPortExtra (if present). */
-        if (!vpe)
+        if(!vpe)
             vpe = (struct ViewPortExtra *)GfxLookUp(vp);
 
-        if ((!vpe) || (!VPE_DATA(vpe)))
+        if((!vpe) || (!VPE_DATA(vpe)))
             return;
 
         bm = VPE_DATA(vpe)->Bitmap;
@@ -112,23 +110,22 @@
     OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod)
-    {
+    if(vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod) {
         HIDD_BM_SetColors(bm, &hidd_col, n, 1);
 
         D(bug("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
-                         , vp->RasInfo->BitMap
-                         , bm
-                         , n
-                         , hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
-                         , hidd_col.pixval));
+              , vp->RasInfo->BitMap
+              , bm
+              , n
+              , hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
+              , hidd_col.pixval));
 
         /*
          * Store the actual pixel value in associated LUT.
          * This LUT is used by graphics.library for blitting LUT images
          * to direct-color screens.
          */
-        if (IS_HIDD_BM(vp->RasInfo->BitMap))
+        if(IS_HIDD_BM(vp->RasInfo->BitMap))
             HIDD_BM_PIXTAB(vp->RasInfo->BitMap)[n] = hidd_col.pixval;
     }
 

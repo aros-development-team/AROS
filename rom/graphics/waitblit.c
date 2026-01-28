@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Wait for the Blitter to finish
 */
@@ -46,10 +46,10 @@
     AROS_LIBFUNC_INIT
 
 
-/*    aros_print_not_implemented ("WaitBlit"); */
+    /*    aros_print_not_implemented ("WaitBlit"); */
     /* TODO: Write graphics/WaitBlit() */
 
-/*    driver_WaitBlit (GfxBase); */
+    /*    driver_WaitBlit (GfxBase); */
 
     AROS_LIBFUNC_EXIT
 } /* WaitBlit */

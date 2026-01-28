@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitVPort()
 */
@@ -8,22 +8,21 @@
 #include <graphics/view.h>
 #include <proto/exec.h>
 
-static const struct ViewPort defaultViewPort =
-{
-  NULL, /* Next */
-  NULL, /* ColorMap */
-  NULL, /* DspIns */
-  NULL, /* SprIns */
-  NULL, /* ClrIns */
-  NULL, /* UCopIns */
-  0,    /* DWidth */
-  0,    /* DHeight */
-  0,    /* DxOffset */
-  0,    /* DyOffset */
-  0,    /* Modes */
-  0x24, /* SpritePriorities */
-  0,    /* ExtendedModes */
-  NULL  /* RasInfo */
+static const struct ViewPort defaultViewPort = {
+    NULL, /* Next */
+    NULL, /* ColorMap */
+    NULL, /* DspIns */
+    NULL, /* SprIns */
+    NULL, /* ClrIns */
+    NULL, /* UCopIns */
+    0,    /* DWidth */
+    0,    /* DHeight */
+    0,    /* DxOffset */
+    0,    /* DyOffset */
+    0,    /* Modes */
+    0x24, /* SpritePriorities */
+    0,    /* ExtendedModes */
+    NULL  /* RasInfo */
 };
 
 /*****************************************************************************
@@ -67,9 +66,9 @@ static const struct ViewPort defaultViewPort =
     AROS_LIBFUNC_INIT
 
     ASSERT_VALID_PTR(vp);
-    
-    CopyMem ((UBYTE *)&defaultViewPort, vp, sizeof (struct ViewPort));
+
+    CopyMem((UBYTE *)&defaultViewPort, vp, sizeof(struct ViewPort));
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* InitViewPort */

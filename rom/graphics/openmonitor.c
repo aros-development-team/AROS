@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function OpenMonitor()
 */
@@ -56,36 +56,31 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     struct MonitorSpec *mspc = NULL;
 
     D(bug("[GFX] OpenMonitor(%s)\n", monitor_name));
 
-    if (monitor_name)
-    {
-        if (stricmp(monitor_name, DEFAULT_MONITOR_NAME))
-        {
+    if(monitor_name) {
+        if(stricmp(monitor_name, DEFAULT_MONITOR_NAME)) {
             ObtainSemaphoreShared(GfxBase->MonitorListSemaphore);
 
             mspc = (struct MonitorSpec *)FindName(&GfxBase->MonitorList, monitor_name);
             D(bug("[OpenMonitor] Found spec 0x%p\n", mspc));
 
             ReleaseSemaphore(GfxBase->MonitorListSemaphore);
-        }
-        else
+        } else
             mspc = GfxBase->default_monitor;
-    }
-    else if (display_id != INVALID_ID)
-    {
+    } else if(display_id != INVALID_ID) {
         struct MonitorInfo info;
 
-        if (GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_MNTR, display_id) >= offsetof(struct MonitorInfo, ViewPosition))
+        if(GetDisplayInfoData(NULL, (UBYTE *)&info, sizeof(info), DTAG_MNTR, display_id) >= offsetof(struct MonitorInfo,
+                ViewPosition))
             mspc = info.Mspc;
-    }
-    else
+    } else
         mspc = GfxBase->default_monitor;
 
-    if (mspc)
+    if(mspc)
         AROS_ATOMIC_INC(mspc->ms_OpenCount);
 
     return mspc;

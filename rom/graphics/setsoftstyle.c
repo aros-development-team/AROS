@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetSoftStyle()
 */
@@ -65,6 +65,6 @@
     rp->AlgoStyle = ((~realEnable & rp->AlgoStyle) | (realEnable & style));
 
     return rp->AlgoStyle | rp->Font->tf_Style;
-    
+
     AROS_LIBFUNC_EXIT
 } /* SetSoftStyle */

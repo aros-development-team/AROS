@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     Desc: Set display driver notification callback
 */
@@ -27,7 +27,7 @@
 
 /*  FUNCTION
         Specify a display driver notification callback.
-        
+
         The callback function is called using "C" calling convention and its
         declaration should have a form:
 

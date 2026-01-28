@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function SetRast()
@@ -60,13 +60,13 @@
     /* We have to use layers to perform clipping */
     struct BitMap *bm = rp->BitMap;
     HIDDT_Pixel    pixval;
-    
+
     ULONG width, height;
-    
+
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     pixval = BM_PIXEL(bm, pen);
-     
+
     fillrect_pendrmd(rp, 0, 0, width  - 1, height - 1, pixval,
                      vHidd_GC_DrawMode_Copy, TRUE, GfxBase);
 

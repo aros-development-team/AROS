@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CalcIVG()
 */
@@ -53,7 +53,7 @@
     AROS_LIBFUNC_INIT
 
     /* TODO: Write graphics/CalcIVG() */
-    aros_print_not_implemented ("CalcIVG");
+    aros_print_not_implemented("CalcIVG");
 
     return 0;
 

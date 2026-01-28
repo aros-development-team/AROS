@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeCprList()
 */
@@ -43,16 +43,15 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct cprlist * NextCprList = cprList;
-  while (NULL != NextCprList)
-  {
-    cprList = NextCprList;
-    NextCprList = NextCprList->Next;
-    FreeMem(cprList->start, cprList->MaxCount << 2  );
-    FreeMem(cprList, sizeof(struct cprlist));
-  }
+    struct cprlist *NextCprList = cprList;
+    while(NULL != NextCprList) {
+        cprList = NextCprList;
+        NextCprList = NextCprList->Next;
+        FreeMem(cprList->start, cprList->MaxCount << 2);
+        FreeMem(cprList, sizeof(struct cprlist));
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeCprList */

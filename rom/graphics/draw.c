@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function Draw()
 */
@@ -16,14 +16,13 @@
 
 /****************************************************************************************/
 
-struct draw_render_data
-{
+struct draw_render_data {
     WORD x1, y1, x2, y2;
 };
 
 static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
-                           OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-                           struct Rectangle *rect, struct GfxBase *GfxBase)
+                         OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                         struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct draw_render_data *drd = draw_rd;
 
@@ -34,9 +33,9 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + rect->MinX - srcx,
-                                        drd->y1 + rect->MinY - srcy,
-                                        drd->x2 + rect->MinX - srcx,
-                                        drd->y2 + rect->MinY - srcy);
+                     drd->y1 + rect->MinY - srcy,
+                     drd->x2 + rect->MinX - srcx,
+                     drd->y2 + rect->MinY - srcy);
 
     /*
      * After we exit this routine, 'rect' will be not valid any more.
@@ -72,13 +71,13 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
 
     NOTES
         Not yet implemented:
-        
+
           - handle layer->Scroll_X/Scroll_Y.
-          
+
           - handle FRST_DOT which indicates whether to draw
             or to don't draw first pixel of line. Important
             for COMPLEMENT drawmode.
-        
+
     EXAMPLE
 
     BUGS
@@ -103,28 +102,22 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
-    
+
     x1 = rp->cp_x;
     y1 = rp->cp_y;
 
-    if (x1 > x)
-    {
+    if(x1 > x) {
         rr.MinX = x;
         rr.MaxX = x1;
-    }
-    else
-    {
+    } else {
         rr.MinX = x1;
         rr.MaxX = x;
     }
-    
-    if (y1 > y)
-    {
+
+    if(y1 > y) {
         rr.MinY = y;
         rr.MaxY = y1;
-    }
-    else
-    {
+    } else {
         rr.MinY = y1;
         rr.MaxY = y;
     }
@@ -141,7 +134,8 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     drd.y2 = y  - rr.MinY;
 
     D(bug("[Draw] (%d, %d) to (%d, %d)\n", rp->cp_x, rp->cp_y, x, y));
-    D(bug("[Draw] RastPort 0x%p, Flags 0x%04X, GC 0x%p, FG 0x%08lX, BG 0x%08lX\n", rp, rp->Flags, gc, GC_FG(gc), GC_BG(gc)));
+    D(bug("[Draw] RastPort 0x%p, Flags 0x%04X, GC 0x%p, FG 0x%08lX, BG 0x%08lX\n", rp, rp->Flags, gc, GC_FG(gc),
+          GC_BG(gc)));
 
     do_render_with_gc(rp, NULL, &rr, draw_render, &drd, gc, TRUE, FALSE, GfxBase);
 
@@ -153,5 +147,5 @@ static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     rp->cp_y = y;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* Draw */

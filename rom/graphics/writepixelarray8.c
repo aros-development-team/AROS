@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -66,15 +66,15 @@
     LONG pixwritten;
 
     EnterFunc(bug("WritePixelArray8(%p, %d, %d, %d, %d)\n",
-        rp, xstart, ystart, xstop, ystop));
+                  rp, xstart, ystart, xstop, ystop));
 
     pixwritten = write_pixels_8(rp, array
-        , ((xstop - xstart + 1) + 15) & ~15 /* modulo */
-        , xstart, ystart, xstop, ystop
-        , NULL, TRUE, GfxBase);
+                                , ((xstop - xstart + 1) + 15) & ~15 /* modulo */
+                                , xstart, ystart, xstop, ystop
+                                , NULL, TRUE, GfxBase);
 
     ReturnInt("WritePixelArray8", LONG, pixwritten);
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* WritePixelArray8 */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AddBob()
 */
@@ -48,24 +48,24 @@
 
 *****************************************************************************/
 {
-        AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-        if (NULL != rp->GelsInfo) {
+    if(NULL != rp->GelsInfo) {
 
-                /*
-                 * Check whether the head and tail VSprite
-                 * were alone before. If so, then give them
-                 * a IntVSprite structure now.
-                 */
-                if (rp->GelsInfo->gelHead->NextVSprite ==
-                    rp->GelsInfo->gelTail) {
-                        _CreateIntVSprite(rp->GelsInfo->gelHead, NULL, GfxBase);
-                        _CreateIntVSprite(rp->GelsInfo->gelTail, NULL, GfxBase);
-                }
-                bob->Flags &= 0x00FF;
-                bob->Flags |= BWAITING;
-                AddVSprite (bob->BobVSprite, rp);
+        /*
+         * Check whether the head and tail VSprite
+         * were alone before. If so, then give them
+         * a IntVSprite structure now.
+         */
+        if(rp->GelsInfo->gelHead->NextVSprite ==
+                rp->GelsInfo->gelTail) {
+            _CreateIntVSprite(rp->GelsInfo->gelHead, NULL, GfxBase);
+            _CreateIntVSprite(rp->GelsInfo->gelTail, NULL, GfxBase);
         }
-        
-        AROS_LIBFUNC_EXIT
+        bob->Flags &= 0x00FF;
+        bob->Flags |= BWAITING;
+        AddVSprite(bob->BobVSprite, rp);
+    }
+
+    AROS_LIBFUNC_EXIT
 } /* AddBob */

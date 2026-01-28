@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function UCopperListInit()
 */
@@ -52,38 +52,36 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  /* has this structure previously been initialized? */
+    /* has this structure previously been initialized? */
 
-  if (ucl->FirstCopList != NULL &&
-      ucl->FirstCopList->MaxCount != 0 &&
-      ucl->FirstCopList->CopIns != NULL )
-  {
-    ucl->FirstCopList->Count  = ucl->FirstCopList->MaxCount;
-    ucl->FirstCopList->CopPtr = ucl->FirstCopList->CopIns;
-   return ucl->FirstCopList;
-  }
+    if(ucl->FirstCopList != NULL &&
+            ucl->FirstCopList->MaxCount != 0 &&
+            ucl->FirstCopList->CopIns != NULL) {
+        ucl->FirstCopList->Count  = ucl->FirstCopList->MaxCount;
+        ucl->FirstCopList->CopPtr = ucl->FirstCopList->CopIns;
+        return ucl->FirstCopList;
+    }
 
 
-  if (NULL != (ucl->FirstCopList =
-                 (struct CopList *)AllocMem(sizeof(struct CopList),
-                                            MEMF_CLEAR|MEMF_PUBLIC)))
-  {
-  /* if we were successful with the memory allocation then let's get
-   * the buffer for the instructions
-   */
-    ucl->CopList = ucl->FirstCopList;
-    /* further init the coplist structure */
-    ucl->FirstCopList->MaxCount = n;
+    if(NULL != (ucl->FirstCopList =
+                    (struct CopList *)AllocMem(sizeof(struct CopList),
+                            MEMF_CLEAR | MEMF_PUBLIC))) {
+        /* if we were successful with the memory allocation then let's get
+         * the buffer for the instructions
+         */
+        ucl->CopList = ucl->FirstCopList;
+        /* further init the coplist structure */
+        ucl->FirstCopList->MaxCount = n;
 
-    ucl->FirstCopList->CopIns = (struct CopIns *)AllocMem(n*sizeof(struct CopIns), MEMF_CLEAR|MEMF_PUBLIC);
-    ucl->FirstCopList->CopPtr = ucl->FirstCopList->CopIns;
+        ucl->FirstCopList->CopIns = (struct CopIns *)AllocMem(n * sizeof(struct CopIns), MEMF_CLEAR | MEMF_PUBLIC);
+        ucl->FirstCopList->CopPtr = ucl->FirstCopList->CopIns;
 
-    /* did we get the memory? */
-    if (NULL == ucl->FirstCopList->CopIns)
-      return (NULL);
-  }
-  return (ucl->FirstCopList);
-  AROS_LIBFUNC_EXIT
+        /* did we get the memory? */
+        if(NULL == ucl->FirstCopList->CopIns)
+            return (NULL);
+    }
+    return (ucl->FirstCopList);
+    AROS_LIBFUNC_EXIT
 } /* UCopperListInit */

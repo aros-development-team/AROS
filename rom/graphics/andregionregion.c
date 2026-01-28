@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRegionRegion()
 */
@@ -50,13 +50,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (!R1->RegionRectangle || !R2->RegionRectangle || !overlap(R1->bounds, R2->bounds))
-    {
+    if(!R1->RegionRectangle || !R2->RegionRectangle || !overlap(R1->bounds, R2->bounds)) {
         ClearRegion(R2);
         return TRUE;
-    }
-    else
-    {
+    } else {
         struct Region R3;
 
         InitRegion(&R3);
@@ -76,8 +73,7 @@
                 &R3.bounds,
                 GfxBase
             )
-        )
-        {
+        ) {
             ClearRegion(R2);
 
             *R2 = R3;

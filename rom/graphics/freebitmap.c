@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Free the memory occupied by a BitMap.
 */
@@ -51,36 +51,30 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (!bm) return;
-    
+    if(!bm) return;
+
     ASSERT_VALID_PTR(bm);
 
-    if (IS_HIDD_BM(bm))
-    {
+    if(IS_HIDD_BM(bm)) {
         OOP_Object *bmobj = HIDD_BM_OBJ(bm);
-        
+
         D(bug("%s: Free HIDD bitmap %p (obj %p)\n", __func__, bm, bmobj));
 
-        if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB)
-        {
+        if(HIDD_BM_FLAGS(bm) & HIDD_BMF_SHARED_PIXTAB) {
             /* NULL colormap otherwise bitmap killing also kills
                the colormap object of the bitmap object
                from which we shared it = to which it belongs */
-            if (bmobj)
+            if(bmobj)
                 HIDD_BM_SetColorMap(bmobj, NULL);
-        }
-        else if (HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) // (bm->Flags & BMF_DISPLAYABLE)
-        {
+        } else if(HIDD_BM_FLAGS(bm) & HIDD_BMF_SCREEN_BITMAP) { // (bm->Flags & BMF_DISPLAYABLE)
             FreeVec(HIDD_BM_PIXTAB(bm));
         }
 
-        if (bmobj)
+        if(bmobj)
             OOP_DisposeObject(bmobj);
 
-        FreeMem(bm, sizeof (struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES);
-    }
-    else
-    {
+        FreeMem(bm, sizeof(struct BitMap) + sizeof(PLANEPTR) * HIDD_BM_EXTRAPLANES);
+    } else {
         ULONG plane;
         ULONG width;
 
@@ -89,32 +83,26 @@
         width = bm->BytesPerRow * 8;
 
         /* Is Interleaved? */
-        if(bm->Flags & BMF_INTERLEAVED)
-        {
-            if(bm->Planes[0])
-            {
-              ASSERT_VALID_PTR(bm->Planes[0]);
-              FreeRaster (bm->Planes[0], width*bm->Depth, bm->Rows);
+        if(bm->Flags & BMF_INTERLEAVED) {
+            if(bm->Planes[0]) {
+                ASSERT_VALID_PTR(bm->Planes[0]);
+                FreeRaster(bm->Planes[0], width * bm->Depth, bm->Rows);
             }
-        }
-        else
-        {
-            for (plane=0; plane < bm->Depth; plane ++)
-            {
+        } else {
+            for(plane = 0; plane < bm->Depth; plane ++) {
                 /* Take care of two special cases: plane pointers containing NULL or -1
                  * are supported by BltBitMap() as all 0's and all 1's planes
                  */
-                if (bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR)-1)
-                {
+                if(bm->Planes[plane] && bm->Planes[plane] != (PLANEPTR) - 1) {
                     ASSERT_VALID_PTR(bm->Planes[plane]);
-                    FreeRaster (bm->Planes[plane], width, bm->Rows);
+                    FreeRaster(bm->Planes[plane], width, bm->Rows);
                 }
             }
 
         }
 
-        FreeMem (bm, sizeof(struct BitMap) +
-                     ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
+        FreeMem(bm, sizeof(struct BitMap) +
+                ((bm->Depth > 8) ? (bm->Depth - 8) * sizeof(PLANEPTR) : 0));
     }
 
     AROS_LIBFUNC_EXIT

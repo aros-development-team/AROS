@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function InitMasks()
 */
@@ -44,29 +44,26 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct AnimComp * CurAnimComp = anOb -> HeadComp;
+    struct AnimComp *CurAnimComp = anOb -> HeadComp;
 
-  /* visit all the components of this AnimOb */
-  while (NULL != CurAnimComp)
-  {
-    struct AnimComp * CurSeqAnimComp = CurAnimComp;
-    /* visit all sequences of the current component of this AnimOb
-     * they might be connected like a ring (most probably are)!
-     */
-    do
-    {
-      InitMasks(CurSeqAnimComp -> AnimBob -> BobVSprite);
+    /* visit all the components of this AnimOb */
+    while(NULL != CurAnimComp) {
+        struct AnimComp *CurSeqAnimComp = CurAnimComp;
+        /* visit all sequences of the current component of this AnimOb
+         * they might be connected like a ring (most probably are)!
+         */
+        do {
+            InitMasks(CurSeqAnimComp -> AnimBob -> BobVSprite);
 
-      /* go to the next sequence of this component */
-      CurSeqAnimComp = CurSeqAnimComp -> NextSeq;
+            /* go to the next sequence of this component */
+            CurSeqAnimComp = CurSeqAnimComp -> NextSeq;
+        } while(CurAnimComp != CurSeqAnimComp && NULL != CurAnimComp);
+
+        /* go to next component */
+        CurAnimComp = CurAnimComp -> NextComp;
     }
-    while (CurAnimComp != CurSeqAnimComp && NULL != CurAnimComp );
 
-    /* go to next component */
-    CurAnimComp = CurAnimComp -> NextComp;
-  }
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitGMasks */

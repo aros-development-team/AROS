@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Try to own the blitter for private usage
 */
@@ -56,29 +56,29 @@
 
 ******************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct BlitWaitQNode node;
-  struct Task *me;
-  
-  me = FindTask(NULL);
+    struct BlitWaitQNode node;
+    struct Task *me;
 
-  D(bug("OwnBlitter: Request by Task %p)\n", me));
+    me = FindTask(NULL);
 
-  Disable();
-  for (;;) {
-    if (GfxBase->BlitOwner == NULL) {
-      GfxBase->BlitOwner = me;
-      Enable();
-      D(bug("OwnBlitter: Now owned by Task %p\n", me));
-      return;
+    D(bug("OwnBlitter: Request by Task %p)\n", me));
+
+    Disable();
+    for(;;) {
+        if(GfxBase->BlitOwner == NULL) {
+            GfxBase->BlitOwner = me;
+            Enable();
+            D(bug("OwnBlitter: Now owned by Task %p\n", me));
+            return;
+        }
+        node.task = me;
+        AddTail(&GfxBase->BlitWaitQ, (struct Node *)&node);
+        SetSignal(0, 1 << SIGB_BLIT);
+        Wait(1 << SIGB_BLIT);
+        Remove((struct Node *)&node);
     }
-    node.task = me;
-    AddTail(&GfxBase->BlitWaitQ, (struct Node*)&node);
-    SetSignal(0, 1 << SIGB_BLIT);
-    Wait(1 << SIGB_BLIT);
-    Remove((struct Node*)&node);
-  }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OwnBlitter */

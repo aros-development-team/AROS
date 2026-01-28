@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FontExtent()
 */
@@ -69,24 +69,23 @@
     WORD maxwidth = -0x7fff;
     WORD minwidth =  0x7fff;
     WORD width    =  0;
-    
-    for(i = 0; i <= font->tf_HiChar - font->tf_LoChar; i++)
-    {
+
+    for(i = 0; i <= font->tf_HiChar - font->tf_LoChar; i++) {
         WORD kern;                 /* Kerning value for the character */
         WORD wspace;               /* Width of character including CharSpace */
-        
+
         kern = 0;
-        
+
         if(font->tf_CharKern != NULL)
             kern = ((WORD *)font->tf_CharKern)[i];
-        
+
         minwidth = min(minwidth, kern);
-        
+
         /* tf_CharLoc[2*i+1] contains the width of the glyph bitmap.
            But in AROS tf_CharLoc is being handled like an LONG array,
            not a WORD array, so the width is tf_CarLoc[i] & 0xFFFF */
         maxwidth = max(maxwidth, kern + ((((LONG *)font->tf_CharLoc)[i]) & 0xFFFF));
-        
+
         if(font->tf_CharSpace != NULL)
             wspace = kern + ((WORD *)font->tf_CharSpace)[i];
         else
@@ -99,13 +98,13 @@
         else
             width = max(wspace, width);
     }
- 
+
     fontExtent->te_Width       = width;
     fontExtent->te_Height      = font->tf_YSize;
     fontExtent->te_Extent.MinX = minwidth;
     fontExtent->te_Extent.MaxX = maxwidth - 1;
     fontExtent->te_Extent.MinY = -font->tf_Baseline;
     fontExtent->te_Extent.MaxY = font->tf_YSize - font->tf_Baseline - 1;
-    
+
     AROS_LIBFUNC_EXIT
 } /* FontExtent */

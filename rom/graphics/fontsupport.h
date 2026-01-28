@@ -1,7 +1,7 @@
 #ifndef FONTSUPPORT_H
 #define FONTSUPPORT_H
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Misc definitions internal to fonts.
@@ -15,20 +15,18 @@
 #define NUMCHARS(tf) 	((tf->tf_HiChar - tf->tf_LoChar) + 2)
 #define CTF(x)      	((struct ColorTextFont *)x)
 
-struct tfe_hashnode
-{
+struct tfe_hashnode {
     struct tfe_hashnode 	*next;
     struct TextFont		*back;
     struct TextFontExtension	*ext;
-    
+
     /* Color font data in chunky format */
     UBYTE   	    	    	*chunky_colorfont;
 };
 
-struct TextFontExtension_intern
-{
+struct TextFontExtension_intern {
     struct TextFontExtension  tfe;
-    struct tfe_hashnode      *hash;    
+    struct tfe_hashnode      *hash;
 };
 
 #define TFE_INTERN(tfe) (*(struct TextFontExtension_intern **)&tfe)
@@ -36,13 +34,13 @@ struct TextFontExtension_intern
 extern struct tfe_hashnode *tfe_hashlookup(struct TextFont *tf, struct GfxBase *GfxBase);
 
 extern void tfe_hashadd(struct tfe_hashnode *hn, struct TextFont *tf,
-    	    	    	struct TextFontExtension *etf, struct GfxBase *GfxBase);
+                        struct TextFontExtension *etf, struct GfxBase *GfxBase);
 
 
 extern void tfe_hashdelete(struct TextFont *tf, struct GfxBase *GfxBase);
 struct tfe_hashnode *tfe_hashnode_create(struct GfxBase *GfxBase);
 
 UBYTE *colorfontbm_to_chunkybuffer(struct TextFont *font, struct GfxBase *GfxBase);
-	
+
 
 #endif /* FONTSUPPORT_H */

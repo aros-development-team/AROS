@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AreaEllipse()
 */
@@ -59,21 +59,19 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct AreaInfo * areainfo = rp->AreaInfo;
+    struct AreaInfo *areainfo = rp->AreaInfo;
 
     /*  Is there still enough storage area in the areainfo-buffer?
      *  We need at least a storage area for two vectors
      */
-    if (areainfo->Count + 2 <= areainfo->MaxCount)
-    {
+    if(areainfo->Count + 2 <= areainfo->MaxCount) {
         FIX_GFXCOORD(cx);
         FIX_GFXCOORD(cy);
         FIX_GFXCOORD(a);
         FIX_GFXCOORD(b);
-        
+
         /* is this the very first entry in the vector collection matrix */
-        if (0 == areainfo->Count)
-        {
+        if(0 == areainfo->Count) {
             areainfo->VctrPtr[0] = cx;
             areainfo->VctrPtr[1] = cy;
             areainfo->FlagPtr[0] = AREAINFOFLAG_ELLIPSE;
@@ -86,31 +84,27 @@
             areainfo->FlagPtr    = &areainfo->FlagPtr[2];
 
             areainfo->Count += 2;
-        }
-        else
-        {
+        } else {
             areaclosepolygon(areainfo);
 
             /* Need to check again, if there is enough room, because
                areaclosepolygon might have eaten one vector!! */
 
-            if (areainfo->Count + 2 > areainfo->MaxCount)
+            if(areainfo->Count + 2 > areainfo->MaxCount)
                 return -1;
-            
+
             /*  If the previous command in the vector collection matrix was a move then
              *  erase that one
              */
 
-            if (AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1])
-            {
+            if(AREAINFOFLAG_MOVE == areainfo->FlagPtr[-1]) {
                 areainfo->VctrPtr = &areainfo->VctrPtr[-2];
                 areainfo->FlagPtr--;
                 areainfo->Count--;
             }
 
             /* still enough storage area?? */
-            if (areainfo->Count + 2 <= areainfo->MaxCount)
-            {
+            if(areainfo->Count + 2 <= areainfo->MaxCount) {
                 areainfo->VctrPtr[0] = cx;
                 areainfo->VctrPtr[1] = cy;
                 areainfo->FlagPtr[0] = AREAINFOFLAG_ELLIPSE;
@@ -125,10 +119,9 @@
                 areainfo->Count += 2;
 
                 return 0;
-            }
-            else
+            } else
                 return -1;
-            
+
         } /* else branch of if (0 == areainfo->Count) */
 
         /* will never get to this point! */
@@ -138,5 +131,5 @@
     return -1;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* AreaEllipse */

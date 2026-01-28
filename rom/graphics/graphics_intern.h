@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -46,16 +46,14 @@
 #define BMDEPTH_COMPATIBILITY	1
 #define SIZERECTBUF		128
 
-struct RegionRectangleExt
-{
+struct RegionRectangleExt {
     struct RegionRectangle     RR;
     IPTR                       Counter;
 };
 
-struct RegionRectangleExtChunk
-{
-     struct RegionRectangleExt       Rects[SIZERECTBUF];
-     struct RegionRectangleExtChunk *FirstChunk;
+struct RegionRectangleExtChunk {
+    struct RegionRectangleExt       Rects[SIZERECTBUF];
+    struct RegionRectangleExtChunk *FirstChunk;
 };
 
 #define RRE(x)     ((struct RegionRectangleExt *)(x))
@@ -71,7 +69,7 @@ typedef WORD PalExtra_AllocList_Type;
 #define PALEXTRA_REFCNT(pe,n) 	    (((PalExtra_RefCnt_Type *)(pe)->pe_RefCnt)[(n)])
 #define PALEXTRA_ALLOCLIST(pe,n)    (((PalExtra_AllocList_Type *)(pe)->pe_AllocList)[(n)])
 
-/* 
+/*
  * Display mode database item. A pointer to this structure is used as a DisplayInfoHandle.
  * In future, if needed, this structure can be extended to hold static bunches of associated
  * DisplayInfoData.
@@ -79,8 +77,7 @@ typedef WORD PalExtra_AllocList_Type;
 
 struct monitor_driverdata;
 
-struct DisplayInfoHandle
-{
+struct DisplayInfoHandle {
     HIDDT_ModeID	       id;  	/* HIDD Mode ID (without card ID)	    */
     struct monitor_driverdata *drv;	/* Points back to display driver descriptor */
 };
@@ -88,8 +85,7 @@ struct DisplayInfoHandle
 #define DIH(x) ((struct DisplayInfoHandle *)x)
 
 /* Monitor driver data. Describes a single physical display. */
-struct monitor_driverdata
-{
+struct monitor_driverdata {
     struct monitor_driverdata *next;		/* Next driver data in chain			  */
     ULONG		       id;		/* Card ID (part of display mode ID)		  */
     ULONG		       mask;		/* Mask of mode ID				  */
@@ -123,8 +119,7 @@ struct monitor_driverdata
 #define DF_DirectFB    0x0008	/* Driver uses a direct-mode framebuffer	*/
 
 /* Common driver data data to all monitors */
-struct common_driverdata
-{
+struct common_driverdata {
     /* The order of these fields match struct monitor_driverdata */
     struct monitor_driverdata *monitors;		/* First monitor driver		   */
     ULONG		       invalid_id;		/* INVALID_ID, for GET_BM_MODEID() */
@@ -134,7 +129,7 @@ struct common_driverdata
 
     /* End of driverdata */
     APTR		       notify_data;		      /* User data for notification callback  */
-    APTR (*DriverNotify)(APTR obj, BOOL add, APTR userdata); /* Display driver notification callback */
+    APTR(*DriverNotify)(APTR obj, BOOL add, APTR userdata);  /* Display driver notification callback */
     struct SignalSemaphore     displaydb_sem;		/* Display mode database semaphore */
 
     ObjectCache     	      *gc_cache;		/* GC cache			   */
@@ -176,8 +171,7 @@ struct common_driverdata
 #define DRIVERDATALIST_HASHSIZE 256
 
 /* Internal GFXBase struct */
-struct GfxBase_intern
-{
+struct GfxBase_intern {
     struct GfxBase 	 	gfxbase;
 
     ULONG			displays;	     /* Number of display drivers installed in the system	 */
@@ -187,7 +181,7 @@ struct GfxBase_intern
     struct SignalSemaphore	view_sema;	     /* ActiView arbitration semaphore				 */
 
     /* TextFontExtension pool */
-    struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
+    struct tfe_hashnode   	 *tfe_hashtab[TFE_HASHTABSIZE];
     struct SignalSemaphore  	tfe_hashtab_sema;
     struct SignalSemaphore  	fontsem;
 
@@ -283,71 +277,75 @@ extern ULONG CalcHashIndex(IPTR n, UWORD size);
 struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct GfxBase *GfxBase);
 
 /* a function needed by ClipBlit */
-void internal_ClipBlit(struct RastPort * srcRP,
+void internal_ClipBlit(struct RastPort *srcRP,
                        WORD xSrc,
                        WORD ySrc,
-                       struct RastPort * destRP,
+                       struct RastPort *destRP,
                        WORD xDest,
                        WORD yDest,
                        WORD xSize,
                        WORD ySize,
                        UBYTE minterm,
-                       struct GfxBase * GfxBase);
+                       struct GfxBase *GfxBase);
 
 /* Driver prototypes */
 
-typedef ULONG (*VIEW_FUNC)(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+typedef ULONG(*VIEW_FUNC)(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
+                          struct GfxBase *GfxBase);
 
-extern ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
+                                     struct GfxBase *GfxBase);
+extern ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
+                                  struct GfxBase *GfxBase);
 extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
 extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd,
+        struct GfxBase *GfxBase);
 extern ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase);
 extern void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 extern void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp
-	, WORD x, WORD y
-	, ULONG apen, ULONG bpen
-	, ULONG *pixval_ptr
-	, struct GfxBase *GfxBase);
+                        , WORD x, WORD y
+                        , ULONG apen, ULONG bpen
+                        , ULONG *pixval_ptr
+                        , struct GfxBase *GfxBase);
 
 /* function for area opeartions */
-BOOL areafillpolygon(struct RastPort  * rp,
-                     struct Rectangle * bounds,
+BOOL areafillpolygon(struct RastPort   *rp,
+                     struct Rectangle *bounds,
                      UWORD              first_idx,
                      UWORD              last_idx,
                      ULONG              bytesperrow,
-                     struct GfxBase   * GfxBase);
+                     struct GfxBase    *GfxBase);
 
-void areafillellipse(struct RastPort   * rp,
-		     struct Rectangle  * bounds,
-                     UWORD             * CurVctr,
+void areafillellipse(struct RastPort    *rp,
+                     struct Rectangle   *bounds,
+                     UWORD              *CurVctr,
                      ULONG               BytesPerRow,
-                     struct GfxBase    * GfxBase);
+                     struct GfxBase     *GfxBase);
 
 void areaclosepolygon(struct AreaInfo *areainfo);
 
 /* functions in color_support */
-ULONG color_distance(struct ColorMap * cm,
+ULONG color_distance(struct ColorMap *cm,
                      ULONG r,
                      ULONG g,
                      ULONG b,
                      ULONG index);
 
-BOOL color_equal(struct ColorMap * cm,
+BOOL color_equal(struct ColorMap *cm,
                  ULONG r,
                  ULONG g,
                  ULONG b,
                  ULONG index);
 
 VOID color_get(struct ColorMap *cm,
-		ULONG *r,
-		ULONG *g,
-		ULONG *b,
-		ULONG index);
+               ULONG *r,
+               ULONG *g,
+               ULONG *b,
+               ULONG index);
 
 void _DisposeRegionRectangleList
 (
@@ -414,14 +412,12 @@ BOOL _LinkRegionRectangleList
 
 #define SIZECHUNKBUF 20
 
-struct ChunkExt
-{
+struct ChunkExt {
     struct RegionRectangleExtChunk  Chunk;
     struct ChunkPool               *Owner;
 };
 
-struct ChunkPool
-{
+struct ChunkPool {
     struct MinNode  Node;
     struct ChunkExt Chunks[SIZECHUNKBUF];
     struct MinList  ChunkList;
@@ -434,10 +430,9 @@ void __DisposeRegionRectangleExtChunk
     struct GfxBase *GfxBase
 );
 
-struct BlitWaitQNode
-{
-	struct MinNode node;
-	struct Task *task;
+struct BlitWaitQNode {
+    struct MinNode node;
+    struct Task *task;
 };
 
 #endif /* GRAPHICS_INTERN_H */

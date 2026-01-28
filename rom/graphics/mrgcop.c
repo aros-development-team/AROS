@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function MrgCop()
 */
@@ -43,7 +43,7 @@
 
     NOTES
         Pre-v39 AmigaOS returns void.
-        
+
         If the given view is already on display, changes appear immediately.
 
     EXAMPLE
@@ -71,14 +71,14 @@
     /* Build lists of displayed bitmaps, one list per display.
        Lists are embedded in ViewPortExtra.DriverData field. Start of
        the list is the first ViewPort for this display. */
-    for (first = view->ViewPort; first; first = first->Next) {
+    for(first = view->ViewPort; first; first = first->Next) {
         /* Ignore hidden ViewPorts */
-        if (!(first->Modes & VP_HIDE)) {
+        if(!(first->Modes & VP_HIDE)) {
 
             mdd = GET_VP_DRIVERDATA(first);
             /* Ignore next ViewPort if it belongs to the same display.
                This makes us slightly faster */
-            if (mdd == prev_mdd)
+            if(mdd == prev_mdd)
                 continue;
             prev_mdd = mdd;
 
@@ -91,10 +91,10 @@
 
             /* Now we look down the list for ViewPorts with the same display driver as
                current ViewPort and add them to a list */
-            for (vp = first->Next; vp; vp = vp->Next) {
-                if (!(vp->Modes & VP_HIDE)) {
+            for(vp = first->Next; vp; vp = vp->Next) {
+                if(!(vp->Modes & VP_HIDE)) {
 
-                    if (GET_VP_DRIVERDATA(vp) == mdd) {
+                    if(GET_VP_DRIVERDATA(vp) == mdd) {
                         vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
                         D(bug("[MrgCop] Attaching ViewPort 0x%p, data 0x%p\n", vp, vpd));
 
@@ -107,22 +107,19 @@
         }
     }
 
-    if (prev_mdd)
-    {
+    if(prev_mdd) {
         ret = DoViewFunction(view, driver_PrepareViewPorts, GfxBase);
 
-        if (ret == MCOP_OK)
-        {
+        if(ret == MCOP_OK) {
             ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
             /* If the given view is a currently displayed one, refresh immediately */
-            if (GfxBase->ActiView == view)
+            if(GfxBase->ActiView == view)
                 DoViewFunction(view, driver_LoadViewPorts, GfxBase);
 
             ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
         }
-    }
-    else
+    } else
         ret = MCOP_NOP;
 
     return ret;

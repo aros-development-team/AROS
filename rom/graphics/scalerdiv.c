@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ScalerDiv()
 */
@@ -50,21 +50,21 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  ULONG res;
-  if (0 == factor || 0 == numerator || 0 == denominator)
-    return 0;
-  else
-    res = (ULONG)((ULONG)factor * (ULONG)numerator) / denominator;
+    ULONG res;
+    if(0 == factor || 0 == numerator || 0 == denominator)
+        return 0;
+    else
+        res = (ULONG)((ULONG)factor * (ULONG)numerator) / denominator;
 
-  if (0 == res)
-    return 1;
+    if(0 == res)
+        return 1;
 
-  if (((factor * numerator) % denominator) >= ((denominator + 1) >> 1))
-    res++;
+    if(((factor * numerator) % denominator) >= ((denominator + 1) >> 1))
+        res++;
 
-  return res;
+    return res;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ScalerDiv */

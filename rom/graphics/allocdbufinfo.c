@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -58,7 +58,7 @@
 
     return (struct DBufInfo *)AllocMem(sizeof(struct DBufInfo),
                                        MEMF_ANY | MEMF_CLEAR);
-    
+
     AROS_LIBFUNC_EXIT
 } /* AllocDBufInfo */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetChipRev()
 */
@@ -46,7 +46,7 @@
     AROS_LIBFUNC_INIT
 
     /* TODO: Write graphics/SetChipRev() */
-    aros_print_not_implemented ("SetChipRev");
+    aros_print_not_implemented("SetChipRev");
 
     return GfxBase->ChipRevBits0;
 

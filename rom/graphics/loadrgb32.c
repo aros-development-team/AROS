@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -52,21 +52,19 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     ASSERT_VALID_PTR(vp);
     ASSERT_VALID_PTR_OR_NULL(table);
 
     /* it is legal to pass a NULL table */
-    
+
     D(bug("LoadRGB32(0x%p)\n", vp));
-    if (table)
-    {
+    if(table) {
         ULONG count;
-        
+
         /* table is terminated by a count value of 0 */
-        
-        while ((count = (*table) >> 16))
-        {
+
+        while((count = (*table) >> 16)) {
             ULONG first, t;
 
             first = (*table) & 0xFFFF;
@@ -74,21 +72,20 @@
             table ++;
 
             D(bug("[LoadRGB32] Setting %u colors starting from %u\n", count, first));
-            for (t = 0; t < count; t++)
-            {
+            for(t = 0; t < count; t++) {
                 D(bug("[LoadRGB32] Color %u R 0x%08lX G 0x%08lX B %08lX\n", t + first, table[0], table[1], table[2]));
-                SetRGB32 (vp,
-                          t + first,
-                          table[0],
-                          table[1],
-                          table[2]);
+                SetRGB32(vp,
+                         t + first,
+                         table[0],
+                         table[1],
+                         table[2]);
 
                 table += 3;
             }
 
         } /* while (*table) */
     }
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* LoadRGB32 */

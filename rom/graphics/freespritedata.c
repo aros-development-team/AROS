@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeSpriteData()
 */
@@ -47,12 +47,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (NULL != extsp) {
-        if (NULL != extsp->es_BitMap) {
+    if(NULL != extsp) {
+        if(NULL != extsp->es_BitMap) {
             FreeBitMap(extsp->es_BitMap);
         }
         FreeVec(extsp);
     }
-    
+
     AROS_LIBFUNC_EXIT
 } /* FreeSpriteData */

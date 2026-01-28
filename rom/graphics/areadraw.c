@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AreaDraw()
 */
@@ -54,32 +54,31 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct AreaInfo * areainfo = rp->AreaInfo;
-    
+    struct AreaInfo *areainfo = rp->AreaInfo;
+
     /* Is there still enough storage area in the areainfo-buffer?
      * We only need on vector to store here.
      */
 
-    if (areainfo->Count + 1 <= areainfo->MaxCount)
-    {
+    if(areainfo->Count + 1 <= areainfo->MaxCount) {
         FIX_GFXCOORD(x);
         FIX_GFXCOORD(y);
-        
+
         /* increment counter */
-        
+
         areainfo->Count++;
         areainfo->VctrPtr[0] = x;
         areainfo->VctrPtr[1] = y;
         areainfo->FlagPtr[0] = AREAINFOFLAG_DRAW;
-        
+
         areainfo->VctrPtr    = &areainfo->VctrPtr[2];
         areainfo->FlagPtr++;
-        
+
         return 0;
     }
 
     return -1;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* AreaDraw */

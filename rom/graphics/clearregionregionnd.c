@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRegionRegion()
 */
@@ -52,32 +52,26 @@
 
     struct Region *R3 = NewRegion();
 
-    if (!R3)
-    {
+    if(!R3) {
         /* Out of memory, failed */
         return NULL;
     }
 
-    if (!R2->RegionRectangle)
-    {
+    if(!R2->RegionRectangle) {
         /* R2 is already empty, nothing to clear */
         return R3;
     }
 
-    if (!R1->RegionRectangle            ||
-        !overlap(R1->bounds, R2->bounds))
-    {
+    if(!R1->RegionRectangle            ||
+            !overlap(R1->bounds, R2->bounds)) {
         /* R2 is not empty, but there's nothing to clear. Make a plain copy. */
-        if (_CopyRegionRectangles(R2, R3, GfxBase))
+        if(_CopyRegionRectangles(R2, R3, GfxBase))
             return R3;
-    }
-    else
-    {
+    } else {
         /* Some other case, do the complete algorighm */
-        if (_DoOperationBandBand(_ClearBandBand,
-                                  MinX(R1), MinX(R2), MinY(R1), MinY(R2),
-                                  R1->RegionRectangle, R2->RegionRectangle, &R3->RegionRectangle, &R3->bounds, GfxBase))
-        {
+        if(_DoOperationBandBand(_ClearBandBand,
+                                MinX(R1), MinX(R2), MinY(R1), MinY(R2),
+                                R1->RegionRectangle, R2->RegionRectangle, &R3->RegionRectangle, &R3->bounds, GfxBase)) {
             _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
             return R3;
         }

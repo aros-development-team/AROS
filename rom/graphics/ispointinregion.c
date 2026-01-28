@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -54,7 +54,7 @@
 
     struct RegionRectangle *rr;
 
-    if (!_IsPointInRect(Bounds(Reg), x, y))
+    if(!_IsPointInRect(Bounds(Reg), x, y))
         return FALSE;
 
     x -= MinX(Reg);
@@ -65,12 +65,11 @@
         rr = Reg->RegionRectangle;
         rr;
         rr = rr->Next
-    )
-    {
-        if (y > MaxY(rr)) continue;
-        if (y < MinY(rr)) return FALSE;
-        if (x < MinX(rr)) continue;
-        if (x > MaxX(rr)) continue;
+    ) {
+        if(y > MaxY(rr)) continue;
+        if(y < MinY(rr)) return FALSE;
+        if(x < MinX(rr)) continue;
+        if(x > MaxX(rr)) continue;
 
         return TRUE;
     }

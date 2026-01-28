@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Get an attribute from a bitmap.
 */
@@ -57,42 +57,38 @@
     AROS_LIBFUNC_INIT
 
     IPTR retval;
-    
-    switch(attribute)
-    {
-        case BMA_HEIGHT:
-            retval = (IPTR)bitmap->Rows;
-            break;
-            
-        case BMA_WIDTH:
-          /* must return width in pixel! */
-            retval = (IPTR)(bitmap->BytesPerRow * 8);
-            break;
-            
-        case BMA_DEPTH:
-            if (IS_HIDD_BM(bitmap))
-            {
-                retval = (IPTR)HIDD_BM_REALDEPTH(bitmap);
-            }
-            else
-            {
-                retval = (IPTR)bitmap->Depth;
-            }
-            break;
-            
-        case BMA_FLAGS:
-            retval = (IPTR)(bitmap->Flags & (BMF_DISPLAYABLE |
-                                             BMF_INTERLEAVED |
-                                             BMF_STANDARD));
-            break;
-            
-        default:
-            retval = 0;
-            break;
+
+    switch(attribute) {
+    case BMA_HEIGHT:
+        retval = (IPTR)bitmap->Rows;
+        break;
+
+    case BMA_WIDTH:
+        /* must return width in pixel! */
+        retval = (IPTR)(bitmap->BytesPerRow * 8);
+        break;
+
+    case BMA_DEPTH:
+        if(IS_HIDD_BM(bitmap)) {
+            retval = (IPTR)HIDD_BM_REALDEPTH(bitmap);
+        } else {
+            retval = (IPTR)bitmap->Depth;
+        }
+        break;
+
+    case BMA_FLAGS:
+        retval = (IPTR)(bitmap->Flags & (BMF_DISPLAYABLE |
+                                         BMF_INTERLEAVED |
+                                         BMF_STANDARD));
+        break;
+
+    default:
+        retval = 0;
+        break;
     }
 
     return retval;
 
     AROS_LIBFUNC_EXIT
-        
+
 } /* GetBitMapAttr */

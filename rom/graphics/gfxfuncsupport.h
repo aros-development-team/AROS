@@ -4,7 +4,7 @@
 /****************************************************************************************/
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,7 +24,7 @@
 #define VPE_DATA(vpe)   ((struct HIDD_ViewPortData *)(vpe)->DriverData[0])
 #define VPE_DRIVER(vpe) ((struct monitor_driverdata *)(vpe)->DriverData[1])
 
-/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
+/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
    HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
    if it is a HIDD bitmap
@@ -127,8 +127,7 @@ do                                  \
 
 /****************************************************************************************/
 
-struct render_special_info
-{
+struct render_special_info {
     struct BitMap *curbm;
 };
 
@@ -136,91 +135,91 @@ struct render_special_info
 
 /* A Pointer to this struct is stored in each RastPort->longreserved[0] */
 
-struct gfx_driverdata
-{
-    struct RastPort * dd_RastPort;	/* This RastPort		*/
+struct gfx_driverdata {
+    struct RastPort *dd_RastPort;	/* This RastPort		*/
     struct Rectangle  dd_ClipRectangle;
-    UBYTE   	      dd_ClipRectangleFlags;    
+    UBYTE   	      dd_ClipRectangleFlags;
 };
 
 static inline struct gfx_driverdata *ObtainDriverData(struct RastPort *rp)
 {
     struct gfx_driverdata *dd = rp->RP_Extra;
 
-    if (dd && dd->dd_RastPort != rp)
-    {
-    	/* We have detected a cloned rastport. Detach extra data from it. */
-    	dd = NULL;
+    if(dd && dd->dd_RastPort != rp) {
+        /* We have detected a cloned rastport. Detach extra data from it. */
+        dd = NULL;
     }
 
     return dd;
 }
 
-typedef ULONG (*RENDERFUNC)(APTR, WORD, WORD, OOP_Object *, OOP_Object *, struct Rectangle *, struct GfxBase *);
-typedef LONG (*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *);
+typedef ULONG(*RENDERFUNC)(APTR, WORD, WORD, OOP_Object *, OOP_Object *, struct Rectangle *, struct GfxBase *);
+typedef LONG(*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *);
 
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
 
 ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
-	    	     RENDERFUNC render_func, APTR funcdata,
-	    	     BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
+                     RENDERFUNC render_func, APTR funcdata,
+                     BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
 
 ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
-			RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
-			BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
+                        RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
+                        BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
 
 ULONG do_pixel_func(struct RastPort *rp, WORD x, WORD y,
-    	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *),
-		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
+                    LONG(*render_func)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *),
+                    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
 
 ULONG fillrect_render(APTR funcdata, WORD srcx, WORD srcy,
-    	    	      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	      struct Rectangle *rect, struct GfxBase *GfxBase);
+                      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                      struct Rectangle *rect, struct GfxBase *GfxBase);
 
 LONG fillrect_pendrmd(struct RastPort *tp, WORD x1, WORD y1, WORD x2, WORD y2,
-    	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
+                      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
 
 BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
-	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
-		   WORD xSize, WORD ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
-		   struct GfxBase *GfxBase);
+                   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
+                   WORD xSize, WORD ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
+                   struct GfxBase *GfxBase);
 
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
-		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase);
+                    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase);
 
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    	   WORD xstart, WORD ystart, WORD xstop, WORD ystop,
-		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
-			   BOOL do_update, struct GfxBase *GfxBase);
+                           WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                           HIDDT_PixelLUT *pixlut, UBYTE transparent,
+                           BOOL do_update, struct GfxBase *GfxBase);
 
-void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, WORD x_src , WORD y_src,
-    	    	     struct BitMap *hidd_bm, WORD x_dest, WORD y_dest,
-		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
-		     struct GfxBase * GfxBase);
+void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, WORD x_src, WORD y_src,
+                     struct BitMap *hidd_bm, WORD x_dest, WORD y_dest,
+                     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
+                     struct GfxBase *GfxBase);
 
-BOOL MoveRaster (struct RastPort * rp, WORD dx, WORD dy, WORD x1, WORD y1,
-    	    	 WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
+BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
+                WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase *GfxBase);
 
 BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r);
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
-    	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase);
+                                 struct Rectangle *r, struct GfxBase *GfxBase);
 
-void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height, struct GfxBase *GfxBase);
+void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height,
+                   struct GfxBase *GfxBase);
 
-void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc, 
-		       struct BitMap *destBitMap, WORD xDest, WORD yDest,
-		       WORD xSize, WORD ySize, ULONG minterm,
-		       struct GfxBase *GfxBase);
+void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
+                       struct BitMap *destBitMap, WORD xDest, WORD yDest,
+                       WORD xSize, WORD ySize, ULONG minterm,
+                       struct GfxBase *GfxBase);
 
 void GenMinterms(struct RastPort *rp);
 
 /****************************************************************************************/
 
-static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)
+static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r,
+        struct GfxBase *GfxBase)
 {
     return GetRPClipRectangleForRect(rp, &lay->bounds, r);
 }

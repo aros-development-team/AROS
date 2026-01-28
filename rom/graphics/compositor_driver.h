@@ -4,11 +4,11 @@
 
 /* Inline stubs for calling the driver */
 
-static inline OOP_Object *compositor_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, BOOL *Active, struct GfxBase *GfxBase)
+static inline OOP_Object *compositor_LoadViewPorts(OOP_Object *o, struct HIDD_ViewPortData *Data, BOOL *Active,
+        struct GfxBase *GfxBase)
 {
-    struct pHidd_Compositor_BitMapStackChanged bscmsg =
-    {
-    	.mID    = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapStackChanged,
+    struct pHidd_Compositor_BitMapStackChanged bscmsg = {
+        .mID    = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapStackChanged,
         .data   = Data,
         .active = Active
     };
@@ -16,10 +16,10 @@ static inline OOP_Object *compositor_LoadViewPorts(OOP_Object *o, struct HIDD_Vi
     return (OOP_Object *)OOP_DoMethod(o, &bscmsg.mID);
 }
 
-static inline BOOL compositor_ScrollBitMap(OOP_Object *o, OOP_Object *bitmap, SIPTR *x, SIPTR *y, struct GfxBase *GfxBase)
+static inline BOOL compositor_ScrollBitMap(OOP_Object *o, OOP_Object *bitmap, SIPTR *x, SIPTR *y,
+        struct GfxBase *GfxBase)
 {
-    struct pHidd_Compositor_BitMapPositionChange msg =
-    {
+    struct pHidd_Compositor_BitMapPositionChange msg = {
         .mID	    = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapPositionChange,
         .bm	        = bitmap,
         .newxoffset = x,
@@ -29,16 +29,16 @@ static inline BOOL compositor_ScrollBitMap(OOP_Object *o, OOP_Object *bitmap, SI
     return OOP_DoMethod(o, &msg.mID);
 }
 
-static inline void compositor_UpdateBitMap(OOP_Object *o, OOP_Object *bitmap, UWORD x, UWORD y, UWORD w, UWORD h, struct GfxBase *GfxBase)
+static inline void compositor_UpdateBitMap(OOP_Object *o, OOP_Object *bitmap, UWORD x, UWORD y, UWORD w, UWORD h,
+        struct GfxBase *GfxBase)
 {
-    struct pHidd_Compositor_BitMapRectChanged msg =
-    {
-    	.mID    = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapRectChanged,
-    	.bm     = bitmap,
-    	.x      = x,
-    	.y      = y,
-    	.width  = w,
-    	.height = h
+    struct pHidd_Compositor_BitMapRectChanged msg = {
+        .mID    = PrivGBase(GfxBase)->HiddCompositorMethodBase + moHidd_Compositor_BitMapRectChanged,
+        .bm     = bitmap,
+        .x      = x,
+        .y      = y,
+        .width  = w,
+        .height = h
     };
 
     OOP_DoMethod(o, &msg.mID);

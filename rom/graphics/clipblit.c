@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Copy content of a rastport to another rastport
 */
@@ -109,11 +109,10 @@
 
     /* overlapping and non-overlapping blits are handled differently. */
 
-    if (LayersBase && srcRP->Layer &&
-        destRP->Layer &&
-        (srcRP->Layer != destRP->Layer) &&
-        (srcRP->Layer->LayerInfo == destRP->Layer->LayerInfo))
-    {
+    if(LayersBase && srcRP->Layer &&
+            destRP->Layer &&
+            (srcRP->Layer != destRP->Layer) &&
+            (srcRP->Layer->LayerInfo == destRP->Layer->LayerInfo)) {
         /* If two layers which belong to the same LayerInfo (~screen)
            have to be locked, lock first LayerInfo, otherwise there
            is a potential deadlock problem */
@@ -121,16 +120,15 @@
         li_locked = TRUE;
     }
 
-    if (srcRP->Layer) LockLayerRom( srcRP->Layer);
-    if (destRP->Layer && (destRP->Layer != srcRP->Layer)) LockLayerRom(destRP->Layer);
+    if(srcRP->Layer) LockLayerRom(srcRP->Layer);
+    if(destRP->Layer && (destRP->Layer != srcRP->Layer)) LockLayerRom(destRP->Layer);
 
     /* Once the layers are locked there's no more need to hold the layerinfo lock */
 
-    if (li_locked) UnlockLayerInfo(srcRP->Layer->LayerInfo);
+    if(li_locked) UnlockLayerInfo(srcRP->Layer->LayerInfo);
 
     /* check for overlapping blits */
-    if ( srcRP == destRP )
-    {
+    if(srcRP == destRP) {
         struct Rectangle Rect;
 
         /* Combine source and destination rectangles to check for overlapping areas */
@@ -140,8 +138,7 @@
         Rect.MaxY = MIN(ySrc + ySize - 1, yDest + ySize - 1);
 
         /* check whether they overlap */
-        if ((Rect.MaxX >= Rect.MinX) && (Rect.MaxY > Rect.MinY))
-        {
+        if((Rect.MaxX >= Rect.MinX) && (Rect.MaxY > Rect.MinY)) {
             /*
              * It's overlapping; depending on how bad it is overlapping I
              * will have to split this up into several calls to the
@@ -152,21 +149,20 @@
             struct RegionRectangle *RR;
             int xs, ys;
 
-            if (!R)
+            if(!R)
                 goto exit;
 
-            if (!OrRectRegion(R, &Rect))
-            {
+            if(!OrRectRegion(R, &Rect)) {
                 DisposeRegion(R);
                 goto exit;
             }
 
             RR = R->RegionRectangle;
 
-            xs = xDest-xSrc;
-            ys = yDest-ySrc;
-            if (xs < 0) xs = -xs;
-            if (ys < 0) ys = -ys;
+            xs = xDest - xSrc;
+            ys = yDest - ySrc;
+            if(xs < 0) xs = -xs;
+            if(ys < 0) ys = -ys;
 
             /*
               if the destination area is overlapping more than half of the
@@ -174,9 +170,8 @@
               difficult case
             */
 
-            if (xs * 2 < xSize ||
-                ys * 2 < ySize)
-            {
+            if(xs * 2 < xSize ||
+                    ys * 2 < ySize) {
                 /*
                    In this case I use a special routine to copy the rectangle
                 */
@@ -190,43 +185,39 @@
                            (ySrc > yDest) ? ySrc + ySize - 1 : yDest + ySize - 1,
                            FALSE,
                            GfxBase);
-            }
-            else
-            {
+            } else {
                 WORD dx, dy;
-                
+
                 /*
                    This case is not as difficult as the overlapping
                    part can be copied first and then the other parts can
                    be copied.
                 */
                 /* first copy the overlapping part to its destination */
-                
+
                 dx = R->bounds.MinX + RR->bounds.MinX - xSrc;
                 dy = R->bounds.MinY + RR->bounds.MinY - ySrc;
-                
+
                 internal_ClipBlit(srcRP,
                                   xSrc + dx,
                                   ySrc + dy,
                                   srcRP,
                                   xDest + dx,
                                   yDest + dy,
-                                  RR->bounds.MaxX-RR->bounds.MinX+1,
-                                  RR->bounds.MaxY-RR->bounds.MinY+1,
+                                  RR->bounds.MaxX - RR->bounds.MinX + 1,
+                                  RR->bounds.MaxY - RR->bounds.MinY + 1,
                                   minterm,
                                   GfxBase);
 
                 /* and now I invert the Region with the source rectangle */
-                if (!XorRectRegion(R, &Rect))
-                {
+                if(!XorRectRegion(R, &Rect)) {
                     /* too bad! no more memory */
                     DisposeRegion(R);
                     goto exit;
                 }
                 RR = R->RegionRectangle;
 
-                while (NULL != RR)
-                {
+                while(NULL != RR) {
                     dx = R->bounds.MinX + RR->bounds.MinX - xSrc;
                     dy = R->bounds.MinY + RR->bounds.MinY - ySrc;
 
@@ -236,8 +227,8 @@
                                       srcRP,
                                       xDest + dx,
                                       yDest + dy,
-                                      RR->bounds.MaxX-RR->bounds.MinX+1,
-                                      RR->bounds.MaxY-RR->bounds.MinY+1,
+                                      RR->bounds.MaxX - RR->bounds.MinX + 1,
+                                      RR->bounds.MaxY - RR->bounds.MinY + 1,
                                       minterm,
                                       GfxBase);
                     RR = RR->Next;
@@ -249,24 +240,22 @@
             DisposeRegion(R);
 
         } /* if (src and dest overlap) */
-        else
-        {
-          /* they don't overlap */
-          internal_ClipBlit(srcRP,
-                            xSrc,
-                            ySrc,
-                            srcRP,
-                            xDest,
-                            yDest,
-                            xSize,
-                            ySize,
-                            minterm,
-                            GfxBase);
+        else {
+            /* they don't overlap */
+            internal_ClipBlit(srcRP,
+                              xSrc,
+                              ySrc,
+                              srcRP,
+                              xDest,
+                              yDest,
+                              xSize,
+                              ySize,
+                              minterm,
+                              GfxBase);
         }
 
     } /* if (destRP == srcRP) */
-    else
-    {
+    else {
 
         /* here: process the case when the source and destination rastports
                  are different */
@@ -286,15 +275,14 @@
     /* the way out, even in failure */
 exit:
 
-    if (destRP->Layer && (destRP->Layer != srcRP->Layer)) UnlockLayerRom(destRP->Layer);
-    if (srcRP->Layer)  UnlockLayerRom( srcRP->Layer);
+    if(destRP->Layer && (destRP->Layer != srcRP->Layer)) UnlockLayerRom(destRP->Layer);
+    if(srcRP->Layer)  UnlockLayerRom(srcRP->Layer);
 
     AROS_LIBFUNC_EXIT
 
 } /* ClipBlit */
 
-struct clipblit_render_data
-{
+struct clipblit_render_data {
     struct render_special_info   rsi;
     ULONG                        minterm;
     struct RastPort             *destRP;
@@ -317,25 +305,25 @@ static ULONG clipblit_render(APTR data, WORD srcx, WORD srcy,
     return 0;
 }
 
-void internal_ClipBlit(struct RastPort * srcRP,
+void internal_ClipBlit(struct RastPort *srcRP,
                        WORD xSrc,
                        WORD ySrc,
-                       struct RastPort * destRP,
+                       struct RastPort *destRP,
                        WORD xDest,
                        WORD yDest,
                        WORD xSize,
                        WORD ySize,
                        UBYTE minterm,
-                       struct GfxBase * GfxBase)
+                       struct GfxBase *GfxBase)
 {
     struct clipblit_render_data data;
     struct Rectangle            rect;
-    
+
     data.minterm        = minterm;
     data.destRP         = destRP;
     data.xDest          = xDest;
     data.yDest          = yDest;
-    
+
     rect.MinX = xSrc;
     rect.MinY = ySrc;
     rect.MaxX = xSrc + xSize - 1;

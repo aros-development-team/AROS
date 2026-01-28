@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ScrollVPort()
 */
@@ -60,8 +60,7 @@
      */
     struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
 
-    if (vpe)
-    {
+    if(vpe) {
         OOP_Object *bm = VPE_DATA(vpe)->Bitmap;
         struct monitor_driverdata *mdd = VPE_DRIVER(vpe);
         IPTR x = vp->DxOffset;
@@ -81,24 +80,20 @@
          */
         OOP_SetAttrsTags(bm, aHidd_BitMap_LeftEdge, x, aHidd_BitMap_TopEdge, y, TAG_DONE);
 
-        if (mdd->compositor)
-        {
+        if(mdd->compositor) {
             /*
              * Perform the operation via software compositor.
              * x and y will be updated to the validated values.
              */
             compositing = compositor_ScrollBitMap(mdd->compositor, bm, &x, &y, GfxBase);
 
-            if (compositing)
-            {
+            if(compositing) {
                 /*
                  * Composition is active.
                  * Uninstall the framebuffer from the frontmost bitmap
                  */
                 UninstallFB(mdd, GfxBase);
-            }
-            else if (!mdd->bm_bak)
-            {
+            } else if(!mdd->bm_bak) {
                 /*
                  * Composition is inactive. Install the framebuffer into the frontmost
                  * bitmap, if not already done.
@@ -110,8 +105,7 @@
         }
 
         /* The bitmap may fail to move. Fix up offsets now. */
-        if (!compositing)
-        {
+        if(!compositing) {
             /*
              * If software composition is inactive, we have our bitmap on display.
              * Get validated offsets from it.

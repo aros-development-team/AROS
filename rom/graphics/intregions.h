@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Header file for intregions.c
 */
@@ -18,11 +18,11 @@
    example tries to install a clip rectangle (region) with maxx < minx
    and/or maxy < miny. Causing apps to render outside of layer/window
    and possibly crash.
-   
+
 */
 
 #define CHECK_EVIL_RECTS 1
-   
+
 #if CHECK_EVIL_RECTS
 
 #define IS_RECT_EVIL(rect)           \
@@ -45,8 +45,8 @@
 #endif
 
 
-BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
-		   struct RegionRectangle** erg);
+BOOL clearrectrect(struct Rectangle *clearrect, struct Rectangle *rect,
+                   struct RegionRectangle **erg);
 
 #define Bounds(x)  (&(x)->bounds)
 #define MinX(rr)   (Bounds(rr)->MinX)
@@ -154,9 +154,8 @@ do                                    \
 /* Copy RegionRectangles from R1 to R2. R2 will be overwritten!!! */
 static inline BOOL _CopyRegionRectangles(struct Region *R1, struct Region *R2, struct GfxBase *GfxBase)
 {
-    if (_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase))
-    {
-    	R2->RegionRectangle = Head(R2->RegionRectangle);
+    if(_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase)) {
+        R2->RegionRectangle = Head(R2->RegionRectangle);
         R2->bounds = R1->bounds;
         return TRUE;
     }

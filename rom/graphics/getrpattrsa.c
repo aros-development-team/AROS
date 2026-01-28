@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetRPAttrsA()
 */
@@ -65,14 +65,14 @@
         RPTAG_ClipRectangle (struct Rectangle *) - Rectangle to clip rendering to. Rectangle will
                                                    be cloned.
         RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see <graphics/rpattr.h>)
-                
+
     RESULT
 
     NOTES
         RPTAG_ClipRectangle and RPTAG_ClipRectangleFlags must not be
         used on manually inited or cloned rastports. Instead the rastport
         must have been created with CreateRastPort() or CloneRastPort().
-        
+
     EXAMPLE
 
     BUGS
@@ -92,136 +92,122 @@
     struct gfx_driverdata *driverdata;
     HIDDT_Color col;
 
-    while ((tag = NextTagItem (&tstate)))
-    {
-        switch(tag->ti_Tag)
-        {
-            case RPTAG_Font :
-                *((IPTR *)tag->ti_Data) = (IPTR)rp->Font;
-                break;
+    while((tag = NextTagItem(&tstate))) {
+        switch(tag->ti_Tag) {
+        case RPTAG_Font :
+            *((IPTR *)tag->ti_Data) = (IPTR)rp->Font;
+            break;
 
-            case RPTAG_APen :
-                *((IPTR *)tag->ti_Data) = (IPTR)GetAPen(rp);
-                break;
+        case RPTAG_APen :
+            *((IPTR *)tag->ti_Data) = (IPTR)GetAPen(rp);
+            break;
 
-            case RPTAG_BPen :
-                *((IPTR *)tag->ti_Data) = (IPTR)GetBPen(rp);
-                break;
+        case RPTAG_BPen :
+            *((IPTR *)tag->ti_Data) = (IPTR)GetBPen(rp);
+            break;
 
-            case RPTAG_DrMd :
-                *((IPTR *)tag->ti_Data) = (IPTR)GetDrMd(rp);
-                break;
+        case RPTAG_DrMd :
+            *((IPTR *)tag->ti_Data) = (IPTR)GetDrMd(rp);
+            break;
 
-            case RPTAG_OutlinePen :
-                *((IPTR *)tag->ti_Data) = (IPTR)GetOutlinePen(rp);
-                break;
+        case RPTAG_OutlinePen :
+            *((IPTR *)tag->ti_Data) = (IPTR)GetOutlinePen(rp);
+            break;
 
-            case RPTAG_WriteMask :
-                *((IPTR *)tag->ti_Data) = (IPTR)rp->Mask;
-                break;
+        case RPTAG_WriteMask :
+            *((IPTR *)tag->ti_Data) = (IPTR)rp->Mask;
+            break;
 
-            case RPTAG_MaxPen :
-                MaxPen = 0x01;
-                z = (LONG)rp->Mask;
-                if (0 == z)
-                    MaxPen = 0x100;
-                else
-                    while (z != 0)
-                    {
-                        z >>= 1;
-                        MaxPen <<= 1;
-                    }
-                *((IPTR *)tag->ti_Data) = MaxPen;
-                break;
+        case RPTAG_MaxPen :
+            MaxPen = 0x01;
+            z = (LONG)rp->Mask;
+            if(0 == z)
+                MaxPen = 0x100;
+            else
+                while(z != 0) {
+                    z >>= 1;
+                    MaxPen <<= 1;
+                }
+            *((IPTR *)tag->ti_Data) = MaxPen;
+            break;
 
-            case RPTAG_DrawBounds :
-                /* FIXME: Implement this */
-                ((struct Rectangle *)tag->ti_Data)->MinX = 0;
-                ((struct Rectangle *)tag->ti_Data)->MinY = 0;
-                ((struct Rectangle *)tag->ti_Data)->MaxX = 0;
-                ((struct Rectangle *)tag->ti_Data)->MaxY = 0;
-                break;
+        case RPTAG_DrawBounds :
+            /* FIXME: Implement this */
+            ((struct Rectangle *)tag->ti_Data)->MinX = 0;
+            ((struct Rectangle *)tag->ti_Data)->MinY = 0;
+            ((struct Rectangle *)tag->ti_Data)->MaxX = 0;
+            ((struct Rectangle *)tag->ti_Data)->MaxY = 0;
+            break;
 
-            case RPTAG_PenMode:
-                /* PenMode is applicable only if there's an RTG bitmap
-                 * attached to the RastPort */
-                *((IPTR *)tag->ti_Data) = rp->BitMap != NULL
-                    && IS_HIDD_BM(rp->BitMap)
-                    && (rp->Flags & RPF_NO_PENS) == 0;
-                break;
+        case RPTAG_PenMode:
+            /* PenMode is applicable only if there's an RTG bitmap
+             * attached to the RastPort */
+            *((IPTR *)tag->ti_Data) = rp->BitMap != NULL
+                                      && IS_HIDD_BM(rp->BitMap)
+                                      && (rp->Flags & RPF_NO_PENS) == 0;
+            break;
 
-            case RPTAG_FgColor:
-            case RPTAG_BgColor:
+        case RPTAG_FgColor:
+        case RPTAG_BgColor:
 
-                /* We return zero if not applicable */
-                col.alpha = 0;
-                col.red   = 0;
-                col.green = 0;
-                col.blue  = 0;
-            
-                if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
-                {
-                    if (rp->Flags & RPF_NO_PENS)
-                    {
-                        /* Remap pixel value back from bitmap's format to ARGB8888 */
-                        HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
-                        HIDDT_Pixel pixval;
+            /* We return zero if not applicable */
+            col.alpha = 0;
+            col.red   = 0;
+            col.green = 0;
+            col.blue  = 0;
 
-                        if (tag->ti_Tag == RPTAG_FgColor)
-                            pixval = _gc->fg;
-                        else
-                            pixval = _gc->bg;
+            if(rp->BitMap && IS_HIDD_BM(rp->BitMap)) {
+                if(rp->Flags & RPF_NO_PENS) {
+                    /* Remap pixel value back from bitmap's format to ARGB8888 */
+                    HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
+                    HIDDT_Pixel pixval;
 
-                        HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), pixval, &col);
-                    }
+                    if(tag->ti_Tag == RPTAG_FgColor)
+                        pixval = _gc->fg;
                     else
-                    {
-                        /* Pens are used. Get a corresponding LUT entry. */
-                        if (HIDD_BM_COLMAP(rp->BitMap))
-                        {
-                            ULONG pen = (tag->ti_Tag == RPTAG_FgColor) ? rp->FgPen : rp->BgPen;
+                        pixval = _gc->bg;
 
-                            HIDD_CM_GetColor(HIDD_BM_COLMAP(rp->BitMap), pen & PEN_MASK, &col);
-                        }
+                    HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), pixval, &col);
+                } else {
+                    /* Pens are used. Get a corresponding LUT entry. */
+                    if(HIDD_BM_COLMAP(rp->BitMap)) {
+                        ULONG pen = (tag->ti_Tag == RPTAG_FgColor) ? rp->FgPen : rp->BgPen;
+
+                        HIDD_CM_GetColor(HIDD_BM_COLMAP(rp->BitMap), pen & PEN_MASK, &col);
                     }
                 }
+            }
 
-                *((IPTR *)tag->ti_Data) = ((col.alpha & 0xFF00) << 16) |
-                                          ((col.red   & 0xFF00) <<  8) |
-                                           (col.green & 0xFF00)        |
-                                          ((col.blue  & 0xFF00) >> 8);
-                break;
+            *((IPTR *)tag->ti_Data) = ((col.alpha & 0xFF00) << 16) |
+                                      ((col.red   & 0xFF00) <<  8) |
+                                      (col.green & 0xFF00)        |
+                                      ((col.blue  & 0xFF00) >> 8);
+            break;
 
-            case RPTAG_ClipRectangle:
-                driverdata = ObtainDriverData(rp);
-                if (driverdata && (driverdata->dd_ClipRectangleFlags & RPCRF_VALID))
-                {
-                    *((struct Rectangle **)tag->ti_Data) = &driverdata->dd_ClipRectangle;
-                }
-                else
-                {
-                    *((struct Rectangle **)tag->ti_Data) = NULL;
-                }
-                break;
+        case RPTAG_ClipRectangle:
+            driverdata = ObtainDriverData(rp);
+            if(driverdata && (driverdata->dd_ClipRectangleFlags & RPCRF_VALID)) {
+                *((struct Rectangle **)tag->ti_Data) = &driverdata->dd_ClipRectangle;
+            } else {
+                *((struct Rectangle **)tag->ti_Data) = NULL;
+            }
+            break;
 
-            case RPTAG_ClipRectangleFlags:
-                driverdata = ObtainDriverData(rp);
-                if (driverdata)
-                {
-                    *((IPTR *)tag->ti_Data) = driverdata->dd_ClipRectangleFlags;
-                }
-                else
-                {
-                    *((IPTR *)tag->ti_Data) = 0;
-                }
-                break;
+        case RPTAG_ClipRectangleFlags:
+            driverdata = ObtainDriverData(rp);
+            if(driverdata) {
+                *((IPTR *)tag->ti_Data) = driverdata->dd_ClipRectangleFlags;
+            } else {
+                *((IPTR *)tag->ti_Data) = 0;
+            }
+            break;
 
-            case RPTAG_RemapColorFonts:
-                *((IPTR *)tag->ti_Data) = (rp->Flags & RPF_REMAP_COLORFONTS) ? TRUE : FALSE;
-                break;
-                
+        case RPTAG_RemapColorFonts:
+            *((IPTR *)tag->ti_Data) = (rp->Flags & RPF_REMAP_COLORFONTS) ? TRUE : FALSE;
+            break;
+
         } /* switch(tag->ti_Tag) */
-        
+
     } /* while ((tag = NextTagItem(&tstate))) */
 
     AROS_LIBFUNC_EXIT

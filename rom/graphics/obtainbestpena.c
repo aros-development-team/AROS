@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Obtain the best pen available for a given color
 */
@@ -65,14 +65,12 @@
     LONG                        retval = -1;
     PalExtra_AllocList_Type     index;
 
-    if (NULL != pe)
-    {
-        struct TagItem  defaults[] =
-        {
+    if(NULL != pe) {
+        struct TagItem  defaults[] = {
             {OBP_Precision, PRECISION_IMAGE },
             {OBP_FailIfBad, FALSE           }
         };
-        ULONG           best_distance = (ULONG)-1;
+        ULONG           best_distance = (ULONG) - 1;
 
 
         /*
@@ -96,16 +94,14 @@
         ** for the closest color.
         */
         index = (PalExtra_AllocList_Type)pe->pe_FirstShared;
-        while ((PalExtra_AllocList_Type)-1 != index)
-        {
-            ULONG distance = color_distance(cm,r,g,b,index);
-            
-            if (distance < best_distance)
-            {
+        while((PalExtra_AllocList_Type) - 1 != index) {
+            ULONG distance = color_distance(cm, r, g, b, index);
+
+            if(distance < best_distance) {
                 best_distance = distance;
                 retval        = index;
             }
-            
+
             index = PALEXTRA_ALLOCLIST(pe, index);
         }
 
@@ -120,45 +116,37 @@
         ** much looser than if the amount of allocated colors is close to 0.
         ** The autodocs say that.
         */
-        if (
+        if(
             (retval == -1) ||
-            (PRECISION_EXACT == defaults[0].ti_Data && 0 != best_distance ) ||
+            (PRECISION_EXACT == defaults[0].ti_Data && 0 != best_distance) ||
             (best_distance * pe->pe_NFree  >
-            (defaults[0].ti_Data * defaults[0].ti_Data) * pe->pe_SharableColors
+             (defaults[0].ti_Data * defaults[0].ti_Data) * pe->pe_SharableColors
             )
-           )
-        {
+        ) {
             /*
             ** The given tolerance could not be accomplished.
             ** Try to allocate a pen. If that fails we
             ** return -1 if the user specified OBP_FailIfBad = TRUE.
             */
-            LONG tmp = ObtainPen(cm,-1,r,g,b,0);
+            LONG tmp = ObtainPen(cm, -1, r, g, b, 0);
 
-            if (-1 == tmp)
-            {
+            if(-1 == tmp) {
                 /*
                 ** Return -1 if the user is strict with color matching.
                 ** In the other case retval is not changed.
                 */
-                if (defaults[1].ti_Data)
-                {
+                if(defaults[1].ti_Data) {
                     retval = -1;
-                }
-                else if (retval != -1)
-                {
+                } else if(retval != -1) {
                     /*
                     ** One more application is using this color
                     */
-                    
+
                     PALEXTRA_REFCNT(pe, retval)++;
                 }
-            }
-            else
+            } else
                 retval = tmp;
-        }
-        else
-        {
+        } else {
             /*
             ** One more application is using this color
             */
@@ -166,11 +154,11 @@
         }
 
         ReleaseSemaphore(&pe->pe_Semaphore);
-      
+
     } /* if (NULL != pe) */
-    
+
     return retval;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* ObtainBestPenA */

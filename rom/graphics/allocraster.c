@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -51,6 +51,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    return AllocMem (RASSIZE(width,height),MEMF_CHIP);
+    return AllocMem(RASSIZE(width, height), MEMF_CHIP);
+
     AROS_LIBFUNC_EXIT
 } /* AllocRaster */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -13,8 +13,7 @@
 
 /****************************************************************************************/
 
-struct bp_render_data
-{
+struct bp_render_data {
     HIDDT_PixelLUT   pixlut;
     UBYTE           *pattern;
     UBYTE           *mask;
@@ -37,9 +36,9 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
     WORD                   patsrcx = (srcx + bprd->renderx1) % 16;
     WORD                   patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
 
-    if (patsrcx < 0)
+    if(patsrcx < 0)
         patsrcx += 16;
-    if (patsrcy < 0)
+    if(patsrcy < 0)
         patsrcy += bprd->patternheight;
 
     HIDD_BM_PutPattern(dstbm_obj, dst_gc, bprd->pattern,
@@ -99,8 +98,7 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
 {
     AROS_LIBFUNC_INIT
 
-    if (rp->AreaPtrn)
-    {
+    if(rp->AreaPtrn) {
         struct bp_render_data   bprd;
         struct Rectangle        rr;
 
@@ -117,33 +115,28 @@ static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
         bprd.invertpattern  = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
         bprd.pixlut.entries = bprd.patterndepth;
         bprd.pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
-        
+
         rr.MinX = xMin;
         rr.MinY = yMin;
         rr.MaxX = xMax;
         rr.MaxY = yMax;
 
         do_render_func(rp, NULL, &rr, bltpattern_render, &bprd, TRUE, FALSE, GfxBase);
-    }
-    else
-    {
-        if (mask)
-        {
+    } else {
+        if(mask) {
             ULONG old_drawmode = GetDrMd(rp);
-            
-            if ((old_drawmode & ~INVERSVID) == JAM2)
+
+            if((old_drawmode & ~INVERSVID) == JAM2)
                 SetDrMd(rp, JAM1 | (old_drawmode & INVERSVID));
 
             BltTemplate(mask, 0, byteCnt, rp, xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
 
             SetDrMd(rp, old_drawmode);
-        }
-        else
-        {
+        } else {
             RectFill(rp, xMin, yMin, xMax, yMax);
         }
     }
-    
+
     AROS_LIBFUNC_EXIT
 
 } /* BltPattern */

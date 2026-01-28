@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetRGB32()
 */
@@ -36,7 +36,7 @@
     RESULT
         the ULONG pointed to by table will be filled with the 32 bit
         fractional RGB values from the colormap
-        
+
     NOTES
         table should point to an array of at least 3*ncolors longwords.
 
@@ -57,19 +57,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    ULONG i,n;
+    ULONG i, n;
 
-    for (i = firstcolor, n = 0; i < (ncolors+firstcolor); i++ )
-    {
+    for(i = firstcolor, n = 0; i < (ncolors + firstcolor); i++) {
         ULONG red, green, blue;
-        
+
         color_get(cm, &red, &green, &blue, i);
-        
+
         table[n++] = red;
         table[n++] = green;
         table[n++] = blue;
     }
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* GetRGB32 */

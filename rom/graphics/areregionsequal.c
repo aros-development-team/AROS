@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRegionRegion()
 */
@@ -51,7 +51,7 @@
 
     struct RegionRectangle *rr1, *rr2;
 
-    if (!_AreRectsEqual(Bounds(R1), Bounds(R2)))
+    if(!_AreRectsEqual(Bounds(R1), Bounds(R2)))
         return FALSE;
 
     for

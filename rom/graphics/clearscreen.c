@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ClearScreen()
 */
@@ -59,14 +59,13 @@
 
     ClearEOL(rp);
 
-    if(height >= ymin)
-    {
+    if(height >= ymin) {
         ULONG      oldDrMd = GetDrMd(rp);
 
         SetDrMd(rp, oldDrMd ^ INVERSVID);
         RectFill(rp, 0, ymin, width - 1, height - 1);
         SetDrMd(rp, oldDrMd);
     }
-        
+
     AROS_LIBFUNC_EXIT
 } /* ClearScreen */

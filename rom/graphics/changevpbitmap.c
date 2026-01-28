@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ChangeVPBitMap()
 */
@@ -67,15 +67,11 @@
 
     ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    if (GfxBase->ActiView)
-    {
-        for (vp2 = GfxBase->ActiView->ViewPort; vp2; vp2 = vp2->Next)
-        {
+    if(GfxBase->ActiView) {
+        for(vp2 = GfxBase->ActiView->ViewPort; vp2; vp2 = vp2->Next) {
             /* First check if the updated ViewPort is currently on display */
-            if (vp2 == vp)
-            {
-                if (!(vp2->Modes & VP_HIDE))
-                {
+            if(vp2 == vp) {
+                if(!(vp2->Modes & VP_HIDE)) {
                     /*
                      * If yes, we need to rebuild driver's display. Look up the driver
                      * and its ViewPorts chain and redisplay it.

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Make a font public available
 */
@@ -49,14 +49,14 @@
     AROS_LIBFUNC_INIT
 
     ASSERT_VALID_PTR(textFont);
-    
+
     textFont->tf_Message.mn_Node.ln_Type = NT_FONT;
     textFont->tf_Accessors = 0;
     textFont->tf_Flags &= ~FPF_REMOVED;
-    
+
     Forbid();
-    AddHead (&GfxBase->TextFonts, (struct Node *)textFont);
+    AddHead(&GfxBase->TextFonts, (struct Node *)textFont);
     Permit();
-    
+
     AROS_LIBFUNC_EXIT
 } /* AddFont */

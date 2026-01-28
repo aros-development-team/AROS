@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function FreeSprite()
 */
@@ -46,14 +46,14 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  if (pick < 8) {
-    UBYTE Mask = (0x01 << pick) ^ 0xff;
-    Disable();
-    GfxBase->SpriteReserved &= Mask;
-    GfxBase->ExtSprites &= Mask;
-    Enable();
-  }
-  AROS_LIBFUNC_EXIT
+    if(pick < 8) {
+        UBYTE Mask = (0x01 << pick) ^ 0xff;
+        Disable();
+        GfxBase->SpriteReserved &= Mask;
+        GfxBase->ExtSprites &= Mask;
+        Enable();
+    }
+    AROS_LIBFUNC_EXIT
 } /* FreeSprite */

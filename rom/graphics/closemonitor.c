@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CloseMonitor()
 */
@@ -51,10 +51,10 @@
 
     BOOL res = TRUE;
 
-    if (monitor_spec != NULL) {
+    if(monitor_spec != NULL) {
         ObtainSemaphore(&monitor_spec->DisplayInfoDataBaseSemaphore);
 
-        if (monitor_spec->ms_OpenCount) {
+        if(monitor_spec->ms_OpenCount) {
             monitor_spec->ms_OpenCount--;
             res = FALSE;
         }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: Update specified region of the bitmap, taking software composition into account.
           Private function for cybergraphics.library support.
@@ -27,11 +27,12 @@ AROS_LH5(void, UpdateBitMap,
     AROS_LIBFUNC_EXIT
 }
 
-void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height, struct GfxBase *GfxBase)
+void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height,
+                   struct GfxBase *GfxBase)
 {
     struct monitor_driverdata *mdd = GET_BM_DRIVERDATA(bitmap);
 
-    if (mdd->compositor)
+    if(mdd->compositor)
         compositor_UpdateBitMap(mdd->compositor, bm, x, y, width, height, GfxBase);
     else
         HIDD_BM_UpdateRect(bm, x, y, width, height);

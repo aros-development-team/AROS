@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function XorRectRegion()
 */
@@ -58,8 +58,8 @@
     struct Region R;
     struct RegionRectangle rr;
 
-    if (IS_RECT_EVIL(Rect)) return TRUE;
-    
+    if(IS_RECT_EVIL(Rect)) return TRUE;
+
     InitRegion(&R);
 
     R.bounds = *Rect;

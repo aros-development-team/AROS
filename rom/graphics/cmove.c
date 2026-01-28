@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CMove()
 */
@@ -50,12 +50,12 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct CopIns * copIns = ucl->CopList->CopPtr;
-  copIns->OpCode = COPPER_MOVE;
-  copIns->u3.u4.u1.DestAddr = (WORD)(IPTR)reg;
-  copIns->u3.u4.u2.DestData = value;
+    struct CopIns *copIns = ucl->CopList->CopPtr;
+    copIns->OpCode = COPPER_MOVE;
+    copIns->u3.u4.u1.DestAddr = (WORD)(IPTR)reg;
+    copIns->u3.u4.u2.DestData = value;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CMove */

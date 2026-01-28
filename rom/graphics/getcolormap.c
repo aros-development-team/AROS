@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetColorMap()
 */
@@ -56,35 +56,34 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct ColorMap * NewCM = (struct ColorMap *)AllocMem(sizeof(struct ColorMap),
-                                                          MEMF_PUBLIC|MEMF_CLEAR);
-    UWORD           * ptr1, * ptr2;
-                                                          
+    struct ColorMap *NewCM = (struct ColorMap *)AllocMem(sizeof(struct ColorMap),
+                             MEMF_PUBLIC | MEMF_CLEAR);
+    UWORD            *ptr1, * ptr2;
+
 #if 0
     /* ColorTable with some preference values; !!! incomplete */
-    const WORD        RGBColorTable[] = {0x0000,0x0f00,0x00f0,0x0ff0,
-                                         0x000f,0x0f0f,0x00ff,0x0fff}; /* !!!etc. */
+    const WORD        RGBColorTable[] = {0x0000, 0x0f00, 0x00f0, 0x0ff0,
+                                         0x000f, 0x0f0f, 0x00ff, 0x0fff
+                                        }; /* !!!etc. */
 #endif
 
 
     /* go on if we got the memory for the ColorMap */
-    if (NULL != NewCM)
-    {
+    if(NULL != NewCM) {
         /* get memory for the ColorTable */
-        NewCM -> ColorTable = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR|MEMF_PUBLIC);
+        NewCM -> ColorTable = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR | MEMF_PUBLIC);
 
         /* get memory for LowColorBits */
-        NewCM -> LowColorBits = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR|MEMF_PUBLIC);
+        NewCM -> LowColorBits = AllocMem(entries * sizeof(UWORD), MEMF_CLEAR | MEMF_PUBLIC);
 
         ptr1 = NewCM -> ColorTable;
         ptr2 = NewCM -> LowColorBits;
 
         /* did we get all the memory we wanted? */
-        if ( (NULL != ptr1) && (NULL != ptr2) )
-        {
+        if((NULL != ptr1) && (NULL != ptr2)) {
 #if 0
             ULONG i;
-            LONG  * L_RGBColorTable = (LONG *)&RGBColorTable[0];
+            LONG   *L_RGBColorTable = (LONG *)&RGBColorTable[0];
 #endif
 
             /* further init the GetColorMap structure */
@@ -105,38 +104,34 @@
             /* Fill the ColorTable and the LowColorBits with the appropriate Data */
 
             /* as we`re clever we`re doing some 32 bit copying with the 16 bit data */
-            for (i = 0; i < (entries >> 1); i++)
-            {
+            for(i = 0; i < (entries >> 1); i++) {
                 LONG ColorValue = L_RGBColorTable[i];
                 *ptr1++ = ColorValue;
                 *ptr2++ = ColorValue;
             }
             /* is there one WORD left to copy? */
-            if (1 == (entries & 1) )
-            {
-                WORD ColorValue = RGBColorTable[entries-1];
+            if(1 == (entries & 1)) {
+                WORD ColorValue = RGBColorTable[entries - 1];
                 *(WORD *)ptr1 = ColorValue;
                 *(WORD *)ptr2 = ColorValue;
             }
 #endif
 
-        }
-        else /* not enough memory for the tables */
-        {
-            if (NULL != NewCM -> ColorTable)
+        } else { /* not enough memory for the tables */
+            if(NULL != NewCM -> ColorTable)
                 FreeMem(NewCM -> ColorTable, entries * sizeof(UWORD));
-            if (NULL != NewCM -> LowColorBits)
+            if(NULL != NewCM -> LowColorBits)
                 FreeMem(NewCM -> LowColorBits, entries * sizeof(UWORD));
 
             FreeMem(NewCM, sizeof(struct ColorMap));
             /* make return value invalid */
             NewCM = NULL;
         }
-        
+
     } /* if (NULL != NewCM) */
 
     return NewCM;
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* GetColorMap */

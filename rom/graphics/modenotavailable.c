@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ModeNotAvailable()
 */
@@ -49,10 +49,10 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     struct DisplayInfo disp;
-    
-    if (GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeID) == sizeof(disp))
+
+    if(GetDisplayInfoData(NULL, (UBYTE *)&disp, sizeof(disp), DTAG_DISP, modeID) == sizeof(disp))
         return disp.NotAvailable;
 
     /* FIXME: Is this correct ? */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function WritePixel()
 */
@@ -62,12 +62,10 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
 
-    if ((rp->Flags & RPF_NO_PENS) != 0)
-    {
+    if((rp->Flags & RPF_NO_PENS) != 0) {
         HIDDT_GC_Intern *_gc = GCINT(&((rp)->longreserved[1]));
         pix = _gc->fg;
-    }
-    else
+    } else
         pix = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
 
     return do_pixel_func(rp, x, y, pix_write, (APTR)pix, TRUE, GfxBase);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AddVSprite()
 */
@@ -47,50 +47,50 @@
 
 *****************************************************************************/
 {
-        AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-        struct VSprite * Head;
-        struct VSprite * Current;
+    struct VSprite *Head;
+    struct VSprite *Current;
 
-        /* unlink this VSprite */
-        if (vs -> NextVSprite)
-            vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
-        vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
+    /* unlink this VSprite */
+    if(vs -> NextVSprite)
+        vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
+    vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
 
-        /* look for the head of this list of gels */
-        Head = vs;
-        while (NULL != Head -> PrevVSprite )
-                Head = Head -> PrevVSprite;
+    /* look for the head of this list of gels */
+    Head = vs;
+    while(NULL != Head -> PrevVSprite)
+        Head = Head -> PrevVSprite;
 
-        /* take this VSprite out of the DrawPath and ClearPath */
-        Current = Head;
+    /* take this VSprite out of the DrawPath and ClearPath */
+    Current = Head;
 
-        while (Current != NULL) {
-                if ((Current -> IntVSprite) && (Current -> IntVSprite -> DrawPath == vs)) {
-                        Current -> IntVSprite -> DrawPath = vs -> IntVSprite -> DrawPath;
-                        break;
-                } else
-                        Current = Current -> NextVSprite;
-        }
+    while(Current != NULL) {
+        if((Current -> IntVSprite) && (Current -> IntVSprite -> DrawPath == vs)) {
+            Current -> IntVSprite -> DrawPath = vs -> IntVSprite -> DrawPath;
+            break;
+        } else
+            Current = Current -> NextVSprite;
+    }
 
-        Current = Head;
-        while (Current != NULL) {
-                if (Current -> ClearPath == vs) {
-                        Current -> ClearPath = vs -> ClearPath;
-                        break;
-                } else
-                        Current = Current -> NextVSprite;
-        }
+    Current = Head;
+    while(Current != NULL) {
+        if(Current -> ClearPath == vs) {
+            Current -> ClearPath = vs -> ClearPath;
+            break;
+        } else
+            Current = Current -> NextVSprite;
+    }
 
-        /*
-         * Are only the head and the tail VSprite left?
-         */
-        if ((Head) && ((!Head->NextVSprite) || (NULL == Head->NextVSprite->NextVSprite))) {
-                _DeleteIntVSprite(Head,GfxBase);
-                if (Head->NextVSprite)
-                    _DeleteIntVSprite(Head->NextVSprite,GfxBase);
-        }
+    /*
+     * Are only the head and the tail VSprite left?
+     */
+    if((Head) && ((!Head->NextVSprite) || (NULL == Head->NextVSprite->NextVSprite))) {
+        _DeleteIntVSprite(Head, GfxBase);
+        if(Head->NextVSprite)
+            _DeleteIntVSprite(Head->NextVSprite, GfxBase);
+    }
 
-        AROS_LIBFUNC_EXIT
-        
+    AROS_LIBFUNC_EXIT
+
 } /* RemVSprite */

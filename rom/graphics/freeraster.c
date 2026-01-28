@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Return the memory occupied by a single bitplane to the system.
 */
@@ -50,7 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    FreeMem (p, RASSIZE(width, height));
+    FreeMem(p, RASSIZE(width, height));
 
     AROS_LIBFUNC_EXIT
 } /* FreeRaster */

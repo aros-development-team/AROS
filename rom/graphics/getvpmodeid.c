@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function GetVPModeID()
 */
@@ -54,13 +54,13 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
     ULONG modeid;
 
-    if (vp->ColorMap)
+    if(vp->ColorMap)
         /* If we have a colormap, get ModeID from it */
         modeid = vp->ColorMap->VPModeID;
-    else if (IS_HIDD_BM(vp->RasInfo->BitMap))
+    else if(IS_HIDD_BM(vp->RasInfo->BitMap))
         modeid = GET_BM_MODEID(vp->RasInfo->BitMap);
     else
         modeid = INVALID_ID;

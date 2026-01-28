@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -32,7 +32,7 @@
                         color2    --  0x0RGB
                         ...
         count   - number of UWORDs in the table
-        
+
     RESULT
 
     NOTES
@@ -54,7 +54,7 @@
 
     WORD t;
 
-    if (!vp)
+    if(!vp)
         return;
 
     ASSERT_VALID_PTR(vp);
@@ -62,17 +62,16 @@
 
     /* TODO: Optimization */
 
-    for (t = 0; t < count; t ++ )
-    {
+    for(t = 0; t < count; t ++) {
         ULONG red   = (colors[t] & 0xF00) >> 8;
         ULONG green = (colors[t] & 0x0F0) >> 4;
         ULONG blue  = (colors[t] & 0x00F);
-        
+
         SetRGB32(vp, t, red   * 0x11111111,
-                        green * 0x11111111,
-                        blue  * 0x11111111);
+                 green * 0x11111111,
+                 blue  * 0x11111111);
     }
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* LoadRGB4 */

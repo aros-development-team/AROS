@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function SetWriteMask()
@@ -47,7 +47,7 @@
 
     rp->Mask = (UBYTE)mask;
     return -1;
- 
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* SetWriteMask */

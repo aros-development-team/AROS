@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function MoveSprite()
 */
@@ -69,7 +69,7 @@
 
     struct monitor_driverdata *mdd;
 
-    if (vp) {
+    if(vp) {
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
@@ -80,7 +80,7 @@
         return;
     }
 
-    if (sprite->num) /* We have only sprite #0 for the mouse cursor */
+    if(sprite->num)  /* We have only sprite #0 for the mouse cursor */
         return;
 
     HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);

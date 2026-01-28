@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: (AROS only) Graphics function SetRegion()
 */
@@ -31,7 +31,7 @@
         If the system runs out of memory during allocation
         of RegionRectangles the destination Region will
         .
-        
+
     INPUTS
 
     RESULT
@@ -55,7 +55,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct RegionRectangle * rrs, *rrd, *rrd_prev, *addr;
+    struct RegionRectangle *rrs, *rrd, *rrd_prev, *addr;
 
     dest->bounds = src->bounds;
 
@@ -64,25 +64,23 @@
         rrs = src->RegionRectangle, rrd = dest->RegionRectangle, rrd_prev = NULL;
         rrs && rrd;
         rrd_prev = rrd, rrs = rrs->Next, rrd = rrd->Next
-    )
-    {
+    ) {
         rrd->bounds = rrs->bounds;
     }
 
     _DisposeRegionRectangleList(rrd, GfxBase);
 
-    if (rrd_prev)
+    if(rrd_prev)
         addr = rrd_prev;
-    else
-    {
+    else {
         dest->RegionRectangle = NULL;
         addr = dest->RegionRectangle;
     }
 
-    if (!_LinkRegionRectangleList(rrs, &addr, GfxBase))
+    if(!_LinkRegionRectangleList(rrs, &addr, GfxBase))
         return FALSE;
 
-    if (!rrd_prev)
+    if(!rrd_prev)
         dest->RegionRectangle = addr ? &Chunk(addr)->FirstChunk->Rects[0].RR : NULL;
 
     return TRUE;

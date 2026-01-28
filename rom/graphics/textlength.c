@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function TextLength()
 */
@@ -54,23 +54,18 @@
     struct TextFont *tf = rp->Font;
     WORD strlen;
 
-    if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
-        || tf->tf_CharSpace)
-    {
+    if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
+            || tf->tf_CharSpace) {
         WORD  idx;
         WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is default glyph */
         UBYTE c;
 
-        for(strlen = 0; count; count--)
-        {
+        for(strlen = 0; count; count--) {
             c = *string++;
 
-            if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
-            {
+            if(c < tf->tf_LoChar || c > tf->tf_HiChar) {
                 idx = defaultidx;
-            }
-            else
-            {
+            } else {
                 idx = c - tf->tf_LoChar;
             }
 
@@ -78,9 +73,7 @@
             strlen += ((WORD *)tf->tf_CharSpace)[idx];
             strlen += rp->TxSpacing;
         }
-    }
-    else
-    {
+    } else {
         strlen = count * (tf->tf_XSize + rp->TxSpacing);
     }
 

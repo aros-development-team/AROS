@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetRGB4CM()
 */
@@ -32,7 +32,7 @@
         r  - red level   (0-15)
         g  - green level (0-15)
         b  - blue level  (0-15)
-        
+
     RESULT
         Store the (r,g,b) triplet at index n in the ColorMap structure.
         The changes will not be immediately displayed. Use this function
@@ -56,8 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (NULL != cm && n < cm->Count)
-    {
+    if(NULL != cm && n < cm->Count) {
         /* Preserve the highest nibble. Needed for interoperability
            with m68k graphics.library. Exact purpose is currently
            unknown - sonic */
@@ -65,10 +64,10 @@
 
         cm->ColorTable[n] = a | (r << 8) | (g <<  4) | b;
 
-        if (cm->Type > COLORMAP_TYPE_V1_2)
+        if(cm->Type > COLORMAP_TYPE_V1_2)
             cm->LowColorBits[n] = 0;
     }
 
     AROS_LIBFUNC_EXIT
-  
+
 } /* SetRGB4CM */

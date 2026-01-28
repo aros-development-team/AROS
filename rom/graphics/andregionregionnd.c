@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AndRegionRegion()
 */
@@ -57,8 +57,7 @@
         R1->RegionRectangle             &&
         R2->RegionRectangle             &&
         overlap(R1->bounds, R2->bounds)
-    )
-    {
+    ) {
         if
         (
             _DoOperationBandBand
@@ -74,12 +73,9 @@
                 &R3->bounds,
                 GfxBase
             )
-        )
-        {
+        ) {
             _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
-        }
-        else
-        {
+        } else {
             DisposeRegion(R3);
             R3 = NULL;
         }

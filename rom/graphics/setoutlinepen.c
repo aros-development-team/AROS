@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetOutlinePen()
 */
@@ -57,7 +57,7 @@
     rp->Flags |= AREAOUTLINE;
 
     return oldPen;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* SetOutlinePen */

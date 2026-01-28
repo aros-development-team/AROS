@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Driver for using gfxhidd for gfx output
 */
@@ -54,8 +54,7 @@
    and testing
 #define FORCE_SOFTWARE_SPRITE */
 
-struct ETextFont
-{
+struct ETextFont {
     struct TextFont     etf_Font;
 };
 
@@ -65,11 +64,9 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 {
     struct gfx_driverdata *dd = ObtainDriverData(rp);
 
-    if (alloc && !dd)
-    {
+    if(alloc && !dd) {
         dd = AllocVec(sizeof(struct gfx_driverdata), MEMF_CLEAR);
-        if (dd)
-        {
+        if(dd) {
             rp->RP_Extra    = dd;
             dd->dd_RastPort = rp;
         }
@@ -80,21 +77,21 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 
 /* *********************** Display driver handling *********************** */
 
-int driver_init(struct GfxBase * GfxBase)
+int driver_init(struct GfxBase *GfxBase)
 {
     OOP_Class *baseGfx;
 
     EnterFunc(bug("driver_init()\n"));
 
     /* Our underlying RTG subsystem core must be already up and running */
-    if (!OpenLibrary("gfx.hidd", 0))
+    if(!OpenLibrary("gfx.hidd", 0))
         return FALSE;
 
     baseGfx = OOP_FindClass(CLID_Hidd_Gfx);
 
     /* Initialize the semaphores */
     InitSemaphore(&(PrivGBase(GfxBase)->blit_sema));
-    
+
     /* Init the needed attrbases */
 
     __IHidd_BitMap      = OOP_ObtainAttrBase(IID_Hidd_BitMap);
@@ -105,16 +102,15 @@ int driver_init(struct GfxBase * GfxBase)
     __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_FakeGfxHidd = OOP_ObtainAttrBase(IID_Hidd_FakeGfxHidd);
 
-    if (__IHidd_BitMap   &&
-        __IHidd_GC       &&
-        __IHidd_Sync     &&
-        __IHidd_PixFmt   &&
-        __IHidd_PlanarBM &&
-        __IHidd_Gfx      &&
-        __IHidd_FakeGfxHidd)
-    {
+    if(__IHidd_BitMap   &&
+            __IHidd_GC       &&
+            __IHidd_Sync     &&
+            __IHidd_PixFmt   &&
+            __IHidd_PlanarBM &&
+            __IHidd_Gfx      &&
+            __IHidd_FakeGfxHidd) {
         CDD(GfxBase)->gcClass = OOP_FindClass(CLID_Hidd_GC);
-        if (!CDD(GfxBase)->gcClass)
+        if(!CDD(GfxBase)->gcClass)
             return FALSE;
 
         /* Init display mode database */
@@ -126,24 +122,21 @@ int driver_init(struct GfxBase * GfxBase)
         CDD(GfxBase)->memorygfx = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, baseGfx, NULL);
         DEBUG_INIT(bug("[driver_init] Memory driver object 0x%p\n", CDD(GfxBase)->memorygfx));
 
-        if (CDD(GfxBase)->memorygfx)
-        {
-            struct TagItem bm_create_tags[] =
-            {
-                { aHidd_BitMap_GfxHidd , (IPTR)CDD(GfxBase)->memorygfx },
+        if(CDD(GfxBase)->memorygfx) {
+            struct TagItem bm_create_tags[] = {
+                { aHidd_BitMap_GfxHidd, (IPTR)CDD(GfxBase)->memorygfx },
                 { aHidd_PlanarBM_BitMap, 0                             },
-                { TAG_DONE             , 0                             }
+                { TAG_DONE, 0                             }
             };
 
             CDD(GfxBase)->planarbm_cache = create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
             DEBUG_INIT(bug("[driver_init] Planar bitmap cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
 
-            if (CDD(GfxBase)->planarbm_cache)
-            {
+            if(CDD(GfxBase)->planarbm_cache) {
                 CDD(GfxBase)->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
                 DEBUG_INIT(bug("[driver_init] GC cache 0x%p\n", CDD(GfxBase)->planarbm_cache));
 
-                if (CDD(GfxBase)->gc_cache)
+                if(CDD(GfxBase)->gc_cache)
                     ReturnInt("driver_init", int, TRUE);
 
                 delete_object_cache(CDD(GfxBase)->planarbm_cache, GfxBase);
@@ -169,7 +162,7 @@ static OOP_Object *create_framebuffer(struct monitor_driverdata *mdd, struct Gfx
 
     /* Get the highest available resolution at the best possible depth */
     hiddmode = get_best_resolution_and_depth(mdd, GfxBase);
-    if (vHidd_ModeID_Invalid == hiddmode) {
+    if(vHidd_ModeID_Invalid == hiddmode) {
         D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
     } else {
         /* Create the framebuffer object */
@@ -204,17 +197,16 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     D(bug("[driver_Setup] gfxhidd=0x%p (%s)\n", gfxhidd, OOP_OCLASS(gfxhidd)->ClassNode.ln_Name));
 
     modes = HIDD_Gfx_QueryModeIDs(gfxhidd, NULL);
-    if (!modes)
+    if(!modes)
         return NULL;
 
     /* Count number of display modes */
-    for (m = modes; *m != vHidd_ModeID_Invalid; m ++)
+    for(m = modes; *m != vHidd_ModeID_Invalid; m ++)
         cnt++;
 
-    mdd = AllocVec(sizeof(struct monitor_driverdata) + cnt * sizeof(struct DisplayInfoHandle), MEMF_PUBLIC|MEMF_CLEAR);
+    mdd = AllocVec(sizeof(struct monitor_driverdata) + cnt * sizeof(struct DisplayInfoHandle), MEMF_PUBLIC | MEMF_CLEAR);
     D(bug("[driver_Setup] Allocated driverdata at 0x%p\n", mdd));
-    if (!mdd)
-    {
+    if(!mdd) {
         HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
         return NULL;
     }
@@ -228,27 +220,23 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
      * (2) and (3) are needed to determine if we need/can use software screen
      * composition with this driver.
      */
-    for (i = 0; i <= cnt; i++)
-    {
+    for(i = 0; i <= cnt; i++) {
         mdd->modes[i].id  = modes[i];
         mdd->modes[i].drv = mdd;
 
         /* Watch out! The last record in the array is terminator (vHidd_ModeID_Invalid) */
-        if ((i < cnt) && (!compose))
-        {
+        if((i < cnt) && (!compose)) {
             HIDD_Gfx_ModeProperties(gfxhidd, modes[i], &props, sizeof(props));
             compose |= props.CompositionFlags;
 
-            if (!can_compose)
-            {
+            if(!can_compose) {
                 OOP_Object *sync, *pf;
                 IPTR colmod;
 
                 HIDD_Gfx_GetMode(gfxhidd, modes[i], &sync, &pf);
                 OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-                if (colmod == vHidd_ColorModel_TrueColor)
-                {
+                if(colmod == vHidd_ColorModel_TrueColor) {
                     /*
                      * At the moment software compositor supports only truecolor screens.
                      * There also definitions for DirectColor, gray, etc, but there is
@@ -268,23 +256,19 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 #endif
     OOP_GetAttr(gfxhidd, aHidd_Gfx_FrameBufferType, &fbtype);
 
-    if (hwcursor)
-    {
+    if(hwcursor) {
         mdd->gfxhidd = gfxhidd;
-    }
-    else
-    {
+    } else {
         D(bug("[driver_Setup] Hardware mouse cursor is not supported, using fakegfx.hidd\n"));
 
         mdd->gfxhidd = init_fakegfxhidd(gfxhidd, GfxBase);
-        if (mdd->gfxhidd)
+        if(mdd->gfxhidd)
             mdd->flags |= DF_UseFakeGfx;
         else
             ok = FALSE;
     }
 
-    if (ok)
-    {
+    if(ok) {
         D(bug("[driver_Setup] Ok, framebuffer type %ld\n", fbtype));
 
         /*
@@ -292,8 +276,7 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
          * Note that we perform this operation on fakegfx.hidd if it was plugged in.
          * This enables software mouse sprite on a framebuffer.
          */
-        switch (fbtype)
-        {
+        switch(fbtype) {
         case vHidd_FrameBuffer_Direct:
             mdd->flags |= DF_DirectFB;
 
@@ -302,12 +285,10 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
             break;
         }
 
-        if ((fbtype == vHidd_FrameBuffer_None) || mdd->framebuffer)
-        {
+        if((fbtype == vHidd_FrameBuffer_None) || mdd->framebuffer) {
             D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
 
-            if ((!compose) && can_compose)
-            {
+            if((!compose) && can_compose) {
                 D(bug("[driver_Setup] Software screen composition required\n"));
 
                 mdd->flags |= DF_SoftCompose;
@@ -317,11 +298,11 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
             return mdd;
         }
 
-        if (mdd->framebuffer)
+        if(mdd->framebuffer)
             OOP_DisposeObject(mdd->framebuffer);
     } /* if (fake gfx stuff ok) */
 
-    if (mdd->flags & DF_UseFakeGfx)
+    if(mdd->flags & DF_UseFakeGfx)
         OOP_DisposeObject(mdd->gfxhidd);
 
     FreeVec(mdd);
@@ -343,14 +324,14 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
 void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
     /* Notify Intuition */
-    if (CDD(GfxBase)->DriverNotify)
+    if(CDD(GfxBase)->DriverNotify)
         CDD(GfxBase)->DriverNotify(mdd->userdata, FALSE, CDD(GfxBase)->notify_data);
 
     /* Dispose associated stuff */
     OOP_DisposeObject(mdd->compositor);
     OOP_DisposeObject(mdd->framebuffer);
 
-    if (mdd->flags & DF_UseFakeGfx)
+    if(mdd->flags & DF_UseFakeGfx)
         OOP_DisposeObject(mdd->gfxhidd);
 
     /* Dispose driver object. This will take care about syncs etc */
@@ -362,10 +343,10 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 #if 0 /* Unused? */
 
 static ULONG getbitmappixel(struct BitMap *bm
-        , LONG x
-        , LONG y
-        , UBYTE depth
-        , UBYTE plane_mask)
+                            , LONG x
+                            , LONG y
+                            , UBYTE depth
+                            , UBYTE plane_mask)
 {
     UBYTE i;
     ULONG idx;
@@ -374,23 +355,18 @@ static ULONG getbitmappixel(struct BitMap *bm
     ULONG pen = 0;
 
     idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
-    mask = XCOORD_TO_MASK( x );
-    
-    for (i = depth - 1; depth; i -- , depth -- )
-    {
+    mask = XCOORD_TO_MASK(x);
+
+    for(i = depth - 1; depth; i --, depth --) {
         pen <<= 1; /* stegerg: moved to here, was inside if!? */
 
-        if ((1L << i) & plane_mask)
-        {
+        if((1L << i) & plane_mask) {
             UBYTE *plane = bm->Planes[i];
-        
-            if (plane == (PLANEPTR)-1)
-            {
+
+            if(plane == (PLANEPTR) - 1) {
                 pen |= 1;
-            }
-            else if (plane != NULL)
-            {
-                if ((plane[idx] & mask) != 0)
+            } else if(plane != NULL) {
+                if((plane[idx] & mask) != 0)
                     pen |= 1;
             }
         }
@@ -402,7 +378,8 @@ static ULONG getbitmappixel(struct BitMap *bm
 #endif
 
 /* This is called for every ViewPorts chain during MrgCop() */
-ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
+                              struct GfxBase *GfxBase)
 {
     /* Do not bother the driver if there's nothing to prepare. Can be changed if needed. */
     return vpd ? HIDD_Gfx_PrepareViewPorts(mdd->gfxhidd, vpd, v) : MCOP_OK;
@@ -414,18 +391,19 @@ ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, str
  * in it will screw up the display, likely with no chance to recover.
  * Because of this we always return zero here.
  */
-ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
+                           struct GfxBase *GfxBase)
 {
     struct BitMap *bitmap;
     OOP_Object *bm, *fb;
     BOOL compositing = FALSE;
 
-    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPortData 0x%p, BitMap object 0x%p\n", vpd, vpd ? vpd->Bitmap : NULL));
+    DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Showing ViewPortData 0x%p, BitMap object 0x%p\n", vpd,
+                       vpd ? vpd->Bitmap : NULL));
     mdd->display = vpd;
 
     /* First try the new method */
-    if (HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd))
-    {
+    if(HIDD_Gfx_ShowViewPorts(mdd->gfxhidd, vpd)) {
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] ShowViewPorts() worked\n"));
         return 0;
     }
@@ -435,20 +413,16 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
      * Perhaps we can use software screen compositor. But for proper operation
      * we need to figure out our frontmost bitmap.
      */
-    if (vpd)
-    {
+    if(vpd) {
         bitmap = vpd->vpe->ViewPort->RasInfo->BitMap;
         bm     = vpd->Bitmap;
-    }
-    else
-    {
+    } else {
         bitmap = NULL;
         bm     = NULL;
     }
     DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Old bitmap 0x%p, New bitmap 0x%p, object 0x%p\n", mdd->frontbm, bitmap, bm));
 
-    if (mdd->compositor)
-    {
+    if(mdd->compositor) {
         /*
          * Compositor present. Give ViewPorts chain to it.
          * For improved visual appearance it will call Show itself and return its result.
@@ -457,14 +431,12 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
          */
         fb = compositor_LoadViewPorts(mdd->compositor, vpd, &compositing, GfxBase);
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Compositor returned 0x%p, active: %d\n", fb, compositing));
-    }
-    else
-    {
+    } else {
         /*
          * First check if the bitmap is already displayed. If so, do nothing (because
          * displaying the same bitmap twice may cause some problems)
          */
-        if (mdd->frontbm == bitmap)
+        if(mdd->frontbm == bitmap)
             return 0;
 
         fb = HIDD_Gfx_Show(mdd->gfxhidd, bm, fHidd_Gfx_Show_CopyBack);
@@ -477,8 +449,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
        NoFrameBuffer = TRUE : bm = NULL  -> fb == NULL and bm == fb
        NoFrameBuffer = TRUE : bm != NULL -> fb != NULL and bm == fb
     */
-    if (fb)
-    {
+    if(fb) {
         /* The screen is not empty, 'fb' is on display now. */
         IPTR width, height;
 
@@ -496,7 +467,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
          * Install the framebuffer into new bitmap. Only if software composition is inactive.
          * If it is active, our BitMap is mirrored, not replaced.
          */
-        if (!compositing)
+        if(!compositing)
             InstallFB(mdd, GfxBase);
 
         /* Tell the driver to refresh the screen */
@@ -505,9 +476,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
         DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Updating display, new size: %d x %d\n", width, height));
 
         HIDD_BM_UpdateRect(fb, 0, 0, width, height);
-    }
-    else
-    {
+    } else {
         /*
          * Screen is empty, simply reset the current bitmap.
          * Only framebuffer-less driver can return NULL. So we don't need
@@ -536,8 +505,7 @@ ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct
  */
 void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    if ((mdd->flags & DF_DirectFB) && mdd->frontbm)
-    {
+    if((mdd->flags & DF_DirectFB) && mdd->frontbm) {
         struct BitMap *bitmap = mdd->frontbm;
         OOP_Object *pf;
 
@@ -553,18 +521,19 @@ void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
         HIDD_BM_COLMOD(bitmap) = OOP_GET(pf, aHidd_PixFmt_ColorModel);
         HIDD_BM_COLMAP(bitmap) = (OOP_Object *)OOP_GET(mdd->framebuffer, aHidd_BitMap_ColorMap);
 
-        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Installed framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Installed framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm,
+                           mdd->bm_bak));
     }
 }
 
 void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 {
-    if (mdd->bm_bak)
-    {
+    if(mdd->bm_bak) {
         /* Put back the old values into the old bitmap */
         struct BitMap *oldbm = mdd->frontbm;
 
-        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Uninstalling framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm, mdd->bm_bak));
+        DEBUG_LOADVIEW(bug("[driver_LoadViewPorts] Uninstalling framebuffer: BitMap 0x%p, object 0x%p\n", mdd->frontbm,
+                           mdd->bm_bak));
 
         HIDD_BM_OBJ(oldbm)    = mdd->bm_bak;
         HIDD_BM_COLMOD(oldbm) = mdd->colmod_bak;
@@ -576,17 +545,16 @@ void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
 }
 
 /* Find the first visible ViewPortData for the specified monitor in the View */
-struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd,
+        struct GfxBase *GfxBase)
 {
     struct ViewPort *vp;
 
-    for (vp = view->ViewPort; vp; vp = vp->Next)
-    {
-        if (!(vp->Modes & VP_HIDE))
-        {
+    for(vp = view->ViewPort; vp; vp = vp->Next) {
+        if(!(vp->Modes & VP_HIDE)) {
             struct ViewPortExtra *vpe = (struct ViewPortExtra *)GfxLookUp(vp);
 
-            if (VPE_DRIVER(vpe) == mdd)
+            if(VPE_DRIVER(vpe) == mdd)
                 return VPE_DATA(vpe);
         }
     }
@@ -607,21 +575,20 @@ ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase)
 
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
-    for (mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next)
-    {
+    for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
         struct HIDD_ViewPortData *vpd = NULL;
 
         /*
          * Find the first visible ViewPort for this display. It
          * will be a start of bitmaps chain to process.
          */
-        if (view)
+        if(view)
             vpd = driver_FindViewPorts(view, mdd, GfxBase);
 
         rc = fn(vpd, view, mdd, GfxBase);
 
         /* Interrupt immediately if the callback returned error */
-        if (rc)
+        if(rc)
             break;
     }
 

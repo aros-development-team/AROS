@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function OrRegionRegion()
 */
@@ -36,7 +36,7 @@
         (out of memory)
 
     NOTES
-        
+
     EXAMPLE
 
     BUGS
@@ -54,14 +54,12 @@
 
     struct Region R3;
 
-    if (!R1->RegionRectangle)
-    {
+    if(!R1->RegionRectangle) {
         /* First region is empty, second left intact */
         return TRUE;
     }
 
-    if (!R2->RegionRectangle)
-    {
+    if(!R2->RegionRectangle) {
         /* Second region was empty. Make a plain copy. */
         return _CopyRegionRectangles(R1, R2, GfxBase);
     }
@@ -84,8 +82,7 @@
             &R3.bounds,
             GfxBase
         )
-    )
-    {
+    ) {
         ClearRegion(R2);
 
         *R2 = R3;

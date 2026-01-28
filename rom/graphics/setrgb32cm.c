@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetRGB32CM()
 */
@@ -32,7 +32,7 @@
         r  - red level   (32 bit left justified fraction)
         g  - green level (32 bit left justified fraction)
         b  - blue level  (32 bit left justified fraction)
-        
+
     RESULT
         Store the (r,g,b) triplet at index n in the ColorMap structure.
         The changes will not be immediately displayed. Use this function
@@ -58,24 +58,23 @@
 {
     AROS_LIBFUNC_INIT
 
-    if (NULL != cm && n < cm->Count)
-    {
+    if(NULL != cm && n < cm->Count) {
         /* Preserve the highest nibble. Needed for interoperability
            with m68k graphics.library. Exact purpose is currently
            unknown - sonic */
         UWORD a = cm->ColorTable[n];
-        
-        cm->ColorTable[n] = (a & 0xF000) |
-            ((r >> 20) & 0x0f00) |
-            ((g >> 24) & 0x00f0) |
-            ((b >> 28) & 0x000f);
 
-        if (cm->Type > COLORMAP_TYPE_V1_2)
+        cm->ColorTable[n] = (a & 0xF000) |
+                            ((r >> 20) & 0x0f00) |
+                            ((g >> 24) & 0x00f0) |
+                            ((b >> 28) & 0x000f);
+
+        if(cm->Type > COLORMAP_TYPE_V1_2)
             cm->LowColorBits[n] = ((r >> 16) & 0x0f00) |
-                ((g >> 20) & 0x00f0) |
-                ((b >> 24) & 0x000f);
+                                  ((g >> 20) & 0x00f0) |
+                                  ((b >> 24) & 0x000f);
     }
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* SetRGB32CM */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function LoadView()
 */
@@ -51,8 +51,7 @@
 
     ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
-    if (GfxBase->ActiView != view)
-    {
+    if(GfxBase->ActiView != view) {
         GfxBase->ActiView = view;
         DoViewFunction(view, driver_LoadViewPorts, GfxBase);
     }

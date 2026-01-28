@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ScrollRasterBF()
 */
@@ -38,7 +38,7 @@
       After this operation the Flags bit of the layer associated
       with this rastport, if there is any layer, should be tested
       for simple layers in case there has any damage been created.
-      
+
 
     INPUTS
       rp    - pointer to rastport
@@ -71,8 +71,8 @@
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
-    
-    if ((xMin > xMax) || (yMin > yMax)) return;
+
+    if((xMin > xMax) || (yMin > yMax)) return;
 
     /*
        This function will simply call ScrollRaster() and fill the empty
@@ -84,29 +84,26 @@
        the rastport
     */
     /* Is it a window's rastport ? */
-    if (NULL != rp->Layer)
-    {
-        struct Layer * L = rp->Layer;
+    if(NULL != rp->Layer) {
+        struct Layer *L = rp->Layer;
 
-        if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
+        if(xMax > (L->bounds.MaxX - L->bounds.MinX))
             xMax = (L->bounds.MaxX - L->bounds.MinX) ;
 
-        if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
+        if(yMax > (L->bounds.MaxY - L->bounds.MinY))
             yMax = (L->bounds.MaxY - L->bounds.MinY) ;
 
-    }
-    else
-    {
+    } else {
         /* this one belongs to a screen */
-        struct BitMap * bm = rp->BitMap;
+        struct BitMap *bm = rp->BitMap;
 
         ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
         ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
 
-        if ((ULONG)xMax >= width )
+        if((ULONG)xMax >= width)
             xMax = width - 1;
 
-        if ((ULONG)yMax >= height)
+        if((ULONG)yMax >= height)
             yMax = height - 1;
     }
 
@@ -116,16 +113,15 @@
     width  = xMax - xMin + 1;
     height = yMax - yMin + 1;
 
-    if ((width < 1) || (height < 1)) return;
+    if((width < 1) || (height < 1)) return;
 
-    if ((absdx >= width) || (absdy >= height))
-    {
+    if((absdx >= width) || (absdy >= height)) {
         EraseRect(rp, xMin, yMin, xMax, yMax);
         return;
     }
 
 
-     if (!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
+    if(!MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE, GfxBase))
         return;
 
     /*
@@ -134,19 +130,15 @@
      */
 
     /* was it scrolled left or right? */
-    if (0 != dx)
-    {
-        if (dx > 0)
-        {
+    if(0 != dx) {
+        if(dx > 0) {
             /* scrolled towards left, clearing on the right */
             EraseRect(rp,
                       xMax - dx + 1,
                       yMin,
                       xMax,
                       yMax);
-        }
-        else
-        {
+        } else {
             /* scrolled towards right, clearing on the left */
             EraseRect(rp,
                       xMin,
@@ -156,19 +148,15 @@
         }
     }
 
-    if (0 != dy)
-    {
-        if (dy > 0)
-        {
+    if(0 != dy) {
+        if(dy > 0) {
             /* scrolled up, clearing on the bottom */
             EraseRect(rp,
                       xMin,
                       yMax - dy + 1,
                       xMax,
                       yMax);
-        }
-        else
-        {
+        } else {
             /* scrolled down, clearing on the top */
             EraseRect(rp,
                       xMin,

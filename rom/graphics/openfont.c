@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function OpenFont()
@@ -54,47 +54,42 @@
 
     struct TextFont *tf, *best_so_far = NULL;
     WORD            bestmatch = 0;
-   
+
     ASSERT_VALID_PTR(textAttr);
-    
-    if (!textAttr->ta_Name) return NULL;
-        
+
+    if(!textAttr->ta_Name) return NULL;
+
     /* Search for font in the fontlist */
     Forbid();
-    ForeachNode(&GfxBase->TextFonts, tf)
-    {
-        if (0 == strcmp(tf->tf_Message.mn_Node.ln_Name, textAttr->ta_Name))
-        {
+    ForeachNode(&GfxBase->TextFonts, tf) {
+        if(0 == strcmp(tf->tf_Message.mn_Node.ln_Name, textAttr->ta_Name)) {
             UWORD           match;
             struct TagItem  *tags = NULL;
-            struct TextAttr match_ta =
-            {
+            struct TextAttr match_ta = {
                 tf->tf_Message.mn_Node.ln_Name,
                 tf->tf_YSize,
                 tf->tf_Style,
                 tf->tf_Flags
             };
-            
-            if (ExtendFont(tf, NULL))
-            {
+
+            if(ExtendFont(tf, NULL)) {
                 tags = ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags;
             }
-            
+
             match = WeighTAMatch(textAttr, &match_ta, tags);
-            if (match > bestmatch)
-            {
+            if(match > bestmatch) {
                 bestmatch = match;
                 best_so_far = tf;
             }
         }
     }
-    
-    if (best_so_far) best_so_far->tf_Accessors ++;
-    
+
+    if(best_so_far) best_so_far->tf_Accessors ++;
+
     Permit();
-   
+
     return best_so_far;
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* OpenFont */

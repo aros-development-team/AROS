@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -59,12 +59,11 @@
     struct Region R;
     struct RegionRectangle rr;
 
-    if (IS_RECT_EVIL(Rect))
-    {
+    if(IS_RECT_EVIL(Rect)) {
         /* Empty rectangle. Just make a plain copy of Reg. */
         struct Region *ret = NewRegion();
 
-        if (_CopyRegionRectangles(Reg, ret, GfxBase))
+        if(_CopyRegionRectangles(Reg, ret, GfxBase))
             return ret;
 
         DisposeRegion(ret);

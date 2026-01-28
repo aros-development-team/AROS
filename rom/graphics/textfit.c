@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Tell how many characters will fit into a box.
 */
@@ -70,8 +70,7 @@
     struct TextFont *tf = rp->Font;
     ULONG retval = 0;
 
-    if (strLen && (constrainingBitHeight >= tf->tf_YSize))
-    {
+    if(strLen && (constrainingBitHeight >= tf->tf_YSize)) {
         BOOL ok = TRUE;
 
         textExtent->te_Extent.MinX = 0;
@@ -81,22 +80,18 @@
         textExtent->te_Width       = 0;
         textExtent->te_Height      = tf->tf_YSize;
 
-        if (constrainingExtent)
-        {
-            if (constrainingExtent->te_Extent.MinY > textExtent->te_Extent.MinY
-                ||
-                constrainingExtent->te_Extent.MaxY < textExtent->te_Extent.MaxY
-                ||
-                constrainingExtent->te_Height < textExtent->te_Height)
-            {
+        if(constrainingExtent) {
+            if(constrainingExtent->te_Extent.MinY > textExtent->te_Extent.MinY
+                    ||
+                    constrainingExtent->te_Extent.MaxY < textExtent->te_Extent.MaxY
+                    ||
+                    constrainingExtent->te_Height < textExtent->te_Height) {
                 ok = FALSE;
             }
         }
 
-        if (ok)
-        {
-            while (strLen--)
-            {
+        if(ok) {
+            while(strLen--) {
                 struct TextExtent char_extent;
                 WORD newwidth, newminx, newmaxx, minx, maxx;
 
@@ -108,18 +103,17 @@
                 maxx = textExtent->te_Width + char_extent.te_Extent.MaxX;
 
                 newminx = (minx < textExtent->te_Extent.MinX) ?
-                    minx : textExtent->te_Extent.MinX;
+                          minx : textExtent->te_Extent.MinX;
                 newmaxx = (maxx > textExtent->te_Extent.MaxX) ?
-                    maxx : textExtent->te_Extent.MaxX;
+                          maxx : textExtent->te_Extent.MaxX;
 
-                if ((ULONG)(newmaxx - newminx + 1) > constrainingBitWidth)
+                if((ULONG)(newmaxx - newminx + 1) > constrainingBitWidth)
                     break;
 
-                if (constrainingExtent)
-                {
-                    if (constrainingExtent->te_Extent.MinX > newminx) break;
-                    if (constrainingExtent->te_Extent.MaxX < newmaxx) break;
-                    if (constrainingExtent->te_Width < newwidth) break;
+                if(constrainingExtent) {
+                    if(constrainingExtent->te_Extent.MinX > newminx) break;
+                    if(constrainingExtent->te_Extent.MaxX < newmaxx) break;
+                    if(constrainingExtent->te_Width < newwidth) break;
                 }
 
                 textExtent->te_Width = newwidth;
@@ -134,8 +128,7 @@
 
     } /* if (strLen && (constrainingBitHeight >= tf->tf_YSize)) */
 
-    if (retval == 0)
-    {
+    if(retval == 0) {
         textExtent->te_Width = 0;
         textExtent->te_Height = 0;
         textExtent->te_Extent.MinX = 0;

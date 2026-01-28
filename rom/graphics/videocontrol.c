@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function VideoControl()
 */
@@ -56,7 +56,7 @@
     LONG *immediate = NULL;
     ULONG res = 0;
 
-    while ((tag = NextTagItem(&tstate))) {
+    while((tag = NextTagItem(&tstate))) {
         switch(tag->ti_Tag) {
 
         case VTAG_ATTACH_CM_SET:
@@ -86,7 +86,7 @@
             tag->ti_Tag = VTAG_NORMAL_DISP_SET;
             tag->ti_Data = (STACKIPTR)cm->NormalDisplayInfo;
             break;
-        
+
         case VTAG_COERCE_DISP_SET:
             cm->CoerceDisplayInfo = (APTR)tag->ti_Data;
             break;
@@ -143,7 +143,7 @@
 
         case VTAG_BORDERSPRITE_GET:
             /* FIXME: Does AmigaOS do the same? */
-            if (cm->Flags & BORDERSPRITES) {
+            if(cm->Flags & BORDERSPRITES) {
                 tag->ti_Tag = VTAG_BORDERSPRITE_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -161,7 +161,7 @@
             tag->ti_Data = cm->SpriteResolution;
             break;
 
-/* TODO: Implement these */
+        /* TODO: Implement these */
         case VTAG_PF1_TO_SPRITEPRI_SET:
             break;
 
@@ -187,7 +187,7 @@
             break;
 
         case VTAG_BORDERBLANK_GET:
-            if (cm->Flags & BORDER_BLANKING) {
+            if(cm->Flags & BORDER_BLANKING) {
                 tag->ti_Tag = VTAG_BORDERBLANK_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -205,7 +205,7 @@
             break;
 
         case VTAG_BORDERNOTRANS_GET:
-            if (cm->Flags & BORDER_NOTRANSPARENCY) {
+            if(cm->Flags & BORDER_NOTRANSPARENCY) {
                 tag->ti_Tag = VTAG_BORDERNOTRANS_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -214,7 +214,7 @@
             }
             break;
 
-/* TODO: implement these */
+        /* TODO: implement these */
         case VTAG_CHROMAKEY_SET:
             break;
 
@@ -225,7 +225,7 @@
             tag->ti_Tag = VTAG_CHROMAKEY_CLR;
             tag->ti_Data = 0;
             break;
-        
+
         case VTAG_BITPLANEKEY_SET:
             break;
 
@@ -269,7 +269,7 @@
             break;
 
         case VTAG_FULLPALETTE_GET:
-            if (cm->AuxFlags & CMAF_FULLPALETTE) {
+            if(cm->AuxFlags & CMAF_FULLPALETTE) {
                 tag->ti_Tag = VTAG_FULLPALETTE_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -279,29 +279,29 @@
             break;
 
         case VC_IntermediateCLUpdate:
-            if (tag->ti_Data)
+            if(tag->ti_Data)
                 cm->AuxFlags &= ~CMAF_NO_INTERMED_UPDATE;
             else
                 cm->AuxFlags |= CMAF_NO_INTERMED_UPDATE;
             break;
-        
+
         case VC_IntermediateCLUpdate_Query:
             *(ULONG *)tag->ti_Data = (cm->AuxFlags & CMAF_NO_INTERMED_UPDATE) ? FALSE : TRUE;
             break;
 
         case VC_NoColorPaletteLoad:
-            if (tag->ti_Data)
+            if(tag->ti_Data)
                 cm->AuxFlags |= CMAF_NO_COLOR_LOAD;
             else
                 cm->AuxFlags &= ~CMAF_NO_COLOR_LOAD;
             break;
-        
+
         case VC_NoColorPaletteLoad_Query:
             *(ULONG *)tag->ti_Data = (cm->AuxFlags & CMAF_NO_COLOR_LOAD) ? TRUE : FALSE;
             break;
 
         case VC_DUALPF_Disable:
-            if (tag->ti_Data)
+            if(tag->ti_Data)
                 cm->AuxFlags |= CMAF_DUALPF_DISABLE;
             else
                 cm->AuxFlags &= ~CMAF_DUALPF_DISABLE;
@@ -320,7 +320,7 @@
             break;
 
         case VTAG_USERCLIP_GET:
-            if (cm->Flags & USER_COPPER_CLIP) {
+            if(cm->Flags & USER_COPPER_CLIP) {
                 tag->ti_Tag = VTAG_USERCLIP_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -342,7 +342,7 @@
             break;
 
         case VTAG_BATCH_CM_GET:
-            if (cm->Flags & VIDEOCONTROL_BATCH) {
+            if(cm->Flags & VIDEOCONTROL_BATCH) {
                 tag->ti_Tag = VTAG_BATCH_CM_SET;
                 tag->ti_Data = TRUE;
             } else {
@@ -355,7 +355,7 @@
             cm->cm_batch_items = (struct TagItem *)tag->ti_Data;
             break;
 
-/* TODO: implement this */
+        /* TODO: implement this */
         case VTAG_BATCH_ITEMS_ADD:
             break;
 
@@ -381,9 +381,9 @@
             res = 1;
         }
     }
-    
-    if (immediate) {
-    
+
+    if(immediate) {
+
         /* TODO: update SpriteBase in the graphics driver here */
 
         *immediate = 0;

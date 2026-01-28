@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function ScrollRegion()
 */
@@ -58,19 +58,15 @@
 
     BOOL res = FALSE;
 
-    if (!rect)
-    {
+    if(!rect) {
         TranslateRect(Bounds(region), dx, dy);
 
         res = TRUE;
-    }
-    else
-    {
+    } else {
         struct Region *cutRegion;
 
         cutRegion = AndRectRegionND(region, rect);
-        if (cutRegion)
-        {
+        if(cutRegion) {
             struct Region *newRegion;
 
             TranslateRect(Bounds(cutRegion), dx, dy);
@@ -78,10 +74,8 @@
             AndRectRegion(cutRegion, rect);
 
             newRegion = ClearRectRegionND(region, rect);
-            if (newRegion)
-            {
-                if (OrRegionRegion(cutRegion, newRegion))
-                {
+            if(newRegion) {
+                if(OrRegionRegion(cutRegion, newRegion)) {
                     _SwapRegions(region, newRegion);
 
                     res = TRUE;

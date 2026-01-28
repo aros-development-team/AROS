@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function SetMaxPen()
 */
@@ -51,35 +51,34 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  BYTE Mask;
+    BYTE Mask;
 
-  /* maxpen==0 is nonsense */
-  if (0 == maxpen)
-    return;
+    /* maxpen==0 is nonsense */
+    if(0 == maxpen)
+        return;
 
-  /* calculate the Mask */
-  /* maxpen   | Mask   | highest bit
-   * 1        | 1      | 0
-   * 2..3     | 3      | 1
-   * 4..7     | 7      | 2
-   * 8..15    | 15     | 3
-   * 16..31   | 31     | 4
-   * 31..63   | 63     | 5
-   * 63..127  | 127    | 6
-   * 128..255 | 255    | 7
-   */
+    /* calculate the Mask */
+    /* maxpen   | Mask   | highest bit
+     * 1        | 1      | 0
+     * 2..3     | 3      | 1
+     * 4..7     | 7      | 2
+     * 8..15    | 15     | 3
+     * 16..31   | 31     | 4
+     * 31..63   | 63     | 5
+     * 63..127  | 127    | 6
+     * 128..255 | 255    | 7
+     */
 
-  /* look for the highest bit */
-  Mask = 0x0;
-  while ((BYTE)maxpen != 0)
-  {
-    maxpen >>= 1;
-    Mask = (Mask << 1) | 0x01;
-  }
+    /* look for the highest bit */
+    Mask = 0x0;
+    while((BYTE)maxpen != 0) {
+        maxpen >>= 1;
+        Mask = (Mask << 1) | 0x01;
+    }
 
-  rp->Mask = Mask;
+    rp->Mask = Mask;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetMaxPen */

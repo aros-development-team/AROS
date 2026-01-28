@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function AddAnimOb()
 */
@@ -55,29 +55,27 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-  struct AnimComp * CurAnimComp;
+    struct AnimComp *CurAnimComp;
 
-  /* this AnimOb becomes the first on in the list*/
-  if (NULL != *anKey)
-  {
-    anOb -> NextOb = (*anKey);
-    anOb -> PrevOb = NULL;
-    (*anKey) -> PrevOb = anOb;
-  }
-  *anKey = anOb;
+    /* this AnimOb becomes the first on in the list*/
+    if(NULL != *anKey) {
+        anOb -> NextOb = (*anKey);
+        anOb -> PrevOb = NULL;
+        (*anKey) -> PrevOb = anOb;
+    }
+    *anKey = anOb;
 
-  CurAnimComp = anOb -> HeadComp;
+    CurAnimComp = anOb -> HeadComp;
 
-  while (NULL != CurAnimComp)
-  {
-    /* initialize the timer of each component's first sequence */
-    CurAnimComp -> Timer = CurAnimComp -> TimeSet;
-    AddBob(CurAnimComp -> AnimBob, rp);
-    /* visit the next component */
-    CurAnimComp = CurAnimComp -> NextComp;
-  }
+    while(NULL != CurAnimComp) {
+        /* initialize the timer of each component's first sequence */
+        CurAnimComp -> Timer = CurAnimComp -> TimeSet;
+        AddBob(CurAnimComp -> AnimBob, rp);
+        /* visit the next component */
+        CurAnimComp = CurAnimComp -> NextComp;
+    }
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AddAnimOb */

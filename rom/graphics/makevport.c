@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function MakeVPort()
 */
@@ -65,11 +65,11 @@
     ULONG ret = MVP_OK;
     BOOL own_vpe = FALSE;
 
-    if (!viewport || !viewport->RasInfo || !viewport->RasInfo->BitMap)
+    if(!viewport || !viewport->RasInfo || !viewport->RasInfo->BitMap)
         return MVP_NO_DISPLAY;
 
     /* Non-HIDD bitmaps cannot be displayed */
-    if (!IS_HIDD_BM(viewport->RasInfo->BitMap)) {
+    if(!IS_HIDD_BM(viewport->RasInfo->BitMap)) {
         return MVP_NO_DISPLAY;
     }
 
@@ -77,10 +77,9 @@
     vpe = (struct ViewPortExtra *)GfxLookUp(viewport);
     D(bug("[MakeVPort] ViewPort 0x%p, ViewPortExtra 0x%p\n", viewport, vpe));
 
-    if (!vpe)
-    {
+    if(!vpe) {
         vpe = (struct ViewPortExtra *)GfxNew(VIEWPORT_EXTRA_TYPE);
-        if (!vpe)
+        if(!vpe)
             return MVP_NO_VPE;
 
         vpe->Flags = VPXF_FREE_ME;
@@ -89,12 +88,11 @@
     }
 
     /* Now make sure that ViewPortData is created */
-    if (!VPE_DATA(vpe))
-        vpe->DriverData[0] = AllocMem(sizeof(struct HIDD_ViewPortData), MEMF_PUBLIC|MEMF_CLEAR);
+    if(!VPE_DATA(vpe))
+        vpe->DriverData[0] = AllocMem(sizeof(struct HIDD_ViewPortData), MEMF_PUBLIC | MEMF_CLEAR);
 
     vpd = VPE_DATA(vpe);
-    if (vpd)
-    {
+    if(vpd) {
         vpd->vpe = vpe;
 
         /*
@@ -110,21 +108,17 @@
 
         D(bug("[MakeVPort] Bitmap object: 0x%p\n", vpd->Bitmap));
 
-        if (IS_HIDD_BM(viewport->RasInfo->BitMap))
-        {
+        if(IS_HIDD_BM(viewport->RasInfo->BitMap)) {
             /*
              * If we have a colormap attached to a HIDD bitmap, we can verify
              * that bitmap and colormap modes do not differ.
              */
-            if (viewport->ColorMap)
-            {
+            if(viewport->ColorMap) {
                 struct DisplayInfoHandle *dih = viewport->ColorMap->NormalDisplayInfo;
 
-                if (dih)
-                {
-                    if ((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
-                        (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id))
-                    {
+                if(dih) {
+                    if((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
+                            (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id)) {
 
                         D(bug("[MakeVPort] Bad NormalDisplayInfo\n"));
                         D(bug("[MakeVPort] Driverdata: ViewPort 0x%p, BitMap 0x%p\n", dih->drv, HIDD_BM_DRVDATA(viewport->RasInfo->BitMap)));
@@ -133,11 +127,10 @@
                     }
                 }
 
-                if (viewport->ColorMap->VPModeID != INVALID_ID)
-                {
-                    if (GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID)
-                    {
-                        D(bug("[MakeVPort] Bad ModeID, ViewPort 0x%08lX, BitMap 0x%08lX\n", viewport->ColorMap->VPModeID, GET_BM_MODEID(viewport->RasInfo->BitMap)));
+                if(viewport->ColorMap->VPModeID != INVALID_ID) {
+                    if(GET_BM_MODEID(viewport->RasInfo->BitMap) != viewport->ColorMap->VPModeID) {
+                        D(bug("[MakeVPort] Bad ModeID, ViewPort 0x%08lX, BitMap 0x%08lX\n", viewport->ColorMap->VPModeID,
+                              GET_BM_MODEID(viewport->RasInfo->BitMap)));
                         ret = MVP_NO_DISPLAY;
                     }
                 }
@@ -148,8 +141,7 @@
          * Ensure that we have a bitmap object.
          * OBTAIN_HIDD_BM() may fail on planar bitmap in low memory situation.
          */
-        if (vpd->Bitmap)
-        {
+        if(vpd->Bitmap) {
             struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(viewport);
 
             /*
@@ -160,19 +152,16 @@
              */
             vpe->DriverData[1] = mdd;
             ret = HIDD_Gfx_MakeViewPort(mdd->gfxhidd, vpd);
-        }
-        else
+        } else
             ret = MVP_NO_MEM;
-    }
-    else
+    } else
         ret = MVP_NO_MEM;
 
-    if (ret == MVP_OK)
+    if(ret == MVP_OK)
         /* Use ScrollVPort() in order to validate offsets */
         ScrollVPort(viewport);
-    else
-    {
-        if (own_vpe)
+    else {
+        if(own_vpe)
             GfxFree(&vpe->n);
     }
 

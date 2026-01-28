@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function EraseRect()
@@ -65,8 +65,8 @@
 
     struct Rectangle r;
     struct Hook     *h = LAYERS_BACKFILL;
-   
-    if (!LayersBase) {
+
+    if(!LayersBase) {
         rp->DrawMode ^= INVERSVID;
         RectFill(rp, xMin, yMin, xMax, yMax);
         rp->DrawMode ^= INVERSVID;
@@ -77,22 +77,20 @@
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
-    
+
     r.MinX = xMin;
     r.MinY = yMin;
     r.MaxX = xMax;
     r.MaxY = yMax;
 
-    if (rp->Layer)
-    {
+    if(rp->Layer) {
         LockLayerRom(rp->Layer);
         h = rp->Layer->BackFill;
     }
 
     DoHookClipRects(h, rp, &r);
-    
-    if (rp->Layer)
-    {
+
+    if(rp->Layer) {
         UnlockLayerRom(rp->Layer);
     }
 

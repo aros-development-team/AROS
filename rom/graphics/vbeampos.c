@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Read the current vertical position of the beam
 */
@@ -46,7 +46,7 @@
 
 
     /* TODO: Write graphics/VBeamPos() */
-    aros_print_not_implemented ("VBeamPos");
+    aros_print_not_implemented("VBeamPos");
 
     return 10;
 

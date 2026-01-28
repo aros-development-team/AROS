@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Graphics function CoerceMode()
 */
@@ -56,7 +56,7 @@
     AROS_LIBFUNC_INIT
 
     /* TODO: Write graphics/CoerceMode() */
-    aros_print_not_implemented ("CoerceMode");
+    aros_print_not_implemented("CoerceMode");
 
     return INVALID_ID;
 
