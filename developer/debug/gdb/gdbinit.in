@@ -7,6 +7,7 @@ handle SIGALRM pass noprint nostop
 handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
+set max-value-size unlimited
 
 define log_to_file
   set logging file $arg0
