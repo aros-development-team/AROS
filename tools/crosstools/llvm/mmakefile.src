@@ -279,7 +279,7 @@ $(HOSTGENDIR)/$(CURDIR)/libcxx:
 tools-crosstools-llvm-libcxx : | $(HOSTGENDIR)/$(CURDIR)/libcxx
 	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxx-installflag) ; then                                                                            \
         cd $(HOSTGENDIR)/$(CURDIR)/libcxx                                                                                               \
-        && cmake                                                                                                                        \
+        && $(CMAKE)                                                                                                                        \
             -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
             -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                          \
             -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
@@ -297,7 +297,7 @@ $(HOSTGENDIR)/$(CURDIR)/libcxxabi:
 tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
 	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxxabi-installflag) ; then                                                                         \
         cd $(HOSTGENDIR)/$(CURDIR)/libcxxabi                                                                                            \
-        && cmake                                                                                                                        \
+        && $(CMAKE)                                                                                                                        \
             -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
             -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                          \
             -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
