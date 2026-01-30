@@ -60,13 +60,16 @@ jobs:
       chmod 600 ~/.ssh/id_rsa
       chmod 700 ~/.ssh
 
-      ssh-keyscan -t rsa shell.sourceforge.net >> ~/.ssh/known_hosts
-      ssh-keyscan -t rsa web.sourceforge.net >> ~/.ssh/known_hosts
+      # Add host keys for strict verification (includes ED25519)
+      ssh-keyscan -H -t rsa,ecdsa,ed25519 shell.sourceforge.net >> ~/.ssh/known_hosts
+      ssh-keyscan -H -t rsa,ecdsa,ed25519 web.sourceforge.net   >> ~/.ssh/known_hosts
+      chmod 600 ~/.ssh/known_hosts
 
       echo "Host web.sourceforge.net" > ~/.ssh/config
       echo "    IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
       echo "    IdentitiesOnly yes" >> ~/.ssh/config
       echo "    StrictHostKeyChecking yes" >> ~/.ssh/config
+      echo "    UserKnownHostsFile ~/.ssh/known_hosts" >> ~/.ssh/config
       echo "    Port 22" >> ~/.ssh/config
       chmod 600 ~/.ssh/config
 
