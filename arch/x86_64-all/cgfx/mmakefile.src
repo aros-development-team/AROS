@@ -3,6 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES  := \
         extractcolor_renderfunc \
+        processpixelarray_avx_opblur \
         processpixelarray_opblur \
         processpixelarray_opbrightness \
         processpixelarray_opsetalpha \

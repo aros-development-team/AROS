@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -15,33 +15,13 @@
 #define BLUR_USE_GAUSSIAN
 
 #ifdef __clang__
-_Pragma("clang attribute push(__attribute__((target(\"ssse3\"))), apply_to=function)")
+_Pragma("clang attribute push(__attribute__((target(\"avx2\"))), apply_to=function)")
 #elif defined(__GNUC__)
 _Pragma("GCC push_options")
-_Pragma("GCC target(\"ssse3\")")
+_Pragma("GCC target(\"avx2\")")
 #endif
 
-#include <emmintrin.h>
-#include <tmmintrin.h>
-
-#define cpuid(num, subnum) \
-    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num),"c"(subnum)); } while(0)
-
-static int has_avx2(void)
-{
-    ULONG eax, ebx, ecx, edx;
-    int _ret = 0;
-    cpuid(0x00000001, 0x0);
-    _ret = (ecx & (1 << 28)) != 0; // Bit 28 of ECX = AVX
-    if (_ret)
-    {
-        cpuid(0x00000007, 0x0); // subleaf ECX = 0
-        _ret = (ebx & (1 << 5)) != 0; // Bit 5 of EBX = AVX2
-    }
-    return _ret;
-}
-
-void ProcessPixelArrayBlurFunc_AVX(struct RastPort *opRast, struct Rectangle *opRect, LONG value, struct Library *CyberGfxBase);
+#include <immintrin.h>
 
 static void build_gaussian_kernel(float *kernel, int radius)
 {
@@ -63,27 +43,10 @@ static void build_gaussian_kernel(float *kernel, int radius)
         kernel[i] /= (float)sum;
 }
 
-/* SSE2 helper to clamp 32-bit signed integers to 0-255 range */
-static inline __m128i clamp_0_255_epi32(__m128i val)
+static void gaussian_horizontal_avx(ULONG *dst, const ULONG *src, int w, int h, const float *kernel, int radius)
 {
-    __m128i zero = _mm_setzero_si128();
-    __m128i max255 = _mm_set1_epi32(255);
-    
-    /* Clamp lower bound to 0: if val < 0, mask will be 0xFFFFFFFF, clearing the value */
-    __m128i mask_neg = _mm_cmpgt_epi32(zero, val);  /* 0xFFFF where 0 > val (val < 0) */
-    val = _mm_andnot_si128(mask_neg, val);          /* Clear negative values */
-    
-    /* Clamp upper bound to 255: if val > 255, replace with 255 */
-    __m128i mask_over = _mm_cmpgt_epi32(val, max255);  /* 0xFFFF where val > 255 */
-    val = _mm_or_si128(_mm_andnot_si128(mask_over, val), _mm_and_si128(mask_over, max255));
-    
-    return val;
-}
-
-static void gaussian_horizontal_sse2(ULONG *dst, const ULONG *src, int w, int h, const float *kernel, int radius)
-{
-    const __m128i mask = _mm_set1_epi32(0xFF);
-    const __m128 half = _mm_set1_ps(0.5f);
+    const __m256i mask = _mm256_set1_epi32(0xFF);
+    const __m256 half = _mm256_set1_ps(0.5f);
 
     for (int y = 0; y < h; ++y)
     {
@@ -114,45 +77,46 @@ static void gaussian_horizontal_sse2(ULONG *dst, const ULONG *src, int w, int h,
         }
 
         int vec_end = w - radius;
-        for (; x + 4 <= vec_end; x += 4)
+        for (; x + 8 <= vec_end; x += 8)
         {
-            __m128 acc_a = _mm_setzero_ps();
-            __m128 acc_r = _mm_setzero_ps();
-            __m128 acc_g = _mm_setzero_ps();
-            __m128 acc_b = _mm_setzero_ps();
+            __m256 acc_a = _mm256_setzero_ps();
+            __m256 acc_r = _mm256_setzero_ps();
+            __m256 acc_g = _mm256_setzero_ps();
+            __m256 acc_b = _mm256_setzero_ps();
 
             for (int k = -radius; k <= radius; ++k)
             {
                 const ULONG *p = row + x + k;
-                __m128i pix = _mm_loadu_si128((const __m128i *)p);
-                __m128 wgt = _mm_set1_ps(kernel[k + radius]);
+                __m256i pix = _mm256_loadu_si256((const __m256i *)p);
+                __m256 wgt = _mm256_set1_ps(kernel[k + radius]);
 
-                __m128i a_i = _mm_and_si128(_mm_srli_epi32(pix, 24), mask);
-                __m128i r_i = _mm_and_si128(_mm_srli_epi32(pix, 16), mask);
-                __m128i g_i = _mm_and_si128(_mm_srli_epi32(pix, 8), mask);
-                __m128i b_i = _mm_and_si128(pix, mask);
+                __m256i a_i = _mm256_and_si256(_mm256_srli_epi32(pix, 24), mask);
+                __m256i r_i = _mm256_and_si256(_mm256_srli_epi32(pix, 16), mask);
+                __m256i g_i = _mm256_and_si256(_mm256_srli_epi32(pix, 8), mask);
+                __m256i b_i = _mm256_and_si256(pix, mask);
 
-                acc_a = _mm_add_ps(acc_a, _mm_mul_ps(_mm_cvtepi32_ps(a_i), wgt));
-                acc_r = _mm_add_ps(acc_r, _mm_mul_ps(_mm_cvtepi32_ps(r_i), wgt));
-                acc_g = _mm_add_ps(acc_g, _mm_mul_ps(_mm_cvtepi32_ps(g_i), wgt));
-                acc_b = _mm_add_ps(acc_b, _mm_mul_ps(_mm_cvtepi32_ps(b_i), wgt));
+                acc_a = _mm256_add_ps(acc_a, _mm256_mul_ps(_mm256_cvtepi32_ps(a_i), wgt));
+                acc_r = _mm256_add_ps(acc_r, _mm256_mul_ps(_mm256_cvtepi32_ps(r_i), wgt));
+                acc_g = _mm256_add_ps(acc_g, _mm256_mul_ps(_mm256_cvtepi32_ps(g_i), wgt));
+                acc_b = _mm256_add_ps(acc_b, _mm256_mul_ps(_mm256_cvtepi32_ps(b_i), wgt));
             }
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(acc_a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(acc_r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(acc_g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(acc_b, half));
+            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_a, half));
+            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_r, half));
+            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_g, half));
+            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_b, half));
 
-            /* Clamp to 0-255 using SSE2-compatible operations */
-            a32 = clamp_0_255_epi32(a32);
-            r32 = clamp_0_255_epi32(r32);
-            g32 = clamp_0_255_epi32(g32);
-            b32 = clamp_0_255_epi32(b32);
+            /* Clamp to 0-255 to prevent channel contamination */
+            __m256i zero = _mm256_setzero_si256();
+            a32 = _mm256_max_epi32(_mm256_min_epi32(a32, mask), zero);
+            r32 = _mm256_max_epi32(_mm256_min_epi32(r32, mask), zero);
+            g32 = _mm256_max_epi32(_mm256_min_epi32(g32, mask), zero);
+            b32 = _mm256_max_epi32(_mm256_min_epi32(b32, mask), zero);
 
-            __m128i outv = _mm_or_si128(_mm_slli_epi32(a32, 24), _mm_slli_epi32(r32, 16));
-            outv = _mm_or_si128(outv, _mm_slli_epi32(g32, 8));
-            outv = _mm_or_si128(outv, b32);
-            _mm_storeu_si128((__m128i *)(out + x), outv);
+            __m256i outv = _mm256_or_si256(_mm256_slli_epi32(a32, 24), _mm256_slli_epi32(r32, 16));
+            outv = _mm256_or_si256(outv, _mm256_slli_epi32(g32, 8));
+            outv = _mm256_or_si256(outv, b32);
+            _mm256_storeu_si256((__m256i *)(out + x), outv);
         }
 
         for (; x < w; ++x)
@@ -179,10 +143,10 @@ static void gaussian_horizontal_sse2(ULONG *dst, const ULONG *src, int w, int h,
     }
 }
 
-static void gaussian_vertical_sse2(ULONG *dst, const ULONG *src, int w, int h, const float *kernel, int radius)
+static void gaussian_vertical_avx(ULONG *dst, const ULONG *src, int w, int h, const float *kernel, int radius)
 {
-    const __m128i mask = _mm_set1_epi32(0xFF);
-    const __m128 half = _mm_set1_ps(0.5f);
+    const __m256i mask = _mm256_set1_epi32(0xFF);
+    const __m256 half = _mm256_set1_ps(0.5f);
 
     for (int y = 0; y < h; ++y)
     {
@@ -213,45 +177,46 @@ static void gaussian_vertical_sse2(ULONG *dst, const ULONG *src, int w, int h, c
         }
 
         int x = 0;
-        for (; x + 4 <= w; x += 4)
+        for (; x + 8 <= w; x += 8)
         {
-            __m128 acc_a = _mm_setzero_ps();
-            __m128 acc_r = _mm_setzero_ps();
-            __m128 acc_g = _mm_setzero_ps();
-            __m128 acc_b = _mm_setzero_ps();
+            __m256 acc_a = _mm256_setzero_ps();
+            __m256 acc_r = _mm256_setzero_ps();
+            __m256 acc_g = _mm256_setzero_ps();
+            __m256 acc_b = _mm256_setzero_ps();
 
             for (int k = -radius; k <= radius; ++k)
             {
                 const ULONG *p = src + (y + k) * w + x;
-                __m128i pix = _mm_loadu_si128((const __m128i *)p);
-                __m128 wgt = _mm_set1_ps(kernel[k + radius]);
+                __m256i pix = _mm256_loadu_si256((const __m256i *)p);
+                __m256 wgt = _mm256_set1_ps(kernel[k + radius]);
 
-                __m128i a_i = _mm_and_si128(_mm_srli_epi32(pix, 24), mask);
-                __m128i r_i = _mm_and_si128(_mm_srli_epi32(pix, 16), mask);
-                __m128i g_i = _mm_and_si128(_mm_srli_epi32(pix, 8), mask);
-                __m128i b_i = _mm_and_si128(pix, mask);
+                __m256i a_i = _mm256_and_si256(_mm256_srli_epi32(pix, 24), mask);
+                __m256i r_i = _mm256_and_si256(_mm256_srli_epi32(pix, 16), mask);
+                __m256i g_i = _mm256_and_si256(_mm256_srli_epi32(pix, 8), mask);
+                __m256i b_i = _mm256_and_si256(pix, mask);
 
-                acc_a = _mm_add_ps(acc_a, _mm_mul_ps(_mm_cvtepi32_ps(a_i), wgt));
-                acc_r = _mm_add_ps(acc_r, _mm_mul_ps(_mm_cvtepi32_ps(r_i), wgt));
-                acc_g = _mm_add_ps(acc_g, _mm_mul_ps(_mm_cvtepi32_ps(g_i), wgt));
-                acc_b = _mm_add_ps(acc_b, _mm_mul_ps(_mm_cvtepi32_ps(b_i), wgt));
+                acc_a = _mm256_add_ps(acc_a, _mm256_mul_ps(_mm256_cvtepi32_ps(a_i), wgt));
+                acc_r = _mm256_add_ps(acc_r, _mm256_mul_ps(_mm256_cvtepi32_ps(r_i), wgt));
+                acc_g = _mm256_add_ps(acc_g, _mm256_mul_ps(_mm256_cvtepi32_ps(g_i), wgt));
+                acc_b = _mm256_add_ps(acc_b, _mm256_mul_ps(_mm256_cvtepi32_ps(b_i), wgt));
             }
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(acc_a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(acc_r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(acc_g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(acc_b, half));
+            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_a, half));
+            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_r, half));
+            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_g, half));
+            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(acc_b, half));
 
-            /* Clamp to 0-255 using SSE2-compatible operations */
-            a32 = clamp_0_255_epi32(a32);
-            r32 = clamp_0_255_epi32(r32);
-            g32 = clamp_0_255_epi32(g32);
-            b32 = clamp_0_255_epi32(b32);
+            /* Clamp to 0-255 to prevent channel contamination */
+            __m256i zero = _mm256_setzero_si256();
+            a32 = _mm256_max_epi32(_mm256_min_epi32(a32, mask), zero);
+            r32 = _mm256_max_epi32(_mm256_min_epi32(r32, mask), zero);
+            g32 = _mm256_max_epi32(_mm256_min_epi32(g32, mask), zero);
+            b32 = _mm256_max_epi32(_mm256_min_epi32(b32, mask), zero);
 
-            __m128i outv = _mm_or_si128(_mm_slli_epi32(a32, 24), _mm_slli_epi32(r32, 16));
-            outv = _mm_or_si128(outv, _mm_slli_epi32(g32, 8));
-            outv = _mm_or_si128(outv, b32);
-            _mm_storeu_si128((__m128i *)(dst + y * w + x), outv);
+            __m256i outv = _mm256_or_si256(_mm256_slli_epi32(a32, 24), _mm256_slli_epi32(r32, 16));
+            outv = _mm256_or_si256(outv, _mm256_slli_epi32(g32, 8));
+            outv = _mm256_or_si256(outv, b32);
+            _mm256_storeu_si256((__m256i *)(dst + y * w + x), outv);
         }
 
         for (; x < w; ++x)
@@ -276,10 +241,10 @@ static void gaussian_vertical_sse2(ULONG *dst, const ULONG *src, int w, int h, c
     }
 }
 
-static void box_blur_sse2(ULONG *dst, const ULONG *src, int w, int h, int radius)
+static void box_blur_avx(ULONG *dst, const ULONG *src, int w, int h, int radius)
 {
-    const __m128i mask = _mm_set1_epi32(0xFF);
-    const __m128 half = _mm_set1_ps(0.5f);
+    const __m256i mask = _mm256_set1_epi32(0xFF);
+    const __m256 half = _mm256_set1_ps(0.5f);
 
     ULONG *sumA = (ULONG *)AllocMem(sizeof(ULONG) * w * h, MEMF_ANY);
     ULONG *sumR = (ULONG *)AllocMem(sizeof(ULONG) * w * h, MEMF_ANY);
@@ -346,32 +311,32 @@ static void box_blur_sse2(ULONG *dst, const ULONG *src, int w, int h, int radius
         }
 
         int vec_end = w - radius;
-        for (; x + 4 <= vec_end; x += 4)
+        for (; x + 8 <= vec_end; x += 8)
         {
-            __m128i acc_a = _mm_setzero_si128();
-            __m128i acc_r = _mm_setzero_si128();
-            __m128i acc_g = _mm_setzero_si128();
-            __m128i acc_b = _mm_setzero_si128();
+            __m256i acc_a = _mm256_setzero_si256();
+            __m256i acc_r = _mm256_setzero_si256();
+            __m256i acc_g = _mm256_setzero_si256();
+            __m256i acc_b = _mm256_setzero_si256();
 
             for (int k = -radius; k <= radius; ++k)
             {
                 const ULONG *p = row + x + k;
-                __m128i pix = _mm_loadu_si128((const __m128i *)p);
-                __m128i a_i = _mm_and_si128(_mm_srli_epi32(pix, 24), mask);
-                __m128i r_i = _mm_and_si128(_mm_srli_epi32(pix, 16), mask);
-                __m128i g_i = _mm_and_si128(_mm_srli_epi32(pix, 8), mask);
-                __m128i b_i = _mm_and_si128(pix, mask);
+                __m256i pix = _mm256_loadu_si256((const __m256i *)p);
+                __m256i a_i = _mm256_and_si256(_mm256_srli_epi32(pix, 24), mask);
+                __m256i r_i = _mm256_and_si256(_mm256_srli_epi32(pix, 16), mask);
+                __m256i g_i = _mm256_and_si256(_mm256_srli_epi32(pix, 8), mask);
+                __m256i b_i = _mm256_and_si256(pix, mask);
 
-                acc_a = _mm_add_epi32(acc_a, a_i);
-                acc_r = _mm_add_epi32(acc_r, r_i);
-                acc_g = _mm_add_epi32(acc_g, g_i);
-                acc_b = _mm_add_epi32(acc_b, b_i);
+                acc_a = _mm256_add_epi32(acc_a, a_i);
+                acc_r = _mm256_add_epi32(acc_r, r_i);
+                acc_g = _mm256_add_epi32(acc_g, g_i);
+                acc_b = _mm256_add_epi32(acc_b, b_i);
             }
 
-            _mm_storeu_si128((__m128i *)(outA + x), acc_a);
-            _mm_storeu_si128((__m128i *)(outR + x), acc_r);
-            _mm_storeu_si128((__m128i *)(outG + x), acc_g);
-            _mm_storeu_si128((__m128i *)(outB + x), acc_b);
+            _mm256_storeu_si256((__m256i *)(outA + x), acc_a);
+            _mm256_storeu_si256((__m256i *)(outR + x), acc_r);
+            _mm256_storeu_si256((__m256i *)(outG + x), acc_g);
+            _mm256_storeu_si256((__m256i *)(outB + x), acc_b);
         }
 
         for (; x < w; ++x)
@@ -425,45 +390,46 @@ static void box_blur_sse2(ULONG *dst, const ULONG *src, int w, int h, int radius
             continue;
         }
 
-        for (; x + 4 <= w; x += 4)
+        for (; x + 8 <= w; x += 8)
         {
-            __m128i acc_a = _mm_setzero_si128();
-            __m128i acc_r = _mm_setzero_si128();
-            __m128i acc_g = _mm_setzero_si128();
-            __m128i acc_b = _mm_setzero_si128();
+            __m256i acc_a = _mm256_setzero_si256();
+            __m256i acc_r = _mm256_setzero_si256();
+            __m256i acc_g = _mm256_setzero_si256();
+            __m256i acc_b = _mm256_setzero_si256();
 
             for (int k = -radius; k <= radius; ++k)
             {
                 int idx = (y + k) * w + x;
-                acc_a = _mm_add_epi32(acc_a, _mm_loadu_si128((const __m128i *)(sumA + idx)));
-                acc_r = _mm_add_epi32(acc_r, _mm_loadu_si128((const __m128i *)(sumR + idx)));
-                acc_g = _mm_add_epi32(acc_g, _mm_loadu_si128((const __m128i *)(sumG + idx)));
-                acc_b = _mm_add_epi32(acc_b, _mm_loadu_si128((const __m128i *)(sumB + idx)));
+                acc_a = _mm256_add_epi32(acc_a, _mm256_loadu_si256((const __m256i *)(sumA + idx)));
+                acc_r = _mm256_add_epi32(acc_r, _mm256_loadu_si256((const __m256i *)(sumR + idx)));
+                acc_g = _mm256_add_epi32(acc_g, _mm256_loadu_si256((const __m256i *)(sumG + idx)));
+                acc_b = _mm256_add_epi32(acc_b, _mm256_loadu_si256((const __m256i *)(sumB + idx)));
             }
 
-            __m128 countx = _mm_loadu_ps(countX + x);
-            __m128 count = _mm_mul_ps(countx, _mm_set1_ps(count_y));
+            __m256 countx = _mm256_loadu_ps(countX + x);
+            __m256 count = _mm256_mul_ps(countx, _mm256_set1_ps(count_y));
 
-            __m128 a = _mm_div_ps(_mm_cvtepi32_ps(acc_a), count);
-            __m128 r = _mm_div_ps(_mm_cvtepi32_ps(acc_r), count);
-            __m128 g = _mm_div_ps(_mm_cvtepi32_ps(acc_g), count);
-            __m128 b = _mm_div_ps(_mm_cvtepi32_ps(acc_b), count);
+            __m256 a = _mm256_div_ps(_mm256_cvtepi32_ps(acc_a), count);
+            __m256 r = _mm256_div_ps(_mm256_cvtepi32_ps(acc_r), count);
+            __m256 g = _mm256_div_ps(_mm256_cvtepi32_ps(acc_g), count);
+            __m256 b = _mm256_div_ps(_mm256_cvtepi32_ps(acc_b), count);
 
-            __m128i a32 = _mm_cvtps_epi32(_mm_add_ps(a, half));
-            __m128i r32 = _mm_cvtps_epi32(_mm_add_ps(r, half));
-            __m128i g32 = _mm_cvtps_epi32(_mm_add_ps(g, half));
-            __m128i b32 = _mm_cvtps_epi32(_mm_add_ps(b, half));
+            __m256i a32 = _mm256_cvtps_epi32(_mm256_add_ps(a, half));
+            __m256i r32 = _mm256_cvtps_epi32(_mm256_add_ps(r, half));
+            __m256i g32 = _mm256_cvtps_epi32(_mm256_add_ps(g, half));
+            __m256i b32 = _mm256_cvtps_epi32(_mm256_add_ps(b, half));
 
-            /* Clamp to 0-255 using SSE2-compatible operations */
-            a32 = clamp_0_255_epi32(a32);
-            r32 = clamp_0_255_epi32(r32);
-            g32 = clamp_0_255_epi32(g32);
-            b32 = clamp_0_255_epi32(b32);
+            /* Clamp values to 0-255 to prevent corruption */
+            __m256i zero = _mm256_setzero_si256();
+            a32 = _mm256_max_epi32(_mm256_min_epi32(a32, mask), zero);
+            r32 = _mm256_max_epi32(_mm256_min_epi32(r32, mask), zero);
+            g32 = _mm256_max_epi32(_mm256_min_epi32(g32, mask), zero);
+            b32 = _mm256_max_epi32(_mm256_min_epi32(b32, mask), zero);
 
-            __m128i outv = _mm_or_si128(_mm_slli_epi32(a32, 24), _mm_slli_epi32(r32, 16));
-            outv = _mm_or_si128(outv, _mm_slli_epi32(g32, 8));
-            outv = _mm_or_si128(outv, b32);
-            _mm_storeu_si128((__m128i *)(dst + y * w + x), outv);
+            __m256i outv = _mm256_or_si256(_mm256_slli_epi32(a32, 24), _mm256_slli_epi32(r32, 16));
+            outv = _mm256_or_si256(outv, _mm256_slli_epi32(g32, 8));
+            outv = _mm256_or_si256(outv, b32);
+            _mm256_storeu_si256((__m256i *)(dst + y * w + x), outv);
         }
 
         for (; x < w; ++x)
@@ -498,19 +464,13 @@ static void box_blur_sse2(ULONG *dst, const ULONG *src, int w, int h, int radius
     FreeMem(countY, sizeof(float) * h);
 }
 
-void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect, LONG value, struct Library *CyberGfxBase)
+void ProcessPixelArrayBlurFunc_AVX(struct RastPort *opRast, struct Rectangle *opRect, LONG value, struct Library *CyberGfxBase)
 {
     const int w = opRect->MaxX - opRect->MinX + 1;
     const int h = opRect->MaxY - opRect->MinY + 1;
 
     if (w <= 0 || h <= 0)
         return;
-
-    if (has_avx2())
-    {
-        ProcessPixelArrayBlurFunc_AVX(opRast, opRect, value, CyberGfxBase);
-        return;
-    }
 
     ULONG *src = (ULONG *)AllocMem((ULONG)w * h * 4, MEMF_ANY);
     ULONG *tmp = (ULONG *)AllocMem((ULONG)w * h * 4, MEMF_ANY);
@@ -541,13 +501,13 @@ void ProcessPixelArrayBlurFunc(struct RastPort *opRast, struct Rectangle *opRect
     }
 
     build_gaussian_kernel(kernel, radius);
-    gaussian_horizontal_sse2(tmp, src, w, h, kernel, radius);
-    gaussian_vertical_sse2(dst, tmp, w, h, kernel, radius);
+    gaussian_horizontal_avx(tmp, src, w, h, kernel, radius);
+    gaussian_vertical_avx(dst, tmp, w, h, kernel, radius);
 
     FreeMem(kernel, sizeof(float) * kernelSize);
 #else
     int radius = value < 1 ? 1 : value;
-    box_blur_sse2(dst, src, w, h, radius);
+    box_blur_avx(dst, src, w, h, radius);
 #endif
 
     WritePixelArray(dst, 0, 0, w * 4, opRast, opRect->MinX, opRect->MinY, w, h, RECTFMT_ARGB);
