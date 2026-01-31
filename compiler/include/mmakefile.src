@@ -33,6 +33,7 @@ INCSUBDIRS :=	aros				\
 		gadgets				\
 		graphics			\
 		hardware			\
+		hardware/cdc			\
 		hardware/cpu			\
 		hardware/efi			\
 		hardware/pic			\
