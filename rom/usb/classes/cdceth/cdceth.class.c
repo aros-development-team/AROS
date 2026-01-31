@@ -8,6 +8,7 @@
 #include "debug.h"
 
 #include "cdceth.class.h"
+#include "cdceth_encap.h"
 
 #include <devices/usb_cdc.h>
 
@@ -679,7 +680,7 @@ AROS_UFH0(void, nEthTask)
             if((ncp->ncp_StateFlags & DDF_ONLINE) && (ncp->ncp_ReadPending == NULL))
             {
                 ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, ETHER_MAX_LEN);
+                psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, ncp->ncp_ReadBufSize);
                 ncp->ncp_ReadBufNum ^= 1;
             }
             while((pp = (struct PsdPipe *) GetMsg(ncp->ncp_TaskMsgPort)))
@@ -700,7 +701,7 @@ AROS_UFH0(void, nEthTask)
                         if(ncp->ncp_StateFlags & DDF_ONLINE)
                         {
                             ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                            psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, ETHER_MAX_LEN);
+                            psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, ncp->ncp_ReadBufSize);
                             ncp->ncp_ReadBufNum ^= 1;
                         } else {
                             ncp->ncp_ReadPending = NULL;
@@ -728,7 +729,7 @@ AROS_UFH0(void, nEthTask)
                         } else {
                             KPRINTF(1, ("Pkt %ld received\n", pktlen));
                             DB(dumpmem(pktptr, pktlen));
-                            nReadPacket(ncp, pktptr, pktlen);
+                            cdceth_handle_rx(ncp, pktptr, pktlen);
                         }
                     }
                 }
@@ -834,220 +835,220 @@ struct NepClassEth * nAllocEth(void)
     struct NepClassEth *ncp;
 
     thistask = FindTask(NULL);
+    ncp = thistask->tc_UserData;
+    if((ncp->ncp_Base = OpenLibrary("poseidon.library", 4)) == NULL)
+    {
+        Alert(AG_OpenLib);
+        return NULL;
+    }
+
+    KPRINTF(5, ("ncp =  0x%p, ps = 0x%p\n", ncp, ps));
+
     do
     {
-        ncp = thistask->tc_UserData;
-        if(!(ncp->ncp_Base = OpenLibrary("poseidon.library", 4)))
-        {
-            Alert(AG_OpenLib);
-            break;
-        }
+        struct PsdInterface *best_if = NULL;
+        struct PsdInterface *ctrl_if = NULL;
+        struct PsdConfig *best_cfg = NULL;
+        struct PsdConfig *cur_cfg = NULL;
+        struct List *cfgs = NULL;
+        IPTR ifcls = 0, ifsub = 0, ifproto = 0;
+        IPTR altifnum = 0;
+        IPTR dataifnum = -1;
+        BOOL have_dataifnum = FALSE;
+        struct PsdDescriptor *pdd;
+        UBYTE *descdata = NULL;
 
-        {
-            struct PsdInterface *best_if = NULL;
-            struct PsdInterface *ctrl_if = NULL;
-            struct PsdConfig *best_cfg = NULL;
-            struct PsdConfig *cur_cfg = NULL;
-            struct List *cfgs = NULL;
-            IPTR ifcls = 0, ifsub = 0, ifproto = 0;
-            IPTR altifnum = 0;
-            IPTR dataifnum = -1;
-            BOOL have_dataifnum = FALSE;
-            struct PsdDescriptor *pdd;
-            UBYTE *descdata = NULL;
+        psdGetAttrs(PGA_DEVICE, ncp->ncp_Device,
+                    DA_ConfigList, &cfgs,
+                    DA_Config, &cur_cfg,
+                    TAG_END);
 
-            psdGetAttrs(PGA_DEVICE, ncp->ncp_Device,
-                        DA_ConfigList, &cfgs,
-                        DA_Config, &cur_cfg,
+        for(best_cfg = (struct PsdConfig *) (cfgs ? cfgs->lh_Head : NULL);
+            best_cfg && best_cfg->pc_Node.ln_Succ;
+            best_cfg = (struct PsdConfig *) best_cfg->pc_Node.ln_Succ)
+        {
+            struct List *ifs = NULL;
+            struct PsdInterface *pif;
+
+            ctrl_if = NULL;
+            dataifnum = -1;
+            have_dataifnum = FALSE;
+
+            psdGetAttrs(PGA_CONFIG, best_cfg,
+                        CA_InterfaceList, &ifs,
                         TAG_END);
 
-            for(best_cfg = (struct PsdConfig *) (cfgs ? cfgs->lh_Head : NULL);
-                best_cfg && best_cfg->pc_Node.ln_Succ;
-                best_cfg = (struct PsdConfig *) best_cfg->pc_Node.ln_Succ)
+            for(pif = ifs ? (struct PsdInterface *) ifs->lh_Head : NULL;
+                pif && pif->pif_Node.ln_Succ;
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ)
             {
-                struct List *ifs = NULL;
-                struct PsdInterface *pif;
+                struct PsdInterface *altpif;
+                struct List *altlist = NULL;
 
-                ctrl_if = NULL;
-                dataifnum = -1;
-                have_dataifnum = FALSE;
+                psdGetAttrs(PGA_INTERFACE, pif,
+                            IFA_Class, &ifcls,
+                            IFA_SubClass, &ifsub,
+                            IFA_Protocol, &ifproto,
+                            IFA_AlternateIfList, &altlist,
+                            TAG_DONE);
 
-                psdGetAttrs(PGA_CONFIG, best_cfg,
-                            CA_InterfaceList, &ifs,
-                            TAG_END);
-
-                for(pif = ifs ? (struct PsdInterface *) ifs->lh_Head : NULL;
-                    pif && pif->pif_Node.ln_Succ;
-                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ)
+                if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
                 {
-                    struct PsdInterface *altpif;
-                    struct List *altlist = NULL;
+                    ctrl_if = pif;
+                    break;
+                }
 
-                    psdGetAttrs(PGA_INTERFACE, pif,
+                for(altpif = altlist ? (struct PsdInterface *) altlist->lh_Head : NULL;
+                    altpif && altpif->pif_Node.ln_Succ;
+                    altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
+                {
+                    psdGetAttrs(PGA_INTERFACE, altpif,
                                 IFA_Class, &ifcls,
                                 IFA_SubClass, &ifsub,
                                 IFA_Protocol, &ifproto,
-                                IFA_AlternateIfList, &altlist,
                                 TAG_DONE);
 
                     if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
                     {
-                        ctrl_if = pif;
-                        break;
-                    }
-
-                    for(altpif = altlist ? (struct PsdInterface *) altlist->lh_Head : NULL;
-                        altpif && altpif->pif_Node.ln_Succ;
-                        altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
-                    {
-                        psdGetAttrs(PGA_INTERFACE, altpif,
-                                    IFA_Class, &ifcls,
-                                    IFA_SubClass, &ifsub,
-                                    IFA_Protocol, &ifproto,
-                                    TAG_DONE);
-
-                        if(cdceth_is_cdc_ethernet((uint8_t) ifcls, (uint8_t) ifsub, (uint8_t) ifproto))
-                        {
-                            ctrl_if = altpif;
-                            break;
-                        }
-                    }
-
-                    if(ctrl_if)
-                    {
+                        ctrl_if = altpif;
                         break;
                     }
                 }
 
-                if(!ctrl_if)
+                if(ctrl_if)
                 {
-                    continue;
+                    break;
+                }
+            }
+
+            if(!ctrl_if)
+            {
+                continue;
+            }
+
+            pdd = psdFindDescriptor(ncp->ncp_Device, NULL,
+                                    DDA_Interface, ctrl_if,
+                                    DDA_DescriptorType, UDT_CS_INTERFACE,
+                                    DDA_CS_SubType, UDST_CDC_UNION,
+                                    TAG_END);
+            if(pdd)
+            {
+                psdGetAttrs(PGA_DESCRIPTOR, pdd,
+                            DDA_DescriptorData, &descdata,
+                            TAG_END);
+                dataifnum = ((struct UsbCDCUnionDesc *) descdata)->bSlaveInterface0;
+                have_dataifnum = TRUE;
+                KPRINTF(5, ("CDC union descriptor selects data interface %ld\n", (long) dataifnum));
+            }
+
+            for(pif = ifs ? (struct PsdInterface *) ifs->lh_Head : NULL;
+                pif && pif->pif_Node.ln_Succ;
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ)
+            {
+                struct PsdInterface *altpif;
+                struct List *altlist = NULL;
+                IPTR ifnum = -1;
+
+                psdGetAttrs(PGA_INTERFACE, pif,
+                            IFA_Class, &ifcls,
+                            IFA_SubClass, &ifsub,
+                            IFA_Protocol, &ifproto,
+                            IFA_AlternateNum, &altifnum,
+                            IFA_InterfaceNum, &ifnum,
+                            IFA_AlternateIfList, &altlist,
+                            TAG_DONE);
+
+                if((ifcls == CDC_CLASS_DATA) &&
+                   (!have_dataifnum || ifnum == dataifnum) &&
+                   (ifsub == 0) &&
+                   ((ifproto == 0) || (ifproto == 1) || (ifproto == 7)))
+                {
+                    struct PsdEndpoint *in = psdFindEndpoint(pif, NULL,
+                                                             EA_IsIn, TRUE,
+                                                             EA_TransferType, USEAF_BULK,
+                                                             TAG_END);
+                    struct PsdEndpoint *out = psdFindEndpoint(pif, NULL,
+                                                              EA_IsIn, FALSE,
+                                                              EA_TransferType, USEAF_BULK,
+                                                              TAG_END);
+
+                    if(in && out)
+                    {
+                        best_if = pif;
+                        ncp->ncp_Config = best_cfg;
+                        ncp->ncp_EPIn = in;
+                        ncp->ncp_EPOut = out;
+                        ncp->ncp_Interface = pif;
+                        break;
+                    }
                 }
 
-                pdd = psdFindDescriptor(ncp->ncp_Device, NULL,
-                                        DDA_Interface, ctrl_if,
-                                        DDA_DescriptorType, UDT_CS_INTERFACE,
-                                        DDA_CS_SubType, UDST_CDC_UNION,
-                                        TAG_END);
-                if(pdd)
+                for(altpif = altlist ? (struct PsdInterface *) altlist->lh_Head : NULL;
+                    altpif && altpif->pif_Node.ln_Succ;
+                    altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
                 {
-                    psdGetAttrs(PGA_DESCRIPTOR, pdd,
-                                DDA_DescriptorData, &descdata,
-                                TAG_END);
-                    dataifnum = ((struct UsbCDCUnionDesc *) descdata)->bSlaveInterface0;
-                    have_dataifnum = TRUE;
-                    KPRINTF(5, ("CDC union descriptor selects data interface %ld\n", (long) dataifnum));
-                }
-
-                for(pif = ifs ? (struct PsdInterface *) ifs->lh_Head : NULL;
-                    pif && pif->pif_Node.ln_Succ;
-                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ)
-                {
-                    struct PsdInterface *altpif;
-                    struct List *altlist = NULL;
-                    IPTR ifnum = -1;
-
-                    psdGetAttrs(PGA_INTERFACE, pif,
+                    ifnum = -1;
+                    psdGetAttrs(PGA_INTERFACE, altpif,
                                 IFA_Class, &ifcls,
                                 IFA_SubClass, &ifsub,
                                 IFA_Protocol, &ifproto,
                                 IFA_AlternateNum, &altifnum,
                                 IFA_InterfaceNum, &ifnum,
-                                IFA_AlternateIfList, &altlist,
                                 TAG_DONE);
 
-                    if((ifcls == CDC_CLASS_DATA) &&
-                       (!have_dataifnum || ifnum == dataifnum) &&
-                       (ifsub == 0) &&
-                       ((ifproto == 0) || (ifproto == 1) || (ifproto == 7)))
+                    if((ifcls != CDC_CLASS_DATA) || (ifsub != 0) ||
+                       (ifproto != 0 && ifproto != 1 && ifproto != 7) ||
+                       (have_dataifnum && ifnum != dataifnum))
                     {
-                        struct PsdEndpoint *in = psdFindEndpoint(pif, NULL,
-                                                                 EA_IsIn, TRUE,
-                                                                 EA_TransferType, USEAF_BULK,
-                                                                 TAG_END);
-                        struct PsdEndpoint *out = psdFindEndpoint(pif, NULL,
-                                                                  EA_IsIn, FALSE,
-                                                                  EA_TransferType, USEAF_BULK,
-                                                                  TAG_END);
-
-                        if(in && out)
-                        {
-                            best_if = pif;
-                            ncp->ncp_Config = best_cfg;
-                            ncp->ncp_EPIn = in;
-                            ncp->ncp_EPOut = out;
-                            ncp->ncp_Interface = pif;
-                            break;
-                        }
+                        continue;
                     }
 
-                    for(altpif = altlist ? (struct PsdInterface *) altlist->lh_Head : NULL;
-                        altpif && altpif->pif_Node.ln_Succ;
-                        altpif = (struct PsdInterface *) altpif->pif_Node.ln_Succ)
+                    struct PsdEndpoint *in = psdFindEndpoint(altpif, NULL,
+                                                             EA_IsIn, TRUE,
+                                                             EA_TransferType, USEAF_BULK,
+                                                             TAG_END);
+                    struct PsdEndpoint *out = psdFindEndpoint(altpif, NULL,
+                                                              EA_IsIn, FALSE,
+                                                              EA_TransferType, USEAF_BULK,
+                                                              TAG_END);
+
+                    if(in && out)
                     {
-                        ifnum = -1;
-                        psdGetAttrs(PGA_INTERFACE, altpif,
-                                    IFA_Class, &ifcls,
-                                    IFA_SubClass, &ifsub,
-                                    IFA_Protocol, &ifproto,
-                                    IFA_AlternateNum, &altifnum,
-                                    IFA_InterfaceNum, &ifnum,
-                                    TAG_DONE);
-
-                        if((ifcls != CDC_CLASS_DATA) || (ifsub != 0) ||
-                           (ifproto != 0 && ifproto != 1 && ifproto != 7) ||
-                           (have_dataifnum && ifnum != dataifnum))
-                        {
-                            continue;
-                        }
-
-                        struct PsdEndpoint *in = psdFindEndpoint(altpif, NULL,
-                                                                 EA_IsIn, TRUE,
-                                                                 EA_TransferType, USEAF_BULK,
-                                                                 TAG_END);
-                        struct PsdEndpoint *out = psdFindEndpoint(altpif, NULL,
-                                                                  EA_IsIn, FALSE,
-                                                                  EA_TransferType, USEAF_BULK,
-                                                                  TAG_END);
-
-                        if(in && out)
-                        {
-                            best_if = altpif;
-                            ncp->ncp_Config = best_cfg;
-                            ncp->ncp_EPIn = in;
-                            ncp->ncp_EPOut = out;
-                            ncp->ncp_Interface = altpif;
-                            break;
-                        }
-                    }
-
-                    if(best_if)
-                    {
+                        best_if = altpif;
+                        ncp->ncp_Config = best_cfg;
+                        ncp->ncp_EPIn = in;
+                        ncp->ncp_EPOut = out;
+                        ncp->ncp_Interface = altpif;
                         break;
                     }
                 }
 
                 if(best_if)
+                {
                     break;
+                }
             }
 
             if(best_if)
-            {
-                KPRINTF(5, ("Selected CDC interface %p in config %p (alt %ld) class/sub/proto %ld/%ld/%ld\n",
-                            (void *) best_if, (void *) best_cfg, altifnum, ifcls, ifsub, ifproto));
-                ncp->ncp_ControlInterface = ctrl_if;
-                if(best_cfg && (cur_cfg != best_cfg))
-                {
-                    KPRINTF(5, ("Switching device to configuration %p\n", (void *) best_cfg));
-                    psdSetAttrs(PGA_DEVICE, ncp->ncp_Device,
-                                DA_Config, best_cfg,
-                                TAG_END);
-                }
+                break;
+        }
 
-                psdSetAttrs(PGA_INTERFACE, best_if,
-                            IFA_AlternateNum, altifnum,
+        if(best_if)
+        {
+            KPRINTF(5, ("Selected CDC interface %p in config %p (alt %ld) class/sub/proto %ld/%ld/%ld\n",
+                        (void *) best_if, (void *) best_cfg, altifnum, ifcls, ifsub, ifproto));
+            ncp->ncp_ControlInterface = ctrl_if;
+            if(best_cfg && (cur_cfg != best_cfg))
+            {
+                KPRINTF(5, ("Switching device to configuration %p\n", (void *) best_cfg));
+                psdSetAttrs(PGA_DEVICE, ncp->ncp_Device,
+                            DA_Config, best_cfg,
                             TAG_END);
             }
+
+            psdSetAttrs(PGA_INTERFACE, best_if,
+                        IFA_AlternateNum, altifnum,
+                        TAG_END);
         }
 
         if(!(ncp->ncp_Interface && ncp->ncp_EPIn && ncp->ncp_EPOut))
@@ -1060,16 +1061,22 @@ struct NepClassEth * nAllocEth(void)
                     EA_MaxPktSize, &ncp->ncp_EPOutMaxPktSize,
                     TAG_END);
 
+        KPRINTF(5, ("Max packet size %d\n", ncp->ncp_EPOutMaxPktSize));
+        cdceth_encap_configure(ncp);
+
         ncp->ncp_ReadPending = NULL;
         ncp->ncp_WritePending = NULL;
-        if(!(ncp->ncp_ReadBuffer[0] = AllocVec(ETHER_MAX_LEN * 4, MEMF_PUBLIC|MEMF_CLEAR)))
         {
-            KPRINTF(1, ("Out of memory for read buffer\n"));
-            break;
+            ULONG bufsize = max(ncp->ncp_ReadBufSize, ncp->ncp_WriteBufSize);
+            if(!(ncp->ncp_ReadBuffer[0] = AllocVec(bufsize * 4, MEMF_PUBLIC|MEMF_CLEAR)))
+            {
+                KPRINTF(1, ("Out of memory for read buffer\n"));
+                break;
+            }
+            ncp->ncp_ReadBuffer[1] = ncp->ncp_ReadBuffer[0] + bufsize;
+            ncp->ncp_WriteBuffer[0] = ncp->ncp_ReadBuffer[1] + bufsize;
+            ncp->ncp_WriteBuffer[1] = ncp->ncp_WriteBuffer[0] + bufsize;
         }
-        ncp->ncp_ReadBuffer[1] = ncp->ncp_ReadBuffer[0] + ETHER_MAX_LEN;
-        ncp->ncp_WriteBuffer[0] = ncp->ncp_ReadBuffer[1] + ETHER_MAX_LEN;
-        ncp->ncp_WriteBuffer[1] = ncp->ncp_WriteBuffer[0] + ETHER_MAX_LEN;
         ncp->ncp_Unit.unit_MsgPort.mp_SigBit = AllocSignal(-1);
         ncp->ncp_Unit.unit_MsgPort.mp_SigTask = thistask;
         ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
@@ -1115,12 +1122,16 @@ struct NepClassEth * nAllocEth(void)
         }
         FreeSignal((LONG) ncp->ncp_Unit.unit_MsgPort.mp_SigBit);
     } while(FALSE);
+
     if(ncp->ncp_ReadBuffer[0])
     {
         FreeVec(ncp->ncp_ReadBuffer[0]);
         ncp->ncp_ReadBuffer[0] = NULL;
     }
-    CloseLibrary(ncp->ncp_Base);
+    if (ncp->ncp_Base) {
+        CloseLibrary(ncp->ncp_Base);
+        ncp->ncp_Base = NULL;
+    }
     Forbid();
     ncp->ncp_Task = NULL;
     if(ncp->ncp_ReadySigTask)
@@ -1507,7 +1518,7 @@ static void cdceth_complete_write(struct NepClassEth *ncp, LONG ioerr, ULONG act
             if(stats)
             {
                 stats->PacketsSent++;
-                stats->BytesSent += actual ? actual : (ULONG) ioreq->ios2_DataLength;
+                stats->BytesSent += (ULONG) ioreq->ios2_DataLength;
             }
             ncp->ncp_DeviceStats.PacketsSent++;
             ioreq->ios2_Req.io_Error = 0;
@@ -1565,6 +1576,10 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     struct EtherPacketHeader *eph;
     UBYTE *copydest;
     UWORD writelen;
+    ULONG payload_len;
+    ULONG payload_offset = 0;
+    ULONG total_len = 0;
+    ULONG frame_len;
     struct BufMan *bufman;
     UBYTE *buf = ncp->ncp_WriteBuffer[ncp->ncp_WriteBufNum];
 
@@ -1572,26 +1587,40 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     writelen   = ioreq->ios2_DataLength;
     bufman     = ioreq->ios2_BufferManagement;
 
-    eph        = (struct EtherPacketHeader *) buf;
-    copydest   = buf;
+    frame_len = writelen;
+    if(!(ioreq->ios2_Req.io_Flags & SANA2IOF_RAW))
+    {
+        frame_len += sizeof(struct EtherPacketHeader);
+    }
+    payload_len = frame_len < ETHER_MIN_LEN ? ETHER_MIN_LEN : frame_len;
 
-    /* Not a raw packet? */
+    if(!cdceth_prepare_tx(ncp, payload_len, ncp->ncp_WriteBufSize,
+                          &payload_offset, &total_len))
+    {
+        KPRINTF(10, ("writepacket: encapsulation setup failed!\n"));
+
+        /* Trigger any tx, buff or generic error events */
+        nDoEvent(ncp, S2EVENT_ERROR|S2EVENT_TX|S2EVENT_BUFF);
+
+        ioreq->ios2_DataLength   = 0;
+        ioreq->ios2_Req.io_Error = S2ERR_MTU_EXCEEDED;
+        ioreq->ios2_WireError    = S2WERR_GENERIC_ERROR;
+        return FALSE;
+    }
+
+    eph = (struct EtherPacketHeader *) (buf + payload_offset);
+    copydest = buf + payload_offset;
+
     if(!(ioreq->ios2_Req.io_Flags & SANA2IOF_RAW))
     {
         UWORD cnt;
-        KPRINTF(10, ("RAW WRITE!\n"));
-        /* The ethernet header isn't included in the data */
-        /* Build ethernet packet header */
         for(cnt = 0; cnt < ETHER_ADDR_SIZE; cnt++)
         {
             eph->eph_Dest[cnt] = ioreq->ios2_DstAddr[cnt];
             eph->eph_Src[cnt]  = ncp->ncp_MacAddress[cnt];
         }
         eph->eph_Type = AROS_WORD2BE(packettype);
-
-        /* Packet data is at txbuffer */
         copydest += sizeof(struct EtherPacketHeader);
-        writelen += sizeof(struct EtherPacketHeader);
     }
 
     /* Dma not available, fallback to regular copy */
@@ -1611,16 +1640,17 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
         return FALSE;
     }
 
-    /* Adjust writelen to legal packet size. */
-    if(writelen < ETHER_MIN_LEN)
+    if(payload_len > frame_len)
     {
-        memset(buf + writelen, 0, ETHER_MIN_LEN - writelen);
-        writelen = ETHER_MIN_LEN;
+        memset(buf + payload_offset + frame_len, 0, payload_len - frame_len);
     }
-    KPRINTF(20, ("PktOut[%ld] %ld\n", ncp->ncp_WriteBufNum, writelen));
+
+    cdceth_finalize_tx(ncp, buf, payload_offset, payload_len, total_len);
+
+    KPRINTF(20, ("PktOut[%ld] %ld\n", ncp->ncp_WriteBufNum, (long) payload_len));
 
     /* Track the padded length so completion can account for bytes sent. */
-    ioreq->ios2_DataLength = writelen;
+    ioreq->ios2_DataLength = payload_len;
     ncp->ncp_WritePending = ioreq;
 
     /*
@@ -1629,7 +1659,7 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
      * completions.  If the pipe is already halted, the pending request will be
      * completed with the error when the pipe callback reports it.
      */
-    psdSendPipe(ncp->ncp_EPOutPipe, buf, (ULONG) writelen);
+    psdSendPipe(ncp->ncp_EPOutPipe, buf, (ULONG) total_len);
 
     ncp->ncp_WriteBufNum ^= 1;
 

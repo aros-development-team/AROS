@@ -164,6 +164,13 @@
 #define MT_1000BASE_T_FULL_DUP  0x0006
 #define MT_2500BASE_T_FULL_DUP  0x0007
 
+enum cdceth_encap_type
+{
+    CDCETH_ENCAP_ECM = 0,
+    CDCETH_ENCAP_EEM,
+    CDCETH_ENCAP_NCM
+};
+
 struct ClsDevCfg
 {
     ULONG cdc_ChunkID;
@@ -273,6 +280,13 @@ struct NepClassEth
 
     UWORD               ncp_ReadBufNum;   /* Next Read Buffer to use */
     UWORD               ncp_WriteBufNum;  /* Next Write Buffer to use */
+    UBYTE               ncp_EncapType;    /* Encapsulation type */
+    UBYTE               ncp_Pad0;
+    ULONG               ncp_ReadBufSize;  /* Size of each read buffer */
+    ULONG               ncp_WriteBufSize; /* Size of each write buffer */
+    ULONG               ncp_NtbMaxSize;   /* Max NCM NTB size */
+    UWORD               ncp_NcmMaxSegment; /* Max NCM segment size */
+    UWORD               ncp_NcmSeq;       /* NCM sequence number */
 
     struct Sana2DeviceStats ncp_DeviceStats; /* SANA Stats */
     struct Sana2PacketTypeStats *ncp_TypeStats2048; /* IP protocol stats ptr, or NULL */
