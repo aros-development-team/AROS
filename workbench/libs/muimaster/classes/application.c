@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team.
+    Copyright (C) 2002-2026, The AROS Development Team.
     Copyright (C) 1999, David Le Corfec.
     All rights reserved.
 
@@ -895,7 +895,6 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
      */
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-        IPTR addr;
         switch (tag->ti_Tag)
         {
 
@@ -904,9 +903,18 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj,
             break;
 
         case MUIA_Application_CopyWinPosToApp:
-            addr = tag->ti_Data;
-            /* First element is storing size and is a 32-bit integer, even on 64-bit systems */
-            CopyMem((CONST_APTR) tag->ti_Data, &data->winposused, *(LONG *)(addr));
+            {
+                CONST_APTR addr = (CONST_APTR)tag->ti_Data;
+                if (addr) {
+                    /*
+                     * First element stores the size, and is a 32-bit
+                     * integer even on 64-bit systems
+                     */
+                    LONG wpsize = *(LONG *)(addr);
+                    D(bug("[MUI] Copying coords (%ld bytes @ 0x%p) ...\n", wpsize, addr));
+                    CopyMem(addr, &data->winposused, wpsize);
+                }
+            }
             break;
 
         case MUIA_Application_SetWinPos:
@@ -1164,20 +1172,19 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj,
 
     case MUIA_Application_GetWinPosSize:
         {
-            int i;
+            int i, sz = 0;
             for (i = 0; i < MAXWINS - 1; i++)
             {
                 if (!data->winpos[i].w1)
-                {
-                    i *= sizeof(struct windowpos);
-                    i += sizeof(long);
-                    data->winposused = i;
-                    STORE = i;
-                    return (TRUE);
-                }
+                    break;
+                sz += sizeof(struct windowpos);
             }
-            STORE = 0;
-            return TRUE;
+            if (sz > 0) {
+                sz += sizeof(LONG);
+            }
+			data->winposused = sz;
+            STORE = sz;
+            return (TRUE);
         }
 
     case MUIA_Application_GetWinPos:

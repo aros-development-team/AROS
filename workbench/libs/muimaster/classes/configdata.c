@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 
 */
 #include <stdlib.h>
@@ -864,18 +864,18 @@ static LONG windowpos_swapbytes(IPTR data, LONG size)
 static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
     struct MUIP_Configdata_GetString *msg)
 {
-    struct MUI_ConfigdataData *data;
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     IPTR s;
-    data = INST_DATA(cl, obj);
-    //kprintf ("getwindowpos\n");
     s = (IPTR) DoMethod(obj, MUIM_Dataspace_Find, MUICFG_WindowPos);
     if (s && data->app) {
 #if (!AROS_BIG_ENDIAN)
-        windowpos_swapbytes(s, AROS_BE2LONG(*((LONG *)s)));
+        LONG size = AROS_BE2LONG(*((LONG *)s));
+        D(bug("[MUI:Cfg] %s: %ld bytes\n", __func__, size));
+        windowpos_swapbytes(s, size);
 #endif
         set(data->app, MUIA_Application_CopyWinPosToApp, s);
 #if (!AROS_BIG_ENDIAN)
-        windowpos_swapbytes(s, *((LONG *)s));
+        windowpos_swapbytes(s, size);
 #endif
     }
     return s;
@@ -887,24 +887,23 @@ static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
     struct MUI_ConfigdataData *data;
     //kprintf ("setwindowpos\n");
     data = INST_DATA(cl, obj);
-    IPTR addr = 0;
-    LONG size = 0;
 
     if (data->app)
     {
+        IPTR addr = 0;
+        IPTR size = 0;
+
         get(data->app, MUIA_Application_GetWinPosAddr, &addr);
         get(data->app, MUIA_Application_GetWinPosSize, &size);
 
-        /* We can ignore size-variable because
-         * MUIA_Application_GetWinPosSize updates *((LONG*)addr) */
-#if (AROS_BIG_ENDIAN)
-        size = *((LONG *)addr);
-#else
-        size = windowpos_swapbytes(addr, *((LONG *)addr));
+        D(bug("[MUI:Cfg] %s: 0x%p (%d bytes)\n", __func__, addr, size));
+
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(addr, size);
 #endif
         DoMethod(obj, MUIM_Dataspace_Add, addr, size, MUICFG_WindowPos);
 #if (!AROS_BIG_ENDIAN)
-        windowpos_swapbytes(addr, AROS_BE2LONG(*((LONG *)addr)));
+        windowpos_swapbytes(addr, size);
 #endif
     }
     return 0;
