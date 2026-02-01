@@ -163,26 +163,36 @@ static void ohciFreeEDContext(struct PCIController *hc, struct IOUsbHWReq *ioreq
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     struct OhciED *oed = ioreq->iouh_DriverPrivate1;
+    BOOL is_iso = FALSE;
     UWORD devadrep;
     UWORD dir;
 
     pciusbOHCIDebug("OHCI", "Freeing EDContext 0x%p IOReq 0x%p\n", oed, ioreq);
+
+    if (oed && (READMEM32_LE(&oed->oed_EPCaps) & OECF_ISO))
+        is_iso = TRUE;
 
     if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
         dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
     else
         dir = ioreq->iouh_Dir;
 
-    usbReleaseBuffer(oed->oed_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
-    usbReleaseBuffer(oed->oed_SetupData, &ioreq->iouh_SetupData, 8, UHDIR_IN);
+    if (!is_iso) {
+        if (oed->oed_Buffer)
+            usbReleaseBuffer(oed->oed_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
+        if (oed->oed_SetupData)
+            usbReleaseBuffer(oed->oed_SetupData, &ioreq->iouh_SetupData, 8, UHDIR_IN);
+    }
 
     devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
     unit->hu_DevBusyReq[devadrep] = NULL;
     unit->hu_DevDataToggle[devadrep] = (READMEM32_LE(&oed->oed_HeadPtr) & OEHF_DATA1) ? TRUE : FALSE;
 
     Disable();
-    ohciFreeTDChain(hc, oed->oed_FirstTD);
-    ohciFreeED(hc, oed);
+    if (!is_iso) {
+        ohciFreeTDChain(hc, oed->oed_FirstTD);
+        ohciFreeED(hc, oed);
+    }
     Enable();
 }
 
@@ -1439,7 +1449,7 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
     }
 
     /* Unlock interrupts  */
-    WRITEREG32_LE(&hc->hc_RegBase, OHCI_INTEN, OISF_MASTERENABLE);
+    WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, OISF_MASTERENABLE);
 
     return FALSE;
 
