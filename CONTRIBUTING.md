@@ -105,6 +105,6 @@ members of the project's leadership.
 This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
 available at [http://contributor-covenant.org/version/1/4][version]
 
-[contact]: http://aros.sourceforge.net/contact.php
+[contact]: http://www.aros.org/contact.html
 [homepage]: http://contributor-covenant.org
 [version]: http://contributor-covenant.org/version/1/4/
