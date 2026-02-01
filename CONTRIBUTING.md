@@ -17,7 +17,7 @@ Please note we have a code of conduct, please follow it in all your interactions
 
 ### Pull Request Process
 
-1.  Ensure any code that is not derived from an external source follows the AROS coding conventions.
+1.  Ensure any code that is not derived from an external source follows the [AROS coding conventions](http://developers.aros.org/documentation/styleguide.html).
  
 2.  Make sure to bump the version numbers in any modules and update the approprate README if
     applicable.
