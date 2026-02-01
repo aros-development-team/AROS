@@ -151,6 +151,12 @@
 #endif
 
 /*
+ * AmiTCP/IP specific socket options
+ */
+#define SO_EVENTMASK	0x2001		/* socket event mask,     */
+					/* defaults to no events (0) */
+
+/*
  * Structure used for manipulating linger option.
  */
 struct linger {
