@@ -245,8 +245,6 @@ struct HWData  {
     ULONG				capabilities;
     ULONG				fifocapabilities;
 
-    struct HIDD_ViewPortData    	*shown;
-
     ULONG				depth;
     ULONG				redmask;
     ULONG				greenmask;

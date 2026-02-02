@@ -14,18 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5312_attach.c,v 1.3 2011/03/07 11:25:43 cegger Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5312
-
-#if !defined(AH_SUPPORT_5112) && \
-    !defined(AH_SUPPORT_5111) && \
-    !defined(AH_SUPPORT_2316) && \
-    !defined(AH_SUPPORT_2317)
-#error "No 5312 RF support defined"
-#endif
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -38,13 +29,6 @@
 /* Add static register initialization vectors */
 #define AH_5212_COMMON
 #include "ar5212/ar5212.ini"
-
-/*
- * These are not valid 2.4 channels, either we change these
- * or we need to change the coding to accept these
- */
-static const uint16_t channels11b[] = { 2412, 2447, 2484 };
-static const uint16_t channels11g[] = { 2312, 2412, 2484 };
 
 static  HAL_BOOL ar5312GetMacAddr(struct ath_hal *ah);
 
@@ -73,18 +57,18 @@ ar5312AniSetup(struct ath_hal *ah)
 }
 
 /*
- * Attach for an AR3212 part.
+ * Attach for an AR5312 part.
  */
-struct ath_hal *
+static struct ath_hal *
 ar5312Attach(uint16_t devid, HAL_SOFTC sc,
 	HAL_BUS_TAG st, HAL_BUS_HANDLE sh, HAL_STATUS *status)
 {
 	struct ath_hal_5212 *ahp = AH_NULL;
 	struct ath_hal *ah;
+	struct ath_hal_rf *rf;
 	uint32_t val;
 	uint16_t eeval;
 	HAL_STATUS ecode;
-	HAL_BOOL rfStatus;
 
 	HALDEBUG(AH_NULL, HAL_DEBUG_ATTACH, "%s: sc %p st %p sh %p\n",
 		 __func__, sc, st, (void*) sh);
@@ -138,7 +122,7 @@ ar5312Attach(uint16_t devid, HAL_SOFTC sc,
 
 	/* setup common ini data; rf backends handle remainder */
 	HAL_INI_INIT(&ahp->ah_ini_modes, ar5212Modes, 6);
-	HAL_INI_INIT(&ahp->ah_ini_common, ar5212Common, 6);
+	HAL_INI_INIT(&ahp->ah_ini_common, ar5212Common, 2);
 
 	if (!ar5312ChipReset(ah, AH_NULL)) {	/* reset chip */
 		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: chip reset failed\n", __func__);
@@ -200,24 +184,11 @@ ar5312Attach(uint16_t devid, HAL_SOFTC sc,
         
 	/* Read Radio Chip Rev Extract */
 	AH_PRIVATE(ah)->ah_analog5GhzRev = ar5212GetRadioRev(ah);
-#ifdef AH_DEBUG
-	/* NB: silently accept anything in release code per Atheros */
-	if ((AH_PRIVATE(ah)->ah_analog5GhzRev & 0xF0) !=
-            AR_RAD5111_SREV_MAJOR &&
-	    (AH_PRIVATE(ah)->ah_analog5GhzRev & 0xF0) !=
-            AR_RAD5112_SREV_MAJOR &&
-	    (AH_PRIVATE(ah)->ah_analog5GhzRev & 0xF0) !=
-            AR_RAD2111_SREV_MAJOR &&
-            (AH_PRIVATE(ah)->ah_analog5GhzRev & 0xF0) !=
-            AR_RAD2112_SREV_MAJOR) {
-		ath_hal_printf(ah, "%s: 5G Radio Chip Rev 0x%02X is not supported by "
-                         "this driver\n", __func__,
-                         AH_PRIVATE(ah)->ah_analog5GhzRev);
-		ecode = HAL_ENOTSUPP;
+
+	rf = ath_hal_rfprobe(ah, &ecode);
+	if (rf == AH_NULL)
 		goto bad;
-	}
-#endif
-	if (IS_5112(ah) && !IS_RADX112_REV2(ah)) {
+	if (IS_RAD5112(ah) && !IS_RADX112_REV2(ah)) {
 #ifdef AH_DEBUG
 		ath_hal_printf(ah, "%s: 5112 Rev 1 is not supported by this "
                          "driver (analog5GhzRev 0x%x)\n", __func__,
@@ -280,32 +251,7 @@ ar5312Attach(uint16_t devid, HAL_SOFTC sc,
 		goto bad;
 	}
 
-	rfStatus = AH_FALSE;
-	if (IS_2317(ah))
-#if defined AH_SUPPORT_2317
-		rfStatus = ar2317RfAttach(ah, &ecode);
-#else
-		ecode = HAL_ENOTSUPP;
-#endif
-	else if (IS_2316(ah))
-#if defined AH_SUPPORT_2316 
-		rfStatus = ar2316RfAttach(ah, &ecode);
-#else
-		ecode = HAL_ENOTSUPP;
-#endif
-	else if (IS_5112(ah))
-#ifdef AH_SUPPORT_5112
-		rfStatus = ar5112RfAttach(ah, &ecode);
-#else
-		ecode = HAL_ENOTSUPP;
-#endif
-	else
-#ifdef AH_SUPPORT_5111
-		rfStatus = ar5111RfAttach(ah, &ecode);
-#else
-		ecode = HAL_ENOTSUPP;
-#endif
-	if (!rfStatus) {
+	if (!rf->attach(ah, &ecode)) {
 		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: RF setup failed, status %u\n",
 		    __func__, ecode);
 		goto bad;
@@ -360,4 +306,29 @@ ar5312GetMacAddr(struct ath_hal *ah)
 	OS_MEMCPY(AH5212(ah)->ah_macaddr, macAddr, 6);
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_AR5312 */
+
+static const char*
+ar5312Probe(uint16_t vendorid, uint16_t devid)
+{
+	if (vendorid == ATHEROS_VENDOR_ID) {
+		switch (devid) {
+		case AR5212_AR5312_REV2:
+		case AR5212_AR5312_REV7:
+			return "Atheros 5312 WiSoC";
+		case AR5212_AR2313_REV8:
+			return "Atheros 2313 WiSoC";
+		case AR5212_AR2315_REV6:
+		case AR5212_AR2315_REV7:
+			return "Atheros 2315 WiSoC";
+		case AR5212_AR2317_REV1:
+		case AR5212_AR2317_REV2:
+			return "Atheros 2317 WiSoC";
+		case AR5212_AR2413:
+			return "Atheros 2413";
+		case AR5212_AR2417:
+			return "Atheros 2417";
+		}
+	}
+	return AH_NULL;
+}
+AH_CHIP(AR5312, ar5312Probe, ar5312Attach);

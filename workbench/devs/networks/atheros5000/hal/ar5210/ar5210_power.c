@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210_power.c,v 1.1.1.1 2008/12/11 04:46:27 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5210
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -134,4 +132,3 @@ ar5210GetPowerMode(struct ath_hal *ah)
 	/* Just so happens the h/w maps directly to the abstracted value */
 	return MS(OS_REG_READ(ah, AR_SCR), AR_SCR_SLE);
 }
-#endif /* AH_SUPPORT_AR5210 */

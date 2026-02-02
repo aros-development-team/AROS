@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    if(base->utility_base == NULL || base->dos_base == NULL)
       success = FALSE;
 
-   if(OpenDevice(timer_name, UNIT_VBLANK, (APTR)&base->timer_request, 0)
+   if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0)
       != 0)
       success = FALSE;
 
@@ -384,7 +384,7 @@ APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 *
 */
 
-APTR DevReserved(struct DevBase *dev_base)
+APTR DevReserved(REG(BASE_REG, struct DevBase *base))
 {
    return NULL;
 }
@@ -631,7 +631,8 @@ BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 
 VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
 {
-   if(interrupt->is_Code == base->wrapper_int_code)
+   if(base->wrapper_int_code != NULL
+      && interrupt->is_Code == base->wrapper_int_code)
       FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
 
    return;

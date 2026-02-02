@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5212_phy.c,v 1.2 2008/12/11 05:30:29 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5212
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -36,48 +34,48 @@ HAL_RATE_TABLE ar5212_11a_table = {
 	{
 /*                                                  short            ctrl  */
 /*                valid                 rateCode Preamble  dot11Rate Rate */
-/*   6 Mb */ {  AH_TRUE, OFDM,    6000,     0x0b,    0x00, (0x80|12),   0 },
-/*   9 Mb */ {  AH_TRUE, OFDM,    9000,     0x0f,    0x00,        18,   0 },
-/*  12 Mb */ {  AH_TRUE, OFDM,   12000,     0x0a,    0x00, (0x80|24),   2 },
-/*  18 Mb */ {  AH_TRUE, OFDM,   18000,     0x0e,    0x00,        36,   2 },
-/*  24 Mb */ {  AH_TRUE, OFDM,   24000,     0x09,    0x00, (0x80|48),   4 },
-/*  36 Mb */ {  AH_TRUE, OFDM,   36000,     0x0d,    0x00,        72,   4 },
-/*  48 Mb */ {  AH_TRUE, OFDM,   48000,     0x08,    0x00,        96,   4 },
-/*  54 Mb */ {  AH_TRUE, OFDM,   54000,     0x0c,    0x00,       108,   4 }
+/*   6 Mb */ {  AH_TRUE, OFDM,    6000,     0x0b,    0x00, (0x80|12),   0, 0, 0 },
+/*   9 Mb */ {  AH_TRUE, OFDM,    9000,     0x0f,    0x00,        18,   0, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, OFDM,   12000,     0x0a,    0x00, (0x80|24),   2, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, OFDM,   18000,     0x0e,    0x00,        36,   2, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, OFDM,   24000,     0x09,    0x00, (0x80|48),   4, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, OFDM,   36000,     0x0d,    0x00,        72,   4, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, OFDM,   48000,     0x08,    0x00,        96,   4, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, OFDM,   54000,     0x0c,    0x00,       108,   4, 0, 0 }
 	},
 };
 
-HAL_RATE_TABLE ar5212_11a_half_table = {
+HAL_RATE_TABLE ar5212_half_table = {
 	8,  /* number of rates */
 	{ 0 },
 	{
 /*                                                  short            ctrl  */
 /*                valid                 rateCode Preamble  dot11Rate Rate */
-/*   6 Mb */ {  AH_TRUE, OFDM,    3000,     0x0b,    0x00, (0x80|6),   0 },
-/*   9 Mb */ {  AH_TRUE, OFDM,    4500,     0x0f,    0x00,        9,   0 },
-/*  12 Mb */ {  AH_TRUE, OFDM,    6000,     0x0a,    0x00, (0x80|12),   2 },
-/*  18 Mb */ {  AH_TRUE, OFDM,    9000,     0x0e,    0x00,        18,   2 },
-/*  24 Mb */ {  AH_TRUE, OFDM,   12000,     0x09,    0x00, (0x80|24),   4 },
-/*  36 Mb */ {  AH_TRUE, OFDM,   18000,     0x0d,    0x00,        36,   4 },
-/*  48 Mb */ {  AH_TRUE, OFDM,   24000,     0x08,    0x00,        48,   4 },
-/*  54 Mb */ {  AH_TRUE, OFDM,   27000,     0x0c,    0x00,       54,   4 }
+/*   6 Mb */ {  AH_TRUE, OFDM,    3000,     0x0b,    0x00, (0x80|6),   0, 0, 0 },
+/*   9 Mb */ {  AH_TRUE, OFDM,    4500,     0x0f,    0x00,        9,   0, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, OFDM,    6000,     0x0a,    0x00, (0x80|12),  2, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, OFDM,    9000,     0x0e,    0x00,        18,  2, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, OFDM,   12000,     0x09,    0x00, (0x80|24),  4, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, OFDM,   18000,     0x0d,    0x00,        36,  4, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, OFDM,   24000,     0x08,    0x00,        48,  4, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, OFDM,   27000,     0x0c,    0x00,       54,   4, 0, 0 }
 	},
 };
 
-HAL_RATE_TABLE ar5212_11a_quarter_table = {
+HAL_RATE_TABLE ar5212_quarter_table = {
 	8,  /* number of rates */
 	{ 0 },
 	{
 /*                                                  short            ctrl  */
 /*                valid                 rateCode Preamble  dot11Rate Rate */
-/*   6 Mb */ {  AH_TRUE, OFDM,    1500,     0x0b,    0x00, (0x80|3),   0 },
-/*   9 Mb */ {  AH_TRUE, OFDM,    2250,     0x0f,    0x00,        4,   0 },
-/*  12 Mb */ {  AH_TRUE, OFDM,    3000,     0x0a,    0x00, (0x80|6),   2 },
-/*  18 Mb */ {  AH_TRUE, OFDM,    4500,     0x0e,    0x00,        9,   2 },
-/*  24 Mb */ {  AH_TRUE, OFDM,    6000,     0x09,    0x00, (0x80|12),   4 },
-/*  36 Mb */ {  AH_TRUE, OFDM,    9000,     0x0d,    0x00,        18,   4 },
-/*  48 Mb */ {  AH_TRUE, OFDM,   12000,     0x08,    0x00,        24,   4 },
-/*  54 Mb */ {  AH_TRUE, OFDM,   13500,     0x0c,    0x00,       27,   4 }
+/*   6 Mb */ {  AH_TRUE, OFDM,    1500,     0x0b,    0x00, (0x80|3),   0, 0, 0 },
+/*   9 Mb */ {  AH_TRUE, OFDM,    2250,     0x0f,    0x00,        4,   0, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, OFDM,    3000,     0x0a,    0x00, (0x80|6),   2, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, OFDM,    4500,     0x0e,    0x00,        9,   2, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, OFDM,    6000,     0x09,    0x00, (0x80|12),  4, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, OFDM,    9000,     0x0d,    0x00,        18,  4, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, OFDM,   12000,     0x08,    0x00,        24,  4, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, OFDM,   13500,     0x0c,    0x00,       27,   4, 0, 0 }
 	},
 };
 
@@ -87,13 +85,13 @@ HAL_RATE_TABLE ar5212_turbog_table = {
 	{
 /*                                                 short            ctrl  */
 /*                valid                rateCode Preamble  dot11Rate Rate */
-/*   6 Mb */ {  AH_TRUE, TURBO,   6000,    0x0b,    0x00, (0x80|12),   0 },
-/*  12 Mb */ {  AH_TRUE, TURBO,  12000,    0x0a,    0x00, (0x80|24),   2 },
-/*  18 Mb */ {  AH_TRUE, TURBO,  18000,    0x0e,    0x00,        36,   2 },
-/*  24 Mb */ {  AH_TRUE, TURBO,  24000,    0x09,    0x00, (0x80|48),   3 },
-/*  36 Mb */ {  AH_TRUE, TURBO,  36000,    0x0d,    0x00,        72,   3 },
-/*  48 Mb */ {  AH_TRUE, TURBO,  48000,    0x08,    0x00,        96,   3 },
-/*  54 Mb */ {  AH_TRUE, TURBO,  54000,    0x0c,    0x00,       108,   3 }
+/*   6 Mb */ {  AH_TRUE, TURBO,   6000,    0x0b,    0x00, (0x80|12),   0, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, TURBO,  12000,    0x0a,    0x00, (0x80|24),   2, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, TURBO,  18000,    0x0e,    0x00,        36,   2, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, TURBO,  24000,    0x09,    0x00, (0x80|48),   3, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, TURBO,  36000,    0x0d,    0x00,        72,   3, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, TURBO,  48000,    0x08,    0x00,        96,   3, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, TURBO,  54000,    0x0c,    0x00,       108,   3, 0, 0 }
 	},
 };
 
@@ -103,14 +101,14 @@ HAL_RATE_TABLE ar5212_turboa_table = {
 	{
 /*                                                 short            ctrl  */
 /*                valid                rateCode Preamble  dot11Rate Rate */
-/*   6 Mb */ {  AH_TRUE, TURBO,   6000,    0x0b,    0x00, (0x80|12),   0 },
-/*   9 Mb */ {  AH_TRUE, TURBO,   9000,    0x0f,    0x00,        18,   0 },
-/*  12 Mb */ {  AH_TRUE, TURBO,  12000,    0x0a,    0x00, (0x80|24),   2 },
-/*  18 Mb */ {  AH_TRUE, TURBO,  18000,    0x0e,    0x00,        36,   2 },
-/*  24 Mb */ {  AH_TRUE, TURBO,  24000,    0x09,    0x00, (0x80|48),   4 },
-/*  36 Mb */ {  AH_TRUE, TURBO,  36000,    0x0d,    0x00,        72,   4 },
-/*  48 Mb */ {  AH_TRUE, TURBO,  48000,    0x08,    0x00,        96,   4 },
-/*  54 Mb */ {  AH_TRUE, TURBO,  54000,    0x0c,    0x00,       108,   4 }
+/*   6 Mb */ {  AH_TRUE, TURBO,   6000,    0x0b,    0x00, (0x80|12),   0, 0, 0 },
+/*   9 Mb */ {  AH_TRUE, TURBO,   9000,    0x0f,    0x00,        18,   0, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, TURBO,  12000,    0x0a,    0x00, (0x80|24),   2, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, TURBO,  18000,    0x0e,    0x00,        36,   2, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, TURBO,  24000,    0x09,    0x00, (0x80|48),   4, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, TURBO,  36000,    0x0d,    0x00,        72,   4, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, TURBO,  48000,    0x08,    0x00,        96,   4, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, TURBO,  54000,    0x0c,    0x00,       108,   4, 0, 0 }
 	},
 };
 
@@ -120,10 +118,10 @@ HAL_RATE_TABLE ar5212_11b_table = {
 	{
 /*                                                 short            ctrl  */
 /*                valid                rateCode Preamble  dot11Rate Rate */
-/*   1 Mb */ {  AH_TRUE,  CCK,    1000,    0x1b,    0x00, (0x80| 2),   0 },
-/*   2 Mb */ {  AH_TRUE,  CCK,    2000,    0x1a,    0x04, (0x80| 4),   1 },
-/* 5.5 Mb */ {  AH_TRUE,  CCK,    5500,    0x19,    0x04, (0x80|11),   1 },
-/*  11 Mb */ {  AH_TRUE,  CCK,   11000,    0x18,    0x04, (0x80|22),   1 }
+/*   1 Mb */ {  AH_TRUE,  CCK,    1000,    0x1b,    0x00, (0x80| 2),   0, 0, 0 },
+/*   2 Mb */ {  AH_TRUE,  CCK,    2000,    0x1a,    0x04, (0x80| 4),   1, 0, 0 },
+/* 5.5 Mb */ {  AH_TRUE,  CCK,    5500,    0x19,    0x04, (0x80|11),   1, 0, 0 },
+/*  11 Mb */ {  AH_TRUE,  CCK,   11000,    0x18,    0x04, (0x80|22),   1, 0, 0 }
 	},
 };
 
@@ -138,19 +136,19 @@ HAL_RATE_TABLE ar5212_11g_table = {
 	{
 /*                                                 short            ctrl  */
 /*                valid                rateCode Preamble  dot11Rate Rate */
-/*   1 Mb */ {  AH_TRUE, CCK,     1000,    0x1b,    0x00, (0x80| 2),   0 },
-/*   2 Mb */ {  AH_TRUE, CCK,     2000,    0x1a,    0x04, (0x80| 4),   1 },
-/* 5.5 Mb */ {  AH_TRUE, CCK,     5500,    0x19,    0x04, (0x80|11),   2 },
-/*  11 Mb */ {  AH_TRUE, CCK,    11000,    0x18,    0x04, (0x80|22),   3 },
+/*   1 Mb */ {  AH_TRUE, CCK,     1000,    0x1b,    0x00, (0x80| 2),   0, 0, 0 },
+/*   2 Mb */ {  AH_TRUE, CCK,     2000,    0x1a,    0x04, (0x80| 4),   1, 0, 0 },
+/* 5.5 Mb */ {  AH_TRUE, CCK,     5500,    0x19,    0x04, (0x80|11),   2, 0, 0 },
+/*  11 Mb */ {  AH_TRUE, CCK,    11000,    0x18,    0x04, (0x80|22),   3, 0, 0 },
 /* remove rates 6, 9 from rate ctrl */
-/*   6 Mb */ { AH_FALSE, OFDM,    6000,    0x0b,    0x00,        12,   4 },
-/*   9 Mb */ { AH_FALSE, OFDM,    9000,    0x0f,    0x00,        18,   4 },
-/*  12 Mb */ {  AH_TRUE, OFDM,   12000,    0x0a,    0x00,        24,   6 },
-/*  18 Mb */ {  AH_TRUE, OFDM,   18000,    0x0e,    0x00,        36,   6 },
-/*  24 Mb */ {  AH_TRUE, OFDM,   24000,    0x09,    0x00,        48,   8 },
-/*  36 Mb */ {  AH_TRUE, OFDM,   36000,    0x0d,    0x00,        72,   8 },
-/*  48 Mb */ {  AH_TRUE, OFDM,   48000,    0x08,    0x00,        96,   8 },
-/*  54 Mb */ {  AH_TRUE, OFDM,   54000,    0x0c,    0x00,       108,   8 }
+/*   6 Mb */ { AH_FALSE, OFDM,    6000,    0x0b,    0x00,        12,   4, 0, 0 },
+/*   9 Mb */ { AH_FALSE, OFDM,    9000,    0x0f,    0x00,        18,   4, 0, 0 },
+/*  12 Mb */ {  AH_TRUE, OFDM,   12000,    0x0a,    0x00,        24,   6, 0, 0 },
+/*  18 Mb */ {  AH_TRUE, OFDM,   18000,    0x0e,    0x00,        36,   6, 0, 0 },
+/*  24 Mb */ {  AH_TRUE, OFDM,   24000,    0x09,    0x00,        48,   8, 0, 0 },
+/*  36 Mb */ {  AH_TRUE, OFDM,   36000,    0x0d,    0x00,        72,   8, 0, 0 },
+/*  48 Mb */ {  AH_TRUE, OFDM,   48000,    0x08,    0x00,        96,   8, 0, 0 },
+/*  54 Mb */ {  AH_TRUE, OFDM,   54000,    0x0c,    0x00,       108,   8, 0, 0 }
 	},
 };
 
@@ -184,10 +182,12 @@ ar5212GetRateTable(struct ath_hal *ah, u_int mode)
 		rt =  &ar5212_turbog_table;
 		break;
 	case HAL_MODE_11A_HALF_RATE:
-		rt = &ar5212_11a_half_table;
+	case HAL_MODE_11G_HALF_RATE:
+		rt = &ar5212_half_table;
 		break;
 	case HAL_MODE_11A_QUARTER_RATE:
-		rt = &ar5212_11a_quarter_table;
+	case HAL_MODE_11G_QUARTER_RATE:
+		rt = &ar5212_quarter_table;
 		break;
 	default:
 		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: invalid mode 0x%x\n",
@@ -197,4 +197,3 @@ ar5212GetRateTable(struct ath_hal *ah, u_int mode)
 	ath_hal_setupratetable(ah, rt);
 	return rt;
 }
-#endif /* AH_SUPPORT_AR5212 */

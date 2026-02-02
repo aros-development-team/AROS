@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2008 Sam Leffler, Errno Consulting
  * Copyright (c) 2002-2008 Atheros Communications, Inc.
+ * Copyright (c) 2010-2026 Neil Cafferkey
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,39 +23,37 @@
  * Atheros Hardware Access Layer (HAL) OS Dependent Definitions.
  */
 
-/*
- * Starting with 2.6.4 the kernel supports a configuration option
- * to pass parameters in registers.  If this is enabled we must
- * mark all function interfaces in+out of the HAL to pass parameters
- * on the stack as this is the convention used internally (for
- * maximum portability).
- */
+#include <exec/types.h>
+
 #define	__ahdecl
 #ifndef __packed
 #define	__packed	__attribute__((__packed__))
 #endif
 
-/*
- * Beware of these being mismatched against the contents of <linux/types.h>
- */
-#include <stdarg.h>
-#include <stdlib.h>
-#ifndef _LINUX_TYPES_H
-/* NB: arm defaults to unsigned so be explicit */
-typedef signed char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+typedef BYTE int8_t;
+typedef WORD int16_t;
+typedef LONG int32_t;
 typedef long long int64_t;
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+typedef UBYTE uint8_t;
+typedef UWORD uint16_t;
+typedef ULONG uint32_t;
 typedef unsigned long long uint64_t;
 
-//typedef unsigned int size_t;
-typedef unsigned int u_int;
-//typedef	void *va_list;
+#ifndef __size_t
+typedef unsigned int size_t;
 #endif
+typedef unsigned int u_int;
+#ifndef _VA_LIST_
+typedef	void *va_list;
+#endif
+
+/*
+ * Bus i/o type definitions.
+ */
+typedef void* HAL_SOFTC;                /* pointer to driver/OS state */
+typedef void* HAL_BUS_TAG;              /* opaque bus i/o id tag */
+typedef void* HAL_BUS_HANDLE;           /* opaque bus i/o handle */
 
 /*
  * Linux/BSD gcc compatibility shims.
@@ -90,28 +89,36 @@ extern	uint32_t __ahdecl ath_hal_getuptime(struct ath_hal *);
 #define	AH_BIG_ENDIAN		4321
 
 #ifndef AH_BYTE_ORDER
-/*
- * When the .inc file is not available (e.g. when building
- * in a kernel source tree); look for some other way to
- * setup the host byte order.
- */
-#ifdef __LITTLE_ENDIAN
+#ifdef __AROS__
+#include <aros/cpu.h>
+#if AROS_BIG_ENDIAN
+#define	AH_BYTE_ORDER	AH_BIG_ENDIAN
+#else
 #define	AH_BYTE_ORDER	AH_LITTLE_ENDIAN
 #endif
-#ifdef __BIG_ENDIAN
+#else
 #define	AH_BYTE_ORDER	AH_BIG_ENDIAN
-#endif
-#define	AH_BYTE_ORDER	AH_BIG_ENDIAN // !!!
-#ifndef AH_BYTE_ORDER
-#error "Do not know host byte order"
 #endif
 #endif /* AH_BYTE_ORDER */
 
+#ifdef __MORPHOS__
+#include <hardware/byteswap.h>
+#define __bswap16	SWAPWORD
+#define __bswap32	SWAPLONG
+#else
 #if AH_BYTE_ORDER == AH_BIG_ENDIAN
 /*
  * This could be optimized but since we only use it for
  * a few registers there's little reason to do so.
  */
+static __inline__ uint16_t
+__bswap16(uint16_t _x)
+{
+ 	return ((uint16_t)(
+	      (((const uint8_t *)(&_x))[0]   ) |
+	      (((const uint8_t *)(&_x))[1]<<8))
+	);
+}
 static __inline__ uint32_t
 __bswap32(uint32_t _x)
 {
@@ -123,7 +130,36 @@ __bswap32(uint32_t _x)
 	);
 }
 #else
-#define __bswap32(_x)	(_x)
+/*
+ * This could be optimized but since we only use it for
+ * a few registers there's little reason to do so.
+ */
+static __inline__ uint16_t
+__bswap16(uint16_t _x)
+{
+ 	return ((uint16_t)(
+	      (((const uint8_t *)(&_x))[1]   ) |
+	      (((const uint8_t *)(&_x))[0]<<8))
+	);
+}
+static __inline__ uint32_t
+__bswap32(uint32_t _x)
+{
+ 	return ((uint32_t)(
+	      (((const uint8_t *)(&_x))[3]    ) |
+	      (((const uint8_t *)(&_x))[2]<< 8) |
+	      (((const uint8_t *)(&_x))[1]<<16) |
+	      (((const uint8_t *)(&_x))[0]<<24))
+	);
+}
+#endif
+#endif
+
+#ifdef __MORPHOS__
+#define SYNCIO	__asm("eieio");\
+		__asm("sync");
+#else
+#define SYNCIO
 #endif
 
 /*
@@ -152,6 +188,7 @@ __bswap32(uint32_t _x)
 			__bswap32((_val));				    \
 	else								    \
 		*((volatile uint32_t *)((_ah)->ah_sh + (_reg))) = (_val);  \
+	SYNCIO; \
 } while (0)
 #define _OS_REG_READ(_ah, _reg) \
 	(OS_REG_UNSWAPPED(_reg) ? \
@@ -185,5 +222,12 @@ extern	void __ahdecl OS_MARK(struct ath_hal *, u_int id, uint32_t value);
 #else
 #define	OS_MARK(_ah, _id, _v)
 #endif
+
+#define OS_SET_DECLARE(set, ptype)
+#define OS_DATA_SET(set, sym)
+#define OS_SET_FOREACH(pvar, set)       for (pvar = (void *)set; *pvar != NULL; pvar++)
+
+extern void *ah_chips[];
+extern void *ah_rfs[];
 
 #endif /* _ATH_AH_OSDEP_H_ */

@@ -18,14 +18,7 @@
 //#define VMWARESVGA_USEMULTIMON
 //#define VMWARESVGA_USE8BIT
 //#define VMWAREGFX_IMMEDIATEDRAW
-#define VMWAREGFX_UPDATEFBONSHOWVP
 /***********************************************************************************************/
-
-#if defined(VMWAREGFX_UPDATEFBONSHOWVP)
-#define VPVISFLAG               (XSD(cl)->data.shown)
-#else
-#define VPVISFLAG               (TRUE)
-#endif
 
 #include "vmwaresvga_hardware.h"
 #include "vmwaresvga_gallium.h"
@@ -72,6 +65,8 @@ struct VMWareSVGA_staticdata {
     struct MouseData            mouse;
     struct HWData               data;
     ULONG                       prefWidth, prefHeight;
+    BOOL                        isQEMU;
+    BOOL                        hwCursor;
 };
 
 struct VMWareSVGABase

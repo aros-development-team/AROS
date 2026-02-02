@@ -2,21 +2,18 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-ifeq ($(CPU),ppc)
-CPU=powerpc-be
-endif
+#MM- workbench-devs-networks-atheros5000-hal : \
+#MM workbench-devs-networks-atheros5000-hal-opts
 
-HALTARGET=$(CPU)-elf
-AH_AROS_BUILD=1
+OPT_AH_PATH=$(TOP)/$(CURDIR)/opt_ah.h
 
-include $(SRCDIR)/$(CURDIR)/amigaos/makefile.inc
-
-oldCC:=$(CC)
-include $(SRCDIR)/$(CURDIR)/public/$(CPU)-elf.inc
-CC:=$(oldCC)
+include $(SRCDIR)/$(CURDIR)/Makefile.inc
 
 NOWARN_FLAGS := $(NOWARN_SHIFT_OVERFLOW)
-USER_CFLAGS += $(NOWARN_FLAGS) -I$(SRCDIR)/$(CURDIR) $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN)
 
 %build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
- files="$(basename $(HAL_SRCS))"
+ files="$(basename $(HAL_OBJS))"
+
+#MM
+workbench-devs-networks-atheros5000-hal-opts: $(TOP)/$(CURDIR)/opt_ah.h

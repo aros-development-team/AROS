@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5311reg.h,v 1.1.1.1 2008/12/11 04:46:44 alc Exp $
  */
 #ifndef _DEV_ATH_AR5311REG_H_
 #define _DEV_ATH_AR5311REG_H_
@@ -45,5 +45,6 @@
  * is controlled
  */
 #define	AR5311_D_MISC_SEQ_NUM_CONTROL	0x01000000 /* seq num local or global */
+#define	AR5311_DIAG_USE_ECO	0x00000400	/* "super secret" enable ECO */
 
 #endif /* _DEV_ATH_AR5311REG_H_ */

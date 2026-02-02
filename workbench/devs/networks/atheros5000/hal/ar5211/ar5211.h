@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211.h,v 1.3 2011/03/07 11:25:42 cegger Exp $
  */
 #ifndef _ATH_AR5211_H_
 #define _ATH_AR5211_H_
@@ -155,6 +155,9 @@ extern	HAL_BOOL ar5211PhyDisable(struct ath_hal *);
 extern	HAL_BOOL ar5211Disable(struct ath_hal *);
 extern	HAL_BOOL ar5211ChipReset(struct ath_hal *, uint16_t);
 extern	HAL_BOOL ar5211PerCalibration(struct ath_hal *, HAL_CHANNEL *, HAL_BOOL *);
+extern	HAL_BOOL ar5211PerCalibrationN(struct ath_hal *ah, HAL_CHANNEL *chan,
+		u_int chainMask, HAL_BOOL longCal, HAL_BOOL *isCalDone);
+extern	HAL_BOOL ar5211ResetCalValid(struct ath_hal *ah, HAL_CHANNEL *chan);
 extern	HAL_BOOL ar5211SetTxPowerLimit(struct ath_hal *, uint32_t limit);
 extern	HAL_BOOL ar5211SetTransmitPower(struct ath_hal *, HAL_CHANNEL *);
 extern	HAL_BOOL ar5211CalNoiseFloor(struct ath_hal *, HAL_CHANNEL_INTERNAL *);
@@ -224,11 +227,15 @@ extern	HAL_BOOL ar5211SetMacAddress(struct ath_hal *ah, const uint8_t *);
 extern	void ar5211GetBssIdMask(struct ath_hal *, uint8_t *);
 extern	HAL_BOOL ar5211SetBssIdMask(struct ath_hal *, const uint8_t *);
 extern	HAL_BOOL ar5211EepromRead(struct ath_hal *, u_int off, uint16_t *data);
+extern	HAL_BOOL ar5211EepromWrite(struct ath_hal *, u_int off, uint16_t data);
+extern	HAL_BOOL ar5211SetRegulatoryDomain(struct ath_hal *,
+		uint16_t, HAL_STATUS *);
 extern	u_int ar5211GetWirelessModes(struct ath_hal *);
 extern	void ar5211EnableRfKill(struct ath_hal *);
 extern	uint32_t ar5211GpioGet(struct ath_hal *, uint32_t gpio);
 extern	void ar5211GpioSetIntr(struct ath_hal *, u_int, uint32_t ilevel);
-extern	HAL_BOOL ar5211GpioCfgOutput(struct ath_hal *, uint32_t gpio);
+extern	HAL_BOOL ar5211GpioCfgOutput(struct ath_hal *, uint32_t gpio,
+		HAL_GPIO_MUX_TYPE);
 extern	HAL_BOOL ar5211GpioCfgInput(struct ath_hal *, uint32_t gpio);
 extern	HAL_BOOL ar5211GpioSet(struct ath_hal *, uint32_t gpio, uint32_t val);
 extern	void ar5211SetLedState(struct ath_hal *, HAL_LED_STATE);
@@ -269,7 +276,7 @@ extern	HAL_BOOL ar5211GetDiagState(struct ath_hal *ah, int request,
 		const void *args, uint32_t argsize,
 		void **result, uint32_t *resultsize);
 
-extern	u_int ar5211GetKeyCacheSize(struct ath_hal *);
+extern	uint32_t ar5211GetKeyCacheSize(struct ath_hal *);
 extern	HAL_BOOL ar5211IsKeyCacheEntryValid(struct ath_hal *, uint16_t);
 extern	HAL_BOOL ar5211ResetKeyCacheEntry(struct ath_hal *, uint16_t entry);
 extern	HAL_BOOL ar5211SetKeyCacheEntry(struct ath_hal *, uint16_t entry,
@@ -278,7 +285,7 @@ extern	HAL_BOOL ar5211SetKeyCacheEntry(struct ath_hal *, uint16_t entry,
 extern	HAL_BOOL ar5211SetKeyCacheEntryMac(struct ath_hal *,
 			uint16_t, const uint8_t *);
 
-extern	HAL_BOOL ar5211SetPowerMode(struct ath_hal *, HAL_POWER_MODE powerRequest,
+extern	HAL_BOOL ar5211SetPowerMode(struct ath_hal *, HAL_POWER_MODE mode,
 		int setChip);
 extern	HAL_POWER_MODE ar5211GetPowerMode(struct ath_hal *);
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2020 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,9 +35,6 @@ MA 02111-1307, USA.
 #include "device.h"
 
 #include "device_protos.h"
-#include "unit_protos.h"
-#include "pci_protos.h"
-#include "request_protos.h"
 
 
 /* Private prototypes */
@@ -186,7 +183,7 @@ static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
       || base->dos_base == NULL)
       success = FALSE;
 
-   if(OpenDevice(timer_name, UNIT_VBLANK, (APTR)&base->timer_request, 0) !=
+   if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0) !=
       0)
       success = FALSE;
 
@@ -399,7 +396,6 @@ static VOID OS4DevBeginIO(struct Interface *self,
 {
    /* Replace caller's cookie with our own */
 
-   request->ios2_Req.io_Error = 0;
    switch(request->ios2_Req.io_Command)
    {
    case CMD_READ:

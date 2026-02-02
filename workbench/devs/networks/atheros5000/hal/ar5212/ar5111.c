@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5111.c,v 1.3 2009/01/06 06:03:57 mrg Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_5111
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -92,7 +90,7 @@ ar5111SetChannel(struct ath_hal *ah,  HAL_CHANNEL_INTERNAL *chan)
 		uint16_t	channel5111;	/* 11a channel for 5111 */
 	} CHAN_INFO_2GHZ;
 
-	const static CHAN_INFO_2GHZ chan2GHzData[] = {
+	static const CHAN_INFO_2GHZ chan2GHzData[] = {
 		{ 1, 0x46, 96  },	/* 2312 -19 */
 		{ 1, 0x46, 97  },	/* 2317 -18 */
 		{ 1, 0x46, 98  },	/* 2322 -17 */
@@ -539,7 +537,7 @@ ar5212GetScaledPower(uint16_t channel, uint16_t pcdacValue,
 	uint16_t lFreq, rFreq;		/* left and right frequency values */
 	uint16_t llPcdac, ulPcdac;	/* lower and upper left pcdac values */
 	uint16_t lrPcdac, urPcdac;	/* lower and upper right pcdac values */
-	uint16_t lPwr, uPwr;		/* lower and upper temp pwr values */
+	uint16_t lPwr = 0, uPwr = 0;		/* lower and upper temp pwr values */
 	uint16_t lScaledPwr, rScaledPwr; /* left and right scaled power */
 
 	if (ar5212FindValueInList(channel, pcdacValue, pSrcStruct, &powerValue)) {
@@ -673,7 +671,7 @@ ar5111RfDetach(struct ath_hal *ah)
  * Allocate memory for analog bank scratch buffers
  * Scratch Buffer will be reinitialized every reset so no need to zero now
  */
-HAL_BOOL
+static HAL_BOOL
 ar5111RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 {
 	struct ath_hal_5212 *ahp = AH5212(ah);
@@ -704,4 +702,10 @@ ar5111RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_5111 */
+
+static HAL_BOOL
+ar5111Probe(struct ath_hal *ah)
+{
+	return IS_RAD5111(ah);
+}
+AH_RF(RF5111, ar5111Probe, ar5111RfAttach);

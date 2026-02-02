@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah.h,v 1.5 2020/12/16 19:49:05 christos Exp $
  */
 
 #ifndef _ATH_AH_H_
@@ -27,18 +27,6 @@
  * follow must call back into the HAL through interface, supplying the
  * reference as the first parameter.
  */
-
-/*
- * Bus i/o type definitions.  We define a platform-independent
- * set of types that are mapped to platform-dependent data for
- * register read/write operations.  We use types that are large
- * enough to hold a pointer; smaller data should fit and only
- * require type coercion to work.  Larger data can be stored
- * elsewhere and a reference passed for the bus tag and/or handle.
- */
-typedef void* HAL_SOFTC;		/* pointer to driver/OS state */
-typedef void* HAL_BUS_TAG;		/* opaque bus i/o id tag */
-typedef void* HAL_BUS_HANDLE;		/* opaque bus i/o handle */
 
 #include "ah_osdep.h"
 
@@ -75,6 +63,8 @@ typedef enum {
 	HAL_ENOTSUPP	= 13,	/* Hardware revision not supported */
 	HAL_ESELFTEST	= 14,	/* Hardware self-test failed */
 	HAL_EINPROGRESS	= 15,	/* Operation incomplete */
+	HAL_EEBADREG	= 16,	/* EEPROM invalid regulatory contents */
+	HAL_EEBADCC	= 17,	/* EEPROM invalid country code */
 } HAL_STATUS;
 
 typedef enum {
@@ -105,8 +95,8 @@ typedef enum {
 	HAL_CAP_TSF_ADJUST	= 20,	/* hardware has beacon tsf adjust */
 	/* 21 was HAL_CAP_XR */
 	HAL_CAP_WME_TKIPMIC 	= 22,   /* hardware can support TKIP MIC when WMM is turned on */
-	HAL_CAP_CHAN_HALFRATE 	= 23,	/* hardware can support half rate channels */
-	HAL_CAP_CHAN_QUARTERRATE = 24,	/* hardware can support quarter rate channels */
+	/* 23 was HAL_CAP_CHAN_HALFRATE */
+	/* 24 was HAL_CAP_CHAN_QUARTERRATE */
 	HAL_CAP_RFSILENT	= 25,	/* hardware has rfsilent support  */
 	HAL_CAP_TPC_ACK		= 26,	/* ack txpower with per-packet tpc */
 	HAL_CAP_TPC_CTS		= 27,	/* cts txpower with per-packet tpc */
@@ -119,6 +109,8 @@ typedef enum {
 	HAL_CAP_RXTSTAMP_PREC	= 34,	/* rx desc tstamp precision (bits) */
 	HAL_CAP_BB_HANG		= 35,	/* can baseband hang */
 	HAL_CAP_MAC_HANG	= 36,	/* can MAC hang */
+	HAL_CAP_INTRMASK	= 37,	/* bitmask of supported interrupts */
+	HAL_CAP_BSSIDMATCH	= 38,	/* hardware has disable bssid match */
 } HAL_CAPABILITY_TYPE;
 
 /* 
@@ -305,6 +297,7 @@ typedef enum {
 	HAL_RX_FILTER_PHYERR	= 0x00000100,	/* Allow phy errors */
 	HAL_RX_FILTER_PHYRADAR	= 0x00000200,	/* Allow phy radar errors */
 	HAL_RX_FILTER_COMPBAR	= 0x00000400,	/* Allow compressed BAR */
+	HAL_RX_FILTER_BSSID	= 0x00000800,	/* Disable BSSID match */
 } HAL_RX_FILTER;
 
 typedef enum {
@@ -331,19 +324,21 @@ typedef enum {
 	HAL_INT_RXORN	= 0x00000020,
 	HAL_INT_TX	= 0x00000040,	/* Non-common mapping */
 	HAL_INT_TXDESC	= 0x00000080,
+	HAL_INT_TIM_TIMER=0x00000100,
 	HAL_INT_TXURN	= 0x00000800,
 	HAL_INT_MIB	= 0x00001000,
 	HAL_INT_RXPHY	= 0x00004000,
 	HAL_INT_RXKCM	= 0x00008000,
 	HAL_INT_SWBA	= 0x00010000,
 	HAL_INT_BMISS	= 0x00040000,
-	HAL_INT_BNR	= 0x00100000,	/* Non-common mapping */
+	HAL_INT_BNR	= 0x00100000,
 	HAL_INT_TIM	= 0x00200000,	/* Non-common mapping */
 	HAL_INT_DTIM	= 0x00400000,	/* Non-common mapping */
 	HAL_INT_DTIMSYNC= 0x00800000,	/* Non-common mapping */
 	HAL_INT_GPIO	= 0x01000000,
 	HAL_INT_CABEND	= 0x02000000,	/* Non-common mapping */
 	HAL_INT_TSFOOR	= 0x04000000,	/* Non-common mapping */
+	HAL_INT_TBTT	= 0x08000000,	/* Non-common mapping */
 	HAL_INT_CST	= 0x10000000,	/* Non-common mapping */
 	HAL_INT_GTT	= 0x20000000,	/* Non-common mapping */
 	HAL_INT_FATAL	= 0x40000000,	/* Non-common mapping */
@@ -351,7 +346,8 @@ typedef enum {
 	HAL_INT_BMISC	= HAL_INT_TIM
 			| HAL_INT_DTIM
 			| HAL_INT_DTIMSYNC
-			| HAL_INT_CABEND,
+			| HAL_INT_CABEND
+			| HAL_INT_TBTT,
 
 	/* Interrupt bits that map directly to ISR/IMR bits */
 	HAL_INT_COMMON  = HAL_INT_RXNOFRM
@@ -365,8 +361,25 @@ typedef enum {
 			| HAL_INT_RXKCM
 			| HAL_INT_SWBA
 			| HAL_INT_BMISS
+			| HAL_INT_BNR
 			| HAL_INT_GPIO,
 } HAL_INT;
+
+typedef enum {
+	HAL_GPIO_MUX_OUTPUT		= 0,
+	HAL_GPIO_MUX_PCIE_ATTENTION_LED	= 1,
+	HAL_GPIO_MUX_PCIE_POWER_LED	= 2,
+	HAL_GPIO_MUX_TX_FRAME		= 3,
+	HAL_GPIO_MUX_RX_CLEAR_EXTERNAL	= 4,
+	HAL_GPIO_MUX_MAC_NETWORK_LED	= 5,
+	HAL_GPIO_MUX_MAC_POWER_LED	= 6
+} HAL_GPIO_MUX_TYPE;
+
+typedef enum {
+	HAL_GPIO_INTR_LOW		= 0,
+	HAL_GPIO_INTR_HIGH		= 1,
+	HAL_GPIO_INTR_DISABLE		= 2
+} HAL_GPIO_INTR_TYPE;
 
 typedef enum {
 	HAL_RFGAIN_INACTIVE		= 0,
@@ -466,8 +479,10 @@ enum {
 #endif
 	HAL_MODE_108G	= 0x020,		/* 11g+Turbo channels */
 	HAL_MODE_108A	= 0x040,		/* 11a+Turbo channels */
-	HAL_MODE_11A_HALF_RATE = 0x200,		/* 11A half rate channels */
-	HAL_MODE_11A_QUARTER_RATE = 0x400,	/* 11A quarter rate channels */
+	HAL_MODE_11A_HALF_RATE = 0x200,		/* 11a half width channels */
+	HAL_MODE_11A_QUARTER_RATE = 0x400,	/* 11a quarter width channels */
+	HAL_MODE_11G_HALF_RATE = 0x800,		/* 11g half width channels */
+	HAL_MODE_11G_QUARTER_RATE = 0x1000,	/* 11g quarter width channels */
 	HAL_MODE_11NG_HT20	= 0x008000,
 	HAL_MODE_11NA_HT20  	= 0x010000,
 	HAL_MODE_11NG_HT40PLUS	= 0x020000,
@@ -654,7 +669,7 @@ struct ath_rx_status;
 struct ath_hal {
 	uint32_t	ah_magic;	/* consistency check magic number */
 	uint32_t	ah_abi;		/* HAL ABI version */
-#define	HAL_ABI_VERSION	0x08110600	/* YYMMDDnn */
+#define	HAL_ABI_VERSION	0x08112800	/* YYMMDDnn */
 	uint16_t	ah_devid;	/* PCI device ID */
 	uint16_t	ah_subvendorid;	/* PCI subvendor ID */
 	HAL_SOFTC	ah_sc;		/* back pointer to driver/os state */
@@ -679,9 +694,19 @@ struct ath_hal {
 				HAL_STATUS *status);
 	HAL_BOOL  __ahdecl(*ah_phyDisable)(struct ath_hal *);
 	HAL_BOOL  __ahdecl(*ah_disable)(struct ath_hal *);
+	void	  __ahdecl(*ah_configPCIE)(struct ath_hal *, HAL_BOOL restore);
+	void	  __ahdecl(*ah_disablePCIE)(struct ath_hal *);
 	void	  __ahdecl(*ah_setPCUConfig)(struct ath_hal *);
-	HAL_BOOL  __ahdecl(*ah_perCalibration)(struct ath_hal*, HAL_CHANNEL *, HAL_BOOL *);
+	HAL_BOOL  __ahdecl(*ah_perCalibration)(struct ath_hal*, HAL_CHANNEL *,
+			HAL_BOOL *);
+	HAL_BOOL  __ahdecl(*ah_perCalibrationN)(struct ath_hal *, HAL_CHANNEL *,
+			u_int chainMask, HAL_BOOL longCal, HAL_BOOL *isCalDone);
+	HAL_BOOL  __ahdecl(*ah_resetCalValid)(struct ath_hal *, HAL_CHANNEL *);
+	HAL_BOOL  __ahdecl(*ah_setTxPower)(struct ath_hal *,
+			HAL_CHANNEL *, uint16_t *);
 	HAL_BOOL  __ahdecl(*ah_setTxPowerLimit)(struct ath_hal *, uint32_t);
+	HAL_BOOL  __ahdecl(*ah_setBoardValues)(struct ath_hal *,
+			HAL_CHANNEL *);
 
 	/* Transmit functions */
 	HAL_BOOL  __ahdecl(*ah_updateTxTrigLevel)(struct ath_hal*,
@@ -764,7 +789,8 @@ struct ath_hal {
 	void	  __ahdecl(*ah_setLedState)(struct ath_hal*, HAL_LED_STATE);
 	void	  __ahdecl(*ah_writeAssocid)(struct ath_hal*,
 				const uint8_t *bssid, uint16_t assocId);
-	HAL_BOOL  __ahdecl(*ah_gpioCfgOutput)(struct ath_hal *, uint32_t gpio);
+	HAL_BOOL  __ahdecl(*ah_gpioCfgOutput)(struct ath_hal *,
+				uint32_t gpio, HAL_GPIO_MUX_TYPE);
 	HAL_BOOL  __ahdecl(*ah_gpioCfgInput)(struct ath_hal *, uint32_t gpio);
 	uint32_t __ahdecl(*ah_gpioGet)(struct ath_hal *, uint32_t gpio);
 	HAL_BOOL  __ahdecl(*ah_gpioSet)(struct ath_hal *,
@@ -902,13 +928,4 @@ extern HAL_BOOL ath_hal_isgsmsku(struct ath_hal *);
  * using the specified channel flags; e.g. CHANNEL_2GHZ.
  */
 extern	int __ahdecl ath_hal_mhz2ieee(struct ath_hal *, u_int mhz, u_int flags);
-
-/*
- * Return a version string for the HAL release.
- */
-extern	char ath_hal_version[];
-/*
- * Return a NULL-terminated array of build/configuration options.
- */
-extern	const char* ath_hal_buildopts[];
 #endif /* _ATH_AH_H_ */

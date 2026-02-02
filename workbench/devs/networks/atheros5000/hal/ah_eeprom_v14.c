@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah_eeprom_v14.c,v 1.7 2021/04/13 03:27:13 mrg Exp $
  */
 #include "opt_ah.h"
 
@@ -37,10 +37,10 @@ v14EepromGet(struct ath_hal *ah, int param, void *val)
 
 	switch (param) {
         case AR_EEP_NFTHRESH_5:
-		*(int8_t *)val = pModal[0].noiseFloorThreshCh[0];
+		*(int16_t *)val = pModal[0].noiseFloorThreshCh[0];
 		return HAL_OK;
         case AR_EEP_NFTHRESH_2:
-		*(int8_t *)val = pModal[1].noiseFloorThreshCh[0];
+		*(int16_t *)val = pModal[1].noiseFloorThreshCh[0];
 		return HAL_OK;
         case AR_EEP_MACADDR:		/* Get MAC Address */
 		sum = 0;
@@ -54,6 +54,7 @@ v14EepromGet(struct ath_hal *ah, int param, void *val)
 			    __func__, ath_hal_ether_sprintf(macaddr));
 			return HAL_EEBADMAC;
 		}
+		return HAL_OK;
         case AR_EEP_REGDMN_0:
 		return pBase->regDmn[0];
         case AR_EEP_REGDMN_1:
@@ -136,12 +137,12 @@ v14EepromSet(struct ath_hal *ah, int param, int v)
 	switch (param) {
 	case AR_EEP_ANTGAINMAX_2:
 		ee->ee_antennaGainMax[1] = (int8_t) v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_ANTGAINMAX_5:
 		ee->ee_antennaGainMax[0] = (int8_t) v;
-		return HAL_OK;
+		return AH_TRUE;
 	}
-	return HAL_EINVAL;
+	return AH_FALSE;
 }
 
 static HAL_BOOL
@@ -158,18 +159,6 @@ v14EepromDiag(struct ath_hal *ah, int request,
 	}
 	return AH_FALSE;
 }
-
-/* XXX conditionalize by target byte order */
-#ifndef bswap16
-static __inline__ uint16_t
-__bswap16(uint16_t _x)
-{
- 	return ((uint16_t)(
-	      (((const uint8_t *)(&_x))[0]    ) |
-	      (((const uint8_t *)(&_x))[1]<< 8))
-	);
-}
-#endif
 
 /* Do structure specific swaps if Eeprom format is non native to host */
 static void
@@ -266,7 +255,7 @@ v14EepromReadCTLInfo(struct ath_hal *ah, HAL_EEPROM_v14 *ee)
 	
 	HALASSERT(AR5416_NUM_CTLS <= sizeof(ee->ee_rdEdgesPower)/NUM_EDGES);
 
-	for (i = 0; ee->ee_base.ctlIndex[i] != 0 && i < AR5416_NUM_CTLS; i++) {
+	for (i = 0; i < AR5416_NUM_CTLS && ee->ee_base.ctlIndex[i] != 0; i++) {
 		for (j = 0; j < NUM_EDGES; j ++) {
 			/* XXX Confirm this is the right thing to do when an invalid channel is stored */
 			if (ee->ee_base.ctlData[i].ctlEdges[CTL_CHAIN][j].bChannel == AR5416_BCHAN_UNUSED) {

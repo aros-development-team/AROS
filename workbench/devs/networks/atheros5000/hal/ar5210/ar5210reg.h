@@ -14,13 +14,13 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210reg.h,v 1.3 2014/08/03 19:14:24 wiz Exp $
  */
 #ifndef _DEV_ATH_AR5210REG_H
 #define _DEV_ATH_AR5210REG_H
 
 /*
- * Register defintions for the Atheros AR5210/5110 MAC/Basedband
+ * Register definitions for the Atheros AR5210/5110 MAC/Basedband
  * Processor for IEEE 802.11a 5-GHz Wireless LANs.
  */
 
@@ -246,8 +246,8 @@
 #define	AR_SCR_SLE		0x00030000	/* sleep enable */
 #define	AR_SCR_SLE_S		16
 #define	AR_SCR_SLE_WAKE		0x00000000	/* force wake */
-#define	AR_SCR_SLE_SLP		0x00010000	/* force sleep */
-#define	AR_SCR_SLE_ALLOW	0x00020000	/* allow to control sleep */
+#define	AR_SCR_SLE_SLP		0x00010000U	/* force sleep */
+#define	AR_SCR_SLE_ALLOW	0x00020000U	/* allow to control sleep */
 #define	AR_SCR_BITS	"\20\20SLE_SLP\21SLE_ALLOW"
 
 #define	AR_INTPEND_IP		0x00000001	/* interrupt pending */

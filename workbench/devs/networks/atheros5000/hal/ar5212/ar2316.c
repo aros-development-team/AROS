@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar2316.c,v 1.3 2013/09/12 11:44:08 martin Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_2316
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -258,7 +256,7 @@ ar2316GetRfBank(struct ath_hal *ah, int bank)
  * NB: the input list is assumed to be sorted in ascending order
  */
 static void
-GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
+GetLowerUpperIndex(int16_t v, const int16_t *lp, uint16_t listSize,
                           uint32_t *vlo, uint32_t *vhi)
 {
 	int16_t target = v;
@@ -304,16 +302,15 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
  */
 static HAL_BOOL
 ar2316FillVpdTable(uint32_t pdGainIdx, int16_t Pmin, int16_t  Pmax,
-		   const int16_t *pwrList, const int16_t *VpdList,
+		   const int16_t *pwrList, const uint16_t *VpdList,
 		   uint16_t numIntercepts, uint16_t retVpdList[][64])
 {
-	uint16_t ii, jj, kk;
+	uint16_t ii, kk;
 	int16_t currPwr = (int16_t)(2*Pmin);
 	/* since Pmin is pwr*2 and pwrList is 4*pwr */
-	uint32_t  idxL, idxR;
+	uint32_t  idxL = 0, idxR = 0;
 
 	ii = 0;
-	jj = 0;
 
 	if (numIntercepts < 2)
 		return AH_FALSE;
@@ -375,7 +372,7 @@ ar2316getGainBoundariesAndPdadcsForPowers(struct ath_hal *ah, uint16_t channel,
 #define	VpdTable_I	priv->vpdTable_I
 	uint32_t ii, jj, kk;
 	int32_t ss;/* potentially -ve index for taking care of pdGainOverlap */
-	uint32_t idxL, idxR;
+	uint32_t idxL = 0, idxR = 0;
 	uint32_t numPdGainsUsed = 0;
 	/* 
 	 * If desired to support -ve power levels in future, just
@@ -519,8 +516,11 @@ ar2316SetPowerTable(struct ath_hal *ah,
 	int16_t minCalPower2316_t2;
 	uint16_t *pdadcValues = ahp->ah_pcdacTable;
 	uint16_t gainBoundaries[4];
-	uint32_t i, reg32, regoffset, tpcrg1;
-	int numPdGainsUsed;
+	uint32_t reg32, regoffset;
+	int i, numPdGainsUsed;
+#ifndef AH_USE_INIPDGAIN
+	uint32_t tpcrg1;
+#endif
 
 	HALDEBUG(ah, HAL_DEBUG_RFPARAM, "%s: chan 0x%x flag 0x%x\n",
 	    __func__, chan->channel,chan->channelFlags);
@@ -542,10 +542,16 @@ ar2316SetPowerTable(struct ath_hal *ah,
 		&minCalPower2316_t2,gainBoundaries, rfXpdGain, pdadcValues);
 	HALASSERT(1 <= numPdGainsUsed && numPdGainsUsed <= 3);
 
-#if 0
+#ifdef AH_USE_INIPDGAIN
+	/*
+	 * Use pd_gains curve from eeprom; Atheros always uses
+	 * the default curve from the ini file but some vendors
+	 * (e.g. Zcomax) want to override this curve and not
+	 * honoring their settings results in tx power 5dBm low.
+	 */
 	OS_REG_RMW_FIELD(ah, AR_PHY_TPCRG1, AR_PHY_TPCRG1_NUM_PD_GAIN, 
 			 (pRawDataset->pDataPerChannel[0].numPdGains - 1));
-#endif
+#else
 	tpcrg1 = OS_REG_READ(ah, AR_PHY_TPCRG1);
 	tpcrg1 = (tpcrg1 &~ AR_PHY_TPCRG1_NUM_PD_GAIN)
 		  | SM(numPdGainsUsed-1, AR_PHY_TPCRG1_NUM_PD_GAIN);
@@ -570,6 +576,7 @@ ar2316SetPowerTable(struct ath_hal *ah,
 		    __func__, OS_REG_READ(ah, AR_PHY_TPCRG1), tpcrg1);
 #endif
 	OS_REG_WRITE(ah, AR_PHY_TPCRG1, tpcrg1);
+#endif
 
 	/*
 	 * Note the pdadc table may not start at 0 dBm power, could be
@@ -717,7 +724,7 @@ ar2316RfDetach(struct ath_hal *ah)
  * Allocate memory for private state.
  * Scratch Buffer will be reinitialized every reset so no need to zero now
  */
-HAL_BOOL
+static HAL_BOOL
 ar2316RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 {
 	struct ath_hal_5212 *ahp = AH5212(ah);
@@ -750,4 +757,10 @@ ar2316RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_2316 */
+
+static HAL_BOOL
+ar2316Probe(struct ath_hal *ah)
+{
+	return IS_2316(ah);
+}
+AH_RF(RF2316, ar2316Probe, ar2316RfAttach);

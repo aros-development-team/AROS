@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2017 Neil Cafferkey
+Copyright (C) 2001-2020 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ MA 02111-1307, USA.
 #include <proto/timer.h>
 
 #include "device.h"
+#include "task.h"
 
 #include "unit_protos.h"
 #include "request_protos.h"
@@ -47,8 +48,8 @@ MA 02111-1307, USA.
 #define TASK_PRIORITY 0
 #define STACK_SIZE 4096
 #define INT_MASK \
-   (HAL_INT_GLOBAL | HAL_INT_TX | HAL_INT_TXDESC | HAL_INT_RX \
-   | HAL_INT_RXEOL)
+   (HAL_INT_GLOBAL | HAL_INT_TX | HAL_INT_RX | HAL_INT_RXEOL \
+   | HAL_INT_FATAL)
 #define TX_POWER (20 << 1)
 #define TX_TRIES 11
 #define G_MGMT_RATE 2000
@@ -58,6 +59,7 @@ MA 02111-1307, USA.
 #define MAX_CHANNEL_COUNT 100
 
 
+static VOID StartTransceiver(struct DevUnit *unit, struct DevBase *base);
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
    UWORD upper_bound_right, struct DevBase *base);
@@ -91,62 +93,6 @@ static VOID UnitTask(struct DevUnit *unit);
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
 static const ULONG g_retry_rates[] = {54000, 36000, 18000, 2000};
 static const ULONG b_retry_rates[] = {11000, 5500, 2000, 1000};
-
-
-#if defined(__mc68000) && !defined(__AROS__)
-#define AddUnitTask(task, initial_pc, unit) \
-   ({ \
-      task->tc_SPReg -= sizeof(APTR); \
-      *((APTR *)task->tc_SPReg) = unit; \
-      AddTask(task, initial_pc, NULL); \
-   })
-#endif
-#ifdef __amigaos4__
-#define AddUnitTask(task, initial_pc, unit) \
-   ({ \
-      struct TagItem _task_tags[] = \
-         {{AT_Param1, (UPINT)unit}, {TAG_END, 0}}; \
-      AddTask(task, initial_pc, NULL, _task_tags); \
-   })
-#endif
-#ifdef __MORPHOS__
-#define AddUnitTask(task, initial_pc, unit) \
-   ({ \
-      struct TagItem _task_tags[] = \
-      { \
-         {TASKTAG_CODETYPE, CODETYPE_PPC}, \
-         {TASKTAG_PC, (UPINT)initial_pc}, \
-         {TASKTAG_PPC_ARG1, (UPINT)unit}, \
-         {TAG_END, 1} \
-      }; \
-      struct TaskInitExtension _task_init = {0xfff0, 0, _task_tags}; \
-      AddTask(task, &_task_init, NULL); \
-   })
-#endif
-#ifdef __AROS__
-#define AddUnitTask(task, initial_pc, unit) \
-   ({ \
-      struct TagItem _task_tags[] = \
-         {{TASKTAG_ARG1, (UPINT)unit}, {TAG_END, 0}}; \
-      NewAddTask(task, initial_pc, NULL, _task_tags); \
-   })
-#endif
-
-#ifdef __amigaos4__
-#undef CachePreDMA
-#define CachePreDMA(address, length, flags) \
-   ({ \
-      struct DMAEntry _dma_entry = {0}; \
-      if(StartDMA((address), *(length), (flags)) == 1) \
-         GetDMAList((address), *(length), (flags), &_dma_entry); \
-      *(length) = _dma_entry.BlockLength; \
-      (ULONG)_dma_entry.PhysicalAddress | (ULONG)address & 0xfff; \
-   })
-#undef CachePostDMA
-#define CachePostDMA(address, length, flags) \
-   EndDMA(address, *(length), flags);
-#endif
-
 
 
 /****i* atheros5000.device/CreateUnit **************************************
@@ -394,14 +340,24 @@ struct DevUnit *CreateUnit(ULONG index, APTR io_base, UWORD id, APTR card,
          rx_desc++;
       }
 
+      /* The hardware doesn't actually understand the concept of a ring,
+         only a list, and will plough straight on through the last unused
+         descriptor and start overwriting used ones unless we stop it.
+         The last descriptor is marked by linking it to itself */
+
+      rx_desc--;
+      rx_desc->ds_link =
+         unit->rx_descs_p + RX_SLOT_COUNT * sizeof(struct ath_desc);
+
       dma_size = sizeof(struct ath_desc) * RX_SLOT_COUNT;
-      CachePreDMA(unit->rx_descs, &dma_size, 0);
+      CachePreDMA(unit->rx_descs, &dma_size, DMA_ReadFromRAM);
 
       /* Record maximum speed in BPS */
 
       unit->speed = 54000000;
 
-      /* Initialise status, transmit, receive and stats interrupts */
+      /* Initialise status, transmit and receive interrupts, as well as
+         reset handler */
 
       unit->status_int.is_Node.ln_Name =
          base->device.dd_Library.lib_Node.ln_Name;
@@ -542,6 +498,10 @@ VOID DeleteUnit(struct DevUnit *unit, struct DevBase *base)
       if((unit->flags & UNITF_ONLINE) != 0)   /* Needed! */
          GoOffline(unit, base);
 
+      unit->FreeDMAMem(unit->card, unit->tx_descs);
+      unit->FreeDMAMem(unit->card, unit->mgmt_descs);
+      unit->FreeDMAMem(unit->card, unit->rx_descs);
+
       for(i = 0; i < TX_SLOT_COUNT; i++)
          unit->FreeDMAMem(unit->card, unit->tx_buffers[i]);
       for(i = 0; i < MGMT_SLOT_COUNT; i++)
@@ -633,8 +593,8 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    queue_info.tqi_aifs = HAL_TXQ_USEDEFAULT;
    queue_info.tqi_cwmin = HAL_TXQ_USEDEFAULT;
    queue_info.tqi_cwmax = HAL_TXQ_USEDEFAULT;
-   queue_info.tqi_qflags =
-      HAL_TXQ_TXEOLINT_ENABLE | HAL_TXQ_TXDESCINT_ENABLE;
+   queue_info.tqi_qflags = HAL_TXQ_TXOKINT_ENABLE | HAL_TXQ_TXERRINT_ENABLE
+      | HAL_TXQ_TXURNINT_ENABLE;
 
    unit->tx_queue_no =
       unit->hal->ah_setupTxQueue(unit->hal, HAL_TX_QUEUE_DATA, &queue_info);
@@ -645,8 +605,8 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    queue_info.tqi_aifs = HAL_TXQ_USEDEFAULT;
    queue_info.tqi_cwmin = HAL_TXQ_USEDEFAULT;
    queue_info.tqi_cwmax = HAL_TXQ_USEDEFAULT;
-   queue_info.tqi_qflags =
-      HAL_TXQ_TXEOLINT_ENABLE | HAL_TXQ_TXDESCINT_ENABLE;
+   queue_info.tqi_qflags = HAL_TXQ_TXOKINT_ENABLE | HAL_TXQ_TXERRINT_ENABLE
+      | HAL_TXQ_TXURNINT_ENABLE;
 
    unit->mgmt_queue_no =
       unit->hal->ah_setupTxQueue(unit->hal, HAL_TX_QUEUE_DATA, &queue_info);
@@ -660,25 +620,11 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
    if(unit->hal->ah_getCapability(unit->hal, HAL_CAP_CIPHER,
       HAL_CIPHER_TKIP, NULL) == HAL_OK)
       unit->flags |= UNITF_HARDTKIP;
-#if 1
-   if(unit->hal->ah_getCapability(unit->hal, HAL_CAP_CIPHER,
-      HAL_CIPHER_MIC, NULL) == HAL_OK)
-   {
-      if(unit->hal->ah_setCapability(unit->hal, HAL_CAP_TKIP_MIC,
-//         0, TRUE, NULL))
-         0, 0, NULL))
-         unit->flags |= UNITF_HARDMIC;
-   }
-#else
-   if(unit->hal->ah_setCapability(unit->hal, HAL_CAP_TKIP_MIC,
-      0, FALSE, NULL))
-#endif
-   if(unit->hal->ah_getCapability(unit->hal, HAL_CAP_TKIP_SPLIT, 0,
-      NULL) == HAL_OK)
-      unit->flags |= UNITF_SPLITMIC;
-   if(unit->hal->ah_getCapability(unit->hal, HAL_CAP_CIPHER,
-      HAL_CIPHER_AES_OCB, NULL) == HAL_OK)
-      unit->flags |= UNITF_HARDAESOCB;
+   if(unit->hal->ah_setCapability(unit->hal, HAL_CAP_TKIP_SPLIT, 1, FALSE,
+      NULL))
+      unit->flags |= UNITF_HARDMIC;
+   unit->hal->ah_setCapability(unit->hal, HAL_CAP_TKIP_MIC, 1,
+      (unit->flags & UNITF_HARDMIC) != 0, NULL);
    if(unit->hal->ah_getCapability(unit->hal, HAL_CAP_CIPHER,
       HAL_CIPHER_AES_CCM, NULL) == HAL_OK)
       unit->flags |= UNITF_HARDCCMP;
@@ -817,7 +763,6 @@ VOID ConfigureAdapter(struct DevUnit *unit, struct DevBase *base)
       unit->hal->ah_stopTxDma(unit->hal, unit->tx_queue_no);
       unit->hal->ah_stopTxDma(unit->hal, unit->mgmt_queue_no);
       unit->hal->ah_setRxFilter(unit->hal, 0);
-ath_hal_delay(3000);
 
       /* Disable frame reception */
 
@@ -894,24 +839,7 @@ ath_hal_delay(3000);
    /* Restart the transceiver if we're already online */
 
    if((unit->flags & UNITF_ONLINE) != 0)
-   {
-      /* Enable interrupts */
-
-      unit->hal->ah_setInterrupts(unit->hal, INT_MASK);
-
-      /* Enable frame reception */
-
-      unit->hal->ah_enableReceive(unit->hal);
-      unit->hal->ah_setRxFilter(unit->hal, unit->filter_mask);
-      unit->hal->ah_startPcuReceive(unit->hal);
-
-#if 0
-      /* Reset TX queues */
-
-      unit->hal->ah_resetTxQueue(unit->hal, unit->tx_queue_no);
-      unit->hal->ah_resetTxQueue(unit->hal, unit->mgmt_queue_no);
-#endif
-   }
+      StartTransceiver(unit, base);
 
    /* Return */
 
@@ -923,7 +851,7 @@ ath_hal_delay(3000);
 /****i* atheros5000.device/GoOnline ****************************************
 *
 *   NAME
-*	GoOnline -- Enable transmission/reception.
+*	GoOnline -- Enter online state.
 *
 *   SYNOPSIS
 *	GoOnline(unit)
@@ -936,9 +864,42 @@ ath_hal_delay(3000);
 
 VOID GoOnline(struct DevUnit *unit, struct DevBase *base)
 {
-   /* Enable interrupts */
+   /* Record online state */
 
    unit->flags |= UNITF_ONLINE;
+
+   /* Enable transmission/reception */
+
+   StartTransceiver(unit, base);
+
+   /* Record start time and report Online event */
+
+   GetSysTime(&unit->stats.LastStart);
+   ReportEvents(unit, S2EVENT_ONLINE, base);
+
+   return;
+}
+
+
+
+/****i* atheros5000.device/StartTransceiver ****************************************
+*
+*   NAME
+*	StartTransceiver -- Enable transmission/reception.
+*
+*   SYNOPSIS
+*	StartTransceiver(unit)
+*
+*	VOID StartTransceiver(struct DevUnit *);
+*
+****************************************************************************
+*
+*/
+
+static VOID StartTransceiver(struct DevUnit *unit, struct DevBase *base)
+{
+   /* Enable interrupts */
+
    unit->hal->ah_setInterrupts(unit->hal, INT_MASK);
 
    /* Enable frame reception */
@@ -946,18 +907,6 @@ VOID GoOnline(struct DevUnit *unit, struct DevBase *base)
    unit->hal->ah_enableReceive(unit->hal);
    unit->hal->ah_setRxFilter(unit->hal, unit->filter_mask);
    unit->hal->ah_startPcuReceive(unit->hal);
-
-#if 0
-   /* Reset TX queues */
-
-   unit->hal->ah_resetTxQueue(unit->hal, unit->tx_queue_no);
-   unit->hal->ah_resetTxQueue(unit->hal, unit->mgmt_queue_no);
-#endif
-
-   /* Record start time and report Online event */
-
-   GetSysTime(&unit->stats.LastStart);
-   ReportEvents(unit, S2EVENT_ONLINE, base);
 
    return;
 }
@@ -1001,7 +950,6 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
       unit->hal->ah_stopPcuReceive(unit->hal);
       unit->hal->ah_stopDmaReceive(unit->hal);
       unit->hal->ah_setRxFilter(unit->hal, 0);
-ath_hal_delay(3000);
 
       /* Stop interrupts */
 
@@ -1154,18 +1102,15 @@ VOID SetKey(struct DevUnit *unit, ULONG index, ULONG type, const UBYTE *key,
 
          if((unit->flags & UNITF_HARDTKIP) != 0)
          {
-// TO DO: Wait for TX queue to empty
             /* Load parameters for hardware encryption */
 
             hal_key.kv_type = HAL_CIPHER_TKIP;
             hal_key.kv_len = 16;
             CopyMem(slot->u.tkip.key, hal_key.kv_val, 16);
 
-            CopyMem(slot->u.tkip.tx_mic_key, hal_key.kv_mic, MIC_SIZE);
-            unit->hal->ah_setKeyCacheEntry(unit->hal, index, &hal_key,
-               unit->bssid, FALSE);
             CopyMem(slot->u.tkip.rx_mic_key, hal_key.kv_mic, MIC_SIZE);
-            unit->hal->ah_setKeyCacheEntry(unit->hal, index + 32, &hal_key,
+            CopyMem(slot->u.tkip.tx_mic_key, hal_key.kv_txmic, MIC_SIZE);
+            unit->hal->ah_setKeyCacheEntry(unit->hal, index, &hal_key,
                unit->bssid, FALSE);
          }
          else
@@ -1188,7 +1133,6 @@ VOID SetKey(struct DevUnit *unit, ULONG index, ULONG type, const UBYTE *key,
 
          if((unit->flags & UNITF_HARDCCMP) != 0)
          {
-// TO DO: Wait for TX queue to empty
             /* Load parameters for hardware encryption */
 
             hal_key.kv_type = HAL_CIPHER_AES_CCM;
@@ -1523,38 +1467,30 @@ static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
    struct DevBase *base;
    uint32_t queue_mask;
-   HAL_INT ints, int_mask;
+   HAL_INT ints;
 
    base = unit->device;
-   int_mask = unit->hal->ah_getInterrupts(unit->hal);
-
-   if(!unit->hal->ah_isInterruptPending(unit->hal)) return FALSE;
-
-   /* Handle ints */
-
-   if(unit->hal->ah_getPendingInterrupts(unit->hal, &ints))
+   if(unit->hal->ah_isInterruptPending(unit->hal))
    {
-      if((ints & HAL_INT_TX) != 0)
+      /* Handle ints */
+
+      if(unit->hal->ah_getPendingInterrupts(unit->hal, &ints))
       {
-         int_mask &= ~(HAL_INT_TX | HAL_INT_TXDESC);
-         queue_mask = 1 << unit->tx_queue_no | 1 << unit->mgmt_queue_no;
-         unit->hal->ah_getTxIntrQueue(unit->hal, &queue_mask);
-         if((queue_mask & 1 << unit->tx_queue_no) != 0)
-            Cause(&unit->tx_end_int);
-         if((queue_mask & 1 << unit->mgmt_queue_no) != 0)
-            Cause(&unit->mgmt_end_int);
-      }
-      if((ints & HAL_INT_RX) != 0)
-      {
-         int_mask &= ~(HAL_INT_RX | HAL_INT_RXEOL);
-         Cause(&unit->rx_int);
+         if((ints & HAL_INT_TX) != 0)
+         {
+            queue_mask = 1 << unit->tx_queue_no | 1 << unit->mgmt_queue_no;
+            unit->hal->ah_getTxIntrQueue(unit->hal, &queue_mask);
+            if((queue_mask & 1 << unit->tx_queue_no) != 0)
+               Cause(&unit->tx_end_int);
+            if((queue_mask & 1 << unit->mgmt_queue_no) != 0)
+               Cause(&unit->mgmt_end_int);
+         }
+         if((ints & HAL_INT_RX) != 0)
+            Cause(&unit->rx_int);
+         if((ints & HAL_INT_FATAL) != 0)
+            unit->flags &= ~UNITF_ONLINE;
       }
    }
-
-#ifdef __MORPHOS__
-   int_mask = INT_MASK;
-#endif
-//   unit->hal->ah_setInterrupts(unit->hal, int_mask))
 
    return FALSE;
 }
@@ -1585,12 +1521,12 @@ static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 
 static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   UWORD ieee_length, frame_control, frame_type, slot, next_slot,
+   UWORD ieee_length, frame_control, frame_type, slot, next_slot, prev_slot,
       encryption, key_no, buffer_no, old_length;
    struct DevBase *base;
    BOOL is_good;
    LONG frag_no;
-   struct ath_desc *rx_desc, *next_desc;
+   struct ath_desc *rx_desc, *next_desc, *prev_desc;
    ULONG dma_size, rx_desc_p;
    UBYTE *buffer, *p, *frame, *data, *snap_frame, *source;
    struct ath_rx_status status;
@@ -1599,11 +1535,12 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
    slot = unit->rx_slot;
    rx_desc = unit->rx_descs + slot;
    rx_desc_p = unit->rx_descs_p + slot * sizeof(struct ath_desc);
+   prev_slot = (slot + RX_SLOT_COUNT - 1) % RX_SLOT_COUNT;
    next_slot = (slot + 1) % RX_SLOT_COUNT;
    next_desc = unit->rx_descs + next_slot;
 
    dma_size = sizeof(struct ath_desc) * RX_SLOT_COUNT;
-   CachePostDMA(unit->rx_descs, &dma_size, 0);
+   CachePostDMA(unit->rx_descs, &dma_size, DMA_ReadFromRAM);
 
    while(unit->hal->ah_procRxDesc(unit->hal, rx_desc, rx_desc_p, next_desc,
       unit->hal->ah_getTsf64(unit->hal), &status) != HAL_EINPROGRESS)
@@ -1691,16 +1628,17 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 
                   data = snap_frame + ETH_HEADERSIZE;
                   if(encryption == S2ENC_TKIP)
-//                     && (unit->flags & UNITF_HARDTKIP) == 0)
-//                     && (unit->flags & UNITF_HARDMIC) == 0)
                   {
-                     is_good = TKIPDecryptFrame(unit, snap_frame, data,
-                        ieee_length, data, key_no, base);
+                     if((unit->flags & UNITF_HARDMIC) == 0)
+                     {
+                        is_good = TKIPDecryptFrame(unit, snap_frame, data,
+                           ieee_length, data, key_no, base);
+                        if(!is_good)
+                           unit->stats.BadData++;
+                     }
                      ieee_length -= MIC_SIZE;
                      *(UWORD *)(snap_frame + ETH_PACKET_IEEELEN) =
                         MakeBEWord(ieee_length);
-                     if(!is_good)
-                        unit->stats.BadData++;
                   }
                }
 
@@ -1754,8 +1692,17 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
       dma_size = FRAME_BUFFER_SIZE;
       CachePreDMA(buffer, &dma_size, 0);
 
+      /* Make the descriptor we just processed the new end-of-list for the
+         hardware, by linking it to itself and removing the self-link on the
+         previous descriptor */
+
+      rx_desc->ds_link = rx_desc_p;
+      prev_desc = unit->rx_descs + prev_slot;
+      prev_desc->ds_link = rx_desc_p;
+
       /* Get next descriptor */
 
+      prev_slot = slot;
       slot = next_slot;
       rx_desc = next_desc;
       rx_desc_p = unit->rx_descs_p + slot * sizeof(struct ath_desc);
@@ -1764,19 +1711,9 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
    }
 
    dma_size = sizeof(struct ath_desc) * RX_SLOT_COUNT;
-   CachePreDMA(unit->rx_descs, &dma_size, 0);
+   CachePreDMA(unit->rx_descs, &dma_size, DMA_ReadFromRAM);
 
    unit->rx_slot = slot;
-// TO DO: unstall reception?
-
-   /* Re-enable RX interrupts */
-
-#if 0
-   Disable();
-   unit->hal->ah_setInterrupts(unit->hal,
-      unit->hal->ah_getInterrupts(unit->hal) | HAL_INT_RX | HAL_INT_RXEOL);
-   Enable();
-#endif
 
    return;
 }
@@ -1789,9 +1726,9 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 *	GetRXBuffer -- Find an appropriate RX frame buffer to use.
 *
 *   SYNOPSIS
-*	buffer = GetRXBuffer(unit, address, frag_no)
+*	buffer = GetRXBuffer(unit, address, frag_no, buffer_no)
 *
-*	UBYTE *GetRXBuffer(struct DevUnit *, UBYTE *, UWORD);
+*	UBYTE *GetRXBuffer(struct DevUnit *, UBYTE *, UWORD, UWORD *);
 *
 ****************************************************************************
 *
@@ -2063,8 +2000,8 @@ static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
    address_left = BELong(*((ULONG *)address));
    address_right = BEWord(*((UWORD *)(address + 4)));
 
-   if(((address_left & 0x01000000) != 0) &&
-      !((address_left == 0xffffffff) && (address_right == 0xffff)))
+   if((address_left & 0x01000000) != 0 &&
+      !(address_left == 0xffffffff && address_right == 0xffff))
    {
       /* Check if this multicast address is wanted */
 
@@ -2140,8 +2077,6 @@ static VOID DistributeMgmtFrame(struct DevUnit *unit, UBYTE *frame,
                base);
          }
          ReplyMsg((APTR)request);
-         request =
-            (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
       }
 
       opener = (APTR)opener->node.mln_Succ;
@@ -2172,6 +2107,9 @@ static VOID DistributeMgmtFrame(struct DevUnit *unit, UBYTE *frame,
 *
 ****************************************************************************
 *
+* Only one frame is sent at a time, as otherwise stability can be affected
+* on some platforms (e.g. AmigaOne SE).
+*
 */
 
 static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
@@ -2197,13 +2135,16 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
    port = unit->request_ports[WRITE_QUEUE];
    rate_table = unit->rate_table;
 
-   while(proceed && (!IsMsgPortEmpty(port)))
+   while(proceed && !IsMsgPortEmpty(port))
    {
       slot = unit->tx_in_slot;
       new_slot = (slot + 1) % TX_SLOT_COUNT;
 
-//      if(new_slot != unit->tx_out_slot)
+#if 0
+      if(new_slot != unit->tx_out_slot)
+#else
       if(slot == unit->tx_out_slot)   // one packet at a time
+#endif
       {
          error = 0;
          body_size = 0;
@@ -2318,8 +2259,6 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
             *(UWORD *)q = 0;
             q += 2;
 
-// TO DO: need to pad header to 4-byte boundary?
-
             /* Leave room for encryption overhead */
 
             ciphertext = q;
@@ -2347,7 +2286,7 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 
             if(encryption == S2ENC_TKIP)
             {
-//               if((unit->flags & UNITF_HARDMIC) == 0)
+               if((unit->flags & UNITF_HARDMIC) == 0)
                {
                   q = mic_header;
                   for(i = 0, p = dest; i < ETH_ADDRESSSIZE; i++)
@@ -2376,39 +2315,38 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
                ((unit->flags & UNITF_SLOWRETRIES) != 0) ? 1 : TX_TRIES,
                HAL_TXKEYIX_INVALID,
                HAL_ANTENNA_MIN_MODE,
-               HAL_TXDESC_INTREQ | HAL_TXDESC_CLRDMASK,
+               HAL_TXDESC_CLRDMASK,
                0, 0, 0, 0, 3);
             if((unit->flags & UNITF_SLOWRETRIES) != 0)
                unit->hal->ah_setupXTxDesc(unit->hal, tx_desc,
                   unit->tx_rate_codes[1], 1,
                   unit->tx_rate_codes[2], 1,
                   unit->tx_rate_codes[3], TX_TRIES - 3);
-            unit->hal->ah_fillTxDesc(unit->hal, tx_desc, frame_size, TRUE, TRUE,
-               tx_desc);
+            unit->hal->ah_fillTxDesc(unit->hal, tx_desc, frame_size, TRUE,
+               TRUE, tx_desc);
 
             dma_size = frame_size;
             CachePreDMA(frame, &dma_size, DMA_ReadFromRAM);
 
-            /* Pass packet to adapter */
+            /* Set new descriptor as successor to previous one */
 
-            unit->hal->ah_stopTxDma(unit->hal, unit->tx_queue_no);
-            last_slot = (slot + TX_SLOT_COUNT - 1) % TX_SLOT_COUNT;
             if(unit->tx_out_slot != slot)
-            //if(unit->hal->ah_numTxPending(unit->hal, unit->tx_queue_no) > 0)
             {
-               last_desc =
-                  unit->tx_descs + last_slot;
-               last_desc->ds_link = unit->tx_descs_p + slot * sizeof(struct ath_desc);
-               dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
-               CachePreDMA(unit->tx_descs, &dma_size, 0);
+               last_slot = (slot + TX_SLOT_COUNT - 1) % TX_SLOT_COUNT;
+               last_desc = unit->tx_descs + last_slot;
+               last_desc->ds_link =
+                  unit->tx_descs_p + slot * sizeof(struct ath_desc);
             }
-            else
-            {
-               dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
-               CachePreDMA(unit->tx_descs, &dma_size, 0);
-               unit->hal->ah_setTxDP(unit->hal, unit->tx_queue_no,
-                  unit->tx_descs_p + slot * sizeof(struct ath_desc));
-            }
+            dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
+            CachePreDMA(unit->tx_descs, &dma_size, DMA_ReadFromRAM);
+
+            /* Set new descriptor as the one to start with if the queue has
+               stopped */
+
+            unit->hal->ah_setTxDP(unit->hal, unit->tx_queue_no,
+               unit->tx_descs_p + slot * sizeof(struct ath_desc));
+
+            /* Restart queue if it stopped */
 
             unit->hal->ah_startTxDma(unit->hal, unit->tx_queue_no);
             unit->tx_in_slot = new_slot;
@@ -2474,26 +2412,24 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 static VOID TXEndInt(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code))
 {
-   UWORD frame_size, new_out_slot, i;
+   UWORD frame_size, i;
    UBYTE *frame;
    struct DevBase *base;
    struct IOSana2Req *request;
    ULONG dma_size;
    struct TypeStats *tracker;
-
-   /* Find out which packets have completed */
+   struct ath_tx_status status;
 
    base = unit->device;
-   new_out_slot = (unit->tx_in_slot + TX_SLOT_COUNT
-      - unit->hal->ah_numTxPending(unit->hal, unit->tx_queue_no))
-      % TX_SLOT_COUNT;
-
    dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
-   CachePostDMA(unit->tx_descs, &dma_size, 0);
+   CachePostDMA(unit->tx_descs, &dma_size, DMA_ReadFromRAM);
 
-   /* Retire sent packets */
+   /* Retire sent frames */
 
-   for(i = unit->tx_out_slot; i != new_out_slot;
+   for(i = unit->tx_out_slot;
+      i != unit->tx_in_slot
+      && unit->hal->ah_procTxDesc(unit->hal, unit->tx_descs + i, &status)
+      != HAL_EINPROGRESS;
       i = (i + 1) % TX_SLOT_COUNT)
    {
       frame = unit->tx_buffers[i];
@@ -2524,7 +2460,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit),
    unit->tx_out_slot = i;
 
    dma_size = sizeof(struct ath_desc) * TX_SLOT_COUNT;
-   CachePreDMA(unit->tx_descs, &dma_size, 0);
+   CachePreDMA(unit->tx_descs, &dma_size, DMA_ReadFromRAM);
 
    /* Restart downloads if they had stopped */
 
@@ -2579,8 +2515,7 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
       slot = unit->mgmt_in_slot;
       new_slot = (slot + 1) % MGMT_SLOT_COUNT;
 
-//      if(new_slot != unit->mgmt_out_slot)
-      if(slot == unit->mgmt_out_slot)   // one packet at a time
+      if(new_slot != unit->mgmt_out_slot)
       {
          /* Get request and DMA frame descriptor */
 
@@ -2630,26 +2565,25 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
          dma_size = frame_size;
          CachePreDMA(frame, &dma_size, DMA_ReadFromRAM);
 
-         /* Pass packet to adapter */
+         /* Set new descriptor as successor to previous one */
 
-         unit->hal->ah_stopTxDma(unit->hal, unit->mgmt_queue_no);
-         last_slot = (slot + MGMT_SLOT_COUNT - 1) % MGMT_SLOT_COUNT;
          if(unit->mgmt_out_slot != slot)
-         //if(unit->hal->ah_numTxPending(unit->hal, unit->mgmt_queue_no) > 0)
          {
+            last_slot = (slot + MGMT_SLOT_COUNT - 1) % MGMT_SLOT_COUNT;
             last_desc = unit->mgmt_descs + last_slot;
             last_desc->ds_link =
                unit->mgmt_descs_p + slot * sizeof(struct ath_desc);
-            dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
-            CachePreDMA(unit->mgmt_descs, &dma_size, 0);
          }
-         else
-         {
-            dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
-            CachePreDMA(unit->mgmt_descs, &dma_size, 0);
-            unit->hal->ah_setTxDP(unit->hal, unit->mgmt_queue_no,
-               unit->mgmt_descs_p + slot * sizeof(struct ath_desc));
-         }
+         dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
+         CachePreDMA(unit->mgmt_descs, &dma_size, DMA_ReadFromRAM);
+
+         /* Set new descriptor as the one to start with if the queue has
+            stopped */
+
+         unit->hal->ah_setTxDP(unit->hal, unit->mgmt_queue_no,
+            unit->mgmt_descs_p + slot * sizeof(struct ath_desc));
+
+         /* Restart queue if it stopped */
 
          unit->hal->ah_startTxDma(unit->hal, unit->mgmt_queue_no);
          unit->mgmt_in_slot = new_slot;
@@ -2691,25 +2625,23 @@ static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 static VOID MgmtTXEndInt(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code))
 {
-   UWORD new_out_slot, i;
+   UWORD i;
    UBYTE *frame;
    struct DevBase *base;
    struct IOSana2Req *request;
    ULONG dma_size;
-
-   /* Find out which packets have completed */
+   struct ath_tx_status status;
 
    base = unit->device;
-   new_out_slot = (unit->mgmt_in_slot + MGMT_SLOT_COUNT
-      - unit->hal->ah_numTxPending(unit->hal, unit->mgmt_queue_no))
-      % MGMT_SLOT_COUNT;
-
    dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
-   CachePostDMA(unit->mgmt_descs, &dma_size, 0);
+   CachePostDMA(unit->mgmt_descs, &dma_size, DMA_ReadFromRAM);
 
    /* Retire sent frames */
 
-   for(i = unit->mgmt_out_slot; i != new_out_slot;
+   for(i = unit->mgmt_out_slot;
+      i != unit->mgmt_in_slot
+      && unit->hal->ah_procTxDesc(unit->hal, unit->mgmt_descs + i, &status)
+      != HAL_EINPROGRESS;
       i = (i + 1) % MGMT_SLOT_COUNT)
    {
       frame = unit->mgmt_buffers[i];
@@ -2726,7 +2658,7 @@ static VOID MgmtTXEndInt(REG(a1, struct DevUnit *unit),
    unit->mgmt_out_slot = i;
 
    dma_size = sizeof(struct ath_desc) * MGMT_SLOT_COUNT;
-   CachePreDMA(unit->mgmt_descs, &dma_size, 0);
+   CachePreDMA(unit->mgmt_descs, &dma_size, DMA_ReadFromRAM);
 
    /* Restart downloads if they had stopped */
 
@@ -2858,58 +2790,6 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 
    return;
 }
-
-
-
-/****i* atheros5000.device/GetRadioBands ***********************************
-*
-*   NAME
-*	GetRadioBands -- Get information on current network.
-*
-*   SYNOPSIS
-*	tag_list = GetRadioBands(unit, pool)
-*
-*	struct TagItem *GetRadioBands(struct DevUnit *, APTR);
-*
-*   FUNCTION
-*
-*   INPUTS
-*	unit - A unit of this device.
-*	pool - A memory pool.
-*
-*   RESULT
-*	None.
-*
-****************************************************************************
-*
-*/
-
-#if 0
-struct TagItem *GetRadioBands(struct DevUnit *unit, APTR pool,
-   struct DevBase *base)
-{
-   BYTE error = 0;
-   struct Sana2RadioBand *bands;
-   UWORD i;
-
-   bands = AllocPooled(pool, sizeof(struct Sana2RadioBand) * 3);
-   if(bands == NULL)
-      error = S2ERR_NO_RESOURCES;
-
-   if(error == 0)
-   {
-      for(i = 0; i < 1; i++)
-      {
-         bands[i] = AllocPooled(pool, sizeof(UWORD) * unit->channel_counts[S2BAND_B]);
-      }
-   }
-
-//   if(error != 0)
-//      bands = NULL;
-
-   return bands;
-}
-#endif
 
 
 

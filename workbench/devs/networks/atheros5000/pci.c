@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2013 Neil Cafferkey
+Copyright (C) 2004-2026 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,21 +57,19 @@ static VOID FreeDMAMemHook(struct BusContext *context, APTR mem);
 const UWORD product_codes[] =
 {
    0x10b7, 0x0013,
-   0x168c, 0x0007,
    0x168c, 0x0012,
    0x168c, 0x0013,
-   0x168c, 0x0015,
-   0x168c, 0x0016,
-   0x168c, 0x0017,
-   0x168c, 0x0018,
-   0x168c, 0x0019,
    0x168c, 0x001a,
    0x168c, 0x001b,
    0x168c, 0x001c,
    0x168c, 0x001d,
+   0x168c, 0x0023,
+   0x168c, 0x0024,
+   0x168c, 0x0027,
+   0x168c, 0x0029,
+   0x168c, 0x002a,
+   0x168c, 0x002b,
    0x168c, 0x1014,
-   0x168c, 0x101a,
-   0x168c, 0x9013,
    0xa727, 0x0013,
    0xffff, 0xffff
 };
@@ -520,7 +518,9 @@ BOOL IsCardCompatible(UWORD vendor_id, UWORD product_id,
 *
 ****************************************************************************
 *
-* Alignment currently must be minimum of 8 bytes.
+* Alignment needs to be overridden for OS4, as on some platforms Exec's DMA
+* functions may clobber adjoining memory that shares the same cache line
+* (e.g. OS4.1 on SAM).
 *
 */
 
@@ -531,6 +531,10 @@ static APTR AllocDMAMemHook(struct BusContext *context, UPINT size,
    APTR mem = NULL, original_mem;
 
    base = context->device;
+#ifdef __amigaos4__
+   if(alignment < 0x20)
+      alignment = 0x20;
+#endif
    size += 2 * sizeof(APTR) + alignment;
 #if !(defined(__MORPHOS__) || defined(__amigaos4__))
    if(base->prometheus_base != NULL)

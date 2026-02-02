@@ -1561,7 +1561,7 @@ static BOOL CmdSetOptions(struct IOSana2Req *request, struct DevBase *base)
    struct DevUnit *unit;
    BOOL reconfigure;
 
-   /*  */
+   /* Set the provided options and reconfigure the interface if necessary */
 
    unit = (APTR)request->ios2_Req.io_Unit;
    reconfigure = SetOptions(unit, request->ios2_Data, base);

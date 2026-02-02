@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5416_keycache.c,v 1.1.1.1 2008/12/11 04:46:48 alc Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5416
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -66,4 +64,3 @@ ar5416SetKeyCacheEntry(struct ath_hal *ah, uint16_t entry,
 	} else
 		return AH_FALSE;
 }
-#endif /* AH_SUPPORT_AR5416 */

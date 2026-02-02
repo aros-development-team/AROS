@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5212_gpio.c,v 1.2 2011/03/07 11:25:43 cegger Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5212
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -30,9 +28,6 @@
 #include "ar5212/ar5212.h"
 #include "ar5212/ar5212reg.h"
 #include "ar5212/ar5212phy.h"
-#ifdef AH_SUPPORT_AR5311
-#include "ar5212/ar5311reg.h"
-#endif
 
 #define	AR_NUM_GPIO	6		/* 6 GPIO pins */
 #define	AR_GPIOD_MASK	0x0000002F	/* GPIO data reg r/w mask */
@@ -41,7 +36,7 @@
  * Configure GPIO Output lines
  */
 HAL_BOOL
-ar5212GpioCfgOutput(struct ath_hal *ah, uint32_t gpio)
+ar5212GpioCfgOutput(struct ath_hal *ah, uint32_t gpio, HAL_GPIO_MUX_TYPE type)
 {
 	HALASSERT(gpio < AR_NUM_GPIO);
 
@@ -127,5 +122,3 @@ ar5212GpioSetIntr(struct ath_hal *ah, u_int gpio, uint32_t ilevel)
 	/* Change the interrupt mask. */
 	(void) ar5212SetInterrupts(ah, AH5212(ah)->ah_maskReg | HAL_INT_GPIO);
 }
-
-#endif  /* AH_SUPPORT_AR5212 */

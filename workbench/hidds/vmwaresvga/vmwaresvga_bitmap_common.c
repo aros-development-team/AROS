@@ -31,23 +31,21 @@ VOID MNAME_BM(Clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear *ms
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
-    if (VPVISFLAG)
+    if (data->data->capabilities & SVGA_CAP_RECT_FILL)
     {
-        if (data->data->capabilities & SVGA_CAP_RECT_FILL)
-        {
-            rectFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height);
-            done = TRUE;
-        }
-        else
-        if ((data->data->capabilities & (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP)) == (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP))
-        {
-            ropFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height, 1);
-            done = TRUE;
-        }
-        if (done)
-            syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
-   }
-   if (!done)
+        rectFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height);
+        done = TRUE;
+    }
+    else
+    if ((data->data->capabilities & (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP)) == (SVGA_CAP_RECT_FILL|SVGA_CAP_RASTER_OP))
+    {
+        ropFillVMWareSVGA(data->data, GC_FG(msg->gc), 0, 0, width, height, 1);
+        done = TRUE;
+    }
+    if (done)
+        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+
+    if (!done)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     UNLOCK_BITMAP
@@ -304,15 +302,12 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
     }
 
 #ifdef OnBitmap
-    if (VPVISFLAG)
-    {
-        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
-        box.x1 = msg->x;
-        box.y1 = msg->y;
-        box.x2 = box.x1+msg->width-1;
-        box.y2 = box.y1+msg->height-1;
-        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
-    }
+    syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+    box.x1 = msg->x;
+    box.y1 = msg->y;
+    box.x2 = box.x1+msg->width-1;
+    box.y2 = box.y1+msg->height-1;
+    VMWareSVGA_Damage_DeltaAdd(data->data, &box);
 #endif
 
     UNLOCK_BITMAP
@@ -461,15 +456,12 @@ VOID MNAME_BM(PutImageLUT)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Put
         ycnt--;
     }
 #ifdef OnBitmap
-    if (VPVISFLAG)
-    {
-        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
-        box.x1 = msg->x;
-        box.y1 = msg->y;
-        box.x2 = box.x1+msg->width-1;
-        box.y2 = box.y1+msg->height-1;
-        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
-    }
+    syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+    box.x1 = msg->x;
+    box.y1 = msg->y;
+    box.x2 = box.x1+msg->width-1;
+    box.y2 = box.y1+msg->height-1;
+    VMWareSVGA_Damage_DeltaAdd(data->data, &box);
 #endif
 
     UNLOCK_BITMAP
@@ -508,12 +500,18 @@ VOID MNAME_BM(FillRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRe
 #endif
     D(bug(DEBUGNAME " %s()\n", __func__);)
 
+#ifdef OnBitmap
+    if (data->width <= msg->minX) return;
+    if (data->height <= msg->minY) return;
+#endif
+
+
     LOCK_BITMAP
 
 #ifdef OnBitmap
     struct HWData *hw;
     hw = data->data;
-    if ((VPVISFLAG) && (hw->capabilities & SVGA_CAP_RASTER_OP))
+    if ((hw->capabilities & SVGA_CAP_RASTER_OP))
     {
         done = TRUE;
         switch (mode)
@@ -669,15 +667,12 @@ VOID MNAME_BM(BlitColorExpansion)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         }
     }
 #ifdef OnBitmap
-    if (VPVISFLAG)
-    {
-        syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
-        box.x1 = msg->destX;
-        box.y1 = msg->destY;
-        box.x2 = msg->destX+msg->width-1;
-        box.y2 = msg->destY+msg->height-1;
-        VMWareSVGA_Damage_DeltaAdd(data->data, &box);
-    }
+    syncfenceVMWareSVGAFIFO(data->data, fenceVMWareSVGAFIFO(data->data));
+    box.x1 = msg->destX;
+    box.y1 = msg->destY;
+    box.x2 = msg->destX+msg->width-1;
+    box.y2 = msg->destY+msg->height-1;
+    VMWareSVGA_Damage_DeltaAdd(data->data, &box);
 #endif
 
     UNLOCK_BITMAP
@@ -709,10 +704,12 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID MNAME_BM(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
+    D(bug(DEBUGNAME " %s()\n", __func__));
+
+#ifdef OnBitmap
     struct HWData *pData = &XSD(cl)->data;
     struct Box box = { msg->x, msg->y, msg->x + msg->width + 1, msg->y + msg->height + 1};
 
-    D(bug(DEBUGNAME " %s()\n", __func__);)
-
     VMWareSVGA_Damage_DeltaAdd(pData, &box);
+#endif
 }

@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5210_xmit.c,v 1.2 2019/02/23 11:24:53 kamil Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5210
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -391,7 +389,7 @@ ar5210StartTxDma(struct ath_hal *ah, u_int q)
 	case HAL_TX_QUEUE_INACTIVE:
 		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: inactive queue %u\n",
 		    __func__, q);
-		/* fal thru... */
+		/* FALLTHROUGH */
 	default:
 		return AH_FALSE;
 	}
@@ -623,4 +621,3 @@ ar5210GetTxIntrQueue(struct ath_hal *ah, uint32_t *txqs)
 {
 	return;
 }
-#endif /* AH_SUPPORT_AR5210 */

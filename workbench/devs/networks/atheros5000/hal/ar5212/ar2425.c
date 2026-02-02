@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar2425.c,v 1.4 2013/09/12 12:05:52 martin Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_2425
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -30,9 +28,7 @@
 #include "ah_eeprom_v3.h"
 
 #define AH_5212_2425
-#ifdef AH_SUPPORT_2417
 #define AH_5212_2417
-#endif
 #include "ar5212/ar5212.ini"
 
 #define	N(a)	(sizeof(a)/sizeof(a[0]))
@@ -65,7 +61,7 @@ ar2425WriteRegs(struct ath_hal *ah, u_int modesIndex, u_int freqIndex,
 	 * Bit 0 enables link to go to L1 when MAC goes to sleep.
 	 * Bit 3 enables the loop back the link down to reset.
 	 */
-	if (IS_PCIE(ah) && ath_hal_pcieL1SKPEnable) {
+	if (AH_PRIVATE(ah)->ah_ispcie && && ath_hal_pcieL1SKPEnable) {
 		OS_REG_WRITE(ah, AR_PCIE_PMC,
 		    AR_PCIE_PMC_ENA_L1 | AR_PCIE_PMC_ENA_RESET);
 	}
@@ -160,12 +156,10 @@ ar2425SetRfRegs(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan, uint16_t modesIn
 	for (i = 0; i < N(ar5212Bank##_ix##_2425); i++)			    \
 		(_priv)->Bank##_ix##Data[i] = ar5212Bank##_ix##_2425[i][_col];\
 } while (0)
-
-    struct ath_hal_5212 *ahp = AH5212(ah);
-#if 0
-	uint16_t ob2GHz = 0, db2GHz = 0;
-#endif
+	struct ath_hal_5212 *ahp = AH5212(ah);
+	const HAL_EEPROM *ee = AH_PRIVATE(ah)->ah_eeprom;
 	struct ar2425State *priv = AR2425(ah);
+	uint16_t ob2GHz = 0, db2GHz = 0;
 	int regWrites = 0;
 
 	HALDEBUG(ah, HAL_DEBUG_RFPARAM,
@@ -173,24 +167,24 @@ ar2425SetRfRegs(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan, uint16_t modesIn
 	    __func__, chan->channel, chan->channelFlags, modesIndex);
 
 	HALASSERT(priv);
-#if 0
+
 	/* Setup rf parameters */
-        switch (chan->channelFlags & CHANNEL_ALL) {
-        case CHANNEL_B:
-            ob2GHz = ahp->ah_obFor24;
-            db2GHz = ahp->ah_dbFor24;
-            break;
-        case CHANNEL_G:
-        case CHANNEL_108G:
-            ob2GHz = ahp->ah_obFor24g;
-            db2GHz = ahp->ah_dbFor24g;
-            break;
-        default:
-            HALDEBUG(ah, HAL_DEBUG_ANY, "%s: invalid channel flags 0x%x\n",
-		__func__, chan->channelFlags);
-            return AH_FALSE;
-        }
-#endif
+	switch (chan->channelFlags & CHANNEL_ALL) {
+	case CHANNEL_B:
+		ob2GHz = ee->ee_obFor24;
+		db2GHz = ee->ee_dbFor24;
+		break;
+	case CHANNEL_G:
+	case CHANNEL_108G:
+		ob2GHz = ee->ee_obFor24g;
+		db2GHz = ee->ee_dbFor24g;
+		break;
+	default:
+		HALDEBUG(ah, HAL_DEBUG_ANY, "%s: invalid channel flags 0x%x\n",
+			__func__, chan->channelFlags);
+		return AH_FALSE;
+	}
+
 	/* Bank 1 Write */
 	RF_BANK_SETUP(priv, 1, 1);
 
@@ -202,10 +196,10 @@ ar2425SetRfRegs(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan, uint16_t modesIn
 
 	/* Bank 6 Write */
 	RF_BANK_SETUP(priv, 6, modesIndex);
-#if 0
+
         ar5212ModifyRfBuffer(priv->Bank6Data, ob2GHz, 3, 193, 0);
         ar5212ModifyRfBuffer(priv->Bank6Data, db2GHz, 3, 190, 0);
-#endif
+
 	/* Bank 7 Setup */
 	RF_BANK_SETUP(priv, 7, modesIndex);
 
@@ -213,13 +207,11 @@ ar2425SetRfRegs(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan, uint16_t modesIn
 	HAL_INI_WRITE_BANK(ah, ar5212Bank1_2425, priv->Bank1Data, regWrites);
 	HAL_INI_WRITE_BANK(ah, ar5212Bank2_2425, priv->Bank2Data, regWrites);
 	HAL_INI_WRITE_BANK(ah, ar5212Bank3_2425, priv->Bank3Data, regWrites);
-#ifdef AH_SUPPORT_2417
 	if (IS_2417(ah)) {
 		HALASSERT(N(ar5212Bank6_2425) == N(ar5212Bank6_2417));
 		HAL_INI_WRITE_BANK(ah, ar5212Bank6_2417, priv->Bank6Data,
 		    regWrites);
 	} else
-#endif /* AH_SUPPORT_2417 */
 		HAL_INI_WRITE_BANK(ah, ar5212Bank6_2425, priv->Bank6Data,
 		    regWrites);
 	HAL_INI_WRITE_BANK(ah, ar5212Bank7_2425, priv->Bank7Data, regWrites);
@@ -259,21 +251,20 @@ ar2425GetRfBank(struct ath_hal *ah, int bank)
  * NB: the input list is assumed to be sorted in ascending order
  */
 static void
-GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
+GetLowerUpperIndex(int16_t v, const int16_t *lp, uint16_t listSize,
                           uint32_t *vlo, uint32_t *vhi)
 {
 	int16_t target = v;
-	const uint16_t *ep = lp+listSize;
-	const uint16_t *tp;
-
-	*vlo = *vhi = 0;
+	const int16_t *ep = lp+listSize;
+	const int16_t *tp;
 
 	/*
 	 * Check first and last elements for out-of-bounds conditions.
 	 */
-	if (target < lp[0])
+	if (target < lp[0]) {
+		*vlo = *vhi = 0;
 		return;
-
+	}
 	if (target >= ep[-1]) {
 		*vlo = *vhi = listSize - 1;
 		return;
@@ -286,7 +277,7 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 		 * then target is not between values, it is one of the values
 		 */
 		if (*tp == target) {
-			*vlo = *vhi = tp - (const uint16_t *) lp;
+			*vlo = *vhi = tp - lp;
 			return;
 		}
 		/*
@@ -294,7 +285,7 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 		 * if so return these 2 values
 		 */
 		if (target < tp[1]) {
-			*vlo = tp - (const uint16_t *) lp;
+			*vlo = tp - lp;
 			*vhi = *vlo + 1;
 			return;
 		}
@@ -313,7 +304,7 @@ ar2425FillVpdTable(uint32_t pdGainIdx, int16_t Pmin, int16_t  Pmax,
 	uint16_t ii, kk;
 	int16_t currPwr = (int16_t)(2*Pmin);
 	/* since Pmin is pwr*2 and pwrList is 4*pwr */
-	uint32_t  idxL, idxR;
+	uint32_t  idxL = 0, idxR = 0;
 
 	ii = 0;
 
@@ -321,8 +312,8 @@ ar2425FillVpdTable(uint32_t pdGainIdx, int16_t Pmin, int16_t  Pmax,
 		return AH_FALSE;
 
 	while (ii <= (uint16_t)(Pmax - Pmin)) {
-		GetLowerUpperIndex(currPwr, (const uint16_t *) pwrList,
-				   numIntercepts, &(idxL), &(idxR));
+		GetLowerUpperIndex(currPwr, pwrList, numIntercepts, 
+					 &(idxL), &(idxR));
 		if (idxR < 1)
 			idxR = 1;			/* extrapolate below */
 		if (idxL == (uint32_t)(numIntercepts - 1))
@@ -374,7 +365,7 @@ ar2425getGainBoundariesAndPdadcsForPowers(struct ath_hal *ah, uint16_t channel,
     /* Note the items statically allocated below are to reduce stack usage */
 	uint32_t ii, jj, kk;
 	int32_t ss;/* potentially -ve index for taking care of pdGainOverlap */
-	uint32_t idxL, idxR;
+	uint32_t idxL = 0, idxR = 0;
 	uint32_t numPdGainsUsed = 0;
         static uint16_t VpdTable_L[MAX_NUM_PDGAINS_PER_CHANNEL][MAX_PWR_RANGE_IN_HALF_DB];
 	/* filled out Vpd table for all pdGains (chanL) */
@@ -690,7 +681,7 @@ ar2425RfDetach(struct ath_hal *ah)
  * Allocate memory for analog bank scratch buffers
  * Scratch Buffer will be reinitialized every reset so no need to zero now
  */
-HAL_BOOL
+static HAL_BOOL
 ar2425RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 {
 	struct ath_hal_5212 *ahp = AH5212(ah);
@@ -721,4 +712,10 @@ ar2425RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_2425 */
+
+static HAL_BOOL
+ar2425Probe(struct ath_hal *ah)
+{
+	return IS_2425(ah) || IS_2417(ah);
+}
+AH_RF(RF2425, ar2425Probe, ar2425RfAttach);

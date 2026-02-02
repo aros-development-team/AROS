@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_attach.c,v 1.3 2011/03/07 11:25:42 cegger Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_AR5211
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -35,6 +33,9 @@ static HAL_BOOL ar5211GetChannelEdges(struct ath_hal *ah,
 static HAL_BOOL ar5211GetChipPowerLimits(struct ath_hal *ah,
 		HAL_CHANNEL *chans, uint32_t nchans);
 
+static void ar5211ConfigPCIE(struct ath_hal *ah, HAL_BOOL restore);
+static void ar5211DisablePCIE(struct ath_hal *ah);
+
 static const struct ath_hal_private ar5211hal = {{
 	.ah_magic			= AR5211_MAGIC,
 	.ah_abi				= HAL_ABI_VERSION,
@@ -47,8 +48,12 @@ static const struct ath_hal_private ar5211hal = {{
 	.ah_reset			= ar5211Reset,
 	.ah_phyDisable			= ar5211PhyDisable,
 	.ah_disable			= ar5211Disable,
+	.ah_configPCIE			= ar5211ConfigPCIE,
+	.ah_disablePCIE			= ar5211DisablePCIE,
 	.ah_setPCUConfig		= ar5211SetPCUConfig,
 	.ah_perCalibration		= ar5211PerCalibration,
+	.ah_perCalibrationN		= ar5211PerCalibrationN,
+	.ah_resetCalValid		= ar5211ResetCalValid,
 	.ah_setTxPowerLimit		= ar5211SetTxPowerLimit,
 	.ah_getChanNoise		= ath_hal_getChanNoise,
 
@@ -96,6 +101,7 @@ static const struct ath_hal_private ar5211hal = {{
 	.ah_setMacAddress		= ar5211SetMacAddress,
 	.ah_getBssIdMask		= ar5211GetBssIdMask,
 	.ah_setBssIdMask		= ar5211SetBssIdMask,
+	.ah_setRegulatoryDomain		= ar5211SetRegulatoryDomain,
 	.ah_setLedState			= ar5211SetLedState,
 	.ah_writeAssocid		= ar5211WriteAssocid,
 	.ah_gpioCfgInput		= ar5211GpioCfgInput,
@@ -329,7 +335,7 @@ ar5211Attach(uint16_t devid, HAL_SOFTC sc,
         }
 	AH_PRIVATE(ah)->ah_currentRD = eeval;
 	AH_PRIVATE(ah)->ah_getNfAdjust = ar5211GetNfAdjust;
-	
+
 	/*
 	 * Got everything we need now to setup the capabilities.
 	 */
@@ -450,6 +456,16 @@ ar5211GetChipPowerLimits(struct ath_hal *ah, HAL_CHANNEL *chans, uint32_t nchans
 	return AH_TRUE;
 }
 
+static void
+ar5211ConfigPCIE(struct ath_hal *ah, HAL_BOOL restore)
+{
+}
+
+static void
+ar5211DisablePCIE(struct ath_hal *ah)
+{
+}
+
 /*
  * Fill all software cached or static hardware state information.
  */
@@ -458,9 +474,6 @@ ar5211FillCapabilityInfo(struct ath_hal *ah)
 {
 	struct ath_hal_private *ahpriv = AH_PRIVATE(ah);
 	HAL_CAPABILITIES *pCap = &ahpriv->ah_caps;
-
-        if (AH_PRIVATE(ah)->ah_currentRD == 1)
-		return AH_FALSE;
 
 	/* Construct wireless mode from EEPROM */
 	pCap->halWirelessModes = 0;
@@ -497,9 +510,29 @@ ar5211FillCapabilityInfo(struct ath_hal *ah)
 	}
 
 	pCap->halTstampPrecision = 13;
+	pCap->halIntrMask = HAL_INT_COMMON
+			| HAL_INT_RX
+			| HAL_INT_TX
+			| HAL_INT_FATAL
+			| HAL_INT_BNR
+			| HAL_INT_TIM
+			;
 
 	/* XXX might be ok w/ some chip revs */
 	ahpriv->ah_rxornIsFatal = AH_TRUE;
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_AR5211 */
+
+static const char*
+ar5211Probe(uint16_t vendorid, uint16_t devid)
+{
+	if (vendorid == ATHEROS_VENDOR_ID) {
+		if (devid == AR5211_DEVID || devid == AR5311_DEVID ||
+		    devid == AR5211_DEFAULT)
+			return "Atheros 5211";
+		if (devid == AR5211_FPGA11B)
+			return "Atheros 5211 (FPGA)";
+	}
+	return AH_NULL;
+}
+AH_CHIP(AR5211, ar5211Probe, ar5211Attach);

@@ -876,9 +876,12 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
         else
         {
 #if (0)
-            xandBuffer = (ULONG *)AllocVecPooled(data->maskPool, size << 2);
-            if (xandBuffer)
+#define SVGA_BITMAP_SIZE(w, h)          ((((w) + 31) >> 5) * (h))
+
+            ULONG *andMask = (ULONG *)AllocVecPooled(data->maskPool, SVGA_BITMAP_SIZE(mouse->width, mouse->height));
+            if (andMask)
             {
+                ULONG *andBuffer = andMask;
                 DCURSOR(bug("[VMWareSVGA:HW] %s: rendering masked Cursor\n", __func__);)
                 writeVMWareSVGAFIFO(data, SVGA_CMD_DEFINE_CURSOR);
                 writeVMWareSVGAFIFO(data, VMWCURSOR_ID); // id
@@ -886,10 +889,12 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
                 writeVMWareSVGAFIFO(data, 0); // hotspot y
                 writeVMWareSVGAFIFO(data, mouse->width); // width
                 writeVMWareSVGAFIFO(data, mouse->height); // height
+                writeVMWareSVGAFIFO(data, 1); // andMaskDepth
+                writeVMWareSVGAFIFO(data, 32); // xorMaskDepth
 
-                for (i = 0; i < size; i++)
+                for (i = 0; i < SVGA_BITMAP_SIZE(mouse->width, mouse->height); i++)
                 {
-                    writeVMWareSVGAFIFO(data, *xandBuffer++);
+                    writeVMWareSVGAFIFO(data, 0 /**andBuffer++*/);
                 }
                 
                 xorBuffer = xorMask;
@@ -899,7 +904,7 @@ VOID defineCursorVMWareSVGA(struct HWData *data, struct MouseData *mouse)
                 }
 
                 syncVMWareSVGAFIFO(data);
-                FreeVecPooled(data->maskPool, xandBuffer);
+                FreeVecPooled(data->maskPool, andMask);
             }
 #endif
         }
@@ -1022,7 +1027,7 @@ VOID VMWareSVGA_Damage_DeltaAdd(struct HWData *hwdata, struct Box *box)
         hwdata->delta_damage.y2 = box->y2;
     }
 #if defined(VMWAREGFX_IMMEDIATEDRAW)
-    if (hwdata->shown)
+    if (TRUE /* hwdata->shown */)
     {
         refreshAreaVMWareSVGA(hwdata, &hwdata->delta_damage);
         VMWareSVGA_Damage_Reset(hwdata);

@@ -354,6 +354,8 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         DINFO(
             if (XSD(cl)->data.capabilities & SVGA_CAP_EXTENDED_FIFO)
                 bug("[VMWareSVGA] %s:   Extended FIFO\n", __func__);
+            if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
+                bug("[VMWareSVGA] %s:   HW Cursor\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_ALPHA_CURSOR)
                 bug("[VMWareSVGA] %s:   Alpha Cursor\n", __func__);
             if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR_BYPASS)
@@ -376,6 +378,11 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
             DINFO(bug("[VMWareSVGA] %s:   Display Topology\n", __func__);)
             vmwareWriteReg(&XSD(cl)->data, SVGA_REG_NUM_GUEST_DISPLAYS, 1);
         }
+        if (XSD(cl)->isQEMU == FALSE && XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
+            XSD(cl)->hwCursor = TRUE;
+        else
+            XSD(cl)->hwCursor = FALSE;
+
         DINFO(
             if (XSD(cl)->data.capabilities & SVGA_CAP_PITCHLOCK)
                 bug("[VMWareSVGA] %s:   Pitchlock\n", __func__);
@@ -441,13 +448,7 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_Gfx_SupportsHWCursor:
             {
                 found = TRUE;
-                if (XSD(cl)->data.capabilities & SVGA_CAP_CURSOR)
-                {
-                    DINFO(bug("[VMWareSVGA] %s:   HW Cursor\n", __func__);)
-                    *msg->storage = (IPTR)TRUE;
-                }
-                else
-                    *msg->storage = (IPTR)FALSE;
+                *msg->storage = (IPTR)XSD(cl)->hwCursor;
             }
             break;
 
@@ -528,9 +529,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
                     friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, (IPTR)NULL, msg->attrList);
                     if (friend != NULL)
                     {
-                        OOP_Class *friend_class = NULL;
-                        OOP_GetAttr(friend, aHidd_BitMap_ClassPtr, (IPTR *)&friend_class);
-                        if (friend_class == XSD(cl)->vmwaresvgaonbmclass)
+                        if (OOP_OCLASS(friend) == XSD(cl)->vmwaresvgaonbmclass)
                         {
                             classptr = XSD(cl)->vmwaresvgaoffbmclass;
                         }
@@ -560,60 +559,6 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
 
     D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, object);)
     return object;
-}
-
-ULONG VMWareSVGA__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
-{
-    IPTR width = 0, bm_width, height = 0, bm_height;
-    struct HIDD_ViewPortData *currVPD;
-
-    D(bug("[VMWareSVGA] %s()\n", __func__);)
-
-#if defined(VMWAREGFX_UPDATEFBONSHOWVP)
-    if ((currVPD = msg->Data) != 0)
-    {
-        if ((XSD(cl)->data.shown) && (XSD(cl)->mouse.visible))
-        {
-            D(bug("[VMWareSVGA] %s: removing cursor...\n", __func__);)
-            displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_HIDE);
-        }
-
-        XSD(cl)->data.shown = currVPD;
-        D(bug("[VMWareSVGA] %s: shown = 0x%p\n", __func__, XSD(cl)->data.shown));
-
-        while ((currVPD) && (currVPD->Bitmap))
-        {
-            OOP_GetAttr(currVPD->Bitmap, aHidd_BitMap_Width, (IPTR *)&bm_width);
-            if (bm_width > width)
-                width = bm_width;
-            OOP_GetAttr(currVPD->Bitmap, aHidd_BitMap_Height, (IPTR *)&bm_height);
-            if (bm_height > height)
-                height = bm_height;
-            currVPD = currVPD->Next;
-        }
-        D(bug("[VMWareSVGA] %s: %dx%d\n", __func__, width, height));
-
-        if (width == 0)
-            width = XSD(cl)->prefWidth;
-        if (height == 0)
-            height = XSD(cl)->prefHeight;
-
-        setModeVMWareSVGA(&XSD(cl)->data, width, height);
-        syncfenceVMWareSVGAFIFO(&XSD(cl)->data, fenceVMWareSVGAFIFO(&XSD(cl)->data));
-        if (XSD(cl)->mouse.visible)
-        {
-            D(bug("[VMWareSVGA] %s: displaying cursor...\n", __func__);)
-            defineCursorVMWareSVGA(&XSD(cl)->data, &XSD(cl)->mouse);
-            moveCursorVMWareSVGA(&XSD(cl)->data, XSD(cl)->mouse.x, XSD(cl)->mouse.y);
-            displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_SHOW);
-        }
-    }
-    else
-    {
-        D(bug("[VMWareSVGA] %s: nothing to show ...\n", __func__);)
-    }
-#endif
-    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL VMWareSVGA__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
@@ -652,7 +597,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     }
 
     // TODO: This is nice and fast. but unfortunately has to go. We'll soon switch to a more refined accelerated blitting
-    else if ((VPVISFLAG) && (XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP) &&
+    else if ((XSD(cl)->data.capabilities & SVGA_CAP_RASTER_OP) &&
         (dst == src) && (OOP_OCLASS(msg->dest) == XSD(cl)->vmwaresvgaonbmclass))
     {
         D(bug("[VMWareSVGA] %s: suitable bitmaps used ...\n", __func__);)
@@ -727,7 +672,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         if (srcbd->VideoData == srcbd->data->vrambase)
         {
             srcbytesperline = srcbd->data->bytesperline;
-            if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
+            if ((XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
             }
@@ -740,7 +685,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         if (dstbd->VideoData == dstbd->data->vrambase)
         {
             dstbytesperline = dstbd->data->bytesperline;
-            if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
+            if ((XSD(cl)->mouse.visible))
             {
                 displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_REMOVE_FROM_FB);
             }
@@ -791,7 +736,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
                 OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
 
-        if ((VPVISFLAG) && (XSD(cl)->mouse.visible))
+        if ((XSD(cl)->mouse.visible))
         {
             displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_RESTORE_TO_FB);
         }
@@ -817,7 +762,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
     if (msg->shape == NULL)
     {
         D(bug("[VMWareSVGA] %s: blanking cursor\n", __func__);)
-        if ((VPVISFLAG) && (XSD(cl)->visible))
+        if ((XSD(cl)->visible))
             displayCursorVMWareSVGA(&XSD(cl)->data, SVGA_CURSOR_ON_HIDE);
         data->mouse.oopshape = NULL;
         FreeVec(data->mouse.shape);
@@ -878,7 +823,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHi
     XSD(cl)->mouse.x = msg->x;
     XSD(cl)->mouse.y = msg->y;
 
-    if ((VPVISFLAG) && (XSD(cl)->visible))
+    if ((XSD(cl)->visible))
     {
         struct BitmapData *bmdata = OOP_INST_DATA(XSD(cl)->vmwaresvgaonbmclass, XSD(cl)->visible);
 
@@ -895,7 +840,7 @@ VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
     XSD(cl)->mouse.visible = msg->visible;
-    if ((VPVISFLAG) && (XSD(cl)->visible))
+    if ((XSD(cl)->visible))
     {
         struct BitmapData *bmdata = OOP_INST_DATA(XSD(cl)->vmwaresvgaonbmclass, XSD(cl)->visible);
 

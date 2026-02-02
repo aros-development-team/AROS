@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah_eeprom_v3.c,v 1.5 2021/04/13 03:27:13 mrg Exp $
  */
 #include "opt_ah.h"
 
@@ -26,9 +26,9 @@ static void
 getPcdacInterceptsFromPcdacMinMax(HAL_EEPROM *ee,
 	uint16_t pcdacMin, uint16_t pcdacMax, uint16_t *vp)
 {
-	const static uint16_t intercepts3[] =
+	static const uint16_t intercepts3[] =
 		{ 0, 5, 10, 20, 30, 50, 70, 85, 90, 95, 100 };
-	const static uint16_t intercepts3_2[] =
+	static const uint16_t intercepts3_2[] =
 		{ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };
 	const uint16_t *ip = ee->ee_version < AR_EEPROM_VER3_2 ?
 		intercepts3 : intercepts3_2;
@@ -1671,45 +1671,45 @@ legacyEepromSet(struct ath_hal *ah, int param, int v)
 	switch (param) {
 	case AR_EEP_AMODE:
 		ee->ee_Amode = v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_BMODE:
 		ee->ee_Bmode = v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_GMODE:
 		ee->ee_Gmode = v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_TURBO5DISABLE:
 		ee->ee_turbo5Disable = v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_TURBO2DISABLE:
 		ee->ee_turbo2Disable = v;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_COMPRESS:
 		if (v)
 			ee->ee_opCap &= ~AR_EEPROM_EEPCAP_COMPRESS_DIS;
 		else
 			ee->ee_opCap |= AR_EEPROM_EEPCAP_COMPRESS_DIS;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_FASTFRAME:
 		if (v)
 			ee->ee_opCap &= ~AR_EEPROM_EEPCAP_FASTFRAME_DIS;
 		else
 			ee->ee_opCap |= AR_EEPROM_EEPCAP_FASTFRAME_DIS;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_AES:
 		if (v)
 			ee->ee_opCap &= ~AR_EEPROM_EEPCAP_AES_DIS;
 		else
 			ee->ee_opCap |= AR_EEPROM_EEPCAP_AES_DIS;
-		return HAL_OK;
+		return AH_TRUE;
 	case AR_EEP_BURST:
 		if (v)
 			ee->ee_opCap &= ~AR_EEPROM_EEPCAP_BURST_DIS;
 		else
 			ee->ee_opCap |= AR_EEPROM_EEPCAP_BURST_DIS;
-		return HAL_OK;
+		return AH_TRUE;
 	}
-	return HAL_EINVAL;
+	return AH_FALSE;
 }
 
 static HAL_BOOL
@@ -1757,15 +1757,14 @@ legacyEepromDetach(struct ath_hal *ah)
 	HAL_EEPROM *ee = AH_PRIVATE(ah)->ah_eeprom;
 
         if (ee->ee_version >= AR_EEPROM_VER4_0 && ee->ee_eepMap == 1)
-		return freeEepromRawPowerCalInfo5112(ah, ee);
+		freeEepromRawPowerCalInfo5112(ah, ee);
 	ath_hal_free(ee);
 	AH_PRIVATE(ah)->ah_eeprom = AH_NULL;
 }
 
 /*
- * TODO: Need to talk to Praveen about this, these are
- * not valid 2.4 channels, either we change these
- * or I need to change the beanie coding to accept these
+ * These are not valid 2.4 channels, either we change 'em
+ * or we need to change the coding to accept them.
  */
 static const uint16_t channels11b[] = { 2412, 2447, 2484 };
 static const uint16_t channels11g[] = { 2312, 2412, 2484 };

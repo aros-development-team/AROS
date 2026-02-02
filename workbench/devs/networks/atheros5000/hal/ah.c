@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah.c,v 1.3 2011/03/07 11:25:42 cegger Exp $
  */
 #include "opt_ah.h"
 
@@ -22,164 +22,24 @@
 #include "ah_internal.h"
 #include "ah_devid.h"
 
-#ifdef AH_SUPPORT_AR5210
-extern	struct ath_hal *ar5210Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
-#ifdef AH_SUPPORT_AR5211
-extern	struct ath_hal *ar5211Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
-#ifdef AH_SUPPORT_AR5212
-extern	struct ath_hal *ar5212Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
-#ifdef AH_SUPPORT_AR5312
-extern	struct ath_hal *ar5312Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
-#ifdef AH_SUPPORT_AR5416
-extern	struct ath_hal *ar5416Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
-#ifdef AH_SUPPORT_AR9160
-extern	struct ath_hal *ar9160Attach(uint16_t, HAL_SOFTC,
-	HAL_BUS_TAG, HAL_BUS_HANDLE, HAL_STATUS*);
-#endif
+/* linker set of registered chips */
+OS_SET_DECLARE(ah_chips, struct ath_hal_chip);
 
-#include "version.h"
-char ath_hal_version[] = ATH_HAL_VERSION;
-const char* ath_hal_buildopts[] = {
-#ifdef AH_SUPPORT_AR5210
-	"AR5210",
-#endif
-#ifdef AH_SUPPORT_AR5211
-	"AR5211",
-#endif
-#ifdef AH_SUPPORT_AR5212
-	"AR5212",
-#endif
-#ifdef AH_SUPPORT_AR5312
-	"AR5312",
-#endif
-#ifdef AH_SUPPORT_AR5416
-	"AR5416",
-#endif
-#ifdef AH_SUPPORT_AR9180
-	"AR9180",
-#endif
-#ifdef AH_SUPPORT_5111
-	"RF5111",
-#endif
-#ifdef AH_SUPPORT_5112
-	"RF5112",
-#endif
-#ifdef AH_SUPPORT_2413
-	"RF2413",
-#endif
-#ifdef AH_SUPPORT_5413
-	"RF5413",
-#endif
-#ifdef AH_SUPPORT_2316
-	"RF2316",
-#endif
-#ifdef AH_SUPPORT_2317
-	"RF2317",
-#endif
-#ifdef AH_SUPPORT_2133
-	"RF2133",
-#endif
-#ifdef AH_SUPPORT_2425
-	"RF2425",
-#endif
-#ifdef AH_SUPPORT_2417
-	"RF2417",
-#endif
-#ifdef AH_DEBUG
-	"DEBUG",
-#endif
-#ifdef AH_ASSERT
-	"ASSERT",
-#endif
-#ifdef AH_DEBUG_ALQ
-	"DEBUG_ALQ",
-#endif
-#ifdef AH_REGOPS_FUNC
-	"REGOPS_FUNC",
-#endif
-#ifdef AH_PRIVATE_DIAG
-	"PRIVATE_DIAG",
-#endif
-#ifdef AH_DEBUG_COUNTRY
-	"DEBUG_COUNTRY",
-#endif
-#ifdef AH_NEED_DESC_SWAP
-	"TX_DESC_SWAP",
-#endif
-#ifdef AH_DISABLE_WME
-	"DISABLE_WME",
-#endif
-#ifdef AH_SUPPORT_11D
-	"11D",
-#endif
-	AH_NULL
-};
-
-static const char*
-ath_hal_devname(uint16_t devid)
-{
-	switch (devid) {
-	case AR5210_PROD:
-	case AR5210_DEFAULT:
-		return "Atheros 5210";
-
-	case AR5211_DEVID:
-	case AR5311_DEVID:
-	case AR5211_DEFAULT:
-		return "Atheros 5211";
-	case AR5211_FPGA11B:
-		return "Atheros 5211 (FPGA)";
-
-	case AR5212_FPGA:
-		return "Atheros 5212 (FPGA)";
-	case AR5212_AR5312_REV2:
-	case AR5212_AR5312_REV7:
-		return "Atheros 5312 WiSoC";
-	case AR5212_AR2315_REV6:
-	case AR5212_AR2315_REV7:
-		return "Atheros 2315 WiSoC";
-	case AR5212_AR2317_REV1:
-		return "Atheros 2317 WiSoC";
-	case AR5212_AR2313_REV8:
-		return "Atheros 2313 WiSoC";
-	case AR5212_DEVID:
-	case AR5212_DEVID_IBM:
-	case AR5212_DEFAULT:
-		return "Atheros 5212";
-	case AR5212_AR2413:
-		return "Atheros 2413";
-	case AR5212_AR2417:
-		return "Atheros 2417";
-	case AR5212_AR5413:
-		return "Atheros 5413";
-	case AR5212_AR5424:
-		return "Atheros 5424/2424";
-	case AR5416_DEVID_PCI:
-	case AR5416_DEVID_PCIE:
-		return "Atheros 5416";
-	case AR9160_DEVID_PCI:
-		return "Atheros 9160";
-	}
-	return AH_NULL;
-}
-
+/*
+ * Check the set of registered chips to see if any recognize
+ * the device as one they can support.
+ */
 const char*
 ath_hal_probe(uint16_t vendorid, uint16_t devid)
 {
-	return (vendorid == ATHEROS_VENDOR_ID ||
-		vendorid == ATHEROS_3COM_VENDOR_ID ||
-		vendorid == ATHEROS_3COM2_VENDOR_ID ?
-			ath_hal_devname(devid) : 0);
+	struct ath_hal_chip * const *pchip;
+
+	OS_SET_FOREACH(pchip, ah_chips) {
+		const char *name = (*pchip)->probe(vendorid, devid);
+		if (name != AH_NULL)
+			return name;
+	}
+	return AH_NULL;
 }
 
 /*
@@ -193,76 +53,52 @@ struct ath_hal*
 ath_hal_attach(uint16_t devid, HAL_SOFTC sc,
 	HAL_BUS_TAG st, HAL_BUS_HANDLE sh, HAL_STATUS *error)
 {
-	struct ath_hal *ah=AH_NULL;
+	struct ath_hal_chip * const *pchip;
 
-	switch (devid) {
-#ifdef AH_SUPPORT_AR5210
-	case AR5210_AP:
-	case AR5210_PROD:
-	case AR5210_DEFAULT:
-		ah = ar5210Attach(devid, sc, st, sh, error);
-		break;
-#endif
-#ifdef AH_SUPPORT_AR5211
-	case AR5211_DEVID:
-	case AR5311_DEVID:
-	case AR5211_FPGA11B:
-	case AR5211_DEFAULT:
-		ah = ar5211Attach(devid, sc, st, sh, error);
-		break;
-#endif
-#ifdef AH_SUPPORT_AR5212
-	case AR5212_DEVID_IBM:
-	case AR5212_AR2413:
-	case AR5212_AR2417:
-	case AR5212_AR5413:
-	case AR5212_AR5424:
-	case AR5212_DEVID_FF19: /* XXX PCI Express extra */
-		devid = AR5212_DEVID;
-		/* fall thru... */
-	case AR5212_DEVID:
-	case AR5212_FPGA:
-	case AR5212_DEFAULT:
-		ah = ar5212Attach(devid, sc, st, sh, error);
-		break;
-#endif
-#ifdef AH_SUPPORT_AR5312
-	case AR5212_AR5312_REV2:
-	case AR5212_AR5312_REV7:
-	case AR5212_AR2313_REV8:
-	case AR5212_AR2315_REV6:
-	case AR5212_AR2315_REV7:
-	case AR5212_AR2317_REV1:
-		ah = ar5312Attach(devid, sc, st, sh, error);
-		break;
-#endif
-#ifdef AH_SUPPORT_AR5416
-	case AR5416_DEVID_PCI:
-	case AR5416_DEVID_PCIE:
-		ah = ar5416Attach(devid, sc, st, sh, error);
-		break;
-#endif
-#ifdef AH_SUPPORT_AR9160
-	case AR9160_DEVID_PCI:
-		ah = ar9160Attach(devid, sc, st, sh, error);
-		break;
-#endif
-	default:
-		ah = AH_NULL;
-		*error = HAL_ENXIO;
-		break;
+	OS_SET_FOREACH(pchip, ah_chips) {
+		struct ath_hal_chip *chip = *pchip;
+		struct ath_hal *ah;
+
+		/* XXX don't have vendorid, assume atheros one works */
+		if (chip->probe(ATHEROS_VENDOR_ID, devid) == AH_NULL)
+			continue;
+		ah = chip->attach(devid, sc, st, sh, error);
+		if (ah != AH_NULL) {
+			/* copy back private state to public area */
+			ah->ah_devid = AH_PRIVATE(ah)->ah_devid;
+			ah->ah_subvendorid = AH_PRIVATE(ah)->ah_subvendorid;
+			ah->ah_macVersion = AH_PRIVATE(ah)->ah_macVersion;
+			ah->ah_macRev = AH_PRIVATE(ah)->ah_macRev;
+			ah->ah_phyRev = AH_PRIVATE(ah)->ah_phyRev;
+			ah->ah_analog5GhzRev = AH_PRIVATE(ah)->ah_analog5GhzRev;
+			ah->ah_analog2GhzRev = AH_PRIVATE(ah)->ah_analog2GhzRev;
+			return ah;
+		}
 	}
-	if (ah != AH_NULL) {
-		/* copy back private state to public area */
-		ah->ah_devid = AH_PRIVATE(ah)->ah_devid;
-		ah->ah_subvendorid = AH_PRIVATE(ah)->ah_subvendorid;
-		ah->ah_macVersion = AH_PRIVATE(ah)->ah_macVersion;
-		ah->ah_macRev = AH_PRIVATE(ah)->ah_macRev;
-		ah->ah_phyRev = AH_PRIVATE(ah)->ah_phyRev;
-		ah->ah_analog5GhzRev = AH_PRIVATE(ah)->ah_analog5GhzRev;
-		ah->ah_analog2GhzRev = AH_PRIVATE(ah)->ah_analog2GhzRev;
+	return AH_NULL;
+}
+
+/* linker set of registered RF backends */
+OS_SET_DECLARE(ah_rfs, struct ath_hal_rf);
+
+/*
+ * Check the set of registered RF backends to see if
+ * any recognize the device as one they can support.
+ */
+struct ath_hal_rf *
+ath_hal_rfprobe(struct ath_hal *ah, HAL_STATUS *ecode)
+{
+#ifdef AH_HAS_RF
+	struct ath_hal_rf * const *prf;
+
+	OS_SET_FOREACH(prf, ah_rfs) {
+		struct ath_hal_rf *rf = *prf;
+		if (rf->probe(ah))
+			return rf;
 	}
-	return ah;
+	*ecode = HAL_ENOTSUPP;
+#endif
+	return AH_NULL;
 }
 
 /*
@@ -419,6 +255,19 @@ ath_hal_computetxtime(struct ath_hal *ah,
 }
 
 static __inline int
+mapgsm(u_int freq, u_int flags)
+{
+	freq *= 10;
+	if (flags & CHANNEL_QUARTER)
+		freq += 5;
+	else if (flags & CHANNEL_HALF)
+		freq += 10;
+	else
+		freq += 20;
+	return (freq - 24220) / 5;
+}
+
+static __inline int
 mappsb(u_int freq, u_int flags)
 {
 	return ((freq * 10) + (((freq % 5) == 2) ? 5 : 0) - 49400) / 5;
@@ -434,6 +283,8 @@ ath_hal_mhz2ieee(struct ath_hal *ah, u_int freq, u_int flags)
 		if (freq == 2484)
 			return 14;
 		if (freq < 2484) {
+			if (ath_hal_isgsmsku(ah))
+				return mapgsm(freq, flags);
 			return ((int)freq - 2407) / 5;
 		} else
 			return 15 + ((freq - 2512) / 20);
@@ -450,6 +301,8 @@ ath_hal_mhz2ieee(struct ath_hal *ah, u_int freq, u_int flags)
 		if (freq == 2484)
 			return 14;
 		if (freq < 2484) {
+			if (ath_hal_isgsmsku(ah))
+				return mapgsm(freq, flags);
 			return ((int)freq - 2407) / 5;
 		}
 		if (freq < 5000) {
@@ -641,10 +494,6 @@ ath_hal_getcapability(struct ath_hal *ah, HAL_CAPABILITY_TYPE type,
 		return pCap->halMcastKeySrchSupport ? HAL_OK : HAL_ENOTSUPP;
 	case HAL_CAP_TSF_ADJUST:	/* hardware has beacon tsf adjust */
 		return HAL_ENOTSUPP;
-	case HAL_CAP_CHAN_HALFRATE:
-		return pCap->halChanHalfRate ? HAL_OK : HAL_ENOTSUPP;
-	case HAL_CAP_CHAN_QUARTERRATE:
-		return pCap->halChanQuarterRate ? HAL_OK : HAL_ENOTSUPP;
 	case HAL_CAP_RFSILENT:		/* rfsilent support  */
 		switch (capability) {
 		case 0:			/* facility is supported */
@@ -676,6 +525,11 @@ ath_hal_getcapability(struct ath_hal *ah, HAL_CAPABILITY_TYPE type,
 	case HAL_CAP_RXTSTAMP_PREC:	/* rx desc tstamp precision (bits) */
 		*result = pCap->halTstampPrecision;
 		return HAL_OK;
+	case HAL_CAP_INTRMASK:		/* mask of supported interrupts */
+		*result = pCap->halIntrMask;
+		return HAL_OK;
+	case HAL_CAP_BSSIDMATCH:	/* hardware has disable bssid match */
+		return pCap->halBssidMatchSupport ? HAL_OK : HAL_ENOTSUPP;
 	default:
 		return HAL_EINVAL;
 	}
@@ -789,6 +643,15 @@ ath_hal_getdiagstate(struct ath_hal *ah, int request,
 		if (argsize != sizeof(uint16_t))
 			return AH_FALSE;
 		return ah->ah_resetKeyCacheEntry(ah, *(const uint16_t *)args);
+#ifdef AH_SUPPORT_WRITE_EEPROM
+	case HAL_DIAG_EEWRITE: {
+		const HAL_DIAG_EEVAL *ee;
+		if (argsize != sizeof(HAL_DIAG_EEVAL))
+			return AH_FALSE;
+		ee = (const HAL_DIAG_EEVAL *)args;
+		return ath_hal_eepromWrite(ah, ee->ee_off, ee->ee_data);
+	}
+#endif /* AH_SUPPORT_WRITE_EEPROM */
 #endif /* AH_PRIVATE_DIAG */
 	case HAL_DIAG_11NCOMPAT:
 		if (argsize == 0) {

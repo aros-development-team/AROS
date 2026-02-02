@@ -1,7 +1,7 @@
 /*
  * Event loop for AmigaOS/MorphOS/AROS
  * Copyright (c) 2002-2005, Jouni Malinen <j@w1.fi>
- * Copyright (c) 2010-2011, Neil Cafferkey
+ * Copyright (c) 2010-2025, Neil Cafferkey
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -80,19 +80,16 @@ int eloop_init(void)
 	memset(&eloop, 0, sizeof(eloop));
 
 	/* Open timer device */
-
-	if(err == 0)
-	{
+	if (err == 0) {
 		eloop.timer_port = CreateMsgPort();
 		eloop.timer_request = (APTR)CreateIORequest(eloop.timer_port,
 			sizeof(struct timerequest));
-		if(eloop.timer_request == NULL)
+		if (eloop.timer_request == NULL)
 			err = 1;
 	}
 
-	if(err == 0)
-	{
-		if(OpenDevice((CONST_STRPTR)"timer.device", UNIT_VBLANK,
+	if (err == 0) {
+		if (OpenDevice((CONST_STRPTR)"timer.device", UNIT_VBLANK,
 			(APTR)eloop.timer_request, 0) != 0) {
 			err = 1;
 			DeleteIORequest((APTR)eloop.timer_request);
@@ -103,9 +100,7 @@ int eloop_init(void)
 	}
 
 	/* Use request at least once to make shutdown easier */
-
-	if(err == 0)
-	{
+	if (err == 0) {
 		eloop.timer_request->tr_node.io_Command =
 			TR_ADDREQUEST;
 		eloop.timer_request->tr_time.tv_secs = 0;
@@ -328,6 +323,8 @@ int eloop_register_signal(int sig,
 int eloop_register_signal_terminate(eloop_signal_handler handler,
 				    void *user_data)
 {
+	signal(SIGINT, SIG_IGN);
+
 	return eloop_register_signal(SIGBREAKB_CTRL_C, handler, user_data);
 }
 
@@ -423,7 +420,7 @@ void eloop_destroy(void)
 	}
 	free(eloop.signals);
 
-	if(eloop.timer_request != NULL) {
+	if (eloop.timer_request != NULL) {
 		AbortIO((APTR) eloop.timer_request);
 		WaitIO((APTR) eloop.timer_request);
 		CloseDevice((APTR) eloop.timer_request);

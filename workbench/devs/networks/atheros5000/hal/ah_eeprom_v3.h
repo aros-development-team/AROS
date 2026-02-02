@@ -14,7 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ah_eeprom_v3.h,v 1.1.1.1 2008/12/11 04:46:25 alc Exp $
  */
 #ifndef _ATH_AH_EEPROM_V3_H_
 #define _ATH_AH_EEPROM_V3_H_
@@ -307,7 +307,7 @@ typedef struct {
 
 /* XXX: assumes NUM_11A_EEPROM_CHANNELS_2413 >= NUM_2_4_EEPROM_CHANNELS_2413 ??? */
 typedef struct {
-	uint16_t	pChannels[NUM_11A_EEPROM_CHANNELS_2413];
+	int16_t	pChannels[NUM_11A_EEPROM_CHANNELS_2413];
 	uint16_t	numChannels;
 	uint16_t	xpd_mask;	/* mask of permitted xpd_gains */
 	RAW_DATA_PER_CHANNEL_2413 pDataPerChannel[NUM_11A_EEPROM_CHANNELS_2413];

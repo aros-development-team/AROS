@@ -14,11 +14,9 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5413.c,v 1.4 2013/09/12 12:07:01 martin Exp $
  */
 #include "opt_ah.h"
-
-#ifdef AH_SUPPORT_5413
 
 #include "ah.h"
 #include "ah_internal.h"
@@ -233,7 +231,7 @@ ar5413SetRfRegs(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan, uint16_t modesIn
 			ar5212ModifyRfBuffer(priv->Bank6Data, 1 , 1, 291, 2);
 
 			/* Optimum value for rf_pwd_iclobuf2G for PCIe chips only */
-			if (IS_PCIE(ah)) {
+			if (AH_PRIVATE(ah)->ah_ispcie) {
 				ar5212ModifyRfBuffer(priv->Bank6Data, ath_hal_reverseBits(6, 3),
 						 3, 131, 3);
 			}
@@ -287,21 +285,20 @@ ar5413GetRfBank(struct ath_hal *ah, int bank)
  * NB: the input list is assumed to be sorted in ascending order
  */
 static void
-GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
+GetLowerUpperIndex(int16_t v, const int16_t *lp, uint16_t listSize,
                           uint32_t *vlo, uint32_t *vhi)
 {
 	int16_t target = v;
-	const uint16_t *ep = lp+listSize;
-	const uint16_t *tp;
-
-	*vlo = *vhi = 0;
+	const int16_t *ep = lp+listSize;
+	const int16_t *tp;
 
 	/*
 	 * Check first and last elements for out-of-bounds conditions.
 	 */
-	if (target < lp[0])
+	if (target < lp[0]) {
+		*vlo = *vhi = 0;
 		return;
-
+	}
 	if (target >= ep[-1]) {
 		*vlo = *vhi = listSize - 1;
 		return;
@@ -314,7 +311,7 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 		 * then target is not between values, it is one of the values
 		 */
 		if (*tp == target) {
-			*vlo = *vhi = tp - (const uint16_t *) lp;
+			*vlo = *vhi = tp - lp;
 			return;
 		}
 		/*
@@ -322,7 +319,7 @@ GetLowerUpperIndex(int16_t v, const uint16_t *lp, uint16_t listSize,
 		 * if so return these 2 values
 		 */
 		if (target < tp[1]) {
-			*vlo = tp - (const uint16_t *) lp;
+			*vlo = tp - lp;
 			*vhi = *vlo + 1;
 			return;
 		}
@@ -341,7 +338,7 @@ ar5413FillVpdTable(uint32_t pdGainIdx, int16_t Pmin, int16_t  Pmax,
 	uint16_t ii, kk;
 	int16_t currPwr = (int16_t)(2*Pmin);
 	/* since Pmin is pwr*2 and pwrList is 4*pwr */
-	uint32_t  idxL, idxR;
+	uint32_t  idxL = 0, idxR = 0;
 
 	ii = 0;
 
@@ -349,8 +346,8 @@ ar5413FillVpdTable(uint32_t pdGainIdx, int16_t Pmin, int16_t  Pmax,
 		return AH_FALSE;
 
 	while (ii <= (uint16_t)(Pmax - Pmin)) {
-		GetLowerUpperIndex(currPwr, (const uint16_t *) pwrList,
-				   numIntercepts, &(idxL), &(idxR));
+		GetLowerUpperIndex(currPwr, pwrList, numIntercepts, 
+					 &(idxL), &(idxR));
 		if (idxR < 1)
 			idxR = 1;			/* extrapolate below */
 		if (idxL == (uint32_t)(numIntercepts - 1))
@@ -405,7 +402,7 @@ ar5413getGainBoundariesAndPdadcsForPowers(struct ath_hal *ah, uint16_t channel,
 #define	VpdTable_I	priv->vpdTable_I
 	uint32_t ii, jj, kk;
 	int32_t ss;/* potentially -ve index for taking care of pdGainOverlap */
-	uint32_t idxL, idxR;
+	uint32_t idxL = 0, idxR = 0;
 	uint32_t numPdGainsUsed = 0;
 	/* 
 	 * If desired to support -ve power levels in future, just
@@ -549,8 +546,11 @@ ar5413SetPowerTable(struct ath_hal *ah,
 	int16_t minCalPower5413_t2;
 	uint16_t *pdadcValues = ahp->ah_pcdacTable;
 	uint16_t gainBoundaries[4];
-	uint32_t i, reg32, regoffset, tpcrg1;
-	int numPdGainsUsed;
+	uint32_t reg32, regoffset;
+	int i, numPdGainsUsed;
+#ifndef AH_USE_INIPDGAIN
+	uint32_t tpcrg1;
+#endif
 
 	HALDEBUG(ah, HAL_DEBUG_RFPARAM, "%s: chan 0x%x flag 0x%x\n",
 	    __func__, chan->channel,chan->channelFlags);
@@ -572,10 +572,16 @@ ar5413SetPowerTable(struct ath_hal *ah,
 		&minCalPower5413_t2,gainBoundaries, rfXpdGain, pdadcValues);
 	HALASSERT(1 <= numPdGainsUsed && numPdGainsUsed <= 3);
 
-#if 0
+#ifdef AH_USE_INIPDGAIN
+	/*
+	 * Use pd_gains curve from eeprom; Atheros always uses
+	 * the default curve from the ini file but some vendors
+	 * (e.g. Zcomax) want to override this curve and not
+	 * honoring their settings results in tx power 5dBm low.
+	 */
 	OS_REG_RMW_FIELD(ah, AR_PHY_TPCRG1, AR_PHY_TPCRG1_NUM_PD_GAIN, 
 			 (pRawDataset->pDataPerChannel[0].numPdGains - 1));
-#endif
+#else
 	tpcrg1 = OS_REG_READ(ah, AR_PHY_TPCRG1);
 	tpcrg1 = (tpcrg1 &~ AR_PHY_TPCRG1_NUM_PD_GAIN)
 		  | SM(numPdGainsUsed-1, AR_PHY_TPCRG1_NUM_PD_GAIN);
@@ -600,6 +606,7 @@ ar5413SetPowerTable(struct ath_hal *ah,
 		    __func__, OS_REG_READ(ah, AR_PHY_TPCRG1), tpcrg1);
 #endif
 	OS_REG_WRITE(ah, AR_PHY_TPCRG1, tpcrg1);
+#endif
 
 	/*
 	 * Note the pdadc table may not start at 0 dBm power, could be
@@ -749,7 +756,7 @@ ar5413RfDetach(struct ath_hal *ah)
  * Allocate memory for analog bank scratch buffers
  * Scratch Buffer will be reinitialized every reset so no need to zero now
  */
-HAL_BOOL
+static HAL_BOOL
 ar5413RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 {
 	struct ath_hal_5212 *ahp = AH5212(ah);
@@ -780,4 +787,10 @@ ar5413RfAttach(struct ath_hal *ah, HAL_STATUS *status)
 
 	return AH_TRUE;
 }
-#endif /* AH_SUPPORT_5413 */
+
+static HAL_BOOL
+ar5413Probe(struct ath_hal *ah)
+{
+	return IS_5413(ah);
+}
+AH_RF(RF5413, ar5413Probe, ar5413RfAttach);

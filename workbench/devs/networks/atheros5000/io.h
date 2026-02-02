@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2025 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -21,6 +21,12 @@ MA 02111-1307, USA.
 
 #ifndef IO_H
 #define IO_H
+
+
+#include <exec/types.h>
+#include <utility/tagitem.h>
+
+#include "endian.h"
 
 
 /* I/O tags */
@@ -67,11 +73,13 @@ MA 02111-1307, USA.
 #define IOTAG_LEQuadsOut (TAG_USER + 39)
 #define IOTAG_AllocDMAMem (TAG_USER + 40)
 #define IOTAG_FreeDMAMem (TAG_USER + 41)
+#define IOTAG_SendFrame (TAG_USER + 42)
+#define IOTAG_ReceiveFrame (TAG_USER + 43)
 
 
 /* I/O macros */
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__x86_64__)
 
 #define BYTEIN(address) \
 ({ \

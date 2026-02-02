@@ -14,11 +14,10 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id$
+ * $Id: ar5211_reset.c,v 1.4 2011/03/07 11:25:42 cegger Exp $
  */
 #include "opt_ah.h"
 
-#ifdef AH_SUPPORT_AR5211
 /*
  * Chips specific device attachment and device info collection
  * Connects Init Reg Vectors, EEPROM Data, and device Functions.
@@ -47,7 +46,7 @@ typedef struct {
 } CHAN_INFO_2GHZ;
 
 #define CI_2GHZ_INDEX_CORRECTION 19
-const static CHAN_INFO_2GHZ chan2GHzData[] = {
+static const CHAN_INFO_2GHZ chan2GHzData[] = {
 	{ 1, 0x46, 96  },	/* 2312 -19 */
 	{ 1, 0x46, 97  },	/* 2317 -18 */
 	{ 1, 0x46, 98  },	/* 2322 -17 */
@@ -222,7 +221,7 @@ uint32_t softLedCfg, softLedState;
 		 *	not accurate enough (e.g. 1 ms resolution).
 		 * 2. It would still not be accurate.
 		 *
-		 * The most important aspect of this solution,
+		 * The most important aspect of this workaround,
 		 * is that, after reset, the TSF is behind
 		 * other STAs TSFs.  This will allow the STA to
 		 * properly resynchronize its TSF in adhoc mode.
@@ -408,7 +407,7 @@ uint32_t softLedCfg, softLedState;
 	/*
 	 * for pre-Production Oahu only.
 	 * Disable clock gating in all DMA blocks. Helps when using
-	 * 11B and AES. This will result in higher power consumption.
+	 * 11B and AES but results in higher power consumption.
 	 */
 	if (AH_PRIVATE(ah)->ah_macVersion == AR_SREV_VERSION_OAHU &&
 	    AH_PRIVATE(ah)->ah_macRev < AR_SREV_OAHU_PROD) {
@@ -553,7 +552,7 @@ uint32_t softLedCfg, softLedState;
 
 	return AH_TRUE;
 bad:
-	if (*status)
+	if (status != AH_NULL)
 		*status = ecode;
 	return AH_FALSE;
 #undef FAIL
@@ -665,7 +664,8 @@ ar5211ChipReset(struct ath_hal *ah, uint16_t channelFlags)
  * changes.
  */
 HAL_BOOL
-ar5211PerCalibration(struct ath_hal *ah, HAL_CHANNEL *chan, HAL_BOOL *isIQdone)
+ar5211PerCalibrationN(struct ath_hal *ah,  HAL_CHANNEL *chan, u_int chainMask,
+	HAL_BOOL longCal, HAL_BOOL *isCalDone)
 {
 	struct ath_hal_5211 *ahp = AH5211(ah);
 	HAL_CHANNEL_INTERNAL *ichan;
@@ -729,31 +729,44 @@ ar5211PerCalibration(struct ath_hal *ah, HAL_CHANNEL *chan, HAL_BOOL *isIQdone)
 			OS_REG_WRITE(ah, AR_PHY_TIMING_CTRL4, data);
 		}
 	}
+	*isCalDone = !ahp->ah_bIQCalibration;
 
-	/* Perform noise floor and set status */
-	if (!ar5211IsNfGood(ah, ichan)) {
-		/* report up and clear internal state */
-		chan->channelFlags |= CHANNEL_CW_INT;
-		ichan->channelFlags &= ~CHANNEL_CW_INT;
-		return AH_FALSE;
-	}
-	if (!ar5211CalNoiseFloor(ah, ichan)) {
-		/*
-		 * Delay 5ms before retrying the noise floor
-		 * just to make sure, as we are in an error
-		 * condition here.
-		 */
-		OS_DELAY(5000);
-		if (!ar5211CalNoiseFloor(ah, ichan)) {
-			if (!IS_CHAN_CCK(chan))
-				chan->channelFlags |= CHANNEL_CW_INT;
+	if (longCal) {
+		/* Perform noise floor and set status */
+		if (!ar5211IsNfGood(ah, ichan)) {
+			/* report up and clear internal state */
+			chan->channelFlags |= CHANNEL_CW_INT;
+			ichan->channelFlags &= ~CHANNEL_CW_INT;
 			return AH_FALSE;
 		}
+		if (!ar5211CalNoiseFloor(ah, ichan)) {
+			/*
+			 * Delay 5ms before retrying the noise floor
+			 * just to make sure, as we are in an error
+			 * condition here.
+			 */
+			OS_DELAY(5000);
+			if (!ar5211CalNoiseFloor(ah, ichan)) {
+				if (!IS_CHAN_CCK(chan))
+					chan->channelFlags |= CHANNEL_CW_INT;
+				return AH_FALSE;
+			}
+		}
+		ar5211RequestRfgain(ah);
 	}
+	return AH_TRUE;
+}
 
-	ar5211RequestRfgain(ah);
-	*isIQdone = !ahp->ah_bIQCalibration;
+HAL_BOOL
+ar5211PerCalibration(struct ath_hal *ah, HAL_CHANNEL *chan, HAL_BOOL *isIQdone)
+{
+	return ar5211PerCalibrationN(ah,  chan, 0x1, AH_TRUE, isIQdone);
+}
 
+HAL_BOOL
+ar5211ResetCalValid(struct ath_hal *ah, HAL_CHANNEL *chan)
+{
+	/* XXX */
 	return AH_TRUE;
 }
 
@@ -938,9 +951,11 @@ ar5211IsNfGood(struct ath_hal *ah, HAL_CHANNEL_INTERNAL *chan)
 
 	if (!getNoiseFloorThresh(ah, chan, &nfThresh))
 		return AH_FALSE;
+#ifdef AH_DEBUG
 	if (OS_REG_READ(ah, AR_PHY_AGC_CONTROL) & AR_PHY_AGC_CONTROL_NF)
 		HALDEBUG(ah, HAL_DEBUG_ANY,
 		    "%s: NF did not complete in calibration window\n", __func__);
+#endif
 	nf = ar5211GetNoiseFloor(ah);
 	if (nf > nfThresh) {
 		HALDEBUG(ah, HAL_DEBUG_ANY,
@@ -1508,8 +1523,8 @@ ar5211SetRateTable(struct ath_hal *ah, RD_EDGES_POWER *pRdEdgesPower,
 		{ 0, 3, 6, 9, MAX_RATE_POWER };
 
 	uint16_t	*pRatesPower;
-	uint16_t	lowerChannel, lowerIndex=0, lowerPower=0;
-	uint16_t	upperChannel, upperIndex=0, upperPower=0;
+	uint16_t	lowerChannel = 0, lowerIndex=0, lowerPower=0;
+	uint16_t	upperChannel = 0, upperIndex=0, upperPower=0;
 	uint16_t	twiceMaxEdgePower=63;
 	uint16_t	twicePower = 0;
 	uint16_t	i, numEdges;
@@ -1699,10 +1714,10 @@ uint16_t
 ar5211GetScaledPower(uint16_t channel, uint16_t pcdacValue, const PCDACS_EEPROM *pSrcStruct)
 {
 	uint16_t powerValue;
-	uint16_t lFreq, rFreq;		/* left and right frequency values */
-	uint16_t llPcdac, ulPcdac;	/* lower and upper left pcdac values */
-	uint16_t lrPcdac, urPcdac;	/* lower and upper right pcdac values */
-	uint16_t lPwr, uPwr;		/* lower and upper temp pwr values */
+	uint16_t lFreq = 0, rFreq = 0;		/* left and right frequency values */
+	uint16_t llPcdac = 0, ulPcdac = 0;	/* lower and upper left pcdac values */
+	uint16_t lrPcdac = 0, urPcdac = 0;	/* lower and upper right pcdac values */
+	uint16_t lPwr = 0, uPwr = 0;		/* lower and upper temp pwr values */
 	uint16_t lScaledPwr, rScaledPwr; /* left and right scaled power */
 
 	if (ar5211FindValueInList(channel, pcdacValue, pSrcStruct, &powerValue))
@@ -2123,4 +2138,3 @@ ar5211SetPCUConfig(struct ath_hal *ah)
 {
 	ar5211SetOperatingMode(ah, AH_PRIVATE(ah)->ah_opmode);
 }
-#endif /* AH_SUPPORT_AR5211 */
