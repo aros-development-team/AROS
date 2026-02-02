@@ -1182,7 +1182,7 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj,
             if (sz > 0) {
                 sz += sizeof(LONG);
             }
-			data->winposused = sz;
+            data->winposused = sz;
             STORE = sz;
             return (TRUE);
         }

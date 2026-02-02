@@ -140,9 +140,9 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 
             D(bug("reqtools.library: Inside libopen func. Configfile loaded successfully\n"));
 
-#define READ_ULONG 	*((ULONG *)configptr);configptr += sizeof(ULONG)
-#define READ_UWORD 	*((UWORD *)configptr);configptr += sizeof(UWORD)
-#define RTPREFS 	(ReqToolsBase->ReqToolsPrefs)
+#define READ_ULONG  *((ULONG *)configptr);configptr += sizeof(ULONG)
+#define READ_UWORD  *((UWORD *)configptr);configptr += sizeof(UWORD)
+#define RTPREFS     (ReqToolsBase->ReqToolsPrefs)
 
             val = READ_ULONG;
             RTPREFS.Flags = AROS_LONG2BE(val);
@@ -617,7 +617,7 @@ topleftscr:
 SAVEDS ASM void RTFuncs_CloseWindowSafely(REGPARAM(a0, struct Window *, window))
 {
     struct IntuiMessage *msg;
-    struct Node     	*succ;
+    struct Node         *succ;
 
     Forbid();
 

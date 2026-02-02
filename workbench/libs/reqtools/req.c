@@ -42,13 +42,13 @@
 
 /****************************************************************************************/
 
-#define ThisProcess()	( ( struct Process * ) FindTask( NULL ) )
+#define ThisProcess()    ( ( struct Process * ) FindTask( NULL ) )
 
 /****************************************************************************************/
 
 struct PWCallBackArgs {
-    char 	*buffer;
-    ULONG 	lastchecksum, verify, retcode;
+    char    *buffer;
+    ULONG   lastchecksum, verify, retcode;
 };
 
 /****************************************************************************************/
@@ -74,8 +74,8 @@ struct FmtBuff {
     LONG numlines, bufflen;
 };
 
-#define DOFMT_COUNTNEWLINES		0
-#define DOFMT_COUNTBARS			1
+#define DOFMT_COUNTNEWLINES        0
+#define DOFMT_COUNTBARS            1
 
 /****************************************************************************************/
 
@@ -89,40 +89,40 @@ extern void FillNewLineTable (char **, char *);
 
 /****************************************************************************************/
 
-typedef struct Req_RealHandlerInfo	Req_GlobData;
-#define STRINGGADID			32
+typedef struct Req_RealHandlerInfo    Req_GlobData;
+#define STRINGGADID 32
 
 struct Req_RealHandlerInfo {
-    IPTR 			(*func)();        /* private */
-    ULONG 			WaitMask;
-    ULONG 			DoNotWait;
+    IPTR                    (*func)();        /* private */
+    ULONG                   WaitMask;
+    ULONG                   DoNotWait;
 
     /* PRIVATE */
-    char 			**gadstrbuff, **buff, *stringbuff, *textfmt;
-    struct PWCallBackArgs 	arg;
-    struct Gadget 		*strgad, *yesgad, *nogad, *retgad, *selgad;
-    struct TextAttr 		boldattr;
-    struct KeyButtonInfo 	buttoninfo;
-    struct StringInfo 		*strinfo;
-    struct Screen 		*scr, *frontscr;
-    struct Window 		*prwin;
-    struct Window 		*reqwin;
-    struct DrawInfo 		*drinfo;
-    struct rtReqInfo 		*reqinfo;
-    struct Hook 		*imsghook, backfillhook;
-    struct TextFont 		*reqfont;
-    struct Catalog 		*catalog;
-    struct Image 		headimg;
-    struct NewWindow 		newreqwin;
-    struct FmtBuff 		bodyfmt, gadfmtbuff;
-    UBYTE 			minmaxstr[30];
-    int 			idcmp, mode, min, max, checksum, pubscr, reqflags;
-    int 			retnum, waitpointer, allowempty, lockwindow, shareidcmp, noscreenpop;
-    int 			textht, texttop, strgadht, strgadtop, width, nowinbackfill;
-    int 			numlines, len, fontht, minmax, minmaxlen, minmaxtop, minmaxleft;
-    int 			fkeys;
-    APTR 			winlock, visinfo;
-    ULONG 			*value, *lenptr;
+    char                    **gadstrbuff, **buff, *stringbuff, *textfmt;
+    struct PWCallBackArgs   arg;
+    struct Gadget           *strgad, *yesgad, *nogad, *retgad, *selgad;
+    struct TextAttr         boldattr;
+    struct KeyButtonInfo    buttoninfo;
+    struct StringInfo       *strinfo;
+    struct Screen           *scr, *frontscr;
+    struct Window           *prwin;
+    struct Window           *reqwin;
+    struct DrawInfo         *drinfo;
+    struct rtReqInfo        *reqinfo;
+    struct Hook             *imsghook, backfillhook;
+    struct TextFont         *reqfont;
+    struct Catalog          *catalog;
+    struct Image            headimg;
+    struct NewWindow        newreqwin;
+    struct FmtBuff          bodyfmt, gadfmtbuff;
+    UBYTE                   minmaxstr[30];
+    int                     idcmp, mode, min, max, checksum, pubscr, reqflags;
+    int                     retnum, waitpointer, allowempty, lockwindow, shareidcmp, noscreenpop;
+    int                     textht, texttop, strgadht, strgadtop, width, nowinbackfill;
+    int                     numlines, len, fontht, minmax, minmaxlen, minmaxtop, minmaxleft;
+    int                     fkeys;
+    APTR                    winlock, visinfo;
+    ULONG                   *value, *lenptr;
 };
 
 /****************************************************************************************/
@@ -138,54 +138,54 @@ static IPTR ASM SAVEDS myReqHandler (REGPARAM(a1, Req_GlobData *,),
 
 /****************************************************************************************/
 
-#define GETSTRINGLONG_FLAGS	(GSREQF_CENTERTEXT|GSREQF_HIGHLIGHTTEXT)
-#define EZREQ_FLAGS		(EZREQF_NORETURNKEY|EZREQF_LAMIGAQUAL|EZREQF_CENTERTEXT)
+#define GETSTRINGLONG_FLAGS    (GSREQF_CENTERTEXT|GSREQF_HIGHLIGHTTEXT)
+#define EZREQ_FLAGS        (EZREQF_NORETURNKEY|EZREQF_LAMIGAQUAL|EZREQF_CENTERTEXT)
 
 
 /****************************************************************************************/
 
 ULONG ASM SAVEDS GetString (
-    REGPARAM(a1, UBYTE *, stringbuff),		/* str in case of rtEZRequestA */
-    REGPARAM(d0, SIPTR, maxlen),			/* args in case of rtEZRequestA */
-    REGPARAM(a2, char *, title),			/* gadfmt in case of rtEZRequestA */
+    REGPARAM(a1, UBYTE *, stringbuff),      /* str in case of rtEZRequestA */
+    REGPARAM(d0, SIPTR, maxlen),            /* args in case of rtEZRequestA */
+    REGPARAM(a2, char *, title),            /* gadfmt in case of rtEZRequestA */
     REGPARAM(d1, ULONG, checksum),
     REGPARAM(d2, ULONG *, value),
     REGPARAM(d3, LONG, mode),
     REGPARAM(d4, struct rtReqInfo *, reqinfo),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    /* #define CLEARSIZE	(28+sizeof(struct NewWindow)+sizeof(struct IntuiText)+\
-    				 sizeof(struct NewGadget)+2*sizeof(struct FmtBuff)) */
+    /* #define CLEARSIZE    (28+sizeof(struct NewWindow)+sizeof(struct IntuiText)+\
+                     sizeof(struct NewGadget)+2*sizeof(struct FmtBuff)) */
 
 // FIXME: obsolete comment?
     /* keep these vars together and just BEFORE NewWindow struct! */
     /*-------------------------------------------------*/
-    int 		reqpos = REQPOS_DEFAULT;
-    char 		*pubname = NULL;
-    ULONG 		underscore = 0;
-    struct TextAttr 	*fontattr = NULL;
-    struct Locale 	*locale = NULL;
-    struct IntuiText 	itxt, *bodyitxt = NULL;
-    struct NewGadget 	ng;
-    struct Image 	*img;
+    int                 reqpos = REQPOS_DEFAULT;
+    char                *pubname = NULL;
+    ULONG               underscore = 0;
+    struct TextAttr     *fontattr = NULL;
+    struct Locale       *locale = NULL;
+    struct IntuiText    itxt, *bodyitxt = NULL;
+    struct NewGadget    ng;
+    struct Image        *img;
     /**/
 // FIXME: obsolete comment?
     /* KEEP MIN AND MAX IN THIS ORDER !!!! */
-    int 		max = MAXINT, min = MININT;
+    int                 max = MAXINT, min = MININT;
     /**/
-    Req_GlobData	*glob;
-    struct Gadget 	*gad;
-    struct TagItem 	*tag, *tstate;
+    Req_GlobData        *glob;
+    struct Gadget       *gad;
+    struct TagItem      *tag, *tstate;
     /* for rtEZRequestA */
-    char 		*gadfmt = title;
-    char 		*ptr;
-    int 		val, spacing, reqhandler = FALSE, nogadfmt, gadlen = 0;
-    int 		height, top, showdef = TRUE;
-    int 		scrwidth, scrheight, i, j, npos, nlen, nogadgets, retnum;
-    int 		invisible, scrfontht, gadlines = 0;
-    int 		leftoff, rightoff;
-    ULONG 		*gadlenptr = NULL, *gadposptr = NULL, idcmpflags;
-    APTR 		gadfmtargs = NULL, textfmtargs = NULL;
+    char                *gadfmt = title;
+    char                *ptr;
+    int                 val, spacing, reqhandler = FALSE, nogadfmt, gadlen = 0;
+    int                 height, top, showdef = TRUE;
+    int                 scrwidth, scrheight, i, j, npos, nlen, nogadgets, retnum;
+    int                 invisible, scrfontht, gadlines = 0;
+    int                 leftoff, rightoff;
+    ULONG               *gadlenptr = NULL, *gadposptr = NULL, idcmpflags;
+    APTR                gadfmtargs = NULL, textfmtargs = NULL;
 
     memset (&itxt, 0, sizeof (struct IntuiText));
     memset (&ng, 0, sizeof (struct NewGadget));
@@ -400,8 +400,8 @@ ULONG ASM SAVEDS GetString (
 
     if (glob->textfmt) {
         /* Calculate size of buffer needed to expand format string, also
-        	calculates number of lines in format string.
-        	(APTR)maxlen points to the arguments! */
+            calculates number of lines in format string.
+            (APTR)maxlen points to the arguments! */
 
         DofmtCount (glob->textfmt, textfmtargs, &glob->bodyfmt.numlines, DOFMT_COUNTNEWLINES);
         glob->numlines = glob->bodyfmt.numlines;
@@ -776,15 +776,15 @@ static struct Image * REGARGS CreateRectImage (Req_GlobData *glob,
 
 /****************************************************************************************/
 
-#define RETURN_KEY	13
-#define ESC_KEY		27
-#define SHIFT_KEY	0x60
-#define F1_KEY		0x50
-#define F10_KEY		0x59
+#define RETURN_KEY  13
+#define ESC_KEY     27
+#define SHIFT_KEY   0x60
+#define F1_KEY      0x50
+#define F10_KEY     0x59
 
-#define QUALS_CONSIDERED	( IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND | IEQUALIFIER_LSHIFT | \
-				IEQUALIFIER_RSHIFT | IEQUALIFIER_LALT | IEQUALIFIER_RALT | \
-				IEQUALIFIER_CONTROL )
+#define QUALS_CONSIDERED    ( IEQUALIFIER_LCOMMAND | IEQUALIFIER_RCOMMAND | IEQUALIFIER_LSHIFT | \
+                IEQUALIFIER_RSHIFT | IEQUALIFIER_LALT | IEQUALIFIER_RALT | \
+                IEQUALIFIER_CONTROL )
 
 /****************************************************************************************/
 
@@ -793,14 +793,14 @@ static IPTR ASM SAVEDS myReqHandler (
     REGPARAM(d0, ULONG, sigs),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    struct Gadget 	*tmpgad, *selgad;
-    struct TagItem 	*tag;
+    struct Gadget     *tmpgad, *selgad;
+    struct TagItem     *tag;
     struct TagItem *tstate = taglist;
     struct IntuiMessage *msg;
-    ULONG 		class, tagdata;
-    UWORD 		code, qual;
-    int 		gadid, val, leftamiga, doactgad, copystr;
-    char 		*str, key;
+    ULONG         class, tagdata;
+    UWORD         code, qual;
+    int         gadid, val, leftamiga, doactgad, copystr;
+    char         *str, key;
 
     /* uncomment if sigs is no longer ignored */
     //if (glob->DoNotWait) sigs = 0;
@@ -855,7 +855,7 @@ static IPTR ASM SAVEDS myReqHandler (
                             !(qual & QUALS_CONSIDERED) &&
                             (code >= F1_KEY) && (code <= F10_KEY) &&
                             (code - F1_KEY < glob->gadfmtbuff.numlines)) {
-                        LONG	i = code - F1_KEY;
+                        LONG i = code - F1_KEY;
 
                         selgad = glob->yesgad;
 
@@ -975,8 +975,8 @@ static IPTR ASM SAVEDS myReqHandler (
 
 static ULONG REGARGS ReqExit (Req_GlobData *glob, int cpystr)
 {
-    ULONG 		ret = glob->arg.retcode;
-    struct Image 	*img, *img2;
+    ULONG           ret = glob->arg.retcode;
+    struct Image    *img, *img2;
 
     if (cpystr && glob->mode <= ENTER_STRING)
         strcpy (glob->stringbuff, glob->arg.buffer);

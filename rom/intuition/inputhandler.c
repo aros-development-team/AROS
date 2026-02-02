@@ -2168,8 +2168,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
             case IESUBCLASS_NEWTABLET:
                 {
                     struct IENewTablet *nt = (struct IENewTablet *)ie->ie_EventAddress;
-
-                    if (nt)
+                    if (nt && screen)
                     {
                         iihdata->ActEventTablet = nt; //cache this
                         ie->ie_X = (screen->Width * nt->ient_TabletX) / nt->ient_RangeX;

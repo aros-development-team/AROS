@@ -751,6 +751,9 @@ BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
     /* Create an X11 cursor from the passed bitmap */
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+
+    LOCK_X11
+
     image = XCCALL(XcursorImageCreate, width, height);
 
     HIDD_BM_GetImage(msg->shape, (UBYTE *)image->pixels, width * 4, 0, 0,
@@ -761,6 +764,8 @@ BOOL X11Cl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o,
 
     data->cursor = XCCALL(XcursorImageLoadCursor, data->display, image);
     XCCALL(XcursorImageDestroy, image);
+
+    UNLOCK_X11
 
     /* Tell the X11 task to change the pointer on all X windows */
     port = CreateMsgPort();

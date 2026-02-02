@@ -841,7 +841,7 @@ static LONG windowpos_swapbytes(IPTR data, LONG size)
     WORD cnt, i, j;
     void *p = (void *)data;
 
-    *((LONG *) p) = AROS_SWAP_BYTES_LONG(size);
+    *((LONG *) p) = AROS_SWAP_BYTES_LONG(*((LONG *) p));
 
     cnt = sizeof(LONG);
     items = (size - sizeof(LONG)) / sizeof(struct windowpos);

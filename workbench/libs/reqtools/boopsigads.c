@@ -59,13 +59,13 @@
 
 /****************************************************************************************/
 
-extern struct Library 		*GadToolsBase;
-extern struct GfxBase 		*GfxBase;
-extern struct IntuitionBase 	*IntuitionBase;
-extern struct Window 		*win;
-extern struct Screen 		*scr;
-extern struct ExecBase 		*SysBase;
-extern struct Device 		*ConsoleDevice;
+extern struct Library       *GadToolsBase;
+extern struct GfxBase       *GfxBase;
+extern struct IntuitionBase *IntuitionBase;
+extern struct Window        *win;
+extern struct Screen        *scr;
+extern struct ExecBase      *SysBase;
+extern struct Device        *ConsoleDevice;
 
 extern void ShortDelay (void);
 
@@ -89,9 +89,9 @@ struct Gadget * REGARGS my_CreateButtonGadget (
     ULONG underscorechar,
     struct NewGadget *ng)
 {
-    struct InitData 	idata;
-    struct Image 	*image;
-    const char 		*label;
+    struct InitData idata;
+    struct Image    *image;
+    const char      *label;
 
     label = ng->ng_GadgetText;
     ng->ng_GadgetText = NULL;
@@ -154,16 +154,16 @@ static struct Image *IsButtonGad (struct Gadget *gad)
 **********/
 
 struct CombStringInfo {
-    ULONG 			magic;
-    struct CombStringInfo 	*self;
-    struct StringInfo 		strinfo;
-    struct StringExtend 	strextend;
-    struct Hook 		edithook;
+    ULONG                   magic;
+    struct CombStringInfo   *self;
+    struct StringInfo       strinfo;
+    struct StringExtend     strextend;
+    struct Hook             edithook;
 };
 
 /****************************************************************************************/
 
-#define IEQUALIFIER_SHIFT		(IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT)
+#define IEQUALIFIER_SHIFT        (IEQUALIFIER_LSHIFT|IEQUALIFIER_RSHIFT)
 
 /****************************************************************************************/
 
@@ -182,8 +182,8 @@ StrEditHookEntry (
     REGPARAM(a1, ULONG *, msg) )
 {
 #endif
-    struct StrGadUserData	*userdata;
-    WORD	qual, rawcode;
+    struct StrGadUserData    *userdata;
+    WORD    qual, rawcode;
 
     if( msg[ 0 ] == SGH_KEY ) {
         rawcode = sgw->IEvent->ie_Code;
@@ -358,15 +358,15 @@ void REGARGS my_DownGadget (struct Gadget *gad, UWORD code, struct KeyButtonInfo
 
 /****************************************************************************************/
 
-#define SHIFT_KEY		0x60
+#define SHIFT_KEY   0x60
 
 /****************************************************************************************/
 
 struct Gadget *REGARGS my_GetKeyGadget (UBYTE key, struct Gadget *glist)
 {
-    struct Gadget *gad;
-    struct Image  *im;
-    char 	  underkey;
+    struct Gadget   *gad;
+    struct Image    *im;
+    char            underkey;
 
     for (gad = glist; gad; gad = gad->NextGadget) {
         if ((im = IsButtonGad (gad)))
@@ -381,9 +381,9 @@ struct Gadget *REGARGS my_GetKeyGadget (UBYTE key, struct Gadget *glist)
 ULONG REGARGS CheckGadgetKey (int code, int qual, char *key,
                               struct KeyButtonInfo *info)
 {
-    struct InputEvent 	ev;
-    struct Gadget 	*gad;
-    int 		upkey = (code & IECODE_UP_PREFIX);
+    struct InputEvent   ev;
+    struct Gadget       *gad;
+    int                 upkey = (code & IECODE_UP_PREFIX);
 
     *key = 0;
     if (!(code & ~IECODE_UP_PREFIX)) return (0);

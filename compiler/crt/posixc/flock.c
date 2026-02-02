@@ -270,7 +270,7 @@ int __init_flocks(struct PosixCIntBase *PosixCBase)
    This function will be called when no other program has posixc.library open
    so no protection should be needed.
 */
-void __unlock_flocks(struct PosixCIntBase *PosixCBase)
+int __unlock_flocks(struct PosixCIntBase *PosixCBase)
 {
     struct FlockNode *lock;
     struct SignalSemaphore *sem;
@@ -293,6 +293,7 @@ void __unlock_flocks(struct PosixCIntBase *PosixCBase)
     }
     FreeMem(PosixCBase->file_locks, sizeof(struct MinList));
     PosixCBase->file_locks = NULL;
+    return TRUE;
 }
 
 ADD2INITLIB(__init_flocks, 1);

@@ -50,15 +50,15 @@ UWORD CHIP waitpointer[] = {
 
 /****************************************************************************************/
 
-extern struct Library 		*GadToolsBase;
-extern struct DosLibrary 	*DOSBase;
-extern struct IntuitionBase 	*IntuitionBase;
-extern struct GfxBase 		*GfxBase;
-extern struct ReqToolsBase 	*ReqToolsBase;
+extern struct Library       *GadToolsBase;
+extern struct DosLibrary    *DOSBase;
+extern struct IntuitionBase *IntuitionBase;
+extern struct GfxBase       *GfxBase;
+extern struct ReqToolsBase  *ReqToolsBase;
 #if defined(__AROS__) || defined(__GNUC__)
-extern struct UtilityBase 	*UtilityBase;
+extern struct UtilityBase   *UtilityBase;
 #else
-extern struct Library 		*UtilityBase;
+extern struct Library       *UtilityBase;
 #endif
 
 /****************************************************************************************/
@@ -68,14 +68,14 @@ int ASM SAVEDS GetVScreenSize (
     REGPARAM(a1, int *, width),
     REGPARAM(a2, int *, height))
 {
-    struct ViewPortExtra 	*vpe;
-    struct Rectangle 		dispclip, *clip;
-    IPTR 			getvpetags[3];
-    int 			ht;
+    struct ViewPortExtra    *vpe;
+    struct Rectangle        dispclip, *clip;
+    IPTR                    getvpetags[3];
+    int                     ht;
 #ifndef USE_FORBID
-    struct Screen		*pubscr;
-    ULONG			ilock = 0L;
-    BOOL			isfirst;
+    struct Screen           *pubscr;
+    ULONG                   ilock = 0L;
+    BOOL                    isfirst;
 #endif
 
 
@@ -172,7 +172,7 @@ struct Screen *REGARGS LockPubScreenByAddr (struct Screen *scr)
 
 
 #undef ThisProcess
-#define ThisProcess()		( ( APTR ) FindTask( NULL ) )
+#define ThisProcess()   ( ( APTR ) FindTask( NULL ) )
 
 /****************************************************************************************/
 
@@ -217,8 +217,8 @@ struct Screen *REGARGS GetReqScreen (
 #ifndef DO_CM_DEPTH
 static int VpDepth (struct ViewPort *vp)
 {
-    ULONG 	modeid = GetVPModeID (vp);
-    int 	depth;
+    ULONG   modeid = GetVPModeID (vp);
+    int     depth;
 
     depth = vp->RasInfo->BitMap->Depth;
 
@@ -335,8 +335,8 @@ void REGARGS InitNewGadget (struct NewGadget *ng,
 struct TextFont * REGARGS GetReqFont (struct TextAttr *attr,
                                       struct TextFont *deffont, int *fontheight, int *fontwidth, int allowprop)
 {
-    struct TextFont 	*ft;
-    int 		forcedef;
+    struct TextFont *ft;
+    int             forcedef;
 
     forcedef = (rtLockPrefs()->Flags & RTPRF_DEFAULTFONT);
     rtUnlockPrefs();
@@ -658,9 +658,9 @@ int CheckBoxHeight (struct NewGadget *ng)
  */
 LONG BottomBorderHeight (struct Screen *scr)
 {
-    struct DrawInfo 	*dri;
-    APTR 		obj;
-    LONG 		h = 10;
+    struct DrawInfo *dri;
+    APTR            obj;
+    LONG            h = 10;
 
     if ((dri = GetScreenDrawInfo (scr))) {
         if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, (IPTR) dri,

@@ -38,7 +38,7 @@
 /****************************************************************************************/
 
 #ifndef MTYPE_APPWINDOW
-#define MTYPE_APPWINDOW		7	/* msg from an app window */
+#define MTYPE_APPWINDOW 7    /* msg from an app window */
 #endif
 
 /****************************************************************************************/
@@ -100,26 +100,26 @@ IPTR ASM SAVEDS PropReqHandler (
     REGPARAM(d0, ULONG, sigs),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    struct IntuiMessage 	*reqmsg = NULL, *imsg, im;
-    struct Gadget 		*gad;
-    struct RealFileRequester 	*freq = NULL;
-    struct RealFontRequester 	*fontreq = NULL;
-    struct BufferData 		*buff;
-    struct DiskfontBase 	*DiskfontBase = glob->diskfontbase;
-    struct TagItem 		*tag, *tstate = taglist;
-    struct AvailFontsHeader 	*afh;
-    struct AvailFonts 		*af;
-    struct ReqEntry 		*entry;
-    struct DosList 		*dlist;
-    struct AppMessage 		*appmsg;
-    struct AssignList 		*assignlist, *fontslist, **prevassign;
-    int 			clicked, ctype, sel, val, code, qual, doubleclick, checkbox;
-    int 			i, step, start, stop, shortage, buffsize, mon, doactgad, lastpos;
-    UBYTE 			*fdir = NULL, *filename = NULL, *str, *str2, *str3, key;
-    ULONG 			tagdata;
-    BPTR 			parent;
-    APTR 			winlock;
-    ULONG 			id;
+    struct IntuiMessage         *reqmsg = NULL, *imsg, im;
+    struct Gadget               *gad;
+    struct RealFileRequester    *freq = NULL;
+    struct RealFontRequester    *fontreq = NULL;
+    struct BufferData           *buff;
+    struct DiskfontBase         *DiskfontBase = glob->diskfontbase;
+    struct TagItem              *tag, *tstate = taglist;
+    struct AvailFontsHeader     *afh;
+    struct AvailFonts           *af;
+    struct ReqEntry             *entry;
+    struct DosList              *dlist;
+    struct AppMessage           *appmsg;
+    struct AssignList           *assignlist, *fontslist, **prevassign;
+    int                         clicked, ctype, sel, val, code, qual, doubleclick, checkbox;
+    int                         i, step, start, stop, shortage, buffsize, mon, doactgad, lastpos;
+    UBYTE                       *fdir = NULL, *filename = NULL, *str, *str2, *str3, key;
+    ULONG                       tagdata;
+    BPTR                        parent;
+    APTR                        winlock;
+    ULONG                       id;
 
     /* uncomment if sigs is no longer ignored */
 //  if (glob->DoNotWait) sigs = SetSignal (0, 0);
@@ -204,9 +204,9 @@ IPTR ASM SAVEDS PropReqHandler (
                                fdir[strlen(fdir)-1] != ':' &&
                                IoErr() != ERROR_DEVICE_NOT_MOUNTED) {
                         struct TagItem tags[] = {
-                            {RT_Window		, (IPTR)glob->reqwin	},
-                            {RT_IntuiMsgFunc	, (IPTR)&glob->intuihook},
-                            {TAG_MORE		, (IPTR)ezreqtags	}
+                            {RT_Window          , (IPTR)glob->reqwin    },
+                            {RT_IntuiMsgFunc    , (IPTR)&glob->intuihook},
+                            {TAG_MORE           , (IPTR)ezreqtags       }
                         };
 
                         if (rtEZRequestA (GetStr (glob->catalog, MSG_CREATE_DRAWER),
@@ -720,7 +720,7 @@ skipfile:
                 gad = NULL;
                 checkbox = -1;
 
-                if (key == 27)	/* Esc? */
+                if (key == 27) /* Esc? */
                     goto docancel;
                 else if (key == glob->gadkey[CHECKBOX_AUTOSCROLL])
                     checkbox = CHECKBOX_AUTOSCROLL;
@@ -767,7 +767,7 @@ skipfile:
                         IPTR checked;
                         struct TagItem get_tags[] = {
                             {GTCB_Checked, (IPTR)&checked},
-                            {TAG_DONE   	    	     }
+                            {TAG_DONE                    }
                         };
 
 #ifdef __AROS__
@@ -932,7 +932,7 @@ rememberclicked:
                     IPTR checked;
                     struct TagItem get_tags[] = {
                         {GTCB_Checked, (IPTR)&checked},
-                        {TAG_DONE   	    	 }
+                        {TAG_DONE                    }
                     };
 
                     GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_ITALIC], glob->reqwin, NULL, get_tags);
@@ -959,7 +959,7 @@ rememberclicked:
                     IPTR checked;
                     struct TagItem get_tags[] = {
                         {GTCB_Checked, (IPTR)&checked},
-                        {TAG_DONE   	    	 }
+                        {TAG_DONE                    }
                     };
 
                     GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_UNDERLINE], glob->reqwin, NULL, get_tags);
@@ -985,7 +985,7 @@ rememberclicked:
                     IPTR checked;
                     struct TagItem get_tags[] = {
                         {GTCB_Checked, (IPTR)&checked},
-                        {TAG_DONE   	    	 }
+                        {TAG_DONE                    }
                     };
 
                     GT_GetGadgetAttrsA(glob->checkboxgad[CHECKBOX_BOLD], glob->reqwin, NULL, get_tags);
@@ -1015,9 +1015,9 @@ updatestyle:
                     EndQuiet (glob);
                     if (!glob->nodir && !glob->disks) {
                         struct TagItem tags[] = {
-                            {RT_Window		, (IPTR)glob->reqwin	},
-                            {RT_IntuiMsgFunc	, (IPTR)&glob->intuihook},
-                            {TAG_MORE		, (IPTR)getstringtags	}
+                            {RT_Window          , (IPTR)glob->reqwin    },
+                            {RT_IntuiMsgFunc    , (IPTR)&glob->intuihook},
+                            {TAG_MORE           , (IPTR)getstringtags   }
                         };
 
                         if (rtGetStringA (glob->selpattern, 123,
@@ -1187,7 +1187,7 @@ docancel:
                 case PARENT:
 parentdir:
                     UnLockReqLock (glob);
-//			    strcpy (fdir, glob->drawerstr);
+//                strcpy (fdir, glob->drawerstr);
                     str = PathPart ( fdir );
                     if (*str) {
                         *str = 0;

@@ -122,14 +122,14 @@ extern ULONG ASM SAVEDS GetString (REGPARAM(a1, UBYTE *, stringbuff),
 
 struct MyStackSwapStruct {
     struct StackSwapStruct  sss;
-    UBYTE   	    	    *stringbuff;
-    LONG    	    	    maxlen;
-    char    	    	    *title;
-    ULONG   	    	    checksum;
-    ULONG   	    	    *value;
-    LONG    	    	    mode;
-    struct rtReqInfo 	    *reqinfo;
-    struct TagItem  	    *taglist;
+    UBYTE                   *stringbuff;
+    LONG                    maxlen;
+    char                    *title;
+    ULONG                   checksum;
+    ULONG                   *value;
+    LONG                    mode;
+    struct rtReqInfo        *reqinfo;
+    struct TagItem          *taglist;
 };
 
 #ifndef MIN_STACK
@@ -152,10 +152,10 @@ static ULONG CheckStack_GetString(UBYTE *stringbuff,
 
 #define sp ((IPTR)(&sss))
 
-    struct MyStackSwapStruct 	    	sss;
-    register struct MyStackSwapStruct 	*sssptr = &sss;
-    struct Task     	    	    	*me = FindTask(NULL);
-    register ULONG   	       	    	retval = 0;
+    struct MyStackSwapStruct            sss;
+    register struct MyStackSwapStruct   *sssptr = &sss;
+    struct Task                         *me = FindTask(NULL);
+    register ULONG                      retval = 0;
 
     if ((sp <= (IPTR)me->tc_SPLower) ||
             (sp >= (IPTR)me->tc_SPUpper) ||
@@ -166,13 +166,13 @@ static ULONG CheckStack_GetString(UBYTE *stringbuff,
             sssptr->sss.stk_Pointer = (APTR) sssptr->sss.stk_Upper;
 
             sssptr->stringbuff  = stringbuff;
-            sssptr->maxlen  	= maxlen;
-            sssptr->title   	= title;
-            sssptr->checksum 	= checksum;
-            sssptr->value   	= value;
-            sssptr->mode    	= mode;
-            sssptr->reqinfo 	= reqinfo;
-            sssptr->taglist 	= taglist;
+            sssptr->maxlen      = maxlen;
+            sssptr->title       = title;
+            sssptr->checksum    = checksum;
+            sssptr->value       = value;
+            sssptr->mode        = mode;
+            sssptr->reqinfo     = reqinfo;
+            sssptr->taglist     = taglist;
 
             StackSwap(&sssptr->sss);
 

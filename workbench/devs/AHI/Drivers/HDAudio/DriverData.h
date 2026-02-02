@@ -178,6 +178,12 @@ struct HDAudioChip {
     /** The recording software interrupt */
     struct Interrupt    record_interrupt;
 
+    /** The reset handler */
+    struct Interrupt    reset_handler;
+
+    /** TRUE if the reset handler has been added to the system */
+    BOOL                reset_handler_added;
+
     /*** Card structures **************************************************/
     HDAADDR(playback_buffer1);
     HDAADDR(playback_buffer2);

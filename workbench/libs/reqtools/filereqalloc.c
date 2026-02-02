@@ -16,10 +16,10 @@
 /****************************************************************************************/
 
 ULONG structsize[] = {
-    sizeof (struct RealFileRequester) 		+ sizeof(ULONG),	/* RT_FILEREQ */
-    sizeof (struct rtReqInfo) 			+ sizeof(ULONG),	/* RT_REQINFO */
-    sizeof (struct RealFontRequester)		+ sizeof(ULONG),	/* RT_FONTREQ */
-    sizeof (struct RealScreenModeRequester) 	+ sizeof(ULONG),	/* RT_SCREENMODEREQ */
+    sizeof (struct RealFileRequester)       + sizeof(ULONG),    /* RT_FILEREQ */
+    sizeof (struct rtReqInfo)               + sizeof(ULONG),    /* RT_REQINFO */
+    sizeof (struct RealFontRequester)       + sizeof(ULONG),    /* RT_FONTREQ */
+    sizeof (struct RealScreenModeRequester) + sizeof(ULONG),    /* RT_SCREENMODEREQ */
 };
 
 /****************************************************************************************/
@@ -79,8 +79,8 @@ APTR ASM SAVEDS AllocRequestA (
     REGPARAM(d0, ULONG, type),
     REGPARAM(a0, struct TagItem *,taglist))
 {
-    struct BufferData 	*buff;
-    ULONG 		*reqstruct;
+    struct BufferData   *buff;
+    ULONG               *reqstruct;
 
     if (!(reqstruct = AllocVec (structsize[type], MEMF_PUBLIC | MEMF_CLEAR)))
         return (NULL);
@@ -128,8 +128,8 @@ APTR ASM SAVEDS AllocRequestA (
 
 void ASM SAVEDS FreeReqBuffer (REGPARAM(a1, APTR, req))
 {
-    struct BufferData 	*buff;
-    struct ReqEntry 	*entry, *temp;
+    struct BufferData   *buff;
+    struct ReqEntry     *entry, *temp;
 
     if ((buff = GetBufferDataPtr (req))) {
         entry = buff->firstname;
@@ -173,14 +173,14 @@ LONG ASM SAVEDS
 ChangeReqAttrA (REGPARAM(a1, APTR, req),
                 REGPARAM(a0, struct TagItem *, taglist))
 {
-    UBYTE			fibspace[sizeof(struct FileInfoBlock)+4];
-    struct FileInfoBlock	*fib = (struct FileInfoBlock *)(((IPTR)&fibspace[3] >> 2) << 2);
-    struct TagItem 		*tag, *tstate = taglist;
-    struct RealFileRequester 	*freq;
-    struct ReqEntry 	 	*entry, *curr;
-    struct BufferData 	 	*buff;
-    struct Screen 		*scr;
-    IPTR 			tagdata;
+    UBYTE                       fibspace[sizeof(struct FileInfoBlock)+4];
+    struct FileInfoBlock        *fib = (struct FileInfoBlock *)(((IPTR)&fibspace[3] >> 2) << 2);
+    struct TagItem              *tag, *tstate = taglist;
+    struct RealFileRequester    *freq;
+    struct ReqEntry             *entry, *curr;
+    struct BufferData           *buff;
+    struct Screen               *scr;
+    IPTR                        tagdata;
 
     /* parse tags */
     while ((tag = NextTagItem (&tstate))) {

@@ -11,7 +11,7 @@
 
 /****************************************************************************************/
 
-struct Library		*WorkbenchBase;
+struct Library *WorkbenchBase;
 
 char TOPAZSTR[] = "topaz.font";
 char DOTINFOSTR[] = ".info";
@@ -22,14 +22,14 @@ struct TextAttr topaz80 = { "topaz.font",8,FS_NORMAL,FPF_ROMFONT|FPF_DESIGNED };
 /****************************************************************************************/
 
 #define FILEREQ_FLAGS \
-	(FREQF_NOBUFFER|FREQF_DOWILDFUNC|FREQF_MULTISELECT|FREQF_SAVE|FREQF_NOFILES|\
-	 FREQF_PATGAD|FREQF_SELECTDIRS)
+    (FREQF_NOBUFFER|FREQF_DOWILDFUNC|FREQF_MULTISELECT|FREQF_SAVE|FREQF_NOFILES|\
+     FREQF_PATGAD|FREQF_SELECTDIRS)
 #define FONTREQ_FLAGS \
-	(FREQF_NOBUFFER|FREQF_DOWILDFUNC|FREQF_FIXEDWIDTH|FREQF_COLORFONTS|\
-	 FREQF_CHANGEPALETTE|FREQF_LEAVEPALETTE|FREQF_SCALE|FREQF_STYLE)
+    (FREQF_NOBUFFER|FREQF_DOWILDFUNC|FREQF_FIXEDWIDTH|FREQF_COLORFONTS|\
+     FREQF_CHANGEPALETTE|FREQF_LEAVEPALETTE|FREQF_SCALE|FREQF_STYLE)
 #define SCREENMODEREQ_FLAGS \
-	(SCREQF_SIZEGADS|SCREQF_DEPTHGAD|SCREQF_NONSTDMODES|SCREQF_GUIMODES|\
-	 SCREQF_AUTOSCROLLGAD|SCREQF_OVERSCANGAD)
+    (SCREQF_SIZEGADS|SCREQF_DEPTHGAD|SCREQF_NONSTDMODES|SCREQF_GUIMODES|\
+     SCREQF_AUTOSCROLLGAD|SCREQF_OVERSCANGAD)
 
 /****************************************************************************************/
 
@@ -47,18 +47,18 @@ APTR ASM SAVEDS FileRequestA (
     REGPARAM(a3, char *, title),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    GlobData 				*glob;
-    struct ReqEntry 			*entry;
-    struct TagItem			*tag, *tstate = taglist;
-    struct RealFontRequester 		*fontreq;
-    struct RealScreenModeRequester 	*scrmodereq = NULL;
-    struct DiskfontBase 		*DiskfontBase;
-    struct TextAttr 			*fontattr = NULL;
-    struct TextFont 			*deffont;
-    struct Locale 			*locale = NULL;
-    char 				*pubname = NULL;
-    int 				reqhandler = FALSE, mon, propmaskset = FALSE;
-    IPTR 				tagdata;
+    GlobData                        *glob;
+    struct ReqEntry                 *entry;
+    struct TagItem                  *tag, *tstate = taglist;
+    struct RealFontRequester        *fontreq;
+    struct RealScreenModeRequester  *scrmodereq = NULL;
+    struct DiskfontBase             *DiskfontBase;
+    struct TextAttr                 *fontattr = NULL;
+    struct TextFont                 *deffont;
+    struct Locale                   *locale = NULL;
+    char                            *pubname = NULL;
+    int                             reqhandler = FALSE, mon, propmaskset = FALSE;
+    IPTR                            tagdata;
 
 
     if (!(glob = AllocVec (sizeof(GlobData), MEMF_PUBLIC|MEMF_CLEAR)))
@@ -106,18 +106,18 @@ APTR ASM SAVEDS FileRequestA (
     }
 
     /* defaults */
-    glob->flags = freq->Flags;	            /* = [scmd|font]req->Flags */
-    glob->reqpos = freq->ReqPos;           /* = [scmd|font]req->ReqPos */
-    glob->leftedge = freq->LeftOffset;     /* = [scmd|font]req->LeftOffset */
-    glob->topedge = freq->TopOffset;       /* = [scmd|font]req->TopOffset */
-    deffont = freq->DefaultFont;           /* = [scmd|font]req->DefaultFont */
-    glob->waitpointer = freq->WaitPointer; /* = [scmd|font]req->WaitPointer */
-    glob->lockwindow = freq->LockWindow;	/* = [scmd|font]req->LockWindow */
-    glob->shareidcmp = freq->ShareIDCMP; 	/* = [scmd|font]req->ShareIDCMP */
-    glob->reqheight = freq->ReqHeight;		/* = [scmd|font]req->ReqHeight */
+    glob->flags = freq->Flags;              /* = [scmd|font]req->Flags */
+    glob->reqpos = freq->ReqPos;            /* = [scmd|font]req->ReqPos */
+    glob->leftedge = freq->LeftOffset;      /* = [scmd|font]req->LeftOffset */
+    glob->topedge = freq->TopOffset;        /* = [scmd|font]req->TopOffset */
+    deffont = freq->DefaultFont;            /* = [scmd|font]req->DefaultFont */
+    glob->waitpointer = freq->WaitPointer;  /* = [scmd|font]req->WaitPointer */
+    glob->lockwindow = freq->LockWindow;    /* = [scmd|font]req->LockWindow */
+    glob->shareidcmp = freq->ShareIDCMP;    /* = [scmd|font]req->ShareIDCMP */
+    glob->reqheight = freq->ReqHeight;      /* = [scmd|font]req->ReqHeight */
 
     /* These must be (but automatically are, MEMF_CLEAR) NULL */
-//	glob->gadtxt[4] = NULL;
+//    glob->gadtxt[4] = NULL;
 // glob->underchar = 0;
 
     /* init global vars */
@@ -450,12 +450,11 @@ void REGARGS CompClicked (GlobData *glob)
 void REGARGS StopTimer (GlobData *glob)
 {
     struct Node *node;
-    int 	othermsgs = FALSE, gotreply = FALSE;
+    int         othermsgs = FALSE, gotreply = FALSE;
 
     if (glob->timerstarted) {
         AbortIO ((struct IORequest *)&glob->timereq);
-        /* We don't use WaitIO() since not sure it leaves other messages
-        	intact. */
+        /* We don't use WaitIO() since not sure it leaves other messages intact. */
         while (!gotreply) {
             Wait (glob->winmask);
             /* Traverse message list and look for timereq msg */
@@ -670,10 +669,10 @@ void REGARGS DeselectFiles (GlobData *glob, int clicked, int dirsonly)
 int REGARGS
 ClickDown( GlobData *glob, int clicked, struct IntuiMessage *reqmsg, int qual )
 {
-    struct BufferData	*buff;
-    struct ReqEntry		*entry;
-    char	*str, *str2, tempstr[108];
-    int	ctype, val;
+    struct BufferData   *buff;
+    struct ReqEntry     *entry;
+    char                *str, *str2, tempstr[108];
+    int                 ctype, val;
 
     buff = glob->buff;
 
