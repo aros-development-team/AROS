@@ -95,6 +95,7 @@ struct RTIsoNode
     APTR                        rtn_BounceBuffer;
     struct IOUsbHWReq           rtn_IOReq;
     UWORD                       rtn_Flags;
+    APTR                        rtn_ChipsetPrivate;
 };
 
 #define RTISO_FLAG_EXPLICIT_FRAME (1 << 0)
