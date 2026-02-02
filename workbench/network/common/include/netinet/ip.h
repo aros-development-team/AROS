@@ -36,6 +36,7 @@
 #include <bsdsocket/types.h>
 #include <netinet/in.h>
 
+#if __BSD_VISIBLE
 /*
  * Definitions for internet protocol version 4.
  *
@@ -223,4 +224,5 @@ struct ippseudo {
 	u_char		ippseudo_p;	/* protocol */
 	u_short		ippseudo_len;	/* protocol length */
 };
+#endif /* __BSD_VISIBLE */
 #endif
