@@ -3,6 +3,11 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-network : workbench-network-stacks-arostcp
 
+#MM- linklibs: network-linklibs
+
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
+#MM- workbench-network-stacks-arostcp : network-linklibs
+
 %copy_files_q mmake=workbench-network-stacks-arostcp files="README" \
     dst=$(AROS_SYSTEM)/Network/AROSTCP
 

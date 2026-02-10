@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#USER_INCLUDES := -isystem $(SRCDIR)/workbench/network/common/include
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
+        -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
+
+#MM- network-linklibs : \
+#MM     network-linklibs-miami
+
+#MM network-linklibs-miami : includes
+
+MIAMILIBSRC = miami_autoinit
+
+%build_linklib mmake=network-linklibs-miami libname=miami files=$(MIAMILIBSRC)
+
+%common
