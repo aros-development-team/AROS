@@ -226,14 +226,18 @@ USER_CPPFLAGS := $(COMMON_CPPFLAGS) -DHAVE_LIBDE265
 USER_CXXFLAGS := $(NOWARN_CXXFLAGS)
 
 ifeq ($(AROS_TOOLCHAIN),gnu)
-GCC_VERSION_MAJOR = $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+ifneq ($(findstring -,$(TARGET_GCC_VER)),)
+  GCC_VERSION_MAJOR := $(firstword $(subst -, ,$(TARGET_GCC_VER)))
+else
+  GCC_VERSION_MAJOR = $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+endif
 ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
-USER_CPPFLAGS += -DLIBHEIF_USE_BOOST_OPTIONAL
-NOWARN_CXXFLAGS := $(NOWARN_ATTRIBUTES)
+  USER_CPPFLAGS += -DLIBHEIF_USE_BOOST_OPTIONAL
+  NOWARN_CXXFLAGS := $(NOWARN_ATTRIBUTES)
 endif
 else
 ifeq ($(AROS_TOOLCHAIN),llvm)
-USER_CXXFLAGS += $(CXXFLAGS_GNU17)
+  USER_CXXFLAGS += $(CXXFLAGS_GNU17)
 endif
 endif
 
