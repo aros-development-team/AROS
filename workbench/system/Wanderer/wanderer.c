@@ -3078,6 +3078,7 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
                 iconmenustate &= ~MENF_ICON_DELETE;
                 iconmenustate &= ~MENF_ICON_FORMAT;
                 iconmenustate &= ~MENF_ICON_EMPTYTRASH;
+                iconmenustate &= ~MENF_ICON_RENAME;
             }
             if (!(isRoot) && ((icon_entry->type == ST_USERDIR) || (icon_entry->type == ST_FILE)))
             {
