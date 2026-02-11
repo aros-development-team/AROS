@@ -38,7 +38,11 @@
 #include "FLAC/format.h"
 #include "private/bitmath.h"
 #include "private/lpc.h"
-#if defined DEBUG || defined FLAC__OVERFLOW_DETECT || defined FLAC__OVERFLOW_DETECT_VERBOSE
+
+/* OPT: #undef'ing this may improve the speed on some architectures */
+#define FLAC__LPC_UNROLLED_FILTER_LOOPS
+
+#if defined DEBUG || defined FLAC__OVERFLOW_DETECT || defined FLAC__OVERFLOW_DETECT_VERBOSE || defined FLAC__LPC_UNROLLED_FILTER_LOOPS
 #include <stdio.h>
 #endif
 
@@ -48,10 +52,6 @@
 /* math.h in VC++ doesn't seem to have this (how Microsoft is that?) */
 #define M_LN2 0.69314718055994530942
 #endif
-
-/* OPT: #undef'ing this may improve the speed on some architectures */
-#define FLAC__LPC_UNROLLED_FILTER_LOOPS
-
 
 void FLAC__lpc_window_data(const FLAC__int32 in[], const FLAC__real window[], FLAC__real out[], unsigned data_len)
 {
