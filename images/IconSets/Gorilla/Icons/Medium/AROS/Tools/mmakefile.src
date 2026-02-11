@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 
 BASEICONS := Calculator HDToolBox InstallAROS Editor Commodities \
          ShowConfig KeyShow InitPrinter PrintFiles GraphicDump
-ADDITIONALICONS := WiMP ScreenGrabber SysExplorer BoingIconBar QuickPart
+ADDITIONALICONS := AHIRecord WiMP ScreenGrabber SysExplorer BoingIconBar QuickPart
 
 #MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-tools-clean
 #MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-tools-clean
