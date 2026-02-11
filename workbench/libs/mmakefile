@@ -9,6 +9,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-libs-complete : \
 #MM     workbench-libs-amigaguide \
 #MM     workbench-libs-asl \
+#MM     workbench-libs-asyncio \
 #MM     workbench-libs-camd \
 #MM     workbench-libs-cgfx \
 #MM     workbench-libs-codesets \
@@ -63,6 +64,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
 #MM     workbench-libs-asl-includes \
+#MM     workbench-libs-asyncio-includes \
 #MM     workbench-libs-bullet-includes \
 #MM     workbench-libs-commodities-includes \
 #MM     workbench-libs-camd-includes \
