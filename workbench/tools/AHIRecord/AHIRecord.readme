@@ -1,0 +1,248 @@
+Short:        Advanced AHI HD-Recorder V1.23
+Author:       Thomas Wenzel (www.toms-home.de)
+Uploader:     toms aminet upload toms home de see note below
+Type:         mus/play
+Version:      1.23
+Architecture: m68k-amigaos; ppc-amigaos
+
+
+Note:
+Aminet admins only: Use address from [Uploader] field to contact me
+All others: Use the email address stated on my homepage www.toms-home.de
+
+Legal stuff
+-----------
+This program is based on the HardDiskRecord program from the AHI developer
+package, and has been generously donated to AROS bye the author Tom.
+
+AHI audio system is Copyright ©1994-2007 Martin Blom.
+
+Important
+---------
+Don't blame me if your AHI driver doesn't work! If this program malfunctions
+due to a bug in my code I'll try to fix it as soon as possible. However, if
+this program fails because of a badly coded AHI driver or because of a
+conflict with one of the numerous hacks or patches out there -- bad luck!
+
+
+Features
+--------
+ - Multithreaded level meter and status display
+ - Asynchronous writes to harddisk
+ - Generates AIFF, WAVE or FLAC files
+
+ - Automatic file generation for recording several tracks sequentially:
+   If you specify a default filename using the NAME ToolType, AHIRecord
+   will enter rec-pause-mode immediately once you've set the audiomode.
+   After you've pressed stop you will be asked for the real filename which
+   will be the default filename followed by a three digit number. Once
+   you've confirmed that filename, AHIRecord will re-enter rec-pause-mode
+   so that you can start recording your next track immediately.
+   The three digit "track number" will be increased by one.
+
+ - Unattended automatic recording:
+   The TIMER parameter allows you to record for a given number of minutes
+   and quit AHIRecord afterwards. This way you can use your favourite
+   scheduling program for precisely timed automated recordings. If you
+   also want AHIRecord to handle the input level just set ALC=YES.
+
+ - FLAC support:
+   The Free Lossless Audio Codec (FLAC) is a commonly used codec to
+   compress audio files to around 75% or even down to 50% of their size
+   without losing quality. However, realtime compression needs lots of CPU
+   power. A CyberStorm 68060-50 with fast SCSI DMA hostadapter can
+   barely manage a compression level of 5 when recording to hard disk.
+   However, a decent PowerPC can usually handle the maximum compression
+   level of 8 without any problems.
+   If the CPU isn't fast enough then encoder overruns will occur and the
+   saved file will be incomplete. In this case the message OUT OF SYNC
+   will be displayed in the status window.
+
+  - Keyboard shortcuts:
+   A : Audio mode
+   P : Prepare File
+   R or SPACE : Rec/Pause
+   S : Stop/Cancel
+   C : Close AHI
+   + : Increase Gain
+   - : Decrease Gain
+   LCOMMAND/RCOMMAND-Q : Quit Program
+
+
+Tooltypes/CLI parameters
+------------------------
+
+ - MODE      Initial AHI audio mode to use
+
+ - FREQ      Initial sampling frequency to use
+
+ - INPUT     Number of the default input to use
+
+ - FORMAT    Initial file format: AIFF_16bit, AIFF_24bit, WAVE_16bit,
+             WAVE_24bit or FLAC_16bit
+
+ - COMPLEVEL Compression level for FLAC
+             The highest level of 8 is strongly recommended as long as
+             your CPU can handle it. FLAC is always lossless no matter
+             how high you set the compression level. Higher level
+             just means more efficient compression leading to smaller files.
+             Playback quality and playback (decoding) CPU load stays the
+             same in any case.
+
+ - NAME      Specify a temporary name for a file to be opened at startup
+             When you finish the recording you will be asked for the
+             final name.
+
+ - AUTONUM   Set to YES: Instead of asking for the final name the recorded
+             files are automatically given an incrementing three digit number.
+             Works only together with NAME (see above).
+
+ - TIMER     Limit recording time to specified number of minutes
+
+ - TOTALTIME Set to YES: Display and count total time
+             (incl. pauses) instead of recording time
+
+ - GAIN      Initial gain setting (0..100)
+
+ - ALC       Turn on automatic level control (set to YES)
+
+ - AUTOBIAS  Set to YES: Automatically determine and subtract any bias
+             from the sampled data. Still experimental, please use with
+             caution! Currently not supported for 24/32-bit modes.
+
+ - BUFFERS   Set number of async buffers for recording to harddisk.
+             A minimum of 4 is recommended. 4 is also the default
+
+ - GPEN      Override the pen number for the green pen returned by AmigaOS
+             (only valid on screens of 8-bit depth or less)
+
+ - YPEN      Same for yellow pen
+
+ - RPEN      Same for red pen
+
+ - ICONS     If set to YES, an icon taken from ENVARC:sys/def_sound.info
+             will be created for each recorded file
+
+ - PUBSCREEN Public screen name to open window on
+
+ - SAVEPRI   Priority of the save task (defaults to 5 if not specified)
+             Use with care!
+
+CLI-Examples
+------------
+AHIRecord MODE=786438 FREQ=44100 INPUT=0 FORMAT=AIFF_16bit
+NAME=Work:Recording.aiff TIMER=45 GAIN=30 ALC=YES
+
+
+Requirements
+------------
+AHI audio system V4
+AmigaOS 3.0 (68k) / 4.0 (PPC)
+asyncio.library V37 (68k) / V50 (PPC)
+68020 CPU / PowerPC
+
+
+Recommended
+-----------
+68030-25 or faster (68060-50 or fast PPC for FLAC)
+High quality 16-bit or 24-bit soundcard (Prelude for example ;)
+Play16 to play your recordings (Play16 is freeware, too!)
+
+
+Revision history
+----------------
+1.23 - Ported to AROS and fixed for 64bit by Nick "Kalamatee" Andrews.
+
+1.21 - Fixed main window size calculation.
+     - Improved default mode and frequency preselection.
+     - Changed behaviour to always select default mode and frequency
+       if not otherwise specified.
+     - Improved out of sync detection.
+     - Underlined shortcut keys in button texts.
+
+1.20 - Recompiled 68k version with integer math for FLAC
+     - Set default FLAC compression level to 5 for 68k / 8 for PPC
+     - Enabled "Prepare File" button after "Close AHI"
+     - Added "Out of Sync" message for encoder/saver overrun
+     - Limited Gain- and Volume sliders to max. 32 steps
+     - Added a few keyboard shortcuts
+
+1.19 - Added TOTALTIME switch
+     - Added COMPLEVEL setting
+
+1.18 - Increased listview size to 5 items
+     - Added "Close AHI" button
+     - Added FLAC support
+
+1.17 - Fixed input ListView to make preselected input visible
+
+1.16 - Fixed time counter in pause mode
+
+1.15a- The 68k version is AHI v4 compatible again
+
+1.15 - This version requires AHI v6
+     - Fixed file writing routines
+     - Fixed buffer size probing by levelmeter-task
+
+1.14 - AmigaOS4 version available
+     - Now writing AIFF files instead of AIFF-C
+     - Various code cleanups
+
+1.13 - Improved pen allocation and/or Cybergraphics usage for level meter
+     - Increased level meter persistence
+
+1.12 - Fixed GAIN setting
+     - AUTOBIAS tooltype
+
+1.11 - Fixed enforcer hit when starting from CLI
+     - GAIN tooltype
+     - SAVEPRI tooltype
+
+1.10 - New parameters for unattended automated recordings:
+       TIMER tooltype
+       ALC tooltype
+
+1.9  - 16-bit or 24-bit filemode now individually selectable
+     - 24-bit filemode support for both WAV and AIFF
+     - Better compatibility with various 24-bit AHI audiomodes
+
+1.8  - Fixed illegal memory access when pressing Pause
+
+1.7  - Fixed a display bug in the format selection cycle gadget
+     - Added 24-bit AIFF support
+     - Added PubScreen support
+
+1.6  - Removed MAUD support (sorry, folks!)
+     - Added mono filetypes
+     - Added support for sequentially recording several tracks
+     - Added Cancel button to escape from rec-pause mode
+     - Improved default filename handling
+     - Keeping AHI driver opened so that monitor volume changes
+       are possible even after the recording has stopped
+
+1.5  - Fixed a bug in the AIFF saver
+     - Added the missing Tooltype for Initial file format
+
+1.4  - Added tooltypes/templates for default values: It makes AHIRecord
+       much more convenient to use
+     - Added Rec/Pause feature
+
+1.3a   Subtask handling slightly modified. Hopefully more stable now.
+
+1.3  - Fixed a nasty bug in cleanup routine that could lead to crashes
+     - New tooltypes for user selectable pens
+
+1.2  - Levelmeter sometimes 'lost' some segments. Hopefully fixed.
+       Removed a bug in FORM size of MAUD and AIFF savers. Some programs
+       refuse to load the file just because the sizes don't match :-(
+
+1.1  - Optimized levelmeter speed. Should run better on slow Amigas
+     - Added WAVE save format
+
+1.0  - First public release
+
+
+Known bugs
+----------
+In case of asyncio buffer overflow the program will hang. Don't expect it
+to record 44.1 kHz to slow floppy disk :-)
