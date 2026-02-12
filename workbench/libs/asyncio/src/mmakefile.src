@@ -29,8 +29,4 @@ FUNCS := \
     modname=asyncio modtype=library \
     files="$(FUNCS)" uselibs=stdc
 
-#MM includes-copy
-INCLUDE_FILES := $(call WILDCARD, ../include/libraries/*.h)
-%copy_includes path=libraries dir=../include/libraries
-
 %common
