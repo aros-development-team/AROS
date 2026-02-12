@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     PanelGroup implementation
 */
@@ -14,8 +14,6 @@
 #include <proto/muimaster.h>
 #include <proto/utility.h>
 
-#include "clib/muimaster_protos.h"
-#include "inline/muimaster.h"
 #include "libraries/mui.h"
 #include "mui.h"
 #include "muimaster_intern.h"
