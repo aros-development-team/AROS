@@ -61,6 +61,9 @@ struct AboutAROS_DATA
 
 static STRPTR pages[4] = { NULL };
 
+static const char *tpp_Plain = "\0333";
+static const char *tpp_Bold = "\0333\033b";
+
 /*** Utility Functions ******************************************************/
 STRPTR Section2Name(ULONG section)
 {
@@ -285,27 +288,27 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR) HVSpace,
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) str_buildtype,
                         MUIA_Weight,               0,
                     End,
 
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) str_abi,
                         MUIA_Weight,               0,
                     End,
 
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) str_variant,
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) TextObject,
                         MUIA_Font,                 MUIV_Font_Big,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) str_builddate,
                         MUIA_Weight,               0,
                     End,
@@ -317,13 +320,13 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     GroupSpacing(0),
 
                     Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) "" REPOTYPE " ID: " REPOREVISION,
                         MUIA_Weight,               0,
                     End,
 #ifdef REPOID
                     Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_PreParse, (IPTR) tpp_Bold,
                         MUIA_Text_Contents, (IPTR) " (" REPOID ")",
                         MUIA_Weight,               0,
                     End,
@@ -341,12 +344,13 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
                     Child, (IPTR) HVSpace,
                     Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) "\0333",
+                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
                         MUIA_Text_Contents,        __(MSG_LICENSE_1),
                         MUIA_Weight,               0,
                     End,
-                    Child, (IPTR) RectangleObject,
-                        MUIA_FixHeightTxt, (IPTR) " ",
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
+                        MUIA_Text_Contents,        (IPTR)" ",
                         MUIA_Weight,               0,
                     End,
                     Child, (IPTR) (licenseButton = (Object *)TextObject,
@@ -356,7 +360,7 @@ Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         MUIA_Weight,        0,
                     End),
                     Child, (IPTR) TextObject,
-                        MUIA_Text_PreParse, (IPTR) "\0333",
+                        MUIA_Text_PreParse, (IPTR) tpp_Plain,
                         MUIA_Text_Contents,        __(MSG_LICENSE_3),
                         MUIA_Weight,               0,
                     End,
