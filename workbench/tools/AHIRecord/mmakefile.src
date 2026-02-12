@@ -26,7 +26,7 @@ USER_CPPFLAGS := -D__amigaos3__ -DFLAC__INTEGER_ONLY_LIBRARY -DHAVE_CONFIG_H
 USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/FLAC
 
 #MM- workbench-tools : workbench-tools-ahirecord
-#MM  workbench-tools-ahirecord : includes linklibs workbench-libs-asyncio-includes
+#MM  workbench-tools-ahirecord : includes linklibs workbench-libs-asyncio-includes workbench-devs-AHI
 
 %build_prog mmake=workbench-tools-ahirecord \
     progname=AHIRecord targetdir=$(AROS_TOOLS) \
