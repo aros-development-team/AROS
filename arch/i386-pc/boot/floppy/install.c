@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <errno.h>
@@ -8,17 +8,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdint.h>
 
 #include <sys/stat.h>
-
-#warning "Only for little endian machines!!!"
-#   define AROS_BE2LONG(l)     \
-        (                                  \
-            ((((unsigned long)(l)) >> 24) & 0x000000FFUL) | \
-            ((((unsigned long)(l)) >>  8) & 0x0000FF00UL) | \
-            ((((unsigned long)(l)) <<  8) & 0x00FF0000UL) | \
-            ((((unsigned long)(l)) << 24) & 0xFF000000UL)   \
-        )
 
 #define CMD_READ        1
 #define CMD_WRITE       2
@@ -54,6 +46,14 @@ struct BlockNode {
 
 unsigned int stage2_firstblock[128];
 
+static uint32_t AROS_BE2LONG(uint32_t l)
+{
+        return ((l >> 24) & 0x000000FFU) |
+               ((l >> 8)  & 0x0000FF00U) |
+               ((l << 8)  & 0x00FF0000U) |
+               ((l << 24) & 0xFF000000U);
+}
+
 int readwriteBlock
         (
                 struct Volume *volume,
@@ -64,7 +64,6 @@ int readwriteBlock
         )
 {
 off_t offset;
-int retval;
 
         offset = (volume->startblock+block)*(volume->SizeBlock*4);
         if (lseek(volume->fd, offset,SEEK_SET)!=-1)
@@ -97,7 +96,6 @@ unsigned int first_block;
 short blk_count,count;
 unsigned short i;
 
-#warning "TODO: logical/physical blocks"
         /*
                 initialze stage2-blocklist
                 (it is NULL-terminated)
@@ -108,26 +106,21 @@ unsigned short i;
                 the first block of stage2 will be stored in stage1
                 so skip the first filekey in the first loop
         */
-#warning "Block read twice"
         retval=readwriteBlock
                 (
                         volume, block, volume->blockbuffer, volume->SizeBlock*4,
                         volume->readcommand
                 );
+        if (retval)
+        {
+                printf("ReadError %d\n", retval);
+                return 0;
+        }
+
         i = volume->SizeBlock - 52;
         first_block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock-51]);
         blk_count=0;
         do {
-                retval=readwriteBlock
-                        (
-                                volume, block, volume->blockbuffer, volume->SizeBlock*4,
-                                volume->readcommand
-                        );
-                if (retval)
-                {
-                        printf("ReadError %d\n", retval);
-                        return 0;
-                }
                 while ((i>=6) && (volume->blockbuffer[i]))
                 {
                         /*
@@ -157,6 +150,19 @@ unsigned short i;
                 }
                 i = volume->SizeBlock - 51;
                 block = AROS_BE2LONG(volume->blockbuffer[volume->SizeBlock - 2]);
+                if (block)
+                {
+                        retval=readwriteBlock
+                                (
+                                        volume, block, volume->blockbuffer, volume->SizeBlock*4,
+                                        volume->readcommand
+                                );
+                        if (retval)
+                        {
+                                printf("ReadError %d\n", retval);
+                                return 0;
+                        }
+                }
         } while (block);
         /*
                 blocks in blocklist are relative to the first
@@ -374,11 +380,11 @@ unsigned int block;
 
 struct Volume *initVolume(char *filename) {
 struct Volume *volume=0;
-struct stat stat;
+struct stat st;
 char *error;
 unsigned int retval;
 
-        if (lstat(filename, &stat)==0)
+        if (stat(filename, &st)==0)
         {
                 volume = (struct Volume *)calloc(1, sizeof(struct Volume));
                 if (volume)
@@ -388,11 +394,14 @@ unsigned int retval;
                         if (volume->blockbuffer)
                         {
                                 volume->fd = open(filename, O_RDWR);
-                                if (volume->fd)
+                                if (volume->fd >= 0)
                                 {
-#warning "No support for partitions"
+                                        /*
+                                                This installer targets floppy images,
+                                                so blocks are addressed from sector 0.
+                                        */
                                         volume->startblock = 0;
-                                        volume->countblock = stat.st_size/(volume->SizeBlock*4);
+                                        volume->countblock = st.st_size/(volume->SizeBlock*4);
                                         volume->readcommand = CMD_READ;
                                         volume->writecommand = CMD_WRITE;
                                         retval = readwriteBlock
@@ -438,7 +447,7 @@ unsigned int retval;
                         error = "Not enough memory";
         }
         else
-                error = "lstat() error";
+                error = "stat() error";
         printf("%s\n",error);
         return 0;
 }
@@ -451,6 +460,7 @@ void uninitVolume(struct Volume *volume) {
 }
 
 void checkBootCode(struct Volume *volume) {
+        (void)volume;
         printf("CHECK not implemented yet\n");
 }
 
@@ -507,4 +517,3 @@ struct Volume *volume;
         }
         return 0;
 }
-
