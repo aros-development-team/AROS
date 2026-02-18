@@ -31,16 +31,27 @@ BOOT_FILES := $(MODULE_BOOTSTRAP) $(MODULE_LEGACY) $(shell \
  
 BOOT_EXTRA_FILES :=
 
-BOOT_TAR_EXECUTABLES := \
-    C/AddBuffers C/AddDataTypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
-    C/ChangeTaskPri C/Copy C/Date C/Delete C/Dir C/DiskChange C/Echo C/Else \
-    C/EndCLI C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote System/Format \
-    C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List \
-    C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt C/Protect C/Quit \
-    C/Reboot C/Relabel C/Rename C/Resident C/Run C/Search C/Set C/SetClock \
-    C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
-    C/Unset C/Unsetenv C/Version C/Which C/Why C/Install-grub \
-    C/Partition \
+BOOT_TAR_LIBS := \
+    Libs/stdc.library \
+    Libs/stdcio.library \
+    Libs/posixc.library \
+    Libs/png.library \
+    Libs/z1.library \
+    Libs/uuid.library \
+    Libs/asl.library \
+    Libs/commodities.library \
+    Libs/cybergraphics.library \
+    Libs/datatypes.library \
+    Libs/diskfont.library \
+    Libs/gadtools.library \
+    Libs/icon.library \
+    Libs/kms.library \
+    Libs/workbench.library \
+    Libs/reqtools.library \
+    Libs/muimaster.library \
+    Libs/coolimages.library
+
+BOOT_TAR_CLASSES := \
     Classes/DataTypes/ascii.datatype \
     Classes/DataTypes/binary.datatype \
     Classes/DataTypes/text.datatype \
@@ -53,31 +64,92 @@ BOOT_TAR_EXECUTABLES := \
     Classes/Zune/IconList.mui \
     Classes/Zune/IconListview.mui \
     Classes/Zune/IconDrawerList.mui \
-    Classes/Zune/IconVolumeList.mui Classes/Zune/PrefsWindow.mcc \
-    Classes/Zune/PrefsEditor.mcc Classes/Zune/SystemPrefsWindow.mcc \
+    Classes/Zune/IconVolumeList.mui \
+    Classes/Zune/PrefsWindow.mcc \
+    Classes/Zune/PrefsEditor.mcc \
+    Classes/Zune/SystemPrefsWindow.mcc
+
+BOOT_TAR_EXECUTABLES := \
+    C/AddBuffers \
+    C/AddDataTypes \
+    C/Alias \
+    C/Ask \
+    C/Assign \
+    C/Avail \
+    C/Break \
+    C/CD \
+    C/ChangeTaskPri \
+    C/Copy \
+    C/Date \
+    C/Delete \
+    C/Dir \
+    C/DiskChange \
+    C/Echo \
+    C/Else \
+    C/EndCLI \
+    C/EndIf \
+    C/EndSkip \
+    C/Execute \
+    C/FailAt \
+    C/Fault \
+    C/Filenote \
+    C/Get \
+    C/Getenv \
+    C/IPrefs \
+    C/If \
+    C/Info \
+    C/Join \
+    C/Lab \
+    C/List \
+    C/MakeDir \
+    C/MakeLink \
+    C/Mount \
+    C/NewShell \
+    C/Path \
+    C/Prompt \
+    C/Protect \
+    C/Quit \
+    C/Reboot \
+    C/Relabel \
+    C/Rename \
+    C/Resident \
+    C/Run \
+    C/Search \
+    C/Set \
+    C/SetClock \
+    C/SetDate \
+    C/Setenv \
+    C/Skip \
+    C/Stack \
+    C/Status \
+    C/Touch \
+    C/Type \
+    C/Unalias \
+    C/Unset \
+    C/Unsetenv \
+    C/Version \
+    C/Which \
+    C/Why \
+    C/Install-grub \
+    C/Partition \
     Devs/clipboard.device \
     Devs/serial.device \
     L/pipe-handler \
-    Libs/stdc.library Libs/stdcio.library Libs/posixc.library \
-    Libs/png.library Libs/z1.library Libs/uuid.library \
-    Libs/asl.library Libs/commodities.library \
-    Libs/cybergraphics.library \
-    Libs/datatypes.library Libs/diskfont.library Libs/gadtools.library \
-    Libs/icon.library Libs/kms.library Libs/workbench.library \
-    Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
-    System/About System/FixFonts \
+    System/About \
+    System/FixFonts \
+    System/Format \
     System/Wanderer/Wanderer \
     System/Wanderer/Tools/DiskInfo \
     System/Wanderer/Tools/ExecuteCommand \
     System/Wanderer/Tools/ExecuteStartup \
-    System/Wanderer/Tools/Info System/Wanderer/Tools/WBNewDrawer \
+    System/Wanderer/Tools/Info \
+    System/Wanderer/Tools/WBNewDrawer \
     System/Wanderer/Tools/WBRename \
     Utilities/MultiView
 
-EXTRA_TAR_EXECUTABLES:= \
+EXTRA_TAR_EXECUTABLES := \
     Classes/Zune/Calendar.mcc \
     Classes/Zune/Clock.mcc \
-    Developer/Debug/sashimi \
     Tools/HDToolBox \
     Prefs/Font \
     Prefs/Time
@@ -95,9 +167,6 @@ EXTRA_TAR_ICONS:= \
     Devs.info \
     Fonts.info \
     Locale.info \
-    Developer.info \
-    Developer/Debug.info \
-    Developer/Debug/Sashimi.info \
     Prefs.info \
     Prefs/Font.info \
     Prefs/Time.info \
@@ -121,6 +190,14 @@ BOOT_TAR_MISC := \
     Prefs/Presets/Themes/$(AROS_GUI_THEME) \
     S
 
+DEBUG_TAR_EXECUTABLES := \
+    Developer/Debug/sashimi
+
+DEBUG_TAR_ICONS:= \
+    Developer.info \
+    Developer/Debug.info \
+    Developer/Debug/Sashimi.info
+
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/boot/bootdisk
 SYSTEM_DEST_DIR := $(OSGENDIR)/boot/systemdisk
@@ -139,7 +216,7 @@ BOOT_FILES += $(AROS_DIR_BOOT)/grub/grub.cfg
 BOOT_TAR_MISC += $(AROS_DIR_BOOT)/grub/grub.cfg
 endif
 
-BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
+BOOT_TAR_FILES := $(BOOT_TAR_EXECUTABLES) $(BOOT_TAR_LIBS) $(BOOT_TAR_CLASSES) $(BOOT_TAR_ICONS) $(BOOT_TAR_MISC)
 
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 BOOT_DEST_DIRS  := $(sort $(dir $(BOOT_DEST_FILES)))
