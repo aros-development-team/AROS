@@ -1,3 +1,7 @@
+/* Copyright (c) 2005 by Pavel Fedin.
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
+ */
+
 //#include <clib/debug_protos.h>
 #include <dos/dos.h>
 //#include <emul/emulregs.h>
@@ -34,6 +38,9 @@
 #include "miami_api.h"
 
 #include <proto/bsdsocket.h>
+
+extern const char *__inet_ntop(int af, const void *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
+extern int __inet_pton(int af, const char *src, void *dst, struct SocketBase *SocketBase);
 
 #undef SocketBase
 #define SocketBase MiamiBase->_SocketBase
@@ -396,52 +403,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: inet_ntop()\n"));
 #endif
 
 	DSYSCALLS(__log(LOG_DEBUG,"inet_ntop(%ld) called",family);)
-	if (family == AF_INET)
-	{
-		sprintf(strptr, "%u.%u.%u.%u",
-		    (unsigned char)addrptr[0], (unsigned char)addrptr[1],
-		    (unsigned char)addrptr[2], (unsigned char)addrptr[3]);
-		return strptr;
-	}
-	else if (family == AF_INET6)
-	{
-		/* RFC 5952 compressed IPv6 representation */
-		const unsigned char *s = (const unsigned char *)addrptr;
-		unsigned short words[8];
-		int i, best_base = -1, best_len = 0, cur_base = -1, cur_len = 0;
-		char *tp = strptr;
-		if (len < 40) { return NULL; }
-		for (i = 0; i < 8; i++)
-			words[i] = ((unsigned short)s[i*2] << 8) | s[i*2+1];
-		/* find longest run of zero words for :: compression */
-		for (i = 0; i < 8; i++) {
-			if (words[i] == 0) {
-				if (cur_base == -1) { cur_base = i; cur_len = 1; }
-				else cur_len++;
-			} else {
-				if (cur_base != -1 && cur_len > best_len) { best_base = cur_base; best_len = cur_len; }
-				cur_base = -1;
-			}
-		}
-		if (cur_base != -1 && cur_len > best_len) { best_base = cur_base; best_len = cur_len; }
-		if (best_len < 2) best_base = -1;
-		for (i = 0; i < 8; i++) {
-			if (best_base != -1 && i >= best_base && i < best_base + best_len) {
-				if (i == best_base) { *tp++ = ':'; *tp++ = ':'; }
-				continue;
-			}
-			if (i != 0 && !(best_base != -1 && i == best_base + best_len))
-				*tp++ = ':';
-			tp += sprintf(tp, "%x", words[i]);
-		}
-		*tp = '\0';
-		return strptr;
-	}
-	else
-	{
-		__log(LOG_CRIT,"inet_ntop(): address family %ld is not implemented", family);
-		return NULL;
-	}
+	return (STRPTR)__inet_ntop((int)family, addrptr, strptr, (socklen_t)len, SocketBase);
 
 	AROS_LIBFUNC_EXIT
 }
@@ -478,12 +440,7 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: inet_pton()\n"));
 #endif
 
 	DSYSCALLS(__log(LOG_DEBUG,"inet_pton(%ld, %s) called", family, (ULONG)strptr);)
-	if (family == AF_INET)
-		return __inet_aton(strptr, addrptr);
-	else {
-		__log(LOG_CRIT,"inet_pton(): address family %ld is not implemented", family);
-		return 0;
-	}
+	return __inet_pton((int)family, strptr, addrptr, SocketBase);
 
 	AROS_LIBFUNC_EXIT
 }

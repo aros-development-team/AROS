@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #                    Helsinki University of Technology, Finland.
 #                    All rights reserved.
 # Copyright (C) 2005 Neil Cafferkey
+# Copyright (C) 2005 - 2026 The AROS Dev Team
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -118,7 +119,7 @@ API_C=\
 	api/res_mkquery api/res_query api/res_send  \
 	api/amiga_roadshow api/miami_api api/miami_functable \
         api/if_indextoname api/if_nametoindex api/if_nameindex \
-        api/getifaddrs
+        api/getifaddrs api/inet_pton api/inet_ntop
 
 API_H=\
 	api/amiga_raf.h api/amiga_api.h api/amiga_libcallentry.h \

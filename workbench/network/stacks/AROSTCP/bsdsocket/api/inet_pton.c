@@ -2,6 +2,7 @@
 
 /* Copyright (c) 1996 by Internet Software Consortium.
  * Copyright (c) 2005 by Pavel Fedin.
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -17,9 +18,6 @@
  * SOFTWARE.
  */
 
-#include <amitcp/socketbasetags.h>
-#include <emul/emulregs.h>
-#include <proto/socket.h>
 #include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/types.h>
@@ -30,6 +28,9 @@
 #include <string.h>
 #include <errno.h>
 
+struct SocketBase;
+extern void writeErrnoValue(struct SocketBase *, int);
+
 /*
  * WARNING: Don't even consider trying to compile this on a system where
  * sizeof(int) < 4.  sizeof(int) > 4 is fine; all the world's not a VAX.
@@ -39,7 +40,7 @@ static int	inet_pton4(const char *src, u_char *dst);
 static int	inet_pton6(const char *src, u_char *dst);
 
 /* int
- * inet_pton(af, src, dst)
+ * __inet_pton(af, src, dst, SocketBase)
  *	convert from presentation format (which usually means ASCII printable)
  *	to network format (which is usually some kind of binary format).
  * return:
@@ -50,7 +51,8 @@ static int	inet_pton6(const char *src, u_char *dst);
  *	Paul Vixie, 1996.
  */
 int
-__inet_pton(int af, const char * __restrict src, void * __restrict dst)
+__inet_pton(int af, const char * __restrict src, void * __restrict dst,
+    struct SocketBase *SocketBase)
 {
 	switch (af) {
 	case AF_INET:
@@ -58,19 +60,10 @@ __inet_pton(int af, const char * __restrict src, void * __restrict dst)
 	case AF_INET6:
 		return (inet_pton6(src, dst));
 	default:
-		SocketBaseTags(SBTM_SETVAL(SBTC_ERRNO),EAFNOSUPPORT,TAG_DONE);
+		writeErrnoValue(SocketBase, EAFNOSUPPORT);
 		return (-1);
 	}
 	/* NOTREACHED */
-}
-
-int inet_pton(void)
-{
-	int af = REG_D0;
-	const char *src = (const char *)REG_A0;
-	void *dst  = (void *)REG_A1;
-
-	return __inet_pton(af, src, dst);
 }
 
 /* int

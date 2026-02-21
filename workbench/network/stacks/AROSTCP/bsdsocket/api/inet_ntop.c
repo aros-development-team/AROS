@@ -1,5 +1,6 @@
 /* Copyright (c) 1996 by Internet Software Consortium.
  * Copyright (c) 2005 by Pavel Fedin
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -15,9 +16,6 @@
  * SOFTWARE.
  */
 
-#include <amitcp/socketbasetags.h>
-#include <emul/emulregs.h>
-#include <proto/socket.h>
 #include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/types.h>
@@ -25,20 +23,23 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
+
+struct SocketBase;
+extern void writeErrnoValue(struct SocketBase *, int);
 
 /*
  * WARNING: Don't even consider trying to compile this on a system where
  * sizeof(int) < 4.  sizeof(int) > 4 is fine; all the world's not a VAX.
  */
 
-static const char *inet_ntop4(const u_char *src, char *dst, socklen_t size);
-static const char *inet_ntop6(const u_char *src, char *dst, socklen_t size);
+static const char *inet_ntop4(const u_char *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
+static const char *inet_ntop6(const u_char *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
 
 /* char *
- * inet_ntop(af, src, dst, size)
+ * __inet_ntop(af, src, dst, size, SocketBase)
  *	convert a network format address to presentation format.
  * return:
  *	pointer to presentation format address (`dst'), or NULL (see errno).
@@ -46,20 +47,16 @@ static const char *inet_ntop6(const u_char *src, char *dst, socklen_t size);
  *	Paul Vixie, 1996.
  */
 const char *
-inet_ntop(void)
+__inet_ntop(int af, const void * __restrict src, char * __restrict dst,
+    socklen_t size, struct SocketBase *SocketBase)
 {
-	int af = REG_D0;
-	const void * __restrict src = (const void *)REG_A0;
-	char * __restrict dst = (char *)REG_A1;
-	socklen_t size = (socklen_t)REG_D1;
-
 	switch (af) {
 	case AF_INET:
-		return (inet_ntop4(src, dst, size));
+		return (inet_ntop4(src, dst, size, SocketBase));
 	case AF_INET6:
-		return (inet_ntop6(src, dst, size));
+		return (inet_ntop6(src, dst, size, SocketBase));
 	default:
-		SocketBaseTags(SBTM_SETVAL(SBTC_ERRNO),EAFNOSUPPORT,TAG_DONE);
+		writeErrnoValue(SocketBase, EAFNOSUPPORT);
 		return (NULL);
 	}
 	/* NOTREACHED */
@@ -77,13 +74,13 @@ inet_ntop(void)
  *	Paul Vixie, 1996.
  */
 static const char *
-inet_ntop4(const u_char *src, char *dst, socklen_t size)
+inet_ntop4(const u_char *src, char *dst, socklen_t size, struct SocketBase *SocketBase)
 {
 	static const char fmt[] = "%u.%u.%u.%u";
 
 	if ((socklen_t)snprintf(dst, size, fmt, src[0], src[1], src[2], src[3])
 	    >= size) {
-		SocketBaseTags(SBTM_SETVAL(SBTC_ERRNO),ENOSPC,TAG_DONE);
+		writeErrnoValue(SocketBase, ENOSPC);
 		return (NULL);
 	}
 	return (dst);
@@ -96,7 +93,7 @@ inet_ntop4(const u_char *src, char *dst, socklen_t size)
  *	Paul Vixie, 1996.
  */
 static const char *
-inet_ntop6(const u_char *src, char *dst, socklen_t size)
+inet_ntop6(const u_char *src, char *dst, socklen_t size, struct SocketBase *SocketBase)
 {
 	/*
 	 * Note that int32_t and int16_t need only be "at least" large enough
@@ -159,7 +156,7 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size)
 		/* Is this address an encapsulated IPv4? */
 		if (i == 6 && best.base == 0 &&
 		    (best.len == 6 || (best.len == 5 && words[5] == 0xffff))) {
-			if (!inet_ntop4(src+12, tp, sizeof tmp - (tp - tmp)))
+			if (!inet_ntop4(src+12, tp, sizeof tmp - (tp - tmp), SocketBase))
 				return (NULL);
 			tp += strlen(tp);
 			break;
@@ -176,7 +173,7 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size)
 	 * Check for overflow, copy, and we're done.
 	 */
 	if ((socklen_t)(tp - tmp) > size) {
-		SocketBaseTags(SBTM_SETVAL(SBTC_ERRNO),ENOSPC,TAG_DONE);
+		writeErrnoValue(SocketBase, ENOSPC);
 		return (NULL);
 	}
 	strcpy(dst, tmp);
