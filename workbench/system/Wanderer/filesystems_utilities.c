@@ -345,12 +345,14 @@ WORD AskChoice(CONST_STRPTR title, CONST_STRPTR strg, CONST_STRPTR gadgets, UWOR
  */
 VOID DisplayIOError(CONST_STRPTR errormessage, IPTR ioError, ...)
 {
-    CONST_STRPTR title = _(MSG_WANDERER_ERROR_FILE_OPERATION);
+    CONST_STRPTR title = _(MSG_IO_ERROR);
     TEXT buffer[ERROR_LEN + 1];
     va_list args;
 
     va_start(args, ioError);
-    VNewRawDoFmt(errormessage, RAWFMTFUNC_STRING, buffer, args);
+    strcat(buffer, _(MSG_WANDERER_ERROR_FILE_OPERATION));
+    strcat(buffer, "\n");
+    VNewRawDoFmt(errormessage, RAWFMTFUNC_STRING, buffer + strlen(buffer), args);
     va_end(args);
 
     if (ioError > 0)
