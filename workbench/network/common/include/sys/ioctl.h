@@ -4,7 +4,7 @@
 /*
  *	SocketIoctl codes
  *
- *      Copyright © 1994 AmiTCP/IP Group,
+ *      Copyright Â© 1994 AmiTCP/IP Group,
  *                       Network Solutions Development, Inc.
  *                       All rights reserved.
  */
@@ -116,6 +116,16 @@ __END_DECLS
 
 #define SIOCGIFASYNCMAP _IOWR('i', 124, struct ifreq)   /* get ppp asyncmap */
 #define SIOCSIFASYNCMAP  _IOW('i', 125, struct ifreq)   /* set ppp asyncmap */
+
+/*
+ * IPv6 interface address ioctls.
+ * Requires <netinet/in_var.h> for struct in6_ifreq / in6_aliasreq.
+ */
+#define SIOCAIFADDR_IN6	 _IOW ('i', 26, struct in6_aliasreq) /* add/chg IPv6 alias */
+#define SIOCDIFADDR_IN6  _IOW ('i', 25, struct in6_ifreq)   /* delete IPv6 addr */
+#define SIOCGIFADDR_IN6	 _IOWR('i', 33, struct in6_ifreq)   /* get IPv6 address */
+#define SIOCGIFDSTADDR_IN6 _IOWR('i', 34, struct in6_ifreq) /* get IPv6 p-p addr */
+#define SIOCGIFNETMASK_IN6 _IOWR('i', 37, struct in6_ifreq) /* get IPv6 netmask */
 
 /*
  * Private extensions to the BSD44 ioctl interface) 

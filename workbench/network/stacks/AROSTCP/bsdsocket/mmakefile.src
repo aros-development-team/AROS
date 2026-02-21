@@ -77,6 +77,15 @@ NETINET_H= \
 	netinet/tcp_seq.h netinet/tcp_timer.h netinet/tcp_var.h \
 	netinet/udp_var.h 
 
+# netinet6 -- IPv6 protocol stack (KAME-derived)
+NETINET6_C= \
+	netinet6/in6 netinet6/in6_proto \
+	netinet6/ip6_input netinet6/ip6_output \
+	netinet6/icmp6 netinet6/nd6
+
+NETINET6_H= \
+	netinet6/in6_var.h netinet6/nd6.h
+
 
 # "Kernel" sources
 # main, timeouts, syncronization, memory management,
@@ -131,16 +140,17 @@ MISC= \
 
 NET_O=      $(NET_C:.c=.o)
 NETINET_O=  $(NETINET_C:.c=.o)
+NETINET6_O= $(NETINET6_C:.c=.o)
 KERN_O=     $(KERN_C:.c=.o)
 API_O=     $(API_C:.c=.o)
-CSRCS=	$(API_C) $(KERN_C) $(NET_C) $(NETINET_C)
-OBJS= 	$(API_O) $(KERN_O) $(NET_O) $(NETINET_O) 
+CSRCS=	$(API_C) $(KERN_C) $(NET_C) $(NETINET_C) $(NETINET6_C)
+OBJS= 	$(API_O) $(KERN_O) $(NET_O) $(NETINET_O) $(NETINET6_O)
 AMISRC=      $(CSRCS) $(SYS_H) $(API_H) $(KERN_H) $(NET_H) $(NETINET_H) \
-	     $(MISC_H) $(MISC) $(PROTOS_H)
+	     $(NETINET6_H) $(MISC_H) $(MISC) $(PROTOS_H)
 #NETINCSRC=   $(SYS_HH) $(NET_HH) $(NETINET_HH) 
 SRCS=	     $(AMISRC) #$(NETINCSRC)
 TARGETS= AROSTCP
-DIRS= net netinet kern api
+DIRS= net netinet netinet6 kern api
 
 all: dirs $(TARGETS)
 
@@ -153,6 +163,7 @@ dirs: $(DIRS)
 
 net: $(NET_O)
 netinet: $(NETINET_O)
+netinet6: $(NETINET6_O)
 kern: $(KERN_O)
 api: $(API_O)
 
@@ -170,7 +181,7 @@ USER_CFLAGS := $(CFLAGS_GNU99) $(NOWARN_FLAGS)
 
 %build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \
     progname=$(STACK_NAME) \
-    files="$(NET_C) $(NETINET_C) $(KERN_C) $(API_C)" \
+    files="$(NET_C) $(NETINET_C) $(NETINET6_C) $(KERN_C) $(API_C)" \
     targetdir=$(AROS_SYSTEM)/Network/$(STACK_NAME)/C
 
 %common

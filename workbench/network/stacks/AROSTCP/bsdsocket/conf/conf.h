@@ -47,6 +47,7 @@
  * protocol families
  */
 #define INET 1
+#define INET6 1			/* IPv6 */
 #define CCITT 0
 #define NHY 0			/* HYPERchannel */
 #define NIMP 0

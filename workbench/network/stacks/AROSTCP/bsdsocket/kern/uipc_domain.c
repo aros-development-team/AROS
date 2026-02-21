@@ -96,6 +96,9 @@ domaininit()
 #if INET
 	ADDDOMAIN(inet);
 #endif
+#if INET6
+	ADDDOMAIN(inet6);
+#endif
 #if NS
 	ADDDOMAIN(ns);
 #endif

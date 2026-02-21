@@ -192,6 +192,18 @@
 #define	IPPROTO_EON		80		/* ISO cnlp */
 #define	IPPROTO_UDPLITE		136		/* UDP Lite */
 
+#define	IPPROTO_HOPOPTS		0		/* IPv6 hop-by-hop options */
+#define	IPPROTO_ROUTING		43		/* IPv6 routing header */
+#define	IPPROTO_FRAGMENT	44		/* IPv6 fragmentation header */
+#define	IPPROTO_RSVP		46		/* RSVP */
+#define	IPPROTO_GRE		47		/* GRE encap */
+#define	IPPROTO_ESP		50		/* IPsec ESP */
+#define	IPPROTO_AH		51		/* IPsec AH */
+#define	IPPROTO_ICMPV6		58		/* ICMPv6 */
+#define	IPPROTO_NONE		59		/* IPv6 no next header */
+#define	IPPROTO_DSTOPTS		60		/* IPv6 destination options */
+#define	IPPROTO_SCTP		132		/* SCTP */
+
 #define	IPPROTO_RAW		255		/* raw IP packet */
 #define	IPPROTO_MAX		256
 
@@ -346,6 +358,26 @@ struct sockaddr_in6 {
 };
 
 /* IPv6 socket options */
-#define IPV6_V6ONLY     26      /* Restrict AF_INET6 sockets to IPv6 only. */
+#define IPV6_V6ONLY		26	/* Restrict AF_INET6 sockets to IPv6 only. */
+#define IPV6_UNICAST_HOPS	4	/* int; IP6 hops */
+#define IPV6_MULTICAST_IF	9	/* u_int; set/get IP6 multicast i/f  */
+#define IPV6_MULTICAST_HOPS	10	/* int; set/get IP6 multicast hops */
+#define IPV6_MULTICAST_LOOP	11	/* u_int; set/get IP6 multicast loopback */
+#define IPV6_JOIN_GROUP		12	/* ipv6_mreq; join a group membership */
+#define IPV6_LEAVE_GROUP	13	/* ipv6_mreq; leave a group membership */
+#define IPV6_PKTINFO		46	/* get/set IPv6 packet info */
+#define IPV6_HOPLIMIT		47	/* int; get/set IPv6 hop limit */
+#define IPV6_HOPOPTS		49	/* get/set IPv6 hop-by-hop options */
+#define IPV6_DSTOPTS		50	/* get/set IPv6 dest options after rt hdr */
+#define IPV6_RTHDR		51	/* get/set IPv6 routing header */
+#define IPV6_RECVPKTINFO	61	/* bool; recv if, dst addr */
+#define IPV6_RECVHOPLIMIT	37	/* bool; recv hop limit */
+#define IPV6_CHECKSUM		26	/* int; checksum offset for raw socket */
+
+/* IPv6 multicast request */
+struct ipv6_mreq {
+	struct in6_addr ipv6mr_multiaddr;
+	unsigned int    ipv6mr_interface;
+};
 
 #endif /* !IN_H */
