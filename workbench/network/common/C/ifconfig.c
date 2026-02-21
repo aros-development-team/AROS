@@ -4,7 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (c) 2005 Pavel Fedin
- * Copyright (c) 2006-2019 The AROS Dev Team
+ * Copyright (c) 2006-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -55,7 +55,10 @@
  * SUCH DAMAGE.
  */
 
+/* INET_ONLY: disable obsolete NS/ISO/AT protocol families */
 #define INET_ONLY
+/* INET6: enable IPv6 address family support */
+#define INET6 1
 
 #include <dos/dos.h>
 
@@ -72,6 +75,7 @@
 #include <net/if_media.h>
 #endif
 #include <netinet/in.h>
+#include <netinet/in_var.h>
 #include <arpa/inet.h>
 #ifdef ENABLE_APPLETALK
 #include <netatalk/at.h>
@@ -116,6 +120,11 @@ struct	sockaddr_in	netmask;
 #ifdef ENABLE_APPLETALK
 struct	netrange	at_nr;		/* AppleTalk net range */
 #endif
+#ifdef INET6
+struct	in6_ifreq	in6_ridreq;
+struct	in6_aliasreq	in6_addreq __attribute__((aligned(4)));
+int	ip6lifetime;
+#endif
 char	name[30];
 int	flags, metric, mtu, setaddr, setipdst, doalias;
 int	clearaddr, s;
@@ -148,6 +157,12 @@ void	unsetmediaopt __P((char *, int));
 #ifdef ISO
 void	fixnsel __P((struct sockaddr_iso *));
 #endif
+#ifdef INET6
+void	in6_status __P((int));
+void	in6_getaddr __P((char *, int));
+void	in6_getprefix __P((char *, int));
+void	setifprefixlen __P((char *, int));
+#endif
 int	main __P((int, char *[]));
 
 #define	NEXTARG		0xffffff
@@ -178,6 +193,9 @@ struct	cmd {
 	{ "mtu",	NEXTARG,	setifmtu },
 	{ "broadcast",	NEXTARG,	setifbroadaddr },
 	{ "ipdst",	NEXTARG,	setifipdst },
+#ifdef INET6
+	{ "prefixlen",	NEXTARG,	setifprefixlen },
+#endif
 #ifndef INET_ONLY
 	{ "range",	NEXTARG,	setatrange },
 	{ "phase",	NEXTARG,	setatphase },
@@ -240,6 +258,10 @@ struct afswtch {
 #define C(x) ((caddr_t) &x)
 	{ "inet", AF_INET, in_status, in_getaddr,
 	     SIOCDIFADDR, SIOCAIFADDR, C(ridreq), C(addreq) },
+#ifdef INET6
+	{ "inet6", AF_INET6, in6_status, in6_getaddr,
+	     SIOCDIFADDR_IN6, SIOCAIFADDR_IN6, C(in6_ridreq), C(in6_addreq) },
+#endif
 #ifndef INET_ONLY	/* small version, for boot media */
 	{ "atalk", AF_APPLETALK, at_status, at_getaddr,
 	     SIOCDIFADDR, SIOCAIFADDR, C(addreq), C(addreq) },
@@ -1370,6 +1392,155 @@ in_getaddr(s, which)
 	}
 }
 
+#ifdef INET6
+
+#define SIN6(x) ((struct sockaddr_in6 *) &(x))
+static struct sockaddr_in6 *sin6tab[] = {
+	SIN6(in6_ridreq.ifr_addr),    SIN6(in6_addreq.ifra_addr),
+	SIN6(in6_addreq.ifra_prefixmask), SIN6(in6_addreq.ifra_dstaddr)
+};
+
+/*
+ * in6_status - print IPv6 address information for the interface.
+ */
+void
+in6_status(force)
+	int force;
+{
+	struct sockaddr_in6 *sin6;
+	char addr[INET6_ADDRSTRLEN];
+	int s6;
+
+	getsock(AF_INET6);
+	s6 = s;
+	if (s6 < 0) {
+		if (errno == EPROTONOSUPPORT)
+			return;
+		err(1, "socket(AF_INET6)");
+	}
+
+	memset(&in6_ridreq, 0, sizeof(in6_ridreq));
+	strncpy(in6_ridreq.ifr_name, name, sizeof(in6_ridreq.ifr_name));
+	if (IoctlSocket(s6, SIOCGIFADDR_IN6, (caddr_t)&in6_ridreq) < 0) {
+		if (errno == EADDRNOTAVAIL || errno == EAFNOSUPPORT) {
+			if (!force)
+				return;
+			memset(&in6_ridreq.ifr_addr, 0,
+			    sizeof(in6_ridreq.ifr_addr));
+		} else if (errno == EOPNOTSUPP) {
+			return;
+		} else
+			warn("SIOCGIFADDR_IN6");
+	}
+
+	sin6 = &in6_ridreq.ifr_addr;
+	if (inet_ntop(AF_INET6, &sin6->sin6_addr, addr, sizeof(addr)) == NULL)
+		strncpy(addr, "?", sizeof(addr));
+	printf("\tinet6 %s", addr);
+
+	/* prefix length via netmask */
+	strncpy(in6_ridreq.ifr_name, name, sizeof(in6_ridreq.ifr_name));
+	if (IoctlSocket(s6, SIOCGIFNETMASK_IN6, (caddr_t)&in6_ridreq) >= 0) {
+		struct in6_addr *ma = &in6_ridreq.ifr_addr.sin6_addr;
+		int plen = 0, i, b;
+		for (i = 0; i < 16; i++) {
+			for (b = 7; b >= 0; b--) {
+				if (ma->s6_addr[i] & (1 << b))
+					plen++;
+				else
+					goto done_plen;
+			}
+		}
+	done_plen:
+		printf(" prefixlen %d", plen);
+	}
+
+	if (flags & IFF_POINTOPOINT) {
+		strncpy(in6_ridreq.ifr_name, name,
+		    sizeof(in6_ridreq.ifr_name));
+		if (IoctlSocket(s6, SIOCGIFDSTADDR_IN6,
+		    (caddr_t)&in6_ridreq) < 0) {
+			if (errno == EADDRNOTAVAIL)
+				memset(&in6_ridreq.ifr_addr, 0,
+				    sizeof(in6_ridreq.ifr_addr));
+			else
+				warn("SIOCGIFDSTADDR_IN6");
+		}
+		sin6 = &in6_ridreq.ifr_addr;
+		if (inet_ntop(AF_INET6, &sin6->sin6_addr, addr,
+		    sizeof(addr)) == NULL)
+			strncpy(addr, "?", sizeof(addr));
+		printf(" --> %s", addr);
+	}
+
+	/* print address flags */
+	{
+		u_int32_t flags6 = in6_ridreq.ifr_ifru.ifru_lifetime.ia6t_expire;
+		/* flags live in ifr6_flags field via union */
+		(void)flags6; /* suppress unused warning */
+	}
+
+	putchar('\n');
+}
+
+/*
+ * in6_getaddr - parse an IPv6 address for use with an ioctl.
+ */
+void
+in6_getaddr(s, which)
+	char *s;
+	int which;
+{
+	struct sockaddr_in6 *sin6 = sin6tab[which];
+
+	sin6->sin6_len = sizeof(*sin6);
+	if (which != MASK)
+		sin6->sin6_family = AF_INET6;
+
+	if (inet_pton(AF_INET6, s, &sin6->sin6_addr) != 1)
+		errx(1, "%s: bad IPv6 address", s);
+}
+
+/*
+ * in6_getprefix - parse a prefix length and set the prefix mask.
+ */
+void
+in6_getprefix(plen_str, which)
+	char *plen_str;
+	int which;
+{
+	struct sockaddr_in6 *sin6 = sin6tab[which];
+	int plen = atoi(plen_str);
+	u_char *cp;
+
+	if (plen < 0 || plen > 128)
+		errx(1, "%s: bad prefix length", plen_str);
+
+	sin6->sin6_len = sizeof(*sin6);
+	sin6->sin6_family = AF_INET6;
+	memset(&sin6->sin6_addr, 0, sizeof(sin6->sin6_addr));
+	for (cp = (u_char *)&sin6->sin6_addr; plen > 7; plen -= 8)
+		*cp++ = 0xff;
+	if (plen > 0)
+		*cp = 0xff << (8 - plen);
+}
+
+/*
+ * setifprefixlen - set the IPv6 prefix length on the alias request.
+ */
+void
+setifprefixlen(addr, d)
+	char *addr;
+	int d;
+{
+	if (afp->af_af == AF_INET6)
+		in6_getprefix(addr, MASK);
+	else
+		errx(1, "prefixlen only valid for inet6");
+}
+
+#endif /* INET6 */
+
 /*
  * Print a value a la the %b format of the kernel's printf
  */
@@ -1557,9 +1728,10 @@ void
 usage()
 {
 	fprintf(stderr,
-	    "usage: ifconfig [ -m ] interface\n%s%s%s%s%s%s%s%s%s%s%s",
+	    "usage: ifconfig [ -m ] interface\n%s%s%s%s%s%s%s%s%s%s%s%s",
 		"\t[ af [alias | -alias | delete] [ address [ dest_addr ] ] [ up ] [ down ] ",
 		"[ netmask mask ] ]\n",
+		"\t[ inet6 address prefixlen len ]\n",
 		"\t[ metric n ]\n",
 		"\t[ mtu n ]\n",
 		"\t[ arp | -arp ]\n",
