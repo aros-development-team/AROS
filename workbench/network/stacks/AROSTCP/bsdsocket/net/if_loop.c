@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -75,11 +75,17 @@
 #include <net/route.h>
 
 
-#if	INET
+#if	INET || INET6
 #include <netinet/in.h>
+#endif
+#if	INET
 #include <netinet/in_systm.h>
 #include <netinet/in_var.h>
 #include <netinet/ip.h>
+#endif
+
+#if INET6
+#include <netinet6/in6_var.h>
 #endif
 
 #if NS
@@ -123,6 +129,22 @@ void loconfig()
 	ifr.ifr_addr.sa_family = AF_INET;
 	ifr_saddr->sin_addr.s_addr = htonl(0x7F000001);
 	in_control(NULL, SIOCSIFADDR, &ifr, &loif);
+
+#if INET6
+	{
+		static const struct in6_addr loopback6 = IN6ADDR_LOOPBACK_INIT;
+		struct in6_aliasreq ifra6 = { };
+		ifra6.ifra_addr.sin6_len    = sizeof(struct sockaddr_in6);
+		ifra6.ifra_addr.sin6_family = AF_INET6;
+		ifra6.ifra_addr.sin6_addr   = loopback6; /* ::1 */
+		ifra6.ifra_prefixmask.sin6_len    = sizeof(struct sockaddr_in6);
+		ifra6.ifra_prefixmask.sin6_family = AF_INET6;
+		/* /128 prefix mask: all bits set */
+		memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
+		    sizeof(ifra6.ifra_prefixmask.sin6_addr));
+		in6_control(NULL, SIOCSIFADDR, (caddr_t)&ifra6, &loif);
+	}
+#endif
 }
 
 int
