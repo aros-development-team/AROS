@@ -171,12 +171,23 @@ AROS_UFHA(struct Interface *, entry, A1))
     if (entry)
     {
         static char unitbuffer[20];
+        static char addrbuffer[12 + IPBUFLEN + 2 + IP6BUFLEN + 1];
+        CONST_STRPTR ip4 = entry->ifDHCP ? (STRPTR)_(MSG_IP_MODE_DHCP) : entry->IP;
+
         sprintf(unitbuffer, "%d", (int)entry->unit);
         *array++ = entry->name;
         *array++ = entry->up ? "*" : "";
         *array++ = FilePart(entry->device);
         *array++ = unitbuffer;
-        *array = entry->ifDHCP ? (STRPTR)_(MSG_IP_MODE_DHCP) : entry->IP;
+
+        /* Build combined IPv4 / IPv6 address string */
+        if (entry->ifDHCP6)
+            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, _(MSG_IP_MODE_DHCP));
+        else if (entry->ip6[0] != '\0')
+            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, entry->ip6);
+        else
+            sprintf(addrbuffer, "%s (IP4)", ip4);
+        *array = addrbuffer;
     }
     else
     {

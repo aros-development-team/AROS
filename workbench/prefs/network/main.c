@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -15,7 +15,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 1.23 (20.2.2024) AROS Dev Team"
+#define VERSION "$VER: Network 1.25 (21.02.2026) AROS Dev Team"
 
 int main(int argc, char **argv)
 {
