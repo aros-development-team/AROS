@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -73,6 +73,9 @@
 #include <net/if.h>
 #include <net/if_dl.h>
 #include <netinet/in.h> /* for findid */
+#if INET6
+#include <netinet/in_var.h>	/* struct in6_aliasreq / in6_ifreq for SIOC*_IN6 */
+#endif
 
 void ifinit(void);
 void if_attach(struct ifnet *);
@@ -614,6 +617,18 @@ ifioctl(so, cmd, data)
 #endif /* AMITCP */
 		ifp->if_metric = ifr->ifr_metric;
 		break;
+
+#if INET6
+	case SIOCAIFADDR_IN6:
+	case SIOCDIFADDR_IN6:
+	case SIOCGIFADDR_IN6:
+	case SIOCGIFDSTADDR_IN6:
+	case SIOCGIFNETMASK_IN6:
+	{
+		int in6_control(struct socket *, int, caddr_t, struct ifnet *);
+		return (in6_control(so, cmd, data, ifp));
+	}
+#endif /* INET6 */
 
 	default:
 		if (so->so_proto == 0)

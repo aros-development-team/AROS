@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2019 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -46,6 +46,8 @@
 #include <net/sana2config.h>
 #include <net/route.h>
 #include <netinet/in.h>
+#include <netinet/in_var.h>
+#include <netinet6/in6_var.h>
 #include <protos/net/if_protos.h>
 
 extern struct ifnet *iface_make(struct ssconfig *ifc);
@@ -350,6 +352,103 @@ static int inline setaddr(struct sockaddr_in *sa, char *addr, u_short af)
   return __inet_aton(addr, &sa->sin_addr);
 }
 
+#ifdef INET6
+/* Minimal in-kernel IPv6 address parser (adapted from KAME inet_pton6). */
+static int
+inet6_aton(const char *src, struct in6_addr *dst)
+{
+	static const char xdigits_l[] = "0123456789abcdef",
+	                  xdigits_u[] = "0123456789ABCDEF";
+	u_char tmp[16], *tp, *endp, *colonp;
+	const char *xdigits, *curtok;
+	int ch, saw_xdigit;
+	u_int val;
+
+	memset((tp = tmp), 0, 16);
+	endp  = tp + 16;
+	colonp = NULL;
+	if (*src == ':')
+		if (*++src != ':')
+			return 0;
+	curtok = src;
+	saw_xdigit = 0;
+	val = 0;
+	while ((ch = *src++) != '\0') {
+		const char *pch;
+		if ((pch = strchr((xdigits = xdigits_l), ch)) == NULL)
+			pch = strchr((xdigits = xdigits_u), ch);
+		if (pch != NULL) {
+			val <<= 4;
+			val |= (pch - xdigits);
+			if (val > 0xffff)
+				return 0;
+			saw_xdigit = 1;
+			continue;
+		}
+		if (ch == ':') {
+			curtok = src;
+			if (!saw_xdigit) {
+				if (colonp)
+					return 0;
+				colonp = tp;
+				continue;
+			}
+			if (tp + 2 > endp)
+				return 0;
+			*tp++ = (u_char)((val >> 8) & 0xff);
+			*tp++ = (u_char)(val & 0xff);
+			saw_xdigit = 0;
+			val = 0;
+			continue;
+		}
+		return 0;
+	}
+	if (saw_xdigit) {
+		if (tp + 2 > endp)
+			return 0;
+		*tp++ = (u_char)((val >> 8) & 0xff);
+		*tp++ = (u_char)(val & 0xff);
+	}
+	if (colonp != NULL) {
+		const int n = tp - colonp;
+		int i;
+		for (i = 1; i <= n; i++) {
+			endp[-i] = colonp[n - i];
+			colonp[n - i] = 0;
+		}
+		tp = endp;
+	}
+	if (tp != endp)
+		return 0;
+	memcpy(dst, tmp, 16);
+	return 1;
+}
+
+/* Parse an IPv6 address string into a sockaddr_in6. */
+static int inline setaddr6(struct sockaddr_in6 *sa6, char *addr)
+{
+  memset(sa6, 0, sizeof(*sa6));
+  sa6->sin6_len    = sizeof(struct sockaddr_in6);
+  sa6->sin6_family = AF_INET6;
+  return inet6_aton(addr, &sa6->sin6_addr);
+}
+
+/* Build an IPv6 prefix mask from a prefix length (0-128). */
+static void setprefixmask6(struct sockaddr_in6 *mask, int plen)
+{
+  u_char *cp;
+  memset(mask, 0, sizeof(*mask));
+  mask->sin6_len    = sizeof(struct sockaddr_in6);
+  mask->sin6_family = AF_INET6;
+  if (plen < 0)   plen = 0;
+  if (plen > 128) plen = 128;
+  for (cp = (u_char *)&mask->sin6_addr; plen > 7; plen -= 8)
+    *cp++ = 0xff;
+  if (plen > 0)
+    *cp = (u_char)(0xff << (8 - plen));
+}
+#endif /* INET6 */
+
 /*
  * Parse an interface entry.
  */
@@ -442,6 +541,36 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 				}
 			}
 		}
+#ifdef INET6
+		/* Apply IPv6 address if specified */
+		if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6) {
+			struct in6_aliasreq in6r;
+			int plen = ssc->args->a_prefixlen ? (int)*ssc->args->a_prefixlen : 64;
+
+			DIFCONF(Printf("> IPv6 address: %s prefixlen %d\n",
+			    ssc->args->a_ip6, plen);)
+
+			memset(&in6r, 0, sizeof(in6r));
+			strncpy(in6r.ifra_name, ssc->args->a_name,
+			    sizeof(in6r.ifra_name) - 1);
+
+			if (setaddr6(&in6r.ifra_addr, ssc->args->a_ip6)) {
+				setprefixmask6(&in6r.ifra_prefixmask, plen);
+				if (in6_control(NULL, SIOCAIFADDR_IN6,
+				    (caddr_t)&in6r, ifp) != 0) {
+					__log(LOG_WARNING,
+					    "addifent: SIOCAIFADDR_IN6 failed "
+					    "for %s\n", ssc->args->a_name);
+				}
+			} else {
+				__log(LOG_WARNING,
+				    "addifent: bad IPv6 address '%s'\n",
+				    ssc->args->a_ip6);
+				*errstrp = ERR_SYNTAX;
+				retval = RETURN_WARN;
+			}
+		}
+#endif /* INET6 */
 		else
 		{
 #if defined(__AROS__)
