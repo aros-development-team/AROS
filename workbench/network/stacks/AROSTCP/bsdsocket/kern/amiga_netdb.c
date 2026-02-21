@@ -542,8 +542,10 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 			}
 		}
 #ifdef INET6
-		/* Apply IPv6 address if specified */
-		if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6) {
+		/* Apply IPv6 address if specified and not AUTO/DHCP (auto-configured via RA) */
+		if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6
+		    && strncmp(ssc->args->a_ip6, "AUTO", 4) != 0
+		    && strncmp(ssc->args->a_ip6, "DHCP", 4) != 0) {
 			struct in6_aliasreq in6r;
 			int plen = ssc->args->a_prefixlen ? (int)*ssc->args->a_prefixlen : 64;
 
