@@ -81,12 +81,13 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
 #endif
 
 /******************************************************************/
+/* ZUNE_CUSTOMCLASS_1 .. ZUNE_CUSTOMCLASS_30 */
 
 #define ZUNE_CUSTOMCLASS_1(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                 \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_2(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -94,7 +95,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_START(name)                                 \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_3(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -104,7 +105,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_4(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -116,7 +117,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_5(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -130,7 +131,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_6(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -146,7 +147,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_7(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -164,7 +165,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_8(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -184,7 +185,7 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_9(name, base, parent_name, parent_class,  \
                            m1, m1_msg_type,                        \
@@ -206,218 +207,931 @@ ADD2EXIT(name ## _Deinitialize, ZUNE_CUSTOMCLASS_PASS);               \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);  \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);  \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_10(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_11(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                        \
-                           m11, m11_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_12(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_13(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_14(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                        \
-                           m11, m11_msg_type,                        \
-                           m12, m12_msg_type,                        \
-                           m13, m13_msg_type,                        \
-                           m14, m14_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_15(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_16(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_17(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                        \
-                           m11, m11_msg_type,                        \
-                           m12, m12_msg_type,                        \
-                           m13, m13_msg_type,                        \
-                           m14, m14_msg_type,                        \
-                           m15, m15_msg_type,                        \
-                           m16, m16_msg_type,                        \
-                           m17, m17_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_18(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_19(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_20(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                        \
-                           m11, m11_msg_type,                        \
-                           m12, m12_msg_type,                        \
-                           m13, m13_msg_type,                        \
-                           m14, m14_msg_type,                        \
-                           m15, m15_msg_type,                        \
-                           m16, m16_msg_type,                        \
-                           m17, m17_msg_type,                        \
-                           m18, m18_msg_type,                        \
-                           m19, m19_msg_type,                        \
-                           m20, m20_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 #define ZUNE_CUSTOMCLASS_21(name, base, parent_name, parent_class,   \
-                           m1, m1_msg_type,                          \
-                           m2, m2_msg_type,                          \
-                           m3, m3_msg_type,                          \
-                           m4, m4_msg_type,                          \
-                           m5, m5_msg_type,                          \
-                           m6, m6_msg_type,                          \
-                           m7, m7_msg_type,                          \
-                           m8, m8_msg_type,                          \
-                           m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                        \
-                           m11, m11_msg_type,                        \
-                           m12, m12_msg_type,                        \
-                           m13, m13_msg_type,                        \
-                           m14, m14_msg_type,                        \
-                           m15, m15_msg_type,                        \
-                           m16, m16_msg_type,                        \
-                           m17, m17_msg_type,                        \
-                           m18, m18_msg_type,                        \
-                           m19, m19_msg_type,                        \
-                           m20, m20_msg_type,                        \
-                           m21, m21_msg_type)                        \
-    __ZUNE_CUSTOMCLASS_START(name)                                   \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type); \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type); \
-    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
+#define ZUNE_CUSTOMCLASS_22(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_23(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_24(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_25(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_26(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type,                       \
+                            m26, m26_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m26, m26, m26_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_27(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type,                       \
+                            m26, m26_msg_type,                       \
+                            m27, m27_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m26, m26, m26_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m27, m27, m27_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_28(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type,                       \
+                            m26, m26_msg_type,                       \
+                            m27, m27_msg_type,                       \
+                            m28, m28_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m26, m26, m26_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m27, m27, m27_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m28, m28, m28_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_29(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type,                       \
+                            m26, m26_msg_type,                       \
+                            m27, m27_msg_type,                       \
+                            m28, m28_msg_type,                       \
+                            m29, m29_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m26, m26, m26_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m27, m27, m27_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m28, m28, m28_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m29, m29, m29_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
+
+#define ZUNE_CUSTOMCLASS_30(name, base, parent_name, parent_class,   \
+                            m1, m1_msg_type,                         \
+                            m2, m2_msg_type,                         \
+                            m3, m3_msg_type,                         \
+                            m4, m4_msg_type,                         \
+                            m5, m5_msg_type,                         \
+                            m6, m6_msg_type,                         \
+                            m7, m7_msg_type,                         \
+                            m8, m8_msg_type,                         \
+                            m9, m9_msg_type,                         \
+                            m10, m10_msg_type,                       \
+                            m11, m11_msg_type,                       \
+                            m12, m12_msg_type,                       \
+                            m13, m13_msg_type,                       \
+                            m14, m14_msg_type,                       \
+                            m15, m15_msg_type,                       \
+                            m16, m16_msg_type,                       \
+                            m17, m17_msg_type,                       \
+                            m18, m18_msg_type,                       \
+                            m19, m19_msg_type,                       \
+                            m20, m20_msg_type,                       \
+                            m21, m21_msg_type,                       \
+                            m22, m22_msg_type,                       \
+                            m23, m23_msg_type,                       \
+                            m24, m24_msg_type,                       \
+                            m25, m25_msg_type,                       \
+                            m26, m26_msg_type,                       \
+                            m27, m27_msg_type,                       \
+                            m28, m28_msg_type,                       \
+                            m29, m29_msg_type,                       \
+                            m30, m30_msg_type)                       \
+    __ZUNE_CUSTOMCLASS_START(name)                                    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m3, m3, m3_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);     \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m14, m14, m14_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m15, m15, m15_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m16, m16, m16_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m21, m21, m21_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m22, m22, m22_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m23, m23, m23_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m24, m24, m24_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m25, m25, m25_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m26, m26, m26_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m27, m27, m27_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m28, m28, m28_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m29, m29, m29_msg_type);  \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m30, m30, m30_msg_type);  \
+    __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)
 
 /*************************************************************************/
 
