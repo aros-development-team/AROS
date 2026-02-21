@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -89,11 +89,14 @@ struct NetPEditor_DATA
     Object  *netped_ifWindow,
             *netped_upState,
             *netped_ifDHCPState,
+            *netped_if6DHCPState,
             *netped_nameString,
             *netped_deviceString,
             *netped_unitString,
             *netped_IPString,
             *netped_maskString,
+            *netped_IP6String,
+            *netped_IP6PrefixString,
             *netped_applyButton,
             *netped_closeButton;
 
@@ -390,6 +393,9 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         SetUnit(iface, ifaceentry->unit);
         SetIP(iface, ifaceentry->IP);
         SetMask(iface, ifaceentry->mask);
+        SetIfDHCP6(iface, ifaceentry->ifDHCP6);
+        SetIP6(iface, ifaceentry->ip6);
+        SetIP6Prefix(iface, ifaceentry->ip6prefix);
     }
     SetInterfaceCount(entries);
 
@@ -503,6 +509,9 @@ BOOL NetworkPrefs2Gadgets
             GetIfDHCP(iface),
             GetIP(iface),
             GetMask(iface),
+            GetIfDHCP6(iface),
+            GetIP6(iface),
+            GetIP6Prefix(iface),
             GetDevice(iface),
             GetUnit(iface),
             GetUp(iface)
@@ -691,7 +700,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     // inferface window
     Object  *deviceString, *IPString, *maskString,
-            *ifDHCPState, *unitString, *nameString, *upState,
+            *IP6String, *IP6PrefixString,
+            *ifDHCPState, *if6DHCPState, *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
 
     // host window
@@ -1046,6 +1056,25 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_CycleChain, 1,
                     MUIA_FixWidthTxt, (IPTR)max_ip_str,
                 End),
+                Child, (IPTR)Label2(__(MSG_IP6_MODE)),
+                Child, (IPTR)(if6DHCPState = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)DHCPCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_IP6)),
+                Child, (IPTR)(IP6String = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IP6CHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)Label2(__(MSG_IP6_PREFIX)),
+                Child, (IPTR)(IP6PrefixString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)"0123456789",
+                    MUIA_CycleChain, 1,
+                    MUIA_FixWidthTxt, (IPTR)"128 ",
+                End),
             End,
             Child, (IPTR)HGroup,
                 Child, (IPTR)(applyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
@@ -1259,11 +1288,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_ifWindow = ifWindow;
         data->netped_upState = upState;
         data->netped_ifDHCPState = ifDHCPState;
+        data->netped_if6DHCPState = if6DHCPState;
         data->netped_nameString = nameString;
         data->netped_deviceString  = deviceString;
         data->netped_unitString = unitString;
         data->netped_IPString = IPString;
         data->netped_maskString = maskString;
+        data->netped_IP6String = IP6String;
+        data->netped_IP6PrefixString = IP6PrefixString;
         data->netped_applyButton = applyButton;
         data->netped_closeButton = closeButton;
 
@@ -1497,6 +1529,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             ifDHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR)self, 2, MUIM_NetPEditor_IPModeChanged, TRUE
+        );
+        DoMethod
+        (
+            if6DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_IP6ModeChanged
         );
         DoMethod
         (
@@ -1775,6 +1812,58 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 }
 
 /*
+    Handles IPv6 mode (Auto/Manual) cycle change in the interface window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_IP6ModeChanged
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_IP6ModeChanged *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    STRPTR str = NULL;
+    IPTR lng = 0;
+    struct Interface *iface;
+
+    DoMethod
+    (
+        data->netped_interfaceList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &iface
+    );
+    GetAttr(MUIA_Cycle_Active, data->netped_if6DHCPState, &lng);
+
+    if (iface != NULL)
+    {
+        if (lng == 1)
+        {
+            /* Auto: clear and disable IPv6 address and prefix fields */
+            SET(data->netped_IP6String, MUIA_Disabled, TRUE);
+            GET(data->netped_IP6String, MUIA_String_Contents, &str);
+            SetIP6(iface, str);
+            SET(data->netped_IP6String, MUIA_String_Contents, "");
+
+            SET(data->netped_IP6PrefixString, MUIA_Disabled, TRUE);
+        }
+        else
+        {
+            /* Manual: enable IPv6 address and prefix fields */
+            IPTR prefix = 0;
+            SET(data->netped_IP6String, MUIA_Disabled, FALSE);
+            SET(data->netped_IP6String, MUIA_String_Contents, GetIP6(iface));
+
+            SET(data->netped_IP6PrefixString, MUIA_Disabled, FALSE);
+            GET(data->netped_IP6PrefixString, MUIA_String_Integer, &prefix);
+            if (prefix == 0)
+                SET(data->netped_IP6PrefixString, MUIA_String_Integer, 64);
+        }
+    }
+
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+    return TRUE;
+}
+
+/*
     Shows content of current list entry in the interface window.
 */
 IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
@@ -1812,6 +1901,21 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         SET(data->netped_ifDHCPState, MUIA_Cycle_Active, GetIfDHCP(iface) ? 1 : 0);
         SET(data->netped_deviceString, MUIA_String_Contents, GetDevice(iface));
         SET(data->netped_unitString, MUIA_String_Integer, GetUnit(iface));
+        SET(data->netped_if6DHCPState, MUIA_Cycle_Active, GetIfDHCP6(iface) ? 1 : 0);
+        if (GetIfDHCP6(iface))
+        {
+            SET(data->netped_IP6String, MUIA_Disabled, TRUE);
+            SET(data->netped_IP6String, MUIA_String_Contents, "");
+            SET(data->netped_IP6PrefixString, MUIA_Disabled, TRUE);
+        }
+        else
+        {
+            LONG prefix = GetIP6Prefix(iface);
+            SET(data->netped_IP6String, MUIA_Disabled, FALSE);
+            SET(data->netped_IP6String, MUIA_String_Contents, GetIP6(iface));
+            SET(data->netped_IP6PrefixString, MUIA_Disabled, FALSE);
+            SET(data->netped_IP6PrefixString, MUIA_String_Integer, prefix ? prefix : 64);
+        }
     }
     else
     {
@@ -1895,6 +1999,9 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
             XGET(data->netped_ifDHCPState, MUIA_Cycle_Active),
             (STRPTR)XGET(data->netped_IPString, MUIA_String_Contents),
             (STRPTR)XGET(data->netped_maskString, MUIA_String_Contents),
+            XGET(data->netped_if6DHCPState, MUIA_Cycle_Active),
+            (STRPTR)XGET(data->netped_IP6String, MUIA_String_Contents),
+            (LONG)XGET(data->netped_IP6PrefixString, MUIA_String_Integer),
             (STRPTR)XGET(data->netped_deviceString, MUIA_String_Contents),
             XGET(data->netped_unitString, MUIA_String_Integer),
             XGET(data->netped_upState, MUIA_Selected)
@@ -2249,7 +2356,7 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_21
+ZUNE_CUSTOMCLASS_22
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                         struct opSet *,
@@ -2260,6 +2367,7 @@ ZUNE_CUSTOMCLASS_21
     MUIM_PrefsEditor_Save,          Msg,
     MUIM_PrefsEditor_Use,           Msg,
     MUIM_NetPEditor_IPModeChanged,  struct MUIP_NetPEditor_IPModeChanged *,
+    MUIM_NetPEditor_IP6ModeChanged, struct MUIP_NetPEditor_IP6ModeChanged *,
     MUIM_NetPEditor_ShowEntry,      Msg,
     MUIM_NetPEditor_EditEntry,      struct MUIP_NetPEditor_EditEntry *,
     MUIM_NetPEditor_ApplyEntry,     Msg,

@@ -2,7 +2,7 @@
 #define _NETPEDITOR_H_
 
 /*
-    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
+    Copyright Â© 2009-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,9 +32,11 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_EditServerEntry (MUIB_NetPEditor | 0x0000000C)
 #define MUIM_NetPEditor_ApplyServerEntry (MUIB_NetPEditor | 0x0000000D)
 #define MUIM_NetPEditor_AddTetheringEntry   (MUIB_NetPEditor | 0x0000000E)
+#define MUIM_NetPEditor_IP6ModeChanged      (MUIB_NetPEditor | 0x0000000F)
 
 struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
+struct MUIP_NetPEditor_IP6ModeChanged {STACKED ULONG MethodID;};
 
 #endif /* _NETPEDITOR_H_ */

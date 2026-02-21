@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/dos.h>
@@ -250,6 +250,9 @@ void InitInterface(struct Interface *iface)
     SetIfDHCP(iface, TRUE);
     SetIP(iface, DEFAULTIP);
     SetMask(iface, DEFAULTMASK);
+    SetIfDHCP6(iface, FALSE);
+    SetIP6(iface, "");
+    SetIP6Prefix(iface, 64);
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
     SetUp(iface, FALSE);
@@ -389,18 +392,52 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     for (i = 0; i < interfacecount; i++)
     {
         iface = GetInterface(i);
-        fprintf
-        (
-            ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
-            GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-            (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-            (GetIfDHCP(iface) ?
-                (strstr(GetDevice(iface), "ppp.device") == NULL ?
-                    (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
-                GetIP(iface)),
-            GetMask(iface),
-            (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
-        );
+        if (GetIfDHCP6(iface))
+        {
+            fprintf
+            (
+                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=AUTO %s\n",
+                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
+                (GetIfDHCP(iface) ?
+                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
+                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
+                    GetIP(iface)),
+                GetMask(iface),
+                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
+            );
+        }
+        else if (GetIP6(iface)[0] != '\0')
+        {
+            fprintf
+            (
+                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=%s PREFIXLEN=%ld %s\n",
+                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
+                (GetIfDHCP(iface) ?
+                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
+                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
+                    GetIP(iface)),
+                GetMask(iface),
+                GetIP6(iface), (long)(GetIP6Prefix(iface) ? GetIP6Prefix(iface) : 64),
+                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
+            );
+        }
+        else
+        {
+            fprintf
+            (
+                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
+                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
+                (GetIfDHCP(iface) ?
+                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
+                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
+                    GetIP(iface)),
+                GetMask(iface),
+                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
+            );
+        }
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL
             || strstr(GetDevice(iface), "prism2.device") != NULL
             || strstr(GetDevice(iface), "realtek8180.device") != NULL)
@@ -1072,6 +1109,26 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     SetMask(iface, tstring + 1);
                 }
+                else if (strncmp(tok.token, "IP6=", 4) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    if (strncmp(tstring + 1, "AUTO", 4) == 0 ||
+                        strncmp(tstring + 1, "DHCP", 4) == 0)
+                    {
+                        SetIfDHCP6(iface, TRUE);
+                        SetIP6(iface, "");
+                    }
+                    else
+                    {
+                        SetIfDHCP6(iface, FALSE);
+                        SetIP6(iface, tstring + 1);
+                    }
+                }
+                else if (strncmp(tok.token, "PREFIXLEN=", 10) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetIP6Prefix(iface, atol(tstring + 1));
+                }
                 else if (strncmp(tok.token, "UP", 2) == 0)
                 {
                     SetUp(iface, TRUE);
@@ -1582,6 +1639,21 @@ STRPTR GetMask(struct Interface *iface)
     return iface->mask;
 }
 
+STRPTR GetIP6(struct Interface *iface)
+{
+    return iface->ip6;
+}
+
+BOOL GetIfDHCP6(struct Interface *iface)
+{
+    return iface->ifDHCP6;
+}
+
+LONG GetIP6Prefix(struct Interface *iface)
+{
+    return iface->ip6prefix;
+}
+
 STRPTR GetDevice(struct Interface *iface)
 {
     return iface->device;
@@ -1638,13 +1710,16 @@ BOOL GetDHCP(void)
 void SetInterface
 (
     struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP, STRPTR mask,
-    STRPTR device, LONG unit, BOOL up
+    BOOL dhcp6, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
 )
 {
     SetName(iface, name);
     SetIfDHCP(iface, dhcp);
     SetIP(iface, IP);
     SetMask(iface, mask);
+    SetIfDHCP6(iface, dhcp6);
+    SetIP6(iface, ip6);
+    SetIP6Prefix(iface, ip6prefix);
     SetDevice(iface, device);
     SetUnit(iface, unit);
     SetUp(iface, up);
@@ -1680,6 +1755,25 @@ void SetMask(struct Interface *iface, STRPTR  w)
         w = DEFAULTMASK;
     }
     strlcpy(iface->mask, w, IPBUFLEN);
+}
+
+void SetIP6(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->ip6, w, IP6BUFLEN);
+}
+
+void SetIfDHCP6(struct Interface *iface, BOOL w)
+{
+    iface->ifDHCP6 = w;
+}
+
+void SetIP6Prefix(struct Interface *iface, LONG w)
+{
+    if (w < 0 || w > 128)
+        w = 64;
+    iface->ip6prefix = w;
 }
 
 void SetDevice(struct Interface *iface, STRPTR w)

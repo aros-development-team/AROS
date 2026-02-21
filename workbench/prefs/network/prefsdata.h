@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>
@@ -9,10 +9,12 @@
 #define AROSTCP_PACKAGE_VARIABLE    "SYS/Packages/AROSTCP"
 
 #define IPBUFLEN (15 + 1)
+#define IP6BUFLEN (39 + 1)
 #define NAMEBUFLEN 128
 #define SMBBUFLEN (16 + 1)
 
 #define IPCHARS "0123456789."
+#define IP6CHARS "0123456789abcdefABCDEF:"
 #define NAMECHARS "0123456789abcdefghijklmnopqrstuvwxyz-"
 
 #define MAXINTERFACES 15
@@ -67,6 +69,9 @@ struct Interface
     BOOL ifDHCP;
     TEXT IP[IPBUFLEN];
     TEXT mask[IPBUFLEN];
+    BOOL ifDHCP6;
+    TEXT ip6[IP6BUFLEN];
+    LONG ip6prefix;
     TEXT device[NAMEBUFLEN];
     LONG unit;
     BOOL up;
@@ -141,6 +146,9 @@ STRPTR GetName(struct Interface *iface);
 BOOL   GetIfDHCP(struct Interface *iface);
 STRPTR GetIP(struct Interface *iface);
 STRPTR GetMask(struct Interface *iface);
+BOOL   GetIfDHCP6(struct Interface *iface);
+STRPTR GetIP6(struct Interface *iface);
+LONG   GetIP6Prefix(struct Interface *iface);
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
 BOOL   GetUp(struct Interface *iface);
@@ -156,12 +164,15 @@ BOOL   GetAutostart(void);
 void SetInterface
 (
     struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP,
-    STRPTR mask, STRPTR device, LONG unit, BOOL up
+    STRPTR mask, BOOL dhcp6, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
 );
 void SetName(struct Interface *iface, STRPTR w);
 void SetIfDHCP(struct Interface *iface, BOOL w);
 void SetIP(struct Interface *iface, STRPTR w);
 void SetMask(struct Interface *iface, STRPTR w);
+void SetIfDHCP6(struct Interface *iface, BOOL w);
+void SetIP6(struct Interface *iface, STRPTR w);
+void SetIP6Prefix(struct Interface *iface, LONG w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
 void SetUp(struct Interface *iface, BOOL w);
