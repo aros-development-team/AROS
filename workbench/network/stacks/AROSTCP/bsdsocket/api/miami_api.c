@@ -398,9 +398,47 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: inet_ntop()\n"));
 	DSYSCALLS(__log(LOG_DEBUG,"inet_ntop(%ld) called",family);)
 	if (family == AF_INET)
 	{
-		sprintf(strptr, "%u.%u.%u.%u", addrptr[0], addrptr[1], addrptr[2], addrptr[3]);
-		return addrptr;
-	} else {
+		sprintf(strptr, "%u.%u.%u.%u",
+		    (unsigned char)addrptr[0], (unsigned char)addrptr[1],
+		    (unsigned char)addrptr[2], (unsigned char)addrptr[3]);
+		return strptr;
+	}
+	else if (family == AF_INET6)
+	{
+		/* RFC 5952 compressed IPv6 representation */
+		const unsigned char *s = (const unsigned char *)addrptr;
+		unsigned short words[8];
+		int i, best_base = -1, best_len = 0, cur_base = -1, cur_len = 0;
+		char *tp = strptr;
+		if (len < 40) { return NULL; }
+		for (i = 0; i < 8; i++)
+			words[i] = ((unsigned short)s[i*2] << 8) | s[i*2+1];
+		/* find longest run of zero words for :: compression */
+		for (i = 0; i < 8; i++) {
+			if (words[i] == 0) {
+				if (cur_base == -1) { cur_base = i; cur_len = 1; }
+				else cur_len++;
+			} else {
+				if (cur_base != -1 && cur_len > best_len) { best_base = cur_base; best_len = cur_len; }
+				cur_base = -1;
+			}
+		}
+		if (cur_base != -1 && cur_len > best_len) { best_base = cur_base; best_len = cur_len; }
+		if (best_len < 2) best_base = -1;
+		for (i = 0; i < 8; i++) {
+			if (best_base != -1 && i >= best_base && i < best_base + best_len) {
+				if (i == best_base) { *tp++ = ':'; *tp++ = ':'; }
+				continue;
+			}
+			if (i != 0 && !(best_base != -1 && i == best_base + best_len))
+				*tp++ = ':';
+			tp += sprintf(tp, "%x", words[i]);
+		}
+		*tp = '\0';
+		return strptr;
+	}
+	else
+	{
 		__log(LOG_CRIT,"inet_ntop(): address family %ld is not implemented", family);
 		return NULL;
 	}
