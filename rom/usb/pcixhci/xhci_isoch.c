@@ -131,6 +131,8 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
 
             Disable();
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to submit ISO transaction" DEBUGCOLOR_RESET" \n");
+            if(ptd)
+                ptd->ptd_Flags |= PTDF_QUEUED;  /* restore: ioreq is back on IsoXFerQueue */
             AddHead(&hc->hc_IsoXFerQueue, (struct Node *) ioreq);
             Enable();
         } else {
@@ -335,18 +337,17 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(ptd && ptd->ptd_IOReq.iouh_DriverPrivate1)
             xhciFreePeriodicContext(hc, hc->hc_Unit, &ptd->ptd_IOReq);
     }
+    for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+        if(ptd)
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
+    }
     Enable();
 
     if(rtn->rtn_BounceBuffer && rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
         usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,
                          rtn->rtn_BufferReq.ubr_Length, rtn->rtn_IOReq.iouh_Dir);
         rtn->rtn_BounceBuffer = NULL;
-    }
-
-    for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
-        struct PTDNode *ptd = rtn->rtn_PTDs[idx];
-        if(ptd)
-            ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
     }
 }
 

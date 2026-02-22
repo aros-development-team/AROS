@@ -334,7 +334,6 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     queued = xhciQueueData_IO(hc, epring,
                               (UQUAD)(IPTR)dmaptr,
                               dmalen,
-                              ioreq->iouh_MaxPktSize,
                               trbflags,
                               iocOnLast,
                               &ioreq->iouh_Req);

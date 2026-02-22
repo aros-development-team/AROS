@@ -769,8 +769,7 @@ static BOOL xhciResetEndpointRing(struct PCIController *hc,
      * cleared TRBs are observed as empty until new TRBs are produced with C=1.
      */
     ring->next = 0;
-    ring->end &= RINGENDCFLAG;
-    ring->end |= RINGENDCFLAG;
+    ring->end = RINGENDCFLAG;
 
     xhciRingUnlock();
 
@@ -914,7 +913,6 @@ WORD xhciQueueData(struct PCIController *hc,
                    volatile struct pcisusbXHCIRing *ring,
                    UQUAD payload,
                    ULONG plen,
-                   ULONG pmax,
                    ULONG trbflags,
                    BOOL  ioconlast)
 {
@@ -943,7 +941,6 @@ WORD xhciQueueData(struct PCIController *hc,
      * by MaxPacketSize; xHCI TRBs are not packet-sized.
      */
     const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
-    (void)pmax;
 
     /*
      * If this is a Control DATA Stage TRB, only the first segment is a DATA
@@ -1010,7 +1007,6 @@ WORD xhciQueueData_IO(struct PCIController *hc,
                       volatile struct pcisusbXHCIRing *ring,
                       UQUAD payload,
                       ULONG plen,
-                      ULONG pmax,
                       ULONG trbflags,
                       BOOL  ioconlast,
                       struct IORequest *ioreq)
@@ -1025,7 +1021,6 @@ WORD xhciQueueData_IO(struct PCIController *hc,
     base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
 
     const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
-    (void)pmax;
 
     const BOOL is_ctl_data_stage = (base_type == TRBF_FLAG_TRTYPE_DATA);
 
@@ -1167,8 +1162,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     if(!devCtx->dc_IN.dmaa_Ptr) {
         pciusbError("xHCI",
                     DEBUGWARNCOLOR_SET "Unable to allocate Device IN Ctx" DEBUGCOLOR_RESET "\n");
-        /* TODO: free devCtx->dc_SlotCtx DMA properly */
-        FreeMem(devCtx, sizeof(*devCtx));
+        xhciFreeDeviceCtx(hc, devCtx, FALSE, timerreq);
         return NULL;
     }
 
@@ -1230,8 +1224,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     if(slotid < 0) {
         pciusbError("xHCI",
                     DEBUGWARNCOLOR_SET "Failed to enable slot" DEBUGCOLOR_RESET "\n");
-        /* TODO: free devCtx->dc_SlotCtx / dc_IN DMA properly */
-        FreeMem(devCtx, sizeof(*devCtx));
+        xhciFreeDeviceCtx(hc, devCtx, FALSE, timerreq);
         return NULL;
     }
 
@@ -1287,8 +1280,7 @@ xhciCreateDeviceCtx(struct PCIController *hc,
         xhciSetPointer(hc, deviceslots[slotid], 0);
 
         devCtx->dc_SlotID = 0;
-        /* TODO free contexts */
-        FreeMem(devCtx, sizeof(*devCtx));
+        xhciFreeDeviceCtx(hc, devCtx, FALSE, timerreq);
         return NULL;
     }
 
@@ -2171,21 +2163,25 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
     if(epid == 0 || epid >= MAX_DEVENDPOINTS)
         return;
 
-#if (0)
-    /* First, find and complete any pending IOReq on this endpoint */
-    struct PCIUnit *unit = hc->hc_Unit;
-    UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
-    if(wIndex & 0x80) devadrep |= 0x10;
+    /* Complete any IOReq still stuck on this endpoint (stall event may not
+     * have been delivered if the event ring was full or the controller
+     * didn't send a Transfer Event).  xhciHandleFinishedTDs would normally
+     * reply the stalled request when it processes the STALL completion code,
+     * so by the time we reach here hu_DevBusyReq is usually already NULL.
+     * Guard the ReplyMsg with a NULL check to avoid double-reply. */
+    {
+        struct PCIUnit *unit = hc->hc_Unit;
+        UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
+        if(wIndex & 0x80) devadrep |= 0x10;
 
-    struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
-    if(pending) {
-        /* Complete the failed request first */
-        pending->iouh_Req.io_Error = UHIOERR_STALL;
-        pending->iouh_Actual = 0;
-        xhciFinishRequest(hc, unit, pending);
-        /* Don't ReplyMsg - let the caller handle it */
+        struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
+        if(pending) {
+            pending->iouh_Req.io_Error = UHIOERR_STALL;
+            pending->iouh_Actual = 0;
+            xhciFinishRequest(hc, unit, pending);
+            ReplyMsg(&pending->iouh_Req.io_Message);
+        }
     }
-#endif
 
     pciusbXHCIDebugV("xHCI",
                      DEBUGCOLOR_SET "CLEAR_FEATURE(ENDPOINT_HALT) completed: dev=%u wIndex=0x%04x -> EPID=%u"
@@ -2260,21 +2256,10 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
         return;
     }
 
-    /* Step 5: Ring doorbell to transition Stopped -> Running */
-    xhciRingDoorbell(hc, devCtx->dc_SlotID, epid);
-
-    /* Step 6: Wait briefly and verify it transitioned to Running */
-    uhwDelayMS(1, timerreq);
-
-    CacheClearE((APTR)epctx, ctxsize, CACRF_InvalidateD);
-    edw0 = AROS_LE2LONG(epctx->ctx[0]);
-    epstate = (edw0 & 0x7U);
-
-    pciusbXHCIDebug("xHCI",
-                    "After doorbell: epid=%u state=%u (%s)\n",
-                    epid, epstate,
-                    (epstate == 1) ? "Running" :
-                    (epstate == 3) ? "Stopped" : "Other");
+    /* Recovery complete: endpoint is in Stopped state and ready to accept
+     * new TRBs.  The next doorbell ring (when a transfer is submitted) will
+     * transition it to Running.  There is no point ringing the doorbell here
+     * because the transfer ring is empty after xhciResetEndpointRing. */
 }
 
 void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq)

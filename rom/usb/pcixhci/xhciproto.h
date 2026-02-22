@@ -168,9 +168,9 @@ WORD xhciQueueTRB(struct PCIController *hc, volatile struct pcisusbXHCIRing *rin
 WORD xhciQueueTRB_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload,
                      ULONG plen, ULONG trbflags, struct IORequest *ioreq);
 WORD xhciQueueData(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
-                   ULONG pmax, ULONG trbflags, BOOL ioconlast);
+                   ULONG trbflags, BOOL ioconlast);
 WORD xhciQueueData_IO(struct PCIController *hc, volatile struct pcisusbXHCIRing *ring, UQUAD payload, ULONG plen,
-                      ULONG pmax, ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
+                      ULONG trbflags, BOOL ioconlast, struct IORequest *ioreq);
 
 ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx, struct IOUsbHWReq *ioreq, UBYTE endpoint,
                  UBYTE dir, ULONG type, ULONG maxpacket, UWORD interval, ULONG flags);
