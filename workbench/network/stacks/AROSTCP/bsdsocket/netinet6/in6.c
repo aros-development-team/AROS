@@ -184,8 +184,22 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 
 	case SIOCAIFADDR_IN6:
 		/* add/change alias */
-		if (ifra->ifra_prefixmask.sin6_len)
+		if (ifra->ifra_prefixmask.sin6_len) {
+			int i, b, plen = 0;
+			u_int8_t *mbytes = ifra->ifra_prefixmask.sin6_addr.s6_addr;
 			ia->ia_prefixmask = ifra->ifra_prefixmask;
+			/* compute ia6_plen from the mask */
+			for (i = 0; i < 16; i++) {
+				for (b = 7; b >= 0; b--) {
+					if (mbytes[i] & (1 << b))
+						plen++;
+					else
+						goto done_plen;
+				}
+			}
+		done_plen:
+			ia->ia6_plen = plen;
+		}
 		if (ifra->ifra_addr.sin6_family == AF_INET6) {
 			error = in6_ifinit(ifp, ia, &ifra->ifra_addr, 0);
 			if (error)

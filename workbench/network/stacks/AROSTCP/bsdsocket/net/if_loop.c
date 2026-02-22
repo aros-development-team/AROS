@@ -142,7 +142,7 @@ void loconfig()
 		/* /128 prefix mask: all bits set */
 		memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
 		    sizeof(ifra6.ifra_prefixmask.sin6_addr));
-		in6_control(NULL, SIOCSIFADDR, (caddr_t)&ifra6, &loif);
+		in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, &loif);
 	}
 #endif
 }
