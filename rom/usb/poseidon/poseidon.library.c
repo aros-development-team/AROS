@@ -2276,6 +2276,7 @@ AROS_LH1(struct PsdDevice *, psdAllocDevice,
     struct PsdDevice *pd;
     KPRINTF(2, ("psdAllocDevice(%p)\n", phw));
     if((pd = psdAllocVec(sizeof(struct PsdDevice)))) {
+        memset(pd, 0, sizeof(struct PsdDevice));
         pd->pd_Hardware = phw;
         pd->pd_Hub = NULL;
         pd->pd_MaxPktSize0 = 8;
@@ -3533,7 +3534,7 @@ AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
         if(itpd != pd) {
             if((itpd->pd_ProductID == pd->pd_ProductID) &&
                (itpd->pd_VendorID == pd->pd_VendorID) &&
-               (!strcmp(itpd->pd_SerNumStr, pd->pd_SerNumStr)) &&
+               (itpd->pd_SerNumStr && !strcmp(itpd->pd_SerNumStr, pd->pd_SerNumStr)) &&
                (itpd->pd_CloneCount == pd->pd_CloneCount)) {
                 pd->pd_CloneCount++;
                 itpd = NULL;
@@ -3979,22 +3980,22 @@ AROS_LH2(struct PsdDevice *, psdFindDeviceA,
             }
         }
         if((ti = FindTagItem(DA_SerialNumber, tags))) {
-            if(strcmp((STRPTR) ti->ti_Data, pd->pd_SerNumStr)) {
+            if(!pd->pd_SerNumStr || strcmp((STRPTR) ti->ti_Data, pd->pd_SerNumStr)) {
                 takeit = FALSE;
             }
         }
         if((ti = FindTagItem(DA_ProductName, tags))) {
-            if(strcmp((STRPTR) ti->ti_Data, pd->pd_ProductStr)) {
+            if(!pd->pd_ProductStr || strcmp((STRPTR) ti->ti_Data, pd->pd_ProductStr)) {
                 takeit = FALSE;
             }
         }
         if((ti = FindTagItem(DA_Manufacturer, tags))) {
-            if(strcmp((STRPTR) ti->ti_Data, pd->pd_MnfctrStr)) {
+            if(!pd->pd_MnfctrStr || strcmp((STRPTR) ti->ti_Data, pd->pd_MnfctrStr)) {
                 takeit = FALSE;
             }
         }
         if((ti = FindTagItem(DA_IDString, tags))) {
-            if(strcmp((STRPTR) ti->ti_Data, pd->pd_IDString)) {
+            if(!pd->pd_IDString || strcmp((STRPTR) ti->ti_Data, pd->pd_IDString)) {
                 takeit = FALSE;
             }
         }
