@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -60,6 +61,9 @@ void
   extern void isointr(void);
   extern void ccittintr(void);
   extern void nsintr(void);
+#if INET6
+  extern void ip6intr(void);
+#endif
 
   spl_t s = splimp();
   int n = netisr; 
@@ -96,6 +100,11 @@ void
   /* raw input do not go through the isr */
   if (n & (1<<NETISR_RAW)) {
     rawintr();
+  }
+#endif
+#if INET6
+  if (n & (1<<NETISR_IPV6)) {
+    ip6intr();
   }
 #endif
 }

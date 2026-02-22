@@ -60,7 +60,6 @@ ip6_output(void *args, ...)
 {
     struct mbuf *m = args;
     struct mbuf *opt;
-    struct route *ro;
     int flags;
     struct ip6_moptions *im6o;
     struct ifnet **ifpp;
@@ -69,7 +68,8 @@ ip6_output(void *args, ...)
 
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct ifnet   *ifp = NULL;
-    struct route    iproute;
+    struct route_in6 iproute;
+    struct route    *ro;
     struct sockaddr_in6 *dst;
     struct rtentry *rt = NULL;
     int error = 0;
@@ -86,8 +86,8 @@ ip6_output(void *args, ...)
     va_end(va);
 
     if (ro == NULL) {
-        ro = &iproute;
-        bzero(ro, sizeof(*ro));
+        bzero(&iproute, sizeof(iproute));
+        ro = (struct route *)&iproute;
     }
 
     /* Route lookup */
@@ -140,7 +140,7 @@ ip6_output(void *args, ...)
         else
             ip6stat.ip6s_localout++;
 
-        if (ro == &iproute && ro->ro_rt) {
+        if (ro == (struct route *)&iproute && ro->ro_rt) {
             RTFREE(ro->ro_rt);
             ro->ro_rt = NULL;
         }
@@ -224,7 +224,7 @@ ip6_output(void *args, ...)
         ip6stat.ip6s_fragmented++;
         m_freem(m);
 
-        if (ro == &iproute && ro->ro_rt) {
+        if (ro == (struct route *)&iproute && ro->ro_rt) {
             RTFREE(ro->ro_rt);
             ro->ro_rt = NULL;
         }
@@ -233,7 +233,7 @@ ip6_output(void *args, ...)
 
 bad:
     m_freem(m);
-    if (ro == &iproute && ro->ro_rt) {
+    if (ro == (struct route *)&iproute && ro->ro_rt) {
         RTFREE(ro->ro_rt);
         ro->ro_rt = NULL;
     }

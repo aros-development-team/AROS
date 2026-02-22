@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -34,6 +35,7 @@
 #define	NETISR_ISO	7		/* same as AF_ISO */
 #define	NETISR_CCITT	10		/* same as AF_CCITT */
 #define NETISR_ARP      31
+#define NETISR_IPV6     28		/* same as AF_INET6 */
 
 void schednetisr(int isr);
 void schednetisr_nosignal(int isr);

@@ -4,6 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -46,7 +47,7 @@
 #endif
 #endif
 
-/* __PPC__ definition is dropped in gcc 4.4.2, but our code relies on it. Fix this up. */
+/* __PPC__ definition is dropped in gcc 4.4.2, but the stack code relies on it. Fix this up. */
 #ifdef __powerpc__
 #ifndef __PPC__
 #define __PPC__
@@ -54,7 +55,7 @@
 #endif
 
 /*
- * For m68k, AmigaOS4 and AROS we build Roadshow-compatible version
+ * Build the Roadshow-compatible version for m68k, AmigaOS4 and AROS
  */
 #ifdef __mc68000
 #define __CONFIG_ROADSHOW__
@@ -91,10 +92,10 @@
 
 /*
  * sys/param.h includes basic information about system and C-compiler
- * environment.  It also contains for example incomplete structure
+ * environment.  It also contains, for example, incomplete structure
  * definitions for all prototype files in protos/ (structure pointers
  * only).  This is why this file must be included first, since SASC
- * don't like incomplete declarations _after_ complete ones.
+ * doesn't like incomplete declarations _after_ complete ones.
  */
 #include <sys/param.h>
 
@@ -215,7 +216,15 @@ extern struct ExecBase *SysBase;
 #include <limits.h>
 #include <stddef.h>
 
-#ifdef DEBUG
+/* Global define to enable Debug output for AROS */
+#if defined(__AROS__)
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+#include <aros/debug.h>
+#endif
+
+#if defined(DEBUG) && (DEBUG > 0)
 #define D(x) x
 #else
 #define D(x)
@@ -309,12 +318,6 @@ GLOBAL struct RxsLib *RexxSysBase;
 
 /* This option is now obsolete
 #define ENABLE_TTCP_SHUTUP */
-
-/* Global define to enable Debug output for AROS */
-#if defined(__AROS__)
-#define DEBUG 0
-#include <aros/debug.h>
-#endif
 
 // ## "TODO: NicJA - Would it be better to use differing pools for different data types?"
 /* Defines used by the stack to Allocate sufficient memory space for _ALL_ allocated blocks */

@@ -34,6 +34,7 @@
 
 #include <net/if.h>
 #include <net/route.h>
+#include <net/raw_cb.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -43,6 +44,9 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+
+#include <protos/net/route_protos.h>
+#include <kern/uipc_socket2_protos.h>
 
 /* IP6_HDR_OFF macro: ip6 header is at offset 0 in mbuf after ip6_input */
 #define ICMPv6_HDRLEN sizeof(struct icmp6_hdr)
@@ -143,8 +147,31 @@ icmp6_input(void *args, ...)
         return;
 
     case ICMP6_ECHO_REPLY:
-        /* pass to raw socket listeners */
-        break;
+        /* pass to raw socket listeners: strip IPv6 header (BSD convention) */
+        {
+            struct sockproto rip6proto;
+            struct sockaddr_in6 rip6src, rip6dst;
+
+            rip6proto.sp_family   = AF_INET6;
+            rip6proto.sp_protocol = IPPROTO_ICMPV6;
+            bzero(&rip6src, sizeof(rip6src));
+            rip6src.sin6_len    = sizeof(rip6src);
+            rip6src.sin6_family = AF_INET6;
+            rip6src.sin6_addr   = ip6->ip6_src;
+            bzero(&rip6dst, sizeof(rip6dst));
+            rip6dst.sin6_len    = sizeof(rip6dst);
+            rip6dst.sin6_family = AF_INET6;
+            rip6dst.sin6_addr   = ip6->ip6_dst;
+
+            /* strip IPv6 header: deliver only ICMPv6 payload to application */
+            m_adj(m, off);
+
+            if (raw_input(m, &rip6proto,
+                          (struct sockaddr *)&rip6src,
+                          (struct sockaddr *)&rip6dst) == 0)
+                m_freem(m);
+        }
+        return;
 
     /* ----- Error messages ----- */
     case ICMP6_DST_UNREACH:
@@ -272,24 +299,104 @@ icmp6_reflect(struct mbuf *m, size_t off)
  * rip6_output - raw IPv6 socket output.
  * rip6_usrreq - raw IPv6 user request.
  * rip6_ctloutput - raw IPv6 socket options.
- *
- * These are minimal stubs; production code delegates to the raw-socket
- * machinery in net/raw_usrreq.c, extended for IPv6.
  * ------------------------------------------------------------------ */
 void
 rip6_input(void *args, ...)
 {
     struct mbuf *m = args;
-    /* pass to raw socket listeners (not yet wired) */
-    m_freem(m);
+    struct ip6_hdr *ip6;
+    int off;
+    va_list va;
+    struct sockproto rip6proto;
+    struct sockaddr_in6 rip6src, rip6dst;
+
+    va_start(va, args);
+    off = va_arg(va, int);
+    va_end(va);
+
+    if (m->m_len < sizeof(struct ip6_hdr) &&
+        (m = m_pullup(m, sizeof(struct ip6_hdr))) == NULL)
+        return;
+
+    ip6 = mtod(m, struct ip6_hdr *);
+
+    rip6proto.sp_family   = AF_INET6;
+    rip6proto.sp_protocol = ip6->ip6_nxt;
+    bzero(&rip6src, sizeof(rip6src));
+    rip6src.sin6_len    = sizeof(rip6src);
+    rip6src.sin6_family = AF_INET6;
+    rip6src.sin6_addr   = ip6->ip6_src;
+    bzero(&rip6dst, sizeof(rip6dst));
+    rip6dst.sin6_len    = sizeof(rip6dst);
+    rip6dst.sin6_family = AF_INET6;
+    rip6dst.sin6_addr   = ip6->ip6_dst;
+
+    /* raw_input takes ownership of m; frees it if no socket found */
+    raw_input(m, &rip6proto,
+              (struct sockaddr *)&rip6src,
+              (struct sockaddr *)&rip6dst);
 }
 
 int
 rip6_output(void *args, ...)
 {
     struct mbuf *m = args;
-    m_freem(m);
-    return EOPNOTSUPP;
+    struct socket *so;
+    struct rawcb *rp;
+    struct sockaddr_in6 *dst6;
+    struct ip6_hdr *ip6;
+    struct route_in6 ro;
+    struct in6_ifaddr *ia;
+    va_list va;
+
+    va_start(va, args);
+    so = va_arg(va, struct socket *);
+    va_end(va);
+
+    rp = sotorawcb(so);
+    if (rp == NULL) {
+        m_freem(m);
+        return EINVAL;
+    }
+
+    dst6 = (struct sockaddr_in6 *)rp->rcb_faddr;
+    if (dst6 == NULL || dst6->sin6_family != AF_INET6) {
+        m_freem(m);
+        return EDESTADDRREQ;
+    }
+
+    /* Prepend IPv6 header */
+    M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
+    if (m == NULL)
+        return ENOBUFS;
+
+    ip6 = mtod(m, struct ip6_hdr *);
+    bzero(ip6, sizeof(*ip6));
+    ip6->ip6_vfc  = IPV6_VERSION;
+    ip6->ip6_nxt  = (u_int8_t)rp->rcb_proto.sp_protocol;
+    ip6->ip6_hlim = ip6_defhlim;
+    ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len - sizeof(struct ip6_hdr)));
+    ip6->ip6_dst  = dst6->sin6_addr;
+
+    /* Source address selection */
+    if (rp->rcb_laddr) {
+        ip6->ip6_src = ((struct sockaddr_in6 *)rp->rcb_laddr)->sin6_addr;
+    } else {
+        /* find output interface via route lookup */
+        bzero(&ro, sizeof(ro));
+        ro.ro_dst.sin6_family = AF_INET6;
+        ro.ro_dst.sin6_len    = sizeof(ro.ro_dst);
+        ro.ro_dst.sin6_addr   = dst6->sin6_addr;
+        rtalloc((struct route *)&ro);
+        if (ro.ro_rt != NULL) {
+            ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &dst6->sin6_addr);
+            if (ia)
+                ip6->ip6_src = ia->ia_addr.sin6_addr;
+            RTFREE(ro.ro_rt);
+        }
+    }
+
+    return ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
 }
 
 int
@@ -303,7 +410,69 @@ int
 rip6_usrreq(struct socket *so, int req, struct mbuf *m,
             struct mbuf *nam, struct mbuf *ctrl)
 {
-    return EOPNOTSUPP;
+    struct rawcb *rp = sotorawcb(so);
+    int error = 0;
+
+    switch (req) {
+    case PRU_ATTACH:
+        if (rp != NULL) {
+            error = EINVAL;
+            break;
+        }
+        MALLOC(rp, struct rawcb *, sizeof(*rp), M_PCB, M_WAITOK);
+        if (rp == NULL) {
+            error = ENOBUFS;
+            break;
+        }
+        bzero(rp, sizeof(*rp));
+        so->so_pcb = (caddr_t)rp;
+        error = raw_attach(so, (int)(long)nam);
+        if (error) {
+            bsd_free(rp, M_PCB);
+            so->so_pcb = NULL;
+        }
+        return error;
+
+    case PRU_BIND:
+        {
+            struct sockaddr_in6 *addr;
+            if (rp == NULL || nam->m_len < sizeof(struct sockaddr_in6)) {
+                error = EINVAL;
+                break;
+            }
+            addr = mtod(nam, struct sockaddr_in6 *);
+            if (addr->sin6_family != AF_INET6) {
+                error = EAFNOSUPPORT;
+                break;
+            }
+            rp->rcb_laddr = mtod(nam, struct sockaddr *);
+            break;
+        }
+
+    case PRU_CONNECT:
+        {
+            struct sockaddr_in6 *addr;
+            if (rp == NULL || nam->m_len < sizeof(struct sockaddr_in6)) {
+                error = EINVAL;
+                break;
+            }
+            addr = mtod(nam, struct sockaddr_in6 *);
+            if (addr->sin6_family != AF_INET6) {
+                error = EAFNOSUPPORT;
+                break;
+            }
+            rp->rcb_faddr = mtod(nam, struct sockaddr *);
+            soisconnected(so);
+            break;
+        }
+
+    default:
+        return raw_usrreq(so, req, m, nam, ctrl);
+    }
+
+    if (m != NULL)
+        m_freem(m);
+    return error;
 }
 
 #endif /* INET6 */

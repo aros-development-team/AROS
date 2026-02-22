@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -134,17 +134,24 @@ int    rthashsize = RTHASHSIZ;	/* for netstat, etc. */
 
 static int rtinits_done = 0;
 struct radix_node_head *ns_rnhead = 0, *in_rnhead = 0;
+#if INET6
+struct radix_node_head *in6_rnhead = 0;
+#endif
 struct radix_node *rn_match(), *rn_delete(), *rn_addroute();
 
 void
 rtinitheads()
 {
-	if (rtinits_done == 0 &&
+	if (rtinits_done == 0) {
 #if NS
-	    rn_inithead(&ns_rnhead, 16, AF_NS) &&
+		rn_inithead(&ns_rnhead, 16, AF_NS);
 #endif
-	    rn_inithead(&in_rnhead, 32, AF_INET))
-		rtinits_done = 1;
+#if INET6
+		rn_inithead(&in6_rnhead, 64, AF_INET6);
+#endif
+		if (rn_inithead(&in_rnhead, 32, AF_INET))
+			rtinits_done = 1;
+	}
 }
 
 /*

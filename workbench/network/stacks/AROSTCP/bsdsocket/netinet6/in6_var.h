@@ -124,6 +124,15 @@ struct ip6stat {
 
 /* icmp6stat defined in <netinet/icmp6.h> */
 
+/*
+ * route_in6 - like struct route but with a properly-sized IPv6 destination.
+ * Use this instead of struct route when doing IPv6 route lookups.
+ */
+struct route_in6 {
+	struct  rtentry      *ro_rt;
+	struct  sockaddr_in6  ro_dst;
+};
+
 #ifdef KERNEL
 extern struct ip6stat ip6stat;
 extern struct icmp6stat icmp6stat;

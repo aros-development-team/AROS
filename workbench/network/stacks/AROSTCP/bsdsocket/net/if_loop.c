@@ -177,6 +177,12 @@ looutput(ifp, m, dst, rt)
 		isr = NETISR_IP;
 		break;
 #endif
+#if INET6
+	case AF_INET6:
+		ifq = &ip6intrq;
+		isr = NETISR_IPV6;
+		break;
+#endif
 #if NS
 	case AF_NS:
 		ifq = &nsintrq;
