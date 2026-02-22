@@ -133,6 +133,36 @@ struct route_in6 {
 	struct  sockaddr_in6  ro_dst;
 };
 
+/*
+ * Per-socket IPv6 multicast options.
+ */
+#define IPV6_MAX_MEMBERSHIPS		20
+#define IP6_DEFAULT_MULTICAST_HLIM	1
+#define IP6_DEFAULT_MULTICAST_LOOP	1
+
+struct ip6_moptions {
+	struct ifnet	*im6o_multicast_ifp;	/* multicast output interface */
+	u_int8_t	 im6o_multicast_hlim;	/* multicast hop limit */
+	u_int8_t	 im6o_multicast_loop;	/* enable loopback */
+	u_int16_t	 im6o_num_memberships;	/* number of group memberships */
+	struct in6_multi *im6o_membership[IPV6_MAX_MEMBERSHIPS];
+};
+
+/* IN6P socket flags (stored in in6p_flags / in6_rawcb.flags) */
+#define IN6P_PKTINFO	0x01		/* receive packet info (RECVPKTINFO) */
+
+/*
+ * Extended rawcb for raw IPv6 sockets (in6_rawcb.rcb must be first).
+ */
+struct in6_rawcb {
+	struct rawcb		rcb;	/* common rawcb (must be first) */
+	struct ip6_moptions    *im6o;	/* multicast options */
+	int			hops;	/* unicast hop limit (-1 = default) */
+	int			v6only;	/* IPv6-only socket flag */
+	int			tclass;	/* traffic class */
+	int			flags;	/* IN6P_* flags */
+};
+
 #ifdef KERNEL
 extern struct ip6stat ip6stat;
 extern struct icmp6stat icmp6stat;
@@ -141,6 +171,7 @@ extern struct ifqueue ip6intrq;		/* IPv6 packet input queue */
 extern int ip6_defhlim;
 extern int ip6_forwarding;
 extern int ip6_v6only;
+extern struct in6_multi *in6_multihead;	/* global IPv6 multicast list */
 
 int  in6_control(struct socket *, int, caddr_t, struct ifnet *);
 void in6_ifscrub(struct ifnet *, struct in6_ifaddr *);
@@ -151,6 +182,8 @@ struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
 struct in6_ifaddr *in6_ifaof_ifpforlinklocal(struct ifnet *);
 int  in6_localaddr(struct in6_addr *);
 void in6_if_up(struct ifnet *);
+struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
+void in6_delmulti(struct in6_multi *);
 #endif /* KERNEL */
 
 #endif /* NETINET6_IN6_VAR_H */

@@ -92,6 +92,39 @@ ip6_output(void *args, ...)
 
     /* Route lookup */
     dst = (struct sockaddr_in6 *)&ro->ro_dst;
+
+    /* For multicast destinations, use im6o interface or pick first available */
+    if (IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        if (im6o && im6o->im6o_multicast_ifp) {
+            ifp = im6o->im6o_multicast_ifp;
+        } else {
+            /* pick first non-loopback, up interface */
+            extern struct ifnet *ifnet;
+            struct ifnet *mifp;
+            for (mifp = ifnet; mifp; mifp = mifp->if_next) {
+                if ((mifp->if_flags & (IFF_UP | IFF_LOOPBACK)) == IFF_UP) {
+                    ifp = mifp;
+                    break;
+                }
+            }
+        }
+        if (ifp == NULL) {
+            ip6stat.ip6s_noroute++;
+            error = EHOSTUNREACH;
+            goto bad;
+        }
+        /* Build a gateway sockaddr pointing at the multicast destination
+         * for link-local multicast (scope FF02::) - no routing needed */
+        dst->sin6_family = AF_INET6;
+        dst->sin6_len    = sizeof(*dst);
+        dst->sin6_addr   = ip6->ip6_dst;
+        /* Set hop limit for multicast */
+        if (ip6->ip6_hlim == 0)
+            ip6->ip6_hlim = im6o ? im6o->im6o_multicast_hlim
+                                 : IP6_DEFAULT_MULTICAST_HLIM;
+        goto multicast_output;
+    }
+
     if (ro->ro_rt == NULL ||
         !IN6_ARE_ADDR_EQUAL(&dst->sin6_addr, &ip6->ip6_dst)) {
         /* flush stale route */
@@ -130,6 +163,7 @@ ip6_output(void *args, ...)
     }
 #endif
 
+multicast_output:
     if (ifpp)
         *ifpp = ifp;
 
@@ -148,7 +182,7 @@ ip6_output(void *args, ...)
         /* add link-layer header via ifp */
         s = splimp();
         error = (*ifp->if_output)(ifp, m,
-            (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
+            (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
                                          : (struct sockaddr *)dst,
             rt);
         splx(s);

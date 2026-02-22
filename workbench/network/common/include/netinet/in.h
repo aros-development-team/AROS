@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Development Team.  All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Library General Public License
@@ -373,6 +374,7 @@ struct sockaddr_in6 {
 #define IPV6_RECVPKTINFO	61	/* bool; recv if, dst addr */
 #define IPV6_RECVHOPLIMIT	37	/* bool; recv hop limit */
 #define IPV6_CHECKSUM		26	/* int; checksum offset for raw socket */
+#define IPV6_TCLASS		36	/* int; traffic class */
 
 /* IPv6 multicast request */
 struct ipv6_mreq {

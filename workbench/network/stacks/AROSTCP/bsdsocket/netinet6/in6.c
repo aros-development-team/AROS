@@ -515,4 +515,56 @@ in6_ifconf(int cmd, caddr_t data)
 	return error;
 }
 
+/*
+ * in6_addmulti - add (or refcount) a multicast group membership on an interface.
+ */
+struct in6_multi *in6_multihead = NULL;
+
+struct in6_multi *
+in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
+{
+	struct in6_multi *in6m;
+
+	/* search for an existing entry */
+	for (in6m = in6_multihead; in6m; in6m = in6m->in6m_next) {
+		if (in6m->in6m_ifp == ifp &&
+		    IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, maddr)) {
+			in6m->in6m_refcount++;
+			return in6m;
+		}
+	}
+
+	/* allocate a new entry */
+	MALLOC(in6m, struct in6_multi *, sizeof(*in6m), M_IFADDR, M_WAITOK);
+	if (in6m == NULL)
+		return NULL;
+	bzero(in6m, sizeof(*in6m));
+	in6m->in6m_addr    = *maddr;
+	in6m->in6m_ifp     = ifp;
+	in6m->in6m_refcount = 1;
+	in6m->in6m_next    = in6_multihead;
+	in6_multihead      = in6m;
+	return in6m;
+}
+
+/*
+ * in6_delmulti - decrement refcount and free if zero.
+ */
+void
+in6_delmulti(struct in6_multi *in6m)
+{
+	struct in6_multi **p;
+
+	if (--in6m->in6m_refcount > 0)
+		return;
+
+	for (p = &in6_multihead; *p; p = &(*p)->in6m_next) {
+		if (*p == in6m) {
+			*p = in6m->in6m_next;
+			break;
+		}
+	}
+	FREE(in6m, M_IFADDR);
+}
+
 #endif /* INET6 */

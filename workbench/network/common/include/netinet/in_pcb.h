@@ -2,6 +2,7 @@
  * Copyright (c) 1982, 1986, 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
  * Copytight (c) 2006 Pavel Fedin
+ * Copyright (C) 2006-2026 The AROS Development Team.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +39,8 @@
 #ifndef _NETINET_IN_PCB_H_
 #define _NETINET_IN_PCB_H_
 
+struct ip6_moptions;  /* forward declaration for IPv6 multicast options */
+
 /*
  * Common structure pcb for internet protocol implementation.
  * Here are stored pointers to local and foreign host table
@@ -62,6 +65,13 @@ struct inpcb {
 	struct	ip inp_ip;		/* header prototype; should have more */
 	struct	mbuf *inp_options;	/* IP options */
 	struct	ip_moptions *inp_moptions; /* IP multicast options */
+#if INET6
+	struct	ip6_moptions *in6p_moptions; /* IPv6 multicast options */
+	int	in6p_hops;		/* IPv6 unicast hop limit (-1=default) */
+	int	in6p_v6only;		/* IPv6-only socket flag */
+	int	in6p_tclass;		/* IPv6 traffic class */
+	int	in6p_flags;		/* IPv6 per-socket flags (IN6P_*) */
+#endif
 };
 
 struct inpcbinfo {
