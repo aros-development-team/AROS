@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -772,6 +772,14 @@ D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if
 		   S2_READORPHAN, SANA2_IOF_RAW);
 #endif
   splx(s);
+
+#if INET6
+  /* Auto-configure link-local IPv6 address (EUI-64) for this interface */
+  {
+    void in6_if_up(struct ifnet *);
+    in6_if_up(&ssc->ss_if);
+  }
+#endif
   return;
 }
 

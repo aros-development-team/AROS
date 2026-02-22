@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -614,8 +614,19 @@ ifioctl(so, cmd, data)
 		if (ifp->if_ioctl)
 			(void) (*ifp->if_ioctl)(ifp, cmd, data);
 
-		ifp->if_flags = (ifp->if_flags & IFF_CANTCHANGE) |
-			(ifr->ifr_flags &~ IFF_CANTCHANGE);
+		{
+			int was_up = (ifp->if_flags & IFF_UP);
+			ifp->if_flags = (ifp->if_flags & IFF_CANTCHANGE) |
+				(ifr->ifr_flags &~ IFF_CANTCHANGE);
+#if INET6
+			/* auto-configure link-local IPv6 when interface goes up */
+			if (!was_up && (ifp->if_flags & IFF_UP) &&
+			    !(ifp->if_flags & IFF_LOOPBACK)) {
+				void in6_if_up(struct ifnet *);
+				in6_if_up(ifp);
+			}
+#endif
+		}
 		break;
 
 	case SIOCSIFMETRIC:

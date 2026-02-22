@@ -430,10 +430,22 @@ in6_if_up(struct ifnet *ifp)
 	sin6.sin6_len    = sizeof(sin6);
 	sin6.sin6_addr.s6_addr[0] = 0xfe;
 	sin6.sin6_addr.s6_addr[1] = 0x80;
-	/* EUI-64: copy MAC, flip U/L bit */
+	/* EUI-64: copy MAC, flip U/L bit; find AF_LINK entry in addrlist */
 	if (ifp->if_addrlen == 6) {
-		u_int8_t *mac = (u_int8_t *)LLADDR(
-			(struct sockaddr_dl *)ifp->if_addrlist->ifa_addr);
+		struct ifaddr *ifa2;
+		struct sockaddr_dl *sdl = NULL;
+		for (ifa2 = ifp->if_addrlist; ifa2; ifa2 = ifa2->ifa_next) {
+			if (ifa2->ifa_addr &&
+			    ifa2->ifa_addr->sa_family == AF_LINK) {
+				sdl = (struct sockaddr_dl *)ifa2->ifa_addr;
+				break;
+			}
+		}
+		if (sdl == NULL || sdl->sdl_alen < 6) {
+			m_free(m);
+			return;
+		}
+		u_int8_t *mac = (u_int8_t *)LLADDR(sdl);
 		sin6.sin6_addr.s6_addr[8]  = mac[0] ^ 0x02;
 		sin6.sin6_addr.s6_addr[9]  = mac[1];
 		sin6.sin6_addr.s6_addr[10] = mac[2];

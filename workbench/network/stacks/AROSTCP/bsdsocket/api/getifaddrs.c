@@ -51,6 +51,9 @@
 #include <api/amiga_api.h>
 #include <api/ifaddrs.h>
 #include <string.h>
+#if INET6
+#include <netinet/in_var.h>
+#endif
 
 #include "apicalls.h"
 
@@ -119,6 +122,10 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 	struct ifconf ifc;
 	struct ifreq *ifr;
 	struct ifreq *lifr;
+#if INET6
+	char buf6[32 * sizeof(struct in6_ifreq)];
+	int n6 = 0;
+#endif
 #endif	/* NET_RT_IFLIST */
 	struct ifaddrs *ifa, *ift;
 	int i;
@@ -250,16 +257,41 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 		else
 			ifr = (struct ifreq *)(((char *)sa) + SA_LEN(sa));
 	}
+
+#if INET6
+	/* Also count IPv6 addresses via SIOCGLIFADDR */
+	{
+		struct in6_ifconf ifc6;
+		int sock6;
+
+		ifc6.ifc6_buf = buf6;
+		ifc6.ifc6_len = sizeof(buf6);
+		sock6 = __socket(AF_INET6, SOCK_DGRAM, 0, SocketBase);
+		if (sock6 >= 0) {
+			if (__IoctlSocket(sock6, SIOCGLIFADDR, (char *)&ifc6, SocketBase) == 0) {
+				n6 = ifc6.ifc6_len / sizeof(struct in6_ifreq);
+				icnt += n6;
+				dcnt += n6 * sizeof(struct sockaddr_in6);
+				ncnt += n6 * (IFNAMSIZ + 1);
+			}
+			__CloseSocket(sock6, SocketBase);
+		}
+	}
+#endif
 #endif	/* NET_RT_IFLIST */
 
 	if (icnt + dcnt + ncnt == 1) {
 		*pif = NULL;
+#ifdef NET_RT_IFLIST
 		bsd_free(buf, NULL);
+#endif
 		return (0);
 	}
 	data = bsd_malloc(sizeof(struct ifaddrs) * icnt + dcnt + ncnt, NULL, NULL);
 	if (data == NULL) {
+#ifdef NET_RT_IFLIST
 		bsd_free(buf, NULL);
+#endif
 		return(-1);
 	}
 
@@ -406,6 +438,33 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 		ifr = (struct ifreq *)(((char *)sa) + SA_LEN(sa));
 		ift = (ift->ifa_next = ift + 1);
 	}
+
+#if INET6
+	/* Fill in IPv6 addresses from buf6 */
+	if (n6 > 0) {
+		struct in6_ifreq *req6 = (struct in6_ifreq *)(void *)buf6;
+		int i6;
+
+		for (i6 = 0; i6 < n6; i6++) {
+			ift->ifa_name = names;
+			names[IFNAMSIZ] = 0;
+			strncpy(names, req6[i6].ifr_name, IFNAMSIZ);
+			while (*names++)
+				;
+
+			ift->ifa_addr = (struct sockaddr *)(void *)data;
+			memcpy(data, &req6[i6].ifr6_addr, sizeof(struct sockaddr_in6));
+			data += sizeof(struct sockaddr_in6);
+
+			ift->ifa_flags = 0;
+			ift->ifa_netmask = NULL;
+			ift->ifa_broadaddr = NULL;
+			ift->ifa_data = NULL;
+
+			ift = (ift->ifa_next = ift + 1);
+		}
+	}
+#endif
 #endif	/* NET_RT_IFLIST */
 	if (--ift >= ifa) {
 		ift->ifa_next = NULL;
