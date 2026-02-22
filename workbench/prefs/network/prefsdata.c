@@ -396,7 +396,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         {
             fprintf
             (
-                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=AUTO %s\n",
+                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=DHCP %s\n",
                 GetName(iface), GetDevice(iface), (int)GetUnit(iface),
                 (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
                 (GetIfDHCP(iface) ?
@@ -1112,8 +1112,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                 else if (strncmp(tok.token, "IP6=", 4) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    if (strncmp(tstring + 1, "AUTO", 4) == 0 ||
-                        strncmp(tstring + 1, "DHCP", 4) == 0)
+                    if (strncmp(tstring + 1, "DHCP", 4) == 0)
                     {
                         SetIfDHCP6(iface, TRUE);
                         SetIP6(iface, "");
