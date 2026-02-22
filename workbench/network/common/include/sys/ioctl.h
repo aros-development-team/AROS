@@ -119,13 +119,14 @@ __END_DECLS
 
 /*
  * IPv6 interface address ioctls.
- * Requires <netinet/in_var.h> for struct in6_ifreq / in6_aliasreq.
+ * Requires <netinet/in_var.h> for struct in6_ifreq / in6_aliasreq / in6_ifconf.
  */
 #define SIOCAIFADDR_IN6	 _IOW ('i', 26, struct in6_aliasreq) /* add/chg IPv6 alias */
 #define SIOCDIFADDR_IN6  _IOW ('i', 25, struct in6_ifreq)   /* delete IPv6 addr */
 #define SIOCGIFADDR_IN6	 _IOWR('i', 33, struct in6_ifreq)   /* get IPv6 address */
 #define SIOCGIFDSTADDR_IN6 _IOWR('i', 34, struct in6_ifreq) /* get IPv6 p-p addr */
 #define SIOCGIFNETMASK_IN6 _IOWR('i', 37, struct in6_ifreq) /* get IPv6 netmask */
+#define SIOCGLIFADDR     _IOWR('i', 56, struct in6_ifconf)  /* get all IPv6 addrs */
 
 /*
  * Private extensions to the BSD44 ioctl interface) 

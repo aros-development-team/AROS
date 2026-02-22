@@ -134,6 +134,21 @@ struct in6_ifreq {
 
 #define	IA6_SIN6(ia6) (&(((struct in6_ifaddr *)(ia6))->ia_addr))
 
+/*
+ * Structure used with SIOCGLIFADDR to enumerate all IPv6 interface addresses.
+ * Analogous to struct ifconf / SIOCGIFCONF for IPv4.
+ */
+struct in6_ifconf {
+	int	ifc_len;		/* size of buffer on input; bytes used on output */
+	union {
+		caddr_t		 ifcu_buf;
+		struct in6_ifreq *ifcu_req;
+	} ifc_ifcu;
+#define	ifc6_len	ifc_len
+#define	ifc6_buf	ifc_ifcu.ifcu_buf
+#define	ifc6_req	ifc_ifcu.ifcu_req
+};
+
 /*#ifdef	KERNEL*/
 #if 1
 extern struct	in_ifaddr *in_ifaddr;

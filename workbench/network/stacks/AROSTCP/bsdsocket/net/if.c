@@ -538,6 +538,14 @@ ifioctl(so, cmd, data)
 	case SIOCGIFCONF:
 		return (ifconf(cmd, data));
 
+#if INET6
+	case SIOCGLIFADDR:
+	{
+		int in6_ifconf(int, caddr_t);
+		return (in6_ifconf(cmd, data));
+	}
+#endif
+
 #ifdef COMPAT_AMITCP2
 	case ASIOCGIFCONF:
 		return (aifconf(cmd, data));

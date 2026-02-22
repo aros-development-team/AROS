@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/synch.h>
+#include <stdio.h>
 
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -138,6 +139,24 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 	case SIOCGIFADDR_IN6:
 		if (ia == NULL)
 			return EADDRNOTAVAIL;
+		/* if a specific address was supplied, find it */
+		if (ifr->ifr_ifru.ifru_addr.sin6_family == AF_INET6 &&
+		    !IN6_IS_ADDR_UNSPECIFIED(&ifr->ifr_ifru.ifru_addr.sin6_addr)) {
+			for (; ia; ia = ia->ia_next) {
+				if (ia->ia6_ifp == ifp &&
+				    IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr,
+				      &ifr->ifr_ifru.ifru_addr.sin6_addr))
+					break;
+			}
+			if (ia == NULL)
+				return EADDRNOTAVAIL;
+		}
+		break;
+
+	case SIOCGIFDSTADDR_IN6:
+	case SIOCGIFNETMASK_IN6:
+		if (ia == NULL)
+			return EADDRNOTAVAIL;
 		break;
 
 	default:
@@ -148,7 +167,15 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 
 	switch (cmd) {
 	case SIOCGIFADDR_IN6:
-		ifr->ifr_addr = ia->ia_addr;
+		ifr->ifr_ifru.ifru_addr = ia->ia_addr;
+		break;
+
+	case SIOCGIFDSTADDR_IN6:
+		ifr->ifr_ifru.ifru_dstaddr = ia->ia_dstaddr;
+		break;
+
+	case SIOCGIFNETMASK_IN6:
+		ifr->ifr_ifru.ifru_addr = ia->ia_prefixmask;
 		break;
 
 	case SIOCSIFADDR:
@@ -432,6 +459,46 @@ in6_if_up(struct ifnet *ifp)
 	ia->ia6_ifaflags = IN6_IFF_AUTOCONF;
 
 	(void)in6_ifinit(ifp, ia, &sin6, 0);
+}
+
+/* ------------------------------------------------------------------
+ * in6_ifconf - enumerate all IPv6 interface addresses (SIOCGLIFADDR).
+ *
+ * Works like ifconf()/SIOCGIFCONF but fills the buffer with
+ * in6_ifreq entries, one per IPv6 address on all interfaces.
+ * ifc->ifc_len is set to the number of bytes written on return.
+ * ------------------------------------------------------------------ */
+int
+in6_ifconf(int cmd, caddr_t data)
+{
+	struct in6_ifconf *ifc = (struct in6_ifconf *)data;
+	struct in6_ifreq  *ifrp;
+	struct in6_ifaddr *ia;
+	struct ifnet      *ifp;
+	int space, error = 0;
+
+	ifrp  = ifc->ifc6_req;
+	space = ifc->ifc6_len;
+
+	for (ia = in6_ifaddr; ia && space >= (int)sizeof(*ifrp); ia = ia->ia_next) {
+		struct in6_ifreq ifr6;
+
+		ifp = ia->ia6_ifp;
+		if (ifp == NULL)
+			continue;
+
+		bzero(&ifr6, sizeof(ifr6));
+		snprintf(ifr6.ifr_name, sizeof(ifr6.ifr_name),
+		         "%s%u", ifp->if_name, ifp->if_unit);
+		ifr6.ifr_ifru.ifru_addr = ia->ia_addr;
+
+		bcopy(&ifr6, ifrp, sizeof(ifr6));
+		ifrp++;
+		space -= sizeof(ifr6);
+	}
+
+	ifc->ifc6_len -= space;
+	return error;
 }
 
 #endif /* INET6 */
