@@ -34,14 +34,14 @@ USER_CPPFLAGS := \
 
 BASEFILES := \
     arp \
-    ping \
     route \
     resolve
 
 MIAMIFILES := \
     hostname \
     ifconfig \
-    logger
+    logger \
+    ping
 
 USERGROUPFILES := \
     whoami

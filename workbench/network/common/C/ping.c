@@ -23,7 +23,7 @@
         ping - send ICMP ECHO_REQUEST packets to network hosts
 
     SYNOPSIS
-        ping [-dfnqrvR] [-c count] [-i wait] [-l preload] [-p pattern]
+        ping [-46dfnqrvR] [-c count] [-i wait] [-l preload] [-p pattern]
              [-s packetsize] [-L [ hosts ]] host
 
     DESCRIPTION
@@ -177,17 +177,17 @@
         ceives.  When a remote system receives a ping packet, it can do one
         of three things with the TTL field in its response:
 
-        ·   Not change it; this is what Berkeley Unix systems did before the
+        .   Not change it; this is what Berkeley Unix systems did before the
             4.3BSD-Tahoe release.  In this case the TTL value in the
             received packet will be 255 minus the number of routers in the
             round-trip path.
 
-        ·   Set it to 255; this is what AROSTCP and current (as of 1994)
+        .   Set it to 255; this is what AROSTCP and current (as of 1994)
             Berkeley Unix systems do.  In this case the TTL value in the
             received packet will be 255 minus the number of routers in the
             path from the remote system to the pinging host.
 
-        ·   Set it to some other value.  Some machines use the same value
+        .   Set it to some other value.  Some machines use the same value
             for ICMP packets that they use for TCP packets, for example
             either 30 or 60.  Others may use completely wild values.
 
@@ -254,8 +254,10 @@
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/ip_var.h>
+#include <netinet/icmp6.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <proto/miami.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -288,6 +290,8 @@ int options;
 #define	F_SO_DONTROUTE	0x080
 #define	F_VERBOSE	0x100
 #define F_LOOSEROUTE    0x200
+#define F_IPV6          0x400
+#define F_IPV4          0x800
 
 #ifndef LONG_MAX
 #define LONG_MAX 0xffffffff
@@ -302,7 +306,9 @@ int options;
 int mx_dup_ck = MAX_DUP_CHK;
 char rcvd_tbl[MAX_DUP_CHK / 8];
 
-struct sockaddr whereto;	/* who to ping */
+struct sockaddr whereto;	/* who to ping (IPv4) */
+struct sockaddr_in6 whereto6;	/* who to ping (IPv6) */
+int use_ipv6 = 0;		/* use IPv6 */
 int datalen = DEFDATALEN;
 int s = -1;			/* socket file descriptor */
 u_char *outpack;
@@ -327,6 +333,7 @@ unsigned long tsum;			/* sum of all times, for doing average */
 char *pr_addr(u_long l);
 void catcher(void), pinger(void), finish(void), usage(void);
 void pr_pack(char *buf,	int cc,	struct sockaddr_in *from);
+void pr_pack6(char *buf, int cc, struct sockaddr_in6 *from);
 void pr_icmph(struct icmp *icp);
 void pr_iph(struct ip *ip);
 void pr_retip(struct ip *ip);
@@ -358,7 +365,7 @@ struct timerequest *timermsg = NULL;
 BOOL notopen = TRUE;
 #define TimerBase (timermsg->tr_node.io_Device)
 
-const TEXT version[] = "$VER: ping 3.10 (14.10.2005)";
+const TEXT version[] = "$VER: ping 4.0 (22.02.2026)";
 
 void
 clean_timer(void)
@@ -396,6 +403,7 @@ int main(argc, argv)
   int ch, fdmask, hold, packlen, preload;
   u_char *datap, *packet;
   char *target, hnamebuf[MAXHOSTNAMELEN];
+  char addrbuf[INET6_ADDRSTRLEN];
 #ifdef IP_OPTIONS
   u_char rspace[3 + 4 * NROUTES + 1]; /* record route space */
 #endif
@@ -412,8 +420,14 @@ int main(argc, argv)
   }
   preload = 0;
   datap = &outpack[8 + sizeof(struct timeval)];
-  while ((ch = getopt(argc, argv, "LRc:dfh:i:l:np:qrs:v")) != EOF)
+  while ((ch = getopt(argc, argv, "46LRc:dfh:i:l:np:qrs:v")) != EOF)
     switch(ch) {
+    case '4':
+      options |= F_IPV4;
+      break;
+    case '6':
+      options |= F_IPV6;
+      break;
     case 'c':
       npackets = atoi(optarg);
       if (npackets <= 0) {
@@ -491,6 +505,20 @@ int main(argc, argv)
   if (argc < 1 || (options & F_LOOSEROUTE) == 0 && argc > 1)
     usage();
 
+  if ((options & F_IPV4) && (options & F_IPV6)) {
+    (void)fprintf(stderr, "ping: -4 and -6 options cannot be used together.\n");
+    CleanUpExit(1);
+  }
+  if ((options & F_IPV6) && (options & F_LOOSEROUTE)) {
+    (void)fprintf(stderr, "ping: -6 and -L options cannot be used together.\n");
+    CleanUpExit(1);
+  }
+  if ((options & F_IPV6) && (options & F_RROUTE)) {
+    (void)fprintf(stderr, "ping: -6 and -R options cannot be used together.\n");
+    CleanUpExit(1);
+  }
+  use_ipv6 = (options & F_IPV6) ? 1 : 0;
+
   if ((options & (F_LOOSEROUTE | F_RROUTE)) == (F_LOOSEROUTE | F_RROUTE)) {
     fprintf(stderr, "ping: -L and -R options cannot be used concurrently\n");
     CleanUpExit(1);
@@ -513,43 +541,64 @@ int main(argc, argv)
     }
 
     while (target = *argv++) {
-      bzero((char *)&whereto, sizeof(struct sockaddr));
-      to = (struct sockaddr_in *)&whereto;
+      if (use_ipv6) {
+        /* IPv6 target resolution */
+        bzero((char *)&whereto6, sizeof(whereto6));
 #ifdef _SOCKADDR_LEN
-      to->sin_len = sizeof(*to);
+        whereto6.sin6_len    = sizeof(whereto6);
 #endif
-      to->sin_family = AF_INET;
-      to->sin_addr.s_addr = inet_addr(target);
-      if (to->sin_addr.s_addr != (u_int)-1)
-	hostname = target;
-      else {
-	hp = gethostbyname(target);
-	if (!hp) {
-	  fprintf(stderr, "ping: unknown host %s\n", target);
-	  CleanUpExit(1);
-	}
-	to->sin_family = hp->h_addrtype;
-	bcopy(hp->h_addr, (caddr_t)&to->sin_addr, hp->h_length);
-	(void)strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
-	hostname = hnamebuf;
-      }
+        whereto6.sin6_family = AF_INET6;
+        if (inet_pton(AF_INET6, target, &whereto6.sin6_addr) == 1) {
+          hostname = target;
+        } else {
+          hp = gethostbyname2(target, AF_INET6);
+          if (!hp) {
+            (void)fprintf(stderr, "ping: unknown host %s\n", target);
+            CleanUpExit(1);
+          }
+          bcopy(hp->h_addr, (caddr_t)&whereto6.sin6_addr, hp->h_length);
+          (void)strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
+          hostname = hnamebuf;
+        }
+      } else {
+        bzero((char *)&whereto, sizeof(struct sockaddr));
+        to = (struct sockaddr_in *)&whereto;
+#ifdef _SOCKADDR_LEN
+        to->sin_len = sizeof(*to);
+#endif
+        to->sin_family = AF_INET;
+        to->sin_addr.s_addr = inet_addr(target);
+        if (to->sin_addr.s_addr != (u_int)-1)
+          hostname = target;
+        else {
+          hp = gethostbyname(target);
+          if (!hp) {
+            fprintf(stderr, "ping: unknown host %s\n", target);
+            CleanUpExit(1);
+          }
+          to->sin_family = hp->h_addrtype;
+          bcopy(hp->h_addr, (caddr_t)&to->sin_addr, hp->h_length);
+          (void)strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
+          hostname = hnamebuf;
+        }
 
 #ifdef IP_OPTIONS
-      if (options & F_LOOSEROUTE) {
-	if (rspace + sizeof(rspace) - 4 < cp) {
-	  fprintf(stderr, "ping: too many hops for "
-		  "source routing %s\n", target);
-	  CleanUpExit(1);
-	}
-	*cp++ = (to->sin_addr.s_addr >> 24);
-	*cp++ = (to->sin_addr.s_addr >> 16);
-	*cp++ = (to->sin_addr.s_addr >> 8);
-	*cp++ = (to->sin_addr.s_addr >> 0);
-	rspace[IPOPT_OLEN] += 4;
-      }
+        if (options & F_LOOSEROUTE) {
+          if (rspace + sizeof(rspace) - 4 < cp) {
+            fprintf(stderr, "ping: too many hops for "
+                    "source routing %s\n", target);
+            CleanUpExit(1);
+          }
+          *cp++ = (to->sin_addr.s_addr >> 24);
+          *cp++ = (to->sin_addr.s_addr >> 16);
+          *cp++ = (to->sin_addr.s_addr >> 8);
+          *cp++ = (to->sin_addr.s_addr >> 0);
+          rspace[IPOPT_OLEN] += 4;
+        }
 #endif
+      }
     }
-  }
+  } /* end resolution block */
 
   if (options & F_FLOOD && options & F_INTERVAL) {
     (void)fprintf(stderr, "ping: -f and -i incompatible options.\n");
@@ -569,13 +618,23 @@ int main(argc, argv)
 
   ident = getpid() & 0xFFFF;
 
-  if (!(proto = getprotobyname("icmp"))) {
-    (void)fprintf(stderr, "ping: unknown protocol icmp.\n");
-    CleanUpExit(1);
+  if (use_ipv6) {
+    if ((s = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6)) < 0) {
+      perror("ping: socket");
+      CleanUpExit(1);
+    }
+  } else {
+    if (!(proto = getprotobyname("icmp"))) {
+      (void)fprintf(stderr, "ping: unknown protocol icmp.\n");
+      CleanUpExit(1);
+    }
+    if ((s = socket(AF_INET, SOCK_RAW, proto->p_proto)) < 0) {
+      perror("ping: socket");
+      CleanUpExit(1);
+    }
   }
 
 #ifdef AMIGA
-  atexit(clean_timer);
 
   timerport = CreateMsgPort();
   if (!timerport) {
@@ -610,10 +669,6 @@ int main(argc, argv)
   SetSocketSignals(timermask | SIGBREAKF_CTRL_C, 0L, 0L);
 #endif
 
-  if ((s = socket(AF_INET, SOCK_RAW, proto->p_proto)) < 0) {
-    perror("ping: socket");
-    CleanUpExit(1);
-  }
   hold = 1;
   if (options & F_SO_DEBUG)
     (void)setsockopt(s, SOL_SOCKET, SO_DEBUG, (char *)&hold,
@@ -663,7 +718,10 @@ int main(argc, argv)
   (void)setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *)&hold,
 		   sizeof(hold));
 
-  if (to->sin_family == AF_INET)
+  if (use_ipv6) {
+    inet_ntop(AF_INET6, &whereto6.sin6_addr, addrbuf, sizeof(addrbuf));
+    (void)printf("PING %s (%s): %d data bytes\n", hostname, addrbuf, datalen);
+  } else if (to->sin_family == AF_INET)
     (void)printf("PING %s (%s): %d data bytes\n", hostname,
 		 inet_ntoa(*(struct in_addr *)&to->sin_addr.s_addr),
 		 datalen);
@@ -682,9 +740,7 @@ int main(argc, argv)
     catcher();			/* start things going */
 
   for (;;) {
-    struct sockaddr_in from;
     register int cc;
-    int fromlen;
 
 #ifdef AMIGA
     /* Check for special signals */
@@ -704,15 +760,29 @@ int main(argc, argv)
 		 (fd_set *)NULL, &timeout) < 1)
 	continue;
     }
-    fromlen = sizeof(from);
-    if ((cc = recvfrom(s, (char *)packet, packlen, 0,
-		       (struct sockaddr *)&from, &fromlen)) < 0) {
-      if (errno == EINTR)
-	continue;
-      perror("ping: recvfrom");
-      continue;
+    if (use_ipv6) {
+      struct sockaddr_in6 from6;
+      int fromlen6 = sizeof(from6);
+      cc = recvfrom(s, (char *)packet, packlen, 0,
+                    (struct sockaddr *)&from6, &fromlen6);
+      if (cc < 0) {
+        if (errno == EINTR) continue;
+        perror("ping: recvfrom");
+        continue;
+      }
+      pr_pack6((char *)packet, cc, &from6);
+    } else {
+      struct sockaddr_in from;
+      int fromlen = sizeof(from);
+      cc = recvfrom(s, (char *)packet, packlen, 0,
+                    (struct sockaddr *)&from, &fromlen);
+      if (cc < 0) {
+        if (errno == EINTR) continue;
+        perror("ping: recvfrom");
+        continue;
+      }
+      pr_pack((char *)packet, cc, &from);
     }
-    pr_pack((char *)packet, cc, &from);
     if (npackets && nreceived >= npackets)
       break;
   }
@@ -790,34 +860,55 @@ catcher()
 void
 pinger()
 {
-	register struct icmp *icp;
 	register int cc;
 	int i;
 
-	icp = (struct icmp *)outpack;
-	icp->icmp_type = ICMP_ECHO;
-	icp->icmp_code = 0;
-	icp->icmp_cksum = 0;
-	icp->icmp_seq = htons(ntransmitted++);
-	icp->icmp_id = ident;			/* ID */
+	if (use_ipv6) {
+		struct icmp6_hdr *icp6 = (struct icmp6_hdr *)outpack;
+		icp6->icmp6_type  = ICMP6_ECHO_REQUEST;
+		icp6->icmp6_code  = 0;
+		icp6->icmp6_cksum = 0;	/* kernel computes ICMPv6 checksum */
+		icp6->icmp6_seq   = htons(ntransmitted++);
+		icp6->icmp6_id    = ident;
 
-	CLR(icp->icmp_seq % mx_dup_ck);
+		CLR(icp6->icmp6_seq % mx_dup_ck);
 
-	if (timing)
+		if (timing)
 #ifdef AMIGA
-/*		(void)ReadEClock((struct EClockVal *)&outpack[8]);*/ /* NC */
-		(void)GetSysTime((struct timeval *)&outpack[8]);
+			(void)GetSysTime((struct timeval *)&outpack[8]);
 #else
-		(void)gettimeofday((struct timeval *)&outpack[8],
-		    (struct timezone *)NULL);
+			(void)gettimeofday((struct timeval *)&outpack[8],
+			    (struct timezone *)NULL);
 #endif
-	cc = datalen + 8;			/* skips ICMP portion */
+		cc = datalen + 8;
 
-	/* compute ICMP checksum here */
-	icp->icmp_cksum = in_cksum((u_short *)icp, cc);
+		i = sendto(s, (char *)outpack, cc, 0,
+		    (struct sockaddr *)&whereto6, sizeof(whereto6));
+	} else {
+		register struct icmp *icp = (struct icmp *)outpack;
+		icp->icmp_type  = ICMP_ECHO;
+		icp->icmp_code  = 0;
+		icp->icmp_cksum = 0;
+		icp->icmp_seq   = htons(ntransmitted++);
+		icp->icmp_id    = ident;
 
-	i = sendto(s, (char *)outpack, cc, 0, &whereto,
-	    sizeof(struct sockaddr));
+		CLR(icp->icmp_seq % mx_dup_ck);
+
+		if (timing)
+#ifdef AMIGA
+			(void)GetSysTime((struct timeval *)&outpack[8]);
+#else
+			(void)gettimeofday((struct timeval *)&outpack[8],
+			    (struct timezone *)NULL);
+#endif
+		cc = datalen + 8;
+
+		/* compute ICMP checksum here */
+		icp->icmp_cksum = in_cksum((u_short *)icp, cc);
+
+		i = sendto(s, (char *)outpack, cc, 0, &whereto,
+		    sizeof(struct sockaddr));
+	}
 
 	if (i < 0 || i != cc)  {
 		if (i < 0)
@@ -1027,6 +1118,93 @@ pr_pack(buf, cc, from)
 			(void)printf("\nunknown option %x", *cp);
 			break;
 		}
+	if (!(options & F_FLOOD)) {
+		(void)putchar('\n');
+		(void)fflush(stdout);
+	}
+}
+
+/*
+ * pr_pack6 --
+ *	Print out an ICMPv6 ECHO REPLY packet.  IPv6 raw sockets deliver
+ *	ICMPv6 payloads directly (no IPv6 header prepended by kernel).
+ */
+void
+pr_pack6(buf, cc, from)
+	char *buf;
+	int cc;
+	struct sockaddr_in6 *from;
+{
+	struct icmp6_hdr *icp6;
+	struct timeval tv, *tp;
+	long triptime;
+	int dupflag;
+	char addrstr[INET6_ADDRSTRLEN];
+
+#ifdef AMIGA
+	GetSysTime((struct timeval *)&tv);
+#else
+	(void)gettimeofday(&tv, (struct timezone *)NULL);
+#endif
+
+	if (cc < (int)sizeof(struct icmp6_hdr)) {
+		if (options & F_VERBOSE)
+			(void)fprintf(stderr,
+			    "ping: ICMPv6 packet too short (%d bytes)\n", cc);
+		return;
+	}
+
+	icp6 = (struct icmp6_hdr *)buf;
+
+	if (icp6->icmp6_type == ICMP6_ECHO_REPLY) {
+		if (icp6->icmp6_id != ident)
+			return;		/* not our echo */
+		++nreceived;
+		if (timing) {
+			tp = (struct timeval *)(buf + sizeof(struct icmp6_hdr));
+			tvsub(&tv, tp);
+			triptime = tv.tv_sec * 1000 + (tv.tv_usec / 1000);
+			tsum += triptime;
+			if (triptime < tmin)
+				tmin = triptime;
+			if (triptime > tmax)
+				tmax = triptime;
+		}
+
+		if (TST(icp6->icmp6_seq % mx_dup_ck)) {
+			++nrepeats;
+			--nreceived;
+			dupflag = 1;
+		} else {
+			SET(icp6->icmp6_seq % mx_dup_ck);
+			dupflag = 0;
+		}
+
+		if (options & F_QUIET)
+			return;
+
+		if (options & F_FLOOD)
+			(void)write(1, &BSPACE, 1);
+		else {
+			inet_ntop(AF_INET6, &from->sin6_addr,
+			    addrstr, sizeof(addrstr));
+			(void)printf("%d bytes from %s: icmp6_seq=%u",
+			    cc, addrstr, ntohs(icp6->icmp6_seq));
+			if (timing)
+				(void)printf(" time=%ld ms", triptime);
+			if (dupflag)
+				(void)printf(" (DUP!)");
+		}
+	} else {
+		/* non-ECHO_REPLY ICMPv6 */
+		if (!(options & F_VERBOSE))
+			return;
+		inet_ntop(AF_INET6, &from->sin6_addr, addrstr, sizeof(addrstr));
+		(void)printf("%d bytes from %s: icmp6_type=%d code=%d\n",
+		    cc, addrstr, icp6->icmp6_type, icp6->icmp6_code);
+		return;
+	}
+
 	if (!(options & F_FLOOD)) {
 		(void)putchar('\n');
 		(void)fflush(stdout);
@@ -1388,8 +1566,10 @@ void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: ping [-Rdfnqrv] [-c count] [-i wait] [-l preload]\n"
-		      "\t[-p pattern] [-s packetsize] [-L [hosts]] host\n");
+	    "usage: ping [-46Rdfnqrv] [-c count] [-i wait] [-l preload]\n"
+		      "\t[-p pattern] [-s packetsize] [-L [hosts]] host\n"
+		      "\t-6  use IPv6 (ICMPv6 echo)\n"
+		      "\t-4  use IPv4 (default)\n");
 	CleanUpExit(1);
 }
 
