@@ -216,7 +216,6 @@ void ehciHandleIsochTDs(struct PCIController *hc)
                     UWORD pktlen = ptdpriv->ptd_PktLength[pkt];
 
                     if(trans & EITF_STATUS_ACTIVE) {
-                        error = FALSE;
                         break;
                     }
 
@@ -415,7 +414,20 @@ WORD ehciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
     if (!rtn->rtn_BufferReq.ubr_Frame) {
         ULONG frameidx = ehciGetFrameNumber(hc);
-        ULONG next = rtn->rtn_NextFrame ? rtn->rtn_NextFrame : ((frameidx + interval) & EHCI_FRAME_NUMBER_MASK);
+        ULONG lead = interval;
+        ULONG next = 0;
+
+        /* Ensure a minimum lead time so the HC has time to process the descriptor */
+        if(lead < 4) lead = 4;
+
+        if(rtn->rtn_NextFrame) {
+            LONG delta = (LONG)(rtn->rtn_NextFrame - (UWORD)frameidx);
+            /* rtn_NextFrame is valid if it is far enough in the future */
+            if(delta >= (LONG)lead && delta < (LONG)(EHCI_FRAME_NUMBER_MASK / 2))
+                next = rtn->rtn_NextFrame;
+        }
+        if(!next)
+            next = (frameidx + lead) & EHCI_FRAME_NUMBER_MASK;
         rtn->rtn_BufferReq.ubr_Frame = (UWORD)next;
     } else {
         rtn->rtn_BufferReq.ubr_Frame &= EHCI_FRAME_NUMBER_MASK;
@@ -573,7 +585,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
             ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[0], sitd->sitd_ExtBufferPtr[0],
                            (phys & EITM_BUFFER_BASE) | (phys & ESITM_BP0_OFFSET_MASK));
             ehciSetPointer(ehcihcp, sitd->sitd_BufferPtr[1], sitd->sitd_ExtBufferPtr[1],
-                           (phys & EITM_BUFFER_BASE) | smask | ((ULONG)cmask << 8));
+                           ((phys + 4096) & EITM_BUFFER_BASE) | smask | ((ULONG)cmask << 8));
             WRITEMEM32_LE(&sitd->sitd_BackPointer, EHCI_TERMINATE);
 
             ptdpriv->ptd_PktCount = 1;
@@ -622,6 +634,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 WRITEMEM32_LE(&itd->itd_Transaction[pktidx],
                               EITF_STATUS_ACTIVE |
                               ((pktoffset >> 12) << EITF_PAGESELECT_SHIFT) |
+                              (pktoffset & EITM_BUFFER_OFFSET) |
                               ((pktlen & EITF_LENGTH_MASK) << EITF_LENGTH_SHIFT));
                 len -= pktlen;
                 pktoffset += pktlen;

@@ -106,32 +106,18 @@ static inline ULONG ohciPrepareDMABuffer(struct PCIController *hc, struct OhciTD
 
 
 /*
- * Isochronous PSW helpers.
+ * Isochronous PSW helpers (OHCI 1.0a spec §4.3.2.3).
  *
- * OHCI ISO PSW Offset field contains the offset of the last byte of each packet
- * relative to BufferPage0, modulo 4 KiB. When the offset wraps, the packet end
- * has crossed into the next page.
+ * After the HC processes an IN packet it writes back:
+ *   PSW[15:12] = CC (completion code)
+ *   PSW[11:0]  = number of bytes actually received
+ *
+ * For OUT packets PSW[11:0] is undefined after completion; we use the
+ * submitted length stored in oitd_Length instead.
  */
-static inline UWORD ohciIsoTDStartOffset(struct OhciIsoTD *oitd)
+static inline ULONG ohciIsoINPktLen(UWORD psw)
 {
-    ULONG bufend = READMEM32_LE(&oitd->oitd_BufferEnd);
-    ULONG len = (ULONG)oitd->oitd_Length;
-    ULONG start = bufend - len + 1;
-    return (UWORD)(start & 0xfff);
-}
-
-static inline ULONG ohciIsoPSWPktLen(UWORD raw_end, UWORD *prev_raw, ULONG *page_add, LONG *prev_end)
-{
-    if(raw_end < *prev_raw)
-        *page_add += 0x1000;
-
-    ULONG end = (ULONG)raw_end + *page_add;
-    ULONG pktlen = end - (ULONG)(*prev_end);
-
-    *prev_raw = raw_end;
-    *prev_end = (LONG)end;
-
-    return pktlen;
+    return (ULONG)(psw & OITM_PSW_OFFSET);
 }
 static AROS_INTH1(OhciResetHandler, struct PCIController *, hc)
 {
@@ -270,10 +256,6 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             struct OhciIsoTD *oitd = (struct OhciIsoTD *)otd;
             UWORD pktcount;
             UWORD pktidx;
-            UWORD base_off;
-            UWORD prev_raw;
-            ULONG page_add;
-            LONG prev_end;
 
             /*
              * HC writes ISO PSWs beyond the first 16 bytes of the common TD header.
@@ -283,32 +265,35 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
 
             pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
 
+            /*
+             * For IN transfers the HC writes back the received byte count in
+             * PSW[11:0] after completion. Sum those up for iouh_Actual.
+             * For OUT transfers PSW[11:0] is undefined; credit the full submitted
+             * length for every NoError/ShortPkt packet (the HC sent what was asked).
+             */
             len = 0;
-            base_off = ohciIsoTDStartOffset(oitd);
-            prev_raw = base_off;
-            page_add = 0;
-            prev_end = (LONG)base_off - 1;
+            if(READMEM32_LE(&oed->oed_EPCaps) & OECF_DIRECTION_IN) {
+                for(pktidx = 0; pktidx < pktcount; pktidx++) {
+                    UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
+                    UWORD ccfield = psw & OITM_PSW_CC;
+                    UWORD pswcc;
 
-            for(pktidx = 0; pktidx < pktcount; pktidx++) {
-                UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
-                UWORD ccfield = psw & OITM_PSW_CC;
-                UWORD pswcc;
-                ULONG pktlen;
+                    if(ccfield == OITM_PSW_CC)
+                        continue; /* Not accessed / unused */
 
-                if(ccfield == OITM_PSW_CC)
-                    continue; /* Not accessed / unused */
-
-                pswcc = ccfield >> OITS_PSW_CC;
-                pktlen = ohciIsoPSWPktLen((UWORD)(psw & OITM_PSW_OFFSET), &prev_raw, &page_add, &prev_end);
-
-                switch(pswcc << OTCS_COMPLETIONCODE) {
-                case OTCF_CC_NOERROR:
-                case OTCF_CC_SHORTPKT:
-                    len += pktlen;
-                    break;
-                default:
-                    break;
+                    pswcc = ccfield >> OITS_PSW_CC;
+                    switch(pswcc << OTCS_COMPLETIONCODE) {
+                    case OTCF_CC_NOERROR:
+                    case OTCF_CC_SHORTPKT:
+                        len += ohciIsoINPktLen(psw);
+                        break;
+                    default:
+                        break;
+                    }
                 }
+            } else {
+                /* OUT: credit full submitted length; HC transmitted what was programmed */
+                len = oitd->oitd_Length;
             }
         } else if(otd->otd_BufferPtr) {
             // FIXME this will blow up if physical memory is ever going to be discontinuous
@@ -375,20 +360,13 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
             struct IOUsbHWBufferReq *bufreq = rtn ? &rtn->rtn_BufferReq : NULL;
             UWORD pktcount;
             UWORD pktidx;
-            UWORD base_off;
-            UWORD prev_raw;
-            ULONG page_add;
-            LONG prev_end;
             ULONG frame;
+            BOOL isIN = (READMEM32_LE(&oed->oed_EPCaps) & OECF_DIRECTION_IN) != 0;
 
             /* Invalidate ISO PSWs written by the HC */
             CacheClearE(&oitd->oitd_Ctrl, 16 + sizeof(oitd->oitd_Offset), CACRF_InvalidateD);
 
             pktcount = ((READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_FRAMECOUNT) & 0x7) + 1;
-            base_off = ohciIsoTDStartOffset(oitd);
-            prev_raw = base_off;
-            page_add = 0;
-            prev_end = (LONG)base_off - 1;
             frame = (READMEM32_LE(&oitd->oitd_Ctrl) >> OITCS_STARTINGFRAME) & 0xffff;
 
             if (rtn && rtn->rtn_PTDs) {
@@ -409,57 +387,113 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
 
             ioreq->iouh_Actual = 0;
 
-            for(pktidx = 0; pktidx < pktcount; pktidx++) {
-                UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
-                UWORD ccfield = psw & OITM_PSW_CC;
-                UWORD pswcc;
-                ULONG pktlen;
+            if(isIN) {
+                /*
+                 * IN: HC writes received byte count in PSW[11:0] after completion.
+                 * Sum the per-packet received counts.
+                 */
+                for(pktidx = 0; pktidx < pktcount; pktidx++) {
+                    UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
+                    UWORD ccfield = psw & OITM_PSW_CC;
+                    UWORD pswcc;
+                    ULONG pktlen;
 
-                if(ccfield == OITM_PSW_CC)
-                    continue; /* Not accessed / unused */
+                    if(ccfield == OITM_PSW_CC)
+                        continue; /* Not accessed / unused */
 
-                pswcc = ccfield >> OITS_PSW_CC;
-                pktlen = ohciIsoPSWPktLen((UWORD)(psw & OITM_PSW_OFFSET), &prev_raw, &page_add, &prev_end);
+                    pswcc = ccfield >> OITS_PSW_CC;
+                    pktlen = ohciIsoINPktLen(psw);
 
-                switch(pswcc << OTCS_COMPLETIONCODE) {
-                case OTCF_CC_NOERROR:
-                    ioreq->iouh_Actual += pktlen;
-                    break;
+                    switch(pswcc << OTCS_COMPLETIONCODE) {
+                    case OTCF_CC_NOERROR:
+                        ioreq->iouh_Actual += pktlen;
+                        break;
 
-                case OTCF_CC_CRCERROR:
-                case OTCF_CC_BABBLE:
-                case OTCF_CC_PIDCORRUPT:
-                case OTCF_CC_WRONGPID:
-                    ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
-                    retire = TRUE;
-                    break;
+                    case OTCF_CC_CRCERROR:
+                    case OTCF_CC_BABBLE:
+                    case OTCF_CC_PIDCORRUPT:
+                    case OTCF_CC_WRONGPID:
+                        ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
+                        retire = TRUE;
+                        break;
 
-                case OTCF_CC_TIMEOUT:
-                    ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
-                    retire = TRUE;
-                    break;
+                    case OTCF_CC_TIMEOUT:
+                        ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+                        retire = TRUE;
+                        break;
 
-                case OTCF_CC_OVERFLOW:
-                    ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
-                    retire = TRUE;
-                    break;
+                    case OTCF_CC_OVERFLOW:
+                        ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
+                        retire = TRUE;
+                        break;
 
-                case OTCF_CC_SHORTPKT:
-                    ioreq->iouh_Actual += pktlen;
-                    if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
-                        ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
-                    retire = TRUE;
-                    break;
+                    case OTCF_CC_SHORTPKT:
+                        ioreq->iouh_Actual += pktlen;
+                        if((!ioreq->iouh_Req.io_Error) && (!(ioreq->iouh_Flags & UHFF_ALLOWRUNTPKTS)))
+                            ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
+                        retire = TRUE;
+                        break;
 
-                case OTCF_CC_UNDERRUN:
-                case OTCF_CC_OVERRUN:
-                    ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
-                    retire = TRUE;
-                    break;
+                    case OTCF_CC_UNDERRUN:
+                    case OTCF_CC_OVERRUN:
+                        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                        retire = TRUE;
+                        break;
 
-                default:
-                    break;
+                    default:
+                        break;
+                    }
                 }
+            } else {
+                /*
+                 * OUT: PSW[11:0] is undefined after completion; credit the full
+                 * submitted length. Errors are still reported via the CC field.
+                 */
+                for(pktidx = 0; pktidx < pktcount; pktidx++) {
+                    UWORD psw = (UWORD)(READMEM32_LE(&oitd->oitd_Offset[pktidx]) & 0xffff);
+                    UWORD ccfield = psw & OITM_PSW_CC;
+                    UWORD pswcc;
+
+                    if(ccfield == OITM_PSW_CC)
+                        continue; /* Not accessed / unused */
+
+                    pswcc = ccfield >> OITS_PSW_CC;
+                    switch(pswcc << OTCS_COMPLETIONCODE) {
+                    case OTCF_CC_NOERROR:
+                    case OTCF_CC_SHORTPKT:
+                        /* Byte count per packet credited below from oitd_Length */
+                        break;
+
+                    case OTCF_CC_CRCERROR:
+                    case OTCF_CC_BABBLE:
+                    case OTCF_CC_PIDCORRUPT:
+                    case OTCF_CC_WRONGPID:
+                        ioreq->iouh_Req.io_Error = UHIOERR_CRCERROR;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_TIMEOUT:
+                        ioreq->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_OVERFLOW:
+                        ioreq->iouh_Req.io_Error = UHIOERR_OVERFLOW;
+                        retire = TRUE;
+                        break;
+
+                    case OTCF_CC_UNDERRUN:
+                    case OTCF_CC_OVERRUN:
+                        ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
+                        retire = TRUE;
+                        break;
+
+                    default:
+                        break;
+                    }
+                }
+                if(!ioreq->iouh_Req.io_Error)
+                    ioreq->iouh_Actual = oitd->oitd_Length;
             }
             retire = TRUE;
             if (bufreq)

@@ -385,7 +385,6 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         UWORD pktidx;
         UWORD remaining;
         UWORD offset;
-        ULONG bus_end_off;
 
         if(!ptd || !(ptd->ptd_Flags & PTDF_BUFFER_VALID))
             continue;
@@ -441,20 +440,28 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         remaining = ptdpriv->ptd_BufferReq.ubr_Length;
         offset = (UWORD)(phys & 0xfff);
-        bus_end_off = offset;
 
         /*
-         * OHCI ISO PSW Offset field contains the offset of the last byte of each
-         * packet relative to BufferPage0, modulo 4 KiB. The HC will advance to the
-         * next page when the offset wraps.
+         * OHCI ISO PSW semantics differ by direction (OHCI 1.0a spec §4.3.2.3):
+         *   OUT: PSW[11:0] = byte count for this packet (how many bytes to send).
+         *   IN:  PSW[11:0] = byte offset from BufferPage0 of the first byte of
+         *                    this packet (where the HC stores received data).
+         * After the HC processes an IN packet it overwrites PSW[11:0] with the
+         * received byte count and PSW[15:12] with the completion code.
          */
         for(pktidx = 0; pktidx < pktcnt; pktidx++) {
             UWORD pktlen = remaining;
             if(pktlen > rtn->rtn_IOReq.iouh_MaxPktSize)
                 pktlen = rtn->rtn_IOReq.iouh_MaxPktSize;
 
-            bus_end_off += pktlen;
-            WRITEMEM32_LE(&oitd->oitd_Offset[pktidx], ((bus_end_off - 1) & 0xfff) | OITM_PSW_CC);
+            if(rtn->rtn_IOReq.iouh_Dir == UHDIR_OUT) {
+                /* OUT: PSW = byte count to transmit */
+                WRITEMEM32_LE(&oitd->oitd_Offset[pktidx], (pktlen & OITM_PSW_OFFSET) | OITM_PSW_CC);
+            } else {
+                /* IN: PSW = byte offset of first byte of this packet from BP0 */
+                WRITEMEM32_LE(&oitd->oitd_Offset[pktidx], (offset & OITM_PSW_OFFSET) | OITM_PSW_CC);
+                offset += pktlen;
+            }
             remaining -= pktlen;
         }
         while(pktidx < 8) {

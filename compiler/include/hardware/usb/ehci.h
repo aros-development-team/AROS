@@ -195,7 +195,7 @@
 #define EITF_STATUS_BABBLE       (1UL<<29)
 #define EITF_STATUS_XACTERR      (1UL<<28)
 #define EITF_LENGTH_MASK         0x0fff
-#define EITF_LENGTH_SHIFT        0
+#define EITF_LENGTH_SHIFT        16
 #define EITF_IOC                 (1UL<<15)
 #define EITF_PAGESELECT_SHIFT    12
 
@@ -296,7 +296,7 @@
 #define EQEM_RELOAD         (((1UL<<4)-1)<<EQES_RELOAD)
 
 /* QH Split Ctrl */
-#define EQSS_MUSOFACTIVE     0    /* µSOF Active */
+#define EQSS_MUSOFACTIVE     0    /* ï¿½SOF Active */
 #define EQSS_MUSOFCSPLIT     8    /* When to send the complete split */
 
 #define EQSS_HUBADDRESS     16    /* Hub Device Address for Split Transaction */
