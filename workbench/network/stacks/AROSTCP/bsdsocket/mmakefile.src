@@ -80,9 +80,10 @@ NETINET_H= \
 
 # netinet6 -- IPv6 protocol stack (KAME-derived)
 NETINET6_C= \
-	netinet6/in6 netinet6/in6_proto \
+	netinet6/in6 netinet6/in6_pcb netinet6/in6_proto \
 	netinet6/ip6_input netinet6/ip6_output \
-	netinet6/icmp6 netinet6/nd6
+	netinet6/icmp6 netinet6/nd6 \
+	netinet6/udp6_usrreq
 
 NETINET6_H= \
 	netinet6/in6_var.h netinet6/nd6.h

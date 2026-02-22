@@ -59,7 +59,13 @@ int  rip6_usrreq(struct socket *, int, struct mbuf *, struct mbuf *,
 #include <netinet/tcp_usrreq_protos.h>
 #include <netinet/udp_usrreq_protos.h>
 void tcp_input(void *args, ...);
+void udp_input(void *args, ...);
 #include <netinet/ip_input_protos.h>
+
+/* UDP over IPv6 */
+void udp6_input(void *args, ...);
+int  udp6_usrreq(struct socket *, int, struct mbuf *, struct mbuf *,
+                 struct mbuf *);
 
 /* ctloutput stubs: old BSD 5-arg signature */
 int rip6_ctloutput(int op, struct socket *so, int level, int optname,
@@ -80,11 +86,11 @@ struct protosw inet6sw[] = {
     },
     /* UDP over IPv6 */
     { SOCK_DGRAM,   &inet6domain,   IPPROTO_UDP,    PR_ATOMIC|PR_ADDR,
-      udp_input,
+      udp6_input,
       NULL,
       udp_ctlinput,
       ip6_ctloutput,
-      udp_usrreq,
+      udp6_usrreq,
       NULL,         NULL,           NULL,           NULL,
     },
     /* TCP over IPv6 */

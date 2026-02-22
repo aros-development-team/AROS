@@ -71,6 +71,8 @@ struct inpcb {
 	int	in6p_v6only;		/* IPv6-only socket flag */
 	int	in6p_tclass;		/* IPv6 traffic class */
 	int	in6p_flags;		/* IPv6 per-socket flags (IN6P_*) */
+	struct	in6_addr inp_laddr6;	/* local IPv6 address */
+	struct	in6_addr inp_faddr6;	/* foreign IPv6 address */
 #endif
 };
 
