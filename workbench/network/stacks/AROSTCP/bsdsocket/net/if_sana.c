@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2025 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -60,6 +60,12 @@
 #include <netns/ns_if.h>
 #endif
 
+#if INET6
+#include <netinet/ip6.h>
+#include <netinet6/in6_var.h>
+#include <netinet6/nd6.h>
+#endif
+
 #include <net/if_sana.h>
 #include <net/if_types.h>
 #include <net/sana2arp.h>
@@ -100,6 +106,9 @@ sana_read(struct sana_softc *ssc, struct IOIPReq *req,
 	  UWORD  flags, UWORD *sent, const char *banner, size_t mtu);
 static void sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req);
+#if INET6
+static void sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req);
+#endif
 static void sana_online(struct sana_softc *ssc, struct IOIPReq *req);
 static void sana_connect(struct sana_softc *ssc, struct IOIPReq *req);
 static void free_written_packet(struct sana_softc *ssc, struct IOIPReq *req);
@@ -743,6 +752,13 @@ D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if
 		   ARP_MTU, sana_arp_read, CMD_READ, 0);
 
 #endif /* INET */
+#if INET6
+  if (ssc->ss_ip6.reqno > 0)
+    ssc->ss_ip6.sent +=
+      sana_send_read(ssc, ssc->ss_ip6.reqno - ssc->ss_ip6.sent,
+                     ssc->ss_ip6.type,
+                     ssc->ss_if.if_mtu, sana_ip6_read, CMD_READ, 0);
+#endif /* INET6 */
 #if	ISO
 #endif /* ISO */
 #if	CCITT
@@ -988,6 +1004,33 @@ sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req)
     arpinput(ssc, m, hwaddr);
 }
 
+#if INET6
+/*
+ * sana_ip6_read(): feed an IPv6 packet to the ip6 input queue.
+ * (Called from sana_poll when an IPv6-typed packet arrives.)
+ */
+static void
+sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req)
+{
+  struct mbuf *m = sana_read(ssc, req, 0, &ssc->ss_ip6.sent, "sana_ip6_read",
+			     ssc->ss_if.if_mtu);
+  spl_t s;
+
+  if (m) {
+    s = splimp();
+    if (IF_QFULL(&ip6intrq)) {
+      IF_DROP(&ip6intrq);
+      m_freem(m);
+    } else {
+      m->m_pkthdr.rcvif = (struct ifnet *)ssc;
+      IF_ENQUEUE(&ip6intrq, m);
+      schednetisr_nosignal(NETISR_IPV6);
+    }
+    splx(s);
+  }
+}
+#endif /* INET6 */
+
 /*
  * sana_online(): process an ONLINE event
  */
@@ -1137,6 +1180,27 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
     req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = 0;
     break;
 #endif
+#if INET6
+  case AF_INET6:
+    {
+      struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)dst;
+      int nd_error;
+      type = ssc->ss_ip6.type;
+      nd_error = nd6_resolve(ifp, rt, m, dst, req->ioip_s2.ios2_DstAddr);
+      if (nd_error == EAGAIN) {
+        /* packet queued by nd6_resolve, will be sent after NA arrives */
+        AddHead((struct List*)&ssc->ss_freereq, (struct Node*)req);
+        splx(s);
+        return 0;
+      }
+      if (nd_error) {
+        error = nd_error;
+        goto bad;
+      }
+      req->ioip_s2.ios2_Req.io_Message.mn_Node.ln_Pri = 0;
+    }
+    break;
+#endif /* INET6 */
   case AF_UNSPEC:
     /* Raw packets. Sana-II address (a tuple of type and host)
      * specifies the destination 

@@ -25,6 +25,7 @@
 
 #define	ETHERTYPE_IP	0x0800		/* IP protocol */
 #define ETHERTYPE_ARP	0x0806		/* Addr. resolution protocol */
+#define ETHERTYPE_IPV6	0x86DD		/* IPv6 protocol */
 
 #define SLIPTYPE_IP ETHERTYPE_IP
 #define CSLIPTYPE_IP ETHERTYPE_IP

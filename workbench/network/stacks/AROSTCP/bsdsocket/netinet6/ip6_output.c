@@ -112,6 +112,24 @@ ip6_output(void *args, ...)
     rt  = ro->ro_rt;
     ifp = rt->rt_ifp;
 
+    /*
+     * If the destination is a local IPv6 address configured on any interface,
+     * redirect via the loopback interface so the packet loops back correctly
+     * without needing NDP resolution on the NIC.
+     */
+#if INET6
+    if (!(ifp->if_flags & IFF_LOOPBACK)) {
+        struct in6_ifaddr *ia6;
+        extern struct ifnet loif;
+        for (ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
+            if (IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
+                ifp = &loif;
+                break;
+            }
+        }
+    }
+#endif
+
     if (ifpp)
         *ifpp = ifp;
 

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -218,6 +218,19 @@ D(bug("[AROSTCP] ssconfig()\n"));
   ifp->ss_arp.type = args->a_arptype ? *args->a_arptype : wd->wd_arptype;
   reqtotal += ifp->ss_arp.reqno = args->a_arpno ? *args->a_arpno : wd->wd_arpno;
   ifp->ss_arp.hrd = args->a_arphdr ? *args->a_arphdr : wd->wd_arphdr;
+
+#if INET6
+  /* IPv6: use ethernet type 0x86DD for ethernet-family wires, else same as IP */
+  if (wd->wd_wiretype == S2WireType_Ethernet || wd->wd_wiretype == 0) {
+    ifp->ss_ip6.type  = ETHERTYPE_IPV6;
+    ifp->ss_ip6.reqno = wd->wd_ipno;   /* same pool size as IPv4 */
+  } else {
+    /* SLIP/PPP etc: same encap type as IPv4 (driver multiplexes) */
+    ifp->ss_ip6.type  = wd->wd_iptype;
+    ifp->ss_ip6.reqno = 0;
+  }
+  reqtotal += ifp->ss_ip6.reqno;
+#endif
 
   reqtotal += args->a_writeno ? *args->a_writeno : wd->wd_writeno;
 
