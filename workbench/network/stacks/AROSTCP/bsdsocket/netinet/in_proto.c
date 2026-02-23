@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -68,6 +69,10 @@
 #include <netinet/in_systm.h>
 
 #include <netinet/in_proto_protos.h>
+#include <kern/amiga_dhcp.h>
+
+/* IPv4 DHCP client state - one global instance for the IPv4 protocol family */
+struct aros_dhcp_state aros_dhcpv4;
 
 /*
  * TCP/IP protocol family: IP, ICMP, UDP, TCP.

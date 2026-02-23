@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -48,6 +48,7 @@
  */
 #define INET 1
 #define INET6 1			/* IPv6 */
+#define DHCP6 0			/* DHCPv6 client support */
 #define CCITT 0
 #define NHY 0			/* HYPERchannel */
 #define NIMP 0

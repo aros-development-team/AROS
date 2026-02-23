@@ -335,10 +335,20 @@ D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 	}
 	if ((msg->Level & GUICMD_MASK) == GUICMD_SET_INTERFACE_STATE) {
 		if (state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_GoingOffline)) {
-			if ((state == MIAMIPANELV_AddInterface_State_Online) && (ifp->if_data.ifi_aros_usedhcp))
-				run_dhclient(ifp);
-		if (state == MIAMIPANELV_AddInterface_State_GoingOffline)
-			kill_dhclient(ifp);
+			if (state == MIAMIPANELV_AddInterface_State_Online) {
+				if (ifp->if_data.ifi_aros_usedhcp)
+					run_dhclient(ifp);
+#if INET6 && DHCP6
+				if (ifp->if_data.ifi_aros_usedhcp6)
+					run_dhclient6(ifp);
+#endif
+			}
+			if (state == MIAMIPANELV_AddInterface_State_GoingOffline) {
+				kill_dhclient(ifp);
+#if INET6 && DHCP6
+				kill_dhclient6(ifp);
+#endif
+			}
 		}
 	}
 }

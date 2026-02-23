@@ -36,6 +36,12 @@
 #include <netinet/in_systm.h>
 #include <netinet/in_pcb.h>
 #include <netinet6/in6_var.h>
+#include <kern/amiga_dhcp.h>
+
+#if DHCP6
+/* IPv6 DHCP client state - one global instance for the IPv6 protocol family */
+struct aros_dhcp_state aros_dhcpv6;
+#endif
 
 /* --- ANSI function declarations matching actual signatures ---
  * pr_input  must be void (*)(void *args, ...)

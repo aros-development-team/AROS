@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -37,6 +37,7 @@
 
 #include <api/amiga_api.h>
 #include <kern/amiga_gui.h>
+#include <kern/amiga_dhcp.h>
 #include <kern/amiga_includes.h>
 #include <kern/amiga_config.h>
 #include <kern/amiga_netdb.h>
@@ -571,6 +572,19 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 				*errstrp = ERR_SYNTAX;
 				retval = RETURN_WARN;
 			}
+		} else if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6
+		    && strncmp(ssc->args->a_ip6, "DHCP", 4) == 0) {
+			/* Start DHCPv6 client for this interface */
+			DIFCONF(Printf("> IPv6 address: using DHCPv6\n");)
+#if DHCP6
+			ifp->if_data.ifi_aros_usedhcp6 = 1;
+			if (ssc->args->a_up) {
+				if (api_state == API_SHOWN)
+					run_dhclient6(ifp);
+				else
+					ifp->if_flags |= IFF_DELAYUP;
+			}
+#endif
 		}
 #endif /* INET6 */
 		else

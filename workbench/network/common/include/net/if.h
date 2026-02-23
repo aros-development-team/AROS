@@ -5,6 +5,7 @@
  *	The Regents of the University of California.  All rights reserved.
  * Copyright (c) 2005 - 2006
  *	Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -112,15 +113,11 @@ struct if_data {
 	u_long	ifi_iqdrops;	/* dropped on input, this interface */
 	u_long	ifi_noproto;	/* destined for unsupported protocol */
 	struct	timeval ifi_lastchange;/* last updated */
-/* AROSTCP/MOSNet specific additions */
+/* AROSTCP specific additions */
    struct   timeval ifi_aros_ontime;
    u_quad_t ifi_aros_lasttotal;
-   u_char   ifi_aros_usedhcp;
-   pid_t    ifi_aros_dhcp_pid;
-   char     ifi_aros_dhcp_args[IFNAMSIZ + 5];
-   u_char   ifi_aros_usedhcp6;
-   pid_t    ifi_aros_dhcp6_pid;
-   char     ifi_aros_dhcp6_args[IFNAMSIZ + 8]; /* "-6 -q <ifname>\0" */
+   u_char   ifi_aros_usedhcp;          /* non-zero if DHCPv4 is requested   */
+   u_char   ifi_aros_usedhcp6;         /* non-zero if DHCPv6 is requested   */
 };
 
 struct ifnet {
