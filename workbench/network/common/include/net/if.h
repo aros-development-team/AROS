@@ -118,6 +118,9 @@ struct if_data {
    u_char   ifi_aros_usedhcp;
    pid_t    ifi_aros_dhcp_pid;
    char     ifi_aros_dhcp_args[IFNAMSIZ + 5];
+   u_char   ifi_aros_usedhcp6;
+   pid_t    ifi_aros_dhcp6_pid;
+   char     ifi_aros_dhcp6_args[IFNAMSIZ + 8]; /* "-6 -q <ifname>\0" */
 };
 
 struct ifnet {
