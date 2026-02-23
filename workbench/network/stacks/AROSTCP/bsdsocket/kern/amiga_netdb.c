@@ -515,7 +515,28 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 					ifp->if_flags |= IFF_NOUP;
 				}
 				DIFCONF(Printf("> IP address: %s\n", ssc->args->a_ip);)
-				if (stricmp(ssc->args->a_ip, "DHCP")) {
+				if (stricmp(ssc->args->a_ip, "DHCP") == 0) {
+					DIFCONF(Printf("> Using DHCP\n");)
+					ifp->if_data.ifi_aros_usedhcp = 1;
+					if (ssc->args->a_up) {
+						if (api_state == API_SHOWN)
+							run_dhclient(ifp);
+						else
+							ifp->if_flags |= IFF_DELAYUP;
+					}
+				} else if (stricmp(ssc->args->a_ip, "AUTO") == 0) {
+					/* Automatic: bring interface up with 0.0.0.0;
+					 * IPv4LL (zeroconf) will assign a 169.254.x.x address */
+					DIFCONF(Printf("> Using Auto (link-local IPv4)\n");)
+					ifp->if_data.ifi_aros_usedhcp = 0;
+					if (ssc->args->a_up) {
+						struct sockaddr_in *sin =
+						    (struct sockaddr_in *)&ifr.ifra_addr;
+						sin->sin_family = AF_INET;
+						sin->sin_addr.s_addr = INADDR_ANY;
+						in_control(NULL, SIOCAIFADDR, &ifr, ifp);
+					}
+				} else {
 					ifp->if_data.ifi_aros_usedhcp = 0;
 					if (setaddr ((struct sockaddr_in *)&ifr.ifra_addr, ssc->args->a_ip, AF_INET)) {
 						if (ssc->args->a_netmask) {
@@ -530,69 +551,59 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 						*errstrp = ERR_SYNTAX;
 						retval = RETURN_WARN;
 					}
-				} else {
-					DIFCONF(Printf("> Using DHCP\n");)
-					ifp->if_data.ifi_aros_usedhcp = 1;
-					if (ssc->args->a_up) {
-						if (api_state == API_SHOWN)
-							run_dhclient(ifp);
-						else
-							ifp->if_flags |= IFF_DELAYUP;
-					}
 				}
 			}
 		}
 #ifdef INET6
-		/* Apply IPv6 address if specified and not AUTO/DHCP (auto-configured via RA) */
-		if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6
-		    && strncmp(ssc->args->a_ip6, "AUTO", 4) != 0
-		    && strncmp(ssc->args->a_ip6, "DHCP", 4) != 0) {
-			struct in6_aliasreq in6r;
-			int plen = ssc->args->a_prefixlen ? (int)*ssc->args->a_prefixlen : 64;
-
-			DIFCONF(Printf("> IPv6 address: %s prefixlen %d\n",
-			    ssc->args->a_ip6, plen);)
-
-			memset(&in6r, 0, sizeof(in6r));
-			strncpy(in6r.ifra_name, ssc->args->a_name,
-			    sizeof(in6r.ifra_name) - 1);
-
-			if (setaddr6(&in6r.ifra_addr, ssc->args->a_ip6)) {
-				setprefixmask6(&in6r.ifra_prefixmask, plen);
-				if (in6_control(NULL, SIOCAIFADDR_IN6,
-				    (caddr_t)&in6r, ifp) != 0) {
-					__log(LOG_WARNING,
-					    "addifent: SIOCAIFADDR_IN6 failed "
-					    "for %s\n", ssc->args->a_name);
-				}
-			} else {
-				__log(LOG_WARNING,
-				    "addifent: bad IPv6 address '%s'\n",
-				    ssc->args->a_ip6);
-				*errstrp = ERR_SYNTAX;
-				retval = RETURN_WARN;
-			}
-		} else if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6
-		    && strncmp(ssc->args->a_ip6, "DHCP", 4) == 0) {
-			/* Start DHCPv6 client for this interface */
-			DIFCONF(Printf("> IPv6 address: using DHCPv6\n");)
+		/* Apply IPv6 address based on configured mode */
+		if ((ifp) && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_ip6) {
+			if (strncmp(ssc->args->a_ip6, "AUTO", 4) == 0) {
+				/* Link-local only: stack already assigns fe80:: via RA/NDP,
+				 * nothing more to do */
+				DIFCONF(Printf("> IPv6: link-local only (AUTO)\n");)
+				ifp->if_data.ifi_aros_usedhcp6 = 0;
+			} else if (strncmp(ssc->args->a_ip6, "DHCP", 4) == 0) {
+				/* DHCPv6 */
+				DIFCONF(Printf("> IPv6 address: using DHCPv6\n");)
 #if DHCP6
-			ifp->if_data.ifi_aros_usedhcp6 = 1;
-			if (ssc->args->a_up) {
-				if (api_state == API_SHOWN)
-					run_dhclient6(ifp);
-				else
-					ifp->if_flags |= IFF_DELAYUP;
-			}
+				ifp->if_data.ifi_aros_usedhcp6 = 1;
+				if (ssc->args->a_up) {
+					if (api_state == API_SHOWN)
+						run_dhclient6(ifp);
+					else
+						ifp->if_flags |= IFF_DELAYUP;
+				}
 #endif
+			} else {
+				/* Static IPv6 address */
+				struct in6_aliasreq in6r;
+				int plen = ssc->args->a_prefixlen ? (int)*ssc->args->a_prefixlen : 64;
+
+				DIFCONF(Printf("> IPv6 address: %s prefixlen %d\n",
+				    ssc->args->a_ip6, plen);)
+
+				memset(&in6r, 0, sizeof(in6r));
+				strncpy(in6r.ifra_name, ssc->args->a_name,
+				    sizeof(in6r.ifra_name) - 1);
+
+				if (setaddr6(&in6r.ifra_addr, ssc->args->a_ip6)) {
+					setprefixmask6(&in6r.ifra_prefixmask, plen);
+					if (in6_control(NULL, SIOCAIFADDR_IN6,
+					    (caddr_t)&in6r, ifp) != 0) {
+						__log(LOG_WARNING,
+						    "addifent: SIOCAIFADDR_IN6 failed "
+						    "for %s\n", ssc->args->a_name);
+					}
+				} else {
+					__log(LOG_WARNING,
+					    "addifent: bad IPv6 address '%s'\n",
+					    ssc->args->a_ip6);
+					*errstrp = ERR_SYNTAX;
+					retval = RETURN_WARN;
+				}
+			}
 		}
 #endif /* INET6 */
-		else
-		{
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_netdb.c) addifent: Interface named '%s' already exists..\n", ssc->args->a_name));
-#endif
-		}
 		ssconfig_free(ssc);
 	} else {
 		*errstrp = ERR_SYNTAX;
