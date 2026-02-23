@@ -207,23 +207,11 @@ struct NetPEditor_DATA
     /* Protocol address data (authoritative while the interface window is open) */
     struct ProtocolAddress netped_protoAddrs[2]; /* [0]=IPv4  [1]=IPv6 */
 
-    // IPv4 configuration sub-window (created by Net4_CreateWindow)
-    Object  *netped_ipv4Window,
-            *netped_ipv4ModeState,
-            *netped_ipv4AddrString,
-            *netped_ipv4MaskString,
-            *netped_ipv4GateString,
-            *netped_ipv4ApplyButton,
-            *netped_ipv4CloseButton;
+    // IPv4 configuration sub-window (Net4WinClass)
+    Object  *netped_ipv4Window;
 
-    // IPv6 configuration sub-window (created by Net6_CreateWindow)
-    Object  *netped_ipv6Window,
-            *netped_ipv6ModeState,
-            *netped_ipv6AddrString,
-            *netped_ipv6PrefixString,
-            *netped_ipv6GateString,
-            *netped_ipv6ApplyButton,
-            *netped_ipv6CloseButton;
+    // IPv6 configuration sub-window (Net6WinClass)
+    Object  *netped_ipv6Window;
 
     // Host window
     Object  *netped_hostWindow,
@@ -844,8 +832,10 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    /* Ensure the private list-icon class exists */
+    /* Ensure private list-icon class and protocol window classes exist */
     if (!netListIconClass && !NetListIconClass_Create())
+        return NULL;
+    if (!PAWin_InitClass() || !Net4Win_InitClass() || !Net6Win_InitClass())
         return NULL;
 
     // main window
@@ -863,15 +853,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
 
-    // IPv4 sub-window (via Net4_CreateWindow)
-    Object  *ipv4Window, *ipv4ModeState, *ipv4AddrString,
-            *ipv4MaskString, *ipv4GateString,
-            *ipv4ApplyButton, *ipv4CloseButton;
+    // IPv4 sub-window (Net4WinClass)
+    Object  *ipv4Window;
 
-    // IPv6 sub-window (via Net6_CreateWindow)
-    Object  *ipv6Window, *ipv6ModeState, *ipv6AddrString,
-            *ipv6PrefixString, *ipv6GateString,
-            *ipv6ApplyButton, *ipv6CloseButton;
+    // IPv6 sub-window (Net6WinClass)
+    Object  *ipv6Window;
 
     // host window
     Object  *hostNamesString, *hostAddressString, *hostWindow,
@@ -1148,12 +1134,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     );
 
     /* Create the IPv4 and IPv6 protocol-address config sub-windows */
-    ipv4Window = Net4_CreateWindow(&ipv4ModeState, &ipv4AddrString,
-                                   &ipv4MaskString, &ipv4GateString,
-                                   &ipv4ApplyButton, &ipv4CloseButton);
-    ipv6Window = Net6_CreateWindow(&ipv6ModeState, &ipv6AddrString,
-                                   &ipv6PrefixString, &ipv6GateString,
-                                   &ipv6ApplyButton, &ipv6CloseButton);
+    ipv4Window = NewObject(Net4WinClass->mcc_Class, NULL, TAG_DONE);
+    ipv6Window = NewObject(Net6WinClass->mcc_Class, NULL, TAG_DONE);
 
     ifWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
@@ -1445,21 +1427,9 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         // IPv4 sub-window
         data->netped_ipv4Window      = ipv4Window;
-        data->netped_ipv4ModeState   = ipv4ModeState;
-        data->netped_ipv4AddrString  = ipv4AddrString;
-        data->netped_ipv4MaskString  = ipv4MaskString;
-        data->netped_ipv4GateString  = ipv4GateString;
-        data->netped_ipv4ApplyButton = ipv4ApplyButton;
-        data->netped_ipv4CloseButton = ipv4CloseButton;
 
         // IPv6 sub-window
         data->netped_ipv6Window       = ipv6Window;
-        data->netped_ipv6ModeState    = ipv6ModeState;
-        data->netped_ipv6AddrString   = ipv6AddrString;
-        data->netped_ipv6PrefixString = ipv6PrefixString;
-        data->netped_ipv6GateString   = ipv6GateString;
-        data->netped_ipv6ApplyButton  = ipv6ApplyButton;
-        data->netped_ipv6CloseButton  = ipv6CloseButton;
 
         // host window
         data->netped_hostWindow = hostWindow;
@@ -1708,38 +1678,20 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
 
-        // IPv4 sub-window
+        // IPv4 sub-window: Use button notifies ApplyIPv4Entry (mode/cancel internal)
         DoMethod
         (
-            ipv4ModeState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_IPv4ModeChanged
-        );
-        DoMethod
-        (
-            ipv4ApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (Object *)XGET(ipv4Window, MUIA_PAWin_UseButton), MUIM_Notify,
+            MUIA_Pressed, FALSE,
             (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv4Entry
         );
-        DoMethod
-        (
-            ipv4CloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)ipv4Window, 3, MUIM_Set, MUIA_Window_Open, FALSE
-        );
 
-        // IPv6 sub-window
+        // IPv6 sub-window: Use button notifies ApplyIPv6Entry (mode/cancel internal)
         DoMethod
         (
-            ipv6ModeState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_IPv6ModeChanged
-        );
-        DoMethod
-        (
-            ipv6ApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (Object *)XGET(ipv6Window, MUIA_PAWin_UseButton), MUIM_Notify,
+            MUIA_Pressed, FALSE,
             (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv6Entry
-        );
-        DoMethod
-        (
-            ipv6CloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)ipv6Window, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
 
         // host window
@@ -1837,6 +1789,12 @@ IPTR NetPEditor__MUIM_Cleanup
         MUI_DisposeObject(data->netped_ifIconObj);
         data->netped_ifIconObj = NULL;
     }
+
+    /* Free custom window classes now that the windows have been removed */
+    Net6Win_FreeClass();
+    Net4Win_FreeClass();
+    PAWin_FreeClass();
+    NetListIconClass_Delete();
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -1943,8 +1901,8 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
     STRPTR str = NULL;
     IPTR lng = 0;
 
-    /* message->interface is now always FALSE; the per-interface mode
-     * changes are handled by IPv4ModeChanged / IPv6ModeChanged */
+    /* message->interface is now always FALSE; the per-protocol mode
+     * changes are handled internally by Net4WinClass / Net6WinClass */
     GetAttr(MUIA_Cycle_Active, data->netped_DHCPState, &lng);
 
     if (lng == 1)
@@ -1973,42 +1931,10 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 }
 
 /* IPv4 mode cycle changed inside the IPv4 config sub-window */
-IPTR NetPEditor__MUIM_NetPEditor_IPv4ModeChanged
-(
-    Class *CLASS, Object *self,
-    Msg message
-)
-{
-    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-    IPTR newMode = XGET(data->netped_ipv4ModeState, MUIA_Cycle_Active);
-
-    Net4_ModeChanged(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
-                     (ULONG)newMode,
-                     data->netped_ipv4AddrString,
-                     data->netped_ipv4MaskString);
-
-    SET(self, MUIA_PrefsEditor_Changed, TRUE);
-    return TRUE;
-}
+/* (removed - mode changes are now handled internally by Net4WinClass) */
 
 /* IPv6 mode cycle changed inside the IPv6 config sub-window */
-IPTR NetPEditor__MUIM_NetPEditor_IPv6ModeChanged
-(
-    Class *CLASS, Object *self,
-    Msg message
-)
-{
-    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-    IPTR newMode = XGET(data->netped_ipv6ModeState, MUIA_Cycle_Active);
-
-    Net6_ModeChanged(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
-                     (ULONG)newMode,
-                     data->netped_ipv6AddrString,
-                     data->netped_ipv6PrefixString);
-
-    SET(self, MUIA_PrefsEditor_Changed, TRUE);
-    return TRUE;
-}
+/* (removed - mode changes are now handled internally by Net6WinClass) */
 
 /* Open the protocol-address config sub-window for the active list entry */
 IPTR NetPEditor__MUIM_NetPEditor_EditProtoEntry
@@ -2025,20 +1951,14 @@ IPTR NetPEditor__MUIM_NetPEditor_EditProtoEntry
 
     if (active == PROTO_FAMILY_IPV4)
     {
-        Net4_ShowWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
-                        data->netped_ipv4ModeState,
-                        data->netped_ipv4AddrString,
-                        data->netped_ipv4MaskString,
-                        data->netped_ipv4GateString);
+        DoMethod(data->netped_ipv4Window, MUIM_PAWin_Show,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV4]);
         SET(data->netped_ipv4Window, MUIA_Window_Open, TRUE);
     }
     else
     {
-        Net6_ShowWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
-                        data->netped_ipv6ModeState,
-                        data->netped_ipv6AddrString,
-                        data->netped_ipv6PrefixString,
-                        data->netped_ipv6GateString);
+        DoMethod(data->netped_ipv6Window, MUIM_PAWin_Show,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
         SET(data->netped_ipv6Window, MUIA_Window_Open, TRUE);
     }
 
@@ -2054,11 +1974,8 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv4Entry
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
-    Net4_ApplyWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
-                     data->netped_ipv4ModeState,
-                     data->netped_ipv4AddrString,
-                     data->netped_ipv4MaskString,
-                     data->netped_ipv4GateString);
+    DoMethod(data->netped_ipv4Window, MUIM_PAWin_Apply,
+             &data->netped_protoAddrs[PROTO_FAMILY_IPV4]);
 
     /* Replace list entry 0 with the updated ProtocolAddress */
     DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV4);
@@ -2080,11 +1997,8 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv6Entry
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
-    Net6_ApplyWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
-                     data->netped_ipv6ModeState,
-                     data->netped_ipv6AddrString,
-                     data->netped_ipv6PrefixString,
-                     data->netped_ipv6GateString);
+    DoMethod(data->netped_ipv6Window, MUIM_PAWin_Apply,
+             &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
 
     /* Replace list entry 1 with the updated ProtocolAddress */
     DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV6);
@@ -2588,7 +2502,7 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_26
+ZUNE_CUSTOMCLASS_24
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                               struct opSet *,
@@ -2614,7 +2528,5 @@ ZUNE_CUSTOMCLASS_26
     MUIM_NetPEditor_AddTetheringEntry,    Msg,
     MUIM_NetPEditor_EditProtoEntry,       Msg,
     MUIM_NetPEditor_ApplyIPv4Entry,       Msg,
-    MUIM_NetPEditor_ApplyIPv6Entry,       Msg,
-    MUIM_NetPEditor_IPv4ModeChanged,      Msg,
-    MUIM_NetPEditor_IPv6ModeChanged,      Msg
+    MUIM_NetPEditor_ApplyIPv6Entry,       Msg
 );

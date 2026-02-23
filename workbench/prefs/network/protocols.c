@@ -4,6 +4,7 @@
     protocols.c - shared ProtocolAddress infrastructure:
       - MUI list hooks (construct / destruct / display)
       - ProtoAddr_FromInterface / ProtoAddr_ToInterface conversions
+      - PAWinClass: common protocol-address configuration window base class
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -11,7 +12,9 @@
 #include <exec/types.h>
 #include <libraries/mui.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
 #include <proto/muimaster.h>
+#include <proto/utility.h>
 #include <proto/alib.h>
 #include <utility/hooks.h>
 #include <string.h>
@@ -153,4 +156,161 @@ void ProtoAddr_ToInterface(struct Interface *iface,
     SetIP6(iface,       ipv6->pa_addr);
     SetIP6Prefix(iface, ipv6->pa_prefix);
     SetGate6(iface,     ipv6->pa_gate);
+}
+
+/*===========================================================================
+ * PAWinClass - common protocol-address configuration window base class.
+ * Subclassed by Net4WinClass (net4.c) and Net6WinClass (net6.c).
+ *
+ * Tags accepted at OM_NEW:
+ *   MUIA_PAWin_ProtocolName  (STRPTR)  - shown as "Address Protocol: <name>"
+ *   MUIA_PAWin_Content       (Object*) - gadget group from subclass
+ *   Any MUIA_Window_* tag    - passed through to Window.mui via TAG_MORE
+ *
+ * Read-only attributes:
+ *   MUIA_PAWin_UseButton     (Object*) - the Use ImageButton
+ *   MUIA_PAWin_CancelButton  (Object*) - the Cancel ImageButton
+ *
+ * Methods overridden by subclasses:
+ *   MUIM_PAWin_Show(pa)        - populate gadgets from ProtocolAddress
+ *   MUIM_PAWin_Apply(pa)       - read gadgets back into ProtocolAddress
+ *   MUIM_PAWin_ModeChanged(m)  - handle mode-cycle notification
+ *===========================================================================*/
+
+struct MUI_CustomClass *PAWinClass = NULL;
+
+struct PAWin_Data
+{
+    Object *pwd_UseButton;
+    Object *pwd_CancelButton;
+};
+
+static IPTR PAWin__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
+{
+    STRPTR   protoName = (STRPTR)GetTagData(MUIA_PAWin_ProtocolName,
+                                            (IPTR)"", msg->ops_AttrList);
+    Object  *content   = (Object *)GetTagData(MUIA_PAWin_Content,
+                                              (IPTR)NULL, msg->ops_AttrList);
+    Object  *useBtn, *cancelBtn;
+
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+        MUIA_Window_Title,       (IPTR)_(MSG_CFG_ADDR),
+        MUIA_Window_CloseGadget, FALSE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec,  (IPTR)"3:Images:protocol",
+                    MUIA_FixWidth,    52,
+                    MUIA_FixHeight,   48,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                Child, (IPTR)Label2(__(MSG_PROTO_LABEL)),
+                Child, (IPTR)TextObject,
+                    MUIA_Text_Contents, (IPTR)protoName,
+                End,
+            End,
+            Child, (IPTR)(content != NULL ? content : HVSpace),
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(useBtn    = ImageButton(_(MSG_BUTTON_USE),
+                                "THEME:Images/Gadgets/Use")),
+                Child, (IPTR)(cancelBtn = ImageButton(_(MSG_BUTTON_CANCEL),
+                                "THEME:Images/Gadgets/Cancel")),
+            End,
+        End,
+        TAG_MORE, (IPTR)msg->ops_AttrList);
+
+    if (!obj)
+        return 0;
+
+    struct PAWin_Data *data = INST_DATA(cl, obj);
+    data->pwd_UseButton    = useBtn;
+    data->pwd_CancelButton = cancelBtn;
+
+    /* Cancel button closes this window */
+    DoMethod(cancelBtn, MUIM_Notify, MUIA_Pressed, FALSE,
+             obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+
+    return (IPTR)obj;
+}
+
+static IPTR PAWin__OM_GET(Class *cl, Object *obj, struct opGet *msg)
+{
+    struct PAWin_Data *data = INST_DATA(cl, obj);
+
+    switch (msg->opg_AttrID)
+    {
+        case MUIA_PAWin_UseButton:
+            *msg->opg_Storage = (IPTR)data->pwd_UseButton;
+            return TRUE;
+        case MUIA_PAWin_CancelButton:
+            *msg->opg_Storage = (IPTR)data->pwd_CancelButton;
+            return TRUE;
+    }
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+/* Base implementations — subclasses override these */
+static IPTR PAWin__MUIM_PAWin_Show(Class *cl, Object *obj,
+    struct MUIP_PAWin_Show *msg)
+{
+    (void)msg;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+static IPTR PAWin__MUIM_PAWin_Apply(Class *cl, Object *obj,
+    struct MUIP_PAWin_Apply *msg)
+{
+    (void)msg;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+static IPTR PAWin__MUIM_PAWin_ModeChanged(Class *cl, Object *obj,
+    struct MUIP_PAWin_ModeChanged *msg)
+{
+    (void)msg;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
+static IPTR PAWin_Dispatch(Class *cl, Object *obj, Msg msg)
+{
+    switch (msg->MethodID)
+    {
+        case OM_NEW:
+            return PAWin__OM_NEW(cl, obj, (struct opSet *)msg);
+        case OM_GET:
+            return PAWin__OM_GET(cl, obj, (struct opGet *)msg);
+        case MUIM_PAWin_Show:
+            return PAWin__MUIM_PAWin_Show(cl, obj,
+                       (struct MUIP_PAWin_Show *)msg);
+        case MUIM_PAWin_Apply:
+            return PAWin__MUIM_PAWin_Apply(cl, obj,
+                       (struct MUIP_PAWin_Apply *)msg);
+        case MUIM_PAWin_ModeChanged:
+            return PAWin__MUIM_PAWin_ModeChanged(cl, obj,
+                       (struct MUIP_PAWin_ModeChanged *)msg);
+        default:
+            return DoSuperMethodA(cl, obj, msg);
+    }
+}
+
+BOOL PAWin_InitClass(void)
+{
+    if (PAWinClass)
+        return TRUE;
+    PAWinClass = MUI_CreateCustomClass(NULL, MUIC_Window, NULL,
+                     sizeof(struct PAWin_Data), PAWin_Dispatch);
+    return PAWinClass != NULL;
+}
+
+void PAWin_FreeClass(void)
+{
+    if (PAWinClass)
+    {
+        MUI_DeleteCustomClass(PAWinClass);
+        PAWinClass = NULL;
+    }
 }

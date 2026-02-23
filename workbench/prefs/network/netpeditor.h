@@ -37,8 +37,6 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_EditProtoEntry   (MUIB_NetPEditor | 0x00000010)
 #define MUIM_NetPEditor_ApplyIPv4Entry   (MUIB_NetPEditor | 0x00000011)
 #define MUIM_NetPEditor_ApplyIPv6Entry   (MUIB_NetPEditor | 0x00000012)
-#define MUIM_NetPEditor_IPv4ModeChanged  (MUIB_NetPEditor | 0x00000013)
-#define MUIM_NetPEditor_IPv6ModeChanged  (MUIB_NetPEditor | 0x00000014)
 
 struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};

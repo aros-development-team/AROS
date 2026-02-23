@@ -23,9 +23,7 @@ enum ProtocolFamily
 
 /*
  * ProtocolAddress - holds the complete address configuration for one protocol
- * (IPv4 or IPv6) on an interface.  Two instances (one per family) replace the
- * flat IPv4/IPv6 fields that were formerly scattered across struct Interface
- * and the interface-window gadgets.
+ * (IPv4 or IPv6) on an interface.
  */
 struct ProtocolAddress
 {
@@ -44,81 +42,58 @@ extern struct Hook proto_displayHook;
 
 /*--- Shared init / conversion (protocols.c) --------------------------------*/
 
-/* Populate a ProtocolAddress from an Interface struct for the given family. */
 void ProtoAddr_FromInterface(struct ProtocolAddress *pa,
                              struct Interface *iface,
                              enum ProtocolFamily fam);
 
-/* Write IPv4 and IPv6 ProtocolAddresses back into an Interface struct. */
 void ProtoAddr_ToInterface(struct Interface *iface,
                            struct ProtocolAddress *ipv4,
                            struct ProtocolAddress *ipv6);
 
-/*--- IPv4 implementation (net4.c) ------------------------------------------*/
+/*--- PAWinClass: common protocol-address configuration window --------------*/
+/*    Defined in protocols.c; subclassed by Net4WinClass and Net6WinClass.   */
 
-/*
- * Create the IPv4 configuration window.
- * Returns the Window Object; the six output pointers receive references to
- * the individual gadgets inside it.
- */
-Object *Net4_CreateWindow(Object **modeOut,
-                          Object **addrOut,
-                          Object **maskOut,
-                          Object **gateOut,
-                          Object **applyOut,
-                          Object **closeOut);
+#define MUIB_PAWin                  (TAG_USER | 0x11000000)
 
-/* Populate the IPv4 config-window gadgets from a ProtocolAddress. */
-void Net4_ShowWindow(struct ProtocolAddress *pa,
-                     Object *mode, Object *addr,
-                     Object *mask, Object *gate);
+/* Init-only attributes (set in OM_NEW tags) */
+#define MUIA_PAWin_ProtocolName     (MUIB_PAWin | 0x0001) /* STRPTR  */
+#define MUIA_PAWin_Content          (MUIB_PAWin | 0x0002) /* Object* */
 
-/* Read the IPv4 config-window gadgets back into a ProtocolAddress. */
-void Net4_ApplyWindow(struct ProtocolAddress *pa,
-                      Object *mode, Object *addr,
-                      Object *mask, Object *gate);
+/* Read-only attributes */
+#define MUIA_PAWin_UseButton        (MUIB_PAWin | 0x0003) /* Object* */
+#define MUIA_PAWin_CancelButton     (MUIB_PAWin | 0x0004) /* Object* */
 
-/*
- * Handle an IPv4 mode cycle change: save current field values if needed,
- * then enable or disable the addr/mask gadgets accordingly.
- */
-void Net4_ModeChanged(struct ProtocolAddress *pa, ULONG newMode,
-                      Object *addr, Object *mask);
+/* Methods */
+#define MUIM_PAWin_Show             (MUIB_PAWin | 0x0010)
+#define MUIM_PAWin_Apply            (MUIB_PAWin | 0x0011)
+#define MUIM_PAWin_ModeChanged      (MUIB_PAWin | 0x0012)
+
+struct MUIP_PAWin_Show        { STACKED ULONG MethodID; STACKED struct ProtocolAddress *pa; };
+struct MUIP_PAWin_Apply       { STACKED ULONG MethodID; STACKED struct ProtocolAddress *pa; };
+struct MUIP_PAWin_ModeChanged { STACKED ULONG MethodID; STACKED ULONG newMode; };
+
+extern struct MUI_CustomClass *PAWinClass;
+extern struct MUI_CustomClass *Net4WinClass;
+extern struct MUI_CustomClass *Net6WinClass;
+
+BOOL PAWin_InitClass(void);
+void PAWin_FreeClass(void);
+
+/*--- Net4WinClass (net4.c) -------------------------------------------------*/
+
+BOOL Net4Win_InitClass(void);
+void Net4Win_FreeClass(void);
 
 /* Write the IP= / NETMASK= / GW= tokens for this address to a FILE. */
 void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa);
 
-/*--- IPv6 implementation (net6.c) ------------------------------------------*/
+/*--- Net6WinClass (net6.c) -------------------------------------------------*/
 
-/*
- * Create the IPv6 configuration window.
- * Returns the Window Object; six output pointers receive gadget references.
- */
-Object *Net6_CreateWindow(Object **modeOut,
-                          Object **addrOut,
-                          Object **prefixOut,
-                          Object **gateOut,
-                          Object **applyOut,
-                          Object **closeOut);
-
-/* Populate the IPv6 config-window gadgets from a ProtocolAddress. */
-void Net6_ShowWindow(struct ProtocolAddress *pa,
-                     Object *mode, Object *addr,
-                     Object *prefix, Object *gate);
-
-/* Read the IPv6 config-window gadgets back into a ProtocolAddress. */
-void Net6_ApplyWindow(struct ProtocolAddress *pa,
-                      Object *mode, Object *addr,
-                      Object *prefix, Object *gate);
-
-/*
- * Handle an IPv6 mode cycle change: save current field values if needed,
- * then enable or disable the addr/prefix gadgets accordingly.
- */
-void Net6_ModeChanged(struct ProtocolAddress *pa, ULONG newMode,
-                      Object *addr, Object *prefix);
+BOOL Net6Win_InitClass(void);
+void Net6Win_FreeClass(void);
 
 /* Write the IP6= / GW6= tokens for this address to a FILE. */
 void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa);
 
 #endif /* _PROTOCOLS_H_ */
+
