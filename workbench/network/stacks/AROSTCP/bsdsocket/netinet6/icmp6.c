@@ -278,16 +278,15 @@ icmp6_reflect(struct mbuf *m, size_t off)
     struct in6_addr t;
     struct in6_ifaddr *ia;
 
-    /* swap addresses */
-    t = ip6->ip6_dst;
-    /* choose a source address to reply from */
-    ia = in6_ifawithifp(m->m_pkthdr.rcvif, &ip6->ip6_src);
+    /* swap addresses: reply goes to original sender */
+    t = ip6->ip6_dst;               /* save our address (original dst) */
+    ip6->ip6_dst = ip6->ip6_src;    /* new dst = original src (remote peer) */
+    /* find the best local source address for the reply */
+    ia = in6_ifawithifp(m->m_pkthdr.rcvif, &ip6->ip6_dst);
     if (ia)
         ip6->ip6_src = ia->ia_addr.sin6_addr;
     else
-        ip6->ip6_src = t;
-    ip6->ip6_dst = ip6->ip6_src;
-    ip6->ip6_src = t;
+        ip6->ip6_src = t;           /* fallback: our original dst address */
 
     ip6->ip6_hlim = ip6_defhlim;
 

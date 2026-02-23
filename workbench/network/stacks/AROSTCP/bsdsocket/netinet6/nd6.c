@@ -180,7 +180,7 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
     case ND6_LLINFO_DELAY:
     case ND6_LLINFO_PROBE:
         /* have a link-layer address */
-        if (rt->rt_gateway->sa_family == AF_LINK) {
+        if (rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
             struct sockaddr_dl *sdl =
                 (struct sockaddr_dl *)rt->rt_gateway;
             if (sdl->sdl_alen > 0) {

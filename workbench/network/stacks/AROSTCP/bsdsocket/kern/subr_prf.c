@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -230,8 +230,22 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
   if (msg) {
     ULONG ret;
     struct CSource cs;
+#if __WORDSIZE == 32
+    if (msg->String == NULL)
+#else
+    if (msg->String == NULL || (IPTR)msg->String >> 32 != 0) /* Safety: discard message with corrupted String pointer */
+#endif
+    {
+      PutMsg(&logReplyPort, &msg->Msg);
+      return 0;
+    }
     if (tag) {
-      cs.CS_Length = log_cnf.log_buf_len-strlen(tag)-1;
+      size_t taglen = strlen(tag);
+      if (taglen + 1 >= (size_t)log_cnf.log_buf_len) {
+        PutMsg(&logReplyPort, &msg->Msg);
+        return 0;
+      }
+      cs.CS_Length = log_cnf.log_buf_len - taglen - 1;
       msg->Tag = &msg->String[cs.CS_Length];
       strcpy(msg->Tag, tag);
     } else {
