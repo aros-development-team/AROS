@@ -230,12 +230,8 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
   if (msg) {
     ULONG ret;
     struct CSource cs;
-#if __WORDSIZE == 32
-    if (msg->String == NULL)
-#else
-    if (msg->String == NULL || (IPTR)msg->String >> 32 != 0) /* Safety: discard message with corrupted String pointer */
-#endif
-    {
+    /* Safety: discard message with corrupted String pointer */
+    if (msg->String == NULL || (IPTR)msg->String >> 32 != 0) {
       PutMsg(&logReplyPort, &msg->Msg);
       return 0;
     }

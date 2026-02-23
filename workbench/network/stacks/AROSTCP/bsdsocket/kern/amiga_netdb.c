@@ -50,6 +50,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <protos/net/if_protos.h>
+#include <protos/net/route_protos.h>
 
 extern struct ifnet *iface_make(struct ssconfig *ifc);
 
@@ -601,6 +602,40 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 					*errstrp = ERR_SYNTAX;
 					retval = RETURN_WARN;
 				}
+			}
+		}
+#endif /* INET6 */
+		/* Install per-interface default routes if GW/GW6 specified */
+		if (ifp && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_gw &&
+		    ssc->args->a_gw[0] != '\0') {
+			struct ortentry route;
+			struct sockaddr_in *dst4 = (struct sockaddr_in *)&route.rt_dst;
+			struct sockaddr_in *gw4  = (struct sockaddr_in *)&route.rt_gateway;
+			memset(&route, 0, sizeof(route));
+			dst4->sin_family      = AF_INET;
+			dst4->sin_len         = sizeof(*dst4);
+			dst4->sin_addr.s_addr = INADDR_ANY;  /* default route: 0.0.0.0 */
+			if (setaddr(gw4, ssc->args->a_gw, AF_INET)) {
+				route.rt_flags = RTF_UP | RTF_GATEWAY;
+				rtioctl(SIOCADDRT, (caddr_t)&route);
+			}
+		}
+#ifdef INET6
+		if (ifp && (flags & NETDB_IFF_MODIFYOLD) && ssc->args->a_gw6 &&
+		    ssc->args->a_gw6[0] != '\0') {
+			struct sockaddr_in6 dst6, gw6;
+			memset(&dst6, 0, sizeof(dst6));
+			memset(&gw6,  0, sizeof(gw6));
+			dst6.sin6_family = AF_INET6;
+			dst6.sin6_len    = sizeof(dst6);
+			/* dst6.sin6_addr is all-zeros = default route ::/0 */
+			if (setaddr6(&gw6, ssc->args->a_gw6)) {
+				rtrequest(RTM_ADD,
+				    (struct sockaddr *)&dst6,
+				    (struct sockaddr *)&gw6,
+				    NULL,
+				    RTF_UP | RTF_GATEWAY,
+				    NULL);
 			}
 		}
 #endif /* INET6 */

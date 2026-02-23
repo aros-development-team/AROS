@@ -2,7 +2,7 @@
  * Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -35,6 +35,7 @@
   "UNIT/N/K," \
   "IP/K,NETMASK/K,UP/S," \
   "IP6/K,PREFIXLEN/N/K," \
+  "GW/K,GW6/K," \
   "IPTYPE/N/K," \
   "ARPTYPE=IPARPTYPE/N/K," \
   "IPREQ=IPREQUESTS/N/K," \
@@ -54,6 +55,8 @@ struct ssc_args {
   SIPTR   a_up;
   UBYTE *a_ip6;
   LONG  *a_prefixlen;
+  UBYTE *a_gw;
+  UBYTE *a_gw6;
   LONG  *a_iptype;
   LONG  *a_arptype;
   LONG  *a_ipno;
