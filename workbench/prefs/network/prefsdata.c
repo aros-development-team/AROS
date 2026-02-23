@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "prefsdata.h"
+#include "protocols.h"
 
 #include <aros/debug.h>
 
@@ -201,7 +202,6 @@ void SetDefaultNetworkPrefsValues()
     SetInterfaceCount(0);
     SetDomain(DEFAULTDOMAIN);
     SetHostname(DEFAULTHOST);
-    SetGate(DEFAULTGATE);
     SetDNS(0, DEFAULTDNS);
     SetDNS(1, DEFAULTDNS);
     SetDHCP(FALSE);
@@ -250,9 +250,11 @@ void InitInterface(struct Interface *iface)
     SetIfDHCP(iface, TRUE);
     SetIP(iface, DEFAULTIP);
     SetMask(iface, DEFAULTMASK);
+    SetGate(iface, "");
     SetIP6Mode(iface, IP_MODE_AUTO);
     SetIP6(iface, "");
     SetIP6Prefix(iface, 64);
+    SetGate6(iface, "");
     SetDevice(iface, DEFAULTDEVICE);
     SetUnit(iface, 0);
     SetUp(iface, FALSE);
@@ -391,66 +393,31 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     if (!ConfFile) return FALSE;
     for (i = 0; i < interfacecount; i++)
     {
-        CONST_STRPTR ip4str, ip6str;
-
         iface = GetInterface(i);
 
-        /* Determine IPv4 token */
-        switch (GetIPMode(iface))
+        /* Determine IPv4 / IPv6 tokens via ProtocolAddress classes */
         {
-            case IP_MODE_DHCP:
-                ip4str = (strstr(GetDevice(iface), "ppp.device") == NULL)
-                         ? "DHCP" : "0.0.0.0";
-                break;
-            case IP_MODE_AUTO:
-                ip4str = "AUTO";
-                break;
-            default:
-                ip4str = GetIP(iface);
-                break;
-        }
+            struct ProtocolAddress pa4, pa6;
+            CONST_STRPTR notrack = GetNoTracking(iface) ? "NOTRACKING" : "";
+            CONST_STRPTR upstr  = GetUp(iface) ? "UP" : "";
 
-        /* Determine IPv6 token and write line */
-        switch (GetIP6Mode(iface))
-        {
-            case IP_MODE_DHCP:
-                fprintf(ConfFile,
-                    "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=DHCP %s\n",
-                    GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                    (GetNoTracking(iface) ? "NOTRACKING" : ""),
-                    ip4str, GetMask(iface),
-                    (GetUp(iface) ? "UP" : ""));
-                break;
-            case IP_MODE_AUTO:
-                fprintf(ConfFile,
-                    "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=AUTO %s\n",
-                    GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                    (GetNoTracking(iface) ? "NOTRACKING" : ""),
-                    ip4str, GetMask(iface),
-                    (GetUp(iface) ? "UP" : ""));
-                break;
-            default:
-                if (GetIP6(iface)[0] != '\0')
-                {
-                    fprintf(ConfFile,
-                        "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=%s PREFIXLEN=%ld %s\n",
-                        GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                        (GetNoTracking(iface) ? "NOTRACKING" : ""),
-                        ip4str, GetMask(iface),
-                        GetIP6(iface),
-                        (long)(GetIP6Prefix(iface) ? GetIP6Prefix(iface) : 64),
-                        (GetUp(iface) ? "UP" : ""));
-                }
-                else
-                {
-                    fprintf(ConfFile,
-                        "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
-                        GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                        (GetNoTracking(iface) ? "NOTRACKING" : ""),
-                        ip4str, GetMask(iface),
-                        (GetUp(iface) ? "UP" : ""));
-                }
-                break;
+            ProtoAddr_FromInterface(&pa4, iface, PROTO_FAMILY_IPV4);
+            ProtoAddr_FromInterface(&pa6, iface, PROTO_FAMILY_IPV6);
+
+            /* ppp.device uses 0.0.0.0 as the address placeholder for DHCP */
+            if (pa4.pa_mode == IP_MODE_DHCP
+                && strstr(GetDevice(iface), "ppp.device") != NULL)
+            {
+                pa4.pa_mode = IP_MODE_MANUAL;
+                strcpy(pa4.pa_addr, "0.0.0.0");
+                strcpy(pa4.pa_mask, "255.255.255.0");
+            }
+
+            fprintf(ConfFile, "%s DEV=%s UNIT=%d %s ",
+                GetName(iface), GetDevice(iface), (int)GetUnit(iface), notrack);
+            Net4_WriteTokens(ConfFile, &pa4);
+            Net6_WriteTokens(ConfFile, &pa6);
+            fprintf(ConfFile, "%s\n", upstr);
         }
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL
             || strstr(GetDevice(iface), "prism2.device") != NULL
@@ -483,8 +450,6 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
 
     if (!GetDHCP())
     {
-        // FIXME: old version wrote Gateway even when DHCP was enabled
-        fprintf(ConfFile, "HOST %s gateway\n", GetGate());
         fprintf(ConfFile, "; Domain names\n");
         fprintf(ConfFile, "; Name servers\n");
         fprintf(ConfFile, "NAMESERVER %s\n", GetDNS(0));
@@ -495,11 +460,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
     ConfFile = fopen(filename, "w");
     if (!ConfFile) return FALSE;
-    if (!GetDHCP())
-    {
-        // FIXME: old version wrote Gateway even when DHCP was enabled
-        fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
-    }
+    /* Per-interface gateways are now written as GW= tokens in the interfaces file */
     fclose(ConfFile);
 
     /* Write variables */
@@ -1152,6 +1113,16 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     SetIP6Prefix(iface, atol(tstring + 1));
                 }
+                else if (strncmp(tok.token, "GW=", 3) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetGate(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "GW6=", 4) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetGate6(iface, tstring + 1);
+                }
                 else if (strncmp(tok.token, "UP", 2) == 0)
                 {
                     SetUp(iface, TRUE);
@@ -1186,25 +1157,7 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
     }
     CloseTokenFile(&tok);
 
-    CombinePath3P(filename, filenamelen, directory, "db", "static-routes");
-    OpenTokenFile(&tok, filename);
-    while (!tok.fend)
-    {
-        GetNextToken(&tok, " \n");
-        if (tok.token)
-        {
-            if (strncmp(tok.token, "DEFAULT", 7) == 0)
-            {
-                GetNextToken(&tok, " \n");
-                if (strncmp(tok.token, "GATEWAY", 7) == 0)
-                {
-                    GetNextToken(&tok, " \n");
-                    SetGate(tok.token);
-                }
-            }
-        }
-    }
-    CloseTokenFile(&tok);
+    /* static-routes is no longer used for gateway; gateways are per-interface in interfaces file */
 
     CombinePath2P(filename, filenamelen, directory, "Autorun");
     OpenTokenFile(&tok, filename);
@@ -1667,6 +1620,11 @@ STRPTR GetMask(struct Interface *iface)
     return iface->mask;
 }
 
+STRPTR GetGate(struct Interface *iface)
+{
+    return iface->gate;
+}
+
 STRPTR GetIP6(struct Interface *iface)
 {
     return iface->ip6;
@@ -1687,6 +1645,11 @@ LONG GetIP6Prefix(struct Interface *iface)
     return iface->ip6prefix;
 }
 
+STRPTR GetGate6(struct Interface *iface)
+{
+    return iface->gate6;
+}
+
 STRPTR GetDevice(struct Interface *iface)
 {
     return iface->device;
@@ -1700,11 +1663,6 @@ LONG GetUnit(struct Interface *iface)
 BOOL GetUp(struct Interface *iface)
 {
     return iface->up;
-}
-
-STRPTR GetGate(void)
-{
-    return prefs.gate;
 }
 
 STRPTR GetDNS(LONG m)
@@ -1743,16 +1701,19 @@ BOOL GetDHCP(void)
 void SetInterface
 (
     struct Interface *iface, STRPTR name, enum IPMode ipMode, STRPTR IP, STRPTR mask,
-    enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
+    STRPTR gate, enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix, STRPTR gate6,
+    STRPTR device, LONG unit, BOOL up
 )
 {
     SetName(iface, name);
     SetIPMode(iface, ipMode);
     SetIP(iface, IP);
     SetMask(iface, mask);
+    SetGate(iface, gate);
     SetIP6Mode(iface, ip6Mode);
     SetIP6(iface, ip6);
     SetIP6Prefix(iface, ip6prefix);
+    SetGate6(iface, gate6);
     SetDevice(iface, device);
     SetUnit(iface, unit);
     SetUp(iface, up);
@@ -1819,6 +1780,20 @@ void SetIP6Prefix(struct Interface *iface, LONG w)
     iface->ip6prefix = w;
 }
 
+void SetGate(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->gate, w, IPBUFLEN);
+}
+
+void SetGate6(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->gate6, w, IP6BUFLEN);
+}
+
 void SetDevice(struct Interface *iface, STRPTR w)
 {
     if (w == NULL || w[0] == '\0')
@@ -1836,15 +1811,6 @@ void SetUnit(struct Interface *iface, LONG w)
 void SetUp(struct Interface *iface, BOOL w)
 {
     iface->up = w;
-}
-
-void SetGate(STRPTR  w)
-{
-    if (!IsLegal(w, IPCHARS))
-    {
-        w = DEFAULTGATE;
-    }
-    strlcpy(prefs.gate, w, IPBUFLEN);
 }
 
 void SetDNS(LONG m, STRPTR w)

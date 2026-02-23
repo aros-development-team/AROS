@@ -28,15 +28,20 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ShowNetEntry    (MUIB_NetPEditor | 0x00000008)
 #define MUIM_NetPEditor_EditNetEntry    (MUIB_NetPEditor | 0x00000009)
 #define MUIM_NetPEditor_ApplyNetEntry   (MUIB_NetPEditor | 0x0000000A)
-#define MUIM_NetPEditor_ShowServerEntry (MUIB_NetPEditor | 0x0000000B)
-#define MUIM_NetPEditor_EditServerEntry (MUIB_NetPEditor | 0x0000000C)
+#define MUIM_NetPEditor_ShowServerEntry  (MUIB_NetPEditor | 0x0000000B)
+#define MUIM_NetPEditor_EditServerEntry  (MUIB_NetPEditor | 0x0000000C)
 #define MUIM_NetPEditor_ApplyServerEntry (MUIB_NetPEditor | 0x0000000D)
-#define MUIM_NetPEditor_AddTetheringEntry   (MUIB_NetPEditor | 0x0000000E)
-#define MUIM_NetPEditor_IP6ModeChanged      (MUIB_NetPEditor | 0x0000000F)
+#define MUIM_NetPEditor_AddTetheringEntry (MUIB_NetPEditor | 0x0000000E)
 
-struct MUIP_NetPEditor_EditEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+/* Protocol address list methods (replaces hardcoded IPv4/IPv6 interface fields) */
+#define MUIM_NetPEditor_EditProtoEntry   (MUIB_NetPEditor | 0x00000010)
+#define MUIM_NetPEditor_ApplyIPv4Entry   (MUIB_NetPEditor | 0x00000011)
+#define MUIM_NetPEditor_ApplyIPv6Entry   (MUIB_NetPEditor | 0x00000012)
+#define MUIM_NetPEditor_IPv4ModeChanged  (MUIB_NetPEditor | 0x00000013)
+#define MUIM_NetPEditor_IPv6ModeChanged  (MUIB_NetPEditor | 0x00000014)
+
+struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
-struct MUIP_NetPEditor_IP6ModeChanged {STACKED ULONG MethodID;};
 
 #endif /* _NETPEDITOR_H_ */

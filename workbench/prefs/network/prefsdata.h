@@ -76,9 +76,11 @@ struct Interface
     enum IPMode ipMode;
     TEXT IP[IPBUFLEN];
     TEXT mask[IPBUFLEN];
+    TEXT gate[IPBUFLEN];
     enum IPMode ip6Mode;
     TEXT ip6[IP6BUFLEN];
     LONG ip6prefix;
+    TEXT gate6[IP6BUFLEN];
     TEXT device[NAMEBUFLEN];
     LONG unit;
     BOOL up;
@@ -127,7 +129,6 @@ struct TCPPrefs
     struct Interface interface[MAXINTERFACES];
     LONG interfacecount;
     BOOL DHCP;
-    TEXT gate[IPBUFLEN];
     TEXT DNS[2][IPBUFLEN];
     TEXT host[NAMEBUFLEN];
     TEXT domain[NAMEBUFLEN];
@@ -154,16 +155,17 @@ enum IPMode GetIPMode(struct Interface *iface);
 BOOL   GetIfDHCP(struct Interface *iface);   /* TRUE if IP_MODE_DHCP */
 STRPTR GetIP(struct Interface *iface);
 STRPTR GetMask(struct Interface *iface);
+STRPTR GetGate(struct Interface *iface);
 enum IPMode GetIP6Mode(struct Interface *iface);
 BOOL   GetIfDHCP6(struct Interface *iface);  /* TRUE if IP_MODE_DHCP */
 STRPTR GetIP6(struct Interface *iface);
 LONG   GetIP6Prefix(struct Interface *iface);
+STRPTR GetGate6(struct Interface *iface);
 STRPTR GetDevice(struct Interface *iface);
 LONG   GetUnit(struct Interface *iface);
 BOOL   GetUp(struct Interface *iface);
 
 BOOL   GetDHCP(void);
-STRPTR GetGate(void);
 STRPTR GetDNS(LONG m);
 STRPTR GetHostname(void);
 STRPTR GetDomain(void);
@@ -173,23 +175,25 @@ BOOL   GetAutostart(void);
 void SetInterface
 (
     struct Interface *iface, STRPTR name, enum IPMode ipMode, STRPTR IP,
-    STRPTR mask, enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
+    STRPTR mask, STRPTR gate, enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix,
+    STRPTR gate6, STRPTR device, LONG unit, BOOL up
 );
 void SetName(struct Interface *iface, STRPTR w);
 void SetIPMode(struct Interface *iface, enum IPMode w);
 void SetIfDHCP(struct Interface *iface, BOOL w);  /* sets IP_MODE_DHCP or IP_MODE_MANUAL */
 void SetIP(struct Interface *iface, STRPTR w);
 void SetMask(struct Interface *iface, STRPTR w);
+void SetGate(struct Interface *iface, STRPTR w);
 void SetIP6Mode(struct Interface *iface, enum IPMode w);
 void SetIfDHCP6(struct Interface *iface, BOOL w); /* sets IP_MODE_DHCP or IP_MODE_MANUAL */
 void SetIP6(struct Interface *iface, STRPTR w);
 void SetIP6Prefix(struct Interface *iface, LONG w);
+void SetGate6(struct Interface *iface, STRPTR w);
 void SetDevice(struct Interface *iface, STRPTR w);
 void SetUnit(struct Interface *iface, LONG w);
 void SetUp(struct Interface *iface, BOOL w);
 
 void SetDHCP(BOOL w);
-void SetGate(STRPTR w);
 void SetDNS(LONG m, STRPTR w);
 void SetHostname(STRPTR w);
 void SetDomain(STRPTR w);

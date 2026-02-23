@@ -15,6 +15,7 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 #include <proto/dos.h>
@@ -27,17 +28,123 @@
 #include "locale.h"
 #include "netpeditor.h"
 #include "prefsdata.h"
+#include "protocols.h"
 
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
 static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
-static CONST_STRPTR IP6Cycle[]  = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
 static const TEXT max_ip_str[] = "255.255.255.255 ";
+
+/* -----------------------------------------------------------------------
+ * Private class: NetIfListIcon
+ * Draws a small "network interface" icon using system pens, auto-sized
+ * to a fixed square set at creation time via MUIA_FixWidth.
+ * Used as source for MUIM_List_CreateImage so it scales with the font.
+ * ----------------------------------------------------------------------- */
+struct NetIfListIcon_Data { LONG size; };
+
+static IPTR NetIfListIcon_Dispatch(Class *cl, Object *obj, Msg msg)
+{
+    struct NetIfListIcon_Data *data;
+
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        obj = (Object *)DoSuperMethodA(cl, obj, msg);
+        if (obj)
+        {
+            data = INST_DATA(cl, obj);
+            data->size = (LONG)GetTagData(MUIA_FixWidth, 16,
+                ((struct opSet *)msg)->ops_AttrList);
+        }
+        return (IPTR)obj;
+
+    case MUIM_AskMinMax:
+    {
+        struct MUIP_AskMinMax *m = (struct MUIP_AskMinMax *)msg;
+        DoSuperMethodA(cl, obj, msg);
+        data = INST_DATA(cl, obj);
+        m->MinMaxInfo->MinWidth  = m->MinMaxInfo->DefWidth  =
+        m->MinMaxInfo->MaxWidth  = data->size;
+        m->MinMaxInfo->MinHeight = m->MinMaxInfo->DefHeight =
+        m->MinMaxInfo->MaxHeight = data->size;
+        return 0;
+    }
+
+    case MUIM_Draw:
+    {
+        struct MUIP_Draw *m = (struct MUIP_Draw *)msg;
+        struct RastPort *rp;
+        LONG x, y, s, mx, mb, sw, sh;
+
+        DoSuperMethodA(cl, obj, msg);
+        if (!(m->flags & MADF_DRAWOBJECT)) return 0;
+
+        rp = _rp(obj);
+        x  = _mleft(obj);
+        y  = _mtop(obj);
+        s  = _mwidth(obj);
+
+        /* Monitor body: top 3/4 of icon */
+        mb = y + (s * 3 / 4);
+        /* Screen inset */
+        sw = (s > 6) ? 2 : 1;
+        sh = (s > 6) ? 2 : 1;
+
+        /* Shadow/outline of monitor body */
+        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        Move(rp, x,     mb); Draw(rp, x,     y);
+        Draw(rp, x+s-1, y);  Draw(rp, x+s-1, mb);
+        Draw(rp, x,     mb);
+
+        /* Fill screen area with highlight */
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        RectFill(rp, x+sw, y+sh, x+s-1-sw, mb-sh);
+
+        /* Shine top-left rim */
+        SetAPen(rp, _pens(obj)[MPEN_SHINE]);
+        Move(rp, x,     mb); Draw(rp, x,     y);
+        Draw(rp, x+s-1, y);
+
+        /* Stand: thin rect centred below monitor */
+        mx = x + s/2;
+        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        RectFill(rp, mx-1, mb+1, mx+1, y+s-1);
+
+        /* Base: horizontal line */
+        Move(rp, x + s/5,     y+s-1);
+        Draw(rp, x + s*4/5,   y+s-1);
+
+        return 0;
+    }
+
+    default:
+        return DoSuperMethodA(cl, obj, msg);
+    }
+}
+
+static struct MUI_CustomClass *netListIconClass = NULL;
+
+static BOOL NetListIconClass_Create(void)
+{
+    netListIconClass = MUI_CreateCustomClass(NULL, MUIC_Area, NULL,
+        sizeof(struct NetIfListIcon_Data),
+        (APTR)NetIfListIcon_Dispatch);
+    return (netListIconClass != NULL);
+}
+
+static void NetListIconClass_Delete(void)
+{
+    if (netListIconClass) { MUI_DeleteCustomClass(netListIconClass); netListIconClass = NULL; }
+}
+
+#define NetListIconObject(size) NewObject(netListIconClass->mcc_Class, NULL, \
+    MUIA_FixWidth, (size), TAG_DONE)
 
 static struct Hook  netpeditor_displayHook,
                     netpeditor_constructHook,
@@ -57,8 +164,8 @@ struct NetPEditor_DATA
 {
     // Main window
     Object  *netped_interfaceList,
+            *netped_ifIconObj,      /* ImageObject for interface list icon */
             *netped_DHCPState,
-            *netped_gateString,
             *netped_DNSString[2],
             *netped_hostString,
             *netped_domainString,
@@ -89,17 +196,34 @@ struct NetPEditor_DATA
     // Interface window
     Object  *netped_ifWindow,
             *netped_upState,
-            *netped_ifDHCPState,
-            *netped_if6DHCPState,
             *netped_nameString,
             *netped_deviceString,
             *netped_unitString,
-            *netped_IPString,
-            *netped_maskString,
-            *netped_IP6String,
-            *netped_IP6PrefixString,
+            *netped_protoAddrList,
+            *netped_protoEditButton,
             *netped_applyButton,
             *netped_closeButton;
+
+    /* Protocol address data (authoritative while the interface window is open) */
+    struct ProtocolAddress netped_protoAddrs[2]; /* [0]=IPv4  [1]=IPv6 */
+
+    // IPv4 configuration sub-window (created by Net4_CreateWindow)
+    Object  *netped_ipv4Window,
+            *netped_ipv4ModeState,
+            *netped_ipv4AddrString,
+            *netped_ipv4MaskString,
+            *netped_ipv4GateString,
+            *netped_ipv4ApplyButton,
+            *netped_ipv4CloseButton;
+
+    // IPv6 configuration sub-window (created by Net6_CreateWindow)
+    Object  *netped_ipv6Window,
+            *netped_ipv6ModeState,
+            *netped_ipv6AddrString,
+            *netped_ipv6PrefixString,
+            *netped_ipv6GateString,
+            *netped_ipv6ApplyButton,
+            *netped_ipv6CloseButton;
 
     // Host window
     Object  *netped_hostWindow,
@@ -171,6 +295,7 @@ AROS_UFHA(struct Interface *, entry, A1))
     AROS_USERFUNC_INIT
     if (entry)
     {
+        static char namebuffer[NAMEBUFLEN + 32]; /* room for \33O[ptr] prefix */
         static char unitbuffer[20];
         static char addrbuffer[12 + IPBUFLEN + 2 + IP6BUFLEN + 1];
         CONST_STRPTR ip4, ip6;
@@ -189,7 +314,14 @@ AROS_UFHA(struct Interface *, entry, A1))
         }
 
         sprintf(unitbuffer, "%d", (int)entry->unit);
-        *array++ = entry->name;
+
+        /* Prepend icon to interface name if available */
+        if (hook->h_Data)
+            sprintf(namebuffer, "\33O[%p] %s", hook->h_Data, entry->name);
+        else
+            strcpy(namebuffer, entry->name);
+
+        *array++ = namebuffer;
         *array++ = entry->up ? "*" : "";
         *array++ = FilePart(entry->device);
         *array++ = unitbuffer;
@@ -416,14 +548,14 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         SetUnit(iface, ifaceentry->unit);
         SetIP(iface, ifaceentry->IP);
         SetMask(iface, ifaceentry->mask);
+        SetGate(iface, ifaceentry->gate);
         SetIP6Mode(iface, ifaceentry->ip6Mode);
         SetIP6(iface, ifaceentry->ip6);
         SetIP6Prefix(iface, ifaceentry->ip6prefix);
+        SetGate6(iface, ifaceentry->gate6);
     }
     SetInterfaceCount(entries);
 
-    GET(data->netped_gateString, MUIA_String_Contents, &str);
-    SetGate(str);
     GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
     SetDNS(0, str);
     GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
@@ -532,9 +664,11 @@ BOOL NetworkPrefs2Gadgets
             GetIPMode(iface),
             GetIP(iface),
             GetMask(iface),
+            GetGate(iface),
             GetIP6Mode(iface),
             GetIP6(iface),
             GetIP6Prefix(iface),
+            GetGate6(iface),
             GetDevice(iface),
             GetUnit(iface),
             GetUp(iface)
@@ -549,7 +683,6 @@ BOOL NetworkPrefs2Gadgets
 
     SET(data->netped_interfaceList, MUIA_List_Quiet, FALSE);
 
-    NNSET(data->netped_gateString, MUIA_String_Contents, (IPTR)GetGate());
     NNSET(data->netped_DNSString[0], MUIA_String_Contents, (IPTR)GetDNS(0));
     NNSET(data->netped_DNSString[1], MUIA_String_Contents, (IPTR)GetDNS(1));
     NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHostname());
@@ -711,8 +844,12 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
+    /* Ensure the private list-icon class exists */
+    if (!netListIconClass && !NetListIconClass_Create())
+        return NULL;
+
     // main window
-    Object  *gateString, *DNSString[2], *hostString, *domainString,
+    Object  *DNSString[2], *hostString, *domainString,
             *autostart, *interfaceList, *DHCPState,
             *addButton, *editButton, *removeButton, *inputGroup,
             *hostList, *hostAddButton, *hostEditButton, *hostRemoveButton,
@@ -722,10 +859,19 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *MBBUsername, *MBBPassword, *tetheringAddButton, *mainTabs;
 
     // inferface window
-    Object  *deviceString, *IPString, *maskString,
-            *IP6String, *IP6PrefixString,
-            *ifDHCPState, *if6DHCPState, *unitString, *nameString, *upState,
+    Object  *deviceString, *protoAddrList, *protoEditButton,
+            *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
+
+    // IPv4 sub-window (via Net4_CreateWindow)
+    Object  *ipv4Window, *ipv4ModeState, *ipv4AddrString,
+            *ipv4MaskString, *ipv4GateString,
+            *ipv4ApplyButton, *ipv4CloseButton;
+
+    // IPv6 sub-window (via Net6_CreateWindow)
+    Object  *ipv6Window, *ipv6ModeState, *ipv6AddrString,
+            *ipv6PrefixString, *ipv6GateString,
+            *ipv6ApplyButton, *ipv6CloseButton;
 
     // host window
     Object  *hostNamesString, *hostAddressString, *hostWindow,
@@ -743,10 +889,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     DHCPCycle[0] = _(MSG_IP_MODE_DHCP);
     DHCPCycle[1] = _(MSG_IP_MODE_AUTO);
     DHCPCycle[2] = _(MSG_IP_MODE_MANUAL);
-
-    IP6Cycle[0] = _(MSG_IP_MODE_DHCP);
-    IP6Cycle[1] = _(MSG_IP6_MODE_AUTO);
-    IP6Cycle[2] = _(MSG_IP_MODE_MANUAL);
 
     EncCycle[0] = _(MSG_ENC_NONE);
     EncCycle[1] = _(MSG_ENC_WEP);
@@ -815,13 +957,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)Label2(__(MSG_IP_MODE)),
                     Child, (IPTR)(DHCPState = (Object *)CycleObject,
                         MUIA_Cycle_Entries, (IPTR)DHCPCycle,
-                    End),
-                    Child, (IPTR)Label2(__(MSG_GATE)),
-                    Child, (IPTR)(gateString = (Object *)StringObject,
-                        StringFrame,
-                        MUIA_String_Accept, (IPTR)IPCHARS,
-                        MUIA_CycleChain, 1,
-                        MUIA_FixWidthTxt, (IPTR)max_ip_str,
                     End),
                     Child, (IPTR)Label2(__(MSG_HOST_NAME)),
                     Child, (IPTR)(hostString = (Object *)StringObject,
@@ -1012,6 +1147,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         TAG_DONE
     );
 
+    /* Create the IPv4 and IPv6 protocol-address config sub-windows */
+    ipv4Window = Net4_CreateWindow(&ipv4ModeState, &ipv4AddrString,
+                                   &ipv4MaskString, &ipv4GateString,
+                                   &ipv4ApplyButton, &ipv4CloseButton);
+    ipv6Window = Net6_CreateWindow(&ipv6ModeState, &ipv6AddrString,
+                                   &ipv6PrefixString, &ipv6GateString,
+                                   &ipv6ApplyButton, &ipv6CloseButton);
+
     ifWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
         MUIA_Window_ID, MAKE_ID('I', 'P', 'W', 'I'),
@@ -1062,47 +1205,24 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)HVSpace,
                 End,
             End,
-            Child, (IPTR)ColGroup(4),
+            Child, (IPTR)HGroup,
                 GroupFrame,
-                Child, (IPTR)Label2(__(MSG_IP_MODE)),
-                Child, (IPTR)(ifDHCPState = (Object *)CycleObject,
-                    MUIA_Cycle_Entries, (IPTR)DHCPCycle,
-                End),
-                Child, (IPTR)Label2(__(MSG_IP)),
-                Child, (IPTR)(IPString = (Object *)StringObject,
-                    StringFrame,
-                    MUIA_String_Accept, (IPTR)IPCHARS,
-                    MUIA_CycleChain, 1,
-                    MUIA_FixWidthTxt, (IPTR)max_ip_str,
-                End),
-                Child, (IPTR)HVSpace,
-                Child, (IPTR)HVSpace,
-                Child, (IPTR)Label2(__(MSG_MASK)),
-                Child, (IPTR)(maskString = (Object *)StringObject,
-                    StringFrame,
-                    MUIA_String_Accept, (IPTR)IPCHARS,
-                    MUIA_CycleChain, 1,
-                    MUIA_FixWidthTxt, (IPTR)max_ip_str,
-                End),
-                Child, (IPTR)Label2(__(MSG_IP6_MODE)),
-                Child, (IPTR)(if6DHCPState = (Object *)CycleObject,
-                    MUIA_Cycle_Entries, (IPTR)IP6Cycle,
-                End),
-                Child, (IPTR)Label2(__(MSG_IP6)),
-                Child, (IPTR)(IP6String = (Object *)StringObject,
-                    StringFrame,
-                    MUIA_String_Accept, (IPTR)IP6CHARS,
-                    MUIA_CycleChain, 1,
-                End),
-                Child, (IPTR)HVSpace,
-                Child, (IPTR)HVSpace,
-                Child, (IPTR)Label2(__(MSG_IP6_PREFIX)),
-                Child, (IPTR)(IP6PrefixString = (Object *)StringObject,
-                    StringFrame,
-                    MUIA_String_Accept, (IPTR)"0123456789",
-                    MUIA_CycleChain, 1,
-                    MUIA_FixWidthTxt, (IPTR)"128 ",
-                End),
+                Child, (IPTR)ListviewObject,
+                    MUIA_Listview_DoubleClick, TRUE,
+                    MUIA_Listview_List, (IPTR)(protoAddrList = (Object *)ListObject,
+                        ReadListFrame,
+                        MUIA_List_Title,         TRUE,
+                        MUIA_List_Format,        (IPTR)"BAR,",
+                        MUIA_List_ConstructHook, (IPTR)&proto_constructHook,
+                        MUIA_List_DestructHook,  (IPTR)&proto_destructHook,
+                        MUIA_List_DisplayHook,   (IPTR)&proto_displayHook,
+                    End),
+                End,
+                Child, (IPTR)VGroup,
+                    MUIA_HorizWeight, 0,
+                    Child, (IPTR)(protoEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                    Child, (IPTR)HVSpace,
+                End,
             End,
             Child, (IPTR)HGroup,
                 Child, (IPTR)(applyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
@@ -1271,14 +1391,14 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     End;
 
     if (self != NULL && ifWindow != NULL && hostWindow != NULL
-        && netWindow != NULL && serverWindow != NULL)
+        && netWindow != NULL && serverWindow != NULL
+        && ipv4Window != NULL && ipv6Window != NULL)
     {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
         // main window
         data->netped_mainTabs = mainTabs;
         data->netped_DHCPState = DHCPState;
-        data->netped_gateString = gateString;
         data->netped_DNSString[0] = DNSString[0];
         data->netped_DNSString[1] = DNSString[1];
         data->netped_hostString = hostString;
@@ -1313,19 +1433,33 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_MBBPassword = MBBPassword;
 
         // interface window
-        data->netped_ifWindow = ifWindow;
-        data->netped_upState = upState;
-        data->netped_ifDHCPState = ifDHCPState;
-        data->netped_if6DHCPState = if6DHCPState;
-        data->netped_nameString = nameString;
+        data->netped_ifWindow      = ifWindow;
+        data->netped_upState       = upState;
+        data->netped_nameString    = nameString;
         data->netped_deviceString  = deviceString;
-        data->netped_unitString = unitString;
-        data->netped_IPString = IPString;
-        data->netped_maskString = maskString;
-        data->netped_IP6String = IP6String;
-        data->netped_IP6PrefixString = IP6PrefixString;
-        data->netped_applyButton = applyButton;
-        data->netped_closeButton = closeButton;
+        data->netped_unitString    = unitString;
+        data->netped_protoAddrList = protoAddrList;
+        data->netped_protoEditButton = protoEditButton;
+        data->netped_applyButton   = applyButton;
+        data->netped_closeButton   = closeButton;
+
+        // IPv4 sub-window
+        data->netped_ipv4Window      = ipv4Window;
+        data->netped_ipv4ModeState   = ipv4ModeState;
+        data->netped_ipv4AddrString  = ipv4AddrString;
+        data->netped_ipv4MaskString  = ipv4MaskString;
+        data->netped_ipv4GateString  = ipv4GateString;
+        data->netped_ipv4ApplyButton = ipv4ApplyButton;
+        data->netped_ipv4CloseButton = ipv4CloseButton;
+
+        // IPv6 sub-window
+        data->netped_ipv6Window       = ipv6Window;
+        data->netped_ipv6ModeState    = ipv6ModeState;
+        data->netped_ipv6AddrString   = ipv6AddrString;
+        data->netped_ipv6PrefixString = ipv6PrefixString;
+        data->netped_ipv6GateString   = ipv6GateString;
+        data->netped_ipv6ApplyButton  = ipv6ApplyButton;
+        data->netped_ipv6CloseButton  = ipv6CloseButton;
 
         // host window
         data->netped_hostWindow = hostWindow;
@@ -1384,11 +1518,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)self, 3, MUIM_NetPEditor_EditEntry, FALSE
         );
 
-        DoMethod
-        (
-            gateString, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
-            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
-        );
         DoMethod
         (
             DNSString[0], MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime,
@@ -1552,23 +1681,22 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)self, 1, MUIM_NetPEditor_AddTetheringEntry
         );
 
-        // interface window
+        // interface window — protocol address list
         DoMethod
         (
-            ifDHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 2, MUIM_NetPEditor_IPModeChanged, TRUE
+            protoAddrList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_EditProtoEntry
         );
         DoMethod
         (
-            if6DHCPState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 1, MUIM_NetPEditor_IP6ModeChanged
+            protoEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditProtoEntry
         );
         DoMethod
         (
             upState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
-
         DoMethod
         (
             applyButton, MUIM_Notify, MUIA_Pressed, FALSE,
@@ -1578,6 +1706,40 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             closeButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+        // IPv4 sub-window
+        DoMethod
+        (
+            ipv4ModeState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_IPv4ModeChanged
+        );
+        DoMethod
+        (
+            ipv4ApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv4Entry
+        );
+        DoMethod
+        (
+            ipv4CloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)ipv4Window, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+        // IPv6 sub-window
+        DoMethod
+        (
+            ipv6ModeState, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_IPv6ModeChanged
+        );
+        DoMethod
+        (
+            ipv6ApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv6Entry
+        );
+        DoMethod
+        (
+            ipv6CloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)ipv6Window, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
 
         // host window
@@ -1629,7 +1791,19 @@ IPTR NetPEditor__MUIM_Setup
 
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
+    /* Create list icon using private class — auto-sizes to active font height */
+    {
+        LONG fh = _font(self)->tf_YSize;
+        data->netped_ifIconObj = (Object *)NetListIconObject(fh);
+    }
+    if (data->netped_ifIconObj)
+        netpeditor_displayHook.h_Data = (APTR)DoMethod(
+            data->netped_interfaceList,
+            MUIM_List_CreateImage, data->netped_ifIconObj, 0);
+
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ipv4Window);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ipv6Window);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_serverWindow);
@@ -1645,9 +1819,24 @@ IPTR NetPEditor__MUIM_Cleanup
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_ipv4Window);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_ipv6Window);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_netWindow);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_serverWindow);
+
+    /* Destroy list icon */
+    if (netpeditor_displayHook.h_Data)
+    {
+        DoMethod(data->netped_interfaceList,
+            MUIM_List_DeleteImage, netpeditor_displayHook.h_Data);
+        netpeditor_displayHook.h_Data = NULL;
+    }
+    if (data->netped_ifIconObj)
+    {
+        MUI_DisposeObject(data->netped_ifIconObj);
+        data->netped_ifIconObj = NULL;
+    }
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -1722,7 +1911,6 @@ IPTR NetPEditor__MUIM_PrefsEditor_ImportFH
 
     NetworkPrefs2Gadgets(data);
 
-    DoMethod(self, MUIM_NetPEditor_IPModeChanged, TRUE);
     DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
 
     return success;
@@ -1739,12 +1927,12 @@ IPTR NetPEditor__MUIM_PrefsEditor_ExportFH
 
     NetworkPrefs2Gadgets(data);
 
-    DoMethod(self, MUIM_NetPEditor_IPModeChanged, TRUE);
     DoMethod(self, MUIM_NetPEditor_IPModeChanged, FALSE);
 
     return success;
 }
 
+/* Global DHCP mode changed — enable/disable DNS gadgets */
 IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 (
     Class *CLASS, Object *self,
@@ -1754,143 +1942,159 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
     STRPTR str = NULL;
     IPTR lng = 0;
-    struct Interface *iface;
 
-    if (message->interface)
+    /* message->interface is now always FALSE; the per-interface mode
+     * changes are handled by IPv4ModeChanged / IPv6ModeChanged */
+    GetAttr(MUIA_Cycle_Active, data->netped_DHCPState, &lng);
+
+    if (lng == 1)
     {
-        DoMethod
-        (
-            data->netped_interfaceList,
-            MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &iface
-        );
-        GetAttr(MUIA_Cycle_Active, data->netped_ifDHCPState, &lng);
+        /* DHCP: DNS is supplied automatically */
+        SET(data->netped_DNSString[0], MUIA_Disabled, TRUE);
+        GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
+        SetDNS(0, str);
+        SET(data->netped_DNSString[0], MUIA_String_Contents, "");
 
-        if (iface != NULL)
-        {
-            if (lng == IP_MODE_DHCP || lng == IP_MODE_AUTO)
-            {
-                /* DHCP or Auto: clear and disable IP/mask text boxes,
-                 * but keep their values for later restoration */
-
-                SET(data->netped_IPString, MUIA_Disabled, TRUE);
-                GET(data->netped_IPString, MUIA_String_Contents, &str);
-                SetIP(iface, str);
-                SET(data->netped_IPString, MUIA_String_Contents, "");
-
-                SET(data->netped_maskString, MUIA_Disabled, TRUE);
-                GET(data->netped_maskString, MUIA_String_Contents, &str);
-                SetMask(iface, str);
-                SET(data->netped_maskString, MUIA_String_Contents, "");
-            }
-            else
-            {
-                /* Manual: enable text boxes and restore previous values */
-
-                SET(data->netped_IPString, MUIA_Disabled, FALSE);
-                SET(data->netped_IPString, MUIA_String_Contents,
-                    GetIP(iface));
-
-                SET(data->netped_maskString, MUIA_Disabled, FALSE);
-                SET(data->netped_maskString, MUIA_String_Contents,
-                    GetMask(iface));
-            }
-            SetIPMode(iface, (enum IPMode)lng);
-        }
+        SET(data->netped_DNSString[1], MUIA_Disabled, TRUE);
+        GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
+        SetDNS(1, str);
+        SET(data->netped_DNSString[1], MUIA_String_Contents, "");
     }
     else
     {
-        GetAttr(MUIA_Cycle_Active, data->netped_DHCPState, &lng);
-
-        if (lng == 1)
-        {
-            /* Clear and disable text boxes, but keep their values for later */
-
-            SET(data->netped_gateString, MUIA_Disabled, TRUE);
-            GET(data->netped_gateString, MUIA_String_Contents, &str);
-            SetGate(str);
-            SET(data->netped_gateString, MUIA_String_Contents, "");
-
-            SET(data->netped_DNSString[0], MUIA_Disabled, TRUE);
-            GET(data->netped_DNSString[0], MUIA_String_Contents, &str);
-            SetDNS(0, str);
-            SET(data->netped_DNSString[0], MUIA_String_Contents, "");
-
-            SET(data->netped_DNSString[1], MUIA_Disabled, TRUE);
-            GET(data->netped_DNSString[1], MUIA_String_Contents, &str);
-            SetDNS(1, str);
-            SET(data->netped_DNSString[1], MUIA_String_Contents, "");
-        }
-        else
-        {
-            /* Enable text boxes, and reset their previous values */
-
-            SET(data->netped_gateString, MUIA_Disabled, FALSE);
-            SET(data->netped_gateString, MUIA_String_Contents, GetGate());
-
-            SET(data->netped_DNSString[0], MUIA_Disabled, FALSE);
-            SET(data->netped_DNSString[0], MUIA_String_Contents, GetDNS(0));
-
-            SET(data->netped_DNSString[1], MUIA_Disabled, FALSE);
-            SET(data->netped_DNSString[1], MUIA_String_Contents, GetDNS(1));
-        }
+        SET(data->netped_DNSString[0], MUIA_Disabled, FALSE);
+        SET(data->netped_DNSString[0], MUIA_String_Contents, GetDNS(0));
+        SET(data->netped_DNSString[1], MUIA_Disabled, FALSE);
+        SET(data->netped_DNSString[1], MUIA_String_Contents, GetDNS(1));
     }
 
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
-
     return TRUE;
 }
 
-/*
-    Handles IPv6 mode (Auto/Manual) cycle change in the interface window.
-*/
-IPTR NetPEditor__MUIM_NetPEditor_IP6ModeChanged
+/* IPv4 mode cycle changed inside the IPv4 config sub-window */
+IPTR NetPEditor__MUIM_NetPEditor_IPv4ModeChanged
 (
     Class *CLASS, Object *self,
-    struct MUIP_NetPEditor_IP6ModeChanged *message
+    Msg message
 )
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-    STRPTR str = NULL;
-    IPTR lng = 0;
-    struct Interface *iface;
+    IPTR newMode = XGET(data->netped_ipv4ModeState, MUIA_Cycle_Active);
 
-    DoMethod
-    (
-        data->netped_interfaceList,
-        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &iface
-    );
-    GetAttr(MUIA_Cycle_Active, data->netped_if6DHCPState, &lng);
-
-    if (iface != NULL)
-    {
-        if (lng == IP_MODE_DHCP || lng == IP_MODE_AUTO)
-        {
-            /* DHCP or Link-Local: disable IPv6 address/prefix fields */
-            SET(data->netped_IP6String, MUIA_Disabled, TRUE);
-            GET(data->netped_IP6String, MUIA_String_Contents, &str);
-            SetIP6(iface, str);
-            SET(data->netped_IP6String, MUIA_String_Contents, "");
-
-            SET(data->netped_IP6PrefixString, MUIA_Disabled, TRUE);
-        }
-        else
-        {
-            /* Manual: enable IPv6 address and prefix fields */
-            IPTR prefix = 0;
-            SET(data->netped_IP6String, MUIA_Disabled, FALSE);
-            SET(data->netped_IP6String, MUIA_String_Contents, GetIP6(iface));
-
-            SET(data->netped_IP6PrefixString, MUIA_Disabled, FALSE);
-            GET(data->netped_IP6PrefixString, MUIA_String_Integer, &prefix);
-            if (prefix == 0)
-                SET(data->netped_IP6PrefixString, MUIA_String_Integer, 64);
-        }
-        SetIP6Mode(iface, (enum IPMode)lng);
-    }
+    Net4_ModeChanged(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                     (ULONG)newMode,
+                     data->netped_ipv4AddrString,
+                     data->netped_ipv4MaskString);
 
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
-
     return TRUE;
+}
+
+/* IPv6 mode cycle changed inside the IPv6 config sub-window */
+IPTR NetPEditor__MUIM_NetPEditor_IPv6ModeChanged
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    IPTR newMode = XGET(data->netped_ipv6ModeState, MUIA_Cycle_Active);
+
+    Net6_ModeChanged(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                     (ULONG)newMode,
+                     data->netped_ipv6AddrString,
+                     data->netped_ipv6PrefixString);
+
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return TRUE;
+}
+
+/* Open the protocol-address config sub-window for the active list entry */
+IPTR NetPEditor__MUIM_NetPEditor_EditProtoEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    LONG active = XGET(data->netped_protoAddrList, MUIA_List_Active);
+
+    if (active == MUIV_List_Active_Off)
+        return 0;
+
+    if (active == PROTO_FAMILY_IPV4)
+    {
+        Net4_ShowWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                        data->netped_ipv4ModeState,
+                        data->netped_ipv4AddrString,
+                        data->netped_ipv4MaskString,
+                        data->netped_ipv4GateString);
+        SET(data->netped_ipv4Window, MUIA_Window_Open, TRUE);
+    }
+    else
+    {
+        Net6_ShowWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                        data->netped_ipv6ModeState,
+                        data->netped_ipv6AddrString,
+                        data->netped_ipv6PrefixString,
+                        data->netped_ipv6GateString);
+        SET(data->netped_ipv6Window, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/* Apply the IPv4 config sub-window back to protoAddrs[0] and refresh the list */
+IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv4Entry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    Net4_ApplyWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                     data->netped_ipv4ModeState,
+                     data->netped_ipv4AddrString,
+                     data->netped_ipv4MaskString,
+                     data->netped_ipv4GateString);
+
+    /* Replace list entry 0 with the updated ProtocolAddress */
+    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV4);
+    DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+             &data->netped_protoAddrs[PROTO_FAMILY_IPV4], PROTO_FAMILY_IPV4);
+    SET(data->netped_protoAddrList, MUIA_List_Active, PROTO_FAMILY_IPV4);
+
+    SET(data->netped_ipv4Window, MUIA_Window_Open, FALSE);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
+}
+
+/* Apply the IPv6 config sub-window back to protoAddrs[1] and refresh the list */
+IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv6Entry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    Net6_ApplyWindow(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                     data->netped_ipv6ModeState,
+                     data->netped_ipv6AddrString,
+                     data->netped_ipv6PrefixString,
+                     data->netped_ipv6GateString);
+
+    /* Replace list entry 1 with the updated ProtocolAddress */
+    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV6);
+    DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+             &data->netped_protoAddrs[PROTO_FAMILY_IPV6], PROTO_FAMILY_IPV6);
+    SET(data->netped_protoAddrList, MUIA_List_Active, PROTO_FAMILY_IPV6);
+
+    SET(data->netped_ipv6Window, MUIA_Window_Open, FALSE);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
 }
 
 /*
@@ -1916,46 +2120,34 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         SET(data->netped_removeButton, MUIA_Disabled, FALSE);
         SET(data->netped_editButton, MUIA_Disabled, FALSE);
 
-        if (GetIPMode(iface) != IP_MODE_MANUAL)
-        {
-            SET(data->netped_IPString, MUIA_Disabled, TRUE);
-            SET(data->netped_IPString, MUIA_String_Contents, "");
-            SET(data->netped_maskString, MUIA_Disabled, TRUE);
-            SET(data->netped_maskString, MUIA_String_Contents, "");
-        }
-        else
-        {
-            SET(data->netped_IPString, MUIA_Disabled, FALSE);
-            SET(data->netped_IPString, MUIA_String_Contents, GetIP(iface));
-            SET(data->netped_maskString, MUIA_Disabled, FALSE);
-            SET(data->netped_maskString, MUIA_String_Contents, GetMask(iface));
-        }
-        SET(data->netped_nameString, MUIA_String_Contents, GetName(iface));
-        SET(data->netped_upState, MUIA_Selected, GetUp(iface) ? 1 : 0);
-        SET(data->netped_ifDHCPState, MUIA_Cycle_Active, (IPTR)GetIPMode(iface));
+        /* Populate per-protocol address data from the interface struct */
+        ProtoAddr_FromInterface(&data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                                iface, PROTO_FAMILY_IPV4);
+        ProtoAddr_FromInterface(&data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                                iface, PROTO_FAMILY_IPV6);
+
+        /* Rebuild the protocol address list */
+        SET(data->netped_protoAddrList, MUIA_List_Quiet, TRUE);
+        DoMethod(data->netped_protoAddrList, MUIM_List_Clear);
+        DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                 MUIV_List_Insert_Bottom);
+        DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                 MUIV_List_Insert_Bottom);
+        SET(data->netped_protoAddrList, MUIA_List_Quiet, FALSE);
+
+        /* Set the remaining interface-window gadgets */
+        SET(data->netped_nameString,   MUIA_String_Contents, GetName(iface));
+        SET(data->netped_upState,      MUIA_Selected,        GetUp(iface) ? 1 : 0);
         SET(data->netped_deviceString, MUIA_String_Contents, GetDevice(iface));
-        SET(data->netped_unitString, MUIA_String_Integer, GetUnit(iface));
-        SET(data->netped_if6DHCPState, MUIA_Cycle_Active, (IPTR)GetIP6Mode(iface));
-        if (GetIP6Mode(iface) != IP_MODE_MANUAL)
-        {
-            SET(data->netped_IP6String, MUIA_Disabled, TRUE);
-            SET(data->netped_IP6String, MUIA_String_Contents, "");
-            SET(data->netped_IP6PrefixString, MUIA_Disabled, TRUE);
-        }
-        else
-        {
-            LONG prefix = GetIP6Prefix(iface);
-            SET(data->netped_IP6String, MUIA_Disabled, FALSE);
-            SET(data->netped_IP6String, MUIA_String_Contents, GetIP6(iface));
-            SET(data->netped_IP6PrefixString, MUIA_Disabled, FALSE);
-            SET(data->netped_IP6PrefixString, MUIA_String_Integer, prefix ? prefix : 64);
-        }
+        SET(data->netped_unitString,   MUIA_String_Integer,  GetUnit(iface));
     }
     else
     {
         SET(data->netped_removeButton, MUIA_Disabled, TRUE);
-        SET(data->netped_editButton, MUIA_Disabled, TRUE);
-        SET(data->netped_ifWindow, MUIA_Window_Open, FALSE);
+        SET(data->netped_editButton,   MUIA_Disabled, TRUE);
+        SET(data->netped_ifWindow,     MUIA_Window_Open, FALSE);
     }
     return 0;
 }
@@ -2026,20 +2218,26 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
     if (active != MUIV_List_Active_Off)
     {
         struct Interface iface;
-        SetInterface
-        (
-            &iface,
-            (STRPTR)XGET(data->netped_nameString, MUIA_String_Contents),
-            (enum IPMode)XGET(data->netped_ifDHCPState, MUIA_Cycle_Active),
-            (STRPTR)XGET(data->netped_IPString, MUIA_String_Contents),
-            (STRPTR)XGET(data->netped_maskString, MUIA_String_Contents),
-            (enum IPMode)XGET(data->netped_if6DHCPState, MUIA_Cycle_Active),
-            (STRPTR)XGET(data->netped_IP6String, MUIA_String_Contents),
-            (LONG)XGET(data->netped_IP6PrefixString, MUIA_String_Integer),
-            (STRPTR)XGET(data->netped_deviceString, MUIA_String_Contents),
-            XGET(data->netped_unitString, MUIA_String_Integer),
-            XGET(data->netped_upState, MUIA_Selected)
-        );
+
+        /* Start from the current list entry so device/name/up are preserved */
+        DoMethod(data->netped_interfaceList,
+                 MUIM_List_GetEntry, active, &iface);
+
+        /* Overwrite with the current gadget values */
+        SetName(&iface,
+            (STRPTR)XGET(data->netped_nameString, MUIA_String_Contents));
+        SetDevice(&iface,
+            (STRPTR)XGET(data->netped_deviceString, MUIA_String_Contents));
+        SetUnit(&iface,
+            XGET(data->netped_unitString, MUIA_String_Integer));
+        SetUp(&iface,
+            XGET(data->netped_upState, MUIA_Selected));
+
+        /* Write the protocol address configuration from protoAddrs[] */
+        ProtoAddr_ToInterface(&iface,
+                              &data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                              &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
+
         DoMethod(data->netped_interfaceList, MUIM_List_Remove, active);
         DoMethod(data->netped_interfaceList, MUIM_List_InsertSingle, &iface, active);
         SET(data->netped_interfaceList, MUIA_List_Active, active);
@@ -2390,29 +2588,33 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_22
+ZUNE_CUSTOMCLASS_26
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
-    OM_NEW,                         struct opSet *,
-    MUIM_Setup,                     Msg,
-    MUIM_Cleanup,                   Msg,
-    MUIM_PrefsEditor_ImportFH,      struct MUIP_PrefsEditor_ImportFH *,
-    MUIM_PrefsEditor_ExportFH,      struct MUIP_PrefsEditor_ExportFH *,
-    MUIM_PrefsEditor_Save,          Msg,
-    MUIM_PrefsEditor_Use,           Msg,
-    MUIM_NetPEditor_IPModeChanged,  struct MUIP_NetPEditor_IPModeChanged *,
-    MUIM_NetPEditor_IP6ModeChanged, struct MUIP_NetPEditor_IP6ModeChanged *,
-    MUIM_NetPEditor_ShowEntry,      Msg,
-    MUIM_NetPEditor_EditEntry,      struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyEntry,     Msg,
-    MUIM_NetPEditor_ShowHostEntry,  Msg,
-    MUIM_NetPEditor_EditHostEntry,  struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyHostEntry, Msg,
-    MUIM_NetPEditor_ShowNetEntry,   Msg,
-    MUIM_NetPEditor_EditNetEntry,   struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyNetEntry,  Msg,
-    MUIM_NetPEditor_ShowServerEntry,   Msg,
-    MUIM_NetPEditor_EditServerEntry,   struct MUIP_NetPEditor_EditEntry *,
-    MUIM_NetPEditor_ApplyServerEntry,  Msg,
-    MUIM_NetPEditor_AddTetheringEntry, Msg
+    OM_NEW,                               struct opSet *,
+    MUIM_Setup,                           Msg,
+    MUIM_Cleanup,                         Msg,
+    MUIM_PrefsEditor_ImportFH,            struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_ExportFH,            struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Save,                Msg,
+    MUIM_PrefsEditor_Use,                 Msg,
+    MUIM_NetPEditor_IPModeChanged,        struct MUIP_NetPEditor_IPModeChanged *,
+    MUIM_NetPEditor_ShowEntry,            Msg,
+    MUIM_NetPEditor_EditEntry,            struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyEntry,           Msg,
+    MUIM_NetPEditor_ShowHostEntry,        Msg,
+    MUIM_NetPEditor_EditHostEntry,        struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyHostEntry,       Msg,
+    MUIM_NetPEditor_ShowNetEntry,         Msg,
+    MUIM_NetPEditor_EditNetEntry,         struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyNetEntry,        Msg,
+    MUIM_NetPEditor_ShowServerEntry,      Msg,
+    MUIM_NetPEditor_EditServerEntry,      struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyServerEntry,     Msg,
+    MUIM_NetPEditor_AddTetheringEntry,    Msg,
+    MUIM_NetPEditor_EditProtoEntry,       Msg,
+    MUIM_NetPEditor_ApplyIPv4Entry,       Msg,
+    MUIM_NetPEditor_ApplyIPv6Entry,       Msg,
+    MUIM_NetPEditor_IPv4ModeChanged,      Msg,
+    MUIM_NetPEditor_IPv6ModeChanged,      Msg
 );

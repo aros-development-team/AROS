@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES 	    := main args netpeditor prefsdata locale misc
+FILES 	    := main args netpeditor prefsdata locale misc protocols net4 net6
 EXEDIR      := $(AROSDIR)/Prefs
 
 #MM- workbench-prefs : workbench-prefs-network
@@ -16,6 +16,6 @@ EXEDIR      := $(AROSDIR)/Prefs
     files=$(FILES)
 
 %copy_files_q mmake=workbench-prefs-network-cpy \
-    files="interface host wireless" src=. dst=$(AROS_IMAGES)
+    files="interface host wireless protocol" src=. dst=$(AROS_IMAGES)
 
 %common
