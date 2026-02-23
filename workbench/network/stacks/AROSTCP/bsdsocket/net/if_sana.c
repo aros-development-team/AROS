@@ -553,7 +553,7 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
     ssc->ss_reqs = next;
 
     /* Order a notify when driver connects to a (wireless) network */
-    if (ifp->if_data.ifi_aros_usedhcp == 1) {
+    if (ssc->ss_if.if_data.ifi_aros_usedhcp == 1) {
       if ((req = CreateIORequest(SanaPort, sizeof(*req))) != NULL) {
         ssc->ss_eventsent++;
         req->ioip_s2.ios2_Req.io_Device    = ssc->ss_dev;    
