@@ -250,7 +250,7 @@ void InitInterface(struct Interface *iface)
     SetIfDHCP(iface, TRUE);
     SetIP(iface, DEFAULTIP);
     SetMask(iface, DEFAULTMASK);
-    SetIfDHCP6(iface, FALSE);
+    SetIP6Mode(iface, IP_MODE_AUTO);
     SetIP6(iface, "");
     SetIP6Prefix(iface, 64);
     SetDevice(iface, DEFAULTDEVICE);
@@ -391,52 +391,66 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     if (!ConfFile) return FALSE;
     for (i = 0; i < interfacecount; i++)
     {
+        CONST_STRPTR ip4str, ip6str;
+
         iface = GetInterface(i);
-        if (GetIfDHCP6(iface))
+
+        /* Determine IPv4 token */
+        switch (GetIPMode(iface))
         {
-            fprintf
-            (
-                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=DHCP %s\n",
-                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-                (GetIfDHCP(iface) ?
-                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
-                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
-                    GetIP(iface)),
-                GetMask(iface),
-                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
-            );
+            case IP_MODE_DHCP:
+                ip4str = (strstr(GetDevice(iface), "ppp.device") == NULL)
+                         ? "DHCP" : "0.0.0.0";
+                break;
+            case IP_MODE_AUTO:
+                ip4str = "AUTO";
+                break;
+            default:
+                ip4str = GetIP(iface);
+                break;
         }
-        else if (GetIP6(iface)[0] != '\0')
+
+        /* Determine IPv6 token and write line */
+        switch (GetIP6Mode(iface))
         {
-            fprintf
-            (
-                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=%s PREFIXLEN=%ld %s\n",
-                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-                (GetIfDHCP(iface) ?
-                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
-                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
-                    GetIP(iface)),
-                GetMask(iface),
-                GetIP6(iface), (long)(GetIP6Prefix(iface) ? GetIP6Prefix(iface) : 64),
-                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
-            );
-        }
-        else
-        {
-            fprintf
-            (
-                ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
-                GetName(iface), GetDevice(iface), (int)GetUnit(iface),
-                (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-                (GetIfDHCP(iface) ?
-                    (strstr(GetDevice(iface), "ppp.device") == NULL ?
-                        (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
-                    GetIP(iface)),
-                GetMask(iface),
-                (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
-            );
+            case IP_MODE_DHCP:
+                fprintf(ConfFile,
+                    "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=DHCP %s\n",
+                    GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                    (GetNoTracking(iface) ? "NOTRACKING" : ""),
+                    ip4str, GetMask(iface),
+                    (GetUp(iface) ? "UP" : ""));
+                break;
+            case IP_MODE_AUTO:
+                fprintf(ConfFile,
+                    "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=AUTO %s\n",
+                    GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                    (GetNoTracking(iface) ? "NOTRACKING" : ""),
+                    ip4str, GetMask(iface),
+                    (GetUp(iface) ? "UP" : ""));
+                break;
+            default:
+                if (GetIP6(iface)[0] != '\0')
+                {
+                    fprintf(ConfFile,
+                        "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s IP6=%s PREFIXLEN=%ld %s\n",
+                        GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                        (GetNoTracking(iface) ? "NOTRACKING" : ""),
+                        ip4str, GetMask(iface),
+                        GetIP6(iface),
+                        (long)(GetIP6Prefix(iface) ? GetIP6Prefix(iface) : 64),
+                        (GetUp(iface) ? "UP" : ""));
+                }
+                else
+                {
+                    fprintf(ConfFile,
+                        "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
+                        GetName(iface), GetDevice(iface), (int)GetUnit(iface),
+                        (GetNoTracking(iface) ? "NOTRACKING" : ""),
+                        ip4str, GetMask(iface),
+                        (GetUp(iface) ? "UP" : ""));
+                }
+                break;
         }
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL
             || strstr(GetDevice(iface), "prism2.device") != NULL
@@ -457,7 +471,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     for (i = 0; i < interfacecount; i++)
     {
         iface = GetInterface(i);
-        if (!GetIfDHCP(iface))
+        if (GetIPMode(iface) == IP_MODE_MANUAL)
         {
             fprintf
             (
@@ -1095,13 +1109,18 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     if (strncmp(tstring + 1, "DHCP", 4) == 0
                         || strstr(GetDevice(iface), "ppp.device") != NULL)
                     {
-                        SetIfDHCP(iface, TRUE);
+                        SetIPMode(iface, IP_MODE_DHCP);
+                        SetIP(iface, DEFAULTIP);
+                    }
+                    else if (strncmp(tstring + 1, "AUTO", 4) == 0)
+                    {
+                        SetIPMode(iface, IP_MODE_AUTO);
                         SetIP(iface, DEFAULTIP);
                     }
                     else
                     {
                         SetIP(iface, tstring + 1);
-                        SetIfDHCP(iface, FALSE);
+                        SetIPMode(iface, IP_MODE_MANUAL);
                     }
                 }
                 else if (strncmp(tok.token, "NETMASK=", 8) == 0)
@@ -1114,12 +1133,17 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                     tstring = strchr(tok.token, '=');
                     if (strncmp(tstring + 1, "DHCP", 4) == 0)
                     {
-                        SetIfDHCP6(iface, TRUE);
+                        SetIP6Mode(iface, IP_MODE_DHCP);
+                        SetIP6(iface, "");
+                    }
+                    else if (strncmp(tstring + 1, "AUTO", 4) == 0)
+                    {
+                        SetIP6Mode(iface, IP_MODE_AUTO);
                         SetIP6(iface, "");
                     }
                     else
                     {
-                        SetIfDHCP6(iface, FALSE);
+                        SetIP6Mode(iface, IP_MODE_MANUAL);
                         SetIP6(iface, tstring + 1);
                     }
                 }
@@ -1625,7 +1649,12 @@ STRPTR GetName(struct Interface *iface)
 
 BOOL GetIfDHCP(struct Interface *iface)
 {
-    return iface->ifDHCP;
+    return iface->ipMode == IP_MODE_DHCP;
+}
+
+enum IPMode GetIPMode(struct Interface *iface)
+{
+    return iface->ipMode;
 }
 
 STRPTR GetIP(struct Interface *iface)
@@ -1645,7 +1674,12 @@ STRPTR GetIP6(struct Interface *iface)
 
 BOOL GetIfDHCP6(struct Interface *iface)
 {
-    return iface->ifDHCP6;
+    return iface->ip6Mode == IP_MODE_DHCP;
+}
+
+enum IPMode GetIP6Mode(struct Interface *iface)
+{
+    return iface->ip6Mode;
 }
 
 LONG GetIP6Prefix(struct Interface *iface)
@@ -1708,15 +1742,15 @@ BOOL GetDHCP(void)
 
 void SetInterface
 (
-    struct Interface *iface, STRPTR name, BOOL dhcp, STRPTR IP, STRPTR mask,
-    BOOL dhcp6, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
+    struct Interface *iface, STRPTR name, enum IPMode ipMode, STRPTR IP, STRPTR mask,
+    enum IPMode ip6Mode, STRPTR ip6, LONG ip6prefix, STRPTR device, LONG unit, BOOL up
 )
 {
     SetName(iface, name);
-    SetIfDHCP(iface, dhcp);
+    SetIPMode(iface, ipMode);
     SetIP(iface, IP);
     SetMask(iface, mask);
-    SetIfDHCP6(iface, dhcp6);
+    SetIP6Mode(iface, ip6Mode);
     SetIP6(iface, ip6);
     SetIP6Prefix(iface, ip6prefix);
     SetDevice(iface, device);
@@ -1735,7 +1769,12 @@ void SetName(struct Interface *iface, STRPTR w)
 
 void SetIfDHCP(struct Interface *iface, BOOL w)
 {
-    iface->ifDHCP = w;
+    iface->ipMode = w ? IP_MODE_DHCP : IP_MODE_MANUAL;
+}
+
+void SetIPMode(struct Interface *iface, enum IPMode w)
+{
+    iface->ipMode = w;
 }
 
 void SetIP(struct Interface *iface, STRPTR w)
@@ -1765,7 +1804,12 @@ void SetIP6(struct Interface *iface, STRPTR w)
 
 void SetIfDHCP6(struct Interface *iface, BOOL w)
 {
-    iface->ifDHCP6 = w;
+    iface->ip6Mode = w ? IP_MODE_DHCP : IP_MODE_MANUAL;
+}
+
+void SetIP6Mode(struct Interface *iface, enum IPMode w)
+{
+    iface->ip6Mode = w;
 }
 
 void SetIP6Prefix(struct Interface *iface, LONG w)

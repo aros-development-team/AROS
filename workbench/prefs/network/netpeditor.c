@@ -32,7 +32,8 @@
 #include <utility/hooks.h>
 
 static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL };
+static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
+static CONST_STRPTR IP6Cycle[]  = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
 static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
@@ -172,7 +173,20 @@ AROS_UFHA(struct Interface *, entry, A1))
     {
         static char unitbuffer[20];
         static char addrbuffer[12 + IPBUFLEN + 2 + IP6BUFLEN + 1];
-        CONST_STRPTR ip4 = entry->ifDHCP ? (STRPTR)_(MSG_IP_MODE_DHCP) : entry->IP;
+        CONST_STRPTR ip4, ip6;
+
+        switch (entry->ipMode)
+        {
+            case IP_MODE_DHCP:   ip4 = _(MSG_IP_MODE_DHCP);  break;
+            case IP_MODE_AUTO:   ip4 = _(MSG_IP_MODE_AUTO);  break;
+            default:             ip4 = entry->IP;             break;
+        }
+        switch (entry->ip6Mode)
+        {
+            case IP_MODE_DHCP:   ip6 = _(MSG_IP_MODE_DHCP);  break;
+            case IP_MODE_AUTO:   ip6 = _(MSG_IP6_MODE_AUTO); break;
+            default:             ip6 = entry->ip6[0] ? entry->ip6 : NULL; break;
+        }
 
         sprintf(unitbuffer, "%d", (int)entry->unit);
         *array++ = entry->name;
@@ -181,10 +195,8 @@ AROS_UFHA(struct Interface *, entry, A1))
         *array++ = unitbuffer;
 
         /* Build combined IPv4 / IPv6 address string */
-        if (entry->ifDHCP6)
-            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, _(MSG_IP_MODE_DHCP));
-        else if (entry->ip6[0] != '\0')
-            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, entry->ip6);
+        if (ip6)
+            sprintf(addrbuffer, "%s (IP4) / %s (IP6)", ip4, ip6);
         else
             sprintf(addrbuffer, "%s (IP4)", ip4);
         *array = addrbuffer;
@@ -399,12 +411,12 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         );
         SetName(iface, ifaceentry->name);
         SetUp(iface, ifaceentry->up);
-        SetIfDHCP(iface, ifaceentry->ifDHCP);
+        SetIPMode(iface, ifaceentry->ipMode);
         SetDevice(iface, ifaceentry->device);
         SetUnit(iface, ifaceentry->unit);
         SetIP(iface, ifaceentry->IP);
         SetMask(iface, ifaceentry->mask);
-        SetIfDHCP6(iface, ifaceentry->ifDHCP6);
+        SetIP6Mode(iface, ifaceentry->ip6Mode);
         SetIP6(iface, ifaceentry->ip6);
         SetIP6Prefix(iface, ifaceentry->ip6prefix);
     }
@@ -517,10 +529,10 @@ BOOL NetworkPrefs2Gadgets
         (
             &ifaceentry,
             GetName(iface),
-            GetIfDHCP(iface),
+            GetIPMode(iface),
             GetIP(iface),
             GetMask(iface),
-            GetIfDHCP6(iface),
+            GetIP6Mode(iface),
             GetIP6(iface),
             GetIP6Prefix(iface),
             GetDevice(iface),
@@ -730,6 +742,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
     DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
+    DHCPCycle[2] = _(MSG_IP_MODE_AUTO);
+
+    IP6Cycle[0] = _(MSG_IP_MODE_MANUAL);
+    IP6Cycle[1] = _(MSG_IP_MODE_DHCP);
+    IP6Cycle[2] = _(MSG_IP6_MODE_AUTO);
 
     EncCycle[0] = _(MSG_ENC_NONE);
     EncCycle[1] = _(MSG_ENC_WEP);
@@ -1069,7 +1086,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End),
                 Child, (IPTR)Label2(__(MSG_IP6_MODE)),
                 Child, (IPTR)(if6DHCPState = (Object *)CycleObject,
-                    MUIA_Cycle_Entries, (IPTR)DHCPCycle,
+                    MUIA_Cycle_Entries, (IPTR)IP6Cycle,
                 End),
                 Child, (IPTR)Label2(__(MSG_IP6)),
                 Child, (IPTR)(IP6String = (Object *)StringObject,
@@ -1750,10 +1767,10 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
 
         if (iface != NULL)
         {
-            if (lng == 1)
+            if (lng == IP_MODE_DHCP || lng == IP_MODE_AUTO)
             {
-                /* Clear and disable text boxes, but keep their values for
-                 * later */
+                /* DHCP or Auto: clear and disable IP/mask text boxes,
+                 * but keep their values for later restoration */
 
                 SET(data->netped_IPString, MUIA_Disabled, TRUE);
                 GET(data->netped_IPString, MUIA_String_Contents, &str);
@@ -1767,7 +1784,7 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
             }
             else
             {
-                /* Enable text boxes, and reset their previous values */
+                /* Manual: enable text boxes and restore previous values */
 
                 SET(data->netped_IPString, MUIA_Disabled, FALSE);
                 SET(data->netped_IPString, MUIA_String_Contents,
@@ -1777,6 +1794,7 @@ IPTR NetPEditor__MUIM_NetPEditor_IPModeChanged
                 SET(data->netped_maskString, MUIA_String_Contents,
                     GetMask(iface));
             }
+            SetIPMode(iface, (enum IPMode)lng);
         }
     }
     else
@@ -1845,9 +1863,9 @@ IPTR NetPEditor__MUIM_NetPEditor_IP6ModeChanged
 
     if (iface != NULL)
     {
-        if (lng == 1)
+        if (lng == IP_MODE_DHCP || lng == IP_MODE_AUTO)
         {
-            /* Auto: clear and disable IPv6 address and prefix fields */
+            /* DHCP or Link-Local: disable IPv6 address/prefix fields */
             SET(data->netped_IP6String, MUIA_Disabled, TRUE);
             GET(data->netped_IP6String, MUIA_String_Contents, &str);
             SetIP6(iface, str);
@@ -1867,6 +1885,7 @@ IPTR NetPEditor__MUIM_NetPEditor_IP6ModeChanged
             if (prefix == 0)
                 SET(data->netped_IP6PrefixString, MUIA_String_Integer, 64);
         }
+        SetIP6Mode(iface, (enum IPMode)lng);
     }
 
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
@@ -1897,7 +1916,7 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         SET(data->netped_removeButton, MUIA_Disabled, FALSE);
         SET(data->netped_editButton, MUIA_Disabled, FALSE);
 
-        if (GetIfDHCP(iface))
+        if (GetIPMode(iface) != IP_MODE_MANUAL)
         {
             SET(data->netped_IPString, MUIA_String_Contents, "");
             SET(data->netped_maskString, MUIA_String_Contents, "");
@@ -1909,11 +1928,11 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
         }
         SET(data->netped_nameString, MUIA_String_Contents, GetName(iface));
         SET(data->netped_upState, MUIA_Selected, GetUp(iface) ? 1 : 0);
-        SET(data->netped_ifDHCPState, MUIA_Cycle_Active, GetIfDHCP(iface) ? 1 : 0);
+        SET(data->netped_ifDHCPState, MUIA_Cycle_Active, (IPTR)GetIPMode(iface));
         SET(data->netped_deviceString, MUIA_String_Contents, GetDevice(iface));
         SET(data->netped_unitString, MUIA_String_Integer, GetUnit(iface));
-        SET(data->netped_if6DHCPState, MUIA_Cycle_Active, GetIfDHCP6(iface) ? 1 : 0);
-        if (GetIfDHCP6(iface))
+        SET(data->netped_if6DHCPState, MUIA_Cycle_Active, (IPTR)GetIP6Mode(iface));
+        if (GetIP6Mode(iface) != IP_MODE_MANUAL)
         {
             SET(data->netped_IP6String, MUIA_Disabled, TRUE);
             SET(data->netped_IP6String, MUIA_String_Contents, "");
@@ -2007,10 +2026,10 @@ IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
         (
             &iface,
             (STRPTR)XGET(data->netped_nameString, MUIA_String_Contents),
-            XGET(data->netped_ifDHCPState, MUIA_Cycle_Active),
+            (enum IPMode)XGET(data->netped_ifDHCPState, MUIA_Cycle_Active),
             (STRPTR)XGET(data->netped_IPString, MUIA_String_Contents),
             (STRPTR)XGET(data->netped_maskString, MUIA_String_Contents),
-            XGET(data->netped_if6DHCPState, MUIA_Cycle_Active),
+            (enum IPMode)XGET(data->netped_if6DHCPState, MUIA_Cycle_Active),
             (STRPTR)XGET(data->netped_IP6String, MUIA_String_Contents),
             (LONG)XGET(data->netped_IP6PrefixString, MUIA_String_Integer),
             (STRPTR)XGET(data->netped_deviceString, MUIA_String_Contents),
