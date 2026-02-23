@@ -740,13 +740,13 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *serverService, *serverUser, *serverGroup, *serverPass,
             *serverApplyButton, *serverCloseButton;
 
-    DHCPCycle[0] = _(MSG_IP_MODE_MANUAL);
-    DHCPCycle[1] = _(MSG_IP_MODE_DHCP);
-    DHCPCycle[2] = _(MSG_IP_MODE_AUTO);
+    DHCPCycle[0] = _(MSG_IP_MODE_DHCP);
+    DHCPCycle[1] = _(MSG_IP_MODE_AUTO);
+    DHCPCycle[2] = _(MSG_IP_MODE_MANUAL);
 
-    IP6Cycle[0] = _(MSG_IP_MODE_MANUAL);
-    IP6Cycle[1] = _(MSG_IP_MODE_DHCP);
-    IP6Cycle[2] = _(MSG_IP6_MODE_AUTO);
+    IP6Cycle[0] = _(MSG_IP_MODE_DHCP);
+    IP6Cycle[1] = _(MSG_IP6_MODE_AUTO);
+    IP6Cycle[2] = _(MSG_IP_MODE_MANUAL);
 
     EncCycle[0] = _(MSG_ENC_NONE);
     EncCycle[1] = _(MSG_ENC_WEP);
@@ -1918,12 +1918,16 @@ IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
 
         if (GetIPMode(iface) != IP_MODE_MANUAL)
         {
+            SET(data->netped_IPString, MUIA_Disabled, TRUE);
             SET(data->netped_IPString, MUIA_String_Contents, "");
+            SET(data->netped_maskString, MUIA_Disabled, TRUE);
             SET(data->netped_maskString, MUIA_String_Contents, "");
         }
         else
         {
+            SET(data->netped_IPString, MUIA_Disabled, FALSE);
             SET(data->netped_IPString, MUIA_String_Contents, GetIP(iface));
+            SET(data->netped_maskString, MUIA_Disabled, FALSE);
             SET(data->netped_maskString, MUIA_String_Contents, GetMask(iface));
         }
         SET(data->netped_nameString, MUIA_String_Contents, GetName(iface));
