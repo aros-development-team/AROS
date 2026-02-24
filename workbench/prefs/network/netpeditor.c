@@ -41,110 +41,32 @@ static CONST_STRPTR ServiceTypeCycle[] = { NULL, NULL };
 static const TEXT max_ip_str[] = "255.255.255.255 ";
 
 /* -----------------------------------------------------------------------
- * Private class: NetIfListIcon
- * Draws a small "network interface" icon using system pens, auto-sized
- * to a fixed square set at creation time via MUIA_FixWidth.
- * Used as source for MUIM_List_CreateImage so it scales with the font.
+ * Interface list icon: 16x16 BodychunkObject using embedded pixel art.
+ * Registered with MUIM_List_CreateImage and embedded via \33O[ptr] escape.
  * ----------------------------------------------------------------------- */
-struct NetIfListIcon_Data { LONG size; };
+#define USE_NET_IFICON_COLORS
+#define USE_NET_IFICON_BODY
+#include "net_ificon.h"
 
-static IPTR NetIfListIcon_Dispatch(Class *cl, Object *obj, Msg msg)
+static APTR netListIconImg = NULL;   /* result of MUIM_List_CreateImage */
+
+static Object *netListIconObj = NULL; /* BodychunkObject used as source */
+
+static Object *NetListIconObject_Create(void)
 {
-    struct NetIfListIcon_Data *data;
-
-    switch (msg->MethodID)
-    {
-    case OM_NEW:
-        obj = (Object *)DoSuperMethodA(cl, obj, msg);
-        if (obj)
-        {
-            data = INST_DATA(cl, obj);
-            data->size = (LONG)GetTagData(MUIA_FixWidth, 16,
-                ((struct opSet *)msg)->ops_AttrList);
-        }
-        return (IPTR)obj;
-
-    case MUIM_AskMinMax:
-    {
-        struct MUIP_AskMinMax *m = (struct MUIP_AskMinMax *)msg;
-        DoSuperMethodA(cl, obj, msg);
-        data = INST_DATA(cl, obj);
-        m->MinMaxInfo->MinWidth  = m->MinMaxInfo->DefWidth  =
-        m->MinMaxInfo->MaxWidth  = data->size;
-        m->MinMaxInfo->MinHeight = m->MinMaxInfo->DefHeight =
-        m->MinMaxInfo->MaxHeight = data->size;
-        return 0;
-    }
-
-    case MUIM_Draw:
-    {
-        struct MUIP_Draw *m = (struct MUIP_Draw *)msg;
-        struct RastPort *rp;
-        LONG x, y, s, mx, mb, sw, sh;
-
-        DoSuperMethodA(cl, obj, msg);
-        if (!(m->flags & MADF_DRAWOBJECT)) return 0;
-
-        rp = _rp(obj);
-        x  = _mleft(obj);
-        y  = _mtop(obj);
-        s  = _mwidth(obj);
-
-        /* Monitor body: top 3/4 of icon */
-        mb = y + (s * 3 / 4);
-        /* Screen inset */
-        sw = (s > 6) ? 2 : 1;
-        sh = (s > 6) ? 2 : 1;
-
-        /* Shadow/outline of monitor body */
-        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
-        Move(rp, x,     mb); Draw(rp, x,     y);
-        Draw(rp, x+s-1, y);  Draw(rp, x+s-1, mb);
-        Draw(rp, x,     mb);
-
-        /* Fill screen area with highlight */
-        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
-        RectFill(rp, x+sw, y+sh, x+s-1-sw, mb-sh);
-
-        /* Shine top-left rim */
-        SetAPen(rp, _pens(obj)[MPEN_SHINE]);
-        Move(rp, x,     mb); Draw(rp, x,     y);
-        Draw(rp, x+s-1, y);
-
-        /* Stand: thin rect centred below monitor */
-        mx = x + s/2;
-        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
-        RectFill(rp, mx-1, mb+1, mx+1, y+s-1);
-
-        /* Base: horizontal line */
-        Move(rp, x + s/5,     y+s-1);
-        Draw(rp, x + s*4/5,   y+s-1);
-
-        return 0;
-    }
-
-    default:
-        return DoSuperMethodA(cl, obj, msg);
-    }
+    return BodychunkObject,
+        MUIA_Bitmap_SourceColors, (IPTR)net_ificon_colors,
+        MUIA_FixWidth,            NET_IFICON_WIDTH,
+        MUIA_FixHeight,           NET_IFICON_HEIGHT,
+        MUIA_Bitmap_Width,        NET_IFICON_WIDTH,
+        MUIA_Bitmap_Height,       NET_IFICON_HEIGHT,
+        MUIA_Bodychunk_Depth,     NET_IFICON_DEPTH,
+        MUIA_Bodychunk_Body,      (IPTR)net_ificon_body,
+        MUIA_Bodychunk_Compression, NET_IFICON_COMPRESSION,
+        MUIA_Bodychunk_Masking,   NET_IFICON_MASKING,
+        MUIA_Bitmap_Transparent,  NET_IFICON_TRANSPARENT,
+    End;
 }
-
-static struct MUI_CustomClass *netListIconClass = NULL;
-
-static BOOL NetListIconClass_Create(void)
-{
-    netListIconClass = MUI_CreateCustomClass(NULL, MUIC_Area, NULL,
-        sizeof(struct NetIfListIcon_Data),
-        (APTR)NetIfListIcon_Dispatch);
-    return (netListIconClass != NULL);
-}
-
-static void NetListIconClass_Delete(void)
-{
-    if (netListIconClass) { MUI_DeleteCustomClass(netListIconClass); netListIconClass = NULL; }
-}
-
-#define NetListIconObject(size) NewObject(netListIconClass->mcc_Class, NULL, \
-    MUIA_FixWidth, (size), TAG_DONE)
 
 static struct Hook  netpeditor_displayHook,
                     netpeditor_constructHook,
@@ -164,7 +86,6 @@ struct NetPEditor_DATA
 {
     // Main window
     Object  *netped_interfaceList,
-            *netped_ifIconObj,      /* ImageObject for interface list icon */
             *netped_DHCPState,
             *netped_DNSString[2],
             *netped_hostString,
@@ -832,9 +753,7 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    /* Ensure private list-icon class and protocol window classes exist */
-    if (!netListIconClass && !NetListIconClass_Create())
-        return NULL;
+    /* Ensure protocol window classes exist */
     if (!PAWin_InitClass() || !Net4Win_InitClass() || !Net6Win_InitClass())
         return NULL;
 
@@ -944,6 +863,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     Child, (IPTR)(DHCPState = (Object *)CycleObject,
                         MUIA_Cycle_Entries, (IPTR)DHCPCycle,
                     End),
+                    Child, (IPTR)HVSpace,
+                    Child, (IPTR)HVSpace,
                     Child, (IPTR)Label2(__(MSG_HOST_NAME)),
                     Child, (IPTR)(hostString = (Object *)StringObject,
                         StringFrame,
@@ -1743,15 +1664,13 @@ IPTR NetPEditor__MUIM_Setup
 
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
 
-    /* Create list icon using private class — auto-sizes to active font height */
-    {
-        LONG fh = _font(self)->tf_YSize;
-        data->netped_ifIconObj = (Object *)NetListIconObject(fh);
-    }
-    if (data->netped_ifIconObj)
-        netpeditor_displayHook.h_Data = (APTR)DoMethod(
+    /* Create list icon from embedded BodychunkObject bitmap */
+    netListIconObj = NetListIconObject_Create();
+    if (netListIconObj)
+        netListIconImg = (APTR)DoMethod(
             data->netped_interfaceList,
-            MUIM_List_CreateImage, data->netped_ifIconObj, 0);
+            MUIM_List_CreateImage, netListIconObj, 0);
+    netpeditor_displayHook.h_Data = netListIconImg;
 
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ipv4Window);
@@ -1778,23 +1697,23 @@ IPTR NetPEditor__MUIM_Cleanup
     DoMethod(_app(self), OM_REMMEMBER, data->netped_serverWindow);
 
     /* Destroy list icon */
-    if (netpeditor_displayHook.h_Data)
+    if (netListIconImg)
     {
         DoMethod(data->netped_interfaceList,
-            MUIM_List_DeleteImage, netpeditor_displayHook.h_Data);
+            MUIM_List_DeleteImage, netListIconImg);
+        netListIconImg = NULL;
         netpeditor_displayHook.h_Data = NULL;
     }
-    if (data->netped_ifIconObj)
+    if (netListIconObj)
     {
-        MUI_DisposeObject(data->netped_ifIconObj);
-        data->netped_ifIconObj = NULL;
+        MUI_DisposeObject(netListIconObj);
+        netListIconObj = NULL;
     }
 
     /* Free custom window classes now that the windows have been removed */
     Net6Win_FreeClass();
     Net4Win_FreeClass();
     PAWin_FreeClass();
-    NetListIconClass_Delete();
 
     return DoSuperMethodA(CLASS, self, message);
 }

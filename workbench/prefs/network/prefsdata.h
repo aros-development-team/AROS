@@ -2,6 +2,9 @@
     Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
+#ifndef _PREFSDATA_H_
+#define _PREFSDATA_H_
+
 #include <exec/types.h>
 
 #define PREFS_PATH_ENV              "ENV:AROSTCP"
@@ -288,3 +291,5 @@ void SetServerActive(struct Server *net, BOOL w);
 
 void SetServerCount(LONG w);
 
+
+#endif /* _PREFSDATA_H_ */

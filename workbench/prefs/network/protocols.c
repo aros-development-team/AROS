@@ -22,6 +22,10 @@
 #include "protocols.h"
 #include "locale.h"
 
+#define USE_NET_PROTOICON_COLORS
+#define USE_NET_PROTOICON_BODY
+#include "net_protoicon.h"
+
 /*--- MUI list hook implementations -----------------------------------------*/
 
 AROS_UFH3S(APTR, protoConstructFunc,
@@ -200,10 +204,17 @@ static IPTR PAWin__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
             GroupFrame,
             Child, (IPTR)HGroup,
                 Child, (IPTR)HVSpace,
-                Child, (IPTR)ImageObject,
-                    MUIA_Image_Spec,  (IPTR)"3:Images:protocol",
-                    MUIA_FixWidth,    52,
-                    MUIA_FixHeight,   48,
+                Child, (IPTR)BodychunkObject,
+                    MUIA_Bitmap_SourceColors,   (IPTR)net_protoicon_colors,
+                    MUIA_FixWidth,              NET_PROTOICON_WIDTH,
+                    MUIA_FixHeight,             NET_PROTOICON_HEIGHT,
+                    MUIA_Bitmap_Width,          NET_PROTOICON_WIDTH,
+                    MUIA_Bitmap_Height,         NET_PROTOICON_HEIGHT,
+                    MUIA_Bodychunk_Depth,       NET_PROTOICON_DEPTH,
+                    MUIA_Bodychunk_Body,        (IPTR)net_protoicon_body,
+                    MUIA_Bodychunk_Compression, NET_PROTOICON_COMPRESSION,
+                    MUIA_Bodychunk_Masking,     NET_PROTOICON_MASKING,
+                    MUIA_Bitmap_Transparent,    NET_PROTOICON_TRANSPARENT,
                 End,
                 Child, (IPTR)HVSpace,
             End,
