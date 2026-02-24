@@ -4,7 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (C) 2005 Pavel Fedin
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -222,13 +222,14 @@ extern struct ExecBase *SysBase;
 #define DEBUG 0
 #endif
 #include <aros/debug.h>
-#endif
-
+#else
 #if defined(DEBUG) && (DEBUG > 0)
 #define D(x) x
 #else
 #define D(x)
 #endif
+#endif /* ! __AROS__ */
+
 #ifdef DEBUG_NETDB
 #define DNETDB(x) x
 #else

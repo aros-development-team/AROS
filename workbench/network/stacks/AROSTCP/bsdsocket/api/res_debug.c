@@ -1,7 +1,7 @@
 /*-
  * Copyright (c) 1985, 1990 Regents of the University of California.
  * All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -93,6 +93,7 @@ char *_res_resultcodes[] = {
 	"NOCHANGE",
 };
 
+void
 __p_query(msg, libPtr)
 	char *msg;
 	struct SocketBase *libPtr;
@@ -133,8 +134,6 @@ __fp_query(msg,libPtr)
 		Printf(" rd");
 	if (hp->ra)
 		Printf(" ra");
-	if (hp->pr)
-		Printf(" pr");
 	Printf("\n\tqdcount = %ld", ntohs(hp->qdcount));
 	Printf(", ancount = %ld", ntohs(hp->ancount));
 	Printf(", nscount = %ld", ntohs(hp->nscount));
@@ -330,11 +329,14 @@ p_rr(cp, msg, libPtr)
 		cp = p_cdname(cp, msg);
 		break;
 
+#ifdef T_UINFO
 	case T_UINFO:
 		Printf("\t%s\n", cp);
 		cp += dlen;
 		break;
+#endif
 
+#if defined(T_UID) && defined(T_GID)
 	case T_UID:
 	case T_GID:
 		if (dlen == 4) {
@@ -342,6 +344,7 @@ p_rr(cp, msg, libPtr)
 			cp += sizeof(int);
 		}
 		break;
+#endif
 
 	case T_WKS:
 		if (dlen < sizeof(u_long) + 1)
@@ -438,12 +441,18 @@ __p_type(type)
 		return("MAILA");
 	case T_ANY:		/* matches any type */
 		return("ANY");
+#ifdef T_UINFO
 	case T_UINFO:
 		return("UINFO");
+#endif
+#ifdef T_UID
 	case T_UID:
 		return("UID");
+#endif
+#ifdef T_GID
 	case T_GID:
 		return("GID");
+#endif
 #ifdef ALLOW_T_UNSPEC
 	case T_UNSPEC:
 		return("UNSPEC");
