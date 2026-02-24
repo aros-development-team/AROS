@@ -45,6 +45,7 @@
 
 #include "net/netdbpaths.h"
 #include <net/sana2config.h>
+#include <net/sana2arp.h>   /* for autoip_start() */
 #include <net/route.h>
 #include <netinet/in.h>
 #include <netinet/in_var.h>
@@ -526,16 +527,14 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 							ifp->if_flags |= IFF_DELAYUP;
 					}
 				} else if (stricmp(ssc->args->a_ip, "AUTO") == 0) {
-					/* Automatic: bring interface up with 0.0.0.0;
-					 * IPv4LL (zeroconf) will assign a 169.254.x.x address */
-					DIFCONF(Printf("> Using Auto (link-local IPv4)\n");)
+					/* Automatic: use IPv4LL (RFC 3927) to assign 169.254.x.x */
+					DIFCONF(Printf("> Using Auto (IPv4LL / RFC 3927)\n");)
 					ifp->if_data.ifi_aros_usedhcp = 0;
 					if (ssc->args->a_up) {
-						struct sockaddr_in *sin =
-						    (struct sockaddr_in *)&ifr.ifra_addr;
-						sin->sin_family = AF_INET;
-						sin->sin_addr.s_addr = INADDR_ANY;
-						in_control(NULL, SIOCAIFADDR, &ifr, ifp);
+						if (api_state == API_SHOWN)
+							autoip_start(ifp);
+						else
+							ifp->if_flags |= IFF_DELAYUP;
 					}
 				} else {
 					ifp->if_data.ifi_aros_usedhcp = 0;

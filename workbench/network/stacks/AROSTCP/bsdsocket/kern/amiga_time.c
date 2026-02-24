@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -60,7 +60,8 @@ static struct timerequest *timerIORequest = NULL; /* template IORequest */
  * timeoutrequest pointers for all the timeouts
  */
 static struct timeoutRequest *ifTimer = NULL,
-  *arpTimer = NULL, 
+  *arpTimer = NULL,
+  *autoipTimer = NULL,
   *protoSlowTimer = NULL, 
   *protoFastTimer = NULL;
 
@@ -132,10 +133,11 @@ D(bug("[AROSTCP](amiga_timer.c) timer_init()\n"));
 	   * create timeout requests for all timeouts;
 	   */
 	  ifTimer = createTimeoutRequest(if_slowtimo, 1 / IFNET_SLOWHZ, 0); 
-	  arpTimer = createTimeoutRequest(arptimer, ARPT_AGE, 0); 
+	  arpTimer = createTimeoutRequest(arptimer, ARPT_AGE, 0);
+	  autoipTimer = createTimeoutRequest(autoip_timer, 1, 0);
 	  protoSlowTimer = createTimeoutRequest(pfslowtimo, 0, 1000000 / PR_SLOWHZ); 
 	  protoFastTimer = createTimeoutRequest(pffasttimo, 0, 1000000 / PR_FASTHZ); 
-	  if (protoFastTimer && protoSlowTimer && arpTimer && ifTimer) {
+	  if (protoFastTimer && protoSlowTimer && arpTimer && ifTimer && autoipTimer) {
 	    can_send_timeouts = TRUE;
 	    return (ULONG)(1 << timerport->mp_SigBit);
 	  }
@@ -167,6 +169,8 @@ D(bug("[AROSTCP](amiga_timer.c) timer_deinit()\n"));
     deleteTimeoutRequest(protoFastTimer);
   if (protoSlowTimer)
     deleteTimeoutRequest(protoSlowTimer);
+  if (autoipTimer)
+    deleteTimeoutRequest(autoipTimer);
   if (arpTimer)
     deleteTimeoutRequest(arpTimer);
   if (ifTimer)
@@ -201,6 +205,7 @@ D(bug("[AROSTCP](amiga_timer.c) timer_send()\n"));
      */
     sendTimeoutRequest(ifTimer);
     sendTimeoutRequest(arpTimer);
+    sendTimeoutRequest(autoipTimer);
     sendTimeoutRequest(protoSlowTimer);
     sendTimeoutRequest(protoFastTimer);
 

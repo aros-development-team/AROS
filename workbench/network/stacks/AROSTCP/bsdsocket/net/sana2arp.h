@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -72,6 +73,28 @@ int arpresolve(register struct sana_softc *ssc, struct mbuf * m,
                int * error);
 void arpinput(struct sana_softc *ssc, struct mbuf *m, caddr_t srcaddr);
 int arpioctl(int cmd, caddr_t data);
+
+/* IPv4LL state values (RFC 3927) */
+#define AUTOIP_DISABLED  0
+#define AUTOIP_PROBE     1
+#define AUTOIP_ANNOUNCE  2
+#define AUTOIP_BOUND     3
+#define AUTOIP_DEFEND    4
+
+/* RFC 3927 timing constants (in 1-second ticks) */
+#define AUTOIP_PROBE_WAIT         1
+#define AUTOIP_PROBE_INTERVAL     2
+#define AUTOIP_PROBE_NUM          3
+#define AUTOIP_ANNOUNCE_WAIT      2
+#define AUTOIP_ANNOUNCE_NUM       2
+#define AUTOIP_ANNOUNCE_INTERVAL  2
+#define AUTOIP_DEFEND_INTERVAL   10
+#define AUTOIP_MAX_CONFLICTS     10
+#define AUTOIP_RATE_LIMIT_INTERVAL 60
+
+void autoip_start(struct ifnet *ifp);
+void autoip_stop(struct ifnet *ifp);
+void autoip_timer(void);
 #endif
 
 #endif /* !IF_ARPSANA_H */

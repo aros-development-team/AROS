@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -271,6 +271,241 @@ arptimer()
   }
 }
 
+/* =========================================================
+ * IPv4LL / RFC 3927 implementation
+ * ========================================================= */
+
+/* Generate a pseudo-random 169.254.x.x address seeded by MAC + conflict count */
+static void
+autoip_randaddr(struct sana_softc *ssc, struct in_addr *out)
+{
+	u_char *hw = ssc->ss_hwaddr;
+	u_int32_t r;
+
+	r  = ((u_int32_t)hw[2] << 24) | ((u_int32_t)hw[3] << 16)
+	   | ((u_int32_t)hw[4] <<  8) |  (u_int32_t)hw[5];
+	r ^= (u_int32_t)ssc->ss_autoip.conflicts * 1664525UL;
+	r  = r * 1664525UL + 1013904223UL;
+	/* Range 169.254.1.0 - 169.254.254.255  (RFC 3927 §2.1) */
+	r  = (r % (254 * 256)) + 256;
+	out->s_addr = htonl(0xA9FE0000UL | r);
+}
+
+/* Send an ARP probe: sender IP = 0.0.0.0, target IP = candidate (RFC 3927 §2.1) */
+static void
+arp_probe(struct sana_softc *ssc, struct in_addr *candidate)
+{
+	struct mbuf      *m;
+	struct s2_arppkt *s2a;
+	struct sockaddr_sana2 ss2;
+	struct in_addr    zero;
+
+	zero.s_addr = INADDR_ANY;
+
+	if ((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
+		return;
+	m->m_len         = sizeof(*s2a);
+	m->m_pkthdr.len  = sizeof(*s2a);
+	MH_ALIGN(m, sizeof(*s2a));
+	s2a = mtod(m, struct s2_arppkt *);
+	aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
+	m->m_flags |= M_BCAST;
+
+	s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+	s2a->arp_pro = htons(ssc->ss_ip.type);
+	s2a->arp_pln = sizeof(struct in_addr);
+	s2a->arp_hln = ssc->ss_if.if_addrlen;
+	s2a->arp_op  = htons(ARPOP_REQUEST);
+
+	bcopy((caddr_t)ssc->ss_hwaddr,
+	      (caddr_t)&s2a->arpdata, s2a->arp_hln);
+	bcopy((caddr_t)&zero,
+	      (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
+	bzero ((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
+	       s2a->arp_hln);
+	bcopy((caddr_t)candidate,
+	      (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
+	      s2a->arp_pln);
+
+	ss2.ss2_len    = sizeof(ss2);
+	ss2.ss2_family = AF_UNSPEC;
+	ss2.ss2_type   = ssc->ss_arp.type;
+	(*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+	                         (struct rtentry *)0);
+}
+
+/* Send an ARP announcement: sender IP = target IP = addr (RFC 3927 §2.6) */
+static void
+arp_announce(struct sana_softc *ssc, struct in_addr *addr)
+{
+	struct mbuf      *m;
+	struct s2_arppkt *s2a;
+	struct sockaddr_sana2 ss2;
+
+	if ((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
+		return;
+	m->m_len         = sizeof(*s2a);
+	m->m_pkthdr.len  = sizeof(*s2a);
+	MH_ALIGN(m, sizeof(*s2a));
+	s2a = mtod(m, struct s2_arppkt *);
+	aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
+	m->m_flags |= M_BCAST;
+
+	s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+	s2a->arp_pro = htons(ssc->ss_ip.type);
+	s2a->arp_pln = sizeof(struct in_addr);
+	s2a->arp_hln = ssc->ss_if.if_addrlen;
+	s2a->arp_op  = htons(ARPOP_REQUEST);
+
+	/* sender: our MAC + candidate IP */
+	bcopy((caddr_t)ssc->ss_hwaddr,
+	      (caddr_t)&s2a->arpdata, s2a->arp_hln);
+	bcopy((caddr_t)addr,
+	      (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
+	/* target: broadcast MAC + candidate IP */
+	bzero ((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
+	       s2a->arp_hln);
+	bcopy((caddr_t)addr,
+	      (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
+	      s2a->arp_pln);
+
+	ss2.ss2_len    = sizeof(ss2);
+	ss2.ss2_family = AF_UNSPEC;
+	ss2.ss2_type   = ssc->ss_arp.type;
+	(*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+	                         (struct rtentry *)0);
+}
+
+/* Assign the probed candidate address via SIOCAIFADDR */
+static void
+autoip_set_addr(struct sana_softc *ssc)
+{
+	struct ifaliasreq ifr;
+	struct sockaddr_in *sin;
+
+	memset(&ifr, 0, sizeof(ifr));
+	sin = (struct sockaddr_in *)&ifr.ifra_addr;
+	sin->sin_family    = AF_INET;
+	sin->sin_addr      = ssc->ss_autoip.candidate;
+	sin = (struct sockaddr_in *)&ifr.ifra_mask;
+	sin->sin_family    = AF_INET;
+	sin->sin_addr.s_addr = htonl(0xFFFF0000UL);   /* /16 netmask */
+
+	in_control(NULL, SIOCAIFADDR, (caddr_t)&ifr, &ssc->ss_if);
+
+	__log(LOG_INFO, "IPv4LL: assigned %d.%d.%d.%d/16 to %s\n",
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
+	       ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF,
+	      ssc->ss_name);
+}
+
+/* Handle a detected address conflict */
+static void
+autoip_conflict(struct sana_softc *ssc)
+{
+	ssc->ss_autoip.conflicts++;
+
+	__log(LOG_WARNING, "IPv4LL: address conflict on %s (count %u)\n",
+	      ssc->ss_name, (unsigned)ssc->ss_autoip.conflicts);
+
+	/* Pick a new candidate and restart */
+	autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
+	ssc->ss_autoip.count  = 0;
+	ssc->ss_autoip.state  = AUTOIP_PROBE;
+
+	if (ssc->ss_autoip.conflicts >= AUTOIP_MAX_CONFLICTS) {
+		/* Rate-limit: wait 60 s before first probe */
+		ssc->ss_autoip.ticks = AUTOIP_RATE_LIMIT_INTERVAL;
+	} else {
+		ssc->ss_autoip.ticks = AUTOIP_PROBE_WAIT;
+	}
+}
+
+/* Begin IPv4LL probing on an interface */
+void
+autoip_start(struct ifnet *ifp)
+{
+	struct sana_softc *ssc = (struct sana_softc *)ifp;
+
+	ssc->ss_autoip.conflicts = 0;
+	autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
+	ssc->ss_autoip.count  = 0;
+	ssc->ss_autoip.ticks  = AUTOIP_PROBE_WAIT;
+	ssc->ss_autoip.state  = AUTOIP_PROBE;
+
+	__log(LOG_INFO, "IPv4LL: starting on %s, probing %d.%d.%d.%d\n",
+	      ssc->ss_name,
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
+	      (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
+	       ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF);
+}
+
+/* Cancel IPv4LL on an interface */
+void
+autoip_stop(struct ifnet *ifp)
+{
+	struct sana_softc *ssc = (struct sana_softc *)ifp;
+	ssc->ss_autoip.state  = AUTOIP_DISABLED;
+	ssc->ss_autoip.count  = 0;
+	ssc->ss_autoip.ticks  = 0;
+}
+
+/* 1-second tick driver for the IPv4LL state machine (called from timer framework) */
+void
+autoip_timer(void)
+{
+	struct sana_softc *ssc;
+
+	for (ssc = ssq; ssc; ssc = ssc->ss_next) {
+		if (ssc->ss_autoip.state == AUTOIP_DISABLED ||
+		    ssc->ss_autoip.state == AUTOIP_BOUND)
+			continue;
+
+		if (ssc->ss_autoip.ticks > 0) {
+			ssc->ss_autoip.ticks--;
+			continue;
+		}
+
+		switch (ssc->ss_autoip.state) {
+
+		case AUTOIP_PROBE:
+			if (ssc->ss_autoip.count < AUTOIP_PROBE_NUM) {
+				arp_probe(ssc, &ssc->ss_autoip.candidate);
+				ssc->ss_autoip.count++;
+				ssc->ss_autoip.ticks = AUTOIP_PROBE_INTERVAL;
+			} else {
+				/* All probes sent - wait then announce */
+				ssc->ss_autoip.state = AUTOIP_ANNOUNCE;
+				ssc->ss_autoip.count = 0;
+				ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_WAIT;
+			}
+			break;
+
+		case AUTOIP_ANNOUNCE:
+			arp_announce(ssc, &ssc->ss_autoip.candidate);
+			ssc->ss_autoip.count++;
+			if (ssc->ss_autoip.count >= AUTOIP_ANNOUNCE_NUM) {
+				autoip_set_addr(ssc);
+				ssc->ss_autoip.state = AUTOIP_BOUND;
+				ssc->ss_autoip.count = 0;
+				ssc->ss_autoip.ticks = 0;
+			} else {
+				ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_INTERVAL;
+			}
+			break;
+
+		case AUTOIP_DEFEND:
+			/* Defend interval elapsed - return to BOUND */
+			ssc->ss_autoip.state = AUTOIP_BOUND;
+			ssc->ss_autoip.ticks = 0;
+			break;
+		}
+	}
+}
+
 /*
  * Broadcast an ARP packet, asking who has addr on interface ssc.
  */
@@ -525,6 +760,21 @@ in_arpinput(register struct sana_softc *ssc,
 	    (isaddr.s_addr == ia->ia_addr.sin_addr.s_addr))
 	  break;
       }
+    /* RFC 3927: detect IPv4LL probe/announce conflicts before normal exit */
+    if (ssc->ss_autoip.state == AUTOIP_PROBE ||
+        ssc->ss_autoip.state == AUTOIP_ANNOUNCE) {
+      u_int32_t cand = ssc->ss_autoip.candidate.s_addr;
+      if ((isaddr.s_addr == cand || itaddr.s_addr == cand) &&
+          bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0)
+        autoip_conflict(ssc);
+    } else if (ssc->ss_autoip.state == AUTOIP_BOUND &&
+               isaddr.s_addr == ssc->ss_autoip.candidate.s_addr &&
+               bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0) {
+      /* Conflict with our bound address - defend */
+      ssc->ss_autoip.state = AUTOIP_DEFEND;
+      ssc->ss_autoip.ticks = AUTOIP_DEFEND_INTERVAL;
+      arp_announce(ssc, &ssc->ss_autoip.candidate);
+    }
     if (maybe_ia == 0)
       goto out;
     myaddr = ia ? ia->ia_addr.sin_addr : maybe_ia->ia_addr.sin_addr;

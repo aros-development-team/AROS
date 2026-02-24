@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -94,6 +94,13 @@ struct sana_softc {
     ULONG hrd;			/* ARP header type */
     struct arptable *table;	/* ARP/IP table */
   } ss_arp;
+  struct {                          /* IPv4LL / RFC 3927 state */
+    UBYTE          state;           /* AUTOIP_xxx state */
+    UBYTE          count;           /* probe/announce counter */
+    UBYTE          ticks;           /* 1-second countdown */
+    UBYTE          conflicts;       /* conflict counter */
+    struct in_addr candidate;       /* candidate/bound address */
+  } ss_autoip;
 #endif	/* INET */
 #if INET6
   struct {

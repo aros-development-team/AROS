@@ -7,6 +7,7 @@
 #include <kern/amiga_dhcp.h>
 #include <net/if.h>
 #include <net/if_sana.h>
+#include <net/sana2arp.h>   /* for autoip_start() */
 
 #include <stdio.h>
 #include <string.h>
@@ -209,6 +210,8 @@ void run_dhcp(void)
 			ifp->if_flags &= ~IFF_DELAYUP;
 			if (ifp->if_data.ifi_aros_usedhcp)
 				need4 = 1;
+			else if (!ifp->if_data.ifi_aros_usedhcp6)
+				autoip_start(ifp);	/* non-DHCP with DELAYUP = IPv4LL */
 #if INET6 && DHCP6
 			if (ifp->if_data.ifi_aros_usedhcp6)
 				need6 = 1;

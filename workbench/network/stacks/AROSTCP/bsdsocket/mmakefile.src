@@ -179,6 +179,7 @@ USER_CPPFLAGS := \
 	-DAMITCP -DKERNEL \
 	-D_XOPEN_SOURCE=600 \
 	-D__BSD_VISIBLE=1
+#USER_CPPFLAGS += -DDEBUG=1
 USER_CFLAGS := $(CFLAGS_GNU99) $(NOWARN_FLAGS) 
 
 %build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \

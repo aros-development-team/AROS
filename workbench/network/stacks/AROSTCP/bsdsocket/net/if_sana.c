@@ -20,9 +20,6 @@
  *
  */
 
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include <conf.h>
 
 #include <exec/errors.h>
@@ -552,8 +549,9 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
     }
     ssc->ss_reqs = next;
 
-    /* Order a notify when driver connects to a (wireless) network */
-    if (ssc->ss_if.if_data.ifi_aros_usedhcp == 1) {
+    /* Order a notify when driver connects to a (wireless) network.
+     * Register for all interfaces — DHCP and IPv4LL both need reconnect handling. */
+    {
       if ((req = CreateIORequest(SanaPort, sizeof(*req))) != NULL) {
         ssc->ss_eventsent++;
         req->ioip_s2.ios2_Req.io_Device    = ssc->ss_dev;    
@@ -1086,6 +1084,8 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
     /* New network -> new address */
     kill_dhclient((struct ifnet *) ssc);
     run_dhclient((struct ifnet *) ssc);
+    if (ssc->ss_autoip.state != AUTOIP_DISABLED)
+      autoip_start((struct ifnet *) ssc);
   }
 
   /* Send request back for next event */
