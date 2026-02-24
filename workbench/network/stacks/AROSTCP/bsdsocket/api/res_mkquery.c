@@ -66,8 +66,13 @@ int res_mkquery(struct SocketBase *libPtr,
 	char *dnptrs[10], **dpp, **lastdnptr;
 
 #ifdef RES_DEBUG
-	       printf("res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
+#if defined(__AROS__)
+	bug("[AROSTCP](res_mkquery.c) res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
+#else
+	printf("res_mkquery(%d, %s, %d, %d)\n", op, dname, class, type);
+#endif
 #endif /* RES_DEBUG */
+
 	/*
 	 * Initialize header fields.
 	 */
