@@ -210,8 +210,8 @@ void run_dhcp(void)
 			ifp->if_flags &= ~IFF_DELAYUP;
 			if (ifp->if_data.ifi_aros_usedhcp)
 				need4 = 1;
-			else if (!ifp->if_data.ifi_aros_usedhcp6)
-				autoip_start(ifp);	/* non-DHCP with DELAYUP = IPv4LL */
+			else if (((struct sana_softc *)ifp)->ss_ipaddr.s_addr == INADDR_ANY)
+				autoip_start(ifp);	/* no DHCPv4 and no address assigned */
 #if INET6 && DHCP6
 			if (ifp->if_data.ifi_aros_usedhcp6)
 				need6 = 1;

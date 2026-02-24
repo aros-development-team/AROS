@@ -674,6 +674,30 @@ D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR - Alter Interface Address\n", __func__));
     }
     break;
 
+#if INET6
+  case SIOCAIFADDR_IN6:		/* Alter IPv6 Interface Address */
+D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 - Alter IPv6 Interface Address\n", __func__));
+    /* Replicate IPv4 SIOCSIFADDR behaviour: start hardware and bring UP */
+    if (!(ssc->ss_if.if_flags & IFF_DRV_RUNNING))
+    {
+D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 set interface as running ..\n", __func__));
+      sana_run(ssc, ssc->ss_reqno, ifa);
+    }
+    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
+      if (ssc->ss_if.if_flags & IFF_NOUP)
+      {
+D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
+        ssc->ss_if.if_flags &= ~IFF_NOUP;
+      }
+      else
+      {
+D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 bringing interface UP ..\n", __func__));
+        sana_up(ssc);
+      }
+    }
+    break;
+#endif /* INET6 */
+
   case SIOCSIFDSTADDR:		/* Sets P-P-link destination address */
 D(bug("[AROSTCP:SANA] %s: SIOCSIFDSTADDR - [*] Set P-P-link destination address\n", __func__));
     break;
