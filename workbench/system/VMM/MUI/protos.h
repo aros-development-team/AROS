@@ -6,7 +6,7 @@ Object *CreateTaskSelectWindow (void);
 Object *CreateMemoryPage (void);
 Object *CreateMiscPage (void);
 int HandleGUI (void);
-int main (LONG argc, UBYTE **argv);
+int main (int argc, char **argv);
 
 BOOL StartVMM (void);
 BOOL InstallAsCommodity (void);

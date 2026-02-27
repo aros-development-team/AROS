@@ -1,53 +1,54 @@
 
-	.MACRO	LONG num
-.ifdef	LITTLE_ENDIAN
+#ifdef LITTLE_ENDIAN
+	.macro	LONG num
 	.byte	((\num)>>24)&255
 	.byte	((\num)>>16)&255
 	.byte	((\num)>> 8)&255
 	.byte	((\num)>> 0)&255
-.else
-	.long	\num
-.endif
-	.ENDM
+	.endm
 
-	.MACRO	LONG2 num1,num2
-.ifdef	LITTLE_ENDIAN
+	.macro	LONG2 num1,num2
 	.byte	((\num1)>>24)&255
 	.byte	((\num1)>>16)&255
 	.byte	((\num1)>> 8)&255
 	.byte	((\num1)>> 0)&255
-	
 	.byte	((\num2)>>24)&255
 	.byte	((\num2)>>16)&255
 	.byte	((\num2)>> 8)&255
 	.byte	((\num2)>> 0)&255
-.else
-	.long	\num1, \num2
-.endif
-	.ENDM
+	.endm
+#else
+	.macro	LONG num
+	.long	\num
+	.endm
 
-	.MACRO	FORM_START name
+	.macro	LONG2 num1,num2
+	.long	\num1, \num2
+	.endm
+#endif
+
+	.macro	FORM_START name
 	.ascii	"FORM"
 	LONG	FORMEND-FORMSTART
 FORMSTART:
 	.ascii	"\name"
-	.ENDM
+	.endm
 
-	.MACRO	FORM_END name
+	.macro	FORM_END name
 FORMEND:
 	.balign	2,0
-	.ENDM
+	.endm
 
-	.MACRO	CHUNK_START name
+	.macro	CHUNK_START name
 	.ascii	"\name"
 	LONG	101f-100f
 100:
-	.ENDM
+	.endm
 
-	.MACRO	CHUNK_END
+	.macro	CHUNK_END
 101:
 	.balign	2,0
-	.ENDM
+	.endm
 
 .SET AHI_TagBase,     2147483648
 .SET AHI_TagBaseR,    AHI_TagBase+32768
@@ -65,6 +66,6 @@ FORMEND:
 .SET AHIDB_UserBase,  AHI_TagBase+500
 
 .SET TAG_DONE, 	      0
-	
+
 .SET TRUE, 	      1
 .SET FALSE, 	      0
