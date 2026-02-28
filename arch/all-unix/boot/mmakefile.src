@@ -47,10 +47,10 @@ $(AROSARCHDIR):
 
 # ---- UNIX board support package ----
 
-KDEVS	:= 
+KDEVS	:=
 KLIBS   := exec
-KHNDLRS := 
-KHIDDS  := 
+KHNDLRS :=
+KHIDDS  :=
 KRSRCS  := task
 
 %link_kickstart mmake=kernel-link-unix file=$(AROSARCHDIR)/kernel \

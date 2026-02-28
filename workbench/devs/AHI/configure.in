@@ -94,9 +94,12 @@ if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null
   AC_DEFINE([HAVE_AS_DEF_SYM], [1], [Assembler needs -Wa])
   ASFWDOPT="-Wa,"
   ASDEFSYM="${ASFWDOPT}--defsym,"
-else
+elif $AS $target_asflags --defsym foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   AC_MSG_RESULT([no])
   ASDEFSYM="--defsym "
+else
+  AC_MSG_RESULT([no, using -D for cpp-based assembler])
+  ASDEFSYM="-D"
 fi
 
 rm -f conftest.s conftest.o

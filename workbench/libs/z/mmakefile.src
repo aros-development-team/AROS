@@ -139,6 +139,7 @@ $(AROS_INCLUDES)/zconf.h : $(ARCHSRCDIR)/zconf.h.chr
 	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
 	@$(SED) -e 's/^#if !defined(CHROMIUM_ZLIB_NO_CHROMECONF)/#if defined(ZLIB_USE_CHROMECONF)/' \
 	    $< > $@
+	@$(CP) $@ $(ARCHSRCDIR)/zconf.h
 
 #MM- workbench-libs-z-includes : workbench-libs-z-geninc
 
