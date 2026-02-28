@@ -1,5 +1,5 @@
 /* Copyright (c) 2005 by Pavel Fedin.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  */
 
 //#include <clib/debug_protos.h>
@@ -454,16 +454,11 @@ AROS_LH2(struct hostent *, gethostbyname2,
 	AROS_LIBFUNC_INIT
 
 #if defined(__AROS__)
-D(bug("[AROSTCP.MIAMI] miami_api.c: gethostbyname2()\n"));
+D(bug("[AROSTCP.MIAMI] miami_api.c: gethostbyname2('%s', af=%ld)\n", name, family));
 #endif
 
 	DSYSCALLS(__log(LOG_DEBUG,"gethostbyname2(%s, %ld) called", (ULONG)name, family);)
-	if (family == AF_INET)
-		return __gethostbyname(name, SocketBase);
-	else {
-		syslog(LOG_CRIT,"gethostbyname2(): address family %ld is not implemented", family);
-		return NULL;
-	}
+	return __gethostbyname2(name, (int)family, SocketBase);
 
 	AROS_LIBFUNC_EXIT
 }

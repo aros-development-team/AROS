@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -142,7 +142,7 @@ LONG usens = 2;
 
 static char *
  getanswer(struct SocketBase * libPtr, querybuf *answer,int anslen, int iquery,
-	    struct hoststruct * HS)
+	    int qtype, struct hoststruct * HS)
 {
   register HEADER *hp;
   register u_char *cp; /* pointer to traverse in 'answer' */
@@ -271,7 +271,7 @@ D(bug("[AROSTCP](gethostnameadr.c) getanswer()\n"));
       bp+= (strlen(bp) + 1);
       break;
     }
-    if (iquery || type != T_A)  {
+    if (iquery || type != qtype)  {
       /*
        * here is strange answer from nameserver: inverse query should have
        * been handled earlyer and there should not be any other types
@@ -304,7 +304,7 @@ D(bug("[AROSTCP](gethostnameadr.c) getanswer()\n"));
       HS->host.h_length = n;
       getclass = class;
       HS->host.h_addrtype = (class == C_IN) ?
-	AF_INET : AF_UNSPEC;
+	(type == T_AAAA ? AF_INET6 : AF_INET) : AF_UNSPEC;
       if (!iquery) {
 	/*
 	 * if not inverse query and haveanswer = 0 host name is first in
@@ -454,7 +454,7 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: couldnt allocate memory for re
 #if defined(__AROS__)
 D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: [res_search] returns %d\n", n));
 #endif
-    ptr = getanswer(libPtr, buf, n, 0, HS);
+    ptr = getanswer(libPtr, buf, n, 0, T_A, HS);
     if (ptr != NULL) {
 #if defined(__AROS__)
 D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: [getanswer] returns valid ptr\n"));
@@ -490,6 +490,100 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: finished search\n"));
   return anshost;
 }
 
+struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *libPtr)
+{
+  querybuf *buf;
+  int n;
+  char *ptr;
+  struct hoststruct *HS = NULL;
+  struct hostent *anshost = NULL;
+  int qtype;
+
+#if defined(__AROS__)
+D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2('%s', af=%d)\n", name, af));
+#endif
+
+  CHECK_TASK2();
+
+  if (af == AF_INET)
+    return __gethostbyname(name, libPtr);
+
+  if (af != AF_INET6) {
+    writeErrnoValue(libPtr, EAFNOSUPPORT);
+    return NULL;
+  }
+
+  qtype = T_AAAA;
+
+  /*
+   * Check if the name is a literal IPv6 address (contains ':')
+   * If so, parse it directly rather than querying DNS.
+   */
+  if (strchr(name, ':') != NULL) {
+    struct in6_addr in6;
+    extern int __inet_pton(int, const char *, void *, struct SocketBase *);
+
+    if (__inet_pton(AF_INET6, name, &in6, libPtr) == 1) {
+      if (allocDataBuffer(&libPtr->hostents,
+          sizeof(struct hostent) + sizeof(struct in6_addr) +
+          sizeof(char *) * 2 + strlen(name) + 1) == FALSE) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return NULL;
+      }
+      HOSTENT->h_addrtype = AF_INET6;
+      HOSTENT->h_length = sizeof(struct in6_addr);
+
+      /* Layout: hostent | in6_addr | addr_list[2] | name_string */
+      {
+        char *base = (char *)(HOSTENT + 1);
+        char **addrlist;
+
+        bcopy(&in6, base, sizeof(struct in6_addr));
+        addrlist = (char **)(base + sizeof(struct in6_addr));
+        addrlist[0] = base;
+        addrlist[1] = NULL;
+        HOSTENT->h_addr_list = addrlist;
+        HOSTENT->h_aliases = addrlist + 2;  /* points to NULL */
+        HOSTENT->h_name = strcpy((char *)(addrlist + 2), name);
+      }
+      return HOSTENT;
+    } else {
+      writeErrnoValue(libPtr, EINVAL);
+      return NULL;
+    }
+  }
+
+  if ((HS = bsd_malloc(sizeof(querybuf) + sizeof(struct hoststruct),
+                       M_TEMP, M_WAITOK)) == NULL) {
+    writeErrnoValue(libPtr, ENOMEM);
+    return NULL;
+  }
+  buf = (querybuf *)(HS + 1);
+
+  n = res_search(libPtr, name, C_IN, qtype, buf->buf, sizeof(querybuf));
+  if (n >= 0) {
+#if defined(__AROS__)
+D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2: [res_search] returns %d\n", n));
+#endif
+    ptr = getanswer(libPtr, buf, n, 0, qtype, HS);
+    if (ptr != NULL) {
+      if ((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+        anshost->h_addrtype = HS->host.h_addrtype;
+        anshost->h_length = HS->host.h_length;
+      }
+    }
+  }
+  else {
+#if defined(__AROS__)
+D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2: [res_search] AAAA failed\n"));
+#endif
+  }
+
+  if (HS)
+    bsd_free(HS, M_TEMP);
+  return anshost;
+}
+
 AROS_LH1(struct hostent *, gethostbyname,
    AROS_LHA(char *, name, A0),
    struct SocketBase *, libPtr, 35, UL)
@@ -516,7 +610,7 @@ D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr()\n"));
 
   CHECK_TASK2();
   
-  if (type != AF_INET)
+  if (type != AF_INET && type != AF_INET6)
     return ((struct hostent *) NULL);
   
   /*
@@ -538,15 +632,28 @@ D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr()\n"));
   buf = (querybuf *)(HS + 1);
   qbuf = (caddr_t)(buf + 1);
   
-  (void)sprintf(qbuf, "%lu.%lu.%lu.%lu.in-addr.arpa",
+  if (type == AF_INET6 && len == 16) {
+    /* Build ip6.arpa reverse name: each nibble in reverse */
+    char *p = qbuf;
+    int i;
+    for (i = 15; i >= 0; i--) {
+      *p++ = "0123456789abcdef"[addr[i] & 0x0f];
+      *p++ = '.';
+      *p++ = "0123456789abcdef"[(addr[i] >> 4) & 0x0f];
+      *p++ = '.';
+    }
+    strcpy(p, "ip6.arpa");
+  } else {
+    (void)sprintf(qbuf, "%lu.%lu.%lu.%lu.in-addr.arpa",
 		((unsigned long)addr[3] & 0xff),
 		((unsigned long)addr[2] & 0xff),
 		((unsigned long)addr[1] & 0xff),
 		((unsigned long)addr[0] & 0xff));
+  }
   n = res_query(libPtr, qbuf, C_IN, T_PTR, (char *)buf, sizeof (querybuf));
 
   if (n >= 0) {
-    ptr = getanswer(libPtr, buf, n, 1, HS);
+    ptr = getanswer(libPtr, buf, n, 1, T_PTR, HS);
     if (ptr != NULL) {
       if (HS->h_addr_count == 1) {
 	HS->h_addr_count++;
