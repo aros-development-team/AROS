@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -299,7 +299,7 @@ AROS_LH1(LONG, AddDynDomain,
   dn->dn_EntSize = nodesize - sizeof (struct GenentNode);
   dn->dn_Ent.d_name = (char *)(dn + 1);
 
-  strcpy((char *)(dn + 1), entry);
+  memcpy((char *)(dn + 1), entry, nodesize - sizeof (*dn));
 
   if (MiamiBase->DynDomain_Locked) {
 	ObtainSemaphore (&DynDB.dyn_Lock);

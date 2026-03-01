@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -81,8 +81,8 @@ rexx_init(void)
     ARexxPort = CreateMsgPort();
     if (ARexxPort) {
 #ifdef DEBUG
-      strcpy(REXX_PORT_NAME, D_REXX_PORT_NAME);
-      strcpy(REXX_ERROR_NAME, D_REXX_PORT_NAME);
+      strncpy(REXX_PORT_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_PORT_NAME) + 3);
+      strncpy(REXX_ERROR_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_ERROR_NAME) + 3);
       if (nthLibrary) {
 	REXX_PORT_NAME[sizeof(D_REXX_PORT_NAME)-1] = '.'; 
 	REXX_PORT_NAME[sizeof(D_REXX_PORT_NAME)] = '0' + nthLibrary;
@@ -91,7 +91,7 @@ rexx_init(void)
 	REXX_ERROR_NAME[sizeof(D_REXX_PORT_NAME)] = '0' + nthLibrary;
 	REXX_ERROR_NAME[sizeof(D_REXX_PORT_NAME)+1] = '\0';
       }
-      strcat(REXX_ERROR_NAME, REXX_ERROR_POSTFIX);
+      strncat(REXX_ERROR_NAME, REXX_ERROR_POSTFIX, sizeof(D_REXX_ERROR_NAME) + 3 - strnlen(REXX_ERROR_NAME, sizeof(D_REXX_ERROR_NAME) + 3) - 1);
 #endif
 
       ARexxPort->mp_Node.ln_Name = REXX_PORT_NAME; 

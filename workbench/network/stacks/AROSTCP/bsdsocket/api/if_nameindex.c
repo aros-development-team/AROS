@@ -5,6 +5,7 @@
  *	Berkeley Software Design, Inc.  All rights reserved.
  * Copyright (c) 2005 - 2006
  *	Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -134,7 +135,8 @@ AROS_LH0(struct if_nameindex *, if_nameindex,
 			ifni2->if_index =
 			    ((struct sockaddr_dl*)ifa->ifa_addr)->sdl_index;
 			ifni2->if_name = cp;
-			strcpy(cp, ifa->ifa_name);
+			strncpy(cp, ifa->ifa_name, IFNAMSIZ);
+			cp[IFNAMSIZ - 1] = '\0';
 			ifni2++;
 			cp += strlen(cp) + 1;
 		}

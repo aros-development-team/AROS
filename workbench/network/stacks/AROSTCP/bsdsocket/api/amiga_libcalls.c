@@ -4,6 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -95,7 +96,7 @@ char * __Inet_NtoA(ULONG s_addr, struct SocketBase *libPtr)
   NTOHL(s_addr);
 
   CHECK_TASK2();
-  sprintf(libPtr->inet_ntoa,
+  snprintf(libPtr->inet_ntoa, sizeof(libPtr->inet_ntoa),
 	  "%ld.%ld.%ld.%ld", 
 	  (long)(s_addr>>24) & 0xff, 
 	  (long)(s_addr>>16) & 0xff, 

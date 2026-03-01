@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -150,10 +150,10 @@ D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats()\n"));
 #endif
 
   for(i = 0; i < MTCOUNT; i++) {
-    p += sprintf(p, "%ld ", (long)mbstat.m_mtypes[i]);
+    p += snprintf(p, res->CS_Length - (p - res->CS_Buffer), "%ld ", (long)mbstat.m_mtypes[i]);
     total += mbstat.m_mtypes[i];
   }
-  p += sprintf(p, "%ld", (long)total);
+  p += snprintf(p, res->CS_Length - (p - res->CS_Buffer), "%ld", (long)total);
 
 #if defined(__AROS__)
 D(bug("[AROSTCP](uipc_mbuf.c) mb_read_stats: %s\n", res->CS_Buffer));

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -37,7 +37,9 @@
 
 #include <api/apicalls.h>
 #include <api/amiga_kernvars.h>
+
 #include <stdarg.h>
+#include <stdio.h>
 
 #include <bsdsocket/socketbasetags.h>
 
@@ -169,7 +171,7 @@ AROS_LH3(VOID, Syslog,
     DSYSLOG(KPrintF("LogTag: %s", libPtr->LogTag);)
     t = tag_cpy;
     t1 = tag_cpy;
-    t1 += sprintf(t1, "%s", libPtr->LogTag);
+    t1 += snprintf(t1, sizeof(tag_cpy) - (t1 - tag_cpy), "%s", libPtr->LogTag);
   }
   DSYSLOG(else KPrintF("LogTag: <NULL>");)
   DSYSLOG(KPrintF(", message: %s\n", fmt);)
@@ -178,7 +180,7 @@ AROS_LH3(VOID, Syslog,
       t = tag_cpy;
       t1 = tag_cpy;
     }
-    sprintf(t1, "[%p]", libPtr->thisTask);
+    snprintf(t1, sizeof(tag_cpy) - (t1 - tag_cpy), "[%p]", libPtr->thisTask);
   }
 
   /* 

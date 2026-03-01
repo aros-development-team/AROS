@@ -117,7 +117,7 @@ int dhclient_path_changed(void *pt, IPTR new)
         root[FILENAME_MAX - 1] = '\0';
         /* db_path points to "<root>/db" — go up one level */
         PathPart(root)[0] = '\0';
-        strcpy(dhclient_path, root);
+        strncpy(dhclient_path, root, FILENAME_MAX);
         AddPart(dhclient_path, newpath, FILENAME_MAX);
     }
     return 0;
@@ -192,12 +192,12 @@ D(bug("[AROSTCP](amiga_main.c) main: Setting environment default Paths ... \n"))
 D(bug("[AROSTCP](amiga_main.c) main: Directory tree root: %s\n", interfaces_path));
 #endif
   D(Printf("Directory tree root: %s\n", interfaces_path);)
-  strcpy(netdb_path, interfaces_path);
-  strcpy(db_path, interfaces_path);
-  strcpy(config_path, interfaces_path);
-  strcpy(logfiledefname, "T:");             /* NicJA: Default to storing logs in Temp for launching
+  strncpy(netdb_path, interfaces_path, FILENAME_MAX);
+  strncpy(db_path, interfaces_path, FILENAME_MAX);
+  strncpy(config_path, interfaces_path, FILENAME_MAX);
+  strncpy(logfiledefname, "T:", FILENAME_MAX);             /* NicJA: Default to storing logs in Temp for launching
                                                from read only media                          */
-  strcpy(dhclient_path, interfaces_path);
+  strncpy(dhclient_path, interfaces_path, FILENAME_MAX);
 /*strcpy(hequiv_path, interfaces_path);
   strcpy(inetdconf_path, interfaces_path);*/
   AddPart(interfaces_path, _PATH_DB, FILENAME_MAX);
@@ -222,10 +222,10 @@ D(bug("[AROSTCP](amiga_main.c) main: Attempting to use '%s' for config location.
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_main.c) main: successfully locked config dir '%s'\n", tmpconfigpath));
 #endif
-        strcpy(interfaces_path, tmpconfigpath);
-        strcpy(netdb_path, tmpconfigpath);
-        strcpy(db_path, tmpconfigpath);
-        strcpy(config_path, tmpconfigpath);
+        strncpy(interfaces_path, tmpconfigpath, FILENAME_MAX);
+        strncpy(netdb_path, tmpconfigpath, FILENAME_MAX);
+        strncpy(db_path, tmpconfigpath, FILENAME_MAX);
+        strncpy(config_path, tmpconfigpath, FILENAME_MAX);
      	  //UnLock(db_path_lock);
       }
 /* TODO: NicJA - Attempt to create chosen config location */
@@ -255,7 +255,7 @@ D(bug("[AROSTCP](amiga_main.c) main: preparing AROSTCP_Task\n"));
 #ifdef DEBUG
       if (nthLibrary) {
 	if (taskname = bsd_malloc(16, M_CFGVAR, M_WAITOK)) {
-	  strcpy(taskname, "bsdsocket.library");
+	  strncpy(taskname, "bsdsocket.library", 16);
 	  taskname[6] = '.'; taskname[7] = '0' + nthLibrary;
 	}
       } else {

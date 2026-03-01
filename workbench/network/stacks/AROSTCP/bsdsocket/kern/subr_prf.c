@@ -243,7 +243,7 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
       }
       cs.CS_Length = log_cnf.log_buf_len - taglen - 1;
       msg->Tag = &msg->String[cs.CS_Length];
-      strcpy(msg->Tag, tag);
+      memcpy(msg->Tag, tag, taglen + 1);
     } else {
       cs.CS_Length = log_cnf.log_buf_len;
       msg->Tag = NULL;

@@ -140,16 +140,16 @@ struct EmulLibEntry callback =
 
 TEXT panel_path[FILENAME_MAX];
 
-static void getbaud(char *buf, unsigned long baud)
+static void getbaud(char *buf, size_t bufsize, unsigned long baud)
 {
 	if (baud > 1000000000)
-		sprintf(buf,"%luG", baud / 1000000000);
+		snprintf(buf, bufsize, "%luG", baud / 1000000000);
 	else if (baud > 1000000)
-		sprintf(buf,"%luM", baud / 1000000);
+		snprintf(buf, bufsize, "%luM", baud / 1000000);
 	else if (baud > 1000)
-		sprintf(buf,"%luK", baud / 1000);
+		snprintf(buf, bufsize, "%luK", baud / 1000);
 	else
-		sprintf(buf,"%lu", baud);
+		snprintf(buf, bufsize, "%lu", baud);
 }
 
 void gui_open()
@@ -180,7 +180,7 @@ D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 //	      NameFromLock(GetProgramDir(), panel_path, FILENAME_MAX);
 	      AddPart(panel_path,"LIBS:", FILENAME_MAX);
 	      AddPart(panel_path,gui_cnf.PanelName, FILENAME_MAX);
-	      strcat(panel_path, ".MiamiPanel");
+	      strncat(panel_path, ".MiamiPanel", FILENAME_MAX - strnlen(panel_path, FILENAME_MAX) - 1);
 	      DGUI(KPrintF("Opening GUI: %s...\n", panel_path);)
 #if defined(__AROS__)
 D(bug("[AROSTCP](amiga_gui.c) %s: Attempting to use '%s'\n", __func__, panel_path));
@@ -201,11 +201,11 @@ D(bug("[AROSTCP](amiga_gui.c) %s: Attempting to use '%s'\n", __func__, panel_pat
 			GUI_Running = 1;
 			for (ifp = ifnet; ifp; ifp = ifp->if_next) {
 				if (!(ifp->if_flags & IFF_LOOPBACK)) {
-					sprintf(ifname, "%s%d", ifp->if_name, ifp->if_unit);
+					snprintf(ifname, sizeof(ifname), "%s%d", ifp->if_name, ifp->if_unit);
 					DGUI(KPrintF("Adding interface %s, index %lu, baud rate %lu\n", ifname, ifp->if_index, ifp->if_baudrate);)
 					if (ifp->if_flags & IFF_UP) {
 						ifstate = MIAMIPANELV_AddInterface_State_Online;
-						getbaud(ifspeed, ifp->if_baudrate);
+						getbaud(ifspeed, sizeof(ifspeed), ifp->if_baudrate);
 					} else {
 						ifstate = MIAMIPANELV_AddInterface_State_Offline;
 						ifspeed[0] = 0;
@@ -322,7 +322,7 @@ D(bug("[AROSTCP](amiga_gui.c) %s()\n", __func__));
 			DGUI(KPrintF("Interface state set\n");)
 			if (state & (MIAMIPANELV_AddInterface_State_Online | MIAMIPANELV_AddInterface_State_Offline)) {
 				if (state == MIAMIPANELV_AddInterface_State_Online) {
-					getbaud(ifspeed, ifp->if_baudrate);
+					getbaud(ifspeed, sizeof(ifspeed), ifp->if_baudrate);
 				} else
 					ifspeed[0] = 0;
 				MiamiPanelSetInterfaceSpeed(ifp->if_index, ifspeed);

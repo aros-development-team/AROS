@@ -18,11 +18,13 @@
 #include <api/apicalls.h>
 #include <kern/amiga_netdb.h>
 
+#include <stdio.h>
+
 /* Format an in_addr as a dotted-decimal string into buf (must be >= 16 bytes) */
 static void fmt_ipaddr(char *buf, struct in_addr addr)
 {
     unsigned char *p = (unsigned char *)&addr.s_addr;
-    sprintf(buf, "%u.%u.%u.%u", p[0], p[1], p[2], p[3]);
+    snprintf(buf, 16, "%u.%u.%u.%u", p[0], p[1], p[2], p[3]);
 }
 
 AROS_LH1(long, bpf_open,
@@ -431,7 +433,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
                 continue;
             dnsn->dnsn_Size = sizeof(struct DomainNameServerNode) + slen;
             dnsn->dnsn_Address = (STRPTR)(dnsn + 1);
-            strcpy(dnsn->dnsn_Address, ipstr);
+            memcpy(dnsn->dnsn_Address, ipstr, slen);
             dnsn->dnsn_UseCount = -1;  /* static entry */
             AddTail(list, (struct Node *)dnsn);
         }
@@ -455,7 +457,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
             continue;
         dnsn->dnsn_Size = sizeof(struct DomainNameServerNode) + slen;
         dnsn->dnsn_Address = (STRPTR)(dnsn + 1);
-        strcpy(dnsn->dnsn_Address, ipstr);
+        memcpy(dnsn->dnsn_Address, ipstr, slen);
         dnsn->dnsn_UseCount = 1;  /* dynamic entry */
         AddTail(list, (struct Node *)dnsn);
     }

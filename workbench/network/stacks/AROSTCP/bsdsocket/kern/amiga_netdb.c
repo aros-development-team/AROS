@@ -681,7 +681,8 @@ D(bug("[AROSTCP](amiga_netdb.c) addservent()\n"));
 	UBYTE *name = (UBYTE *)(alias + aliases);
 
 	sn->sn_Ent.s_port = Args[KNDB_DATA];
-	sn->sn_Ent.s_proto = strcpy(name, s_proto);
+	sn->sn_Ent.s_proto = name;
+	memcpy(name, s_proto, protonamelen);
 	sn->sn_Ent.s_name = name + protonamelen;
 	sn->sn_Ent.s_aliases = (char **)alias;
 
@@ -987,7 +988,7 @@ D(bug("[AROSTCP](amiga_netdb.c) adddomainent()\n"));
     *errstrp = ERR_SYNTAX; 
     return RETURN_WARN;
   }
-  nodesize = sizeof (*dn) + strlen(Buffer) + 1;
+  nodesize = sizeof (*dn) + strnlen(Buffer, BufLen) + 1;
   if ((dn = bsd_malloc(nodesize, M_NETDB, M_WAITOK)) == NULL) {
     *errstrp = ERR_MEMORY;
     return RETURN_FAIL;
@@ -995,7 +996,7 @@ D(bug("[AROSTCP](amiga_netdb.c) adddomainent()\n"));
   dn->dn_EntSize = nodesize - sizeof (struct GenentNode);
   dn->dn_Ent.d_name = (char *)(dn + 1);
   
-  strcpy((char *)(dn + 1), Buffer);
+  memcpy((char *)(dn + 1), Buffer, nodesize - sizeof (*dn));
 
   AddTail((struct List*)&ndb->ndb_Domains, (struct Node*)dn);
   return RETURN_OK;
@@ -1022,7 +1023,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addrcent()\n"));
     *errstrp = ERR_SYNTAX;
     return RETURN_WARN;
   }
-  nodesize = sizeof (*dn) + strlen(Buffer) + 1;
+  nodesize = sizeof (*dn) + strnlen(Buffer, BufLen) + 1;
   if ((dn = bsd_malloc(nodesize, M_NETDB, M_WAITOK)) == NULL) {
     *errstrp = ERR_MEMORY;
     return RETURN_FAIL;
@@ -1030,7 +1031,7 @@ D(bug("[AROSTCP](amiga_netdb.c) addrcent()\n"));
   dn->rn_EntSize = nodesize - sizeof (struct GenentNode);
   dn->rn_Ent = (char *)(dn + 1);
 
-  strcpy((char *)(dn + 1), Buffer);
+  memcpy((char *)(dn + 1), Buffer, nodesize - sizeof (*dn));
 
   AddTail((struct List*)&ndb->ndb_Rc, (struct Node*)dn);
   return RETURN_OK;

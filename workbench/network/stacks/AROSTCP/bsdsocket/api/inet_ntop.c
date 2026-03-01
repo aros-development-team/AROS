@@ -1,6 +1,6 @@
 /* Copyright (c) 1996 by Internet Software Consortium.
  * Copyright (c) 2005 by Pavel Fedin
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -161,7 +161,7 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size, struct SocketBase *Sock
 			tp += strlen(tp);
 			break;
 		}
-		tp += sprintf(tp, "%x", words[i]);
+		tp += snprintf(tp, sizeof(tmp) - (tp - tmp), "%x", words[i]);
 	}
 	/* Was it a trailing run of 0x00's? */
 	if (best.base != -1 && (best.base + best.len) ==
@@ -176,6 +176,6 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size, struct SocketBase *Sock
 		writeErrnoValue(SocketBase, ENOSPC);
 		return (NULL);
 	}
-	strcpy(dst, tmp);
+	memcpy(dst, tmp, tp - tmp);
 	return (dst);
 }

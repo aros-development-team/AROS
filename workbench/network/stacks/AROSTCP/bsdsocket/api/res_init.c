@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2010 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -117,7 +117,8 @@ D(bug("[AROSTCP](res_init.c) res_update_db: Failed to allocate space for entry %
       res_cleanup_db(state);
       return -1;
     }
-    strcpy(state->dnsrch[n++], domain->dn_Ent.d_name);
+    memcpy(state->dnsrch[n], domain->dn_Ent.d_name, l);
+    n++;
   }
   for (domain = (struct DomainentNode *)DynDB.dyn_Domains.mlh_Head;
      domain->dn_Node.mln_Succ;
@@ -135,7 +136,8 @@ D(bug("[AROSTCP](res_init.c) res_update_db: Failed to allocate space for entry %
 
       return -1;
     }
-    strcpy(state->dnsrch[n++], domain->dn_Ent.d_name);
+    memcpy(state->dnsrch[n], domain->dn_Ent.d_name, l);
+    n++;
   }  /* Terminate the array */
 
   state->dnsrch[n] = NULL;

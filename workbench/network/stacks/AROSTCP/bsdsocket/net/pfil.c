@@ -3,6 +3,7 @@
 
 /*-
  * Copyright (c) 1996 Matthew R. Green
+ * Copyright (C) 2005-2026 The AROS Dev Team
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -83,7 +84,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
 	DPF(kprintf("pfil_run_hooks(0x%08lx, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
 	pfb.data = mtod(m, unsigned char *);
 	pfb.length = m->m_len;
-	sprintf(ifname, "%s%u", ifp->if_name, ifp->if_unit);
+	snprintf(ifname, sizeof(ifname), "%s%u", ifp->if_name, ifp->if_unit);
 	pfb.name = ifname;
 	if (ifp->if_flags & IFF_LOOPBACK)
 		pfb.itype = MIAMIPFBIT_LOOP;

@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2026 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -45,6 +45,8 @@
 #include <net/sana2config.h>
 #include <net/if_arp.h>
 #include <net/if_sana.h>
+
+#include <stdio.h>
 
 static const char template[] = SSC_TEMPLATE;
 
@@ -262,9 +264,13 @@ D(bug("[AROSTCP] ssconfig()\n"));
     ifp->ss_cflags &= ~(SSF_TRACK);
 
   /* Set up name */
-  ifp->ss_if.if_name = strcpy(ifp->ss_name, ifc->name);
+  ifp->ss_if.if_name = ifp->ss_name;
+  strncpy(ifp->ss_name, ifc->name, IFNAMSIZ);
+  ifp->ss_name[IFNAMSIZ - 1] = '\0';
   ifp->ss_if.if_unit = ifc->unit;
-  ifp->ss_execname = strcpy((char *)(ifp + 1), ifc->args->a_dev);
+  ifp->ss_execname = (char *)(ifp + 1);
+  strncpy(ifp->ss_execname, ifc->args->a_dev, FILENAME_MAX - 1);
+  ((char *)(ifp + 1))[FILENAME_MAX - 1] = '\0';
   ifp->ss_execunit = *ifc->args->a_unit;
 }
 

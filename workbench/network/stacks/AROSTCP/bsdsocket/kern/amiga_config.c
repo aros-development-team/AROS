@@ -4,7 +4,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -187,7 +187,7 @@ getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 	{ 
 	  ULONG s_addr = 
 	    ((struct in_addr *)variables[var].value)[index].s_addr;
-	  vlen = sprintf(Buffer, "%ld.%ld.%ld.%ld", 	  
+	  vlen = snprintf(Buffer, sizeof(Buffer), "%ld.%ld.%ld.%ld", 	  
 			 (long)(s_addr>>24) & 0xff, (long)(s_addr>>16) & 0xff, 
 			 (long)(s_addr>>8) & 0xff, (long)s_addr & 0xff);
 	  value = Buffer;
@@ -318,7 +318,7 @@ setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 	  *errstrp = ERR_MEMORY;
 	  return RETURN_ERROR;
 	}
-	strcpy(value, Buffer);
+	memcpy(value, Buffer, vlen);
 	if (variables[var].notify) 
 	  if (!(*variables[var].notify)(dp, (IPTR) value)) {
 	    bsd_free(value, M_CFGVAR);
@@ -429,7 +429,7 @@ D(bug("[AROSTCP](amiga_config.c) parsefile('%s')\n",name));
         line++;
         if (*buf == '#')
           continue;
-        arg.CS_Length = strlen(buf);
+        arg.CS_Length = strnlen(buf, CONFIGLINELEN);
         arg.CS_CurChr = 0;
         retval = setvalue(&arg, errstrp, res);
 

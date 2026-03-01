@@ -458,7 +458,7 @@ __p_type(type)
 		return("UNSPEC");
 #endif /* ALLOW_T_UNSPEC */
 	default:
-		(void)sprintf(nbuf, "%ld", type);
+		(void)snprintf(nbuf, sizeof(nbuf), "%ld", type);
 		return(nbuf);
 	}
 }
@@ -479,7 +479,7 @@ __p_class(class)
 	case C_ANY:		/* matches any class */
 		return("ANY");
 	default:
-		(void)sprintf(nbuf, "%ld", class);
+		(void)snprintf(nbuf, sizeof(nbuf), "%ld", class);
 		return(nbuf);
 	}
 }
@@ -495,7 +495,7 @@ __p_time(value)
 	register char *p;
 
 	if (value == 0) {
-		strcpy(nbuf, "0 secs");
+		strncpy(nbuf, "0 secs", sizeof(nbuf));
 		return(nbuf);
 	}
 
@@ -509,25 +509,25 @@ __p_time(value)
 #define	PLURALIZE(x)	x, (x == 1) ? "" : "s"
 	p = nbuf;
 	if (value) {
-		(void)sprintf(p, "%ld day%s", PLURALIZE(value));
+		(void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld day%s", PLURALIZE(value));
 		while (*++p);
 	}
 	if (hours) {
 		if (value)
 			*p++ = ' ';
-		(void)sprintf(p, "%ld hour%s", PLURALIZE(hours));
+		(void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld hour%s", PLURALIZE(hours));
 		while (*++p);
 	}
 	if (mins) {
 		if (value || hours)
 			*p++ = ' ';
-		(void)sprintf(p, "%ld min%s", PLURALIZE(mins));
+		(void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld min%s", PLURALIZE(mins));
 		while (*++p);
 	}
 	if (secs || ! (value || hours || mins)) {
 		if (value || hours || mins)
 			*p++ = ' ';
-		(void)sprintf(p, "%ld sec%s", PLURALIZE(secs));
+		(void)snprintf(p, sizeof(nbuf) - (p - nbuf), "%ld sec%s", PLURALIZE(secs));
 	}
 	return(nbuf);
 }

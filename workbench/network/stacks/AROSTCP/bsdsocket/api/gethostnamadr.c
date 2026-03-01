@@ -84,6 +84,8 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 #include <api/gethtbynamadr.h>     /* prototypes (NO MORE BUGS HERE) */
 #include <api/apicalls.h>
 
+#include <stdio.h>
+
 #include <proto/bsdsocket.h>
 
 #define	MAXALIASES	35
@@ -414,7 +416,8 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname: name IS an IP address\n"));
     HOSTENT->h_addr_list = (char **)lptr;
     *++lptr = 0;
     HOSTENT->h_aliases = (char **)lptr;
-    HOSTENT->h_name = strcpy((char *)++lptr, name);
+    HOSTENT->h_name = (char *)++lptr;
+    memcpy(HOSTENT->h_name, name, strnlen(name, MAXDNAME) + 1);
 
     return HOSTENT;
   }
@@ -544,7 +547,8 @@ D(bug("[AROSTCP](gethostnameadr.c) gethostbyname2('%s', af=%d)\n", name, af));
         addrlist[1] = NULL;
         HOSTENT->h_addr_list = addrlist;
         HOSTENT->h_aliases = addrlist + 2;  /* points to NULL */
-        HOSTENT->h_name = strcpy((char *)(addrlist + 2), name);
+        HOSTENT->h_name = (char *)(addrlist + 2);
+        memcpy(HOSTENT->h_name, name, strnlen(name, MAXDNAME) + 1);
       }
       return HOSTENT;
     } else {
@@ -642,9 +646,9 @@ D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr()\n"));
       *p++ = "0123456789abcdef"[(addr[i] >> 4) & 0x0f];
       *p++ = '.';
     }
-    strcpy(p, "ip6.arpa");
+    memcpy(p, "ip6.arpa", 9);
   } else {
-    (void)sprintf(qbuf, "%lu.%lu.%lu.%lu.in-addr.arpa",
+    (void)snprintf(qbuf, MAXDNAME + 1, "%lu.%lu.%lu.%lu.in-addr.arpa",
 		((unsigned long)addr[3] & 0xff),
 		((unsigned long)addr[2] & 0xff),
 		((unsigned long)addr[1] & 0xff),
