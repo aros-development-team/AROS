@@ -76,3 +76,7 @@
 	{"xns", K_XNS},
 #define	K_XRESOLVE	39
 	{"xresolve", K_XRESOLVE},
+#define	K_INET6	40
+	{"inet6", K_INET6},
+#define	K_SHOW	41
+	{"show", K_SHOW},

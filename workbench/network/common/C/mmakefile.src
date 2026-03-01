@@ -33,15 +33,15 @@ USER_CPPFLAGS := \
 #MM     arostcp-linklibs-miami
 
 BASEFILES := \
-    arp \
-    route
+    arp
 
 MIAMIFILES := \
     hostname \
     ifconfig \
     logger \
     ping \
-    resolve
+    resolve \
+    route
 
 USERGROUPFILES := \
     whoami
