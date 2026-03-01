@@ -48,7 +48,7 @@
  */
 #define INET 1
 #define INET6 1			/* IPv6 */
-#define DHCP6 0			/* DHCPv6 client support */
+#define DHCP6 1			/* DHCPv6 client support */
 #define CCITT 0
 #define NHY 0			/* HYPERchannel */
 #define NIMP 0
