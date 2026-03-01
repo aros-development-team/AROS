@@ -523,6 +523,16 @@ sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa)
             sana2perror("S2_TRACKTYPE for ARP", req);
           }
 #endif
+#if INET6
+          if (ssc->ss_ip6.reqno) {
+            req->ios2_Req.io_Command = S2_TRACKTYPE;
+            req->ios2_PacketType = ssc->ss_ip6.type;
+            DoIO((struct IORequest*)req);
+            if (req->ios2_Req.io_Error &&
+                req->ios2_WireError != S2WERR_ALREADY_TRACKED)
+              sana2perror("S2_TRACKTYPE for IPv6", req);
+          }
+#endif
         }
       }
       else
