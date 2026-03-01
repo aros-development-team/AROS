@@ -338,9 +338,12 @@ nd6_ns_input(struct mbuf *m, int off, int icmp6len)
 
 found:
     /* send a Neighbor Advertisement in response */
-    nd6_na_output(ifp, &ip6->ip6_src, &tgt,
-                  ND_NA_FLAG_SOLICITED | ND_NA_FLAG_OVERRIDE, 1,
-                  (struct sockaddr *)NULL);
+    {
+        struct in6_addr src_copy = ip6->ip6_src;
+        nd6_na_output(ifp, &src_copy, &tgt,
+                      ND_NA_FLAG_SOLICITED | ND_NA_FLAG_OVERRIDE, 1,
+                      (struct sockaddr *)NULL);
+    }
     m_freem(m);
 }
 

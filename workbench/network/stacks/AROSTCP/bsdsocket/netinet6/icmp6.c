@@ -249,8 +249,10 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
     /* source: find appropriate local address */
     {
         struct in6_ifaddr *ia = NULL;
-        if (m->m_pkthdr.rcvif)
-            ia = in6_ifawithifp(m->m_pkthdr.rcvif, &nip6->ip6_dst);
+        if (m->m_pkthdr.rcvif) {
+            struct in6_addr dst_copy = nip6->ip6_dst;
+            ia = in6_ifawithifp(m->m_pkthdr.rcvif, &dst_copy);
+        }
         if (ia)
             nip6->ip6_src = ia->ia_addr.sin6_addr;
         /* else: stays 0 - routing will fix it */
@@ -282,7 +284,10 @@ icmp6_reflect(struct mbuf *m, size_t off)
     t = ip6->ip6_dst;               /* save our address (original dst) */
     ip6->ip6_dst = ip6->ip6_src;    /* new dst = original src (remote peer) */
     /* find the best local source address for the reply */
-    ia = in6_ifawithifp(m->m_pkthdr.rcvif, &ip6->ip6_dst);
+    {
+        struct in6_addr dst_copy = ip6->ip6_dst;
+        ia = in6_ifawithifp(m->m_pkthdr.rcvif, &dst_copy);
+    }
     if (ia)
         ip6->ip6_src = ia->ia_addr.sin6_addr;
     else
