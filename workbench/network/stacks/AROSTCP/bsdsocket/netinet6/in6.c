@@ -33,6 +33,8 @@
 
 #include <net/if.h>
 #include <net/if_dl.h>
+#include <net/if_sana.h>
+#include <net/sana2request.h>
 #include <net/route.h>
 
 #include <netinet/in.h>
@@ -40,6 +42,8 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <net/rtsock_protos.h>
+
+#include <devices/sana2.h>
 
 struct in6_ifaddr *in6_ifaddr = NULL;
 struct ifqueue    ip6intrq    = {0};
@@ -488,6 +492,34 @@ in6_if_up(struct ifnet *ifp)
 	ia->ia6_ifaflags = IN6_IFF_AUTOCONF;
 
 	(void)in6_ifinit(ifp, ia, &sin6, 0);
+
+	/*
+	 * Join required IPv6 multicast groups so the NIC accepts the
+	 * corresponding Ethernet multicast MACs (RFC 4291 §2.8):
+	 *  - ff02::1        (all-nodes) — needed to receive Router Advertisements
+	 *  - ff02::1:ffXX:XXXX (solicited-node) — needed for NDP / DAD
+	 */
+	{
+		struct in6_addr maddr;
+
+		/* ff02::1 — all-nodes link-local multicast */
+		bzero(&maddr, sizeof(maddr));
+		maddr.s6_addr[0]  = 0xff;
+		maddr.s6_addr[1]  = 0x02;
+		maddr.s6_addr[15] = 0x01;
+		(void)in6_addmulti(&maddr, ifp);
+
+		/* ff02::1:ffXX:XXXX — solicited-node multicast for our link-local */
+		bzero(&maddr, sizeof(maddr));
+		maddr.s6_addr[0]  = 0xff;
+		maddr.s6_addr[1]  = 0x02;
+		maddr.s6_addr[11] = 0x01;
+		maddr.s6_addr[12] = 0xff;
+		maddr.s6_addr[13] = sin6.sin6_addr.s6_addr[13];
+		maddr.s6_addr[14] = sin6.sin6_addr.s6_addr[14];
+		maddr.s6_addr[15] = sin6.sin6_addr.s6_addr[15];
+		(void)in6_addmulti(&maddr, ifp);
+	}
 }
 
 /* ------------------------------------------------------------------
@@ -531,7 +563,87 @@ in6_ifconf(int cmd, caddr_t data)
 }
 
 /*
+ * in6_map_mcast_macaddr - compute Ethernet multicast MAC from IPv6 multicast addr.
+ * RFC 2464 §7: map ff02::X to 33:33:XX:XX:XX:XX (last 4 bytes of IPv6 addr).
+ */
+static void
+in6_map_mcast_macaddr(struct in6_addr *addr, u_int8_t *mac)
+{
+	mac[0] = 0x33;
+	mac[1] = 0x33;
+	mac[2] = addr->s6_addr[12];
+	mac[3] = addr->s6_addr[13];
+	mac[4] = addr->s6_addr[14];
+	mac[5] = addr->s6_addr[15];
+}
+
+/*
+ * sana_add_mcast6 - tell SANA-II device to accept Ethernet multicast for an
+ * IPv6 multicast address via S2_ADDMULTICASTADDRESS.
+ */
+static int
+sana_add_mcast6(struct ifnet *ifp, struct in6_addr *maddr)
+{
+	struct sana_softc *ssc = (struct sana_softc *)ifp;
+	struct IOSana2Req *req;
+	u_int8_t mac[6];
+	int error = 0;
+
+	if (ifp->if_addrlen != 6)
+		return 0;  /* not Ethernet — nothing to do */
+
+	in6_map_mcast_macaddr(maddr, mac);
+
+	req = CreateIOSana2Req(ssc);
+	if (req == NULL)
+		return ENOBUFS;
+
+	req->ios2_Req.io_Command = S2_ADDMULTICASTADDRESS;
+	bcopy(mac, req->ios2_SrcAddr, 6);
+	DoIO((struct IORequest *)req);
+
+	if (req->ios2_Req.io_Error)
+		error = EIO;
+
+	DeleteIOSana2Req(req);
+	return error;
+}
+
+/*
+ * sana_del_mcast6 - tell SANA-II device to stop accepting an Ethernet multicast.
+ */
+static int
+sana_del_mcast6(struct ifnet *ifp, struct in6_addr *maddr)
+{
+	struct sana_softc *ssc = (struct sana_softc *)ifp;
+	struct IOSana2Req *req;
+	u_int8_t mac[6];
+	int error = 0;
+
+	if (ifp->if_addrlen != 6)
+		return 0;
+
+	in6_map_mcast_macaddr(maddr, mac);
+
+	req = CreateIOSana2Req(ssc);
+	if (req == NULL)
+		return ENOBUFS;
+
+	req->ios2_Req.io_Command = S2_DELMULTICASTADDRESS;
+	bcopy(mac, req->ios2_SrcAddr, 6);
+	DoIO((struct IORequest *)req);
+
+	if (req->ios2_Req.io_Error)
+		error = EIO;
+
+	DeleteIOSana2Req(req);
+	return error;
+}
+
+/*
  * in6_addmulti - add (or refcount) a multicast group membership on an interface.
+ * Also registers the corresponding Ethernet multicast address with the SANA-II
+ * device so the NIC hardware filter accepts matching frames.
  */
 struct in6_multi *in6_multihead = NULL;
 
@@ -549,6 +661,13 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
 		}
 	}
 
+	/* register Ethernet multicast address with the NIC */
+	if (sana_add_mcast6(ifp, maddr) != 0) {
+		__log(LOG_ERR, "in6_addmulti: S2_ADDMULTICASTADDRESS failed for %s%d\n",
+		      ifp->if_name, ifp->if_unit);
+		/* continue anyway — some drivers accept all multicast */
+	}
+
 	/* allocate a new entry */
 	MALLOC(in6m, struct in6_multi *, sizeof(*in6m), M_IFADDR, M_WAITOK);
 	if (in6m == NULL)
@@ -564,6 +683,8 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
 
 /*
  * in6_delmulti - decrement refcount and free if zero.
+ * Unregisters the Ethernet multicast address from the SANA-II device when
+ * the last reference is released.
  */
 void
 in6_delmulti(struct in6_multi *in6m)
@@ -572,6 +693,9 @@ in6_delmulti(struct in6_multi *in6m)
 
 	if (--in6m->in6m_refcount > 0)
 		return;
+
+	/* unregister Ethernet multicast address from the NIC */
+	sana_del_mcast6(in6m->in6m_ifp, &in6m->in6m_addr);
 
 	for (p = &in6_multihead; *p; p = &(*p)->in6m_next) {
 		if (*p == in6m) {
