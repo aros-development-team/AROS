@@ -20,6 +20,47 @@ static void nUasFillLun(UBYTE *lun, UWORD lunnum)
     lun[0] = (UBYTE) (lunnum & 0x3f);
 }
 
+static LONG nUasDoDataTransfer(struct NepClassMS *ncm, UBYTE *data, ULONG data_len,
+                               BOOL read, ULONG *actual)
+{
+    struct PsdPipe *pp;
+    LONG ioerr;
+    LONG actual_len = 0;
+
+    if(ncm->ncm_UasStreamId)
+    {
+        struct PsdPipeStream *stream = read ? ncm->ncm_EPInStream : ncm->ncm_EPOutStream;
+
+        if(stream)
+        {
+            actual_len = read ? psdStreamRead(stream, data, data_len)
+                              : psdStreamWrite(stream, data, data_len);
+            ioerr = psdGetStreamError(stream);
+            if(actual)
+            {
+                *actual = (ULONG) actual_len;
+            }
+            if((ioerr == UHIOERR_OVERFLOW) || (ioerr == UHIOERR_RUNTPACKET))
+            {
+                ioerr = 0;
+            }
+            return ioerr;
+        }
+    }
+
+    pp = read ? ncm->ncm_EPInPipe : ncm->ncm_EPOutPipe;
+    ioerr = psdDoPipe(pp, data, data_len);
+    if(actual)
+    {
+        *actual = psdGetPipeActual(pp);
+    }
+    if((ioerr == UHIOERR_OVERFLOW) || (ioerr == UHIOERR_RUNTPACKET))
+    {
+        ioerr = 0;
+    }
+    return ioerr;
+}
+
 static LONG nUasDoCommand(struct NepClassMS *ncm, const UBYTE *cdb, UWORD cdb_len,
                            UBYTE *data, ULONG data_len, BOOL read,
                            ULONG *actual, UBYTE *status, UBYTE *iu_id,
@@ -31,6 +72,7 @@ static LONG nUasDoCommand(struct NepClassMS *ncm, const UBYTE *cdb, UWORD cdb_le
     ULONG cmdlen;
     ULONG actual_len;
     LONG ioerr;
+    ULONG tag;
 
     if(actual)
     {
@@ -52,7 +94,13 @@ static LONG nUasDoCommand(struct NepClassMS *ncm, const UBYTE *cdb, UWORD cdb_le
     memset(&cmdiu, 0, sizeof(cmdiu));
     cmdiu.iu_Id = UAS_IU_ID_COMMAND;
     cmdiu.iu_TaskAttr = 0;
-    cmdiu.iu_Tag = AROS_LONG2LE(++ncm->ncm_TagCount);
+    if(ncm->ncm_UasStreamId)
+    {
+        tag = ncm->ncm_UasStreamId;
+    } else {
+        tag = ++ncm->ncm_TagCount;
+    }
+    cmdiu.iu_Tag = AROS_LONG2LE(tag);
     nUasFillLun(cmdiu.iu_Lun, ncm->ncm_UnitLUN);
     cmdlen = (cdb_len > 16) ? 16 : cdb_len;
     if(cmdlen)
@@ -68,16 +116,7 @@ static LONG nUasDoCommand(struct NepClassMS *ncm, const UBYTE *cdb, UWORD cdb_le
 
     if(data_len)
     {
-        pp = read ? ncm->ncm_EPInPipe : ncm->ncm_EPOutPipe;
-        ioerr = psdDoPipe(pp, data, data_len);
-        if(actual)
-        {
-            *actual = psdGetPipeActual(pp);
-        }
-        if((ioerr == UHIOERR_OVERFLOW) || (ioerr == UHIOERR_RUNTPACKET))
-        {
-            ioerr = 0;
-        }
+        ioerr = nUasDoDataTransfer(ncm, data, data_len, read, actual);
         if(ioerr)
         {
             return ioerr;

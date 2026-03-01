@@ -14,6 +14,28 @@ extern const STRPTR GM_UNIQUENAME(libname);
 #undef  ps
 #define ps ncm->ncm_Base
 
+/*
+ * Some devices (notably flash-based) can legitimately NAK bulk transfers for
+ * extended periods while busy (erase/program/wear-leveling). Poseidon can be
+ * configured with a finite NAK timeout on pipes; when that fires we get
+ * UHIOERR_NAKTIMEOUT (often shown as "response timeout").
+ *
+ * Treat UHIOERR_NAKTIMEOUT as a retryable "device busy" condition and, to
+ * reduce repeated aborts, relax the pipe's NAK timeout for subsequent attempts.
+ */
+static void nRelaxNakTimeout(struct NepClassMS *ncm, struct PsdPipe *pp, ULONG new_timeout_ms)
+{
+    /* Only touch it if the stack supports the attributes (Poseidon) and if a non-zero timeout is requested. */
+    if(pp && new_timeout_ms)
+    {
+        psdSetAttrs(PGA_PIPE, pp,
+                    PPA_NakTimeout, TRUE,
+                    PPA_NakTimeoutTime, new_timeout_ms,
+                    TAG_END);
+    }
+}
+
+
 /* /// "nBulkReset()" */
 LONG nBulkReset(struct NepClassMS *ncm)
 {
@@ -237,7 +259,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     UWORD retrycnt = 0;
     UBYTE cmdstrbuf[16*3+2];
 
-    KPRINTF(10, ("\n"));
+    KPRINTF(10, ("%s(0x%p, 0x%p)\n", __func__, ncm, scsicmd));
 
     GM_UNIQUENAME(nHexString)(scsicmd->scsi_Command, (ULONG) (scsicmd->scsi_CmdLength < 16 ? scsicmd->scsi_CmdLength : 16), cmdstrbuf);
 
@@ -285,8 +307,8 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
         }
         //psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Issueing command %s Dlen=%ld", cmdstrbuf, datalen);
 
-        KPRINTF(2, ("command block phase, tag %08lx, len %ld, flags %02lx...\n",
-                umscbw.dCBWTag, scsicmd->scsi_CmdLength, scsicmd->scsi_Flags));
+        KPRINTF(2, ("command block phase, tag %08lx, flags %02lx <scsicmd len %ld, flags %02lx>...\n",
+                umscbw.dCBWTag, umscbw.bmCBWFlags, scsicmd->scsi_CmdLength, scsicmd->scsi_Flags));
         KPRINTF(2, ("command: %s\n", cmdstrbuf));
         ioerr = psdDoPipe(ncm->ncm_EPOutPipe, &umscbw, UMSCBW_SIZEOF);
         if(ioerr == UHIOERR_STALL) /* Retry on stall */
@@ -606,38 +628,72 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                         rioerr = HFERR_BadStatus;
                     }
                 } else {
-                    KPRINTF(10, ("Command status failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
+                    if(ioerr == UHIOERR_NAKTIMEOUT)
+                    {
+                        /* Device may simply be busy and NAKing for too long. Treat as retryable. */
+                        KPRINTF(10, ("Command status NAK-timeout, assuming device busy; backing off and retrying\n"));
+                        psdDelayMS(500);
+                        nRelaxNakTimeout(ncm, ncm->ncm_EPInPipe, 120000); /* 120s */
+                        if(!retrycnt) retrycnt = 1;
+                        scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+                        rioerr = HFERR_Phase;
+                    } else {
+                        KPRINTF(10, ("Command status failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Command (%s) failed:", cmdstrbuf);
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                      "Command status failed: %s (%ld)",
+                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+                        rioerr = HFERR_Phase;
+                        nBulkReset(ncm);
+                    }
+                }
+            } else {
+                if(ioerr == UHIOERR_NAKTIMEOUT)
+                {
+                    /* Prolonged NAKs are common when flash devices are busy (erase/program). Retry with backoff. */
+                    KPRINTF(10, ("Data phase NAK-timeout, assuming device busy; backing off and retrying\n"));
+                    psdDelayMS(500);
+                    /* Relax timeout for subsequent attempts to reduce repeated aborts. */
+                    nRelaxNakTimeout(ncm, pp, (scsicmd->scsi_Flags & SCSIF_READ) ? 60000 : 120000);
+                    if(!retrycnt) retrycnt = 1;
+                    scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+                    rioerr = HFERR_Phase;
+                } else {
+                    KPRINTF(10, ("Data phase failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
                     psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Command (%s) failed:", cmdstrbuf);
                     psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                  "Command status failed: %s (%ld)",
+                                   "Data phase failed: %s (%ld)",
                                    psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
                     scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
                     rioerr = HFERR_Phase;
                     nBulkReset(ncm);
                 }
-            } else {
-                KPRINTF(10, ("Data phase failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Command (%s) failed:", cmdstrbuf);
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                               "Data phase failed: %s (%ld)",
-                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-                scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
-                rioerr = HFERR_Phase;
-                nBulkReset(ncm);
             }
         } else {
-            KPRINTF(10, ("Command block failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
-            scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
-            rioerr = HFERR_Phase;
-            if(ioerr == UHIOERR_TIMEOUT)
+            if(ioerr == UHIOERR_NAKTIMEOUT)
             {
-                break;
+                /* CBW OUT timed out due to prolonged NAK; treat as retryable busy. */
+                KPRINTF(10, ("Command block NAK-timeout, assuming device busy; backing off and retrying\n"));
+                psdDelayMS(500);
+                nRelaxNakTimeout(ncm, ncm->ncm_EPOutPipe, 120000); /* 120s */
+                if(!retrycnt) retrycnt = 1;
+                scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+                rioerr = HFERR_Phase;
+            } else {
+                KPRINTF(10, ("Command block failed: %s (%ld)\n", psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr));
+                scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
+                rioerr = HFERR_Phase;
+                if(ioerr == UHIOERR_TIMEOUT)
+                {
+                    break;
+                }
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Command (%s) failed:", cmdstrbuf);
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                               "Command block failed: %s (%ld)",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                nBulkReset(ncm);
             }
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Command (%s) failed:", cmdstrbuf);
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Command block failed: %s (%ld)",
-                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
-            nBulkReset(ncm);
         }
         if(!rioerr)
         {

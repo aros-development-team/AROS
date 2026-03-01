@@ -9,7 +9,7 @@
 
 #include "massstorage.class.h"
 
-#define DEF_NAKTIMEOUT  (100)
+#define DEF_NAKTIMEOUT  (600)
 
 static inline BOOL nIsBulkTransport(ULONG proto)
 {
@@ -1491,6 +1491,120 @@ static BOOL nUasCollectEndpoints(struct NepClassMS *ncm)
     return ncm->ncm_EPCmd && ncm->ncm_EPStatus && ncm->ncm_EPIn && ncm->ncm_EPOut;
 }
 
+static void nUasDisableStreams(struct NepClassMS *ncm)
+{
+    if(ncm->ncm_EPInStream)
+    {
+        psdCloseStream(ncm->ncm_EPInStream);
+        ncm->ncm_EPInStream = NULL;
+    }
+    if(ncm->ncm_EPOutStream)
+    {
+        psdCloseStream(ncm->ncm_EPOutStream);
+        ncm->ncm_EPOutStream = NULL;
+    }
+    if(ncm->ncm_EPIn)
+    {
+        psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
+                    EA_StreamBase, 0,
+                    TAG_END);
+    }
+    if(ncm->ncm_EPOut)
+    {
+        psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
+                    EA_StreamBase, 0,
+                    TAG_END);
+    }
+    ncm->ncm_UasStreamId = 0;
+}
+
+static void nUasInitStreams(struct NepClassMS *ncm)
+{
+    IPTR maxstreams_in = 0;
+    IPTR maxstreams_out = 0;
+    IPTR maxpkt_in = 0;
+    IPTR maxpkt_out = 0;
+    BOOL use_timeout = ncm->ncm_CDC && ncm->ncm_CDC->cdc_NakTimeout;
+
+    ncm->ncm_UasStreamId = 0;
+    if(!ncm->ncm_EPIn || !ncm->ncm_EPOut)
+    {
+        return;
+    }
+
+    psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
+                EA_MaxStreams, &maxstreams_in,
+                EA_MaxPktSize, &maxpkt_in,
+                TAG_END);
+    psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
+                EA_MaxStreams, &maxstreams_out,
+                EA_MaxPktSize, &maxpkt_out,
+                TAG_END);
+
+    if(!maxstreams_in || !maxstreams_out)
+    {
+        return;
+    }
+
+    psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
+                EA_StreamBase, 1,
+                TAG_END);
+    psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
+                EA_StreamBase, 1,
+                TAG_END);
+
+    if(use_timeout)
+    {
+        ncm->ncm_EPOutStream = psdOpenStream(ncm->ncm_EPOut,
+                                            PSA_BufferedWrite, FALSE,
+                                            PSA_NoZeroPktTerm, TRUE,
+                                            PSA_NumPipes, 1,
+                                            PSA_BufferSize, maxpkt_out,
+                                            PSA_NakTimeout, TRUE,
+                                            PSA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
+                                            TAG_END);
+    } else {
+        ncm->ncm_EPOutStream = psdOpenStream(ncm->ncm_EPOut,
+                                            PSA_BufferedWrite, FALSE,
+                                            PSA_NoZeroPktTerm, TRUE,
+                                            PSA_NumPipes, 1,
+                                            PSA_BufferSize, maxpkt_out,
+                                            TAG_END);
+    }
+    if(!ncm->ncm_EPOutStream)
+    {
+        nUasDisableStreams(ncm);
+        return;
+    }
+
+    if(use_timeout)
+    {
+        ncm->ncm_EPInStream = psdOpenStream(ncm->ncm_EPIn,
+                                           PSA_BufferedRead, FALSE,
+                                           PSA_ReadAhead, FALSE,
+                                           PSA_NumPipes, 1,
+                                           PSA_BufferSize, maxpkt_in,
+                                           PSA_NakTimeout, TRUE,
+                                           PSA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
+                                           TAG_END);
+    } else {
+        ncm->ncm_EPInStream = psdOpenStream(ncm->ncm_EPIn,
+                                           PSA_BufferedRead, FALSE,
+                                           PSA_ReadAhead, FALSE,
+                                           PSA_NumPipes, 1,
+                                           PSA_BufferSize, maxpkt_in,
+                                           TAG_END);
+    }
+    if(!ncm->ncm_EPInStream)
+    {
+        nUasDisableStreams(ncm);
+        return;
+    }
+
+    ncm->ncm_UasStreamId = 1;
+}
+
+
 /* /// "nAllocMS()" */
 struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
 {
@@ -1500,6 +1614,9 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
 
     thistask = FindTask(NULL);
     ncm = thistask->tc_UserData;
+    ncm->ncm_EPInStream = NULL;
+    ncm->ncm_EPOutStream = NULL;
+    ncm->ncm_UasStreamId = 0;
     do
     {
         if(!(ncm->ncm_Base = OpenLibrary("poseidon.library", 4)))
@@ -1657,6 +1774,10 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                                         PPA_AllowRuntPackets, TRUE,
                                         TAG_END);
                         }
+                        if(ncm->ncm_TPType == MS_PROTO_UAS)
+                        {
+                            nUasInitStreams(ncm);
+                        }
                         if(ncm->ncm_EPInt)
                         {
                             if((ncm->ncm_EPIntPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPInt)))
@@ -1716,6 +1837,7 @@ void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm)
     }
     Permit();
 
+    nUasDisableStreams(ncm);
     psdFreePipe(ncm->ncm_EPIntPipe);
     psdFreePipe(ncm->ncm_EPStatusPipe);
     psdFreePipe(ncm->ncm_EPCmdPipe);
@@ -4786,7 +4908,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
 
             patch.fse_PatchFlags = 0x0080|0x0010;
             patch.fse_SegList = segList;
-            patch.fse_StackSize = (AROS_STACKSIZE << 1);
+            patch.fse_StackSize = (AROS_STACKSIZE << 2);
             //if(((patch.fse_DosType & 0xffffff00) == 0x46415400) || (patch.fse_DosType == 0x4d534800))
             {
                 KPRINTF(10, ("setting up certain fs values for MS-DOS fs\n"));
@@ -4827,7 +4949,7 @@ BOOL MountPartition(struct NepClassMS *ncm, STRPTR dosDevice)
             {
                 BOOL installboot;
                 KPRINTF(10, ("MakeDosNode() succeeded, patchflags %04lx\n", patch.fse_PatchFlags));
-                node->dn_StackSize = (AROS_STACKSIZE << 1);
+                node->dn_StackSize = (AROS_STACKSIZE << 2);
 
                 /*node->dn_Priority = 5;*/
                 if(patch.fse_PatchFlags & 0x0001) node->dn_Type = patch.fse_Type;
@@ -6062,7 +6184,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                 }
 
                 case ID_ABOUT:
-                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore Böckelmann.", NULL);
+                    MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore BÃ¶ckelmann.", NULL);
                     break;
             }
             if(retid == MUIV_Application_ReturnID_Quit)

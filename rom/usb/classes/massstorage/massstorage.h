@@ -148,12 +148,14 @@ struct NepClassMS
     struct PsdPipe     *ncm_EPOutPipe;    /* Endpoint OUT pipe */
     struct PsdEndpoint *ncm_EPIn;         /* Endpoint IN */
     struct PsdPipe     *ncm_EPInPipe;     /* Endpoint IN pipe */
+    struct PsdPipeStream *ncm_EPInStream; /* UAS IN Endpoint stream */
     struct PsdEndpoint *ncm_EPCmd;        /* UAS Command Endpoint */
     struct PsdPipe     *ncm_EPCmdPipe;    /* UAS Command pipe */
     struct PsdEndpoint *ncm_EPStatus;     /* UAS Status Endpoint */
     struct PsdPipe     *ncm_EPStatusPipe; /* UAS Status pipe */
     struct PsdEndpoint *ncm_EPInt;        /* Optional Endpoint INT */
     struct PsdPipe     *ncm_EPIntPipe;    /* Optional Endpoint INT pipe */
+    struct PsdPipeStream *ncm_EPOutStream;/* UAS OUT Endpoint stream */
     UWORD               ncm_EPOutNum;     /* Endpoint OUT number */
     UWORD               ncm_EPInNum;      /* Endpoint IN number */
     UWORD               ncm_EPCmdNum;     /* UAS Command endpoint number */
@@ -180,6 +182,7 @@ struct NepClassMS
     UWORD               ncm_TPType;       /* Transport type */
     UWORD               ncm_CSType;       /* SCSI Commandset type */
     ULONG               ncm_TagCount;     /* Tag for CBW */
+    UWORD               ncm_UasStreamId;  /* USB3 stream ID in use (0 = none) */
     struct DriveGeometry ncm_Geometry;    /* Drive Geometry */
     ULONG               ncm_GeoChangeCount; /* when did we last obtained the geometry for caching */
     BOOL                ncm_BulkResetBorks; /* Bulk Reset is broken, don't try to use it */

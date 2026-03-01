@@ -4,7 +4,9 @@
     Desc: Find and mount partitions.
 */
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 
 #include <string.h>
 #include <stdio.h>
