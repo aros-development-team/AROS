@@ -82,6 +82,8 @@
 
 #include <proto/bsdsocket.h>
 
+#include <stdio.h>
+
 /*
  * Functions which are defined in link library in unix systems
  */

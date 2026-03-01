@@ -97,6 +97,8 @@
 
 #include <dos/rdargs.h>
 
+#include <stdio.h>
+
 /*
  * Configuration information.
  */

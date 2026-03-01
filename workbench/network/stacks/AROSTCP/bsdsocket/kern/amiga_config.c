@@ -57,6 +57,8 @@
 #include <netinet/udp.h>
 #include <netinet/udp_var.h>
 
+#include <stdio.h>
+
 /* External functions */
 int ultoa(unsigned long ul,char *buffer);
 

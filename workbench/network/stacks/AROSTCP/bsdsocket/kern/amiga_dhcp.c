@@ -81,12 +81,14 @@ _update_dhclient(struct ifnet *exclude_ifp)
 
 	count = build_dhclient_args(aros_dhcpv4.args, sizeof(aros_dhcpv4.args),
 	                            exclude_ifp, 0);
-	if (count == 0)
+	if (count == 0) {
+		D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: no interfaces need DHCPv4\n"));
 		return; /* no interfaces need DHCPv4 */
+	}
 
-	DDHCP(KPrintF("Starting DHCP client: %s\n", aros_dhcpv4.args);)
+	D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: Starting DHCP client: %s (path=%s)\n", aros_dhcpv4.args, dhclient_path));
 	seglist = LoadSeg(dhclient_path);
-	DDHCP(KPrintF("dhclient seglist = 0x%p\n", seglist);)
+	D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: dhclient seglist = 0x%p\n", seglist));
 	if (seglist) {
 		aros_dhcpv4.pid =
 			(pid_t)CreateNewProcTags(NP_Seglist, seglist,
@@ -97,6 +99,7 @@ _update_dhclient(struct ifnet *exclude_ifp)
 								 NP_ConsoleTask, NULL,
 								 TAG_DONE);
 		DDHCP(KPrintF("dhclient pid = 0x%p\n", aros_dhcpv4.pid);)
+		D(bug("[AROSTCP](amiga_dhcp.c) _update_dhclient: dhclient pid = 0x%p\n", aros_dhcpv4.pid));
 		if (!aros_dhcpv4.pid) {
 			UnLoadSeg(seglist);
 			seglist = BNULL;
@@ -204,9 +207,14 @@ void run_dhcp(void)
 	int need6 = 0;
 #endif
 
+	D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: scanning interfaces for IFF_DELAYUP\n"));
 	for (ifp = ifnet; ifp; ifp = ifp->if_next) {
+		D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: %s%u flags=0x%x usedhcp=%d\n",
+		      ifp->if_name, ifp->if_unit, ifp->if_flags,
+		      ifp->if_data.ifi_aros_usedhcp));
 		if (ifp->if_flags & IFF_DELAYUP) {
 			DDHCP(KPrintF("Executing delayed DHCP start for %s%u\n", ifp->if_name, ifp->if_unit);)
+			D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: delayed start for %s%u\n", ifp->if_name, ifp->if_unit));
 			ifp->if_flags &= ~IFF_DELAYUP;
 			if (ifp->if_data.ifi_aros_usedhcp)
 				need4 = 1;
@@ -219,11 +227,15 @@ void run_dhcp(void)
 		}
 	}
 
-	if (need4)
+	if (need4) {
+		D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: launching DHCPv4 client\n"));
 		_update_dhclient(NULL);
+	}
 #if INET6 && DHCP6
-	if (need6)
+	if (need6) {
+		D(bug("[AROSTCP](amiga_dhcp.c) run_dhcp: launching DHCPv6 client\n"));
 		_update_dhclient6(NULL);
+	}
 #endif
 }
 

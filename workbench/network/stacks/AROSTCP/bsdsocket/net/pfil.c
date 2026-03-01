@@ -46,6 +46,8 @@
 #include <sys/systm.h>
 #include <sys/queue.h>
 
+#include <stdio.h>
+
 #include <net/if.h>
 #include <net/pfil.h>
 
