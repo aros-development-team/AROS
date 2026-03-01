@@ -1430,7 +1430,7 @@ packet_ok(register u_char *buf, int cc, register struct sockaddr_in *from,
 #ifndef ARCHAIC
 	if (verbose) {
 		register int i;
-		u_int32_t *lp = (u_int32_t *)&icp->icmp_ip;
+		u_int32_t *lp = (u_int32_t *)((u_char *)icp + ICMP_MINLEN);
 
 		Printf("\n%d bytes from %s to ", cc, inet_ntoa(from->sin_addr));
 		Printf("%s: icmp type %d (%s) code %d\n",
