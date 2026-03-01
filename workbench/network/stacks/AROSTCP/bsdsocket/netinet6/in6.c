@@ -39,6 +39,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <net/rtsock_protos.h>
 
 struct in6_ifaddr *in6_ifaddr = NULL;
 struct ifqueue    ip6intrq    = {0};
@@ -208,9 +209,11 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 		ia->ia6_flags    = ifra->ifra_flags;
 		ia->ia6_lifetime_vltime = ifra->ifra_lifetime.ia6t_vltime;
 		ia->ia6_lifetime_pltime = ifra->ifra_lifetime.ia6t_pltime;
+		rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
 		return 0;
 
 	case SIOCDIFADDR_IN6:
+		rt_newaddrmsg(RTM_DELADDR, (struct ifaddr *)ia, 0, NULL);
 		in6_purgeaddr((struct ifaddr *)ia);
 		break;
 

@@ -99,6 +99,7 @@ struct ifnet *aifunit(register char *name);
 int aifconf(int cmd, caddr_t data);
 
 #include <kern/uipc_domain_protos.h>
+#include <net/rtsock_protos.h>
 
 static char *sprint_d(u_int n, char *buf, int buflen);
 int	ifqmaxlen = IFQ_MAXLEN;
@@ -424,6 +425,7 @@ if_down(ifp)
 	for (ifa = ifp->if_addrlist; ifa; ifa = ifa->ifa_next)
 		pfctlinput(PRC_IFDOWN, ifa->ifa_addr);
 	if_qflush(&ifp->if_snd);
+	rt_ifmsg(ifp);
 }
 
 /*

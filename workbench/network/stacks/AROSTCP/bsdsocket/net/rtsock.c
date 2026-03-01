@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2025 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -74,6 +74,10 @@
 
 #include <net/rtsock_protos.h>
 #include <net/raw_usrreq_protos.h>
+#include <net/route_protos.h>
+#include <net/if_protos.h>
+
+#include <net/if_dl.h>
 
 struct sockaddr route_dst = { 2, PF_ROUTE, };
 struct sockaddr route_src = { 2, PF_ROUTE, };
@@ -84,8 +88,7 @@ extern struct route_cb route_cb;
 	((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
 #define ADVANCE(x, n) (x += ROUNDUP((n)->sa_len))
 
-#ifndef AMITCP
-
+int
 route_usrreq(so, req, m, nam, control)
 	register struct socket *so;
 	int req;
@@ -105,8 +108,10 @@ route_usrreq(so, req, m, nam, control)
 		int af = rp->rcb_proto.sp_protocol;
 		if (af == AF_INET)
 			route_cb.ip_count--;
+#ifdef AF_NS
 		else if (af == AF_NS)
 			route_cb.ns_count--;
+#endif
 		else if (af == AF_ISO)
 			route_cb.iso_count--;
 		route_cb.any_count--;
@@ -123,8 +128,10 @@ route_usrreq(so, req, m, nam, control)
 		}
 		if (af == AF_INET)
 			route_cb.ip_count++;
+#ifdef AF_NS
 		else if (af == AF_NS)
 			route_cb.ns_count++;
+#endif
 		else if (af == AF_ISO)
 			route_cb.iso_count++;
 		rp->rcb_faddr = &route_src;
@@ -150,10 +157,6 @@ route_output(m, so)
 	int len, error = 0;
 	struct ifnet *ifp = 0;
 	struct ifaddr *ifa = 0;
-	struct ifaddr *ifaof_ifpforaddr(), *ifa_ifwithroute();
-#ifdef AMITCP
-    	struct proc *curproc = (struct proc*)cthread_data(cthread_self());
-#endif
 
 #define senderr(e) { error = e; goto flush;}
 	if (m == 0 || m->m_len < sizeof(long))
@@ -397,7 +400,6 @@ cleanup:
     }
 	return (error);
 }
-#endif /* AMITCP */
 
 void
 rt_setmetrics(which, in, out)
@@ -486,9 +488,6 @@ int error;
 	register struct mbuf *m;
 	int dlen = ROUNDUP(dst->sa_len);
 	int len = dlen + sizeof(*rtm);
-#ifndef AMITCP
-    	struct proc *curproc = (struct proc*)cthread_data(cthread_self());
-#endif /* AMITCP */
 	if (route_cb.any_count == 0)
 		return;
 	m = m_gethdr(M_DONTWAIT, MT_DATA);
@@ -533,6 +532,176 @@ int error;
 	rtm->rtm_msglen = len;
 	route_proto.sp_protocol = dst->sa_family;
 	raw_input(m, &route_proto, &route_src, &route_dst);
+}
+
+/*
+ * rt_ifmsg - generate a routing socket message when an
+ * interface goes up/down or its flags change.
+ */
+void
+rt_ifmsg(ifp)
+	struct ifnet *ifp;
+{
+	struct if_msghdr *ifm;
+	struct mbuf *m;
+	struct sockaddr_dl *sdl;
+	int len, sdl_len;
+
+	if (route_cb.any_count == 0)
+		return;
+
+	sdl_len = sizeof(struct sockaddr_dl);
+	len = sizeof(*ifm) + ROUNDUP(sdl_len);
+
+	m = m_gethdr(M_DONTWAIT, MT_DATA);
+	if (m == 0)
+		return;
+	if (len > MHLEN) {
+		MCLGET(m, M_DONTWAIT);
+		if ((m->m_flags & M_EXT) == 0) {
+			m_freem(m);
+			return;
+		}
+	}
+	m->m_pkthdr.len = m->m_len = len;
+	m->m_pkthdr.rcvif = 0;
+	ifm = mtod(m, struct if_msghdr *);
+	aligned_bzero_const((caddr_t)ifm, sizeof(*ifm));
+	ifm->ifm_msglen = len;
+	ifm->ifm_version = RTM_VERSION;
+	ifm->ifm_type = RTM_IFINFO;
+	ifm->ifm_addrs = RTA_IFP;
+	ifm->ifm_flags = (int)ifp->if_flags;
+	ifm->ifm_index = ifp->if_index;
+	ifm->ifm_data = ifp->if_data;
+
+	/* Append a sockaddr_dl for the interface */
+	sdl = (struct sockaddr_dl *)((caddr_t)ifm + sizeof(*ifm));
+	bzero((caddr_t)sdl, sdl_len);
+	sdl->sdl_len = sdl_len;
+	sdl->sdl_family = AF_LINK;
+	sdl->sdl_index = ifp->if_index;
+	sdl->sdl_type = ifp->if_type;
+	sdl->sdl_nlen = strnlen(ifp->if_name, sizeof(sdl->sdl_data) - 1);
+	bcopy(ifp->if_name, sdl->sdl_data, sdl->sdl_nlen);
+
+	route_proto.sp_protocol = 0;
+	raw_input(m, &route_proto, &route_src, &route_dst);
+}
+
+/*
+ * rt_newaddrmsg - generate RTM_NEWADDR or RTM_DELADDR routing
+ * socket messages when interface addresses are added or removed.
+ * If a non-NULL rtentry is provided, also send an RTM_ADD/RTM_DELETE
+ * message for the associated route.
+ */
+void
+rt_newaddrmsg(cmd, ifa, error, rt)
+	int cmd;
+	struct ifaddr *ifa;
+	int error;
+	struct rtentry *rt;
+{
+	struct ifa_msghdr *ifam;
+	struct rt_msghdr *rtm;
+	struct mbuf *m;
+	struct ifnet *ifp = ifa->ifa_ifp;
+	struct sockaddr *sa, *mask;
+	int len, sa_len;
+
+	if (route_cb.any_count == 0)
+		return;
+
+	/* Send ifa_msghdr for the address change */
+	sa = ifa->ifa_addr;
+	sa_len = ROUNDUP(sa->sa_len);
+	len = sizeof(*ifam) + sa_len;
+	if (ifa->ifa_netmask) {
+		mask = ifa->ifa_netmask;
+		len += ROUNDUP(mask->sa_len);
+	} else {
+		mask = 0;
+	}
+
+	m = m_gethdr(M_DONTWAIT, MT_DATA);
+	if (m == 0)
+		return;
+	if (len > MHLEN) {
+		MCLGET(m, M_DONTWAIT);
+		if ((m->m_flags & M_EXT) == 0) {
+			m_freem(m);
+			return;
+		}
+	}
+	m->m_pkthdr.len = m->m_len = len;
+	m->m_pkthdr.rcvif = 0;
+	ifam = mtod(m, struct ifa_msghdr *);
+	aligned_bzero_const((caddr_t)ifam, sizeof(*ifam));
+	ifam->ifam_msglen = len;
+	ifam->ifam_version = RTM_VERSION;
+	ifam->ifam_type = cmd;
+	ifam->ifam_addrs = RTA_IFA;
+	ifam->ifam_flags = (int)ifa->ifa_flags;
+	ifam->ifam_index = ifp ? ifp->if_index : 0;
+	ifam->ifam_metric = ifa->ifa_metric;
+
+	m_copyback(m, sizeof(*ifam), sa->sa_len, (caddr_t)sa);
+	if (mask) {
+		m_copyback(m, sizeof(*ifam) + sa_len, mask->sa_len, (caddr_t)mask);
+		ifam->ifam_addrs |= RTA_NETMASK;
+	}
+	if (m->m_pkthdr.len != len) {
+		m_freem(m);
+		return;
+	}
+
+	route_proto.sp_protocol = sa->sa_family;
+	raw_input(m, &route_proto, &route_src, &route_dst);
+
+	/* If a route entry is provided, also send an RTM_ADD/RTM_DELETE */
+	if (rt) {
+		struct sockaddr *dst = rt_key(rt);
+		struct sockaddr *gate = rt->rt_gateway;
+		int rtm_cmd = (cmd == RTM_NEWADDR) ? RTM_ADD : RTM_DELETE;
+		int dlen = ROUNDUP(dst->sa_len);
+		int glen = gate ? ROUNDUP(gate->sa_len) : 0;
+
+		len = sizeof(*rtm) + dlen + glen;
+		m = m_gethdr(M_DONTWAIT, MT_DATA);
+		if (m == 0)
+			return;
+		if (len > MHLEN) {
+			MCLGET(m, M_DONTWAIT);
+			if ((m->m_flags & M_EXT) == 0) {
+				m_freem(m);
+				return;
+			}
+		}
+		m->m_pkthdr.len = m->m_len = len;
+		m->m_pkthdr.rcvif = 0;
+		rtm = mtod(m, struct rt_msghdr *);
+		aligned_bzero_const((caddr_t)rtm, sizeof(*rtm));
+		rtm->rtm_msglen = len;
+		rtm->rtm_version = RTM_VERSION;
+		rtm->rtm_type = rtm_cmd;
+		rtm->rtm_flags = rt->rt_flags;
+		rtm->rtm_addrs = RTA_DST;
+		rtm->rtm_errno = error;
+		rtm->rtm_index = ifp ? ifp->if_index : 0;
+
+		m_copyback(m, sizeof(*rtm), dst->sa_len, (caddr_t)dst);
+		if (gate) {
+			m_copyback(m, sizeof(*rtm) + dlen, gate->sa_len, (caddr_t)gate);
+			rtm->rtm_addrs |= RTA_GATEWAY;
+		}
+		if (m->m_pkthdr.len != len) {
+			m_freem(m);
+			return;
+		}
+		rtm->rtm_msglen = len;
+		route_proto.sp_protocol = dst->sa_family;
+		raw_input(m, &route_proto, &route_src, &route_dst);
+	}
 }
 
 
@@ -688,20 +857,11 @@ rt_walk(rn, f, w)
 /*
  * Definitions of protocols supported in the ROUTE domain.
  */
-#ifdef AMITCP
-/* 
- * Actually, we are only initializing the raw control blocks...
- */
-#define route_output NULL
-#define route_usrreq NULL
-#else /* AMITCP */
-int	raw_init(),raw_usrreq(),raw_input(),raw_ctlinput();
-#endif /* AMITCP */
 extern	struct domain routedomain;		/* or at least forward */
 
 struct protosw routesw[] = {
 { SOCK_RAW,	&routedomain,	0,		PR_ATOMIC|PR_ADDR,
-  (void (*)(APTR args, ...))raw_input,	route_output,	(APTR)raw_ctlinput,	0,
+  (void (*)(APTR args, ...))raw_input,	(APTR)route_output,	(APTR)raw_ctlinput,	0,
   route_usrreq,
   raw_init,	0,		0,		        0,
 }

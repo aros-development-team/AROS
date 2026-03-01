@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -73,6 +74,7 @@
 #include <netinet/in_var.h>
 
 #include <netinet/in_protos.h>
+#include <net/rtsock_protos.h>
 
 #if INET
 /*
@@ -475,9 +477,12 @@ in_control(so, cmd, data, ifp)
 		if ((ifp->if_flags & IFF_BROADCAST) &&
 		    (ifra->ifra_broadaddr.sin_family == AF_INET))
 			ia->ia_broadaddr = ifra->ifra_broadaddr;
+		if (error == 0)
+			rt_newaddrmsg(RTM_NEWADDR, &ia->ia_ifa, 0, NULL);
 		return (error);
 
 	case SIOCDIFADDR:
+		rt_newaddrmsg(RTM_DELADDR, (struct ifaddr *)ia, 0, NULL);
 		in_ifscrub(ifp, ia);
 		if ((ifa = ifp->if_addrlist) == (struct ifaddr *)ia)
 			ifp->if_addrlist = ifa->ifa_next;

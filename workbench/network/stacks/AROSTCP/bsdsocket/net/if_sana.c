@@ -71,6 +71,7 @@
 #include <net/sana2config.h>
 #include <net/sana2request.h>
 #include <net/sana2errno.h>
+#include <net/rtsock_protos.h>
 
 #include <libraries/bsdsocket.h>
 #include <libraries/miamipanel.h>
@@ -763,6 +764,7 @@ D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if
   ssc->ss_if.if_data.ifi_aros_ontime.tv_micro = now.tv_micro;
   ssc->ss_if.if_data.ifi_aros_lasttotal = ssc->ss_if.if_ibytes + ssc->ss_if.if_obytes;
   gui_set_interface_state(&ssc->ss_if, MIAMIPANELV_AddInterface_State_Online);
+  rt_ifmsg(&ssc->ss_if);
   /* Send read requests to device driver */
 #if	INET
   /* IP */
