@@ -423,12 +423,13 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 
 	while (ifr < lifr) {
 		struct sockaddr *sa;
+		size_t nlen;
 
 		ift->ifa_name = names;
-		names[IFNAMSIZ] = 0;
-		strncpy(names, ifr->ifr_name, IFNAMSIZ);
-		while (*names++)
-			;
+		nlen = strnlen(ifr->ifr_name, IFNAMSIZ);
+		memcpy(names, ifr->ifr_name, nlen);
+		names[nlen] = '\0';
+		names += nlen + 1;
 
 		ift->ifa_addr = (struct sockaddr *)data;
 		sa = &ifr->ifr_addr;
@@ -446,11 +447,13 @@ getifaddrs(struct ifaddrs **pif, struct SocketBase *SocketBase)
 		int i6;
 
 		for (i6 = 0; i6 < n6; i6++) {
+			size_t nlen;
+
 			ift->ifa_name = names;
-			names[IFNAMSIZ] = 0;
-			strncpy(names, req6[i6].ifr_name, IFNAMSIZ);
-			while (*names++)
-				;
+			nlen = strnlen(req6[i6].ifr_name, IFNAMSIZ);
+			memcpy(names, req6[i6].ifr_name, nlen);
+			names[nlen] = '\0';
+			names += nlen + 1;
 
 			ift->ifa_addr = (struct sockaddr *)(void *)data;
 			memcpy(data, &req6[i6].ifr6_addr, sizeof(struct sockaddr_in6));

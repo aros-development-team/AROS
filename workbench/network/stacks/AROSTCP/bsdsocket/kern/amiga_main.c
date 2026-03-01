@@ -254,8 +254,8 @@ D(bug("[AROSTCP](amiga_main.c) main: preparing AROSTCP_Task\n"));
     if (!taskname) {
 #ifdef DEBUG
       if (nthLibrary) {
-	if (taskname = bsd_malloc(16, M_CFGVAR, M_WAITOK)) {
-	  strncpy(taskname, "bsdsocket.library", 16);
+	if (taskname = bsd_malloc(sizeof("bsdsocket.library"), M_CFGVAR, M_WAITOK)) {
+	  memcpy(taskname, "bsdsocket.library", sizeof("bsdsocket.library"));
 	  taskname[6] = '.'; taskname[7] = '0' + nthLibrary;
 	}
       } else {

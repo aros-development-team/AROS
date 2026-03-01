@@ -887,8 +887,8 @@ set_source(aio, ph, MiamiBase)
 		u_int32_t flags6;
 
 		/* XXX: interface name should not be hardcoded */
-		strncpy(ifr6.ifr_name, "lo0", sizeof(ifr6.ifr_name));
 		memset(&ifr6, 0, sizeof(ifr6));
+		memcpy(ifr6.ifr_name, "lo0", sizeof("lo0"));
 		memcpy(&ifr6.ifr_addr, ai.ai_addr, ai.ai_addrlen);
 		if (IoctlSocket(s, SIOCGIFAFLAG_IN6, &ifr6) == 0) {
 			flags6 = ifr6.ifr_ifru.ifru_flags6;
@@ -2664,7 +2664,7 @@ res_querydomainN(name, domain, target, MiamiBase)
 			return (-1);
 		}
 		if (n > 0 && name[--n] == '.') {
-			strncpy(nbuf, name, n);
+			memcpy(nbuf, name, n);
 			nbuf[n] = '\0';
 		} else
 			longname = name;

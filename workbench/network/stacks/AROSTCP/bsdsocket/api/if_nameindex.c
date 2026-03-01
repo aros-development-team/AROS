@@ -132,13 +132,16 @@ AROS_LH0(struct if_nameindex *, if_nameindex,
 	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr &&
 		    ifa->ifa_addr->sa_family == AF_LINK) {
+			size_t nlen = strlen(ifa->ifa_name);
+			if (nlen >= IFNAMSIZ)
+				nlen = IFNAMSIZ - 1;
 			ifni2->if_index =
 			    ((struct sockaddr_dl*)ifa->ifa_addr)->sdl_index;
 			ifni2->if_name = cp;
-			strncpy(cp, ifa->ifa_name, IFNAMSIZ);
-			cp[IFNAMSIZ - 1] = '\0';
+			memcpy(cp, ifa->ifa_name, nlen);
+			cp[nlen] = '\0';
 			ifni2++;
-			cp += strlen(cp) + 1;
+			cp += nlen + 1;
 		}
 	}
 	/*

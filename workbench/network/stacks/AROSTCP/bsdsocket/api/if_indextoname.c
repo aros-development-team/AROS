@@ -91,8 +91,11 @@ AROS_LH2(char *, if_indextoname,
 		error = ENXIO;
 		ifname = NULL;
 	}
-	else
-		strncpy(ifname, ifa->ifa_name, IFNAMSIZ);
+	else {
+		size_t nlen = strnlen(ifa->ifa_name, IFNAMSIZ - 1);
+		memcpy(ifname, ifa->ifa_name, nlen);
+		ifname[nlen] = '\0';
+	}
 
 	freeifaddrs(ifaddrs);
 

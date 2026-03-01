@@ -476,8 +476,12 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent()\n"));
 		ifp = ifunit(ssc->args->a_name);
 		if ((!ifp) && (flags & NETDB_IFF_ADDNEW)) {
 			DIFCONF(Printf("Adding new interface %s\n", ssc->args->a_name);)
-			cp = strncpy(ssc->name, ssc->args->a_name, IFNAMSIZ);
-			ssc->name[IFNAMSIZ-1] = '\0';
+		{
+			size_t nlen = strnlen(ssc->args->a_name, IFNAMSIZ - 1);
+			memcpy(ssc->name, ssc->args->a_name, nlen);
+			ssc->name[nlen] = '\0';
+			cp = ssc->name;
+		}
 
 			for (; *cp; cp++)
 				if (*cp >= '0' && *cp <= '9')
@@ -583,8 +587,11 @@ D(bug("[AROSTCP](amiga_netdb.c) addifent: configuring interface '%s'\n", ssc->ar
 				    ssc->args->a_ip6, plen);)
 
 				memset(&in6r, 0, sizeof(in6r));
-				strncpy(in6r.ifra_name, ssc->args->a_name,
+			{
+				size_t nlen = strnlen(ssc->args->a_name,
 				    sizeof(in6r.ifra_name) - 1);
+				memcpy(in6r.ifra_name, ssc->args->a_name, nlen);
+			}
 
 				if (setaddr6(&in6r.ifra_addr, ssc->args->a_ip6)) {
 					setprefixmask6(&in6r.ifra_prefixmask, plen);

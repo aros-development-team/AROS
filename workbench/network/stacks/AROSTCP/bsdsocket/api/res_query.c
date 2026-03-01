@@ -450,10 +450,12 @@ res_querydomain(struct SocketBase *	libPtr,
 		} else
 			longname = name;
 	} else {
-		strncpy(nbuf, name, MAXDNAME);
-		ptr = nbuf + strlen(name);
+		size_t nlen = strnlen(name, MAXDNAME);
+		memcpy(nbuf, name, nlen);
+		ptr = nbuf + nlen;
 		*ptr++ = '.';
 		(void)strncpy(ptr, domain, MAXDNAME);
+		nbuf[2*MAXDNAME+1] = '\0';
 #if defined(__AROS__)
 		D(bug("[AROSTCP](res_query.c) res_querydomain: '%s'\n", nbuf));
 #endif

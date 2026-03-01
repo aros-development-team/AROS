@@ -495,7 +495,7 @@ __p_time(value)
 	register char *p;
 
 	if (value == 0) {
-		strncpy(nbuf, "0 secs", sizeof(nbuf));
+		memcpy(nbuf, "0 secs", sizeof("0 secs"));
 		return(nbuf);
 	}
 

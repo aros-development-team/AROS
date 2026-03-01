@@ -81,8 +81,8 @@ rexx_init(void)
     ARexxPort = CreateMsgPort();
     if (ARexxPort) {
 #ifdef DEBUG
-      strncpy(REXX_PORT_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_PORT_NAME) + 3);
-      strncpy(REXX_ERROR_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_ERROR_NAME) + 3);
+      memcpy(REXX_PORT_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_PORT_NAME));
+      memcpy(REXX_ERROR_NAME, D_REXX_PORT_NAME, sizeof(D_REXX_PORT_NAME));
       if (nthLibrary) {
 	REXX_PORT_NAME[sizeof(D_REXX_PORT_NAME)-1] = '.'; 
 	REXX_PORT_NAME[sizeof(D_REXX_PORT_NAME)] = '0' + nthLibrary;

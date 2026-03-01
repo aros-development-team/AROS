@@ -265,8 +265,11 @@ D(bug("[AROSTCP] ssconfig()\n"));
 
   /* Set up name */
   ifp->ss_if.if_name = ifp->ss_name;
-  strncpy(ifp->ss_name, ifc->name, IFNAMSIZ);
-  ifp->ss_name[IFNAMSIZ - 1] = '\0';
+  {
+    size_t nlen = strnlen(ifc->name, IFNAMSIZ - 1);
+    memcpy(ifp->ss_name, ifc->name, nlen);
+    ifp->ss_name[nlen] = '\0';
+  }
   ifp->ss_if.if_unit = ifc->unit;
   ifp->ss_execname = (char *)(ifp + 1);
   /* Buffer after the struct is allocated to strlen(a_dev)+1, NOT FILENAME_MAX.
