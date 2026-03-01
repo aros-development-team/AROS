@@ -11,5 +11,11 @@ ip   0
 icmp 1 
 tcp  6
 udp  17
+ipv6    41  IPv6
+ipv6-route 43  routing
+ipv6-frag  44  fragment
+ipv6-icmp  58  icmpv6
+ipv6-nonxt 59  none
+ipv6-opts  60  dst
 raw  255
 ; EOF

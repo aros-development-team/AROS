@@ -72,7 +72,8 @@ STRPTR KW_VARS =
   "TASKNAME,NTH=NTHBASE,DBSANA=DEBUGSANA,DBICMP=DEBUGICMP,"
   "DBIP=DEBUGIP,GTW=GATEWAY,REDIR=IPSENDREDIRECTS,"
   "USENS=USENAMESERVER,ULO=USELOOPBACK,TCPSND=TCP_SENDSPACE,"
-  "TCPRCV=TCP_RECVSPACE,CON=CONSOLENAME,LOGF=LOGFILENAME,OPENGUI,REFRESH";
+  "TCPRCV=TCP_RECVSPACE,CON=CONSOLENAME,LOGF=LOGFILENAME,OPENGUI,REFRESH,"
+  "DHCLIENT";
 
 /* extern declarations */
 
@@ -106,6 +107,7 @@ extern STRPTR consolename ;	 int logname_changed(void *pt, IPTR new);
 extern STRPTR logfilename;
 extern LONG OpenGUIOnStartup;
 extern ULONG gui_refresh;
+extern STRPTR dhclient_name; int dhclient_path_changed(void *pt, IPTR new);
 
 /* Global variables */
 STRPTR KW_Protocols = KW_ROUTES;
@@ -140,5 +142,6 @@ struct cfg_variable variables[] = {
 { VAR_STRP, VF_RW, NULL, &consolename, logname_changed },
 { VAR_STRP, VF_RW, NULL, &logfilename, logname_changed },
 { VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum },
-{ VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL }
+{ VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL },
+{ VAR_STRP, VF_RCONF, NULL, &dhclient_name, dhclient_path_changed }
 };

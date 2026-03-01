@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2020 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -86,12 +86,42 @@ UBYTE *taskname = NULL;
 ULONG EnableDebug = 0;
 BOOL  initialized = FALSE;
 
+STRPTR dhclient_name = NULL;
+
 TEXT interfaces_path[FILENAME_MAX];
 TEXT netdb_path[FILENAME_MAX];
 TEXT db_path[FILENAME_MAX];
 TEXT config_path[FILENAME_MAX];
 UBYTE logfiledefname[FILENAME_MAX];
 UBYTE dhclient_path[FILENAME_MAX];
+
+/*
+ * Notify callback for the DHCLIENT config variable.
+ * Resolves relative paths against the AROSTCP root directory.
+ */
+int dhclient_path_changed(void *pt, IPTR new)
+{
+    STRPTR newpath = (STRPTR)new;
+
+    if (newpath == NULL || newpath[0] == '\0')
+        return 0;
+
+    /* If it contains a colon it's an absolute Amiga path — use as-is */
+    if (strchr(newpath, ':') != NULL) {
+        strncpy(dhclient_path, newpath, FILENAME_MAX - 1);
+        dhclient_path[FILENAME_MAX - 1] = '\0';
+    } else {
+        /* Relative path: resolve against the AROSTCP root (parent of db/) */
+        TEXT root[FILENAME_MAX];
+        strncpy(root, db_path, FILENAME_MAX - 1);
+        root[FILENAME_MAX - 1] = '\0';
+        /* db_path points to "<root>/db" — go up one level */
+        PathPart(root)[0] = '\0';
+        strcpy(dhclient_path, root);
+        AddPart(dhclient_path, newpath, FILENAME_MAX);
+    }
+    return 0;
+}
 
 /*
 TEXT hequiv_path[FILENAME_MAX];
