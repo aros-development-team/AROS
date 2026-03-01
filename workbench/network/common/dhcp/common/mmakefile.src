@@ -4,12 +4,13 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. -I$(SRCDIR)/$(CURDIR)/../includes
 NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := \
-        -D_GNU_SOURCE
+        -D_GNU_SOURCE \
+        -DDHCPv6
 
-FILES :=	alloc bpf comapi conflex ctrace discover dispatch	\
-		dlpi dns ethernet execute fddi icmp inet lpf memory	\
-		nit options packet parse print raw resolv socket	\
-		tables tr tree upf
+FILES :=	alloc comapi conflex ctrace discover dispatch \
+		dns ethernet execute fddi icmp inet inet_pton memory \
+		ns_name options packet parse print resolv socket \
+		tables tr tree dhcp4o6
 
 %build_linklib mmake=network-dhcp-libdhcp	\
 	libname=dhcp			        \

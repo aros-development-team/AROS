@@ -4,12 +4,12 @@
    protocol... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -20,18 +20,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
+
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -54,21 +50,42 @@ int rc_history_count;
 static void print_rc_hist_entry (int);
 #endif
 
-VOIDPTR dmalloc (size, file, line)
-	unsigned size;
-	const char *file;
-	int line;
-{
-	unsigned char *foo = malloc (size + DMDSIZE);
-	__unused int i;
-	VOIDPTR *bar;
+static int dmalloc_failures;
+static char out_of_memory[] = "Run out of memory.";
+
+void *
+dmalloc(size_t size, const char *file, int line) {
+	unsigned char *foo;
+	size_t len;
+	void **bar;
 #if defined (DEBUG_MEMORY_LEAKAGE) || defined (DEBUG_MALLOC_POOL) || \
 		defined (DEBUG_MEMORY_LEAKAGE_ON_EXIT)
+	int i;
 	struct dmalloc_preamble *dp;
 #endif
-	if (!foo)
-		return (VOIDPTR)0;
-	bar = (VOIDPTR)(foo + DMDOFFSET);
+
+	len = size + DMDSIZE;
+	if (len < size)
+		return NULL;
+
+	foo = malloc(len);
+
+	if (!foo) {
+		dmalloc_failures++;
+		if (dmalloc_failures > 10) {
+			/* In case log_fatal() returns here */
+			IGNORE_RET(write(STDERR_FILENO,
+					 out_of_memory,
+					 strlen(out_of_memory)));
+			IGNORE_RET(write(STDERR_FILENO, "\n", 1));
+			exit(1);
+		} else if (dmalloc_failures >= 10) {
+			/* Something went wrong beyond repair. */
+			log_fatal("Fatal error: out of memory.");
+		}
+		return NULL;
+	}
+	bar = (void *)(foo + DMDOFFSET);
 	memset (bar, 0, size);
 
 #if defined (DEBUG_MEMORY_LEAKAGE) || defined (DEBUG_MALLOC_POOL) || \
@@ -124,11 +141,8 @@ VOIDPTR dmalloc (size, file, line)
 	return bar;
 }
 
-void dfree (ptr, file, line)
-	VOIDPTR ptr;
-	const char *file;
-	int line;
-{
+void
+dfree(void *ptr, const char *file, int line) {
 	if (!ptr) {
 		log_error ("dfree %s(%d): free on null pointer.", file, line);
 		return;
@@ -194,12 +208,8 @@ void dfree (ptr, file, line)
 /* For allocation functions that keep their own free lists, we want to
    account for the reuse of the memory. */
 
-void dmalloc_reuse (foo, file, line, justref)
-	VOIDPTR foo;
-	const char *file;
-	int line;
-	int justref;
-{
+void
+dmalloc_reuse(void *foo, const char *file, int line, int justref) {
 	struct dmalloc_preamble *dp;
 
 	/* Get the pointer to the dmalloc header. */
@@ -255,8 +265,10 @@ void dmalloc_dump_outstanding ()
 {
 	static unsigned long dmalloc_cutoff_point;
 	struct dmalloc_preamble *dp;
+#if defined(DEBUG_MALLOC_POOL)
 	unsigned char *foo;
 	int i;
+#endif
 
 	if (!dmalloc_cutoff_point)
 		dmalloc_cutoff_point = dmalloc_cutoff_generation;
@@ -307,8 +319,8 @@ void dmalloc_dump_outstanding ()
 			    if (rc_history [i].addr == dp + 1) {
 				inhistory = 1;
 				if (!noted) {
-				    log_info ("  %s(%d): %d", dp -> file,
-					      dp -> line, dp -> size);
+				    log_info ("  %s(%d): %ld", dp -> file,
+					      dp -> line, (long) dp -> size);
 				    noted = 1;
 				}
 				print_rc_hist_entry (i);
@@ -320,8 +332,9 @@ void dmalloc_dump_outstanding ()
 			} while (count--);
 			if (!inhistory)
 #endif
-				log_info ("  %s(%d): %d",
-					  dp -> file, dp -> line, dp -> size);
+				log_info ("  %s(%d): %ld",
+					  dp -> file, dp -> line,
+					  (long) dp -> size);
 		}
 #endif
 	}
@@ -353,7 +366,7 @@ void dump_rc_history (void *addr)
 			i += RC_HISTORY_MAX;
 	}
 	rc_history_count = 0;
-		
+
 	while (rc_history [i].file) {
 		if (!addr || addr == rc_history [i].addr)
 			print_rc_hist_entry (i);
@@ -413,7 +426,7 @@ void rc_history_next (int d)
 		rc_history_index = 0;
 	++rc_history_count;
 }
-#endif
+#endif /* DEBUG_RC_HISTORY */
 
 #if defined (DEBUG_MEMORY_LEAKAGE) || defined (DEBUG_MALLOC_POOL) || \
 		defined (DEBUG_MEMORY_LEAKAGE_ON_EXIT)
@@ -427,7 +440,6 @@ static int dmalloc_find_entry (struct dmalloc_preamble *dp,
 			       int min, int max)
 {
 	int middle;
-	int cmp;
 
 	middle = (min + max) / 2;
 	if (middle == min)
@@ -448,8 +460,7 @@ static int dmalloc_find_entry (struct dmalloc_preamble *dp,
 void omapi_print_dmalloc_usage_by_caller ()
 {
 	struct dmalloc_preamble *dp;
-	unsigned char *foo;
-	int ccur, cmax, i, j;
+	int ccur, cmax, i;
 	struct caller cp [1024];
 
 	cmax = 1024;
@@ -494,7 +505,9 @@ void omapi_print_dmalloc_usage_by_caller ()
 	for (i = 0; i < ccur; i++) {
 		printf ("%d\t%s:%d\t%d\n", i,
 			cp [i].dp -> file, cp [i].dp -> line, cp [i].count);
+#if defined(DUMP_RC_HISTORY)
 		dump_rc_history (cp [i].dp + 1);
+#endif
 	}
 }
 #endif /* DEBUG_MEMORY_LEAKAGE || DEBUG_MALLOC_POOL */
@@ -522,11 +535,11 @@ isc_result_t omapi_object_allocate (omapi_object_t **o,
 			tsize = (*type -> sizer) (size);
 		else
 			tsize = type -> size;
-		
+
 		/* Sanity check. */
 		if (tsize < sizeof (omapi_object_t))
-			return ISC_R_INVALIDARG;
-		
+			return DHCP_R_INVALIDARG;
+
 		foo = dmalloc (tsize, file, line);
 		if (!foo)
 			return ISC_R_NOMEMORY;
@@ -560,7 +573,7 @@ isc_result_t omapi_object_reference (omapi_object_t **r,
 				     const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
@@ -568,7 +581,7 @@ isc_result_t omapi_object_reference (omapi_object_t **r,
 			   file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -587,17 +600,17 @@ isc_result_t omapi_object_dereference (omapi_object_t **h,
 	omapi_object_t *p, *hp;
 
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with refcnt of zero!",
@@ -608,10 +621,10 @@ isc_result_t omapi_object_dereference (omapi_object_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	/* See if this object's inner object refers to it, but don't
 	   count this as a reference if we're being asked to free the
 	   reference from the inner object. */
@@ -681,6 +694,13 @@ isc_result_t omapi_object_dereference (omapi_object_t **h,
 /*			if (!hp -> type -> freer) */
 				rc_register (file, line, h, hp,
 					     0, 1, hp -> type -> rc_flag);
+			if (handle_reference) {
+				if (omapi_handle_clear(hp->handle) !=
+				    ISC_R_SUCCESS) {
+					log_debug("Attempt to clear null "
+						  "handle pointer");
+				}
+			}
 			if (hp -> type -> destroy)
 				(*(hp -> type -> destroy)) (hp, file, line);
 			if (hp -> type -> freer)
@@ -709,7 +729,7 @@ isc_result_t omapi_buffer_new (omapi_buffer_t **h,
 {
 	omapi_buffer_t *t;
 	isc_result_t status;
-	
+
 	t = (omapi_buffer_t *)dmalloc (sizeof *t, file, line);
 	if (!t)
 		return ISC_R_NOMEMORY;
@@ -726,7 +746,7 @@ isc_result_t omapi_buffer_reference (omapi_buffer_t **r,
 				     const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
@@ -734,7 +754,7 @@ isc_result_t omapi_buffer_reference (omapi_buffer_t **r,
 			   file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -747,17 +767,17 @@ isc_result_t omapi_buffer_dereference (omapi_buffer_t **h,
 				       const char *file, int line)
 {
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with refcnt of zero!",
@@ -768,7 +788,7 @@ isc_result_t omapi_buffer_dereference (omapi_buffer_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 
@@ -804,10 +824,18 @@ isc_result_t omapi_typed_data_new (const char *file, int line,
 		s = va_arg (l, char *);
 		val = strlen (s);
 		len = OMAPI_TYPED_DATA_NOBUFFER_LEN + val;
+		if (len < val) {
+			va_end(l);
+			return DHCP_R_INVALIDARG;
+		}
 		break;
 	      case omapi_datatype_data:
 		val = va_arg (l, unsigned);
 		len = OMAPI_TYPED_DATA_NOBUFFER_LEN + val;
+		if (len < val) {
+			va_end(l);
+			return DHCP_R_INVALIDARG;
+		}
 		break;
 	      case omapi_datatype_object:
 		len = OMAPI_TYPED_DATA_OBJECT_LEN;
@@ -815,7 +843,7 @@ isc_result_t omapi_typed_data_new (const char *file, int line,
 		break;
 	      default:
 		va_end (l);
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	}
 	va_end (l);
 
@@ -854,14 +882,14 @@ isc_result_t omapi_typed_data_reference (omapi_typed_data_t **r,
 					 const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): reference store into non-null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -874,17 +902,17 @@ isc_result_t omapi_typed_data_dereference (omapi_typed_data_t **h,
 					   const char *file, int line)
 {
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with refcnt of zero!",
@@ -895,10 +923,10 @@ isc_result_t omapi_typed_data_dereference (omapi_typed_data_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	--((*h) -> refcnt);
 	rc_register (file, line, h, *h, (*h) -> refcnt, 1, RC_MISC);
 	if ((*h) -> refcnt <= 0 ) {
@@ -923,8 +951,12 @@ isc_result_t omapi_data_string_new (omapi_data_string_t **d, unsigned len,
 				    const char *file, int line)
 {
 	omapi_data_string_t *new;
+	unsigned nlen;
 
-	new = dmalloc (OMAPI_DATA_STRING_EMPTY_SIZE + len, file, line);
+	nlen = OMAPI_DATA_STRING_EMPTY_SIZE + len;
+	if (nlen < len)
+		return DHCP_R_INVALIDARG;
+	new = dmalloc (nlen, file, line);
 	if (!new)
 		return ISC_R_NOMEMORY;
 	memset (new, 0, OMAPI_DATA_STRING_EMPTY_SIZE);
@@ -937,14 +969,14 @@ isc_result_t omapi_data_string_reference (omapi_data_string_t **r,
 					  const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): reference store into non-null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -957,17 +989,17 @@ isc_result_t omapi_data_string_dereference (omapi_data_string_t **h,
 					    const char *file, int line)
 {
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with refcnt of zero!",
@@ -978,7 +1010,7 @@ isc_result_t omapi_data_string_dereference (omapi_data_string_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 
@@ -1008,7 +1040,7 @@ isc_result_t omapi_value_reference (omapi_value_t **r,
 				    const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
@@ -1016,7 +1048,7 @@ isc_result_t omapi_value_reference (omapi_value_t **r,
 			   file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -1029,17 +1061,17 @@ isc_result_t omapi_value_dereference (omapi_value_t **h,
 				      const char *file, int line)
 {
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with refcnt of zero!",
@@ -1050,10 +1082,10 @@ isc_result_t omapi_value_dereference (omapi_value_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	--((*h) -> refcnt);
 	rc_register (file, line, h, *h, (*h) -> refcnt, 1, RC_MISC);
 	if ((*h) -> refcnt == 0) {
@@ -1090,7 +1122,7 @@ isc_result_t omapi_addr_list_reference (omapi_addr_list_t **r,
 					  const char *file, int line)
 {
 	if (!h || !r)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (*r) {
 #if defined (POINTER_DEBUG)
@@ -1098,7 +1130,7 @@ isc_result_t omapi_addr_list_reference (omapi_addr_list_t **r,
 			   file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 	*r = h;
@@ -1111,17 +1143,17 @@ isc_result_t omapi_addr_list_dereference (omapi_addr_list_t **h,
 					    const char *file, int line)
 {
 	if (!h)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (!*h) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of null pointer!", file, line);
 		abort ();
 #else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
-	
+
 	if ((*h) -> refcnt <= 0) {
 #if defined (POINTER_DEBUG)
 		log_error ("%s(%d): dereference of pointer with zero refcnt!",
@@ -1132,7 +1164,7 @@ isc_result_t omapi_addr_list_dereference (omapi_addr_list_t **h,
 		abort ();
 #else
 		*h = 0;
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 #endif
 	}
 
@@ -1144,4 +1176,3 @@ isc_result_t omapi_addr_list_dereference (omapi_addr_list_t **h,
 	*h = 0;
 	return ISC_R_SUCCESS;
 }
-

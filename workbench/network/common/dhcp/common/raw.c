@@ -1,4 +1,4 @@
-/* socket.c
+/* raw.c
 
    BSD raw socket interface code... */
 
@@ -16,12 +16,12 @@
    Sigh. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1995-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -32,23 +32,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 
@@ -66,14 +55,14 @@ void if_register_send (info)
 
 	/* Set up the address we're going to connect to. */
 	name.sin_family = AF_INET;
-	name.sin_port = local_port;
+	name.sin_port = relay_port ? relay_port : local_port;
 	name.sin_addr.s_addr = htonl (INADDR_BROADCAST);
 	memset (name.sin_zero, 0, sizeof (name.sin_zero));
 
 	/* List addresses on which we're listening. */
-	if (!quiet_interface_discovery)
+        if (!quiet_interface_discovery)
 		log_info ("Sending on %s, port %d",
-		      inet_ntoa (info->primary_address), htons (local_port));
+		      piaddr (info -> address), htons (name.sin_port));
 	if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0)
 		log_fatal ("Can't create dhcp socket: %m");
 
@@ -100,11 +89,7 @@ void if_register_send (info)
 void if_deregister_send (info)
 	struct interface_info *info;
 {
-#ifdef SOCKET_IS_NOT_A_FILE
-	CloseSocket (info -> wfdesc);
-#else
 	close (info -> wfdesc);
-#endif
 	info -> wfdesc = -1;
 
         if (!quiet_interface_discovery)
@@ -115,7 +100,7 @@ void if_deregister_send (info)
 		       info -> shared_network -> name : ""));
 }
 
-ssize_t send_packet (interface, packet, raw, len, from, to, hto)
+size_t send_packet (interface, packet, raw, len, from, to, hto)
 	struct interface_info *interface;
 	struct packet *packet;
 	struct dhcp_packet *raw;
@@ -126,6 +111,7 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 {
 	unsigned char buf [256];
 	int bufp = 0;
+	struct iovec iov [2];
 	int result;
 
 	/* Assemble the headers... */
@@ -134,39 +120,14 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 				(unsigned char *)raw, len);
 
 	/* Fire it off */
-	result = sendto(interface -> wfdesc, buf, bufp, 0, (struct sockaddr *)to, sizeof *to);
-	if (result >= 0)
-		result = sendto(interface -> wfdesc, buf, bufp, 0, (struct sockaddr *)to, sizeof *to);
+	iov [0].iov_base = (char *)buf;
+	iov [0].iov_len = bufp;
+	iov [1].iov_base = (char *)raw;
+	iov [1].iov_len = len;
+
+	result = writev(interface -> wfdesc, iov, 2);
 	if (result < 0)
 		log_error ("send_packet: %m");
 	return result;
 }
-
-int can_unicast_without_arp (ip)
-	struct interface_info *ip;
-{
-	return 0;
-}
-
-int supports_multiple_interfaces (ip)
-	struct interface_info *ip;
-{
-	return 0;
-}
-
-void maybe_setup_fallback ()
-{
-}
-
-void if_reinitialize_send (info)
-	struct interface_info *info;
-{
-}
-
-int can_receive_unicast_unconfigured (ip)
-	struct interface_info *ip;
-{
-	return 0;
-}
-
 #endif /* USE_SOCKET_SEND */

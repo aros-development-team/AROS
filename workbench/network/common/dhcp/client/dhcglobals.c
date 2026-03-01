@@ -11,8 +11,7 @@ enum dhcp_shutdown_state shutdown_state;
 /* class.c */
 struct class unknown_class;
 struct class known_class;
-struct collection default_collection;
-struct collection *collections;
+/* default_collection and collections are defined in common/parse.c */
 struct executable_statement *default_classification_rules;
 
 /* resolv.c */

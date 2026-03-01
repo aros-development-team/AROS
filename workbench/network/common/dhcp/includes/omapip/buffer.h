@@ -3,12 +3,12 @@
    Definitions for the object management API protocol buffering... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,17 +19,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
 /* OMAPI buffers are ring buffers, which means that the beginning of the
@@ -58,7 +52,7 @@ typedef struct _omapi_buffer {
 	u_int16_t head, tail;		/* Buffers are organized in a ring. */
 	char buf [OMAPI_BUF_SIZE];	/* The actual buffer is included in
 					   the buffer data structure. */
-} omapi_buffer_t;	
+} omapi_buffer_t;
 
 #define BUFFER_BYTES_FREE(x)	\
 	((x) -> tail > (x) -> head \
@@ -80,4 +74,3 @@ isc_result_t omapi_connection_get_uint32 (omapi_object_t *, u_int32_t *);
 isc_result_t omapi_connection_put_uint32 (omapi_object_t *, u_int32_t);
 isc_result_t omapi_connection_get_uint16 (omapi_object_t *, u_int16_t *);
 isc_result_t omapi_connection_put_uint16 (omapi_object_t *, u_int32_t);
-

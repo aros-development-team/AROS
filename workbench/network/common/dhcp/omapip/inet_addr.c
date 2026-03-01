@@ -12,11 +12,7 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
+ * 3. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
@@ -33,18 +29,7 @@
  * SUCH DAMAGE.
  */
 
-#if defined(LIBC_SCCS) && !defined(lint)
-#if 0
-static char sccsid[] = "@(#)inet_addr.c	8.1 (Berkeley) 6/17/93";
-#else
-static char rcsid[] = "$NetBSD: inet_addr.c,v 1.6 1996/02/02 15:22:23 mrg Exp $";
-#endif
-#endif /* LIBC_SCCS and not lint */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 1983, 1990, 1993 The Regents of the University of California.  All rights reserved.\n";
-#endif
+#include "dhcpd.h"
 
 #include "omapip/omapip_p.h"
 
@@ -81,14 +66,14 @@ inet_aton(cp, addr)
 				base = 8;
 		}
 		while ((c = *cp) != '\0') {
-			if (isascii(c) && isdigit(c)) {
+			if (isascii(c) && isdigit((int)c)) {
 				val = (val * base) + (c - '0');
 				cp++;
 				continue;
 			}
-			if (base == 16 && isascii(c) && isxdigit(c)) {
+			if (base == 16 && isascii(c) && isxdigit((int)c)) {
 				val = (val << 4) + 
-					(c + 10 - (islower(c) ? 'a' : 'A'));
+				      (c + 10 - (islower((int)c) ? 'a' : 'A'));
 				cp++;
 				continue;
 			}
@@ -110,7 +95,7 @@ inet_aton(cp, addr)
 	/*
 	 * Check for trailing characters.
 	 */
-	if (*cp && (!isascii(*cp) || !isspace(*cp)))
+	if (*cp && (!isascii(*cp) || !isspace((int)*cp)))
 		return (0);
 	/*
 	 * Concoct the address according to

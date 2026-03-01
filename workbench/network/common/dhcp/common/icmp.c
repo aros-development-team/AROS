@@ -4,12 +4,12 @@
    responses. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -20,23 +20,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 #include "netinet/ip.h"
@@ -57,15 +46,11 @@ trace_type_t *trace_icmp_output;
 
 void icmp_startup (routep, handler)
 	int routep;
-	void (*handler) PROTO ((struct iaddr, u_int8_t *, int));
+	void (*handler) (struct iaddr, u_int8_t *, int);
 {
 	struct protoent *proto;
 	int protocol = 1;
-	// struct sockaddr_in from;
-	// int fd;
 	int state;
-	// struct icmp_state *new;
-	// omapi_object_t *h;
 	isc_result_t result;
 
 	/* Only initialize icmp once. */
@@ -100,7 +85,7 @@ void icmp_startup (routep, handler)
 		proto = getprotobyname ("icmp");
 		if (proto)
 			protocol = proto -> p_proto;
-		
+
 		/* Get a raw socket for the ICMP protocol. */
 		icmp_state -> socket = socket (AF_INET, SOCK_RAW, protocol);
 		if (icmp_state -> socket < 0) {
@@ -167,11 +152,11 @@ int icmp_echorequest (addr)
 	icmp.icmp_code = 0;
 	icmp.icmp_cksum = 0;
 	icmp.icmp_seq = 0;
-#ifdef PTRSIZE_64BIT
+#if SIZEOF_STRUCT_IADDR_P == 8
 	icmp.icmp_id = (((u_int32_t)(u_int64_t)addr) ^
   			(u_int32_t)(((u_int64_t)addr) >> 32));
 #else
-	icmp.icmp_id = (u_int32_t)addr;
+	icmp.icmp_id = (u_int32_t)(uintptr_t)addr;
 #endif
 	memset (&icmp.icmp_dun, 0, sizeof icmp.icmp_dun);
 
@@ -284,7 +269,6 @@ isc_result_t icmp_echoreply (h)
 void trace_icmp_input_input (trace_type_t *ttype, unsigned length, char *buf)
 {
 	struct iaddr *ia;
-	// unsigned len;
 	u_int8_t *icbuf;
 	ia = (struct iaddr *)buf;
 	ia->len = ntohl(ia->len);
@@ -298,17 +282,15 @@ void trace_icmp_input_stop (trace_type_t *ttype) { }
 
 void trace_icmp_output_input (trace_type_t *ttype, unsigned length, char *buf)
 {
-	struct icmp *icmp;
 	struct iaddr ia;
 
-	if (length != (sizeof (*icmp) + (sizeof ia))) {
+	if (length != (sizeof (struct icmp) + sizeof (ia))) {
 		log_error ("trace_icmp_output_input: data size mismatch %d:%d",
-			   length, (int)((sizeof (*icmp)) + (sizeof ia)));
+			   length, (int)(sizeof (struct icmp) + sizeof (ia)));
 		return;
 	}
 	ia.len = 4;
 	memcpy (ia.iabuf, buf, 4);
-	icmp = (struct icmp *)(buf + 1);
 
 	log_error ("trace_icmp_output_input: unsent ping to %s", piaddr (ia));
 }

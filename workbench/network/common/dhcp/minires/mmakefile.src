@@ -9,8 +9,8 @@ USER_CPPFLAGS := \
         -D_XOPEN_SOURCE=600 \
         -D__BSD_VISIBLE=1
 
-FILES :=	ns_date ns_name	ns_parse ns_samedomain ns_sign 		\
-		ns_verify res_comp res_findzonecut res_init res_mkquery	\
+FILES :=	ns_date ns_name	ns_parse ns_samedomain ns_sign \
+		ns_verify res_comp res_findzonecut res_init res_mkquery \
 		res_mkupdate res_send res_sendsigned res_update
 
 %build_linklib mmake=network-dhcp-libminires	\

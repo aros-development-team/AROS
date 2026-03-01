@@ -3,12 +3,12 @@
    Functions supporting the object management protocol... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,18 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
+
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -57,7 +53,7 @@ isc_result_t omapi_protocol_connect (omapi_object_t *h,
 		return status;
 
 	rstatus = omapi_connect ((omapi_object_t *)obj, server_name, port);
-	if (rstatus != ISC_R_SUCCESS && rstatus != ISC_R_INCOMPLETE) {
+	if (rstatus != ISC_R_SUCCESS && rstatus != DHCP_R_INCOMPLETE) {
 		omapi_protocol_dereference (&obj, MDL);
 		return rstatus;
 	}
@@ -93,7 +89,7 @@ isc_result_t omapi_protocol_connect (omapi_object_t *h,
 		}
 
 		obj -> insecure = 0;
-		rstatus = ISC_R_INCOMPLETE;
+		rstatus = DHCP_R_INCOMPLETE;
 	} else {
 		obj -> insecure = 1;
 #if 0
@@ -118,7 +114,7 @@ isc_result_t omapi_protocol_send_intro (omapi_object_t *h,
 #endif
 
 	if (h -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)h;
 
 	if (!h -> outer || h -> outer -> type != omapi_type_connection)
@@ -137,13 +133,17 @@ isc_result_t omapi_protocol_send_intro (omapi_object_t *h,
 	   protocol input state machine. */
 	p -> state = omapi_protocol_intro_wait;
 	status = omapi_connection_require (h -> outer, 8);
-	if (status != ISC_R_SUCCESS && status != ISC_R_NOTYET)
+	if (status != ISC_R_SUCCESS && status != DHCP_R_NOTYET)
 		return status;
 
 	/* Make up an initial transaction ID for this connection. */
 	p -> next_xid = random ();
 	return ISC_R_SUCCESS;
 }
+
+#ifdef DEBUG_PROTOCOL
+extern const char *omapi_message_op_name(int);
+#endif /* DEBUG_PROTOCOL */
 
 isc_result_t omapi_protocol_send_message (omapi_object_t *po,
 					  omapi_object_t *id,
@@ -156,24 +156,23 @@ isc_result_t omapi_protocol_send_message (omapi_object_t *po,
 	omapi_remote_auth_t *ra;
 	omapi_value_t *signature;
 	isc_result_t status;
-	// u_int32_t foo;
 	unsigned auth_len;
 
 	if (po -> type != omapi_type_protocol ||
 	    !po -> outer || po -> outer -> type != omapi_type_connection ||
 	    mo -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	if (omo && omo -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)po;
 	c = (omapi_object_t *)(po -> outer);
 	m = (omapi_message_object_t *)mo;
 	om = (omapi_message_object_t *)omo;
 
 #ifdef DEBUG_PROTOCOL
-	log_debug ("omapi_protocol_send_message()"
-		   "op=%ld  handle=%#lx  id=%#lx  rid=%#lx",
-		   (long)m -> op,
+	log_debug ("omapi_protocol_send_message(): "
+		   "op=%s  handle=%#lx  id=%#lx  rid=%#lx",
+		   omapi_message_op_name (m->op),
 		   (long)(m -> object ? m -> object -> handle : m -> handle),
 		   (long)p -> next_xid, (long)m -> rid);
 #endif
@@ -187,7 +186,7 @@ isc_result_t omapi_protocol_send_message (omapi_object_t *po,
 		}
 
 		if (!ra)
-			return ISC_R_KEY_UNKNOWN;
+			return DHCP_R_KEY_UNKNOWN;
 	} else if (p -> remote_auth_list) {
 		ra = p -> default_auth;
 	} else {
@@ -339,7 +338,7 @@ isc_result_t omapi_protocol_send_message (omapi_object_t *po,
 	}
 	return ISC_R_SUCCESS;
 }
-					  
+
 
 isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 					    const char *name, va_list ap)
@@ -348,7 +347,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 	omapi_protocol_object_t *p;
 	omapi_object_t *c;
 	omapi_message_object_t *m;
-	omapi_value_t *signature;
+	omapi_value_t *signature = NULL;
 	u_int16_t nlen;
 	u_int32_t vlen;
 	u_int32_t th;
@@ -405,7 +404,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 	    dmalloc_dump_outstanding ();
 #endif
 #if defined (DEBUG_RC_HISTORY_EXHAUSTIVELY)
-	    dump_rc_history ();
+	    dump_rc_history (h);
 #endif
 	    for (m = omapi_registered_messages; m; m = m -> next) {
 		if (m -> protocol_object == p) {
@@ -413,6 +412,9 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 			omapi_signal (m -> object, "disconnect");
 		}
 	    }
+
+	    /* XXX */
+	    return ISC_R_SUCCESS;
 	}
 
 	/* Not a signal we recognize? */
@@ -425,7 +427,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 	}
 
 	if (!p -> outer || p -> outer -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	c = p -> outer;
 
 	/* We get here because we requested that we be woken up after
@@ -437,16 +439,16 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 		   byte order. */
 		omapi_connection_get_uint32 (c, &p -> protocol_version);
 		omapi_connection_get_uint32 (c, &p -> header_size);
-	
+
 		/* We currently only support the current protocol version. */
 		if (p -> protocol_version != OMAPI_PROTOCOL_VERSION) {
 			omapi_disconnect (c, 1);
-			return ISC_R_VERSIONMISMATCH;
+			return DHCP_R_VERSIONMISMATCH;
 		}
 
 		if (p -> header_size < sizeof (omapi_protocol_header_t)) {
 			omapi_disconnect (c, 1);
-			return ISC_R_PROTOCOLERROR;
+			return DHCP_R_PROTOCOLERROR;
 		}
 
 		if (p -> default_auth) {
@@ -487,7 +489,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 			dmalloc_dump_outstanding ();
 #endif
 #if defined (DEBUG_RC_HISTORY_EXHAUSTIVELY)
-			dump_rc_history ();
+			dump_rc_history (h);
 #endif
 #if defined (DEBUG_MEMORY_LEAKAGE)
 		}
@@ -536,7 +538,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 				(0, c, (p -> header_size -
 					sizeof (omapi_protocol_header_t)));
 		}
-						     
+
 		/* XXX must compute partial signature across the
                    XXX preceding bytes.    Also, if authenticator
 		   specifies encryption as well as signing, we may
@@ -600,7 +602,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 		if (omapi_connection_require (c, nlen) != ISC_R_SUCCESS)
 			break;
 		/* If it's already here, fall through. */
-					     
+
 	      case omapi_protocol_name_wait:
 		omapi_connection_copyout (p -> name -> value, c,
 					  p -> name -> len);
@@ -631,7 +633,7 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 		if (omapi_connection_require (c, vlen) != ISC_R_SUCCESS)
 			break;
 		/* If it's already here, fall through. */
-					     
+
 	      case omapi_protocol_value_wait:
 		omapi_connection_copyout (p -> value -> u.buffer.value, c,
 					  p -> value -> u.buffer.len);
@@ -671,7 +673,6 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 	      case omapi_protocol_signature_wait:
 		if (p -> message -> id_object) {
 			/* Compute the signature of the message. */
-			signature = (omapi_value_t *)0;
 			status = omapi_get_value_str (c, (omapi_object_t *)0,
 						      "input-signature",
 						      &signature);
@@ -696,9 +697,11 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 					       &p -> message -> authenticator,
 					       omapi_datatype_data,
 					       p -> message -> authlen);
-			
+
 		if (status != ISC_R_SUCCESS) {
-			omapi_value_dereference (&signature, MDL);
+			if (signature != NULL) {
+				omapi_value_dereference (&signature, MDL);
+			}
 			omapi_disconnect (c, 1);
 			return ISC_R_NOMEMORY;
 		}
@@ -714,10 +717,12 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 			      p -> message -> authenticator -> u.buffer.value,
 			      p -> message -> authlen) != 0))) {
 			/* Invalid signature. */
-			p -> verify_result = ISC_R_INVALIDKEY;
+			p->verify_result = DHCP_R_INVALIDKEY;
 		}
 
-		omapi_value_dereference (&signature, MDL);
+		if (signature != NULL) {
+			omapi_value_dereference (&signature, MDL);
+		}
 
 		/* Process the message. */
 	      message_done:
@@ -745,13 +750,13 @@ isc_result_t omapi_protocol_signal_handler (omapi_object_t *h,
 		dmalloc_dump_outstanding ();
 #endif
 #if defined (DEBUG_RC_HISTORY_EXHAUSTIVELY)
-		dump_rc_history ();
+		dump_rc_history (h);
 #endif
 #if defined (DEBUG_MEMORY_LEAKAGE)
 		previous_outstanding = 0xDEADBEEF;
 #endif
 		/* Now wait for the next message. */
-		goto to_header_wait;		
+		goto to_header_wait;
 
 	      default:
 		/* XXX should never get here.   Assertion? */
@@ -770,10 +775,10 @@ isc_result_t omapi_protocol_add_auth (omapi_object_t *po,
 
 	if (ao -> type != omapi_type_auth_key &&
 	    (!ao -> inner || ao -> inner -> type != omapi_type_auth_key))
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (po -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)po;
 
 #ifdef DEBUG_PROTOCOL
@@ -828,14 +833,14 @@ isc_result_t omapi_protocol_lookup_auth (omapi_object_t **a,
 	omapi_remote_auth_t *r;
 
 	if (po -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)po;
 
 	for (r = p -> remote_auth_list; r; r = r -> next)
 		if (r -> remote_handle == handle)
 			return omapi_object_reference (a, r -> a, MDL);
 
-	return ISC_R_KEY_UNKNOWN;
+	return DHCP_R_KEY_UNKNOWN;
 }
 
 isc_result_t omapi_protocol_set_value (omapi_object_t *h,
@@ -847,14 +852,14 @@ isc_result_t omapi_protocol_set_value (omapi_object_t *h,
 	omapi_remote_auth_t *r;
 
 	if (h -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)h;
 
 	if (omapi_ds_strcmp (name, "default-authenticator") == 0) {
-		if (value -> type != omapi_datatype_object)
-			return ISC_R_INVALIDARG;
+		if (!value || value -> type != omapi_datatype_object)
+			return DHCP_R_INVALIDARG;
 
-		if (!value || !value -> u.object) {
+		if (!value -> u.object) {
 			p -> default_auth = (omapi_remote_auth_t *)0;
 		} else {
 			for (r = p -> remote_auth_list; r; r = r -> next)
@@ -862,7 +867,7 @@ isc_result_t omapi_protocol_set_value (omapi_object_t *h,
 					break;
 
 			if (!r)
-				return ISC_R_KEY_UNKNOWN;
+				return DHCP_R_KEY_UNKNOWN;
 
 			p -> default_auth = r;
 		}
@@ -884,7 +889,7 @@ isc_result_t omapi_protocol_get_value (omapi_object_t *h,
 	omapi_protocol_object_t *p;
 
 	if (h -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)h;
 
 	if (omapi_ds_strcmp (name, "default-authenticator") == 0) {
@@ -894,7 +899,7 @@ isc_result_t omapi_protocol_get_value (omapi_object_t *h,
 		return omapi_make_object_value (value, name,
 						p -> default_auth -> a, MDL);
 	}
-	
+
 	if (h -> inner && h -> inner -> type -> get_value)
 		return (*(h -> inner -> type -> get_value))
 			(h -> inner, id, name, value);
@@ -906,7 +911,7 @@ isc_result_t omapi_protocol_destroy (omapi_object_t *h,
 {
 	omapi_protocol_object_t *p;
 	if (h -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_object_t *)h;
 	if (p -> message)
 		omapi_message_dereference (&p -> message, file, line);
@@ -918,12 +923,10 @@ isc_result_t omapi_protocol_destroy (omapi_object_t *h,
 		dfree (p -> default_auth, file, line);
 
 	while (p -> remote_auth_list) {
-		omapi_remote_auth_t *r = p -> remote_auth_list -> next;
-		p -> remote_auth_list = r;
-		if (r) {
-			omapi_object_dereference (&r -> a, file, line);
-			dfree (r, file, line);
-		}
+		omapi_remote_auth_t *r = p -> remote_auth_list;
+		p -> remote_auth_list =  p -> remote_auth_list -> next;
+		omapi_object_dereference (&r -> a, file, line);
+		dfree (r, file, line);
 	}
 	return ISC_R_SUCCESS;
 }
@@ -935,10 +938,8 @@ isc_result_t omapi_protocol_stuff_values (omapi_object_t *c,
 					  omapi_object_t *id,
 					  omapi_object_t *p)
 {
-	// int i;
-
 	if (p -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (p -> inner && p -> inner -> type -> stuff_values)
 		return (*(p -> inner -> type -> stuff_values)) (c, id,
@@ -976,15 +977,19 @@ isc_result_t omapi_protocol_configure_security (omapi_object_t *h,
 		h = h -> outer;
 
 	if (h -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	l = (omapi_protocol_listener_object_t *)h;
 
 	l -> verify_auth = verify_auth;
 	l -> insecure = 0;
 
-	return omapi_listener_configure_security (h -> outer, verify_addr);
+	if (h -> outer != NULL) {
+		return omapi_listener_configure_security (h -> outer, verify_addr);
+	} else {
+		return DHCP_R_INVALIDARG;
+	}
 }
-					      
+
 
 /* Set up a listener for the omapi protocol.    The handle stored points to
    a listener object, not a protocol object. */
@@ -1033,7 +1038,7 @@ isc_result_t omapi_protocol_listener_signal (omapi_object_t *o,
 	omapi_protocol_listener_object_t *p;
 
 	if (!o || o -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	p = (omapi_protocol_listener_object_t *)o;
 
 	/* Not a signal we recognize? */
@@ -1046,7 +1051,7 @@ isc_result_t omapi_protocol_listener_signal (omapi_object_t *o,
 
 	c = va_arg (ap, omapi_object_t *);
 	if (!c || c -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	obj = (omapi_protocol_object_t *)0;
 	status = omapi_protocol_allocate (&obj, MDL);
@@ -1086,8 +1091,8 @@ isc_result_t omapi_protocol_listener_set_value (omapi_object_t *h,
 						omapi_typed_data_t *value)
 {
 	if (h -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
-	
+		return DHCP_R_INVALIDARG;
+
 	if (h -> inner && h -> inner -> type -> set_value)
 		return (*(h -> inner -> type -> set_value))
 			(h -> inner, id, name, value);
@@ -1100,8 +1105,8 @@ isc_result_t omapi_protocol_listener_get_value (omapi_object_t *h,
 						omapi_value_t **value)
 {
 	if (h -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
-	
+		return DHCP_R_INVALIDARG;
+
 	if (h -> inner && h -> inner -> type -> get_value)
 		return (*(h -> inner -> type -> get_value))
 			(h -> inner, id, name, value);
@@ -1112,7 +1117,7 @@ isc_result_t omapi_protocol_listener_destroy (omapi_object_t *h,
 					      const char *file, int line)
 {
 	if (h -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	return ISC_R_SUCCESS;
 }
 
@@ -1123,10 +1128,8 @@ isc_result_t omapi_protocol_listener_stuff (omapi_object_t *c,
 					    omapi_object_t *id,
 					    omapi_object_t *p)
 {
-	// int i;
-
 	if (p -> type != omapi_type_protocol_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (p -> inner && p -> inner -> type -> stuff_values)
 		return (*(p -> inner -> type -> stuff_values)) (c, id,
@@ -1144,7 +1147,7 @@ isc_result_t omapi_protocol_send_status (omapi_object_t *po,
 	omapi_object_t *mo;
 
 	if (po -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	status = omapi_message_new ((omapi_object_t **)&message, MDL);
 	if (status != ISC_R_SUCCESS)
@@ -1202,7 +1205,7 @@ isc_result_t omapi_protocol_send_open (omapi_object_t *po,
 	omapi_object_t *mo;
 
 	if (po -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	status = omapi_message_new ((omapi_object_t **)&message, MDL);
 	mo = (omapi_object_t *)message;
@@ -1261,7 +1264,7 @@ isc_result_t omapi_protocol_send_update (omapi_object_t *po,
 	omapi_object_t *mo;
 
 	if (po -> type != omapi_type_protocol)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	status = omapi_message_new ((omapi_object_t **)&message, MDL);
 	if (status != ISC_R_SUCCESS)
@@ -1295,8 +1298,8 @@ isc_result_t omapi_protocol_send_update (omapi_object_t *po,
 			omapi_message_dereference (&message, MDL);
 			return status;
 		}
-	}		
-		
+	}
+
 	status = omapi_set_object_value (mo, (omapi_object_t *)0,
 					 "object", object);
 	if (status != ISC_R_SUCCESS) {

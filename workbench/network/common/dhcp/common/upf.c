@@ -3,12 +3,12 @@
    Ultrix PacketFilter interface code. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,23 +19,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 #if defined (USE_UPF_SEND) || defined (USE_UPF_RECEIVE)
@@ -105,7 +94,7 @@ int if_register_upf (info)
 		       info -> name);
 
 	/* We only know how to do ethernet. */
-	if (param.end_dev_type != ENDT_10MB)	
+	if (param.end_dev_type != ENDT_10MB)
 		log_fatal ("Invalid device type on network interface %s: %d",
 		       info -> name, param.end_dev_type);
 
@@ -167,6 +156,9 @@ void if_deregister_send (info)
    XXX Changes to the filter program may require changes to the constant
    offsets used in if_register_send to patch the UPF program! XXX */
 
+#if defined(RELAY_PORT)
+#error "Relay port is not yet supported for UPF"
+#endif
 
 void if_register_receive (info)
 	struct interface_info *info;
@@ -265,6 +257,9 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 		return send_fallback (interface, packet, raw,
 				      len, from, to, hto);
 
+	if (hto == NULL && interface->anycast_mac_addr.hlen)
+		hto = &interface->anycast_mac_addr;
+
 	/* Assemble the headers... */
 	assemble_hw_header (interface, (unsigned char *)hw, &hbufp, hto);
 	assemble_udp_ip_header (interface,
@@ -300,6 +295,7 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	int offset = 0;
 	unsigned char ibuf [1500 + sizeof (struct enstamp)];
 	int bufix = 0;
+	unsigned paylen;
 
 	length = read (interface -> rfdesc, ibuf, sizeof ibuf);
 	if (length <= 0)
@@ -321,7 +317,7 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 
 	/* Decode the IP and UDP headers... */
 	offset = decode_udp_ip_header (interface, ibuf, bufix,
-				       from, length);
+				       from, length, &paylen, 1);
 
 	/* If the IP or UDP checksum was bad, skip the packet... */
 	if (offset < 0)
@@ -330,9 +326,12 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	bufix += offset;
 	length -= offset;
 
+	if (length < paylen)
+		log_fatal("Internal inconsistency at %s:%d.", MDL);
+
 	/* Copy out the data in the packet... */
-	memcpy (buf, &ibuf [bufix], length);
-	return length;
+	memcpy (buf, &ibuf[bufix], paylen);
+	return paylen;
 }
 
 int can_unicast_without_arp (ip)

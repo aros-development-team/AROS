@@ -101,7 +101,8 @@ typedef enum {
 	ISC_R_NO_TSIG = 66,
 	ISC_R_NOT_EQUAL = 67,
 	ISC_R_CONNRESET = 68,
-	ISC_R_UNKNOWNATTRIBUTE = 69
+	ISC_R_UNKNOWNATTRIBUTE = 69,
+	ISC_R_INPROGRESS = 70	/* async operation in progress */
 } isc_result_t;
 
 
@@ -110,7 +111,7 @@ typedef enum {
 const char *		isc_result_totext(isc_result_t);
 isc_result_t		isc_result_register(unsigned int base,
 					    unsigned int nresults,
-					    char **text,
+					    const char **text,
 					    isc_msgcat_t *msgcat,
 					    int set);
 

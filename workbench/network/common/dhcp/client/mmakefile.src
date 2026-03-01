@@ -2,29 +2,30 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM- workbench-network : network-dhcp-client
 
-#MM network-dhcp-client :   \
-#MM				network-dhcp-libdhcp   \
-#MM				network-dhcp-libdst    \
-#MM				network-dhcp-libomapip \
-#MM				network-dhcp-libminires
+#MM network-dhcp-client :      \
+#MM	network-dhcp-libdhcp   \
+#MM	network-dhcp-libdst    \
+#MM	network-dhcp-libomapip \
+#MM	network-dhcp-libminires
 
-#MM network-dhcp-client-quick :   \
-#MM				network-dhcp-libdhcp-quick   \
-#MM				network-dhcp-libdst-quick    \
-#MM				network-dhcp-libomapip-quick \
-#MM				network-dhcp-libminires-quick
+#MM network-dhcp-client-quick :      \
+#MM	network-dhcp-libdhcp-quick   \
+#MM	network-dhcp-libdst-quick    \
+#MM	network-dhcp-libomapip-quick \
+#MM	network-dhcp-libminires-quick
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../includes
 NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
 USER_CFLAGS := $(NOWARN_FLAGS)
 USER_CPPFLAGS := \
-        -DCLIENT_PATH="C:" \
-        -D_GNU_SOURCE
+        -DCLIENT_PATH=\"C:\" \
+        -D_GNU_SOURCE \
+        -DDHCPv6
 
-FILES :=	dhclient dhcglobals clparse
+FILES := dhclient client_tables clparse dhc6 dhcglobals
 
 %build_prog mmake=network-dhcp-client nix=yes		\
 	targetdir="$(AROS_SYSTEM)/Network/AROSTCP/C"	\
-	progname=dhclient					\
-	files="$(FILES)"					\
-	uselibs="dhcp minires omapip dst"
+	progname=dhclient				\
+	files="$(FILES)"				\
+	uselibs="dhcp minires omapip dst net miami"

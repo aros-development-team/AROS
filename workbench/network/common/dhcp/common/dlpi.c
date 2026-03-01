@@ -1,14 +1,14 @@
 /* dlpi.c
- 
+
    Data Link Provider Interface (DLPI) network interface code. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,14 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
  * This software was written for Internet Systems Consortium
  * by Eric James Negaard, <lmdejn@lmd.ericsson.se>.  To learn more about
- * Internet Systems Consortium, see ``http://www.isc.org''.
+ * Internet Systems Consortium, see ``https://www.isc.org''.
  *
  * Joost Mulders has also done considerable work in debugging the DLPI API
  * support on Solaris and getting this code to work properly on a variety
@@ -77,14 +77,18 @@
  * to sleep.
  */
 
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
+/*
+ * The Open Group Technical Standard can be found here:
+ * http://www.opengroup.org/onlinepubs/009618899/index.htm
+ *
+ * The HP DLPI Programmer's Guide can be found here:
+ * http://docs.hp.com/en/B2355-90139/index.html
+ */
 
 #include "dhcpd.h"
 
-#if defined (USE_DLPI_SEND) || defined (USE_DLPI_RECEIVE)
+#if defined (USE_DLPI_SEND) || defined (USE_DLPI_RECEIVE) || \
+    defined(USE_DLPI_HWADDR)
 
 # include <sys/ioctl.h>
 # include <sys/time.h>
@@ -93,9 +97,8 @@ static char copyright[] =
 # ifdef USE_DLPI_PFMOD
 #  include <sys/pfmod.h>
 # endif
-# ifdef USE_POLL
-#  include <poll.h>
-# endif
+#include <poll.h>
+#include <errno.h>
 
 # include <netinet/in_systm.h>
 # include "includes/netinet/ip.h"
@@ -120,47 +123,59 @@ static char copyright[] =
 #  define ABS(x) ((x) >= 0 ? (x) : 0-(x))
 # endif
 
-static int strioctl PROTO ((int fd, int cmd, int timeout, int len, char *dp));
+#if defined(USE_DLPI_PFMOD) || defined(USE_DLPI_RAW)
+static int strioctl (int fd, int cmd, int timeout, int len, char *dp);
+#endif
 
 #define DLPI_MAXDLBUF		8192	/* Buffer size */
 #define DLPI_MAXDLADDR		1024	/* Max address size */
-#define DLPI_DEVDIR		"/dev/"	/* Device directory */
 
-static int dlpiopen PROTO ((char *ifname));
-static int dlpiunit PROTO ((char *ifname));
-static int dlpiinforeq PROTO ((int fd));
-static int dlpiphysaddrreq PROTO ((int fd, unsigned long addrtype));
-static int dlpiattachreq PROTO ((int fd, unsigned long ppa));
-static int dlpibindreq PROTO ((int fd, unsigned long sap, unsigned long max_conind,
-			       unsigned long service_mode, unsigned long conn_mgmt,
-			       unsigned long xidtest));
-static int dlpidetachreq PROTO ((int fd));
-static int dlpiunbindreq PROTO ((int fd));
-static int dlpiokack PROTO ((int fd, char *bufp));
-static int dlpiinfoack PROTO ((int fd, char *bufp));
-static int dlpiphysaddrack PROTO ((int fd, char *bufp));
-static int dlpibindack PROTO ((int fd, char *bufp));
-static int dlpiunitdatareq PROTO ((int fd, unsigned char *addr,
-				   int addrlen, unsigned long minpri,
-				   unsigned long maxpri, unsigned char *data,
-				   int datalen));
-static int dlpiunitdataind PROTO ((int fd,
-				   unsigned char *dstaddr,
-				   unsigned long *dstaddrlen,
-				   unsigned char *srcaddr,
-				   unsigned long *srcaddrlen,
-				   unsigned long *grpaddr,
-				   unsigned char *data,
-				   int datalen));
+/* Device directory */
+#if defined(USE_DEV_NET)
+#define DLPI_DEVDIR		"/dev/net/"  /* Solaris 11 + */
+#else
+#define DLPI_DEVDIR		"/dev/"      /* Pre Solaris 11 */
+#endif
 
-# ifndef USE_POLL
-static void	sigalrm PROTO ((int sig));
-# endif
-static int	expected PROTO ((unsigned long prim, union DL_primitives *dlp,
-				  int msgflags));
-static int	strgetmsg PROTO ((int fd, struct strbuf *ctlp,
-				  struct strbuf *datap, int *flagsp,
-				  char *caller));
+static int dlpiopen(const char *ifname);
+static int dlpiunit (char *ifname);
+static int dlpiinforeq (int fd);
+static int dlpiphysaddrreq (int fd, unsigned long addrtype);
+static int dlpiattachreq (int fd, unsigned long ppa);
+static int dlpibindreq (int fd, unsigned long sap, unsigned long max_conind,
+			unsigned long service_mode, unsigned long conn_mgmt,
+			unsigned long xidtest);
+#if defined(UNUSED_DLPI_INTERFACE)
+/* These functions are unused at present, but may be used at a later date.
+ * defined out to avoid compiler warnings about unused static functions.
+ */
+static int dlpidetachreq (int fd);
+static int dlpiunbindreq (int fd);
+#endif
+static int dlpiokack (int fd, char *bufp);
+static int dlpiinfoack (int fd, char *bufp);
+static int dlpiphysaddrack (int fd, char *bufp);
+static int dlpibindack (int fd, char *bufp);
+#if defined(USE_DLPI_SEND) || defined(USE_DLPI_RECEIVE)
+/* These functions are not used if we're only sourcing the get_hw_addr()
+ * function (for USE_SOCKETS).
+ */
+static int dlpiunitdatareq (int fd, unsigned char *addr, int addrlen,
+			    unsigned long minpri, unsigned long maxpri,
+			    unsigned char *data, int datalen);
+static int dlpiunitdataind (int fd,
+			    unsigned char *dstaddr,
+			    unsigned long *dstaddrlen,
+			    unsigned char *srcaddr,
+			    unsigned long *srcaddrlen,
+			    unsigned long *grpaddr,
+			    unsigned char *data,
+			    int datalen);
+#endif /* !USE_DLPI_HWADDR: USE_DLPI_SEND || USE_DLPI_RECEIVE */
+static int expected (unsigned long prim, union DL_primitives *dlp,
+		     int msgflags);
+static int strgetmsg (int fd, struct strbuf *ctlp, struct strbuf *datap,
+		      int *flagsp, char *caller);
 
 /* Reinitializes the specified interface after an address change.   This
    is not required for packet-filter APIs. */
@@ -198,9 +213,8 @@ int if_register_dlpi (info)
 	    log_fatal ("Can't open DLPI device for %s: %m", info -> name);
 	}
 
-
 	/*
-       * Submit a DL_INFO_REQ request, to find the dl_mac_type and 
+	 * Submit a DL_INFO_REQ request, to find the dl_mac_type and
          * dl_provider_style
 	 */
 	if (dlpiinforeq(sock) < 0 || dlpiinfoack(sock, (char *)buf) < 0) {
@@ -211,7 +225,7 @@ int if_register_dlpi (info)
 	      case DL_ETHER:
 		info -> hw_address.hbuf [0] = HTYPE_ETHER;
 		break;
-	      /* adding token ring 5/1999 - mayer@ping.at  */ 
+	      /* adding token ring 5/1999 - mayer@ping.at  */
 	      case DL_TPR:
 		info -> hw_address.hbuf [0] = HTYPE_IEEE802;
 		break;
@@ -219,8 +233,8 @@ int if_register_dlpi (info)
 		info -> hw_address.hbuf [0] = HTYPE_FDDI;
 		break;
 	      default:
-              log_fatal ("%s: unsupported DLPI MAC type %ld",
-                     info -> name, dlp -> info_ack.dl_mac_type);
+		log_fatal("%s: unsupported DLPI MAC type %lu", info->name,
+			  (unsigned long)dlp->info_ack.dl_mac_type);
 		break;
 	    }
             /*
@@ -229,10 +243,10 @@ int if_register_dlpi (info)
              * assume -2 and ffffff.
              */
             info -> dlpi_sap_length = dlp -> info_ack.dl_sap_length;
-            info -> dlpi_broadcast_addr.hlen = 
+            info -> dlpi_broadcast_addr.hlen =
              dlp -> info_ack.dl_brdcst_addr_length;
-            memcpy (info -> dlpi_broadcast_addr.hbuf, 
-             (char *)dlp + dlp -> info_ack.dl_brdcst_addr_offset, 
+            memcpy (info -> dlpi_broadcast_addr.hbuf,
+             (char *)dlp + dlp -> info_ack.dl_brdcst_addr_offset,
              dlp -> info_ack.dl_brdcst_addr_length);
 	}
 
@@ -242,7 +256,7 @@ int if_register_dlpi (info)
 	     * does not exist.
 	     */
 	    unit = dlpiunit (info -> name);
-	
+
 	    if (dlpiattachreq (sock, unit) < 0
 		|| dlpiokack (sock, (char *)buf) < 0) {
 		log_fatal ("Can't attach DLPI device for %s: %m", info -> name);
@@ -252,7 +266,7 @@ int if_register_dlpi (info)
 	/*
 	 * Bind to the IP service access point (SAP), connectionless (CLDLS).
 	 */
-      if (dlpibindreq (sock, ETHERTYPE_IP, 0, DL_CLDLS, 0, 0) < 0
+	if (dlpibindreq (sock, ETHERTYPE_IP, 0, DL_CLDLS, 0, 0) < 0
 	    || dlpibindack (sock, (char *)buf) < 0) {
 	    log_fatal ("Can't bind DLPI device for %s: %m", info -> name);
 	}
@@ -289,6 +303,7 @@ int if_register_dlpi (info)
 	return sock;
 }
 
+#if defined(USE_DLPI_PFMOD) || defined(USE_DLPI_RAW)
 static int
 strioctl (fd, cmd, timeout, len, dp)
 int fd;
@@ -311,6 +326,7 @@ char *dp;
 	return sio.ic_len;
     }
 }
+#endif /* USE_DPI_PFMOD || USE_DLPI_RAW */
 
 #ifdef USE_DLPI_SEND
 void if_register_send (info)
@@ -392,6 +408,10 @@ void if_deregister_send (info)
 /* Packet filter program...
    XXX Changes to the filter program may require changes to the constant
    offsets used in if_register_send to patch the NIT program! XXX */
+
+#if defined(RELAY_PORT)
+#error "Relay port is not yet supported for DLPI"
+#endif
 
 void if_register_receive (info)
 	struct interface_info *info;
@@ -513,19 +533,23 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 	struct sockaddr_in *to;
 	struct hardware *hto;
 {
-	unsigned hbufp = 0;
+#ifdef USE_DLPI_RAW
 	double hh [32];
+	int fudge;
+#endif
 	double ih [1536 / sizeof (double)];
 	unsigned char *dbuf = (unsigned char *)ih;
 	unsigned dbuflen;
 	unsigned char dstaddr [DLPI_MAXDLADDR];
 	unsigned addrlen;
 	int result;
-	int fudge;
 
 	if (!strcmp (interface -> name, "fallback"))
 		return send_fallback (interface, packet, raw,
 				      len, from, to, hto);
+
+	if (hto == NULL && interface->anycast_mac_addr.hlen)
+		hto = &interface->anycast_mac_addr;
 
 	dbuflen = 0;
 
@@ -537,8 +561,6 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 	fudge = dbuflen % 4; /* IP header must be word-aligned. */
 	memcpy (dbuf + fudge, (unsigned char *)hh, dbuflen);
 	dbuflen += fudge;
-#else
-	fudge = 0;
 #endif
 	assemble_udp_ip_header (interface, dbuf, &dbuflen, from.s_addr,
 				to -> sin_addr.s_addr, to -> sin_port,
@@ -553,9 +575,9 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 #else
 
 	/*
-         * Setup the destination address (DLSAP) in dstaddr 
+         * Setup the destination address (DLSAP) in dstaddr
          *
-         * If sap_length < 0 we must deliver the DLSAP as phys+sap. 
+         * If sap_length < 0 we must deliver the DLSAP as phys+sap.
          * If sap_length > 0 we must deliver the DLSAP as sap+phys.
          *
          * sap = Service Access Point == ETHERTYPE_IP
@@ -579,11 +601,11 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 
         if (hto && hto -> hlen == interface -> hw_address.hlen)
              memcpy ( phys, (char *) &hto -> hbuf [1], phys_len);
-          else 
-             memcpy ( phys, interface -> dlpi_broadcast_addr.hbuf, 
+          else
+             memcpy ( phys, interface -> dlpi_broadcast_addr.hbuf,
               interface -> dlpi_broadcast_addr.hlen);
-           
-          if (sap_len < 0) { 
+
+          if (sap_len < 0) {
              memcpy ( dstaddr, phys, phys_len);
              memcpy ( (char *) &dstaddr [phys_len], sap, ABS (sap_len));
           }
@@ -614,21 +636,21 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	unsigned char dbuf [1536];
 	unsigned char srcaddr [DLPI_MAXDLADDR];
 	unsigned long srcaddrlen;
-	int flags = 0;
 	int length = 0;
 	int offset = 0;
-	int rslt;
 	int bufix = 0;
-	
+	unsigned paylen;
+
 #ifdef USE_DLPI_RAW
 	length = read (interface -> rfdesc, dbuf, sizeof (dbuf));
-#else	
+#else
 	length = dlpiunitdataind (interface -> rfdesc, (unsigned char *)NULL,
 				  (unsigned long *)NULL, srcaddr, &srcaddrlen,
 				  (unsigned long *)NULL, dbuf, sizeof (dbuf));
 #endif
 
 	if (length <= 0) {
+	    log_error("receive_packet: %m");
 	    return length;
 	}
 
@@ -647,15 +669,14 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
           if (hfrom && (srcaddrlen == ABS (sap_len) + phys_len )) {
             hfrom -> hbuf [0] = interface -> hw_address.hbuf [0];
             hfrom -> hlen = interface -> hw_address.hlen;
-            
+
             if (sap_len < 0) {
               memcpy ((char *) &hfrom -> hbuf [1], srcaddr, phys_len);
             }
             else {
-              memcpy ((char *) &hfrom -> hbuf [1], (char *) &srcaddr [phys_len],
-                phys_len);
+              memcpy((char *)&hfrom->hbuf[1], srcaddr + sap_len, phys_len);
             }
-          } 
+          }
           else if (hfrom) {
             memset (hfrom, '\0', sizeof *hfrom);
           }
@@ -679,19 +700,29 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	length -= offset;
 #endif
 	offset = decode_udp_ip_header (interface, dbuf, bufix,
-				       from, length);
+				       from, length, &paylen, 1);
 
-	/* If the IP or UDP checksum was bad, skip the packet... */
+	/*
+	 * If the IP or UDP checksum was bad, skip the packet...
+	 *
+	 * Note: this happens all the time when writing packets via the
+	 * fallback socket.  The packet received by streams does not have
+	 * the IP or UDP checksums filled in, as those are calculated by
+	 * the hardware.
+	 */
 	if (offset < 0) {
-	    return 0;
+		return 0;
 	}
 
 	bufix += offset;
 	length -= offset;
 
+	if (length < paylen)
+		log_fatal("Internal inconsistency at %s:%d.", MDL);
+
 	/* Copy out the data in the packet... */
-	memcpy (buf, &dbuf [bufix], length);
-	return length;
+	memcpy(buf, &dbuf [bufix], paylen);
+	return paylen;
 }
 #endif
 
@@ -702,11 +733,11 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
  * Based largely in part to the example code contained in the document
  * "How to Use the STREAMS Data Link Provider Interface (DLPI)", written
  * by Neal Nuckolls of SunSoft Internet Engineering.
- * 
+ *
  * This code has been developed and tested on sparc-based machines running
  * SunOS 5.5.1, with le and hme network interfaces.  It should be pretty
  * generic, though.
- * 
+ *
  * The usual disclaimers apply.  This code works for me.  Don't blame me
  * if it makes your machine or network go down in flames.  That taken
  * into consideration, use this code as you wish.  If you make usefull
@@ -723,43 +754,42 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 static int dlpiunit (ifname)
 	char *ifname;
 {
-	int fd;
-	char *cp, *dp, *ep;
+	char *cp;
 	int unit;
-	
+
 	if (!ifname) {
 		return 0;
 	}
-	
+
 	/* Advance to the end of the name */
 	cp = ifname;
 	while (*cp) cp++;
 	/* Back up to the start of the first digit */
 	while ((*(cp-1) >= '0' && *(cp-1) <= '9') || *(cp - 1) == ':') cp--;
-	
+
 	/* Convert the unit number */
 	unit = 0;
 	while (*cp >= '0' && *cp <= '9') {
 		unit *= 10;
 		unit += (*cp++ - '0');
 	}
-	
+
 	return unit;
 }
 
 /*
  * dlpiopen - open the DLPI device for a given interface name
  */
-static int dlpiopen (ifname)
-	char *ifname;
-{
+static int
+dlpiopen(const char *ifname) {
 	char devname [50];
-	char *cp, *dp, *ep;
-	
+	char *dp;
+	const char *cp, *ep;
+
 	if (!ifname) {
 		return -1;
 	}
-	
+
 	/* Open a DLPI device */
 	if (*ifname == '/') {
 		dp = devname;
@@ -773,16 +803,20 @@ static int dlpiopen (ifname)
 	ep = cp = ifname;
 	while (*ep)
 		ep++;
+
+/* Before Solaris 11 we strip off the digit to open the base dev name */
+#if !defined(USE_DEV_NET)
 	/* And back up to the first digit (unit number) */
 	while ((*(ep - 1) >= '0' && *(ep - 1) <= '9') || *(ep - 1) == ':')
 		ep--;
-	
+#endif
+
 	/* Copy everything up to the unit number */
 	while (cp < ep) {
 		*dp++ = *cp++;
 	}
 	*dp = '\0';
-	
+
 	return open (devname, O_RDWR, 0);
 }
 
@@ -796,15 +830,15 @@ static int dlpiinforeq (fd)
 	dl_info_req_t info_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	info_req.dl_primitive = DL_INFO_REQ;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (info_req);
 	ctl.buf = (char *)&info_req;
-	
+
 	flags = RS_HIPRI;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf *)NULL, flags);
 }
 
@@ -818,16 +852,16 @@ static int dlpiphysaddrreq (fd, addrtype)
 	dl_phys_addr_req_t physaddr_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	physaddr_req.dl_primitive = DL_PHYS_ADDR_REQ;
 	physaddr_req.dl_addr_type = addrtype;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (physaddr_req);
 	ctl.buf = (char *)&physaddr_req;
-	
+
 	flags = RS_HIPRI;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf *)NULL, flags);
 }
 
@@ -841,16 +875,16 @@ static int dlpiattachreq (fd, ppa)
 	dl_attach_req_t	attach_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	attach_req.dl_primitive = DL_ATTACH_REQ;
 	attach_req.dl_ppa = ppa;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (attach_req);
 	ctl.buf = (char *)&attach_req;
-	
+
 	flags = 0;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf*)NULL, flags);
 }
 
@@ -868,25 +902,28 @@ static int dlpibindreq (fd, sap, max_conind, service_mode, conn_mgmt, xidtest)
 	dl_bind_req_t bind_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	bind_req.dl_primitive = DL_BIND_REQ;
 	bind_req.dl_sap = sap;
 	bind_req.dl_max_conind = max_conind;
 	bind_req.dl_service_mode = service_mode;
 	bind_req.dl_conn_mgmt = conn_mgmt;
 	bind_req.dl_xidtest_flg = xidtest;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (bind_req);
 	ctl.buf = (char *)&bind_req;
-	
+
 	flags = 0;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf*)NULL, flags);
 }
 
+#if defined(UNUSED_DLPI_INTERFACE)
 /*
- * dlpiunbindreq - send a request to unbind.
+ * dlpiunbindreq - send a request to unbind.  This function is not actually
+ *	used by ISC DHCP, but is included for completeness in case it is
+ *	ever required for new work.
  */
 static int dlpiunbindreq (fd)
 	int fd;
@@ -894,21 +931,23 @@ static int dlpiunbindreq (fd)
 	dl_unbind_req_t	unbind_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	unbind_req.dl_primitive = DL_UNBIND_REQ;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (unbind_req);
 	ctl.buf = (char *)&unbind_req;
-	
+
 	flags = 0;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf*)NULL, flags);
 }
 
 
 /*
- * dlpidetachreq - send a request to detach.
+ * dlpidetachreq - send a request to detach.  This function is not actually
+ *	used by ISC DHCP, but is included for completeness in case it is
+ *	ever required for new work.
  */
 static int dlpidetachreq (fd)
 	int fd;
@@ -916,17 +955,18 @@ static int dlpidetachreq (fd)
 	dl_detach_req_t	detach_req;
 	struct strbuf ctl;
 	int flags;
-	
+
 	detach_req.dl_primitive = DL_DETACH_REQ;
-	
+
 	ctl.maxlen = 0;
 	ctl.len = sizeof (detach_req);
 	ctl.buf = (char *)&detach_req;
-	
+
 	flags = 0;
-	
+
 	return putmsg (fd, &ctl, (struct strbuf*)NULL, flags);
 }
+#endif /* UNUSED_DLPI_INTERFACE */
 
 
 /*
@@ -939,7 +979,7 @@ static int dlpibindack (fd, bufp)
 	union DL_primitives *dlp;
 	struct strbuf ctl;
 	int flags;
-	
+
 	ctl.maxlen = DLPI_MAXDLBUF;
 	ctl.len = 0;
 	ctl.buf = bufp;
@@ -948,13 +988,13 @@ static int dlpibindack (fd, bufp)
 		       (struct strbuf*)NULL, &flags, "dlpibindack") < 0) {
 		return -1;
 	}
-	
+
 	dlp = (union DL_primitives *)ctl.buf;
-	
-	if (!expected (DL_BIND_ACK, dlp, flags) < 0) {
+
+	if (expected (DL_BIND_ACK, dlp, flags) == -1) {
 		return -1;
 	}
-	
+
 	if (ctl.len < sizeof (dl_bind_ack_t)) {
 		/* Returned structure is too short */
 		return -1;
@@ -973,27 +1013,27 @@ static int dlpiokack (fd, bufp)
 	union DL_primitives *dlp;
 	struct strbuf ctl;
 	int flags;
-	
+
 	ctl.maxlen = DLPI_MAXDLBUF;
 	ctl.len = 0;
 	ctl.buf = bufp;
-	
+
 	if (strgetmsg (fd, &ctl,
 		       (struct strbuf*)NULL, &flags, "dlpiokack") < 0) {
 		return -1;
 	}
-	
+
 	dlp = (union DL_primitives *)ctl.buf;
-	
-	if (!expected (DL_OK_ACK, dlp, flags) < 0) {
+
+	if (expected (DL_OK_ACK, dlp, flags) == -1) {
 		return -1;
 	}
-	
+
 	if (ctl.len < sizeof (dl_ok_ack_t)) {
 		/* Returned structure is too short */
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -1007,27 +1047,27 @@ static int dlpiinfoack (fd, bufp)
 	union DL_primitives *dlp;
 	struct strbuf ctl;
 	int flags;
-	
+
 	ctl.maxlen = DLPI_MAXDLBUF;
 	ctl.len = 0;
 	ctl.buf = bufp;
-	
+
 	if (strgetmsg (fd, &ctl, (struct strbuf *)NULL, &flags,
 		       "dlpiinfoack") < 0) {
 		return -1;
 	}
-	
+
 	dlp = (union DL_primitives *) ctl.buf;
-	
-	if (!expected (DL_INFO_ACK, dlp, flags) < 0) {
+
+	if (expected (DL_INFO_ACK, dlp, flags) == -1) {
 		return -1;
 	}
-	
+
 	if (ctl.len < sizeof (dl_info_ack_t)) {
 		/* Returned structure is too short */
 		return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -1041,19 +1081,19 @@ int dlpiphysaddrack (fd, bufp)
 	union DL_primitives *dlp;
 	struct strbuf ctl;
 	int flags;
-	
+
 	ctl.maxlen = DLPI_MAXDLBUF;
 	ctl.len = 0;
 	ctl.buf = bufp;
-	
+
 	if (strgetmsg (fd, &ctl, (struct strbuf *)NULL, &flags,
 		       "dlpiphysaddrack") < 0) {
 		return -1;
 	}
 
 	dlp = (union DL_primitives *)ctl.buf;
-	
-	if (!expected (DL_PHYS_ADDR_ACK, dlp, flags) < 0) {
+
+	if (expected (DL_PHYS_ADDR_ACK, dlp, flags) == -1) {
 		return -1;
 	}
 
@@ -1061,10 +1101,11 @@ int dlpiphysaddrack (fd, bufp)
 		/* Returned structure is too short */
 		return -1;
 	}
-	
+
 	return 0;
 }
 
+#if defined(USE_DLPI_SEND) || defined(USE_DLPI_RECEIVE)
 int dlpiunitdatareq (fd, addr, addrlen, minpri, maxpri, dbuf, dbuflen)
 	int fd;
 	unsigned char *addr;
@@ -1077,7 +1118,7 @@ int dlpiunitdatareq (fd, addr, addrlen, minpri, maxpri, dbuf, dbuflen)
 	long buf [DLPI_MAXDLBUF];
 	union DL_primitives *dlp;
 	struct strbuf ctl, data;
-	
+
 	/* Set up the control information... */
 	dlp = (union DL_primitives *)buf;
 	dlp -> unitdata_req.dl_primitive = DL_UNITDATA_REQ;
@@ -1089,7 +1130,7 @@ int dlpiunitdatareq (fd, addr, addrlen, minpri, maxpri, dbuf, dbuflen)
 	/* Append the destination address */
 	memcpy ((char *)buf + dlp -> unitdata_req.dl_dest_addr_offset,
 		addr, addrlen);
-	
+
 	ctl.maxlen = 0;
 	ctl.len = dlp -> unitdata_req.dl_dest_addr_offset + addrlen;
 	ctl.buf = (char *)buf;
@@ -1126,22 +1167,23 @@ static int dlpiunitdataind (fd, daddr, daddrlen,
 	ctl.maxlen = DLPI_MAXDLBUF;
 	ctl.len = 0;
 	ctl.buf = (char *)buf;
-	
+
 	data.maxlen = dlen;
 	data.len = 0;
 	data.buf = (char *)dbuf;
-	
+
 	result = getmsg (fd, &ctl, &data, &flags);
-	
-	if (result != 0) {
+
+	if (result < 0) {
+		log_debug("dlpiunitdataind: %m");
 		return -1;
 	}
-	
+
 	if (ctl.len < sizeof (dl_unitdata_ind_t) ||
 	    dlp -> unitdata_ind.dl_primitive != DL_UNITDATA_IND) {
 		return -1;
 	}
-	
+
 	if (data.len <= 0) {
 		return data.len;
 	}
@@ -1165,13 +1207,14 @@ static int dlpiunitdataind (fd, daddr, daddrlen,
 	if (daddrlen) {
 		*daddrlen = dlp -> unitdata_ind.dl_dest_addr_length;
 	}
-	
+
 	if (grpaddr) {
 		*grpaddr = dlp -> unitdata_ind.dl_group_address;
 	}
-	
+
 	return data.len;
 }
+#endif /* !USE_DLPI_HWADDR: USE_DLPI_RECEIVE || USE_DLPI_SEND */
 
 /*
  * expected - see if we got what we wanted.
@@ -1183,15 +1226,15 @@ static int expected (prim, dlp, msgflags)
 {
 	if (msgflags != RS_HIPRI) {
 		/* Message was not M_PCPROTO */
-		return 0;
+		return -1;
 	}
 
-	if (dlp -> dl_primitive != prim) {
+	if (dlp->dl_primitive != prim) {
 		/* Incorrect/unexpected return message */
-		return 0;
+		return -1;
 	}
-	
-	return 1;
+
+	return 0;
 }
 
 /*
@@ -1204,15 +1247,12 @@ static int strgetmsg (fd, ctlp, datap, flagsp, caller)
 	int fd;
 {
 	int result;
-#ifdef USE_POLL
 	struct pollfd pfd;
 	int count;
 	time_t now;
 	time_t starttime;
 	int to_msec;
-#endif
-	
-#ifdef USE_POLL
+
 	pfd.fd = fd;
 	pfd.events = POLLPRI;	/* We're only interested in knowing
 				 * when we can receive the next high
@@ -1224,7 +1264,7 @@ static int strgetmsg (fd, ctlp, datap, flagsp, caller)
 	while (now <= starttime + DLPI_MAXWAIT) {
 		to_msec = ((starttime + DLPI_MAXWAIT) - now) * 1000;
 		count = poll (&pfd, 1, to_msec);
-		
+
 		if (count == 0) {
 			/* log_fatal ("strgetmsg: timeout"); */
 			return -1;
@@ -1240,18 +1280,6 @@ static int strgetmsg (fd, ctlp, datap, flagsp, caller)
 			break;
 		}
 	}
-#else  /* defined (USE_POLL) */
-	/*
-	 * Start timer.  Can't use select, since it might return true if there
-	 * were non High-Priority data available on the stream.
-	 */
-	(void) sigset (SIGALRM, sigalrm);
-	
-	if (alarm (DLPI_MAXWAIT) < 0) {
-		/* log_fatal ("alarm: %m"); */
-		return -1;
-	}
-#endif /* !defined (USE_POLL) */
 
 	/*
 	 * Set flags argument and issue getmsg ().
@@ -1260,16 +1288,6 @@ static int strgetmsg (fd, ctlp, datap, flagsp, caller)
 	if ((result = getmsg (fd, ctlp, datap, flagsp)) < 0) {
 		return result;
 	}
-
-#ifndef USE_POLL
-	/*
-	 * Stop timer.
-	 */	
-	if (alarm (0) < 0) {
-		/* log_fatal ("alarm: %m"); */
-		return -1;
-	}
-#endif
 
 	/*
 	 * Check for MOREDATA and/or MORECTL.
@@ -1288,18 +1306,7 @@ static int strgetmsg (fd, ctlp, datap, flagsp, caller)
 	return 0;
 }
 
-#ifndef USE_POLL
-/*
- * sigalrm - handle alarms.
- */
-static void sigalrm (sig)
-	int sig;
-{
-	fprintf (stderr, "strgetmsg: timeout");
-	exit (1);
-}
-#endif /* !defined (USE_POLL) */
-
+#if defined(USE_DLPI_SEND)
 int can_unicast_without_arp (ip)
 	struct interface_info *ip;
 {
@@ -1333,4 +1340,88 @@ void maybe_setup_fallback ()
 		interface_dereference (&fbi, MDL);
 	}
 }
-#endif /* USE_DLPI */
+#endif /* USE_DLPI_SEND */
+
+void
+get_hw_addr(const char *name, struct hardware *hw) {
+	int sock, unit;
+	long buf[DLPI_MAXDLBUF];
+        union DL_primitives *dlp;
+
+        dlp = (union DL_primitives *)buf;
+
+	/*
+	 * Open a DLPI device.
+	 */
+	sock = dlpiopen(name);
+	if (sock < 0) {
+		log_fatal("Can't open DLPI device for %s: %m", name);
+	}
+
+	/*
+	 * Submit a DL_INFO_REQ request, to find the dl_mac_type and
+         * dl_provider_style
+	 */
+	if (dlpiinforeq(sock) < 0) {
+	    log_fatal("Can't request DLPI MAC type for %s: %m", name);
+	}
+	if (dlpiinfoack(sock, (char *)buf) < 0) {
+	    log_fatal("Can't get DLPI MAC type for %s: %m", name);
+	}
+	switch (dlp->info_ack.dl_mac_type) {
+		case DL_CSMACD: /* IEEE 802.3 */
+		case DL_ETHER:
+			hw->hbuf[0] = HTYPE_ETHER;
+			break;
+		case DL_TPR:
+			hw->hbuf[0] = HTYPE_IEEE802;
+			break;
+		case DL_FDDI:
+			hw->hbuf[0] = HTYPE_FDDI;
+			break;
+		default:
+			log_fatal("%s: unsupported DLPI MAC type %lu", name,
+				  (unsigned long)dlp->info_ack.dl_mac_type);
+	}
+
+	if (dlp->info_ack.dl_provider_style == DL_STYLE2) {
+		/*
+		 * Attach to the device.  If this fails, the device
+		 * does not exist.
+		 */
+		unit = dlpiunit((char *)name);
+
+		if (dlpiattachreq(sock, unit) < 0 ||
+		    dlpiokack(sock, (char *)buf) < 0) {
+			log_fatal("Can't attach DLPI device for %s: %m",
+				  name);
+		}
+	}
+
+	/*
+	 * Submit a DL_PHYS_ADDR_REQ request, to find
+	 * the hardware address.
+	 */
+	if (dlpiphysaddrreq(sock, DL_CURR_PHYS_ADDR) < 0) {
+		log_fatal("Can't request DLPI hardware address for %s: %m",
+			  name);
+	}
+	if (dlpiphysaddrack(sock, (char *)buf) < 0) {
+		log_fatal("Can't get DLPI hardware address for %s: %m",
+			  name);
+	}
+	if (dlp->physaddr_ack.dl_addr_length < sizeof(hw->hbuf)) {
+		memcpy(hw->hbuf+1,
+		       (char *)buf + dlp->physaddr_ack.dl_addr_offset,
+		       dlp->physaddr_ack.dl_addr_length);
+		hw->hlen = dlp->physaddr_ack.dl_addr_length + 1;
+	} else {
+		memcpy(hw->hbuf+1,
+		       (char *)buf + dlp->physaddr_ack.dl_addr_offset,
+		       sizeof(hw->hbuf)-1);
+		hw->hlen = sizeof(hw->hbuf);
+	}
+
+	close(sock);
+}
+#endif /* USE_DLPI_SEND || USE_DLPI_RECEIVE || USE_DLPI_HWADDR */

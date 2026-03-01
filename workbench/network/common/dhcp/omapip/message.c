@@ -3,12 +3,12 @@
    Subroutines for dealing with message objects. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,18 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
+
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -89,7 +85,7 @@ isc_result_t omapi_message_set_value (omapi_object_t *h,
 	isc_result_t status;
 
 	if (h -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)h;
 
 	/* Can't set authlen. */
@@ -104,7 +100,7 @@ isc_result_t omapi_message_set_value (omapi_object_t *h,
 
 	} else if (!omapi_ds_strcmp (name, "object")) {
 		if (value -> type != omapi_datatype_object)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		if (m -> object)
 			omapi_object_dereference (&m -> object, MDL);
 		omapi_object_reference (&m -> object, value -> u.object, MDL);
@@ -112,7 +108,7 @@ isc_result_t omapi_message_set_value (omapi_object_t *h,
 
 	} else if (!omapi_ds_strcmp (name, "notify-object")) {
 		if (value -> type != omapi_datatype_object)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		if (m -> notify_object)
 			omapi_object_dereference (&m -> notify_object, MDL);
 		omapi_object_reference (&m -> notify_object,
@@ -122,35 +118,35 @@ isc_result_t omapi_message_set_value (omapi_object_t *h,
 	/* Can set authid, but it has to be an integer. */
 	} else if (!omapi_ds_strcmp (name, "authid")) {
 		if (value -> type != omapi_datatype_int)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		m -> authid = value -> u.integer;
 		return ISC_R_SUCCESS;
 
 	/* Can set op, but it has to be an integer. */
 	} else if (!omapi_ds_strcmp (name, "op")) {
 		if (value -> type != omapi_datatype_int)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		m -> op = value -> u.integer;
 		return ISC_R_SUCCESS;
 
 	/* Handle also has to be an integer. */
 	} else if (!omapi_ds_strcmp (name, "handle")) {
 		if (value -> type != omapi_datatype_int)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		m -> h = value -> u.integer;
 		return ISC_R_SUCCESS;
 
 	/* Transaction ID has to be an integer. */
 	} else if (!omapi_ds_strcmp (name, "id")) {
 		if (value -> type != omapi_datatype_int)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		m -> id = value -> u.integer;
 		return ISC_R_SUCCESS;
 
 	/* Remote transaction ID has to be an integer. */
 	} else if (!omapi_ds_strcmp (name, "rid")) {
 		if (value -> type != omapi_datatype_int)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		m -> rid = value -> u.integer;
 		return ISC_R_SUCCESS;
 	}
@@ -162,7 +158,7 @@ isc_result_t omapi_message_set_value (omapi_object_t *h,
 		if (status == ISC_R_SUCCESS)
 			return status;
 	}
-			  
+
 	return ISC_R_NOTFOUND;
 }
 
@@ -173,7 +169,7 @@ isc_result_t omapi_message_get_value (omapi_object_t *h,
 {
 	omapi_message_object_t *m;
 	if (h -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)h;
 
 	/* Look for values that are in the message data structure. */
@@ -209,11 +205,9 @@ isc_result_t omapi_message_get_value (omapi_object_t *h,
 isc_result_t omapi_message_destroy (omapi_object_t *h,
 				    const char *file, int line)
 {
-	// int i;
-
 	omapi_message_object_t *m;
 	if (h -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)h;
 	if (m -> authenticator) {
 		omapi_typed_data_dereference (&m -> authenticator, file, line);
@@ -236,9 +230,9 @@ isc_result_t omapi_message_signal_handler (omapi_object_t *h,
 {
 	omapi_message_object_t *m;
 	if (h -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)h;
-	
+
 	if (!strcmp (name, "status")) {
 		if (m -> notify_object &&
 		    m -> notify_object -> type -> signal_handler)
@@ -261,10 +255,8 @@ isc_result_t omapi_message_stuff_values (omapi_object_t *c,
 					 omapi_object_t *id,
 					 omapi_object_t *m)
 {
-	// int i;
-
 	if (m -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (m -> inner && m -> inner -> type -> stuff_values)
 		return (*(m -> inner -> type -> stuff_values)) (c, id,
@@ -277,12 +269,12 @@ isc_result_t omapi_message_register (omapi_object_t *mo)
 	omapi_message_object_t *m;
 
 	if (mo -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)mo;
-	
+
 	/* Already registered? */
 	if (m -> prev || m -> next || omapi_registered_messages == m)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (omapi_registered_messages) {
 		omapi_object_reference
@@ -306,12 +298,12 @@ isc_result_t omapi_message_unregister (omapi_object_t *mo)
 	omapi_message_object_t *n;
 
 	if (mo -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	m = (omapi_message_object_t *)mo;
-	
+
 	/* Not registered? */
 	if (!m -> prev && omapi_registered_messages != m)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	n = (omapi_message_object_t *)0;
 	if (m -> next) {
@@ -347,7 +339,7 @@ isc_result_t omapi_message_unregister (omapi_object_t *mo)
 }
 
 #ifdef DEBUG_PROTOCOL
-static const char *omapi_message_op_name(int op) {
+const char *omapi_message_op_name(int op) {
 	switch (op) {
 	case OMAPI_OP_OPEN:    return "OMAPI_OP_OPEN";
 	case OMAPI_OP_REFRESH: return "OMAPI_OP_REFRESH";
@@ -366,7 +358,7 @@ omapi_message_process_internal (omapi_object_t *, omapi_object_t *);
 isc_result_t omapi_message_process (omapi_object_t *mo, omapi_object_t *po)
 {
 	isc_result_t status;
-#if defined (DEBUG_MEMORY_LEAKAGE)
+#if defined (DEBUG_MEMORY_LEAKAGE) && 0
 	unsigned long previous_outstanding = dmalloc_outstanding;
 #endif
 
@@ -400,7 +392,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 	omapi_object_type_t *type;
 
 	if (mo -> type != omapi_type_message)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	message = (omapi_message_object_t *)mo;
 
 #ifdef DEBUG_PROTOCOL
@@ -428,12 +420,12 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 
 		/* All messages must have an authenticator, with the exception
 		   of messages that are opening a new authenticator. */
-		if (omapi_protocol_authenticated (po) &&
-		    !message -> id_object &&
-		    message -> op != OMAPI_OP_OPEN) {
+		if (omapi_protocol_authenticated(po) &&
+		    !message->id_object &&
+		    message->op != OMAPI_OP_OPEN) {
 			return omapi_protocol_send_status
-				(po, message -> id_object, ISC_R_NOKEYS,
-				 message -> id, "No authenticator on message");
+				(po, message->id_object, DHCP_R_NOKEYS,
+				 message->id, "No authenticator on message");
 		}
 	}
 
@@ -441,8 +433,8 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 	      case OMAPI_OP_OPEN:
 		if (m) {
 			return omapi_protocol_send_status
-				(po, message -> id_object, ISC_R_INVALIDARG,
-				 message -> id, "OPEN can't be a response");
+				(po, message->id_object, DHCP_R_INVALIDARG,
+				 message->id, "OPEN can't be a response");
 		}
 
 		/* Get the type of the requested object, if one was
@@ -464,12 +456,12 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 
 		/* If this object had no authenticator, the requested object
 		   must be an authenticator object. */
-		if (omapi_protocol_authenticated (po) &&
-		    !message -> id_object &&
+		if (omapi_protocol_authenticated(po) &&
+		    !message->id_object &&
 		    type != omapi_type_auth_key) {
 			return omapi_protocol_send_status
-				(po, message -> id_object, ISC_R_NOKEYS,
-				 message -> id, "No authenticator on message");
+				(po, message->id_object, DHCP_R_NOKEYS,
+				 message->id, "No authenticator on message");
 		}
 
 		/* Get the create flag. */
@@ -522,9 +514,9 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 		if (!type) {
 			if (create) {
 				return omapi_protocol_send_status
-					(po, message -> id_object,
-					 ISC_R_INVALIDARG,
-					 message -> id,
+					(po, message->id_object,
+					 DHCP_R_INVALIDARG,
+					 message->id,
 					 "type required on create");
 			}
 			goto refresh;
@@ -544,7 +536,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 
 		if (status != ISC_R_SUCCESS &&
 		    status != ISC_R_NOTFOUND &&
-		    status != ISC_R_NOKEYS) {
+		    status != DHCP_R_NOKEYS) {
 			return omapi_protocol_send_status
 				(po, message -> id_object,
 				 status, message -> id,
@@ -558,7 +550,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 				(po, message -> id_object,
 				 ISC_R_NOTFOUND, message -> id,
 				 "no object matches specification");
-		}			
+		}
 
 		/* If we found an object, we're supposed to be creating an
 		   object, and we're not supposed to have found an object,
@@ -630,7 +622,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 					 "can't select authenticator");
 			}
 		}
-		
+
 		/* Now send the new contents of the object back in
 		   response. */
 		goto send;
@@ -644,7 +636,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 				 status, message -> id,
 				 "no matching handle");
 		}
-	      send:		
+	      send:
 		status = omapi_protocol_send_update (po, message -> id_object,
 						     message -> id, object);
 		omapi_object_dereference (&object, MDL);
@@ -674,7 +666,7 @@ omapi_message_process_internal (omapi_object_t *mo, omapi_object_t *po)
 					 status, message -> id,
 					 "cannot update authenticator");
 			}
-			
+
 			status = omapi_protocol_add_auth (po, object,
 							  message -> h);
 		} else {

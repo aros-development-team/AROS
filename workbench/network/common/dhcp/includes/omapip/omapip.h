@@ -3,12 +3,12 @@
    Definitions for the object management API and protocol... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,22 +19,24 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
 #ifndef _OMAPIP_H_
 #define _OMAPIP_H_
-#include <isc-dhcp/result.h>
+#include "result.h"
+#include <stdarg.h>
+
+#if !defined(__AROS__)
+#include <dns/tsec.h>
+#else
+/* On AROS, provide the minimal ISC/DNS type stubs */
+#include <omapip/isclib_aros.h>
+#endif
 
 typedef unsigned int omapi_handle_t;
 
@@ -96,7 +98,7 @@ typedef struct {
 typedef struct __omapi_object_type_t {
 	const char *name;
 	struct __omapi_object_type_t *next;
-	
+
 	isc_result_t (*set_value) (omapi_object_t *, omapi_object_t *,
 				   omapi_data_string_t *,
 				   omapi_typed_data_t *);
@@ -152,6 +154,7 @@ typedef struct auth_key {
 	char *name;
 	char *algorithm;
 	omapi_data_string_t *key;
+	dns_tsec_t *tsec_key;
 } omapi_auth_key_t;
 
 #define OMAPI_CREATE          1
@@ -286,7 +289,7 @@ isc_result_t omapi_protocol_set_value (omapi_object_t *, omapi_object_t *,
 				       omapi_typed_data_t *);
 isc_result_t omapi_protocol_get_value (omapi_object_t *, omapi_object_t *,
 				       omapi_data_string_t *,
-				       omapi_value_t **); 
+				       omapi_value_t **);
 isc_result_t omapi_protocol_stuff_values (omapi_object_t *,
 					  omapi_object_t *,
 					  omapi_object_t *);
@@ -305,7 +308,7 @@ isc_result_t omapi_protocol_listener_set_value (omapi_object_t *,
 isc_result_t omapi_protocol_listener_get_value (omapi_object_t *,
 						omapi_object_t *,
 						omapi_data_string_t *,
-						omapi_value_t **); 
+						omapi_value_t **);
 isc_result_t omapi_protocol_listener_destroy (omapi_object_t *,
 					      const char *, int);
 isc_result_t omapi_protocol_listener_signal (omapi_object_t *,
@@ -336,7 +339,7 @@ isc_result_t omapi_connection_set_value (omapi_object_t *, omapi_object_t *,
 					 omapi_typed_data_t *);
 isc_result_t omapi_connection_get_value (omapi_object_t *, omapi_object_t *,
 					 omapi_data_string_t *,
-					 omapi_value_t **); 
+					 omapi_value_t **);
 isc_result_t omapi_connection_destroy (omapi_object_t *, const char *, int);
 isc_result_t omapi_connection_signal_handler (omapi_object_t *,
 					      const char *, va_list);
@@ -349,7 +352,9 @@ isc_result_t omapi_connection_put_name (omapi_object_t *, const char *);
 isc_result_t omapi_connection_put_string (omapi_object_t *, const char *);
 isc_result_t omapi_connection_put_handle (omapi_object_t *c,
 					  omapi_object_t *h);
-
+isc_result_t omapi_connection_put_named_uint32 (omapi_object_t *,
+						const char *,
+						u_int32_t);
 isc_result_t omapi_listen (omapi_object_t *, unsigned, int);
 isc_result_t omapi_listen_addr (omapi_object_t *,
 				omapi_addr_t *, int);
@@ -365,7 +370,7 @@ isc_result_t omapi_listener_set_value (omapi_object_t *, omapi_object_t *,
 				       omapi_typed_data_t *);
 isc_result_t omapi_listener_get_value (omapi_object_t *, omapi_object_t *,
 				       omapi_data_string_t *,
-				       omapi_value_t **); 
+				       omapi_value_t **);
 isc_result_t omapi_listener_destroy (omapi_object_t *, const char *, int);
 isc_result_t omapi_listener_signal_handler (omapi_object_t *,
 					    const char *, va_list);
@@ -379,6 +384,12 @@ isc_result_t omapi_register_io_object (omapi_object_t *,
 				       isc_result_t (*)(omapi_object_t *),
 				       isc_result_t (*)(omapi_object_t *),
 				       isc_result_t (*)(omapi_object_t *));
+isc_result_t omapi_reregister_io_object (omapi_object_t *,
+					 int (*)(omapi_object_t *),
+					 int (*)(omapi_object_t *),
+					 isc_result_t (*)(omapi_object_t *),
+					 isc_result_t (*)(omapi_object_t *),
+					 isc_result_t (*)(omapi_object_t *));
 isc_result_t omapi_unregister_io_object (omapi_object_t *);
 isc_result_t omapi_dispatch (struct timeval *);
 isc_result_t omapi_wait_for_completion (omapi_object_t *, struct timeval *);
@@ -387,7 +398,7 @@ isc_result_t omapi_io_set_value (omapi_object_t *, omapi_object_t *,
 				 omapi_data_string_t *,
 				 omapi_typed_data_t *);
 isc_result_t omapi_io_get_value (omapi_object_t *, omapi_object_t *,
-				 omapi_data_string_t *, omapi_value_t **); 
+				 omapi_data_string_t *, omapi_value_t **);
 isc_result_t omapi_io_destroy (omapi_object_t *, const char *, int);
 isc_result_t omapi_io_signal_handler (omapi_object_t *, const char *, va_list);
 isc_result_t omapi_io_stuff_values (omapi_object_t *,
@@ -405,7 +416,7 @@ isc_result_t omapi_generic_set_value  (omapi_object_t *, omapi_object_t *,
 				       omapi_typed_data_t *);
 isc_result_t omapi_generic_get_value (omapi_object_t *, omapi_object_t *,
 				      omapi_data_string_t *,
-				      omapi_value_t **); 
+				      omapi_value_t **);
 isc_result_t omapi_generic_destroy (omapi_object_t *, const char *, int);
 isc_result_t omapi_generic_signal_handler (omapi_object_t *,
 					   const char *, va_list);
@@ -420,7 +431,7 @@ isc_result_t omapi_message_set_value  (omapi_object_t *, omapi_object_t *,
 				       omapi_typed_data_t *);
 isc_result_t omapi_message_get_value (omapi_object_t *, omapi_object_t *,
 				      omapi_data_string_t *,
-				      omapi_value_t **); 
+				      omapi_value_t **);
 isc_result_t omapi_message_destroy (omapi_object_t *, const char *, int);
 isc_result_t omapi_message_signal_handler (omapi_object_t *,
 					   const char *, va_list);
@@ -442,7 +453,7 @@ isc_result_t omapi_auth_key_lookup (omapi_object_t **,
 				    omapi_object_t *);
 isc_result_t omapi_auth_key_get_value (omapi_object_t *, omapi_object_t *,
 				       omapi_data_string_t *,
-				       omapi_value_t **); 
+				       omapi_value_t **);
 isc_result_t omapi_auth_key_stuff_values (omapi_object_t *,
 					  omapi_object_t *,
 					  omapi_object_t *);
@@ -514,9 +525,9 @@ isc_result_t omapi_set_string_value (omapi_object_t *, omapi_object_t *,
 				     const char *, const char *);
 isc_result_t omapi_get_value (omapi_object_t *, omapi_object_t *,
 			      omapi_data_string_t *,
-			      omapi_value_t **); 
+			      omapi_value_t **);
 isc_result_t omapi_get_value_str (omapi_object_t *, omapi_object_t *,
-				  const char *, omapi_value_t **); 
+				  const char *, omapi_value_t **);
 isc_result_t omapi_stuff_values (omapi_object_t *,
 				 omapi_object_t *,
 				 omapi_object_t *);
@@ -549,7 +560,7 @@ isc_result_t omapi_object_handle (omapi_handle_t *, omapi_object_t *);
 isc_result_t omapi_handle_lookup (omapi_object_t **, omapi_handle_t);
 isc_result_t omapi_handle_td_lookup (omapi_object_t **, omapi_typed_data_t *);
 
-void * dmalloc (unsigned, const char *, int);
+void * dmalloc (size_t, const char *, int);
 void dfree (void *, const char *, int);
 #if defined (DEBUG_MEMORY_LEAKAGE) || defined (DEBUG_MALLOC_POOL) || \
 		defined (DEBUG_MEMORY_LEAKAGE_ON_EXIT)

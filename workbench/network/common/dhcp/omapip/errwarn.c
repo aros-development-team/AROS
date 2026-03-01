@@ -4,12 +4,12 @@
 
 /*
  * Copyright (c) 1995 RadioMail Corporation.
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -20,10 +20,10 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
  * This software was written for RadioMail Corporation by Ted Lemon
  * under a contract with Vixie Enterprises.   Further modifications have
@@ -31,20 +31,17 @@
  * with Vixie Laboratories.
  */
 
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 #include <errno.h>
+#include <syslog.h>
 
 #ifdef DEBUG
 int log_perror = -1;
 #else
 int log_perror = 1;
 #endif
-int log_priority;
 void (*log_cleanup) (void);
 
 #define CVT_BUF_MAX 1023
@@ -57,7 +54,7 @@ void log_fatal (const char * fmt, ... )
 {
   va_list list;
 
-  do_percentm (fbuf, fmt);
+  do_percentm (fbuf, sizeof fbuf, fmt);
 
   /* %Audit% This is log output. %2004.06.17,Safe%
    * If we truncate we hope the user can get a hint from the log.
@@ -67,34 +64,24 @@ void log_fatal (const char * fmt, ... )
   va_end (list);
 
 #ifndef DEBUG
-  syslog (log_priority | LOG_ERR, "%s", mbuf);
+  syslog (LOG_ERR, "%s", mbuf);
 #endif
 
   /* Also log it to stderr? */
   if (log_perror) {
-	  write (STDERR_FILENO, mbuf, strlen (mbuf));
-	  write (STDERR_FILENO, "\n", 1);
+	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
+	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
-#if !defined (NOMINUM)
   log_error ("%s", "");
-  log_error ("If you did not get this software from ftp.isc.org, please");
-  log_error ("get the latest from ftp.isc.org and install that before");
-  log_error ("requesting help.");
-  log_error ("%s", "");
-  log_error ("If you did get this software from ftp.isc.org and have not");
-  log_error ("yet read the README, please read it before requesting help.");
-  log_error ("If you intend to request help from the dhcp-server@isc.org");
-  log_error ("mailing list, please read the section on the README about");
-  log_error ("submitting bug reports and requests for help.");
-  log_error ("%s", "");
-  log_error ("Please do not under any circumstances send requests for");
-  log_error ("help directly to the authors of this software - please");
-  log_error ("send them to the appropriate mailing list as described in");
-  log_error ("the README file.");
+  log_error ("If you think you have received this message due to a bug rather");
+  log_error ("than a configuration issue please read the section on submitting");
+  log_error ("bugs on either our web page at www.isc.org or in the README file");
+  log_error ("before submitting a bug.  These pages explain the proper");
+  log_error ("process and the information we find helpful for debugging.");
   log_error ("%s", "");
   log_error ("exiting.");
-#endif
+
   if (log_cleanup)
 	  (*log_cleanup) ();
   exit (1);
@@ -106,7 +93,7 @@ int log_error (const char * fmt, ...)
 {
   va_list list;
 
-  do_percentm (fbuf, fmt);
+  do_percentm (fbuf, sizeof fbuf, fmt);
 
   /* %Audit% This is log output. %2004.06.17,Safe%
    * If we truncate we hope the user can get a hint from the log.
@@ -116,12 +103,12 @@ int log_error (const char * fmt, ...)
   va_end (list);
 
 #ifndef DEBUG
-  syslog (log_priority | LOG_ERR, "%s", mbuf);
+  syslog (LOG_ERR, "%s", mbuf);
 #endif
 
   if (log_perror) {
-	  write (STDERR_FILENO, mbuf, strlen (mbuf));
-	  write (STDERR_FILENO, "\n", 1);
+	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
+	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;
@@ -133,7 +120,7 @@ int log_info (const char *fmt, ...)
 {
   va_list list;
 
-  do_percentm (fbuf, fmt);
+  do_percentm (fbuf, sizeof fbuf, fmt);
 
   /* %Audit% This is log output. %2004.06.17,Safe%
    * If we truncate we hope the user can get a hint from the log.
@@ -143,12 +130,12 @@ int log_info (const char *fmt, ...)
   va_end (list);
 
 #ifndef DEBUG
-  syslog (log_priority | LOG_INFO, "%s", mbuf);
+  syslog (LOG_INFO, "%s", mbuf);
 #endif
 
   if (log_perror) {
-	  write (STDERR_FILENO, mbuf, strlen (mbuf));
-	  write (STDERR_FILENO, "\n", 1);
+	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
+	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;
@@ -160,7 +147,7 @@ int log_debug (const char *fmt, ...)
 {
   va_list list;
 
-  do_percentm (fbuf, fmt);
+  do_percentm (fbuf, sizeof fbuf, fmt);
 
   /* %Audit% This is log output. %2004.06.17,Safe%
    * If we truncate we hope the user can get a hint from the log.
@@ -170,12 +157,12 @@ int log_debug (const char *fmt, ...)
   va_end (list);
 
 #ifndef DEBUG
-  syslog (log_priority | LOG_DEBUG, "%s", mbuf);
+  syslog (LOG_DEBUG, "%s", mbuf);
 #endif
 
   if (log_perror) {
-	  write (STDERR_FILENO, mbuf, strlen (mbuf));
-	  write (STDERR_FILENO, "\n", 1);
+	  IGNORE_RET (write (STDERR_FILENO, mbuf, strlen (mbuf)));
+	  IGNORE_RET (write (STDERR_FILENO, "\n", 1));
   }
 
   return 0;
@@ -183,8 +170,9 @@ int log_debug (const char *fmt, ...)
 
 /* Find %m in the input string and substitute an error message string. */
 
-void do_percentm (obuf, ibuf)
+void do_percentm (obuf, obufsize, ibuf)
      char *obuf;
+     size_t obufsize;
      const char *ibuf;
 {
 	const char *s = ibuf;
@@ -204,13 +192,13 @@ void do_percentm (obuf, ibuf)
 				if (!m)
 					m = "<unknown error>";
 				len += strlen (m);
-				if (len > CVT_BUF_MAX)
+				if (len > obufsize - 1)
 					goto out;
 				strcpy (p - 1, m);
 				p += strlen (p);
 				++s;
 			} else {
-				if (++len > CVT_BUF_MAX)
+				if (++len > obufsize - 1)
 					goto out;
 				*p++ = *s++;
 			}
@@ -218,7 +206,7 @@ void do_percentm (obuf, ibuf)
 		} else {
 			if (*s == '%')
 				infmt = 1;
-			if (++len > CVT_BUF_MAX)
+			if (++len > obufsize - 1)
 				goto out;
 			*p++ = *s++;
 		}

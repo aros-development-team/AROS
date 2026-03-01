@@ -3,12 +3,12 @@
    Turn data structures into printable text. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1995-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,25 +19,16 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
-
 #include "dhcpd.h"
+
+int db_time_format = DEFAULT_TIME_FORMAT;
 
 char *quotify_string (const char *s, const char *file, int line)
 {
@@ -48,7 +39,7 @@ char *quotify_string (const char *s, const char *file, int line)
 	for (sp = s; sp && *sp; sp++) {
 		if (*sp == ' ')
 			len++;
-		else if (!isascii (*sp) || !isprint (*sp))
+		else if (!isascii ((int)*sp) || !isprint ((int)*sp))
 			len += 4;
 		else if (*sp == '"' || *sp == '\\')
 			len += 2;
@@ -62,7 +53,7 @@ char *quotify_string (const char *s, const char *file, int line)
 		for (sp = s; sp && *sp; sp++) {
 			if (*sp == ' ')
 				*nsp++ = ' ';
-			else if (!isascii (*sp) || !isprint (*sp)) {
+			else if (!isascii ((int)*sp) || !isprint ((int)*sp)) {
 				sprintf (nsp, "\\%03o",
 					 *(const unsigned char *)sp);
 				nsp += 4;
@@ -77,7 +68,7 @@ char *quotify_string (const char *s, const char *file, int line)
 	return buf;
 }
 
-char *quotify_buf (const unsigned char *s, unsigned len,
+char *quotify_buf (const unsigned char *s, unsigned len, char enclose_char,
 		   const char *file, int line)
 {
 	unsigned nulen = 0;
@@ -95,9 +86,17 @@ char *quotify_buf (const unsigned char *s, unsigned len,
 			nulen++;
 	}
 
+	if (enclose_char) {
+		nulen +=2 ;
+	}
+
 	buf = dmalloc (nulen + 1, MDL);
 	if (buf) {
 		nsp = buf;
+		if (enclose_char) {
+			*nsp++ = enclose_char;
+		}
+
 		for (i = 0; i < len; i++) {
 			if (s [i] == ' ')
 				*nsp++ = ' ';
@@ -109,6 +108,10 @@ char *quotify_buf (const unsigned char *s, unsigned len,
 				*nsp++ = s [i];
 			} else
 				*nsp++ = s [i];
+		}
+
+		if (enclose_char) {
+			*nsp++ = enclose_char;
 		}
 		*nsp++ = 0;
 	}
@@ -129,7 +132,7 @@ char *print_base64 (const unsigned char *buf, unsigned len,
 	b = dmalloc (bl + 1, file, line);
 	if (!b)
 		return (char *)0;
-	
+
 	i = 0;
 	s = b;
 	while (i != len) {
@@ -166,9 +169,9 @@ char *print_base64 (const unsigned char *buf, unsigned len,
 }
 
 char *print_hw_addr (htype, hlen, data)
-	int htype;
-	int hlen;
-	unsigned char *data;
+	const int htype;
+	const int hlen;
+	const unsigned char *data;
 {
 	static char habuf [49];
 	char *s;
@@ -196,15 +199,15 @@ void print_lease (lease)
 
 	log_debug ("  Lease %s",
 	       piaddr (lease -> ip_addr));
-	
+
 	t = gmtime (&lease -> starts);
 	strftime (tbuf, sizeof tbuf, "%Y/%m/%d %H:%M:%S", t);
 	log_debug ("  start %s", tbuf);
-	
+
 	t = gmtime (&lease -> ends);
 	strftime (tbuf, sizeof tbuf, "%Y/%m/%d %H:%M:%S", t);
 	log_debug ("  end %s", tbuf);
-	
+
 	if (lease -> hardware_addr.hlen)
 		log_debug ("    hardware addr = %s",
 			   print_hw_addr (lease -> hardware_addr.hbuf [0],
@@ -212,7 +215,7 @@ void print_lease (lease)
 					  &lease -> hardware_addr.hbuf [1]));
 	log_debug ("  host %s  ",
 	       lease -> host ? lease -> host -> name : "<none>");
-}	
+}
 
 #if defined (DEBUG_PACKET)
 void dump_packet_option (struct option_cache *oc,
@@ -298,7 +301,7 @@ void dump_raw (buf, len)
 /*
           1         2         3         4         5         6         7
 01234567890123456789012345678901234567890123456789012345678901234567890123
-280: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00   .................  
+280: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00   .................
 */
 
 	memset(lbuf, ' ', 79);
@@ -360,44 +363,130 @@ void hash_dump (table)
 	}
 }
 
-#define HBLEN 60
+/*
+ * print a string as hex.  This only outputs
+ * colon separated hex list no matter what
+ * the input looks like.  See print_hex
+ * for a function that prints either cshl
+ * or a string if all bytes are printible
+ * It only uses limit characters from buf
+ * and doesn't do anything if buf == NULL
+ *
+ * len - length of data
+ * data - input data
+ * limit - length of buf to use
+ * buf - output buffer
+ */
+void print_hex_only (len, data, limit, buf)
+	unsigned len;
+	const u_int8_t *data;
+	unsigned limit;
+	char *buf;
+{
+	char *bufptr = buf;
+	int byte = 0;
 
-#define DECLARE_HEX_PRINTER(x)						      \
-char *print_hex##x (len, data, limit)					      \
-	unsigned len;							      \
-	const u_int8_t *data;						      \
-	unsigned limit;							      \
-{									      \
-									      \
-	static char hex_buf##x [HBLEN + 1];				      \
-	unsigned i;							      \
-									      \
-	if (limit > HBLEN)						      \
-		limit = HBLEN;						      \
-									      \
-	for (i = 0; i < (limit - 2) && i < len; i++) {			      \
-		if (!isascii (data [i]) || !isprint (data [i])) {	      \
-			for (i = 0; i < limit / 3 && i < len; i++) {	      \
-				sprintf (&hex_buf##x [i * 3],		      \
-					 "%02x:", data [i]);		      \
-			}						      \
-			hex_buf##x [i * 3 - 1] = 0;			      \
-			return hex_buf##x;				      \
-		}							      \
-	}								      \
-	hex_buf##x [0] = '"';						      \
-	i = len;							      \
-	if (i > limit - 2)						      \
-		i = limit - 2;						      \
-	memcpy (&hex_buf##x [1], data, i);				      \
-	hex_buf##x [i + 1] = '"';					      \
-	hex_buf##x [i + 2] = 0;						      \
-	return hex_buf##x;						      \
+	if (data == NULL || bufptr == NULL || limit == 0) {
+		return;
+	}
+
+	if (((len == 0) || ((len * 3) > limit))) {
+		*bufptr = 0x0;
+		return;
+	}
+
+	for ( ; byte < len; ++byte) {
+		if (byte > 0) {
+			*bufptr++ = ':';
+		}
+
+		sprintf(bufptr, "%02x", data[byte]);
+		bufptr += 2;
+	}
+
+	return;
 }
 
-DECLARE_HEX_PRINTER (_1)
-DECLARE_HEX_PRINTER (_2)
-DECLARE_HEX_PRINTER (_3)
+/*
+ * print a string as either text if all the characters
+ * are printable or colon separated hex if they aren't
+ *
+ * len - length of data
+ * data - input data
+ * limit - length of buf to use
+ * buf - output buffer
+ */
+void print_hex_or_string (len, data, limit, buf)
+	unsigned len;
+	const u_int8_t *data;
+	unsigned limit;
+	char *buf;
+{
+	unsigned i;
+	if ((buf == NULL) || (limit < 3))
+		return;
+
+	for (i = 0; (i < (limit - 3)) && (i < len); i++) {
+		if (!isascii(data[i]) || !isprint(data[i])) {
+			print_hex_only(len, data, limit, buf);
+			return;
+		}
+	}
+
+	buf[0] = '"';
+	i = len;
+	if (i > (limit - 3))
+		i = limit - 3;
+	memcpy(&buf[1], data, i);
+	buf[i + 1] = '"';
+	buf[i + 2] = 0;
+	return;
+}
+
+/*
+ * print a string as either hex or text
+ * using static buffers to hold the output
+ *
+ * len - length of data
+ * data - input data
+ * limit - length of buf
+ * buf_num - the output buffer to use
+ */
+#define HBLEN 1024
+char *print_hex(len, data, limit, buf_num)
+	unsigned len;
+	const u_int8_t *data;
+	unsigned limit;
+	unsigned buf_num;
+{
+	static char hex_buf_1[HBLEN + 1];
+	static char hex_buf_2[HBLEN + 1];
+	static char hex_buf_3[HBLEN + 1];
+	char *hex_buf;
+
+	switch(buf_num) {
+	  case 0:
+		hex_buf = hex_buf_1;
+		if (limit >= sizeof(hex_buf_1))
+			limit = sizeof(hex_buf_1);
+		break;
+	  case 1:
+		hex_buf = hex_buf_2;
+		if (limit >= sizeof(hex_buf_2))
+			limit = sizeof(hex_buf_2);
+		break;
+	  case 2:
+		hex_buf = hex_buf_3;
+		if (limit >= sizeof(hex_buf_3))
+			limit = sizeof(hex_buf_3);
+		break;
+	  default:
+		return(NULL);
+	}
+
+	print_hex_or_string(len, data, limit, hex_buf);
+	return(hex_buf);
+}
 
 #define DQLEN	80
 
@@ -410,7 +499,7 @@ char *print_dotted_quads (len, data)
 	char *s;
 
 	s = &dq_buf [0];
-	
+
 	i = 0;
 
 	/* %Audit% Loop bounds checks to 21 bytes. %2004.06.17,Safe%
@@ -448,8 +537,7 @@ char *print_dec_2 (val)
 	return vbuf;
 }
 
-static unsigned print_subexpression PROTO ((struct expression *,
-					    char *, unsigned));
+static unsigned print_subexpression (struct expression *, char *, unsigned);
 
 static unsigned print_subexpression (expr, buf, len)
 	struct expression *expr;
@@ -458,7 +546,7 @@ static unsigned print_subexpression (expr, buf, len)
 {
 	unsigned rv, left;
 	const char *s;
-	
+
 	switch (expr -> op) {
 	      case expr_none:
 		if (len > 3) {
@@ -466,7 +554,7 @@ static unsigned print_subexpression (expr, buf, len)
 			return 3;
 		}
 		break;
-		  
+
 	      case expr_match:
 		if (len > 7) {
 			strcpy (buf, "(match)");
@@ -513,6 +601,21 @@ static unsigned print_subexpression (expr, buf, len)
 		}
 		break;
 
+	      case expr_regex_match:
+		if (len > 10) {
+			rv = 4;
+			strcpy(buf, "(regex ");
+			rv += print_subexpression(expr->data.equal[0],
+						  buf + rv, len - rv - 2);
+			buf[rv++] = ' ';
+			rv += print_subexpression(expr->data.equal[1],
+						  buf + rv, len - rv - 1);
+			buf[rv++] = ')';
+			buf[rv] = 0;
+			return rv;
+		}
+		break;
+
 	      case expr_substring:
 		if (len > 11) {
 			rv = 8;
@@ -545,6 +648,30 @@ static unsigned print_subexpression (expr, buf, len)
 			if (len > rv)
 				buf [rv++] = ')';
 			buf [rv] = 0;
+			return rv;
+		}
+		break;
+
+	      case expr_lcase:
+		if (len > 9) {
+			rv = 7;
+			strcpy(buf, "(lcase ");
+			rv += print_subexpression(expr->data.lcase,
+						  buf + rv, len - rv - 1);
+			buf[rv++] = ')';
+			buf[rv] = 0;
+			return rv;
+		}
+		break;
+
+	      case expr_ucase:
+		if (len > 9) {
+			rv = 7;
+			strcpy(buf, "(ucase ");
+			rv += print_subexpression(expr->data.ucase,
+						  buf + rv, len - rv - 1);
+			buf[rv++] = ')';
+			buf[rv] = 0;
 			return rv;
 		}
 		break;
@@ -645,7 +772,7 @@ static unsigned print_subexpression (expr, buf, len)
 	      case expr_binary_xor:
 		s = "^";
 		goto binop;
-		
+
 	      case expr_not:
 		if (len > 6) {
 			rv = 5;
@@ -890,7 +1017,7 @@ static unsigned print_subexpression (expr, buf, len)
 			rv += print_subexpression (expr -> data.b2a.width,
 						   buf + rv, len - rv - 3);
 			buf [rv++] = ' ';
-			rv += print_subexpression (expr -> data.b2a.seperator,
+			rv += print_subexpression (expr -> data.b2a.separator,
 						   buf + rv, len - rv - 2);
 			buf [rv++] = ' ';
 			rv += print_subexpression (expr -> data.b2a.buffer,
@@ -1006,6 +1133,7 @@ static unsigned print_subexpression (expr, buf, len)
 			return rv;
 		}
 		break;
+
 	      case expr_function:
 		rv = 9;
 		if (len > rv + 1) {
@@ -1019,10 +1147,23 @@ static unsigned print_subexpression (expr, buf, len)
 					rv += strlen (foo -> string);
 				}
 			}
-			buf [rv] = ')';
-			buf [rv++] = 0;
+			buf [rv++] = ')';
+			buf [rv] = 0;
 			return rv;
 		}
+		break;
+
+	      case expr_gethostname:
+		if (len > 13) {
+			strcpy(buf, "(gethostname)");
+			return 13;
+		}
+		break;
+
+	      default:
+		log_fatal("Impossible case at %s:%d (undefined expression "
+			  "%d).", MDL, expr->op);
+		break;
 	}
 	return 0;
 }
@@ -1038,11 +1179,10 @@ void print_expression (name, expr)
 }
 
 int token_print_indent_concat (FILE *file, int col,  int indent,
-			       const char *prefix, 
+			       const char *prefix,
 			       const char *suffix, ...)
 {
 	va_list list;
-	// char *buf;
 	unsigned len;
 	char *s, *t, *u;
 
@@ -1066,10 +1206,11 @@ int token_print_indent_concat (FILE *file, int col,  int indent,
 		len = strlen (s);
 		strcpy (u, s);
 		u += len;
+		s = va_arg (list, char *);
 	}
 	va_end (list);
-	
-	len = token_print_indent (file, col, indent,
+
+	col = token_print_indent (file, col, indent,
 				  prefix, suffix, t);
 	dfree (t, MDL);
 	return col;
@@ -1080,7 +1221,7 @@ int token_indent_data_string (FILE *file, int col, int indent,
 			      struct data_string *data)
 {
 	int i;
-	// char *buf;
+	char *buf;
 	char obuf [3];
 
 	/* See if this is just ASCII. */
@@ -1091,7 +1232,7 @@ int token_indent_data_string (FILE *file, int col, int indent,
 
 	/* If we have a purely ASCII string, output it as text. */
 	if (i == data -> len) {
-		char *buf = dmalloc (data -> len + 3, MDL);
+		buf = dmalloc (data -> len + 3, MDL);
 		if (buf) {
 			buf [0] = '"';
 			memcpy (buf + 1, data -> data, data -> len);
@@ -1122,7 +1263,12 @@ int token_print_indent (FILE *file, int col, int indent,
 			const char *prefix,
 			const char *suffix, const char *buf)
 {
-	int len = strlen (buf) + strlen (prefix);
+	int len = 0;
+	if (prefix != NULL)
+		len += strlen (prefix);
+	if (buf != NULL)
+		len += strlen (buf);
+
 	if (col + len > 79) {
 		if (indent + len < 79) {
 			indent_spaces (file, indent);
@@ -1135,8 +1281,10 @@ int token_print_indent (FILE *file, int col, int indent,
 		fputs (prefix, file);
 		col += strlen (prefix);
 	}
-	fputs (buf, file);
-	col += len;
+	if ((buf != NULL) && (*buf != 0)) {
+		fputs (buf, file);
+		col += strlen(buf);
+	}
 	if (suffix && *suffix) {
 		if (col + strlen (suffix) > 79) {
 			indent_spaces (file, indent);
@@ -1157,248 +1305,176 @@ void indent_spaces (FILE *file, int indent)
 		fputc (' ', file);
 }
 
-#if defined (NSUPDATE)
-void print_dns_status (int status, ns_updque *uq)
+/* Format the given time as "A; # B", where A is the format
+ * used by the parser, and B is the local time, for humans.
+ */
+const char *
+print_time(TIME t)
 {
-	char obuf [1024];
-	char *s = &obuf [0], *end = &obuf [1022];
-	ns_updrec *u;
-	int position;
-	int ttlp;
-	const char *predicate = "if", *en, *op;
-	int errorp;
+	static char buf[sizeof("epoch 9223372036854775807; "
+			       "# Wed Jun 30 21:49:08 2147483647")];
+	static char buf1[sizeof("# Wed Jun 30 21:49:08 2147483647")];
+	time_t since_epoch;
+	/* The string: 	       "6 2147483647/12/31 23:59:60;"
+	 * is smaller than the other, used to declare the buffer size, so
+	 * we can use one buffer for both.
+	 */
 
-	for (u = ISC_LIST_HEAD (*uq); u; u = ISC_LIST_NEXT (u, r_link)) {
-		ttlp = 0;
+	if (t == MAX_TIME)
+		return "never;";
 
-		switch (u -> r_opcode)
-		{
-		      case NXRRSET:
-			op = "rrset doesn't exist";
-			position = 1;
-			break;
-		      case YXRRSET:
-			op = "rrset exists";
-			position = 1;
-			break;
-		      case NXDOMAIN:
-			op = "domain doesn't exist";
-			position = 1;
-			break;
-		      case YXDOMAIN:
-			op = "domain exists";
-			position = 1;
-			break;
-		      case ADD:
-			op = "add";
-			position = 0;
-			ttlp = 1;
-			break;
-		      case DELETE:
-			op = "delete";
-			position = 0;
-			break;
-		      default:
-			op = "unknown";
-			position = 0;
-			break;
-		}
-		if (!position) {
-			if (s != &obuf [0] && s + 1 < end)
-				*s++ = ' ';
-			if (s + strlen (op) < end) {
-				strcpy (s, op);
-				s += strlen (s);
-			}
-		} else {
-			if (s != &obuf [0] && s + 1 < end)
-				*s++ = ' ';
-			if (s + strlen (predicate) < end) {
-				strcpy (s, predicate);
-				s += strlen (s);
-			}
-			predicate = "and";
-		}
-		if (u -> r_dname) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			if (s + strlen (u -> r_dname) < end) {
-				strcpy (s, u -> r_dname);
-				s += strlen (s);
-			}
-		}
-		if (ttlp) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			/* 27 is as big as a ttl can get. */
-			if (s + 27 < end) {
-				sprintf (s, "%lu",
-					 (unsigned long)(u -> r_ttl));
-				s += strlen (s);
-			}
-		}
-		switch (u -> r_class) {
-		      case C_IN:
-			en = "IN";
-			break;
-		      case C_CHAOS:
-			en = "CHAOS";
-			break;
-		      case C_HS:
-			en = "HS";
-			break;
-		      default:
-			en = "UNKNOWN";
-			break;
-		}
-		if (s + strlen (en) < end) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			strcpy (s, en);
-			s += strlen (en);
-		}
-		switch (u -> r_type) {
-		      case T_A:
-			en = "A";
-			break;
-		      case T_PTR:
-			en = "PTR";
-			break;
-		      case T_MX:
-			en = "MX";
-			break;
-		      case T_TXT:
-			en = "TXT";
-			break;
-		      case T_KEY:
-			en = "KEY";
-			break;
-		      case T_CNAME:
-			en = "CNAME";
-			break;
-		      default:
-			en = "UNKNOWN";
-			break;
-		}
-		if (s + strlen (en) < end) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			strcpy (s, en);
-			s += strlen (en);
-		}
-		if (u -> r_data) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			if (u -> r_type == T_TXT) {
-				if (s + 1 < end)
-					*s++ = '"';
-			}
-			if(u->r_type == T_KEY) {
-			  strcat(s, "<keydata>");
-			  s+=strlen("<keydata>");
-			}
-			else {  
-			  if (s + u -> r_size < end) {
-			    memcpy (s, u -> r_data, u -> r_size);
-			    s += u -> r_size;
-			    if (u -> r_type == T_TXT) {
-			      if (s + 1 < end)
-				*s++ = '"';
-			    }
-			  }
-			}
-		}
-		if (position) {
-			if (s + 1 < end)
-				*s++ = ' ';
-			if (s + strlen (op) < end) {
-				strcpy (s, op);
-				s += strlen (s);
-			}
-		}
-		if (u == ISC_LIST_TAIL (*uq))
-			break;
-	}
-	if (s == &obuf [0]) {
-		strcpy (s, "empty update");
-		s += strlen (s);
-	}
-	if (status == NOERROR)
-		errorp = 0;
-	else
-		errorp = 1;
-	en = isc_result_totext (status);
-#if 0
-	switch (status) {
-	      case -1:
-		en = "resolver failed";
-		break;
+	if (t < 0)
+		return NULL;
 
-	      case FORMERR:
-		en = "format error";
-		break;
-
-	      case NOERROR:
-		en = "succeeded";
-		errorp = 0;
-		break;
-
-	      case NOTAUTH:
-		en = "not authorized";
-		break;
-
-	      case NOTIMP:
-		en = "not implemented";
-		break;
-
-	      case NOTZONE:
-		en = "not a single valid zone";
-		break;
-
-	      case NXDOMAIN:
-		en = "no such domain";
-		break;
-
-	      case NXRRSET:
-		en = "no such record";
-		break;
-
-	      case REFUSED:
-		en = "refused";
-		break;
-
-	      case SERVFAIL:
-		en = "server failed";
-		break;
-
-	      case YXDOMAIN:
-		en = "domain exists";
-		break;
-
-	      case YXRRSET:
-		en = "record exists";
-		break;
-
-	      default:
-		en = "unknown error";
-		break;
-	}
+	/* For those lucky enough to have a 128-bit time_t, ensure that
+	 * whatever (corrupt) value we're given doesn't exceed the static
+	 * buffer.
+	 */
+#if (MAX_TIME > 0x7fffffffffffffff)
+	if (t > 0x7fffffffffffffff)
+		return NULL;
 #endif
 
-	if (s + 2 < end) {
-		*s++ = ':';
-		*s++ = ' ';
+	if (db_time_format == LOCAL_TIME_FORMAT) {
+		since_epoch = mktime(localtime(&t));
+		if ((strftime(buf1, sizeof(buf1),
+			      "# %a %b %d %H:%M:%S %Y",
+			      localtime(&t)) == 0) ||
+		    (snprintf(buf, sizeof(buf), "epoch %lu; %s",
+			      (unsigned long)since_epoch, buf1) >= sizeof(buf)))
+			return NULL;
+
+	} else {
+		/* No bounds check for the year is necessary - in this case,
+		 * strftime() will run out of space and assert an error.
+		 */
+		if (strftime(buf, sizeof(buf), "%w %Y/%m/%d %H:%M:%S;",
+			     gmtime(&t)) == 0)
+			return NULL;
 	}
-	if (s + strlen (en) < end) {
-		strcpy (s, en);
-		s += strlen (en);
-	}
-	if (s + 1 < end)
-		*s++ = '.';
-	*s++ = 0;
-	if (errorp)
-		log_error ("%s", obuf);
-	else
-		log_info ("%s", obuf);
+
+	return buf;
 }
-#endif /* NSUPDATE */
+
+/* !brief Return the given data as a string of hex digits "xx:xx:xx ..."
+ *
+ * Converts the given data into a null-terminated, string of hex digits,
+ * stored in an allocated buffer.  It is the caller's responsiblity to free
+ * the buffer.
+ *
+ * \param s - pointer to the data to convert
+ * \param len - length of the data to convert
+ * \param file - source file of invocation
+ * \param line - line number of invocation
+ *
+ * \return Returns an allocated buffer containing the hex string
+*/
+char *buf_to_hex (const unsigned char *s, unsigned len,
+		   const char *file, int line)
+{
+	unsigned nulen = 0;
+	char *buf;
+
+	/* If somebody hands us length of zero, we'll give them
+	 * back an empty string */
+	if (!len) {
+		buf = dmalloc (1, MDL);
+		if (buf) {
+			*buf = 0x0;
+		}
+
+		return (buf);
+	}
+
+
+	/* Figure out how big it needs to be. print_to_hex uses
+	 * "%02x:" per character.  Note since there's no trailing colon
+	 * we'll have room for the null */
+	nulen = (len * 3);
+
+	/* Allocate our buffer */
+	buf = dmalloc (nulen, MDL);
+
+	/* Hex-ify it */
+	if (buf) {
+		print_hex_only (len, s, nulen, buf);
+	}
+
+	return buf;
+}
+
+/* !brief Formats data into a string based on a lease id format
+ *
+ * Takes the given data and returns an allocated string whose contents are
+ * the string version of that data, formatted according to the output lease
+ * id format.  Note it is the caller's responsiblity to delete the string.
+ *
+ * Currently two formats are supported:
+ *
+ *  OCTAL - Default or "legacy" CSL format enclosed in quotes '"'.
+ *
+ *  HEX - Bytes represented as string colon seperated of hex digit pairs
+ *  (xx:xx:xx...)
+ *
+ * \param s - data to convert
+ * \param len - length of the data to convert
+ * \param format - desired format of the result
+ * \param file -  source file of invocation
+ * \param line - line number of invocation
+ *
+ * \return A pointer to the allocated, null-terminated string
+*/
+char *format_lease_id(const unsigned char *s, unsigned len,
+                      int format, const char *file, int line) {
+	char *idstr = NULL;
+
+	switch (format) {
+		case TOKEN_HEX:
+			idstr = buf_to_hex(s, len, MDL);
+			break;
+		case TOKEN_OCTAL:
+		default:
+			idstr = quotify_buf(s, len, '"', MDL);
+			break;
+	}
+	return (idstr);
+}
+
+/*
+ * Convert a relative path name to an absolute path name
+ *
+ * Not all versions of realpath() support NULL for
+ * the second parameter and PATH_MAX isn't defined
+ * on all systems.  For the latter, we'll make what
+ * ought to be a big enough buffer and let it fly.
+ * If passed an absolute path it should return it
+ * an allocated buffer.
+ */
+char *absolute_path(const char *orgpath) {
+	char *abspath = NULL;
+	if (orgpath) {
+#ifdef PATH_MAX
+		char buf[PATH_MAX];
+#else
+		char buf[2048];
+#endif
+		errno = 0;
+                if (realpath(orgpath, buf) == NULL) {
+			const char* errmsg = strerror(errno);
+                        log_fatal("Failed to get realpath for %s: %s",
+				  orgpath, errmsg);
+		}
+
+		/* dup the result into an allocated buffer */
+		abspath = dmalloc(strlen(buf) + 1, MDL);
+		if (abspath == NULL)  {
+			log_fatal("No memory for filename:%s\n",
+				  buf);
+		}
+
+		memcpy (abspath, buf, strlen(buf));
+		abspath[strlen(buf)] = 0x0;
+	}
+
+	return (abspath);
+}

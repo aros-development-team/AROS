@@ -3,12 +3,12 @@
    Functions for maintaining handles on objects. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,18 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
+
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -51,7 +47,7 @@
    next handle should go, and if necessary create additional nodes in
    the tree to contain the new handle.  The pointer to the object is
    then stored in the correct position.
-   
+
    Theoretically, we could have some code here to free up handle
    tables as they go out of use, but by and large handle tables won't
    go out of use, so this is being skipped for now.  It shouldn't be
@@ -61,9 +57,13 @@
 omapi_handle_table_t *omapi_handle_table;
 omapi_handle_t omapi_next_handle = 1;	/* Next handle to be assigned. */
 
+#define FIND_HAND  0
+#define CLEAR_HAND 1
+
 static isc_result_t omapi_handle_lookup_in (omapi_object_t **,
 					    omapi_handle_t,
-					    omapi_handle_table_t *);
+					    omapi_handle_table_t *,
+					    int);
 static isc_result_t omapi_object_handle_in_table (omapi_handle_t,
 						  omapi_handle_table_t *,
 						  omapi_object_t *);
@@ -71,14 +71,13 @@ static isc_result_t omapi_handle_table_enclose (omapi_handle_table_t **);
 
 isc_result_t omapi_object_handle (omapi_handle_t *h, omapi_object_t *o)
 {
-	// int tabix;
 	isc_result_t status;
 
 	if (o -> handle) {
 		*h = o -> handle;
 		return ISC_R_SUCCESS;
 	}
-	
+
 	if (!omapi_handle_table) {
 		omapi_handle_table = dmalloc (sizeof *omapi_handle_table, MDL);
 		if (!omapi_handle_table)
@@ -97,7 +96,7 @@ isc_result_t omapi_object_handle (omapi_handle_t *h, omapi_object_t *o)
 
 	while (omapi_next_handle >= omapi_handle_table -> limit) {
 		omapi_handle_table_t *new;
-		
+
 		new = dmalloc (sizeof *new, MDL);
 		if (!new)
 			return ISC_R_NOMEMORY;
@@ -146,7 +145,7 @@ static isc_result_t omapi_object_handle_in_table (omapi_handle_t h,
 
 	if (table -> first > h || table -> limit <= h)
 		return ISC_R_NOSPACE;
-	
+
 	/* If this is a leaf table, just stash the object in the
 	   appropriate place. */
 	if (table -> leafp) {
@@ -238,56 +237,65 @@ static isc_result_t omapi_handle_table_enclose (omapi_handle_table_t **table)
 
 isc_result_t omapi_handle_lookup (omapi_object_t **o, omapi_handle_t h)
 {
-	return omapi_handle_lookup_in (o, h, omapi_handle_table);
+	return(omapi_handle_lookup_in(o, h, omapi_handle_table, FIND_HAND));
 }
 
 static isc_result_t omapi_handle_lookup_in (omapi_object_t **o,
 					    omapi_handle_t h,
-					    omapi_handle_table_t *table)
-
+					    omapi_handle_table_t *table,
+					    int op)
 {
 	omapi_handle_t scale, index;
 
-	if (!table || table -> first > h || table -> limit <= h)
-		return ISC_R_NOTFOUND;
-	
+	if (!table || table->first > h || table->limit <= h)
+		return(ISC_R_NOTFOUND);
+
 	/* If this is a leaf table, just grab the object. */
-	if (table -> leafp) {
+	if (table->leafp) {
 		/* Not there? */
-		if (!table -> children [h - table -> first].object)
-			return ISC_R_NOTFOUND;
-		return omapi_object_reference
-			(o, table -> children [h - table -> first].object,
-			 MDL);
+		if (!table->children[h - table->first].object)
+			return(ISC_R_NOTFOUND);
+		if (op == CLEAR_HAND) {
+			table->children[h - table->first].object = NULL;
+			return(ISC_R_SUCCESS);
+		} else {
+			return(omapi_object_reference
+			       (o, table->children[h - table->first].object,
+				MDL));
+		}
 	}
 
 	/* Scale is the number of handles represented by each child of this
 	   table.   For a leaf table, scale would be 1.   For a first level
 	   of indirection, 120.   For a second, 120 * 120.   Et cetera. */
-	scale = (table -> limit - table -> first) / OMAPI_HANDLE_TABLE_SIZE;
+	scale = (table->limit - table->first) / OMAPI_HANDLE_TABLE_SIZE;
 
 	/* So the next most direct table from this one that contains the
 	   handle must be the subtable of this table whose index into this
 	   table's array of children is the handle divided by the scale. */
-	index = (h - table -> first) / scale;
+	index = (h - table->first) / scale;
 
-	return omapi_handle_lookup_in (o, h, table -> children [index].table);
+	return(omapi_handle_lookup_in(o, h, table->children[index].table, op));
 }
 
 /* For looking up objects based on handles that have been sent on the wire. */
 isc_result_t omapi_handle_td_lookup (omapi_object_t **obj,
 				     omapi_typed_data_t *handle)
 {
-	// isc_result_t status;
 	omapi_handle_t h;
 
-	if (handle -> type == omapi_datatype_int)
-		h = handle -> u.integer;
-	else if (handle -> type == omapi_datatype_data &&
-		 handle -> u.buffer.len == sizeof h) {
-		memcpy (&h, handle -> u.buffer.value, sizeof h);
-		h = ntohl (h);
+	if (handle->type == omapi_datatype_int)
+		h = handle->u.integer;
+	else if (handle->type == omapi_datatype_data &&
+		 handle->u.buffer.len == sizeof h) {
+		memcpy(&h, handle->u.buffer.value, sizeof h);
+		h = ntohl(h);
 	} else
-		return ISC_R_INVALIDARG;
-	return omapi_handle_lookup (obj, h);
+		return(DHCP_R_INVALIDARG);
+	return(omapi_handle_lookup(obj, h));
+}
+
+isc_result_t omapi_handle_clear(omapi_handle_t h)
+{
+	return(omapi_handle_lookup_in(NULL, h, omapi_handle_table, CLEAR_HAND));
 }

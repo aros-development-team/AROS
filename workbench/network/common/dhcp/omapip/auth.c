@@ -3,12 +3,12 @@
    Subroutines having to do with authentication. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1998-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,23 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
-#if 0
-static char ocopyright[] =
-"$Id$ Copyright 2004 Internet Systems Consortium.";
-#endif
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -46,7 +37,8 @@ HASH_FUNCTIONS_DECL (omapi_auth_key, const char *,
 omapi_auth_hash_t *auth_key_hash;
 HASH_FUNCTIONS (omapi_auth_key, const char *, omapi_auth_key_t,
 		omapi_auth_hash_t,
-		omapi_auth_key_reference, omapi_auth_key_dereference)
+		omapi_auth_key_reference, omapi_auth_key_dereference,
+		do_case_hash)
 
 isc_result_t omapi_auth_key_new (omapi_auth_key_t **o, const char *file,
 				 int line)
@@ -59,29 +51,37 @@ isc_result_t omapi_auth_key_destroy (omapi_object_t *h,
 {
 	omapi_auth_key_t *a;
 
-	if (h -> type != omapi_type_auth_key)
-		return ISC_R_INVALIDARG;
+	if (h->type != omapi_type_auth_key)
+		return DHCP_R_INVALIDARG;
 	a = (omapi_auth_key_t *)h;
 
-	if (auth_key_hash)
-		omapi_auth_key_hash_delete (auth_key_hash, a -> name, 0, MDL);
+	if (auth_key_hash != NULL)
+		omapi_auth_key_hash_delete(auth_key_hash, a->name, 0, MDL);
 
-	if (a -> name)
-		dfree (a -> name, MDL);
-	if (a -> algorithm)
-		dfree (a -> algorithm, MDL);
-	if (a -> key)
-		omapi_data_string_dereference (&a -> key, MDL);
-	
+	if (a->name != NULL)
+		dfree(a->name, MDL);
+	if (a->algorithm != NULL)
+		dfree(a->algorithm, MDL);
+	if (a->key != NULL)
+		omapi_data_string_dereference(&a->key, MDL);
+	if (a->tsec_key != NULL)
+#if !defined(__AROS__)
+		dns_tsec_destroy(&a->tsec_key);
+#else
+		a->tsec_key = NULL; /* AROS: no TSIG support */
+#endif
+
 	return ISC_R_SUCCESS;
 }
 
 isc_result_t omapi_auth_key_enter (omapi_auth_key_t *a)
 {
 	omapi_auth_key_t *tk;
+	isc_result_t      status;
+	dst_key_t        *dstkey;
 
 	if (a -> type != omapi_type_auth_key)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	tk = (omapi_auth_key_t *)0;
 	if (auth_key_hash) {
@@ -97,12 +97,35 @@ isc_result_t omapi_auth_key_enter (omapi_auth_key_t *a)
 			omapi_auth_key_dereference (&tk, MDL);
 		}
 	} else {
-		if (!omapi_auth_key_new_hash (&auth_key_hash, 1, MDL))
+		if (!omapi_auth_key_new_hash(&auth_key_hash,
+					     KEY_HASH_SIZE, MDL))
 			return ISC_R_NOMEMORY;
 	}
+
+	/*
+	 * If possible create a tsec structure for this key,
+	 * if we can't create the structure we put out a warning
+	 * and continue.
+	 */
+	status = isclib_make_dst_key(a->name, a->algorithm,
+				     a->key->value, a->key->len,
+				     &dstkey);
+#if !defined(__AROS__)
+	if (status == ISC_R_SUCCESS) {
+		status = dns_tsec_create(dhcp_gbl_ctx.mctx, dns_tsectype_tsig,
+					 dstkey, &a->tsec_key);
+		dst_key_free(&dstkey);
+	}
+	if (status != ISC_R_SUCCESS)
+		log_error("Unable to create tsec structure for %s", a->name);
+#else
+	/* AROS: no BIND9 TSIG support - tsec_key stays NULL */
+	(void)status;
+	(void)dstkey;
+#endif
+
 	omapi_auth_key_hash_add (auth_key_hash, a -> name, 0, a, MDL);
 	return ISC_R_SUCCESS;
-	
 }
 
 isc_result_t omapi_auth_key_lookup_name (omapi_auth_key_t **a,
@@ -127,7 +150,7 @@ isc_result_t omapi_auth_key_lookup (omapi_object_t **h,
 		return ISC_R_NOTFOUND;
 
 	if (!ref)
-		return ISC_R_NOKEYS;
+		return DHCP_R_NOKEYS;
 
 	status = omapi_get_value_str (ref, id, "name", &name);
 	if (status != ISC_R_SUCCESS)
@@ -184,7 +207,7 @@ isc_result_t omapi_auth_key_stuff_values (omapi_object_t *c,
 	isc_result_t status;
 
 	if (h -> type != omapi_type_auth_key)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	a = (omapi_auth_key_t *)h;
 
 	/* Write only the name and algorithm -- not the secret! */

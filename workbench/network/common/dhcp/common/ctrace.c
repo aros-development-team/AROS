@@ -3,12 +3,12 @@
    Subroutines that support dhcp tracing... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 2001-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,21 +19,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon, as part of a project for Nominum, Inc.   To learn more
- * about Internet Systems Consortium, see http://www.isc.org/.  To
- * learn more about Nominum, Inc., see ``http://www.nominum.com''.
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 
@@ -46,13 +37,14 @@ void trace_interface_register (trace_type_t *ttype, struct interface_info *ip)
 		memset (&tipkt, 0, sizeof tipkt);
 		memcpy (&tipkt.hw_address,
 			&ip -> hw_address, sizeof ip -> hw_address);
-		memcpy (&tipkt.primary_address,
-			&ip -> primary_address, sizeof ip -> primary_address);
+		if (ip->address_count)
+			memcpy(&tipkt.primary_address,
+			       ip->addresses, sizeof(*ip->addresses));
 		memcpy (tipkt.name, ip -> name, sizeof ip -> name);
 		tipkt.index = htonl (ip -> index);
 
 		trace_write_packet (ttype, sizeof tipkt, (char *)&tipkt, MDL);
-	}	
+	}
 }
 
 void trace_interface_input (trace_type_t *ttype, unsigned len, char *buf)
@@ -69,7 +61,7 @@ void trace_interface_input (trace_type_t *ttype, unsigned len, char *buf)
 		return;
 	}
 	tipkt = (trace_interface_packet_t *)buf;
-	
+
 	ip = (struct interface_info *)0;
 	status = interface_allocate (&ip, MDL);
 	if (status != ISC_R_SUCCESS) {
@@ -87,8 +79,19 @@ void trace_interface_input (trace_type_t *ttype, unsigned len, char *buf)
 
 	memcpy (&ip -> hw_address, &tipkt -> hw_address,
 		sizeof ip -> hw_address);
-	memcpy (&ip -> primary_address, &tipkt -> primary_address,
-		sizeof ip -> primary_address);
+	/* XXX: Without the full addresses state it's not quite a full
+	 * trace.
+	 */
+	ip->address_count = ip->address_max = 1;
+	ip->addresses = dmalloc(sizeof(*ip->addresses), MDL);
+	if (!ip->addresses) {
+		dfree(ip->ifp, MDL);
+		ip->ifp = NULL;
+		interface_dereference (&ip, MDL);
+		status = ISC_R_NOMEMORY;
+		goto foo;
+	}
+	memcpy(ip->addresses, &tipkt->primary_address, sizeof(*ip->addresses));
 	memcpy (ip -> name, tipkt -> name, sizeof ip -> name);
 	ip -> index = ntohl (tipkt -> index);
 
@@ -102,7 +105,7 @@ void trace_interface_input (trace_type_t *ttype, unsigned len, char *buf)
 	ip -> ifp -> ifr_addr.sa_len = sizeof (struct sockaddr_in);
 #endif
 	sin = (struct sockaddr_in *)&ip -> ifp -> ifr_addr;
-	sin -> sin_addr = ip -> primary_address;
+	sin->sin_addr = ip->addresses[0];
 
 	addr.len = 4;
 	memcpy (addr.iabuf, &sin -> sin_addr.s_addr, addr.len);
@@ -180,7 +183,7 @@ void trace_inpacket_input (trace_type_t *ttype, unsigned len, char *buf)
 	tip = (trace_inpacket_t *)buf;
 	index = ntohl (tip -> index);
 	tip -> from.len = ntohl (tip -> from.len);
-	
+
 	if (index > interface_count ||
 	    index < 0 ||
 	    !interface_vector [index]) {
@@ -256,7 +259,7 @@ void trace_outpacket_input (trace_type_t *ttype, unsigned len, char *buf)
 	}
 	tip = (trace_outpacket_t *)buf;
 	index = ntohl (tip -> index);
-	
+
 	if (index > interface_count ||
 	    index < 0 ||
 	    !interface_vector [index]) {

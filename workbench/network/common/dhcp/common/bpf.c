@@ -3,12 +3,12 @@
    BPF socket interface code, originally contributed by Archie Cobbs. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,10 +19,10 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
  * This software was contributed to Internet Systems Consortium
  * by Archie Cobbs.
@@ -32,27 +32,19 @@
  * managed to get me to integrate them.
  */
 
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
-
+#include "dhcpd.h"
 #if defined (USE_BPF_SEND) || defined (USE_BPF_RECEIVE)	\
 				|| defined (USE_LPF_RECEIVE)
 # if defined (USE_LPF_RECEIVE)
-#  include "dhcpd.h"
 #  include <asm/types.h>
 #  include <linux/filter.h>
 #  define bpf_insn sock_filter /* Linux: dare to be gratuitously different. */
 # else
-/* This one's for BSD based OSes (dunno if it breaks any other OSes) */
-# define USE_SOCKET_FALLBACK
-#  include "dhcpd.h"
 #  include <sys/ioctl.h>
 #  include <sys/uio.h>
-#  include "/usr/include/net/bpf.h"
+#  include <net/bpf.h>
 #  if defined (NEED_OSF_PFILT_HACKS)
-#   include </usr/include/net/pfilt.h>
+#   include <net/pfilt.h>
 #  endif
 # endif
 
@@ -61,6 +53,13 @@ static char copyright[] =
 #include "includes/netinet/udp.h"
 #include "includes/netinet/if_ether.h"
 #endif
+
+#if defined(USE_BPF_SEND) || defined(USE_BPF_RECEIVE) || defined(USE_BPF_HWADDR)
+#include <net/if_types.h>
+#include <ifaddrs.h>
+#endif
+
+#include <errno.h>
 
 /* Reinitializes the specified interface after an address change.   This
    is not required for packet-filter APIs. */
@@ -116,6 +115,8 @@ int if_register_bpf (info)
 	if (ioctl (sock, BIOCSETIF, info -> ifp) < 0)
 		log_fatal ("Can't attach interface %s to bpf device %s: %m",
 		       info -> name, filename);
+
+	get_hw_addr(info->name, &info->hw_address);
 
 	return sock;
 }
@@ -191,14 +192,53 @@ struct bpf_insn dhcp_bpf_filter [] = {
 	BPF_JUMP (BPF_JMP + BPF_JEQ + BPF_K, 67, 0, 1),             /* patch */
 
 	/* If we passed all the tests, ask for the whole packet. */
-	BPF_STMT(BPF_RET+BPF_K, (u_int)-1),
+	BPF_STMT (BPF_RET + BPF_K, (u_int)-1),
 
 	/* Otherwise, drop it. */
-	BPF_STMT(BPF_RET+BPF_K, 0),
+	BPF_STMT (BPF_RET + BPF_K, 0),
 };
 
+#if defined(RELAY_PORT)
+/*
+ * For relay port extension
+ */
+struct bpf_insn dhcp_bpf_relay_filter [] = {
+	/* Make sure this is an IP packet... */
+	BPF_STMT (BPF_LD + BPF_H + BPF_ABS, 12),
+	BPF_JUMP (BPF_JMP + BPF_JEQ + BPF_K, ETHERTYPE_IP, 0, 10),
+
+	/* Make sure it's a UDP packet... */
+	BPF_STMT (BPF_LD + BPF_B + BPF_ABS, 23),
+	BPF_JUMP (BPF_JMP + BPF_JEQ + BPF_K, IPPROTO_UDP, 0, 8),
+
+	/* Make sure this isn't a fragment... */
+	BPF_STMT(BPF_LD + BPF_H + BPF_ABS, 20),
+	BPF_JUMP(BPF_JMP + BPF_JSET + BPF_K, 0x1fff, 6, 0),
+
+	/* Get the IP header length... */
+	BPF_STMT (BPF_LDX + BPF_B + BPF_MSH, 14),
+
+	/* Make sure it's to the right port... */
+	BPF_STMT (BPF_LD + BPF_H + BPF_IND, 16),
+	BPF_JUMP (BPF_JMP + BPF_JEQ + BPF_K, 67, 2, 0),             /* patch */
+
+	/* relay can have an alternative port... */
+	BPF_STMT (BPF_LD + BPF_H + BPF_IND, 16),
+	BPF_JUMP (BPF_JMP + BPF_JEQ + BPF_K, 67, 0, 1),             /* patch */
+
+	/* If we passed all the tests, ask for the whole packet. */
+	BPF_STMT (BPF_RET + BPF_K, (u_int)-1),
+
+	/* Otherwise, drop it. */
+	BPF_STMT (BPF_RET + BPF_K, 0),
+};
+
+int dhcp_bpf_relay_filter_len =
+	sizeof dhcp_bpf_relay_filter / sizeof (struct bpf_insn);
+#endif
+
 #if defined (DEC_FDDI)
-struct bpf_insn *bpf_fddi_filter;
+struct bpf_insn *bpf_fddi_filter = NULL;
 #endif
 
 int dhcp_bpf_filter_len = sizeof dhcp_bpf_filter / sizeof (struct bpf_insn);
@@ -225,9 +265,10 @@ void if_register_receive (info)
 {
 	int flag = 1;
 	struct bpf_version v;
-	u_int32_t addr;
 	struct bpf_program p;
+#ifdef NEED_OSF_PFILT_HACKS
 	u_int32_t bits;
+#endif
 #ifdef DEC_FDDI
 	int link_layer;
 #endif /* DEC_FDDI */
@@ -282,7 +323,7 @@ void if_register_receive (info)
 	if (ioctl(info -> rfdesc, BIOCGDLT, &link_layer) >= 0 &&
 	    link_layer == DLT_FDDI) {
 		if (!bpf_fddi_filter) {
-			bpf_fddi_filter = dmalloc (sizeof bpf_fddi_filter,
+			bpf_fddi_filter = dmalloc (sizeof dhcp_bpf_filter,
 						    MDL);
 			if (!bpf_fddi_filter)
 				log_fatal ("No memory for FDDI filter.");
@@ -307,7 +348,19 @@ void if_register_receive (info)
         /* Patch the server port into the BPF  program...
 	   XXX changes to filter program may require changes
 	   to the insn number(s) used below! XXX */
-	dhcp_bpf_filter [8].k = ntohs (local_port);
+#if defined(RELAY_PORT)
+	if (relay_port) {
+		/*
+		 * If user defined relay UDP port, we need to filter
+		 * also on the user UDP port.
+		 */
+		p.bf_len = dhcp_bpf_relay_filter_len;
+		p.bf_insns = dhcp_bpf_relay_filter;
+
+		dhcp_bpf_relay_filter [10].k = ntohs (relay_port);
+	}
+#endif
+	p.bf_insns [8].k = ntohs (local_port);
 
 	if (ioctl (info -> rfdesc, BIOCSETF, &p) < 0)
 		log_fatal ("Can't install packet filter program: %m");
@@ -355,11 +408,13 @@ ssize_t send_packet (interface, packet, raw, len, from, to, hto)
 	double ip [32];
 	struct iovec iov [3];
 	int result;
-	int fudge;
 
 	if (!strcmp (interface -> name, "fallback"))
 		return send_fallback (interface, packet, raw,
 				      len, from, to, hto);
+
+	if (hto == NULL && interface->anycast_mac_addr.hlen)
+		hto = &interface->anycast_mac_addr;
 
 	/* Assemble the headers... */
 	assemble_hw_header (interface, (unsigned char *)hw, &hbufp, hto);
@@ -394,6 +449,7 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	int length = 0;
 	int offset = 0;
 	struct bpf_hdr hdr;
+	unsigned paylen;
 
 	/* All this complexity is because BPF doesn't guarantee
 	   that only one packet will be returned at a time.   We're
@@ -403,45 +459,43 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 	/* Process packets until we get one we can return or until we've
 	   done a read and gotten nothing we can return... */
 
-	do {
-		/* If the buffer is empty, fill it. */
-		if (interface -> rbuf_offset == interface -> rbuf_len) {
-			length = read (interface -> rfdesc,
-				       interface -> rbuf,
-				       (size_t)interface -> rbuf_max);
-			if (length <= 0) {
+	/* If the buffer is empty, fill it. */
+	if (interface->rbuf_offset >= interface->rbuf_len) {
+		length = read(interface->rfdesc, interface->rbuf,
+			      (size_t)interface->rbuf_max);
+		if (length <= 0) {
 #ifdef __FreeBSD__
-				if (errno == ENXIO) {
+			if (errno == ENXIO) {
 #else
-				if (errno == EIO) {
+			if (errno == EIO) {
 #endif
-					dhcp_interface_remove
-						((omapi_object_t *)interface,
-						 (omapi_object_t *)0);
-				}
-				return length;
+				dhcp_interface_remove
+					((omapi_object_t *)interface, NULL);
 			}
-			interface -> rbuf_offset = 0;
-			interface -> rbuf_len = BPF_WORDALIGN (length);
+			return (length);
 		}
+		interface->rbuf_offset = 0;
+		interface->rbuf_len = BPF_WORDALIGN(length);
+	}
 
+	do {
 		/* If there isn't room for a whole bpf header, something went
 		   wrong, but we'll ignore it and hope it goes away... XXX */
-		if (interface -> rbuf_len -
-		    interface -> rbuf_offset < sizeof hdr) {
-			interface -> rbuf_offset = interface -> rbuf_len;
+		if (interface->rbuf_len -
+		    interface->rbuf_offset < sizeof hdr) {
+			interface->rbuf_offset = interface->rbuf_len;
 			continue;
 		}
 
 		/* Copy out a bpf header... */
-		memcpy (&hdr, &interface -> rbuf [interface -> rbuf_offset],
-			sizeof hdr);
+		memcpy(&hdr, &interface->rbuf[interface->rbuf_offset],
+		       sizeof hdr);
 
 		/* If the bpf header plus data doesn't fit in what's left
 		   of the buffer, stick head in sand yet again... */
-		if (interface -> rbuf_offset +
-		    hdr.bh_hdrlen + hdr.bh_caplen > interface -> rbuf_len) {
-			interface -> rbuf_offset = interface -> rbuf_len;
+		if (interface->rbuf_offset +
+		    hdr.bh_hdrlen + hdr.bh_caplen > interface->rbuf_len) {
+			interface->rbuf_offset = interface->rbuf_len;
 			continue;
 		}
 
@@ -449,69 +503,64 @@ ssize_t receive_packet (interface, buf, len, from, hfrom)
 		   the packet won't fit in the input buffer, all we
 		   can do is drop it. */
 		if (hdr.bh_caplen != hdr.bh_datalen) {
-			interface -> rbuf_offset =
-				BPF_WORDALIGN (interface -> rbuf_offset +
-					       hdr.bh_hdrlen + hdr.bh_caplen);
+			interface->rbuf_offset =
+				BPF_WORDALIGN(interface->rbuf_offset +
+					      hdr.bh_hdrlen + hdr.bh_caplen);
 			continue;
 		}
 
 		/* Skip over the BPF header... */
-		interface -> rbuf_offset += hdr.bh_hdrlen;
+		interface->rbuf_offset += hdr.bh_hdrlen;
 
 		/* Decode the physical header... */
-		offset = decode_hw_header (interface,
-					   interface -> rbuf,
-					   interface -> rbuf_offset,
-					   hfrom);
+		offset = decode_hw_header(interface, interface->rbuf,
+					  interface->rbuf_offset, hfrom);
 
 		/* If a physical layer checksum failed (dunno of any
 		   physical layer that supports this, but WTH), skip this
 		   packet. */
 		if (offset < 0) {
-			interface -> rbuf_offset = 
-				BPF_WORDALIGN (interface -> rbuf_offset +
-					       hdr.bh_caplen);
+			interface->rbuf_offset =
+				BPF_WORDALIGN(interface->rbuf_offset +
+					      hdr.bh_caplen);
 			continue;
 		}
-		interface -> rbuf_offset += offset;
+		interface->rbuf_offset += offset;
 		hdr.bh_caplen -= offset;
 
 		/* Decode the IP and UDP headers... */
-		offset = decode_udp_ip_header (interface,
-					       interface -> rbuf,
-					       interface -> rbuf_offset,
-					       from,
-					       hdr.bh_caplen);
+		offset = decode_udp_ip_header(interface, interface->rbuf,
+					      interface->rbuf_offset,
+                                              from, hdr.bh_caplen, &paylen, 1);
 
 		/* If the IP or UDP checksum was bad, skip the packet... */
 		if (offset < 0) {
-			interface -> rbuf_offset = 
-				BPF_WORDALIGN (interface -> rbuf_offset +
-					       hdr.bh_caplen);
+			interface->rbuf_offset =
+				BPF_WORDALIGN(interface->rbuf_offset +
+					      hdr.bh_caplen);
 			continue;
 		}
-		interface -> rbuf_offset = interface -> rbuf_offset + offset;
+		interface->rbuf_offset = interface->rbuf_offset + offset;
 		hdr.bh_caplen -= offset;
 
 		/* If there's not enough room to stash the packet data,
 		   we have to skip it (this shouldn't happen in real
 		   life, though). */
 		if (hdr.bh_caplen > len) {
-			interface -> rbuf_offset =
-				BPF_WORDALIGN (interface -> rbuf_offset +
+			interface->rbuf_offset =
+				BPF_WORDALIGN(interface->rbuf_offset +
 					       hdr.bh_caplen);
 			continue;
 		}
 
 		/* Copy out the data in the packet... */
-		memcpy (buf, interface -> rbuf + interface -> rbuf_offset,
-			hdr.bh_caplen);
-		interface -> rbuf_offset =
-			BPF_WORDALIGN (interface -> rbuf_offset +
-				       hdr.bh_caplen);
-		return hdr.bh_caplen;
-	} while (!length);
-	return 0;
+		memcpy(buf, interface->rbuf + interface->rbuf_offset, paylen);
+		interface->rbuf_offset =
+			BPF_WORDALIGN(interface->rbuf_offset + hdr.bh_caplen);
+		return paylen;
+	} while (interface->rbuf_offset < interface->rbuf_len);
+
+	return (0);
 }
 
 int can_unicast_without_arp (ip)
@@ -546,5 +595,66 @@ void maybe_setup_fallback ()
 				   fbi -> name, isc_result_totext (status));
 		interface_dereference (&fbi, MDL);
 	}
+}
+#endif
+
+#if defined(USE_BPF_RECEIVE) || defined(USE_BPF_HWADDR)
+void
+get_hw_addr(const char *name, struct hardware *hw) {
+	struct ifaddrs *ifa;
+	struct ifaddrs *p;
+	struct sockaddr_dl *sa;
+
+	if (getifaddrs(&ifa) != 0) {
+		log_fatal("Error getting interface information; %m");
+	}
+
+	/*
+	 * Loop through our interfaces finding a match.
+	 */
+	sa = NULL;
+	for (p=ifa; (p != NULL) && (sa == NULL); p = p->ifa_next) {
+		if ((p->ifa_addr->sa_family == AF_LINK) &&
+		    !strcmp(p->ifa_name, name)) {
+		    	sa = (struct sockaddr_dl *)p->ifa_addr;
+		}
+	}
+	if (sa == NULL) {
+		log_fatal("No interface called '%s'", name);
+	}
+
+	/*
+	 * Pull out the appropriate information.
+	 */
+        switch (sa->sdl_type) {
+                case IFT_ETHER:
+#if defined (IFT_L2VLAN)
+		case IFT_L2VLAN:
+#endif
+                        hw->hlen = sa->sdl_alen + 1;
+                        hw->hbuf[0] = HTYPE_ETHER;
+                        memcpy(&hw->hbuf[1], LLADDR(sa), sa->sdl_alen);
+                        break;
+		case IFT_ISO88023:
+		case IFT_ISO88024: /* "token ring" */
+		case IFT_ISO88025:
+		case IFT_ISO88026:
+                        hw->hlen = sa->sdl_alen + 1;
+                        hw->hbuf[0] = HTYPE_IEEE802;
+                        memcpy(&hw->hbuf[1], LLADDR(sa), sa->sdl_alen);
+                        break;
+#ifdef IFT_FDDI
+                case IFT_FDDI:
+                        hw->hlen = sa->sdl_alen + 1;
+                        hw->hbuf[0] = HTYPE_FDDI;
+                        memcpy(&hw->hbuf[1], LLADDR(sa), sa->sdl_alen);
+                        break;
+#endif /* IFT_FDDI */
+                default:
+                        log_fatal("Unsupported device type %d for \"%s\"",
+                                  sa->sdl_type, name);
+        }
+
+	freeifaddrs(ifa);
 }
 #endif

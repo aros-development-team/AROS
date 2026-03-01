@@ -3,12 +3,12 @@
    Tokens for config file lexer and parser. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,19 +19,18 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
+/*
+ * The following tokens have been deprecated and aren't in use anymore.
+ * They have been left in place to avoid disturbing the code.
+ * DNS_UPDATE, DNS_DELETE, NS_UPDATE, UPDATED_DNS_RR
+ */
 enum dhcp_token {
 	SEMI = ';',
 	DOT = '.',
@@ -40,17 +39,22 @@ enum dhcp_token {
 	SLASH = '/',
 	LBRACE = '{',
 	RBRACE = '}',
+	LBRACKET = '[',
+	RBRACKET = ']',
 	LPAREN = '(',
 	RPAREN = ')',
 	EQUAL = '=',
+	TILDE = '~',
 	BANG = '!',
 	PERCENT = '%',
- 	PLUS = '+',
+	PLUS = '+',
 	MINUS = '-',
 	ASTERISK = '*',
 	AMPERSAND = '&',
 	PIPE = '|',
 	CARET = '^',
+	ENDOFLINE = '\n',
+	QUESTIONMARK = '?',
 
 	HOST = 256,
 	FIRST_TOKEN = HOST,
@@ -174,7 +178,7 @@ enum dhcp_token {
 	COMMUNICATIONS_INTERRUPTED = 376,
 	POTENTIAL_CONFLICT = 377,
 	RECOVER = 378,
-	FDDI = 379,
+	TOKEN_FDDI = 379,
 	AUTHORITATIVE = 380,
 	TOKEN_NOT = 381,
 	AUTHENTICATION = 383,
@@ -189,7 +193,13 @@ enum dhcp_token {
 	SIGNED = 392,
 	UNSIGNED = 393,
 	IP_ADDRESS = 394,
-	_TEXT = 395,
+#ifdef __AROS__
+	/* AROS defines TEXT as a typedef; use DHCP_TEXT to avoid conflict */
+	DHCP_TEXT = 395,
+#define TEXT DHCP_TEXT
+#else
+	TEXT = 395,
+#endif
 	STRING_TOKEN = 396,
 	SPACE = 397,
 	CONCAT = 398,
@@ -206,7 +216,14 @@ enum dhcp_token {
 	COMMIT = 411,
 	DNS_UPDATE = 412,
 	LEASE_TIME = 413,
-	_STATIC = 414,
+#ifdef __AROS__
+	/* AROS defines STATIC as a macro; use DHCP_STATIC to avoid conflict */
+	DHCP_STATIC = 414,
+#undef STATIC
+#define STATIC DHCP_STATIC
+#else
+	STATIC = 414,
+#endif
 	NEVER = 415,
 	INFINITE = 416,
 	TOKEN_DELETED = 417,
@@ -223,7 +240,7 @@ enum dhcp_token {
 	MCLT = 428,
 	SPLIT = 429,
 	AT = 430,
-	NO = 431,
+	TOKEN_NO = 431,
 	TOKEN_DELETE = 432,
 	NS_UPDATE = 433,
 	UPDATE = 434,
@@ -302,13 +319,78 @@ enum dhcp_token {
 	TOKEN_HELP = 606,
 	END_OF_FILE = 607,
 	RECOVER_WAIT = 608,
-	SERVER = 609,
+	TOKEN_SERVER = 609,
 	CONNECT = 610,
 	REMOVE = 611,
 	REFRESH = 612,
 	DOMAIN_NAME = 613,
 	DO_FORWARD_UPDATE = 614,
-	KNOWN_CLIENTS = 615
+	KNOWN_CLIENTS = 615,
+	ATSFP = 616,
+	LCASE = 617,
+	UCASE = 618,
+	WIDTH = 619,
+	LENGTH = 620,
+	HASH = 621,
+	SIZE = 622,
+	EPOCH = 623,
+	DB_TIME_FORMAT = 624,
+	LOCAL = 625,
+	MAX_LEASE_MISBALANCE = 626,
+	MAX_LEASE_OWNERSHIP = 627,
+	MAX_BALANCE = 628,
+	MIN_BALANCE = 629,
+	DOMAIN_LIST = 630,
+	LEASEQUERY = 631,
+	EXECUTE = 632,
+	IP6_ADDRESS = 633,
+	FIXED_ADDR6 = 634,
+	COMPRESSED = 635,
+	SUBNET6 = 636,
+	HOST_IDENTIFIER = 637,
+	IA_NA = 638,
+	IA_TA = 639,
+	IA_PD = 640,
+	IAADDR = 641,
+	IAPREFIX = 642,
+	LEASE6 = 643,
+	PREFERRED_LIFE = 644,
+	MAX_LIFE = 645,
+	DEFAULT_DUID = 646,
+	SERVER_DUID = 647,
+	LLT = 648,
+	EN = 649,
+	LL = 650,
+	RANGE6 = 651,
+	WHITESPACE = 652,
+	TOKEN_ALSO = 653,
+	AFTER = 654,
+	ZEROLEN = 655,
+	TEMPORARY = 656,
+	PREFIX6 = 657,
+	FIXED_PREFIX6 = 658,
+	ANYCAST_MAC = 659,
+	CONFLICT_DONE = 660,
+	AUTO_PARTNER_DOWN = 661,
+	GETHOSTNAME = 662,
+	REWIND = 663,
+	INITIAL_DELAY = 664,
+	GETHOSTBYNAME = 665,
+	PRIMARY6 = 666,
+	SECONDARY6 = 667,
+	TOKEN_INFINIBAND = 668,
+	POOL6 = 669,
+	V6RELAY = 670,
+	V6RELOPT = 671,
+	PARSE_VENDOR_OPT = 672,
+	AUTHORING_BYTE_ORDER = 673,
+	TOKEN_LITTLE_ENDIAN = 674,
+	TOKEN_BIG_ENDIAN = 675,
+	LEASE_ID_FORMAT = 676,
+	TOKEN_HEX = 677,
+	TOKEN_OCTAL = 678,
+	KEY_ALGORITHM = 679,
+	DISCONNECT = 680
 };
 
 #define is_identifier(x)	((x) >= FIRST_TOKEN &&	\

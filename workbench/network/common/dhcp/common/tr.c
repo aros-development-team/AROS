@@ -4,12 +4,12 @@
    Contributed in May of 1999 by Andrew Chittenden */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -20,16 +20,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 
@@ -47,9 +42,9 @@ static char copyright[] =
  * source routing
  */
 
-static int insert_source_routing PROTO ((struct trh_hdr *trh, struct interface_info* interface));
-static void save_source_routing PROTO ((struct trh_hdr *trh, struct interface_info* interface));
-static void expire_routes PROTO ((void));
+static int insert_source_routing (struct trh_hdr *trh, struct interface_info* interface);
+static void save_source_routing (struct trh_hdr *trh, struct interface_info* interface);
+static void expire_routes (void);
 
 /*
  * As we keep a list of interesting routing information only, a singly
@@ -59,9 +54,9 @@ struct routing_entry {
         struct routing_entry *next;
         unsigned char addr[TR_ALEN];
         unsigned char iface[5];
-        __u16 rcf;                      /* route control field */
-        __u16 rseg[8];                  /* routing registers */
-        unsigned long access_time;      /* time we last used this entry */
+        u_int16_t rcf;			/* route control field */
+        u_int16_t rseg[8];		/* routing registers */
+        unsigned long access_time;	/* time we last used this entry */
 };
 
 static struct routing_entry *routing_info = NULL;
@@ -157,7 +152,7 @@ ssize_t decode_tr_header (interface, buf, bufix, from)
                         && llc->protid[1] == 0
                         && llc->protid[2] == 0) {
                 /* say there is source routing information present */
-                trh->saddr[0] |= TR_RII;	
+                trh->saddr[0] |= TR_RII;
         }
 
 	if (trh->saddr[0] & TR_RII)
@@ -204,7 +199,7 @@ static int insert_source_routing (trh, interface)
 	/* single route broadcasts as per rfc 1042 */
 	if (memcmp(trh->daddr, tr_broadcast,TR_ALEN) == 0) {
 		trh->saddr[0] |= TR_RII;
-		trh->rcf = ((sizeof(trh->rcf)) << 8) & TR_RCF_LEN_MASK;  
+		trh->rcf = ((sizeof(trh->rcf)) << 8) & TR_RCF_LEN_MASK;
                 trh->rcf |= (TR_RCF_FRAME2K | TR_RCF_LIMITED_BROADCAST);
 		trh->rcf = htons(trh->rcf);
 	} else {
@@ -217,9 +212,9 @@ static int insert_source_routing (trh, interface)
 		if (rover != NULL) {
                         /* success: route that frame */
                         if ((rover->rcf & TR_RCF_LEN_MASK) >> 8) {
-                                __u16 rcf = rover->rcf;
+                                u_int16_t rcf = rover->rcf;
 				memcpy(trh->rseg,rover->rseg,sizeof(trh->rseg));
-				rcf ^= TR_RCF_DIR_BIT;	
+				rcf ^= TR_RCF_DIR_BIT;
 				rcf &= ~TR_RCF_BROADCAST_MASK;
                                 trh->rcf = htons(rcf);
 				trh->saddr[0] |= TR_RII;
@@ -229,7 +224,7 @@ static int insert_source_routing (trh, interface)
                         /* we don't have any routing information so send a
                          * limited broadcast */
                         trh->saddr[0] |= TR_RII;
-                        trh->rcf = ((sizeof(trh->rcf)) << 8) & TR_RCF_LEN_MASK;  
+                        trh->rcf = ((sizeof(trh->rcf)) << 8) & TR_RCF_LEN_MASK;
                         trh->rcf |= (TR_RCF_FRAME2K | TR_RCF_LIMITED_BROADCAST);
                         trh->rcf = htons(trh->rcf);
 		}
@@ -254,7 +249,7 @@ static void save_source_routing(trh, interface)
         struct routing_entry *rover;
         struct timeval now;
         unsigned char saddr[TR_ALEN];
-        __u16 rcf = 0;
+        u_int16_t rcf = 0;
 
         gettimeofday(&now, NULL);
 

@@ -3,12 +3,12 @@
    Subroutines that support the generic listener object. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,20 +19,17 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
+#include "dhcpd.h"
+
 #include <omapip/omapip_p.h>
+#include <errno.h>
 
 #if defined (TRACING)
 omapi_array_t *trace_listeners;
@@ -68,35 +65,36 @@ isc_result_t omapi_listen_addr (omapi_object_t *h,
 				omapi_addr_t *addr,
 				int max)
 {
-	// struct hostent *he;
-	// int hix;
 	isc_result_t status;
 	omapi_listener_object_t *obj;
 	int i;
-	// struct in_addr ia;
+
+	/* Currently only support IPv4 addresses. */
+	if (addr->addrtype != AF_INET)
+		return DHCP_R_INVALIDARG;
 
 	/* Get the handle. */
 	obj = (omapi_listener_object_t *)0;
 	status = omapi_listener_allocate (&obj, MDL);
 	if (status != ISC_R_SUCCESS)
-		return status;
+		/*
+		 * we could simply return here but by going to
+		 * error_exit we keep the code check tools happy
+		 * without removing the NULL check on obj at
+		 * the exit, which we could skip curently but
+		 * might want in the future.
+		 */
+		goto error_exit;
+	obj->socket = -1;
 
 	/* Connect this object to the inner object. */
 	status = omapi_object_reference (&h -> outer,
 					 (omapi_object_t *)obj, MDL);
-	if (status != ISC_R_SUCCESS) {
-		omapi_listener_dereference (&obj, MDL);
-		return status;
-	}
+	if (status != ISC_R_SUCCESS)
+		goto error_exit;
 	status = omapi_object_reference (&obj -> inner, h, MDL);
-	if (status != ISC_R_SUCCESS) {
-		omapi_listener_dereference (&obj, MDL);
-		return status;
-	}
-
-	/* Currently only support TCPv4 addresses. */
-	if (addr -> addrtype != AF_INET)
-		return ISC_R_INVALIDARG;
+	if (status != ISC_R_SUCCESS)
+		goto error_exit;
 
 	/* Set up the address on which we will listen... */
 	obj -> address.sin_port = htons (addr -> port);
@@ -119,19 +117,19 @@ isc_result_t omapi_listen_addr (omapi_object_t *h,
 #endif
 		/* Create a socket on which to listen. */
 		obj -> socket = socket (PF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (!obj -> socket) {
-			omapi_listener_dereference (&obj, MDL);
+		if (obj->socket == -1) {
 			if (errno == EMFILE
 			    || errno == ENFILE || errno == ENOBUFS)
-				return ISC_R_NORESOURCES;
-			return ISC_R_UNEXPECTED;
+				status = ISC_R_NORESOURCES;
+			else
+				status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
-	
+
 #if defined (HAVE_SETFD)
 		if (fcntl (obj -> socket, F_SETFD, 1) < 0) {
-			close (obj -> socket);
-			omapi_listener_dereference (&obj, MDL);
-			return ISC_R_UNEXPECTED;
+			status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
 #endif
 
@@ -140,44 +138,34 @@ isc_result_t omapi_listen_addr (omapi_object_t *h,
 		i = 1;
 		if (setsockopt (obj -> socket, SOL_SOCKET, SO_REUSEADDR,
 				(char *)&i, sizeof i) < 0) {
-#ifdef SOCKET_IS_NOT_A_FILE
-			CloseSocket (obj -> socket);
-#else
-			close (obj -> socket);
-#endif
-			omapi_listener_dereference (&obj, MDL);
-			return ISC_R_UNEXPECTED;
+			status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
-		
+
 		/* Try to bind to the wildcard address using the port number
 		   we were given. */
 		i = bind (obj -> socket,
 			  (struct sockaddr *)&obj -> address,
 			  sizeof obj -> address);
 		if (i < 0) {
-			omapi_listener_dereference (&obj, MDL);
 			if (errno == EADDRINUSE)
-				return ISC_R_ADDRNOTAVAIL;
-			if (errno == EPERM)
-				return ISC_R_NOPERM;
-			return ISC_R_UNEXPECTED;
+				status = ISC_R_ADDRNOTAVAIL;
+			else if (errno == EPERM)
+				status = ISC_R_NOPERM;
+			else
+				status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
 
 		/* Now tell the kernel to listen for connections. */
 		if (listen (obj -> socket, max)) {
-			omapi_listener_dereference (&obj, MDL);
-			return ISC_R_UNEXPECTED;
+			status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
 
-#ifdef SOCKET_IS_NOT_A_FILE
-		i = 1;
-		if (IoctlSocket (obj -> socket, FIONBIO, (char *)&i) < 0)
-#else
-		if (fcntl (obj -> socket, F_SETFL, O_NONBLOCK) < 0)
-#endif
-		{
-			omapi_listener_dereference (&obj, MDL);
-			return ISC_R_UNEXPECTED;
+		if (fcntl (obj -> socket, F_SETFL, O_NONBLOCK) < 0) {
+			status = ISC_R_UNEXPECTED;
+			goto error_exit;
 		}
 
 		status = omapi_register_io_object ((omapi_object_t *)obj,
@@ -186,7 +174,25 @@ isc_result_t omapi_listen_addr (omapi_object_t *h,
 #if defined (TRACING)
 	}
 #endif
+
 	omapi_listener_dereference (&obj, MDL);
+	return status;
+
+error_exit:
+	if (obj != NULL) {
+		if (h->outer == (omapi_object_t *)obj) {
+			omapi_object_dereference((omapi_object_t **)&h->outer,
+						 MDL);
+		}
+		if (obj->inner == h) {
+			omapi_object_dereference((omapi_object_t **)&obj->inner,
+						 MDL);
+		}
+		if (obj->socket != -1) {
+			close(obj->socket);
+		}
+		omapi_listener_dereference(&obj, MDL);
+	}
 	return status;
 }
 
@@ -199,7 +205,7 @@ int omapi_listener_readfd (omapi_object_t *h)
 	if (h -> type != omapi_type_listener)
 		return -1;
 	l = (omapi_listener_object_t *)h;
-	
+
 	return l -> socket;
 }
 
@@ -207,16 +213,14 @@ int omapi_listener_readfd (omapi_object_t *h)
 isc_result_t omapi_accept (omapi_object_t *h)
 {
 	isc_result_t status;
-	SOCKLEN_T len;
+	socklen_t len;
 	omapi_connection_object_t *obj;
 	omapi_listener_object_t *listener;
-	// omapi_addr_t remote_addr;
-	// int i;
 	struct sockaddr_in addr;
 	int socket;
 
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	listener = (omapi_listener_object_t *)h;
 
 	/* Accept the connection. */
@@ -228,12 +232,16 @@ isc_result_t omapi_accept (omapi_object_t *h)
 			return ISC_R_NORESOURCES;
 		return ISC_R_UNEXPECTED;
 	}
-	
+
+	if ((MAX_FD_VALUE != 0) && (socket > MAX_FD_VALUE)) {
+		close(socket);
+		return (ISC_R_NORESOURCES);
+	}
+
 #if defined (TRACING)
 	/* If we're recording a trace, remember the connection. */
 	if (trace_record ()) {
 		trace_iov_t iov [3];
-		// u_int32_t lsock;
 		iov [0].buf = (char *)&addr.sin_port;
 		iov [0].len = sizeof addr.sin_port;
 		iov [1].buf = (char *)&addr.sin_addr;
@@ -248,11 +256,7 @@ isc_result_t omapi_accept (omapi_object_t *h)
 	obj = (omapi_connection_object_t *)0;
 	status = omapi_listener_connect (&obj, listener, socket, &addr);
 	if (status != ISC_R_SUCCESS) {
-#ifdef SOCKET_IS_NOT_A_FILE
-		CloseSocket (socket);
-#else
 		close (socket);
-#endif
 		return status;
 	}
 
@@ -283,7 +287,7 @@ isc_result_t omapi_listener_connect (omapi_connection_object_t **obj,
 #ifdef DEBUG_PROTOCOL
 	log_debug ("omapi_accept()");
 #endif
-	
+
 	/* Get the handle. */
 	status = omapi_connection_allocate (obj, MDL);
 	if (status != ISC_R_SUCCESS)
@@ -354,6 +358,7 @@ static void trace_listener_accept_input (trace_type_t *ttype,
 	u_int16_t *remote_port;
 	u_int16_t *local_port;
 	omapi_connection_object_t *obj;
+	isc_result_t status;
 	struct sockaddr_in remote_addr;
 
 	addr = (struct in_addr *)buf;
@@ -368,7 +373,12 @@ static void trace_listener_accept_input (trace_type_t *ttype,
 				   omapi_listener_object_t, lp) {
 		if (lp -> address.sin_port == *local_port) {
 			obj = (omapi_connection_object_t *)0;
-			omapi_listener_connect (&obj, lp, 0, &remote_addr);
+			status = omapi_listener_connect (&obj,
+							 lp, 0, &remote_addr);
+			if (status != ISC_R_SUCCESS) {
+				log_error("%s:%d: OMAPI: Failed to connect "
+					  "a listener.", MDL);
+			}
 			omapi_listener_dereference (&lp, MDL);
 			return;
 		}
@@ -392,7 +402,7 @@ isc_result_t omapi_listener_configure_security (omapi_object_t *h,
 	omapi_listener_object_t *l;
 
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	l = (omapi_listener_object_t *)h;
 
 	l -> verify_addr = verify_addr;
@@ -406,8 +416,8 @@ isc_result_t omapi_listener_set_value (omapi_object_t *h,
 				      omapi_typed_data_t *value)
 {
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
-	
+		return DHCP_R_INVALIDARG;
+
 	if (h -> inner && h -> inner -> type -> set_value)
 		return (*(h -> inner -> type -> set_value))
 			(h -> inner, id, name, value);
@@ -420,8 +430,8 @@ isc_result_t omapi_listener_get_value (omapi_object_t *h,
 				       omapi_value_t **value)
 {
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
-	
+		return DHCP_R_INVALIDARG;
+
 	if (h -> inner && h -> inner -> type -> get_value)
 		return (*(h -> inner -> type -> get_value))
 			(h -> inner, id, name, value);
@@ -434,19 +444,15 @@ isc_result_t omapi_listener_destroy (omapi_object_t *h,
 	omapi_listener_object_t *l;
 
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	l = (omapi_listener_object_t *)h;
 
 #ifdef DEBUG_PROTOCOL
 	log_debug ("omapi_listener_destroy()");
 #endif
-	
+
 	if (l -> socket != -1) {
-#ifdef SOCKET_IS_NOT_A_FILE
-		CloseSocket (l -> socket);
-#else
 		close (l -> socket);
-#endif
 		l -> socket = -1;
 	}
 	return ISC_R_SUCCESS;
@@ -456,8 +462,8 @@ isc_result_t omapi_listener_signal_handler (omapi_object_t *h,
 					    const char *name, va_list ap)
 {
 	if (h -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
-	
+		return DHCP_R_INVALIDARG;
+
 	if (h -> inner && h -> inner -> type -> signal_handler)
 		return (*(h -> inner -> type -> signal_handler)) (h -> inner,
 								  name, ap);
@@ -471,14 +477,11 @@ isc_result_t omapi_listener_stuff_values (omapi_object_t *c,
 					  omapi_object_t *id,
 					  omapi_object_t *l)
 {
-	// int i;
-
 	if (l -> type != omapi_type_listener)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (l -> inner && l -> inner -> type -> stuff_values)
 		return (*(l -> inner -> type -> stuff_values)) (c, id,
 								l -> inner);
 	return ISC_R_SUCCESS;
 }
-

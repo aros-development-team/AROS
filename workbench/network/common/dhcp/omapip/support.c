@@ -3,12 +3,12 @@
    Subroutines providing general support for objects. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,18 +19,14 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
+
+#include "dhcpd.h"
 
 #include <omapip/omapip_p.h>
 
@@ -48,7 +44,6 @@ omapi_object_type_t *omapi_type_auth_key;
 
 omapi_object_type_t *omapi_object_types;
 int omapi_object_type_count;
-// static int ot_max;
 
 #if defined (DEBUG_MEMORY_LEAKAGE_ON_EXIT)
 void omapi_type_relinquish ()
@@ -66,8 +61,6 @@ void omapi_type_relinquish ()
 isc_result_t omapi_init (void)
 {
 	isc_result_t status;
-
-	dst_init();
 
 	/* Register all the standard object types... */
 	status = omapi_object_type_register (&omapi_type_connection,
@@ -191,7 +184,6 @@ isc_result_t omapi_init (void)
 	omapi_listener_trace_setup ();
 	omapi_connection_trace_setup ();
 	omapi_buffer_trace_setup ();
-	trace_mr_init ();
 #endif
 
 	/* This seems silly, but leave it. */
@@ -293,7 +285,6 @@ isc_result_t omapi_signal (omapi_object_t *handle, const char *name, ...)
 isc_result_t omapi_signal_in (omapi_object_t *handle, const char *name, ...)
 {
 	va_list ap;
-	// omapi_object_t *outer;
 	isc_result_t status;
 
 	if (!handle)
@@ -317,7 +308,7 @@ isc_result_t omapi_set_value (omapi_object_t *h,
 	omapi_object_t *outer;
 	isc_result_t status;
 
-#if defined (DEBUG)
+#if defined (DEBUG_PROTOCOL)
 	if (!value) {
 		log_info ("omapi_set_value (%.*s, NULL)",
 			  (int)name -> len, name -> value);
@@ -352,7 +343,7 @@ isc_result_t omapi_set_value (omapi_object_t *h,
 							  id, name, value);
 	else
 		status = ISC_R_NOTFOUND;
-#if defined (DEBUG)
+#if defined (DEBUG_PROTOCOL)
 	log_info (" ==> %s", isc_result_totext (status));
 #endif
 	return status;
@@ -363,7 +354,6 @@ isc_result_t omapi_set_value_str (omapi_object_t *h,
 				  const char *name,
 				  omapi_typed_data_t *value)
 {
-	// omapi_object_t *outer;
 	omapi_data_string_t *nds;
 	isc_result_t status;
 
@@ -384,8 +374,6 @@ isc_result_t omapi_set_boolean_value (omapi_object_t *h, omapi_object_t *id,
 	isc_result_t status;
 	omapi_typed_data_t *tv = (omapi_typed_data_t *)0;
 	omapi_data_string_t *n = (omapi_data_string_t *)0;
-	// int len;
-	// int ip;
 
 	status = omapi_data_string_new (&n, strlen (name), MDL);
 	if (status != ISC_R_SUCCESS)
@@ -410,8 +398,6 @@ isc_result_t omapi_set_int_value (omapi_object_t *h, omapi_object_t *id,
 	isc_result_t status;
 	omapi_typed_data_t *tv = (omapi_typed_data_t *)0;
 	omapi_data_string_t *n = (omapi_data_string_t *)0;
-	// int len;
-	// int ip;
 
 	status = omapi_data_string_new (&n, strlen (name), MDL);
 	if (status != ISC_R_SUCCESS)
@@ -436,8 +422,6 @@ isc_result_t omapi_set_object_value (omapi_object_t *h, omapi_object_t *id,
 	isc_result_t status;
 	omapi_typed_data_t *tv = (omapi_typed_data_t *)0;
 	omapi_data_string_t *n = (omapi_data_string_t *)0;
-	// int len;
-	// int ip;
 
 	status = omapi_data_string_new (&n, strlen (name), MDL);
 	if (status != ISC_R_SUCCESS)
@@ -462,8 +446,6 @@ isc_result_t omapi_set_string_value (omapi_object_t *h, omapi_object_t *id,
 	isc_result_t status;
 	omapi_typed_data_t *tv = (omapi_typed_data_t *)0;
 	omapi_data_string_t *n = (omapi_data_string_t *)0;
-	// int len;
-	// int ip;
 
 	status = omapi_data_string_new (&n, strlen (name), MDL);
 	if (status != ISC_R_SUCCESS)
@@ -552,7 +534,7 @@ isc_result_t omapi_object_update (omapi_object_t *obj, omapi_object_t *id,
 	int i;
 
 	if (!src)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	if (src -> type != omapi_type_generic)
 		return ISC_R_NOTIMPLEMENTED;
 	gsrc = (omapi_generic_object_t *)src;
@@ -560,11 +542,17 @@ isc_result_t omapi_object_update (omapi_object_t *obj, omapi_object_t *id,
 		status = omapi_set_value (obj, id,
 					  gsrc -> values [i] -> name,
 					  gsrc -> values [i] -> value);
-		if (status != ISC_R_SUCCESS && status != ISC_R_UNCHANGED)
+		if (status != ISC_R_SUCCESS && status != DHCP_R_UNCHANGED)
 			return status;
 	}
+
+	/*
+	 * For now ignore the return value.  I'm not sure if we want to
+	 * generate an error if we can't set the handle value.  If we
+	 * do add a check we probably should allow unchanged and notfound
+	 */
 	if (handle)
-		omapi_set_int_value (obj, id, "remote-handle", (int)handle);
+		(void) omapi_set_int_value (obj, id, "remote-handle", (int)handle);
 	status = omapi_signal (obj, "updated");
 	if (status != ISC_R_NOTFOUND)
 		return status;
@@ -757,18 +745,18 @@ isc_result_t omapi_make_object_value (omapi_value_t **vp,
 				      const char *file, int line)
 {
 	isc_result_t status;
-	
+
 	status = omapi_value_new (vp, file, line);
 	if (status != ISC_R_SUCCESS)
 		return status;
-	
+
 	status = omapi_data_string_reference (&(*vp) -> name,
                                               name, file, line);
 	if (status != ISC_R_SUCCESS) {
 		omapi_value_dereference (vp, file, line);
 		return status;
 	}
-	
+
 	if (value) {
 		status = omapi_typed_data_new (file, line, &(*vp) -> value,
 					       omapi_datatype_object, value);
@@ -777,7 +765,7 @@ isc_result_t omapi_make_object_value (omapi_value_t **vp,
 			return status;
 		}
 	}
-	
+
 	return ISC_R_SUCCESS;
 }
 
@@ -854,10 +842,10 @@ isc_result_t omapi_get_int_value (unsigned long *v, omapi_typed_data_t *t)
 	} else if (t -> type == omapi_datatype_string ||
 		   t -> type == omapi_datatype_data) {
 		if (t -> u.buffer.len != sizeof (rv))
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		memcpy (&rv, t -> u.buffer.value, sizeof rv);
 		*v = ntohl (rv);
 		return ISC_R_SUCCESS;
 	}
-	return ISC_R_INVALIDARG;
+	return DHCP_R_INVALIDARG;
 }

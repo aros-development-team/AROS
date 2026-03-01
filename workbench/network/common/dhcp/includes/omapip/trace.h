@@ -3,12 +3,12 @@
    Definitions for omapi tracing facility... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 2001-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,21 +19,17 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon, as part of a project for Nominum, Inc.   To learn more
- * about Internet Systems Consortium, see http://www.isc.org/.  To
- * learn more about Nominum, Inc., see ``http://www.nominum.com''.
  */
 
 #define TRACEFILE_MAGIC		0x64484370UL	/* dHCp */
 #define TRACEFILE_VERSION	1
 
-/* The first thing in a trace file is the header, which basically just 
+/* The first thing in a trace file is the header, which basically just
    defines the version of the file. */
 typedef struct {
 	u_int32_t magic;	/* Magic number for trace file. */
@@ -90,7 +86,7 @@ typedef struct {
 void trace_free_all (void);
 int trace_playback (void);
 int trace_record (void);
-isc_result_t trace_init (void (*set_time) (u_int32_t), const char *, int);
+isc_result_t trace_init(void (*set_time)(time_t), const char *, int);
 isc_result_t trace_begin (const char *, const char *, int);
 isc_result_t trace_write_packet (trace_type_t *, unsigned, const char *,
 				 const char *, int);

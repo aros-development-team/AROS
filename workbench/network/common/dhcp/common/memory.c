@@ -3,12 +3,12 @@
    Memory-resident database... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1995-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,23 +19,12 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
-
-#if 0
-static char copyright[] =
-"$Id$ Copyright (c) 2004 Internet Systems Consortium.  All rights reserved.\n";
-#endif
 
 #include "dhcpd.h"
 
@@ -53,14 +42,14 @@ isc_result_t delete_group (struct group_object *group, int writep)
 		group_hash_lookup (&d, group_name_hash, group -> name,
 				   strlen (group -> name), MDL);
 	} else
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	if (!d)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	/* Also not okay to delete a group that's not the one in
 	   the hash table. */
 	if (d != group)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	/* If it's dynamic, and we're deleting it, we can just blow away the
 	   hash table entry. */
@@ -85,8 +74,6 @@ isc_result_t delete_group (struct group_object *group, int writep)
 isc_result_t supersede_group (struct group_object *group, int writep)
 {
 	struct group_object *t;
-	// struct group_object *u;
-	// isc_result_t status;
 
 	/* Register the group in the group name hash table,
 	   so we can look it up later. */
@@ -120,7 +107,7 @@ isc_result_t supersede_group (struct group_object *group, int writep)
 			}
 		}
 	} else {
-		group_new_hash (&group_name_hash, 0, MDL);
+		group_new_hash(&group_name_hash, GROUP_HASH_SIZE, MDL);
 		t = (struct group_object *)0;
 	}
 
@@ -143,7 +130,6 @@ isc_result_t supersede_group (struct group_object *group, int writep)
 int clone_group (struct group **gp, struct group *group,
 		 const char *file, int line)
 {
-	// isc_result_t status;
 	struct group *g = (struct group *)0;
 
 	/* Normally gp should contain the null pointer, but for convenience

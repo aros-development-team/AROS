@@ -3,12 +3,12 @@
    Definitions for address trees... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1996-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,17 +19,11 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
 /* A pair of pointers, suitable for making a linked list. */
@@ -51,8 +45,9 @@ struct enumeration_value {
 struct enumeration {
 	struct enumeration *next;
 	const char *name;
+	unsigned width;
 	struct enumeration_value *values;
-};	
+};
 
 /* Tree node types... */
 #define TREE_CONCAT		1
@@ -74,6 +69,8 @@ struct buffer {
    XXX ephemeral by default and be made a persistent reference explicitly. */
 /* XXX on the other hand, it seems to work pretty nicely, so maybe the
    XXX above comment is meshuggenah. */
+/* XXX I think the above comment tries to say this:
+   XXX    http://tinyurl.com/2tjqre */
 
 /* A string of data bytes, possibly accompanied by a larger buffer. */
 struct data_string {
@@ -112,9 +109,6 @@ struct binding_value {
 		struct data_string data;
 		unsigned long intval;
 		int boolean;
-#if defined (NSUPDATE)
-		ns_updrec *dns;
-#endif
 		struct fundef *fundef;
 		struct binding_value *bv;
 	} value;
@@ -190,13 +184,20 @@ enum expr_op {
 	expr_binary_and,
 	expr_binary_or,
 	expr_binary_xor,
-	expr_client_state
+	expr_client_state,
+	expr_ucase,
+	expr_lcase,
+	expr_regex_match,
+	expr_iregex_match,
+	expr_gethostname,
+	expr_v6relay,
+	expr_concat_dclist
 };
 
 struct expression {
 	int refcnt;
 	enum expr_op op;
-	union {
+	union expr_union {
 		struct {
 			struct expression *expr;
 			struct expression *offset;
@@ -216,6 +217,8 @@ struct expression {
 			struct expression *expr;
 			struct expression *len;
 		} suffix;
+		struct expression *lcase;
+		struct expression *ucase;
 		struct option *option;
 		struct option *config_option;
 		struct {
@@ -233,7 +236,7 @@ struct expression {
 		struct {
 			struct expression *base;
 			struct expression *width;
-			struct expression *seperator;
+			struct expression *separator;
 			struct expression *buffer;
 		} b2a;
 		struct {
@@ -271,10 +274,14 @@ struct expression {
 			struct expression *arglist;
 		} funcall;
 		struct fundef *func;
+		struct {
+			struct expression *relay;
+			struct expression *roption;
+		} v6relay;
 	} data;
 	int flags;
 #	define EXPR_EPHEMERAL	1
-};		
+};
 
 /* DNS host entry structure... */
 struct dns_host_entry {
@@ -297,7 +304,7 @@ struct universe {
 					     struct option_state *,
 					     unsigned);
 	void (*save_func) (struct universe *, struct option_state *,
-			   struct option_cache *);
+			   struct option_cache *, isc_boolean_t);
 	void (*foreach) (struct packet *,
 			 struct lease *, struct client_state *,
 			 struct option_state *, struct option_state *,
@@ -320,13 +327,19 @@ struct universe {
 			    struct option_state *, struct option_state *,
 			    struct binding_scope **,
 			    struct universe *);
-	void (*store_tag) PROTO ((unsigned char *, u_int32_t));
-	void (*store_length) PROTO ((unsigned char *, u_int32_t));
+	u_int32_t (*get_tag) (const unsigned char *);
+	void (*store_tag) (unsigned char *, u_int32_t);
+	u_int32_t (*get_length) (const unsigned char *);
+	void (*store_length) (unsigned char *, u_int32_t);
 	int tag_size, length_size;
-	option_hash_t *hash;
-	struct option *options [256];
+	unsigned site_code_min, end;
+	option_name_hash_t *name_hash;
+	option_code_hash_t *code_hash;
 	struct option *enc_opt;
 	int index;
+
+	/* Flags should probably become condensed. */
+	int concat_duplicates;
 };
 
 struct option {
@@ -334,4 +347,5 @@ struct option {
 	const char *format;
 	struct universe *universe;
 	unsigned code;
+	int refcnt;
 };

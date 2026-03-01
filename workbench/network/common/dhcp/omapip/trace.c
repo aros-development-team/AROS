@@ -5,12 +5,12 @@
    transactions... */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 2001-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -21,21 +21,19 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon, as part of a project for Nominum, Inc.   To learn more
- * about Internet Systems Consortium, see http://www.isc.org/.  To
- * learn more about Nominum, Inc., see ``http://www.nominum.com''.
  */
 
+#include "dhcpd.h"
 #include <omapip/omapip_p.h>
+#include <errno.h>
 
 #if defined (TRACING)
-void (*trace_set_time_hook) (u_int32_t);
+void (*trace_set_time_hook) (TIME);
 static int tracing_stopped;
 static int traceoutfile;
 static int traceindex;
@@ -51,6 +49,8 @@ trace_type_t trace_time_marker;
 #if defined (DEBUG_MEMORY_LEAKAGE) || defined (DEBUG_MEMORY_LEAKAGE_ON_EXIT)
 extern omapi_array_t *trace_listeners;
 extern omapi_array_t *omapi_connections;
+
+extern int errno;
 
 void trace_free_all ()
 {
@@ -97,7 +97,7 @@ int trace_record ()
 	return 0;
 }
 
-isc_result_t trace_init (void (*set_time) (u_int32_t),
+isc_result_t trace_init (void (*set_time) (TIME),
 			 const char *file, int line)
 {
 	trace_type_t *root_type;
@@ -133,10 +133,16 @@ isc_result_t trace_begin (const char *filename,
 	if (traceoutfile) {
 		log_error ("%s(%d): trace_begin called twice",
 			   file, line);
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	}
 
-	traceoutfile = open (filename, O_CREAT | O_WRONLY | O_EXCL, 0644);
+	traceoutfile = open (filename, O_CREAT | O_WRONLY | O_EXCL, 0600);
+	if (traceoutfile < 0 && errno == EEXIST) {
+		log_error ("WARNING: Overwriting trace file \"%s\"", filename);
+		traceoutfile = open (filename, O_WRONLY | O_EXCL | O_TRUNC,
+				     0600);
+	}
+
 	if (traceoutfile < 0) {
 		log_error ("%s(%d): trace_begin: %s: %m",
 			   file, line, filename);
@@ -151,7 +157,7 @@ isc_result_t trace_begin (const char *filename,
 	tfh.version = htonl (TRACEFILE_VERSION);
 	tfh.hlen = htonl (sizeof (tracefile_header_t));
 	tfh.phlen = htonl (sizeof (tracepacket_t));
-	
+
 	status = write (traceoutfile, &tfh, sizeof tfh);
 	if (status < 0) {
 		log_error ("%s(%d): trace_begin write failed: %m", file, line);
@@ -178,7 +184,7 @@ isc_result_t trace_begin (const char *filename,
 			}
 		}
 	}
-	
+
 	return ISC_R_SUCCESS;
 }
 
@@ -209,14 +215,14 @@ isc_result_t trace_write_packet_iov (trace_type_t *ttype,
 	if (!ttype) {
 		log_error ("%s(%d): trace_write_packet with null trace type",
 			   file ? file : "<unknown file>", line);
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	}
 	if (!traceoutfile) {
 		log_error ("%s(%d): trace_write_packet with no tracefile.",
 			   file ? file : "<unknown file>", line);
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	}
-	
+
 	/* Compute the total length of the iov. */
 	length = 0;
 	for (i = 0; i < count; i++)
@@ -224,6 +230,7 @@ isc_result_t trace_write_packet_iov (trace_type_t *ttype,
 
 	/* We have to swap out the data, because it may be read back on a
 	   machine of different endianness. */
+	memset(&tmp, 0, sizeof(tmp));
 	tmp.type_index = htonl (ttype -> index);
 	tmp.when = htonl (time ((time_t *)0)); /* XXX */
 	tmp.length = htonl (length);
@@ -259,7 +266,7 @@ isc_result_t trace_write_packet_iov (trace_type_t *ttype,
 	if (length % 8) {
 	    static char zero [] = { 0, 0, 0, 0, 0, 0, 0 };
 	    unsigned padl = 8 - (length % 8);
-		
+
 	    status = write (traceoutfile, zero, padl);
 	    if (status < 0) {
 		log_error ("%s(%d): trace_write_packet write failed: %m",
@@ -308,7 +315,6 @@ trace_type_t *trace_type_register (const char *name,
 				   const char *file, int line)
 {
 	trace_type_t *ttmp;
-	// trace_type_t *tptr;
 	unsigned slen = strlen (name);
 	isc_result_t status;
 
@@ -324,7 +330,7 @@ trace_type_t *trace_type_register (const char *name,
 	strcpy (ttmp -> name, name);
 	ttmp -> have_packet = have_packet;
 	ttmp -> stop_tracing = stop_tracing;
-	
+
 	if (traceoutfile) {
 		status = trace_type_record (ttmp, slen, file, line);
 		if (status != ISC_R_SUCCESS) {
@@ -339,7 +345,7 @@ trace_type_t *trace_type_register (const char *name,
 
 	return ttmp;
 }
-						   
+
 static isc_result_t trace_type_record (trace_type_t *ttmp, unsigned slen,
 				       const char *file, int line)
 {
@@ -397,7 +403,7 @@ void trace_index_map_input (trace_type_t *ttype, unsigned length, char *buf)
 		}
 		prev = &tptr -> next;
 	}
-	
+
 	log_error ("No registered trace type for type name %.*s",
 		   (int)length - TRACE_INDEX_MAPPING_SIZE, tmap -> name);
 	return;
@@ -412,41 +418,41 @@ void trace_replay_init (void)
 
 void trace_file_replay (const char *filename)
 {
-	tracepacket_t *tpkt = (tracepacket_t *)0;
+	tracepacket_t *tpkt = NULL;
 	int status;
-	char *buf = (char *)0;
+	char *buf = NULL;
 	unsigned buflen;
 	unsigned bufmax = 0;
-	trace_type_t *ttype = (trace_type_t *)0;
+	trace_type_t *ttype = NULL;
 	isc_result_t result;
 	int len;
 
 	traceinfile = fopen (filename, "r");
 	if (!traceinfile) {
-		log_error ("Can't open tracefile %s: %m", filename);
+		log_error("Can't open tracefile %s: %m", filename);
 		return;
 	}
 #if defined (HAVE_SETFD)
-	if (fcntl (fileno (traceinfile), F_SETFD, 1) < 0)
-		log_error ("Can't set close-on-exec on %s: %m", filename);
+	if (fcntl (fileno(traceinfile), F_SETFD, 1) < 0)
+		log_error("Can't set close-on-exec on %s: %m", filename);
 #endif
-	status = fread (&tracefile_header, 1,
-			sizeof tracefile_header, traceinfile);
+	status = fread(&tracefile_header, 1,
+		       sizeof tracefile_header, traceinfile);
 	if (status < sizeof tracefile_header) {
-		if (ferror (traceinfile))
-			log_error ("Error reading trace file header: %m");
+		if (ferror(traceinfile))
+			log_error("Error reading trace file header: %m");
 		else
-			log_error ("Short read on trace file header: %d %ld.",
-				   status, (long)(sizeof tracefile_header));
+			log_error("Short read on trace file header: %d %ld.",
+				  status, (long)(sizeof tracefile_header));
 		goto out;
 	}
-	tracefile_header.magic = ntohl (tracefile_header.magic);
-	tracefile_header.version = ntohl (tracefile_header.version);
-	tracefile_header.hlen = ntohl (tracefile_header.hlen);
-	tracefile_header.phlen = ntohl (tracefile_header.phlen);
+	tracefile_header.magic = ntohl(tracefile_header.magic);
+	tracefile_header.version = ntohl(tracefile_header.version);
+	tracefile_header.hlen = ntohl(tracefile_header.hlen);
+	tracefile_header.phlen = ntohl(tracefile_header.phlen);
 
 	if (tracefile_header.magic != TRACEFILE_MAGIC) {
-		log_error ("%s: not a dhcp trace file.", filename);
+		log_error("%s: not a dhcp trace file.", filename);
 		goto out;
 	}
 	if (tracefile_header.version > TRACEFILE_VERSION) {
@@ -456,43 +462,43 @@ void trace_file_replay (const char *filename)
 		goto out;
 	}
 	if (tracefile_header.phlen < sizeof *tpkt) {
-		log_error ("tracefile packet size too small - %ld < %ld",
-			   (long int)tracefile_header.phlen,
-			   (long int)sizeof *tpkt);
+		log_error("tracefile packet size too small - %ld < %ld",
+			  (long int)tracefile_header.phlen,
+			  (long int)sizeof *tpkt);
 		goto out;
 	}
 	len = (sizeof tracefile_header) - tracefile_header.hlen;
 	if (len < 0) {
-		log_error ("tracefile header size too small - %ld < %ld",
-			   (long int)tracefile_header.hlen,
-			   (long int)sizeof tracefile_header);
+		log_error("tracefile header size too small - %ld < %ld",
+			  (long int)tracefile_header.hlen,
+			  (long int)sizeof tracefile_header);
 		goto out;
 	}
 	if (len > 0) {
-		status = fseek (traceinfile, (long)len, SEEK_CUR);
+		status = fseek(traceinfile, (long)len, SEEK_CUR);
 		if (status < 0) {
-			log_error ("can't seek past header: %m");
+			log_error("can't seek past header: %m");
 			goto out;
 		}
 	}
 
-	tpkt = dmalloc ((unsigned)tracefile_header.phlen, MDL);
-	if (!tpkt) {
+	tpkt = dmalloc((unsigned)tracefile_header.phlen, MDL);
+	if (tpkt == NULL) {
 		log_error ("can't allocate trace packet header.");
 		goto out;
 	}
 
-	while ((result = trace_get_next_packet (&ttype, tpkt, &buf, &buflen,
-						&bufmax)) == ISC_R_SUCCESS) {
-	    (*ttype -> have_packet) (ttype, tpkt -> length, buf);
-	    ttype = (trace_type_t *)0;
+	while ((result = trace_get_next_packet(&ttype, tpkt, &buf, &buflen,
+					       &bufmax)) == ISC_R_SUCCESS) {
+	    (*ttype->have_packet)(ttype, tpkt->length, buf);
+	    ttype = NULL;
 	}
       out:
-	fclose (traceinfile);
-	if (buf)
-		dfree (buf, MDL);
-	if (tpkt)
-		dfree (tpkt, MDL);
+	fclose(traceinfile);
+	if (buf != NULL)
+		dfree(buf, MDL);
+	if (tpkt != NULL)
+		dfree(tpkt, MDL);
 }
 
 /* Get the next packet from the file.   If ttp points to a nonzero pointer
@@ -506,54 +512,80 @@ isc_result_t trace_get_next_packet (trace_type_t **ttp,
 {
 	trace_type_t *ttype;
 	unsigned paylen;
-	int status;
-	// int len;
+	int status, curposok = 0;
 	fpos_t curpos;
 
-	status = fgetpos (traceinfile, &curpos);
-	if (status < 0)
-		log_error ("Can't save tracefile position: %m");
-
-	status = fread (tpkt, 1, (size_t)tracefile_header.phlen, traceinfile);
-	if (status < tracefile_header.phlen) {
-		if (ferror (traceinfile))
-			log_error ("Error reading trace packet header: %m");
-		else if (status == 0)
-			return ISC_R_EOF;
-		else
-			log_error ("Short read on trace packet header: "
-				   "%ld %ld.",
-				   (long int)status,
-				   (long int)tracefile_header.phlen);
-		return ISC_R_PROTOCOLERROR;
-	}
-
-	/* Swap the packet. */
-	tpkt -> type_index = ntohl (tpkt -> type_index);
-	tpkt -> length = ntohl (tpkt -> length);
-	tpkt -> when = ntohl (tpkt -> when);
-	
-	/* See if there's a handler for this packet type. */
-	if (tpkt -> type_index < trace_type_count &&
-	    trace_types [tpkt -> type_index])
-		ttype = trace_types [tpkt -> type_index];
-	else {
-		log_error ("Trace packet with unknown index %ld",
-			   (long int)tpkt -> type_index);
-		return ISC_R_PROTOCOLERROR;
-	}
-
-	/* If we were just hunting for the time marker, we've found it,
-	   so back up to the beginning of the packet and return its
-	   type. */
-	if (ttp && *ttp == &trace_time_marker) {
-		*ttp = ttype;
-		status = fsetpos (traceinfile, &curpos);
+	while(1) {
+		curposok = 0;
+		status = fgetpos(traceinfile, &curpos);
 		if (status < 0) {
-			log_error ("fsetpos in tracefile failed: %m");
-			return ISC_R_PROTOCOLERROR;
+			log_error("Can't save tracefile position: %m");
+		} else {
+			curposok = 1;
 		}
-		return ISC_R_EXISTS;
+
+		status = fread(tpkt, 1, (size_t)tracefile_header.phlen,
+			       traceinfile);
+		if (status < tracefile_header.phlen) {
+			if (ferror(traceinfile))
+				log_error("Error reading trace packet header: "
+					  "%m");
+			else if (status == 0)
+				return ISC_R_EOF;
+			else
+				log_error ("Short read on trace packet header:"
+					   " %ld %ld.",
+					   (long int)status,
+					   (long int)tracefile_header.phlen);
+			return DHCP_R_PROTOCOLERROR;
+		}
+
+		/* Swap the packet. */
+		tpkt->type_index = ntohl(tpkt -> type_index);
+		tpkt->length = ntohl(tpkt -> length);
+		tpkt->when = ntohl(tpkt -> when);
+
+		/* See if there's a handler for this packet type. */
+		if (tpkt->type_index < trace_type_count &&
+		    trace_types[tpkt->type_index])
+			ttype = trace_types[tpkt->type_index];
+		else {
+			log_error ("Trace packet with unknown index %ld",
+				   (long int)tpkt->type_index);
+			return DHCP_R_PROTOCOLERROR;
+		}
+
+		/*
+		 * Determine if we should try to expire any timer events.
+		 * We do so if:
+		 *   we aren't looking for a specific type of packet
+		 *   we have a hook to use to update the timer
+		 *   the timestamp on the packet doesn't match the current time
+		 * When we do so we rewind the file to the beginning of this
+		 * packet and then try for a new packet.  This allows
+		 * any code triggered by a timeout to get the current packet
+		 * while we get the next one.
+		 */
+
+		if ((ttp != NULL) && (*ttp == NULL) &&
+		    (tpkt->when != cur_tv.tv_sec) &&
+		    (trace_set_time_hook != NULL)) {
+			if (curposok == 0) {
+				log_error("no curpos for fsetpos in "
+					  "tracefile");
+				return DHCP_R_PROTOCOLERROR;
+			}
+
+			status = fsetpos(traceinfile, &curpos);
+			if (status < 0) {
+				log_error("fsetpos in tracefile failed: %m");
+				return DHCP_R_PROTOCOLERROR;
+			}
+
+			(*trace_set_time_hook) (tpkt->when);
+			continue;
+		}
+		break;
 	}
 
 	/* If we were supposed to get a particular kind of packet,
@@ -564,7 +596,7 @@ isc_result_t trace_get_next_packet (trace_type_t **ttp,
 		status = fsetpos (traceinfile, &curpos);
 		if (status < 0) {
 			log_error ("fsetpos in tracefile failed: %m");
-			return ISC_R_PROTOCOLERROR;
+			return DHCP_R_PROTOCOLERROR;
 		}
 		return ISC_R_UNEXPECTEDTOKEN;
 	}
@@ -572,7 +604,9 @@ isc_result_t trace_get_next_packet (trace_type_t **ttp,
 	paylen = tpkt -> length;
 	if (paylen % 8)
 		paylen += 8 - (tpkt -> length % 8);
-	if (paylen > (*bufmax)) {
+
+	/* allocate a buffer if we need one or current buffer is too small */
+	if ((*buf == NULL) || (paylen > (*bufmax))) {
 		if ((*buf))
 			dfree ((*buf), MDL);
 		(*bufmax) = ((paylen + 1023) & ~1023U);
@@ -583,7 +617,7 @@ isc_result_t trace_get_next_packet (trace_type_t **ttp,
 			return ISC_R_NOMEMORY;
 		}
 	}
-	
+
 	status = fread ((*buf), 1, paylen, traceinfile);
 	if (status < paylen) {
 		if (ferror (traceinfile))
@@ -591,14 +625,11 @@ isc_result_t trace_get_next_packet (trace_type_t **ttp,
 		else
 			log_error ("Short read on trace payload: %d %d.",
 				   status, paylen);
-		return ISC_R_PROTOCOLERROR;
+		return DHCP_R_PROTOCOLERROR;
 	}
 
 	/* Store the actual length of the payload. */
 	*buflen = tpkt -> length;
-
-	if (trace_set_time_hook)
-		(*trace_set_time_hook) (tpkt -> when);
 
 	if (ttp)
 		*ttp = ttype;
@@ -613,7 +644,7 @@ isc_result_t trace_get_packet (trace_type_t **ttp,
 	isc_result_t status;
 
 	if (!buf || *buf)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	tpkt = dmalloc ((unsigned)tracefile_header.phlen, MDL);
 	if (!tpkt) {
@@ -625,33 +656,6 @@ isc_result_t trace_get_packet (trace_type_t **ttp,
 
 	dfree (tpkt, MDL);
 	return status;
-}
-
-time_t trace_snoop_time (trace_type_t **ptp)
-{
-	tracepacket_t *tpkt;
-	unsigned bufmax = 0;
-	unsigned buflen = 0;
-	char *buf = (char *)0;
-	// isc_result_t status;
-	time_t result;
-	trace_type_t *ttp;
-	
-	if (!ptp)
-		ptp = &ttp;
-
-	tpkt = dmalloc ((unsigned)tracefile_header.phlen, MDL);
-	if (!tpkt) {
-		log_error ("can't allocate trace packet header.");
-		return ISC_R_NOMEMORY;
-	}
-
-	*ptp = &trace_time_marker;
-	trace_get_next_packet (ptp, tpkt, &buf, &buflen, &bufmax);
-	result = tpkt -> when;
-
-	dfree (tpkt, MDL);
-	return result;
 }
 
 /* Get a packet from the trace input file that contains a file with the
@@ -670,7 +674,7 @@ isc_result_t trace_get_file (trace_type_t *ttype,
 
 	/* Disallow some obvious bogosities. */
 	if (!buf || !len || *buf)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	/* Save file position in case of filename mismatch. */
 	status = fgetpos (traceinfile, &curpos);
@@ -684,27 +688,30 @@ isc_result_t trace_get_file (trace_type_t *ttype,
 	}
 
 	result = trace_get_next_packet (&ttype, tpkt, buf, len, &max);
+	/* done with tpkt, free it */
+	dfree (tpkt, MDL);
 	if (result != ISC_R_SUCCESS) {
-		dfree (tpkt, MDL);
-		if (*buf)
+		if (*buf) {
 			dfree (*buf, MDL);
+			*buf = NULL;
+		}
 		return result;
 	}
 
 	/* Make sure the filename is right. */
 	if (strcmp (filename, *buf)) {
 		log_error ("Read file %s when expecting %s", *buf, filename);
+		dfree (*buf, MDL);
+		*buf = NULL;
+
 		status = fsetpos (traceinfile, &curpos);
 		if (status < 0) {
 			log_error ("fsetpos in tracefile failed: %m");
-			dfree (tpkt, MDL);
-			dfree (*buf, MDL);
-			return ISC_R_PROTOCOLERROR;
+			return DHCP_R_PROTOCOLERROR;
 		}
 		return ISC_R_UNEXPECTEDTOKEN;
 	}
 
-	dfree (tpkt, MDL);
 	return ISC_R_SUCCESS;
 }
 #endif /* TRACING */

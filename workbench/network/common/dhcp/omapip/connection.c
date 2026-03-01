@@ -3,12 +3,12 @@
    Subroutines for dealing with connections. */
 
 /*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Copyright (C) 2004-2022 Internet Systems Consortium, Inc. ("ISC")
  * Copyright (c) 1999-2003 by Internet Software Consortium
  *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -19,23 +19,19 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  *   Internet Systems Consortium, Inc.
- *   950 Charter Street
- *   Redwood City, CA 94063
+ *   PO Box 360
+ *   Newmarket, NH 03857 USA
  *   <info@isc.org>
- *   http://www.isc.org/
+ *   https://www.isc.org/
  *
- * This software has been written for Internet Systems Consortium
- * by Ted Lemon in cooperation with Vixie Enterprises and Nominum, Inc.
- * To learn more about Internet Systems Consortium, see
- * ``http://www.isc.org/''.  To learn more about Vixie Enterprises,
- * see ``http://www.vix.com''.   To learn more about Nominum, Inc., see
- * ``http://www.nominum.com''.
  */
 
+#include "dhcpd.h"
+#include <isc/util.h>
 #include <omapip/omapip_p.h>
 #include <arpa/inet.h>
 #include <arpa/nameser.h>
-
+#include <errno.h>
 
 #if defined (TRACING)
 static void trace_connect_input (trace_type_t *, unsigned, char *);
@@ -47,6 +43,9 @@ trace_type_t *trace_disconnect;
 extern omapi_array_t *trace_listeners;
 #endif
 static isc_result_t omapi_connection_connect_internal (omapi_object_t *);
+
+static isc_result_t ctring_from_attribute(omapi_object_t *obj, char *attr_name,
+                                          char **cstr);
 
 OMAPI_OBJECT_ALLOC (omapi_connection,
 		    omapi_connection_object_t, omapi_type_connection)
@@ -70,11 +69,11 @@ isc_result_t omapi_connect (omapi_object_t *c,
 		   name.  It's okay for this call to block. */
 		he = gethostbyname (server_name);
 		if (!he)
-			return ISC_R_HOSTUNKNOWN;
+			return DHCP_R_HOSTUNKNOWN;
 		for (i = 0; he -> h_addr_list [i]; i++)
 			;
 		if (i == 0)
-			return ISC_R_HOSTUNKNOWN;
+			return DHCP_R_HOSTUNKNOWN;
 		hix = i;
 
 		status = omapi_addr_list_new (&addrs, hix, MDL);
@@ -96,7 +95,6 @@ isc_result_t omapi_connect (omapi_object_t *c,
 		addrs -> addresses [0].addrlen = sizeof foo;
 		memcpy (addrs -> addresses [0].address, &foo, sizeof foo);
 		addrs -> addresses [0].port = port;
-		hix = 1;
 	}
 	status = omapi_connect_list (c, addrs, (omapi_addr_t *)0);
 	omapi_addr_list_dereference (&addrs, MDL);
@@ -111,10 +109,6 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 	omapi_connection_object_t *obj;
 	int flag;
 	struct sockaddr_in local_sin;
-#if defined (TRACING)
-	// trace_addr_t *addrs;
-	// u_int16_t naddrs;
-#endif
 
 	obj = (omapi_connection_object_t *)0;
 	status = omapi_connection_allocate (&obj, MDL);
@@ -158,8 +152,9 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 		if (local_addr) {
 			/* Only do TCPv4 so far. */
 			if (local_addr -> addrtype != AF_INET) {
+				close(obj->socket);
 				omapi_connection_dereference (&obj, MDL);
-				return ISC_R_INVALIDARG;
+				return DHCP_R_INVALIDARG;
 			}
 			local_sin.sin_port = htons (local_addr -> port);
 			memcpy (&local_sin.sin_addr,
@@ -171,11 +166,13 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 			local_sin.sin_family = AF_INET;
 			memset (&local_sin.sin_zero, 0,
 				sizeof local_sin.sin_zero);
-			
+
 			if (bind (obj -> socket, (struct sockaddr *)&local_sin,
 				  sizeof local_sin) < 0) {
-				omapi_object_dereference ((omapi_object_t **)
-							  &obj, MDL);
+				omapi_connection_object_t **objp = &obj;
+				omapi_object_t **o = (omapi_object_t **)objp;
+				close(obj->socket);
+				omapi_object_dereference(o, MDL);
 				if (errno == EADDRINUSE)
 					return ISC_R_ADDRINUSE;
 				if (errno == EADDRNOTAVAIL)
@@ -187,7 +184,7 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 			obj -> local_addr = local_sin;
 		}
 
-#if defined (HAVE_SETFD)
+#if defined(F_SETFD)
 		if (fcntl (obj -> socket, F_SETFD, 1) < 0) {
 			close (obj -> socket);
 			omapi_connection_dereference (&obj, MDL);
@@ -202,17 +199,25 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 			omapi_connection_dereference (&obj, MDL);
 			return ISC_R_UNEXPECTED;
 		}
-	
+
 		/* Set the file to nonblocking mode. */
-#ifdef SOCKET_IS_NOT_A_FILE
-		if (IoctlSocket (obj -> socket, FIONBIO, (char *)&flag) < 0)
-#else
-		if (fcntl (obj -> socket, F_SETFL, O_NONBLOCK) < 0)
-#endif
-		{
+		if (fcntl (obj -> socket, F_SETFL, O_NONBLOCK) < 0) {
 			omapi_connection_dereference (&obj, MDL);
 			return ISC_R_UNEXPECTED;
 		}
+
+#ifdef SO_NOSIGPIPE
+		/*
+		 * If available stop the OS from killing our
+		 * program on a SIGPIPE failure
+		 */
+		flag = 1;
+		if (setsockopt(obj->socket, SOL_SOCKET, SO_NOSIGPIPE,
+			       (char *)&flag, sizeof(flag)) < 0) {
+			omapi_connection_dereference (&obj, MDL);
+			return ISC_R_UNEXPECTED;
+		}
+#endif
 
 		status = (omapi_register_io_object
 			  ((omapi_object_t *)obj,
@@ -223,6 +228,16 @@ isc_result_t omapi_connect_list (omapi_object_t *c,
 			goto out;
 		status = omapi_connection_connect_internal ((omapi_object_t *)
 							    obj);
+		/*
+		 * inprogress is the same as success but used
+		 * to indicate to the dispatch code that we should
+		 * mark the socket as requiring more attention.
+		 * Routines calling this function should handle
+		 * success properly.
+		 */
+		if (status == ISC_R_INPROGRESS) {
+			status = ISC_R_SUCCESS;
+		}
 #if defined (TRACING)
 	}
 	omapi_connection_register (obj, MDL);
@@ -273,7 +288,7 @@ void omapi_connection_register (omapi_connection_object_t *obj,
 #if defined (TRACING)
 	if (trace_record ()) {
 		/* Connection registration packet:
-		   
+
 		     int32_t index
 		     int32_t listener_index [-1 means no listener]
 		   u_int16_t remote_port
@@ -337,6 +352,7 @@ static void trace_connect_input (trace_type_t *ttype,
 	s += sizeof remote.sin_addr;
 	memcpy (&local.sin_addr, s, sizeof local.sin_addr);
 	s += sizeof local.sin_addr;
+	POST(s);
 
 	connect_index = ntohl (connect_index);
 	listener_index = ntohl (listener_index);
@@ -352,7 +368,7 @@ static void trace_connect_input (trace_type_t *ttype,
 				omapi_listener_reference (&listener, lp, MDL);
 				omapi_listener_dereference (&lp, MDL);
 				break;
-			} 
+			}
 		} omapi_array_foreach_end (trace_listeners,
 					   omapi_listener_object_t, lp);
 		if (!listener) {
@@ -378,29 +394,27 @@ static void trace_connect_input (trace_type_t *ttype,
 	/* Find the matching connect object, if there is one. */
 	omapi_array_foreach_begin (omapi_connections,
 				   omapi_connection_object_t, lp) {
-	    for (i = 0; (lp -> connect_list &&
-			 i < lp -> connect_list -> count); i++) {
+	    for (i = 0; (lp->connect_list &&
+			 i < lp->connect_list->count); i++) {
 		    if (!memcmp (&remote.sin_addr,
-				 &lp -> connect_list -> addresses [i].address,
+				 &lp->connect_list->addresses[i].address,
 				 sizeof remote.sin_addr) &&
 			(ntohs (remote.sin_port) ==
-			 lp -> connect_list -> addresses [i].port))
-			lp -> state = omapi_connection_connected;
-		    lp -> remote_addr = remote;
-		    lp -> remote_addr.sin_family = AF_INET;
-#if defined (HAVE_SIN_LEN)
-		    lp -> remote_addr.sin_len = sizeof remote;
-#endif
-		    omapi_addr_list_dereference (&lp -> connect_list, MDL);
-		    lp -> index = connect_index;
-		    status = omapi_signal_in ((omapi_object_t *)lp,
-						  "connect");
-		    omapi_connection_dereference (&lp, MDL);
-		    return;
+			 lp->connect_list->addresses[i].port)) {
+			    lp->state = omapi_connection_connected;
+			    lp->remote_addr = remote;
+			    lp->remote_addr.sin_family = AF_INET;
+			    omapi_addr_list_dereference(&lp->connect_list, MDL);
+			    lp->index = connect_index;
+			    status = omapi_signal_in((omapi_object_t *)lp,
+						     "connect");
+			    omapi_connection_dereference (&lp, MDL);
+			    return;
+		    }
 		}
 	} omapi_array_foreach_end (omapi_connections,
 				   omapi_connection_object_t, lp);
-						 
+
 	log_error ("Spurious traced connect - index %ld, addr %s, port %d",
 		   (long int)connect_index, inet_ntoa (remote.sin_addr),
 		   ntohs (remote.sin_port));
@@ -417,7 +431,7 @@ static void trace_disconnect_input (trace_type_t *ttype,
 		log_error ("trace disconnect: wrong length %d", length);
 		return;
 	}
-	
+
 	index = (int32_t *)buf;
 
 	omapi_array_foreach_begin (omapi_connections,
@@ -445,18 +459,18 @@ isc_result_t omapi_disconnect (omapi_object_t *h,
 			       int force)
 {
 	omapi_connection_object_t *c;
-	isc_result_t status;
 
 #ifdef DEBUG_PROTOCOL
-	log_debug ("omapi_disconnect(%s)", force ? "force" : "");
+	log_debug ("omapi_disconnect(force=%d)", force);
 #endif
 
 	c = (omapi_connection_object_t *)h;
 	if (c -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 #if defined (TRACING)
 	if (trace_record ()) {
+		isc_result_t status;
 		int32_t index;
 
 		index = htonl (c -> index);
@@ -490,15 +504,21 @@ isc_result_t omapi_disconnect (omapi_object_t *h,
 				}
 			}
 		}
-#ifdef SOCKET_IS_NOT_A_FILE
-		CloseSocket (c ->  socket);
-#else
 		close (c -> socket);
-#endif
 #if defined (TRACING)
 	}
 #endif
 	c -> state = omapi_connection_closed;
+
+#if 0
+	/*
+	 * Disconnecting from the I/O object seems incorrect as it doesn't
+	 * cause the I/O object to be cleaned and released.  Previous to
+	 * using the isc socket library this wouldn't have caused a problem
+	 * with the socket library we would have a reference to a closed
+	 * socket.  Instead we now do an unregister to properly free the
+	 * I/O object.
+	 */
 
 	/* Disconnect from I/O object, if any. */
 	if (h -> outer) {
@@ -506,10 +526,37 @@ isc_result_t omapi_disconnect (omapi_object_t *h,
 			omapi_object_dereference (&h -> outer -> inner, MDL);
 		omapi_object_dereference (&h -> outer, MDL);
 	}
+#else
+	if (h->outer) {
+		omapi_unregister_io_object(h);
+	}
+#endif
 
 	/* If whatever created us registered a signal handler, send it
 	   a disconnect signal. */
 	omapi_signal (h, "disconnect", h);
+
+	/* Disconnect from protocol object, if any. */
+	if (h->inner != NULL) {
+		if (h->inner->outer != NULL) {
+			omapi_object_dereference(&h->inner->outer, MDL);
+		}
+		omapi_object_dereference(&h->inner, MDL);
+	}
+
+	/* XXX: the code to free buffers should be in the dereference
+		function, but there is no special-purpose function to
+		dereference connections, so these just get leaked */
+	/* Free any buffers */
+	if (c->inbufs != NULL) {
+		omapi_buffer_dereference(&c->inbufs, MDL);
+	}
+	c->in_bytes = 0;
+	if (c->outbufs != NULL) {
+		omapi_buffer_dereference(&c->outbufs, MDL);
+	}
+	c->out_bytes = 0;
+
 	return ISC_R_SUCCESS;
 }
 
@@ -518,20 +565,18 @@ isc_result_t omapi_connection_require (omapi_object_t *h, unsigned bytes)
 	omapi_connection_object_t *c;
 
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	c = (omapi_connection_object_t *)h;
 
 	c -> bytes_needed = bytes;
 	if (c -> bytes_needed <= c -> in_bytes) {
 		return ISC_R_SUCCESS;
 	}
-	return ISC_R_NOTYET;
+	return DHCP_R_NOTYET;
 }
 
 /* Return the socket on which the dispatcher should wait for readiness
-   to read, for a connection object.   If we already have more bytes than
-   we need to do the next thing, and we have at least a single full input
-   buffer, then don't indicate that we're ready to read. */
+   to read, for a connection object.  */
 int omapi_connection_readfd (omapi_object_t *h)
 {
 	omapi_connection_object_t *c;
@@ -540,48 +585,55 @@ int omapi_connection_readfd (omapi_object_t *h)
 	c = (omapi_connection_object_t *)h;
 	if (c -> state != omapi_connection_connected)
 		return -1;
-	if (c -> in_bytes >= OMAPI_BUF_SIZE - 1 &&
-	    c -> in_bytes > c -> bytes_needed)
-		return -1;
 	return c -> socket;
 }
 
-/* Return the socket on which the dispatcher should wait for readiness
-   to write, for a connection object.   If there are no bytes buffered
-   for writing, then don't indicate that we're ready to write. */
+/*
+ * Return the socket on which the dispatcher should wait for readiness
+ * to write, for a connection object.  When bytes are buffered we should
+ * also poke the dispatcher to tell it to start or re-start watching the
+ * socket.
+ */
 int omapi_connection_writefd (omapi_object_t *h)
 {
 	omapi_connection_object_t *c;
 	if (h -> type != omapi_type_connection)
 		return -1;
 	c = (omapi_connection_object_t *)h;
-	if (c -> state == omapi_connection_connecting)
-		return c -> socket;
-	if (c -> out_bytes)
-		return c -> socket;
-	else
-		return -1;
+	return c->socket;
 }
 
 isc_result_t omapi_connection_connect (omapi_object_t *h)
 {
 	isc_result_t status;
 
+	/*
+	 * We use the INPROGRESS status to indicate that
+	 * we want more from the socket.  In this case we
+	 * have now connected and are trying to write to
+	 * the socket for the first time.  For the signaling
+	 * code this is the same as a SUCCESS so we don't
+	 * pass it on as a signal.
+	 */
 	status = omapi_connection_connect_internal (h);
+	if (status == ISC_R_INPROGRESS)
+		return ISC_R_INPROGRESS;
+
 	if (status != ISC_R_SUCCESS)
 		omapi_signal (h, "status", status);
+
 	return ISC_R_SUCCESS;
 }
 
 static isc_result_t omapi_connection_connect_internal (omapi_object_t *h)
 {
-	int error;
+	int error = 0;
 	omapi_connection_object_t *c;
-	SOCKLEN_T sl;
+	socklen_t sl;
 	isc_result_t status;
 
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	c = (omapi_connection_object_t *)h;
 
 	if (c -> state == omapi_connection_connecting) {
@@ -615,7 +667,7 @@ static isc_result_t omapi_connection_connect_internal (omapi_object_t *h)
 		if (c -> connect_list -> addresses [c -> cptr].addrtype !=
 		    AF_INET) {
 			omapi_disconnect (h, 1);
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 		}
 
 		memcpy (&c -> remote_addr.sin_addr,
@@ -652,11 +704,11 @@ static isc_result_t omapi_connection_connect_internal (omapi_object_t *h)
 				return status;
 			}
 			c -> state = omapi_connection_connecting;
-			return ISC_R_INCOMPLETE;
+			return DHCP_R_INCOMPLETE;
 		}
 		c -> state = omapi_connection_connected;
 	}
-	
+
 	/* I don't know why this would fail, so I'm tempted not to test
 	   the return value. */
 	sl = sizeof (c -> local_addr);
@@ -664,16 +716,16 @@ static isc_result_t omapi_connection_connect_internal (omapi_object_t *h)
 			 (struct sockaddr *)&c -> local_addr, &sl) < 0) {
 	}
 
-	/* Disconnect from I/O object, if any. */
-	if (h -> outer)
-		omapi_unregister_io_object (h);
+	/* Reregister with the I/O object.  If we don't already have an
+	   I/O object this turns into a register call, otherwise we simply
+	   modify the pointers in the I/O object. */
 
-	status = omapi_register_io_object (h,
-					   omapi_connection_readfd,
-					   omapi_connection_writefd,
-					   omapi_connection_reader,
-					   omapi_connection_writer,
-					   omapi_connection_reaper);
+	status = omapi_reregister_io_object (h,
+					     omapi_connection_readfd,
+					     omapi_connection_writefd,
+					     omapi_connection_reader,
+					     omapi_connection_writer,
+					     omapi_connection_reaper);
 
 	if (status != ISC_R_SUCCESS) {
 		omapi_disconnect (h, 1);
@@ -682,7 +734,7 @@ static isc_result_t omapi_connection_connect_internal (omapi_object_t *h)
 
 	omapi_signal_in (h, "connect");
 	omapi_addr_list_dereference (&c -> connect_list, MDL);
-	return ISC_R_SUCCESS;
+	return ISC_R_INPROGRESS;
 }
 
 /* Reaper function for connection - if the connection is completely closed,
@@ -694,7 +746,7 @@ isc_result_t omapi_connection_reaper (omapi_object_t *h)
 	omapi_connection_object_t *c;
 
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	c = (omapi_connection_object_t *)h;
 	if (c -> state == omapi_connection_disconnecting &&
@@ -713,110 +765,117 @@ isc_result_t omapi_connection_reaper (omapi_object_t *h)
 	return ISC_R_SUCCESS;
 }
 
-static isc_result_t make_dst_key (DST_KEY **dst_key, omapi_object_t *a) {
-	omapi_value_t *name      = (omapi_value_t *)0;
-	omapi_value_t *algorithm = (omapi_value_t *)0;
-	omapi_value_t *key       = (omapi_value_t *)0;
-	int algorithm_id = UNKNOWN_KEYALG;
-	char *name_str = NULL;
+static isc_result_t make_dst_key (dst_key_t **dst_key, omapi_object_t *a) {
+	omapi_value_t *key = 0;
+	char *name_str = 0;
+	char *algorithm_str = 0;
 	isc_result_t status = ISC_R_SUCCESS;
 
-	if (status == ISC_R_SUCCESS)
-		status = omapi_get_value_str
-			(a, (omapi_object_t *)0, "name", &name);
-
-	if (status == ISC_R_SUCCESS)
-		status = omapi_get_value_str
-			(a, (omapi_object_t *)0, "algorithm", &algorithm);
-
-	if (status == ISC_R_SUCCESS)
-		status = omapi_get_value_str
-			(a, (omapi_object_t *)0, "key", &key);
-
+	/* Get the key name as a C string. */
+	status = ctring_from_attribute(a, "name", &name_str);
 	if (status == ISC_R_SUCCESS) {
-		if ((algorithm -> value -> type == omapi_datatype_data ||
-		     algorithm -> value -> type == omapi_datatype_string) &&
-		    strncasecmp ((char *)algorithm -> value -> u.buffer.value,
-		                 NS_TSIG_ALG_HMAC_MD5 ".",
-		                 algorithm -> value -> u.buffer.len) == 0) {
-			algorithm_id = KEY_HMAC_MD5;
-		} else {
-			status = ISC_R_INVALIDARG;
+		/* Get the algorithm name as a C string. */
+		status = ctring_from_attribute(a, "algorithm", &algorithm_str);
+		if (status == ISC_R_SUCCESS) {
+			/* Get the key secret value */
+			status = omapi_get_value_str(a, 0, "key", &key);
+			if (status == ISC_R_SUCCESS) {
+				/* Now let's try and create the key */
+				status = isclib_make_dst_key(
+						name_str,
+						algorithm_str,
+						key->value->u.buffer.value,
+						key->value->u.buffer.len,
+						dst_key);
+
+				if (*dst_key == NULL) {
+					status = ISC_R_NOMEMORY;
+				}
+			}
 		}
-	}
-
-	if (status == ISC_R_SUCCESS) {
-		name_str = dmalloc (name -> value -> u.buffer.len + 1, MDL);
-		if (!name_str)
-			status = ISC_R_NOMEMORY;
-	}
-
-	if (status == ISC_R_SUCCESS) {
-		memcpy (name_str,
-			name -> value -> u.buffer.value,
-			name -> value -> u.buffer.len);
-		name_str [name -> value -> u.buffer.len] = 0;
-
-		*dst_key = dst_buffer_to_key (name_str, algorithm_id, 0, 0,
-					      key -> value -> u.buffer.value,
-					      key -> value -> u.buffer.len);
-		if (!*dst_key)
-			status = ISC_R_NOMEMORY;
 	}
 
 	if (name_str)
 		dfree (name_str, MDL);
+	if (algorithm_str)
+		dfree (algorithm_str, MDL);
 	if (key)
 		omapi_value_dereference (&key, MDL);
-	if (algorithm)
-		omapi_value_dereference (&algorithm, MDL);
-	if (name)
-		omapi_value_dereference (&name, MDL);
 
 	return status;
 }
 
 isc_result_t omapi_connection_sign_data (int mode,
-					 DST_KEY *key,
+					 dst_key_t *key,
 					 void **context,
 					 const unsigned char *data,
 					 const unsigned len,
 					 omapi_typed_data_t **result)
 {
+#if defined(__AROS__)
+	/* AROS: no BIND9 DST library — OMAPI authentication not supported */
+	return ISC_R_NOTIMPLEMENTED;
+#else
 	omapi_typed_data_t *td = (omapi_typed_data_t *)0;
 	isc_result_t status;
-	int r;
+	dst_context_t **dctx = (dst_context_t **)context;
 
+	/* Create the context for the dst module */
+	if (mode & SIG_MODE_INIT) {
+		status = dst_context_create(key, dhcp_gbl_ctx.mctx, dctx);
+		if (status != ISC_R_SUCCESS) {
+			return status;
+		}
+	}
+
+	/* If we have any data add it to the context */
+	if (len != 0) {
+		isc_region_t region;
+		region.base   = (unsigned char *)data;
+		region.length = len;
+		dst_context_adddata(*dctx, &region);
+	}
+
+	/* Finish the signature and clean up the context */
 	if (mode & SIG_MODE_FINAL) {
+		unsigned int sigsize;
+		isc_buffer_t sigbuf;
+
+		status = dst_key_sigsize(key, &sigsize);
+		if (status != ISC_R_SUCCESS) {
+			goto cleanup;
+		}
+
 		status = omapi_typed_data_new (MDL, &td,
 					       omapi_datatype_data,
-					       dst_sig_size (key));
-		if (status != ISC_R_SUCCESS)
-			return status;
-	}
+					       sigsize);
+		if (status != ISC_R_SUCCESS) {
+			goto cleanup;
+		}
 
-	r = dst_sign_data (mode, key, context, data, len,
-			   td ? td -> u.buffer.value : (u_char *)0,
-			   td ? td -> u.buffer.len   : 0);
+		isc_buffer_init(&sigbuf, td->u.buffer.value, td->u.buffer.len);
+		status = dst_context_sign(*dctx, &sigbuf);
+		if (status != ISC_R_SUCCESS) {
+			goto cleanup;
+		}
 
-	/* dst_sign_data() really should do this for us, shouldn't it? */
-	if (mode & SIG_MODE_FINAL)
-		*context = (void *)0;
+		if (result) {
+			omapi_typed_data_reference (result, td, MDL);
+		}
 
-	if (r < 0) {
-		if (td)
+	cleanup:
+		/* We are done with the context and the td.  On success
+		 * the td is now referenced from result, on failure we
+		 * don't need it any more */
+		if (td) {
 			omapi_typed_data_dereference (&td, MDL);
-		return ISC_R_INVALIDKEY;
+		}
+		dst_context_destroy(dctx);
+		return status;
 	}
-
-	if (result && td) {
-		omapi_typed_data_reference (result, td, MDL);
-	}
-
-	if (td)
-		omapi_typed_data_dereference (&td, MDL);
 
 	return ISC_R_SUCCESS;
+#endif /* !__AROS__ */
 }
 
 isc_result_t omapi_connection_output_auth_length (omapi_object_t *h,
@@ -824,15 +883,18 @@ isc_result_t omapi_connection_output_auth_length (omapi_object_t *h,
 {
 	omapi_connection_object_t *c;
 
-	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+	if (h->type != omapi_type_connection)
+		return DHCP_R_INVALIDARG;
 	c = (omapi_connection_object_t *)h;
 
-	if (!c -> out_key)
+	if (c->out_key == NULL)
 		return ISC_R_NOTFOUND;
 
-	*l = dst_sig_size (c -> out_key);
-	return ISC_R_SUCCESS;
+#if defined(__AROS__)
+	return ISC_R_NOTIMPLEMENTED;
+#else
+	return(dst_key_sigsize(c->out_key, l));
+#endif
 }
 
 isc_result_t omapi_connection_set_value (omapi_object_t *h,
@@ -844,12 +906,12 @@ isc_result_t omapi_connection_set_value (omapi_object_t *h,
 	isc_result_t status;
 
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	c = (omapi_connection_object_t *)h;
 
 	if (omapi_ds_strcmp (name, "input-authenticator") == 0) {
 		if (value && value -> type != omapi_datatype_object)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 
 		if (c -> in_context) {
 			omapi_connection_sign_data (SIG_MODE_FINAL,
@@ -859,23 +921,28 @@ isc_result_t omapi_connection_set_value (omapi_object_t *h,
 						    (omapi_typed_data_t **) 0);
 		}
 
-		if (c -> in_key) {
-			dst_free_key (c -> in_key);
-			c -> in_key = (DST_KEY *)0;
+		if (c->in_key != NULL) {
+#if !defined(__AROS__)
+			dst_key_free(&c->in_key);
+#else
+			c->in_key = NULL;
+#endif
 		}
 
 		if (value) {
+#if !defined(__AROS__)
 			status = make_dst_key (&c -> in_key,
 					       value -> u.object);
 			if (status != ISC_R_SUCCESS)
 				return status;
+#endif
 		}
 
 		return ISC_R_SUCCESS;
 	}
 	else if (omapi_ds_strcmp (name, "output-authenticator") == 0) {
 		if (value && value -> type != omapi_datatype_object)
-			return ISC_R_INVALIDARG;
+			return DHCP_R_INVALIDARG;
 
 		if (c -> out_context) {
 			omapi_connection_sign_data (SIG_MODE_FINAL,
@@ -885,21 +952,26 @@ isc_result_t omapi_connection_set_value (omapi_object_t *h,
 						    (omapi_typed_data_t **) 0);
 		}
 
-		if (c -> out_key) {
-			dst_free_key (c -> out_key);
-			c -> out_key = (DST_KEY *)0;
+		if (c->out_key != NULL) {
+#if !defined(__AROS__)
+			dst_key_free(&c->out_key);
+#else
+			c->out_key = NULL;
+#endif
 		}
 
 		if (value) {
+#if !defined(__AROS__)
 			status = make_dst_key (&c -> out_key,
 					       value -> u.object);
 			if (status != ISC_R_SUCCESS)
 				return status;
+#endif
 		}
 
 		return ISC_R_SUCCESS;
 	}
-	
+
 	if (h -> inner && h -> inner -> type -> set_value)
 		return (*(h -> inner -> type -> set_value))
 			(h -> inner, id, name, value);
@@ -914,9 +986,10 @@ isc_result_t omapi_connection_get_value (omapi_object_t *h,
 	omapi_connection_object_t *c;
 	omapi_typed_data_t *td = (omapi_typed_data_t *)0;
 	isc_result_t status;
+	unsigned int sigsize;
 
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 	c = (omapi_connection_object_t *)h;
 
 	if (omapi_ds_strcmp (name, "input-signature") == 0) {
@@ -935,11 +1008,19 @@ isc_result_t omapi_connection_get_value (omapi_object_t *h,
 		return status;
 
 	} else if (omapi_ds_strcmp (name, "input-signature-size") == 0) {
-		if (!c -> in_key)
+		if (c->in_key == NULL)
 			return ISC_R_NOTFOUND;
 
-		return omapi_make_int_value (value, name,
-					     dst_sig_size (c -> in_key), MDL);
+#if !defined(__AROS__)
+		status = dst_key_sigsize(c->in_key, &sigsize);
+		if (status != ISC_R_SUCCESS) {
+			return(status);
+		}
+
+		return omapi_make_int_value(value, name, sigsize, MDL);
+#else
+		return ISC_R_NOTIMPLEMENTED;
+#endif
 
 	} else if (omapi_ds_strcmp (name, "output-signature") == 0) {
 		if (!c -> out_key || !c -> out_context)
@@ -957,13 +1038,21 @@ isc_result_t omapi_connection_get_value (omapi_object_t *h,
 		return status;
 
 	} else if (omapi_ds_strcmp (name, "output-signature-size") == 0) {
-		if (!c -> out_key)
+		if (c->out_key == NULL)
 			return ISC_R_NOTFOUND;
 
-		return omapi_make_int_value (value, name,
-					     dst_sig_size (c -> out_key), MDL);
+#if !defined(__AROS__)
+		status = dst_key_sigsize(c->out_key, &sigsize);
+		if (status != ISC_R_SUCCESS) {
+			return(status);
+		}
+
+		return omapi_make_int_value(value, name, sigsize, MDL);
+#else
+		return ISC_R_NOTIMPLEMENTED;
+#endif
 	}
-	
+
 	if (h -> inner && h -> inner -> type -> get_value)
 		return (*(h -> inner -> type -> get_value))
 			(h -> inner, id, name, value);
@@ -995,12 +1084,12 @@ isc_result_t omapi_connection_signal_handler (omapi_object_t *h,
 					      const char *name, va_list ap)
 {
 	if (h -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 #ifdef DEBUG_PROTOCOL
 	log_debug ("omapi_connection_signal_handler(%s)", name);
 #endif
-	
+
 	if (h -> inner && h -> inner -> type -> signal_handler)
 		return (*(h -> inner -> type -> signal_handler)) (h -> inner,
 								  name, ap);
@@ -1014,13 +1103,58 @@ isc_result_t omapi_connection_stuff_values (omapi_object_t *c,
 					    omapi_object_t *id,
 					    omapi_object_t *m)
 {
-	// int i;
-
 	if (m -> type != omapi_type_connection)
-		return ISC_R_INVALIDARG;
+		return DHCP_R_INVALIDARG;
 
 	if (m -> inner && m -> inner -> type -> stuff_values)
 		return (*(m -> inner -> type -> stuff_values)) (c, id,
 								m -> inner);
 	return ISC_R_SUCCESS;
+}
+
+/* @brief Fetches the value of an attribute in an object as an allocated
+ * C string
+ *
+ * @param obj ompapi object containing the desire attribute
+ * @param attr_name  name of the desired attribute
+ * @param[out] cstr pointer in which to place the allocated C string's address
+ *
+ * Caller is responsible for freeing (via dfree) the allocated string.
+ *
+ * @return ISC_R_SUCCESS if successful, otherwise indicates the type of failure
+*/
+static isc_result_t ctring_from_attribute(omapi_object_t *obj, char *attr_name,
+                                          char **cstr) {
+	isc_result_t status = ISC_R_SUCCESS;
+	omapi_value_t *attr = 0;
+
+	/* Find the attribute in the object. */
+	status = omapi_get_value_str(obj, (omapi_object_t *)0, attr_name,
+                                 &attr);
+	if (status != ISC_R_SUCCESS) {
+		return (status);
+	}
+
+	/* Got it, let's make sure it's either data or string type. */
+	if (attr->value->type != omapi_datatype_data &&
+            attr->value->type != omapi_datatype_string) {
+		return (DHCP_R_INVALIDARG);
+        }
+
+	/* Make a C string from the attribute value. */
+	*cstr = dmalloc (attr->value->u.buffer.len + 1, MDL);
+	if (!(*cstr)) {
+		status = ISC_R_NOMEMORY;
+        } else {
+	        memcpy (*cstr, attr->value->u.buffer.value,
+		            attr->value->u.buffer.len);
+	        (*cstr)[attr->value->u.buffer.len] = 0;
+	}
+
+	/* Get rid of the attribute reference */
+	if (attr) {
+		omapi_value_dereference (&attr, MDL);
+	}
+
+	return (status);
 }
