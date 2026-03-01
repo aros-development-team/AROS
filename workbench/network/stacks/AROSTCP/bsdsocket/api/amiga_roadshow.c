@@ -10,8 +10,20 @@
 #include <utility/tagitem.h>
 //#include <if/route.h>
 #include <sys/types.h>
+#include <sys/malloc.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 #include <syslog.h>
 #include <api/amiga_api.h>
+#include <api/apicalls.h>
+#include <kern/amiga_netdb.h>
+
+/* Format an in_addr as a dotted-decimal string into buf (must be >= 16 bytes) */
+static void fmt_ipaddr(char *buf, struct in_addr addr)
+{
+    unsigned char *p = (unsigned char *)&addr.s_addr;
+    sprintf(buf, "%u.%u.%u.%u", p[0], p[1], p[2], p[3]);
+}
 
 AROS_LH1(long, bpf_open,
 	AROS_LHA(long, channel, D0),
@@ -284,9 +296,36 @@ AROS_LH1(LONG, AddDomainNameServer,
 	struct SocketBase *, libPtr, 86, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "AddDomainNameServer() is not implemented");
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct sockaddr_in sa;
+    struct NameserventNode *nsn;
+
+    if (address == NULL) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+
+    /* Parse the dotted-decimal address string */
+    if (!__inet_aton(address, &sa.sin_addr)) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+
+    if ((nsn = bsd_malloc(sizeof(struct NameserventNode), NULL, NULL)) == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return -1;
+    }
+
+    nsn->nsn_EntSize = sizeof(nsn->nsn_Ent);
+    nsn->nsn_Ent.ns_addr.s_addr = sa.sin_addr.s_addr;
+
+    ObtainSemaphore(&DynDB.dyn_Lock);
+    AddTail((struct List *)&DynDB.dyn_NameServers, (struct Node *)nsn);
+    ndb_Serial++;
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -295,9 +334,43 @@ AROS_LH1(LONG, RemoveDomainNameServer,
 	struct SocketBase *, libPtr, 87, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "RemoveDomainNameServer() is not implemented");
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct in_addr target;
+    struct MinNode *node, *nnode;
+    int found = 0;
+
+    if (address == NULL) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+
+    if (!__inet_aton(address, &target)) {
+        writeErrnoValue(libPtr, EINVAL);
+        return -1;
+    }
+
+    ObtainSemaphore(&DynDB.dyn_Lock);
+    for (node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ;) {
+        struct NameserventNode *nsn = (struct NameserventNode *)node;
+        nnode = node->mln_Succ;
+        if (nsn->nsn_Ent.ns_addr.s_addr == target.s_addr) {
+            Remove((struct Node *)node);
+            bsd_free(node, NULL);
+            found = 1;
+            break;
+        }
+        node = nnode;
+    }
+    if (found)
+        ndb_Serial++;
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+
+    if (!found) {
+        writeErrnoValue(libPtr, ENOENT);
+        return -1;
+    }
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -306,7 +379,20 @@ AROS_LH1(void, ReleaseDomainNameServerList,
 	struct SocketBase *, libPtr, 88, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ReleaseDomainNameServerList() is not implemented");
+
+    struct Node *node, *nnode;
+
+    if (list == NULL)
+        return;
+
+    for (node = list->lh_Head; node->ln_Succ;) {
+        nnode = node->ln_Succ;
+        Remove(node);
+        bsd_free(node, NULL);
+        node = nnode;
+    }
+    bsd_free(list, NULL);
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -314,8 +400,71 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
 	struct SocketBase *, libPtr, 89, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "ObtainDomainNameServerList() is not implemented");
-    return NULL;
+
+    struct List *list;
+    struct MinNode *node;
+
+    list = bsd_malloc(sizeof(struct List), NULL, NULL);
+    if (list == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        return NULL;
+    }
+    NewList(list);
+
+    ObtainSemaphoreShared(&ndb_Lock);
+
+    /* Walk static nameservers from the NetDB */
+    if (NDB) {
+        for (node = NDB->ndb_NameServers.mlh_Head; node->mln_Succ;
+             node = node->mln_Succ) {
+            struct NameserventNode *nsn = (struct NameserventNode *)node;
+            char ipstr[16];
+            struct DomainNameServerNode *dnsn;
+            int slen;
+
+            fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
+            slen = strlen(ipstr) + 1;
+
+            dnsn = bsd_malloc(sizeof(struct DomainNameServerNode) + slen,
+                              NULL, NULL);
+            if (dnsn == NULL)
+                continue;
+            dnsn->dnsn_Size = sizeof(struct DomainNameServerNode) + slen;
+            dnsn->dnsn_Address = (STRPTR)(dnsn + 1);
+            strcpy(dnsn->dnsn_Address, ipstr);
+            dnsn->dnsn_UseCount = -1;  /* static entry */
+            AddTail(list, (struct Node *)dnsn);
+        }
+    }
+
+    /* Walk dynamic nameservers from DynDB */
+    ObtainSemaphoreShared(&DynDB.dyn_Lock);
+    for (node = DynDB.dyn_NameServers.mlh_Head; node->mln_Succ;
+         node = node->mln_Succ) {
+        struct NameserventNode *nsn = (struct NameserventNode *)node;
+        char ipstr[16];
+        struct DomainNameServerNode *dnsn;
+        int slen;
+
+        fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
+        slen = strlen(ipstr) + 1;
+
+        dnsn = bsd_malloc(sizeof(struct DomainNameServerNode) + slen,
+                          NULL, NULL);
+        if (dnsn == NULL)
+            continue;
+        dnsn->dnsn_Size = sizeof(struct DomainNameServerNode) + slen;
+        dnsn->dnsn_Address = (STRPTR)(dnsn + 1);
+        strcpy(dnsn->dnsn_Address, ipstr);
+        dnsn->dnsn_UseCount = 1;  /* dynamic entry */
+        AddTail(list, (struct Node *)dnsn);
+    }
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+
+    ReleaseSemaphore(&ndb_Lock);
+
+    return list;
+
     AROS_LIBFUNC_EXIT
 }
 
