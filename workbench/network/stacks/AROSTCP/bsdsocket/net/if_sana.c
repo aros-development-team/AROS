@@ -618,7 +618,14 @@ D(bug("[AROSTCP:SANA] %s()\n", __func__));
   case SIOCSIFFLAGS:
 D(bug("[AROSTCP:SANA] %s: SIOCSIFFLAGS - \n", __func__));
 
-    if (((ifr->ifr_flags & (IFF_UP|IFF_DRV_RUNNING)) == (IFF_UP|IFF_DRV_RUNNING)) && ((ssc->ss_if.if_flags & (IFF_UP|IFF_DRV_RUNNING)) == IFF_DRV_RUNNING))
+    /*
+     * Bring the device online if the user wants IFF_UP, the driver
+     * has been initialised (IFF_DRV_RUNNING), but sana_up() hasn't
+     * actually been called yet (no read requests queued).
+     */
+    if ((ifr->ifr_flags & IFF_UP) &&
+        (ssc->ss_if.if_flags & IFF_DRV_RUNNING) &&
+        (ssc->ss_ip.sent == 0))
     {
 D(bug("[AROSTCP:SANA] %s: SIFFLAGS bringing interface up .. \n", __func__));
       sana_up(ssc);
@@ -646,7 +653,13 @@ D(bug("[AROSTCP:SANA] %s: SIOCSIFADDR - Set Interface Address\n", __func__));
 D(bug("[AROSTCP:SANA] %s: SIFADDR set interface as running .. \n", __func__));
       sana_run(ssc, ssc->ss_reqno, ifa);
     }
-    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
+    /*
+     * Use ss_ip.sent==0 instead of !IFF_UP to detect whether the device
+     * has actually been brought online.  IFF_UP may already be set by a
+     * prior SIOCSIFFLAGS from the DHCP client's PREINIT phase, but that
+     * does not mean sana_up() (CmdOnline + CmdRead) has been called.
+     */
+    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
       if (ssc->ss_if.if_flags & IFF_NOUP)
       {
 D(bug("[AROSTCP:SANA] %s: SIFADDR Clearing interface NOUP flag .. \n", __func__));
@@ -684,7 +697,7 @@ D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 - Alter IPv6 Interface Address\n", __f
 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 set interface as running ..\n", __func__));
       sana_run(ssc, ssc->ss_reqno, ifa);
     }
-    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && !(ssc->ss_if.if_flags & IFF_UP)) {
+    if ((ssc->ss_if.if_flags & IFF_DRV_RUNNING) && (ssc->ss_ip.sent == 0)) {
       if (ssc->ss_if.if_flags & IFF_NOUP)
       {
 D(bug("[AROSTCP:SANA] %s: SIOCAIFADDR_IN6 Clearing interface NOUP flag ..\n", __func__));
