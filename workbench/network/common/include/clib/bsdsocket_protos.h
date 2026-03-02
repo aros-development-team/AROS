@@ -2,12 +2,21 @@
 #define CLIB_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
 #include <sys/types.h>
 #include <sys/select.h>
+
+#if defined(__CONFIG_ROADSHOW__)
+#define BSDSOCKET_ROADSHOW_BPF
+#define BSDSOCKET_ROADSHOW_ROUTING
+#define BSDSOCKET_ROADSHOW_IFCFG
+#define BSDSOCKET_ROADSHOW_NETMON
+#define BSDSOCKET_ROADSHOW_DNS
+#endif
+
 /* Stub macros for 'emulation' of some functions */
 #define select(nfds,rfds,wfds,efds,timeout) WaitSelect(nfds,rfds,wfds,efds,timeout,NULL)
 #define inet_ntoa(addr) Inet_NtoA(((struct in_addr)addr).s_addr)
@@ -261,7 +270,7 @@ AROS_LP1(LONG, GetSocketEvents,
 );
 
 /* RoadShow Extensions .. */
-#if defined(__CONFIG_ROADSHOW__)
+#if defined(BSDSOCKET_ROADSHOW_BPF)
 AROS_LP1(long, bpf_open,
          AROS_LPA(long, channel, D0),
          LIBBASETYPEPTR, SocketBase, 61, BSDSocket
@@ -302,6 +311,8 @@ AROS_LP1(long, bpf_data_waiting,
          AROS_LPA(long, handle, D0),
          LIBBASETYPEPTR, SocketBase, 68, BSDSocket
 );
+#endif
+#if defined(BSDSOCKET_ROADSHOW_ROUTING)
 AROS_LP1(long, AddRouteTagList,
          AROS_LPA(struct TagItem *, tags, A0),
          LIBBASETYPEPTR, SocketBase, 69, BSDSocket
@@ -323,6 +334,8 @@ AROS_LP2(struct rt_msghdr *, GetRouteInfo,
          AROS_LPA(LONG, flags, D1),
          LIBBASETYPEPTR, SocketBase, 73, BSDSocket
 );
+#endif
+#if defined(BSDSOCKET_ROADSHOW_IFCFG)
 AROS_LP4(long, AddInterfaceTagList,
          AROS_LPA(STRPTR, name, A0),
          AROS_LPA(STRPTR, device, A1),
@@ -367,6 +380,8 @@ AROS_LP1(void, AbortInterfaceConfig,
          AROS_LPA(struct AddressAllocationMessage *, message, A0),
          LIBBASETYPEPTR, SocketBase, 82, BSDSocket
 );
+#endif
+#if defined(BSDSOCKET_ROADSHOW_NETMON)
 AROS_LP3(long, AddNetMonitorHookTagList,
          AROS_LPA(long, type, D0),
          AROS_LPA(struct Hook *, hook, A0),
@@ -384,6 +399,8 @@ AROS_LP4(LONG, GetNetworkStatistics,
          AROS_LPA(LONG, size, D2),
          LIBBASETYPEPTR, SocketBase, 85, BSDSocket
 );
+#endif
+#if defined(BSDSOCKET_ROADSHOW_DNS)
 AROS_LP1(LONG, AddDomainNameServer,
          AROS_LPA(STRPTR, address, A0),
          LIBBASETYPEPTR, SocketBase, 86, BSDSocket
@@ -399,6 +416,8 @@ AROS_LP1(void, ReleaseDomainNameServerList,
 AROS_LP0(struct List *, ObtainDomainNameServerList,
          LIBBASETYPEPTR, SocketBase, 89, BSDSocket
 );
+#endif
+#if defined(__CONFIG_ROADSHOW__)
 AROS_LP1(void, setnetent,
          AROS_LPA(int, stayopen, D0),
          LIBBASETYPEPTR, SocketBase, 90, BSDSocket

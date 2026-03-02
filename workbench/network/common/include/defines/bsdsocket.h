@@ -2,7 +2,7 @@
 #define DEFINES_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -13,6 +13,14 @@
 #include <exec/types.h>
 #include <aros/preprocessor/variadic/cast2iptr.hpp>
 
+
+#if defined(__CONFIG_ROADSHOW__)
+#define BSDSOCKET_ROADSHOW_BPF
+#define BSDSOCKET_ROADSHOW_ROUTING
+#define BSDSOCKET_ROADSHOW_IFCFG
+#define BSDSOCKET_ROADSHOW_NETMON
+#define BSDSOCKET_ROADSHOW_DNS
+#endif
 
 #define __socket_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, socket, \
@@ -484,10 +492,8 @@
 #define GetSocketEvents(arg1) \
     __GetSocketEvents_WB(SocketBase, (arg1))
 
-#if defined(__CONFIG_ROADSHOW__)
-
 /* RoadShow Extensions .. */
-
+#if defined(BSDSOCKET_ROADSHOW_BPF)
 #define __bpf_open_WB(__SocketBase, __arg1) \
         AROS_LC1(long, bpf_open, \
                   AROS_LCA(long, (__arg1), D0), \
@@ -559,7 +565,8 @@
 
 #define bpf_data_waiting(arg1) \
     __bpf_data_waiting_WB(SocketBase, arg1)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_ROUTING)
 #define __AddRouteTagList_WB(__SocketBase, __arg1) \
         AROS_LC1(long, AddRouteTagList, \
                   AROS_LCA(struct TagItem *, (__arg1), A0), \
@@ -600,7 +607,8 @@
 
 #define GetRouteInfo(arg1, arg2) \
     __GetRouteInfo_WB(SocketBase, arg1, arg2)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_IFCFG)
 #define __AddInterfaceTagList_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(long, AddInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
@@ -680,7 +688,8 @@
 
 #define AbortInterfaceConfig(arg1) \
     __AbortInterfaceConfig_WB(SocketBase, arg1)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_NETMON)
 #define __AddNetMonitorHookTagList_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, AddNetMonitorHookTagList, \
                   AROS_LCA(long, (__arg1), D0), \
@@ -709,7 +718,8 @@
 
 #define GetNetworkStatistics(arg1, arg2, arg3, arg4) \
     __GetNetworkStatistics_WB(SocketBase, arg1, arg2, arg3, arg4)
-
+#endif
+#if defined(BSDSOCKET_ROADSHOW_DNS)
 #define __AddDomainNameServer_WB(__SocketBase, __arg1) \
         AROS_LC1(LONG, AddDomainNameServer, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
@@ -740,7 +750,8 @@
 
 #define ObtainDomainNameServerList() \
     __ObtainDomainNameServerList_WB(SocketBase)
-
+#endif
+#if defined(__CONFIG_ROADSHOW__)
 #define __setnetent_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, setnetent, \
                   AROS_LCA(int, (__arg1), D0), \

@@ -2,6 +2,7 @@
  * Copyright © 1983, 1989 The Regents of the University of California.
  * All rights reserved.
  * Copyright © 2005 Pavel Fedin
+ * Copyright © 2005-2026, The AROS Development Team.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -139,13 +140,14 @@
 *
 */
 #define D(x)
+#define BSDSOCKET_ROADSHOW_ROUTING
 
 #include <sys/errno.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <stdio.h> /* NC */
+
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/sockio.h>
@@ -157,10 +159,9 @@
 
 #include <dos/dos.h>
 
-#define __CONFIG_ROADSHOW__
+#include <proto/exec.h>
 #include <proto/socket.h>
 #include <proto/miami.h>
-#include <proto/exec.h>
 #include <libraries/bsdsocket.h>
 
 #define herror(x) perror(x)
