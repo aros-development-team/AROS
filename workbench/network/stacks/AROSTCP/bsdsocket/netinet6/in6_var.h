@@ -30,52 +30,39 @@ struct in6_multi {
 /*
  * Macros for IPv6 address classification.
  */
+/*
+ * Kernel-optimized IPv6 address classification macros.
+ * These use s6_addr32[] for faster word-level comparison in the stack.
+ * The public <netinet/in.h> provides portable byte-level versions;
+ * these override them in kernel context for performance.
+ */
+#undef IN6_IS_ADDR_UNSPECIFIED
 #define IN6_IS_ADDR_UNSPECIFIED(a) \
 	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
 	 (a)->s6_addr32[2] == 0 && (a)->s6_addr32[3] == 0)
 
+#undef IN6_IS_ADDR_LOOPBACK
 #define IN6_IS_ADDR_LOOPBACK(a) \
 	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
 	 (a)->s6_addr32[2] == 0 && ntohl((a)->s6_addr32[3]) == 1)
 
-#define IN6_IS_ADDR_MULTICAST(a)	((a)->s6_addr[0] == 0xff)
-
-#define IN6_IS_ADDR_LINKLOCAL(a) \
-	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0x80))
-
-#define IN6_IS_ADDR_SITELOCAL(a) \
-	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0xc0))
-
+#undef IN6_IS_ADDR_V4MAPPED
 #define IN6_IS_ADDR_V4MAPPED(a) \
 	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
 	 ntohl((a)->s6_addr32[2]) == 0x0000ffff)
 
+#undef IN6_IS_ADDR_V4COMPAT
 #define IN6_IS_ADDR_V4COMPAT(a) \
 	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
 	 (a)->s6_addr32[2] == 0 && \
 	 ntohl((a)->s6_addr32[3]) > 1)
-
-#define IN6_IS_ADDR_MC_NODELOCAL(a) \
-	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x01))
-
-#define IN6_IS_ADDR_MC_LINKLOCAL(a) \
-	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x02))
-
-#define IN6_IS_ADDR_MC_SITELOCAL(a) \
-	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x05))
-
-#define IN6_IS_ADDR_MC_ORGLOCAL(a) \
-	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x08))
-
-#define IN6_IS_ADDR_MC_GLOBAL(a) \
-	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x0e))
 
 /* Convenience: access s6_addr32 portably without assuming struct layout */
 #ifndef s6_addr32
 #define s6_addr32 un.u32_addr
 #endif
 
-/* IPv6 address equality comparison */
+#undef IN6_ARE_ADDR_EQUAL
 #define IN6_ARE_ADDR_EQUAL(a, b) \
 	(bcmp(&(a)->s6_addr[0], &(b)->s6_addr[0], sizeof(struct in6_addr)) == 0)
 
