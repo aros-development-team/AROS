@@ -1575,5 +1575,26 @@ usage()
 
 VOID CleanUpExit(LONG error)
 {
+#ifdef AMIGA
+  /* Reset socket signal handlers before exiting so the signals
+   * are not left allocated against the process. */
+  SetSocketSignals(0L, 0L, 0L);
+
+  /* Clean up the timer device resources */
+  clean_timer();
+
+  /* Close the raw socket if it was opened */
+  if (s >= 0) {
+    CloseSocket(s);
+    s = -1;
+  }
+#endif
+
+  /* Free the outbound packet buffer */
+  if (outpack) {
+    free(outpack);
+    outpack = NULL;
+  }
+
   exit(error);
 }
