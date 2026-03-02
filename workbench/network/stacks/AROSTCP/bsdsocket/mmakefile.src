@@ -6,7 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #                    Helsinki University of Technology, Finland.
 #                    All rights reserved.
 # Copyright (C) 2005 Neil Cafferkey
-# Copyright (C) 2005 - 2026 The AROS Dev Team
+# Copyright (C) 2005-2026 The AROS Dev Team
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -64,13 +64,19 @@ NET_H= \
 	net/netisr.h net/raw_cb.h
 
 # netinet -- internet protocols (ip, icmp, tcp, udp, arp)
-NETINET_C= \
-	netinet/in netinet/in_cksum netinet/in_pcb netinet/in_proto \
+NETINET_C:= \
+	netinet/in netinet/in_pcb netinet/in_proto \
 	netinet/ip_icmp \
 	netinet/ip_input netinet/ip_output netinet/raw_ip \
 	netinet/tcp_debug netinet/tcp_input netinet/tcp_output \
 	netinet/tcp_subr netinet/tcp_timer netinet/tcp_usrreq \
 	netinet/udp_usrreq
+
+ifeq ($(AROS_TARGET_CPU),x86_64)
+NETINET_C += netinet/in_cksum_sse2
+else
+NETINET_C += netinet/in_cksum
+endif
 
 NETINET_H= \
 	netinet/in_pcb.h netinet/in_var.h netinet/icmp_var.h  \
@@ -87,7 +93,6 @@ NETINET6_C= \
 
 NETINET6_H= \
 	netinet6/in6_var.h netinet6/nd6.h
-
 
 # "Kernel" sources
 # main, timeouts, syncronization, memory management,
