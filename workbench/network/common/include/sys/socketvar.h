@@ -4,6 +4,7 @@
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
  * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -118,7 +119,11 @@ struct socket {
 		short	sb_flags;	     /* flags, see below */
 		struct timeval sb_timeo;     /* timeout for read/write */
 	} so_rcv, so_snd;
-#define	SB_MAX		(64*1024)	/* default for max chars in sockbuf */
+#if defined(__mc68000__)
+#define	SB_MAX		(64*1024)	/* max chars in sockbuf (m68k) */
+#else
+#define	SB_MAX		(512*1024)	/* max chars in sockbuf */
+#endif
 #define	SB_LOCK		0x01		/* lock on data queue */
 #define	SB_WANT		0x02		/* someone is waiting to lock */
 #define	SB_WAIT		0x04		/* someone is waiting for data/space */

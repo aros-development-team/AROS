@@ -102,16 +102,23 @@
 /*
  * Configuration information.
  */
+#if defined(__mc68000__)
 struct mbconf mbconf = {
   2,		                /* # of mbuf chunks to allocate initially */
-//8,
   64,				/* # of mbufs to allocate at a time */
-//256,
   4,				/* # of clusters to allocate at a time */
-//256,				/* maximum memory to use (in kilobytes) */
-  1024,
+  1024,				/* maximum memory to use (in kilobytes) */
   2048				/* size of the mbuf cluster */
 };
+#else
+struct mbconf mbconf = {
+  8,		                /* # of mbuf chunks to allocate initially */
+  256,				/* # of mbufs to allocate at a time */
+  32,				/* # of clusters to allocate at a time */
+  4096,				/* maximum memory to use (in kilobytes) */
+  2048				/* size of the mbuf cluster */
+};
+#endif
 
 /*
  * List of free mbufs. Access to this list is protected by splimp()

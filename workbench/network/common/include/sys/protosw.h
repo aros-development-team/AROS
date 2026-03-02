@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -112,7 +113,7 @@ struct protosw {
 };
 
 #define	PR_SLOWHZ	2		/* 2 slow timeouts per second */
-#define	PR_FASTHZ	5		/* 5 fast timeouts per second */
+#define	PR_FASTHZ	20		/* 20 fast timeouts per second (50ms) */
 
 /*
  * Values for pr_flags.

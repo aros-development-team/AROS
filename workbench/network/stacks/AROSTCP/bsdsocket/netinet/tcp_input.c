@@ -2,6 +2,7 @@
  * Copyright (c) 1982, 1986, 1988, 1990, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  * Copyright (c) 2006 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -2061,10 +2062,12 @@ tcp_mss(tp, offer)
 		(void)sbreserve(&so->so_rcv, bufsize);
 	}
 	/*
-	 * Don't force slow-start on local network.
+	 * Set initial congestion window.  Use RFC 6928 IW10
+	 * (10 segments) for non-local destinations instead of
+	 * the original 1-segment slow start.
 	 */
 	if (!in_localaddr(inp->inp_faddr))
-		tp->snd_cwnd = mss;
+		tp->snd_cwnd = MIN(10 * mss, MAX(2 * mss, 14600));
 
 #ifdef RTV_SSTHRESH
 	if (rt->rt_rmx.rmx_ssthresh) {

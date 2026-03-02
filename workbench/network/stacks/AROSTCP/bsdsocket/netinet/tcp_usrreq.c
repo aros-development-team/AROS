@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 1982, 1986, 1988, 1993
  *	The Regents of the University of California.  All rights reserved.
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -565,8 +566,13 @@ tcp_ctloutput(op, so, level, optname, mp)
  * sizes, respectively.  These are obsolescent (this information should
  * be set by the route).
  */
+#if defined(__mc68000__)
 u_long	tcp_sendspace = 1024*16;
 u_long	tcp_recvspace = 1024*16;
+#else
+u_long	tcp_sendspace = 1024*128;
+u_long	tcp_recvspace = 1024*128;
+#endif
 
 /*
  * Attach TCP protocol to socket, allocating

@@ -2,6 +2,7 @@
  * Copyright (c) 1982, 1986, 1988, 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
  * Copyright (c) 2006 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,7 +72,7 @@
 
 /* patchable/settable parameters for tcp */
 int	ip_defttl = 60;				  /* default time to live for TCP segs */
-int 	tcp_mssdflt = TCP_MSS;
+int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
 int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 1;

@@ -2,6 +2,7 @@
  * Copyright (c) 1982, 1986, 1988, 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
  * Copyright (c) 2006 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -99,8 +100,10 @@ tcp_output(tp)
 		 * We have been idle for "a while" and no acks are
 		 * expected to clock out any data we send --
 		 * slow start to get ack "clock" running again.
+		 * Use RFC 6928 IW10 instead of 1 segment.
 		 */
-		tp->snd_cwnd = tp->t_maxseg;
+		tp->snd_cwnd = MIN(10 * tp->t_maxseg,
+		    MAX(2 * tp->t_maxseg, 14600));
 again:
 	sendalot = 0;
 	off = tp->snd_nxt - tp->snd_una;
