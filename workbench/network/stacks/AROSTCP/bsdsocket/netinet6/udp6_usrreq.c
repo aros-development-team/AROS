@@ -85,17 +85,6 @@ extern u_long udp_sendspace;
 extern u_long udp_recvspace;
 
 /* ------------------------------------------------------------------ *
- * IPv6 pseudo-header for UDP checksum (RFC 2460 §8.1).
- * ------------------------------------------------------------------ */
-struct udp6_pseudo {
-	struct in6_addr	src;		/* 16 bytes */
-	struct in6_addr	dst;		/* 16 bytes */
-	u_int32_t	len;		/* upper-layer packet length (network) */
-	u_int8_t	zero[3];	/* must be zero */
-	u_int8_t	nxt;		/* next header = IPPROTO_UDP */
-};
-
-/* ------------------------------------------------------------------ *
  * udp6_output - build and transmit a UDP/IPv6 datagram.
  * ------------------------------------------------------------------ */
 static int
@@ -107,7 +96,6 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
 	u_short lport, fport;
 	struct udphdr *uh;
 	struct ip6_hdr *ip6;
-	struct udp6_pseudo phdr;
 	int len, udplen, error = 0;
 	int s = 0;
 
@@ -183,27 +171,6 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
 	uh->uh_ulen  = htons((u_short)udplen);
 	uh->uh_sum   = 0;
 
-	/* ---- Compute UDP checksum using IPv6 pseudo-header ---- */
-	bzero(&phdr, sizeof(phdr));
-	phdr.src = laddr6;
-	phdr.dst = faddr6;
-	phdr.len = htonl((u_int32_t)udplen);
-	phdr.nxt = IPPROTO_UDP;
-
-	/* Temporarily prepend pseudo-header to mbuf chain for in_cksum() */
-	M_PREPEND(m, sizeof(phdr), M_DONTWAIT);
-	if (m == NULL) {
-		error = ENOBUFS;
-		if (addr_m) { in6_pcbdisconnect(inp); splx(s); }
-		return error;
-	}
-	bcopy(&phdr, mtod(m, void *), sizeof(phdr));
-	uh = (struct udphdr *)(mtod(m, u_int8_t *) + sizeof(phdr));
-	uh->uh_sum = in_cksum(m, sizeof(phdr) + udplen);
-	if (uh->uh_sum == 0)
-		uh->uh_sum = 0xffff; /* RFC 768: replace zero checksum with 0xffff */
-	m_adj(m, sizeof(phdr));  /* remove pseudo-header */
-
 	/* ---- Prepend IPv6 header ---- */
 	M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
 	if (m == NULL) {
@@ -220,6 +187,13 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
 	                                       : (u_int8_t)ip6_defhlim;
 	ip6->ip6_src  = laddr6;
 	ip6->ip6_dst  = faddr6;
+
+	/* ---- Compute UDP checksum using in6_cksum (IPv6 pseudo-header) ---- */
+	uh = (struct udphdr *)((u_int8_t *)ip6 + sizeof(struct ip6_hdr));
+	uh->uh_sum = in6_cksum(m, IPPROTO_UDP,
+	    sizeof(struct ip6_hdr), udplen);
+	if (uh->uh_sum == 0)
+		uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
 	error = ip6_output(m, NULL, NULL, 0, inp->in6p_moptions, NULL, inp);
 
@@ -265,6 +239,17 @@ udp6_input(void *args, ...)
 	ip6 = mtod(m, struct ip6_hdr *);
 	uh  = (struct udphdr *)((u_int8_t *)ip6 + off);
 	len = ntohs(uh->uh_ulen);
+
+	/* Verify UDP checksum (mandatory for UDP over IPv6, RFC 2460 §8.1) */
+	if (uh->uh_sum == 0) {
+		/* Zero checksum is not allowed for UDP6 — silently drop */
+		m_freem(m);
+		return;
+	}
+	if (in6_cksum(m, IPPROTO_UDP, off, len) != 0) {
+		m_freem(m);
+		return;
+	}
 
 	/* Build sockaddr_in6 for source and destination */
 	bzero(&src6, sizeof(src6));

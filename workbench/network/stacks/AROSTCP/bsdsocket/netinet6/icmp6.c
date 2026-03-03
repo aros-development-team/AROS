@@ -47,6 +47,7 @@
 
 #include <protos/net/route_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <protos/netinet/in_cksum_protos.h>
 
 /* IP6_HDR_OFF macro: ip6 header is at offset 0 in mbuf after ip6_input */
 #define ICMPv6_HDRLEN sizeof(struct icmp6_hdr)
@@ -55,7 +56,6 @@ struct icmp6stat icmp6stat = {0};
 
 /* forward */
 static void icmp6_reflect(struct mbuf *, size_t);
-static int  icmp6_cksum(struct mbuf *, u_int8_t, u_int32_t, u_int32_t);
 
 /* ------------------------------------------------------------------
  * icmp6_init
@@ -129,9 +129,12 @@ icmp6_input(void *args, ...)
 
     icmp6stat.icp6s_inhist[icmp6->icmp6_type]++;
 
-    /* verify checksum */
-    /* (full pseudo-header checksum verification omitted for brevity;
-     *  production code should call in_cksum with pseudo-header) */
+    /* verify checksum using IPv6 pseudo-header */
+    if (in6_cksum(m, IPPROTO_ICMPV6, off, icmp6len)) {
+        icmp6stat.icp6s_checksum++;
+        m_freem(m);
+        return;
+    }
 
     switch (icmp6->icmp6_type) {
     /* ----- Neighbor Discovery (delegated to nd6.c) ----- */
@@ -284,6 +287,12 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
 
     nip6->ip6_plen = htons(m->m_pkthdr.len - sizeof(struct ip6_hdr));
 
+    /* compute ICMPv6 checksum with pseudo-header */
+    icmp6->icmp6_cksum = 0;
+    icmp6->icmp6_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+        sizeof(struct ip6_hdr),
+        m->m_pkthdr.len - sizeof(struct ip6_hdr));
+
     icmp6stat.icp6s_outhist[type]++;
 
     ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
@@ -313,6 +322,15 @@ icmp6_reflect(struct mbuf *m, size_t off)
         ip6->ip6_src = t;           /* fallback: our original dst address */
 
     ip6->ip6_hlim = ip6_defhlim;
+
+    /* compute ICMPv6 checksum with pseudo-header */
+    {
+        struct icmp6_hdr *icmp6r;
+        icmp6r = (struct icmp6_hdr *)((caddr_t)ip6 + off);
+        icmp6r->icmp6_cksum = 0;
+        icmp6r->icmp6_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+            off, m->m_pkthdr.len - off);
+    }
 
     ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
 }

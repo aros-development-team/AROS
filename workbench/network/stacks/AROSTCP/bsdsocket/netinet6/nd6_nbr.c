@@ -49,47 +49,10 @@
 struct rtentry *rtalloc1(struct sockaddr *, int);
 int ip6_output(void *, ...);
 
+#include <protos/netinet/in_cksum_protos.h>
+
 /* DAD queue — singly-linked list */
 static struct dadq *dadq_head = NULL;
-
-/* ------------------------------------------------------------------
- * ICMPv6 pseudo-header checksum for NDP messages.
- *
- * RFC 4861 requires hop-limit=255 and proper ICMPv6 checksums.
- * ------------------------------------------------------------------ */
-static u_int16_t
-nd6_cksum(struct ip6_hdr *ip6, void *icmp6, int icmp6len)
-{
-	u_int32_t sum = 0;
-	u_int16_t *p;
-	int i;
-
-	/* pseudo-header: src + dst + length + next-header */
-	{
-		struct in6_addr addrs[2];
-		memcpy(&addrs[0], &ip6->ip6_src, sizeof(struct in6_addr));
-		memcpy(&addrs[1], &ip6->ip6_dst, sizeof(struct in6_addr));
-		p = (u_int16_t *)addrs;
-		for (i = 0; i < 16; i++)	/* 32 bytes of addresses */
-			sum += ntohs(p[i]);
-	}
-
-	sum += (u_int32_t)icmp6len;
-	sum += IPPROTO_ICMPV6;
-
-	/* ICMPv6 payload */
-	p = (u_int16_t *)icmp6;
-	for (i = 0; i < icmp6len / 2; i++)
-		sum += ntohs(p[i]);
-	if (icmp6len & 1)
-		sum += ((u_int8_t *)icmp6)[icmp6len - 1] << 8;
-
-	/* fold */
-	while (sum >> 16)
-		sum = (sum & 0xffff) + (sum >> 16);
-
-	return htons((u_int16_t)~sum);
-}
 
 /* ------------------------------------------------------------------
  * nd6_ns_output - send a Neighbor Solicitation.
@@ -187,7 +150,8 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
 
 	/* ICMPv6 checksum */
 	nd_ns->nd_ns_cksum = 0;
-	nd_ns->nd_ns_cksum = nd6_cksum(ip6, nd_ns, icmp6len + optlen);
+	nd_ns->nd_ns_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+	    sizeof(struct ip6_hdr), icmp6len + optlen);
 
 	/* build destination sockaddr for ip6_output */
 	bzero(&dst_sa, sizeof(dst_sa));
@@ -387,7 +351,8 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
 
 	/* ICMPv6 checksum */
 	nd_na->nd_na_cksum = 0;
-	nd_na->nd_na_cksum = nd6_cksum(ip6, nd_na, icmp6len + optlen);
+	nd_na->nd_na_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+	    sizeof(struct ip6_hdr), icmp6len + optlen);
 
 	nd6stat.nd6s_snd_na++;
 	ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);

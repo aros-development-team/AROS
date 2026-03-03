@@ -49,41 +49,13 @@
 /* Forward declarations */
 int ip6_output(void *, ...);
 
+#include <protos/netinet/in_cksum_protos.h>
+
 /* Default router list (singly-linked) */
 static struct nd_defrouter *nd6_defrtrlist = NULL;
 
 /* Prefix list (singly-linked) */
 static struct nd_prefix *nd6_prefixlist = NULL;
-
-/* ------------------------------------------------------------------
- * ICMPv6 checksum helper (same algorithm as nd6_nbr.c).
- * ------------------------------------------------------------------ */
-static u_int16_t
-nd6_rtr_cksum(struct ip6_hdr *ip6, void *icmp6, int icmp6len)
-{
-	u_int32_t sum = 0;
-	u_int16_t *p;
-	int i;
-
-	{
-		struct in6_addr addrs[2];
-		memcpy(&addrs[0], &ip6->ip6_src, sizeof(struct in6_addr));
-		memcpy(&addrs[1], &ip6->ip6_dst, sizeof(struct in6_addr));
-		p = (u_int16_t *)addrs;
-		for (i = 0; i < 16; i++)
-			sum += ntohs(p[i]);
-	}
-	sum += (u_int32_t)icmp6len;
-	sum += IPPROTO_ICMPV6;
-	p = (u_int16_t *)icmp6;
-	for (i = 0; i < icmp6len / 2; i++)
-		sum += ntohs(p[i]);
-	if (icmp6len & 1)
-		sum += ((u_int8_t *)icmp6)[icmp6len - 1] << 8;
-	while (sum >> 16)
-		sum = (sum & 0xffff) + (sum >> 16);
-	return htons((u_int16_t)~sum);
-}
 
 /* ==================================================================
  * Default Router List Management
@@ -627,7 +599,8 @@ nd6_rs_output(struct ifnet *ifp)
 
 	/* checksum */
 	rs->nd_rs_cksum = 0;
-	rs->nd_rs_cksum = nd6_rtr_cksum(ip6, rs, icmp6len + optlen);
+	rs->nd_rs_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+	    sizeof(struct ip6_hdr), icmp6len + optlen);
 
 	nd6stat.nd6s_snd_rs++;
 	ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
