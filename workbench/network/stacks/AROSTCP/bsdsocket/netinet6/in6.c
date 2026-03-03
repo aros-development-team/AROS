@@ -520,6 +520,13 @@ in6_if_up(struct ifnet *ifp)
 		maddr.s6_addr[15] = sin6.sin6_addr.s6_addr[15];
 		(void)in6_addmulti(&maddr, ifp);
 	}
+
+	/*
+	 * Initialize ND state for this interface and start DAD.
+	 * After DAD completes, nd6_dad_timer() will send the first RS.
+	 */
+	nd6_ifattach(ifp);
+	nd6_dad_start(ia);
 }
 
 /* ------------------------------------------------------------------

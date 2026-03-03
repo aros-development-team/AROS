@@ -136,6 +136,10 @@ icmp6_input(void *args, ...)
         nd6_ra_input(m, off, icmp6len);
         return;
 
+    case ND_REDIRECT:
+        nd6_redirect_input(m, off, icmp6len);
+        return;
+
     /* ----- Echo ----- */
     case ICMP6_ECHO_REQUEST:
         icmp6stat.icp6s_reflect++;
