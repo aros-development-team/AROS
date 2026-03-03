@@ -1368,14 +1368,14 @@ show_routes(void)
 				}
 			}
 			if (sa_dst) {
-				(void) printf("%-20.20s ",
+				(void) printf("%-20s ",
 				    (rtm->rtm_flags & RTF_HOST) ?
 				    routename(sa_dst) : netname(sa_dst));
 			} else {
 				(void) printf("%-20s ", "???");
 			}
 			if (sa_gw) {
-				(void) printf("%-20.20s ", routename(sa_gw));
+				(void) printf("%-20s ", routename(sa_gw));
 			} else {
 				(void) printf("%-20s ", "*");
 			}
@@ -1411,6 +1411,12 @@ show_routes(void)
 	/* Get IPv6 routes */
 	buf = GetRouteInfo(AF_INET6, 0);
 	if (buf != NULL) {
+		(void) printf("\n%-40s %-40s %-12s %s\n",
+		    "IPv6 Destination", "IPv6 Gateway", "Flags", "Refs/Use");
+		(void) printf("%-40s %-40s %-12s %s\n",
+		    "---------------------------------------",
+		    "---------------------------------------",
+		    "------------", "--------");
 		for (next = (char *)buf; ; next += rtm->rtm_msglen) {
 			rtm = (struct rt_msghdr *)next;
 			if (rtm->rtm_msglen == 0)
@@ -1432,16 +1438,16 @@ show_routes(void)
 				}
 			}
 			if (sa_dst) {
-				(void) printf("%-20.20s ",
+				(void) printf("%-40s ",
 				    (rtm->rtm_flags & RTF_HOST) ?
 				    routename(sa_dst) : netname(sa_dst));
 			} else {
-				(void) printf("%-20s ", "???");
+				(void) printf("%-40s ", "???");
 			}
 			if (sa_gw) {
-				(void) printf("%-20.20s ", routename(sa_gw));
+				(void) printf("%-40s ", routename(sa_gw));
 			} else {
-				(void) printf("%-20s ", "*");
+				(void) printf("%-40s ", "*");
 			}
 			{
 				char flagbuf[16], *fp = flagbuf;
