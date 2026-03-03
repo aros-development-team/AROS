@@ -452,7 +452,7 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 			lladdr[5] = sin6->sin6_addr.s6_addr[15];
 			return 0;
 		}
-		m_freem(m);
+		/* caller frees mbuf on error */
 		return EHOSTUNREACH;
 	}
 
@@ -461,7 +461,7 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 		/* allocate neighbor cache entry */
 		MALLOC(ln, struct llinfo_nd6 *, sizeof(*ln), M_PCB, M_NOWAIT);
 		if (ln == NULL) {
-			m_freem(m);
+			/* caller frees mbuf on error */
 			return ENOBUFS;
 		}
 		bzero(ln, sizeof(*ln));
@@ -526,7 +526,7 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 		return EAGAIN;
 	}
 
-	m_freem(m);
+	/* caller frees mbuf on error */
 	return EHOSTUNREACH;
 }
 
