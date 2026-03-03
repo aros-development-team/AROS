@@ -1,11 +1,9 @@
-/* Prototypes for functions defined in
-in_cksum.c / in_cksum_sse2.c
- */
+/* Prototypes for IPv4 checksum functions. */
 
 int in_cksum(register struct mbuf * m,
              register int len);
 
-/* Prototype for IPv6 upper-layer checksum (netinet6/in6_cksum.c).
+/* Prototype for IPv6 upper-layer checksum.
  *
  * Computes the ones-complement checksum of the IPv6 pseudo-header
  * (src, dst, upper-layer length, next-header) plus upper-layer data.
