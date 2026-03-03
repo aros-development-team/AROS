@@ -99,12 +99,21 @@ nd6_ifattach(struct ifnet *ifp)
 {
 	struct nd_ifinfo *ndi;
 
-	if (ifp->if_index >= ND6_MAXIFS)
+	D(bug("[AROSTCP:ND6] %s: ifp=%s%d index=%d\n",
+	    __func__, ifp->if_name, ifp->if_unit, ifp->if_index));
+
+	if (ifp->if_index >= ND6_MAXIFS) {
+		D(bug("[AROSTCP:ND6] %s: index %d >= ND6_MAXIFS(%d), skip\n",
+		    __func__, ifp->if_index, ND6_MAXIFS));
 		return;
+	}
 
 	ndi = &nd6_ndi[ifp->if_index];
-	if (ndi->initialized)
+	if (ndi->initialized) {
+		D(bug("[AROSTCP:ND6] %s: already initialized for index %d\n",
+		    __func__, ifp->if_index));
 		return;
+	}
 
 	ndi->basereachable = ND6_REACHABLE_TIME;
 	ndi->reachable     = ND6_REACHABLE_TIME;
@@ -118,6 +127,10 @@ nd6_ifattach(struct ifnet *ifp)
 	ndi->rtr_solicit_timer = 0;
 	ndi->recalctm        = 0;
 	ndi->initialized     = 1;
+
+	D(bug("[AROSTCP:ND6] %s: initialized for %s%d (reachable=%d retrans=%d)\n",
+	    __func__, ifp->if_name, ifp->if_unit,
+	    ndi->reachable, ndi->retrans));
 }
 
 /* ------------------------------------------------------------------
@@ -560,9 +573,18 @@ nd6_timer(void *arg)
 	struct timeval _tv;
 	long now;
 	struct nd_ifinfo *ndi;
+	static int nd6_timer_ticks = 0;
 
 	GetSysTime(&_tv);
 	now = _tv.tv_sec;
+
+	nd6_timer_ticks++;
+
+	/* log first 10 calls, then every ~30 seconds */
+	if (nd6_timer_ticks <= 10 || (nd6_timer_ticks % 60) == 0) {
+		D(bug("[AROSTCP:ND6] %s: tick=%d now=%ld\n",
+		    __func__, nd6_timer_ticks, now));
+	}
 
 	/* NUD state machine for each neighbor cache entry */
 	for (ln = llinfo_nd6.ln_next; ln != &llinfo_nd6; ln = nln) {
@@ -643,9 +665,13 @@ nd6_timer(void *arg)
 	}
 
 	/* run sub-timers */
+	D(bug("[AROSTCP:ND6] %s: calling nd6_dad_timer\n", __func__));
 	nd6_dad_timer();
+	D(bug("[AROSTCP:ND6] %s: calling nd6_defrouter_timer\n", __func__));
 	nd6_defrouter_timer();
+	D(bug("[AROSTCP:ND6] %s: calling nd6_prefix_timer\n", __func__));
 	nd6_prefix_timer();
+	D(bug("[AROSTCP:ND6] %s: sub-timers done\n", __func__));
 
 	/* RS retransmission for interfaces still soliciting */
 	{
@@ -667,6 +693,10 @@ nd6_timer(void *arg)
 				    ND6_RTR_SOLICITATION_INTERVAL;
 			}
 		}
+	}
+	if (nd6_timer_ticks <= 10) {
+		D(bug("[AROSTCP:ND6] %s: tick=%d returning\n",
+		    __func__, nd6_timer_ticks));
 	}
 }
 

@@ -2,8 +2,8 @@
 /*	$NetBSD: pfil.h,v 1.22 2003/06/23 12:57:08 martin Exp $	*/
 
 /*-
- * Copyright (c) 1996 Matthew R. Green
- * Copyright (c) 2005 - 2006 Pavel Fedin
+ * Copyright (C) 1996 Matthew R. Green
+ * Copyright (C) 2005 - 2006 Pavel Fedin
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

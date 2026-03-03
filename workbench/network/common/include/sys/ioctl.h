@@ -117,6 +117,8 @@ __END_DECLS
 #define SIOCGIFASYNCMAP _IOWR('i', 124, struct ifreq)   /* get ppp asyncmap */
 #define SIOCSIFASYNCMAP  _IOW('i', 125, struct ifreq)   /* set ppp asyncmap */
 
+#define SIOCGIFHWADDR	_IOWR('i', 57, struct ifreq)    /* get IF hw address */
+
 /*
  * IPv6 interface address ioctls.
  * Requires <netinet/in_var.h> for struct in6_ifreq / in6_aliasreq / in6_ifconf.

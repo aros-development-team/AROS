@@ -1,7 +1,7 @@
 #ifndef _NET_IF_SLVAR_H_
 #define _NET_IF_SLVAR_H_
 /*-
- * Copyright (c) 1991, 1993
+ * Copyright (C) 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

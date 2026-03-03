@@ -825,7 +825,11 @@ D(bug("[AROSTCP:SANA] %s('%s%d')\n", __func__, ssc->ss_if.if_name, ssc->ss_if.if
   /* Auto-configure link-local IPv6 address (EUI-64) for this interface */
   {
     void in6_if_up(struct ifnet *);
+    D(bug("[AROSTCP:SANA] %s: calling in6_if_up for %s%d (flags=0x%x)\n",
+        __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit, ssc->ss_if.if_flags));
     in6_if_up(&ssc->ss_if);
+    D(bug("[AROSTCP:SANA] %s: in6_if_up returned for %s%d\n",
+        __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit));
   }
 #endif
   return;

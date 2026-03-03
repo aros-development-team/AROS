@@ -1,9 +1,9 @@
 /*	$KAME: getifaddrs.c,v 1.9 2005/11/14 16:53:20 sonic Exp $	*/
 
 /*
- * Copyright (c) 1995, 1999
+ * Copyright (C) 1995, 1999
  *	Berkeley Software Design, Inc.  All rights reserved.
- * Copyright (c) 2005 - 2006
+ * Copyright (C) 2005 - 2006
  *	Pavel Fedin
  *
  * Redistribution and use in source and binary forms, with or without

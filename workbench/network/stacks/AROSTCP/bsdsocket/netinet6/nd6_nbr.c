@@ -114,6 +114,11 @@ nd6_ns_output(struct ifnet *ifp, struct in6_addr *src,
 	caddr_t mac;
 	int pktlen;
 
+	D(bug("[AROSTCP:ND6] %s: ifp=%s%d dad=%d tgt=%02x%02x:...:%02x%02x\n",
+	    __func__, ifp->if_name, ifp->if_unit, dad,
+	    tgt->s6_addr[0], tgt->s6_addr[1],
+	    tgt->s6_addr[14], tgt->s6_addr[15]));
+
 	/* include Source Link-Layer Address option unless DAD */
 	mac = nd6_ifptomac(ifp);
 	if (!dad && mac && ifp->if_addrlen == 6)
@@ -603,10 +608,15 @@ nd6_dad_start(struct in6_ifaddr *ia)
 	struct ifnet *ifp;
 	struct timeval _tv;
 
-	if (ia == NULL)
+	if (ia == NULL) {
+		D(bug("[AROSTCP:ND6] %s: ia is NULL\n", __func__));
 		return;
+	}
 
 	ifp = ia->ia6_ifp;
+
+	D(bug("[AROSTCP:ND6] %s: starting DAD for %s%d, flags=0x%x\n",
+	    __func__, ifp->if_name, ifp->if_unit, ia->ia6_ifaflags));
 
 	/* mark address as tentative */
 	ia->ia6_ifaflags |= IN6_IFF_TENTATIVE;
@@ -614,14 +624,17 @@ nd6_dad_start(struct in6_ifaddr *ia)
 
 	/* check if already in DAD queue */
 	for (dp = dadq_head; dp; dp = dp->next) {
-		if (dp->ia == ia)
+		if (dp->ia == ia) {
+			D(bug("[AROSTCP:ND6] %s: already in DAD queue\n", __func__));
 			return;		/* already running DAD */
+		}
 	}
 
 	/* allocate DAD queue entry */
 	MALLOC(dp, struct dadq *, sizeof(*dp), M_PCB, M_NOWAIT);
 	if (dp == NULL) {
 		/* can't do DAD, just mark as ready */
+		D(bug("[AROSTCP:ND6] %s: MALLOC failed, skipping DAD\n", __func__));
 		ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
 		return;
 	}
@@ -639,6 +652,9 @@ nd6_dad_start(struct in6_ifaddr *ia)
 	/* insert into DAD queue */
 	dp->next = dadq_head;
 	dadq_head = dp;
+
+	D(bug("[AROSTCP:ND6] %s: DAD queued, timer=%ld\n",
+	    __func__, (long)dp->timer));
 }
 
 /* ------------------------------------------------------------------
@@ -680,6 +696,10 @@ nd6_dad_timer(void)
 			continue;
 		}
 
+		D(bug("[AROSTCP:ND6] %s: processing DAD entry ifp=%s%d count=%d ns_i=%d timer=%ld now=%ld\n",
+		    __func__, dp->ifp->if_name, dp->ifp->if_unit,
+		    dp->count, dp->ns_icount, (long)dp->timer, now));
+
 		if (dp->ns_icount > 0) {
 			/* received NS for our tentative addr = duplicate */
 			dp->ia->ia6_ifaflags |= IN6_IFF_DUPLICATED;
@@ -696,6 +716,8 @@ nd6_dad_timer(void)
 
 		if (dp->count >= ND6_MAX_DAD_NS) {
 			/* DAD complete — no duplicates detected */
+			D(bug("[AROSTCP:ND6] %s: DAD complete for %s%d, sending RS\n",
+			    __func__, dp->ifp->if_name, dp->ifp->if_unit));
 			dp->ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
 			/* send initial Router Solicitation now that addr is valid */
 			nd6_rs_output(dp->ifp);
@@ -706,6 +728,8 @@ nd6_dad_timer(void)
 		}
 
 		/* send DAD NS probe (src = ::, dad = 1) */
+		D(bug("[AROSTCP:ND6] %s: sending DAD NS probe #%d for %s%d\n",
+		    __func__, dp->count + 1, dp->ifp->if_name, dp->ifp->if_unit));
 		nd6_ns_output(dp->ifp, NULL,
 		    &dp->ia->ia_addr.sin6_addr, NULL, 1);
 		dp->count++;

@@ -1,7 +1,7 @@
 /*      $NetBSD: kvm.h,v 1.7 1996/04/19 12:02:50 leo Exp $      */
 
 /*-
- * Copyright (c) 1989, 1993
+ * Copyright (C) 1989, 1993
  *      The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -23,7 +23,7 @@
 
 /* 
  * Mach Operating System
- * Copyright (c) 1992 Carnegie Mellon University
+ * Copyright (C) 1992 Carnegie Mellon University
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify and distribute this software and its
@@ -48,7 +48,7 @@
  */
 
 /*
- * Copyright (c) 1982, 1986, 1988, 1990 Regents of the University of California.
+ * Copyright (C) 1982, 1986, 1988, 1990 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

@@ -2,7 +2,7 @@
 /*	$NetBSD: pfil.c,v 1.20 2001/11/12 23:49:46 lukem Exp $	*/
 
 /*-
- * Copyright (c) 1996 Matthew R. Green
+ * Copyright (C) 1996 Matthew R. Green
  * Copyright (C) 2005-2026 The AROS Dev Team
  * All rights reserved.
  *

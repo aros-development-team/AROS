@@ -3,7 +3,7 @@
  *
  * ++Copyright++ 1983, 1993
  * -
- * Copyright (c) 1983, 1993
+ * Copyright (C) 1983, 1993
  *    The Regents of the University of California.  All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  * -
- * Portions Copyright (c) 1993 by Digital Equipment Corporation.
+ * Portions Copyright (C) 1993 by Digital Equipment Corporation.
  * 
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above

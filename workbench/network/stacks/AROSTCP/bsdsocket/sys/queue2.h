@@ -22,7 +22,7 @@
 
 /* 
  * Mach Operating System
- * Copyright (c) 1992 Carnegie Mellon University
+ * Copyright (C) 1992 Carnegie Mellon University
  * All Rights Reserved.
  * 
  * Permission to use, copy, modify and distribute this software and its

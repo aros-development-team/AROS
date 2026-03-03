@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1983, 1987, 1989 The Regents of the University of California.
+ * Copyright (C) 1983, 1987, 1989 The Regents of the University of California.
  * All rights reserved.
  * Copyright (C) 2005 - 2007 The AROS Dev Team
  *

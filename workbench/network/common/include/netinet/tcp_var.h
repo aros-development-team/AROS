@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1982, 1986, 1993, 1994
+ * Copyright (C) 1982, 1986, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

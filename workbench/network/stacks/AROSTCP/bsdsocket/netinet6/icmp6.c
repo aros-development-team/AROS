@@ -67,7 +67,22 @@ icmp6_init(void)
 }
 
 void icmp6_fasttimo(void) {}
-void icmp6_slowtimo(void) {}
+
+void
+icmp6_slowtimo(void)
+{
+    static int icmp6_slow_ticks = 0;
+    icmp6_slow_ticks++;
+    if (icmp6_slow_ticks <= 10 || (icmp6_slow_ticks % 60) == 0) {
+        D(bug("[AROSTCP:ICMP6] %s: tick=%d\n", __func__, icmp6_slow_ticks));
+    }
+    nd6_timer(NULL);
+    if (icmp6_slow_ticks <= 10) {
+        D(bug("[AROSTCP:ICMP6] %s: nd6_timer returned (tick=%d)\n",
+            __func__, icmp6_slow_ticks));
+    }
+}
+
 void icmp6_drain(void)    {}
 
 /* ------------------------------------------------------------------

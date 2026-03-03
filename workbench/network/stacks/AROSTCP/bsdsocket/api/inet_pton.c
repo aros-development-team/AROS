@@ -1,7 +1,7 @@
 /*	$KAME: inet_pton.c,v 1.0 2005/11/14 15:49:40 SONIC Exp $	*/
 
-/* Copyright (c) 1996 by Internet Software Consortium.
- * Copyright (c) 2005 by Pavel Fedin.
+/* Copyright (C) 1996 by Internet Software Consortium.
+ * Copyright (C) 2005 by Pavel Fedin.
  * Copyright (C) 2005 - 2026 The AROS Dev Team
  *
  * Permission to use, copy, modify, and distribute this software for any

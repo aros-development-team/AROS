@@ -1,7 +1,7 @@
 /*	$NetBSD: err.h,v 1.11 1994/10/26 00:55:52 cgd Exp $	*/
 
 /*-
- * Copyright (c) 1993
+ * Copyright (C) 1993
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

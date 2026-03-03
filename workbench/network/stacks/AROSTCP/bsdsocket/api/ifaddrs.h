@@ -1,7 +1,7 @@
 /*	$FreeBSD: /repoman/r/ncvs/src/include/ifaddrs.h,v 1.3 2003/11/14 18:53:22 bms Exp $	*/
 
 /*
- * Copyright (c) 1995, 1999
+ * Copyright (C) 1995, 1999
  *	Berkeley Software Design, Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

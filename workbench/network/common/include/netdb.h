@@ -22,7 +22,7 @@
  */
 
 /*-
- * Copyright (c) 1980, 1983, 1988 Regents of the University of California.
+ * Copyright (C) 1980, 1983, 1988 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms are permitted

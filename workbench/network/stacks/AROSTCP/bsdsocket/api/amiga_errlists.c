@@ -140,7 +140,7 @@ const int h_nerr = { sizeof h_errlist / sizeof h_errlist[0] };
 
 
 /*
- * Copyright (c) 1982, 1985 Regents of the University of California.
+ * Copyright (C) 1982, 1985 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

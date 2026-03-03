@@ -1,9 +1,9 @@
 /*	$KAME: if_nameindex.c,v 1.0 2005/11/14 16:49:01 sonic Exp $	*/
 
 /*-
- * Copyright (c) 1997, 2000
+ * Copyright (C) 1997, 2000
  *	Berkeley Software Design, Inc.  All rights reserved.
- * Copyright (c) 2005 - 2006
+ * Copyright (C) 2005 - 2006
  *	Pavel Fedin
  * Copyright (C) 2005-2026 The AROS Dev Team
  *

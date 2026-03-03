@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 1982, 1986, 1991, 1993
+ * Copyright (C) 1982, 1986, 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 2006 Pavel Fedin
+ * Copyright (C) 2006 Pavel Fedin
  * (c) UNIX System Laboratories, Inc.
  * All or some portions of this file are derived from material licensed
  * to the University of California by American Telephone and Telegraph

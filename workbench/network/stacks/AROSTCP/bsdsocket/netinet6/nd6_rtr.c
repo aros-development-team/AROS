@@ -573,6 +573,9 @@ nd6_rs_output(struct ifnet *ifp)
 	int pktlen;
 	struct in6_ifaddr *ia;
 
+	D(bug("[AROSTCP:ND6] %s: sending RS on %s%d\n",
+	    __func__, ifp->if_name, ifp->if_unit));
+
 	/* include SLLA if we have a valid source address */
 	ia = in6_ifaof_ifpforlinklocal(ifp);
 	mac = nd6_ifptomac(ifp);

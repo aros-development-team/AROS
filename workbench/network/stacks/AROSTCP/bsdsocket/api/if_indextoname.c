@@ -1,9 +1,9 @@
 /*	$KAME: if_indextoname.c,v 1.0 2005/11/14 16:44:30 sonic Exp $	*/
 
 /*-
- * Copyright (c) 1997, 2000
+ * Copyright (C) 1997, 2000
  *	Berkeley Software Design, Inc.  All rights reserved.
- * Copyright (c) 2005
+ * Copyright (C) 2005
  *	Pavel Fedin
  *
  * Redistribution and use in source and binary forms, with or without

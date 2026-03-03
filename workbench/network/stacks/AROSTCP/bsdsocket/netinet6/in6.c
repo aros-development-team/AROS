@@ -412,22 +412,33 @@ in6_if_up(struct ifnet *ifp)
 	struct sockaddr_in6 sin6;
 	struct mbuf *m;
 
+	D(bug("[AROSTCP:IN6] %s: ifp=%s%d flags=0x%x addrlen=%d\n",
+	    __func__, ifp->if_name, ifp->if_unit, ifp->if_flags, ifp->if_addrlen));
+
 	/* skip loopback - it already has ::1 */
-	if (ifp->if_flags & IFF_LOOPBACK)
+	if (ifp->if_flags & IFF_LOOPBACK) {
+		D(bug("[AROSTCP:IN6] %s: skip loopback\n", __func__));
 		return;
+	}
 
 	/* check if link-local already configured */
-	if (in6_ifaof_ifpforlinklocal(ifp))
+	if (in6_ifaof_ifpforlinklocal(ifp)) {
+		D(bug("[AROSTCP:IN6] %s: link-local already configured\n", __func__));
 		return;
+	}
 
 	/* only for interfaces with a link-layer address */
-	if (ifp->if_addrlen == 0)
+	if (ifp->if_addrlen == 0) {
+		D(bug("[AROSTCP:IN6] %s: no link-layer address (addrlen=0)\n", __func__));
 		return;
+	}
 
 	/* allocate address record */
 	m = m_getclr(M_WAIT, MT_IFADDR);
-	if (m == NULL)
+	if (m == NULL) {
+		D(bug("[AROSTCP:IN6] %s: m_getclr failed\n", __func__));
 		return;
+	}
 
 	ia = mtod(m, struct in6_ifaddr *);
 
@@ -449,10 +460,14 @@ in6_if_up(struct ifnet *ifp)
 			}
 		}
 		if (sdl == NULL || sdl->sdl_alen < 6) {
+			D(bug("[AROSTCP:IN6] %s: no AF_LINK sdl (sdl=%p alen=%d)\n",
+			    __func__, sdl, sdl ? sdl->sdl_alen : -1));
 			m_free(m);
 			return;
 		}
 		u_int8_t *mac = (u_int8_t *)LLADDR(sdl);
+		D(bug("[AROSTCP:IN6] %s: MAC=%02x:%02x:%02x:%02x:%02x:%02x\n",
+		    __func__, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]));
 		sin6.sin6_addr.s6_addr[8]  = mac[0] ^ 0x02;
 		sin6.sin6_addr.s6_addr[9]  = mac[1];
 		sin6.sin6_addr.s6_addr[10] = mac[2];
@@ -463,9 +478,18 @@ in6_if_up(struct ifnet *ifp)
 		sin6.sin6_addr.s6_addr[15] = mac[5];
 	} else {
 		/* can't form EUI-64 */
+		D(bug("[AROSTCP:IN6] %s: addrlen=%d, can't form EUI-64\n",
+		    __func__, ifp->if_addrlen));
 		m_free(m);
 		return;
 	}
+
+	D(bug("[AROSTCP:IN6] %s: link-local = fe80::%02x%02x:%02xff:fe%02x:%02x%02x\n",
+	    __func__,
+	    sin6.sin6_addr.s6_addr[8], sin6.sin6_addr.s6_addr[9],
+	    sin6.sin6_addr.s6_addr[10],
+	    sin6.sin6_addr.s6_addr[13],
+	    sin6.sin6_addr.s6_addr[14], sin6.sin6_addr.s6_addr[15]));
 
 	/* link into global and ifp lists */
 	if (in6_ifaddr) {
@@ -491,6 +515,7 @@ in6_if_up(struct ifnet *ifp)
 	ia->ia6_plen = 64;
 	ia->ia6_ifaflags = IN6_IFF_AUTOCONF;
 
+	D(bug("[AROSTCP:IN6] %s: calling in6_ifinit\n", __func__));
 	(void)in6_ifinit(ifp, ia, &sin6, 0);
 
 	/*
@@ -499,6 +524,7 @@ in6_if_up(struct ifnet *ifp)
 	 *  - ff02::1        (all-nodes) — needed to receive Router Advertisements
 	 *  - ff02::1:ffXX:XXXX (solicited-node) — needed for NDP / DAD
 	 */
+	D(bug("[AROSTCP:IN6] %s: joining multicast groups\n", __func__));
 	{
 		struct in6_addr maddr;
 
@@ -525,8 +551,11 @@ in6_if_up(struct ifnet *ifp)
 	 * Initialize ND state for this interface and start DAD.
 	 * After DAD completes, nd6_dad_timer() will send the first RS.
 	 */
+	D(bug("[AROSTCP:IN6] %s: calling nd6_ifattach\n", __func__));
 	nd6_ifattach(ifp);
+	D(bug("[AROSTCP:IN6] %s: calling nd6_dad_start\n", __func__));
 	nd6_dad_start(ia);
+	D(bug("[AROSTCP:IN6] %s: done for %s%d\n", __func__, ifp->if_name, ifp->if_unit));
 }
 
 /* ------------------------------------------------------------------
@@ -601,16 +630,28 @@ sana_add_mcast6(struct ifnet *ifp, struct in6_addr *maddr)
 
 	in6_map_mcast_macaddr(maddr, mac);
 
+	D(bug("[AROSTCP:IN6] %s: %s%d registering eth mcast %02x:%02x:%02x:%02x:%02x:%02x\n",
+	    __func__, ifp->if_name, ifp->if_unit,
+	    mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]));
+
 	req = CreateIOSana2Req(ssc);
-	if (req == NULL)
+	if (req == NULL) {
+		D(bug("[AROSTCP:IN6] %s: CreateIOSana2Req failed\n", __func__));
 		return ENOBUFS;
+	}
 
 	req->ios2_Req.io_Command = S2_ADDMULTICASTADDRESS;
 	bcopy(mac, req->ios2_SrcAddr, 6);
+	D(bug("[AROSTCP:IN6] %s: calling DoIO(S2_ADDMULTICASTADDRESS)\n", __func__));
 	DoIO((struct IORequest *)req);
 
-	if (req->ios2_Req.io_Error)
+	if (req->ios2_Req.io_Error) {
+		D(bug("[AROSTCP:IN6] %s: DoIO error=%d\n",
+		    __func__, req->ios2_Req.io_Error));
 		error = EIO;
+	} else {
+		D(bug("[AROSTCP:IN6] %s: DoIO success\n", __func__));
+	}
 
 	DeleteIOSana2Req(req);
 	return error;
@@ -659,20 +700,31 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
 {
 	struct in6_multi *in6m;
 
+	D(bug("[AROSTCP:IN6] %s: ifp=%s%d maddr=%02x%02x:%02x%02x:...:%02x%02x\n",
+	    __func__, ifp->if_name, ifp->if_unit,
+	    maddr->s6_addr[0], maddr->s6_addr[1],
+	    maddr->s6_addr[2], maddr->s6_addr[3],
+	    maddr->s6_addr[14], maddr->s6_addr[15]));
+
 	/* search for an existing entry */
 	for (in6m = in6_multihead; in6m; in6m = in6m->in6m_next) {
 		if (in6m->in6m_ifp == ifp &&
 		    IN6_ARE_ADDR_EQUAL(&in6m->in6m_addr, maddr)) {
 			in6m->in6m_refcount++;
+			D(bug("[AROSTCP:IN6] %s: existing entry, refcount=%d\n",
+			    __func__, in6m->in6m_refcount));
 			return in6m;
 		}
 	}
 
 	/* register Ethernet multicast address with the NIC */
+	D(bug("[AROSTCP:IN6] %s: calling sana_add_mcast6\n", __func__));
 	if (sana_add_mcast6(ifp, maddr) != 0) {
 		__log(LOG_ERR, "in6_addmulti: S2_ADDMULTICASTADDRESS failed for %s%d\n",
 		      ifp->if_name, ifp->if_unit);
 		/* continue anyway — some drivers accept all multicast */
+	} else {
+		D(bug("[AROSTCP:IN6] %s: sana_add_mcast6 succeeded\n", __func__));
 	}
 
 	/* allocate a new entry */
@@ -685,6 +737,7 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
 	in6m->in6m_refcount = 1;
 	in6m->in6m_next    = in6_multihead;
 	in6_multihead      = in6m;
+	D(bug("[AROSTCP:IN6] %s: created new entry\n", __func__));
 	return in6m;
 }
 

@@ -21,7 +21,7 @@
  */
 
 /*
- * Copyright (c) 1980, 1986 Regents of the University of California.
+ * Copyright (C) 1980, 1986 Regents of the University of California.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -605,6 +605,46 @@ ifioctl(so, cmd, data)
 		ifr->ifr_mtu = ifp->if_mtu;
 		break;
 
+	case SIOCGIFHWADDR:
+	{
+		struct ifaddr *ifa_link;
+		struct sockaddr_dl *sdl = NULL;
+
+		D(bug("[AROSTCP:IF] %s: SIOCGIFHWADDR for %s%d\n",
+		    __func__, ifp->if_name, ifp->if_unit));
+
+		/* Find AF_LINK address (first entry on if_addrlist) */
+		for (ifa_link = ifp->if_addrlist; ifa_link;
+		     ifa_link = ifa_link->ifa_next) {
+			D(bug("[AROSTCP:IF] %s:   ifa %p family=%d\n",
+			    __func__, ifa_link, ifa_link->ifa_addr->sa_family));
+			if (ifa_link->ifa_addr->sa_family == AF_LINK) {
+				sdl = (struct sockaddr_dl *)ifa_link->ifa_addr;
+				break;
+			}
+		}
+		if (sdl == NULL || sdl->sdl_alen == 0) {
+			D(bug("[AROSTCP:IF] %s: SIOCGIFHWADDR no hw addr (sdl=%p alen=%d)\n",
+			    __func__, sdl, sdl ? sdl->sdl_alen : -1));
+			return (EADDRNOTAVAIL);
+		}
+		D(bug("[AROSTCP:IF] %s: SIOCGIFHWADDR sdl_alen=%d MAC=%02x:%02x:%02x:%02x:%02x:%02x\n",
+		    __func__, sdl->sdl_alen,
+		    ((unsigned char *)LLADDR(sdl))[0],
+		    ((unsigned char *)LLADDR(sdl))[1],
+		    ((unsigned char *)LLADDR(sdl))[2],
+		    ((unsigned char *)LLADDR(sdl))[3],
+		    ((unsigned char *)LLADDR(sdl))[4],
+		    ((unsigned char *)LLADDR(sdl))[5]));
+		bzero(&ifr->ifr_hwaddr, sizeof(ifr->ifr_hwaddr));
+		ifr->ifr_hwaddr.sa_family = sdl->sdl_type;
+		ifr->ifr_hwaddr.sa_len = sdl->sdl_alen;
+		bcopy(LLADDR(sdl), ifr->ifr_hwaddr.sa_data,
+		    (sdl->sdl_alen > sizeof(ifr->ifr_hwaddr.sa_data))
+		    ? sizeof(ifr->ifr_hwaddr.sa_data) : sdl->sdl_alen);
+		break;
+	}
+
 	case SIOCSIFFLAGS:
 		/* if_down() is kludged for Sana-II driver ioctl */
 		if (ifp->if_flags & IFF_UP && (ifr->ifr_flags & IFF_UP) == 0) {
@@ -621,10 +661,24 @@ ifioctl(so, cmd, data)
 			ifp->if_flags = (ifp->if_flags & IFF_CANTCHANGE) |
 				(ifr->ifr_flags &~ IFF_CANTCHANGE);
 #if INET6
-			/* auto-configure link-local IPv6 when interface goes up */
+			/*
+			 * Auto-configure link-local IPv6 when interface
+			 * transitions to UP, but only if the hardware is
+			 * already running.  If not, sana_restore() will
+			 * call in6_if_up() once the device is online.
+			 * Without this guard, in6_if_up → in6_ifinit →
+			 * sana_ioctl(SIOCSIFADDR) would trigger sana_run
+			 * + sana_up as a side-effect, changing the device
+			 * initialisation order and breaking DHCP timing.
+			 */
+			D(bug("[AROSTCP:IF] %s: SIOCSIFFLAGS %s%d was_up=%d flags=0x%x\n",
+			    __func__, ifp->if_name, ifp->if_unit,
+			    was_up, ifp->if_flags));
 			if (!was_up && (ifp->if_flags & IFF_UP) &&
+			    (ifp->if_flags & IFF_DRV_RUNNING) &&
 			    !(ifp->if_flags & IFF_LOOPBACK)) {
 				void in6_if_up(struct ifnet *);
+				D(bug("[AROSTCP:IF] %s: SIOCSIFFLAGS calling in6_if_up\n", __func__));
 				in6_if_up(ifp);
 			}
 #endif

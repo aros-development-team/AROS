@@ -1,4 +1,4 @@
-/* Copyright (c) 2005 by Pavel Fedin.
+/* Copyright (C) 2005 by Pavel Fedin.
  * Copyright (C) 2005 - 2026 The AROS Dev Team
  */
 #ifndef MIAMI_API_H

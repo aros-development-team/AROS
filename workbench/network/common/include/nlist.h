@@ -1,7 +1,7 @@
 /*      $NetBSD: nlist.h,v 1.5 1994/10/26 00:56:11 cgd Exp $    */
 
 /*-
- * Copyright (c) 1991, 1993
+ * Copyright (C) 1991, 1993
  *      The Regents of the University of California.  All rights reserved.
  * (c) UNIX System Laboratories, Inc.
  * All or some portions of this file are derived from material licensed

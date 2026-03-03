@@ -3,7 +3,7 @@
 /*
  * $Id$
  *
- * Copyright (c) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
+ * Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * 
