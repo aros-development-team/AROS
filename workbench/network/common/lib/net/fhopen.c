@@ -2,7 +2,7 @@
  *
  *      fhopen.c - open level 1 file from an AmigaDOS file handle (SAS/C)
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */

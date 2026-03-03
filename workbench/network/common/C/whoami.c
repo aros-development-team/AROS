@@ -5,10 +5,10 @@
  * Author: ppessi <Pekka.Pessi@hut.fi>
  *         Pavel Fedin <sonic_amiga@rambler.ru>
  *
- * Copyright © 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>,
+ * Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>,
  *		    Helsinki University of Technology, Finland.
  *		    All rights reserved.
- * Copyright © 2005 Pavel Fedin
+ * Copyright (C) 2005 Pavel Fedin
  *
  * Created      : Wed Jan 12 01:40:38 1994 ppessi
  * Last modified: Thu Sep 29 22:29:20 2005 sonic
@@ -17,9 +17,9 @@
 //#include "whoami_rev.h"
 
 static const char version[] = "$VER: whoami 1.3 (29.09.2005)\n"
-  "Copyright © 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
+  "Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
   "Helsinki University of Technology, Finland.\n"
-  "Copyright © 2005 Pavel Fedin\n";
+  "Copyright (C) 2005 Pavel Fedin\n";
 
 /****** utilities/whoami ***************************************************
 

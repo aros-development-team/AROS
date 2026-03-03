@@ -2,10 +2,10 @@
 #
 # Makefile for AmiTCP/IP network support library 
 #
-# Copyright © 2005 - 2006 Pavel Fedin
+# Copyright (C) 2005 - 2006 Pavel Fedin
 #
 # Based on Smakefile which is
-# Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+# Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
 #		   Helsinki University of Technology, Finland.
 #		   All rights reserved. 
 #

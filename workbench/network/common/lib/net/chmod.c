@@ -2,12 +2,12 @@
  *
  *      chmod.c - chmod() for usergroup link library
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  *
  *      This function is based on SetOwner37 code
- *      Copyright © 1993 by Geert Uytterhoeven
+ *      Copyright (C) 1993 by Geert Uytterhoeven
  */
 
 /****** net.lib/chmod *********************************************************

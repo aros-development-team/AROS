@@ -2,7 +2,7 @@
  *
  *      set_socket_stdio.c - redirect stdio to/from a socket
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */

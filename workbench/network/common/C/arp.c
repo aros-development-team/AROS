@@ -2,10 +2,10 @@
  *
  * arp.c --- arp utility for AmiTCP/IP
  *
- * Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>,
+ * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>,
  *                  Helsinki University of Technology, Finland.
  *                  All rights reserved.
- * Copyright © 2005 Pavel Fedin
+ * Copyright (C) 2005 Pavel Fedin
  *
  * Created      : Sun Apr 18 05:08:20 1993 ppessi
  * Last modified: Wed Feb 16 19:48:50 1994 ppessi
@@ -44,7 +44,7 @@ static const char version[] __attribute__((used)) = "$VER: arp 3.2 (12.09.2005) 
 
 
 /*
- * Copyright © 1984 Regents of the University of California.
+ * Copyright (C) 1984 Regents of the University of California.
  * All rights reserved.
  *
  * This code is derived from software contributed to Berkeley by

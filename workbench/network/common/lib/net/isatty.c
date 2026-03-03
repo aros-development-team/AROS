@@ -2,7 +2,7 @@
  *
  *      isatty.c - check is a file is a terminal (interactive) or not (SAS/C)
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */

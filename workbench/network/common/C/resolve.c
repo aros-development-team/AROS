@@ -5,18 +5,18 @@
  * Author: ppessi <Pekka.Pessi@hut.fi>
  *	   Pavel Fedin <sonic_amiga@rambler.ru>
  *
- * Copyright © 1994 AmiTCP/IP Group, <AmiTCP-group@hut.fi>
+ * Copyright (C) 1994 AmiTCP/IP Group, <AmiTCP-group@hut.fi>
  *                  Helsinki University of Technology, Finland.
- 8 Copyright © 2005 Pavel Fedin
+ 8 Copyright (C) 2005 Pavel Fedin
  *
  * Created      : Tue Jan 11 22:33:06 1994 ppessi
  * Last modified: Mon Oct 17 12:25:13 2005 sonic
  */
 
 static const char version[] __attribute__((used)) = "$VER: resolve 5.0 (28.02.2026)\n"
-"Copyright © 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
+"Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>\n"
 "Helsinki University of Technology, Finland.\n"
-"Copyright © 2005 Pavel Fedin <sonic_amiga@rambler.ru";
+"Copyright (C) 2005 Pavel Fedin <sonic_amiga@rambler.ru";
 
 #define USE_INLINE_STDARG
 

@@ -2,11 +2,11 @@
  *
  *      linkntoa.c - link level address printing
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  *
- *      Copyright © 1991 Regents of the University of California.
+ *      Copyright (C) 1991 Regents of the University of California.
  */
 
 #include <sys/types.h>

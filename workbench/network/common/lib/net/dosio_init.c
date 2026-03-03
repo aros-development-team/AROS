@@ -2,7 +2,7 @@
  *
  *      dosio_init.c - SAS C auto initialization functions for DOSIO
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */

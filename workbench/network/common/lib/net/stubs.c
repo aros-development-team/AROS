@@ -2,7 +2,7 @@
  *
  *      stubs.c - common stubs for bsdsocket.library
  *
- *      Copyright © 1994 AmiTCP/IP Group,
+ *      Copyright (C) 1994 AmiTCP/IP Group,
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
  */
@@ -16,6 +16,10 @@
 #include <sys/socket.h>
 
 #include <netinet/in.h>
+
+/* Standard IPv6 address constants (POSIX / RFC 2553) */
+const struct in6_addr in6addr_any      = IN6ADDR_ANY_INIT;
+const struct in6_addr in6addr_loopback = IN6ADDR_LOOPBACK_INIT;
 
 #undef select
 

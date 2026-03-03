@@ -2,10 +2,10 @@
  * 
  *      printuserfault.c - Print a usergroup error message (DOS)
  *
- *      Copyright © 1994 AmiTCP/IP Group, 
+ *      Copyright (C) 1994 AmiTCP/IP Group, 
  *                       Network Solutions Development Inc.
  *                       All rights reserved.
- *      Copyright © 2005 Pavel Fedin
+ *      Copyright (C) 2005 Pavel Fedin
  */
 
 /****** net.lib/PrintUserFault ************************************************

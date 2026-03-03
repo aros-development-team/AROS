@@ -1,8 +1,8 @@
 /*
- * Copyright © 1983, 1989 The Regents of the University of California.
+ * Copyright (C) 1983, 1989 The Regents of the University of California.
  * All rights reserved.
- * Copyright © 2005 Pavel Fedin
- * Copyright © 2005-2026, The AROS Development Team.
+ * Copyright (C) 2005 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
