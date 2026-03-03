@@ -4090,7 +4090,8 @@ $(%(mmake)-configflag) : $(%(mmake)-touchfileflag) $(TOP)/$(CURDIR)/mmakefile
     usecppflags=yes extracppflags= \
     usecflags=yes extracflags= \
     usecxxflags=yes extracxxflags= \
-    extraldflags= useldlinker=no
+    extraldflags= useldlinker=no \
+    usecrosstoolsdir=yes
 
 ifneq (%(prefix),)
     %(mmake)-prefix          := %(prefix)
@@ -4105,16 +4106,27 @@ else
 endif
     %(mmake)-cmake-env += CMAKE_GENERATOR='Unix Makefiles'
 ifeq (%(compiler),host)
+    ifeq (%(usecrosstoolsdir),yes)
     %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags)"
     %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags)"
     %(mmake)-cmake-env += CXXFLAGS="$(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags)"
+    else
+    %(mmake)-cmake-env += LDFLAGS="$(HOST_LDFLAGS) $(USER_LDFLAGS) %(extraldflags)"
+    %(mmake)-cmake-env += CFLAGS="$(HOST_CFLAGS) %(extracflags)"
+    %(mmake)-cmake-env += CXXFLAGS="$(HOST_CXXFLAGS) %(extracxxflags)"
+    endif
     %(mmake)-cmake-env += CPPFLAGS="$(HOST_CPPFLAGS) %(extracppflags)"
     %(mmake)-cmake_opts      := -DCMAKE_INSTALL_PREFIX=$(%(mmake)-prefix)
 ifeq (,$(findstring CMAKE_BUILD_TYPE,%(extraoptions)))
     %(mmake)-cmake_opts      += -DCMAKE_BUILD_TYPE=Release
 endif
+    ifeq (%(usecrosstoolsdir),yes)
     %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
                                 -DCMAKE_EXE_LINKER_FLAGS="$(strip $(HOST_LDFLAGS) -L$(CROSSTOOLSDIR)/lib $(USER_LDFLAGS) %(extraldflags))"
+    else
+    %(mmake)-cmake_opts      += -DCMAKE_LINKER="$(strip $(HOST_LD))" \
+                                -DCMAKE_EXE_LINKER_FLAGS="$(strip $(HOST_LDFLAGS) $(USER_LDFLAGS) %(extraldflags))"
+    endif
     ifeq (%(useldlinker),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_LINK_EXECUTABLE="<CMAKE_LINKER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>"
     endif
@@ -4124,7 +4136,11 @@ endif
         %(mmake)-cmake_opts      += -DCMAKE_C_COMPILER="$(strip $(HOST_DEF_CC))"
     endif
     ifeq (%(usecflags),yes)
+        ifeq (%(usecrosstoolsdir),yes)
         %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(HOST_CFLAGS) -I$(CROSSTOOLSDIR)/include %(extracflags))"
+        else
+        %(mmake)-cmake_opts  += -DCMAKE_C_FLAGS="$(strip $(HOST_CFLAGS) %(extracflags))"
+        endif
     endif
     ifeq (%(usecppflags),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CPP_FLAGS="$(strip $(HOST_CPPFLAGS) %(extracppflags))"
@@ -4135,7 +4151,11 @@ endif
         %(mmake)-cmake_opts      += -DCMAKE_CXX_COMPILER="$(strip $(HOST_CXX))"
     endif
     ifeq (%(usecxxflags),yes)
+        ifeq (%(usecrosstoolsdir),yes)
         %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(HOST_CXXFLAGS) -I$(CROSSTOOLSDIR)/include %(extracxxflags))"
+        else
+        %(mmake)-cmake_opts  += -DCMAKE_CXX_FLAGS="$(strip $(HOST_CXXFLAGS) %(extracxxflags))"
+        endif
     endif
     ifeq (%(package),)
         %(mmake)-pkgdir      := $(HOSTGENDIR)/$(CURDIR)
