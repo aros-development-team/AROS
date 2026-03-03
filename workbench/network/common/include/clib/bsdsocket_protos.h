@@ -2,7 +2,7 @@
 #define CLIB_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
@@ -28,7 +28,7 @@ AROS_LP3(int, socket,
 );
 AROS_LP3(int, bind,
          AROS_LPA(int, s, D0),
-         AROS_LPA(struct sockaddr *, name, A0),
+         AROS_LPA(const struct sockaddr *, name, A0),
          AROS_LPA(socklen_t, namelen, D1),
          LIBBASETYPEPTR, SocketBase, 6, BSDSocket
 );
@@ -45,7 +45,7 @@ AROS_LP3(int, accept,
 );
 AROS_LP3(int, connect,
          AROS_LPA(int, s, D0),
-         AROS_LPA(struct sockaddr *, name, A0),
+         AROS_LPA(const struct sockaddr *, name, A0),
          AROS_LPA(socklen_t, namelen, D1),
          LIBBASETYPEPTR, SocketBase, 9, BSDSocket
 );
@@ -90,7 +90,7 @@ AROS_LP5(int, setsockopt,
          AROS_LPA(int, s, D0),
          AROS_LPA(int, level, D1),
          AROS_LPA(int, optname, D2),
-         AROS_LPA(void *, optval, A0),
+         AROS_LPA(const void *, optval, A0),
          AROS_LPA(socklen_t, optlen, D3),
          LIBBASETYPEPTR, SocketBase, 15, BSDSocket
 );

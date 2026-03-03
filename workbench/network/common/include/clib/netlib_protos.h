@@ -8,10 +8,11 @@
 **
 **	Prototypes for netlib utility functions
 **
-**	Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
+**	Copyright (C) 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
 **                  Helsinki University of Technology, Finland.
 **                  All rights reserved.
-**	Copyright © 2005 Pavel Fedin
+**	Copyright (C) 2005 Pavel Fedin
+**  Copyright (C) 2005-2026, The AROS Development Team.
 */
 
 #ifndef EXEC_TYPES_H

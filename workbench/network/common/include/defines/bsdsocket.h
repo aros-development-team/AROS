@@ -2,7 +2,7 @@
 #define DEFINES_BSDSOCKET_PROTOS_H
 
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -35,7 +35,7 @@
 #define __bind_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, bind, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(struct sockaddr *,(__arg2),A0), \
+                  AROS_LCA(const struct sockaddr *,(__arg2),A0), \
                   AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 6, BSDSocket)
 
@@ -66,7 +66,7 @@
 #define __connect_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(int, connect, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(struct sockaddr *,(__arg2),A0), \
+                  AROS_LCA(const struct sockaddr *,(__arg2),A0), \
                   AROS_LCA(socklen_t,(__arg3),D1), \
         struct Library *, (__SocketBase), 9, BSDSocket)
 
@@ -145,7 +145,7 @@
                   AROS_LCA(int,(__arg1),D0), \
                   AROS_LCA(int,(__arg2),D1), \
                   AROS_LCA(int,(__arg3),D2), \
-                  AROS_LCA(void *,(__arg4),A0), \
+                  AROS_LCA(const void *,(__arg4),A0), \
                   AROS_LCA(socklen_t,(__arg5),D3), \
         struct Library *, (__SocketBase), 15, BSDSocket)
 

@@ -3,7 +3,8 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
- * Copyright (C) 2005 - 2011 Pavel Fedin
+ * Copyright (C) 2005-2011 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Library General Public License
@@ -131,6 +132,9 @@ struct addrinfo {
 			/* following for getaddrinfo() */
 #define	AI_PASSIVE	1      /* socket is intended for bind() + listen() */
 #define	AI_CANONNAME	2      /* return canonical name */
+#define	AI_NUMERICHOST	4      /* hostname is a numeric address string */
+#define	AI_NUMERICSERV	8      /* service name is a numeric port string */
+#define	AI_ADDRCONFIG	0x0400 /* only return addresses configured on host */
 
 			/* following for getnameinfo() */
 #define	NI_MAXHOST	  1025	/* max hostname returned */

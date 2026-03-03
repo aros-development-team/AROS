@@ -328,6 +328,51 @@ struct ip_opts {
 #define	IP_RECVRETOPTS	6	/* bool; receive IP options for response */
 #define	IP_RECVDSTADDR	7	/* bool; receive IP dst addr w/datagram */
 #define	IP_RETOPTS	8	/* ip_opts; set/get IP per-packet options */
+#define	IP_MULTICAST_IF		9	/* set/get IP multicast interface */
+#define	IP_MULTICAST_TTL	10	/* set/get IP multicast TTL */
+#define	IP_MULTICAST_LOOP	11	/* set/get IP multicast loopback */
+#define	IP_ADD_MEMBERSHIP	12	/* add an IP group membership */
+#define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
+#define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
+#define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
+
+/*
+ * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
+ */
+struct ip_mreq {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Argument structure for IP_ADD_SOURCE_MEMBERSHIP et al.
+ */
+struct ip_mreq_source {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_sourceaddr;	/* IP address of source */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Protocol-independent multicast (RFC 3678).
+ */
+#include <sys/_sockaddr_storage.h>
+
+struct group_req {
+	uint32_t		gr_interface;	/* interface index */
+	struct sockaddr_storage	gr_group;	/* group address */
+};
+
+struct group_source_req {
+	uint32_t		gsr_interface;	/* interface index */
+	struct sockaddr_storage	gsr_group;	/* group address */
+	struct sockaddr_storage	gsr_source;	/* source address */
+};
+
+#define	MCAST_JOIN_GROUP	42	/* join any-source group */
+#define	MCAST_LEAVE_GROUP	43	/* leave all-source group */
+#define	MCAST_JOIN_SOURCE_GROUP	46	/* join source-specific group */
+#define	MCAST_LEAVE_SOURCE_GROUP 47	/* leave source-specific group */
 
 #ifdef KERNEL
 struct in_addr in_makeaddr(u_long net,

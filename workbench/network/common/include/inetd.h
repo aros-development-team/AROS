@@ -4,9 +4,10 @@
 /*
  *      Internet daemon interface definitions
  *
- *      Copyright © 1994 AmiTCP/IP Group,
+ *      Copyright (C) 1994 AmiTCP/IP Group,
  *                       Network Solutions Development, Inc.
  *                       All rights reserved.
+ *      Copyright (C) 2005-2026, The AROS Development Team.
  */
 
 /* 

@@ -2,7 +2,7 @@
 #define CLIB_MIAMIPANEL_PROTOS_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>

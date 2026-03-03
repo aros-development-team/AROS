@@ -2,8 +2,7 @@
 #define PROTO_MIAMIPANEL_H
 
 /*
-    *** Automatically generated from 'miamipanel.conf'. Edits will be lost. ***
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2005, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/types.h>

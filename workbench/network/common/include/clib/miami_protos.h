@@ -2,7 +2,7 @@
 #define CLIB_MIAMI_PROTOS_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/libcall.h>
@@ -137,13 +137,13 @@ AROS_LP1(void, freeaddrinfo,
 );
 AROS_LP4(LONG, getaddrinfo,
          AROS_LPA(const char *, hostname, A0),
-         AROS_LPA(char *, servicename, A1),
-         AROS_LPA(struct addrinfo *, hintsp, A2),
+         AROS_LPA(const char *, servicename, A1),
+         AROS_LPA(const struct addrinfo *, hintsp, A2),
          AROS_LPA(struct addrinfo **, result, A3),
          LIBBASETYPEPTR, MiamiBase, 44, Miami
 );
 AROS_LP7(LONG, getnameinfo,
-         AROS_LPA(struct sockaddr *, sockaddr, A0),
+         AROS_LPA(const struct sockaddr *, sockaddr, A0),
          AROS_LPA(LONG, addrlen, D0),
          AROS_LPA(char *, hostname, A1),
          AROS_LPA(LONG, hostlen, D1),

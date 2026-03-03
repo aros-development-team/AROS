@@ -2,7 +2,7 @@
 #define	_ENDIAN_H_
 
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 

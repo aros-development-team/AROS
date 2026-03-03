@@ -2,7 +2,7 @@
 #define DEFINES_MIAMI_PROTOS_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2005-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -209,7 +209,7 @@
 #define __inet_ntop_WB(__MiamiBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(STRPTR, inet_ntop, \
                   AROS_LCA(LONG, (__arg1), D0), \
-                  AROS_LCA(void *, (__arg2), A0), \
+                  AROS_LCA(const void *, (__arg2), A0), \
                   AROS_LCA(char *, (__arg3), A1), \
                   AROS_LCA(LONG, (__arg4), D1), \
         struct Library *, (__MiamiBase), 38, Miami)
@@ -264,8 +264,8 @@
 #define __getaddrinfo_WB(__MiamiBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(LONG, getaddrinfo, \
                   AROS_LCA(const char *, (__arg1), A0), \
-                  AROS_LCA(char *, (__arg2), A1), \
-                  AROS_LCA(struct addrinfo *, (__arg3), A2), \
+                  AROS_LCA(const char *, (__arg2), A1), \
+                  AROS_LCA(const struct addrinfo *, (__arg3), A2), \
                   AROS_LCA(struct addrinfo **, (__arg4), A3), \
         struct Library *, (__MiamiBase), 44, Miami)
 
@@ -274,7 +274,7 @@
 
 #define __getnameinfo_WB(__MiamiBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6, __arg7) \
         AROS_LC7(LONG, getnameinfo, \
-                  AROS_LCA(struct sockaddr *, (__arg1), A0), \
+                  AROS_LCA(const struct sockaddr *, (__arg1), A0), \
                   AROS_LCA(LONG, (__arg2), D0), \
                   AROS_LCA(char *, (__arg3), A1), \
                   AROS_LCA(LONG, (__arg4), D1), \
