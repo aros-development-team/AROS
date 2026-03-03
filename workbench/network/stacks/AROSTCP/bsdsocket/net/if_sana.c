@@ -1072,21 +1072,35 @@ sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req)
 static void
 sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req)
 {
-  struct mbuf *m = sana_read(ssc, req, 0, &ssc->ss_ip6.sent, "sana_ip6_read",
-			     ssc->ss_if.if_mtu);
+  struct mbuf *m;
   spl_t s;
 
+  D(bug("[AROSTCP:SANA] %s: %s%d ioError=%d wireError=%ld len=%ld\n",
+      __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
+      req->ioip_s2.ios2_Req.io_Error,
+      (long)req->ioip_s2.ios2_WireError,
+      (long)req->ioip_s2.ios2_DataLength));
+
+  m = sana_read(ssc, req, 0, &ssc->ss_ip6.sent, "sana_ip6_read",
+		ssc->ss_if.if_mtu);
+
   if (m) {
+    D(bug("[AROSTCP:SANA] %s: %s%d pktlen=%d flags=0x%x\n",
+        __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
+        m->m_pkthdr.len, m->m_flags));
     s = splimp();
     if (IF_QFULL(&ip6intrq)) {
       IF_DROP(&ip6intrq);
       m_freem(m);
+      D(bug("[AROSTCP:SANA] %s: ip6intrq FULL, dropped\n", __func__));
     } else {
       m->m_pkthdr.rcvif = (struct ifnet *)ssc;
       IF_ENQUEUE(&ip6intrq, m);
       schednetisr_nosignal(NETISR_IPV6);
     }
     splx(s);
+  } else {
+    D(bug("[AROSTCP:SANA] %s: sana_read returned NULL\n", __func__));
   }
 }
 #endif /* INET6 */

@@ -437,6 +437,26 @@ rip6_output(void *args, ...)
         }
     }
 
+    /*
+     * Compute ICMPv6 checksum.  For raw sockets with IPPROTO_ICMPV6,
+     * the kernel fills in the checksum (FreeBSD behaviour).
+     */
+    if (rp->rcb_proto.sp_protocol == IPPROTO_ICMPV6) {
+        struct icmp6_hdr *icmp6;
+        int icmp6len = m->m_pkthdr.len - sizeof(struct ip6_hdr);
+
+        if (m->m_len < (int)(sizeof(struct ip6_hdr) + sizeof(struct icmp6_hdr))) {
+            m = m_pullup(m, sizeof(struct ip6_hdr) + sizeof(struct icmp6_hdr));
+            if (m == NULL)
+                return ENOBUFS;
+            ip6 = mtod(m, struct ip6_hdr *);
+        }
+        icmp6 = (struct icmp6_hdr *)(ip6 + 1);
+        icmp6->icmp6_cksum = 0;
+        icmp6->icmp6_cksum = in6_cksum(m, IPPROTO_ICMPV6,
+            sizeof(struct ip6_hdr), icmp6len);
+    }
+
     return ip6_output(m, NULL, NULL, 0, NULL, NULL, NULL);
 }
 

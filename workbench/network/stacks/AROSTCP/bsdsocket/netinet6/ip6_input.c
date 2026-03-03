@@ -128,6 +128,22 @@ ip6_input(struct mbuf *m)
 
     ip6stat.ip6s_total++;
 
+    D({
+        struct ip6_hdr *_ip6 = mtod(m, struct ip6_hdr *);
+        u_int8_t *s = (u_int8_t *)&_ip6->ip6_src;
+        u_int8_t *d = (u_int8_t *)&_ip6->ip6_dst;
+        bug("[AROSTCP:IP6] %s: pktlen=%d nxt=%d\n"
+            "  src=%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+            "%02x%02x:%02x%02x:%02x%02x:%02x%02x\n"
+            "  dst=%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+            "%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+            __func__, m->m_pkthdr.len, _ip6->ip6_nxt,
+            s[0],s[1],s[2],s[3],s[4],s[5],s[6],s[7],
+            s[8],s[9],s[10],s[11],s[12],s[13],s[14],s[15],
+            d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],
+            d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15]);
+    });
+
     /* pull up to minimum header size */
     if (m->m_len < sizeof(struct ip6_hdr) &&
         (m = m_pullup(m, sizeof(struct ip6_hdr))) == NULL) {
