@@ -13,11 +13,13 @@ USER_CPPFLAGS := \
 #MM- workbench-network-common-c : \
 #MM     workbench-network-common-c-base \
 #MM     workbench-network-common-c-miami \
-#MM     workbench-network-common-c-usergroup
+#MM     workbench-network-common-c-usergroup \
+#MM     workbench-network-common-c-ip
 #MM- workbench-network-common-c-quick : \
 #MM     workbench-network-common-c-base-quick \
 #MM     workbench-network-common-c-miami-quick \
-#MM     workbench-network-common-c-usergroup-quick
+#MM     workbench-network-common-c-usergroup-quick \
+#MM     workbench-network-common-c-ip-quick
 
 #MM workbench-network-common-c-base : \
 #MM     network-includes \
