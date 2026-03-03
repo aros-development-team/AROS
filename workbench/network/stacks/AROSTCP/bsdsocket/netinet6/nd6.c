@@ -60,6 +60,8 @@ struct nd6stat nd6stat = {0};
 
 int nd6_maxndopt   = 10;		/* max options in a single ND msg */
 int nd6_maxqueuelen = 1;		/* max packets held per entry */
+int nd6_inuse      = 0;		/* neighbor cache entries in use */
+int nd6_allocated  = 0;		/* total neighbor cache allocations */
 
 /* per-interface ND info array, indexed by ifp->if_index */
 #define ND6_MAXIFS 16
@@ -254,9 +256,13 @@ nd6_options(union nd_opts *ndopts)
  *
  * dst    - target IPv6 address
  * create - if non-zero, create a new entry if not found
- * ifp    - interface to use
+ * ifp    - interface to use (used for scope, may be NULL)
  *
  * Returns the routing entry, or NULL.
+ *
+ * Based on FreeBSD 4.11 nd6_lookup():
+ *   - If the found route doesn't have RTF_LLINFO (e.g. default route),
+ *     return NULL to prevent using non-neighbor routes.
  * ------------------------------------------------------------------ */
 struct rtentry *
 nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
@@ -270,10 +276,39 @@ nd6_lookup(struct in6_addr *dst, int create, struct ifnet *ifp)
 	sin6.sin6_addr   = *dst;
 
 	rt = rtalloc1((struct sockaddr *)&sin6, create);
-	if (rt)
+	if (rt) {
+		if ((rt->rt_flags & RTF_LLINFO) == 0) {
+			/*
+			 * Found a route but it's not a neighbor cache
+			 * entry (e.g. default route, gateway route).
+			 * Don't use it for NDP.
+			 */
+			if (create) {
+				rt->rt_refcnt--;
+				return NULL;
+			}
+		}
 		rt->rt_refcnt--;
+	}
 
 	return rt;
+}
+
+/* ------------------------------------------------------------------
+ * nd6_free - delete a neighbor cache entry.
+ *
+ * Removes the route entry and its associated llinfo_nd6.
+ * Based on FreeBSD 4.11 nd6_free() (simplified — no default router
+ * list management yet).
+ * ------------------------------------------------------------------ */
+void
+nd6_free(struct rtentry *rt)
+{
+	if (rt == NULL)
+		return;
+
+	rtrequest(RTM_DELETE, rt_key(rt), (struct sockaddr *)0,
+	    rt_mask(rt), 0, (struct rtentry **)0);
 }
 
 /* ------------------------------------------------------------------
@@ -351,22 +386,31 @@ nd6_cache_lladdr(struct ifnet *ifp, struct in6_addr *from,
 	if (rt == NULL)
 		return ENOBUFS;
 
+	/*
+	 * Validate the route: must be an LLINFO host route, not
+	 * a gateway route.  (FreeBSD 4.11 check)
+	 */
+	if ((rt->rt_flags & (RTF_GATEWAY | RTF_LLINFO)) != RTF_LLINFO) {
+		nd6_free(rt);
+		return EINVAL;
+	}
+
 	ln = (struct llinfo_nd6 *)rt->rt_llinfo;
 	if (ln == NULL) {
-		/* allocate neighbor cache entry */
-		MALLOC(ln, struct llinfo_nd6 *, sizeof(*ln), M_PCB, M_NOWAIT);
-		if (ln == NULL)
-			return ENOBUFS;
-		bzero(ln, sizeof(*ln));
-		rt->rt_llinfo = (caddr_t)ln;
-		ln->ln_rt     = rt;
-		ln->ln_state  = ND6_LLINFO_NOSTATE;
-		/* insert into list */
-		ln->ln_next = llinfo_nd6.ln_next;
-		ln->ln_prev = &llinfo_nd6;
-		llinfo_nd6.ln_next->ln_prev = ln;
-		llinfo_nd6.ln_next = ln;
+		nd6_free(rt);
+		return EINVAL;
 	}
+	if (rt->rt_gateway == NULL) {
+		nd6_free(rt);
+		return EINVAL;
+	}
+
+	/*
+	 * Ensure gateway is AF_LINK.  Normally nd6_rtrequest(RTM_RESOLVE)
+	 * converts it, but defend against routes created by other paths.
+	 */
+	if (rt->rt_gateway && rt->rt_gateway->sa_family != AF_LINK)
+		nd6_storelladdr(rt);
 
 	sdl = (rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK)
 	    ? (struct sockaddr_dl *)rt->rt_gateway : NULL;
@@ -480,7 +524,10 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 	case ND6_LLINFO_STALE:
 	case ND6_LLINFO_DELAY:
 	case ND6_LLINFO_PROBE:
-		/* have a link-layer address */
+		/* have a link-layer address — ensure gateway is AF_LINK */
+		if (rt->rt_gateway &&
+		    rt->rt_gateway->sa_family != AF_LINK)
+			nd6_storelladdr(rt);
 		if (rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
 			struct sockaddr_dl *sdl =
 			    (struct sockaddr_dl *)rt->rt_gateway;
@@ -705,48 +752,220 @@ nd6_timer(void *arg)
  * ================================================================== */
 
 /* ------------------------------------------------------------------
+ * nd6_storelladdr - convert route gateway to AF_LINK sockaddr_dl.
+ *
+ * When a route is cloned from an RTF_CLONING prefix route via
+ * RTM_RESOLVE, the gateway is copied from the parent and has
+ * sa_family == AF_INET6.  NDP needs an AF_LINK (sockaddr_dl)
+ * gateway so that nd6_cache_lladdr() and nd6_resolve() can store
+ * and retrieve the resolved link-layer address.
+ *
+ * The gateway buffer is ROUNDUP(sizeof(sockaddr_in6)) = 32 bytes
+ * on LP64, which is large enough for the sockaddr_dl header (8 bytes)
+ * plus a typical interface name (4-8 chars) plus a 6-byte MAC.
+ * ------------------------------------------------------------------ */
+void
+nd6_storelladdr(struct rtentry *rt)
+{
+	struct ifnet *ifp = rt->rt_ifp;
+	struct sockaddr_dl *sdl;
+	int namelen;
+	char namebuf[IFNAMSIZ];
+	int sdl_len;
+	int buflen;
+
+	if (rt->rt_gateway == NULL)
+		return;
+	if (rt->rt_gateway->sa_family == AF_LINK)
+		return;		/* already converted */
+
+	/*
+	 * Compute available gateway buffer size.  rtrequest() allocated
+	 * ROUNDUP(original_gateway->sa_len) bytes.  For AF_INET6 gateways
+	 * from cloned routes, that is ROUNDUP(28) = 32 on LP64.
+	 */
+#define	ND6_ROUNDUP(a)	\
+	((a) > 0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+	buflen = ND6_ROUNDUP(rt->rt_gateway->sa_len);
+	if (buflen < (int)sizeof(struct sockaddr_dl) - 46 + IFNAMSIZ + 6) {
+		/* sanity: buffer must hold at least the fixed header */
+		buflen = ND6_ROUNDUP(sizeof(struct sockaddr_in6));
+	}
+
+	sprintf(namebuf, "%s%d", ifp->if_name, ifp->if_unit);
+	namelen = strlen(namebuf);
+
+	/* sdl_len includes space for name + MAC (even though MAC is empty) */
+	sdl_len = 8 + namelen + ifp->if_addrlen;
+	if (sdl_len > buflen) {
+		D(bug("[AROSTCP:ND6] %s: sdl_len %d > buflen %d, truncating\n",
+		    __func__, sdl_len, buflen));
+		sdl_len = buflen;
+	}
+
+	sdl = (struct sockaddr_dl *)rt->rt_gateway;
+	bzero(sdl, buflen);
+	sdl->sdl_len    = sdl_len;
+	sdl->sdl_family = AF_LINK;
+	sdl->sdl_index  = ifp->if_index;
+	sdl->sdl_type   = ifp->if_type;
+	sdl->sdl_nlen   = namelen;
+	sdl->sdl_alen   = 0;		/* filled by nd6_cache_lladdr */
+	sdl->sdl_slen   = 0;
+	bcopy(namebuf, sdl->sdl_data, namelen);
+}
+
+/* ------------------------------------------------------------------
  * nd6_rtrequest - called when a route entry changes.
  *
- * Manages neighbor cache entries attached to routing entries.
+ * Manages neighbor cache (llinfo_nd6) entries attached to routing
+ * entries.  Based on FreeBSD 4.11 / KAME nd6_rtrequest().
+ *
+ * RTM_ADD with RTF_CLONING: convert gateway to AF_LINK (sockaddr_dl)
+ *   for the prefix route.  When cloned, children inherit AF_LINK.
+ *   Since AROSTCP lacks rt_setgate(), we convert in-place via
+ *   nd6_storelladdr() (buffer is large enough: ROUNDUP(28) = 32).
+ *
+ * RTM_ADD without RTF_CLONING: manually-added host route with
+ *   known link-layer address.  State = REACHABLE.
+ *
+ * RTM_RESOLVE: cloned route needing resolution.
+ *   State = NOSTATE (will become INCOMPLETE when NS is sent).
+ *
+ * RTM_DELETE: free held packet, unlink from list.
  * ------------------------------------------------------------------ */
 void
 nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
 {
+	struct sockaddr *gate;
 	struct llinfo_nd6 *ln;
+	struct ifnet *ifp;
 	struct sockaddr_dl *sdl;
 
 	if (rt == NULL)
 		return;
+	gate = rt->rt_gateway;
+	ln = (struct llinfo_nd6 *)rt->rt_llinfo;
+	ifp = rt->rt_ifp;
 
 	switch (req) {
 	case RTM_ADD:
-		/* only care about host routes with AF_LINK gateway */
-		if (!(rt->rt_flags & RTF_HOST))
-			break;
-		if (rt->rt_gateway == NULL ||
-		    rt->rt_gateway->sa_family != AF_LINK)
-			break;
-		sdl = (struct sockaddr_dl *)rt->rt_gateway;
-		if (rt->rt_llinfo)
-			break;	/* already have one */
+		/*
+		 * For RTF_CLONING prefix routes (and RTF_LLINFO host
+		 * routes added directly), convert gateway to AF_LINK.
+		 * This matches FreeBSD 4.11's:
+		 *   rt_setgate(rt, rt_key(rt), &null_sdl);
+		 */
+		if ((rt->rt_flags & (RTF_CLONING | RTF_LLINFO)) != 0) {
+			nd6_storelladdr(rt);
+			gate = rt->rt_gateway;
+			if (ln) {
+				struct timeval _tv;
+				GetSysTime(&_tv);
+				ln->ln_expire = _tv.tv_sec ? _tv.tv_sec : 1;
+			}
+			if (rt->rt_flags & RTF_CLONING)
+				break;	/* prefix route: no llinfo needed */
+		}
+		/* FALLTHROUGH */
+
+	case RTM_RESOLVE:
+		if (ifp &&
+		    (ifp->if_flags & (IFF_POINTOPOINT | IFF_LOOPBACK)) == 0) {
+			/*
+			 * Validate/convert gateway to AF_LINK.
+			 * For cloned routes the parent's AF_LINK gateway
+			 * was already copied; for manual routes or routes
+			 * from other paths, convert now.
+			 */
+			if (gate->sa_family != AF_LINK) {
+				nd6_storelladdr(rt);
+				gate = rt->rt_gateway;
+			}
+			sdl = (struct sockaddr_dl *)gate;
+			sdl->sdl_type = ifp->if_type;
+			sdl->sdl_index = ifp->if_index;
+		}
+		if (ln != NULL)
+			break;	/* already have neighbor entry (route change) */
+
+		/*
+		 * Allocate neighbor cache entry (llinfo_nd6).
+		 */
 		MALLOC(ln, struct llinfo_nd6 *, sizeof(*ln), M_PCB, M_NOWAIT);
-		if (ln == NULL)
+		if (ln == NULL) {
+			log(LOG_DEBUG, "nd6_rtrequest: malloc failed\n");
 			break;
+		}
+		nd6_inuse++;
+		nd6_allocated++;
 		bzero(ln, sizeof(*ln));
 		rt->rt_llinfo = (caddr_t)ln;
-		ln->ln_rt    = rt;
-		ln->ln_state = ND6_LLINFO_NOSTATE;
-		/* insert into list */
+		ln->ln_rt = rt;
+
+		if (req == RTM_ADD) {
+			/*
+			 * Manually added route: gateway should already
+			 * contain a valid link-layer address.
+			 */
+			ln->ln_state = ND6_LLINFO_REACHABLE;
+		} else {
+			/*
+			 * RTM_RESOLVE: cloned from prefix route.
+			 * rt_expire is 0 from rtrequest(), set a
+			 * non-zero expire so NUD timer can process it.
+			 */
+			struct timeval _tv;
+			ln->ln_state = ND6_LLINFO_NOSTATE;
+			GetSysTime(&_tv);
+			ln->ln_expire = _tv.tv_sec ? _tv.tv_sec : 1;
+		}
+		rt->rt_flags |= RTF_LLINFO;
+
+		/* insert into global list */
 		ln->ln_next = llinfo_nd6.ln_next;
 		ln->ln_prev = &llinfo_nd6;
 		llinfo_nd6.ln_next->ln_prev = ln;
 		llinfo_nd6.ln_next = ln;
+
+		/*
+		 * If rt_key(rt) is one of our own addresses on this
+		 * interface, mark permanently reachable and fill in
+		 * our own MAC.  (FreeBSD 4.11: in6ifa_ifpwithaddr check)
+		 */
+		if (ifp && gate->sa_family == AF_LINK) {
+			struct ifaddr *ifa;
+			struct sockaddr_in6 *rt_sin6 =
+			    (struct sockaddr_in6 *)rt_key(rt);
+
+			for (ifa = ifp->if_addrlist; ifa;
+			     ifa = ifa->ifa_next) {
+				if (ifa->ifa_addr->sa_family != AF_INET6)
+					continue;
+				if (IN6_ARE_ADDR_EQUAL(
+				    &((struct sockaddr_in6 *)
+				      ifa->ifa_addr)->sin6_addr,
+				    &rt_sin6->sin6_addr))
+					break;
+			}
+			if (ifa) {
+				caddr_t mac = nd6_ifptomac(ifp);
+				ln->ln_expire = 0; /* permanent */
+				ln->ln_state = ND6_LLINFO_REACHABLE;
+				if (mac) {
+					sdl = (struct sockaddr_dl *)gate;
+					bcopy(mac, LLADDR(sdl),
+					    ifp->if_addrlen);
+					sdl->sdl_alen = ifp->if_addrlen;
+				}
+			}
+		}
 		break;
 
 	case RTM_DELETE:
-		ln = (struct llinfo_nd6 *)rt->rt_llinfo;
 		if (ln == NULL)
 			break;
+		nd6_inuse--;
 		/* free held packet */
 		if (ln->ln_hold) {
 			m_freem(ln->ln_hold);
@@ -756,6 +975,7 @@ nd6_rtrequest(int req, struct rtentry *rt, struct sockaddr *sa)
 		ln->ln_prev->ln_next = ln->ln_next;
 		ln->ln_next->ln_prev = ln->ln_prev;
 		rt->rt_llinfo = NULL;
+		rt->rt_flags &= ~RTF_LLINFO;
 		FREE(ln, M_PCB);
 		break;
 	}

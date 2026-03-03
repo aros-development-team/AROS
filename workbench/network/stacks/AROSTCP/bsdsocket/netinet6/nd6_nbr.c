@@ -471,6 +471,10 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 					llinfo_nd6.ln_next = ln;
 					/* cache TLLA if present */
 					if (lladdr && lladdrlen > 0) {
+						if (rt->rt_gateway &&
+						    rt->rt_gateway->sa_family
+						    != AF_LINK)
+							nd6_storelladdr(rt);
 						sdl = (rt->rt_gateway &&
 						    rt->rt_gateway->sa_family
 						    == AF_LINK)
@@ -492,7 +496,10 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 
 	/*
 	 * RFC 4861 §7.2.5 — update neighbor cache based on NA.
+	 * Ensure gateway is AF_LINK for MAC storage.
 	 */
+	if (rt->rt_gateway && rt->rt_gateway->sa_family != AF_LINK)
+		nd6_storelladdr(rt);
 	sdl = (rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK)
 	    ? (struct sockaddr_dl *)rt->rt_gateway : NULL;
 

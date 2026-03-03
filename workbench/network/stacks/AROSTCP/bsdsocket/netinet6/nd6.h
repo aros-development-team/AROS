@@ -188,12 +188,14 @@ int  nd6_is_addr_neighbor(struct sockaddr_in6 *, struct ifnet *);
 void nd6_option_init(void *, int, union nd_opts *);
 int  nd6_options(union nd_opts *);
 struct rtentry *nd6_lookup(struct in6_addr *, int, struct ifnet *);
+void nd6_free(struct rtentry *);
 void nd6_setmtu(struct ifnet *);
 void nd6_timer(void *);
 void nd6_nud_hint(struct rtentry *);
 int  nd6_resolve(struct ifnet *, struct rtentry *, struct mbuf *,
 	struct sockaddr *, u_char *);
 void nd6_rtrequest(int, struct rtentry *, struct sockaddr *);
+void nd6_storelladdr(struct rtentry *);
 int  nd6_ioctl(u_long, caddr_t, struct ifnet *);
 int  nd6_cache_lladdr(struct ifnet *, struct in6_addr *,
 	char *, int, int, int);
