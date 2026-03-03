@@ -137,6 +137,7 @@ in6_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 				(struct sockaddr *)&ia->ia_dstaddr;
 			ia->ia_ifa.ifa_netmask =
 				(struct sockaddr *)&ia->ia_prefixmask;
+			ia->ia_ifa.ifa_rtrequest = nd6_rtrequest;
 			ia->ia6_ifp = ifp;
 		}
 		break;
@@ -294,6 +295,15 @@ in6_ifinit(struct ifnet *ifp, struct in6_ifaddr *ia,
 		if (ia->ia_dstaddr.sin6_family != AF_INET6)
 			return 0;
 		flags |= RTF_HOST;
+	} else {
+		/*
+		 * On broadcast/multicast interfaces (e.g. Ethernet), set
+		 * RTF_CLONING so that rtalloc1() can create per-host cloned
+		 * routes for each neighbor.  Without this, all neighbors on
+		 * the prefix share one route entry and stomp on each other's
+		 * cached link-layer address in rt_gateway / rt_llinfo.
+		 */
+		flags |= RTF_CLONING;
 	}
 
 	if ((error = rtinit(&ia->ia_ifa, RTM_ADD, flags)) == 0)
@@ -511,6 +521,7 @@ in6_if_up(struct ifnet *ifp)
 
 	ia->ia_ifa.ifa_addr    = (struct sockaddr *)&ia->ia_addr;
 	ia->ia_ifa.ifa_netmask = (struct sockaddr *)&ia->ia_prefixmask;
+	ia->ia_ifa.ifa_rtrequest = nd6_rtrequest;
 	ia->ia6_ifp = ifp;
 	ia->ia6_plen = 64;
 	ia->ia6_ifaflags = IN6_IFF_AUTOCONF;

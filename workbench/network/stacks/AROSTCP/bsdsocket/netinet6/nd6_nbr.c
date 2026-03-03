@@ -464,10 +464,26 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
 					rt->rt_llinfo = (caddr_t)ln;
 					ln->ln_rt = rt;
 					ln->ln_state = ND6_LLINFO_STALE;
+					ln->ln_router = 1;
 					ln->ln_next = llinfo_nd6.ln_next;
 					ln->ln_prev = &llinfo_nd6;
 					llinfo_nd6.ln_next->ln_prev = ln;
 					llinfo_nd6.ln_next = ln;
+					/* cache TLLA if present */
+					if (lladdr && lladdrlen > 0) {
+						sdl = (rt->rt_gateway &&
+						    rt->rt_gateway->sa_family
+						    == AF_LINK)
+						    ? (struct sockaddr_dl *)
+						      rt->rt_gateway : NULL;
+						if (sdl) {
+							bcopy(lladdr,
+							    LLADDR(sdl),
+							    lladdrlen);
+							sdl->sdl_alen =
+							    lladdrlen;
+						}
+					}
 				}
 			}
 		}
