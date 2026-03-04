@@ -11,12 +11,15 @@
 #include <proto/utility.h>
 #include <sys/types.h>
 #include <sys/malloc.h>
+#include <sys/mbuf.h>
 #include <sys/socket.h>
 #include <sys/synch.h>
 #include <netinet/in.h>
 #include <net/route.h>
 #include <net/if.h>
 #include <net/radix.h>
+#include <net/bpf.h>
+#include <net/if_sana.h>
 #include <protos/net/route_protos.h>
 #include <syslog.h>
 #include <api/amiga_api.h>
@@ -25,6 +28,16 @@
 
 #include <stdio.h>
 #include <string.h>
+
+/* BPF kernel functions (from net/bpf.c) */
+extern int  bpf_allocate(void);
+extern struct bpf_d *bpf_lookup(int handle);
+extern void bpf_freed(int handle);
+extern void bpf_rotate(struct bpf_d *d);
+extern int  bpf_setif(struct bpf_d *d, const char *ifname);
+extern int  bpf_setf(struct bpf_d *d, struct bpf_program *fp);
+
+extern struct ifnet *ifnet;
 
 /*
  * Helper: fill a sockaddr_in from a network-byte-order IPv4 address.
@@ -126,9 +139,23 @@ AROS_LH1(long, bpf_open,
 	struct SocketBase *, libPtr, 61, UL)
 {
     AROS_LIBFUNC_INIT
-    __log(LOG_CRIT,"bpf_open() is not implemented");
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    int handle;
+    struct bpf_d *d;
+
+    handle = bpf_allocate();
+    if (handle < 0) {
+	writeErrnoValue(libPtr, ENOMEM);
+	return -1;
+    }
+
+    d = bpf_lookup(handle);
+    if (d != NULL) {
+	d->bd_sigtask = libPtr->thisTask;
+    }
+
+    return handle;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -137,8 +164,15 @@ AROS_LH1(long, bpf_close,
 	struct SocketBase *, libPtr, 62, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    if (bpf_lookup(handle) == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+
+    bpf_freed(handle);
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -149,8 +183,50 @@ AROS_LH3(long, bpf_read,
 	struct SocketBase *, libPtr, 63, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+    int copylen;
+    spl_t s;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+    if (d->bd_ifp == NULL) {
+	writeErrnoValue(libPtr, ENXIO);
+	return -1;
+    }
+
+    s = splnet();
+
+    /*
+     * If hold buffer is empty but store has data, rotate.
+     * This makes accumulated packets available for reading.
+     */
+    if (d->bd_hlen == 0 && d->bd_slen > 0)
+	bpf_rotate(d);
+
+    if (d->bd_hlen == 0) {
+	splx(s);
+	/* No data available */
+	writeErrnoValue(libPtr, EWOULDBLOCK);
+	return -1;
+    }
+
+    /* Copy from hold buffer to user buffer */
+    copylen = d->bd_hlen;
+    if (copylen > len)
+	copylen = len;
+
+    memcpy(buffer, d->bd_hbuf, copylen);
+
+    /* Mark hold buffer as consumed */
+    d->bd_hlen = 0;
+    splx(s);
+
+    return copylen;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -161,8 +237,62 @@ AROS_LH3(long, bpf_write,
 	struct SocketBase *, libPtr, 64, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+    struct mbuf *m;
+    struct ifnet *ifp;
+    struct sockaddr dst;
+    int error;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+    if (d->bd_ifp == NULL) {
+	writeErrnoValue(libPtr, ENXIO);
+	return -1;
+    }
+
+    ifp = d->bd_ifp;
+
+    if (len > (long)ifp->if_mtu) {
+	writeErrnoValue(libPtr, EMSGSIZE);
+	return -1;
+    }
+
+    /* Allocate mbuf with header and copy user data */
+    m = m_gethdr(M_DONTWAIT, MT_DATA);
+    if (m == NULL) {
+	writeErrnoValue(libPtr, ENOBUFS);
+	return -1;
+    }
+    if (len > (int)MHLEN) {
+	MCLGET(m, M_DONTWAIT);
+	if ((m->m_flags & M_EXT) == 0) {
+	    m_freem(m);
+	    writeErrnoValue(libPtr, ENOBUFS);
+	    return -1;
+	}
+    }
+    memcpy(mtod(m, char *), buffer, len);
+    m->m_len = len;
+    m->m_pkthdr.len = len;
+    m->m_pkthdr.rcvif = NULL;
+
+    /* Send as raw packet via AF_UNSPEC */
+    memset(&dst, 0, sizeof(dst));
+    dst.sa_family = AF_UNSPEC;
+    dst.sa_len = sizeof(dst);
+
+    error = (*ifp->if_output)(ifp, m, &dst, NULL);
+    if (error) {
+	writeErrnoValue(libPtr, error);
+	return -1;
+    }
+
+    return len;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -172,8 +302,19 @@ AROS_LH2(long, bpf_set_notify_mask,
 	struct SocketBase *, libPtr, 65, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+
+    d->bd_notifymask = mask;
+    d->bd_sigtask = libPtr->thisTask;
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -183,8 +324,19 @@ AROS_LH2(long, bpf_set_interrupt_mask,
 	struct SocketBase *, libPtr, 66, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+
+    d->bd_intrmask = mask;
+    d->bd_sigtask = libPtr->thisTask;
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -195,8 +347,140 @@ AROS_LH3(long, bpf_ioctl,
 	struct SocketBase *, libPtr, 67, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+    int error = 0;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+
+    switch (request) {
+
+    case BIOCGBLEN:
+	*(u_int *)argp = d->bd_bufsize;
+	break;
+
+    case BIOCSBLEN:
+    {
+	u_int size = *(u_int *)argp;
+
+	if (d->bd_sbuf != NULL) {
+	    error = EINVAL;	/* already allocated */
+	    break;
+	}
+	if (size < BPF_MINBUFSIZE)
+	    size = BPF_MINBUFSIZE;
+	if (size > BPF_MAXBUFSIZE)
+	    size = BPF_MAXBUFSIZE;
+	d->bd_bufsize = size;
+	*(u_int *)argp = size;
+	break;
+    }
+
+    case BIOCSETF:
+	error = bpf_setf(d, (struct bpf_program *)argp);
+	break;
+
+    case BIOCFLUSH:
+    {
+	spl_t s = splnet();
+	d->bd_slen = 0;
+	d->bd_hlen = 0;
+	splx(s);
+	break;
+    }
+
+    case BIOCPROMISC:
+	if (d->bd_ifp == NULL) {
+	    error = ENXIO;
+	    break;
+	}
+	if (!d->bd_promisc) {
+	    d->bd_promisc = 1;
+	    d->bd_ifp->if_pcount++;
+	    d->bd_ifp->if_flags |= IFF_PROMISC;
+	}
+	break;
+
+    case BIOCGDLT:
+	if (d->bd_ifp == NULL) {
+	    error = ENXIO;
+	    break;
+	}
+	*(u_int *)argp = d->bd_dlt;
+	break;
+
+    case BIOCGETIF:
+	if (d->bd_ifp == NULL) {
+	    error = ENXIO;
+	    break;
+	}
+	snprintf(argp, IFNAMSIZ, "%s%d",
+		 d->bd_ifp->if_name, d->bd_ifp->if_unit);
+	break;
+
+    case BIOCSETIF:
+	error = bpf_setif(d, argp);
+	break;
+
+    case BIOCGSTATS:
+    {
+	struct bpf_stat *bs = (struct bpf_stat *)argp;
+	bs->bs_recv = d->bd_rcount;
+	bs->bs_drop = d->bd_dcount;
+	break;
+    }
+
+    case BIOCIMMEDIATE:
+	d->bd_immediate = *(u_int *)argp ? 1 : 0;
+	break;
+
+    case BIOCVERSION:
+    {
+	struct bpf_version *bv = (struct bpf_version *)argp;
+	bv->bv_major = BPF_MAJOR_VERSION;
+	bv->bv_minor = BPF_MINOR_VERSION;
+	break;
+    }
+
+    case BIOCGHDRCMPLT:
+	*(u_int *)argp = d->bd_hdrcmplt;
+	break;
+
+    case BIOCSHDRCMPLT:
+	d->bd_hdrcmplt = *(u_int *)argp ? 1 : 0;
+	break;
+
+    case BIOCGSEESENT:
+	*(u_int *)argp = d->bd_seesent;
+	break;
+
+    case BIOCSSEESENT:
+	d->bd_seesent = *(u_int *)argp ? 1 : 0;
+	break;
+
+    case BIOCSRTIMEOUT:
+	d->bd_rtimeout = *(struct timeval *)argp;
+	break;
+
+    case BIOCGRTIMEOUT:
+	*(struct timeval *)argp = d->bd_rtimeout;
+	break;
+
+    default:
+	error = EINVAL;
+	break;
+    }
+
+    if (error) {
+	writeErrnoValue(libPtr, error);
+	return -1;
+    }
+    return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -205,8 +489,20 @@ AROS_LH1(long, bpf_data_waiting,
 	struct SocketBase *, libPtr, 68, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    return -1;
+
+    struct bpf_d *d;
+
+    d = bpf_lookup(handle);
+    if (d == NULL) {
+	writeErrnoValue(libPtr, EBADF);
+	return -1;
+    }
+
+    /* Return number of bytes available for reading */
+    if (d->bd_hlen > 0)
+	return d->bd_hlen;
+    return d->bd_slen;
+
     AROS_LIBFUNC_EXIT
 }
 

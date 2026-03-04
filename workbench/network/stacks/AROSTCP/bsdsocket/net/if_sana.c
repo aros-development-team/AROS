@@ -67,6 +67,7 @@
 #include <net/if_sana.h>
 #include <net/if_types.h>
 #include <net/sana2arp.h>
+#include <net/bpf.h>
 
 #include <net/sana2config.h>
 #include <net/sana2request.h>
@@ -1029,6 +1030,9 @@ sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
   spl_t s;
 
   if (m) {
+    /* BPF tap: let packet filters see incoming IPv4 packets */
+    if (ssc->ss_if.if_bpf)
+      bpf_mtap(&ssc->ss_if, m, BPF_D_IN);
     s = splimp();
     if (IF_QFULL(&ipintrq)) {
       IF_DROP(&ipintrq);
@@ -1060,8 +1064,12 @@ sana_arp_read(struct sana_softc *ssc, struct IOIPReq *req)
 
   m = sana_read(ssc, req, 0, &ssc->ss_arp.sent, "sana_arp_read", ARP_MTU);
 
-  if (m)
+  if (m) {
+    /* BPF tap: let packet filters see incoming ARP packets */
+    if (ssc->ss_if.if_bpf)
+      bpf_mtap(&ssc->ss_if, m, BPF_D_IN);
     arpinput(ssc, m, hwaddr);
+  }
 }
 
 #if INET6
@@ -1088,6 +1096,9 @@ sana_ip6_read(struct sana_softc *ssc, struct IOIPReq *req)
     D(bug("[AROSTCP:SANA] %s: %s%d pktlen=%d flags=0x%x\n",
         __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
         m->m_pkthdr.len, m->m_flags));
+    /* BPF tap: let packet filters see incoming IPv6 packets */
+    if (ssc->ss_if.if_bpf)
+      bpf_mtap(&ssc->ss_if, m, BPF_D_IN);
     s = splimp();
     if (IF_QFULL(&ip6intrq)) {
       IF_DROP(&ip6intrq);
@@ -1308,6 +1319,11 @@ sana_output(struct ifnet *ifp, struct mbuf *m0,
   /*
    * Queue packet to Sana-II driver
    */
+
+  /* BPF tap: let packet filters see outgoing packets */
+  if (ifp->if_bpf)
+    bpf_mtap(ifp, m, BPF_D_OUT);
+
   req->ioip_Command = (m->m_flags & M_BCAST) ? S2_BROADCAST : CMD_WRITE;
   req->ioip_dispatch = free_written_packet;
   req->ioip_packet = m;

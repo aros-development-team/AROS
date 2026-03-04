@@ -56,12 +56,13 @@ NET_C= \
 	net/raw_cb net/raw_usrreq \
 	net/route net/rtsock net/radix \
 	net/if_sana net/netisr net/sana2config \
-	net/sana2copybuff net/sana2arp net/sana2perror
+	net/sana2copybuff net/sana2arp net/sana2perror \
+	net/bpf_filter net/bpf
 
 NET_H= \
 	net/if_types.h net/if_sana.h \
 	net/sana2request.h net/sana2arp.h net/sana2config.h \
-	net/netisr.h net/raw_cb.h
+	net/netisr.h net/raw_cb.h net/bpf.h
 
 # netinet -- internet protocols (ip, icmp, tcp, udp, arp)
 NETINET_C:= \

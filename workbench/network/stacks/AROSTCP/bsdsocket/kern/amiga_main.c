@@ -63,6 +63,7 @@ BOOL sana_poll(void);
  * include prototypes for initialization functions
  */
 #include <kern/uipc_domain_protos.h>    /* domaininit() */
+#include <net/bpf.h>                    /* bpf_init() */
 
 /*
  * The main module of the AMITCP/IP.
@@ -425,6 +426,9 @@ D(bug("[AROSTCP](amiga_main.c) init_all()\n"));
   pfil_init();
   D(Printf("pfil_init() complete\n");)
 
+  bpf_init();
+  D(Printf("bpf_init() complete\n");)
+
   loconfig();
   D(Printf("loconfig() complete\n");)
 	    
@@ -481,6 +485,12 @@ D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
    */
   netdb_deinit();
   
+  /*
+   * Deinitialize BPF before network interfaces
+   */
+  bpf_cleanup();
+  D(Printf("bpf_cleanup() completed\n");)
+
   /*
    * Deinitialize network interfaces
    */
