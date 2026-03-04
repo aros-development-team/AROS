@@ -1,4 +1,8 @@
-/* This file contains Roadshow-specific functions which are not required for MorphOS build */
+/*
+ * Copyright (C) 2005-2026, The AROS Development Team.
+ *
+ * This file contains Roadshow-specific functions which are not required for MorphOS build
+ */
 
 #include <conf.h>
 
@@ -20,6 +24,7 @@
 #include <net/radix.h>
 #include <net/bpf.h>
 #include <net/if_sana.h>
+#include <sys/ioctl.h>
 #include <protos/net/route_protos.h>
 #include <syslog.h>
 #include <api/amiga_api.h>
@@ -358,6 +363,37 @@ AROS_LH3(long, bpf_ioctl,
     }
 
     switch (request) {
+
+    /*
+     * Roadshow-compatible: query bytes available for reading.
+     */
+    case FIONREAD:
+	*(long *)argp = (d->bd_hlen > 0) ? d->bd_hlen : d->bd_slen;
+	break;
+
+    /*
+     * Roadshow-compatible: get interface address.
+     */
+    case SIOCGIFADDR:
+    {
+	struct sockaddr_in *sin = (struct sockaddr_in *)argp;
+	struct ifaddr *ifa;
+
+	if (d->bd_ifp == NULL) {
+	    error = ENXIO;
+	    break;
+	}
+	/* Find the first AF_INET address on this interface */
+	for (ifa = d->bd_ifp->if_addrlist; ifa != NULL; ifa = ifa->ifa_next) {
+	    if (ifa->ifa_addr && ifa->ifa_addr->sa_family == AF_INET) {
+		memcpy(sin, ifa->ifa_addr, sizeof(struct sockaddr_in));
+		break;
+	    }
+	}
+	if (ifa == NULL)
+	    error = EADDRNOTAVAIL;
+	break;
+    }
 
     case BIOCGBLEN:
 	*(u_int *)argp = d->bd_bufsize;

@@ -1,7 +1,8 @@
 /*
  * Copyright (C) 1982, 1986, 1988, 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (C) 2005 - 2006 Pavel Fedin
+ * Copyright (C) 2005-2006 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,6 +51,7 @@
 #include <net/if.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
+#include "../net/ipfilter.h"
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -313,8 +315,11 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
 sendit:
 #endif
-	/* Run through list of hooks */
-        pfil_run_hooks(m, ifp, MIAMIPFBPT_IP);
+	/* Run through list of hooks and IP filter engine */
+        if (pfil_run_hooks(m, ifp, MIAMIPFBPT_IP, IPF_OUT)) {
+		error = EHOSTUNREACH;
+		goto bad;
+	}
 
 	/*
 	 * If small enough for interface, can just send directly.

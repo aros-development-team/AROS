@@ -45,6 +45,7 @@
 #include <net/if_types.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
+#include "ipfilter.h"
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/in_var.h>
@@ -706,7 +707,7 @@ arpinput(struct sana_softc *ssc,
     goto out;
   }
 #endif
-  pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP);
+  pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_IN);
   proto = ntohs(ar->ar_pro);
 
   if (proto == ssc->ss_ip.type) {
@@ -886,7 +887,7 @@ in_arpinput(register struct sana_softc *ssc,
 
     m->m_flags &= ~(M_BCAST|M_MCAST);
 
-    pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP);
+    pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_OUT);
     (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2, 
 			    (struct rtentry *)0);
     return;

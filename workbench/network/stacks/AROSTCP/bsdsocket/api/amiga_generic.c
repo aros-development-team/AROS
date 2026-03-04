@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -49,6 +49,7 @@
 #include <api/apicalls.h>
 
 #include <net/if_protos.h>
+#include "../net/ipfilter.h"
 
 #include <bsdsocket/socketbasetags.h>
 
@@ -195,6 +196,101 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
     goto Return;
   }
   if (IOCGROUP(cmd) == 'r') {
+    /* Check for IPF/NAT ioctls first */
+    switch (cmd) {
+    case SIOCFRENB:
+      if (*(u_int *)data)
+        ipf_enable();
+      else
+        ipf_disable();
+      error = 0;
+      goto Return;
+
+    case SIOCIPFFL:
+    {
+      int flags = *(int *)data;
+      int flushed = ipf_flush(flags);
+      *(int *)data = flushed;
+      error = 0;
+      goto Return;
+    }
+
+    case SIOCADAFR:	/* SIOCADDFR */
+      error = ipf_add_rule((struct ipf_rule *)data);
+      goto Return;
+
+    case SIOCINAFR:
+      error = ipf_insert_rule((struct ipf_rule *)data);
+      goto Return;
+
+    case SIOCRMAFR:	/* SIOCDELFR */
+      error = ipf_remove_rule((struct ipf_rule *)data);
+      goto Return;
+
+    case SIOCGETFS:
+    {
+      struct ipf_state *st = (struct ipf_state *)data;
+      memcpy(st, &ipf_global, sizeof(*st));
+      error = 0;
+      goto Return;
+    }
+
+    case SIOCSETFF:
+      /* Set global log flags (future use) */
+      error = 0;
+      goto Return;
+
+    case SIOCGETFF:
+      *(u_int *)data = 0;	/* log flags, future use */
+      error = 0;
+      goto Return;
+
+    case SIOCFRZST:
+    {
+      struct ipf_state *st = (struct ipf_state *)data;
+      memcpy(st, &ipf_global, sizeof(*st));
+      ipf_global.passed = 0;
+      ipf_global.blocked = 0;
+      ipf_global.logged = 0;
+      error = 0;
+      goto Return;
+    }
+
+    case SIOCADNAT:
+      error = ipnat_add_rule((struct ipnat_rule *)data);
+      goto Return;
+
+    case SIOCRMNAT:
+      error = ipnat_remove_rule((struct ipnat_rule *)data);
+      goto Return;
+
+    case SIOCFLNAT:
+    {
+      int cleared = ipnat_clear_rules();
+      *(int *)data = cleared;
+      error = 0;
+      goto Return;
+    }
+
+    case SIOCCNATL:
+    {
+      int flushed = ipnat_flush_entries();
+      *(int *)data = flushed;
+      error = 0;
+      goto Return;
+    }
+
+    case SIOCGNATS:
+    {
+      struct ipnat_state *ns = (struct ipnat_state *)data;
+      memcpy(ns, &ipnat_global, sizeof(*ns));
+      error = 0;
+      goto Return;
+    }
+
+    default:
+      break;	/* fall through to rtioctl */
+    }
     error = (rtioctl(cmd, data));
     goto Return;
   }

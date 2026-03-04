@@ -39,7 +39,7 @@
 #define BPF_WORDALIGN(x) (((x) + (BPF_ALIGNMENT - 1)) & ~(BPF_ALIGNMENT - 1))
 
 #define BPF_MAXINSNS	512
-#define BPF_MAXBUFSIZE	(512 * 1024)
+#define BPF_MAXBUFSIZE	0x8000
 #define BPF_DFLTBUFSIZE	(4096)
 #define BPF_MINBUFSIZE	32
 
@@ -77,25 +77,31 @@ struct bpf_hdr {
 #define DLT_LINUX_SLL	113	/* Linux cooked sockets */
 
 /*
- * BPF ioctl commands (using Roadshow bpf_ioctl interface).
+ * BPF ioctl commands — Roadshow-compatible encoding.
+ * Uses _IOR/_IOW/_IOWR macros with group 'B', matching Roadshow's
+ * public net/bpf.h exactly.
  */
-#define BIOCGBLEN	1	/* get buffer length */
-#define BIOCSBLEN	2	/* set buffer length */
-#define BIOCSETF	3	/* set packet filter */
-#define BIOCFLUSH	4	/* flush packet buffer */
-#define BIOCPROMISC	5	/* put interface into promiscuous mode */
-#define BIOCGDLT	6	/* get link layer type */
-#define BIOCGETIF	7	/* get interface name */
-#define BIOCSETIF	8	/* set interface */
-#define BIOCGSTATS	9	/* get packet stats */
-#define BIOCIMMEDIATE	10	/* set immediate mode */
-#define BIOCVERSION	11	/* get filter language version */
-#define BIOCGHDRCMPLT	12	/* get "header already complete" flag */
-#define BIOCSHDRCMPLT	13	/* set "header already complete" flag */
-#define BIOCGSEESENT	14	/* get "see packets sent" flag */
-#define BIOCSSEESENT	15	/* set "see packets sent" flag */
-#define BIOCSRTIMEOUT	16	/* set read timeout */
-#define BIOCGRTIMEOUT	17	/* get read timeout */
+#include <sys/ioctl.h>
+
+#define	BIOCGBLEN	_IOR('B', 102, u_int)
+#define	BIOCSBLEN	_IOWR('B', 102, u_int)
+#define	BIOCSETF	_IOW('B', 103, struct bpf_program)
+#define	BIOCFLUSH	_IO('B', 104)
+#define	BIOCPROMISC	_IO('B', 105)
+#define	BIOCGDLT	_IOR('B', 106, u_int)
+#define	BIOCGETIF	_IOR('B', 107, struct ifreq)
+#define	BIOCSETIF	_IOW('B', 108, struct ifreq)
+#define	BIOCSRTIMEOUT	_IOW('B', 109, struct timeval)
+#define	BIOCGRTIMEOUT	_IOR('B', 110, struct timeval)
+#define	BIOCGSTATS	_IOR('B', 111, struct bpf_stat)
+#define	BIOCIMMEDIATE	_IOW('B', 112, u_int)
+#define	BIOCVERSION	_IOR('B', 113, struct bpf_version)
+
+/* FreeBSD extensions (not in Roadshow but useful) */
+#define	BIOCGHDRCMPLT	_IOR('B', 114, u_int)
+#define	BIOCSHDRCMPLT	_IOW('B', 115, u_int)
+#define	BIOCGSEESENT	_IOR('B', 116, u_int)
+#define	BIOCSSEESENT	_IOW('B', 117, u_int)
 
 /*
  * BPF statistics structure.

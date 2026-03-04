@@ -50,6 +50,7 @@
 
 #include <net/if.h>
 #include <net/pfil.h>
+#include "ipfilter.h"
 
 struct SignalSemaphore pfil_list_lock;
 struct MinList pfil_list;
@@ -73,10 +74,16 @@ void pfil_init(void)
 }
 
 /*
- * pfil_run_hooks() runs the specified packet filter hooks.
+ * pfil_run_hooks() runs the specified packet filter hooks and the
+ * IP filter engine.
+ *
+ * Returns 0 if the packet should be passed, non-zero if it should
+ * be dropped (blocked by ipf).
+ *
+ * dir: IPF_IN (1) for input, IPF_OUT (2) for output.
  */
-void
-pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
+int
+pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
 {
 	struct packet_filter_hook *pfh;
 	struct MiamiPFBuffer pfb;
@@ -84,6 +91,13 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
 	void (*pfil_func)(struct Hook *, APTR, struct MiamiPFBuffer *);
 
 	DPF(kprintf("pfil_run_hooks(0x%08lx, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
+
+	/* Run IP filter engine for IP packets */
+	if (pr == MIAMIPFBPT_IP) {
+		if (ipf_check(m, ifp, dir) != IPF_PASS)
+			return 1;	/* blocked */
+	}
+
 	pfb.data = mtod(m, unsigned char *);
 	pfb.length = m->m_len;
 	snprintf(ifname, sizeof(ifname), "%s%u", ifp->if_name, ifp->if_unit);

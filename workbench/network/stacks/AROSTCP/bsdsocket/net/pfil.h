@@ -3,7 +3,8 @@
 
 /*-
  * Copyright (C) 1996 Matthew R. Green
- * Copyright (C) 2005 - 2006 Pavel Fedin
+ * Copyright (C) 2005-2006 Pavel Fedin
+ * Copyright (C) 2005-2026, The AROS Development Team.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -52,7 +53,7 @@ struct packet_filter_hook {
 
 
 void	pfil_init(void);
-void	pfil_run_hooks(struct mbuf *, struct ifnet *, unsigned char);
+int	pfil_run_hooks(struct mbuf *, struct ifnet *, unsigned char, int);
                             
 #endif /* _NET_PFIL_H_ */
 

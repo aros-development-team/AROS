@@ -144,4 +144,43 @@ __END_DECLS
 #define SIOCGSERREQ	_IOWR('i',70, struct ifreq)   /* get ser IO req */
 #define SIOCFSERREQ	_IOW ('i',71, struct ifreq)    /* return IO req */
 
+/*
+ * IPFilter (ipf) ioctls — FreeBSD-compatible definitions.
+ * On BSD these operate on /dev/ipl; on AROS they are dispatched
+ * via IoctlSocket() on a raw socket.
+ */
+struct frentry;
+struct friostat;
+
+#define SIOCADAFR	_IOW ('r', 60, struct frentry *)  /* add rule (append) */
+#define SIOCRMAFR	_IOW ('r', 61, struct frentry *)  /* remove rule */
+#define SIOCADIFR	_IOW ('r', 62, struct frentry *)  /* add to inactive */
+#define SIOCRMIFR	_IOW ('r', 63, struct frentry *)  /* rm from inactive */
+#define SIOCIPFFL	_IOWR('r', 64, int)               /* flush rules */
+#define SIOCIPFFB	_IOR ('r', 65, int)               /* flush bad pkts */
+#define SIOCGETFS	_IOWR('r', 66, struct friostat *) /* get filt stats */
+#define SIOCFRZST	_IOWR('r', 67, struct friostat *) /* get+zero stats */
+#define SIOCFRENB	_IOW ('r', 68, u_int)             /* enable/disable */
+#define SIOCSETFF	_IOW ('r', 69, u_int)             /* set log flags */
+#define SIOCGETFF	_IOR ('r', 70, u_int)             /* get log flags */
+#define SIOCINAFR	_IOW ('r', 71, struct frentry *)  /* insert rule */
+#define SIOCINIFR	_IOW ('r', 72, struct frentry *)  /* insert inactive */
+#define SIOCSWAPA	_IOR ('r', 73, u_int)             /* swap active set */
+#define SIOCFRSYN	_IOW ('r', 74, u_int)             /* sync interfaces */
+#define SIOCZRLST	_IOWR('r', 75, struct frentry *)  /* zero rule stats */
+#define SIOCADDFR	SIOCADAFR  /* alias */
+#define SIOCDELFR	SIOCRMAFR  /* alias */
+
+/* IPFilter NAT ioctls — FreeBSD-compatible. */
+struct ipnat;
+struct nat;
+
+#define SIOCADNAT	_IOW ('r', 80, struct ipnat *)    /* add NAT rule */
+#define SIOCRMNAT	_IOW ('r', 81, struct ipnat *)    /* remove NAT rule */
+#define SIOCGNATS	_IOWR('r', 82, struct natstat *)  /* get NAT stats */
+#define SIOCGNATL	_IOWR('r', 83, struct natlookup *)/* NAT lookup */
+#define SIOCFLNAT	_IOWR('r', 84, int)               /* flush NAT rules */
+#define SIOCCNATL	_IOWR('r', 85, int)               /* flush NAT entries*/
+#define SIOCPURGENAT	_IOWR('r', 86, int)               /* purge NAT */
+
 #endif /* !SYS_IOCTL_H */

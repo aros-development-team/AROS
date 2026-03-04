@@ -57,7 +57,7 @@ NET_C= \
 	net/route net/rtsock net/radix \
 	net/if_sana net/netisr net/sana2config \
 	net/sana2copybuff net/sana2arp net/sana2perror \
-	net/bpf_filter net/bpf
+	net/bpf_filter net/bpf net/ipfilter
 
 NET_H= \
 	net/if_types.h net/if_sana.h \

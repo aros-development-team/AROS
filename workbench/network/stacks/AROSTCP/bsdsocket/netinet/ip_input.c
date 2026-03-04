@@ -3,6 +3,7 @@
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
  * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026, The AROS Development Team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -73,6 +74,7 @@
 #include <net/if_protos.h>
 #include <net/route.h>
 #include <net/pfil.h>
+#include "../net/ipfilter.h"
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -274,9 +276,12 @@ next:
 	}
 
 	/*
-	 * Run through list of hooks.
+	 * Run through list of hooks and IP filter engine.
 	 */
-        pfil_run_hooks(m, m->m_pkthdr.rcvif, MIAMIPFBPT_IP);
+        if (pfil_run_hooks(m, m->m_pkthdr.rcvif, MIAMIPFBPT_IP, IPF_IN)) {
+		m_freem(m);
+		goto next;
+	}
 
 	/*
 	 * Process options and, if not destined for us,
