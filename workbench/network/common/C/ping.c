@@ -365,7 +365,7 @@ struct timerequest *timermsg = NULL;
 BOOL notopen = TRUE;
 #define TimerBase (timermsg->tr_node.io_Device)
 
-const TEXT version[] = "$VER: ping 4.0 (22.02.2026)";
+const TEXT version[] = "$VER: ping 4.1 (04.03.2026)";
 
 void
 clean_timer(void)
@@ -1013,8 +1013,12 @@ pr_pack(buf, cc, from)
 			   inet_ntoa(*(struct in_addr *)&from->sin_addr.s_addr),
 			   ntohs(icp->icmp_seq));
 			(void)printf(" ttl=%d", ip->ip_ttl);
-			if (timing)
-				(void)printf(" time=%ld ms", triptime);
+			if (timing) {
+				if (triptime == 0)
+					(void)printf(" time=<1ms");
+				else
+					(void)printf(" time=%ldms", triptime);
+			}
 			if (dupflag)
 				(void)printf(" (DUP!)");
 			/* check the data */
@@ -1190,8 +1194,12 @@ pr_pack6(buf, cc, from)
 			    addrstr, sizeof(addrstr));
 			(void)printf("%d bytes from %s: icmp6_seq=%u",
 			    cc, addrstr, ntohs(icp6->icmp6_seq));
-			if (timing)
-				(void)printf(" time=%ld ms", triptime);
+			if (timing) {
+				if (triptime == 0)
+					(void)printf(" time=<1ms");
+				else
+					(void)printf(" time=%ldms", triptime);
+			}
 			if (dupflag)
 				(void)printf(" (DUP!)");
 		}
@@ -1288,7 +1296,7 @@ finish()
 			    ntransmitted));
 	(void)putchar('\n');
 	if (nreceived && timing)
-		(void)printf("round-trip min/avg/max = %ld/%lu/%ld ms\n",
+		(void)printf("round-trip min/avg/max = %ld/%lu/%ldms\n",
 		    tmin, tsum / (nreceived + nrepeats), tmax);
 	CleanUpExit(0);
 }
