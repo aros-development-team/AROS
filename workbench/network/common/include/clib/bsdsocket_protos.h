@@ -212,17 +212,17 @@ AROS_LP2(struct netent *, getnetbyaddr,
          LIBBASETYPEPTR, SocketBase, 38, BSDSocket
 );
 AROS_LP2(struct servent *, getservbyname,
-         AROS_LPA(char *, name, A0),
-         AROS_LPA(char *, proto, A1),
+         AROS_LPA(const char *, name, A0),
+         AROS_LPA(const char *, proto, A1),
          LIBBASETYPEPTR, SocketBase, 39, BSDSocket
 );
 AROS_LP2(struct servent *, getservbyport,
          AROS_LPA(int, port, D0),
-         AROS_LPA(char *, proto, A0),
+         AROS_LPA(const char *, proto, A0),
          LIBBASETYPEPTR, SocketBase, 40, BSDSocket
 );
 AROS_LP1(struct protoent *, getprotobyname,
-         AROS_LPA(char *, name, A0),
+         AROS_LPA(const char *, name, A0),
          LIBBASETYPEPTR, SocketBase, 41, BSDSocket
 );
 AROS_LP1(struct protoent *, getprotobynumber,
@@ -287,7 +287,7 @@ AROS_LP3(long, bpf_read,
 );
 AROS_LP3(long, bpf_write,
          AROS_LPA(long, handle, D0),
-         AROS_LPA(void *, buffer, A0),
+         AROS_LPA(const void *, buffer, A0),
          AROS_LPA(long, len, D1),
          LIBBASETYPEPTR, SocketBase, 64, BSDSocket
 );
@@ -449,7 +449,7 @@ AROS_LP0(struct servent *, getservent,
          LIBBASETYPEPTR, SocketBase, 98, BSDSocket
 );
 AROS_LP2(LONG, inet_aton,
-         AROS_LPA(STRPTR, cp, A0),
+         AROS_LPA(CONST_STRPTR, cp, A0),
          AROS_LPA(struct in_addr *, addr, A1),
          LIBBASETYPEPTR, SocketBase, 99, BSDSocket
 );

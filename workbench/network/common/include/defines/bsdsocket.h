@@ -350,7 +350,7 @@
 
 #define __getnetbyname_WB(__SocketBase, __arg1) \
         AROS_LC1(struct netent *, getnetbyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 37, BSDSocket)
 
 #define getnetbyname(arg1) \
@@ -367,8 +367,8 @@
 
 #define __getservbyname_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(struct servent *, getservbyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
-                  AROS_LCA(char *,(__arg2),A1), \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg2),A1), \
         struct Library *, (__SocketBase), 39, BSDSocket)
 
 #define getservbyname(arg1, arg2) \
@@ -377,7 +377,7 @@
 #define __getservbyport_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(struct servent *, getservbyport, \
                   AROS_LCA(int,(__arg1),D0), \
-                  AROS_LCA(char *,(__arg2),A0), \
+                  AROS_LCA(const char *,(__arg2),A0), \
         struct Library *, (__SocketBase), 40, BSDSocket)
 
 #define getservbyport(arg1, arg2) \
@@ -385,7 +385,7 @@
 
 #define __getprotobyname_WB(__SocketBase, __arg1) \
         AROS_LC1(struct protoent *, getprotobyname, \
-                  AROS_LCA(char *,(__arg1),A0), \
+                  AROS_LCA(const char *,(__arg1),A0), \
         struct Library *, (__SocketBase), 41, BSDSocket)
 
 #define getprotobyname(arg1) \
@@ -523,7 +523,7 @@
 #define __bpf_write_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, bpf_write, \
                   AROS_LCA(long, (__arg1), D0), \
-                  AROS_LCA(void *, (__arg2), A0), \
+                  AROS_LCA(const void *, (__arg2), A0), \
                   AROS_LCA(long, (__arg3), D1), \
         struct Library *, (__SocketBase), 64, BSDSocket)
 
