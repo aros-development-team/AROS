@@ -22,6 +22,7 @@
 #include <conf.h>
 #include <sys/malloc.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <kern/amiga_log.h>
 #include <net/route.h>
 #include <net/if.h>
@@ -30,6 +31,8 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <syslog.h>
 #include <version.h>
 
@@ -41,6 +44,8 @@
 
 extern const char *__inet_ntop(int af, const void *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
 extern int __inet_pton(int af, const char *src, void *dst, struct SocketBase *SocketBase);
+
+extern struct hostent * __gethostbyaddr(UBYTE *, int, int, struct SocketBase *);
 
 #undef SocketBase
 #define SocketBase MiamiBase->_SocketBase
@@ -491,8 +496,8 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: gai_strerror()\n"));
 #endif
 
 	DSYSCALLS(__log(LOG_DEBUG,"gai_strerror(%ld) called", error);)
-	if (error > 12)
-		error = 12;
+	if (error < 0 || error > 11)
+		return "Unknown error";
 	return ai_errors[error];
 
 	AROS_LIBFUNC_EXIT
@@ -509,13 +514,22 @@ AROS_LH1(void, freeaddrinfo,
 D(bug("[AROSTCP.MIAMI] miami_api.c: freeaddrinfo()\n"));
 #endif
 
+	struct addrinfo *ai, *next;
+
+	for (ai = addrinfo; ai != NULL; ai = next) {
+		next = ai->ai_next;
+		if (ai->ai_canonname)
+			FreeVec(ai->ai_canonname);
+		FreeVec(ai);
+	}
+
 	AROS_LIBFUNC_EXIT
 }
 
 AROS_LH4(LONG, getaddrinfo,
          AROS_LHA(char *, hostname, A0),
-         AROS_LHA(char *, servicename, A1),
-         AROS_LHA(struct addrinfo *, hintsp, A2),
+         AROS_LHA(char *, servname, A1),
+         AROS_LHA(struct addrinfo *, hints, A2),
          AROS_LHA(struct addrinfo **, result, A3),
          struct MiamiBase *, MiamiBase, 44, Miami
 )
@@ -523,18 +537,309 @@ AROS_LH4(LONG, getaddrinfo,
 	AROS_LIBFUNC_INIT
 
 #if defined(__AROS__)
-D(bug("[AROSTCP.MIAMI] miami_api.c: getaddrinfo()\n"));
+D(bug("[AROSTCP.MIAMI] miami_api.c: getaddrinfo('%s', '%s')\n",
+      hostname ? hostname : "(null)", servname ? servname : "(null)"));
 #endif
 
-	__log(LOG_CRIT,"getaddrinfo() is not implemented");
-	writeErrnoValue(SocketBase, ENOSYS);
-	return EAI_SYSTEM;
+	struct addrinfo sentinel;
+	struct addrinfo *cur;
+	int family = PF_UNSPEC;
+	int socktype = 0;
+	int protocol = 0;
+	int flags = 0;
+	int port = 0;
+	int error;
+
+	*result = NULL;
+	memset(&sentinel, 0, sizeof(sentinel));
+	cur = &sentinel;
+
+	if (hostname == NULL && servname == NULL)
+		return EAI_NONAME;
+
+	/* Process hints */
+	if (hints) {
+		if (hints->ai_addrlen || hints->ai_canonname ||
+		    hints->ai_addr || hints->ai_next)
+			return EAI_BADFLAGS;
+		family = hints->ai_family;
+		socktype = hints->ai_socktype;
+		protocol = hints->ai_protocol;
+		flags = hints->ai_flags;
+
+		switch (family) {
+		case PF_UNSPEC:
+		case PF_INET:
+		case PF_INET6:
+			break;
+		default:
+			return EAI_FAMILY;
+		}
+		switch (socktype) {
+		case 0:
+		case SOCK_STREAM:
+		case SOCK_DGRAM:
+		case SOCK_RAW:
+			break;
+		default:
+			return EAI_SOCKTYPE;
+		}
+	}
+
+	/* Resolve service name to port number */
+	if (servname != NULL && servname[0] != '\0') {
+		char *ep;
+		long pval;
+		const char *proto_name = NULL;
+
+		if (socktype == SOCK_STREAM)
+			proto_name = "tcp";
+		else if (socktype == SOCK_DGRAM)
+			proto_name = "udp";
+
+		/* Try numeric port first */
+		pval = strtol(servname, &ep, 10);
+		if (ep != servname && *ep == '\0' && pval >= 0 && pval <= 65535) {
+			port = htons((unsigned short)pval);
+		} else {
+			struct servent *sp;
+
+			if (flags & AI_NUMERICSERV)
+				return EAI_NONAME;
+
+			sp = getservbyname(servname, proto_name);
+			if (sp == NULL) {
+				/* try the other protocol if socktype was unspecified */
+				if (proto_name == NULL) {
+					sp = getservbyname(servname, "tcp");
+					if (sp == NULL)
+						sp = getservbyname(servname, "udp");
+				}
+				if (sp == NULL)
+					return EAI_SERVICE;
+			}
+			port = sp->s_port; /* already in network byte order */
+		}
+	}
+
+	/* Determine which socket types to iterate */
+	int stypes[3];
+	int nstypes = 0;
+
+	if (socktype != 0) {
+		stypes[0] = socktype;
+		nstypes = 1;
+	} else {
+		stypes[0] = SOCK_STREAM;
+		stypes[1] = SOCK_DGRAM;
+		nstypes = 2;
+	}
+
+	/* Determine which address families to iterate */
+	int families[2];
+	int nfamilies = 0;
+
+	if (family == PF_INET || family == PF_INET6) {
+		families[0] = family;
+		nfamilies = 1;
+	} else {
+		/* PF_UNSPEC: try both */
+		families[0] = PF_INET6;
+		families[1] = PF_INET;
+		nfamilies = 2;
+	}
+
+	for (int fi = 0; fi < nfamilies; fi++) {
+		int af = families[fi];
+
+		/* Resolve or construct addresses */
+		struct sockaddr_storage addrs[16];
+		char *canonname = NULL;
+		int naddrs = 0;
+
+		if (hostname == NULL) {
+			/* NULL hostname: wildcard or loopback */
+			if (af == PF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[0];
+				memset(sin, 0, sizeof(*sin));
+				sin->sin_len = sizeof(*sin);
+				sin->sin_family = AF_INET;
+				sin->sin_addr.s_addr = (flags & AI_PASSIVE)
+					? htonl(INADDR_ANY) : htonl(INADDR_LOOPBACK);
+				naddrs = 1;
+			} else {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[0];
+				memset(sin6, 0, sizeof(*sin6));
+				sin6->sin6_len = sizeof(*sin6);
+				sin6->sin6_family = AF_INET6;
+				if (flags & AI_PASSIVE)
+					memset(&sin6->sin6_addr, 0, sizeof(sin6->sin6_addr));
+				else {
+					memset(&sin6->sin6_addr, 0, sizeof(sin6->sin6_addr));
+					sin6->sin6_addr.s6_addr[15] = 1; /* ::1 */
+				}
+				naddrs = 1;
+			}
+		} else if (flags & AI_NUMERICHOST) {
+			/* Numeric-only parse */
+			if (af == PF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[0];
+				memset(sin, 0, sizeof(*sin));
+				sin->sin_len = sizeof(*sin);
+				sin->sin_family = AF_INET;
+				if (__inet_pton(AF_INET, hostname, &sin->sin_addr, SocketBase) == 1)
+					naddrs = 1;
+			} else {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[0];
+				memset(sin6, 0, sizeof(*sin6));
+				sin6->sin6_len = sizeof(*sin6);
+				sin6->sin6_family = AF_INET6;
+				if (__inet_pton(AF_INET6, hostname, &sin6->sin6_addr, SocketBase) == 1)
+					naddrs = 1;
+			}
+		} else {
+			/* Try numeric parse first, then DNS */
+			int numeric_ok = 0;
+
+			if (af == PF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[0];
+				memset(sin, 0, sizeof(*sin));
+				sin->sin_len = sizeof(*sin);
+				sin->sin_family = AF_INET;
+				if (__inet_pton(AF_INET, hostname, &sin->sin_addr, SocketBase) == 1) {
+					naddrs = 1;
+					numeric_ok = 1;
+				}
+			} else {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[0];
+				memset(sin6, 0, sizeof(*sin6));
+				sin6->sin6_len = sizeof(*sin6);
+				sin6->sin6_family = AF_INET6;
+				if (__inet_pton(AF_INET6, hostname, &sin6->sin6_addr, SocketBase) == 1) {
+					naddrs = 1;
+					numeric_ok = 1;
+				}
+			}
+
+			if (!numeric_ok) {
+				/* DNS lookup */
+				struct hostent *hp;
+
+				if (af == PF_INET)
+					hp = __gethostbyname(hostname, SocketBase);
+				else
+					hp = __gethostbyname2(hostname, AF_INET6, SocketBase);
+
+				if (hp != NULL && hp->h_addr_list != NULL) {
+					if (flags & AI_CANONNAME)
+						canonname = hp->h_name;
+					for (int i = 0; hp->h_addr_list[i] && naddrs < 16; i++) {
+						if (af == PF_INET) {
+							struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[naddrs];
+							memset(sin, 0, sizeof(*sin));
+							sin->sin_len = sizeof(*sin);
+							sin->sin_family = AF_INET;
+							memcpy(&sin->sin_addr, hp->h_addr_list[i], hp->h_length);
+						} else {
+							struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[naddrs];
+							memset(sin6, 0, sizeof(*sin6));
+							sin6->sin6_len = sizeof(*sin6);
+							sin6->sin6_family = AF_INET6;
+							memcpy(&sin6->sin6_addr, hp->h_addr_list[i], hp->h_length);
+						}
+						naddrs++;
+					}
+				}
+			}
+		}
+
+		if (naddrs == 0)
+			continue;
+
+		/* Build result nodes for each address x socktype combination */
+		for (int ai = 0; ai < naddrs; ai++) {
+			struct sockaddr *sa = (struct sockaddr *)&addrs[ai];
+			int addrlen = (af == PF_INET)
+				? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+
+			/* Set port in the address */
+			if (af == PF_INET)
+				((struct sockaddr_in *)sa)->sin_port = port;
+			else
+				((struct sockaddr_in6 *)sa)->sin6_port = port;
+
+			for (int si = 0; si < nstypes; si++) {
+				struct addrinfo *ai_new;
+				int proto;
+
+				if (stypes[si] == SOCK_STREAM)
+					proto = IPPROTO_TCP;
+				else if (stypes[si] == SOCK_DGRAM)
+					proto = IPPROTO_UDP;
+				else
+					proto = protocol;
+
+				/* Allocate addrinfo + sockaddr in single block */
+				ai_new = (struct addrinfo *)AllocVec(
+					sizeof(struct addrinfo) + addrlen,
+					MEMF_PUBLIC | MEMF_CLEAR);
+				if (ai_new == NULL) {
+					error = EAI_MEMORY;
+					goto fail;
+				}
+
+				ai_new->ai_flags = flags;
+				ai_new->ai_family = af;
+				ai_new->ai_socktype = stypes[si];
+				ai_new->ai_protocol = proto;
+				ai_new->ai_addrlen = addrlen;
+				ai_new->ai_addr = (struct sockaddr *)(ai_new + 1);
+				memcpy(ai_new->ai_addr, sa, addrlen);
+				ai_new->ai_next = NULL;
+
+				/* Set canonical name on first result only */
+				if (sentinel.ai_next == NULL && canonname != NULL) {
+					int clen = strlen(canonname) + 1;
+					ai_new->ai_canonname = (char *)AllocVec(clen, MEMF_PUBLIC);
+					if (ai_new->ai_canonname)
+						memcpy(ai_new->ai_canonname, canonname, clen);
+				} else if (sentinel.ai_next == NULL && (flags & AI_CANONNAME) && hostname != NULL) {
+					int clen = strlen(hostname) + 1;
+					ai_new->ai_canonname = (char *)AllocVec(clen, MEMF_PUBLIC);
+					if (ai_new->ai_canonname)
+						memcpy(ai_new->ai_canonname, hostname, clen);
+				}
+
+				cur->ai_next = ai_new;
+				cur = ai_new;
+			}
+		}
+	}
+
+	if (sentinel.ai_next == NULL)
+		return EAI_NONAME;
+
+	*result = sentinel.ai_next;
+	return 0;
+
+fail:
+	/* Free any partial results */
+	{
+		struct addrinfo *ai_f, *next;
+		for (ai_f = sentinel.ai_next; ai_f != NULL; ai_f = next) {
+			next = ai_f->ai_next;
+			if (ai_f->ai_canonname)
+				FreeVec(ai_f->ai_canonname);
+			FreeVec(ai_f);
+		}
+	}
+	return error;
 
 	AROS_LIBFUNC_EXIT
 }
 
 AROS_LH7(LONG, getnameinfo,
-         AROS_LHA(struct sockaddr *, sockaddr, A0),
+         AROS_LHA(struct sockaddr *, sa, A0),
          AROS_LHA(LONG, addrlen, D0),
          AROS_LHA(char *, hostname, A1),
          AROS_LHA(LONG, hostlen, D1),
@@ -547,11 +852,114 @@ AROS_LH7(LONG, getnameinfo,
 	AROS_LIBFUNC_INIT
 
 #if defined(__AROS__)
-D(bug("[AROSTCP.MIAMI] miami_api.c: getnameinfo()\n"));
+D(bug("[AROSTCP.MIAMI] miami_api.c: getnameinfo(af=%d)\n", sa ? sa->sa_family : -1));
 #endif
 
-	__log(LOG_CRIT,"getnameinfo() is not implemented");
-	return ENOSYS;
+	if (sa == NULL)
+		return EAI_FAIL;
+
+	/* Resolve hostname */
+	if (hostname != NULL && hostlen > 0) {
+		if (flags & NI_NUMERICHOST) {
+			/* Numeric only */
+			const char *p = NULL;
+			if (sa->sa_family == AF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+				p = __inet_ntop(AF_INET, &sin->sin_addr,
+						hostname, hostlen, SocketBase);
+			} else if (sa->sa_family == AF_INET6) {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+				p = __inet_ntop(AF_INET6, &sin6->sin6_addr,
+						hostname, hostlen, SocketBase);
+			} else {
+				return EAI_FAMILY;
+			}
+			if (p == NULL)
+				return EAI_FAIL;
+		} else {
+			/* Try reverse DNS */
+			struct hostent *hp = NULL;
+			const char *numaddr = NULL;
+
+			if (sa->sa_family == AF_INET) {
+				struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+				hp = __gethostbyaddr((UBYTE *)&sin->sin_addr,
+						     sizeof(sin->sin_addr),
+						     AF_INET, SocketBase);
+			} else if (sa->sa_family == AF_INET6) {
+				struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+				hp = __gethostbyaddr((UBYTE *)&sin6->sin6_addr,
+						     sizeof(sin6->sin6_addr),
+						     AF_INET6, SocketBase);
+			} else {
+				return EAI_FAMILY;
+			}
+
+			if (hp != NULL && hp->h_name != NULL) {
+				char *name = hp->h_name;
+				if (flags & NI_NOFQDN) {
+					/* Truncate at first dot */
+					char *dot = strchr(name, '.');
+					if (dot) {
+						int dlen = dot - name;
+						if (dlen >= hostlen)
+							return EAI_FAIL;
+						memcpy(hostname, name, dlen);
+						hostname[dlen] = '\0';
+						goto host_done;
+					}
+				}
+				if ((int)strlen(name) >= hostlen)
+					return EAI_FAIL;
+				strcpy(hostname, name);
+			} else {
+				if (flags & NI_NAMEREQD)
+					return EAI_NONAME;
+				/* Fall back to numeric */
+				if (sa->sa_family == AF_INET) {
+					struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+					numaddr = __inet_ntop(AF_INET, &sin->sin_addr,
+							      hostname, hostlen, SocketBase);
+				} else {
+					struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+					numaddr = __inet_ntop(AF_INET6, &sin6->sin6_addr,
+							      hostname, hostlen, SocketBase);
+				}
+				if (numaddr == NULL)
+					return EAI_FAIL;
+			}
+		}
+	}
+host_done:
+
+	/* Resolve service name */
+	if (servicename != NULL && servicelen > 0) {
+		int port;
+
+		if (sa->sa_family == AF_INET)
+			port = ((struct sockaddr_in *)sa)->sin_port;
+		else if (sa->sa_family == AF_INET6)
+			port = ((struct sockaddr_in6 *)sa)->sin6_port;
+		else
+			return EAI_FAMILY;
+
+		if (!(flags & NI_NUMERICSERV)) {
+			const char *proto = (flags & NI_DGRAM) ? "udp" : "tcp";
+			struct servent *sp = getservbyport(port, proto);
+
+			if (sp != NULL) {
+				if ((int)strlen(sp->s_name) >= servicelen)
+					return EAI_FAIL;
+				strcpy(servicename, sp->s_name);
+				goto serv_done;
+			}
+		}
+		/* Numeric fallback */
+		snprintf(servicename, servicelen, "%d", ntohs(port));
+	}
+serv_done:
+
+	return 0;
 
 	AROS_LIBFUNC_EXIT
 }
@@ -567,7 +975,11 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiSupportsIPV6()\n"));
 #endif
 
 	DSYSCALLS(__log(LOG_DEBUG,"MiamiSupportsIPV6() called");)
+#if INET6
+	return TRUE;
+#else
 	return FALSE;
+#endif
 
 	AROS_LIBFUNC_EXIT
 }
