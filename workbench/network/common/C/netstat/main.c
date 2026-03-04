@@ -63,6 +63,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <err.h>
+#include <arpa/inet.h>
 
 #if defined(__AROS__)
 #include <fcntl.h>
@@ -160,6 +161,10 @@ struct nlist nl[] = {
 	{ "_mrttable" },
 #define N_VIFTABLE	30
 	{ "_viftable" },
+#define N_IP6STAT	31
+	{ "_ip6stat" },
+#define N_ICMP6STAT	32
+	{ "_icmp6stat" },
 	"",
 };
 
@@ -183,6 +188,15 @@ struct protox {
 	{ -1,		N_IGMPSTAT,	1,	0,
 	  igmp_stats,	"igmp" },
 #endif
+	{ -1,		-1,		0,	0,
+	  0,		0 }
+};
+
+struct protox ip6protox[] = {
+	{ -1,		N_IP6STAT,	1,	0,
+	  ip6_stats,	"ip6" },
+	{ -1,		N_ICMP6STAT,	1,	0,
+	  icmp6_stats,	"icmp6" },
 	{ -1,		-1,		0,	0,
 	  0,		0 }
 };
@@ -216,6 +230,7 @@ struct protox isoprotox[] = {
 #endif
 
 struct protox *protoprotox[] = { protox,
+				 ip6protox,
 #ifdef NETNS
 				 nsprotox,
 #endif
@@ -271,6 +286,8 @@ main(argc, argv)
 				af = AF_NS;
 			else if (strcmp(optarg, "inet") == 0)
 				af = AF_INET;
+			else if (strcmp(optarg, "inet6") == 0)
+				af = AF_INET6;
 			else if (strcmp(optarg, "unix") == 0)
 				af = AF_UNIX;
 			else if (strcmp(optarg, "iso") == 0)
@@ -426,6 +443,9 @@ main(argc, argv)
 		}
 		endprotoent();
 	}
+	if (af == AF_INET6 || af == AF_UNSPEC)
+		for (tp = ip6protox; tp->pr_name; tp++)
+			printproto(tp, tp->pr_name);
 #ifdef NETNS
 	if (af == AF_NS || af == AF_UNSPEC)
 		for (tp = nsprotox; tp->pr_name; tp++)

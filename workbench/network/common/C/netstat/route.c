@@ -51,6 +51,7 @@ static const char rcsid[] =
 #include <net/route.h>
 #undef KERNEL
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 #ifdef NETNS
 #include <netns/ns.h>
@@ -180,6 +181,9 @@ pr_family(af)
 	switch (af) {
 	case AF_INET:
 		afname = "Internet";
+		break;
+	case AF_INET6:
+		afname = "Internet6";
 		break;
 	case AF_NS:
 		afname = "XNS";
@@ -390,6 +394,20 @@ p_sockaddr(sa, flags, width)
 		      ((flags & RTF_HOST) ?
 			routename(sin->sin_addr.s_addr) :
 			netname(sin->sin_addr.s_addr, 0L));
+		break;
+	    }
+	case AF_INET6:
+	    {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+		static char ip6buf[INET6_ADDRSTRLEN];
+
+		if (IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr))
+			cp = "default";
+		else {
+			inet_ntop(AF_INET6, &sin6->sin6_addr,
+				  ip6buf, sizeof(ip6buf));
+			cp = ip6buf;
+		}
 		break;
 	    }
 #ifdef NETNS
@@ -604,6 +622,58 @@ netname(in, mask)
 	else
 		sprintf(line, "%u.%u.%u.%u", C(i >> 24),
 			C(i >> 16), C(i >> 8), C(i));
+	return (line);
+}
+
+char *
+routename6(sa6)
+	struct sockaddr_in6 *sa6;
+{
+	static char line[INET6_ADDRSTRLEN];
+
+	if (IN6_IS_ADDR_UNSPECIFIED(&sa6->sin6_addr))
+		strcpy(line, "default");
+	else
+		inet_ntop(AF_INET6, &sa6->sin6_addr, line, sizeof(line));
+	return (line);
+}
+
+char *
+netname6(sa6, mask)
+	struct sockaddr_in6 *sa6;
+	struct in6_addr *mask;
+{
+	static char line[INET6_ADDRSTRLEN + 4]; /* +4 for /128 */
+	int masklen;
+
+	if (IN6_IS_ADDR_UNSPECIFIED(&sa6->sin6_addr) &&
+	    (mask == NULL || IN6_IS_ADDR_UNSPECIFIED(mask)))
+		return ("default");
+
+	inet_ntop(AF_INET6, &sa6->sin6_addr, line, INET6_ADDRSTRLEN);
+
+	if (mask != NULL) {
+		u_char *p = (u_char *)mask;
+		masklen = 0;
+		for (int i = 0; i < 16; i++) {
+			if (p[i] == 0xff)
+				masklen += 8;
+			else {
+				u_char v = p[i];
+				while (v & 0x80) {
+					masklen++;
+					v <<= 1;
+				}
+				break;
+			}
+		}
+		if (masklen < 128) {
+			char pfx[8];
+			snprintf(pfx, sizeof(pfx), "/%d", masklen);
+			strncat(line, pfx, sizeof(line) - strlen(line) - 1);
+		}
+	}
+
 	return (line);
 }
 

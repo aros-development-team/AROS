@@ -174,6 +174,18 @@ intpr(interval, ifnetaddr)
 				printf("%-15.15s ",
 				    routename(sin->sin_addr.s_addr));
 				break;
+			case AF_INET6:
+				{
+				struct sockaddr_in6 *sin6 =
+					(struct sockaddr_in6 *)sa;
+				char addr6buf[INET6_ADDRSTRLEN];
+
+				inet_ntop(AF_INET6, &sin6->sin6_addr,
+					  addr6buf, sizeof(addr6buf));
+				printf("%-11.11s ", addr6buf);
+				printf("%-15.15s ", addr6buf);
+				}
+				break;
 #ifdef NETNS
 			case AF_NS:
 				{

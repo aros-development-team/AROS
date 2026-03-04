@@ -34,6 +34,11 @@
  */
 
 #include <sys/cdefs.h>
+#include <netinet/in.h>
+
+#if defined(__AROS__)
+#include <proto/miami.h>
+#endif
 
 extern int	Aflag;		/* show addresses of protocol control block */
 extern int	aflag;		/* show all sockets (including servers) */
@@ -69,6 +74,11 @@ void	icmp_stats __P((u_long, char *));
 void	igmp_stats __P((u_long, char *));
 void	protopr __P((u_long, char *));
 
+void	ip6_stats __P((u_long, char *));
+void	icmp6_stats __P((u_long, char *));
+char	*inet6name __P((struct in6_addr *));
+void	inet6print __P((struct in6_addr *, int, char *));
+
 void	mbpr(u_long);
 
 void	hostpr __P((u_long, u_long));
@@ -83,7 +93,9 @@ char	*ns_phost __P((struct sockaddr *));
 void	upHex __P((char *));
 
 char	*routename __P((u_long));
+char	*routename6 __P((struct sockaddr_in6 *));
 char	*netname __P((u_long, u_long));
+char	*netname6 __P((struct sockaddr_in6 *, struct in6_addr *));
 char	*ns_print __P((struct sockaddr *));
 void	routepr __P((u_long));
 
