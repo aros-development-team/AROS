@@ -217,3 +217,6 @@
 [submodule "workbench/system/VMM/cat"]
 	path = workbench/system/VMM/cat
 	url = https://github.com/aros-translation-team/vmm-handler.git
+[submodule "workbench/prefs/firewall/catalogs"]
+	path = workbench/prefs/firewall/catalogs
+	url = https://github.com/aros-translation-team/firewall-prefs.git
