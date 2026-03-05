@@ -791,7 +791,7 @@ nd6_storelladdr(struct rtentry *rt)
     }
 
     sprintf(namebuf, "%s%d", ifp->if_name, ifp->if_unit);
-    namelen = strlen(namebuf);
+    namelen = strnlen(namebuf, sizeof(namebuf));
 
     /* sdl_len includes space for name + MAC (even though MAC is empty) */
     sdl_len = 8 + namelen + ifp->if_addrlen;

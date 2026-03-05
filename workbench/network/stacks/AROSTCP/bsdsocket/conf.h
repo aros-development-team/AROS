@@ -47,6 +47,10 @@
 #endif
 #endif
 
+#ifndef FILENAME_MAX
+#define FILENAME_MAX 256
+#endif
+
 /* __PPC__ definition is dropped in gcc 4.4.2, but the stack code relies on it. Fix this up. */
 #ifdef __powerpc__
 #ifndef __PPC__

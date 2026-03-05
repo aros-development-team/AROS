@@ -172,6 +172,16 @@ strlen(register const char *s1)
   return (len);
 }
 
+static inline int
+strnlen(register const char *s1, int maxlen)
+{
+  register int len;
+
+  for (len = 0; len < maxlen && *s1++ != '\0'; len++)
+    ;
+  return (len);
+}
+
 static inline char *
 strcpy(register char *s1, register const char *s2)
 {

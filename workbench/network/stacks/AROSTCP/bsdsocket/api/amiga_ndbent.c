@@ -291,7 +291,7 @@ AROS_LH1(LONG, AddDynDomain,
     struct DomainentNode *dn;
     short  nodesize;
 
-    nodesize = sizeof(*dn) + strlen(entry) + 1;
+    nodesize = sizeof(*dn) + strnlen(entry, MAXHOSTNAMELEN) + 1;
     if((dn = bsd_malloc(nodesize, NULL, NULL)) == NULL) {
         writeErrnoValue(MiamiBase->_SocketBase, ENOMEM);
         return ENOMEM;

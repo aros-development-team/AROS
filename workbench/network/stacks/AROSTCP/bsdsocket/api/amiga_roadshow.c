@@ -1100,7 +1100,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
             int slen;
 
             fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
-            slen = strlen(ipstr) + 1;
+            slen = strnlen(ipstr, sizeof(ipstr)) + 1;
 
             dnsn = bsd_malloc(sizeof(struct DomainNameServerNode) + slen,
                               NULL, NULL);
@@ -1124,7 +1124,7 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
         int slen;
 
         fmt_ipaddr(ipstr, nsn->nsn_Ent.ns_addr);
-        slen = strlen(ipstr) + 1;
+        slen = strnlen(ipstr, sizeof(ipstr)) + 1;
 
         dnsn = bsd_malloc(sizeof(struct DomainNameServerNode) + slen,
                           NULL, NULL);

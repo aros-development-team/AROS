@@ -200,7 +200,7 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
              * of gethostbyaddr. (from question section ???)
              */
             HS->host.h_name = bp;
-            n = strlen(bp) + 1;
+            n = strnlen(bp, buflen) + 1;
             bp += n;
             buflen -= n;
         } else
@@ -251,7 +251,7 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
                 continue;
             *ap++ = bp;
             HS->host_alias_count++;
-            n = strlen(bp) + 1;
+            n = strnlen(bp, buflen) + 1;
             bp += n;
             buflen -= n;
             continue;
@@ -269,7 +269,7 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
             HS->host.h_name = bp;   /* well, rewrites name pointer if there were
 				 returned questions also... */
             haveanswer = 1;
-            bp += (strlen(bp) + 1);
+            bp += (strnlen(bp, buflen) + 1);
             break;
         }
         if(iquery || type != qtype)  {
@@ -316,7 +316,7 @@ getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
                 int n1;
 
                 HS->host.h_name = bp;
-                n1 = strlen(bp) + 1;
+                n1 = strnlen(bp, buflen) + 1;
                 bp += n1;
                 buflen -= n1;
             }
@@ -520,7 +520,7 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
         if(__inet_pton(AF_INET6, name, &in6, libPtr) == 1) {
             if(allocDataBuffer(&libPtr->hostents,
                                sizeof(struct hostent) + sizeof(struct in6_addr) +
-                               sizeof(char *) * 2 + strlen(name) + 1) == FALSE) {
+                               sizeof(char *) * 2 + strnlen(name, MAXDNAME) + 1) == FALSE) {
                 writeErrnoValue(libPtr, ENOMEM);
                 return NULL;
             }
@@ -872,7 +872,7 @@ LONG __gethostname(STRPTR name, LONG namelen, struct SocketBase *libPtr)
                                    sizeof(id_addr), AF_INET, libPtr);
 
             if(hent != NULL) {
-                host_namelen = strlen(hent->h_name);
+                host_namelen = strnlen(hent->h_name, MAXHOSTNAMELEN);
                 sethostname(hent->h_name, host_namelen);
             } else {
 #if defined(__AROS__)
@@ -880,7 +880,7 @@ LONG __gethostname(STRPTR name, LONG namelen, struct SocketBase *libPtr)
 #endif
             }
         }
-    } else host_namelen = strlen(host_name);
+    } else host_namelen = strnlen(host_name, MAXHOSTNAMELEN);
 
 #if defined(__AROS__)
     D(bug("[AROSTCP](gethostnameadr.c) __gethostname: namelen: %d host_namelen: %d\n", namelen, host_namelen));

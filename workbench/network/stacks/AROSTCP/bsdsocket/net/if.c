@@ -175,8 +175,8 @@ struct ifnet *ifp;
      * create a Link Level name for this device
      */
     unitname = sprint_d((u_int)ifp->if_unit, workbuf, sizeof(workbuf));
-    namelen = strlen(ifp->if_name);
-    unitlen = strlen(unitname);
+    namelen = strnlen(ifp->if_name, IFNAMSIZ);
+    unitlen = strnlen(unitname, sizeof(workbuf));
 #define _offsetof(t, m) ((IPTR)((caddr_t)&((t *)0)->m))
     socksize = _offsetof(struct sockaddr_dl, sdl_data[0]) +
                unitlen + namelen + ifp->if_addrlen;

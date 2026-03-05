@@ -103,7 +103,7 @@ int res_update_db(struct state *state)
     for(domain = (struct DomainentNode *)NDB->ndb_Domains.mlh_Head;
             domain->dn_Node.mln_Succ;
             domain = (struct DomainentNode *)domain->dn_Node.mln_Succ) {
-        l = strlen(domain->dn_Ent.d_name) + 1;
+        l = strnlen(domain->dn_Ent.d_name, MAXDNAME) + 1;
         state->dnsrch[n] = bsd_malloc(l, NULL, NULL);
         if(!state->dnsrch[n]) {
 #if defined(__AROS__)
@@ -121,7 +121,7 @@ int res_update_db(struct state *state)
     for(domain = (struct DomainentNode *)DynDB.dyn_Domains.mlh_Head;
             domain->dn_Node.mln_Succ;
             domain = (struct DomainentNode *)domain->dn_Node.mln_Succ) {
-        l = strlen(domain->dn_Ent.d_name) + 1;
+        l = strnlen(domain->dn_Ent.d_name, MAXDNAME) + 1;
         state->dnsrch[n] = bsd_malloc(l, NULL, NULL);
         if(!state->dnsrch[n]) {
 #if defined(__AROS__)

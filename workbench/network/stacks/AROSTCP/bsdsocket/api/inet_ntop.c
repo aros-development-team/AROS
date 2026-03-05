@@ -160,7 +160,7 @@ inet_ntop6(const u_char *src, char *dst, socklen_t size, struct SocketBase *Sock
                 (best.len == 6 || (best.len == 5 && words[5] == 0xffff))) {
             if(!inet_ntop4(src + 12, tp, sizeof tmp - (tp - tmp), SocketBase))
                 return (NULL);
-            tp += strlen(tp);
+            tp += strnlen(tp, sizeof(tmp) - (tp - tmp));
             break;
         }
         tp += snprintf(tp, sizeof(tmp) - (tp - tmp), "%x", words[i]);

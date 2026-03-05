@@ -56,7 +56,7 @@ build_dhclient_args(char *buf, size_t len, struct ifnet *exclude_ifp, int v6)
                 continue;
         }
         snprintf(tmp, sizeof(tmp), " %s%u", ifp->if_name, ifp->if_unit);
-        strncat(buf, tmp, len - strlen(buf) - 1);
+        strncat(buf, tmp, len - strnlen(buf, len) - 1);
         count++;
     }
     return count;

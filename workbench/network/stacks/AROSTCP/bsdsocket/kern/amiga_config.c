@@ -183,7 +183,7 @@ getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
                 break;
             case VAR_STRP:
                 value = ((UBYTE **)variables[var].value)[index];
-                vlen  = strlen(value);
+                vlen  = strnlen(value, KEYWORDLEN);
                 break;
             case VAR_INET: {
                 ULONG s_addr =
@@ -312,7 +312,7 @@ setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
             case VAR_STRP:
                 if(ReadItem(Buffer, BufLen, args) <= 0)
                     goto reterr;
-                vlen  = strlen(Buffer) + 1;
+                vlen  = strnlen(Buffer, BufLen) + 1;
                 value = bsd_malloc(vlen, M_CFGVAR, M_WAITOK);
                 if(!value) {
                     *errstrp = ERR_MEMORY;

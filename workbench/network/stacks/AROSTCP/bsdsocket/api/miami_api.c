@@ -801,12 +801,12 @@ AROS_LH4(LONG, getaddrinfo,
 
                 /* Set canonical name on first result only */
                 if(sentinel.ai_next == NULL && canonname != NULL) {
-                    int clen = strlen(canonname) + 1;
+                    int clen = strnlen(canonname, MAXHOSTNAMELEN) + 1;
                     ai_new->ai_canonname = (char *)AllocVec(clen, MEMF_PUBLIC);
                     if(ai_new->ai_canonname)
                         memcpy(ai_new->ai_canonname, canonname, clen);
                 } else if(sentinel.ai_next == NULL && (flags & AI_CANONNAME) && hostname != NULL) {
-                    int clen = strlen(hostname) + 1;
+                    int clen = strnlen(hostname, MAXHOSTNAMELEN) + 1;
                     ai_new->ai_canonname = (char *)AllocVec(clen, MEMF_PUBLIC);
                     if(ai_new->ai_canonname)
                         memcpy(ai_new->ai_canonname, hostname, clen);
@@ -911,7 +911,7 @@ AROS_LH7(LONG, getnameinfo,
                         goto host_done;
                     }
                 }
-                if((int)strlen(name) >= hostlen)
+                if((int)strnlen(name, hostlen) >= hostlen)
                     return EAI_FAIL;
                 strcpy(hostname, name);
             } else {
@@ -950,7 +950,7 @@ host_done:
             struct servent *sp = getservbyport(port, proto);
 
             if(sp != NULL) {
-                if((int)strlen(sp->s_name) >= servicelen)
+                if((int)strnlen(sp->s_name, servicelen) >= servicelen)
                     return EAI_FAIL;
                 strcpy(servicename, sp->s_name);
                 goto serv_done;

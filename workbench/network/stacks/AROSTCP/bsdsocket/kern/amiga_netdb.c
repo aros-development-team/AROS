@@ -279,7 +279,7 @@ node_alloc(size_t nodesize, UBYTE *name, UBYTE **alias, int *aliasp)
     D(bug("[AROSTCP](amiga_netdb.c) node_alloc()\n"));
 #endif
 
-    nodesize += strlen(name) + 1;	/* Add space needed for the name */
+    nodesize += strnlen(name, MAXHOSTNAMELEN) + 1;	/* Add space needed for the name */
 
     *aliasp = 1;
     nodesize += sizeof(char *);	/* Alias list NULL terminator */
@@ -288,7 +288,7 @@ node_alloc(size_t nodesize, UBYTE *name, UBYTE **alias, int *aliasp)
     if(alias) {
         while(*alias) {
             (*aliasp)++;
-            nodesize += strlen(*alias++) + 1 + sizeof(char *);
+            nodesize += strnlen(*alias++, MAXHOSTNAMELEN) + 1 + sizeof(char *);
         }
     }
     gn = bsd_malloc(nodesize, M_NETDB, M_WAITOK);
@@ -678,7 +678,7 @@ addservent(struct NetDataBase *ndb,
         if((plen = StrToLong(s_proto, &tmp)) > 0 &&
                 s_proto[plen++] == '/') {
             Args[KNDB_DATA] = tmp;
-            int protonamelen = strlen(s_proto = s_proto + plen) + 1;
+            int protonamelen = strnlen(s_proto = s_proto + plen, MAXHOSTNAMELEN) + 1;
             sn = node_alloc(sizeof(*sn) + protonamelen,
                             (UBYTE *)Args[KNDB_NAME],
                             (UBYTE **)Args[KNDB_ALIAS], &aliases);

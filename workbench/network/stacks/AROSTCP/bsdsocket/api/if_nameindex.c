@@ -107,7 +107,7 @@ AROS_LH0(struct if_nameindex *, if_nameindex,
     for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
         if(ifa->ifa_addr &&
                 ifa->ifa_addr->sa_family == AF_LINK) {
-            nbytes += strlen(ifa->ifa_name) + 1;
+            nbytes += strnlen(ifa->ifa_name, IFNAMSIZ) + 1;
             ni++;
         }
     }
@@ -132,7 +132,7 @@ AROS_LH0(struct if_nameindex *, if_nameindex,
     for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
         if(ifa->ifa_addr &&
                 ifa->ifa_addr->sa_family == AF_LINK) {
-            size_t nlen = strlen(ifa->ifa_name);
+            size_t nlen = strnlen(ifa->ifa_name, IFNAMSIZ);
             if(nlen >= IFNAMSIZ)
                 nlen = IFNAMSIZ - 1;
             ifni2->if_index =

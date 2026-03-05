@@ -240,7 +240,7 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
             return 0;
         }
         if(tag) {
-            size_t taglen = strlen(tag);
+            size_t taglen = strnlen(tag, log_cnf.log_buf_len);
             if(taglen + 1 >= (size_t)log_cnf.log_buf_len) {
                 PutMsg(&logReplyPort, &msg->Msg);
                 return 0;
@@ -501,7 +501,7 @@ textout:
                 /*
                  * spit out necessary pad characters to fill on left, if necessary
                  */
-                if(width > 0 && !leftjustify && (width -= strlen(p)) > 0)
+                if(width > 0 && !leftjustify && (width -= strnlen(p, precision > 0 ? precision : cs->CS_Length)) > 0)
                     while(width--)
                         cs_putchar(padc, cs);
                 /* take a copy of the original pointer */

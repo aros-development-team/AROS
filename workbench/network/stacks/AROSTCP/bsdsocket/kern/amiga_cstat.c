@@ -559,7 +559,7 @@ LONG
 rexx_gethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res)
 {
     __gethostname(CURRENT(res), SPACE(res), (struct SocketBase *)SocketBase);
-    res->CS_CurChr += strlen(CURRENT(res));
+    res->CS_CurChr += strnlen(CURRENT(res), SPACE(res));
 
     return RETURN_OK;
 }

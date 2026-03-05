@@ -272,10 +272,10 @@ ssconfig(struct sana_softc *ifp, struct ssconfig *ifc)
     }
     ifp->ss_if.if_unit = ifc->unit;
     ifp->ss_execname = (char *)(ifp + 1);
-    /* Buffer after the struct is allocated to strlen(a_dev)+1, NOT FILENAME_MAX.
+    /* Buffer after the struct is allocated to strnlen(a_dev, FILENAME_MAX)+1, NOT FILENAME_MAX.
      * Use memcpy with the exact source length to avoid overflowing the allocation. */
     {
-        size_t devlen = strlen(ifc->args->a_dev);
+        size_t devlen = strnlen(ifc->args->a_dev, FILENAME_MAX);
         memcpy(ifp->ss_execname, ifc->args->a_dev, devlen + 1);
     }
     ifp->ss_execunit = *ifc->args->a_unit;

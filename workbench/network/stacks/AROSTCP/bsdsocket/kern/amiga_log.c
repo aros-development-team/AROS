@@ -502,7 +502,7 @@ void log_msg(struct SysLogPacket *msg)
              clockdata.year,
              levels + 6 * ((msg->Level <= LOG_DEBUG) ? msg->Level : LOG_DEBUG)
             );
-    chars = strlen(msg->String) - 1;
+    chars = strnlen(msg->String, log_cnf.log_buf_len) - 1;
     /* Remove last newline */
     if(msg->String[chars] == '\n') {
         msg->String[chars] = '\0';

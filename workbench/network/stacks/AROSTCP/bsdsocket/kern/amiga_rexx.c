@@ -145,7 +145,7 @@ void rexx_deinit(void)
              */
             while(rmsg = (struct RexxMsg *)GetMsg(ARexxPort)) {
                 SetRexxVar(rmsg, REXX_ERROR_NAME,
-                           errstr, strlen(errstr));
+                           errstr, strnlen(errstr, REPLYBUFLEN));
                 if(rmsg != REXX_RETURN_ERROR) {
                     rmsg->rm_Result2 = 0;
                     rmsg->rm_Result1 = 100;
@@ -190,12 +190,12 @@ BOOL rexx_poll(void)
 
         if(error = parseline(&csarg, &errstr, &result)) {
             SetRexxVar(rmsg, REXX_ERROR_NAME,
-                       errstr, (long)strlen(errstr));
+                       errstr, (long)strnlen(errstr, REPLYBUFLEN));
             rmsg->rm_Result1 = error;
         } else {
             if(rmsg->rm_Action & (1L << RXFB_RESULT)) {
                 rmsg->rm_Result2 = (IPTR)
-                                   CreateArgstring(result.CS_Buffer, (LONG)strlen(result.CS_Buffer));
+                                   CreateArgstring(result.CS_Buffer, (LONG)strnlen(result.CS_Buffer, result.CS_Length));
             }
         }
 

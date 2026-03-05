@@ -325,7 +325,7 @@ iface_make(struct ssconfig *ifc)
 
             /* Allocate the interface structure */
             ssc = (struct sana_softc *)
-                  bsd_malloc(sizeof(*ssc) + strlen(ifc->args->a_dev) + 1,
+                  bsd_malloc(sizeof(*ssc) + strnlen(ifc->args->a_dev, FILENAME_MAX) + 1,
                              M_IFNET, M_WAITOK);
 
             if(!ssc) {
@@ -382,7 +382,7 @@ iface_make(struct ssconfig *ifc)
 
                     /* Allocate the interface structure */
                     ssc = (struct sana_softc *)
-                          bsd_malloc(sizeof(*ssc) + strlen(ifc->args->a_dev) + 1,
+                          bsd_malloc(sizeof(*ssc) + strnlen(ifc->args->a_dev, FILENAME_MAX) + 1,
                                      M_IFNET, M_WAITOK);
 
                     if(!ssc) {

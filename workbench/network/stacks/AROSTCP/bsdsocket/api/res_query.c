@@ -428,7 +428,7 @@ res_querydomain(struct SocketBase 	*libPtr,
          * Check for trailing '.';
          * copy without '.' if present.
          */
-        n = strlen(name) - 1;
+        n = strnlen(name, 2 * MAXDNAME + 2) - 1;
         if(name[n] == '.' && n < (2 * MAXDNAME + 2) - 1) {
             bcopy(name, nbuf, n);
             nbuf[n] = '\0';
