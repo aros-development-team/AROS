@@ -407,10 +407,10 @@ res_querydomain(struct SocketBase 	*libPtr,
 #ifdef RES_DEBUG
 #if defined(__AROS__)
     bug("[AROSTCP](res_query.c) res_querydomain('%s', '%s', %d, %d)\n",
-        name, domain, class, type);
+        name, domain ? domain : "(null)", class, type);
 #else
     printf("res_querydomain(%s, %s, %d, %d)\n",
-           name, domain, class, type);
+           name, domain ? domain : "(null)", class, type);
 #endif
 #endif
 
@@ -428,10 +428,10 @@ res_querydomain(struct SocketBase 	*libPtr,
          * Check for trailing '.';
          * copy without '.' if present.
          */
-        n = strnlen(name, 2 * MAXDNAME + 2) - 1;
-        if(name[n] == '.' && n < (2 * MAXDNAME + 2) - 1) {
-            bcopy(name, nbuf, n);
-            nbuf[n] = '\0';
+        n = strnlen(name, 2 * MAXDNAME + 2);
+        if(n > 0 && name[n - 1] == '.' && n <= (2 * MAXDNAME + 2) - 1) {
+            bcopy(name, nbuf, n - 1);
+            nbuf[n - 1] = '\0';
         } else
             longname = name;
     } else {
@@ -439,7 +439,7 @@ res_querydomain(struct SocketBase 	*libPtr,
         memcpy(nbuf, name, nlen);
         ptr = nbuf + nlen;
         *ptr++ = '.';
-        (void)strncpy(ptr, domain, MAXDNAME);
+        (void)strlcpy(ptr, domain, MAXDNAME + 1);
         nbuf[2 * MAXDNAME + 1] = '\0';
 #if defined(__AROS__)
         D(bug("[AROSTCP](res_query.c) res_querydomain: '%s'\n", nbuf));
@@ -462,7 +462,7 @@ register const char *name;
 {
     register char *C1, *C2;
     FILE *fp;
-    char *file, *getenv(), *strcpy(), *strncpy();
+    char *file, *getenv();
     char buf[BUFSIZ];
     static char abuf[MAXDNAME];
 
@@ -490,7 +490,7 @@ register const char *name;
                 break;
             for(C2 = C1 + 1; *C2 && !isspace(*C2); ++C2);
             abuf[sizeof(abuf) - 1] = *C2 = '\0';
-            (void)strncpy(abuf, C1, sizeof(abuf) - 1);
+            (void)strlcpy(abuf, C1, sizeof(abuf));
             fclose(fp);
 #if defined(__AROS__)
             D(bug("[AROSTCP](res_query.c) __hostalias: returning %s\n", abuf));

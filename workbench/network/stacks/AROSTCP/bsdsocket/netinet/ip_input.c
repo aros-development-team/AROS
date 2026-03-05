@@ -376,9 +376,9 @@ found:
          * convert offset of this to bytes.
          */
         ip->ip_len -= hlen;
-        ((struct ipasfrag *)ip)->ipf_mff = 0;
+        ((struct ipasfrag *)(void *)ip)->ipf_mff = 0;
         if(ip->ip_off & IP_MF)
-            ((struct ipasfrag *)ip)->ipf_mff = 1;
+            ((struct ipasfrag *)(void *)ip)->ipf_mff = 1;
         ip->ip_off <<= 3;
 
         /*
@@ -386,9 +386,9 @@ found:
          * or if this is not the first fragment,
          * attempt reassembly; if it succeeds, proceed.
          */
-        if(((struct ipasfrag *)ip)->ipf_mff || ip->ip_off) {
+        if(((struct ipasfrag *)(void *)ip)->ipf_mff || ip->ip_off) {
             ipstat.ips_fragments++;
-            ip = ip_reass((struct ipasfrag *)ip, fp);
+            ip = ip_reass((struct ipasfrag *)(void *)ip, fp);
             if(ip == 0)
                 goto next;
             else

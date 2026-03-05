@@ -201,6 +201,22 @@ strncpy(register char *s1, register const char *s2, register unsigned int len)
     ;
   return (s1);
 }
+
+static inline size_t
+strlcpy(char *dst, const char *src, size_t dstsize)
+{
+  size_t srclen = 0;
+  if(dstsize > 0) {
+    while(srclen < dstsize - 1 && src[srclen] != '\0') {
+      dst[srclen] = src[srclen];
+      srclen++;
+    }
+    dst[srclen] = '\0';
+  }
+  while(src[srclen] != '\0')
+    srclen++;
+  return srclen;
+}
 #endif
 #endif /* __SASC */
 
