@@ -104,7 +104,7 @@ if (CxBase != NULL)
 
 /**********************************************************************/
 
-int main (LONG argc, UBYTE **argv)
+int main (int argc, char **argv)
 
 {
 BOOL Quit;
@@ -145,7 +145,7 @@ if (QuestionMark)
   CloseAll ();
   return (0);
   }
-          
+
 if (Quit)
   {
   if (!StopVMM ())

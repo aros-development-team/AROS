@@ -179,8 +179,9 @@ LLVM_CMAKEOPTIONS +=                                                            
     -DBUILD_SHARED_LIBS=OFF
 else
 LLVM_CMAKEOPTIONS +=                                                                                                                    \
-    -DBUILD_SHARED_LIBS=ON                                                                                                              \
-    -DLLVM_ENABLE_LTO=ON
+    -DLLVM_BUILD_LLVM_DYLIB=ON                                                                                                          \
+    -DLLVM_LINK_LLVM_DYLIB=ON                                                                                                           \
+    -DBUILD_SHARED_LIBS=OFF
 endif
 endif
 
@@ -209,6 +210,7 @@ endif
 
 LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                                                                          \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Linux                                                                                                             \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
@@ -229,6 +231,7 @@ LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                  
 
 LLVM_LIBCXX_CMAKEOPTIONS :=                                                                                                             \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Linux                                                                                                             \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
@@ -310,6 +313,7 @@ tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
 
 LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                                                                          \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Linux                                                                                                             \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \

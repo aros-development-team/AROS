@@ -936,7 +936,7 @@ case "$aros_toolchain" in
         toolchain_size_opt_lvl="-Os"
         aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
-        aros_config_aflags="$""(WARN_ALL) -no-integrated-as -x assembler-with-cpp -c"
+        aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         toolchain_ld_fmtbinary="--format=binary"
         aros_nowarn_flags="$aros_nowarn_flags NOWARN_IGNORED_OPTIMIZATION_ARGUMENT"
         ;;
@@ -1323,7 +1323,7 @@ case "$target_cpu" in
                 x86_64_isa_extra+="--target=x86_64-unknown-aros "
                 if test "$target_cpu" = "x86_64"; then
                     target_needs_collect32=yes
-                    aros_target32_cpu=i386
+                    aros_target_cpu32=i386
                 fi
             ;;
             *)
@@ -1692,22 +1692,28 @@ case "$target_os" in
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_isa_flags="$""(ISA_X8664_FLAGS)"
+                aros_isa_flags="$""(ISA_X8664_FLAGS))$export_newline""ISA_32_FLAGS                  = $""(strip $""(ISA_X86_FLAGS)"
                 aros_macosx_version="10.6"
                 aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP)"
                 aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP)"
-                aros_kernel_isa_flags="-m64"
-                aros_kernel_ldflags="-m64"
+                aros_kernel_isa_flags="-arch x86_64"
+                aros_kernel_ldflags="-arch x86_64"
                 aros_nominal_depth=8
+                aros_kernel_cc="$toolchain_c_compiler -arch x86_64"
+                aros_kernel_cxx="$toolchain_cxx_compiler -arch x86_64"
+                aros_kernel_cpp="$toolchain_cpp_preprocessor${toolchain_cpp_opts} -arch x86_64"
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
-                aros_kernel_ld="$toolchain_ld"
-                aros_kernel_as="$toolchain_as"
-                aros_kernel_ranlib="$toolchain_ranlib"
+                aros_kernel_ld="$toolchain_ld -arch x86_64"
+                aros_kernel_as="$toolchain_as -arch x86_64"
+                aros_kernel_ranlib="ranlib"
                 aros_kernel_nm="$toolchain_nm"
                 aros_kernel_strip="strip"
-                kernel_tool_prefix="i686-apple-darwin10-"
+                kernel_tool_prefix=""
                 llvm_target_cpu="X86"
+                aros_target_cpu32="i386"
+                target_isa_extra="TARGET_ISA_32_CFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_CXXFLAGS        = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_OBJCFLAGS       = $""(TARGET_ISA_32_CFLAGS)$export_newline""TARGET_ISA_32_AFLAGS          = $""(ISA_32_FLAGS)$export_newline""TARGET_ISA_32_LDFLAGS         = $""(ISA_32_FLAGS)$export_newline"
+                target_link_extra="TARGET_32_C_LIBS              = $""(strip -L$""(CROSSTOOLSDIR)/lib/generic -lclang_rt.builtins-$""(AROS_TARGET_CPU32))$export_newline"
                 ;;
             *ppc*)
                 aros_target_cpu="ppc"
@@ -1740,9 +1746,32 @@ case "$target_os" in
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch arm"
                 aros_kernel_ranlib="$toolchain_ranlib -arch arm"
-                kernel_tool_prefix="arm-apple-darwin10-" 
+                kernel_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
                 llvm_target_cpu="Arm"
+                ;;
+            *aarch64*)
+                aros_target_cpu="aarch64"
+                aros_object_format="aarch64elf"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Daarch64"
+                aros_macosx_version="11.0"
+                aros_kernel_includes="$aros_kernel_includes -D__arm64__"
+                aros_kernel_isa_flags="-arch arm64"
+                aros_config_cflags="$aros_config_cflags -fno-pic"
+                aros_kernel_cflags="$aros_kernel_cflags -fno-pic"
+                aros_kernel_ldflags="-arch arm64"
+                aros_kernel_cc="$toolchain_c_compiler -arch arm64"
+                aros_kernel_cxx="$toolchain_cxx_compiler -arch arm64"
+                aros_kernel_cpp="$toolchain_cpp_preprocessor${toolchain_cpp_opts} -arch arm64"
+                aros_kernel_ld="$toolchain_ld -arch arm64"
+                aros_kernel_as="$toolchain_as -arch arm64"
+                aros_kernel_rs="$toolchain_ar"
+                aros_kernel_ar_flags="-cr"
+                aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="$toolchain_nm"
+                aros_kernel_strip="strip"
+                kernel_tool_prefix=""
+                llvm_target_cpu="AArch64"
                 ;;
             *)
                 AC_MSG_ERROR("Unsupported target CPU for darwin hosted flavour -- $target_cpu")
@@ -1772,6 +1801,7 @@ case "$target_os" in
                 esac
                 aros_kernel_cflags="$aros_kernel_cflags -mmacosx-version-min=$aros_macosx_version"
                 aros_kernel_ldflags="$aros_kernel_ldflags -mmacosx-version-min=$aros_macosx_version"
+                aros_target_options+="$export_newline""# Enable Cocoa Gfx Driver$export_newline""OPT_HOST_COCOAGFX             := yes$export_newline"
             ;;
         esac
         ;;
@@ -4434,7 +4464,7 @@ AC_CONFIG_COMMANDS([binutils-support],
         orig_target_objdump=${orig_target_objdump}
         orig_target_objcopy=${orig_target_objcopy}
         orig_target_strip=${orig_target_strip}
-        aros_kernel_ld=${aros_kernel_ld}
+        aros_kernel_ld="${aros_kernel_ld}"
     ]
 )
 if test "${use_ld_wrapper}" = "yes"; then
@@ -4460,7 +4490,7 @@ if test "${use_kernel_cc_wrapper}" = "yes"; then
             aros_target_cpu=${aros_target_cpu}
             aros_target_arch=${aros_target_arch}
             aros_target_suffix=${aros_target_suffix}
-            aros_kernel_ld=${aros_kernel_ld}
+            aros_kernel_ld="${aros_kernel_ld}"
         ]
     )
     AC_CONFIG_FILES(
