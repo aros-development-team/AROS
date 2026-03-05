@@ -1,0 +1,17 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main args locale fweditor prefsdata
+
+EXEDIR := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-firewall
+
+#MM workbench-prefs-firewall : includes linklibs workbench-prefs-firewall-catalogs
+
+USER_CPPFLAGS := -DHAVE_STRLCPY
+
+%build_prog mmake=workbench-prefs-firewall \
+    progname=Firewall targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
