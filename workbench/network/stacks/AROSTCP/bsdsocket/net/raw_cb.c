@@ -20,29 +20,29 @@
  *
  */
 
-/* 
+/*
  * Mach Operating System
  * Copyright (C) 1992 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
- * any improvements or extensions that they make and grant Carnegie Mellon 
+ *
+ * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 
@@ -106,7 +106,7 @@ struct rawcb rawcb = {0};	/* head of list */
 /* --- end moved from raw_cb.h --- */
 
 /*
- * Routines to manage the raw protocol control blocks. 
+ * Routines to manage the raw protocol control blocks.
  *
  * TODO:
  *	hash lookups by protocol family/protocol + address family
@@ -123,25 +123,25 @@ u_long	raw_recvspace = RAWRCVQ;
  */
 int
 raw_attach(register struct socket *so,
-	   int proto)
+           int proto)
 {
-	register struct rawcb *rp = sotorawcb(so);
-	int error;
+    register struct rawcb *rp = sotorawcb(so);
+    int error;
 
-	/*
-	 * It is assumed that raw_attach is called
-	 * after space has been allocated for the
-	 * rawcb.
-	 */
-	if (rp == 0)
-		return (ENOBUFS);
-	if (error = soreserve(so, raw_sendspace, raw_recvspace))
-		return (error);
-	rp->rcb_socket = so;
-	rp->rcb_proto.sp_family = so->so_proto->pr_domain->dom_family;
-	rp->rcb_proto.sp_protocol = proto;
-	insque(rp, &rawcb);
-	return (0);
+    /*
+     * It is assumed that raw_attach is called
+     * after space has been allocated for the
+     * rawcb.
+     */
+    if(rp == 0)
+        return (ENOBUFS);
+    if(error = soreserve(so, raw_sendspace, raw_recvspace))
+        return (error);
+    rp->rcb_socket = so;
+    rp->rcb_proto.sp_family = so->so_proto->pr_domain->dom_family;
+    rp->rcb_proto.sp_protocol = proto;
+    insque(rp, &rawcb);
+    return (0);
 }
 
 /*
@@ -151,17 +151,17 @@ raw_attach(register struct socket *so,
 void
 raw_detach(register struct rawcb *rp)
 {
-	struct socket *so = rp->rcb_socket;
+    struct socket *so = rp->rcb_socket;
 
-	so->so_pcb = 0;
-	sofree(so);
-	remque(rp);
+    so->so_pcb = 0;
+    sofree(so);
+    remque(rp);
 #ifdef notdef
-	if (rp->rcb_laddr)
-		m_freem(dtom(rp->rcb_laddr));
-	rp->rcb_laddr = 0;
+    if(rp->rcb_laddr)
+        m_freem(dtom(rp->rcb_laddr));
+    rp->rcb_laddr = 0;
 #endif
-	bsd_free((caddr_t)(rp), M_PCB);
+    bsd_free((caddr_t)(rp), M_PCB);
 }
 
 /*
@@ -172,27 +172,27 @@ raw_disconnect(struct rawcb *rp)
 {
 
 #ifdef notdef
-	if (rp->rcb_faddr)
-		m_freem(dtom(rp->rcb_faddr));
-	rp->rcb_faddr = 0;
+    if(rp->rcb_faddr)
+        m_freem(dtom(rp->rcb_faddr));
+    rp->rcb_faddr = 0;
 #endif
-	if (rp->rcb_socket->so_state & SS_NOFDREF)
-		raw_detach(rp);
+    if(rp->rcb_socket->so_state & SS_NOFDREF)
+        raw_detach(rp);
 }
 
 #ifdef notdef
 raw_bind(so, nam)
-	register struct socket *so;
-	struct mbuf *nam;
+register struct socket *so;
+struct mbuf *nam;
 {
-	struct sockaddr *addr = mtod(nam, struct sockaddr *);
-	register struct rawcb *rp;
+    struct sockaddr *addr = mtod(nam, struct sockaddr *);
+    register struct rawcb *rp;
 
-	if (ifnet == 0)
-		return (EADDRNOTAVAIL);
-	rp = sotorawcb(so);
-	nam = m_copym(nam, 0, M_COPYALL, M_WAITOK);
-	rp->rcb_laddr = mtod(nam, struct sockaddr *);
-	return (0);
+    if(ifnet == 0)
+        return (EADDRNOTAVAIL);
+    rp = sotorawcb(so);
+    nam = m_copym(nam, 0, M_COPYALL, M_WAITOK);
+    rp->rcb_laddr = mtod(nam, struct sockaddr *);
+    return (0);
 }
 #endif

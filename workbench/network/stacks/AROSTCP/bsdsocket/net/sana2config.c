@@ -58,21 +58,21 @@ static const char template[] = SSC_TEMPLATE;
 struct ssconfig *
 ssconfig_parse(struct RDArgs *rdargs)
 {
-  struct ssconfig *config = AllocVec(sizeof(*config), MEMF_CLEAR|MEMF_PUBLIC);
+    struct ssconfig *config = AllocVec(sizeof(*config), MEMF_CLEAR | MEMF_PUBLIC);
 
-D(bug("[AROSTCP] ssconfig_parse()\n"));
+    D(bug("[AROSTCP] ssconfig_parse()\n"));
 
-  if (config != NULL) {
-    
-    if (ReadArgs(template, (IPTR *)config->args, rdargs)) {
-      config->rdargs = rdargs;
-      config->flags |= SSCF_RDARGS;
-      return config;
-    } else {
-      FreeVec(config);
+    if(config != NULL) {
+
+        if(ReadArgs(template, (IPTR *)config->args, rdargs)) {
+            config->rdargs = rdargs;
+            config->flags |= SSCF_RDARGS;
+            return config;
+        } else {
+            FreeVec(config);
+        }
     }
-  }
-  return NULL;
+    return NULL;
 }
 
 /*
@@ -81,63 +81,63 @@ D(bug("[AROSTCP] ssconfig_parse()\n"));
 void
 ssconfig_free(struct ssconfig config[])
 {
-D(bug("[AROSTCP] ssconfig_free()\n"));
-  if (config->flags & SSCF_RDARGS)
-    FreeArgs(config->rdargs);
-  FreeVec(config);
+    D(bug("[AROSTCP] ssconfig_free()\n"));
+    if(config->flags & SSCF_RDARGS)
+        FreeArgs(config->rdargs);
+    FreeVec(config);
 }
 
 #if 0
 static int
 getconfs(BPTR iffh, UBYTE *buf)
 {
-  LONG i, quoted = 0, escaped = 0;
+    LONG i, quoted = 0, escaped = 0;
 
-D(bug("[AROSTCP] getconfs()\n"));
+    D(bug("[AROSTCP] getconfs()\n"));
 
-  if (FGets(iffh, buf, CONFIGLINELEN - 1)) {
-    for (i = 0; buf[i]; i++) {
-      UBYTE c = buf[i];
-      if (c == '\n') {
-	if (quoted) {
-	  return ERROR_UNMATCHED_QUOTES;
-	}
-	if (i > 0 && buf[i - 1] == '+') {
-	  i--;
-	  if (i < CONFIGLINELEN - 2) {
-	    if (FGets(iffh, buf + i, CONFIGLINELEN - 1 - i))
-	      continue;
-	    return IoErr();
-	  }	    
-	  return ERROR_LINE_TOO_LONG;
-	}
-	return 0;
-      } else if (quoted) {
-	if (escaped) {
-	  escaped = 0;
-	} else if (c == '*') {
-	  escaped = 1;
-	  continue;
-	} else if (c == '"') {
-	  quoted = 0;
-	}
-      } else if (c == ';' || c == '#') {
-	buf[i++] = '\n';
-	buf[i] = '\0';
-	return 0;
-      } else if (escaped) {
-	escaped = 0;
-      } else if (c == '*') {
-	escaped = 1;
-      } else if (c == '"') {
-	quoted = 1;
-      }
+    if(FGets(iffh, buf, CONFIGLINELEN - 1)) {
+        for(i = 0; buf[i]; i++) {
+            UBYTE c = buf[i];
+            if(c == '\n') {
+                if(quoted) {
+                    return ERROR_UNMATCHED_QUOTES;
+                }
+                if(i > 0 && buf[i - 1] == '+') {
+                    i--;
+                    if(i < CONFIGLINELEN - 2) {
+                        if(FGets(iffh, buf + i, CONFIGLINELEN - 1 - i))
+                            continue;
+                        return IoErr();
+                    }
+                    return ERROR_LINE_TOO_LONG;
+                }
+                return 0;
+            } else if(quoted) {
+                if(escaped) {
+                    escaped = 0;
+                } else if(c == '*') {
+                    escaped = 1;
+                    continue;
+                } else if(c == '"') {
+                    quoted = 0;
+                }
+            } else if(c == ';' || c == '#') {
+                buf[i++] = '\n';
+                buf[i] = '\0';
+                return 0;
+            } else if(escaped) {
+                escaped = 0;
+            } else if(c == '*') {
+                escaped = 1;
+            } else if(c == '"') {
+                quoted = 1;
+            }
+        }
+        return ERROR_LINE_TOO_LONG;
     }
-    return ERROR_LINE_TOO_LONG;
-  }
 
-  buf[0] = '\0';
-  return IoErr();
+    buf[0] = '\0';
+    return IoErr();
 }
 #endif
 
@@ -145,53 +145,53 @@ D(bug("[AROSTCP] getconfs()\n"));
  * Default configuration as per hardware type
  */
 static const struct wire_defaults {
-  LONG  wd_wiretype;
-  LONG  wd_iptype;		/* IP packet type */
-  WORD  wd_ipno;		/* SANA-II requests reserved for receiving */
-  WORD  wd_writeno;		/* SANA-II requests reserved for sending */
-  LONG  wd_arptype;		/* ARP packet type */
-  WORD  wd_arpno;		/* SANA-II requests reserved for ARP */
-  WORD  wd_arphdr;		/* ARP version */
-  WORD  wd_ifflags;		/* Interface flags */
-  BYTE  wd_pad[2];
+    LONG  wd_wiretype;
+    LONG  wd_iptype;		/* IP packet type */
+    WORD  wd_ipno;		/* SANA-II requests reserved for receiving */
+    WORD  wd_writeno;		/* SANA-II requests reserved for sending */
+    LONG  wd_arptype;		/* ARP packet type */
+    WORD  wd_arpno;		/* SANA-II requests reserved for ARP */
+    WORD  wd_arphdr;		/* ARP version */
+    WORD  wd_ifflags;		/* Interface flags */
+    BYTE  wd_pad[2];
 } wire_defaults[] = {
-  { 
-    S2WireType_Ethernet, 
-    ETHERTYPE_IP, 16, 16, 
-    ETHERTYPE_ARP, 4, 1, 
-    IFF_BROADCAST|IFF_SIMPLEX, 
-  },
-  { 
-    S2WireType_Arcnet, 
-    ARCOTYPE_IP, 16, 16, 
-    ARCOTYPE_ARP, 4, 7, 
-    IFF_BROADCAST|IFF_SIMPLEX, 
-  },
-  { 
-    S2WireType_SLIP, 
-    SLIPTYPE_IP, 8, 8,
-    0, 0, 0,
-    IFF_POINTOPOINT|IFF_NOARP, 
-  },
-  { 
-    S2WireType_CSLIP, 
-    SLIPTYPE_IP, 8, 8,
-    0, 0, 0,
-    IFF_POINTOPOINT|IFF_NOARP, 
-  },
-  { 
-    S2WireType_PPP, 
-    PPPTYPE_IP, 8, 8,
-    0, 0, 0,
-    IFF_POINTOPOINT|IFF_NOARP, 
-  },
-  /* Use ethernet as default */
-  {
-    0,
-    ETHERTYPE_IP, 16, 16,
-    ETHERTYPE_ARP, 4, 1,
-    IFF_BROADCAST|IFF_SIMPLEX, 
-  },
+    {
+        S2WireType_Ethernet,
+        ETHERTYPE_IP, 16, 16,
+        ETHERTYPE_ARP, 4, 1,
+        IFF_BROADCAST | IFF_SIMPLEX,
+    },
+    {
+        S2WireType_Arcnet,
+        ARCOTYPE_IP, 16, 16,
+        ARCOTYPE_ARP, 4, 7,
+        IFF_BROADCAST | IFF_SIMPLEX,
+    },
+    {
+        S2WireType_SLIP,
+        SLIPTYPE_IP, 8, 8,
+        0, 0, 0,
+        IFF_POINTOPOINT | IFF_NOARP,
+    },
+    {
+        S2WireType_CSLIP,
+        SLIPTYPE_IP, 8, 8,
+        0, 0, 0,
+        IFF_POINTOPOINT | IFF_NOARP,
+    },
+    {
+        S2WireType_PPP,
+        PPPTYPE_IP, 8, 8,
+        0, 0, 0,
+        IFF_POINTOPOINT | IFF_NOARP,
+    },
+    /* Use ethernet as default */
+    {
+        0,
+        ETHERTYPE_IP, 16, 16,
+        ETHERTYPE_ARP, 4, 1,
+        IFF_BROADCAST | IFF_SIMPLEX,
+    },
 };
 
 /*
@@ -200,84 +200,84 @@ static const struct wire_defaults {
 void
 ssconfig(struct sana_softc *ifp, struct ssconfig *ifc)
 {
-  const struct ssc_args *args = ifc->args;
-  const struct wire_defaults *wd;
-  LONG wt = ifp->ss_hwtype;
-  LONG reqtotal = 0;
+    const struct ssc_args *args = ifc->args;
+    const struct wire_defaults *wd;
+    LONG wt = ifp->ss_hwtype;
+    LONG reqtotal = 0;
 
-D(bug("[AROSTCP] ssconfig()\n"));
+    D(bug("[AROSTCP] ssconfig()\n"));
 
-  assert(ifp != NULL);
+    assert(ifp != NULL);
 
-  for (wd = wire_defaults; wd->wd_wiretype != 0; wd++) {
-    if (wt == wd->wd_wiretype)
-      break;
-  }
-  
-  ifp->ss_ip.type = args->a_iptype ? *args->a_iptype : wd->wd_iptype;
-  reqtotal += ifp->ss_ip.reqno = args->a_ipno ? *args->a_ipno : wd->wd_ipno;
+    for(wd = wire_defaults; wd->wd_wiretype != 0; wd++) {
+        if(wt == wd->wd_wiretype)
+            break;
+    }
 
-  ifp->ss_arp.type = args->a_arptype ? *args->a_arptype : wd->wd_arptype;
-  reqtotal += ifp->ss_arp.reqno = args->a_arpno ? *args->a_arpno : wd->wd_arpno;
-  ifp->ss_arp.hrd = args->a_arphdr ? *args->a_arphdr : wd->wd_arphdr;
+    ifp->ss_ip.type = args->a_iptype ? *args->a_iptype : wd->wd_iptype;
+    reqtotal += ifp->ss_ip.reqno = args->a_ipno ? *args->a_ipno : wd->wd_ipno;
+
+    ifp->ss_arp.type = args->a_arptype ? *args->a_arptype : wd->wd_arptype;
+    reqtotal += ifp->ss_arp.reqno = args->a_arpno ? *args->a_arpno : wd->wd_arpno;
+    ifp->ss_arp.hrd = args->a_arphdr ? *args->a_arphdr : wd->wd_arphdr;
 
 #if INET6
-  /* IPv6: use ethernet type 0x86DD for ethernet-family wires, else same as IP */
-  if (wd->wd_wiretype == S2WireType_Ethernet || wd->wd_wiretype == 0) {
-    ifp->ss_ip6.type  = ETHERTYPE_IPV6;
-    ifp->ss_ip6.reqno = wd->wd_ipno;   /* same pool size as IPv4 */
-  } else {
-    /* SLIP/PPP etc: same encap type as IPv4 (driver multiplexes) */
-    ifp->ss_ip6.type  = wd->wd_iptype;
-    ifp->ss_ip6.reqno = 0;
-  }
-  reqtotal += ifp->ss_ip6.reqno;
+    /* IPv6: use ethernet type 0x86DD for ethernet-family wires, else same as IP */
+    if(wd->wd_wiretype == S2WireType_Ethernet || wd->wd_wiretype == 0) {
+        ifp->ss_ip6.type  = ETHERTYPE_IPV6;
+        ifp->ss_ip6.reqno = wd->wd_ipno;   /* same pool size as IPv4 */
+    } else {
+        /* SLIP/PPP etc: same encap type as IPv4 (driver multiplexes) */
+        ifp->ss_ip6.type  = wd->wd_iptype;
+        ifp->ss_ip6.reqno = 0;
+    }
+    reqtotal += ifp->ss_ip6.reqno;
 #endif
 
-  reqtotal += args->a_writeno ? *args->a_writeno : wd->wd_writeno;
+    reqtotal += args->a_writeno ? *args->a_writeno : wd->wd_writeno;
 
-  if (reqtotal > 65535)
-    reqtotal = 65535;
-  ifp->ss_reqno = reqtotal;
+    if(reqtotal > 65535)
+        reqtotal = 65535;
+    ifp->ss_reqno = reqtotal;
 
-  {
-    UWORD ifflags = wd->wd_ifflags;
+    {
+        UWORD ifflags = wd->wd_ifflags;
 
-    if (args->a_noarp)
-      ifflags |= IFF_NOARP;
-    if (args->a_point2point) {
-      ifflags |= IFF_POINTOPOINT;
-      ifflags &= ~IFF_BROADCAST;
+        if(args->a_noarp)
+            ifflags |= IFF_NOARP;
+        if(args->a_point2point) {
+            ifflags |= IFF_POINTOPOINT;
+            ifflags &= ~IFF_BROADCAST;
+        }
+        if(args->a_nosimplex)
+            ifflags &= ~IFF_SIMPLEX;
+        if(args->a_loopback)
+            ifflags |= IFF_LOOPBACK;
+
+        ifp->ss_if.if_flags = ifflags;
     }
-    if (args->a_nosimplex)
-      ifflags &= ~IFF_SIMPLEX;
-    if (args->a_loopback)
-      ifflags |= IFF_LOOPBACK;
 
-    ifp->ss_if.if_flags = ifflags;
-  }
+    /* Flags for soft_sanac */
+    ifp->ss_cflags = SS_CFLAGS;
 
-  /* Flags for soft_sanac */
-  ifp->ss_cflags = SS_CFLAGS;
+    if(args->a_notrack)
+        ifp->ss_cflags &= ~(SSF_TRACK);
 
-  if (args->a_notrack)
-    ifp->ss_cflags &= ~(SSF_TRACK);
-
-  /* Set up name */
-  ifp->ss_if.if_name = ifp->ss_name;
-  {
-    size_t nlen = strnlen(ifc->name, IFNAMSIZ - 1);
-    memcpy(ifp->ss_name, ifc->name, nlen);
-    ifp->ss_name[nlen] = '\0';
-  }
-  ifp->ss_if.if_unit = ifc->unit;
-  ifp->ss_execname = (char *)(ifp + 1);
-  /* Buffer after the struct is allocated to strlen(a_dev)+1, NOT FILENAME_MAX.
-   * Use memcpy with the exact source length to avoid overflowing the allocation. */
-  {
-    size_t devlen = strlen(ifc->args->a_dev);
-    memcpy(ifp->ss_execname, ifc->args->a_dev, devlen + 1);
-  }
-  ifp->ss_execunit = *ifc->args->a_unit;
+    /* Set up name */
+    ifp->ss_if.if_name = ifp->ss_name;
+    {
+        size_t nlen = strnlen(ifc->name, IFNAMSIZ - 1);
+        memcpy(ifp->ss_name, ifc->name, nlen);
+        ifp->ss_name[nlen] = '\0';
+    }
+    ifp->ss_if.if_unit = ifc->unit;
+    ifp->ss_execname = (char *)(ifp + 1);
+    /* Buffer after the struct is allocated to strlen(a_dev)+1, NOT FILENAME_MAX.
+     * Use memcpy with the exact source length to avoid overflowing the allocation. */
+    {
+        size_t devlen = strlen(ifc->args->a_dev);
+        memcpy(ifp->ss_execname, ifc->args->a_dev, devlen + 1);
+    }
+    ifp->ss_execunit = *ifc->args->a_unit;
 }
 

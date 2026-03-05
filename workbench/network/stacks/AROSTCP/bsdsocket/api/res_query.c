@@ -68,11 +68,11 @@ static char sccsid[] = "@(#)res_query.c	5.11 (Berkeley) 3/6/91";
 #include <netdb.h>
 #ifndef AMITCP
 #include <ctype.h>
-#endif     
+#endif
 #include <sys/errno.h>
 
 #include <kern/amiga_includes.h>
-#include <kern/amiga_subr.h>     
+#include <kern/amiga_subr.h>
 #include <api/amiga_api.h>
 #include <kern/amiga_netdb.h>
 
@@ -91,140 +91,138 @@ static char sccsid[] = "@(#)res_query.c	5.11 (Berkeley) 3/6/91";
  * Caller must parse answer and determine whether it answers the question.
  */
 int
-res_query(struct SocketBase *	libPtr,
-	  const char *		name,		/* domain name */
-	  int 			class,
-	  int			type,		/* class and type of query */
-	  u_char *		answer,		/* buffer to put answer */
-	  int 			anslen)		/* size of answer buffer */
+res_query(struct SocketBase 	*libPtr,
+          const char 		*name,		/* domain name */
+          int 			class,
+          int			type,		/* class and type of query */
+          u_char 		*answer,		/* buffer to put answer */
+          int 			anslen)		/* size of answer buffer */
 {
-	char *buf;
-	HEADER *hp;
-	int n;
+    char *buf;
+    HEADER *hp;
+    int n;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query()\n"));
+    D(bug("[AROSTCP](res_query.c) res_query()\n"));
 #endif
 
-	if ((_res.options & RES_INIT) == 0 && res_init(&_res) == -1)
-	{
+    if((_res.options & RES_INIT) == 0 && res_init(&_res) == -1) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: resolver not initialised/failed to init\n"));
+        D(bug("[AROSTCP](res_query.c) res_query: resolver not initialised/failed to init\n"));
 #endif
-		return (-1);
-	}
+        return (-1);
+    }
 
-	if ((_res.dbserial != ndb_Serial) && res_update_db(&_res) == -1)
-	{
+    if((_res.dbserial != ndb_Serial) && res_update_db(&_res) == -1) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: resolver failed to update\n"));
+        D(bug("[AROSTCP](res_query.c) res_query: resolver failed to update\n"));
 #endif
-		return (-1);
-	}
+        return (-1);
+    }
 
 
-	/* an idea to remove reduntant bsd_mallocs and bsd_frees. let's make
-	   a new structure in gethostby(name|addr) and put libPrt->buffer
-	   point to it (first item in new structure is old value of that
-	   buffer). that structure holds pointers to all needed character
-	   buffers and is initialized to NULL. at end gethostby... bsd_frees
-	   all buffers that are pointed there */
-	
-	if ((buf = bsd_malloc(MAXPACKET, M_TEMP, M_WAITOK)) == NULL) {
+    /* an idea to remove reduntant bsd_mallocs and bsd_frees. let's make
+       a new structure in gethostby(name|addr) and put libPrt->buffer
+       point to it (first item in new structure is old value of that
+       buffer). that structure holds pointers to all needed character
+       buffers and is initialized to NULL. at end gethostby... bsd_frees
+       all buffers that are pointed there */
+
+    if((buf = bsd_malloc(MAXPACKET, M_TEMP, M_WAITOK)) == NULL) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: Failed to allocate query entry\n"));
+        D(bug("[AROSTCP](res_query.c) res_query: Failed to allocate query entry\n"));
 #endif
-	  writeErrnoValue(libPtr, ENOMEM);
-	  return -1;
-	}
+        writeErrnoValue(libPtr, ENOMEM);
+        return -1;
+    }
 
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-	bug("[AROSTCP](res_query.c) res_query: name: %s class: %d type %d\n", name, class, type);
+    bug("[AROSTCP](res_query.c) res_query: name: %s class: %d type %d\n", name, class, type);
 #else
-	printf("res_query(%s, %d, %d)\n", name, class, type);
+    printf("res_query(%s, %d, %d)\n", name, class, type);
 #endif
 #endif
-	n = res_mkquery(libPtr, QUERY, name, class, type, (char *)NULL, 0, NULL,
-			buf, MAXPACKET);
+    n = res_mkquery(libPtr, QUERY, name, class, type, (char *)NULL, 0, NULL,
+                    buf, MAXPACKET);
 
-	if (n <= 0) {
+    if(n <= 0) {
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-			bug("[AROSTCP](res_query.c) res_query: [res_mkquery] Failed\n");
+        bug("[AROSTCP](res_query.c) res_query: [res_mkquery] Failed\n");
 #else
-			printf("res_query: mkquery failed\n");
+        printf("res_query: mkquery failed\n");
 #endif
 #endif
-			h_errno = NO_RECOVERY;
-			goto Return;
-	}
+        h_errno = NO_RECOVERY;
+        goto Return;
+    }
 
-/* TODO: NicJA - Where is CHECK_POINTER() !!!! */
+    /* TODO: NicJA - Where is CHECK_POINTER() !!!! */
 #if !defined(__AROS__)
-	CHECK_POINTER(buf);
+    CHECK_POINTER(buf);
 #endif
 
-	n = res_send(libPtr, buf, n, (char *)answer, anslen);
+    n = res_send(libPtr, buf, n, (char *)answer, anslen);
 
-	if (n < 0) {
+    if(n < 0) {
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-			bug("[AROSTCP](res_query.c) res_query: [res_send] Failed\n");
+        bug("[AROSTCP](res_query.c) res_query: [res_send] Failed\n");
 #else
-			printf("res_query: send error\n");
+        printf("res_query: send error\n");
 #endif
 #endif
-			h_errno = TRY_AGAIN;
-			goto Return;
-	}
+        h_errno = TRY_AGAIN;
+        goto Return;
+    }
 
-	hp = (HEADER *) answer;
-	if (hp->rcode != NOERROR || ntohs(hp->ancount) == 0) {
+    hp = (HEADER *) answer;
+    if(hp->rcode != NOERROR || ntohs(hp->ancount) == 0) {
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-		bug("[AROSTCP](res_query.c) res_query: [res_send] Error: rcode = %d, ancount = %d\n", hp->rcode, ntohs(hp->ancount));
+        bug("[AROSTCP](res_query.c) res_query: [res_send] Error: rcode = %d, ancount = %d\n", hp->rcode, ntohs(hp->ancount));
 #else
-		printf("rcode = %d, ancount=%d\n", hp->rcode,
-			ntohs(hp->ancount));
+        printf("rcode = %d, ancount=%d\n", hp->rcode,
+               ntohs(hp->ancount));
 #endif
 #endif
-		switch (hp->rcode) {
-			case NXDOMAIN:
+        switch(hp->rcode) {
+        case NXDOMAIN:
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Host not found!\n"));
+            D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Host not found!\n"));
 #endif
-				h_errno = HOST_NOT_FOUND;
-				break;
-			case SERVFAIL:
+            h_errno = HOST_NOT_FOUND;
+            break;
+        case SERVFAIL:
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Server Fail!\n"));
+            D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Server Fail!\n"));
 #endif
-				h_errno = TRY_AGAIN;
-				break;
-			case NOERROR:
+            h_errno = TRY_AGAIN;
+            break;
+        case NOERROR:
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: !IMPOSSIBLE CASE!\n"));
+            D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: !IMPOSSIBLE CASE!\n"));
 #endif
-				h_errno = NO_DATA;
-				break;
-			case FORMERR:
-			case NOTIMP:
-			case REFUSED:
-			default:
+            h_errno = NO_DATA;
+            break;
+        case FORMERR:
+        case NOTIMP:
+        case REFUSED:
+        default:
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Unknown!\n"));
+            D(bug("[AROSTCP](res_query.c) res_query: [res_send] Error: Unknown!\n"));
 #endif
-				h_errno = NO_RECOVERY;
-				break;
-		}
-		n = -1;
-		goto Return;
-	}
+            h_errno = NO_RECOVERY;
+            break;
+        }
+        n = -1;
+        goto Return;
+    }
 
 Return:
-	bsd_free(buf, M_TEMP);
-	return(n);
+    bsd_free(buf, M_TEMP);
+    return(n);
 }
 
 /*
@@ -236,169 +234,156 @@ Return:
  * (not, for example, for host address-to-name lookups in domain in-addr.arpa).
  */
 int
-res_search(struct SocketBase *	libPtr,
-	   const char *		name,		/* domain name */
-	   int			class,
-	   int			type,		/* class and type of query */
-	   u_char *		answer,		/* buffer to put answer */
-	   int 			anslen)		/* size of answer */
+res_search(struct SocketBase 	*libPtr,
+           const char 		*name,		/* domain name */
+           int			class,
+           int			type,		/* class and type of query */
+           u_char 		*answer,		/* buffer to put answer */
+           int 			anslen)		/* size of answer */
 {
-	register const char *cp;
-	char **domain;
-	
-	int n, ret, got_nodata = 0;
-	int tmp_errno;
+    register const char *cp;
+    char **domain;
+
+    int n, ret, got_nodata = 0;
+    int tmp_errno;
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search('%s')\n", name));
+    D(bug("[AROSTCP](res_query.c) res_search('%s')\n", name));
 #endif
-	
+
 #ifndef AMICTP
-	char *__hostalias();
-#endif /* ! AMITCP */	
-	if ((_res.options & RES_INIT) == 0 && res_init(&_res) == -1)
-	{
+    char *__hostalias();
+#endif /* ! AMITCP */
+    if((_res.options & RES_INIT) == 0 && res_init(&_res) == -1) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search: resolver not initialised/failed to init\n"));
+        D(bug("[AROSTCP](res_query.c) res_search: resolver not initialised/failed to init\n"));
 #endif
-		return (-1);
-	}
-	else
-	{
+        return (-1);
+    } else {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search: resolver initialised.  base @ %x\n", &_res));
-#endif		
-	}
-
-	if ((_res.dbserial != ndb_Serial) && res_update_db(&_res) == -1)
-	{
-#if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search: resolver failed to update\n"));
+        D(bug("[AROSTCP](res_query.c) res_search: resolver initialised.  base @ %x\n", &_res));
 #endif
-		return (-1);
-	}
-	else
-	{
-#if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search: resolver db updated\n"));
-#endif		
-	}
+    }
 
-	writeErrnoValue(libPtr, 0);
-	h_errno = HOST_NOT_FOUND;	       /* default, if we never query */
-	for (cp = name, n = 0; *cp; cp++)
-		if (*cp == '.')
-			n++;
+    if((_res.dbserial != ndb_Serial) && res_update_db(&_res) == -1) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](res_query.c) res_search: resolver failed to update\n"));
+#endif
+        return (-1);
+    } else {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](res_query.c) res_search: resolver db updated\n"));
+#endif
+    }
+
+    writeErrnoValue(libPtr, 0);
+    h_errno = HOST_NOT_FOUND;	       /* default, if we never query */
+    for(cp = name, n = 0; *cp; cp++)
+        if(*cp == '.')
+            n++;
 
 #ifndef AMITCP
-	if (n == 0 && (cp = __hostalias(name)))
-	{
+    if(n == 0 && (cp = __hostalias(name))) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) res_search: returning hostalias response\n"));
+        D(bug("[AROSTCP](res_query.c) res_search: returning hostalias response\n"));
 #endif
-		return (res_query(cp, class, type, answer, anslen));
-	}
+        return (res_query(cp, class, type, answer, anslen));
+    }
 #endif /* !AMITCP */
 
-	/*
-	 * We do at least one level of search if
-	 *	- there is no dot and RES_DEFNAME is set, or
-	 *	- there is at least one dot, there is no trailing dot,
-	 *	  and RES_DNSRCH is set.
-	 */
+    /*
+     * We do at least one level of search if
+     *	- there is no dot and RES_DEFNAME is set, or
+     *	- there is at least one dot, there is no trailing dot,
+     *	  and RES_DNSRCH is set.
+     */
 #if defined(__AROS__) && defined(DEBUG) && (DEBUG > 0)
-	bug("[AROSTCP](res_query.c) res_search: n =%d\n", n);
-	if (_res.options & RES_DEFNAMES) {
-		bug("[AROSTCP](res_query.c) res_search: OPTION:Search local domain\n");
-	}
-	
-	if (_res.options & RES_DNSRCH) {
-		bug("[AROSTCP](res_query.c) res_search: OPTION:Search using DNS\n");
-	}
+    bug("[AROSTCP](res_query.c) res_search: n =%d\n", n);
+    if(_res.options & RES_DEFNAMES) {
+        bug("[AROSTCP](res_query.c) res_search: OPTION:Search local domain\n");
+    }
+
+    if(_res.options & RES_DNSRCH) {
+        bug("[AROSTCP](res_query.c) res_search: OPTION:Search using DNS\n");
+    }
 #endif
 
-	if ((n == 0 && _res.options & RES_DEFNAMES) ||
-	   (n != 0 && *--cp != '.' && _res.options & RES_DNSRCH))
-	{
+    if((n == 0 && _res.options & RES_DEFNAMES) ||
+            (n != 0 && *--cp != '.' && _res.options & RES_DNSRCH)) {
 #if defined(__AROS__)
-		D(bug("[AROSTCP](res_query.c) res_search: Querying DNS servers .. \n"));
+        D(bug("[AROSTCP](res_query.c) res_search: Querying DNS servers .. \n"));
 #endif
-		for (domain = _res.dnsrch; *domain; domain++)
-		{
+        for(domain = _res.dnsrch; *domain; domain++) {
 #if defined(__AROS__)
-			D(bug("[AROSTCP](res_query.c) res_search: resolver querying domain '%s'\n", *domain));
+            D(bug("[AROSTCP](res_query.c) res_search: resolver querying domain '%s'\n", *domain));
 #endif
-			ret = res_querydomain(libPtr, name, *domain,
-				  class, type, answer, anslen);
-			if (ret > 0)
-			{
+            ret = res_querydomain(libPtr, name, *domain,
+                                  class, type, answer, anslen);
+            if(ret > 0) {
 #if defined(__AROS__)
-			D(bug("[AROSTCP](res_query.c) res_search: returning querydomain response\n"));
+                D(bug("[AROSTCP](res_query.c) res_search: returning querydomain response\n"));
 #endif
-				return (ret);
-			}
-			/*
-			 * If no server present, give up.
-			 * If name isn't found in this domain,
-			 * keep trying higher domains in the search list
-			 * (if that's enabled).
-			 * On a NO_DATA error, keep trying, otherwise
-			 * a wildcard entry of another type could keep us
-			 * from finding this entry higher in the domain.
-			 * If we get some other error (negative answer or
-			 * server failure), then stop searching up,
-			 * but try the input name below in case it's fully-qualified.
-			 */
-			tmp_errno = readErrnoValue(libPtr);
-			if ((tmp_errno == ECONNREFUSED) || (tmp_errno == ETIMEDOUT) || (tmp_errno == EINTR)) {
-				h_errno = TRY_AGAIN;
+                return (ret);
+            }
+            /*
+             * If no server present, give up.
+             * If name isn't found in this domain,
+             * keep trying higher domains in the search list
+             * (if that's enabled).
+             * On a NO_DATA error, keep trying, otherwise
+             * a wildcard entry of another type could keep us
+             * from finding this entry higher in the domain.
+             * If we get some other error (negative answer or
+             * server failure), then stop searching up,
+             * but try the input name below in case it's fully-qualified.
+             */
+            tmp_errno = readErrnoValue(libPtr);
+            if((tmp_errno == ECONNREFUSED) || (tmp_errno == ETIMEDOUT) || (tmp_errno == EINTR)) {
+                h_errno = TRY_AGAIN;
 
 #if defined(__AROS__)
-				D(bug("[AROSTCP](res_query.c) res_search: resolver failed to connect, setting retry\n"));
+                D(bug("[AROSTCP](res_query.c) res_search: resolver failed to connect, setting retry\n"));
 #endif
-				return (-1);
-			}
+                return (-1);
+            }
 
-			if (h_errno == NO_DATA)
-			{
+            if(h_errno == NO_DATA) {
 #if defined(__AROS__)
-				D(bug("[AROSTCP](res_query.c) res_search: resolver got no response\n"));
+                D(bug("[AROSTCP](res_query.c) res_search: resolver got no response\n"));
 #endif
-				got_nodata++;
-			}
+                got_nodata++;
+            }
 
-			if ((h_errno != HOST_NOT_FOUND && h_errno != NO_DATA) ||
-				(_res.options & RES_DNSRCH) == 0)
-			{
+            if((h_errno != HOST_NOT_FOUND && h_errno != NO_DATA) ||
+                    (_res.options & RES_DNSRCH) == 0) {
 #if defined(__AROS__)
-				D(bug("[AROSTCP](res_query.c) res_search: resolver got response\n"));
+                D(bug("[AROSTCP](res_query.c) res_search: resolver got response\n"));
 #endif
-				break;
-			}
-		}
-	}
-		/*
-		 * If the search/default failed, try the name as fully-qualified,
-		 * but only if it contained at least one dot (even trailing).
-		 * This is purely a heuristic; we assume that any reasonable query
-		 * about a top-level domain (for servers, SOA, etc) will not use
-		 * res_search.
-		 */
-		
-	if (n && (ret = res_querydomain(libPtr, name, (char *)NULL,
-					class, type, answer, anslen)) > 0)
-   {
-#if defined(__AROS__)
-		D(bug("[AROSTCP](res_query.c) res_search: returning querydomain.2 result\n"));
-#endif
-		return (ret);
-	}
-#if defined(__AROS__)
-	D(bug("[AROSTCP](res_query.c) res_search: finished search.\n"));
-#endif
-	if (got_nodata) h_errno = NO_DATA;
+                break;
+            }
+        }
+    }
+    /*
+     * If the search/default failed, try the name as fully-qualified,
+     * but only if it contained at least one dot (even trailing).
+     * This is purely a heuristic; we assume that any reasonable query
+     * about a top-level domain (for servers, SOA, etc) will not use
+     * res_search.
+     */
 
-	return (-1);
+    if(n && (ret = res_querydomain(libPtr, name, (char *)NULL,
+                                   class, type, answer, anslen)) > 0) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](res_query.c) res_search: returning querydomain.2 result\n"));
+#endif
+        return (ret);
+    }
+#if defined(__AROS__)
+    D(bug("[AROSTCP](res_query.c) res_search: finished search.\n"));
+#endif
+    if(got_nodata) h_errno = NO_DATA;
+
+    return (-1);
 }
 
 /*
@@ -406,119 +391,118 @@ D(bug("[AROSTCP](res_query.c) res_search: returning hostalias response\n"));
  * removing a trailing dot from name if domain is NULL.
  */
 int
-res_querydomain(struct SocketBase *	libPtr,
-		const char *		name,
-		const char *		domain,
-		int 			class,
-		int 			type,	/* class and type of query */
-		u_char *		answer,	/* buffer to put answer */
-		int 			anslen) /* size of answer */
+res_querydomain(struct SocketBase 	*libPtr,
+                const char 		*name,
+                const char 		*domain,
+                int 			class,
+                int 			type,	/* class and type of query */
+                u_char 		*answer,	/* buffer to put answer */
+                int 			anslen) /* size of answer */
 {
-	char * nbuf;
-	const char * longname;
-	char * ptr;
-	int n;
+    char *nbuf;
+    const char *longname;
+    char *ptr;
+    int n;
 
 #ifdef RES_DEBUG
 #if defined(__AROS__)
-	bug("[AROSTCP](res_query.c) res_querydomain('%s', '%s', %d, %d)\n",
-		name, domain, class, type);
+    bug("[AROSTCP](res_query.c) res_querydomain('%s', '%s', %d, %d)\n",
+        name, domain, class, type);
 #else
-	printf("res_querydomain(%s, %s, %d, %d)\n",
-		name, domain, class, type);
+    printf("res_querydomain(%s, %s, %d, %d)\n",
+           name, domain, class, type);
 #endif
 #endif
 
-	if ((nbuf = bsd_malloc(2*MAXDNAME+2, M_TEMP, M_WAITOK)) == NULL) {
+    if((nbuf = bsd_malloc(2 * MAXDNAME + 2, M_TEMP, M_WAITOK)) == NULL) {
 #if defined(__AROS__)
-	  D(bug("[AROSTCP](res_query.c) res_querydomain: failed to allocate buffer\n"));
+        D(bug("[AROSTCP](res_query.c) res_querydomain: failed to allocate buffer\n"));
 #endif
-	  writeErrnoValue(libPtr, ENOMEM);
-	  return -1;
-	}
-	longname = nbuf;
+        writeErrnoValue(libPtr, ENOMEM);
+        return -1;
+    }
+    longname = nbuf;
 
-	if (domain == NULL) {
-		/*
-		 * Check for trailing '.';
-		 * copy without '.' if present.
-		 */
-	        n = strlen(name) - 1;
-		if (name[n] == '.' && n < (2*MAXDNAME+2) - 1) {
-			bcopy(name, nbuf, n);
-		        nbuf[n] = '\0';
-		} else
-			longname = name;
-	} else {
-		size_t nlen = strnlen(name, MAXDNAME);
-		memcpy(nbuf, name, nlen);
-		ptr = nbuf + nlen;
-		*ptr++ = '.';
-		(void)strncpy(ptr, domain, MAXDNAME);
-		nbuf[2*MAXDNAME+1] = '\0';
+    if(domain == NULL) {
+        /*
+         * Check for trailing '.';
+         * copy without '.' if present.
+         */
+        n = strlen(name) - 1;
+        if(name[n] == '.' && n < (2 * MAXDNAME + 2) - 1) {
+            bcopy(name, nbuf, n);
+            nbuf[n] = '\0';
+        } else
+            longname = name;
+    } else {
+        size_t nlen = strnlen(name, MAXDNAME);
+        memcpy(nbuf, name, nlen);
+        ptr = nbuf + nlen;
+        *ptr++ = '.';
+        (void)strncpy(ptr, domain, MAXDNAME);
+        nbuf[2 * MAXDNAME + 1] = '\0';
 #if defined(__AROS__)
-		D(bug("[AROSTCP](res_query.c) res_querydomain: '%s'\n", nbuf));
+        D(bug("[AROSTCP](res_query.c) res_querydomain: '%s'\n", nbuf));
 #endif
-	}
+    }
 
 #if defined(__AROS__)
-	D(bug("[AROSTCP](res_query.c) res_querydomain: using name '%s'\n", longname));
+    D(bug("[AROSTCP](res_query.c) res_querydomain: using name '%s'\n", longname));
 #endif
-	n = res_query(libPtr, longname, class, type, answer, anslen);
-	bsd_free(nbuf, M_TEMP);
-	return n;
+    n = res_query(libPtr, longname, class, type, answer, anslen);
+    bsd_free(nbuf, M_TEMP);
+    return n;
 }
 
 #ifndef AMITCP
 
 char *
 __hostalias(name)
-	register const char *name;
+register const char *name;
 {
-	register char *C1, *C2;
-	FILE *fp;
-	char *file, *getenv(), *strcpy(), *strncpy();
-	char buf[BUFSIZ];
-	static char abuf[MAXDNAME];
+    register char *C1, *C2;
+    FILE *fp;
+    char *file, *getenv(), *strcpy(), *strncpy();
+    char buf[BUFSIZ];
+    static char abuf[MAXDNAME];
 
 #if defined(__AROS__)
-	D(bug("[AROSTCP](res_query.c) __hostalias('%s')\n", name));
+    D(bug("[AROSTCP](res_query.c) __hostalias('%s')\n", name));
 #endif
 
-	file = getenv("HOSTALIASES");
-	if (file == NULL || (fp = fopen(file, "r")) == NULL)
-	{
+    file = getenv("HOSTALIASES");
+    if(file == NULL || (fp = fopen(file, "r")) == NULL) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) __hostalias: failed to find env setting\n"));
+        D(bug("[AROSTCP](res_query.c) __hostalias: failed to find env setting\n"));
 #endif
-		return (NULL);
-	}
+        return (NULL);
+    }
 
-	buf[sizeof(buf) - 1] = '\0';
-	while (fgets(buf, sizeof(buf), fp)) {
-		for (C1 = buf; *C1 && !isspace(*C1); ++C1);
-		if (!*C1)
-			break;
-		*C1 = '\0';
-		if (!strcasecmp(buf, name)) {
-			while (isspace(*++C1));
-			if (!*C1)
-				break;
-			for (C2 = C1 + 1; *C2 && !isspace(*C2); ++C2);
-			abuf[sizeof(abuf) - 1] = *C2 = '\0';
-			(void)strncpy(abuf, C1, sizeof(abuf) - 1);
-			fclose(fp);
+    buf[sizeof(buf) - 1] = '\0';
+    while(fgets(buf, sizeof(buf), fp)) {
+        for(C1 = buf; *C1 && !isspace(*C1); ++C1);
+        if(!*C1)
+            break;
+        *C1 = '\0';
+        if(!strcasecmp(buf, name)) {
+            while(isspace(*++C1));
+            if(!*C1)
+                break;
+            for(C2 = C1 + 1; *C2 && !isspace(*C2); ++C2);
+            abuf[sizeof(abuf) - 1] = *C2 = '\0';
+            (void)strncpy(abuf, C1, sizeof(abuf) - 1);
+            fclose(fp);
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) __hostalias: returning %s\n", abuf));
+            D(bug("[AROSTCP](res_query.c) __hostalias: returning %s\n", abuf));
 #endif
-			return (abuf);
-		}
-	}
+            return (abuf);
+        }
+    }
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_query.c) __hostalias: bad data\n"));
+    D(bug("[AROSTCP](res_query.c) __hostalias: bad data\n"));
 #endif
-	fclose(fp);
-	return (NULL);
+    fclose(fp);
+    return (NULL);
 }
 
 #endif /* !AMITCP */

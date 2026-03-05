@@ -108,120 +108,120 @@ struct	ifnet loif = {0};
 void
 loattach()
 {
-	register struct ifnet *ifp = &loif;
+    register struct ifnet *ifp = &loif;
 
-	ifp->if_name = "lo";
-	ifp->if_mtu = LOMTU;
-	ifp->if_flags = IFF_LOOPBACK;
-	ifp->if_ioctl = loioctl;
-	ifp->if_output = looutput;
-	ifp->if_type = IFT_LOOP;
-	ifp->if_hdrlen = 0;
-	ifp->if_addrlen = 0;
-	if_attach(ifp);
+    ifp->if_name = "lo";
+    ifp->if_mtu = LOMTU;
+    ifp->if_flags = IFF_LOOPBACK;
+    ifp->if_ioctl = loioctl;
+    ifp->if_output = looutput;
+    ifp->if_type = IFT_LOOP;
+    ifp->if_hdrlen = 0;
+    ifp->if_addrlen = 0;
+    if_attach(ifp);
 }
 
 void loconfig()
 {
-	struct ifreq ifr = { };
-	struct sockaddr_in *ifr_saddr = (struct sockaddr_in *)&ifr.ifr_addr;
-	ifr.ifr_addr.sa_len = sizeof(struct sockaddr_in);
-	ifr.ifr_addr.sa_family = AF_INET;
-	ifr_saddr->sin_addr.s_addr = htonl(0x7F000001);
-	in_control(NULL, SIOCSIFADDR, &ifr, &loif);
+    struct ifreq ifr = { };
+    struct sockaddr_in *ifr_saddr = (struct sockaddr_in *)&ifr.ifr_addr;
+    ifr.ifr_addr.sa_len = sizeof(struct sockaddr_in);
+    ifr.ifr_addr.sa_family = AF_INET;
+    ifr_saddr->sin_addr.s_addr = htonl(0x7F000001);
+    in_control(NULL, SIOCSIFADDR, &ifr, &loif);
 
 #if INET6
-	{
-		static const struct in6_addr loopback6 = IN6ADDR_LOOPBACK_INIT;
-		struct in6_aliasreq ifra6 = { };
-		ifra6.ifra_addr.sin6_len    = sizeof(struct sockaddr_in6);
-		ifra6.ifra_addr.sin6_family = AF_INET6;
-		ifra6.ifra_addr.sin6_addr   = loopback6; /* ::1 */
-		ifra6.ifra_prefixmask.sin6_len    = sizeof(struct sockaddr_in6);
-		ifra6.ifra_prefixmask.sin6_family = AF_INET6;
-		/* /128 prefix mask: all bits set */
-		memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
-		    sizeof(ifra6.ifra_prefixmask.sin6_addr));
-		in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, &loif);
-	}
+    {
+        static const struct in6_addr loopback6 = IN6ADDR_LOOPBACK_INIT;
+        struct in6_aliasreq ifra6 = { };
+        ifra6.ifra_addr.sin6_len    = sizeof(struct sockaddr_in6);
+        ifra6.ifra_addr.sin6_family = AF_INET6;
+        ifra6.ifra_addr.sin6_addr   = loopback6; /* ::1 */
+        ifra6.ifra_prefixmask.sin6_len    = sizeof(struct sockaddr_in6);
+        ifra6.ifra_prefixmask.sin6_family = AF_INET6;
+        /* /128 prefix mask: all bits set */
+        memset(&ifra6.ifra_prefixmask.sin6_addr, 0xff,
+               sizeof(ifra6.ifra_prefixmask.sin6_addr));
+        in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra6, &loif);
+    }
 #endif
 }
 
 int
 looutput(ifp, m, dst, rt)
-	struct ifnet *ifp;
-	register struct mbuf *m;
-	struct sockaddr *dst;
-	register struct rtentry *rt;
+struct ifnet *ifp;
+register struct mbuf *m;
+struct sockaddr *dst;
+register struct rtentry *rt;
 {
-	int isr;
-	spl_t s;
-	register struct ifqueue *ifq = 0;
+    int isr;
+    spl_t s;
+    register struct ifqueue *ifq = 0;
 
-	if ((m->m_flags & M_PKTHDR) == 0)
-		panic("looutput no HDR");
-	m->m_pkthdr.rcvif = ifp;
+    if((m->m_flags & M_PKTHDR) == 0)
+        panic("looutput no HDR");
+    m->m_pkthdr.rcvif = ifp;
 
-	if (rt && rt->rt_flags & RTF_REJECT) {
-		m_freem(m);
-		DROUTE(log(LOG_DEBUG,"lo0: packet rejected");)
-		return (rt->rt_flags & RTF_HOST ? EHOSTUNREACH : ENETUNREACH);
-	}
-	ifp->if_opackets++;
-	ifp->if_obytes += m->m_pkthdr.len;
-	switch (dst->sa_family) {
+    if(rt && rt->rt_flags & RTF_REJECT) {
+        m_freem(m);
+        DROUTE(log(LOG_DEBUG, "lo0: packet rejected");)
+        return (rt->rt_flags & RTF_HOST ? EHOSTUNREACH : ENETUNREACH);
+    }
+    ifp->if_opackets++;
+    ifp->if_obytes += m->m_pkthdr.len;
+    switch(dst->sa_family) {
 
 #if INET
-	case AF_INET:
-		ifq = &ipintrq;
-		isr = NETISR_IP;
-		break;
+    case AF_INET:
+        ifq = &ipintrq;
+        isr = NETISR_IP;
+        break;
 #endif
 #if INET6
-	case AF_INET6:
-		ifq = &ip6intrq;
-		isr = NETISR_IPV6;
-		break;
+    case AF_INET6:
+        ifq = &ip6intrq;
+        isr = NETISR_IPV6;
+        break;
 #endif
 #if NS
-	case AF_NS:
-		ifq = &nsintrq;
-		isr = NETISR_NS;
-		break;
+    case AF_NS:
+        ifq = &nsintrq;
+        isr = NETISR_NS;
+        break;
 #endif
 #if ISO
-	case AF_ISO:
-		ifq = &clnlintrq;
-		isr = NETISR_ISO;
-		break;
+    case AF_ISO:
+        ifq = &clnlintrq;
+        isr = NETISR_ISO;
+        break;
 #endif
-	default:
-		printf("lo%ld: can't handle af%ld\n", (long)ifp->if_unit,
-			(long)dst->sa_family);
-		m_freem(m);
-		return (EAFNOSUPPORT);
-	}
-	s = splimp();
-	if (IF_QFULL(ifq)) {
-		IF_DROP(ifq);
-		m_freem(m);
-		splx(s);
-		return (ENOBUFS);
-	}
-	IF_ENQUEUE(ifq, m);
-	schednetisr(isr);
-	ifp->if_ipackets++;
-	ifp->if_ibytes += m->m_pkthdr.len;
-	splx(s);
-	return (0);
+    default:
+        printf("lo%ld: can't handle af%ld\n", (long)ifp->if_unit,
+               (long)dst->sa_family);
+        m_freem(m);
+        return (EAFNOSUPPORT);
+    }
+    s = splimp();
+    if(IF_QFULL(ifq)) {
+        IF_DROP(ifq);
+        m_freem(m);
+        splx(s);
+        return (ENOBUFS);
+    }
+    IF_ENQUEUE(ifq, m);
+    schednetisr(isr);
+    ifp->if_ipackets++;
+    ifp->if_ibytes += m->m_pkthdr.len;
+    splx(s);
+    return (0);
 }
 
-void lortrequest(int cmd, 
-		 struct rtentry *rt, 
-		 struct sockaddr *sa)
+void lortrequest(int cmd,
+                 struct rtentry *rt,
+                 struct sockaddr *sa)
 {
-	if (rt)
-		rt->rt_rmx.rmx_mtu = LOMTU;
+    if(rt)
+        rt->rt_rmx.rmx_mtu = LOMTU;
 }
 
 /*
@@ -230,23 +230,23 @@ void lortrequest(int cmd,
 int
 loioctl(register struct ifnet *ifp, int cmd, caddr_t data)
 {
-	register struct ifaddr *ifa;
-	int error = 0;
+    register struct ifaddr *ifa;
+    int error = 0;
 
-	switch (cmd) {
+    switch(cmd) {
 
-	case SIOCSIFADDR:
-		ifp->if_flags |= IFF_UP;
-		ifa = (struct ifaddr *)data;
-		if (ifa != 0 && ifa->ifa_addr->sa_family == AF_ISO)
-			ifa->ifa_rtrequest = lortrequest;
-		/*
-		 * Everything else is done at a higher level.
-		 */
-		break;
+    case SIOCSIFADDR:
+        ifp->if_flags |= IFF_UP;
+        ifa = (struct ifaddr *)data;
+        if(ifa != 0 && ifa->ifa_addr->sa_family == AF_ISO)
+            ifa->ifa_rtrequest = lortrequest;
+        /*
+         * Everything else is done at a higher level.
+         */
+        break;
 
-	default:
-		error = EINVAL;
-	}
-	return (error);
+    default:
+        error = EINVAL;
+    }
+    return (error);
 }

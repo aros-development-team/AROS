@@ -29,14 +29,14 @@
 *        struct hostent *gethostbyaddr(caddr_t, LONG, LONG);
 *
 *
-*   DESCRIPTION 
+*   DESCRIPTION
 *        gethostbyname() and gethostbyaddr() both return a pointer
 *        to an object with the following structure containing the
 *        data received from a name server or the broken-out fields
 *        of a line in netdb configuration file.  In the case of
 *        gethostbyaddr(), addr is a pointer to the binary format
 *        address of length len (not a character string) and type is
-*        an address family as defined in <sys/socket.h>. 
+*        an address family as defined in <sys/socket.h>.
 *
 *          struct hostent {
 *            char *h_name;       \* official name of host *\
@@ -63,7 +63,7 @@
 *                            returned in network byte order.
 *
 *   DIAGNOSTICS
-*        A NULL pointer is returned if no matching entry was found or 
+*        A NULL pointer is returned if no matching entry was found or
 *        error occured.
 *
 *   BUGS
@@ -137,7 +137,7 @@
 *        AF_INET is supported.
 *
 *   DIAGNOSTICS
-*        A NULL pointer is returned if no matching entry was found or 
+*        A NULL pointer is returned if no matching entry was found or
 *        error occured.
 *
 *   BUGS
@@ -191,7 +191,7 @@
 *
 *
 *   DIAGNOSTICS
-*        A NULL pointer is returned if no matching entry was found or 
+*        A NULL pointer is returned if no matching entry was found or
 *        error occured.
 *
 *   BUGS
@@ -262,7 +262,7 @@
 *        "udp".
 *
 *   DIAGNOSTICS
-*        A NULL pointer is returned if no matching entry was found or 
+*        A NULL pointer is returned if no matching entry was found or
 *        error occured.
 *
 *   BUGS

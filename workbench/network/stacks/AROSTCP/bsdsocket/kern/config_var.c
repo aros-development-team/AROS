@@ -67,13 +67,13 @@
 
 /* Level 1 variables */
 STRPTR KW_VARS =
-  "WITH,IC=ICMP,ICH=ICMPHIST,IP,T=TCP,U=UDP,CONNECTIONS,HOSTNAME,ROUTES,"
-  "MBS=MBUF_STAT,MBTS=MBUF_TYPE_STATS,MBC=MBUF_CONF,LOG,GUI,SHOW,"
-  "TASKNAME,NTH=NTHBASE,DBSANA=DEBUGSANA,DBICMP=DEBUGICMP,"
-  "DBIP=DEBUGIP,GTW=GATEWAY,REDIR=IPSENDREDIRECTS,"
-  "USENS=USENAMESERVER,ULO=USELOOPBACK,TCPSND=TCP_SENDSPACE,"
-  "TCPRCV=TCP_RECVSPACE,CON=CONSOLENAME,LOGF=LOGFILENAME,OPENGUI,REFRESH,"
-  "DHCLIENT";
+    "WITH,IC=ICMP,ICH=ICMPHIST,IP,T=TCP,U=UDP,CONNECTIONS,HOSTNAME,ROUTES,"
+    "MBS=MBUF_STAT,MBTS=MBUF_TYPE_STATS,MBC=MBUF_CONF,LOG,GUI,SHOW,"
+    "TASKNAME,NTH=NTHBASE,DBSANA=DEBUGSANA,DBICMP=DEBUGICMP,"
+    "DBIP=DEBUGIP,GTW=GATEWAY,REDIR=IPSENDREDIRECTS,"
+    "USENS=USENAMESERVER,ULO=USELOOPBACK,TCPSND=TCP_SENDSPACE,"
+    "TCPRCV=TCP_RECVSPACE,CON=CONSOLENAME,LOGF=LOGFILENAME,OPENGUI,REFRESH,"
+    "DHCLIENT";
 
 /* extern declarations */
 
@@ -84,15 +84,18 @@ extern LONG ipstat;
 extern LONG tcpstat;
 extern LONG udpstat;
 LONG getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res);
-LONG rexx_gethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res); LONG rexx_sethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+LONG rexx_gethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
+LONG rexx_sethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG getroutes(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 extern struct mbstat mbstat;
 extern LONG mb_read_stats(struct CSource *args, UBYTE **errstrp, struct CSource *res);
-extern struct mbconf mbconf; int mb_check_conf(void *pt, IPTR new);
+extern struct mbconf mbconf;
+int mb_check_conf(void *pt, IPTR new);
 extern LONG log_cnf;
 extern LONG gui_cnf;
 extern LONG gui_show[];
-extern STRPTR taskname; int taskname_changed(void *pt, IPTR new);
+extern STRPTR taskname;
+int taskname_changed(void *pt, IPTR new);
 extern LONG nthLibrary;
 extern LONG debug_sana;
 extern LONG icmpprintfs;
@@ -103,45 +106,47 @@ extern LONG usens;
 extern LONG useloopback;
 extern ULONG tcp_sendspace;
 extern ULONG tcp_recvspace;
-extern STRPTR consolename ;	 int logname_changed(void *pt, IPTR new);
+extern STRPTR consolename ;
+int logname_changed(void *pt, IPTR new);
 extern STRPTR logfilename;
 extern LONG OpenGUIOnStartup;
 extern ULONG gui_refresh;
-extern STRPTR dhclient_name; int dhclient_path_changed(void *pt, IPTR new);
+extern STRPTR dhclient_name;
+int dhclient_path_changed(void *pt, IPTR new);
 
 /* Global variables */
 STRPTR KW_Protocols = KW_ROUTES;
 
 struct cfg_variable variables[] = {
-{ VAR_FUNC, VF_RW, NULL, NULL, (notify_f)read_sets },
-{ VAR_LONG, VF_TABLE|VF_READ, KW_ICMP, &icmpstat, NULL },
-{ VAR_FUNC, VF_READ, NULL, (notify_f)read_icmphist, NULL },
-{ VAR_LONG, VF_TABLE|VF_READ, KW_IP,   &ipstat,   NULL },
-{ VAR_LONG, VF_TABLE|VF_READ, KW_TCP,  &tcpstat,  NULL },
-{ VAR_LONG, VF_TABLE|VF_READ, KW_UDP,  &udpstat,  NULL },
-{ VAR_FUNC, VF_READ, NULL, (notify_f)getsockets, NULL },
-{ VAR_FUNC, VF_RW, NULL, (notify_f)rexx_gethostname, (notify_f)rexx_sethostname },
-{ VAR_FUNC, VF_READ, NULL, (notify_f)getroutes, NULL },
-{ VAR_LONG, VF_TABLE|VF_READ, KW_MBUF_STAT, &mbstat, NULL },
-{ VAR_FUNC, VF_READ, NULL, (notify_f)mb_read_stats, NULL },
-{ VAR_LONG, VF_TABLE|VF_RCONF,   KW_MBUF_CONF, &mbconf, mb_check_conf },
-{ VAR_LONG, VF_TABLE|VF_RCONF,   KW_LOG, &log_cnf, NULL },
-{ VAR_STRP, VF_TABLE|VF_RCONF,   KW_GUI, &gui_cnf, NULL },
-{ VAR_ENUM, VF_TABLE|VF_RCONF,   KW_SHOW, gui_show, boolean_enum },
-{ VAR_STRP, VF_RCONF, NULL, &taskname, taskname_changed },
-{ VAR_LONG, VF_RW, NULL, &nthLibrary,  NULL },
-{ VAR_ENUM, VF_RW, NULL, &debug_sana, boolean_enum },
-{ VAR_ENUM, VF_RW, NULL, &icmpprintfs, boolean_enum },
-{ VAR_ENUM, VF_RW, NULL, &ipprintfs, boolean_enum },
-{ VAR_ENUM, VF_RW, NULL, &ipforwarding, boolean_enum },
-{ VAR_ENUM, VF_RW, NULL, &ipsendredirects, boolean_enum },
-{ VAR_ENUM, VF_RW, NULL, &usens, (notify_f)"NO,FIRST,SECOND" },
-{ VAR_ENUM, VF_RW, NULL, &useloopback, boolean_enum },
-{ VAR_LONG, VF_RW, NULL, (LONG*)&tcp_sendspace, NULL },
-{ VAR_LONG, VF_RW, NULL, (LONG*)&tcp_recvspace, NULL },
-{ VAR_STRP, VF_RW, NULL, &consolename, logname_changed },
-{ VAR_STRP, VF_RW, NULL, &logfilename, logname_changed },
-{ VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum },
-{ VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL },
-{ VAR_STRP, VF_RCONF, NULL, &dhclient_name, dhclient_path_changed }
+    { VAR_FUNC, VF_RW, NULL, NULL, (notify_f)read_sets },
+    { VAR_LONG, VF_TABLE | VF_READ, KW_ICMP, &icmpstat, NULL },
+    { VAR_FUNC, VF_READ, NULL, (notify_f)read_icmphist, NULL },
+    { VAR_LONG, VF_TABLE | VF_READ, KW_IP,   &ipstat,   NULL },
+    { VAR_LONG, VF_TABLE | VF_READ, KW_TCP,  &tcpstat,  NULL },
+    { VAR_LONG, VF_TABLE | VF_READ, KW_UDP,  &udpstat,  NULL },
+    { VAR_FUNC, VF_READ, NULL, (notify_f)getsockets, NULL },
+    { VAR_FUNC, VF_RW, NULL, (notify_f)rexx_gethostname, (notify_f)rexx_sethostname },
+    { VAR_FUNC, VF_READ, NULL, (notify_f)getroutes, NULL },
+    { VAR_LONG, VF_TABLE | VF_READ, KW_MBUF_STAT, &mbstat, NULL },
+    { VAR_FUNC, VF_READ, NULL, (notify_f)mb_read_stats, NULL },
+    { VAR_LONG, VF_TABLE | VF_RCONF,   KW_MBUF_CONF, &mbconf, mb_check_conf },
+    { VAR_LONG, VF_TABLE | VF_RCONF,   KW_LOG, &log_cnf, NULL },
+    { VAR_STRP, VF_TABLE | VF_RCONF,   KW_GUI, &gui_cnf, NULL },
+    { VAR_ENUM, VF_TABLE | VF_RCONF,   KW_SHOW, gui_show, boolean_enum },
+    { VAR_STRP, VF_RCONF, NULL, &taskname, taskname_changed },
+    { VAR_LONG, VF_RW, NULL, &nthLibrary,  NULL },
+    { VAR_ENUM, VF_RW, NULL, &debug_sana, boolean_enum },
+    { VAR_ENUM, VF_RW, NULL, &icmpprintfs, boolean_enum },
+    { VAR_ENUM, VF_RW, NULL, &ipprintfs, boolean_enum },
+    { VAR_ENUM, VF_RW, NULL, &ipforwarding, boolean_enum },
+    { VAR_ENUM, VF_RW, NULL, &ipsendredirects, boolean_enum },
+    { VAR_ENUM, VF_RW, NULL, &usens, (notify_f)"NO,FIRST,SECOND" },
+    { VAR_ENUM, VF_RW, NULL, &useloopback, boolean_enum },
+    { VAR_LONG, VF_RW, NULL, (LONG *) &tcp_sendspace, NULL },
+    { VAR_LONG, VF_RW, NULL, (LONG *) &tcp_recvspace, NULL },
+    { VAR_STRP, VF_RW, NULL, &consolename, logname_changed },
+    { VAR_STRP, VF_RW, NULL, &logfilename, logname_changed },
+    { VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum },
+    { VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL },
+    { VAR_STRP, VF_RCONF, NULL, &dhclient_name, dhclient_path_changed }
 };

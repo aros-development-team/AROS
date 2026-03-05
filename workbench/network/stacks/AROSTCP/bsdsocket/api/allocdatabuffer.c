@@ -29,24 +29,24 @@
 #include <api/amiga_api.h>
 #include <api/allocdatabuffer.h>
 
-BOOL doAllocDataBuffer(struct DataBuffer * DB, int size)
+BOOL doAllocDataBuffer(struct DataBuffer *DB, int size)
 {
-  if (DB->db_Addr)
-    bsd_free(DB->db_Addr, M_TEMP);
-  
-  if ((DB->db_Addr = bsd_malloc(size, M_TEMP, M_WAITOK)) == NULL) {
-    DB->db_Size = 0;
-    return FALSE;
-  }
-  DB->db_Size = size;
-  return TRUE;
+    if(DB->db_Addr)
+        bsd_free(DB->db_Addr, M_TEMP);
+
+    if((DB->db_Addr = bsd_malloc(size, M_TEMP, M_WAITOK)) == NULL) {
+        DB->db_Size = 0;
+        return FALSE;
+    }
+    DB->db_Size = size;
+    return TRUE;
 }
 
-VOID freeDataBuffer(struct DataBuffer * DB)
+VOID freeDataBuffer(struct DataBuffer *DB)
 {
-  if (DB->db_Addr)
-    bsd_free(DB->db_Addr, M_TEMP);
-  DB->db_Size = 0;
-  DB->db_Addr = NULL;
+    if(DB->db_Addr)
+        bsd_free(DB->db_Addr, M_TEMP);
+    DB->db_Size = 0;
+    DB->db_Addr = NULL;
 }
 

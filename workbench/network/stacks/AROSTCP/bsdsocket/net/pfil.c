@@ -56,23 +56,23 @@
 
 struct SignalSemaphore pfil_list_lock;
 struct MinList pfil_list;
-              
+
 static __inline void
 PFIL_RLOCK(void)
 {
-	ObtainSemaphoreShared(&pfil_list_lock);
+    ObtainSemaphoreShared(&pfil_list_lock);
 }
 
 static __inline void
 PFIL_RUNLOCK(void)
 {
-	ReleaseSemaphore(&pfil_list_lock);
+    ReleaseSemaphore(&pfil_list_lock);
 }
 
 void pfil_init(void)
 {
-	InitSemaphore(&pfil_list_lock);
-	NewList((struct List *)&pfil_list);
+    InitSemaphore(&pfil_list_lock);
+    NewList((struct List *)&pfil_list);
 }
 
 /*
@@ -87,61 +87,61 @@ void pfil_init(void)
 int
 pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
 {
-	struct packet_filter_hook *pfh;
-	struct MiamiPFBuffer pfb;
-	unsigned char ifname[IFNAMSIZ+3];
-	void (*pfil_func)(struct Hook *, APTR, struct MiamiPFBuffer *);
+    struct packet_filter_hook *pfh;
+    struct MiamiPFBuffer pfb;
+    unsigned char ifname[IFNAMSIZ + 3];
+    void (*pfil_func)(struct Hook *, APTR, struct MiamiPFBuffer *);
 
-	DPF(kprintf("pfil_run_hooks(0x%08lx, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
+    DPF(kprintf("pfil_run_hooks(0x%08lx, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
 
-	/* Run IP filter engine for IP packets */
-	if (pr == MIAMIPFBPT_IP) {
-		if (ipf_check(m, ifp, dir) != IPF_PASS)
-			return 1;	/* blocked */
-	}
+    /* Run IP filter engine for IP packets */
+    if(pr == MIAMIPFBPT_IP) {
+        if(ipf_check(m, ifp, dir) != IPF_PASS)
+            return 1;	/* blocked */
+    }
 
-	pfb.data = mtod(m, unsigned char *);
-	pfb.length = m->m_len;
-	snprintf(ifname, sizeof(ifname), "%s%u", ifp->if_name, ifp->if_unit);
-	pfb.name = ifname;
-	if (ifp->if_flags & IFF_LOOPBACK)
-		pfb.itype = MIAMIPFBIT_LOOP;
-	else
-		pfb.itype = MIAMIPFBIT_BUILTIN;
-	pfb.ptype = pr;
-	PFIL_RLOCK();
-	for (pfh = (struct packet_filter_hook *)pfil_list.mlh_Head;
-	     pfh->pfil_link.mln_Succ;
-	     pfh = (struct packet_filter_hook *)pfh->pfil_link.mln_Succ) {
-/* TODO: NicJA - Where is CHECK_POINTER() !!!! */
+    pfb.data = mtod(m, unsigned char *);
+    pfb.length = m->m_len;
+    snprintf(ifname, sizeof(ifname), "%s%u", ifp->if_name, ifp->if_unit);
+    pfb.name = ifname;
+    if(ifp->if_flags & IFF_LOOPBACK)
+        pfb.itype = MIAMIPFBIT_LOOP;
+    else
+        pfb.itype = MIAMIPFBIT_BUILTIN;
+    pfb.ptype = pr;
+    PFIL_RLOCK();
+    for(pfh = (struct packet_filter_hook *)pfil_list.mlh_Head;
+            pfh->pfil_link.mln_Succ;
+            pfh = (struct packet_filter_hook *)pfh->pfil_link.mln_Succ) {
+        /* TODO: NicJA - Where is CHECK_POINTER() !!!! */
 #if !defined(__AROS__)
-	     CHECK_POINTER(pfh);
+        CHECK_POINTER(pfh);
 #endif
-	     DPF(kprintf("Checking handle 0x%08lx\n", pfh);)
-	     DPF(kprintf("Interface: 0x%08lx\n", pfh->pfil_if);)
-	     DPF(kprintf("Hook: 0x%08lx\n", pfh->pfil_hook);)
-	     DPF(kprintf("Function: 0x%08lx\n", pfh->pfil_hook->h_Entry);)
-	     DPF(kprintf("CPU type: %ld\n", pfh->pfil_hooktype);)
-	     if (pfh->pfil_if == ifp) {
-		pfil_func = (APTR)pfh->pfil_hook->h_Entry;
-		DPF(kprintf("Executing packet filter routine: 0x%08lx\n", pfil_func);)
-		switch (pfh->pfil_hooktype) {
-		case MIAMICPU_M68KREG:
-			AROS_UFC3NR(void, pfil_func,
-				AROS_UFCA(struct Hook *, pfh->pfil_hook, A0),
-				AROS_UFCA(APTR, pfh, A2),
-				AROS_UFCA(struct MiamiPFBuffer *, &pfb, A1));
-			break;
-		case MIAMICPU_PPCV4:
-			pfil_func(pfh->pfil_hook, pfh, &pfb);
-			break;
-		}
-	     }
-	}
-	PFIL_RUNLOCK();
+        DPF(kprintf("Checking handle 0x%08lx\n", pfh);)
+        DPF(kprintf("Interface: 0x%08lx\n", pfh->pfil_if);)
+        DPF(kprintf("Hook: 0x%08lx\n", pfh->pfil_hook);)
+        DPF(kprintf("Function: 0x%08lx\n", pfh->pfil_hook->h_Entry);)
+        DPF(kprintf("CPU type: %ld\n", pfh->pfil_hooktype);)
+        if(pfh->pfil_if == ifp) {
+            pfil_func = (APTR)pfh->pfil_hook->h_Entry;
+            DPF(kprintf("Executing packet filter routine: 0x%08lx\n", pfil_func);)
+            switch(pfh->pfil_hooktype) {
+            case MIAMICPU_M68KREG:
+                AROS_UFC3NR(void, pfil_func,
+                            AROS_UFCA(struct Hook *, pfh->pfil_hook, A0),
+                            AROS_UFCA(APTR, pfh, A2),
+                            AROS_UFCA(struct MiamiPFBuffer *, &pfb, A1));
+                break;
+            case MIAMICPU_PPCV4:
+                pfil_func(pfh->pfil_hook, pfh, &pfb);
+                break;
+            }
+        }
+    }
+    PFIL_RUNLOCK();
 
-	return 0;	/* pass */
+    return 0;	/* pass */
 }
 
 #endif /* ENABLE_PACKET_FILTER */
-    
+

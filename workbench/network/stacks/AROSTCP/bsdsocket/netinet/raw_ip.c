@@ -99,17 +99,17 @@ struct	sockproto ripproto = { PF_INET };
  */
 void rip_input(void *arg, ...)
 {
-	struct mbuf *m = arg;
-	register struct ip *ip = mtod(m, struct ip *);
+    struct mbuf *m = arg;
+    register struct ip *ip = mtod(m, struct ip *);
 
-	ripproto.sp_protocol = ip->ip_p;
-	ripdst.sin_addr = ip->ip_dst;
-	ripsrc.sin_addr = ip->ip_src;
-	if (raw_input(m, &ripproto, (struct sockaddr *)&ripsrc,
-	  (struct sockaddr *)&ripdst) == 0) {
-		ipstat.ips_noproto++;
-		ipstat.ips_delivered--;
-	}
+    ripproto.sp_protocol = ip->ip_p;
+    ripdst.sin_addr = ip->ip_dst;
+    ripsrc.sin_addr = ip->ip_src;
+    if(raw_input(m, &ripproto, (struct sockaddr *)&ripsrc,
+                 (struct sockaddr *)&ripdst) == 0) {
+        ipstat.ips_noproto++;
+        ipstat.ips_delivered--;
+    }
 }
 
 /*
@@ -119,43 +119,43 @@ void rip_input(void *arg, ...)
 #define	satosin(sa)	((struct sockaddr_in *)(sa))
 int rip_output(void *arg, ...)
 {
-	register struct ip *ip;
-	register struct raw_inpcb *rp;
-	register struct sockaddr_in *sin;
-	register struct mbuf *m = arg;
-	struct socket *so;
-	va_list va;
+    register struct ip *ip;
+    register struct raw_inpcb *rp;
+    register struct sockaddr_in *sin;
+    register struct mbuf *m = arg;
+    struct socket *so;
+    va_list va;
 
-	va_start(va, arg);
-	so = va_arg(va, struct socket *);
-	va_end(va);
+    va_start(va, arg);
+    so = va_arg(va, struct socket *);
+    va_end(va);
 
-	rp = sotorawinpcb(so);
-	/*
-	 * If the user handed us a complete IP packet, use it.
-	 * Otherwise, allocate an mbuf for a header and fill it in.
-	 */
-	if (rp->rinp_flags & RINPF_HDRINCL)
-		ip = mtod(m, struct ip *);
-	else {
-		M_PREPEND(m, sizeof(struct ip), M_WAIT);
-		ip = mtod(m, struct ip *);
-		ip->ip_tos = 0;
-		ip->ip_off = 0;
-		ip->ip_p = rp->rinp_rcb.rcb_proto.sp_protocol;
-		ip->ip_len = m->m_pkthdr.len;
-		if (sin = satosin(rp->rinp_rcb.rcb_laddr)) {
-			ip->ip_src = sin->sin_addr;
-		} else
-			ip->ip_src.s_addr = 0;
-		if (sin = satosin(rp->rinp_rcb.rcb_faddr))
-		    ip->ip_dst = sin->sin_addr;
-		ip->ip_ttl = MAXTTL;
-	}
-	return (ip_output(m,
-	   (rp->rinp_flags & RINPF_HDRINCL)? (struct mbuf *)0: rp->rinp_options,
-	    &rp->rinp_route, 
-	   (so->so_options & SO_DONTROUTE) | IP_ALLOWBROADCAST));
+    rp = sotorawinpcb(so);
+    /*
+     * If the user handed us a complete IP packet, use it.
+     * Otherwise, allocate an mbuf for a header and fill it in.
+     */
+    if(rp->rinp_flags & RINPF_HDRINCL)
+        ip = mtod(m, struct ip *);
+    else {
+        M_PREPEND(m, sizeof(struct ip), M_WAIT);
+        ip = mtod(m, struct ip *);
+        ip->ip_tos = 0;
+        ip->ip_off = 0;
+        ip->ip_p = rp->rinp_rcb.rcb_proto.sp_protocol;
+        ip->ip_len = m->m_pkthdr.len;
+        if(sin = satosin(rp->rinp_rcb.rcb_laddr)) {
+            ip->ip_src = sin->sin_addr;
+        } else
+            ip->ip_src.s_addr = 0;
+        if(sin = satosin(rp->rinp_rcb.rcb_faddr))
+            ip->ip_dst = sin->sin_addr;
+        ip->ip_ttl = MAXTTL;
+    }
+    return (ip_output(m,
+                      (rp->rinp_flags & RINPF_HDRINCL) ? (struct mbuf *)0 : rp->rinp_options,
+                      &rp->rinp_route,
+                      (so->so_options & SO_DONTROUTE) | IP_ALLOWBROADCAST));
 }
 
 /*
@@ -163,140 +163,138 @@ int rip_output(void *arg, ...)
  */
 int
 rip_ctloutput(op, so, level, optname, m)
-	int op;
-	struct socket *so;
-	int level, optname;
-	struct mbuf **m;
+int op;
+struct socket *so;
+int level, optname;
+struct mbuf **m;
 {
-	int error = 0;
-	register struct raw_inpcb *rp = sotorawinpcb(so);
+    int error = 0;
+    register struct raw_inpcb *rp = sotorawinpcb(so);
 
-	if (level != IPPROTO_IP)
-		error = EINVAL;
-	else switch (op) {
+    if(level != IPPROTO_IP)
+        error = EINVAL;
+    else switch(op) {
 
-	case PRCO_SETOPT:
-		switch (optname) {
+        case PRCO_SETOPT:
+            switch(optname) {
 
-		case IP_OPTIONS:
-			return (ip_pcbopts(&rp->rinp_options, *m));
+            case IP_OPTIONS:
+                return (ip_pcbopts(&rp->rinp_options, *m));
 
-		case IP_HDRINCL:
-			if (m == 0 || *m == 0 || (*m)->m_len < sizeof (int)) {
-				error = EINVAL;
-				break;
-			}
-			if (*mtod(*m, int *))
-				rp->rinp_flags |= RINPF_HDRINCL;
-			else
-				rp->rinp_flags &= ~RINPF_HDRINCL;
-			break;
+            case IP_HDRINCL:
+                if(m == 0 || *m == 0 || (*m)->m_len < sizeof(int)) {
+                    error = EINVAL;
+                    break;
+                }
+                if(*mtod(*m, int *))
+                    rp->rinp_flags |= RINPF_HDRINCL;
+                else
+                    rp->rinp_flags &= ~RINPF_HDRINCL;
+                break;
 
-		default:
-			error = EINVAL;
-			break;
-		}
-		break;
+            default:
+                error = EINVAL;
+                break;
+            }
+            break;
 
-	case PRCO_GETOPT:
-		*m = m_get(M_WAIT, MT_SOOPTS);
-		switch (optname) {
+        case PRCO_GETOPT:
+            *m = m_get(M_WAIT, MT_SOOPTS);
+            switch(optname) {
 
-		case IP_OPTIONS:
-			if (rp->rinp_options) {
-				(*m)->m_len = rp->rinp_options->m_len;
-				aligned_bcopy(mtod(rp->rinp_options, caddr_t),
-				    mtod(*m, caddr_t), (unsigned)(*m)->m_len);
-			} else
-				(*m)->m_len = 0;
-			break;
+            case IP_OPTIONS:
+                if(rp->rinp_options) {
+                    (*m)->m_len = rp->rinp_options->m_len;
+                    aligned_bcopy(mtod(rp->rinp_options, caddr_t),
+                                  mtod(*m, caddr_t), (unsigned)(*m)->m_len);
+                } else
+                    (*m)->m_len = 0;
+                break;
 
-		case IP_HDRINCL:
-			(*m)->m_len = sizeof (int);
-			*mtod(*m, int *) = rp->rinp_flags & RINPF_HDRINCL;
-			break;
+            case IP_HDRINCL:
+                (*m)->m_len = sizeof(int);
+                *mtod(*m, int *) = rp->rinp_flags & RINPF_HDRINCL;
+                break;
 
-		default:
-			error = EINVAL;
-			m_freem(*m);
-			*m = 0;
-			break;
-		}
-		break;
-	}
-	if (op == PRCO_SETOPT && *m)
-		(void)m_free(*m);
-	return (error);
+            default:
+                error = EINVAL;
+                m_freem(*m);
+                *m = 0;
+                break;
+            }
+            break;
+        }
+    if(op == PRCO_SETOPT && *m)
+        (void)m_free(*m);
+    return (error);
 }
 
 int
 rip_usrreq(so, req, m, nam, /*rights,*/ control)
-	register struct socket *so;
-	int req;
-	struct mbuf *m, *nam, /**rights,*/ *control;
+register struct socket *so;
+int req;
+struct mbuf *m, *nam, /**rights,*/ *control;
 {
-	register int error = 0;
-	register struct raw_inpcb *rp = sotorawinpcb(so);
+    register int error = 0;
+    register struct raw_inpcb *rp = sotorawinpcb(so);
 
-	switch (req) {
+    switch(req) {
 
-	case PRU_ATTACH:
-		if (rp)
-			panic("rip_attach");
-		MALLOC(rp, struct raw_inpcb *, sizeof *rp, M_PCB, M_WAITOK);
-		if (rp == 0)
-			return (ENOBUFS);
-		aligned_bzero_const((caddr_t)rp, sizeof(*rp));
-		so->so_pcb = (caddr_t)rp;
-		break;
+    case PRU_ATTACH:
+        if(rp)
+            panic("rip_attach");
+        MALLOC(rp, struct raw_inpcb *, sizeof * rp, M_PCB, M_WAITOK);
+        if(rp == 0)
+            return (ENOBUFS);
+        aligned_bzero_const((caddr_t)rp, sizeof(*rp));
+        so->so_pcb = (caddr_t)rp;
+        break;
 
-	case PRU_DETACH:
-		if (rp == 0)
-			panic("rip_detach");
-		if (rp->rinp_options)
-			m_freem(rp->rinp_options);
-		if (rp->rinp_route.ro_rt)
-			RTFREE(rp->rinp_route.ro_rt);
-		if (rp->rinp_rcb.rcb_laddr)
-			rp->rinp_rcb.rcb_laddr = 0;
-		break;
+    case PRU_DETACH:
+        if(rp == 0)
+            panic("rip_detach");
+        if(rp->rinp_options)
+            m_freem(rp->rinp_options);
+        if(rp->rinp_route.ro_rt)
+            RTFREE(rp->rinp_route.ro_rt);
+        if(rp->rinp_rcb.rcb_laddr)
+            rp->rinp_rcb.rcb_laddr = 0;
+        break;
 
-	case PRU_BIND:
-	    {
-		struct sockaddr_in *addr = mtod(nam, struct sockaddr_in *);
+    case PRU_BIND: {
+        struct sockaddr_in *addr = mtod(nam, struct sockaddr_in *);
 
-		if (nam->m_len != sizeof(*addr))
-			return (EINVAL);
-		if ((ifnet == 0) ||
-		    ((addr->sin_family != AF_INET) &&
-		     (addr->sin_family != AF_IMPLINK)) ||
-		    (addr->sin_addr.s_addr &&
-		     ifa_ifwithaddr((struct sockaddr *)addr) == 0))
-			return (EADDRNOTAVAIL);
-		rp->rinp_rcb.rcb_laddr = (struct sockaddr *)&rp->rinp_laddr;
-		rp->rinp_laddr = *addr;
-		return (0);
-	    }
-	case PRU_CONNECT:
-	    {
-		struct sockaddr_in *addr = mtod(nam, struct sockaddr_in *);
+        if(nam->m_len != sizeof(*addr))
+            return (EINVAL);
+        if((ifnet == 0) ||
+                ((addr->sin_family != AF_INET) &&
+                 (addr->sin_family != AF_IMPLINK)) ||
+                (addr->sin_addr.s_addr &&
+                 ifa_ifwithaddr((struct sockaddr *)addr) == 0))
+            return (EADDRNOTAVAIL);
+        rp->rinp_rcb.rcb_laddr = (struct sockaddr *)&rp->rinp_laddr;
+        rp->rinp_laddr = *addr;
+        return (0);
+    }
+    case PRU_CONNECT: {
+        struct sockaddr_in *addr = mtod(nam, struct sockaddr_in *);
 
-		if (nam->m_len != sizeof(*addr))
-			return (EINVAL);
-		if (ifnet == 0)
-			return (EADDRNOTAVAIL);
-		if ((addr->sin_family != AF_INET) &&
-		     (addr->sin_family != AF_IMPLINK))
-			return (EAFNOSUPPORT);
-		rp->rinp_rcb.rcb_faddr = (struct sockaddr *)&rp->rinp_faddr;
-		rp->rinp_faddr = *addr;
-		soisconnected(so);
-		return (0);
-	    }
-	}
-	error = raw_usrreq(so, req, m, nam, /*rights,*/ control);
+        if(nam->m_len != sizeof(*addr))
+            return (EINVAL);
+        if(ifnet == 0)
+            return (EADDRNOTAVAIL);
+        if((addr->sin_family != AF_INET) &&
+                (addr->sin_family != AF_IMPLINK))
+            return (EAFNOSUPPORT);
+        rp->rinp_rcb.rcb_faddr = (struct sockaddr *)&rp->rinp_faddr;
+        rp->rinp_faddr = *addr;
+        soisconnected(so);
+        return (0);
+    }
+    }
+    error = raw_usrreq(so, req, m, nam, /*rights,*/ control);
 
-	if (error && (req == PRU_ATTACH) && so->so_pcb)
-		bsd_free(so->so_pcb, M_PCB);
-	return (error);
+    if(error && (req == PRU_ATTACH) && so->so_pcb)
+        bsd_free(so->so_pcb, M_PCB);
+    return (error);
 }

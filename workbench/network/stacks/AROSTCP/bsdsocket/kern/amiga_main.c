@@ -73,15 +73,15 @@ BOOL sana_poll(void);
 /*
  * Global variable so AMITCP/IP task information can be utilized.
  */
-struct Task * AROSTCP_Task;
+struct Task *AROSTCP_Task;
 
-extern struct ExecBase * SysBase;
-extern struct Library * MasterSocketBase;
+extern struct ExecBase *SysBase;
+extern struct Library *MasterSocketBase;
 extern WORD nthLibrary;
 
-static ULONG sanamask = 0, 
-  sig = 0, signalmask = 0, timermask = 0, 
-  breakmask = 0;
+static ULONG sanamask = 0,
+             sig = 0, signalmask = 0, timermask = 0,
+             breakmask = 0;
 
 UBYTE *taskname = NULL;
 /*BPTR db_lock = NULL;*/
@@ -105,11 +105,11 @@ int dhclient_path_changed(void *pt, IPTR new)
 {
     STRPTR newpath = (STRPTR)new;
 
-    if (newpath == NULL || newpath[0] == '\0')
+    if(newpath == NULL || newpath[0] == '\0')
         return 0;
 
     /* If it contains a colon it's an absolute Amiga path — use as-is */
-    if (strchr(newpath, ':') != NULL) {
+    if(strchr(newpath, ':') != NULL) {
         strncpy(dhclient_path, newpath, FILENAME_MAX - 1);
         dhclient_path[FILENAME_MAX - 1] = '\0';
     } else {
@@ -134,219 +134,218 @@ STRPTR version = "$VER: " STACK_RELEASE;
 int
 main(int argc, char *argv[])
 {
-  BYTE oldpri;
-  STRPTR oldname;
-  int retval;
-  struct Library *TestSocketBase;
+    BYTE oldpri;
+    STRPTR oldname;
+    int retval;
+    struct Library *TestSocketBase;
 
 #ifndef __AROS__
-  SysBase = *(struct ExecBase **)4;
+    SysBase = *(struct ExecBase **)4;
 #else
-D(bug("[AROSTCP](amiga_main.c) main()\n"));
+    D(bug("[AROSTCP](amiga_main.c) main()\n"));
 #endif
 
-  TestSocketBase = OpenLibrary("bsdsocket.library",0);
-  if (TestSocketBase) {
-	CloseLibrary(TestSocketBase);
-	error_request("Another TCP/IP stack is running, please quit it first.");
-	return 21;
-  }
-
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Kernel launching ...\n"));
-#else
-  D(Printf(STACK_NAME " kernel started\n");)
-#endif
-
-  /*
-   * Disable CTRL-C(D) Break signal.
-   */
-  signal(SIGINT, SIG_IGN);
-
-  /*
-   * Initialize AROSTCP_Task to point the Task structure of this task.
-   */
-  AROSTCP_Task = FindTask(NULL);
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: AROSTCP_Task @ 0x%p\n",AROSTCP_Task));
-#endif
-  D(Printf("AROSTCP_Task @ 0x%p\n",AROSTCP_Task);)
-
-  /*
-   * Get a lock on the 'db' directory so we don't need an assign.
-   */
-   BPTR  db_path_lock = BNULL;
-
-   char tmpconfigpath[1024];
-
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Setting environment default Paths ... \n"));
-#endif
-
-   db_path_lock = GetProgramDir();
-#if defined(__AROS__)
-   db_path_lock = ParentDir(db_path_lock);
-#endif
-
-  NameFromLock(db_path_lock, interfaces_path, FILENAME_MAX);
-  
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Directory tree root: %s\n", interfaces_path));
-#endif
-  D(Printf("Directory tree root: %s\n", interfaces_path);)
-  strncpy(netdb_path, interfaces_path, FILENAME_MAX);
-  strncpy(db_path, interfaces_path, FILENAME_MAX);
-  strncpy(config_path, interfaces_path, FILENAME_MAX);
-  strncpy(logfiledefname, "T:", FILENAME_MAX);             /* NicJA: Default to storing logs in Temp for launching
-                                               from read only media                          */
-  strncpy(dhclient_path, interfaces_path, FILENAME_MAX);
-/*strcpy(hequiv_path, interfaces_path);
-  strcpy(inetdconf_path, interfaces_path);*/
-  AddPart(interfaces_path, _PATH_DB, FILENAME_MAX);
-  AddPart(netdb_path, _PATH_DB, FILENAME_MAX);
-  AddPart(db_path, _PATH_DB, FILENAME_MAX);
-  AddPart(config_path, _PATH_DB, FILENAME_MAX);
-  AddPart(logfiledefname, _PATH_SYSLOG, FILENAME_MAX);
-  AddPart(dhclient_path, _PATH_DHCLIENT, FILENAME_MAX);
-/*AddPart(hequiv_path, _PATH_HEQUIV, FILENAME_MAX);
-  AddPart(inetdconf_path, _PATH_INETDCONF, FILENAME_MAX);*/
-
-/* NicJA : Allow user specified config location (from Env: variable) */
-	if (GetVar("AROSTCP/Config", tmpconfigpath, 1024, GVF_GLOBAL_ONLY) != -1)
-	{
-   	db_path_lock = BNULL;
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Env: Var AROSTCP/Config set.\n"));
-D(bug("[AROSTCP](amiga_main.c) main: Attempting to use '%s' for config location..\n", tmpconfigpath));
-#endif
-	  if (db_path_lock = Lock(tmpconfigpath, ACCESS_READ))
-	  {
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: successfully locked config dir '%s'\n", tmpconfigpath));
-#endif
-        strncpy(interfaces_path, tmpconfigpath, FILENAME_MAX);
-        strncpy(netdb_path, tmpconfigpath, FILENAME_MAX);
-        strncpy(db_path, tmpconfigpath, FILENAME_MAX);
-        strncpy(config_path, tmpconfigpath, FILENAME_MAX);
-     	  //UnLock(db_path_lock);
-      }
-/* TODO: NicJA - Attempt to create chosen config location */
-/* TODO: NicJA - and copy defaults if it doesnt currently exist and is possible? */
-	}
-
-  AddPart(interfaces_path, _FILE_SANA2CONFIG, FILENAME_MAX);
-  AddPart(netdb_path, _FILE_NETDB, FILENAME_MAX);
-  AddPart(config_path, _FILE_CONFIG, FILENAME_MAX);
-
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Log file defaulting to '%s'\n", logfiledefname));
-#endif
-
-  /* Save pointer to this tasks old name */
-  oldname = AROSTCP_Task->tc_Node.ln_Name;
-
-  if (init_all()) {
-#if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: preparing AROSTCP_Task\n"));
-#endif
-    /* Set our priority */
-    oldpri = SetTaskPri(AROSTCP_Task, 5);
-
-    /* Set our Task name */
-    if (!taskname) {
-#ifdef DEBUG
-      if (nthLibrary) {
-	if (taskname = bsd_malloc(sizeof("bsdsocket.library"), M_CFGVAR, M_WAITOK)) {
-	  memcpy(taskname, "bsdsocket.library", sizeof("bsdsocket.library"));
-	  taskname[6] = '.'; taskname[7] = '0' + nthLibrary;
-	}
-      } else {
-#endif
-	taskname = "bsdsocket.library";
-#ifdef DEBUG
-      }
-#endif
+    TestSocketBase = OpenLibrary("bsdsocket.library", 0);
+    if(TestSocketBase) {
+        CloseLibrary(TestSocketBase);
+        error_request("Another TCP/IP stack is running, please quit it first.");
+        return 21;
     }
-    if (taskname) AROSTCP_Task->tc_Node.ln_Name = taskname;
 
-    initialized = TRUE;           /* Global initialization flag */
-
-#ifdef DEBUG
-    /* Show our task address */
-    printf("%s Task address : %lx\n", taskname, (long) AROSTCP_Task);
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_main.c) main: Kernel launching ...\n"));
+#else
+    D(Printf(STACK_NAME " kernel started\n");)
 #endif
-
-    /* Initialize signal mask for the wait */
-    breakmask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F;
-    signalmask = timermask | breakmask | sanamask;
 
     /*
-     * Now when everything else is successfully initialized,
-     * let the timeouts roll!
+     * Disable CTRL-C(D) Break signal.
      */
-    timer_send();
+    signal(SIGINT, SIG_IGN);
 
-    for(;;) {
-      sig = Wait(signalmask);     /* Sleep until we are signalled. */
+    /*
+     * Initialize AROSTCP_Task to point the Task structure of this task.
+     */
+    AROSTCP_Task = FindTask(NULL);
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_main.c) main: AROSTCP_Task @ 0x%p\n", AROSTCP_Task));
+#endif
+    D(Printf("AROSTCP_Task @ 0x%p\n", AROSTCP_Task);)
 
-      do {
-        if (sig & sanamask) {
-          if (!sana_poll()) sig &= ~sanamask;
-	     }
+    /*
+     * Get a lock on the 'db' directory so we don't need an assign.
+     */
+    BPTR  db_path_lock = BNULL;
 
-        if (sig & timermask) {
-	       if (!timer_poll()) sig &= ~timermask;
-	     }
-
-	     sig |= SetSignal(0L, signalmask) & signalmask;
-      } while (sig & (~breakmask));
-
-      if (sig & breakmask) {
-	     int i;
+    char tmpconfigpath[1024];
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Task received CTRL-C\n"));
+    D(bug("[AROSTCP](amiga_main.c) main: Setting environment default Paths ... \n"));
 #endif
-	    /* We received CTRL-C
-	     * NETTRACE task keeps one base open, it is not counted. */
-        api_hide();		          /* hides the API from users */
 
-        api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */
-
-        /* Try three times with a short delay */
-        for (i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
-          Delay(50);		          /* give tasks time to close socket base */
-        }
-
-        if (MasterSocketBase->lib_OpenCnt > 1) {
+    db_path_lock = GetProgramDir();
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) main: Got CTRL-C while %ld %s still open.\n",
-          MasterSocketBase->lib_OpenCnt - 1,
-	             (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries"));
+    db_path_lock = ParentDir(db_path_lock);
 #endif
 
-          __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
-	       (MasterSocketBase->lib_OpenCnt - 1),
-	             (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
+    NameFromLock(db_path_lock, interfaces_path, FILENAME_MAX);
 
-          api_show(); /* stopping not successful, show API to users */ 
-        } else {
-          break;
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_main.c) main: Directory tree root: %s\n", interfaces_path));
+#endif
+    D(Printf("Directory tree root: %s\n", interfaces_path);)
+    strncpy(netdb_path, interfaces_path, FILENAME_MAX);
+    strncpy(db_path, interfaces_path, FILENAME_MAX);
+    strncpy(config_path, interfaces_path, FILENAME_MAX);
+    strncpy(logfiledefname, "T:", FILENAME_MAX);             /* NicJA: Default to storing logs in Temp for launching
+                                               from read only media                          */
+    strncpy(dhclient_path, interfaces_path, FILENAME_MAX);
+    /*strcpy(hequiv_path, interfaces_path);
+      strcpy(inetdconf_path, interfaces_path);*/
+    AddPart(interfaces_path, _PATH_DB, FILENAME_MAX);
+    AddPart(netdb_path, _PATH_DB, FILENAME_MAX);
+    AddPart(db_path, _PATH_DB, FILENAME_MAX);
+    AddPart(config_path, _PATH_DB, FILENAME_MAX);
+    AddPart(logfiledefname, _PATH_SYSLOG, FILENAME_MAX);
+    AddPart(dhclient_path, _PATH_DHCLIENT, FILENAME_MAX);
+    /*AddPart(hequiv_path, _PATH_HEQUIV, FILENAME_MAX);
+      AddPart(inetdconf_path, _PATH_INETDCONF, FILENAME_MAX);*/
+
+    /* NicJA : Allow user specified config location (from Env: variable) */
+    if(GetVar("AROSTCP/Config", tmpconfigpath, 1024, GVF_GLOBAL_ONLY) != -1) {
+        db_path_lock = BNULL;
+#if defined(__AROS__)
+        D(bug("[AROSTCP](amiga_main.c) main: Env: Var AROSTCP/Config set.\n"));
+        D(bug("[AROSTCP](amiga_main.c) main: Attempting to use '%s' for config location..\n", tmpconfigpath));
+#endif
+        if(db_path_lock = Lock(tmpconfigpath, ACCESS_READ)) {
+#if defined(__AROS__)
+            D(bug("[AROSTCP](amiga_main.c) main: successfully locked config dir '%s'\n", tmpconfigpath));
+#endif
+            strncpy(interfaces_path, tmpconfigpath, FILENAME_MAX);
+            strncpy(netdb_path, tmpconfigpath, FILENAME_MAX);
+            strncpy(db_path, tmpconfigpath, FILENAME_MAX);
+            strncpy(config_path, tmpconfigpath, FILENAME_MAX);
+            //UnLock(db_path_lock);
         }
-      }
+        /* TODO: NicJA - Attempt to create chosen config location */
+        /* TODO: NicJA - and copy defaults if it doesnt currently exist and is possible? */
     }
-    retval = 0;
-  } else
-    retval = 20;
 
-  /* free all resources */
-  deinit_all();
-  initialized = FALSE;
+    AddPart(interfaces_path, _FILE_SANA2CONFIG, FILENAME_MAX);
+    AddPart(netdb_path, _FILE_NETDB, FILENAME_MAX);
+    AddPart(config_path, _FILE_CONFIG, FILENAME_MAX);
 
-  SetTaskPri(AROSTCP_Task, oldpri);
-  AROSTCP_Task->tc_Node.ln_Name = oldname;
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_main.c) main: Log file defaulting to '%s'\n", logfiledefname));
+#endif
 
-  return retval;
+    /* Save pointer to this tasks old name */
+    oldname = AROSTCP_Task->tc_Node.ln_Name;
+
+    if(init_all()) {
+#if defined(__AROS__)
+        D(bug("[AROSTCP](amiga_main.c) main: preparing AROSTCP_Task\n"));
+#endif
+        /* Set our priority */
+        oldpri = SetTaskPri(AROSTCP_Task, 5);
+
+        /* Set our Task name */
+        if(!taskname) {
+#ifdef DEBUG
+            if(nthLibrary) {
+                if(taskname = bsd_malloc(sizeof("bsdsocket.library"), M_CFGVAR, M_WAITOK)) {
+                    memcpy(taskname, "bsdsocket.library", sizeof("bsdsocket.library"));
+                    taskname[6] = '.';
+                    taskname[7] = '0' + nthLibrary;
+                }
+            } else {
+#endif
+                taskname = "bsdsocket.library";
+#ifdef DEBUG
+            }
+#endif
+        }
+        if(taskname) AROSTCP_Task->tc_Node.ln_Name = taskname;
+
+        initialized = TRUE;           /* Global initialization flag */
+
+#ifdef DEBUG
+        /* Show our task address */
+        printf("%s Task address : %lx\n", taskname, (long) AROSTCP_Task);
+#endif
+
+        /* Initialize signal mask for the wait */
+        breakmask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F;
+        signalmask = timermask | breakmask | sanamask;
+
+        /*
+         * Now when everything else is successfully initialized,
+         * let the timeouts roll!
+         */
+        timer_send();
+
+        for(;;) {
+            sig = Wait(signalmask);     /* Sleep until we are signalled. */
+
+            do {
+                if(sig & sanamask) {
+                    if(!sana_poll()) sig &= ~sanamask;
+                }
+
+                if(sig & timermask) {
+                    if(!timer_poll()) sig &= ~timermask;
+                }
+
+                sig |= SetSignal(0L, signalmask) & signalmask;
+            } while(sig & (~breakmask));
+
+            if(sig & breakmask) {
+                int i;
+
+#if defined(__AROS__)
+                D(bug("[AROSTCP](amiga_main.c) main: Task received CTRL-C\n"));
+#endif
+                /* We received CTRL-C
+                 * NETTRACE task keeps one base open, it is not counted. */
+                api_hide();		          /* hides the API from users */
+
+                api_sendbreaktotasks(); /* send brk to all tasks w/ SBase open */
+
+                /* Try three times with a short delay */
+                for(i = 0; i < 3 && MasterSocketBase->lib_OpenCnt > 1; i++) {
+                    Delay(50);		          /* give tasks time to close socket base */
+                }
+
+                if(MasterSocketBase->lib_OpenCnt > 1) {
+#if defined(__AROS__)
+                    D(bug("[AROSTCP](amiga_main.c) main: Got CTRL-C while %ld %s still open.\n",
+                          MasterSocketBase->lib_OpenCnt - 1,
+                          (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries"));
+#endif
+
+                    __log(LOG_ERR, "Got CTRL-C while %d %s still open.\n",
+                          (MasterSocketBase->lib_OpenCnt - 1),
+                          (MasterSocketBase->lib_OpenCnt == 2) ? "library" : "libraries");
+
+                    api_show(); /* stopping not successful, show API to users */
+                } else {
+                    break;
+                }
+            }
+        }
+        retval = 0;
+    } else
+        retval = 20;
+
+    /* free all resources */
+    deinit_all();
+    initialized = FALSE;
+
+    SetTaskPri(AROSTCP_Task, oldpri);
+    AROSTCP_Task->tc_Node.ln_Name = oldname;
+
+    return retval;
 }
 
 /*
@@ -356,111 +355,111 @@ BOOL
 init_all(void)
 {
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) init_all()\n"));
+    D(bug("[AROSTCP](amiga_main.c) init_all()\n"));
 #endif
-  /*
-   * Initialize malloc semaphore
-   */
-  malloc_init();
-  D(Printf("malloc_init() complete\n");)
+    /*
+     * Initialize malloc semaphore
+     */
+    malloc_init();
+    D(Printf("malloc_init() complete\n");)
 
-  /*
-   * initialize concurrency control subsystem
-   */  
-  spl_init();
-  D(Printf("spl_init() complete\n");)
-  
-  /*
-   * initialize sleep queues
-   */
-  sleep_init();
-  D(Printf("sleep_init() complete\n");)
-  
-  /* 
-   * Read command line arguments and configuration file
-   */
-  if (!readconfig())
-    return FALSE;
-  D(Printf("readconfig() complete\n");)
+    /*
+     * initialize concurrency control subsystem
+     */
+    spl_init();
+    D(Printf("spl_init() complete\n");)
 
-  /*
-   * initialize logging system
-   */
-  if (!log_init())
-    return FALSE;
-  D(Printf("log_init() complete\n");)
+    /*
+     * initialize sleep queues
+     */
+    sleep_init();
+    D(Printf("sleep_init() complete\n");)
 
-  /* 
-   * initialize the mbuf subsystem
-   */
-  if (!mbinit())
-    return FALSE;
-  D(Printf("mbinit() complete\n");)
+    /*
+     * Read command line arguments and configuration file
+     */
+    if(!readconfig())
+        return FALSE;
+    D(Printf("readconfig() complete\n");)
 
-  /*
-   * initialize timer
-   */
-  if ((timermask = timer_init()) == 0L)
-    return FALSE;
-  D(Printf("timer_init() complete\n");)
+    /*
+     * initialize logging system
+     */
+    if(!log_init())
+        return FALSE;
+    D(Printf("log_init() complete\n");)
 
-  /*
-   * initialize API
-   */
-  if (!api_init())
-    return FALSE;
-  D(Printf("api_init() complete\n");)
-	
-  /*
-   * initialize SANA-II subsystem
-   */
-  if ((sanamask = sana_init()) == 0L)
-    return FALSE;
-  D(Printf("sana_init() complete\n");)
-	    
-  /*
-   * initialize domains (initializes all protocols)
-   */
-  domaininit();
-  D(Printf("domaininit() complete\n");)
+    /*
+     * initialize the mbuf subsystem
+     */
+    if(!mbinit())
+        return FALSE;
+    D(Printf("mbinit() complete\n");)
 
-  pfil_init();
-  D(Printf("pfil_init() complete\n");)
+    /*
+     * initialize timer
+     */
+    if((timermask = timer_init()) == 0L)
+        return FALSE;
+    D(Printf("timer_init() complete\n");)
 
-  bpf_init();
-  D(Printf("bpf_init() complete\n");)
+    /*
+     * initialize API
+     */
+    if(!api_init())
+        return FALSE;
+    D(Printf("api_init() complete\n");)
 
-  loconfig();
-  D(Printf("loconfig() complete\n");)
-	    
-  /*
-   * Initialize NetDataBase
-   */
-  if (init_netdb() != 0)
-    return FALSE;
-  D(Printf("init_netdb() complete\n");)
+    /*
+     * initialize SANA-II subsystem
+     */
+    if((sanamask = sana_init()) == 0L)
+        return FALSE;
+    D(Printf("sana_init() complete\n");)
 
-  /*
-   * Make API visible
-   */
-  if (api_show() == FALSE)
-    return FALSE;
-  D(Printf("api_show() complete\n");)
+    /*
+     * initialize domains (initializes all protocols)
+     */
+    domaininit();
+    D(Printf("domaininit() complete\n");)
 
-  if (Nettrace_Task) {
-    D(Printf("Initialization complete, signalling NETTRACE\n");)
-    Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
-  } else
-    return FALSE;
+    pfil_init();
+    D(Printf("pfil_init() complete\n");)
 
-  rc_start();
-  D(Printf("rc_start() complete, initialization finished\n");)
+    bpf_init();
+    D(Printf("bpf_init() complete\n");)
+
+    loconfig();
+    D(Printf("loconfig() complete\n");)
+
+    /*
+     * Initialize NetDataBase
+     */
+    if(init_netdb() != 0)
+        return FALSE;
+    D(Printf("init_netdb() complete\n");)
+
+    /*
+     * Make API visible
+     */
+    if(api_show() == FALSE)
+        return FALSE;
+    D(Printf("api_show() complete\n");)
+
+    if(Nettrace_Task) {
+        D(Printf("Initialization complete, signalling NETTRACE\n");)
+        Signal(Nettrace_Task, SIGBREAKF_CTRL_F);
+    } else
+        return FALSE;
+
+    rc_start();
+    D(Printf("rc_start() complete, initialization finished\n");)
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successful.\n"));
+    D(bug("[AROSTCP](amiga_main.c) init_all: Initialisation successful.\n"));
 #endif
 
-  return TRUE;
+    return TRUE;
 }
 
 /*
@@ -470,72 +469,72 @@ void
 deinit_all(void)
 {
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
+    D(bug("[AROSTCP](amiga_main.c) deinit_all()\n"));
 #endif
-  /*
-   * make sure we are out of critical section
-   */
-  spl0();
-  D(Printf("spl0() completed\n");)
+    /*
+     * make sure we are out of critical section
+     */
+    spl0();
+    D(Printf("spl0() completed\n");)
 
-  api_hide();			/* hides the API from users */
-  D(Printf("api_hide() completed\n");)
+    api_hide();			/* hides the API from users */
+    D(Printf("api_hide() completed\n");)
 
-  /*
-   * Deinitialize network database.
-   */
-  netdb_deinit();
-  
-  /*
-   * Deinitialize BPF before network interfaces
-   */
-  bpf_cleanup();
-  D(Printf("bpf_cleanup() completed\n");)
+    /*
+     * Deinitialize network database.
+     */
+    netdb_deinit();
 
-  /*
-   * Deinitialize network interfaces
-   */
-  sana_deinit();
+    /*
+     * Deinitialize BPF before network interfaces
+     */
+    bpf_cleanup();
+    D(Printf("bpf_cleanup() completed\n");)
 
-  /*
-   * Deinitialize timers
-   */
-  timer_deinit();
+    /*
+     * Deinitialize network interfaces
+     */
+    sana_deinit();
 
-  /*
-   * Free all resources allocated by mbufs.
-   */
-  mbdeinit();
-  D(Printf("mbdeinit() completed\n");)
+    /*
+     * Deinitialize timers
+     */
+    timer_deinit();
 
-  log_deinit();
-  D(Printf("log_deinit() completed\n");)
+    /*
+     * Free all resources allocated by mbufs.
+     */
+    mbdeinit();
+    D(Printf("mbdeinit() completed\n");)
 
-  /*
-   * Free memory pool.
-   */
-  malloc_deinit();
-  D(Printf("malloc_deinit() completed\n");)
+    log_deinit();
+    D(Printf("log_deinit() completed\n");)
 
-  /*
-   * Check that there are no libraries open (to our API). We can continue only
-   * if all bases are closed.
-   */
-  api_deinit();  /* NOTICE: this waits until every api user has exited */
+    /*
+     * Free memory pool.
+     */
+    malloc_deinit();
+    D(Printf("malloc_deinit() completed\n");)
+
+    /*
+     * Check that there are no libraries open (to our API). We can continue only
+     * if all bases are closed.
+     */
+    api_deinit();  /* NOTICE: this waits until every api user has exited */
 }
 
 /*
  * Notification function for taskname
- */ 
+ */
 int taskname_changed(void *p, IPTR newname)
 {
 #if defined(__AROS__)
-D(bug("[AROSTCP](amiga_main.c) taskname_changed()\n"));
+    D(bug("[AROSTCP](amiga_main.c) taskname_changed()\n"));
 #endif
-  
-  AROSTCP_Task->tc_Node.ln_Name = (UBYTE *)newname;
-  if (initialized)
-    printf("New task name '%s'\n", (char *)newname);
 
-  return TRUE;
+    AROSTCP_Task->tc_Node.ln_Name = (UBYTE *)newname;
+    if(initialized)
+        printf("New task name '%s'\n", (char *)newname);
+
+    return TRUE;
 }

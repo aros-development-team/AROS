@@ -91,121 +91,127 @@ static int
 udp6_output(struct inpcb *inp, struct mbuf *m,
             struct mbuf *addr_m, struct mbuf *control)
 {
-	struct sockaddr_in6 *dst6;
-	struct in6_addr laddr6, faddr6;
-	u_short lport, fport;
-	struct udphdr *uh;
-	struct ip6_hdr *ip6;
-	int len, udplen, error = 0;
-	int s = 0;
+    struct sockaddr_in6 *dst6;
+    struct in6_addr laddr6, faddr6;
+    u_short lport, fport;
+    struct udphdr *uh;
+    struct ip6_hdr *ip6;
+    int len, udplen, error = 0;
+    int s = 0;
 
-	if (control)
-		m_freem(control);
+    if(control)
+        m_freem(control);
 
-	len = m->m_pkthdr.len;
-	udplen = len + sizeof(struct udphdr);
+    len = m->m_pkthdr.len;
+    udplen = len + sizeof(struct udphdr);
 
-	/* ---- Resolve destination ---- */
-	if (addr_m) {
-		if (addr_m->m_len < (int)sizeof(struct sockaddr_in6)) {
-			error = EINVAL;
-			goto release;
-		}
-		dst6 = mtod(addr_m, struct sockaddr_in6 *);
-		if (dst6->sin6_family != AF_INET6) {
-			error = EAFNOSUPPORT;
-			goto release;
-		}
-		if (!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
-			error = EISCONN;
-			goto release;
-		}
-		s = splnet();
-		error = in6_pcbconnect(inp, addr_m);
-		if (error) {
-			splx(s);
-			goto release;
-		}
-	} else {
-		if (IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
-			error = ENOTCONN;
-			goto release;
-		}
-	}
+    /* ---- Resolve destination ---- */
+    if(addr_m) {
+        if(addr_m->m_len < (int)sizeof(struct sockaddr_in6)) {
+            error = EINVAL;
+            goto release;
+        }
+        dst6 = mtod(addr_m, struct sockaddr_in6 *);
+        if(dst6->sin6_family != AF_INET6) {
+            error = EAFNOSUPPORT;
+            goto release;
+        }
+        if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+            error = EISCONN;
+            goto release;
+        }
+        s = splnet();
+        error = in6_pcbconnect(inp, addr_m);
+        if(error) {
+            splx(s);
+            goto release;
+        }
+    } else {
+        if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+            error = ENOTCONN;
+            goto release;
+        }
+    }
 
-	faddr6 = inp->inp_faddr6;
-	fport  = inp->inp_fport;
-	lport  = inp->inp_lport;
+    faddr6 = inp->inp_faddr6;
+    fport  = inp->inp_fport;
+    lport  = inp->inp_lport;
 
-	/* ---- Resolve source address ---- */
-	if (!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
-		laddr6 = inp->inp_laddr6;
-	} else {
-		/* Auto-select from routing table */
-		struct route_in6 ro;
-		struct in6_ifaddr *ia;
-		bzero(&ro, sizeof(ro));
-		ro.ro_dst.sin6_family = AF_INET6;
-		ro.ro_dst.sin6_len    = sizeof(ro.ro_dst);
-		ro.ro_dst.sin6_addr   = faddr6;
-		rtalloc((struct route *)&ro);
-		bzero(&laddr6, sizeof(laddr6));
-		if (ro.ro_rt != NULL) {
-			ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &faddr6);
-			if (ia)
-				laddr6 = ia->ia_addr.sin6_addr;
-			RTFREE(ro.ro_rt);
-		}
-	}
+    /* ---- Resolve source address ---- */
+    if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
+        laddr6 = inp->inp_laddr6;
+    } else {
+        /* Auto-select from routing table */
+        struct route_in6 ro;
+        struct in6_ifaddr *ia;
+        bzero(&ro, sizeof(ro));
+        ro.ro_dst.sin6_family = AF_INET6;
+        ro.ro_dst.sin6_len    = sizeof(ro.ro_dst);
+        ro.ro_dst.sin6_addr   = faddr6;
+        rtalloc((struct route *)&ro);
+        bzero(&laddr6, sizeof(laddr6));
+        if(ro.ro_rt != NULL) {
+            ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &faddr6);
+            if(ia)
+                laddr6 = ia->ia_addr.sin6_addr;
+            RTFREE(ro.ro_rt);
+        }
+    }
 
-	/* ---- Prepend UDP header ---- */
-	M_PREPEND(m, sizeof(struct udphdr), M_DONTWAIT);
-	if (m == NULL) {
-		error = ENOBUFS;
-		if (addr_m) { in6_pcbdisconnect(inp); splx(s); }
-		return error;
-	}
-	uh = mtod(m, struct udphdr *);
-	uh->uh_sport = lport;
-	uh->uh_dport = fport;
-	uh->uh_ulen  = htons((u_short)udplen);
-	uh->uh_sum   = 0;
+    /* ---- Prepend UDP header ---- */
+    M_PREPEND(m, sizeof(struct udphdr), M_DONTWAIT);
+    if(m == NULL) {
+        error = ENOBUFS;
+        if(addr_m) {
+            in6_pcbdisconnect(inp);
+            splx(s);
+        }
+        return error;
+    }
+    uh = mtod(m, struct udphdr *);
+    uh->uh_sport = lport;
+    uh->uh_dport = fport;
+    uh->uh_ulen  = htons((u_short)udplen);
+    uh->uh_sum   = 0;
 
-	/* ---- Prepend IPv6 header ---- */
-	M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
-	if (m == NULL) {
-		error = ENOBUFS;
-		if (addr_m) { in6_pcbdisconnect(inp); splx(s); }
-		return error;
-	}
-	ip6 = mtod(m, struct ip6_hdr *);
-	ip6->ip6_vfc  = IPV6_VERSION;
-	ip6->ip6_flow = 0;
-	ip6->ip6_plen = htons((u_short)udplen);
-	ip6->ip6_nxt  = IPPROTO_UDP;
-	ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
-	                                       : (u_int8_t)ip6_defhlim;
-	ip6->ip6_src  = laddr6;
-	ip6->ip6_dst  = faddr6;
+    /* ---- Prepend IPv6 header ---- */
+    M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
+    if(m == NULL) {
+        error = ENOBUFS;
+        if(addr_m) {
+            in6_pcbdisconnect(inp);
+            splx(s);
+        }
+        return error;
+    }
+    ip6 = mtod(m, struct ip6_hdr *);
+    ip6->ip6_vfc  = IPV6_VERSION;
+    ip6->ip6_flow = 0;
+    ip6->ip6_plen = htons((u_short)udplen);
+    ip6->ip6_nxt  = IPPROTO_UDP;
+    ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
+                    : (u_int8_t)ip6_defhlim;
+    ip6->ip6_src  = laddr6;
+    ip6->ip6_dst  = faddr6;
 
-	/* ---- Compute UDP checksum using in6_cksum (IPv6 pseudo-header) ---- */
-	uh = (struct udphdr *)((u_int8_t *)ip6 + sizeof(struct ip6_hdr));
-	uh->uh_sum = in6_cksum(m, IPPROTO_UDP,
-	    sizeof(struct ip6_hdr), udplen);
-	if (uh->uh_sum == 0)
-		uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
+    /* ---- Compute UDP checksum using in6_cksum (IPv6 pseudo-header) ---- */
+    uh = (struct udphdr *)((u_int8_t *)ip6 + sizeof(struct ip6_hdr));
+    uh->uh_sum = in6_cksum(m, IPPROTO_UDP,
+                           sizeof(struct ip6_hdr), udplen);
+    if(uh->uh_sum == 0)
+        uh->uh_sum = 0xffff; /* RFC 2460: UDP6 checksum must not be zero */
 
-	error = ip6_output(m, NULL, NULL, 0, inp->in6p_moptions, NULL, inp);
+    error = ip6_output(m, NULL, NULL, 0, inp->in6p_moptions, NULL, inp);
 
-	if (addr_m) {
-		in6_pcbdisconnect(inp);
-		splx(s);
-	}
-	return error;
+    if(addr_m) {
+        in6_pcbdisconnect(inp);
+        splx(s);
+    }
+    return error;
 
 release:
-	m_freem(m);
-	return error;
+    m_freem(m);
+    return error;
 }
 
 /* ------------------------------------------------------------------ *
@@ -217,76 +223,76 @@ release:
 void
 udp6_input(void *args, ...)
 {
-	struct mbuf *m = args;
-	int off;
-	va_list va;
+    struct mbuf *m = args;
+    int off;
+    va_list va;
 
-	va_start(va, args);
-	off = va_arg(va, int);
-	va_end(va);
+    va_start(va, args);
+    off = va_arg(va, int);
+    va_end(va);
 
-	struct ip6_hdr *ip6;
-	struct udphdr *uh;
-	struct inpcb *inp;
-	struct sockaddr_in6 src6, dst6;
-	int len;
+    struct ip6_hdr *ip6;
+    struct udphdr *uh;
+    struct inpcb *inp;
+    struct sockaddr_in6 src6, dst6;
+    int len;
 
-	if (m->m_len < off + (int)sizeof(struct udphdr)) {
-		if ((m = m_pullup(m, off + sizeof(struct udphdr))) == NULL)
-			return;
-	}
+    if(m->m_len < off + (int)sizeof(struct udphdr)) {
+        if((m = m_pullup(m, off + sizeof(struct udphdr))) == NULL)
+            return;
+    }
 
-	ip6 = mtod(m, struct ip6_hdr *);
-	uh  = (struct udphdr *)((u_int8_t *)ip6 + off);
-	len = ntohs(uh->uh_ulen);
+    ip6 = mtod(m, struct ip6_hdr *);
+    uh  = (struct udphdr *)((u_int8_t *)ip6 + off);
+    len = ntohs(uh->uh_ulen);
 
-	/* Verify UDP checksum (mandatory for UDP over IPv6, RFC 2460 §8.1) */
-	if (uh->uh_sum == 0) {
-		/* Zero checksum is not allowed for UDP6 — silently drop */
-		m_freem(m);
-		return;
-	}
-	if (in6_cksum(m, IPPROTO_UDP, off, len) != 0) {
-		m_freem(m);
-		return;
-	}
+    /* Verify UDP checksum (mandatory for UDP over IPv6, RFC 2460 §8.1) */
+    if(uh->uh_sum == 0) {
+        /* Zero checksum is not allowed for UDP6 — silently drop */
+        m_freem(m);
+        return;
+    }
+    if(in6_cksum(m, IPPROTO_UDP, off, len) != 0) {
+        m_freem(m);
+        return;
+    }
 
-	/* Build sockaddr_in6 for source and destination */
-	bzero(&src6, sizeof(src6));
-	src6.sin6_family = AF_INET6;
-	src6.sin6_len    = sizeof(src6);
-	src6.sin6_addr   = ip6->ip6_src;
-	src6.sin6_port   = uh->uh_sport;
+    /* Build sockaddr_in6 for source and destination */
+    bzero(&src6, sizeof(src6));
+    src6.sin6_family = AF_INET6;
+    src6.sin6_len    = sizeof(src6);
+    src6.sin6_addr   = ip6->ip6_src;
+    src6.sin6_port   = uh->uh_sport;
 
-	bzero(&dst6, sizeof(dst6));
-	dst6.sin6_family = AF_INET6;
-	dst6.sin6_len    = sizeof(dst6);
-	dst6.sin6_addr   = ip6->ip6_dst;
-	dst6.sin6_port   = uh->uh_dport;
+    bzero(&dst6, sizeof(dst6));
+    dst6.sin6_family = AF_INET6;
+    dst6.sin6_len    = sizeof(dst6);
+    dst6.sin6_addr   = ip6->ip6_dst;
+    dst6.sin6_port   = uh->uh_dport;
 
-	/* Find matching socket */
-	inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
-	                    &dst6.sin6_addr, uh->uh_dport);
-	if (inp == NULL) {
-		/* No match: drop */
-		m_freem(m);
-		return;
-	}
+    /* Find matching socket */
+    inp = in6_pcblookup(&udb, &src6.sin6_addr, uh->uh_sport,
+                        &dst6.sin6_addr, uh->uh_dport);
+    if(inp == NULL) {
+        /* No match: drop */
+        m_freem(m);
+        return;
+    }
 
-	/* Strip IPv6 header + extension headers, leaving UDP header + data */
-	m_adj(m, off);
+    /* Strip IPv6 header + extension headers, leaving UDP header + data */
+    m_adj(m, off);
 
-	/* Deliver to socket */
-	{
-		struct mbuf *opts = NULL;
-		if (sbappendaddr(&inp->inp_socket->so_rcv,
-		                 (struct sockaddr *)&src6,
-		                 m, opts) == 0) {
-			m_freem(m);
-			return;
-		}
-		sorwakeup(inp->inp_socket);
-	}
+    /* Deliver to socket */
+    {
+        struct mbuf *opts = NULL;
+        if(sbappendaddr(&inp->inp_socket->so_rcv,
+                        (struct sockaddr *)&src6,
+                        m, opts) == 0) {
+            m_freem(m);
+            return;
+        }
+        sorwakeup(inp->inp_socket);
+    }
 }
 
 /* ------------------------------------------------------------------ *
@@ -296,129 +302,129 @@ int
 udp6_usrreq(struct socket *so, int req, struct mbuf *m,
             struct mbuf *addr, struct mbuf *control)
 {
-	struct inpcb *inp = sotoinpcb(so);
-	int error = 0;
-	int s;
+    struct inpcb *inp = sotoinpcb(so);
+    int error = 0;
+    int s;
 
-	/* Socket-level ioctl: delegate to IPv6 interface control */
-	if (req == PRU_CONTROL)
-		return in6_control(so, (int)(long)m, (caddr_t)addr,
-		                   (struct ifnet *)control);
+    /* Socket-level ioctl: delegate to IPv6 interface control */
+    if(req == PRU_CONTROL)
+        return in6_control(so, (int)(long)m, (caddr_t)addr,
+                           (struct ifnet *)control);
 
-	if (inp == NULL && req != PRU_ATTACH) {
-		error = EINVAL;
-		goto release;
-	}
+    if(inp == NULL && req != PRU_ATTACH) {
+        error = EINVAL;
+        goto release;
+    }
 
-	switch (req) {
+    switch(req) {
 
-	case PRU_ATTACH:
-		if (inp != NULL) {
-			error = EINVAL;
-			break;
-		}
-		s = splnet();
-		error = in_pcballoc(so, &udbinfo);
-		splx(s);
-		if (error)
-			break;
-		error = soreserve(so, udp_sendspace, udp_recvspace);
-		if (error)
-			break;
-		inp = sotoinpcb(so);
-		inp->in6p_hops = -1; /* use system default hop limit */
-		break;
+    case PRU_ATTACH:
+        if(inp != NULL) {
+            error = EINVAL;
+            break;
+        }
+        s = splnet();
+        error = in_pcballoc(so, &udbinfo);
+        splx(s);
+        if(error)
+            break;
+        error = soreserve(so, udp_sendspace, udp_recvspace);
+        if(error)
+            break;
+        inp = sotoinpcb(so);
+        inp->in6p_hops = -1; /* use system default hop limit */
+        break;
 
-	case PRU_DETACH:
-		s = splnet();
-		in_pcbdetach(inp);
-		splx(s);
-		break;
+    case PRU_DETACH:
+        s = splnet();
+        in_pcbdetach(inp);
+        splx(s);
+        break;
 
-	case PRU_BIND:
-		s = splnet();
-		error = in6_pcbbind(inp, addr);
-		splx(s);
-		break;
+    case PRU_BIND:
+        s = splnet();
+        error = in6_pcbbind(inp, addr);
+        splx(s);
+        break;
 
-	case PRU_LISTEN:
-		error = EOPNOTSUPP;
-		break;
+    case PRU_LISTEN:
+        error = EOPNOTSUPP;
+        break;
 
-	case PRU_CONNECT:
-		if (!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
-			error = EISCONN;
-			break;
-		}
-		s = splnet();
-		error = in6_pcbconnect(inp, addr);
-		splx(s);
-		if (error == 0)
-			soisconnected(so);
-		break;
+    case PRU_CONNECT:
+        if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+            error = EISCONN;
+            break;
+        }
+        s = splnet();
+        error = in6_pcbconnect(inp, addr);
+        splx(s);
+        if(error == 0)
+            soisconnected(so);
+        break;
 
-	case PRU_CONNECT2:
-		error = EOPNOTSUPP;
-		break;
+    case PRU_CONNECT2:
+        error = EOPNOTSUPP;
+        break;
 
-	case PRU_DISCONNECT:
-		if (IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
-			error = ENOTCONN;
-			break;
-		}
-		s = splnet();
-		in6_pcbdisconnect(inp);
-		splx(s);
-		so->so_state &= ~SS_ISCONNECTED;
-		break;
+    case PRU_DISCONNECT:
+        if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+            error = ENOTCONN;
+            break;
+        }
+        s = splnet();
+        in6_pcbdisconnect(inp);
+        splx(s);
+        so->so_state &= ~SS_ISCONNECTED;
+        break;
 
-	case PRU_SHUTDOWN:
-		socantsendmore(so);
-		break;
+    case PRU_SHUTDOWN:
+        socantsendmore(so);
+        break;
 
-	case PRU_SEND:
-		return udp6_output(inp, m, addr, control);
+    case PRU_SEND:
+        return udp6_output(inp, m, addr, control);
 
-	case PRU_ABORT:
-		soisdisconnected(so);
-		s = splnet();
-		in_pcbdetach(inp);
-		splx(s);
-		break;
+    case PRU_ABORT:
+        soisdisconnected(so);
+        s = splnet();
+        in_pcbdetach(inp);
+        splx(s);
+        break;
 
-	case PRU_SOCKADDR:
-		in6_setsockaddr(inp, addr);
-		break;
+    case PRU_SOCKADDR:
+        in6_setsockaddr(inp, addr);
+        break;
 
-	case PRU_PEERADDR:
-		in6_setpeeraddr(inp, addr);
-		break;
+    case PRU_PEERADDR:
+        in6_setpeeraddr(inp, addr);
+        break;
 
-	case PRU_SENSE:
-		return 0;
+    case PRU_SENSE:
+        return 0;
 
-	case PRU_RCVD:
-	case PRU_RCVOOB:
-		return EOPNOTSUPP;
+    case PRU_RCVD:
+    case PRU_RCVOOB:
+        return EOPNOTSUPP;
 
-	case PRU_SENDOOB:
-	case PRU_FASTTIMO:
-	case PRU_SLOWTIMO:
-	case PRU_PROTORCV:
-	case PRU_PROTOSEND:
-		error = EOPNOTSUPP;
-		break;
+    case PRU_SENDOOB:
+    case PRU_FASTTIMO:
+    case PRU_SLOWTIMO:
+    case PRU_PROTORCV:
+    case PRU_PROTOSEND:
+        error = EOPNOTSUPP;
+        break;
 
-	default:
-		panic("udp6_usrreq: unknown req %d", req);
-	}
+    default:
+        panic("udp6_usrreq: unknown req %d", req);
+    }
 
 release:
-	if (control)
-		m_freem(control);
-	if (m)
-		m_freem(m);
-	return error;
+    if(control)
+        m_freem(control);
+    if(m)
+        m_freem(m);
+    return error;
 }
 
 #endif /* INET6 */

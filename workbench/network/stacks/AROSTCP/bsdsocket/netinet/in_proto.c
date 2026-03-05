@@ -108,85 +108,97 @@ int	eoninput(), eonctlinput(), eonprotoinit();
 extern	struct domain inetdomain;
 
 struct protosw inetsw[] = {
-{ 0,		&inetdomain,	0,		0,
-  NULL,		ip_output,	NULL,		NULL,
-  NULL,
-  ip_init,	NULL,		ip_slowtimo,	ip_drain,
-},
-{ SOCK_DGRAM,	&inetdomain,	IPPROTO_UDP,	PR_ATOMIC|PR_ADDR,
-  udp_input,
-  NULL,
-  udp_ctlinput,
-  ip_ctloutput,
-  udp_usrreq,
-  udp_init,	NULL,		NULL,		NULL,
-},
-{ SOCK_STREAM,	&inetdomain,	IPPROTO_TCP,	PR_CONNREQUIRED|PR_IMPLOPCL|PR_WANTRCVD,
-  tcp_input,	NULL,		tcp_ctlinput,	tcp_ctloutput,
-  tcp_usrreq,
-  tcp_init,	tcp_fasttimo,	tcp_slowtimo,	tcp_drain,
-},
-{ SOCK_RAW,	&inetdomain,	IPPROTO_RAW,	PR_ATOMIC|PR_ADDR,
-  rip_input,	rip_output,	NULL,		rip_ctloutput,
-  rip_usrreq,
-  NULL,		NULL,		NULL,		NULL,
-},
-{ SOCK_RAW,	&inetdomain,	IPPROTO_ICMP,	PR_ATOMIC|PR_ADDR,
-  icmp_input,
-  rip_output,
-  NULL,
-  rip_ctloutput,
-  rip_usrreq,
-  NULL,		NULL,		NULL,		NULL,
-},
+    {
+        0,		&inetdomain,	0,		0,
+        NULL,		ip_output,	NULL,		NULL,
+        NULL,
+        ip_init,	NULL,		ip_slowtimo,	ip_drain,
+    },
+    {
+        SOCK_DGRAM,	&inetdomain,	IPPROTO_UDP,	PR_ATOMIC | PR_ADDR,
+        udp_input,
+        NULL,
+        udp_ctlinput,
+        ip_ctloutput,
+        udp_usrreq,
+        udp_init,	NULL,		NULL,		NULL,
+    },
+    {
+        SOCK_STREAM,	&inetdomain,	IPPROTO_TCP,	PR_CONNREQUIRED | PR_IMPLOPCL | PR_WANTRCVD,
+        tcp_input,	NULL,		tcp_ctlinput,	tcp_ctloutput,
+        tcp_usrreq,
+        tcp_init,	tcp_fasttimo,	tcp_slowtimo,	tcp_drain,
+    },
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_RAW,	PR_ATOMIC | PR_ADDR,
+        rip_input,	rip_output,	NULL,		rip_ctloutput,
+        rip_usrreq,
+        NULL,		NULL,		NULL,		NULL,
+    },
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_ICMP,	PR_ATOMIC | PR_ADDR,
+        icmp_input,
+        rip_output,
+        NULL,
+        rip_ctloutput,
+        rip_usrreq,
+        NULL,		NULL,		NULL,		NULL,
+    },
 #if TPIP
-{ SOCK_SEQPACKET,&inetdomain,	IPPROTO_TP,	PR_CONNREQUIRED|PR_WANTRCVD,
-  tpip_input,	NULL,		tpip_ctlinput,		tp_ctloutput,
-  tp_usrreq,
-  tp_init,	NULL,		tp_slowtimo,	tp_drain,
-},
+    {
+        SOCK_SEQPACKET, &inetdomain,	IPPROTO_TP,	PR_CONNREQUIRED | PR_WANTRCVD,
+        tpip_input,	NULL,		tpip_ctlinput,		tp_ctloutput,
+        tp_usrreq,
+        tp_init,	NULL,		tp_slowtimo,	tp_drain,
+    },
 #endif
-/* EON (ISO CLNL over IP) */
+    /* EON (ISO CLNL over IP) */
 #if EON
-{ SOCK_RAW,	&inetdomain,	IPPROTO_EON,	0,
-  eoninput,	NULL,		eonctlinput,		NULL,
-  NULL,
-  eonprotoinit,	NULL,		NULL,		NULL,
-},
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_EON,	0,
+        eoninput,	NULL,		eonctlinput,		NULL,
+        NULL,
+        eonprotoinit,	NULL,		NULL,		NULL,
+    },
 #endif
 #if NSIP
-{ SOCK_RAW,	&inetdomain,	IPPROTO_IDP,	PR_ATOMIC|PR_ADDR,
-  idpip_input,	rip_output,	nsip_ctlinput,	NULL,
-  rip_usrreq,
-  NULL,		NULL,		NULL,		NULL,
-},
+    {
+        SOCK_RAW,	&inetdomain,	IPPROTO_IDP,	PR_ATOMIC | PR_ADDR,
+        idpip_input,	rip_output,	nsip_ctlinput,	NULL,
+        rip_usrreq,
+        NULL,		NULL,		NULL,		NULL,
+    },
 #endif
-	/* raw wildcard */
-{ SOCK_RAW,	&inetdomain,	0,		PR_ATOMIC|PR_ADDR,
-  rip_input,	rip_output,	NULL,		rip_ctloutput,
-  rip_usrreq,
-  NULL,		NULL,		NULL,		NULL,
-},
+    /* raw wildcard */
+    {
+        SOCK_RAW,	&inetdomain,	0,		PR_ATOMIC | PR_ADDR,
+        rip_input,	rip_output,	NULL,		rip_ctloutput,
+        rip_usrreq,
+        NULL,		NULL,		NULL,		NULL,
+    },
 };
 
-struct domain inetdomain =
-    { AF_INET, "internet", NULL, NULL, NULL, 
-      inetsw, &inetsw[sizeof(inetsw)/sizeof(inetsw[0])], NULL };
+struct domain inetdomain = {
+    AF_INET, "internet", NULL, NULL, NULL,
+    inetsw, &inetsw[sizeof(inetsw) / sizeof(inetsw[0])], NULL
+};
 
 #if NIMP > 0
 extern	struct domain impdomain;
 
 struct protosw impsw[] = {
-{ SOCK_RAW,	&impdomain,	0,		PR_ATOMIC|PR_ADDR,
-  0,		rimp_output,	0,		0,
-  rip_usrreq,
-  0,		0,		hostslowtimo,	0,
-},
+    {
+        SOCK_RAW,	&impdomain,	0,		PR_ATOMIC | PR_ADDR,
+        0,		rimp_output,	0,		0,
+        rip_usrreq,
+        0,		0,		hostslowtimo,	0,
+    },
 };
 
-struct domain impdomain =
-    { AF_IMPLINK, "imp", NULL, NULL, NULL,
-      impsw, &impsw[sizeof (impsw)/sizeof(impsw[0])], NULL };
+struct domain impdomain = {
+    AF_IMPLINK, "imp", NULL, NULL, NULL,
+    impsw, &impsw[sizeof(impsw) / sizeof(impsw[0])], NULL
+};
 #endif
 
 #if NHY > 0
@@ -197,14 +209,16 @@ int	rhy_output();
 extern	struct domain hydomain;
 
 struct protosw hysw[] = {
-{ SOCK_RAW,	&hydomain,	0,		PR_ATOMIC|PR_ADDR,
-  0,		rhy_output,	0,		0,
-  rip_usrreq,
-  0,		0,		0,		0,
-},
+    {
+        SOCK_RAW,	&hydomain,	0,		PR_ATOMIC | PR_ADDR,
+        0,		rhy_output,	0,		0,
+        rip_usrreq,
+        0,		0,		0,		0,
+    },
 };
 
-struct domain hydomain =
-    { AF_HYLINK, "hy", NULL, NULL, NULL,
-      hysw, &hysw[sizeof (hysw)/sizeof(hysw[0])], NULL };
+struct domain hydomain = {
+    AF_HYLINK, "hy", NULL, NULL, NULL,
+    hysw, &hysw[sizeof(hysw) / sizeof(hysw[0])], NULL
+};
 #endif

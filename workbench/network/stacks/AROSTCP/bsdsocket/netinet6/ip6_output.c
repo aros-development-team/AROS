@@ -85,7 +85,7 @@ ip6_output(void *args, ...)
     inp   = va_arg(va, struct inpcb *);
     va_end(va);
 
-    if (ro == NULL) {
+    if(ro == NULL) {
         bzero(&iproute, sizeof(iproute));
         ro = (struct route *)&iproute;
     }
@@ -94,21 +94,21 @@ ip6_output(void *args, ...)
     dst = (struct sockaddr_in6 *)&ro->ro_dst;
 
     /* For multicast destinations, use im6o interface or pick first available */
-    if (IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
-        if (im6o && im6o->im6o_multicast_ifp) {
+    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        if(im6o && im6o->im6o_multicast_ifp) {
             ifp = im6o->im6o_multicast_ifp;
         } else {
             /* pick first non-loopback, up interface */
             extern struct ifnet *ifnet;
             struct ifnet *mifp;
-            for (mifp = ifnet; mifp; mifp = mifp->if_next) {
-                if ((mifp->if_flags & (IFF_UP | IFF_LOOPBACK)) == IFF_UP) {
+            for(mifp = ifnet; mifp; mifp = mifp->if_next) {
+                if((mifp->if_flags & (IFF_UP | IFF_LOOPBACK)) == IFF_UP) {
                     ifp = mifp;
                     break;
                 }
             }
         }
-        if (ifp == NULL) {
+        if(ifp == NULL) {
             ip6stat.ip6s_noroute++;
             error = EHOSTUNREACH;
             goto bad;
@@ -119,16 +119,16 @@ ip6_output(void *args, ...)
         dst->sin6_len    = sizeof(*dst);
         dst->sin6_addr   = ip6->ip6_dst;
         /* Set hop limit for multicast */
-        if (ip6->ip6_hlim == 0)
+        if(ip6->ip6_hlim == 0)
             ip6->ip6_hlim = im6o ? im6o->im6o_multicast_hlim
-                                 : IP6_DEFAULT_MULTICAST_HLIM;
+                            : IP6_DEFAULT_MULTICAST_HLIM;
         goto multicast_output;
     }
 
-    if (ro->ro_rt == NULL ||
-        !IN6_ARE_ADDR_EQUAL(&dst->sin6_addr, &ip6->ip6_dst)) {
+    if(ro->ro_rt == NULL ||
+            !IN6_ARE_ADDR_EQUAL(&dst->sin6_addr, &ip6->ip6_dst)) {
         /* flush stale route */
-        if (ro->ro_rt) {
+        if(ro->ro_rt) {
             RTFREE(ro->ro_rt);
             ro->ro_rt = NULL;
         }
@@ -137,7 +137,7 @@ ip6_output(void *args, ...)
         dst->sin6_addr   = ip6->ip6_dst;
         rtalloc(ro);
     }
-    if (ro->ro_rt == NULL) {
+    if(ro->ro_rt == NULL) {
         ip6stat.ip6s_noroute++;
         error = EHOSTUNREACH;
         goto bad;
@@ -151,11 +151,11 @@ ip6_output(void *args, ...)
      * without needing NDP resolution on the NIC.
      */
 #if INET6
-    if (!(ifp->if_flags & IFF_LOOPBACK)) {
+    if(!(ifp->if_flags & IFF_LOOPBACK)) {
         struct in6_ifaddr *ia6;
         extern struct ifnet loif;
-        for (ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
-            if (IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
+        for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
+            if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
                 ifp = &loif;
                 break;
             }
@@ -164,17 +164,17 @@ ip6_output(void *args, ...)
 #endif
 
 multicast_output:
-    if (ifpp)
+    if(ifpp)
         *ifpp = ifp;
 
     /* Set hop limit if not already set by transport layer */
-    if (ip6->ip6_hlim == 0)
+    if(ip6->ip6_hlim == 0)
         ip6->ip6_hlim = ip6_defhlim;
 
     mtu = ifp->if_mtu;
 
     /* packet is within MTU: send directly */
-    if (m->m_pkthdr.len <= mtu) {
+    if(m->m_pkthdr.len <= mtu) {
         /* set packet length in ip6 header */
         ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len
                                           - sizeof(struct ip6_hdr)));
@@ -182,17 +182,17 @@ multicast_output:
         /* add link-layer header via ifp */
         s = splimp();
         error = (*ifp->if_output)(ifp, m,
-            (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
-                                         : (struct sockaddr *)dst,
-            rt);
+                                  (rt && (rt->rt_flags & RTF_GATEWAY)) ? rt->rt_gateway
+                                  : (struct sockaddr *)dst,
+                                  rt);
         splx(s);
 
-        if (error)
+        if(error)
             ip6stat.ip6s_odropped++;
         else
             ip6stat.ip6s_localout++;
 
-        if (ro == (struct route *)&iproute && ro->ro_rt) {
+        if(ro == (struct route *)&iproute && ro->ro_rt) {
             RTFREE(ro->ro_rt);
             ro->ro_rt = NULL;
         }
@@ -212,7 +212,7 @@ multicast_output:
         u_int16_t offlg;
         u_int8_t  nxt8;
 
-        if (frag_pl <= 0) {
+        if(frag_pl <= 0) {
             ip6stat.ip6s_cantfrag++;
             error = EMSGSIZE;
             goto bad;
@@ -227,14 +227,17 @@ multicast_output:
         ip6->ip6_nxt = IPPROTO_FRAGMENT;
 
         off2 = 0;
-        while (m->m_pkthdr.len > hlen) {
+        while(m->m_pkthdr.len > hlen) {
             int flen = MIN(frag_pl, m->m_pkthdr.len - hlen);
             int more = (m->m_pkthdr.len - hlen - flen) > 0;
             struct ip6_frag fh;
 
             /* allocate fragment mbuf */
             m0 = m_gethdr(M_WAIT, MT_DATA);
-            if (m0 == NULL) { error = ENOBUFS; goto bad; }
+            if(m0 == NULL) {
+                error = ENOBUFS;
+                goto bad;
+            }
 
             /* copy IPv6 header */
             M_COPY_PKTHDR(m0, m);
@@ -246,7 +249,7 @@ multicast_output:
             fh.ip6f_nxt      = nxt8;
             fh.ip6f_reserved = 0;
             offlg            = (u_int16_t)off2;
-            if (more) offlg |= IP6F_MORE_FRAG;
+            if(more) offlg |= IP6F_MORE_FRAG;
             fh.ip6f_offlg    = htons(offlg);
             fh.ip6f_ident    = id;
 
@@ -262,11 +265,11 @@ multicast_output:
 
             s = splimp();
             error = (*ifp->if_output)(ifp, m0,
-                (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
-                                             : (struct sockaddr *)dst,
-                rt);
+                                      (rt->rt_flags & RTF_GATEWAY) ? rt->rt_gateway
+                                      : (struct sockaddr *)dst,
+                                      rt);
             splx(s);
-            if (error) {
+            if(error) {
                 ip6stat.ip6s_odropped++;
                 goto bad;
             }
@@ -276,7 +279,7 @@ multicast_output:
         ip6stat.ip6s_fragmented++;
         m_freem(m);
 
-        if (ro == (struct route *)&iproute && ro->ro_rt) {
+        if(ro == (struct route *)&iproute && ro->ro_rt) {
             RTFREE(ro->ro_rt);
             ro->ro_rt = NULL;
         }
@@ -285,7 +288,7 @@ multicast_output:
 
 bad:
     m_freem(m);
-    if (ro == (struct route *)&iproute && ro->ro_rt) {
+    if(ro == (struct route *)&iproute && ro->ro_rt) {
         RTFREE(ro->ro_rt);
         ro->ro_rt = NULL;
     }

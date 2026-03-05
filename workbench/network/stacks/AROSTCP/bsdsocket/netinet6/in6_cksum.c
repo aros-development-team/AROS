@@ -52,170 +52,185 @@
 int
 in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
 {
-	u_int32_t sum = 0;
-	struct mbuf *mp;
-	int moff;		/* offset within current mbuf */
-	int mlen;		/* usable bytes in current mbuf */
-	int dlen;		/* remaining data bytes to checksum */
-	u_int16_t *w;
-	int byte_swapped = 0;
-	union {
-		char	c[2];
-		u_int16_t s;
-	} s_util;
-	union {
-		u_int16_t s[2];
-		u_int32_t l;
-	} l_util;
+    u_int32_t sum = 0;
+    struct mbuf *mp;
+    int moff;		/* offset within current mbuf */
+    int mlen;		/* usable bytes in current mbuf */
+    int dlen;		/* remaining data bytes to checksum */
+    u_int16_t *w;
+    int byte_swapped = 0;
+    union {
+        char	c[2];
+        u_int16_t s;
+    } s_util;
+    union {
+        u_int16_t s[2];
+        u_int32_t l;
+    } l_util;
 
 #define ADDCARRY(x) (x > 65535 ? x -= 65535 : x)
 #define REDUCE { l_util.l = sum; sum = l_util.s[0] + l_util.s[1]; ADDCARRY(sum); }
 
-	/* ---- IPv6 pseudo-header (RFC 2460 §8.1) ---- */
-	if (nxt != 0) {
-		struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
-		u_int16_t *addr;
-		int i;
+    /* ---- IPv6 pseudo-header (RFC 2460 §8.1) ---- */
+    if(nxt != 0) {
+        struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+        u_int16_t *addr;
+        int i;
 
-		/* source address: 16 bytes = 8 words */
-		addr = (u_int16_t *)&ip6->ip6_src;
-		for (i = 0; i < 8; i++)
-			sum += addr[i];
+        /* source address: 16 bytes = 8 words */
+        addr = (u_int16_t *)&ip6->ip6_src;
+        for(i = 0; i < 8; i++)
+            sum += addr[i];
 
-		/* destination address: 16 bytes = 8 words */
-		addr = (u_int16_t *)&ip6->ip6_dst;
-		for (i = 0; i < 8; i++)
-			sum += addr[i];
+        /* destination address: 16 bytes = 8 words */
+        addr = (u_int16_t *)&ip6->ip6_dst;
+        for(i = 0; i < 8; i++)
+            sum += addr[i];
 
-		/* upper-layer packet length (32-bit, network byte order) */
-		{
-			u_int32_t ul = htonl(len);
-			u_int16_t *p = (u_int16_t *)&ul;
-			sum += p[0];
-			sum += p[1];
-		}
+        /* upper-layer packet length (32-bit, network byte order) */
+        {
+            u_int32_t ul = htonl(len);
+            u_int16_t *p = (u_int16_t *)&ul;
+            sum += p[0];
+            sum += p[1];
+        }
 
-		/* next header (16-bit word with zero high byte) */
-		sum += htons(nxt);
+        /* next header (16-bit word with zero high byte) */
+        sum += htons(nxt);
 
-		REDUCE;
-	}
+        REDUCE;
+    }
 
-	/* ---- Skip 'off' bytes into the mbuf chain ---- */
-	mp = m;
-	moff = 0;
-	{
-		u_int32_t skip = off;
-		while (mp != NULL && skip > 0) {
-			if ((u_int32_t)mp->m_len > skip) {
-				moff = skip;
-				break;
-			}
-			skip -= mp->m_len;
-			mp = mp->m_next;
-		}
-		if (mp == NULL) {
-			printf("in6_cksum: offset %u past end of chain\n",
-			    (unsigned)off);
-			return 0;
-		}
-	}
+    /* ---- Skip 'off' bytes into the mbuf chain ---- */
+    mp = m;
+    moff = 0;
+    {
+        u_int32_t skip = off;
+        while(mp != NULL && skip > 0) {
+            if((u_int32_t)mp->m_len > skip) {
+                moff = skip;
+                break;
+            }
+            skip -= mp->m_len;
+            mp = mp->m_next;
+        }
+        if(mp == NULL) {
+            printf("in6_cksum: offset %u past end of chain\n",
+                   (unsigned)off);
+            return 0;
+        }
+    }
 
-	/* ---- Checksum 'len' bytes of upper-layer data ---- */
-	dlen = (int)len;
-	byte_swapped = 0;
+    /* ---- Checksum 'len' bytes of upper-layer data ---- */
+    dlen = (int)len;
+    byte_swapped = 0;
 
-	while (mp != NULL && dlen > 0) {
-		if (mp->m_len <= moff) {
-			mp = mp->m_next;
-			moff = 0;
-			continue;
-		}
+    while(mp != NULL && dlen > 0) {
+        if(mp->m_len <= moff) {
+            mp = mp->m_next;
+            moff = 0;
+            continue;
+        }
 
-		w = (u_int16_t *)((u_int8_t *)mp->m_data + moff);
-		mlen = mp->m_len - moff;
-		moff = 0;
+        w = (u_int16_t *)((u_int8_t *)mp->m_data + moff);
+        mlen = mp->m_len - moff;
+        moff = 0;
 
-		if (dlen < mlen)
-			mlen = dlen;
-		dlen -= mlen;
+        if(dlen < mlen)
+            mlen = dlen;
+        dlen -= mlen;
 
-		/*
-		 * Handle inter-mbuf odd-byte bridge.
-		 */
-		if (mlen > 0 && s_util.c[0] != 0 && byte_swapped == 0) {
-			/* This is handled below; we get here only if
-			 * the previous mbuf ended on an odd byte. */
-		}
+        /*
+         * Handle inter-mbuf odd-byte bridge.
+         */
+        if(mlen > 0 && s_util.c[0] != 0 && byte_swapped == 0) {
+            /* This is handled below; we get here only if
+             * the previous mbuf ended on an odd byte. */
+        }
 
-		/*
-		 * Force to even boundary.
-		 */
-		if ((1 & (long)w) && (mlen > 0)) {
-			REDUCE;
-			sum <<= 8;
-			s_util.c[0] = *(u_char *)w;
-			w = (u_int16_t *)((char *)w + 1);
-			mlen--;
-			byte_swapped = 1;
-		}
+        /*
+         * Force to even boundary.
+         */
+        if((1 & (long)w) && (mlen > 0)) {
+            REDUCE;
+            sum <<= 8;
+            s_util.c[0] = *(u_char *)w;
+            w = (u_int16_t *)((char *)w + 1);
+            mlen--;
+            byte_swapped = 1;
+        }
 
-		/* Unrolled loop: 32 bytes at a time */
-		while ((mlen -= 32) >= 0) {
-			sum += w[0]; sum += w[1]; sum += w[2]; sum += w[3];
-			sum += w[4]; sum += w[5]; sum += w[6]; sum += w[7];
-			sum += w[8]; sum += w[9]; sum += w[10]; sum += w[11];
-			sum += w[12]; sum += w[13]; sum += w[14]; sum += w[15];
-			w += 16;
-		}
-		mlen += 32;
+        /* Unrolled loop: 32 bytes at a time */
+        while((mlen -= 32) >= 0) {
+            sum += w[0];
+            sum += w[1];
+            sum += w[2];
+            sum += w[3];
+            sum += w[4];
+            sum += w[5];
+            sum += w[6];
+            sum += w[7];
+            sum += w[8];
+            sum += w[9];
+            sum += w[10];
+            sum += w[11];
+            sum += w[12];
+            sum += w[13];
+            sum += w[14];
+            sum += w[15];
+            w += 16;
+        }
+        mlen += 32;
 
-		/* 8 bytes at a time */
-		while ((mlen -= 8) >= 0) {
-			sum += w[0]; sum += w[1]; sum += w[2]; sum += w[3];
-			w += 4;
-		}
-		mlen += 8;
+        /* 8 bytes at a time */
+        while((mlen -= 8) >= 0) {
+            sum += w[0];
+            sum += w[1];
+            sum += w[2];
+            sum += w[3];
+            w += 4;
+        }
+        mlen += 8;
 
-		if (mlen == 0 && byte_swapped == 0) {
-			mp = mp->m_next;
-			continue;
-		}
-		REDUCE;
+        if(mlen == 0 && byte_swapped == 0) {
+            mp = mp->m_next;
+            continue;
+        }
+        REDUCE;
 
-		/* 2 bytes at a time */
-		while ((mlen -= 2) >= 0) {
-			sum += *w++;
-		}
+        /* 2 bytes at a time */
+        while((mlen -= 2) >= 0) {
+            sum += *w++;
+        }
 
-		if (byte_swapped) {
-			REDUCE;
-			sum <<= 8;
-			byte_swapped = 0;
-			if (mlen == -1) {
-				s_util.c[1] = *(char *)w;
-				sum += s_util.s;
-				mlen = 0;
-			} else
-				mlen = -1;
-		} else if (mlen == -1) {
-			s_util.c[0] = *(char *)w;
-		}
+        if(byte_swapped) {
+            REDUCE;
+            sum <<= 8;
+            byte_swapped = 0;
+            if(mlen == -1) {
+                s_util.c[1] = *(char *)w;
+                sum += s_util.s;
+                mlen = 0;
+            } else
+                mlen = -1;
+        } else if(mlen == -1) {
+            s_util.c[0] = *(char *)w;
+        }
 
-		mp = mp->m_next;
-	}
+        mp = mp->m_next;
+    }
 
-	if (dlen > 0)
-		printf("in6_cksum: ran out of data (%d bytes left)\n", dlen);
+    if(dlen > 0)
+        printf("in6_cksum: ran out of data (%d bytes left)\n", dlen);
 
-	/* Handle trailing odd byte */
-	if (mlen == -1) {
-		s_util.c[1] = 0;
-		sum += s_util.s;
-	}
+    /* Handle trailing odd byte */
+    if(mlen == -1) {
+        s_util.c[1] = 0;
+        sum += s_util.s;
+    }
 
-	REDUCE;
-	return (~sum & 0xffff);
+    REDUCE;
+    return (~sum & 0xffff);
 
 #undef ADDCARRY
 #undef REDUCE

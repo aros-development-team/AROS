@@ -50,9 +50,9 @@
 *   ERRORS
 *        EBADF        - The descriptor is invalid.
 *
-*        EINTR        - The operation was interrupted by a break 
+*        EINTR        - The operation was interrupted by a break
 *                       signal.
-* 
+*
 *        EOPNOTSUPP   - The referenced socket is not of type
 *                       SOCK_STREAM.
 *
@@ -132,7 +132,7 @@
 *
 *        long CloseSocket(long);
 *
-*   FUNCTION 
+*   FUNCTION
 *        CloseSocket() deletes  a  descriptor  from the  library base
 *        socket reference table.   If s is the last reference  to the
 *        underlying object, then the object  will  be deactivated and
@@ -167,16 +167,16 @@
 *
 *   NAME
 *        connect - initiate a connection on a socket
-*   
+*
 *   SYNOPSIS
 *        #include <sys/types.h>
 *        #include <sys/socket.h>
-*   
+*
 *        success = connect(s, name, namelen)
 *        D0                D0 A0    D1
-*   
+*
 *        long connect(long, struct sockaddr *, long);
-*   
+*
 *   FUNCTION
 *        The parameter s is a socket.  If it  is of  type SOCK_DGRAM,
 *        then  this call specifies the peer with which the  socket is
@@ -192,55 +192,55 @@
 *        their association.  Datagram sockets may dissolve the  asso-
 *        ciation by connecting to  an invalid address, such as a null
 *        address.
-*   
+*
 *   RETURN VALUES
 *         0   on success.
-*   
+*
 *        -1   on failure and sets errno to indicate the error.
-*   
+*
 *   ERRORS
 *        EADDRINUSE        - The address is already in use.
-*   
+*
 *        EADDRNOTAVAIL     - The specified address is  not  available
 *                            on the remote machine.
-*   
+*
 *        EAFNOSUPPORT      - Addresses in the specified address  fam-
 *                            ily cannot be used with this socket.
-*   
+*
 *        EALREADY          - The socket is non-blocking and a  previ-
 *                            ous  connection attempt has not yet been
 *                            completed.
-*   
+*
 *        EBADF             - s is not a valid descriptor.
-*   
+*
 *        ECONNREFUSED      - The attempt to  connect  was  forcefully
 *                            rejected.   The  calling  program should
 *                            CloseSocket() the socket descriptor, and
 *                            issue another socket()  call to obtain a
 *                            new descriptor before attempting another
 *                            connect() call.
-*   
+*
 *        EINPROGRESS       - The socket is non-blocking and the  con-
 *                            nection cannot be completed immediately.
 *                            It is possible to select()  for  comple-
 *                            tion  by  selecting the socket for writ-
 *                            ing.
-*   
-*        EINTR             - The operation was interrupted by a break 
+*
+*        EINTR             - The operation was interrupted by a break
 *                            signal.
-* 
+*
 *        EINVAL            - namelen is  not  the  size  of  a  valid
 *                            address  for  the specified address fam-
 *                            ily.
-*   
+*
 *        EISCONN             The socket is already connected.
-*   
+*
 *        ENETUNREACH       - The network is not reachable  from  this
 *                            host.
-*   
+*
 *        ETIMEDOUT         - Connection   establishment   timed   out
 *                            without establishing a connection.
-*        
+*
 *   SEE ALSO
 *        accept(), CloseSocket(), connect(), getsockname(), select(),
 *        socket()
@@ -262,15 +262,15 @@
 *       long Dup2Socket(long, long);
 *
 *   DESCRIPTION
-*       Dup2Socket() duplicates an existing socket descriptor. 
+*       Dup2Socket() duplicates an existing socket descriptor.
 *       the argument fd1 is small non-negative value that indexes
 *       the socket on SocketBase descriptor table. The value must
 *       be less than the size of the table, which is returned by
 *       getdtablesize(). fd2 specifies the desired value of the new
-*       descriptor. If descriptor fd2 is already in use, it is 
+*       descriptor. If descriptor fd2 is already in use, it is
 *       first deallocated as if it were closed by CloseSocket(). If
 *       the value if fd2 is -1, the new descriptor used and returned
-*       is the lowest numbered descriptor that is not currently in 
+*       is the lowest numbered descriptor that is not currently in
 *       use by the SocketBase.
 *
 *       Dup2Socket() has also an feature to mark a file descriptor as
@@ -380,12 +380,12 @@
 *
 *        success =  getsockopt(s, level, optname, optval, optlen)
 *        D0                    D0 D1     D2       A0      A1
-*        
+*
 *        long getsockopt(long, long, long, caddr_t, long *);
 *
 *        success =  setsockopt(s, level, optname, optval, optlen)
 *        D0                    D0 D1     D2       A0      D3
-*        
+*
 *        long setsockopt(long, long, long, caddr_t, long);
 *
 *   FUNCTION
@@ -560,7 +560,7 @@
 *
 *        FIOGETOWN
 *        SIOCGPGRP           The argument is pointer to struct Task*.
-*                            Set the value of that pointer to the 
+*                            Set the value of that pointer to the
 *                            Task that  is  receiving SIGIO or SIGURG
 *                            signals for  the  socket  referred to by
 *                            the descriptor passed to IoctlSocket().
@@ -595,8 +595,8 @@
 *
 *
 *   RETURN VALUES
-*        IoctlSocket() returns 0 on success for most requests.   Some 
-*        specialized requests may return non-zero values on success; On  
+*        IoctlSocket() returns 0 on success for most requests.   Some
+*        specialized requests may return non-zero values on success; On
 *        failure,  IoctlSocket() returns -1 and sets errno to indicate
 *        the error.
 *
@@ -676,7 +676,7 @@
 *       nbytes = recvfrom(s, buf, len, flags, from, fromlen)
 *       D0                D0 A0   D1   D2     A1    A2
 *
-*       long recvfrom(long, char *, long, long, 
+*       long recvfrom(long, char *, long, long,
 *                        struct sockaddr *, long *);
 *
 *   FUNCTION
@@ -722,9 +722,9 @@
 *   ERRORS
 *        EBADF             - s is an invalid descriptor.
 *
-*        EINTR             - The operation was interrupted by a break 
+*        EINTR             - The operation was interrupted by a break
 *                            signal.
-* 
+*
 *        EWOULDBLOCK       - The socket is  marked  non-blocking  and
 *                            the requested operation would block.
 *
@@ -757,7 +757,7 @@
 *
 *        n = select (nfds, readfds, writefds, exceptfds, timeout)
 *
-*        long select(long, fd_set *, fd_set *, fd_set *, 
+*        long select(long, fd_set *, fd_set *, fd_set *,
 *                    struct timeval *);
 *
 *        n = WaitSelect (nfds, readfds, writefds, exceptfds, timeout,
@@ -765,7 +765,7 @@
 *                    sigmp)
 *                    D1
 *
-*        long WaitSelect(long, fd_set *, fd_set *, fd_set *, 
+*        long WaitSelect(long, fd_set *, fd_set *, fd_set *,
 *                        struct timeval *, long *);
 *
 *        FD_SET (fd, &fdset)
@@ -939,9 +939,9 @@
 *   ERRORS
 *        EBADF             - s is an invalid descriptor.
 *
-*        EINTR             - The operation was interrupted by a break 
+*        EINTR             - The operation was interrupted by a break
 *                             signal.
-* 
+*
 *        EINVAL            - len is not the size of a  valid  address
 *                            for the specified address family.
 *
@@ -1131,7 +1131,7 @@
 *
 *   SEE ALSO
 *        accept(), bind(), CloseSocket(), connect(), getsockname(),
-*        getsockopt(), IoctlSocket(), listen(), recv(), select(), 
+*        getsockopt(), IoctlSocket(), listen(), recv(), select(),
 *        send(), shutdown(), WaitSelect()
 *****************************************************************************
 *

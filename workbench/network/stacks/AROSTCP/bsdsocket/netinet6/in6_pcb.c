@@ -64,33 +64,33 @@
 int
 in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 {
-	struct sockaddr_in6 *sin6;
-	u_short lport = 0;
+    struct sockaddr_in6 *sin6;
+    u_short lport = 0;
 
-	if (inp->inp_lport || !IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))
-		return EINVAL;
+    if(inp->inp_lport || !IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))
+        return EINVAL;
 
-	if (nam == NULL) {
-		/* wildcard bind: allocate an ephemeral port */
-		lport = htons(++(inp->inp_pcbinfo->lastport));
-		if (lport == 0)
-			lport = htons(++(inp->inp_pcbinfo->lastport));
-		inp->inp_lport = lport;
-		/* leave inp_laddr6 as all-zeros (wildcard) */
-		return 0;
-	}
+    if(nam == NULL) {
+        /* wildcard bind: allocate an ephemeral port */
+        lport = htons(++(inp->inp_pcbinfo->lastport));
+        if(lport == 0)
+            lport = htons(++(inp->inp_pcbinfo->lastport));
+        inp->inp_lport = lport;
+        /* leave inp_laddr6 as all-zeros (wildcard) */
+        return 0;
+    }
 
-	if (nam->m_len < (int)sizeof(struct sockaddr_in6))
-		return EINVAL;
+    if(nam->m_len < (int)sizeof(struct sockaddr_in6))
+        return EINVAL;
 
-	sin6 = mtod(nam, struct sockaddr_in6 *);
-	if (sin6->sin6_family != AF_INET6)
-		return EAFNOSUPPORT;
+    sin6 = mtod(nam, struct sockaddr_in6 *);
+    if(sin6->sin6_family != AF_INET6)
+        return EAFNOSUPPORT;
 
-	inp->inp_laddr6 = sin6->sin6_addr;
-	inp->inp_lport  = sin6->sin6_port; /* already in network byte order */
+    inp->inp_laddr6 = sin6->sin6_addr;
+    inp->inp_lport  = sin6->sin6_port; /* already in network byte order */
 
-	return 0;
+    return 0;
 }
 
 /* ------------------------------------------------------------------ *
@@ -99,29 +99,29 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 int
 in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
 {
-	struct sockaddr_in6 *sin6;
+    struct sockaddr_in6 *sin6;
 
-	if (nam == NULL || nam->m_len < (int)sizeof(struct sockaddr_in6))
-		return EINVAL;
+    if(nam == NULL || nam->m_len < (int)sizeof(struct sockaddr_in6))
+        return EINVAL;
 
-	sin6 = mtod(nam, struct sockaddr_in6 *);
-	if (sin6->sin6_family != AF_INET6)
-		return EAFNOSUPPORT;
+    sin6 = mtod(nam, struct sockaddr_in6 *);
+    if(sin6->sin6_family != AF_INET6)
+        return EAFNOSUPPORT;
 
-	if (IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr))
-		return EADDRNOTAVAIL;
+    if(IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr))
+        return EADDRNOTAVAIL;
 
-	/* Bind a local port if not already bound */
-	if (inp->inp_lport == 0) {
-		int error = in6_pcbbind(inp, NULL);
-		if (error)
-			return error;
-	}
+    /* Bind a local port if not already bound */
+    if(inp->inp_lport == 0) {
+        int error = in6_pcbbind(inp, NULL);
+        if(error)
+            return error;
+    }
 
-	inp->inp_faddr6 = sin6->sin6_addr;
-	inp->inp_fport  = sin6->sin6_port;
+    inp->inp_faddr6 = sin6->sin6_addr;
+    inp->inp_fport  = sin6->sin6_port;
 
-	return 0;
+    return 0;
 }
 
 /* ------------------------------------------------------------------ *
@@ -130,10 +130,10 @@ in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
 void
 in6_pcbdisconnect(struct inpcb *inp)
 {
-	bzero(&inp->inp_faddr6, sizeof(inp->inp_faddr6));
-	inp->inp_fport = 0;
-	if (inp->inp_socket->so_state & SS_NOFDREF)
-		in_pcbdetach(inp);
+    bzero(&inp->inp_faddr6, sizeof(inp->inp_faddr6));
+    inp->inp_fport = 0;
+    if(inp->inp_socket->so_state & SS_NOFDREF)
+        in_pcbdetach(inp);
 }
 
 /* ------------------------------------------------------------------ *
@@ -142,15 +142,15 @@ in6_pcbdisconnect(struct inpcb *inp)
 void
 in6_setsockaddr(struct inpcb *inp, struct mbuf *nam)
 {
-	struct sockaddr_in6 *sin6;
+    struct sockaddr_in6 *sin6;
 
-	nam->m_len = sizeof(struct sockaddr_in6);
-	sin6 = mtod(nam, struct sockaddr_in6 *);
-	bzero(sin6, sizeof(*sin6));
-	sin6->sin6_family = AF_INET6;
-	sin6->sin6_len    = sizeof(*sin6);
-	sin6->sin6_port   = inp->inp_lport;
-	sin6->sin6_addr   = inp->inp_laddr6;
+    nam->m_len = sizeof(struct sockaddr_in6);
+    sin6 = mtod(nam, struct sockaddr_in6 *);
+    bzero(sin6, sizeof(*sin6));
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_len    = sizeof(*sin6);
+    sin6->sin6_port   = inp->inp_lport;
+    sin6->sin6_addr   = inp->inp_laddr6;
 }
 
 /* ------------------------------------------------------------------ *
@@ -159,15 +159,15 @@ in6_setsockaddr(struct inpcb *inp, struct mbuf *nam)
 void
 in6_setpeeraddr(struct inpcb *inp, struct mbuf *nam)
 {
-	struct sockaddr_in6 *sin6;
+    struct sockaddr_in6 *sin6;
 
-	nam->m_len = sizeof(struct sockaddr_in6);
-	sin6 = mtod(nam, struct sockaddr_in6 *);
-	bzero(sin6, sizeof(*sin6));
-	sin6->sin6_family = AF_INET6;
-	sin6->sin6_len    = sizeof(*sin6);
-	sin6->sin6_port   = inp->inp_fport;
-	sin6->sin6_addr   = inp->inp_faddr6;
+    nam->m_len = sizeof(struct sockaddr_in6);
+    sin6 = mtod(nam, struct sockaddr_in6 *);
+    bzero(sin6, sizeof(*sin6));
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_len    = sizeof(*sin6);
+    sin6->sin6_port   = inp->inp_fport;
+    sin6->sin6_addr   = inp->inp_faddr6;
 }
 
 /* ------------------------------------------------------------------ *
@@ -182,43 +182,43 @@ in6_pcblookup(struct inpcbhead *head,
               struct in6_addr *faddr, u_int fport_arg,
               struct in6_addr *laddr, u_int lport_arg)
 {
-	struct inpcb *inp, *match = NULL;
-	int matchwild = 3;
-	u_short fport = fport_arg, lport = lport_arg;
+    struct inpcb *inp, *match = NULL;
+    int matchwild = 3;
+    u_short fport = fport_arg, lport = lport_arg;
 
-	LIST_FOREACH(inp, head, inp_list) {
-		if (inp->inp_lport != lport)
-			continue;
+    LIST_FOREACH(inp, head, inp_list) {
+        if(inp->inp_lport != lport)
+            continue;
 
-		int wildcard = 0;
+        int wildcard = 0;
 
-		/* Check local address */
-		if (!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
-			if (!IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, laddr))
-				continue;
-		} else {
-			wildcard++;
-		}
+        /* Check local address */
+        if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
+            if(!IN6_ARE_ADDR_EQUAL(&inp->inp_laddr6, laddr))
+                continue;
+        } else {
+            wildcard++;
+        }
 
-		/* Check foreign address */
-		if (!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
-			if (inp->inp_fport != fport ||
-			    !IN6_ARE_ADDR_EQUAL(&inp->inp_faddr6, faddr))
-				continue;
-		} else {
-			if (fport != 0)
-				wildcard++;
-		}
+        /* Check foreign address */
+        if(!IN6_IS_ADDR_UNSPECIFIED(&inp->inp_faddr6)) {
+            if(inp->inp_fport != fport ||
+                    !IN6_ARE_ADDR_EQUAL(&inp->inp_faddr6, faddr))
+                continue;
+        } else {
+            if(fport != 0)
+                wildcard++;
+        }
 
-		if (wildcard < matchwild) {
-			match = inp;
-			matchwild = wildcard;
-			if (matchwild == 0)
-				break;
-		}
-	}
+        if(wildcard < matchwild) {
+            match = inp;
+            matchwild = wildcard;
+            if(matchwild == 0)
+                break;
+        }
+    }
 
-	return match;
+    return match;
 }
 
 #endif /* INET6 */

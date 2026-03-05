@@ -93,31 +93,31 @@
  * Convert network-format internet address
  * to base 256 d.d.d.d representation.
  */
-char * __Inet_NtoA(ULONG s_addr, struct SocketBase *libPtr)
+char *__Inet_NtoA(ULONG s_addr, struct SocketBase *libPtr)
 {
-  NTOHL(s_addr);
+    NTOHL(s_addr);
 
-  CHECK_TASK2();
-  snprintf(libPtr->inet_ntoa, sizeof(libPtr->inet_ntoa),
-	  "%ld.%ld.%ld.%ld", 
-	  (long)(s_addr>>24) & 0xff, 
-	  (long)(s_addr>>16) & 0xff, 
-	  (long)(s_addr>>8) & 0xff, 
-	  (long)s_addr & 0xff);
-  return ((char *)libPtr->inet_ntoa);
+    CHECK_TASK2();
+    snprintf(libPtr->inet_ntoa, sizeof(libPtr->inet_ntoa),
+             "%ld.%ld.%ld.%ld",
+             (long)(s_addr >> 24) & 0xff,
+             (long)(s_addr >> 16) & 0xff,
+             (long)(s_addr >> 8) & 0xff,
+             (long)s_addr & 0xff);
+    return ((char *)libPtr->inet_ntoa);
 }
 AROS_LH1(char *, Inet_NtoA,
-   AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 29, UL)
+         AROS_LHA(ULONG, s_addr, D0),
+         struct SocketBase *, libPtr, 29, UL)
 {
-  AROS_LIBFUNC_INIT
-  D(__log(LOG_DEBUG,"Inet_NtoA(0x%08lx) called",s_addr);)
-  return __Inet_NtoA(s_addr, libPtr);
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_INIT
+    D(__log(LOG_DEBUG, "Inet_NtoA(0x%08lx) called", s_addr);)
+    return __Inet_NtoA(s_addr, libPtr);
+    AROS_LIBFUNC_EXIT
 }
 
 /* from inet_addr.c */
-/* 
+/*
  * Check whether "cp" is a valid ascii representation
  * of an Internet address and convert to a binary address.
  * Returns 1 if the address is valid, 0 if not.
@@ -125,101 +125,102 @@ AROS_LH1(char *, Inet_NtoA,
  * cannot distinguish between failure and a local broadcast address.
  */
 
-LONG __inet_aton(CONST_STRPTR cp,  struct in_addr * addr)
+LONG __inet_aton(CONST_STRPTR cp,  struct in_addr *addr)
 {
-	register u_long val, base, n;
-	register char c;
-	u_long parts[4], *pp = parts;
-	
-	for (;;) {
-		/*
-		 * Collect number up to ``.''.
-		 * Values are specified as for C:
-		 * 0x=hex, 0=octal, other=decimal.
-		 */
-		val = 0; base = 10;
-		if (*cp == '0') {
-			if (*++cp == 'x' || *cp == 'X')
-				base = 16, cp++;
-			else
-				base = 8;
-		}
-		while ((c = *cp) != '\0') {
-			if (isascii(c) && isdigit(c)) {
-				val = (val * base) + (c - '0');
-				cp++;
-				continue;
-			}
-			if (base == 16 && isascii(c) && isxdigit(c)) {
-				val = (val << 4) + 
-					(c + 10 - (islower(c) ? 'a' : 'A'));
-				cp++;
-				continue;
-			}
-			break;
-		}
-		if (*cp == '.') {
-			/*
-			 * Internet format:
-			 *	a.b.c.d
-			 *	a.b.c	(with c treated as 16-bits)
-			 *	a.b	(with b treated as 24 bits)
-			 */
-			if (pp >= parts + 3 || val > 0xff)
-				return (0);
-			*pp++ = val, cp++;
-		} else
-			break;
-	}
-	/*
-	 * Check for trailing characters.
-	 */
-	if (*cp && (!isascii(*cp) || !isspace(*cp)))
-		return (0);
-	/*
-	 * Concoct the address according to
-	 * the number of parts specified.
-	 */
-	n = pp - parts + 1;
-	switch (n) {
+    register u_long val, base, n;
+    register char c;
+    u_long parts[4], *pp = parts;
 
-	case 1:				/* a -- 32 bits */
-		break;
+    for(;;) {
+        /*
+         * Collect number up to ``.''.
+         * Values are specified as for C:
+         * 0x=hex, 0=octal, other=decimal.
+         */
+        val = 0;
+        base = 10;
+        if(*cp == '0') {
+            if(*++cp == 'x' || *cp == 'X')
+                base = 16, cp++;
+            else
+                base = 8;
+        }
+        while((c = *cp) != '\0') {
+            if(isascii(c) && isdigit(c)) {
+                val = (val * base) + (c - '0');
+                cp++;
+                continue;
+            }
+            if(base == 16 && isascii(c) && isxdigit(c)) {
+                val = (val << 4) +
+                      (c + 10 - (islower(c) ? 'a' : 'A'));
+                cp++;
+                continue;
+            }
+            break;
+        }
+        if(*cp == '.') {
+            /*
+             * Internet format:
+             *	a.b.c.d
+             *	a.b.c	(with c treated as 16-bits)
+             *	a.b	(with b treated as 24 bits)
+             */
+            if(pp >= parts + 3 || val > 0xff)
+                return (0);
+            *pp++ = val, cp++;
+        } else
+            break;
+    }
+    /*
+     * Check for trailing characters.
+     */
+    if(*cp && (!isascii(*cp) || !isspace(*cp)))
+        return (0);
+    /*
+     * Concoct the address according to
+     * the number of parts specified.
+     */
+    n = pp - parts + 1;
+    switch(n) {
 
-	case 2:				/* a.b -- 8.24 bits */
-		if (val > 0xffffff)
-			return (0);
-		val |= parts[0] << 24;
-		break;
+    case 1:				/* a -- 32 bits */
+        break;
 
-	case 3:				/* a.b.c -- 8.8.16 bits */
-		if (val > 0xffff)
-			return (0);
-		val |= (parts[0] << 24) | (parts[1] << 16);
-		break;
+    case 2:				/* a.b -- 8.24 bits */
+        if(val > 0xffffff)
+            return (0);
+        val |= parts[0] << 24;
+        break;
 
-	case 4:				/* a.b.c.d -- 8.8.8.8 bits */
-		if (val > 0xff)
-			return (0);
-		val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
-		break;
-	}
-	if (addr)
-		addr->s_addr = htonl(val);
-	return (1);
+    case 3:				/* a.b.c -- 8.8.16 bits */
+        if(val > 0xffff)
+            return (0);
+        val |= (parts[0] << 24) | (parts[1] << 16);
+        break;
+
+    case 4:				/* a.b.c.d -- 8.8.8.8 bits */
+        if(val > 0xff)
+            return (0);
+        val |= (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8);
+        break;
+    }
+    if(addr)
+        addr->s_addr = htonl(val);
+    return (1);
 }
 
 #if defined(__CONFIG_ROADSHOW__)
 AROS_LH2(LONG, inet_aton,
-   AROS_LHA(STRPTR, cp, A0),
-   AROS_LHA(struct in_addr *, addr, A1),
-   struct SocketBase *, libPtr, 99, UL)
+         AROS_LHA(STRPTR, cp, A0),
+         AROS_LHA(struct in_addr *, addr, A1),
+         struct SocketBase *, libPtr, 99, UL)
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	return __inet_aton(cp,  addr);
+    return __inet_aton(cp,  addr);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 }
 #endif
@@ -233,16 +234,16 @@ AROS_LH2(LONG, inet_aton,
    REG(a0, const char *cp),
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, inet_addr,
-   AROS_LHA(const char *, cp, A0),
-   struct SocketBase *, libPtr, 30, UL)
+         AROS_LHA(const char *, cp, A0),
+         struct SocketBase *, libPtr, 30, UL)
 {
-        AROS_LIBFUNC_INIT
-	struct in_addr val;
+    AROS_LIBFUNC_INIT
+    struct in_addr val;
 
-	if (__inet_aton(cp, &val))
-		return (val.s_addr);
-	return (INADDR_NONE);
-        AROS_LIBFUNC_EXIT
+    if(__inet_aton(cp, &val))
+        return (val.s_addr);
+    return (INADDR_NONE);
+    AROS_LIBFUNC_EXIT
 }
 
 /* from inet_lnaof.c */
@@ -255,19 +256,19 @@ AROS_LH1(ULONG, inet_addr,
    REG(d0, ULONG s_addr),
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, Inet_LnaOf,
-   AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 31, UL)
+         AROS_LHA(ULONG, s_addr, D0),
+         struct SocketBase *, libPtr, 31, UL)
 {
-        AROS_LIBFUNC_INIT
-	NTOHL(s_addr);
+    AROS_LIBFUNC_INIT
+    NTOHL(s_addr);
 
-	if (IN_CLASSA(s_addr))
-		return ((s_addr)&IN_CLASSA_HOST);
-	else if (IN_CLASSB(s_addr))
-		return ((s_addr)&IN_CLASSB_HOST);
-	else
-		return ((s_addr)&IN_CLASSC_HOST);
-        AROS_LIBFUNC_EXIT
+    if(IN_CLASSA(s_addr))
+        return ((s_addr)&IN_CLASSA_HOST);
+    else if(IN_CLASSB(s_addr))
+        return ((s_addr)&IN_CLASSB_HOST);
+    else
+        return ((s_addr)&IN_CLASSC_HOST);
+    AROS_LIBFUNC_EXIT
 }
 
 /* from inet_netof.c */
@@ -279,19 +280,19 @@ AROS_LH1(ULONG, Inet_LnaOf,
    REG(d0, ULONG s_addr),
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, Inet_NetOf,
-   AROS_LHA(ULONG, s_addr, D0),
-   struct SocketBase *, libPtr, 32, UL)
+         AROS_LHA(ULONG, s_addr, D0),
+         struct SocketBase *, libPtr, 32, UL)
 {
-        AROS_LIBFUNC_INIT
-	NTOHL(s_addr);
+    AROS_LIBFUNC_INIT
+    NTOHL(s_addr);
 
-	if (IN_CLASSA(s_addr))
-		return (((s_addr)&IN_CLASSA_NET) >> IN_CLASSA_NSHIFT);
-	else if (IN_CLASSB(s_addr))
-		return (((s_addr)&IN_CLASSB_NET) >> IN_CLASSB_NSHIFT);
-	else
-		return (((s_addr)&IN_CLASSC_NET) >> IN_CLASSC_NSHIFT);
-        AROS_LIBFUNC_EXIT
+    if(IN_CLASSA(s_addr))
+        return (((s_addr)&IN_CLASSA_NET) >> IN_CLASSA_NSHIFT);
+    else if(IN_CLASSB(s_addr))
+        return (((s_addr)&IN_CLASSB_NET) >> IN_CLASSB_NSHIFT);
+    else
+        return (((s_addr)&IN_CLASSC_NET) >> IN_CLASSC_NSHIFT);
+    AROS_LIBFUNC_EXIT
 }
 
 /* from inet_makeaddr.c */
@@ -304,24 +305,24 @@ AROS_LH1(ULONG, Inet_NetOf,
    REG(d1, ULONG host),
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH2(ULONG, Inet_MakeAddr,
-   AROS_LHA(ULONG, net, D0),
-   AROS_LHA(ULONG, host, D1),
-   struct SocketBase *, libPtr, 33, UL)
+         AROS_LHA(ULONG, net, D0),
+         AROS_LHA(ULONG, host, D1),
+         struct SocketBase *, libPtr, 33, UL)
 {
-	AROS_LIBFUNC_INIT
-	u_long addr;
+    AROS_LIBFUNC_INIT
+    u_long addr;
 
-	if (net < 128)
-		addr = (net << IN_CLASSA_NSHIFT) | (host & IN_CLASSA_HOST);
-	else if (net < 65536)
-		addr = (net << IN_CLASSB_NSHIFT) | (host & IN_CLASSB_HOST);
-	else if (net < 16777216L)
-		addr = (net << IN_CLASSC_NSHIFT) | (host & IN_CLASSC_HOST);
-	else
-		addr = net | host;
+    if(net < 128)
+        addr = (net << IN_CLASSA_NSHIFT) | (host & IN_CLASSA_HOST);
+    else if(net < 65536)
+        addr = (net << IN_CLASSB_NSHIFT) | (host & IN_CLASSB_HOST);
+    else if(net < 16777216L)
+        addr = (net << IN_CLASSC_NSHIFT) | (host & IN_CLASSC_HOST);
+    else
+        addr = net | host;
 
-	return htonl(addr);
-	AROS_LIBFUNC_EXIT
+    return htonl(addr);
+    AROS_LIBFUNC_EXIT
 }
 
 /* from inet_network.c */
@@ -334,51 +335,52 @@ AROS_LH2(ULONG, Inet_MakeAddr,
    REG(a0, const char *cp),
    REG(a6, struct SocketBase *libPtr))*/
 AROS_LH1(ULONG, inet_network,
-   AROS_LHA(const char *, cp, A0),
-   struct SocketBase *, libPtr, 34, UL)
+         AROS_LHA(const char *, cp, A0),
+         struct SocketBase *, libPtr, 34, UL)
 {
-	AROS_LIBFUNC_INIT
-	register u_long val, base, n;
-	register char c;
-	u_long parts[4], *pp = parts;
-	register int i;
+    AROS_LIBFUNC_INIT
+    register u_long val, base, n;
+    register char c;
+    u_long parts[4], *pp = parts;
+    register int i;
 
 again:
-	val = 0; base = 10;
-	if (*cp == '0')
-		base = 8, cp++;
-	if (*cp == 'x' || *cp == 'X')
-		base = 16, cp++;
-	while (c = *cp) {
-		if (isdigit(c)) {
-			val = (val * base) + (c - '0');
-			cp++;
-			continue;
-		}
-		if (base == 16 && isxdigit(c)) {
-			val = (val << 4) + (c + 10 - (islower(c) ? 'a' : 'A'));
-			cp++;
-			continue;
-		}
-		break;
-	}
-	if (*cp == '.') {
-		if (pp >= parts + 4)
-			return (INADDR_NONE);
-		*pp++ = val, cp++;
-		goto again;
-	}
-	if (*cp && !isspace(*cp))
-		return (INADDR_NONE);
-	*pp++ = val;
-	n = pp - parts;
-	if (n > 4)
-		return (INADDR_NONE);
-	for (val = 0, i = 0; i < n; i++) {
-		val <<= 8;
-		val |= parts[i] & 0xff;
-	}
-	return (val);
-	AROS_LIBFUNC_EXIT
+    val = 0;
+    base = 10;
+    if(*cp == '0')
+        base = 8, cp++;
+    if(*cp == 'x' || *cp == 'X')
+        base = 16, cp++;
+    while(c = *cp) {
+        if(isdigit(c)) {
+            val = (val * base) + (c - '0');
+            cp++;
+            continue;
+        }
+        if(base == 16 && isxdigit(c)) {
+            val = (val << 4) + (c + 10 - (islower(c) ? 'a' : 'A'));
+            cp++;
+            continue;
+        }
+        break;
+    }
+    if(*cp == '.') {
+        if(pp >= parts + 4)
+            return (INADDR_NONE);
+        *pp++ = val, cp++;
+        goto again;
+    }
+    if(*cp && !isspace(*cp))
+        return (INADDR_NONE);
+    *pp++ = val;
+    n = pp - parts;
+    if(n > 4)
+        return (INADDR_NONE);
+    for(val = 0, i = 0; i < n; i++) {
+        val <<= 8;
+        val |= parts[i] & 0xff;
+    }
+    return (val);
+    AROS_LIBFUNC_EXIT
 }
 

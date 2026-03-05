@@ -34,9 +34,9 @@
         vsyslog(level, format, ap)
                 D0     A0      A1
 
-        void syslog(unsigned long level, char * format, ...); 
+        void syslog(unsigned long level, char * format, ...);
 
-        void vsyslog(unsigned long level, char * format, ap); 
+        void vsyslog(unsigned long level, char * format, ap);
 
     FUNCTION
         Writes the message given as format string and arguments
@@ -51,7 +51,7 @@
             LOG_EMERG           A panic condition.
 
             LOG_ALERT           A condition that should be
-                                corrected immediately, such as a 
+                                corrected immediately, such as a
                                 corrupted system database.
 
             LOG_CRIT            Critical conditions, such  as  hard
@@ -96,7 +96,7 @@
         integer arguments are expected to be 32 bits wide, thus
         eliminating the need to specify the 'l' size modifier for the
         number formatters.
- 
+
         This function is callable from interrupts.
 
     BUGS
@@ -104,7 +104,7 @@
         by the logging system, some log messages may get lost if a
         high priority task or interrupt handler sends many messages
         in succession. If this happens, the next log message tells
-        the fact. 
+        the fact.
 
     SEE ALSO
         net.lib/syslog for syslog utility functions (openlog(),

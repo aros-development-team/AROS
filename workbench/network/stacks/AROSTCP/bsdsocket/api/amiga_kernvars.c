@@ -15,28 +15,28 @@ extern struct ip6stat ip6stat;
 extern struct icmp6stat icmp6stat;
 
 struct kernel_var kvars[] = {
-	{ "_mbstat" , &mbstat },
-	{ "_ipstat" , &ipstat },
-	{ "_tcb" , &tcb },
-	{ "_tcpstat", &tcpstat },
-	{ "_udb" , &udb },
-	{ "_udpstat" , &udpstat },
-	{ "_ifnet" , &ifnet },
-	{ "_icmpstat" , &icmpstat },
-	{ "_rtstat" , &rtstat },
-	{ "_rt_tables" , &rt_tables },
-	{ "_ip6stat" , &ip6stat },
-	{ "_icmp6stat" , &icmp6stat },
+    { "_mbstat", &mbstat },
+    { "_ipstat", &ipstat },
+    { "_tcb", &tcb },
+    { "_tcpstat", &tcpstat },
+    { "_udb", &udb },
+    { "_udpstat", &udpstat },
+    { "_ifnet", &ifnet },
+    { "_icmpstat", &icmpstat },
+    { "_rtstat", &rtstat },
+    { "_rt_tables", &rt_tables },
+    { "_ip6stat", &ip6stat },
+    { "_icmp6stat", &icmp6stat },
 #ifdef ENABLE_IGMP
-	{ "_igmpstat" , &igmpstat },
+    { "_igmpstat", &igmpstat },
 #endif
 #ifdef ENABLE_MULTICAST
-	{ "_ip_mrtproto" , &ip_mrtptoto },
-	{ "_mrtstat" , &mrtstat },
-	{ "_mrttable" , &mrttable },
-	{ "_viftable" , &viftable },
+    { "_ip_mrtproto", &ip_mrtptoto },
+    { "_mrtstat", &mrtstat },
+    { "_mrttable", &mrttable },
+    { "_viftable", &viftable },
 #endif
-	{ NULL , NULL }
+    { NULL, NULL }
 };
 
 struct MiamiBase;
@@ -44,17 +44,17 @@ struct MiamiBase;
 AROS_LH1(void *, FindKernelVar,
          AROS_LHA(STRPTR, name, A0),
          struct MiamiBase *, MiamiBase, 59, Miami
-)
+        )
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	struct kernel_var *kvar;
+    struct kernel_var *kvar;
 
-	for (kvar = kvars; kvar->v_name; kvar++)
-		if (!strcmp(name, kvar->v_name))
-			return kvar->v_addr;
-	return NULL;
+    for(kvar = kvars; kvar->v_name; kvar++)
+        if(!strcmp(name, kvar->v_name))
+            return kvar->v_addr;
+    return NULL;
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 

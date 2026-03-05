@@ -82,159 +82,159 @@ static BOOL domain_initialized = FALSE;
 BOOL
 domaininit()
 {
-	register struct domain *dp;
-	register struct protosw *pr;
+    register struct domain *dp;
+    register struct protosw *pr;
 
-	if (domain_initialized)
-	  return TRUE;
+    if(domain_initialized)
+        return TRUE;
 
 #undef unix
 #ifndef AMITCP
-	ADDDOMAIN(unix);
+    ADDDOMAIN(unix);
 #endif /* AMITCP */
-	ADDDOMAIN(route);
+    ADDDOMAIN(route);
 #if INET
-	ADDDOMAIN(inet);
+    ADDDOMAIN(inet);
 #endif
 #if INET6
-	ADDDOMAIN(inet6);
+    ADDDOMAIN(inet6);
 #endif
 #if NS
-	ADDDOMAIN(ns);
+    ADDDOMAIN(ns);
 #endif
 #if ISO
-	ADDDOMAIN(iso);
+    ADDDOMAIN(iso);
 #endif
 #if RMP
-	ADDDOMAIN(rmp);
+    ADDDOMAIN(rmp);
 #endif
 #if CCITT
-	ADDDOMAIN(ccitt);
+    ADDDOMAIN(ccitt);
 #endif
 #if NIMP > 0
-	ADDDOMAIN(imp);
+    ADDDOMAIN(imp);
 #endif
 
-	for (dp = domains; dp; dp = dp->dom_next) {
-		if (dp->dom_init)
-			(*dp->dom_init)();
-		for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-			if (pr->pr_init)
-				(*pr->pr_init)();
-	}
+    for(dp = domains; dp; dp = dp->dom_next) {
+        if(dp->dom_init)
+            (*dp->dom_init)();
+        for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+            if(pr->pr_init)
+                (*pr->pr_init)();
+    }
 #ifdef AMITCP
-  /*
-   * No space needed for the link header with SanaII drivers
-   */
-  max_linkhdr = 0;
+    /*
+     * No space needed for the link header with SanaII drivers
+     */
+    max_linkhdr = 0;
 #else
-if (max_linkhdr < 16)		/* XXX */
-max_linkhdr = 16;
+    if(max_linkhdr < 16)		/* XXX */
+        max_linkhdr = 16;
 #endif
-	max_hdr = max_linkhdr + max_protohdr;
-	max_datalen = MHLEN - max_hdr;
+    max_hdr = max_linkhdr + max_protohdr;
+    max_datalen = MHLEN - max_hdr;
 
 #ifndef AMITCP
-	/*
-	 * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
-	 */
-	pffasttimo();
-	pfslowtimo();
+    /*
+     * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
+     */
+    pffasttimo();
+    pfslowtimo();
 #endif
-	domain_initialized = TRUE;
-	return TRUE;
+    domain_initialized = TRUE;
+    return TRUE;
 }
 
 struct protosw *
 pffindtype(family, type)
-	int family, type;
+int family, type;
 {
-	register struct domain *dp;
-	register struct protosw *pr;
+    register struct domain *dp;
+    register struct protosw *pr;
 
-	for (dp = domains; dp; dp = dp->dom_next)
-		if (dp->dom_family == family)
-			goto found;
-	return (0);
+    for(dp = domains; dp; dp = dp->dom_next)
+        if(dp->dom_family == family)
+            goto found;
+    return (0);
 found:
-	for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-		if (pr->pr_type && pr->pr_type == type)
-			return (pr);
-	return (0);
+    for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+        if(pr->pr_type && pr->pr_type == type)
+            return (pr);
+    return (0);
 }
 
 struct protosw *
 pffindproto(family, protocol, type)
-	int family, protocol, type;
+int family, protocol, type;
 {
-	register struct domain *dp;
-	register struct protosw *pr;
-	struct protosw *maybe = 0;
+    register struct domain *dp;
+    register struct protosw *pr;
+    struct protosw *maybe = 0;
 
-	if (family == 0)
-		return (0);
-	for (dp = domains; dp; dp = dp->dom_next)
-		if (dp->dom_family == family)
-			goto found;
-	return (0);
+    if(family == 0)
+        return (0);
+    for(dp = domains; dp; dp = dp->dom_next)
+        if(dp->dom_family == family)
+            goto found;
+    return (0);
 found:
-	for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++) {
-		if ((pr->pr_protocol == protocol) && (pr->pr_type == type))
-			return (pr);
+    for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++) {
+        if((pr->pr_protocol == protocol) && (pr->pr_type == type))
+            return (pr);
 
-		if (type == SOCK_RAW && pr->pr_type == SOCK_RAW &&
-		    pr->pr_protocol == 0 && maybe == (struct protosw *)0)
-			maybe = pr;
-	}
-	return (maybe);
+        if(type == SOCK_RAW && pr->pr_type == SOCK_RAW &&
+                pr->pr_protocol == 0 && maybe == (struct protosw *)0)
+            maybe = pr;
+    }
+    return (maybe);
 }
 
 void
 pfctlinput(cmd, sa)
-	int cmd;
-	struct sockaddr *sa;
+int cmd;
+struct sockaddr *sa;
 {
-	register struct domain *dp;
-	register struct protosw *pr;
+    register struct domain *dp;
+    register struct protosw *pr;
 
-	for (dp = domains; dp; dp = dp->dom_next)
-		for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-			if (pr->pr_ctlinput)
-				(*pr->pr_ctlinput)(cmd, sa, (caddr_t) 0);
+    for(dp = domains; dp; dp = dp->dom_next)
+        for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+            if(pr->pr_ctlinput)
+                (*pr->pr_ctlinput)(cmd, sa, (caddr_t) 0);
 }
 
 void
 pfslowtimo()
 {
-	register struct domain *dp;
-	register struct protosw *pr;
+    register struct domain *dp;
+    register struct protosw *pr;
 
-	for (dp = domains; dp; dp = dp->dom_next)
-		for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-			if (pr->pr_slowtimo)
-				(*pr->pr_slowtimo)();
+    for(dp = domains; dp; dp = dp->dom_next)
+        for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+            if(pr->pr_slowtimo)
+                (*pr->pr_slowtimo)();
 #ifndef AMITCP
-	/*
-	 * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
-	 */
-	timeout(pfslowtimo, (caddr_t)0, hz/2);
-#endif /* AMITCP */       
+    /*
+     * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
+     */
+    timeout(pfslowtimo, (caddr_t)0, hz / 2);
+#endif /* AMITCP */
 }
 
 void
 pffasttimo()
 {
-	register struct domain *dp;
-	register struct protosw *pr;
+    register struct domain *dp;
+    register struct protosw *pr;
 
-	for (dp = domains; dp; dp = dp->dom_next)
-		for (pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-			if (pr->pr_fasttimo)
-				(*pr->pr_fasttimo)();
+    for(dp = domains; dp; dp = dp->dom_next)
+        for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+            if(pr->pr_fasttimo)
+                (*pr->pr_fasttimo)();
 #ifndef AMITCP
-	/*
-	 * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
-	 */
-	timeout(pffasttimo, (caddr_t)0, hz/5);
-#endif /* AMITCP */       
+    /*
+     * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
+     */
+    timeout(pffasttimo, (caddr_t)0, hz / 5);
+#endif /* AMITCP */
 }

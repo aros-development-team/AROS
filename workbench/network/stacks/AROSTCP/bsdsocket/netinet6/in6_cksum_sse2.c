@@ -80,7 +80,7 @@ cksum_fold64_v6(uint64_t sum)
 /*   four independent 128-bit accumulators for ILP.                   */
 /* ------------------------------------------------------------------ */
 static uint64_t
-cksum_sse2_block6(const uint8_t * __restrict ptr, int count)
+cksum_sse2_block6(const uint8_t *__restrict ptr, int count)
 {
     const __m128i zero = _mm_setzero_si128();
 
@@ -90,7 +90,7 @@ cksum_sse2_block6(const uint8_t * __restrict ptr, int count)
     __m128i acc3 = zero;
 
     /* -- 64-bytes-per-iteration SSE2 main loop -- */
-    while (count >= 64) {
+    while(count >= 64) {
         __builtin_prefetch(ptr + 128, 0, 1);
 
         __m128i a = _mm_loadu_si128((const __m128i *)(ptr +  0));
@@ -112,7 +112,7 @@ cksum_sse2_block6(const uint8_t * __restrict ptr, int count)
     }
 
     /* -- 16-bytes-per-iteration SSE2 tail -- */
-    while (count >= 16) {
+    while(count >= 16) {
         __m128i a = _mm_loadu_si128((const __m128i *)ptr);
         acc0 = _mm_add_epi32(acc0, _mm_unpacklo_epi16(a, zero));
         acc0 = _mm_add_epi32(acc0, _mm_unpackhi_epi16(a, zero));
@@ -135,7 +135,7 @@ cksum_sse2_block6(const uint8_t * __restrict ptr, int count)
         uint64_t vsum = (uint64_t)lo + (uint64_t)hi;
 
         /* -- 8-byte scalar tail -- */
-        while (count >= 8) {
+        while(count >= 8) {
             uint16_t w0, w1, w2, w3;
             memcpy(&w0, ptr + 0, 2);
             memcpy(&w1, ptr + 2, 2);
@@ -148,7 +148,7 @@ cksum_sse2_block6(const uint8_t * __restrict ptr, int count)
         }
 
         /* -- 2-byte scalar tail -- */
-        while (count >= 2) {
+        while(count >= 2) {
             uint16_t w;
             memcpy(&w, ptr, 2);
             vsum  += w;
@@ -233,7 +233,7 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     struct mbuf *mp;
 
     /* ---- IPv6 pseudo-header (RFC 2460 §8.1) ---- */
-    if (nxt != 0) {
+    if(nxt != 0) {
         struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
         sum = cksum_pseudo6(ip6, nxt, len);
     }
@@ -243,33 +243,33 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     {
         u_int32_t skip = off;
         int moff = 0;
-        while (mp != NULL && skip > 0) {
-            if ((u_int32_t)mp->m_len > skip) {
+        while(mp != NULL && skip > 0) {
+            if((u_int32_t)mp->m_len > skip) {
                 moff = (int)skip;
                 break;
             }
             skip -= mp->m_len;
             mp = mp->m_next;
         }
-        if (__builtin_expect(mp == NULL, 0)) {
+        if(__builtin_expect(mp == NULL, 0)) {
             printf("in6_cksum: offset %u past end of chain\n",
-                (unsigned)off);
+                   (unsigned)off);
             return 0;
         }
 
         /* If we landed mid-mbuf, handle the partial first mbuf */
-        if (moff > 0) {
+        if(moff > 0) {
             const uint8_t *ptr = (const uint8_t *)mp->m_data + moff;
             int mlen = mp->m_len - moff;
-            if ((int)len < mlen)
+            if((int)len < mlen)
                 mlen = (int)len;
             len -= mlen;
 
             int even_len = mlen & ~1;
-            if (even_len > 0)
+            if(even_len > 0)
                 sum += cksum_sse2_block6(ptr, even_len);
 
-            if (mlen & 1) {
+            if(mlen & 1) {
                 odd_byte       = ptr[even_len];
                 odd_byte_valid = 1;
             }
@@ -279,44 +279,44 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
     }
 
     /* ---- Checksum remaining mbufs ---- */
-    for (; __builtin_expect(mp != NULL && len > 0, 1); mp = mp->m_next) {
+    for(; __builtin_expect(mp != NULL && len > 0, 1); mp = mp->m_next) {
 
-        if (__builtin_expect(mp->m_len == 0, 0))
+        if(__builtin_expect(mp->m_len == 0, 0))
             continue;
 
         const uint8_t *ptr = (const uint8_t *)mp->m_data;
         int mlen = mp->m_len;
-        if ((int)len < mlen)
+        if((int)len < mlen)
             mlen = (int)len;
         len -= mlen;
 
         /* Bridge odd byte from previous mbuf */
-        if (__builtin_expect(odd_byte_valid, 0)) {
+        if(__builtin_expect(odd_byte_valid, 0)) {
             sum += (uint16_t)(odd_byte | ((uint16_t)(*ptr) << 8));
             ptr++;
             mlen--;
             odd_byte_valid = 0;
         }
 
-        if (__builtin_expect(mlen <= 0, 0))
+        if(__builtin_expect(mlen <= 0, 0))
             continue;
 
         int even_len = mlen & ~1;
 
-        if (even_len > 0)
+        if(even_len > 0)
             sum += cksum_sse2_block6(ptr, even_len);
 
-        if (mlen & 1) {
+        if(mlen & 1) {
             odd_byte       = ptr[even_len];
             odd_byte_valid = 1;
         }
     }
 
-    if (__builtin_expect(len != 0, 0))
+    if(__builtin_expect(len != 0, 0))
         printf("in6_cksum: ran out of data (%u bytes left)\n", (unsigned)len);
 
     /* Final odd-byte: low byte, high byte = 0 */
-    if (__builtin_expect(odd_byte_valid, 0))
+    if(__builtin_expect(odd_byte_valid, 0))
         sum += (uint16_t)odd_byte;
 
     /* Fold and complement */

@@ -47,33 +47,34 @@
 
 #define NPRIMES 27
 static int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531, 2039,
-			2557, 3067, 3583, 4093, 4603, 5119, 5623, 6143, 6653,
-			7159, 7673, 8191, 12281, 16381, 24571, 32749 };
+                        2557, 3067, 3583, 4093, 4603, 5119, 5623, 6143, 6653,
+                        7159, 7673, 8191, 12281, 16381, 24571, 32749
+                      };
 
 /*
  * General routine to allocate a prime number sized hash table.
  */
 void *
 phashinit(elements, type, nentries)
-	int elements, type;
-	u_long *nentries;
+int elements, type;
+u_long *nentries;
 {
-	long hashsize;
-	LIST_HEAD(generic, generic) *hashtbl;
-	int i;
+    long hashsize;
+    LIST_HEAD(generic, generic) *hashtbl;
+    int i;
 
-	if (elements <= 0)
-		panic("phashinit: bad elements");
-	for (i = 1, hashsize = primes[1]; hashsize <= elements;) {
-		i++;
-		if (i == NPRIMES)
-			break;
-		hashsize = primes[i];
-	}
-	hashsize = primes[i - 1];
-	hashtbl = bsd_malloc((u_long)hashsize * sizeof(*hashtbl), type, M_WAITOK);
-	for (i = 0; i < hashsize; i++)
-		LIST_INIT(&hashtbl[i]);
-	*nentries = hashsize;
-	return (hashtbl);
+    if(elements <= 0)
+        panic("phashinit: bad elements");
+    for(i = 1, hashsize = primes[1]; hashsize <= elements;) {
+        i++;
+        if(i == NPRIMES)
+            break;
+        hashsize = primes[i];
+    }
+    hashsize = primes[i - 1];
+    hashtbl = bsd_malloc((u_long)hashsize * sizeof(*hashtbl), type, M_WAITOK);
+    for(i = 0; i < hashsize; i++)
+        LIST_INIT(&hashtbl[i]);
+    *nentries = hashsize;
+    return (hashtbl);
 }

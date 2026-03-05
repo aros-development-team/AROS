@@ -68,44 +68,44 @@
 unsigned int
 __if_nametoindex(char *ifname, struct SocketBase *SocketBase)
 {
-	// int s;
-	struct ifnet *ifp;
-	struct ifaddrs *ifaddrs, *ifa;
-	unsigned int ni;
+    // int s;
+    struct ifnet *ifp;
+    struct ifaddrs *ifaddrs, *ifa;
+    unsigned int ni;
 
-	ifp = ifunit(ifname);
-	if (ifp)
-		return ifp->if_index;
+    ifp = ifunit(ifname);
+    if(ifp)
+        return ifp->if_index;
 
-	if (getifaddrs(&ifaddrs, SocketBase) < 0)
-		return(0);
+    if(getifaddrs(&ifaddrs, SocketBase) < 0)
+        return(0);
 
-	ni = 0;
+    ni = 0;
 
-	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-		if (ifa->ifa_addr &&
-		    ifa->ifa_addr->sa_family == AF_LINK &&
-		    strcmp(ifa->ifa_name, ifname) == 0) {
-			ni = ((struct sockaddr_dl*)ifa->ifa_addr)->sdl_index;
-			break;
-		}
-	}
+    for(ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
+        if(ifa->ifa_addr &&
+                ifa->ifa_addr->sa_family == AF_LINK &&
+                strcmp(ifa->ifa_name, ifname) == 0) {
+            ni = ((struct sockaddr_dl *)ifa->ifa_addr)->sdl_index;
+            break;
+        }
+    }
 
-	freeifaddrs(ifaddrs);
-	if (!ni)
-		writeErrnoValue(SocketBase, ENXIO);
-	return(ni);
+    freeifaddrs(ifaddrs);
+    if(!ni)
+        writeErrnoValue(SocketBase, ENXIO);
+    return(ni);
 }
 
 AROS_LH1(LONG, if_nametoindex,
          AROS_LHA(char *, ifname, A0),
          struct MiamiBase *, MiamiBase, 46, Miami
-)
+        )
 {
-	AROS_LIBFUNC_INIT
+    AROS_LIBFUNC_INIT
 
-	return __if_nametoindex(ifname, MiamiBase->_SocketBase);
+    return __if_nametoindex(ifname, MiamiBase->_SocketBase);
 
-	AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 

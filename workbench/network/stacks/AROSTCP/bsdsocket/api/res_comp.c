@@ -63,13 +63,13 @@ static char sccsid[] = "@(#)res_comp.c	6.22 (Berkeley) 3/19/91";
 #include <arpa/nameser.h>
 #include <netinet/in.h>
 
-#include <exec/semaphores.h>     
-     
-#include <kern/amiga_netdb.h>     
+#include <exec/semaphores.h>
+
+#include <kern/amiga_netdb.h>
 #include <api/resolv.h>
 
 static int dn_find(u_char *exp_dn, u_char *msg,
-		   u_char **dnptrs, u_char **lastdnptr);
+                   u_char **dnptrs, u_char **lastdnptr);
 
 /*
  * Expand compressed domain name 'comp_dn' to full domain name.
@@ -80,69 +80,69 @@ static int dn_find(u_char *exp_dn, u_char *msg,
  */
 int
 dn_expand(const u_char *msg, const u_char *eomorig, const u_char *comp_dn,
-	  u_char *exp_dn, int length)
+          u_char *exp_dn, int length)
 {
-	register u_char *cp, *dn;
-	register int n, c;
-	u_char *eom;
-	int len = -1, checked = 0;
+    register u_char *cp, *dn;
+    register int n, c;
+    u_char *eom;
+    int len = -1, checked = 0;
 
-	dn = exp_dn;
-	cp = (u_char *)comp_dn;
-	eom = exp_dn + length;
-	/*
-	 * fetch next label in domain name
-	 */
-	while (n = *cp++) {
-		/*
-		 * Check for indirection
-		 */
-		switch (n & INDIR_MASK) {
-		case 0:
-			if (dn != exp_dn) {
-				if (dn >= eom)
-					return (-1);
-				*dn++ = '.';
-			}
-			if (dn+n >= eom)
-				return (-1);
-			checked += n + 1;
-			while (--n >= 0) {
-				if ((c = *cp++) == '.') {
-					if (dn + n + 2 >= eom)
-						return (-1);
-					*dn++ = '\\';
-				}
-				*dn++ = c;
-				if (cp >= eomorig)	/* out of range */
-					return(-1);
-			}
-			break;
+    dn = exp_dn;
+    cp = (u_char *)comp_dn;
+    eom = exp_dn + length;
+    /*
+     * fetch next label in domain name
+     */
+    while(n = *cp++) {
+        /*
+         * Check for indirection
+         */
+        switch(n & INDIR_MASK) {
+        case 0:
+            if(dn != exp_dn) {
+                if(dn >= eom)
+                    return (-1);
+                *dn++ = '.';
+            }
+            if(dn + n >= eom)
+                return (-1);
+            checked += n + 1;
+            while(--n >= 0) {
+                if((c = *cp++) == '.') {
+                    if(dn + n + 2 >= eom)
+                        return (-1);
+                    *dn++ = '\\';
+                }
+                *dn++ = c;
+                if(cp >= eomorig)	/* out of range */
+                    return(-1);
+            }
+            break;
 
-		case INDIR_MASK:
-			if (len < 0)
-				len = cp - comp_dn + 1;
-			cp = (u_char *)msg + (((n & 0x3f) << 8) | (*cp & 0xff));
-			if (cp < msg || cp >= eomorig)	/* out of range */
-				return(-1);
-			checked += 2;
-			/*
-			 * Check for loops in the compressed name;
-			 * if we've looked at the whole message,
-			 * there must be a loop.
-			 */
-			if (checked >= eomorig - msg)
-				return (-1);
-			break;
+        case INDIR_MASK:
+            if(len < 0)
+                len = cp - comp_dn + 1;
+            cp = (u_char *)msg + (((n & 0x3f) << 8) | (*cp & 0xff));
+            if(cp < msg || cp >= eomorig)	/* out of range */
+                return(-1);
+            checked += 2;
+            /*
+             * Check for loops in the compressed name;
+             * if we've looked at the whole message,
+             * there must be a loop.
+             */
+            if(checked >= eomorig - msg)
+                return (-1);
+            break;
 
-		default:
-			return (-1);			/* flag error */
-		}
-	}
-	*dn = '\0';
-	if (len < 0)
-		len = cp - comp_dn;
-	return (len);
+        default:
+            return (-1);			/* flag error */
+        }
+    }
+    *dn = '\0';
+    if(len < 0)
+        len = cp - comp_dn;
+    return (len);
 }
 
 /*
@@ -159,76 +159,76 @@ dn_expand(const u_char *msg, const u_char *eomorig, const u_char *comp_dn,
  */
 int
 dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
-	u_char **dnptrs, u_char **lastdnptr)
+        u_char **dnptrs, u_char **lastdnptr)
 {
-	register u_char *cp, *dn;
-	register int c, l;
-	u_char **cpp, **lpp, *sp, *eob;
-	u_char *msg;
+    register u_char *cp, *dn;
+    register int c, l;
+    u_char **cpp, **lpp, *sp, *eob;
+    u_char *msg;
 
-	dn = (u_char *)exp_dn;
-	cp = comp_dn;
-	eob = cp + length;
-	if (dnptrs != NULL) {
-		if ((msg = *dnptrs++) != NULL) {
-			for (cpp = dnptrs; *cpp != NULL; cpp++)
-				;
-			lpp = cpp;	/* end of list to search */
-		}
-	} else
-		msg = NULL;
-	for (c = *dn++; c != '\0'; ) {
-		/* look to see if we can use pointers */
-		if (msg != NULL) {
-			if ((l = dn_find(dn-1, msg, dnptrs, lpp)) >= 0) {
-				if (cp+1 >= eob)
-					return (-1);
-				*cp++ = (l >> 8) | INDIR_MASK;
-				*cp++ = l % 256;
-				return (cp - comp_dn);
-			}
-			/* not found, save it */
-			if (lastdnptr != NULL && cpp < lastdnptr-1) {
-				*cpp++ = cp;
-				*cpp = NULL;
-			}
-		}
-		sp = cp++;	/* save ptr to length byte */
-		do {
-			if (c == '.') {
-				c = *dn++;
-				break;
-			}
-			if (c == '\\') {
-				if ((c = *dn++) == '\0')
-					break;
-			}
-			if (cp >= eob) {
-				if (msg != NULL)
-					*lpp = NULL;
-				return (-1);
-			}
-			*cp++ = c;
-		} while ((c = *dn++) != '\0');
-		/* catch trailing '.'s but not '..' */
-		if ((l = cp - sp - 1) == 0 && c == '\0') {
-			cp--;
-			break;
-		}
-		if (l <= 0 || l > MAXLABEL) {
-			if (msg != NULL)
-				*lpp = NULL;
-			return (-1);
-		}
-		*sp = l;
-	}
-	if (cp >= eob) {
-		if (msg != NULL)
-			*lpp = NULL;
-		return (-1);
-	}
-	*cp++ = '\0';
-	return (cp - comp_dn);
+    dn = (u_char *)exp_dn;
+    cp = comp_dn;
+    eob = cp + length;
+    if(dnptrs != NULL) {
+        if((msg = *dnptrs++) != NULL) {
+            for(cpp = dnptrs; *cpp != NULL; cpp++)
+                ;
+            lpp = cpp;	/* end of list to search */
+        }
+    } else
+        msg = NULL;
+    for(c = *dn++; c != '\0';) {
+        /* look to see if we can use pointers */
+        if(msg != NULL) {
+            if((l = dn_find(dn - 1, msg, dnptrs, lpp)) >= 0) {
+                if(cp + 1 >= eob)
+                    return (-1);
+                *cp++ = (l >> 8) | INDIR_MASK;
+                *cp++ = l % 256;
+                return (cp - comp_dn);
+            }
+            /* not found, save it */
+            if(lastdnptr != NULL && cpp < lastdnptr - 1) {
+                *cpp++ = cp;
+                *cpp = NULL;
+            }
+        }
+        sp = cp++;	/* save ptr to length byte */
+        do {
+            if(c == '.') {
+                c = *dn++;
+                break;
+            }
+            if(c == '\\') {
+                if((c = *dn++) == '\0')
+                    break;
+            }
+            if(cp >= eob) {
+                if(msg != NULL)
+                    *lpp = NULL;
+                return (-1);
+            }
+            *cp++ = c;
+        } while((c = *dn++) != '\0');
+        /* catch trailing '.'s but not '..' */
+        if((l = cp - sp - 1) == 0 && c == '\0') {
+            cp--;
+            break;
+        }
+        if(l <= 0 || l > MAXLABEL) {
+            if(msg != NULL)
+                *lpp = NULL;
+            return (-1);
+        }
+        *sp = l;
+    }
+    if(cp >= eob) {
+        if(msg != NULL)
+            *lpp = NULL;
+        return (-1);
+    }
+    *cp++ = '\0';
+    return (cp - comp_dn);
 }
 
 /*
@@ -237,26 +237,26 @@ dn_comp(const u_char *exp_dn, u_char *comp_dn, int length,
 int
 __dn_skipname(const u_char *comp_dn, const u_char *eom)
 {
-	register u_char *cp;
-	register int n;
+    register u_char *cp;
+    register int n;
 
-	cp = (u_char *)comp_dn;
-	while (cp < eom && (n = *cp++)) {
-		/*
-		 * check for indirection
-		 */
-		switch (n & INDIR_MASK) {
-		case 0:		/* normal case, n == len */
-			cp += n;
-			continue;
-		default:	/* illegal type */
-			return (-1);
-		case INDIR_MASK:	/* indirection */
-			cp++;
-		}
-		break;
-	}
-	return (cp - comp_dn);
+    cp = (u_char *)comp_dn;
+    while(cp < eom && (n = *cp++)) {
+        /*
+         * check for indirection
+         */
+        switch(n & INDIR_MASK) {
+        case 0:		/* normal case, n == len */
+            cp += n;
+            continue;
+        default:	/* illegal type */
+            return (-1);
+        case INDIR_MASK:	/* indirection */
+            cp++;
+        }
+        break;
+    }
+    return (cp - comp_dn);
 }
 
 /*
@@ -267,47 +267,48 @@ __dn_skipname(const u_char *comp_dn, const u_char *eom)
  */
 static int
 dn_find(u_char *exp_dn, u_char *msg,
-	u_char **dnptrs, u_char **lastdnptr)
+        u_char **dnptrs, u_char **lastdnptr)
 {
-	register u_char *dn, *cp, **cpp;
-	register int n;
-	u_char *sp;
+    register u_char *dn, *cp, **cpp;
+    register int n;
+    u_char *sp;
 
-	for (cpp = dnptrs; cpp < lastdnptr; cpp++) {
-		dn = exp_dn;
-		sp = cp = *cpp;
-		while (n = *cp++) {
-			/*
-			 * check for indirection
-			 */
-			switch (n & INDIR_MASK) {
-			case 0:		/* normal case, n == len */
-				while (--n >= 0) {
-					if (*dn == '.')
-						goto next;
-					if (*dn == '\\')
-						dn++;
-					if (*dn++ != *cp++)
-						goto next;
-				}
-				if ((n = *dn++) == '\0' && *cp == '\0')
-					return (sp - msg);
-				if (n == '.')
-					continue;
-				goto next;
+    for(cpp = dnptrs; cpp < lastdnptr; cpp++) {
+        dn = exp_dn;
+        sp = cp = *cpp;
+        while(n = *cp++) {
+            /*
+             * check for indirection
+             */
+            switch(n & INDIR_MASK) {
+            case 0:		/* normal case, n == len */
+                while(--n >= 0) {
+                    if(*dn == '.')
+                        goto next;
+                    if(*dn == '\\')
+                        dn++;
+                    if(*dn++ != *cp++)
+                        goto next;
+                }
+                if((n = *dn++) == '\0' && *cp == '\0')
+                    return (sp - msg);
+                if(n == '.')
+                    continue;
+                goto next;
 
-			default:	/* illegal type */
-				return (-1);
+            default:	/* illegal type */
+                return (-1);
 
-			case INDIR_MASK:	/* indirection */
-				cp = msg + (((n & 0x3f) << 8) | *cp);
-			}
-		}
-		if (*dn == '\0')
-			return (sp - msg);
-	next:	;
-	}
-	return (-1);
+            case INDIR_MASK:	/* indirection */
+                cp = msg + (((n & 0x3f) << 8) | *cp);
+            }
+        }
+        if(*dn == '\0')
+            return (sp - msg);
+next:
+        ;
+    }
+    return (-1);
 }
 
 /*
@@ -321,37 +322,40 @@ dn_find(u_char *exp_dn, u_char *msg,
 u_short
 _getshort(u_char *msgp)
 {
-	register u_char *p = (u_char *) msgp;
-	register u_short u;
+    register u_char *p = (u_char *) msgp;
+    register u_short u;
 
-	u = *p++ << 8;
-	return ((u_short)(u | *p));
+    u = *p++ << 8;
+    return ((u_short)(u | *p));
 }
 
 u_long
 _getlong(u_char *msgp)
 {
-	register u_char *p = (u_char *) msgp;
-	register u_long u;
+    register u_char *p = (u_char *) msgp;
+    register u_long u;
 
-	u = *p++; u <<= 8;
-	u |= *p++; u <<= 8;
-	u |= *p++; u <<= 8;
-	return (u | *p);
+    u = *p++;
+    u <<= 8;
+    u |= *p++;
+    u <<= 8;
+    u |= *p++;
+    u <<= 8;
+    return (u | *p);
 }
 
 void
 __putshort(register u_short s, register u_char *msgp)
 {
-	msgp[1] = s;
-	msgp[0] = s >> 8;
+    msgp[1] = s;
+    msgp[0] = s >> 8;
 }
 
 void
 __putlong(register u_long l, register u_char *msgp)
 {
-	msgp[3] = l;
-	msgp[2] = (l >>= 8);
-	msgp[1] = (l >>= 8);
-	msgp[0] = l >> 8;
+    msgp[3] = l;
+    msgp[2] = (l >>= 8);
+    msgp[1] = (l >>= 8);
+    msgp[0] = l >> 8;
 }

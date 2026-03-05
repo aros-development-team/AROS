@@ -44,7 +44,7 @@
 *
 *        LONG ObtainSocket(LONG, LONG, LONG, LONG);
 *
-*   FUNCTION 
+*   FUNCTION
 *        When one task wants to give  a socket to  an another one, it
 *        releases it (with a key value) to a special socket list held
 *        by  AmiTCP/IP.   This  function  requests  that  socket  and
@@ -72,7 +72,7 @@
 *                          socket.
 *
 *        EWOULDBLOCK     - Matching socket is not found.
-*         
+*
 *   SEE ALSO
 *        ReleaseCopyOfSocket(), ReleaseSocket(), socket()
 *
@@ -112,7 +112,7 @@
 *   RESULT
 *        id - -1 in case of error and the key value of the socket put
 *             in the list. Most useful when an unique id is generated
-*             by this routine. 
+*             by this routine.
 *
 *   ERRORS
 *        EINVAL - Requested unique id is already used.
@@ -163,7 +163,7 @@
 *   RESULT
 *        id - -1 in case of error and the key value of the socket put
 *             in the list. Most useful when an unique id is generated
-*             by this routine. 
+*             by this routine.
 *
 *   ERRORS
 *        EINVAL - Requested unique id is already used.
@@ -197,7 +197,7 @@
 *        ptr     - pointer to error variable that is to be modified on
 *                  every error condition on this library function.
 *        size    - size of the error variable.
-* 
+*
 *   EXAMPLE
 *        #include <errno.h>
 *
@@ -264,5 +264,5 @@
 *        IoctlSocket(), recv(), send(), select(), WaitSelect()
 *
 *****************************************************************************
-* 
+*
 */

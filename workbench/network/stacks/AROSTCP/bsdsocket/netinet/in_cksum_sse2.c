@@ -196,7 +196,7 @@ cksum_fold64(uint64_t sum)
  *     Handles any remaining whole word.
  */
 static uint64_t
-cksum_sse2_block(const uint8_t * __restrict ptr, int count)
+cksum_sse2_block(const uint8_t *__restrict ptr, int count)
 {
     const __m128i zero = _mm_setzero_si128();
 
@@ -211,7 +211,7 @@ cksum_sse2_block(const uint8_t * __restrict ptr, int count)
     __m128i acc3 = zero;
 
     /* -- 64-bytes-per-iteration SSE2 main loop -- */
-    while (count >= 64) {
+    while(count >= 64) {
         /*
          * Prefetch 128 bytes ahead.  On a cold cache this brings the next
          * two 64-byte blocks into L1 while we process the current block.
@@ -245,7 +245,7 @@ cksum_sse2_block(const uint8_t * __restrict ptr, int count)
     }
 
     /* -- 16-bytes-per-iteration SSE2 tail -- */
-    while (count >= 16) {
+    while(count >= 16) {
         __m128i a = _mm_loadu_si128((const __m128i *)ptr);
         acc0 = _mm_add_epi32(acc0, _mm_unpacklo_epi16(a, zero));
         acc0 = _mm_add_epi32(acc0, _mm_unpackhi_epi16(a, zero));
@@ -275,7 +275,7 @@ cksum_sse2_block(const uint8_t * __restrict ptr, int count)
         uint64_t vsum = (uint64_t)lo + (uint64_t)hi;
 
         /* -- 8-byte scalar tail (4 × u16 per iteration) -- */
-        while (count >= 8) {
+        while(count >= 8) {
             /*
              * Use memcpy to perform the u16 load.  Under -fstrict-aliasing
              * a direct cast of uint8_t* to uint16_t* is UB; memcpy into a
@@ -294,7 +294,7 @@ cksum_sse2_block(const uint8_t * __restrict ptr, int count)
         }
 
         /* -- 2-byte scalar tail -- */
-        while (count >= 2) {
+        while(count >= 2) {
             uint16_t w;
             memcpy(&w, ptr, 2);
             vsum  += w;
@@ -346,14 +346,14 @@ in_cksum(struct mbuf *m, int len)
     uint8_t odd_byte       = 0;
     int     odd_byte_valid = 0;
 
-    for (; __builtin_expect(m != NULL && len > 0, 1); m = m->m_next) {
+    for(; __builtin_expect(m != NULL && len > 0, 1); m = m->m_next) {
 
-        if (__builtin_expect(m->m_len == 0, 0))
+        if(__builtin_expect(m->m_len == 0, 0))
             continue;
 
         const uint8_t *ptr = mtod(m, const uint8_t *);
         int mlen = m->m_len;
-        if (mlen > len)
+        if(mlen > len)
             mlen = len;
         len -= mlen;
 
@@ -362,14 +362,14 @@ in_cksum(struct mbuf *m, int len)
          * of this mbuf.  The saved byte is the low byte of the bridging
          * word; the new byte becomes the high byte.
          */
-        if (__builtin_expect(odd_byte_valid, 0)) {
+        if(__builtin_expect(odd_byte_valid, 0)) {
             sum += (uint16_t)(odd_byte | ((uint16_t)(*ptr) << 8));
             ptr++;
             mlen--;
             odd_byte_valid = 0;
         }
 
-        if (__builtin_expect(mlen <= 0, 0))
+        if(__builtin_expect(mlen <= 0, 0))
             continue;
 
         /*
@@ -379,7 +379,7 @@ in_cksum(struct mbuf *m, int len)
          */
         int even_len = mlen & ~1;
 
-        if (even_len > 0)
+        if(even_len > 0)
             sum += cksum_sse2_block(ptr, even_len);
 
         /*
@@ -387,13 +387,13 @@ in_cksum(struct mbuf *m, int len)
          * the first byte of the next mbuf (or zero-padded if this is the
          * last mbuf with data).
          */
-        if (mlen & 1) {
+        if(mlen & 1) {
             odd_byte       = ptr[even_len];
             odd_byte_valid = 1;
         }
     }
 
-    if (__builtin_expect(len != 0, 0))
+    if(__builtin_expect(len != 0, 0))
         printf("cksum: out of data\n");
 
     /*
@@ -402,7 +402,7 @@ in_cksum(struct mbuf *m, int len)
      * implicitly zero.  The contribution is simply the byte value itself
      * cast to u16.
      */
-    if (__builtin_expect(odd_byte_valid, 0))
+    if(__builtin_expect(odd_byte_valid, 0))
         sum += (uint16_t)odd_byte;
 
     /*

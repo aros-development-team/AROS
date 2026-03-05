@@ -35,76 +35,76 @@ extern struct MsgPort *SanaPort;
 ULONG netisr = 0L;
 
 /*
- * scnednetisr(): schedule net "interrupt" 
+ * scnednetisr(): schedule net "interrupt"
  * This routine signals TCP/IP task to run net_poll via sana_poll
  */
 void schednetisr(int isr)
 {
-  netisr |= 1<<isr;
-  Signal(SanaPort->mp_SigTask, 1<<SanaPort->mp_SigBit);
+    netisr |= 1 << isr;
+    Signal(SanaPort->mp_SigTask, 1 << SanaPort->mp_SigBit);
 }
 
 void schednetisr_nosignal(int isr)
 {
-  netisr |= 1<<isr;
+    netisr |= 1 << isr;
 }
 
-/* 
+/*
  * net_poll(): run scheduled network level protocols
  *             this routine is called from sana_poll
  */
-void 
-  net_poll(void)
+void
+net_poll(void)
 {
-  extern void ipintr(void);
-  extern void impintr(void);
-  extern void isointr(void);
-  extern void ccittintr(void);
-  extern void nsintr(void);
+    extern void ipintr(void);
+    extern void impintr(void);
+    extern void isointr(void);
+    extern void ccittintr(void);
+    extern void nsintr(void);
 #if INET6
-  extern void ip6intr(void);
+    extern void ip6intr(void);
 #endif
 
-  spl_t s = splimp();
-  int n = netisr; 
-  netisr = 0;
-  splx(s);
+    spl_t s = splimp();
+    int n = netisr;
+    netisr = 0;
+    splx(s);
 
-  if (!n) return;
+    if(!n) return;
 #if	INET
-  if (n & (1<<NETISR_IP)) {
-    ipintr();
-  }
+    if(n & (1 << NETISR_IP)) {
+        ipintr();
+    }
 #endif /* INET */
 #if	NIMP > 0
-  if (n & (1<<NETISR_IMP)) {
-    impintr();
-  }
+    if(n & (1 << NETISR_IMP)) {
+        impintr();
+    }
 #endif /* NIMP > 0 */
 #if	ISO
-  if (n & (1<<NETISR_ISO)) {
-    isointr();
-  }
+    if(n & (1 << NETISR_ISO)) {
+        isointr();
+    }
 #endif /* ISO */
 #if	CCITT
-  if (n & (1<<NETISR_CCITT)) {
-    ccittintr();
-  }
+    if(n & (1 << NETISR_CCITT)) {
+        ccittintr();
+    }
 #endif /* CCITT */
 #if	NS
-  if (n & (1<<NETISR_NS)) {
-    nsintr();
-  }
+    if(n & (1 << NETISR_NS)) {
+        nsintr();
+    }
 #endif /* NS */
 #if 0
-  /* raw input do not go through the isr */
-  if (n & (1<<NETISR_RAW)) {
-    rawintr();
-  }
+    /* raw input do not go through the isr */
+    if(n & (1 << NETISR_RAW)) {
+        rawintr();
+    }
 #endif
 #if INET6
-  if (n & (1<<NETISR_IPV6)) {
-    ip6intr();
-  }
+    if(n & (1 << NETISR_IPV6)) {
+        ip6intr();
+    }
 #endif
 }

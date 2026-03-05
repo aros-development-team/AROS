@@ -53,8 +53,8 @@ static int bpf_initialized = 0;
 void
 bpf_init(void)
 {
-	memset(bpf_dtab, 0, sizeof(bpf_dtab));
-	bpf_initialized = 1;
+    memset(bpf_dtab, 0, sizeof(bpf_dtab));
+    bpf_initialized = 1;
 }
 
 /*
@@ -63,21 +63,21 @@ bpf_init(void)
 void
 bpf_cleanup(void)
 {
-	int i;
+    int i;
 
-	for (i = 0; i < BPF_MAXDEVICES; i++) {
-		struct bpf_d *d = &bpf_dtab[i];
-		if (d->bd_inuse) {
-			if (d->bd_sbuf)
-				bsd_free(d->bd_sbuf, NULL);
-			if (d->bd_hbuf)
-				bsd_free(d->bd_hbuf, NULL);
-			if (d->bd_filter)
-				bsd_free(d->bd_filter, NULL);
-			d->bd_inuse = 0;
-		}
-	}
-	bpf_initialized = 0;
+    for(i = 0; i < BPF_MAXDEVICES; i++) {
+        struct bpf_d *d = &bpf_dtab[i];
+        if(d->bd_inuse) {
+            if(d->bd_sbuf)
+                bsd_free(d->bd_sbuf, NULL);
+            if(d->bd_hbuf)
+                bsd_free(d->bd_hbuf, NULL);
+            if(d->bd_filter)
+                bsd_free(d->bd_filter, NULL);
+            d->bd_inuse = 0;
+        }
+    }
+    bpf_initialized = 0;
 }
 
 /*
@@ -87,26 +87,26 @@ bpf_cleanup(void)
 int
 bpf_allocate(void)
 {
-	int i;
-	spl_t s;
+    int i;
+    spl_t s;
 
-	if (!bpf_initialized)
-		bpf_init();
+    if(!bpf_initialized)
+        bpf_init();
 
-	s = splnet();
-	for (i = 0; i < BPF_MAXDEVICES; i++) {
-		if (!bpf_dtab[i].bd_inuse) {
-			struct bpf_d *d = &bpf_dtab[i];
-			memset(d, 0, sizeof(*d));
-			d->bd_inuse = 1;
-			d->bd_bufsize = BPF_DFLTBUFSIZE;
-			d->bd_seesent = 1;
-			splx(s);
-			return i;
-		}
-	}
-	splx(s);
-	return -1;
+    s = splnet();
+    for(i = 0; i < BPF_MAXDEVICES; i++) {
+        if(!bpf_dtab[i].bd_inuse) {
+            struct bpf_d *d = &bpf_dtab[i];
+            memset(d, 0, sizeof(*d));
+            d->bd_inuse = 1;
+            d->bd_bufsize = BPF_DFLTBUFSIZE;
+            d->bd_seesent = 1;
+            splx(s);
+            return i;
+        }
+    }
+    splx(s);
+    return -1;
 }
 
 /*
@@ -116,11 +116,11 @@ bpf_allocate(void)
 struct bpf_d *
 bpf_lookup(int handle)
 {
-	if (handle < 0 || handle >= BPF_MAXDEVICES)
-		return NULL;
-	if (!bpf_dtab[handle].bd_inuse)
-		return NULL;
-	return &bpf_dtab[handle];
+    if(handle < 0 || handle >= BPF_MAXDEVICES)
+        return NULL;
+    if(!bpf_dtab[handle].bd_inuse)
+        return NULL;
+    return &bpf_dtab[handle];
 }
 
 /*
@@ -129,43 +129,43 @@ bpf_lookup(int handle)
 void
 bpf_freed(int handle)
 {
-	struct bpf_d *d;
-	spl_t s;
+    struct bpf_d *d;
+    spl_t s;
 
-	d = bpf_lookup(handle);
-	if (d == NULL)
-		return;
+    d = bpf_lookup(handle);
+    if(d == NULL)
+        return;
 
-	s = splnet();
+    s = splnet();
 
-	/* Detach from interface */
-	if (d->bd_ifp != NULL) {
-		d->bd_ifp->if_bpf = NULL;
-		if (d->bd_promisc) {
-			d->bd_ifp->if_pcount--;
-			d->bd_ifp->if_flags &= ~IFF_PROMISC;
-		}
-		d->bd_ifp = NULL;
-	}
+    /* Detach from interface */
+    if(d->bd_ifp != NULL) {
+        d->bd_ifp->if_bpf = NULL;
+        if(d->bd_promisc) {
+            d->bd_ifp->if_pcount--;
+            d->bd_ifp->if_flags &= ~IFF_PROMISC;
+        }
+        d->bd_ifp = NULL;
+    }
 
-	/* Free buffers */
-	if (d->bd_sbuf) {
-		bsd_free(d->bd_sbuf, NULL);
-		d->bd_sbuf = NULL;
-	}
-	if (d->bd_hbuf) {
-		bsd_free(d->bd_hbuf, NULL);
-		d->bd_hbuf = NULL;
-	}
+    /* Free buffers */
+    if(d->bd_sbuf) {
+        bsd_free(d->bd_sbuf, NULL);
+        d->bd_sbuf = NULL;
+    }
+    if(d->bd_hbuf) {
+        bsd_free(d->bd_hbuf, NULL);
+        d->bd_hbuf = NULL;
+    }
 
-	/* Free filter */
-	if (d->bd_filter) {
-		bsd_free(d->bd_filter, NULL);
-		d->bd_filter = NULL;
-	}
+    /* Free filter */
+    if(d->bd_filter) {
+        bsd_free(d->bd_filter, NULL);
+        d->bd_filter = NULL;
+    }
 
-	d->bd_inuse = 0;
-	splx(s);
+    d->bd_inuse = 0;
+    splx(s);
 }
 
 /*
@@ -176,29 +176,29 @@ bpf_freed(int handle)
 static int
 bpf_allocbufs(struct bpf_d *d)
 {
-	if (d->bd_sbuf)
-		bsd_free(d->bd_sbuf, NULL);
-	if (d->bd_hbuf)
-		bsd_free(d->bd_hbuf, NULL);
+    if(d->bd_sbuf)
+        bsd_free(d->bd_sbuf, NULL);
+    if(d->bd_hbuf)
+        bsd_free(d->bd_hbuf, NULL);
 
-	d->bd_sbuf = bsd_malloc(d->bd_bufsize, NULL, NULL);
-	d->bd_hbuf = bsd_malloc(d->bd_bufsize, NULL, NULL);
+    d->bd_sbuf = bsd_malloc(d->bd_bufsize, NULL, NULL);
+    d->bd_hbuf = bsd_malloc(d->bd_bufsize, NULL, NULL);
 
-	if (d->bd_sbuf == NULL || d->bd_hbuf == NULL) {
-		if (d->bd_sbuf) {
-			bsd_free(d->bd_sbuf, NULL);
-			d->bd_sbuf = NULL;
-		}
-		if (d->bd_hbuf) {
-			bsd_free(d->bd_hbuf, NULL);
-			d->bd_hbuf = NULL;
-		}
-		return ENOMEM;
-	}
+    if(d->bd_sbuf == NULL || d->bd_hbuf == NULL) {
+        if(d->bd_sbuf) {
+            bsd_free(d->bd_sbuf, NULL);
+            d->bd_sbuf = NULL;
+        }
+        if(d->bd_hbuf) {
+            bsd_free(d->bd_hbuf, NULL);
+            d->bd_hbuf = NULL;
+        }
+        return ENOMEM;
+    }
 
-	d->bd_slen = 0;
-	d->bd_hlen = 0;
-	return 0;
+    d->bd_slen = 0;
+    d->bd_hlen = 0;
+    return 0;
 }
 
 /*
@@ -207,13 +207,13 @@ bpf_allocbufs(struct bpf_d *d)
 void
 bpf_rotate(struct bpf_d *d)
 {
-	caddr_t tmp;
+    caddr_t tmp;
 
-	tmp = d->bd_hbuf;
-	d->bd_hbuf = d->bd_sbuf;
-	d->bd_hlen = d->bd_slen;
-	d->bd_sbuf = tmp;
-	d->bd_slen = 0;
+    tmp = d->bd_hbuf;
+    d->bd_hbuf = d->bd_sbuf;
+    d->bd_hlen = d->bd_slen;
+    d->bd_sbuf = tmp;
+    d->bd_slen = 0;
 }
 
 /*
@@ -222,20 +222,20 @@ bpf_rotate(struct bpf_d *d)
 static int
 bpf_dlt_for_ifp(struct ifnet *ifp)
 {
-	struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
 
-	switch (ssc->ss_hwtype) {
-	case 1:		/* IFT_ETHER */
-		return DLT_EN10MB;
-	case 24:	/* IFT_LOOP / loopback */
-		return DLT_NULL;
-	case 23:	/* IFT_PPP */
-		return DLT_PPP;
-	case 28:	/* IFT_SLIP */
-		return DLT_SLIP;
-	default:
-		return DLT_EN10MB;	/* default to Ethernet */
-	}
+    switch(ssc->ss_hwtype) {
+    case 1:		/* IFT_ETHER */
+        return DLT_EN10MB;
+    case 24:	/* IFT_LOOP / loopback */
+        return DLT_NULL;
+    case 23:	/* IFT_PPP */
+        return DLT_PPP;
+    case 28:	/* IFT_SLIP */
+        return DLT_SLIP;
+    default:
+        return DLT_EN10MB;	/* default to Ethernet */
+    }
 }
 
 /*
@@ -245,61 +245,61 @@ bpf_dlt_for_ifp(struct ifnet *ifp)
 int
 bpf_setif(struct bpf_d *d, const char *ifname)
 {
-	struct ifnet *ifp;
-	int error;
-	spl_t s;
+    struct ifnet *ifp;
+    int error;
+    spl_t s;
 
-	/* Find the interface by name */
-	for (ifp = ifnet; ifp != NULL; ifp = ifp->if_next) {
-		char name[IFNAMSIZ];
-		snprintf(name, sizeof(name), "%s%d", ifp->if_name, ifp->if_unit);
-		if (strcmp(name, ifname) == 0)
-			break;
-	}
-	if (ifp == NULL)
-		return ENXIO;
+    /* Find the interface by name */
+    for(ifp = ifnet; ifp != NULL; ifp = ifp->if_next) {
+        char name[IFNAMSIZ];
+        snprintf(name, sizeof(name), "%s%d", ifp->if_name, ifp->if_unit);
+        if(strcmp(name, ifname) == 0)
+            break;
+    }
+    if(ifp == NULL)
+        return ENXIO;
 
-	s = splnet();
+    s = splnet();
 
-	/* Detach from current interface if any */
-	if (d->bd_ifp != NULL) {
-		/* Only clear if_bpf if we own it */
-		if (d->bd_ifp->if_bpf == (caddr_t)d)
-			d->bd_ifp->if_bpf = NULL;
-		if (d->bd_promisc) {
-			d->bd_ifp->if_pcount--;
-			d->bd_ifp->if_flags &= ~IFF_PROMISC;
-			d->bd_promisc = 0;
-		}
-	}
+    /* Detach from current interface if any */
+    if(d->bd_ifp != NULL) {
+        /* Only clear if_bpf if we own it */
+        if(d->bd_ifp->if_bpf == (caddr_t)d)
+            d->bd_ifp->if_bpf = NULL;
+        if(d->bd_promisc) {
+            d->bd_ifp->if_pcount--;
+            d->bd_ifp->if_flags &= ~IFF_PROMISC;
+            d->bd_promisc = 0;
+        }
+    }
 
-	/* Allocate buffers if not yet done */
-	if (d->bd_sbuf == NULL) {
-		error = bpf_allocbufs(d);
-		if (error) {
-			splx(s);
-			return error;
-		}
-	}
+    /* Allocate buffers if not yet done */
+    if(d->bd_sbuf == NULL) {
+        error = bpf_allocbufs(d);
+        if(error) {
+            splx(s);
+            return error;
+        }
+    }
 
-	/* Attach to new interface */
-	d->bd_ifp = ifp;
-	d->bd_dlt = bpf_dlt_for_ifp(ifp);
+    /* Attach to new interface */
+    d->bd_ifp = ifp;
+    d->bd_dlt = bpf_dlt_for_ifp(ifp);
 
-	/*
-	 * Set if_bpf to point to us.  In a full BSD BPF this would be
-	 * a linked list; here we support one active BPF listener per
-	 * interface.  Multiple descriptors can still be open — they just
-	 * capture from different interfaces.
-	 */
-	ifp->if_bpf = (caddr_t)d;
+    /*
+     * Set if_bpf to point to us.  In a full BSD BPF this would be
+     * a linked list; here we support one active BPF listener per
+     * interface.  Multiple descriptors can still be open — they just
+     * capture from different interfaces.
+     */
+    ifp->if_bpf = (caddr_t)d;
 
-	/* Flush existing data */
-	d->bd_slen = 0;
-	d->bd_hlen = 0;
+    /* Flush existing data */
+    d->bd_slen = 0;
+    d->bd_hlen = 0;
 
-	splx(s);
-	return 0;
+    splx(s);
+    return 0;
 }
 
 /*
@@ -309,46 +309,46 @@ bpf_setif(struct bpf_d *d, const char *ifname)
 int
 bpf_setf(struct bpf_d *d, struct bpf_program *fp)
 {
-	struct bpf_insn *fcode;
-	u_int flen;
-	spl_t s;
+    struct bpf_insn *fcode;
+    u_int flen;
+    spl_t s;
 
-	flen = fp->bf_len;
+    flen = fp->bf_len;
 
-	/* A zero-length filter accepts everything */
-	if (flen == 0) {
-		s = splnet();
-		if (d->bd_filter) {
-			bsd_free(d->bd_filter, NULL);
-			d->bd_filter = NULL;
-		}
-		d->bd_flen = 0;
-		splx(s);
-		return 0;
-	}
+    /* A zero-length filter accepts everything */
+    if(flen == 0) {
+        s = splnet();
+        if(d->bd_filter) {
+            bsd_free(d->bd_filter, NULL);
+            d->bd_filter = NULL;
+        }
+        d->bd_flen = 0;
+        splx(s);
+        return 0;
+    }
 
-	if (flen > BPF_MAXINSNS)
-		return EINVAL;
+    if(flen > BPF_MAXINSNS)
+        return EINVAL;
 
-	/* Validate the program */
-	if (!bpf_validate(fp->bf_insns, (int)flen))
-		return EINVAL;
+    /* Validate the program */
+    if(!bpf_validate(fp->bf_insns, (int)flen))
+        return EINVAL;
 
-	/* Copy the filter program */
-	fcode = bsd_malloc(flen * sizeof(struct bpf_insn), NULL, NULL);
-	if (fcode == NULL)
-		return ENOMEM;
+    /* Copy the filter program */
+    fcode = bsd_malloc(flen * sizeof(struct bpf_insn), NULL, NULL);
+    if(fcode == NULL)
+        return ENOMEM;
 
-	memcpy(fcode, fp->bf_insns, flen * sizeof(struct bpf_insn));
+    memcpy(fcode, fp->bf_insns, flen * sizeof(struct bpf_insn));
 
-	s = splnet();
-	if (d->bd_filter)
-		bsd_free(d->bd_filter, NULL);
-	d->bd_filter = fcode;
-	d->bd_flen = flen;
-	splx(s);
+    s = splnet();
+    if(d->bd_filter)
+        bsd_free(d->bd_filter, NULL);
+    d->bd_filter = fcode;
+    d->bd_flen = flen;
+    splx(s);
 
-	return 0;
+    return 0;
 }
 
 /*
@@ -358,46 +358,46 @@ bpf_setf(struct bpf_d *d, struct bpf_program *fp)
 static void
 catchpacket(struct bpf_d *d, const u_char *pkt, u_int pktlen, u_int snaplen)
 {
-	struct bpf_hdr *hp;
-	int totlen, curlen, hdrlen;
+    struct bpf_hdr *hp;
+    int totlen, curlen, hdrlen;
 
-	hdrlen = BPF_WORDALIGN(sizeof(struct bpf_hdr));
-	if (snaplen > pktlen)
-		snaplen = pktlen;
-	totlen = BPF_WORDALIGN(hdrlen + snaplen);
+    hdrlen = BPF_WORDALIGN(sizeof(struct bpf_hdr));
+    if(snaplen > pktlen)
+        snaplen = pktlen;
+    totlen = BPF_WORDALIGN(hdrlen + snaplen);
 
-	curlen = d->bd_slen;
+    curlen = d->bd_slen;
 
-	/* If store buffer is full, rotate */
-	if (curlen + totlen > d->bd_bufsize) {
-		if (d->bd_hlen != 0) {
-			/* Hold buffer still has unread data — drop */
-			d->bd_dcount++;
-			return;
-		}
-		bpf_rotate(d);
-		curlen = 0;
-	}
+    /* If store buffer is full, rotate */
+    if(curlen + totlen > d->bd_bufsize) {
+        if(d->bd_hlen != 0) {
+            /* Hold buffer still has unread data — drop */
+            d->bd_dcount++;
+            return;
+        }
+        bpf_rotate(d);
+        curlen = 0;
+    }
 
-	/* Append packet to store buffer */
-	hp = (struct bpf_hdr *)(d->bd_sbuf + curlen);
-	GetSysTime(&hp->bh_tstamp);
-	hp->bh_datalen = pktlen;
-	hp->bh_caplen = snaplen;
-	hp->bh_hdrlen = hdrlen;
+    /* Append packet to store buffer */
+    hp = (struct bpf_hdr *)(d->bd_sbuf + curlen);
+    GetSysTime(&hp->bh_tstamp);
+    hp->bh_datalen = pktlen;
+    hp->bh_caplen = snaplen;
+    hp->bh_hdrlen = hdrlen;
 
-	memcpy((char *)hp + hdrlen, pkt, snaplen);
+    memcpy((char *)hp + hdrlen, pkt, snaplen);
 
-	d->bd_slen = curlen + totlen;
-	d->bd_ccount++;
+    d->bd_slen = curlen + totlen;
+    d->bd_ccount++;
 
-	/* In immediate mode, rotate immediately so data is readable */
-	if (d->bd_immediate && d->bd_hlen == 0)
-		bpf_rotate(d);
+    /* In immediate mode, rotate immediately so data is readable */
+    if(d->bd_immediate && d->bd_hlen == 0)
+        bpf_rotate(d);
 
-	/* Signal the waiting task if notification mask is set */
-	if (d->bd_notifymask && d->bd_sigtask)
-		Signal(d->bd_sigtask, d->bd_notifymask);
+    /* Signal the waiting task if notification mask is set */
+    if(d->bd_notifymask && d->bd_sigtask)
+        Signal(d->bd_sigtask, d->bd_notifymask);
 }
 
 /*
@@ -412,28 +412,28 @@ catchpacket(struct bpf_d *d, const u_char *pkt, u_int pktlen, u_int snaplen)
 void
 bpf_tap(struct ifnet *ifp, u_char *pkt, u_int pktlen, int direction)
 {
-	struct bpf_d *d;
-	u_int slen;
-	spl_t s;
+    struct bpf_d *d;
+    u_int slen;
+    spl_t s;
 
-	if (ifp->if_bpf == NULL)
-		return;
+    if(ifp->if_bpf == NULL)
+        return;
 
-	d = (struct bpf_d *)ifp->if_bpf;
-	if (!d->bd_inuse)
-		return;
+    d = (struct bpf_d *)ifp->if_bpf;
+    if(!d->bd_inuse)
+        return;
 
-	/* Skip outgoing packets if not configured to see them */
-	if (direction == BPF_D_OUT && !d->bd_seesent)
-		return;
+    /* Skip outgoing packets if not configured to see them */
+    if(direction == BPF_D_OUT && !d->bd_seesent)
+        return;
 
-	d->bd_rcount++;
+    d->bd_rcount++;
 
-	s = splnet();
-	slen = bpf_filter(d->bd_filter, pkt, pktlen, pktlen);
-	if (slen != 0)
-		catchpacket(d, pkt, pktlen, slen);
-	splx(s);
+    s = splnet();
+    slen = bpf_filter(d->bd_filter, pkt, pktlen, pktlen);
+    if(slen != 0)
+        catchpacket(d, pkt, pktlen, slen);
+    splx(s);
 }
 
 /*
@@ -447,48 +447,48 @@ bpf_tap(struct ifnet *ifp, u_char *pkt, u_int pktlen, int direction)
 void
 bpf_mtap(struct ifnet *ifp, struct mbuf *m, int direction)
 {
-	struct bpf_d *d;
-	u_int pktlen, slen;
-	u_char *buf;
-	spl_t s;
+    struct bpf_d *d;
+    u_int pktlen, slen;
+    u_char *buf;
+    spl_t s;
 
-	if (ifp->if_bpf == NULL)
-		return;
+    if(ifp->if_bpf == NULL)
+        return;
 
-	d = (struct bpf_d *)ifp->if_bpf;
-	if (!d->bd_inuse)
-		return;
+    d = (struct bpf_d *)ifp->if_bpf;
+    if(!d->bd_inuse)
+        return;
 
-	if (direction == BPF_D_OUT && !d->bd_seesent)
-		return;
+    if(direction == BPF_D_OUT && !d->bd_seesent)
+        return;
 
-	d->bd_rcount++;
+    d->bd_rcount++;
 
-	pktlen = m->m_pkthdr.len;
-	if (pktlen == 0)
-		return;
+    pktlen = m->m_pkthdr.len;
+    if(pktlen == 0)
+        return;
 
-	s = splnet();
+    s = splnet();
 
-	/*
-	 * If the mbuf is contiguous (single mbuf or data fits in first),
-	 * filter directly.  Otherwise, linearize into a temporary buffer.
-	 */
-	if (m->m_next == NULL) {
-		buf = mtod(m, u_char *);
-		slen = bpf_filter(d->bd_filter, buf, pktlen, m->m_len);
-		if (slen != 0)
-			catchpacket(d, buf, pktlen, slen);
-	} else {
-		/* Linearize: copy mbuf chain into contiguous buffer */
-		buf = bsd_malloc(pktlen, NULL, NULL);
-		if (buf != NULL) {
-			m_copydata(m, 0, (int)pktlen, (caddr_t)buf);
-			slen = bpf_filter(d->bd_filter, buf, pktlen, pktlen);
-			if (slen != 0)
-				catchpacket(d, buf, pktlen, slen);
-			bsd_free(buf, NULL);
-		}
-	}
-	splx(s);
+    /*
+     * If the mbuf is contiguous (single mbuf or data fits in first),
+     * filter directly.  Otherwise, linearize into a temporary buffer.
+     */
+    if(m->m_next == NULL) {
+        buf = mtod(m, u_char *);
+        slen = bpf_filter(d->bd_filter, buf, pktlen, m->m_len);
+        if(slen != 0)
+            catchpacket(d, buf, pktlen, slen);
+    } else {
+        /* Linearize: copy mbuf chain into contiguous buffer */
+        buf = bsd_malloc(pktlen, NULL, NULL);
+        if(buf != NULL) {
+            m_copydata(m, 0, (int)pktlen, (caddr_t)buf);
+            slen = bpf_filter(d->bd_filter, buf, pktlen, pktlen);
+            if(slen != 0)
+                catchpacket(d, buf, pktlen, slen);
+            bsd_free(buf, NULL);
+        }
+    }
+    splx(s);
 }

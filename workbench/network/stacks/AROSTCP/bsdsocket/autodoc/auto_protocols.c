@@ -33,7 +33,7 @@
 *
 *       The address mapping caches are separate for each interface. The
 *       amount of mappings in the cache may be specified with an
-*       IoctlSocket() request. 
+*       IoctlSocket() request.
 *
 *       To facilitate communications with systems which do not use ARP,
 *       IoctlSocket() requests are provided to enter and delete entries
@@ -57,18 +57,18 @@
 *       any socket descriptor (s). The arpreq structure contains:
 *
 *       \* Maximum number of octets in protocol/hw address *\
-*       #define MAXADDRARP  16 
+*       #define MAXADDRARP  16
 *
 *       \*
-*        * ARP ioctl request. 
+*        * ARP ioctl request.
 *        *\
 *       struct arpreq {
 *               struct  sockaddr arp_pa;  \* protocol address *\
 *               struct  {                 \* hardware address *\
 *                 u_char sa_len;         \* actual length + 2 *\
-*                 u_char sa_family;             
-*                 char   sa_data[MAXADDRARP];           
-*               }  arp_ha;              
+*                 u_char sa_family;
+*                 char   sa_data[MAXADDRARP];
+*               }  arp_ha;
 *               int     arp_flags;                   \* flags *\
 *       };
 *
@@ -100,7 +100,7 @@
 *       the static ARP table is accessed via the /dev/kmem.) The SIOCGARPT
 *       ioctl takes the following arptabreq structure as an argument:
 *
-*       \* 
+*       \*
 *        * An AmiTCP/IP specific ARP table ioctl request
 *        *\
 *       struct arptabreq {
@@ -113,12 +113,12 @@
 *       The atr_arpreq specifies the used interface. The hardware address
 *       for the interface is returned in the arp_ha field of atr_arpreq
 *       structure.
-*       
+*
 *       The SIOCGARPT ioctl reads at most atr_size entries from the cache
 *       into the user supplied buffer atr_table, if it is not NULL. Actual
 *       amount of returned entries is returned in atr_size. The current
 *       amount of cached mappings is returned in the atr_inuse.
-*       
+*
 *       The SIOCGARPT ioctl has following usage:
 *
 *       struct arpreq cache[N];
@@ -159,14 +159,14 @@
 *
 *   NAME
 *       icmp - Internet Control Message Protocol
-*   
+*
 *   SYNOPSIS
 *       #include <sys/socket.h>
 *       #include <netinet/in.h>
-*   
+*
 *       int
 *       socket(AF_INET, SOCK_RAW, proto)
-*   
+*
 *   DESCRIPTION
 *       ICMP is the error and control message protocol used by IP and the
 *       Internet protocol family.  It may be accessed through a ``raw
@@ -181,30 +181,30 @@
 *       Outgoing packets automatically have an IP header prepended to them
 *       (based on the destination address).  Incoming packets are received
 *       with the IP header and options intact.
-*   
+*
 *   DIAGNOSTICS
 *       A socket operation may fail with one of the following errors
 *       returned:
-*   
+*
 *       [EISCONN]        when trying to establish a connection on a socket
 *                        which already has one, or when trying to send a
 *                        datagram with the destination address specified and
 *                        the socket is already connected;
-*   
+*
 *       [ENOTCONN]       when trying to send a datagram, but no destination
 *                        address is specified, and the socket hasn't been
 *                        connected;
-*   
+*
 *       [ENOBUFS]        when the system runs out of memory for an internal
 *                        data structure;
-*   
+*
 *       [EADDRNOTAVAIL]  when an attempt is made to create a socket with a
 *                        network address for which no network interface
 *                        exists.
-*   
+*
 *   SEE ALSO
 *       bsdsocket.library/send(),  bsdsocket.library/recv(), inet,  ip
-*   
+*
 *   HISTORY
 *       The icmp protocol is originally from 4.3BSD.
 *
@@ -302,7 +302,7 @@
 *   UNSUPPORTED IN AmiTCP/IP
 *       These standard BSD ioctl codes are not currently supported:
 *
-*       SIOCADDMULTI     Enable a multicast address for the interface. 
+*       SIOCADDMULTI     Enable a multicast address for the interface.
 *
 *       SIOCDELMULTI     Disable a previously set multicast address.
 *
@@ -324,9 +324,9 @@
 *         WORD   flags;                                      \* iff_flags *\
 *         struct TagItem *tags;                 \* tag list user provides *\
 *       };
-*       
+*
 *   SEE ALSO
-*       arp, lo, netutil/arp, netutil/ifconfig, <sys/ioctl.h>, <net/if.h>, 
+*       arp, lo, netutil/arp, netutil/ifconfig, <sys/ioctl.h>, <net/if.h>,
 *       <net/sana2tags.h>
 *
 *****************************************************************************
@@ -337,23 +337,23 @@
 *
 *   NAME
 *       inet - Internet protocol family
-*   
+*
 *   SYNOPSIS
 *       #include <sys/types.h>
 *       #include <netinet/in.h>
-*   
+*
 *   DESCRIPTION
 *       The Internet protocol family implements a collection of protocols
 *       which are centered around the Internet Protocol (IP) and which share
 *       a common address format.  The Internet family provides protocol
 *       support for the SOCK_STREAM, SOCK_DGRAM, and SOCK_RAW socket types.
-*   
+*
 *   PROTOCOLS
 *       The Internet protocol family is comprised of the Internet Protocol
 *       (IP), the Address Resolution Protocol (ARP), the Internet Control
 *       Message Protocol (ICMP), the Transmission Control Protocol (TCP),
 *       and the User Datagram Protocol (UDP).
-*   
+*
 *       TCP is used to support the SOCK_STREAM abstraction while UDP is used
 *       to support the SOCK_DGRAM abstraction; (SEE ALSO tcp, SEE ALSO udp).
 *       A raw interface to IP is available by creating an Internet socket of
@@ -361,7 +361,7 @@
 *       and report errors in protocol processing.  It is also accessible to
 *       user programs; (SEE ALSO icmp).  ARP is used to translate 32-bit IP
 *       addresses into varying length hardware addresses; (SEE ALSO arp).
-*   
+*
 *       The 32-bit IP address is divided into network number and host number
 *       parts.  It is frequency-encoded; the most significant bit is zero in
 *       Class A addresses, in which the high-order 8 bits are the network
@@ -378,18 +378,18 @@
 *       enabled and examined by the following ioctl commands on a datagram
 *       socket in the Internet domain; they have the same form as the
 *       SIOCIFADDR (SEE ALSO if) command.
-*   
+*
 *       SIOCSIFNETMASK      Set interface network mask.  The network mask
 *                           defines the network part of the address; if it
 *                           contains more of the address than the address
 *                           type would indicate, then subnets are in use.
-*   
+*
 *       SIOCGIFNETMASK      Get interface network mask.
-*   
+*
 *   ADDRESSING
 *       IP addresses are four byte quantities, stored in network byte order
 *       (the native Amiga byte order)
-*   
+*
 *       Sockets in the Internet protocol family  use  the  following
 *       addressing structure:
 *            struct sockaddr_in {
@@ -398,10 +398,10 @@
 *                 struct    in_addr sin_addr;
 *                 char sin_zero[8];
 *            };
-*   
+*
 *       Functions in bsdsocket.library are provided to manipulate structures
 *       of this form.
-*   
+*
 *       The sin_addr field of the sockaddr_in structure specifies a local or
 *       remote IP address.  Each network interface has its own unique IP
 *       address.  The special value INADDR_ANY may be used in this field to
@@ -418,7 +418,7 @@
 *       that has a wildcard local address, the system sets the sin_addr
 *       field of the socket to the IP address of the network interface that
 *       the packets for that connection are routed via.
-*   
+*
 *       The sin_port field of the sockaddr_in structure specifies a port
 *       number used by TCP or UDP. The local port address specified in a
 *       bind() call is restricted to be greater than IPPORT_RESERVED
@@ -434,14 +434,14 @@
 *       care which local port number is used to set up TCP connections by
 *       sim- ply calling socket() and then connect(), and to send UDP
 *       datagrams with a socket() call followed by a send() call.
-*   
+*
 *       Although this implementation restricts sockets to unique local port
 *       numbers, TCP allows multiple simultaneous connections involving the
 *       same local port number so long as the remote IP addresses or port
 *       numbers are different for each connection.  Programs may explicitly
 *       override the socket restriction by setting the SO_REUSEADDR socket
 *       option with setsockopt (see getsockopt()).
-*   
+*
 *   SEE ALSO
 *       bsdsocket.library/bind(), bsdsocket.library/connect(),
 *       bsdsocket.library/getsockopt(), bsdsocket.library/IoctlSocket(),
@@ -449,12 +449,12 @@
 *       bsdsocket.library/gethostent(), bsdsocket.library/getnetent(),
 *       bsdsocket.library/getprotoent(), bsdsocket.library/getservent(),
 *       bsdsocket.library/inet_addr(), arp, icmp, ip, tcp, udp
-*   
+*
 *       Network Information Center, DDN Protocol Handbook (3 vols.),
 *       Network  Information  Center, SRI International, Menlo Park,
 *       Calif., 1985.
 *       A AmiTCP/IP Interprocess Communication Primer
-*   
+*
 *   WARNING
 *       The Internet protocol support is subject to change as the Internet
 *       protocols develop.  Users should not depend on details of the
@@ -468,21 +468,21 @@
 *
 *   NAME
 *       ip - Internet Protocol
-*   
+*
 *   SYNOPSIS
 *       #include <sys/socket.h>
 *       #include <netinet/in.h>
-*   
+*
 *       int
 *       socket(AF_INET, SOCK_RAW, proto)
-*   
+*
 *   DESCRIPTION
 *       IP is the transport layer protocol used by the Internet protocol
 *       family.  Options may be set at the IP level when using higher-level
 *       protocols that are based on IP (such as TCP and UDP). It may also be
 *       accessed through a ``raw socket'' when developing new protocols, or
 *       special purpose applica- tions.
-*   
+*
 *       A single generic option is supported at the IP level, IP_OPTIONS,
 *       that may be used to provide IP options to be transmitted in the IP
 *       header of each outgoing packet.  Options are set with setsockopt()
@@ -493,51 +493,51 @@
 *       gateways.  The first-hop gateway address will be extracted from the
 *       option list and the size adjusted accordingly before use.  IP
 *       options may be used with any socket type in the Internet family.
-*   
+*
 *       Raw IP sockets are connectionless, and are normally used with the
 *       sendto and recvfrom calls, though the connect() call may also be
 *       used to fix the destination for future packets (in which case the
 *       recv() and send() system calls may be used).
-*   
+*
 *       If proto is 0, the default protocol IPPROTO_RAW is used for outgoing
 *       packets, and only incoming packets destined for that protocol are
 *       received.  If proto is non-zero, that protocol number will be used
 *       on outgoing packets and to filter incoming packets.
-*   
+*
 *       Outgoing packets automatically have an IP header prepended to them
 *       (based on the destination address and the protocol number the socket
 *       is created with).  Incoming packets are received with IP header and
 *       options intact.
-*   
+*
 *   DIAGNOSTICS
 *       A socket operation may fail with one of the following errors
 *       returned:
-*   
+*
 *       [EISCONN]        when trying to establish a connection on a socket
 *                        which already has one, or when trying to send a
 *                        datagram with the destination address specified and
 *                        the socket is already connected;
-*   
+*
 *       [ENOTCONN]       when trying to send a datagram, but no destination
 *                        address is specified, and the socket hasn't been
 *                        connected;
-*   
+*
 *       [ENOBUFS]        when the system runs out of memory for an internal
 *                        data structure;
-*   
+*
 *       [EADDRNOTAVAIL]  when an attempt is made to create a socket with a
 *                        network address for which no network interface
 *                        exists.
-*   
+*
 *       The following errors specific to IP may occur when setting or
 *       getting IP options:
-*   
+*
 *       [EINVAL]         An unknown socket option name was given.
-*   
+*
 *       [EINVAL]         The IP option field was improperly formed; an
 *                        option field was shorter than the minimum value or
 *                        longer than the option buffer provided.
-*   
+*
 *   SEE ALSO
 *       bsdsocket.library/getsockopt(), bsdsocket.library/send(),
 *       bsdsocket.library/recv(), icmp, inet
@@ -578,7 +578,7 @@
 *   SEE ALSO
 *       inet, if, netutil/ifconfig
 *
-*   BUGS 
+*   BUGS
 *       Older BSD Unix systems enabled the loopback interface
 *       automatically, using a nonstandard Internet address (127.1).  Use
 *       of that address is now discouraged; a reserved host address for the
@@ -592,11 +592,11 @@
 *
 *   NAME
 *       routing - system supporting for local network packet routing
-*   
+*
 *   DESCRIPTION
 *       The network facilities provided general packet routing,
 *       leaving routing table maintenance to applications processes.
-*   
+*
 *       A simple set of data structures comprise a ``routing table''
 *       used in selecting the appropriate network interface when
 *       transmitting packets.  This table contains a single entry for
@@ -606,7 +606,7 @@
 *       The commands allow the addition and deletion of a single
 *       routing table entry, respectively.  Routing table
 *       manipulations may only be carried out by super-user.
-*   
+*
 *       A routing table entry has the following form, as defined  in
 *       <net/route.h>:
 *            struct rtentry {
@@ -622,7 +622,7 @@
 *         #define   RTF_UP         0x1              \* route usable *\
 *         #define   RTF_GATEWAY    0x2  \* destination is a gateway *\
 *         #define   RTF_HOST  0x4     \* host entry (net otherwise) *\
-*   
+*
 *       Routing table entries come in three flavors: for a specific
 *       host, for all hosts on a specific network, for any destination
 *       not matched by entries of the first two types (a wildcard
@@ -636,33 +636,33 @@
 *       Otherwise, the interface may be requested to address the
 *       packet to an entity different from the eventual recipient
 *       (that is, the packet is forwarded).
-*   
+*
 *       Routing table entries installed by a user process may not
 *       specify the hash, reference count, use, or interface fields;
 *       these are filled in by the routing routines.  If a route is in
 *       use when it is deleted (rt_refcnt is non-zero), the resources
 *       associated with it will not be reclaimed until all references
 *       to it are removed.
-*   
+*
 *       The routing code returns EEXIST if requested to duplicate an
 *       existing entry, ESRCH if requested to delete a non-existent
 *       entry, or ENOBUFS if insufficient resources were available to
 *       install a new route.
-*   
+*
 *       The rt_use field contains the number of packets sent along the
 *       route.  This value is used to select among multiple routes to
 *       the same destination.  When multiple routes to the same
 *       destination exist, the least used route is selected.
-*   
+*
 *       A wildcard routing entry is specified with a zero destination
 *       address value.  Wildcard routes are used only when the system
 *       fails to find a route to the destination host and network.
 *       The combination of wildcard routes and routing redirects can
 *       provide an economical mechanism for routing traffic.
-*   
+*
 *   SEE ALSO
 *       bsdsocket.library/IoctlSocket(), netutil/route
-*   
+*
 *****************************************************************************
 *
 */
@@ -671,14 +671,14 @@
 *
 *   NAME
 *       tcp - Internet Transmission Control Protocol
-*   
+*
 *   SYNOPSIS
 *       #include <sys/socket.h>
 *       #include <netinet/in.h>
-*   
+*
 *       int
 *       socket(AF_INET, SOCK_STREAM, 0)
-*   
+*
 *   DESCRIPTION
 *       The TCP protocol provides reliable, flow-controlled, two-way
 *       transmission of data.  It is a byte-stream protocol used to support
@@ -687,7 +687,7 @@
 *       addresses''. Thus, each address is composed of an Internet address
 *       specifying the host and network, with a specific TCP port on the
 *       host identifying the peer entity.
-*   
+*
 *       Sockets utilizing the tcp protocol are either ``active'' or
 *       ``passive''.  Active sockets initiate connections to passive
 *       sockets.  By default TCP sockets are created active; to create a
@@ -696,7 +696,7 @@
 *       function call.  Only passive sockets may use the accept() call to
 *       accept incoming connections.  Only active sockets may use the
 *       connect() call to initiate connections.
-*   
+*
 *       Passive sockets may ``underspecify'' their location to match
 *       incoming connection requests from multiple networks.  This
 *       technique, termed ``wildcard addressing'', allows a single server to
@@ -709,7 +709,7 @@
 *       socket is the address associated with the network interface through
 *       which packets are being transmitted and received.  Normally this
 *       address corresponds to the peer entity's network.
-*   
+*
 *       TCP supports one socket option which is set with setsockopt() and
 *       tested with getsockopt().  Under most circumstances, TCP sends data
 *       when it is presented; when outstanding data has not yet been
@@ -721,44 +721,44 @@
 *       a boolean option, TCP_NODELAY (from <netinet/tcp.h>, to defeat this
 *       algorithm.  The option level for the setsockopt call is the protocol
 *       number for TCP, available from getprotobyname().
-*   
+*
 *       Options at the IP transport level may be used with TCP; SEE ALSO ip.
 *       Incoming connection requests that are source-routed are noted, and
 *       the reverse source route is used in responding.
-*   
+*
 *   DIAGNOSTICS
 *       A socket operation may fail with one of the following errors
 *       returned:
-*   
+*
 *       [EISCONN]        when trying to establish a connection on a socket
 *                        which already has one;
-*   
+*
 *       [ENOBUFS]        when the AmiTCP/IP runs out of memory for an internal
 *                        data structure;
-*   
+*
 *       [ETIMEDOUT]      when a connection was dropped due to excessive
 *                        retransmissions;
-*   
+*
 *       [ECONNRESET]     when the remote peer forces the connection to be
 *                        closed;
-*   
+*
 *       [ECONNREFUSED]   when the remote peer actively refuses connection
 *                        establishment (usually because no process is
 *                        listening to the port);
-*   
+*
 *       [EADDRINUSE]     when an attempt is made to create a socket with a
 *                        port which has already been allocated;
-*   
+*
 *       [EADDRNOTAVAIL]  when an attempt is made to create a socket with a
 *                        network address for which no network interface
 *                        exists.
-*   
-*   SEE ALSO 
+*
+*   SEE ALSO
 *       bsdsocket.library/getsockopt(), bsdsocket.library/socket(),
 *       bsdsocket.library/bind(), bsdsocket.library/listen(),
 *       bsdsocket.library/accept(), bsdsocket.library/connect(), inet,
 *       ip, <sys/socket.h>, <netinet/tcp.h>, <netinet/in.h>
-*   
+*
 *   HISTORY
 *       The tcp protocol stack appeared in 4.2BSD.
 *
@@ -770,14 +770,14 @@
 *
 *   NAME
 *       udp - Internet User Datagram Protocol
-*   
+*
 *   SYNOPSIS
 *       #include <sys/socket.h>
 *       #include <netinet/in.h>
-*   
+*
 *       int
 *       socket(AF_INET, SOCK_DGRAM, 0)
-*   
+*
 *   DESCRIPTION
 *       UDP is a simple, unreliable datagram protocol which is used to
 *       support the SOCK_DGRAM abstraction for the Internet protocol family.
@@ -785,7 +785,7 @@
 *       sendto() and recvfrom() calls, though the connect() call may also be
 *       used to fix the destination for future packets (in which case the
 *       recv() and send() function calls may be used).
-*   
+*
 *       UDP address formats are identical to those used by TCP. In
 *       particular UDP provides a port identifier in addition to the normal
 *       Internet address format.  Note that the UDP port space is separate
@@ -793,36 +793,36 @@
 *       a TCP port). In addition broadcast packets may be sent (assuming the
 *       underlying network supports this) by using a reserved ``broadcast
 *       address''; this address is network interface dependent.
-*   
+*
 *       Options at the IP transport level may be used with UDP; SEE ALSO ip.
-*   
+*
 *   DIAGNOSTICS
 *       A socket operation may fail with one of the following errors
 *       returned:
-*   
+*
 *       [EISCONN]        when trying to establish a connection on a socket
 *                        which already has one, or when trying to send a
 *                        datagram with the destination address specified and
 *                        the socket is already connected;
-*   
+*
 *       [ENOTCONN]       when trying to send a datagram, but no destination
 *                        address is specified, and the socket hasn't been
 *                        connected;
-*   
+*
 *       [ENOBUFS]        when the system runs out of memory for an
 *                        internal data structure;
-*   
+*
 *       [EADDRINUSE]     when an attempt is made to create a socket with a
 *                        port which has already been allocated;
-*   
+*
 *       [EADDRNOTAVAIL]  when an attempt is made to create a socket with a
 *                        network address for which no network interface
 *                        exists.
-*   
+*
 *   SEE ALSO
 *       bsdsocket.library/getsockopt(), bsdsocket.library/recv(),
 *       bsdsocket.library/send(), bsdsocket.library/socket(), inet, ip
-*   
+*
 *   HISTORY
 *       The udp protocol appeared in 4.2BSD.
 *

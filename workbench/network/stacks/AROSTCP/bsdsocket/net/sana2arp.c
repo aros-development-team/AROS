@@ -60,13 +60,13 @@
  * Internet to hardware address resolution table entry
  */
 struct	arptab {
-  struct arptab *at_succ;	/* doubly linked list */
-  struct arptab *at_pred;
-  struct in_addr at_iaddr;	/* internet address */
-  u_char         at_hwaddr[MAXADDRSANA]; /* hardware address */
-  u_char         at_timer;	/* minutes since last reference */
-  u_char         at_flags;	/* flags */
-  struct mbuf   *at_hold;	/* last packet until resolved/timeout */
+    struct arptab *at_succ;	/* doubly linked list */
+    struct arptab *at_pred;
+    struct in_addr at_iaddr;	/* internet address */
+    u_char         at_hwaddr[MAXADDRSANA]; /* hardware address */
+    u_char         at_timer;	/* minutes since last reference */
+    u_char         at_flags;	/* flags */
+    struct mbuf   *at_hold;	/* last packet until resolved/timeout */
 };
 
 /*
@@ -78,20 +78,20 @@ unsigned long arpentries = ARPENTRIES;
  * General per interface hash table
  */
 struct arptable {
-  struct SignalSemaphore atb_lock;
-  struct arptab         *atb_free;
-  struct MinList         atb_entries[ARPTAB_HSIZE];
+    struct SignalSemaphore atb_lock;
+    struct arptab         *atb_free;
+    struct MinList         atb_entries[ARPTAB_HSIZE];
 };
 
 #define ARPTAB_LOCK(atb) (ObtainSemaphore(&atb->atb_lock))
-#define ARPTAB_UNLOCK(atb) (ReleaseSemaphore(&atb->atb_lock)) 
+#define ARPTAB_UNLOCK(atb) (ReleaseSemaphore(&atb->atb_lock))
 #define	ARPTAB_HASH(a) ((u_long)(a) % ARPTAB_HSIZE)
 
 extern struct ifnet loif;
 
 int	useloopback = 0;	/* use loopback interface for local traffic */
 
-static void arpwhohas(register struct sana_softc *ssc, struct in_addr * addr);
+static void arpwhohas(register struct sana_softc *ssc, struct in_addr *addr);
 static void in_arpinput(register struct sana_softc *ssc, struct mbuf *m);
 static char *sana_sprintf(register u_char *ap, int len);
 
@@ -100,51 +100,51 @@ static char *sana_sprintf(register u_char *ap, int len);
  * MUST BE CALLED AT SPLIMP.
  */
 void
-alloc_arptable(struct sana_softc* ssc, int to_allocate)
+alloc_arptable(struct sana_softc *ssc, int to_allocate)
 {
-  struct arptab *at;
-  struct arptable *atab;
-  int i;
-  
-  if (ssc->ss_arp.table) 
-    return /* (void)ssc->ss_arp.table */;
+    struct arptab *at;
+    struct arptable *atab;
+    int i;
+
+    if(ssc->ss_arp.table)
+        return /* (void)ssc->ss_arp.table */;
 
 #if 0
-  if (to_allocate < arpentries)
+    if(to_allocate < arpentries)
 #endif
-      to_allocate = arpentries;
-    
-  atab = bsd_malloc(sizeof(*atab), M_ARPENT, M_WAITOK);
-  at = bsd_malloc(sizeof(*at) * to_allocate, M_ARPENT, M_WAITOK);
+        to_allocate = arpentries;
 
-  if (atab && at) {
-    InitSemaphore(&atab->atb_lock);
-    for (i = 0; i < ARPTAB_HSIZE; i++)
-      NewList((struct List *)(atab->atb_entries + i));
+    atab = bsd_malloc(sizeof(*atab), M_ARPENT, M_WAITOK);
+    at = bsd_malloc(sizeof(*at) * to_allocate, M_ARPENT, M_WAITOK);
 
-    aligned_bzero(at, sizeof(*at) * to_allocate);
+    if(atab && at) {
+        InitSemaphore(&atab->atb_lock);
+        for(i = 0; i < ARPTAB_HSIZE; i++)
+            NewList((struct List *)(atab->atb_entries + i));
 
-    at[0].at_succ = NULL;
-    for (i = 1; i < to_allocate; i++) {
-      at[i].at_succ = &at[i - 1];
+        aligned_bzero(at, sizeof(*at) * to_allocate);
+
+        at[0].at_succ = NULL;
+        for(i = 1; i < to_allocate; i++) {
+            at[i].at_succ = &at[i - 1];
+        }
+        atab->atb_free = &at[to_allocate - 1];
+    } else {
+        if(atab) bsd_free(atab, M_ARPENT);
+        if(at) bsd_free(at, M_ARPENT);
+        __log(LOG_ERR, "Could not allocate ARP table for %s\n", ssc->ss_name);
     }
-    atab->atb_free = &at[to_allocate - 1];
-  } else {
-    if (atab) bsd_free(atab, M_ARPENT);
-    if (at) bsd_free(at, M_ARPENT);
-    __log(LOG_ERR, "Could not allocate ARP table for %s\n", ssc->ss_name);
-  }
 
-  ssc->ss_arp.table = atab;
+    ssc->ss_arp.table = atab;
 }
 
-/* 
- * Notification function for arp entries 
+/*
+ * Notification function for arp entries
  */
-LONG 
+LONG
 arpentries_notify(void *dummy, LONG value)
 {
-  return (ULONG)value > ARPENTRIES_MIN;
+    return (ULONG)value > ARPENTRIES_MIN;
 }
 
 /*
@@ -153,20 +153,20 @@ arpentries_notify(void *dummy, LONG value)
 static void
 arptfree(register struct arptable *atb, register struct arptab *at)
 {
-  if (at->at_hold)
-    m_freem(at->at_hold);
+    if(at->at_hold)
+        m_freem(at->at_hold);
 
-  Remove((struct Node *)at);
+    Remove((struct Node *)at);
 
-  if (at->at_flags & ATF_PERM) {
-    bsd_free(at, M_ARPENT);
-  } else {
-    at->at_hold = NULL;
-    at->at_timer = at->at_flags = 0;
-    at->at_iaddr.s_addr = 0;
-    at->at_succ = atb->atb_free;
-    atb->atb_free = at;
-  }
+    if(at->at_flags & ATF_PERM) {
+        bsd_free(at, M_ARPENT);
+    } else {
+        at->at_hold = NULL;
+        at->at_timer = at->at_flags = 0;
+        at->at_iaddr.s_addr = 0;
+        at->at_succ = atb->atb_free;
+        atb->atb_free = at;
+    }
 }
 
 /*
@@ -175,67 +175,67 @@ arptfree(register struct arptable *atb, register struct arptab *at)
 static struct arptab *
 arptnew(u_long addr, struct arptable *atb, int permanent)
 {
-  struct arptab *at = NULL;
+    struct arptab *at = NULL;
 
-  if (permanent) {
-    at = bsd_malloc(sizeof(*at), M_ARPENT, M_WAITOK);
-    bzero((caddr_t)at, sizeof(*at));
-  } else {
-    at = atb->atb_free;
-    if (at) {
-      atb->atb_free = at->at_succ;
+    if(permanent) {
+        at = bsd_malloc(sizeof(*at), M_ARPENT, M_WAITOK);
+        bzero((caddr_t)at, sizeof(*at));
     } else {
-      /*
-       * The oldest entry is pushed out from the 
-       * interface table if there is no free entry.
-       * This should always succeed since all 
-       * entries can not be permanent
-       */
-      struct arptab *oldest = NULL;
-      int i;
+        at = atb->atb_free;
+        if(at) {
+            atb->atb_free = at->at_succ;
+        } else {
+            /*
+             * The oldest entry is pushed out from the
+             * interface table if there is no free entry.
+             * This should always succeed since all
+             * entries can not be permanent
+             */
+            struct arptab *oldest = NULL;
+            int i;
 
-      for (i = 0; i < ARPTAB_HSIZE; i++) {
-	for (at = (struct arptab *)atb->atb_entries[i].mlh_Head; 
-	     at->at_succ; 
-	     at = at->at_succ) {
-	  if (at->at_flags == 0 || (at->at_flags & ATF_PERM))
-	    continue;
-	  if (!oldest || oldest->at_timer < at->at_timer)
-	    oldest = at;
-	}
-      }
-      if (oldest) {
-	Remove((struct Node *)oldest);
-	at = oldest;
-      } else {
-	at = NULL;
-      }
+            for(i = 0; i < ARPTAB_HSIZE; i++) {
+                for(at = (struct arptab *)atb->atb_entries[i].mlh_Head;
+                        at->at_succ;
+                        at = at->at_succ) {
+                    if(at->at_flags == 0 || (at->at_flags & ATF_PERM))
+                        continue;
+                    if(!oldest || oldest->at_timer < at->at_timer)
+                        oldest = at;
+                }
+            }
+            if(oldest) {
+                Remove((struct Node *)oldest);
+                at = oldest;
+            } else {
+                at = NULL;
+            }
+        }
     }
-  }
-  if (at) {
-    at->at_iaddr.s_addr = addr;
-    at->at_flags = ATF_INUSE;
-    AddHead((struct List *)(&atb->atb_entries[ARPTAB_HASH(addr)]), 
-	    (struct Node *)at);
-  }
-  return (at);
+    if(at) {
+        at->at_iaddr.s_addr = addr;
+        at->at_flags = ATF_INUSE;
+        AddHead((struct List *)(&atb->atb_entries[ARPTAB_HASH(addr)]),
+                (struct Node *)at);
+    }
+    return (at);
 }
 
 /*
  * Locate an IP address in the ARP table
  * Assume looker have locked the table
  */
-static struct arptab*
+static struct arptab *
 arptab_look(struct arptable *table, u_long addr)
 {
-  register struct arptab *at = (struct arptab *)
-    table->atb_entries[ARPTAB_HASH(addr)].mlh_Head; 
+    register struct arptab *at = (struct arptab *)
+                                 table->atb_entries[ARPTAB_HASH(addr)].mlh_Head;
 
-  for(;at->at_succ; at = at->at_succ) 
-    if (at->at_iaddr.s_addr == addr) 
-      return at;
+    for(; at->at_succ; at = at->at_succ)
+        if(at->at_iaddr.s_addr == addr)
+            return at;
 
-  return NULL;
+    return NULL;
 }
 
 /*
@@ -244,32 +244,32 @@ arptab_look(struct arptable *table, u_long addr)
 void
 arptimer()
 {
-  struct sana_softc *ssc;
-  register struct arptable *atab;
-  register struct arptab *at;
-  register int i;
+    struct sana_softc *ssc;
+    register struct arptable *atab;
+    register struct arptab *at;
+    register int i;
 
-  for (ssc = ssq; ssc; ssc = ssc->ss_next) {
-    if (!(atab = ssc->ss_arp.table))
-      continue;
-    /* Lock the table */
-    ARPTAB_LOCK(atab);
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        if(!(atab = ssc->ss_arp.table))
+            continue;
+        /* Lock the table */
+        ARPTAB_LOCK(atab);
 
-    for (i = 0; i < ARPTAB_HSIZE; i++) {
-      for (at = (struct arptab *)atab->atb_entries[i].mlh_Head; 
-	   at->at_succ; 
-	   at = at->at_succ) {
-	if (at->at_flags == 0 || (at->at_flags & ATF_PERM))
-	  continue;
-	if (++at->at_timer < ((at->at_flags & ATF_COM) ?
-			      ARPT_KILLC : ARPT_KILLI))
-	  continue;
-	/* timer has expired, clear entry */
-	arptfree(atab, at);
-      }
+        for(i = 0; i < ARPTAB_HSIZE; i++) {
+            for(at = (struct arptab *)atab->atb_entries[i].mlh_Head;
+                    at->at_succ;
+                    at = at->at_succ) {
+                if(at->at_flags == 0 || (at->at_flags & ATF_PERM))
+                    continue;
+                if(++at->at_timer < ((at->at_flags & ATF_COM) ?
+                                     ARPT_KILLC : ARPT_KILLI))
+                    continue;
+                /* timer has expired, clear entry */
+                arptfree(atab, at);
+            }
+        }
+        ARPTAB_UNLOCK(atab);
     }
-    ARPTAB_UNLOCK(atab);
-  }
 }
 
 /* =========================================================
@@ -280,231 +280,231 @@ arptimer()
 static void
 autoip_randaddr(struct sana_softc *ssc, struct in_addr *out)
 {
-	u_char *hw = ssc->ss_hwaddr;
-	u_int32_t r;
+    u_char *hw = ssc->ss_hwaddr;
+    u_int32_t r;
 
-	r  = ((u_int32_t)hw[2] << 24) | ((u_int32_t)hw[3] << 16)
-	   | ((u_int32_t)hw[4] <<  8) |  (u_int32_t)hw[5];
-	r ^= (u_int32_t)ssc->ss_autoip.conflicts * 1664525UL;
-	r  = r * 1664525UL + 1013904223UL;
-	/* Range 169.254.1.0 - 169.254.254.255  (RFC 3927 §2.1) */
-	r  = (r % (254 * 256)) + 256;
-	out->s_addr = htonl(0xA9FE0000UL | r);
+    r  = ((u_int32_t)hw[2] << 24) | ((u_int32_t)hw[3] << 16)
+         | ((u_int32_t)hw[4] <<  8) | (u_int32_t)hw[5];
+    r ^= (u_int32_t)ssc->ss_autoip.conflicts * 1664525UL;
+    r  = r * 1664525UL + 1013904223UL;
+    /* Range 169.254.1.0 - 169.254.254.255  (RFC 3927 §2.1) */
+    r  = (r % (254 * 256)) + 256;
+    out->s_addr = htonl(0xA9FE0000UL | r);
 }
 
 /* Send an ARP probe: sender IP = 0.0.0.0, target IP = candidate (RFC 3927 §2.1) */
 static void
 arp_probe(struct sana_softc *ssc, struct in_addr *candidate)
 {
-	struct mbuf      *m;
-	struct s2_arppkt *s2a;
-	struct sockaddr_sana2 ss2;
-	struct in_addr    zero;
+    struct mbuf      *m;
+    struct s2_arppkt *s2a;
+    struct sockaddr_sana2 ss2;
+    struct in_addr    zero;
 
-	zero.s_addr = INADDR_ANY;
+    zero.s_addr = INADDR_ANY;
 
-	if ((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
-		return;
-	m->m_len         = sizeof(*s2a);
-	m->m_pkthdr.len  = sizeof(*s2a);
-	MH_ALIGN(m, sizeof(*s2a));
-	s2a = mtod(m, struct s2_arppkt *);
-	aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
-	m->m_flags |= M_BCAST;
+    if((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
+        return;
+    m->m_len         = sizeof(*s2a);
+    m->m_pkthdr.len  = sizeof(*s2a);
+    MH_ALIGN(m, sizeof(*s2a));
+    s2a = mtod(m, struct s2_arppkt *);
+    aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
+    m->m_flags |= M_BCAST;
 
-	s2a->arp_hrd = htons(ssc->ss_arp.hrd);
-	s2a->arp_pro = htons(ssc->ss_ip.type);
-	s2a->arp_pln = sizeof(struct in_addr);
-	s2a->arp_hln = ssc->ss_if.if_addrlen;
-	s2a->arp_op  = htons(ARPOP_REQUEST);
+    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_pro = htons(ssc->ss_ip.type);
+    s2a->arp_pln = sizeof(struct in_addr);
+    s2a->arp_hln = ssc->ss_if.if_addrlen;
+    s2a->arp_op  = htons(ARPOP_REQUEST);
 
-	bcopy((caddr_t)ssc->ss_hwaddr,
-	      (caddr_t)&s2a->arpdata, s2a->arp_hln);
-	bcopy((caddr_t)&zero,
-	      (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
-	bzero ((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
-	       s2a->arp_hln);
-	bcopy((caddr_t)candidate,
-	      (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
-	      s2a->arp_pln);
+    bcopy((caddr_t)ssc->ss_hwaddr,
+          (caddr_t)&s2a->arpdata, s2a->arp_hln);
+    bcopy((caddr_t)&zero,
+          (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
+    bzero((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_hln);
+    bcopy((caddr_t)candidate,
+          (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_pln);
 
-	ss2.ss2_len    = sizeof(ss2);
-	ss2.ss2_family = AF_UNSPEC;
-	ss2.ss2_type   = ssc->ss_arp.type;
-	(*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
-	                         (struct rtentry *)0);
+    ss2.ss2_len    = sizeof(ss2);
+    ss2.ss2_family = AF_UNSPEC;
+    ss2.ss2_type   = ssc->ss_arp.type;
+    (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+                            (struct rtentry *)0);
 }
 
 /* Send an ARP announcement: sender IP = target IP = addr (RFC 3927 §2.6) */
 static void
 arp_announce(struct sana_softc *ssc, struct in_addr *addr)
 {
-	struct mbuf      *m;
-	struct s2_arppkt *s2a;
-	struct sockaddr_sana2 ss2;
+    struct mbuf      *m;
+    struct s2_arppkt *s2a;
+    struct sockaddr_sana2 ss2;
 
-	if ((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
-		return;
-	m->m_len         = sizeof(*s2a);
-	m->m_pkthdr.len  = sizeof(*s2a);
-	MH_ALIGN(m, sizeof(*s2a));
-	s2a = mtod(m, struct s2_arppkt *);
-	aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
-	m->m_flags |= M_BCAST;
+    if((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
+        return;
+    m->m_len         = sizeof(*s2a);
+    m->m_pkthdr.len  = sizeof(*s2a);
+    MH_ALIGN(m, sizeof(*s2a));
+    s2a = mtod(m, struct s2_arppkt *);
+    aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
+    m->m_flags |= M_BCAST;
 
-	s2a->arp_hrd = htons(ssc->ss_arp.hrd);
-	s2a->arp_pro = htons(ssc->ss_ip.type);
-	s2a->arp_pln = sizeof(struct in_addr);
-	s2a->arp_hln = ssc->ss_if.if_addrlen;
-	s2a->arp_op  = htons(ARPOP_REQUEST);
+    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_pro = htons(ssc->ss_ip.type);
+    s2a->arp_pln = sizeof(struct in_addr);
+    s2a->arp_hln = ssc->ss_if.if_addrlen;
+    s2a->arp_op  = htons(ARPOP_REQUEST);
 
-	/* sender: our MAC + candidate IP */
-	bcopy((caddr_t)ssc->ss_hwaddr,
-	      (caddr_t)&s2a->arpdata, s2a->arp_hln);
-	bcopy((caddr_t)addr,
-	      (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
-	/* target: broadcast MAC + candidate IP */
-	bzero ((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
-	       s2a->arp_hln);
-	bcopy((caddr_t)addr,
-	      (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
-	      s2a->arp_pln);
+    /* sender: our MAC + candidate IP */
+    bcopy((caddr_t)ssc->ss_hwaddr,
+          (caddr_t)&s2a->arpdata, s2a->arp_hln);
+    bcopy((caddr_t)addr,
+          (caddr_t)&s2a->arpdata + s2a->arp_hln, s2a->arp_pln);
+    /* target: broadcast MAC + candidate IP */
+    bzero((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_hln);
+    bcopy((caddr_t)addr,
+          (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_pln);
 
-	ss2.ss2_len    = sizeof(ss2);
-	ss2.ss2_family = AF_UNSPEC;
-	ss2.ss2_type   = ssc->ss_arp.type;
-	(*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
-	                         (struct rtentry *)0);
+    ss2.ss2_len    = sizeof(ss2);
+    ss2.ss2_family = AF_UNSPEC;
+    ss2.ss2_type   = ssc->ss_arp.type;
+    (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+                            (struct rtentry *)0);
 }
 
 /* Assign the probed candidate address via SIOCAIFADDR */
 static void
 autoip_set_addr(struct sana_softc *ssc)
 {
-	struct ifaliasreq ifr;
-	struct sockaddr_in *sin;
+    struct ifaliasreq ifr;
+    struct sockaddr_in *sin;
 
-	memset(&ifr, 0, sizeof(ifr));
-	sin = (struct sockaddr_in *)&ifr.ifra_addr;
-	sin->sin_family    = AF_INET;
-	sin->sin_addr      = ssc->ss_autoip.candidate;
-	sin = (struct sockaddr_in *)&ifr.ifra_mask;
-	sin->sin_family    = AF_INET;
-	sin->sin_addr.s_addr = htonl(0xFFFF0000UL);   /* /16 netmask */
+    memset(&ifr, 0, sizeof(ifr));
+    sin = (struct sockaddr_in *)&ifr.ifra_addr;
+    sin->sin_family    = AF_INET;
+    sin->sin_addr      = ssc->ss_autoip.candidate;
+    sin = (struct sockaddr_in *)&ifr.ifra_mask;
+    sin->sin_family    = AF_INET;
+    sin->sin_addr.s_addr = htonl(0xFFFF0000UL);   /* /16 netmask */
 
-	in_control(NULL, SIOCAIFADDR, (caddr_t)&ifr, &ssc->ss_if);
+    in_control(NULL, SIOCAIFADDR, (caddr_t)&ifr, &ssc->ss_if);
 
-	__log(LOG_INFO, "IPv4LL: assigned %d.%d.%d.%d/16 to %s\n",
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
-	       ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF,
-	      ssc->ss_name);
+    __log(LOG_INFO, "IPv4LL: assigned %d.%d.%d.%d/16 to %s\n",
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
+          ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF,
+          ssc->ss_name);
 }
 
 /* Handle a detected address conflict */
 static void
 autoip_conflict(struct sana_softc *ssc)
 {
-	ssc->ss_autoip.conflicts++;
+    ssc->ss_autoip.conflicts++;
 
-	__log(LOG_WARNING, "IPv4LL: address conflict on %s (count %u)\n",
-	      ssc->ss_name, (unsigned)ssc->ss_autoip.conflicts);
+    __log(LOG_WARNING, "IPv4LL: address conflict on %s (count %u)\n",
+          ssc->ss_name, (unsigned)ssc->ss_autoip.conflicts);
 
-	/* Pick a new candidate and restart */
-	autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
-	ssc->ss_autoip.count  = 0;
-	ssc->ss_autoip.state  = AUTOIP_PROBE;
+    /* Pick a new candidate and restart */
+    autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
+    ssc->ss_autoip.count  = 0;
+    ssc->ss_autoip.state  = AUTOIP_PROBE;
 
-	if (ssc->ss_autoip.conflicts >= AUTOIP_MAX_CONFLICTS) {
-		/* Rate-limit: wait 60 s before first probe */
-		ssc->ss_autoip.ticks = AUTOIP_RATE_LIMIT_INTERVAL;
-	} else {
-		ssc->ss_autoip.ticks = AUTOIP_PROBE_WAIT;
-	}
+    if(ssc->ss_autoip.conflicts >= AUTOIP_MAX_CONFLICTS) {
+        /* Rate-limit: wait 60 s before first probe */
+        ssc->ss_autoip.ticks = AUTOIP_RATE_LIMIT_INTERVAL;
+    } else {
+        ssc->ss_autoip.ticks = AUTOIP_PROBE_WAIT;
+    }
 }
 
 /* Begin IPv4LL probing on an interface */
 void
 autoip_start(struct ifnet *ifp)
 {
-	struct sana_softc *ssc = (struct sana_softc *)ifp;
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
 
-	ssc->ss_autoip.conflicts = 0;
-	autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
-	ssc->ss_autoip.count  = 0;
-	ssc->ss_autoip.ticks  = AUTOIP_PROBE_WAIT;
-	ssc->ss_autoip.state  = AUTOIP_PROBE;
+    ssc->ss_autoip.conflicts = 0;
+    autoip_randaddr(ssc, &ssc->ss_autoip.candidate);
+    ssc->ss_autoip.count  = 0;
+    ssc->ss_autoip.ticks  = AUTOIP_PROBE_WAIT;
+    ssc->ss_autoip.state  = AUTOIP_PROBE;
 
-	__log(LOG_INFO, "IPv4LL: starting on %s, probing %d.%d.%d.%d\n",
-	      ssc->ss_name,
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
-	      (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
-	       ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF);
+    __log(LOG_INFO, "IPv4LL: starting on %s, probing %d.%d.%d.%d\n",
+          ssc->ss_name,
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 24) & 0xFF,
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >> 16) & 0xFF,
+          (ntohl(ssc->ss_autoip.candidate.s_addr) >>  8) & 0xFF,
+          ntohl(ssc->ss_autoip.candidate.s_addr)        & 0xFF);
 }
 
 /* Cancel IPv4LL on an interface */
 void
 autoip_stop(struct ifnet *ifp)
 {
-	struct sana_softc *ssc = (struct sana_softc *)ifp;
-	ssc->ss_autoip.state  = AUTOIP_DISABLED;
-	ssc->ss_autoip.count  = 0;
-	ssc->ss_autoip.ticks  = 0;
+    struct sana_softc *ssc = (struct sana_softc *)ifp;
+    ssc->ss_autoip.state  = AUTOIP_DISABLED;
+    ssc->ss_autoip.count  = 0;
+    ssc->ss_autoip.ticks  = 0;
 }
 
 /* 1-second tick driver for the IPv4LL state machine (called from timer framework) */
 void
 autoip_timer(void)
 {
-	struct sana_softc *ssc;
+    struct sana_softc *ssc;
 
-	for (ssc = ssq; ssc; ssc = ssc->ss_next) {
-		if (ssc->ss_autoip.state == AUTOIP_DISABLED ||
-		    ssc->ss_autoip.state == AUTOIP_BOUND)
-			continue;
+    for(ssc = ssq; ssc; ssc = ssc->ss_next) {
+        if(ssc->ss_autoip.state == AUTOIP_DISABLED ||
+                ssc->ss_autoip.state == AUTOIP_BOUND)
+            continue;
 
-		if (ssc->ss_autoip.ticks > 0) {
-			ssc->ss_autoip.ticks--;
-			continue;
-		}
+        if(ssc->ss_autoip.ticks > 0) {
+            ssc->ss_autoip.ticks--;
+            continue;
+        }
 
-		switch (ssc->ss_autoip.state) {
+        switch(ssc->ss_autoip.state) {
 
-		case AUTOIP_PROBE:
-			if (ssc->ss_autoip.count < AUTOIP_PROBE_NUM) {
-				arp_probe(ssc, &ssc->ss_autoip.candidate);
-				ssc->ss_autoip.count++;
-				ssc->ss_autoip.ticks = AUTOIP_PROBE_INTERVAL;
-			} else {
-				/* All probes sent - wait then announce */
-				ssc->ss_autoip.state = AUTOIP_ANNOUNCE;
-				ssc->ss_autoip.count = 0;
-				ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_WAIT;
-			}
-			break;
+        case AUTOIP_PROBE:
+            if(ssc->ss_autoip.count < AUTOIP_PROBE_NUM) {
+                arp_probe(ssc, &ssc->ss_autoip.candidate);
+                ssc->ss_autoip.count++;
+                ssc->ss_autoip.ticks = AUTOIP_PROBE_INTERVAL;
+            } else {
+                /* All probes sent - wait then announce */
+                ssc->ss_autoip.state = AUTOIP_ANNOUNCE;
+                ssc->ss_autoip.count = 0;
+                ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_WAIT;
+            }
+            break;
 
-		case AUTOIP_ANNOUNCE:
-			arp_announce(ssc, &ssc->ss_autoip.candidate);
-			ssc->ss_autoip.count++;
-			if (ssc->ss_autoip.count >= AUTOIP_ANNOUNCE_NUM) {
-				autoip_set_addr(ssc);
-				ssc->ss_autoip.state = AUTOIP_BOUND;
-				ssc->ss_autoip.count = 0;
-				ssc->ss_autoip.ticks = 0;
-			} else {
-				ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_INTERVAL;
-			}
-			break;
+        case AUTOIP_ANNOUNCE:
+            arp_announce(ssc, &ssc->ss_autoip.candidate);
+            ssc->ss_autoip.count++;
+            if(ssc->ss_autoip.count >= AUTOIP_ANNOUNCE_NUM) {
+                autoip_set_addr(ssc);
+                ssc->ss_autoip.state = AUTOIP_BOUND;
+                ssc->ss_autoip.count = 0;
+                ssc->ss_autoip.ticks = 0;
+            } else {
+                ssc->ss_autoip.ticks = AUTOIP_ANNOUNCE_INTERVAL;
+            }
+            break;
 
-		case AUTOIP_DEFEND:
-			/* Defend interval elapsed - return to BOUND */
-			ssc->ss_autoip.state = AUTOIP_BOUND;
-			ssc->ss_autoip.ticks = 0;
-			break;
-		}
-	}
+        case AUTOIP_DEFEND:
+            /* Defend interval elapsed - return to BOUND */
+            ssc->ss_autoip.state = AUTOIP_BOUND;
+            ssc->ss_autoip.ticks = 0;
+            break;
+        }
+    }
 }
 
 /*
@@ -513,52 +513,52 @@ autoip_timer(void)
 static void
 arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
 {
-  register struct mbuf *m;
-  register struct s2_arppkt *s2a;
-  struct sockaddr_sana2 ss2;
+    register struct mbuf *m;
+    register struct s2_arppkt *s2a;
+    struct sockaddr_sana2 ss2;
 
-  if ((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
-    return;
-  m->m_len = sizeof(*s2a);
-  m->m_pkthdr.len = sizeof(*s2a);
-  MH_ALIGN(m, sizeof(*s2a));
-  s2a = mtod(m, struct s2_arppkt *);
-  aligned_bzero_const((caddr_t)s2a, sizeof (*s2a));
-  m->m_flags |= M_BCAST;
+    if((m = m_gethdr(M_DONTWAIT, MT_DATA)) == NULL)
+        return;
+    m->m_len = sizeof(*s2a);
+    m->m_pkthdr.len = sizeof(*s2a);
+    MH_ALIGN(m, sizeof(*s2a));
+    s2a = mtod(m, struct s2_arppkt *);
+    aligned_bzero_const((caddr_t)s2a, sizeof(*s2a));
+    m->m_flags |= M_BCAST;
 
-  /* fill in header depending of the interface */
-  s2a->arp_hrd = htons(ssc->ss_arp.hrd);
-  s2a->arp_pro = htons(ssc->ss_ip.type);
-  s2a->arp_pln = sizeof(struct in_addr); /* protocol address length */
-  s2a->arp_hln = ssc->ss_if.if_addrlen;  /* hardware address length */
-  s2a->arp_op = htons(ARPOP_REQUEST);
+    /* fill in header depending of the interface */
+    s2a->arp_hrd = htons(ssc->ss_arp.hrd);
+    s2a->arp_pro = htons(ssc->ss_ip.type);
+    s2a->arp_pln = sizeof(struct in_addr); /* protocol address length */
+    s2a->arp_hln = ssc->ss_if.if_addrlen;  /* hardware address length */
+    s2a->arp_op = htons(ARPOP_REQUEST);
 
-  /* Copy source hardware address */
-  bcopy((caddr_t)ssc->ss_hwaddr, 
-	(caddr_t)&s2a->arpdata, 
-	s2a->arp_hln);
-  /* Copy source protocol address */
-  bcopy((caddr_t)&ssc->ss_ipaddr, 
-	(caddr_t)&s2a->arpdata + s2a->arp_hln, 
-	s2a->arp_pln);
-  /* Zero target hardware address */
-  bzero((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln, 
-	s2a->arp_hln);
-  /* Copy target protocol address */
-  bcopy((caddr_t)addr, 
-	(caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln, 
-	s2a->arp_pln);
+    /* Copy source hardware address */
+    bcopy((caddr_t)ssc->ss_hwaddr,
+          (caddr_t)&s2a->arpdata,
+          s2a->arp_hln);
+    /* Copy source protocol address */
+    bcopy((caddr_t)&ssc->ss_ipaddr,
+          (caddr_t)&s2a->arpdata + s2a->arp_hln,
+          s2a->arp_pln);
+    /* Zero target hardware address */
+    bzero((caddr_t)&s2a->arpdata + s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_hln);
+    /* Copy target protocol address */
+    bcopy((caddr_t)addr,
+          (caddr_t)&s2a->arpdata + 2 * s2a->arp_hln + s2a->arp_pln,
+          s2a->arp_pln);
 
-  /* Send an ARP packet */
-  ss2.ss2_len = sizeof(ss2);
-  ss2.ss2_family = AF_UNSPEC;
-  ss2.ss2_type = ssc->ss_arp.type; 
-  (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2, 
-			  (struct rtentry *)0);
+    /* Send an ARP packet */
+    ss2.ss2_len = sizeof(ss2);
+    ss2.ss2_family = AF_UNSPEC;
+    ss2.ss2_type = ssc->ss_arp.type;
+    (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+                            (struct rtentry *)0);
 }
 
 /*
- * Resolve an IP address into an SANA-II address.  If success, 
+ * Resolve an IP address into an SANA-II address.  If success,
  * desten is filled in.  If there is no entry in arptab,
  * set one up and broadcast a request for the IP address.
  * Hold onto this mbuf and resend it once the address
@@ -568,110 +568,110 @@ arpwhohas(register struct sana_softc *ssc, struct in_addr *addr)
  * taken over here, either now or for later transmission.
  *
  * We do some (conservative) locking here at splimp, since
- * arptab is also altered from sana poll routine 
+ * arptab is also altered from sana poll routine
  */
 int
 arpresolve(register struct sana_softc *ssc,
-	   struct mbuf *m,
-	   register struct in_addr *destip,
-	   register u_char *desten,
-	   int *error)
+           struct mbuf *m,
+           register struct in_addr *destip,
+           register u_char *desten,
+           int *error)
 {
-  register struct arptab *at;
-  register struct arptable *atb;
-  struct sockaddr_in sin;
-  register struct in_ifaddr *ia;
+    register struct arptab *at;
+    register struct arptable *atb;
+    struct sockaddr_in sin;
+    register struct in_ifaddr *ia;
 
-  if (m->m_flags & M_BCAST) {	/* broadcast */
-    return 1;
-  }
-
-  /* if for us, use software loopback driver if up */
-  for (ia = in_ifaddr; ia; ia = ia->ia_next)
-    if ((ia->ia_ifp == &ssc->ss_if) &&
-	(destip->s_addr == ia->ia_addr.sin_addr.s_addr)) {
-      /*
-       * This test used to be
-       *	if (loif.if_flags & IFF_UP)
-       * It allowed local traffic to be forced
-       * through the hardware by configuring the loopback down.
-       * However, it causes problems during network configuration
-       * for boards that can't receive packets they send.
-       * It is now necessary to clear "useloopback"
-       * to force traffic out to the hardware.
-       */
-      if (useloopback) {
-	sin.sin_family = AF_INET;
-	sin.sin_addr = *destip;
-	(void) looutput(&loif, m, (struct sockaddr *)&sin, 0);
-	/*
-	 * The packet has already been sent and freed.
-	 */
-	return (0);
-      } else {
-	bcopy((caddr_t)ssc->ss_hwaddr, (caddr_t)desten, ssc->ss_if.if_addrlen);
-	return (1);
-      }
+    if(m->m_flags & M_BCAST) {	/* broadcast */
+        return 1;
     }
 
-  if (ssc->ss_if.if_flags & IFF_NOARP) {
-    /* No arp */
-    __log(LOG_ERR, 
-	"arpresolve: can't resolve address for if %s/%ld\n", 
-	ssc->ss_if.if_name, ssc->ss_if.if_unit);
-    *error = ENETUNREACH;
-    m_freem(m);
-    return (0);
-  } 
+    /* if for us, use software loopback driver if up */
+    for(ia = in_ifaddr; ia; ia = ia->ia_next)
+        if((ia->ia_ifp == &ssc->ss_if) &&
+                (destip->s_addr == ia->ia_addr.sin_addr.s_addr)) {
+            /*
+             * This test used to be
+             *	if (loif.if_flags & IFF_UP)
+             * It allowed local traffic to be forced
+             * through the hardware by configuring the loopback down.
+             * However, it causes problems during network configuration
+             * for boards that can't receive packets they send.
+             * It is now necessary to clear "useloopback"
+             * to force traffic out to the hardware.
+             */
+            if(useloopback) {
+                sin.sin_family = AF_INET;
+                sin.sin_addr = *destip;
+                (void) looutput(&loif, m, (struct sockaddr *)&sin, 0);
+                /*
+                 * The packet has already been sent and freed.
+                 */
+                return (0);
+            } else {
+                bcopy((caddr_t)ssc->ss_hwaddr, (caddr_t)desten, ssc->ss_if.if_addrlen);
+                return (1);
+            }
+        }
 
-  /* Try to locate ARP table */ 
-  if (!(atb = ssc->ss_arp.table)) {
-    alloc_arptable(ssc, 0);
-    if (!(atb = ssc->ss_arp.table)) {
-      __log(LOG_ERR, "arpresolve: memory exhausted");
-      *error = ENOBUFS; 
-      m_free(m); 
-      return 0;
+    if(ssc->ss_if.if_flags & IFF_NOARP) {
+        /* No arp */
+        __log(LOG_ERR,
+              "arpresolve: can't resolve address for if %s/%ld\n",
+              ssc->ss_if.if_name, ssc->ss_if.if_unit);
+        *error = ENETUNREACH;
+        m_freem(m);
+        return (0);
     }
-  }
 
-  ARPTAB_LOCK(atb);
-  at = arptab_look(atb, destip->s_addr);
-  if (at == 0) {		/* not found */
-    at = arptnew(destip->s_addr, atb, FALSE);
-    if (at) {
-      at->at_hold = m;
-      arpwhohas(ssc, destip);
-    } else {
-      __log(LOG_ERR, "arpresolve: no free entry");
-      *error = ENETUNREACH;
-      m_free(m); 
-    } 
+    /* Try to locate ARP table */
+    if(!(atb = ssc->ss_arp.table)) {
+        alloc_arptable(ssc, 0);
+        if(!(atb = ssc->ss_arp.table)) {
+            __log(LOG_ERR, "arpresolve: memory exhausted");
+            *error = ENOBUFS;
+            m_free(m);
+            return 0;
+        }
+    }
+
+    ARPTAB_LOCK(atb);
+    at = arptab_look(atb, destip->s_addr);
+    if(at == 0) {		/* not found */
+        at = arptnew(destip->s_addr, atb, FALSE);
+        if(at) {
+            at->at_hold = m;
+            arpwhohas(ssc, destip);
+        } else {
+            __log(LOG_ERR, "arpresolve: no free entry");
+            *error = ENETUNREACH;
+            m_free(m);
+        }
+        ARPTAB_UNLOCK(atb);
+        return 0;
+    }
+
+    at->at_timer = 0;		/* restart the timer */
+    if(at->at_flags & ATF_COM) {	/* entry IS complete */
+        bcopy((caddr_t)at->at_hwaddr, (caddr_t)desten, ssc->ss_if.if_addrlen);
+        ARPTAB_UNLOCK(atb);
+        return 1;
+    }
+    /*
+     * There is an arptab entry, but no address response yet.
+     * Replace the held mbuf with this latest one.
+     */
+    if(at->at_hold)
+        m_freem(at->at_hold);
+    at->at_hold = m;
+    arpwhohas(ssc, destip);	/* ask again */
     ARPTAB_UNLOCK(atb);
     return 0;
-  }
-
-  at->at_timer = 0;		/* restart the timer */
-  if (at->at_flags & ATF_COM) {	/* entry IS complete */
-    bcopy((caddr_t)at->at_hwaddr, (caddr_t)desten, ssc->ss_if.if_addrlen);
-    ARPTAB_UNLOCK(atb);
-    return 1;
-  }
-  /*
-   * There is an arptab entry, but no address response yet.  
-   * Replace the held mbuf with this latest one.
-   */
-  if (at->at_hold)
-    m_freem(at->at_hold);
-  at->at_hold = m;
-  arpwhohas(ssc, destip);	/* ask again */
-  ARPTAB_UNLOCK(atb);
-  return 0;
 }
 
 /*
  * Called from the sana poll routine
- * when ARP type packet is received.  
+ * when ARP type packet is received.
  * Common length and type checks are done here,
  * then the protocol-specific routine is called.
  * In addition, a sanity check is performed on the sender
@@ -679,44 +679,44 @@ arpresolve(register struct sana_softc *ssc,
  */
 void
 arpinput(struct sana_softc *ssc,
-	struct mbuf *m,
-        caddr_t srcaddr)
+         struct mbuf *m,
+         caddr_t srcaddr)
 {
-  register struct arphdr *ar;
-  int proto;
+    register struct arphdr *ar;
+    int proto;
 
-  if (ssc->ss_if.if_flags & IFF_NOARP)
-    goto out;
-  if (m->m_len < sizeof(struct arphdr))
-    goto out;
-  ar = mtod(m, struct arphdr *);
-  if (ntohs(ar->ar_hrd) != ssc->ss_arp.hrd)
-    goto out;
-  if (m->m_len < sizeof(struct arphdr) + 2 * ar->ar_hln + 2 * ar->ar_pln)
-    goto out;
-  if (ar->ar_hln != ssc->ss_if.if_addrlen) 
-    goto out;
+    if(ssc->ss_if.if_flags & IFF_NOARP)
+        goto out;
+    if(m->m_len < sizeof(struct arphdr))
+        goto out;
+    ar = mtod(m, struct arphdr *);
+    if(ntohs(ar->ar_hrd) != ssc->ss_arp.hrd)
+        goto out;
+    if(m->m_len < sizeof(struct arphdr) + 2 * ar->ar_hln + 2 * ar->ar_pln)
+        goto out;
+    if(ar->ar_hln != ssc->ss_if.if_addrlen)
+        goto out;
 
 #ifdef paranoid_arp_mode
-  /* Sanity check */
-  if (bcmp(srcaddr, (UBYTE*)ar + sizeof(*ar), ar->ar_hln)) {
-    __log(LOG_ERR, "An ARP packet sent as %s", 
-	sana_sprintf(srcaddr, ar->ar_hln));
-    __log(LOG_ERR, " from address: %s!!\n", 
-	sana_sprintf((UBYTE*)ar + sizeof(*ar), ar->ar_hln));
-    goto out;
-  }
+    /* Sanity check */
+    if(bcmp(srcaddr, (UBYTE *)ar + sizeof(*ar), ar->ar_hln)) {
+        __log(LOG_ERR, "An ARP packet sent as %s",
+              sana_sprintf(srcaddr, ar->ar_hln));
+        __log(LOG_ERR, " from address: %s!!\n",
+              sana_sprintf((UBYTE *)ar + sizeof(*ar), ar->ar_hln));
+        goto out;
+    }
 #endif
-  pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_IN);
-  proto = ntohs(ar->ar_pro);
+    pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_IN);
+    proto = ntohs(ar->ar_pro);
 
-  if (proto == ssc->ss_ip.type) {
-    in_arpinput(ssc, m);
-    return;
-  } 
+    if(proto == ssc->ss_ip.type) {
+        in_arpinput(ssc, m);
+        return;
+    }
 
- out:
-  m_freem(m);
+out:
+    m_freem(m);
 }
 
 /*
@@ -725,294 +725,294 @@ arpinput(struct sana_softc *ssc,
  */
 static void
 in_arpinput(register struct sana_softc *ssc,
-	    struct mbuf *m)
+            struct mbuf *m)
 {
-  register struct s2_arppkt *s2a;
-  struct sockaddr_in sin;
-  struct in_addr isaddr, itaddr, myaddr;
-  int op;
+    register struct s2_arppkt *s2a;
+    struct sockaddr_in sin;
+    struct in_addr isaddr, itaddr, myaddr;
+    int op;
 #if 0 /* unused */
-  int completed = 0;
+    int completed = 0;
 #endif
-  caddr_t sha, spa, tha, tpa;
-  size_t  len = ssc->ss_if.if_addrlen;
+    caddr_t sha, spa, tha, tpa;
+    size_t  len = ssc->ss_if.if_addrlen;
 
-  s2a = mtod(m, struct s2_arppkt *);
-  op = ntohs(s2a->arp_op);
+    s2a = mtod(m, struct s2_arppkt *);
+    op = ntohs(s2a->arp_op);
 
-  if (s2a->arp_pln != sizeof(struct in_addr))
-    goto out;
+    if(s2a->arp_pln != sizeof(struct in_addr))
+        goto out;
 
-  sha = (caddr_t)&(s2a->arpdata); /* other members must be calculated */
-  bcopy(spa = sha + len, (caddr_t)&isaddr, sizeof (isaddr));
-  tha = spa + sizeof(struct in_addr);
-  bcopy(tpa = tha + len, (caddr_t)&itaddr, sizeof (itaddr));
+    sha = (caddr_t) & (s2a->arpdata); /* other members must be calculated */
+    bcopy(spa = sha + len, (caddr_t)&isaddr, sizeof(isaddr));
+    tha = spa + sizeof(struct in_addr);
+    bcopy(tpa = tha + len, (caddr_t)&itaddr, sizeof(itaddr));
 
 
-  {
-    register struct in_ifaddr *ia;
-    struct in_ifaddr *maybe_ia = 0;
+    {
+        register struct in_ifaddr *ia;
+        struct in_ifaddr *maybe_ia = 0;
 
-    /* Check for our own ARP packets */
-    for (ia = in_ifaddr; ia; ia = ia->ia_next)
-      if (ia->ia_ifp == &ssc->ss_if) {
-	maybe_ia = ia;
-	if ((itaddr.s_addr == ia->ia_addr.sin_addr.s_addr) ||
-	    (isaddr.s_addr == ia->ia_addr.sin_addr.s_addr))
-	  break;
-      }
-    /* RFC 3927: detect IPv4LL probe/announce conflicts before normal exit */
-    if (ssc->ss_autoip.state == AUTOIP_PROBE ||
-        ssc->ss_autoip.state == AUTOIP_ANNOUNCE) {
-      u_int32_t cand = ssc->ss_autoip.candidate.s_addr;
-      if ((isaddr.s_addr == cand || itaddr.s_addr == cand) &&
-          bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0)
-        autoip_conflict(ssc);
-    } else if (ssc->ss_autoip.state == AUTOIP_BOUND &&
-               isaddr.s_addr == ssc->ss_autoip.candidate.s_addr &&
-               bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0) {
-      /* Conflict with our bound address - defend */
-      ssc->ss_autoip.state = AUTOIP_DEFEND;
-      ssc->ss_autoip.ticks = AUTOIP_DEFEND_INTERVAL;
-      arp_announce(ssc, &ssc->ss_autoip.candidate);
+        /* Check for our own ARP packets */
+        for(ia = in_ifaddr; ia; ia = ia->ia_next)
+            if(ia->ia_ifp == &ssc->ss_if) {
+                maybe_ia = ia;
+                if((itaddr.s_addr == ia->ia_addr.sin_addr.s_addr) ||
+                        (isaddr.s_addr == ia->ia_addr.sin_addr.s_addr))
+                    break;
+            }
+        /* RFC 3927: detect IPv4LL probe/announce conflicts before normal exit */
+        if(ssc->ss_autoip.state == AUTOIP_PROBE ||
+                ssc->ss_autoip.state == AUTOIP_ANNOUNCE) {
+            u_int32_t cand = ssc->ss_autoip.candidate.s_addr;
+            if((isaddr.s_addr == cand || itaddr.s_addr == cand) &&
+                    bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0)
+                autoip_conflict(ssc);
+        } else if(ssc->ss_autoip.state == AUTOIP_BOUND &&
+                  isaddr.s_addr == ssc->ss_autoip.candidate.s_addr &&
+                  bcmp(sha, (caddr_t)ssc->ss_hwaddr, len) != 0) {
+            /* Conflict with our bound address - defend */
+            ssc->ss_autoip.state = AUTOIP_DEFEND;
+            ssc->ss_autoip.ticks = AUTOIP_DEFEND_INTERVAL;
+            arp_announce(ssc, &ssc->ss_autoip.candidate);
+        }
+        if(maybe_ia == 0)
+            goto out;
+        myaddr = ia ? ia->ia_addr.sin_addr : maybe_ia->ia_addr.sin_addr;
+        if(!bcmp(sha, (caddr_t)ssc->ss_hwaddr, len))
+            goto out;			/* it's from me, ignore it. */
     }
-    if (maybe_ia == 0)
-      goto out;
-    myaddr = ia ? ia->ia_addr.sin_addr : maybe_ia->ia_addr.sin_addr;
-    if (!bcmp(sha, (caddr_t)ssc->ss_hwaddr, len))
-      goto out;			/* it's from me, ignore it. */
-  }
 #ifndef AMITCP
-  if (!bcmp(sha, (caddr_t)etherbroadcastaddr, ac->ac_if.if_addrlen)) {
-    __log(LOG_ERR,
-	"arp: ether address is broadcast for IP address %lx!\n",
-	ntohl(isaddr.s_addr));
-    goto out;
-  }
+    if(!bcmp(sha, (caddr_t)etherbroadcastaddr, ac->ac_if.if_addrlen)) {
+        __log(LOG_ERR,
+              "arp: ether address is broadcast for IP address %lx!\n",
+              ntohl(isaddr.s_addr));
+        goto out;
+    }
 #endif
 
-  /* Check for duplicate IP addresses */
-  if (isaddr.s_addr == myaddr.s_addr) {
-    __log(LOG_ERR,
-	"duplicate IP address %lx!! sent from hardware address: %s\n",
-	ntohl(isaddr.s_addr), 
-	sana_sprintf(sha, len));
-    itaddr = myaddr;
-    if (op == ARPOP_REQUEST)
-      goto reply;
-    goto out;
-  }
-  
-  {
-    struct arptable *atb;
-    register struct arptab *at = NULL; /* same as "merge" flag */
-    
-    /* Try to locate ARP table */ 
-    if (!(atb = ssc->ss_arp.table)) {
-      goto reply;
+    /* Check for duplicate IP addresses */
+    if(isaddr.s_addr == myaddr.s_addr) {
+        __log(LOG_ERR,
+              "duplicate IP address %lx!! sent from hardware address: %s\n",
+              ntohl(isaddr.s_addr),
+              sana_sprintf(sha, len));
+        itaddr = myaddr;
+        if(op == ARPOP_REQUEST)
+            goto reply;
+        goto out;
     }
 
-    ARPTAB_LOCK(atb);
-    at = arptab_look(atb, isaddr.s_addr);
+    {
+        struct arptable *atb;
+        register struct arptab *at = NULL; /* same as "merge" flag */
 
-    if (at) {
-      bcopy(sha, (caddr_t)at->at_hwaddr, len);
+        /* Try to locate ARP table */
+        if(!(atb = ssc->ss_arp.table)) {
+            goto reply;
+        }
+
+        ARPTAB_LOCK(atb);
+        at = arptab_look(atb, isaddr.s_addr);
+
+        if(at) {
+            bcopy(sha, (caddr_t)at->at_hwaddr, len);
 #if o /* unused */
-      if ((at->at_flags & ATF_COM) == 0)
-	completed = 1;
+            if((at->at_flags & ATF_COM) == 0)
+                completed = 1;
 #endif
-      at->at_flags |= ATF_COM;
-      if (at->at_hold) {
-	sin.sin_family = AF_INET;
-	sin.sin_addr = isaddr;
-	(*ssc->ss_if.if_output)(&ssc->ss_if, at->at_hold,
-			       (struct sockaddr *)&sin, (struct rtentry *)0);
-	at->at_hold = 0;
-      }
-    }
-    if (at == 0 && itaddr.s_addr == myaddr.s_addr) {
-      /* ensure we have a table entry */
-      if (at = arptnew(isaddr.s_addr, atb, FALSE)) {
-	bcopy(sha, (caddr_t)at->at_hwaddr, len);
+            at->at_flags |= ATF_COM;
+            if(at->at_hold) {
+                sin.sin_family = AF_INET;
+                sin.sin_addr = isaddr;
+                (*ssc->ss_if.if_output)(&ssc->ss_if, at->at_hold,
+                                        (struct sockaddr *)&sin, (struct rtentry *)0);
+                at->at_hold = 0;
+            }
+        }
+        if(at == 0 && itaddr.s_addr == myaddr.s_addr) {
+            /* ensure we have a table entry */
+            if(at = arptnew(isaddr.s_addr, atb, FALSE)) {
+                bcopy(sha, (caddr_t)at->at_hwaddr, len);
 #if 0 /* unused */
-	completed = 1;
+                completed = 1;
 #endif
-	at->at_flags |= ATF_COM;
-      }
+                at->at_flags |= ATF_COM;
+            }
+        }
+        ARPTAB_UNLOCK(atb);
     }
-    ARPTAB_UNLOCK(atb);
-  }
 
- reply:
-  /*
-   * Reply if this is an IP request
-   */
-  if (op != ARPOP_REQUEST) 
-    goto out;
+reply:
+    /*
+     * Reply if this is an IP request
+     */
+    if(op != ARPOP_REQUEST)
+        goto out;
 
-  if (itaddr.s_addr == myaddr.s_addr) {
-    /* I am the target */
-    bcopy(sha, tha, len);
-    bcopy((caddr_t)ssc->ss_hwaddr, sha, len);
-  } else {
-    /* Answer if we have a public entry */
-    register struct arptab *at;
-    
-    /* Try to locate ARP table */ 
-    if (!ssc->ss_arp.table)
-      goto out;
-
-    ARPTAB_LOCK(ssc->ss_arp.table);
-    at = arptab_look(ssc->ss_arp.table, itaddr.s_addr);
-    if (at && (at->at_flags & ATF_PUBL)) {
-      bcopy(sha, tha, len);
-      bcopy(at->at_hwaddr, sha, len);
+    if(itaddr.s_addr == myaddr.s_addr) {
+        /* I am the target */
+        bcopy(sha, tha, len);
+        bcopy((caddr_t)ssc->ss_hwaddr, sha, len);
     } else {
-      at = NULL;
+        /* Answer if we have a public entry */
+        register struct arptab *at;
+
+        /* Try to locate ARP table */
+        if(!ssc->ss_arp.table)
+            goto out;
+
+        ARPTAB_LOCK(ssc->ss_arp.table);
+        at = arptab_look(ssc->ss_arp.table, itaddr.s_addr);
+        if(at && (at->at_flags & ATF_PUBL)) {
+            bcopy(sha, tha, len);
+            bcopy(at->at_hwaddr, sha, len);
+        } else {
+            at = NULL;
+        }
+        ARPTAB_UNLOCK(ssc->ss_arp.table);
+        if(!at)
+            goto out;
     }
-    ARPTAB_UNLOCK(ssc->ss_arp.table);
-    if (!at) 
-      goto out;
-  }
-  {
-    struct sockaddr_sana2 ss2;
-    bcopy(spa, tpa, sizeof(struct in_addr));
-    bcopy((caddr_t)&itaddr, spa, sizeof(struct in_addr));
-    s2a->arp_op = htons(ARPOP_REPLY); 
+    {
+        struct sockaddr_sana2 ss2;
+        bcopy(spa, tpa, sizeof(struct in_addr));
+        bcopy((caddr_t)&itaddr, spa, sizeof(struct in_addr));
+        s2a->arp_op = htons(ARPOP_REPLY);
 
-    ss2.ss2_len = sizeof(ss2);
-    ss2.ss2_family = AF_UNSPEC;
-    ss2.ss2_type = ssc->ss_arp.type;
-    bcopy(tha, ss2.ss2_host, len);
+        ss2.ss2_len = sizeof(ss2);
+        ss2.ss2_family = AF_UNSPEC;
+        ss2.ss2_type = ssc->ss_arp.type;
+        bcopy(tha, ss2.ss2_host, len);
 
-    m->m_flags &= ~(M_BCAST|M_MCAST);
+        m->m_flags &= ~(M_BCAST | M_MCAST);
 
-    pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_OUT);
-    (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2, 
-			    (struct rtentry *)0);
+        pfil_run_hooks(m, &ssc->ss_if, MIAMIPFBPT_ARP, IPF_OUT);
+        (*ssc->ss_if.if_output)(&ssc->ss_if, m, (struct sockaddr *)&ss2,
+                                (struct rtentry *)0);
+        return;
+    }
+out:
+    m_freem(m);
     return;
-  }
- out:
-  m_freem(m);
-  return;
 }
 
 int
 arpioctl(cmd, data)
-	int cmd;
-	caddr_t data;
+int cmd;
+caddr_t data;
 {
-  register struct arpreq *ar = (struct arpreq *)data;
-  register struct arptab *at;
-  register struct sockaddr_in *sin;
-  struct arptable *atb;
-  struct ifaddr *ifa;
-  struct sana_softc *ssc;
-  spl_t s;
+    register struct arpreq *ar = (struct arpreq *)data;
+    register struct arptab *at;
+    register struct sockaddr_in *sin;
+    struct arptable *atb;
+    struct ifaddr *ifa;
+    struct sana_softc *ssc;
+    spl_t s;
 
-  sin = (struct sockaddr_in *)&ar->arp_pa;
-  sin->sin_len = sizeof(ar->arp_pa);
+    sin = (struct sockaddr_in *)&ar->arp_pa;
+    sin->sin_len = sizeof(ar->arp_pa);
 
-  if (ar->arp_pa.sa_family != AF_INET ||
-      ar->arp_ha.sa_family != AF_UNSPEC)
-    return (EAFNOSUPPORT);
+    if(ar->arp_pa.sa_family != AF_INET ||
+            ar->arp_ha.sa_family != AF_UNSPEC)
+        return (EAFNOSUPPORT);
 
-  s = splimp();
-  if ((ifa = ifa_ifwithnet(&ar->arp_pa)) == NULL) {
+    s = splimp();
+    if((ifa = ifa_ifwithnet(&ar->arp_pa)) == NULL) {
+        splx(s);
+        return (ENETUNREACH);
+    }
+
+    ssc = (struct sana_softc *)ifa->ifa_ifp;
     splx(s);
-    return (ENETUNREACH);
-  }
 
-  ssc = (struct sana_softc *)ifa->ifa_ifp;
-  splx(s);
-
-/*if (ssc->ss_if.if_type != IFT_SANA || !(atb = ssc->ss_arp.table)) {*/
-  if (ssc->ss_if.if_output != sana_output || !(atb = ssc->ss_arp.table)) {
-    return (EAFNOSUPPORT);
-  }
-
-  ARPTAB_LOCK(atb);
-
-  if (cmd != SIOCGARPT) {
-    at = arptab_look(atb, sin->sin_addr.s_addr);
-    if (at == NULL && cmd != SIOCSARP) {
-      ARPTAB_UNLOCK(atb);
-      return (ENXIO);
-    }
-  }
-
-  switch (cmd) {
-
-  case SIOCSARP:		/* set entry */
-    if (ar->arp_ha.sa_len > sizeof(at->at_hwaddr) + 2 ||
-	ar->arp_ha.sa_len != ssc->ss_if.if_addrlen + 2) {
-      ARPTAB_UNLOCK(atb);
-      return (EINVAL);
-    }
-    /*
-     * Free if new entry should be allocated in a different way 
-     */
-    if (at != NULL && (at->at_flags ^ ar->arp_flags) & ATF_PERM) {
-      arptfree(atb, at);
-      at = NULL;
-    }
-    if (at == NULL) {
-      at = arptnew(sin->sin_addr.s_addr, atb, ar->arp_flags & ATF_PERM);
-      if (at == NULL) {
-	ARPTAB_UNLOCK(atb);
-	return (EADDRNOTAVAIL);
-      }
+    /*if (ssc->ss_if.if_type != IFT_SANA || !(atb = ssc->ss_arp.table)) {*/
+    if(ssc->ss_if.if_output != sana_output || !(atb = ssc->ss_arp.table)) {
+        return (EAFNOSUPPORT);
     }
 
-    bcopy((caddr_t)ar->arp_ha.sa_data, (caddr_t)at->at_hwaddr,
-	  ar->arp_ha.sa_len - 2);
-    at->at_flags = ATF_COM | ATF_INUSE | 
-      (ar->arp_flags & (ATF_PERM|ATF_PUBL));
-    at->at_timer = 0;
-    break;
+    ARPTAB_LOCK(atb);
 
-  case SIOCDARP:		/* delete entry */
-    arptfree(atb, at);
-    break;
-
-  case SIOCGARP:		/* get entry */
-    bcopy((caddr_t)at->at_hwaddr, (caddr_t)ar->arp_ha.sa_data,
-	  ar->arp_ha.sa_len = ssc->ss_if.if_addrlen + 2);
-    ar->arp_flags = at->at_flags;
-    break;
-
-  case SIOCGARPT:		/* get table */
-    {
-      int i, n; long siz;
-      register struct arptabreq *atr = (struct arptabreq *)data;
-      ar = atr->atr_table;
-      siz = ar ? atr->atr_size : 0;
-
-      for (n = i = 0; i < ARPTAB_HSIZE; i++) {
-	for (at = (struct arptab *)atb->atb_entries[i].mlh_Head; 
-	     at->at_succ; 
-	     at = at->at_succ) {
-	  n++;
-	  if (siz > 0) {
-	    struct sockaddr_in *sin = (struct sockaddr_in *)&ar->arp_pa;
-	    sin->sin_len = sizeof(*sin);
-	    sin->sin_family = AF_INET;
-	    sin->sin_addr = at->at_iaddr;
-	    bcopy((caddr_t)at->at_hwaddr, (caddr_t)ar->arp_ha.sa_data,
-		  ar->arp_ha.sa_len = ssc->ss_if.if_addrlen + 2);
-	    ar->arp_flags = at->at_flags;
-	    siz--;
-	    ar++;
-	  }
-	}
-      }
-      atr->atr_size -= siz;
-      atr->atr_inuse = n;
+    if(cmd != SIOCGARPT) {
+        at = arptab_look(atb, sin->sin_addr.s_addr);
+        if(at == NULL && cmd != SIOCSARP) {
+            ARPTAB_UNLOCK(atb);
+            return (ENXIO);
+        }
     }
-  }
 
-  ARPTAB_UNLOCK(atb);
-  return 0;
+    switch(cmd) {
+
+    case SIOCSARP:		/* set entry */
+        if(ar->arp_ha.sa_len > sizeof(at->at_hwaddr) + 2 ||
+                ar->arp_ha.sa_len != ssc->ss_if.if_addrlen + 2) {
+            ARPTAB_UNLOCK(atb);
+            return (EINVAL);
+        }
+        /*
+         * Free if new entry should be allocated in a different way
+         */
+        if(at != NULL && (at->at_flags ^ ar->arp_flags) & ATF_PERM) {
+            arptfree(atb, at);
+            at = NULL;
+        }
+        if(at == NULL) {
+            at = arptnew(sin->sin_addr.s_addr, atb, ar->arp_flags & ATF_PERM);
+            if(at == NULL) {
+                ARPTAB_UNLOCK(atb);
+                return (EADDRNOTAVAIL);
+            }
+        }
+
+        bcopy((caddr_t)ar->arp_ha.sa_data, (caddr_t)at->at_hwaddr,
+              ar->arp_ha.sa_len - 2);
+        at->at_flags = ATF_COM | ATF_INUSE |
+                       (ar->arp_flags & (ATF_PERM | ATF_PUBL));
+        at->at_timer = 0;
+        break;
+
+    case SIOCDARP:		/* delete entry */
+        arptfree(atb, at);
+        break;
+
+    case SIOCGARP:		/* get entry */
+        bcopy((caddr_t)at->at_hwaddr, (caddr_t)ar->arp_ha.sa_data,
+              ar->arp_ha.sa_len = ssc->ss_if.if_addrlen + 2);
+        ar->arp_flags = at->at_flags;
+        break;
+
+    case SIOCGARPT: {	/* get table */
+        int i, n;
+        long siz;
+        register struct arptabreq *atr = (struct arptabreq *)data;
+        ar = atr->atr_table;
+        siz = ar ? atr->atr_size : 0;
+
+        for(n = i = 0; i < ARPTAB_HSIZE; i++) {
+            for(at = (struct arptab *)atb->atb_entries[i].mlh_Head;
+                    at->at_succ;
+                    at = at->at_succ) {
+                n++;
+                if(siz > 0) {
+                    struct sockaddr_in *sin = (struct sockaddr_in *)&ar->arp_pa;
+                    sin->sin_len = sizeof(*sin);
+                    sin->sin_family = AF_INET;
+                    sin->sin_addr = at->at_iaddr;
+                    bcopy((caddr_t)at->at_hwaddr, (caddr_t)ar->arp_ha.sa_data,
+                          ar->arp_ha.sa_len = ssc->ss_if.if_addrlen + 2);
+                    ar->arp_flags = at->at_flags;
+                    siz--;
+                    ar++;
+                }
+            }
+        }
+        atr->atr_size -= siz;
+        atr->atr_inuse = n;
+    }
+    }
+
+    ARPTAB_UNLOCK(atb);
+    return 0;
 }
 
 static const char *digits = "0123456789ABCDEF";
@@ -1021,17 +1021,17 @@ static const char *digits = "0123456789ABCDEF";
  */
 static char *sana_sprintf(register u_char *ap, int len)
 {
-  register int i;
-  static char addrbuf[17*3];
-  register unsigned char *cp = addrbuf;
+    register int i;
+    static char addrbuf[17 * 3];
+    register unsigned char *cp = addrbuf;
 
-  for (i = 0; i < len; ) {
-    *cp++ = digits[*ap >> 4];
-    *cp++ = digits[*ap++ & 0xf];
-    i++;
-    if (i < len) 
-      *cp++ = ':';
-  }
-  *cp = 0;
-  return (addrbuf);
+    for(i = 0; i < len;) {
+        *cp++ = digits[*ap >> 4];
+        *cp++ = digits[*ap++ & 0xf];
+        i++;
+        if(i < len)
+            *cp++ = ':';
+    }
+    *cp = 0;
+    return (addrbuf);
 }

@@ -32,35 +32,35 @@
 
 int controlaccess(struct in_addr shost, unsigned short dport)
 {
-  int i;
+    int i;
 
-  LOCK_R_NDB(NDB);		
-  for (i = 0; NDB->ndb_AccessTable[i].ai_flags; i++) 
+    LOCK_R_NDB(NDB);
+    for(i = 0; NDB->ndb_AccessTable[i].ai_flags; i++)
 #define AT NDB->ndb_AccessTable[i]
 #define host (*(ULONG *)&shost)				/* XXX */
-    if ((AT.ai_port == 0 && (!(AT.ai_flags & ACF_PRIVONLY) || dport < 1024)
-	 || AT.ai_port == dport) &&
-	((host ^ AT.ai_host) & AT.ai_mask) == 0) {
-      /*
-       * match
-       */
-      int allow = AT.ai_flags & ACF_ALLOW;
+        if((AT.ai_port == 0 && (!(AT.ai_flags & ACF_PRIVONLY) || dport < 1024)
+                || AT.ai_port == dport) &&
+                ((host ^ AT.ai_host) & AT.ai_mask) == 0) {
+            /*
+             * match
+             */
+            int allow = AT.ai_flags & ACF_ALLOW;
 
-      if (AT.ai_flags & ACF_LOG)
-	__log(allow? LOG_INFO: LOG_NOTICE,
-	    "Access from host %ld.%ld.%ld.%ld to port %ld %s\n",
-	    host>>24 & 0xff, host>>16 & 0xff, host>>8 & 0xff, host & 0xff,
-	    dport, allow? "allowed": "denied");
+            if(AT.ai_flags & ACF_LOG)
+                __log(allow ? LOG_INFO : LOG_NOTICE,
+                      "Access from host %ld.%ld.%ld.%ld to port %ld %s\n",
+                      host >> 24 & 0xff, host >> 16 & 0xff, host >> 8 & 0xff, host & 0xff,
+                      dport, allow ? "allowed" : "denied");
 
-      UNLOCK_NDB(NDB);
-      return allow;
+            UNLOCK_NDB(NDB);
+            return allow;
 #undef allow
 #undef host
 #undef AT
-    }
-  /*
-   * No match. allow by default.
-   */
-  UNLOCK_NDB(NDB);
-  return ACF_ALLOW;
+        }
+    /*
+     * No match. allow by default.
+     */
+    UNLOCK_NDB(NDB);
+    return ACF_ALLOW;
 }

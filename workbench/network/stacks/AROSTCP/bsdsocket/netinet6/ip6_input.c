@@ -73,17 +73,17 @@ ip6_init(void)
     int i;
 
     pr = pffindproto(AF_INET6, IPPROTO_RAW, SOCK_RAW);
-    if (pr == NULL)
+    if(pr == NULL)
         panic("ip6_init: no raw IPv6");
 
     /* build protocol dispatch table */
-    for (i = 0; i < IPPROTO_MAX; i++)
+    for(i = 0; i < IPPROTO_MAX; i++)
         ip6_protox[i] = (u_char)(pr - inet6sw);
 
-    for (pr = inet6domain.dom_protosw;
-         pr < inet6domain.dom_protoswNPROTOSW;
-         pr++) {
-        if (pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
+    for(pr = inet6domain.dom_protosw;
+            pr < inet6domain.dom_protoswNPROTOSW;
+            pr++) {
+        if(pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
             ip6_protox[pr->pr_protocol] = (u_char)(pr - inet6sw);
     }
 
@@ -101,11 +101,11 @@ ip6intr(void)
     struct mbuf *m;
     spl_t s;
 
-    for (;;) {
+    for(;;) {
         s = splimp();
         IF_DEQUEUE(&ip6intrq, m);
         splx(s);
-        if (m == NULL)
+        if(m == NULL)
             break;
         ip6_input(m);
     }
@@ -138,69 +138,69 @@ ip6_input(struct mbuf *m)
             "  dst=%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
             "%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
             __func__, m->m_pkthdr.len, _ip6->ip6_nxt,
-            s[0],s[1],s[2],s[3],s[4],s[5],s[6],s[7],
-            s[8],s[9],s[10],s[11],s[12],s[13],s[14],s[15],
-            d[0],d[1],d[2],d[3],d[4],d[5],d[6],d[7],
-            d[8],d[9],d[10],d[11],d[12],d[13],d[14],d[15]);
+            s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+            s[8], s[9], s[10], s[11], s[12], s[13], s[14], s[15],
+            d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
+            d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]);
     });
 
     /* pull up to minimum header size */
-    if (m->m_len < sizeof(struct ip6_hdr) &&
-        (m = m_pullup(m, sizeof(struct ip6_hdr))) == NULL) {
+    if(m->m_len < sizeof(struct ip6_hdr) &&
+            (m = m_pullup(m, sizeof(struct ip6_hdr))) == NULL) {
         ip6stat.ip6s_toosmall++;
         return;
     }
     ip6 = mtod(m, struct ip6_hdr *);
 
     /* version check */
-    if ((ip6->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION) {
+    if((ip6->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION) {
         ip6stat.ip6s_badvers++;
         goto bad;
     }
 
     plen = ntohs(ip6->ip6_plen);
-    if (m->m_pkthdr.len < sizeof(struct ip6_hdr) + plen) {
+    if(m->m_pkthdr.len < sizeof(struct ip6_hdr) + plen) {
         ip6stat.ip6s_tooshort++;
         goto bad;
     }
     /* trim any trailing junk */
-    if (m->m_pkthdr.len > sizeof(struct ip6_hdr) + plen)
+    if(m->m_pkthdr.len > sizeof(struct ip6_hdr) + plen)
         m_adj(m, sizeof(struct ip6_hdr) + plen - m->m_pkthdr.len);
 
     /* discard unspecified source except when link-local */
-    if (IN6_IS_ADDR_UNSPECIFIED(&ip6->ip6_src) &&
-        !IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+    if(IN6_IS_ADDR_UNSPECIFIED(&ip6->ip6_src) &&
+            !IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
         ip6stat.ip6s_badscope++;
         goto bad;
     }
 
     /* check if destination is one of our addresses */
-    for (ia = in6_ifaddr; ia; ia = ia->ia_next) {
-        if (IN6_ARE_ADDR_EQUAL(&ip6->ip6_dst, &ia->ia_addr.sin6_addr))
+    for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
+        if(IN6_ARE_ADDR_EQUAL(&ip6->ip6_dst, &ia->ia_addr.sin6_addr))
             goto ours;
         /* also accept solicited-node multicast for our addr */
-        if (IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
             /* ff02::1:ffXX:XXXX */
-            if (ip6->ip6_dst.s6_addr[0] == 0xff &&
-                ip6->ip6_dst.s6_addr[1] == 0x02 &&
-                ip6->ip6_dst.s6_addr[11] == 0x01 &&
-                ip6->ip6_dst.s6_addr[12] == 0xff &&
-                ip6->ip6_dst.s6_addr[13] == ia->ia_addr.sin6_addr.s6_addr[13] &&
-                ip6->ip6_dst.s6_addr[14] == ia->ia_addr.sin6_addr.s6_addr[14] &&
-                ip6->ip6_dst.s6_addr[15] == ia->ia_addr.sin6_addr.s6_addr[15])
+            if(ip6->ip6_dst.s6_addr[0] == 0xff &&
+                    ip6->ip6_dst.s6_addr[1] == 0x02 &&
+                    ip6->ip6_dst.s6_addr[11] == 0x01 &&
+                    ip6->ip6_dst.s6_addr[12] == 0xff &&
+                    ip6->ip6_dst.s6_addr[13] == ia->ia_addr.sin6_addr.s6_addr[13] &&
+                    ip6->ip6_dst.s6_addr[14] == ia->ia_addr.sin6_addr.s6_addr[14] &&
+                    ip6->ip6_dst.s6_addr[15] == ia->ia_addr.sin6_addr.s6_addr[15])
                 goto ours;
         }
     }
 
     /* accept all-nodes multicast ff02::1 */
-    if (ip6->ip6_dst.s6_addr[0] == 0xff &&
-        ip6->ip6_dst.s6_addr[1] == 0x02 &&
-        ip6->ip6_dst.s6_addr[15] == 0x01)
+    if(ip6->ip6_dst.s6_addr[0] == 0xff &&
+            ip6->ip6_dst.s6_addr[1] == 0x02 &&
+            ip6->ip6_dst.s6_addr[15] == 0x01)
         goto ours;
 
     /* forwarding */
-    if (ip6_forwarding) {
-        if (ip6->ip6_hlim <= 1) {
+    if(ip6_forwarding) {
+        if(ip6->ip6_hlim <= 1) {
             /* hop limit exceeded */
             icmp6_error(m, ICMP6_TIME_EXCEEDED,
                         ICMP6_TIME_EXCEED_TRANSIT, 0);
@@ -223,16 +223,16 @@ ours:
     nxt = ip6->ip6_nxt;
 
     /* simple extension header skip loop */
-    while (1) {
+    while(1) {
         struct ip6_ext *ext;
         int extlen;
 
-        switch (nxt) {
+        switch(nxt) {
         case IPPROTO_HOPOPTS:
         case IPPROTO_ROUTING:
         case IPPROTO_DSTOPTS:
-            if (m->m_len < off + sizeof(struct ip6_ext) &&
-                (m = m_pullup(m, off + sizeof(struct ip6_ext))) == NULL) {
+            if(m->m_len < off + sizeof(struct ip6_ext) &&
+                    (m = m_pullup(m, off + sizeof(struct ip6_ext))) == NULL) {
                 ip6stat.ip6s_tooshort++;
                 return;
             }
@@ -260,7 +260,7 @@ ours:
 deliver:
     /* dispatch to upper-layer protocol */
     pr = &inet6sw[ip6_protox[nxt]];
-    if (pr->pr_input)
+    if(pr->pr_input)
         (*pr->pr_input)(m, off, nxt);
     else
         m_freem(m);

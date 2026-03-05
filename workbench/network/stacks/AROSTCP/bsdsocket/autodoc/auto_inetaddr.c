@@ -17,7 +17,7 @@
 *
 *        net = inet_network(cp)
 *        D0                 A0
-*        
+*
 *        unsigned long inet_network(char *);
 *
 *        in_addr = Inet_MakeAddr(net, lna)
@@ -40,7 +40,7 @@
 *
 *        char * Inet_NtoA(unsigned long);
 *
-*        
+*
 *        in_addr = inet_makeaddr(net, lna)
 *
 *        struct in_addr inet_makeaddr(long, long);

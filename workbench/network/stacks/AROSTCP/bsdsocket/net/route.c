@@ -20,29 +20,29 @@
  *
  */
 
-/* 
+/*
  * Mach Operating System
  * Copyright (C) 1992 Carnegie Mellon University
  * All Rights Reserved.
- * 
+ *
  * Permission to use, copy, modify and distribute this software and its
  * documentation is hereby granted, provided that both the copyright
  * notice and this permission notice appear in all copies of the
  * software, derivative works or modified versions, and any portions
  * thereof, and that both notices appear in supporting documentation.
- * 
+ *
  * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
  * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
  * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
- * 
+ *
  * Carnegie Mellon requests users of this software to return to
- * 
+ *
  *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
  *  School of Computer Science
  *  Carnegie Mellon University
  *  Pittsburgh PA 15213-3890
- * 
- * any improvements or extensions that they make and grant Carnegie Mellon 
+ *
+ * any improvements or extensions that they make and grant Carnegie Mellon
  * the rights to redistribute these changes.
  */
 
@@ -142,16 +142,16 @@ struct radix_node *rn_match(), *rn_delete(), *rn_addroute();
 void
 rtinitheads()
 {
-	if (rtinits_done == 0) {
+    if(rtinits_done == 0) {
 #if NS
-		rn_inithead(&ns_rnhead, 16, AF_NS);
+        rn_inithead(&ns_rnhead, 16, AF_NS);
 #endif
 #if INET6
-		rn_inithead(&in6_rnhead, 64, AF_INET6);
+        rn_inithead(&in6_rnhead, 64, AF_INET6);
 #endif
-		if (rn_inithead(&in_rnhead, 32, AF_INET))
-			rtinits_done = 1;
-	}
+        if(rn_inithead(&in_rnhead, 32, AF_INET))
+            rtinits_done = 1;
+    }
 }
 
 /*
@@ -159,64 +159,65 @@ rtinitheads()
  */
 void
 rtalloc(ro)
-	register struct route *ro;
+register struct route *ro;
 {
-	if (ro->ro_rt && ro->ro_rt->rt_ifp && (ro->ro_rt->rt_flags & RTF_UP))
-		return;				 /* XXX */
-	ro->ro_rt = rtalloc1(&ro->ro_dst, 1);
+    if(ro->ro_rt && ro->ro_rt->rt_ifp && (ro->ro_rt->rt_flags & RTF_UP))
+        return;				 /* XXX */
+    ro->ro_rt = rtalloc1(&ro->ro_dst, 1);
 }
 
 struct rtentry *
 rtalloc1(dst, report)
-	register struct sockaddr *dst;
-	int  report;
+register struct sockaddr *dst;
+int  report;
 {
-	register struct radix_node_head *rnh;
-	register struct rtentry *rt;
-	register struct radix_node *rn;
-	struct rtentry *newrt = 0;
-	int err = 0, msgtype = RTM_MISS;
-	spl_t s = splnet();
+    register struct radix_node_head *rnh;
+    register struct rtentry *rt;
+    register struct radix_node *rn;
+    struct rtentry *newrt = 0;
+    int err = 0, msgtype = RTM_MISS;
+    spl_t s = splnet();
 
-	for (rnh = radix_node_head; rnh && (dst->sa_family != rnh->rnh_af); )
-		rnh = rnh->rnh_next;
-	DROUTE(log(LOG_DEBUG,"Found radix node head: 0x%08lx", rnh);)
-	DROUTE(log(LOG_DEBUG,"rnh_treetop = 0x%08lx", rnh->rnh_treetop);)
-	if (rnh && rnh->rnh_treetop &&
-	    (rn = rn_match((caddr_t)dst, rnh->rnh_treetop)) &&
-	    ((rn->rn_flags & RNF_ROOT) == 0)) {
-		newrt = rt = (struct rtentry *)rn;
-		if (report && (rt->rt_flags & RTF_CLONING)) {
-			if ((err = rtrequest(RTM_RESOLVE, dst, SA(0),
-					      SA(0), 0, &newrt)) ||
-			    ((rt->rt_flags & RTF_XRESOLVE)
-			      && (msgtype = RTM_RESOLVE))) /* intended! */
-			    goto miss;
-		} else
-			rt->rt_refcnt++;
-	} else {
-		DROUTE(log(LOG_DEBUG,"Route lookup failure, rn = 0x%08lx", rn);)
-		rtstat.rts_unreach++;
-	miss:	if (report)
-			rt_missmsg(msgtype, dst, SA(0), SA(0), SA(0), 0, err);
-	}
-	splx(s);
-	return (newrt);
+    for(rnh = radix_node_head; rnh && (dst->sa_family != rnh->rnh_af);)
+        rnh = rnh->rnh_next;
+    DROUTE(log(LOG_DEBUG, "Found radix node head: 0x%08lx", rnh);)
+    DROUTE(log(LOG_DEBUG, "rnh_treetop = 0x%08lx", rnh->rnh_treetop);)
+    if(rnh && rnh->rnh_treetop &&
+            (rn = rn_match((caddr_t)dst, rnh->rnh_treetop)) &&
+            ((rn->rn_flags & RNF_ROOT) == 0)) {
+        newrt = rt = (struct rtentry *)rn;
+        if(report && (rt->rt_flags & RTF_CLONING)) {
+            if((err = rtrequest(RTM_RESOLVE, dst, SA(0),
+                                SA(0), 0, &newrt)) ||
+                    ((rt->rt_flags & RTF_XRESOLVE)
+                     && (msgtype = RTM_RESOLVE))) /* intended! */
+                goto miss;
+        } else
+            rt->rt_refcnt++;
+    } else {
+        DROUTE(log(LOG_DEBUG, "Route lookup failure, rn = 0x%08lx", rn);)
+        rtstat.rts_unreach++;
+miss:
+        if(report)
+            rt_missmsg(msgtype, dst, SA(0), SA(0), SA(0), 0, err);
+    }
+    splx(s);
+    return (newrt);
 }
 
 void
 rtfree(rt)
-	register struct rtentry *rt;
+register struct rtentry *rt;
 {
-	if (rt == 0)
-		panic("rtfree");
-	rt->rt_refcnt--;
-	if (rt->rt_refcnt <= 0 && (rt->rt_flags & RTF_UP) == 0) {
-		rttrash--;
-		if (rt->rt_nodes->rn_flags & (RNF_ACTIVE | RNF_ROOT))
-			panic ("rtfree 2");
-		Free(rt);
-	}
+    if(rt == 0)
+        panic("rtfree");
+    rt->rt_refcnt--;
+    if(rt->rt_refcnt <= 0 && (rt->rt_flags & RTF_UP) == 0) {
+        rttrash--;
+        if(rt->rt_nodes->rn_flags & (RNF_ACTIVE | RNF_ROOT))
+            panic("rtfree 2");
+        Free(rt);
+    }
 }
 
 /*
@@ -230,86 +231,86 @@ rtfree(rt)
  */
 void
 rtredirect(dst, gateway, netmask, flags, src, rtp)
-	struct sockaddr *dst, *gateway, *netmask, *src;
-	int flags;
-	struct rtentry **rtp;
+struct sockaddr *dst, *gateway, *netmask, *src;
+int flags;
+struct rtentry **rtp;
 {
-	register struct rtentry *rt = NULL;
-	int error = 0;
-	short *stat = 0;
+    register struct rtentry *rt = NULL;
+    int error = 0;
+    short *stat = 0;
 
-	/* verify the gateway is directly reachable */
-	if (ifa_ifwithnet(gateway) == 0) {
-		error = ENETUNREACH;
-		goto done;
-	}
-	rt = rtalloc1(dst, 0);
-	/*
-	 * If the redirect isn't from our current router for this dst,
-	 * it's either old or wrong.  If it redirects us to ourselves,
-	 * we have a routing loop, perhaps as a result of an interface
-	 * going down recently.
-	 */
+    /* verify the gateway is directly reachable */
+    if(ifa_ifwithnet(gateway) == 0) {
+        error = ENETUNREACH;
+        goto done;
+    }
+    rt = rtalloc1(dst, 0);
+    /*
+     * If the redirect isn't from our current router for this dst,
+     * it's either old or wrong.  If it redirects us to ourselves,
+     * we have a routing loop, perhaps as a result of an interface
+     * going down recently.
+     */
 #define	equal(a1, a2) (bcmp((caddr_t)(a1), (caddr_t)(a2), (a1)->sa_len) == 0)
-	if (!(flags & RTF_DONE) && rt && !equal(src, rt->rt_gateway))
-		error = EINVAL;
-	else if (ifa_ifwithaddr(gateway))
-		error = EHOSTUNREACH;
-	if (error)
-		goto done;
-	/*
-	 * Create a new entry if we just got back a wildcard entry
-	 * or the the lookup failed.  This is necessary for hosts
-	 * which use routing redirects generated by smart gateways
-	 * to dynamically build the routing tables.
-	 */
-	if ((rt == 0) || (rt_mask(rt) && rt_mask(rt)->sa_len < 2))
-		goto create;
-	/*
-	 * Don't listen to the redirect if it's
-	 * for a route to an interface. 
-	 */
-	if (rt->rt_flags & RTF_GATEWAY) {
-		if (((rt->rt_flags & RTF_HOST) == 0) && (flags & RTF_HOST)) {
-			/*
-			 * Changing from route to net => route to host.
-			 * Create new route, rather than smashing route to net.
-			 */
-		create:
-			flags |=  RTF_GATEWAY | RTF_DYNAMIC;
-			error = rtrequest((int)RTM_ADD, dst, gateway,
-				    SA(0), flags,
-				    (struct rtentry **)0);
-			stat = &rtstat.rts_dynamic;
-		} else {
-			/*
-			 * Smash the current notion of the gateway to
-			 * this destination.  Should check about netmask!!!
-			 */
-			if (gateway->sa_len <= rt->rt_gateway->sa_len) {
-				Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
-				rt->rt_flags |= RTF_MODIFIED;
-				flags |= RTF_MODIFIED;
-				stat = &rtstat.rts_newgateway;
-			} else
-				error = ENOSPC;
-		}
-	} else
-		error = EHOSTUNREACH;
+    if(!(flags & RTF_DONE) && rt && !equal(src, rt->rt_gateway))
+        error = EINVAL;
+    else if(ifa_ifwithaddr(gateway))
+        error = EHOSTUNREACH;
+    if(error)
+        goto done;
+    /*
+     * Create a new entry if we just got back a wildcard entry
+     * or the the lookup failed.  This is necessary for hosts
+     * which use routing redirects generated by smart gateways
+     * to dynamically build the routing tables.
+     */
+    if((rt == 0) || (rt_mask(rt) && rt_mask(rt)->sa_len < 2))
+        goto create;
+    /*
+     * Don't listen to the redirect if it's
+     * for a route to an interface.
+     */
+    if(rt->rt_flags & RTF_GATEWAY) {
+        if(((rt->rt_flags & RTF_HOST) == 0) && (flags & RTF_HOST)) {
+            /*
+             * Changing from route to net => route to host.
+             * Create new route, rather than smashing route to net.
+             */
+create:
+            flags |=  RTF_GATEWAY | RTF_DYNAMIC;
+            error = rtrequest((int)RTM_ADD, dst, gateway,
+                              SA(0), flags,
+                              (struct rtentry **)0);
+            stat = &rtstat.rts_dynamic;
+        } else {
+            /*
+             * Smash the current notion of the gateway to
+             * this destination.  Should check about netmask!!!
+             */
+            if(gateway->sa_len <= rt->rt_gateway->sa_len) {
+                Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
+                rt->rt_flags |= RTF_MODIFIED;
+                flags |= RTF_MODIFIED;
+                stat = &rtstat.rts_newgateway;
+            } else
+                error = ENOSPC;
+        }
+    } else
+        error = EHOSTUNREACH;
 done:
-	if (rt) {
-		if (rtp && !error)
-			*rtp = rt;
-		else
-			rtfree(rt);
-	}
-	if (error)
-		rtstat.rts_badredirect++;
-	else {
-		if (stat)
-		    (*stat)++;
-	}
-	rt_missmsg(RTM_REDIRECT, dst, gateway, netmask, src, flags, error);
+    if(rt) {
+        if(rtp && !error)
+            *rtp = rt;
+        else
+            rtfree(rt);
+    }
+    if(error)
+        rtstat.rts_badredirect++;
+    else {
+        if(stat)
+            (*stat)++;
+    }
+    rt_missmsg(RTM_REDIRECT, dst, gateway, netmask, src, flags, error);
 }
 
 /*
@@ -317,82 +318,80 @@ done:
 */
 int
 rtioctl(req, data)
-	int req;
-	caddr_t data;
+int req;
+caddr_t data;
 {
 #if !defined(COMPAT_43) && !defined(AMITCP)
-	return (EOPNOTSUPP);
+    return (EOPNOTSUPP);
 #else
-	register struct ortentry *entry = (struct ortentry *)data;
-	int error;
-	struct sockaddr netmask;
+    register struct ortentry *entry = (struct ortentry *)data;
+    int error;
+    struct sockaddr netmask;
 
-	if (req == SIOCADDRT)
-		req = RTM_ADD;
-	else if (req == SIOCDELRT)
-		req = RTM_DELETE;
-	else
-		return (EINVAL);
+    if(req == SIOCADDRT)
+        req = RTM_ADD;
+    else if(req == SIOCDELRT)
+        req = RTM_DELETE;
+    else
+        return (EINVAL);
 
 #ifndef AMITCP /* no protection on AmigaOS */
-	if (error = suser(p->p_ucred, &p->p_acflag))
-		return (error);
+    if(error = suser(p->p_ucred, &p->p_acflag))
+        return (error);
 #endif /* AMITCP */
 
 #if BYTE_ORDER != BIG_ENDIAN
-	if (entry->rt_dst.sa_family == 0 && entry->rt_dst.sa_len < 16) {
-		entry->rt_dst.sa_family = entry->rt_dst.sa_len;
-		entry->rt_dst.sa_len = 16;
-	}
-	if (entry->rt_gateway.sa_family == 0 && entry->rt_gateway.sa_len < 16) {
-		entry->rt_gateway.sa_family = entry->rt_gateway.sa_len;
-		entry->rt_gateway.sa_len = 16;
-	}
+    if(entry->rt_dst.sa_family == 0 && entry->rt_dst.sa_len < 16) {
+        entry->rt_dst.sa_family = entry->rt_dst.sa_len;
+        entry->rt_dst.sa_len = 16;
+    }
+    if(entry->rt_gateway.sa_family == 0 && entry->rt_gateway.sa_len < 16) {
+        entry->rt_gateway.sa_family = entry->rt_gateway.sa_len;
+        entry->rt_gateway.sa_len = 16;
+    }
 #else
-	if (entry->rt_dst.sa_len == 0)
-		entry->rt_dst.sa_len = 16;
-	if (entry->rt_gateway.sa_len == 0)
-		entry->rt_gateway.sa_len = 16;
+    if(entry->rt_dst.sa_len == 0)
+        entry->rt_dst.sa_len = 16;
+    if(entry->rt_gateway.sa_len == 0)
+        entry->rt_gateway.sa_len = 16;
 #endif
-	if ((entry->rt_flags & RTF_HOST) == 0)
-		switch (entry->rt_dst.sa_family) {
+    if((entry->rt_flags & RTF_HOST) == 0)
+        switch(entry->rt_dst.sa_family) {
 #if INET
-		case AF_INET:
-			{
+        case AF_INET: {
 #if 0
-			  /*
-			   * Should not use icmpmask, since it is accessed from
-			   * different tasks!
-			   */
-				extern struct sockaddr_in icmpmask;
-				struct sockaddr_in *dst_in = 
-					(struct sockaddr_in *)&entry->rt_dst;
+            /*
+             * Should not use icmpmask, since it is accessed from
+             * different tasks!
+             */
+            extern struct sockaddr_in icmpmask;
+            struct sockaddr_in *dst_in =
+                (struct sockaddr_in *)&entry->rt_dst;
 
-				in_sockmaskof(dst_in->sin_addr, &icmpmask);
-				netmask = (struct sockaddr *)&icmpmask;
+            in_sockmaskof(dst_in->sin_addr, &icmpmask);
+            netmask = (struct sockaddr *)&icmpmask;
 #else
-                                struct sockaddr_in *dst_saddr = (struct sockaddr_in *)&entry->rt_dst;
-				in_sockmaskof(dst_saddr->sin_addr, (struct sockaddr_in *)&netmask);
+            struct sockaddr_in *dst_saddr = (struct sockaddr_in *)&entry->rt_dst;
+            in_sockmaskof(dst_saddr->sin_addr, (struct sockaddr_in *)&netmask);
 #endif
-			}
-			break;
+        }
+        break;
 #endif
 #if NS
-		case AF_NS:
-			{
-				extern struct sockaddr_ns ns_netmask;
-				netmask = (struct sockaddr)ns_netmask;
-			}
+        case AF_NS: {
+            extern struct sockaddr_ns ns_netmask;
+            netmask = (struct sockaddr)ns_netmask;
+        }
 #endif
-		}
-	error = rtrequest(req, &(entry->rt_dst), &(entry->rt_gateway),
-			  (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
-			  entry->rt_flags, (struct rtentry **)0);
-	rt_missmsg((req == RTM_ADD ? RTM_OLDADD : RTM_OLDDEL),
-		   &(entry->rt_dst), &(entry->rt_gateway),
-		   (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
-		   SA(0), entry->rt_flags, error);
-	return (error);
+        }
+    error = rtrequest(req, &(entry->rt_dst), &(entry->rt_gateway),
+                      (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
+                      entry->rt_flags, (struct rtentry **)0);
+    rt_missmsg((req == RTM_ADD ? RTM_OLDADD : RTM_OLDDEL),
+               &(entry->rt_dst), &(entry->rt_gateway),
+               (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
+               SA(0), entry->rt_flags, error);
+    return (error);
 #endif
 }
 
@@ -401,163 +400,164 @@ ifa_ifwithroute(flags, dst, gateway)
 int	flags;
 struct sockaddr	*dst, *gateway;
 {
-	register struct ifaddr *ifa;
-	if ((flags & RTF_GATEWAY) == 0) {
-		/*
-		 * If we are adding a route to an interface,
-		 * and the interface is a pt to pt link
-		 * we should search for the destination
-		 * as our clue to the interface.  Otherwise
-		 * we can use the local address.
-		 */
-		ifa = 0;
-		if (flags & RTF_HOST) 
-			ifa = ifa_ifwithdstaddr(dst);
-		if (ifa == 0)
-			ifa = ifa_ifwithaddr(gateway);
-	} else {
-		/*
-		 * If we are adding a route to a remote net
-		 * or host, the gateway may still be on the
-		 * other end of a pt to pt link.
-		 */
-		ifa = ifa_ifwithdstaddr(gateway);
-	}
-	if (ifa == 0)
-		ifa = ifa_ifwithnet(gateway);
-	if (ifa == 0) {
-		struct rtentry *rt = rtalloc1(dst, 0);
-		if (rt == 0)
-			return (0);
-		rt->rt_refcnt--;
-		if ((ifa = rt->rt_ifa) == 0)
-			return (0);
-	}
-	if (ifa->ifa_addr->sa_family != dst->sa_family) {
-		struct ifaddr *oifa = ifa, *ifaof_ifpforaddr();
-		ifa = ifaof_ifpforaddr(dst, ifa->ifa_ifp);
-		if (ifa == 0)
-			ifa = oifa;
-	}
-	return (ifa);
+    register struct ifaddr *ifa;
+    if((flags & RTF_GATEWAY) == 0) {
+        /*
+         * If we are adding a route to an interface,
+         * and the interface is a pt to pt link
+         * we should search for the destination
+         * as our clue to the interface.  Otherwise
+         * we can use the local address.
+         */
+        ifa = 0;
+        if(flags & RTF_HOST)
+            ifa = ifa_ifwithdstaddr(dst);
+        if(ifa == 0)
+            ifa = ifa_ifwithaddr(gateway);
+    } else {
+        /*
+         * If we are adding a route to a remote net
+         * or host, the gateway may still be on the
+         * other end of a pt to pt link.
+         */
+        ifa = ifa_ifwithdstaddr(gateway);
+    }
+    if(ifa == 0)
+        ifa = ifa_ifwithnet(gateway);
+    if(ifa == 0) {
+        struct rtentry *rt = rtalloc1(dst, 0);
+        if(rt == 0)
+            return (0);
+        rt->rt_refcnt--;
+        if((ifa = rt->rt_ifa) == 0)
+            return (0);
+    }
+    if(ifa->ifa_addr->sa_family != dst->sa_family) {
+        struct ifaddr *oifa = ifa, *ifaof_ifpforaddr();
+        ifa = ifaof_ifpforaddr(dst, ifa->ifa_ifp);
+        if(ifa == 0)
+            ifa = oifa;
+    }
+    return (ifa);
 }
 
 #define ROUNDUP(a) (a>0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
 
 int
 rtrequest(req, dst, gateway, netmask, flags, ret_nrt)
-	int req, flags;
-	struct sockaddr *dst, *gateway, *netmask;
-	struct rtentry **ret_nrt;
+int req, flags;
+struct sockaddr *dst, *gateway, *netmask;
+struct rtentry **ret_nrt;
 {
-	int len, error = 0;
-	spl_t s = splnet();
-	register struct rtentry *rt;
-	register struct radix_node *rn;
-	register struct radix_node_head *rnh;
-	struct ifaddr *ifa, *ifa_ifwithdstaddr();
-	struct sockaddr *ndst;
-	u_char af = dst->sa_family;
+    int len, error = 0;
+    spl_t s = splnet();
+    register struct rtentry *rt;
+    register struct radix_node *rn;
+    register struct radix_node_head *rnh;
+    struct ifaddr *ifa, *ifa_ifwithdstaddr();
+    struct sockaddr *ndst;
+    u_char af = dst->sa_family;
 #define senderr(x) { error = x ; goto bad; }
 
-	if (rtinits_done == 0)
-		rtinitheads();
-	for (rnh = radix_node_head; rnh && (af != rnh->rnh_af); )
-		rnh = rnh->rnh_next;
-	if (rnh == 0)
-		senderr(ESRCH);
-	if (flags & RTF_HOST)
-		netmask = 0;
-	switch (req) {
-	case RTM_DELETE:
-		if (ret_nrt && (rt = *ret_nrt)) {
-			RTFREE(rt);
-			*ret_nrt = 0;
-		}
-		if ((rn = rn_delete((caddr_t)dst, (caddr_t)netmask, 
-					rnh->rnh_treetop)) == 0)
-			senderr(ESRCH);
-		if (rn->rn_flags & (RNF_ACTIVE | RNF_ROOT))
-			panic ("rtrequest delete");
-		rt = (struct rtentry *)rn;
-		rt->rt_flags &= ~RTF_UP;
-		if ((ifa = rt->rt_ifa) && ifa->ifa_rtrequest)
-			ifa->ifa_rtrequest(RTM_DELETE, rt, SA(0));
-		rttrash++;
-		if (rt->rt_refcnt <= 0)
-			rtfree(rt);
-		break;
+    if(rtinits_done == 0)
+        rtinitheads();
+    for(rnh = radix_node_head; rnh && (af != rnh->rnh_af);)
+        rnh = rnh->rnh_next;
+    if(rnh == 0)
+        senderr(ESRCH);
+    if(flags & RTF_HOST)
+        netmask = 0;
+    switch(req) {
+    case RTM_DELETE:
+        if(ret_nrt && (rt = *ret_nrt)) {
+            RTFREE(rt);
+            *ret_nrt = 0;
+        }
+        if((rn = rn_delete((caddr_t)dst, (caddr_t)netmask,
+                           rnh->rnh_treetop)) == 0)
+            senderr(ESRCH);
+        if(rn->rn_flags & (RNF_ACTIVE | RNF_ROOT))
+            panic("rtrequest delete");
+        rt = (struct rtentry *)rn;
+        rt->rt_flags &= ~RTF_UP;
+        if((ifa = rt->rt_ifa) && ifa->ifa_rtrequest)
+            ifa->ifa_rtrequest(RTM_DELETE, rt, SA(0));
+        rttrash++;
+        if(rt->rt_refcnt <= 0)
+            rtfree(rt);
+        break;
 
-	case RTM_RESOLVE:
-		if (ret_nrt == 0 || (rt = *ret_nrt) == 0)
-			senderr(EINVAL);
-		ifa = rt->rt_ifa;
-		flags = rt->rt_flags & ~RTF_CLONING;
-		gateway = rt->rt_gateway;
-		if ((netmask = rt->rt_genmask) == 0)
-			flags |= RTF_HOST;
-		goto makeroute;
+    case RTM_RESOLVE:
+        if(ret_nrt == 0 || (rt = *ret_nrt) == 0)
+            senderr(EINVAL);
+        ifa = rt->rt_ifa;
+        flags = rt->rt_flags & ~RTF_CLONING;
+        gateway = rt->rt_gateway;
+        if((netmask = rt->rt_genmask) == 0)
+            flags |= RTF_HOST;
+        goto makeroute;
 
-	case RTM_ADD:
-		if ((ifa = ifa_ifwithroute(flags, dst, gateway)) == 0)
-			senderr(ENETUNREACH);
-	makeroute:
-		len = sizeof (*rt) + ROUNDUP(gateway->sa_len)
-		    + ROUNDUP(dst->sa_len);
-		R_Malloc(rt, struct rtentry *, len);
-		if (rt == 0)
-			senderr(ENOBUFS);
-		Bzero(rt, len);
-		ndst = (struct sockaddr *)(rt + 1);
-		if (netmask) {
-			rt_maskedcopy(dst, ndst, netmask);
-		} else
-			Bcopy(dst, ndst, dst->sa_len);
-		rn = rn_addroute((caddr_t)ndst, (caddr_t)netmask,
-					rnh->rnh_treetop, rt->rt_nodes);
-		if (rn == 0) {
-			Free(rt);
-			senderr(EEXIST);
-		}
-		rt->rt_ifa = ifa;
-		rt->rt_ifp = ifa->ifa_ifp;
-		rt->rt_flags = RTF_UP | flags;
-		rt->rt_gateway = (struct sockaddr *)
-					(rn->rn_key + ROUNDUP(dst->sa_len));
-		Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
-		if (req == RTM_RESOLVE)
-			rt->rt_rmx = (*ret_nrt)->rt_rmx; /* copy metrics */
-		if (ifa->ifa_rtrequest)
-			ifa->ifa_rtrequest(req, rt, SA(ret_nrt ? *ret_nrt : 0));
-		if (ret_nrt) {
-			*ret_nrt = rt;
-			rt->rt_refcnt++;
-		}
-		break;
-	}
+    case RTM_ADD:
+        if((ifa = ifa_ifwithroute(flags, dst, gateway)) == 0)
+            senderr(ENETUNREACH);
+makeroute:
+        len = sizeof(*rt) + ROUNDUP(gateway->sa_len)
+              + ROUNDUP(dst->sa_len);
+        R_Malloc(rt, struct rtentry *, len);
+        if(rt == 0)
+            senderr(ENOBUFS);
+        Bzero(rt, len);
+        ndst = (struct sockaddr *)(rt + 1);
+        if(netmask) {
+            rt_maskedcopy(dst, ndst, netmask);
+        } else
+            Bcopy(dst, ndst, dst->sa_len);
+        rn = rn_addroute((caddr_t)ndst, (caddr_t)netmask,
+                         rnh->rnh_treetop, rt->rt_nodes);
+        if(rn == 0) {
+            Free(rt);
+            senderr(EEXIST);
+        }
+        rt->rt_ifa = ifa;
+        rt->rt_ifp = ifa->ifa_ifp;
+        rt->rt_flags = RTF_UP | flags;
+        rt->rt_gateway = (struct sockaddr *)
+                         (rn->rn_key + ROUNDUP(dst->sa_len));
+        Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
+        if(req == RTM_RESOLVE)
+            rt->rt_rmx = (*ret_nrt)->rt_rmx; /* copy metrics */
+        if(ifa->ifa_rtrequest)
+            ifa->ifa_rtrequest(req, rt, SA(ret_nrt ? *ret_nrt : 0));
+        if(ret_nrt) {
+            *ret_nrt = rt;
+            rt->rt_refcnt++;
+        }
+        break;
+    }
 bad:
-	splx(s);
-	return (error);
+    splx(s);
+    return (error);
 }
 
 void
 rt_maskedcopy(src, dst, netmask)
 struct sockaddr *src, *dst, *netmask;
 {
-	register u_char *cp1 = (u_char *)src;
-	register u_char *cp2 = (u_char *)dst;
-	register u_char *cp3 = (u_char *)netmask;
-	u_char *cplim = cp2 + *cp3;
-	u_char *cplim2 = cp2 + *cp1;
+    register u_char *cp1 = (u_char *)src;
+    register u_char *cp2 = (u_char *)dst;
+    register u_char *cp3 = (u_char *)netmask;
+    u_char *cplim = cp2 + *cp3;
+    u_char *cplim2 = cp2 + *cp1;
 
-	*cp2++ = *cp1++; *cp2++ = *cp1++; /* copies sa_len & sa_family */
-	cp3 += 2;
-	if (cplim > cplim2)
-		cplim = cplim2;
-	while (cp2 < cplim)
-		*cp2++ = *cp1++ & *cp3++;
-	if (cp2 < cplim2)
-		bzero((caddr_t)cp2, (unsigned)(cplim2 - cp2));
+    *cp2++ = *cp1++;
+    *cp2++ = *cp1++; /* copies sa_len & sa_family */
+    cp3 += 2;
+    if(cplim > cplim2)
+        cplim = cplim2;
+    while(cp2 < cplim)
+        *cp2++ = *cp1++ & *cp3++;
+    if(cp2 < cplim2)
+        bzero((caddr_t)cp2, (unsigned)(cplim2 - cp2));
 }
 /*
  * Set up a routing table entry, normally
@@ -565,47 +565,47 @@ struct sockaddr *src, *dst, *netmask;
  */
 int
 rtinit(ifa, cmd, flags)
-	register struct ifaddr *ifa;
-	int cmd, flags;
+register struct ifaddr *ifa;
+int cmd, flags;
 {
-	register struct rtentry *rt;
-	register struct sockaddr *dst;
-	register struct sockaddr *deldst;
-	struct mbuf *m = 0;
-	int error;
+    register struct rtentry *rt;
+    register struct sockaddr *dst;
+    register struct sockaddr *deldst;
+    struct mbuf *m = 0;
+    int error;
 
-	dst = flags & RTF_HOST ? ifa->ifa_dstaddr : ifa->ifa_addr;
-	if (ifa->ifa_flags & IFA_ROUTE) {
-		if ((rt = ifa->ifa_rt) && (rt->rt_flags & RTF_UP) == 0) {
-			RTFREE(rt);
-			ifa->ifa_rt = 0;
-		}
-	}
-	if (cmd == RTM_DELETE) {
-		if ((flags & RTF_HOST) == 0 && ifa->ifa_netmask) {
-			m = m_get(M_WAIT, MT_SONAME);
-			deldst = mtod(m, struct sockaddr *);
-			rt_maskedcopy(dst, deldst, ifa->ifa_netmask);
-			dst = deldst;
-		}
-		if (rt = rtalloc1(dst, 0)) {
-			rt->rt_refcnt--;
-			if (rt->rt_ifa != ifa) {
-				if (m)
-					(void) m_free(m);
-				return (flags & RTF_HOST ? EHOSTUNREACH
-							: ENETUNREACH);
-			}
-		}
-	}
-	error = rtrequest(cmd, dst, ifa->ifa_addr, ifa->ifa_netmask,
-			flags | ifa->ifa_flags, &ifa->ifa_rt);
-	if (m)
-		(void) m_free(m);
-	if (cmd == RTM_ADD && error == 0 && (rt = ifa->ifa_rt)
-						&& rt->rt_ifa != ifa) {
-		rt->rt_ifa = ifa;
-		rt->rt_ifp = ifa->ifa_ifp;
-	}
-	return (error);
+    dst = flags & RTF_HOST ? ifa->ifa_dstaddr : ifa->ifa_addr;
+    if(ifa->ifa_flags & IFA_ROUTE) {
+        if((rt = ifa->ifa_rt) && (rt->rt_flags & RTF_UP) == 0) {
+            RTFREE(rt);
+            ifa->ifa_rt = 0;
+        }
+    }
+    if(cmd == RTM_DELETE) {
+        if((flags & RTF_HOST) == 0 && ifa->ifa_netmask) {
+            m = m_get(M_WAIT, MT_SONAME);
+            deldst = mtod(m, struct sockaddr *);
+            rt_maskedcopy(dst, deldst, ifa->ifa_netmask);
+            dst = deldst;
+        }
+        if(rt = rtalloc1(dst, 0)) {
+            rt->rt_refcnt--;
+            if(rt->rt_ifa != ifa) {
+                if(m)
+                    (void) m_free(m);
+                return (flags & RTF_HOST ? EHOSTUNREACH
+                        : ENETUNREACH);
+            }
+        }
+    }
+    error = rtrequest(cmd, dst, ifa->ifa_addr, ifa->ifa_netmask,
+                      flags | ifa->ifa_flags, &ifa->ifa_rt);
+    if(m)
+        (void) m_free(m);
+    if(cmd == RTM_ADD && error == 0 && (rt = ifa->ifa_rt)
+            && rt->rt_ifa != ifa) {
+        rt->rt_ifa = ifa;
+        rt->rt_ifp = ifa->ifa_ifp;
+    }
+    return (error);
 }
