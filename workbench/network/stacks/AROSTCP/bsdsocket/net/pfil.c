@@ -139,6 +139,8 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
 	     }
 	}
 	PFIL_RUNLOCK();
+
+	return 0;	/* pass */
 }
 
 #endif /* ENABLE_PACKET_FILTER */
