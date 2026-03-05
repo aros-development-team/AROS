@@ -4,8 +4,16 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-s \
 #MM  workbench-network-stacks-arostcp-envpackage
 
-%copy_files_q mmake=workbench-network-stacks-arostcp-s files="Package-Startup startnet stopnet" \
-    dst=$(AROS_SYSTEM)/Network/AROSTCP/S
+SFILES := \
+    Package-Startup \
+    startnet \
+    stopnet \
+    Check-Firewall-Rules \
+    Start-Firewall \
+    Stop-Firewall
+
+%copy_files_q mmake=workbench-network-stacks-arostcp-s \
+    files="$(SFILES)" dst=$(AROS_SYSTEM)/Network/AROSTCP/S
 
 $(AROS_PACKAGES)/AROSTCP:
 	%fileactionmsg msg="Creating" file="$(AROS_PACKAGES)/AROSTCP"
