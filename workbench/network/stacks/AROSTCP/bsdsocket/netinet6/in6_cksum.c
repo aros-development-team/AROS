@@ -89,10 +89,10 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
 
         /* upper-layer packet length (32-bit, network byte order) */
         {
-            u_int32_t ul = htonl(len);
-            u_int16_t *p = (u_int16_t *)&ul;
-            sum += p[0];
-            sum += p[1];
+            union { u_int32_t ul; u_int16_t us[2]; } ulen;
+            ulen.ul = htonl(len);
+            sum += ulen.us[0];
+            sum += ulen.us[1];
         }
 
         /* next header (16-bit word with zero high byte) */

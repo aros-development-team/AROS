@@ -654,7 +654,9 @@ caddr_t data;
             (void)(*ifp->if_ioctl)(ifp, cmd, data);
 
         {
+#if INET6
             int was_up = (ifp->if_flags & IFF_UP);
+#endif
             ifp->if_flags = (ifp->if_flags & IFF_CANTCHANGE) |
                             (ifr->ifr_flags & ~ IFF_CANTCHANGE);
 #if INET6

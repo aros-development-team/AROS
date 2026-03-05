@@ -483,7 +483,6 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
 {
     struct llinfo_nd6 *ln;
     struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)dst;
-    struct nd_ifinfo *ndi;
 
     if(rt == NULL) {
         /* multicast: map directly (RFC 2464 §7) */
@@ -553,7 +552,6 @@ nd6_resolve(struct ifnet *ifp, struct rtentry *rt, struct mbuf *m,
             nd6stat.nd6s_res_holdq_full++;
         }
         ln->ln_hold = m;
-        ndi = nd6_ifinfo(ifp);
         if(ln->ln_asked < ND6_MAX_MULTICAST_SOLICIT) {
             ln->ln_asked++;
             nd6_ns_output(ifp, NULL, &sin6->sin6_addr, ln, 0);
@@ -619,7 +617,6 @@ nd6_timer(void *arg)
     struct llinfo_nd6 *ln, *nln;
     struct timeval _tv;
     long now;
-    struct nd_ifinfo *ndi;
     static int nd6_timer_ticks = 0;
 
     GetSysTime(&_tv);
@@ -724,6 +721,7 @@ nd6_timer(void *arg)
     {
         extern struct ifnet *ifnet;
         struct ifnet *iifp;
+        struct nd_ifinfo *ndi;
         for(iifp = ifnet; iifp; iifp = iifp->if_next) {
             if(iifp->if_index >= ND6_MAXIFS)
                 continue;

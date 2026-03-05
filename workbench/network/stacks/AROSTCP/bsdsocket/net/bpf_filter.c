@@ -309,13 +309,12 @@ int
 bpf_validate(const struct bpf_insn *f, int len)
 {
     int i;
-    const struct bpf_insn *p;
 
     if(len < 1 || len > BPF_MAXINSNS)
         return 0;
 
     for(i = 0; i < len; ++i) {
-        p = &f[i];
+        const struct bpf_insn *p = &f[i];
 
         switch(BPF_CLASS(p->code)) {
         case BPF_LD:

@@ -134,11 +134,11 @@ rexx_hide(void)
 
 void rexx_deinit(void)
 {
-    struct RexxMsg *rmsg;
     static STRPTR errstr = "99: Port Closed!";
 
     if(RexxSysBase) {
         if(ARexxPort) {
+            struct RexxMsg *rmsg;
             rexx_hide();
             /*
              * Reply to all messages received with error code set.

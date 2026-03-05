@@ -537,7 +537,6 @@ nd6_rs_output(struct ifnet *ifp)
     struct mbuf *m;
     struct ip6_hdr *ip6;
     struct nd_router_solicit *rs;
-    struct nd_opt_hdr *nd_opt;
     caddr_t mac;
     int hlen = sizeof(struct ip6_hdr);
     int icmp6len = sizeof(struct nd_router_solicit);
@@ -591,7 +590,7 @@ nd6_rs_output(struct ifnet *ifp)
 
     /* Source Link-Layer Address option */
     if(optlen) {
-        nd_opt = (struct nd_opt_hdr *)(rs + 1);
+        struct nd_opt_hdr *nd_opt = (struct nd_opt_hdr *)(rs + 1);
         nd_opt->nd_opt_type = ND_OPT_SOURCE_LINKADDR;
         nd_opt->nd_opt_len  = 1;
         bcopy(mac, (caddr_t)(nd_opt + 1), ifp->if_addrlen);

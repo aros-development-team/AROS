@@ -246,7 +246,6 @@ int
 bpf_setif(struct bpf_d *d, const char *ifname)
 {
     struct ifnet *ifp;
-    int error;
     spl_t s;
 
     /* Find the interface by name */
@@ -275,7 +274,7 @@ bpf_setif(struct bpf_d *d, const char *ifname)
 
     /* Allocate buffers if not yet done */
     if(d->bd_sbuf == NULL) {
-        error = bpf_allocbufs(d);
+        int error = bpf_allocbufs(d);
         if(error) {
             splx(s);
             return error;

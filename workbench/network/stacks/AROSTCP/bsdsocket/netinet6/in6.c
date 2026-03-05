@@ -582,7 +582,6 @@ in6_ifconf(int cmd, caddr_t data)
     struct in6_ifconf *ifc = (struct in6_ifconf *)data;
     struct in6_ifreq  *ifrp;
     struct in6_ifaddr *ia;
-    struct ifnet      *ifp;
     int space, error = 0;
 
     ifrp  = ifc->ifc6_req;
@@ -590,8 +589,7 @@ in6_ifconf(int cmd, caddr_t data)
 
     for(ia = in6_ifaddr; ia && space >= (int)sizeof(*ifrp); ia = ia->ia_next) {
         struct in6_ifreq ifr6;
-
-        ifp = ia->ia6_ifp;
+        struct ifnet *ifp = ia->ia6_ifp;
         if(ifp == NULL)
             continue;
 

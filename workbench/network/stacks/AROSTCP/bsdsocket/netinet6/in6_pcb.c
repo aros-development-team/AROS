@@ -64,15 +64,12 @@
 int
 in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
 {
-    struct sockaddr_in6 *sin6;
-    u_short lport = 0;
-
     if(inp->inp_lport || !IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))
         return EINVAL;
 
     if(nam == NULL) {
         /* wildcard bind: allocate an ephemeral port */
-        lport = htons(++(inp->inp_pcbinfo->lastport));
+        u_short lport = htons(++(inp->inp_pcbinfo->lastport));
         if(lport == 0)
             lport = htons(++(inp->inp_pcbinfo->lastport));
         inp->inp_lport = lport;
@@ -83,12 +80,14 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
     if(nam->m_len < (int)sizeof(struct sockaddr_in6))
         return EINVAL;
 
-    sin6 = mtod(nam, struct sockaddr_in6 *);
-    if(sin6->sin6_family != AF_INET6)
-        return EAFNOSUPPORT;
+    {
+        struct sockaddr_in6 *sin6 = mtod(nam, struct sockaddr_in6 *);
+        if(sin6->sin6_family != AF_INET6)
+            return EAFNOSUPPORT;
 
-    inp->inp_laddr6 = sin6->sin6_addr;
-    inp->inp_lport  = sin6->sin6_port; /* already in network byte order */
+        inp->inp_laddr6 = sin6->sin6_addr;
+        inp->inp_lport  = sin6->sin6_port; /* already in network byte order */
+    }
 
     return 0;
 }
