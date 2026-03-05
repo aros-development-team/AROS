@@ -16,7 +16,9 @@ static const char version[] __attribute__((used)) =
 #include <proto/socket.h>
 #include <proto/miami.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 
+#include <dos/dosextens.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
@@ -322,7 +324,16 @@ static void interactive_mode(void)
 
 int main(int argc, char *argv[])
 {
+    struct Process *pr = (struct Process *)FindTask(NULL);
+    APTR old_window = pr->pr_WindowPtr;
+
+    /* Suppress "Please insert volume AROSTCP:" requesters */
+    pr->pr_WindowPtr = (APTR)-1;
+
     get_nameserver(default_server, sizeof(default_server));
+
+    /* Restore original window pointer */
+    pr->pr_WindowPtr = old_window;
 
     if (argc < 2) {
         /* No arguments: interactive mode */
