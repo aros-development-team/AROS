@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -159,6 +159,8 @@ struct SocketBase {
 /* -- NetDB pointers for getXXXent() and friends -- */
   struct HostentNode *HostentNode;
   struct ProtoentNode *ProtoentNode;
+  struct NetentNode *NetentNode;
+  struct ServentNode *ServentNode;
 };
 
 /* 

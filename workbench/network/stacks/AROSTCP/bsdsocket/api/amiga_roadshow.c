@@ -1169,69 +1169,11 @@ AROS_LH0(struct List *, ObtainDomainNameServerList,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(void, setnetent,
-         AROS_LHA(int, stayopen, D0),
-         struct SocketBase *, libPtr, 90, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "setnetent() is not implemented");
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(void, endnetent,
-         struct SocketBase *, libPtr, 91, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "endnetent() is not implemented");
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(struct netent *, getnetent,
-         struct SocketBase *, libPtr, 92, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "getnetent() is not implemented");
-    return NULL;
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(void, setprotoent,
-         AROS_LHA(int, stayopen, D0),
-         struct SocketBase *, libPtr, 93, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "setprotoent() is not implemented");
-    AROS_LIBFUNC_EXIT
-}
-
+// setnetent/endnetent/getnetent defined in amiga_ndbent.c
+// setprotoent defined in amiga_ndbent.c
 // endprotoent defined in amiga_ndbent.c
 // getprotoent defined in amiga_ndbent.c
-
-AROS_LH1(void, setservent,
-         AROS_LHA(int, stayopen, D0),
-         struct SocketBase *, libPtr, 96, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "setservent() is not implemented");
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(void, endservent,
-         struct SocketBase *, libPtr, 97, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "endservent() is not implemented");
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0(struct servent *, getservent,
-         struct SocketBase *, libPtr, 98, UL)
-{
-    AROS_LIBFUNC_INIT
-    __log(LOG_CRIT, "getservent() is not implemented");
-    return NULL;
-    AROS_LIBFUNC_EXIT
-}
+// setservent/endservent/getservent defined in amiga_ndbent.c
 
 // inet_aton defined in amiga_libcalls.c
 

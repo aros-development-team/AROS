@@ -173,6 +173,166 @@ AROS_LH0(void, Miami_endprotoent,
     AROS_LIBFUNC_EXIT
 }
 
+/* **** SETPROTOENT */
+
+void __setprotoent(struct SocketBase *libPtr, int stayopen)
+{
+    DSYSCALLS(log(LOG_DEBUG, "setprotoent() called");)
+
+    /* Reset to start of protocol list */
+    ObtainSemaphoreShared(&ndb_Lock);
+    libPtr->ProtoentNode = (struct ProtoentNode *)NDB->ndb_Protocols.mlh_Head;
+}
+
+#if defined(__CONFIG_ROADSHOW__)
+AROS_LH1(void, setprotoent,
+         AROS_LHA(int, stayopen, D0),
+         struct SocketBase *, libPtr, 93, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    __setprotoent(libPtr, stayopen);
+
+    AROS_LIBFUNC_EXIT
+}
+#endif
+
+/* **** SETNETENT / ENDNETENT / GETNETENT */
+
+void __setnetent(struct SocketBase *libPtr, int stayopen)
+{
+    DSYSCALLS(log(LOG_DEBUG, "setnetent() called");)
+
+    ObtainSemaphoreShared(&ndb_Lock);
+    libPtr->NetentNode = (struct NetentNode *)NDB->ndb_Networks.mlh_Head;
+}
+
+struct netent *__getnetent(struct SocketBase *libPtr)
+{
+    struct NetentNode *nn;
+
+    DSYSCALLS(log(LOG_DEBUG, "getnetent() called");)
+
+    nn = libPtr->NetentNode;
+    if (!nn) {
+        ObtainSemaphoreShared(&ndb_Lock);
+        nn = (struct NetentNode *)NDB->ndb_Networks.mlh_Head;
+    }
+    if (nn->nn_Node.mln_Succ) {
+        libPtr->NetentNode = (struct NetentNode *)nn->nn_Node.mln_Succ;
+        return &nn->nn_Ent;
+    } else
+        return NULL;
+}
+
+void __endnetent(struct SocketBase *libPtr)
+{
+    DSYSCALLS(log(LOG_DEBUG, "endnetent() called");)
+    libPtr->NetentNode = NULL;
+    ReleaseSemaphore(&ndb_Lock);
+}
+
+#if defined(__CONFIG_ROADSHOW__)
+AROS_LH1(void, setnetent,
+         AROS_LHA(int, stayopen, D0),
+         struct SocketBase *, libPtr, 90, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    __setnetent(libPtr, stayopen);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, endnetent,
+         struct SocketBase *, libPtr, 91, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    __endnetent(libPtr);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(struct netent *, getnetent,
+         struct SocketBase *, libPtr, 92, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    return __getnetent(libPtr);
+
+    AROS_LIBFUNC_EXIT
+}
+#endif
+
+/* **** SETSERVENT / ENDSERVENT / GETSERVENT */
+
+void __setservent(struct SocketBase *libPtr, int stayopen)
+{
+    DSYSCALLS(log(LOG_DEBUG, "setservent() called");)
+
+    ObtainSemaphoreShared(&ndb_Lock);
+    libPtr->ServentNode = (struct ServentNode *)NDB->ndb_Services.mlh_Head;
+}
+
+struct servent *__getservent(struct SocketBase *libPtr)
+{
+    struct ServentNode *sn;
+
+    DSYSCALLS(log(LOG_DEBUG, "getservent() called");)
+
+    sn = libPtr->ServentNode;
+    if (!sn) {
+        ObtainSemaphoreShared(&ndb_Lock);
+        sn = (struct ServentNode *)NDB->ndb_Services.mlh_Head;
+    }
+    if (sn->sn_Node.mln_Succ) {
+        libPtr->ServentNode = (struct ServentNode *)sn->sn_Node.mln_Succ;
+        return &sn->sn_Ent;
+    } else
+        return NULL;
+}
+
+void __endservent(struct SocketBase *libPtr)
+{
+    DSYSCALLS(log(LOG_DEBUG, "endservent() called");)
+    libPtr->ServentNode = NULL;
+    ReleaseSemaphore(&ndb_Lock);
+}
+
+#if defined(__CONFIG_ROADSHOW__)
+AROS_LH1(void, setservent,
+         AROS_LHA(int, stayopen, D0),
+         struct SocketBase *, libPtr, 96, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    __setservent(libPtr, stayopen);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(void, endservent,
+         struct SocketBase *, libPtr, 97, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    __endservent(libPtr);
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(struct servent *, getservent,
+         struct SocketBase *, libPtr, 98, UL)
+{
+    AROS_LIBFUNC_INIT
+
+    return __getservent(libPtr);
+
+    AROS_LIBFUNC_EXIT
+}
+#endif
+
 /* **** */
 
 AROS_LH0(void, ClearDynDomain,
