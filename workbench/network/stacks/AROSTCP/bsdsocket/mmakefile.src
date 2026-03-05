@@ -90,6 +90,7 @@ NETINET6_C= \
 	netinet6/in6 netinet6/in6_pcb netinet6/in6_proto \
 	netinet6/ip6_input netinet6/ip6_output \
 	netinet6/icmp6 netinet6/nd6 netinet6/nd6_nbr netinet6/nd6_rtr \
+	netinet6/mld6 \
 	netinet6/udp6_usrreq
 
 ifeq ($(AROS_TARGET_CPU),x86_64)

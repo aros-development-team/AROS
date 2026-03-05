@@ -41,6 +41,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <netinet6/mld6.h>
 #include <net/rtsock_protos.h>
 
 #include <devices/sana2.h>
@@ -744,8 +745,14 @@ in6_addmulti(struct in6_addr *maddr, struct ifnet *ifp)
     in6m->in6m_addr    = *maddr;
     in6m->in6m_ifp     = ifp;
     in6m->in6m_refcount = 1;
+    in6m->in6m_state   = MLD6_IDLE_MEMBER;
+    in6m->in6m_timer   = 0;
     in6m->in6m_next    = in6_multihead;
     in6_multihead      = in6m;
+
+    /* Send initial MLD report for this group */
+    mld6_start_listening(in6m);
+
     D(bug("[AROSTCP:IN6] %s: created new entry\n", __func__));
     return in6m;
 }
@@ -762,6 +769,9 @@ in6_delmulti(struct in6_multi *in6m)
 
     if(--in6m->in6m_refcount > 0)
         return;
+
+    /* Send MLD Done before removing from list */
+    mld6_stop_listening(in6m);
 
     /* unregister Ethernet multicast address from the NIC */
     sana_del_mcast6(in6m->in6m_ifp, &in6m->in6m_addr);

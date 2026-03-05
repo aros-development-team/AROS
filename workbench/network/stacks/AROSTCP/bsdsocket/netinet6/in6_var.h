@@ -25,6 +25,8 @@ struct in6_multi {
 	struct ifnet   *in6m_ifp;	/* back pointer to ifnet */
 	u_int		in6m_refcount;	/* reference count */
 	struct in6_multi *in6m_next;	/* linked list */
+	u_int		in6m_state;	/* MLD membership state */
+	u_int		in6m_timer;	/* MLD report delay timer (ticks) */
 };
 
 /*

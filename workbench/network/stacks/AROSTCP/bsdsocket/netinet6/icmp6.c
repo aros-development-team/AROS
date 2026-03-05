@@ -44,6 +44,7 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
+#include <netinet6/mld6.h>
 
 #include <protos/net/route_protos.h>
 #include <kern/uipc_socket2_protos.h>
@@ -63,10 +64,13 @@ static void icmp6_reflect(struct mbuf *, size_t);
 void
 icmp6_init(void)
 {
-    /* nothing to initialise for now */
+    mld6_init();
 }
 
-void icmp6_fasttimo(void) {}
+void icmp6_fasttimo(void)
+{
+    mld6_fasttimeo();
+}
 
 void
 icmp6_slowtimo(void)
@@ -137,6 +141,13 @@ icmp6_input(void *args, ...)
     }
 
     switch(icmp6->icmp6_type) {
+    /* ----- Multicast Listener Discovery (delegated to mld6.c) ----- */
+    case MLD_LISTENER_QUERY:
+    case MLD_LISTENER_REPORT:
+    case MLD_LISTENER_DONE:
+        mld6_input(m, off, icmp6len);
+        return;
+
     /* ----- Neighbor Discovery (delegated to nd6.c) ----- */
     case ND_NEIGHBOR_SOLICIT:
         nd6_ns_input(m, off, icmp6len);
