@@ -266,12 +266,14 @@ D(bug("[AROSTCP.MIAMI] miami_api.c: MiamiPFRemoveHook()\n"));
 #endif
 	
 	DPF(log("MiamiPFRemoveHook(0x%p) called", handle);)
+#ifdef ENABLE_PACKET_FILTER
 	if (handle) {
 		ObtainSemaphore(&pfil_list_lock);
 		Remove(handle);
 		ReleaseSemaphore(&pfil_list_lock);
 		bsd_free(handle, NULL);
 	}
+#endif
 
 	AROS_LIBFUNC_EXIT
 }

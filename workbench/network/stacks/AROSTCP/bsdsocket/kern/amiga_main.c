@@ -45,6 +45,7 @@
 
 #include <kern/amiga_time.h>
 #include <kern/amiga_log.h>
+#include <net/pfil.h>
 
 ULONG sana_init(void);
 void sana_deinit(void);

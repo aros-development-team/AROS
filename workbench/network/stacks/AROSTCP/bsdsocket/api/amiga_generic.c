@@ -49,7 +49,9 @@
 #include <api/apicalls.h>
 
 #include <net/if_protos.h>
+#ifdef ENABLE_PACKET_FILTER
 #include "../net/ipfilter.h"
+#endif
 
 #include <bsdsocket/socketbasetags.h>
 
@@ -198,6 +200,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
   if (IOCGROUP(cmd) == 'r') {
     /* Check for IPF/NAT ioctls first */
     switch (cmd) {
+#ifdef ENABLE_PACKET_FILTER
     case SIOCFRENB:
       if (*(u_int *)data)
         ipf_enable();
@@ -287,6 +290,7 @@ LONG __IoctlSocket(LONG fdes, ULONG cmd, caddr_t data, struct SocketBase *libPtr
       error = 0;
       goto Return;
     }
+#endif /* ENABLE_PACKET_FILTER */
 
     default:
       break;	/* fall through to rtioctl */

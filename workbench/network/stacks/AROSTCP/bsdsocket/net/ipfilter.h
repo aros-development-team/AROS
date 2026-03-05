@@ -10,6 +10,8 @@
 #ifndef _NET_IPFILTER_H_
 #define _NET_IPFILTER_H_
 
+#ifdef ENABLE_PACKET_FILTER
+
 #include <sys/types.h>
 #include <netinet/in.h>
 
@@ -211,5 +213,7 @@ int	ipnat_flush_entries(void);
 /* Global state */
 extern struct ipf_state ipf_global;
 extern struct ipnat_state ipnat_global;
+
+#endif /* ENABLE_PACKET_FILTER */
 
 #endif /* _NET_IPFILTER_H_ */

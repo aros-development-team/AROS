@@ -34,6 +34,8 @@
 #ifndef _NET_PFIL_H_
 #define _NET_PFIL_H_
 
+#ifdef ENABLE_PACKET_FILTER
+
 #include <sys/systm.h>
 #include <sys/queue.h>
 
@@ -54,6 +56,13 @@ struct packet_filter_hook {
 
 void	pfil_init(void);
 int	pfil_run_hooks(struct mbuf *, struct ifnet *, unsigned char, int);
-                            
+
+#else /* !ENABLE_PACKET_FILTER */
+
+#define pfil_init()                          do { } while (0)
+#define pfil_run_hooks(m, ifp, pr, dir)      0
+
+#endif /* ENABLE_PACKET_FILTER */
+
 #endif /* _NET_PFIL_H_ */
 

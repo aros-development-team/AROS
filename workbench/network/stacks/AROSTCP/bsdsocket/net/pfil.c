@@ -32,6 +32,8 @@
 
 #include <conf.h>
 
+#ifdef ENABLE_PACKET_FILTER
+
 #include <aros/asmcall.h>
 #include <exec/lists.h>
 #include <libraries/miami.h>
@@ -138,4 +140,6 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
 	}
 	PFIL_RUNLOCK();
 }
+
+#endif /* ENABLE_PACKET_FILTER */
     

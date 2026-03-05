@@ -9,6 +9,8 @@
 
 #include <conf.h>
 
+#ifdef ENABLE_PACKET_FILTER
+
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/malloc.h>
@@ -551,3 +553,5 @@ ipnat_flush_entries(void)
 
 	return count;
 }
+
+#endif /* ENABLE_PACKET_FILTER */
