@@ -1385,6 +1385,8 @@ get_hw_addr(const char *name, struct hardware *hw)
 	hw->hlen = 7;          /* 1 type byte + 6 MAC bytes */
 	hw->hbuf[0] = HTYPE_ETHER;
 
+	log_info("get_hw_addr: looking up hardware address for %s", name);
+
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 		log_error("get_hw_addr: socket: %m");
 		return;
@@ -1394,16 +1396,24 @@ get_hw_addr(const char *name, struct hardware *hw)
 	strncpy(ifr.ifr_name, name, IFNAMSIZ - 1);
 
 #ifdef SIOCGIFHWADDR
+	log_info("get_hw_addr: calling SIOCGIFHWADDR for %s", name);
 	if (IoctlSocket(sock, SIOCGIFHWADDR, (char *)&ifr) == 0) {
 		/* ifr_hwaddr.sa_data contains the MAC bytes */
 		for (i = 0; i < 6; i++)
 			hw->hbuf[i+1] = (unsigned char)ifr.ifr_hwaddr.sa_data[i];
+		log_info("get_hw_addr: got MAC %02x:%02x:%02x:%02x:%02x:%02x",
+		    hw->hbuf[1], hw->hbuf[2], hw->hbuf[3],
+		    hw->hbuf[4], hw->hbuf[5], hw->hbuf[6]);
 		CloseSocket(sock);
 		return;
 	}
+	log_error("get_hw_addr: SIOCGIFHWADDR failed: %m");
+#else
+	log_info("get_hw_addr: SIOCGIFHWADDR not available at compile time");
 #endif
 
 	/* Fallback: leave zeroed MAC, interface open for DHCP discovery */
+	log_error("get_hw_addr: falling back to zero MAC for %s", name);
 	CloseSocket(sock);
 }
 #endif /* __AROS__ */
