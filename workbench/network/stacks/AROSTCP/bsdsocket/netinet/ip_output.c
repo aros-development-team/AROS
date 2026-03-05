@@ -317,6 +317,8 @@ sendit:
 #endif
 	/* Run through list of hooks and IP filter engine */
         if (pfil_run_hooks(m, ifp, MIAMIPFBPT_IP, IPF_OUT)) {
+		DIPF(log(LOG_DEBUG, "ipfilter: dropped outgoing packet on %s%d\n",
+		    ifp->if_name, ifp->if_unit);)
 		error = EHOSTUNREACH;
 		goto bad;
 	}

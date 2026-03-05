@@ -300,6 +300,11 @@ extern struct ExecBase *SysBase;
 #else
 #define DDHCP(x)
 #endif
+#ifdef DEBUG_IPF
+#define DIPF(x) x
+#else
+#define DIPF(x)
+#endif
 
 #if 0
 GLOBAL struct IntuitionBase *IntuitionBase;

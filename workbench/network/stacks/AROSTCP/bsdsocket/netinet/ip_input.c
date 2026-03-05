@@ -279,6 +279,8 @@ next:
 	 * Run through list of hooks and IP filter engine.
 	 */
         if (pfil_run_hooks(m, m->m_pkthdr.rcvif, MIAMIPFBPT_IP, IPF_IN)) {
+		DIPF(log(LOG_DEBUG, "ipfilter: dropped incoming packet on %s%d\n",
+		    m->m_pkthdr.rcvif->if_name, m->m_pkthdr.rcvif->if_unit);)
 		m_freem(m);
 		goto next;
 	}
