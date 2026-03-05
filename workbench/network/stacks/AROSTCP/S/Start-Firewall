@@ -1,0 +1,17 @@
+; $VER: Start-Firewall 5.0 (05.03.2026)
+
+; Purpose:
+;   Bring the firewall up from a clean slate: clear old state, then apply rules.
+
+; Clear any existing packet-filter configuration so we don't stack rules.
+ipf -DFa
+
+; Apply the filter policy from disk and turn filtering on.
+if EXISTS ENV:AROSTCP/ipf.rules
+  ipf -f ENV:AROSTCP/ipf.rules
+EndIf
+
+; Wipe current NAT config/state, then install the NAT policy from disk.
+if EXISTS ENV:AROSTCP/ipnat.rules
+  ipnat -CF -f ENV:AROSTCP/ipnat.rules
+EndIf

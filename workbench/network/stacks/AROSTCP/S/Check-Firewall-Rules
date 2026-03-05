@@ -1,0 +1,14 @@
+; $VER: Check-Firewall-Rules 5.0 (05.03.2026)
+
+; Purpose:
+;   Sanity-check the on-disk rule sets without touching the live firewall.
+
+; Parse/validate the packet-filter rules only (no load/enable); non-zero means invalid.
+if EXISTS ENV:AROSTCP/ipf.rules
+  ipf -nf ENV:AROSTCP/ipf.rules
+EndIf
+
+; Parse/validate the NAT rules only (no load/enable); non-zero means invalid.
+if EXISTS ENV:AROSTCP/ipnat.rules
+  ipnat -nf ENV:AROSTCP/ipnat.rules
+EndIf

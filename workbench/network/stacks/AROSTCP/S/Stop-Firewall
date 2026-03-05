@@ -1,0 +1,10 @@
+; $VER: Stop-Firewall 5.0 (05.03.2026)
+
+; Purpose:
+;   Tear down firewalling by clearing active IPFilter rules and NAT state.
+
+; Disable IP filtering and flush any loaded/active filter rules.
+ipf -DFa
+
+; Remove NAT rules and flush any active NAT translation entries.
+ipnat -CF
