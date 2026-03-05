@@ -154,6 +154,43 @@ void AROS_SLIB_ENTRY(setservent, UL, 96)(void);
 void AROS_SLIB_ENTRY(endservent, UL, 97)(void);
 void AROS_SLIB_ENTRY(getservent, UL, 98)(void);
 void AROS_SLIB_ENTRY(inet_aton, UL, 99)(void);
+void AROS_SLIB_ENTRY(RS_inet_ntop, UL, 100)(void);
+void AROS_SLIB_ENTRY(RS_inet_pton, UL, 101)(void);
+void AROS_SLIB_ENTRY(In_LocalAddr, UL, 102)(void);
+void AROS_SLIB_ENTRY(In_CanForward, UL, 103)(void);
+void AROS_SLIB_ENTRY(mbuf_copym, UL, 104)(void);
+void AROS_SLIB_ENTRY(mbuf_copydata, UL, 105)(void);
+void AROS_SLIB_ENTRY(mbuf_copyback, UL, 106)(void);
+void AROS_SLIB_ENTRY(mbuf_free, UL, 107)(void);
+void AROS_SLIB_ENTRY(mbuf_freem, UL, 108)(void);
+void AROS_SLIB_ENTRY(mbuf_get, UL, 109)(void);
+void AROS_SLIB_ENTRY(mbuf_gethdr, UL, 110)(void);
+void AROS_SLIB_ENTRY(mbuf_prepend, UL, 111)(void);
+void AROS_SLIB_ENTRY(mbuf_adj, UL, 112)(void);
+void AROS_SLIB_ENTRY(mbuf_cat, UL, 113)(void);
+void AROS_SLIB_ENTRY(mbuf_pullup, UL, 114)(void);
+void AROS_SLIB_ENTRY(ProcessIsServer, UL, 115)(void);
+void AROS_SLIB_ENTRY(ObtainServerSocket, UL, 116)(void);
+void AROS_SLIB_ENTRY(GetDefaultDomainName, UL, 117)(void);
+void AROS_SLIB_ENTRY(SetDefaultDomainName, UL, 118)(void);
+void AROS_SLIB_ENTRY(ObtainRoadshowData, UL, 119)(void);
+void AROS_SLIB_ENTRY(ReleaseRoadshowData, UL, 120)(void);
+void AROS_SLIB_ENTRY(ChangeRoadshowData, UL, 121)(void);
+void AROS_SLIB_ENTRY(RemoveInterface, UL, 122)(void);
+void AROS_SLIB_ENTRY(RS_gethostbyname_r, UL, 123)(void);
+void AROS_SLIB_ENTRY(RS_gethostbyaddr_r, UL, 124)(void);
+/* slots 125-127: reserved */
+void AROS_SLIB_ENTRY(ipf_open, UL, 128)(void);
+void AROS_SLIB_ENTRY(ipf_close, UL, 129)(void);
+void AROS_SLIB_ENTRY(ipf_read, UL, 130)(void);
+void AROS_SLIB_ENTRY(ipf_write, UL, 131)(void);
+void AROS_SLIB_ENTRY(ipf_ioctl, UL, 132)(void);
+void AROS_SLIB_ENTRY(ipf_set_notify_mask, UL, 133)(void);
+void AROS_SLIB_ENTRY(ipf_set_interrupt_mask, UL, 134)(void);
+void AROS_SLIB_ENTRY(RS_freeaddrinfo, UL, 135)(void);
+void AROS_SLIB_ENTRY(RS_getaddrinfo, UL, 136)(void);
+void AROS_SLIB_ENTRY(RS_gai_strerror, UL, 137)(void);
+void AROS_SLIB_ENTRY(RS_getnameinfo, UL, 138)(void);
 #endif
 
 /* TODO: following functions are not implemented yet */
@@ -274,6 +311,45 @@ f_void UserLibrary_funcTable[] = {
     AROS_SLIB_ENTRY(endservent, UL, 97),
     AROS_SLIB_ENTRY(getservent, UL, 98),
     AROS_SLIB_ENTRY(inet_aton, UL, 99),
+    AROS_SLIB_ENTRY(RS_inet_ntop, UL, 100),
+    AROS_SLIB_ENTRY(RS_inet_pton, UL, 101),
+    AROS_SLIB_ENTRY(In_LocalAddr, UL, 102),
+    AROS_SLIB_ENTRY(In_CanForward, UL, 103),
+    AROS_SLIB_ENTRY(mbuf_copym, UL, 104),
+    AROS_SLIB_ENTRY(mbuf_copydata, UL, 105),
+    AROS_SLIB_ENTRY(mbuf_copyback, UL, 106),
+    AROS_SLIB_ENTRY(mbuf_free, UL, 107),
+    AROS_SLIB_ENTRY(mbuf_freem, UL, 108),
+    AROS_SLIB_ENTRY(mbuf_get, UL, 109),
+    AROS_SLIB_ENTRY(mbuf_gethdr, UL, 110),
+    AROS_SLIB_ENTRY(mbuf_prepend, UL, 111),
+    AROS_SLIB_ENTRY(mbuf_adj, UL, 112),
+    AROS_SLIB_ENTRY(mbuf_cat, UL, 113),
+    AROS_SLIB_ENTRY(mbuf_pullup, UL, 114),
+    AROS_SLIB_ENTRY(ProcessIsServer, UL, 115),
+    AROS_SLIB_ENTRY(ObtainServerSocket, UL, 116),
+    AROS_SLIB_ENTRY(GetDefaultDomainName, UL, 117),
+    AROS_SLIB_ENTRY(SetDefaultDomainName, UL, 118),
+    AROS_SLIB_ENTRY(ObtainRoadshowData, UL, 119),
+    AROS_SLIB_ENTRY(ReleaseRoadshowData, UL, 120),
+    AROS_SLIB_ENTRY(ChangeRoadshowData, UL, 121),
+    AROS_SLIB_ENTRY(RemoveInterface, UL, 122),
+    AROS_SLIB_ENTRY(RS_gethostbyname_r, UL, 123),
+    AROS_SLIB_ENTRY(RS_gethostbyaddr_r, UL, 124),
+    AROS_SLIB_ENTRY(Null, LIB, 0),	    /* Reserved (slot 125) */
+    AROS_SLIB_ENTRY(Null, LIB, 0),	    /* Reserved (slot 126) */
+    AROS_SLIB_ENTRY(Null, LIB, 0),	    /* Reserved (slot 127) */
+    AROS_SLIB_ENTRY(ipf_open, UL, 128),
+    AROS_SLIB_ENTRY(ipf_close, UL, 129),
+    AROS_SLIB_ENTRY(ipf_read, UL, 130),
+    AROS_SLIB_ENTRY(ipf_write, UL, 131),
+    AROS_SLIB_ENTRY(ipf_ioctl, UL, 132),
+    AROS_SLIB_ENTRY(ipf_set_notify_mask, UL, 133),
+    AROS_SLIB_ENTRY(ipf_set_interrupt_mask, UL, 134),
+    AROS_SLIB_ENTRY(RS_freeaddrinfo, UL, 135),
+    AROS_SLIB_ENTRY(RS_getaddrinfo, UL, 136),
+    AROS_SLIB_ENTRY(RS_gai_strerror, UL, 137),
+    AROS_SLIB_ENTRY(RS_getnameinfo, UL, 138),
 #endif
     /* TODO: Following functions are not implemented yet */
 
