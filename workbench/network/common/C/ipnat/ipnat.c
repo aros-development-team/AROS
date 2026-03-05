@@ -26,6 +26,8 @@
 
 #include <net/ipfilter.h>
 
+const TEXT version[] = "$VER: ipnat 1.0 (05.03.2026)";
+
 static int verbose = 0;
 static int nochange = 0;
 static int removing = 0;
