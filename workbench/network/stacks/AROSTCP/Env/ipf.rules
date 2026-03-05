@@ -1,0 +1,7 @@
+# $VER: ipf.rules 1.0 (05.03.2026)
+#
+# Default config allowing all packets to pass
+#
+pass out from any to any
+pass in from any to any
+pass out proto tcp all keep state
