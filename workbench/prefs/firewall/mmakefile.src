@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-FILES := main args locale fweditor prefsdata
+FILES := main args locale fweditor prefsdata filter nat
 
 EXEDIR := $(AROSDIR)/Prefs
 

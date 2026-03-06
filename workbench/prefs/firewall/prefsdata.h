@@ -10,8 +10,8 @@
 #define PREFS_PATH_ENV      "ENV:AROSTCP"
 #define PREFS_PATH_ENVARC   "ENVARC:AROSTCP"
 
-#define IPF_CONF_NAME       "ipf.conf"
-#define IPNAT_CONF_NAME     "ipnat.conf"
+#define IPF_CONF_NAME       "ipf.rules"
+#define IPNAT_CONF_NAME     "ipnat.rules"
 
 #define FW_MAX_ADDR_LEN     48      /* IPv6 + /prefix */
 #define FW_MAX_PORT_LEN     12      /* "65535" or range */
@@ -91,6 +91,14 @@ BOOL SaveFirewallPrefs(void);
 BOOL UseFirewallPrefs(void);
 BOOL ApplyFirewallRules(void);
 void Prefs_HandleArgs(BOOL use, BOOL save);
+
+/* Read config files from a directory path */
+void ReadFilterConf(STRPTR path);
+void ReadNATConf(STRPTR path);
+
+/* Parsing individual rules (used by ImportFH) */
+BOOL ParseFilterLine(const char *line, struct FilterRule *rule);
+BOOL ParseNATLine(const char *line, struct NATRule *rule);
 
 /* Format a rule into human-readable text */
 void FormatFilterRule(struct FilterRule *rule, char *buf, int bufsize);

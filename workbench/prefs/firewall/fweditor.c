@@ -30,11 +30,12 @@
 #include "prefsdata.h"
 #include "locale.h"
 
-/* Cycle labels */
-static const char *actionLabels[]   = { "Pass", "Block", "Count", NULL };
-static const char *dirLabels[]      = { "In", "Out", NULL };
-static const char *protoLabels[]    = { "Any", "TCP", "UDP", "ICMP", "TCP/UDP", NULL };
-static const char *natTypeLabels[]  = { "Map (SNAT)", "Redirect (DNAT)", "Bidirectional", NULL };
+/* Cycle labels -- populated at runtime from locale catalog */
+static CONST_STRPTR actionLabels[FW_ACTION_NUM + 1];
+static CONST_STRPTR dirLabels[FW_DIR_NUM + 1];
+static CONST_STRPTR protoLabels[FW_PROTO_NUM + 1];
+static CONST_STRPTR natTypeLabels[FW_NAT_NUM + 1];
+static CONST_STRPTR pages[3];
 
 /*** Instance data **********************************************************/
 
@@ -100,13 +101,9 @@ AROS_UFH3S(LONG, FilterDisplayFunc,
 
     if (entry)
     {
-        static const char *anames[] = { "Pass", "Block", "Count" };
-        static const char *dnames[] = { "In", "Out" };
-        static const char *pnames[] = { "Any", "TCP", "UDP", "ICMP", "TCP/UDP" };
-
-        strlcpy(col0, anames[entry->action], sizeof(col0));
-        strlcpy(col1, dnames[entry->direction], sizeof(col1));
-        strlcpy(col2, pnames[entry->protocol], sizeof(col2));
+        strlcpy(col0, actionLabels[entry->action], sizeof(col0));
+        strlcpy(col1, dirLabels[entry->direction], sizeof(col1));
+        strlcpy(col2, protoLabels[entry->protocol], sizeof(col2));
 
         if (entry->src_addr[0])
         {
@@ -117,7 +114,7 @@ AROS_UFH3S(LONG, FilterDisplayFunc,
         }
         else
         {
-            strlcpy(col3, entry->src_port[0] ? entry->src_port : "any", sizeof(col3));
+            strlcpy(col3, entry->src_port[0] ? entry->src_port : (char *)_(MSG_ANY), sizeof(col3));
         }
 
         if (entry->dst_addr[0])
@@ -129,7 +126,7 @@ AROS_UFH3S(LONG, FilterDisplayFunc,
         }
         else
         {
-            strlcpy(col4, entry->dst_port[0] ? entry->dst_port : "any", sizeof(col4));
+            strlcpy(col4, entry->dst_port[0] ? entry->dst_port : (char *)_(MSG_ANY), sizeof(col4));
         }
 
         col5[0] = '\0';
@@ -146,12 +143,12 @@ AROS_UFH3S(LONG, FilterDisplayFunc,
     }
     else
     {
-        array[0] = "\033bAction";
-        array[1] = "\033bDir";
-        array[2] = "\033bProto";
-        array[3] = "\033bSource";
-        array[4] = "\033bDest";
-        array[5] = "\033bFlags";
+        array[0] = (char *)_(MSG_ACTION);
+        array[1] = (char *)_(MSG_DIRECTION);
+        array[2] = (char *)_(MSG_PROTOCOL);
+        array[3] = (char *)_(MSG_SOURCE);
+        array[4] = (char *)_(MSG_DESTINATION);
+        array[5] = (char *)_(MSG_FLAGS);
     }
 
     return 0;
@@ -194,23 +191,20 @@ AROS_UFH3S(LONG, NATDisplayFunc,
 
     if (entry)
     {
-        static const char *tnames[] = { "Map", "Rdr", "Bimap" };
-        static const char *pnames[] = { "Any", "TCP", "UDP", "ICMP", "TCP/UDP" };
-
-        strlcpy(col0, tnames[entry->type], sizeof(col0));
+        strlcpy(col0, natTypeLabels[entry->type], sizeof(col0));
         strlcpy(col1, entry->interface, sizeof(col1));
 
         if (entry->src_port[0])
             snprintf(col2, sizeof(col2), "%s:%s", entry->src_addr, entry->src_port);
         else
-            strlcpy(col2, entry->src_addr[0] ? entry->src_addr : "any", sizeof(col2));
+            strlcpy(col2, entry->src_addr[0] ? entry->src_addr : (char *)_(MSG_ANY), sizeof(col2));
 
         if (entry->nat_port[0])
             snprintf(col3, sizeof(col3), "%s:%s", entry->nat_addr, entry->nat_port);
         else
-            strlcpy(col3, entry->nat_addr[0] ? entry->nat_addr : "any", sizeof(col3));
+            strlcpy(col3, entry->nat_addr[0] ? entry->nat_addr : (char *)_(MSG_ANY), sizeof(col3));
 
-        strlcpy(col4, pnames[entry->protocol], sizeof(col4));
+        strlcpy(col4, protoLabels[entry->protocol], sizeof(col4));
 
         array[0] = col0;
         array[1] = col1;
@@ -220,11 +214,11 @@ AROS_UFH3S(LONG, NATDisplayFunc,
     }
     else
     {
-        array[0] = "\033bType";
-        array[1] = "\033bIface";
-        array[2] = "\033bSource";
-        array[3] = "\033bTarget";
-        array[4] = "\033bProto";
+        array[0] = (char *)_(MSG_NAT_TYPE);
+        array[1] = (char *)_(MSG_INTERFACE);
+        array[2] = (char *)_(MSG_SOURCE);
+        array[3] = (char *)_(MSG_TARGET);
+        array[4] = (char *)_(MSG_PROTOCOL);
     }
 
     return 0;
@@ -419,13 +413,37 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object *fAddBtn, *fRemBtn, *fUpBtn, *fDownBtn, *fUpdateBtn;
     Object *nAddBtn, *nRemBtn, *nUpdateBtn;
 
-    static const char *pages[] = { "Filter Rules", "NAT Rules", NULL };
-
     InitHooks();
+
+    /* Populate localized cycle and tab labels */
+    actionLabels[0] = _(MSG_PASS);
+    actionLabels[1] = _(MSG_BLOCK);
+    actionLabels[2] = _(MSG_COUNT);
+    actionLabels[3] = NULL;
+
+    dirLabels[0] = _(MSG_IN);
+    dirLabels[1] = _(MSG_OUT);
+    dirLabels[2] = NULL;
+
+    protoLabels[0] = _(MSG_ANY);
+    protoLabels[1] = _(MSG_TCP);
+    protoLabels[2] = _(MSG_UDP);
+    protoLabels[3] = _(MSG_ICMP);
+    protoLabels[4] = _(MSG_TCPUDP);
+    protoLabels[5] = NULL;
+
+    natTypeLabels[0] = _(MSG_NAT_MAP);
+    natTypeLabels[1] = _(MSG_NAT_RDR);
+    natTypeLabels[2] = _(MSG_NAT_BIMAP);
+    natTypeLabels[3] = NULL;
+
+    pages[0] = _(MSG_TAB_FILTER);
+    pages[1] = _(MSG_TAB_NAT);
+    pages[2] = NULL;
 
     self = (Object *)DoSuperNewTags(CLASS, self, NULL,
         MUIA_PrefsEditor_Name,     __(MSG_NAME),
-        MUIA_PrefsEditor_Path,     (IPTR)"AROSTCP/ipf.conf",
+        MUIA_PrefsEditor_Path,     (IPTR)"AROSTCP/ipf.rules",
         MUIA_PrefsEditor_IconTool, (IPTR)"SYS:Prefs/Firewall",
 
         Child, (IPTR)RegisterGroup(pages),
@@ -443,42 +461,42 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 
                 Child, (IPTR)ColGroup(4),
-                    Child, (IPTR)Label2("Action:"),
+                    Child, (IPTR)Label2(__(MSG_ACTION)),
                     Child, (IPTR)(fActionCycle = CycleObject,
                         MUIA_Cycle_Entries, (IPTR)actionLabels,
                     End),
-                    Child, (IPTR)Label2("Direction:"),
+                    Child, (IPTR)Label2(__(MSG_DIRECTION)),
                     Child, (IPTR)(fDirCycle = CycleObject,
                         MUIA_Cycle_Entries, (IPTR)dirLabels,
                     End),
 
-                    Child, (IPTR)Label2("Protocol:"),
+                    Child, (IPTR)Label2(__(MSG_PROTOCOL)),
                     Child, (IPTR)(fProtoCycle = CycleObject,
                         MUIA_Cycle_Entries, (IPTR)protoLabels,
                     End),
-                    Child, (IPTR)Label2("Interface:"),
+                    Child, (IPTR)Label2(__(MSG_INTERFACE)),
                     Child, (IPTR)(fIfStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_IFNAME,
                     End),
 
-                    Child, (IPTR)Label2("Source:"),
+                    Child, (IPTR)Label2(__(MSG_SOURCE)),
                     Child, (IPTR)(fSrcStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_ADDR_LEN,
                     End),
-                    Child, (IPTR)Label2("Src Port:"),
+                    Child, (IPTR)Label2(__(MSG_SRC_PORT)),
                     Child, (IPTR)(fSrcPortStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_PORT_LEN,
                     End),
 
-                    Child, (IPTR)Label2("Destination:"),
+                    Child, (IPTR)Label2(__(MSG_DESTINATION)),
                     Child, (IPTR)(fDstStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_ADDR_LEN,
                     End),
-                    Child, (IPTR)Label2("Dst Port:"),
+                    Child, (IPTR)Label2(__(MSG_DST_PORT)),
                     Child, (IPTR)(fDstPortStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_PORT_LEN,
@@ -486,21 +504,21 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 
                 Child, (IPTR)HGroup,
-                    Child, (IPTR)(fQuickChk = MUI_MakeObject(MUIO_Checkmark, (IPTR)"Quick")),
-                    Child, (IPTR)Label2("Quick"),
-                    Child, (IPTR)(fKeepStateChk = MUI_MakeObject(MUIO_Checkmark, (IPTR)"Keep State")),
-                    Child, (IPTR)Label2("Keep State"),
-                    Child, (IPTR)(fLogChk = MUI_MakeObject(MUIO_Checkmark, (IPTR)"Log")),
-                    Child, (IPTR)Label2("Log"),
+                    Child, (IPTR)(fQuickChk = MUI_MakeObject(MUIO_Checkmark, __(MSG_QUICK))),
+                    Child, (IPTR)Label2(__(MSG_QUICK)),
+                    Child, (IPTR)(fKeepStateChk = MUI_MakeObject(MUIO_Checkmark, __(MSG_KEEPSTATE))),
+                    Child, (IPTR)Label2(__(MSG_KEEPSTATE)),
+                    Child, (IPTR)(fLogChk = MUI_MakeObject(MUIO_Checkmark, __(MSG_LOG))),
+                    Child, (IPTR)Label2(__(MSG_LOG)),
                     Child, (IPTR)HSpace(0),
                 End,
 
                 Child, (IPTR)HGroup,
-                    Child, (IPTR)(fAddBtn = SimpleButton("Add")),
-                    Child, (IPTR)(fUpdateBtn = SimpleButton("Update")),
-                    Child, (IPTR)(fRemBtn = SimpleButton("Remove")),
-                    Child, (IPTR)(fUpBtn = SimpleButton("Move Up")),
-                    Child, (IPTR)(fDownBtn = SimpleButton("Move Down")),
+                    Child, (IPTR)(fAddBtn = SimpleButton(__(MSG_ADD))),
+                    Child, (IPTR)(fUpdateBtn = SimpleButton(__(MSG_UPDATE))),
+                    Child, (IPTR)(fRemBtn = SimpleButton(__(MSG_REMOVE))),
+                    Child, (IPTR)(fUpBtn = SimpleButton(__(MSG_MOVEUP))),
+                    Child, (IPTR)(fDownBtn = SimpleButton(__(MSG_MOVEDOWN))),
                 End,
             End,
 
@@ -518,38 +536,38 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 
                 Child, (IPTR)ColGroup(4),
-                    Child, (IPTR)Label2("Type:"),
+                    Child, (IPTR)Label2(__(MSG_NAT_TYPE)),
                     Child, (IPTR)(nTypeCycle = CycleObject,
                         MUIA_Cycle_Entries, (IPTR)natTypeLabels,
                     End),
-                    Child, (IPTR)Label2("Protocol:"),
+                    Child, (IPTR)Label2(__(MSG_PROTOCOL)),
                     Child, (IPTR)(nProtoCycle = CycleObject,
                         MUIA_Cycle_Entries, (IPTR)protoLabels,
                     End),
 
-                    Child, (IPTR)Label2("Interface:"),
+                    Child, (IPTR)Label2(__(MSG_INTERFACE)),
                     Child, (IPTR)(nIfStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_IFNAME,
                     End),
-                    Child, (IPTR)Label2("Source:"),
+                    Child, (IPTR)Label2(__(MSG_SOURCE)),
                     Child, (IPTR)(nSrcStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_ADDR_LEN,
                     End),
 
-                    Child, (IPTR)Label2("Port:"),
+                    Child, (IPTR)Label2(__(MSG_PORT)),
                     Child, (IPTR)(nSrcPortStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_PORT_LEN,
                     End),
-                    Child, (IPTR)Label2("Target:"),
+                    Child, (IPTR)Label2(__(MSG_TARGET)),
                     Child, (IPTR)(nNatStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_ADDR_LEN,
                     End),
 
-                    Child, (IPTR)Label2("Tgt Port:"),
+                    Child, (IPTR)Label2(__(MSG_TGT_PORT)),
                     Child, (IPTR)(nNatPortStr = StringObject,
                         StringFrame,
                         MUIA_String_MaxLen, FW_MAX_PORT_LEN,
@@ -558,9 +576,9 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 End,
 
                 Child, (IPTR)HGroup,
-                    Child, (IPTR)(nAddBtn = SimpleButton("Add")),
-                    Child, (IPTR)(nUpdateBtn = SimpleButton("Update")),
-                    Child, (IPTR)(nRemBtn = SimpleButton("Remove")),
+                    Child, (IPTR)(nAddBtn = SimpleButton(__(MSG_ADD))),
+                    Child, (IPTR)(nUpdateBtn = SimpleButton(__(MSG_UPDATE))),
+                    Child, (IPTR)(nRemBtn = SimpleButton(__(MSG_REMOVE))),
                     Child, (IPTR)HSpace(0),
                 End,
             End,
@@ -626,27 +644,74 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     return self;
 }
 
-/* ---- ImportFH: called by PrefsEditor to refresh from data -------------- */
+/* ---- ImportFH: called by PrefsEditor to read rules from file handle ----- */
 
 IPTR FWEditor__MUIM_PrefsEditor_ImportFH(
     Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ImportFH *message)
 {
     struct FWEditor_DATA *data = INST_DATA(CLASS, self);
+    BPTR fh = message->fh;
+    char line[512];
+
+    /*
+     * Read filter rules from the file handle provided by PrefsEditor.
+     * This is the ipf.rules file. We also attempt to load ipnat.rules
+     * from the same directory.
+     */
+    numFilterRules = 0;
+    if (fh != BNULL)
+    {
+        while (FGets(fh, line, sizeof(line) - 1) &&
+               numFilterRules < FW_MAX_FILTER_RULES)
+        {
+            struct FilterRule rule;
+            if (ParseFilterLine(line, &rule))
+                filterRules[numFilterRules++] = rule;
+        }
+    }
+
+    /*
+     * PrefsEditor only opens one file (the Path we set).
+     * Load NAT rules separately from the same directory.
+     */
+    ReadNATConf(PREFS_PATH_ENV);
+    if (numNatRules == 0)
+        ReadNATConf(PREFS_PATH_ENVARC);
 
     PopulateListsFromRules(data);
     return TRUE;
 }
 
-/* ---- ExportFH: called by PrefsEditor to prepare data for writing ------- */
+/* ---- ExportFH: called by PrefsEditor to write rules to file handle ----- */
 
 IPTR FWEditor__MUIM_PrefsEditor_ExportFH(
     Class *CLASS, Object *self,
     struct MUIP_PrefsEditor_ExportFH *message)
 {
     struct FWEditor_DATA *data = INST_DATA(CLASS, self);
+    BPTR fh = message->fh;
+    char line[512];
+    int i;
 
     SyncRulesFromLists(data);
+
+    /*
+     * Write filter rules to the file handle provided by PrefsEditor.
+     */
+    if (fh != BNULL)
+    {
+        FPuts(fh, "# AROS Firewall Preferences -- filter rules for ipf(1)\n");
+        FPuts(fh, "# Generated file -- edit with Firewall preferences application\n");
+
+        for (i = 0; i < numFilterRules; i++)
+        {
+            FormatFilterRule(&filterRules[i], line, sizeof(line));
+            FPuts(fh, line);
+            FPuts(fh, "\n");
+        }
+    }
+
     return TRUE;
 }
 
