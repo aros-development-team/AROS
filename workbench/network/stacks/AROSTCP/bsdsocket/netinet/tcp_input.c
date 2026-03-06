@@ -208,6 +208,43 @@ struct mbuf *m;
         p->m_nextpkt = m;
     }
 
+    /*
+     * SACK (RFC 2018): Build SACK blocks from the reassembly
+     * queue to report to the sender what we have received.
+     * Only generate blocks when SACK is negotiated and we
+     * have OOO data (segments beyond rcv_nxt).
+     */
+    if(tp->t_flags & TF_SACK_PERMIT) {
+        struct mbuf *sq;
+        int n = 0;
+        for(sq = tp->t_segq; sq && n < MAX_SACK_BLKS;
+                sq = sq->m_nextpkt) {
+            struct tcpiphdr *stip = GETTCP(sq);
+            tcp_seq sblk_start = stip->ti_seq;
+            tcp_seq sblk_end = stip->ti_seq + stip->ti_len;
+            /* Merge with next contiguous segments */
+            while(sq->m_nextpkt) {
+                struct tcpiphdr *ntip = GETTCP(sq->m_nextpkt);
+                if(ntip->ti_seq == sblk_end) {
+                    sblk_end = ntip->ti_seq + ntip->ti_len;
+                    sq = sq->m_nextpkt;
+                } else
+                    break;
+            }
+            /* Only report blocks beyond rcv_nxt (OOO data) */
+            if(SEQ_GT(sblk_end, tp->rcv_nxt)) {
+                if(SEQ_LT(sblk_start, tp->rcv_nxt))
+                    sblk_start = tp->rcv_nxt;
+                tp->t_dsack_blks[n].start = sblk_start;
+                tp->t_dsack_blks[n].end = sblk_end;
+                n++;
+            }
+        }
+        tp->t_num_dsack_blks = n;
+        if(n > 0)
+            tp->t_flagsext |= TF_SACK_GENERATE;
+    }
+
 present:
     /*
      * Present data to user, advancing rcv_nxt through
@@ -269,6 +306,7 @@ void tcp_input(void *arg, ...)
     iphlen = va_arg(va, int);
     va_end(va);
 
+    u_char iptos = 0;		/* saved IP TOS for ECN */
 
     bzero((char *)&to, sizeof(to));
 
@@ -293,6 +331,8 @@ void tcp_input(void *arg, ...)
      */
     tlen = ((struct ip *)ti)->ip_len;
     len = sizeof(struct ip) + tlen;
+    /* Save IP TOS for ECN detection before pseudo-header overwrites it */
+    iptos = ((struct ip *)ti)->ip_tos;
     bzero(ti->ti_x1, sizeof(ti->ti_x1));
     ti->ti_len = (u_short)tlen;
     HTONS(ti->ti_len);
@@ -659,6 +699,19 @@ findpcb:
         if(optp)
             tcp_dooptions(tp, optp, optlen, ti,
                           &to);
+        /* Enable SACK if peer offered it and we support it */
+        if(tcp_do_sack && (to.to_flag & TOF_SACK_PERMITTED))
+            tp->t_flags |= TF_SACK_PERMIT;
+        else
+            tp->t_flags &= ~TF_SACK_PERMIT;
+        /*
+         * ECN negotiation (RFC 3168, server side):
+         * Client sent SYN with ECE+CWR. If we support ECN,
+         * enable it and we'll respond with ECE in SYN-ACK.
+         */
+        if(tcp_do_ecn &&
+                (tiflags & (TH_ECE | TH_CWR)) == (TH_ECE | TH_CWR))
+            tp->t_flagsext |= TF_ECN_PERMIT;
         if(iss)
             tp->iss = iss;
         else
@@ -788,6 +841,19 @@ findpcb:
                 tp->snd_scale = tp->requested_s_scale;
                 tp->rcv_scale = tp->request_r_scale;
             }
+            /* Enable SACK if both sides agree */
+            if(!(to.to_flag & TOF_SACK_PERMITTED))
+                tp->t_flags &= ~TF_SACK_PERMIT;
+            /*
+             * ECN negotiation (RFC 3168):
+             * We sent SYN with ECE+CWR. If the SYN-ACK has ECE
+             * (without CWR), ECN is negotiated.
+             */
+            if(tcp_do_ecn &&
+                    (tiflags & (TH_ECE | TH_CWR)) == TH_ECE)
+                tp->t_flagsext |= TF_ECN_PERMIT;
+            else
+                tp->t_flagsext &= ~TF_ECN_PERMIT;
             /*
              * Our SYN was acked.  If segment contains CC.ECHO
              * option, check it to make sure this segment really
@@ -1204,6 +1270,17 @@ close:
     case TCPS_LAST_ACK:
     case TCPS_TIME_WAIT:
 
+        /*
+         * ECN (RFC 3168): If this connection is ECN-capable
+         * and the incoming IP packet has the CE codepoint set,
+         * the network is experiencing congestion. Signal the
+         * sender by setting ECE in our next ACK.
+         */
+        if((tp->t_flagsext & TF_ECN_PERMIT) &&
+                (iptos & IPTOS_ECN_MASK) == IPTOS_ECN_CE) {
+            tp->t_flagsext |= TF_ECN_SND_ECE;
+        }
+
         if(SEQ_LEQ(ti->ti_ack, tp->snd_una)) {
             if(ti->ti_len == 0 && tiwin == tp->snd_wnd) {
                 tcpstat.tcps_rcvdupack++;
@@ -1247,6 +1324,13 @@ close:
                     tp->t_rtt = 0;
                     tp->snd_nxt = ti->ti_ack;
                     tp->snd_cwnd = tp->t_maxseg;
+                    /*
+                     * NewReno (RFC 3782): record recovery point.
+                     * We stay in fast recovery until all data
+                     * up to snd_recover is acknowledged.
+                     */
+                    tp->snd_recover = tp->snd_max;
+                    tp->t_flagsext |= TF_IN_FASTRECOV;
                     (void) tcp_output(tp);
                     tp->snd_cwnd = tp->snd_ssthresh +
                                    tp->t_maxseg * tp->t_dupacks;
@@ -1263,13 +1347,59 @@ close:
             break;
         }
         /*
-         * If the congestion window was inflated to account
-         * for the other side's cached packets, retract it.
+         * This ACK advances snd_una (not a pure dup).
+         *
+         * NewReno (RFC 3782): If we are in fast recovery,
+         * check for partial ACK. A partial ACK advances
+         * snd_una but does not complete recovery
+         * (snd_una < snd_recover). In that case, retransmit
+         * the next unacknowledged segment and deflate cwnd.
          */
-        if(tp->t_dupacks > tcprexmtthresh &&
-                tp->snd_cwnd > tp->snd_ssthresh)
-            tp->snd_cwnd = tp->snd_ssthresh;
-        tp->t_dupacks = 0;
+        if(tp->t_flagsext & TF_IN_FASTRECOV) {
+            if(SEQ_LT(ti->ti_ack, tp->snd_recover)) {
+                /*
+                 * Partial ACK (RFC 3782 step 3):
+                 * - Retransmit first unacked segment
+                 * - Deflate cwnd by amount ACKed, add back 1 MSS
+                 * - Do not exit fast recovery
+                 */
+                tcp_seq old_snd_nxt = tp->snd_nxt;
+                tcpstat.tcps_newreno_partial++;
+                tp->t_timer[TCPT_REXMT] = 0;
+                tp->snd_nxt = ti->ti_ack;
+                tp->snd_cwnd = tp->t_maxseg;
+                (void) tcp_output(tp);
+                /* Deflate: partial_ack bytes left the pipe */
+                tp->snd_cwnd = tp->snd_ssthresh +
+                    tp->t_maxseg * (tp->t_dupacks - tcprexmtthresh);
+                if(tp->snd_cwnd < tp->t_maxseg)
+                    tp->snd_cwnd = tp->t_maxseg;
+                if(SEQ_GT(old_snd_nxt, tp->snd_nxt))
+                    tp->snd_nxt = old_snd_nxt;
+                tp->t_dupacks = 0;
+                goto drop;
+            } else {
+                /*
+                 * Full ACK (RFC 3782 step 3):
+                 * Recovery is complete. Deflate cwnd to
+                 * min(ssthresh, FlightSize + MSS).
+                 */
+                tp->t_flagsext &= ~TF_IN_FASTRECOV;
+                if(tp->snd_cwnd > tp->snd_ssthresh)
+                    tp->snd_cwnd = tp->snd_ssthresh;
+                tp->t_dupacks = 0;
+            }
+        } else {
+            /*
+             * Not in fast recovery — original Reno behavior:
+             * If the congestion window was inflated to account
+             * for the other side's cached packets, retract it.
+             */
+            if(tp->t_dupacks >= tcprexmtthresh &&
+                    tp->snd_cwnd > tp->snd_ssthresh)
+                tp->snd_cwnd = tp->snd_ssthresh;
+            tp->t_dupacks = 0;
+        }
         if(SEQ_GT(ti->ti_ack, tp->snd_max)) {
             tcpstat.tcps_rcvacktoomuch++;
             goto dropafterack;
@@ -1328,13 +1458,39 @@ process_ACK:
             goto step6;
 
         /*
+         * ECN (RFC 3168): If the peer sent ECE, it received a
+         * CE-marked packet from the network. Reduce cwnd once
+         * per RTT (like a single loss), and send CWR.
+         */
+        if((tp->t_flagsext & TF_ECN_PERMIT) &&
+                (tiflags & TH_ECE)) {
+            tcpstat.tcps_ecn_ce++;
+            /*
+             * Only reduce once per window of data.
+             * Check that we are not already in recovery.
+             */
+            if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
+                u_int ecn_win =
+                    MIN(tp->snd_wnd, tp->snd_cwnd) / 2 /
+                    tp->t_maxseg;
+                if(ecn_win < 2)
+                    ecn_win = 2;
+                tp->snd_ssthresh = ecn_win * tp->t_maxseg;
+                tp->snd_cwnd = tp->snd_ssthresh;
+            }
+            tp->t_flagsext |= TF_ECN_SND_CWR;
+        }
+
+        /*
          * When new data is acked, open the congestion window.
          * If the window gives us less than ssthresh packets
          * in flight, open exponentially (maxseg per packet).
          * Otherwise open linearly: maxseg per window
          * (maxseg^2 / cwnd per packet).
+         *
+         * Do NOT grow cwnd during fast recovery (NewReno).
          */
-        {
+        if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
             register u_int cw = tp->snd_cwnd;
             register u_int incr = tp->t_maxseg;
 
@@ -1771,6 +1927,38 @@ struct tcpopt *to;
             bcopy((char *)cp + 2,
                   (char *)&to->to_ccecho, sizeof(to->to_ccecho));
             NTOHL(to->to_ccecho);
+            break;
+
+        case TCPOPT_SACK_PERMITTED:
+            if(optlen != TCPOLEN_SACK_PERMITTED)
+                continue;
+            if(!(ti->ti_flags & TH_SYN))
+                continue;
+            to->to_flag |= TOF_SACK_PERMITTED;
+            break;
+
+        case TCPOPT_SACK:
+            if(optlen <= TCPOLEN_SACKHDR ||
+               ((optlen - TCPOLEN_SACKHDR) % TCPOLEN_SACK) != 0)
+                continue;
+            to->to_flag |= TOF_SACK;
+            to->to_nsacks = (optlen - TCPOLEN_SACKHDR) / TCPOLEN_SACK;
+            if(to->to_nsacks > MAX_SACK_BLKS)
+                to->to_nsacks = MAX_SACK_BLKS;
+            {
+                u_char *sackp = cp + TCPOLEN_SACKHDR;
+                int i;
+                for(i = 0; i < to->to_nsacks; i++) {
+                    bcopy(sackp, &to->to_sacks[i].start,
+                          sizeof(tcp_seq));
+                    NTOHL(to->to_sacks[i].start);
+                    sackp += sizeof(tcp_seq);
+                    bcopy(sackp, &to->to_sacks[i].end,
+                          sizeof(tcp_seq));
+                    NTOHL(to->to_sacks[i].end);
+                    sackp += sizeof(tcp_seq);
+                }
+            }
             break;
         }
     }

@@ -76,6 +76,9 @@ int 	tcp_mssdflt = 1460;			  /* Ethernet MSS (1500 - 40) */
 int 	tcp_rttdflt = TCPTV_SRTTDFLT / PR_SLOWHZ;
 int	tcp_do_rfc1323 = 1;
 int	tcp_do_rfc1644 = 1;
+int	tcp_do_sack = 1;	/* enable SACK (RFC 2018) */
+int	tcp_do_newreno = 1;	/* enable NewReno (RFC 3782) */
+int	tcp_do_ecn = 0;		/* enable ECN (RFC 3168) - off by default */
 static	void tcp_cleartaocache(void);
 
 extern u_char inetctlerrmap[];
@@ -253,6 +256,15 @@ struct inpcb *inp;
         tp->t_flags = (TF_REQ_SCALE | TF_REQ_TSTMP);
     if(tcp_do_rfc1644)
         tp->t_flags |= TF_REQ_CC;
+    tp->t_flagsext = 0;
+    if(tcp_do_newreno)
+        tp->t_flagsext |= TF_NEWRENO;
+    if(tcp_do_sack)
+        tp->t_flags |= TF_SACK_PERMIT;	/* request SACK in SYN */
+    tp->t_num_sack_blks = 0;
+    tp->t_num_dsack_blks = 0;
+    tp->snd_fack = 0;
+    tp->snd_awnd = 0;
     tp->t_inpcb = inp;
     /*
      * Init srtt to TCPTV_SRTTBASE (0), so we can tell that we have no

@@ -1,8 +1,8 @@
 /*
  * Copyright (C) 1982, 1986, 1988, 1990, 1993
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (C) 2006
- *	Pavel Fedin
+ * Copyright (C) 2006 Pavel Fedin
+ * Copyright (C) 2005-2026 The AROS Dev Team
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -262,6 +262,13 @@ int timer;
             tp->snd_cwnd = tp->t_maxseg;
             tp->snd_ssthresh = win * tp->t_maxseg;
             tp->t_dupacks = 0;
+            /*
+             * Exit fast recovery on RTO (NewReno/SACK).
+             * The retransmission will restart from snd_una.
+             */
+            tp->t_flagsext &= ~TF_IN_FASTRECOV;
+            tp->t_num_sack_blks = 0;
+            tp->snd_recover = tp->snd_max;
         }
         (void) tcp_output(tp);
         break;

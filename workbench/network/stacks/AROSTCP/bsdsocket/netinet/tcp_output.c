@@ -329,6 +329,16 @@ send:
                                                      tp->request_r_scale);
                 optlen += 4;
             }
+            /*
+             * SACK Permitted option (RFC 2018): Advertise
+             * in SYN that we support SACK.
+             */
+            if(tp->t_flags & TF_SACK_PERMIT) {
+                opt[optlen++] = TCPOPT_NOP;
+                opt[optlen++] = TCPOPT_NOP;
+                opt[optlen++] = TCPOPT_SACK_PERMITTED;
+                opt[optlen++] = TCPOLEN_SACK_PERMITTED;
+            }
         }
     }
 
@@ -349,6 +359,45 @@ send:
         *lp   = htonl(tp->ts_recent);
         optlen += TCPOLEN_TSTAMP_APPA;
     }
+
+    /*
+     * SACK blocks (RFC 2018): If we have out-of-order data
+     * to report and SACK is negotiated, add SACK option.
+     * Not on SYN segments (SACK_PERMITTED handles SYN).
+     */
+    if(!(flags & TH_SYN) &&
+            (tp->t_flags & TF_SACK_PERMIT) &&
+            (tp->t_flagsext & TF_SACK_GENERATE) &&
+            tp->t_num_dsack_blks > 0) {
+        int sack_bytes_avail = TCP_MAXOLEN - optlen;
+        int max_blks = (sack_bytes_avail - TCPOLEN_SACKHDR) /
+            TCPOLEN_SACK;
+        int nsack = tp->t_num_dsack_blks;
+        int i;
+        if(max_blks <= 0)
+            goto skip_sack;
+        if(nsack > max_blks)
+            nsack = max_blks;
+        /* Pad to 4-byte boundary if needed */
+        if((optlen % 4) != 0) {
+            opt[optlen++] = TCPOPT_NOP;
+            if((optlen % 4) != 0)
+                opt[optlen++] = TCPOPT_NOP;
+        }
+        opt[optlen++] = TCPOPT_SACK;
+        opt[optlen++] = TCPOLEN_SACKHDR + nsack * TCPOLEN_SACK;
+        for(i = 0; i < nsack; i++) {
+            u_int32_t val;
+            val = htonl(tp->t_dsack_blks[i].start);
+            bcopy(&val, opt + optlen, sizeof(val));
+            optlen += sizeof(val);
+            val = htonl(tp->t_dsack_blks[i].end);
+            bcopy(&val, opt + optlen, sizeof(val));
+            optlen += sizeof(val);
+        }
+        tp->t_flagsext &= ~TF_SACK_GENERATE;
+    }
+skip_sack:
 
     /*
      * Send `CC-family' options if our side wants to use them (TF_REQ_CC),
@@ -566,6 +615,38 @@ send:
         ti->ti_off = (sizeof(struct tcphdr) + optlen) >> 2;
     }
     ti->ti_flags = flags;
+
+    /*
+     * ECN (RFC 3168): Set ECN-related TCP flags and IP codepoint.
+     *
+     * SYN: If ECN is desired, set ECE+CWR to propose ECN.
+     * SYN-ACK: If ECN was negotiated (server), set ECE only.
+     * Data: If peer sent ECE (congestion), respond with CWR.
+     *        If peer needs us to echo congestion, set ECE.
+     */
+    if(tp->t_flagsext & TF_ECN_PERMIT) {
+        if(tp->t_flagsext & TF_ECN_SND_CWR) {
+            ti->ti_flags |= TH_CWR;
+            tp->t_flagsext &= ~TF_ECN_SND_CWR;
+            tcpstat.tcps_ecn_cwr++;
+        }
+        if(tp->t_flagsext & TF_ECN_SND_ECE) {
+            ti->ti_flags |= TH_ECE;
+            tp->t_flagsext &= ~TF_ECN_SND_ECE;
+            tcpstat.tcps_ecn_ece++;
+        }
+    } else if(flags & TH_SYN) {
+        /*
+         * Not yet negotiated: propose ECN in outgoing SYN.
+         * Client sends ECE+CWR; server sends ECE only.
+         */
+        if(tcp_do_ecn) {
+            if(!(flags & TH_ACK))
+                ti->ti_flags |= TH_ECE | TH_CWR; /* SYN */
+            else if(tp->t_flagsext & TF_ECN_PERMIT)
+                ti->ti_flags |= TH_ECE; /* SYN-ACK */
+        }
+    }
     /*
      * Calculate receive window.  Don't shrink window,
      * but avoid silly window syndrome.
@@ -673,6 +754,13 @@ send:
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */
+        /*
+         * ECN (RFC 3168): Set ECT(0) codepoint in the IP header
+         * for ECN-capable connections, except on pure SYN/RST.
+         */
+        if((tp->t_flagsext & TF_ECN_PERMIT) &&
+                !(flags & (TH_SYN | TH_RST)))
+            ((struct ip *)ti)->ip_tos |= IPTOS_ECN_ECT0;
 #if BSD >= 43
         error = ip_output(m, tp->t_inpcb->inp_options, &tp->t_inpcb->inp_route,
                           so->so_options & SO_DONTROUTE, 0);
