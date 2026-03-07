@@ -2,11 +2,13 @@
     Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
     net4.c - IPv4 protocol-address configuration window class (Net4WinClass):
-      - Subclass of PAWinClass (protocols.c)
+      - Subclass of PAWinClass (protocols.c, passed in via the plugin API)
       - MUIM_PAWin_Show        : populate gadgets from a ProtocolAddress
       - MUIM_PAWin_Apply       : read gadgets back into a ProtocolAddress
       - MUIM_PAWin_ModeChanged : enable/disable addr+mask for manual mode
       - Net4_WriteTokens       : write IP= / NETMASK= / GW= to a FILE
+
+    This file is compiled as part of the net4.netprefs plugin module.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -214,13 +216,13 @@ static IPTR Net4Win_Dispatch(Class *cl, Object *obj, Msg msg)
 }
 
 /*---------------------------------------------------------------------------*/
-BOOL Net4Win_InitClass(void)
+BOOL Net4Win_InitClass(struct MUI_CustomClass *PAWinCl)
 {
     if (Net4WinClass)
         return TRUE;
-    if (!PAWinClass && !PAWin_InitClass())
+    if (!PAWinCl)
         return FALSE;
-    Net4WinClass = MUI_CreateCustomClass(NULL, NULL, PAWinClass,
+    Net4WinClass = MUI_CreateCustomClass(NULL, NULL, PAWinCl,
                        sizeof(struct Net4Win_Data), Net4Win_Dispatch);
     return Net4WinClass != NULL;
 }
@@ -245,10 +247,13 @@ void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa)
         case IP_MODE_AUTO:
             fprintf(f, "IP=AUTO ");
             break;
+        case IP_MODE_MANUAL:
+            if (pa->pa_addr[0])
+                fprintf(f, "IP=%s NETMASK=%s ",
+                    (const char *)pa->pa_addr,
+                    pa->pa_mask[0] ? (const char *)pa->pa_mask : "255.255.255.0");
+            break;
         default:
-            fprintf(f, "IP=%s NETMASK=%s ",
-                pa->pa_addr[0] ? (const char *)pa->pa_addr : "0.0.0.0",
-                pa->pa_mask[0] ? (const char *)pa->pa_mask : "255.255.255.0");
             break;
     }
     if (pa->pa_gate[0])

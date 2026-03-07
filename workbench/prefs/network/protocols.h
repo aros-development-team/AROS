@@ -1,5 +1,11 @@
 /*
     Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+
+    protocols.h - Shared protocol-address infrastructure.
+
+    PAWinClass is the base MUI window class for protocol-address
+    configuration.  Plugin modules (*.netprefs) subclass it and register
+    themselves via the netprefs library API at runtime.
 */
 
 #ifndef _PROTOCOLS_H_
@@ -51,7 +57,7 @@ void ProtoAddr_ToInterface(struct Interface *iface,
                            struct ProtocolAddress *ipv6);
 
 /*--- PAWinClass: common protocol-address configuration window --------------*/
-/*    Defined in protocols.c; subclassed by Net4WinClass and Net6WinClass.   */
+/*    Defined in protocols.c; subclassed by plugin modules (.netprefs).      */
 
 #define MUIB_PAWin                  (TAG_USER | 0x11000000)
 
@@ -73,27 +79,9 @@ struct MUIP_PAWin_Apply       { STACKED ULONG MethodID; STACKED struct ProtocolA
 struct MUIP_PAWin_ModeChanged { STACKED ULONG MethodID; STACKED ULONG newMode; };
 
 extern struct MUI_CustomClass *PAWinClass;
-extern struct MUI_CustomClass *Net4WinClass;
-extern struct MUI_CustomClass *Net6WinClass;
 
 BOOL PAWin_InitClass(void);
 void PAWin_FreeClass(void);
-
-/*--- Net4WinClass (net4.c) -------------------------------------------------*/
-
-BOOL Net4Win_InitClass(void);
-void Net4Win_FreeClass(void);
-
-/* Write the IP= / NETMASK= / GW= tokens for this address to a FILE. */
-void Net4_WriteTokens(FILE *f, struct ProtocolAddress *pa);
-
-/*--- Net6WinClass (net6.c) -------------------------------------------------*/
-
-BOOL Net6Win_InitClass(void);
-void Net6Win_FreeClass(void);
-
-/* Write the IP6= / GW6= tokens for this address to a FILE. */
-void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa);
 
 #endif /* _PROTOCOLS_H_ */
 

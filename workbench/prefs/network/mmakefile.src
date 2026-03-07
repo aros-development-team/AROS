@@ -1,19 +1,87 @@
 #
-#   Makefile to make Network prefs program.
+#   Makefile to make Network prefs program and protocol address plugin modules.
+#   Follows the SysExplorer module pattern (see workbench/tools/SysExplorer).
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES 	    := main args netpeditor prefsdata locale misc protocols net4 net6
+NETPREFS_SRCDIR    := $(SRCDIR)/$(CURDIR)
+NETPREFS_GENINCDIR := $(GENDIR)/$(CURDIR)/include
+
+FILES 	    := main args netpeditor prefsdata locale misc protocols netprefs_library
 EXEDIR      := $(AROSDIR)/Prefs
+
+IPV4MODDIR  := Modules/IPv4
+IPV4_FILES  := locale $(IPV4MODDIR)/ipv4_init $(IPV4MODDIR)/ipv4_win
+
+IPV6MODDIR  := Modules/IPv6
+IPV6_FILES  := locale $(IPV6MODDIR)/ipv6_init $(IPV6MODDIR)/ipv6_win
+
+NETPREFSCOMMON_INCLUDES := -I$(NETPREFS_GENINCDIR)
 
 #MM- workbench-prefs : workbench-prefs-network
 
-#MM workbench-prefs-network : includes linklibs workbench-prefs-network-catalogs \
-#MM workbench-prefs-network-cpy
+#MM- workbench-prefs-network : workbench-prefs-network-catalogs \
+#MM  workbench-prefs-network-cpy \
+#MM  workbench-prefs-network-includes \
+#MM  workbench-prefs-network-app \
+#MM  workbench-prefs-network-modules
 
-%build_prog mmake=workbench-prefs-network \
+#MM- workbench-prefs-network-modules : workbench-prefs-network-module-ipv4 \
+#MM  workbench-prefs-network-module-ipv6
+
+# --- Generate includes from netprefs.conf ---
+
+#MM workbench-prefs-network-gen-includes : workbench-prefs-network-gen-setup
+#MM- workbench-prefs-network-includes : workbench-prefs-network-gen-includes
+
+#MM
+workbench-prefs-network-gen-includes: $(GENDIR)/$(CURDIR)/.includes-generated
+
+$(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE) $(NETPREFS_SRCDIR)/netprefs.conf
+	@$(ECHO) "Generating NetPrefs.library Private API headers..."
+	@$(GENMODULE) -c $(NETPREFS_SRCDIR)/netprefs.conf -d $(NETPREFS_GENINCDIR) writeincludes netprefs library
+	@$(GENMODULE) -c $(NETPREFS_SRCDIR)/netprefs.conf -d $(NETPREFS_GENINCDIR) writelibdefs netprefs library
+	@$(TOUCH) $@
+
+#MM
+workbench-prefs-network-gen-setup:
+	%mkdirs_q $(NETPREFS_GENINCDIR)/clib $(NETPREFS_GENINCDIR)/defines $(NETPREFS_GENINCDIR)/inline $(NETPREFS_GENINCDIR)/proto
+
+# --- Main application ---
+
+#MM workbench-prefs-network-app : workbench-prefs-network-includes workbench-prefs-network-catalogs
+
+USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES)
+USER_LDFLAGS :=
+%build_prog mmake=workbench-prefs-network-app \
     progname=Network targetdir=$(EXEDIR) \
     files=$(FILES)
+
+# --- IPv4 protocol address module ---
+
+#MM workbench-prefs-network-module-ipv4 : includes linklibs \
+#MM workbench-prefs-network-includes workbench-prefs-network-catalogs
+
+USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(IPV4MODDIR)
+USER_LDFLAGS :=
+%build_module mmake=workbench-prefs-network-module-ipv4 \
+    modname=net4 modtype=library modsuffix=netprefs \
+    files="$(IPV4_FILES)" moduledir=Prefs/NetModules \
+    uselibs="amiga stdc stdcio posixc" includedir=$(NETPREFS_GENINCDIR) \
+    conffile=$(NETPREFS_SRCDIR)/$(IPV4MODDIR)/ipv4.conf
+
+# --- IPv6 protocol address module ---
+
+#MM workbench-prefs-network-module-ipv6 : includes linklibs \
+#MM workbench-prefs-network-includes workbench-prefs-network-catalogs
+
+USER_INCLUDES := $(NETPREFSCOMMON_INCLUDES) -I$(NETPREFS_SRCDIR)/$(IPV6MODDIR)
+USER_LDFLAGS :=
+%build_module mmake=workbench-prefs-network-module-ipv6 \
+    modname=net6 modtype=library modsuffix=netprefs \
+    files="$(IPV6_FILES)" moduledir=Prefs/NetModules \
+    uselibs="amiga stdc stdcio posixc" includedir=$(NETPREFS_GENINCDIR) \
+    conffile=$(NETPREFS_SRCDIR)/$(IPV6MODDIR)/ipv6.conf
 
 %copy_files_q mmake=workbench-prefs-network-cpy \
     files="interface host wireless protocol" src=. dst=$(AROS_IMAGES)

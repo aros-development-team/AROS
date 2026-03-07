@@ -33,6 +33,10 @@
 #include <proto/alib.h>
 #include <utility/hooks.h>
 
+#include <aros/debug.h>
+#include <aros/libcall.h>
+#include "netprefs_intern.h"
+
 static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL};
 static CONST_STRPTR DHCPCycle[] = { NULL, NULL, NULL, NULL };
 static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
@@ -128,11 +132,10 @@ struct NetPEditor_DATA
     /* Protocol address data (authoritative while the interface window is open) */
     struct ProtocolAddress netped_protoAddrs[2]; /* [0]=IPv4  [1]=IPv6 */
 
-    // IPv4 configuration sub-window (Net4WinClass)
-    Object  *netped_ipv4Window;
-
-    // IPv6 configuration sub-window (Net6WinClass)
-    Object  *netped_ipv6Window;
+    /* Plugin module system */
+    struct NetPrefsBase *netped_NetPrefsBase;
+    ULONG               netped_protoCount;
+    Object             *netped_protoWindows[2]; /* indexed by ProtocolFamily */
 
     // Host window
     Object  *netped_hostWindow,
@@ -750,12 +753,100 @@ void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
         additionaldata);
 }
 
+/*** Module loading **********************************************************/
+static CONST_STRPTR NetModuleDir = "PROGDIR:NetModules";
+
+extern void netprefs_initlib(struct NetPrefsBase **basePtr);
+extern void NetPrefs_SetBase(struct NetPrefsBase *base);
+extern struct NetPrefsBase *NetPrefs_GetBase(void);
+
+static void LoadNetModules(struct NetPrefsBase *NetPrefsBase)
+{
+    BPTR dirLock;
+    struct FileInfoBlock *fib;
+
+    D(bug("[NetPrefs] %s: scanning '%s' for modules\n", __func__, NetModuleDir));
+
+    dirLock = Lock(NetModuleDir, SHARED_LOCK);
+    if (!dirLock)
+    {
+        D(bug("[NetPrefs] %s: cannot lock '%s'\n", __func__, NetModuleDir));
+        return;
+    }
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib && Examine(dirLock, fib))
+    {
+        while (ExNext(dirLock, fib))
+        {
+            int namelen = strlen(fib->fib_FileName);
+            char *path;
+
+            /* Skip .dbg debug-symbol files */
+            if ((namelen > 4) &&
+                (strcmp(&fib->fib_FileName[namelen - 4], ".dbg")))
+            {
+                path = AllocVec(strlen(NetModuleDir) + 1 + namelen + 1,
+                                MEMF_CLEAR);
+                if (path)
+                {
+                    sprintf(path, "%s/%s", NetModuleDir, fib->fib_FileName);
+
+                    APTR modBase = (APTR)OpenLibrary(path, 0);
+                    if (modBase)
+                    {
+                        D(bug("[NetPrefs] %s: '%s' loaded @ 0x%p\n",
+                              __func__, fib->fib_FileName, modBase));
+
+                        AROS_LC1(void, ModuleInit,
+                            AROS_LCA(struct NetPrefsBase *, NetPrefsBase, A0),
+                            struct Library *, modBase, 5, Module);
+                    }
+                    FreeVec(path);
+                }
+            }
+        }
+    }
+
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+    UnLock(dirLock);
+}
+
 /*** Methods ****************************************************************/
 Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-    /* Ensure protocol window classes exist */
-    if (!PAWin_InitClass() || !Net4Win_InitClass() || !Net6Win_InitClass())
+    struct NetPrefsBase *NetPrefsBase = NULL;
+
+    /* Initialise the registration library and PAWinClass */
+    netprefs_initlib(&NetPrefsBase);
+    if (!NetPrefsBase)
         return NULL;
+
+    /* Store globally for prefsdata.c and others */
+    NetPrefs_SetBase(NetPrefsBase);
+
+    if (!PAWin_InitClass())
+        return NULL;
+
+    /* Register PAWinClass so modules can retrieve it via GetBase() */
+    AROS_LC2(void, RegisterBase,
+        AROS_LCA(CONST_STRPTR, "PAWin.Class", A0),
+        AROS_LCA(APTR, PAWinClass, A1),
+        struct NetPrefsBase *, NetPrefsBase, 6, NetPrefs);
+
+    /* Discover and load protocol modules from PROGDIR:NetModules */
+    LoadNetModules(NetPrefsBase);
+
+    /* Call Startup on every registered module */
+    {
+        struct NetPrefsIntModule *mod;
+        ForeachNode(&NetPrefsBase->npb_Modules, mod)
+        {
+            if (mod->npim_Module.npm_Startup)
+                mod->npim_Module.npm_Startup(NetPrefsBase);
+        }
+    }
 
     // main window
     Object  *DNSString[2], *hostString, *domainString,
@@ -771,12 +862,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     Object  *deviceString, *protoAddrList, *protoEditButton,
             *unitString, *nameString, *upState,
             *ifWindow, *applyButton, *closeButton;
-
-    // IPv4 sub-window (Net4WinClass)
-    Object  *ipv4Window;
-
-    // IPv6 sub-window (Net6WinClass)
-    Object  *ipv6Window;
 
     // host window
     Object  *hostNamesString, *hostAddressString, *hostWindow,
@@ -1054,9 +1139,21 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         TAG_DONE
     );
 
-    /* Create the IPv4 and IPv6 protocol-address config sub-windows */
-    ipv4Window = NewObject(Net4WinClass->mcc_Class, NULL, TAG_DONE);
-    ipv6Window = NewObject(Net6WinClass->mcc_Class, NULL, TAG_DONE);
+    /* Create protocol-address config sub-windows from loaded modules */
+    Object *protoWindows[2] = { NULL, NULL };
+    ULONG protoCount = 0;
+    {
+        struct ProtoHandlerNode *ph;
+        ForeachNode(&NetPrefsBase->npb_ProtoHandlers, ph)
+        {
+            if (ph->ph_Family < 2 && ph->ph_WinClass)
+            {
+                protoWindows[ph->ph_Family] =
+                    NewObject(ph->ph_WinClass->mcc_Class, NULL, TAG_DONE);
+                protoCount++;
+            }
+        }
+    }
 
     ifWindow = (Object *)WindowObject,
         MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
@@ -1295,7 +1392,7 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     if (self != NULL && ifWindow != NULL && hostWindow != NULL
         && netWindow != NULL && serverWindow != NULL
-        && ipv4Window != NULL && ipv6Window != NULL)
+        && protoCount > 0)
     {
         struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
@@ -1346,11 +1443,11 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_applyButton   = applyButton;
         data->netped_closeButton   = closeButton;
 
-        // IPv4 sub-window
-        data->netped_ipv4Window      = ipv4Window;
-
-        // IPv6 sub-window
-        data->netped_ipv6Window       = ipv6Window;
+        // Protocol address sub-windows (from loaded modules)
+        data->netped_NetPrefsBase = NetPrefsBase;
+        data->netped_protoCount   = protoCount;
+        for (ULONG i = 0; i < 2; i++)
+            data->netped_protoWindows[i] = protoWindows[i];
 
         // host window
         data->netped_hostWindow = hostWindow;
@@ -1599,21 +1696,19 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
         );
 
-        // IPv4 sub-window: Use button notifies ApplyIPv4Entry (mode/cancel internal)
-        DoMethod
-        (
-            (Object *)XGET(ipv4Window, MUIA_PAWin_UseButton), MUIM_Notify,
-            MUIA_Pressed, FALSE,
-            (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv4Entry
-        );
-
-        // IPv6 sub-window: Use button notifies ApplyIPv6Entry (mode/cancel internal)
-        DoMethod
-        (
-            (Object *)XGET(ipv6Window, MUIA_PAWin_UseButton), MUIM_Notify,
-            MUIA_Pressed, FALSE,
-            (IPTR)self, 1, MUIM_NetPEditor_ApplyIPv6Entry
-        );
+        // Protocol sub-windows: Use button notifies generic ApplyProtoEntry
+        for (ULONG pi = 0; pi < 2; pi++)
+        {
+            if (protoWindows[pi])
+            {
+                DoMethod
+                (
+                    (Object *)XGET(protoWindows[pi], MUIA_PAWin_UseButton),
+                    MUIM_Notify, MUIA_Pressed, FALSE,
+                    (IPTR)self, 2, MUIM_NetPEditor_ApplyProtoEntry, pi
+                );
+            }
+        }
 
         // host window
         DoMethod
@@ -1673,8 +1768,11 @@ IPTR NetPEditor__MUIM_Setup
     netpeditor_displayHook.h_Data = netListIconImg;
 
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
-    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ipv4Window);
-    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ipv6Window);
+    for (ULONG pi = 0; pi < 2; pi++)
+    {
+        if (data->netped_protoWindows[pi])
+            DoMethod(_app(self), OM_ADDMEMBER, data->netped_protoWindows[pi]);
+    }
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
     DoMethod(_app(self), OM_ADDMEMBER, data->netped_serverWindow);
@@ -1690,8 +1788,11 @@ IPTR NetPEditor__MUIM_Cleanup
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
 
     DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
-    DoMethod(_app(self), OM_REMMEMBER, data->netped_ipv4Window);
-    DoMethod(_app(self), OM_REMMEMBER, data->netped_ipv6Window);
+    for (ULONG pi = 0; pi < 2; pi++)
+    {
+        if (data->netped_protoWindows[pi])
+            DoMethod(_app(self), OM_REMMEMBER, data->netped_protoWindows[pi]);
+    }
     DoMethod(_app(self), OM_REMMEMBER, data->netped_hostWindow);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_netWindow);
     DoMethod(_app(self), OM_REMMEMBER, data->netped_serverWindow);
@@ -1710,9 +1811,15 @@ IPTR NetPEditor__MUIM_Cleanup
         netListIconObj = NULL;
     }
 
-    /* Free custom window classes now that the windows have been removed */
-    Net6Win_FreeClass();
-    Net4Win_FreeClass();
+    /* Shutdown all loaded modules (frees their MUI classes) */
+    {
+        struct NetPrefsIntModule *mod;
+        ForeachNode(&data->netped_NetPrefsBase->npb_Modules, mod)
+        {
+            if (mod->npim_Module.npm_Shutdown)
+                mod->npim_Module.npm_Shutdown(data->netped_NetPrefsBase);
+        }
+    }
     PAWin_FreeClass();
 
     return DoSuperMethodA(CLASS, self, message);
@@ -1865,67 +1972,44 @@ IPTR NetPEditor__MUIM_NetPEditor_EditProtoEntry
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
     LONG active = XGET(data->netped_protoAddrList, MUIA_List_Active);
 
-    if (active == MUIV_List_Active_Off)
+    if (active == MUIV_List_Active_Off || active < 0 ||
+        (ULONG)active >= data->netped_protoCount)
         return 0;
 
-    if (active == PROTO_FAMILY_IPV4)
+    Object *win = data->netped_protoWindows[active];
+    if (win)
     {
-        DoMethod(data->netped_ipv4Window, MUIM_PAWin_Show,
-                 &data->netped_protoAddrs[PROTO_FAMILY_IPV4]);
-        SET(data->netped_ipv4Window, MUIA_Window_Open, TRUE);
-    }
-    else
-    {
-        DoMethod(data->netped_ipv6Window, MUIM_PAWin_Show,
-                 &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
-        SET(data->netped_ipv6Window, MUIA_Window_Open, TRUE);
+        DoMethod(win, MUIM_PAWin_Show, &data->netped_protoAddrs[active]);
+        SET(win, MUIA_Window_Open, TRUE);
     }
 
     return 0;
 }
 
-/* Apply the IPv4 config sub-window back to protoAddrs[0] and refresh the list */
-IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv4Entry
+/* Apply a protocol config sub-window back to protoAddrs[family] and refresh */
+IPTR NetPEditor__MUIM_NetPEditor_ApplyProtoEntry
 (
     Class *CLASS, Object *self,
-    Msg message
+    struct MUIP_NetPEditor_ApplyProtoEntry *msg
 )
 {
     struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    ULONG family = msg->family;
 
-    DoMethod(data->netped_ipv4Window, MUIM_PAWin_Apply,
-             &data->netped_protoAddrs[PROTO_FAMILY_IPV4]);
+    if (family >= data->netped_protoCount || !data->netped_protoWindows[family])
+        return 0;
 
-    /* Replace list entry 0 with the updated ProtocolAddress */
-    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV4);
+    Object *win = data->netped_protoWindows[family];
+
+    DoMethod(win, MUIM_PAWin_Apply, &data->netped_protoAddrs[family]);
+
+    /* Replace the list entry with the updated ProtocolAddress */
+    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, family);
     DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
-             &data->netped_protoAddrs[PROTO_FAMILY_IPV4], PROTO_FAMILY_IPV4);
-    SET(data->netped_protoAddrList, MUIA_List_Active, PROTO_FAMILY_IPV4);
+             &data->netped_protoAddrs[family], family);
+    SET(data->netped_protoAddrList, MUIA_List_Active, family);
 
-    SET(data->netped_ipv4Window, MUIA_Window_Open, FALSE);
-    SET(self, MUIA_PrefsEditor_Changed, TRUE);
-    return 0;
-}
-
-/* Apply the IPv6 config sub-window back to protoAddrs[1] and refresh the list */
-IPTR NetPEditor__MUIM_NetPEditor_ApplyIPv6Entry
-(
-    Class *CLASS, Object *self,
-    Msg message
-)
-{
-    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
-
-    DoMethod(data->netped_ipv6Window, MUIM_PAWin_Apply,
-             &data->netped_protoAddrs[PROTO_FAMILY_IPV6]);
-
-    /* Replace list entry 1 with the updated ProtocolAddress */
-    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, PROTO_FAMILY_IPV6);
-    DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
-             &data->netped_protoAddrs[PROTO_FAMILY_IPV6], PROTO_FAMILY_IPV6);
-    SET(data->netped_protoAddrList, MUIA_List_Active, PROTO_FAMILY_IPV6);
-
-    SET(data->netped_ipv6Window, MUIA_Window_Open, FALSE);
+    SET(win, MUIA_Window_Open, FALSE);
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
     return 0;
 }
@@ -2421,7 +2505,7 @@ IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
     return 0;
 }
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_24
+ZUNE_CUSTOMCLASS_23
 (
     NetPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                               struct opSet *,
@@ -2446,6 +2530,5 @@ ZUNE_CUSTOMCLASS_24
     MUIM_NetPEditor_ApplyServerEntry,     Msg,
     MUIM_NetPEditor_AddTetheringEntry,    Msg,
     MUIM_NetPEditor_EditProtoEntry,       Msg,
-    MUIM_NetPEditor_ApplyIPv4Entry,       Msg,
-    MUIM_NetPEditor_ApplyIPv6Entry,       Msg
+    MUIM_NetPEditor_ApplyProtoEntry,      struct MUIP_NetPEditor_ApplyProtoEntry *
 );

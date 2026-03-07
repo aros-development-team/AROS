@@ -2,11 +2,13 @@
     Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 
     net6.c - IPv6 protocol-address configuration window class (Net6WinClass):
-      - Subclass of PAWinClass (protocols.c)
+      - Subclass of PAWinClass (protocols.c, passed in via the plugin API)
       - MUIM_PAWin_Show        : populate gadgets from a ProtocolAddress
       - MUIM_PAWin_Apply       : read gadgets back into a ProtocolAddress
       - MUIM_PAWin_ModeChanged : enable/disable addr+prefix for manual mode
       - Net6_WriteTokens       : write IP6= / GW6= to a FILE
+
+    This file is compiled as part of the net6.netprefs plugin module.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -205,13 +207,13 @@ static IPTR Net6Win_Dispatch(Class *cl, Object *obj, Msg msg)
 }
 
 /*---------------------------------------------------------------------------*/
-BOOL Net6Win_InitClass(void)
+BOOL Net6Win_InitClass(struct MUI_CustomClass *PAWinCl)
 {
     if (Net6WinClass)
         return TRUE;
-    if (!PAWinClass && !PAWin_InitClass())
+    if (!PAWinCl)
         return FALSE;
-    Net6WinClass = MUI_CreateCustomClass(NULL, NULL, PAWinClass,
+    Net6WinClass = MUI_CreateCustomClass(NULL, NULL, PAWinCl,
                        sizeof(struct Net6Win_Data), Net6Win_Dispatch);
     return Net6WinClass != NULL;
 }
@@ -236,13 +238,13 @@ void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa)
         case IP_MODE_AUTO:
             fprintf(f, "IP6=AUTO ");
             break;
-        default:
+        case IP_MODE_MANUAL:
             if (pa->pa_addr[0])
                 fprintf(f, "IP6=%s PREFIXLEN=%ld ",
                     pa->pa_addr,
                     pa->pa_prefix ? pa->pa_prefix : 64L);
-            else
-                fprintf(f, "IP6=AUTO ");
+            break;
+        default:
             break;
     }
     if (pa->pa_gate[0])

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include "prefsdata.h"
 #include "protocols.h"
+#include "netprefs_intern.h"
 
 #include <aros/debug.h>
 
@@ -395,28 +396,43 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     {
         iface = GetInterface(i);
 
-        /* Determine IPv4 / IPv6 tokens via ProtocolAddress classes */
+        /* Write interface line using registered protocol handlers */
         {
-            struct ProtocolAddress pa4, pa6;
             CONST_STRPTR notrack = GetNoTracking(iface) ? "NOTRACKING" : "";
             CONST_STRPTR upstr  = GetUp(iface) ? "UP" : "";
 
-            ProtoAddr_FromInterface(&pa4, iface, PROTO_FAMILY_IPV4);
-            ProtoAddr_FromInterface(&pa6, iface, PROTO_FAMILY_IPV6);
-
-            /* ppp.device uses 0.0.0.0 as the address placeholder for DHCP */
-            if (pa4.pa_mode == IP_MODE_DHCP
-                && strstr(GetDevice(iface), "ppp.device") != NULL)
-            {
-                pa4.pa_mode = IP_MODE_MANUAL;
-                strcpy(pa4.pa_addr, "0.0.0.0");
-                strcpy(pa4.pa_mask, "255.255.255.0");
-            }
-
             fprintf(ConfFile, "%s DEV=%s UNIT=%d %s ",
                 GetName(iface), GetDevice(iface), (int)GetUnit(iface), notrack);
-            Net4_WriteTokens(ConfFile, &pa4);
-            Net6_WriteTokens(ConfFile, &pa6);
+
+            /* Iterate registered protocol handlers to write their tokens */
+            {
+                extern struct NetPrefsBase *NetPrefs_GetBase(void);
+                struct NetPrefsBase *npb = NetPrefs_GetBase();
+                if (npb)
+                {
+                    struct ProtoHandlerNode *ph;
+                    ForeachNode(&npb->npb_ProtoHandlers, ph)
+                    {
+                        if (ph->ph_WriteTokens && ph->ph_Family < 2)
+                        {
+                            struct ProtocolAddress pa;
+                            ProtoAddr_FromInterface(&pa, iface, ph->ph_Family);
+
+                            /* ppp.device uses 0.0.0.0 for DHCP placeholder */
+                            if (ph->ph_Family == PROTO_FAMILY_IPV4
+                                && pa.pa_mode == IP_MODE_DHCP
+                                && strstr(GetDevice(iface), "ppp.device") != NULL)
+                            {
+                                pa.pa_mode = IP_MODE_MANUAL;
+                                strcpy(pa.pa_addr, "0.0.0.0");
+                                strcpy(pa.pa_mask, "255.255.255.0");
+                            }
+
+                            ph->ph_WriteTokens(ConfFile, &pa);
+                        }
+                    }
+                }
+            }
             fprintf(ConfFile, "%s\n", upstr);
         }
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL

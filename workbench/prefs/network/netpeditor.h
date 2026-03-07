@@ -33,13 +33,13 @@ extern struct MUI_CustomClass *NetPEditor_CLASS;
 #define MUIM_NetPEditor_ApplyServerEntry (MUIB_NetPEditor | 0x0000000D)
 #define MUIM_NetPEditor_AddTetheringEntry (MUIB_NetPEditor | 0x0000000E)
 
-/* Protocol address list methods (replaces hardcoded IPv4/IPv6 interface fields) */
+/* Protocol address list methods (plugin-based protocol modules) */
 #define MUIM_NetPEditor_EditProtoEntry   (MUIB_NetPEditor | 0x00000010)
-#define MUIM_NetPEditor_ApplyIPv4Entry   (MUIB_NetPEditor | 0x00000011)
-#define MUIM_NetPEditor_ApplyIPv6Entry   (MUIB_NetPEditor | 0x00000012)
+#define MUIM_NetPEditor_ApplyProtoEntry  (MUIB_NetPEditor | 0x00000011)
 
 struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
 struct MUIP_NetPEditor_IPModeChanged {STACKED ULONG MethodID; STACKED ULONG interface;};
+struct MUIP_NetPEditor_ApplyProtoEntry {STACKED ULONG MethodID; STACKED ULONG family;};
 
 #endif /* _NETPEDITOR_H_ */
