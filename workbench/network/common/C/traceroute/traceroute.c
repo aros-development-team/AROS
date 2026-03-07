@@ -196,6 +196,7 @@
 #else
 #include <aros/config.h>
 #include <proto/socket.h>
+#include <proto/miami.h>
 #endif
 #include <sys/file.h>
 #include <sys/ioctl.h>
@@ -223,6 +224,8 @@ typedef int bool;
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <netinet/tcpip.h>
+#include <netinet/ip6.h>
+#include <netinet/icmp6.h>
 
 #include <arpa/inet.h>
 
@@ -321,8 +324,8 @@ u_int32_t gwlist[NGATEWAYS + 1];
 int s;				/* receive (icmp) socket file descriptor */
 int sndsock;			/* send (udp) socket file descriptor */
 
-struct sockaddr whereto;	/* Who to try to reach */
-struct sockaddr wherefrom;	/* Who we are */
+struct sockaddr_storage whereto;	/* Who to try to reach */
+struct sockaddr_storage wherefrom;	/* Who we are */
 int packlen;			/* total length of packet */
 int protlen;			/* length of protocol part of packet */
 int minpacket;			/* min ip packet size */
@@ -360,6 +363,7 @@ int optlen;			/* length of ip options */
 int fixedPort = 0;		/* Use fixed destination port for TCP and UDP */
 int printdiff = 0;		/* Print the difference between sent and quoted */
 int ecnflag = 0;		/* ECN bleaching detection flag */
+int v6flag = 0;			/* IPv6 mode */
 
 extern int optind;
 extern int opterr;
@@ -407,6 +411,16 @@ void	gen_prep(struct outdata *);
 int	gen_check(const u_char *, int);
 void	icmp_prep(struct outdata *);
 int	icmp_check(const u_char *, int);
+
+/* IPv6 functions */
+void	icmp6_prep(struct outdata *);
+int	icmp6_check(const u_char *, int);
+int	packet_ok6(u_char *, int, struct sockaddr_in6 *, int);
+void	print6(u_char *, int, struct sockaddr_in6 *);
+void	send_probe6(int, int);
+int	wait_for_reply6(int, struct sockaddr_in6 *, const struct timeval *);
+char	*inet6name(struct in6_addr *);
+const char *findsaddr6(const struct sockaddr_in6 *, struct sockaddr_in6 *);
 
 /* Descriptor structure for each outgoing protocol we support */
 struct outproto {
@@ -479,6 +493,15 @@ struct	outproto protos[] = {
 		icmp_check
 	},
 	{
+		"icmp6",
+		"typ cod sum ",
+		IPPROTO_ICMPV6,
+		sizeof(struct icmp6_hdr),
+		0,
+		icmp6_prep,
+		icmp6_check
+	},
+	{
 		NULL,
 		"",
 		0,
@@ -501,6 +524,8 @@ main(int argc, char **argv)
 	register u_int32_t *ap;
 	register struct sockaddr_in *from = (struct sockaddr_in *)&wherefrom;
 	register struct sockaddr_in *to = (struct sockaddr_in *)&whereto;
+	struct sockaddr_in6 *from6 = (struct sockaddr_in6 *)&wherefrom;
+	struct sockaddr_in6 *to6 = (struct sockaddr_in6 *)&whereto;
 	register struct hostinfo *hi;
 	int on = 1;
 	register struct protoent *pe;
@@ -538,15 +563,11 @@ main(int argc, char **argv)
 	 * Do the setuid-required stuff first, then lose privileges ASAP.
 	 * Do error checking for these two calls where they appeared in
 	 * the original code.
+	 * Socket creation is deferred until after argument parsing and
+	 * hostname resolution so we know the address family.
 	 */
 	cp = "icmp";
 	pe = getprotobyname(cp);
-	if (pe) {
-		if ((s = socket(AF_INET, SOCK_RAW, pe->p_proto)) < 0)
-			sockerrno = errno;
-		else if ((sndsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0)
-			sockerrno = errno;
-	}
 
 #if !defined(__AROS__)
 	if (setuid(getuid()) != 0) {
@@ -595,8 +616,16 @@ main(int argc, char **argv)
 		prog = argv[0];
 
 	opterr = 0;
-	while ((op = getopt(argc, argv, "aA:eEdDFInrSvxf:g:i:M:m:P:p:q:s:t:w:z:")) != EOF)
+	while ((op = getopt(argc, argv, "46aA:eEdDFInrSvxf:g:i:M:m:P:p:q:s:t:w:z:")) != EOF)
 		switch (op) {
+		case '4':
+			v6flag = 0;
+			break;
+
+		case '6':
+			v6flag = 1;
+			break;
+
 		case 'a':
 			as_path = 1;
 			break;
@@ -730,229 +759,392 @@ main(int argc, char **argv)
 	if (!doipcksum)
 		Fprintf(stderr, "%s: Warning: ip checksums disabled\n", prog);
 
-	if (lsrr > 0)
+	if (lsrr > 0) {
+		if (v6flag) {
+			Fprintf(stderr,
+			    "%s: loose source route not supported for IPv6\n",
+			    prog);
+			exit(1);
+		}
 		optlen = (lsrr + 1) * sizeof(gwlist[0]);
-	minpacket = sizeof(*outip) + proto->hdrlen + optlen;
-	if (minpacket > 40)
-		packlen = minpacket;
-	else
-		packlen = 40;
+	}
 
 	/* Process destination and optional packet size */
 	switch (argc - optind) {
 
 	case 2:
-		packlen = str2val(argv[optind + 1],
-		    "packet length", minpacket, maxpacket);
-		/* Fall through */
+		/* packlen will be validated after we compute minpacket */
+		break;
 
 	case 1:
 		hostname = argv[optind];
-		hi = gethostinfo(hostname);
-		setsin(to, hi->addrs[0]);
-		if (hi->n > 1)
-			Fprintf(stderr,
-		    "%s: Warning: %s has multiple addresses; using %s\n",
-				prog, hostname, inet_ntoa(to->sin_addr));
-		hostname = hi->name;
-		hi->name = NULL;
-		freehostinfo(hi);
 		break;
 
 	default:
 		usage();
 	}
 
+	if (hostname == NULL)
+		usage();
+
+	/*
+	 * Resolve the destination using getaddrinfo for dual-stack support.
+	 * Auto-detect IPv4/IPv6 based on the address or DNS result.
+	 */
+	{
+		struct addrinfo hints, *res;
+		int error;
+		char addrstr[INET6_ADDRSTRLEN];
+
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = v6flag ? AF_INET6 : AF_INET;
+		hints.ai_socktype = SOCK_DGRAM;
+
+		error = getaddrinfo(hostname, NULL, &hints, &res);
+		if (error != 0) {
+			/* If no explicit -4/-6, try the other family */
+			if (hints.ai_family == AF_INET) {
+				hints.ai_family = AF_INET6;
+				error = getaddrinfo(hostname, NULL, &hints, &res);
+				if (error == 0)
+					v6flag = 1;
+			}
+			if (error != 0) {
+				Fprintf(stderr, "%s: %s: %s\n",
+				    prog, hostname, gai_strerror(error));
+				exit(1);
+			}
+		}
+
+		if (res->ai_family == AF_INET6)
+			v6flag = 1;
+		else
+			v6flag = 0;
+
+		if (v6flag) {
+			memcpy(to6, res->ai_addr, res->ai_addrlen);
+			inet_ntop(AF_INET6, &to6->sin6_addr,
+			    addrstr, sizeof(addrstr));
+		} else {
+			memcpy(to, res->ai_addr, res->ai_addrlen);
+			strlcpy(addrstr, inet_ntoa(to->sin_addr),
+			    sizeof(addrstr));
+		}
+
+		if (res->ai_canonname != NULL)
+			hostname = strdup(res->ai_canonname);
+		else
+			hostname = strdup(hostname);
+
+		freeaddrinfo(res);
+	}
+
+	/*
+	 * If using ICMP probe and IPv6 was selected, switch to ICMPv6.
+	 */
+	if (v6flag && proto->num == IPPROTO_ICMP)
+		proto = setproto("icmp6");
+
+	/* Recompute port now that proto may have changed */
+	if (requestPort == -1)
+		port = proto->port;
+
+	/*
+	 * Compute minimum packet and protocol lengths.
+	 * For IPv4, packlen includes the IP header.
+	 * For IPv6, packlen includes the (virtual) IPv6 header for
+	 * user-facing consistency, but we only allocate the transport portion.
+	 */
+	if (v6flag) {
+		minpacket = sizeof(struct ip6_hdr) + proto->hdrlen;
+		if (minpacket > 40)
+			packlen = minpacket;
+		else
+			packlen = 40;
+	} else {
+		minpacket = sizeof(*outip) + proto->hdrlen + optlen;
+		if (minpacket > 40)
+			packlen = minpacket;
+		else
+			packlen = 40;
+	}
+
+	/* Process optional packet size argument */
+	if (argc - optind >= 2)
+		packlen = str2val(argv[optind + 1],
+		    "packet length", minpacket, maxpacket);
+
 #if !defined(__AROS__)
 	setlinebuf(stdout);
 #endif
 
-	protlen = packlen - sizeof(*outip) - optlen;
 	if ((proto->num == IPPROTO_SCTP) && (packlen & 3)) {
 		Fprintf(stderr, "%s: packet length must be a multiple of 4\n",
 		    prog);
 		exit(1);
 	}
 
-	outip = (struct ip *)malloc((unsigned)packlen);
-	if (outip == NULL) {
-		Fprintf(stderr, "%s: malloc: %s\n", prog, strerror(errno));
-		exit(1);
-	}
-	memset((char *)outip, 0, packlen);
-
-	outip->ip_v = IPVERSION;
-	if (settos)
-		outip->ip_tos = tos;
-	if (ecnflag) {
-		outip->ip_tos &= ~IPTOS_ECN_MASK;
-		outip->ip_tos |= IPTOS_ECN_ECT1;
-	}
-	outip->ip_len = htons(packlen);
-	outip->ip_off = htons(off);
-	outip->ip_p = proto->num;
-	outp = (u_char *)(outip + 1);
-	if (lsrr > 0) {
-		register u_char *optlist;
-
-		optlist = outp;
-		outp += optlen;
-
-		/* final hop */
-		gwlist[lsrr] = to->sin_addr.s_addr;
-
-		outip->ip_dst.s_addr = gwlist[0];
-
-		/* force 4 byte alignment */
-		optlist[0] = IPOPT_NOP;
-		/* loose source route option */
-		optlist[1] = IPOPT_LSRR;
-		i = lsrr * sizeof(gwlist[0]);
-		optlist[2] = i + 3;
-		/* Pointer to LSRR addresses */
-		optlist[3] = IPOPT_MINOFF;
-		memcpy(optlist + 4, gwlist + 1, i);
-	} else
-		outip->ip_dst = to->sin_addr;
-
-	outip->ip_hl = (outp - (u_char *)outip) >> 2;
 	ident = (getpid() & 0xffff) | 0x8000;
 
-	if (pe == NULL) {
-		Fprintf(stderr, "%s: unknown protocol %s\n", prog, cp);
-		exit(1);
-	}
-	if (s < 0) {
-		errno = sockerrno;
-		Fprintf(stderr, "%s: icmp socket: %s\n", prog, strerror(errno));
-		exit(1);
-	}
-	if (options & SO_DEBUG)
-		(void)setsockopt(s, SOL_SOCKET, SO_DEBUG, (char *)&on,
-		    sizeof(on));
-	if (options & SO_DONTROUTE)
-		(void)setsockopt(s, SOL_SOCKET, SO_DONTROUTE, (char *)&on,
-		    sizeof(on));
+	if (v6flag) {
+		/*
+		 * IPv6 path: no IP header construction needed.
+		 * Allocate just the transport header + data.
+		 */
+		protlen = packlen - sizeof(struct ip6_hdr);
+		outp = (u_char *)malloc((unsigned)protlen);
+		if (outp == NULL) {
+			Fprintf(stderr, "%s: malloc: %s\n", prog,
+			    strerror(errno));
+			exit(1);
+		}
+		memset(outp, 0, protlen);
+		outip = NULL;
 
-#if	defined(IPSEC) && defined(IPSEC_POLICY_IPSEC)
-	if (setpolicy(s, "in bypass") < 0)
-		errx(1, "%s", ipsec_strerror());
+		/* Create IPv6 receive socket (ICMPv6) */
+		s = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+		if (s < 0) {
+			Fprintf(stderr, "%s: icmpv6 socket: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 
-	if (setpolicy(s, "out bypass") < 0)
-		errx(1, "%s", ipsec_strerror());
-#endif	/* defined(IPSEC) && defined(IPSEC_POLICY_IPSEC) */
+		/* Create IPv6 send socket */
+		if (proto->num == IPPROTO_ICMPV6) {
+			sndsock = socket(AF_INET6, SOCK_RAW, IPPROTO_ICMPV6);
+		} else {
+			/* For UDP and other probes, use DGRAM socket */
+			sndsock = socket(AF_INET6, SOCK_DGRAM, 0);
+		}
+		if (sndsock < 0) {
+			Fprintf(stderr, "%s: send socket: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 
-	if (sndsock < 0) {
-		errno = sockerrno;
-		Fprintf(stderr, "%s: raw socket: %s\n", prog, strerror(errno));
-		exit(1);
-	}
+		if (options & SO_DEBUG) {
+			(void)setsockopt(s, SOL_SOCKET, SO_DEBUG,
+			    (char *)&on, sizeof(on));
+			(void)setsockopt(sndsock, SOL_SOCKET, SO_DEBUG,
+			    (char *)&on, sizeof(on));
+		}
+		if (options & SO_DONTROUTE) {
+			(void)setsockopt(s, SOL_SOCKET, SO_DONTROUTE,
+			    (char *)&on, sizeof(on));
+			(void)setsockopt(sndsock, SOL_SOCKET, SO_DONTROUTE,
+			    (char *)&on, sizeof(on));
+		}
+
+		/* Determine source address for IPv6 */
+		if (source == NULL) {
+			if ((err = findsaddr6(to6, from6)) != NULL) {
+				Fprintf(stderr, "%s: findsaddr6: %s\n",
+				    prog, err);
+				exit(1);
+			}
+		} else {
+			struct addrinfo hints6, *res6;
+			int err6;
+
+			memset(&hints6, 0, sizeof(hints6));
+			hints6.ai_family = AF_INET6;
+			hints6.ai_socktype = SOCK_DGRAM;
+			err6 = getaddrinfo(source, NULL, &hints6, &res6);
+			if (err6 != 0) {
+				Fprintf(stderr, "%s: %s: %s\n",
+				    prog, source, gai_strerror(err6));
+				exit(1);
+			}
+			memcpy(from6, res6->ai_addr, res6->ai_addrlen);
+			freeaddrinfo(res6);
+		}
+
+		/* Bind source address */
+		from6->sin6_port = htons(ident);
+		if (bind(sndsock, (struct sockaddr *)from6,
+		    sizeof(*from6)) < 0) {
+			Fprintf(stderr, "%s: bind: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
+
+	} else {
+		/*
+		 * IPv4 path: construct full IP header.
+		 */
+		protlen = packlen - sizeof(*outip) - optlen;
+
+		outip = (struct ip *)malloc((unsigned)packlen);
+		if (outip == NULL) {
+			Fprintf(stderr, "%s: malloc: %s\n", prog,
+			    strerror(errno));
+			exit(1);
+		}
+		memset((char *)outip, 0, packlen);
+
+		outip->ip_v = IPVERSION;
+		if (settos)
+			outip->ip_tos = tos;
+		if (ecnflag) {
+			outip->ip_tos &= ~IPTOS_ECN_MASK;
+			outip->ip_tos |= IPTOS_ECN_ECT1;
+		}
+		outip->ip_len = htons(packlen);
+		outip->ip_off = htons(off);
+		outip->ip_p = proto->num;
+		outp = (u_char *)(outip + 1);
+		if (lsrr > 0) {
+			register u_char *optlist;
+
+			optlist = outp;
+			outp += optlen;
+
+			/* final hop */
+			gwlist[lsrr] = to->sin_addr.s_addr;
+
+			outip->ip_dst.s_addr = gwlist[0];
+
+			/* force 4 byte alignment */
+			optlist[0] = IPOPT_NOP;
+			/* loose source route option */
+			optlist[1] = IPOPT_LSRR;
+			i = lsrr * sizeof(gwlist[0]);
+			optlist[2] = i + 3;
+			/* Pointer to LSRR addresses */
+			optlist[3] = IPOPT_MINOFF;
+			memcpy(optlist + 4, gwlist + 1, i);
+		} else
+			outip->ip_dst = to->sin_addr;
+
+		outip->ip_hl = (outp - (u_char *)outip) >> 2;
+
+		/* Create IPv4 sockets */
+		if (pe == NULL) {
+			Fprintf(stderr, "%s: unknown protocol %s\n", prog, cp);
+			exit(1);
+		}
+		if ((s = socket(AF_INET, SOCK_RAW, pe->p_proto)) < 0) {
+			Fprintf(stderr, "%s: icmp socket: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
+		if ((sndsock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+			Fprintf(stderr, "%s: raw socket: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
+
+		if (options & SO_DEBUG) {
+			(void)setsockopt(s, SOL_SOCKET, SO_DEBUG,
+			    (char *)&on, sizeof(on));
+			(void)setsockopt(sndsock, SOL_SOCKET, SO_DEBUG,
+			    (char *)&on, sizeof(on));
+		}
+		if (options & SO_DONTROUTE) {
+			(void)setsockopt(s, SOL_SOCKET, SO_DONTROUTE,
+			    (char *)&on, sizeof(on));
+			(void)setsockopt(sndsock, SOL_SOCKET, SO_DONTROUTE,
+			    (char *)&on, sizeof(on));
+		}
 
 #ifdef SO_SNDBUF
-	if (setsockopt(sndsock, SOL_SOCKET, SO_SNDBUF, (char *)&packlen,
-	    sizeof(packlen)) < 0) {
-		Fprintf(stderr, "%s: SO_SNDBUF: %s\n", prog, strerror(errno));
-		exit(1);
-	}
+		if (setsockopt(sndsock, SOL_SOCKET, SO_SNDBUF,
+		    (char *)&packlen, sizeof(packlen)) < 0) {
+			Fprintf(stderr, "%s: SO_SNDBUF: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 #endif
 #ifdef IP_HDRINCL
-	if (setsockopt(sndsock, IPPROTO_IP, IP_HDRINCL, (char *)&on,
-	    sizeof(on)) < 0) {
-		Fprintf(stderr, "%s: IP_HDRINCL: %s\n", prog, strerror(errno));
-		exit(1);
-	}
+		if (setsockopt(sndsock, IPPROTO_IP, IP_HDRINCL,
+		    (char *)&on, sizeof(on)) < 0) {
+			Fprintf(stderr, "%s: IP_HDRINCL: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 #else
 #ifdef IP_TOS
-	if (settos && setsockopt(sndsock, IPPROTO_IP, IP_TOS,
-	    (char *)&tos, sizeof(tos)) < 0) {
-		Fprintf(stderr, "%s: setsockopt tos %d: %s\n",
-		    prog, tos, strerror(errno));
-		exit(1);
-	}
-#endif
-#endif
-	if (options & SO_DEBUG)
-		(void)setsockopt(sndsock, SOL_SOCKET, SO_DEBUG, (char *)&on,
-		    sizeof(on));
-	if (options & SO_DONTROUTE)
-		(void)setsockopt(sndsock, SOL_SOCKET, SO_DONTROUTE, (char *)&on,
-		    sizeof(on));
-
-	/* Get the interface address list */
-	n = ifaddrlist(&al, errbuf);
-	if (n < 0) {
-		Fprintf(stderr, "%s: ifaddrlist: %s\n", prog, errbuf);
-		exit(1);
-	}
-	if (n == 0) {
-		Fprintf(stderr,
-		    "%s: Can't find any network interfaces\n", prog);
-		exit(1);
-	}
-
-	/* Look for a specific device */
-	if (device != NULL) {
-		for (i = n; i > 0; --i, ++al)
-			if (strcmp(device, al->device) == 0)
-				break;
-		if (i <= 0) {
-			Fprintf(stderr, "%s: Can't find interface %.32s\n",
-			    prog, device);
+		if (settos && setsockopt(sndsock, IPPROTO_IP, IP_TOS,
+		    (char *)&tos, sizeof(tos)) < 0) {
+			Fprintf(stderr, "%s: setsockopt tos %d: %s\n",
+			    prog, tos, strerror(errno));
 			exit(1);
 		}
-	}
+#endif
+#endif
 
-	/* Determine our source address */
-	if (source == NULL) {
-		/*
-		 * If a device was specified, use the interface address.
-		 * Otherwise, try to determine our source address.
-		 */
-		if (device != NULL)
-			setsin(from, al->addr);
-		else if ((err = findsaddr(to, from)) != NULL) {
-			Fprintf(stderr, "%s: findsaddr: %s\n",
-			    prog, err);
+		/* Get the interface address list */
+		n = ifaddrlist(&al, errbuf);
+		if (n < 0) {
+			Fprintf(stderr, "%s: ifaddrlist: %s\n",
+			    prog, errbuf);
 			exit(1);
 		}
-	} else {
-		hi = gethostinfo(source);
-		source = hi->name;
-		hi->name = NULL;
-		/*
-		 * If the device was specified make sure it
-		 * corresponds to the source address specified.
-		 * Otherwise, use the first address (and warn if
-		 * there are more than one).
-		 */
+		if (n == 0) {
+			Fprintf(stderr,
+			    "%s: Can't find any network interfaces\n", prog);
+			exit(1);
+		}
+
+		/* Look for a specific device */
 		if (device != NULL) {
-			for (i = hi->n, ap = hi->addrs; i > 0; --i, ++ap)
-				if (*ap == al->addr)
+			for (i = n; i > 0; --i, ++al)
+				if (strcmp(device, al->device) == 0)
 					break;
 			if (i <= 0) {
 				Fprintf(stderr,
-				    "%s: %s is not on interface %.32s\n",
-				    prog, source, device);
+				    "%s: Can't find interface %.32s\n",
+				    prog, device);
 				exit(1);
 			}
-			setsin(from, *ap);
-		} else {
-			setsin(from, hi->addrs[0]);
-			if (hi->n > 1)
-				Fprintf(stderr,
-			"%s: Warning: %s has multiple addresses; using %s\n",
-				    prog, source, inet_ntoa(from->sin_addr));
 		}
-		freehostinfo(hi);
-	}
 
-	outip->ip_src = from->sin_addr;
+		/* Determine our source address */
+		if (source == NULL) {
+			if (device != NULL)
+				setsin(from, al->addr);
+			else if ((err = findsaddr(to, from)) != NULL) {
+				Fprintf(stderr, "%s: findsaddr: %s\n",
+				    prog, err);
+				exit(1);
+			}
+		} else {
+			hi = gethostinfo(source);
+			source = hi->name;
+			hi->name = NULL;
+			if (device != NULL) {
+				for (i = hi->n, ap = hi->addrs; i > 0;
+				    --i, ++ap)
+					if (*ap == al->addr)
+						break;
+				if (i <= 0) {
+					Fprintf(stderr,
+					    "%s: %s is not on interface %.32s\n",
+					    prog, source, device);
+					exit(1);
+				}
+				setsin(from, *ap);
+			} else {
+				setsin(from, hi->addrs[0]);
+				if (hi->n > 1)
+					Fprintf(stderr,
+				"%s: Warning: %s has multiple addresses;"
+				" using %s\n",
+					    prog, source,
+					    inet_ntoa(from->sin_addr));
+			}
+			freehostinfo(hi);
+		}
 
-	/* Check the source address (-s), if any, is valid */
-	if (bind(sndsock, (struct sockaddr *)from, sizeof(*from)) < 0) {
-		Fprintf(stderr, "%s: bind: %s\n",
-		    prog, strerror(errno));
-		exit(1);
+		outip->ip_src = from->sin_addr;
+
+		/* Check the source address (-s), if any, is valid */
+		if (bind(sndsock, (struct sockaddr *)from,
+		    sizeof(*from)) < 0) {
+			Fprintf(stderr, "%s: bind: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 	}
 
 	if (as_path) {
@@ -965,10 +1157,21 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (connect(sndsock, (struct sockaddr *)&whereto,
-	    sizeof(whereto)) != 0) {
-		Fprintf(stderr, "%s: connect: %s\n", prog, strerror(errno));
-		exit(1);
+	if (v6flag) {
+		/* Connect send socket to destination for IPv6 */
+		to6->sin6_port = htons(port);
+		if (proto->num != IPPROTO_ICMPV6) {
+			/* For DGRAM socket, don't connect - use sendto */
+		} else {
+			/* For raw ICMPv6, connect to filter replies */
+		}
+	} else {
+		if (connect(sndsock, (struct sockaddr *)&whereto,
+		    sizeof(struct sockaddr_in)) != 0) {
+			Fprintf(stderr, "%s: connect: %s\n",
+			    prog, strerror(errno));
+			exit(1);
+		}
 	}
 
 #ifdef WITH_CASPER
@@ -982,12 +1185,6 @@ main(int argc, char **argv)
 
 #if defined(_SYS_CAPSICUM_H_)
 	caph_cache_catpages();
-
-	/*
-	 * Here we enter capability mode. Further down access to global
-	 * namespaces (e.g filesystem) is restricted (see capsicum(4)).
-	 * We must connect(2) our socket before this point.
-	 */
 	if (cansandbox && cap_enter() < 0) {
 		if (errno != ENOSYS) {
 			Fprintf(stderr, "%s: cap_enter: %s\n", prog,
@@ -997,14 +1194,12 @@ main(int argc, char **argv)
 			cansandbox = false;
 		}
 	}
-
 	cap_rights_init(&rights, CAP_SEND, CAP_SETSOCKOPT);
 	if (cansandbox && cap_rights_limit(sndsock, &rights) < 0) {
 		Fprintf(stderr, "%s: cap_rights_limit sndsock: %s\n", prog,
 		    strerror(errno));
 		exit(1);
 	}
-
 	cap_rights_init(&rights, CAP_RECV, CAP_EVENT);
 	if (cansandbox && cap_rights_limit(s, &rights) < 0) {
 		Fprintf(stderr, "%s: cap_rights_limit s: %s\n", prog,
@@ -1016,13 +1211,20 @@ main(int argc, char **argv)
 #if	defined(IPSEC) && defined(IPSEC_POLICY_IPSEC)
 	if (setpolicy(sndsock, "in bypass") < 0)
 		errx(1, "%s", ipsec_strerror());
-
 	if (setpolicy(sndsock, "out bypass") < 0)
 		errx(1, "%s", ipsec_strerror());
-#endif	/* defined(IPSEC) && defined(IPSEC_POLICY_IPSEC) */
+#endif
 
-	Fprintf(stderr, "%s to %s (%s)",
-	    prog, hostname, inet_ntoa(to->sin_addr));
+	if (v6flag) {
+		char dstaddr[INET6_ADDRSTRLEN];
+		inet_ntop(AF_INET6, &to6->sin6_addr,
+		    dstaddr, sizeof(dstaddr));
+		Fprintf(stderr, "%s to %s (%s)",
+		    prog, hostname, dstaddr);
+	} else {
+		Fprintf(stderr, "%s to %s (%s)",
+		    prog, hostname, inet_ntoa(to->sin_addr));
+	}
 	if (source)
 		Fprintf(stderr, " from %s", source);
 	Fprintf(stderr, ", %d hops max, %d byte packets\n", max_ttl, packlen);
@@ -1030,17 +1232,18 @@ main(int argc, char **argv)
 
 	for (ttl = first_ttl; ttl <= max_ttl; ++ttl) {
 		u_int32_t lastaddr = 0;
+		struct in6_addr lastaddr6;
 		int gotlastaddr = 0;
 		int got_there = 0;
 		int unreachable = 0;
 		int sentfirst = 0;
 		int loss;
 
+		memset(&lastaddr6, 0, sizeof(lastaddr6));
 		Printf("%2d ", ttl);
 		for (probe = 0, loss = 0; probe < nprobes; ++probe) {
 			register int cc;
 			struct timeval t1, t2;
-			register struct ip *ip;
 			struct outdata outdata;
 
 			if (sentfirst && pausemsecs > 0)
@@ -1055,13 +1258,85 @@ main(int argc, char **argv)
 
 			/* Finalize and send packet */
 			(*proto->prepare)(&outdata);
-			send_probe(seq, ttl);
+			if (v6flag)
+				send_probe6(seq, ttl);
+			else
+				send_probe(seq, ttl);
 			++sentfirst;
 
 			/* Wait for a reply */
-			while ((cc = wait_for_reply(s, from, &t1)) != 0) {
+			if (v6flag) {
+			    while ((cc = wait_for_reply6(s, from6, &t1)) != 0) {
 				double T;
 				int precis;
+
+				(void)gettimeofday(&t2, NULL);
+				i = packet_ok6(packet, cc, from6, seq);
+				/* Skip non-matching packet */
+				if (i == 0)
+					continue;
+				if (!gotlastaddr ||
+				    memcmp(&from6->sin6_addr, &lastaddr6,
+				    sizeof(lastaddr6)) != 0) {
+					if (gotlastaddr)
+						printf("\n   ");
+					print6(packet, cc, from6);
+					memcpy(&lastaddr6, &from6->sin6_addr,
+					    sizeof(lastaddr6));
+					++gotlastaddr;
+				}
+				T = deltaT(&t1, &t2);
+#ifdef SANE_PRECISION
+				if (T >= 1000.0)
+					precis = 0;
+				else if (T >= 100.0)
+					precis = 1;
+				else if (T >= 10.0)
+					precis = 2;
+				else
+#endif
+					precis = 3;
+				Printf("  %.*f ms", precis, T);
+				if (i == -2) {
+					++got_there;
+					break;
+				}
+				/* time exceeded in transit */
+				if (i == -1)
+					break;
+				code = i - 1;
+				switch (code) {
+				case ICMP6_DST_UNREACH_NOPORT:
+					++got_there;
+					break;
+				case ICMP6_DST_UNREACH_NOROUTE:
+					++unreachable;
+					Printf(" !N");
+					break;
+				case ICMP6_DST_UNREACH_ADMIN:
+					++unreachable;
+					Printf(" !X");
+					break;
+				case ICMP6_DST_UNREACH_ADDR:
+					++unreachable;
+					Printf(" !H");
+					break;
+				case ICMP6_DST_UNREACH_BEYONDSCOPE:
+					++unreachable;
+					Printf(" !B");
+					break;
+				default:
+					++unreachable;
+					Printf(" !<%d>", code);
+					break;
+				}
+				break;
+			    }
+			} else {
+			    while ((cc = wait_for_reply(s, from, &t1)) != 0) {
+				double T;
+				int precis;
+				register struct ip *ip;
 
 				(void)gettimeofday(&t2, NULL);
 				i = packet_ok(packet, cc, from, seq);
@@ -1220,6 +1495,7 @@ main(int argc, char **argv)
 					break;
 				}
 				break;
+			    }
 			}
 			if (cc == 0) {
 				loss++;
@@ -2100,9 +2376,289 @@ void
 usage(void)
 {
 	Fprintf(stderr,
-	    "Usage: %s [-adDeEFInrSvx] [-A as_server] [-f first_ttl] [-g gateway]\n"
-	    "\t[-i iface] [-m max_ttl] [-M first_ttl] [-p port] [-P proto]\n"
-	    "\t[-q nprobes] [-s src_addr] [-t tos] [-w waittime]\n"
+	    "Usage: %s [-46adDeEFInrSvx] [-A as_server] [-f first_ttl]\n"
+	    "\t[-g gateway] [-i iface] [-m max_ttl] [-M first_ttl] [-p port]\n"
+	    "\t[-P proto] [-q nprobes] [-s src_addr] [-t tos] [-w waittime]\n"
 	    "\t[-z pausemsecs] host [packetlen]\n", prog);
 	exit(1);
+}
+
+/*
+ * IPv6 support functions
+ */
+
+void
+icmp6_prep(struct outdata *outdata)
+{
+	struct icmp6_hdr *const icp6 = (struct icmp6_hdr *) outp;
+
+	icp6->icmp6_type = ICMP6_ECHO_REQUEST;
+	icp6->icmp6_code = 0;
+	icp6->icmp6_id = htons(ident);
+	icp6->icmp6_seq = htons(outdata->seq);
+	icp6->icmp6_cksum = 0;
+	/* Kernel computes ICMPv6 checksum for raw sockets */
+}
+
+int
+icmp6_check(const u_char *data, int seq)
+{
+	struct icmp6_hdr *const icp6 = (struct icmp6_hdr *) data;
+
+	return (icp6->icmp6_id == htons(ident)
+	    && icp6->icmp6_seq == htons(seq));
+}
+
+void
+send_probe6(int seq, int ttl)
+{
+	struct sockaddr_in6 *to6 = (struct sockaddr_in6 *)&whereto;
+	struct sockaddr_in6 dst;
+	int cc;
+
+	if (setsockopt(sndsock, IPPROTO_IPV6, IPV6_UNICAST_HOPS,
+	    (char *)&ttl, sizeof(ttl)) < 0) {
+		Fprintf(stderr, "%s: setsockopt IPV6_UNICAST_HOPS %d: %s\n",
+		    prog, ttl, strerror(errno));
+		exit(1);
+	}
+
+	/* XXX undocumented debugging hack */
+	if (verbose > 1) {
+		register const u_short *sp;
+		register int nshorts, i;
+
+		sp = (u_short *)outp;
+		nshorts = (u_int)protlen / sizeof(u_short);
+		i = 0;
+		Printf("[ %d bytes", protlen);
+		while (--nshorts >= 0) {
+			if ((i++ % 8) == 0)
+				Printf("\n\t");
+			Printf(" %04x", ntohs(*sp++));
+		}
+		if (protlen & 1) {
+			if ((i % 8) == 0)
+				Printf("\n\t");
+			Printf(" %02x", *(u_char *)sp);
+		}
+		Printf("]\n");
+	}
+
+	if (proto->num == IPPROTO_ICMPV6) {
+		/* Raw ICMPv6 socket: send ICMPv6 header + data */
+		memcpy(&dst, to6, sizeof(dst));
+		dst.sin6_port = 0;
+		cc = sendto(sndsock, (char *)outp, protlen, 0,
+		    (struct sockaddr *)&dst, sizeof(dst));
+	} else {
+		/* DGRAM socket: kernel adds transport header.
+		 * Send data portion after the transport header.
+		 * Set destination port in the address. */
+		struct udphdr *outudp = (struct udphdr *)outp;
+		u_char *data = outp + sizeof(struct udphdr);
+		int datalen = protlen - sizeof(struct udphdr);
+
+		memcpy(&dst, to6, sizeof(dst));
+		dst.sin6_port = outudp->uh_dport;
+
+		if (datalen < 0)
+			datalen = 0;
+		cc = sendto(sndsock, (char *)data, datalen, 0,
+		    (struct sockaddr *)&dst, sizeof(dst));
+		if (cc >= 0)
+			cc += sizeof(struct udphdr);
+	}
+
+	if (cc < 0 || cc != protlen) {
+		if (cc < 0)
+			Fprintf(stderr, "%s: sendto: %s\n",
+			    prog, strerror(errno));
+		Printf("%s: wrote %s %d chars, ret=%d\n",
+		    prog, hostname, protlen, cc);
+		(void)fflush(stdout);
+	}
+}
+
+int
+wait_for_reply6(register int sock, register struct sockaddr_in6 *fromp,
+    register const struct timeval *tp)
+{
+	fd_set *fdsp;
+	size_t nfds;
+	struct timeval now, wait;
+	register int cc = 0;
+	register int error;
+	socklen_t fromlen = sizeof(*fromp);
+
+	nfds = howmany(sock + 1, NFDBITS);
+	if ((fdsp = malloc(nfds * sizeof(fd_mask))) == NULL)
+		err(1, "malloc");
+	memset(fdsp, 0, nfds * sizeof(fd_mask));
+	FD_SET(sock, fdsp);
+
+	wait.tv_sec = tp->tv_sec + waittime;
+	wait.tv_usec = tp->tv_usec;
+	(void)gettimeofday(&now, NULL);
+	tvsub(&wait, &now);
+	if (wait.tv_sec < 0) {
+		wait.tv_sec = 0;
+		wait.tv_usec = 1;
+	}
+
+	error = select(sock + 1, fdsp, NULL, NULL, &wait);
+	if (error == -1 && errno == EINVAL) {
+		Fprintf(stderr, "%s: botched select() args\n", prog);
+		exit(1);
+	}
+	if (error > 0)
+		cc = recvfrom(sock, (char *)packet, sizeof(packet), 0,
+			    (struct sockaddr *)fromp, &fromlen);
+
+	free(fdsp);
+	return (cc);
+}
+
+int
+packet_ok6(register u_char *buf, int cc, register struct sockaddr_in6 *from,
+    register int seq)
+{
+	register struct icmp6_hdr *icp6;
+	register u_char type, code;
+
+	/* ICMPv6 raw socket: no IPv6 header in received data */
+	if (cc < (int)sizeof(struct icmp6_hdr)) {
+		if (verbose)
+			Printf("packet too short (%d bytes)\n", cc);
+		return (0);
+	}
+
+	icp6 = (struct icmp6_hdr *)buf;
+	type = icp6->icmp6_type;
+	code = icp6->icmp6_code;
+
+	/* Echo reply means we reached the destination (ICMPv6 probe) */
+	if (type == ICMP6_ECHO_REPLY
+	    && proto->num == IPPROTO_ICMPV6
+	    && (*proto->check)((u_char *)icp6, (u_char)seq))
+		return (-2);
+
+	if ((type == ICMP6_TIME_EXCEEDED &&
+	     code == ICMP6_TIME_EXCEED_TRANSIT) ||
+	    type == ICMP6_DST_UNREACH) {
+		struct ip6_hdr *hip6;
+		u_char *inner;
+		int inner_len;
+
+		/*
+		 * After the ICMPv6 header comes the invoking packet:
+		 * IPv6 header (40 bytes) + original transport header
+		 */
+		hip6 = (struct ip6_hdr *)(icp6 + 1);
+		inner_len = cc - sizeof(struct icmp6_hdr);
+
+		if (inner_len < (int)sizeof(struct ip6_hdr))
+			return (0);
+
+		inner = (u_char *)(hip6 + 1);
+		inner_len -= sizeof(struct ip6_hdr);
+
+		if (inner_len >= 8
+		    && hip6->ip6_nxt == proto->num
+		    && (*proto->check)(inner, (u_char)seq))
+			return (type == ICMP6_TIME_EXCEEDED ? -1 : code + 1);
+	}
+
+	if (verbose) {
+		char fromaddr[INET6_ADDRSTRLEN];
+		inet_ntop(AF_INET6, &from->sin6_addr,
+		    fromaddr, sizeof(fromaddr));
+		Printf("\n%d bytes from %s: icmp6 type %d code %d\n",
+		    cc, fromaddr, type, code);
+	}
+
+	return (0);
+}
+
+void
+print6(register u_char *buf, register int cc, register struct sockaddr_in6 *from)
+{
+	char addr[INET6_ADDRSTRLEN];
+
+	inet_ntop(AF_INET6, &from->sin6_addr, addr, sizeof(addr));
+
+	if (as_path)
+		Printf(" [AS%u]", as_lookup(asn, addr, AF_INET6));
+
+	if (nflag)
+		Printf(" %s", addr);
+	else
+		Printf(" %s (%s)", inet6name(&from->sin6_addr), addr);
+}
+
+char *
+inet6name(struct in6_addr *in6)
+{
+	static char line[NI_MAXHOST];
+	struct sockaddr_in6 sin6;
+
+	memset(&sin6, 0, sizeof(sin6));
+	sin6.sin6_len = sizeof(sin6);
+	sin6.sin6_family = AF_INET6;
+	sin6.sin6_addr = *in6;
+
+	if (!nflag && getnameinfo((struct sockaddr *)&sin6, sizeof(sin6),
+	    line, sizeof(line), NULL, 0, NI_NAMEREQD) == 0)
+		return (line);
+
+	if (inet_ntop(AF_INET6, in6, line, sizeof(line)) == NULL)
+		strlcpy(line, "?", sizeof(line));
+	return (line);
+}
+
+/*
+ * Find source address for IPv6 destination using the
+ * connect-getsockname trick (same approach as findsaddr-udp.c).
+ */
+const char *
+findsaddr6(register const struct sockaddr_in6 *to,
+    register struct sockaddr_in6 *from)
+{
+	const char *errstr;
+	struct sockaddr_in6 cto, cfrom;
+	int s6;
+	socklen_t len;
+
+	s6 = socket(AF_INET6, SOCK_DGRAM, 0);
+	if (s6 == -1)
+		return ("failed to open DGRAM socket for IPv6 src addr selection.");
+
+	errstr = NULL;
+	len = sizeof(struct sockaddr_in6);
+	memcpy(&cto, to, len);
+	cto.sin6_port = htons(65535);
+	if (connect(s6, (struct sockaddr *)&cto, len) == -1) {
+		errstr = "failed to connect to IPv6 peer for src addr selection.";
+		goto err6;
+	}
+
+	if (getsockname(s6, (struct sockaddr *)&cfrom, &len) == -1) {
+		errstr = "failed to get socket name for IPv6 src addr selection.";
+		goto err6;
+	}
+
+	if (len != sizeof(struct sockaddr_in6) ||
+	    cfrom.sin6_family != AF_INET6) {
+		errstr = "unexpected address family in IPv6 src addr selection.";
+		goto err6;
+	}
+
+	memset(from, 0, sizeof(*from));
+	from->sin6_len = sizeof(*from);
+	from->sin6_family = AF_INET6;
+	from->sin6_addr = cfrom.sin6_addr;
+
+err6:
+	(void) close(s6);
+	return (errstr);
 }

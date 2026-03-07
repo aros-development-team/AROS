@@ -22,5 +22,6 @@
  */
 
 extern char *prog;
+extern int v6flag;
 
 void	setsin(struct sockaddr_in *, u_int32_t);
