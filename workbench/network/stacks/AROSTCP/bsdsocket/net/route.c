@@ -180,8 +180,8 @@ int  report;
 
     for(rnh = radix_node_head; rnh && (dst->sa_family != rnh->rnh_af);)
         rnh = rnh->rnh_next;
-    DROUTE(log(LOG_DEBUG, "Found radix node head: 0x%08lx", rnh);)
-    DROUTE(log(LOG_DEBUG, "rnh_treetop = 0x%08lx", rnh->rnh_treetop);)
+    DROUTE(log(LOG_DEBUG, "Found radix node head: 0x%p", rnh);)
+    DROUTE(log(LOG_DEBUG, "rnh_treetop = 0x%p", rnh->rnh_treetop);)
     if(rnh && rnh->rnh_treetop &&
             (rn = rn_match((caddr_t)dst, rnh->rnh_treetop)) &&
             ((rn->rn_flags & RNF_ROOT) == 0)) {
@@ -195,7 +195,7 @@ int  report;
         } else
             rt->rt_refcnt++;
     } else {
-        DROUTE(log(LOG_DEBUG, "Route lookup failure, rn = 0x%08lx", rn);)
+        DROUTE(log(LOG_DEBUG, "Route lookup failure, rn = 0x%p", rn);)
         rtstat.rts_unreach++;
 miss:
         if(report)

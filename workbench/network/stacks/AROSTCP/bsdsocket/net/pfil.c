@@ -92,7 +92,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
     unsigned char ifname[IFNAMSIZ + 3];
     void (*pfil_func)(struct Hook *, APTR, struct MiamiPFBuffer *);
 
-    DPF(kprintf("pfil_run_hooks(0x%08lx, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
+    DPF(kprintf("pfil_run_hooks(0x%p, %s%u, %u) called\n", ifp, ifp->if_name, ifp->if_unit, pr);)
 
     /* Run IP filter engine for IP packets */
     if(pr == MIAMIPFBPT_IP) {
@@ -117,14 +117,14 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr, int dir)
 #if !defined(__AROS__)
         CHECK_POINTER(pfh);
 #endif
-        DPF(kprintf("Checking handle 0x%08lx\n", pfh);)
-        DPF(kprintf("Interface: 0x%08lx\n", pfh->pfil_if);)
-        DPF(kprintf("Hook: 0x%08lx\n", pfh->pfil_hook);)
-        DPF(kprintf("Function: 0x%08lx\n", pfh->pfil_hook->h_Entry);)
+        DPF(kprintf("Checking handle 0x%p\n", pfh);)
+        DPF(kprintf("Interface: 0x%p\n", pfh->pfil_if);)
+        DPF(kprintf("Hook: 0x%p\n", pfh->pfil_hook);)
+        DPF(kprintf("Function: 0x%p\n", pfh->pfil_hook->h_Entry);)
         DPF(kprintf("CPU type: %ld\n", pfh->pfil_hooktype);)
         if(pfh->pfil_if == ifp) {
             pfil_func = (APTR)pfh->pfil_hook->h_Entry;
-            DPF(kprintf("Executing packet filter routine: 0x%08lx\n", pfil_func);)
+            DPF(kprintf("Executing packet filter routine: 0x%p\n", pfil_func);)
             switch(pfh->pfil_hooktype) {
             case MIAMICPU_M68KREG:
                 AROS_UFC3NR(void, pfil_func,

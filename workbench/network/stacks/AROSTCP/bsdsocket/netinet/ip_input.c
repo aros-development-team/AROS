@@ -403,6 +403,8 @@ found:
      * Switch out to protocol's input routine.
      */
     ipstat.ips_delivered++;
+    D(bug("[AROSTCP:IP] %s: proto=%u mbuf=0x%p len=%d -> pr_input\n",
+          __func__, ip->ip_p, m, ip->ip_len));
     (*inetsw[ip_protox[ip->ip_p]].pr_input)(m, hlen);
     goto next;
 bad:

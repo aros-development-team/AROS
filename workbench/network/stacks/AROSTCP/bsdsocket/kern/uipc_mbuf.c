@@ -176,7 +176,7 @@ int
 mb_check_conf(void *dp, IPTR newvalue)
 {
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) mb_check_conf(0x%08x, %d)\n", dp, newvalue));
+    D(bug("[AROSTCP](uipc_mbuf.c) mb_check_conf(0x%p, %d)\n", dp, newvalue));
 #endif
 
     if((u_long *)dp == &mbconf.initial_mbuf_chunks) {
@@ -266,7 +266,7 @@ mbdeinit(void)
      */
     while(mbufmem) {
 #if defined(__AROS__)
-        D(bug("[AROSTCP](uipc_mbuf.c) mbdeinit: Freeing %d bytes @ 0x%08x\n", mbufmem, mbufmem->size));
+        D(bug("[AROSTCP](uipc_mbuf.c) mbdeinit: Freeing %d bytes @ 0x%p\n", mbufmem, mbufmem->size));
 #endif
         next = mbufmem->next;
         mbstat.m_memused -= mbufmem->size;
@@ -483,7 +483,7 @@ int canwait, type;
 
     MGET(m, canwait, type);
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_get: returning 0x%08x\n", m));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_get: returning 0x%p\n", m));
 #endif
 
     return (m);
@@ -537,7 +537,7 @@ register struct mbuf *m;
 {
     register struct mbuf *n;
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_freem(0x%08x)\n", m));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_freem(0x%p)\n", m));
 #endif
 
     if(m == NULL) {
@@ -567,7 +567,7 @@ int len, canwait;
 {
     struct mbuf *mn;
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_prepend(0x%08x, len = %d)\n", m, len));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_prepend(0x%p, len = %d)\n", m, len));
 #endif
 
     MGET(mn, canwait, m->m_type);
@@ -605,7 +605,7 @@ register int len;
     struct mbuf *top = NULL;
     int copyhdr = 0;
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_copym(0x%08x, len = %d)\n", m, len));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_copym(0x%p, len = %d)\n", m, len));
 #endif
 
     if(off < 0 || len < 0) {
@@ -695,7 +695,7 @@ caddr_t cp;
 {
     register unsigned count;
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_copydata(0x%08x, len = %d)\n", m, len));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_copydata(0x%p, len = %d)\n", m, len));
 #endif
 
     if(off < 0 || len < 0) {
@@ -745,7 +745,7 @@ m_cat(m, n)
 register struct mbuf *m, *n;
 {
 #if defined(__AROS__)
-    D(bug("[AROSTCP](uipc_mbuf.c) m_cat(0x%08x, 0x%08x)\n", m, n));
+    D(bug("[AROSTCP](uipc_mbuf.c) m_cat(0x%p, 0x%p)\n", m, n));
 #endif
 
     while(m->m_next)

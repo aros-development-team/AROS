@@ -63,6 +63,8 @@
 #include <netinet/tcp_var.h>
 #include <netinet/tcpip.h>
 
+#include <conf.h>
+
 int	tcp_keepidle = TCPTV_KEEP_IDLE;
 int	tcp_keepintvl = TCPTV_KEEPINTVL;
 int	tcp_maxidle;
@@ -197,7 +199,13 @@ int timer;
      * to a longer retransmit interval and retransmit one segment.
      */
     case TCPT_REXMT:
+        D(bug("[AROSTCP:TCP] %s: REXMT timer fired: tp=0x%p state=%d "
+              "rxtshift=%d snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
+              __func__, tp, tp->t_state, tp->t_rxtshift,
+              (unsigned long)tp->snd_una, (unsigned long)tp->snd_nxt,
+              (unsigned long)tp->snd_max));
         if(++tp->t_rxtshift > TCP_MAXRXTSHIFT) {
+            D(bug("[AROSTCP:TCP] %s: REXMT max retries exceeded, dropping\n", __func__));
             tp->t_rxtshift = TCP_MAXRXTSHIFT;
             tcpstat.tcps_timeoutdrop++;
             tp = tcp_drop(tp, tp->t_softerror ?

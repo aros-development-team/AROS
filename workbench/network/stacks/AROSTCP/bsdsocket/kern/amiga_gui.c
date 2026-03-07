@@ -61,7 +61,7 @@ void SAVEDS gui_async_op(ULONG code, ULONG unit)
     DGUI(log(LOG_DEBUG, "gui_async_op(%lu, %lu) called", code, unit);)
     for(ifp = ifnet; ifp; ifp = ifp->if_next) {
         if(ifp->if_index == unit) {
-            DGUI(log(LOG_DEBUG, "Found ifp = 0x%08lx", ifp);)
+            DGUI(log(LOG_DEBUG, "Found ifp = 0x%p", ifp);)
             ifupdown(ifp, (code == MIAMIPANELV_CallBack_Code_UnitOffline));
         }
     }
@@ -184,7 +184,7 @@ void gui_open()
             D(bug("[AROSTCP](amiga_gui.c) %s: Attempting to use '%s'\n", __func__, panel_path));
 #endif
             MiamiPanelBase = OpenLibrary(panel_path, 0);
-            DGUI(KPrintF("Panel library opened, base = 0x%08lx\n", MiamiPanelBase);)
+            DGUI(KPrintF("Panel library opened, base = 0x%p\n", MiamiPanelBase);)
             if(MiamiPanelBase) {
                 DGUI(PanelVersion = MiamiPanelGetVersion();)
                 DGUI(KPrintF("Panel API version: %lu\n", PanelVersion);)

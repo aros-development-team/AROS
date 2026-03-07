@@ -401,7 +401,7 @@ struct ifnet {
 #define	IFCAP_CANTCHANGE	(IFCAP_NETMAP | IFCAP_NV)
 #define	IFCAP_ALLCAPS		0xffffffff
 
-#define	IFQ_MAXLEN	50
+#define	IFQ_MAXLEN	256
 #define	IFNET_SLOWHZ	1		/* granularity is 1 second */
 
 /*

@@ -43,7 +43,7 @@ static inline void setup_accesscontroltable(struct NetDataBase * ndb)
   {
     ndb->ndb_AccessTable = new_AccessTable;
 #ifdef DEBUG_NETDB
-    __log(7, "Reallocated accesscontroltable to 0x%08x:", new_AccessTable);
+    __log(7, "Reallocated accesscontroltable to 0x%p:", new_AccessTable);
     {
       int i;
 #define host ndb->ndb_AccessTable[i].ai_host

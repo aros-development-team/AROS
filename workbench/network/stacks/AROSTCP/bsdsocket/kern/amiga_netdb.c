@@ -977,10 +977,10 @@ addnameservent(struct NetDataBase *ndb,
 #endif
 
 #if defined(__AROS__)
-    D(bug("[AROSTCP](amiga_netdb.c) addnameservent: Added nameserver %s (0x%08lx) to netdb = 0x%08lx\n", Buffer,
+    D(bug("[AROSTCP](amiga_netdb.c) addnameservent: Added nameserver %s (0x%08lx) to netdb = 0x%p\n", Buffer,
           nsn->nsn_Ent.ns_addr.s_addr, ndb));
 #endif
-    DNETDB(__log(LOG_DEBUG, "Added nameserver %s (0x%08lx) to netdb = 0x%08lx\n", Buffer, nsn->nsn_Ent.ns_addr.s_addr, ndb);
+    DNETDB(__log(LOG_DEBUG, "Added nameserver %s (0x%08lx) to netdb = 0x%p\n", Buffer, nsn->nsn_Ent.ns_addr.s_addr, ndb);
           )
 
     AddTail((struct List *)&ndb->ndb_NameServers, (struct Node *)nsn);

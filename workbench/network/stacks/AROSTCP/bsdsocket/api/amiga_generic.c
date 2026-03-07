@@ -573,16 +573,16 @@ AROS_LH1(LONG, GetSocketEvents,
     ReleaseSemaphore(&libPtr->EventLock);
     if(se) {
         *eventsp = se->events;
-        DEVENTS(log(LOG_DEBUG, "GetSocketEvents(): events 0x%08lx for socket 0x%08lx libPtr = 0x%08lx", se->events, se->socket,
+        DEVENTS(log(LOG_DEBUG, "GetSocketEvents(): events 0x%08lx for socket 0x%p libPtr = 0x%p", se->events, se->socket,
                     libPtr);)
         so = se->socket;
         bsd_free(se, NULL);
         for(i = 0; i < libPtr->dTableSize; i++)
             if(libPtr->dTable[i] == so)
                 return i;
-        DEVENTS(log(LOG_CRIT, "GetSocketEvents(): unreferenced socket 0x%08lx libPtr = 0x%08lx", so, libPtr);)
+        DEVENTS(log(LOG_CRIT, "GetSocketEvents(): unreferenced socket 0x%p libPtr = 0x%p", so, libPtr);)
     }
-    DEVENTS(else log(LOG_DEBUG, "GetSocketEvents(): no events pending libPtr = 0x%08lx", libPtr);)
+    DEVENTS(else log(LOG_DEBUG, "GetSocketEvents(): no events pending libPtr = 0x%p", libPtr);)
         return -1;
     AROS_LIBFUNC_EXIT
 }

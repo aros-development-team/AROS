@@ -261,7 +261,7 @@ vlog(unsigned long level, const char *tag, const char *fmt, va_list ap)
         msg->Level = level & (LOG_FACMASK | LOG_PRIMASK);	/* Level of message */
         ret = cs.CS_CurChr;
         msg->Time = now.tv_secs;
-        DSYSLOG(KPrintF("Putting message = 0x%08x, tag: %s, text: %s\n", msg, msg->Tag, msg->String);)
+        DSYSLOG(KPrintF("Putting message = 0x%p, tag: %s, text: %s\n", msg, msg->Tag, msg->String);)
         PutMsg(logPort, (struct Message *)msg);
         return ret;
     }

@@ -65,6 +65,8 @@
 #include <netinet/tcp_debug.h>
 #endif
 
+#include <conf.h>
+
 #ifdef notyet
 extern struct mbuf *m_copypack();
 #endif
@@ -87,6 +89,11 @@ register struct tcpcb *tp;
     int idle, sendalot;
     struct rmxp_tao *taop;
     struct rmxp_tao tao_noncached;
+
+    D(bug("[AROSTCP:TCP] %s: tp=0x%p state=%d flags=0x%x snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
+          __func__, tp, tp->t_state, tp->t_flags,
+          (unsigned long)tp->snd_una, (unsigned long)tp->snd_nxt,
+          (unsigned long)tp->snd_max));
 
     /*
      * Determine length of data that should be transmitted,
@@ -340,6 +347,9 @@ send:
                 opt[optlen++] = TCPOLEN_SACK_PERMITTED;
             }
         }
+        D(bug("[AROSTCP:TCP] %s: SYN options: optlen=%u MSS WScale=%d SACK=%s\n",
+              __func__, optlen, tp->request_r_scale,
+              (tp->t_flags & TF_SACK_PERMIT) ? "yes" : "no"));
     }
 
     /*
@@ -484,6 +494,15 @@ skip_sack:
         break;
         }
     }
+
+    /*
+     * Pad option area to a 4-byte boundary.  The TCP data offset
+     * field counts 32-bit words, so options must be a multiple of 4.
+     * Without this, the receiver misinterprets trailing option bytes
+     * as payload data (causing phantom ACK advances and stalls).
+     */
+    while (optlen & 3)
+        opt[optlen++] = TCPOPT_NOP;
 
     hdrlen += optlen;
 
@@ -745,6 +764,11 @@ skip_sack:
      * the template, but need a way to checksum without them.
      */
     m->m_pkthdr.len = hdrlen + len;
+
+    D(bug("[AROSTCP:TCP] %s: SEND mbuf=0x%p flags=0x%02x seq=%lu ack=%lu len=%ld optlen=%u hdrlen=%u\n",
+          __func__, m, flags, (unsigned long)ntohl(ti->ti_seq),
+          (unsigned long)ntohl(ti->ti_ack), len, optlen, hdrlen));
+
 #ifdef TUBA
     if(tp->t_tuba_pcb)
         error = tuba_output(m, tp);
@@ -770,6 +794,7 @@ skip_sack:
 #endif
     }
     if(error) {
+        D(bug("[AROSTCP:TCP] %s: ip_output error=%d\n", __func__, error));
 out:
         if(error == ENOBUFS) {
             tcp_quench(tp->t_inpcb, 0);

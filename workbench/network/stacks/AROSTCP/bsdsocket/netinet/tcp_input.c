@@ -66,6 +66,7 @@
 struct	tcpiphdr tcp_saveti;
 #endif
 
+#include <conf.h>
 #include "tcp_compat.h"
 
 int	tcprexmtthresh = 3;
@@ -311,6 +312,10 @@ void tcp_input(void *arg, ...)
     bzero((char *)&to, sizeof(to));
 
     tcpstat.tcps_rcvtotal++;
+
+    D(bug("[AROSTCP:TCP] %s: mbuf=0x%p m_len=%d iphlen=%d\n",
+          __func__, m, m->m_len, iphlen));
+
     /*
      * Get IP and TCP header together in first mbuf.
      * Note: IP leaves IP header in first mbuf.
@@ -338,6 +343,7 @@ void tcp_input(void *arg, ...)
     HTONS(ti->ti_len);
     ti->ti_sum = in_cksum(m, len);
     if(ti->ti_sum) {
+        D(bug("[AROSTCP:TCP] %s: BAD CHECKSUM, dropping\n", __func__));
         tcpstat.tcps_rcvbadsum++;
         goto drop;
     }
@@ -391,6 +397,18 @@ void tcp_input(void *arg, ...)
     NTOHS(ti->ti_win);
     NTOHS(ti->ti_urp);
 
+    D({
+        u_char *sa = (u_char *)&ti->ti_src.s_addr;
+        u_char *da = (u_char *)&ti->ti_dst.s_addr;
+        bug("[AROSTCP:TCP] %s: RECV %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u "
+            "flags=0x%02x seq=%lu ack=%lu win=%u tlen=%d off=%d\n",
+            __func__,
+            sa[0], sa[1], sa[2], sa[3], ntohs(ti->ti_sport),
+            da[0], da[1], da[2], da[3], ntohs(ti->ti_dport),
+            tiflags, (unsigned long)ti->ti_seq, (unsigned long)ti->ti_ack,
+            ti->ti_win, tlen, off);
+    });
+
     /*
      * Drop TCP, IP headers and TCP options.
      */
@@ -420,11 +438,15 @@ findpcb:
      * If the TCB exists but is in CLOSED state, it is embryonic,
      * but should either do a listen or a connect soon.
      */
-    if(inp == NULL)
+    if(inp == NULL) {
+        D(bug("[AROSTCP:TCP] %s: no PCB found, dropwithreset\n", __func__));
         goto dropwithreset;
+    }
     tp = intotcpcb(inp);
-    if(tp == 0)
+    if(tp == 0) {
+        D(bug("[AROSTCP:TCP] %s: no tcpcb, dropwithreset\n", __func__));
         goto dropwithreset;
+    }
     if(tp->t_state == TCPS_CLOSED)
         goto drop;
 
@@ -799,6 +821,9 @@ findpcb:
      *	continue processing rest of data/controls, beginning with URG
      */
     case TCPS_SYN_SENT:
+        D(bug("[AROSTCP:TCP] %s: SYN_SENT: tiflags=0x%02x ack=%lu iss=%lu snd_max=%lu\n",
+              __func__, tiflags, (unsigned long)ti->ti_ack,
+              (unsigned long)tp->iss, (unsigned long)tp->snd_max));
         if((taop = tcp_gettaocache(inp)) == NULL) {
             taop = &tao_noncached;
             bzero(taop, sizeof(*taop));
@@ -833,6 +858,7 @@ findpcb:
         tp->irs = ti->ti_seq;
         tcp_rcvseqinit(tp);
         if(tiflags & TH_ACK && SEQ_GT(ti->ti_ack, tp->iss)) {
+            D(bug("[AROSTCP:TCP] %s: SYN_SENT->ESTABLISHED: SYN-ACK received\n", __func__));
             tcpstat.tcps_connects++;
             soisconnected(so);
             /* Do window scaling on this connection? */
@@ -1021,6 +1047,9 @@ trimthenstep6:
             tcpstat.tcps_rcvduppack++;
             tcpstat.tcps_rcvdupbyte += ti->ti_len;
             tcpstat.tcps_pawsdrop++;
+            D(bug("[AROSTCP:TCP] tcp_input: PAWS drop: tsval=%lu ts_recent=%lu age=%ld\n",
+                  (unsigned long)to.to_tsval, (unsigned long)tp->ts_recent,
+                  (long)(tcp_now - tp->ts_recent_age)));
             goto dropafterack;
         }
     }
@@ -1033,8 +1062,10 @@ trimthenstep6:
      */
     if((tp->t_flags & (TF_REQ_CC | TF_RCVD_CC)) == (TF_REQ_CC | TF_RCVD_CC) &&
             ((to.to_flag & TOF_CC) == 0 || tp->cc_recv != to.to_cc) &&
-            (tiflags & TH_RST) == 0)
+            (tiflags & TH_RST) == 0) {
+        D(bug("[AROSTCP:TCP] tcp_input: T/TCP CC drop\n"));
         goto dropafterack;
+    }
 
     todrop = tp->rcv_nxt - ti->ti_seq;
     if(todrop > 0) {
@@ -1125,8 +1156,12 @@ trimthenstep6:
             if(tp->rcv_wnd == 0 && ti->ti_seq == tp->rcv_nxt) {
                 tp->t_flags |= TF_ACKNOW;
                 tcpstat.tcps_rcvwinprobe++;
-            } else
+            } else {
+                D(bug("[AROSTCP:TCP] tcp_input: window drop: rcv_wnd=%lu seq=%lu rcv_nxt=%lu todrop=%ld tlen=%u\n",
+                      (unsigned long)tp->rcv_wnd, (unsigned long)ti->ti_seq,
+                      (unsigned long)tp->rcv_nxt, (long)todrop, ti->ti_len));
                 goto dropafterack;
+            }
         } else
             tcpstat.tcps_rcvbyteafterwin += todrop;
         m_adj(m, -todrop);
@@ -1402,6 +1437,8 @@ close:
         }
         if(SEQ_GT(ti->ti_ack, tp->snd_max)) {
             tcpstat.tcps_rcvacktoomuch++;
+            D(bug("[AROSTCP:TCP] tcp_input: ACK too high: ack=%lu snd_max=%lu\n",
+                  (unsigned long)ti->ti_ack, (unsigned long)tp->snd_max));
             goto dropafterack;
         }
         /*
@@ -1578,6 +1615,7 @@ process_ACK:
          */
         case TCPS_TIME_WAIT:
             tp->t_timer[TCPT_2MSL] = 2 * TCPTV_MSL;
+            D(bug("[AROSTCP:TCP] tcp_input: TIME_WAIT drop\n"));
             goto dropafterack;
         }
     }
@@ -1770,6 +1808,7 @@ dropafterack:
      * Generate an ACK dropping incoming segment if it occupies
      * sequence space, where the ACK reflects our state.
      */
+    D(bug("[AROSTCP:TCP] %s: dropafterack: flags=0x%02x\n", __func__, tiflags));
     if(tiflags & TH_RST)
         goto drop;
 #ifdef TCPDEBUG
@@ -1787,6 +1826,7 @@ dropwithreset:
      * Make ACK acceptable to originator of segment.
      * Don't bother to respond if destination was broadcast/multicast.
      */
+    D(bug("[AROSTCP:TCP] %s: dropwithreset: flags=0x%02x\n", __func__, tiflags));
     if((tiflags & TH_RST) || m->m_flags & (M_BCAST | M_MCAST) ||
             IN_MULTICAST(ntohl(ti->ti_dst.s_addr)))
         goto drop;
@@ -1811,6 +1851,7 @@ drop:
     /*
      * Drop space held by incoming segment and return.
      */
+    D(bug("[AROSTCP:TCP] %s: drop: flags=0x%02x mbuf=0x%p\n", __func__, tiflags, m));
 #ifdef TCPDEBUG
     if(tp == 0 || (tp->t_inpcb->inp_socket->so_options & SO_DEBUG))
         tcp_trace(TA_DROP, ostate, tp, &tcp_saveti, 0);

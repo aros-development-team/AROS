@@ -180,7 +180,7 @@ register struct socket *so;
     wakeup((caddr_t)&so->so_timeo);
     sowakeup(so, &so->so_snd);
     sowakeup(so, &so->so_rcv);
-    DEVENTS(__log(LOG_DEBUG, "soisdisconnecting(0x%08lx) called", so);)
+    DEVENTS(__log(LOG_DEBUG, "soisdisconnecting(0x%p) called", so);)
 //	soevent(so, FD_CLOSE);
 }
 
@@ -194,7 +194,7 @@ register struct socket *so;
     wakeup((caddr_t)&so->so_timeo);
     sowakeup(so, &so->so_snd);
     sowakeup(so, &so->so_rcv);
-    DEVENTS(__log(LOG_DEBUG, "soisdisconnected(0x%08lx) called", so);)
+    DEVENTS(__log(LOG_DEBUG, "soisdisconnected(0x%p) called", so);)
 //	soevent(so, FD_CLOSE);
 }
 
@@ -314,7 +314,7 @@ struct socket *so;
 
     so->so_state |= SS_CANTSENDMORE;
     sowakeup(so, &so->so_snd);
-    DEVENTS(__log(LOG_DEBUG, "socantsendmore(0x%08lx) called", so);)
+    DEVENTS(__log(LOG_DEBUG, "socantsendmore(0x%p) called", so);)
 }
 
 void
@@ -324,7 +324,7 @@ struct socket *so;
 
     so->so_state |= SS_CANTRCVMORE;
     sowakeup(so, &so->so_rcv);
-    DEVENTS(__log(LOG_DEBUG, "socantrcvmore(0x%08lx) called", so);)
+    DEVENTS(__log(LOG_DEBUG, "socantrcvmore(0x%p) called", so);)
     soevent(so, FD_CLOSE);
 }
 
@@ -437,7 +437,7 @@ void soevent(struct socket *so, u_long event)
     if(so->so_pgid && ((so->so_state & (SS_ASYNC | SS_NOFDREF)) == SS_ASYNC)) {
         if(so->so_pgid->sigEventMask) {
             if(event & so->so_eventmask) {
-                DEVENTS(__log(LOG_DEBUG, "Sending event 0x%08lx for socket 0x%08lx", event, so);)
+                DEVENTS(__log(LOG_DEBUG, "Sending event 0x%08lx for socket 0x%p", event, so);)
                 ObtainSemaphore(&so->so_pgid->EventLock);
                 for(tse = (struct soevent *)so->so_pgid->EventList.mlh_Head; tse->node.mln_Succ;
                         tse = (struct soevent *)tse->node.mln_Succ) {

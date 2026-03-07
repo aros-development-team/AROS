@@ -990,11 +990,22 @@ sana_read(struct sana_softc *ssc, struct IOIPReq *req,
 static void
 sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
 {
-    struct mbuf *m = sana_read(ssc, req, 0, &ssc->ss_ip.sent, "sana_ip_read",
-                               ssc->ss_if.if_mtu);
+    struct mbuf *m;
     spl_t s;
 
+    D(bug("[AROSTCP:SANA] %s: %s%d ioError=%d wireError=%ld len=%ld\n",
+          __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
+          req->ioip_s2.ios2_Req.io_Error,
+          (long)req->ioip_s2.ios2_WireError,
+          (long)req->ioip_s2.ios2_DataLength));
+
+    m = sana_read(ssc, req, 0, &ssc->ss_ip.sent, "sana_ip_read",
+                  ssc->ss_if.if_mtu);
+
     if(m) {
+        D(bug("[AROSTCP:SANA] %s: %s%d pktlen=%d flags=0x%x mbuf=0x%p\n",
+              __func__, ssc->ss_if.if_name, ssc->ss_if.if_unit,
+              m->m_pkthdr.len, m->m_flags, m));
         /* BPF tap: let packet filters see incoming IPv4 packets */
         if(ssc->ss_if.if_bpf)
             bpf_mtap(&ssc->ss_if, m, BPF_D_IN);
@@ -1002,16 +1013,17 @@ sana_ip_read(struct sana_softc *ssc, struct IOIPReq *req)
         if(IF_QFULL(&ipintrq)) {
             IF_DROP(&ipintrq);
             m_freem(m);
-            /* m = NULL; */
+            D(bug("[AROSTCP:SANA] %s: ipintrq FULL, dropped\n", __func__));
         } else {
             /* Set interface pointer (needed for broadcasts) */
             m->m_pkthdr.rcvif = (struct ifnet *)ssc;
             IF_ENQUEUE(&ipintrq, m);
             /* A signal might be needed if we use PA_EXCEPTION port */
             schednetisr_nosignal(NETISR_IP);
-            /* m = NULL; */
         }
         splx(s);
+    } else {
+        D(bug("[AROSTCP:SANA] %s: sana_read returned NULL\n", __func__));
     }
 }
 
