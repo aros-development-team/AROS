@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/exec.h>
@@ -15,6 +15,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "__stdc_intbase.h"
@@ -25,7 +26,7 @@
 
 #include "debug.h"
 
-struct signal_func_data *__sig_getfuncdata(int signum)
+struct signal_func_data *__stdc_sig_getfuncdata(int signum)
 {
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
@@ -50,6 +51,10 @@ struct signal_func_data *__sig_getfuncdata(int signum)
         for (i = 0; i < _SIGMAX; i++)
         {
             StdCBase->sigfunc_array[i].sigfunc = SIG_DFL;
+            StdCBase->sigfunc_array[i].sigaction_func = NULL;
+            memset(&StdCBase->sigfunc_array[i].sa_mask, 0,
+                   sizeof(sigset_t));
+            StdCBase->sigfunc_array[i].sa_flags = 0;
             StdCBase->sigfunc_array[i].flags = 0;
         }
     }

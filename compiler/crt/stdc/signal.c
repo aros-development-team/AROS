@@ -1,6 +1,8 @@
 /*
-    Copyright (C) 2004-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 */
+
+#include <string.h>
 
 #include "__signal.h"
 
@@ -28,28 +30,30 @@
         The old handler that was replaced by the new handler.
 
     NOTES
-        Implemented but no interrupts will be generated like when pressing
-        Ctrl-C; signal handlers can for now only be called by raise() in the
-        program itself.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        sigaction()
 
     INTERNALS
+        When signal() is used, SA_SIGINFO mode and sa_mask are cleared
+        so that the handler is treated as a plain signal(2)-style handler.
 
 ******************************************************************************/
 {
-    struct signal_func_data *sigfuncdata = __sig_getfuncdata(signum);
+    struct signal_func_data *sigfuncdata = __stdc_sig_getfuncdata(signum);
 
     if (!sigfuncdata)
         return SIG_ERR;
 
     __sighandler_t *ret = sigfuncdata->sigfunc;
     sigfuncdata->sigfunc = handler;
+    sigfuncdata->sigaction_func = NULL;
+    sigfuncdata->sa_flags = 0;
+    memset(&sigfuncdata->sa_mask, 0, sizeof(sigset_t));
 
     return ret;
 }
-

@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <aros/types/sigset_t.h>
 #include <pwd.h>
 
 /* Some private structs */
@@ -50,11 +51,9 @@ struct PosixCIntBase
 
     /* getpass.c */
     char passbuffer[PASS_MAX];
-#if (0)
+
     /* sigprocmask.c */
     sigset_t   sigmask;
-    sigset_t   signals;
-#endif
 
     /* __exec.c */
     BPTR exec_seglist;

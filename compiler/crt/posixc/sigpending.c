@@ -1,10 +1,10 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function sigpending().
 */
 
-#include <aros/debug.h>
+#include <string.h>
 #include <errno.h>
 
 /*****************************************************************************
@@ -19,27 +19,37 @@
         sigset_t *set)
 
 /*  FUNCTION
+        Return the set of signals that are pending for delivery.
 
     INPUTS
+        set - receives the set of pending signals
 
     RESULT
+        0 on success, -1 on error with errno set.
 
     NOTES
-        Not implemented.
+        Since AROS does not deliver asynchronous signals, the pending
+        set is always empty.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        sigprocmask(), sigaction()
 
     INTERNALS
 
 ******************************************************************************/
 {
-    /* TODO: Implement sigpending() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
-    errno = ENOSYS;
-    
-    return -1;
+    if (!set)
+    {
+        errno = EFAULT;
+        return -1;
+    }
+
+    /* No asynchronous signal delivery on AROS, so nothing is pending */
+    memset(set, 0, sizeof(sigset_t));
+
+    return 0;
 } /* sigpending */

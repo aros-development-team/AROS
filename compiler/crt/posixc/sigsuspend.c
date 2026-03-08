@@ -1,10 +1,12 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function sigsuspend().
 */
 
-#include <aros/debug.h>
+#include "__posixc_intbase.h"
+
+#include <string.h>
 #include <errno.h>
 
 /*****************************************************************************
@@ -19,52 +21,56 @@
         const sigset_t *mask)
 
 /*  FUNCTION
-        replace the callers signal mask, and suspend it
-        until it signaled to terminate, or to invoke a
-        signal handler.
-
-        If the signal terminates the process, sigsuspend()
-        doesn't return.
-
-        If the signal is caught, sigsuspend() returns following the
-        signal handler, and the signal mask is restored to
-        the state prior to calling sigsuspend().
-
-        SIGKILL or SIGSTOP cannot be blocked; specifying
-        them in the mask has no effect on the process's signal mask.
+        Replace the callers signal mask temporarily, and suspend the
+        process until a signal is delivered that either terminates it
+        or invokes a signal handler.
 
     INPUTS
+        mask - the temporary signal mask to use while suspended
 
     RESULT
-        always returns -1, normally with the error EINTR.
+        Always returns -1 with errno set to EINTR (successful return
+        after a signal handler) or EFAULT (bad pointer).
 
     NOTES
-        Not implemented.
-
-        Normally used in conjunction with sigprocmask(), to prevent
-        signal delivery during critical code sections. Callers must
-        block the signals with sigprocmask(). On completion, the caller
-        waits for signals by calling sigsuspend() with the return value
-        of sigprocmask()
+        Since AROS does not deliver asynchronous signals, this function
+        sets the temporary mask, then immediately returns EINTR to
+        avoid blocking forever.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        kill(), pause(), sigaction(), stdc/signal(), sigprocmask(),
-        sigwaitinfo(), sigsetops(), sigwait()
+        sigprocmask(), sigaction(), pause()
 
     INTERNALS
-        POSIX.1-2001
 
 ******************************************************************************/
 {
-    /* TODO: Implement sigsuspend() */
-    AROS_FUNCTION_NOT_IMPLEMENTED("posixc");
+    struct PosixCIntBase *PosixCBase =
+        (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    errno = ENOSYS;
+    if (!mask)
+    {
+        errno = EFAULT;
+        return -1;
+    }
 
+    if (PosixCBase)
+    {
+        sigset_t oldmask;
+
+        /* Save current mask, apply temporary mask */
+        memcpy(&oldmask, &PosixCBase->sigmask, sizeof(sigset_t));
+        memcpy(&PosixCBase->sigmask, mask, sizeof(sigset_t));
+
+        /* Restore the original mask */
+        memcpy(&PosixCBase->sigmask, &oldmask, sizeof(sigset_t));
+    }
+
+    /* sigsuspend always returns -1 with EINTR */
+    errno = EINTR;
     return -1;
 
 } /* sigsuspend */
