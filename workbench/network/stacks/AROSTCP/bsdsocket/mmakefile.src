@@ -46,6 +46,7 @@ PROTOS_H= \
 	protos/netinet/tcp_debug_protos.h protos/netinet/tcp_input_protos.h \
 	protos/netinet/tcp_output_protos.h protos/netinet/tcp_subr_protos.h \
 	protos/netinet/tcp_timer_protos.h protos/netinet/tcp_usrreq_protos.h \
+	protos/netinet/tcp_cc_newreno_protos.h protos/netinet/tcp_cc_cubic_protos.h \
 	protos/netinet/udp_usrreq_protos.h
 
 # Protocol inspecific network routines:
@@ -71,6 +72,7 @@ NETINET_C:= \
 	netinet/ip_input netinet/ip_output netinet/raw_ip \
 	netinet/tcp_debug netinet/tcp_input netinet/tcp_output \
 	netinet/tcp_subr netinet/tcp_timer netinet/tcp_usrreq \
+	netinet/tcp_cc_newreno netinet/tcp_cc_cubic \
 	netinet/udp_usrreq
 
 ifeq ($(AROS_TARGET_CPU),x86_64)
@@ -83,6 +85,7 @@ NETINET_H= \
 	netinet/in_pcb.h netinet/in_var.h netinet/icmp_var.h  \
 	netinet/tcpip.h netinet/tcp_debug.h netinet/tcp_fsm.h \
 	netinet/tcp_seq.h netinet/tcp_timer.h netinet/tcp_var.h \
+	netinet/tcp_cc.h \
 	netinet/udp_var.h 
 
 # netinet6 -- IPv6 protocol stack (KAME-derived)

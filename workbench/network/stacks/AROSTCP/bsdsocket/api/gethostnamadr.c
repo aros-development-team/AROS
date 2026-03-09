@@ -83,6 +83,7 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 
 #include <api/gethtbynamadr.h>     /* prototypes (NO MORE BUGS HERE) */
 #include <api/apicalls.h>
+#include <kern/amiga_netdb.h>      /* NDB, LOCK_R_NDB, HostentNode */
 
 #include <stdio.h>
 
@@ -654,8 +655,9 @@ struct hostent *__gethostbyaddr(UBYTE *addr, int len, int type, struct SocketBas
                 bcopy(addr, ptr, len);
                 HS->h_addr_ptrs[0] = ptr;
                 ptr += len;
-            } else
-                bcopy(addr, &HS->h_addr_ptrs[0], len);
+            } else if(HS->h_addr_count > 1) {
+                bcopy(addr, HS->h_addr_ptrs[0], len);
+            }
             HS->h_addr_ptrs[1] = NULL;
             if((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
                 anshost->h_addrtype = type;
@@ -736,6 +738,499 @@ static struct hostent *makehostent(struct SocketBase *libPtr,
     HOSTENT->h_addr_list[i] = NULL;
 
     return HOSTENT;
+}
+
+/*
+ * makehostent_r -- marshal hoststruct (from getanswer) into caller's buffer.
+ * Returns 0 on success, ERANGE if buf too small.
+ */
+static int
+makehostent_r(struct hoststruct *HS, char *ptr,
+              struct hostent *result, char *buf, LONG buflen)
+{
+    int i, data_len, total;
+    long offset;
+
+    /* data_len = aligned size of string/address data in hostbuf */
+    data_len = (caddr_t)ALIGN(ptr) - (caddr_t)&HS->hostbuf;
+
+    /* Total buffer needed: string data + alias ptrs + addr ptrs */
+    total = data_len +
+            HS->host_alias_count * sizeof(char *) +
+            HS->h_addr_count * sizeof(char *);
+
+    if (total > buflen)
+        return ERANGE;
+
+    /* Copy string/address data into buf */
+    bcopy(HS->hostbuf, buf, data_len);
+
+    /* Pointer adjustment: buf base vs HS->hostbuf base */
+    offset = (caddr_t)buf - (caddr_t)&HS->hostbuf;
+
+    result->h_name = HS->host.h_name + offset;
+
+    result->h_aliases = (char **)(buf + data_len);
+    for (i = 0; HS->host_aliases[i]; i++)
+        result->h_aliases[i] = HS->host_aliases[i] + offset;
+    result->h_aliases[i++] = NULL;
+
+    result->h_addr_list = result->h_aliases + i;
+    for (i = 0; HS->h_addr_ptrs[i]; i++)
+        result->h_addr_list[i] = HS->h_addr_ptrs[i] + offset;
+    result->h_addr_list[i] = NULL;
+
+    return 0;
+}
+
+/*
+ * hostent_copyout_r -- copy a fully-formed hostent into caller's buffer.
+ * Works with any struct hostent * whose pointers reference valid data
+ * (e.g. from the NDB HostentNode). Returns 0 on success, ERANGE if
+ * buf is too small.
+ */
+static int
+hostent_copyout_r(const struct hostent *src, struct hostent *result,
+                  char *buf, LONG buflen)
+{
+    char *bp = buf;
+    int naliases, naddrs, i, namelen, total;
+    char *alias_strs[MAXALIASES + 1];
+    char *addr_data[MAXADDRS + 1];
+    char **ptrp;
+
+    /* Count aliases */
+    for (naliases = 0; src->h_aliases && src->h_aliases[naliases]; naliases++)
+        ;
+    /* Count addresses */
+    for (naddrs = 0; src->h_addr_list && src->h_addr_list[naddrs]; naddrs++)
+        ;
+
+    /* Calculate total required space */
+    namelen = strnlen(src->h_name, MAXDNAME) + 1;
+    total = namelen;
+    for (i = 0; i < naliases; i++)
+        total += strnlen(src->h_aliases[i], MAXDNAME) + 1;
+
+    /* Align for address data */
+    total = (int)ALIGN(total);
+    total += naddrs * src->h_length;
+
+    /* Align for pointer arrays */
+    total = (total + sizeof(char *) - 1) & ~(sizeof(char *) - 1);
+    total += (naliases + 1) * sizeof(char *);  /* alias ptrs + NULL */
+    total += (naddrs + 1) * sizeof(char *);    /* addr ptrs + NULL */
+
+    if (total > buflen)
+        return ERANGE;
+
+    /* Copy h_name */
+    result->h_name = bp;
+    memcpy(bp, src->h_name, namelen);
+    bp[namelen - 1] = '\0';
+    bp += namelen;
+
+    /* Copy alias strings */
+    for (i = 0; i < naliases; i++) {
+        int slen = strnlen(src->h_aliases[i], MAXDNAME) + 1;
+        alias_strs[i] = bp;
+        memcpy(bp, src->h_aliases[i], slen);
+        bp[slen - 1] = '\0';
+        bp += slen;
+    }
+
+    /* Align for address data */
+    bp = (char *)ALIGN(bp);
+
+    /* Copy address data */
+    for (i = 0; i < naddrs; i++) {
+        addr_data[i] = bp;
+        memcpy(bp, src->h_addr_list[i], src->h_length);
+        bp += src->h_length;
+    }
+
+    /* Align for pointer arrays */
+    bp = (char *)(((long)bp + sizeof(char *) - 1) & ~(sizeof(char *) - 1));
+
+    /* Write alias pointer array */
+    ptrp = (char **)bp;
+    result->h_aliases = ptrp;
+    for (i = 0; i < naliases; i++)
+        ptrp[i] = alias_strs[i];
+    ptrp[naliases] = NULL;
+    bp += (naliases + 1) * sizeof(char *);
+
+    /* Write address pointer array */
+    ptrp = (char **)bp;
+    result->h_addr_list = ptrp;
+    for (i = 0; i < naddrs; i++)
+        ptrp[i] = addr_data[i];
+    ptrp[naddrs] = NULL;
+
+    result->h_addrtype = src->h_addrtype;
+    result->h_length = src->h_length;
+
+    return 0;
+}
+
+/*
+ * _gethtbyname_r -- search local host database, copy result to caller's buf.
+ * Returns 0 on success, HOST_NOT_FOUND if not found, ERANGE if buf too small.
+ * Must be called without NDB lock held.
+ */
+static int
+_gethtbyname_r(struct SocketBase *libPtr, const char *name,
+               struct hostent *result, char *buf, LONG buflen)
+{
+    struct HostentNode *entNode;
+    int rc = HOST_NOT_FOUND;
+
+    LOCK_R_NDB(NDB);
+    for (entNode = (struct HostentNode *)NDB->ndb_Hosts.mlh_Head;
+         entNode->hn_Node.mln_Succ;
+         entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ) {
+        if (strcasecmp(entNode->hn_Ent.h_name, (char *)name) == 0) {
+            rc = hostent_copyout_r(&entNode->hn_Ent, result, buf, buflen);
+            break;
+        }
+        /* Check aliases */
+        if (entNode->hn_Ent.h_aliases) {
+            char **ap;
+            for (ap = entNode->hn_Ent.h_aliases; *ap; ap++) {
+                if (strcasecmp(*ap, name) == 0) {
+                    rc = hostent_copyout_r(&entNode->hn_Ent, result,
+                                           buf, buflen);
+                    goto done;
+                }
+            }
+        }
+    }
+done:
+    UNLOCK_NDB(NDB);
+    return rc;
+}
+
+/*
+ * _gethtbyaddr_r -- search local host database by address, copy to caller's buf.
+ * Returns 0 on success, HOST_NOT_FOUND if not found, ERANGE if buf too small.
+ */
+static int
+_gethtbyaddr_r(struct SocketBase *libPtr, const char *addr, int len, int type,
+               struct hostent *result, char *buf, LONG buflen)
+{
+    struct HostentNode *entNode;
+    int rc = HOST_NOT_FOUND;
+
+    LOCK_R_NDB(NDB);
+    for (entNode = (struct HostentNode *)NDB->ndb_Hosts.mlh_Head;
+         entNode->hn_Node.mln_Succ;
+         entNode = (struct HostentNode *)entNode->hn_Node.mln_Succ) {
+        if (entNode->hn_Ent.h_addrtype == type &&
+            !bcmp(entNode->hn_Ent.h_addr, addr, len)) {
+            rc = hostent_copyout_r(&entNode->hn_Ent, result, buf, buflen);
+            break;
+        }
+    }
+    UNLOCK_NDB(NDB);
+    return rc;
+}
+
+/*
+ * __gethostbyname_r -- thread-safe gethostbyname.
+ * Returns result on success, NULL on failure.
+ * Sets *h_errnop on DNS errors. Sets errno via writeErrnoValue.
+ */
+struct hostent *
+__gethostbyname_r(const char *name, struct hostent *result,
+                  char *buf, LONG buflen, LONG *h_errnop,
+                  struct SocketBase *libPtr)
+{
+    querybuf *qbuf;
+    int n, rc;
+    char *ptr;
+    struct hoststruct *HS = NULL;
+
+#if defined(__AROS__)
+    D(bug("[AROSTCP](gethostnameadr.c) __gethostbyname_r('%s')\n", name));
+#endif
+
+    if (!name || !result || !buf || buflen <= 0) {
+        writeErrnoValue(libPtr, EINVAL);
+        if (h_errnop) *h_errnop = NETDB_INTERNAL;
+        return NULL;
+    }
+
+    /*
+     * Check if name is a dotted-quad IP address literal.
+     */
+    if (isipaddr(name)) {
+        struct in_addr inaddr;
+        int namelen_ip;
+
+        if (!__inet_aton(name, &inaddr)) {
+            writeErrnoValue(libPtr, EINVAL);
+            if (h_errnop) *h_errnop = HOST_NOT_FOUND;
+            return NULL;
+        }
+
+        namelen_ip = strnlen(name, MAXDNAME) + 1;
+        /* Need: addr data (aligned) + addr_list[2] + aliases[1] + name */
+        n = (int)ALIGN(sizeof(struct in_addr)) +
+            2 * sizeof(char *) +     /* h_addr_list */
+            1 * sizeof(char *) +     /* h_aliases (just NULL) */
+            namelen_ip;
+        if (n > buflen) {
+            writeErrnoValue(libPtr, ERANGE);
+            if (h_errnop) *h_errnop = NETDB_INTERNAL;
+            return NULL;
+        }
+
+        {
+            char *bp = buf;
+            char **addrlist;
+
+            /* Copy address data */
+            memcpy(bp, &inaddr, sizeof(struct in_addr));
+            bp += sizeof(struct in_addr);
+
+            /* Align for pointer arrays */
+            bp = (char *)(((long)bp + sizeof(char *) - 1) &
+                          ~(sizeof(char *) - 1));
+
+            /* Address list */
+            addrlist = (char **)bp;
+            addrlist[0] = buf;       /* points to the in_addr */
+            addrlist[1] = NULL;
+            result->h_addr_list = addrlist;
+            bp += 2 * sizeof(char *);
+
+            /* Empty alias list */
+            result->h_aliases = (char **)bp;
+            *(char **)bp = NULL;
+            bp += sizeof(char *);
+
+            /* Name string */
+            result->h_name = bp;
+            memcpy(bp, name, namelen_ip);
+            bp[namelen_ip - 1] = '\0';
+        }
+
+        result->h_addrtype = AF_INET;
+        result->h_length = sizeof(struct in_addr);
+        if (h_errnop) *h_errnop = 0;
+        return result;
+    }
+
+    /*
+     * Search local database (first if usens != FIRST)
+     */
+    if (usens != 1) {
+        rc = _gethtbyname_r(libPtr, name, result, buf, buflen);
+        if (rc == 0) {
+            if (h_errnop) *h_errnop = 0;
+            return result;
+        }
+        if (rc == ERANGE) {
+            writeErrnoValue(libPtr, ERANGE);
+            if (h_errnop) *h_errnop = NETDB_INTERNAL;
+            return NULL;
+        }
+        if (usens == 0) {
+            if (h_errnop) *h_errnop = HOST_NOT_FOUND;
+            return NULL;
+        }
+    }
+
+    /*
+     * DNS lookup
+     */
+    if ((HS = bsd_malloc(sizeof(querybuf) + sizeof(struct hoststruct),
+                         M_TEMP, M_WAITOK)) == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        if (h_errnop) *h_errnop = NETDB_INTERNAL;
+        return NULL;
+    }
+    qbuf = (querybuf *)(HS + 1);
+
+    n = res_search(libPtr, name, C_IN, T_A, qbuf->buf, sizeof(querybuf));
+    if (n >= 0) {
+        ptr = getanswer(libPtr, qbuf, n, 0, T_A, HS);
+        if (ptr != NULL) {
+            rc = makehostent_r(HS, ptr, result, buf, buflen);
+            if (rc == 0) {
+                result->h_addrtype = HS->host.h_addrtype;
+                result->h_length = HS->host.h_length;
+                bsd_free(HS, M_TEMP);
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            if (rc == ERANGE) {
+                writeErrnoValue(libPtr, ERANGE);
+                if (h_errnop) *h_errnop = NETDB_INTERNAL;
+                bsd_free(HS, M_TEMP);
+                return NULL;
+            }
+        }
+    } else {
+        /* DNS failed — try local DB if usens is FIRST */
+        if (usens != 2) {
+            rc = _gethtbyname_r(libPtr, name, result, buf, buflen);
+            if (rc == 0) {
+                bsd_free(HS, M_TEMP);
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            if (rc == ERANGE) {
+                writeErrnoValue(libPtr, ERANGE);
+                if (h_errnop) *h_errnop = NETDB_INTERNAL;
+                bsd_free(HS, M_TEMP);
+                return NULL;
+            }
+        }
+    }
+
+    /* Not found */
+    if (h_errnop) *h_errnop = h_errno;
+    bsd_free(HS, M_TEMP);
+    return NULL;
+}
+
+/*
+ * __gethostbyaddr_r -- thread-safe gethostbyaddr.
+ * Returns result on success, NULL on failure.
+ */
+struct hostent *
+__gethostbyaddr_r(const char *addr, LONG len, LONG type,
+                  struct hostent *result, char *buf, LONG buflen,
+                  LONG *h_errnop, struct SocketBase *libPtr)
+{
+    querybuf *qb;
+    int n, rc;
+    char *ptr;
+    struct hoststruct *HS = NULL;
+    char *revname;
+
+#if defined(__AROS__)
+    D(bug("[AROSTCP](gethostnameadr.c) __gethostbyaddr_r()\n"));
+#endif
+
+    if (!addr || !result || !buf || buflen <= 0) {
+        writeErrnoValue(libPtr, EINVAL);
+        if (h_errnop) *h_errnop = NETDB_INTERNAL;
+        return NULL;
+    }
+
+    if (type != AF_INET && type != AF_INET6) {
+        if (h_errnop) *h_errnop = HOST_NOT_FOUND;
+        return NULL;
+    }
+
+    /*
+     * Search local database first (if usens != FIRST)
+     */
+    if (usens != 1) {
+        rc = _gethtbyaddr_r(libPtr, addr, len, type, result, buf, buflen);
+        if (rc == 0) {
+            if (h_errnop) *h_errnop = 0;
+            return result;
+        }
+        if (rc == ERANGE) {
+            writeErrnoValue(libPtr, ERANGE);
+            if (h_errnop) *h_errnop = NETDB_INTERNAL;
+            return NULL;
+        }
+        if (usens == 0) {
+            if (h_errnop) *h_errnop = HOST_NOT_FOUND;
+            return NULL;
+        }
+    }
+
+    /*
+     * DNS reverse lookup
+     */
+    if ((HS = bsd_malloc(sizeof(querybuf) + MAXDNAME + 1 +
+                         sizeof(struct hoststruct), M_TEMP, M_WAITOK))
+        == NULL) {
+        writeErrnoValue(libPtr, ENOMEM);
+        if (h_errnop) *h_errnop = NETDB_INTERNAL;
+        return NULL;
+    }
+    qb = (querybuf *)(HS + 1);
+    revname = (caddr_t)(qb + 1);
+
+    if (type == AF_INET6 && len == 16) {
+        /* Build ip6.arpa reverse name */
+        char *p = revname;
+        int i;
+        for (i = 15; i >= 0; i--) {
+            *p++ = "0123456789abcdef"[((unsigned char *)addr)[i] & 0x0f];
+            *p++ = '.';
+            *p++ = "0123456789abcdef"[(((unsigned char *)addr)[i] >> 4) & 0x0f];
+            *p++ = '.';
+        }
+        memcpy(p, "ip6.arpa", 9);
+    } else {
+        (void)snprintf(revname, MAXDNAME + 1, "%lu.%lu.%lu.%lu.in-addr.arpa",
+                       ((unsigned long)((unsigned char *)addr)[3] & 0xff),
+                       ((unsigned long)((unsigned char *)addr)[2] & 0xff),
+                       ((unsigned long)((unsigned char *)addr)[1] & 0xff),
+                       ((unsigned long)((unsigned char *)addr)[0] & 0xff));
+    }
+
+    n = res_query(libPtr, revname, C_IN, T_PTR, (char *)qb, sizeof(querybuf));
+    if (n >= 0) {
+        ptr = getanswer(libPtr, qb, n, 1, T_PTR, HS);
+        if (ptr != NULL) {
+            /* For PTR lookups, getanswer may not set address data.
+             * Inject the queried address into the hoststruct. */
+            if (HS->h_addr_count == 1) {
+                HS->h_addr_count++;
+                bcopy(addr, ptr, len);
+                HS->h_addr_ptrs[0] = ptr;
+                ptr += len;
+            } else if (HS->h_addr_count > 1) {
+                /* Address slot(s) already exist — overwrite first */
+                bcopy(addr, HS->h_addr_ptrs[0], len);
+            }
+            HS->h_addr_ptrs[1] = NULL;
+
+            rc = makehostent_r(HS, ptr, result, buf, buflen);
+            if (rc == 0) {
+                result->h_addrtype = type;
+                result->h_length = len;
+                bsd_free(HS, M_TEMP);
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            if (rc == ERANGE) {
+                writeErrnoValue(libPtr, ERANGE);
+                if (h_errnop) *h_errnop = NETDB_INTERNAL;
+                bsd_free(HS, M_TEMP);
+                return NULL;
+            }
+        }
+    } else {
+        /* DNS failed — try local DB if usens is FIRST */
+        if (usens != 2) {
+            rc = _gethtbyaddr_r(libPtr, addr, len, type, result, buf, buflen);
+            if (rc == 0) {
+                bsd_free(HS, M_TEMP);
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            if (rc == ERANGE) {
+                writeErrnoValue(libPtr, ERANGE);
+                if (h_errnop) *h_errnop = NETDB_INTERNAL;
+                bsd_free(HS, M_TEMP);
+                return NULL;
+            }
+        }
+    }
+
+    /* Not found */
+    if (h_errnop) *h_errnop = h_errno;
+    bsd_free(HS, M_TEMP);
+    return NULL;
 }
 
 /*

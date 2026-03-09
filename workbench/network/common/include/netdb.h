@@ -118,6 +118,9 @@ static inline int *__get_h_errno_ptr(struct Library *SocketBase)
 #define	NO_DATA		4 /* Valid name, no data record of requested type */
 #define	NO_ADDRESS	NO_DATA		/* no address, look for MX record */
 
+#define	NETDB_INTERNAL	-1 /* see errno */
+#define	NETDB_SUCCESS	0  /* no problem */
+
 struct addrinfo {
   long		ai_flags;		/* AI_PASSIVE, AI_CANONNAME */
   long		ai_family;		/* PF_xxx */

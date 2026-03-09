@@ -31,5 +31,15 @@ struct hostent * _gethtbyname(struct SocketBase * libPtr,
 struct hostent * _gethtbyaddr(struct SocketBase * libPtr,
 			      const char * addr, int len, int type);
 
+/* Thread-safe resolver variants */
+struct hostent *__gethostbyname_r(const char *name,
+			struct hostent *result, char *buf,
+			LONG buflen, LONG *h_errnop,
+			struct SocketBase *libPtr);
+struct hostent *__gethostbyaddr_r(const char *addr, LONG len, LONG type,
+			struct hostent *result, char *buf,
+			LONG buflen, LONG *h_errnop,
+			struct SocketBase *libPtr);
+
 #endif /* API_GETHTBYNAMADR_H */
 

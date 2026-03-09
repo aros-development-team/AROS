@@ -827,6 +827,32 @@
 #define inet_aton(arg1, arg2) \
     __inet_aton_WB(SocketBase, (arg1), (arg2))
 
+#define __gethostbyname_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
+        AROS_LC5(struct hostent *, RS_gethostbyname_r, \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(struct hostent *,(__arg2),A1), \
+                  AROS_LCA(char *,(__arg3),A2), \
+                  AROS_LCA(LONG,(__arg4),D0), \
+                  AROS_LCA(LONG *,(__arg5),A3), \
+        struct Library *, (__SocketBase), 123, BSDSocket)
+
+#define gethostbyname_r(arg1, arg2, arg3, arg4, arg5) \
+    __gethostbyname_r_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5))
+
+#define __gethostbyaddr_r_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5, __arg6, __arg7) \
+        AROS_LC7(struct hostent *, RS_gethostbyaddr_r, \
+                  AROS_LCA(const char *,(__arg1),A0), \
+                  AROS_LCA(LONG,(__arg2),D0), \
+                  AROS_LCA(LONG,(__arg3),D1), \
+                  AROS_LCA(struct hostent *,(__arg4),A1), \
+                  AROS_LCA(char *,(__arg5),A2), \
+                  AROS_LCA(LONG,(__arg6),D2), \
+                  AROS_LCA(LONG *,(__arg7),A3), \
+        struct Library *, (__SocketBase), 124, BSDSocket)
+
+#define gethostbyaddr_r(arg1, arg2, arg3, arg4, arg5, arg6, arg7) \
+    __gethostbyaddr_r_WB(SocketBase, (arg1), (arg2), (arg3), (arg4), (arg5), (arg6), (arg7))
+
 #endif /* __CONFIG_ROADSHOW__ */
 
 #ifdef PTHREAD_H

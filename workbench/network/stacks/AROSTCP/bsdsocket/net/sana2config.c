@@ -53,6 +53,9 @@ static const char template[] = SSC_TEMPLATE;
 #define CONFIGLINELEN 1024
 #ifndef __mc68000__
 #define SANA2_LARGEREQALLOCS
+#define SANA2_DEF_WRITENO 64
+#else
+#define SANA2_DEF_WRITENO 16
 #endif
 
 /*
@@ -161,7 +164,7 @@ static const struct wire_defaults {
 } wire_defaults[] = {
     {
         S2WireType_Ethernet,
-        ETHERTYPE_IP, 16, 16,
+        ETHERTYPE_IP, 16, SANA2_DEF_WRITENO,
         ETHERTYPE_ARP, 4, 1,
         ETHERTYPE_IPV6, 16,
         IFF_BROADCAST | IFF_SIMPLEX,
@@ -197,7 +200,7 @@ static const struct wire_defaults {
     /* Use ethernet as default */
     {
         0,
-        ETHERTYPE_IP, 16, 16,
+        ETHERTYPE_IP, 16, SANA2_DEF_WRITENO,
         ETHERTYPE_ARP, 4, 1,
         ETHERTYPE_IPV6, 16,
         IFF_BROADCAST | IFF_SIMPLEX,

@@ -68,6 +68,7 @@ struct	tcpiphdr tcp_saveti;
 
 #include <conf.h>
 #include "tcp_compat.h"
+#include <netinet/tcp_cc.h>
 
 int	tcprexmtthresh = 3;
 #if defined(__AROS__)
@@ -1348,13 +1349,8 @@ close:
                     tp->t_dupacks = 0;
                 else if(++tp->t_dupacks == tcprexmtthresh) {
                     tcp_seq onxt = tp->snd_nxt;
-                    u_int win =
-                        MIN(tp->snd_wnd, tp->snd_cwnd) / 2 /
-                        tp->t_maxseg;
 
-                    if(win < 2)
-                        win = 2;
-                    tp->snd_ssthresh = win * tp->t_maxseg;
+                    CC_ON_LOSS(tp);
                     tp->t_timer[TCPT_REXMT] = 0;
                     tp->t_rtt = 0;
                     tp->snd_nxt = ti->ti_ack;
@@ -1507,33 +1503,20 @@ process_ACK:
              * Check that we are not already in recovery.
              */
             if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
-                u_int ecn_win =
-                    MIN(tp->snd_wnd, tp->snd_cwnd) / 2 /
-                    tp->t_maxseg;
-                if(ecn_win < 2)
-                    ecn_win = 2;
-                tp->snd_ssthresh = ecn_win * tp->t_maxseg;
-                tp->snd_cwnd = tp->snd_ssthresh;
+                CC_ON_ECN(tp);
             }
             tp->t_flagsext |= TF_ECN_SND_CWR;
         }
 
         /*
          * When new data is acked, open the congestion window.
-         * If the window gives us less than ssthresh packets
-         * in flight, open exponentially (maxseg per packet).
-         * Otherwise open linearly: maxseg per window
-         * (maxseg^2 / cwnd per packet).
+         * Delegate to the pluggable congestion control algorithm
+         * which handles both slow start and congestion avoidance.
          *
-         * Do NOT grow cwnd during fast recovery (NewReno).
+         * Do NOT grow cwnd during fast recovery (NewReno/CUBIC).
          */
         if(!(tp->t_flagsext & TF_IN_FASTRECOV)) {
-            register u_int cw = tp->snd_cwnd;
-            register u_int incr = tp->t_maxseg;
-
-            if(cw > tp->snd_ssthresh)
-                incr = incr * incr / cw;
-            tp->snd_cwnd = MIN(cw + incr, TCP_MAXWIN << tp->snd_scale);
+            CC_ON_ACK(tp, acked);
         }
         if(acked > so->so_snd.sb_cc) {
             tp->snd_wnd -= so->so_snd.sb_cc;

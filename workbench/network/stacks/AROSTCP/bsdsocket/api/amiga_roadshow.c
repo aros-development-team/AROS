@@ -54,6 +54,12 @@ extern struct ifnet *ifnet;
 
 extern struct hostent *__gethostbyname(const char *name, struct SocketBase *);
 extern struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *);
+extern struct hostent *__gethostbyname_r(const char *name,
+    struct hostent *result, char *buf, LONG buflen, LONG *h_errnop,
+    struct SocketBase *libPtr);
+extern struct hostent *__gethostbyaddr_r(const char *addr, LONG len, LONG type,
+    struct hostent *result, char *buf, LONG buflen, LONG *h_errnop,
+    struct SocketBase *libPtr);
 
 /* Internal implementation functions */
 extern const char *__inet_ntop(int af, const void *src, char *dst,
@@ -1489,10 +1495,7 @@ AROS_LH5(struct hostent *, RS_gethostbyname_r,
          struct SocketBase *, libPtr, 123, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    if (h_errnop)
-        *h_errnop = -1;
-    return NULL;
+    return __gethostbyname_r(name, result, buf, buflen, h_errnop, libPtr);
     AROS_LIBFUNC_EXIT
 }
 
@@ -1510,10 +1513,8 @@ AROS_LH7(struct hostent *, RS_gethostbyaddr_r,
          struct SocketBase *, libPtr, 124, UL)
 {
     AROS_LIBFUNC_INIT
-    writeErrnoValue(libPtr, ENOSYS);
-    if (h_errnop)
-        *h_errnop = -1;
-    return NULL;
+    return __gethostbyaddr_r(addr, len, type, result, buf, buflen,
+                             h_errnop, libPtr);
     AROS_LIBFUNC_EXIT
 }
 

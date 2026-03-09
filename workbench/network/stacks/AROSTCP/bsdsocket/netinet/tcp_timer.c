@@ -64,6 +64,7 @@
 #include <netinet/tcpip.h>
 
 #include <conf.h>
+#include <netinet/tcp_cc.h>
 
 int	tcp_keepidle = TCPTV_KEEP_IDLE;
 int	tcp_keepintvl = TCPTV_KEEPINTVL;
@@ -264,11 +265,7 @@ int timer;
          * to go below this.)
          */
         {
-            u_int win = MIN(tp->snd_wnd, tp->snd_cwnd) / 2 / tp->t_maxseg;
-            if(win < 2)
-                win = 2;
-            tp->snd_cwnd = tp->t_maxseg;
-            tp->snd_ssthresh = win * tp->t_maxseg;
+            CC_ON_RTO(tp);
             tp->t_dupacks = 0;
             /*
              * Exit fast recovery on RTO (NewReno/SACK).

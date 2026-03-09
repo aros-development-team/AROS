@@ -67,6 +67,7 @@
 #endif
 
 #include "tcp_compat.h"
+#include <netinet/tcp_cc.h>
 
 #include <kern/kern_subr_protos.h>
 
@@ -101,6 +102,7 @@ tcp_init()
 
     tcp_iss = 1;		/* wrong */
     tcp_ccgen = 1;
+    tcp_cc_init();
     tcp_cleartaocache();
     LIST_INIT(&tcb);
     tcbinfo.listhead = &tcb;
@@ -279,6 +281,9 @@ struct inpcb *inp;
                   TCPTV_MIN, TCPTV_REXMTMAX);
     tp->snd_cwnd = TCP_MAXWIN << TCP_MAX_WINSHIFT;
     tp->snd_ssthresh = TCP_MAXWIN << TCP_MAX_WINSHIFT;
+    /* Initialize congestion control algorithm */
+    tp->t_cc_algo = tcp_cc_default;
+    CC_INIT(tp);
     inp->inp_ip.ip_ttl = ip_defttl;
     inp->inp_ppcb = (caddr_t)tp;
     return (tp);
@@ -482,8 +487,9 @@ int _errno;
 {
     struct tcpcb *tp = intotcpcb(inp);
 
-    if(tp)
-        tp->snd_cwnd = tp->t_maxseg;
+    if(tp) {
+        CC_ON_RTO(tp);
+    }
 }
 
 /*

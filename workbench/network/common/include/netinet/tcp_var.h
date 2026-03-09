@@ -52,6 +52,29 @@ struct sackblk {
 };
 
 /*
+ * Congestion control algorithm identifiers.
+ */
+#define TCP_CC_NEWRENO  0
+#define TCP_CC_CUBIC    1
+
+/*
+ * CUBIC congestion control state (RFC 8312).
+ * Embedded in struct tcpcb for each connection using CUBIC.
+ */
+struct cubic_state {
+	u_long  wmax;           /* W_max: cwnd at last loss event (bytes) */
+	u_long  epoch_start;    /* tcp_now at start of current epoch */
+	u_long  origin_point;   /* W_max at epoch start for cubic fn */
+	u_long  k;              /* time to reach W_max (ticks) */
+	u_long  tcp_cwnd;       /* last computed CUBIC target cwnd */
+	u_long  w_est;          /* TCP-friendly estimated cwnd (bytes) */
+	u_long  ack_cnt;        /* bytes ACKed since last cwnd increase */
+	u_short flags;          /* cubic-specific flags */
+#define CUBIC_FLAG_RESET    0x0001
+#define CUBIC_FLAG_FRIENDLY 0x0002
+};
+
+/*
  * Tcp control block, one per tcp; fields:
  */
 struct tcpcb {
@@ -163,6 +186,10 @@ struct tcpcb {
 	tcp_cc	cc_send;		/* send connection count */
 	tcp_cc	cc_recv;		/* receive connection count */
 	u_long	t_duration;		/* connection duration */
+
+/* Congestion control algorithm state */
+	u_char	t_cc_algo;		/* CC algorithm (TCP_CC_NEWRENO/CUBIC) */
+	struct	cubic_state t_cubic;	/* CUBIC algorithm state (RFC 8312) */
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */

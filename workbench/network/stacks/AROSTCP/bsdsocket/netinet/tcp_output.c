@@ -66,6 +66,7 @@
 #endif
 
 #include <conf.h>
+#include <netinet/tcp_cc.h>
 
 #ifdef notyet
 extern struct mbuf *m_copypack();
@@ -102,7 +103,7 @@ register struct tcpcb *tp;
      * to send, then transmit; otherwise, investigate further.
      */
     idle = (tp->snd_max == tp->snd_una);
-    if(idle && tp->t_idle >= tp->t_rxtcur)
+    if(idle && tp->t_idle >= tp->t_rxtcur) {
         /*
          * We have been idle for "a while" and no acks are
          * expected to clock out any data we send --
@@ -111,6 +112,8 @@ register struct tcpcb *tp;
          */
         tp->snd_cwnd = MIN(10 * tp->t_maxseg,
                            MAX(2 * tp->t_maxseg, 14600));
+        CC_AFTER_IDLE(tp);
+    }
 again:
     sendalot = 0;
     off = tp->snd_nxt - tp->snd_una;
@@ -794,10 +797,23 @@ skip_sack:
 #endif
     }
     if(error) {
-        D(bug("[AROSTCP:TCP] %s: ip_output error=%d\n", __func__, error));
+        D(bug("[AROSTCP:TCP] %s: ip_output error=%d len=%ld\n", __func__, error, len));
 out:
         if(error == ENOBUFS) {
-            tcp_quench(tp->t_inpcb, 0);
+            if(len == 0) {
+                /*
+                 * ACK-only packet dropped due to output queue
+                 * exhaustion.  Schedule a retry via the delayed
+                 * ACK timer (200ms) to give the SANA2 device
+                 * time to drain its in-flight requests.
+                 * Do NOT call tcp_quench — cwnd reduction is
+                 * pointless for a receive-side ACK.
+                 */
+                tp->t_flags &= ~TF_ACKNOW;
+                tp->t_flags |= TF_DELACK;
+            } else {
+                tcp_quench(tp->t_inpcb, 0);
+            }
             return (0);
         }
         if((error == EHOSTUNREACH || error == ENETDOWN)
