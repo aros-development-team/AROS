@@ -9709,9 +9709,7 @@ case "$aros_toolchain" in
         toolchain_size_opt_lvl="-Os"
         aros_cxx_ldflags="-L$""(CROSSTOOLSDIR)/lib -stdlib=libc++ -static-libstdc++"
         if test "$aros_host_arch" = "darwin" ; then
-            # Darwin lacks a GNU-compatible external assembler, so use clang's
-            # integrated assembler instead of -no-integrated-as.
-            aros_target_cflags=""
+                                    aros_target_cflags=""
             aros_config_aflags="$""(WARN_ALL) -x assembler-with-cpp -c"
         else
             aros_target_cflags="$""(CFLAGS_NO_INTEGRATED_AS)"
@@ -10846,8 +10844,8 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld"
                 aros_kernel_as="$toolchain_as"
-                aros_kernel_ranlib="$toolchain_ranlib"
-                aros_kernel_nm="$toolchain_nm"
+                aros_kernel_ranlib="ranlib"
+                aros_kernel_nm="nm"
                 aros_kernel_strip="strip"
                 kernel_tool_prefix="i686-apple-darwin10-"
                 llvm_target_cpu="X86"
@@ -10871,8 +10869,8 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch ppc"
                 aros_kernel_as="$toolchain_as -arch ppc"
-                aros_kernel_ranlib="$toolchain_ranlib -arch ppc"
-                aros_kernel_nm="$toolchain_nm -arch ppc"
+                aros_kernel_ranlib="ranlib -arch ppc"
+                aros_kernel_nm="nm -arch ppc"
                 aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 llvm_target_cpu="PowerPC"
@@ -10889,7 +10887,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="$toolchain_ld -arch arm"
-                aros_kernel_ranlib="$toolchain_ranlib -arch arm"
+                aros_kernel_ranlib="ranlib -arch arm"
                 kernel_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
                 llvm_target_cpu="Arm"
