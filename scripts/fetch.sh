@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2004-2025, The AROS Development Team. All rights reserved.
+# Copyright @ 2004-2026, The AROS Development Team. All rights reserved.
 # $Id$
 
 SPOOFED_USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -401,7 +401,7 @@ do_patch()
     local patch=$(echo "$patch_spec": | cut -d: -f1)
     local subdir=$(echo "$patch_spec": | cut -d: -f2)
     local patch_opt=$(echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /g")
-    local patch_cmd="patch -Z $patch_opt < $BASE/$patch"
+    local patch_cmd="patch -Z -E $patch_opt < $BASE/$patch"
         
     cd "${subdir:-.}"  2> /dev/null;
     
