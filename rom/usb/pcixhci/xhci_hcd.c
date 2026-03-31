@@ -2769,10 +2769,12 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     ULONG status = AROS_LE2LONG(hcopr->usbsts);
-    xhciDumpStatus(status);
+    volatile struct xhci_ir *xhciir =
+        (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
+    ULONG iman = AROS_LE2LONG(xhciir->iman), tmp;
 
-    /* First acknowledge the interrupt ..*/
-    hcopr->usbsts = AROS_LONG2LE(status);
+    xhciDumpIR(xhciir);
+    xhciDumpStatus(status);
 
     /* Check if anything interesting happened.... */
     if(status & XHCIF_USBSTS_HCH) {
@@ -2796,15 +2798,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                             DEBUGCOLOR_SET "Port Change Detect" DEBUGCOLOR_RESET" \n");
     }
 
-    volatile struct xhci_ir *xhciir =
-        (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
-    xhciDumpIR(xhciir);
-
-    ULONG iman = AROS_LE2LONG(xhciir->iman), tmp;
-    /* Clear IP (W1C) while keeping IE set */
-    xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE | XHCIF_IR_IMAN_IP);
-    tmp = AROS_LE2LONG(xhciir->iman);
-
     /*
      * Some controllers can signal via USBSTS even when IMAN.IP sampling is
      * unreliable; do not skip event processing just because IP wasn't seen.
@@ -2818,6 +2811,12 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         ULONG startidx = idx;
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
+
+        /* First acknowledge the interrupt ..*/
+        hcopr->usbsts = AROS_LONG2LE(status);
+        /* Clear IP (W1C) while keeping IE set */
+        xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE | XHCIF_IR_IMAN_IP);
+        tmp = AROS_LE2LONG(xhciir->iman);
 
         pciusbXHCIDebugTRBV("xHCI",
                             DEBUGCOLOR_SET "Processing events..." DEBUGCOLOR_RESET" \n");
