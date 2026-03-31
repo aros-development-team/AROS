@@ -568,6 +568,63 @@ static UINT8 *find_pci(struct ACPICABase *ACPICABase, ACPI_PCI_ID *PciId)
     return NULL;
 }
 
+typedef union _pcicfg
+{
+    UINT32  ul;
+    UINT16  uw[2];
+    UINT8   ub[4];
+} pcicfg;
+
+#define CFGADD(bus,dev,func,reg)    \
+    ( 0x80000000 | ((bus)<<16) |    \
+    ((dev)<<11) | ((func)<<8) | ((reg)&~3))
+
+static UINT32 ReadConfigLong(UINT8 bus, UINT8 dev, UINT8 sub, UINT16 reg)
+{
+    UINT32 temp;
+
+    Disable();
+    outl(CFGADD(bus, dev, sub, reg),0x0cf8);
+    temp=inl(0x0cfc);
+    Enable();
+
+    return temp;
+}
+
+static UWORD ReadConfigByte(UINT8 bus, UINT8 dev, UINT8 sub, UINT16 reg)
+{
+    pcicfg temp;
+
+    temp.ul = ReadConfigLong(bus, dev, sub, (reg & ~3));
+    return temp.ub[reg & 3];
+}
+
+static void WriteConfigLong(UINT8 bus, UINT8 dev, UINT8 sub, UINT16 reg, UINT32 val)
+{
+    Disable();
+
+    outl(CFGADD(bus, dev, sub, reg), 0x0cf8);
+    outl(val, 0x0cfc);
+
+    Enable();
+}
+
+static void WriteConfigByte(UINT8 bus, UINT8 dev, UINT8 sub, UINT16 reg, UINT8 val)
+{
+    UINT32 temp;
+    const int shift = (reg & 3) * 8;
+
+    // Read whole Long from PCI config space.
+    temp = ReadConfigLong(bus, dev, sub, reg & ~3);
+
+    // Modify proper part of it according to request.
+    temp = (temp & ~(0xff << shift)) | ((ULONG)val << shift);
+
+    // And put whole Long again into PCI config space.
+    WriteConfigLong(bus, dev, sub, reg & ~3, temp);
+}
+
+
 ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT64 *Value, UINT32 Width)
 {
     struct ACPICABase *ACPICABase = (struct ACPICABase *)__aros_getbase_ACPICABase();
@@ -582,6 +639,19 @@ ACPI_STATUS AcpiOsReadPciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UINT
         case 16: *Value = *(volatile UINT16 *)(ecam + offset); break;
         case 32: *Value = *(volatile UINT32 *)(ecam + offset); break;
         case 64: *Value = *(volatile UINT64 *)(ecam + offset); break;
+        default: *Value = 0; break;
+        }
+
+        return AE_OK;
+    }
+
+    /* Fallback */
+    if (PciId->Segment == 0) {
+        switch (Width) {
+        case  8: *Value = ReadConfigByte(PciId->Bus, PciId->Device, PciId->Function, Register); break;
+        case 32: *Value = ReadConfigLong(PciId->Bus, PciId->Device, PciId->Function, Register); break;
+        case 16:
+        case 64: *Value = 0; return AE_NOT_IMPLEMENTED;
         default: *Value = 0; break;
         }
 
@@ -605,6 +675,19 @@ ACPI_STATUS AcpiOsWritePciConfiguration(ACPI_PCI_ID *PciId, UINT32 Register, UIN
         case 16: *(volatile UINT16 *)(ecam + offset) = Value & 0xffff; break;
         case 32: *(volatile UINT32 *)(ecam + offset) = Value & 0xffffffff; break;
         case 64: *(volatile UINT64 *)(ecam + offset) = Value; break;
+        default: break;
+        }
+
+        return AE_OK;
+    }
+
+    /* Fallback */
+    if (PciId->Segment == 0) {
+        switch (Width) {
+        case  8: WriteConfigByte(PciId->Bus, PciId->Device, PciId->Function, Register, Value); break;
+        case 32: WriteConfigLong(PciId->Bus, PciId->Device, PciId->Function, Register, Value); break;
+        case 16:
+        case 64: return AE_NOT_IMPLEMENTED;
         default: break;
         }
 
