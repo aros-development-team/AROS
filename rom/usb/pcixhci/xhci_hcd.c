@@ -2815,6 +2815,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_ERSp);
         volatile struct xhci_trb *etrb;
         ULONG idx   = ering->next;
+        ULONG startidx = idx;
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
 
@@ -3248,19 +3249,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             }
             ering->next = idx;
             etrb = &ering->ring[idx];
+        }
 
-            /* Update the hardware dequeue pointer to the next TRB. */
-            {
-                volatile struct xhci_ir *ir =
-                    (volatile struct xhci_ir *)xhcic->xhc_XHCIIntR;
-                UQUAD next_dma;
+        /* Update the hardware dequeue pointer to the next TRB. */
+        if (idx != startidx) { /* Don't write same value as per xHCI 2.0 spec */
+            volatile struct xhci_ir *ir = (volatile struct xhci_ir *)xhcic->xhc_XHCIIntR;
+            UQUAD next_dma;
 
-                next_dma  = (UQUAD)(IPTR)xhcic->xhc_DMAERS;
-                next_dma += (UQUAD)ering->next * (UQUAD)sizeof(struct xhci_trb);
+            next_dma  = (UQUAD)(IPTR)xhcic->xhc_DMAERS;
+            next_dma += (UQUAD)(idx) * (UQUAD)sizeof(struct xhci_trb);
 
-                xhciSetPointer(hc, ir->erdp,
-                               (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
-            }
+            xhciSetPointer(hc, ir->erdp, (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
         }
 
         if(maxwork == 0) {
