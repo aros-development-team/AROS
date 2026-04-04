@@ -1,7 +1,7 @@
 #ifndef _SDCARD_BUS_H
 #define _SDCARD_BUS_H
 /*
-    Copyright © 2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,11 @@
 #include <exec/semaphores.h>
 #include <exec/ports.h>
 #include <exec/io.h>
+
+#include <aros/config.h>
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
 
 #define FNAME_SDCBUS(x)                 SDCARD__SDBus__ ## x
 
@@ -73,6 +78,10 @@ struct sdcard_Bus
 
     /* Bus Instance Private/Internal */
     IPTR                                sdcb_Private;
+
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t                          sdcb_Lock;       /* SMP: protects BusFlags, listeners, BusStatus */
+#endif
 };
 
 /* Bus Flags .. */

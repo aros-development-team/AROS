@@ -90,14 +90,19 @@ static int FNAME_SDC(Scan)(LIBBASETYPEPTR LIBBASE)
 
             sprintf(sdcBusTaskName, "SDCard bus:%02u Subsystem", busCurrent->sdcb_BusNum);
 
-            NewCreateTask(
+            LIBBASE->sdcard_PendingBusTasks++;
+
+            if (NewCreateTask(
                 TASKTAG_PC         , FNAME_SDCBUS(BusTask),
                 TASKTAG_NAME       , sdcBusTaskName,
                 TASKTAG_STACKSIZE  , SDCARD_BUSTASKSTACK,
                 TASKTAG_PRI        , SDCARD_BUSTASKPRI,
                 TASKTAG_TASKMSGPORT, &busCurrent->sdcb_MsgPort,
                 TASKTAG_ARG1       , busCurrent,
-                TAG_DONE);
+                TAG_DONE) == NULL)
+            {
+                LIBBASE->sdcard_PendingBusTasks--;
+            }
         }
     }
 

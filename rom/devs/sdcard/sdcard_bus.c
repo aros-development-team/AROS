@@ -55,17 +55,14 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
 
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
-    if (sdcUnit->sdcu_Flags & AF_Card_MMC)
-    {
-        FNAME_SDCUNIT(MMCChangeFrequency)(sdcUnit);
-    }
-    else
-    {
-        FNAME_SDCUNIT(SDSCChangeFrequency)(sdcUnit);
-    }
-
-    sdcard_Udelay(1000);
-
+    /*
+     * Send CMD7 (SELECT_CARD) BEFORE capability detection.
+     * ACMD51 (SEND_SCR) and CMD6 (SWITCH_FUNC) are data transfer commands
+     * that require the card to be in Transfer state per the SD spec.
+     * Issuing them before CMD7 causes data transfer errors on some SDHCI
+     * controllers, which can leave the controller in a bad state and break
+     * subsequent reads (including partition table scanning).
+     */
     if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
     {
         if (FNAME_SDCUNIT(WaitStatus)(10000, sdcUnit) == -1)
@@ -75,6 +72,18 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
 
         D(bug("[SDCard%02ld] %s: Selected card with RCA %d [select response %08x]\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcUnit->sdcu_CardRCA, sdcStartTags[3].ti_Data));
         D(bug("[SDCard%02ld] %s: Card is now operating in Transfer Mode\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+        /* Now that card is in transfer state, detect capabilities */
+        if (sdcUnit->sdcu_Flags & AF_Card_MMC)
+        {
+            FNAME_SDCUNIT(MMCChangeFrequency)(sdcUnit);
+        }
+        else
+        {
+            FNAME_SDCUNIT(SDSCChangeFrequency)(sdcUnit);
+        }
+
+        sdcard_Udelay(1000);
 
         if (!(sdcUnit->sdcu_Flags & AF_Card_HighCapacity))
         {
@@ -111,6 +120,42 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
             else
                 FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
         }
+
+        /* Enable 4-bit bus width if supported by the card */
+        if (sdcUnit->sdcu_Flags & AF_Card_4bitData)
+        {
+            UBYTE sdcHostCtrl;
+
+            D(bug("[SDCard%02ld] %s: Switching to 4-bit bus width\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+
+            /* Send ACMD6 (SET_BUS_WIDTH) with arg=2 for 4-bit mode */
+            sdcStartTags[0].ti_Data = MMC_CMD_APP_CMD;
+            sdcStartTags[1].ti_Data = sdcUnit->sdcu_CardRCA << 16;
+            sdcStartTags[2].ti_Data = MMC_RSP_R1;
+            sdcStartTags[3].ti_Data = 0;
+            sdcStartTags[4].ti_Tag = TAG_DONE;
+            if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
+                (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+            {
+                sdcStartTags[0].ti_Data = SD_CMD_APP_SET_BUS_WIDTH;
+                sdcStartTags[1].ti_Data = 2; /* 4-bit mode */
+                sdcStartTags[2].ti_Data = MMC_RSP_R1;
+                sdcStartTags[3].ti_Data = 0;
+                if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
+                    (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+                {
+                    /* Set 4-bit mode in SDHCI HOST_CONTROL register */
+                    sdcHostCtrl = sdcUnit->sdcu_Bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, sdcUnit->sdcu_Bus);
+                    sdcHostCtrl |= SDHCI_HCTRL_4BITBUS;
+                    sdcUnit->sdcu_Bus->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcHostCtrl, sdcUnit->sdcu_Bus);
+                    D(bug("[SDCard%02ld] %s: 4-bit bus width enabled\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                }
+                else
+                {
+                    D(bug("[SDCard%02ld] %s: Failed to set 4-bit bus width\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                }
+            }
+        }
     }
 
     D(bug("[SDCard%02ld] %s: Done.\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
@@ -129,7 +174,7 @@ ULONG FNAME_SDCUNIT(WaitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
         {TAG_DONE,               0}
     };
 
-    UBYTE retryreq = 5;
+    ULONG retryreq = 5;
 
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
@@ -143,7 +188,7 @@ ULONG FNAME_SDCUNIT(WaitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
                 bug("[SDCard%02ld] %s: Status [Error = %08x]\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStatusTags[3].ti_Data);
                 return -1;
             }
-        } else if (--retryreq < 0)
+        } else if (--retryreq == 0)
                 return -1;
 
         sdcard_Udelay(1000);
@@ -343,8 +388,8 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                                 case 0:
                                 {
                                     D(bug("[SDSC Card]\n"));
-                                    pp[DE_SIZEBLOCK + 4] = 1 << FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 80, 4);
-                                    pp[DE_SECSPERBLOCK + 4] = pp[DE_SIZEBLOCK + 4] >> 9;
+                                    pp[DE_SIZEBLOCK + 4] = (1 << FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 80, 4)) >> 2;
+                                    pp[DE_SECSPERBLOCK + 4] = pp[DE_SIZEBLOCK + 4] >> 7;
                                     pp[DE_HIGHCYL + 4] = ((1 + FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 62, 12)) << (FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 47, 3) + 2));
                                     break;
                                 }
@@ -353,10 +398,8 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                                     D(bug("[SDHC/XC Card]\n"));
 
                                     pp[DE_SECSPERBLOCK + 4] = 2;
-                                    pp[DE_SIZEBLOCK + 4] = 2 << (10 - 1);
+                                    pp[DE_SIZEBLOCK + 4] = (2 << (10 - 1)) >> 2;
                                     pp[DE_HIGHCYL + 4] = ((1 + FNAME_SDCBUS(Rsp136Unpack)(sdcRsp136, 48, 22)) * (2 << (9 - 1)));
-
-                                    sdcUnit->sdcu_Flags         |= AF_Card_MMC;
 
                                     break;
                                 }
@@ -368,7 +411,10 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                             sdcUnit->sdcu_Cylinders     = pp[DE_HIGHCYL + 4];
                             sdcUnit->sdcu_Heads         = 1;
                             sdcUnit->sdcu_Sectors       = pp[DE_SECSPERBLOCK + 4];
-                            sdcUnit->sdcu_Capacity      = sdcUnit->sdcu_Cylinders * sdcUnit->sdcu_Heads * sdcUnit->sdcu_Sectors;
+                            sdcUnit->sdcu_Capacity      = (UQUAD)sdcUnit->sdcu_Cylinders * sdcUnit->sdcu_Heads * sdcUnit->sdcu_Sectors;
+
+                            /* DE_HIGHCYL is the last cylinder index (inclusive), not the count */
+                            pp[DE_HIGHCYL + 4]          = sdcUnit->sdcu_Cylinders - 1;
 
                             sdcUnit->sdcu_Eject         = FNAME_SDCIO(Eject);
 
@@ -388,7 +434,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                             pp[DE_MAXTRANSFER  + 4]     = 0x00200000;
                             pp[DE_MASK         + 4]     = 0x7FFFFFFE;
                             pp[DE_BOOTPRI      + 4]     = 0;
-                            pp[DE_DOSTYPE      + 4]     = AROS_MAKE_ID('D','O','S','\001');
+                            pp[DE_DOSTYPE      + 4]     = 0;
                             pp[DE_CONTROL      + 4]     = 0;
                             pp[DE_BOOTBLOCKS   + 4]     = 2;
 
@@ -402,7 +448,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                                 D(bug("[SDBus%02u] %s:        BlockSize:%d, SectorsPerBlock:%d ..\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__,
                                       pp[DE_SIZEBLOCK + 4], sdcUnit->sdcu_Sectors));
 
-                                AddBootNode(pp[DE_BOOTPRI + 4], ADNF_STARTPROC, devnode, NULL);
+                                AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
                                 D(bug("[SDBus%02u] %s: Unit detection complete\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
                                 return TRUE;
@@ -553,6 +599,9 @@ void FNAME_SDCBUS(SetPowerLevel)(ULONG supportedlvls, BOOL lowest, struct sdcard
 
 ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+#endif
     UWORD sdCommand      = (UWORD)GetTagData(SDCARD_TAG_CMD, 0, CmdTags);
     ULONG sdArg          = GetTagData(SDCARD_TAG_ARG, 0, CmdTags);
     ULONG sdResponseType = GetTagData(SDCARD_TAG_RSPTYPE, MMC_RSP_NONE, CmdTags);
@@ -570,7 +619,7 @@ ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         sdDataFlags = GetTagData(SDCARD_TAG_DATAFLAGS, 0, CmdTags);
     };
 
-bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen);
+D(bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen));
 
     /* Dont wait for DATA inihibit for stop commands */
     if (sdCommand != MMC_CMD_STOP_TRANSMISSION)
@@ -639,9 +688,15 @@ bug("SendCmd(%d,%d)\n", sdCommand, sdDataLen);
         DTRANS(bug("[SDBus%02u] %s: Mode %08x [%d x %dBytes]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcTransMode, (((sdDataLen >> bus->sdcb_SectorShift) > 0) ? (sdDataLen >> bus->sdcb_SectorShift) : 1), ((sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen)));
     }
 
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     bus->sdcb_RespListener = CmdTags;
     if (sdDataLen > 0)
         bus->sdcb_DataListener = CmdTags;
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
 
     SetSignal(0, 1L << bus->sdcb_CommandSig);
 
@@ -754,56 +809,27 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
             }
 
             if ((bus->sdcb_BusStatus & sdCommandMask) && (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & sdcStateMask)) {
-                ULONG currbyte, tranlen = (sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen;
+                ULONG currword, tranlen = (sdDataLen > (1 << bus->sdcb_SectorShift)) ? (1 << bus->sdcb_SectorShift) : sdDataLen;
+                ULONG tranwords = tranlen >> 2;
+                volatile ULONG *dataPtr = (volatile ULONG *)sdData;
 
                 DTRANS(bug("[SDBus%02u] %s: Attempting to %s %dbytes\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, ((sdDataMode == MMC_DATA_READ) ? "read" : "write"), tranlen));
-                for (currbyte = 0; currbyte < tranlen; currbyte++)
+                if (sdDataMode == MMC_DATA_READ)
                 {
-                    DTRANS(DUMP(
-                        if ((currbyte % 16) == 0)
-                        {
-                            bug("[SDBus%02u] %s:    ", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
-                        }
-                    ))
-                    if (sdDataMode == MMC_DATA_READ)
+                    for (currword = 0; currword < tranwords; currword++)
                     {
-                        if ((currbyte % 4) == 0)
-                        {
-                            sdcReg = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
-                        }
-                        *(UBYTE *)sdData = sdcReg & 0xFF;
+                        dataPtr[currword] = bus->sdcb_IOReadLong(SDHCI_BUFFER, bus);
                     }
-                    else
-                        sdcReg |= *(UBYTE *)sdData << (currbyte % 4);
-
-                    sdData++;
-                    sdDataLen--;
-                    if (sdDataMode != MMC_DATA_READ)
-                    {
-                        if (((currbyte % 4) == 3) || (sdDataLen == 0))
-                        {
-                            bus->sdcb_IOWriteLong(SDHCI_BUFFER, *(ULONG *)(sdData - 3), bus);
-                        }
-                    }
-                    else
-                        sdcReg >>= 8;
-                    DTRANS(DUMP(
-                        if ((currbyte % 4) == 3)
-                        {
-                            bug(" %08x", *(ULONG *)(sdData - 3));
-                        }
-                        if ((currbyte % 16) == 15)
-                        {
-                            bug("\n");
-                        }
-                    ))
                 }
-                DTRANS(DUMP(
-                    if ((currbyte % 16) != 0)
+                else
+                {
+                    for (currword = 0; currword < tranwords; currword++)
                     {
-                        bug("\n");
+                        bus->sdcb_IOWriteLong(SDHCI_BUFFER, dataPtr[currword], bus);
                     }
-                ))
+                }
+                sdData += tranlen;
+                sdDataLen -= tranlen;
             }
             else if (!(bus->sdcb_BusStatus & SDHCI_INT_DATA_END))
             {
@@ -827,29 +853,190 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
     return retVal;
 }
 
+/*
+ * WaitCmd: Wait for an SDHCI command (and optional data transfer) to complete.
+ *
+ * After SendCmd() issues a command, WaitCmd() waits for the SDHCI controller
+ * to clear the inhibit bits specified in 'mask' (typically CMD_INHIBIT and
+ * DATA_INHIBIT).
+ *
+ * For commands with data (reads/writes), the flow is:
+ *   1. SendCmd() writes the command and sets bus->sdcb_DataListener
+ *   2. RESPONSE IRQ fires -> BusIRQ() calls FinishCmd(), signals this task
+ *   3. DATA_AVAIL IRQ fires -> BusIRQ() calls FinishData() to do PIO transfer
+ *   4. DATA_INHIBIT clears once all data is transferred
+ *
+ * Problem:
+ *   The RESPONSE and DATA_AVAIL interrupts may arrive as separate IRQs.
+ *   When BusIRQ() handles the RESPONSE IRQ, it acknowledges the interrupt
+ *   by writing to INT_STATUS. If DATA_AVAIL is asserted in the narrow
+ *   window between reading INT_STATUS and the acknowledgment write, the
+ *   DATA_AVAIL interrupt can be lost:
+ *
+ *     - BusIRQ reads INT_STATUS -> sees RESPONSE only
+ *     - Hardware asserts DATA_AVAIL (sets bit in INT_STATUS)
+ *     - BusIRQ writes INT_STATUS to ack RESPONSE -> may clear DATA_AVAIL too
+ *     - BusIRQ returns, no further IRQ edge generated
+ *     - Result: FinishData() is never called, DATA_INHIBIT stays set,
+ *       WaitCmd() spins until timeout.
+ *
+ * Fix:
+ *   During the poll loop, if DATA_INHIBIT is still set and FinishData()
+ *   hasn't been called yet (DataListener non-null), we check INT_STATUS
+ *   directly. If DATA_AVAIL or DATA_END is pending, we recover by calling
+ *   FinishData() from task context under Disable() protection to prevent
+ *   a race with BusIRQ().
+ */
 ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
 {
-    D(bug("[SDBus%02u] %s(), task %p %s\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name));
-    D(bug("Task=%p\n", bus->sdcb_Task));
+#if defined(__AROSEXEC_SMP__)
+    struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+#endif
+    ULONG initialTimeout = timeout;
+
     if (bus->sdcb_Task == FindTask(NULL))
     {
-        D(bug("Waiting for signal %d\n", bus->sdcb_CommandSig));
         Wait(1L << bus->sdcb_CommandSig);
     }
     else
     {
-        D(bug("\nNot a Bus task!\n\n"));
         sdcard_Udelay(1000);
     }
 
     while (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & mask) {
         sdcard_Udelay(1000);
 
+        /*
+         * Lost interrupt recovery for data transfers.
+         *
+         * If we're waiting for DATA_INHIBIT to clear and FinishData()
+         * hasn't run yet (DataListener still set), check whether the
+         * hardware actually has data ready that we missed due to a
+         * lost IRQ. If so, process it directly.
+         */
+        if ((mask & SDHCI_PS_DATA_INHIBIT) && bus->sdcb_DataListener)
+        {
+            ULONG intStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
+
+            if (intStatus & (SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
+                             SDHCI_INT_DATA_END))
+            {
+                DIRQ(bug("[SDBus%02u] WaitCmd: lost IRQ recovery, INT_STATUS=%08x PS=%08x\n",
+                    bus->sdcb_BusNum, intStatus,
+                    bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus)));
+
+                /*
+                 * Claim the DataListener under lock to prevent BusIRQ()
+                 * on another CPU from racing with us.
+                 */
+                {
+                    struct TagItem *dataListener;
+#if defined(__AROSEXEC_SMP__)
+                    KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#else
+                    Disable();
+#endif
+                    dataListener = bus->sdcb_DataListener;
+                    if (dataListener)
+                        bus->sdcb_DataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+                    KrnSpinUnLock(&bus->sdcb_Lock);
+#else
+                    Enable();
+#endif
+                    if (dataListener)
+                    {
+                        bus->sdcb_BusStatus = intStatus;
+                        if (FNAME_SDCBUS(FinishData)(dataListener, bus) != -1)
+                        {
+                            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS,
+                                intStatus & SDHCI_INT_DATA_MASK, bus);
+                            bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+                        }
+                    }
+                }
+
+                /* Re-check PRESENT_STATE immediately after recovery */
+                continue;
+            }
+        }
+
         if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
             break;
 
-        if (--timeout <= 0)
+        if (--timeout == 0)
+        {
+            bug("[SDBus%02u] WaitCmd: TIMEOUT! PS=%08x BS=%08x DL=%p\n",
+                bus->sdcb_BusNum,
+                bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus),
+                bus->sdcb_BusStatus, bus->sdcb_DataListener);
             break;
+        }
+    }
+
+    /*
+     * Response recovery for non-bus-task callers.
+     *
+     * Some SDHCI controllers clear CMD_INHIBIT as soon as the command
+     * response is received — before the interrupt is delivered to the CPU.
+     * When WaitCmd is called from a task other than the bus task, we poll
+     * PRESENT_STATE and may exit the loop before the IRQ handler has had
+     * a chance to call FinishCmd() to read the response register.
+     * The result: the caller's response tag stays 0.
+     *
+     * Fix: if RespListener is still set after the poll loop, the IRQ handler
+     * hasn't processed it yet. Claim it under Disable() (to prevent a race
+     * with the IRQ handler) and call FinishCmd() directly from task context.
+     * Also acknowledge the RESPONSE interrupt so it doesn't fire later and
+     * try to process a stale (now-NULL) RespListener.
+     */
+    if (bus->sdcb_RespListener)
+    {
+        struct TagItem *respListener;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#else
+        Disable();
+#endif
+        respListener = bus->sdcb_RespListener;
+        if (respListener)
+            bus->sdcb_RespListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&bus->sdcb_Lock);
+#else
+        Enable();
+#endif
+        if (respListener)
+        {
+            FNAME_SDCBUS(FinishCmd)(respListener, bus);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, SDHCI_INT_RESPONSE, bus);
+        }
+    }
+
+    /* Same recovery for data transfers — see response recovery comment above */
+    if (bus->sdcb_DataListener)
+    {
+        struct TagItem *dataListener;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#else
+        Disable();
+#endif
+        dataListener = bus->sdcb_DataListener;
+        if (dataListener)
+            bus->sdcb_DataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&bus->sdcb_Lock);
+#else
+        Enable();
+#endif
+        if (dataListener)
+        {
+            bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
+            FNAME_SDCBUS(FinishData)(dataListener, bus);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS,
+                bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK, bus);
+        }
     }
 
     if ((timeout <= 0) || (bus->sdcb_BusStatus & SDHCI_INT_ERROR))
@@ -877,11 +1064,15 @@ ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *buf, ULONG offset, const ULONG len)
 /********** BUS IRQ HANDLER **************/
 
 #undef DIRQ
-#define DIRQ(x) x
+#define DIRQ(x) /* x */
 
 void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 {
+#if defined(__AROSEXEC_SMP__)
+    struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+#endif
     BOOL        error = FALSE;
+    int         loops = 0;
 
     DIRQ(bug("[SDBus%02u] %s(bus @ 0x%p)\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus));
 
@@ -891,87 +1082,140 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
         return;
     }
 
+    /*
+     * Re-read INT_STATUS after processing to catch bits (e.g. DATA_AVAIL)
+     * that arrive while we handle earlier events (e.g. RESPONSE).
+     * Some controllers may not re-assert the IRQ line for newly-set bits.
+     */
     bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
 
-    if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    while ((bus->sdcb_BusStatus & bus->sdcb_IntrMask) && loops < 8)
     {
-        DIRQ(bug("[SDBus%02u] %s: Status = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus));
+        loops++;
 
-        if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
+        if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
         {
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
+            DIRQ(bug("[SDBus%02u] %s: Status = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus));
 
-            bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
-            bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
+            if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
+            {
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
 
-            if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
-                bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
+                bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
 
-            bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+                if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
+                    bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
 
+                bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+
+                if (bus->sdcb_Task)
+                    Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
+            }
+            if (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
+            {
+                struct TagItem *respListener;
+
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
+
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                respListener = bus->sdcb_RespListener;
+                if ((bus->sdcb_BusStatus & SDHCI_INT_RESPONSE) && respListener)
+                    bus->sdcb_RespListener = NULL;
+                else
+                    respListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+                if (respListener)
+                {
+                    if (FNAME_SDCBUS(FinishCmd)(respListener, bus) == -1)
+                        error = TRUE;
+                }
+                if (bus->sdcb_Task && (bus->sdcb_BusStatus & SDHCI_INT_RESPONSE))
+                {
+                    DIRQ(bug("Signalling task %p (%s) with signal %d\n", bus->sdcb_Task, bus->sdcb_Task->tc_Node.ln_Name, bus->sdcb_CommandSig));
+                    Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
+                }
+
+                bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK;
+            }
+            if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
+            {
+                struct TagItem *dataListener;
+
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                dataListener = bus->sdcb_DataListener;
+                if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) && dataListener)
+                    bus->sdcb_DataListener = NULL;
+                else
+                    dataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+                if (dataListener)
+                {
+                    if (FNAME_SDCBUS(FinishData)(dataListener, bus) == -1)
+                        error = TRUE;
+                    bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
+                    bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+                }
+                else
+                {
+                    bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
+                    bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+                }
+            }
+        }
+        else
+        {
+            bug("[SDBus%02u] %s: ERROR [Status = %08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
+            if (bus->sdcb_BusStatus & SDHCI_INT_ACMD12ERR)
+            {
+                bug("[SDBus%02u] %s:       [acmd12err = %04x    ]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IOReadWord(SDHCI_ACMD12_ERR, bus));
+            }
+            error = TRUE;
+        }
+
+        if (error)
+        {
+            if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
+            {
+                bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & bus->sdcb_IntrMask, bus);
+                bus->sdcb_BusStatus &= ~bus->sdcb_IntrMask;
+            }
+            bug("[SDBus%02u] %s: Reseting SDHCI CMD/DATA\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
+
+            FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
+            FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
+
+            /*
+             * Signal the bus task so it wakes up from WaitCmd().
+             * Without this, a command timeout (no RESPONSE received)
+             * leaves the bus task stuck in Wait() indefinitely,
+             * because the success path is the only place that signals.
+             */
             if (bus->sdcb_Task)
-                Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
-        }
-        if (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
-        {
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
-
-            if ((bus->sdcb_BusStatus & SDHCI_INT_RESPONSE) &&
-                (bus->sdcb_RespListener))
-            {
-                if (FNAME_SDCBUS(FinishCmd)(bus->sdcb_RespListener, bus) == -1)
-                    error = TRUE;
-                bus->sdcb_RespListener = NULL;
-            }
-            if (bus->sdcb_Task && (bus->sdcb_BusStatus & SDHCI_INT_RESPONSE))
-            {
-                DIRQ(bug("Signalling task %p (%s) with signal %d\n", bus->sdcb_Task, bus->sdcb_Task->tc_Node.ln_Name, bus->sdcb_CommandSig));
                 Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
-            }
 
-            bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK;
+            break;  /* Don't re-read after error */
         }
-        if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
-        {
-            if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) &&
-                (bus->sdcb_DataListener))
-            {
-                if (FNAME_SDCBUS(FinishData)(bus->sdcb_DataListener, bus) == -1)
-                    error = TRUE;
-                bus->sdcb_DataListener = NULL;
-                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
-                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
-            }
-            else
-            {
-                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
-                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
-            }
-        }
-    }
-    else
-    {
-        bug("[SDBus%02u] %s: ERROR [Status = %08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
-        if (bus->sdcb_BusStatus & SDHCI_INT_ACMD12ERR)
-        {
-            bug("[SDBus%02u] %s:       [acmd12err = %04x    ]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IOReadWord(SDHCI_ACMD12_ERR, bus));
-        }
-        error = TRUE;
+
+        /* Re-read INT_STATUS to catch bits that arrived during processing */
+        bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
     }
 
-    if (error)
-    {
-        if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
-        {
-            bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
-            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & bus->sdcb_IntrMask, bus);
-            bus->sdcb_BusStatus &= ~bus->sdcb_IntrMask;
-        }
-        bug("[SDBus%02u] %s: Reseting SDHCI CMD/DATA\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
-
-        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
-        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
-    }
     DIRQ(bug("[SDBus%02u] %s: Done.\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 }
 
@@ -984,10 +1228,15 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     LIBBASETYPEPTR LIBBASE = bus->sdcb_DeviceBase;
     struct IORequest *msg;
     ULONG sig, tasksig;
+    BOOL startupScanDone = FALSE;
 
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     bus->sdcb_Timer = sdcard_OpenTimer(LIBBASE);
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinInit(&bus->sdcb_Lock);
+#endif
 
     /* Get the signal used for sleeping */
     bus->sdcb_Task = FindTask(0);
@@ -1024,38 +1273,85 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
         bus->sdcb_IOWriteLong(SDHCI_SIGNAL_ENABLE, bus->sdcb_IntrMask, bus);
     }
 
+    /* Fix #33: Detect card already present at boot (not just hotplug) */
+    if (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & SDHCI_PS_CARD_PRESENT)
+    {
+        DINIT(bug("[SDBus%02u] %s: Card already present at startup\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+        FNAME_SDCBUS(RegisterUnit)(bus);
+    }
+
+    if (!startupScanDone)
+    {
+        startupScanDone = TRUE;
+        if (LIBBASE->sdcard_PendingBusTasks > 0)
+            LIBBASE->sdcard_PendingBusTasks--;
+    }
+
     for (;;)
     {
         tasksig = Wait(sig);
 
-        if ((tasksig & (1L << bus->sdcb_MediaSig)) && (bus->sdcb_BusFlags & AF_Bus_MediaChanged))
+        if (tasksig & (1L << bus->sdcb_MediaSig))
         {
-            D(bug("[SDBus%02u] %s: detected unit change\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
-            D(bug("[SDBus%02u] %s: Card %s Detected!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, (bus->sdcb_BusFlags & AF_Bus_MediaPresent) ? "Insert" : "Eject" ));
-            if (bus->sdcb_BusFlags & AF_Bus_MediaPresent)
+            ULONG flags;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_READ);
+#endif
+            flags = bus->sdcb_BusFlags;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+            if (flags & AF_Bus_MediaChanged)
             {
-                FNAME_SDCBUS(RegisterUnit)(bus);
-            }
-            else
-            {
-                FNAME_SDCBUS(ReleaseUnit)(bus);
+                D(bug("[SDBus%02u] %s: detected unit change\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
+                D(bug("[SDBus%02u] %s: Card %s Detected!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, (flags & AF_Bus_MediaPresent) ? "Insert" : "Eject" ));
+                if (flags & AF_Bus_MediaPresent)
+                {
+                    FNAME_SDCBUS(RegisterUnit)(bus);
+                }
+                else
+                {
+                    FNAME_SDCBUS(ReleaseUnit)(bus);
+                }
             }
         }
 
         /* Defer IORequest processing if the bus is active */
-        if ((tasksig & (1L << bus->sdcb_MsgPort->mp_SigBit)) && (!(bus->sdcb_BusFlags & AF_Bus_Active)))
         {
-            /* process pending requests .. */
-            bus->sdcb_BusFlags |= AF_Bus_Active;
-            while ((msg = (struct IORequest *)GetMsg(bus->sdcb_MsgPort)))
+            BOOL canProcess;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_READ);
+#endif
+            canProcess = (tasksig & (1L << bus->sdcb_MsgPort->mp_SigBit)) && (!(bus->sdcb_BusFlags & AF_Bus_Active));
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+            if (canProcess)
             {
-                /* And do IO's */
-                if (FNAME_SDC(HandleIO)(msg))
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                /* process pending requests .. */
+                bus->sdcb_BusFlags |= AF_Bus_Active;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+                while ((msg = (struct IORequest *)GetMsg(bus->sdcb_MsgPort)))
                 {
-                    ReplyMsg((struct Message *)msg);
+                    /* And do IO's */
+                    if (FNAME_SDC(HandleIO)(msg))
+                    {
+                        ReplyMsg((struct Message *)msg);
+                    }
                 }
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                bus->sdcb_BusFlags &= ~AF_Bus_Active;
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
             }
-            bus->sdcb_BusFlags &= ~AF_Bus_Active;
         }
     }
 }
