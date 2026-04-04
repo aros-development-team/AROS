@@ -179,6 +179,7 @@ LLVM_CMAKEOPTIONS +=                                                            
     -DBUILD_SHARED_LIBS=OFF
 else
 LLVM_CMAKEOPTIONS +=                                                                                                                    \
+    -DLLVM_BUILD_LLVM_DYLIB=ON
     -DBUILD_SHARED_LIBS=ON                                                                                                              \
     -DLLVM_ENABLE_LTO=ON
 endif
@@ -213,9 +214,10 @@ LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                  
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
-  -DCMAKE_C_FLAGS="$(LLVM_CXX_CFLAGS) -Wl,--allow-multiple-definition"                                                                  \
-  -DCMAKE_CXX_FLAGS="$(LLVM_CXX_CXXFLAGS) $(LLVM_LIBCXXABI_FLAG) -Wl,--allow-multiple-definition"                                       \
+  -DCMAKE_C_FLAGS="$(LLVM_CXX_CFLAGS)"                                                                                                  \
+  -DCMAKE_CXX_FLAGS="$(LLVM_CXX_CXXFLAGS) $(LLVM_LIBCXXABI_FLAG)"                                                                      \
   -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_CXX_EXEFLAGS) -nostdlib++ -L$(CROSSTOOLSDIR)/lib -lc++ -Wl,--allow-multiple-definition"              \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-multiple-definition"                                                                         \
   -DLIBCXXABI_LIBCXX_INCLUDES=$(LIBCXX_BUILDBASE)/include                                                                               \
   -DLIBCXXABI_ENABLE_SHARED=OFF                                                                                                         \
   -DLIBCXXABI_ENABLE_STATIC=ON                                                                                                          \
@@ -310,17 +312,21 @@ tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
 
 LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                                                                          \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Generic                                                                                                           \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
   -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
   -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                                    \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
+  -DUNIX=ON                                                                                                                             \
   -DLIBUNWIND_ENABLE_SHARED=OFF                                                                                                         \
   -DLIBUNWIND_ENABLE_STATIC=ON                                                                                                          \
   -DLIBUNWIND_HAS_DL_LIB=OFF                                                                                                            \
-  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS) -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0 -Wl,--allow-multiple-definition"                        \
-  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0 -Wl,--allow-multiple-definition"          \
-  -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -L$(CROSSTOOLSDIR)/lib -lc++ -Wl,--allow-multiple-definition"
+  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS) -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0"                                                       \
+  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0"                                         \
+  -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -L$(CROSSTOOLSDIR)/lib -lc++ -Wl,--allow-multiple-definition"              \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-multiple-definition"
 
 #LLVM_LIBUNWIND_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
 
@@ -512,7 +518,7 @@ endif
 
 %build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
-    extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no
+    extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no usecrosstoolsdir=no
 
 #
 # Rules to setup the monotree
