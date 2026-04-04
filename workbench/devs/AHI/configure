@@ -3311,7 +3311,10 @@ foo:
     nop
 EOF
 
-# Try compiling using the assembler explicitly
+# Try compiling using the assembler explicitly.
+# Also try with $CC since LLVM toolchains set AS=llvm-as (an LLVM IR tool)
+# but actually assemble via clang, which supports -Wa,--defsym forwarding
+# to its integrated assembler.
 if $AS $target_asflags -Wa,--defsym,foo=1 -c conftest.s -o conftest.o >/dev/null 2>&1; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 printf "%s\n" "yes" >&6; }
@@ -3320,6 +3323,19 @@ printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
 
   ASFWDOPT="-Wa,"
   ASDEFSYM="${ASFWDOPT}--defsym,"
+elif $CC $target_asflags -Wa,--defsym,foo=1 -x assembler-with-cpp -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes, via CC" >&5
+printf "%s\n" "yes, via CC" >&6; }
+
+printf "%s\n" "#define HAVE_AS_DEF_SYM 1" >>confdefs.h
+
+  ASFWDOPT="-Wa,"
+  ASDEFSYM="${ASFWDOPT}--defsym,"
+elif $CC $target_asflags -DFOO=1 -x assembler-with-cpp -c conftest.s -o conftest.o >/dev/null 2>&1; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: using -D preprocessor defines" >&5
+printf "%s\n" "using -D preprocessor defines" >&6; }
+  ASFWDOPT=""
+  ASDEFSYM="-D"
 else
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
