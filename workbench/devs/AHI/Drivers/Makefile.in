@@ -82,6 +82,14 @@ ifneq ($(strip $(HAVE_WASAPI)),)
 SUBDIRS		+= WASAPI
 endif
 
+#
+# Raspberry Pi audio drivers (ARM targets)
+#
+ifeq ($(host_cpu),arm)
+SUBDIRS		+= RPiPWM
+SUBDIRS		+= RPiHDMI
+endif
+
 all:
 	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
 

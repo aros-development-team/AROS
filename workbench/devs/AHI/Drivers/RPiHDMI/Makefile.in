@@ -1,0 +1,14 @@
+#
+#  Makefile.in for RPiHDMI AHI audio driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= rpihdmi.audio
+MODEFILE	= RPIHDMI
+
+OBJECTS		= rpihdmi-init.o rpihdmi-main.o rpihdmi-playslave.o rpihdmi-accel.o rpihdmi-hwaccess.o
+
+include ../Common/Makefile.common
