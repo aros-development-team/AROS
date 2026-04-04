@@ -6,6 +6,7 @@ USER_CPPFLAGS := -D__TIMER_NOLIBBASE__
 USER_LDFLAGS := -static
 
 SDCARDFILES = \
+    bootwait \
     sdcard_init \
     sdcard_device \
     sdcard_bus \

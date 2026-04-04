@@ -71,6 +71,7 @@ struct SDCardBase
     struct List                         sdcard_Buses;
     ULONG                               sdcard_BusCnt;
     ULONG                               sdcard_TotalBusUnits;
+    volatile ULONG                      sdcard_PendingBusTasks;
 //    struct sdcard_Bus                   *sdcard_Bus;
 
    /* Memory Management */
