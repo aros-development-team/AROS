@@ -1,29 +1,29 @@
 
 
-	.MACRO	FORM_START name
+	.macro	FORM_START name
 CHUNKCNT	.ASSIGNA 0
 	.ascii	"FORM"
 	.long	FORMEND-FORMSTART
 FORMSTART:
 	.ascii	"\name"
-	.ENDM
+	.endm
 
-	.MACRO	FORM_END name
+	.macro	FORM_END name
 FORMEND:
 	.balign	2
-	.ENDM
+	.endm
 
-	.MACRO	CHUNK_START name
+	.macro	CHUNK_START name
 	.ascii	"\name"
 	.long	CHUNKEND\&CHUNKCNT-CHUNKSTART\&CHUNKCNT
 CHUNKSTART\&CHUNKCNT:
-	.ENDM
+	.endm
 
-	.MACRO	CHUNK_END
+	.macro	CHUNK_END
 CHUNKEND\&CHUNKCNT:
 CHUNKCNT	.ASSIGNA \&CHUNKCNT+1
 	.balign	2
-	.ENDM
+	.endm
 
 AHIDB_AudioID	.EQU	2147483648+100
 AHIDB_Volume	.EQU	2147483648+103

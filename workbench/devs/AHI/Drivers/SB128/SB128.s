@@ -35,5 +35,5 @@
 		
 	FORM_END
 
-	.END
+	.end
 	
