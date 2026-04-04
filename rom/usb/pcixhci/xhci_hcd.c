@@ -2867,6 +2867,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 xhciDumpPort(&xhciports[hciport]);
                 origportsc = AROS_LE2LONG(xhciports[hciport].portsc);
+                newportsc = origportsc & (XHCIF_PR_PORTSC_PP);
 
                 if(origportsc & XHCIF_PR_PORTSC_OCC) {
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
