@@ -46,6 +46,7 @@ If NOT WARN
 
     ; Perform basic "posixc.library" unit tests...
     Execute S/Test cunit/crt/posixc/cunit-crt-realpath
+    Execute S/Test cunit/crt/posixc/cunit-crt-tmpfile
 
 Endif
 
