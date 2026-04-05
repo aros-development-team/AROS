@@ -69,7 +69,7 @@
         if(!atemplate)
             return -1;
         if (!(lock = Lock(atemplate, ACCESS_READ))) {
-            int fd = open(template, O_RDWR|O_CREAT|O_EXCL);
+            int fd = open(template, O_RDWR|O_CREAT|O_EXCL, 0600);
             if (fd != -1)
                 return fd;
         }
