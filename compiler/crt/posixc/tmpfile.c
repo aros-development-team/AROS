@@ -89,17 +89,48 @@
 ******************************************************************************/
 {
   #define TEMPLATE "T:temp.XXXXXX"
-  char * filename;
+  char *filename;
   FILE *fp;
+  int fd;
 
+  /* Allocate buffer on heap to save stack space */
   filename = (char *)malloc(MAXPATHLEN);
-  if (!filename) { puts("FIXME: mktemp() malloc failed"); return NULL;}
-  strcpy(filename, TEMPLATE);
+  if (!filename)
+  {
+    errno = ENOMEM;
+    return NULL;
+  }
 
-  mktemp(filename);
+  /* Use mkstemp() instead of deprecated mktemp() to avoid race conditions */
+  if (strlcpy(filename, TEMPLATE, MAXPATHLEN) >= MAXPATHLEN)
+  {
+    free(filename);
+    errno = ENAMETOOLONG;
+    return NULL;
+  }
+
+  fd = mkstemp(filename);
+  if (fd == -1)
+  {
+    /* errno already set by mkstemp() */
+    free(filename);
+    return NULL;
+  }
+
   D(bug("[posixc/tmpfile()] filename: %s\n", filename));
-  fp = fopen(filename, "w+");
+
   /* unlink(filename); -- see BUG1 in BUGS section */
+
+  /* Convert file descriptor to FILE stream */
+  fp = fdopen(fd, "w+");
+  if (fp == NULL)
+  {
+    /* errno already set by fdopen() */
+    close(fd);
+    free(filename);
+    return NULL;
+  }
+
   free(filename);
   return fp;
  
