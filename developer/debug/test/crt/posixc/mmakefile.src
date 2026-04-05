@@ -44,7 +44,8 @@ POSIXCNIXTESTFILES := \
          argv0_slave argv0_test3  argv0_test4
 
 CUNITPOSIXCTESTFILES := \
-    cunit-crt-realpath
+    cunit-crt-realpath \
+    cunit-crt-tmpfile
 
 EXEDIR := $(AROS_TESTS)/crt/posix
 CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc
