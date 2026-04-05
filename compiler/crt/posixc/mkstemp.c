@@ -69,8 +69,8 @@
         if(!atemplate)
             return -1;
         if (!(lock = Lock(atemplate, ACCESS_READ))) {
-            int fd = open(template, O_WRITE|O_CREAT|O_EXCL);
-            if (fd > 0)
+            int fd = open(template, O_RDWR|O_CREAT|O_EXCL);
+            if (fd != -1)
                 return fd;
         }
         UnLock(lock);
