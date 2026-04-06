@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_SCROLLBAR_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,8 @@
 #define MUIB_Scrollbar       (MUIB_ZUNE | 0x00002e00)
 
 /*** Attributes *************************************************************/
-#define MUIA_Scrollbar_Type  (MUIB_MUI | 0x0042fb6b)      /* V11 i.. LONG */
+#define MUIA_Scrollbar_Type        (MUIB_MUI | 0x0042fb6b) /* V11 i.. LONG  */
+#define MUIA_Scrollbar_IncDecSize  (MUIB_MUI | 0x00426c07) /* V20 ISG ULONG */
 
 enum
 {

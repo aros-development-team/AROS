@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
@@ -30,6 +30,7 @@ struct Scrollbar_DATA
     Object *up_arrow;
     Object *down_arrow;
     int sb_pos;
+    ULONG incdec;
 };
 
 
@@ -41,10 +42,26 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     int usewinborder =
         GetTagData(MUIA_Prop_UseWinBorder, 0, msg->ops_AttrList);
     int sb_pos = GetTagData(MUIA_Scrollbar_Type, 0, msg->ops_AttrList);
+    ULONG incdec =
+        GetTagData(MUIA_Scrollbar_IncDecSize, 1, msg->ops_AttrList);
+
+    /*
+     * Filter MUIA_ShowMe from the tag list passed to the Prop child.
+     * If a subclass sets MUIA_ShowMe=FALSE on the Scrollbar group,
+     * it must not leak to the Prop, otherwise the prop knob stays
+     * hidden even after the group is shown.
+    */
+    struct TagItem *showTag = FindTagItem(MUIA_ShowMe, msg->ops_AttrList);
+    if (showTag)
+        showTag->ti_Tag = TAG_IGNORE;
 
     Object *prop =
         MUI_NewObject(MUIC_Prop, PropFrame, MUIA_Prop_Horiz, horiz,
-        TAG_MORE, msg->ops_AttrList);
+        TAG_MORE, (IPTR)msg->ops_AttrList);
+
+    /* Restore the original tag so the Group (superclass) still sees it */
+    if (showTag)
+        showTag->ti_Tag = MUIA_ShowMe;
 
     obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Spacing, 0,
@@ -56,6 +73,7 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
     data->prop = prop;
     data->sb_pos = sb_pos;
+    data->incdec = incdec;
 
     if (!usewinborder)
     {
@@ -69,7 +87,8 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         if (data->up_arrow)
         {
             DoMethod(data->up_arrow, MUIM_Notify, MUIA_Timer,
-                MUIV_EveryTime, (IPTR) prop, 2, MUIM_Prop_Decrease, 1);
+                MUIV_EveryTime, (IPTR) prop, 2,
+                MUIM_Prop_Decrease, incdec);
         }
 
         data->down_arrow = ImageObject,
@@ -82,7 +101,8 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         if (data->down_arrow)
         {
             DoMethod(data->down_arrow, MUIM_Notify, MUIA_Timer,
-                MUIV_EveryTime, (IPTR) prop, 2, MUIM_Prop_Increase, 1);
+                MUIV_EveryTime, (IPTR) prop, 2,
+                MUIM_Prop_Increase, incdec);
         }
 
         switch (sb_pos)
@@ -112,6 +132,52 @@ IPTR Scrollbar__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     return (IPTR) obj;
+}
+
+
+IPTR Scrollbar__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Scrollbar_DATA *data = INST_DATA(cl, obj);
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem(&tags)) != NULL)
+    {
+        if (tag->ti_Tag == MUIA_Scrollbar_IncDecSize)
+        {
+            data->incdec = tag->ti_Data;
+            if (data->up_arrow)
+            {
+                DoMethod(data->up_arrow, MUIM_KillNotify, MUIA_Timer);
+                DoMethod(data->up_arrow, MUIM_Notify, MUIA_Timer,
+                    MUIV_EveryTime, (IPTR) data->prop, 2,
+                    MUIM_Prop_Decrease, data->incdec);
+            }
+            if (data->down_arrow)
+            {
+                DoMethod(data->down_arrow, MUIM_KillNotify, MUIA_Timer);
+                DoMethod(data->down_arrow, MUIM_Notify, MUIA_Timer,
+                    MUIV_EveryTime, (IPTR) data->prop, 2,
+                    MUIM_Prop_Increase, data->incdec);
+            }
+        }
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+
+IPTR Scrollbar__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct Scrollbar_DATA *data = INST_DATA(cl, obj);
+
+    if (msg->opg_AttrID == MUIA_Scrollbar_IncDecSize)
+    {
+        *(msg->opg_Storage) = data->incdec;
+        return 1;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 
@@ -162,6 +228,10 @@ BOOPSI_DISPATCHER(IPTR, Scrollbar_Dispatcher, cl, obj, msg)
     {
     case OM_NEW:
         return Scrollbar__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_SET:
+        return Scrollbar__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Scrollbar__OM_GET(cl, obj, (struct opGet *)msg);
     case MUIM_Setup:
         return Scrollbar__MUIM_Setup(cl, obj, msg);
     default:
