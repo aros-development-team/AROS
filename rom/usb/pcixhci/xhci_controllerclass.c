@@ -39,6 +39,11 @@ static const char strHardwareNameMinorUnknown[] = "x";
 static const char strHardwareNameMinorFmt[] = "%u";
 static const char strHardwareNameSuffix[] = " xHCI Host controller";
 
+#define USB_INTEL_XUSB2PR      0xD0
+#define USB_INTEL_USB2PRM      0xD4
+#define USB_INTEL_USB3_PSSEN   0xD8
+#define USB_INTEL_USB3PRM      0xDC
+
 static BOOL XHCIController__Init(struct PCIController *hc)
 {
     struct XhciHCPrivate *xhcic = NULL;
@@ -232,6 +237,26 @@ takeownership:
             break;
         }
         xhciECPOff += nextcap << 2;
+    }
+
+    IPTR vendor = 0;
+    OOP_GetAttr(hc->hc_PCIDeviceObject, aHidd_PCIDevice_VendorID, &vendor);
+    if(vendor == 0x8086) {
+        /* Intel port routing. For chipsets exposing both EHCI and xHCI and multiplexing
+           physical ports between them. Switch ports to xHCI host controller. Tested on
+           H18M (0x8c31 - LynxPoint) */
+
+        /* Read routable USB 3.0 ports and switch on SuperSpeed termination on them */
+        ULONG usb3prm = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3PRM);
+        WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3_PSSEN, usb3prm);
+
+        /* Read routable USB 2.0 ports and switch power and data lines to xHCI host */
+        ULONG usb2prm = READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB2PRM);
+        WRITECONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_XUSB2PR, usb2prm);
+
+        pciusbWarn("xHCI", DEBUGCOLOR_SET "Intel PCH: USB3PSSEN=%08lx XUSB2PR=%08lx" DEBUGCOLOR_RESET" \n",
+                   READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_USB3_PSSEN),
+                   READCONFIGLONG(hc, hc->hc_PCIDeviceObject, USB_INTEL_XUSB2PR));
     }
 
     UWORD xhciversion;
