@@ -231,7 +231,7 @@ takeownership:
         if(nextcap == 0) {
             break;
         }
-        xhciECPOff = nextcap << 2;
+        xhciECPOff += nextcap << 2;
     }
 
     UWORD xhciversion;
