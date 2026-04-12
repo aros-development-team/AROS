@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-devs-networks-e1000-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-etherlink3 \
 #MM     workbench-devs-networks-intelpro100 \
+#MM     workbench-devs-networks-lpe32002-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-nforce-$(AROS_TARGET_CPU) \
 #MM     workbench-devs-networks-nvidianet \
 #MM     workbench-devs-networks-pcnet32-$(AROS_TARGET_CPU) \
