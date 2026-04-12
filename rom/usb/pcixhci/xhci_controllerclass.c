@@ -291,7 +291,7 @@ takeownership:
     pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "  OPR.CONFIG: 0x%08x" DEBUGCOLOR_RESET" \n",
                      AROS_LE2LONG(((volatile struct xhci_hcopr *)xhcic->xhc_XHCIOpR)->config));
 
-    hc->hc_NumPorts = (ULONG)((hcsparams1 >> 24) & 0xFF);
+    hc->hc_NumPorts = xhciPortLimit;
     xhcic->xhc_NumSlots = (ULONG)(hcsparams1 & 0xFF);
 
     pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "%d ports, %d slots" DEBUGCOLOR_RESET" \n",
