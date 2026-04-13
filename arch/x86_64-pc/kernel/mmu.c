@@ -138,10 +138,12 @@ void core_LoadMMU(struct CPUMMUConfig *MMU)
 void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
 {
     /*
-     * how many PDE entries shall be created? Detault is 2048 (4GB), unless more RAM
-     * is available...
+     * How many PDE entries shall be created?
+     * Keep a larger identity-mapped window by default (64 GiB) so MMIO BARs
+     * placed above 4 GiB (common with ReBAR/large VRAM GPUs and 64-bit PCI
+     * BARs) are directly accessible during early driver init.
      */
-    MMU->mmu_PDEPageCount = 2048;
+    MMU->mmu_PDEPageCount = 32768; /* 32768 * 2 MiB = 64 GiB */
 
     /* Does RAM exceed 4GB? adjust amount of PDE pages */
     if (((memtop + (1 << 21) - 1) >> 21) > MMU->mmu_PDEPageCount)
@@ -152,8 +154,8 @@ void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
     if (!MMU->mmu_PML4)
     {
         /*
-         * Allocate MMU pages and directories. Four PDE directories (PDE2M structures)
-         * are enough to map whole 4GB address space.
+         * Allocate MMU paging structures for the configured identity-mapped
+         * low physical address window.
          */
         MMU->mmu_PML4 = krnAllocBootMemAligned(sizeof(struct PML4E) * 512, PAGE_SIZE);
         MMU->mmu_PDP  = krnAllocBootMemAligned(sizeof(struct PDPE)  * 512, PAGE_SIZE);
