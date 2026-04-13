@@ -44,33 +44,40 @@ static struct
 
 /*
  * The MMU pages and directories. They are stored at fixed location and may be either reused in the
- * 64-bit kernel, or replaced by it. Four PDE directories (PDE2M structures) are enough to map whole
- * 4GB address space.
+ * 64-bit kernel, or replaced by it.
+ *
+ * 64 PDP entries × 512 PDEs each = 32768 2MB pages = 64 GiB identity map.
+ * EFI firmware (especially with ReBAR / large-VRAM GPUs) may place GRUB2-loaded
+ * kernel modules above 4 GiB, so the bootstrap page tables must cover enough
+ * address space for the ljmp into the 64-bit kernel to succeed.
  */
-static struct PML4E PML4[512]   __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDPE  PDP[512]    __attribute__((used,aligned(4096),section(".bss.aros.tables")));
-static struct PDE2M PDE[4][512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
+#define BOOTSTRAP_PDP_COUNT 64
+
+static struct PML4E PML4[512]                    __attribute__((used,aligned(4096),section(".bss.aros.tables")));
+static struct PDPE  PDP[512]                     __attribute__((used,aligned(4096),section(".bss.aros.tables")));
+static struct PDE2M PDE[BOOTSTRAP_PDP_COUNT][512] __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 
 /*
  * The 64-bit long mode may be activated only, when MMU paging is enabled. Therefore the basic
- * MMU tables have to be prepared first. This routine uses 6 tables (2048 + 5 entries) in order
- * to map the first 4GB of address space as user-accessible executable RW area.
+ * MMU tables have to be prepared first.
+ *
+ * This routine creates a 64 GiB identity map using 2MB pages so that the ljmp into the 64-bit
+ * kernel succeeds even when GRUB2/EFI places kernel modules above 4 GiB.
  *
  * This mapping may be changed later by the 64-bit kernel, in order to provide separate address spaces,
  * protect kernel from being overwritten and so on and so forth.
  *
  * To simplify things down we will use 2MB memory page size. In this mode the address is broken up into 4 fields:
- * - Bits 63–48 sign extension of bit 47 as required for canonical address forms.
- * - Bits 47–39 index into the 512-entry page-map level-4 table.
- * - Bits 38–30 index into the 512-entry page-directory-pointer table.
- * - Bits 29–21 index into the 512-entry page-directory table.
- * - Bits 20–0  byte offset into the physical page.
+ * - Bits 63-48 sign extension of bit 47 as required for canonical address forms.
+ * - Bits 47-39 index into the 512-entry page-map level-4 table.
+ * - Bits 38-30 index into the 512-entry page-directory-pointer table.
+ * - Bits 29-21 index into the 512-entry page-directory table.
+ * - Bits 20-0  byte offset into the physical page.
  * Let's remember that our topmost address is  0xFFFFF000, as specified by GDT.
 */
 void setup_mmu(void)
 {
     int i;
-    struct PDE2M *pdes[] = { &PDE[0][0], &PDE[1][0], &PDE[2][0], &PDE[3][0] };
 
     D(kprintf("[BOOT] Setting up MMU, kickstart base 0x%p\n", kick_base);)
     D(kprintf("[BOOT] cr0: 0x%p cr3: 0x%p cr4: 0x%p\n", rdcr(cr0), rdcr(cr3), rdcr(cr4));)
@@ -102,7 +109,7 @@ void setup_mmu(void)
     GDT.super_ds.base_mid   = 0;
     GDT.super_ds.base_high  = 0;
 
-    D(kprintf("[BOOT] Mapping first 4G area with MMU\n");)
+    D(kprintf("[BOOT] Mapping first %dG area with MMU\n", BOOTSTRAP_PDP_COUNT);)
     D(kprintf("[BOOT] PML4 0x%p, PDP 0x%p, PDE 0x%p\n", PML4, PDP, PDE);)
 
     /*
@@ -125,17 +132,19 @@ void setup_mmu(void)
 
     /*
      * Page directory pointer entries.
-     * Our address contains usable bits 30 and 31, so there are four of them.
+     * We map BOOTSTRAP_PDP_COUNT GiB (one PDP entry = 1 GiB with 512 × 2MB pages).
      */
-    for (i=0; i < 4; i++)
+    for (i = 0; i < BOOTSTRAP_PDP_COUNT; i++)
     {
         int j;
+        struct PDE2M *pde = &PDE[i][0];
 
-        D(kprintf("[BOOT] PDE[%u] 0x%p\n", i, pdes[i]);)
+        D(if ((i & 15) == 0) kprintf("[BOOT] PDP[%u] PDE 0x%p\n", i, pde);)
 
         /*
          * Set the PDP entry up and point to the PDE table.
-         * Field meanings are analogous to PML4, just 'base' points to page directory tables
+         * Bootstrap BSS is always below 4 GiB (loaded by GRUB2 in low memory),
+         * so base_high for the PDE table pointer is always 0.
          */
         PDP[i].p         = 1;
         PDP[i].rw        = 1;
@@ -144,30 +153,34 @@ void setup_mmu(void)
         PDP[i].pcd       = 0;
         PDP[i].a         = 0;
         PDP[i].mbz       = 0;
-        PDP[i].base_low  = (unsigned int)pdes[i] >> 12;
+        PDP[i].base_low  = (unsigned int)pde >> 12;
         PDP[i].nx        = 0;
         PDP[i].avail     = 0;
         PDP[i].base_high = 0;
 
-        for (j=0; j < 512; j++)
+        for (j = 0; j < 512; j++)
         {
-            /* Build a complete PDE set (512 entries) for every PDP entry */
-            struct PDE2M *PDE = pdes[i];
+            /*
+             * Build a complete PDE set (512 entries) for every PDP entry.
+             * Use unsigned long long for the physical base address since
+             * we're in 32-bit mode but mapping addresses above 4 GiB.
+             */
+            unsigned long long base = ((unsigned long long)i << 30) | ((unsigned long long)j << 21);
 
-            PDE[j].p         = 1;
-            PDE[j].rw        = 1;
-            PDE[j].us        = 1;
-            PDE[j].pwt       = 0;
-            PDE[j].pcd       = 0;
-            PDE[j].a         = 0;
-            PDE[j].d         = 0;       /* Clear write tracking bit                                                        */
-            PDE[j].g         = 0;       /* Page is global                                                                  */
-            PDE[j].pat       = 0;       /* Most significant PAT bit                                                        */
-            PDE[j].ps        = 1;       /* It's PDE (not PTE) and page size will be 2MB (after we enable PAE)              */
-            PDE[j].base_low  = ((i << 30) + (j << 21)) >> 13;   /* Base address of the physical page. This is 1:1 mapping. */
-            PDE[j].avail     = 0;
-            PDE[j].nx        = 0;
-            PDE[j].base_high = 0;
+            pde[j].p         = 1;
+            pde[j].rw        = 1;
+            pde[j].us        = 1;
+            pde[j].pwt       = 0;
+            pde[j].pcd       = 0;
+            pde[j].a         = 0;
+            pde[j].d         = 0;
+            pde[j].g         = 0;
+            pde[j].pat       = 0;
+            pde[j].ps        = 1;       /* 2MB page size                                                                   */
+            pde[j].base_low  = (unsigned int)(base >> 13);  /* Physical page base address bits [31:13]                     */
+            pde[j].avail     = 0;
+            pde[j].nx        = 0;
+            pde[j].base_high = (unsigned int)((base >> 32) & 0x000FFFFF); /* Physical page base address bits [51:32]       */
         }
     }
 
