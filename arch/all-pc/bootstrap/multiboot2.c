@@ -202,13 +202,24 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
             )
 
             /*
+             * Check if framebuffer is above 4 GiB. VBEModeInfo.phys_base is 32-bit,
+             * so we must skip framebuffer setup entirely when the address doesn't fit.
+             * This is common on EFI systems with ReBAR or large VRAM GPUs.
+             */
+#ifdef MULTIBOOT_64BIT
+            int fb_reachable = (fb->common.framebuffer_addr <= 0xFFFFFFFFULL);
+#else
+            int fb_reachable = (fb->common.framebuffer_addr_high == 0);
+#endif
+
+            /*
              * AROS VESA driver supports only RGB framebuffer because we are
              * unlikely to have VGA palette registers for other cases.
              * FIXME: we have some pointer to palette registers. We just need to
              * pass it to the bootstrap and handle it there (how? Is it I/O port
              * address or memory-mapped I/O address?)
              */
-            if (fb->common.framebuffer_type == MB2_FRAMEBUFFER_RGB)
+            if (fb_reachable && fb->common.framebuffer_type == MB2_FRAMEBUFFER_RGB)
             {
                 /*
                  * We have a framebuffer but no VBE information.
