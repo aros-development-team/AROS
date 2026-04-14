@@ -46,12 +46,12 @@ static struct
  * The MMU pages and directories. They are stored at fixed location and may be either reused in the
  * 64-bit kernel, or replaced by it.
  *
- * 64 PDP entries × 512 PDEs each = 32768 2MB pages = 64 GiB identity map.
- * EFI firmware (especially with ReBAR / large-VRAM GPUs) may place GRUB2-loaded
- * kernel modules above 4 GiB, so the bootstrap page tables must cover enough
- * address space for the ljmp into the 64-bit kernel to succeed.
+ * 512 PDP entries × 512 PDEs each = 262144 2MB pages = 512 GiB identity map.
+ * EFI firmware (especially with ReBAR / large-VRAM GPUs) may place GOP framebuffers
+ * far above 4 GiB. Keeping a wider early identity map avoids triple-fault resets
+ * when bootconsole touches a high framebuffer before the kernel rebuilds MMU tables.
  */
-#define BOOTSTRAP_PDP_COUNT 64
+#define BOOTSTRAP_PDP_COUNT 512
 
 static struct PML4E PML4[512]                    __attribute__((used,aligned(4096),section(".bss.aros.tables")));
 static struct PDPE  PDP[512]                     __attribute__((used,aligned(4096),section(".bss.aros.tables")));
@@ -61,7 +61,7 @@ static struct PDE2M PDE[BOOTSTRAP_PDP_COUNT][512] __attribute__((used,aligned(40
  * The 64-bit long mode may be activated only, when MMU paging is enabled. Therefore the basic
  * MMU tables have to be prepared first.
  *
- * This routine creates a 64 GiB identity map using 2MB pages so that the ljmp into the 64-bit
+ * This routine creates a 512 GiB identity map using 2MB pages so that the ljmp into the 64-bit
  * kernel succeeds even when GRUB2/EFI places kernel modules above 4 GiB.
  *
  * This mapping may be changed later by the 64-bit kernel, in order to provide separate address spaces,

@@ -135,19 +135,25 @@ void core_LoadMMU(struct CPUMMUConfig *MMU)
     wrcr(cr3, MMU->mmu_PML4);
 }
 
-void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop)
+void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop, IPTR maptop)
 {
+    IPTR top = memtop;
+
+    if (maptop > top)
+        top = maptop;
+
     /*
      * How many PDE entries shall be created?
-     * Keep a larger identity-mapped window by default (64 GiB) so MMIO BARs
-     * placed above 4 GiB (common with ReBAR/large VRAM GPUs and 64-bit PCI
-     * BARs) are directly accessible during early driver init.
+     * Build an identity map window large enough for physical RAM and the
+     * currently active GOP framebuffer range. This keeps high ReBAR/GOP BARs
+     * mapped while avoiding oversized early allocations on systems that don't
+     * need them.
      */
-    MMU->mmu_PDEPageCount = 32768; /* 32768 * 2 MiB = 64 GiB */
-
-    /* Does RAM exceed 4GB? adjust amount of PDE pages */
-    if (((memtop + (1 << 21) - 1) >> 21) > MMU->mmu_PDEPageCount)
-        MMU->mmu_PDEPageCount = (memtop + (1 << 21) - 1) >> 21;
+    MMU->mmu_PDEPageCount = (top + (1 << 21) - 1) >> 21;
+    if (MMU->mmu_PDEPageCount < 2048)       /* keep at least 4 GiB mapped */
+        MMU->mmu_PDEPageCount = 2048;
+    if (MMU->mmu_PDEPageCount > 262144)     /* cap at 512 GiB */
+        MMU->mmu_PDEPageCount = 262144;
 
     D(bug("[Kernel] core_SetupMMU: Re-creating the MMU pages for first %dMB area\n", MMU->mmu_PDEPageCount << 1));
 

@@ -46,6 +46,7 @@ static APTR core_BSPAllocTLS(struct KernBootPrivate *);
 static APTR core_BSPAllocTSS(struct KernBootPrivate *);
 static APTR core_BSPAllocGDT(struct KernBootPrivate *);
 static APTR core_AllocIDT(struct KernBootPrivate *);
+static void boot_dump_video_info(const struct TagItem *msg);
 
 /* Common IBM PC memory layout (64bit version) */
 static const struct MemRegion PC_Memory[] =
@@ -126,8 +127,57 @@ static void boot_start(struct TagItem *msg)
     fb_Mirror = (void *)LibGetTagData(KRN_ProtAreaEnd, 0x101000, msg);
 
     con_InitTagList(msg);
+    boot_dump_video_info(msg);
 
     kernel_cstart(msg);
+}
+
+static void boot_dump_video_info(const struct TagItem *msg)
+{
+    struct TagItem *tag;
+    struct vbe_mode *vmode = NULL;
+    UWORD vbemode = 0xFFFF;
+    IPTR fb_addr = 0;
+    struct TagItem *scan = (struct TagItem *)msg;
+
+    while ((tag = LibNextTagItem(&scan)))
+    {
+        switch (tag->ti_Tag)
+        {
+        case KRN_VBEModeInfo:
+            vmode = (struct vbe_mode *)tag->ti_Data;
+            break;
+        case KRN_VBEMode:
+            vbemode = (UWORD)tag->ti_Data;
+            break;
+        case KRN_FBAddr:
+            fb_addr = tag->ti_Data;
+            break;
+        }
+    }
+
+    if (!vmode)
+    {
+        bug("[Kernel] Boot video: no VBE/GOP mode info in boot tags\n");
+        return;
+    }
+
+    bug("[Kernel] Boot video: mode=0x%04X %ux%ux%u pitch=%u fb=0x%016llX\n",
+        vbemode,
+        (unsigned)vmode->x_resolution,
+        (unsigned)vmode->y_resolution,
+        (unsigned)vmode->bits_per_pixel,
+        (unsigned)vmode->bytes_per_scanline,
+        (unsigned long long)(fb_addr ? fb_addr : (IPTR)vmode->phys_base));
+    bug("[Kernel] Boot video masks: R%u@%u G%u@%u B%u@%u X%u@%u\n",
+        (unsigned)vmode->red_mask_size,
+        (unsigned)vmode->red_field_position,
+        (unsigned)vmode->green_mask_size,
+        (unsigned)vmode->green_field_position,
+        (unsigned)vmode->blue_mask_size,
+        (unsigned)vmode->blue_field_position,
+        (unsigned)vmode->reserved_mask_size,
+        (unsigned)vmode->reserved_field_position);
 }
 
 #if defined(_KERNEL_EARLYTRAP)
@@ -181,7 +231,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     struct TagItem *msg = (struct TagItem *)start_msg;
     struct MemHeader *mh, *mh2;
     struct mb_mmap *mmap = NULL;
-    IPTR mmap_len = 0, addr = 0, klo  = 0, memtop = 0;
+    IPTR mmap_len = 0, addr = 0, klo  = 0, memtop = 0, maptop = 0;
     struct TagItem *tag;
 #if defined(__AROSEXEC_SMP__)
     struct X86SchedulerPrivate  *scheduleData;
@@ -383,8 +433,24 @@ void kernel_cstart(const struct TagItem *start_msg)
     // Re-read mmap pointer, since we have modified it previously...
     mmap = (struct mb_mmap *)LibGetTagData(KRN_MMAPAddress, 0, BootMsg);
     memtop = mmap_LargestAddress(mmap, mmap_len);
-    D(bug("[Kernel] %s: memtop @ 0x%p\n", __func__, memtop));
-    core_SetupMMU(&__KernBootPrivate->MMU, memtop);
+    maptop = memtop;
+    {
+        IPTR fb_addr = LibGetTagData(KRN_FBAddr, 0, BootMsg);
+        struct vbe_mode *vmode = (struct vbe_mode *)LibGetTagData(KRN_VBEModeInfo, 0, BootMsg);
+
+        if (fb_addr)
+        {
+            IPTR fb_end = fb_addr;
+
+            if (vmode)
+                fb_end = fb_addr + ((IPTR)vmode->bytes_per_scanline * (IPTR)vmode->y_resolution);
+
+            if (fb_end > maptop)
+                maptop = fb_end;
+        }
+    }
+    D(bug("[Kernel] %s: memtop @ 0x%p, maptop @ 0x%p\n", __func__, memtop, maptop));
+    core_SetupMMU(&__KernBootPrivate->MMU, memtop, maptop);
 
     /*
      * Here we ended all boot-time allocations.

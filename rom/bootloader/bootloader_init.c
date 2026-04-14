@@ -86,7 +86,14 @@ static void GetCmdLine(char *Kernel_Args, struct BootLoaderBase *BootLoaderBase)
     }
 }
 
-static const ULONG masks [] = {0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff};
+static ULONG mask_for_bits(UBYTE bits)
+{
+    if (bits == 0)
+        return 0;
+    if (bits >= 32)
+        return 0xFFFFFFFFUL;
+    return ((1UL << bits) - 1UL);
+}
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 {
@@ -186,10 +193,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
             {
                 /* VBE v3 structures specify linear framebuffer parameters in separate fields */
                 BootLoaderBase->Vesa->BytesPerLine     = vmi->linear_bytes_per_scanline;
-                BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->linear_red_mask_size-1]<<vmi->linear_red_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->linear_blue_mask_size-1]<<vmi->linear_blue_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->linear_green_mask_size-1]<<vmi->linear_green_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->linear_reserved_mask_size-1]<<vmi->linear_reserved_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Red]   = mask_for_bits(vmi->linear_red_mask_size) << vmi->linear_red_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Blue]  = mask_for_bits(vmi->linear_blue_mask_size) << vmi->linear_blue_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Green] = mask_for_bits(vmi->linear_green_mask_size) << vmi->linear_green_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Alpha] = mask_for_bits(vmi->linear_reserved_mask_size) << vmi->linear_reserved_field_position;
                 BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->linear_red_field_position - vmi->linear_red_mask_size;
                 BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->linear_blue_field_position - vmi->linear_blue_mask_size;
                 BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->linear_green_field_position - vmi->linear_green_mask_size;
@@ -198,10 +205,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
             else
             {
                 BootLoaderBase->Vesa->BytesPerLine     = vmi->bytes_per_scanline;
-                BootLoaderBase->Vesa->Masks [VI_Red]   = masks[vmi->red_mask_size-1]<<vmi->red_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Blue]  = masks[vmi->blue_mask_size-1]<<vmi->blue_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Green] = masks[vmi->green_mask_size-1]<<vmi->green_field_position;
-                BootLoaderBase->Vesa->Masks [VI_Alpha] = masks[vmi->reserved_mask_size-1]<<vmi->reserved_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Red]   = mask_for_bits(vmi->red_mask_size) << vmi->red_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Blue]  = mask_for_bits(vmi->blue_mask_size) << vmi->blue_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Green] = mask_for_bits(vmi->green_mask_size) << vmi->green_field_position;
+                BootLoaderBase->Vesa->Masks [VI_Alpha] = mask_for_bits(vmi->reserved_mask_size) << vmi->reserved_field_position;
                 BootLoaderBase->Vesa->Shifts[VI_Red]   = 32 - vmi->red_field_position - vmi->red_mask_size;
                 BootLoaderBase->Vesa->Shifts[VI_Blue]  = 32 - vmi->blue_field_position - vmi->blue_mask_size;
                 BootLoaderBase->Vesa->Shifts[VI_Green] = 32 - vmi->green_field_position - vmi->green_mask_size;

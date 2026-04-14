@@ -45,12 +45,8 @@ void con_InitTagList(const struct TagItem *tags)
 
     if (vbemode)
     {
-        con_InitVESA(vbever, vbemode);
-
-        /* Override with full 64-bit address from GOP/multiboot2.
-         * VBEModeInfo.phys_base is 32-bit and truncates on >4GB systems. */
-        if (fb_addr)
-            scr_FrameBuffer = (void *)fb_addr;
+        /* Use full 64-bit GOP framebuffer address when available, before any fb init. */
+        con_InitVESAEx(vbever, vbemode, fb_addr ? (void *)fb_addr : NULL);
     }
     else
         con_InitVGA();

@@ -33,7 +33,9 @@ void *krnAllocBootMemAligned(unsigned long size, unsigned int align)
     {
         /* Our allocation must succeed. We can't continue without it. */
         krnPanic(NULL, "Not enough memory for boot information\n"
-                       "Increase reserved space in bootstrap");
+                       "Increase reserved space in bootstrap\n"
+                       "BootMemPtr=0x%p request=%lu end=0x%p limit=0x%p",
+                       BootMemPtr, size, end, BootMemLimit);
     }
 #endif
 
