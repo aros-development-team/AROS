@@ -1271,7 +1271,14 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     CacheClearE((APTR)devCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
 
     /* ---- Address Device ---- */
+#if 1
+    /* BSR = 0 is needed on real hardware for the following GET_DESCRIPTORS to work
+       (it won't execute on devaddr=0, it needs EP in state Addressed) */
+    if(TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 0, NULL,
+#else
+    /* original code */
     if(TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 1, NULL,
+#endif
             timerreq)) {
         pciusbError("xHCI",
                     DEBUGWARNCOLOR_SET "Address Device (BSR=1) failed" DEBUGCOLOR_RESET "\n");
