@@ -49,16 +49,14 @@ static const char strXhciPortTaskName[] = "xHCI port task";
  *  - RW fields we deliberately change (PP/PR/WPR and, for legacy disable, PED)
  *  - RW1C change bits we want to clear
  *
- * Note: Some controllers tolerate writing PED=0 to "disable"; others may ignore
- * it. We keep this behavior for now, but still mask to avoid disturbing RO bits.
  */
 #define XHCI_PORTSC_RW_MASK \
-    (XHCIF_PR_PORTSC_PP | XHCIF_PR_PORTSC_PR | XHCIF_PR_PORTSC_WPR | XHCIF_PR_PORTSC_PED)
+    (XHCIF_PR_PORTSC_PP | XHCIF_PR_PORTSC_PR | XHCIF_PR_PORTSC_WPR)
 
 #define XHCI_PORTSC_RW1C_MASK \
     (XHCIF_PR_PORTSC_CSC | XHCIF_PR_PORTSC_PEC | XHCIF_PR_PORTSC_PLC | \
      XHCIF_PR_PORTSC_OCC | XHCIF_PR_PORTSC_PRC | XHCIF_PR_PORTSC_WRC | \
-     XHCIF_PR_PORTSC_CEC)
+     XHCIF_PR_PORTSC_CEC | XHCIF_PR_PORTSC_PED)
 
 /* Compose a masked PORTSC write: preserve only the RW bits, plus requested RW1C clears. */
 static inline ULONG xhciPortscComposeWrite(ULONG oldportsc, ULONG set_rw_bits, ULONG clear_rw_bits, ULONG rw1c_bits)
@@ -391,8 +389,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
     case UFS_PORT_ENABLE:
         /*
          * ClearFeature(PORT_ENABLE) disables the port.
-         * For xHCI, "port disable" semantics are controller-defined; we keep the
-         * existing behavior of clearing PED plus tearing down the slot.
+         * For xHCI, "port disable" is done by writing 1 to PED
          */
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Disabling Port"
@@ -406,8 +403,7 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
             xhciDisconnectDevice(hc, devCtx, unit->hu_TimerReq);
         }
 
-        /* Attempt to clear PED via masked write (won't disturb RO fields). */
-        writeval = xhciPortscComposeWrite(oldval, 0, XHCIF_PR_PORTSC_PED, 0);
+        clearbits |= XHCIF_PR_PORTSC_PED;
         cmdgood = TRUE;
         break;
 
