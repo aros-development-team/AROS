@@ -150,8 +150,8 @@ void core_SetupMMU(struct CPUMMUConfig *MMU, IPTR memtop, IPTR maptop)
      * need them.
      */
     MMU->mmu_PDEPageCount = (top + (1 << 21) - 1) >> 21;
-    if (MMU->mmu_PDEPageCount < 2048)       /* keep at least 4 GiB mapped */
-        MMU->mmu_PDEPageCount = 2048;
+    if (MMU->mmu_PDEPageCount < 32768)      /* keep at least 64 GiB mapped */
+        MMU->mmu_PDEPageCount = 32768;
     if (MMU->mmu_PDEPageCount > 262144)     /* cap at 512 GiB */
         MMU->mmu_PDEPageCount = 262144;
 
