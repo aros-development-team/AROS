@@ -227,6 +227,25 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
                 VBEModeInfo.green_field_position        = fb->framebuffer_green_field_position;
                 VBEModeInfo.blue_mask_size              = fb->framebuffer_blue_mask_size;
                 VBEModeInfo.blue_field_position         = fb->framebuffer_blue_field_position;
+                {
+                    UBYTE maxend = 0;
+                    UBYTE rend = fb->framebuffer_red_field_position + fb->framebuffer_red_mask_size;
+                    UBYTE gend = fb->framebuffer_green_field_position + fb->framebuffer_green_mask_size;
+                    UBYTE bend = fb->framebuffer_blue_field_position + fb->framebuffer_blue_mask_size;
+                    if (rend > maxend) maxend = rend;
+                    if (gend > maxend) maxend = gend;
+                    if (bend > maxend) maxend = bend;
+                    if (fb->common.framebuffer_bpp > maxend)
+                    {
+                        VBEModeInfo.reserved_mask_size      = fb->common.framebuffer_bpp - maxend;
+                        VBEModeInfo.reserved_field_position = maxend;
+                    }
+                    else
+                    {
+                        VBEModeInfo.reserved_mask_size      = 0;
+                        VBEModeInfo.reserved_field_position = 0;
+                    }
+                }
                 VBEModeInfo.phys_base                   = fb->common.framebuffer_addr;
                 VBEModeInfo.linear_bytes_per_scanline   = fb->common.framebuffer_pitch;
                 VBEModeInfo.linear_red_mask_size        = fb->framebuffer_red_mask_size;
@@ -235,6 +254,8 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
                 VBEModeInfo.linear_green_field_position = fb->framebuffer_green_field_position;
                 VBEModeInfo.linear_blue_mask_size       = fb->framebuffer_blue_mask_size;
                 VBEModeInfo.linear_blue_field_position  = fb->framebuffer_blue_field_position;
+                VBEModeInfo.linear_reserved_mask_size   = VBEModeInfo.reserved_mask_size;
+                VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
 
                 tag->ti_Tag  = KRN_VBEModeInfo;
                 tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;

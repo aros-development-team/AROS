@@ -19,9 +19,9 @@
 __attribute__((section(".data"))) unsigned char scr_Type = SCR_UNKNOWN;
 __attribute__((section(".data"))) static unsigned char bcdebugflags = 0;
 
-void con_InitVESA(unsigned short version, struct vbe_mode *mode)
+void con_InitVESAEx(unsigned short version, struct vbe_mode *mode, void *fb_override)
 {
-    scr_FrameBuffer = (version >= 0x0200) ? (void *)(unsigned long)mode->phys_base : NULL;
+    scr_FrameBuffer = fb_override ? fb_override : ((version >= 0x0200) ? (void *)(unsigned long)mode->phys_base : NULL);
 
     if (mode->mode_attributes & VM_GRAPHICS)
     {
@@ -59,6 +59,11 @@ void con_InitVESA(unsigned short version, struct vbe_mode *mode)
     /* We must have valid framebuffer address here */
     if (!scr_FrameBuffer)
         scr_Type = SCR_UNKNOWN;
+}
+
+void con_InitVESA(unsigned short version, struct vbe_mode *mode)
+{
+    con_InitVESAEx(version, mode, NULL);
 }
 
 void con_InitVGA(void)
