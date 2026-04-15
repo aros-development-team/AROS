@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -67,6 +67,12 @@
 #endif
 
 #define AVOID_FLICKER 1
+
+#if defined(__mc68000__)
+#define ASL_NOINLINE __attribute__((noinline))
+#else
+#define ASL_NOINLINE
+#endif
 
 /*****************************************************************************************/
 

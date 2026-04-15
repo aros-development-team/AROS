@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -32,6 +32,41 @@
 //#define ADEBUG 0
 
 #include <aros/debug.h>
+
+/*****************************************************************************************/
+
+static ASL_NOINLINE ULONG DoASLSMFilterFunc(struct IntSMReq *ismreq, struct LayoutData *ld, ULONG displayid)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    REG_A4 = (ULONG)ismreq->ism_IntReq.ir_BasePtr;
+    REG_A0 = (ULONG)ismreq->ism_FilterFunc;
+    REG_A2 = (ULONG)ld->ld_Req;
+    REG_A1 = (ULONG)displayid;
+    ret = (*MyEmulHandle->EmulCallDirect68k)(ismreq->ism_FilterFunc->h_Entry);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[hook], %%a0\n\t"
+        "move.l %[obj],  %%a2\n\t"
+        "move.l %[base], %%a4\n\t"
+        "movea.l 8(%%a0), %%a3\n\t"
+        "move.l %[msg],  %%a1\n\t"
+        "jsr (%%a3)\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [hook]  "g" (ismreq->ism_FilterFunc),
+          [obj]   "g" (ld->ld_Req),
+          [msg]   "g" ((APTR)(IPTR)displayid),
+          [base]  "g" (ismreq->ism_IntReq.ir_BasePtr)
+        : "a0", "a1", "a2", "a3", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)(IPTR)displayid);
+#endif
+    return ret;
+}
 
 /*****************************************************************************************/
 
@@ -101,23 +136,8 @@ LONG SMGetModes(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
             if (ismreq->ism_FilterFunc)
             {
-#ifdef __MORPHOS__
-                {
-                    ULONG ret;
-
-                    REG_A4 = (ULONG)ismreq->ism_IntReq.ir_BasePtr;      /* Compatability */
-                    REG_A0 = (ULONG)ismreq->ism_FilterFunc;
-                    REG_A2 = (ULONG)ld->ld_Req;
-                    REG_A1 = (ULONG)displayid;
-                    ret = (*MyEmulHandle->EmulCallDirect68k)(ismreq->ism_FilterFunc->h_Entry);
-
-                    if (ret == 0)
-                        continue;
-                }
-#else
-                if (CallHookPkt(ismreq->ism_FilterFunc, ld->ld_Req, (APTR)(IPTR)displayid) == 0)
+                if (DoASLSMFilterFunc(ismreq, ld, displayid) == 0)
                     continue;
-#endif
             }
 
             dispmode = AllocPooled(ld->ld_IntReq->ir_MemPool, sizeof(struct DisplayMode));

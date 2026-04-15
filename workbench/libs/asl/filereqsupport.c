@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -33,6 +33,93 @@
 //#define ADEBUG 0
 
 #include <aros/debug.h>
+
+/*****************************************************************************************/
+
+static ASL_NOINLINE ULONG DoASLHookFunc(struct IntFileReq *ifreq, ULONG mask, APTR object, struct FileRequester *fr)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    UWORD *funcptr = ifreq->ifr_HookFunc;
+    LONG *p = ((ULONG *)REG_A7) - 3;
+    REG_A7 = (ULONG)p;
+    p[0] = (ULONG)mask;
+    p[1] = (ULONG)object;
+    p[2] = (ULONG)fr;
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 -= 4;
+    REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;
+    ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 += 4;
+    REG_A7 += 3 * sizeof(ULONG);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[fr], -(%%sp)\n\t"
+        "move.l %[obj], -(%%sp)\n\t"
+        "move.l %[mask], -(%%sp)\n\t"
+        "movea.l %[func], %%a1\n\t"
+        "move.l %[base], %%a4\n\t"
+        "move.w (%%a1), %%d1\n\t"
+        "cmp.w #0xFF00, %%d1\n\t"
+        "blo 1f\n\t"
+        "subq.l #4, %%sp\n\t"
+        "jsr (%%a1)\n\t"
+        "addq.l #4, %%sp\n\t"
+        "bra 2f\n\t"
+        "1:\n\t"
+        "jsr (%%a1)\n\t"
+        "2:\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "lea 12(%%sp), %%sp\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [func] "g" (ifreq->ifr_HookFunc),
+          [base] "g" (ifreq->ifr_IntReq.ir_BasePtr),
+          [mask] "g" (mask),
+          [obj]  "g" (object),
+          [fr]   "g" (fr)
+        : "a0", "a1", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = ifreq->ifr_HookFunc(mask, object, fr);
+#endif
+    return ret;
+}
+
+static ASL_NOINLINE ULONG DoASLFileFilterFunc(struct IntFileReq *ifreq, struct FileRequester *freq, struct AnchorPath *ap)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;
+    REG_A0 = (ULONG)ifreq->ifr_FilterFunc;
+    REG_A2 = (ULONG)freq;
+    REG_A1 = (ULONG)ap;
+    ret = (*MyEmulHandle->EmulCallDirect68k)(ifreq->ifr_FilterFunc->h_Entry);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[hook], %%a0\n\t"
+        "move.l %[obj],  %%a2\n\t"
+        "move.l %[base], %%a4\n\t"
+        "movea.l 8(%%a0), %%a3\n\t"
+        "move.l %[msg],  %%a1\n\t"
+        "jsr (%%a3)\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [hook]  "g" (ifreq->ifr_FilterFunc),
+          [obj]   "g" (freq),
+          [msg]   "g" (ap),
+          [base]  "g" (ifreq->ifr_IntReq.ir_BasePtr)
+        : "a0", "a1", "a2", "a3", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = CallHookPkt(ifreq->ifr_FilterFunc, freq, ap);
+#endif
+    return ret;
+}
 
 /*****************************************************************************************/
 
@@ -442,37 +529,8 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
                     D(bug("FRGetDirectory: 1 fr_Drawer 0x%lx <%s>\n",path,path));
 
                     /* return code 0 means, add to list */
-
-#ifdef __MORPHOS__
-                    {
-                        ULONG ret;
-                        UWORD *funcptr = ifreq->ifr_HookFunc;
-                        LONG *p = ((ULONG *)REG_A7) - 3;
-
-                        REG_A7 = (ULONG)p;
-                        p[0] = (ULONG)FRF_FILTERFUNC;
-                        p[1] = (ULONG)&ap;
-                        p[2] = (ULONG)freq;
-
-                        if (*funcptr >= (UWORD)0xFF00)
-                            REG_A7 -= 4;
-
-                        REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;   /* Compatability */
-
-                        ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
-
-                        if (*funcptr >= (UWORD)0xFF00)
-                            REG_A7 += 4;
-
-                        REG_A7 += 3 * sizeof(ULONG);
-
-                        if (ret != 0)
-                            addentry = FALSE;
-                    }
-#else
-                    if (ifreq->ifr_HookFunc(FRF_FILTERFUNC, &ap, freq) != 0)
+                    if (DoASLHookFunc(ifreq, FRF_FILTERFUNC, &ap, freq) != 0)
                         addentry = FALSE;
-#endif
 
                     freq->fr_Drawer = old_frdrawer;
                 }
@@ -496,23 +554,8 @@ BOOL FRGetDirectory(STRPTR path, struct LayoutData *ld, struct AslBase_intern *A
 
                     /* return code TRUE (!= 0) means, add to list */
 
-#ifdef __MORPHOS__
-                    {
-                        ULONG ret;
-
-                        REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;   /* Compatability */
-                        REG_A0 = (ULONG)ifreq->ifr_FilterFunc;
-                        REG_A2 = (ULONG)freq;
-                        REG_A1 = (ULONG)&ap;
-                        ret = (*MyEmulHandle->EmulCallDirect68k)(ifreq->ifr_FilterFunc->h_Entry);
-
-                        if (ret == 0)
-                            addentry = FALSE;
-                    }
-#else
-                    if (CallHookPkt(ifreq->ifr_FilterFunc, freq, &ap) == 0)
+                    if (DoASLFileFilterFunc(ifreq, freq, &ap) == 0)
                         addentry = FALSE;
-#endif
 
                     freq->fr_Drawer = old_frdrawer;
 

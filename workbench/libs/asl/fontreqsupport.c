@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -32,6 +32,93 @@
 //#define ADEBUG 0
 
 #include <aros/debug.h>
+
+/*****************************************************************************************/
+
+static ASL_NOINLINE ULONG DoASLFontHookFunc(struct IntFontReq *iforeq, ULONG mask, APTR object, struct FontRequester *fr)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    UWORD *funcptr = iforeq->ifo_HookFunc;
+    ULONG *p = ((ULONG *)REG_A7) - 3;
+    REG_A7 = (ULONG)p;
+    p[0] = (ULONG)FOF_FILTERFUNC;
+    p[1] = (ULONG)&avf_start->af_Attr;
+    p[2] = (ULONG)ld->ld_Req;
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 -= 4;
+    REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;
+    ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 += 4;
+    REG_A7 += 3 * sizeof(ULONG);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[fr], -(%%sp)\n\t"
+        "move.l %[obj], -(%%sp)\n\t"
+        "move.l %[mask], -(%%sp)\n\t"
+        "movea.l %[func], %%a1\n\t"
+        "move.l %[base], %%a4\n\t"
+        "move.w (%%a1), %%d1\n\t"
+        "cmp.w #0xFF00, %%d1\n\t"
+        "blo 1f\n\t"
+        "subq.l #4, %%sp\n\t"
+        "jsr (%%a1)\n\t"
+        "addq.l #4, %%sp\n\t"
+        "bra 2f\n\t"
+        "1:\n\t"
+        "jsr (%%a1)\n\t"
+        "2:\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "lea 12(%%sp), %%sp\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [func] "g" (iforeq->ifo_HookFunc),
+          [base] "g" (iforeq->ifo_IntReq.ir_BasePtr),
+          [mask] "g" (mask),
+          [obj]  "g" (object),
+          [fr]   "g" (fr)
+        : "a0", "a1", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = iforeq->ifo_HookFunc(mask, object, fr);
+#endif
+    return ret;
+}
+
+static ASL_NOINLINE ULONG DoASLFontFilterFunc(struct IntFontReq *iforeq, struct LayoutData *ld, struct AvailFonts *avf)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;
+    REG_A0 = (ULONG)iforeq->ifo_FilterFunc;
+    REG_A2 = (ULONG)ld->ld_Req;
+    REG_A1 = (ULONG)&avf->af_Attr;
+    ret = (*MyEmulHandle->EmulCallDirect68k)(iforeq->ifo_FilterFunc->h_Entry);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[hook], %%a0\n\t"
+        "move.l %[obj],  %%a2\n\t"
+        "move.l %[base], %%a4\n\t"
+        "movea.l 8(%%a0), %%a3\n\t"
+        "move.l %[msg],  %%a1\n\t"
+        "jsr (%%a3)\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [hook]  "g" (iforeq->ifo_FilterFunc),
+          [obj]   "g" (ld->ld_Req),
+          [msg]   "g" (&avf->af_Attr),
+          [base]  "g" (iforeq->ifo_IntReq.ir_BasePtr)
+        : "a0", "a1", "a2", "a3", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = CallHookPkt(iforeq->ifo_FilterFunc, ld->ld_Req, &avf->af_Attr);
+#endif
+    return ret;
+}
 
 /*****************************************************************************************/
 
@@ -147,55 +234,15 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
         if (iforeq->ifo_FilterFunc)
         {
-#ifdef __MORPHOS__
-            {
-                ULONG ret;
-
-                REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;  /* Compatability */
-                REG_A0 = (ULONG)iforeq->ifo_FilterFunc;
-                REG_A2 = (ULONG)ld->ld_Req;
-                REG_A1 = (ULONG)&avf_start->af_Attr;
-                ret = (*MyEmulHandle->EmulCallDirect68k)(iforeq->ifo_FilterFunc->h_Entry);
-
-                if (!ret) continue;
-            }
-#else
-            if (!(CallHookPkt(iforeq->ifo_FilterFunc, ld->ld_Req, &avf_start->af_Attr))) continue;
-#endif
+            if (!(DoASLFontFilterFunc(iforeq, ld, avf_start)))
+                continue;
         }
 
         if (iforeq->ifo_HookFunc && (iforeq->ifo_Flags & FOF_FILTERFUNC))
         {
-#ifdef __MORPHOS__
-            {
-                ULONG ret;
-                UWORD *funcptr = iforeq->ifo_HookFunc;
-                ULONG *p = ((ULONG *)REG_A7) - 3;
-
-                REG_A7 = (ULONG)p;
-                p[0] = (ULONG)FOF_FILTERFUNC;
-                p[1] = (ULONG)&avf_start->af_Attr;
-                p[2] = (ULONG)ld->ld_Req;
-
-                if (*funcptr >= (UWORD)0xFF00)
-                    REG_A7 -= 4;
-
-                REG_A4 = (ULONG)iforeq->ifo_IntReq.ir_BasePtr;  /* Compatability */
-
-                ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
-
-                if (*funcptr >= (UWORD)0xFF00)
-                    REG_A7 += 4;
-
-                REG_A7 += 3 * sizeof(ULONG);
-
-                if (!ret) continue;
-            }
-#else
-            if (!(iforeq->ifo_HookFunc(FOF_FILTERFUNC,
+            if (!(DoASLFontHookFunc(iforeq, FOF_FILTERFUNC,
                                        &avf_start->af_Attr,
                                        (struct FontRequester *)ld->ld_Req))) continue;
-#endif
         }
 
         fontnode = MyAllocVecPooled(ld->ld_IntReq->ir_MemPool,

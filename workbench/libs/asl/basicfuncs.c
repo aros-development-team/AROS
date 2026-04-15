@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Basic helpfuncs for Asl.
 */
@@ -40,6 +40,93 @@
 #define DEBUG 0
 
 #include <aros/debug.h>
+
+/*****************************************************************************************/
+
+static ASL_NOINLINE ULONG DoASLIntuiMsgFunc(struct IntReq *intreq, APTR req, struct IntuiMessage *imsg)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    REG_A4 = (ULONG)intreq->ir_BasePtr;
+    REG_A0 = (ULONG)intreq->ir_IntuiMsgFunc;
+    REG_A2 = (ULONG)req;
+    REG_A1 = (ULONG)imsg;
+    ret = (*MyEmulHandle->EmulCallDirect68k)(intreq->ir_IntuiMsgFunc->h_Entry);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[hook], %%a0\n\t"
+        "move.l %[req],  %%a2\n\t"
+        "move.l %[base], %%a4\n\t"
+        "movea.l 8(%%a0), %%a3\n\t"
+        "move.l %[imsg], %%a1\n\t"
+        "jsr (%%a3)\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [hook]  "g" (intreq->ir_IntuiMsgFunc),
+          [req]   "g" (req),
+          [imsg]  "g" (imsg),
+          [base]  "g" (intreq->ir_BasePtr)
+        : "a0", "a1", "a2", "a3", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = CallHookPkt(intreq->ir_IntuiMsgFunc, req, imsg);
+#endif
+    return ret;
+}
+
+static ASL_NOINLINE ULONG DoASLHookFunc(struct IntFileReq *ifreq, ULONG mask, APTR object, struct FileRequester *fr)
+{
+    ULONG ret;
+#ifdef __MORPHOS__
+    UWORD *funcptr = ifreq->ifr_HookFunc;
+    LONG *p = ((ULONG *)REG_A7) - 3;
+    REG_A7 = (ULONG)p;
+    p[0] = (ULONG)mask;
+    p[1] = (ULONG)object;
+    p[2] = (ULONG)fr;
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 -= 4;
+    REG_A4 = (ULONG)ifreq->ifr_IntReq.ir_BasePtr;
+    ret = (ULONG)(*MyEmulHandle->EmulCallDirect68k)(funcptr);
+    if (*funcptr >= (UWORD)0xFF00)
+        REG_A7 += 4;
+    REG_A7 += 3 * sizeof(ULONG);
+#elif defined(__mc68000__)
+    __asm__ volatile (
+        "move.l %%a4, -(%%sp)\n\t"
+        "move.l %[fr], -(%%sp)\n\t"
+        "move.l %[obj], -(%%sp)\n\t"
+        "move.l %[mask], -(%%sp)\n\t"
+        "movea.l %[func], %%a1\n\t"
+        "move.l %[base], %%a4\n\t"
+        "move.w (%%a1), %%d1\n\t"
+        "cmp.w #0xFF00, %%d1\n\t"
+        "blo 1f\n\t"
+        "subq.l #4, %%sp\n\t"
+        "jsr (%%a1)\n\t"
+        "addq.l #4, %%sp\n\t"
+        "bra 2f\n\t"
+        "1:\n\t"
+        "jsr (%%a1)\n\t"
+        "2:\n\t"
+        "move.l %%d0, %[ret]\n\t"
+        "lea 12(%%sp), %%sp\n\t"
+        "move.l (%%sp)+, %%a4\n\t"
+        : [ret] "=r" (ret)
+        : [func] "g" (ifreq->ifr_HookFunc),
+          [base] "g" (ifreq->ifr_IntReq.ir_BasePtr),
+          [mask] "g" (mask),
+          [obj]  "g" (object),
+          [fr]   "g" (fr)
+        : "a0", "a1", "a4", "d0", "d1", "memory", "cc"
+    );
+#else
+    ret = ifreq->ifr_HookFunc(mask, object, fr);
+#endif
+    return ret;
+}
 
 /*****************************************************************************************/
 
@@ -728,19 +815,11 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
             } /* if (imsg->IDCMPWindow is ld->ld_Window or ld->ld_Window2) */
             else if (intreq->ir_IntuiMsgFunc)
             {
-#ifdef __MORPHOS__
-                REG_A4 = (ULONG)intreq->ir_BasePtr;     /* Compatability */
-                REG_A0 = (ULONG)intreq->ir_IntuiMsgFunc;
-                REG_A2 = (ULONG)req;
-                REG_A1 = (ULONG)imsg;
-                (*MyEmulHandle->EmulCallDirect68k)(intreq->ir_IntuiMsgFunc->h_Entry);
-#else
-                CallHookPkt(intreq->ir_IntuiMsgFunc, req, imsg);
-#endif
+                DoASLIntuiMsgFunc(intreq, req, imsg);
             }
             else if ((intreq->ir_ReqType == ASL_FileRequest) && ifreq->ifr_HookFunc && (ifreq->ifr_Flags1 & FRF_INTUIFUNC))
             {
-                ifreq->ifr_HookFunc(FRF_INTUIFUNC, imsg, req);
+                DoASLHookFunc(ifreq, FRF_INTUIFUNC, imsg, req);
             }
             ReplyMsg((struct Message *)imsg);
 
