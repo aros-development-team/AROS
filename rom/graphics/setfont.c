@@ -50,12 +50,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(textFont) {
-        rp->Font       = textFont;
-        rp->TxWidth    = textFont->tf_XSize;
-        rp->TxHeight   = textFont->tf_YSize;
-        rp->TxBaseline = textFont->tf_Baseline;
+    struct TextFont *rpFont;
+
+    if((rpFont = textFont) == NULL) {
+        rpFont = GfxBase->DefaultFont;
     }
+
+    rp->Font       = rpFont;
+    rp->TxWidth    = rpFont->tf_XSize;
+    rp->TxHeight   = rpFont->tf_YSize;
+    rp->TxBaseline = rpFont->tf_Baseline;
 
     AROS_LIBFUNC_EXIT
 
