@@ -525,6 +525,10 @@ static const char *xhciDiagCCName(ULONG cc)
         return "RING_OVERRUN";
     case TRB_CC_EVENT_RING_FULL_ERROR:
         return "EVENT_RING_FULL";
+    case TRB_CC_SHORT_PACKET:
+        return "SHORT_PACKET";
+    case TRB_CC_BABBLE_DETECTED_ERROR:
+        return "BABBLE_DETECTED";
     default:
         return "OTHER";
     }
