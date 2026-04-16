@@ -941,10 +941,10 @@ WORD xhciQueueData(struct PCIController *hc,
     base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
 
     /*
-     * xHCI limits the per-TRB transfer length field to 17 bits.  Do not split
-     * by MaxPacketSize; xHCI TRBs are not packet-sized.
+     * xHCI limits the per-TRB transfer length field to 17 bits (and 64K of
+     * max size). Do not split by MaxPacketSize; xHCI TRBs are not packet-sized.
      */
-    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
+    const ULONG segmax = TRB_TPARAMS_TRBLEN_MAX;
 
     /*
      * If this is a Control DATA Stage TRB, only the first segment is a DATA
@@ -1024,7 +1024,7 @@ WORD xhciQueueData_IO(struct PCIController *hc,
 
     base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
 
-    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
+    const ULONG segmax = TRB_TPARAMS_TRBLEN_MAX;
 
     const BOOL is_ctl_data_stage = (base_type == TRBF_FLAG_TRTYPE_DATA);
 
