@@ -1684,7 +1684,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
                       ((flags & UHFF_MULTI_2) || (flags & UHFF_MULTI_3))) {
                 UBYTE transactions = 1;
 
-                if(flags & UHFF_MULTI_3)
+                if((flags & UHFF_MULTI_3) == UHFF_MULTI_3)
                     transactions = 3;
                 else if(flags & UHFF_MULTI_2)
                     transactions = 2;
