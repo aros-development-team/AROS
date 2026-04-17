@@ -598,7 +598,7 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icid_t icInstance, icid_t intNum)
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
 
     /* write IOAPIC EIO if necessary .. */
-    if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))if (intrMap)
+    if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
          return FALSE;
     }

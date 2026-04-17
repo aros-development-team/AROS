@@ -414,6 +414,7 @@ struct xhci_trb
 /* Data Stage TRB params & Flags */
 #define TRBS_TPARAMS_DS_TRBLEN                  0
 #define TRB_TPARAMS_DS_TRBLEN_SMASK             0x1FFFFu                                        /* 17 bits      */
+#define TRB_TPARAMS_TRBLEN_MAX                  0x10000u                                        /* 64K          */
 #define TRBS_TPARAMS_DS_TDSIZE                  17
 #define TRB_TPARAMS_DS_TDSIZE_SMASK             0x1Fu                                           /* 5 bits       */
 #define TRB_TPARAMS_DS_TDSIZE_MASK              (TRB_TPARAMS_DS_TDSIZE_SMASK << TRBS_TPARAMS_DS_TDSIZE)

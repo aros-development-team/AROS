@@ -174,7 +174,7 @@
 #define EHCI_FRAMELIST_ALIGNMENT 0x0fff
 
 #define EHCI_PAGE_SIZE           4096
-#define EHCI_PAGE_MASK           0xfffff000
+#define EHCI_PAGE_MASK           (~((IPTR)EHCI_PAGE_SIZE - 1))
 #define EHCI_OFFSET_MASK         0x00000fff
 
 #define EHCI_TDQH_ALIGNMENT      0x001f

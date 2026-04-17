@@ -525,6 +525,10 @@ static const char *xhciDiagCCName(ULONG cc)
         return "RING_OVERRUN";
     case TRB_CC_EVENT_RING_FULL_ERROR:
         return "EVENT_RING_FULL";
+    case TRB_CC_SHORT_PACKET:
+        return "SHORT_PACKET";
+    case TRB_CC_BABBLE_DETECTED_ERROR:
+        return "BABBLE_DETECTED";
     default:
         return "OTHER";
     }
@@ -937,10 +941,10 @@ WORD xhciQueueData(struct PCIController *hc,
     base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
 
     /*
-     * xHCI limits the per-TRB transfer length field to 17 bits.  Do not split
-     * by MaxPacketSize; xHCI TRBs are not packet-sized.
+     * xHCI limits the per-TRB transfer length field to 17 bits (and 64K of
+     * max size). Do not split by MaxPacketSize; xHCI TRBs are not packet-sized.
      */
-    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
+    const ULONG segmax = TRB_TPARAMS_TRBLEN_MAX;
 
     /*
      * If this is a Control DATA Stage TRB, only the first segment is a DATA
@@ -1020,7 +1024,7 @@ WORD xhciQueueData_IO(struct PCIController *hc,
 
     base_flags &= ~(TRBF_FLAG_CH | TRBF_FLAG_IOC);
 
-    const ULONG segmax = TRB_TPARAMS_DS_TRBLEN_SMASK;
+    const ULONG segmax = TRB_TPARAMS_TRBLEN_MAX;
 
     const BOOL is_ctl_data_stage = (base_type == TRBF_FLAG_TRTYPE_DATA);
 
@@ -1271,7 +1275,14 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     CacheClearE((APTR)devCtx->dc_IN.dmaa_Ptr, inctx_size, CACRF_ClearD);
 
     /* ---- Address Device ---- */
+#if 1
+    /* BSR = 0 is needed on real hardware for the following GET_DESCRIPTORS to work
+       (it won't execute on devaddr=0, it needs EP in state Addressed) */
+    if(TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 0, NULL,
+#else
+    /* original code */
     if(TRB_CC_SUCCESS != xhciCmdDeviceAddress(hc, slotid, devCtx->dc_IN.dmaa_Ptr, 1, NULL,
+#endif
             timerreq)) {
         pciusbError("xHCI",
                     DEBUGWARNCOLOR_SET "Address Device (BSR=1) failed" DEBUGCOLOR_RESET "\n");
@@ -1673,7 +1684,7 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
                       ((flags & UHFF_MULTI_2) || (flags & UHFF_MULTI_3))) {
                 UBYTE transactions = 1;
 
-                if(flags & UHFF_MULTI_3)
+                if((flags & UHFF_MULTI_3) == UHFF_MULTI_3)
                     transactions = 3;
                 else if(flags & UHFF_MULTI_2)
                     transactions = 2;
@@ -2769,10 +2780,12 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
     pciusbXHCIDebug("xHCI", DEBUGFUNCCOLOR_SET "%s()" DEBUGCOLOR_RESET" \n", __func__);
 
     ULONG status = AROS_LE2LONG(hcopr->usbsts);
-    xhciDumpStatus(status);
+    volatile struct xhci_ir *xhciir =
+        (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
+    ULONG iman = AROS_LE2LONG(xhciir->iman), tmp;
 
-    /* First acknowledge the interrupt ..*/
-    hcopr->usbsts = AROS_LONG2LE(status);
+    xhciDumpIR(xhciir);
+    xhciDumpStatus(status);
 
     /* Check if anything interesting happened.... */
     if(status & XHCIF_USBSTS_HCH) {
@@ -2796,15 +2809,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                             DEBUGCOLOR_SET "Port Change Detect" DEBUGCOLOR_RESET" \n");
     }
 
-    volatile struct xhci_ir *xhciir =
-        (volatile struct xhci_ir *)((IPTR)xhcic->xhc_XHCIIntR);
-    xhciDumpIR(xhciir);
-
-    ULONG iman = AROS_LE2LONG(xhciir->iman), tmp;
-    /* Clear IP (W1C) while keeping IE set */
-    xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE | XHCIF_IR_IMAN_IP);
-    tmp = AROS_LE2LONG(xhciir->iman);
-
     /*
      * Some controllers can signal via USBSTS even when IMAN.IP sampling is
      * unreliable; do not skip event processing just because IP wasn't seen.
@@ -2815,8 +2819,15 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_ERSp);
         volatile struct xhci_trb *etrb;
         ULONG idx   = ering->next;
+        ULONG startidx = idx;
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
+
+        /* First acknowledge the interrupt ..*/
+        hcopr->usbsts = AROS_LONG2LE(status);
+        /* Clear IP (W1C) while keeping IE set */
+        xhciir->iman = AROS_LONG2LE(XHCIF_IR_IMAN_IE | XHCIF_IR_IMAN_IP);
+        tmp = AROS_LE2LONG(xhciir->iman);
 
         pciusbXHCIDebugTRBV("xHCI",
                             DEBUGCOLOR_SET "Processing events..." DEBUGCOLOR_RESET" \n");
@@ -2867,6 +2878,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 xhciDumpPort(&xhciports[hciport]);
                 origportsc = AROS_LE2LONG(xhciports[hciport].portsc);
+                newportsc = origportsc & (XHCIF_PR_PORTSC_PP);
 
                 if(origportsc & XHCIF_PR_PORTSC_OCC) {
                     hc->hc_PortChangeMap[hciport] |= UPSF_PORT_OVER_CURRENT;
@@ -3248,19 +3260,17 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
             }
             ering->next = idx;
             etrb = &ering->ring[idx];
+        }
 
-            /* Update the hardware dequeue pointer to the next TRB. */
-            {
-                volatile struct xhci_ir *ir =
-                    (volatile struct xhci_ir *)xhcic->xhc_XHCIIntR;
-                UQUAD next_dma;
+        /* Update the hardware dequeue pointer to the next TRB. */
+        if (idx != startidx) { /* Don't write same value as per xHCI 2.0 spec */
+            volatile struct xhci_ir *ir = (volatile struct xhci_ir *)xhcic->xhc_XHCIIntR;
+            UQUAD next_dma;
 
-                next_dma  = (UQUAD)(IPTR)xhcic->xhc_DMAERS;
-                next_dma += (UQUAD)ering->next * (UQUAD)sizeof(struct xhci_trb);
+            next_dma  = (UQUAD)(IPTR)xhcic->xhc_DMAERS;
+            next_dma += (UQUAD)(idx) * (UQUAD)sizeof(struct xhci_trb);
 
-                xhciSetPointer(hc, ir->erdp,
-                               (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
-            }
+            xhciSetPointer(hc, ir->erdp, (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
         }
 
         if(maxwork == 0) {
