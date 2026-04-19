@@ -399,7 +399,8 @@ struct hostent *__gethostbyname(const char *name, struct SocketBase *libPtr)
         }
 
         if(allocDataBuffer(&libPtr->hostents,
-                           sizeof(struct hostent) + 28) == FALSE) {
+                           sizeof(struct hostent) + 3 * sizeof(u_long) +
+                           strnlen(name, MAXDNAME) + 1) == FALSE) {
             writeErrnoValue(libPtr, ENOMEM);
             h_errno = 0;
             return NULL;
@@ -538,7 +539,7 @@ struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *li
                 addrlist[0] = base;
                 addrlist[1] = NULL;
                 HOSTENT->h_addr_list = addrlist;
-                HOSTENT->h_aliases = addrlist + 2;  /* points to NULL */
+                HOSTENT->h_aliases = addrlist + 1;  /* points to addr_list NULL terminator */
                 HOSTENT->h_name = (char *)(addrlist + 2);
                 memcpy(HOSTENT->h_name, name, strnlen(name, MAXDNAME) + 1);
             }
