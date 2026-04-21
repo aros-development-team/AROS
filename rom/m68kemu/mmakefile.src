@@ -1,0 +1,46 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+# Author: Fabian Schmieder
+#
+# m68kemu.library — Transparent M68K emulation for AmigaOS hunk binaries
+# Uses Moira (MIT license) as the CPU core
+#
+# Skip on m68k targets — no need to emulate m68k on m68k
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_CPU),m68k)
+
+USER_CPPFLAGS := -DNO_INLINE_STDARG -I$(SRCDIR)/$(CURDIR)/Moira
+USER_CXXFLAGS := -std=c++20
+USER_LDFLAGS := -static
+
+M68KEMU_FILES := \
+    m68kemu_init \
+    m68kemu_run \
+    m68kemu_memory \
+    m68kemu_thunks \
+    m68kemu_shadow \
+    m68kemu_m68klib \
+    m68kemu_stubs \
+    m68kemu_thunks_gen
+
+M68KEMU_CXXFILES := \
+    m68kemu_moira \
+    Moira/Moira/Moira \
+    Moira/Moira/MoiraDebugger
+
+%build_module mmake=kernel-m68kemu \
+    modname=m68kemu modtype=library \
+    files="$(M68KEMU_FILES)" \
+    cxxfiles="$(M68KEMU_CXXFILES)" \
+    uselibs="stdc++ stdcio stdc posixc"
+
+%common
+
+endif # ifneq m68k
+
+# ── Shadow layout regeneration (optional, for new target architectures) ──
+# The checked-in m68kemu_shadow_layouts.h works for x86_64.
+# To regenerate for a different target:
+#   make kernel-m68kemu-shadows
+# Requires: python3, host gcc, AROS SDK headers built
