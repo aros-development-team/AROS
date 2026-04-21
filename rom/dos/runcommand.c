@@ -95,8 +95,22 @@
         D(bug("[DOS] %s: elfinfo == 0x%p\n", __func__, elfinfo);)
         if (!elfinfo)
         {
+            /* Route m68k hunk binaries through emulator */
+            if (hunkinfo)
+            {
+                struct Library *emubase = OpenLibrary("m68kemu.library", 0);
+                if (emubase)
+                {
+                    LONG (*RunHunk)(BPTR, ULONG, CONST_STRPTR, ULONG) =
+                        (LONG (*)(BPTR, ULONG, CONST_STRPTR, ULONG))__AROS_GETVECADDR(emubase, 5);
+                    LONG m68k_ret = RunHunk(segList, stacksize, argptr, argsize);
+                    CloseLibrary(emubase);
+                    return m68k_ret;
+                }
+            }
+
             /* Segment is tracked by LoadSeg but is not ELF.
-             * Reject unsupported formats (e.g. 68k HUNK). */
+             * Reject unsupported formats (e.g. 68k HUNK without emulator). */
             return -1;
         }
     }

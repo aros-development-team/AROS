@@ -776,8 +776,27 @@ static void DosEntry(void)
 
     D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 
+    /* Check if this is an m68k hunk binary and route through emulator */
+    {
+        IPTR hunkinfo = 0;
+        struct TagItem htags[] = { { GSLI_68KHUNK, (IPTR)&hunkinfo }, { TAG_DONE, 0 } };
+        if (segArray[3] && GetSegListInfo(segArray[3], htags) && hunkinfo)
+        {
+            struct Library *emubase = OpenLibrary("m68kemu.library", 0);
+            if (emubase)
+            {
+                LONG (*RunHunk)(BPTR, ULONG, CONST_STRPTR, ULONG) =
+                    (LONG (*)(BPTR, ULONG, CONST_STRPTR, ULONG))__AROS_GETVECADDR(emubase, 5);
+                result = RunHunk(segArray[3], me->pr_StackSize, me->pr_Arguments, argSize);
+                CloseLibrary(emubase);
+                goto skip_native_entry;
+            }
+        }
+    }
+
     /* Call entry point of our process, remembering stack in its pr_ReturnAddr */
     result = CallEntry(me->pr_Arguments, argSize, initialPC, me);
+skip_native_entry:
 
     /* Call user defined exit function before shutting down. */
     if (me->pr_ExitCode != NULL)
