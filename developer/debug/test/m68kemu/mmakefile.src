@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+# Author: Fabian Schmieder
+include $(SRCDIR)/config/aros.cfg
+
+%build_prog mmake=test-m68kemu \
+    progname=test_m68kemu targetdir=$(AROS_TESTS)/m68kemu \
+    files=test_m68kemu
+
+%build_prog mmake=test-m68kemu-runm68k \
+    progname=RunM68K targetdir=$(AROS_C) \
+    files=runm68k
+
+%common
