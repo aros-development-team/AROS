@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Code to parse the command line options and the module config file for
     the genmodule program
@@ -85,6 +85,12 @@ static const char *dtmprefix[] =
     "__PDTM_",
     NULL
 };
+static const char *imagemprefix[] =
+{
+    "__OM_",
+    "__IM_",
+    NULL
+};
 
 void print_help(void)
 {
@@ -108,7 +114,7 @@ void print_help(void)
             "  writemakefile: Generate a makefile with some definitions.\n"
             "  writeskel: Generate skeleton implementation of the module.\n"
             "  writethunk: Generate thunk file for the module.\n"
-            "\nModtypes: datatype, device, gadget, handler, hidd, hook, library"
+            "\nModtypes: datatype, device, gadget, handler, hidd, hook, image, library"
             ", mcc, mcp, mui, resource, usbclass\n\n"
             );
 }
@@ -269,6 +275,11 @@ struct config *initconfig(int argc, char **argv)
     {
         cfg->modtype = GADGET;
         cfg->moddir = "Classes/Gadgets";
+    }
+    else if (strcmp(argv[optind+2], "image")==0)
+    {
+        cfg->modtype = IMAGE;
+        cfg->moddir = "Classes/Images";
     }
     else if (strcmp(argv[optind+2], "datatype")==0)
     {
@@ -446,6 +457,7 @@ static void readconfig(struct config *cfg)
     case MUI:
     case MCP:
     case GADGET:
+    case IMAGE:
     case DATATYPE:
     case HIDD:
         mainclass = newclass(cfg);
@@ -479,6 +491,10 @@ static void readconfig(struct config *cfg)
     case GADGET:
         cfg->firstlvo = 5;
         mainclass->boopsimprefix = gadgetmprefix;
+        break;
+    case IMAGE:
+        cfg->firstlvo = 5;
+        mainclass->boopsimprefix = imagemprefix;
         break;
     case DATATYPE:
         cfg->firstlvo = 6;
@@ -697,6 +713,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 break;
 
             case GADGET:
+            case IMAGE:
             case DATATYPE:
             case HIDD:
                 cfg->options |= (
@@ -725,6 +742,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             case USBCLASS:
             case RESOURCE:
             case GADGET:
+            case IMAGE:
             case DEVICE:
             case DATATYPE:
             case MCC:
@@ -756,6 +774,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
             case USBCLASS:
             case RESOURCE:
             case GADGET:
+            case IMAGE:
             case DEVICE:
             case DATATYPE:
             case MCC:
@@ -1336,6 +1355,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
             case MCP:
             case MCC:
             case GADGET:
+            case IMAGE:
             case DATATYPE:
             case USBCLASS:
             case HIDD:

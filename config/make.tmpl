@@ -2051,6 +2051,9 @@ ifeq ($(%(mmake)_MODDIR),)
   ifeq (%(modtype),gadget)
     %(mmake)_MODDIR  := $(AROS_GADGETS)
   endif
+  ifeq (%(modtype),image)
+    %(mmake)_MODDIR  := $(AROS_CLASSIMAGES)
+  endif
   ifeq (%(modtype),datatype)
     %(mmake)_MODDIR  := $(AROS_DATATYPES)
   endif

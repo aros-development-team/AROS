@@ -1,4 +1,4 @@
-# Copyright © 1995-2023, The AROS Development Team. All rights reserved.
+# Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
 # $Id$
 #
 # Static makefile rule file for AROS.
@@ -58,6 +58,7 @@ AROS_DIR_CATALOGS             := Catalogs
 AROS_DIR_COMMODITIES          := Commodities
 AROS_DIR_DATATYPES            := $(AROS_DIR_CLASSES)/Datatypes
 AROS_DIR_GADGETS              := $(AROS_DIR_CLASSES)/Gadgets
+AROS_DIR_CLASSIMAGES          := $(AROS_DIR_CLASSES)/Images
 AROS_DIR_DEVS                 := Devs
 AROS_DIR_DRIVERS              := Drivers
 AROS_DIR_ENVARC               := Env-Archive
@@ -97,6 +98,7 @@ AROS_CLASSES                  := $(AROSDIR)/$(AROS_DIR_CLASSES)
 AROS_CLASSES_ARCH             := $(AROSARCHDIR)/$(AROS_DIR_CLASSES)
 AROS_DATATYPES                := $(AROSDIR)/$(AROS_DIR_DATATYPES)
 AROS_GADGETS                  := $(AROSDIR)/$(AROS_DIR_GADGETS)
+AROS_CLASSIMAGES              := $(AROSDIR)/$(AROS_DIR_CLASSIMAGES)
 AROS_DEVS                     := $(AROSDIR)/$(AROS_DIR_DEVS)
 AROS_DEVS_ARCH                := $(AROSARCHDIR)/$(AROS_DIR_DEVS)
 AROS_EXPANSION                := $(AROSDIR)/$(AROS_DIR_EXPANSION)
