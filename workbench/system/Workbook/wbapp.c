@@ -87,8 +87,8 @@ static IPTR WBAppNew(Class *cl, Object *obj, struct opSet *ops)
         return 0;
     }
 
-    my->AppMask |= (1UL << my->AppPort->mp_SigBit);
-    my->WinMask |= (1UL << my->WinPort->mp_SigBit);
+    my->AppMask = (1UL << my->AppPort->mp_SigBit);
+    my->WinMask = (1UL << my->WinPort->mp_SigBit);
 
     /* Create our root window */
     my->Root = NewObject(WBWindow, NULL,
@@ -328,56 +328,49 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
 
             if (mask & my->AppMask) {
                 struct WBHandlerMessage *wbhm;
-                wbhm = (APTR)GetMsg(my->AppPort);
 
-                switch (wbhm->wbhm_Type) {
-                case WBHM_TYPE_SHOW:
-                    /* Show all windows */
-                    wbShowAllWindows(cl, obj);
-                    break;
-                case WBHM_TYPE_HIDE:
-                    /* Hide all windows */
-                    wbHideAllWindows(cl, obj);
-                    break;
-                case WBHM_TYPE_OPEN:
-                    /* Open a drawer */
-                    wbOpenDrawer(cl, obj, wbhm->wbhm_Data.Open.Name);
-                    break;
-                case WBHM_TYPE_UPDATE:
-                    /* Refresh an open window/object */
-                    break;
+                while ((wbhm = (APTR)GetMsg(my->AppPort)) != NULL) {
+                    switch (wbhm->wbhm_Type) {
+                    case WBHM_TYPE_SHOW:
+                        wbShowAllWindows(cl, obj);
+                        break;
+                    case WBHM_TYPE_HIDE:
+                        wbHideAllWindows(cl, obj);
+                        break;
+                    case WBHM_TYPE_OPEN:
+                        wbOpenDrawer(cl, obj, wbhm->wbhm_Data.Open.Name);
+                        break;
+                    case WBHM_TYPE_UPDATE:
+                        break;
+                    }
+                    ReplyMsg((APTR)wbhm);
                 }
-                ReplyMsg((APTR)wbhm);
             }
 
             if (mask & my->WinMask) {
                 struct IntuiMessage *im;
 
-                im = GT_GetIMsg(my->WinPort);
-
-                D(bug("im=%p, Class=%d, Code=%d\n", im, im->Class, im->Code));
-                switch (im->Class) {
-                case IDCMP_CLOSEWINDOW:
-                    /* Dispose the window */
-                    wbCloseWindow(cl, obj, im->IDCMPWindow);
-                    break;
-                case IDCMP_REFRESHWINDOW:
-                    /* call WBWM_REFRESH on the window */
-                    wbRefreshWindow(cl, obj, im->IDCMPWindow);
-                    break;
-                case IDCMP_NEWSIZE:
-                    /* call WBWM_NEWSIZE on the window */
-                    wbNewSizeWindow(cl, obj, im->IDCMPWindow);
-                    break;
-                case IDCMP_MENUPICK:
-                    done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
-                    break;
-                case IDCMP_INTUITICKS:
-                    wbIntuiTick(cl, obj, im->IDCMPWindow);
-                    break;
+                while ((im = GT_GetIMsg(my->WinPort)) != NULL) {
+                    D(bug("im=%p, Class=%d, Code=%d\n", im, im->Class, im->Code));
+                    switch (im->Class) {
+                    case IDCMP_CLOSEWINDOW:
+                        wbCloseWindow(cl, obj, im->IDCMPWindow);
+                        break;
+                    case IDCMP_REFRESHWINDOW:
+                        wbRefreshWindow(cl, obj, im->IDCMPWindow);
+                        break;
+                    case IDCMP_NEWSIZE:
+                        wbNewSizeWindow(cl, obj, im->IDCMPWindow);
+                        break;
+                    case IDCMP_MENUPICK:
+                        done = wbMenuPick(cl, obj, im->IDCMPWindow, im->Code);
+                        break;
+                    case IDCMP_INTUITICKS:
+                        wbIntuiTick(cl, obj, im->IDCMPWindow);
+                        break;
+                    }
+                    GT_ReplyIMsg(im);
                 }
-
-                GT_ReplyIMsg(im);
             }
         }
 
