@@ -757,6 +757,18 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
                         ND_OPT_PI_FLAG_AUTO) &&
                         pi->nd_opt_pi_prefix_len == 64)
                     nd6_prefix_slaac(ifp, pr);
+
+                /* RFC 4941: also create temporary address for privacy */
+                if(ip6_use_tempaddr &&
+                        (pi->nd_opt_pi_flags_reserved &
+                        ND_OPT_PI_FLAG_AUTO) &&
+                        pi->nd_opt_pi_prefix_len == 64) {
+                    int tmpret = in6_tmpifadd(ifp, pr);
+                    if(tmpret == EEXIST) {
+                        /* collision, retry once */
+                        tmpret = in6_tmpifadd(ifp, pr);
+                    }
+                }
             }
             break;
 

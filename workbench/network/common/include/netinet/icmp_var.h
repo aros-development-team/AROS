@@ -51,6 +51,7 @@ struct	icmpstat {
 	u_long	icps_checksum;		/* bad checksum */
 	u_long	icps_badlen;		/* calculated bound mismatch */
 	u_long	icps_reflect;		/* number of responses */
+	u_long	icps_ratelimit;		/* # of errors rate-limited */
 	u_long	icps_inhist[ICMP_MAXTYPE + 1];
 };
 

@@ -52,6 +52,7 @@ struct ifqueue    ip6intrq    = {0};
 int ip6_defhlim    = 64;
 int ip6_forwarding = 0;
 int ip6_v6only     = 1;   /* sockets default to IPv6-only */
+int ip6_use_tempaddr = 1; /* enable privacy extensions by default */
 
 extern struct ifnet loif;
 
@@ -383,10 +384,26 @@ in6_ifawithifp(struct ifnet *ifp, struct in6_addr *dst)
             continue;
         if(ia->ia6_ifaflags & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED))
             continue;
+        /* skip deprecated addresses if we have a better candidate */
+        if((ia->ia6_ifaflags & IN6_IFF_DEPRECATED) && besta != NULL)
+            continue;
         int sc = in6_addrscope(&ia->ia_addr.sin6_addr);
         if(sc == dstscope) {
-            besta = ia;
-            break;
+            /*
+             * RFC 4941: prefer non-deprecated temporary addresses
+             * for outgoing connections (privacy).
+             */
+            if(besta == NULL || bestscope != dstscope) {
+                besta = ia;
+                bestscope = sc;
+            } else if((ia->ia6_ifaflags & IN6_IFF_TEMPORARY) &&
+                      !(ia->ia6_ifaflags & IN6_IFF_DEPRECATED) &&
+                      (!(besta->ia6_ifaflags & IN6_IFF_TEMPORARY) ||
+                       (besta->ia6_ifaflags & IN6_IFF_DEPRECATED))) {
+                besta = ia;
+                bestscope = sc;
+            }
+            continue;
         }
         if(sc > bestscope) {
             bestscope = sc;
@@ -783,6 +800,184 @@ in6_delmulti(struct in6_multi *in6m)
         }
     }
     FREE(in6m, M_IFADDR);
+}
+
+/* ==================================================================
+ * IPv6 Privacy Extensions (RFC 4941) - Temporary Address Management
+ * ================================================================== */
+
+/*
+ * Generate a random interface identifier for temporary addresses (RFC 4941).
+ * Uses AROS-available entropy sources.
+ */
+static void
+in6_generate_random_iid(struct in6_addr *addr)
+{
+    u_int32_t *p = (u_int32_t *)&addr->s6_addr[8];
+    static u_int32_t rstate1 = 0, rstate2 = 0;
+
+    /* seed from available entropy if needed */
+    if(rstate1 == 0) {
+        struct timeval _tv;
+        GetSysTime(&_tv);
+        rstate1 = (u_int32_t)(IPTR)FindTask(NULL) ^ 0xdeadbeef;
+        rstate2 = (u_int32_t)(_tv.tv_sec * 1000000 + _tv.tv_usec) ^ 0xcafebabe;
+    }
+
+    /* xorshift64 */
+    rstate1 ^= rstate1 << 13;
+    rstate1 ^= rstate1 >> 7;
+    rstate1 ^= rstate1 << 17;
+    rstate2 ^= rstate2 << 13;
+    rstate2 ^= rstate2 >> 7;
+    rstate2 ^= rstate2 << 17;
+
+    p[0] = rstate1;
+    p[1] = rstate2;
+
+    /* clear the universal/local bit (RFC 4941 §3.2.1) - set to "local" */
+    addr->s6_addr[8] &= ~0x02;
+}
+
+/*
+ * in6_tmpifadd - create a temporary address for the given prefix on ifp.
+ * Called when an RA with the 'A' (autonomous) flag is processed.
+ */
+int
+in6_tmpifadd(struct ifnet *ifp, struct nd_prefix *pr)
+{
+    struct in6_ifaddr *ia, *newia;
+    struct in6_aliasreq ifra;
+    struct in6_addr tmpaddr;
+    struct sockaddr_in6 *sin6;
+    struct timeval _tv;
+    int error;
+
+    if(!ip6_use_tempaddr)
+        return 0;
+
+    if(pr->ndpr_plen != 64)
+        return 0;  /* SLAAC temporary addresses require /64 */
+
+    /* build the temporary address: prefix + random IID */
+    bzero(&tmpaddr, sizeof(tmpaddr));
+    bcopy(&pr->ndpr_prefix.sin6_addr, &tmpaddr, 8);
+    in6_generate_random_iid(&tmpaddr);
+
+    /* check for conflicts with existing addresses */
+    for(ia = in6_ifaddr; ia; ia = ia->ia_next) {
+        if(IN6_ARE_ADDR_EQUAL(&ia->ia_addr.sin6_addr, &tmpaddr))
+            return EEXIST;  /* collision - caller should retry */
+    }
+
+    /* allocate and initialize */
+    bzero(&ifra, sizeof(ifra));
+    sin6 = &ifra.ifra_addr;
+    sin6->sin6_len    = sizeof(*sin6);
+    sin6->sin6_family = AF_INET6;
+    sin6->sin6_addr   = tmpaddr;
+
+    /* set prefix mask (/64) */
+    ifra.ifra_prefixmask.sin6_len    = sizeof(struct sockaddr_in6);
+    ifra.ifra_prefixmask.sin6_family = AF_INET6;
+    {
+        int i;
+        for(i = 0; i < 8; i++)
+            ifra.ifra_prefixmask.sin6_addr.s6_addr[i] = 0xff;
+    }
+
+    ifra.ifra_flags = IN6_IFF_AUTOCONF;
+
+    /* set lifetimes: min of RA prefix lifetime and configured max */
+    {
+        u_int32_t preferred = pr->ndpr_pltime;
+        u_int32_t valid = pr->ndpr_vltime;
+        if(preferred > IP6_TEMP_PREFERRED_LIFETIME)
+            preferred = IP6_TEMP_PREFERRED_LIFETIME;
+        if(valid > IP6_TEMP_VALID_LIFETIME)
+            valid = IP6_TEMP_VALID_LIFETIME;
+        ifra.ifra_lifetime.ia6t_vltime = valid;
+        ifra.ifra_lifetime.ia6t_pltime = preferred;
+    }
+
+    error = in6_control(NULL, SIOCAIFADDR_IN6, (caddr_t)&ifra, ifp);
+    if(error)
+        return error;
+
+    /* find the newly created address and set temporary flags + lifetimes */
+    GetSysTime(&_tv);
+    for(newia = in6_ifaddr; newia; newia = newia->ia_next) {
+        if(IN6_ARE_ADDR_EQUAL(&newia->ia_addr.sin6_addr, &tmpaddr) &&
+           newia->ia6_ifp == ifp)
+            break;
+    }
+    if(newia) {
+        u_int32_t preferred = pr->ndpr_pltime;
+        u_int32_t valid = pr->ndpr_vltime;
+        if(preferred > IP6_TEMP_PREFERRED_LIFETIME)
+            preferred = IP6_TEMP_PREFERRED_LIFETIME;
+        if(valid > IP6_TEMP_VALID_LIFETIME)
+            valid = IP6_TEMP_VALID_LIFETIME;
+
+        newia->ia6_ifaflags |= IN6_IFF_TEMPORARY;
+        newia->ia6_lifetime_preferred = (u_int32_t)_tv.tv_sec + preferred;
+        newia->ia6_lifetime_expire = (u_int32_t)_tv.tv_sec + valid;
+
+        D(bug("[AROSTCP:IN6] %s: created temporary addr on %s%d "
+              "(preferred=%lus valid=%lus)\n",
+              __func__, ifp->if_name, ifp->if_unit,
+              (unsigned long)preferred, (unsigned long)valid));
+    }
+
+    /* join solicited-node multicast for the new address */
+    {
+        struct in6_addr maddr;
+        bzero(&maddr, sizeof(maddr));
+        maddr.s6_addr[0]  = 0xff;
+        maddr.s6_addr[1]  = 0x02;
+        maddr.s6_addr[11] = 0x01;
+        maddr.s6_addr[12] = 0xff;
+        maddr.s6_addr[13] = tmpaddr.s6_addr[13];
+        maddr.s6_addr[14] = tmpaddr.s6_addr[14];
+        maddr.s6_addr[15] = tmpaddr.s6_addr[15];
+        (void)in6_addmulti(&maddr, ifp);
+    }
+
+    return 0;
+}
+
+/*
+ * in6_tmpaddrtimer - periodic maintenance of temporary addresses.
+ * Called from icmp6_slowtimo() every 500ms.
+ */
+void
+in6_tmpaddrtimer(void)
+{
+    struct in6_ifaddr *ia, *nia;
+    struct timeval _tv;
+
+    GetSysTime(&_tv);
+
+    for(ia = in6_ifaddr; ia; ia = nia) {
+        nia = ia->ia_next;
+        if(!(ia->ia6_ifaflags & IN6_IFF_TEMPORARY))
+            continue;
+
+        /* check valid lifetime expiry */
+        if(ia->ia6_lifetime_expire &&
+           (u_int32_t)_tv.tv_sec >= ia->ia6_lifetime_expire) {
+            D(bug("[AROSTCP:IN6] %s: removing expired temporary addr\n",
+                  __func__));
+            in6_purgeaddr((struct ifaddr *)ia);
+            continue;
+        }
+
+        /* check preferred lifetime - deprecate if expired */
+        if(ia->ia6_lifetime_preferred &&
+           (u_int32_t)_tv.tv_sec >= ia->ia6_lifetime_preferred) {
+            ia->ia6_ifaflags |= IN6_IFF_DEPRECATED;
+        }
+    }
 }
 
 #endif /* INET6 */

@@ -95,6 +95,40 @@ int	icmpprintfs = 0;	/* has effect only if ICMPPRINTFS is defined */
 
 extern	struct protosw inetsw[];
 
+/* tcp_now: 500ms tick counter incremented by tcp_slowtimo() */
+extern u_long tcp_now;
+
+/* ICMP rate limiting (token bucket) */
+static int icmp_ratelimit_tokens = 10;    /* current tokens */
+static int icmp_ratelimit_max = 10;       /* max burst */
+static int icmp_ratelimit_rate = 5;       /* tokens per slow-tick (500ms) */
+static long icmp_ratelimit_last = 0;      /* last refill time (tcp_now) */
+
+/*
+ * Rate-limit ICMP error generation using a token bucket.
+ * Returns 1 if allowed, 0 if rate-limited.
+ */
+static int
+icmp_ratelimit(void)
+{
+    long elapsed;
+
+    elapsed = (long)(tcp_now - icmp_ratelimit_last);
+    if (elapsed > 0) {
+        icmp_ratelimit_last = tcp_now;
+        icmp_ratelimit_tokens += elapsed * icmp_ratelimit_rate;
+        if (icmp_ratelimit_tokens > icmp_ratelimit_max)
+            icmp_ratelimit_tokens = icmp_ratelimit_max;
+    }
+
+    if (icmp_ratelimit_tokens > 0) {
+        icmp_ratelimit_tokens--;
+        return 1;
+    }
+    icmpstat.icps_ratelimit++;
+    return 0;
+}
+
 /*
  * Generate an error packet of type error
  * in response to bad packet ip.
@@ -129,6 +163,11 @@ struct in_addr dest;
             n->m_len >= oiplen + ICMP_MINLEN &&
             !ICMP_INFOTYPE(((struct icmp *)((caddr_t)oip + oiplen))->icmp_type)) {
         icmpstat.icps_oldicmp++;
+        goto freeit;
+    }
+
+    /* Rate-limit ICMP error generation */
+    if (!icmp_ratelimit()) {
         goto freeit;
     }
 

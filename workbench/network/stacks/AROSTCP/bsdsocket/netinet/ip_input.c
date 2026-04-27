@@ -168,8 +168,14 @@ ip_init()
     ipq.next = ipq.prev = &ipq;
     {
         struct timeval time;
+        APTR task;
+        u_int32_t seed;
         GetSysTime(&time);
-        ip_id = time.tv_sec & 0xffff;
+        task = FindTask(NULL);
+        seed = (u_int32_t)time.tv_sec ^ ((u_int32_t)time.tv_micro << 16)
+             ^ (u_int32_t)(IPTR)task;
+        if(seed == 0) seed = 1;
+        ip_id = seed & 0xffff;
     }
     ipintrq.ifq_maxlen = ipqmaxlen;
 

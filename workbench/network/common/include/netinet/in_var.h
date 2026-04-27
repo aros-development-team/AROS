@@ -86,6 +86,8 @@ struct in6_ifaddr {
 	int	ia6_plen;		/* prefix length (bits) */
 	u_int32_t ia6_lifetime_vltime; /* valid lifetime */
 	u_int32_t ia6_lifetime_pltime; /* preferred lifetime */
+	u_int32_t ia6_lifetime_expire; /* valid lifetime expiry (seconds since boot) */
+	u_int32_t ia6_lifetime_preferred; /* preferred lifetime expiry (seconds since boot) */
 	u_int32_t ia6_ifaflags;		/* address flags */
 	struct	in6_ifaddr *ia_next;	/* next in list */
 };

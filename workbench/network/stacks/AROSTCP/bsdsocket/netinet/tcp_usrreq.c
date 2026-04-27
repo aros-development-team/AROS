@@ -452,8 +452,7 @@ struct mbuf *nam;
     tcpstat.tcps_connattempt++;
     tp->t_state = TCPS_SYN_SENT;
     tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
-    tp->iss = tcp_iss;
-    tcp_iss += TCP_ISSINCR / 2;
+    tp->iss = tcp_new_isn(inp);
     tcp_sendseqinit(tp);
     tp->cc_send = CC_INC(tcp_ccgen);
 

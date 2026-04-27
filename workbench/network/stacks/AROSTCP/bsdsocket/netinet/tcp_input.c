@@ -70,6 +70,8 @@ struct	tcpiphdr tcp_saveti;
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
 
+extern int ip_defttl;		/* default TTL for TCP segments */
+
 int	tcprexmtthresh = 3;
 #if defined(__AROS__)
 int	tcp_iss;
@@ -472,6 +474,119 @@ findpcb:
              */
             if(controlaccess(ti->ti_src, ti->ti_dport) == 0)
                 goto dropwithreset;
+
+            /*
+             * SYN cookie mode: handle incoming SYN statelessly
+             * by encoding connection state into the ISN of our
+             * SYN-ACK.  No socket or TCB is allocated.
+             */
+            if(tcp_syncookies &&
+                (tiflags & TH_SYN) && !(tiflags & TH_ACK)) {
+                u_int16_t peer_mss = 0;
+                tcp_seq cookie_isn;
+
+                /* Extract MSS from SYN options */
+                if(optp && optlen > 0) {
+                    u_char *cp = (u_char *)optp;
+                    int cnt = optlen;
+                    while(cnt > 0) {
+                        if(*cp == TCPOPT_EOL) break;
+                        if(*cp == TCPOPT_NOP) {
+                            cp++; cnt--; continue;
+                        }
+                        if(cnt < 2) break;
+                        if(*cp == TCPOPT_MAXSEG &&
+                            cp[1] == TCPOLEN_MAXSEG &&
+                            cnt >= TCPOLEN_MAXSEG) {
+                            bcopy(cp + 2, &peer_mss,
+                                sizeof(u_int16_t));
+                            NTOHS(peer_mss);
+                            break;
+                        }
+                        if(cp[1] < 2) break;
+                        cnt -= cp[1];
+                        cp += cp[1];
+                    }
+                }
+                if(peer_mss == 0)
+                    peer_mss = tcp_mssdflt;
+
+                cookie_isn = tcp_syncookie_generate(
+                    ti->ti_dst, ti->ti_src,
+                    ti->ti_dport, ti->ti_sport,
+                    peer_mss);
+
+                tcpstat.tcps_sc_sendcookie++;
+
+                /* Send SYN-ACK with cookie ISN; consumes mbuf */
+                tcp_respond(tp, ti, m,
+                    ti->ti_seq + 1,     /* ack peer SYN */
+                    cookie_isn,         /* our cookie ISN */
+                    TH_SYN | TH_ACK);
+                return;
+            }
+
+            /*
+             * SYN cookie validation: an ACK on a listen socket
+             * may be completing a cookie handshake.
+             */
+            if(tcp_syncookies &&
+                (tiflags & TH_ACK) &&
+                !(tiflags & TH_SYN) && !(tiflags & TH_RST)) {
+                u_int16_t sc_mss;
+                struct socket *lso = so;
+
+                sc_mss = tcp_syncookie_validate(
+                    ti->ti_dst, ti->ti_src,
+                    ti->ti_dport, ti->ti_sport,
+                    ti->ti_ack);
+                if(sc_mss > 0) {
+                    /* Valid cookie: create the full connection */
+                    so = sonewconn(lso, 0);
+                    if(so == NULL)
+                        goto drop;
+
+                    inp = (struct inpcb *)so->so_pcb;
+                    inp->inp_laddr = ti->ti_dst;
+                    inp->inp_lport = ti->ti_dport;
+                    inp->inp_faddr = ti->ti_src;
+                    inp->inp_fport = ti->ti_sport;
+                    in_pcbrehash(inp);
+
+                    tp = intotcpcb(inp);
+                    tp->t_state = TCPS_ESTABLISHED;
+                    tp->iss = ti->ti_ack - 1;
+                    tp->snd_una = ti->ti_ack;
+                    tp->snd_nxt = ti->ti_ack;
+                    tp->snd_max = ti->ti_ack;
+                    tp->irs = ti->ti_seq - 1;
+                    tp->rcv_nxt = ti->ti_seq;
+                    tp->rcv_adv = ti->ti_seq +
+                        sbspace(&so->so_rcv);
+                    tp->snd_wnd = tiwin;
+                    tp->snd_wl1 = ti->ti_seq - 1;
+                    tp->t_maxseg = sc_mss;
+                    tp->t_maxopd = sc_mss;
+                    tp->t_flags |= TF_ACKNOW;
+                    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
+                    inp->inp_ip.ip_ttl = ip_defttl;
+
+                    /* Initialize congestion control */
+                    tp->snd_cwnd = tp->t_maxseg;
+                    tp->snd_ssthresh =
+                        TCP_MAXWIN << TCP_MAX_WINSHIFT;
+                    tp->t_cc_algo = tcp_cc_default;
+                    CC_INIT(tp);
+
+                    tcpstat.tcps_sc_recvcookie++;
+                    tcpstat.tcps_connects++;
+                    soisconnected(so);
+                    goto step6;
+                }
+                tcpstat.tcps_sc_badcookie++;
+                goto dropwithreset;
+            }
+
             so = sonewconn(so, 0);
             if(so == 0)
                 goto drop;
@@ -738,8 +853,7 @@ findpcb:
         if(iss)
             tp->iss = iss;
         else
-            tp->iss = tcp_iss;
-        tcp_iss += TCP_ISSINCR / 2;
+            tp->iss = tcp_new_isn(inp);
         tp->irs = ti->ti_seq;
         tcp_sendseqinit(tp);
         tcp_rcvseqinit(tp);

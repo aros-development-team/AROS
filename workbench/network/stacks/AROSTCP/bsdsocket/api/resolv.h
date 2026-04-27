@@ -103,4 +103,7 @@ extern u_long _getlong(u_char *);
 extern void __putshort(u_short, u_char *);
 extern void __putlong(u_long, u_char *);
 
+/* Randomized DNS query ID (RFC 5452) */
+extern u_short res_randomid(void);
+
 #endif /* API_RESOLV_H */

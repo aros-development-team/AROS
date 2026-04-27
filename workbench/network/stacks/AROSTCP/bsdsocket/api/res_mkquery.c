@@ -45,6 +45,30 @@ static char sccsid[] = "@(#)res_mkquery.c	6.16 (Berkeley) 3/6/91";
 #include <kern/amiga_subr.h>
 
 /*
+ * Randomized DNS query ID (xorshift32 PRNG).
+ * Prevents DNS cache poisoning via predictable IDs.
+ */
+static u_int32_t res_prng_state = 0;
+
+u_short
+res_randomid(void)
+{
+    u_int32_t x = res_prng_state;
+    if(x == 0) {
+        struct timeval tv;
+        GetSysTime(&tv);
+        x = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
+            ^ (u_int32_t)(IPTR)FindTask(NULL);
+        if(x == 0) x = 0xcafebabe;
+    }
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    res_prng_state = x;
+    return (u_short)(x & 0xffff);
+}
+
+/*
  * Form all types of queries.
  * Returns the size of the result or -1.
  */
@@ -80,7 +104,7 @@ int res_mkquery(struct SocketBase *libPtr,
         return(-1);
     bzero(buf, sizeof(HEADER));
     hp = (HEADER *) buf;
-    hp->id = htons(++_res.id);
+    hp->id = htons(res_randomid());
     hp->opcode = op;
     hp->unused = (_res.options & RES_PRIMARY) != 0;
     hp->rd = (_res.options & RES_RECURSE) != 0;

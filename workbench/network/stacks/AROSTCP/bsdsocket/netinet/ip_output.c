@@ -61,6 +61,32 @@
 #include <netinet/ip_var.h>
 
 #include <kern/amiga_subr.h>
+#include <kern/amiga_includes.h>
+
+/*
+ * Randomized IP ID generation (xorshift32 PRNG).
+ * Prevents IP ID prediction attacks / idle scanning.
+ */
+static u_int32_t ip_prng_state = 1;
+
+static u_int16_t
+ip_randomid(void)
+{
+	u_int32_t x = ip_prng_state;
+	if(x <= 1) {
+		/* Seed from available entropy on first call */
+		struct timeval tv;
+		GetSysTime(&tv);
+		x = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
+		    ^ (u_int32_t)(IPTR)FindTask(NULL);
+		if(x == 0) x = 0xdeadbeef;
+	}
+	x ^= x << 13;
+	x ^= x >> 17;
+	x ^= x << 5;
+	ip_prng_state = x;
+	return (u_int16_t)(x & 0xffff);
+}
 
 #ifdef vax
 #include <machine/mtpr.h>
@@ -125,7 +151,7 @@ int	STKARGFUN ip_output(void *args, ...)
     if((flags & (IP_FORWARDING | IP_RAWOUTPUT)) == 0) {
         ip->ip_v = IPVERSION;
         ip->ip_off &= IP_DF;
-        ip->ip_id = htons(ip_id++);
+        ip->ip_id = htons(ip_randomid());
         ip->ip_hl = hlen >> 2;
         ipstat.ips_localout++;
     } else {

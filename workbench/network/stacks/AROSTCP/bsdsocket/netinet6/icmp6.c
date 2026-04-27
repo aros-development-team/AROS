@@ -55,6 +55,40 @@
 
 struct icmp6stat icmp6stat = {0};
 
+/* tcp_now: 500ms tick counter incremented by tcp_slowtimo() */
+extern u_long tcp_now;
+
+/* ICMPv6 rate limiting (token bucket) */
+static int icmp6_ratelimit_tokens = 10;    /* current tokens */
+static int icmp6_ratelimit_max = 10;       /* max burst */
+static int icmp6_ratelimit_rate = 5;       /* tokens per slow-tick (500ms) */
+static long icmp6_ratelimit_last = 0;      /* last refill time (tcp_now) */
+
+/*
+ * Rate-limit ICMPv6 error generation using a token bucket.
+ * Returns 1 if allowed, 0 if rate-limited.
+ */
+static int
+icmp6_ratelimit(void)
+{
+    long elapsed;
+
+    elapsed = (long)(tcp_now - icmp6_ratelimit_last);
+    if (elapsed > 0) {
+        icmp6_ratelimit_last = tcp_now;
+        icmp6_ratelimit_tokens += elapsed * icmp6_ratelimit_rate;
+        if (icmp6_ratelimit_tokens > icmp6_ratelimit_max)
+            icmp6_ratelimit_tokens = icmp6_ratelimit_max;
+    }
+
+    if (icmp6_ratelimit_tokens > 0) {
+        icmp6_ratelimit_tokens--;
+        return 1;
+    }
+    icmp6stat.icp6s_toofreq++;
+    return 0;
+}
+
 /* forward */
 static void icmp6_reflect(struct mbuf *, size_t);
 
@@ -72,6 +106,9 @@ void icmp6_fasttimo(void)
     mld6_fasttimeo();
 }
 
+extern void frag6_slowtimo(void);
+extern void in6_tmpaddrtimer(void);
+
 void
 icmp6_slowtimo(void)
 {
@@ -80,7 +117,14 @@ icmp6_slowtimo(void)
     if(icmp6_slow_ticks <= 10 || (icmp6_slow_ticks % 60) == 0) {
         D(bug("[AROSTCP:ICMP6] %s: tick=%d\n", __func__, icmp6_slow_ticks));
     }
+    /* Refill ICMPv6 rate-limit tokens each slow tick */
+    icmp6_ratelimit_tokens += icmp6_ratelimit_rate;
+    if (icmp6_ratelimit_tokens > icmp6_ratelimit_max)
+        icmp6_ratelimit_tokens = icmp6_ratelimit_max;
+    icmp6_ratelimit_last = tcp_now;
     nd6_timer(NULL);
+    frag6_slowtimo();
+    in6_tmpaddrtimer();
     if(icmp6_slow_ticks <= 10) {
         D(bug("[AROSTCP:ICMP6] %s: nd6_timer returned (tick=%d)\n",
               __func__, icmp6_slow_ticks));
@@ -257,6 +301,12 @@ icmp6_error(struct mbuf *m, int type, int code, int param)
             m_freem(m);
             return;
         }
+    }
+
+    /* Rate-limit ICMPv6 error generation */
+    if (!icmp6_ratelimit()) {
+        m_freem(m);
+        return;
     }
 
     /* include as much of the offending packet as possible (max 1280 - hdrs) */

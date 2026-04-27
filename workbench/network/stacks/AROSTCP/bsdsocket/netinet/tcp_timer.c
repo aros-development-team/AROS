@@ -143,10 +143,6 @@ tpgone:
         ;
     }
     tcp_iss += TCP_ISSINCR / PR_SLOWHZ;		/* increment iss */
-#ifdef TCP_COMPAT_42
-    if((int)tcp_iss < 0)
-        tcp_iss = 0;				/* XXX */
-#endif
     tcp_now++;					/* for timestamps */
     splx(s);
 }

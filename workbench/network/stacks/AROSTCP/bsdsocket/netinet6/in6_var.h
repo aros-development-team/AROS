@@ -137,6 +137,12 @@ struct ip6_moptions {
 	struct in6_multi *im6o_membership[IPV6_MAX_MEMBERSHIPS];
 };
 
+/* IPv6 Privacy Extensions (RFC 4941) - temporary address lifetimes */
+#define IP6_TEMP_PREFERRED_LIFETIME  86400   /* 1 day (seconds) */
+#define IP6_TEMP_VALID_LIFETIME      604800  /* 7 days (seconds) */
+#define IP6_TEMP_REGEN_ADVANCE       5       /* seconds before deprecation to regen */
+#define IP6_TEMP_MAX_DESYNC_FACTOR   600     /* max random desync (seconds) */
+
 /* IN6P socket flags (stored in in6p_flags / in6_rawcb.flags) */
 #define IN6P_PKTINFO	0x01		/* receive packet info (RECVPKTINFO) */
 
@@ -173,6 +179,12 @@ int  in6_localaddr(struct in6_addr *);
 void in6_if_up(struct ifnet *);
 struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
 void in6_delmulti(struct in6_multi *);
+
+/* Privacy extensions (RFC 4941) */
+extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */
+struct nd_prefix;  /* forward declaration for prototype below */
+int  in6_tmpifadd(struct ifnet *, struct nd_prefix *);
+void in6_tmpaddrtimer(void);   /* called from slow timer */
 #endif /* KERNEL */
 
 #endif /* NETINET6_IN6_VAR_H */

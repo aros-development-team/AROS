@@ -289,19 +289,25 @@ usevc:
 #endif
                             /*
                              * Use datagrams.
+                             * Close and reopen for each query to randomize
+                             * the source port (DNS source port randomization,
+                             * mitigates cache poisoning per RFC 5452).
                              */
+                            if(res_sock >= 0) {
+                                (void) __CloseSocket(res_sock, libPtr);
+                                res_sock = -1;
+                                connected = 0;
+                            }
+                            res_sock = __socket(AF_INET, SOCK_DGRAM, 0, libPtr);
                             if(res_sock < 0) {
-                                res_sock = __socket(AF_INET, SOCK_DGRAM, 0, libPtr);
-                                if(res_sock < 0) {
 #if defined(__AROS__)
-                                    D(bug("[AROSTCP](res_send.c) res_send: Failed to create socket\n"));
+                                D(bug("[AROSTCP](res_send.c) res_send: Failed to create socket\n"));
 #endif
-                                    terrno = readErrnoValue(libPtr);
+                                terrno = readErrnoValue(libPtr);
 #ifdef RES_DEBUG
-                                    Perror("socket (dg)");
+                                Perror("socket (dg)");
 #endif /* RES_DEBUG */
-                                    continue;
-                                }
+                                continue;
                             }
                             /*
                              * I'm tired of answering this question, so:

@@ -343,6 +343,10 @@ struct	tcpstat {
 	u_long	tcps_ecn_ce;		/* ECN CE packets received */
 	u_long	tcps_ecn_ece;		/* ECN ECE flags sent */
 	u_long	tcps_ecn_cwr;		/* ECN CWR flags sent */
+/* SYN cookie statistics */
+	u_long	tcps_sc_sendcookie;	/* SYN cookies sent */
+	u_long	tcps_sc_recvcookie;	/* SYN cookies validated */
+	u_long	tcps_sc_badcookie;	/* SYN cookies failed validation */
 };
 
 /*

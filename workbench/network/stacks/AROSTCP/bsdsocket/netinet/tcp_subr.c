@@ -36,6 +36,8 @@
  * $Id$
  */
 
+#include <conf.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
@@ -69,7 +71,146 @@
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
 
+#include <kern/amiga_includes.h>
+
 #include <kern/kern_subr_protos.h>
+
+/*
+ * RFC 6528 ISN randomization: secret key and hash function.
+ */
+u_int32_t tcp_secret_key[4];
+
+/* Mix-based hash for ISN generation (Murmur-style) */
+u_int32_t
+tcp_isn_hash(u_int32_t a, u_int32_t b, u_int32_t c, u_int32_t d,
+    u_int32_t *key)
+{
+	u_int32_t h = key[0];
+	h ^= a; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
+	h ^= b; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
+	h ^= c; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
+	h ^= d; h = (h << 13) | (h >> 19); h *= 0x5bd1e995;
+	h ^= key[1]; h ^= key[2]; h ^= key[3];
+	h ^= h >> 16;
+	return h;
+}
+
+/*
+ * Generate a per-connection ISN per RFC 6528:
+ *   ISN = M + F(localip, localport, remoteip, remoteport, secret_key)
+ * where M is the monotonic tcp_iss clock component.
+ */
+tcp_seq
+tcp_new_isn(struct inpcb *inp)
+{
+	u_int32_t hash;
+
+	hash = tcp_isn_hash(
+	    inp->inp_laddr.s_addr,
+	    (u_int32_t)inp->inp_lport,
+	    inp->inp_faddr.s_addr,
+	    (u_int32_t)inp->inp_fport,
+	    tcp_secret_key);
+
+	return ((tcp_seq)tcp_iss + hash);
+}
+
+/*
+ * SYN cookie support (RFC 4987).
+ *
+ * Cookie = ISN encoding:
+ *   bits 31..8: hash(src_ip, src_port, dst_ip, dst_port, secret, counter)
+ *   bits  7..5: MSS index (8 common MSS values)
+ *   bits  4..0: counter mod 32 (to validate freshness)
+ *
+ * The counter is tcp_iss / TCP_ISSINCR (approximately a slow-timer tick count).
+ */
+
+/* Common MSS values for encoding (3 bits = 8 entries) */
+static u_int16_t tcp_sc_msstab[] = {
+	216, 536, 1024, 1220, 1360, 1440, 1460, 8960
+};
+#define TCP_SC_MSS_ENTRIES (sizeof(tcp_sc_msstab)/sizeof(tcp_sc_msstab[0]))
+
+int tcp_syncookies = 1;		/* SYN cookies enabled by default */
+
+static int
+tcp_sc_mss_encode(u_int16_t mss)
+{
+	int i, best = 0;
+
+	for(i = 0; i < TCP_SC_MSS_ENTRIES; i++) {
+		if(tcp_sc_msstab[i] <= mss)
+			best = i;
+	}
+	return best;
+}
+
+tcp_seq
+tcp_syncookie_generate(struct in_addr src, struct in_addr dst,
+    u_int16_t sport, u_int16_t dport, u_int16_t mss)
+{
+	u_int32_t counter;
+	u_int32_t hash;
+	int mss_idx;
+
+	counter = (u_int32_t)(tcp_iss / TCP_ISSINCR);
+	mss_idx = tcp_sc_mss_encode(mss);
+
+	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
+	    ((u_int32_t)sport << 16) | dport,
+	    counter, tcp_secret_key);
+
+	return ((hash & 0xFFFFFF00) |
+	    ((mss_idx & 0x7) << 5) | (counter & 0x1F));
+}
+
+u_int16_t
+tcp_syncookie_validate(struct in_addr src, struct in_addr dst,
+    u_int16_t sport, u_int16_t dport, tcp_seq ack_seq)
+{
+	tcp_seq cookie = ack_seq - 1;
+	u_int32_t counter_now;
+	u_int32_t counter_then;
+	u_int32_t hash;
+	int mss_idx;
+	int diff;
+	u_int32_t try_counter;
+	tcp_seq expected;
+
+	counter_now  = (u_int32_t)(tcp_iss / TCP_ISSINCR);
+	counter_then = cookie & 0x1F;
+	mss_idx      = (cookie >> 5) & 0x7;
+
+	diff = (counter_now & 0x1F) - counter_then;
+	if(diff < 0) diff += 32;
+	if(diff > 6) /* ~3 seconds window */
+		return 0;
+
+	/* Try current counter epoch */
+	try_counter = (counter_now & ~0x1F) | counter_then;
+	hash = tcp_isn_hash(src.s_addr, dst.s_addr,
+	    ((u_int32_t)sport << 16) | dport,
+	    try_counter, tcp_secret_key);
+	expected = (hash & 0xFFFFFF00) |
+	    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
+	if(expected == cookie)
+		return tcp_sc_msstab[mss_idx];
+
+	/* Try previous epoch in case counter wrapped */
+	if(try_counter >= 32) {
+		try_counter -= 32;
+		hash = tcp_isn_hash(src.s_addr, dst.s_addr,
+		    ((u_int32_t)sport << 16) | dport,
+		    try_counter, tcp_secret_key);
+		expected = (hash & 0xFFFFFF00) |
+		    ((mss_idx & 0x7) << 5) | (counter_then & 0x1F);
+		if(expected == cookie)
+			return tcp_sc_msstab[mss_idx];
+	}
+
+	return 0;  /* invalid cookie */
+}
 
 /* patchable/settable parameters for tcp */
 int	ip_defttl = 60;				  /* default time to live for TCP segs */
@@ -99,8 +240,32 @@ extern struct in_addr zeroin_addr;
 void
 tcp_init()
 {
+    /*
+     * Seed the ISN secret key and initial sequence number from
+     * available entropy (system time, task pointer).
+     */
+    {
+        struct timeval tv;
+        APTR task;
+        u_int32_t seed;
 
-    tcp_iss = 1;		/* wrong */
+        GetSysTime(&tv);
+        task = FindTask(NULL);
+        seed = (u_int32_t)tv.tv_secs ^ ((u_int32_t)tv.tv_micro << 16)
+             ^ (u_int32_t)(IPTR)task;
+
+        /* Fill secret key with mixed entropy */
+        tcp_secret_key[0] = seed * 0x5bd1e995;
+        seed ^= seed >> 16;
+        tcp_secret_key[1] = seed * 0x85ebca6b;
+        seed ^= seed >> 13;
+        tcp_secret_key[2] = seed * 0xc2b2ae35;
+        seed ^= seed >> 16;
+        tcp_secret_key[3] = seed * 0xcc9e2d51;
+
+        /* Start tcp_iss at an unpredictable value */
+        tcp_iss = (int)(tcp_secret_key[0] ^ tcp_secret_key[2]);
+    }
     tcp_ccgen = 1;
     tcp_cc_init();
     tcp_cleartaocache();
