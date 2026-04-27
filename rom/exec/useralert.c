@@ -78,7 +78,7 @@ LONG Alert_AskSuspend(struct Task *task, ULONG alertNum, char * buffer, struct E
     /* Look for the library in our list */
     IntuitionBase = (struct IntuitionBase *) FindName (&SysBase->LibList, "intuition.library");
 
-    EXEC_UNLOCK_LIST(&SysBase->LibList);
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->LibList);
     if (!IntuitionBase)
          return choice;
 
