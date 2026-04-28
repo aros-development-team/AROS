@@ -197,7 +197,6 @@ IPTR TextField__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         WORD tx = x + 3;
         WORD ty = y + 2 + rp->TxBaseline;
         WORD maxw = w - 6;
-        WORD maxh = h - 4;
         WORD lineheight = rp->TxHeight;
         STRPTR pos = data->td_Text;
         ULONG linenum = 0;

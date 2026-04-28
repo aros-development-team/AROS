@@ -217,7 +217,6 @@ IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         LONG pct = ((level - data->fgd_Min) * 100) / range;
         WORD len, txWidth, txX, txY;
 
-        buf[0] = '\0';
         if (pct >= 100)
         {
             buf[0] = '1'; buf[1] = '0'; buf[2] = '0'; buf[3] = '%'; buf[4] = '\0';

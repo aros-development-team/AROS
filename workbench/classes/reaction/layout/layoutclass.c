@@ -542,7 +542,6 @@ void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
 IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct LayoutData *data = INST_DATA(cl, o);
-    struct LayoutChild *lc;
     struct RastPort *rp;
 
     layout_compute_domain(cl, o, data);
@@ -554,6 +553,8 @@ IPTR Layout__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     if (rp)
     {
+        struct LayoutChild *lc;
+
         /* Render each child */
         ForeachNode(&data->ld_Children, lc)
         {

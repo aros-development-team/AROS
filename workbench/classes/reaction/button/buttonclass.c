@@ -168,7 +168,7 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
     struct Gadget *gad = G(o);
-    WORD x, y, w, h;
+    WORD x, y;
     BOOL selected;
 
     if (!rp && msg->gpr_GInfo)
@@ -179,8 +179,6 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     x = gad->LeftEdge;
     y = gad->TopEdge;
-    w = gad->Width;
-    h = gad->Height;
     selected = (gad->Flags & GFLG_SELECTED) || data->bd_Pushed;
 
     /* Draw button frame - use super class rendering first */
