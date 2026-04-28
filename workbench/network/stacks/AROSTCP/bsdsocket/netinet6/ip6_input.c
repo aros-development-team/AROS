@@ -136,9 +136,7 @@ frag6_input(struct mbuf *m, int off)
     int fragoff, frglen, mff;
     spl_t s;
 
-    ip6 = mtod(m, struct ip6_hdr *);
-
-    /* pull up fragment header */
+    /* pull up fragment header (m_pullup may reallocate) */
     if(m->m_len < off + sizeof(struct ip6_frag) &&
        (m = m_pullup(m, off + sizeof(struct ip6_frag))) == NULL) {
         ip6stat.ip6s_toosmall++;
@@ -269,8 +267,6 @@ frag6_input(struct mbuf *m, int off)
         /* take first fragment's mbuf as the base */
         af6 = q6->ip6q_down;
         result = af6->m;
-
-        rip6 = mtod(result, struct ip6_hdr *);
 
         /* Remove the fragment header from the first mbuf:
          * shift data after frag hdr back over the frag hdr */

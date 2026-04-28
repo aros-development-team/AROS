@@ -763,10 +763,9 @@ nd6_ra_input(struct mbuf *m, int off, int icmp6len)
                         (pi->nd_opt_pi_flags_reserved &
                         ND_OPT_PI_FLAG_AUTO) &&
                         pi->nd_opt_pi_prefix_len == 64) {
-                    int tmpret = in6_tmpifadd(ifp, pr);
-                    if(tmpret == EEXIST) {
+                    if(in6_tmpifadd(ifp, pr) == EEXIST) {
                         /* collision, retry once */
-                        tmpret = in6_tmpifadd(ifp, pr);
+                        (void)in6_tmpifadd(ifp, pr);
                     }
                 }
             }

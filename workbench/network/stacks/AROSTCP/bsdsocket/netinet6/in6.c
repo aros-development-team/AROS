@@ -401,7 +401,7 @@ in6_ifawithifp(struct ifnet *ifp, struct in6_addr *dst)
                       (!(besta->ia6_ifaflags & IN6_IFF_TEMPORARY) ||
                        (besta->ia6_ifaflags & IN6_IFF_DEPRECATED))) {
                 besta = ia;
-                bestscope = sc;
+                /* bestscope unchanged — already equals sc (== dstscope) */
             }
             continue;
         }
