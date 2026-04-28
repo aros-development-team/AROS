@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := chooserclass
+
+FUNCS := \
+	chooser_funcs
+
+#MM workbench-classes-reaction-chooser : includes linklibs
+#MM workbench-classes-reaction-chooser-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-chooser \
+    modname=chooser modtype=gadget \
+    files="$(FUNCS) $(FILES)"
+
+%common

@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := getscreenmodeclass
+
+#MM workbench-classes-reaction-getscreenmode : includes linklibs
+#MM workbench-classes-reaction-getscreenmode-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-getscreenmode \
+    modname=getscreenmode modtype=gadget \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,33 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-classes-complete : workbench-classes-reaction
+
+#MM- workbench-classes-reaction : \
+#MM     workbench-classes-reaction-button \
+#MM     workbench-classes-reaction-checkbox \
+#MM     workbench-classes-reaction-chooser \
+#MM     workbench-classes-reaction-clicktab \
+#MM     workbench-classes-reaction-fuelgauge \
+#MM     workbench-classes-reaction-getfile \
+#MM     workbench-classes-reaction-getfont \
+#MM     workbench-classes-reaction-getscreenmode \
+#MM     workbench-classes-reaction-integer \
+#MM     workbench-classes-reaction-layout \
+#MM     workbench-classes-reaction-listbrowser \
+#MM     workbench-classes-reaction-palette \
+#MM     workbench-classes-reaction-radiobutton \
+#MM     workbench-classes-reaction-scroller \
+#MM     workbench-classes-reaction-slider \
+#MM     workbench-classes-reaction-space \
+#MM     workbench-classes-reaction-speedbar \
+#MM     workbench-classes-reaction-string \
+#MM     workbench-classes-reaction-textfield \
+#MM     workbench-classes-reaction-window \
+#MM     workbench-classes-reaction-bevel \
+#MM     workbench-classes-reaction-bitmap \
+#MM     workbench-classes-reaction-drawlist \
+#MM     workbench-classes-reaction-glyph \
+#MM     workbench-classes-reaction-label \
+#MM     workbench-classes-reaction-led \
+#MM     workbench-classes-reaction-penmap

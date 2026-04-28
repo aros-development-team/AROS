@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := buttonclass
+
+#MM workbench-classes-reaction-button : includes linklibs
+#MM workbench-classes-reaction-button-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-button \
+    modname=button modtype=gadget \
+    files=$(FILES)
+
+%common

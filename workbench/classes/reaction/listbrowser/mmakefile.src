@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := listbrowserclass
+
+FUNCS := \
+	listbrowser_funcs
+
+#MM workbench-classes-reaction-listbrowser : includes linklibs
+#MM workbench-classes-reaction-listbrowser-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-listbrowser \
+    modname=listbrowser modtype=gadget \
+    files="$(FUNCS) $(FILES)"
+
+%common

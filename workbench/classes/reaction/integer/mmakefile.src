@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := integerclass
+
+#MM workbench-classes-reaction-integer : includes linklibs
+#MM workbench-classes-reaction-integer-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-integer \
+    modname=integer modtype=gadget \
+    files=$(FILES)
+
+%common

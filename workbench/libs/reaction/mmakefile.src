@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -D__NOLIBBASE__
+USER_LDFLAGS := -static
+
+FUNCS := \
+	ra_openwindow \
+	ra_closewindow \
+	ra_handleinput \
+	ra_disposewindowobject
+
+FILES := reaction_init
+
+#MM workbench-libs-reaction-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-layers-includes \
+#MM     includes-copy
+
+#MM- workbench-libs-reaction : linklibs
+
+%build_module mmake=workbench-libs-reaction \
+    modname=reaction modtype=library \
+    files="$(FUNCS) $(FILES)"
+
+%common

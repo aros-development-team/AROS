@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := speedbarclass
+
+#MM workbench-classes-reaction-speedbar : includes linklibs
+#MM workbench-classes-reaction-speedbar-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-speedbar \
+    modname=speedbar modtype=gadget \
+    files=$(FILES)
+
+%common

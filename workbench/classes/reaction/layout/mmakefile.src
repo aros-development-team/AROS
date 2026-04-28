@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := layoutclass
+
+FUNCS := \
+	layout_funcs \
+	page_funcs
+
+#MM workbench-classes-reaction-layout : includes linklibs
+#MM workbench-classes-reaction-layout-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-layers-includes
+
+%build_module mmake=workbench-classes-reaction-layout \
+    modname=layout modtype=gadget \
+    files="$(FUNCS) $(FILES)"
+
+%common

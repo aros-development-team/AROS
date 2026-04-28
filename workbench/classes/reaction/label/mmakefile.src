@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := labelclass
+
+#MM workbench-classes-reaction-label : includes linklibs
+#MM workbench-classes-reaction-label-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-label \
+    modname=label modtype=image \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := spaceclass
+
+#MM workbench-classes-reaction-space : includes linklibs
+#MM workbench-classes-reaction-space-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-space \
+    modname=space modtype=gadget \
+    files=$(FILES)
+
+%common

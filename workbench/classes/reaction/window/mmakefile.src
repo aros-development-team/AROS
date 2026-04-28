@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := windowclass
+
+#MM workbench-classes-reaction-window : includes linklibs
+#MM workbench-classes-reaction-window-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-layers-includes
+
+%build_module mmake=workbench-classes-reaction-window \
+    modname=window modtype=gadget \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := drawlistclass
+
+#MM workbench-classes-reaction-drawlist : includes linklibs
+#MM workbench-classes-reaction-drawlist-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-drawlist \
+    modname=drawlist modtype=image \
+    files=$(FILES)
+
+%common

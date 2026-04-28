@@ -23,6 +23,7 @@ INCSUBDIRS :=	aros				\
 		bluetooth			\
 		c++				\
 		c++/exec			\
+		classes	                        \
 		clib				\
 		datatypes			\
 		defines			        \

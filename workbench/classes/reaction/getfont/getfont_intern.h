@@ -1,0 +1,38 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: Reaction getfont.gadget - Internal definitions
+*/
+
+#ifndef GETFONT_INTERN_H
+#define GETFONT_INTERN_H
+
+#include <exec/types.h>
+#include <intuition/intuition.h>
+#include <intuition/classes.h>
+#include <intuition/gadgetclass.h>
+#include <graphics/text.h>
+#include <gadgets/getfont.h>
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
+#include LC_LIBDEFS_FILE
+
+#define G(obj)  ((struct Gadget *)(obj))
+
+struct GetFontData
+{
+    STRPTR          gfd_TitleText;      /* Requester title */
+    struct TextAttr *gfd_TextAttr;      /* Current font text attributes */
+    STRPTR          gfd_FontName;       /* Current font name */
+    UWORD           gfd_FontSize;       /* Current font size */
+    UWORD           gfd_FontStyle;      /* Current font style */
+    BOOL            gfd_DoStyle;        /* Show style options */
+    BOOL            gfd_FixedWidthOnly; /* Only show fixed-width fonts */
+    UWORD           gfd_MinHeight;      /* Minimum font height */
+    UWORD           gfd_MaxHeight;      /* Maximum font height */
+};
+
+#endif /* GETFONT_INTERN_H */

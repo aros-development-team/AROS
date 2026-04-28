@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := textfieldclass
+
+#MM workbench-classes-reaction-textfield : includes linklibs
+#MM workbench-classes-reaction-textfield-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-textfield \
+    modname=textfield modtype=gadget \
+    files=$(FILES)
+
+%common
