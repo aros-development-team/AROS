@@ -31,6 +31,7 @@ CPPFLAGS	= @CPPFLAGS@ -I${top_srcdir} -I${common_srcdir} -I${srcdir} \
 		  -DDRIVER="\"${DRIVER}\""
 CFLAGS		= @CFLAGS@
 ASFLAGS		= @ASFLAGS@
+ASCPPFLAGS	= @ASCPPFLAGS@
 LDFLAGS		= @LDFLAGS@ -nostartfiles
 ifeq (@host_os@,aros)
 LDFLAGS		+= -static
@@ -124,7 +125,7 @@ $(MODEFILE):	$(MODEFILE).o
 
 $(MODEFILE).o: MODEFILE.s $(MODEFILE).s
 	cat $^ | \
-	$(CC) $(ASFLAGS) \
+	$(CC) $(ASFLAGS) $(ASCPPFLAGS) \
 	       -c - -o $@
 
 gatestubs.c:	$(top_srcdir)/Include/SFD/ahi_sub_lib.sfd

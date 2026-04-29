@@ -120,6 +120,7 @@ case $host in
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -noixemul -mcpu=${CPU} -r"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
@@ -129,6 +130,7 @@ case $host in
   optflags="-m32 -march=${CPU} $target_optflags"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -140,6 +142,7 @@ case $host in
   linkerflags="$target_ldflags -noixemul -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  ascppflags=""
   resident="-resident"
   buildhandler="true"
   stripflag=""
@@ -151,6 +154,7 @@ case $host in
   linkerflags="$target_ldflags -m${CPU}"
   asCPU=`echo ${CPU} | sed 's/-.*//'`
   asflags="$target_asflags -m${asCPU} ${ASFWDOPT}--register-prefix-optional ${ASFWDOPT}--bitwise-or ${ASDEFSYM}CPU=${asCPU}"
+  ascppflags=""
   resident=""
   buildhandler="true"
   stripflag=""
@@ -163,6 +167,7 @@ case $host in
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -mcpu=${CPU}"
   asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident=""                                      dnl *** Not supported (yet?)
   stripflag=""
  ;;
@@ -173,6 +178,7 @@ case $host in
   optflags="-mcpu=${CPU} $target_optflags"
   linkerflags="$target_ldflags -noixemul -mcpu=${CPU}"
   asflags="$target_asflags -m${CPU} -mregnames ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident="-mresident32"
   buildhandler="true"
   stripflag=""
@@ -183,6 +189,7 @@ case $host in
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1 ${ASDEFSYM}x86_64=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -193,6 +200,7 @@ case $host in
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -203,6 +211,7 @@ case $host in
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -213,6 +222,7 @@ case $host in
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU}"
+  ascppflags=""
   resident=""
   buildhandler="true"
   stripflag=""
@@ -223,6 +233,7 @@ case $host in
   optflags="$target_optflags -fomit-frame-pointer"
   linkerflags="$target_ldflags"
   asflags="$target_asflags ${ASDEFSYM}CPU=${CPU} ${ASDEFSYM}LITTLE_ENDIAN=1"
+  ascppflags="-DLITTLE_ENDIAN=1"
   resident=""
   buildhandler="true"
   stripflag=""
@@ -238,6 +249,7 @@ top_builddir=$(pwd)
 : ${CPPFLAGS="-DCPU=\"\\\"${CPU}\\\"\" -I. -I${srcdir} -I${top_builddir} -I${top_builddir}/Include/gcc ${os_includedir} $target_cppflags"}
 : ${LDFLAGS="${linkerflags}"}
 : ${ASFLAGS="${asflags}"}
+: ${ASCPPFLAGS="${ascppflags}"}
 : ${ARFLAGS="-ru"}
 : ${STRIPFLAGS="${stripflag}"}
 
@@ -250,6 +262,7 @@ top_builddir=$(pwd)
 AC_PREFIX_DEFAULT( / )
 
 AC_SUBST(ASFLAGS)
+AC_SUBST(ASCPPFLAGS)
 AC_SUBST(ARFLAGS)
 AC_SUBST(STRIPFLAGS)
 AC_SUBST(CFLAG_RESIDENT)
