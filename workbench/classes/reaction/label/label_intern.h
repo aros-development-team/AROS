@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct LabelBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct LabelData
 {
     STRPTR          ld_Text;            /* Label text */

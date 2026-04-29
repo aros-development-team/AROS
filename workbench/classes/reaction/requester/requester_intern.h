@@ -29,6 +29,13 @@
 
 #include LC_LIBDEFS_FILE
 
+/* Module library base with stored class pointer */
+struct RequesterBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 /* Requester class instance data */
 struct RequesterData
 {

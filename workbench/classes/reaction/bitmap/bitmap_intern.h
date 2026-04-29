@@ -20,6 +20,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct BitMapBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct BitmapData
 {
     struct BitMap   *bd_BitMap;          /* Normal state bitmap */

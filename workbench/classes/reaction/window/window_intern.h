@@ -32,6 +32,13 @@
 
 #include LC_LIBDEFS_FILE
 
+/* Module library base with stored class pointer */
+struct WindowBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 /* Window class instance data */
 struct WindowClassData
 {

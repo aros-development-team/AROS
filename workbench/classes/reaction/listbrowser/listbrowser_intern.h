@@ -10,10 +10,20 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <intuition/classes.h>
 #include <intuition/gadgetclass.h>
 #include <gadgets/listbrowser.h>
 
 #include LC_LIBDEFS_FILE
+
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct ListBrowserBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
 
 /* Per-column data in a ListBrowserNode */
 struct LBColumnEntry

@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct GlyphBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct GlyphData
 {
     ULONG           gd_Glyph;           /* Glyph type (GLYPH_*) */

@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct LEDBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct LEDData
 {
     UWORD           ld_Pairs;           /* Number of digit pairs */

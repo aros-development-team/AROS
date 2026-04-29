@@ -20,6 +20,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct PenMapBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct PenMapData
 {
     UBYTE          *pd_PenMap;          /* Normal state pen-indexed pixel data */

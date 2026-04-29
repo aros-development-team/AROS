@@ -35,6 +35,13 @@
 
 #include LC_LIBDEFS_FILE
 
+/* Module library base with stored class pointer */
+struct LayoutBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 /* Child node in layout */
