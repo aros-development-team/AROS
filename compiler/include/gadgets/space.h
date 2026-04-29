@@ -19,10 +19,14 @@
 
 #define SPACE_Dummy         (REACTION_Dummy + 0x9000)
 
-#define SPACE_MinWidth      (SPACE_Dummy + 0x0001) /* Minimum width */
-#define SPACE_MinHeight     (SPACE_Dummy + 0x0002) /* Minimum height */
-#define SPACE_BevelStyle    (SPACE_Dummy + 0x0003) /* Bevel style */
-#define SPACE_Transparent   (SPACE_Dummy + 0x0004) /* No background fill */
+#define SPACE_MinHeight     (SPACE_Dummy + 1)  /* Gadget minimum height */
+#define SPACE_MinWidth      (SPACE_Dummy + 2)  /* Gadget minimum width */
+#define SPACE_MouseX        (SPACE_Dummy + 3)  /* Mouse X position within gadget (notify) */
+#define SPACE_MouseY        (SPACE_Dummy + 4)  /* Mouse Y position within gadget (notify) */
+#define SPACE_Transparent   (SPACE_Dummy + 5)  /* Skip background erase before redraw */
+#define SPACE_AreaBox       (SPACE_Dummy + 6)  /* Inner rendering area IBox (get only) */
+#define SPACE_RenderHook    (SPACE_Dummy + 7)  /* Hook called on gadget refresh */
+#define SPACE_BevelStyle    (SPACE_Dummy + 8)  /* Bevel frame style (see bevel.h) */
 
 #ifndef SpaceObject
 #define SpaceObject     NewObject(NULL, SPACE_CLASSNAME

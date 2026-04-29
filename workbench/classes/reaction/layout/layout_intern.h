@@ -81,7 +81,6 @@ struct LayoutData
     struct MinList      ld_Children;     /* List of LayoutChild */
     ULONG               ld_Orientation;  /* LAYOUT_ORIENT_HORIZ/VERT */
     ULONG               ld_BevelStyle;   /* Bevel style */
-    ULONG               ld_Alignment;    /* Alignment */
     ULONG               ld_HorizAlignment;
     ULONG               ld_VertAlignment;
 

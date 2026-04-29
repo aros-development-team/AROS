@@ -57,17 +57,8 @@ static void label_set(Class *cl, Object *o, struct opSet *msg)
             case LABEL_DrawInfo:
                 data->ld_DrawInfo = (struct DrawInfo *)tag->ti_Data;
                 break;
-            case LABEL_MenuMode:
-                data->ld_MenuMode = (BOOL)tag->ti_Data;
-                break;
             case LABEL_Underscore:
                 data->ld_Underscore = (UBYTE)tag->ti_Data;
-                break;
-            case LABEL_KeyStroke:
-                data->ld_KeyStroke = (UBYTE)tag->ti_Data;
-                break;
-            case LABEL_TextPen:
-                data->ld_TextPen = (UWORD)tag->ti_Data;
                 break;
         }
     }
@@ -232,20 +223,8 @@ IPTR Label__OM_GET(Class *cl, Object *o, struct opGet *msg)
             *msg->opg_Storage = (IPTR)data->ld_DrawInfo;
             return TRUE;
 
-        case LABEL_MenuMode:
-            *msg->opg_Storage = data->ld_MenuMode;
-            return TRUE;
-
         case LABEL_Underscore:
             *msg->opg_Storage = data->ld_Underscore;
-            return TRUE;
-
-        case LABEL_KeyStroke:
-            *msg->opg_Storage = data->ld_KeyStroke;
-            return TRUE;
-
-        case LABEL_TextPen:
-            *msg->opg_Storage = data->ld_TextPen;
             return TRUE;
     }
 
@@ -289,7 +268,7 @@ IPTR Label__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
             break;
 
         default:
-            textPen = data->ld_TextPen ? data->ld_TextPen : pens[TEXTPEN];
+            textPen = pens[TEXTPEN];
             break;
     }
 

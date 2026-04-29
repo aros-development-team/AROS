@@ -35,7 +35,6 @@ struct BevelData
     ULONG           bd_LabelPlace;      /* Label placement */
     UWORD           bd_TextPen;         /* Text pen */
     UWORD           bd_FillPen;         /* Fill pen */
-    UWORD           bd_FillTextPen;     /* Fill text pen */
 };
 
 #endif /* BEVEL_INTERN_H */

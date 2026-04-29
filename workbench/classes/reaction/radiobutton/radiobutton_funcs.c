@@ -20,11 +20,7 @@ struct RadioButtonNode
     STRPTR      rbn_Text;
     ULONG       rbn_Flags;
     LONG        rbn_Selected;
-    LONG        rbn_Disabled;
 };
-
-#define RBNF_DISABLED  (1 << 0)
-#define RBNF_SELECTED  (1 << 1)
 
 /*****************************************************************************
 
@@ -71,14 +67,6 @@ struct RadioButtonNode
             case RBNA_Labels:
                 node->rbn_Text = (STRPTR)tag->ti_Data;
                 node->rbn_Node.ln_Name = (STRPTR)tag->ti_Data;
-                break;
-
-            case RBNA_Disabled:
-                node->rbn_Disabled = (LONG)tag->ti_Data;
-                if (tag->ti_Data)
-                    node->rbn_Flags |= RBNF_DISABLED;
-                else
-                    node->rbn_Flags &= ~RBNF_DISABLED;
                 break;
         }
     }
@@ -157,14 +145,6 @@ struct RadioButtonNode
                 rbn->rbn_Text = (STRPTR)tag->ti_Data;
                 rbn->rbn_Node.ln_Name = (STRPTR)tag->ti_Data;
                 break;
-
-            case RBNA_Disabled:
-                rbn->rbn_Disabled = (LONG)tag->ti_Data;
-                if (tag->ti_Data)
-                    rbn->rbn_Flags |= RBNF_DISABLED;
-                else
-                    rbn->rbn_Flags &= ~RBNF_DISABLED;
-                break;
         }
     }
 
@@ -208,10 +188,6 @@ struct RadioButtonNode
         {
             case RBNA_Labels:
                 *(STRPTR *)tag->ti_Data = rbn->rbn_Text;
-                break;
-
-            case RBNA_Disabled:
-                *(LONG *)tag->ti_Data = rbn->rbn_Disabled;
                 break;
         }
     }

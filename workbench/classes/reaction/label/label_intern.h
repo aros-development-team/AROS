@@ -37,10 +37,7 @@ struct LabelData
     BOOL            ld_DisposeImage;    /* Dispose image on OM_DISPOSE */
     LONG           *ld_Mapping;         /* Pen mapping */
     struct DrawInfo *ld_DrawInfo;       /* DrawInfo */
-    BOOL            ld_MenuMode;        /* Menu rendering mode */
     UBYTE           ld_Underscore;      /* Underscore character */
-    UBYTE           ld_KeyStroke;       /* Keyboard shortcut */
-    UWORD           ld_TextPen;         /* Override text pen */
 };
 
 #endif /* LABEL_INTERN_H */

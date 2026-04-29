@@ -7,23 +7,31 @@
 #ifndef GADGETS_CHECKBOX_H
 #define GADGETS_CHECKBOX_H
 
-#ifndef EXEC_TYPES_H
-#include <exec/types.h>
-#endif
 #ifndef REACTION_REACTION_H
 #include <reaction/reaction.h>
+#endif
+#ifndef INTUITION_GADGETCLASS_H
+#include <intuition/gadgetclass.h>
 #endif
 
 #define CHECKBOX_CLASSNAME  "checkbox.gadget"
 #define CHECKBOX_VERSION    44
 
-#define CHECKBOX_Dummy      (REACTION_Dummy + 0x11000)
+/*****************************************************************************/
 
-#define CHECKBOX_Checked        (CHECKBOX_Dummy + 0x0001) /* Current checked state */
-#define CHECKBOX_TextPen        (CHECKBOX_Dummy + 0x0002) /* Text pen */
-#define CHECKBOX_BackgroundPen  (CHECKBOX_Dummy + 0x0003) /* Background pen */
-#define CHECKBOX_FillPen        (CHECKBOX_Dummy + 0x0004) /* Fill pen */
-#define CHECKBOX_TextPlace      (CHECKBOX_Dummy + 0x0005) /* Label placement */
+/* Additional attributes defined by the checkbox.gadget class */
+
+#define CHECKBOX_Dummy          (REACTION_Dummy + 0x11000)
+
+#define CHECKBOX_TextPen        (CHECKBOX_Dummy+1)  /* (WORD) Text pen, ~0 for TEXTPEN */
+#define CHECKBOX_FillTextPen    (CHECKBOX_Dummy+2)  /* (WORD) Fill text pen, ~0 for FILLTEXTPEN */
+#define CHECKBOX_BackgroundPen  (CHECKBOX_Dummy+3)  /* (WORD) Background pen, ~0 for BACKGROUNDPEN */
+#define CHECKBOX_BevelStyle     (CHECKBOX_Dummy+4)  /* (WORD) Outer bevel style (obsolete) */
+#define CHECKBOX_TextPlace      (CHECKBOX_Dummy+5)  /* (LONG) Label placement (PLACETEXT_LEFT/RIGHT) */
+
+#define CHECKBOX_Checked        GA_Selected         /* (BOOL) Checkmark state */
+
+/*****************************************************************************/
 
 #ifndef CheckBoxObject
 #define CheckBoxObject  NewObject(NULL, CHECKBOX_CLASSNAME

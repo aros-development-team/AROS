@@ -37,8 +37,6 @@ struct IntegerData
     LONG    maximum;
     ULONG   maxchars;
     BOOL    arrows;
-    LONG    incdecamount;
-    ULONG   justification;
 };
 
 #endif /* INTEGER_INTERN_H */

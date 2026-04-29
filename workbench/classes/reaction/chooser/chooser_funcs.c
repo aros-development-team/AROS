@@ -37,9 +37,6 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
             case CNA_Disabled:
                 cn->cn_Disabled = (BOOL)tag->ti_Data;
                 break;
-            case CNA_Selected:
-                cn->cn_Selected = (BOOL)tag->ti_Data;
-                break;
             case CNA_Separator:
                 cn->cn_Separator = (BOOL)tag->ti_Data;
                 break;
@@ -203,9 +200,6 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
                 break;
             case CNA_Disabled:
                 *store = (IPTR)cn->cn_Disabled;
-                break;
-            case CNA_Selected:
-                *store = (IPTR)cn->cn_Selected;
                 break;
             case CNA_Separator:
                 *store = (IPTR)cn->cn_Separator;

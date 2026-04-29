@@ -137,9 +137,9 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
                     if (cur_column < columns)
                         lbn->lbn_ColumnData[cur_column].lbce_BGPen = (UBYTE)tag->ti_Data;
                     break;
-                case LBNCA_Justification:
+                case LBNCA_HorizJustify:
                     if (cur_column < columns)
-                        lbn->lbn_ColumnData[cur_column].lbce_Justification = (UBYTE)tag->ti_Data;
+                        lbn->lbn_ColumnData[cur_column].lbce_HorizJustify = (UBYTE)tag->ti_Data;
                     break;
                 case LBNCA_Editable:
                     if (cur_column < columns)
@@ -148,10 +148,6 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
                 case LBNCA_MaxChars:
                     if (cur_column < columns)
                         lbn->lbn_ColumnData[cur_column].lbce_MaxChars = (UWORD)tag->ti_Data;
-                    break;
-                case LBNCA_HorizJustify:
-                    if (cur_column < columns)
-                        lbn->lbn_ColumnData[cur_column].lbce_HorizJustify = (UBYTE)tag->ti_Data;
                     break;
             }
         }
@@ -269,10 +265,6 @@ AROS_LH2(void, SetListBrowserNodeAttrsA,
             case LBNCA_BGPen:
                 if (cur_column < lbn->lbn_Columns)
                     lbn->lbn_ColumnData[cur_column].lbce_BGPen = (UBYTE)tag->ti_Data;
-                break;
-            case LBNCA_Justification:
-                if (cur_column < lbn->lbn_Columns)
-                    lbn->lbn_ColumnData[cur_column].lbce_Justification = (UBYTE)tag->ti_Data;
                 break;
             case LBNCA_HorizJustify:
                 if (cur_column < lbn->lbn_Columns)

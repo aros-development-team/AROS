@@ -39,13 +39,10 @@ struct BitmapData
     struct Screen   *bd_Screen;          /* Screen for color mapping */
     ULONG           bd_Precision;        /* Remapping precision */
     BOOL            bd_Masking;          /* Use mask plane */
-    BOOL            bd_Transparent;      /* Transparent mode */
     WORD            bd_OffsetX;          /* Source X offset */
     WORD            bd_OffsetY;          /* Source Y offset */
     struct BitMap   *bd_SelectBitMap;    /* Selected state bitmap */
     UBYTE           *bd_SelectMaskPlane; /* Selected mask plane */
-    struct BitMap   *bd_DisBitMap;       /* Disabled state bitmap */
-    UBYTE           *bd_DisMaskPlane;    /* Disabled mask plane */
 };
 
 #endif /* BITMAP_INTERN_H */

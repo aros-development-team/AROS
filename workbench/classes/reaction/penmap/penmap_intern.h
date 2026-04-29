@@ -31,16 +31,15 @@ struct PenMapBase_intern
 
 struct PenMapData
 {
-    UBYTE          *pd_PenMap;          /* Normal state pen-indexed pixel data */
-    UWORD           pd_Width;           /* Penmap width in pixels */
-    UWORD           pd_Height;          /* Penmap height in pixels */
+    UBYTE          *pd_SelectData;      /* Selected state render data */
     struct Screen  *pd_Screen;          /* Screen for pen allocation */
     ULONG           pd_Precision;       /* Color matching precision */
-    UBYTE          *pd_SelectPenMap;    /* Selected state penmap */
-    UBYTE          *pd_DisPenMap;       /* Disabled state penmap */
-    UBYTE           pd_Transparent;     /* Transparent pen index */
-    UWORD           pd_NumColors;       /* Number of colors in palette */
-    ULONG          *pd_RGBData;         /* RGB color data array */
+    WORD            pd_SelectBGPen;     /* Selected background pen */
+    APTR            pd_Palette;         /* Palette data */
+    struct ColorMap *pd_ColorMap;       /* Colormap for remap */
+    UWORD           pd_ImageType;       /* Image type */
+    UWORD           pd_Transparent;     /* Transparent pen index */
+    BOOL            pd_MaskBlit;        /* Use blitmask for transparency */
 };
 
 #endif /* PENMAP_INTERN_H */

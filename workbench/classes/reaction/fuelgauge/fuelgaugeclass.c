@@ -80,7 +80,7 @@ IPTR FuelGauge__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         data->fgd_Min         = 0;
         data->fgd_Max         = 100;
         data->fgd_Level       = 0;
-        data->fgd_Orientation = FUELGAUGE_ORIENT_HORIZ;
+        data->fgd_Orientation = FGORIENT_HORIZ;
         data->fgd_Percent     = TRUE;
 
         fuelgauge_set(cl, (Object *)retval, msg);
@@ -197,7 +197,7 @@ IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     else
         SetAPen(rp, 3);
 
-    if (data->fgd_Orientation == FUELGAUGE_ORIENT_HORIZ)
+    if (data->fgd_Orientation == FGORIENT_HORIZ)
     {
         fillSize = (w * (level - data->fgd_Min)) / range;
         if (fillSize > 0)

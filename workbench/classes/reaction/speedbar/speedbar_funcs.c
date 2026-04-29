@@ -19,7 +19,6 @@ struct SpeedButtonNode
     struct Node sbn_Node;
     UWORD       sbn_Number;
     Object     *sbn_Image;
-    STRPTR      sbn_Text;
     ULONG       sbn_Flags;
     LONG        sbn_Disabled;
     LONG        sbn_Toggle;
@@ -75,11 +74,6 @@ struct SpeedButtonNode
         {
             case SBNA_Image:
                 node->sbn_Image = (Object *)tag->ti_Data;
-                break;
-
-            case SBNA_Text:
-                node->sbn_Text = (STRPTR)tag->ti_Data;
-                node->sbn_Node.ln_Name = (STRPTR)tag->ti_Data;
                 break;
 
             case SBNA_Disabled:
@@ -182,11 +176,6 @@ struct SpeedButtonNode
                 sbn->sbn_Image = (Object *)tag->ti_Data;
                 break;
 
-            case SBNA_Text:
-                sbn->sbn_Text = (STRPTR)tag->ti_Data;
-                sbn->sbn_Node.ln_Name = (STRPTR)tag->ti_Data;
-                break;
-
             case SBNA_Disabled:
                 sbn->sbn_Disabled = (LONG)tag->ti_Data;
                 if (tag->ti_Data)
@@ -253,10 +242,6 @@ struct SpeedButtonNode
         {
             case SBNA_Image:
                 *(Object **)tag->ti_Data = sbn->sbn_Image;
-                break;
-
-            case SBNA_Text:
-                *(STRPTR *)tag->ti_Data = sbn->sbn_Text;
                 break;
 
             case SBNA_Disabled:

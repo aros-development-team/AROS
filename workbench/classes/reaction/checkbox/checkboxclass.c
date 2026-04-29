@@ -41,7 +41,7 @@ static void checkbox_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case CHECKBOX_Checked:
+            case GA_Selected:
                 data->cd_Checked = (BOOL)tag->ti_Data;
                 break;
             case CHECKBOX_TextPen:
@@ -50,8 +50,8 @@ static void checkbox_set(Class *cl, Object *o, struct opSet *msg)
             case CHECKBOX_BackgroundPen:
                 data->cd_BackgroundPen = (UWORD)tag->ti_Data;
                 break;
-            case CHECKBOX_FillPen:
-                data->cd_FillPen = (UWORD)tag->ti_Data;
+            case CHECKBOX_FillTextPen:
+                data->cd_FillTextPen = (UWORD)tag->ti_Data;
                 break;
             case CHECKBOX_TextPlace:
                 data->cd_TextPlace = tag->ti_Data;
@@ -103,7 +103,7 @@ IPTR CheckBox__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case CHECKBOX_Checked:
+        case GA_Selected:
             *msg->opg_Storage = data->cd_Checked;
             return TRUE;
 
@@ -115,8 +115,8 @@ IPTR CheckBox__OM_GET(Class *cl, Object *o, struct opGet *msg)
             *msg->opg_Storage = data->cd_BackgroundPen;
             return TRUE;
 
-        case CHECKBOX_FillPen:
-            *msg->opg_Storage = data->cd_FillPen;
+        case CHECKBOX_FillTextPen:
+            *msg->opg_Storage = data->cd_FillTextPen;
             return TRUE;
 
         case CHECKBOX_TextPlace:

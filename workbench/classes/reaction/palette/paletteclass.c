@@ -47,9 +47,6 @@ static void palette_set(Class *cl, Object *o, struct opSet *msg)
             case PALETTE_NumColors:
                 data->pd_NumColors = tag->ti_Data;
                 break;
-            case PALETTE_ColorsPerRow:
-                data->pd_ColorsPerRow = (UWORD)tag->ti_Data;
-                break;
         }
     }
 }
@@ -69,7 +66,6 @@ IPTR Palette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         /* Set defaults */
         data->pd_NumColors    = 8;
-        data->pd_ColorsPerRow = 8;
         data->pd_ColorOffset  = 0;
         data->pd_Color        = 0;
 
@@ -114,10 +110,6 @@ IPTR Palette__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case PALETTE_NumColors:
             *msg->opg_Storage = data->pd_NumColors;
             return TRUE;
-
-        case PALETTE_ColorsPerRow:
-            *msg->opg_Storage = data->pd_ColorsPerRow;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -147,9 +139,8 @@ IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     w = gad->Width;
     h = gad->Height;
 
-    cols = data->pd_ColorsPerRow;
+    cols = data->pd_NumColors;
     if (cols == 0) cols = 1;
-    if (cols > data->pd_NumColors) cols = data->pd_NumColors;
 
     rows = (data->pd_NumColors + cols - 1) / cols;
     if (rows == 0) rows = 1;

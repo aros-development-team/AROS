@@ -48,15 +48,6 @@ static void getfont_set(Class *cl, Object *o, struct opSet *msg)
             case GETFONT_TextAttr:
                 data->gfd_TextAttr = (struct TextAttr *)tag->ti_Data;
                 break;
-            case GETFONT_FontName:
-                data->gfd_FontName = (STRPTR)tag->ti_Data;
-                break;
-            case GETFONT_FontSize:
-                data->gfd_FontSize = (UWORD)tag->ti_Data;
-                break;
-            case GETFONT_FontStyle:
-                data->gfd_FontStyle = (UWORD)tag->ti_Data;
-                break;
             case GETFONT_DoStyle:
                 data->gfd_DoStyle = (BOOL)tag->ti_Data;
                 break;
@@ -88,7 +79,6 @@ IPTR GetFont__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         /* Default values */
         data->gfd_TitleText = "Select Font";
-        data->gfd_FontSize = 8;
 
         getfont_set(cl, (Object *)retval, msg);
     }
@@ -126,18 +116,6 @@ IPTR GetFont__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case GETFONT_TextAttr:
             *msg->opg_Storage = (IPTR)data->gfd_TextAttr;
-            return TRUE;
-
-        case GETFONT_FontName:
-            *msg->opg_Storage = (IPTR)data->gfd_FontName;
-            return TRUE;
-
-        case GETFONT_FontSize:
-            *msg->opg_Storage = (IPTR)data->gfd_FontSize;
-            return TRUE;
-
-        case GETFONT_FontStyle:
-            *msg->opg_Storage = (IPTR)data->gfd_FontStyle;
             return TRUE;
 
         case GETFONT_DoStyle:
@@ -214,14 +192,18 @@ IPTR GetFont__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     RectFill(rp, x + 1, y + 1, x + tw - 2, y + h - 2);
 
     /* Build display text showing font name and size */
-    if (data->gfd_FontName)
+    if (data->gfd_TextAttr && data->gfd_TextAttr->ta_Name)
     {
         snprintf(dispbuf, sizeof(dispbuf), "%s/%d",
-                 data->gfd_FontName, (int)data->gfd_FontSize);
+                 data->gfd_TextAttr->ta_Name, (int)data->gfd_TextAttr->ta_YSize);
+    }
+    else if (data->gfd_TextAttr)
+    {
+        snprintf(dispbuf, sizeof(dispbuf), "%d", (int)data->gfd_TextAttr->ta_YSize);
     }
     else
     {
-        snprintf(dispbuf, sizeof(dispbuf), "%d", (int)data->gfd_FontSize);
+        snprintf(dispbuf, sizeof(dispbuf), "(no font)");
     }
 
     /* Draw font info text */

@@ -36,7 +36,6 @@ struct RadioButtonData
     struct List *labels;
     LONG         selected;
     UWORD        spacing;
-    ULONG        orientation;
     ULONG        labelplace;
 };
 

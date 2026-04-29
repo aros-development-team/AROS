@@ -33,13 +33,8 @@ struct StringBase_intern
 
 struct StringGadData
 {
-    ULONG           sd_MaxChars;        /* Maximum characters allowed */
-    STRPTR          sd_Buffer;          /* String buffer */
-    ULONG           sd_BufferPos;       /* Cursor position in buffer */
-    ULONG           sd_DispPos;         /* Display position (first visible char) */
-    ULONG           sd_Justification;   /* Text justification */
-    struct Hook    *sd_EditHook;        /* Custom edit hook */
-    BOOL            sd_ReplaceMode;     /* Replace mode (overwrite vs insert) */
+    UWORD           sd_MinVisible;      /* Minimum visible characters for sizing */
+    UWORD           sd_HookType;        /* Built-in hook type (SHK_*) */
 };
 
 #endif /* STRING_INTERN_H */

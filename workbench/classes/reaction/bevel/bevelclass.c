@@ -50,9 +50,6 @@ static void bevel_set(Class *cl, Object *o, struct opSet *msg)
             case BEVEL_FillPen:
                 data->bd_FillPen = (UWORD)tag->ti_Data;
                 break;
-            case BEVEL_FillTextPen:
-                data->bd_FillTextPen = (UWORD)tag->ti_Data;
-                break;
         }
     }
 }
@@ -231,10 +228,6 @@ IPTR Bevel__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case BEVEL_FillPen:
             *msg->opg_Storage = data->bd_FillPen;
-            return TRUE;
-
-        case BEVEL_FillTextPen:
-            *msg->opg_Storage = data->bd_FillTextPen;
             return TRUE;
     }
 

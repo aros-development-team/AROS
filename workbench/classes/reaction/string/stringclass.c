@@ -38,26 +38,11 @@ static void string_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case STRINGA_MaxChars:
-                data->sd_MaxChars = tag->ti_Data;
+            case STRINGA_MinVisible:
+                data->sd_MinVisible = (UWORD)tag->ti_Data;
                 break;
-            case STRINGA_Buffer:
-                data->sd_Buffer = (STRPTR)tag->ti_Data;
-                break;
-            case STRINGA_BufferPos:
-                data->sd_BufferPos = tag->ti_Data;
-                break;
-            case STRINGA_DispPos:
-                data->sd_DispPos = tag->ti_Data;
-                break;
-            case STRINGA_Justification:
-                data->sd_Justification = tag->ti_Data;
-                break;
-            case STRINGA_EditHook:
-                data->sd_EditHook = (struct Hook *)tag->ti_Data;
-                break;
-            case STRINGA_ReplaceMode:
-                data->sd_ReplaceMode = (BOOL)tag->ti_Data;
+            case STRINGA_HookType:
+                data->sd_HookType = (UWORD)tag->ti_Data;
                 break;
         }
     }
@@ -75,9 +60,6 @@ IPTR String__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         struct StringGadData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct StringGadData));
-
-        /* Set default values */
-        data->sd_MaxChars = 256;
 
         string_set(cl, (Object *)retval, msg);
     }
@@ -106,32 +88,15 @@ IPTR String__OM_SET(Class *cl, Object *o, struct opSet *msg)
 IPTR String__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct StringGadData *data = INST_DATA(cl, o);
-    struct StringInfo *si = (struct StringInfo *)G(o)->SpecialInfo;
 
     switch (msg->opg_AttrID)
     {
-        case STRINGA_MaxChars:
-            *msg->opg_Storage = data->sd_MaxChars;
+        case STRINGA_MinVisible:
+            *msg->opg_Storage = data->sd_MinVisible;
             return TRUE;
 
-        case STRINGA_Buffer:
-            *msg->opg_Storage = (IPTR)data->sd_Buffer;
-            return TRUE;
-
-        case STRINGA_TextVal:
-            *msg->opg_Storage = si ? (IPTR)si->Buffer : (IPTR)NULL;
-            return TRUE;
-
-        case STRINGA_LongVal:
-            *msg->opg_Storage = si ? si->LongInt : 0;
-            return TRUE;
-
-        case STRINGA_Justification:
-            *msg->opg_Storage = data->sd_Justification;
-            return TRUE;
-
-        case STRINGA_BufferPos:
-            *msg->opg_Storage = data->sd_BufferPos;
+        case STRINGA_HookType:
+            *msg->opg_Storage = data->sd_HookType;
             return TRUE;
     }
 

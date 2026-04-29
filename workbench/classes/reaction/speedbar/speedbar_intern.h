@@ -38,8 +38,6 @@ struct SpeedBarData
     ULONG           sd_BevelStyle;      /* Bevel style for buttons */
     struct Window   *sd_Window;         /* Parent window */
     BOOL            sd_EvenSize;        /* Force even button sizing */
-    BOOL            sd_RaisedButtons;   /* Draw raised button frames */
-    BOOL            sd_SmallImages;     /* Use small images */
 };
 
 #endif /* SPEEDBAR_INTERN_H */

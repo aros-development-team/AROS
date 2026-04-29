@@ -13,32 +13,40 @@
 #ifndef REACTION_REACTION_H
 #include <reaction/reaction.h>
 #endif
+#ifndef INTUITION_IMAGECLASS_H
+#include <intuition/imageclass.h>
+#endif
 
 #define GLYPH_CLASSNAME     "glyph.image"
 #define GLYPH_VERSION       44
 
 #define GLYPH_Dummy         (REACTION_Dummy + 0x15000)
 
-#define GLYPH_Glyph         (GLYPH_Dummy + 0x0001) /* Glyph type (GLYPH_*) */
-#define GLYPH_SoftStyle     (GLYPH_Dummy + 0x0002) /* Text style flags */
+#define GLYPH_Glyph        (GLYPH_Dummy+1) /* (WORD) Glyph type, see below */
+#define GLYPH_DrawInfo      (GLYPH_Dummy+2) /* Obsolete - do not use */
 
-/* Glyph IDs */
-#define GLYPH_POPFILE       0
-#define GLYPH_POPFONT       1
-#define GLYPH_POPUP         2
-#define GLYPH_POPDRAWER     3
-#define GLYPH_POPSCREEN     4
-#define GLYPH_POPTIME       5
-#define GLYPH_ARROWLEFT     6
-#define GLYPH_ARROWRIGHT    7
-#define GLYPH_ARROWUP       8
-#define GLYPH_ARROWDOWN     9
-#define GLYPH_CHECKBOX      10
-#define GLYPH_RADIOBUTTON   11
-#define GLYPH_UPARROW       12
-#define GLYPH_DOWNARROW     13
-#define GLYPH_LEFTARROW     14
-#define GLYPH_RIGHTARROW    15
+/* Glyph type constants for GLYPH_Glyph */
+#define GLYPH_NONE          0   /* No glyph */
+#define GLYPH_DOWNARROW     1   /* Down arrow */
+#define GLYPH_UPARROW       2   /* Up arrow */
+#define GLYPH_LEFTARROW     3   /* Left arrow */
+#define GLYPH_RIGHTARROW    4   /* Right arrow */
+#define GLYPH_DROPDOWN      5   /* Dropdown indicator */
+#define GLYPH_POPUP         6   /* Popup indicator */
+#define GLYPH_CHECKMARK     7   /* Checkmark */
+#define GLYPH_POPFONT       8   /* Font popup */
+#define GLYPH_POPFILE       9   /* File popup */
+#define GLYPH_POPDRAWER     10  /* Drawer popup */
+#define GLYPH_POPSCREENMODE 11  /* Screenmode popup */
+#define GLYPH_POPTIME       12  /* Time popup */
+#define GLYPH_RADIOBUTTON   18  /* Radio button */
+#define GLYPH_RETURNARROW   20  /* Return arrow */
+#define GLYPH_BDOWNARROW    21  /* Bold down arrow */
+#define GLYPH_BUPARROW      22  /* Bold up arrow */
+#define GLYPH_BLEFTARROW    23  /* Bold left arrow */
+#define GLYPH_BRIGHTARROW   24  /* Bold right arrow */
+#define GLYPH_DROPDOWNMENU  25  /* Dropdown menu indicator */
+#define GLYPH_CYCLE         26  /* Cycle indicator */
 
 #ifndef GlyphObject
 #define GlyphObject     NewObject(NULL, GLYPH_CLASSNAME

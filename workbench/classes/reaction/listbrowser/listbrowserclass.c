@@ -101,17 +101,8 @@ static void lb_set_attrs(struct ListBrowserData *data, struct TagItem *tags)
             case LISTBROWSER_ShowSelected:
                 data->lbd_ShowSelected = (BOOL)tag->ti_Data;
                 break;
-            case LISTBROWSER_ReadOnly:
-                data->lbd_ReadOnly = (BOOL)tag->ti_Data;
-                break;
             case LISTBROWSER_ColumnTitles:
                 data->lbd_ColumnTitles = (BOOL)tag->ti_Data;
-                break;
-            case LISTBROWSER_Striping:
-                data->lbd_Striping = (UBYTE)tag->ti_Data;
-                break;
-            case LISTBROWSER_NumColumns:
-                data->lbd_NumColumns = (UWORD)tag->ti_Data;
                 break;
             case LISTBROWSER_Hierarchical:
                 data->lbd_Hierarchical = (BOOL)tag->ti_Data;
@@ -194,9 +185,6 @@ IPTR ListBrowser__OM_GET(Class *cl, Object *obj, struct opGet *msg)
             return TRUE;
         case LISTBROWSER_TotalNodes:
             *msg->opg_Storage = (IPTR)data->lbd_TotalNodes;
-            return TRUE;
-        case LISTBROWSER_VisibleRows:
-            *msg->opg_Storage = (IPTR)data->lbd_VisibleRows;
             return TRUE;
         case LISTBROWSER_RelEvent:
             *msg->opg_Storage = (IPTR)data->lbd_RelEvent;
@@ -325,11 +313,6 @@ IPTR ListBrowser__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
                 bgpen = dri ? dri->dri_Pens[FILLPEN] : 3;
                 fgpen = dri ? dri->dri_Pens[FILLTEXTPEN] : 0;
             }
-            else if (data->lbd_Striping == LBS_ROWS && (i & 1))
-            {
-                bgpen = dri ? dri->dri_Pens[SHINEPEN] : 2;
-                fgpen = dri ? dri->dri_Pens[TEXTPEN] : 1;
-            }
             else
             {
                 bgpen = dri ? dri->dri_Pens[BACKGROUNDPEN] : 0;
@@ -388,11 +371,6 @@ IPTR ListBrowser__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
 
 IPTR ListBrowser__GM_GOACTIVE(Class *cl, Object *obj, struct gpInput *msg)
 {
-    struct ListBrowserData *data = INST_DATA_LB(cl, obj);
-
-    if (data->lbd_ReadOnly)
-        return GMR_NOREUSE;
-
     return GMR_MEACTIVE;
 }
 

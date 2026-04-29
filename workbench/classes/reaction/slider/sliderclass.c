@@ -21,7 +21,6 @@
 #include <utility/tagitem.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #include "slider_intern.h"
 
@@ -62,15 +61,6 @@ static void slider_set(Class *cl, Object *o, struct opSet *msg)
                 break;
             case SLIDER_Invert:
                 data->sd_Invert = (BOOL)tag->ti_Data;
-                break;
-            case SLIDER_LevelFormat:
-                data->sd_LevelFormat = (STRPTR)tag->ti_Data;
-                break;
-            case SLIDER_LevelPlace:
-                data->sd_LevelPlace = tag->ti_Data;
-                break;
-            case SLIDER_LevelMaxLen:
-                data->sd_LevelMaxLen = (UWORD)tag->ti_Data;
                 break;
         }
     }
@@ -158,18 +148,6 @@ IPTR Slider__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case SLIDER_Invert:
             *msg->opg_Storage = data->sd_Invert;
             return TRUE;
-
-        case SLIDER_LevelFormat:
-            *msg->opg_Storage = (IPTR)data->sd_LevelFormat;
-            return TRUE;
-
-        case SLIDER_LevelPlace:
-            *msg->opg_Storage = data->sd_LevelPlace;
-            return TRUE;
-
-        case SLIDER_LevelMaxLen:
-            *msg->opg_Storage = data->sd_LevelMaxLen;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -224,58 +202,6 @@ static void slider_draw_ticks(struct RastPort *rp, struct DrawInfo *dri,
 
 /******************************************************************************/
 
-static void slider_draw_level(struct RastPort *rp, struct DrawInfo *dri,
-                              struct SliderData *data,
-                              WORD x, WORD y, WORD w, WORD h)
-{
-    char buf[64];
-    UWORD pen = dri ? dri->dri_Pens[TEXTPEN] : 1;
-    WORD tx, ty;
-    WORD len;
-
-    if (!data->sd_LevelFormat)
-        return;
-
-    snprintf(buf, sizeof(buf), data->sd_LevelFormat, (long)data->sd_Level);
-    buf[sizeof(buf) - 1] = '\0';
-
-    if (data->sd_LevelMaxLen > 0 && strlen(buf) > data->sd_LevelMaxLen)
-        buf[data->sd_LevelMaxLen] = '\0';
-
-    len = strlen(buf);
-
-    SetAPen(rp, pen);
-    SetDrMd(rp, JAM1);
-
-    /* Position based on placement flags */
-    if (data->sd_LevelPlace & PLACETEXT_LEFT)
-    {
-        tx = x - TextLength(rp, buf, len) - 4;
-        ty = y + (h - rp->TxHeight) / 2 + rp->TxBaseline;
-    }
-    else if (data->sd_LevelPlace & PLACETEXT_ABOVE)
-    {
-        tx = x + (w - TextLength(rp, buf, len)) / 2;
-        ty = y - rp->TxHeight - 2 + rp->TxBaseline;
-    }
-    else if (data->sd_LevelPlace & PLACETEXT_BELOW)
-    {
-        tx = x + (w - TextLength(rp, buf, len)) / 2;
-        ty = y + h + 2 + rp->TxBaseline;
-    }
-    else
-    {
-        /* Default: PLACETEXT_RIGHT */
-        tx = x + w + 4;
-        ty = y + (h - rp->TxHeight) / 2 + rp->TxBaseline;
-    }
-
-    Move(rp, tx, ty);
-    Text(rp, buf, len);
-}
-
-/******************************************************************************/
-
 IPTR Slider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct SliderData *data = INST_DATA(cl, o);
@@ -303,12 +229,6 @@ IPTR Slider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (data->sd_Ticks > 0)
     {
         slider_draw_ticks(rp, dri, data, x, y, w, h);
-    }
-
-    /* Draw level text */
-    if (data->sd_LevelFormat)
-    {
-        slider_draw_level(rp, dri, data, x, y, w, h);
     }
 
     /* Disabled rendering */

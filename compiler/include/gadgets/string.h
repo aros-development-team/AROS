@@ -17,19 +17,40 @@
 #define STRING_CLASSNAME    "string.gadget"
 #define STRING_VERSION      44
 
-#define STRINGA_Dummy       (REACTION_Dummy + 0x0055000)
+/*
+ * string.gadget accepts the same tags as the ROM strgclass,
+ * plus the following Reaction-specific extensions.
+ */
 
-#define STRINGA_MaxChars        (STRINGA_Dummy + 0x0001) /* Buffer size limit */
-#define STRINGA_Buffer          (STRINGA_Dummy + 0x0002) /* String buffer */
-#define STRINGA_BufferPos       (STRINGA_Dummy + 0x0003) /* Cursor position */
-#define STRINGA_DispPos         (STRINGA_Dummy + 0x0004) /* Display scroll offset */
-#define STRINGA_UndoBuffer      (STRINGA_Dummy + 0x0005) /* Undo buffer */
-#define STRINGA_WorkBuffer      (STRINGA_Dummy + 0x0006) /* Work buffer */
-#define STRINGA_Justification   (STRINGA_Dummy + 0x0007) /* Text alignment */
-#define STRINGA_TextVal         (STRINGA_Dummy + 0x0008) /* String value */
-#define STRINGA_LongVal         (STRINGA_Dummy + 0x0009) /* Integer value */
-#define STRINGA_EditHook        (STRINGA_Dummy + 0x000A) /* Custom edit hook */
-#define STRINGA_ReplaceMode     (STRINGA_Dummy + 0x000B) /* Overwrite mode */
+#define STRINGA_MinVisible      (REACTION_Dummy + 0x0055000)
+    /* (UWORD) Minimum visible character count used for domain sizing. */
+
+#define STRINGA_HookType        (REACTION_Dummy + 0x0055001)
+    /* (UWORD) Select a built-in editing hook. */
+
+/* v45+ tags */
+#define STRINGA_GetBlockPos     (REACTION_Dummy + 0x0055010)
+    /* (ULONG) Marked block positions: high word = start, low word = end. */
+
+#define STRINGA_Mark            (REACTION_Dummy + 0x0055011)
+    /* (ULONG) Set marked block: high word = start, low word = end. */
+
+#define STRINGA_AllowMarking    (REACTION_Dummy + 0x0055012)
+    /* (BOOL) Enable or disable text marking. Default TRUE. */
+
+/* Built-in hook types for STRINGA_HookType */
+#define SHK_CUSTOM      0
+#define SHK_PASSWORD    1
+#define SHK_IPADDRESS   2
+#define SHK_FLOAT       3
+#define SHK_HEXIDECIMAL 4
+#define SHK_TELEPHONE   5
+#define SHK_POSTALCODE  6
+#define SHK_AMOUNT      7
+#define SHK_UPPERCASE   8
+#define SHK_HOTKEY      9   /* v45+ */
+
+#define SHK_HEXADECIMAL SHK_HEXIDECIMAL
 
 #ifndef StringObject
 #define StringObject    NewObject(NULL, STRING_CLASSNAME

@@ -17,19 +17,18 @@
 #define RADIOBUTTON_CLASSNAME   "radiobutton.gadget"
 #define RADIOBUTTON_VERSION     44
 
+/* Node attributes for radio button entries */
+#define RBNA_Dummy              (TAG_USER + 0x020000)
+#define RBNA_UserData           (RBNA_Dummy + 1)  /* Per-node user data (APTR) */
+#define RBNA_Labels             (RBNA_Dummy + 2)  /* Node label string (STRPTR) */
+
 #define RADIOBUTTON_Dummy       (REACTION_Dummy + 0x14000)
 
-#define RADIOBUTTON_Labels      (RADIOBUTTON_Dummy + 0x0001) /* Label list */
-#define RADIOBUTTON_Selected    (RADIOBUTTON_Dummy + 0x0002) /* Active choice index */
-#define RADIOBUTTON_Spacing     (RADIOBUTTON_Dummy + 0x0003) /* Space between items */
-#define RADIOBUTTON_Orientation (RADIOBUTTON_Dummy + 0x0004) /* Horiz or vert layout */
-#define RADIOBUTTON_LabelPlace  (RADIOBUTTON_Dummy + 0x0005) /* Label position */
-
-/* Node attributes for AllocRadioButtonNode() */
-#define RBNA_Dummy              (TAG_USER + 0x020000)
-#define RBNA_UserData           (RBNA_Dummy + 1) /* Per-node user data */
-#define RBNA_Labels             (RBNA_Dummy + 2) /* Node label string */
-#define RBNA_Disabled           (RBNA_Dummy + 3) /* Node disabled state */
+#define RADIOBUTTON_Labels      (RADIOBUTTON_Dummy + 1)  /* Label list (struct List *) */
+#define RADIOBUTTON_Strings     (RADIOBUTTON_Dummy + 2)  /* Reserved - unsupported */
+#define RADIOBUTTON_Spacing     (RADIOBUTTON_Dummy + 3)  /* Space between buttons (WORD) */
+#define RADIOBUTTON_Selected    (RADIOBUTTON_Dummy + 4)  /* Active selection index (WORD) */
+#define RADIOBUTTON_LabelPlace  (RADIOBUTTON_Dummy + 5)  /* Label placement (WORD) */
 
 #ifndef RadioButtonObject
 #define RadioButtonObject   NewObject(NULL, RADIOBUTTON_CLASSNAME

@@ -54,12 +54,6 @@ static void speedbar_set(Class *cl, Object *o, struct opSet *msg)
             case SPEEDBAR_EvenSize:
                 data->sd_EvenSize = (BOOL)tag->ti_Data;
                 break;
-            case SPEEDBAR_RaisedButtons:
-                data->sd_RaisedButtons = (BOOL)tag->ti_Data;
-                break;
-            case SPEEDBAR_SmallImages:
-                data->sd_SmallImages = (BOOL)tag->ti_Data;
-                break;
         }
     }
 }
@@ -127,14 +121,6 @@ IPTR SpeedBar__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case SPEEDBAR_EvenSize:
             *msg->opg_Storage = data->sd_EvenSize;
             return TRUE;
-
-        case SPEEDBAR_RaisedButtons:
-            *msg->opg_Storage = data->sd_RaisedButtons;
-            return TRUE;
-
-        case SPEEDBAR_SmallImages:
-            *msg->opg_Storage = data->sd_SmallImages;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -179,11 +165,10 @@ IPTR SpeedBar__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
              node->ln_Succ;
              node = node->ln_Succ)
         {
-            WORD bw = data->sd_SmallImages ? 24 : 32;
+            WORD bw = 32;
             WORD bh = h - 4;
 
-            /* Draw raised button frame if enabled */
-            if (data->sd_RaisedButtons)
+            /* Draw button frame */
             {
                 SetAPen(rp, shine);
                 Move(rp, bx, by + bh - 1);

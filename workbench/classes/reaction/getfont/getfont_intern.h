@@ -35,9 +35,6 @@ struct GetFontData
 {
     STRPTR          gfd_TitleText;      /* Requester title */
     struct TextAttr *gfd_TextAttr;      /* Current font text attributes */
-    STRPTR          gfd_FontName;       /* Current font name */
-    UWORD           gfd_FontSize;       /* Current font size */
-    UWORD           gfd_FontStyle;      /* Current font style */
     BOOL            gfd_DoStyle;        /* Show style options */
     BOOL            gfd_FixedWidthOnly; /* Only show fixed-width fonts */
     UWORD           gfd_MinHeight;      /* Minimum font height */

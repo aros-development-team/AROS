@@ -31,7 +31,6 @@ struct GlyphBase_intern
 struct GlyphData
 {
     ULONG           gd_Glyph;           /* Glyph type (GLYPH_*) */
-    ULONG           gd_SoftStyle;       /* Text style flags */
 };
 
 #endif /* GLYPH_INTERN_H */

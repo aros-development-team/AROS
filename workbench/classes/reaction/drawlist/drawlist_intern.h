@@ -30,8 +30,7 @@ struct DrawListBase_intern
 
 struct DrawListData
 {
-    struct DrawList *dd_Directives;      /* Array of drawing directives */
-    ULONG           dd_NumDirectives;    /* Number of directives */
+    struct DrawList *dd_Directives;      /* DLST_END terminated directive array */
 };
 
 #endif /* DRAWLIST_INTERN_H */

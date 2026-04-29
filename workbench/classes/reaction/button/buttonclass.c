@@ -37,14 +37,11 @@ static void button_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case BUTTON_Pushed:
-                data->bd_Pushed = (BOOL)tag->ti_Data;
+            case BUTTON_PushButton:
+                data->bd_PushButton = (BOOL)tag->ti_Data;
                 break;
-            case BUTTON_Child:
-                data->bd_Child = (Object *)tag->ti_Data;
-                break;
-            case BUTTON_SelChild:
-                data->bd_SelChild = (Object *)tag->ti_Data;
+            case BUTTON_Glyph:
+                data->bd_Glyph = (Object *)tag->ti_Data;
                 break;
             case BUTTON_AutoButton:
                 data->bd_AutoButton = tag->ti_Data;
@@ -72,9 +69,6 @@ static void button_set(Class *cl, Object *o, struct opSet *msg)
                 break;
             case BUTTON_Transparent:
                 data->bd_Transparent = (BOOL)tag->ti_Data;
-                break;
-            case BUTTON_RenderMode:
-                data->bd_RenderMode = tag->ti_Data;
                 break;
             case BUTTON_DomainString:
                 data->bd_DomainString = (STRPTR)tag->ti_Data;
@@ -109,15 +103,10 @@ IPTR Button__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct ButtonData *data = INST_DATA(cl, o);
 
-    if (data->bd_Child)
+    if (data->bd_Glyph)
     {
-        DisposeObject(data->bd_Child);
-        data->bd_Child = NULL;
-    }
-    if (data->bd_SelChild)
-    {
-        DisposeObject(data->bd_SelChild);
-        data->bd_SelChild = NULL;
+        DisposeObject(data->bd_Glyph);
+        data->bd_Glyph = NULL;
     }
 
     return DoSuperMethodA(cl, o, msg);
@@ -140,8 +129,8 @@ IPTR Button__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case BUTTON_Pushed:
-            *msg->opg_Storage = data->bd_Pushed;
+        case BUTTON_PushButton:
+            *msg->opg_Storage = data->bd_PushButton;
             return TRUE;
 
         case BUTTON_Justification:
@@ -179,21 +168,20 @@ IPTR Button__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
     x = gad->LeftEdge;
     y = gad->TopEdge;
-    selected = (gad->Flags & GFLG_SELECTED) || data->bd_Pushed;
+    selected = (gad->Flags & GFLG_SELECTED) || data->bd_PushButton;
 
     /* Draw button frame - use super class rendering first */
     DoSuperMethodA(cl, o, (Msg)msg);
 
-    /* Draw child image if present */
-    if (data->bd_Child)
+    /* Draw glyph image if present */
+    if (data->bd_Glyph)
     {
-        Object *img = selected && data->bd_SelChild ? data->bd_SelChild : data->bd_Child;
         UWORD state = selected ? IDS_SELECTED : IDS_NORMAL;
 
         if (gad->Flags & GFLG_DISABLED)
             state = IDS_DISABLED;
 
-        DrawImageState(rp, (struct Image *)img, x, y, state, dri);
+        DrawImageState(rp, (struct Image *)data->bd_Glyph, x, y, state, dri);
     }
 
     if (!msg->gpr_RPort && msg->gpr_GInfo)

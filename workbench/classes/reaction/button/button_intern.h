@@ -32,22 +32,20 @@ struct ButtonBase_intern
 
 struct ButtonData
 {
-    Object          *bd_Child;          /* Child image object */
-    Object          *bd_SelChild;       /* Selected child image */
+    Object          *bd_Glyph;          /* Glyph image object */
     STRPTR          bd_DomainString;    /* Domain sizing string */
 
     ULONG           bd_AutoButton;      /* Auto-button glyph type */
     ULONG           bd_BevelStyle;      /* Bevel style */
     ULONG           bd_Justification;   /* Text justification */
     ULONG           bd_SoftStyle;       /* Text style */
-    ULONG           bd_RenderMode;      /* Render mode */
 
     UWORD           bd_TextPen;         /* Text pen */
     UWORD           bd_BackgroundPen;   /* Background pen */
     UWORD           bd_FillTextPen;     /* Fill text pen */
     UWORD           bd_FillPen;         /* Fill pen */
 
-    BOOL            bd_Pushed;          /* Pushed/selected state */
+    BOOL            bd_PushButton;      /* Push button/toggle mode */
     BOOL            bd_Transparent;     /* Transparent background */
 };
 

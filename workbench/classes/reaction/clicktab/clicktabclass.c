@@ -155,26 +155,8 @@ static void clicktab_set(Class *cl, Object *o, struct opSet *msg)
             case CLICKTAB_Current:
                 data->td_Current = (LONG)tag->ti_Data;
                 break;
-            case CLICKTAB_NumTabs:
-                data->td_NumTabs = (LONG)tag->ti_Data;
-                break;
-            case CLICKTAB_PageObject:
-                data->td_PageObject = (Object *)tag->ti_Data;
-                break;
             case CLICKTAB_PageGroup:
                 data->td_PageGroup = (Object *)tag->ti_Data;
-                break;
-            case CLICKTAB_CloseImage:
-                data->td_CloseImage = (Object *)tag->ti_Data;
-                break;
-            case CLICKTAB_FlagImage:
-                data->td_FlagImage = (Object *)tag->ti_Data;
-                break;
-            case CLICKTAB_LabelTruncate:
-                data->td_LabelTruncate = (BOOL)tag->ti_Data;
-                break;
-            case CLICKTAB_BackgroundPen:
-                data->td_BackgroundPen = (UWORD)tag->ti_Data;
                 break;
         }
     }
@@ -235,14 +217,6 @@ IPTR ClickTab__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case CLICKTAB_Labels:
             *msg->opg_Storage = (IPTR)data->td_Labels;
-            return TRUE;
-
-        case CLICKTAB_NumTabs:
-            *msg->opg_Storage = data->td_NumTabs;
-            return TRUE;
-
-        case CLICKTAB_PageObject:
-            *msg->opg_Storage = (IPTR)data->td_PageObject;
             return TRUE;
 
         case CLICKTAB_PageGroup:

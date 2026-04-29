@@ -39,9 +39,6 @@ static void drawlist_set(Class *cl, Object *o, struct opSet *msg)
             case DRAWLIST_Directives:
                 data->dd_Directives = (struct DrawList *)tag->ti_Data;
                 break;
-            case DRAWLIST_NumDirectives:
-                data->dd_NumDirectives = tag->ti_Data;
-                break;
         }
     }
 }
@@ -92,10 +89,6 @@ IPTR DrawList__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case DRAWLIST_Directives:
             *msg->opg_Storage = (IPTR)data->dd_Directives;
             return TRUE;
-
-        case DRAWLIST_NumDirectives:
-            *msg->opg_Storage = data->dd_NumDirectives;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -110,66 +103,57 @@ IPTR DrawList__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     struct RastPort *rp = msg->imp_RPort;
     struct DrawList *dl;
     WORD baseX, baseY;
-    WORD curX, curY;
-    ULONG i;
 
-    if (!rp || !data->dd_Directives || data->dd_NumDirectives == 0)
+    if (!rp || !data->dd_Directives)
         return FALSE;
 
     baseX = im->LeftEdge + msg->imp_Offset.X;
     baseY = im->TopEdge + msg->imp_Offset.Y;
-    curX = baseX;
-    curY = baseY;
 
     SetDrMd(rp, JAM1);
 
-    dl = data->dd_Directives;
-
-    for (i = 0; i < data->dd_NumDirectives; i++, dl++)
+    for (dl = data->dd_Directives; dl->dl_Directive != DLST_END; dl++)
     {
-        switch (dl->dl_Command)
+        switch (dl->dl_Directive)
         {
-            case DLD_END:
-                return TRUE;
-
-            case DLD_MOVE:
-                curX = baseX + dl->dl_X;
-                curY = baseY + dl->dl_Y;
-                Move(rp, curX, curY);
+            case DLST_LINE:
+                SetAPen(rp, dl->dl_Pen);
+                Move(rp, baseX + dl->dl_X1, baseY + dl->dl_Y1);
+                Draw(rp, baseX + dl->dl_X2, baseY + dl->dl_Y2);
                 break;
 
-            case DLD_DRAW:
-                curX = baseX + dl->dl_X;
-                curY = baseY + dl->dl_Y;
-                Draw(rp, curX, curY);
-                break;
-
-            case DLD_FILL:
+            case DLST_RECT:
             {
-                WORD fillX = baseX + dl->dl_X;
-                WORD fillY = baseY + dl->dl_Y;
-                RectFill(rp, curX, curY, fillX, fillY);
+                WORD x1 = baseX + dl->dl_X1, y1 = baseY + dl->dl_Y1;
+                WORD x2 = baseX + dl->dl_X2, y2 = baseY + dl->dl_Y2;
+                SetAPen(rp, dl->dl_Pen);
+                Move(rp, x1, y1);
+                Draw(rp, x2, y1);
+                Draw(rp, x2, y2);
+                Draw(rp, x1, y2);
+                Draw(rp, x1, y1);
                 break;
             }
 
-            case DLD_NOPEN:
-                SetAPen(rp, dl->dl_X);
+            case DLST_FILL:
+                SetAPen(rp, dl->dl_Pen);
+                RectFill(rp, baseX + dl->dl_X1, baseY + dl->dl_Y1,
+                             baseX + dl->dl_X2, baseY + dl->dl_Y2);
                 break;
 
-            case DLD_FILLPEN:
-                SetAPen(rp, dl->dl_X);
+            case DLST_AMOVE:
+                Move(rp, baseX + dl->dl_X1, baseY + dl->dl_Y1);
                 break;
 
-            case DLD_BPEN:
-                SetBPen(rp, dl->dl_X);
+            case DLST_ADRAW:
+                SetAPen(rp, dl->dl_Pen);
+                Draw(rp, baseX + dl->dl_X1, baseY + dl->dl_Y1);
                 break;
 
-            case DLD_AFPT:
-                SetAfPt(rp, (UWORD *)(IPTR)dl->dl_X, dl->dl_Y);
-                break;
-
-            case DLD_AFPTSIZE:
-                SetAfPt(rp, NULL, dl->dl_X);
+            case DLST_AFILL:
+                SetAPen(rp, dl->dl_Pen);
+                RectFill(rp, baseX + dl->dl_X1, baseY + dl->dl_Y1,
+                             baseX + dl->dl_X2, baseY + dl->dl_Y2);
                 break;
         }
     }
