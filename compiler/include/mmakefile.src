@@ -40,6 +40,7 @@ INCSUBDIRS :=	aros				\
 		hardware/pic			\
 		hardware/usb			\
 		hidd				\
+		images		                \
 		inline			        \
 		intuition			\
 		irda				\
@@ -49,6 +50,7 @@ INCSUBDIRS :=	aros				\
 		pragmas				\
 		prefs				\
 		proto				\
+		reaction			\
 		resources			\
 		rexx				\
 		SDI				\
