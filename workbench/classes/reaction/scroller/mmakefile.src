@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := scrollerclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-scroller : includes linklibs
 #MM workbench-classes-reaction-scroller-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := scrollerclass
 
 %build_module mmake=workbench-classes-reaction-scroller \
     modname=scroller modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

@@ -64,7 +64,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 5, Chooser)
+        struct Library *, ChooserBase, 6, Chooser)
 
 /*  FUNCTION
         Allocates and initializes a ChooserNode for use with
@@ -103,7 +103,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct Node *, node, A0),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 6, Chooser)
+        struct Library *, ChooserBase, 7, Chooser)
 
 /*  FUNCTION
         Frees a ChooserNode previously allocated with AllocChooserNodeA.
@@ -133,7 +133,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 7, Chooser)
+        struct Library *, ChooserBase, 8, Chooser)
 
 /*  FUNCTION
         Sets attributes on an existing ChooserNode.
@@ -164,7 +164,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 8, Chooser)
+        struct Library *, ChooserBase, 9, Chooser)
 
 /*  FUNCTION
         Gets attributes from a ChooserNode. Each tag's ti_Data is

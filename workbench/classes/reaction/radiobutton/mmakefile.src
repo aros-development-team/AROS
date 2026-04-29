@@ -5,6 +5,10 @@ USER_LDFLAGS := -static
 
 FILES := radiobuttonclass
 
+FUNCS := \
+	getclass \
+	radiobutton_funcs
+
 #MM workbench-classes-reaction-radiobutton : includes linklibs
 #MM workbench-classes-reaction-radiobutton-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +18,6 @@ FILES := radiobuttonclass
 
 %build_module mmake=workbench-classes-reaction-radiobutton \
     modname=radiobutton modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := labelclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-label : includes linklibs
 #MM workbench-classes-reaction-label-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := labelclass
 
 %build_module mmake=workbench-classes-reaction-label \
     modname=label modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

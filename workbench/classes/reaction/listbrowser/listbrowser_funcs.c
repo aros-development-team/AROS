@@ -55,7 +55,7 @@ static void lb_free_list_internal(struct List *list)
 AROS_LH2(struct Node *, AllocListBrowserNodeA,
     AROS_LHA(UWORD,            columns, D0),
     AROS_LHA(struct TagItem *, tags,    A0),
-    struct Library *, ListBrowserBase, 5, ListBrowser)
+    struct Library *, ListBrowserBase, 6, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -167,7 +167,7 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
  *****************************************************************************/
 AROS_LH1(void, FreeListBrowserNode,
     AROS_LHA(struct Node *, node, A0),
-    struct Library *, ListBrowserBase, 6, ListBrowser)
+    struct Library *, ListBrowserBase, 7, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -201,7 +201,7 @@ AROS_LH1(void, FreeListBrowserNode,
 AROS_LH2(void, SetListBrowserNodeAttrsA,
     AROS_LHA(struct Node *, node, A0),
     AROS_LHA(struct TagItem *, tags, A1),
-    struct Library *, ListBrowserBase, 7, ListBrowser)
+    struct Library *, ListBrowserBase, 8, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -290,7 +290,7 @@ AROS_LH2(void, SetListBrowserNodeAttrsA,
 AROS_LH2(void, GetListBrowserNodeAttrsA,
     AROS_LHA(struct Node *, node, A0),
     AROS_LHA(struct TagItem *, tags, A1),
-    struct Library *, ListBrowserBase, 8, ListBrowser)
+    struct Library *, ListBrowserBase, 9, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -345,7 +345,7 @@ AROS_LH2(void, GetListBrowserNodeAttrsA,
  *****************************************************************************/
 AROS_LH1(void, ListBrowserSelectAll,
     AROS_LHA(struct List *, list, A0),
-    struct Library *, ListBrowserBase, 9, ListBrowser)
+    struct Library *, ListBrowserBase, 10, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -366,8 +366,8 @@ AROS_LH1(void, ListBrowserSelectAll,
  *****************************************************************************/
 AROS_LH2(void, ShowListBrowserNodeChildren,
     AROS_LHA(struct Node *, node, A0),
-    AROS_LHA(UWORD,         visible, D0),
-    struct Library *, ListBrowserBase, 10, ListBrowser)
+    AROS_LHA(WORD,          depth, D0),
+    struct Library *, ListBrowserBase, 11, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -377,7 +377,7 @@ AROS_LH2(void, ShowListBrowserNodeChildren,
         struct Node *child;
         for (child = ((struct List *)&lbn->lbn_Children)->lh_Head; child->ln_Succ; child = child->ln_Succ)
         {
-            ((struct ListBrowserNode *)child)->lbn_Hidden = !visible;
+            ((struct ListBrowserNode *)child)->lbn_Hidden = !depth;
         }
     }
 
@@ -389,7 +389,7 @@ AROS_LH2(void, ShowListBrowserNodeChildren,
  *****************************************************************************/
 AROS_LH1(void, HideListBrowserNodeChildren,
     AROS_LHA(struct Node *, node, A0),
-    struct Library *, ListBrowserBase, 11, ListBrowser)
+    struct Library *, ListBrowserBase, 12, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -411,7 +411,7 @@ AROS_LH1(void, HideListBrowserNodeChildren,
  *****************************************************************************/
 AROS_LH1(void, ShowAllListBrowserChildren,
     AROS_LHA(struct List *, list, A0),
-    struct Library *, ListBrowserBase, 12, ListBrowser)
+    struct Library *, ListBrowserBase, 13, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -432,7 +432,7 @@ AROS_LH1(void, ShowAllListBrowserChildren,
  *****************************************************************************/
 AROS_LH1(void, HideAllListBrowserChildren,
     AROS_LHA(struct List *, list, A0),
-    struct Library *, ListBrowserBase, 13, ListBrowser)
+    struct Library *, ListBrowserBase, 14, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -455,7 +455,7 @@ AROS_LH1(void, HideAllListBrowserChildren,
  *****************************************************************************/
 AROS_LH1(void, FreeListBrowserList,
     AROS_LHA(struct List *, list, A0),
-    struct Library *, ListBrowserBase, 14, ListBrowser)
+    struct Library *, ListBrowserBase, 15, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -470,7 +470,7 @@ AROS_LH1(void, FreeListBrowserList,
 AROS_LH2(struct ColumnInfo *, AllocLBColumnInfoA,
     AROS_LHA(UWORD,            columns, D0),
     AROS_LHA(struct TagItem *, tags,    A0),
-    struct Library *, ListBrowserBase, 15, ListBrowser)
+    struct Library *, ListBrowserBase, 16, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -524,9 +524,9 @@ AROS_LH2(struct ColumnInfo *, AllocLBColumnInfoA,
  * SetLBColumnInfoAttrsA - Set attributes on ColumnInfo
  *****************************************************************************/
 AROS_LH2(LONG, SetLBColumnInfoAttrsA,
-    AROS_LHA(struct ColumnInfo *, colinfo, A0),
-    AROS_LHA(struct TagItem *,    tags,    A1),
-    struct Library *, ListBrowserBase, 16, ListBrowser)
+    AROS_LHA(struct ColumnInfo *, colinfo, A1),
+    AROS_LHA(struct TagItem *,    tags,    A0),
+    struct Library *, ListBrowserBase, 17, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -563,9 +563,9 @@ AROS_LH2(LONG, SetLBColumnInfoAttrsA,
  * GetLBColumnInfoAttrsA - Get attributes from ColumnInfo
  *****************************************************************************/
 AROS_LH2(LONG, GetLBColumnInfoAttrsA,
-    AROS_LHA(struct ColumnInfo *, colinfo, A0),
-    AROS_LHA(struct TagItem *,    tags,    A1),
-    struct Library *, ListBrowserBase, 17, ListBrowser)
+    AROS_LHA(struct ColumnInfo *, colinfo, A1),
+    AROS_LHA(struct TagItem *,    tags,    A0),
+    struct Library *, ListBrowserBase, 18, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -603,7 +603,7 @@ AROS_LH2(LONG, GetLBColumnInfoAttrsA,
  *****************************************************************************/
 AROS_LH1(void, FreeLBColumnInfo,
     AROS_LHA(struct ColumnInfo *, colinfo, A0),
-    struct Library *, ListBrowserBase, 18, ListBrowser)
+    struct Library *, ListBrowserBase, 19, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 
@@ -618,7 +618,7 @@ AROS_LH1(void, FreeLBColumnInfo,
  *****************************************************************************/
 AROS_LH1(void, ListBrowserClearAll,
     AROS_LHA(struct List *, list, A0),
-    struct Library *, ListBrowserBase, 19, ListBrowser)
+    struct Library *, ListBrowserBase, 20, ListBrowser)
 {
     AROS_LIBFUNC_INIT
 

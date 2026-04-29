@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := textfieldclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-textfield : includes linklibs
 #MM workbench-classes-reaction-textfield-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := textfieldclass
 
 %build_module mmake=workbench-classes-reaction-textfield \
     modname=textfield modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

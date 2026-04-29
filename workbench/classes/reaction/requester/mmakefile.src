@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := requesterclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-requester : includes linklibs
 #MM workbench-classes-reaction-requester-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := requesterclass
 
 %build_module mmake=workbench-classes-reaction-requester \
     modname=requester modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := integerclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-integer : includes linklibs
 #MM workbench-classes-reaction-integer-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := integerclass
 
 %build_module mmake=workbench-classes-reaction-integer \
     modname=integer modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

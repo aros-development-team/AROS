@@ -88,7 +88,7 @@ static void bitmap_set(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR BitMap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -107,14 +107,14 @@ IPTR Bitmap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR BitMap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR BitMap__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     bitmap_set(cl, o, msg);
@@ -123,7 +123,7 @@ IPTR Bitmap__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR BitMap__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct BitmapData *data = INST_DATA(cl, o);
 
@@ -187,7 +187,7 @@ IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
+IPTR BitMap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 {
     struct BitmapData *data = INST_DATA(cl, o);
     struct Image *im = (struct Image *)o;

@@ -25,6 +25,12 @@
 #define RADIOBUTTON_Orientation (RADIOBUTTON_Dummy + 0x0004) /* Horiz or vert layout */
 #define RADIOBUTTON_LabelPlace  (RADIOBUTTON_Dummy + 0x0005) /* Label position */
 
+/* Node attributes for AllocRadioButtonNode() */
+#define RBNA_Dummy              (TAG_USER + 0x020000)
+#define RBNA_UserData           (RBNA_Dummy + 1) /* Per-node user data */
+#define RBNA_Labels             (RBNA_Dummy + 2) /* Node label string */
+#define RBNA_Disabled           (RBNA_Dummy + 3) /* Node disabled state */
+
 #ifndef RadioButtonObject
 #define RadioButtonObject   NewObject(NULL, RADIOBUTTON_CLASSNAME
 #endif

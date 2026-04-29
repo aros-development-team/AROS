@@ -73,7 +73,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 5, ClickTab)
+        struct Library *, ClickTabBase, 6, ClickTab)
 
 /*  FUNCTION
         Allocates and initializes a ClickTabNode for use with
@@ -112,7 +112,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct Node *, node, A0),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 6, ClickTab)
+        struct Library *, ClickTabBase, 7, ClickTab)
 
 /*  FUNCTION
         Frees a ClickTabNode previously allocated with AllocClickTabNodeA.
@@ -142,7 +142,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 7, ClickTab)
+        struct Library *, ClickTabBase, 8, ClickTab)
 
 /*  FUNCTION
         Sets attributes on an existing ClickTabNode.
@@ -173,7 +173,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 8, ClickTab)
+        struct Library *, ClickTabBase, 9, ClickTab)
 
 /*  FUNCTION
         Gets attributes from a ClickTabNode. Each tag's ti_Data is

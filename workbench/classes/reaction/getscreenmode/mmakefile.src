@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := getscreenmodeclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-getscreenmode : includes linklibs
 #MM workbench-classes-reaction-getscreenmode-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := getscreenmodeclass
 
 %build_module mmake=workbench-classes-reaction-getscreenmode \
     modname=getscreenmode modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

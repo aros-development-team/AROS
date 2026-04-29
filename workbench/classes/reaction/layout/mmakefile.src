@@ -6,6 +6,7 @@ USER_LDFLAGS := -static
 FILES := layoutclass
 
 FUNCS := \
+	getclass \
 	layout_funcs \
 	page_funcs
 

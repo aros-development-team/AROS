@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := paletteclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-palette : includes linklibs
 #MM workbench-classes-reaction-palette-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := paletteclass
 
 %build_module mmake=workbench-classes-reaction-palette \
     modname=palette modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

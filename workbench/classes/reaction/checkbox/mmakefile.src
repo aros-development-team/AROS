@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := checkboxclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-checkbox : includes linklibs
 #MM workbench-classes-reaction-checkbox-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := checkboxclass
 
 %build_module mmake=workbench-classes-reaction-checkbox \
     modname=checkbox modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

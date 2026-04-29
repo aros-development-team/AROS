@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := fuelgaugeclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-fuelgauge : includes linklibs
 #MM workbench-classes-reaction-fuelgauge-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := fuelgaugeclass
 
 %build_module mmake=workbench-classes-reaction-fuelgauge \
     modname=fuelgauge modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

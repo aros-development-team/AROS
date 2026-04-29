@@ -29,7 +29,7 @@
         AROS_LHA(ULONG, object, D0),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 5, Layout)
+        struct Library *, LayoutBase, 6, Layout)
 
 /*  FUNCTION
         Activates a gadget within the layout group.
@@ -65,7 +65,7 @@
         AROS_LHA(struct Gadget *, gadget, A0),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 6, Layout)
+        struct Library *, LayoutBase, 7, Layout)
 
 /*  FUNCTION
         Flushes the cached domain information for the layout gadget,
@@ -99,7 +99,7 @@
         AROS_LHA(BOOL, refresh, D0),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 7, Layout)
+        struct Library *, LayoutBase, 8, Layout)
 
 /*  FUNCTION
         Recalculates the layout of all children within the layout gadget.
@@ -148,7 +148,7 @@
         AROS_LHA(struct Screen *, screen, A3),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 8, Layout)
+        struct Library *, LayoutBase, 9, Layout)
 
 /*  FUNCTION
         Queries the minimum and maximum size of a layout group.

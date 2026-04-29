@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := getfileclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-getfile : includes linklibs
 #MM workbench-classes-reaction-getfile-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := getfileclass
 
 %build_module mmake=workbench-classes-reaction-getfile \
     modname=getfile modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

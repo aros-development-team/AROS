@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := penmapclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-penmap : includes linklibs
 #MM workbench-classes-reaction-penmap-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := penmapclass
 
 %build_module mmake=workbench-classes-reaction-penmap \
     modname=penmap modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

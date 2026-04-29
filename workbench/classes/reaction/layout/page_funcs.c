@@ -22,10 +22,10 @@ static Class *pageclass = NULL;
     NAME */
 #include <proto/layout.h>
 
-        AROS_LH0(Class *, GetPageClass,
+        AROS_LH0(Class *, PAGE_GetClass,
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 9, Layout)
+        struct Library *, LayoutBase, 10, Layout)
 
 /*  FUNCTION
         Returns a pointer to the Page gadget class.
@@ -54,10 +54,10 @@ static Class *pageclass = NULL;
         AROS_LHA(Object *, object, A1),
         AROS_LHA(struct Window *, window, A2),
         AROS_LHA(struct Requester *, requester, A3),
-        AROS_LHA(struct TagItem *, tags, D2),
+        AROS_LHA(struct TagItem *, tags, A4),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 10, Layout)
+        struct Library *, LayoutBase, 11, Layout)
 
 /*  FUNCTION
         Sets attributes on a gadget that is a child of a page layout.
@@ -97,7 +97,7 @@ static Class *pageclass = NULL;
         AROS_LHA(struct Requester *, requester, A3),
 
 /*  LOCATION */
-        struct Library *, LayoutBase, 11, Layout)
+        struct Library *, LayoutBase, 12, Layout)
 
 /*  FUNCTION
         Refreshes a gadget within a page layout.

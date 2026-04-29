@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := buttonclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-button : includes linklibs
 #MM workbench-classes-reaction-button-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := buttonclass
 
 %build_module mmake=workbench-classes-reaction-button \
     modname=button modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

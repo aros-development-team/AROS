@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := glyphclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-glyph : includes linklibs
 #MM workbench-classes-reaction-glyph-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := glyphclass
 
 %build_module mmake=workbench-classes-reaction-glyph \
     modname=glyph modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common
