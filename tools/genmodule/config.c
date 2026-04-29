@@ -1801,6 +1801,29 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
                     exitfileerror(20, ".unusedlibbase has to come after a function declaration\n");
                 (*funclistptr)->unusedlibbase = 1;
             }
+            else if (strncmp(s, "inlineguard", 11) == 0)
+            {
+                char *guard, *end;
+
+                if (*funclistptr == NULL)
+                    exitfileerror(20, ".inlineguard has to come after a function declaration\n");
+
+                s += 11;
+                while (isspace(*s)) s++;
+
+                if (*s == '\0' || *s == '#')
+                    exitfileerror(20, ".inlineguard expects a preprocessor define name\n");
+
+                guard = s;
+                while (*s && !isspace(*s) && *s != '#') s++;
+                end = s;
+
+                while (isspace(*s)) s++;
+                if (*s && *s != '#')
+                    exitfileerror(20, ".inlineguard has junk after the define name\n");
+
+                (*funclistptr)->inlineguard = strndup(guard, end - guard);
+            }
             else
                 exitfileerror(20, "Syntax error");
         }

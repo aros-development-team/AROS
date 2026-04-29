@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     The code for storing information of functions present in the module
 */
@@ -33,6 +33,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
         funchead->novararg = 0;
         funchead->priv= 0;
         funchead->unusedlibbase = 0;
+        funchead->inlineguard = NULL;
     }
     else
     {

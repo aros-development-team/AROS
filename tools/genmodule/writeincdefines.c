@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Function to write defines/modulename.h. Part of genmodule.
 */
@@ -352,19 +352,39 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 {
     struct functionarg *arglistit = funclistit->arguments;
     int isvoid;
+    const char *guard_open, *guard_close;
+    char guard_open_buf[256], guard_close_buf[256];
 
     isvoid = strcmp(funclistit->type, "void") == 0
         || strcmp(funclistit->type, "VOID") == 0;
+
+    if (funclistit->inlineguard)
+    {
+        snprintf(guard_open_buf, sizeof(guard_open_buf),
+                 "\n#if defined(%s)\n", funclistit->inlineguard);
+        snprintf(guard_close_buf, sizeof(guard_close_buf),
+                 "#endif /* defined(%s) */\n", funclistit->inlineguard);
+        guard_open = guard_open_buf;
+        guard_close = guard_close_buf;
+    }
+    else
+    {
+        snprintf(guard_open_buf, sizeof(guard_open_buf),
+                 "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n",
+                 cfg->includenameupper);
+        guard_open = guard_open_buf;
+        guard_close = "#endif /* !NO_INLINE_STDARG */\n";
+    }
 
     if (funclistit->varargtype == 1)
     {
         int count;
         char *type;
 
+        fprintf(out, "%s", guard_open);
         fprintf(out,
-                "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "#define %s(",
-                cfg->includenameupper, varargname
+                varargname
         );
         for (arglistit = funclistit->arguments, count = 1;
              arglistit != NULL && arglistit->next != NULL;
@@ -410,18 +430,17 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         fprintf(out,
                 "); \\\n"
                 "})\n"
-                "#endif /* !NO_INLINE_STDARG */\n"
         );
+        fprintf(out, "%s", guard_close);
     }
     else if (funclistit->varargtype == 2)
     {
         int count;
         struct functionarg *lastarg;
 
+        fprintf(out, "%s", guard_open);
         fprintf(out,
-                "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "static inline %s __%s_WB(%s __%s",
-                cfg->includenameupper,
                 funclistit->type, varargname, cfg->libbasetypeptrextern, cfg->libbase
         );
         for (arglistit = funclistit->arguments;
@@ -483,17 +502,16 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         }
         fprintf(out,
                 "__VA_ARGS__)\n"
-                "#endif /* !NO_INLINE_STDARG */\n"
         );
+        fprintf(out, "%s", guard_close);
     }
     else if (funclistit->varargtype == 3)
     {
         int count;
 
+        fprintf(out, "%s", guard_open);
         fprintf(out,
-                "\n#if !defined(NO_INLINE_STDARG) && !defined(%s_NO_INLINE_STDARG)\n"
                 "static inline %s __inline_%s_%s(%s __%s",
-                cfg->includenameupper,
                 funclistit->type, cfg->basename, varargname, cfg->libbasetypeptrextern, cfg->libbase
         );
         for (arglistit = funclistit->arguments, count = 0;
@@ -561,8 +579,8 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
         }
         fprintf(out,
                 "__VA_ARGS__)\n"
-                "#endif /* !NO_INLINE_STDARG */\n"
         );
+        fprintf(out, "%s", guard_close);
     }
 }
 
