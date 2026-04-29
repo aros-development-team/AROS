@@ -13,57 +13,41 @@
 #ifndef EXEC_LISTS_H
 #include <exec/lists.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-/*
- * chooser.gadget - ClassAct/ReAction compatible popup/dropdown chooser
- *
- * Superclass: gadgetclass
- * Include:    <gadgets/chooser.h>
- */
-
-#define CHOOSER_CLASSNAME   "gadgets/chooser.gadget"
+#define CHOOSER_CLASSNAME   "chooser.gadget"
 #define CHOOSER_VERSION     44
 
-/* Tag base */
-#define CHOOSER_Dummy       (TAG_USER + 0x40000)
+#define CHOOSER_Dummy       (REACTION_Dummy + 0x0001000)
 
-/* Attributes */
-/* (I..) Exec list of ChooserNode items */
-#define CHOOSER_Labels          (CHOOSER_Dummy + 0x0001)
-/* (ISG) Currently selected item (0-based) */
-#define CHOOSER_Selected        (CHOOSER_Dummy + 0x0002)
-/* (I..) Maximum number of visible items */
-#define CHOOSER_MaxLabels       (CHOOSER_Dummy + 0x0003)
-/* (I..) Render as dropdown */
-#define CHOOSER_DropDown        (CHOOSER_Dummy + 0x0004)
-/* (I..) Auto-fit width */
-#define CHOOSER_AutoFit         (CHOOSER_Dummy + 0x0005)
-/* (ISG) Title string */
-#define CHOOSER_Title           (CHOOSER_Dummy + 0x0006)
-/* (I..) Read only mode */
-#define CHOOSER_ReadOnly        (CHOOSER_Dummy + 0x0007)
-/* (I..) Label array (STRPTR *) */
-#define CHOOSER_LabelArray      (CHOOSER_Dummy + 0x0008)
-/* (I..) Popup mode */
-#define CHOOSER_PopUp           (CHOOSER_Dummy + 0x0009)
-/* (I..) Hide */
-#define CHOOSER_Hidden          (CHOOSER_Dummy + 0x000A)
+#define CHOOSER_Labels          (CHOOSER_Dummy + 0x0001) /* List of ChooserNodes */
+#define CHOOSER_Selected        (CHOOSER_Dummy + 0x0002) /* Active item index */
+#define CHOOSER_MaxLabels       (CHOOSER_Dummy + 0x0003) /* Max visible entries */
+#define CHOOSER_DropDown        (CHOOSER_Dummy + 0x0004) /* Dropdown style */
+#define CHOOSER_AutoFit         (CHOOSER_Dummy + 0x0005) /* Fit width to content */
+#define CHOOSER_Title           (CHOOSER_Dummy + 0x0006) /* Title text */
+#define CHOOSER_ReadOnly        (CHOOSER_Dummy + 0x0007) /* Non-editable */
+#define CHOOSER_LabelArray      (CHOOSER_Dummy + 0x0008) /* STRPTR array of labels */
+#define CHOOSER_PopUp           (CHOOSER_Dummy + 0x0009) /* Popup style */
+#define CHOOSER_Hidden          (CHOOSER_Dummy + 0x000A) /* Hidden state */
 
-/* ChooserNode attributes (for AllocChooserNodeA) */
-#define CNA_Dummy           (TAG_USER + 0x40100)
-#define CNA_Text            (CNA_Dummy + 0x0001)
-#define CNA_Image           (CNA_Dummy + 0x0002)
-#define CNA_Disabled        (CNA_Dummy + 0x0003)
-#define CNA_Selected        (CNA_Dummy + 0x0004)
-#define CNA_Separator       (CNA_Dummy + 0x0005)
-#define CNA_UserData        (CNA_Dummy + 0x0006)
-#define CNA_ReadOnly        (CNA_Dummy + 0x0007)
+/* ChooserNode tags */
+#define CNA_Dummy           (TAG_USER + 0x5001500)
+#define CNA_Text            (CNA_Dummy + 0x0001) /* Node label */
+#define CNA_Image           (CNA_Dummy + 0x0002) /* Node image */
+#define CNA_Disabled        (CNA_Dummy + 0x0003) /* Disabled state */
+#define CNA_Selected        (CNA_Dummy + 0x0004) /* Selected state */
+#define CNA_Separator       (CNA_Dummy + 0x0005) /* Separator line */
+#define CNA_UserData        (CNA_Dummy + 0x0006) /* User data pointer */
+#define CNA_ReadOnly        (CNA_Dummy + 0x0007) /* Non-selectable */
 
-/* Object creation macros */
+#ifndef ChooserObject
 #define ChooserObject   NewObject(NULL, CHOOSER_CLASSNAME
+#endif
+#ifndef ChooserEnd
 #define ChooserEnd      TAG_END)
+#endif
 
 #endif /* GADGETS_CHOOSER_H */

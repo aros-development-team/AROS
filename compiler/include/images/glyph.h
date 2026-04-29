@@ -10,19 +10,19 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-#define GLYPH_CLASSNAME     "images/glyph.image"
+#define GLYPH_CLASSNAME     "glyph.image"
 #define GLYPH_VERSION       44
 
-#define GLYPH_Dummy         (TAG_USER + 0x180000)
+#define GLYPH_Dummy         (REACTION_Dummy + 0x15000)
 
-#define GLYPH_Glyph         (GLYPH_Dummy + 0x0001)
-#define GLYPH_SoftStyle     (GLYPH_Dummy + 0x0002)
+#define GLYPH_Glyph         (GLYPH_Dummy + 0x0001) /* Glyph type (GLYPH_*) */
+#define GLYPH_SoftStyle     (GLYPH_Dummy + 0x0002) /* Text style flags */
 
-/* Glyph types */
+/* Glyph IDs */
 #define GLYPH_POPFILE       0
 #define GLYPH_POPFONT       1
 #define GLYPH_POPUP         2
@@ -40,7 +40,11 @@
 #define GLYPH_LEFTARROW     14
 #define GLYPH_RIGHTARROW    15
 
+#ifndef GlyphObject
 #define GlyphObject     NewObject(NULL, GLYPH_CLASSNAME
+#endif
+#ifndef GlyphEnd
 #define GlyphEnd        TAG_END)
+#endif
 
 #endif /* IMAGES_GLYPH_H */

@@ -10,21 +10,25 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-#define SPACE_CLASSNAME     "gadgets/space.gadget"
+#define SPACE_CLASSNAME     "space.gadget"
 #define SPACE_VERSION       44
 
-#define SPACE_Dummy         (TAG_USER + 0x110000)
+#define SPACE_Dummy         (REACTION_Dummy + 0x9000)
 
-#define SPACE_MinWidth      (SPACE_Dummy + 0x0001)
-#define SPACE_MinHeight     (SPACE_Dummy + 0x0002)
-#define SPACE_BevelStyle    (SPACE_Dummy + 0x0003)
-#define SPACE_Transparent   (SPACE_Dummy + 0x0004)
+#define SPACE_MinWidth      (SPACE_Dummy + 0x0001) /* Minimum width */
+#define SPACE_MinHeight     (SPACE_Dummy + 0x0002) /* Minimum height */
+#define SPACE_BevelStyle    (SPACE_Dummy + 0x0003) /* Bevel style */
+#define SPACE_Transparent   (SPACE_Dummy + 0x0004) /* No background fill */
 
+#ifndef SpaceObject
 #define SpaceObject     NewObject(NULL, SPACE_CLASSNAME
+#endif
+#ifndef SpaceEnd
 #define SpaceEnd        TAG_END)
+#endif
 
 #endif /* GADGETS_SPACE_H */

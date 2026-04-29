@@ -10,19 +10,19 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-#define DRAWLIST_CLASSNAME  "images/drawlist.image"
+#define DRAWLIST_CLASSNAME  "drawlist.image"
 #define DRAWLIST_VERSION    44
 
-#define DRAWLIST_Dummy      (TAG_USER + 0x170000)
+#define DRAWLIST_Dummy      (REACTION_Dummy + 0x17000)
 
-#define DRAWLIST_Directives     (DRAWLIST_Dummy + 0x0001)
-#define DRAWLIST_NumDirectives  (DRAWLIST_Dummy + 0x0002)
+#define DRAWLIST_Directives     (DRAWLIST_Dummy + 0x0001) /* Array of DrawList structs */
+#define DRAWLIST_NumDirectives  (DRAWLIST_Dummy + 0x0002) /* Directive count */
 
-/* Drawlist directive commands */
+/* Drawing commands */
 #define DLD_END         0
 #define DLD_MOVE        1
 #define DLD_DRAW        2
@@ -33,7 +33,7 @@
 #define DLD_AFPT        7
 #define DLD_AFPTSIZE    8
 
-/* DrawList directive structure */
+/* DrawList directive entry */
 struct DrawList
 {
     WORD dl_Command;
@@ -41,7 +41,11 @@ struct DrawList
     WORD dl_Y;
 };
 
+#ifndef DrawListObject
 #define DrawListObject  NewObject(NULL, DRAWLIST_CLASSNAME
+#endif
+#ifndef DrawListEnd
 #define DrawListEnd     TAG_END)
+#endif
 
 #endif /* IMAGES_DRAWLIST_H */

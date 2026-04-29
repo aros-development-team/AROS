@@ -10,37 +10,26 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-/*
- * checkbox.gadget - ClassAct/ReAction compatible checkbox gadget
- *
- * Superclass: gadgetclass
- * Include:    <gadgets/checkbox.h>
- */
-
-#define CHECKBOX_CLASSNAME  "gadgets/checkbox.gadget"
+#define CHECKBOX_CLASSNAME  "checkbox.gadget"
 #define CHECKBOX_VERSION    44
 
-/* Tag base */
-#define CHECKBOX_Dummy      (TAG_USER + 0x60000)
+#define CHECKBOX_Dummy      (REACTION_Dummy + 0x11000)
 
-/* Attributes */
-/* (ISG) Checked state */
-#define CHECKBOX_Checked        (CHECKBOX_Dummy + 0x0001)
-/* (I..) Text pen */
-#define CHECKBOX_TextPen        (CHECKBOX_Dummy + 0x0002)
-/* (I..) Background pen */
-#define CHECKBOX_BackgroundPen  (CHECKBOX_Dummy + 0x0003)
-/* (I..) Fill pen */
-#define CHECKBOX_FillPen        (CHECKBOX_Dummy + 0x0004)
-/* (I..) Text placement */
-#define CHECKBOX_TextPlace      (CHECKBOX_Dummy + 0x0005)
+#define CHECKBOX_Checked        (CHECKBOX_Dummy + 0x0001) /* Current checked state */
+#define CHECKBOX_TextPen        (CHECKBOX_Dummy + 0x0002) /* Text pen */
+#define CHECKBOX_BackgroundPen  (CHECKBOX_Dummy + 0x0003) /* Background pen */
+#define CHECKBOX_FillPen        (CHECKBOX_Dummy + 0x0004) /* Fill pen */
+#define CHECKBOX_TextPlace      (CHECKBOX_Dummy + 0x0005) /* Label placement */
 
-/* Object creation macros */
+#ifndef CheckBoxObject
 #define CheckBoxObject  NewObject(NULL, CHECKBOX_CLASSNAME
+#endif
+#ifndef CheckBoxEnd
 #define CheckBoxEnd     TAG_END)
+#endif
 
 #endif /* GADGETS_CHECKBOX_H */

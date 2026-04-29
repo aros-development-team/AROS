@@ -24,7 +24,7 @@
 
 #include "string_intern.h"
 
-#define StringGadBase ((struct Library *)(cl->cl_UserData))
+#define StringBase ((struct Library *)(cl->cl_UserData))
 
 /******************************************************************************/
 
@@ -65,7 +65,7 @@ static void string_set(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR StringGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR String__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -87,14 +87,14 @@ IPTR StringGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR StringGad__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR String__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR StringGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR String__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     string_set(cl, o, msg);
@@ -103,7 +103,7 @@ IPTR StringGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR StringGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR String__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct StringGadData *data = INST_DATA(cl, o);
     struct StringInfo *si = (struct StringInfo *)G(o)->SpecialInfo;
@@ -140,7 +140,7 @@ IPTR StringGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-IPTR StringGad__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
+IPTR String__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     /* STRGCLASS handles all string rendering */
     return DoSuperMethodA(cl, o, (Msg)msg);

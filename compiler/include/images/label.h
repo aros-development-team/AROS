@@ -10,33 +10,37 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-#define LABEL_CLASSNAME     "images/label.image"
+#define LABEL_CLASSNAME     "label.image"
 #define LABEL_VERSION       44
 
-#define LABEL_Dummy         (TAG_USER + 0x190000)
+#define LABEL_Dummy         (REACTION_Dummy + 0x0006000)
 
-#define LABEL_Text              (LABEL_Dummy + 0x0001)
-#define LABEL_Image             (LABEL_Dummy + 0x0002)
-#define LABEL_Justification     (LABEL_Dummy + 0x0003)
-#define LABEL_SoftStyle         (LABEL_Dummy + 0x0004)
-#define LABEL_DisposeImage      (LABEL_Dummy + 0x0005)
-#define LABEL_Mapping           (LABEL_Dummy + 0x0006)
-#define LABEL_DrawInfo          (LABEL_Dummy + 0x0007)
-#define LABEL_MenuMode          (LABEL_Dummy + 0x0008)
-#define LABEL_Underscore        (LABEL_Dummy + 0x0009)
-#define LABEL_KeyStroke         (LABEL_Dummy + 0x000A)
-#define LABEL_TextPen           (LABEL_Dummy + 0x000B)
+#define LABEL_Text              (LABEL_Dummy + 0x0001) /* Label string */
+#define LABEL_Image             (LABEL_Dummy + 0x0002) /* Inline image */
+#define LABEL_Justification     (LABEL_Dummy + 0x0003) /* Text alignment */
+#define LABEL_SoftStyle         (LABEL_Dummy + 0x0004) /* Text style flags */
+#define LABEL_DisposeImage      (LABEL_Dummy + 0x0005) /* Free image on dispose */
+#define LABEL_Mapping           (LABEL_Dummy + 0x0006) /* Pen mapping array */
+#define LABEL_DrawInfo          (LABEL_Dummy + 0x0007) /* DrawInfo for rendering */
+#define LABEL_MenuMode          (LABEL_Dummy + 0x0008) /* Menu-style rendering */
+#define LABEL_Underscore        (LABEL_Dummy + 0x0009) /* Shortcut underline char */
+#define LABEL_KeyStroke         (LABEL_Dummy + 0x000A) /* Keyboard shortcut */
+#define LABEL_TextPen           (LABEL_Dummy + 0x000B) /* Text pen */
 
-/* Label justification */
+/* Justification */
 #define LJ_LEFT     0
 #define LJ_CENTER   1
 #define LJ_RIGHT    2
 
+#ifndef LabelObject
 #define LabelObject     NewObject(NULL, LABEL_CLASSNAME
+#endif
+#ifndef LabelEnd
 #define LabelEnd        TAG_END)
+#endif
 
 #endif /* IMAGES_LABEL_H */

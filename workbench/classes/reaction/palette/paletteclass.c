@@ -24,7 +24,7 @@
 
 #include "palette_intern.h"
 
-#define PaletteGadBase ((struct Library *)(cl->cl_UserData))
+#define PaletteBase ((struct Library *)(cl->cl_UserData))
 
 /******************************************************************************/
 
@@ -56,7 +56,7 @@ static void palette_set(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR Palette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -81,14 +81,14 @@ IPTR PaletteGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR Palette__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR Palette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     palette_set(cl, o, msg);
@@ -97,7 +97,7 @@ IPTR PaletteGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR Palette__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct PaletteGadData *data = INST_DATA(cl, o);
 
@@ -125,7 +125,7 @@ IPTR PaletteGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
+IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct PaletteGadData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;

@@ -40,13 +40,13 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case WINDOW_Title:
+            case WA_Title:
                 data->wcd_Title = (STRPTR)tag->ti_Data;
                 if (data->wcd_Window)
                     SetWindowTitles(data->wcd_Window, data->wcd_Title, (UBYTE *)~0);
                 break;
 
-            case WINDOW_ScreenTitle:
+            case WA_ScreenTitle:
                 data->wcd_ScreenTitle = (STRPTR)tag->ti_Data;
                 break;
 
@@ -56,14 +56,6 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
 
             case WINDOW_Position:
                 data->wcd_Position = tag->ti_Data;
-                break;
-
-            case WINDOW_UniqueID:
-                data->wcd_UniqueID = tag->ti_Data;
-                break;
-
-            case WINDOW_Flags:
-                data->wcd_Flags = tag->ti_Data;
                 break;
 
             case WINDOW_Layout:
@@ -90,24 +82,12 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
                 data->wcd_AppMsgHook = (struct Hook *)tag->ti_Data;
                 break;
 
-            case WINDOW_BackfillHook:
-                data->wcd_BackfillHook = (struct Hook *)tag->ti_Data;
-                break;
-
             case WINDOW_SharedPort:
                 data->wcd_UserPort = (struct MsgPort *)tag->ti_Data;
                 break;
 
             case WINDOW_Icon:
                 data->wcd_Icon = (struct DiskObject *)tag->ti_Data;
-                break;
-
-            case WINDOW_Iconified:
-                data->wcd_Iconified = (BOOL)tag->ti_Data;
-                break;
-
-            case WINDOW_HelpGroup:
-                data->wcd_HelpGroup = tag->ti_Data;
                 break;
 
             case WINDOW_LockWidth:
@@ -122,8 +102,12 @@ static void window_set(Class *cl, Object *o, struct opSet *msg)
                 data->wcd_UserData = tag->ti_Data;
                 break;
 
-            case WINDOW_NewLookMenus:
-                data->wcd_NewLookMenus = (BOOL)tag->ti_Data;
+            case WINDOW_IconTitle:
+                data->wcd_IconTitle = (STRPTR)tag->ti_Data;
+                break;
+
+            case WINDOW_IconifyGadget:
+                data->wcd_IconifyGadget = (BOOL)tag->ti_Data;
                 break;
 
             /* Standard Intuition window tags */
@@ -166,7 +150,7 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         memset(data, 0, sizeof(struct WindowClassData));
 
         /* Set defaults */
-        data->wcd_Position = WPOS_TOPLEFT;
+        data->wcd_Position = WPOS_CENTERSCREEN;
 
         /* Process initial attributes */
         window_set(cl, (Object *)retval, msg);
@@ -234,36 +218,12 @@ IPTR Window__OM_GET(Class *cl, Object *o, struct opGet *msg)
                 *msg->opg_Storage = 0;
             return TRUE;
 
-        case WINDOW_Title:
-            *msg->opg_Storage = (IPTR)data->wcd_Title;
-            return TRUE;
-
-        case WINDOW_UniqueID:
-            *msg->opg_Storage = data->wcd_UniqueID;
+        case WINDOW_UserData:
+            *msg->opg_Storage = data->wcd_UserData;
             return TRUE;
 
         case WINDOW_GadgetUserData:
             *msg->opg_Storage = data->wcd_GadgetUserData;
-            return TRUE;
-
-        case WINDOW_Iconified:
-            *msg->opg_Storage = data->wcd_Iconified;
-            return TRUE;
-
-        case WINDOW_InnerWidth:
-            if (data->wcd_Window)
-                *msg->opg_Storage = data->wcd_Window->Width
-                    - data->wcd_Window->BorderLeft - data->wcd_Window->BorderRight;
-            else
-                *msg->opg_Storage = 0;
-            return TRUE;
-
-        case WINDOW_InnerHeight:
-            if (data->wcd_Window)
-                *msg->opg_Storage = data->wcd_Window->Height
-                    - data->wcd_Window->BorderTop - data->wcd_Window->BorderBottom;
-            else
-                *msg->opg_Storage = 0;
             return TRUE;
     }
 
@@ -340,7 +300,7 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
                          IDCMP_NEWSIZE | IDCMP_RAWKEY | IDCMP_VANILLAKEY |
                          IDCMP_CHANGEWINDOW | IDCMP_ACTIVEWINDOW |
                          IDCMP_INACTIVEWINDOW,
-        WA_NewLookMenus, data->wcd_NewLookMenus,
+        WA_NewLookMenus, TRUE,
         WA_SizeBBottom, TRUE,
         TAG_DONE);
 

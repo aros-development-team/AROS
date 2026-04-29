@@ -32,16 +32,6 @@
 
 #include LC_LIBDEFS_FILE
 
-/* Method IDs */
-#define WM_Dummy        0x6A00
-#define WM_OPEN         (WM_Dummy + 1)
-#define WM_CLOSE        (WM_Dummy + 2)
-#define WM_HANDLEINPUT  (WM_Dummy + 3)
-#define WM_ICONIFY      (WM_Dummy + 4)
-#define WM_UNICONIFY    (WM_Dummy + 5)
-#define WM_NEWPREFS     (WM_Dummy + 6)
-#define WM_RETHINK      (WM_Dummy + 7)
-
 /* Window class instance data */
 struct WindowClassData
 {
@@ -52,18 +42,15 @@ struct WindowClassData
     Object              *wcd_Layout;        /* Root layout object */
     struct Menu         *wcd_MenuStrip;     /* Window menus */
     struct Hook         *wcd_IDCMPHook;     /* Custom IDCMP hook */
-    struct Hook         *wcd_BackfillHook;  /* Background fill hook */
     struct Hook         *wcd_AppMsgHook;    /* AppWindow message hook */
     struct DiskObject   *wcd_Icon;          /* Iconify icon */
 
     STRPTR              wcd_Title;          /* Window title */
     STRPTR              wcd_ScreenTitle;    /* Screen title */
+    STRPTR              wcd_IconTitle;      /* Iconify title */
 
-    ULONG               wcd_Flags;          /* Window flags */
     ULONG               wcd_IDCMPHookBits;  /* IDCMP bits for hook */
-    ULONG               wcd_UniqueID;       /* Unique window ID */
     ULONG               wcd_Position;       /* Window position */
-    ULONG               wcd_HelpGroup;      /* Help group */
     ULONG               wcd_UserData;       /* User data */
 
     WORD                wcd_Left;           /* Window left edge */
@@ -71,11 +58,11 @@ struct WindowClassData
     WORD                wcd_Width;          /* Window width */
     WORD                wcd_Height;         /* Window height */
 
-    BOOL                wcd_GadgetUserData; /* Use gadget user data */
+    BOOL                wcd_GadgetUserData; /* How to interpret UserData */
     BOOL                wcd_Iconified;      /* Iconified state */
     BOOL                wcd_LockWidth;      /* Lock width */
     BOOL                wcd_LockHeight;     /* Lock height */
-    BOOL                wcd_NewLookMenus;   /* New look menus */
+    BOOL                wcd_IconifyGadget;  /* Show iconify gadget */
 
     /* IDCMP message processing */
     struct IntuiMessage *wcd_CurrentMsg;    /* Current message being processed */
