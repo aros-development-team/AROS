@@ -64,6 +64,11 @@ static struct handlerinfo *newhandler(struct config *);
 static struct interfaceinfo *newinterface(struct config *);
 
 /* the method prefices for the supported classes */
+static const char *boopsimprefix[] =
+{
+    "__OM_",
+    NULL
+};
 static const char *muimprefix[] =
 {
     "__OM_",
@@ -245,6 +250,11 @@ struct config *initconfig(int argc, char **argv)
     {
         cfg->modtype = LIBRARY;
         cfg->moddir = "Libs";
+    }
+    else if (strcmp(argv[optind+2],"class")==0)
+    {
+        cfg->modtype = CLASS;
+        cfg->moddir = "Classes";
     }
     else if (strcmp(argv[optind+2],"mcc")==0)
     {
@@ -453,6 +463,7 @@ static void readconfig(struct config *cfg)
     case HANDLER:
         break;
 
+    case CLASS:
     case MCC:
     case MUI:
     case MCP:
@@ -471,22 +482,18 @@ static void readconfig(struct config *cfg)
 
     switch (cfg->modtype)
     {
-    case LIBRARY:
-    case USBCLASS:
-        cfg->firstlvo = 5;
-        break;
-    case DEVICE:
-        cfg->firstlvo = 7;
-        break;
-    case MCC:
-    case MUI:
-    case MCP:
-        cfg->firstlvo = 6;
-        mainclass->boopsimprefix = muimprefix;
-        break;
     case HANDLER:
     case RESOURCE:
         cfg->firstlvo = 1;
+        break;
+    case LIBRARY:
+    case USBCLASS:
+    case HIDD:
+        cfg->firstlvo = 5;
+        break;
+    case CLASS:
+        cfg->firstlvo = 5;
+        mainclass->boopsimprefix = boopsimprefix;
         break;
     case GADGET:
         cfg->firstlvo = 5;
@@ -500,9 +507,14 @@ static void readconfig(struct config *cfg)
         cfg->firstlvo = 6;
         mainclass->boopsimprefix = dtmprefix;
         break;
-    case HIDD:
-        cfg->firstlvo = 5;
-        /* FIXME: need boopsimprefix ? */
+    case MCC:
+    case MUI:
+    case MCP:
+        cfg->firstlvo = 6;
+        mainclass->boopsimprefix = muimprefix;
+        break;
+    case DEVICE:
+        cfg->firstlvo = 7;
         break;
     default:
         fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
@@ -712,6 +724,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 ) ? OPTION_INCLUDES : OPTION_NOINCLUDES;
                 break;
 
+            case CLASS:
             case GADGET:
             case IMAGE:
             case DATATYPE:
@@ -739,17 +752,18 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 cfg->options |= (cfg->funclist != NULL) ? OPTION_STUBS : OPTION_NOSTUBS;
                 break;
 
-            case USBCLASS:
             case RESOURCE:
+            case HANDLER:
+            case DEVICE:
+            case CLASS:
             case GADGET:
             case IMAGE:
-            case DEVICE:
             case DATATYPE:
             case MCC:
             case MUI:
             case MCP:
             case HIDD:
-            case HANDLER:
+            case USBCLASS:
                 cfg->options |= OPTION_NOSTUBS;
                 break;
 
@@ -771,17 +785,18 @@ static char *readsections(struct config *cfg, struct classinfo *cl, struct inter
                 cfg->options |= OPTION_AUTOINIT;
                 break;
 
-            case USBCLASS:
             case RESOURCE:
+            case HANDLER:
+            case DEVICE:
+            case CLASS:
             case GADGET:
             case IMAGE:
-            case DEVICE:
             case DATATYPE:
             case MCC:
             case MUI:
             case MCP:
             case HIDD:
-            case HANDLER:
+            case USBCLASS:
                 cfg->options |= OPTION_NOAUTOINIT;
                 break;
 
@@ -1203,6 +1218,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                     cl->classtype = MCP;
                 else if (strcmp(s, "image")==0)
                     cl->classtype = IMAGE;
+                else if (strcmp(s, "class")==0)
+                    cl->classtype = CLASS;
                 else if (strcmp(s, "gadget")==0)
                     cl->classtype = GADGET;
                 else if (strcmp(s, "datatype")==0)
@@ -1351,6 +1368,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
                 cfg->libbasetypeptrextern = "APTR ";
                 break;
             case LIBRARY:
+            case CLASS:
             case MUI:
             case MCP:
             case MCC:
