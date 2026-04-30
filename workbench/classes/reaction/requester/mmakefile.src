@@ -16,7 +16,7 @@ FUNCS := \
 #MM     kernel-utility-includes
 
 %build_module mmake=workbench-classes-reaction-requester \
-    modname=requester modtype=gadget \
+    modname=requester modtype=class \
     files="$(FUNCS) $(FILES)"
 
 %common

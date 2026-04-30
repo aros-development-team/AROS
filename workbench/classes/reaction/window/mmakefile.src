@@ -17,7 +17,7 @@ FUNCS := \
 #MM     kernel-layers-includes
 
 %build_module mmake=workbench-classes-reaction-window \
-    modname=window modtype=gadget \
+    modname=window modtype=class \
     files="$(FUNCS) $(FILES)"
 
 %common
