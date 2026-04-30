@@ -17,11 +17,11 @@
 <table>
   <tr>
     <td style="text-align:center">BUILD Arch</td>
-    <td colspan=7 style="text-align:center">Status</td>
+    <td colspan=8 style="text-align:center">Status</td>
   </tr>
   <tr>
     <td rowspan=2 style="text-align:center">Toolchain</td>
-    <td colspan=5 style="text-align:center">GNU</td>
+    <td colspan=6 style="text-align:center">GNU</td>
     <td colspan=2 style="text-align:center">LLVM</td>
   </tr>
   <tr>
