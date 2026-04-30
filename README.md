@@ -65,10 +65,10 @@
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
+    <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=17&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64?branchName=master"></a>
     </td>
-    <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center">
       <a href="https://dev.azure.com/aros-development-team/AROS/_build/latest?definitionId=40&branchName=master"><img alt="Build Status" src="https://dev.azure.com/aros-development-team/AROS/_apis/build/status/aros-development-team.AROS-pc-x86_64-llvm?branchName=master"></a>
