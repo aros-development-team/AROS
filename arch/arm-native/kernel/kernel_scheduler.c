@@ -67,7 +67,7 @@ BOOL core_Schedule(void)
             for (nexttask = (struct Task *)GetHead(&SysBase->TaskReady); nexttask != NULL; nexttask = (struct Task *)GetSucc(nexttask))
             {
 #if defined(__AROSEXEC_SMP__)
-                if ((GetIntETask(nexttask)->iet_CpuAffinity  & cpumask) == cpumask)
+                if (((IPTR)GetIntETask(nexttask)->iet_CpuAffinity & cpumask) == cpumask)
                 {
 #endif
                     if (nexttask->tc_Node.ln_Pri <= task->tc_Node.ln_Pri)
@@ -179,7 +179,7 @@ struct Task *core_Dispatch(void)
     for (newtask = (struct Task *)GetHead(&SysBase->TaskReady); newtask != NULL; newtask = (struct Task *)GetSucc(newtask))
     {
 #if defined(__AROSEXEC_SMP__)
-        if ((GetIntETask(newtask)->iet_CpuAffinity & cpumask) == cpumask)
+        if (((IPTR)GetIntETask(newtask)->iet_CpuAffinity & cpumask) == cpumask)
         {
 #endif
             Remove(&newtask->tc_Node);
@@ -205,7 +205,7 @@ struct Task *core_Dispatch(void)
             SysBase->DispCount++;
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
             SET_THIS_TASK(newtask);
-            SysBase->Elapsed = SysBase->Quantum;
+            SCHEDELAPSED_SET(SCHEDQUANTUM_GET);
             FLAG_SCHEDQUANTUM_CLEAR;
 
             /* Check the stack of the task we are about to launch. */
