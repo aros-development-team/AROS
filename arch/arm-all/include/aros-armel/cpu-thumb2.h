@@ -2,7 +2,7 @@
 #define AROS_ARM_CPU_H
 
 /*
-    Copyright © 2016, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2016, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -74,7 +74,9 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
 #define AROS_SIG_ATOMIC_MAX     0x7fffffff
 
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__clang__)
+#define AROS_GET_SP ({ unsigned char *__sp; __asm__ __volatile__("mov %0, sp" : "=r"(__sp)); __sp; })
+#else
 register unsigned char* AROS_GET_SP __asm__("%sp");
 #endif
 
@@ -126,7 +128,7 @@ struct JumpVec
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
 /* Prototypes */
-extern void _aros_not_implemented ();
+extern void _aros_not_implemented (char *);
 extern void aros_not_implemented ();
 
 /* How much stack do we need ? Lots :-) */

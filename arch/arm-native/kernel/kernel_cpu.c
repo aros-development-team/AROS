@@ -41,7 +41,7 @@ asm(
 "       .globl mpcore_trampoline                \n"
 "       .type mpcore_trampoline,%function       \n"
 "mpcore_trampoline:                             \n"
-"               mrs     r4, cpsr_all            \n" /* Check if in hypervisor mode */
+"               mrs     r4, cpsr                \n" /* Check if in hypervisor mode */
 "               and     r4, r4, #0x1f           \n" /* In that case try to leave it */
 "               mov     r8, #0x1a               \n"
 "               cmp     r4, r8                  \n"
@@ -86,7 +86,7 @@ asm(
 "leave_hyper:                                   \n" /* Escape hypervisor mode forever */
 "               adr     r4, mpcore_continue_boot\n"
 "               .byte   0x04,0xf3,0x2e,0xe1     \n" /* msr     ELR_hyp, r4             */
-"               mrs     r4, cpsr_all            \n"
+"               mrs     r4, cpsr                \n"
 "               and     r4, r4, #0x1f           \n"
 "               orr     r4, r4, #0x13           \n"
 "               .byte   0x04,0xf3,0x6e,0xe1     \n" /* msr     SPSR_hyp, r4            */

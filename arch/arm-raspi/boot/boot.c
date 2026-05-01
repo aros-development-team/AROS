@@ -46,7 +46,7 @@ asm("   .section .aros.startup      \n"
 "       .globl bootstrap            \n"
 "       .type bootstrap,%function   \n"
 "bootstrap:                         \n"
-"       mrs     r4, cpsr_all        \n" /* Check if in hypervisor mode */
+"       mrs     r4, cpsr            \n" /* Check if in hypervisor mode */
 "       and     r4, r4, #0x1f       \n"
 "       mov     r8, #0x1a           \n"
 "       cmp     r4, r8              \n"
@@ -56,20 +56,21 @@ asm("   .section .aros.startup      \n"
 #if AROS_BIG_ENDIAN
 "       setend  be                  \n" /* Switch to big endian mode */
 #endif
-"       ldr     sp, tmp_stack_ptr   \n"
+"       mov     sp, #0x1000         \n"
+"       sub     sp, sp, #16         \n"
 "       mrc     p15,0,r4,c1,c0,2    \n" /* Enable signle and double VFP coprocessors */
 "       orr     r4, r4, #0x00f00000 \n" /* This is necessary since gcc might want to use vfp registers  */
 "       mcr     p15,0,r4,c1,c0,2    \n" /* Either as cache for general purpose regs or e.g. for division. This is the case with gcc9 */
 "       mov     r4,#0x40000000      \n"
 "       fmxr    fpexc,r4            \n" /* Enable VFP now */
-"       b       boot                \n"
+"       ldr     pc, =boot           \n"
 "leave_hyper:                       \n"
 #if AROS_BIG_ENDIAN
 "       setend  be                  \n"
 #endif
 "       adr     r4, continue_boot   \n"
 "       .byte   0x04,0xf3,0x2e,0xe1 \n" /* msr     ELR_hyp, r4  */
-"       mrs     r4, cpsr_all        \n"
+"       mrs     r4, cpsr            \n"
 "       and     r4, r4, #0x1f       \n"
 "       orr     r4, r4, #0x13       \n"
 "       .byte   0x04,0xf3,0x6e,0xe1 \n" /* msr     SPSR_hyp, r4 */
