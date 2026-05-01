@@ -104,7 +104,7 @@ if (CxBase != NULL)
 
 /**********************************************************************/
 
-int main (LONG argc, UBYTE **argv)
+int main (LONG argc, char **argv)
 
 {
 BOOL Quit;
@@ -116,7 +116,7 @@ if (!OpenLibs1 ())
   return (10);
   }
 
-ToolTypes = ArgArrayInit (argc, argv);
+ToolTypes = ArgArrayInit (argc, (UBYTE **)argv);
 
 if (ToolTypes == NULL)
   {
@@ -145,7 +145,7 @@ if (QuestionMark)
   CloseAll ();
   return (0);
   }
-          
+
 if (Quit)
   {
   if (!StopVMM ())

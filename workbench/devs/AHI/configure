@@ -5841,7 +5841,7 @@ printf "%s\n" "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
 
 
 
-ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/PulseAudio/Makefile Drivers/WASAPI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
+ac_config_files="$ac_config_files Makefile AHI/Makefile AHI-Handler/Makefile AddAudioModes/Makefile Device/Makefile Docs/Makefile Drivers/Makefile Drivers/Common/Makefile.common Drivers/Device/Makefile Drivers/Filesave/Makefile Drivers/Void/Makefile Drivers/ac97/Makefile Drivers/VIA-AC97/Makefile Drivers/HDAudio/Makefile Drivers/CMI8738/Makefile Drivers/SB128/Makefile Drivers/EMU10kx/Makefile Drivers/Envy24HT/Makefile Drivers/Envy24/Makefile Drivers/Alsa/Makefile Drivers/OSS/Makefile Drivers/PulseAudio/Makefile Drivers/WASAPI/Makefile Drivers/RPiPWM/Makefile Drivers/RPiHDMI/Makefile Examples/Makefile Examples/Device/PlayTest/Makefile Examples/Extras/CloneAudioModes/Makefile Examples/Low-level/PlaySineEverywhere/Makefile Examples/Low-level/Test-7.1/Makefile Examples/Low-level/ScanAudioModes/Makefile Include/Makefile"
 
 ac_config_commands="$ac_config_commands default"
 
@@ -6559,6 +6559,8 @@ do
     "Drivers/OSS/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/OSS/Makefile" ;;
     "Drivers/PulseAudio/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/PulseAudio/Makefile" ;;
     "Drivers/WASAPI/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/WASAPI/Makefile" ;;
+    "Drivers/RPiPWM/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/RPiPWM/Makefile" ;;
+    "Drivers/RPiHDMI/Makefile") CONFIG_FILES="$CONFIG_FILES Drivers/RPiHDMI/Makefile" ;;
     "Examples/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Makefile" ;;
     "Examples/Device/PlayTest/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Device/PlayTest/Makefile" ;;
     "Examples/Extras/CloneAudioModes/Makefile") CONFIG_FILES="$CONFIG_FILES Examples/Extras/CloneAudioModes/Makefile" ;;
