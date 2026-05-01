@@ -40,7 +40,7 @@ INCSUBDIRS :=	aros				\
 		hardware/pic			\
 		hardware/usb			\
 		hidd				\
-		images		                \
+		images				\
 		inline			        \
 		intuition			\
 		irda				\
