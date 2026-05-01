@@ -1,2 +1,11 @@
 #!/bin/sh
-exec @orig_target_cxx@ @orig_target_cxx_flags@ "$@" -static
+
+# Clang++ ELF wrapper for kernel compilation — equivalent of elf-specs for GCC.
+# Calls the AROS-targeted compiler with predefines and include paths that
+# GCC would get from -specs=elf-specs.
+
+exec @orig_target_cxx@ @orig_target_cxx_flags@ \
+    -D__ELF__ \
+    -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include/aros/stdc \
+    -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include \
+    "$@" -static

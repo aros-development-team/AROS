@@ -858,6 +858,8 @@ aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
 target_llvm_version
+gcc_float_cpu
+gcc_soft_cpu
 HARDVAR
 SOFTVAR
 target_gcc_version
@@ -10624,7 +10626,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabihf-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -10646,7 +10648,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 kernel_tool_prefix="arm-linux-gnueabi-"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
@@ -10890,7 +10892,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 aros_kernel_ranlib="ranlib -arch arm"
                 kernel_tool_prefix="arm-apple-darwin10-"
                 export PATH="$aros_xcode_path/Platforms/$aros_ios_platform.platform/Developer/usr/bin:$PATH"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unsupported target CPU for darwin hosted flavour -- $target_cpu\"" "$LINENO" 5
@@ -11111,7 +11113,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
 
                 target_cpu=arm
                 aros_target_cpu=arm
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *arm*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -11119,7 +11121,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 gcc_float_fpu="vfpv3"
                 gcc_soft_fpu=
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for EfikaMX $target_cpu\"" "$LINENO" 5
@@ -11159,6 +11161,13 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__"
 
+        aros_kernel_toolchain=$aros_toolchain
+        kernel_toolchain_c_compiler=$toolchain_c_compiler
+        kernel_toolchain_cxx_compiler=$toolchain_cxx_compiler
+        if test "$aros_kernel_toolchain" = "llvm"; then
+            aros_kernel_llvmwrapper=yes
+        fi
+
         case "$target_cpu" in
             *aarch64*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
@@ -11171,10 +11180,6 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 ;;
             *armhf*)
                 PLATFORM_EXECSMP="#define __AROSPLATFORM_SMP__"
-                # we intentionaly leave
-                # gcc_default_cpu empty here
-                # so the correct value is loaded
-                # later.
                 if test "$aros_object_format" = "" ; then
                     aros_object_format="armelf_aros"
                 fi
@@ -11184,7 +11189,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 gcc_float_fpu="vfpv3-d16"
                 gcc_soft_fpu=$gcc_float_fpu
                 gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -11208,7 +11213,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
                 gcc_float_fpu="vfpv3-d16"
                 gcc_soft_fpu=""
                 gcc_default_fpu=
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
 
                 aros_isa_flags="$""(ISA_ARM_FLAGS)"
                 aros_config_cflags="$aros_config_cflags"
@@ -11280,7 +11285,7 @@ printf "%s\n" "$darwin_sdk_path" >&6; }
         gcc_float_fpu="fpv5-sp-d16"
         gcc_soft_fpu=$gcc_float_fpu
         gcc_default_fpu="$""(GCC_FLOAT_FPU)"
-        llvm_target_cpu="Arm"
+        llvm_target_cpu="ARM"
 
         aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dthumb"
         ;;
@@ -11501,7 +11506,7 @@ fi
                 kernel_tool_prefix="arm-mingw32ce-"
                 aros_nominal_width=160
                 aros_nominal_height=160
-                llvm_target_cpu="Arm"
+                llvm_target_cpu="ARM"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Mingw32 -- $target_cpu\"" "$LINENO" 5
@@ -12253,6 +12258,21 @@ printf "%s\n" "release" >&6; }
             x86_isa_extra="$x86_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
             x86_64_isa_extra="$x86_64_isa_extra $""(CFLAGS_NO_MS_BITFIELDS)"
         fi
+        ;;
+    esac
+elif test "$aros_toolchain" = "llvm" ; then
+    case "$aros_target_cpu" in
+    *arm*)
+        # clang accepts the modern <arm arch><features> form (armv7-a+fp/+nofp)
+        if test "$gcc_default_cpu" = ""; then
+            default_arm_cpu=armv7-a
+        else
+            default_arm_cpu=$gcc_default_cpu
+        fi
+        gcc_soft_cpu="$default_arm_cpu+nofp"
+        gcc_float_cpu="$default_arm_cpu+fp"
+
+
         ;;
     esac
 fi

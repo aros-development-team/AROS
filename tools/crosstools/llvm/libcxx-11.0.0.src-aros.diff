@@ -1,3 +1,60 @@
+diff -ruN libcxx-11.0.0.src/include/__config libcxx-11.0.0.src.aros/include/__config
+--- libcxx-11.0.0.src/include/__config	2020-10-07 10:10:48.000000000 +0000
++++ libcxx-11.0.0.src.aros/include/__config	2026-03-11 12:00:00.000000000 +0000
+@@ -1230,7 +1230,8 @@
+ #endif
+
+ #if defined(__BIONIC__) || defined(__CloudABI__) ||                            \
+-    defined(__Fuchsia__) || defined(__wasi__) || defined(_LIBCPP_HAS_MUSL_LIBC)
++    defined(__Fuchsia__) || defined(__wasi__) || defined(_LIBCPP_HAS_MUSL_LIBC) || \
++    defined(__AROS__)
+ #define _LIBCPP_PROVIDES_DEFAULT_RUNE_TABLE
+ #endif
+
+diff -ruN libcxx-11.0.0.src/include/typeinfo libcxx-11.0.0.src.aros/include/typeinfo
+--- libcxx-11.0.0.src/include/typeinfo	2020-10-07 10:10:48.000000000 +0000
++++ libcxx-11.0.0.src.aros/include/typeinfo	2026-02-27 12:00:00.000000000 +0000
+@@ -222,7 +222,7 @@
+     _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
+     static size_t __hash(__type_name_t __v) _NOEXCEPT {
+       if (__is_type_name_unique(__v))
+-        return reinterpret_cast<size_t>(__v);
++        return static_cast<size_t>(__v);
+       return __non_unique_impl::__hash(__type_name_to_string(__v));
+     }
+   };
+diff -ruN libcxx-11.0.0.src/include/atomic libcxx-11.0.0.src.aros/include/atomic
+--- libcxx-11.0.0.src/include/atomic	2020-10-07 10:10:48.000000000 +0000
++++ libcxx-11.0.0.src.aros/include/atomic	2026-04-07 12:00:00.000000000 +0000
+@@ -2774,10 +2774,11 @@
+ typedef conditional<_LIBCPP_CONTENTION_LOCK_FREE, __cxx_contention_t, char>::type               __libcpp_signed_lock_free;
+ typedef conditional<_LIBCPP_CONTENTION_LOCK_FREE, __cxx_contention_t, unsigned char>::type      __libcpp_unsigned_lock_free;
+ #else
+-    // No signed/unsigned lock-free types
++typedef __cxx_contention_t __libcpp_signed_lock_free;
++typedef typename make_unsigned<__cxx_contention_t>::type __libcpp_unsigned_lock_free;
+ #endif
+ 
+ typedef atomic<__libcpp_signed_lock_free> atomic_signed_lock_free;
+ typedef atomic<__libcpp_unsigned_lock_free> atomic_unsigned_lock_free;
+ 
+ #define ATOMIC_FLAG_INIT {false}
+diff -ruN libcxx-11.0.0.src/cmake/config-ix.cmake libcxx-11.0.0.src.aros/cmake/config-ix.cmake
+--- libcxx-11.0.0.src/cmake/config-ix.cmake	2020-10-07 10:10:48.000000000 +0000
++++ libcxx-11.0.0.src.aros/cmake/config-ix.cmake	2026-04-07 12:00:00.000000000 +0000
+@@ -96,6 +96,12 @@
+   set(LIBCXX_HAS_RT_LIB NO)
+   set(LIBCXX_HAS_SYSTEM_LIB NO)
+   check_library_exists(atomic __atomic_fetch_add_8 "" LIBCXX_HAS_ATOMIC_LIB)
++elseif(AROS)
++  check_library_exists(pthread pthread_create "" LIBCXX_HAS_PTHREAD_LIB)
++  check_library_exists(m ccos "" LIBCXX_HAS_M_LIB)
++  set(LIBCXX_HAS_RT_LIB NO)
++  set(LIBCXX_HAS_SYSTEM_LIB NO)
++  set(LIBCXX_HAS_ATOMIC_LIB NO)
+ else()
+   check_library_exists(pthread pthread_create "" LIBCXX_HAS_PTHREAD_LIB)
+   check_library_exists(m ccos "" LIBCXX_HAS_M_LIB)
 diff -ruN libcxx-11.0.0.src/src/filesystem/filesystem_common.h libcxx-11.0.0.src.aros/src/filesystem/filesystem_common.h
 --- libcxx-11.0.0.src/src/filesystem/filesystem_common.h	2020-10-07 10:10:48.000000000 +0000
 +++ libcxx-11.0.0.src.aros/src/filesystem/filesystem_common.h	2025-07-09 01:12:21.008427636 +0000

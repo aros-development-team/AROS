@@ -44,7 +44,7 @@ $(eval -include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg)
 #MM- crosstools-libunwind-quick : crosstools-libunwind-setup tools-crosstools-llvm-toolchain-quick
 
 #MM- crosstools-llvm : \
-#MM           tools-crosstools-llvm-toolchain crosstools-compiler-rt \
+#MM           tools-crosstools-llvm-toolchain crosstools-compiler-rt-fixup \
 #MM           crosstools-libunwind tools-crosstools-llvm-libcxx tools-crosstools-llvm-libcxxabi
 #MM- crosstools-llvm-quick : \
 #MM           tools-crosstools-llvm-toolchain-quick \
@@ -197,7 +197,7 @@ LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_BUILDBASE)"
 
 LLVM_INSTALLCMD         :=$(MAKE) -j1 install/strip
 
-LLVM_TARGET_FLAGS       :=--target=$(AROS_TARGET_CPU)-unknown-aros
+LLVM_TARGET_FLAGS       :=--target=$(AROS_TARGET_CPU)-unknown-aros $(ISA_FLAGS)
 
 LLVM_CXX_CFLAGS         :=$(LLVM_TARGET_FLAGS) -fno-PIC -fno-pic -fno-PIE -fno-pie -fno-plt
 LLVM_CXX_CXXFLAGS       :=$(LLVM_CXX_CFLAGS) -nostdinc++ $(NOWARN_MISSING_FIELD_INITIALIZERS)
@@ -350,14 +350,18 @@ LLVM_COMPILER_RT_CMAKEBASE :=                                                   
   -DCOMPILER_RT_BUILD_LIBFUZZER=OFF                                                                                                     \
   -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON                                                                                                  \
   -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON                                                                                                 \
+  -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF                                                                                              \
   -DBUILD_SHARED_LIBS=OFF                                                                                                               \
-  -DAROS_BUILD=ON
+  -DAROS_BUILD=ON \
+  -DCOMPILER_RT_LIBRARY_INSTALL_DIR="lib/clang/$(LLVM_VERSION)/lib/aros" \
+  -DCOMPILER_RT_LIBRARY_OUTPUT_DIR="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros"
 
 LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                                                                        \
   $(LLVM_COMPILER_RT_CMAKEBASE)                                                                                                         \
   -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU)-unknown-aros                                                                             \
   -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                                \
   -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                              \
+  -DCMAKE_ASM_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                              \
   -DCMAKE_EXE_LINKER_FLAGS="-nodefaultlibs -nostartfiles $(AROS_LIB)/startup.o -L$(AROS_LIB) -lexec -larossupport -lamiga -lautoinit -Wl,--allow-multiple-definition" \
   -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)
 
@@ -366,6 +370,17 @@ LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                
 %build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(COMPILER_RT_BUILDBASE)                                      \
     prefix="$(CROSSTOOLSDIR)" maketarget=$(LLVM_CMAKETARGET) cmakeinstallcmd="$(LLVM_INSTALLCMD)"                                       \
     extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
+
+# Clang's driver looks for libclang_rt.builtins-armhf.a on hard-float targets,
+# but compiler-rt builds it as builtins-arm.a. Create a symlink.
+COMPILER_RT_CLANG_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros
+
+#MM crosstools-compiler-rt-fixup : crosstools-compiler-rt
+crosstools-compiler-rt-fixup :
+	$(Q)$(IF) $(TEST) -f $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a -a \
+	    ! -e $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; then \
+	    $(LN) -sf libclang_rt.builtins-arm.a $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; \
+	fi
 
 ifneq ($(AROS_TARGET_CPU32),)
 LLVM_COMPILER_RT32_CMAKEOPTIONS :=                                                                                                      \
@@ -434,7 +449,8 @@ endif
 
 %fetch mmake=crosstools-llvm-lld-fetch archive=$(LLVMLLD_ARCHBASE)                                                                      \
     archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
-    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-lld
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-lld                                                              \
+    patches_specs=$(LLVMLLD_ARCHBASE)-aros.diff:$(LLVMLLD_ARCHBASE):-p1
 
 %create_patch mmake=crosstools-llvm-lld-create-patch                                                                                    \
     archive=$(LLVMLLD_ARCHBASE) suffixes="tar.xz"                                                                                       \
