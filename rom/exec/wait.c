@@ -7,6 +7,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <aros/atomic.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <proto/exec.h>
