@@ -15,8 +15,10 @@
 #include "exec_intern.h"
 
 #if defined(__AROSEXEC_SMP__)
+#include <aros/atomic.h>
 #include <utility/hooks.h>
 
+#include "etask.h"
 #include "kernel_ipi.h"
 
 AROS_UFH3(IPTR, signal_hook,

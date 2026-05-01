@@ -22,10 +22,16 @@ AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
     D(bug("[Exec] %s()\n", __func__));
 
     /* Check if it is time for the running task to be switched away */
-    if (!SCHEDELAPSED_GET || (--SCHEDELAPSED_GET == 0))
     {
-        FLAG_SCHEDQUANTUM_SET;
-        FLAG_SCHEDSWITCH_SET;
+        UWORD current = SCHEDELAPSED_GET;
+        if (current)
+            SCHEDELAPSED_SET(--current);
+
+        if (current == 0)
+        {
+            FLAG_SCHEDQUANTUM_SET;
+            FLAG_SCHEDSWITCH_SET;
+        }
     }
 
     /* Chain to the generic routine */
