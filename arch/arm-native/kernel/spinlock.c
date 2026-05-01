@@ -40,11 +40,12 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     else
     {
         asm volatile(
+                ".syntax unified                \n\t"   // GCC/binutils default in inline asm is divided; clang requires unified
                 "1:     ldrex   %0, [%2]        \n\t"   // Load the lock value, gaining exclusive access
                 "       adds    %0, %0, #1      \n\t"   // Increase the lock value and update conditional bits
                 "       wfemi                   \n\t"   // Wait for event if lock value is negative
                 "       strexpl %1, %0, [%2]    \n\t"   // Try to exclusively write the lock value to memory if positive
-                "       rsbpls  %0, %1, #0      \n\t"   // Reverse substract and update conditionals:
+                "       rsbspl  %0, %1, #0      \n\t"   // Reverse substract and update conditionals:
                                                         // - if strex write was successful, %0 contains 0. #0 - %0 clears N flag.
                                                         // - If write failed %0 contains 1. #0 - %0 sets N flag (value 0xffffffff).
                 "       bmi     1b              \n\t"   // Try again if N flag is set (because of lock value, or write failure)

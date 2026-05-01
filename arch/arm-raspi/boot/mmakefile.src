@@ -5,7 +5,7 @@ include $(SRCDIR)/config/aros.cfg
 TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
                    bc/vars bc/font8x14 bc/screen_fb vc_fb
-USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
+USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
 USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
@@ -179,7 +179,7 @@ $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES
 
 $(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"
-	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static $(TARGET_C_LIBS) -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
 	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
 	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
 
@@ -190,7 +190,7 @@ $(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
 
 $(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
 	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
-	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm core.bin -o $@
+	@cd $(TARGETDIR) && $(TARGET_OBJCOPY) -I binary -O elf32-littlearm -B arm core.bin $@
 
 #MM
 distfiles-raspi-be : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
