@@ -6,6 +6,7 @@ USER_LDFLAGS := -static
 FILES := listbrowserclass
 
 FUNCS := \
+	getclass \
 	listbrowser_funcs
 
 #MM workbench-classes-reaction-listbrowser : includes linklibs

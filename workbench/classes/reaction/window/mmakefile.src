@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := windowclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-window : includes linklibs
 #MM workbench-classes-reaction-window-includes : \
 #MM     kernel-exec-includes \
@@ -14,7 +17,7 @@ FILES := windowclass
 #MM     kernel-layers-includes
 
 %build_module mmake=workbench-classes-reaction-window \
-    modname=window modtype=gadget \
-    files=$(FILES)
+    modname=window modtype=class \
+    files="$(FUNCS) $(FILES)"
 
 %common

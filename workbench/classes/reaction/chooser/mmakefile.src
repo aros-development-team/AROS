@@ -6,6 +6,7 @@ USER_LDFLAGS := -static
 FILES := chooserclass
 
 FUNCS := \
+	getclass \
 	chooser_funcs
 
 #MM workbench-classes-reaction-chooser : includes linklibs

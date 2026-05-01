@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := bitmapclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-bitmap : includes linklibs
 #MM workbench-classes-reaction-bitmap-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := bitmapclass
 
 %build_module mmake=workbench-classes-reaction-bitmap \
     modname=bitmap modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

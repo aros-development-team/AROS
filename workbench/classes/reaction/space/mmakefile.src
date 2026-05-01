@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := spaceclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-space : includes linklibs
 #MM workbench-classes-reaction-space-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := spaceclass
 
 %build_module mmake=workbench-classes-reaction-space \
     modname=space modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

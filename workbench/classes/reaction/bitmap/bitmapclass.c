@@ -61,9 +61,6 @@ static void bitmap_set(Class *cl, Object *o, struct opSet *msg)
             case BITMAP_Masking:
                 data->bd_Masking = (BOOL)tag->ti_Data;
                 break;
-            case BITMAP_Transparent:
-                data->bd_Transparent = (BOOL)tag->ti_Data;
-                break;
             case BITMAP_OffsetX:
                 data->bd_OffsetX = (WORD)tag->ti_Data;
                 break;
@@ -76,19 +73,13 @@ static void bitmap_set(Class *cl, Object *o, struct opSet *msg)
             case BITMAP_SelectMaskPlane:
                 data->bd_SelectMaskPlane = (UBYTE *)tag->ti_Data;
                 break;
-            case BITMAP_DisBitMap:
-                data->bd_DisBitMap = (struct BitMap *)tag->ti_Data;
-                break;
-            case BITMAP_DisMaskPlane:
-                data->bd_DisMaskPlane = (UBYTE *)tag->ti_Data;
-                break;
         }
     }
 }
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR BitMap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -107,14 +98,14 @@ IPTR Bitmap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR BitMap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR BitMap__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     bitmap_set(cl, o, msg);
@@ -123,7 +114,7 @@ IPTR Bitmap__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR BitMap__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct BitmapData *data = INST_DATA(cl, o);
 
@@ -161,10 +152,6 @@ IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
             *msg->opg_Storage = data->bd_Masking;
             return TRUE;
 
-        case BITMAP_Transparent:
-            *msg->opg_Storage = data->bd_Transparent;
-            return TRUE;
-
         case BITMAP_OffsetX:
             *msg->opg_Storage = data->bd_OffsetX;
             return TRUE;
@@ -176,10 +163,6 @@ IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case BITMAP_SelectBitMap:
             *msg->opg_Storage = (IPTR)data->bd_SelectBitMap;
             return TRUE;
-
-        case BITMAP_DisBitMap:
-            *msg->opg_Storage = (IPTR)data->bd_DisBitMap;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -187,7 +170,7 @@ IPTR Bitmap__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-IPTR Bitmap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
+IPTR BitMap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 {
     struct BitmapData *data = INST_DATA(cl, o);
     struct Image *im = (struct Image *)o;
@@ -226,16 +209,8 @@ IPTR Bitmap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 
         case IDS_DISABLED:
         case IDS_INACTIVEDISABLED:
-            if (data->bd_DisBitMap)
-            {
-                bm = data->bd_DisBitMap;
-                mask = data->bd_DisMaskPlane;
-            }
-            else
-            {
-                bm = data->bd_BitMap;
-                mask = data->bd_MaskPlane;
-            }
+            bm = data->bd_BitMap;
+            mask = data->bd_MaskPlane;
             break;
 
         case IDS_NORMAL:
@@ -259,9 +234,9 @@ IPTR Bitmap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
         BltBitMapRastPort(bm, srcX, srcY, rp, x, y, w, h, 0xC0);
     }
 
-    /* Ghost rendering for disabled state if no disabled bitmap */
+    /* Ghost rendering for disabled state */
     if ((msg->imp_State == IDS_DISABLED || msg->imp_State == IDS_INACTIVEDISABLED)
-        && !data->bd_DisBitMap && msg->imp_DrInfo)
+        && msg->imp_DrInfo)
     {
         UWORD ghostPat[] = { 0x4444, 0x1111 };
 

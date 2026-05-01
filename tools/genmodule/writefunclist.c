@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Write the functionlist to a file that can be included in the .conf file.
 */
@@ -90,6 +90,9 @@ void writefunclist(struct config *cfg)
 
                 if (funclistit->novararg)
                     fprintf(out, ".novararg\n");
+
+                if (funclistit->inlineguard)
+                    fprintf(out, ".inlineguard %s\n", funclistit->inlineguard);
 
                 if (funclistit->priv)
                     fprintf(out, ".private\n");

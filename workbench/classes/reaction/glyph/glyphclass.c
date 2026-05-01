@@ -39,9 +39,6 @@ static void glyph_set(Class *cl, Object *o, struct opSet *msg)
             case GLYPH_Glyph:
                 data->gd_Glyph = tag->ti_Data;
                 break;
-            case GLYPH_SoftStyle:
-                data->gd_SoftStyle = tag->ti_Data;
-                break;
         }
     }
 }
@@ -290,10 +287,6 @@ IPTR Glyph__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case GLYPH_Glyph:
             *msg->opg_Storage = data->gd_Glyph;
             return TRUE;
-
-        case GLYPH_SoftStyle:
-            *msg->opg_Storage = data->gd_SoftStyle;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -346,28 +339,33 @@ IPTR Glyph__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 
     switch (data->gd_Glyph)
     {
-        case GLYPH_ARROWUP:
         case GLYPH_UPARROW:
+        case GLYPH_BUPARROW:
             SetAPen(rp, fgPen);
             glyph_draw_arrow_up(rp, x + 2, y + 2, w - 4, h - 4);
             break;
 
-        case GLYPH_ARROWDOWN:
         case GLYPH_DOWNARROW:
+        case GLYPH_BDOWNARROW:
             SetAPen(rp, fgPen);
             glyph_draw_arrow_down(rp, x + 2, y + 2, w - 4, h - 4);
             break;
 
-        case GLYPH_ARROWLEFT:
         case GLYPH_LEFTARROW:
+        case GLYPH_BLEFTARROW:
             SetAPen(rp, fgPen);
             glyph_draw_arrow_left(rp, x + 2, y + 2, w - 4, h - 4);
             break;
 
-        case GLYPH_ARROWRIGHT:
         case GLYPH_RIGHTARROW:
+        case GLYPH_BRIGHTARROW:
             SetAPen(rp, fgPen);
             glyph_draw_arrow_right(rp, x + 2, y + 2, w - 4, h - 4);
+            break;
+
+        case GLYPH_DROPDOWN:
+        case GLYPH_DROPDOWNMENU:
+            glyph_draw_arrow_down(rp, x + 2, y + 2, w - 4, h - 4);
             break;
 
         case GLYPH_POPUP:
@@ -383,13 +381,12 @@ IPTR Glyph__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
             break;
 
         case GLYPH_POPFONT:
-        case GLYPH_POPSCREEN:
+        case GLYPH_POPSCREENMODE:
         case GLYPH_POPTIME:
-            /* These popup variants use the generic popup glyph */
             glyph_draw_popup(rp, pens, x, y, w, h);
             break;
 
-        case GLYPH_CHECKBOX:
+        case GLYPH_CHECKMARK:
             glyph_draw_checkbox(rp, pens, x, y, w, h);
             break;
 
@@ -397,8 +394,16 @@ IPTR Glyph__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
             glyph_draw_radiobutton(rp, pens, x, y, w, h);
             break;
 
-        default:
+        case GLYPH_CYCLE:
             glyph_draw_popup(rp, pens, x, y, w, h);
+            break;
+
+        case GLYPH_RETURNARROW:
+            SetAPen(rp, fgPen);
+            glyph_draw_arrow_right(rp, x + 2, y + 2, w - 4, h - 4);
+            break;
+
+        default:
             break;
     }
 

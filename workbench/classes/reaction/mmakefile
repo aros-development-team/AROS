@@ -30,4 +30,5 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-classes-reaction-glyph \
 #MM     workbench-classes-reaction-label \
 #MM     workbench-classes-reaction-led \
-#MM     workbench-classes-reaction-penmap
+#MM     workbench-classes-reaction-penmap \
+#MM     workbench-classes-reaction-requester

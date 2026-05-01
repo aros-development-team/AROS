@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+# Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -22,7 +22,9 @@ FILES := workbook workbook_intern \
 ## For the 'workbook.resource' embedded commands
 USER_CPPFLAGS += \
                -DUSE_EXEC_DEBUG \
-	       -DAROS_ROM
+               -DAROS_ROM
+USER_CPPFLAGS += \
+               -DINTUITION_INLINE_NEWOBJECT
 
 OBJDIR := $(OBJDIR).kernel
 

@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := stringclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-string : includes linklibs
 #MM workbench-classes-reaction-string-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := stringclass
 
 %build_module mmake=workbench-classes-reaction-string \
     modname=string modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

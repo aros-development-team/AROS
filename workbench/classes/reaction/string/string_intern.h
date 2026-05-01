@@ -20,17 +20,21 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct StringBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct StringGadData
 {
-    ULONG           sd_MaxChars;        /* Maximum characters allowed */
-    STRPTR          sd_Buffer;          /* String buffer */
-    ULONG           sd_BufferPos;       /* Cursor position in buffer */
-    ULONG           sd_DispPos;         /* Display position (first visible char) */
-    ULONG           sd_Justification;   /* Text justification */
-    struct Hook    *sd_EditHook;        /* Custom edit hook */
-    BOOL            sd_ReplaceMode;     /* Replace mode (overwrite vs insert) */
+    UWORD           sd_MinVisible;      /* Minimum visible characters for sizing */
+    UWORD           sd_HookType;        /* Built-in hook type (SHK_*) */
 };
 
 #endif /* STRING_INTERN_H */

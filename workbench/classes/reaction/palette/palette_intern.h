@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct PaletteBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct PaletteGadData
@@ -26,7 +35,6 @@ struct PaletteGadData
     ULONG           pd_Color;           /* Selected color index */
     ULONG           pd_ColorOffset;     /* First color in palette range */
     ULONG           pd_NumColors;       /* Number of colors to display */
-    UWORD           pd_ColorsPerRow;    /* Colors per row in the grid */
 };
 
 #endif /* PALETTE_INTERN_H */

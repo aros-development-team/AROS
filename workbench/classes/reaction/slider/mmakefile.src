@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := sliderclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-slider : includes linklibs
 #MM workbench-classes-reaction-slider-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := sliderclass
 
 %build_module mmake=workbench-classes-reaction-slider \
     modname=slider modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

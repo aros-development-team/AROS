@@ -41,7 +41,7 @@ static void checkbox_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case CHECKBOX_Checked:
+            case GA_Selected:
                 data->cd_Checked = (BOOL)tag->ti_Data;
                 break;
             case CHECKBOX_TextPen:
@@ -50,8 +50,8 @@ static void checkbox_set(Class *cl, Object *o, struct opSet *msg)
             case CHECKBOX_BackgroundPen:
                 data->cd_BackgroundPen = (UWORD)tag->ti_Data;
                 break;
-            case CHECKBOX_FillPen:
-                data->cd_FillPen = (UWORD)tag->ti_Data;
+            case CHECKBOX_FillTextPen:
+                data->cd_FillTextPen = (UWORD)tag->ti_Data;
                 break;
             case CHECKBOX_TextPlace:
                 data->cd_TextPlace = tag->ti_Data;
@@ -62,7 +62,7 @@ static void checkbox_set(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Checkbox__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR CheckBox__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -81,14 +81,14 @@ IPTR Checkbox__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Checkbox__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR CheckBox__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR Checkbox__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR CheckBox__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     checkbox_set(cl, o, msg);
@@ -97,13 +97,13 @@ IPTR Checkbox__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR Checkbox__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR CheckBox__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct CheckboxData *data = INST_DATA(cl, o);
 
     switch (msg->opg_AttrID)
     {
-        case CHECKBOX_Checked:
+        case GA_Selected:
             *msg->opg_Storage = data->cd_Checked;
             return TRUE;
 
@@ -115,8 +115,8 @@ IPTR Checkbox__OM_GET(Class *cl, Object *o, struct opGet *msg)
             *msg->opg_Storage = data->cd_BackgroundPen;
             return TRUE;
 
-        case CHECKBOX_FillPen:
-            *msg->opg_Storage = data->cd_FillPen;
+        case CHECKBOX_FillTextPen:
+            *msg->opg_Storage = data->cd_FillTextPen;
             return TRUE;
 
         case CHECKBOX_TextPlace:
@@ -169,7 +169,7 @@ static void checkbox_render_box(struct RastPort *rp, struct DrawInfo *dri,
     }
 }
 
-IPTR Checkbox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
+IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct CheckboxData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
@@ -233,7 +233,7 @@ IPTR Checkbox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
 /******************************************************************************/
 
-IPTR Checkbox__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
+IPTR CheckBox__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct CheckboxData *data = INST_DATA(cl, o);
     struct Gadget *gad = G(o);
@@ -268,7 +268,7 @@ IPTR Checkbox__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
 /******************************************************************************/
 
-IPTR Checkbox__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
+IPTR CheckBox__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     return GMR_MEACTIVE;
 }

@@ -134,10 +134,6 @@ static void layout_set(Class *cl, Object *o, struct opSet *msg)
                 data->ld_BevelStyle = tag->ti_Data;
                 break;
 
-            case LAYOUT_Alignment:
-                data->ld_Alignment = tag->ti_Data;
-                break;
-
             case LAYOUT_EvenSize:
                 data->ld_EvenSize = (BOOL)tag->ti_Data;
                 break;
@@ -162,11 +158,8 @@ static void layout_set(Class *cl, Object *o, struct opSet *msg)
                 data->ld_LabelPlace = tag->ti_Data;
                 break;
 
-            case LAYOUT_HorizSpacing:
+            case LAYOUT_InnerSpacing:
                 data->ld_HorizSpacing = (UWORD)tag->ti_Data;
-                break;
-
-            case LAYOUT_VertSpacing:
                 data->ld_VertSpacing = (UWORD)tag->ti_Data;
                 break;
 
@@ -234,24 +227,7 @@ static void layout_set(Class *cl, Object *o, struct opSet *msg)
                 break;
             }
 
-            case LAYOUT_RemoveImage:
-            {
-                Object *img = (Object *)tag->ti_Data;
-                struct LayoutChild *node, *next;
 
-                ForeachNodeSafe(&data->ld_Children, node, next)
-                {
-                    if (node->lc_Object == img && node->lc_IsImage)
-                    {
-                        Remove((struct Node *)node);
-                        node->lc_NoDispose = TRUE;
-                        free_child(node);
-                        data->ld_DomainValid = FALSE;
-                        break;
-                    }
-                }
-                break;
-            }
         }
     }
 }

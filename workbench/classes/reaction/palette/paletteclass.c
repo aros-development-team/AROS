@@ -24,7 +24,7 @@
 
 #include "palette_intern.h"
 
-#define PaletteGadBase ((struct Library *)(cl->cl_UserData))
+#define PaletteBase ((struct Library *)(cl->cl_UserData))
 
 /******************************************************************************/
 
@@ -47,16 +47,13 @@ static void palette_set(Class *cl, Object *o, struct opSet *msg)
             case PALETTE_NumColors:
                 data->pd_NumColors = tag->ti_Data;
                 break;
-            case PALETTE_ColorsPerRow:
-                data->pd_ColorsPerRow = (UWORD)tag->ti_Data;
-                break;
         }
     }
 }
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
+IPTR Palette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
@@ -69,7 +66,6 @@ IPTR PaletteGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         /* Set defaults */
         data->pd_NumColors    = 8;
-        data->pd_ColorsPerRow = 8;
         data->pd_ColorOffset  = 0;
         data->pd_Color        = 0;
 
@@ -81,14 +77,14 @@ IPTR PaletteGad__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_DISPOSE(Class *cl, Object *o, Msg msg)
+IPTR Palette__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     return DoSuperMethodA(cl, o, msg);
 }
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
+IPTR Palette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     palette_set(cl, o, msg);
@@ -97,7 +93,7 @@ IPTR PaletteGad__OM_SET(Class *cl, Object *o, struct opSet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
+IPTR Palette__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct PaletteGadData *data = INST_DATA(cl, o);
 
@@ -114,10 +110,6 @@ IPTR PaletteGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
         case PALETTE_NumColors:
             *msg->opg_Storage = data->pd_NumColors;
             return TRUE;
-
-        case PALETTE_ColorsPerRow:
-            *msg->opg_Storage = data->pd_ColorsPerRow;
-            return TRUE;
     }
 
     return DoSuperMethodA(cl, o, (Msg)msg);
@@ -125,7 +117,7 @@ IPTR PaletteGad__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-IPTR PaletteGad__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
+IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct PaletteGadData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
@@ -147,9 +139,8 @@ IPTR PaletteGad__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     w = gad->Width;
     h = gad->Height;
 
-    cols = data->pd_ColorsPerRow;
+    cols = data->pd_NumColors;
     if (cols == 0) cols = 1;
-    if (cols > data->pd_NumColors) cols = data->pd_NumColors;
 
     rows = (data->pd_NumColors + cols - 1) / cols;
     if (rows == 0) rows = 1;

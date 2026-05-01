@@ -71,7 +71,7 @@ static void getscreenmode_set(Class *cl, Object *o, struct opSet *msg)
             case GETSCREENMODE_DoDepth:
                 data->dodepth = (BOOL)tag->ti_Data;
                 break;
-            case GETSCREENMODE_DoOverscan:
+            case GETSCREENMODE_DoOverscanType:
                 data->dooverscan = (BOOL)tag->ti_Data;
                 break;
             case GETSCREENMODE_DoAutoScroll:

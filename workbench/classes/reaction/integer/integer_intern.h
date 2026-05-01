@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct IntegerBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct IntegerData
@@ -28,8 +37,6 @@ struct IntegerData
     LONG    maximum;
     ULONG   maxchars;
     BOOL    arrows;
-    LONG    incdecamount;
-    ULONG   justification;
 };
 
 #endif /* INTEGER_INTERN_H */

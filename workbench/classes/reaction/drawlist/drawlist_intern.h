@@ -19,10 +19,18 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct DrawListBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct DrawListData
 {
-    struct DrawList *dd_Directives;      /* Array of drawing directives */
-    ULONG           dd_NumDirectives;    /* Number of directives */
+    struct DrawList *dd_Directives;      /* DLST_END terminated directive array */
 };
 
 #endif /* DRAWLIST_INTERN_H */

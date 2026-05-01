@@ -13,60 +13,46 @@
 #ifndef EXEC_LISTS_H
 #include <exec/lists.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
 
-/*
- * clicktab.gadget - ClassAct/ReAction compatible tabbed gadget
- *
- * Superclass: gadgetclass
- * Include:    <gadgets/clicktab.h>
- */
-
-#define CLICKTAB_CLASSNAME  "gadgets/clicktab.gadget"
+#define CLICKTAB_CLASSNAME  "clicktab.gadget"
 #define CLICKTAB_VERSION    44
 
-/* Tag base */
-#define CLICKTAB_Dummy      (TAG_USER + 0x50000)
+/* ClickTabNode attributes */
+#define TNA_Dummy           (TAG_USER + 0x010000)
+#define TNA_UserData        (TNA_Dummy + 1)  /* (APTR) User data pointer */
+#define TNA_Enabled         (TNA_Dummy + 2)  /* Obsolete, not implemented */
+#define TNA_Spacing         (TNA_Dummy + 3)  /* Obsolete */
+#define TNA_Highlight       (TNA_Dummy + 4)  /* Obsolete */
+#define TNA_Image           (TNA_Dummy + 5)  /* (struct Image *) Render image */
+#define TNA_SelImage        (TNA_Dummy + 6)  /* (struct Image *) Selected image */
+#define TNA_Text            (TNA_Dummy + 7)  /* (STRPTR) Tab label string */
+#define TNA_Number          (TNA_Dummy + 8)  /* (WORD) Numeric tab ID */
+#define TNA_TextPen         (TNA_Dummy + 9)  /* (WORD) Pen for tab text */
+#define TNA_Disabled        (TNA_Dummy + 10) /* (BOOL) Tab disabled state (V42) */
 
-/* Attributes */
-/* (I..) Exec list of ClickTabNode items */
-#define CLICKTAB_Labels         (CLICKTAB_Dummy + 0x0001)
-/* (ISG) Currently selected tab (0-based) */
-#define CLICKTAB_Current        (CLICKTAB_Dummy + 0x0002)
-/* (I..) Total number of tabs */
-#define CLICKTAB_NumTabs        (CLICKTAB_Dummy + 0x0003)
-/* (I..) Page object (for automatic page switching) */
-#define CLICKTAB_PageObject     (CLICKTAB_Dummy + 0x0004)
-/* (I..) Page group */
-#define CLICKTAB_PageGroup      (CLICKTAB_Dummy + 0x0005)
-/* (I..) CloseImage - for closeable tabs */
-#define CLICKTAB_CloseImage     (CLICKTAB_Dummy + 0x0006)
-/* (I..) Flag image */
-#define CLICKTAB_FlagImage      (CLICKTAB_Dummy + 0x0007)
-/* (I..) Label truncation */
-#define CLICKTAB_LabelTruncate  (CLICKTAB_Dummy + 0x0008)
-/* (I..) Current clicked tab */
-#define CLICKTAB_CurrentNode    (CLICKTAB_Dummy + 0x0009)
-/* (I..) Tab background pen */
-#define CLICKTAB_BackgroundPen  (CLICKTAB_Dummy + 0x000A)
+/* ClickTab gadget attributes */
+#define CLICKTAB_Dummy              (REACTION_Dummy + 0x27000)
+#define CLICKTAB_Labels             (CLICKTAB_Dummy + 1) /* (struct List *) Tab node list */
+#define CLICKTAB_Current            (CLICKTAB_Dummy + 2) /* (WORD) Selected tab index */
+#define CLICKTAB_CurrentNode        (CLICKTAB_Dummy + 3) /* (struct Node *) Selected tab node */
+#define CLICKTAB_Orientation        (CLICKTAB_Dummy + 4) /* (WORD) Layout orientation */
+#define CLICKTAB_PageGroup          (CLICKTAB_Dummy + 5) /* (Object *) Embedded page object (V42) */
+#define CLICKTAB_PageGroupBackFill  (CLICKTAB_Dummy + 6) /* (Object *) Page + backfill ptr (V42) */
 
-/* ClickTabNode attributes (for AllocClickTabNodeA) */
-#define TNA_Dummy           (TAG_USER + 0x50100)
-#define TNA_Text            (TNA_Dummy + 0x0001)
-#define TNA_Number          (TNA_Dummy + 0x0002)
-#define TNA_Disabled        (TNA_Dummy + 0x0003)
-#define TNA_Image           (TNA_Dummy + 0x0004)
-#define TNA_SelImage        (TNA_Dummy + 0x0005)
-#define TNA_UserData        (TNA_Dummy + 0x0006)
-#define TNA_Closable        (TNA_Dummy + 0x0007)
-#define TNA_Flagged         (TNA_Dummy + 0x0008)
-#define TNA_CloseGadget     (TNA_Dummy + 0x0009)
-#define TNA_HintInfo        (TNA_Dummy + 0x000A)
+/* CLICKTAB_Orientation modes */
+#define CTORIENT_HORIZ      0
+#define CTORIENT_VERT       1
+#define CTORIENT_HORIZFLIP  2
+#define CTORIENT_VERTFLIP   3
 
-/* Object creation macros */
+#ifndef ClickTabObject
 #define ClickTabObject  NewObject(NULL, CLICKTAB_CLASSNAME
+#endif
+#ifndef ClickTabEnd
 #define ClickTabEnd     TAG_END)
+#endif
 
 #endif /* GADGETS_CLICKTAB_H */

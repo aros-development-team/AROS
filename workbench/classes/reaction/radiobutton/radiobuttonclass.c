@@ -54,10 +54,6 @@ static void radiobutton_set(Class *cl, Object *o, struct opSet *msg)
                 data->spacing = (UWORD)tag->ti_Data;
                 break;
 
-            case RADIOBUTTON_Orientation:
-                data->orientation = (ULONG)tag->ti_Data;
-                break;
-
             case RADIOBUTTON_LabelPlace:
                 data->labelplace = (ULONG)tag->ti_Data;
                 break;
@@ -81,7 +77,6 @@ IPTR RadioButton__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         /* Set defaults */
         data->selected    = 0;
         data->spacing     = 4;
-        data->orientation = 0; /* vertical */
 
         radiobutton_set(cl, (Object *)retval, msg);
     }
@@ -127,10 +122,6 @@ IPTR RadioButton__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case RADIOBUTTON_Spacing:
             *msg->opg_Storage = (IPTR)data->spacing;
-            break;
-
-        case RADIOBUTTON_Orientation:
-            *msg->opg_Storage = (IPTR)data->orientation;
             break;
 
         case RADIOBUTTON_LabelPlace:
@@ -182,18 +173,9 @@ IPTR RadioButton__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     index = 0;
     for (node = data->labels->lh_Head; node->ln_Succ; node = node->ln_Succ)
     {
-        if (data->orientation == 0)
-        {
-            /* Vertical layout */
-            cx = x + RADIO_RADIUS;
-            cy = y + (itemh / 2);
-        }
-        else
-        {
-            /* Horizontal layout */
-            cx = x + RADIO_RADIUS;
-            cy = y + (itemh / 2);
-        }
+        /* Vertical layout */
+        cx = x + RADIO_RADIUS;
+        cy = y + (itemh / 2);
 
         /* Draw outer circle - shadow */
         SetAPen(rp, pens[SHADOWPEN]);
@@ -227,17 +209,7 @@ IPTR RadioButton__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         }
 
         /* Advance to next item position */
-        if (data->orientation == 0)
-        {
-            y += itemh;
-        }
-        else
-        {
-            WORD labelw = 0;
-            if (node->ln_Name)
-                labelw = TextLength(rp, node->ln_Name, strlen(node->ln_Name));
-            x += itemw + labelw + data->spacing;
-        }
+        y += itemh;
 
         index++;
     }

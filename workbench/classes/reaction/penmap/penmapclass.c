@@ -37,35 +37,32 @@ static void penmap_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
-            case PENMAP_PenMap:
-                data->pd_PenMap = (UBYTE *)tag->ti_Data;
+            case PENMAP_SelectBGPen:
+                data->pd_SelectBGPen = (WORD)tag->ti_Data;
                 break;
-            case PENMAP_Width:
-                data->pd_Width = (UWORD)tag->ti_Data;
+            case PENMAP_SelectData:
+                data->pd_SelectData = (UBYTE *)tag->ti_Data;
                 break;
-            case PENMAP_Height:
-                data->pd_Height = (UWORD)tag->ti_Data;
+            case PENMAP_Palette:
+                data->pd_Palette = (APTR)tag->ti_Data;
                 break;
             case PENMAP_Screen:
                 data->pd_Screen = (struct Screen *)tag->ti_Data;
                 break;
+            case PENMAP_ImageType:
+                data->pd_ImageType = (UWORD)tag->ti_Data;
+                break;
+            case PENMAP_Transparent:
+                data->pd_Transparent = (UWORD)tag->ti_Data;
+                break;
             case PENMAP_Precision:
                 data->pd_Precision = tag->ti_Data;
                 break;
-            case PENMAP_SelectPenMap:
-                data->pd_SelectPenMap = (UBYTE *)tag->ti_Data;
+            case PENMAP_ColorMap:
+                data->pd_ColorMap = (struct ColorMap *)tag->ti_Data;
                 break;
-            case PENMAP_DisPenMap:
-                data->pd_DisPenMap = (UBYTE *)tag->ti_Data;
-                break;
-            case PENMAP_Transparent:
-                data->pd_Transparent = (UBYTE)tag->ti_Data;
-                break;
-            case PENMAP_NumColors:
-                data->pd_NumColors = (UWORD)tag->ti_Data;
-                break;
-            case PENMAP_RGBData:
-                data->pd_RGBData = (ULONG *)tag->ti_Data;
+            case PENMAP_MaskBlit:
+                data->pd_MaskBlit = (BOOL)tag->ti_Data;
                 break;
         }
     }
@@ -150,44 +147,40 @@ IPTR PenMap__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case PENMAP_PenMap:
-            *msg->opg_Storage = (IPTR)data->pd_PenMap;
+        case PENMAP_SelectBGPen:
+            *msg->opg_Storage = data->pd_SelectBGPen;
             return TRUE;
 
-        case PENMAP_Width:
-            *msg->opg_Storage = data->pd_Width;
+        case PENMAP_SelectData:
+            *msg->opg_Storage = (IPTR)data->pd_SelectData;
             return TRUE;
 
-        case PENMAP_Height:
-            *msg->opg_Storage = data->pd_Height;
+        case PENMAP_Palette:
+            *msg->opg_Storage = (IPTR)data->pd_Palette;
             return TRUE;
 
         case PENMAP_Screen:
             *msg->opg_Storage = (IPTR)data->pd_Screen;
             return TRUE;
 
-        case PENMAP_Precision:
-            *msg->opg_Storage = data->pd_Precision;
-            return TRUE;
-
-        case PENMAP_SelectPenMap:
-            *msg->opg_Storage = (IPTR)data->pd_SelectPenMap;
-            return TRUE;
-
-        case PENMAP_DisPenMap:
-            *msg->opg_Storage = (IPTR)data->pd_DisPenMap;
+        case PENMAP_ImageType:
+            *msg->opg_Storage = data->pd_ImageType;
             return TRUE;
 
         case PENMAP_Transparent:
             *msg->opg_Storage = data->pd_Transparent;
             return TRUE;
 
-        case PENMAP_NumColors:
-            *msg->opg_Storage = data->pd_NumColors;
+        case PENMAP_Precision:
+            *msg->opg_Storage = data->pd_Precision;
             return TRUE;
 
-        case PENMAP_RGBData:
-            *msg->opg_Storage = (IPTR)data->pd_RGBData;
+        case PENMAP_ColorMap:
+            *msg->opg_Storage = (IPTR)data->pd_ColorMap;
+            return TRUE;
+
+        case PENMAP_MaskBlit:
+            *msg->opg_Storage = data->pd_MaskBlit;
             return TRUE;
     }
 
@@ -215,35 +208,32 @@ IPTR PenMap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     w = im->Width;
     h = im->Height;
 
-    /* Select appropriate penmap based on state */
+    /* Select appropriate penmap based on state.
+     * Normal data comes from IA_Data (PENMAP_RenderData),
+     * selected data from PENMAP_SelectData.
+     */
     switch (msg->imp_State)
     {
         case IDS_SELECTED:
         case IDS_INACTIVESELECTED:
-            penmap = data->pd_SelectPenMap ? data->pd_SelectPenMap : data->pd_PenMap;
-            break;
-
-        case IDS_DISABLED:
-        case IDS_INACTIVEDISABLED:
-            penmap = data->pd_DisPenMap ? data->pd_DisPenMap : data->pd_PenMap;
+            penmap = data->pd_SelectData ? data->pd_SelectData : (UBYTE *)im->ImageData;
             break;
 
         default:
-            penmap = data->pd_PenMap;
+            penmap = (UBYTE *)im->ImageData;
             break;
     }
 
-    if (!penmap)
+    if (!penmap || w <= 0 || h <= 0)
         return FALSE;
 
     SetDrMd(rp, JAM1);
 
-    penmap_render(rp, penmap, data->pd_Width, data->pd_Height,
+    penmap_render(rp, penmap, w, h,
         x, y, w, h, data->pd_Transparent);
 
-    /* Draw disabled ghosting if no specific disabled penmap */
-    if ((msg->imp_State == IDS_DISABLED || msg->imp_State == IDS_INACTIVEDISABLED)
-        && !data->pd_DisPenMap)
+    /* Draw disabled ghosting */
+    if (msg->imp_State == IDS_DISABLED || msg->imp_State == IDS_INACTIVEDISABLED)
     {
         UWORD ghostPat[] = { 0x2222, 0x8888 };
 

@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := drawlistclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-drawlist : includes linklibs
 #MM workbench-classes-reaction-drawlist-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := drawlistclass
 
 %build_module mmake=workbench-classes-reaction-drawlist \
     modname=drawlist modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

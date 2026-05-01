@@ -37,9 +37,6 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
             case CNA_Disabled:
                 cn->cn_Disabled = (BOOL)tag->ti_Data;
                 break;
-            case CNA_Selected:
-                cn->cn_Selected = (BOOL)tag->ti_Data;
-                break;
             case CNA_Separator:
                 cn->cn_Separator = (BOOL)tag->ti_Data;
                 break;
@@ -64,7 +61,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 5, Chooser)
+        struct Library *, ChooserBase, 6, Chooser)
 
 /*  FUNCTION
         Allocates and initializes a ChooserNode for use with
@@ -103,7 +100,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct Node *, node, A0),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 6, Chooser)
+        struct Library *, ChooserBase, 7, Chooser)
 
 /*  FUNCTION
         Frees a ChooserNode previously allocated with AllocChooserNodeA.
@@ -133,7 +130,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 7, Chooser)
+        struct Library *, ChooserBase, 8, Chooser)
 
 /*  FUNCTION
         Sets attributes on an existing ChooserNode.
@@ -164,7 +161,7 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ChooserBase, 8, Chooser)
+        struct Library *, ChooserBase, 9, Chooser)
 
 /*  FUNCTION
         Gets attributes from a ChooserNode. Each tag's ti_Data is
@@ -203,9 +200,6 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
                 break;
             case CNA_Disabled:
                 *store = (IPTR)cn->cn_Disabled;
-                break;
-            case CNA_Selected:
-                *store = (IPTR)cn->cn_Selected;
                 break;
             case CNA_Separator:
                 *store = (IPTR)cn->cn_Separator;

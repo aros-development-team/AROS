@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := bevelclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-bevel : includes linklibs
 #MM workbench-classes-reaction-bevel-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := bevelclass
 
 %build_module mmake=workbench-classes-reaction-bevel \
     modname=bevel modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

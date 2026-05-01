@@ -20,6 +20,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct SpeedBarBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct SpeedBarData
@@ -29,8 +38,6 @@ struct SpeedBarData
     ULONG           sd_BevelStyle;      /* Bevel style for buttons */
     struct Window   *sd_Window;         /* Parent window */
     BOOL            sd_EvenSize;        /* Force even button sizing */
-    BOOL            sd_RaisedButtons;   /* Draw raised button frames */
-    BOOL            sd_SmallImages;     /* Use small images */
 };
 
 #endif /* SPEEDBAR_INTERN_H */

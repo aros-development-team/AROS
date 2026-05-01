@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct BevelBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 struct BevelData
 {
     ULONG           bd_Style;           /* Bevel style (BVS_*) */
@@ -26,7 +35,6 @@ struct BevelData
     ULONG           bd_LabelPlace;      /* Label placement */
     UWORD           bd_TextPen;         /* Text pen */
     UWORD           bd_FillPen;         /* Fill pen */
-    UWORD           bd_FillTextPen;     /* Fill text pen */
 };
 
 #endif /* BEVEL_INTERN_H */

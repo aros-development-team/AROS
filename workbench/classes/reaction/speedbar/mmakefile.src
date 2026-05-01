@@ -5,6 +5,10 @@ USER_LDFLAGS := -static
 
 FILES := speedbarclass
 
+FUNCS := \
+	getclass \
+	speedbar_funcs
+
 #MM workbench-classes-reaction-speedbar : includes linklibs
 #MM workbench-classes-reaction-speedbar-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +18,6 @@ FILES := speedbarclass
 
 %build_module mmake=workbench-classes-reaction-speedbar \
     modname=speedbar modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

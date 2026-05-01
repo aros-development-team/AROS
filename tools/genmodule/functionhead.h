@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
@@ -44,6 +44,7 @@ struct functionhead {
     int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
     int unusedlibbase : 1; /* Libbase must no be made available internally */
+    char *inlineguard; /* If set, vararg inline is guarded by #if defined(guard) */
 };
 
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall);

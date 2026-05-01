@@ -12,6 +12,8 @@ USER_CPPFLAGS := \
                -D__INTUITION_NOLIBBASE__ \
                -D__KEYMAP_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += \
+               -DINTUITION_INLINE_NEWOBJECT
 USER_LDFLAGS := -static
 
 %build_module mmake=kernel-console \

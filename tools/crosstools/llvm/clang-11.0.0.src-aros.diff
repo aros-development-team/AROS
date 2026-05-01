@@ -124,13 +124,13 @@ diff -ruN clang-11.0.0.src/lib/Basic/Targets.cpp clang-11.0.0.src.aros/lib/Basic
      case llvm::Triple::FreeBSD:
 @@ -180,6 +185,11 @@
        return new DarwinARMTargetInfo(Triple, Opts);
- 
+
      switch (os) {
 +    //  FIXME:
-+    //  Needs to be tested before inclusion!!!
++    //  Needs to be tested!!!
 +    //  New Target AROS ARMle
-+    //  case llvm::Triple::AROS:
-+    //    return new AROSTargetInfo<ARMleTargetInfo>(Triple, Opts);
++    case llvm::Triple::AROS:
++      return new AROSTargetInfo<ARMleTargetInfo>(Triple, Opts);
      case llvm::Triple::CloudABI:
        return new CloudABITargetInfo<ARMleTargetInfo>(Triple, Opts);
      case llvm::Triple::Linux:

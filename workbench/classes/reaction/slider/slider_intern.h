@@ -19,6 +19,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct SliderBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct SliderData
@@ -30,9 +39,6 @@ struct SliderData
     UWORD           sd_Ticks;           /* Number of major tick marks */
     UWORD           sd_ShortTicks;      /* Number of minor tick marks between major ticks */
     BOOL            sd_Invert;          /* Invert direction */
-    STRPTR          sd_LevelFormat;     /* printf-style format for level display */
-    ULONG           sd_LevelPlace;      /* Placement of level text (PLACETEXT_xxx) */
-    UWORD           sd_LevelMaxLen;     /* Maximum length of level text */
 };
 
 #endif /* SLIDER_INTERN_H */

@@ -46,18 +46,6 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
             case TNA_UserData:
                 tn->tn_UserData = (APTR)tag->ti_Data;
                 break;
-            case TNA_Closable:
-                tn->tn_Closable = (BOOL)tag->ti_Data;
-                break;
-            case TNA_Flagged:
-                tn->tn_Flagged = (BOOL)tag->ti_Data;
-                break;
-            case TNA_CloseGadget:
-                tn->tn_CloseGadget = (Object *)tag->ti_Data;
-                break;
-            case TNA_HintInfo:
-                tn->tn_HintInfo = (STRPTR)tag->ti_Data;
-                break;
         }
     }
 }
@@ -73,7 +61,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 5, ClickTab)
+        struct Library *, ClickTabBase, 6, ClickTab)
 
 /*  FUNCTION
         Allocates and initializes a ClickTabNode for use with
@@ -112,7 +100,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct Node *, node, A0),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 6, ClickTab)
+        struct Library *, ClickTabBase, 7, ClickTab)
 
 /*  FUNCTION
         Frees a ClickTabNode previously allocated with AllocClickTabNodeA.
@@ -142,7 +130,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 7, ClickTab)
+        struct Library *, ClickTabBase, 8, ClickTab)
 
 /*  FUNCTION
         Sets attributes on an existing ClickTabNode.
@@ -173,7 +161,7 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
         AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-        struct Library *, ClickTabBase, 8, ClickTab)
+        struct Library *, ClickTabBase, 9, ClickTab)
 
 /*  FUNCTION
         Gets attributes from a ClickTabNode. Each tag's ti_Data is
@@ -221,18 +209,6 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
                 break;
             case TNA_UserData:
                 *store = (IPTR)tn->tn_UserData;
-                break;
-            case TNA_Closable:
-                *store = (IPTR)tn->tn_Closable;
-                break;
-            case TNA_Flagged:
-                *store = (IPTR)tn->tn_Flagged;
-                break;
-            case TNA_CloseGadget:
-                *store = (IPTR)tn->tn_CloseGadget;
-                break;
-            case TNA_HintInfo:
-                *store = (IPTR)tn->tn_HintInfo;
                 break;
         }
     }

@@ -10,37 +10,46 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
+#endif
+#ifndef INTUITION_GADGETCLASS_H
+#include <intuition/gadgetclass.h>
 #endif
 
-#define SLIDER_CLASSNAME        "gadgets/slider.gadget"
+#define SLIDER_CLASSNAME        "slider.gadget"
 #define SLIDER_VERSION          44
 
-#define SLIDER_Dummy            (TAG_USER + 0x100000)
+#define SLIDER_Dummy            (REACTION_Dummy + 0x0028000)
 
-#define SLIDER_Min              (SLIDER_Dummy + 0x0001)
-#define SLIDER_Max              (SLIDER_Dummy + 0x0002)
-#define SLIDER_Level            (SLIDER_Dummy + 0x0003)
-#define SLIDER_Orientation      (SLIDER_Dummy + 0x0004)
-#define SLIDER_Ticks            (SLIDER_Dummy + 0x0005)
-#define SLIDER_ShortTicks       (SLIDER_Dummy + 0x0006)
-#define SLIDER_Invert           (SLIDER_Dummy + 0x0007)
-#define SLIDER_LevelFormat      (SLIDER_Dummy + 0x0008)
-#define SLIDER_LevelPlace       (SLIDER_Dummy + 0x0009)
-#define SLIDER_LevelMaxLen      (SLIDER_Dummy + 0x000A)
-#define SLIDER_KnobDelta        (SLIDER_Dummy + 0x000B)
+#define SLIDER_Min              (SLIDER_Dummy + 1)   /* Minimum value (WORD) */
+#define SLIDER_Max              (SLIDER_Dummy + 2)   /* Maximum value (WORD) */
+#define SLIDER_Level            (SLIDER_Dummy + 3)   /* Current level (WORD) */
+#define SLIDER_Orientation      (SLIDER_Dummy + 4)   /* Horizontal or vertical (WORD) */
+#define SLIDER_DispHook         (SLIDER_Dummy + 5)   /* Display hook (struct Hook *) */
+#define SLIDER_Ticks            (SLIDER_Dummy + 6)   /* Number of tick marks (LONG) */
+#define SLIDER_ShortTicks       (SLIDER_Dummy + 7)   /* Use short ticks (BOOL) */
+#define SLIDER_TickSize         (SLIDER_Dummy + 8)   /* Tick mark size (WORD) */
+#define SLIDER_KnobImage        (SLIDER_Dummy + 9)   /* Custom knob image (struct Image *) */
+#define SLIDER_BodyFill         (SLIDER_Dummy + 10)  /* Body fill pen (WORD) */
+#define SLIDER_BodyImage        (SLIDER_Dummy + 11)  /* Custom body image (struct Image *) */
+#define SLIDER_Gradient         (SLIDER_Dummy + 12)  /* Gradient mode (BOOL) */
+#define SLIDER_PenArray         (SLIDER_Dummy + 13)  /* Gradient pen array (UWORD *) */
+#define SLIDER_Invert           (SLIDER_Dummy + 14)  /* Invert min/max positions (BOOL) */
+#define SLIDER_KnobDelta        (SLIDER_Dummy + 15)  /* Knob movement delta (WORD) */
 
-#define SLIDER_HORIZONTAL       0
-#define SLIDER_VERTICAL         1
+/* Orientation modes */
+#define SORIENT_HORIZ           FREEHORIZ
+#define SORIENT_VERT            FREEVERT
 
-#define PLACETEXT_LEFT   (1 << 0)
-#define PLACETEXT_RIGHT  (1 << 1)
-#define PLACETEXT_ABOVE  (1 << 2)
-#define PLACETEXT_BELOW  (1 << 3)
-#define PLACETEXT_IN     (1 << 4)
+#define SLIDER_HORIZONTAL       SORIENT_HORIZ
+#define SLIDER_VERTICAL         SORIENT_VERT
 
+#ifndef SliderObject
 #define SliderObject    NewObject(NULL, SLIDER_CLASSNAME
+#endif
+#ifndef SliderEnd
 #define SliderEnd       TAG_END)
+#endif
 
 #endif /* GADGETS_SLIDER_H */

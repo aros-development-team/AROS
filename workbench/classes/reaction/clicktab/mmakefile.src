@@ -6,6 +6,7 @@ USER_LDFLAGS := -static
 FILES := clicktabclass
 
 FUNCS := \
+	getclass \
 	clicktab_funcs
 
 #MM workbench-classes-reaction-clicktab : includes linklibs

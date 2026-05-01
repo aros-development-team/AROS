@@ -10,10 +10,20 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <intuition/classes.h>
 #include <intuition/gadgetclass.h>
 #include <gadgets/listbrowser.h>
 
 #include LC_LIBDEFS_FILE
+
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct ListBrowserBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
 
 /* Per-column data in a ListBrowserNode */
 struct LBColumnEntry
@@ -23,10 +33,9 @@ struct LBColumnEntry
     Object *lbce_Image;
     UBYTE   lbce_FGPen;
     UBYTE   lbce_BGPen;
-    UBYTE   lbce_Justification;
+    UBYTE   lbce_HorizJustify;
     UBYTE   lbce_Editable;
     UWORD   lbce_MaxChars;
-    UBYTE   lbce_HorizJustify;
     BOOL    lbce_CopyText;      /* TRUE if text was copied (needs freeing) */
 };
 
@@ -50,7 +59,6 @@ struct ListBrowserData
 {
     struct List        *lbd_Labels;
     struct ColumnInfo  *lbd_ColumnInfo;
-    UWORD               lbd_NumColumns;
     LONG                lbd_Selected;
     LONG                lbd_Position;       /* Top visible row */
     LONG                lbd_TotalNodes;
@@ -58,13 +66,11 @@ struct ListBrowserData
     BOOL                lbd_MultiSelect;
     BOOL                lbd_Separators;
     BOOL                lbd_ShowSelected;
-    BOOL                lbd_ReadOnly;
     BOOL                lbd_ColumnTitles;
     BOOL                lbd_Hierarchical;
     BOOL                lbd_Editable;
     BOOL                lbd_AutoFit;
     BOOL                lbd_Borderless;
-    UBYTE               lbd_Striping;
     UWORD               lbd_RowHeight;
     UWORD               lbd_TitleHeight;
     struct TextFont    *lbd_Font;

@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := ledclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-led : includes linklibs
 #MM workbench-classes-reaction-led-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := ledclass
 
 %build_module mmake=workbench-classes-reaction-led \
     modname=led modtype=image \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

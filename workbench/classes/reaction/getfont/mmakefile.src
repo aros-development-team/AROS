@@ -5,6 +5,9 @@ USER_LDFLAGS := -static
 
 FILES := getfontclass
 
+FUNCS := \
+	getclass
+
 #MM workbench-classes-reaction-getfont : includes linklibs
 #MM workbench-classes-reaction-getfont-includes : \
 #MM     kernel-exec-includes \
@@ -14,6 +17,6 @@ FILES := getfontclass
 
 %build_module mmake=workbench-classes-reaction-getfont \
     modname=getfont modtype=gadget \
-    files=$(FILES)
+    files="$(FUNCS) $(FILES)"
 
 %common

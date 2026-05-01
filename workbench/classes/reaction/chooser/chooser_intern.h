@@ -21,6 +21,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct ChooserBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 /* ChooserNode - internal representation of a chooser list item */
@@ -30,7 +39,6 @@ struct ChooserNode
     STRPTR              cn_Text;        /* CNA_Text */
     Object              *cn_Image;      /* CNA_Image */
     BOOL                cn_Disabled;    /* CNA_Disabled */
-    BOOL                cn_Selected;    /* CNA_Selected */
     BOOL                cn_Separator;   /* CNA_Separator */
     BOOL                cn_ReadOnly;    /* CNA_ReadOnly */
     APTR                cn_UserData;    /* CNA_UserData */
@@ -46,7 +54,6 @@ struct ChooserData
 
     BOOL                cd_DropDown;     /* Dropdown mode */
     BOOL                cd_AutoFit;      /* Auto-fit width */
-    BOOL                cd_ReadOnly;     /* Read only mode */
     BOOL                cd_PopUp;        /* Popup mode */
     BOOL                cd_Hidden;       /* Hidden */
 

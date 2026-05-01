@@ -6,7 +6,8 @@ USER_INCLUDES := -I$(INTUITION_BUILDDIR)
 USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
 USER_CPPFLAGS := \
                -DUSE_EXEC_DEBUG \
-	       -D__DOS_NOLIBBASE__ \
+               -DINTUITION_INLINE_NEWOBJECT \
+               -D__DOS_NOLIBBASE__ \
                -D__INTUITION_NOLIBBASE__ \
                -D__LAYERS_NOLIBBASE__ \
                -D__UTILITY_NOLIBBASE__ \

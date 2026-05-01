@@ -1468,7 +1468,7 @@ $(%(mmake)_GENFILEFLAG) : OPTS := $(%(mmake)_OPTS)
 $(%(mmake)_GENFILEFLAG) : MODNAME := %(modname)
 $(%(mmake)_GENFILEFLAG) : MODTYPE := %(modtype)
 $(%(mmake)_GENFILEFLAG) : $(%(mmake)_DEPS)
-	$(Q)$(ECHO) "Generating support files for module $(MODNAME$(BDID))"
+	$(Q)$(ECHO) "Generating $(MODTYPE) support files for $(MODNAME$(BDID)) module"
 	$(Q)$(IF) $(TEST) "%(conffile)" = "lib.conf" && $(TEST) -f lib.conf; then \
 		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
 	fi

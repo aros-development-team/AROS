@@ -63,14 +63,6 @@ static void integer_set(Class *cl, Object *o, struct opSet *msg)
             case INTEGER_Arrows:
                 data->arrows = (BOOL)tag->ti_Data;
                 break;
-
-            case INTEGER_IncDecAmount:
-                data->incdecamount = (LONG)tag->ti_Data;
-                break;
-
-            case INTEGER_Justification:
-                data->justification = (ULONG)tag->ti_Data;
-                break;
         }
     }
 
@@ -98,7 +90,6 @@ IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     data->minimum      = (LONG)0x80000000;
     data->maximum      = (LONG)0x7FFFFFFF;
     data->maxchars     = 10;
-    data->incdecamount = 1;
 
     integer_set(cl, o, msg);
 
@@ -150,14 +141,6 @@ IPTR Integer__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case INTEGER_Arrows:
             *msg->opg_Storage = (IPTR)data->arrows;
-            return (IPTR)TRUE;
-
-        case INTEGER_IncDecAmount:
-            *msg->opg_Storage = (IPTR)data->incdecamount;
-            return (IPTR)TRUE;
-
-        case INTEGER_Justification:
-            *msg->opg_Storage = (IPTR)data->justification;
             return (IPTR)TRUE;
     }
 

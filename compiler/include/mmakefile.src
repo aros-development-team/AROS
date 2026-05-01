@@ -50,6 +50,7 @@ INCSUBDIRS :=	aros				\
 		pragmas				\
 		prefs				\
 		proto				\
+		reaction			\
 		resources			\
 		rexx				\
 		SDI				\

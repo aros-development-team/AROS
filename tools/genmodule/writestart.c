@@ -692,6 +692,7 @@ static void writeresident(FILE *out, struct config *cfg)
         switch (cfg->modtype)
         {
         case LIBRARY:
+        case CLASS:
         case MUI:
         case MCC:
         case MCP:

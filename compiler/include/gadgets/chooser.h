@@ -7,63 +7,68 @@
 #ifndef GADGETS_CHOOSER_H
 #define GADGETS_CHOOSER_H
 
-#ifndef EXEC_TYPES_H
-#include <exec/types.h>
+#ifndef REACTION_REACTION_H
+#include <reaction/reaction.h>
 #endif
-#ifndef EXEC_LISTS_H
-#include <exec/lists.h>
-#endif
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef INTUITION_GADGETCLASS_H
+#include <intuition/gadgetclass.h>
 #endif
 
-/*
- * chooser.gadget - ClassAct/ReAction compatible popup/dropdown chooser
- *
- * Superclass: gadgetclass
- * Include:    <gadgets/chooser.h>
- */
+#define CHOOSER_CLASSNAME   "chooser.gadget"
+#define CHOOSER_VERSION     45
 
-#define CHOOSER_CLASSNAME   "gadgets/chooser.gadget"
-#define CHOOSER_VERSION     44
+/* Predefined minimum dimensions for safe operation */
+#define CHOOSER_MinWidth    36
+#define CHOOSER_MinHeight   10
 
-/* Tag base */
-#define CHOOSER_Dummy       (TAG_USER + 0x40000)
+/*****************************************************************************/
 
-/* Attributes */
-/* (I..) Exec list of ChooserNode items */
-#define CHOOSER_Labels          (CHOOSER_Dummy + 0x0001)
-/* (ISG) Currently selected item (0-based) */
-#define CHOOSER_Selected        (CHOOSER_Dummy + 0x0002)
-/* (I..) Maximum number of visible items */
-#define CHOOSER_MaxLabels       (CHOOSER_Dummy + 0x0003)
-/* (I..) Render as dropdown */
-#define CHOOSER_DropDown        (CHOOSER_Dummy + 0x0004)
-/* (I..) Auto-fit width */
-#define CHOOSER_AutoFit         (CHOOSER_Dummy + 0x0005)
-/* (ISG) Title string */
-#define CHOOSER_Title           (CHOOSER_Dummy + 0x0006)
-/* (I..) Read only mode */
-#define CHOOSER_ReadOnly        (CHOOSER_Dummy + 0x0007)
-/* (I..) Label array (STRPTR *) */
-#define CHOOSER_LabelArray      (CHOOSER_Dummy + 0x0008)
-/* (I..) Popup mode */
-#define CHOOSER_PopUp           (CHOOSER_Dummy + 0x0009)
-/* (I..) Hide */
-#define CHOOSER_Hidden          (CHOOSER_Dummy + 0x000A)
+/* Chooser node attributes */
 
-/* ChooserNode attributes (for AllocChooserNodeA) */
-#define CNA_Dummy           (TAG_USER + 0x40100)
-#define CNA_Text            (CNA_Dummy + 0x0001)
-#define CNA_Image           (CNA_Dummy + 0x0002)
-#define CNA_Disabled        (CNA_Dummy + 0x0003)
-#define CNA_Selected        (CNA_Dummy + 0x0004)
-#define CNA_Separator       (CNA_Dummy + 0x0005)
-#define CNA_UserData        (CNA_Dummy + 0x0006)
-#define CNA_ReadOnly        (CNA_Dummy + 0x0007)
+#define CNA_Dummy           (TAG_USER+0x5001500)
 
-/* Object creation macros */
+#define CNA_Text            (CNA_Dummy+1)   /* (STRPTR) Node label text */
+#define CNA_Image           (CNA_Dummy+2)   /* (struct Image *) Normal image */
+#define CNA_SelImage        (CNA_Dummy+3)   /* (struct Image *) Selected image */
+#define CNA_UserData        (CNA_Dummy+4)   /* (APTR) User data */
+#define CNA_Separator       (CNA_Dummy+5)   /* (BOOL) Render separator bar */
+#define CNA_Disabled        (CNA_Dummy+6)   /* (BOOL) Disabled entry */
+#define CNA_BGPen           (CNA_Dummy+7)   /* (WORD) Background pen (unimplemented) */
+#define CNA_FGPen           (CNA_Dummy+8)   /* (WORD) Foreground pen (unimplemented) */
+#define CNA_ReadOnly        (CNA_Dummy+9)   /* (BOOL) Non-selectable entry */
+
+/*****************************************************************************/
+
+/* Additional attributes defined by the Chooser class */
+
+#define CHOOSER_Dummy       (REACTION_Dummy + 0x0001000)
+
+#define CHOOSER_PopUp           (CHOOSER_Dummy+1)   /* (BOOL) Popup menu mode */
+#define CHOOSER_DropDown        (CHOOSER_Dummy+2)   /* (BOOL) Dropdown menu mode */
+#define CHOOSER_Title           (CHOOSER_Dummy+3)   /* (STRPTR) Dropdown title */
+#define CHOOSER_Labels          (CHOOSER_Dummy+4)   /* (struct List *) Label list */
+#define CHOOSER_Active          (CHOOSER_Dummy+5)   /* (WORD) Active label index */
+#define CHOOSER_Selected        (CHOOSER_Active)    /* Alias for CHOOSER_Active */
+#define CHOOSER_Width           (CHOOSER_Dummy+6)   /* (WORD) Popup menu width */
+#define CHOOSER_AutoFit         (CHOOSER_Dummy+7)   /* (BOOL) Auto-fit to labels */
+#define CHOOSER_MaxLabels       (CHOOSER_Dummy+9)   /* (WORD) Max visible labels */
+#define CHOOSER_Offset          (CHOOSER_Dummy+10)  /* (WORD) Value offset for notifications */
+#define CHOOSER_Hidden          (CHOOSER_Dummy+11)  /* (BOOL) Hidden chooser mode */
+#define CHOOSER_LabelArray      (CHOOSER_Dummy+12)  /* (STRPTR *) Null-terminated string array */
+#define CHOOSER_Justification   (CHOOSER_Dummy+13)  /* (WORD) Label alignment */
+
+/* Justification modes for CHOOSER_Justification */
+#define CHJ_LEFT    0
+#define CHJ_CENTER  1
+#define CHJ_RIGHT   2
+
+/*****************************************************************************/
+
+#ifndef ChooserObject
 #define ChooserObject   NewObject(NULL, CHOOSER_CLASSNAME
+#endif
+#ifndef ChooserEnd
 #define ChooserEnd      TAG_END)
+#endif
 
 #endif /* GADGETS_CHOOSER_H */

@@ -20,6 +20,15 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct RadioButtonBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+};
+
 #define G(obj)  ((struct Gadget *)(obj))
 
 struct RadioButtonData
@@ -27,7 +36,6 @@ struct RadioButtonData
     struct List *labels;
     LONG         selected;
     UWORD        spacing;
-    ULONG        orientation;
     ULONG        labelplace;
 };
 

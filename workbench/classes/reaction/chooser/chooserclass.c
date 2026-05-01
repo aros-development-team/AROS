@@ -78,7 +78,7 @@ static void chooser_set(Class *cl, Object *o, struct opSet *msg)
                 data->cd_Labels = (struct List *)tag->ti_Data;
                 data->cd_NumLabels = chooser_count_labels(data->cd_Labels);
                 break;
-            case CHOOSER_Selected:
+            case CHOOSER_Active:
                 data->cd_Selected = (LONG)tag->ti_Data;
                 break;
             case CHOOSER_MaxLabels:
@@ -92,9 +92,6 @@ static void chooser_set(Class *cl, Object *o, struct opSet *msg)
                 break;
             case CHOOSER_Title:
                 data->cd_Title = (STRPTR)tag->ti_Data;
-                break;
-            case CHOOSER_ReadOnly:
-                data->cd_ReadOnly = (BOOL)tag->ti_Data;
                 break;
             case CHOOSER_PopUp:
                 data->cd_PopUp = (BOOL)tag->ti_Data;
@@ -162,7 +159,7 @@ IPTR Chooser__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case CHOOSER_Selected:
+        case CHOOSER_Active:
             *msg->opg_Storage = data->cd_Selected;
             return TRUE;
 
@@ -172,10 +169,6 @@ IPTR Chooser__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
         case CHOOSER_DropDown:
             *msg->opg_Storage = data->cd_DropDown;
-            return TRUE;
-
-        case CHOOSER_ReadOnly:
-            *msg->opg_Storage = data->cd_ReadOnly;
             return TRUE;
 
         case CHOOSER_Title:
@@ -310,9 +303,6 @@ IPTR Chooser__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
     struct Gadget *gad = G(o);
 
     if (gad->Flags & GFLG_DISABLED)
-        return GMR_NOREUSE;
-
-    if (data->cd_ReadOnly)
         return GMR_NOREUSE;
 
     data->cd_Active = TRUE;
