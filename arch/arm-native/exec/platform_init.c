@@ -39,6 +39,7 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
     struct Task *BootTask, *CPUIdleTask;
 #if defined(__AROSEXEC_SMP__)
     int cpu, cpunum = KrnGetCPUCount();
+    void *cpuMask = NULL;
 #endif
     char *taskName;
 
@@ -62,12 +63,15 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
     {
         taskName = AllocVec(15, MEMF_CLEAR);
         sprintf( taskName, "CPU #%02d Idle", cpu);
+        cpuMask = KrnAllocCPUMask();
+        if (cpuMask)
+            KrnGetCPUMask(cpu, cpuMask);
 #else
     taskName = "System Idle";
 #endif
         CPUIdleTask = NewCreateTask(TASKTAG_NAME   , taskName,
 #if defined(__AROSEXEC_SMP__)
-                                TASKTAG_AFFINITY   , KrnGetCPUMask(cpu),
+                                TASKTAG_AFFINITY   , cpuMask,
 #endif
                                 TASKTAG_PRI        , -127,
                                 TASKTAG_PC         , IdleTask,
@@ -113,22 +117,22 @@ void Exec_TaskSpinUnlock(spinlock_t *thisLock)
 {
     struct Task *curTask, *nxtTask;
 
-    Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
+    Kernel_52_KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                 SPINLOCK_MODE_WRITE, NULL);
     ForeachNodeSafe(&PrivExecBase(SysBase)->TaskSpinning, curTask, nxtTask)
     {
         if (GetIntETask(curTask)->iet_SpinLock == thisLock)
         {
-            Kernel_43_KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
+            Kernel_52_KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE, NULL);
             Disable();
             Remove(&curTask->tc_Node);
             Enqueue(&SysBase->TaskReady, &curTask->tc_Node);
-            Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
+            Kernel_53_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL);
             Enable();
         }
     }
-    Kernel_44_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
+    Kernel_53_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL);
 }
 
 int Exec_ARMCPUSMPInit(struct ExecBase *SysBase)

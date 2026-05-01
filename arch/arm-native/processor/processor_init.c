@@ -35,7 +35,10 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 #if defined(__AROSEXEC_SMP__)
         if (i > 0)
         {
-            NewCreateTask(TASKTAG_AFFINITY      , KrnGetCPUMask(i)              },
+            void *cpuMask = KrnAllocCPUMask();
+            if (cpuMask)
+                KrnGetCPUMask(i, cpuMask);
+            NewCreateTask(TASKTAG_AFFINITY      , cpuMask,
                           TASKTAG_PRI           , -127,
                           TASKTAG_PC            , ReadProcessorInformation,
                           TASKTAG_ARG1          , sysprocs[i],

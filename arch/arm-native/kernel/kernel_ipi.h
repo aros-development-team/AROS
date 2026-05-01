@@ -1,7 +1,7 @@
 #ifndef KERNEL_IPI_H_
 #define KERNEL_IPI_H_
 /*
-    Copyright © 2015, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2015, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,4 +19,23 @@
 #define IPI_ADDTASK	        0x101
 #define IPI_REMTASK	        0x102
 #define IPI_REBOOT	        0x10F
+
+#include <utility/hooks.h>
+
+#define IPI_CALL_HOOK_MAX_ARGS  5
+
+struct IPIHook
+{
+    struct Hook ih_Hook;
+    IPTR        ih_Args[IPI_CALL_HOOK_MAX_ARGS];
+};
+
+/* Stub: arm-native IPI hook dispatch is not yet implemented. */
+static inline int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
+                                 int nargs, IPTR *args, APTR _KB)
+{
+    (void)hook; (void)cpu_mask; (void)async;
+    (void)nargs; (void)args; (void)_KB;
+    return 0;
+}
 #endif

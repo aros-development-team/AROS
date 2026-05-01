@@ -9,6 +9,8 @@ typedef struct tls
     ULONG               ScheduleFlags;
     BYTE                IDNestCnt;
     BYTE                TDNestCnt;
+    UWORD               Quantum;
+    UWORD               Elapsed;
 } tls_t;
 
 #define TLSSF_Quantum   (1 << 0)

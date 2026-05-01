@@ -16,15 +16,18 @@
 extern struct Hook Exec_TaskSpinLockFailHook;
 extern void Exec_TaskSpinUnlock(spinlock_t *);
 
-extern void Kernel_40_KrnSpinInit(spinlock_t *, void *);
-#define EXEC_SPINLOCK_INIT(a) Kernel_40_KrnSpinInit((a), NULL)
-extern spinlock_t *Kernel_43_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
-#define EXEC_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), NULL, (b), NULL)
-#define EXECTASK_SPINLOCK_LOCK(a,b) Kernel_43_KrnSpinLock((a), &Exec_TaskSpinLockFailHook, (b), NULL)
-extern void Kernel_44_KrnSpinUnLock(spinlock_t *, void *);
-#define EXEC_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL)
-#define EXECTASK_SPINLOCK_UNLOCK(a) Kernel_44_KrnSpinUnLock((a), NULL); \
+extern void Kernel_49_KrnSpinInit(spinlock_t *, void *);
+#define EXEC_SPINLOCK_INIT(a) Kernel_49_KrnSpinInit((a), NULL)
+extern spinlock_t *Kernel_52_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
+#define EXEC_SPINLOCK_LOCK(a,b,c) Kernel_52_KrnSpinLock((a), (b), (c), NULL)
+#define EXECTASK_SPINLOCK_LOCK(a,b) Kernel_52_KrnSpinLock((a), &Exec_TaskSpinLockFailHook, (b), NULL)
+extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
+#define EXEC_SPINLOCK_UNLOCK(a) Kernel_53_KrnSpinUnLock((a), NULL)
+#define EXECTASK_SPINLOCK_UNLOCK(a) Kernel_53_KrnSpinUnLock((a), NULL); \
             Exec_TaskSpinUnlock((a))
+
+/* Stub: arm-native syscall-based reschedule is not yet implemented. */
+#define krnSysCallReschedTask(task, state) do { (void)(task); (void)(state); } while (0)
 
 #endif
 
@@ -206,10 +209,10 @@ struct Exec_PlatformData
         __ret;  \
     })
 #define GET_THIS_TASK           TLS_GET(ThisTask)
-#define SCHEDQUANTUM_SET(val)           (SysBase->Quantum=(val))
-#define SCHEDQUANTUM_GET                (SysBase->Quantum)
-#define SCHEDELAPSED_SET(val)           (SysBase->Elapsed=(val))
-#define SCHEDELAPSED_GET                (SysBase->Elapsed)
+#define SCHEDQUANTUM_SET(val)           TLS_SET(Quantum,(val))
+#define SCHEDQUANTUM_GET                TLS_GET(Quantum)
+#define SCHEDELAPSED_SET(val)           TLS_SET(Elapsed,(val))
+#define SCHEDELAPSED_GET                TLS_GET(Elapsed)
 #if !defined(__AROSEXEC_SMP__)
 #define SET_THIS_TASK(x)        TLS_SET(ThisTask,(x))
 #else
