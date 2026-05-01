@@ -38,5 +38,12 @@ AHI_OPTIONS+=--with-target-cppflags="$(TARGET_CPPFLAGS)"
 TARGET_AS:=$(strip $(CC) $(TARGET_SYSROOT))
 AHI_OPTIONS+=--with-target-asflags="$(AFLAGS)"
 
+#
+# AHI configure runs AC_CHECK_TOOL for objcopy/strip and falls back to
+# ":" / bare names when the toolchain prefix doesn't match. Force the
+# values so the per-driver MODEFILE binaries (RPiPWM/RPiHDMI etc.)
+# get produced by llvm-objcopy.
+#
 %build_with_configure mmake=workbench-devs-AHI-subsystem prefix=$(EXEDIR) \
-    extraoptions="$(AHI_OPTIONS)" usecppflags=no gnuflags=no
+    extraoptions="$(AHI_OPTIONS)" usecppflags=no gnuflags=no \
+    config_env_extra="OBJCOPY=$(OBJCOPY) STRIP=$(STRIP_PLAIN)"

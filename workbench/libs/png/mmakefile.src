@@ -52,6 +52,14 @@ endif
 #AFILES += \
 #	arm/filter_neon
 
+# Clang auto-defines __ARM_NEON for armv7-a+fp even with -mfpu=vfpv3-d16,
+# which makes pngpriv.h enable PNG_ARM_NEON_OPT=2 and reference the
+# arm/*_neon implementations above. Until those are wired in, force the
+# NEON path off so the link resolves.
+ifeq ($(AROS_TARGET_CPU),arm)
+USER_CPPFLAGS += -DPNG_ARM_NEON_OPT=0
+endif
+
 #MM- core-linklibs : linklibs-png
 #MM- linklibs-png : workbench-libs-png-pkgconfig
 
