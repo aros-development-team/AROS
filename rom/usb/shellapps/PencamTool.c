@@ -624,6 +624,11 @@ APTR TransferImage(struct NepClassPencam *nch, struct PCImageHeader *pcih)
     UBYTE *imgbuf;
     UBYTE *newimgbuf;
 
+    if(pcih->pcih_ImgSize < 64)
+    {
+        Printf("Image size too small (%ld bytes).\n", pcih->pcih_ImgSize);
+        return(NULL);
+    }
     rawbuf = psdAllocVec(pcih->pcih_ImgSize);
     if(!rawbuf)
     {
@@ -644,6 +649,12 @@ APTR TransferImage(struct NepClassPencam *nch, struct PCImageHeader *pcih)
     }
     if(!ioerr)
     {
+        if(((ULONG) pcih->pcih_ImgWidth > 4096) || ((ULONG) pcih->pcih_ImgHeight > 4096))
+        {
+            Printf("Image dimensions too large (%ldx%ld).\n", (LONG) pcih->pcih_ImgWidth, (LONG) pcih->pcih_ImgHeight);
+            psdFreeVec(rawbuf);
+            return(NULL);
+        }
         imgbuf = psdAllocVec((ULONG) pcih->pcih_ImgWidth * (ULONG) pcih->pcih_ImgHeight * 3);
         if(imgbuf)
         {

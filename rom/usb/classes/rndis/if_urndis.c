@@ -198,8 +198,9 @@ urndis_ctrl_handle_query(struct NepClassEth *ncp,
         return letoh32(msg->rm_status);
     }
 
-    if (letoh32(msg->rm_infobuflen) + letoh32(msg->rm_infobufoffset) +
-        RNDIS_HEADER_OFFSET > letoh32(msg->rm_len)) {
+    if (letoh32(msg->rm_infobuflen) > letoh32(msg->rm_len) ||
+        letoh32(msg->rm_infobufoffset) > letoh32(msg->rm_len) - letoh32(msg->rm_infobuflen) ||
+        RNDIS_HEADER_OFFSET > letoh32(msg->rm_len) - letoh32(msg->rm_infobuflen) - letoh32(msg->rm_infobufoffset)) {
         bug("%s: ctrl message error: invalid query info "
             "len/offset/end_position(%d/%d/%d) -> "
             "go out of buffer limit %d\n",

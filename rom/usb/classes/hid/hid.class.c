@@ -2918,11 +2918,16 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                 nhi->nhi_LogicalMin = nch->nch_HidGlobal.nhg_LogicalMin;
                                                 nhi->nhi_LogicalMax = nch->nch_HidGlobal.nhg_LogicalMax;
 
+                                                if((nhi->nhi_LogicalMin > nhi->nhi_LogicalMax) || ((nhi->nhi_LogicalMax - nhi->nhi_LogicalMin) > 65535))
+                                                {
+                                                    KPRINTF(10, ("Invalid HID logical range %ld..%ld, capping\n", nhi->nhi_LogicalMin, nhi->nhi_LogicalMax));
+                                                    nhi->nhi_LogicalMax = nhi->nhi_LogicalMin;
+                                                }
                                                 nhi->nhi_MapSize = (nhi->nhi_LogicalMax - nhi->nhi_LogicalMin)+1;
                                                 nhi->nhi_UsageMap = psdAllocVec(sizeof(ULONG) * nhi->nhi_MapSize);
                                                 nhi->nhi_ActionMap = psdAllocVec(sizeof(struct List) * nhi->nhi_MapSize);
+                                                if(nhi->nhi_Count > 65535) nhi->nhi_Count = 1;
                                                 nhi->nhi_Buffer = psdAllocVec(2 * sizeof(LONG) * nhi->nhi_Count);
-                                                nhi->nhi_OldBuffer = &nhi->nhi_Buffer[nhi->nhi_Count];
                                                 nhi->nhi_PhysicalMin = nch->nch_HidGlobal.nhg_PhysicalMin;
                                                 nhi->nhi_PhysicalMax = nch->nch_HidGlobal.nhg_PhysicalMax;
                                                 nhi->nhi_UnitExp = nch->nch_HidGlobal.nhg_UnitExp;
@@ -2941,6 +2946,7 @@ BOOL nParseReport(struct NepClassHid *nch, struct NepHidReport *nhr)
                                                     break;
                                                 }
 
+                                                nhi->nhi_OldBuffer = &nhi->nhi_Buffer[nhi->nhi_Count];
                                                 nhi->nhi_Usage = nhi->nhi_DesignIndex = nhi->nhi_StringIndex = HID_PARAM_UNDEF;
                                                 NewList(&nhi->nhi_ActionList);
 
