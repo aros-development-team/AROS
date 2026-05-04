@@ -263,36 +263,44 @@ BOOL pciInit(struct PCIDevice *hd)
                     char *usb_chipset = "UHCI";
                     int usb_min = -1, usb_maj = 1;
 
-                    hc->hc_Node.ln_Name = AllocVec(16 + 34, MEMF_CLEAR);
+                    hc->hc_Node.ln_Name = AllocVec(32, MEMF_CLEAR);
                     hc->hc_Node.ln_Pri = hc->hc_HCIType;
-                    sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
-                    usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
+                    if(hc->hc_Node.ln_Name) {
+                        char hw_name[64];
+                        int pos;
 
-                    usbc_tags[1].ti_Data = (IPTR)&hc->hc_Node.ln_Name[16];
-                    switch (hc->hc_HCIType) {
-                    case HCITYPE_OHCI: {
-                        usb_chipset = "OHCI";
-                        usb_min = 1;
-                        break;
+                        sprintf(hc->hc_Node.ln_Name, "pciusb.device/%u", (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
+                        usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
+
+                        switch (hc->hc_HCIType) {
+                        case HCITYPE_OHCI: {
+                            usb_chipset = "OHCI";
+                            usb_min = 1;
+                            break;
+                        }
+
+                        case HCITYPE_EHCI: {
+                            usb_chipset = "EHCI";
+                            usb_maj = 2;
+                            usb_min = 0;
+                            break;
+                        }
+
+                        }
+
+                        pos = sprintf(hw_name, "PCI USB %d.", usb_maj);
+                        if (usb_min < 0)
+                            pos += sprintf(hw_name + pos, "x");
+                        else
+                            pos += sprintf(hw_name + pos, "%d", usb_min);
+                        pos += sprintf(hw_name + pos, " %s Host controller", usb_chipset);
+
+                        usbc_tags[1].ti_Data = (IPTR)AllocVec(pos + 1, MEMF_CLEAR);
+                        if(usbc_tags[1].ti_Data)
+                            memcpy((char *)usbc_tags[1].ti_Data, hw_name, pos + 1);
+
+                        HW_AddDriver(root, usbContrClass, usbc_tags);
                     }
-
-                    case HCITYPE_EHCI: {
-                        usb_chipset = "EHCI";
-                        usb_maj = 2;
-                        usb_min = 0;
-                        break;
-                    }
-
-                    }
-
-                    sprintf((char *)usbc_tags[1].ti_Data, "PCI USB %u.",  usb_maj);
-                    if (usb_min < 0)
-                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "x");
-                    else
-                        sprintf((char *)(usbc_tags[1].ti_Data + 10), "%u", usb_min);
-                    sprintf((char *)(usbc_tags[1].ti_Data + 11), " %s Host controller",  usb_chipset);
-
-                    HW_AddDriver(root, usbContrClass, usbc_tags);
                 }
                 hc->hc_Unit = hu;
                 Enqueue(&hu->hu_Controllers, &hc->hc_Node);
