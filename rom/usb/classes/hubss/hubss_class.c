@@ -328,7 +328,10 @@ AROS_LH2(IPTR, usbDoMethodA, AROS_LHA(ULONG, methodid, D0), AROS_LHA(IPTR *, met
                     } else {
                         Permit();
                     }
-                    DeleteMsgPort(nhm.nhm_Msg.mn_ReplyPort);
+                    if(nhm.nhm_Msg.mn_ReplyPort)
+                    {
+                        DeleteMsgPort(nhm.nhm_Msg.mn_ReplyPort);
+                    }
                 }
                 CloseLibrary(ps);
             }

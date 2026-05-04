@@ -53,6 +53,15 @@ AROS_UFH0(void, nGUITask)
             mybug(-1,("[AROSXClass GUI] arosx.library openened\n"));
 
             arosx_eventport = CreateMsgPort();
+            if(!arosx_eventport)
+            {
+                CloseLibrary(AROSXBase);
+                FreeVec(gui);
+                Forbid();
+                arosxc->GUITask = NULL;
+                --arosxb->Library.lib_OpenCnt;
+                return;
+            }
             arosx_eventhook = AROSX_AddEventHandler(arosx_eventport, (((1<<arosxc->id))<<28));
             /*
                 Set to listen every controller

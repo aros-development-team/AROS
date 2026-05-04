@@ -403,7 +403,7 @@ struct AROSXClassController *AROSXClass_CreateController(LIBBASETYPEPTR arosxb, 
         }
     }
 
-    AROSXClass_DestroyController(arosxb, arosxc);
+    FreeVec(arosxc);
 
     return NULL;
 

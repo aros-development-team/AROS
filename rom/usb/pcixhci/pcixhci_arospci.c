@@ -238,12 +238,15 @@ BOOL pciInit(struct PCIDevice *hd)
                     };
                     int name_len = sizeof(strPcixhciDevicePrefix) - 1 + 10 + 1;
                     hc->hc_Node.ln_Name = AllocVec(name_len, MEMF_CLEAR);
-                    hc->hc_Node.ln_Pri = HCITYPE_XHCI;
-                    sprintf(hc->hc_Node.ln_Name, strPcixhciDeviceFormat,
-                            (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
-                    usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
-                    pciusbWarn("PCI", "Instantiating xHCI controller class for '%s'\n", hc->hc_Node.ln_Name);
-                    HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
+                    if(hc->hc_Node.ln_Name)
+                    {
+                        hc->hc_Node.ln_Pri = HCITYPE_XHCI;
+                        sprintf(hc->hc_Node.ln_Name, strPcixhciDeviceFormat,
+                                (hu->hu_UnitNo & ~PCIUSBUNIT_MASK));
+                        usbc_tags[0].ti_Data = (IPTR)hc->hc_Node.ln_Name;
+                        pciusbWarn("PCI", "Instantiating xHCI controller class for '%s'\n", hc->hc_Node.ln_Name);
+                        HW_AddDriver(root, hd->hd_USBXHCIControllerClass, usbc_tags);
+                    }
                 }
                 hc->hc_Unit = hu;
                 Enqueue(&hu->hu_Controllers, &hc->hc_Node);
