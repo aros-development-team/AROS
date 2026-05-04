@@ -211,7 +211,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
     for(count = 0; count < 128; count++)
     {
         struct InputEvent ie;
-        UBYTE buf[16];
+        UBYTE buf[80];
         UBYTE buf2[80];
         LONG actual;
         BOOL printable;

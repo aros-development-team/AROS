@@ -3771,7 +3771,8 @@ IPTR Action_SaveErrors(struct IClass *cl, Object *obj, Msg msg)
     {
         if(MUI_AslRequest(aslreq, TAG_END))
         {
-            strcpy(path, aslreq->fr_Drawer);
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
             AddPart(path, aslreq->fr_File, 256);
             if((fh = Open(path, MODE_NEWFILE)))
             {
@@ -3821,7 +3822,8 @@ IPTR Action_SaveDeviceList(struct IClass *cl, Object *obj, Msg msg)
     {
         if(MUI_AslRequest(aslreq, TAG_END))
         {
-            strcpy(path, aslreq->fr_Drawer);
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
             AddPart(path, aslreq->fr_File, 256);
             if((fh = Open(path, MODE_NEWFILE)))
             {
@@ -3857,7 +3859,8 @@ IPTR Action_LoadPrefs(struct IClass *cl, Object *obj, Msg msg)
     {
         if(MUI_AslRequest(aslreq, TAG_END))
         {
-            strcpy(path, aslreq->fr_Drawer);
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
             AddPart(path, aslreq->fr_File, 256);
             if(psdLoadCfgFromDisk(path))
             {
@@ -3887,7 +3890,8 @@ IPTR Action_SavePrefsAs(struct IClass *cl, Object *obj, Msg msg)
     {
         if(MUI_AslRequest(aslreq, TAG_END))
         {
-            strcpy(path, aslreq->fr_Drawer);
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
             AddPart(path, aslreq->fr_File, 256);
             InternalCreateConfigGUI(data);
             if(psdSaveCfgToDisk(path, FALSE))
@@ -4993,7 +4997,8 @@ IPTR Action_Cfg_Export(struct IClass *cl, Object *obj, Msg msg)
         {
             if(MUI_AslRequest(aslreq, TAG_END))
             {
-                strcpy(path, aslreq->fr_Drawer);
+                strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+                path[sizeof(path) - 1] = '\0';
                 AddPart(path, aslreq->fr_File, 256);
                 fh = Open(path, MODE_NEWFILE);
                 if(fh)
@@ -5039,7 +5044,8 @@ IPTR Action_Cfg_Import(struct IClass *cl, Object *obj, Msg msg)
     {
         if(MUI_AslRequest(aslreq, TAG_END))
         {
-            strcpy(path, aslreq->fr_Drawer);
+            strncpy(path, aslreq->fr_Drawer, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
             AddPart(path, aslreq->fr_File, 256);
             fh = Open(path, MODE_OLDFILE);
             if(fh)
