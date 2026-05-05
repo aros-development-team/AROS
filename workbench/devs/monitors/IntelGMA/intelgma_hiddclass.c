@@ -1001,6 +1001,16 @@ ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
     return len;
 }
 
+VOID METHOD(INTELG45, Hidd_Gfx, NominalDimensions)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
+}
+
 static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Root__New, moRoot_New},
@@ -1013,15 +1023,16 @@ static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 static const struct OOP_MethodDescr INTELG45_Hidd_Gfx_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CopyBox         , moHidd_Gfx_CopyBox         },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject       , moHidd_Gfx_CreateObject       },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject    , moHidd_Gfx_CreateObject    },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorVisible, moHidd_Gfx_SetCursorVisible},
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorPos    , moHidd_Gfx_SetCursorPos    },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorShape  , moHidd_Gfx_SetCursorShape  },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ShowViewPorts   , moHidd_Gfx_ShowViewPorts   },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ModeProperties  , moHidd_Gfx_ModeProperties  },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__NominalDimensions, moHidd_Gfx_NominalDimensions    },
     {NULL, 0}
 };
-#define NUM_INTELG45_Hidd_Gfx_METHODS 7
+#define NUM_INTELG45_Hidd_Gfx_METHODS 8
 
 const struct OOP_InterfaceDescr INTELG45_ifdescr[] =
 {
