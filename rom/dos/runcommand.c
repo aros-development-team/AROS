@@ -76,12 +76,13 @@
     LONG ret;
 #if !(AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     IPTR elfinfo = 0;
-    struct TagItem segtags[2] =
+    IPTR hunkinfo = 0;
+    struct TagItem segtags[3] =
     {
         { GSLI_ElfHandle,       (IPTR)&elfinfo  },
+        { GSLI_68KHUNK,         (IPTR)&hunkinfo },
         { TAG_DONE,             0               }
     };
-    BOOL archsuitable = FALSE;
 #endif
     D(BOOL injected;)
 
@@ -92,18 +93,15 @@
     if (GetSegListInfo(segList, segtags))
     {
         D(bug("[DOS] %s: elfinfo == 0x%p\n", __func__, elfinfo);)
-        if (elfinfo)
-            archsuitable = TRUE;
+        if (!elfinfo)
+        {
+            /* Segment is tracked by LoadSeg but is not ELF.
+             * Reject unsupported formats (e.g. 68k HUNK). */
+            return -1;
+        }
     }
-
-    if (!archsuitable)
-    {
-#if (0)
-        /* TODO: report failure reason? */
-        me->pr_Result2 = ;
-#endif
-        return -1;
-    }
+    /* If GetSegListInfo returns 0, segment is not tracked by LoadSeg
+     * (e.g. internal/ROM resident command) - allow execution. */
 #endif
 
     if(stacksize < AROS_STACKSIZE)

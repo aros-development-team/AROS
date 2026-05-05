@@ -311,7 +311,14 @@ static int relocate
     struct sheader *toreloc  = &sh[shrel->info];
 
     struct symbol *symtab   = (struct symbol *)shsymtab->addr;
-    struct relo   *rel      = (struct relo *)shrel->addr;
+    UBYTE         *relbase  = (UBYTE *)shrel->addr;
+    /*
+     * Some toolchains emit SHT_REL (8-byte: offset+info, addend in the
+     * field) while others emit SHT_RELA (12-byte: offset+info+addend).
+     */
+#if defined(__arm__)
+    BOOL is_rela = (shrel->type == SHT_RELA);
+#endif
 
     /*
      * Ignore relocs if the target section has no allocation. that can happen
@@ -321,6 +328,7 @@ static int relocate
         return 1;
 
     ULONG numrel = shrel->size / shrel->entsize;
+    ULONG entsize = shrel->entsize;
     ULONG i;
 #if defined(__i386__) || defined(__x86_64__)
     IPTR got_base = 0;
@@ -334,8 +342,9 @@ static int relocate
     }
 #endif
 
-    for (i=0; i<numrel; i++, rel++)
+    for (i=0; i<numrel; i++)
     {
+        struct relo *rel = (struct relo *)(relbase + i * entsize);
         struct symbol *sym;
         ULONG *p;
         IPTR s;
@@ -533,7 +542,17 @@ static int relocate
             case R_ARM_JUMP24:
             case R_ARM_PC24:
             {
-                LONG temp = (LONG)(rel->addend + s - (IPTR)p);
+                LONG addend;
+                if (is_rela) {
+                    addend = (LONG)((struct rela *)rel)->addend;
+                } else {
+                    /* SHT_REL: 24-bit signed offset (in units of 4 bytes)
+                     * encoded in the BL/B instruction's low 24 bits. */
+                    addend = (LONG)((*p & 0x00FFFFFFu) << 2);
+                    if (addend & 0x02000000)
+                        addend -= 0x04000000;
+                }
+                LONG temp = (LONG)(addend + s - (IPTR)p);
 
                 if (temp & 3) {
                     kprintf("[ELF Loader] CALL/JUMP24/PC24 unaligned\n");
@@ -555,7 +574,15 @@ static int relocate
 
             case R_ARM_PREL31:
             {
-                LONG temp = (LONG)(rel->addend + s - (IPTR)p);
+                LONG addend;
+                if (is_rela) {
+                    addend = (LONG)((struct rela *)rel)->addend;
+                } else {
+                    /* SHT_REL: 31-bit signed offset stored in the low 31
+                     * bits of the field; bit 31 is the cantUnwind flag. */
+                    addend = (LONG)(*p << 1) >> 1;
+                }
+                LONG temp = (LONG)(addend + s - (IPTR)p);
 
                 // Range check for signed 31 bits.
                 if (temp < -(1<<30) || temp > ((1<<30)-1)) {
@@ -652,7 +679,23 @@ static int relocate
             case R_ARM_MOVW_ABS_NC:
             case R_ARM_MOVT_ABS:
             {
-                ULONG temp = (ULONG)s + (ULONG)rel->addend;
+                LONG addend;
+                if (is_rela) {
+                    addend = (LONG)((struct rela *)rel)->addend;
+                } else {
+                    /* SHT_REL: 16-bit immediate is encoded split (bits
+                     * 19:16 hold imm4, 11:0 hold imm12). For MOVT this
+                     * is the upper half of the addend; for MOVW the lower.
+                     * Treat the 16-bit value as unsigned when reassembling
+                     * the full 32-bit addend so MOVT/MOVW pairs combine
+                     * correctly. */
+                    ULONG imm16 = ((*p & 0x000F0000u) >> 4) | (*p & 0x00000FFFu);
+                    if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
+                        addend = (LONG)(imm16 << 16);
+                    else
+                        addend = (LONG)imm16;
+                }
+                ULONG temp = (ULONG)s + (ULONG)addend;
 
                 // Select the 16-bit half to encode.
                 ULONG imm16 = (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
@@ -671,7 +714,10 @@ static int relocate
             case R_ARM_TARGET1: /* use for constructors/destructors; maps to
                                    R_ARM_ABS32 */
             case R_ARM_ABS32:
-                *p = rel->addend + s;
+                if (is_rela)
+                    *p = (ULONG)((struct rela *)rel)->addend + s;
+                else
+                    *p = *p + s;  /* SHT_REL: addend is in *p */
                 break;
 
             case R_ARM_NONE:
@@ -1028,8 +1074,12 @@ BPTR InternalLoadSeg_ELF
     /* Relocate the sections */
     for (i = 0; i < int_shnum; i++)
     {
-        /* Does this relocation section refer to a hunk? If so, addr must be != 0 */
-        if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
+        /* Does this relocation section refer to a hunk? If so, addr must be != 0.
+         * Accept both SHT_REL and SHT_RELA: the actual section type produced by
+         * a given toolchain is not fixed (e.g. clang/lld emits SHT_REL for ARM
+         * 32-bit while some gcc builds emit SHT_RELA).
+         */
+        if ((sh[i].type == SHT_REL || sh[i].type == SHT_RELA) && sh[sh[i].info].addr)
         {
             sh[i].addr = load_block(file, sh[i].offset, sh[i].size, funcarray, &srb, DOSBase);
             if (!sh[i].addr || !relocate(&eh, sh, i, symtab_shndx, DOSBase))
