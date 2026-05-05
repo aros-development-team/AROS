@@ -35,7 +35,7 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
             while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_READREADY) != 0)
             {
                 /* Data synchronization barrier */
-                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+                asm volatile ("dsb" ::: "memory");
 
                 if(try-- == 0)
                 {
@@ -43,12 +43,12 @@ volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
                 }
             }
 
-            asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+            asm volatile ("dmb" ::: "memory");
 
             msg = rd32le(mb + VCMB_READ);
             D(kprintf("[VCMB] -> %p\n", msg));
 
-            asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+            asm volatile ("dmb" ::: "memory");
 
             if ((msg & VCMB_CHAN_MASK) == chan)
                 return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
@@ -66,10 +66,10 @@ void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
         while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_WRITEREADY) != 0)
         {
                 /* Data synchronization barrier */
-                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+                asm volatile ("dsb" ::: "memory");
         }
 
-        asm volatile ("mcr p15, #0, %[r], c7, c10, #5" : : [r] "r" (0) );
+        asm volatile ("dmb" ::: "memory");
 
         wr32le(mb + VCMB_WRITE, (uintptr_t)msg | chan);
     }

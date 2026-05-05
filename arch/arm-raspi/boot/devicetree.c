@@ -157,6 +157,26 @@ of_node_t * dt_find_node_by_phandle(uint32_t phandle)
 #define MAX_KEY_SIZE    64
 char ptrbuf[64];
 
+/*
+ * Match a device tree node name against a search key.
+ * If the search key does not contain '@', the unit-address
+ * suffix in the node name is ignored (standard DT convention,
+ * e.g. "memory" matches a node named "memory@0").
+ */
+static int dt_name_cmp(const char *node_name, const char *key)
+{
+    while (*key) {
+        if (*node_name != *key)
+            return 1;
+        node_name++;
+        key++;
+    }
+    /* key exhausted: node must also end, or have '@' unit-address */
+    if (*node_name == 0 || *node_name == '@')
+        return 0;
+    return 1;
+}
+
 of_node_t * dt_find_node(char *key)
 {
     int i;
@@ -181,7 +201,7 @@ of_node_t * dt_find_node(char *key)
 
             ForeachNode(&ret->on_children, node)
             {
-                if (!strcmp(node->on_name, ptrbuf))
+                if (!dt_name_cmp(node->on_name, ptrbuf))
                 {
                     ret = node;
                     break;

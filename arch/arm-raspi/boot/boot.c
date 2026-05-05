@@ -87,7 +87,16 @@ asm("   .section .aros.startup      \n"
 );
 
 // The bootstrap tmp stack is re-used by the reset handler so we store it at this fixed location
+/*
+ * clang's integrated assembler does not treat TARGET_SECTION_COMMENT ("//")
+ * as a comment — it becomes part of the section name, so the variable lands
+ * in ".aros.startup //" instead of ".aros.startup".
+ */
+#if defined(__clang__)
+static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup"))) = (void *)(0x1000 - 16);
+#else
 static __used void * tmp_stack_ptr __attribute__((used, section(".aros.startup" TARGET_SECTION_COMMENT))) = (void *)(0x1000 - 16);
+#endif
 static struct TagItem *boottag;
 static unsigned long *mem_upper;
 static void *pkg_image = NULL;
@@ -209,6 +218,9 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
     if (e)
     {
         of_property_t *p = dt_find_property(e, "ranges");
+        if (p == NULL)
+            while(1) asm volatile("wfe");
+
         uint32_t *ranges = p->op_value;
         int32_t len = p->op_length;
 
@@ -244,7 +256,11 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
 #else
     kprintf("\n\n[BOOT] Little-Endian AROS %s\n", bootstrapName);
 #endif
-    kprintf("[BOOT] Booted on %s\n", dt_find_property(dt_find_node("/"), "model")->op_value);
+    {
+        of_node_t *root = dt_find_node("/");
+        of_property_t *model = root ? dt_find_property(root, "model") : NULL;
+        kprintf("[BOOT] Booted on %s\n", model ? (const char *)model->op_value : "unknown");
+    }
 
     /* first of all, store the arch for the kernel to use .. */
     boottag->ti_Tag = KRN_Platform;
@@ -265,13 +281,20 @@ void boot(uintptr_t dummy, uintptr_t arch, struct tag * atags, uintptr_t a)
             kprintf("[BOOT] local_intc points to %s\n", p->op_value);
 
             e = dt_find_node(p->op_value);
-            p = dt_find_property(e, "reg");
-            uint32_t *reg = p->op_value;
+            if (e)
+                p = dt_find_property(e, "reg");
+            else
+                p = NULL;
 
-            kprintf("[BOOT] Mapping local interrupt area at %p-%p\n", AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]) + AROS_BE2LONG(reg[1]) - 1);
+            if (p)
+            {
+                uint32_t *reg = p->op_value;
 
-            /* Prepare mapping - device type */
-            mmu_map_section(AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[1]) < 0x100000 ? 0x100000 : AROS_BE2LONG(reg[1]), 0, 0, 3, 0);
+                kprintf("[BOOT] Mapping local interrupt area at %p-%p\n", AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]) + AROS_BE2LONG(reg[1]) - 1);
+
+                /* Prepare mapping - device type */
+                mmu_map_section(AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[0]), AROS_BE2LONG(reg[1]) < 0x100000 ? 0x100000 : AROS_BE2LONG(reg[1]), 0, 0, 3, 0);
+            }
         }
     }
 
