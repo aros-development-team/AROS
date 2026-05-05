@@ -2058,7 +2058,7 @@ case "$target_os" in
                 aros_target_cpu="arm"
                 target_cpu="armhf"
 
-                gcc_float_fpu="vfpv3-d16"
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=$gcc_float_fpu
                 gcc_default_fpu="$""(GCC_FLOAT_FPU)"
                 llvm_target_cpu="ARM"
@@ -2082,7 +2082,7 @@ case "$target_os" in
                 fi
                 aros_target_cpu="arm"
 
-                gcc_float_fpu="vfpv3-d16"
+                gcc_float_fpu="neon-vfpv4"
                 gcc_soft_fpu=""
                 gcc_default_fpu=
                 llvm_target_cpu="ARM"

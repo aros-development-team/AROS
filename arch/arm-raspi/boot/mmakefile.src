@@ -47,6 +47,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-openfirmware-quick \
 #MM kernel-graphics-quick \
 #MM kernel-cgxbootpic-quick \
+#MM workbench-libs-gadtools-quick \
 #MM kernel-intuition-quick \
 #MM kernel-partition-quick \
 #MM kernel-layers-quick \
@@ -75,6 +76,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vc4gfx-quick \
 #MM kernel-sdcard-quick \
+#MM kernel-hidd-input-quick \
 #MM kernel-hidd-kbd-quick \
 #MM kernel-hidd-mouse-quick \
 #MM kernel-usb-nopci-quick \
@@ -94,6 +96,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-openfirmware \
 #MM kernel-graphics \
 #MM kernel-cgxbootpic \
+#MM workbench-libs-gadtools \
 #MM kernel-intuition \
 #MM kernel-partition \
 #MM kernel-layers \
@@ -123,6 +126,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM hidd-i2c-bcm2708 \
 #MM hidd-vc4gfx \
 #MM kernel-hidd-gfx \
+#MM kernel-hidd-input \
 #MM kernel-hidd-kbd \
 #MM kernel-hidd-mouse \
 #MM kernel-usb-nopci \
@@ -137,14 +141,14 @@ RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
 
-PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
-PKG_HIDDS     := gfx mouse keyboard hiddclass i2c i2c-bcm2708 vc4gfx
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse i2c i2c-bcm2708 vc4gfx
 PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
 
 %make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/$(ARM_BSP) \
