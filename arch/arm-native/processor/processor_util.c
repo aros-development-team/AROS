@@ -6,6 +6,7 @@
 #include <aros/debug.h>
 
 #include <resources/processor.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "processor_arch_intern.h"
@@ -69,7 +70,7 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     {
         info->Family = CPUFAMILY_ARM_6;
 
-        if ((scp_reg & 0xFFF0) == 0xc070)
+        if ((scp_reg & 0xFFF0) == 0xc070 || (scp_reg & 0xFFF0) == 0xd030)
             info->Family = CPUFAMILY_ARM_7;
 
         DPROBE(bug("[processor.ARM] %s: Checking Memory Model Feature Register..\n", __PRETTY_FUNCTION__));
@@ -145,74 +146,117 @@ VOID ReadProcessorInformation(struct ARMProcessorInformation * info)
     DPROBE(bug("[processor.ARM] %s: Checking Cache Type Register..\n", __PRETTY_FUNCTION__));
     asm volatile("mrc p15, 0, %[cache_reg], c0, c0, 1" : [cache_reg] "=r" (cache_reg) );
 
-    if (scp_reg & (1 << 2))
+    if (info->Family >= CPUFAMILY_ARM_7)
     {
-        switch((cache_reg >> 18) & 0xF) {
-            case 3:
-                info->L1DataCacheSize = 4;
-                break;
-            case 4:
-                info->L1DataCacheSize = 8;
-                break;
-            case 5:
-                info->L1DataCacheSize = 16;
-                break;
-            case 6:
-                info->L1DataCacheSize = 32;
-                break;
-            case 7:
-                info->L1DataCacheSize = 64;
-                break;
-            case 8:
-                info->L1DataCacheSize = 128;
-                break;
-            case 9:
-                info->L1DataCacheSize = 256;
-                break;
-            case 10:
-                info->L1DataCacheSize = 512;
-                break;
-            case 11:
-                info->L1DataCacheSize = 1024;
-                break;
-            default:
-                info->L1DataCacheSize = 0;
-                break;
+        /*
+         * ARMv7+ CTR no longer encodes total cache size — its 18:21
+         * and 6:9 fields are now line-size descriptors (DminLine /
+         * IminLine). Total size must be derived from CCSIDR via
+         * CSSELR (write level/type, then read CCSIDR). ARMv6 still
+         * uses the old CTR-based decoding below.
+         *
+         * CCSIDR fields:
+         *   [2:0]   LineSize   (line bytes = 1 << (LineSize + 4))
+         *   [12:3]  Associativity-1
+         *   [27:13] NumSets-1
+         */
+        uint32_t ccsidr;
+        uint32_t line_bytes, assoc, sets;
+
+        if (scp_reg & (1 << 2))
+        {
+            asm volatile("mcr p15, 2, %0, c0, c0, 0" : : "r" (0));   /* CSSELR: L1 data, 0=L1, InD=0 */
+            asm volatile("isb");
+            asm volatile("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
+            line_bytes = 1 << ((ccsidr & 7) + 4);
+            assoc = ((ccsidr >> 3) & 0x3FF) + 1;
+            sets = ((ccsidr >> 13) & 0x7FFF) + 1;
+            info->L1DataCacheSize = (sets * assoc * line_bytes) >> 10; /* KiB */
+        }
+
+        if (scp_reg & (1 << 12))
+        {
+            asm volatile("mcr p15, 2, %0, c0, c0, 0" : : "r" (1));   /* CSSELR: L1, InD=1 (instruction) */
+            asm volatile("isb");
+            asm volatile("mrc p15, 1, %0, c0, c0, 0" : "=r" (ccsidr));
+            line_bytes = 1 << ((ccsidr & 7) + 4);
+            assoc = ((ccsidr >> 3) & 0x3FF) + 1;
+            sets = ((ccsidr >> 13) & 0x7FFF) + 1;
+            info->L1InstructionCacheSize = (sets * assoc * line_bytes) >> 10;
         }
     }
-    if (scp_reg & (1 << 12))
+    else
     {
-        switch((cache_reg >> 6) & 0xF) {
-            case 3:
-                info->L1InstructionCacheSize = 4;
-                break;
-            case 4:
-                info->L1InstructionCacheSize = 8;
-                break;
-            case 5:
-                info->L1InstructionCacheSize = 16;
-                break;
-            case 6:
-                info->L1InstructionCacheSize = 32;
-                break;
-            case 7:
-                info->L1InstructionCacheSize = 64;
-                break;
-            case 8:
-                info->L1InstructionCacheSize = 128;
-                break;
-            case 9:
-                info->L1InstructionCacheSize = 256;
-                break;
-            case 10:
-                info->L1InstructionCacheSize = 512;
-                break;
-            case 11:
-                info->L1InstructionCacheSize = 1024;
-                break;
-            default:
-                info->L1InstructionCacheSize = 0;
-                break;
+        /* Pre-ARMv7: CTR encodes cache size in bits 18:21 (D) / 6:9 (I) */
+        if (scp_reg & (1 << 2))
+        {
+            switch ((cache_reg >> 18) & 0xF) {
+                case 3:
+                    info->L1DataCacheSize = 4;
+                    break;
+                case 4:
+                    info->L1DataCacheSize = 8;
+                    break;
+                case 5:
+                    info->L1DataCacheSize = 16;
+                    break;
+                case 6:
+                    info->L1DataCacheSize = 32;
+                    break;
+                case 7:
+                    info->L1DataCacheSize = 64;
+                    break;
+                case 8:
+                    info->L1DataCacheSize = 128;
+                    break;
+                case 9:
+                    info->L1DataCacheSize = 256;
+                    break;
+                case 10:
+                    info->L1DataCacheSize = 512;
+                    break;
+                case 11:
+                    info->L1DataCacheSize = 1024;
+                    break;
+                default:
+                    info->L1DataCacheSize = 0;
+                    break;
+            }
+        }
+        if (scp_reg & (1 << 12))
+        {
+            switch ((cache_reg >> 6) & 0xF) {
+                case 3:
+                    info->L1InstructionCacheSize = 4;
+                    break;
+                case 4:
+                    info->L1InstructionCacheSize = 8;
+                    break;
+                case 5:
+                    info->L1InstructionCacheSize = 16;
+                    break;
+                case 6:
+                    info->L1InstructionCacheSize = 32;
+                    break;
+                case 7:
+                    info->L1InstructionCacheSize = 64;
+                    break;
+                case 8:
+                    info->L1InstructionCacheSize = 128;
+                    break;
+                case 9:
+                    info->L1InstructionCacheSize = 256;
+                    break;
+                case 10:
+                    info->L1InstructionCacheSize = 512;
+                    break;
+                case 11:
+                    info->L1InstructionCacheSize = 1024;
+                    break;
+                default:
+                    info->L1InstructionCacheSize = 0;
+                    break;
+            }
         }
     }
     D(bug("[processor.ARM] %s: .. Done\n", __PRETTY_FUNCTION__));
