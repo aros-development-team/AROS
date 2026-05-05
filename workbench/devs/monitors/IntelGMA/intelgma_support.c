@@ -150,18 +150,18 @@ void UpdateCursor(struct g45staticdata *sd)
     writel(sd->CursorBase, sd->Card.MMIO + (sd->pipe == PIPE_A ? G45_CURABASE : G45_CURBBASE));
 }
 
-void SetCursorPosition(struct g45staticdata *sd,LONG x,LONG y)
+void SetCursorPosition(struct g45staticdata *sd, LONG x, LONG y)
 {
-        LONG width = (sd->VisibleBitmap->state->htotal & 0x0000ffff);
+    LONG width = (sd->VisibleBitmap->state->htotal & 0x0000ffff);
     LONG height = (sd->VisibleBitmap->state->vtotal & 0x0000ffff);
-        
-        if(x<0)x=0;
-        if(y<0)y=0;
-        if(x>width)x = width;  // Grue eats you,if pointer is outside of the screen.
-        if(y>height)y = height;
-        
-        writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
-                        sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
+
+    if (x < 0) x=0;
+    if (y < 0) y=0;
+    if (x > width) x = width;  // Grue eats you,if pointer is outside of the screen.
+    if (y > height) y = height;
+
+    writel(((ULONG)x << G45_CURPOS_XSHIFT) | ((ULONG)y << G45_CURPOS_YSHIFT),
+                    sd->Card.MMIO + (sd->pipe == PIPE_A ?G45_CURAPOS:G45_CURBPOS));
     UpdateCursor(sd);
 }
 
