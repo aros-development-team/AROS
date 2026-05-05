@@ -50,15 +50,37 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
 {
     uint32_t count = 0;
 
-    if (addr == NULL && length == 0xffffffff)
+    /*
+     * Cache line size from CTR. ARMv7+ format has [31:29]==0b100;
+     * DminLine [19:16] / IminLine [3:0] are log2 of words per line,
+     * so line size in bytes = 4 << minline. Use min(D,I) so the
+     * stride covers both caches.
+     */
+    uint32_t ctr;
+    __asm__ __volatile__("mrc p15, 0, %0, c0, c0, 1" : "=r"(ctr));
+    uint32_t line;
+    if ((ctr >> 29) == 0x4)
     {
-        count = 0x8000000;
+        uint32_t dminline = (ctr >> 16) & 0xf;
+        uint32_t iminline = ctr & 0xf;
+        uint32_t minline = dminline < iminline ? dminline : iminline;
+        line = 4U << minline;
     }
     else
     {
-        void *end_addr = (void*)(((uintptr_t)addr + length + 31) & ~31);
-        addr = (void *)((uintptr_t)addr & ~31);
-        count = (uintptr_t)(end_addr - addr) >> 5;
+        line = 32;
+    }
+    uint32_t mask = line - 1;
+
+    if (addr == NULL && length == 0xffffffff)
+    {
+        count = (uint32_t)(0x100000000ULL / line);
+    }
+    else
+    {
+        void *end_addr = (void*)(((uintptr_t)addr + length + mask) & ~(uintptr_t)mask);
+        addr = (void *)((uintptr_t)addr & ~(uintptr_t)mask);
+        count = (uintptr_t)(end_addr - addr) / line;
     }
 
     D(bug("[Kernel] CacheClearE from %p length %d count %d, flags %x\n", addr, length, count, flags));
@@ -82,11 +104,10 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
             __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 1"::"r"(addr));
         }
 
-        addr += 32;
+        addr += line;
     }
 
-    asm volatile ("mcr  p15, 0, %[r], c7, c10, 4" : : [r] "r" (0)); /* dsb */
-    //__asm__ __volatile__("dsb":::"memory");
+    __asm__ __volatile__("dsb":::"memory");
 }
 
 void handle_syscall(void *regs)

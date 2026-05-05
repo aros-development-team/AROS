@@ -39,6 +39,7 @@
 extern struct TagItem *BootMsg;
 
 void __attribute__((used)) kernel_cstart(struct TagItem *msg);
+static void __attribute__((used, noreturn, noinline)) kernel_cstart_user(void);
 
 uint32_t stack[AROS_STACKSIZE] __attribute__((used,aligned(16)));
 static uint32_t stack_super[AROS_STACKSIZE] __attribute__((used,aligned(16)));
@@ -64,9 +65,20 @@ asm (
     ".string \"Native/CORE v3 (" __DATE__ ")\"" "\n\t\n\t"
 );
 
+/*
+ * With clang's integrated assembler, TARGET_SECTION_COMMENT (//) is NOT
+ * treated as a comment — it becomes a literal part of the section name,
+ * creating ".aros.init //" as a separate section from ".aros.init".
+ */
+#if defined(__clang__)
+static uint32_t * const stack_end __attribute__((used, section(".aros.init"))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_super_end __attribute__((used, section(".aros.init"))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
+static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init"))) = &stack_fiq[1024 - sizeof(IPTR)];
+#else
 static uint32_t * const stack_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack[AROS_STACKSIZE - sizeof(IPTR)];
 static uint32_t * const stack_super_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack_super[AROS_STACKSIZE - sizeof(IPTR)];
 static uint32_t * const stack_fiq_end __attribute__((used, section(".aros.init " TARGET_SECTION_COMMENT))) = &stack_fiq[1024 - sizeof(IPTR)];
+#endif
 
 struct ARM_Implementation __arm_arosintern  __attribute__((aligned(4), section(".data"))) = {0,0,NULL,0};
 struct ExecBase *SysBase __attribute__((section(".data"))) = NULL;
@@ -305,18 +317,49 @@ void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     D(bug("[Kernel] InitCode(RTF_SINGLETASK) ... \n"));
     InitCode(RTF_SINGLETASK, 0);
 
+    /*
+     * Switch from SVC to USER mode and continue on the USER stack.
+     *
+     * The boot entry sets USER/SYSTEM SP to stack_end (top of stack[])
+     * and SVC SP to stack_super_end (top of stack_super[]).  kernel_cstart
+     * runs in SVC mode so all its locals live on stack_super.
+     *
+     * After "cps #0x10" SP switches to the USER bank (stack[]).  The
+     * compiler does not know SP changed — any SP-relative access to
+     * kernel_cstart locals would read uninitialised stack[] memory.
+     * Place the mode switch and branch to user-mode code in a single asm
+     * block: kernel_cstart_user runs with its own frame on stack[] and
+     * accesses only globals (SysBase, KernelBase), never kernel_cstart's
+     * locals.
+     */
     D(bug("[Kernel] Dropping into USER mode ... \n"));
-    asm("cps %[mode_user]\n"
+    asm volatile(
+        "cps    %[mode_user]    \n" /* USER mode: SP = stack[] from boot */
 #if AROS_BIG_ENDIAN
-        "setend be\n"
+        "setend be              \n"
 #endif
-     : : [mode_user] "I" (CPUMODE_USER)); /* switch to user mode */
+        "b      kernel_cstart_user \n"
+        :
+        : [mode_user] "I" (CPUMODE_USER)
+    );
+    __builtin_unreachable();
+}
 
+/*
+ * User-mode continuation of kernel_cstart.
+ *
+ * Runs on stack[] (USER/SYSTEM SP set at boot), completely separate from
+ * stack_super which is reserved for SVC exception handlers.  Must only
+ * access globals — never kernel_cstart's stack-allocated locals.
+ */
+static void __attribute__((used, noreturn, noinline)) kernel_cstart_user(void)
+{
     D(bug("[Kernel] InitCode(RTF_COLDSTART) ...\n"));
     InitCode(RTF_COLDSTART, 0);
 
     /* The above should not return */
     krnPanic(KernelBase, "System Boot Failed!");
+    __builtin_unreachable();
 }
 
 DEFINESET(ARMPLATFORMS);

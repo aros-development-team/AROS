@@ -195,14 +195,28 @@ asm (
 
 void handle_dataabort(regs_t *regs)
 {
-    register unsigned int far;
+    register unsigned int far, dfsr;
 
-    // Read fault address register
+    // Read fault address register and data fault status register
     asm volatile("mrc p15, 0, %[far], c6, c0, 0": [far] "=r" (far) );
+    asm volatile("mrc p15, 0, %[dfsr], c5, c0, 0": [dfsr] "=r" (dfsr) );
 
     bug("[Kernel] Trap ARM Data Abort Exception\n");
     bug("[Kernel]    exception #2 (Bus Error)\n");
     bug("[Kernel]    attempt to access 0x%p from 0x%p\n", far, regs->pc);
+    /* DFSR: bits[10,3:0] = status; bit[11] = WnR (1=write, 0=read);
+     * bits[7:4] = domain. Common status codes (short descriptor):
+     *   0b00001 (0x01) - Alignment fault
+     *   0b00101 (0x05) - Translation fault, section
+     *   0b00111 (0x07) - Translation fault, page
+     *   0b01101 (0x0d) - Permission fault, section
+     *   0b01111 (0x0f) - Permission fault, page
+     *   0b00010 (0x02) - Debug event
+     *   0b01000 (0x08) - Synchronous external abort */
+    bug("[Kernel]    DFSR=0x%08x  status=0x%02x  WnR=%d\n",
+        dfsr,
+        ((dfsr >> 6) & 0x10) | (dfsr & 0x0f),
+        (dfsr >> 11) & 1);
 
     cpu_DumpRegs(regs);
 
@@ -246,9 +260,24 @@ asm (
 
 void handle_prefetchabort(regs_t *regs)
 {
+    register unsigned int ifar, ifsr;
+
+    /* Read instruction fault address and status registers */
+    asm volatile("mrc p15, 0, %[ifar], c6, c0, 2": [ifar] "=r" (ifar) );
+    asm volatile("mrc p15, 0, %[ifsr], c5, c0, 1": [ifsr] "=r" (ifsr) );
+
     bug("[Kernel] Trap ARM Prefetch Abort Exception\n");
     bug("[Kernel]    exception #3 (Address Error)\n");
-    bug("[Kernel]    at 0x%p\n", regs->pc);
+    bug("[Kernel]    at 0x%p (IFAR=0x%p)\n", regs->pc, ifar);
+    /* IFSR status codes (short descriptor):
+     *   0x05 - Translation fault, section
+     *   0x07 - Translation fault, page
+     *   0x0d - Permission fault, section
+     *   0x0f - Permission fault, page
+     *   0x08 - Synchronous external abort */
+    bug("[Kernel]    IFSR=0x%08x  status=0x%02x\n",
+        ifsr,
+        ((ifsr >> 6) & 0x10) | (ifsr & 0x0f));
 
     cpu_DumpRegs(regs);
 
