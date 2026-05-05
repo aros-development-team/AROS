@@ -152,6 +152,9 @@ void UpdateCursor(struct g45staticdata *sd)
 
 void SetCursorPosition(struct g45staticdata *sd, LONG x, LONG y)
 {
+    if (sd->VisibleBitmap == NULL)
+        return;
+
     LONG width = (sd->VisibleBitmap->state->htotal & 0x0000ffff);
     LONG height = (sd->VisibleBitmap->state->vtotal & 0x0000ffff);
 
