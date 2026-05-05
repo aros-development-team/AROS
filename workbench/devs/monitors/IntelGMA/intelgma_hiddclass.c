@@ -449,6 +449,31 @@ OOP_Object *METHOD(INTELG45, Root, New)
 //        { TAG_DONE, 0UL }
 //    };
 
+    MAKE_SYNC(640x480_60,  25174,
+         640,  656,  752,  800,
+         480,  490,  492,  525,
+         "GMA_LVDS:640x480");
+
+
+    //native lcd mode
+    struct TagItem sync_native[]={
+        { aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
+        { aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
+        { aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
+        { aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
+        { aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
+        { aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
+        { aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
+        { aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
+        { aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
+        { aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
+        { aHidd_Sync_VMax,     4096},
+        { aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
+        { aHidd_Sync_HMax,     4096},
+        { aHidd_Sync_Description, (IPTR)NULL },
+        { TAG_DONE, 0UL }
+    };
+
         OOP_Object *i2cBus = NULL;
 
     modetags = tags = AllocVecPooled(sd->MemPool,
@@ -479,30 +504,8 @@ OOP_Object *METHOD(INTELG45, Root, New)
                 char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
                 snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
                         sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
+        sync_native[13].ti_Data = (IPTR)description;
 
-                //native lcd mode
-                struct TagItem sync_native[]={
-                { aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
-                { aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
-                { aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
-                { aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
-                { aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
-                { aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
-                { aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
-                { aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
-                { aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
-                { aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
-                { aHidd_Sync_VMax,     4096},
-                { aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
-                { aHidd_Sync_HMax,     4096},
-                { aHidd_Sync_Description, (IPTR)description },
-                { TAG_DONE, 0UL }};
-
-                MAKE_SYNC(640x480_60,   25174,
-         640,  656,  752,  800,
-         480,  490,  492,  525,
-         "GMA_LVDS:640x480");
-                
                 tags->ti_Tag =  aHidd_Gfx_SyncTags;
                 tags->ti_Data = (IPTR)sync_640x480_60;
                 tags++;
