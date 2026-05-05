@@ -229,6 +229,13 @@ AROS_UFH3(void, Enumerator,
         /*-------- DO NOT CHANGE/REMOVE -------------*/
         bug("\003\n"); /* Tell vga text mode debug output to die */
         /*-------- DO NOT CHANGE/REMOVE -------------*/
+        /*
+            Explanation:
+            Debug output writes to frame buffer. The same framebuffer gets mapped to first memory header below and
+            structures (like command ring or bitmaps) get allocated from it. If debug continues to output, it
+            actually overwrites allocated structures and memory manager MemChunks. First signs are Allocate failing
+            with 'Sanity check failed'.
+        */
 
         switch (MGCC & G45_MGCC_GMS_MASK)
         {
