@@ -218,7 +218,13 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
 
         struct symbol *symtab =
                         (struct symbol *)((unsigned long)shsymtab->addr);
-        struct relo *rel = (struct relo *)((unsigned long)shrel->addr);
+        /*
+         * ARM 32-bit ELF uses SHT_REL (8-byte entries: offset+info, no
+         * addend). The AROS-wide `relo` alias resolves to `struct rela`
+         * (12 bytes) on ARM, which strides past every other entry and
+         * reads garbage. Use `struct rel` explicitly here.
+         */
+        struct rel *rel = (struct rel *)((unsigned long)shrel->addr);
         char *section = (char *)((unsigned long)toreloc->addr);
 
         unsigned int numrel = (unsigned long)shrel->size
@@ -347,9 +353,6 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                         if (ELF_R_TYPE(rel->info) == R_ARM_MOVT_ABS)
                                 offset <<= 16;
 
-kprintf("movw/movt: offset=%08x, s=%08x, sym->value=%08x, section_orig_addr=%08x, section_addr=%08x\n", offset, s, sym->value,
-        deltas[sym->shindex], sh[sym->shindex].addr + virtoffset);
-
                         if (is_exec)
                         {
                                 /* Fix address by difference between actual address and expected address */
@@ -378,6 +381,32 @@ kprintf("movw/movt: offset=%08x, s=%08x, sym->value=%08x, section_orig_addr=%08x
                         {
                                 *p += s + virtoffset;
                         }
+                break;
+
+                case R_ARM_PREL31:
+                {
+                        /* 31-bit PC-relative, used in .ARM.exidx */
+                        intptr_t offset = AROS_LE2LONG(*p);
+                        /* Sign-extend from bit 30 */
+                        offset = (offset << 1) >> 1;
+
+                        if (is_exec)
+                        {
+                                if (shrel->info != sym->shindex)
+                                {
+                                        intptr_t expected_delta = deltas[sym->shindex] - deltas[shrel->info];
+                                        intptr_t actual_delta = sh[sym->shindex].addr - sh[shrel->info].addr;
+                                        offset += actual_delta - expected_delta;
+                                }
+                        }
+                        else
+                        {
+                                offset += s - (uint32_t)p;
+                        }
+
+                        *p &= AROS_LONG2LE(0x80000000);
+                        *p |= AROS_LONG2LE(offset & 0x7fffffff);
+                }
                 break;
 
                 case R_ARM_NONE: /* No reloc */

@@ -18,7 +18,7 @@ void arm_flush_cache(uint32_t addr, uint32_t length)
                 addr += 32;
                 length -= 32;
         }
-        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+        __asm__ __volatile__("dsb":::"memory");
 }
 
 void arm_icache_invalidate(uint32_t addr, uint32_t length)
@@ -29,7 +29,7 @@ void arm_icache_invalidate(uint32_t addr, uint32_t length)
                 addr += 32;
                 length -= 32;
         }
-        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+        __asm__ __volatile__("dsb":::"memory");
 }
 
 void arm_dcache_invalidate(uint32_t addr, uint32_t length)
@@ -40,7 +40,7 @@ void arm_dcache_invalidate(uint32_t addr, uint32_t length)
                 addr += 32;
                 length -= 32;
         }
-        __asm__ __volatile__("mcr p15, 0, %0, c7, c10, 4"::"r"(addr));
+        __asm__ __volatile__("dsb":::"memory");
 }
 
 void *malloc(size_t size)
