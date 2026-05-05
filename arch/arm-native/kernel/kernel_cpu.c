@@ -199,27 +199,36 @@ void cpu_Restore_VFP32_State(void *buffer);
 
 asm(
 "cpu_Save_VFP16_State:                      \n"
-"           vmsr    fpscr, r3               \n"
+"           vmrs    r3, fpscr               \n"
 "           str     r3, [r0, #256]          \n"
 "           vstmia  r0, {d0-d15}            \n"
 "           bx      lr                      \n"
 
+/*
+ * ARMv7 VSTMIA/VLDMIA only encode up to 16 doubles per instruction
+ * (imm8 <= 32). d16-d31 must be saved/restored with a second
+ * VSTMIA/VLDMIA targeting the high half.
+ */
 "cpu_Save_VFP32_State:                      \n"
-"           vmsr    fpscr, r3               \n"
+"           vmrs    r3, fpscr               \n"
 "           str     r3, [r0, #256]          \n"
-"           .word   0xec800b40              \n"         // vstmia  r0, {d0-d31}
+"           vstmia  r0, {d0-d15}            \n"
+"           add     r1, r0, #128            \n"
+"           vstmia  r1, {d16-d31}           \n"
 "           bx      lr                      \n"
 
 "cpu_Restore_VFP16_State:                   \n"
 "           ldr     r3, [r0, #256]          \n"
-"           vmrs    r3, fpscr               \n"
+"           vmsr    fpscr, r3               \n"
 "           vldmia  r0, {d0-d15}            \n"
 "           bx      lr                      \n"
 
 "cpu_Restore_VFP32_State:                   \n"
 "           ldr     r3, [r0, #256]          \n"
-"           vmrs    r3, fpscr               \n"
-"           .word   0xec900b20              \n"         // vldmia  r0, {d0-d31}
+"           vmsr    fpscr, r3               \n"
+"           vldmia  r0, {d0-d15}            \n"
+"           add     r1, r0, #128            \n"
+"           vldmia  r1, {d16-d31}           \n"
 "           bx      lr                      \n"
 );
 
@@ -235,10 +244,26 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     asm volatile ("mrc p15, 0, %0, c0, c0, 0" : "=r" (tmp));
     if ((tmp & 0xfff0) == 0xc070 || (tmp & 0xfff0) == 0xd030)
     {
+        uint32_t mvfr0;
+
         krnARMImpl->ARMI_Family = 7;
 
-        krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP16_State;
-        krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP16_State;
+        /*
+         * VFPv3+ (ARMv7+) reports register file size in MVFR0[3:0]:
+         *   1 = 16 double registers (d0-d15)
+         *   2 = 32 double registers (d0-d31)
+         */
+        asm volatile ("vmrs %0, mvfr0" : "=r" (mvfr0));
+        if ((mvfr0 & 0xf) == 2)
+        {
+            krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP32_State;
+            krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP32_State;
+        }
+        else
+        {
+            krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP16_State;
+            krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP16_State;
+        }
 
 #if defined(__AROSEXEC_SMP__)
         // Read the Multiprocessor Affinity Register (MPIDR)
@@ -252,6 +277,7 @@ void cpu_Probe(struct ARM_Implementation *krnARMImpl)
     }
     else
     {
+        /* ARMv6 / VFPv2 — d0-d15 only, no MVFR0. */
         krnARMImpl->ARMI_Family = 6;
         krnARMImpl->ARMI_Save_VFP_State = &cpu_Save_VFP16_State;
         krnARMImpl->ARMI_Restore_VFP_State = &cpu_Restore_VFP16_State;
