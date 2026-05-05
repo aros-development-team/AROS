@@ -494,7 +494,8 @@ int G45_Init(struct g45staticdata *sd)
 
                 if (sd->PCIDevice)
                 {
-                    D(bug("[GMA] Found supported gfx card\n\003"));
+                    D(bug("[GMA] Found supported gfx card\n"));
+                    D(bug("\003"));
 
                     sd->mid_CopyMemBox8     = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
                     sd->mid_CopyMemBox16    = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
