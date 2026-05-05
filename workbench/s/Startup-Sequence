@@ -1,6 +1,6 @@
-SetClock LOAD
-
 FailAt 21
+
+SetClock LOAD
 
 If NOT EXISTS "RAM:Clipboards"
     MakeDir "RAM:Clipboards"
