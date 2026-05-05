@@ -16,10 +16,27 @@
 
 #define DUMPINFO(a) a
 
+#if defined(__AROSEXEC_SMP__)
+static void ProbeCPUAndSignal(struct ARMProcessorInformation *info,
+                              struct Task *parent, ULONG sigmask)
+{
+    ReadProcessorInformation(info);
+    Signal(parent, sigmask);
+}
+#endif
+
 LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 {
     struct ARMProcessorInformation **sysprocs;
     unsigned int i;
+#if defined(__AROSEXEC_SMP__)
+    struct Task *me = FindTask(NULL);
+    ULONG waitmask = 0;
+    BYTE sigbits[ProcessorBase->cpucount];
+
+    for (i = 0; i < ProcessorBase->cpucount; i++)
+        sigbits[i] = -1;
+#endif
 
     D(bug("[processor.ARM] :%s()\n", __PRETTY_FUNCTION__));
 
@@ -38,11 +55,25 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
             void *cpuMask = KrnAllocCPUMask();
             if (cpuMask)
                 KrnGetCPUMask(i, cpuMask);
-            NewCreateTask(TASKTAG_AFFINITY      , cpuMask,
-                          TASKTAG_PRI           , -127,
-                          TASKTAG_PC            , ReadProcessorInformation,
-                          TASKTAG_ARG1          , sysprocs[i],
-                          TAG_DONE);
+
+            sigbits[i] = AllocSignal(-1);
+            if (sigbits[i] >= 0)
+            {
+                ULONG mask = 1UL << sigbits[i];
+                waitmask |= mask;
+                NewCreateTask(TASKTAG_AFFINITY      , cpuMask,
+                              TASKTAG_PRI           , -127,
+                              TASKTAG_PC            , ProbeCPUAndSignal,
+                              TASKTAG_ARG1          , sysprocs[i],
+                              TASKTAG_ARG2          , me,
+                              TASKTAG_ARG3          , mask,
+                              TAG_DONE);
+            }
+            else
+            {
+                /* Out of signals — fall back to probing on whatever CPU we land on. */
+                ReadProcessorInformation(sysprocs[i]);
+            }
         }
         else
 #else
@@ -50,6 +81,16 @@ LONG Processor_Init(struct ProcessorBase * ProcessorBase)
 #endif
             ReadProcessorInformation(sysprocs[i]);
     }
+
+#if defined(__AROSEXEC_SMP__)
+    if (waitmask)
+        Wait(waitmask);
+    for (i = 0; i < ProcessorBase->cpucount; i++)
+    {
+        if (sigbits[i] >= 0)
+            FreeSignal(sigbits[i]);
+    }
+#endif
 
     DUMPINFO(
     bug("[processor.ARM] Processor Details -:\n");
