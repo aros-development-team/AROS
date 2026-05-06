@@ -10,7 +10,7 @@
 #include <hidd/i2c.h>
 #include <hidd/gallium.h>
 
-#include "util/u_simple_screen.h"
+// #include "util/u_simple_screen.h"
 #include "nouveau/nouveau_drmif.h"
 #include "nouveau/nouveau_bo.h"
 #include "nouveau/nouveau_channel.h"
@@ -114,7 +114,7 @@ struct HIDDNouveauI2CData
 
 struct HIDDGalliumNouveauData
 {
-    struct pipe_winsys nouveau_winsys;
+    // struct pipe_winsys nouveau_winsys;
     OOP_Object *nouveau_obj;
 };
 
