@@ -907,4 +907,12 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
     return len;
 }
 
-
+VOID METHOD(Nouveau, Hidd_Gfx, NominalDimensions)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
+}
