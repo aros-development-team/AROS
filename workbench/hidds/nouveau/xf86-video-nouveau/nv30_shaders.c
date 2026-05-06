@@ -23,6 +23,26 @@
 #include "nv30_shaders.h"
 #include "nv04_pushbuf.h"
 
+/*******************************************************************************
+ * NV40/G70 vertex shaders
+ */
+
+nv_shader_t nv40_vp_exa_render;
+nv_shader_t nv40_vp_video;
+
+/*******************************************************************************
+ * NV30/NV40/G70 fragment shaders
+ */
+
+nv_shader_t nv30_fp_pass_col0;
+nv_shader_t nv30_fp_pass_tex0;
+nv_shader_t nv30_fp_composite_mask;
+nv_shader_t nv30_fp_composite_mask_sa_ca;
+nv_shader_t nv30_fp_composite_mask_ca;
+nv_shader_t nv30_fp_yv12_bicubic;
+nv_shader_t nv30_fp_yv12_bilinear;
+nv_shader_t nv40_fp_yv12_bicubic;
+
 void NV30_UploadFragProg(NVPtr pNv, nv_shader_t *shader, int *hw_offset)
 {
 	uint32_t data, i;
