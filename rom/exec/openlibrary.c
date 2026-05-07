@@ -67,7 +67,7 @@
     /* Look for the library in our list */
     library = (struct Library *) FindName (&SysBase->LibList, libName);
 
-    EXEC_UNLOCK_LIST(&SysBase->LibList);
+    EXEC_UNLOCK_LIST_AND_PERMIT(&SysBase->LibList);
 
     /* Something found ? */
     if(library!=NULL)
