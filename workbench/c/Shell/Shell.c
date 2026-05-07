@@ -164,7 +164,7 @@ LONG interact(ShellState *ss)
             }
 
             cli->cli_CurrentInput = cli->cli_StandardInput;
-            cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
+            if (!cli->cli_Background) cli->cli_Background = IsInteractive(cli->cli_CurrentInput) ? DOSFALSE : DOSTRUE;
 
             setInteractive(cli, ss);
         }
