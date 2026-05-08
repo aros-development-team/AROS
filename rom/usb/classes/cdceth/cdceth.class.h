@@ -26,10 +26,6 @@
 #include "cdceth.h"
 #include "dev.h"
 
-#if defined(__GNUC__)
-# pragma pack(2)
-#endif
-
 #define DDF_CONFIGURED (1<<2)  /* station address is configured */
 #define DDF_ONLINE     (1<<3)  /* device is online */
 #define DDF_OFFLINE    (1<<4)  /* device was put offline */
@@ -178,10 +174,6 @@ struct ClsDevCfg
     ULONG cdc_DefaultUnit;
     ULONG cdc_MediaType;
 };
-
-#if defined(__GNUC__)
-# pragma pack()
-#endif
 
 /* Structure of an ethernet packet - internal */
 
