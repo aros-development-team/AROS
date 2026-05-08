@@ -154,7 +154,7 @@
 
     /* Now that we have the pointers, fill it all */
     CopyMem(de_pp, de, desize);
-        
+
     bs1 = MKBADDR(s1);
     bs2 = MKBADDR(s2);
     
@@ -183,7 +183,7 @@
     dn->dn_Type = DLT_DEVICE;
     dn->dn_Name = bs1;
     dn->dn_Priority = 10;
-    dn->dn_StackSize = 4000;
+    dn->dn_StackSize = AROS_STACKSIZE;
 
 #if __WORDSIZE > 32
     /*
