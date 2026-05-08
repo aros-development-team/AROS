@@ -4,7 +4,7 @@
 
 #include "drmP.h"
 #include "nouveau_intern.h"
-#include "nouveau_i2c.h"
+// #include "nouveau_i2c.h"
 
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
@@ -41,9 +41,10 @@ void METHOD(NouveauI2C, Hidd_I2C, PutBits)
 {
     struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct nouveau_i2c_chan * i2c_chan = (struct nouveau_i2c_chan *)i2cdata->i2c_chan;
- 
-    i2c_chan->bit.setsda(i2c_chan, msg->sda);
-    i2c_chan->bit.setscl(i2c_chan, msg->scl);
+
+    // FIXME: check nvkm_i2c
+    // i2c_chan->bit.setsda(i2c_chan, msg->sda);
+    // i2c_chan->bit.setscl(i2c_chan, msg->scl);
 }
 
 void METHOD(NouveauI2C, Hidd_I2C, GetBits)
@@ -51,8 +52,8 @@ void METHOD(NouveauI2C, Hidd_I2C, GetBits)
     struct HIDDNouveauI2CData * i2cdata = OOP_INST_DATA(cl, o);
     struct nouveau_i2c_chan * i2c_chan = (struct nouveau_i2c_chan *)i2cdata->i2c_chan;
 
-    *msg->sda = i2c_chan->bit.getsda(i2c_chan);
-    *msg->scl = i2c_chan->bit.getscl(i2c_chan);
+    // *msg->sda = i2c_chan->bit.getsda(i2c_chan);
+    // *msg->scl = i2c_chan->bit.getscl(i2c_chan);
 }
 
 ADD2LIBS((STRPTR)"i2c.hidd", 0, static struct Library *, I2CBase);

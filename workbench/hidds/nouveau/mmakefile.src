@@ -5,7 +5,7 @@ include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
 GALLIUM_PATH = $(top_srcdir)/src/gallium
 
 include $(GALLIUM_PATH)/drivers/nouveau/Makefile.sources
-include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
+include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 
 # WARNING - THIS MMAKEFILE REFERENCES SOURCE CODE OUTSIDE OF ITS TREE
 
@@ -45,12 +45,25 @@ XF86_NOUVEAU_SOURCES = \
             nvc0_exa \
             nv04_exa \
 
-DRM_PATH = $(SRCDIR)/$(CURDIR)/drm/
 XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
 #FIXME
 #            nouveau_galliumclass \
 #            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_C_SOURCES:.c=)) \
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include/nvkm \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/nvkm \
+
+NOUVEAU_DRM_C_SOURCES := \
+            $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM2_NVIDIA_SOURCES))
+
+%build_prog mmake=hidd-nouveau-drm files="$(NOUVEAU_DRM_C_SOURCES)" \
+    targetdir="$(AROS_C)" progname="dummy" usesdks="config"
+
 
 NOUVEAU_HIDD_C_SOURCES := \
             nouveau_hiddclass \
@@ -60,28 +73,32 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_i2cclass \
             arosc_emul \
             nouveau_compositorclass \
-            $(addprefix $(DRM_PATH),$(AROS_DRM_CORE_SOURCES))           \
-            $(addprefix $(DRM_PATH),$(AROS_DRM_NVIDIA_SOURCES))         \
-            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_CORE_SOURCES))        \
-            $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))      \
+            $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM2_CORE_SOURCES))  \
+            $(addprefix$(SRCDIR)/$(CURDIR)/,$(AROS_LIBDRM_CORE_SOURCES))        \
+            $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_LIBDRM_NVIDIA_SOURCES))      \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
 #NOUVEAU_HIDD_CXX_SOURCES := \
 #            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
 
-USER_INCLUDES += \
-            -I$(DRM_PATH)/drm \
-            -I$(DRM_PATH)/drm/nouveau \
-            -I$(DRM_PATH)/drm-aros \
-            -I$(DRM_PATH)/drm-aros/nouveau \
-            -iquote $(GALLIUM_PATH)/drivers \
-            -iquote $(GALLIUM_PATH)/drivers/nouveau \
-            -iquote $(GALLIUM_PATH)/include \
-            -iquote $(GALLIUM_PATH)/auxiliary \
-            -iquote $(top_srcdir)/src/mesa \
-            -iquote $(GENDIR)/workbench/libs/mesa/20.0.8/src/compiler/nir \
-            -I$(DRM_PATH)/libdrm \
-            -I$(DRM_PATH)/libdrm/nouveau \
+#            -iquote $(GALLIUM_PATH)/drivers \
+#            -iquote $(GALLIUM_PATH)/drivers/nouveau \
+#            -iquote $(GALLIUM_PATH)/include \
+#            -iquote $(GALLIUM_PATH)/auxiliary \
+#            -iquote $(top_srcdir)/src/mesa \
+#            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/drm \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include/nvkm \
+            -I$(SRCDIR)/$(CURDIR)/drm-aros \
+            -I$(SRCDIR)/$(CURDIR)/drm-aros/nouveau \
+            -I$(SRCDIR)/$(CURDIR)/libdrm \
+            -I$(SRCDIR)/$(CURDIR)/libdrm/nouveau \
             -I$(XF86_NOUVEAU_PATH)
 
 

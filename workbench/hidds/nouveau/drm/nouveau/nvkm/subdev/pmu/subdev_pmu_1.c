@@ -1,0 +1,13 @@
+/* Auto-generated: subdev/pmu */
+#include "base.c"
+#include "gf100.c"
+#include "gf119.c"
+#include "gk104.c"
+#include "gk208.c"
+#include "gk20a.c"
+#include "gm107.c"
+#include "gm20b.c"
+#include "gp100.c"
+#include "gp102.c"
+#include "gt215.c"
+#include "memx.c"

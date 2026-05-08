@@ -12,7 +12,7 @@
 
 // #include "util/u_simple_screen.h"
 #include "nouveau/nouveau_drmif.h"
-#include "nouveau/nouveau_bo.h"
+#include "nouveau/nouveau_bo_libdrm.h"
 #include "nouveau/nouveau_channel.h"
 #include "nouveau/nouveau_notifier.h"
 #include "nouveau/nouveau_grobj.h"

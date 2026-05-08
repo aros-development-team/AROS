@@ -7,7 +7,13 @@
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
-#include <nouveau_drm.h>
+#include <uapi/drm/nouveau_drm.h>
+#include <drm_legacy.h>
+#include <nvif/object.h>
+#include <core/mm.h>
+#include <nvif/device.h>
+struct nouveau_drm;
+#include <nouveau/nouveau_abi16.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -503,7 +509,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             }
             
             nouveau_device_get_param(carddata->dev, NOUVEAU_GETPARAM_BUS_TYPE, &value);
-            if (value == NV_PCIE)
+            if (value == 2 /* NV_PCIE */)
                 carddata->IsPCIE = TRUE;
             else
                 carddata->IsPCIE = FALSE;
