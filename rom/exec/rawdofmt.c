@@ -16,9 +16,15 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-#ifdef __arm__
+#if defined(__arm__)
 
 #define is_va_list(ap) ap.__ap
+#define null_va_list(ap) va_list ap = {NULL}
+#define VA_NULL {NULL}
+
+#elif defined(__aarch64__)
+
+#define is_va_list(ap) ap.__stack
 #define null_va_list(ap) va_list ap = {NULL}
 #define VA_NULL {NULL}
 
