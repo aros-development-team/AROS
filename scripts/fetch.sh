@@ -520,6 +520,11 @@ LOCATION=${newlocation:-.}
 BASE=${newbase:-${destination}}
 patches_origins=${patches_origins:-.}
 
+# Ensure LOCATION, destination, and BASE are absolute paths.
+[[ "$LOCATION" != /* ]] && LOCATION="$PWD/$LOCATION"
+[[ "$destination" != /* ]] && destination="$PWD/$destination"
+[[ "$BASE" != /* ]] && BASE="$PWD/$BASE"
+
 fetchlockfile="$archive"
 fetchlock "$LOCATION" "$fetchlockfile"
 
