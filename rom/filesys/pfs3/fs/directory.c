@@ -1209,7 +1209,7 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 	}
 
 	/* check fit */
-	size = (size + 1) & 0xfffe;
+	size = (size + (AROS_PTRALIGN - 1)) & ~(AROS_PTRALIGN - 1);
 	if (size > spaceleft)
 		return (0);
 
@@ -4188,7 +4188,7 @@ static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 	}
 
 	/* check fit */
-	size = (size + 1) & 0xfffe;
+	size = (size + (AROS_PTRALIGN - 1)) & ~(AROS_PTRALIGN - 1);
 	if (size > spaceleft)
 		return 0;
 

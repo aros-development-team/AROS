@@ -1446,7 +1446,7 @@ BOOL CmdExamineAll(struct Handler *handler, struct Lock *lock,
          entry_size = struct_size + name_size;
          if(type >= ED_COMMENT)
             entry_size += comment_size;
-         entry_size = (entry_size + 1) & (~0x1);
+         entry_size = (entry_size + (AROS_PTRALIGN - 1)) & ~(AROS_PTRALIGN - 1);
 
          pattern = control->eac_MatchString;
          if(pattern != NULL)

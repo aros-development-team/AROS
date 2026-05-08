@@ -109,7 +109,7 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
         return NULL;
     }
     
-    strsize = (strlen(ead->ed_Name) + 1 + 1) & ~1;
+    strsize = (strlen(ead->ed_Name) + 1 + (AROS_PTRALIGN - 1)) & ~(AROS_PTRALIGN - 1);
     size = sizeof(struct FileEntry) + strsize + fdh->NumEntries * sizeof(struct TTextAttr);
     if (fdh->ContentsID == OFCH_ID) /* Reserve extra Attr for outline fonts */
          size += sizeof(struct TTextAttr);
@@ -417,7 +417,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 
         if (ok)
         {
-            int namelen = (strlen(fe2.FileName) + 1 + 1) & ~1;
+            int namelen = (strlen(fe2.FileName) + 1 + (AROS_PTRALIGN - 1)) & ~(AROS_PTRALIGN - 1);
             attrs = AllocVec(fe2.Numentries * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
 
             ok = ok && attrs != NULL;
