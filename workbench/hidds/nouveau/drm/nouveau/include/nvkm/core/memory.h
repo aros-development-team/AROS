@@ -8,9 +8,7 @@ struct nvkm_vmm;
 
 struct nvkm_tags {
 	struct nvkm_mm_node *mn;
-#if !defined(__AROS__)
 	refcount_t refcount;
-#endif
 };
 
 enum nvkm_memory_target {

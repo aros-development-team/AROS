@@ -28,15 +28,17 @@
  * Authors: Thomas Hellstrom <thellstrom-at-vmware-dot-com>
  */
 
-// #ifndef _TTM_MODULE_H_
-// #define _TTM_MODULE_H_
+#ifndef _TTM_MODULE_H_
+#define _TTM_MODULE_H_
 
-// #if !defined(__AROS__)
-// #include <linux/kernel.h>
-// struct kobject;
+#if !defined(__AROS__)
+#include <linux/kernel.h>
+struct kobject;
+#endif
 
-// #define TTM_PFX "[TTM] "
-// extern struct kobject *ttm_get_kobj(void);
-// #endif
+#define TTM_PFX "[TTM] "
+#if !defined(__AROS__)
+extern struct kobject *ttm_get_kobj(void);
+#endif
 
-// #endif /* _TTM_MODULE_H_ */
+#endif /* _TTM_MODULE_H_ */

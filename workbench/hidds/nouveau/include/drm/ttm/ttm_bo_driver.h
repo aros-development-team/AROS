@@ -123,7 +123,6 @@ struct ttm_mem_type_manager_func {
 	void (*put_node)(struct ttm_mem_type_manager *man,
 			 struct ttm_mem_reg *mem);
 
-#if !defined(__AROS__)
 	/**
 	 * struct ttm_mem_type_manager member debug
 	 *
@@ -136,7 +135,6 @@ struct ttm_mem_type_manager_func {
 	 */
 	void (*debug)(struct ttm_mem_type_manager *man,
 		      struct drm_printer *printer);
-#endif
 };
 
 /**

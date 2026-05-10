@@ -39,6 +39,7 @@ void *kmemdup(const void *src, size_t len, BYTE flags);
 void *kmalloc_array(size_t n, size_t size, BYTE flags);
 void *kvmalloc_array(size_t n, size_t size, BYTE flags);
 char *kstrndup(const char *c, size_t len, BYTE flags);
+int kstrtol(const char *s, unsigned int base, long *res);
 #define capable(p)                      TRUE
 #define roundup(x, y)                   ((((x) + ((y) - 1)) / (y)) * (y))
 #define round_up(x, y)                  roundup(x, y)
@@ -49,6 +50,7 @@ char *kstrndup(const char *c, size_t len, BYTE flags);
 #define mutex_unlock(x)                 ReleaseSemaphore(&(x)->semaphore)
 #define mutex_trylock(x)                AttemptSemaphore(&(x)->semaphore)
 #define mutex_init(x)                   InitSemaphore(&(x)->semaphore);
+#define mutex_destroy(x)
 #define likely(x)                       __builtin_expect((IPTR)(x),1)
 #define unlikely(x)                     __builtin_expect((IPTR)(x),0)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
@@ -145,6 +147,8 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 
 /* Kernel debug */
 #define CONFIG_NOUVEAU_DEBUG            3 /* NV_DGB_INFO */
+#define CONFIG_NOUVEAU_DEBUG_DEFAULT    3
+#define KERN_CRIT
 #define KERN_ERR
 #define KERN_DEBUG
 #define KERN_WARNING
@@ -162,6 +166,8 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define dev_notice(dev, fmt, ...)       bug(fmt, ##__VA_ARGS__)
 #define dev_crit(dev, fmt, ...)         bug(fmt, ##__VA_ARGS__)
 #define dev_WARN(dev, fmt, ...)         bug(fmt, ##__VA_ARGS__)
+#define pr_err(fmt, ...)                bug(fmt, ##__VA_ARGS__)
+#define pr_debug(fmt, ...)              bug(fmt, ##__VA_ARGS__)
 #define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED %s\n", __func__);while(1); }
 
 /* PCI handling */
@@ -188,6 +194,8 @@ int pci_is_pcie(struct pci_dev * pdev);
 void clear_bit(int nr, volatile void * addr);
 void set_bit(int nr, volatile void *addr);
 int test_bit(int nr, volatile void *addr);
+int test_and_clear_bit(unsigned int nr, volatile unsigned long *p);
+int test_and_set_bit(unsigned int nr, volatile unsigned long *p);
 #define __set_bit(nr, addr)         set_bit(nr, addr)
 #define __clear_bit(nr, addr)       clear_bit(nr, addr)
 #define for_each_set_bit(bit, addr, size) NOT_IMPLEMENTED_STOP
@@ -216,6 +224,16 @@ struct page *alloc_page(ULONG mask);
 static inline int atomic_add_return(int i, atomic_t *v)
 {
     return __sync_add_and_fetch(&v->count, i);
+}
+
+static inline int atomic_dec_return(atomic_t *v)
+{
+    return __sync_sub_and_fetch(&v->count, 1);
+}
+
+static inline int atomic_inc_return(atomic_t *v)
+{
+    return __sync_add_and_fetch(&v->count, 1);
 }
 
 static inline void atomic_add(int i, atomic_t *v)
@@ -366,6 +384,15 @@ static inline int kref_sub(struct kref *kref, unsigned int count, void (*release
         return 0; 
 }
 
+static inline unsigned int kref_read(struct kref *kref)
+{
+    return kref->refcount.count;
+}
+
+void refcount_set(refcount_t *r, int n);
+bool refcount_dec_and_test(refcount_t *r);
+void refcount_inc(refcount_t *r);
+
 
 /* IDR handling */
 #define idr_pre_get(a, b)               idr_pre_get_internal(a)
@@ -474,10 +501,10 @@ typedef struct {
 #define MODULE_FIRMWARE(x)
 struct device;
 int request_firmware(const struct firmware **fw, const char *name, struct device *device);
+int firmware_request_nowarn(const struct firmware **fw, const char *name, struct device *device);
 void release_firmware(const struct firmware *fw);
 
 /* scatterlist */
-struct scatterlist;
 struct scatterlist *sg_next(struct scatterlist *s);
 dma_addr_t sg_dma_address(struct scatterlist *s);
 IPTR sg_dma_len(struct scatterlist *s);
@@ -500,15 +527,58 @@ void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_addr, size_t 
 void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_addr, size_t size, ULONG dir);
 
 /* dma fence handling */
-struct dma_fence
+struct dma_resv
 {
     ULONG dummy;
 };
-struct dma_resv;
+struct dma_fence;
+struct dma_fence_ops
+{
+    const char * (*get_driver_name)(struct dma_fence *fence);
+    const char * (*get_timeline_name)(struct dma_fence *fence);
+    bool (*enable_signaling)(struct dma_fence *fence);
+    bool (*signaled)(struct dma_fence *fence);
+    void (*release)(struct dma_fence *fence);
+    signed long (*wait)(struct dma_fence *fence, bool intr, signed long timeout);
+};
+struct dma_fence
+{
+    struct kref refcount;
+    ULONG flags;
+    ULONG seqno;
+    struct dma_fence_ops *ops;
+    IPTR context;
+    spinlock_t *lock;
+};
+
+#define DMA_FENCE_FLAG_SIGNALED_BIT 0
+#define DMA_FENCE_FLAG_USER_BITS 3 /* last */
+
 struct dma_fence *dma_fence_get(struct dma_fence *fence);
 struct dma_fence *dma_resv_get_excl(struct dma_resv *resv);
 void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence);
 void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence);
+void dma_fence_free(struct dma_fence *fence);
+signed long dma_fence_wait(struct dma_fence *fence, bool intr);
+bool dma_fence_is_signaled(struct dma_fence *fence);
+void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, spinlock_t *lock, u64 context, u64 seqno);
+void dma_fence_put(struct dma_fence *fence);
+int dma_fence_signal_locked(struct dma_fence *fence);
+void dma_fence_enable_sw_signaling(struct dma_fence *fence);
+void dma_resv_assert_held(struct dma_resv *resv);
+int dma_resv_trylock(struct dma_resv *resv);
+struct ww_acquire_ctx;
+int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
+int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
+void dma_resv_unlock(struct dma_resv *resv);
+struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv);
+void dma_resv_init(struct dma_resv *resv);
+void dma_resv_fini(struct dma_resv *resv);
+int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num);
+struct dma_resv_list;
+struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv);
+bool dma_resv_held(struct dma_resv *resv);
+int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src);
 
 /* other */
 #define do_div(n,base) ({ \
@@ -527,5 +597,6 @@ u64 div_u64(u64 a, u32 b);
 s64 div64_s64(s64 a, s64 b);
 u32 get_unaligned_le32(const void *p);
 u16 get_unaligned_le16(const void *p);
+void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 
 #endif /* _DRM_COMPAT_FUNCS_ */

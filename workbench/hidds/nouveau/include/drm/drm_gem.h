@@ -34,10 +34,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// #if !defined(__AROS__)
-// #include <linux/kref.h>
-// #include <linux/dma-resv.h>
-// #endif
+#if !defined(__AROS__)
+#include <linux/kref.h>
+#include <linux/dma-resv.h>
+#else
+#include <drm-compat/drm_compat_funcs.h>
+#endif
 
 // #include <drm/drm_vma_manager.h>
 
@@ -280,16 +282,14 @@ struct drm_gem_object {
 	 */
 	struct dma_resv *resv;
 
-// #if !defined(__AROS__)
-// 	/**
-// 	 * @_resv:
-// 	 *
-// 	 * A reservation object for this GEM object.
-// 	 *
-// 	 * This is unused for imported GEM objects.
-// 	 */
-// 	struct dma_resv _resv;
-// #endif
+	/**
+	 * @_resv:
+	 *
+	 * A reservation object for this GEM object.
+	 *
+	 * This is unused for imported GEM objects.
+	 */
+	struct dma_resv _resv;
 
 // 	/**
 // 	 * @funcs:

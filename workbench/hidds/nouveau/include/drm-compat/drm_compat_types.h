@@ -41,6 +41,7 @@
 #define dma_addr_t                  IPTR
 #define phys_addr_t                 IPTR
 #define loff_t                      IPTR
+#define pgoff_t                     IPTR
 #define pgprot_t                    ULONG
 #define gfp_t                       ULONG
 #define irqreturn_t                 ULONG
@@ -87,7 +88,7 @@ struct page
 #define PAGE_SHIFT              12
 #define PAGE_SIZE               ((1UL) << PAGE_SHIFT)
 #define PAGE_MASK               (~(PAGE_SIZE-1))
-#define PAGE_ALIGN(addr)        (APTR)(((IPTR)(addr) + PAGE_SIZE - 1) & PAGE_MASK)
+#define PAGE_ALIGN(addr)        (typeof(addr))(((IPTR)(addr) + PAGE_SIZE - 1) & PAGE_MASK)
 #define ALIGN(val, align)       (val + align - 1) & (~(align - 1))
 #define BITS_TO_LONGS(x)        ((x / (sizeof(long) * 8)) + 1)
 #define BIT(n)                  ((1UL) << (n))
@@ -236,6 +237,12 @@ struct work_struct
 struct module;
 struct edid;
 struct clk;
+struct drm_printer;
+struct scatterlist;
+struct sg_table
+{
+    struct scatterlist *sgl;
+};
 struct lock_class_key
 {
     ULONG dummy;

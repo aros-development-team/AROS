@@ -1,0 +1,13 @@
+/* Auto-generated: engine/bsp */
+// #include "client.c"
+// #include "device.c"
+// #include "disp.c"
+// #include "driver.c"
+// #include "fifo.c"
+#include "mem.c"
+// #include "mmu.c"
+#include "notify.c"
+#include "object.c"
+// #include "user.c"
+// #include "user361.c"
+#include "vmm.c"
