@@ -4,7 +4,7 @@
     Desc: BCM VideoCore4 Gfx Hidd hardware functions
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <asm/io.h>
