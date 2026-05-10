@@ -2,7 +2,7 @@
     Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
@@ -203,7 +203,7 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
 
     InitSemaphore(&xsd->vcsd_GPUMemLock);
 
-    bug("[VideoCoreGfx] VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10);
+    D(bug("[VideoCoreGfx] VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10));
 
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Type = NT_MEMORY;
     xsd->vcsd_GPUMemManage.mhe_MemHeader.mh_Node.ln_Name = "VideoCore GPU Memory";
@@ -230,7 +230,7 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
     AddTail(&SysBase->MemList, (struct Node *)&xsd->vcsd_GPUMemManage);
     Enable();
 
-    bug("[VideoCoreGfx] Memory Manager Initialised\n");
+    D(bug("[VideoCoreGfx] Memory Manager Initialised\n"));
 
     return TRUE;
 }

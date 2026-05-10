@@ -4,7 +4,7 @@
     Desc: BCM VideoCore4 Gfx Hidd initialisation code
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
@@ -122,16 +122,17 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     {
         if (FNAME_SUPPORT(InitMem)((void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]), AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]), LIBBASE))
         {
-            bug("[VideoCoreGfx] VideoCore GPU Found\n");
+            D(bug("[VideoCoreGfx] VideoCore GPU Found\n"));
 
             FNAME_HW(InitGfxHW)((APTR)xsd);
+            FNAME_SUPPORT(InitCursor)(xsd);
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {
                 LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
-                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, DDRV_BootMode, TRUE, TAG_DONE) == DD_OK)
+                if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE) == DD_OK)
                 {
-                    bug("[VideoCoreGfx] BootMode Display Driver Registered\n");
+                    D(bug("[VideoCoreGfx] Display Driver Registered\n"));
 
                     LIBBASE->library.lib_OpenCnt++;
                     retval = TRUE;
@@ -144,7 +145,7 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 failure:
     if (!(retval))
     {
-        bug("[VideoCoreGfx] No VideoCore GPU Found\n");
+        D(bug("[VideoCoreGfx] No VideoCore GPU Found\n"));
 
         FreeVec((APTR)xsd->vcsd_MBoxBuff);
 
