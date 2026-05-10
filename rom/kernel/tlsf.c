@@ -679,7 +679,7 @@ void tlsf_freevec(struct MemHeaderExt * mhe, APTR ptr)
     /* Double-free detection (after semaphore for SMP safety) */
     if (FREE_BLOCK(fb))
     {
-        D(nbug("[Kernel:TLSF] DOUBLE FREE! ptr=%p size=%lu\n", ptr, (unsigned long)GET_SIZE(fb)));
+        D(nbug("[Kernel:TLSF] DOUBLE FREE! ptr=%p size=%llu\n", ptr, (unsigned long long)GET_SIZE(fb)));
         if (sem_protected)
             ReleaseSemaphore((struct SignalSemaphore *)mhe->mhe_MemHeader.mh_Node.ln_Name);
         return;
