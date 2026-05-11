@@ -19,7 +19,6 @@
 #define __user
 #define __iomem
 #define __force
-#define __must_check
 #define __u64                       UQUAD
 #define __s64                       QUAD
 #define __u32                       ULONG

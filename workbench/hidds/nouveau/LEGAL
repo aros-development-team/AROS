@@ -5,6 +5,7 @@
 (c)----drm-aros
 (d)----libdrm
 (e)----xf86-video-nouveau
+(f)----include/linux
 
 (a) 
 All files in *this directory* are licensed under APL license.
@@ -21,3 +22,7 @@ All files in *this directory and its subdirectories* are licensed under MIT lice
 
 (e)
 All files in *this directory and its subdirectories* are licensed under MIT license.
+
+(f)
+Files in this directory are copied from FreeBSD (sys/compat/linuxkpi/common/include/linux)
+Check each file for license
