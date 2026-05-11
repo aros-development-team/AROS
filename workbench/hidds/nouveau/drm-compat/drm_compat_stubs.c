@@ -74,3 +74,5 @@ int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num) { NOT_IMPLE
 struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 bool dma_resv_held(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src) { NOT_IMPLEMENTED_STOP }
+
+void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPLEMENTED_STOP }

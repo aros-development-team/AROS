@@ -701,19 +701,25 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
     {
         /* This is probing for DDC */
         D(bug("i2c_transfer - probing for DDC\n"));
+NOT_IMPLEMENTED_STOP
+#if 0
         if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, 0xa0)) /* AROS has shifted addresses (<< 1) */
             return 2;
         else
             return 0;
+#endif
     }
     else if ((num == 2) && (msgs[0].addr == 0x75) && (msgs[1].addr == 0x75) && (msgs[0].len == 1) && (msgs[1].len == 1))
     {
+NOT_IMPLEMENTED_STOP
+#if 0
         /* This is probing for some hardware related to TV output on nv04 */
         D(bug("i2c_transfer - probing for some hardware related to TV output on nv04\n"));
         if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, 0xea)) /* AROS has shifted addresses (<< 1) */
             return 2;
         else
             return 0;
+#endif
     }
     else if ((num == 2) && (msgs[0].addr == 0x50) && (msgs[1].addr == 0x50) && (msgs[0].len == 1) && (msgs[1].len != 1))
     {

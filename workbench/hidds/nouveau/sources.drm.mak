@@ -19,6 +19,8 @@ AROS_DRM_CORE_SOURCES = \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_tt \
             drm/ttm/ttm_bo_util \
+            drm/ttm/ttm_bo_manager \
+            drm/ttm/ttm_page_alloc \
             drm/ttm/ttm_memory \
             drm-compat/drm_compat_funcs \
             drm-compat/drm_compat_stubs \
