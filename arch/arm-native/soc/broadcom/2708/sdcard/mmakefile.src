@@ -3,19 +3,30 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/devs/sdcard
 
+# Arasan SDHCI controller (default)
 BCM2708FILES = \
     sdcard_bcm2708init \
     sdcard_bcm2708bus \
     sdcard_bcm2708time
 
+# BCM2835 SDHOST controller (alternative — frees Arasan for WiFi)
+BCM2708SDHOSTFILES = \
+    sdcard_sdhost_init \
+    sdcard_sdhost_bus \
+    sdcard_bcm2708time
+
+# Uncomment ONE of these to select the SD controller:
+#BCM2708BUILDFILES := $(BCM2708FILES)
+BCM2708BUILDFILES := $(BCM2708SDHOSTFILES)
+
 %build_archspecific \
   mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
   arch=raspi-arm modname=sdcard \
-  files="$(BCM2708FILES)"
+  files="$(BCM2708BUILDFILES)"
 
 %build_archspecific \
   mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
   arch=raspi-armeb modname=sdcard \
-  files="$(BCM2708FILES)"
+  files="$(BCM2708BUILDFILES)"
 
 %common
