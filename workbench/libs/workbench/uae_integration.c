@@ -118,8 +118,12 @@ static STRPTR str_dup_vec(void *mempool, char *in)
     }
 
     result=AllocVecPooled(mempool, strlen(in)+1);
-    strcpy(result, in);
-  
+    if(!result)
+    {
+        return 0;
+    }
+    memcpy(result, in, strlen(in)+1);
+
     return (STRPTR) result;
 }
 
