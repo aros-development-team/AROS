@@ -61,6 +61,7 @@ static char *opt_drivetypes[] = {
     "IDE",
     "SCSI",
     "USB",
+    "VirtIO",
     NULL
 };
 
@@ -71,11 +72,12 @@ const struct OOP_ABDescr install__abd[] =
     {NULL                       , NULL                  }
 };
 
-#define OPT_DTYPE_NVME  0
-#define OPT_DTYPE_AHCI  1
-#define OPT_DTYPE_IDE   2
-#define OPT_DTYPE_SCSI  3
-#define OPT_DTYPE_USB   4
+#define OPT_DTYPE_NVME   0
+#define OPT_DTYPE_AHCI   1
+#define OPT_DTYPE_IDE    2
+#define OPT_DTYPE_SCSI   3
+#define OPT_DTYPE_USB    4
+#define OPT_DTYPE_VIRTIO 5
 
 Object *cycle_drivetype = NULL;
 Object *optObjDestDevice = NULL;
@@ -84,6 +86,7 @@ Object *optObjDestUnit = NULL;
 CONST_STRPTR def_atadev     = "ata.device";
 CONST_STRPTR def_ahcidev    = "ahci.device";
 CONST_STRPTR def_nvmedev    = "nvme.device";
+CONST_STRPTR def_virtiodev  = "virtio.device";
 CONST_STRPTR def_scsidev    = "scsi.device";
 CONST_STRPTR def_usbdev     = "usbscsi.device";
 CONST_STRPTR strZero        = "0";
@@ -180,6 +183,8 @@ AROS_UFH3
                                                             MUIA_Cycle_Active, OPT_DTYPE_SCSI, MUIA_String_Contents, (IPTR)def_scsidev);
             SetOptObjNotificationFromObj(cycle_drivetype, optObjDestDevice,
                                                             MUIA_Cycle_Active, OPT_DTYPE_USB, MUIA_String_Contents, (IPTR)def_usbdev);
+            SetOptObjNotificationFromObj(cycle_drivetype, optObjDestDevice,
+                                                            MUIA_Cycle_Active, OPT_DTYPE_VIRTIO, MUIA_String_Contents, (IPTR)def_virtiodev);
             SetOptObjNotificationFromObj(cycle_drivetype, optObjDestUnit,
                                                             MUIA_Cycle_Active, MUIV_EveryTime, MUIA_String_Integer, 0);
             DoMethod(cycle_drivetype, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
@@ -234,6 +239,11 @@ static BYTE DriveSelect__InitDriveTypeCycle(struct DriveSelect_Data *data, Objec
         else if (!strncmp(driveDev, def_atadev, strlen(def_atadev)))
         {
             data->dsd_CycActive = OPT_DTYPE_IDE;
+            retval = (BYTE)data->dsd_CycActive;
+        }
+        else if (!strncmp(driveDev, def_virtiodev, strlen(def_virtiodev)))
+        {
+            data->dsd_CycActive = OPT_DTYPE_VIRTIO;
             retval = (BYTE)data->dsd_CycActive;
         }
         else if (!strncmp(driveDev, def_scsidev, strlen(def_scsidev)))
@@ -497,6 +507,11 @@ static IPTR DriveSelect__OM_SET(Class * CLASS, Object * self, struct opSet *mess
             {
                 data->dsd_SysPartName = NVME_SYS_PART_NAME;
                 data->dsd_WorkPartName = NVME_WORK_PART_NAME;
+            }
+            else if (strncmp(devStr, def_virtiodev, strlen(def_virtiodev)) == 0)
+            {
+                data->dsd_SysPartName = VIRTIO_SYS_PART_NAME;
+                data->dsd_WorkPartName = VIRTIO_WORK_PART_NAME;
             }
             else
             {

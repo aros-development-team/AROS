@@ -1,7 +1,7 @@
 #ifndef IA_INSTALL_H
 #define IA_INSTALL_H
 /*
-    Copyright © 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright Â© 2003-2023, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,8 @@
 #define WORK_PART_NAME        "DH1"
 #define NVME_SYS_PART_NAME    "NH0"
 #define NVME_WORK_PART_NAME   "NH1"
+#define VIRTIO_SYS_PART_NAME  "VH0"
+#define VIRTIO_WORK_PART_NAME "VH1"
 #define USB_SYS_PART_NAME     "DU0"
 #define USB_WORK_PART_NAME    "DU1"
 #define EFI_VOL_NAME          "EFI"
