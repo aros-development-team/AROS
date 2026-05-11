@@ -45,7 +45,7 @@
 
 #define TTM_MEMORY_ALLOC_RETRIES 4
 
-// struct ttm_mem_global ttm_mem_glob;
+struct ttm_mem_global ttm_mem_glob;
 // EXPORT_SYMBOL(ttm_mem_glob);
 
 struct ttm_mem_zone {
@@ -465,27 +465,29 @@ static void ttm_check_swapping(struct ttm_mem_global *glob);
 // 	return ret;
 // }
 
-// void ttm_mem_global_release(struct ttm_mem_global *glob)
-// {
-// 	struct ttm_mem_zone *zone;
-// 	unsigned int i;
+void ttm_mem_global_release(struct ttm_mem_global *glob)
+{
+	struct ttm_mem_zone *zone;
+	unsigned int i;
 
-// 	/* let the page allocator first stop the shrink work. */
-// 	ttm_page_alloc_fini();
-// 	ttm_dma_page_alloc_fini();
+	/* let the page allocator first stop the shrink work. */
+	ttm_page_alloc_fini();
+	ttm_dma_page_alloc_fini();
 
-// 	flush_workqueue(glob->swap_queue);
-// 	destroy_workqueue(glob->swap_queue);
-// 	glob->swap_queue = NULL;
-// 	for (i = 0; i < glob->num_zones; ++i) {
-// 		zone = glob->zones[i];
-// 		kobject_del(&zone->kobj);
-// 		kobject_put(&zone->kobj);
-// 	}
-// 	kobject_del(&glob->kobj);
-// 	kobject_put(&glob->kobj);
-// 	memset(glob, 0, sizeof(*glob));
-// }
+#if !defined(__AROS__)
+	flush_workqueue(glob->swap_queue);
+	destroy_workqueue(glob->swap_queue);
+	glob->swap_queue = NULL;
+	for (i = 0; i < glob->num_zones; ++i) {
+		zone = glob->zones[i];
+		kobject_del(&zone->kobj);
+		kobject_put(&zone->kobj);
+	}
+	kobject_del(&glob->kobj);
+	kobject_put(&glob->kobj);
+#endif
+	memset(glob, 0, sizeof(*glob));
+}
 
 static void ttm_check_swapping(struct ttm_mem_global *glob)
 {

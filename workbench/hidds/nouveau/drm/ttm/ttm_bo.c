@@ -54,7 +54,7 @@
  */
 DEFINE_MUTEX(ttm_global_mutex);
 unsigned ttm_bo_glob_use_count;
-// struct ttm_bo_global ttm_bo_glob;
+struct ttm_bo_global ttm_bo_glob;
 
 // static struct attribute ttm_bo_count = {
 // 	.name = "bo_count",
@@ -230,15 +230,15 @@ void ttm_bo_del_from_lru(struct ttm_buffer_object *bo)
 		bdev->driver->del_from_lru_notify(bo);
 }
 
-// void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo)
-// {
-// 	struct ttm_bo_global *glob = bo->bdev->glob;
+void ttm_bo_del_sub_from_lru(struct ttm_buffer_object *bo)
+{
+	struct ttm_bo_global *glob = bo->bdev->glob;
 
-// 	spin_lock(&glob->lru_lock);
-// 	ttm_bo_del_from_lru(bo);
-// 	spin_unlock(&glob->lru_lock);
-// }
-// EXPORT_SYMBOL(ttm_bo_del_sub_from_lru);
+	spin_lock(&glob->lru_lock);
+	ttm_bo_del_from_lru(bo);
+	spin_unlock(&glob->lru_lock);
+}
+EXPORT_SYMBOL(ttm_bo_del_sub_from_lru);
 
 static void ttm_bo_bulk_move_set_pos(struct ttm_lru_bulk_move_pos *pos,
 				     struct ttm_buffer_object *bo)

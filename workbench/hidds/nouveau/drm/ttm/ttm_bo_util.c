@@ -306,21 +306,24 @@ NOT_IMPLEMENTED_STOP
 }
 EXPORT_SYMBOL(ttm_kmap_atomic_prot);
 
-// /**
-//  * ttm_kunmap_atomic_prot - Unmap a page that was mapped using
-//  * ttm_kmap_atomic_prot.
-//  *
-//  * @addr: The virtual address from the map.
-//  * @prot: The page protection.
-//  */
-// void ttm_kunmap_atomic_prot(void *addr, pgprot_t prot)
-// {
-// 	if (pgprot_val(prot) == pgprot_val(PAGE_KERNEL))
-// 		kunmap_atomic(addr);
-// 	else
-// 		__ttm_kunmap_atomic(addr);
-// }
-// EXPORT_SYMBOL(ttm_kunmap_atomic_prot);
+/**
+ * ttm_kunmap_atomic_prot - Unmap a page that was mapped using
+ * ttm_kmap_atomic_prot.
+ *
+ * @addr: The virtual address from the map.
+ * @prot: The page protection.
+ */
+void ttm_kunmap_atomic_prot(void *addr, pgprot_t prot)
+{
+NOT_IMPLEMENTED_STOP
+#if 0
+	if (pgprot_val(prot) == pgprot_val(PAGE_KERNEL))
+		kunmap_atomic(addr);
+	else
+		__ttm_kunmap_atomic(addr);
+#endif
+}
+EXPORT_SYMBOL(ttm_kunmap_atomic_prot);
 
 static int ttm_copy_io_ttm_page(struct ttm_tt *ttm, void *src,
 				unsigned long page,
@@ -600,78 +603,85 @@ EXPORT_SYMBOL(ttm_io_prot);
 // 	return (!map->virtual) ? -ENOMEM : 0;
 // }
 
-// static int ttm_bo_kmap_ttm(struct ttm_buffer_object *bo,
-// 			   unsigned long start_page,
-// 			   unsigned long num_pages,
-// 			   struct ttm_bo_kmap_obj *map)
-// {
-// 	struct ttm_mem_reg *mem = &bo->mem;
-// 	struct ttm_operation_ctx ctx = {
-// 		.interruptible = false,
-// 		.no_wait_gpu = false
-// 	};
-// 	struct ttm_tt *ttm = bo->ttm;
-// 	pgprot_t prot;
-// 	int ret;
+static int ttm_bo_kmap_ttm(struct ttm_buffer_object *bo,
+			   unsigned long start_page,
+			   unsigned long num_pages,
+			   struct ttm_bo_kmap_obj *map)
+{
+	struct ttm_mem_reg *mem = &bo->mem;
+	struct ttm_operation_ctx ctx = {
+		.interruptible = false,
+		.no_wait_gpu = false
+	};
+	struct ttm_tt *ttm = bo->ttm;
+	pgprot_t prot;
+	int ret;
 
-// 	BUG_ON(!ttm);
+	BUG_ON(!ttm);
 
-// 	ret = ttm_tt_populate(ttm, &ctx);
-// 	if (ret)
-// 		return ret;
+	ret = ttm_tt_populate(ttm, &ctx);
+	if (ret)
+		return ret;
 
-// 	if (num_pages == 1 && (mem->placement & TTM_PL_FLAG_CACHED)) {
-// 		/*
-// 		 * We're mapping a single page, and the desired
-// 		 * page protection is consistent with the bo.
-// 		 */
+	if (num_pages == 1 && (mem->placement & TTM_PL_FLAG_CACHED)) {
+		/*
+		 * We're mapping a single page, and the desired
+		 * page protection is consistent with the bo.
+		 */
 
-// 		map->bo_kmap_type = ttm_bo_map_kmap;
-// 		map->page = ttm->pages[start_page];
-// 		map->virtual = kmap(map->page);
-// 	} else {
-// 		/*
-// 		 * We need to use vmap to get the desired page protection
-// 		 * or to make the buffer object look contiguous.
-// 		 */
-// 		prot = ttm_io_prot(mem->placement, PAGE_KERNEL);
-// 		map->bo_kmap_type = ttm_bo_map_vmap;
-// 		map->virtual = vmap(ttm->pages + start_page, num_pages,
-// 				    0, prot);
-// 	}
-// 	return (!map->virtual) ? -ENOMEM : 0;
-// }
+		map->bo_kmap_type = ttm_bo_map_kmap;
+		map->page = ttm->pages[start_page];
+		map->virtual = kmap(map->page);
+	} else {
+		/*
+		 * We need to use vmap to get the desired page protection
+		 * or to make the buffer object look contiguous.
+		 */
+#if !defined(__AROS__)
+		prot = ttm_io_prot(mem->placement, PAGE_KERNEL);
+#else
+		prot = 0;
+#endif
+		map->bo_kmap_type = ttm_bo_map_vmap;
+		map->virtual = vmap(ttm->pages + start_page, num_pages,
+				    0, prot);
+	}
+	return (!map->virtual) ? -ENOMEM : 0;
+}
 
-// int ttm_bo_kmap(struct ttm_buffer_object *bo,
-// 		unsigned long start_page, unsigned long num_pages,
-// 		struct ttm_bo_kmap_obj *map)
-// {
-// 	struct ttm_mem_type_manager *man =
-// 		&bo->bdev->man[bo->mem.mem_type];
-// 	unsigned long offset, size;
-// 	int ret;
+int ttm_bo_kmap(struct ttm_buffer_object *bo,
+		unsigned long start_page, unsigned long num_pages,
+		struct ttm_bo_kmap_obj *map)
+{
+	struct ttm_mem_type_manager *man =
+		&bo->bdev->man[bo->mem.mem_type];
+	unsigned long offset, size;
+	int ret;
 
-// 	map->virtual = NULL;
-// 	map->bo = bo;
-// 	if (num_pages > bo->num_pages)
-// 		return -EINVAL;
-// 	if (start_page > bo->num_pages)
-// 		return -EINVAL;
+	map->virtual = NULL;
+	map->bo = bo;
+	if (num_pages > bo->num_pages)
+		return -EINVAL;
+	if (start_page > bo->num_pages)
+		return -EINVAL;
 
-// 	(void) ttm_mem_io_lock(man, false);
-// 	ret = ttm_mem_io_reserve(bo->bdev, &bo->mem);
-// 	ttm_mem_io_unlock(man);
-// 	if (ret)
-// 		return ret;
-// 	if (!bo->mem.bus.is_iomem) {
-// 		return ttm_bo_kmap_ttm(bo, start_page, num_pages, map);
-// 	} else {
-// 		offset = start_page << PAGE_SHIFT;
-// 		size = num_pages << PAGE_SHIFT;
-// 		return ttm_bo_ioremap(bo, offset, size, map);
-// 	}
-// }
-// EXPORT_SYMBOL(ttm_bo_kmap);
+	(void) ttm_mem_io_lock(man, false);
+	ret = ttm_mem_io_reserve(bo->bdev, &bo->mem);
+	ttm_mem_io_unlock(man);
+	if (ret)
+		return ret;
+	if (!bo->mem.bus.is_iomem) {
+		return ttm_bo_kmap_ttm(bo, start_page, num_pages, map);
+	} else {
+		offset = start_page << PAGE_SHIFT;
+		size = num_pages << PAGE_SHIFT;
+NOT_IMPLEMENTED_STOP
+#if 0
+		return ttm_bo_ioremap(bo, offset, size, map);
+#endif
+	}
+}
+EXPORT_SYMBOL(ttm_bo_kmap);
 
 void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 {
