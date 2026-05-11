@@ -47,7 +47,32 @@ struct VideoCoreGfx_staticdata {
         OOP_AttrBase	        vcsd_attrBases[ATTRBASES_NUM];
 
 	APTR                    data;
+
+        /* HW cursor state. cur_buf == NULL means cursor unavailable. */
+        ULONG                   vcsd_CurBufHandle;
+        APTR                    vcsd_CurBuf;        /* CPU-physical, ARGB pixels */
+        ULONG                   vcsd_CurBufBus;     /* GPU bus address */
+        ULONG                   vcsd_CurWidth;
+        ULONG                   vcsd_CurHeight;
+        ULONG                   vcsd_CurHotX;
+        ULONG                   vcsd_CurHotY;
+        LONG                    vcsd_CurX;
+        LONG                    vcsd_CurY;
+        BOOL                    vcsd_CurVisible;
+
+        /* Firmware-reported native HDMI resolution, populated by
+         * HDMI_SyncGen at init time. Used as the default returned by
+         * NominalDimensions so a fresh boot lands on the panel's native
+         * mode instead of the AROS hardcoded 800x600.
+         */
+        ULONG                   vcsd_NativeWidth;
+        ULONG                   vcsd_NativeHeight;
 };
+
+/* Maximum HW cursor size supported by VideoCore firmware. */
+#define VC4_CURSOR_MAX_W 64
+#define VC4_CURSOR_MAX_H 64
+#define VC4_CURSOR_BUF_BYTES (VC4_CURSOR_MAX_W * VC4_CURSOR_MAX_H * 4)
 
 struct VideoCoreGfxBase
 {
@@ -95,6 +120,7 @@ struct DisplayMode
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 
 int     FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
+int     FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *);
 int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
 int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
 APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);

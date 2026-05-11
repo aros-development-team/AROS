@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
-USER_CPPFLAGS += -DDEBUG=1
+USER_CPPFLAGS += -DDEBUG=0
 USER_LDFLAGS := -static
 
 FILES :=    cdceth.class cdceth_encap dev debug

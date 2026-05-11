@@ -4,7 +4,7 @@
     Desc: BCM VideoCore4 Gfx Hidd Class.
 */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define __OOP_NOATTRBASES__
@@ -26,9 +26,15 @@
 #include <clib/alib_protos.h>
 #include <string.h>
 
+#include <proto/mbox.h>
+
 #include "vc4gfx_hidd.h"
 #include "vc4gfx_hardware.h"
-#include "vc4gfx_bitmap.h"
+
+#ifdef MBoxBase
+#undef MBoxBase
+#endif
+#define MBoxBase      xsd->vcsd_MBoxBase
 
 #include LC_LIBDEFS_FILE
 
@@ -199,17 +205,235 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             *msg->storage = (IPTR)(XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper - XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower);
             found = TRUE;
             break;
+
+        case aoHidd_Gfx_HWSpriteTypes:
+            *msg->storage = XSD(cl)->vcsd_CurBuf ? vHidd_SpriteType_DirectColor : 0;
+            found = TRUE;
+            break;
         }
     }
     if (!found)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
+int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
+{
+    /* Allocate a 64x64 ARGB scratch buffer in GPU memory for cursor pixels.
+     * The firmware reads cursor pixels from this buffer each time we issue
+     * SETCURSORINFO, so it must remain locked for the lifetime of the driver.
+     * Use VCMEM_DIRECT (uncached, 0xC alias) so the CPU can write pixels
+     * via the MMU's uncached mapping - VCMEM_NORMAL is rejected by the
+     * firmware when the request comes from ARM (videocore.h:108).
+     *
+     * ALLOCMEM tag layout: [tag, value_buf_size, code, size, alignment,
+     * flags] - the request value buffer is 3 u32 (size/align/flags),
+     * the response writes a 1 u32 handle into the first slot.
+     */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(10 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_ALLOCMEM);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(12);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(12);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(VC4_CURSOR_BUF_BYTES);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(VCMEM_DIRECT);
+    xsd->vcsd_MBoxMessage[8] = 0;
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+        return FALSE;
+    xsd->vcsd_CurBufHandle = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    if (!xsd->vcsd_CurBufHandle)
+        return FALSE;
+
+    /* LOCKMEM tag layout: [tag, value_buf_size, code, handle] - request
+     * value is the handle, response overwrites it with the bus address.
+     */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(xsd->vcsd_CurBufHandle);
+    xsd->vcsd_MBoxMessage[6] = 0;
+    xsd->vcsd_MBoxMessage[7] = 0;
+
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+        return FALSE;
+
+    xsd->vcsd_CurBufBus = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    xsd->vcsd_CurVisible = FALSE;
+
+    /* The firmware should hand back a GPU bus address with the alias
+     * bits set (VCMEM_DIRECT == 0xC, VCMEM_NORMAL == 0x4). QEMU's
+     * mailbox emulation may return a bare low-RAM address instead,
+     * which overlaps with CPU-side allocations and would corrupt
+     * unrelated state. Treat anything outside the GPU alias range as
+     * "no HW cursor available".
+     */
+    if ((xsd->vcsd_CurBufBus & 0xC0000000) == 0)
+    {
+        xsd->vcsd_CurBuf = NULL;
+        return FALSE;
+    }
+    xsd->vcsd_CurBuf = (APTR)(xsd->vcsd_CurBufBus & 0x3fffffff);
+
+    if (xsd->vcsd_CurBuf == NULL)
+        return FALSE;
+
+    D(bug("[VideoCoreGfx] HW cursor buffer @ 0x%p (bus 0x%08x)\n",
+        xsd->vcsd_CurBuf, xsd->vcsd_CurBufBus));
+    return TRUE;
+}
+
+VOID MNAME_GFX(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    /* Hand back the panel's native HDMI resolution if we know it. Falls
+     * through to the superclass (which returns AROS_NOMINAL_*) when GETRES
+     * couldn't tell us - e.g. headless boot or unsupported firmware.
+     */
+    if (xsd->vcsd_NativeWidth && xsd->vcsd_NativeHeight)
+    {
+        if (msg->width)
+            *msg->width  = xsd->vcsd_NativeWidth;
+        if (msg->height)
+            *msg->height = xsd->vcsd_NativeHeight;
+        if (msg->depth)
+            *msg->depth  = 24;
+        return;
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    IPTR width = 0, height = 0;
+
+    if (!xsd->vcsd_CurBuf)
+        return FALSE;
+
+    if (msg->shape == NULL)
+    {
+        /* Hide and forget the current shape. */
+        xsd->vcsd_CurVisible = FALSE;
+        xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+        xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+        xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+        xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+        xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+        xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(0);     /* enable=0 */
+        xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[9] = 0;
+        MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+        MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+        return TRUE;
+    }
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    if (width == 0 || height == 0 ||
+        width > VC4_CURSOR_MAX_W || height > VC4_CURSOR_MAX_H)
+        return FALSE;
+
+    /* The VideoCore firmware wants cursor pixels as bytes R,G,B,A in
+     * memory (mailbox SET_CURSOR_INFO format=0), which corresponds to
+     * AROS' vHidd_StdPixFmt_RGBA32. HIDD's GetImage handles conversion.
+     */
+    HIDD_BM_GetImage(msg->shape, (UBYTE *)xsd->vcsd_CurBuf,
+                     width * 4, 0, 0, width, height, vHidd_StdPixFmt_RGBA32);
+
+    xsd->vcsd_CurWidth  = width;
+    xsd->vcsd_CurHeight = height;
+    xsd->vcsd_CurHotX   = msg->xoffset;
+    xsd->vcsd_CurHotY   = msg->yoffset;
+
+    /* SETCURSORINFO: width, height, format(0), buf, hot_x, hot_y */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(12 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORINFO);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(24);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(24);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(width);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(height);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(0);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(xsd->vcsd_CurBufBus);
+    xsd->vcsd_MBoxMessage[9] = AROS_LE2LONG(xsd->vcsd_CurHotX);
+    xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(xsd->vcsd_CurHotY);
+    xsd->vcsd_MBoxMessage[11] = 0;
+
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+        return FALSE;
+    if (AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) != 0)
+        return FALSE;
+
+    return TRUE;
+}
+
+BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (!xsd->vcsd_CurBuf)
+        return FALSE;
+
+    xsd->vcsd_CurX = msg->x;
+    xsd->vcsd_CurY = msg->y;
+
+    if (!xsd->vcsd_CurVisible)
+        return TRUE;
+
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(1);     /* enable */
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)msg->x);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)msg->y);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords (firmware scales) */
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+    return TRUE;
+}
+
+VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (!xsd->vcsd_CurBuf)
+        return;
+
+    xsd->vcsd_CurVisible = msg->visible ? TRUE : FALSE;
+
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(msg->visible ? 1 : 0);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)xsd->vcsd_CurX);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)xsd->vcsd_CurY);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords */
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+}
+
 OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
-
-    EnterFunc(bug("VideoCoreGfx::CreateObject()\n"));
 
     if (msg->cl == XSD(cl)->vcsd_basebm)
     {
@@ -226,7 +450,6 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
         framebuffer = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
         if (framebuffer)
         {
-            D(bug("[VideoCoreGfx] VideoCoreGfx::CreateObject: Using OnScreenBM\n"));
             newbm_tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
             newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOnBMClass;
         }
@@ -237,7 +460,6 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 
             if (displayable || (friend && (OOP_OCLASS(friend) == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)))
             {
-                D(bug("[VideoCoreGfx] VideoCoreGfx::CreateObject: Using OffScreenBM (ChunkyBM)\n"));
                 newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassID;
                 newbm_tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
             }
@@ -252,5 +474,5 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     else
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    ReturnPtr("VideoCoreGfx::CreateObject: Obj", OOP_Object *, object);
+    return object;
 }

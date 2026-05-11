@@ -248,7 +248,7 @@ UBYTE buffer[32];
                                 return NULL;
                         }
                         pos = buffer;
-                        while ((*name != 0) && (*name != '/'))
+                        while ((*name != 0) && (*name != '/') && (pos < buffer + sizeof(buffer) - 1))
                         {
                                 *pos++ = *name++;
                         }
