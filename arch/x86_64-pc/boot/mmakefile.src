@@ -41,6 +41,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-hidd-pciata                      \
 #MM                     kernel-ahci                             \
 #MM                     kernel-nvme                             \
+#MM                     kernel-virtio                           \
 #MM                     kernel-battclock                        \
 #MM                     kernel-efi                              \
 #MM                     kernel-timer                            \
@@ -60,7 +61,7 @@ KRSRCS      := efi hpet log
 KRSRCS_ARCH := battclock processor
 KLIBS       := acpica
 KLIBS_ARCH  := expansion
-KDEVS       := ata ahci nvme
+KDEVS       := ata ahci nvme virtio
 KDEVS_ARCH  := timer
 KHIDDS      := ata_pci bus i8042 ipmi smbios-ipmi parallel pci pcipc telemetry power serial vesagfx vgagfx storage system
 

@@ -1,0 +1,38 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-virtio : kernel-timer-includes
+
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+VIRTIODEVICEFILES :=  \
+        virtio_init \
+        virtio_timer \
+        virtio_io \
+        virtio_hw \
+        virtio_queue
+
+VIRTIOCLASSFILES :=  \
+        virtio_controllerclass \
+        virtio_busclass \
+        virtio_unitclass
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+# Enable AROS debugging
+#USER_CPPFLAGS += -DDEBUG=1
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-virtio \
+  modname=virtio modtype=device \
+  files="$(VIRTIODEVICEFILES) $(VIRTIOCLASSFILES)" \
+  uselibs="hiddstubs"
+
+%common
