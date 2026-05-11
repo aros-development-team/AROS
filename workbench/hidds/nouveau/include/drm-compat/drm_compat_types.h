@@ -98,14 +98,6 @@ struct page
 #define __aligned(x)            __attribute__((__alligned__(x)))
 
 
-/* PCI support */
-struct pci_dev
-{
-    ULONG class;
-    APTR oopdev;
-    TEXT name[16];
-};
-
 /* io_mapping support */
 struct io_mapping
 {

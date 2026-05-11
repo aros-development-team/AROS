@@ -3,6 +3,7 @@
 */
 
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_pci.h>
 
 #define PIO_RESERVED                (IPTR)0x40000UL
 

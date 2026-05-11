@@ -172,26 +172,6 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define pr_debug(fmt, ...)              bug(fmt, ##__VA_ARGS__)
 #define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED %s\n", __func__);while(1); }
 
-/* PCI handling */
-void * ioremap(resource_size_t offset, unsigned long size);
-#define pci_map_page(a, b, c, d, e)     (dma_addr_t)(b->address + c)
-#define pci_dma_mapping_error(a, b)     FALSE
-#define pci_unmap_page(a, b, c, d)      
-#define ioremap_nocache                 ioremap
-#define ioremap_wc                      ioremap
-void iounmap(void * addr);
-resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int barnum);
-unsigned long pci_resource_len(struct pci_dev * pdev, unsigned int barnum);
-#define PCI_DEVFN(dev, fun)             dev, fun
-void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun);
-int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val);
-int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val);
-int pci_write_config_dword(struct pci_dev * pdev, int where, u32 val);
-#define pci_name(pdev)                  ((const char *)pdev->name)
-int pci_is_pcie(struct pci_dev * pdev);
-
-
-
 /* Bit operations */
 void clear_bit(int nr, volatile void * addr);
 void set_bit(int nr, volatile void *addr);
@@ -417,6 +397,10 @@ int agp_unbind_memory(struct agp_memory * mem);
 void agp_flush_chipset(struct agp_bridge_data * bridge);
 
 /* io_mapping handling */
+void * ioremap(resource_size_t offset, unsigned long size);
+void iounmap(void * addr);
+#define ioremap_nocache ioremap
+#define ioremap_wc      ioremap
 #define __copy_from_user_inatomic_nocache(to, from, size)   copy_from_user(to, from, size)
 #define io_mapping_map_atomic_wc(mapping, offset)   (APTR)(mapping->address + (offset))
 #define io_mapping_unmap_atomic(address)
