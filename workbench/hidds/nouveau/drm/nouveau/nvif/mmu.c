@@ -20,6 +20,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 #include <nvif/mmu.h>
+#include <linux/overflow.h>
 
 #include <nvif/class.h>
 #include <nvif/if0008.h>

@@ -24,6 +24,8 @@
  *
  */
 
+#include <linux/compiler_attributes.h>
+
 #include "nouveau_drv.h"
 #include "nouveau_dma.h"
 #include "nouveau_vmm.h"

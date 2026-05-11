@@ -30,6 +30,8 @@
 #if !defined(__AROS__)
 #include <linux/dma-mapping.h>
 #include <linux/swiotlb.h>
+#else
+#include <linux/compiler_attributes.h>
 #endif
 
 #include "nouveau_drv.h"

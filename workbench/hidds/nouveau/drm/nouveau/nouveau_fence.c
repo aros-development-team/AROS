@@ -30,6 +30,7 @@
 #include <linux/sched/signal.h>
 #include <trace/events/dma_fence.h>
 #else
+#include <linux/compiler_attributes.h>
 #include <drm-compat/drm_compat_funcs.h>
 #endif
 

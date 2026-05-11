@@ -31,6 +31,7 @@
 #include <linux/vga_switcheroo.h>
 #include <linux/mmu_notifier.h>
 #else
+#include <linux/compiler_attributes.h>
 #include <drm-compat/drm_compat_pci.h>
 #include <drm-compat/drm_compat_funcs.h>
 #endif
