@@ -30,8 +30,6 @@ nvkm_object_search(struct nvkm_client *client, u64 handle,
 		   const struct nvkm_object_func *func)
 {
 	struct nvkm_object *object;
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (handle) {
 		struct rb_node *node = client->objroot.rb_node;
 		while (node) {
@@ -52,25 +50,19 @@ NOT_IMPLEMENTED_STOP
 done:
 	if (unlikely(func && object->func != func))
 		return ERR_PTR(-EINVAL);
-#endif
 	return object;
 }
 
 void
 nvkm_object_remove(struct nvkm_object *object)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (!RB_EMPTY_NODE(&object->node))
 		rb_erase(&object->node, &object->client->objroot);
-#endif
 }
 
 bool
 nvkm_object_insert(struct nvkm_object *object)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct rb_node **ptr = &object->client->objroot.rb_node;
 	struct rb_node *parent = NULL;
 
@@ -88,7 +80,6 @@ NOT_IMPLEMENTED_STOP
 
 	rb_link_node(&object->node, parent, ptr);
 	rb_insert_color(&object->node, &object->client->objroot);
-#endif
 	return true;
 }
 
@@ -330,10 +321,7 @@ nvkm_object_ctor(const struct nvkm_object_func *func,
 	object->object = oclass->object;
 	INIT_LIST_HEAD(&object->head);
 	INIT_LIST_HEAD(&object->tree);
-NOT_IMPLEMENTED_STOP
-#if 0
 	RB_CLEAR_NODE(&object->node);
-#endif
 	WARN_ON(IS_ERR(object->engine));
 }
 

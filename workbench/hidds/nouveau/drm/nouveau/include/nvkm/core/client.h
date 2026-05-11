@@ -11,9 +11,7 @@ struct nvkm_client {
 	u32 debug;
 
 	struct nvkm_client_notify *notify[32];
-#if !defined(__AROS__)
 	struct rb_root objroot;
-#endif
 
 	bool super;
 	void *data;

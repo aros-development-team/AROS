@@ -24,6 +24,7 @@ AROS_DRM_CORE_SOURCES = \
             drm/ttm/ttm_memory \
             drm-compat/drm_compat_funcs \
             drm-compat/drm_compat_stubs \
+            drm-compat/linux_compat \
 
 AROS_DRM_NVIDIA_SOURCES = \
 drm/nouveau/nouveau_drm \

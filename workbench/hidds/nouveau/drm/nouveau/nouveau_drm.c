@@ -200,13 +200,16 @@ nouveau_cli_fini(struct nouveau_cli *cli)
 	 *
 	 * So, after flushing the workqueue, there should be nothing left.
 	 */
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	flush_work(&cli->work);
 #endif
 	WARN_ON(!list_empty(&cli->worker));
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	usif_client_fini(cli);
+#endif
 	nouveau_vmm_fini(&cli->svm);
 	nouveau_vmm_fini(&cli->vmm);
 	nvif_mmu_fini(&cli->mmu);

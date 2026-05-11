@@ -299,10 +299,7 @@ nvkm_client_new(const char *name, u64 device, const char *cfg,
 	snprintf(client->name, sizeof(client->name), "%s", name);
 	client->device = device;
 	client->debug = nvkm_dbgopt(dbg, "CLIENT");
-NOT_IMPLEMENTED_STOP
-#if 0
 	client->objroot = RB_ROOT;
-#endif
 	client->ntfy = ntfy;
 	INIT_LIST_HEAD(&client->umem);
 	spin_lock_init(&client->lock);

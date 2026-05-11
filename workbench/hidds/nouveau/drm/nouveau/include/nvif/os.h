@@ -36,6 +36,7 @@
 #include <soc/tegra/fuse.h>
 #include <soc/tegra/pmc.h>
 #else
+#include <linux/rbtree.h>
 #include <drm-compat/drm_compat_types.h>
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_pci.h>

@@ -17,9 +17,7 @@ struct nvkm_object {
 	u8  route;
 	u64 token;
 	u64 object;
-#if !defined(__AROS__)
 	struct rb_node node;
-#endif
 };
 
 enum nvkm_object_map {
