@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifdef DEBUG
@@ -248,7 +248,7 @@ UBYTE buffer[32];
                                 return NULL;
                         }
                         pos = buffer;
-                        while ((*name != 0) && (*name != '/') && (pos < buffer + sizeof(buffer) - 1))
+                        while ((*name != 0) && (*name != '/') && ((UBYTE *)pos < buffer + sizeof(buffer) - 1))
                         {
                                 *pos++ = *name++;
                         }
