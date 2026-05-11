@@ -106,12 +106,14 @@ static char *nouveau_debug;
 static u64
 nouveau_pci_name(struct pci_dev *pdev)
 {
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	u64 name = (u64)pci_domain_nr(pdev->bus) << 32;
 	name |= pdev->bus->number << 16;
 	name |= PCI_SLOT(pdev->devfn) << 8;
 	return name | PCI_FUNC(pdev->devfn);
+#else
+return 0x0101010101;
 #endif
 }
 
@@ -247,12 +249,12 @@ nouveau_cli_init(struct nouveau_drm *drm, const char *sname,
 	snprintf(cli->name, sizeof(cli->name), "%s", sname);
 	cli->drm = drm;
 	mutex_init(&cli->mutex);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	usif_client_init(cli);
 #endif
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	INIT_WORK(&cli->work, nouveau_cli_work);
 #endif

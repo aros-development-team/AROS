@@ -99,4 +99,5 @@ drm/nouveau/nouveau_drm \
             drm/nouveau/nouveau_ttm \
             drm/nouveau/nouveau_mem \
             drm/nouveau/nouveau_sgdma \
+            drm/nouveau/nouveau_nvif \
 

@@ -34,7 +34,7 @@
 
 #include <drm/drm_device.h>
 
-// struct drm_file;
+struct drm_file;
 // struct drm_gem_object;
 // struct drm_master;
 // struct drm_minor;

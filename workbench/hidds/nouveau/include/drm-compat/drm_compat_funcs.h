@@ -170,7 +170,8 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define dev_WARN(dev, fmt, ...)         bug(fmt, ##__VA_ARGS__)
 #define pr_err(fmt, ...)                bug(fmt, ##__VA_ARGS__)
 #define pr_debug(fmt, ...)              bug(fmt, ##__VA_ARGS__)
-#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED %s\n", __func__);while(1); }
+#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__);while(1); }
+#define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
 
 /* Bit operations */
 void clear_bit(int nr, volatile void * addr);

@@ -26,7 +26,7 @@
 
 static const struct nvif_driver *
 nvif_driver[] = {
-#ifdef __KERNEL__
+#if 1
 	&nvif_driver_nvkm,
 #else
 	&nvif_driver_drm,
