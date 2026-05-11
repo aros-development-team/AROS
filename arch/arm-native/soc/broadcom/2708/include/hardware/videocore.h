@@ -99,6 +99,10 @@
 
 #define VCTAG_GETDMACHAN        0x00060001
 
+/* HW cursor */
+#define VCTAG_SETCURSORINFO     0x00008010
+#define VCTAG_SETCURSORSTATE    0x00008011
+
 /* GPU Memory allocation flags */
 #define VCMEM_DISCARDABLE       (1 << 0)        // can be released at any time
 #define VCMEM_NORMAL            (0 << 2)        // normal allocating alias. Don't use from ARM
