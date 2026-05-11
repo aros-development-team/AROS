@@ -9,9 +9,9 @@
 #endif
 
 // #include <drm/drm_hashtab.h>
-// #include <drm/drm_mode_config.h>
+#include <drm/drm_mode_config.h>
 
-// struct drm_driver;
+struct drm_driver;
 // struct drm_minor;
 // struct drm_master;
 // struct drm_device_dma;
@@ -24,7 +24,7 @@
 
 // struct inode;
 
-// struct pci_dev;
+struct pci_dev;
 // struct pci_controller;
 
 
@@ -69,8 +69,8 @@ struct drm_device {
 // 	/** @dev: Device structure of bus-device */
 	struct device *dev;
 
-// 	/** @driver: DRM driver managing the device */
-// 	struct drm_driver *driver;
+	/** @driver: DRM driver managing the device */
+	struct drm_driver *driver;
 
 	/**
 	 * @dev_private:
@@ -179,14 +179,14 @@ struct drm_device {
 // 	 */
 // 	struct list_head clientlist;
 
-// 	/**
-// 	 * @irq_enabled:
-// 	 *
-// 	 * Indicates that interrupt handling is enabled, specifically vblank
-// 	 * handling. Drivers which don't use drm_irq_install() need to set this
-// 	 * to true manually.
-// 	 */
-// 	bool irq_enabled;
+	/**
+	 * @irq_enabled:
+	 *
+	 * Indicates that interrupt handling is enabled, specifically vblank
+	 * handling. Drivers which don't use drm_irq_install() need to set this
+	 * to true manually.
+	 */
+	bool irq_enabled;
 
 // 	/**
 // 	 * @irq: Used by the drm_irq_install() and drm_irq_unistall() helpers.
@@ -267,8 +267,8 @@ struct drm_device {
 // 	/** @agp: AGP data */
 // 	struct drm_agp_head *agp;
 
-// 	/** @pdev: PCI device structure */
-// 	struct pci_dev *pdev;
+	/** @pdev: PCI device structure */
+	struct pci_dev *pdev;
 
 // #ifdef __alpha__
 // 	/** @hose: PCI hose, only used on ALPHA platforms. */
@@ -277,8 +277,8 @@ struct drm_device {
 // 	/** @num_crtcs: Number of CRTCs on this device */
 // 	unsigned int num_crtcs;
 
-// 	/** @mode_config: Current mode config */
-// 	struct drm_mode_config mode_config;
+	/** @mode_config: Current mode config */
+	struct drm_mode_config mode_config;
 
 // 	/** @object_name_lock: GEM information */
 // 	struct mutex object_name_lock;

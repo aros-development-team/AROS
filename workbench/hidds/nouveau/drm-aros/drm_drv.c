@@ -1,10 +1,12 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2026, The AROS Development Team. All rights reserved.
 */
 
-#include "drmP.h"
+#include <aros/debug.h>
+
+#include <drm/drm_drv.h>
+
 #include "drm_aros.h"
-#include "drm_global.h"
 
 struct drm_driver *current_drm_driver = NULL;
 
@@ -97,10 +99,8 @@ static int drm_init_device(struct drm_driver * driver)
     return 0;
 }
 
-int drm_init(struct drm_driver * driver)
+int drm_aros_init(struct drm_driver * driver)
 {
-    drm_global_init();
-
     if (drm_aros_pci_init(driver))
         return -1;
 

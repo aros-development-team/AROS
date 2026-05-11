@@ -143,6 +143,8 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
     return IS_ERR(ptr);
 }
 
+#define IS_ENABLED(option)  option##_ENABLED
+
 #define __rcu
 
 /* Kernel debug */

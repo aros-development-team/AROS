@@ -26,6 +26,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/drm_compat_stubs \
 
 AROS_DRM_NVIDIA_SOURCES = \
+drm/nouveau/nouveau_drm \
             drm/nouveau/nvkm/engine/device/engine_device \
             drm/nouveau/nvkm/engine/gr/engine_gr \
             drm/nouveau/nvkm/engine/gr/ctxnv40 \
