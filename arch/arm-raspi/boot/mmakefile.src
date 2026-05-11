@@ -173,7 +173,7 @@ distfiles-raspi-be-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 distfiles-raspi-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
 
 $(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
-	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\ninitramfs $(ARM_BSP) 0x00800000" > $@
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\ndtoverlay=disable-bt\ndtoverlay=sdhost\narm_64bit=0\nhdmi_drive=2\n" > $@
 
 $(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
 	@$(ECHO) "Creating   $@"

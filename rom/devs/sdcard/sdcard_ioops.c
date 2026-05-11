@@ -112,69 +112,92 @@ BOOL __used sdcard_WaitBusyTO(struct sdcard_Unit *unit, UWORD tout, BOOL irq, UB
 }
 
 /*
+ * Maximum number of sectors per SD transfer chunk.
+ * Smaller values give USB more bus time (less mouse jitter)
+ * but increase per-transfer overhead.  128 sectors = 64KB.
+ */
+#define SD_CHUNK_BLOCKS 128
+
+/*
  * 32bit Read operations
  */
 BYTE FNAME_SDCIO(ReadSector32)(struct sdcard_Unit *unit, ULONG block,
     ULONG count, APTR buffer, ULONG *act)
 {
-    struct TagItem sdcReadTags[] =
-    {
-        {SDCARD_TAG_CMD,         MMC_CMD_READ_SINGLE_BLOCK},
-        {SDCARD_TAG_ARG,         block},
-        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
-        {SDCARD_TAG_RSP,         0},
-        {SDCARD_TAG_DATA,        (IPTR)buffer},
-        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
-        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
-        {TAG_DONE,            0}
-    };
+    struct sdcard_Bus *bus = unit->sdcu_Bus;
+    ULONG sectorShift = bus->sdcb_SectorShift;
+    ULONG remaining = count;
+    ULONG curBlock = block;
+    UBYTE *curBuffer = (UBYTE *)buffer;
     BYTE retVal = 0;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     *act = 0;
 
-    if (count > 1)
-        sdcReadTags[0].ti_Data = MMC_CMD_READ_MULTIPLE_BLOCK;
-
-    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
-        sdcReadTags[1].ti_Data <<= unit->sdcu_Bus->sdcb_SectorShift;
-
-    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
-        sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
-
-    if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
+    while (remaining > 0 && retVal == 0)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
+        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunkArg = curBlock;
+        struct TagItem sdcReadTags[] =
         {
-            if (count > 1)
+            {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_READ_MULTIPLE_BLOCK : MMC_CMD_READ_SINGLE_BLOCK},
+            {SDCARD_TAG_ARG,         chunkArg},
+            {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+            {SDCARD_TAG_RSP,         0},
+            {SDCARD_TAG_DATA,        (IPTR)curBuffer},
+            {SDCARD_TAG_DATALEN,     chunk << sectorShift},
+            {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
+            {TAG_DONE,            0}
+        };
+
+        if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
+            sdcReadTags[1].ti_Data <<= sectorShift;
+
+        D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+            sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
+
+        if (SDCBUS_SendCmd(sdcReadTags, bus) != -1)
+        {
+            if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) != -1)
             {
-                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-                sdcReadTags[1].ti_Data = 0;
-                sdcReadTags[2].ti_Data = MMC_RSP_R1b;
-                sdcReadTags[4].ti_Tag = TAG_DONE;
-                if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+                if (chunk > 1)
                 {
-                    bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                    sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                    sdcReadTags[1].ti_Data = 0;
+                    sdcReadTags[2].ti_Data = MMC_RSP_R1b;
+                    sdcReadTags[4].ti_Tag = TAG_DONE;
+                    if (SDCBUS_SendCmd(sdcReadTags, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
+                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
                 }
-                if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) == -1)
-                {
-                    bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-                }
+                *act += chunk << sectorShift;
             }
-            *act = sdcReadTags[5].ti_Data;
+            else
+            {
+                bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                retVal = IOERR_ABORTED;
+            }
         }
         else
         {
-            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+            bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
             retVal = IOERR_ABORTED;
         }
-    }
-    else
-    {
-        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-        retVal = IOERR_ABORTED;
+
+        remaining -= chunk;
+        curBlock += chunk;
+        curBuffer += chunk << sectorShift;
+
+        /* Yield between chunks so USB gets bus time */
+        if (remaining > 0 && retVal == 0)
+            Reschedule();
     }
 
     DTRANS(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
@@ -205,64 +228,78 @@ BYTE FNAME_SDCIO(ReadDMA32)(struct sdcard_Unit *unit, ULONG block,
 BYTE FNAME_SDCIO(ReadSector64)(struct sdcard_Unit *unit, UQUAD block,
     ULONG count, APTR buffer, ULONG *act)
 {
-    struct TagItem sdcReadTags[] =
-    {
-        {SDCARD_TAG_CMD,         MMC_CMD_READ_SINGLE_BLOCK},
-        {SDCARD_TAG_ARG,         block},
-        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
-        {SDCARD_TAG_RSP,         0},
-        {SDCARD_TAG_DATA,        (IPTR)buffer},
-        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
-        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
-        {TAG_DONE,            0}
-    };
+    struct sdcard_Bus *bus = unit->sdcu_Bus;
+    ULONG sectorShift = bus->sdcb_SectorShift;
+    ULONG remaining = count;
+    UQUAD curBlock = block;
+    UBYTE *curBuffer = (UBYTE *)buffer;
     BYTE retVal = 0;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     *act = 0;
 
-    if (count > 1)
-        sdcReadTags[0].ti_Data = MMC_CMD_READ_MULTIPLE_BLOCK;
-
     if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
         return IOERR_NOCMD;
 
-    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
-        sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
-
-    if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) != -1)
+    while (remaining > 0 && retVal == 0)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
+        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        struct TagItem sdcReadTags[] =
         {
-            if (count > 1)
+            {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_READ_MULTIPLE_BLOCK : MMC_CMD_READ_SINGLE_BLOCK},
+            {SDCARD_TAG_ARG,         curBlock},
+            {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+            {SDCARD_TAG_RSP,         0},
+            {SDCARD_TAG_DATA,        (IPTR)curBuffer},
+            {SDCARD_TAG_DATALEN,     chunk << sectorShift},
+            {SDCARD_TAG_DATAFLAGS,   MMC_DATA_READ},
+            {TAG_DONE,            0}
+        };
+
+        D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+            sdcReadTags[0].ti_Data, sdcReadTags[1].ti_Data, sdcReadTags[5].ti_Data, sdcReadTags[4].ti_Data));
+
+        if (SDCBUS_SendCmd(sdcReadTags, bus) != -1)
+        {
+            if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) != -1)
             {
-                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-                sdcReadTags[1].ti_Data = 0;
-                sdcReadTags[2].ti_Data = MMC_RSP_R1b;
-                sdcReadTags[4].ti_Tag = TAG_DONE;
-                if (FNAME_SDCBUS(SendCmd)(sdcReadTags, unit->sdcu_Bus) == -1)
+                if (chunk > 1)
                 {
-                    bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                    sdcReadTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                    sdcReadTags[1].ti_Data = 0;
+                    sdcReadTags[2].ti_Data = MMC_RSP_R1b;
+                    sdcReadTags[4].ti_Tag = TAG_DONE;
+                    if (SDCBUS_SendCmd(sdcReadTags, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to terminate Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
+                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
                 }
-                if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) == -1)
-                {
-                    bug("[SDCard%02ld] %s: Failed to ACK termination of Read operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-                }
+                *act += chunk << sectorShift;
             }
-            *act = sdcReadTags[5].ti_Data;
+            else
+            {
+                bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                retVal = IOERR_ABORTED;
+            }
         }
         else
         {
-            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+            bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
             retVal = IOERR_ABORTED;
         }
-    }
-    else
-    {
-        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-        retVal = IOERR_ABORTED;
+
+        remaining -= chunk;
+        curBlock += chunk;
+        curBuffer += chunk << sectorShift;
+
+        if (remaining > 0 && retVal == 0)
+            Reschedule();
     }
 
     DTRANS(bug("[SDCard%02ld] %s: %d bytes Read\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
@@ -292,64 +329,79 @@ BYTE FNAME_SDCIO(ReadDMA64)(struct sdcard_Unit *unit, UQUAD block,
 BYTE FNAME_SDCIO(WriteSector32)(struct sdcard_Unit *unit, ULONG block,
     ULONG count, APTR buffer, ULONG *act)
 {
-    struct TagItem sdcWriteTags[] =
-    {
-        {SDCARD_TAG_CMD,         MMC_CMD_WRITE_SINGLE_BLOCK},
-        {SDCARD_TAG_ARG,         block},
-        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
-        {SDCARD_TAG_RSP,         0},
-        {SDCARD_TAG_DATA,        (IPTR)buffer},
-        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
-        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_WRITE},
-        {TAG_DONE,            0}
-    };
+    struct sdcard_Bus *bus = unit->sdcu_Bus;
+    ULONG sectorShift = bus->sdcb_SectorShift;
+    ULONG remaining = count;
+    ULONG curBlock = block;
+    UBYTE *curBuffer = (UBYTE *)buffer;
     BYTE retVal = 0;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     *act = 0;
 
-    if (count > 1)
-        sdcWriteTags[0].ti_Data = MMC_CMD_WRITE_MULTIPLE_BLOCK;
-
-    if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
-        sdcWriteTags[1].ti_Data <<= unit->sdcu_Bus->sdcb_SectorShift;
-
-    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
-        sdcWriteTags[0].ti_Data, sdcWriteTags[1].ti_Data, sdcWriteTags[5].ti_Data, sdcWriteTags[4].ti_Data));
-
-    if (FNAME_SDCBUS(SendCmd)(sdcWriteTags, unit->sdcu_Bus) != -1)
+    while (remaining > 0 && retVal == 0)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
+        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        ULONG chunkArg = curBlock;
+        struct TagItem sdcWriteTags[] =
         {
-            if (count > 1)
+            {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_WRITE_MULTIPLE_BLOCK : MMC_CMD_WRITE_SINGLE_BLOCK},
+            {SDCARD_TAG_ARG,         chunkArg},
+            {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+            {SDCARD_TAG_RSP,         0},
+            {SDCARD_TAG_DATA,        (IPTR)curBuffer},
+            {SDCARD_TAG_DATALEN,     chunk << sectorShift},
+            {SDCARD_TAG_DATAFLAGS,   MMC_DATA_WRITE},
+            {TAG_DONE,            0}
+        };
+
+        if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
+            sdcWriteTags[1].ti_Data <<= sectorShift;
+
+        D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+            sdcWriteTags[0].ti_Data, sdcWriteTags[1].ti_Data, sdcWriteTags[5].ti_Data, sdcWriteTags[4].ti_Data));
+
+        if (SDCBUS_SendCmd(sdcWriteTags, bus) != -1)
+        {
+            if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) != -1)
             {
-                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                sdcWriteTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-                sdcWriteTags[1].ti_Data = 0;
-                sdcWriteTags[2].ti_Data = MMC_RSP_R1b;
-                sdcWriteTags[4].ti_Tag = TAG_DONE;
-                if (FNAME_SDCBUS(SendCmd)(sdcWriteTags, unit->sdcu_Bus) == -1)
+                if (chunk > 1)
                 {
-                    bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                    sdcWriteTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                    sdcWriteTags[1].ti_Data = 0;
+                    sdcWriteTags[2].ti_Data = MMC_RSP_R1b;
+                    sdcWriteTags[4].ti_Tag = TAG_DONE;
+                    if (SDCBUS_SendCmd(sdcWriteTags, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
+                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
                 }
-                if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) == -1)
-                {
-                    bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-                }
+                *act += chunk << sectorShift;
             }
-            *act = sdcWriteTags[5].ti_Data;
+            else
+            {
+                bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                retVal = IOERR_ABORTED;
+            }
         }
         else
         {
-            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+            bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
             retVal = IOERR_ABORTED;
         }
-    }
-    else
-    {
-        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-        retVal = IOERR_ABORTED;
+
+        remaining -= chunk;
+        curBlock += chunk;
+        curBuffer += chunk << sectorShift;
+
+        if (remaining > 0 && retVal == 0)
+            Reschedule();
     }
 
     DTRANS(bug("[SDCard%02ld] %s: %d bytes Written\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));
@@ -379,64 +431,78 @@ BYTE FNAME_SDCIO(WriteDMA32)(struct sdcard_Unit *unit, ULONG block,
 BYTE FNAME_SDCIO(WriteSector64)(struct sdcard_Unit *unit, UQUAD block,
     ULONG count, APTR buffer, ULONG *act)
 {
-    struct TagItem sdcWriteTags[] =
-    {
-        {SDCARD_TAG_CMD,         MMC_CMD_WRITE_SINGLE_BLOCK},
-        {SDCARD_TAG_ARG,         (IPTR)block},  /* truncates UQUAD to 32-bit; safe for SD/SDHC block addressing (<2TB) */
-        {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
-        {SDCARD_TAG_RSP,         0},
-        {SDCARD_TAG_DATA,        (IPTR)buffer},
-        {SDCARD_TAG_DATALEN,     count * (1 << unit->sdcu_Bus->sdcb_SectorShift)},
-        {SDCARD_TAG_DATAFLAGS,   MMC_DATA_WRITE},
-        {TAG_DONE,            0}
-    };
+    struct sdcard_Bus *bus = unit->sdcu_Bus;
+    ULONG sectorShift = bus->sdcb_SectorShift;
+    ULONG remaining = count;
+    UQUAD curBlock = block;
+    UBYTE *curBuffer = (UBYTE *)buffer;
     BYTE retVal = 0;
 
     D(bug("[SDCard%02ld] %s()\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     *act = 0;
 
-    if (count > 1)
-        sdcWriteTags[0].ti_Data = MMC_CMD_WRITE_MULTIPLE_BLOCK;
-
     if (!(unit->sdcu_Flags & AF_Card_HighCapacity))
         return IOERR_NOCMD;
 
-    D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
-        sdcWriteTags[0].ti_Data, sdcWriteTags[1].ti_Data, sdcWriteTags[5].ti_Data, sdcWriteTags[4].ti_Data));
-
-    if (FNAME_SDCBUS(SendCmd)(sdcWriteTags, unit->sdcu_Bus) != -1)
+    while (remaining > 0 && retVal == 0)
     {
-        if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) != -1)
+        ULONG chunk = (remaining > SD_CHUNK_BLOCKS) ? SD_CHUNK_BLOCKS : remaining;
+        struct TagItem sdcWriteTags[] =
         {
-            if (count > 1)
+            {SDCARD_TAG_CMD,         (chunk > 1) ? MMC_CMD_WRITE_MULTIPLE_BLOCK : MMC_CMD_WRITE_SINGLE_BLOCK},
+            {SDCARD_TAG_ARG,         curBlock},
+            {SDCARD_TAG_RSPTYPE,     MMC_RSP_R1},
+            {SDCARD_TAG_RSP,         0},
+            {SDCARD_TAG_DATA,        (IPTR)curBuffer},
+            {SDCARD_TAG_DATALEN,     chunk << sectorShift},
+            {SDCARD_TAG_DATAFLAGS,   MMC_DATA_WRITE},
+            {TAG_DONE,            0}
+        };
+
+        D(bug("[SDCard%02ld] %s: Sending CMD %d, block %08x, len %d [buffer @ 0x%p]\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__,
+            sdcWriteTags[0].ti_Data, sdcWriteTags[1].ti_Data, sdcWriteTags[5].ti_Data, sdcWriteTags[4].ti_Data));
+
+        if (SDCBUS_SendCmd(sdcWriteTags, bus) != -1)
+        {
+            if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) != -1)
             {
-                DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-                sdcWriteTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
-                sdcWriteTags[1].ti_Data = 0;
-                sdcWriteTags[2].ti_Data = MMC_RSP_R1b;
-                sdcWriteTags[4].ti_Tag = TAG_DONE;
-                if (FNAME_SDCBUS(SendCmd)(sdcWriteTags, unit->sdcu_Bus) == -1)
+                if (chunk > 1)
                 {
-                    bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    DTRANS(bug("[SDCard%02ld] %s: Finishing transaction ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__));
+                    sdcWriteTags[0].ti_Data = MMC_CMD_STOP_TRANSMISSION;
+                    sdcWriteTags[1].ti_Data = 0;
+                    sdcWriteTags[2].ti_Data = MMC_RSP_R1b;
+                    sdcWriteTags[4].ti_Tag = TAG_DONE;
+                    if (SDCBUS_SendCmd(sdcWriteTags, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to terminate Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
+                    if (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, bus) == -1)
+                    {
+                        bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                    }
                 }
-                if (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 100000, unit->sdcu_Bus) == -1)
-                {
-                    bug("[SDCard%02ld] %s: Failed to ACK termination of Write operation\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-                }
+                *act += chunk << sectorShift;
             }
-            *act = sdcWriteTags[5].ti_Data;
+            else
+            {
+                bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+                retVal = IOERR_ABORTED;
+            }
         }
         else
         {
-            bug("[SDCard%02ld] %s: Transfer error\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
+            bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
             retVal = IOERR_ABORTED;
         }
-    }
-    else
-    {
-        bug("[SDCard%02ld] %s: Error ..\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__);
-        retVal = IOERR_ABORTED;
+
+        remaining -= chunk;
+        curBlock += chunk;
+        curBuffer += chunk << sectorShift;
+
+        if (remaining > 0 && retVal == 0)
+            Reschedule();
     }
 
     DTRANS(bug("[SDCard%02ld] %s: %d bytes Written\n", unit->sdcu_UnitNum, __PRETTY_FUNCTION__, *act));

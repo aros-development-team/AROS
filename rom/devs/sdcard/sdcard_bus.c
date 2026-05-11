@@ -56,14 +56,15 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     /*
-     * Send CMD7 (SELECT_CARD) BEFORE capability detection.
+     * Fix #40: Send CMD7 (SELECT_CARD) BEFORE capability detection.
      * ACMD51 (SEND_SCR) and CMD6 (SWITCH_FUNC) are data transfer commands
-     * that require the card to be in Transfer state per the SD spec.
-     * Issuing them before CMD7 causes data transfer errors on some SDHCI
-     * controllers, which can leave the controller in a bad state and break
-     * subsequent reads (including partition table scanning).
+     * that require the card to be in Transfer state. On real hardware (e.g.
+     * Pi 3B), issuing these before CMD7 causes data transfer errors that
+     * can leave the SDHCI controller in a bad state, breaking subsequent
+     * reads (including partition table scanning by partition.library).
+     * QEMU's SD emulation is more permissive and doesn't enforce this.
      */
-    if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+    if ((SDCBUS_SendCmd(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
     {
         if (FNAME_SDCUNIT(WaitStatus)(10000, sdcUnit) == -1)
         {
@@ -91,7 +92,7 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
             sdcStartTags[1].ti_Data = 1 << sdcUnit->sdcu_Bus->sdcb_SectorShift;
             sdcStartTags[2].ti_Data = MMC_RSP_R1;
             sdcStartTags[3].ti_Data = 0;
-            if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+            if ((SDCBUS_SendCmd(sdcStartTags, sdcUnit->sdcu_Bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
             {
                 D(bug("[SDCard%02ld] %s: Blocklen set to %d\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcStartTags[1].ti_Data));
             }
@@ -106,19 +107,19 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
             if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
             {
                 if (sdcUnit->sdcu_Flags & AB_Card_HighSpeed52)
-                    FNAME_SDCBUS(SetClock)(52000000, sdcUnit->sdcu_Bus);
+                    SDCBUS_SetClock(52000000, sdcUnit->sdcu_Bus);
                 else
-                    FNAME_SDCBUS(SetClock)(26000000, sdcUnit->sdcu_Bus);
+                    SDCBUS_SetClock(26000000, sdcUnit->sdcu_Bus);
             }
             else
-                FNAME_SDCBUS(SetClock)(20000000, sdcUnit->sdcu_Bus);
+                SDCBUS_SetClock(20000000, sdcUnit->sdcu_Bus);
         }
         else
         {
             if (sdcUnit->sdcu_Flags & AF_Card_HighSpeed)
-                FNAME_SDCBUS(SetClock)(50000000, sdcUnit->sdcu_Bus);
+                SDCBUS_SetClock(50000000, sdcUnit->sdcu_Bus);
             else
-                FNAME_SDCBUS(SetClock)(25000000, sdcUnit->sdcu_Bus);
+                SDCBUS_SetClock(25000000, sdcUnit->sdcu_Bus);
         }
 
         /* Enable 4-bit bus width if supported by the card */
@@ -134,20 +135,19 @@ BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *sdcUnit)
             sdcStartTags[2].ti_Data = MMC_RSP_R1;
             sdcStartTags[3].ti_Data = 0;
             sdcStartTags[4].ti_Tag = TAG_DONE;
-            if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
-                (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+            if ((SDCBUS_SendCmd(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
+                (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
             {
                 sdcStartTags[0].ti_Data = SD_CMD_APP_SET_BUS_WIDTH;
                 sdcStartTags[1].ti_Data = 2; /* 4-bit mode */
                 sdcStartTags[2].ti_Data = MMC_RSP_R1;
                 sdcStartTags[3].ti_Data = 0;
-                if ((FNAME_SDCBUS(SendCmd)(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
-                    (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+                if ((SDCBUS_SendCmd(sdcStartTags, sdcUnit->sdcu_Bus) != -1) &&
+                    (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
                 {
-                    /* Set 4-bit mode in SDHCI HOST_CONTROL register */
-                    sdcHostCtrl = sdcUnit->sdcu_Bus->sdcb_IOReadByte(SDHCI_HOST_CONTROL, sdcUnit->sdcu_Bus);
-                    sdcHostCtrl |= SDHCI_HCTRL_4BITBUS;
-                    sdcUnit->sdcu_Bus->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcHostCtrl, sdcUnit->sdcu_Bus);
+                    /* Set 4-bit mode in controller — controller-specific via BusInit */
+                    if (sdcUnit->sdcu_Bus->sdcb_SetBusWidth)
+                        sdcUnit->sdcu_Bus->sdcb_SetBusWidth(4, sdcUnit->sdcu_Bus);
                     D(bug("[SDCard%02ld] %s: 4-bit bus width enabled\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
                 }
                 else
@@ -179,7 +179,7 @@ ULONG FNAME_SDCUNIT(WaitStatus)(ULONG timeout, struct sdcard_Unit *sdcUnit)
     DFUNCS(bug("[SDCard%02ld] %s()\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
 
     do {
-        if ((FNAME_SDCBUS(SendCmd)(sdcStatusTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1) )
+        if ((SDCBUS_SendCmd(sdcStatusTags, sdcUnit->sdcu_Bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1) )
         {
             if ((sdcStatusTags[3].ti_Data & MMC_STATUS_RDY_FOR_DATA) &&
                 (sdcStatusTags[3].ti_Data & MMC_STATUS_STATE_MASK) != MMC_STATUS_STATE_PRG)
@@ -230,7 +230,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
     sdcRegTags[0].ti_Data = MMC_CMD_GO_IDLE_STATE;
     sdcRegTags[1].ti_Data = 0;
     sdcRegTags[2].ti_Data = MMC_RSP_NONE;
-    if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) == -1))
+    if ((SDCBUS_SendCmd(sdcRegTags, bus) == -1) || (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) == -1))
     {
         D(bug("[SDBus%02u] %s: Error: Card failed to go idle!\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
         return FALSE;
@@ -243,7 +243,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
     sdcRegTags[2].ti_Data = MMC_RSP_R7;
     D(bug("[SDBus%02u] %s: Querying Interface conditions [%08x] ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
 
-    if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1)  && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
+    if ((SDCBUS_SendCmd(sdcRegTags, bus) != -1)  && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
     {
         D(bug("[SDBus%02u] %s: Query Response = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[3].ti_Data));
         D(bug("[SDBus%02u] %s: SD2.0 Compliant Card .. publishing high-capacity support\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
@@ -260,7 +260,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         sdcRegTags[1].ti_Data = 0;
         sdcRegTags[2].ti_Data = MMC_RSP_R1;
 
-        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) == -1))
+        if ((SDCBUS_SendCmd(sdcRegTags, bus) == -1) || (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) == -1))
         {
             D(bug("[SDBus%02u] %s: App Command Failed\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
             return FALSE;
@@ -273,7 +273,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         sdcRegTags[2].ti_Data = MMC_RSP_R3;
 
         D(bug("[SDBus%02u] %s: Querying Operating conditions [%08x] ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
-        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
+        if ((SDCBUS_SendCmd(sdcRegTags, bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
         {
             D(bug("[SDBus%02u] %s: Query Response = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[3].ti_Data));
             sdcard_Udelay(1000);
@@ -306,7 +306,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
             D(bug("[SDBus%02u] %s: Begin Voltage Switching..\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
         }
 
-        FNAME_SDCBUS(SetPowerLevel)(sdcCardPower, TRUE, bus);
+        SDCBUS_SetPowerLevel(sdcCardPower, TRUE, bus);
         sdcard_Udelay(2000);
 
         /* Put the "card" into identify mode*/
@@ -315,7 +315,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
         sdcRegTags[1].ti_Data = 0;
         sdcRegTags[2].ti_Data = MMC_RSP_R2;
         sdcRegTags[3].ti_Data = (IPTR)sdcRsp136;
-        if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
+        if ((SDCBUS_SendCmd(sdcRegTags, bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
         {
             if (sdcRegTags[3].ti_Data)
             {
@@ -335,7 +335,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
             sdcRegTags[1].ti_Data = 0;
             sdcRegTags[2].ti_Data = MMC_RSP_R6;
             sdcRegTags[3].ti_Data = 0;
-            if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
+            if ((SDCBUS_SendCmd(sdcRegTags, bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
             {
                 if ((sdcUnit = AllocVecPooled(LIBBASE->sdcard_MemPool, sizeof(struct sdcard_Unit))) != NULL)
                 {
@@ -356,7 +356,7 @@ BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *bus)
                     sdcRegTags[2].ti_Data = MMC_RSP_R2;
                     sdcRegTags[3].ti_Data = (IPTR)sdcRsp136;
                     D(bug("[SDBus%02u] %s: Querying Card Specific Data [%08x] ...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdcRegTags[1].ti_Data));
-                    if ((FNAME_SDCBUS(SendCmd)(sdcRegTags, bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
+                    if ((SDCBUS_SendCmd(sdcRegTags, bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, bus) != -1))
                     {
                         if (FNAME_SDCUNIT(WaitStatus)(10000, sdcUnit) == -1)
                         {
@@ -866,8 +866,8 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
  *   3. DATA_AVAIL IRQ fires -> BusIRQ() calls FinishData() to do PIO transfer
  *   4. DATA_INHIBIT clears once all data is transferred
  *
- * Problem:
- *   The RESPONSE and DATA_AVAIL interrupts may arrive as separate IRQs.
+ * Problem (observed on BCM2708/Pi 3B+):
+ *   The RESPONSE and DATA_AVAIL interrupts arrive as separate IRQs.
  *   When BusIRQ() handles the RESPONSE IRQ, it acknowledges the interrupt
  *   by writing to INT_STATUS. If DATA_AVAIL is asserted in the narrow
  *   window between reading INT_STATUS and the acknowledgment write, the
@@ -878,7 +878,7 @@ ULONG FNAME_SDCBUS(FinishData)(struct TagItem *DataTags, struct sdcard_Bus *bus)
  *     - BusIRQ writes INT_STATUS to ack RESPONSE -> may clear DATA_AVAIL too
  *     - BusIRQ returns, no further IRQ edge generated
  *     - Result: FinishData() is never called, DATA_INHIBIT stays set,
- *       WaitCmd() spins until timeout.
+ *       WaitCmd() polls for 100 seconds before timing out.
  *
  * Fix:
  *   During the poll loop, if DATA_INHIBIT is still set and FinishData()
@@ -964,7 +964,7 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
         if ((bus->sdcb_BusStatus & SDHCI_INT_ERROR) == SDHCI_INT_ERROR)
             break;
 
-        if (--timeout == 0)
+        if (--timeout <= 0)
         {
             bug("[SDBus%02u] WaitCmd: TIMEOUT! PS=%08x BS=%08x DL=%p\n",
                 bus->sdcb_BusNum,
@@ -977,12 +977,12 @@ ULONG FNAME_SDCBUS(WaitCmd)(ULONG mask, ULONG timeout, struct sdcard_Bus *bus)
     /*
      * Response recovery for non-bus-task callers.
      *
-     * Some SDHCI controllers clear CMD_INHIBIT as soon as the command
-     * response is received — before the interrupt is delivered to the CPU.
-     * When WaitCmd is called from a task other than the bus task, we poll
-     * PRESENT_STATE and may exit the loop before the IRQ handler has had
-     * a chance to call FinishCmd() to read the response register.
-     * The result: the caller's response tag stays 0.
+     * On QEMU (and potentially real hardware), the SDHCI controller clears
+     * CMD_INHIBIT as soon as the command response is received — before the
+     * interrupt is delivered to the CPU. When WaitCmd is called from a task
+     * other than the bus task, we poll PRESENT_STATE and may exit the loop
+     * before the IRQ handler has had a chance to call FinishCmd() to read
+     * the response register. The result: the caller's response tag stays 0.
      *
      * Fix: if RespListener is still set after the poll loop, the IRQ handler
      * hasn't processed it yet. Claim it under Disable() (to prevent a race
@@ -1091,130 +1091,131 @@ void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *bus, void *_unused)
 
     while ((bus->sdcb_BusStatus & bus->sdcb_IntrMask) && loops < 8)
     {
-        loops++;
+    loops++;
 
-        if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    if (!(bus->sdcb_BusStatus & SDHCI_INT_ERROR))
+    {
+        DIRQ(bug("[SDBus%02u] %s: Status = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus));
+
+        if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
         {
-            DIRQ(bug("[SDBus%02u] %s: Status = %08x\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus));
-
-            if (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE))
-            {
-                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE)), bus);
 
 #if defined(__AROSEXEC_SMP__)
-                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+            KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
-                bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
-                bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
+            bus->sdcb_BusFlags &= ~AF_Bus_MediaPresent;
+            bus->sdcb_BusFlags |= AF_Bus_MediaChanged;
 
-                if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
-                    bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
+            if (bus->sdcb_BusStatus & SDHCI_INT_CARD_INSERT)
+                bus->sdcb_BusFlags |= AF_Bus_MediaPresent;
 #if defined(__AROSEXEC_SMP__)
-                KrnSpinUnLock(&bus->sdcb_Lock);
+            KrnSpinUnLock(&bus->sdcb_Lock);
 #endif
 
-                bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
+            bus->sdcb_BusStatus &= ~(SDHCI_INT_CARD_INSERT|SDHCI_INT_CARD_REMOVE);
 
-                if (bus->sdcb_Task)
-                    Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
-            }
-            if (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
-            {
-                struct TagItem *respListener;
-
-                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
-
-#if defined(__AROSEXEC_SMP__)
-                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
-#endif
-                respListener = bus->sdcb_RespListener;
-                if ((bus->sdcb_BusStatus & SDHCI_INT_RESPONSE) && respListener)
-                    bus->sdcb_RespListener = NULL;
-                else
-                    respListener = NULL;
-#if defined(__AROSEXEC_SMP__)
-                KrnSpinUnLock(&bus->sdcb_Lock);
-#endif
-                if (respListener)
-                {
-                    if (FNAME_SDCBUS(FinishCmd)(respListener, bus) == -1)
-                        error = TRUE;
-                }
-                if (bus->sdcb_Task && (bus->sdcb_BusStatus & SDHCI_INT_RESPONSE))
-                {
-                    DIRQ(bug("Signalling task %p (%s) with signal %d\n", bus->sdcb_Task, bus->sdcb_Task->tc_Node.ln_Name, bus->sdcb_CommandSig));
-                    Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
-                }
-
-                bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK;
-            }
-            if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
-            {
-                struct TagItem *dataListener;
-
-#if defined(__AROSEXEC_SMP__)
-                KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
-#endif
-                dataListener = bus->sdcb_DataListener;
-                if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) && dataListener)
-                    bus->sdcb_DataListener = NULL;
-                else
-                    dataListener = NULL;
-#if defined(__AROSEXEC_SMP__)
-                KrnSpinUnLock(&bus->sdcb_Lock);
-#endif
-                if (dataListener)
-                {
-                    if (FNAME_SDCBUS(FinishData)(dataListener, bus) == -1)
-                        error = TRUE;
-                    bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
-                    bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
-                }
-                else
-                {
-                    bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
-                    bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
-                }
-            }
-        }
-        else
-        {
-            bug("[SDBus%02u] %s: ERROR [Status = %08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
-            if (bus->sdcb_BusStatus & SDHCI_INT_ACMD12ERR)
-            {
-                bug("[SDBus%02u] %s:       [acmd12err = %04x    ]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IOReadWord(SDHCI_ACMD12_ERR, bus));
-            }
-            error = TRUE;
-        }
-
-        if (error)
-        {
-            if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
-            {
-                bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
-                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & bus->sdcb_IntrMask, bus);
-                bus->sdcb_BusStatus &= ~bus->sdcb_IntrMask;
-            }
-            bug("[SDBus%02u] %s: Reseting SDHCI CMD/DATA\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
-
-            FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
-            FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
-
-            /*
-             * Signal the bus task so it wakes up from WaitCmd().
-             * Without this, a command timeout (no RESPONSE received)
-             * leaves the bus task stuck in Wait() indefinitely,
-             * because the success path is the only place that signals.
-             */
             if (bus->sdcb_Task)
-                Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
-
-            break;  /* Don't re-read after error */
+                Signal(bus->sdcb_Task, (1L << bus->sdcb_MediaSig));
         }
+        if (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK)
+        {
+            struct TagItem *respListener;
 
-        /* Re-read INT_STATUS to catch bits that arrived during processing */
-        bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_CMD_MASK), bus);
+
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            respListener = bus->sdcb_RespListener;
+            if ((bus->sdcb_BusStatus & SDHCI_INT_RESPONSE) && respListener)
+                bus->sdcb_RespListener = NULL;
+            else
+                respListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+            if (respListener)
+            {
+                if (FNAME_SDCBUS(FinishCmd)(respListener, bus) == -1)
+                    error = TRUE;
+            }
+            if (bus->sdcb_Task && (bus->sdcb_BusStatus & SDHCI_INT_RESPONSE))
+            {
+                DIRQ(bug("Signalling task %p (%s) with signal %d\n", bus->sdcb_Task, bus->sdcb_Task->tc_Node.ln_Name, bus->sdcb_CommandSig));
+                Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
+            }
+
+            bus->sdcb_BusStatus &= ~SDHCI_INT_CMD_MASK;
+        }
+        if (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK)
+        {
+            struct TagItem *dataListener;
+
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&bus->sdcb_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            dataListener = bus->sdcb_DataListener;
+            if ((bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)) && dataListener)
+                bus->sdcb_DataListener = NULL;
+            else
+                dataListener = NULL;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&bus->sdcb_Lock);
+#endif
+            if (dataListener)
+            {
+                if (FNAME_SDCBUS(FinishData)(dataListener, bus) == -1)
+                    error = TRUE;
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & (SDHCI_INT_DATA_AVAIL|SDHCI_INT_SPACE_AVAIL)), bus);
+                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+            }
+            else
+            {
+                bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, (bus->sdcb_BusStatus & SDHCI_INT_DATA_MASK), bus);
+                bus->sdcb_BusStatus &= ~SDHCI_INT_DATA_MASK;
+            }
+        }
     }
+    else
+    {
+        bug("[SDBus%02u] %s: ERROR [Status = %08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus);
+        if (bus->sdcb_BusStatus & SDHCI_INT_ACMD12ERR)
+        {
+            bug("[SDBus%02u] %s:       [acmd12err = %04x    ]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IOReadWord(SDHCI_ACMD12_ERR, bus));
+        }
+        error = TRUE;
+    }
+
+    if (error)
+    {
+        if (bus->sdcb_BusStatus & bus->sdcb_IntrMask)
+        {
+            bug("[SDBus%02u] %s: Clearing Unhandled Interrupts [%08x]\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_BusStatus & bus->sdcb_IntrMask);
+            bus->sdcb_IOWriteLong(SDHCI_INT_STATUS, bus->sdcb_BusStatus & bus->sdcb_IntrMask, bus);
+            bus->sdcb_BusStatus &= ~bus->sdcb_IntrMask;
+        }
+        bug("[SDBus%02u] %s: Reseting SDHCI CMD/DATA\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__);
+
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_CMD, bus);
+        FNAME_SDCBUS(SoftReset)(SDHCI_RESET_DATA, bus);
+
+        /*
+         * Signal the bus task so it wakes up from WaitCmd().
+         * Without this, a command timeout (no RESPONSE received)
+         * leaves the bus task stuck in Wait() indefinitely,
+         * because the success path is the only place that signals.
+         */
+        if (bus->sdcb_Task)
+            Signal(bus->sdcb_Task, 1L << bus->sdcb_CommandSig);
+
+        break;  /* Don't re-read after error */
+    }
+
+    /* Re-read INT_STATUS to catch bits that arrived during processing */
+    bus->sdcb_BusStatus = bus->sdcb_IOReadLong(SDHCI_INT_STATUS, bus);
+
+    } /* end while loop */
 
     DIRQ(bug("[SDBus%02u] %s: Done.\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 }
@@ -1233,10 +1234,6 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
     DFUNCS(bug("[SDBus%02u] %s()\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
 
     bus->sdcb_Timer = sdcard_OpenTimer(LIBBASE);
-
-#if defined(__AROSEXEC_SMP__)
-    KrnSpinInit(&bus->sdcb_Lock);
-#endif
 
     /* Get the signal used for sleeping */
     bus->sdcb_Task = FindTask(0);
@@ -1262,23 +1259,18 @@ void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *bus)
 
     DINIT(bug("[SDBus%02u] %s: TaskSig: %d, MediaSig: %d\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_TaskSig, bus->sdcb_MediaSig));
 
-    /* Install IRQ handler */
-    if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, FNAME_SDCBUS(BusIRQ), bus, NULL)) != NULL)
+    /* Install IRQ handler (controller-specific) */
+    if (bus->sdcb_BusIRQHandler)
     {
-        DINIT(bug("[SDBus%02u] %s: IRQHandle @ 0x%p for IRQ#%ld\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IRQHandle, bus->sdcb_BusIRQ));
-
-        DINIT(bug("[SDBus%02u] %s: Masking chipset Interrupts...\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
-
-        bus->sdcb_IOWriteLong(SDHCI_INT_ENABLE, bus->sdcb_IntrMask, bus);
-        bus->sdcb_IOWriteLong(SDHCI_SIGNAL_ENABLE, bus->sdcb_IntrMask, bus);
+        if ((bus->sdcb_IRQHandle = KrnAddIRQHandler(bus->sdcb_BusIRQ, bus->sdcb_BusIRQHandler, bus, NULL)) != NULL)
+        {
+            DINIT(bug("[SDBus%02u] %s: IRQHandle @ 0x%p for IRQ#%ld\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__, bus->sdcb_IRQHandle, bus->sdcb_BusIRQ));
+        }
     }
 
-    /* Fix #33: Detect card already present at boot (not just hotplug) */
-    if (bus->sdcb_IOReadLong(SDHCI_PRESENT_STATE, bus) & SDHCI_PS_CARD_PRESENT)
-    {
-        DINIT(bug("[SDBus%02u] %s: Card already present at startup\n", bus->sdcb_BusNum, __PRETTY_FUNCTION__));
-        FNAME_SDCBUS(RegisterUnit)(bus);
-    }
+    /* Controller-specific post-IRQ init (enable interrupts, detect card) */
+    if (bus->sdcb_BusPostIRQInit)
+        bus->sdcb_BusPostIRQInit(bus);
 
     if (!startupScanDone)
     {

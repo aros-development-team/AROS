@@ -58,7 +58,6 @@ BOOL FNAME_SDC(RegisterBus)(struct sdcard_Bus *bus, LIBBASETYPEPTR LIBBASE)
 static int FNAME_SDC(Scan)(LIBBASETYPEPTR LIBBASE)
 {
     struct sdcard_Bus   *busCurrent;
-    unsigned int        sdcReg;
 
     DINIT(bug("[SDCard--] %s()\n", __PRETTY_FUNCTION__));
 
@@ -70,21 +69,9 @@ static int FNAME_SDC(Scan)(LIBBASETYPEPTR LIBBASE)
             if (busCurrent->sdcb_LEDCtrl)
                 busCurrent->sdcb_LEDCtrl(LED_OFF);
 
-            busCurrent->sdcb_IntrMask = SDHCI_INT_BUS_POWER | SDHCI_INT_DATA_END_BIT |
-                    SDHCI_INT_DATA_CRC | SDHCI_INT_DATA_TIMEOUT | SDHCI_INT_INDEX |
-                    SDHCI_INT_END_BIT | SDHCI_INT_CRC | SDHCI_INT_TIMEOUT |
-                    SDHCI_INT_CARD_REMOVE | SDHCI_INT_CARD_INSERT |
-                    SDHCI_INT_DATA_AVAIL | SDHCI_INT_SPACE_AVAIL |
-                    SDHCI_INT_DATA_END | SDHCI_INT_RESPONSE;
-
-            FNAME_SDCBUS(SetClock)(busCurrent->sdcb_ClockMin, busCurrent);
-
-            FNAME_SDCBUS(SetPowerLevel)(busCurrent->sdcb_Power, FALSE, busCurrent);
-
-            sdcReg = busCurrent->sdcb_IOReadByte(SDHCI_HOST_CONTROL, busCurrent);
-            DINIT(bug("[SDCard--] %s: Setting Min Buswidth... [%x -> %x]\n", __PRETTY_FUNCTION__, sdcReg, sdcReg & ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD)));
-            sdcReg &= ~(SDHCI_HCTRL_8BITBUS|SDHCI_HCTRL_4BITBUS|SDHCI_HCTRL_HISPD);
-            busCurrent->sdcb_IOWriteByte(SDHCI_HOST_CONTROL, sdcReg, busCurrent);
+            /* Controller-specific scan-time init (interrupts, clock, power, bus width) */
+            if (busCurrent->sdcb_BusInit)
+                busCurrent->sdcb_BusInit(busCurrent);
 
             DINIT(bug("[SDCard--] %s: Launching Bus Task...\n", __PRETTY_FUNCTION__));
 

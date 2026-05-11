@@ -33,9 +33,9 @@ ULONG FNAME_SDCUNIT(SDSCSwitch)(BOOL test, int group, UBYTE value, APTR buf, str
     sdcSwitchTags[1].ti_Data &= ~(0xF << (group * 4));
     sdcSwitchTags[1].ti_Data |= value << (group * 4);
 
-    if ((retVal = FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
+    if ((retVal = SDCBUS_SendCmd(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
     {
-        retVal = FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus);
+        retVal = SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus);
     }
     return retVal;
 }
@@ -67,7 +67,7 @@ ULONG FNAME_SDCUNIT(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         sdcChFreqTags[2].ti_Data = MMC_RSP_R1;
         sdcChFreqTags[4].ti_Tag = TAG_DONE;
 
-        if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) == -1))
+        if ((SDCBUS_SendCmd(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1) || (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) == -1))
         {
             D(bug("[SDCard%02ld] %s: App Command Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
             return -1;
@@ -80,7 +80,7 @@ ULONG FNAME_SDCUNIT(SDSCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         sdcChFreqTags[4].ti_Tag = SDCARD_TAG_DATA;
 
         D(bug("[SDCard%02ld] %s: Querying SCR Register ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-        if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 10000, sdcUnit->sdcu_Bus) != -1))
+        if ((SDCBUS_SendCmd(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 10000, sdcUnit->sdcu_Bus) != -1))
         {
             D(bug("[SDCard%02ld] %s: Query Response = %08x\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__, sdcChFreqTags[3].ti_Data));
             break;

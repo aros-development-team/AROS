@@ -27,8 +27,9 @@ struct IORequest *sdcard_OpenTimer(LIBBASETYPEPTR LIBBASE)
         if (NULL != io)
         {
             /*
-             * UNIT_MICROHZ gives us microsecond resolution at best,
-             * so sub-microsecond delays will be rounded up.
+             * ok. ECLOCK does not have too great resolution, either.
+             * we will have to sacrifice our performance a little bit, meaning, the 400ns will turn into (worst case) 2us.
+             * hopefully we won't have to call that TOO often...
              */
             if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))
             {
