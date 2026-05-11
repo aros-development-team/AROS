@@ -27,9 +27,9 @@ ULONG FNAME_SDCUNIT(MMCSwitch)(UBYTE offset, UBYTE value, struct sdcard_Unit *sd
 
     sdcSwitchTags[1].ti_Data = (MMC_SWITCH_WRITE_BYTE << 24) | (offset << 16) | (value << 8);
 
-    if ((retVal = FNAME_SDCBUS(SendCmd)(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
+    if ((retVal = SDCBUS_SendCmd(sdcSwitchTags, sdcUnit->sdcu_Bus)) != -1)
     {
-        if ((retVal = FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus)) != -1)
+        if ((retVal = SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus)) != -1)
         {
             /* Wait for units ready status */
             FNAME_SDCUNIT(WaitStatus)(1000, sdcUnit);
@@ -60,7 +60,7 @@ ULONG FNAME_SDCUNIT(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         return 0;
 
     D(bug("[SDCard%02ld] %s: Querying Ext_CSD ... \n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
-    if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1) || (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) == -1))
+    if ((SDCBUS_SendCmd(sdcChFreqTags, sdcUnit->sdcu_Bus) == -1) || (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) == -1))
     {
         D(bug("[SDCard%02ld] %s: Query Failed\n", sdcUnit->sdcu_UnitNum, __PRETTY_FUNCTION__));
         return 0;
@@ -77,7 +77,7 @@ ULONG FNAME_SDCUNIT(MMCChangeFrequency)(struct sdcard_Unit *sdcUnit)
         return -1;
     }
 
-    if ((FNAME_SDCBUS(SendCmd)(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (FNAME_SDCBUS(WaitCmd)(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
+    if ((SDCBUS_SendCmd(sdcChFreqTags, sdcUnit->sdcu_Bus) != -1) && (SDCBUS_WaitCmd(SDHCI_PS_CMD_INHIBIT|SDHCI_PS_DATA_INHIBIT, 1000, sdcUnit->sdcu_Bus) != -1))
     {
         if (sdcRespBuf[0xB9])
         {
