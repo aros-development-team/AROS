@@ -36,7 +36,101 @@
 #define SPI0_BASE                                       (ARM_PERIIOBASE + 0x204000)
 #define BSC0_BASE                                       (ARM_PERIIOBASE + 0x205000)
 #define GPIO_PWM                                        (ARM_PERIIOBASE + 0x20C000)
+#define DMA0_BASE                                       (ARM_PERIIOBASE + 0x007000)
 #define V3D_BASE                                        (ARM_PERIIOBASE + 0xc00000)
+
+/* PWM registers */
+#define PWM_CTL                                         (GPIO_PWM + 0x00)
+#define PWM_STA                                         (GPIO_PWM + 0x04)
+#define PWM_DMAC                                        (GPIO_PWM + 0x08)
+#define PWM_RNG1                                        (GPIO_PWM + 0x10)
+#define PWM_DAT1                                        (GPIO_PWM + 0x14)
+#define PWM_FIF1                                        (GPIO_PWM + 0x18)
+#define PWM_RNG2                                        (GPIO_PWM + 0x20)
+#define PWM_DAT2                                        (GPIO_PWM + 0x24)
+
+/* PWM CTL bits */
+#define PWM_CTL_PWEN1                                   (1 << 0)
+#define PWM_CTL_MODE1                                   (1 << 1)
+#define PWM_CTL_RPTL1                                   (1 << 2)
+#define PWM_CTL_SBIT1                                   (1 << 3)
+#define PWM_CTL_POLA1                                   (1 << 4)
+#define PWM_CTL_USEF1                                   (1 << 5)
+#define PWM_CTL_CLRF1                                   (1 << 6)
+#define PWM_CTL_MSEN1                                   (1 << 7)
+#define PWM_CTL_PWEN2                                   (1 << 8)
+#define PWM_CTL_MODE2                                   (1 << 9)
+#define PWM_CTL_RPTL2                                   (1 << 10)
+#define PWM_CTL_SBIT2                                   (1 << 11)
+#define PWM_CTL_POLA2                                   (1 << 12)
+#define PWM_CTL_USEF2                                   (1 << 13)
+#define PWM_CTL_MSEN2                                   (1 << 15)
+
+/* PWM STA bits */
+#define PWM_STA_FULL1                                   (1 << 0)
+#define PWM_STA_EMPT1                                   (1 << 1)
+#define PWM_STA_WERR1                                   (1 << 2)
+#define PWM_STA_RERR1                                   (1 << 3)
+#define PWM_STA_GAPO1                                   (1 << 4)
+#define PWM_STA_GAPO2                                   (1 << 5)
+#define PWM_STA_BERR                                    (1 << 8)
+#define PWM_STA_STA1                                    (1 << 9)
+#define PWM_STA_STA2                                    (1 << 10)
+
+/* PWM DMAC bits */
+#define PWM_DMAC_ENAB                                   (1 << 31)
+#define PWM_DMAC_PANIC(x)                               (((x) & 0xFF) << 8)
+#define PWM_DMAC_DREQ(x)                                (((x) & 0xFF) << 0)
+
+/* Clock Manager PWM */
+#define CM_PWMCTL                                       (CLOCK_BASE + 0xA0)
+#define CM_PWMDIV                                       (CLOCK_BASE + 0xA4)
+#define CM_PASSWORD                                     0x5A000000
+#define CM_SRC_OSC                                      1
+#define CM_SRC_PLLD                                     6
+#define CM_BUSY                                         (1 << 7)
+#define CM_ENAB                                         (1 << 4)
+#define CM_MASH(x)                                      (((x) & 3) << 9)
+
+/* DMA controller */
+#define DMA_CH_BASE(ch)                                 (DMA0_BASE + (ch) * 0x100)
+#define DMA_CS(ch)                                      (DMA_CH_BASE(ch) + 0x00)
+#define DMA_CONBLK_AD(ch)                               (DMA_CH_BASE(ch) + 0x04)
+#define DMA_DEBUG(ch)                                   (DMA_CH_BASE(ch) + 0x20)
+#define DMA_INT_STATUS                                  (DMA0_BASE + 0xFE0)
+#define DMA_ENABLE_REG                                  (DMA0_BASE + 0xFF0)
+
+/* DMA CS bits */
+#define DMA_CS_ACTIVE                                   (1 << 0)
+#define DMA_CS_END                                      (1 << 1)
+#define DMA_CS_INT                                      (1 << 2)
+#define DMA_CS_WAIT_FOR_WRITES                          (1 << 28)
+#define DMA_CS_PANIC_PRI(x)                             (((x) & 0xF) << 20)
+#define DMA_CS_PRI(x)                                   (((x) & 0xF) << 16)
+#define DMA_CS_ABORT                                    (1 << 30)
+#define DMA_CS_RESET                                    (1 << 31)
+
+/* DMA TI (Transfer Information) bits */
+#define DMA_TI_INTEN                                    (1 << 0)
+#define DMA_TI_TDMODE                                   (1 << 1)
+#define DMA_TI_WAIT_RESP                                (1 << 3)
+#define DMA_TI_DEST_INC                                 (1 << 4)
+#define DMA_TI_DEST_WIDTH                               (1 << 5)
+#define DMA_TI_DEST_DREQ                                (1 << 6)
+#define DMA_TI_SRC_INC                                  (1 << 8)
+#define DMA_TI_SRC_WIDTH                                (1 << 9)
+#define DMA_TI_SRC_DREQ                                 (1 << 10)
+#define DMA_TI_BURST_LENGTH(x)                          (((x) & 0xF) << 12)
+#define DMA_TI_PERMAP(x)                                (((x) & 0x1F) << 16)
+#define DMA_TI_NO_WIDE_BURSTS                           (1 << 26)
+
+/* DMA 2D mode transfer length encoding */
+#define DMA_TXFR_LEN_2D(xlength, ylength)               (((ylength) << 16) | (xlength))
+/* DMA 2D mode stride encoding (both signed 16-bit) */
+#define DMA_STRIDE_2D(src_stride, dst_stride)            (((dst_stride) << 16) | ((src_stride) & 0xFFFF))
+
+/* DMA DREQ peripheral map IDs */
+#define DMA_DREQ_PWM                                    5
 
 #define SYSTIMER_CS                                     (SYSTIMER_BASE + 0x00)
 #define SYSTIMER_CLO                                    (SYSTIMER_BASE + 0x04)
