@@ -5,7 +5,7 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 
-#include "pci.h" /* From hidd.pci */
+#include <hardware/pci.h>
 
 #include "pcimockhardware.h"
 #include "pcimockhardware_intern.h"
