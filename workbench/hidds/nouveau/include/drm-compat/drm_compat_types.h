@@ -155,6 +155,7 @@ typedef struct
 struct mutex
 {
     struct SignalSemaphore semaphore;
+    const char *name;
 };
 
 #define DEFINE_MUTEX(name) struct mutex name;   \
@@ -178,6 +179,7 @@ struct idr
 struct i2c_adapter
 {
     IPTR i2cdriver;     /* OOP_Object * */
+    APTR algo_data;
 };
 
 struct i2c_client;

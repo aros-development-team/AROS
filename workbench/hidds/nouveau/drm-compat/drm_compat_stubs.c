@@ -19,8 +19,6 @@ int order_base_2(unsigned long n) { NOT_IMPLEMENTED_STOP }
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 u64 div_u64(u64 a, u32 b) { NOT_IMPLEMENTED_STOP }
 s64 div64_s64(s64 a, s64 b) { NOT_IMPLEMENTED_STOP }
-u32 get_unaligned_le32(const void *p) { NOT_IMPLEMENTED_STOP }
-u16 get_unaligned_le16(const void *p) { NOT_IMPLEMENTED_STOP }
 
 dma_addr_t dma_map_page(struct device *dev, struct page *page, unsigned long offset, size_t size, ULONG dir) { NOT_IMPLEMENTED_STOP }
 void dma_unmap_page(struct device *dev, dma_addr_t dma_handle, size_t size, ULONG dir) { NOT_IMPLEMENTED_STOP }

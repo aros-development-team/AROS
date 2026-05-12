@@ -26,6 +26,8 @@ struct pci_dev
     UWORD   device;
     UWORD   subsystem_vendor;
     UWORD   subsystem_device;
+    IPTR    rom;
+    size_t  romlen;
 };
 
 #define PCI_SLOT(devfn)     (((devfn) >> 3) & 0x1f)
@@ -46,5 +48,9 @@ void pci_disable_device(struct pci_dev *pdev);
 int pci_enable_device(struct pci_dev *pdev);
 int pci_set_master(struct pci_dev *pdev);
 int pci_enable_msi(struct pci_dev *pdev);
+int pci_enable_rom(struct pci_dev *pdev);
+void pci_disable_rom(struct pci_dev *pdev);
+void *pci_map_rom(struct pci_dev *pdev, size_t *size);
+void pci_unmap_rom(struct pci_dev *pdev, void *mem);
 
 #endif /* _DRM_COMPAT_PCI_ */

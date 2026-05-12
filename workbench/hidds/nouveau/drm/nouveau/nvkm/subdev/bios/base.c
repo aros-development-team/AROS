@@ -57,22 +57,16 @@ nvbios_rd08(struct nvkm_bios *bios, u32 addr)
 u16
 nvbios_rd16(struct nvkm_bios *bios, u32 addr)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (likely(nvbios_addr(bios, &addr, 2)))
 		return get_unaligned_le16(&bios->data[addr]);
-#endif
 	return 0x0000;
 }
 
 u32
 nvbios_rd32(struct nvkm_bios *bios, u32 addr)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (likely(nvbios_addr(bios, &addr, 4)))
 		return get_unaligned_le32(&bios->data[addr]);
-#endif
 	return 0x00000000;
 }
 

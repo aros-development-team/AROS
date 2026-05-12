@@ -223,6 +223,11 @@ nvkm_pci_new_(const struct nvkm_pci_func *func, struct nvkm_device *device,
 	pci->msi = false;
 #endif
 
+#if defined(__AROS__)
+	pci->msi = false;
+	bug("FIXME: implement MSI\n");
+#endif
+
 	pci->msi = nvkm_boolopt(device->cfgopt, "NvMSI", pci->msi);
 	if (pci->msi && func->msi_rearm) {
 		pci->msi = pci_enable_msi(pci->pdev) == 0;

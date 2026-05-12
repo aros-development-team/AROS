@@ -239,3 +239,34 @@ int pci_enable_msi(struct pci_dev *pdev)
     NOT_IMPLEMENTED_STOP;
     return 0;
 }
+
+int pci_enable_rom(struct pci_dev *pdev)
+{
+    NOT_IMPLEMENTED_CONTINUE
+    return 0;
+}
+void pci_disable_rom(struct pci_dev *pdev)
+{
+    NOT_IMPLEMENTED_CONTINUE
+}
+
+void *pci_map_rom(struct pci_dev *pdev, size_t *size)
+{
+
+    IPTR _return;
+    IPTR romsize;
+
+    OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_RomBase, (IPTR *)&_return);
+    OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_RomSize, (IPTR *)&romsize);;
+    *size = romsize;
+
+    pdev->rom       = _return;
+    pdev->romlen    = romsize;
+
+    return (void *)_return;
+}
+
+void pci_unmap_rom(struct pci_dev *pdev, void *mem)
+{
+    /* No implementation needed */
+}

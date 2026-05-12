@@ -81,6 +81,22 @@ int kstrtol(const char *s, unsigned int base, long *res);
 #define max_t(t, x, y)                  ({(t)(x) > (t)(y) ? (t)(x) : (t)(y);})
 #define min_t(t, x, y)                  ({(t)(x) < (t)(y) ? (t)(x) : (t)(y);})
 
+static inline void __mutex_init(struct mutex *m, const char *name, void *ingore)
+{
+    InitSemaphore(&m->semaphore);
+    m->name = name;
+}
+
+
+static inline u16 get_unaligned_le16(const void *p)
+{
+    return AROS_LE2WORD(*(const u16 *)p);
+}
+
+static inline u32 get_unaligned_le32(const void *p)
+{
+    return AROS_LE2LONG(*(const u32 *)p);
+}
 
 APTR HIDDNouveauAlloc(ULONG size);
 VOID HIDDNouveauFree(APTR memory);
@@ -170,7 +186,7 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define dev_WARN(dev, fmt, ...)         bug(fmt, ##__VA_ARGS__)
 #define pr_err(fmt, ...)                bug(fmt, ##__VA_ARGS__)
 #define pr_debug(fmt, ...)              bug(fmt, ##__VA_ARGS__)
-#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__);while(1); }
+#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1); }
 #define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
 
 /* Bit operations */

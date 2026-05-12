@@ -45,11 +45,8 @@ static void
 pcirom_fini(void *data)
 {
 	struct priv *priv = data;
-NOT_IMPLEMENTED_STOP
-#if 0
 	pci_unmap_rom(priv->pdev, priv->rom);
 	pci_disable_rom(priv->pdev);
-#endif
 	kfree(priv);
 }
 
@@ -65,8 +62,6 @@ pcirom_init(struct nvkm_bios *bios, const char *name)
 		pdev = device->func->pci(device)->pdev;
 	else
 		return ERR_PTR(-ENODEV);
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (!(ret = pci_enable_rom(pdev))) {
 		if (ret = -ENOMEM,
 		    (priv = kmalloc(sizeof(*priv), GFP_KERNEL))) {
@@ -79,7 +74,6 @@ NOT_IMPLEMENTED_STOP
 		}
 		pci_disable_rom(pdev);
 	}
-#endif
 
 	return ERR_PTR(ret);
 }
@@ -106,8 +100,6 @@ platform_init(struct nvkm_bios *bios, const char *name)
 	else
 		return ERR_PTR(-ENODEV);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (!pdev->rom || pdev->romlen == 0)
 		return ERR_PTR(-ENODEV);
 
@@ -118,7 +110,6 @@ NOT_IMPLEMENTED_STOP
 			return priv;
 		kfree(priv);
 	}
-#endif
 
 	return ERR_PTR(ret);
 }

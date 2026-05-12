@@ -694,9 +694,10 @@ nvkm_clk_ctor(const struct nvkm_clk_func *func, struct nvkm_device *device,
 	clk->ustate_dc = -1;
 	clk->allow_reclock = allow_reclock;
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	INIT_WORK(&clk->work, nvkm_pstate_work);
+#else
+	bug("CHECKME: clk_ctor\n");
 #endif
 	init_waitqueue_head(&clk->wait);
 	atomic_set(&clk->waiting, 0);

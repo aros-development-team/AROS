@@ -42,5 +42,6 @@
 #include <drm-compat/drm_compat_pci.h>
 #include <drm-compat/drm_linux_list.h>
 #define CONFIG_ARM_ENABLED 0
+// #define MOCK_HARDWARE
 #endif
 #endif

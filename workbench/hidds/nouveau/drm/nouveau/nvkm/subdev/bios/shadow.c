@@ -191,6 +191,7 @@ nvbios_shadow(struct nvkm_bios *bios)
 	/* handle user-specified bios source */
 	optarg = nvkm_stropt(device->cfgopt, "NvBios", &optlen);
 	source = optarg ? kstrndup(optarg, optlen, GFP_KERNEL) : NULL;
+#if !defined(MOCK_HARDWARE)
 	if (source) {
 		/* try to match one of the built-in methods */
 		for (mthd = mthds; mthd->func; mthd++) {
@@ -238,6 +239,10 @@ nvbios_shadow(struct nvkm_bios *bios)
 		nvkm_error(subdev, "unable to locate usable image\n");
 		return -EINVAL;
 	}
+#else
+	best = &mthds[2];
+	shadow_method(bios, best, NULL);
+#endif
 
 	nvkm_debug(subdev, "using image from %s\n", best->func ?
 		   best->func->name : source);

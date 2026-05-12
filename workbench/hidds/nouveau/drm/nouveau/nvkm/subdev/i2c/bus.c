@@ -225,8 +225,6 @@ nvkm_i2c_bus_ctor(const struct nvkm_i2c_bus_func *func,
 	const bool internal = true;
 #endif
 	int ret;
-NOT_IMPLEMENTED_STOP
-#if 0
 
 	bus->func = func;
 	bus->pad = pad;
@@ -235,31 +233,42 @@ NOT_IMPLEMENTED_STOP
 	list_add_tail(&bus->head, &pad->i2c->bus);
 	BUS_TRACE(bus, "ctor");
 
+#if !defined(__AROS__)
 	snprintf(bus->i2c.name, sizeof(bus->i2c.name), "nvkm-%s-bus-%04x",
 		 dev_name(device->dev), id);
 	bus->i2c.owner = THIS_MODULE;
 	bus->i2c.dev.parent = device->dev;
+#endif
 
 	if ( bus->func->drive_scl &&
 	    !nvkm_boolopt(device->cfgopt, "NvI2C", internal)) {
 		if (!(bit = kzalloc(sizeof(*bit), GFP_KERNEL)))
 			return -ENOMEM;
+#if !defined(__AROS__)
+bug("CHECKME: I2C\n");
 		bit->udelay = 10;
 		bit->timeout = usecs_to_jiffies(2200);
 		bit->data = bus;
 		bit->pre_xfer = nvkm_i2c_bus_pre_xfer;
 		bit->post_xfer = nvkm_i2c_bus_post_xfer;
+#endif
 		bit->setscl = nvkm_i2c_bus_setscl;
 		bit->setsda = nvkm_i2c_bus_setsda;
 		bit->getscl = nvkm_i2c_bus_getscl;
 		bit->getsda = nvkm_i2c_bus_getsda;
 		bus->i2c.algo_data = bit;
+#if !defined(__AROS__)
 		ret = i2c_bit_add_bus(&bus->i2c);
+#else
+		ret = 0;
+#endif
 	} else {
+NOT_IMPLEMENTED_STOP
+#if 0
 		bus->i2c.algo = &nvkm_i2c_bus_algo;
 		ret = i2c_add_adapter(&bus->i2c);
-	}
 #endif
+	}
 
 	return ret;
 }

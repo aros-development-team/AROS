@@ -238,9 +238,6 @@ nvkm_subdev_ctor(const struct nvkm_subdev_func *func,
 	subdev->device = device;
 	subdev->index = index;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	__mutex_init(&subdev->mutex, name, &nvkm_subdev_lock_class[index]);
-#endif
 	subdev->debug = nvkm_dbgopt(device->dbgopt, name);
 }

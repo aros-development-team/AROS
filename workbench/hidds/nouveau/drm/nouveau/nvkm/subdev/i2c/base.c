@@ -426,6 +426,8 @@ nvkm_i2c_new_(const struct nvkm_i2c_func *func, struct nvkm_device *device,
 			}
 		}
 	}
-
+#if defined(MOCK_HARDWARE)
+	i = 1;
+#endif
 	return nvkm_event_init(&nvkm_i2c_intr_func, 4, i, &i2c->event);
 }
