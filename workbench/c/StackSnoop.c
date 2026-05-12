@@ -109,10 +109,20 @@ static int out (const UBYTE * fmt, ...)
 static void CheckTaskStack(struct Task *task)
 {
     UBYTE *startcheck, *endcheck;
-    LONG stacksize, stackinc, unusedstack = 0;
+    SIPTR stacksize, stackinc, unusedstack = 0;
     
-    stacksize = (LONG)( ((UBYTE *)task->tc_SPUpper) - ((UBYTE *)task->tc_SPLower) );
-      
+    stacksize = ((UBYTE *)task->tc_SPUpper) - ((UBYTE *)task->tc_SPLower);
+
+    if (!(task->tc_Flags & TF_STACKCHK))
+    {
+        out("Task %p (%25s) Stack Size =%6id (no stackcheck)\n",
+                    task,
+                    task->tc_Node.ln_Name ?
+                            (const char *)task->tc_Node.ln_Name : "<NONAME>",
+                    stacksize);
+        return;
+    }
+
 #if AROS_STACK_GROWS_DOWNWARDS
     startcheck = (UBYTE *)task->tc_SPLower;
     endcheck = ((UBYTE *)task->tc_SPUpper) - 1;
@@ -129,7 +139,7 @@ static void CheckTaskStack(struct Task *task)
         unusedstack++;
     }
     
-    out("Task %p (%25s) Stack Size =%6ld, Left =%6ld, Used %s%6ld%s\n",
+    out("Task %p (%25s) Stack Size =%6id, Left =%6id, Used %s%6id%s\n",
                 task,
                 task->tc_Node.ln_Name ?
                         (const char *)task->tc_Node.ln_Name : "<NONAME>",
