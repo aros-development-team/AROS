@@ -31,6 +31,71 @@ static int mbox_init(struct MBoxBase *MBoxBase)
     return retval;
 }
 
+volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
+    unsigned int chan, void *msg)
+{
+    unsigned int try = 0x2000000;
+    unsigned int reply;
+    ULONG length;
+    void *phys_addr;
+
+    if ((((unsigned int)msg & VCMB_CHAN_MASK) != 0) || (chan > VCMB_CHAN_MAX))
+        return (volatile unsigned int *)-1;
+
+    length = AROS_LE2LONG(((ULONG *)msg)[0]);
+    phys_addr = CachePreDMA(msg, &length, DMA_ReadFromRAM);
+
+    ObtainSemaphore(&MBoxBase->mbox_Sem);
+
+    {
+        unsigned int wtry = 0x2000000;
+        while ((MBoxStatus(mb) & VCMB_STATUS_WRITEREADY) != 0)
+        {
+            __asm__ __volatile__("dsb" ::: "memory");
+            if (--wtry == 0)
+            {
+                ReleaseSemaphore(&MBoxBase->mbox_Sem);
+                return (volatile unsigned int *)-1;
+            }
+        }
+    }
+
+    __asm__ __volatile__("dmb" ::: "memory");
+    *((volatile unsigned int *)(mb + VCMB_WRITE)) =
+        AROS_LONG2LE(((unsigned int)phys_addr | chan));
+    while (1)
+    {
+        while ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
+        {
+            __asm__ __volatile__("dsb" ::: "memory");
+
+            if (try-- == 0)
+            {
+                ReleaseSemaphore(&MBoxBase->mbox_Sem);
+                return (volatile unsigned int *)-1;
+            }
+        }
+
+        __asm__ __volatile__("dmb" ::: "memory");
+        reply = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
+        __asm__ __volatile__("dmb" ::: "memory");
+
+        if ((reply & VCMB_CHAN_MASK) == chan)
+        {
+            uint32_t *addr = (uint32_t *)(reply & ~VCMB_CHAN_MASK);
+            uint32_t len = AROS_LE2LONG(addr[0]);
+
+            CacheClearE(addr, len, CACRF_InvalidateD);
+
+            if ((void *)addr == phys_addr)
+            {
+                ReleaseSemaphore(&MBoxBase->mbox_Sem);
+                return (volatile unsigned int *)msg;
+            }
+        }
+    }
+}
+
 AROS_LH1(unsigned int, MBoxStatus,
                 AROS_LHA(void *, mb, A0),
                 struct MBoxBase *, MBoxBase, 1, Mbox)
@@ -126,6 +191,24 @@ AROS_LH3(void, MBoxWrite,
 
         ReleaseSemaphore(&MBoxBase->mbox_Sem);
     }
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH3(volatile unsigned int *, MBoxCall,
+                AROS_LHA(void *, mb, A0),
+                AROS_LHA(unsigned int, chan, D0),
+                AROS_LHA(void *, msg, A1),
+                struct MBoxBase *, MBoxBase, 4, Mbox)
+{
+    AROS_LIBFUNC_INIT
+
+    D(bug("[MBOX] MBoxCall(chan %d @ 0x%p, msg @ 0x%p)\n", chan, mb, msg));
+
+    if (msg == NULL)
+        return (volatile unsigned int *)-1;
+
+    return mbox_call_locked(MBoxBase, mb, chan, msg);
 
     AROS_LIBFUNC_EXIT
 }
