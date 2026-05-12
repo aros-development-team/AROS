@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -50,25 +50,54 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
             D(bug("[USB2OTG] %s: Enabling Power ..\n", __PRETTY_FUNCTION__));
             wr32le(USB2OTG_POWER, 0);
 
-#if (0)
-            D(bug("[USB2OTG] %s: Preparing Controller (non HSIC mode) ..\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_USB) = USB2OTG_USB_MODESELECT|USB2OTG_USB_USBTRDTIM(5)|(USB2OTGBase->hd_Unit->hu_OperatingMode << 29);
-            *((volatile unsigned int *)USB2OTG_OTGCTRL) = 0;
+            /* Save firmware GUSBCFG before reset to restore PHY settings. */
+            ULONG saved_gusbcfg = rd32le(USB2OTG_USB);
 
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_LPMCONFIG);
-            otg_RegVal &= ~USB2OTG_LPMCONFIG_HSICCONNECT;
-            *((volatile unsigned int *)USB2OTG_LPMCONFIG) = otg_RegVal;
+            /* Step 1: Core soft reset (wait AHB IDLE -> CSFTRST -> wait clear). */
+            bug("[USB2OTG] Init: Core soft reset\n");
+            usb2otg_wait_ahb_idle(100000, "before core soft reset");
+            wr32le(USB2OTG_RESET, USB2OTG_RESET_CORESOFT);
+            usb2otg_wait_reset_bit_clear(USB2OTG_RESET_CORESOFT, 1000000,
+                "Init: Core soft reset");
+            /* Wait for internal logic to settle after core reset */
+            {
+                volatile int i;
+                for (i = 0; i < 100000; i++)
+                    asm volatile("mov r0, r0\n");
+            }
 
-            D(bug("[USB2OTG] %s: Clearing Global NAK ..\n", __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_DEVCTRL) = (1 << 10) | (1 << 8);
-#endif
+            /*
+             * Step 2: Re-enable DMA + global IRQs (cleared by core reset).
+             * NPTxFEmpLvl=1 → NPTXFEMP only fires when fully drained, so
+             * OUT-arming code doesn't queue while stale data is in FIFO.
+             */
+            otg_RegVal = rd32le(USB2OTG_AHB);
+            otg_RegVal |= USB2OTG_AHB_DMAENABLE
+                        | USB2OTG_AHB_AXIBURSTLENGTH
+                        | USB2OTG_AHB_INTENABLE
+                        | USB2OTG_AHB_TRANSFEREMPTYLEVEL;  /* NPTxFEmpLvl = fully empty */
+            wr32le(USB2OTG_AHB, otg_RegVal);
+
+            /* Step 3: Restore GUSBCFG with force-host bit set. */
+            saved_gusbcfg &= ~USB2OTG_USB_FORCE_DEV_MODE;
+            saved_gusbcfg |= USB2OTG_USB_FORCE_HOST_MODE;
+            wr32le(USB2OTG_USB, saved_gusbcfg);
+            /* 25 ms for mode switch — ~30M NOPs on 1.2 GHz Cortex-A53. */
+            {
+                volatile int i;
+                for (i = 0; i < 30000000; i++)
+                    asm volatile("mov r0, r0\n");
+            }
+
+            /* Step 4: Configure HOSTCFG (FSLSPCLKSEL) after core reset. */
             otg_RegVal = rd32le(USB2OTG_HARDWARE2);
-            if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
+            if (USB2OTG_HW2_FSPHY_TYPE(otg_RegVal) == USB2OTG_HW2_FSPHY_TYPE_ULPI &&
+                USB2OTG_HW2_HSPHY_TYPE(otg_RegVal) == USB2OTG_HW2_HSPHY_TYPE_UTMI)
             {
                 otg_RegVal = rd32le(USB2OTG_USB);
                 if (otg_RegVal & USB2OTG_USB_ULPIFSLS)
                 {
-                    D(bug("[USB2OTG] %s: Host clock: 48Mhz\n", __PRETTY_FUNCTION__));
+                    bug("[USB2OTG] Host clock: 48Mhz\n");
                     otg_RegVal = rd32le(USB2OTG_HOSTCFG);
                     otg_RegVal &= ~3;
                     otg_RegVal |= 1;
@@ -76,64 +105,73 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 }
                 else
                 {
-                    D(bug("[USB2OTG] %s: Host clock: 30-60Mhz\n", __PRETTY_FUNCTION__));
+                    bug("[USB2OTG] Host clock: 30-60Mhz (ULPI)\n");
                     otg_RegVal = rd32le(USB2OTG_HOSTCFG);
                     otg_RegVal &= ~3;
                     wr32le(USB2OTG_HOSTCFG, otg_RegVal);
                 }
             } else {
-                D(bug("[USB2OTG] %s: Host clock: 30-60Mhz\n", __PRETTY_FUNCTION__));
+                bug("[USB2OTG] Host clock: 30-60Mhz (default)\n");
                 otg_RegVal = rd32le(USB2OTG_HOSTCFG);
                 otg_RegVal &= ~3;
                 wr32le(USB2OTG_HOSTCFG, otg_RegVal);
             }
-#if 0 // Emulate FS/LS only device
-            otg_RegVal = rd32le(USB2OTG_HOSTCFG);
-            otg_RegVal |= (1 << 2);
-            wr32le(USB2OTG_HOSTCFG, otg_RegVal);
-#endif
 
-#if (0)
-            D(bug("[USB2OTG] %s: Enabling HNP...\n", __PRETTY_FUNCTION__));
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_OTGCTRL);
-            otg_RegVal |= USB2OTG_OTGCTRL_HOSTSETHNPENABLE;
-            *((volatile unsigned int *)USB2OTG_OTGCTRL) = otg_RegVal;
-#endif
+            /* Step 5: HFIR = 60000 for 30-60 MHz PHY clock. */
+            {
+                ULONG hfir = rd32le(USB2OTG_HOSTFRAMEINTERV);
+                hfir &= ~0xffff;
+                hfir |= 60000;
+                wr32le(USB2OTG_HOSTFRAMEINTERV, hfir);
+            }
+
+            /*
+             * Step 6: Enable SOF + HOSTCHANNEL IRQs (GINTMSK cleared by
+             * reset). SOF drives frame scheduling; HOSTCHANNEL drives
+             * per-channel completion/error.
+             */
+            wr32le(USB2OTG_INTR, 0xffffffff); /* clear pending */
+            otg_RegVal = USB2OTG_INTRCORE_DMASTARTOFFRAME |
+                         USB2OTG_INTRCORE_HOSTCHANNEL;
+            wr32le(USB2OTG_INTRMASK, otg_RegVal);
+
+            /*
+             * BCM2835/2837 DWC OTG SPRAM layout: RXFIFO 774 DW @ 0,
+             * NPTXFIFO 256 DW @ 774, PTXFIFO 512 DW @ 1030.
+             */
+            wr32le(USB2OTG_RCVSIZE, 774);
+            wr32le(USB2OTG_NONPERIFIFOSIZE, (256 << 16) | 774);
+            wr32le(USB2OTG_PERIFIFOSIZE, (512 << 16) | (774 + 256));
+
+            usb2otg_wait_ahb_idle(100000, "before FIFO flush");
 
             D(bug("[USB2OTG] %s: Flushing Tx Fifo's...\n", __PRETTY_FUNCTION__));
-            wr32le(USB2OTG_RESET, USB2OTG_RESET_TXFIFOFLUSH | (10 << 6));
-            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-            if ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_TXFIFOFLUSH) != 0)
-                bug("[USB2OTG] %s: Tx Flush Timed-Out!\n", __PRETTY_FUNCTION__);
+            wr32le(USB2OTG_RESET, USB2OTG_RESET_TXFIFOFLUSH | (0x10 << 6));
+            usb2otg_wait_reset_bit_clear(USB2OTG_RESET_TXFIFOFLUSH, 100000,
+                "Init: Tx Flush");
 
             D(bug("[USB2OTG] %s: Flushing Rx Fifo's...\n", __PRETTY_FUNCTION__));
             wr32le(USB2OTG_RESET, USB2OTG_RESET_RXFIFOFLUSH);
-            for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-            if ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_RXFIFOFLUSH) != 0)
-                bug("[USB2OTG] %s: Rx Flush Timed-Out!\n", __PRETTY_FUNCTION__);
+            usb2otg_wait_reset_bit_clear(USB2OTG_RESET_RXFIFOFLUSH, 100000,
+                "Init: Rx Flush");
 
             otg_RegVal = rd32le(USB2OTG_HARDWARE2);
             D(bug("[USB2OTG] %s: Queue Depths:\n",
                         __PRETTY_FUNCTION__));
             D(bug("[USB2OTG] %s:      Periodic Transmit: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 24)) >> 24)));
+                        __PRETTY_FUNCTION__, USB2OTG_HW2_PTXQDEPTH(otg_RegVal)));
             D(bug("[USB2OTG] %s:      Non-Periodic Transmit: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x3 << 22)) >> 22)));
+                        __PRETTY_FUNCTION__, USB2OTG_HW2_NPTXQDEPTH(otg_RegVal)));
 
-            otg_RegVal = rd32le(USB2OTG_HARDWARE3);
-#if (0)
-            D(bug("[USB2OTG] %s:      Device Tokens: 0x%0x\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0x1F << 26)) >> 26)));
-#endif
-            D(bug("[USB2OTG] %s:      FIFO: %ld bytes\n",
-                        __PRETTY_FUNCTION__, ((otg_RegVal & (0xFFFF << 16)) >> 16) << 2));
-#if (0)
-            D(bug("[USB2OTG] %s: Xfer Size: %ld\n",
-                        __PRETTY_FUNCTION__, (otg_RegVal & 0xF)));
-#endif
+            {
+                ULONG hw3 = rd32le(USB2OTG_HARDWARE3);
+                /* HW3[31:16] = total FIFO depth in DWORDs; *4 for bytes. */
+                D(bug("[USB2OTG] %s:      FIFO: %ld bytes\n",
+                            __PRETTY_FUNCTION__, ((hw3 >> 16) & 0xFFFF) << 2));
+            }
 
             otg_RegVal = rd32le(USB2OTG_HARDWARE2);
-            if ((otg_Unit->hu_HostChans = ((otg_RegVal & (0xF << 14)) >> 14) + 1) > EPSCHANS_MAX)
+            if ((otg_Unit->hu_HostChans = USB2OTG_HW2_HOSTCHANS(otg_RegVal)) > EPSCHANS_MAX)
                 otg_Unit->hu_HostChans = EPSCHANS_MAX;
 
             otg_RegVal = rd32le(USB2OTG_HOSTCFG);
@@ -142,74 +180,43 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 D(bug("[USB2OTG] %s: Host Channels: %d\n",
                             __PRETTY_FUNCTION__, otg_Unit->hu_HostChans));
 
+                /*
+                 * Two-phase channel halt per Synopsys DWC OTG Programming
+                 * Guide: 1) disable active channels, 2) force-halt all.
+                 */
+                bug("[USB2OTG] Init: Halting %d host channels\n", otg_Unit->hu_HostChans);
+
+                /* Phase 1: Disable channels */
                 for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
-#if (0)
-                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_INTRMASK)) =
-                        (USB2OTG_INTRCHAN_STALL|USB2OTG_INTRCHAN_BABBLEERROR|USB2OTG_INTRCHAN_TRANSACTIONERROR) |
-                        (USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE|USB2OTG_INTRCHAN_ACKNOWLEDGE|USB2OTG_INTRCHAN_NOTREADY) |
-                        (USB2OTG_INTRCHAN_HALT|USB2OTG_INTRCHAN_FRAMEOVERRUN|USB2OTG_INTRCHAN_DATATOGGLEERROR);
-                    otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE));
-                    D(bug("[USB2OTG] %s:      Chan #%d FIFO @ 0x%p, Characteristics: %08x -> %08x\n",
-                                __PRETTY_FUNCTION__,
-                                chan, USB2OTG_FIFOBASE + (chan * USB2OTG_FIFOSIZE), otg_RegVal, (otg_RegVal & ~USB2OTG_HOSTCHAR_ENABLE) | (USB2OTG_HOSTCHAR_DISABLE | (1 << USB2OTG_HOSTCHAR_EPDIR))
-                                ));
-                    otg_RegVal &= ~USB2OTG_HOSTCHAR_ENABLE;
-                    otg_RegVal |= USB2OTG_HOSTCHAR_DISABLE | (1 << USB2OTG_HOSTCHAR_EPDIR);
-                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
-#endif
+                    otg_RegVal = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+                    /* Clear enable, clear direction, set disable */
+                    otg_RegVal &= ~(USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_EPDIR(1));
+                    otg_RegVal |= USB2OTG_HOSTCHAR_DISABLE;
+                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), otg_RegVal);
                 }
 
+                /* Phase 2: Force-halt all channels */
                 for (chan = 0; chan < otg_Unit->hu_HostChans; chan++) {
-#if (0)
-                    otg_RegVal = *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE));
-                    otg_RegVal |= USB2OTG_HOSTCHAR_ENABLE|USB2OTG_HOSTCHAR_DISABLE|(1 << USB2OTG_HOSTCHAR_EPDIR);
-                    *((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) = otg_RegVal;
-                    for (ns = 0; ns < 100000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 100ms
-                    if ((*((volatile unsigned int *)(USB2OTG_HOST_CHANBASE + (chan * USB2OTG_HOST_CHANREGSIZE) + USB2OTG_HOSTCHAN_CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) != 0)
-                        bug("[USB2OTG] %s: Unable to clear Halt on channel #%d\n", __PRETTY_FUNCTION__, chan);
-#endif
-                }
+                    otg_RegVal = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
+                    otg_RegVal |= USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_DISABLE;
+                    otg_RegVal &= ~USB2OTG_HOSTCHAR_EPDIR(1);
+                    wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), otg_RegVal);
 
-#if (0)
-                D(bug("[USB2OTG] %s: Enabling HOST Channel Interrupts ...\n",
-                            __PRETTY_FUNCTION__));
-                *((volatile unsigned int *)USB2OTG_HOSTINTRMASK) = (1U << otg_Unit->hu_HostChans) - 1U;
-#endif
-            }
-#if (0)
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
-
-            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
-            {
-                D(bug("[USB2OTG] %s: Configuring USB Core DEVICE mode -:\n",
-                            __PRETTY_FUNCTION__));
-
-                if ((otg_Unit->hu_DevEPs = ((otg_RegVal & (0xF << 10)) >> 10) + 1) > EPSCHANS_MAX)
-                    otg_Unit->hu_DevEPs = EPSCHANS_MAX;
-
-                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE4);
-                otg_Unit->hu_DevInEPs = ((otg_RegVal & (0xF << 26)) >> 26) + 1;
-
-                D(bug("[USB2OTG] %s:      Endpoints: %d/%d\n",
-                            __PRETTY_FUNCTION__, otg_Unit->hu_DevInEPs, otg_Unit->hu_DevEPs));
-
-                for (chan = 0; chan < otg_Unit->hu_DevEPs; chan++) {
-                    D(bug("[USB2OTG] %s:      Endpoint #%d ", __PRETTY_FUNCTION__, chan));
-                    if (chan < otg_Unit->hu_DevInEPs)
+                    /* Wait for channel to halt (ENABLE bit clears) */
                     {
-                        D(bug("IN_CTL: %08x, ", *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL))));
+                        int timeout = 100000;
+                        while ((rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE) && --timeout > 0)
+                            asm volatile("mov r0, r0\n");
+                        if (timeout == 0)
+                            bug("[USB2OTG] Init: Channel #%d halt timed out!\n", chan);
                     }
-                    D(bug("OUT_CTL: %08x\n", *((volatile unsigned int *)(USB2OTG_DEV_OUTEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_OUTEP_DOEPCTL))));
-                }
-            }
-#endif
 
-#if (0)
-            D(bug("[USB2OTG] %s: Pulling-Up D+ ..\n", __PRETTY_FUNCTION__));
-            otg_RegVal = *((volatile unsigned int *)USB2OTG_DEVCTRL);
-            otg_RegVal &= ~(1 << 1);
-            *((volatile unsigned int *)USB2OTG_DEVCTRL) = otg_RegVal;
-#endif
+                    /* Clear all pending interrupts on this channel */
+                    wr32le(USB2OTG_CHANNEL_REG(chan, INTR), 0x7ff);
+                }
+
+            }
+
 
             {
                 struct MsgPort *port = CreateMsgPort();
@@ -219,7 +226,8 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 otg_RegVal = rd32le(USB2OTG_HOSTPORT);
                 if (!(otg_RegVal & USB2OTG_HOSTPORT_PRTPWR))
                 {
-                    D(bug("[USB2OTG] %s: Powering On Host Port ..\n", __PRETTY_FUNCTION__));
+                    bug("[USB2OTG] Init: Powering On Host Port\n");
+                    otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                     otg_RegVal |= USB2OTG_HOSTPORT_PRTPWR;
                     wr32le(USB2OTG_HOSTPORT, otg_RegVal);
                 }
@@ -232,14 +240,14 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                 otg_RegVal = rd32le(USB2OTG_HOSTPORT);
                 if (otg_RegVal & USB2OTG_HOSTPORT_PRTCONNSTS)
                 {
-                    D(bug("[USB2OTG] %s: Reseting Host Port ..\n", __PRETTY_FUNCTION__));
+                    bug("[USB2OTG] Init: Device connected, resetting port\n");
 
                     req->tr_time.tv_secs = 0;
                     req->tr_time.tv_micro = 100000;
                     DoIO((struct IORequest *)req);
 
                     otg_RegVal = rd32le(USB2OTG_HOSTPORT);
-                    otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG);
+                    otg_RegVal &= ~USB2OTG_HOSTPORT_SC_BITS;
                     otg_RegVal |= USB2OTG_HOSTPORT_PRTRST;
                     wr32le(USB2OTG_HOSTPORT, otg_RegVal);
 
@@ -248,67 +256,38 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
                     DoIO((struct IORequest *)req);
 
                     otg_RegVal = rd32le(USB2OTG_HOSTPORT);
-                    otg_RegVal &= ~(USB2OTG_HOSTPORT_PRTCONNSTS|USB2OTG_HOSTPORT_PRTENA|USB2OTG_HOSTPORT_PRTENCHNG|USB2OTG_HOSTPORT_PRTOVRCURRCHNG| USB2OTG_HOSTPORT_PRTRST);
+                    otg_RegVal &= ~(USB2OTG_HOSTPORT_SC_BITS | USB2OTG_HOSTPORT_PRTRST);
                     wr32le(USB2OTG_HOSTPORT, otg_RegVal);
-
 
                     req->tr_time.tv_secs = 0;
                     req->tr_time.tv_micro = 20000;
                     DoIO((struct IORequest *)req);
+
+                    otg_RegVal = rd32le(USB2OTG_HOSTPORT);
+
+                    /* Signal port change so hub class INT EP returns immediately. */
+                    if (otg_RegVal & USB2OTG_HOSTPORT_PRTCONNSTS)
+                    {
+                        otg_Unit->hu_HubPortChanged = TRUE;
+                        D(bug("[USB2OTG] Init: HubPortChanged set to TRUE\n"));
+                    }
+                }
+                else
+                {
+                    bug("[USB2OTG] Init: No device connected on port!\n");
                 }
 
                 CloseDevice((struct IORequest *)req);
                 DeleteIORequest((struct IORequest *)req);
                 DeleteMsgPort(port);
             }
-#if (0)
-            D(bug("[USB2OTG] %s: Configuring Interrupts ...\n",
-                        __PRETTY_FUNCTION__));
-
-            *((volatile unsigned int *)USB2OTG_INTRMASK) =
-                (USB2OTG_INTRCORE_ENUMERATIONDONE|USB2OTG_INTRCORE_USBRESET|USB2OTG_INTRCORE_USBSUSPEND) |
-                (USB2OTG_INTRCORE_INENDPOINT|USB2OTG_INTRCORE_RECEIVESTATUSLEVEL|USB2OTG_INTRCORE_SESSIONREQUEST|USB2OTG_INTRCORE_OTG|USB2OTG_INTRCORE_HOSTCHANNEL|USB2OTG_INTRCORE_PORT);
-
-            if (!(otg_Unit->hu_OperatingMode) || (otg_Unit->hu_OperatingMode == USB2OTG_USBDEVICEMODE))
-            {
-                otg_RegVal = *((volatile unsigned int *)USB2OTG_HARDWARE2);
-                if (otg_RegVal & (1 << 20))
-                {
-                    D(bug("[USB2OTG] %s: Multi-Process Interrupts ...\n",
-                        __PRETTY_FUNCTION__));
-                    for (chan = 0; chan < otg_Unit->hu_DevInEPs; chan++) {
-                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = (1 << 0);
-                        *((volatile unsigned int *)(USB2OTG_DEV_INEP_BASE + (chan * USB2OTG_DEV_EPSIZE) + USB2OTG_DEV_INEP_DIEPCTL)) = 0;
-                        *((volatile unsigned int *)USB2OTG_DEVEACHINTMSK) = 0xFFFF;
-                    }
-                }
-                else
-                {
-                    *((volatile unsigned int *)USB2OTG_DEVINEPMASK) = (1 << 0);
-                    *((volatile unsigned int *)USB2OTG_DEVOUTEPMASK) = 0;
-                    *((volatile unsigned int *)USB2OTG_DEVINTRMASK) = 0xFFFF;
-                }
-            }
-
-            D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n",
-                        __PRETTY_FUNCTION__));
-            *((volatile unsigned int *)USB2OTG_AHB) = USB2OTG_AHB_INTENABLE;
-
-            D(bug("[USB2OTG] %s: Initialising NakTimeout (intr @ 0x%p) ...\n",
-                        __PRETTY_FUNCTION__, &otg_Unit->hu_NakTimeoutInt));
-
-
-            Cause(&otg_Unit->hu_NakTimeoutInt);
-#endif
+            /* Don't double-start NakTimeoutInt — creates overlapping chains. */
+            // Cause(&otg_Unit->hu_NakTimeoutInt);
         }
 
         otg_RegVal = rd32le(USB2OTG_OTGCTRL);
         D(bug("[USB2OTG] %s: OTG Control: %08x\n",
                     __PRETTY_FUNCTION__, otg_RegVal));
-#if 0
-for(int i=0; i < 0x600 / 4; i++)
-bug("%04x: %08x\n", i * 4, rd32le(USB2OTG_OTGCTRL + i*4));
-#endif
         return (&otg_Unit->hu_Unit);
     }
 
@@ -326,6 +305,41 @@ void FNAME_DEV(CloseUnit)(struct IOUsbHWReq *ioreq, struct USB2OTGUnit *otg_Unit
 void FNAME_DEV(TermIO)(struct IOUsbHWReq *ioreq,
             LIBBASETYPEPTR USB2OTGBase)
 {
+    /*
+     * USB §9.4.5: CLEAR_FEATURE(ENDPOINT_HALT) resets device toggle to
+     * DATA0; host must mirror or every subsequent xfer hits DATATGLERR.
+     * MSC BOT reset-recovery depends on this.
+     */
+    if (ioreq->iouh_Req.io_Error == 0 &&
+        ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER &&
+        ioreq->iouh_SetupData.bmRequestType ==
+            (URTF_OUT | URTF_STANDARD | URTF_ENDPOINT) &&
+        ioreq->iouh_SetupData.bRequest == USR_CLEAR_FEATURE &&
+        AROS_LE2WORD(ioreq->iouh_SetupData.wValue) == UFS_ENDPOINT_HALT)
+    {
+        struct USB2OTGUnit *otg_Unit = USB2OTGBase->hd_Unit;
+        UWORD widx = AROS_LE2WORD(ioreq->iouh_SetupData.wIndex);
+        UBYTE ep = (UBYTE)(widx & 0x0f);
+        UBYTE dev = ioreq->iouh_DevAddr;
+
+        if (otg_Unit != NULL)
+        {
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            otg_Unit->hu_PIDBits[dev & 0x7f] &= ~(3UL << (2 * ep));
+            otg_Unit->hu_NakGate[dev & 0x7f] = USB2OTG_NAK_GATE_NONE;
+            /* Also clear PING flow bit; stale PING state survives BOT
+             * Reset Recovery and re-wedges on the next CBW. */
+            otg_Unit->hu_PingBits[dev & 0x7f] &= ~(1UL << ep);
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+            Enable();
+        }
+    }
+
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_FREEMSG;
 
     if (!(ioreq->iouh_Req.io_Flags & IOF_QUICK))
@@ -520,34 +534,39 @@ WORD FNAME_DEV(cmdControlXFer)(struct IOUsbHWReq *ioreq,
     D(bug("[USB2OTG] UHCMD_CONTROLXFER(unit:0x%p, ioreq:0x%p)\n",
                 otg_Unit, ioreq));
 
-#if (0)
-    if (!(ioreq->iouh_State & UHSF_OPERATIONAL))
-    {
-        return (UHIOERR_USBOFFLINE);
-    }
-#endif
 
     if (ioreq->iouh_DevAddr == otg_Unit->hu_HubAddr)
     {
+        D(bug("[USB2OTG] CTRL-RH: dev=%ld hubaddr=%ld req=%02lx val=%04lx len=%ld\n",
+            (LONG)ioreq->iouh_DevAddr,
+            (LONG)otg_Unit->hu_HubAddr,
+            (ULONG)ioreq->iouh_SetupData.bRequest,
+            (ULONG)AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
+            (LONG)ioreq->iouh_Length));
         return (FNAME_ROOTHUB(cmdControlXFer)(ioreq, otg_Unit, USB2OTGBase));
     }
 
-    D(bug("[USB2OTG] UHCMD_CONTROLXFER: DevAddr #%ld\n",
-                ioreq->iouh_DevAddr));
-
-    (bug("[USB2OTG] ControlTransfer to dev %02x: %02x %02x %04x %04x %04x\n", ioreq->iouh_DevAddr,
-            ioreq->iouh_SetupData.bmRequestType, ioreq->iouh_SetupData.bRequest, AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
-            AROS_LE2WORD(ioreq->iouh_SetupData.wLength), AROS_LE2WORD(ioreq->iouh_SetupData.wIndex)));
+    D(bug("[USB2OTG] CTRL-HW: dev=%ld hubaddr=%ld req=%02lx val=%04lx len=%ld\n",
+        (LONG)ioreq->iouh_DevAddr,
+        (LONG)otg_Unit->hu_HubAddr,
+        (ULONG)ioreq->iouh_SetupData.bRequest,
+        (ULONG)AROS_LE2WORD(ioreq->iouh_SetupData.wValue),
+        (LONG)ioreq->iouh_Length));
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
+    usb2otg_reset_retry_state(ioreq);
 
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     AddTail(&otg_Unit->hu_CtrlXFerQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
     Enable();
-    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
-
-    D(bug("[USB2OTG] UHCMD_CONTROLXFER: handled ioreq @ 0x%p\n", ioreq));
+    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     return (RC_DONTREPLY);
 }
@@ -559,12 +578,6 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
     D(bug("[USB2OTG] UHCMD_BULKXFER(unit:0x%p, ioreq:0x%p)\n",
                 otg_Unit, ioreq));
 
-#if (0)
-    if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
-    {
-        return(UHIOERR_USBOFFLINE);
-    }
-#endif
 
     if (ioreq->iouh_Flags & UHFF_LOWSPEED)
     {
@@ -573,11 +586,33 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
+    usb2otg_reset_retry_state(ioreq);
 
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+    {
+        int chan;
+        for (chan = 0; chan < 8; chan++)
+        {
+            if (otg_Unit->hu_Channel[chan].hc_Request == ioreq &&
+                otg_Unit->hu_Channel[chan].hc_SplitCSplitPending)
+            {
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+                Enable();
+                return RC_DONTREPLY;
+            }
+        }
+    }
     AddTail(&otg_Unit->hu_BulkXFerQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
     Enable();
-    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
     D(bug("[USB2OTG] UHCMD_BULKXFER: handled ioreq @ 0x%p\n", ioreq));
 
@@ -588,25 +623,13 @@ WORD FNAME_DEV(cmdIntXFer)(struct IOUsbHWReq *ioreq,
                        struct USB2OTGUnit *otg_Unit,
                        LIBBASETYPEPTR USB2OTGBase)
 {
-    D(bug("[USB2OTG] UHCMD_INTXFER(unit:0x%p, ioreq:0x%p)\n",
-                otg_Unit, ioreq));
-
-#if (0)
-    if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
-    {
-        return (UHIOERR_USBOFFLINE);
-    }
-#endif
-
     if (ioreq->iouh_DevAddr == otg_Unit->hu_HubAddr)
     {
+        D(bug("[USB2OTG] INT-RH: ep=%ld len=%ld changed=%d\n",
+            (LONG)ioreq->iouh_Endpoint, (LONG)ioreq->iouh_Length,
+            otg_Unit->hu_HubPortChanged));
         return (FNAME_ROOTHUB(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase));
     }
-
-if (ioreq->iouh_DevAddr == 4) {
-    D(bug("[USB2OTG] UHCMD_INTXFER: DevAddr #%ld\n",
-                ioreq->iouh_DevAddr));
-}
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
@@ -617,11 +640,19 @@ if (ioreq->iouh_DevAddr == 4) {
     ioreq->iouh_DriverPrivate1 = (APTR)((last_handled << 16) | next_to_handle);
 
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     AddTail(&otg_Unit->hu_IntXFerQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
     Enable();
-    //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
+    FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 
-    D(bug("[USB2OTG] UHCMD_INTXFER: handled ioreq @ 0x%p added=%d, next=%d\n", ioreq, last_handled, next_to_handle));
+    D(bug("[USB2OTG] INT-Q: dev=%d ep=%d len=%d interval=%d next=%d\n",
+        ioreq->iouh_DevAddr, ioreq->iouh_Endpoint,
+        ioreq->iouh_Length, ioreq->iouh_Interval, next_to_handle));
 
     return (RC_DONTREPLY);
 }
@@ -633,12 +664,6 @@ WORD FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *ioreq,
     D(bug("[USB2OTG] UHCMD_ISOXFER(unit:0x%p, ioreq:0x%p)\n",
                 otg_Unit, ioreq));
 
-#if (0)
-    if(!(ioreq->iouh_State & UHSF_OPERATIONAL))
-    {
-        return(UHIOERR_USBOFFLINE);
-    }
-#endif
     if(ioreq->iouh_Flags & UHFF_LOWSPEED)
     {
         return(UHIOERR_BADPARAMS);
@@ -648,7 +673,13 @@ WORD FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *ioreq,
     ioreq->iouh_Actual = 0;
 
     Disable();
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     AddTail(&otg_Unit->hu_IsoXFerQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
     Enable();
     //FNAME_DEV(Cause)(USB2OTGBase, &otg_Unit->hu_PendingInt);
 

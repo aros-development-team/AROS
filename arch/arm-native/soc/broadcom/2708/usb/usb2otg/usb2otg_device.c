@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 2013-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
 #include <aros/debug.h>
+#include <aros/atomic.h>
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
@@ -79,13 +80,13 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                 );
 
                     otg_RegVal = rd32le(USB2OTG_HARDWARE2);
-                    bug("[USB2OTG] Architecture: %d - ", ((otg_RegVal & (3 << 3)) >> 3));
-                    switch (((otg_RegVal & (3 << 3)) >> 3))
+                    bug("[USB2OTG] Architecture: %d - ", USB2OTG_HW2_ARCH(otg_RegVal));
+                    switch (USB2OTG_HW2_ARCH(otg_RegVal))
                     {
-                        case 2:
+                        case USB2OTG_HW2_ARCH_INT_DMA:
                             bug("Internal DMA\n");
                             break;
-                        case 1:
+                        case USB2OTG_HW2_ARCH_EXT_DMA:
                             bug("External DMA\n");
                             break;
                         default:
@@ -114,8 +115,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                     PwrOnMsg[6] = AROS_LE2LONG(VCPOWER_STATE_ON | VCPOWER_STATE_WAIT);
                     PwrOnMsg[7] = 0;
 
-                    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, PwrOnMsg);
-                    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == PwrOnMsg)
+                    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, PwrOnMsg) == PwrOnMsg)
                     {
                         D(bug("[USB2OTG] Power on state: %08x\n", AROS_LE2LONG(PwrOnMsg[6])));
                         if ((AROS_LE2LONG(PwrOnMsg[6]) & 1) == 0)
@@ -128,8 +128,10 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                         {
                             bug("[USB2OTG] USB HCD does not exist\n");
 
-                            for (int i=0; i < 8; i++)
-                                bug("[USB2OTG] %08x\n", PwrOnMsg[i]);
+                            D(
+                                for (int i=0; i < 8; i++)
+                                    bug("[USB2OTG] %08x\n", PwrOnMsg[i]);
+                            )
 
                             USB2OTGBase = NULL;
                         }
@@ -183,6 +185,7 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_AbortQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_PeriodicTDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_FinishedXfers);
+                                    KrnSpinInit(&USB2OTGBase->hd_Unit->hu_Lock);
 
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Type = NT_INTERRUPT;
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Name = "OTG2USB Pending Work Interrupt";
@@ -196,27 +199,39 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Data = USB2OTGBase->hd_Unit;
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutInt.is_Code = (VOID_FUNC)FNAME_DEV(NakTimeoutInt);
 
-                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_Node.ln_Type = NT_MSGPORT;
-                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_Flags = PA_SOFTINT;
-                                    USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_SigTask = &USB2OTGBase->hd_Unit->hu_NakTimeoutInt;
-                                    NewList(&USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort.mp_MsgList);
-
+                                    USB2OTGBase->hd_Unit->hu_WorkerAffinity = 0;
+                                    KrnGetCPUMask(0, &USB2OTGBase->hd_Unit->hu_WorkerAffinity);
+                                    USB2OTGBase->hd_Unit->hu_WorkerTask = NewCreateTask(
+                                        TASKTAG_NAME, "USB2OTG Worker",
+                                        TASKTAG_AFFINITY, &USB2OTGBase->hd_Unit->hu_WorkerAffinity,
+                                        TASKTAG_PC, FNAME_DEV(WorkerTask),
+                                        TASKTAG_TASKMSGPORT, &USB2OTGBase->hd_Unit->hu_WorkerPort,
+                                        TASKTAG_ARG1, USB2OTGBase->hd_Unit,
+                                        TAG_DONE);
+                                    if (!USB2OTGBase->hd_Unit->hu_WorkerTask || !USB2OTGBase->hd_Unit->hu_WorkerPort)
+                                    {
+                                        bug("[USB2OTG] Failed to create CPU0 worker task\n");
+                                        return FALSE;
+                                    }
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
-                                    USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &USB2OTGBase->hd_Unit->hu_NakTimeoutMsgPort;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
+                                    USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_micro = 150 * 1000;
+                                    SendIO((APTR)&USB2OTGBase->hd_Unit->hu_NakTimeoutReq);
 
                                     USB2OTGBase->hd_Unit->hu_HubPortChanged = FALSE;
 
                                     USB2OTGBase->hd_Unit->hu_OperatingMode = (otg_OperatingMode == (USB2OTG_USBHOSTMODE|USB2OTG_USBDEVICEMODE)) ? 0 : otg_OperatingMode;
 
                                     for (i=0; i < 128; i++)
+                                    {
                                         USB2OTGBase->hd_Unit->hu_PIDBits[i] = 0;
+                                        USB2OTGBase->hd_Unit->hu_NakGate[i] = USB2OTG_NAK_GATE_NONE;
+                                    }
+                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
+                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;
 
-#if (0)
-                                    D(bug("[USB2OTG] %s: Unit Mode %d\n",
-                                                __PRETTY_FUNCTION__, USB2OTGBase->hd_Unit->hu_OperatingMode));
-#endif
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
-
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
@@ -225,7 +240,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     otg_RegVal = rd32le(USB2OTG_USB);
                                     otg_RegVal &= ~(USB2OTG_USB_ULPIDRIVEEXTERNALVBUS|USB2OTG_USB_TSDLINEPULSEENABLE);
                                     wr32le(USB2OTG_USB, otg_RegVal);
-
                                     D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
                                     wr32le(USB2OTG_RESET, USB2OTG_RESET_CORESOFT);
                                     for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
@@ -238,16 +252,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     otg_RegVal &= ~USB2OTG_USB_MODESELECT_UTMI;
                                     wr32le(USB2OTG_USB, otg_RegVal);
 
-#if (0)
-                                    D(bug("[USB2OTG] %s: Reseting Controller ..\n", __PRETTY_FUNCTION__));
-                                    wr32le(USB2OTG_RESET, USB2OTG_RESET_CORESOFT);
-                                    for (ns = 0; ns < 10000; ns++) { asm volatile("mov r0, r0\n"); } // Wait 10ms
-                                    if ((rd32le(USB2OTG_RESET) & USB2OTG_RESET_CORESOFT) != 0)
-                                        bug("[USB2OTG] %s: Reset Timed-Out!\n", __PRETTY_FUNCTION__);
-#endif
-
                                     otg_RegVal = rd32le(USB2OTG_HARDWARE2);
-                                    if (((otg_RegVal & (3 << 6) >> 6) == 2) && ((otg_RegVal & (3 << 8) >> 8) == 1))
+                                    if (USB2OTG_HW2_FSPHY_TYPE(otg_RegVal) == USB2OTG_HW2_FSPHY_TYPE_ULPI &&
+                                        USB2OTG_HW2_HSPHY_TYPE(otg_RegVal) == USB2OTG_HW2_HSPHY_TYPE_UTMI)
                                     {
                                         D(bug("[USB2OTG] %s: ULPI FSLS configuration: enabled.\n", __PRETTY_FUNCTION__));
                                         otg_RegVal = rd32le(USB2OTG_USB);
@@ -272,44 +279,9 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     USB2OTGBase->hd_Unit->hu_XferSizeWidth = 11 + (otg_RegVal & 0x0f);
                                     USB2OTGBase->hd_Unit->hu_PktSizeWidth = 4 + ((otg_RegVal >> 4) & 0x07);
 
-                                    bug("[USB2OTG] %s: XferSizeWidth = %d, PktSizeWidth = %d\n", __PRETTY_FUNCTION__,
-                                        USB2OTGBase->hd_Unit->hu_XferSizeWidth, USB2OTGBase->hd_Unit->hu_PktSizeWidth);
+                                    D(bug("[USB2OTG] %s: XferSizeWidth = %d, PktSizeWidth = %d\n", __PRETTY_FUNCTION__,
+                                        USB2OTGBase->hd_Unit->hu_XferSizeWidth, USB2OTGBase->hd_Unit->hu_PktSizeWidth));
 
-#if (0)
-                                    D(bug("[USB2OTG] %s: Operating Mode: ", __PRETTY_FUNCTION__));
-                                    otg_RegVal = rd32le(USB2OTG_HARDWARE2);
-                                    switch (otg_RegVal & 7)
-                                    {
-                                        case 0:
-                                            D(bug("HNP/SRP\n"));
-                                            otg_RegVal = rd32le(USB2OTG_USB);
-                                            otg_RegVal |= (USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
-                                            wr32le(USB2OTG_USB, otg_RegVal);
-                                            break;
-                                        case 1:
-                                        case 3:
-                                        case 5:
-                                            D(bug("SRP\n"));
-                                            otg_RegVal = rd32le(USB2OTG_USB);
-                                            otg_RegVal &= ~USB2OTG_USB_HNPCAPABLE;
-                                            otg_RegVal |= USB2OTG_USB_SRPCAPABLE;
-                                            wr32le(USB2OTG_USB, otg_RegVal);
-                                            break;
-                                        case 2:
-                                        case 4:
-                                        case 6:
-                                            D(bug("No HNP or SRP\n"));
-                                            otg_RegVal = rd32le(USB2OTG_USB);
-                                            otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
-                                            wr32le(USB2OTG_USB, otg_RegVal);
-                                            break;
-                                    }
-#else
-                                    D(bug("[USB2OTG] %s: Disable HNP/SRP\n", __PRETTY_FUNCTION__));
-                                    otg_RegVal = rd32le(USB2OTG_USB);
-                                    otg_RegVal &= ~(USB2OTG_USB_HNPCAPABLE|USB2OTG_USB_SRPCAPABLE);
-                                    wr32le(USB2OTG_USB, otg_RegVal);
-#endif
 
                                     D(bug("[USB2OTG] %s: Enabling Global Interrupts ...\n", __PRETTY_FUNCTION__));
                                     otg_RegVal = rd32le(USB2OTG_INTR);
@@ -479,6 +451,18 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
     ioreq->iouh_Req.io_Error                   = UHIOERR_NO_ERROR;
 
+    D(
+        if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER ||
+            ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
+        {
+            bug("[USB2OTG:BIO] cmd=%lu dev=%ld ep=%ld len=%ld\n",
+                (ULONG)ioreq->iouh_Req.io_Command,
+                (LONG)ioreq->iouh_DevAddr,
+                (LONG)ioreq->iouh_Endpoint,
+                (LONG)ioreq->iouh_Length);
+        }
+    )
+
     if (ioreq->iouh_Req.io_Command < NSCMD_DEVICEQUERY)
     {
         switch (ioreq->iouh_Req.io_Command)
@@ -548,6 +532,11 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
 
     if (ret != RC_DONTREPLY)
     {
+        D(
+            if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                bug("[USB2OTG:BIO] CTRL done dev=%ld ret=%ld\n",
+                    (LONG)ioreq->iouh_DevAddr, (LONG)ret);
+        )
         D(bug("[USB2OTG] %s: Terminating I/O..\n",
                     __PRETTY_FUNCTION__));
 
@@ -582,12 +571,6 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
     /* Is it pending? */
     if (ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
     {
-#if (0)
-        if (FNAME_DEV(cmdAbortIO)(ioreq, USB2OTGBase))
-        {
-            return(0);
-        }
-#endif
     }
     return(-1);
 
@@ -596,27 +579,42 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
 
 void FNAME_DEV(Cause)(LIBBASETYPEPTR USB2OTGBase, struct Interrupt *interrupt)
 {
-    Cause(interrupt);
-    #if 0
-    /* this is a workaround for the original Cause() function missing tailed calls */
-    Disable();
-
-    if((interrupt->is_Node.ln_Type == NT_SOFTINT) || (interrupt->is_Node.ln_Type == NT_USER))
+#if defined(__AROSEXEC_SMP__)
+    if (USB2OTGBase && USB2OTGBase->hd_Unit && USB2OTGBase->hd_Unit->hu_WorkerTask)
     {
-        // signal tailed call
-        interrupt->is_Node.ln_Type = NT_USER;
-    } else {
-        do
+        struct USB2OTGUnit *unit = USB2OTGBase->hd_Unit;
+        ULONG sigmask = 1UL << unit->hu_WorkerPort->mp_SigBit;
+
+        if (interrupt == &unit->hu_PendingInt)
         {
-            interrupt->is_Node.ln_Type = NT_SOFTINT;
-            Forbid(); // make sure code is not interrupted by other tasks
-            Enable();
-            AROS_INTC1(interrupt->is_Code, interrupt->is_Data);
             Disable();
-            Permit();
-        } while(interrupt->is_Node.ln_Type != NT_SOFTINT);
-        interrupt->is_Node.ln_Type = NT_INTERRUPT;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            unit->hu_WorkFlags |= USB2OTG_WORK_PENDING;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&unit->hu_Lock);
+#endif
+            Enable();
+            Signal(unit->hu_WorkerTask, sigmask);
+            return;
+        }
+        if (interrupt == &unit->hu_NakTimeoutInt)
+        {
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            unit->hu_WorkFlags |= USB2OTG_WORK_NAKTIMEOUT;
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&unit->hu_Lock);
+#endif
+            Enable();
+            Signal(unit->hu_WorkerTask, sigmask);
+            return;
+        }
     }
-    Enable();
-    #endif
+#endif
+
+    Cause(interrupt);
 }

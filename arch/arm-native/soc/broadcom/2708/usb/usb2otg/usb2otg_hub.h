@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <devices/usb_hub.h>
@@ -68,7 +68,15 @@ const struct OTGHubCfg OTGRootHubCfg =
         URTF_IN|1,
         USEAF_INTERRUPT,
         LE16(8),
-        255
+        /*
+         * High-speed interrupt endpoints encode interval as 2^(bInterval-1)
+         * microframes. A value of 255 gets clamped by Poseidon to 16 and turns
+         * into 32768, which is clearly wrong for the root hub status pipe.
+         * Use 12 => 2048 microframes => 256 ms, which matches the old
+         * full-speed-style "255 ms" intent closely enough without exploding
+         * the scheduler state.
+         */
+        12
     },
 };
 
