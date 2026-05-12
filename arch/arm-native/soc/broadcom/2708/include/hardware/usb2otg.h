@@ -68,6 +68,10 @@
 #define USB2OTG_HOSTPORT_PRTSPD_HIGH                    (0 << 17)
 #define USB2OTG_HOSTPORT_PRTSPD_FULL                    (1 << 17)
 #define USB2OTG_HOSTPORT_PRTSPD_LOW                     (2 << 17)
+#define USB2OTG_HOSTPORT_PRTSPD(reg)                    (((reg) >> 17) & 0x3)
+#define USB2OTG_HOSTPORT_PRTSPD_HS_VAL                  0
+#define USB2OTG_HOSTPORT_PRTSPD_FS_VAL                  1
+#define USB2OTG_HOSTPORT_PRTSPD_LS_VAL                  2
 #define USB2OTG_HOSTPORT_SC_BITS                        0x2e
 
 #define USB2OTG_HOST_CHANBASE                           (USB2OTG_BASE + 0x0500)
@@ -85,10 +89,17 @@
 #define USB2OTG_HOSTCHAR_EPDIR(x)                       (((x) & 1) << 15)
 #define USB2OTG_HOSTCHAR_ADDR(x)                        (((x) & 0x7f) << 22)
 #define USB2OTG_HOSTCHAR_EC(x)                          (((x) & 3) << 20)
+#define USB2OTG_HOSTCHAR_ODDFRAME                       (1 << 29)
 #define USB2OTG_HOSTCHAR_DISABLE                        (1 << 30)
 #define USB2OTG_HOSTCHAR_ENABLE                         (1 << 31)
 #define USB2OTG_HOSTCHAR_EPTYPE(x)                      (((x) & 3) << 18)
 #define USB2OTG_HOSTCHAR_LOWSPEED                       (1 << 17)
+
+/* HCSPLT (SPLITCTRL register) bits */
+#define USB2OTG_HCSPLT_SPLITEN                          (1U << 31)
+#define USB2OTG_HCSPLT_COMPLSPLT                        (1U << 16)
+#define USB2OTG_HCSPLT_SSPLIT                           USB2OTG_HCSPLT_SPLITEN
+#define USB2OTG_HCSPLT_CSPLIT                           (USB2OTG_HCSPLT_SPLITEN | USB2OTG_HCSPLT_COMPLSPLT)
 
 #define USB2OTG_HOSTTSIZE_PID(x)                        (((x) & 3) << 29)
 #define USB2OTG_HOSTTSIZE_PKTCNT(x)                     (((x) & 1023) << 19)
@@ -223,6 +234,27 @@
 #define USB2OTG_RESET_INTOKENQUEUEFLUSH                 (1 << 3)
 #define USB2OTG_RESET_RXFIFOFLUSH                       (1 << 4)
 #define USB2OTG_RESET_TXFIFOFLUSH                       (1 << 5)
+#define USB2OTG_RESET_AHBIDLE                           (1U << 31)
+
+/* GHWCFG2 (HARDWARE2) field accessors. */
+#define USB2OTG_HW2_ARCH(reg)                           (((reg) >> 3) & 0x3)
+#define USB2OTG_HW2_ARCH_SLAVE_ONLY                     0
+#define USB2OTG_HW2_ARCH_EXT_DMA                        1
+#define USB2OTG_HW2_ARCH_INT_DMA                        2
+#define USB2OTG_HW2_FSPHY_TYPE(reg)                     (((reg) >> 6) & 0x3)
+#define USB2OTG_HW2_FSPHY_TYPE_NONE                     0
+#define USB2OTG_HW2_FSPHY_TYPE_DEDICATED                1
+#define USB2OTG_HW2_FSPHY_TYPE_UTMI                     2
+#define USB2OTG_HW2_FSPHY_TYPE_ULPI                     3
+#define USB2OTG_HW2_HSPHY_TYPE(reg)                     (((reg) >> 8) & 0x3)
+#define USB2OTG_HW2_HSPHY_TYPE_NONE                     0
+#define USB2OTG_HW2_HSPHY_TYPE_UTMI                     1
+#define USB2OTG_HW2_HSPHY_TYPE_ULPI                     2
+#define USB2OTG_HW2_HSPHY_TYPE_BOTH                     3
+#define USB2OTG_HW2_HOSTCHANS(reg)                      ((((reg) >> 14) & 0xF) + 1)
+#define USB2OTG_HW2_NPTXQDEPTH(reg)                     (((reg) >> 22) & 0x3)
+#define USB2OTG_HW2_PTXQDEPTH(reg)                      (((reg) >> 24) & 0x3)
+#define USB2OTG_HW2_DEVTOKENS(reg)                      (((reg) >> 26) & 0x1F)
 
 /* Bits in USB2OTG_I2CCTRL */
 #define USB2OTG_I2CCTRL_READWRITEDATA                   (1 << 0)
@@ -327,6 +359,15 @@
 #define USB2OTG_INTRCHAN_BUFFERNOTAVAILABLE             (1 << 11)
 #define USB2OTG_INTRCHAN_EXCESSIVETRANSMISSION          (1 << 12)
 #define USB2OTG_INTRCHAN_FRAMELISTROLLOVER              (1 << 13)
+
+/* Common HCINT bit combinations seen by the IRQ handler. Names
+ * mirror DWC2 spec terminology so the meaning is obvious at the
+ * dispatch site. */
+#define USB2OTG_INTR_CLEAR_ALL                          (0x7ff)
+#define USB2OTG_INTR_XFC_STALL                          (USB2OTG_INTRCHAN_TRANSFERCOMPLETE | USB2OTG_INTRCHAN_STALL)
+#define USB2OTG_INTR_HALT_ACK                           (USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_ACKNOWLEDGE)
+#define USB2OTG_INTR_HALT_NAK                           (USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE)
+#define USB2OTG_INTR_HALT_NYET                          (USB2OTG_INTRCHAN_HALT | USB2OTG_INTRCHAN_NOTREADY)
 
 /* Bits in the power register */
 #define USB2OTG_POWER_STOPPCLOCK                        (1 << 0)

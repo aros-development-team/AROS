@@ -14,4 +14,7 @@ struct MBoxBase {
     struct SignalSemaphore      mbox_Sem;
 };
 
+volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
+    unsigned int chan, void *msg);
+
 #endif /* MBOX_PRIVATE_H_ */
