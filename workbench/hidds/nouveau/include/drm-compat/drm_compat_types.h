@@ -239,4 +239,9 @@ struct lock_class_key
     ULONG dummy;
 };
 
+struct device
+{
+    ULONG dummy;
+};
+
 #endif /* _DRM_COMPAT_TYPES_ */

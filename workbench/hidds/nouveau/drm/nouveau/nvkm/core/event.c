@@ -21,6 +21,7 @@
  */
 #include <core/event.h>
 #include <core/notify.h>
+#include <linux/overflow.h>
 
 void
 nvkm_event_put(struct nvkm_event *event, u32 types, int index)
@@ -90,12 +91,9 @@ int
 nvkm_event_init(const struct nvkm_event_func *func, int types_nr, int index_nr,
 		struct nvkm_event *event)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	event->refs = kzalloc(array3_size(index_nr, types_nr,
 					  sizeof(*event->refs)),
 			      GFP_KERNEL);
-#endif
 	if (!event->refs)
 		return -ENOMEM;
 

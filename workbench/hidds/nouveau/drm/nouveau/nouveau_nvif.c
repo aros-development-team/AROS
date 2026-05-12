@@ -37,6 +37,7 @@
 #include <nvif/ioctl.h>
 
 #include "nouveau_drv.h"
+struct drm_file;
 #include "nouveau_usif.h"
 
 static void

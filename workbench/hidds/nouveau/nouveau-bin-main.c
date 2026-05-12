@@ -5,9 +5,10 @@
 #include <hidd/hidd.h>
 
 #include <drm-compat/drm_compat_types.h>
+#include <drm-compat/drm_compat_pci.h>
 #include <drm/drm_drv.h>
 
-OOP_AttrBase HiddPCIDeviceAttrBase  = 0;
+#include "drm-aros/drm_aros_pci.h"
 
 APTR NouveauMemPool;
 
@@ -21,11 +22,19 @@ VOID HIDDNouveauFree(APTR memory)
     FreeVecPooled(NouveauMemPool, memory);
 }
 
+int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent);
+
 void main()
 {
     NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
-    HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
-    struct drm_device drm_dev;
-    nouveau_drm_device_init(&drm_dev);
+    OpenLibrary("DEVS:Drivers/pcimock.hidd", 0L);
+
+    drm_aros_pci_init();
+
+    struct pci_dev *pdev = drm_aros_pci_find_supported_video_card();
+
+    nouveau_drm_probe(pdev, NULL);
 }
+
+ADD2LIBS("pci.hidd", 0, static struct Library *, PciHiddBase);

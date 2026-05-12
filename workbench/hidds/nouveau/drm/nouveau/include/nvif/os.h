@@ -41,5 +41,6 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_pci.h>
 #include <drm-compat/drm_linux_list.h>
+#define CONFIG_ARM_ENABLED 0
 #endif
 #endif

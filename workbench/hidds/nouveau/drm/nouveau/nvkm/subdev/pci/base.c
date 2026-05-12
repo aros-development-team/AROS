@@ -191,8 +191,6 @@ nvkm_pci_new_(const struct nvkm_pci_func *func, struct nvkm_device *device,
 	      int index, struct nvkm_pci **ppci)
 {
 	struct nvkm_pci *pci;
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (!(pci = *ppci = kzalloc(sizeof(**ppci), GFP_KERNEL)))
 		return -ENOMEM;
 	nvkm_subdev_ctor(&nvkm_pci_func, device, index, &pci->subdev);
@@ -233,7 +231,6 @@ NOT_IMPLEMENTED_STOP
 	} else {
 		pci->msi = false;
 	}
-#endif
 
 	return 0;
 }

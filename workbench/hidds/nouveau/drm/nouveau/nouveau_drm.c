@@ -39,6 +39,7 @@
 // #include <drm/drm_crtc_helper.h>
 // #include <drm/drm_ioctl.h>
 // #include <drm/drm_vblank.h>
+#include <drm/drm_drv.h>
 struct drm_connector;
 
 #include <core/gpuobj.h>
@@ -92,7 +93,7 @@ static char *nouveau_debug;
 // module_param_named(modeset, nouveau_modeset, int, 0400);
 
 // MODULE_PARM_DESC(atomic, "Expose atomic ioctl (default: disabled)");
-// static int nouveau_atomic = 0;
+static int nouveau_atomic = 0;
 // module_param_named(atomic, nouveau_atomic, int, 0400);
 
 // MODULE_PARM_DESC(runpm, "disable (0), force enable (1), optimus only default (-1)");
@@ -100,13 +101,14 @@ static char *nouveau_debug;
 // module_param_named(runpm, nouveau_runtime_pm, int, 0400);
 
 // static struct drm_driver driver_stub;
-// static struct drm_driver driver_pci;
+static struct drm_driver driver_pci;
 // static struct drm_driver driver_platform;
 
 static u64
 nouveau_pci_name(struct pci_dev *pdev)
 {
 NOT_IMPLEMENTED_CONTINUE
+// correct in nvkm_device_pci_new as well!!
 #if 0
 	u64 name = (u64)pci_domain_nr(pdev->bus) << 32;
 	name |= pdev->bus->number << 16;
@@ -535,7 +537,7 @@ done:
 // 	nouveau_bo_move_init(drm);
 // }
 
-int
+static int
 nouveau_drm_device_init(struct drm_device *dev)
 {
 	struct nouveau_drm *drm;
@@ -550,6 +552,7 @@ nouveau_drm_device_init(struct drm_device *dev)
 	if (ret)
 		goto fail_alloc;
 
+NOT_IMPLEMENTED_STOP
 #if 0
 	ret = nouveau_cli_init(drm, "DRM", &drm->client);
 	if (ret)
@@ -630,37 +633,42 @@ fail_alloc:
 	return ret;
 }
 
-// static void
-// nouveau_drm_device_fini(struct drm_device *dev)
-// {
-// 	struct nouveau_drm *drm = nouveau_drm(dev);
+static void
+nouveau_drm_device_fini(struct drm_device *dev)
+{
+	struct nouveau_drm *drm = nouveau_drm(dev);
 
-// 	if (nouveau_pmops_runtime()) {
-// 		pm_runtime_get_sync(dev->dev);
-// 		pm_runtime_forbid(dev->dev);
-// 	}
+#if !defined(__AROS__)
+	if (nouveau_pmops_runtime()) {
+		pm_runtime_get_sync(dev->dev);
+		pm_runtime_forbid(dev->dev);
+	}
+#endif
 
-// 	nouveau_led_fini(dev);
-// 	nouveau_fbcon_fini(dev);
-// 	nouveau_dmem_fini(drm);
-// 	nouveau_svm_fini(drm);
-// 	nouveau_hwmon_fini(dev);
-// 	nouveau_debugfs_fini(drm);
+NOT_IMPLEMENTED_STOP
+#if 0
+	nouveau_led_fini(dev);
+	nouveau_fbcon_fini(dev);
+	nouveau_dmem_fini(drm);
+	nouveau_svm_fini(drm);
+	nouveau_hwmon_fini(dev);
+	nouveau_debugfs_fini(drm);
 
-// 	if (dev->mode_config.num_crtc)
-// 		nouveau_display_fini(dev, false, false);
-// 	nouveau_display_destroy(dev);
+	if (dev->mode_config.num_crtc)
+		nouveau_display_fini(dev, false, false);
+	nouveau_display_destroy(dev);
 
-// 	nouveau_accel_fini(drm);
-// 	nouveau_bios_takedown(dev);
+	nouveau_accel_fini(drm);
+	nouveau_bios_takedown(dev);
 
-// 	nouveau_ttm_fini(drm);
-// 	nouveau_vga_fini(drm);
+	nouveau_ttm_fini(drm);
+	nouveau_vga_fini(drm);
 
-// 	nouveau_cli_fini(&drm->client);
-// 	nouveau_cli_fini(&drm->master);
-// 	kfree(drm);
-// }
+	nouveau_cli_fini(&drm->client);
+	nouveau_cli_fini(&drm->master);
+	kfree(drm);
+#endif
+}
 
 // /*
 //  * On some Intel PCIe bridge controllers doing a
@@ -720,100 +728,119 @@ fail_alloc:
 // 	}
 // }
 
-// static int nouveau_drm_probe(struct pci_dev *pdev,
-// 			     const struct pci_device_id *pent)
-// {
-// 	struct nvkm_device *device;
-// 	struct drm_device *drm_dev;
-// 	struct apertures_struct *aper;
-// 	bool boot = false;
-// 	int ret;
+int nouveau_drm_probe(struct pci_dev *pdev,
+			     const struct pci_device_id *pent)
+{
+	struct nvkm_device *device;
+	struct drm_device *drm_dev;
+	struct apertures_struct *aper;
+	bool boot = false;
+	int ret;
 
-// 	if (vga_switcheroo_client_probe_defer(pdev))
-// 		return -EPROBE_DEFER;
+#if !defined(__AROS__)
+	if (vga_switcheroo_client_probe_defer(pdev))
+		return -EPROBE_DEFER;
+#endif
 
-// 	/* We need to check that the chipset is supported before booting
-// 	 * fbdev off the hardware, as there's no way to put it back.
-// 	 */
-// 	ret = nvkm_device_pci_new(pdev, nouveau_config, "error",
-// 				  true, false, 0, &device);
-// 	if (ret)
-// 		return ret;
+	/* We need to check that the chipset is supported before booting
+	 * fbdev off the hardware, as there's no way to put it back.
+	 */
+	ret = nvkm_device_pci_new(pdev, nouveau_config, "error",
+				  true, false, 0, &device);
+	if (ret)
+		return ret;
 
-// 	nvkm_device_del(&device);
+	nvkm_device_del(&device);
 
-// 	/* Remove conflicting drivers (vesafb, efifb etc). */
-// 	aper = alloc_apertures(3);
-// 	if (!aper)
-// 		return -ENOMEM;
+#if !defined(__AROS__)
+	/* Remove conflicting drivers (vesafb, efifb etc). */
+	aper = alloc_apertures(3);
+	if (!aper)
+		return -ENOMEM;
 
-// 	aper->ranges[0].base = pci_resource_start(pdev, 1);
-// 	aper->ranges[0].size = pci_resource_len(pdev, 1);
-// 	aper->count = 1;
+	aper->ranges[0].base = pci_resource_start(pdev, 1);
+	aper->ranges[0].size = pci_resource_len(pdev, 1);
+	aper->count = 1;
 
-// 	if (pci_resource_len(pdev, 2)) {
-// 		aper->ranges[aper->count].base = pci_resource_start(pdev, 2);
-// 		aper->ranges[aper->count].size = pci_resource_len(pdev, 2);
-// 		aper->count++;
-// 	}
+	if (pci_resource_len(pdev, 2)) {
+		aper->ranges[aper->count].base = pci_resource_start(pdev, 2);
+		aper->ranges[aper->count].size = pci_resource_len(pdev, 2);
+		aper->count++;
+	}
 
-// 	if (pci_resource_len(pdev, 3)) {
-// 		aper->ranges[aper->count].base = pci_resource_start(pdev, 3);
-// 		aper->ranges[aper->count].size = pci_resource_len(pdev, 3);
-// 		aper->count++;
-// 	}
+	if (pci_resource_len(pdev, 3)) {
+		aper->ranges[aper->count].base = pci_resource_start(pdev, 3);
+		aper->ranges[aper->count].size = pci_resource_len(pdev, 3);
+		aper->count++;
+	}
 
-// #ifdef CONFIG_X86
-// 	boot = pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
-// #endif
-// 	if (nouveau_modeset != 2)
-// 		drm_fb_helper_remove_conflicting_framebuffers(aper, "nouveaufb", boot);
-// 	kfree(aper);
+#ifdef CONFIG_X86
+	boot = pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
+#endif
+	if (nouveau_modeset != 2)
+		drm_fb_helper_remove_conflicting_framebuffers(aper, "nouveaufb", boot);
+	kfree(aper);
+#endif
 
-// 	ret = nvkm_device_pci_new(pdev, nouveau_config, nouveau_debug,
-// 				  true, true, ~0ULL, &device);
-// 	if (ret)
-// 		return ret;
+	ret = nvkm_device_pci_new(pdev, nouveau_config, nouveau_debug,
+				  true, true, ~0ULL, &device);
+	if (ret)
+		return ret;
 
-// 	pci_set_master(pdev);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	pci_set_master(pdev);
+#endif
 
-// 	if (nouveau_atomic)
-// 		driver_pci.driver_features |= DRIVER_ATOMIC;
+	if (nouveau_atomic)
+		driver_pci.driver_features |= DRIVER_ATOMIC;
 
-// 	drm_dev = drm_dev_alloc(&driver_pci, &pdev->dev);
-// 	if (IS_ERR(drm_dev)) {
-// 		ret = PTR_ERR(drm_dev);
-// 		goto fail_nvkm;
-// 	}
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	drm_dev = drm_dev_alloc(&driver_pci, &pdev->dev);
+	if (IS_ERR(drm_dev)) {
+		ret = PTR_ERR(drm_dev);
+		goto fail_nvkm;
+	}
 
-// 	ret = pci_enable_device(pdev);
-// 	if (ret)
-// 		goto fail_drm;
+	ret = pci_enable_device(pdev);
+	if (ret)
+		goto fail_drm;
 
-// 	drm_dev->pdev = pdev;
-// 	pci_set_drvdata(pdev, drm_dev);
+	drm_dev->pdev = pdev;
+	pci_set_drvdata(pdev, drm_dev);
+#endif
 
-// 	ret = nouveau_drm_device_init(drm_dev);
-// 	if (ret)
-// 		goto fail_pci;
+	ret = nouveau_drm_device_init(drm_dev);
+	if (ret)
+		goto fail_pci;
 
-// 	ret = drm_dev_register(drm_dev, pent->driver_data);
-// 	if (ret)
-// 		goto fail_drm_dev_init;
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	ret = drm_dev_register(drm_dev, pent->driver_data);
+	if (ret)
+		goto fail_drm_dev_init;
 
-// 	quirk_broken_nv_runpm(pdev);
-// 	return 0;
+	quirk_broken_nv_runpm(pdev);
+#endif
+	return 0;
 
-// fail_drm_dev_init:
-// 	nouveau_drm_device_fini(drm_dev);
-// fail_pci:
-// 	pci_disable_device(pdev);
-// fail_drm:
-// 	drm_dev_put(drm_dev);
-// fail_nvkm:
-// 	nvkm_device_del(&device);
-// 	return ret;
-// }
+fail_drm_dev_init:
+	nouveau_drm_device_fini(drm_dev);
+fail_pci:
+NOT_IMPLEMENTED_STOP
+#if 0
+	pci_disable_device(pdev);
+#endif
+fail_drm:
+NOT_IMPLEMENTED_STOP
+#if 0
+	drm_dev_put(drm_dev);
+#endif
+fail_nvkm:
+	nvkm_device_del(&device);
+	return ret;
+}
 
 // void
 // nouveau_drm_device_remove(struct drm_device *dev)

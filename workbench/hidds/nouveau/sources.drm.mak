@@ -22,7 +22,9 @@ AROS_DRM_CORE_SOURCES = \
             drm/ttm/ttm_bo_manager \
             drm/ttm/ttm_page_alloc \
             drm/ttm/ttm_memory \
+            drm-aros/drm_aros_pci \
             drm-compat/drm_compat_funcs \
+            drm-compat/drm_compat_pci \
             drm-compat/drm_compat_stubs \
             drm-compat/linux_compat \
 

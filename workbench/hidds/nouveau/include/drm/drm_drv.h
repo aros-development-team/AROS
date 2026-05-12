@@ -70,16 +70,16 @@ enum drm_driver_feature {
 // 	 * render nodes <drm_render_node>` for details.
 // 	 */
 // 	DRIVER_RENDER			= BIT(3),
-// 	/**
-// 	 * @DRIVER_ATOMIC:
-// 	 *
-// 	 * Driver supports the full atomic modesetting userspace API. Drivers
-// 	 * which only use atomic internally, but do not the support the full
-// 	 * userspace API (e.g. not all properties converted to atomic, or
-// 	 * multi-plane updates are not guaranteed to be tear-free) should not
-// 	 * set this flag.
-// 	 */
-// 	DRIVER_ATOMIC			= BIT(4),
+	/**
+	 * @DRIVER_ATOMIC:
+	 *
+	 * Driver supports the full atomic modesetting userspace API. Drivers
+	 * which only use atomic internally, but do not the support the full
+	 * userspace API (e.g. not all properties converted to atomic, or
+	 * multi-plane updates are not guaranteed to be tear-free) should not
+	 * set this flag.
+	 */
+	DRIVER_ATOMIC			= BIT(4),
 // 	/**
 // 	 * @DRIVER_SYNCOBJ:
 // 	 *
@@ -738,13 +738,13 @@ struct drm_driver {
 // 	/** @date: driver date */
 // 	char *date;
 
-// 	/**
-// 	 * @driver_features:
-// 	 * Driver features, see &enum drm_driver_feature. Drivers can disable
-// 	 * some features on a per-instance basis using
-// 	 * &drm_device.driver_features.
-// 	 */
-// 	u32 driver_features;
+	/**
+	 * @driver_features:
+	 * Driver features, see &enum drm_driver_feature. Drivers can disable
+	 * some features on a per-instance basis using
+	 * &drm_device.driver_features.
+	 */
+	u32 driver_features;
 
 // 	/**
 // 	 * @ioctls:

@@ -486,7 +486,6 @@ typedef struct {
 
 /* firmaware handling */
 #define MODULE_FIRMWARE(x)
-struct device;
 int request_firmware(const struct firmware **fw, const char *name, struct device *device);
 int firmware_request_nowarn(const struct firmware **fw, const char *name, struct device *device);
 void release_firmware(const struct firmware *fw);
