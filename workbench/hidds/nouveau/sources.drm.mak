@@ -29,6 +29,9 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_compat \
 
 AROS_DRM_NVIDIA_SOURCES = \
+drm/nouveau/dispnv04/tvnv04 \
+drm/nouveau/dispnv04/dfp \
+drm/nouveau/nouveau_bios \
 drm/nouveau/nouveau_drm \
             drm/nouveau/nvkm/engine/device/engine_device \
             drm/nouveau/nvkm/engine/gr/engine_gr \

@@ -63,3 +63,6 @@ bool dma_resv_held(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src) { NOT_IMPLEMENTED_STOP }
 
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPLEMENTED_STOP }
+
+unsigned int drm_debug;
+void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }

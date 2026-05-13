@@ -48,7 +48,22 @@
 #include <nvif/mmu.h>
 #include <nvif/vmm.h>
 
+#if defined(__AROS__)
+#define DRM_UT_CORE     0x01
+#define DRM_UT_DRIVER   0x02
+#define DRM_UT_KMS      0x04
+
+extern unsigned int drm_debug;
+#endif
+
 // #include <drm/drm_connector.h>
+#include <uapi/drm/drm_mode.h>
+#include <drm/drm_modes.h>
+struct drm_connector;
+struct drm_encoder;
+struct drm_file;
+struct drm_mode_fb_cmd2;
+struct drm_mode_create_dumb;
 #include <drm/drm_device.h>
 // #include <drm/drm_drv.h>
 // #include <drm/drm_file.h>
