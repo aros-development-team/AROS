@@ -1059,7 +1059,9 @@ put_pages:
 
 int ttm_pool_populate(struct ttm_tt *ttm, struct ttm_operation_ctx *ctx)
 {
+#if !defined(__AROS__)
 	struct ttm_mem_global *mem_glob = ttm->bdev->glob->mem_glob;
+#endif
 	unsigned i;
 	int ret;
 

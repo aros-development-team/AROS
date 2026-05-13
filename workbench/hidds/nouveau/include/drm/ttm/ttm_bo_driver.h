@@ -426,8 +426,8 @@ extern struct ttm_bo_global {
 
 #if !defined(__AROS__)
 	struct kobject kobj;
-#endif
 	struct ttm_mem_global *mem_glob;
+#endif
 	struct page *dummy_read_page;
 	spinlock_t lru_lock;
 

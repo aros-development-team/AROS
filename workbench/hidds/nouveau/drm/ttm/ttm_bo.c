@@ -172,7 +172,9 @@ static void ttm_bo_release_list(struct kref *list_kref)
 		dma_resv_fini(&bo->base._resv);
 	mutex_destroy(&bo->wu_mutex);
 	bo->destroy(bo);
+#if !defined(__AROS__)
 	ttm_mem_global_free(bdev->glob->mem_glob, acc_size);
+#endif
 }
 
 static void ttm_bo_add_mem_to_lru(struct ttm_buffer_object *bo,
@@ -1341,9 +1343,12 @@ int ttm_bo_init_reserved(struct ttm_bo_device *bdev,
 {
 	int ret = 0;
 	unsigned long num_pages;
+#if !defined(__AROS__)
 	struct ttm_mem_global *mem_glob = bdev->glob->mem_glob;
+#endif
 	bool locked;
 
+#if !defined(__AROS__)
 	ret = ttm_mem_global_alloc(mem_glob, acc_size, ctx);
 	if (ret) {
 		pr_err("Out of kernel memory\n");
@@ -1353,6 +1358,7 @@ int ttm_bo_init_reserved(struct ttm_bo_device *bdev,
 			kfree(bo);
 		return -ENOMEM;
 	}
+#endif
 
 	num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 	if (num_pages == 0) {
@@ -1361,7 +1367,9 @@ int ttm_bo_init_reserved(struct ttm_bo_device *bdev,
 			(*destroy)(bo);
 		else
 			kfree(bo);
+#if !defined(__AROS__)
 		ttm_mem_global_free(mem_glob, acc_size);
+#endif
 		return -EINVAL;
 	}
 	bo->destroy = destroy ? destroy : ttm_bo_default_destroy;
@@ -1690,52 +1698,59 @@ static void ttm_bo_global_release(void)
 	if (--ttm_bo_glob_use_count > 0)
 		goto out;
 
-	// kobject_del(&glob->kobj); FIXME
-	// kobject_put(&glob->kobj);
+#if !defined(__AROS__)
+	kobject_del(&glob->kobj);
+	kobject_put(&glob->kobj);
+#endif
 	ttm_mem_global_release(&ttm_mem_glob);
 	memset(glob, 0, sizeof(*glob));
 out:
 	mutex_unlock(&ttm_global_mutex);
 }
 
-// static int ttm_bo_global_init(void)
-// {
-// 	struct ttm_bo_global *glob = &ttm_bo_glob;
-// 	int ret = 0;
-// 	unsigned i;
+static int ttm_bo_global_init(void)
+{
+	struct ttm_bo_global *glob = &ttm_bo_glob;
+	int ret = 0;
+	unsigned i;
 
-// 	mutex_lock(&ttm_global_mutex);
-// 	if (++ttm_bo_glob_use_count > 1)
-// 		goto out;
+	mutex_lock(&ttm_global_mutex);
+	if (++ttm_bo_glob_use_count > 1)
+		goto out;
 
-// 	ret = ttm_mem_global_init(&ttm_mem_glob);
-// 	if (ret)
-// 		goto out;
+#if !defined(__AROS__)
+	ret = ttm_mem_global_init(&ttm_mem_glob);
+	if (ret)
+		goto out;
+#endif
 
-// 	spin_lock_init(&glob->lru_lock);
-// 	glob->mem_glob = &ttm_mem_glob;
-// 	glob->mem_glob->bo_glob = glob;
-// 	glob->dummy_read_page = alloc_page(__GFP_ZERO | GFP_DMA32);
+	spin_lock_init(&glob->lru_lock);
+#if !defined(__AROS__)
+	glob->mem_glob = &ttm_mem_glob;
+	glob->mem_glob->bo_glob = glob;
+#endif
+	glob->dummy_read_page = alloc_page(__GFP_ZERO | GFP_DMA32);
 
-// 	if (unlikely(glob->dummy_read_page == NULL)) {
-// 		ret = -ENOMEM;
-// 		goto out;
-// 	}
-// #endif
+	if (unlikely(glob->dummy_read_page == NULL)) {
+		ret = -ENOMEM;
+		goto out;
+	}
 
-// 	for (i = 0; i < TTM_MAX_BO_PRIORITY; ++i)
-// 		INIT_LIST_HEAD(&glob->swap_lru[i]);
-// 	INIT_LIST_HEAD(&glob->device_list);
-// 	atomic_set(&glob->bo_count, 0);
+	for (i = 0; i < TTM_MAX_BO_PRIORITY; ++i)
+		INIT_LIST_HEAD(&glob->swap_lru[i]);
+	INIT_LIST_HEAD(&glob->device_list);
+	atomic_set(&glob->bo_count, 0);
 
-// 	ret = kobject_init_and_add(
-// 		&glob->kobj, &ttm_bo_glob_kobj_type, ttm_get_kobj(), "buffer_objects");
-// 	if (unlikely(ret != 0))
-// 		kobject_put(&glob->kobj);
-// out:
-// 	mutex_unlock(&ttm_global_mutex);
-// 	return ret;
-// }
+#if !defined(__AROS__)
+	ret = kobject_init_and_add(
+		&glob->kobj, &ttm_bo_glob_kobj_type, ttm_get_kobj(), "buffer_objects");
+	if (unlikely(ret != 0))
+		kobject_put(&glob->kobj);
+#endif
+out:
+	mutex_unlock(&ttm_global_mutex);
+	return ret;
+}
 
 int ttm_bo_device_release(struct ttm_bo_device *bdev)
 {
