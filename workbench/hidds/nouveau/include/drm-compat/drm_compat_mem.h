@@ -20,7 +20,7 @@ VOID HIDDNouveauFree(APTR memory);
 #define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
 #define kmalloc(size, flags)            HIDDNouveauAlloc(size)
 #define kzalloc(size, flags)            HIDDNouveauAlloc(size)
-void *kmalloc_array(size_t n, size_t size, gfp_t flags);
+#define kmalloc_array(n, size, flags)   kmalloc(size *n, flags)
 #define kfree(objp)                     HIDDNouveauFree((APTR)objp)
 
 #define vmalloc_user(size)              HIDDNouveauAlloc(size)

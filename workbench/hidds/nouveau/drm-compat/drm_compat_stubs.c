@@ -39,7 +39,6 @@ IPTR sg_dma_len(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
 void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
-void *kmalloc_array(size_t n, size_t size, BYTE flags) { NOT_IMPLEMENTED_STOP }
 void *kvmalloc_array(size_t n, size_t size, BYTE flags) { NOT_IMPLEMENTED_STOP }
 char *kstrndup(const char *c, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
 int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
