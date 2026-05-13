@@ -1643,43 +1643,43 @@ EXPORT_SYMBOL(ttm_bo_clean_mm);
 // EXPORT_SYMBOL(ttm_bo_evict_mm);
 // #endif
 
-// int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
-// 			unsigned long p_size)
-// {
-// 	int ret;
-// 	struct ttm_mem_type_manager *man;
-// 	unsigned i;
+int ttm_bo_init_mm(struct ttm_bo_device *bdev, unsigned type,
+			unsigned long p_size)
+{
+	int ret;
+	struct ttm_mem_type_manager *man;
+	unsigned i;
 
-// 	BUG_ON(type >= TTM_NUM_MEM_TYPES);
-// 	man = &bdev->man[type];
-// 	BUG_ON(man->has_type);
-// 	man->io_reserve_fastpath = true;
-// 	man->use_io_reserve_lru = false;
-// 	mutex_init(&man->io_reserve_mutex);
-// 	spin_lock_init(&man->move_lock);
-// 	INIT_LIST_HEAD(&man->io_reserve_lru);
+	BUG_ON(type >= TTM_NUM_MEM_TYPES);
+	man = &bdev->man[type];
+	BUG_ON(man->has_type);
+	man->io_reserve_fastpath = true;
+	man->use_io_reserve_lru = false;
+	mutex_init(&man->io_reserve_mutex);
+	spin_lock_init(&man->move_lock);
+	INIT_LIST_HEAD(&man->io_reserve_lru);
 
-// 	ret = bdev->driver->init_mem_type(bdev, type, man);
-// 	if (ret)
-// 		return ret;
-// 	man->bdev = bdev;
+	ret = bdev->driver->init_mem_type(bdev, type, man);
+	if (ret)
+		return ret;
+	man->bdev = bdev;
 
-// 	if (type != TTM_PL_SYSTEM) {
-// 		ret = (*man->func->init)(man, p_size);
-// 		if (ret)
-// 			return ret;
-// 	}
-// 	man->has_type = true;
-// 	man->use_type = true;
-// 	man->size = p_size;
+	if (type != TTM_PL_SYSTEM) {
+		ret = (*man->func->init)(man, p_size);
+		if (ret)
+			return ret;
+	}
+	man->has_type = true;
+	man->use_type = true;
+	man->size = p_size;
 
-// 	for (i = 0; i < TTM_MAX_BO_PRIORITY; ++i)
-// 		INIT_LIST_HEAD(&man->lru[i]);
-// 	man->move = NULL;
+	for (i = 0; i < TTM_MAX_BO_PRIORITY; ++i)
+		INIT_LIST_HEAD(&man->lru[i]);
+	man->move = NULL;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(ttm_bo_init_mm);
+	return 0;
+}
+EXPORT_SYMBOL(ttm_bo_init_mm);
 
 // #if !defined(__AROS__)
 // static void ttm_bo_global_kobj_release(struct kobject *kobj)
@@ -1801,52 +1801,55 @@ NOT_IMPLEMENTED_STOP
 }
 EXPORT_SYMBOL(ttm_bo_device_release);
 
-// int ttm_bo_device_init(struct ttm_bo_device *bdev,
-// 		       struct ttm_bo_driver *driver,
-// 		       struct address_space *mapping,
-// 		       bool need_dma32)
-// {
-// 	struct ttm_bo_global *glob = &ttm_bo_glob;
-// 	int ret;
+int ttm_bo_device_init(struct ttm_bo_device *bdev,
+		       struct ttm_bo_driver *driver,
+		       struct address_space *mapping,
+		       bool need_dma32)
+{
+	struct ttm_bo_global *glob = &ttm_bo_glob;
+	int ret;
 
-// 	ret = ttm_bo_global_init();
-// 	if (ret)
-// 		return ret;
+	ret = ttm_bo_global_init();
+	if (ret)
+		return ret;
 
-// 	bdev->driver = driver;
+	bdev->driver = driver;
 
-// 	memset(bdev->man, 0, sizeof(bdev->man));
+	memset(bdev->man, 0, sizeof(bdev->man));
 
-// 	/*
-// 	 * Initialize the system memory buffer type.
-// 	 * Other types need to be driver / IOCTL initialized.
-// 	 */
-// 	ret = ttm_bo_init_mm(bdev, TTM_PL_SYSTEM, 0);
-// 	if (unlikely(ret != 0))
-// 		goto out_no_sys;
+	/*
+	 * Initialize the system memory buffer type.
+	 * Other types need to be driver / IOCTL initialized.
+	 */
+	ret = ttm_bo_init_mm(bdev, TTM_PL_SYSTEM, 0);
+	if (unlikely(ret != 0))
+		goto out_no_sys;
 
-// 	drm_vma_offset_manager_init(&bdev->vma_manager,
-// 				    DRM_FILE_PAGE_OFFSET_START,
-// 				    DRM_FILE_PAGE_OFFSET_SIZE);
-// 	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
-// 	INIT_LIST_HEAD(&bdev->ddestroy);
-// 	bdev->dev_mapping = mapping;
-// 	bdev->glob = glob;
-// 	bdev->need_dma32 = need_dma32;
-// 	mutex_lock(&ttm_global_mutex);
-// 	list_add_tail(&bdev->device_list, &glob->device_list);
-// 	mutex_unlock(&ttm_global_mutex);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	drm_vma_offset_manager_init(&bdev->vma_manager,
+				    DRM_FILE_PAGE_OFFSET_START,
+				    DRM_FILE_PAGE_OFFSET_SIZE);
+	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
+#endif
+	INIT_LIST_HEAD(&bdev->ddestroy);
+	bdev->dev_mapping = mapping;
+	bdev->glob = glob;
+	bdev->need_dma32 = need_dma32;
+	mutex_lock(&ttm_global_mutex);
+	list_add_tail(&bdev->device_list, &glob->device_list);
+	mutex_unlock(&ttm_global_mutex);
 
-// 	return 0;
-// out_no_sys:
-// 	ttm_bo_global_release();
-// 	return ret;
-// }
-// EXPORT_SYMBOL(ttm_bo_device_init);
+	return 0;
+out_no_sys:
+	ttm_bo_global_release();
+	return ret;
+}
+EXPORT_SYMBOL(ttm_bo_device_init);
 
-// /*
-//  * buffer object vm functions.
-//  */
+/*
+ * buffer object vm functions.
+ */
 
 bool ttm_mem_reg_is_pci(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
 {

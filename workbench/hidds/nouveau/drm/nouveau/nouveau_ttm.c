@@ -231,13 +231,15 @@ nouveau_ttm_init(struct nouveau_drm *drm)
 		drm->agp.cma = pci->agp.cma;
 	}
 
-NOT_IMPLEMENTED_STOP
-#if 0
+bug("FIXME: NULL i_mapping\n");
 	ret = ttm_bo_device_init(&drm->ttm.bdev,
 				  &nouveau_bo_driver,
+#if !defined(__AROS__)
 				  dev->anon_inode->i_mapping,
-				  drm->client.mmu.dmabits <= 32 ? true : false);
+#else
+				  NULL,
 #endif
+				  drm->client.mmu.dmabits <= 32 ? true : false);
 	if (ret) {
 		NV_ERROR(drm, "error initialising bo driver, %d\n", ret);
 		return ret;
@@ -246,8 +248,7 @@ NOT_IMPLEMENTED_STOP
 	/* VRAM init */
 	drm->gem.vram_available = drm->client.device.info.ram_user;
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	arch_io_reserve_memtype_wc(device->func->resource_addr(device, 1),
 				   device->func->resource_size(device, 1));
 #endif
@@ -259,8 +260,7 @@ NOT_IMPLEMENTED_STOP
 		return ret;
 	}
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	drm->ttm.mtrr = arch_phys_wc_add(device->func->resource_addr(device, 1),
 					 device->func->resource_size(device, 1));
 #endif
@@ -294,8 +294,7 @@ nouveau_ttm_fini(struct nouveau_drm *drm)
 
 	ttm_bo_device_release(&drm->ttm.bdev);
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	arch_phys_wc_del(drm->ttm.mtrr);
 	drm->ttm.mtrr = 0;
 	arch_io_free_memtype_wc(device->func->resource_addr(device, 1),
