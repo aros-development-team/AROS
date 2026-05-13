@@ -37,8 +37,6 @@
 #define max(a, b)                       ((a) > (b) ? (a) : (b))
 #define min(a, b)                       ((a) < (b) ? (a) : (b))
 #define clamp(a, vmin, vmax)            ((min(vmax, max(vmin, a))))
-#define ilog2(n)                        (fls_long(n) - 1)
-#define rounddown_pow_of_two(n)         (1UL << ilog2(n))
 #define is_power_of_2(x)                (x != 0 && ((x & (x - 1)) == 0))
 #define access_ok(a, b, c)              TRUE
 #define le16_to_cpu(x)                  AROS_LE2WORD(x)
@@ -480,7 +478,6 @@ __res; })
 
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
 int sprintf(char * restrict s, const char * restrict format, ...);
-int order_base_2(unsigned long n);
 unsigned long clk_get_rate(struct clk *);
 u64 div_u64(u64 a, u32 b);
 s64 div64_s64(s64 a, s64 b);

@@ -16,7 +16,6 @@ void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, sp
 void dma_fence_put(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 int dma_fence_signal_locked(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 
-int order_base_2(unsigned long n) { NOT_IMPLEMENTED_STOP }
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 u64 div_u64(u64 a, u32 b) { NOT_IMPLEMENTED_STOP }
 s64 div64_s64(s64 a, s64 b) { NOT_IMPLEMENTED_STOP }
