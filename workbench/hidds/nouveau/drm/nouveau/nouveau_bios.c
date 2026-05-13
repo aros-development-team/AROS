@@ -2090,11 +2090,16 @@ nouveau_bios_init(struct drm_device *dev)
 		return 0;
 
 	if (!NVInitVBIOS(dev))
+#if !defined(MOCK_HARDWARE)
 		return -ENODEV;
 
 	ret = parse_dcb_table(dev, bios);
 	if (ret)
 		return ret;
+#else
+	;
+	bios->major_version = 6;
+#endif
 
 	if (!bios->major_version)	/* we don't run version 0 bios */
 		return 0;
