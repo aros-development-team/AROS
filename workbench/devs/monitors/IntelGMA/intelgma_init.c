@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -229,6 +229,13 @@ AROS_UFH3(void, Enumerator,
         /*-------- DO NOT CHANGE/REMOVE -------------*/
         bug("\003\n"); /* Tell vga text mode debug output to die */
         /*-------- DO NOT CHANGE/REMOVE -------------*/
+        /*
+            Explanation:
+            Debug output writes to frame buffer. The same framebuffer gets mapped to first memory header below and
+            structures (like command ring or bitmaps) get allocated from it. If debug continues to output, it
+            actually overwrites allocated structures and memory manager MemChunks. First signs are Allocate failing
+            with 'Sanity check failed'.
+        */
 
         switch (MGCC & G45_MGCC_GMS_MASK)
         {
@@ -494,7 +501,8 @@ int G45_Init(struct g45staticdata *sd)
 
                 if (sd->PCIDevice)
                 {
-                    D(bug("[GMA] Found supported gfx card\n\003"));
+                    D(bug("[GMA] Found supported gfx card\n"));
+                    D(bug("\003"));
 
                     sd->mid_CopyMemBox8     = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
                     sd->mid_CopyMemBox16    = OOP_GetMethodID((STRPTR)CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);

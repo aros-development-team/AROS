@@ -53,20 +53,20 @@ Bool NV30_LoadFragProg(ScrnInfoPtr pScrn, nv_shader_t *shader);
  * NV40/G70 vertex shaders
  */
 
-nv_shader_t nv40_vp_exa_render;
-nv_shader_t nv40_vp_video;
+extern nv_shader_t nv40_vp_exa_render;
+extern nv_shader_t nv40_vp_video;
 
 /*******************************************************************************
  * NV30/NV40/G70 fragment shaders
  */
 
-nv_shader_t nv30_fp_pass_col0;
-nv_shader_t nv30_fp_pass_tex0;
-nv_shader_t nv30_fp_composite_mask;
-nv_shader_t nv30_fp_composite_mask_sa_ca;
-nv_shader_t nv30_fp_composite_mask_ca;
-nv_shader_t nv30_fp_yv12_bicubic;
-nv_shader_t nv30_fp_yv12_bilinear;
-nv_shader_t nv40_fp_yv12_bicubic;
+extern nv_shader_t nv30_fp_pass_col0;
+extern nv_shader_t nv30_fp_pass_tex0;
+extern nv_shader_t nv30_fp_composite_mask;
+extern nv_shader_t nv30_fp_composite_mask_sa_ca;
+extern nv_shader_t nv30_fp_composite_mask_ca;
+extern nv_shader_t nv30_fp_yv12_bicubic;
+extern nv_shader_t nv30_fp_yv12_bilinear;
+extern nv_shader_t nv40_fp_yv12_bicubic;
 
 #endif

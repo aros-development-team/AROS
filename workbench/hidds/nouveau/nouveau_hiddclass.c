@@ -626,6 +626,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
     else if (SD(cl)->basegallium && (msg->cl == SD(cl)->basegallium))
     {
         /* Create the gallium 3d driver object .. */
+        // FIXME
         object = OOP_NewObject(NULL, CLID_Hidd_Gallium_Nouveau, msg->attrList);
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
@@ -906,4 +907,12 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
     return len;
 }
 
-
+VOID METHOD(Nouveau, Hidd_Gfx, NominalDimensions)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
+}

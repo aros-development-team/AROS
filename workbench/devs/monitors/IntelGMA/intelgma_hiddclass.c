@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -431,117 +431,94 @@ OOP_Object *METHOD(INTELG45, Root, New)
         { TAG_DONE, 0UL }
     };
 
-//    struct TagItem pftags_15bpp[] = {
-//        { aHidd_PixFmt_RedShift,    17  }, /* 0 */
-//        { aHidd_PixFmt_GreenShift,  22  }, /* 1 */
-//        { aHidd_PixFmt_BlueShift,   27  }, /* 2 */
-//        { aHidd_PixFmt_AlphaShift,  0   }, /* 3 */
-//        { aHidd_PixFmt_RedMask,     0x00007c00 }, /* 4 */
-//        { aHidd_PixFmt_GreenMask,   0x000003e0 }, /* 5 */
-//        { aHidd_PixFmt_BlueMask,    0x0000001f }, /* 6 */
-//        { aHidd_PixFmt_AlphaMask,   0x00000000 }, /* 7 */
-//        { aHidd_PixFmt_ColorModel,  vHidd_ColorModel_TrueColor }, /* 8 */
-//        { aHidd_PixFmt_Depth,       15  }, /* 9 */
-//        { aHidd_PixFmt_BytesPerPixel,   2   }, /* 10 */
-//        { aHidd_PixFmt_BitsPerPixel,    15  }, /* 11 */
-//        { aHidd_PixFmt_StdPixFmt,   vHidd_StdPixFmt_RGB15_LE }, /* 12 */
-//        { aHidd_PixFmt_BitMapType,  vHidd_BitMapType_Chunky }, /* 15 */
-//        { TAG_DONE, 0UL }
-//    };
-
-        OOP_Object *i2cBus = NULL;
-
-    modetags = tags = AllocVecPooled(sd->MemPool,
-        sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
-    poolptr = AllocVecPooled(sd->MemPool,
-        sizeof(struct TagItem) * SYNC_TAG_COUNT * SYNC_LIST_COUNT);
-
-        struct TagItem i2c_attrs[] = {
-//                      { aHidd_I2C_HoldTime,           40 },
-//                      { aHidd_I2C_RiseFallTime,   40 },
-                        { TAG_DONE, 0UL }
-        };
-
-        tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-        tags->ti_Data = (IPTR)pftags_24bpp;
-        tags++;
-
-        tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-        tags->ti_Data = (IPTR)pftags_16bpp;
-        tags++;
-
-//      tags->ti_Tag = aHidd_Gfx_PixFmtTags;
-//      tags->ti_Data = (IPTR)pftags_15bpp;
-//      tags++;
-
-        if( sd->pipe == PIPE_B )
-        {
-                char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
-                snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
-                        sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
-
-                //native lcd mode
-                struct TagItem sync_native[]={
-                { aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
-                { aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
-                { aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
-                { aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
-                { aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
-                { aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
-                { aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
-                { aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
-                { aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
-                { aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
-                { aHidd_Sync_VMax,     4096},
-                { aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
-                { aHidd_Sync_HMax,     4096},
-                { aHidd_Sync_Description, (IPTR)description },
-                { TAG_DONE, 0UL }};
-
-                MAKE_SYNC(640x480_60,   25174,
+    MAKE_SYNC(640x480_60,  25174,
          640,  656,  752,  800,
          480,  490,  492,  525,
          "GMA_LVDS:640x480");
-                
-                tags->ti_Tag =  aHidd_Gfx_SyncTags;
-                tags->ti_Data = (IPTR)sync_640x480_60;
-                tags++;
-                
-                tags->ti_Tag =  aHidd_Gfx_SyncTags;
-                tags->ti_Data = (IPTR)sync_native;
-                tags++;
-                
-        }
-        else
+
+    //native lcd mode
+    struct TagItem sync_native[]={
+        { aHidd_Sync_PixelClock,sd->lvds_fixed.pixelclock*1000000 },
+        { aHidd_Sync_HDisp,     sd->lvds_fixed.hdisp },
+        { aHidd_Sync_HSyncStart,sd->lvds_fixed.hstart },
+        { aHidd_Sync_HSyncEnd,  sd->lvds_fixed.hend },
+        { aHidd_Sync_HTotal,    sd->lvds_fixed.htotal },
+        { aHidd_Sync_VDisp,     sd->lvds_fixed.vdisp },
+        { aHidd_Sync_VSyncStart,sd->lvds_fixed.vstart },
+        { aHidd_Sync_VSyncEnd,  sd->lvds_fixed.vend },
+        { aHidd_Sync_VTotal,    sd->lvds_fixed.vtotal },
+        { aHidd_Sync_VMin,     sd->lvds_fixed.vdisp},
+        { aHidd_Sync_VMax,     4096},
+        { aHidd_Sync_HMin,     sd->lvds_fixed.hdisp},
+        { aHidd_Sync_HMax,     4096},
+        { aHidd_Sync_Description, (IPTR)NULL },
+        { TAG_DONE, 0UL }
+    };
+
+    OOP_Object *i2cBus = NULL;
+
+    modetags = tags = AllocVecPooled(sd->MemPool, sizeof (struct TagItem) * (3 + SYNC_LIST_COUNT + 1));
+    poolptr = AllocVecPooled(sd->MemPool, sizeof(struct TagItem) * SYNC_TAG_COUNT * SYNC_LIST_COUNT);
+
+    struct TagItem i2c_attrs[] = {
+//        { aHidd_I2C_HoldTime,           40 },
+//        { aHidd_I2C_RiseFallTime,   40 },
+        { TAG_DONE, 0UL }
+    };
+
+    tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+    tags->ti_Data = (IPTR)pftags_24bpp;
+    tags++;
+
+    tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+    tags->ti_Data = (IPTR)pftags_16bpp;
+    tags++;
+
+    if( sd->pipe == PIPE_B )
+    {
+        char *description = AllocVecPooled(sd->MemPool, MAX_MODE_NAME_LEN + 1);
+        snprintf(description, MAX_MODE_NAME_LEN, "GMA_LVDS:%dx%d",
+                sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
+        sync_native[13].ti_Data = (IPTR)description;
+
+        tags->ti_Tag =  aHidd_Gfx_SyncTags;
+        tags->ti_Data = (IPTR)sync_640x480_60;
+        tags++;
+
+        tags->ti_Tag =  aHidd_Gfx_SyncTags;
+        tags->ti_Data = (IPTR)sync_native;
+        tags++;
+    }
+    else
+    {
+        i2cBus = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
+
+        if (i2cBus)
         {
-                i2cBus = OOP_NewObject(sd->IntelI2C, NULL, i2c_attrs);
+            if (HIDD_I2C_ProbeAddress(i2cBus, 0xa0))
+            {
+                struct TagItem attrs[] = {
+                    { aHidd_I2CDevice_Driver,   (IPTR)i2cBus    },
+                    { aHidd_I2CDevice_Address,  0xa0            },
+                    { aHidd_I2CDevice_Name,     (IPTR)"Display" },
+                    { TAG_DONE,                 0UL             }
+                };
 
-                if (i2cBus)
+                D(bug("[GMA] I2C display device found\n"));
+
+                OOP_Object *i2cDev = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+
+                if (i2cDev)
                 {
-                        if (HIDD_I2C_ProbeAddress(i2cBus, 0xa0))
-                        {
-                                struct TagItem attrs[] = {
-                                                { aHidd_I2CDevice_Driver,       (IPTR)i2cBus    },
-                                                { aHidd_I2CDevice_Address,      0xa0            },
-                                                { aHidd_I2CDevice_Name,         (IPTR)"Display" },
-                                                { TAG_DONE,                             0UL                     }
-                                };
-
-                                D(bug("[GMA] I2C display device found\n"));
-
-                                OOP_Object *i2cDev = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
-
-                                if (i2cDev)
-                                {
-                                        G45_parse_ddc(cl, &tags, poolptr, i2cDev);
-                                }
-                        }
+                    G45_parse_ddc(cl, &tags, poolptr, i2cDev);
                 }
-
+            }
         }
 
-        tags->ti_Tag = TAG_DONE;
-        tags->ti_Data = 0;
+    }
+
+    tags->ti_Tag = TAG_DONE;
+    tags->ti_Data = 0;
 
     struct TagItem mytags[] = {
         { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
@@ -561,20 +538,19 @@ OOP_Object *METHOD(INTELG45, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
-                struct g45data * gfxdata = OOP_INST_DATA(cl, o);
-                gfxdata->i2cobj = i2cBus;
+        struct g45data * gfxdata = OOP_INST_DATA(cl, o);
+        gfxdata->i2cobj = i2cBus;
         sd->GMAObject = o;
 
-                /* Create compositor object */
-                {
-                        struct TagItem comptags [] =
-                        {
-                                { aHidd_Compositor_GfxHidd, (IPTR)o },
-                                { TAG_DONE, TAG_DONE }
-                        };
-                        sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
-                        /* TODO: Check if object was created, how to handle ? */
-                }
+        /* Create compositor object */
+        {
+            struct TagItem comptags [] = {
+                { aHidd_Compositor_GfxHidd, (IPTR)o },
+                { TAG_DONE, TAG_DONE }
+            };
+            sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
+            /* TODO: Check if object was created, how to handle ? */
+        }
     }
 
     FreeVecPooled(sd->MemPool, modetags);
@@ -1025,6 +1001,16 @@ ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
     return len;
 }
 
+VOID METHOD(INTELG45, Hidd_Gfx, NominalDimensions)
+{
+    if (msg->width)
+        *(msg->width) = 1024;
+    if (msg->height)
+        *(msg->height) = 768;
+    if (msg->depth)
+        *(msg->depth) = 24;
+}
+
 static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Root__New, moRoot_New},
@@ -1037,15 +1023,16 @@ static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 static const struct OOP_MethodDescr INTELG45_Hidd_Gfx_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CopyBox         , moHidd_Gfx_CopyBox         },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject       , moHidd_Gfx_CreateObject       },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject    , moHidd_Gfx_CreateObject    },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorVisible, moHidd_Gfx_SetCursorVisible},
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorPos    , moHidd_Gfx_SetCursorPos    },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorShape  , moHidd_Gfx_SetCursorShape  },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ShowViewPorts   , moHidd_Gfx_ShowViewPorts   },
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ModeProperties  , moHidd_Gfx_ModeProperties  },
+    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__NominalDimensions, moHidd_Gfx_NominalDimensions    },
     {NULL, 0}
 };
-#define NUM_INTELG45_Hidd_Gfx_METHODS 7
+#define NUM_INTELG45_Hidd_Gfx_METHODS 8
 
 const struct OOP_InterfaceDescr INTELG45_ifdescr[] =
 {
