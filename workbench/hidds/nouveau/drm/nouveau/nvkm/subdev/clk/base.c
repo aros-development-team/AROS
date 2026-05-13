@@ -346,12 +346,12 @@ static int
 nvkm_pstate_calc(struct nvkm_clk *clk, bool wait)
 {
 	atomic_set(&clk->waiting, 1);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	schedule_work(&clk->work);
-#endif
 	if (wait)
 		wait_event(clk->wait, !atomic_read(&clk->waiting));
+#endif
 	return 0;
 }
 
