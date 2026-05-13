@@ -39,6 +39,7 @@
 #include <linux/dma-resv.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_dma.h>
 #endif
 
 // #include <drm/drm_vma_manager.h>

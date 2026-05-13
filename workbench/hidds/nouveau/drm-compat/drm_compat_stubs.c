@@ -3,6 +3,7 @@
 */
 
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_dma.h>
 
 struct dma_fence *dma_fence_get(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 struct dma_fence *dma_resv_get_excl(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
