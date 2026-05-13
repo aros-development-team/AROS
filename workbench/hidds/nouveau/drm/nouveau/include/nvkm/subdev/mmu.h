@@ -5,9 +5,7 @@
 
 struct nvkm_vma {
 	struct list_head head;
-#if !defined(__AROS__)
 	struct rb_node tree;
-#endif
 	u64 addr;
 	u64 size:50;
 	bool mapref:1; /* PTs (de)referenced on (un)map (vs pre-allocated). */
@@ -39,10 +37,8 @@ struct nvkm_vmm {
 	struct list_head join;
 
 	struct list_head list;
-#if !defined(__AROS__)
 	struct rb_root free;
 	struct rb_root root;
-#endif
 
 	bool bootstrapped;
 	atomic_t engref[NVKM_SUBDEV_NR];

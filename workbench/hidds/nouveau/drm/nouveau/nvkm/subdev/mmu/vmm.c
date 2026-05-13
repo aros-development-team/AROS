@@ -784,10 +784,7 @@ nvkm_vma_tail(struct nvkm_vma *vma, u64 tail)
 static inline void
 nvkm_vmm_free_remove(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	rb_erase(&vma->tree, &vmm->free);
-#endif
 }
 
 static inline void
@@ -801,8 +798,6 @@ nvkm_vmm_free_delete(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 static void
 nvkm_vmm_free_insert(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct rb_node **ptr = &vmm->free.rb_node;
 	struct rb_node *parent = NULL;
 
@@ -826,16 +821,12 @@ NOT_IMPLEMENTED_STOP
 
 	rb_link_node(&vma->tree, parent, ptr);
 	rb_insert_color(&vma->tree, &vmm->free);
-#endif
 }
 
 static inline void
 nvkm_vmm_node_remove(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	rb_erase(&vma->tree, &vmm->root);
-#endif
 }
 
 static inline void
@@ -849,8 +840,6 @@ nvkm_vmm_node_delete(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 static void
 nvkm_vmm_node_insert(struct nvkm_vmm *vmm, struct nvkm_vma *vma)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct rb_node **ptr = &vmm->root.rb_node;
 	struct rb_node *parent = NULL;
 
@@ -868,14 +857,11 @@ NOT_IMPLEMENTED_STOP
 
 	rb_link_node(&vma->tree, parent, ptr);
 	rb_insert_color(&vma->tree, &vmm->root);
-#endif
 }
 
 struct nvkm_vma *
 nvkm_vmm_node_search(struct nvkm_vmm *vmm, u64 addr)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct rb_node *node = vmm->root.rb_node;
 	while (node) {
 		struct nvkm_vma *vma = rb_entry(node, typeof(*vma), tree);
@@ -887,7 +873,6 @@ NOT_IMPLEMENTED_STOP
 		else
 			return vma;
 	}
-#endif
 	return NULL;
 }
 
@@ -998,13 +983,10 @@ nvkm_vmm_dtor(struct nvkm_vmm *vmm)
 	if (0)
 		nvkm_vmm_dump(vmm);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	while ((node = rb_first(&vmm->root))) {
 		struct nvkm_vma *vma = rb_entry(node, typeof(*vma), tree);
 		nvkm_vmm_put(vmm, &vma);
 	}
-#endif
 
 	if (vmm->bootstrapped) {
 		const struct nvkm_vmm_page *page = vmm->func->page;
@@ -1066,10 +1048,7 @@ nvkm_vmm_ctor(const struct nvkm_vmm_func *func, struct nvkm_mmu *mmu,
 	vmm->debug = mmu->subdev.debug;
 	kref_init(&vmm->kref);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	__mutex_init(&vmm->mutex, "&vmm->mutex", key ? key : &_key);
-#endif
 
 	/* Locate the smallest page size supported by the backend, it will
 	 * have the the deepest nesting of page tables.
@@ -1108,11 +1087,8 @@ NOT_IMPLEMENTED_STOP
 
 	/* Initialise address-space MM. */
 	INIT_LIST_HEAD(&vmm->list);
-NOT_IMPLEMENTED_STOP
-#if 0
 	vmm->free = RB_ROOT;
 	vmm->root = RB_ROOT;
-#endif
 
 	if (managed) {
 		/* Address-space will be managed by the client for the most
@@ -1706,8 +1682,6 @@ nvkm_vmm_get_locked(struct nvkm_vmm *vmm, bool getref, bool mapref, bool sparse,
 	} else {
 		align = max_t(u8, align, 12);
 	}
-NOT_IMPLEMENTED_STOP
-#if 0
 
 	/* Locate smallest block that can possibly satisfy the allocation. */
 	temp = vmm->free.rb_node;
@@ -1748,7 +1722,6 @@ NOT_IMPLEMENTED_STOP
 			break;
 		}
 	} while ((node = rb_next(node)));
-#endif
 
 	if (unlikely(!vma))
 		return -ENOSPC;
