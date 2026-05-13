@@ -66,8 +66,8 @@ NOUVEAU_HIDD_C_SOURCES := \
             $(addprefix $(DRM_PATH),$(AROS_LIBDRM_NVIDIA_SOURCES))      \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
-NOUVEAU_HIDD_CXX_SOURCES := \
-            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
+#NOUVEAU_HIDD_CXX_SOURCES := \
+#            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
 
 USER_INCLUDES += \
             -I$(DRM_PATH)/drm \
@@ -79,7 +79,7 @@ USER_INCLUDES += \
             -iquote $(GALLIUM_PATH)/include \
             -iquote $(GALLIUM_PATH)/auxiliary \
             -iquote $(top_srcdir)/src/mesa \
-            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/20.0.8/src/compiler/nir \
             -I$(DRM_PATH)/libdrm \
             -I$(DRM_PATH)/libdrm/nouveau \
             -I$(XF86_NOUVEAU_PATH)
