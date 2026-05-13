@@ -1065,21 +1065,24 @@ int ttm_pool_populate(struct ttm_tt *ttm, struct ttm_operation_ctx *ctx)
 	unsigned i;
 	int ret;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (ttm->state != tt_unpopulated)
 		return 0;
 
+#if 0
 	if (ttm_check_under_lowerlimit(mem_glob, ttm->num_pages, ctx))
 		return -ENOMEM;
-
+#endif
+NOT_IMPLEMENTED_STOP
+#if 0
 	ret = ttm_get_pages(ttm->pages, ttm->num_pages, ttm->page_flags,
 			    ttm->caching_state);
 	if (unlikely(ret != 0)) {
 		ttm_pool_unpopulate_helper(ttm, 0);
 		return ret;
 	}
+#endif
 
+#if 0
 	for (i = 0; i < ttm->num_pages; ++i) {
 		ret = ttm_mem_global_alloc_page(mem_glob, ttm->pages[i],
 						PAGE_SIZE, ctx);
@@ -1096,9 +1099,9 @@ NOT_IMPLEMENTED_STOP
 			return ret;
 		}
 	}
+#endif
 
 	ttm->state = tt_unbound;
-#endif
 	return 0;
 }
 EXPORT_SYMBOL(ttm_pool_populate);

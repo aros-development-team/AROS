@@ -977,6 +977,8 @@ static int ttm_bo_add_move_fence(struct ttm_buffer_object *bo,
 	struct dma_fence *fence;
 	int ret;
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	spin_lock(&man->move_lock);
 	fence = dma_fence_get(man->move);
 	spin_unlock(&man->move_lock);
@@ -998,6 +1000,7 @@ static int ttm_bo_add_move_fence(struct ttm_buffer_object *bo,
 	}
 
 	dma_fence_put(bo->moving);
+#endif
 	bo->moving = fence;
 	return 0;
 }
@@ -1146,9 +1149,12 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 	bool type_found = false;
 	int i, ret;
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	ret = dma_resv_reserve_shared(bo->base.resv, 1);
 	if (unlikely(ret))
 		return ret;
+#endif
 
 	mem->mm_node = NULL;
 	for (i = 0; i < placement->num_placement; ++i) {
@@ -1408,26 +1414,24 @@ int ttm_bo_init_reserved(struct ttm_bo_device *bdev,
 		 * struct elements we want use regardless.
 		 */
 		dma_resv_init(&bo->base._resv);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 		drm_vma_node_reset(&bo->base.vma_node);
 #endif
 	}
 	atomic_inc(&bo->bdev->glob->bo_count);
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	/*
 	 * For ttm_bo_type_device buffers, allocate
 	 * address space from the device.
 	 */
 	if (bo->type == ttm_bo_type_device ||
 	    bo->type == ttm_bo_type_sg)
-{
-NOT_IMPLEMENTED_STOP
-#if 0
 		ret = drm_vma_offset_add(&bdev->vma_manager, &bo->base.vma_node,
 					 bo->mem.num_pages);
-#endif
-}
+
 	/* passed reservation objects should already be locked,
 	 * since otherwise lockdep will be angered in radeon.
 	 */
@@ -1435,6 +1439,7 @@ NOT_IMPLEMENTED_STOP
 		locked = dma_resv_trylock(bo->base.resv);
 		WARN_ON(!locked);
 	}
+#endif
 
 	if (likely(!ret))
 		ret = ttm_bo_validate(bo, placement, ctx);
@@ -1871,7 +1876,7 @@ bool ttm_mem_reg_is_pci(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
 void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	drm_vma_node_unmap(&bo->base.vma_node, bdev->dev_mapping);
 #endif
@@ -1896,7 +1901,7 @@ EXPORT_SYMBOL(ttm_bo_unmap_virtual);
 int ttm_bo_wait(struct ttm_buffer_object *bo,
 		bool interruptible, bool no_wait)
 {
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	long timeout = 15 * HZ;
 
@@ -1916,8 +1921,8 @@ NOT_IMPLEMENTED_STOP
 		return -EBUSY;
 
 	dma_resv_add_excl_fence(bo->base.resv, NULL);
-	return 0;
 #endif
+	return 0;
 }
 EXPORT_SYMBOL(ttm_bo_wait);
 
@@ -2052,36 +2057,38 @@ EXPORT_SYMBOL(ttm_bo_wait);
 // EXPORT_SYMBOL(ttm_bo_swapout_all);
 // #endif
 
-// /**
-//  * ttm_bo_wait_unreserved - interruptible wait for a buffer object to become
-//  * unreserved
-//  *
-//  * @bo: Pointer to buffer
-//  */
-// int ttm_bo_wait_unreserved(struct ttm_buffer_object *bo)
-// {
-// 	int ret;
+/**
+ * ttm_bo_wait_unreserved - interruptible wait for a buffer object to become
+ * unreserved
+ *
+ * @bo: Pointer to buffer
+ */
+int ttm_bo_wait_unreserved(struct ttm_buffer_object *bo)
+{
+	int ret;
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	/*
+	 * In the absense of a wait_unlocked API,
+	 * Use the bo::wu_mutex to avoid triggering livelocks due to
+	 * concurrent use of this function. Note that this use of
+	 * bo::wu_mutex can go away if we change locking order to
+	 * mmap_sem -> bo::reserve.
+	 */
+	ret = mutex_lock_interruptible(&bo->wu_mutex);
+	if (unlikely(ret != 0))
+		return -ERESTARTSYS;
+	if (!dma_resv_is_locked(bo->base.resv))
+		goto out_unlock;
+	ret = dma_resv_lock_interruptible(bo->base.resv, NULL);
+	if (ret == -EINTR)
+		ret = -ERESTARTSYS;
+	if (unlikely(ret != 0))
+		goto out_unlock;
+	dma_resv_unlock(bo->base.resv);
 
-// 	/*
-// 	 * In the absense of a wait_unlocked API,
-// 	 * Use the bo::wu_mutex to avoid triggering livelocks due to
-// 	 * concurrent use of this function. Note that this use of
-// 	 * bo::wu_mutex can go away if we change locking order to
-// 	 * mmap_sem -> bo::reserve.
-// 	 */
-// 	ret = mutex_lock_interruptible(&bo->wu_mutex);
-// 	if (unlikely(ret != 0))
-// 		return -ERESTARTSYS;
-// 	if (!dma_resv_is_locked(bo->base.resv))
-// 		goto out_unlock;
-// 	ret = dma_resv_lock_interruptible(bo->base.resv, NULL);
-// 	if (ret == -EINTR)
-// 		ret = -ERESTARTSYS;
-// 	if (unlikely(ret != 0))
-// 		goto out_unlock;
-// 	dma_resv_unlock(bo->base.resv);
-
-// out_unlock:
-// 	mutex_unlock(&bo->wu_mutex);
-// 	return ret;
-// }
+out_unlock:
+	mutex_unlock(&bo->wu_mutex);
+#endif
+	return ret;
+}

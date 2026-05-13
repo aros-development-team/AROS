@@ -553,8 +553,6 @@ nouveau_drm_device_init(struct drm_device *dev)
 	if (ret)
 		goto fail_alloc;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	ret = nouveau_cli_init(drm, "DRM", &drm->client);
 	if (ret)
 		goto fail_master;
@@ -574,7 +572,9 @@ NOT_IMPLEMENTED_STOP
 	if (drm->client.device.info.chipset == 0xc1)
 		nvif_mask(&drm->client.device.object, 0x00088080, 0x00000800, 0x00000000);
 
+#if !defined(__AROS__)
 	nouveau_vga_init(drm);
+#endif
 
 	ret = nouveau_ttm_init(drm);
 	if (ret)
@@ -586,6 +586,8 @@ NOT_IMPLEMENTED_STOP
 
 	nouveau_accel_init(drm);
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	ret = nouveau_display_create(dev);
 	if (ret)
 		goto fail_dispctor;

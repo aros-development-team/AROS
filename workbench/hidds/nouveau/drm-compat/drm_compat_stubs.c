@@ -39,7 +39,6 @@ IPTR sg_dma_len(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
 void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
-void *kvmalloc_array(size_t n, size_t size, BYTE flags) { NOT_IMPLEMENTED_STOP }
 char *kstrndup(const char *c, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
 int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
 
@@ -49,13 +48,13 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
 int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr, size_t size, int prot) { NOT_IMPLEMENTED_STOP }
 
 void dma_fence_enable_sw_signaling(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
-void dma_resv_assert_held(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
+void dma_resv_assert_held(struct dma_resv *resv) { bug("FIXME!!! dma_resv_assert_held\n"); }
 int dma_resv_trylock(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLEMENTED_STOP }
 int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLEMENTED_STOP }
 void dma_resv_unlock(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
-void dma_resv_init(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
+void dma_resv_init(struct dma_resv *resv) { bug("FIXME!!! dma_resv_init\n"); }
 void dma_resv_fini(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num) { NOT_IMPLEMENTED_STOP }
 struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
@@ -68,3 +67,5 @@ unsigned int drm_debug;
 void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }
 
 void drm_gem_object_put_unlocked(struct drm_gem_object *obj) { NOT_IMPLEMENTED_STOP }
+
+u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_alloc\n"); return 100; }

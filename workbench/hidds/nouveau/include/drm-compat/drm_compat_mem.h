@@ -30,7 +30,7 @@ VOID HIDDNouveauFree(APTR memory);
 
 #define kvmalloc(size, flags)           HIDDNouveauAlloc(size)
 #define kvcalloc(count, size, flags)    HIDDNouveauAlloc((count) * (size))
-void *kvmalloc_array(size_t n, size_t size, BYTE flags);
+#define kvmalloc_array(n, size, flags)  kvmalloc(size *n, flags)
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
 void *kmemdup(const void *src, size_t len, BYTE flags);

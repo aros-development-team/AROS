@@ -198,16 +198,16 @@ EXPORT_SYMBOL(ttm_mem_io_free);
 // 	return 0;
 // }
 
-// void ttm_mem_io_free_vm(struct ttm_buffer_object *bo)
-// {
-// 	struct ttm_mem_reg *mem = &bo->mem;
+void ttm_mem_io_free_vm(struct ttm_buffer_object *bo)
+{
+	struct ttm_mem_reg *mem = &bo->mem;
 
-// 	if (mem->bus.io_reserved_vm) {
-// 		mem->bus.io_reserved_vm = false;
-// 		list_del_init(&bo->io_reserve_lru);
-// 		ttm_mem_io_free(bo->bdev, mem);
-// 	}
-// }
+	if (mem->bus.io_reserved_vm) {
+		mem->bus.io_reserved_vm = false;
+		list_del_init(&bo->io_reserve_lru);
+		ttm_mem_io_free(bo->bdev, mem);
+	}
+}
 
 static int ttm_mem_reg_ioremap(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem,
 			void **virtual)
@@ -582,27 +582,27 @@ pgprot_t ttm_io_prot(uint32_t caching_flags, pgprot_t tmp)
 EXPORT_SYMBOL(ttm_io_prot);
 #endif
 
-// static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
-// 			  unsigned long offset,
-// 			  unsigned long size,
-// 			  struct ttm_bo_kmap_obj *map)
-// {
-// 	struct ttm_mem_reg *mem = &bo->mem;
+static int ttm_bo_ioremap(struct ttm_buffer_object *bo,
+			  unsigned long offset,
+			  unsigned long size,
+			  struct ttm_bo_kmap_obj *map)
+{
+	struct ttm_mem_reg *mem = &bo->mem;
 
-// 	if (bo->mem.bus.addr) {
-// 		map->bo_kmap_type = ttm_bo_map_premapped;
-// 		map->virtual = (void *)(((u8 *)bo->mem.bus.addr) + offset);
-// 	} else {
-// 		map->bo_kmap_type = ttm_bo_map_iomap;
-// 		if (mem->placement & TTM_PL_FLAG_WC)
-// 			map->virtual = ioremap_wc(bo->mem.bus.base + bo->mem.bus.offset + offset,
-// 						  size);
-// 		else
-// 			map->virtual = ioremap_nocache(bo->mem.bus.base + bo->mem.bus.offset + offset,
-// 						       size);
-// 	}
-// 	return (!map->virtual) ? -ENOMEM : 0;
-// }
+	if (bo->mem.bus.addr) {
+		map->bo_kmap_type = ttm_bo_map_premapped;
+		map->virtual = (void *)(((u8 *)bo->mem.bus.addr) + offset);
+	} else {
+		map->bo_kmap_type = ttm_bo_map_iomap;
+		if (mem->placement & TTM_PL_FLAG_WC)
+			map->virtual = ioremap_wc(bo->mem.bus.base + bo->mem.bus.offset + offset,
+						  size);
+		else
+			map->virtual = ioremap_nocache(bo->mem.bus.base + bo->mem.bus.offset + offset,
+						       size);
+	}
+	return (!map->virtual) ? -ENOMEM : 0;
+}
 
 static int ttm_bo_kmap_ttm(struct ttm_buffer_object *bo,
 			   unsigned long start_page,
@@ -676,10 +676,7 @@ int ttm_bo_kmap(struct ttm_buffer_object *bo,
 	} else {
 		offset = start_page << PAGE_SHIFT;
 		size = num_pages << PAGE_SHIFT;
-NOT_IMPLEMENTED_STOP
-#if 0
 		return ttm_bo_ioremap(bo, offset, size, map);
-#endif
 	}
 }
 EXPORT_SYMBOL(ttm_bo_kmap);

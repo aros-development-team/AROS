@@ -530,9 +530,6 @@ nouveau_channels_init(struct nouveau_drm *drm)
 		return -ENODEV;
 
 	drm->chan.nr = args.v.channels.data;
-NOT_IMPLEMENTED_STOP
-#if 0
 	drm->chan.context_base = dma_fence_context_alloc(drm->chan.nr);
-#endif
 	return 0;
 }

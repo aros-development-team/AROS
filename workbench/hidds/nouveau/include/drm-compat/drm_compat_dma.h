@@ -52,6 +52,7 @@ struct dma_fence
 #define DMA_FENCE_FLAG_SIGNALED_BIT 0
 #define DMA_FENCE_FLAG_USER_BITS 3 /* last */
 
+u64 dma_fence_context_alloc(unsigned int num);
 struct dma_fence *dma_fence_get(struct dma_fence *fence);
 struct dma_fence *dma_resv_get_excl(struct dma_resv *resv);
 void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence);
