@@ -84,4 +84,14 @@ refcount_dec_and_test(refcount_t *r)
 	return (atomic_dec_and_test(r));
 }
 
+static inline bool
+refcount_dec_and_mutex_lock(refcount_t *ref, struct mutex *lock)
+{
+	if (atomic_dec_and_test(ref) == true) {
+		mutex_lock(lock);
+		return (true);
+	}
+	return (false);
+}
+
 #endif /* __LINUXKPI_LINUX_REFCOUNT_H__ */

@@ -139,10 +139,7 @@ nv50_instobj_kmap(struct nv50_instobj *iobj, struct nvkm_vmm *vmm)
 		 * succeed,or there's no more objects left on the LRU.
 		 */
 		mutex_lock(&subdev->mutex);
-NOT_IMPLEMENTED_STOP
-#if 0
 		eobj = list_first_entry_or_null(&imem->lru, typeof(*eobj), lru);
-#endif
 		if (eobj) {
 			nvkm_debug(subdev, "evict %016llx %016llx @ %016llx\n",
 				   nvkm_memory_addr(&eobj->base.memory),
@@ -199,8 +196,6 @@ nv50_instobj_release(struct nvkm_memory *memory)
 
 	wmb();
 	nvkm_bar_flush(subdev->device->bar);
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (refcount_dec_and_mutex_lock(&iobj->maps, &subdev->mutex)) {
 		/* Add the now-unused mapping to the LRU instead of directly
 		 * unmapping it here, in case we need to map it again later.
@@ -214,7 +209,6 @@ NOT_IMPLEMENTED_STOP
 		iobj->base.memory.ptrs = NULL;
 		mutex_unlock(&subdev->mutex);
 	}
-#endif
 }
 
 static void __iomem *
@@ -225,12 +219,14 @@ nv50_instobj_acquire(struct nvkm_memory *memory)
 	struct nvkm_vmm *vmm;
 	void __iomem *map = NULL;
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#warning smp_rmb & smp_wmb
+
 	/* Already mapped? */
 	if (refcount_inc_not_zero(&iobj->maps)) {
 		/* read barrier match the wmb on refcount set */
+#if !defined(__AROS__)
 		smp_rmb();
+#endif
 		return iobj->map;
 	}
 
@@ -260,12 +256,14 @@ NOT_IMPLEMENTED_STOP
 		else
 			iobj->base.memory.ptrs = &nv50_instobj_slow;
 		/* barrier to ensure the ptrs are written before refcount is set */
+#if !defined(__AROS__)
 		smp_wmb();
+#endif
 		refcount_set(&iobj->maps, 1);
 	}
 
 	mutex_unlock(&imem->subdev.mutex);
-#endif
+
 	return map;
 }
 

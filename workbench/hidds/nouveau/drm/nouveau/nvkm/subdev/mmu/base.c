@@ -190,10 +190,7 @@ nvkm_mmu_ptc_get(struct nvkm_mmu *mmu, u32 size, u32 align, bool zero)
 	}
 
 	/* If there's a free PT in the cache, reuse it. */
-NOT_IMPLEMENTED_STOP
-#if 0
 	pt = list_first_entry_or_null(&ptc->item, typeof(*pt), head);
-#endif
 	if (pt) {
 		if (zero)
 			nvkm_fo64(pt->memory, 0, 0, size >> 3);
