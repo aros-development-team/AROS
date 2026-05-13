@@ -91,7 +91,7 @@ struct page
 #define PAGE_SIZE               ((1UL) << PAGE_SHIFT)
 #define PAGE_MASK               (~(PAGE_SIZE-1))
 #define PAGE_ALIGN(addr)        (typeof(addr))(((IPTR)(addr) + PAGE_SIZE - 1) & PAGE_MASK)
-#define ALIGN(val, align)       (val + align - 1) & (~(align - 1))
+#define ALIGN(val, align)       (((val) + (align) - 1) & (~((align) - 1)))
 #define IS_ALIGNED(x, n)        ((x & ((typeof(x))(n) - 1)) == 0)
 #define __aligned(x)            __attribute__((__alligned__(x)))
 
