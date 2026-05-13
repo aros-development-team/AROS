@@ -42,7 +42,6 @@
 #define loff_t                      IPTR
 #define pgoff_t                     IPTR
 #define pgprot_t                    ULONG
-#define gfp_t                       ULONG
 #define irqreturn_t                 ULONG
 #define INT_MAX                     2147483647
 #define U64_MAX                     ULLONG_MAX
@@ -55,6 +54,10 @@
              (type *)((char *)__mptr - offsetof(type, member)); })
 
 #define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
+
+#define	DECLARE_BITMAP(n, bits) \
+    unsigned long n[howmany(bits, sizeof(long) * 8)]
+
 
 #define IRQ_NONE    0
 #define IRQ_HANDLED 1
@@ -89,10 +92,6 @@ struct page
 #define PAGE_MASK               (~(PAGE_SIZE-1))
 #define PAGE_ALIGN(addr)        (typeof(addr))(((IPTR)(addr) + PAGE_SIZE - 1) & PAGE_MASK)
 #define ALIGN(val, align)       (val + align - 1) & (~(align - 1))
-#define BITS_TO_LONGS(x)        ((x / (sizeof(long) * 8)) + 1)
-#define BIT(n)                  ((1UL) << (n))
-#define BIT_ULL(n)              ((1ULL) << (n))
-#define BITS_PER_BYTE           (8)
 #define IS_ALIGNED(x, n)        ((x & ((typeof(x))(n) - 1)) == 0)
 #define __aligned(x)            __attribute__((__alligned__(x)))
 

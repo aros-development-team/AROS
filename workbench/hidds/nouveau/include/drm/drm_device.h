@@ -6,6 +6,8 @@
 #include <linux/kref.h>
 #include <linux/mutex.h>
 #include <linux/idr.h>
+#else
+#include <linux/bitops.h>
 #endif
 
 // #include <drm/drm_hashtab.h>

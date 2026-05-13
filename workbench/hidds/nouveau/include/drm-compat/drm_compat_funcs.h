@@ -19,29 +19,7 @@
 #define readw(addr)                     (*(volatile UWORD*)(addr))
 #define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
 #define readb(addr)                     (*(volatile UBYTE*)(addr))
-#define kzalloc(size, flags)            HIDDNouveauAlloc(size)
-#define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
-#define kmalloc(size, flags)            HIDDNouveauAlloc(size)
-#define vmalloc_user(size)              HIDDNouveauAlloc(size)
-#define vmalloc(size)                   HIDDNouveauAlloc(size)
-#define kvmalloc(size, flags)           HIDDNouveauAlloc(size)
-#define kvcalloc(count, size, flags)    HIDDNouveauAlloc((count) * (size))
-#define vzalloc(size)                   vmalloc(size)
-#define kfree(objp)                     HIDDNouveauFree(objp)
-#define vfree(objp)                     HIDDNouveauFree(objp)
-#define kvfree(objp)                    HIDDNouveauFree(objp)
-#define GFP_KERNEL (1UL < 0)
-#define __GFP_ZERO (1UL < 1)
-#define GFP_DMA32  (1UL < 2)
-#define GFP_HIGHUSER (1UL < 3)
-#define GFP_USER (1UL < 4)
-void *kmemdup(const void *src, size_t len, BYTE flags);
-void *kmalloc_array(size_t n, size_t size, BYTE flags);
-void *kvmalloc_array(size_t n, size_t size, BYTE flags);
-char *kstrndup(const char *c, size_t len, BYTE flags);
-int kstrtol(const char *s, unsigned int base, long *res);
 #define capable(p)                      TRUE
-#define roundup(x, y)                   ((((x) + ((y) - 1)) / (y)) * (y))
 #define round_up(x, y)                  roundup(x, y)
 #define lower_32_bits(n)                ((u32)(n))
 #define upper_32_bits(n)                ((u32)(((n) >> 16) >> 16))
@@ -55,7 +33,6 @@ int kstrtol(const char *s, unsigned int base, long *res);
 #define unlikely(x)                     __builtin_expect((IPTR)(x),0)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
-#define ffs(x)                          __builtin_ffs(x)
 #define fls_long(x)                     ((sizeof(x) * 8) - __builtin_clzl(x))
 #define max(a, b)                       ((a) > (b) ? (a) : (b))
 #define min(a, b)                       ((a) < (b) ? (a) : (b))
@@ -76,8 +53,6 @@ int kstrtol(const char *s, unsigned int base, long *res);
 #define rounddown(x, y)                 (((x)/(y))*(y))
 #define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
 #define EREMOTEIO                       EIO
-#define __ffs64(mask)                   ffs(mask)
-#define __ffs(mask)                     ffs(mask)
 #define max_t(t, x, y)                  ({(t)(x) > (t)(y) ? (t)(x) : (t)(y);})
 #define min_t(t, x, y)                  ({(t)(x) < (t)(y) ? (t)(x) : (t)(y);})
 
@@ -190,18 +165,8 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
 
 /* Bit operations */
-void clear_bit(int nr, volatile void * addr);
-void set_bit(int nr, volatile void *addr);
-int test_bit(int nr, volatile void *addr);
 int test_and_clear_bit(unsigned int nr, volatile unsigned long *p);
 int test_and_set_bit(unsigned int nr, volatile unsigned long *p);
-#define __set_bit(nr, addr)         set_bit(nr, addr)
-#define __clear_bit(nr, addr)       clear_bit(nr, addr)
-#define for_each_set_bit(bit, addr, size) NOT_IMPLEMENTED_STOP
-
-#define DECLARE_BITMAP(name, bits)  UBYTE name[(bits) / 8]
-void bitmap_clear(UBYTE *map, unsigned int start, int len);
-unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size);
 
 /* Page handling */
 void __free_page(struct page * p);
@@ -589,8 +554,6 @@ __res = ((unsigned long) n) % (unsigned) base; \
 n = ((unsigned long) n) / (unsigned) base; \
 __res; })
 
-unsigned int hweight32(unsigned int number);
-unsigned int hweight8(unsigned int number);
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
 int sprintf(char * restrict s, const char * restrict format, ...);
 int order_base_2(unsigned long n);

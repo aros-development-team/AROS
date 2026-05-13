@@ -50,7 +50,6 @@ void *kvmalloc_array(size_t n, size_t size, BYTE flags) { NOT_IMPLEMENTED_STOP }
 char *kstrndup(const char *c, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
 int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
 
-void bitmap_clear(UBYTE *map, unsigned int start, int len) { NOT_IMPLEMENTED_STOP }
 unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_IMPLEMENTED_STOP }
 
 size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size) { NOT_IMPLEMENTED_STOP }

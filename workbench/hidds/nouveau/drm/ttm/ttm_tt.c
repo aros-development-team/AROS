@@ -38,6 +38,7 @@
 #include <linux/file.h>
 #else
 #include <drm-compat/drm_compat_types.h>
+#include <drm-compat/drm_compat_mem.h>
 #endif
 // #include <drm/drm_cache.h>
 #include <drm/ttm/ttm_bo_driver.h>

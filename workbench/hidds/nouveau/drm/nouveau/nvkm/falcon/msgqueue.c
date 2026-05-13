@@ -289,7 +289,7 @@ msgqueue_seq_acquire(struct nvkm_msgqueue *priv)
 
 	mutex_lock(&priv->seq_lock);
 
-	index = find_first_zero_bit((UBYTE *)priv->seq_tbl, NVKM_MSGQUEUE_NUM_SEQUENCES);
+	index = find_first_zero_bit(priv->seq_tbl, NVKM_MSGQUEUE_NUM_SEQUENCES);
 
 	if (index >= NVKM_MSGQUEUE_NUM_SEQUENCES) {
 		nvkm_error(subdev, "no free sequence available\n");

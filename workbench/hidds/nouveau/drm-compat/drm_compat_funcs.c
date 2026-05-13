@@ -60,28 +60,6 @@ unsigned int ioread8(void * addr)
     return 0xff;
 }
 
-/* Bit operations */
-void clear_bit(int nr, volatile void * addr)
-{
-    unsigned long mask = 1 << nr;
-    
-    *(unsigned long*)addr &= ~mask;
-}
-
-void set_bit(int nr, volatile void *addr)
-{
-    unsigned long mask = 1 << nr;
-    
-    *(unsigned long*)addr |= mask;
-}
-
-int test_bit(int nr, volatile void *addr)
-{
-    unsigned long mask = 1 << nr;
-    
-    return (*(unsigned long*)addr) & mask;
-}
-
 /* Delay handling */
 #include <aros/symbolsets.h>
 #include <devices/timer.h>

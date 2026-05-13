@@ -39,6 +39,7 @@
 #include <linux/module.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_mem.h>
 #endif
 
 /**

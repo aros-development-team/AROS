@@ -45,6 +45,8 @@
 #include <linux/dma-resv.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_mem.h>
+#include <linux/bitops.h>
 #endif
 
 // static void ttm_bo_global_kobj_release(struct kobject *kobj);
