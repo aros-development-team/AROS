@@ -191,8 +191,6 @@ nvkm_mm_tail(struct nvkm_mm *mm, u8 heap, u8 type, u32 size_max, u32 size_min,
 
 	BUG_ON(type == NVKM_MM_TYPE_NONE || type == NVKM_MM_TYPE_HOLE);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	list_for_each_entry_reverse(this, &mm->free, fl_entry) {
 		u32 e = this->offset + this->length;
 		u32 s = this->offset;
@@ -234,7 +232,6 @@ NOT_IMPLEMENTED_STOP
 		*pnode = this;
 		return 0;
 	}
-#endif
 
 	return -ENOSPC;
 }

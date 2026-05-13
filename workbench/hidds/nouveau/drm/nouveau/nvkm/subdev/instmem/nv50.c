@@ -375,10 +375,7 @@ nv50_instobj_new(struct nvkm_instmem *base, u32 size, u32 align, bool zero,
 
 	nvkm_instobj_ctor(&nv50_instobj_func, &imem->base, &iobj->base);
 	iobj->imem = imem;
-NOT_IMPLEMENTED_STOP
-#if 0
 	refcount_set(&iobj->maps, 0);
-#endif
 	INIT_LIST_HEAD(&iobj->lru);
 
 	return nvkm_ram_get(device, 0, 1, page, size, true, true, &iobj->ram);

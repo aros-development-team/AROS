@@ -162,10 +162,7 @@ nvkm_timer_init(struct nvkm_subdev *subdev)
 	struct nvkm_timer *tmr = nvkm_timer(subdev);
 	if (tmr->func->init)
 		tmr->func->init(tmr);
-NOT_IMPLEMENTED_STOP
-#if 0
 	tmr->func->time(tmr, ktime_to_ns(ktime_get()));
-#endif
 	nvkm_timer_alarm_trigger(tmr);
 	return 0;
 }

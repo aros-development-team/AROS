@@ -44,6 +44,7 @@
 #include <linux/overflow.h>
 #include <linux/rbtree.h>
 #include <linux/bitmap.h>
+#include <linux/ktime.h>
 #include <linux/refcount.h>
 #include <linux/list.h>
 
