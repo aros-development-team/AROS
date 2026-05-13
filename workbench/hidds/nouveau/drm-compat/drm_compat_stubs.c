@@ -55,9 +55,6 @@ unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_I
 size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size) { NOT_IMPLEMENTED_STOP }
 int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr, size_t size, int prot) { NOT_IMPLEMENTED_STOP }
 
-int test_and_clear_bit(unsigned int nr, volatile unsigned long *p) { NOT_IMPLEMENTED_STOP }
-int test_and_set_bit(unsigned int nr, volatile unsigned long *p) { NOT_IMPLEMENTED_STOP }
-
 void dma_fence_enable_sw_signaling(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 void dma_resv_assert_held(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_trylock(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }

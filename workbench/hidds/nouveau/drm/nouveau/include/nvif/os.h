@@ -36,12 +36,15 @@
 #include <soc/tegra/fuse.h>
 #include <soc/tegra/pmc.h>
 #else
-#include <linux/rbtree.h>
-#include <linux/bitmap.h>
 #include <drm-compat/drm_compat_types.h>
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_pci.h>
 #include <drm-compat/drm_linux_list.h>
+
+#include <linux/overflow.h>
+#include <linux/rbtree.h>
+#include <linux/bitmap.h>
+
 #define CONFIG_ARM_ENABLED 0
 // #define MOCK_HARDWARE
 #endif

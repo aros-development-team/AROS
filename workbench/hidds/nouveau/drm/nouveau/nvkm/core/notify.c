@@ -36,17 +36,17 @@ nvkm_notify_put(struct nvkm_notify *notify)
 {
 	struct nvkm_event *event = notify->event;
 	unsigned long flags;
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (likely(event) &&
 	    test_and_clear_bit(NVKM_NOTIFY_USER, &notify->flags)) {
 		spin_lock_irqsave(&event->refs_lock, flags);
 		nvkm_notify_put_locked(notify);
 		spin_unlock_irqrestore(&event->refs_lock, flags);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 		if (test_bit(NVKM_NOTIFY_WORK, &notify->flags))
 			flush_work(&notify->work);
-	}
 #endif
+	}
 }
 
 static inline void

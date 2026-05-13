@@ -598,7 +598,7 @@ nvkm_clk_fini(struct nvkm_subdev *subdev, bool suspend)
 {
 	struct nvkm_clk *clk = nvkm_clk(subdev);
 	nvkm_notify_put(&clk->pwrsrc_ntfy);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	flush_work(&clk->work);
 #endif

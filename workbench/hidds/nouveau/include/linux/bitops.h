@@ -356,7 +356,7 @@ __assign_bit(long bit, volatile unsigned long *addr, bool value)
 		__clear_bit(bit, addr);
 }
 
-/*
+#if !defined(__AROS__)
 static inline int
 test_and_clear_bit(long bit, volatile unsigned long *var)
 {
@@ -371,7 +371,7 @@ test_and_clear_bit(long bit, volatile unsigned long *var)
 		;
 	return !!(val & bit);
 }
-*/
+#endif
 
 static inline int
 __test_and_clear_bit(long bit, volatile unsigned long *var)
@@ -388,7 +388,7 @@ __test_and_clear_bit(long bit, volatile unsigned long *var)
 	return !!(val & bit);
 }
 
-/*/
+#if !defined(__AROS__)
 static inline int
 test_and_set_bit(long bit, volatile unsigned long *var)
 {
@@ -403,7 +403,7 @@ test_and_set_bit(long bit, volatile unsigned long *var)
 		;
 	return !!(val & bit);
 }
-*/
+#endif
 
 static inline int
 __test_and_set_bit(long bit, volatile unsigned long *var)
@@ -419,6 +419,20 @@ __test_and_set_bit(long bit, volatile unsigned long *var)
 
 	return !!(val & bit);
 }
+
+#if defined(__AROS__)
+static inline int
+test_and_clear_bit(long bit, volatile unsigned long *var)
+{
+    return __test_and_clear_bit(bit, var);
+}
+
+static inline int
+test_and_set_bit(long bit, volatile unsigned long *var)
+{
+    return __test_and_set_bit(bit, var);
+}
+#endif
 
 enum {
         REG_OP_ISFREE,

@@ -109,8 +109,6 @@ nvkm_pci_oneinit(struct nvkm_subdev *subdev)
 	struct nvkm_pci *pci = nvkm_pci(subdev);
 	struct pci_dev *pdev = pci->pdev;
 	int ret;
-NOT_IMPLEMENTED_STOP
-#if 0
 
 	if (pci_is_pcie(pci->pdev)) {
 		ret = nvkm_pcie_oneinit(pci);
@@ -118,6 +116,8 @@ NOT_IMPLEMENTED_STOP
 			return ret;
 	}
 
+bug("FIXME: install interrupt handler!\n");
+#if 0
 	ret = request_irq(pdev->irq, nvkm_pci_intr, IRQF_SHARED, "nvkm", pci);
 	if (ret)
 		return ret;

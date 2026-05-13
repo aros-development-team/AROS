@@ -164,10 +164,6 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 #define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1); }
 #define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
 
-/* Bit operations */
-int test_and_clear_bit(unsigned int nr, volatile unsigned long *p);
-int test_and_set_bit(unsigned int nr, volatile unsigned long *p);
-
 /* Page handling */
 void __free_page(struct page * p);
 struct page * create_page_helper();                     /* Helper function - not from compat */
