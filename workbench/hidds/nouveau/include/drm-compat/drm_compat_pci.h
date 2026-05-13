@@ -33,7 +33,7 @@ struct pci_dev
 #define PCI_SLOT(devfn)     (((devfn) >> 3) & 0x1f)
 #define PCI_FUNC(devfn)     ((devfn) & 0x07)
 
-#define pci_map_page(a, b, c, d, e)     (dma_addr_t)(b->address + c)
+#define pci_map_page(a, b, c, d, e)     dma_map_page(&a->dev, b, c, d, e)
 #define pci_dma_mapping_error(a, b)     FALSE
 #define pci_unmap_page(a, b, c, d)      
 resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int barnum);
