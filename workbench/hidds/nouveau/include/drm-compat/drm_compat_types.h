@@ -145,11 +145,6 @@ struct kref
     atomic_t refcount;
 };
 
-typedef struct
-{
-    atomic_t refcount;
-} refcount_t;
-
 /* Mutex emulation */
 struct mutex
 {

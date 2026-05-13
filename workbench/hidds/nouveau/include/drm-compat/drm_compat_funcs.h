@@ -346,11 +346,6 @@ static inline unsigned int kref_read(struct kref *kref)
     return kref->refcount.count;
 }
 
-void refcount_set(refcount_t *r, int n);
-bool refcount_dec_and_test(refcount_t *r);
-void refcount_inc(refcount_t *r);
-
-
 /* IDR handling */
 #define idr_pre_get(a, b)               idr_pre_get_internal(a)
 int idr_pre_get_internal(struct idr *idp);

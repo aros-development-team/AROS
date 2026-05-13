@@ -36,10 +36,6 @@ struct scatterlist *sg_next(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 dma_addr_t sg_dma_address(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 IPTR sg_dma_len(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 
-void refcount_set(refcount_t *r, int n) { NOT_IMPLEMENTED_STOP }
-bool refcount_dec_and_test(refcount_t *r) { NOT_IMPLEMENTED_STOP }
-void refcount_inc(refcount_t *r) { NOT_IMPLEMENTED_STOP }
-
 struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
 void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
