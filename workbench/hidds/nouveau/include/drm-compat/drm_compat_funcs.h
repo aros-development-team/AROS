@@ -166,7 +166,6 @@ static inline bool IS_ERR_OR_NULL(APTR ptr)
 
 /* Page handling */
 void __free_page(struct page * p);
-struct page * create_page_helper();                     /* Helper function - not from compat */
 #define PageHighMem(p)              FALSE
 #define put_page(p)                 __free_page(p)  /*FIXME: This might be wrong */
 #define page_to_phys(p)             (dma_addr_t)p->address

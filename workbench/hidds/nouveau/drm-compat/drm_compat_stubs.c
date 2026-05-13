@@ -42,7 +42,6 @@ bool refcount_dec_and_test(refcount_t *r) { NOT_IMPLEMENTED_STOP }
 void refcount_inc(refcount_t *r) { NOT_IMPLEMENTED_STOP }
 
 struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
-struct page *alloc_page(ULONG mask) { NOT_IMPLEMENTED_STOP }
 
 void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
 void *kmalloc_array(size_t n, size_t size, BYTE flags) { NOT_IMPLEMENTED_STOP }

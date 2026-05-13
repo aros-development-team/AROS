@@ -148,13 +148,18 @@ void __free_page(struct page * p)
     HIDDNouveauFree(p);
 }
 
-struct page * create_page_helper()
+static struct page * create_page_helper()
 {
     struct page * p;
     p = HIDDNouveauAlloc(sizeof(*p));
     p->allocated_buffer = HIDDNouveauAlloc(PAGE_SIZE + PAGE_SIZE - 1);
     p->address = PAGE_ALIGN(p->allocated_buffer);
     return p;
+}
+
+struct page *alloc_page(ULONG mask)
+{
+    return create_page_helper();
 }
 
 /* IDR handling */
