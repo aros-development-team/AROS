@@ -85,7 +85,7 @@ static char *nouveau_debug;
 // module_param_named(debug, nouveau_debug, charp, 0400);
 
 // MODULE_PARM_DESC(noaccel, "disable kernel/abi16 acceleration");
-// static int nouveau_noaccel = 0;
+static int nouveau_noaccel = 0;
 // module_param_named(noaccel, nouveau_noaccel, int, 0400);
 
 // MODULE_PARM_DESC(modeset, "enable driver (default: auto, "
@@ -329,214 +329,214 @@ done:
 	return ret;
 }
 
-// static void
-// nouveau_accel_ce_fini(struct nouveau_drm *drm)
-// {
-// 	nouveau_channel_idle(drm->cechan);
-// 	nvif_object_fini(&drm->ttm.copy);
-// 	nouveau_channel_del(&drm->cechan);
-// }
+static void
+nouveau_accel_ce_fini(struct nouveau_drm *drm)
+{
+	nouveau_channel_idle(drm->cechan);
+	nvif_object_fini(&drm->ttm.copy);
+	nouveau_channel_del(&drm->cechan);
+}
 
-// static void
-// nouveau_accel_ce_init(struct nouveau_drm *drm)
-// {
-// 	struct nvif_device *device = &drm->client.device;
-// 	int ret = 0;
+static void
+nouveau_accel_ce_init(struct nouveau_drm *drm)
+{
+	struct nvif_device *device = &drm->client.device;
+	int ret = 0;
 
-// 	/* Allocate channel that has access to a (preferably async) copy
-// 	 * engine, to use for TTM buffer moves.
-// 	 */
-// 	if (device->info.family >= NV_DEVICE_INFO_V0_KEPLER) {
-// 		ret = nouveau_channel_new(drm, device,
-// 					  nvif_fifo_runlist_ce(device), 0,
-// 					  true, &drm->cechan);
-// 	} else
-// 	if (device->info.chipset >= 0xa3 &&
-// 	    device->info.chipset != 0xaa &&
-// 	    device->info.chipset != 0xac) {
-// 		/* Prior to Kepler, there's only a single runlist, so all
-// 		 * engines can be accessed from any channel.
-// 		 *
-// 		 * We still want to use a separate channel though.
-// 		 */
-// 		ret = nouveau_channel_new(drm, device, NvDmaFB, NvDmaTT, false,
-// 					  &drm->cechan);
-// 	}
+	/* Allocate channel that has access to a (preferably async) copy
+	 * engine, to use for TTM buffer moves.
+	 */
+	if (device->info.family >= NV_DEVICE_INFO_V0_KEPLER) {
+		ret = nouveau_channel_new(drm, device,
+					  nvif_fifo_runlist_ce(device), 0,
+					  true, &drm->cechan);
+	} else
+	if (device->info.chipset >= 0xa3 &&
+	    device->info.chipset != 0xaa &&
+	    device->info.chipset != 0xac) {
+		/* Prior to Kepler, there's only a single runlist, so all
+		 * engines can be accessed from any channel.
+		 *
+		 * We still want to use a separate channel though.
+		 */
+		ret = nouveau_channel_new(drm, device, NvDmaFB, NvDmaTT, false,
+					  &drm->cechan);
+	}
 
-// 	if (ret)
-// 		NV_ERROR(drm, "failed to create ce channel, %d\n", ret);
-// }
+	if (ret)
+		NV_ERROR(drm, "failed to create ce channel, %d\n", ret);
+}
 
-// static void
-// nouveau_accel_gr_fini(struct nouveau_drm *drm)
-// {
-// 	nouveau_channel_idle(drm->channel);
-// 	nvif_object_fini(&drm->ntfy);
-// 	nvkm_gpuobj_del(&drm->notify);
-// 	nvif_object_fini(&drm->nvsw);
-// 	nouveau_channel_del(&drm->channel);
-// }
+static void
+nouveau_accel_gr_fini(struct nouveau_drm *drm)
+{
+	nouveau_channel_idle(drm->channel);
+	nvif_object_fini(&drm->ntfy);
+	nvkm_gpuobj_del(&drm->notify);
+	nvif_object_fini(&drm->nvsw);
+	nouveau_channel_del(&drm->channel);
+}
 
-// static void
-// nouveau_accel_gr_init(struct nouveau_drm *drm)
-// {
-// 	struct nvif_device *device = &drm->client.device;
-// 	u32 arg0, arg1;
-// 	int ret;
+static void
+nouveau_accel_gr_init(struct nouveau_drm *drm)
+{
+	struct nvif_device *device = &drm->client.device;
+	u32 arg0, arg1;
+	int ret;
 
-// 	/* Allocate channel that has access to the graphics engine. */
-// 	if (device->info.family >= NV_DEVICE_INFO_V0_KEPLER) {
-// 		arg0 = nvif_fifo_runlist(device, NV_DEVICE_INFO_ENGINE_GR);
-// 		arg1 = 1;
-// 	} else {
-// 		arg0 = NvDmaFB;
-// 		arg1 = NvDmaTT;
-// 	}
+	/* Allocate channel that has access to the graphics engine. */
+	if (device->info.family >= NV_DEVICE_INFO_V0_KEPLER) {
+		arg0 = nvif_fifo_runlist(device, NV_DEVICE_INFO_ENGINE_GR);
+		arg1 = 1;
+	} else {
+		arg0 = NvDmaFB;
+		arg1 = NvDmaTT;
+	}
 
-// 	ret = nouveau_channel_new(drm, device, arg0, arg1, false,
-// 				  &drm->channel);
-// 	if (ret) {
-// 		NV_ERROR(drm, "failed to create kernel channel, %d\n", ret);
-// 		nouveau_accel_gr_fini(drm);
-// 		return;
-// 	}
+	ret = nouveau_channel_new(drm, device, arg0, arg1, false,
+				  &drm->channel);
+	if (ret) {
+		NV_ERROR(drm, "failed to create kernel channel, %d\n", ret);
+		nouveau_accel_gr_fini(drm);
+		return;
+	}
 
-// 	/* A SW class is used on pre-NV50 HW to assist with handling the
-// 	 * synchronisation of page flips, as well as to implement fences
-// 	 * on TNT/TNT2 HW that lacks any kind of support in host.
-// 	 */
-// 	if (device->info.family < NV_DEVICE_INFO_V0_TESLA) {
-// 		ret = nvif_object_init(&drm->channel->user, NVDRM_NVSW,
-// 				       nouveau_abi16_swclass(drm), NULL, 0,
-// 				       &drm->nvsw);
-// 		if (ret == 0) {
-// 			ret = RING_SPACE(drm->channel, 2);
-// 			if (ret == 0) {
-// 				BEGIN_NV04(drm->channel, NvSubSw, 0, 1);
-// 				OUT_RING  (drm->channel, drm->nvsw.handle);
-// 			}
-// 		}
+	/* A SW class is used on pre-NV50 HW to assist with handling the
+	 * synchronisation of page flips, as well as to implement fences
+	 * on TNT/TNT2 HW that lacks any kind of support in host.
+	 */
+	if (device->info.family < NV_DEVICE_INFO_V0_TESLA) {
+		ret = nvif_object_init(&drm->channel->user, NVDRM_NVSW,
+				       nouveau_abi16_swclass(drm), NULL, 0,
+				       &drm->nvsw);
+		if (ret == 0) {
+			ret = RING_SPACE(drm->channel, 2);
+			if (ret == 0) {
+				BEGIN_NV04(drm->channel, NvSubSw, 0, 1);
+				OUT_RING  (drm->channel, drm->nvsw.handle);
+			}
+		}
 
-// 		if (ret) {
-// 			NV_ERROR(drm, "failed to allocate sw class, %d\n", ret);
-// 			nouveau_accel_gr_fini(drm);
-// 			return;
-// 		}
-// 	}
+		if (ret) {
+			NV_ERROR(drm, "failed to allocate sw class, %d\n", ret);
+			nouveau_accel_gr_fini(drm);
+			return;
+		}
+	}
 
-// 	/* NvMemoryToMemoryFormat requires a notifier ctxdma for some reason,
-// 	 * even if notification is never requested, so, allocate a ctxdma on
-// 	 * any GPU where it's possible we'll end up using M2MF for BO moves.
-// 	 */
-// 	if (device->info.family < NV_DEVICE_INFO_V0_FERMI) {
-// 		ret = nvkm_gpuobj_new(nvxx_device(device), 32, 0, false, NULL,
-// 				      &drm->notify);
-// 		if (ret) {
-// 			NV_ERROR(drm, "failed to allocate notifier, %d\n", ret);
-// 			nouveau_accel_gr_fini(drm);
-// 			return;
-// 		}
+	/* NvMemoryToMemoryFormat requires a notifier ctxdma for some reason,
+	 * even if notification is never requested, so, allocate a ctxdma on
+	 * any GPU where it's possible we'll end up using M2MF for BO moves.
+	 */
+	if (device->info.family < NV_DEVICE_INFO_V0_FERMI) {
+		ret = nvkm_gpuobj_new(nvxx_device(device), 32, 0, false, NULL,
+				      &drm->notify);
+		if (ret) {
+			NV_ERROR(drm, "failed to allocate notifier, %d\n", ret);
+			nouveau_accel_gr_fini(drm);
+			return;
+		}
 
-// 		ret = nvif_object_init(&drm->channel->user, NvNotify0,
-// 				       NV_DMA_IN_MEMORY,
-// 				       &(struct nv_dma_v0) {
-// 						.target = NV_DMA_V0_TARGET_VRAM,
-// 						.access = NV_DMA_V0_ACCESS_RDWR,
-// 						.start = drm->notify->addr,
-// 						.limit = drm->notify->addr + 31
-// 				       }, sizeof(struct nv_dma_v0),
-// 				       &drm->ntfy);
-// 		if (ret) {
-// 			nouveau_accel_gr_fini(drm);
-// 			return;
-// 		}
-// 	}
-// }
+		ret = nvif_object_init(&drm->channel->user, NvNotify0,
+				       NV_DMA_IN_MEMORY,
+				       &(struct nv_dma_v0) {
+						.target = NV_DMA_V0_TARGET_VRAM,
+						.access = NV_DMA_V0_ACCESS_RDWR,
+						.start = drm->notify->addr,
+						.limit = drm->notify->addr + 31
+				       }, sizeof(struct nv_dma_v0),
+				       &drm->ntfy);
+		if (ret) {
+			nouveau_accel_gr_fini(drm);
+			return;
+		}
+	}
+}
 
-// static void
-// nouveau_accel_fini(struct nouveau_drm *drm)
-// {
-// 	nouveau_accel_ce_fini(drm);
-// 	nouveau_accel_gr_fini(drm);
-// 	if (drm->fence)
-// 		nouveau_fence(drm)->dtor(drm);
-// }
+static void
+nouveau_accel_fini(struct nouveau_drm *drm)
+{
+	nouveau_accel_ce_fini(drm);
+	nouveau_accel_gr_fini(drm);
+	if (drm->fence)
+		nouveau_fence(drm)->dtor(drm);
+}
 
-// static void
-// nouveau_accel_init(struct nouveau_drm *drm)
-// {
-// 	struct nvif_device *device = &drm->client.device;
-// 	struct nvif_sclass *sclass;
-// 	int ret, i, n;
+static void
+nouveau_accel_init(struct nouveau_drm *drm)
+{
+	struct nvif_device *device = &drm->client.device;
+	struct nvif_sclass *sclass;
+	int ret, i, n;
 
-// 	if (nouveau_noaccel)
-// 		return;
+	if (nouveau_noaccel)
+		return;
 
-// 	/* Initialise global support for channels, and synchronisation. */
-// 	ret = nouveau_channels_init(drm);
-// 	if (ret)
-// 		return;
+	/* Initialise global support for channels, and synchronisation. */
+	ret = nouveau_channels_init(drm);
+	if (ret)
+		return;
 
-// 	/*XXX: this is crap, but the fence/channel stuff is a little
-// 	 *     backwards in some places.  this will be fixed.
-// 	 */
-// 	ret = n = nvif_object_sclass_get(&device->object, &sclass);
-// 	if (ret < 0)
-// 		return;
+	/*XXX: this is crap, but the fence/channel stuff is a little
+	 *     backwards in some places.  this will be fixed.
+	 */
+	ret = n = nvif_object_sclass_get(&device->object, &sclass);
+	if (ret < 0)
+		return;
 
-// 	for (ret = -ENOSYS, i = 0; i < n; i++) {
-// 		switch (sclass[i].oclass) {
-// 		case NV03_CHANNEL_DMA:
-// 			ret = nv04_fence_create(drm);
-// 			break;
-// 		case NV10_CHANNEL_DMA:
-// 			ret = nv10_fence_create(drm);
-// 			break;
-// 		case NV17_CHANNEL_DMA:
-// 		case NV40_CHANNEL_DMA:
-// 			ret = nv17_fence_create(drm);
-// 			break;
-// 		case NV50_CHANNEL_GPFIFO:
-// 			ret = nv50_fence_create(drm);
-// 			break;
-// 		case G82_CHANNEL_GPFIFO:
-// 			ret = nv84_fence_create(drm);
-// 			break;
-// 		case FERMI_CHANNEL_GPFIFO:
-// 		case KEPLER_CHANNEL_GPFIFO_A:
-// 		case KEPLER_CHANNEL_GPFIFO_B:
-// 		case MAXWELL_CHANNEL_GPFIFO_A:
-// 		case PASCAL_CHANNEL_GPFIFO_A:
-// 		case VOLTA_CHANNEL_GPFIFO_A:
-// 		case TURING_CHANNEL_GPFIFO_A:
-// 			ret = nvc0_fence_create(drm);
-// 			break;
-// 		default:
-// 			break;
-// 		}
-// 	}
+	for (ret = -ENOSYS, i = 0; i < n; i++) {
+		switch (sclass[i].oclass) {
+		case NV03_CHANNEL_DMA:
+			ret = nv04_fence_create(drm);
+			break;
+		case NV10_CHANNEL_DMA:
+			ret = nv10_fence_create(drm);
+			break;
+		case NV17_CHANNEL_DMA:
+		case NV40_CHANNEL_DMA:
+			ret = nv17_fence_create(drm);
+			break;
+		case NV50_CHANNEL_GPFIFO:
+			ret = nv50_fence_create(drm);
+			break;
+		case G82_CHANNEL_GPFIFO:
+			ret = nv84_fence_create(drm);
+			break;
+		case FERMI_CHANNEL_GPFIFO:
+		case KEPLER_CHANNEL_GPFIFO_A:
+		case KEPLER_CHANNEL_GPFIFO_B:
+		case MAXWELL_CHANNEL_GPFIFO_A:
+		case PASCAL_CHANNEL_GPFIFO_A:
+		case VOLTA_CHANNEL_GPFIFO_A:
+		case TURING_CHANNEL_GPFIFO_A:
+			ret = nvc0_fence_create(drm);
+			break;
+		default:
+			break;
+		}
+	}
 
-// 	nvif_object_sclass_put(&sclass);
-// 	if (ret) {
-// 		NV_ERROR(drm, "failed to initialise sync subsystem, %d\n", ret);
-// 		nouveau_accel_fini(drm);
-// 		return;
-// 	}
+	nvif_object_sclass_put(&sclass);
+	if (ret) {
+		NV_ERROR(drm, "failed to initialise sync subsystem, %d\n", ret);
+		nouveau_accel_fini(drm);
+		return;
+	}
 
-// 	/* Volta requires access to a doorbell register for kickoff. */
-// 	if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_VOLTA) {
-// 		ret = nvif_user_init(device);
-// 		if (ret)
-// 			return;
-// 	}
+	/* Volta requires access to a doorbell register for kickoff. */
+	if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_VOLTA) {
+		ret = nvif_user_init(device);
+		if (ret)
+			return;
+	}
 
-// 	/* Allocate channels we need to support various functions. */
-// 	nouveau_accel_gr_init(drm);
-// 	nouveau_accel_ce_init(drm);
+	/* Allocate channels we need to support various functions. */
+	nouveau_accel_gr_init(drm);
+	nouveau_accel_ce_init(drm);
 
-// 	/* Initialise accelerated TTM buffer moves. */
-// 	nouveau_bo_move_init(drm);
-// }
+	/* Initialise accelerated TTM buffer moves. */
+	nouveau_bo_move_init(drm);
+}
 
 static int
 nouveau_drm_device_init(struct drm_device *dev)
@@ -623,10 +623,12 @@ fail_dispctor:
 	// nouveau_accel_fini(drm);
 	// nouveau_bios_takedown(dev);
 fail_bios:
-	// nouveau_ttm_fini(drm);
+	nouveau_ttm_fini(drm);
 fail_ttm:
-	// nouveau_vga_fini(drm);
-	// nouveau_cli_fini(&drm->client);
+#if !defined(__AROS__)
+	nouveau_vga_fini(drm);
+#endif
+	nouveau_cli_fini(&drm->client);
 fail_master:
 	nouveau_cli_fini(&drm->master);
 fail_alloc:

@@ -375,7 +375,7 @@ void drm_gem_object_release(struct drm_gem_object *obj);
 // 	kref_put(&obj->refcount, drm_gem_object_free);
 // }
 
-// void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
+void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
 // void drm_gem_object_put(struct drm_gem_object *obj);
 
 // int drm_gem_handle_create(struct drm_file *file_priv,

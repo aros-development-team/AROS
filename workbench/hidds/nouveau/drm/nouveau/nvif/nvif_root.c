@@ -3,7 +3,7 @@
 #include "device.c"
 // #include "disp.c"
 #include "driver.c"
-// #include "fifo.c"
+#include "fifo.c"
 #include "mem.c"
 #include "mmu.c"
 #include "notify.c"

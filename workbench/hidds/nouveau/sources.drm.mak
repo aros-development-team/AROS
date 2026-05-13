@@ -31,6 +31,14 @@ AROS_DRM_CORE_SOURCES = \
 AROS_DRM_NVIDIA_SOURCES = \
 drm/nouveau/dispnv04/tvnv04 \
 drm/nouveau/dispnv04/dfp \
+drm/nouveau/nv04_fence \
+drm/nouveau/nv10_fence \
+drm/nouveau/nv17_fence \
+drm/nouveau/nv50_fence \
+drm/nouveau/nv84_fence \
+drm/nouveau/nvc0_fence \
+drm/nouveau/nouveau_abi16 \
+drm/nouveau/nouveau_chan \
 drm/nouveau/nouveau_bios \
 drm/nouveau/nouveau_drm \
             drm/nouveau/nvkm/engine/device/engine_device \

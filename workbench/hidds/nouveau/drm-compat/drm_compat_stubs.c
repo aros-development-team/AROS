@@ -66,3 +66,5 @@ void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPL
 
 unsigned int drm_debug;
 void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }
+
+void drm_gem_object_put_unlocked(struct drm_gem_object *obj) { NOT_IMPLEMENTED_STOP }
