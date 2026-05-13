@@ -40,11 +40,12 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_dma.h>
 #include <drm-compat/drm_compat_pci.h>
-#include <drm-compat/drm_linux_list.h>
 
 #include <linux/overflow.h>
 #include <linux/rbtree.h>
 #include <linux/bitmap.h>
+#include <linux/refcount.h>
+#include <linux/list.h>
 
 #define CONFIG_ARM_ENABLED 0
 // #define MOCK_HARDWARE

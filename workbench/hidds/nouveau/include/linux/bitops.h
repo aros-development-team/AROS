@@ -129,6 +129,7 @@ ilog2_long_long(long long n)
 #define atomic_set_long(P, V) (*(unsigned long *)(P) |= (V))
 #define atomic_clear_long(P, V) (*(unsigned long *)(P) &= ~(V))
 #define READ_ONCE(x) (*(volatile typeof(x) *)&(x))
+#define WRITE_ONCE(x, v) (*(volatile typeof(x) *)(uintptr_t)&(x) = (v))
 #endif
 
 #include <linux/bits.h>
