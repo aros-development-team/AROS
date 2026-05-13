@@ -61,15 +61,12 @@ nvkm_notify_get(struct nvkm_notify *notify)
 {
 	struct nvkm_event *event = notify->event;
 	unsigned long flags;
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (likely(event) &&
 	    !test_and_set_bit(NVKM_NOTIFY_USER, &notify->flags)) {
 		spin_lock_irqsave(&event->refs_lock, flags);
 		nvkm_notify_get_locked(notify);
 		spin_unlock_irqrestore(&event->refs_lock, flags);
 	}
-#endif
 }
 
 static inline void
@@ -77,8 +74,6 @@ nvkm_notify_func(struct nvkm_notify *notify)
 {
 	struct nvkm_event *event = notify->event;
 	int ret = notify->func(notify);
-NOT_IMPLEMENTED_STOP
-#if 0
 	unsigned long flags;
 	if ((ret == NVKM_NOTIFY_KEEP) ||
 	    !test_and_clear_bit(NVKM_NOTIFY_USER, &notify->flags)) {
@@ -86,7 +81,6 @@ NOT_IMPLEMENTED_STOP
 		nvkm_notify_get_locked(notify);
 		spin_unlock_irqrestore(&event->refs_lock, flags);
 	}
-#endif
 }
 
 static void

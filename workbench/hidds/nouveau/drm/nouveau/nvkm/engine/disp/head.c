@@ -67,12 +67,9 @@ nvkm_head_mthd_scanoutpos(struct nvkm_object *object,
 		 */
 		if (!args->v0.vtotal || !args->v0.htotal)
 			return -ENOTSUPP;
-NOT_IMPLEMENTED_STOP
-#if 0
 		args->v0.time[0] = ktime_to_ns(ktime_get());
 		head->func->rgpos(head, &args->v0.hline, &args->v0.vline);
 		args->v0.time[1] = ktime_to_ns(ktime_get());
-#endif
 	} else
 		return ret;
 

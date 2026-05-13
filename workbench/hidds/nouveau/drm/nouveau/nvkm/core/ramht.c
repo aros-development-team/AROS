@@ -144,11 +144,8 @@ nvkm_ramht_new(struct nvkm_device *device, u32 size, u32 align,
 	struct nvkm_ramht *ramht;
 	int ret, i;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (!(ramht = *pramht = vzalloc(struct_size(ramht, data, (size >> 3)))))
 		return -ENOMEM;
-#endif
 
 	ramht->device = device;
 	ramht->parent = parent;

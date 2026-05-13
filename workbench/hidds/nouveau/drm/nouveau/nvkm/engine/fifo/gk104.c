@@ -393,8 +393,6 @@ NOT_IMPLEMENTED_STOP
 	gk104_fifo_recover_runl(fifo, runl);
 
 	/* Schedule recovery for any engines the channel is on. */
-NOT_IMPLEMENTED_STOP
-#if 0
 	for_each_set_bit(engn, &engm, fifo->engine_nr) {
 		struct gk104_fifo_engine_status status;
 		gk104_fifo_engine_status(fifo, engn, &status);
@@ -402,7 +400,6 @@ NOT_IMPLEMENTED_STOP
 			continue;
 		gk104_fifo_recover_engn(fifo, engn);
 	}
-#endif
 }
 
 static void

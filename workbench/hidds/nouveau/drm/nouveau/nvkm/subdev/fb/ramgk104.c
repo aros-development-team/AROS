@@ -1448,10 +1448,7 @@ gk104_ram_ctor_data(struct gk104_ram *ram, u8 ramcfg, int i)
 
 	if (!(cfg = kmalloc(sizeof(*cfg), GFP_KERNEL)))
 		return -ENOMEM;
-NOT_IMPLEMENTED_STOP
-#if 0
 	p = &list_last_entry(&ram->cfg, typeof(*cfg), head)->bios;
-#endif
 	n = &cfg->bios;
 
 	/* memory config data for a range of target frequencies */

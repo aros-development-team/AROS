@@ -71,10 +71,7 @@ nvkm_mmu_ptp_get(struct nvkm_mmu *mmu, u32 size, bool zero)
 	if (!(pt = kzalloc(sizeof(*pt), GFP_KERNEL)))
 		return NULL;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	ptp = list_first_entry_or_null(&mmu->ptp.list, typeof(*ptp), head);
-#endif
 	if (!ptp) {
 		/* Need to allocate a new parent to sub-allocate from. */
 		if (!(ptp = kmalloc(sizeof(*ptp), GFP_KERNEL))) {

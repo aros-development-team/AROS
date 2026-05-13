@@ -682,10 +682,7 @@ static bool ttm_bo_delayed_delete(struct ttm_bo_device *bdev, bool remove_all)
 		kref_put(&bo->list_kref, ttm_bo_release_list);
 		spin_lock(&glob->lru_lock);
 	}
-NOT_IMPLEMENTED_STOP
-#if 0
 	list_splice_tail(&removed, &bdev->ddestroy);
-#endif
 	empty = list_empty(&bdev->ddestroy);
 	spin_unlock(&glob->lru_lock);
 

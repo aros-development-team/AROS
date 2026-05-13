@@ -133,13 +133,10 @@ nvkm_cstate_find_best(struct nvkm_clk *clk, struct nvkm_pstate *pstate,
 		max_volt = min(max_volt,
 			       nvkm_volt_map(volt, volt->max2_id, clk->temp));
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	list_for_each_entry_from_reverse(cstate, &pstate->list, head) {
 		if (nvkm_cstate_valid(clk, cstate, max_volt, clk->temp))
 			return cstate;
 	}
-#endif
 
 	return NULL;
 }
@@ -148,8 +145,6 @@ static struct nvkm_cstate *
 nvkm_cstate_get(struct nvkm_clk *clk, struct nvkm_pstate *pstate, int cstatei)
 {
 	struct nvkm_cstate *cstate;
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (cstatei == NVKM_CLK_CSTATE_HIGHEST)
 		return list_last_entry(&pstate->list, typeof(*cstate), head);
 	else {
@@ -158,7 +153,6 @@ NOT_IMPLEMENTED_STOP
 				return cstate;
 		}
 	}
-#endif
 	return NULL;
 }
 
@@ -518,8 +512,6 @@ nvkm_clk_nstate(struct nvkm_clk *clk, const char *mode, int arglen)
 		char save = mode[arglen];
 		long v;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 		((char *)mode)[arglen] = '\0';
 		if (!kstrtol(mode, 0, &v)) {
 			ret = nvkm_clk_ustate_update(clk, v);
@@ -527,7 +519,6 @@ NOT_IMPLEMENTED_STOP
 				ret = 1;
 		}
 		((char *)mode)[arglen] = save;
-#endif
 	}
 
 	return ret - 2;

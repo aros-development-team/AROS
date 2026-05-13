@@ -215,12 +215,9 @@ fail:
 			nvif_fatal(object, "failed to restart, %d\n", rret);
 	}
 fail_child:
-NOT_IMPLEMENTED_STOP
-#if 0
 	list_for_each_entry_continue_reverse(child, &object->tree, head) {
 		nvkm_object_init(child);
 	}
-#endif
 	return ret;
 }
 
@@ -255,11 +252,8 @@ nvkm_object_init(struct nvkm_object *object)
 	return 0;
 
 fail_child:
-NOT_IMPLEMENTED_STOP
-#if 0
 	list_for_each_entry_continue_reverse(child, &object->tree, head)
 		nvkm_object_fini(child, false);
-#endif
 fail:
 	nvif_error(object, "init failed with %d\n", ret);
 	if (object->func->fini)

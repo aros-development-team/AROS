@@ -503,10 +503,7 @@ acr_r352_prepare_ls_blob(struct acr_r352 *acr, struct nvkm_secboot *sb)
 				managed_falcons &= ~BIT(falcon_id);
 				nvkm_info(subdev, "skipping %s falcon...\n",
 					  nvkm_secboot_falcon_name[falcon_id]);
-NOT_IMPLEMENTED_STOP
-#if 0
 				continue;
-#endif
 			}
 			ret = PTR_ERR(img);
 			goto cleanup;
@@ -528,10 +525,7 @@ NOT_IMPLEMENTED_STOP
 		for_each_set_bit(falcon_id, &managed_falcons,
 				 NVKM_SECBOOT_FALCON_END) {
 			if (falcon_id == acr->base.boot_falcon)
-NOT_IMPLEMENTED_STOP
-#if 0
 				continue;
-#endif
 
 
 			acr->lazy_bootstrap |= BIT(falcon_id);
