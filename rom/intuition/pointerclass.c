@@ -174,6 +174,15 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         }
     }
 
+    /*
+     * BOOPSI convention: DoSuperMethodA returns the new object in o.
+     * If we never called it (no matching bitmap type), o still holds
+     * the class pointer passed as the second argument. Detect this
+     * and return NULL to indicate allocation failure.
+     */
+    if ((IPTR)o == (IPTR)cl)
+        return (IPTR)NULL;
+
     return (IPTR)o;
 }
 
