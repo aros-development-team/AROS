@@ -66,6 +66,10 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     APTR fb_ptr = NULL;
     ULONG fb_pitch = 0;
 
+    /* Hold the mailbox lock across the whole multi-transaction sequence
+     * (FBFREE -> batched mode/depth/pixfmt/FBALLOC -> GETPITCH). */
+    VC4_MBOX_LOCK(xsd);
+
     /* Free any previous framebuffer the firmware was holding. */
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(6 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
@@ -73,8 +77,7 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_MBoxMessage[3] = 0;
     xsd->vcsd_MBoxMessage[4] = 0;
     xsd->vcsd_MBoxMessage[5] = 0;
-    MBoxWrite((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    MBoxRead((void *)VCMB_BASE, VCMB_PROPCHAN);
+    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
 
     /* SETRES + SETVRES + SETDEPTH + SETPIXFMT + FBALLOC, all in one
      * batch. SETPIXFMT pins the channel order to RGB so the layout
@@ -115,11 +118,12 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_MBoxMessage[25] = 0;
     xsd->vcsd_MBoxMessage[0]  = AROS_LE2LONG(26 << 2);
 
-    MBoxWrite((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if ((MBoxRead((void *)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+    if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+            == (volatile unsigned int *)-1)
         || (xsd->vcsd_MBoxMessage[1] != AROS_LE2LONG(VCTAG_RESP))
         || (xsd->vcsd_MBoxMessage[22] != AROS_LE2LONG(VCTAG_RESP + 8)))
     {
+        VC4_MBOX_UNLOCK(xsd);
         return FALSE;
     }
     fb_ptr = (APTR)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[23]) & 0x3fffffff);
@@ -136,8 +140,8 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
     xsd->vcsd_MBoxMessage[5] = 0;
     xsd->vcsd_MBoxMessage[6] = 0;
 
-    MBoxWrite((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if ((MBoxRead((void *)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    if ((MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+            != (volatile unsigned int *)-1)
         && (xsd->vcsd_MBoxMessage[4] == AROS_LE2LONG(VCTAG_RESP + 4)))
     {
         fb_pitch = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
@@ -148,6 +152,7 @@ static BOOL vc4_program_fb(struct VideoCoreGfx_staticdata *xsd,
         fb_pitch = aligned_width * bytesperpix;
     }
 
+    VC4_MBOX_UNLOCK(xsd);
     *fb_ptr_out   = fb_ptr;
     *fb_pitch_out = fb_pitch;
     return TRUE;
@@ -161,6 +166,7 @@ static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
     if (!xsd->vcsd_CurBuf || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
         return;
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(12 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORINFO);
@@ -173,8 +179,7 @@ static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
     xsd->vcsd_MBoxMessage[9] = AROS_LE2LONG(xsd->vcsd_CurHotX);
     xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(xsd->vcsd_CurHotY);
     xsd->vcsd_MBoxMessage[11] = 0;
-    MBoxWrite((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    MBoxRead((void *)VCMB_BASE, VCMB_PROPCHAN);
+    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
 
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
@@ -186,8 +191,8 @@ static VOID vc4_restore_cursor(struct VideoCoreGfx_staticdata *xsd)
     xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)xsd->vcsd_CurY);
     xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(0);
     xsd->vcsd_MBoxMessage[9] = 0;
-    MBoxWrite((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    MBoxRead((void *)VCMB_BASE, VCMB_PROPCHAN);
+    MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    VC4_MBOX_UNLOCK(xsd);
 }
 
 /*********** BitMap::New() *************************************/

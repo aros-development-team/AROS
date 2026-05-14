@@ -12,6 +12,7 @@
 #include <string.h>    // memset() prototype
 
 #include "vc4gfx_hardware.h"
+#include "vc4gfx_hidd.h"
 
 #ifdef OnBitmap
 /*********  BitMap::Clear()  *************************************/
@@ -53,34 +54,52 @@ BOOL MNAME_BM(SetColors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetCo
         return FALSE;
 
 #ifdef OnBitmap
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[0] = AROS_LONG2LE(5 + (msg->numColors - msg->firstColor) * 4);
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[2] = AROS_LONG2LE(VCTAG_SETPALETTE);
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[3] = AROS_LONG2LE((msg->numColors - msg->firstColor) * 4);
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[4] = AROS_LONG2LE(msg->firstColor);
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[5] = AROS_LONG2LE(msg->numColors);
-#endif
+    {
+        struct VideoCoreGfx_staticdata *xsd =
+            &((struct VideoCoreGfxBase *)cl->UserData)->vsd;
+        unsigned int *m;
+        ULONG nc = msg->numColors;
+
+        VC4_MBOX_LOCK(xsd);
+        m = xsd->vcsd_MBoxMessage;
+        m[0] = AROS_LONG2LE((8 + nc) * 4);
+        m[1] = AROS_LONG2LE(VCTAG_REQ);
+        m[2] = AROS_LONG2LE(VCTAG_SETPALETTE);
+        m[3] = AROS_LONG2LE((2 + nc) * 4);
+        m[4] = 0;
+        m[5] = AROS_LONG2LE(msg->firstColor);
+        m[6] = AROS_LONG2LE(nc);
+        for (xc_i = msg->firstColor, col_i = 0; col_i < nc; xc_i++, col_i++)
+        {
+            red   = msg->colors[col_i].red   >> 8;
+            green = msg->colors[col_i].green >> 8;
+            blue  = msg->colors[col_i].blue  >> 8;
+            data->cmap[xc_i] =
+                0x01000000 | red | (green << 8) | (blue << 16);
+            m[7 + col_i] = AROS_LONG2LE((red << 24) | (green << 16) |
+                                        (blue << 8) | 0xff);
+            msg->colors[col_i].pixval = xc_i;
+        }
+        m[7 + nc] = 0;  /* end tag */
+
+        if ((MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, m)
+                == (volatile unsigned int *)-1)
+            || (AROS_LE2LONG(m[4]) != (VCTAG_RESP + 4))
+            || (AROS_LE2LONG(m[5]) != 0))
+        {
+            VC4_MBOX_UNLOCK(xsd);
+            return FALSE;
+        }
+        VC4_MBOX_UNLOCK(xsd);
+    }
+#else
     for (xc_i = msg->firstColor, col_i = 0; col_i < msg->numColors; xc_i++, col_i++)
     {
-        red = msg->colors[col_i].red >> 8;
+        red   = msg->colors[col_i].red   >> 8;
         green = msg->colors[col_i].green >> 8;
-        blue = msg->colors[col_i].blue >> 8;
+        blue  = msg->colors[col_i].blue  >> 8;
         data->cmap[xc_i] = 0x01000000 | red | (green << 8) | (blue << 16);
-#ifdef OnBitmap
-
-        (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[6 + col_i] = AROS_LONG2LE((red << 24) | (green << 16) | (blue << 8));
-        D(bug("[VideoCoreGfx] VideoCoreGfx.BitMap::SetColors: color #%d = %08x\n", xc_i, AROS_LONG2LE(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[6 + col_i]));
-#endif
         msg->colors[col_i].pixval = xc_i;
-    }
-#ifdef OnBitmap
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[7 + col_i ] = 0;
-    (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[7 + col_i + 1] = 0; // terminate tag
-
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage)
-    {
-        D(bug("[VideoCoreGfx] %s: Palette set [status %08x]\n", __PRETTY_FUNCTION__, AROS_LONG2LE(&((struct VideoCoreGfxBase *)cl->UserData)->vsd)->vcsd_MBoxMessage[7 + col_i]));
     }
 #endif
     return TRUE;

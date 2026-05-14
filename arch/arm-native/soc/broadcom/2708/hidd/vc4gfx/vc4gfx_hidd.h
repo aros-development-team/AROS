@@ -10,8 +10,15 @@
 #include <exec/memheaderext.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
+#include <proto/exec.h>
 
 #include "vc4gfx_hardware.h"
+
+/* vcsd_MBoxMessage is a single shared buffer used by every mailbox
+ * round-trip (palette, framebuffer alloc, cursor, mode set, memory).
+ * Take vcsd_GPUMemLock around every pack-write-read sequence. */
+#define VC4_MBOX_LOCK(xsd)   ObtainSemaphore(&(xsd)->vcsd_GPUMemLock)
+#define VC4_MBOX_UNLOCK(xsd) ReleaseSemaphore(&(xsd)->vcsd_GPUMemLock)
 
 #define DEBUGMODEARRAY
 //#define DEBUGPIXFMT

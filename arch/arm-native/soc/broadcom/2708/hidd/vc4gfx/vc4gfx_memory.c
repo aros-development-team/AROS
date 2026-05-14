@@ -58,6 +58,7 @@ void *FNAME_SUPPORT(Alloc)(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
     if (*flags & MEMF_HWALIGNED)
         gpumemalign = 4096;
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(9 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_ALLOCMEM);
@@ -70,16 +71,19 @@ void *FNAME_SUPPORT(Alloc)(struct MemHeaderExt *mhe, IPTR size, ULONG *flags)
 
     xsd->vcsd_MBoxMessage[8] = 0; // terminate tag
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        != (volatile unsigned int *)-1)
     {
+        void *res = (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[7]) & 0x3fffffff);
         D(bug("[VideoCoreGfx] %s: Allocated %d bytes, memhandle @ 0x%p\n", __PRETTY_FUNCTION__,
             AROS_LE2LONG(xsd->vcsd_MBoxMessage[4]), AROS_LE2LONG(xsd->vcsd_MBoxMessage[7])));
+        VC4_MBOX_UNLOCK(xsd);
 
         mhe->mhe_MemHeader.mh_Free -= size;
 
-        return (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[7]) & 0x3fffffff);
+        return res;
     }
+    VC4_MBOX_UNLOCK(xsd);
     return NULL;
 }
 
@@ -93,6 +97,7 @@ void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(7 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
@@ -103,12 +108,15 @@ void *FNAME_SUPPORT(LockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     xsd->vcsd_MBoxMessage[6] = 0; // terminate tag
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        != (volatile unsigned int *)-1)
     {
+        void *res = (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) & 0x3fffffff);
         D(bug("[VideoCoreGfx] %s: Memory locked @ 0x%p\n", __PRETTY_FUNCTION__, AROS_LE2LONG(xsd->vcsd_MBoxMessage[5])));
-        return (void*)(AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) & 0x3fffffff);
+        VC4_MBOX_UNLOCK(xsd);
+        return res;
     }
+    VC4_MBOX_UNLOCK(xsd);
     return NULL;
 }
 
@@ -121,6 +129,7 @@ void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(7 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_UNLOCKMEM);
@@ -131,12 +140,15 @@ void *FNAME_SUPPORT(UnLockMem)(struct MemHeaderExt *mhe, void *memhandle)
 
     xsd->vcsd_MBoxMessage[6] = 0; // terminate tag
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        != (volatile unsigned int *)-1)
     {
+        void *res = (void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
         D(bug("[VideoCoreGfx] %s: Memory unlocked [status %08x]\n", __PRETTY_FUNCTION__, AROS_LE2LONG(xsd->vcsd_MBoxMessage[5])));
-        return (void*)AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+        VC4_MBOX_UNLOCK(xsd);
+        return res;
     }
+    VC4_MBOX_UNLOCK(xsd);
     return NULL;
 }
 
@@ -154,6 +166,7 @@ void FNAME_SUPPORT(Free)(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
 
     D(bug("[VideoCoreGfx] %s(memhandle @ 0x%p)\n", __PRETTY_FUNCTION__, memhandle));
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(7 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_FREEMEM);
@@ -164,13 +177,15 @@ void FNAME_SUPPORT(Free)(struct MemHeaderExt *mhe, APTR  memhandle, IPTR size)
 
     xsd->vcsd_MBoxMessage[6] = 0; // terminate tag
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        != (volatile unsigned int *)-1)
     {
-        mhe->mhe_MemHeader.mh_Free += size;
-
         D(bug("[VideoCoreGfx] %s: Memory freed [status %08x]\n", __PRETTY_FUNCTION__, AROS_LE2LONG(xsd->vcsd_MBoxMessage[5])));
+        VC4_MBOX_UNLOCK(xsd);
+        mhe->mhe_MemHeader.mh_Free += size;
+        return;
     }
+    VC4_MBOX_UNLOCK(xsd);
 }
 
 void *mh_AllocAbs(struct MemHeaderExt *mhe, IPTR size, APTR  mem)
@@ -201,7 +216,9 @@ int FNAME_SUPPORT(InitMem)(void *memstart, int memlength, struct VideoCoreGfxBas
     struct VideoCoreGfx_staticdata *xsd = &LIBBASE->vsd;
 //    struct MemChunk *mc = memstart;
 
-    InitSemaphore(&xsd->vcsd_GPUMemLock);
+    /* vcsd_GPUMemLock is initialised earlier in FNAME_SUPPORT(Init)
+     * (vc4gfx_init.c) so that the very first MBoxWrite/Read can take
+     * it. */
 
     D(bug("[VideoCoreGfx] VideoCore GPU Memory @ 0x%p [%dKB]\n", memstart, memlength >> 10));
 

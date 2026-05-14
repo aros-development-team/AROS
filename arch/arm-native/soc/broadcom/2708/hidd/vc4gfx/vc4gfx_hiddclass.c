@@ -229,6 +229,7 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
      * flags] - the request value buffer is 3 u32 (size/align/flags),
      * the response writes a 1 u32 handle into the first slot.
      */
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(10 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_ALLOCMEM);
@@ -240,12 +241,18 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
     xsd->vcsd_MBoxMessage[8] = 0;
     xsd->vcsd_MBoxMessage[9] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
         return FALSE;
+    }
     xsd->vcsd_CurBufHandle = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
     if (!xsd->vcsd_CurBufHandle)
+    {
+        VC4_MBOX_UNLOCK(xsd);
         return FALSE;
+    }
 
     /* LOCKMEM tag layout: [tag, value_buf_size, code, handle] - request
      * value is the handle, response overwrites it with the bus address.
@@ -259,11 +266,15 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
     xsd->vcsd_MBoxMessage[6] = 0;
     xsd->vcsd_MBoxMessage[7] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
         return FALSE;
+    }
 
     xsd->vcsd_CurBufBus = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    VC4_MBOX_UNLOCK(xsd);
     xsd->vcsd_CurVisible = FALSE;
 
     /* The firmware should hand back a GPU bus address with the alias
@@ -322,6 +333,7 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     {
         /* Hide and forget the current shape. */
         xsd->vcsd_CurVisible = FALSE;
+        VC4_MBOX_LOCK(xsd);
         xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
         xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
         xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
@@ -332,8 +344,8 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
         xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(0);
         xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(0);
         xsd->vcsd_MBoxMessage[9] = 0;
-        MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-        MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+        MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+        VC4_MBOX_UNLOCK(xsd);
         return TRUE;
     }
 
@@ -356,6 +368,7 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     xsd->vcsd_CurHotY   = msg->yoffset;
 
     /* SETCURSORINFO: width, height, format(0), buf, hot_x, hot_y */
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(12 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORINFO);
@@ -369,13 +382,17 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(xsd->vcsd_CurHotY);
     xsd->vcsd_MBoxMessage[11] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
         return FALSE;
-    if (AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) != 0)
-        return FALSE;
-
-    return TRUE;
+    }
+    {
+        BOOL ok = (AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) == 0);
+        VC4_MBOX_UNLOCK(xsd);
+        return ok;
+    }
 }
 
 BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
@@ -391,6 +408,7 @@ BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     if (!xsd->vcsd_CurVisible)
         return TRUE;
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
@@ -402,8 +420,8 @@ BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords (firmware scales) */
     xsd->vcsd_MBoxMessage[9] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+    MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    VC4_MBOX_UNLOCK(xsd);
     return TRUE;
 }
 
@@ -416,6 +434,7 @@ VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
     xsd->vcsd_CurVisible = msg->visible ? TRUE : FALSE;
 
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
@@ -427,8 +446,8 @@ VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords */
     xsd->vcsd_MBoxMessage[9] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN);
+    MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    VC4_MBOX_UNLOCK(xsd);
 }
 
 OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
