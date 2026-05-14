@@ -23,6 +23,8 @@
 #ifndef __NOUVEAU_BO_H__
 #define __NOUVEAU_BO_H__
 
+#include "libdrm_redefines.h"
+
 /* Relocation/Buffer type flags */
 #define NOUVEAU_BO_VRAM   (1 << 0)
 #define NOUVEAU_BO_GART   (1 << 1)

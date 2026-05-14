@@ -26,7 +26,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "nouveau_bo_libdrm.h"
+#include "nouveau_bo.h"
 #include "nouveau_grobj.h"
 
 int

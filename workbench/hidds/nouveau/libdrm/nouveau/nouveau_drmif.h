@@ -24,7 +24,7 @@
 #define __NOUVEAU_DRMIF_H__
 
 #include <stdint.h>
-#include <arosdrm.h>
+#include "arosdrm.h"
 
 #include "nouveau_device.h"
 

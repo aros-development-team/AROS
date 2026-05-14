@@ -105,7 +105,8 @@ nouveau_bo_kfree(struct nouveau_bo_priv *nvbo)
 #if !defined(__AROS__)        
 		munmap(nvbo->map, nvbo->size);
 #else
-        drmMUnmap(nvdev->fd, nvbo->handle);
+bug("FIXME: drmMUnmap\n");
+        // drmMUnmap(nvdev->fd, nvbo->handle);
 #endif
 		nvbo->map = NULL;
 	}
@@ -180,9 +181,10 @@ nouveau_bo_kmap(struct nouveau_bo_priv *nvbo)
 		return -errno;
 	}
 #else
-    nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
-    if (nvbo->map == NULL)
-        return -EINVAL;
+bug("FIXME: drmMMap\n");
+    // nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
+    // if (nvbo->map == NULL)
+    //     return -EINVAL;
 #endif
 	return 0;
 }
