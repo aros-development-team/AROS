@@ -33,8 +33,13 @@
 #endif
 
 #include <drm/drm_device.h>
+#include <drm/drm_ioctl.h>
 
-struct drm_file;
+struct drm_file
+{
+    ULONG dummy;
+};
+
 // struct drm_gem_object;
 // struct drm_master;
 // struct drm_minor;
@@ -746,17 +751,17 @@ struct drm_driver {
 	 */
 	u32 driver_features;
 
-// 	/**
-// 	 * @ioctls:
-// 	 *
-// 	 * Array of driver-private IOCTL description entries. See the chapter on
-// 	 * :ref:`IOCTL support in the userland interfaces
-// 	 * chapter<drm_driver_ioctl>` for the full details.
-// 	 */
+	/**
+	 * @ioctls:
+	 *
+	 * Array of driver-private IOCTL description entries. See the chapter on
+	 * :ref:`IOCTL support in the userland interfaces
+	 * chapter<drm_driver_ioctl>` for the full details.
+	 */
 
-// 	const struct drm_ioctl_desc *ioctls;
-// 	/** @num_ioctls: Number of entries in @ioctls. */
-// 	int num_ioctls;
+	const struct drm_ioctl_desc *ioctls;
+	/** @num_ioctls: Number of entries in @ioctls. */
+	int num_ioctls;
 
 // 	/**
 // 	 * @fops:
@@ -766,6 +771,10 @@ struct drm_driver {
 // 	 * some examples.
 // 	 */
 // 	const struct file_operations *fops;
+
+#if defined(__AROS__)
+	struct drm_device *dev;
+#endif
 
 // 	/* Everything below here is for legacy driver, never use! */
 // 	/* private: */

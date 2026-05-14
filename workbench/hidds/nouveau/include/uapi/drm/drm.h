@@ -54,6 +54,9 @@ typedef unsigned int drm_handle_t;
 #if !defined(__AROS__)
 #include <sys/ioccom.h>
 #include <sys/types.h>
+#else
+#include <sys/ioctl.h>
+#include <drm-compat/drm_compat_types.h>
 #endif
 typedef int8_t   __s8;
 typedef uint8_t  __u8;
