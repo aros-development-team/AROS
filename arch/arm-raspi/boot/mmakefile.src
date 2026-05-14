@@ -48,6 +48,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-graphics-quick \
 #MM kernel-cgxbootpic-quick \
 #MM workbench-libs-gadtools-quick \
+#MM workbench-libs-lowlevel-quick \
 #MM kernel-intuition-quick \
 #MM kernel-partition-quick \
 #MM kernel-layers-quick \
@@ -97,6 +98,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-graphics \
 #MM kernel-cgxbootpic \
 #MM workbench-libs-gadtools \
+#MM workbench-libs-lowlevel \
 #MM kernel-intuition \
 #MM kernel-partition \
 #MM kernel-layers \
@@ -141,7 +143,7 @@ RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
 
-PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox
 PKG_RSRC_ARCH := processor
