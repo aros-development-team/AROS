@@ -89,7 +89,7 @@ nvkm_i2c_bus_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	return ret;
 }
 
-#if 0
+#if !defined(__AROS__)
 static u32
 nvkm_i2c_bus_func(struct i2c_adapter *adap)
 {
@@ -163,12 +163,11 @@ nvkm_i2c_bus_probe(struct nvkm_i2c_bus *bus, const char *what,
 {
 	int i;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	BUS_DBG(bus, "probing %ss", what);
 	for (i = 0; info[i].dev.addr; i++) {
 		u8 orig_udelay = 0;
 
+#if !defined(__AROS__)
 		if ((bus->i2c.algo == &i2c_bit_algo) && (info[i].udelay != 0)) {
 			struct i2c_algo_bit_data *algo = bus->i2c.algo_data;
 			BUS_DBG(bus, "%dms delay instead of %dms",
@@ -176,6 +175,7 @@ NOT_IMPLEMENTED_STOP
 			orig_udelay = algo->udelay;
 			algo->udelay = info[i].udelay;
 		}
+#endif
 
 		if (nvkm_probe_i2c(&bus->i2c, info[i].dev.addr) &&
 		    (!match || match(bus, &info[i].dev, data))) {
@@ -184,12 +184,13 @@ NOT_IMPLEMENTED_STOP
 			return i;
 		}
 
+#if !defined(__AROS__)
 		if (orig_udelay) {
 			struct i2c_algo_bit_data *algo = bus->i2c.algo_data;
 			algo->udelay = orig_udelay;
 		}
-	}
 #endif
+	}
 
 	BUS_DBG(bus, "no devices found.");
 	return -ENODEV;

@@ -456,6 +456,7 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
     if (adap->i2cdriver == (IPTR)0)
     {
         bug("ERROR: i2c_transfer called without driver present\n");
+NOT_IMPLEMENTED_STOP
         return 0;
     }
     
@@ -507,7 +508,7 @@ NOT_IMPLEMENTED_STOP
             { TAG_DONE, 0UL }
         };
 
-        D(bug("i2c_transfer - reading from DDC\n"));
+        (bug("i2c_transfer - reading from DDC\n"));
 
         OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
         
@@ -540,7 +541,7 @@ NOT_IMPLEMENTED_STOP
             { TAG_DONE, 0UL }
         };
 
-        D(bug("i2c_transfer - reading from register 0x54\n"));
+        (bug("i2c_transfer - reading from register 0x54\n"));
 
         OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
         
@@ -563,6 +564,7 @@ NOT_IMPLEMENTED_STOP
     {
         /* Not supported case */
         bug("i2c_transfer case not supported: num = %d\n", num);
+NOT_IMPLEMENTED_STOP
     }
     
     /* Failure */
