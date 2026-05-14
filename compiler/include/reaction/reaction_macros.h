@@ -27,6 +27,24 @@
  */
 
 /*
+ * On AROS, reaction.library exports RA_OpenWindow / RA_CloseWindow /
+ * RA_HandleInput / RA_DisposeWindowObject as real library functions
+ * (genmodule-built from reaction.conf). Pulling in <proto/reaction.h>
+ * here ensures the library base is auto-opened and the prototypes are
+ * visible whenever the macros are in scope - matching the AmigaOS NDK
+ * convention where including this header is enough.
+ *
+ * On AmigaOS this header has no <proto/reaction.h>, because RA_* are
+ * implemented purely as the macros below. The #ifdef __AROS__ guard
+ * keeps source written to that convention portable.
+ */
+#if defined(__AROS__) && !defined(__NOLIBBASE__)
+#ifndef PROTO_REACTION_H
+#include <proto/reaction.h>
+#endif
+#endif
+
+/*
  * Pull in class tag definitions so the macros are self-contained.
  * These headers only define tag constants and macros — no heavy deps.
  */
@@ -367,18 +385,31 @@
 
 /****************************************************************************
  * Vector Glyph Image Aliases
+ *
+ * Defined as enum constants rather than #defines so they don't clash with
+ * module basenames (e.g. genmodule's AROS_LD1 macros token-paste the
+ * basename `GetFile' / `GetScreenMode'). The integer values are unchanged.
+ *
+ * Guarded by GLYPH_POPFILE so this is skipped when <images/glyph.h> hasn't
+ * been fully processed yet (recursive include via images/glyph.h ->
+ * reaction.h -> reaction_macros.h re-entering glyph.h via its include
+ * guard before the GLYPH_* values are emitted).
  */
-#define GetPath             GLYPH_POPDRAWER
-#define GetFile             GLYPH_POPFILE
-#define GetScreen           GLYPH_POPSCREENMODE
-#define GetTime             GLYPH_POPTIME
-#define CheckMark           GLYPH_CHECKMARK
-#define PopUp               GLYPH_POPUP
-#define DropDown            GLYPH_DROPDOWN
-#define ArrowUp             GLYPH_ARROWUP
-#define ArrowDown           GLYPH_ARROWDOWN
-#define ArrowLeft           GLYPH_ARROWLEFT
-#define ArrowRight          GLYPH_ARROWRIGHT
+#ifdef GLYPH_POPFILE
+enum {
+    GetPath    = GLYPH_POPDRAWER,
+    GetFile    = GLYPH_POPFILE,
+    GetScreen  = GLYPH_POPSCREENMODE,
+    GetTime    = GLYPH_POPTIME,
+    CheckMark  = GLYPH_CHECKMARK,
+    PopUp      = GLYPH_POPUP,
+    DropDown   = GLYPH_DROPDOWN,
+    ArrowUp    = GLYPH_UPARROW,
+    ArrowDown  = GLYPH_DOWNARROW,
+    ArrowLeft  = GLYPH_LEFTARROW,
+    ArrowRight = GLYPH_RIGHTARROW
+};
+#endif
 
 /****************************************************************************
  * Bevel Frame Type Aliases

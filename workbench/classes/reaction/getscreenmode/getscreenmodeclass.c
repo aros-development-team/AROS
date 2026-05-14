@@ -3,6 +3,7 @@
 
     Desc: Reaction getscreenmode.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -87,10 +88,14 @@ IPTR GetScreenMode__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[GetScreenMode] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
         struct GetScreenModeData *data = INST_DATA(cl, (Object *)retval);
+
+        D(bug("[GetScreenMode] OM_NEW: obj 0x%p\n", (void *)retval));
 
         memset(data, 0, sizeof(struct GetScreenModeData));
 
@@ -110,6 +115,7 @@ IPTR GetScreenMode__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR GetScreenMode__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[GetScreenMode] OM_DISPOSE: enter\n"));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -117,7 +123,9 @@ IPTR GetScreenMode__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR GetScreenMode__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    IPTR retval;
+    D(bug("[GetScreenMode] OM_SET: enter\n"));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
     getscreenmode_set(cl, o, msg);
     return retval;
 }
@@ -165,6 +173,8 @@ IPTR GetScreenMode__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     WORD x, y, w, h;
     UWORD bgpen, textpen, shinepen, shadowpen;
     char modebuf[64];
+
+    D(bug("[GetScreenMode] GM_RENDER: redraw 0x%lx\n", (unsigned long)msg->gpr_Redraw));
 
     if (!rp && msg->gpr_GInfo)
         rp = ObtainGIRPort(msg->gpr_GInfo);

@@ -3,6 +3,7 @@
 
     Desc: Reaction led.image - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -148,6 +149,7 @@ IPTR LED__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[LED] OM_NEW: obj 0x%p\n", (APTR)retval));
         struct LEDData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct LEDData));
@@ -163,6 +165,7 @@ IPTR LED__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR LED__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[LED] OM_DISPOSE: obj 0x%p\n", o));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -170,6 +173,7 @@ IPTR LED__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR LED__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[LED] OM_SET: obj 0x%p\n", o));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     led_set(cl, o, msg);
     return retval;
@@ -223,6 +227,8 @@ IPTR LED__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     WORD digitW, digitH, colonW, gap, thick;
     WORD curX;
     UWORD i;
+
+    D(bug("[LED] IM_DRAW: state %d, dimensions %dx%d\n", msg->imp_State, im->Width, im->Height));
 
     if (!rp || !dri)
         return FALSE;

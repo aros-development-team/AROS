@@ -3,6 +3,7 @@
 
     Desc: Reaction drawlist.image - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -52,6 +53,7 @@ IPTR DrawList__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[DrawList] OM_NEW: obj 0x%p\n", (APTR)retval));
         struct DrawListData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct DrawListData));
@@ -66,6 +68,7 @@ IPTR DrawList__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR DrawList__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[DrawList] OM_DISPOSE: obj 0x%p\n", o));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -73,6 +76,7 @@ IPTR DrawList__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR DrawList__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[DrawList] OM_SET: obj 0x%p\n", o));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     drawlist_set(cl, o, msg);
     return retval;
@@ -103,6 +107,8 @@ IPTR DrawList__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     struct RastPort *rp = msg->imp_RPort;
     struct DrawList *dl;
     WORD baseX, baseY;
+
+    D(bug("[DrawList] IM_DRAW: state %d, dimensions %dx%d\n", msg->imp_State, im->Width, im->Height));
 
     if (!rp || !data->dd_Directives)
         return FALSE;

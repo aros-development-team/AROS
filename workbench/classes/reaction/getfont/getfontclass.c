@@ -3,6 +3,7 @@
 
     Desc: Reaction getfont.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -70,10 +71,14 @@ IPTR GetFont__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[GetFont] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
         struct GetFontData *data = INST_DATA(cl, (Object *)retval);
+
+        D(bug("[GetFont] OM_NEW: obj 0x%p\n", (void *)retval));
 
         memset(data, 0, sizeof(struct GetFontData));
 
@@ -90,6 +95,7 @@ IPTR GetFont__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR GetFont__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[GetFont] OM_DISPOSE: enter\n"));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -97,7 +103,9 @@ IPTR GetFont__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR GetFont__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    IPTR retval;
+    D(bug("[GetFont] OM_SET: enter\n"));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
     getfont_set(cl, o, msg);
     return retval;
 }
@@ -151,6 +159,8 @@ IPTR GetFont__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     WORD bx;
     UWORD bgpen, textpen, shinepen, shadowpen;
     char dispbuf[128];
+
+    D(bug("[GetFont] GM_RENDER: redraw 0x%lx\n", (unsigned long)msg->gpr_Redraw));
 
     if (!rp && msg->gpr_GInfo)
         rp = ObtainGIRPort(msg->gpr_GInfo);

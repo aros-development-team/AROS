@@ -3,6 +3,7 @@
 
     Desc: Reaction integer.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <string.h>
 #include <limits.h>
@@ -79,7 +80,10 @@ IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct IntegerData *data;
 
+    D(bug("[Integer] OM_NEW: enter\n"));
+
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+    D(bug("[Integer] OM_NEW: obj=%p\n", (void *)o));
     if (!o)
         return (IPTR)0;
 
@@ -100,6 +104,8 @@ IPTR Integer__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Integer__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Integer] OM_DISPOSE: obj=%p\n", (void *)o));
+
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -108,6 +114,8 @@ IPTR Integer__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 IPTR Integer__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
+
+    D(bug("[Integer] OM_SET: obj=%p\n", (void *)o));
 
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     integer_set(cl, o, msg);
@@ -152,6 +160,8 @@ IPTR Integer__OM_GET(Class *cl, Object *o, struct opGet *msg)
 IPTR Integer__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     IPTR retval;
+
+    D(bug("[Integer] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
 
     /* Let the STRGCLASS superclass render the string area */
     retval = DoSuperMethodA(cl, o, (Msg)msg);

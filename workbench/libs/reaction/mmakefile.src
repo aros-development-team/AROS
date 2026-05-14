@@ -25,6 +25,7 @@ FILES := reaction_init
 
 %build_module mmake=workbench-libs-reaction \
     modname=reaction modtype=library \
-    files="$(FUNCS) $(FILES)"
+    files="$(FUNCS) $(FILES)" \
+    linklibfiles="reaction_classes_autoinit"
 
 %common

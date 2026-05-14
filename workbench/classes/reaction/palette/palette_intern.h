@@ -26,6 +26,7 @@ struct PaletteBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -35,6 +36,8 @@ struct PaletteGadData
     ULONG           pd_Color;           /* Selected color index */
     ULONG           pd_ColorOffset;     /* First color in palette range */
     ULONG           pd_NumColors;       /* Number of colors to display */
+    Object         *pd_FrameBevel;      /* Cached outer frame bevel */
+    Object         *pd_SelBevel;        /* Cached selection bevel */
 };
 
 #endif /* PALETTE_INTERN_H */

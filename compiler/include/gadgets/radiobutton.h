@@ -29,6 +29,7 @@
 #define RADIOBUTTON_Spacing     (RADIOBUTTON_Dummy + 3)  /* Space between buttons (WORD) */
 #define RADIOBUTTON_Selected    (RADIOBUTTON_Dummy + 4)  /* Active selection index (WORD) */
 #define RADIOBUTTON_LabelPlace  (RADIOBUTTON_Dummy + 5)  /* Label placement (WORD) */
+#define RADIOBUTTON_LabelArray  (RADIOBUTTON_Dummy + 6)  /* (STRPTR *) NULL-terminated label array (auto-builds list) */
 
 #ifndef RadioButtonObject
 #define RadioButtonObject   NewObject(NULL, RADIOBUTTON_CLASSNAME

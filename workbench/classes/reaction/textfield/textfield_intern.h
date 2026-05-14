@@ -26,6 +26,7 @@ struct TextFieldBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -42,6 +43,7 @@ struct TextFieldData
     ULONG           td_Top;             /* First visible line */
     ULONG           td_Blinkrate;       /* Cursor blink rate */
     UWORD           td_TabSpaces;       /* Number of spaces per tab */
+    Object         *td_BevelImage;      /* Cached bevel for frame */
 };
 
 #endif /* TEXTFIELD_INTERN_H */

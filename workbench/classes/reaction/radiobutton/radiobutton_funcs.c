@@ -3,6 +3,7 @@
 
     Desc: Reaction radiobutton.gadget - Node management functions
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -50,6 +51,7 @@ struct RadioButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[RadioButton] AllocRadioButtonNodeA: columns=%d\n", columns));
     struct RadioButtonNode *node;
     struct TagItem *tag, *tstate;
 
@@ -98,8 +100,8 @@ struct RadioButtonNode
 {
     AROS_LIBFUNC_INIT
 
-    if (node)
-    {
+    D(bug("[RadioButton] FreeRadioButtonNode: node=%p\n", node));
+    if (node)    {
         FreeVec(node);
     }
 
@@ -130,6 +132,7 @@ struct RadioButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[RadioButton] SetRadioButtonNodeAttrsA: node=%p\n", node));
     struct RadioButtonNode *rbn = (struct RadioButtonNode *)node;
     struct TagItem *tag, *tstate;
 
@@ -175,6 +178,7 @@ struct RadioButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[RadioButton] GetRadioButtonNodeAttrsA: node=%p\n", node));
     struct RadioButtonNode *rbn = (struct RadioButtonNode *)node;
     struct TagItem *tag, *tstate;
 
@@ -187,7 +191,7 @@ struct RadioButtonNode
         switch (tag->ti_Tag)
         {
             case RBNA_Labels:
-                *(STRPTR *)tag->ti_Data = rbn->rbn_Text;
+                *((STRPTR *)tag->ti_Data) = rbn->rbn_Text;
                 break;
         }
     }

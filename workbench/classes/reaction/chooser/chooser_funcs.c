@@ -3,6 +3,7 @@
 
     Desc: Reaction chooser.gadget - Exported node management functions
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -79,12 +80,16 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
 
     struct ChooserNode *cn;
 
+    D(bug("[Chooser] AllocChooserNodeA: enter\n"));
+
     cn = (struct ChooserNode *)AllocVec(sizeof(struct ChooserNode),
                                         MEMF_PUBLIC | MEMF_CLEAR);
     if (cn)
     {
         choosernode_set(cn, tags);
     }
+
+    D(bug("[Chooser] AllocChooserNodeA: result 0x%p\n", (void *)cn));
 
     return (struct Node *)cn;
 
@@ -111,6 +116,8 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Chooser] FreeChooserNode: node 0x%p\n", (void *)node));
 
     if (node)
     {
@@ -142,6 +149,8 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Chooser] SetChooserNodeAttrsA: node 0x%p\n", (void *)node));
 
     if (node)
     {
@@ -178,6 +187,8 @@ static void choosernode_set(struct ChooserNode *cn, struct TagItem *tags)
 
     struct ChooserNode *cn;
     struct TagItem *tag;
+
+    D(bug("[Chooser] GetChooserNodeAttrsA: node 0x%p\n", (void *)node));
 
     if (!node)
         return;

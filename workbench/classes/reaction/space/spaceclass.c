@@ -3,6 +3,7 @@
 
     Desc: Reaction space.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -59,10 +60,14 @@ IPTR Space__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Space] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
         struct SpaceData *data = INST_DATA(cl, (Object *)retval);
+
+        D(bug("[Space] OM_NEW: obj 0x%p\n", (void *)retval));
 
         memset(data, 0, sizeof(struct SpaceData));
         data->sd_MinWidth   = 1;
@@ -80,6 +85,7 @@ IPTR Space__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Space__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Space] OM_DISPOSE: enter\n"));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -87,7 +93,9 @@ IPTR Space__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Space__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    IPTR retval;
+    D(bug("[Space] OM_SET: enter\n"));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
     space_set(cl, o, msg);
     return retval;
 }
@@ -129,6 +137,8 @@ IPTR Space__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
     struct Gadget *gad = G(o);
     WORD x, y, w, h;
+
+    D(bug("[Space] GM_RENDER: redraw 0x%lx\n", (unsigned long)msg->gpr_Redraw));
 
     if (!rp && msg->gpr_GInfo)
         rp = ObtainGIRPort(msg->gpr_GInfo);

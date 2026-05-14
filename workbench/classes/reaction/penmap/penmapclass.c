@@ -3,6 +3,7 @@
 
     Desc: Reaction penmap.image - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -112,6 +113,7 @@ IPTR PenMap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[PenMap] OM_NEW: obj 0x%p\n", (APTR)retval));
         struct PenMapData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct PenMapData));
@@ -127,6 +129,7 @@ IPTR PenMap__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR PenMap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[PenMap] OM_DISPOSE: obj 0x%p\n", o));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -134,6 +137,7 @@ IPTR PenMap__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR PenMap__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[PenMap] OM_SET: obj 0x%p\n", o));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     penmap_set(cl, o, msg);
     return retval;
@@ -198,6 +202,8 @@ IPTR PenMap__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     UWORD *pens;
     WORD x, y, w, h;
     UBYTE *penmap;
+
+    D(bug("[PenMap] IM_DRAW: state %d, dimensions %dx%d\n", msg->imp_State, im->Width, im->Height));
 
     if (!rp || !dri)
         return FALSE;

@@ -31,6 +31,7 @@ struct GlyphBase_intern
 struct GlyphData
 {
     ULONG           gd_Glyph;           /* Glyph type (GLYPH_*) */
+    UBYTE           gd_VisualType;      /* cap_GlyphType snapshot (GLT_*) */
 };
 
 #endif /* GLYPH_INTERN_H */

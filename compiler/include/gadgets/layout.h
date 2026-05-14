@@ -102,6 +102,17 @@ struct LayoutLimits
 #define INTERSPACING    4
 #define INTERSPACE      INTERSPACING
 
+/* Private methods used internally by reaction.library / window.class */
+#define LM_ADDTOWINDOW          (LAYOUT_Dummy + 0x500)
+#define LM_REMOVEFROMWINDOW     (LAYOUT_Dummy + 0x501)
+
+struct lpAddToWindow
+{
+    ULONG               MethodID;
+    struct Window      *lpaw_Window;
+    struct Requester   *lpaw_Requester;
+};
+
 /*****************************************************************************/
 
 /* Child tags - apply after LAYOUT_AddChild / LAYOUT_ModifyChild */

@@ -3,6 +3,7 @@
 
     Desc: Reaction layout.gadget - Exported library functions
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -47,6 +48,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[Layout] ActivateLayoutGadget: gadget=0x%p window=0x%p object=%lu\n", gadget, window, object));
+
     if (gadget && window)
     {
         return ActivateGadget(gadget, window, requester);
@@ -77,6 +80,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Layout] FlushLayoutDomainCache: gadget=0x%p\n", gadget));
 
     if (gadget)
     {
@@ -116,6 +121,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Layout] RethinkLayout: gadget=0x%p window=0x%p refresh=%ld\n", gadget, window, (LONG)refresh));
 
     if (gadget && window)
     {

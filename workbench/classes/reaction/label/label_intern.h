@@ -38,6 +38,10 @@ struct LabelData
     LONG           *ld_Mapping;         /* Pen mapping */
     struct DrawInfo *ld_DrawInfo;       /* DrawInfo */
     UBYTE           ld_Underscore;      /* Underscore character */
+    UWORD           ld_TextPen;         /* Override text pen (0 = use prefs/dri) */
+    BOOL            ld_TextPenSet;
+    BOOL            ld_3DLabel;         /* cap_3DLabel snapshot */
+    UWORD           ld_PrefsLabelPen;   /* cap_LabelPen snapshot */
 };
 
 #endif /* LABEL_INTERN_H */

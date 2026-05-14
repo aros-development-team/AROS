@@ -3,6 +3,7 @@
 
     Desc: Reaction listbrowser.gadget - Exported node/column management functions
 */
+#define DEBUG 1
 
 #include <string.h>
 #include <stdlib.h>
@@ -59,6 +60,7 @@ AROS_LH2(struct Node *, AllocListBrowserNodeA,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[ListBrowser] AllocListBrowserNodeA: columns=%d\n", columns));
     struct ListBrowserNode *lbn;
     struct TagItem *tag;
 
@@ -167,6 +169,7 @@ AROS_LH1(void, FreeListBrowserNode,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[ListBrowser] FreeListBrowserNode: node=%p\n", node));
     if (node)
     {
         struct ListBrowserNode *lbn = (struct ListBrowserNode *)node;
@@ -201,6 +204,7 @@ AROS_LH2(void, SetListBrowserNodeAttrsA,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[ListBrowser] SetListBrowserNodeAttrsA: node=%p\n", node));
     if (!node) return;
 
     struct ListBrowserNode *lbn = (struct ListBrowserNode *)node;
@@ -286,6 +290,7 @@ AROS_LH2(void, GetListBrowserNodeAttrsA,
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[ListBrowser] GetListBrowserNodeAttrsA: node=%p\n", node));
     if (!node) return;
 
     struct ListBrowserNode *lbn = (struct ListBrowserNode *)node;

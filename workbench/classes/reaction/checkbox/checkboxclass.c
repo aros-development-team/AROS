@@ -3,6 +3,7 @@
 
     Desc: Reaction checkbox.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -17,8 +18,11 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <gadgets/checkbox.h>
+#include <images/bevel.h>
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
+#include <reaction/reaction_prefs.h>
+#include <exec/semaphores.h>
 
 #include <string.h>
 
@@ -66,12 +70,28 @@ IPTR CheckBox__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[CheckBox] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
+    D(bug("[CheckBox] OM_NEW: obj=%p\n", (void *)retval));
     if (retval)
     {
         struct CheckboxData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct CheckboxData));
+
+        /* Snapshot prefs */
+        {
+            struct UIPrefs *prefs;
+            prefs = (struct UIPrefs *)FindSemaphore((STRPTR)RAPREFSSEMAPHORE);
+            if (prefs)
+            {
+                ObtainSemaphoreShared(&prefs->cap_Semaphore);
+                data->cd_PrefsLabelPen = prefs->cap_LabelPen;
+                data->cd_3DLabel       = prefs->cap_3DLabel ? TRUE : FALSE;
+                ReleaseSemaphore(&prefs->cap_Semaphore);
+            }
+        }
 
         checkbox_set(cl, (Object *)retval, msg);
     }
@@ -83,6 +103,15 @@ IPTR CheckBox__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR CheckBox__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[CheckBox] OM_DISPOSE: obj=%p\n", (void *)o));
+
+    struct CheckboxData *data = INST_DATA(cl, o);
+    if (data->cd_BevelImage)
+    {
+        DisposeObject(data->cd_BevelImage);
+        data->cd_BevelImage = NULL;
+    }
+
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -90,6 +119,8 @@ IPTR CheckBox__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR CheckBox__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[CheckBox] OM_SET: obj=%p\n", (void *)o));
+
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     checkbox_set(cl, o, msg);
     return retval;
@@ -129,48 +160,10 @@ IPTR CheckBox__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 /******************************************************************************/
 
-static void checkbox_render_box(struct RastPort *rp, struct DrawInfo *dri,
-                                WORD x, WORD y, WORD w, WORD h, BOOL checked)
-{
-    UWORD shine = dri ? dri->dri_Pens[SHINEPEN] : 2;
-    UWORD shadow = dri ? dri->dri_Pens[SHADOWPEN] : 1;
-    UWORD bg = dri ? dri->dri_Pens[BACKGROUNDPEN] : 0;
-    UWORD fill = dri ? dri->dri_Pens[FILLPEN] : 3;
-
-    /* Draw recessed box frame */
-    SetAPen(rp, shadow);
-    Move(rp, x, y + h - 1);
-    Draw(rp, x, y);
-    Draw(rp, x + w - 1, y);
-
-    SetAPen(rp, shine);
-    Move(rp, x + 1, y + h - 1);
-    Draw(rp, x + w - 1, y + h - 1);
-    Draw(rp, x + w - 1, y + 1);
-
-    /* Fill interior */
-    SetAPen(rp, bg);
-    RectFill(rp, x + 1, y + 1, x + w - 2, y + h - 2);
-
-    /* Draw checkmark if checked */
-    if (checked)
-    {
-        SetAPen(rp, fill);
-        /* Simple X-style checkmark */
-        Move(rp, x + 3, y + 2);
-        Draw(rp, x + w - 4, y + h - 3);
-        Move(rp, x + w - 4, y + 2);
-        Draw(rp, x + 3, y + h - 3);
-        /* Thicken the mark */
-        Move(rp, x + 4, y + 2);
-        Draw(rp, x + w - 3, y + h - 3);
-        Move(rp, x + w - 3, y + 2);
-        Draw(rp, x + 4, y + h - 3);
-    }
-}
-
 IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[CheckBox] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
+
     struct CheckboxData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -201,18 +194,69 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     bx = x;
     by = y + (h - bh) / 2;
 
-    checkbox_render_box(rp, dri, bx, by, bw, bh, data->cd_Checked);
+    /* Draw box frame via bevel.image (BVS_FIELD = inset/recessed). */
+    if (dri)
+    {
+        if (!data->cd_BevelImage)
+        {
+            data->cd_BevelImage = NewObject(NULL, "bevel.image",
+                BEVEL_Style, BVS_FIELD,
+                TAG_END);
+        }
+        if (data->cd_BevelImage)
+        {
+            struct impDraw idmsg;
+            idmsg.MethodID         = IM_DRAWFRAME;
+            idmsg.imp_RPort        = rp;
+            idmsg.imp_Offset.X     = bx;
+            idmsg.imp_Offset.Y     = by;
+            idmsg.imp_State        = data->cd_Checked ? IDS_SELECTED : IDS_NORMAL;
+            idmsg.imp_DrInfo       = dri;
+            idmsg.imp_Dimensions.Width  = bw;
+            idmsg.imp_Dimensions.Height = bh;
+            DoMethodA(data->cd_BevelImage, (Msg)&idmsg);
+        }
+    }
 
-    /* Draw label text from gadget text */
+    /* Draw checkmark if checked */
+    if (data->cd_Checked && dri)
+    {
+        UWORD pen = dri->dri_Pens[FILLPEN];
+        SetAPen(rp, pen);
+        Move(rp, bx + 4, by + 3);
+        Draw(rp, bx + bw - 5, by + bh - 4);
+        Move(rp, bx + bw - 5, by + 3);
+        Draw(rp, bx + 4, by + bh - 4);
+        Move(rp, bx + 5, by + 3);
+        Draw(rp, bx + bw - 4, by + bh - 4);
+        Move(rp, bx + bw - 4, by + 3);
+        Draw(rp, bx + 5, by + bh - 4);
+    }
+
+    /* Draw label text from gadget text (BOOPSI stores GA_Text as STRPTR) */
     if (gad->GadgetText)
     {
-        UWORD pen = data->cd_TextPen ? data->cd_TextPen :
-                    (dri ? dri->dri_Pens[TEXTPEN] : 1);
+        STRPTR txt = (STRPTR)gad->GadgetText;
+        UWORD pen;
+        if (data->cd_TextPen)
+            pen = data->cd_TextPen;
+        else if (gad->Flags & GFLG_DISABLED)
+            pen = dri ? dri->dri_Pens[SHADOWPEN] : 1;
+        else if (data->cd_PrefsLabelPen)
+            pen = data->cd_PrefsLabelPen;
+        else
+            pen = dri ? dri->dri_Pens[TEXTPEN] : 1;
         SetAPen(rp, pen);
         SetDrMd(rp, JAM1);
+        if (data->cd_3DLabel && !(gad->Flags & GFLG_DISABLED) && dri)
+        {
+            SetAPen(rp, dri->dri_Pens[SHINEPEN]);
+            Move(rp, bx + bw + 7, by + rp->TxBaseline + 1);
+            Text(rp, txt, strlen(txt));
+            SetAPen(rp, pen);
+        }
         Move(rp, bx + bw + 6, by + rp->TxBaseline);
-        Text(rp, gad->GadgetText->IText,
-             strlen(gad->GadgetText->IText));
+        Text(rp, txt, strlen(txt));
     }
 
     /* Disabled rendering */
@@ -235,6 +279,8 @@ IPTR CheckBox__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
 IPTR CheckBox__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[CheckBox] GM_GOACTIVE: obj=%p\n", (void *)o));
+
     struct CheckboxData *data = INST_DATA(cl, o);
     struct Gadget *gad = G(o);
 
@@ -270,5 +316,7 @@ IPTR CheckBox__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR CheckBox__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[CheckBox] GM_HANDLEINPUT: obj=%p\n", (void *)o));
+
     return GMR_MEACTIVE;
 }

@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_LDFLAGS := -static
 
-FILES := buttonclass
+FILES := buttonclass button_init
 
 FUNCS := \
 	getclass

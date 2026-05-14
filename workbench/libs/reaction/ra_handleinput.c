@@ -3,6 +3,7 @@
 
     Desc: Reaction - RA_HandleInput() implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -13,7 +14,6 @@
 #include <intuition/classes.h>
 #include <classes/window.h>
 
-#include "reaction_windowmethods.h"
 #include "reaction_intern.h"
 
 /*****************************************************************************
@@ -70,6 +70,8 @@
     if (windowobj)
     {
         result = DoMethod(windowobj, WM_HANDLEINPUT, (IPTR)code);
+        D(bug("[Reaction] RA_HandleInput: windowobj=%p result=0x%08lx code=%d\n",
+            windowobj, result, code ? *code : 0));
     }
 
     return result;

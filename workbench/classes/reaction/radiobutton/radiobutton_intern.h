@@ -37,6 +37,15 @@ struct RadioButtonData
     LONG         selected;
     UWORD        spacing;
     ULONG        labelplace;
+    UWORD        rd_PrefsLabelPen;
+    BOOL         rd_3DLabel;
+    /* When the application supplies RADIOBUTTON_LabelArray (a NULL-terminated
+     * STRPTR vector) instead of an explicit `labels' List, the class builds
+     * an internal list of struct Node entries here and points `labels' at
+     * it. The list and its nodes are owned by the gadget and freed on
+     * OM_DISPOSE. */
+    struct List  rd_AutoList;
+    BOOL         rd_AutoListUsed;
 };
 
 #endif /* RADIOBUTTON_INTERN_H */

@@ -3,6 +3,7 @@
 
     Desc: Reaction speedbar.gadget - Button node management functions
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -57,6 +58,7 @@ struct SpeedButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[SpeedBar] AllocSpeedButtonNodeA: number=%d\n", number));
     struct SpeedButtonNode *node;
     struct TagItem *tag, *tstate;
 
@@ -129,6 +131,7 @@ struct SpeedButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[SpeedBar] FreeSpeedButtonNode: node=%p\n", node));
     if (node)
     {
         FreeVec(node);
@@ -161,6 +164,7 @@ struct SpeedButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[SpeedBar] SetSpeedButtonNodeAttrsA: node=%p\n", node));
     struct SpeedButtonNode *sbn = (struct SpeedButtonNode *)node;
     struct TagItem *tag, *tstate;
 
@@ -229,6 +233,7 @@ struct SpeedButtonNode
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("[SpeedBar] GetSpeedButtonNodeAttrsA: node=%p\n", node));
     struct SpeedButtonNode *sbn = (struct SpeedButtonNode *)node;
     struct TagItem *tag, *tstate;
 

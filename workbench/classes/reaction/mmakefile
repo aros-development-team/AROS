@@ -16,6 +16,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM     workbench-classes-reaction-layout \
 #MM     workbench-classes-reaction-listbrowser \
 #MM     workbench-classes-reaction-palette \
+#MM     workbench-classes-reaction-page \
 #MM     workbench-classes-reaction-radiobutton \
 #MM     workbench-classes-reaction-scroller \
 #MM     workbench-classes-reaction-slider \

@@ -3,6 +3,7 @@
 
     Desc: Reaction radiobutton.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -21,6 +22,8 @@
 #include <intuition/imageclass.h>
 #include <gadgets/radiobutton.h>
 #include <utility/tagitem.h>
+#include <reaction/reaction_prefs.h>
+#include <exec/semaphores.h>
 #include <string.h>
 
 #include "radiobutton_intern.h"
@@ -46,6 +49,36 @@ static void radiobutton_set(Class *cl, Object *o, struct opSet *msg)
                 data->labels = (struct List *)tag->ti_Data;
                 break;
 
+            case RADIOBUTTON_LabelArray:
+            {
+                STRPTR *arr = (STRPTR *)tag->ti_Data;
+
+                /* Free any previously auto-built list */
+                if (data->rd_AutoListUsed)
+                {
+                    struct Node *n;
+                    while ((n = RemHead(&data->rd_AutoList)) != NULL)
+                        FreeVec(n);
+                }
+
+                NEWLIST(&data->rd_AutoList);
+                data->rd_AutoListUsed = TRUE;
+
+                if (arr)
+                {
+                    while (*arr)
+                    {
+                        struct Node *n = (struct Node *)AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                        if (!n) break;
+                        n->ln_Name = (STRPTR)*arr;
+                        AddTail(&data->rd_AutoList, n);
+                        arr++;
+                    }
+                }
+                data->labels = &data->rd_AutoList;
+                break;
+            }
+
             case RADIOBUTTON_Selected:
                 data->selected = (LONG)tag->ti_Data;
                 break;
@@ -67,9 +100,11 @@ IPTR RadioButton__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[RadioButton] OM_NEW: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[RadioButton] OM_NEW: obj=%p\n", (Object *)retval));
         struct RadioButtonData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct RadioButtonData));
@@ -77,6 +112,19 @@ IPTR RadioButton__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         /* Set defaults */
         data->selected    = 0;
         data->spacing     = 4;
+
+        /* Snapshot prefs */
+        {
+            struct UIPrefs *prefs;
+            prefs = (struct UIPrefs *)FindSemaphore((STRPTR)RAPREFSSEMAPHORE);
+            if (prefs)
+            {
+                ObtainSemaphoreShared(&prefs->cap_Semaphore);
+                data->rd_PrefsLabelPen = prefs->cap_LabelPen;
+                data->rd_3DLabel       = prefs->cap_3DLabel ? TRUE : FALSE;
+                ReleaseSemaphore(&prefs->cap_Semaphore);
+            }
+        }
 
         radiobutton_set(cl, (Object *)retval, msg);
     }
@@ -88,7 +136,20 @@ IPTR RadioButton__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR RadioButton__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
-    /* Labels list is owned by the caller; do not free it */
+    struct RadioButtonData *data = INST_DATA(cl, o);
+
+    D(bug("[RadioButton] OM_DISPOSE: entry\n"));
+
+    /* Free any auto-built label list (caller-owned RADIOBUTTON_Labels lists
+     * are NOT freed). */
+    if (data->rd_AutoListUsed)
+    {
+        struct Node *n;
+        while ((n = RemHead(&data->rd_AutoList)) != NULL)
+            FreeVec(n);
+        data->rd_AutoListUsed = FALSE;
+    }
+
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -98,6 +159,7 @@ IPTR RadioButton__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[RadioButton] OM_SET: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     radiobutton_set(cl, o, msg);
 
@@ -139,6 +201,7 @@ IPTR RadioButton__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR RadioButton__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[RadioButton] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct RadioButtonData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo->gi_DrInfo;
@@ -185,25 +248,37 @@ IPTR RadioButton__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         SetAPen(rp, pens[SHINEPEN]);
         DrawEllipse(rp, cx, cy, RADIO_RADIUS - 1, RADIO_RADIUS - 1);
 
-        /* Fill selected indicator */
+        /* Fill selected indicator (small disk, drawn without AreaInfo
+         * so we don't depend on RastPort having a valid AreaInfo/TmpRas). */
         if (index == data->selected)
         {
+            WORD ir = RADIO_RADIUS - 3;
+            if (ir < 1) ir = 1;
             SetAPen(rp, pens[FILLPEN]);
-            AreaEllipse(rp, cx, cy, RADIO_RADIUS - 3, RADIO_RADIUS - 3);
+            RectFill(rp, cx - ir, cy - ir, cx + ir, cy + ir);
         }
 
         /* Draw the label text */
         if (node->ln_Name)
         {
             WORD tx, ty;
+            UWORD textPen = data->rd_PrefsLabelPen
+                          ? data->rd_PrefsLabelPen
+                          : pens[TEXTPEN];
 
-            SetAPen(rp, pens[TEXTPEN]);
             SetBPen(rp, pens[BACKGROUNDPEN]);
-            SetDrMd(rp, JAM2);
+            SetDrMd(rp, JAM1);
 
             tx = x + itemw;
             ty = cy - (rp->TxHeight / 2) + rp->TxBaseline;
 
+            if (data->rd_3DLabel)
+            {
+                SetAPen(rp, pens[SHINEPEN]);
+                Move(rp, tx + 1, ty + 1);
+                Text(rp, node->ln_Name, strlen(node->ln_Name));
+            }
+            SetAPen(rp, textPen);
             Move(rp, tx, ty);
             Text(rp, node->ln_Name, strlen(node->ln_Name));
         }

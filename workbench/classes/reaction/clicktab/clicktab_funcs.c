@@ -3,6 +3,7 @@
 
     Desc: Reaction clicktab.gadget - Exported node management functions
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -79,12 +80,16 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
 
     struct ClickTabNode *tn;
 
+    D(bug("[ClickTab] AllocClickTabNodeA: enter\n"));
+
     tn = (struct ClickTabNode *)AllocVec(sizeof(struct ClickTabNode),
                                          MEMF_PUBLIC | MEMF_CLEAR);
     if (tn)
     {
         clicktabnode_set(tn, tags);
     }
+
+    D(bug("[ClickTab] AllocClickTabNodeA: result 0x%p\n", (void *)tn));
 
     return (struct Node *)tn;
 
@@ -111,6 +116,8 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[ClickTab] FreeClickTabNode: node 0x%p\n", (void *)node));
 
     if (node)
     {
@@ -142,6 +149,8 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[ClickTab] SetClickTabNodeAttrsA: node 0x%p\n", (void *)node));
 
     if (node)
     {
@@ -178,6 +187,8 @@ static void clicktabnode_set(struct ClickTabNode *tn, struct TagItem *tags)
 
     struct ClickTabNode *tn;
     struct TagItem *tag;
+
+    D(bug("[ClickTab] GetClickTabNodeAttrsA: node 0x%p\n", (void *)node));
 
     if (!node)
         return;

@@ -3,6 +3,7 @@
 
     Desc: Reaction - RA_CloseWindow() implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -12,7 +13,6 @@
 #include <intuition/classes.h>
 #include <classes/window.h>
 
-#include "reaction_windowmethods.h"
 #include "reaction_intern.h"
 
 /*****************************************************************************
@@ -44,6 +44,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Reaction] RA_CloseWindow: windowobj=%p\n", windowobj));
 
     if (windowobj)
     {

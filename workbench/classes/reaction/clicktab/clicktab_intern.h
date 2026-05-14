@@ -56,6 +56,10 @@ struct ClickTabData
     LONG                td_HoverTab;     /* Tab under mouse (-1 = none) */
     UWORD               *td_TabWidths;   /* Cached tab pixel widths */
     UWORD               td_TabHeight;    /* Computed tab height */
+
+    /* Internal labels list when caller supplies a NULL-terminated
+       STRPTR[] via GA_Text. Retains ownership; freed in OM_DISPOSE. */
+    struct List         *td_AutoLabels;
 };
 
 #endif /* CLICKTAB_INTERN_H */

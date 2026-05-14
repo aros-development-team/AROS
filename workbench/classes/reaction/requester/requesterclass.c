@@ -3,6 +3,7 @@
 
     Desc: Reaction requester.class - BOOPSI requester class
 */
+#define DEBUG 1
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -131,9 +132,14 @@ IPTR Requester__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct RequesterData *data;
 
+    D(bug("[Requester] OM_NEW: entry\n"));
+
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (!o)
+    {
+        D(bug("[Requester] OM_NEW: superclass failed\n"));
         return (IPTR)NULL;
+    }
 
     data = INST_DATA(cl, o);
 
@@ -170,6 +176,10 @@ IPTR Requester__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     requester_set(cl, o, msg->ops_AttrList);
 
+    D(bug("[Requester] OM_NEW: created obj 0x%p body='%s' gadgets='%s'\n",
+        o, data->rd_BodyText ? data->rd_BodyText : (STRPTR)"(null)",
+        data->rd_GadgetText ? data->rd_GadgetText : (STRPTR)"(null)"));
+
     return (IPTR)o;
 }
 
@@ -177,6 +187,7 @@ IPTR Requester__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Requester__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Requester] OM_DISPOSE: obj 0x%p\n", o));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -184,6 +195,7 @@ IPTR Requester__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Requester__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[Requester] OM_SET: obj 0x%p\n", o));
     requester_set(cl, o, msg->ops_AttrList);
     return DoSuperMethodA(cl, o, (Msg)msg);
 }
@@ -219,13 +231,16 @@ IPTR Requester__RM_OPENREQ(Class *cl, Object *o, struct orRequest *msg)
     struct Screen *refscr = msg->or_Screen;
     LONG result = 0;
 
+    D(bug("[Requester] RM_OPENREQ: obj 0x%p type=%ld refwin=0x%p\n",
+        o, (LONG)data->rd_Type, refwin));
+
     /* Apply any additional tags from the method */
     if (msg->or_Attrs)
         requester_set(cl, o, msg->or_Attrs);
 
-    /* If no reference window and no screen, try to get the default public screen */
-    if (!refwin && !refscr)
-        return 0;
+    /* refwin/refscr may both be NULL - that's fine, EasyRequestArgs() falls
+     * back to the default public screen. Don't early-return here or apps
+     * that pass no refwin (which is common) get a silent no-op. */
 
     /* Use the window's screen if no explicit screen given */
     if (refwin && !refscr)
@@ -268,5 +283,8 @@ IPTR Requester__RM_OPENREQ(Class *cl, Object *o, struct orRequest *msg)
     }
 
     data->rd_ReturnCode = result;
+
+    D(bug("[Requester] RM_OPENREQ: result=%ld\n", result));
+
     return (IPTR)result;
 }

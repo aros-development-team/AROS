@@ -23,6 +23,14 @@
 #include <intuition/classes.h>
 #endif
 
+#ifndef REACTION_REACTION_PREFS_H
+#include <reaction/reaction_prefs.h>
+#endif
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
 #include LC_LIBDEFS_FILE
 
 struct ReactionBase
@@ -32,6 +40,8 @@ struct ReactionBase
     APTR                    aui_SysBase;
     APTR                    aui_IntuitionBase;
     APTR                    aui_UtilityBase;
+    struct UIPrefs          aui_Prefs;          /* live prefs, semaphore-named */
+    char                    aui_PrefsName[32];  /* backing storage for SemaphoreName */
 };
 
 #define ARB(b) ((struct ReactionBase *)(b))

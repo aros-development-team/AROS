@@ -43,6 +43,17 @@ struct BitmapData
     WORD            bd_OffsetY;          /* Source Y offset */
     struct BitMap   *bd_SelectBitMap;    /* Selected state bitmap */
     UBYTE           *bd_SelectMaskPlane; /* Selected mask plane */
+    struct BitMap   *bd_DisabledBitMap;  /* Disabled state bitmap */
+    UBYTE           *bd_DisabledMaskPlane;
+    UWORD           bd_DisabledWidth;
+    UWORD           bd_DisabledHeight;
+    WORD            bd_DisabledOffsetX;
+    WORD            bd_DisabledOffsetY;
+    STRPTR          bd_DisabledSourceFile;
+    APTR            bd_DTObject;         /* datatypes obj for normal source file */
+    APTR            bd_DisabledDTObject; /* datatypes obj for disabled source file */
+    BOOL            bd_LoadTried;        /* normal source file load attempted */
+    BOOL            bd_DisabledLoadTried;/* disabled source file load attempted */
 };
 
 #endif /* BITMAP_INTERN_H */

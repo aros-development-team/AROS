@@ -3,6 +3,7 @@
 
     Desc: Reaction getfile.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -83,10 +84,14 @@ IPTR GetFile__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[GetFile] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
         struct GetFileData *data = INST_DATA(cl, (Object *)retval);
+
+        D(bug("[GetFile] OM_NEW: obj 0x%p\n", (void *)retval));
 
         memset(data, 0, sizeof(struct GetFileData));
 
@@ -103,6 +108,7 @@ IPTR GetFile__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR GetFile__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[GetFile] OM_DISPOSE: enter\n"));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -110,7 +116,9 @@ IPTR GetFile__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR GetFile__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    IPTR retval;
+    D(bug("[GetFile] OM_SET: enter\n"));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
     getfile_set(cl, o, msg);
     return retval;
 }
@@ -160,6 +168,8 @@ IPTR GetFile__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     WORD bx;
     UWORD bgpen, textpen, shinepen, shadowpen;
     STRPTR disptext;
+
+    D(bug("[GetFile] GM_RENDER: redraw 0x%lx\n", (unsigned long)msg->gpr_Redraw));
 
     if (!rp && msg->gpr_GInfo)
         rp = ObtainGIRPort(msg->gpr_GInfo);

@@ -3,6 +3,7 @@
 
     Desc: Reaction fuelgauge.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -17,7 +18,10 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <gadgets/fuelgauge.h>
+#include <images/bevel.h>
 #include <utility/tagitem.h>
+#include <reaction/reaction_prefs.h>
+#include <exec/semaphores.h>
 
 #include <string.h>
 
@@ -71,9 +75,11 @@ IPTR FuelGauge__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[FuelGauge] OM_NEW: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[FuelGauge] OM_NEW: obj=%p\n", (Object *)retval));
         struct FuelGaugeData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct FuelGaugeData));
@@ -82,6 +88,22 @@ IPTR FuelGauge__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         data->fgd_Level       = 0;
         data->fgd_Orientation = FGORIENT_HORIZ;
         data->fgd_Percent     = TRUE;
+
+        /* Snapshot prefs */
+        {
+            struct UIPrefs *prefs;
+            prefs = (struct UIPrefs *)FindSemaphore((STRPTR)RAPREFSSEMAPHORE);
+            if (prefs)
+            {
+                ObtainSemaphoreShared(&prefs->cap_Semaphore);
+                data->fgd_3DProp = prefs->cap_3DProp ? TRUE : FALSE;
+                ReleaseSemaphore(&prefs->cap_Semaphore);
+            }
+            else
+            {
+                data->fgd_3DProp = TRUE;
+            }
+        }
 
         fuelgauge_set(cl, (Object *)retval, msg);
     }
@@ -93,6 +115,13 @@ IPTR FuelGauge__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR FuelGauge__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[FuelGauge] OM_DISPOSE: entry\n"));
+    struct FuelGaugeData *data = INST_DATA(cl, o);
+    if (data->fgd_BevelImage)
+    {
+        DisposeObject(data->fgd_BevelImage);
+        data->fgd_BevelImage = NULL;
+    }
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -100,6 +129,7 @@ IPTR FuelGauge__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR FuelGauge__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[FuelGauge] OM_SET: entry\n"));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     fuelgauge_set(cl, o, msg);
     return retval;
@@ -153,6 +183,7 @@ IPTR FuelGauge__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[FuelGauge] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct FuelGaugeData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -248,6 +279,31 @@ IPTR FuelGauge__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
         Move(rp, txX, txY);
         Text(rp, buf, len);
+    }
+
+    /* Draw 3D recessed frame around the gauge if cap_3DProp is set */
+    if (data->fgd_3DProp && dri)
+    {
+        if (!data->fgd_BevelImage)
+        {
+            data->fgd_BevelImage = NewObject(NULL, "bevel.image",
+                BEVEL_Style, BVS_FIELD,
+                BEVEL_Transparent, TRUE,
+                TAG_END);
+        }
+        if (data->fgd_BevelImage)
+        {
+            struct impDraw idmsg;
+            idmsg.MethodID         = IM_DRAWFRAME;
+            idmsg.imp_RPort        = rp;
+            idmsg.imp_Offset.X     = x;
+            idmsg.imp_Offset.Y     = y;
+            idmsg.imp_State        = IDS_NORMAL;
+            idmsg.imp_DrInfo       = dri;
+            idmsg.imp_Dimensions.Width  = w;
+            idmsg.imp_Dimensions.Height = h;
+            DoMethodA(data->fgd_BevelImage, (Msg)&idmsg);
+        }
     }
 
     if (!msg->gpr_RPort && msg->gpr_GInfo)

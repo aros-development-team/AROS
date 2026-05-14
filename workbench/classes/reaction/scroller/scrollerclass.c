@@ -3,6 +3,7 @@
 
     Desc: Scroller gadget class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -80,7 +81,10 @@ IPTR Scroller__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Scroller] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
+    D(bug("[Scroller] OM_NEW: obj=%p\n", (void *)retval));
     if (!retval)
         return (IPTR)0;
 
@@ -106,6 +110,8 @@ IPTR Scroller__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Scroller__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Scroller] OM_DISPOSE: obj=%p\n", (void *)o));
+
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -114,6 +120,8 @@ IPTR Scroller__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 IPTR Scroller__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
+
+    D(bug("[Scroller] OM_SET: obj=%p\n", (void *)o));
 
     retval = DoSuperMethodA(cl, o, (Msg)msg);
 
@@ -162,6 +170,8 @@ IPTR Scroller__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR Scroller__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[Scroller] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
+
     IPTR retval;
     struct ScrollerData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;

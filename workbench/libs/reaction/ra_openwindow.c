@@ -3,6 +3,7 @@
 
     Desc: Reaction - RA_OpenWindow() implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -14,7 +15,6 @@
 #include <classes/window.h>
 #include <utility/tagitem.h>
 
-#include "reaction_windowmethods.h"
 #include "reaction_intern.h"
 
 /*****************************************************************************
@@ -54,6 +54,8 @@
 
     struct Window *win = NULL;
 
+    D(bug("[Reaction] RA_OpenWindow: windowobj=%p\n", windowobj));
+
     if (windowobj)
     {
         /* Send OM_OPEN to open the window. The window.class handles
@@ -61,6 +63,11 @@
         if (DoMethod(windowobj, WM_OPEN, NULL))
         {
             GetAttr(WINDOW_Window, windowobj, (IPTR *)&win);
+            D(bug("[Reaction] RA_OpenWindow: opened win=%p\n", win));
+        }
+        else
+        {
+            D(bug("[Reaction] RA_OpenWindow: WM_OPEN failed\n"));
         }
     }
 

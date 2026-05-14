@@ -39,6 +39,10 @@ struct SliderData
     UWORD           sd_Ticks;           /* Number of major tick marks */
     UWORD           sd_ShortTicks;      /* Number of minor tick marks between major ticks */
     BOOL            sd_Invert;          /* Invert direction */
+    /* Level-text rendering (SLIDER_LevelFormat / MaxLen / Place). */
+    STRPTR          sd_LevelFormat;     /* printf-style format, owned by caller */
+    LONG            sd_LevelMaxLen;     /* maximum chars in formatted output (incl. NUL) */
+    ULONG           sd_LevelPlace;      /* PLACETEXT_xx — where to draw the text */
 };
 
 #endif /* SLIDER_INTERN_H */

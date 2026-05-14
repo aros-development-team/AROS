@@ -26,6 +26,7 @@ struct CheckBoxBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -37,6 +38,9 @@ struct CheckboxData
     UWORD           cd_BackgroundPen;   /* Background pen */
     UWORD           cd_FillTextPen;     /* Fill text pen */
     ULONG           cd_TextPlace;       /* Text placement */
+    Object         *cd_BevelImage;      /* Cached bevel for box frame */
+    UWORD           cd_PrefsLabelPen;   /* cap_LabelPen snapshot */
+    BOOL            cd_3DLabel;         /* cap_3DLabel snapshot */
 };
 
 #endif /* CHECKBOX_INTERN_H */

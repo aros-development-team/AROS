@@ -3,6 +3,7 @@
 
     Desc: Reaction textfield.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -18,6 +19,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <gadgets/textfield.h>
+#include <images/bevel.h>
 #include <utility/tagitem.h>
 
 #include <string.h>
@@ -75,10 +77,14 @@ IPTR TextField__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[TextField] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
         struct TextFieldData *data = INST_DATA(cl, (Object *)retval);
+
+        D(bug("[TextField] OM_NEW: obj 0x%p\n", (void *)retval));
 
         memset(data, 0, sizeof(struct TextFieldData));
 
@@ -98,6 +104,12 @@ IPTR TextField__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR TextField__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    struct TextFieldData *data = INST_DATA(cl, o);
+    if (data->td_BevelImage)
+    {
+        DisposeObject(data->td_BevelImage);
+        data->td_BevelImage = NULL;
+    }
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -160,6 +172,8 @@ IPTR TextField__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     struct Gadget *gad = G(o);
     WORD x, y, w, h;
 
+    D(bug("[TextField] GM_RENDER: redraw 0x%lx\n", (unsigned long)msg->gpr_Redraw));
+
     if (!rp && msg->gpr_GInfo)
         rp = ObtainGIRPort(msg->gpr_GInfo);
 
@@ -175,20 +189,29 @@ IPTR TextField__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     SetAPen(rp, dri ? dri->dri_Pens[BACKGROUNDPEN] : 0);
     RectFill(rp, x, y, x + w - 1, y + h - 1);
 
-    /* Draw recessed border frame */
+    /* Draw recessed border frame via bevel.image (BVS_FIELD = recessed). */
+    if (dri)
     {
-        UWORD shine  = dri ? dri->dri_Pens[SHINEPEN] : 2;
-        UWORD shadow = dri ? dri->dri_Pens[SHADOWPEN] : 1;
-
-        SetAPen(rp, shadow);
-        Move(rp, x, y + h - 1);
-        Draw(rp, x, y);
-        Draw(rp, x + w - 1, y);
-
-        SetAPen(rp, shine);
-        Move(rp, x + 1, y + h - 1);
-        Draw(rp, x + w - 1, y + h - 1);
-        Draw(rp, x + w - 1, y + 1);
+        if (!data->td_BevelImage)
+        {
+            data->td_BevelImage = NewObject(NULL, "bevel.image",
+                BEVEL_Style, BVS_FIELD,
+                BEVEL_Transparent, TRUE,
+                TAG_END);
+        }
+        if (data->td_BevelImage)
+        {
+            struct impDraw idmsg;
+            idmsg.MethodID         = IM_DRAWFRAME;
+            idmsg.imp_RPort        = rp;
+            idmsg.imp_Offset.X     = x;
+            idmsg.imp_Offset.Y     = y;
+            idmsg.imp_State        = IDS_NORMAL;
+            idmsg.imp_DrInfo       = dri;
+            idmsg.imp_Dimensions.Width  = w;
+            idmsg.imp_Dimensions.Height = h;
+            DoMethodA(data->td_BevelImage, (Msg)&idmsg);
+        }
     }
 
     /* Render text content inside the border */

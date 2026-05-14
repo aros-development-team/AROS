@@ -3,6 +3,7 @@
 
     Desc: Reaction glyph.image - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -17,6 +18,8 @@
 #include <intuition/imageclass.h>
 #include <images/glyph.h>
 #include <utility/tagitem.h>
+#include <reaction/reaction_prefs.h>
+#include <exec/semaphores.h>
 
 #include <string.h>
 
@@ -249,10 +252,23 @@ IPTR Glyph__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[Glyph] OM_NEW: obj 0x%p\n", (APTR)retval));
         struct GlyphData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct GlyphData));
         data->gd_Glyph = GLYPH_POPUP;
+
+        /* Snapshot the user's preferred glyph rendering style */
+        {
+            struct UIPrefs *prefs;
+            prefs = (struct UIPrefs *)FindSemaphore((STRPTR)RAPREFSSEMAPHORE);
+            if (prefs)
+            {
+                ObtainSemaphoreShared(&prefs->cap_Semaphore);
+                data->gd_VisualType = prefs->cap_GlyphType;
+                ReleaseSemaphore(&prefs->cap_Semaphore);
+            }
+        }
 
         glyph_set(cl, (Object *)retval, msg);
     }
@@ -264,6 +280,7 @@ IPTR Glyph__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Glyph__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Glyph] OM_DISPOSE: obj 0x%p\n", o));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -271,6 +288,7 @@ IPTR Glyph__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Glyph__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[Glyph] OM_SET: obj 0x%p\n", o));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     glyph_set(cl, o, msg);
     return retval;
@@ -303,6 +321,8 @@ IPTR Glyph__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
     UWORD *pens;
     WORD x, y, w, h;
     UWORD fgPen, bgPen;
+
+    D(bug("[Glyph] IM_DRAW: state %d, dimensions %dx%d, glyph %d\n", msg->imp_State, im->Width, im->Height, data->gd_Glyph));
 
     if (!rp || !dri)
         return FALSE;
@@ -337,75 +357,64 @@ IPTR Glyph__IM_DRAW(Class *cl, Object *o, struct impDraw *msg)
 
     SetDrMd(rp, JAM1);
 
-    switch (data->gd_Glyph)
+    /* Helper to draw the glyph at (x,y) using fgPen for the strokes. We
+     * encapsulate it so GLT_3D can call it twice (shadow pre-pass plus the
+     * main pass shifted up-left). */
+    #define DRAW_GLYPH(_x,_y,_pen) do { \
+        WORD _gx = (_x), _gy = (_y); \
+        switch (data->gd_Glyph) { \
+            case GLYPH_UPARROW: case GLYPH_BUPARROW: \
+                SetAPen(rp, (_pen)); glyph_draw_arrow_up   (rp, _gx + 2, _gy + 2, w - 4, h - 4); break; \
+            case GLYPH_DOWNARROW: case GLYPH_BDOWNARROW: \
+            case GLYPH_DROPDOWN: case GLYPH_DROPDOWNMENU: \
+                SetAPen(rp, (_pen)); glyph_draw_arrow_down (rp, _gx + 2, _gy + 2, w - 4, h - 4); break; \
+            case GLYPH_LEFTARROW: case GLYPH_BLEFTARROW: \
+                SetAPen(rp, (_pen)); glyph_draw_arrow_left (rp, _gx + 2, _gy + 2, w - 4, h - 4); break; \
+            case GLYPH_RIGHTARROW: case GLYPH_BRIGHTARROW: \
+            case GLYPH_RETURNARROW: \
+                SetAPen(rp, (_pen)); glyph_draw_arrow_right(rp, _gx + 2, _gy + 2, w - 4, h - 4); break; \
+            case GLYPH_POPUP: case GLYPH_POPFONT: case GLYPH_POPSCREENMODE: \
+            case GLYPH_POPTIME: case GLYPH_CYCLE: \
+                glyph_draw_popup    (rp, pens, _gx, _gy, w, h); break; \
+            case GLYPH_POPFILE: \
+                glyph_draw_popfile  (rp, pens, _gx, _gy, w, h); break; \
+            case GLYPH_POPDRAWER: \
+                glyph_draw_popdrawer(rp, pens, _gx, _gy, w, h); break; \
+            case GLYPH_CHECKMARK: \
+                glyph_draw_checkbox (rp, pens, _gx, _gy, w, h); break; \
+            case GLYPH_RADIOBUTTON: \
+                glyph_draw_radiobutton(rp, pens, _gx, _gy, w, h); break; \
+            default: break; \
+        } } while (0)
+
+    if (data->gd_VisualType == GLT_3D &&
+        msg->imp_State != IDS_DISABLED && msg->imp_State != IDS_INACTIVEDISABLED)
     {
-        case GLYPH_UPARROW:
-        case GLYPH_BUPARROW:
-            SetAPen(rp, fgPen);
-            glyph_draw_arrow_up(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        case GLYPH_DOWNARROW:
-        case GLYPH_BDOWNARROW:
-            SetAPen(rp, fgPen);
-            glyph_draw_arrow_down(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        case GLYPH_LEFTARROW:
-        case GLYPH_BLEFTARROW:
-            SetAPen(rp, fgPen);
-            glyph_draw_arrow_left(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        case GLYPH_RIGHTARROW:
-        case GLYPH_BRIGHTARROW:
-            SetAPen(rp, fgPen);
-            glyph_draw_arrow_right(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        case GLYPH_DROPDOWN:
-        case GLYPH_DROPDOWNMENU:
-            glyph_draw_arrow_down(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        case GLYPH_POPUP:
-            glyph_draw_popup(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_POPFILE:
-            glyph_draw_popfile(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_POPDRAWER:
-            glyph_draw_popdrawer(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_POPFONT:
-        case GLYPH_POPSCREENMODE:
-        case GLYPH_POPTIME:
-            glyph_draw_popup(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_CHECKMARK:
-            glyph_draw_checkbox(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_RADIOBUTTON:
-            glyph_draw_radiobutton(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_CYCLE:
-            glyph_draw_popup(rp, pens, x, y, w, h);
-            break;
-
-        case GLYPH_RETURNARROW:
-            SetAPen(rp, fgPen);
-            glyph_draw_arrow_right(rp, x + 2, y + 2, w - 4, h - 4);
-            break;
-
-        default:
-            break;
+        /* Shadow pre-pass shifted +1,+1 then redraw on top in fgPen. Only
+         * for arrow glyphs - composite popup/checkbox glyphs already render
+         * their own shading internally. */
+        switch (data->gd_Glyph)
+        {
+            case GLYPH_UPARROW: case GLYPH_BUPARROW:
+            case GLYPH_DOWNARROW: case GLYPH_BDOWNARROW:
+            case GLYPH_LEFTARROW: case GLYPH_BLEFTARROW:
+            case GLYPH_RIGHTARROW: case GLYPH_BRIGHTARROW:
+            case GLYPH_DROPDOWN: case GLYPH_DROPDOWNMENU:
+            case GLYPH_RETURNARROW:
+                DRAW_GLYPH(x + 1, y + 1, pens[SHADOWPEN]);
+                DRAW_GLYPH(x,     y,     pens[SHINEPEN]);
+                break;
+            default:
+                DRAW_GLYPH(x, y, fgPen);
+                break;
+        }
     }
+    else
+    {
+        DRAW_GLYPH(x, y, fgPen);
+    }
+
+    #undef DRAW_GLYPH
 
     /* Draw disabled ghosting pattern */
     if (msg->imp_State == IDS_DISABLED || msg->imp_State == IDS_INACTIVEDISABLED)

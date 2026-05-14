@@ -39,6 +39,13 @@
 #define BITMAP_OffsetY          (BITMAP_Dummy + 15) /* (LONG) Y source offset */
 #define BITMAP_SelectOffsetX    (BITMAP_Dummy + 16) /* (LONG) Selected X offset */
 #define BITMAP_SelectOffsetY    (BITMAP_Dummy + 17) /* (LONG) Selected Y offset */
+#define BITMAP_DisabledSourceFile (BITMAP_Dummy + 18) /* (STRPTR) Disabled state filename */
+#define BITMAP_DisabledBitMap     (BITMAP_Dummy + 19) /* (struct BitMap *) Disabled state bitmap */
+#define BITMAP_DisabledWidth      (BITMAP_Dummy + 20) /* (LONG) Disabled bitmap width */
+#define BITMAP_DisabledHeight     (BITMAP_Dummy + 21) /* (LONG) Disabled bitmap height */
+#define BITMAP_DisabledMaskPlane  (BITMAP_Dummy + 22) /* (APTR) Disabled state mask plane */
+#define BITMAP_DisabledOffsetX    (BITMAP_Dummy + 23) /* (LONG) Disabled X offset */
+#define BITMAP_DisabledOffsetY    (BITMAP_Dummy + 24) /* (LONG) Disabled Y offset */
 
 #ifndef BitMapObject
 #define BitMapObject    NewObject(NULL, BITMAP_CLASSNAME

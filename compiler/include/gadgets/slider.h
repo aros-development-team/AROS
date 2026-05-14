@@ -37,6 +37,9 @@
 #define SLIDER_PenArray         (SLIDER_Dummy + 13)  /* Gradient pen array (UWORD *) */
 #define SLIDER_Invert           (SLIDER_Dummy + 14)  /* Invert min/max positions (BOOL) */
 #define SLIDER_KnobDelta        (SLIDER_Dummy + 15)  /* Knob movement delta (WORD) */
+#define SLIDER_LevelFormat      (SLIDER_Dummy + 16)  /* (STRPTR) printf-style format for level text */
+#define SLIDER_LevelMaxLen      (SLIDER_Dummy + 17)  /* (LONG)   max chars in formatted level text */
+#define SLIDER_LevelPlace       (SLIDER_Dummy + 18)  /* (LONG)   PLACETEXT_xx — where to draw level */
 
 /* Orientation modes */
 #define SORIENT_HORIZ           FREEHORIZ

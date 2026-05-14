@@ -3,6 +3,7 @@
 
     Desc: Reaction - RA_DisposeWindowObject() implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -42,6 +43,8 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    D(bug("[Reaction] RA_DisposeWindowObject: windowobj=%p\n", windowobj));
 
     if (windowobj)
     {

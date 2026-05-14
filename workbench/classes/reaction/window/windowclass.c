@@ -3,6 +3,7 @@
 
     Desc: Reaction window.class - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -14,11 +15,29 @@
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
+#include <intuition/imageclass.h>
 #include <classes/window.h>
 #include <gadgets/layout.h>
 #include <utility/tagitem.h>
+#include <reaction/reaction_prefs.h>
+#include <exec/semaphores.h>
+
+/* Fallback definitions in case the installed <gadgets/layout.h> doesn't
+ * yet have the new layout-private methods we use to attach the gadget
+ * tree to the window. Public header has matching definitions. */
+#ifndef LM_ADDTOWINDOW
+#define LM_ADDTOWINDOW          (LAYOUT_Dummy + 0x500)
+#define LM_REMOVEFROMWINDOW     (LAYOUT_Dummy + 0x501)
+struct lpAddToWindow
+{
+    ULONG               MethodID;
+    struct Window      *lpaw_Window;
+    struct Requester   *lpaw_Requester;
+};
+#endif
 
 #include <string.h>
 
@@ -142,6 +161,8 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Window] OM_NEW: entry\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
@@ -154,6 +175,14 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
         /* Process initial attributes */
         window_set(cl, (Object *)retval, msg);
+
+        D(bug("[Window] OM_NEW: created obj 0x%p title='%s' position=%ld layout=0x%p\n",
+            (APTR)retval, data->wcd_Title ? data->wcd_Title : (STRPTR)"(null)",
+            (LONG)data->wcd_Position, data->wcd_Layout));
+    }
+    else
+    {
+        D(bug("[Window] OM_NEW: superclass failed\n"));
     }
 
     return retval;
@@ -164,6 +193,8 @@ IPTR Window__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 IPTR Window__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct WindowClassData *data = INST_DATA(cl, o);
+
+    D(bug("[Window] OM_DISPOSE: obj 0x%p\n", o));
 
     /* Close window if still open */
     if (data->wcd_Window)
@@ -189,7 +220,9 @@ IPTR Window__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Window__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
+    IPTR retval;
+    D(bug("[Window] OM_SET: obj 0x%p\n", o));
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
     window_set(cl, o, msg);
     return retval;
 }
@@ -237,6 +270,10 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     struct WindowClassData *data = INST_DATA(cl, o);
     struct Screen *screen;
     WORD left, top, width, height;
+    UWORD layoutMinW = 0, layoutMinH = 0;
+
+    D(bug("[Window] WM_OPEN: obj 0x%p title='%s'\n", o,
+        data->wcd_Title ? data->wcd_Title : (STRPTR)"(null)"));
 
     if (data->wcd_Window)
         return (IPTR)data->wcd_Window;
@@ -245,10 +282,58 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     if (!screen)
         screen = LockPubScreen(NULL);
 
+    /* Query the layout's preferred minimum size before opening the window.
+     * ReAction apps typically pass placeholder WA_Width/WA_Height values
+     * and rely on the window auto-sizing to the layout's natural size.
+     */
+    if (data->wcd_Layout && screen)
+    {
+        struct GadgetInfo gi;
+        struct gpDomain gpd;
+
+        memset(&gi, 0, sizeof(gi));
+        gi.gi_Screen = screen;
+        gi.gi_Window = NULL;
+        gi.gi_RastPort = &screen->RastPort;
+        gi.gi_DrInfo = GetScreenDrawInfo(screen);
+
+        memset(&gpd, 0, sizeof(gpd));
+        gpd.MethodID  = GM_DOMAIN;
+        gpd.gpd_GInfo = &gi;
+        gpd.gpd_RPort = &screen->RastPort;
+        gpd.gpd_Which = GDOMAIN_MINIMUM;
+
+        if (DoMethodA(data->wcd_Layout, (Msg)&gpd))
+        {
+            layoutMinW = (UWORD)gpd.gpd_Domain.Width;
+            layoutMinH = (UWORD)gpd.gpd_Domain.Height;
+            D(bug("[Window] WM_OPEN: layout min size %ldx%ld\n",
+                (LONG)layoutMinW, (LONG)layoutMinH));
+        }
+
+        if (gi.gi_DrInfo)
+            FreeScreenDrawInfo(screen, gi.gi_DrInfo);
+    }
+
     left   = data->wcd_Left;
     top    = data->wcd_Top;
     width  = data->wcd_Width  ? data->wcd_Width  : 400;
     height = data->wcd_Height ? data->wcd_Height : 300;
+
+    /* Auto-fit to layout content. LockWidth/LockHeight forces the window to
+     * exactly the layout's minimum size; otherwise we just ensure the inner
+     * area is at least large enough to hold the layout.
+     */
+    if (layoutMinW)
+    {
+        if (data->wcd_LockWidth || width < layoutMinW)
+            width = layoutMinW;
+    }
+    if (layoutMinH)
+    {
+        if (data->wcd_LockHeight || height < layoutMinH)
+            height = layoutMinH;
+    }
 
     /* Apply position policy */
     switch (data->wcd_Position)
@@ -281,6 +366,19 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
     if (left + width > screen->Width) left = screen->Width - width;
     if (top + height > screen->Height) top = screen->Height - height;
 
+    /* Default refresh mode from cap_SimpleRefresh prefs */
+    BOOL simpleRefresh = TRUE;
+    {
+        struct UIPrefs *prefs;
+        prefs = (struct UIPrefs *)FindSemaphore((STRPTR)RAPREFSSEMAPHORE);
+        if (prefs)
+        {
+            ObtainSemaphoreShared(&prefs->cap_Semaphore);
+            simpleRefresh = prefs->cap_SimpleRefresh ? TRUE : FALSE;
+            ReleaseSemaphore(&prefs->cap_Semaphore);
+        }
+    }
+
     data->wcd_Window = OpenWindowTags(NULL,
         WA_Left,        left,
         WA_Top,         top,
@@ -294,7 +392,7 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
         WA_SizeGadget,  TRUE,
         WA_CloseGadget, TRUE,
         WA_Activate,    TRUE,
-        WA_SimpleRefresh, TRUE,
+        simpleRefresh ? WA_SimpleRefresh : WA_SmartRefresh, TRUE,
         WA_IDCMP,       IDCMP_CLOSEWINDOW | IDCMP_GADGETUP |
                          IDCMP_MENUPICK | IDCMP_REFRESHWINDOW |
                          IDCMP_NEWSIZE | IDCMP_RAWKEY | IDCMP_VANILLAKEY |
@@ -320,14 +418,19 @@ IPTR Window__WM_OPEN(Class *cl, Object *o, Msg msg)
                 GA_Height, data->wcd_Window->Height - data->wcd_Window->BorderTop - data->wcd_Window->BorderBottom,
                 TAG_DONE);
 
-            AddGList(data->wcd_Window, (struct Gadget *)data->wcd_Layout, -1, -1, NULL);
-            RefreshGList((struct Gadget *)data->wcd_Layout, data->wcd_Window, NULL, -1);
+            /* Layout flattens itself + descendant gadgets into the window's
+             * GList so Intuition can hit-test and dispatch IDCMP_GADGETUP for
+             * each child. The layout itself is the head of that chain. */
+            DoMethod(data->wcd_Layout, LM_ADDTOWINDOW,
+                (IPTR)data->wcd_Window, (IPTR)NULL);
         }
 
         /* Attach menu strip */
         if (data->wcd_MenuStrip)
             SetMenuStrip(data->wcd_Window, data->wcd_MenuStrip);
     }
+
+    D(bug("[Window] WM_OPEN: result window=0x%p\n", data->wcd_Window));
 
     return (IPTR)data->wcd_Window;
 }
@@ -338,10 +441,13 @@ IPTR Window__WM_CLOSE(Class *cl, Object *o, Msg msg)
 {
     struct WindowClassData *data = INST_DATA(cl, o);
 
+    D(bug("[Window] WM_CLOSE: obj 0x%p window=0x%p\n", o, data->wcd_Window));
+
     if (data->wcd_Window)
     {
         if (data->wcd_Layout)
-            RemoveGList(data->wcd_Window, (struct Gadget *)data->wcd_Layout, -1);
+            DoMethod(data->wcd_Layout, LM_REMOVEFROMWINDOW,
+                (IPTR)data->wcd_Window, (IPTR)NULL);
 
         if (data->wcd_MenuStrip)
             ClearMenuStrip(data->wcd_Window);
@@ -368,6 +474,9 @@ IPTR Window__WM_HANDLEINPUT(Class *cl, Object *o, Msg msg)
     imsg = (struct IntuiMessage *)GetMsg(data->wcd_Window->UserPort);
     if (!imsg)
         return WMHI_LASTMSG;
+
+    D(bug("[Window] WM_HANDLEINPUT: obj 0x%p IDCMP class=0x%08lx code=0x%04lx\n",
+        o, (ULONG)imsg->Class, (ULONG)imsg->Code));
 
     if (code)
         *code = imsg->Code;

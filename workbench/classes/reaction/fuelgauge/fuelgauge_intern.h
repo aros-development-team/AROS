@@ -26,6 +26,7 @@ struct FuelGaugeBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -40,6 +41,8 @@ struct FuelGaugeData
     UWORD           fgd_ShortTicks;     /* Number of minor tick marks */
     BOOL            fgd_Percent;        /* Show percentage text */
     ULONG           fgd_Justification;  /* Text justification */
+    BOOL            fgd_3DProp;         /* cap_3DProp snapshot */
+    Object         *fgd_BevelImage;     /* Cached recessed bevel */
 };
 
 #endif /* FUELGAUGE_INTERN_H */

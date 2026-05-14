@@ -14,6 +14,10 @@
 #include <intuition/gadgetclass.h>
 #include <gadgets/listbrowser.h>
 
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
 #include LC_LIBDEFS_FILE
 
 #include <exec/libraries.h>

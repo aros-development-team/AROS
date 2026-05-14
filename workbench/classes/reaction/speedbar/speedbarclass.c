@@ -3,6 +3,7 @@
 
     Desc: Reaction speedbar.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -64,9 +65,11 @@ IPTR SpeedBar__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[SpeedBar] OM_NEW: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[SpeedBar] OM_NEW: obj=%p\n", (Object *)retval));
         struct SpeedBarData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct SpeedBarData));
@@ -81,6 +84,7 @@ IPTR SpeedBar__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR SpeedBar__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[SpeedBar] OM_DISPOSE: entry\n"));
     /* Buttons list is owned by the caller - do not free it here */
     return DoSuperMethodA(cl, o, msg);
 }
@@ -89,6 +93,7 @@ IPTR SpeedBar__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR SpeedBar__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[SpeedBar] OM_SET: entry\n"));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     speedbar_set(cl, o, msg);
     return retval;
@@ -130,6 +135,7 @@ IPTR SpeedBar__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR SpeedBar__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[SpeedBar] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct SpeedBarData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;

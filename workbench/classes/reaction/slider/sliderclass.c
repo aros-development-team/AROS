@@ -3,6 +3,7 @@
 
     Desc: Reaction slider.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -28,6 +29,34 @@
 
 #define TICK_LENGTH     6
 #define SHORTTICK_LENGTH 3
+
+#ifndef VOID_FUNC
+typedef void (*VOID_FUNC)(void);
+#endif
+
+/* RawDoFmt-callable putchar — collects formatted text into a bounded buffer. */
+struct slider_putch_data
+{
+    UBYTE *p;
+    LONG   remain;
+};
+
+AROS_UFH2(void, slider_putch_func,
+    AROS_UFHA(UBYTE, c, D0),
+    AROS_UFHA(APTR,  dat, A3))
+{
+    AROS_USERFUNC_INIT
+
+    struct slider_putch_data *pcd = (struct slider_putch_data *)dat;
+    if (pcd->remain > 0)
+    {
+        *pcd->p++ = c;
+        pcd->remain--;
+    }
+    if (c == 0) pcd->remain = 0;
+
+    AROS_USERFUNC_EXIT
+}
 
 /******************************************************************************/
 
@@ -62,6 +91,15 @@ static void slider_set(Class *cl, Object *o, struct opSet *msg)
             case SLIDER_Invert:
                 data->sd_Invert = (BOOL)tag->ti_Data;
                 break;
+            case SLIDER_LevelFormat:
+                data->sd_LevelFormat = (STRPTR)tag->ti_Data;
+                break;
+            case SLIDER_LevelMaxLen:
+                data->sd_LevelMaxLen = (LONG)tag->ti_Data;
+                break;
+            case SLIDER_LevelPlace:
+                data->sd_LevelPlace = (ULONG)tag->ti_Data;
+                break;
         }
     }
 
@@ -78,9 +116,11 @@ IPTR Slider__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Slider] OM_NEW: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[Slider] OM_NEW: obj=%p\n", (Object *)retval));
         struct SliderData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct SliderData));
@@ -101,6 +141,7 @@ IPTR Slider__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Slider__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Slider] OM_DISPOSE: entry\n"));
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -108,6 +149,7 @@ IPTR Slider__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Slider__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[Slider] OM_SET: entry\n"));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     slider_set(cl, o, msg);
     return retval;
@@ -204,6 +246,7 @@ static void slider_draw_ticks(struct RastPort *rp, struct DrawInfo *dri,
 
 IPTR Slider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[Slider] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct SliderData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -239,6 +282,71 @@ IPTR Slider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         SetAfPt(rp, (UWORD *)pattern, 1);
         RectFill(rp, x, y, x + w - 1, y + h - 1);
         SetAfPt(rp, NULL, 0);
+    }
+
+    /* SLIDER_LevelFormat: draw the current level as text. PLACETEXT_IN
+     * centres the text inside the slider track; LEFT/RIGHT/ABOVE/BELOW
+     * place it relative to the gadget bounding box. The application
+     * supplies sd_LevelMaxLen to bound the buffer size. */
+    if (data->sd_LevelFormat && data->sd_LevelMaxLen > 0)
+    {
+        UBYTE  buf[64];
+        LONG   maxlen = data->sd_LevelMaxLen;
+        IPTR   args[2];
+        ULONG  len;
+
+        if (maxlen > (LONG)sizeof(buf)) maxlen = (LONG)sizeof(buf);
+
+        args[0] = (IPTR)data->sd_Level;
+        args[1] = 0;
+
+        {
+            struct slider_putch_data pcd;
+            pcd.p      = buf;
+            pcd.remain = maxlen - 1;
+            RawDoFmt(data->sd_LevelFormat, (RAWARG)args,
+                     (VOID_FUNC)slider_putch_func, &pcd);
+        }
+        buf[sizeof(buf) - 1] = 0;
+        len = strlen((const char *)buf);
+
+        if (len > 0)
+        {
+            WORD tw = TextLength(rp, (STRPTR)buf, len);
+            WORD th = rp->TxHeight;
+            WORD by = rp->TxBaseline;
+            WORD tx, ty;
+
+            switch (data->sd_LevelPlace)
+            {
+                case PLACETEXT_LEFT:
+                    tx = x - tw - 2;
+                    ty = y + (h - th) / 2 + by;
+                    break;
+                case PLACETEXT_RIGHT:
+                    tx = x + w + 2;
+                    ty = y + (h - th) / 2 + by;
+                    break;
+                case PLACETEXT_ABOVE:
+                    tx = x + (w - tw) / 2;
+                    ty = y - 2 + by - th;
+                    break;
+                case PLACETEXT_BELOW:
+                    tx = x + (w - tw) / 2;
+                    ty = y + h + by;
+                    break;
+                case PLACETEXT_IN:
+                default:
+                    tx = x + (w - tw) / 2;
+                    ty = y + (h - th) / 2 + by;
+                    break;
+            }
+
+            SetAPen(rp, dri ? dri->dri_Pens[TEXTPEN] : 1);
+            SetDrMd(rp, JAM1);
+            Move(rp, tx, ty);
+            Text(rp, (STRPTR)buf, len);
+        }
     }
 
     if (!msg->gpr_RPort && msg->gpr_GInfo)

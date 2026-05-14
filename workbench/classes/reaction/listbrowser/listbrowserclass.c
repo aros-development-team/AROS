@@ -3,6 +3,7 @@
 
     Desc: Reaction listbrowser.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <string.h>
 #include <stdlib.h>
@@ -125,9 +126,11 @@ static void lb_set_attrs(struct ListBrowserData *data, struct TagItem *tags)
 
 IPTR ListBrowser__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
+    D(bug("[ListBrowser] OM_NEW: entry\n"));
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
+        D(bug("[ListBrowser] OM_NEW: obj=%p\n", obj));
         struct ListBrowserData *data = INST_DATA_LB(cl, obj);
         memset(data, 0, sizeof(*data));
 
@@ -143,11 +146,13 @@ IPTR ListBrowser__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR ListBrowser__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
+    D(bug("[ListBrowser] OM_DISPOSE: entry\n"));
     return DoSuperMethodA(cl, obj, msg);
 }
 
 IPTR ListBrowser__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
+    D(bug("[ListBrowser] OM_SET: entry\n"));
     struct ListBrowserData *data = INST_DATA_LB(cl, obj);
     IPTR retval;
 
@@ -202,6 +207,7 @@ IPTR ListBrowser__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
 IPTR ListBrowser__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
 {
+    D(bug("[ListBrowser] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct ListBrowserData *data = INST_DATA_LB(cl, obj);
     struct RastPort *rp = msg->gpr_RPort;
     struct GadgetInfo *gi = msg->gpr_GInfo;
@@ -371,11 +377,13 @@ IPTR ListBrowser__GM_RENDER(Class *cl, Object *obj, struct gpRender *msg)
 
 IPTR ListBrowser__GM_GOACTIVE(Class *cl, Object *obj, struct gpInput *msg)
 {
+    D(bug("[ListBrowser] GM_GOACTIVE: entry\n"));
     return GMR_MEACTIVE;
 }
 
 IPTR ListBrowser__GM_HANDLEINPUT(Class *cl, Object *obj, struct gpInput *msg)
 {
+    D(bug("[ListBrowser] GM_HANDLEINPUT: entry\n"));
     struct ListBrowserData *data = INST_DATA_LB(cl, obj);
     struct InputEvent *ie = msg->gpi_IEvent;
     IPTR retval = GMR_MEACTIVE;

@@ -3,6 +3,7 @@
 
     Desc: Reaction chooser.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -109,7 +110,10 @@ IPTR Chooser__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Chooser] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
+    D(bug("[Chooser] OM_NEW: obj=%p\n", (void *)retval));
     if (retval)
     {
         struct ChooserData *data = INST_DATA(cl, (Object *)retval);
@@ -139,6 +143,8 @@ IPTR Chooser__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Chooser__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Chooser] OM_DISPOSE: obj=%p\n", (void *)o));
+
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -146,6 +152,8 @@ IPTR Chooser__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Chooser__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[Chooser] OM_SET: obj=%p\n", (void *)o));
+
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     chooser_set(cl, o, msg);
     return retval;
@@ -200,6 +208,8 @@ static void chooser_draw_arrow(struct RastPort *rp, WORD x, WORD y,
 
 IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[Chooser] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
+
     struct ChooserData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -299,6 +309,8 @@ IPTR Chooser__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 
 IPTR Chooser__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[Chooser] GM_GOACTIVE: obj=%p\n", (void *)o));
+
     struct ChooserData *data = INST_DATA(cl, o);
     struct Gadget *gad = G(o);
 
@@ -314,6 +326,8 @@ IPTR Chooser__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR Chooser__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[Chooser] GM_HANDLEINPUT: obj=%p\n", (void *)o));
+
     struct ChooserData *data = INST_DATA(cl, o);
     struct Gadget *gad = G(o);
     struct InputEvent *ie = msg->gpi_IEvent;

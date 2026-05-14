@@ -3,6 +3,7 @@
 
     Desc: Reaction palette.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -18,6 +19,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <gadgets/palette.h>
+#include <images/bevel.h>
 #include <utility/tagitem.h>
 
 #include <string.h>
@@ -57,9 +59,11 @@ IPTR Palette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[Palette] OM_NEW: entry\n"));
     retval = DoSuperMethodA(cl, o, (Msg)msg);
     if (retval)
     {
+        D(bug("[Palette] OM_NEW: obj=%p\n", (Object *)retval));
         struct PaletteGadData *data = INST_DATA(cl, (Object *)retval);
 
         memset(data, 0, sizeof(struct PaletteGadData));
@@ -79,6 +83,10 @@ IPTR Palette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR Palette__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[Palette] OM_DISPOSE: entry\n"));
+    struct PaletteGadData *data = INST_DATA(cl, o);
+    if (data->pd_FrameBevel) { DisposeObject(data->pd_FrameBevel); data->pd_FrameBevel = NULL; }
+    if (data->pd_SelBevel)   { DisposeObject(data->pd_SelBevel);   data->pd_SelBevel   = NULL; }
     return DoSuperMethodA(cl, o, msg);
 }
 
@@ -86,6 +94,7 @@ IPTR Palette__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR Palette__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[Palette] OM_SET: entry\n"));
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     palette_set(cl, o, msg);
     return retval;
@@ -119,6 +128,7 @@ IPTR Palette__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[Palette] GM_RENDER: redraw=%d\n", msg->gpr_Redraw));
     struct PaletteGadData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -166,20 +176,32 @@ IPTR Palette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
         RectFill(rp, cx + 1, cy + 1, cx + cellw - 2, cy + cellh - 2);
 
         /* Highlight selected color with a frame */
+    /* Highlight selected color via bevel.image (BVS_BUTTON raised). */
         if (i == data->pd_Color)
         {
-            UWORD shine  = dri ? dri->dri_Pens[SHINEPEN]  : 2;
-            UWORD shadow = dri ? dri->dri_Pens[SHADOWPEN] : 1;
-
-            SetAPen(rp, shine);
-            Move(rp, cx, cy + cellh - 1);
-            Draw(rp, cx, cy);
-            Draw(rp, cx + cellw - 1, cy);
-
-            SetAPen(rp, shadow);
-            Move(rp, cx + 1, cy + cellh - 1);
-            Draw(rp, cx + cellw - 1, cy + cellh - 1);
-            Draw(rp, cx + cellw - 1, cy + 1);
+            if (dri)
+            {
+                if (!data->pd_SelBevel)
+                {
+                    data->pd_SelBevel = NewObject(NULL, "bevel.image",
+                        BEVEL_Style, BVS_BUTTON,
+                        BEVEL_Transparent, TRUE,
+                        TAG_END);
+                }
+                if (data->pd_SelBevel)
+                {
+                    struct impDraw idmsg;
+                    idmsg.MethodID         = IM_DRAWFRAME;
+                    idmsg.imp_RPort        = rp;
+                    idmsg.imp_Offset.X     = cx;
+                    idmsg.imp_Offset.Y     = cy;
+                    idmsg.imp_State        = IDS_SELECTED;
+                    idmsg.imp_DrInfo       = dri;
+                    idmsg.imp_Dimensions.Width  = cellw;
+                    idmsg.imp_Dimensions.Height = cellh;
+                    DoMethodA(data->pd_SelBevel, (Msg)&idmsg);
+                }
+            }
         }
     }
 

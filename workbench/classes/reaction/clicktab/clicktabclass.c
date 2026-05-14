@@ -3,6 +3,7 @@
 
     Desc: Reaction clicktab.gadget - BOOPSI class implementation
 */
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -18,6 +19,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <gadgets/clicktab.h>
+#include <gadgets/layout.h>
 #include <utility/tagitem.h>
 
 #include <string.h>
@@ -75,6 +77,57 @@ static void clicktab_free_widths(struct ClickTabData *data)
     }
 }
 
+/* Free a labels list previously built by clicktab_build_auto_labels(). */
+static void clicktab_free_auto_labels(struct ClickTabData *data)
+{
+    if (data->td_AutoLabels)
+    {
+        struct ClickTabNode *tn;
+        while ((tn = (struct ClickTabNode *)RemHead(data->td_AutoLabels)))
+            FreeVec(tn);
+        FreeVec(data->td_AutoLabels);
+        data->td_AutoLabels = NULL;
+    }
+}
+
+/* Build an internal ClickTabNode list from a NULL-terminated STRPTR[]
+   passed via GA_Text. The labels themselves are kept by the caller. */
+static struct List *clicktab_build_auto_labels(STRPTR *array)
+{
+    struct List *list;
+    LONG i;
+
+    if (!array)
+        return NULL;
+
+    list = (struct List *)AllocVec(sizeof(struct List),
+                                    MEMF_PUBLIC | MEMF_CLEAR);
+    if (!list)
+        return NULL;
+
+    NewList(list);
+
+    for (i = 0; array[i]; i++)
+    {
+        struct ClickTabNode *tn;
+
+        tn = (struct ClickTabNode *)AllocVec(sizeof(struct ClickTabNode),
+                                              MEMF_PUBLIC | MEMF_CLEAR);
+        if (!tn)
+            break;
+
+        tn->tn_Text   = array[i];
+        tn->tn_Number = i;
+        AddTail(list, (struct Node *)tn);
+    }
+
+    return list;
+}
+
+static UWORD clicktab_label_width(struct RastPort *rp, STRPTR text);
+static void  clicktab_draw_label(struct RastPort *rp, WORD x, WORD y,
+                                  STRPTR text);
+
 static void clicktab_compute_widths(struct ClickTabData *data,
                                     struct RastPort *rp)
 {
@@ -101,9 +154,7 @@ static void clicktab_compute_widths(struct ClickTabData *data,
 
             if (tn->tn_Text && rp)
             {
-                struct TextExtent te;
-                TextExtent(rp, tn->tn_Text, strlen(tn->tn_Text), &te);
-                w += te.te_Width;
+                w += clicktab_label_width(rp, tn->tn_Text);
             }
             else
             {
@@ -117,7 +168,98 @@ static void clicktab_compute_widths(struct ClickTabData *data,
     }
 }
 
-/* Determine which tab index an x coordinate falls in */
+/* Locate the first underscore in text (the AmigaOS convention for
+   marking the keyboard shortcut letter). Returns the byte offset
+   of the underscore, or -1 if none found. The shortcut character
+   itself is at offset+1. */
+static LONG clicktab_find_underscore(STRPTR text)
+{
+    if (text)
+    {
+        LONG i;
+        for (i = 0; text[i]; i++)
+        {
+            if (text[i] == '_' && text[i + 1])
+                return i;
+        }
+    }
+    return -1;
+}
+
+/* Pixel width of a label, ignoring the underscore marker. */
+static UWORD clicktab_label_width(struct RastPort *rp, STRPTR text)
+{
+    LONG us;
+    UWORD w = 0;
+
+    if (!text || !rp)
+        return 0;
+
+    us = clicktab_find_underscore(text);
+    if (us < 0)
+    {
+        struct TextExtent te;
+        TextExtent(rp, text, strlen(text), &te);
+        w = te.te_Width;
+    }
+    else
+    {
+        struct TextExtent te;
+        if (us > 0)
+        {
+            TextExtent(rp, text, us, &te);
+            w += te.te_Width;
+        }
+        TextExtent(rp, text + us + 1, strlen(text + us + 1), &te);
+        w += te.te_Width;
+    }
+    return w;
+}
+
+/* Draw a label honouring the underscore-shortcut convention: the
+   underscore is suppressed and the following character is underlined. */
+static void clicktab_draw_label(struct RastPort *rp, WORD x, WORD y,
+                                 STRPTR text)
+{
+    LONG us;
+    LONG len;
+
+    if (!text)
+        return;
+
+    us  = clicktab_find_underscore(text);
+    len = (LONG)strlen(text);
+
+    if (us < 0)
+    {
+        Move(rp, x, y);
+        Text(rp, text, len);
+        return;
+    }
+
+    Move(rp, x, y);
+    if (us > 0)
+        Text(rp, text, us);
+
+    /* Underline the shortcut character */
+    {
+        struct TextExtent te;
+        WORD chx = rp->cp_x;
+        UWORD chw;
+
+        TextExtent(rp, text + us + 1, 1, &te);
+        chw = te.te_Width;
+
+        Text(rp, text + us + 1, 1);
+        Move(rp, chx, y + 1);
+        Draw(rp, chx + chw - 1, y + 1);
+        Move(rp, chx + chw, y);
+    }
+
+    if (us + 2 < len)
+        Text(rp, text + us + 2, len - (us + 2));
+}
+
 static LONG clicktab_hit_test(struct ClickTabData *data, WORD mx)
 {
     LONG i;
@@ -142,6 +284,7 @@ static void clicktab_set(Class *cl, Object *o, struct opSet *msg)
     struct ClickTabData *data = INST_DATA(cl, o);
     struct TagItem *tags = msg->ops_AttrList;
     struct TagItem *tag;
+    BOOL currentChanged = FALSE;
 
     while ((tag = NextTagItem(&tags)))
     {
@@ -151,14 +294,42 @@ static void clicktab_set(Class *cl, Object *o, struct opSet *msg)
                 data->td_Labels = (struct List *)tag->ti_Data;
                 data->td_NumTabs = clicktab_count_tabs(data->td_Labels);
                 clicktab_free_widths(data);
+                /* Caller-owned list overrides any GA_Text auto list. */
+                clicktab_free_auto_labels(data);
+                break;
+            case GA_Text:
+                /* On AmigaOS ClickTab, GA_Text accepts a NULL-terminated
+                   STRPTR[] as a convenience for setting tab labels.
+                   Build an internal node list and use it as td_Labels. */
+                clicktab_free_auto_labels(data);
+                data->td_AutoLabels =
+                    clicktab_build_auto_labels((STRPTR *)tag->ti_Data);
+                if (data->td_AutoLabels)
+                {
+                    data->td_Labels = data->td_AutoLabels;
+                    data->td_NumTabs =
+                        clicktab_count_tabs(data->td_Labels);
+                    clicktab_free_widths(data);
+                }
                 break;
             case CLICKTAB_Current:
-                data->td_Current = (LONG)tag->ti_Data;
+                if (data->td_Current != (LONG)tag->ti_Data)
+                {
+                    data->td_Current = (LONG)tag->ti_Data;
+                    currentChanged = TRUE;
+                }
                 break;
             case CLICKTAB_PageGroup:
                 data->td_PageGroup = (Object *)tag->ti_Data;
                 break;
         }
+    }
+
+    if (currentChanged && data->td_PageGroup)
+    {
+        SetAttrs(data->td_PageGroup,
+                 PAGE_Current, (IPTR)data->td_Current,
+                 TAG_END);
     }
 }
 
@@ -168,7 +339,10 @@ IPTR ClickTab__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
 
+    D(bug("[ClickTab] OM_NEW: enter\n"));
+
     retval = DoSuperMethodA(cl, o, (Msg)msg);
+    D(bug("[ClickTab] OM_NEW: obj=%p\n", (void *)retval));
     if (retval)
     {
         struct ClickTabData *data = INST_DATA(cl, (Object *)retval);
@@ -187,9 +361,18 @@ IPTR ClickTab__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR ClickTab__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    D(bug("[ClickTab] OM_DISPOSE: obj=%p\n", (void *)o));
+
     struct ClickTabData *data = INST_DATA(cl, o);
 
     clicktab_free_widths(data);
+    clicktab_free_auto_labels(data);
+
+    if (data->td_PageGroup)
+    {
+        DisposeObject(data->td_PageGroup);
+        data->td_PageGroup = NULL;
+    }
 
     return DoSuperMethodA(cl, o, msg);
 }
@@ -198,6 +381,8 @@ IPTR ClickTab__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 
 IPTR ClickTab__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    D(bug("[ClickTab] OM_SET: obj=%p\n", (void *)o));
+
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
     clicktab_set(cl, o, msg);
     return retval;
@@ -282,7 +467,8 @@ static void clicktab_draw_tab(struct RastPort *rp, struct DrawInfo *dri,
     /* Draw label */
     if (text)
     {
-        WORD tx = x + (w - TextLength(rp, text, strlen(text))) / 2;
+        UWORD lblW = clicktab_label_width(rp, text);
+        WORD tx = x + (w - lblW) / 2;
         WORD ty = y + TAB_PADDING_V + rp->TxBaseline;
 
         if (!selected)
@@ -290,8 +476,7 @@ static void clicktab_draw_tab(struct RastPort *rp, struct DrawInfo *dri,
 
         SetAPen(rp, textpen);
         SetDrMd(rp, JAM1);
-        Move(rp, tx, ty);
-        Text(rp, text, strlen(text));
+        clicktab_draw_label(rp, tx, ty, text);
     }
 
     /* Disabled ghost pattern */
@@ -307,6 +492,8 @@ static void clicktab_draw_tab(struct RastPort *rp, struct DrawInfo *dri,
 
 IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
+    D(bug("[ClickTab] GM_RENDER: obj=%p redraw=%ld\n", (void *)o, msg->gpr_Redraw));
+
     struct ClickTabData *data = INST_DATA(cl, o);
     struct RastPort *rp = msg->gpr_RPort;
     struct DrawInfo *dri = msg->gpr_GInfo ? msg->gpr_GInfo->gi_DrInfo : NULL;
@@ -330,9 +517,16 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     if (!data->td_TabWidths)
         clicktab_compute_widths(data, rp);
 
-    /* Clear gadget area */
+    /* Clear only the tab strip area; the page area below is owned by
+     * the page group and would be cleared/rendered by it. Filling the
+     * full ClickTab box here would overpaint the new page's gadgets
+     * after a tab switch. */
     SetAPen(rp, dri ? dri->dri_Pens[BACKGROUNDPEN] : 0);
-    RectFill(rp, x, y, x + w - 1, y + h - 1);
+    {
+        WORD th = data->td_TabHeight ? data->td_TabHeight : h;
+        if (th > h) th = h;
+        RectFill(rp, x, y, x + w - 1, y + th - 1);
+    }
 
     if (!data->td_Labels || !data->td_TabWidths)
         goto done;
@@ -381,6 +575,18 @@ IPTR ClickTab__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
     }
 
 done:
+    /* Forward render to the page group (the panel below the tab strip) */
+    if (data->td_PageGroup)
+    {
+        struct gpRender prender;
+        memset(&prender, 0, sizeof(prender));
+        prender.MethodID  = GM_RENDER;
+        prender.gpr_GInfo = msg->gpr_GInfo;
+        prender.gpr_RPort = rp;
+        prender.gpr_Redraw = msg->gpr_Redraw;
+        DoMethodA(data->td_PageGroup, (Msg)&prender);
+    }
+
     if (!msg->gpr_RPort && msg->gpr_GInfo)
         ReleaseGIRPort(rp);
 
@@ -391,6 +597,8 @@ done:
 
 IPTR ClickTab__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[ClickTab] GM_GOACTIVE: obj=%p\n", (void *)o));
+
     struct Gadget *gad = G(o);
 
     if (gad->Flags & GFLG_DISABLED)
@@ -403,6 +611,8 @@ IPTR ClickTab__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR ClickTab__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
+    D(bug("[ClickTab] GM_HANDLEINPUT: obj=%p\n", (void *)o));
+
     struct ClickTabData *data = INST_DATA(cl, o);
     struct Gadget *gad = G(o);
     struct InputEvent *ie = msg->gpi_IEvent;
@@ -432,7 +642,21 @@ IPTR ClickTab__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
                     {
                         data->td_Current = hit;
 
-                        /* Redraw tabs */
+                        /* Sync page group to the new current tab via
+                         * SetGadgetAttrs so Page__OM_SET sees a live
+                         * GadgetInfo and performs the LM_REMOVEFROMWINDOW/
+                         * LM_ADDTOWINDOW dance for the old/new pages. */
+                        if (data->td_PageGroup)
+                        {
+                            struct GadgetInfo *gi = msg->gpi_GInfo;
+                            SetGadgetAttrs((struct Gadget *)data->td_PageGroup,
+                                           gi ? gi->gi_Window    : NULL,
+                                           gi ? gi->gi_Requester : NULL,
+                                           PAGE_Current, (IPTR)data->td_Current,
+                                           TAG_END);
+                        }
+
+                        /* Redraw tabs + page group */
                         struct RastPort *rp = ObtainGIRPort(msg->gpi_GInfo);
                         if (rp)
                         {
@@ -471,4 +695,127 @@ IPTR ClickTab__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
     data->td_HoverTab = -1;
 
     return DoSuperMethodA(cl, o, (Msg)msg);
+}
+
+/******************************************************************************/
+
+/* GM_DOMAIN: tab strip min size + page group min size (max of all pages). */
+IPTR ClickTab__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+    struct RastPort *rp = msg->gpd_RPort;
+    UWORD  tabsW = 0;
+    UWORD  tabsH = 18;
+    UWORD  pageW = 0;
+    UWORD  pageH = 0;
+
+    /* Tab strip */
+    if (rp)
+    {
+        clicktab_compute_widths(data, rp);
+        tabsH = data->td_TabHeight ? data->td_TabHeight : 18;
+        if (data->td_TabWidths)
+        {
+            LONG i;
+            for (i = 0; i < data->td_NumTabs; i++)
+                tabsW += data->td_TabWidths[i] - TAB_OVERLAP;
+            if (data->td_NumTabs > 0)
+                tabsW += TAB_OVERLAP;
+        }
+    }
+    if (tabsW == 0) tabsW = 40;
+
+    /* Page group */
+    if (data->td_PageGroup)
+    {
+        struct gpDomain pgd;
+        memset(&pgd, 0, sizeof(pgd));
+        pgd.MethodID = GM_DOMAIN;
+        pgd.gpd_GInfo = msg->gpd_GInfo;
+        pgd.gpd_RPort = rp;
+        pgd.gpd_Which = msg->gpd_Which;
+        if (DoMethodA(data->td_PageGroup, (Msg)&pgd))
+        {
+            pageW = (UWORD)pgd.gpd_Domain.Width;
+            pageH = (UWORD)pgd.gpd_Domain.Height;
+        }
+    }
+
+    msg->gpd_Domain.Left   = 0;
+    msg->gpd_Domain.Top    = 0;
+    msg->gpd_Domain.Width  = (tabsW > pageW) ? tabsW : pageW;
+    msg->gpd_Domain.Height = tabsH + pageH;
+
+    D(bug("[ClickTab] GM_DOMAIN: obj=%p tabs %dx%d page %dx%d -> %dx%d\n",
+        (void *)o, (int)tabsW, (int)tabsH, (int)pageW, (int)pageH,
+        (int)msg->gpd_Domain.Width, (int)msg->gpd_Domain.Height));
+
+    return TRUE;
+}
+
+/******************************************************************************/
+
+/* GM_LAYOUT: position the page group below the tab strip and forward. */
+IPTR ClickTab__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+    struct Gadget *gad = G(o);
+
+    D(bug("[ClickTab] GM_LAYOUT: obj=%p (%d,%d %dx%d)\n", (void *)o,
+        (int)gad->LeftEdge, (int)gad->TopEdge,
+        (int)gad->Width, (int)gad->Height));
+
+    if (data->td_PageGroup)
+    {
+        struct Gadget *pg = (struct Gadget *)data->td_PageGroup;
+        UWORD tabsH = data->td_TabHeight ? data->td_TabHeight : 18;
+
+        pg->LeftEdge = gad->LeftEdge;
+        pg->TopEdge  = gad->TopEdge + tabsH;
+        pg->Width    = gad->Width;
+        pg->Height   = (gad->Height > tabsH) ? (gad->Height - tabsH) : 0;
+
+        struct gpLayout gpl;
+        memset(&gpl, 0, sizeof(gpl));
+        gpl.MethodID    = GM_LAYOUT;
+        gpl.gpl_GInfo   = msg->gpl_GInfo;
+        gpl.gpl_Initial = msg->gpl_Initial;
+        DoMethodA(data->td_PageGroup, (Msg)&gpl);
+    }
+
+    return DoSuperMethodA(cl, o, (Msg)msg);
+}
+
+/******************************************************************************/
+
+/* LM_ADDTOWINDOW: forward to page group so its gadgets join the GList. */
+IPTR ClickTab__LM_ADDTOWINDOW(Class *cl, Object *o, Msg msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+
+    if (data->td_PageGroup)
+    {
+        D(bug("[ClickTab] LM_ADDTOWINDOW: forwarding to page group %p\n",
+            data->td_PageGroup));
+        DoMethodA(data->td_PageGroup, msg);
+    }
+
+    return retval;
+}
+
+/******************************************************************************/
+
+IPTR ClickTab__LM_REMOVEFROMWINDOW(Class *cl, Object *o, Msg msg)
+{
+    struct ClickTabData *data = INST_DATA(cl, o);
+
+    if (data->td_PageGroup)
+    {
+        D(bug("[ClickTab] LM_REMOVEFROMWINDOW: forwarding to page group %p\n",
+            data->td_PageGroup));
+        DoMethodA(data->td_PageGroup, msg);
+    }
+
+    return DoSuperMethodA(cl, o, msg);
 }

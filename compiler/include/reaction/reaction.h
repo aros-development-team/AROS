@@ -123,11 +123,22 @@
 
 /*****************************************************************************/
 
-#ifdef ALL_REACTION_MACROS
+/*
+ * On AmigaOS, including <reaction/reaction.h> (or any of the class headers
+ * that pull it in) provides the RA_* convenience macros directly, so apps
+ * never need a <proto/reaction.h>. Match that behaviour by always pulling
+ * in reaction_macros.h. The legacy ALL_REACTION_MACROS guard is preserved
+ * for source that defined it explicitly, but is no longer required.
+ *
+ * When building reaction.library itself the RA_* names are real library
+ * entry points and must NOT be redefined as macros, so __NOLIBBASE__ (set
+ * by genmodule when compiling the library) suppresses the include.
+ */
+#if !defined(__NOLIBBASE__)
 #ifndef REACTION_MACROS_H
 #include <reaction/reaction_macros.h>
-#endif /* REACTION_MACROS_H */
-#endif /* ALL_REACTION_MACROS */
+#endif
+#endif
 
 /*****************************************************************************/
 

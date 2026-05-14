@@ -26,6 +26,7 @@ struct ButtonBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;       /* bevel.image — held to keep its class registered */
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -33,6 +34,7 @@ struct ButtonBase_intern
 struct ButtonData
 {
     Object          *bd_Glyph;          /* Glyph image object */
+    Object          *bd_BevelImage;     /* Private bevel.image for frame */
     STRPTR          bd_DomainString;    /* Domain sizing string */
 
     ULONG           bd_AutoButton;      /* Auto-button glyph type */
@@ -44,9 +46,11 @@ struct ButtonData
     UWORD           bd_BackgroundPen;   /* Background pen */
     UWORD           bd_FillTextPen;     /* Fill text pen */
     UWORD           bd_FillPen;         /* Fill pen */
+    UWORD           bd_PrefsLabelPen;   /* cap_LabelPen snapshot */
 
     BOOL            bd_PushButton;      /* Push button/toggle mode */
     BOOL            bd_Transparent;     /* Transparent background */
+    UBYTE           bd_Underscore;      /* Underscore prefix char ('_' default, 0 = none) */
 };
 
 #endif /* BUTTON_INTERN_H */

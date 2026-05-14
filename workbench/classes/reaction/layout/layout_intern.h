@@ -29,6 +29,20 @@
 #include <gadgets/layout.h>
 #endif
 
+/* Fallback definitions in case the installed <gadgets/layout.h> is stale
+ * (built before these methods were added). The public header has the same
+ * definitions for external consumers (e.g. window.class). */
+#ifndef LM_ADDTOWINDOW
+#define LM_ADDTOWINDOW          (LAYOUT_Dummy + 0x500)
+#define LM_REMOVEFROMWINDOW     (LAYOUT_Dummy + 0x501)
+struct lpAddToWindow
+{
+    ULONG               MethodID;
+    struct Window      *lpaw_Window;
+    struct Requester   *lpaw_Requester;
+};
+#endif
+
 #ifdef __AROS__
 #include <aros/debug.h>
 #endif
@@ -40,6 +54,8 @@ struct LayoutBase_intern
 {
     struct Library lib;
     Class *rc_Class;
+    struct Library *rc_BevelBase;       /* bevel.image kept open for NewObject lookups */
+    struct Library *rc_PageBase;        /* page.gadget — opened lazily by PAGE_GetClass */
 };
 
 #define G(obj)  ((struct Gadget *)(obj))
@@ -66,6 +82,8 @@ struct LayoutChild
     BOOL                lc_WeightMinimum;
 
     /* Computed layout */
+    UWORD               lc_NatWidth;    /* natural/min size from query_child_size */
+    UWORD               lc_NatHeight;
     WORD                lc_Left;
     WORD                lc_Top;
     UWORD               lc_Width;
@@ -92,6 +110,8 @@ struct LayoutData
 
     STRPTR              ld_Label;        /* Group label */
     ULONG               ld_LabelPlace;   /* Label placement */
+    BOOL                ld_LabelPlaceSet;
+    BOOL                ld_3DLook;       /* cap_3DLook snapshot - draw frames */
 
     UWORD               ld_HorizSpacing; /* Horizontal spacing */
     UWORD               ld_VertSpacing;  /* Vertical spacing */
@@ -106,6 +126,12 @@ struct LayoutData
     UWORD               ld_MaxWidth;
     UWORD               ld_MaxHeight;
     BOOL                ld_DomainValid;
+    BOOL                ld_ComputingDomain; /* Cycle guard for recursive GM_DOMAIN */
+
+    /* Cached frame bevel.image (lazy) */
+    Object             *ld_BevelImage;
+    UWORD               ld_FrameH;       /* Cached frame horiz thickness */
+    UWORD               ld_FrameV;       /* Cached frame vert  thickness */
 
     /* Current layout area */
     struct IBox         ld_GadgetBox;
