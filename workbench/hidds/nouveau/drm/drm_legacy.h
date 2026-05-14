@@ -36,12 +36,11 @@
 #include <drm/drm_legacy.h>
 #else
 #include "drm_compat_types.h"
-#define IS_ENABLED(x) (0)
+#include <linux/list.h>
 struct drm_buf_entry;
 struct drm_buf;
 struct drm_master;
 struct file;
-#include "drm_linux_list.h"
 #endif
 
 struct agp_memory;

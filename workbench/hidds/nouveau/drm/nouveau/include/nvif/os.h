@@ -49,6 +49,7 @@
 #include <linux/list.h>
 
 #define CONFIG_ARM_ENABLED 0
+#define CONFIG_DRM_NOUVEAU_SVM_ENABLED 0
 // #define MOCK_HARDWARE
 #endif
 #endif

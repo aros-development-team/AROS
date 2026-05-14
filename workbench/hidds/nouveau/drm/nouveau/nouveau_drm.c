@@ -69,7 +69,7 @@ struct drm_connector;
 #include "nouveau_abi16.h"
 #include "nouveau_fbcon.h"
 #include "nouveau_fence.h"
-// #include "nouveau_debugfs.h"
+#include "nouveau_display.h"
 #include "nouveau_usif.h"
 #include "nouveau_connector.h"
 #include "nouveau_platform.h"
@@ -586,8 +586,6 @@ nouveau_drm_device_init(struct drm_device *dev)
 
 	nouveau_accel_init(drm);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	ret = nouveau_display_create(dev);
 	if (ret)
 		goto fail_dispctor;
@@ -598,13 +596,16 @@ NOT_IMPLEMENTED_STOP
 			goto fail_dispinit;
 	}
 
+#if !defined(__AROS__)
 	nouveau_debugfs_init(drm);
 	nouveau_hwmon_init(dev);
+#endif
 	nouveau_svm_init(drm);
 	nouveau_dmem_init(drm);
+#if !defined(__AROS__)
 	nouveau_fbcon_init(dev);
-	nouveau_led_init(dev);
 #endif
+	nouveau_led_init(dev);
 
 #if !defined(__AROS__)
 	if (nouveau_pmops_runtime()) {
@@ -620,7 +621,7 @@ NOT_IMPLEMENTED_STOP
 	return 0;
 
 fail_dispinit:
-	// nouveau_display_destroy(dev);
+	nouveau_display_destroy(dev);
 fail_dispctor:
 	nouveau_accel_fini(drm);
 	nouveau_bios_takedown(dev);

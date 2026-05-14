@@ -1,5 +1,6 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <aros/debug.h>
 
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
@@ -35,6 +36,8 @@ void main()
     struct pci_dev *pdev = drm_aros_pci_find_supported_video_card();
 
     nouveau_drm_probe(pdev, NULL);
+
+    bug("FINISHED nouveau_drm_probe\n");
 }
 
 ADD2LIBS("pci.hidd", 0, static struct Library *, PciHiddBase);

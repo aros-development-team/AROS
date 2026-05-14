@@ -1,7 +1,7 @@
 /* Auto-generated: engine/bsp */
 #include "client.c"
 #include "device.c"
-// #include "disp.c"
+#include "disp.c"
 #include "driver.c"
 #include "fifo.c"
 #include "mem.c"

@@ -29,6 +29,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_compat \
 
 AROS_DRM_NVIDIA_SOURCES = \
+drm/nouveau/nouveau_display \
 drm/nouveau/dispnv04/tvnv04 \
 drm/nouveau/dispnv04/dfp \
 drm/nouveau/nv04_fence \

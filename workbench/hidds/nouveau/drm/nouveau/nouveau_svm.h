@@ -7,7 +7,7 @@ struct nouveau_drm;
 
 struct nouveau_svmm;
 
-#if 0//IS_ENABLED(CONFIG_DRM_NOUVEAU_SVM)
+#if IS_ENABLED(CONFIG_DRM_NOUVEAU_SVM)
 void nouveau_svm_init(struct nouveau_drm *);
 void nouveau_svm_fini(struct nouveau_drm *);
 void nouveau_svm_suspend(struct nouveau_drm *);
