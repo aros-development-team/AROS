@@ -260,7 +260,7 @@ struct NepClassPTP * usbForceInterfaceBinding(struct NepPTPBase *nh, struct PsdI
             FreeVec(nch->nch_CDC);
             FreeVec(nch);
             CloseLibrary(ps);
-            return(nch);
+            return(NULL);
         }
         CloseLibrary(ps);
     }

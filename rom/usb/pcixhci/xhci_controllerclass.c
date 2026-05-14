@@ -501,12 +501,14 @@ OOP_Object *XHCIController__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot
         char name_buf[64];
         char *hardware_name = NULL;
 
-        sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
+        int pos;
+
+        pos = sprintf(name_buf, strHardwareNamePrefixFmt, hc->hc_USBVersionMajor);
         if(hc->hc_USBVersionMinor == 0xFF)
-            sprintf(name_buf + 10, strHardwareNameMinorUnknown);
+            pos += sprintf(name_buf + pos, strHardwareNameMinorUnknown);
         else
-            sprintf(name_buf + 10, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
-        sprintf(name_buf + 11, strHardwareNameSuffix);
+            pos += sprintf(name_buf + pos, strHardwareNameMinorFmt, hc->hc_USBVersionMinor);
+        sprintf(name_buf + pos, strHardwareNameSuffix);
 
         hardware_name = AllocVec(strlen(name_buf) + 1, MEMF_CLEAR);
         if(hardware_name != NULL) {
