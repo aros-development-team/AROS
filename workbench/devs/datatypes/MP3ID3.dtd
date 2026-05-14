@@ -1,6 +1,6 @@
 Name=MP3ID3
-Version=$VER: MP3ID3 41.1 (4.1.2017)
-BaseName=mp3id3
+Version=$VER: MP3ID3 41.2 (14.05.2026)
+BaseName=mp3
 Pattern=#?
 Mask='I' 'D' '3'
 GroupID=soun
