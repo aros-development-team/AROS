@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -165,6 +165,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
                     D(kprintf("[Pointer] %s: releasing shared pointer\n", __func__));
                     ReleaseSharedPointer(shared, IntuitionBase);
                 }
+                return (IPTR)o;
             }
             else
             {
@@ -173,17 +174,7 @@ IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
             }
         }
     }
-
-    /*
-     * BOOPSI convention: DoSuperMethodA returns the new object in o.
-     * If we never called it (no matching bitmap type), o still holds
-     * the class pointer passed as the second argument. Detect this
-     * and return NULL to indicate allocation failure.
-     */
-    if ((IPTR)o == (IPTR)cl)
-        return (IPTR)NULL;
-
-    return (IPTR)o;
+    return (IPTR)NULL;
 }
 
 /***********************************************************************************/
