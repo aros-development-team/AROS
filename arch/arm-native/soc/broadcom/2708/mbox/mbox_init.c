@@ -63,17 +63,18 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
     __asm__ __volatile__("dmb" ::: "memory");
     *((volatile unsigned int *)(mb + VCMB_WRITE)) =
         AROS_LONG2LE(((unsigned int)phys_addr | chan));
-    while (1)
+
+    /* Drain the inbox until either our own response shows up (matched by
+     * channel AND by physical address — the address check distinguishes our
+     * submission from any other caller queued on the same channel) or the
+     * timeout budget is exhausted.*/
+    while (try > 0)
     {
-        while ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
+        if ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
         {
             __asm__ __volatile__("dsb" ::: "memory");
-
-            if (try-- == 0)
-            {
-                ReleaseSemaphore(&MBoxBase->mbox_Sem);
-                return (volatile unsigned int *)-1;
-            }
+            try--;
+            continue;
         }
 
         __asm__ __volatile__("dmb" ::: "memory");
@@ -93,7 +94,12 @@ volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
                 return (volatile unsigned int *)msg;
             }
         }
+        /* Wrong channel or wrong address — drop the message and keep
+         * draining until we find ours, or 'try' reaches zero. */
     }
+
+    ReleaseSemaphore(&MBoxBase->mbox_Sem);
+    return (volatile unsigned int *)-1;
 }
 
 AROS_LH1(unsigned int, MBoxStatus,
@@ -121,41 +127,41 @@ AROS_LH2(volatile unsigned int *, MBoxRead,
 
     D(bug("[MBox] MBoxRead(chan %d @ 0x%p)\n", chan, mb));
 
-    if (chan <= VCMB_CHAN_MAX)
+    if (chan > VCMB_CHAN_MAX)
+        return (volatile unsigned int *)-1;
+
+    ObtainSemaphore(&MBoxBase->mbox_Sem);
+
+    /* Drain until we find a message for our channel or the timeout
+     * budget runs out. */
+    while (try > 0)
     {
-        while(1)
+        if ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
         {
-            ObtainSemaphore(&MBoxBase->mbox_Sem);
+            asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+            try--;
+            continue;
+        }
 
-            while ((MBoxStatus(mb) & VCMB_STATUS_READREADY) != 0)
-            {
-                /* Data synchronization barrier */
-                asm volatile ("mcr p15, 0, %[r], c7, c10, 4" : : [r] "r" (0) );
+        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+        msg = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
+        asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
 
-                if(try-- == 0)
-                {
-                    break;
-                }
-            }
-            asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
-
-            msg = AROS_LE2LONG(*((volatile unsigned int *)(mb + VCMB_READ)));
-
-            asm volatile ("mcr p15, 0, %[r], c7, c10, 5" : : [r] "r" (0) );
+        if ((msg & VCMB_CHAN_MASK) == chan)
+        {
+            uint32_t *addr = (uint32_t *)(msg & ~VCMB_CHAN_MASK);
+            uint32_t len = AROS_LE2LONG(addr[0]);
 
             ReleaseSemaphore(&MBoxBase->mbox_Sem);
 
-            if ((msg & VCMB_CHAN_MASK) == chan)
-            {
-                uint32_t *addr = (uint32_t *)(msg & ~VCMB_CHAN_MASK);
-                uint32_t len = AROS_LE2LONG(addr[0]);
+            CacheClearE(addr, len, CACRF_InvalidateD);
 
-                CacheClearE(addr, len, CACRF_InvalidateD);
-
-                return (volatile unsigned int *)(addr);
-            }
+            return (volatile unsigned int *)(addr);
         }
+        /* Wrong channel — drop and keep draining. */
     }
+
+    ReleaseSemaphore(&MBoxBase->mbox_Sem);
     return (volatile unsigned int *)-1;
 
     AROS_LIBFUNC_EXIT
