@@ -1,5 +1,6 @@
 #include <proto/exec.h>
 #include <proto/oop.h>
+#include <proto/dos.h>
 #include <aros/debug.h>
 
 #include <hidd/pci.h>
@@ -38,6 +39,9 @@ void main()
     nouveau_drm_probe(pdev, NULL);
 
     bug("FINISHED nouveau_drm_probe\n");
+
+    while(1)
+        Delay(50);
 }
 
 ADD2LIBS("pci.hidd", 0, static struct Library *, PciHiddBase);
