@@ -2,7 +2,7 @@
 #define AROS_I386_CPU_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -36,6 +36,10 @@ typedef  void *cpumask_t;
 #define AROS_DOUBLEALIGN           4 /* Alignment for double */
 #define AROS_WORSTALIGN            16 /* Worst case alignment */
 #define AROS_STACKALIGN           16 /* Clean stack must be aligned to this */
+
+/* Cache-line isolation for spinlocks (Intel guidance, 128 B). The allocator
+ * must honour this for any heap-allocated container that embeds spinlock_t. */
+#define AROS_SPINLOCK_ALIGN __attribute__((__aligned__(128)))
 
 #define AROS_32BIT_TYPE         int
 
