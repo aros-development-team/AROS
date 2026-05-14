@@ -1,2 +1,3 @@
 TYPE = PROJECT
-DEFAULTTOOL = SYS:Extras/Multimedia/C/MadAHI
+DEFAULTTOOL = SYS:Utilities/MultiView
+STACK = 40960
