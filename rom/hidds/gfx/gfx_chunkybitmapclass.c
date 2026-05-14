@@ -978,9 +978,11 @@ VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG idx;
+    BOOL refresh_bpr = FALSE;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -1000,7 +1002,23 @@ VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
                     break;
             }
         }
+        else if (IS_BITMAP_ATTR(tag->ti_Tag, idx))
+        {
+            /* BitMap's Set updates bytesPerRow either directly or via
+             * GetBytesPerRow when a framebuffer's ModeID changes.
+             */
+            if (idx == aoHidd_BitMap_BytesPerRow || idx == aoHidd_BitMap_ModeID)
+                refresh_bpr = TRUE;
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (refresh_bpr)
+    {
+        IPTR bpr = 0;
+        OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bpr);
+        if (bpr)
+            data->bytesperrow = bpr;
+    }
 }
