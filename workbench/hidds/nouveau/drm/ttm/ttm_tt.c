@@ -93,6 +93,9 @@ static int ttm_tt_alloc_page_directory(struct ttm_tt *ttm)
 			GFP_KERNEL | __GFP_ZERO);
 	if (!ttm->pages)
 		return -ENOMEM;
+#if defined(__AROS__)
+	ttm->allocated_buffer = HIDDNouveauAlloc((ttm->num_pages * PAGE_SIZE) + PAGE_SIZE - 1);
+#endif
 	return 0;
 }
 
@@ -105,6 +108,9 @@ static int ttm_dma_tt_alloc_page_directory(struct ttm_dma_tt *ttm)
 	if (!ttm->ttm.pages)
 		return -ENOMEM;
 	ttm->dma_address = (void *) (ttm->ttm.pages + ttm->ttm.num_pages);
+#if defined(__AROS__)
+	ttm->ttm.allocated_buffer = HIDDNouveauAlloc((ttm->ttm.num_pages * PAGE_SIZE) + PAGE_SIZE - 1);
+#endif
 	return 0;
 }
 
@@ -224,9 +230,9 @@ void ttm_tt_destroy(struct ttm_tt *ttm)
 	if (!(ttm->page_flags & TTM_PAGE_FLAG_PERSISTENT_SWAP) &&
 	    ttm->swap_storage)
 		fput(ttm->swap_storage);
-#endif
 
 	ttm->swap_storage = NULL;
+#endif
 	ttm->func->destroy(ttm);
 }
 
@@ -238,7 +244,9 @@ void ttm_tt_init_fields(struct ttm_tt *ttm, struct ttm_buffer_object *bo,
 	ttm->caching_state = tt_cached;
 	ttm->page_flags = page_flags;
 	ttm->state = tt_unpopulated;
+#if !defined(__AROS__)
 	ttm->swap_storage = NULL;
+#endif
 	ttm->sg = bo->sg;
 }
 
@@ -259,6 +267,10 @@ void ttm_tt_fini(struct ttm_tt *ttm)
 {
 	kvfree(ttm->pages);
 	ttm->pages = NULL;
+#if defined(__AROS__)
+	HIDDNouveauFree(ttm->allocated_buffer);
+	ttm->allocated_buffer = NULL;
+#endif
 }
 EXPORT_SYMBOL(ttm_tt_fini);
 
@@ -458,7 +470,7 @@ static void ttm_tt_add_mapping(struct ttm_tt *ttm)
 	if (ttm->page_flags & TTM_PAGE_FLAG_SG)
 		return;
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	for (i = 0; i < ttm->num_pages; ++i)
 		ttm->pages[i]->mapping = ttm->bdev->dev_mapping;
@@ -489,13 +501,13 @@ static void ttm_tt_clear_mapping(struct ttm_tt *ttm)
 	if (ttm->page_flags & TTM_PAGE_FLAG_SG)
 		return;
 
-	for (i = 0; i < ttm->num_pages; ++i) {
 NOT_IMPLEMENTED_STOP
 #if 0
+	for (i = 0; i < ttm->num_pages; ++i) {
 		(*page)->mapping = NULL;
 		(*page++)->index = 0;
-#endif
 	}
+#endif
 }
 
 void ttm_tt_unpopulate(struct ttm_tt *ttm)

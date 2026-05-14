@@ -111,7 +111,11 @@ struct ttm_tt {
 	uint32_t page_flags;
 	unsigned long num_pages;
 	struct sg_table *sg; /* for SG objects via dma-buf */
+#if !defined(__AROS__)
 	struct file *swap_storage;
+#else
+	APTR allocated_buffer;
+#endif
 	enum ttm_caching_state caching_state;
 	enum {
 		tt_bound,
