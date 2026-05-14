@@ -184,17 +184,21 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
 
         /*
          * Start slave task.
-         * On SMP, Forbid() only prevents task switching on the local CPU,
-         * so the new process can start on another CPU immediately.
-         * We set tc_UserData with a memory barrier so the slave can
-         * busy-wait on it safely.
+         *
+         * The slave runs at higher priority than the caller and busy-waits
+         * for tc_UserData. Forbid()/Permit() guarantees we set tc_UserData
+         * before the slave can be scheduled — required on UP, where the
+         * slave would otherwise preempt us mid-CreateNewProc and spin
+         * forever.
          */
+        Forbid();
         dd->slavetask = CreateNewProc(proctags);
 
         if (dd->slavetask != NULL) {
             dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
             __sync_synchronize();
         }
+        Permit();
 
         if (dd->slavetask != NULL) {
             /* Wait for slave to allocate its signal and pre-fill buffers */
