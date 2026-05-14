@@ -72,15 +72,37 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
     }
     uint32_t mask = line - 1;
 
+    /*
+     * Pure DCIMVAC on a range whose start or end is not cache-line
+     * aligned would silently drop dirty bytes outside the caller's
+     * range -- the partial head/tail lines also cover unrelated
+     * heap, and any writeback pending there is lost. Promote those
+     * edge lines to clean+invalidate (DCCIMVAC).
+     */
+    uintptr_t head_line = (uintptr_t)-1;
+    uintptr_t tail_line = (uintptr_t)-1;
+
     if (addr == NULL && length == 0xffffffff)
     {
         count = (uint32_t)(0x100000000ULL / line);
     }
     else
     {
-        void *end_addr = (void*)(((uintptr_t)addr + length + mask) & ~(uintptr_t)mask);
-        addr = (void *)((uintptr_t)addr & ~(uintptr_t)mask);
-        count = (uintptr_t)(end_addr - addr) / line;
+        uintptr_t orig_start = (uintptr_t)addr;
+        uintptr_t orig_end = orig_start + length;
+        uintptr_t aligned_start = orig_start & ~(uintptr_t)mask;
+        uintptr_t aligned_end = (orig_end + mask) & ~(uintptr_t)mask;
+
+        if ((flags & CACRF_InvalidateD) && !(flags & CACRF_ClearD))
+        {
+            if (orig_start & mask)
+                head_line = aligned_start;
+            if (orig_end & mask)
+                tail_line = aligned_end - line;
+        }
+
+        addr = (void *)aligned_start;
+        count = (aligned_end - aligned_start) / line;
     }
 
     D(bug("[Kernel] CacheClearE from %p length %d count %d, flags %x\n", addr, length, count, flags));
@@ -101,7 +123,10 @@ void cache_clear_e(void *addr, uint32_t length, uint32_t flags)
         }
         if (flags & CACRF_InvalidateD)
         {
-            __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 1"::"r"(addr));
+            if ((uintptr_t)addr == head_line || (uintptr_t)addr == tail_line)
+                __asm__ __volatile__("mcr p15, 0, %0, c7, c14, 1"::"r"(addr));
+            else
+                __asm__ __volatile__("mcr p15, 0, %0, c7, c6, 1"::"r"(addr));
         }
 
         addr += line;

@@ -340,16 +340,16 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         buffer = &req->iouh_SetupData;
         xfer_size = 8;
 
-        /* Flush caches for setup and actual data */
+        /* Flush caches for setup data. The control data stage is armed
+         * separately by AdvanceChannel(), which does its own cache
+         * maintenance against the bounce or direct DMA target -- doing
+         * it here on the caller's iouh_Data would only force redundant
+         * work on a buffer we don't yet know the alignment-routing of. */
         CacheClearE(buffer, xfer_size, CACRF_ClearD);
-        if (req->iouh_Data != NULL && req->iouh_Length != 0)
+        if (req->iouh_Data != NULL && req->iouh_Length != 0
+            && !(req->iouh_SetupData.bmRequestType & URTF_IN))
         {
-            /* Determine data direction from request type, direction is of no use here */
-            if (req->iouh_SetupData.bmRequestType & URTF_IN) {
-                CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_InvalidateD);
-            }
-            else
-                CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_ClearD);
+            CacheClearE(req->iouh_Data, req->iouh_Length, CACRF_ClearD);
         }
 
         /* Set toggle bit to SETUP */
@@ -381,16 +381,10 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
         buffer = req->iouh_Data ? (APTR)((IPTR)req->iouh_Data + req->iouh_Actual) : NULL;
         xfer_size = req->iouh_Length - req->iouh_Actual;
 
-        /* Flush caches */
-        if (buffer != NULL && xfer_size != 0)
-        {
-            if (direction)
-                CacheClearE(buffer, xfer_size, CACRF_InvalidateD);
-            else
-                CacheClearE(buffer, xfer_size, CACRF_ClearD);
-            /* DSB so cache maintenance is visible before DWC2 reads RAM. */
-            asm volatile("dsb sy" ::: "memory");
-        }
+        /* Cache flush is deferred until after the bounce-vs-direct
+         * decision below, mirroring AdvanceChannel(). For IN, flushing
+         * the caller buffer before that decision can corrupt adjacent
+         * heap on partial cache lines when the buffer is misaligned. */
 
         /* Alignment diagnostic (64 B cache line on A7). */
         D(
@@ -602,6 +596,17 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
             dma_buf = (APTR)otg_Unit->hu_BounceBuf[chan];
             D(bug("[USB2OTG] Setup: bounce align %p -> %p (%d bytes)\n", buffer, dma_buf, xfer_size));
         }
+        else if (buffer != NULL && xfer_size != 0
+                 && req->iouh_Req.io_Command != UHCMD_CONTROLXFER)
+        {
+            /* Aligned direct DMA -- arm-time cache flush. Control data
+             * stage is flushed by AdvanceChannel() when it arms. */
+            if (direction)
+                CacheClearE(buffer, xfer_size, CACRF_InvalidateD);
+            else
+                CacheClearE(buffer, xfer_size, CACRF_ClearD);
+        }
+        asm volatile("dsb sy" ::: "memory");
         wr32le(USB2OTG_CHANNEL_REG(chan, DMAADDR), 0xc0000000 | (ULONG)dma_buf);
     }
 
