@@ -4,11 +4,21 @@
 #include <aros/cpu.h>
 #include <exec/types.h>
 
-/* Align spinlock_t to 128 bytes so that each lock occupies a full cache line.
- * This avoids false sharing between CPUs, since otherwise multiple locks could
- * reside in the same line and contend unnecessarily. On x86_64 the natural
- * alignment would only be 16 bytes, so the attribute enforces cache-line isolation.
+/* AROS_SPINLOCK_ALIGN is defined by <aros/cpu.h> (per-arch). Arches that
+ * want cache-line isolation between locks (e.g. x86 per Intel guidance)
+ * set it to __attribute__((__aligned__(N))); the default is empty so
+ * spinlock_t gets natural alignment. AROS_PLATFORM_SMP unconditionally
+ * embeds spinlock_t as padding in struct MsgPort and SemaphoreRequest,
+ * so any container -- including library bases like IconBase -- inherits
+ * the alignment. On arches where AllocMem cannot deliver that alignment
+ * (e.g. arm-native), an over-aligned spinlock_t makes Clang emit
+ * udf-trap checks before every field access. Keep this empty unless
+ * the arch's allocator can honour the alignment at runtime.
  */
+#ifndef AROS_SPINLOCK_ALIGN
+#define AROS_SPINLOCK_ALIGN
+#endif
+
 typedef struct {
     union
     {
@@ -25,7 +35,7 @@ typedef struct {
     // The field s_Owner is set either to task owning the lock,
     // or NULL if the lock is free/read mode or was acquired in interrupt/supervisor mode
     void * s_Owner;
-} __attribute__((__aligned__(128))) spinlock_t;
+} AROS_SPINLOCK_ALIGN spinlock_t;
 
 #define SPINLOCK_UNLOCKED               0
 #define SPINLOCKB_WRITE                 27
