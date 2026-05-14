@@ -25,8 +25,6 @@ void dma_free_attrs(struct device *dev, size_t size, void *cpuaddr, dma_addr_t d
 void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags, unsigned long attrs) { NOT_IMPLEMENTED_STOP }
 void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags) { NOT_IMPLEMENTED_STOP }
 void dma_free_coherent(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle) { NOT_IMPLEMENTED_STOP }
-void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_addr, size_t size, ULONG dir) { NOT_IMPLEMENTED_STOP }
-void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_addr, size_t size, ULONG dir) { NOT_IMPLEMENTED_STOP }
 
 int request_firmware(const struct firmware **fw, const char *name, struct device *device) { NOT_IMPLEMENTED_STOP }
 int firmware_request_nowarn(const struct firmware **fw, const char *name, struct device *device) { NOT_IMPLEMENTED_STOP }

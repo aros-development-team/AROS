@@ -21,8 +21,6 @@ void dma_free_attrs(struct device *dev, size_t size, void *cpuaddr, dma_addr_t d
 void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags, unsigned long attrs);
 void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags);
 void dma_free_coherent(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle);
-void dma_sync_single_for_device(struct device *dev, dma_addr_t dma_addr, size_t size, ULONG dir);
-void dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_addr, size_t size, ULONG dir);
 
 /* dma fence handling */
 struct dma_resv

@@ -622,8 +622,8 @@ NOT_IMPLEMENTED_STOP
 fail_dispinit:
 	// nouveau_display_destroy(dev);
 fail_dispctor:
-	// nouveau_accel_fini(drm);
-	// nouveau_bios_takedown(dev);
+	nouveau_accel_fini(drm);
+	nouveau_bios_takedown(dev);
 fail_bios:
 	nouveau_ttm_fini(drm);
 fail_ttm:
