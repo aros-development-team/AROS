@@ -75,6 +75,9 @@ static struct DisplayMode *VC4_BuildMode(const struct VC4ModeEntry *e)
  */
 static BOOL VC4_TestRes(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
 {
+    BOOL ok;
+
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LONG2LE(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LONG2LE(VCTAG_TESTRES);
@@ -84,13 +87,11 @@ static BOOL VC4_TestRes(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
     xsd->vcsd_MBoxMessage[6] = AROS_LONG2LE(h);
     xsd->vcsd_MBoxMessage[7] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if (MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) != xsd->vcsd_MBoxMessage)
-        return FALSE;
-    if (xsd->vcsd_MBoxMessage[1] != AROS_LE2LONG(VCTAG_RESP))
-        return FALSE;
-
-    return TRUE;
+    ok = (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+              != (volatile unsigned int *)-1)
+         && (xsd->vcsd_MBoxMessage[1] == AROS_LE2LONG(VCTAG_RESP));
+    VC4_MBOX_UNLOCK(xsd);
+    return ok;
 }
 
 int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
@@ -106,6 +107,7 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     /* Query the firmware for the currently-active display mode. This is the
      * resolution the HDMI link was negotiated at and serves as our default.
      */
+    VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LONG2LE(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LONG2LE(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LONG2LE(VCTAG_GETRES);
@@ -115,28 +117,29 @@ int FNAME_SUPPORT(HDMI_SyncGen)(struct List *modelist, OOP_Class *cl)
     xsd->vcsd_MBoxMessage[6] = 0;
     xsd->vcsd_MBoxMessage[7] = 0;
 
-    MBoxWrite((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
-    if ((MBoxRead((void*)VCMB_BASE, VCMB_PROPCHAN) == xsd->vcsd_MBoxMessage) &&
+    if ((MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+            != (volatile unsigned int *)-1) &&
         (xsd->vcsd_MBoxMessage[1] == AROS_LE2LONG(VCTAG_RESP)))
     {
         native_w = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
         native_h = AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]);
+    }
+    VC4_MBOX_UNLOCK(xsd);
 
-        xsd->vcsd_NativeWidth  = native_w;
-        xsd->vcsd_NativeHeight = native_h;
+    xsd->vcsd_NativeWidth  = native_w;
+    xsd->vcsd_NativeHeight = native_h;
 
-        if (native_w && native_h)
+    if (native_w && native_h)
+    {
+        struct VC4ModeEntry n = { native_w, native_h, 25174,
+            native_w, native_w, native_w,
+            native_h, native_h, native_h };
+        if ((hdmi_mode = VC4_BuildMode(&n)) != NULL)
         {
-            struct VC4ModeEntry n = { native_w, native_h, 25174,
-                native_w, native_w, native_w,
-                native_h, native_h, native_h };
-            if ((hdmi_mode = VC4_BuildMode(&n)) != NULL)
-            {
-                AddTail(modelist, &hdmi_mode->dm_Node);
-                hdmi_modecount++;
-                D(bug("[VideoCoreGfx] %s: native HDMI mode %dx%d\n",
-                    __PRETTY_FUNCTION__, (int)native_w, (int)native_h));
-            }
+            AddTail(modelist, &hdmi_mode->dm_Node);
+            hdmi_modecount++;
+            D(bug("[VideoCoreGfx] %s: native HDMI mode %dx%d\n",
+                __PRETTY_FUNCTION__, (int)native_w, (int)native_h));
         }
     }
 
