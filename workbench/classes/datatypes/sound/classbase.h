@@ -107,6 +107,12 @@ struct InstanceData
 	WORD			BackgroundPen;
 
 	BOOL			ForceRefresh;	// bugfix (?) for gmv
+
+	/* Play position cursor */
+	struct IBox		WaveBox;		// Waveform render area inside window (set by Sound_RENDER/Sound_DRAW)
+	BOOL			WaveBoxValid;
+	ULONG			PlayPos;		// Current sample offset during playback; ~0UL = inactive
+	WORD			CursorX;		// Last drawn XOR cursor x; -1 = not drawn
 };
 
 /****************************************************************************/

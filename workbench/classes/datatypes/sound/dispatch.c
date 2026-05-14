@@ -1,8 +1,8 @@
 /*
 **
 **	sound.datatype v41
-**	© 2025 The AROS Dev Team.
-**	© 1998-2004 by Stephan Rupprecht
+**	Â© 2025-2026 The AROS Dev Team.
+**	Â© 1998-2004 by Stephan Rupprecht
 **	all rights reserved
 **
 */
@@ -32,6 +32,7 @@
 #include <intuition/intuitionbase.h>
 #include <intuition/cghooks.h>
 #include <devices/ahi.h>
+#include <devices/timer.h>
 #include <gadgets/tapedeck.h>
 #include <graphics/gfxmacros.h>
 #include <graphics/gfxbase.h>
@@ -45,6 +46,7 @@
 #include <proto/utility.h>
 #include <proto/datatypes.h>
 #include <proto/ahi.h>
+#include <proto/timer.h>
 #include <clib/alib_protos.h>
 #else
 #include <pragma/exec_lib.h>
@@ -193,6 +195,7 @@ void PlayerProcAHI( void );
 void __regargs makeqtab( BYTE *qtab );
 unsigned __regargs StrLen( STRPTR str );
 IPTR propgdispatcher( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg) );
+void __regargs DrawPlayCursor( struct ClassBase *cb, struct InstanceData *id );
 
 /****************************************************************************/
 
@@ -853,6 +856,9 @@ IPTR __regargs Sound_NEW( Class *cl, Object *o, struct opSet *ops )
         id->ClassBase = cb;
         id->FreeSampleData = TRUE;
 //		id->SyncSampleChange = FALSE;
+        id->PlayPos = (ULONG)~0;
+        id->CursorX = -1;
+        id->WaveBoxValid = FALSE;
         InitSemaphore( &id->Lock );
 
         /* create process */
@@ -1773,6 +1779,66 @@ void __regargs DrawWaveform( struct ClassBase *cb, struct RastPort *rp, struct I
 
 /****************************************************************************/
 
+/* Draw / move the playback cursor.
+ * Uses XOR (COMPLEMENT) so the same call erases the previous cursor and
+ * draws the new one, leaving the underlying waveform intact.
+ * Caller must NOT hold id->Lock - we obtain it here.
+ */
+void __regargs DrawPlayCursor( struct ClassBase *cb, struct InstanceData *id )
+{
+    struct Window   *win;
+    struct RastPort *rp;
+    struct IBox      box;
+    WORD             newCx = -1;
+    WORD             oldCx;
+
+    ObtainSemaphore( &id->Lock );
+
+    win = id->Window;
+    if( !win || !id->WaveBoxValid || !win->RPort || !win->RPort->Layer ) {
+        ReleaseSemaphore( &id->Lock );
+        return;
+    }
+
+    box = id->WaveBox;
+    oldCx = id->CursorX;
+
+    if( id->PlayPos != (ULONG)~0 && id->SampleLength > 0 && box.Width > 0 ) {
+        ULONG pos = id->PlayPos;
+        if( pos > id->SampleLength ) pos = id->SampleLength;
+        newCx = (WORD)( box.Left + ( ( (UQUAD)pos * (ULONG)box.Width ) / id->SampleLength ) );
+        if( newCx >= box.Left + box.Width )
+            newCx = box.Left + box.Width - 1;
+    }
+
+    if( oldCx == newCx ) {
+        ReleaseSemaphore( &id->Lock );
+        return;
+    }
+
+    rp = win->RPort;
+    LockLayerRom( rp->Layer );
+    SetDrMd( rp, COMPLEMENT );
+
+    if( oldCx >= box.Left && oldCx < box.Left + box.Width ) {
+        Move( rp, oldCx, box.Top );
+        Draw( rp, oldCx, box.Top + box.Height - 1 );
+    }
+    if( newCx >= box.Left && newCx < box.Left + box.Width ) {
+        Move( rp, newCx, box.Top );
+        Draw( rp, newCx, box.Top + box.Height - 1 );
+    }
+
+    SetDrMd( rp, JAM1 );
+    UnlockLayerRom( rp->Layer );
+
+    id->CursorX = newCx;
+
+    ReleaseSemaphore( &id->Lock );
+}
+
+/****************************************************************************/
+
 IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
 {
     struct ClassBase		*cb = (struct ClassBase *)cl->cl_UserData;
@@ -1810,6 +1876,21 @@ IPTR __regargs Sound_RENDER( Class *cl, Object *o, struct gpRender *gpr )
             SetAPen( rp, ( wfpen == -1 ) ? pens[HIGHLIGHTTEXTPEN] : wfpen );
 
             DrawWaveform( cb, rp, id, x, y, w, h );
+
+            /* Remember waveform area for the play-position cursor and
+             * re-draw the cursor (full redraw wiped it).
+             */
+            ObtainSemaphore( &id->Lock );
+            id->WaveBox.Left   = x;
+            id->WaveBox.Top    = y;
+            id->WaveBox.Width  = w;
+            id->WaveBox.Height = h;
+            id->WaveBoxValid   = TRUE;
+            id->CursorX        = -1;
+            ReleaseSemaphore( &id->Lock );
+
+            if( id->PlayPos != (ULONG)~0 )
+                DrawPlayCursor( cb, id );
         }
 
         if( id->ControlPanel ) {
@@ -3513,17 +3594,94 @@ void PlayerProcAHI( void )
     BOOL				stereo, paused = FALSE, failed;
     static UBYTE			sdtst2ahist[] = { AHIST_M8S, AHIST_S8S, AHIST_M16S, AHIST_S16S };
     BYTE				*buffer = NULL;
+    /* Play-position cursor support */
+    struct MsgPort		*cursorMP = NULL;
+    struct timerequest	*cursorIO = NULL;
+    struct Device		*TimerBase = NULL;
+    ULONG				cursormsk = 0;
+    BOOL				cursorPending = FALSE;
+    BOOL				cursorPlaying = FALSE;
+    struct timeval		cursorStart = { 0, 0 };
+    ULONG				cursorElapsedAtPause = 0;
 
     mp = &pr->pr_MsgPort;
     mpmsk = 1L << mp->mp_SigBit;
 
     D(bug( "[Sound.dt:AHI] %s()\n", __func__ ); )
 
+    /* Open timer.device for the play-position cursor (best effort) */
+    if( ( cursorMP = CreateMsgPort() ) ) {
+        if( ( cursorIO = (struct timerequest *) CreateIORequest( cursorMP, sizeof( *cursorIO ) ) ) ) {
+            if( OpenDevice( "timer.device", UNIT_VBLANK, (struct IORequest *) cursorIO, 0 ) == 0 ) {
+                TimerBase = cursorIO->tr_node.io_Device;
+                cursormsk = 1L << cursorMP->mp_SigBit;
+            } else {
+                DeleteIORequest( (struct IORequest *) cursorIO );
+                cursorIO = NULL;
+                DeleteMsgPort( cursorMP );
+                cursorMP = NULL;
+            }
+        } else {
+            DeleteMsgPort( cursorMP );
+            cursorMP = NULL;
+        }
+    }
+
     for( ;; ) {
         LONG			rcv;
         struct ObjectMsg	*msg;
 
-        rcv = Wait( mpmsk | SIGBREAKF_CTRL_C );
+        rcv = Wait( mpmsk | cursormsk | SIGBREAKF_CTRL_C );
+
+        if( cursormsk && ( rcv & cursormsk ) ) {
+            /* Drain the timer reply */
+            while( GetMsg( cursorMP ) ) ;
+            cursorPending = FALSE;
+
+            if( cursorPlaying && id && !paused ) {
+                struct timeval now;
+                ULONG elapsed_us;
+                UQUAD pos;
+                ULONG freq;
+
+                GetSysTime( &now );
+                SubTime( &now, &cursorStart );
+                elapsed_us = now.tv_secs * 1000000UL + now.tv_micro;
+
+                ObtainSemaphoreShared( &id->Lock );
+                freq = id->Frequency;
+                ReleaseSemaphore( &id->Lock );
+
+                pos = ( (UQUAD) elapsed_us * (UQUAD) freq ) / 1000000UL;
+
+                if( id->SampleLength ) {
+                    if( id->Cycles ) {
+                        UQUAD total = (UQUAD) id->SampleLength * (UQUAD) id->Cycles;
+                        if( pos >= total ) {
+                            pos = id->SampleLength;
+                            cursorPlaying = FALSE;
+                        } else {
+                            pos = pos % id->SampleLength;
+                        }
+                    } else {
+                        /* Continuous - just wrap */
+                        pos = pos % id->SampleLength;
+                    }
+                }
+
+                id->PlayPos = (ULONG) pos;
+                DrawPlayCursor( cb, id );
+            }
+
+            /* Re-arm the timer while we're still tracking */
+            if( cursorPlaying && cursorIO && !cursorPending ) {
+                cursorIO->tr_node.io_Command = TR_ADDREQUEST;
+                cursorIO->tr_time.tv_secs    = 0;
+                cursorIO->tr_time.tv_micro   = 40000; /* ~25 fps */
+                SendIO( (struct IORequest *) cursorIO );
+                cursorPending = TRUE;
+            }
+        }
 
         if( rcv & mpmsk ) {
             while( ( msg = (struct ObjectMsg *) GetMsg( mp ) ) ) {
@@ -3588,6 +3746,19 @@ void PlayerProcAHI( void )
                 case COMMAND_STOP: {
                     D(bug( "[Sound.dt:AHI] %s: COMMAND_STOP/EXIT\n", __func__); )
 
+                    /* Cancel cursor timer and erase cursor */
+                    if( cursorPending && cursorIO ) {
+                        if( !CheckIO( (struct IORequest *) cursorIO ) )
+                            AbortIO( (struct IORequest *) cursorIO );
+                        WaitIO( (struct IORequest *) cursorIO );
+                        cursorPending = FALSE;
+                    }
+                    cursorPlaying = FALSE;
+                    if( id ) {
+                        id->PlayPos = (ULONG)~0;
+                        DrawPlayCursor( cb, id );
+                    }
+
                     if( AHIBase ) {
                         if (actrl) {
                             AHI_FreeAudio( actrl );
@@ -3604,6 +3775,16 @@ void PlayerProcAHI( void )
                     SetTDMode( cb, id, BUT_STOP );
 
                     if( msg->Command == COMMAND_EXIT ) {
+                        /* Close timer.device before exiting */
+                        if( cursorIO ) {
+                            CloseDevice( (struct IORequest *) cursorIO );
+                            DeleteIORequest( (struct IORequest *) cursorIO );
+                            cursorIO = NULL;
+                        }
+                        if( cursorMP ) {
+                            DeleteMsgPort( cursorMP );
+                            cursorMP = NULL;
+                        }
                         Forbid();
                         ReplyMsg( &msg->Message );
                         DeleteMsgPort( mp );
@@ -3643,6 +3824,14 @@ void PlayerProcAHI( void )
                             }
 
                             paused = TRUE;
+
+                            /* Save elapsed time so resume picks up where we left off */
+                            if( cursorPlaying && TimerBase ) {
+                                struct timeval now;
+                                GetSysTime( &now );
+                                SubTime( &now, &cursorStart );
+                                cursorElapsedAtPause = now.tv_secs * 1000000UL + now.tv_micro;
+                            }
                         }
                     }
                 }
@@ -3662,6 +3851,15 @@ void PlayerProcAHI( void )
                             }
 
                             paused = FALSE;
+
+                            /* Resume cursor: shift start so PlayPos continues from pause point */
+                            if( cursorPlaying && TimerBase ) {
+                                struct timeval delta;
+                                GetSysTime( &cursorStart );
+                                delta.tv_secs  = cursorElapsedAtPause / 1000000UL;
+                                delta.tv_micro = cursorElapsedAtPause % 1000000UL;
+                                SubTime( &cursorStart, &delta );
+                            }
                         } else {
                             LONG	i;
 
@@ -3678,6 +3876,15 @@ void PlayerProcAHI( void )
                             AHI_ControlAudio( actrl,
                                               AHIC_Play, TRUE,
                                               TAG_DONE );
+
+                            /* (re)start cursor from sample 0 */
+                            if( TimerBase ) {
+                                GetSysTime( &cursorStart );
+                                cursorElapsedAtPause = 0;
+                                cursorPlaying = TRUE;
+                                id->PlayPos = 0;
+                                DrawPlayCursor( cb, id );
+                            }
                         }
                     } else {
                         failed = TRUE;
@@ -3854,6 +4061,23 @@ void PlayerProcAHI( void )
                             SetTDMode( cb, id, BUT_STOP );
                         } else {
                             SetTDMode( cb, id, BUT_PLAY );
+
+                            /* Start tracking the play cursor */
+                            if( TimerBase ) {
+                                GetSysTime( &cursorStart );
+                                cursorElapsedAtPause = 0;
+                                cursorPlaying = TRUE;
+                                paused = FALSE;
+                                id->PlayPos = 0;
+                                DrawPlayCursor( cb, id );
+                                if( cursorIO && !cursorPending ) {
+                                    cursorIO->tr_node.io_Command = TR_ADDREQUEST;
+                                    cursorIO->tr_time.tv_secs    = 0;
+                                    cursorIO->tr_time.tv_micro   = 40000;
+                                    SendIO( (struct IORequest *) cursorIO );
+                                    cursorPending = TRUE;
+                                }
+                            }
                         }
                     }
                     D(bug( "[Sound.dt:AHI] %s: COMMAND_PLAY finished\n", __func__ ); )
@@ -3894,8 +4118,22 @@ void PlayerProcAHI( void )
                     SoundHook = NULL;
                 }
             }
-            if( ! id->Continuous )
+            if( ! id->Continuous ) {
                 SetTDMode( cb, id, BUT_STOP );
+
+                /* Stop cursor when one-shot playback finishes */
+                if( cursorPending && cursorIO ) {
+                    if( !CheckIO( (struct IORequest *) cursorIO ) )
+                        AbortIO( (struct IORequest *) cursorIO );
+                    WaitIO( (struct IORequest *) cursorIO );
+                    cursorPending = FALSE;
+                }
+                cursorPlaying = FALSE;
+                if( id ) {
+                    id->PlayPos = (ULONG)~0;
+                    DrawPlayCursor( cb, id );
+                }
+            }
         }
         else
         {
@@ -3952,6 +4190,8 @@ IPTR __regargs Sound_REMOVEDTOBJECT( Class *cl, Object *o, Msg msg )
     ObtainSemaphore( &id->Lock );
     id->Window = (struct Window *)NULL;
     id->Requester = NULL;
+    id->WaveBoxValid = FALSE;
+    id->CursorX = -1;
     ReleaseSemaphore( &id->Lock );
 
     if( id->ColorMap ) {
