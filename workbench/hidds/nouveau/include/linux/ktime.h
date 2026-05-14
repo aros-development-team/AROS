@@ -60,7 +60,6 @@ ktime_to_ns(ktime_t kt)
 	return (kt);
 }
 
-#if !defined(__AROS__)
 static inline ktime_t
 ns_to_ktime(uint64_t nsec)
 {
@@ -79,6 +78,7 @@ ktime_to_us(ktime_t kt)
 	return (ktime_divns(kt, NSEC_PER_USEC));
 }
 
+#if !defined(__AROS__)
 static inline int64_t
 ktime_to_ms(ktime_t kt)
 {

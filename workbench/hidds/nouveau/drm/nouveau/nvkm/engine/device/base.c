@@ -2824,10 +2824,8 @@ nvkm_device_init(struct nvkm_device *device)
 
 	nvkm_device_fini(device, false);
 
-#if !defined(__AROS__)
 	nvdev_trace(device, "init running...\n");
 	time = ktime_to_us(ktime_get());
-#endif
 
 	if (device->func->init) {
 		ret = device->func->init(device);
@@ -2846,10 +2844,8 @@ nvkm_device_init(struct nvkm_device *device)
 	nvkm_acpi_init(device);
 	nvkm_therm_clkgate_enable(device->therm);
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvdev_trace(device, "init completed in %lldus\n", time);
-#endif
 	return 0;
 
 fail_subdev:
