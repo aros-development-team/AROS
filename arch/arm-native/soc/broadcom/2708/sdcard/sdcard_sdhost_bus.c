@@ -103,6 +103,7 @@ static inline void sdhost_neon_copy(void *dst, const void *src, ULONG bytes)
 
 static int sdhost_wait_cmd_idle(struct sdcard_Bus *bus, int timeout_us)
 {
+    /* Wait for the controller to clear SDCMD_NEW */
     while (timeout_us-- > 0)
     {
         if ((sdhost_read(bus, SDCMD) & SDCMD_NEW) == 0)
@@ -117,8 +118,9 @@ static void sdhost_flush_fifo(struct sdcard_Bus *bus)
 {
     ULONG edm = sdhost_read(bus, SDEDM);
     ULONG level = (edm & SDEDM_FIFO_LEVEL_MASK) >> SDEDM_FIFO_LEVEL_SHIFT;
+    int   guard = 32;
 
-    while (level > 0)
+    while (level > 0 && guard-- > 0)
     {
         (void)sdhost_read(bus, SDDATA);
         edm = sdhost_read(bus, SDEDM);
@@ -387,7 +389,7 @@ ULONG FNAME_SDHOSTBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         bus->sdcb_BusNum, __PRETTY_FUNCTION__,
         sdCommand, sdArgument, sdRspType, sdDataLen, sdDataFlags));
 
-    if (sdhost_wait_cmd_idle(bus, 5000) != 0)
+    if (sdhost_wait_cmd_idle(bus, 250000) != 0)
     {
         D(bug("[SDHost%02u] %s: device busy before CMD%u\n",
             bus->sdcb_BusNum, __PRETTY_FUNCTION__, sdCommand));
@@ -422,20 +424,12 @@ ULONG FNAME_SDHOSTBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
         sdhost_write(bus, SDHBCT, blklen);
         sdhost_write(bus, SDHBLC, nblks);
 
-        /* Direct DMA when the caller's buffer is 32-byte aligned and
-         * its physical address fits in the 1 GB low-memory window the
-         * 0xC0000000 bus alias covers.  Otherwise bounce through the
-         * AllocMem'd low buffer and NEON-copy in/out. */
+        /* Diagnostic: always route through the bounce buffer so every
+         * transfer uses one well-aligned, known-good DMA address. Direct
+         * DMA is only used as a fallback if the bounce buffer is too
+         * small or unavailable. */
         {
-            ULONG phys = (ULONG)(IPTR)KrnVirtualToPhysical(sdData);
-            BOOL direct_ok = (((IPTR)sdData & 0x1f) == 0) &&
-                              (phys < 0x40000000);
-
-            if (direct_ok)
-            {
-                dma_buf = sdData;
-            }
-            else if (priv->dma_bounce && sdDataLen <= priv->dma_bounce_size)
+            if (priv->dma_bounce && sdDataLen <= priv->dma_bounce_size)
             {
                 dma_buf = priv->dma_bounce;
                 used_bounce = TRUE;
@@ -493,7 +487,7 @@ ULONG FNAME_SDHOSTBUS(SendCmd)(struct TagItem *CmdTags, struct sdcard_Bus *bus)
     }
 
     /* Wait for the command engine to settle. */
-    if (sdhost_wait_cmd_idle(bus, 5000) != 0)
+    if (sdhost_wait_cmd_idle(bus, 250000) != 0)
     {
         D(bug("[SDHost%02u] %s: cmd idle wait failed (SDCMD=%04x)\n",
             bus->sdcb_BusNum, __PRETTY_FUNCTION__,
