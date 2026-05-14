@@ -6,11 +6,14 @@
 #include <hidd/pci.h>
 #include <hidd/hidd.h>
 
+#include <drm-aros/drm_aros_pci.h>
 #include <drm-compat/drm_compat_types.h>
-#include <drm-compat/drm_compat_pci.h>
 #include <drm/drm_drv.h>
 
-#include "drm-aros/drm_aros_pci.h"
+#include "libdrm/arosdrmmode.h"
+#include "libdrm/nouveau/nouveau_bo.h"
+
+struct drm_driver current_drm_driver;
 
 APTR NouveauMemPool;
 
@@ -40,6 +43,21 @@ void main()
 
     bug("FINISHED nouveau_drm_probe\n");
 
+    bug("Allocating FB bitmap\n");
+
+    struct nouveau_device *dev;
+    struct nouveau_bo *bo;
+
+    nouveau_bo_new(dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 640 * 4 * 480, &bo);
+
+
+    bug("Switching mode to 640x480\n");
+
+
+
+    // drmModeSetCrtc(0, 0, 0, 0 , 0, NULL, 0, NULL);
+
+    bug("Sleeping\n");
     while(1)
         Delay(50);
 }

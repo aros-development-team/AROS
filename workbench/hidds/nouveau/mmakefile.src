@@ -63,7 +63,7 @@ NOUVEAU_DRM_C_SOURCES := \
             $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_CORE_SOURCES))
 
 %build_prog mmake=hidd-nouveau-drm files="nouveau-bin-main $(NOUVEAU_DRM_C_SOURCES)" \
-    targetdir="$(AROS_C)" progname="nouveau-bin" uselibs="oop" usesdks="config private"
+    targetdir="$(AROS_C)" progname="nouveau-bin" uselibs="oop libdrm_nouveau" usesdks="config private drm"
 
 
 NOUVEAU_HIDD_C_SOURCES := \
