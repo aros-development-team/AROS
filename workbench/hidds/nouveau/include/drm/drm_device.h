@@ -1,14 +1,12 @@
 #ifndef _DRM_DEVICE_H_
 #define _DRM_DEVICE_H_
 
-#if !defined(__AROS__)
 #include <linux/list.h>
+#if !defined(__AROS__)
 #include <linux/kref.h>
 #include <linux/mutex.h>
-#include <linux/idr.h>
-#else
-#include <linux/bitops.h>
 #endif
+#include <linux/idr.h>
 
 // #include <drm/drm_hashtab.h>
 #include <drm/drm_mode_config.h>
@@ -104,15 +102,15 @@ struct drm_device {
 // 	 */
 // 	struct drm_master *master;
 
-// 	/**
-// 	 * @driver_features: per-device driver features
-// 	 *
-// 	 * Drivers can clear specific flags here to disallow
-// 	 * certain features on a per-device basis while still
-// 	 * sharing a single &struct drm_driver instance across
-// 	 * all devices.
-// 	 */
-// 	u32 driver_features;
+	/**
+	 * @driver_features: per-device driver features
+	 *
+	 * Drivers can clear specific flags here to disallow
+	 * certain features on a per-device basis while still
+	 * sharing a single &struct drm_driver instance across
+	 * all devices.
+	 */
+	u32 driver_features;
 
 // 	/**
 // 	 * @unplugged:
@@ -282,11 +280,11 @@ struct drm_device {
 	/** @mode_config: Current mode config */
 	struct drm_mode_config mode_config;
 
-// 	/** @object_name_lock: GEM information */
-// 	struct mutex object_name_lock;
+	/** @object_name_lock: GEM information */
+	struct mutex object_name_lock;
 
-// 	/** @object_name_idr: GEM information */
-// 	struct idr object_name_idr;
+	/** @object_name_idr: GEM information */
+	struct idr object_name_idr;
 
 // 	/** @vma_offset_manager: GEM information */
 // 	struct drm_vma_offset_manager *vma_offset_manager;

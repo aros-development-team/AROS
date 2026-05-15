@@ -135,8 +135,8 @@ struct nouveau_cli_work {
 	struct nouveau_cli *cli;
 	struct list_head head;
 
-#if !defined(__AROS__)
 	struct dma_fence *fence;
+#if !defined(__AROS__)
 	struct dma_fence_cb cb;
 #endif
 };

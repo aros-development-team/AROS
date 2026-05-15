@@ -16,6 +16,7 @@ AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/arosdrm_nouveau \
 
 AROS_DRM_CORE_SOURCES = \
+            drm/drm_gem \
             drm/ttm/ttm_bo \
             drm/ttm/ttm_tt \
             drm/ttm/ttm_bo_util \
@@ -31,6 +32,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_idr \
 
 AROS_DRM_NVIDIA_SOURCES = \
+drm/nouveau/nouveau_gem \
 drm/nouveau/nouveau_display \
 drm/nouveau/dispnv04/tvnv04 \
 drm/nouveau/dispnv04/dfp \

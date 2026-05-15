@@ -76,5 +76,8 @@ struct dma_resv_list;
 struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv);
 bool dma_resv_held(struct dma_resv *resv);
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src);
+long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout);
+void dma_resv_lock_slow(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
+int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 
 #endif /* _DRM_COMPAT_DMA_ */

@@ -15,6 +15,7 @@ VOID HIDDNouveauFree(APTR memory);
 #define GFP_DMA32       (1UL < 2)
 #define GFP_HIGHUSER    (1UL < 3)
 #define GFP_USER        (1UL < 4)
+#define GFP_NOWAIT      (1UL < 5)
 
 
 #define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))

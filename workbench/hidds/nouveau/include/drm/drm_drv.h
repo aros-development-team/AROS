@@ -30,6 +30,8 @@
 #if !defined(__AROS__)
 #include <linux/list.h>
 #include <linux/irqreturn.h>
+#else
+#include <linux/idr.h>
 #endif
 
 #include <drm/drm_device.h>
@@ -37,10 +39,12 @@
 
 struct drm_file
 {
+    struct idr object_idr;
+    spinlock_t table_lock;
     void *driver_priv;
 };
 
-// struct drm_gem_object;
+struct drm_gem_object;
 // struct drm_master;
 // struct drm_minor;
 // struct dma_buf_attachment;
@@ -499,41 +503,41 @@ struct drm_driver {
 // 	 */
 // 	int (*debugfs_init)(struct drm_minor *minor);
 
-// 	/**
-// 	 * @gem_free_object: deconstructor for drm_gem_objects
-// 	 *
-// 	 * This is deprecated and should not be used by new drivers. Use
-// 	 * &drm_gem_object_funcs.free instead.
-// 	 */
-// 	void (*gem_free_object) (struct drm_gem_object *obj);
+	/**
+	 * @gem_free_object: deconstructor for drm_gem_objects
+	 *
+	 * This is deprecated and should not be used by new drivers. Use
+	 * &drm_gem_object_funcs.free instead.
+	 */
+	void (*gem_free_object) (struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_free_object_unlocked: deconstructor for drm_gem_objects
-// 	 *
-// 	 * This is deprecated and should not be used by new drivers. Use
-// 	 * &drm_gem_object_funcs.free instead.
-// 	 * Compared to @gem_free_object this is not encumbered with
-// 	 * &drm_device.struct_mutex legacy locking schemes.
-// 	 */
-// 	void (*gem_free_object_unlocked) (struct drm_gem_object *obj);
+	/**
+	 * @gem_free_object_unlocked: deconstructor for drm_gem_objects
+	 *
+	 * This is deprecated and should not be used by new drivers. Use
+	 * &drm_gem_object_funcs.free instead.
+	 * Compared to @gem_free_object this is not encumbered with
+	 * &drm_device.struct_mutex legacy locking schemes.
+	 */
+	void (*gem_free_object_unlocked) (struct drm_gem_object *obj);
 
-// 	/**
-// 	 * @gem_open_object:
-// 	 *
-// 	 * This callback is deprecated in favour of &drm_gem_object_funcs.open.
-// 	 *
-// 	 * Driver hook called upon gem handle creation
-// 	 */
-// 	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
+	/**
+	 * @gem_open_object:
+	 *
+	 * This callback is deprecated in favour of &drm_gem_object_funcs.open.
+	 *
+	 * Driver hook called upon gem handle creation
+	 */
+	int (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
 
-// 	/**
-// 	 * @gem_close_object:
-// 	 *
-// 	 * This callback is deprecated in favour of &drm_gem_object_funcs.close.
-// 	 *
-// 	 * Driver hook called upon gem handle release
-// 	 */
-// 	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
+	/**
+	 * @gem_close_object:
+	 *
+	 * This callback is deprecated in favour of &drm_gem_object_funcs.close.
+	 *
+	 * Driver hook called upon gem handle release
+	 */
+	void (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 
 // 	/**
 // 	 * @gem_print_info:
@@ -832,20 +836,20 @@ struct drm_device *drm_dev_alloc(struct drm_driver *driver,
 // 	return true;
 // }
 
-// /**
-//  * drm_core_check_feature - check driver feature flags
-//  * @dev: DRM device to check
-//  * @feature: feature flag
-//  *
-//  * This checks @dev for driver features, see &drm_driver.driver_features,
-//  * &drm_device.driver_features, and the various &enum drm_driver_feature flags.
-//  *
-//  * Returns true if the @feature is supported, false otherwise.
-//  */
-// static inline bool drm_core_check_feature(const struct drm_device *dev, u32 feature)
-// {
-// 	return dev->driver->driver_features & dev->driver_features & feature;
-// }
+/**
+ * drm_core_check_feature - check driver feature flags
+ * @dev: DRM device to check
+ * @feature: feature flag
+ *
+ * This checks @dev for driver features, see &drm_driver.driver_features,
+ * &drm_device.driver_features, and the various &enum drm_driver_feature flags.
+ *
+ * Returns true if the @feature is supported, false otherwise.
+ */
+static inline bool drm_core_check_feature(const struct drm_device *dev, u32 feature)
+{
+	return dev->driver->driver_features & dev->driver_features & feature;
+}
 
 // /**
 //  * drm_drv_uses_atomic_modeset - check if the driver implements

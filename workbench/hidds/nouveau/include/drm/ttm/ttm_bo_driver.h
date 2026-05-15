@@ -760,27 +760,27 @@ static inline int ttm_bo_reserve(struct ttm_buffer_object *bo,
  * from all our other reservations. Because there are no other reservations
  * held by us, this function cannot deadlock any more.
  */
-// static inline int ttm_bo_reserve_slowpath(struct ttm_buffer_object *bo,
-// 					  bool interruptible,
-// 					  struct ww_acquire_ctx *ticket)
-// {
-// 	int ret = 0;
+static inline int ttm_bo_reserve_slowpath(struct ttm_buffer_object *bo,
+					  bool interruptible,
+					  struct ww_acquire_ctx *ticket)
+{
+	int ret = 0;
 
-// 	WARN_ON(!kref_read(&bo->kref));
+	WARN_ON(!kref_read(&bo->kref));
 
-// 	if (interruptible)
-// 		ret = dma_resv_lock_slow_interruptible(bo->base.resv,
-// 								 ticket);
-// 	else
-// 		dma_resv_lock_slow(bo->base.resv, ticket);
+	if (interruptible)
+		ret = dma_resv_lock_slow_interruptible(bo->base.resv,
+								 ticket);
+	else
+		dma_resv_lock_slow(bo->base.resv, ticket);
 
-// 	if (likely(ret == 0))
-// 		ttm_bo_del_sub_from_lru(bo);
-// 	else if (ret == -EINTR)
-// 		ret = -ERESTARTSYS;
+	if (likely(ret == 0))
+		ttm_bo_del_sub_from_lru(bo);
+	else if (ret == -EINTR)
+		ret = -ERESTARTSYS;
 
-// 	return ret;
-// }
+	return ret;
+}
 
 /**
  * ttm_bo_unreserve

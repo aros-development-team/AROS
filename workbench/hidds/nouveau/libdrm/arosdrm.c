@@ -6,7 +6,11 @@
 
 #include <libdrm/arosdrm.h>
 
+#include <drm-compat/drm_compat_funcs.h>
 #include <drm/drm_drv.h>
+#include <drm/drm_gem.h>
+void drm_gem_open(struct drm_device *dev, struct drm_file *file_private);;
+
 #include "drm_crtc_internal.h"
 
 APTR HIDDNouveauAlloc(ULONG size);
@@ -83,10 +87,12 @@ drmOpen(const char *name, const char *busid)
         if (drm_files[i] == NULL)
         {
             drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
-            // spin_lock_init(&drm_files[i]->table_lock);
+            spin_lock_init(&drm_files[i]->table_lock);
             // INIT_LIST_HEAD(&drm_files[i]->fbs);
 
-bug("FIXME: what about drm_gem_open, see drm_file_alloc\n");
+            if (drm_core_check_feature(current_drm_device, DRIVER_GEM))
+                drm_gem_open(current_drm_device, drm_files[i]);
+
             if (current_drm_device->driver->open)
                 current_drm_device->driver->open(current_drm_device, drm_files[i]);
             return i;

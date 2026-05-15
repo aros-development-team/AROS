@@ -15,6 +15,7 @@ bool dma_fence_is_signaled(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, spinlock_t *lock, u64 context, u64 seqno) { NOT_IMPLEMENTED_STOP }
 void dma_fence_put(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 int dma_fence_signal_locked(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
+long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout) { NOT_IMPLEMENTED_STOP }
 
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 u64 div_u64(u64 a, u32 b) { NOT_IMPLEMENTED_STOP }
@@ -63,7 +64,5 @@ void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPL
 
 unsigned int drm_debug;
 void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }
-
-void drm_gem_object_put_unlocked(struct drm_gem_object *obj) { NOT_IMPLEMENTED_STOP }
 
 u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_alloc\n"); return 100; }

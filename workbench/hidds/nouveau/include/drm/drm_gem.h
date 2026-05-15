@@ -40,6 +40,7 @@
 #else
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_dma.h>
+struct drm_file;
 #endif
 
 // #include <drm/drm_vma_manager.h>
@@ -203,15 +204,15 @@ struct drm_gem_object {
 	 */
 	struct drm_device *dev;
 
-// 	/**
-// 	 * @filp:
-// 	 *
-// 	 * SHMEM file node used as backing storage for swappable buffer objects.
-// 	 * GEM also supports driver private objects with driver-specific backing
-// 	 * storage (contiguous CMA memory, special reserved blocks). In this
-// 	 * case @filp is NULL.
-// 	 */
-// 	struct file *filp;
+	/**
+	 * @filp:
+	 *
+	 * SHMEM file node used as backing storage for swappable buffer objects.
+	 * GEM also supports driver private objects with driver-specific backing
+	 * storage (contiguous CMA memory, special reserved blocks). In this
+	 * case @filp is NULL.
+	 */
+	struct file *filp;
 
 // 	/**
 // 	 * @vma_node:
@@ -225,22 +226,22 @@ struct drm_gem_object {
 // 	 */
 // 	struct drm_vma_offset_node vma_node;
 
-// 	/**
-// 	 * @size:
-// 	 *
-// 	 * Size of the object, in bytes.  Immutable over the object's
-// 	 * lifetime.
-// 	 */
-// 	size_t size;
+	/**
+	 * @size:
+	 *
+	 * Size of the object, in bytes.  Immutable over the object's
+	 * lifetime.
+	 */
+	size_t size;
 
-// 	/**
-// 	 * @name:
-// 	 *
-// 	 * Global name for this object, starts at 1. 0 means unnamed.
-// 	 * Access is covered by &drm_device.object_name_lock. This is used by
-// 	 * the GEM_FLINK and GEM_OPEN ioctls.
-// 	 */
-// 	int name;
+	/**
+	 * @name:
+	 *
+	 * Global name for this object, starts at 1. 0 means unnamed.
+	 * Access is covered by &drm_device.object_name_lock. This is used by
+	 * the GEM_FLINK and GEM_OPEN ioctls.
+	 */
+	int name;
 
 // 	/**
 // 	 * @dma_buf:
@@ -332,27 +333,27 @@ struct drm_gem_object {
 
 void drm_gem_object_release(struct drm_gem_object *obj);
 // void drm_gem_object_free(struct kref *kref);
-// int drm_gem_object_init(struct drm_device *dev,
-// 			struct drm_gem_object *obj, size_t size);
-// void drm_gem_private_object_init(struct drm_device *dev,
-// 				 struct drm_gem_object *obj, size_t size);
+int drm_gem_object_init(struct drm_device *dev,
+			struct drm_gem_object *obj, size_t size);
+void drm_gem_private_object_init(struct drm_device *dev,
+				 struct drm_gem_object *obj, size_t size);
 // void drm_gem_vm_open(struct vm_area_struct *vma);
 // void drm_gem_vm_close(struct vm_area_struct *vma);
 // int drm_gem_mmap_obj(struct drm_gem_object *obj, unsigned long obj_size,
 // 		     struct vm_area_struct *vma);
 // int drm_gem_mmap(struct file *filp, struct vm_area_struct *vma);
 
-// /**
-//  * drm_gem_object_get - acquire a GEM buffer object reference
-//  * @obj: GEM buffer object
-//  *
-//  * This function acquires an additional reference to @obj. It is illegal to
-//  * call this without already holding a reference. No locks required.
-//  */
-// static inline void drm_gem_object_get(struct drm_gem_object *obj)
-// {
-// 	kref_get(&obj->refcount);
-// }
+/**
+ * drm_gem_object_get - acquire a GEM buffer object reference
+ * @obj: GEM buffer object
+ *
+ * This function acquires an additional reference to @obj. It is illegal to
+ * call this without already holding a reference. No locks required.
+ */
+static inline void drm_gem_object_get(struct drm_gem_object *obj)
+{
+	kref_get(&obj->refcount);
+}
 
 // /**
 //  * __drm_gem_object_put - raw function to release a GEM buffer object reference
@@ -378,10 +379,10 @@ void drm_gem_object_release(struct drm_gem_object *obj);
 void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
 // void drm_gem_object_put(struct drm_gem_object *obj);
 
-// int drm_gem_handle_create(struct drm_file *file_priv,
-// 			  struct drm_gem_object *obj,
-// 			  u32 *handlep);
-// int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
+int drm_gem_handle_create(struct drm_file *file_priv,
+			  struct drm_gem_object *obj,
+			  u32 *handlep);
+int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
 
 
 // void drm_gem_free_mmap_offset(struct drm_gem_object *obj);
@@ -394,7 +395,7 @@ void drm_gem_object_put_unlocked(struct drm_gem_object *obj);
 
 // int drm_gem_objects_lookup(struct drm_file *filp, void __user *bo_handles,
 // 			   int count, struct drm_gem_object ***objs_out);
-// struct drm_gem_object *drm_gem_object_lookup(struct drm_file *filp, u32 handle);
+struct drm_gem_object *drm_gem_object_lookup(struct drm_file *filp, u32 handle);
 // long drm_gem_dma_resv_wait(struct drm_file *filep, u32 handle,
 // 				    bool wait_all, unsigned long timeout);
 // int drm_gem_lock_reservations(struct drm_gem_object **objs, int count,

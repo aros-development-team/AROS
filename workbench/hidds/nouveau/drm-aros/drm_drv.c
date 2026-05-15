@@ -64,6 +64,9 @@ static int drm_dev_init(struct drm_device *dev, struct drm_driver *driver,
     dev->dev_private = NULL;
     dev->irq_enabled = 0;
 
+
+    dev->driver_features = ~0u;
+
     // /* Init fields */
     // INIT_LIST_HEAD(&dev->maplist);
     // InitSemaphore(&dev->struct_mutex.semaphore);
@@ -79,7 +82,7 @@ static int drm_dev_init(struct drm_device *dev, struct drm_driver *driver,
     //     }
     // }
     
-    if (driver->driver_features & DRIVER_GEM) {
+    if (drm_core_check_feature(dev, DRIVER_GEM)) {
         if (drm_gem_init(dev)) {
             DRM_ERROR("Cannot initialize graphics execution "
                   "manager (GEM)\n");

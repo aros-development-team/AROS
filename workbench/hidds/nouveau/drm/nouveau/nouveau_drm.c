@@ -182,18 +182,21 @@ nouveau_name(struct drm_device *dev)
 // 	schedule_work(&work->cli->work);
 // }
 
-// void
-// nouveau_cli_work_queue(struct nouveau_cli *cli, struct dma_fence *fence,
-// 		       struct nouveau_cli_work *work)
-// {
-// 	work->fence = dma_fence_get(fence);
-// 	work->cli = cli;
-// 	mutex_lock(&cli->lock);
-// 	list_add_tail(&work->head, &cli->worker);
-// 	if (dma_fence_add_callback(fence, &work->cb, nouveau_cli_work_fence))
-// 		nouveau_cli_work_fence(fence, &work->cb);
-// 	mutex_unlock(&cli->lock);
-// }
+void
+nouveau_cli_work_queue(struct nouveau_cli *cli, struct dma_fence *fence,
+		       struct nouveau_cli_work *work)
+{
+	work->fence = dma_fence_get(fence);
+	work->cli = cli;
+	mutex_lock(&cli->lock);
+	list_add_tail(&work->head, &cli->worker);
+NOT_IMPLEMENTED_STOP
+#if 0
+	if (dma_fence_add_callback(fence, &work->cb, nouveau_cli_work_fence))
+		nouveau_cli_work_fence(fence, &work->cb);
+#endif
+	mutex_unlock(&cli->lock);
+}
 
 static void
 nouveau_cli_fini(struct nouveau_cli *cli)
@@ -1228,11 +1231,11 @@ nouveau_ioctls[] = {
 	DRM_IOCTL_DEF_DRV(NOUVEAU_GPUOBJ_FREE, nouveau_abi16_ioctl_gpuobj_free, DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_INIT, nouveau_svmm_init, DRM_RENDER_ALLOW),
 	DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_BIND, nouveau_svmm_bind, DRM_RENDER_ALLOW),
-	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_NEW, nouveau_gem_ioctl_new, DRM_RENDER_ALLOW),
-	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_PUSHBUF, nouveau_gem_ioctl_pushbuf, DRM_RENDER_ALLOW),
-	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_PREP, nouveau_gem_ioctl_cpu_prep, DRM_RENDER_ALLOW),
-	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_FINI, nouveau_gem_ioctl_cpu_fini, DRM_RENDER_ALLOW),
-	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_INFO, nouveau_gem_ioctl_info, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_NEW, nouveau_gem_ioctl_new, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_PUSHBUF, nouveau_gem_ioctl_pushbuf, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_PREP, nouveau_gem_ioctl_cpu_prep, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_FINI, nouveau_gem_ioctl_cpu_fini, DRM_RENDER_ALLOW),
+	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_INFO, nouveau_gem_ioctl_info, DRM_RENDER_ALLOW),
 };
 
 // long
@@ -1312,9 +1315,9 @@ driver_stub = {
 	// .gem_prime_vmap = nouveau_gem_prime_vmap,
 	// .gem_prime_vunmap = nouveau_gem_prime_vunmap,
 
-	// .gem_free_object_unlocked = nouveau_gem_object_del,
-	// .gem_open_object = nouveau_gem_object_open,
-	// .gem_close_object = nouveau_gem_object_close,
+	.gem_free_object_unlocked = nouveau_gem_object_del,
+	.gem_open_object = nouveau_gem_object_open,
+	.gem_close_object = nouveau_gem_object_close,
 
 	// .dumb_create = nouveau_display_dumb_create,
 	// .dumb_map_offset = nouveau_display_dumb_map_offset,
