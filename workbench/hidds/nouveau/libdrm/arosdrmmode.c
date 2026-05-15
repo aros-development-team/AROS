@@ -23,8 +23,8 @@
  *
  */
 
-#include "arosdrm.h"
-#include "arosdrmmode.h"
+#include <libdrm/arosdrm.h>
+#include <libdrm/arosdrmmode.h>
 
 #include <string.h>
 

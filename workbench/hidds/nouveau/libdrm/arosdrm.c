@@ -4,7 +4,7 @@
 
 #include <aros/debug.h>
 
-#include "arosdrm.h"
+#include <libdrm/arosdrm.h>
 
 #include <drm/drm_drv.h>
 #include "drm_crtc_internal.h"
