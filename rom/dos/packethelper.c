@@ -37,7 +37,9 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
         phs->name = bstrname;
         return TRUE;
     } else { /* ":" */
-        BSTR bstrname = C2BSTR(name);
+        /* Strip the volume/assign specifier before handing the name to the filesystem handler. */
+        CONST_STRPTR filename = strchr(name, ':') + 1;
+        BSTR bstrname = C2BSTR(filename);
         struct DevProc *dvp = NULL;
         if ((dvp = GetDeviceProc(name, dvp))) {
             phs->name = bstrname;
@@ -46,6 +48,7 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
             phs->dp = dvp;
             return TRUE;
         }
+        FREEC2BSTR(bstrname);
     }
     return FALSE;
 }
