@@ -12,7 +12,7 @@
 APTR HIDDNouveauAlloc(ULONG size);
 VOID HIDDNouveauFree(APTR memory);
 
-extern struct drm_driver * current_drm_driver;
+extern struct drm_device *current_drm_device;
 
 /* FIXME: Array for now, list maybe in future */
 struct drm_file * drm_files[128] = {NULL};
@@ -20,49 +20,57 @@ struct drm_file * drm_files[128] = {NULL};
 int 
 drmCommandNone(int fd, unsigned long drmCommandIndex)
 {
+    struct drm_driver *drv = current_drm_device->driver;
+
     if (!drm_files[fd])
         return -EINVAL;
 
-    if (!current_drm_driver || !current_drm_driver->ioctls)
+    if (!drv || !drv->ioctls)
         return -EINVAL;
 
-    return current_drm_driver->ioctls[drmCommandIndex].func(current_drm_driver->dev, NULL, drm_files[fd]);
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, NULL, drm_files[fd]);
 }
 
 int
 drmCommandRead(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
 {
+    struct drm_driver *drv = current_drm_device->driver;
+
     if (!drm_files[fd])
         return -EINVAL;
 
-    if (!current_drm_driver || !current_drm_driver->ioctls)
+    if (!drv || !drv->ioctls)
         return -EINVAL;
 
-    return current_drm_driver->ioctls[drmCommandIndex].func(current_drm_driver->dev, data, drm_files[fd]);
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
 }
 
 int
 drmCommandWrite(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
 {
+    struct drm_driver *drv = current_drm_device->driver;
+
     if (!drm_files[fd])
         return -EINVAL;
 
-    if (!current_drm_driver || !current_drm_driver->ioctls)
+    if (!drv || !drv->ioctls)
         return -EINVAL;
     
-    return current_drm_driver->ioctls[drmCommandIndex].func(current_drm_driver->dev, data, drm_files[fd]);
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
 }
 
 int
 drmCommandWriteRead(int fd, unsigned long drmCommandIndex, void *data, unsigned long size)
 {
+    struct drm_driver *drv = current_drm_device->driver;
+
     if (!drm_files[fd])
         return -EINVAL;
     
-    if (!current_drm_driver || !current_drm_driver->ioctls)
+    if (!drv || !drv->ioctls)
         return -EINVAL;
     
-    return current_drm_driver->ioctls[drmCommandIndex].func(current_drm_driver->dev, data, drm_files[fd]);
+    return drv->ioctls[drmCommandIndex].func(current_drm_device, data, drm_files[fd]);
 }
 
 int
@@ -115,8 +123,8 @@ drmVersionPtr
 drmGetVersion(int fd)
 {
     static drmVersion ver;
-    if (current_drm_driver)
-        ver.version_patchlevel = current_drm_driver->patchlevel;
+    if (current_drm_device->driver)
+        ver.version_patchlevel = current_drm_device->driver->patchlevel;
     else
         ver.version_patchlevel = 0;
     

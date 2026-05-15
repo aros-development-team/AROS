@@ -14,8 +14,6 @@
 #include "libdrm/nouveau/nouveau_bo.h"
 #include "libdrm/nouveau/nouveau_drmif.h"
 
-struct drm_driver current_drm_driver; //FIXME to be removed
-
 APTR NouveauMemPool;
 struct drm_device *current_drm_device;
 

@@ -5,7 +5,7 @@
 #include "arosdrm.h"
 #include "drmP.h"
 
-extern struct drm_driver * current_drm_driver;
+extern struct drm_driver *current_drm_device;
 
 /* FIXME: Array for now, list maybe in future */
 extern struct drm_file * drm_files[128];
