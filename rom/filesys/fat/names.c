@@ -194,38 +194,55 @@ LONG GetDirEntryLongName(struct DirEntry *short_de, STRPTR name,
             break;
         }
 
-        /* Copy the characters into the name buffer. Note that filename
-         * entries can have null-termination, but don't have to. We take the
-         * easy way out - copy everything, and bolt on an additional null just
-         * in case. */
+        /* Copy the characters into the name buffer. Per FAT-LFN spec the
+         * name is terminated by a 0x0000 UTF-16 code unit, with subsequent
+         * unused slots filled with 0xFFFF. Some writers omit the 0x0000
+         * terminator when the name doesn't fill the entry, padding straight
+         * with 0xFFFF. Treat either as end-of-name so we don't pull padding
+         * (or stale bytes from a partial rename) into the extracted name. */
 
         /* XXX: these are in UTF-16, but we're just taking the bottom byte.
          * That works well enough but is still a hack. If our DOS ever
          * supports unicode, this should be revisited */
-        for (i = 0; i < 5; i++)
         {
-            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name1[i])];
-            c++;
-        }
-        for (i = 0; i < 6; i++)
-        {
-            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name2[i])];
-            c++;
-        }
-        for (i = 0; i < 2; i++)
-        {
-            *c = glob->from_unicode[AROS_LE2WORD(de.e.long_entry.name3[i])];
-            c++;
+            BOOL terminated = FALSE;
+            UWORD u;
+
+            for (i = 0; i < 5 && !terminated; i++)
+            {
+                u = AROS_LE2WORD(de.e.long_entry.name1[i]);
+                if (u == 0x0000 || u == 0xFFFF)
+                    terminated = TRUE;
+                else
+                    *c++ = glob->from_unicode[u];
+            }
+            for (i = 0; i < 6 && !terminated; i++)
+            {
+                u = AROS_LE2WORD(de.e.long_entry.name2[i]);
+                if (u == 0x0000 || u == 0xFFFF)
+                    terminated = TRUE;
+                else
+                    *c++ = glob->from_unicode[u];
+            }
+            for (i = 0; i < 2 && !terminated; i++)
+            {
+                u = AROS_LE2WORD(de.e.long_entry.name3[i]);
+                if (u == 0x0000 || u == 0xFFFF)
+                    terminated = TRUE;
+                else
+                    *c++ = glob->from_unicode[u];
+            }
         }
 
         /* If this is the last entry, clean up and get us out of here */
         if (de.e.long_entry.order & 0x40)
         {
             *c = 0;
-            *len = strlen((char *)buf);
+            *len = c - buf;
             CopyMem(buf, name, *len);
 
-            D(bug("[fat] extracted long name '%s'\n", buf));
+            D(bug("[fat] extracted long name '%s' (len %lu)\n",
+                buf, (unsigned long)*len));
 
             ReleaseDirHandle(&dh, glob);
 
