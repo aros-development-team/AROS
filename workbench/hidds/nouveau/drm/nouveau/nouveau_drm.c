@@ -735,7 +735,7 @@ NOT_IMPLEMENTED_STOP
 // }
 
 int nouveau_drm_probe(struct pci_dev *pdev,
-			     const struct pci_device_id *pent)
+			     const struct pci_device_id *pent, struct drm_device **pdrm_dev)
 {
 	struct nvkm_device *device;
 	struct drm_device *drm_dev;
@@ -745,6 +745,7 @@ int nouveau_drm_probe(struct pci_dev *pdev,
 
 #if defined(__AROS__)
 	driver_pci = driver_stub;
+	*pdrm_dev = NULL;
 #endif
 
 #if !defined(__AROS__)
@@ -835,6 +836,9 @@ NOT_IMPLEMENTED_CONTINUE
 		goto fail_drm_dev_init;
 
 	quirk_broken_nv_runpm(pdev);
+#endif
+#if defined(__AROS__)
+	*pdrm_dev = drm_dev;
 #endif
 	return 0;
 

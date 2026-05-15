@@ -17,6 +17,7 @@
 struct drm_driver current_drm_driver; //FIXME to be removed
 
 APTR NouveauMemPool;
+struct drm_device *current_drm_device;
 
 APTR HIDDNouveauAlloc(ULONG size)
 {
@@ -28,7 +29,7 @@ VOID HIDDNouveauFree(APTR memory)
     FreeVecPooled(NouveauMemPool, memory);
 }
 
-int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent);
+int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
 
 void main()
 {
@@ -40,7 +41,7 @@ void main()
 
     struct pci_dev *pdev = drm_aros_pci_find_supported_video_card();
 
-    nouveau_drm_probe(pdev, NULL);
+    nouveau_drm_probe(pdev, NULL, &current_drm_device);
 
     bug("FINISHED nouveau_drm_probe\n");
 
