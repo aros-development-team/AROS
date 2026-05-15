@@ -37,7 +37,7 @@
 
 struct drm_file
 {
-    ULONG dummy;
+    void *driver_priv;
 };
 
 // struct drm_gem_object;
@@ -186,25 +186,25 @@ struct drm_driver {
 // 	 */
 // 	int (*load) (struct drm_device *, unsigned long flags);
 
-// 	/**
-// 	 * @open:
-// 	 *
-// 	 * Driver callback when a new &struct drm_file is opened. Useful for
-// 	 * setting up driver-private data structures like buffer allocators,
-// 	 * execution contexts or similar things. Such driver-private resources
-// 	 * must be released again in @postclose.
-// 	 *
-// 	 * Since the display/modeset side of DRM can only be owned by exactly
-// 	 * one &struct drm_file (see &drm_file.is_master and &drm_device.master)
-// 	 * there should never be a need to set up any modeset related resources
-// 	 * in this callback. Doing so would be a driver design bug.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * 0 on success, a negative error code on failure, which will be
-// 	 * promoted to userspace as the result of the open() system call.
-// 	 */
-// 	int (*open) (struct drm_device *, struct drm_file *);
+	/**
+	 * @open:
+	 *
+	 * Driver callback when a new &struct drm_file is opened. Useful for
+	 * setting up driver-private data structures like buffer allocators,
+	 * execution contexts or similar things. Such driver-private resources
+	 * must be released again in @postclose.
+	 *
+	 * Since the display/modeset side of DRM can only be owned by exactly
+	 * one &struct drm_file (see &drm_file.is_master and &drm_device.master)
+	 * there should never be a need to set up any modeset related resources
+	 * in this callback. Doing so would be a driver design bug.
+	 *
+	 * Returns:
+	 *
+	 * 0 on success, a negative error code on failure, which will be
+	 * promoted to userspace as the result of the open() system call.
+	 */
+	int (*open) (struct drm_device *, struct drm_file *);
 
 // 	/**
 // 	 * @postclose:
@@ -730,8 +730,8 @@ struct drm_driver {
 // 	 */
 // 	const struct vm_operations_struct *gem_vm_ops;
 
-// 	/** @major: driver major number */
-// 	int major;
+	/** @major: driver major number */
+	int major;
 // 	/** @minor: driver minor number */
 // 	int minor;
 	/** @patchlevel: driver patch level */

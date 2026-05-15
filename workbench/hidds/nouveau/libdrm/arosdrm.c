@@ -77,21 +77,21 @@ int
 drmOpen(const char *name, const char *busid)
 {
     int i;
-bug("FIXME drmOpen\n"); while(1);
-#if 0
+
     for (i = 0; i < 128; i++)
     {
         if (drm_files[i] == NULL)
         {
             drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
-            spin_lock_init(&drm_files[i]->table_lock);
-            INIT_LIST_HEAD(&drm_files[i]->fbs);
-            if (current_drm_driver->open)
-                current_drm_driver->open(current_drm_driver->dev, drm_files[i]);
+            // spin_lock_init(&drm_files[i]->table_lock);
+            // INIT_LIST_HEAD(&drm_files[i]->fbs);
+
+bug("FIXME: what about drm_gem_open, see drm_file_alloc\n");
+            if (current_drm_device->driver->open)
+                current_drm_device->driver->open(current_drm_device, drm_files[i]);
             return i;
         }
     }
-#endif
     
     return -EINVAL;
 }
@@ -124,10 +124,16 @@ drmGetVersion(int fd)
 {
     static drmVersion ver;
     if (current_drm_device->driver)
+    {
         ver.version_patchlevel = current_drm_device->driver->patchlevel;
+        ver.version_major = current_drm_device->driver->major;
+    }
     else
+    {
         ver.version_patchlevel = 0;
-    
+        ver.version_major = 0;
+    }
+
     return &ver;
 }
 

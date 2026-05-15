@@ -1130,51 +1130,61 @@ fail_nvkm:
 // 	return 1;
 // }
 
-// static int
-// nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
-// {
-// 	struct nouveau_drm *drm = nouveau_drm(dev);
-// 	struct nouveau_cli *cli;
-// 	char name[32], tmpname[TASK_COMM_LEN];
-// 	int ret;
+static int
+nouveau_drm_open(struct drm_device *dev, struct drm_file *fpriv)
+{
+	struct nouveau_drm *drm = nouveau_drm(dev);
+	struct nouveau_cli *cli;
+#if !defined(__AROS__)
+	char name[32], tmpname[TASK_COMM_LEN];
+#else
+	char name[32];
+#endif
+	int ret;
 
-// 	/* need to bring up power immediately if opening device */
-// 	ret = pm_runtime_get_sync(dev->dev);
-// 	if (ret < 0 && ret != -EACCES) {
-// 		pm_runtime_put_autosuspend(dev->dev);
-// 		return ret;
-// 	}
+#if !defined(__AROS__)
+	/* need to bring up power immediately if opening device */
+	ret = pm_runtime_get_sync(dev->dev);
+	if (ret < 0 && ret != -EACCES) {
+		pm_runtime_put_autosuspend(dev->dev);
+		return ret;
+	}
 
-// 	get_task_comm(tmpname, current);
-// 	snprintf(name, sizeof(name), "%s[%d]", tmpname, pid_nr(fpriv->pid));
+	get_task_comm(tmpname, current);
+	snprintf(name, sizeof(name), "%s[%d]", tmpname, pid_nr(fpriv->pid));
+#else
+	snprintf(name, sizeof(name), "Nouveau");
+#endif
 
-// 	if (!(cli = kzalloc(sizeof(*cli), GFP_KERNEL))) {
-// 		ret = -ENOMEM;
-// 		goto done;
-// 	}
+	if (!(cli = kzalloc(sizeof(*cli), GFP_KERNEL))) {
+		ret = -ENOMEM;
+		goto done;
+	}
 
-// 	ret = nouveau_cli_init(drm, name, cli);
-// 	if (ret)
-// 		goto done;
+	ret = nouveau_cli_init(drm, name, cli);
+	if (ret)
+		goto done;
 
-// 	cli->base.super = false;
+	cli->base.super = false;
 
-// 	fpriv->driver_priv = cli;
+	fpriv->driver_priv = cli;
 
-// 	mutex_lock(&drm->client.mutex);
-// 	list_add(&cli->head, &drm->clients);
-// 	mutex_unlock(&drm->client.mutex);
+	mutex_lock(&drm->client.mutex);
+	list_add(&cli->head, &drm->clients);
+	mutex_unlock(&drm->client.mutex);
 
-// done:
-// 	if (ret && cli) {
-// 		nouveau_cli_fini(cli);
-// 		kfree(cli);
-// 	}
+done:
+	if (ret && cli) {
+		nouveau_cli_fini(cli);
+		kfree(cli);
+	}
 
-// 	pm_runtime_mark_last_busy(dev->dev);
-// 	pm_runtime_put_autosuspend(dev->dev);
-// 	return ret;
-// }
+#if !defined(__AROS__)
+	pm_runtime_mark_last_busy(dev->dev);
+	pm_runtime_put_autosuspend(dev->dev);
+#endif
+	return ret;
+}
 
 // static void
 // nouveau_drm_postclose(struct drm_device *dev, struct drm_file *fpriv)
@@ -1268,7 +1278,7 @@ driver_stub = {
 #endif
 		,
 
-	// .open = nouveau_drm_open,
+	.open = nouveau_drm_open,
 	// .postclose = nouveau_drm_postclose,
 	// .lastclose = nouveau_vga_lastclose,
 
@@ -1308,7 +1318,7 @@ driver_stub = {
 #else
 	// .date = DRIVER_DATE,
 #endif
-	// .major = DRIVER_MAJOR,
+	.major = DRIVER_MAJOR,
 	// .minor = DRIVER_MINOR,
 	.patchlevel = DRIVER_PATCHLEVEL,
 };
