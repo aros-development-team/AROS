@@ -12,8 +12,9 @@
 
 #include "libdrm/arosdrmmode.h"
 #include "libdrm/nouveau/nouveau_bo.h"
+#include "libdrm/nouveau/nouveau_drmif.h"
 
-struct drm_driver current_drm_driver;
+struct drm_driver current_drm_driver; //FIXME to be removed
 
 APTR NouveauMemPool;
 
@@ -45,8 +46,11 @@ void main()
 
     bug("Allocating FB bitmap\n");
 
-    struct nouveau_device *dev;
-    struct nouveau_bo *bo;
+    struct nouveau_device *dev = NULL;
+
+    nouveau_device_open(&dev, "");
+
+    struct nouveau_bo *bo = NULL;
 
     nouveau_bo_new(dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 640 * 4 * 480, &bo);
 

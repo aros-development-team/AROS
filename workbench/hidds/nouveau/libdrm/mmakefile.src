@@ -13,6 +13,7 @@ LIBDRM_C_SOURCES := \
             nouveau/nouveau_bo \
             nouveau/nouveau_pushbuf \
             nouveau/nouveau_reloc \
+            nouveau/nouveau_device \
 
 %build_linklib mmake=hidd-nouveau-libdrm libname=libdrm_nouveau files="$(LIBDRM_C_SOURCES)" sdk=drm usesdks="config"
 

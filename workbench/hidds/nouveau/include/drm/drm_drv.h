@@ -734,8 +734,8 @@ struct drm_driver {
 // 	int major;
 // 	/** @minor: driver minor number */
 // 	int minor;
-// 	/** @patchlevel: driver patch level */
-// 	int patchlevel;
+	/** @patchlevel: driver patch level */
+	int patchlevel;
 // 	/** @name: driver name */
 // 	char *name;
 // 	/** @desc: driver description */

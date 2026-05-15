@@ -65,59 +65,63 @@ drmCommandWriteRead(int fd, unsigned long drmCommandIndex, void *data, unsigned 
     return current_drm_driver->ioctls[drmCommandIndex].func(current_drm_driver->dev, data, drm_files[fd]);
 }
 
-// int
-// drmOpen(const char *name, const char *busid)
-// {
-//     int i;
-
-//     for (i = 0; i < 128; i++)
-//     {
-//         if (drm_files[i] == NULL)
-//         {
-//             drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
-//             spin_lock_init(&drm_files[i]->table_lock);
-//             INIT_LIST_HEAD(&drm_files[i]->fbs);
-//             if (current_drm_driver->open)
-//                 current_drm_driver->open(current_drm_driver->dev, drm_files[i]);
-//             return i;
-//         }
-//     }
+int
+drmOpen(const char *name, const char *busid)
+{
+    int i;
+bug("FIXME drmOpen\n"); while(1);
+#if 0
+    for (i = 0; i < 128; i++)
+    {
+        if (drm_files[i] == NULL)
+        {
+            drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
+            spin_lock_init(&drm_files[i]->table_lock);
+            INIT_LIST_HEAD(&drm_files[i]->fbs);
+            if (current_drm_driver->open)
+                current_drm_driver->open(current_drm_driver->dev, drm_files[i]);
+            return i;
+        }
+    }
+#endif
     
-//     return -EINVAL;
-// }
+    return -EINVAL;
+}
 
-// int
-// drmClose(int fd)
-// {
-//     struct drm_file * f = NULL;
+int
+drmClose(int fd)
+{
+    struct drm_file * f = NULL;
 
-//     if (!(f = drm_files[fd]))
-//         return 0;
+bug("FIXME drmClose\n"); while(1);
+#if 0
+    if (!(f = drm_files[fd]))
+        return 0;
     
-//     drm_files[fd] = NULL;
+    drm_files[fd] = NULL;
     
-//     if (current_drm_driver->preclose)
-//         current_drm_driver->preclose(current_drm_driver->dev, f);
+    if (current_drm_driver->preclose)
+        current_drm_driver->preclose(current_drm_driver->dev, f);
 
-//     if (current_drm_driver->postclose)
-//         current_drm_driver->postclose(current_drm_driver->dev, f);
+    if (current_drm_driver->postclose)
+        current_drm_driver->postclose(current_drm_driver->dev, f);
 
-//     HIDDNouveauFree(f);
+    HIDDNouveauFree(f);
+#endif
+    return 0;
+}
+
+drmVersionPtr
+drmGetVersion(int fd)
+{
+    static drmVersion ver;
+    if (current_drm_driver)
+        ver.version_patchlevel = current_drm_driver->patchlevel;
+    else
+        ver.version_patchlevel = 0;
     
-//     return 0;
-// }
-
-// drmVersionPtr
-// drmGetVersion(int fd)
-// {
-//     static drmVersion ver;
-//     if (current_drm_driver)
-//         ver.version_patchlevel = current_drm_driver->version_patchlevel;
-//     else
-//         ver.version_patchlevel = 0;
-    
-//     return &ver;
-// }
+    return &ver;
+}
 
 void
 drmFreeVersion(drmVersionPtr ptr)
