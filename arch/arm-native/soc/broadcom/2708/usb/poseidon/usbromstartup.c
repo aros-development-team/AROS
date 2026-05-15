@@ -1,11 +1,13 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-/* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
- * PsdStackloader should be started during startup-sequence nonetheless */
+/* Minimal Pi-only Poseidon bootstrap: registers the USB controller
+ * (usb2otg.device) with poseidon.library at coldsart. USB classes are
+ * disk-loaded by AddUSBClasses from Startup-Sequence, which
+ * triggers class scan / binding. */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
@@ -28,6 +30,28 @@ AROS_UFP3(static IPTR, usbromstartup_init,
     AROS_UFHA(BPTR, seglist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
+/* Force a resident-list library to be initialised (its lib_init runs and it
+ * gets added to SysBase->LibList). Needed because AROS's OpenLibrary only
+ * looks in LibList - it does not trigger InitResident on RTF_AUTOINIT
+ * residents that haven't been COLDSTART-iterated yet. */
+static void prewarm_library(STRPTR name, struct ExecBase *SysBase)
+{
+    if (FindName(&SysBase->LibList, name))
+        return;
+    {
+        struct Resident *res = FindResident(name);
+        if (res)
+        {
+            D(bug("[USBROMStartup] prewarm InitResident(\"%s\")\n", name));
+            InitResident(res, BNULL);
+        }
+        else
+        {
+            bug("[USBROMStartup] prewarm: %s not in resident list\n", name);
+        }
+    }
+}
+
 const struct Resident usbHook =
 {
     RTC_MATCHWORD,
@@ -36,7 +60,8 @@ const struct Resident usbHook =
     RTF_COLDSTART,
     41,
     NT_TASK,
-    35,
+    /* Run after intuition (residentpri 15). */
+    10,
     name,
     &version[5],
     (APTR)usbromstartup_init
@@ -57,61 +82,27 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
     D(bug("[USBROMStartup] Loading poseidon...\n"));
 
+    prewarm_library("poseidon.library", SysBase);
+
+    D(bug("[USBROMStartup] opening poseidon.library...\n"));
+
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
-        APTR msdclass;
-        IPTR usecount = 0;
-        ULONG bootdelay = 4;
-
-        D(bug("[USBROMStartup] Adding classes...\n"));
-
-        psdAddClass("hub.class", 0);
-        if(!(psdAddClass("hid.class", 0)))
-        {
-            psdAddClass("bootmouse.class", 0);
-            psdAddClass("bootkeyboard.class", 0);
-        }
-        msdclass = psdAddClass("massstorage.class", 0);
-
-        D(bug("[USBROMStartup] Added chipset drivers...\n"));
-
-        /* load the raspi usb hardware driver */
         if ((phw = psdAddHardware("usb2otg.device", 0)))
         {
             D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
-
             psdEnumerateHardware(phw);
         }
-
-        D(bug("[USBROMStartup] Scanning classes...\n"));
-        psdClassScan();
-        D(bug("[USBROMStartup] classes enumerated\n"));
-
-        if(msdclass)
+        else
         {
-            D(bug("[USBROMStartup] waiting for hubs..\n"));
-            psdDelayMS(1000); // wait for hubs to settle
-            D(bug("[USBROMStartup] checking for massstorage devices..\n"));
-            psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount, TAG_END);
-            D(bug("[USBROMStartup] %d masstorage devices found\n", usecount));
-            if(usecount > 0)
-            {
-                D(bug("[USBROMStartup] adding boot delay\n"));
-
-                psdAddErrorMsg(RETURN_OK, (STRPTR)name,
-                               "Delaying further execution by %ld second(s) (boot delay).",
-                               bootdelay);
-                if(bootdelay > 1)
-                {
-                    psdDelayMS((bootdelay-1)*1000);
-                }
-            } else {
-                psdAddErrorMsg(RETURN_OK, (STRPTR)name, "Boot delay skipped, no mass storage devices found.");
-            }
+            bug("[USBROMStartup] psdAddHardware failed\n");
         }
 
-        D(bug("[USBROMStartup] cleaning up .. \n"));
         CloseLibrary(ps);
+    }
+    else
+    {
+        D(bug("[USBROMStartup] OpenLibrary(poseidon.library) failed\n"));
     }
     D(bug("[USBROMStartup] Finished...\n"));
 
