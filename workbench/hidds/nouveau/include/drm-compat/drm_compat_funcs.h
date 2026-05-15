@@ -346,14 +346,6 @@ static inline unsigned int kref_read(struct kref *kref)
     return kref->refcount.count;
 }
 
-/* IDR handling */
-#define idr_pre_get(a, b)               idr_pre_get_internal(a)
-int idr_pre_get_internal(struct idr *idp);
-int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id);
-void *idr_find(struct idr *idp, int id);
-void idr_remove(struct idr *idp, int id);
-void idr_init(struct idr *idp);
-
 /* AGP handling */
 struct agp_bridge_data *agp_backend_acquire(void * dev);
 void agp_backend_release(struct agp_bridge_data * bridge);

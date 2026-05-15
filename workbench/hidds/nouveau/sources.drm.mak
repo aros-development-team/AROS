@@ -28,6 +28,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/drm_compat_pci \
             drm-compat/drm_compat_stubs \
             drm-compat/linux_compat \
+            drm-compat/linux_idr \
 
 AROS_DRM_NVIDIA_SOURCES = \
 drm/nouveau/nouveau_display \

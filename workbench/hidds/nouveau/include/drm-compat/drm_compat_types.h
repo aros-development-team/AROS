@@ -58,6 +58,8 @@
 #define	DECLARE_BITMAP(n, bits) \
     unsigned long n[howmany(bits, sizeof(long) * 8)]
 
+#define HZ 1000
+
 
 #define IRQ_NONE    0
 #define IRQ_HANDLED 1
@@ -160,15 +162,6 @@ static int init_##name()                        \
     return TRUE;                                \
 }                                               \
 ADD2INIT(init_##name, 0)
-
-/* IDR handling */
-struct idr
-{
-    ULONG size;
-    ULONG occupied;
-    ULONG last_starting_id;
-    IPTR * pointers;
-};
 
 /* I2C handling */
 struct i2c_adapter
