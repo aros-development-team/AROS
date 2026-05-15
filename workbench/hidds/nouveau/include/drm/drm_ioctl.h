@@ -39,6 +39,7 @@
 #include <asm/ioctl.h>
 #else
 #include <linux/bitops.h>
+#define _IOC_NR(cmd) ((cmd) & 0xff)
 #endif
 
 struct drm_device;

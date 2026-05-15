@@ -182,10 +182,7 @@ nouveau_abi16_fini(struct nouveau_abi16 *abi16)
 int
 nouveau_abi16_ioctl_getparam(ABI16_IOCTL_ARGS)
 {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	struct nouveau_cli *cli = nouveau_cli(file_priv);
-#endif
 	struct nouveau_drm *drm = nouveau_drm(dev);
 	struct nvif_device *device = &drm->client.device;
 	struct nvkm_gr *gr = nvxx_gr(device);
@@ -246,10 +243,7 @@ NOT_IMPLEMENTED_CONTINUE
 		getparam->value = nvkm_gr_units(gr);
 		break;
 	default:
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		NV_PRINTK(dbg, cli, "unknown parameter %lld\n", getparam->param);
-#endif
 		return -EINVAL;
 	}
 
