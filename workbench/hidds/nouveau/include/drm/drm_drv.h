@@ -62,19 +62,19 @@ enum drm_driver_feature {
 	 * drivers.
 	 */
 	DRIVER_GEM			= BIT(0),
-// 	/**
-// 	 * @DRIVER_MODESET:
-// 	 *
-// 	 * Driver supports mode setting interfaces (KMS).
-// 	 */
-// 	DRIVER_MODESET			= BIT(1),
-// 	/**
-// 	 * @DRIVER_RENDER:
-// 	 *
-// 	 * Driver supports dedicated render nodes. See also the :ref:`section on
-// 	 * render nodes <drm_render_node>` for details.
-// 	 */
-// 	DRIVER_RENDER			= BIT(3),
+	/**
+	 * @DRIVER_MODESET:
+	 *
+	 * Driver supports mode setting interfaces (KMS).
+	 */
+	DRIVER_MODESET			= BIT(1),
+	/**
+	 * @DRIVER_RENDER:
+	 *
+	 * Driver supports dedicated render nodes. See also the :ref:`section on
+	 * render nodes <drm_render_node>` for details.
+	 */
+	DRIVER_RENDER			= BIT(3),
 	/**
 	 * @DRIVER_ATOMIC:
 	 *
@@ -772,10 +772,6 @@ struct drm_driver {
 // 	 */
 // 	const struct file_operations *fops;
 
-#if defined(__AROS__)
-	struct drm_device *dev;
-#endif
-
 // 	/* Everything below here is for legacy driver, never use! */
 // 	/* private: */
 
@@ -799,8 +795,8 @@ struct drm_driver {
 // 		      struct drm_driver *driver);
 // void drm_dev_fini(struct drm_device *dev);
 
-// struct drm_device *drm_dev_alloc(struct drm_driver *driver,
-// 				 struct device *parent);
+struct drm_device *drm_dev_alloc(struct drm_driver *driver,
+				 struct device *parent);
 // int drm_dev_register(struct drm_device *dev, unsigned long flags);
 // void drm_dev_unregister(struct drm_device *dev);
 

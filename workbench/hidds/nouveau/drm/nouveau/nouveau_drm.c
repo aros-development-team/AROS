@@ -101,7 +101,7 @@ static int nouveau_atomic = 0;
 // static int nouveau_runtime_pm = -1;
 // module_param_named(runpm, nouveau_runtime_pm, int, 0400);
 
-// static struct drm_driver driver_stub;
+static struct drm_driver driver_stub;
 static struct drm_driver driver_pci;
 // static struct drm_driver driver_platform;
 
@@ -743,6 +743,10 @@ int nouveau_drm_probe(struct pci_dev *pdev,
 	bool boot = false;
 	int ret;
 
+#if defined(__AROS__)
+	driver_pci = driver_stub;
+#endif
+
 #if !defined(__AROS__)
 	if (vga_switcheroo_client_probe_defer(pdev))
 		return -EPROBE_DEFER;
@@ -801,19 +805,22 @@ NOT_IMPLEMENTED_CONTINUE
 	if (nouveau_atomic)
 		driver_pci.driver_features |= DRIVER_ATOMIC;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	drm_dev = drm_dev_alloc(&driver_pci, &pdev->dev);
 	if (IS_ERR(drm_dev)) {
 		ret = PTR_ERR(drm_dev);
 		goto fail_nvkm;
 	}
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	ret = pci_enable_device(pdev);
 	if (ret)
 		goto fail_drm;
+#endif
 
 	drm_dev->pdev = pdev;
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	pci_set_drvdata(pdev, drm_dev);
 #endif
 
@@ -1188,23 +1195,23 @@ fail_nvkm:
 // 	pm_runtime_put_autosuspend(dev->dev);
 // }
 
-// static const struct drm_ioctl_desc
-// nouveau_ioctls[] = {
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GETPARAM, nouveau_abi16_ioctl_getparam, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_SETPARAM, drm_invalid_op, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_CHANNEL_ALLOC, nouveau_abi16_ioctl_channel_alloc, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_CHANNEL_FREE, nouveau_abi16_ioctl_channel_free, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GROBJ_ALLOC, nouveau_abi16_ioctl_grobj_alloc, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_NOTIFIEROBJ_ALLOC, nouveau_abi16_ioctl_notifierobj_alloc, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GPUOBJ_FREE, nouveau_abi16_ioctl_gpuobj_free, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_INIT, nouveau_svmm_init, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_BIND, nouveau_svmm_bind, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_NEW, nouveau_gem_ioctl_new, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_PUSHBUF, nouveau_gem_ioctl_pushbuf, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_PREP, nouveau_gem_ioctl_cpu_prep, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_FINI, nouveau_gem_ioctl_cpu_fini, DRM_RENDER_ALLOW),
-// 	DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_INFO, nouveau_gem_ioctl_info, DRM_RENDER_ALLOW),
-// };
+static const struct drm_ioctl_desc
+nouveau_ioctls[] = {
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GETPARAM, nouveau_abi16_ioctl_getparam, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_SETPARAM, drm_invalid_op, DRM_AUTH|DRM_MASTER|DRM_ROOT_ONLY),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_CHANNEL_ALLOC, nouveau_abi16_ioctl_channel_alloc, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_CHANNEL_FREE, nouveau_abi16_ioctl_channel_free, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GROBJ_ALLOC, nouveau_abi16_ioctl_grobj_alloc, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_NOTIFIEROBJ_ALLOC, nouveau_abi16_ioctl_notifierobj_alloc, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GPUOBJ_FREE, nouveau_abi16_ioctl_gpuobj_free, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_INIT, nouveau_svmm_init, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_SVM_BIND, nouveau_svmm_bind, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_NEW, nouveau_gem_ioctl_new, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_PUSHBUF, nouveau_gem_ioctl_pushbuf, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_PREP, nouveau_gem_ioctl_cpu_prep, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_CPU_FINI, nouveau_gem_ioctl_cpu_fini, DRM_RENDER_ALLOW),
+	// DRM_IOCTL_DEF_DRV(NOUVEAU_GEM_INFO, nouveau_gem_ioctl_info, DRM_RENDER_ALLOW),
+};
 
 // long
 // nouveau_drm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -1248,59 +1255,59 @@ fail_nvkm:
 // 	.llseek = noop_llseek,
 // };
 
-// static struct drm_driver
-// driver_stub = {
-// 	.driver_features =
-// 		DRIVER_GEM | DRIVER_MODESET | DRIVER_RENDER
-// #if defined(CONFIG_NOUVEAU_LEGACY_CTX_SUPPORT)
-// 		| DRIVER_KMS_LEGACY_CONTEXT
-// #endif
-// 		,
+static struct drm_driver
+driver_stub = {
+	.driver_features =
+		DRIVER_GEM | DRIVER_MODESET | DRIVER_RENDER
+#if defined(CONFIG_NOUVEAU_LEGACY_CTX_SUPPORT)
+		| DRIVER_KMS_LEGACY_CONTEXT
+#endif
+		,
 
-// 	.open = nouveau_drm_open,
-// 	.postclose = nouveau_drm_postclose,
-// 	.lastclose = nouveau_vga_lastclose,
+	// .open = nouveau_drm_open,
+	// .postclose = nouveau_drm_postclose,
+	// .lastclose = nouveau_vga_lastclose,
 
-// #if defined(CONFIG_DEBUG_FS)
-// 	.debugfs_init = nouveau_drm_debugfs_init,
-// #endif
+#if defined(CONFIG_DEBUG_FS)
+	.debugfs_init = nouveau_drm_debugfs_init,
+#endif
 
-// 	.enable_vblank = nouveau_display_vblank_enable,
-// 	.disable_vblank = nouveau_display_vblank_disable,
-// 	.get_scanout_position = nouveau_display_scanoutpos,
-// 	.get_vblank_timestamp = drm_calc_vbltimestamp_from_scanoutpos,
+	// .enable_vblank = nouveau_display_vblank_enable,
+	// .disable_vblank = nouveau_display_vblank_disable,
+	// .get_scanout_position = nouveau_display_scanoutpos,
+	// .get_vblank_timestamp = drm_calc_vbltimestamp_from_scanoutpos,
 
-// 	.ioctls = nouveau_ioctls,
-// 	.num_ioctls = ARRAY_SIZE(nouveau_ioctls),
-// 	.fops = &nouveau_driver_fops,
+	.ioctls = nouveau_ioctls,
+	.num_ioctls = ARRAY_SIZE(nouveau_ioctls),
+	// .fops = &nouveau_driver_fops,
 
-// 	.prime_handle_to_fd = drm_gem_prime_handle_to_fd,
-// 	.prime_fd_to_handle = drm_gem_prime_fd_to_handle,
-// 	.gem_prime_pin = nouveau_gem_prime_pin,
-// 	.gem_prime_unpin = nouveau_gem_prime_unpin,
-// 	.gem_prime_get_sg_table = nouveau_gem_prime_get_sg_table,
-// 	.gem_prime_import_sg_table = nouveau_gem_prime_import_sg_table,
-// 	.gem_prime_vmap = nouveau_gem_prime_vmap,
-// 	.gem_prime_vunmap = nouveau_gem_prime_vunmap,
+	// .prime_handle_to_fd = drm_gem_prime_handle_to_fd,
+	// .prime_fd_to_handle = drm_gem_prime_fd_to_handle,
+	// .gem_prime_pin = nouveau_gem_prime_pin,
+	// .gem_prime_unpin = nouveau_gem_prime_unpin,
+	// .gem_prime_get_sg_table = nouveau_gem_prime_get_sg_table,
+	// .gem_prime_import_sg_table = nouveau_gem_prime_import_sg_table,
+	// .gem_prime_vmap = nouveau_gem_prime_vmap,
+	// .gem_prime_vunmap = nouveau_gem_prime_vunmap,
 
-// 	.gem_free_object_unlocked = nouveau_gem_object_del,
-// 	.gem_open_object = nouveau_gem_object_open,
-// 	.gem_close_object = nouveau_gem_object_close,
+	// .gem_free_object_unlocked = nouveau_gem_object_del,
+	// .gem_open_object = nouveau_gem_object_open,
+	// .gem_close_object = nouveau_gem_object_close,
 
-// 	.dumb_create = nouveau_display_dumb_create,
-// 	.dumb_map_offset = nouveau_display_dumb_map_offset,
+	// .dumb_create = nouveau_display_dumb_create,
+	// .dumb_map_offset = nouveau_display_dumb_map_offset,
 
-// 	.name = DRIVER_NAME,
-// 	.desc = DRIVER_DESC,
-// #ifdef GIT_REVISION
-// 	.date = GIT_REVISION,
-// #else
-// 	.date = DRIVER_DATE,
-// #endif
-// 	.major = DRIVER_MAJOR,
-// 	.minor = DRIVER_MINOR,
-// 	.patchlevel = DRIVER_PATCHLEVEL,
-// };
+	// .name = DRIVER_NAME,
+	// .desc = DRIVER_DESC,
+#ifdef GIT_REVISION
+	// .date = GIT_REVISION,
+#else
+	// .date = DRIVER_DATE,
+#endif
+	// .major = DRIVER_MAJOR,
+	// .minor = DRIVER_MINOR,
+	.patchlevel = DRIVER_PATCHLEVEL,
+};
 
 // static struct pci_device_id
 // nouveau_drm_pci_table[] = {
