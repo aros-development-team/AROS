@@ -151,7 +151,7 @@ void drm_i2c_encoder_mode_fixup() { NOT_IMPLEMENTED_STOP }
 void drm_i2c_encoder_restore() { NOT_IMPLEMENTED_STOP }
 void drm_i2c_encoder_save() { NOT_IMPLEMENTED_STOP }
 void drm_mode_config_cleanup() { NOT_IMPLEMENTED_STOP }
-void drm_mode_config_init() { NOT_IMPLEMENTED_STOP }
+
 void drm_mode_config_reset() { NOT_IMPLEMENTED_STOP }
 void drm_mode_copy() { NOT_IMPLEMENTED_STOP }
 void drm_mode_create_dvi_i_properties() { NOT_IMPLEMENTED_STOP }
@@ -174,6 +174,6 @@ void drm_plane_create_zpos_immutable_property() { NOT_IMPLEMENTED_STOP }
 void drm_plane_create_zpos_property() { NOT_IMPLEMENTED_STOP }
 void drm_primary_helper_funcs() { NOT_IMPLEMENTED_STOP }
 void drm_property_add_enum() { NOT_IMPLEMENTED_STOP }
-void drm_property_create() { NOT_IMPLEMENTED_STOP }
-void drm_property_create_range() { NOT_IMPLEMENTED_STOP }
+
+
 void drm_universal_plane_init() { NOT_IMPLEMENTED_STOP }
