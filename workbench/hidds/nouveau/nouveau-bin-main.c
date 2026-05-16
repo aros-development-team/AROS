@@ -43,23 +43,57 @@ void main()
 
     bug("FINISHED nouveau_drm_probe\n");
 
-    bug("Allocating FB bitmap\n");
 
     struct nouveau_device *dev = NULL;
-
-    nouveau_device_open(&dev, "");
-
     struct nouveau_bo *bo = NULL;
+    int ret;
 
-    nouveau_bo_new(dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 640 * 4 * 480, &bo);
+    bug("---- Opening nouveau device\n");
 
+    ret = nouveau_device_open(&dev, "");
+    if (ret)
+    {
+        bug("Failed nouveau_device_open: %d\n", ret);
+        goto _sleep;
+    }
 
-    bug("Switching mode to 640x480\n");
+    bug("---- Allocating FB bitmap\n");
+
+    ret = nouveau_bo_new(dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 640 * 4 * 480, &bo);
+    if (ret)
+    {
+        bug("Failed nouveau_bo_new: %d\n", ret);
+        goto _sleep;
+    }
+
+    bug("---- Mapping FB bitmap\n");
+    ret = nouveau_bo_map(bo, NOUVEAU_BO_RDWR);
+    if (ret)
+    {
+        bug("Failed nouveau_bo_map: %d\n", ret);
+        goto _sleep;
+    }
+
+    int fbid = 0;
+    struct nouveau_device_priv *nvdev = nouveau_device(dev);
+
+    bug("---- Adding FB bitmap\n");
+    ret = drmModeAddFB(nvdev->fd, 640, 480,
+                    24, 4 * 8,
+                    640 * 4, bo->handle, &fbid);
+    if (ret)
+    {
+        bug("Failed drmModeAddFB: %d\n", ret);
+        goto _sleep;
+    }
+
+    // bug("Switching mode to 640x480\n");
 
 
 
     // drmModeSetCrtc(0, 0, 0, 0 , 0, NULL, 0, NULL);
 
+_sleep:
     bug("Sleeping\n");
     while(1)
         Delay(50);
