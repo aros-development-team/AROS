@@ -608,8 +608,8 @@ BOOL IsOnSameDevice(CONST_STRPTR path1, CONST_STRPTR path2)
             {
                 returnValue = TRUE;
             }
+            UnLock(tlock);
         }
-        UnLock(tlock);
     }
     UnLock(slock);
 

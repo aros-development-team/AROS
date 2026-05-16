@@ -317,10 +317,11 @@ D(bug("[Wanderer]: %s()\n", __func__));
         // Count number of dropped elements
         WORD numberOfObjects = 0;
         struct Node *current = &currententry->dropse_Node;
-        do
+        while (current != NULL && GetSucc(current) != NULL)
         {
             numberOfObjects++;
-        } while ((current = GetSucc(current)) != NULL);
+            current = GetSucc(current);
+        }
 
         dobjects.totalObjects = numberOfObjects;
 
@@ -376,6 +377,8 @@ D(bug("[Wanderer]: %s()\n", __func__));
             }
         }
 
+        if (targetDir != copyFunc_DropEvent->drop_TargetPath)
+            FreeVec(copyFunc_DropEvent->drop_TargetPath);
         FreeVec(targetDir);
         FreeMem(copyFunc_DropEvent, sizeof(struct IconList_Drop_Event));
 
