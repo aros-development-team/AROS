@@ -320,6 +320,15 @@ static inline void kref_get(struct kref *kref)
     atomic_inc(&kref->refcount);
 }
 
+static bool kref_get_unless_zero(struct kref *kref)
+{
+    if (kref->refcount.count == 0)
+        return false;
+
+    kref_get(kref);
+    return true;
+}
+
 static inline int kref_put(struct kref *kref, void (*release) (struct kref *kref))
 {
     if (atomic_dec_and_test(&kref->refcount)) 

@@ -1025,8 +1025,8 @@ struct drm_crtc {
 	 */
 	int y;
 
-// 	/** @funcs: CRTC control functions */
-// 	const struct drm_crtc_funcs *funcs;
+	/** @funcs: CRTC control functions */
+	const struct drm_crtc_funcs *funcs;
 
 	/**
 	 * @gamma_size: Size of legacy gamma ramp reported to userspace. Set up
@@ -1219,14 +1219,14 @@ static inline uint32_t drm_crtc_mask(const struct drm_crtc *crtc)
 // 	return mo ? obj_to_crtc(mo) : NULL;
 // }
 
-// /**
-//  * drm_for_each_crtc - iterate over all CRTCs
-//  * @crtc: a &struct drm_crtc as the loop cursor
-//  * @dev: the &struct drm_device
-//  *
-//  * Iterate over all CRTCs of @dev.
-//  */
-// #define drm_for_each_crtc(crtc, dev) \
-// 	list_for_each_entry(crtc, &(dev)->mode_config.crtc_list, head)
+/**
+ * drm_for_each_crtc - iterate over all CRTCs
+ * @crtc: a &struct drm_crtc as the loop cursor
+ * @dev: the &struct drm_device
+ *
+ * Iterate over all CRTCs of @dev.
+ */
+#define drm_for_each_crtc(crtc, dev) \
+	list_for_each_entry(crtc, &(dev)->mode_config.crtc_list, head)
 
 #endif /* __DRM_CRTC_H__ */

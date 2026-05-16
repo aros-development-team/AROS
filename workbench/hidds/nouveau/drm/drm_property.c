@@ -375,63 +375,63 @@ struct drm_property *drm_property_create_bool(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_property_create_bool);
 
-// /**
-//  * drm_property_add_enum - add a possible value to an enumeration property
-//  * @property: enumeration property to change
-//  * @value: value of the new enumeration
-//  * @name: symbolic name of the new enumeration
-//  *
-//  * This functions adds enumerations to a property.
-//  *
-//  * It's use is deprecated, drivers should use one of the more specific helpers
-//  * to directly create the property with all enumerations already attached.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_property_add_enum(struct drm_property *property,
-// 			  uint64_t value, const char *name)
-// {
-// 	struct drm_property_enum *prop_enum;
-// 	int index = 0;
+/**
+ * drm_property_add_enum - add a possible value to an enumeration property
+ * @property: enumeration property to change
+ * @value: value of the new enumeration
+ * @name: symbolic name of the new enumeration
+ *
+ * This functions adds enumerations to a property.
+ *
+ * It's use is deprecated, drivers should use one of the more specific helpers
+ * to directly create the property with all enumerations already attached.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_property_add_enum(struct drm_property *property,
+			  uint64_t value, const char *name)
+{
+	struct drm_property_enum *prop_enum;
+	int index = 0;
 
-// 	if (WARN_ON(strlen(name) >= DRM_PROP_NAME_LEN))
-// 		return -EINVAL;
+	if (WARN_ON(strlen(name) >= DRM_PROP_NAME_LEN))
+		return -EINVAL;
 
-// 	if (WARN_ON(!drm_property_type_is(property, DRM_MODE_PROP_ENUM) &&
-// 		    !drm_property_type_is(property, DRM_MODE_PROP_BITMASK)))
-// 		return -EINVAL;
+	if (WARN_ON(!drm_property_type_is(property, DRM_MODE_PROP_ENUM) &&
+		    !drm_property_type_is(property, DRM_MODE_PROP_BITMASK)))
+		return -EINVAL;
 
-// 	/*
-// 	 * Bitmask enum properties have the additional constraint of values
-// 	 * from 0 to 63
-// 	 */
-// 	if (WARN_ON(drm_property_type_is(property, DRM_MODE_PROP_BITMASK) &&
-// 		    value > 63))
-// 		return -EINVAL;
+	/*
+	 * Bitmask enum properties have the additional constraint of values
+	 * from 0 to 63
+	 */
+	if (WARN_ON(drm_property_type_is(property, DRM_MODE_PROP_BITMASK) &&
+		    value > 63))
+		return -EINVAL;
 
-// 	list_for_each_entry(prop_enum, &property->enum_list, head) {
-// 		if (WARN_ON(prop_enum->value == value))
-// 			return -EINVAL;
-// 		index++;
-// 	}
+	list_for_each_entry(prop_enum, &property->enum_list, head) {
+		if (WARN_ON(prop_enum->value == value))
+			return -EINVAL;
+		index++;
+	}
 
-// 	if (WARN_ON(index >= property->num_values))
-// 		return -EINVAL;
+	if (WARN_ON(index >= property->num_values))
+		return -EINVAL;
 
-// 	prop_enum = kzalloc(sizeof(struct drm_property_enum), GFP_KERNEL);
-// 	if (!prop_enum)
-// 		return -ENOMEM;
+	prop_enum = kzalloc(sizeof(struct drm_property_enum), GFP_KERNEL);
+	if (!prop_enum)
+		return -ENOMEM;
 
-// 	strncpy(prop_enum->name, name, DRM_PROP_NAME_LEN);
-// 	prop_enum->name[DRM_PROP_NAME_LEN-1] = '\0';
-// 	prop_enum->value = value;
+	strncpy(prop_enum->name, name, DRM_PROP_NAME_LEN);
+	prop_enum->name[DRM_PROP_NAME_LEN-1] = '\0';
+	prop_enum->value = value;
 
-// 	property->values[index] = value;
-// 	list_add_tail(&prop_enum->head, &property->enum_list);
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_property_add_enum);
+	property->values[index] = value;
+	list_add_tail(&prop_enum->head, &property->enum_list);
+	return 0;
+}
+EXPORT_SYMBOL(drm_property_add_enum);
 
 /**
  * drm_property_destroy - destroy a drm property

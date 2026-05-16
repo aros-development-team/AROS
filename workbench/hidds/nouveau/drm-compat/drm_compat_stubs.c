@@ -104,9 +104,9 @@ void drm_atomic_state_init() { NOT_IMPLEMENTED_STOP }
 void drm_connector_attach_encoder() { NOT_IMPLEMENTED_STOP }
 void drm_connector_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_connector_init() { NOT_IMPLEMENTED_STOP }
-void drm_connector_list_iter_begin() { NOT_IMPLEMENTED_STOP }
-void drm_connector_list_iter_end() { NOT_IMPLEMENTED_STOP }
-void drm_connector_list_iter_next() { NOT_IMPLEMENTED_STOP }
+
+
+
 void drm_connector_register() { NOT_IMPLEMENTED_STOP }
 void drm_connector_set_path_property() { NOT_IMPLEMENTED_STOP }
 void drm_connector_unregister() { NOT_IMPLEMENTED_STOP }
@@ -152,10 +152,10 @@ void drm_i2c_encoder_restore() { NOT_IMPLEMENTED_STOP }
 void drm_i2c_encoder_save() { NOT_IMPLEMENTED_STOP }
 void drm_mode_config_cleanup() { NOT_IMPLEMENTED_STOP }
 
-void drm_mode_config_reset() { NOT_IMPLEMENTED_STOP }
+
 void drm_mode_copy() { NOT_IMPLEMENTED_STOP }
-void drm_mode_create_dvi_i_properties() { NOT_IMPLEMENTED_STOP }
-void drm_mode_create_scaling_mode_property() { NOT_IMPLEMENTED_STOP }
+
+
 void drm_mode_create_tv_properties() { NOT_IMPLEMENTED_STOP }
 void drm_mode_destroy() { NOT_IMPLEMENTED_STOP }
 void drm_mode_duplicate() { NOT_IMPLEMENTED_STOP }
@@ -173,7 +173,7 @@ void drm_plane_create_blend_mode_property() { NOT_IMPLEMENTED_STOP }
 void drm_plane_create_zpos_immutable_property() { NOT_IMPLEMENTED_STOP }
 void drm_plane_create_zpos_property() { NOT_IMPLEMENTED_STOP }
 void drm_primary_helper_funcs() { NOT_IMPLEMENTED_STOP }
-void drm_property_add_enum() { NOT_IMPLEMENTED_STOP }
+
 
 
 void drm_universal_plane_init() { NOT_IMPLEMENTED_STOP }

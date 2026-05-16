@@ -170,41 +170,41 @@
 // 	return ret;
 // }
 
-// /**
-//  * drm_mode_config_reset - call ->reset callbacks
-//  * @dev: drm device
-//  *
-//  * This functions calls all the crtc's, encoder's and connector's ->reset
-//  * callback. Drivers can use this in e.g. their driver load or resume code to
-//  * reset hardware and software state.
-//  */
-// void drm_mode_config_reset(struct drm_device *dev)
-// {
-// 	struct drm_crtc *crtc;
-// 	struct drm_plane *plane;
-// 	struct drm_encoder *encoder;
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
+/**
+ * drm_mode_config_reset - call ->reset callbacks
+ * @dev: drm device
+ *
+ * This functions calls all the crtc's, encoder's and connector's ->reset
+ * callback. Drivers can use this in e.g. their driver load or resume code to
+ * reset hardware and software state.
+ */
+void drm_mode_config_reset(struct drm_device *dev)
+{
+	struct drm_crtc *crtc;
+	struct drm_plane *plane;
+	struct drm_encoder *encoder;
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
 
-// 	drm_for_each_plane(plane, dev)
-// 		if (plane->funcs->reset)
-// 			plane->funcs->reset(plane);
+	drm_for_each_plane(plane, dev)
+		if (plane->funcs->reset)
+			plane->funcs->reset(plane);
 
-// 	drm_for_each_crtc(crtc, dev)
-// 		if (crtc->funcs->reset)
-// 			crtc->funcs->reset(crtc);
+	drm_for_each_crtc(crtc, dev)
+		if (crtc->funcs->reset)
+			crtc->funcs->reset(crtc);
 
-// 	drm_for_each_encoder(encoder, dev)
-// 		if (encoder->funcs->reset)
-// 			encoder->funcs->reset(encoder);
+	drm_for_each_encoder(encoder, dev)
+		if (encoder->funcs->reset)
+			encoder->funcs->reset(encoder);
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter)
-// 		if (connector->funcs->reset)
-// 			connector->funcs->reset(connector);
-// 	drm_connector_list_iter_end(&conn_iter);
-// }
-// EXPORT_SYMBOL(drm_mode_config_reset);
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter)
+		if (connector->funcs->reset)
+			connector->funcs->reset(connector);
+	drm_connector_list_iter_end(&conn_iter);
+}
+EXPORT_SYMBOL(drm_mode_config_reset);
 
 /*
  * Global properties
@@ -413,8 +413,10 @@ void drm_mode_config_init(struct drm_device *dev)
 #if !defined(__AROS__)
 	idr_init(&dev->mode_config.tile_idr);
 	ida_init(&dev->mode_config.connector_ida);
+#endif
 	spin_lock_init(&dev->mode_config.connector_list_lock);
 
+#if !defined(__AROS__)
 	init_llist_head(&dev->mode_config.connector_free_list);
 	INIT_WORK(&dev->mode_config.connector_free_work, drm_connector_free_work_fn);
 #endif

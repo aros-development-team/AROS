@@ -627,30 +627,34 @@
 // 	}
 // }
 
-// #ifdef CONFIG_LOCKDEP
-// static struct lockdep_map connector_list_iter_dep_map = {
-// 	.name = "drm_connector_list_iter"
-// };
-// #endif
+#if !defined(__AROS__)
+#ifdef CONFIG_LOCKDEP
+static struct lockdep_map connector_list_iter_dep_map = {
+	.name = "drm_connector_list_iter"
+};
+#endif
+#endif
 
-// /**
-//  * drm_connector_list_iter_begin - initialize a connector_list iterator
-//  * @dev: DRM device
-//  * @iter: connector_list iterator
-//  *
-//  * Sets @iter up to walk the &drm_mode_config.connector_list of @dev. @iter
-//  * must always be cleaned up again by calling drm_connector_list_iter_end().
-//  * Iteration itself happens using drm_connector_list_iter_next() or
-//  * drm_for_each_connector_iter().
-//  */
-// void drm_connector_list_iter_begin(struct drm_device *dev,
-// 				   struct drm_connector_list_iter *iter)
-// {
-// 	iter->dev = dev;
-// 	iter->conn = NULL;
-// 	lock_acquire_shared_recursive(&connector_list_iter_dep_map, 0, 1, NULL, _RET_IP_);
-// }
-// EXPORT_SYMBOL(drm_connector_list_iter_begin);
+/**
+ * drm_connector_list_iter_begin - initialize a connector_list iterator
+ * @dev: DRM device
+ * @iter: connector_list iterator
+ *
+ * Sets @iter up to walk the &drm_mode_config.connector_list of @dev. @iter
+ * must always be cleaned up again by calling drm_connector_list_iter_end().
+ * Iteration itself happens using drm_connector_list_iter_next() or
+ * drm_for_each_connector_iter().
+ */
+void drm_connector_list_iter_begin(struct drm_device *dev,
+				   struct drm_connector_list_iter *iter)
+{
+	iter->dev = dev;
+	iter->conn = NULL;
+#if !defined(__AROS__)
+	lock_acquire_shared_recursive(&connector_list_iter_dep_map, 0, 1, NULL, _RET_IP_);
+#endif
+}
+EXPORT_SYMBOL(drm_connector_list_iter_begin);
 
 // /*
 //  * Extra-safe connector put function that works in any context. Should only be
@@ -671,67 +675,75 @@
 // 	schedule_work(&config->connector_free_work);
 // }
 
-// /**
-//  * drm_connector_list_iter_next - return next connector
-//  * @iter: connector_list iterator
-//  *
-//  * Returns the next connector for @iter, or NULL when the list walk has
-//  * completed.
-//  */
-// struct drm_connector *
-// drm_connector_list_iter_next(struct drm_connector_list_iter *iter)
-// {
-// 	struct drm_connector *old_conn = iter->conn;
-// 	struct drm_mode_config *config = &iter->dev->mode_config;
-// 	struct list_head *lhead;
-// 	unsigned long flags;
+/**
+ * drm_connector_list_iter_next - return next connector
+ * @iter: connector_list iterator
+ *
+ * Returns the next connector for @iter, or NULL when the list walk has
+ * completed.
+ */
+struct drm_connector *
+drm_connector_list_iter_next(struct drm_connector_list_iter *iter)
+{
+	struct drm_connector *old_conn = iter->conn;
+	struct drm_mode_config *config = &iter->dev->mode_config;
+	struct list_head *lhead;
+	unsigned long flags;
 
-// 	spin_lock_irqsave(&config->connector_list_lock, flags);
-// 	lhead = old_conn ? &old_conn->head : &config->connector_list;
+	spin_lock_irqsave(&config->connector_list_lock, flags);
+	lhead = old_conn ? &old_conn->head : &config->connector_list;
 
-// 	do {
-// 		if (lhead->next == &config->connector_list) {
-// 			iter->conn = NULL;
-// 			break;
-// 		}
+	do {
+		if (lhead->next == &config->connector_list) {
+			iter->conn = NULL;
+			break;
+		}
 
-// 		lhead = lhead->next;
-// 		iter->conn = list_entry(lhead, struct drm_connector, head);
+		lhead = lhead->next;
+		iter->conn = list_entry(lhead, struct drm_connector, head);
 
-// 		/* loop until it's not a zombie connector */
-// 	} while (!kref_get_unless_zero(&iter->conn->base.refcount));
+		/* loop until it's not a zombie connector */
+	} while (!kref_get_unless_zero(&iter->conn->base.refcount));
 
-// 	if (old_conn)
-// 		__drm_connector_put_safe(old_conn);
-// 	spin_unlock_irqrestore(&config->connector_list_lock, flags);
+#warning memleak
+#if 0
+	if (old_conn)
+		__drm_connector_put_safe(old_conn);
+#endif
+	spin_unlock_irqrestore(&config->connector_list_lock, flags);
 
-// 	return iter->conn;
-// }
-// EXPORT_SYMBOL(drm_connector_list_iter_next);
+	return iter->conn;
+}
+EXPORT_SYMBOL(drm_connector_list_iter_next);
 
-// /**
-//  * drm_connector_list_iter_end - tear down a connector_list iterator
-//  * @iter: connector_list iterator
-//  *
-//  * Tears down @iter and releases any resources (like &drm_connector references)
-//  * acquired while walking the list. This must always be called, both when the
-//  * iteration completes fully or when it was aborted without walking the entire
-//  * list.
-//  */
-// void drm_connector_list_iter_end(struct drm_connector_list_iter *iter)
-// {
-// 	struct drm_mode_config *config = &iter->dev->mode_config;
-// 	unsigned long flags;
+/**
+ * drm_connector_list_iter_end - tear down a connector_list iterator
+ * @iter: connector_list iterator
+ *
+ * Tears down @iter and releases any resources (like &drm_connector references)
+ * acquired while walking the list. This must always be called, both when the
+ * iteration completes fully or when it was aborted without walking the entire
+ * list.
+ */
+void drm_connector_list_iter_end(struct drm_connector_list_iter *iter)
+{
+	struct drm_mode_config *config = &iter->dev->mode_config;
+	unsigned long flags;
 
-// 	iter->dev = NULL;
-// 	if (iter->conn) {
-// 		spin_lock_irqsave(&config->connector_list_lock, flags);
-// 		__drm_connector_put_safe(iter->conn);
-// 		spin_unlock_irqrestore(&config->connector_list_lock, flags);
-// 	}
-// 	lock_release(&connector_list_iter_dep_map, 0, _RET_IP_);
-// }
-// EXPORT_SYMBOL(drm_connector_list_iter_end);
+	iter->dev = NULL;
+	if (iter->conn) {
+		spin_lock_irqsave(&config->connector_list_lock, flags);
+#warning memleak
+#if 0
+		__drm_connector_put_safe(iter->conn);
+#endif
+		spin_unlock_irqrestore(&config->connector_list_lock, flags);
+	}
+#if !defined(__AROS__)
+	lock_release(&connector_list_iter_dep_map, 0, _RET_IP_);
+#endif
+}
+EXPORT_SYMBOL(drm_connector_list_iter_end);
 
 // static const struct drm_prop_enum_list drm_subpixel_enum_list[] = {
 // 	{ SubPixelUnknown, "Unknown" },
@@ -802,13 +814,13 @@ static const struct drm_prop_enum_list drm_link_status_enum_list[] = {
 // }
 // EXPORT_SYMBOL(drm_display_info_set_bus_formats);
 
-// /* Optional connector properties. */
-// static const struct drm_prop_enum_list drm_scaling_mode_enum_list[] = {
-// 	{ DRM_MODE_SCALE_NONE, "None" },
-// 	{ DRM_MODE_SCALE_FULLSCREEN, "Full" },
-// 	{ DRM_MODE_SCALE_CENTER, "Center" },
-// 	{ DRM_MODE_SCALE_ASPECT, "Full aspect" },
-// };
+/* Optional connector properties. */
+static const struct drm_prop_enum_list drm_scaling_mode_enum_list[] = {
+	{ DRM_MODE_SCALE_NONE, "None" },
+	{ DRM_MODE_SCALE_FULLSCREEN, "Full" },
+	{ DRM_MODE_SCALE_CENTER, "Center" },
+	{ DRM_MODE_SCALE_ASPECT, "Full aspect" },
+};
 
 // static const struct drm_prop_enum_list drm_aspect_ratio_enum_list[] = {
 // 	{ DRM_MODE_PICTURE_ASPECT_NONE, "Automatic" },
@@ -831,18 +843,18 @@ static const struct drm_prop_enum_list drm_link_status_enum_list[] = {
 // 	{ DRM_MODE_PANEL_ORIENTATION_RIGHT_UP,	"Right Side Up"	},
 // };
 
-// static const struct drm_prop_enum_list drm_dvi_i_select_enum_list[] = {
-// 	{ DRM_MODE_SUBCONNECTOR_Automatic, "Automatic" }, /* DVI-I and TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_DVID,      "DVI-D"     }, /* DVI-I  */
-// 	{ DRM_MODE_SUBCONNECTOR_DVIA,      "DVI-A"     }, /* DVI-I  */
-// };
+static const struct drm_prop_enum_list drm_dvi_i_select_enum_list[] = {
+	{ DRM_MODE_SUBCONNECTOR_Automatic, "Automatic" }, /* DVI-I and TV-out */
+	{ DRM_MODE_SUBCONNECTOR_DVID,      "DVI-D"     }, /* DVI-I  */
+	{ DRM_MODE_SUBCONNECTOR_DVIA,      "DVI-A"     }, /* DVI-I  */
+};
 // DRM_ENUM_NAME_FN(drm_get_dvi_i_select_name, drm_dvi_i_select_enum_list)
 
-// static const struct drm_prop_enum_list drm_dvi_i_subconnector_enum_list[] = {
-// 	{ DRM_MODE_SUBCONNECTOR_Unknown,   "Unknown"   }, /* DVI-I and TV-out */
-// 	{ DRM_MODE_SUBCONNECTOR_DVID,      "DVI-D"     }, /* DVI-I  */
-// 	{ DRM_MODE_SUBCONNECTOR_DVIA,      "DVI-A"     }, /* DVI-I  */
-// };
+static const struct drm_prop_enum_list drm_dvi_i_subconnector_enum_list[] = {
+	{ DRM_MODE_SUBCONNECTOR_Unknown,   "Unknown"   }, /* DVI-I and TV-out */
+	{ DRM_MODE_SUBCONNECTOR_DVID,      "DVI-D"     }, /* DVI-I  */
+	{ DRM_MODE_SUBCONNECTOR_DVIA,      "DVI-A"     }, /* DVI-I  */
+};
 // DRM_ENUM_NAME_FN(drm_get_dvi_i_subconnector_name,
 // 		 drm_dvi_i_subconnector_enum_list)
 
@@ -1209,36 +1221,36 @@ int drm_connector_create_standard_properties(struct drm_device *dev)
 	return 0;
 }
 
-// /**
-//  * drm_mode_create_dvi_i_properties - create DVI-I specific connector properties
-//  * @dev: DRM device
-//  *
-//  * Called by a driver the first time a DVI-I connector is made.
-//  */
-// int drm_mode_create_dvi_i_properties(struct drm_device *dev)
-// {
-// 	struct drm_property *dvi_i_selector;
-// 	struct drm_property *dvi_i_subconnector;
+/**
+ * drm_mode_create_dvi_i_properties - create DVI-I specific connector properties
+ * @dev: DRM device
+ *
+ * Called by a driver the first time a DVI-I connector is made.
+ */
+int drm_mode_create_dvi_i_properties(struct drm_device *dev)
+{
+	struct drm_property *dvi_i_selector;
+	struct drm_property *dvi_i_subconnector;
 
-// 	if (dev->mode_config.dvi_i_select_subconnector_property)
-// 		return 0;
+	if (dev->mode_config.dvi_i_select_subconnector_property)
+		return 0;
 
-// 	dvi_i_selector =
-// 		drm_property_create_enum(dev, 0,
-// 				    "select subconnector",
-// 				    drm_dvi_i_select_enum_list,
-// 				    ARRAY_SIZE(drm_dvi_i_select_enum_list));
-// 	dev->mode_config.dvi_i_select_subconnector_property = dvi_i_selector;
+	dvi_i_selector =
+		drm_property_create_enum(dev, 0,
+				    "select subconnector",
+				    drm_dvi_i_select_enum_list,
+				    ARRAY_SIZE(drm_dvi_i_select_enum_list));
+	dev->mode_config.dvi_i_select_subconnector_property = dvi_i_selector;
 
-// 	dvi_i_subconnector = drm_property_create_enum(dev, DRM_MODE_PROP_IMMUTABLE,
-// 				    "subconnector",
-// 				    drm_dvi_i_subconnector_enum_list,
-// 				    ARRAY_SIZE(drm_dvi_i_subconnector_enum_list));
-// 	dev->mode_config.dvi_i_subconnector_property = dvi_i_subconnector;
+	dvi_i_subconnector = drm_property_create_enum(dev, DRM_MODE_PROP_IMMUTABLE,
+				    "subconnector",
+				    drm_dvi_i_subconnector_enum_list,
+				    ARRAY_SIZE(drm_dvi_i_subconnector_enum_list));
+	dev->mode_config.dvi_i_subconnector_property = dvi_i_subconnector;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_mode_create_dvi_i_properties);
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_dvi_i_properties);
 
 // /**
 //  * DOC: HDMI connector properties
@@ -1475,34 +1487,34 @@ int drm_connector_create_standard_properties(struct drm_device *dev)
 // }
 // EXPORT_SYMBOL(drm_mode_create_tv_properties);
 
-// /**
-//  * drm_mode_create_scaling_mode_property - create scaling mode property
-//  * @dev: DRM device
-//  *
-//  * Called by a driver the first time it's needed, must be attached to desired
-//  * connectors.
-//  *
-//  * Atomic drivers should use drm_connector_attach_scaling_mode_property()
-//  * instead to correctly assign &drm_connector_state.picture_aspect_ratio
-//  * in the atomic state.
-//  */
-// int drm_mode_create_scaling_mode_property(struct drm_device *dev)
-// {
-// 	struct drm_property *scaling_mode;
+/**
+ * drm_mode_create_scaling_mode_property - create scaling mode property
+ * @dev: DRM device
+ *
+ * Called by a driver the first time it's needed, must be attached to desired
+ * connectors.
+ *
+ * Atomic drivers should use drm_connector_attach_scaling_mode_property()
+ * instead to correctly assign &drm_connector_state.picture_aspect_ratio
+ * in the atomic state.
+ */
+int drm_mode_create_scaling_mode_property(struct drm_device *dev)
+{
+	struct drm_property *scaling_mode;
 
-// 	if (dev->mode_config.scaling_mode_property)
-// 		return 0;
+	if (dev->mode_config.scaling_mode_property)
+		return 0;
 
-// 	scaling_mode =
-// 		drm_property_create_enum(dev, 0, "scaling mode",
-// 				drm_scaling_mode_enum_list,
-// 				    ARRAY_SIZE(drm_scaling_mode_enum_list));
+	scaling_mode =
+		drm_property_create_enum(dev, 0, "scaling mode",
+				drm_scaling_mode_enum_list,
+				    ARRAY_SIZE(drm_scaling_mode_enum_list));
 
-// 	dev->mode_config.scaling_mode_property = scaling_mode;
+	dev->mode_config.scaling_mode_property = scaling_mode;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
+	return 0;
+}
+EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
 
 // /**
 //  * DOC: Variable refresh properties

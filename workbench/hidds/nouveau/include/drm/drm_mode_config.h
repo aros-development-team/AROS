@@ -422,11 +422,11 @@ struct drm_mode_config {
 // 	/** @fb_list: List of all &struct drm_framebuffer. */
 // 	struct list_head fb_list;
 
-// 	/**
-// 	 * @connector_list_lock: Protects @num_connector and
-// 	 * @connector_list and @connector_free_list.
-// 	 */
-// 	spinlock_t connector_list_lock;
+	/**
+	 * @connector_list_lock: Protects @num_connector and
+	 * @connector_list and @connector_free_list.
+	 */
+	spinlock_t connector_list_lock;
 // 	/**
 // 	 * @num_connector: Number of connectors on this device. Protected by
 // 	 * @connector_list_lock.
