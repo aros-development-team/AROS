@@ -34,7 +34,7 @@
 static inline int DRM_IOCTL(int fd, unsigned long cmd, void *arg)
 {
 	int ret = drmIoctl(fd, cmd, arg);
-	return ret < 0 ? -errno : ret;
+	return ret;
 }
 
 /*
