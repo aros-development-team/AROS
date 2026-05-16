@@ -29,10 +29,8 @@
 
 #include <subdev/bios/dcb.h>
 
-#if !defined(__AROS__)
 #include <drm/drm_encoder_slave.h>
 #include <drm/drm_dp_mst_helper.h>
-#endif
 #include "dispnv04/disp.h"
 struct nv50_head_atom;
 
@@ -41,9 +39,7 @@ struct nv50_head_atom;
 struct nvkm_i2c_port;
 
 struct nouveau_encoder {
-#if !defined(__AROS__)
 	struct drm_encoder_slave base;
-#endif
 
 	struct dcb_output *dcb;
 	int or;
@@ -79,7 +75,6 @@ struct nouveau_encoder {
 struct nouveau_encoder *
 find_encoder(struct drm_connector *connector, int type);
 
-#if !defined(__AROS__)
 static inline struct nouveau_encoder *nouveau_encoder(struct drm_encoder *enc)
 {
 	struct drm_encoder_slave *slave = to_encoder_slave(enc);
@@ -97,7 +92,6 @@ get_slave_funcs(struct drm_encoder *enc)
 {
 	return to_encoder_slave(enc)->slave_funcs;
 }
-#endif
 
 /* nouveau_dp.c */
 enum nouveau_dp_status {

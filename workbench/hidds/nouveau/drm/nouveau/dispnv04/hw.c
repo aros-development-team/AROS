@@ -217,6 +217,8 @@ nouveau_hw_get_clock(struct drm_device *dev, enum nvbios_pll_type plltype)
 	int ret;
 	int domain;
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	domain = pci_domain_nr(dev->pdev->bus);
 
 	if (plltype == PLL_MEMORY &&
@@ -244,6 +246,7 @@ nouveau_hw_get_clock(struct drm_device *dev, enum nvbios_pll_type plltype)
 		return ret;
 
 	return nouveau_hw_pllvals_to_clk(&pllvals);
+#endif
 }
 
 static void

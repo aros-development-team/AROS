@@ -1,0 +1,10 @@
+/* Auto-generated: dispnv04 */
+#include "arb.c"
+#include "crtc.c"
+#include "dac.c"
+#include "dfp.c"
+#include "disp.c"
+#include "tvnv04.c"
+#include "tvnv17.c"
+#include "tvmodesnv17.c"
+#include "hw.c"

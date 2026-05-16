@@ -141,8 +141,11 @@ nv04_display_init(struct drm_device *dev, bool resume, bool runtime)
 	if (runtime)
 		return 0;
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	/* Restore mode. */
 	drm_helper_resume_force_mode(dev);
+#endif
 
 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
 		struct nouveau_crtc *nv_crtc = nouveau_crtc(crtc);
@@ -211,12 +214,15 @@ nv04_display_create(struct drm_device *dev)
 	/* Pre-nv50 doesn't support atomic, so don't expose the ioctls */
 	dev->driver_features &= ~DRIVER_ATOMIC;
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	/* Request page flip completion event. */
 	if (drm->nvsw.client) {
 		nvif_notify_init(&drm->nvsw, nv04_flip_complete,
 				 false, NV04_NVSW_NTFY_UEVENT,
 				 NULL, 0, 0, &disp->flip);
 	}
+#endif
 
 	nouveau_hw_save_vga_fonts(dev, 1);
 

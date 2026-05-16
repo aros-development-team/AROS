@@ -35,10 +35,13 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_idr \
 
 AROS_DRM_NVIDIA_SOURCES = \
+drm/nouveau/nouveau_dp \
+drm/nouveau/nouveau_connector \
 drm/nouveau/nouveau_gem \
 drm/nouveau/nouveau_display \
-drm/nouveau/dispnv04/tvnv04 \
-drm/nouveau/dispnv04/dfp \
+drm/nouveau/dispnv04/dispnv04_root_1 \
+drm/nouveau/dispnv04/dispnv04_root_2 \
+drm/nouveau/dispnv50/dispnv50_root \
 drm/nouveau/nv04_fence \
 drm/nouveau/nv10_fence \
 drm/nouveau/nv17_fence \

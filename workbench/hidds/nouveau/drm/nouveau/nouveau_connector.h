@@ -29,9 +29,10 @@
 
 #include <nvif/notify.h>
 
-#if !defined(__AROS__)
 #include <drm/drm_crtc.h>
+#if !defined(__AROS__)
 #include <drm/drm_edid.h>
+#endif
 #include <drm/drm_encoder.h>
 #include <drm/drm_dp_helper.h>
 #include <drm/drm_util.h>
@@ -220,8 +221,6 @@ nouveau_backlight_ctor(void) {
 static inline void
 nouveau_backlight_dtor(void) {
 }
-#endif
-
 #endif
 
 #endif /* __NOUVEAU_CONNECTOR_H__ */

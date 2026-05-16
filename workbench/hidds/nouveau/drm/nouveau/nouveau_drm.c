@@ -90,7 +90,7 @@ static int nouveau_noaccel = 0;
 
 // MODULE_PARM_DESC(modeset, "enable driver (default: auto, "
 // 		          "0 = disabled, 1 = enabled, 2 = headless)");
-// int nouveau_modeset = -1;
+int nouveau_modeset = -1;
 // module_param_named(modeset, nouveau_modeset, int, 0400);
 
 // MODULE_PARM_DESC(atomic, "Expose atomic ioctl (default: disabled)");

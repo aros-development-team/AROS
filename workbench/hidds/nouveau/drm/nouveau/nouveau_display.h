@@ -6,14 +6,10 @@
 
 #include <nvif/disp.h>
 
-#if !defined(__AROS__)
 #include <drm/drm_framebuffer.h>
-#endif
 
 struct nouveau_framebuffer {
-#if !defined(__AROS__)
 	struct drm_framebuffer base;
-#endif
 	struct nouveau_bo *nvbo;
 	struct nouveau_vma *vma;
 	u32 r_handle;
@@ -23,13 +19,11 @@ struct nouveau_framebuffer {
 	struct nvif_object h_core;
 };
 
-#if !defined(__AROS__)
 static inline struct nouveau_framebuffer *
 nouveau_framebuffer(struct drm_framebuffer *fb)
 {
 	return container_of(fb, struct nouveau_framebuffer, base);
 }
-#endif
 
 int nouveau_framebuffer_new(struct drm_device *,
 			    const struct drm_mode_fb_cmd2 *,

@@ -25,7 +25,8 @@
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_plane_helper.h>
-#include <drm/drm_vblank.h>
+#include <drm/drm_print.h>
+// #include <drm/drm_vblank.h>
 
 #include "nouveau_drv.h"
 #include "nouveau_reg.h"
@@ -638,7 +639,9 @@ nv_crtc_mode_set(struct drm_crtc *crtc, struct drm_display_mode *mode,
 	int ret;
 
 	NV_DEBUG(drm, "CTRC mode on CRTC %d:\n", nv_crtc->index);
+#if !defined(__AROS__)
 	drm_mode_debug_printmodeline(adjusted_mode);
+#endif
 
 	ret = nv_crtc_swap_fbs(crtc, old_fb);
 	if (ret)
@@ -703,7 +706,9 @@ static void nv_crtc_prepare(struct drm_crtc *crtc)
 	if (nv_two_heads(dev))
 		NVSetOwner(dev, nv_crtc->index);
 
+#if !defined(__AROS__)
 	drm_crtc_vblank_off(crtc);
+#endif
 	funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
 
 	NVBlankScreen(dev, nv_crtc->index, true);
@@ -735,7 +740,9 @@ static void nv_crtc_commit(struct drm_crtc *crtc)
 #endif
 
 	funcs->dpms(crtc, DRM_MODE_DPMS_ON);
+#if !defined(__AROS__)
 	drm_crtc_vblank_on(crtc);
+#endif
 }
 
 static void nv_crtc_destroy(struct drm_crtc *crtc)
@@ -911,10 +918,12 @@ nv04_crtc_mode_set_base_atomic(struct drm_crtc *crtc,
 	struct nouveau_drm *drm = nouveau_drm(crtc->dev);
 	struct drm_device *dev = drm->dev;
 
+#if !defined(__AROS__)
 	if (state == ENTER_ATOMIC_MODE_SET)
 		nouveau_fbcon_accel_save_disable(dev);
 	else
 		nouveau_fbcon_accel_restore(dev);
+#endif
 
 	return nv04_crtc_do_mode_set_base(crtc, fb, x, y, true);
 }
@@ -1038,6 +1047,7 @@ struct nv04_page_flip_state {
 	u64 offset;
 };
 
+#if !defined(__AROS__)
 static int
 nv04_finish_page_flip(struct nouveau_channel *chan,
 		      struct nv04_page_flip_state *ps)
@@ -1134,6 +1144,7 @@ fail:
 	spin_unlock_irqrestore(&dev->event_lock, flags);
 	return ret;
 }
+#endif
 
 static int
 nv04_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
@@ -1153,6 +1164,8 @@ nv04_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 	int head = nouveau_crtc(crtc)->index;
 	int ret;
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	chan = drm->channel;
 	if (!chan)
 		return -ENODEV;
@@ -1193,8 +1206,10 @@ nv04_crtc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
 		{ { }, event, crtc, fb->format->cpp[0] * 8, fb->pitches[0],
 		  new_bo->bo.offset };
 
+#if !defined(__AROS__)
 	/* Keep vblanks on during flip, for the target crtc of this flip */
 	drm_crtc_vblank_get(crtc);
+#endif
 
 	/* Emit a page flip */
 	if (swap_interval) {
@@ -1239,6 +1254,7 @@ fail_unpin:
 fail_free:
 	kfree(s);
 	return ret;
+#endif
 }
 
 static const struct drm_crtc_funcs nv04_crtc_funcs = {
@@ -1314,7 +1330,10 @@ nv04_crtc_create(struct drm_device *dev, int crtc_num)
                                   create_primary_plane(dev), NULL,
                                   &nv04_crtc_funcs, NULL);
 	drm_crtc_helper_add(&nv_crtc->base, &nv04_crtc_helper_funcs);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	drm_mode_crtc_set_gamma_size(&nv_crtc->base, 256);
+#endif
 
 	ret = nouveau_bo_new(&nouveau_drm(dev)->client, 64*64*4, 0x100,
 			     TTM_PL_FLAG_VRAM, 0, 0x0000, NULL, NULL,

@@ -27,16 +27,12 @@
 #ifndef __NOUVEAU_CRTC_H__
 #define __NOUVEAU_CRTC_H__
 
-#if !defined(__AROS__)
 #include <drm/drm_crtc.h>
-#endif
 
 #include <nvif/notify.h>
 
 struct nouveau_crtc {
-#if !defined(__AROS__)
 	struct drm_crtc base;
-#endif
 
 	int index;
 	struct nvif_notify vblank;
@@ -73,7 +69,6 @@ struct nouveau_crtc {
 	void (*restore)(struct drm_crtc *crtc);
 };
 
-#if !defined(__AROS__)
 static inline struct nouveau_crtc *nouveau_crtc(struct drm_crtc *crtc)
 {
 	return crtc ? container_of(crtc, struct nouveau_crtc, base) : NULL;
@@ -83,7 +78,6 @@ static inline struct drm_crtc *to_drm_crtc(struct nouveau_crtc *crtc)
 {
 	return &crtc->base;
 }
-#endif
 
 int nv04_cursor_init(struct nouveau_crtc *);
 

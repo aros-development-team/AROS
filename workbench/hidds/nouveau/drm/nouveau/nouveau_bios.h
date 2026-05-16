@@ -165,7 +165,7 @@ void nouveau_bios_takedown(struct drm_device *dev);
 int nouveau_run_vbios_init(struct drm_device *);
 struct dcb_connector_table_entry *
 nouveau_bios_connector_entry(struct drm_device *, int index);
-// bool nouveau_bios_fp_mode(struct drm_device *, struct drm_display_mode *);
+bool nouveau_bios_fp_mode(struct drm_device *, struct drm_display_mode *);
 uint8_t *nouveau_bios_embedded_edid(struct drm_device *);
 int nouveau_bios_parse_lvds_table(struct drm_device *, int pxclk,
 					 bool *dl, bool *if_is_24bit);

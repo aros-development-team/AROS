@@ -27,9 +27,9 @@
 #ifndef __NOUVEAU_FBCON_H__
 #define __NOUVEAU_FBCON_H__
 
-#if !defined(__AROS__)
 #include <drm/drm_fb_helper.h>
 
+#if !defined(__AROS__)
 #include "nouveau_display.h"
 
 struct nouveau_fbdev {

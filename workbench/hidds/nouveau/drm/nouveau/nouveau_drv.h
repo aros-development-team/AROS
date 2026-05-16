@@ -52,11 +52,12 @@
 #define DRM_UT_CORE     0x01
 #define DRM_UT_DRIVER   0x02
 #define DRM_UT_KMS      0x04
+#define DRM_UT_ATOMIC   0x10
 
 extern unsigned int drm_debug;
 #endif
 
-// #include <drm/drm_connector.h>
+#include <drm/drm_connector.h>
 #include <uapi/drm/drm_mode.h>
 #include <drm/drm_modes.h>
 struct drm_connector;
