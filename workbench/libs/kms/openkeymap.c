@@ -37,6 +37,10 @@
 	via keymap.resource. No more than a single copy of the keymap
 	will be loaded.
 
+	On 64-bit little-endian systems, this function automatically
+	converts 68K hunk-format keymaps to native format. See
+	parsekeymapseg.c for implementation details (GitHub issue #74).
+
     EXAMPLE
 
     BUGS
@@ -44,6 +48,8 @@
     SEE ALSO
 
     INTERNALS
+	Uses parsekeymapseg() to convert hunk-format seglists on
+	non-big-endian or non-32-bit systems.
 
     HISTORY
 

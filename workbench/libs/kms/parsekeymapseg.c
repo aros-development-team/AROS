@@ -1,4 +1,24 @@
+/*
+    Copyright (C) 2020-2024, The AROS Development Team. All rights reserved.
 
+    Desc:
+        Convert 68K hunk-format keymap seglists to native format.
+
+        This module implements the conversion required for GitHub issue #74:
+        "convert the hunk seglist data to 64bit-LE values"
+
+        When loading 68K hunk-format keymaps on 64-bit little-endian systems,
+        this code:
+        1. Reads 32-bit big-endian pointers from the hunk seglist
+        2. Byte-swaps on little-endian systems
+        3. Zero-extends to 64-bit IPTR (not sign-extends)
+        4. Allocates native-sized structures with proper alignment
+        5. Copies and converts all keymap data
+
+        The COPYPTR macro is critical - it ensures zero-extension by starting
+        from (IPTR)0 and adding the 32-bit value, preventing sign-extension
+        that would occur if we cast a negative 32-bit value directly.
+*/
 
 #include <proto/exec.h>
 
