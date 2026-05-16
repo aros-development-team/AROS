@@ -31,7 +31,7 @@
 #define SHORTTICK_LENGTH 3
 
 #ifndef VOID_FUNC
-typedef void (*VOID_FUNC)(void);
+typedef void (*VOID_FUNC)();
 #endif
 
 /* RawDoFmt-callable putchar — collects formatted text into a bounded buffer. */
