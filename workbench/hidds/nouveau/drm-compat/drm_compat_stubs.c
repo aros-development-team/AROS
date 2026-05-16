@@ -39,6 +39,7 @@ struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
 void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
 char *kstrndup(const char *c, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
+char *kstrdup(const char *c, BYTE flags) { NOT_IMPLEMENTED_STOP }
 int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
 
 unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_IMPLEMENTED_STOP }
@@ -66,3 +67,113 @@ unsigned int drm_debug;
 void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }
 
 u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_alloc\n"); return 100; }
+
+
+
+
+struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
+void drm_atomic_add_affected_planes() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_get_crtc_state() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_check() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_check_plane_state() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_cleanup_planes() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_commit_cleanup_done() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_commit_hw_done() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_connector_destroy_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_connector_duplicate_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_connector_reset() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_crtc_destroy_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_crtc_duplicate_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_crtc_reset() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_disable_plane() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_legacy_gamma_set() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_plane_destroy_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_plane_duplicate_state() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_helper_plane_reset() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_setup_commit() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_update_legacy_modeset_state() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_update_plane() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_wait_for_dependencies() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_helper_wait_for_fences() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_state_default_clear() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_state_default_release() { NOT_IMPLEMENTED_STOP }
+void __drm_atomic_state_free() { NOT_IMPLEMENTED_STOP }
+void drm_atomic_state_init() { NOT_IMPLEMENTED_STOP }
+void drm_connector_attach_encoder() { NOT_IMPLEMENTED_STOP }
+void drm_connector_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_connector_init() { NOT_IMPLEMENTED_STOP }
+void drm_connector_list_iter_begin() { NOT_IMPLEMENTED_STOP }
+void drm_connector_list_iter_end() { NOT_IMPLEMENTED_STOP }
+void drm_connector_list_iter_next() { NOT_IMPLEMENTED_STOP }
+void drm_connector_register() { NOT_IMPLEMENTED_STOP }
+void drm_connector_set_path_property() { NOT_IMPLEMENTED_STOP }
+void drm_connector_unregister() { NOT_IMPLEMENTED_STOP }
+void drm_crtc_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_crtc_helper_set_config() { NOT_IMPLEMENTED_STOP }
+void drm_crtc_helper_set_mode() { NOT_IMPLEMENTED_STOP }
+void drm_crtc_init_with_planes() { NOT_IMPLEMENTED_STOP }
+void drm_cvt_mode() { NOT_IMPLEMENTED_STOP }
+void drm_dp_atomic_find_vcpi_slots() { NOT_IMPLEMENTED_STOP }
+void drm_dp_atomic_release_vcpi_slots() { NOT_IMPLEMENTED_STOP }
+void drm_dp_aux_register() { NOT_IMPLEMENTED_STOP }
+void drm_dp_aux_unregister() { NOT_IMPLEMENTED_STOP }
+void drm_dp_calc_pbn_mode() { NOT_IMPLEMENTED_STOP }
+void drm_dp_check_act_status() { NOT_IMPLEMENTED_STOP }
+void drm_dp_dpcd_read() { NOT_IMPLEMENTED_STOP }
+void drm_dp_dpcd_write() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_allocate_vcpi() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_atomic_check() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_deallocate_vcpi() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_detect_port() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_get_port_malloc() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_hpd_irq() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_put_port_malloc() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_reset_vcpi_slots() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_topology_mgr_destroy() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_topology_mgr_init() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_topology_mgr_resume() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_topology_mgr_set_mst() { NOT_IMPLEMENTED_STOP }
+void drm_dp_mst_topology_mgr_suspend() { NOT_IMPLEMENTED_STOP }
+void drm_dp_update_payload_part1() { NOT_IMPLEMENTED_STOP }
+void drm_dp_update_payload_part2() { NOT_IMPLEMENTED_STOP }
+void drm_encoder_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_encoder_init() { NOT_IMPLEMENTED_STOP }
+void drm_framebuffer_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_framebuffer_init() { NOT_IMPLEMENTED_STOP }
+void drm_helper_connector_dpms() { NOT_IMPLEMENTED_STOP }
+void drm_helper_hpd_irq_event() { NOT_IMPLEMENTED_STOP }
+void drm_helper_mode_fill_fb_struct() { NOT_IMPLEMENTED_STOP }
+void drm_helper_probe_single_connector_modes() { NOT_IMPLEMENTED_STOP }
+void drm_i2c_encoder_detect() { NOT_IMPLEMENTED_STOP }
+void drm_i2c_encoder_mode_fixup() { NOT_IMPLEMENTED_STOP }
+void drm_i2c_encoder_restore() { NOT_IMPLEMENTED_STOP }
+void drm_i2c_encoder_save() { NOT_IMPLEMENTED_STOP }
+void drm_mode_config_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_mode_config_init() { NOT_IMPLEMENTED_STOP }
+void drm_mode_config_reset() { NOT_IMPLEMENTED_STOP }
+void drm_mode_copy() { NOT_IMPLEMENTED_STOP }
+void drm_mode_create_dvi_i_properties() { NOT_IMPLEMENTED_STOP }
+void drm_mode_create_scaling_mode_property() { NOT_IMPLEMENTED_STOP }
+void drm_mode_create_tv_properties() { NOT_IMPLEMENTED_STOP }
+void drm_mode_destroy() { NOT_IMPLEMENTED_STOP }
+void drm_mode_duplicate() { NOT_IMPLEMENTED_STOP }
+void drm_mode_equal() { NOT_IMPLEMENTED_STOP }
+void drm_mode_object_find() { NOT_IMPLEMENTED_STOP }
+void drm_mode_object_put() { NOT_IMPLEMENTED_STOP }
+void drm_mode_probed_add() { NOT_IMPLEMENTED_STOP }
+void drm_mode_set_crtcinfo() { NOT_IMPLEMENTED_STOP }
+void drm_mode_vrefresh() { NOT_IMPLEMENTED_STOP }
+void drm_object_attach_property() { NOT_IMPLEMENTED_STOP }
+void drm_object_property_set_value() { NOT_IMPLEMENTED_STOP }
+void drm_plane_cleanup() { NOT_IMPLEMENTED_STOP }
+void drm_plane_create_alpha_property() { NOT_IMPLEMENTED_STOP }
+void drm_plane_create_blend_mode_property() { NOT_IMPLEMENTED_STOP }
+void drm_plane_create_zpos_immutable_property() { NOT_IMPLEMENTED_STOP }
+void drm_plane_create_zpos_property() { NOT_IMPLEMENTED_STOP }
+void drm_primary_helper_funcs() { NOT_IMPLEMENTED_STOP }
+void drm_property_add_enum() { NOT_IMPLEMENTED_STOP }
+void drm_property_create() { NOT_IMPLEMENTED_STOP }
+void drm_property_create_range() { NOT_IMPLEMENTED_STOP }
+void drm_universal_plane_init() { NOT_IMPLEMENTED_STOP }

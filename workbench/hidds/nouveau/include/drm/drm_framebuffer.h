@@ -29,6 +29,7 @@
 #include <linux/sched.h>
 #else
 #include <linux/list.h>
+#include <drm-compat/drm_compat_funcs.h>
 #endif
 
 #include <drm/drm_mode_object.h>

@@ -852,19 +852,19 @@ static inline bool drm_core_check_feature(const struct drm_device *dev, u32 feat
 	return dev->driver->driver_features & dev->driver_features & feature;
 }
 
-// /**
-//  * drm_drv_uses_atomic_modeset - check if the driver implements
-//  * atomic_commit()
-//  * @dev: DRM device
-//  *
-//  * This check is useful if drivers do not have DRIVER_ATOMIC set but
-//  * have atomic modesetting internally implemented.
-//  */
-// static inline bool drm_drv_uses_atomic_modeset(struct drm_device *dev)
-// {
-// 	return drm_core_check_feature(dev, DRIVER_ATOMIC) ||
-// 		(dev->mode_config.funcs && dev->mode_config.funcs->atomic_commit != NULL);
-// }
+/**
+ * drm_drv_uses_atomic_modeset - check if the driver implements
+ * atomic_commit()
+ * @dev: DRM device
+ *
+ * This check is useful if drivers do not have DRIVER_ATOMIC set but
+ * have atomic modesetting internally implemented.
+ */
+static inline bool drm_drv_uses_atomic_modeset(struct drm_device *dev)
+{
+	return drm_core_check_feature(dev, DRIVER_ATOMIC) ||
+		(dev->mode_config.funcs && dev->mode_config.funcs->atomic_commit != NULL);
+}
 
 
 // int drm_dev_set_unique(struct drm_device *dev, const char *name);

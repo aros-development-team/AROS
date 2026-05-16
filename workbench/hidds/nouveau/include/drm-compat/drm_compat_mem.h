@@ -35,6 +35,7 @@ VOID HIDDNouveauFree(APTR memory);
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
 void *kmemdup(const void *src, size_t len, BYTE flags);
+void *kstrdup(const void *src, BYTE flags);
 char *kstrndup(const char *c, size_t len, BYTE flags);
 int kstrtol(const char *s, unsigned int base, long *res);
 

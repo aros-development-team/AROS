@@ -29,10 +29,10 @@
 
 #if !defined(__AROS__)
 #include <linux/hdmi.h>
+#endif
 
 #include <drm/drm_mode_object.h>
 #include <drm/drm_connector.h>
-#endif
 
 struct videomode;
 
@@ -466,13 +466,13 @@ struct drm_connector;
 struct drm_cmdline_mode;
 
 // struct drm_display_mode *drm_mode_create(struct drm_device *dev);
-// void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode);
+void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode);
 // void drm_mode_convert_to_umode(struct drm_mode_modeinfo *out,
 // 			       const struct drm_display_mode *in);
 // int drm_mode_convert_umode(struct drm_device *dev,
 // 			   struct drm_display_mode *out,
 // 			   const struct drm_mode_modeinfo *in);
-// void drm_mode_probed_add(struct drm_connector *connector, struct drm_display_mode *mode);
+void drm_mode_probed_add(struct drm_connector *connector, struct drm_display_mode *mode);
 // void drm_mode_debug_printmodeline(const struct drm_display_mode *mode);
 // bool drm_mode_is_420_only(const struct drm_display_info *display,
 // 			  const struct drm_display_mode *mode);
@@ -481,10 +481,10 @@ struct drm_cmdline_mode;
 // bool drm_mode_is_420(const struct drm_display_info *display,
 // 		     const struct drm_display_mode *mode);
 
-// struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
-// 				      int hdisplay, int vdisplay, int vrefresh,
-// 				      bool reduced, bool interlaced,
-// 				      bool margins);
+struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
+				      int hdisplay, int vdisplay, int vrefresh,
+				      bool reduced, bool interlaced,
+				      bool margins);
 // struct drm_display_mode *drm_gtf_mode(struct drm_device *dev,
 // 				      int hdisplay, int vdisplay, int vrefresh,
 // 				      bool interlaced, int margins);
@@ -505,21 +505,21 @@ struct drm_cmdline_mode;
 
 void drm_mode_set_name(struct drm_display_mode *mode);
 // int drm_mode_hsync(const struct drm_display_mode *mode);
-// int drm_mode_vrefresh(const struct drm_display_mode *mode);
-// void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
-// 			    int *hdisplay, int *vdisplay);
+int drm_mode_vrefresh(const struct drm_display_mode *mode);
+void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
+			    int *hdisplay, int *vdisplay);
 
-// void drm_mode_set_crtcinfo(struct drm_display_mode *p,
-// 			   int adjust_flags);
-// void drm_mode_copy(struct drm_display_mode *dst,
-// 		   const struct drm_display_mode *src);
-// struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
-// 					    const struct drm_display_mode *mode);
+void drm_mode_set_crtcinfo(struct drm_display_mode *p,
+			   int adjust_flags);
+void drm_mode_copy(struct drm_display_mode *dst,
+		   const struct drm_display_mode *src);
+struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
+					    const struct drm_display_mode *mode);
 // bool drm_mode_match(const struct drm_display_mode *mode1,
 // 		    const struct drm_display_mode *mode2,
 // 		    unsigned int match_flags);
-// bool drm_mode_equal(const struct drm_display_mode *mode1,
-// 		    const struct drm_display_mode *mode2);
+bool drm_mode_equal(const struct drm_display_mode *mode1,
+		    const struct drm_display_mode *mode2);
 // bool drm_mode_equal_no_clocks(const struct drm_display_mode *mode1,
 // 			      const struct drm_display_mode *mode2);
 // bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
