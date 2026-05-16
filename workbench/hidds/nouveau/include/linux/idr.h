@@ -97,6 +97,11 @@ int	idr_alloc(struct idr *idp, void *ptr, int start, int end, gfp_t);
 int	idr_alloc_cyclic(struct idr *idp, void *ptr, int start, int end, gfp_t);
 int	idr_for_each(struct idr *idp, int (*fn)(int id, void *p, void *data), void *data);
 
+static inline void idr_init_base(struct idr *idp, int base)
+{
+    idr_init(idp);
+}
+
 #define	idr_for_each_entry(idp, entry, id)	\
 	for ((id) = 0; ((entry) = idr_get_next(idp, &(id))) != NULL; ++(id))
 

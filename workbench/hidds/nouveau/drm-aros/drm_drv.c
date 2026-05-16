@@ -8,10 +8,7 @@
 #include <drm-compat/drm_compat_mem.h>
 #include <uapi/drm/drm.h>
 #include <drm/drm_drv.h>
-
-#define DRM_ERROR(fmt, ...) bug("[" DRM_NAME "(ERROR):%s] " fmt, __func__ , ##__VA_ARGS__)
-
-// struct drm_driver *current_drm_driver = NULL;
+#include <drm/drm_print.h>
 
 // int drm_lastclose(struct drm_device * dev)
 // {
@@ -50,11 +47,7 @@
 //     current_drm_driver = NULL;
 // }
 
-static int drm_gem_init(struct drm_device *dev)
-{
-    bug("NOT IMPLEMENTED: drm_gem_init\n");
-    return 0;
-}
+int drm_gem_init(struct drm_device *dev);
 
 static int drm_dev_init(struct drm_device *dev, struct drm_driver *driver,
     struct device *parent)

@@ -49,8 +49,8 @@
 #include <drm/drm_drv.h>
 // #include <drm/drm_file.h>
 #include <drm/drm_gem.h>
-// #include <drm/drm_print.h>
-// #include <drm/drm_vma_manager.h>
+#include <drm/drm_print.h>
+#include <drm/drm_vma_manager.h>
 
 // #include "drm_internal.h"
 
@@ -86,27 +86,27 @@
  * drm_gem_init - Initialize the GEM device fields
  * @dev: drm_devic structure to initialize
  */
-// int
-// drm_gem_init(struct drm_device *dev)
-// {
-// 	struct drm_vma_offset_manager *vma_offset_manager;
+int
+drm_gem_init(struct drm_device *dev)
+{
+	struct drm_vma_offset_manager *vma_offset_manager;
 
-// 	mutex_init(&dev->object_name_lock);
-// 	idr_init_base(&dev->object_name_idr, 1);
+	mutex_init(&dev->object_name_lock);
+	idr_init_base(&dev->object_name_idr, 1);
 
-// 	vma_offset_manager = kzalloc(sizeof(*vma_offset_manager), GFP_KERNEL);
-// 	if (!vma_offset_manager) {
-// 		DRM_ERROR("out of memory\n");
-// 		return -ENOMEM;
-// 	}
+	vma_offset_manager = kzalloc(sizeof(*vma_offset_manager), GFP_KERNEL);
+	if (!vma_offset_manager) {
+		DRM_ERROR("out of memory\n");
+		return -ENOMEM;
+	}
 
-// 	dev->vma_offset_manager = vma_offset_manager;
-// 	drm_vma_offset_manager_init(vma_offset_manager,
-// 				    DRM_FILE_PAGE_OFFSET_START,
-// 				    DRM_FILE_PAGE_OFFSET_SIZE);
+	dev->vma_offset_manager = vma_offset_manager;
+	drm_vma_offset_manager_init(vma_offset_manager,
+				    DRM_FILE_PAGE_OFFSET_START,
+				    DRM_FILE_PAGE_OFFSET_SIZE);
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // #if !defined(__AROS__)
 // void
@@ -175,10 +175,7 @@ void drm_gem_private_object_init(struct drm_device *dev,
 	if (!obj->resv)
 		obj->resv = &obj->_resv;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	drm_vma_node_reset(&obj->vma_node);
-#endif
 }
 EXPORT_SYMBOL(drm_gem_private_object_init);
 
@@ -940,9 +937,7 @@ EXPORT_SYMBOL(drm_gem_object_lookup);
 void
 drm_gem_open(struct drm_device *dev, struct drm_file *file_private)
 {
-#if !defined(__AROS__)
 	idr_init_base(&file_private->object_idr, 1);
-#endif
 	spin_lock_init(&file_private->table_lock);
 }
 
