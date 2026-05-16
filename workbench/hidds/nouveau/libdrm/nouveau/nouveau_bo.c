@@ -181,10 +181,9 @@ nouveau_bo_kmap(struct nouveau_bo_priv *nvbo)
 		return -errno;
 	}
 #else
-bug("FIXME: drmMMap\n");
-    // nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
-    // if (nvbo->map == NULL)
-    //     return -EINVAL;
+    nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
+    if (nvbo->map == NULL)
+        return -EINVAL;
 #endif
 	return 0;
 }

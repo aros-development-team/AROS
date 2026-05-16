@@ -62,7 +62,7 @@ static int drm_dev_init(struct drm_device *dev, struct drm_driver *driver,
 
     // /* Init fields */
     // INIT_LIST_HEAD(&dev->maplist);
-    // InitSemaphore(&dev->struct_mutex.semaphore);
+    mutex_init(&dev->struct_mutex);
     // int ret;
 
     // if (drm_core_has_AGP(dev)) {

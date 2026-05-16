@@ -25,6 +25,7 @@ AROS_DRM_CORE_SOURCES = \
             drm/ttm/ttm_memory \
             drm-aros/drm_drv \
             drm-aros/drm_aros_pci \
+            drm-aros/nouveau/nouveau_aros_drm \
             drm-compat/drm_compat_funcs \
             drm-compat/drm_compat_pci \
             drm-compat/drm_compat_stubs \

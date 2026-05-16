@@ -9,7 +9,9 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_gem.h>
-void drm_gem_open(struct drm_device *dev, struct drm_file *file_private);;
+
+void drm_gem_open(struct drm_device *dev, struct drm_file *file_private);
+void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
 
 #include "drm_crtc_internal.h"
 
@@ -18,8 +20,7 @@ VOID HIDDNouveauFree(APTR memory);
 
 extern struct drm_device *current_drm_device;
 
-/* FIXME: Array for now, list maybe in future */
-struct drm_file * drm_files[128] = {NULL};
+static struct drm_file * drm_files[128] = {NULL};
 
 int 
 drmCommandNone(int fd, unsigned long drmCommandIndex)
@@ -224,4 +225,10 @@ void *drmMalloc(int size)
 void drmFree(void *pt)
 {
     HIDDNouveauFree(pt);
+}
+
+void * drmMMap(int fd, uint32_t handle)
+{
+    struct drm_file *f = drm_files[fd];
+    return drm_gem_nouveau_mmap(current_drm_device, f, handle);
 }

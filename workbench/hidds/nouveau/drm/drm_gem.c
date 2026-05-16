@@ -1044,27 +1044,29 @@ NOT_IMPLEMENTED_STOP
 }
 EXPORT_SYMBOL(drm_gem_object_put_unlocked);
 
-// /**
-//  * drm_gem_object_put - release a GEM buffer object reference
-//  * @obj: GEM buffer object
-//  *
-//  * This releases a reference to @obj. Callers must hold the
-//  * &drm_device.struct_mutex lock when calling this function, even when the
-//  * driver doesn't use &drm_device.struct_mutex for anything.
-//  *
-//  * For drivers not encumbered with legacy locking use
-//  * drm_gem_object_put_unlocked() instead.
-//  */
-// void
-// drm_gem_object_put(struct drm_gem_object *obj)
-// {
-// 	if (obj) {
-// 		WARN_ON(!mutex_is_locked(&obj->dev->struct_mutex));
+/**
+ * drm_gem_object_put - release a GEM buffer object reference
+ * @obj: GEM buffer object
+ *
+ * This releases a reference to @obj. Callers must hold the
+ * &drm_device.struct_mutex lock when calling this function, even when the
+ * driver doesn't use &drm_device.struct_mutex for anything.
+ *
+ * For drivers not encumbered with legacy locking use
+ * drm_gem_object_put_unlocked() instead.
+ */
+void
+drm_gem_object_put(struct drm_gem_object *obj)
+{
+	if (obj) {
+#if !defined(__AROS__)
+		WARN_ON(!mutex_is_locked(&obj->dev->struct_mutex));
+#endif
 
-// 		kref_put(&obj->refcount, drm_gem_object_free);
-// 	}
-// }
-// EXPORT_SYMBOL(drm_gem_object_put);
+		kref_put(&obj->refcount, drm_gem_object_free);
+	}
+}
+EXPORT_SYMBOL(drm_gem_object_put);
 
 // /**
 //  * drm_gem_vm_open - vma->ops->open implementation for GEM

@@ -126,12 +126,12 @@ struct drm_device {
 // 	/** @unique: Unique name of the device */
 // 	char *unique;
 
-// 	/**
-// 	 * @struct_mutex:
-// 	 *
-// 	 * Lock for others (not &drm_minor.master and &drm_file.is_master)
-// 	 */
-// 	struct mutex struct_mutex;
+	/**
+	 * @struct_mutex:
+	 *
+	 * Lock for others (not &drm_minor.master and &drm_file.is_master)
+	 */
+	struct mutex struct_mutex;
 
 // 	/**
 // 	 * @master_mutex:
