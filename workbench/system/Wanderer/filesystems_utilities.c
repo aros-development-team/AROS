@@ -634,7 +634,7 @@ BOOL IsDirectory(CONST_STRPTR path)
 
     if (fib != NULL)
     {
-        retValue = fib->fib_DirEntryType == 2;
+        retValue = fib->fib_DirEntryType > 0;
         FreeDosObject(DOS_FIB, fib);
     }
 
