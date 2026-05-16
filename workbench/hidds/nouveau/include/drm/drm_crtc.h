@@ -929,8 +929,8 @@ struct drm_crtc {
 // 	 */
 // 	struct drm_modeset_lock mutex;
 
-// 	/** @base: base KMS object for ID tracking etc. */
-// 	struct drm_mode_object base;
+	/** @base: base KMS object for ID tracking etc. */
+	struct drm_mode_object base;
 
 	/**
 	 * @primary:

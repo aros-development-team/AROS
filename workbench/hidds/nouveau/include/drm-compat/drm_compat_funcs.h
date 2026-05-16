@@ -482,4 +482,6 @@ u32 get_unaligned_le32(const void *p);
 u16 get_unaligned_le16(const void *p);
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 
+#define u64_to_user_ptr(x) ((void *)(IPTR)(x))
+
 #endif /* _DRM_COMPAT_FUNCS_ */

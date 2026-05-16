@@ -43,6 +43,7 @@ struct drm_file
     spinlock_t table_lock;
     void *driver_priv;
     struct list_head fbs;
+    struct mutex fbs_lock;
 };
 
 struct drm_gem_object;

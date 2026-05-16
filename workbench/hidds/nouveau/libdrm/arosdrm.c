@@ -90,6 +90,7 @@ drmOpen(const char *name, const char *busid)
             drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
             spin_lock_init(&drm_files[i]->table_lock);
             INIT_LIST_HEAD(&drm_files[i]->fbs);
+            mutex_init(&drm_files[i]->fbs_lock);
 
             if (drm_core_check_feature(current_drm_device, DRIVER_GEM))
                 drm_gem_open(current_drm_device, drm_files[i]);
@@ -196,9 +197,9 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             // case(DRM_IOCTL_MODE_GETCRTC):
             //     ret = drm_mode_getcrtc(current_drm_driver->dev, arg, drm_files[fd]);
             //     break;
-            // case(DRM_IOCTL_MODE_GETRESOURCES):
-            //     ret = drm_mode_getresources(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
+            case(DRM_IOCTL_MODE_GETRESOURCES):
+                ret = drm_mode_getresources(current_drm_device, arg, drm_files[fd]);
+                break;
             // case(DRM_IOCTL_MODE_GETCONNECTOR):
             //     ret = drm_mode_getconnector(current_drm_driver->dev, arg, drm_files[fd]);
             //     break;

@@ -367,13 +367,9 @@ int drm_mode_addfb2(struct drm_device *dev,
 	r->fb_id = fb->base.id;
 
 	/* Transfer ownership to the filp for reaping on close */
-#if !defined(__AROS__)
 	mutex_lock(&file_priv->fbs_lock);
 	list_add(&fb->filp_head, &file_priv->fbs);
 	mutex_unlock(&file_priv->fbs_lock);
-#else
-	list_add(&fb->filp_head, &file_priv->fbs);
-#endif
 
 	return 0;
 }

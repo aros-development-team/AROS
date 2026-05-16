@@ -29,6 +29,7 @@
 // #include <drm/drm_file.h>
 #include <drm/drm_mode_config.h>
 #include <drm/drm_print.h>
+#include <drm/drm_lease.h>
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
@@ -73,102 +74,104 @@
 // 	drm_plane_unregister_all(dev);
 // }
 
-// /**
-//  * drm_mode_getresources - get graphics configuration
-//  * @dev: drm device for the ioctl
-//  * @data: data pointer for the ioctl
-//  * @file_priv: drm file for the ioctl call
-//  *
-//  * Construct a set of configuration description structures and return
-//  * them to the user, including CRTC, connector and framebuffer configuration.
-//  *
-//  * Called by the user via ioctl.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_mode_getresources(struct drm_device *dev, void *data,
-// 			  struct drm_file *file_priv)
-// {
-// 	struct drm_mode_card_res *card_res = data;
-// 	struct drm_framebuffer *fb;
-// 	struct drm_connector *connector;
-// 	struct drm_crtc *crtc;
-// 	struct drm_encoder *encoder;
-// 	int count, ret = 0;
-// 	uint32_t __user *fb_id;
-// 	uint32_t __user *crtc_id;
-// 	uint32_t __user *connector_id;
-// 	uint32_t __user *encoder_id;
-// 	struct drm_connector_list_iter conn_iter;
+/**
+ * drm_mode_getresources - get graphics configuration
+ * @dev: drm device for the ioctl
+ * @data: data pointer for the ioctl
+ * @file_priv: drm file for the ioctl call
+ *
+ * Construct a set of configuration description structures and return
+ * them to the user, including CRTC, connector and framebuffer configuration.
+ *
+ * Called by the user via ioctl.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_getresources(struct drm_device *dev, void *data,
+			  struct drm_file *file_priv)
+{
+	struct drm_mode_card_res *card_res = data;
+	struct drm_framebuffer *fb;
+	struct drm_connector *connector;
+	struct drm_crtc *crtc;
+	struct drm_encoder *encoder;
+	int count, ret = 0;
+	uint32_t __user *fb_id;
+	uint32_t __user *crtc_id;
+	uint32_t __user *connector_id;
+	uint32_t __user *encoder_id;
+	struct drm_connector_list_iter conn_iter;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	mutex_lock(&file_priv->fbs_lock);
-// 	count = 0;
-// 	fb_id = u64_to_user_ptr(card_res->fb_id_ptr);
-// 	list_for_each_entry(fb, &file_priv->fbs, filp_head) {
-// 		if (count < card_res->count_fbs &&
-// 		    put_user(fb->base.id, fb_id + count)) {
-// 			mutex_unlock(&file_priv->fbs_lock);
-// 			return -EFAULT;
-// 		}
-// 		count++;
-// 	}
-// 	card_res->count_fbs = count;
-// 	mutex_unlock(&file_priv->fbs_lock);
+	mutex_lock(&file_priv->fbs_lock);
+	count = 0;
+	fb_id = u64_to_user_ptr(card_res->fb_id_ptr);
+	list_for_each_entry(fb, &file_priv->fbs, filp_head) {
+		if (count < card_res->count_fbs &&
+		    put_user(fb->base.id, fb_id + count)) {
+			mutex_unlock(&file_priv->fbs_lock);
+			return -EFAULT;
+		}
+		count++;
+	}
+	card_res->count_fbs = count;
+	mutex_unlock(&file_priv->fbs_lock);
 
-// 	card_res->max_height = dev->mode_config.max_height;
-// 	card_res->min_height = dev->mode_config.min_height;
-// 	card_res->max_width = dev->mode_config.max_width;
-// 	card_res->min_width = dev->mode_config.min_width;
+	card_res->max_height = dev->mode_config.max_height;
+	card_res->min_height = dev->mode_config.min_height;
+	card_res->max_width = dev->mode_config.max_width;
+	card_res->min_width = dev->mode_config.min_width;
 
-// 	count = 0;
-// 	crtc_id = u64_to_user_ptr(card_res->crtc_id_ptr);
-// 	drm_for_each_crtc(crtc, dev) {
-// 		if (drm_lease_held(file_priv, crtc->base.id)) {
-// 			if (count < card_res->count_crtcs &&
-// 			    put_user(crtc->base.id, crtc_id + count))
-// 				return -EFAULT;
-// 			count++;
-// 		}
-// 	}
-// 	card_res->count_crtcs = count;
+	count = 0;
+	crtc_id = u64_to_user_ptr(card_res->crtc_id_ptr);
+	drm_for_each_crtc(crtc, dev) {
+		if (drm_lease_held(file_priv, crtc->base.id)) {
+			if (count < card_res->count_crtcs &&
+			    put_user(crtc->base.id, crtc_id + count))
+				return -EFAULT;
+			count++;
+		}
+	}
+	card_res->count_crtcs = count;
 
-// 	count = 0;
-// 	encoder_id = u64_to_user_ptr(card_res->encoder_id_ptr);
-// 	drm_for_each_encoder(encoder, dev) {
-// 		if (count < card_res->count_encoders &&
-// 		    put_user(encoder->base.id, encoder_id + count))
-// 			return -EFAULT;
-// 		count++;
-// 	}
-// 	card_res->count_encoders = count;
+	count = 0;
+	encoder_id = u64_to_user_ptr(card_res->encoder_id_ptr);
+	drm_for_each_encoder(encoder, dev) {
+		if (count < card_res->count_encoders &&
+		    put_user(encoder->base.id, encoder_id + count))
+			return -EFAULT;
+		count++;
+	}
+	card_res->count_encoders = count;
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	count = 0;
-// 	connector_id = u64_to_user_ptr(card_res->connector_id_ptr);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		/* only expose writeback connectors if userspace understands them */
-// 		if (!file_priv->writeback_connectors &&
-// 		    (connector->connector_type == DRM_MODE_CONNECTOR_WRITEBACK))
-// 			continue;
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	count = 0;
+	connector_id = u64_to_user_ptr(card_res->connector_id_ptr);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+#if !defined(__AROS__)
+		/* only expose writeback connectors if userspace understands them */
+		if (!file_priv->writeback_connectors &&
+		    (connector->connector_type == DRM_MODE_CONNECTOR_WRITEBACK))
+			continue;
+#endif
 
-// 		if (drm_lease_held(file_priv, connector->base.id)) {
-// 			if (count < card_res->count_connectors &&
-// 			    put_user(connector->base.id, connector_id + count)) {
-// 				drm_connector_list_iter_end(&conn_iter);
-// 				return -EFAULT;
-// 			}
-// 			count++;
-// 		}
-// 	}
-// 	card_res->count_connectors = count;
-// 	drm_connector_list_iter_end(&conn_iter);
+		if (drm_lease_held(file_priv, connector->base.id)) {
+			if (count < card_res->count_connectors &&
+			    put_user(connector->base.id, connector_id + count)) {
+				drm_connector_list_iter_end(&conn_iter);
+				return -EFAULT;
+			}
+			count++;
+		}
+	}
+	card_res->count_connectors = count;
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	return ret;
-// }
+	return ret;
+}
 
 /**
  * drm_mode_config_reset - call ->reset callbacks
