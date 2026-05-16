@@ -415,12 +415,12 @@ struct drm_mode_config {
 // 	 */
 // 	struct idr tile_idr;
 
-// 	/** @fb_lock: Mutex to protect fb the global @fb_list and @num_fb. */
-// 	struct mutex fb_lock;
-// 	/** @num_fb: Number of entries on @fb_list. */
-// 	int num_fb;
-// 	/** @fb_list: List of all &struct drm_framebuffer. */
-// 	struct list_head fb_list;
+	/** @fb_lock: Mutex to protect fb the global @fb_list and @num_fb. */
+	struct mutex fb_lock;
+	/** @num_fb: Number of entries on @fb_list. */
+	int num_fb;
+	/** @fb_list: List of all &struct drm_framebuffer. */
+	struct list_head fb_list;
 
 	/**
 	 * @connector_list_lock: Protects @num_connector and

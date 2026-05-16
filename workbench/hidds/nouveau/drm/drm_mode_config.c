@@ -393,11 +393,11 @@ void drm_mode_config_init(struct drm_device *dev)
 	drm_modeset_lock_init(&dev->mode_config.connection_mutex);
 #endif
 	mutex_init(&dev->mode_config.idr_mutex);
-#if !defined(__AROS__)
 	mutex_init(&dev->mode_config.fb_lock);
+#if !defined(__AROS__)
 	mutex_init(&dev->mode_config.blob_lock);
-	INIT_LIST_HEAD(&dev->mode_config.fb_list);
 #endif
+	INIT_LIST_HEAD(&dev->mode_config.fb_list);
 	INIT_LIST_HEAD(&dev->mode_config.crtc_list);
 	INIT_LIST_HEAD(&dev->mode_config.connector_list);
 	INIT_LIST_HEAD(&dev->mode_config.encoder_list);
@@ -424,8 +424,8 @@ void drm_mode_config_init(struct drm_device *dev)
 	drm_mode_create_standard_properties(dev);
 
 	/* Just to be sure */
-#if !defined(__AROS__)
 	dev->mode_config.num_fb = 0;
+#if !defined(__AROS__)
 	dev->mode_config.num_connector = 0;
 #endif
 	dev->mode_config.num_crtc = 0;

@@ -118,8 +118,8 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 }
 
 #define BUG_ON(condition)           do { if (unlikely(condition)) bug("BUG: %s:%d\n", __FILE__, __LINE__); } while(0)
-#define WARN_ON(condition)          ({do { if (unlikely(condition)) bug("WARN: %s:%d\n", __FILE__, __LINE__); } while(0); condition;})
-#define WARN_ON_ONCE(condition)     ({do { bug("WARN_ON_ONCE NOT IMPLEMENTED\n"); } while (0); condition;})
+#define WARN_ON(condition)          ({do { if (unlikely(condition)) bug("WARN_ON: %s:%d\n", __FILE__, __LINE__); } while(0); condition;})
+#define WARN_ON_ONCE(condition)     ({do { if (unlikely(condition)) bug("WARN_ON_ONCE: %s:%d\n", __FILE__, __LINE__); } while(0); condition;})
 #define EXPORT_SYMBOL(x)
 #define PTR_ERR(addr)               ((SIPTR)addr)
 #define ERR_PTR(error)              ((APTR)(SIPTR)error)

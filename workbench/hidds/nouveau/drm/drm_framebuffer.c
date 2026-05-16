@@ -695,67 +695,69 @@ int drm_mode_addfb2(struct drm_device *dev,
 // 	}
 // }
 
-// void drm_framebuffer_free(struct kref *kref)
-// {
-// 	struct drm_framebuffer *fb =
-// 			container_of(kref, struct drm_framebuffer, base.refcount);
-// 	struct drm_device *dev = fb->dev;
+void drm_framebuffer_free(struct kref *kref)
+{
+	struct drm_framebuffer *fb =
+			container_of(kref, struct drm_framebuffer, base.refcount);
+	struct drm_device *dev = fb->dev;
 
-// 	/*
-// 	 * The lookup idr holds a weak reference, which has not necessarily been
-// 	 * removed at this point. Check for that.
-// 	 */
-// 	drm_mode_object_unregister(dev, &fb->base);
+	/*
+	 * The lookup idr holds a weak reference, which has not necessarily been
+	 * removed at this point. Check for that.
+	 */
+	drm_mode_object_unregister(dev, &fb->base);
 
-// 	fb->funcs->destroy(fb);
-// }
+	fb->funcs->destroy(fb);
+}
 
-// /**
-//  * drm_framebuffer_init - initialize a framebuffer
-//  * @dev: DRM device
-//  * @fb: framebuffer to be initialized
-//  * @funcs: ... with these functions
-//  *
-//  * Allocates an ID for the framebuffer's parent mode object, sets its mode
-//  * functions & device file and adds it to the master fd list.
-//  *
-//  * IMPORTANT:
-//  * This functions publishes the fb and makes it available for concurrent access
-//  * by other users. Which means by this point the fb _must_ be fully set up -
-//  * since all the fb attributes are invariant over its lifetime, no further
-//  * locking but only correct reference counting is required.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_framebuffer_init(struct drm_device *dev, struct drm_framebuffer *fb,
-// 			 const struct drm_framebuffer_funcs *funcs)
-// {
-// 	int ret;
+/**
+ * drm_framebuffer_init - initialize a framebuffer
+ * @dev: DRM device
+ * @fb: framebuffer to be initialized
+ * @funcs: ... with these functions
+ *
+ * Allocates an ID for the framebuffer's parent mode object, sets its mode
+ * functions & device file and adds it to the master fd list.
+ *
+ * IMPORTANT:
+ * This functions publishes the fb and makes it available for concurrent access
+ * by other users. Which means by this point the fb _must_ be fully set up -
+ * since all the fb attributes are invariant over its lifetime, no further
+ * locking but only correct reference counting is required.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_framebuffer_init(struct drm_device *dev, struct drm_framebuffer *fb,
+			 const struct drm_framebuffer_funcs *funcs)
+{
+	int ret;
 
-// 	if (WARN_ON_ONCE(fb->dev != dev || !fb->format))
-// 		return -EINVAL;
+	if (WARN_ON_ONCE(fb->dev != dev || !fb->format))
+		return -EINVAL;
 
-// 	INIT_LIST_HEAD(&fb->filp_head);
+	INIT_LIST_HEAD(&fb->filp_head);
 
-// 	fb->funcs = funcs;
-// 	strcpy(fb->comm, current->comm);
+	fb->funcs = funcs;
+#if !defined(__AROS__)
+	strcpy(fb->comm, current->comm);
+#endif
 
-// 	ret = __drm_mode_object_add(dev, &fb->base, DRM_MODE_OBJECT_FB,
-// 				    false, drm_framebuffer_free);
-// 	if (ret)
-// 		goto out;
+	ret = __drm_mode_object_add(dev, &fb->base, DRM_MODE_OBJECT_FB,
+				    false, drm_framebuffer_free);
+	if (ret)
+		goto out;
 
-// 	mutex_lock(&dev->mode_config.fb_lock);
-// 	dev->mode_config.num_fb++;
-// 	list_add(&fb->head, &dev->mode_config.fb_list);
-// 	mutex_unlock(&dev->mode_config.fb_lock);
+	mutex_lock(&dev->mode_config.fb_lock);
+	dev->mode_config.num_fb++;
+	list_add(&fb->head, &dev->mode_config.fb_list);
+	mutex_unlock(&dev->mode_config.fb_lock);
 
-// 	drm_mode_object_register(dev, &fb->base);
-// out:
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_framebuffer_init);
+	drm_mode_object_register(dev, &fb->base);
+out:
+	return ret;
+}
+EXPORT_SYMBOL(drm_framebuffer_init);
 
 // /**
 //  * drm_framebuffer_lookup - look up a drm framebuffer and grab a reference

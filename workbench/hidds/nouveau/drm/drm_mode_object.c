@@ -84,13 +84,13 @@ int drm_mode_object_add(struct drm_device *dev,
 	return __drm_mode_object_add(dev, obj, obj_type, true, NULL);
 }
 
-// void drm_mode_object_register(struct drm_device *dev,
-// 			      struct drm_mode_object *obj)
-// {
-// 	mutex_lock(&dev->mode_config.idr_mutex);
-// 	idr_replace(&dev->mode_config.object_idr, obj, obj->id);
-// 	mutex_unlock(&dev->mode_config.idr_mutex);
-// }
+void drm_mode_object_register(struct drm_device *dev,
+			      struct drm_mode_object *obj)
+{
+	mutex_lock(&dev->mode_config.idr_mutex);
+	idr_replace(&dev->mode_config.object_idr, obj, obj->id);
+	mutex_unlock(&dev->mode_config.idr_mutex);
+}
 
 /**
  * drm_mode_object_unregister - free a modeset identifer
