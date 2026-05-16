@@ -38,6 +38,7 @@
 #if !defined(__AROS__)
 #include <sys/libkern.h>
 #else
+#include <drm-compat/drm_compat_types.h>
 #include <sys/bitcount.h>
 static __inline __pure2 int
 ffs(int mask)

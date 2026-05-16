@@ -42,6 +42,7 @@ struct drm_file
     struct idr object_idr;
     spinlock_t table_lock;
     void *driver_priv;
+    struct list_head fbs;
 };
 
 struct drm_gem_object;

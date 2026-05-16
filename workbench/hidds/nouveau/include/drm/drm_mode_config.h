@@ -34,65 +34,65 @@
 
 // #include <drm/drm_modeset_lock.h>
 
-// struct drm_file;
-// struct drm_device;
+struct drm_file;
+struct drm_device;
 // struct drm_atomic_state;
-// struct drm_mode_fb_cmd2;
+struct drm_mode_fb_cmd2;
 // struct drm_format_info;
 // struct drm_display_mode;
 
-// /**
-//  * struct drm_mode_config_funcs - basic driver provided mode setting functions
-//  *
-//  * Some global (i.e. not per-CRTC, connector, etc) mode setting functions that
-//  * involve drivers.
-//  */
-// struct drm_mode_config_funcs {
-// 	/**
-// 	 * @fb_create:
-// 	 *
-// 	 * Create a new framebuffer object. The core does basic checks on the
-// 	 * requested metadata, but most of that is left to the driver. See
-// 	 * &struct drm_mode_fb_cmd2 for details.
-// 	 *
-// 	 * To validate the pixel format and modifier drivers can use
-// 	 * drm_any_plane_has_format() to make sure at least one plane supports
-// 	 * the requested values. Note that the driver must first determine the
-// 	 * actual modifier used if the request doesn't have it specified,
-// 	 * ie. when (@mode_cmd->flags & DRM_MODE_FB_MODIFIERS) == 0.
-// 	 *
-// 	 * If the parameters are deemed valid and the backing storage objects in
-// 	 * the underlying memory manager all exist, then the driver allocates
-// 	 * a new &drm_framebuffer structure, subclassed to contain
-// 	 * driver-specific information (like the internal native buffer object
-// 	 * references). It also needs to fill out all relevant metadata, which
-// 	 * should be done by calling drm_helper_mode_fill_fb_struct().
-// 	 *
-// 	 * The initialization is finalized by calling drm_framebuffer_init(),
-// 	 * which registers the framebuffer and makes it accessible to other
-// 	 * threads.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * A new framebuffer with an initial reference count of 1 or a negative
-// 	 * error code encoded with ERR_PTR().
-// 	 */
-// 	struct drm_framebuffer *(*fb_create)(struct drm_device *dev,
-// 					     struct drm_file *file_priv,
-// 					     const struct drm_mode_fb_cmd2 *mode_cmd);
+/**
+ * struct drm_mode_config_funcs - basic driver provided mode setting functions
+ *
+ * Some global (i.e. not per-CRTC, connector, etc) mode setting functions that
+ * involve drivers.
+ */
+struct drm_mode_config_funcs {
+	/**
+	 * @fb_create:
+	 *
+	 * Create a new framebuffer object. The core does basic checks on the
+	 * requested metadata, but most of that is left to the driver. See
+	 * &struct drm_mode_fb_cmd2 for details.
+	 *
+	 * To validate the pixel format and modifier drivers can use
+	 * drm_any_plane_has_format() to make sure at least one plane supports
+	 * the requested values. Note that the driver must first determine the
+	 * actual modifier used if the request doesn't have it specified,
+	 * ie. when (@mode_cmd->flags & DRM_MODE_FB_MODIFIERS) == 0.
+	 *
+	 * If the parameters are deemed valid and the backing storage objects in
+	 * the underlying memory manager all exist, then the driver allocates
+	 * a new &drm_framebuffer structure, subclassed to contain
+	 * driver-specific information (like the internal native buffer object
+	 * references). It also needs to fill out all relevant metadata, which
+	 * should be done by calling drm_helper_mode_fill_fb_struct().
+	 *
+	 * The initialization is finalized by calling drm_framebuffer_init(),
+	 * which registers the framebuffer and makes it accessible to other
+	 * threads.
+	 *
+	 * RETURNS:
+	 *
+	 * A new framebuffer with an initial reference count of 1 or a negative
+	 * error code encoded with ERR_PTR().
+	 */
+	struct drm_framebuffer *(*fb_create)(struct drm_device *dev,
+					     struct drm_file *file_priv,
+					     const struct drm_mode_fb_cmd2 *mode_cmd);
 
-// 	/**
-// 	 * @get_format_info:
-// 	 *
-// 	 * Allows a driver to return custom format information for special
-// 	 * fb layouts (eg. ones with auxiliary compression control planes).
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * The format information specific to the given fb metadata, or
-// 	 * NULL if none is found.
-// 	 */
-// 	const struct drm_format_info *(*get_format_info)(const struct drm_mode_fb_cmd2 *mode_cmd);
+	/**
+	 * @get_format_info:
+	 *
+	 * Allows a driver to return custom format information for special
+	 * fb layouts (eg. ones with auxiliary compression control planes).
+	 *
+	 * RETURNS:
+	 *
+	 * The format information specific to the given fb metadata, or
+	 * NULL if none is found.
+	 */
+	const struct drm_format_info *(*get_format_info)(const struct drm_mode_fb_cmd2 *mode_cmd);
 
 // 	/**
 // 	 * @output_poll_changed:
@@ -334,7 +334,7 @@
 // 	 * &drm_private_state and &drm_private_obj.
 // 	 */
 // 	void (*atomic_state_free)(struct drm_atomic_state *state);
-// };
+};
 
 /**
  * struct drm_mode_config - Mode configuration control structure
@@ -524,9 +524,9 @@ struct drm_mode_config {
 // 	 */
 // 	struct list_head privobj_list;
 
-// 	int min_width, min_height;
-// 	int max_width, max_height;
-// 	const struct drm_mode_config_funcs *funcs;
+	int min_width, min_height;
+	int max_width, max_height;
+	const struct drm_mode_config_funcs *funcs;
 // 	resource_size_t fb_base;
 
 // 	/* output poll support */
@@ -880,27 +880,27 @@ struct drm_mode_config {
 // 	 */
 // 	bool fbdev_use_iomem;
 
-// 	/**
-// 	 * @quirk_addfb_prefer_xbgr_30bpp:
-// 	 *
-// 	 * Special hack for legacy ADDFB to keep nouveau userspace happy. Should
-// 	 * only ever be set by the nouveau kernel driver.
-// 	 */
-// 	bool quirk_addfb_prefer_xbgr_30bpp;
+	/**
+	 * @quirk_addfb_prefer_xbgr_30bpp:
+	 *
+	 * Special hack for legacy ADDFB to keep nouveau userspace happy. Should
+	 * only ever be set by the nouveau kernel driver.
+	 */
+	bool quirk_addfb_prefer_xbgr_30bpp;
 
-// 	/**
-// 	 * @quirk_addfb_prefer_host_byte_order:
-// 	 *
-// 	 * When set to true drm_mode_addfb() will pick host byte order
-// 	 * pixel_format when calling drm_mode_addfb2().  This is how
-// 	 * drm_mode_addfb() should have worked from day one.  It
-// 	 * didn't though, so we ended up with quirks in both kernel
-// 	 * and userspace drivers to deal with the broken behavior.
-// 	 * Simply fixing drm_mode_addfb() unconditionally would break
-// 	 * these drivers, so add a quirk bit here to allow drivers
-// 	 * opt-in.
-// 	 */
-// 	bool quirk_addfb_prefer_host_byte_order;
+	/**
+	 * @quirk_addfb_prefer_host_byte_order:
+	 *
+	 * When set to true drm_mode_addfb() will pick host byte order
+	 * pixel_format when calling drm_mode_addfb2().  This is how
+	 * drm_mode_addfb() should have worked from day one.  It
+	 * didn't though, so we ended up with quirks in both kernel
+	 * and userspace drivers to deal with the broken behavior.
+	 * Simply fixing drm_mode_addfb() unconditionally would break
+	 * these drivers, so add a quirk bit here to allow drivers
+	 * opt-in.
+	 */
+	bool quirk_addfb_prefer_host_byte_order;
 
 // 	/**
 // 	 * @async_page_flip: Does this device support async flips on the primary
@@ -908,12 +908,12 @@ struct drm_mode_config {
 // 	 */
 // 	bool async_page_flip;
 
-// 	/**
-// 	 * @allow_fb_modifiers:
-// 	 *
-// 	 * Whether the driver supports fb modifiers in the ADDFB2.1 ioctl call.
-// 	 */
-// 	bool allow_fb_modifiers;
+	/**
+	 * @allow_fb_modifiers:
+	 *
+	 * Whether the driver supports fb modifiers in the ADDFB2.1 ioctl call.
+	 */
+	bool allow_fb_modifiers;
 
 // 	/**
 // 	 * @normalize_zpos:

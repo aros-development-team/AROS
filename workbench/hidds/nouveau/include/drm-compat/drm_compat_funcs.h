@@ -50,6 +50,7 @@
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
 #define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
+#define DIV_ROUND_UP_ULL(x, y)          DIV_ROUND_UP((unsigned long long)(x), (y))
 #define EREMOTEIO                       EIO
 #define max_t(t, x, y)                  ({(t)(x) > (t)(y) ? (t)(x) : (t)(y);})
 #define min_t(t, x, y)                  ({(t)(x) < (t)(y) ? (t)(x) : (t)(y);})
@@ -341,7 +342,7 @@ static inline int kref_sub(struct kref *kref, unsigned int count, void (*release
         return 0; 
 }
 
-static inline unsigned int kref_read(struct kref *kref)
+static inline unsigned int kref_read(const struct kref *kref)
 {
     return kref->refcount.count;
 }
