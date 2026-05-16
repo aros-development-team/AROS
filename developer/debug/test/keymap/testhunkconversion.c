@@ -65,7 +65,9 @@ static void test_hunk_pointer_conversion(void)
         TEST_ASSERT(kmn->kn_Node.ln_Name != NULL, "Keymap name is set");
         
         if (kmn->kn_Node.ln_Name) {
-            TEST_ASSERT(strlen(kmn->kn_Node.ln_Name) > 0, "Keymap name is non-empty");
+            /* Check first byte is non-zero (string is non-empty and accessible)
+             * This avoids strlen() over-read concerns (CWE-126) */
+            TEST_ASSERT(kmn->kn_Node.ln_Name[0] != '\0', "Keymap name is non-empty");
             printf("    Keymap name: '%s'\n", kmn->kn_Node.ln_Name);
         }
         
