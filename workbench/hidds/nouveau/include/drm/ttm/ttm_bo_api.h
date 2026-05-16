@@ -33,7 +33,7 @@
 
 #include <drm/drm_gem.h>
 // #include <drm/drm_hashtab.h>
-// #include <drm/drm_vma_manager.h>
+#include <drm/drm_vma_manager.h>
 #if !defined(__AROS__)
 #include <linux/kref.h>
 #include <linux/list.h>

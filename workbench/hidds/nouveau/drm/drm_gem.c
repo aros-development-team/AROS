@@ -409,12 +409,9 @@ drm_gem_handle_create_tail(struct drm_file *file_priv,
 
 	handle = ret;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	ret = drm_vma_node_allow(&obj->vma_node, file_priv);
 	if (ret)
 		goto err_remove;
-#endif
 
 #if !defined(__AROS__)
 	if (obj->funcs && obj->funcs->open) {
