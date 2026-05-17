@@ -36,7 +36,6 @@ APTR HIDDNouveauAlloc(ULONG size);
 #define kvzalloc(size, flags)           kvmalloc(size, flags | __GFP_ZERO)
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
-int kstrtol(const char *s, unsigned int base, long *res);
 char *kvasprintf(gfp_t, const char *, va_list);
 char *kasprintf(gfp_t, const char *, ...);
 

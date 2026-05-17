@@ -40,7 +40,7 @@ struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
 
 
-int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
+
 
 unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_IMPLEMENTED_STOP }
 
