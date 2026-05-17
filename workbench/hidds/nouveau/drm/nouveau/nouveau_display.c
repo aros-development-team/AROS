@@ -418,8 +418,6 @@ int
 nouveau_display_init(struct drm_device *dev, bool resume, bool runtime)
 {
 	struct nouveau_display *disp = nouveau_display(dev);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	struct drm_connector *connector;
 	struct drm_connector_list_iter conn_iter;
 	int ret;
@@ -428,10 +426,12 @@ NOT_IMPLEMENTED_CONTINUE
 	if (ret)
 		return ret;
 
+#if !defined(__AROS__)
 	/* enable connector detection and polling for connectors without HPD
 	 * support
 	 */
 	drm_kms_helper_poll_enable(dev);
+#endif
 
 	/* enable hotplug interrupts */
 	drm_connector_list_iter_begin(dev, &conn_iter);
@@ -442,9 +442,6 @@ NOT_IMPLEMENTED_CONTINUE
 	drm_connector_list_iter_end(&conn_iter);
 
 	return ret;
-#else
-    return 0;
-#endif
 }
 
 // void
