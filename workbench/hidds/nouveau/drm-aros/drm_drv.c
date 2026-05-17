@@ -68,6 +68,7 @@ struct drm_device *current_drm_device;
 int nouveau_init()
 {
     struct pci_dev *pdev;
+    struct pci_device_id dummy;
 
     if (drm_aros_pci_init())
         return -1;
@@ -79,7 +80,7 @@ int nouveau_init()
 
     // bug("\003\n"); /* Tell vga text mode debug output to die */
 
-    if (nouveau_drm_probe(pdev, NULL, &current_drm_device))
+    if (nouveau_drm_probe(pdev, &dummy, &current_drm_device))
         return -1;
     
     return 0;
