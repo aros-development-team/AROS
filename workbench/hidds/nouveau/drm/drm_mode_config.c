@@ -410,8 +410,8 @@ void drm_mode_config_init(struct drm_device *dev)
 	idr_init(&dev->mode_config.object_idr);
 #if !defined(__AROS__)
 	idr_init(&dev->mode_config.tile_idr);
-	ida_init(&dev->mode_config.connector_ida);
 #endif
+	ida_init(&dev->mode_config.connector_ida);
 	spin_lock_init(&dev->mode_config.connector_list_lock);
 
 #if !defined(__AROS__)

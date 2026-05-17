@@ -26,7 +26,7 @@
 #include <drm/drm_utils.h>
 #include <drm/drm_print.h>
 #include <drm/drm_drv.h>
-// #include <drm/drm_file.h>
+#include <drm/drm_file.h>
 // #include <drm/drm_sysfs.h>
 
 #if !defined(__AROS__)
@@ -36,67 +36,67 @@
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
 
-// /**
-//  * DOC: overview
-//  *
-//  * In DRM connectors are the general abstraction for display sinks, and include
-//  * als fixed panels or anything else that can display pixels in some form. As
-//  * opposed to all other KMS objects representing hardware (like CRTC, encoder or
-//  * plane abstractions) connectors can be hotplugged and unplugged at runtime.
-//  * Hence they are reference-counted using drm_connector_get() and
-//  * drm_connector_put().
-//  *
-//  * KMS driver must create, initialize, register and attach at a &struct
-//  * drm_connector for each such sink. The instance is created as other KMS
-//  * objects and initialized by setting the following fields. The connector is
-//  * initialized with a call to drm_connector_init() with a pointer to the
-//  * &struct drm_connector_funcs and a connector type, and then exposed to
-//  * userspace with a call to drm_connector_register().
-//  *
-//  * Connectors must be attached to an encoder to be used. For devices that map
-//  * connectors to encoders 1:1, the connector should be attached at
-//  * initialization time with a call to drm_connector_attach_encoder(). The
-//  * driver must also set the &drm_connector.encoder field to point to the
-//  * attached encoder.
-//  *
-//  * For connectors which are not fixed (like built-in panels) the driver needs to
-//  * support hotplug notifications. The simplest way to do that is by using the
-//  * probe helpers, see drm_kms_helper_poll_init() for connectors which don't have
-//  * hardware support for hotplug interrupts. Connectors with hardware hotplug
-//  * support can instead use e.g. drm_helper_hpd_irq_event().
-//  */
+/**
+ * DOC: overview
+ *
+ * In DRM connectors are the general abstraction for display sinks, and include
+ * als fixed panels or anything else that can display pixels in some form. As
+ * opposed to all other KMS objects representing hardware (like CRTC, encoder or
+ * plane abstractions) connectors can be hotplugged and unplugged at runtime.
+ * Hence they are reference-counted using drm_connector_get() and
+ * drm_connector_put().
+ *
+ * KMS driver must create, initialize, register and attach at a &struct
+ * drm_connector for each such sink. The instance is created as other KMS
+ * objects and initialized by setting the following fields. The connector is
+ * initialized with a call to drm_connector_init() with a pointer to the
+ * &struct drm_connector_funcs and a connector type, and then exposed to
+ * userspace with a call to drm_connector_register().
+ *
+ * Connectors must be attached to an encoder to be used. For devices that map
+ * connectors to encoders 1:1, the connector should be attached at
+ * initialization time with a call to drm_connector_attach_encoder(). The
+ * driver must also set the &drm_connector.encoder field to point to the
+ * attached encoder.
+ *
+ * For connectors which are not fixed (like built-in panels) the driver needs to
+ * support hotplug notifications. The simplest way to do that is by using the
+ * probe helpers, see drm_kms_helper_poll_init() for connectors which don't have
+ * hardware support for hotplug interrupts. Connectors with hardware hotplug
+ * support can instead use e.g. drm_helper_hpd_irq_event().
+ */
 
-// struct drm_conn_prop_enum_list {
-// 	int type;
-// 	const char *name;
-// 	struct ida ida;
-// };
+struct drm_conn_prop_enum_list {
+	int type;
+	const char *name;
+	struct ida ida;
+};
 
-// /*
-//  * Connector and encoder types.
-//  */
-// static struct drm_conn_prop_enum_list drm_connector_enum_list[] = {
-// 	{ DRM_MODE_CONNECTOR_Unknown, "Unknown" },
-// 	{ DRM_MODE_CONNECTOR_VGA, "VGA" },
-// 	{ DRM_MODE_CONNECTOR_DVII, "DVI-I" },
-// 	{ DRM_MODE_CONNECTOR_DVID, "DVI-D" },
-// 	{ DRM_MODE_CONNECTOR_DVIA, "DVI-A" },
-// 	{ DRM_MODE_CONNECTOR_Composite, "Composite" },
-// 	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO" },
-// 	{ DRM_MODE_CONNECTOR_LVDS, "LVDS" },
-// 	{ DRM_MODE_CONNECTOR_Component, "Component" },
-// 	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN" },
-// 	{ DRM_MODE_CONNECTOR_DisplayPort, "DP" },
-// 	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A" },
-// 	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B" },
-// 	{ DRM_MODE_CONNECTOR_TV, "TV" },
-// 	{ DRM_MODE_CONNECTOR_eDP, "eDP" },
-// 	{ DRM_MODE_CONNECTOR_VIRTUAL, "Virtual" },
-// 	{ DRM_MODE_CONNECTOR_DSI, "DSI" },
-// 	{ DRM_MODE_CONNECTOR_DPI, "DPI" },
-// 	{ DRM_MODE_CONNECTOR_WRITEBACK, "Writeback" },
-// 	{ DRM_MODE_CONNECTOR_SPI, "SPI" },
-// };
+/*
+ * Connector and encoder types.
+ */
+static struct drm_conn_prop_enum_list drm_connector_enum_list[] = {
+	{ DRM_MODE_CONNECTOR_Unknown, "Unknown" },
+	{ DRM_MODE_CONNECTOR_VGA, "VGA" },
+	{ DRM_MODE_CONNECTOR_DVII, "DVI-I" },
+	{ DRM_MODE_CONNECTOR_DVID, "DVI-D" },
+	{ DRM_MODE_CONNECTOR_DVIA, "DVI-A" },
+	{ DRM_MODE_CONNECTOR_Composite, "Composite" },
+	{ DRM_MODE_CONNECTOR_SVIDEO, "SVIDEO" },
+	{ DRM_MODE_CONNECTOR_LVDS, "LVDS" },
+	{ DRM_MODE_CONNECTOR_Component, "Component" },
+	{ DRM_MODE_CONNECTOR_9PinDIN, "DIN" },
+	{ DRM_MODE_CONNECTOR_DisplayPort, "DP" },
+	{ DRM_MODE_CONNECTOR_HDMIA, "HDMI-A" },
+	{ DRM_MODE_CONNECTOR_HDMIB, "HDMI-B" },
+	{ DRM_MODE_CONNECTOR_TV, "TV" },
+	{ DRM_MODE_CONNECTOR_eDP, "eDP" },
+	{ DRM_MODE_CONNECTOR_VIRTUAL, "Virtual" },
+	{ DRM_MODE_CONNECTOR_DSI, "DSI" },
+	{ DRM_MODE_CONNECTOR_DPI, "DPI" },
+	{ DRM_MODE_CONNECTOR_WRITEBACK, "Writeback" },
+	{ DRM_MODE_CONNECTOR_SPI, "SPI" },
+};
 
 // void drm_connector_ida_init(void)
 // {
@@ -114,53 +114,55 @@
 // 		ida_destroy(&drm_connector_enum_list[i].ida);
 // }
 
-// /**
-//  * drm_connector_get_cmdline_mode - reads the user's cmdline mode
-//  * @connector: connector to quwery
-//  *
-//  * The kernel supports per-connector configuration of its consoles through
-//  * use of the video= parameter. This function parses that option and
-//  * extracts the user's specified mode (or enable/disable status) for a
-//  * particular connector. This is typically only used during the early fbdev
-//  * setup.
-//  */
-// static void drm_connector_get_cmdline_mode(struct drm_connector *connector)
-// {
-// 	struct drm_cmdline_mode *mode = &connector->cmdline_mode;
-// 	char *option = NULL;
+/**
+ * drm_connector_get_cmdline_mode - reads the user's cmdline mode
+ * @connector: connector to quwery
+ *
+ * The kernel supports per-connector configuration of its consoles through
+ * use of the video= parameter. This function parses that option and
+ * extracts the user's specified mode (or enable/disable status) for a
+ * particular connector. This is typically only used during the early fbdev
+ * setup.
+ */
+static void drm_connector_get_cmdline_mode(struct drm_connector *connector)
+{
+	struct drm_cmdline_mode *mode = &connector->cmdline_mode;
+	char *option = NULL;
 
-// 	if (fb_get_options(connector->name, &option))
-// 		return;
+#if !defined(__AROS__)
+	if (fb_get_options(connector->name, &option))
+		return;
+#endif
 
-// 	if (!drm_mode_parse_command_line_for_connector(option,
-// 						       connector,
-// 						       mode))
-// 		return;
+	if (!drm_mode_parse_command_line_for_connector(option,
+						       connector,
+						       mode))
+		return;
 
-// 	if (mode->force) {
-// 		DRM_INFO("forcing %s connector %s\n", connector->name,
-// 			 drm_get_connector_force_name(mode->force));
-// 		connector->force = mode->force;
-// 	}
+	if (mode->force) {
+		DRM_INFO("forcing %s connector %s\n", connector->name,
+			 drm_get_connector_force_name(mode->force));
+		connector->force = mode->force;
+	}
 
-// 	DRM_DEBUG_KMS("cmdline mode for connector %s %s %dx%d@%dHz%s%s%s\n",
-// 		      connector->name, mode->name,
-// 		      mode->xres, mode->yres,
-// 		      mode->refresh_specified ? mode->refresh : 60,
-// 		      mode->rb ? " reduced blanking" : "",
-// 		      mode->margins ? " with margins" : "",
-// 		      mode->interlace ?  " interlaced" : "");
-// }
+	DRM_DEBUG_KMS("cmdline mode for connector %s %s %dx%d@%dHz%s%s%s\n",
+		      connector->name, mode->name,
+		      mode->xres, mode->yres,
+		      mode->refresh_specified ? mode->refresh : 60,
+		      mode->rb ? " reduced blanking" : "",
+		      mode->margins ? " with margins" : "",
+		      mode->interlace ?  " interlaced" : "");
+}
 
-// static void drm_connector_free(struct kref *kref)
-// {
-// 	struct drm_connector *connector =
-// 		container_of(kref, struct drm_connector, base.refcount);
-// 	struct drm_device *dev = connector->dev;
+static void drm_connector_free(struct kref *kref)
+{
+	struct drm_connector *connector =
+		container_of(kref, struct drm_connector, base.refcount);
+	struct drm_device *dev = connector->dev;
 
-// 	drm_mode_object_unregister(dev, &connector->base);
-// 	connector->funcs->destroy(connector);
-// }
+	drm_mode_object_unregister(dev, &connector->base);
+	connector->funcs->destroy(connector);
+}
 
 // void drm_connector_free_work_fn(struct work_struct *work)
 // {
@@ -181,124 +183,131 @@
 // 	}
 // }
 
-// /**
-//  * drm_connector_init - Init a preallocated connector
-//  * @dev: DRM device
-//  * @connector: the connector to init
-//  * @funcs: callbacks for this connector
-//  * @connector_type: user visible type of the connector
-//  *
-//  * Initialises a preallocated connector. Connectors should be
-//  * subclassed as part of driver connector objects.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_connector_init(struct drm_device *dev,
-// 		       struct drm_connector *connector,
-// 		       const struct drm_connector_funcs *funcs,
-// 		       int connector_type)
-// {
-// 	struct drm_mode_config *config = &dev->mode_config;
-// 	int ret;
-// 	struct ida *connector_ida =
-// 		&drm_connector_enum_list[connector_type].ida;
+/**
+ * drm_connector_init - Init a preallocated connector
+ * @dev: DRM device
+ * @connector: the connector to init
+ * @funcs: callbacks for this connector
+ * @connector_type: user visible type of the connector
+ *
+ * Initialises a preallocated connector. Connectors should be
+ * subclassed as part of driver connector objects.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_connector_init(struct drm_device *dev,
+		       struct drm_connector *connector,
+		       const struct drm_connector_funcs *funcs,
+		       int connector_type)
+{
+	struct drm_mode_config *config = &dev->mode_config;
+	int ret;
+	struct ida *connector_ida =
+		&drm_connector_enum_list[connector_type].ida;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
-// 		(!funcs->atomic_destroy_state ||
-// 		 !funcs->atomic_duplicate_state));
+	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
+		(!funcs->atomic_destroy_state ||
+		 !funcs->atomic_duplicate_state));
 
-// 	ret = __drm_mode_object_add(dev, &connector->base,
-// 				    DRM_MODE_OBJECT_CONNECTOR,
-// 				    false, drm_connector_free);
-// 	if (ret)
-// 		return ret;
+	ret = __drm_mode_object_add(dev, &connector->base,
+				    DRM_MODE_OBJECT_CONNECTOR,
+				    false, drm_connector_free);
+	if (ret)
+		return ret;
 
-// 	connector->base.properties = &connector->properties;
-// 	connector->dev = dev;
-// 	connector->funcs = funcs;
+	connector->base.properties = &connector->properties;
+	connector->dev = dev;
+	connector->funcs = funcs;
 
-// 	/* connector index is used with 32bit bitmasks */
-// 	ret = ida_simple_get(&config->connector_ida, 0, 32, GFP_KERNEL);
-// 	if (ret < 0) {
-// 		DRM_DEBUG_KMS("Failed to allocate %s connector index: %d\n",
-// 			      drm_connector_enum_list[connector_type].name,
-// 			      ret);
-// 		goto out_put;
-// 	}
-// 	connector->index = ret;
-// 	ret = 0;
+	/* connector index is used with 32bit bitmasks */
+	ret = ida_simple_get(&config->connector_ida, 0, 32, GFP_KERNEL);
+	if (ret < 0) {
+		DRM_DEBUG_KMS("Failed to allocate %s connector index: %d\n",
+			      drm_connector_enum_list[connector_type].name,
+			      ret);
+		goto out_put;
+	}
+	connector->index = ret;
+	ret = 0;
 
-// 	connector->connector_type = connector_type;
-// 	connector->connector_type_id =
-// 		ida_simple_get(connector_ida, 1, 0, GFP_KERNEL);
-// 	if (connector->connector_type_id < 0) {
-// 		ret = connector->connector_type_id;
-// 		goto out_put_id;
-// 	}
-// 	connector->name =
-// 		kasprintf(GFP_KERNEL, "%s-%d",
-// 			  drm_connector_enum_list[connector_type].name,
-// 			  connector->connector_type_id);
-// 	if (!connector->name) {
-// 		ret = -ENOMEM;
-// 		goto out_put_type_id;
-// 	}
+	connector->connector_type = connector_type;
+	connector->connector_type_id =
+		ida_simple_get(connector_ida, 1, 0, GFP_KERNEL);
+	if (connector->connector_type_id < 0) {
+		ret = connector->connector_type_id;
+		goto out_put_id;
+	}
+	connector->name =
+		kasprintf(GFP_KERNEL, "%s-%d",
+			  drm_connector_enum_list[connector_type].name,
+			  connector->connector_type_id);
+	if (!connector->name) {
+		ret = -ENOMEM;
+		goto out_put_type_id;
+	}
 
-// 	INIT_LIST_HEAD(&connector->probed_modes);
-// 	INIT_LIST_HEAD(&connector->modes);
-// 	mutex_init(&connector->mutex);
-// 	connector->edid_blob_ptr = NULL;
-// 	connector->tile_blob_ptr = NULL;
-// 	connector->status = connector_status_unknown;
-// 	connector->display_info.panel_orientation =
-// 		DRM_MODE_PANEL_ORIENTATION_UNKNOWN;
+	INIT_LIST_HEAD(&connector->probed_modes);
+	INIT_LIST_HEAD(&connector->modes);
+	mutex_init(&connector->mutex);
+#if !defined(__AROS__)
+	connector->edid_blob_ptr = NULL;
+#endif
+	connector->tile_blob_ptr = NULL;
+	connector->status = connector_status_unknown;
+	connector->display_info.panel_orientation =
+		DRM_MODE_PANEL_ORIENTATION_UNKNOWN;
 
-// 	drm_connector_get_cmdline_mode(connector);
+	drm_connector_get_cmdline_mode(connector);
 
-// 	/* We should add connectors at the end to avoid upsetting the connector
-// 	 * index too much. */
-// 	spin_lock_irq(&config->connector_list_lock);
-// 	list_add_tail(&connector->head, &config->connector_list);
-// 	config->num_connector++;
-// 	spin_unlock_irq(&config->connector_list_lock);
+	/* We should add connectors at the end to avoid upsetting the connector
+	 * index too much. */
+	spin_lock_irq(&config->connector_list_lock);
+	list_add_tail(&connector->head, &config->connector_list);
+	config->num_connector++;
+	spin_unlock_irq(&config->connector_list_lock);
 
-// 	if (connector_type != DRM_MODE_CONNECTOR_VIRTUAL &&
-// 	    connector_type != DRM_MODE_CONNECTOR_WRITEBACK)
-// 		drm_connector_attach_edid_property(connector);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+	if (connector_type != DRM_MODE_CONNECTOR_VIRTUAL &&
+	    connector_type != DRM_MODE_CONNECTOR_WRITEBACK)
+		drm_connector_attach_edid_property(connector);
+#endif
 
-// 	drm_object_attach_property(&connector->base,
-// 				      config->dpms_property, 0);
+	drm_object_attach_property(&connector->base,
+				      config->dpms_property, 0);
 
-// 	drm_object_attach_property(&connector->base,
-// 				   config->link_status_property,
-// 				   0);
+	drm_object_attach_property(&connector->base,
+				   config->link_status_property,
+				   0);
 
-// 	drm_object_attach_property(&connector->base,
-// 				   config->non_desktop_property,
-// 				   0);
-// 	drm_object_attach_property(&connector->base,
-// 				   config->tile_property,
-// 				   0);
+	drm_object_attach_property(&connector->base,
+				   config->non_desktop_property,
+				   0);
+	drm_object_attach_property(&connector->base,
+				   config->tile_property,
+				   0);
 
-// 	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
-// 		drm_object_attach_property(&connector->base, config->prop_crtc_id, 0);
-// 	}
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
+		drm_object_attach_property(&connector->base, config->prop_crtc_id, 0);
+	}
 
-// 	connector->debugfs_entry = NULL;
-// out_put_type_id:
-// 	if (ret)
-// 		ida_simple_remove(connector_ida, connector->connector_type_id);
-// out_put_id:
-// 	if (ret)
-// 		ida_simple_remove(&config->connector_ida, connector->index);
-// out_put:
-// 	if (ret)
-// 		drm_mode_object_unregister(dev, &connector->base);
+#if !defined(__AROS__)
+	connector->debugfs_entry = NULL;
+#endif
+out_put_type_id:
+	if (ret)
+		ida_simple_remove(connector_ida, connector->connector_type_id);
+out_put_id:
+	if (ret)
+		ida_simple_remove(&config->connector_ida, connector->index);
+out_put:
+	if (ret)
+		drm_mode_object_unregister(dev, &connector->base);
 
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_connector_init);
+	return ret;
+}
+EXPORT_SYMBOL(drm_connector_init);
 
 // /**
 //  * drm_connector_init_with_ddc - Init a preallocated connector
@@ -605,27 +614,27 @@
 // }
 // EXPORT_SYMBOL(drm_get_connector_status_name);
 
-// /**
-//  * drm_get_connector_force_name - return a string for connector force
-//  * @force: connector force to get name of
-//  *
-//  * Returns: const pointer to name.
-//  */
-// const char *drm_get_connector_force_name(enum drm_connector_force force)
-// {
-// 	switch (force) {
-// 	case DRM_FORCE_UNSPECIFIED:
-// 		return "unspecified";
-// 	case DRM_FORCE_OFF:
-// 		return "off";
-// 	case DRM_FORCE_ON:
-// 		return "on";
-// 	case DRM_FORCE_ON_DIGITAL:
-// 		return "digital";
-// 	default:
-// 		return "unknown";
-// 	}
-// }
+/**
+ * drm_get_connector_force_name - return a string for connector force
+ * @force: connector force to get name of
+ *
+ * Returns: const pointer to name.
+ */
+const char *drm_get_connector_force_name(enum drm_connector_force force)
+{
+	switch (force) {
+	case DRM_FORCE_UNSPECIFIED:
+		return "unspecified";
+	case DRM_FORCE_OFF:
+		return "off";
+	case DRM_FORCE_ON:
+		return "on";
+	case DRM_FORCE_ON_DIGITAL:
+		return "digital";
+	default:
+		return "unknown";
+	}
+}
 
 #if !defined(__AROS__)
 #ifdef CONFIG_LOCKDEP

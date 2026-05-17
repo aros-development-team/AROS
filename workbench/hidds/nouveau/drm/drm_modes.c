@@ -38,6 +38,10 @@
 
 #include <video/of_videomode.h>
 #include <video/videomode.h>
+#else
+#include <linux/minmax.h>
+#include <linux/string.h>
+#include <linux/kstrtox.h>
 #endif
 
 #include <drm/drm_crtc.h>
@@ -1421,469 +1425,469 @@ EXPORT_SYMBOL(drm_mode_validate_driver);
 // }
 // EXPORT_SYMBOL(drm_connector_list_update);
 
-// static int drm_mode_parse_cmdline_bpp(const char *str, char **end_ptr,
-// 				      struct drm_cmdline_mode *mode)
-// {
-// 	unsigned int bpp;
-
-// 	if (str[0] != '-')
-// 		return -EINVAL;
-
-// 	str++;
-// 	bpp = simple_strtol(str, end_ptr, 10);
-// 	if (*end_ptr == str)
-// 		return -EINVAL;
-
-// 	mode->bpp = bpp;
-// 	mode->bpp_specified = true;
-
-// 	return 0;
-// }
-
-// static int drm_mode_parse_cmdline_refresh(const char *str, char **end_ptr,
-// 					  struct drm_cmdline_mode *mode)
-// {
-// 	unsigned int refresh;
-
-// 	if (str[0] != '@')
-// 		return -EINVAL;
-
-// 	str++;
-// 	refresh = simple_strtol(str, end_ptr, 10);
-// 	if (*end_ptr == str)
-// 		return -EINVAL;
-
-// 	mode->refresh = refresh;
-// 	mode->refresh_specified = true;
-
-// 	return 0;
-// }
-
-// static int drm_mode_parse_cmdline_extra(const char *str, int length,
-// 					bool freestanding,
-// 					const struct drm_connector *connector,
-// 					struct drm_cmdline_mode *mode)
-// {
-// 	int i;
-
-// 	for (i = 0; i < length; i++) {
-// 		switch (str[i]) {
-// 		case 'i':
-// 			if (freestanding)
-// 				return -EINVAL;
-
-// 			mode->interlace = true;
-// 			break;
-// 		case 'm':
-// 			if (freestanding)
-// 				return -EINVAL;
-
-// 			mode->margins = true;
-// 			break;
-// 		case 'D':
-// 			if (mode->force != DRM_FORCE_UNSPECIFIED)
-// 				return -EINVAL;
-
-// 			if ((connector->connector_type != DRM_MODE_CONNECTOR_DVII) &&
-// 			    (connector->connector_type != DRM_MODE_CONNECTOR_HDMIB))
-// 				mode->force = DRM_FORCE_ON;
-// 			else
-// 				mode->force = DRM_FORCE_ON_DIGITAL;
-// 			break;
-// 		case 'd':
-// 			if (mode->force != DRM_FORCE_UNSPECIFIED)
-// 				return -EINVAL;
-
-// 			mode->force = DRM_FORCE_OFF;
-// 			break;
-// 		case 'e':
-// 			if (mode->force != DRM_FORCE_UNSPECIFIED)
-// 				return -EINVAL;
-
-// 			mode->force = DRM_FORCE_ON;
-// 			break;
-// 		default:
-// 			return -EINVAL;
-// 		}
-// 	}
-
-// 	return 0;
-// }
-
-// static int drm_mode_parse_cmdline_res_mode(const char *str, unsigned int length,
-// 					   bool extras,
-// 					   const struct drm_connector *connector,
-// 					   struct drm_cmdline_mode *mode)
-// {
-// 	const char *str_start = str;
-// 	bool rb = false, cvt = false;
-// 	int xres = 0, yres = 0;
-// 	int remaining, i;
-// 	char *end_ptr;
-
-// 	xres = simple_strtol(str, &end_ptr, 10);
-// 	if (end_ptr == str)
-// 		return -EINVAL;
-
-// 	if (end_ptr[0] != 'x')
-// 		return -EINVAL;
-// 	end_ptr++;
-
-// 	str = end_ptr;
-// 	yres = simple_strtol(str, &end_ptr, 10);
-// 	if (end_ptr == str)
-// 		return -EINVAL;
-
-// 	remaining = length - (end_ptr - str_start);
-// 	if (remaining < 0)
-// 		return -EINVAL;
-
-// 	for (i = 0; i < remaining; i++) {
-// 		switch (end_ptr[i]) {
-// 		case 'M':
-// 			cvt = true;
-// 			break;
-// 		case 'R':
-// 			rb = true;
-// 			break;
-// 		default:
-// 			/*
-// 			 * Try to pass that to our extras parsing
-// 			 * function to handle the case where the
-// 			 * extras are directly after the resolution
-// 			 */
-// 			if (extras) {
-// 				int ret = drm_mode_parse_cmdline_extra(end_ptr + i,
-// 								       1,
-// 								       false,
-// 								       connector,
-// 								       mode);
-// 				if (ret)
-// 					return ret;
-// 			} else {
-// 				return -EINVAL;
-// 			}
-// 		}
-// 	}
-
-// 	mode->xres = xres;
-// 	mode->yres = yres;
-// 	mode->cvt = cvt;
-// 	mode->rb = rb;
-
-// 	return 0;
-// }
-
-// static int drm_mode_parse_cmdline_options(char *str, size_t len,
-// 					  const struct drm_connector *connector,
-// 					  struct drm_cmdline_mode *mode)
-// {
-// 	unsigned int rotation = 0;
-// 	char *sep = str;
-
-// 	while ((sep = strchr(sep, ','))) {
-// 		char *delim, *option;
-
-// 		option = sep + 1;
-// 		delim = strchr(option, '=');
-// 		if (!delim) {
-// 			delim = strchr(option, ',');
-
-// 			if (!delim)
-// 				delim = str + len;
-// 		}
-
-// 		if (!strncmp(option, "rotate", delim - option)) {
-// 			const char *value = delim + 1;
-// 			unsigned int deg;
-
-// 			deg = simple_strtol(value, &sep, 10);
-
-// 			/* Make sure we have parsed something */
-// 			if (sep == value)
-// 				return -EINVAL;
-
-// 			switch (deg) {
-// 			case 0:
-// 				rotation |= DRM_MODE_ROTATE_0;
-// 				break;
-
-// 			case 90:
-// 				rotation |= DRM_MODE_ROTATE_90;
-// 				break;
-
-// 			case 180:
-// 				rotation |= DRM_MODE_ROTATE_180;
-// 				break;
-
-// 			case 270:
-// 				rotation |= DRM_MODE_ROTATE_270;
-// 				break;
-
-// 			default:
-// 				return -EINVAL;
-// 			}
-// 		} else if (!strncmp(option, "reflect_x", delim - option)) {
-// 			rotation |= DRM_MODE_REFLECT_X;
-// 			sep = delim;
-// 		} else if (!strncmp(option, "reflect_y", delim - option)) {
-// 			rotation |= DRM_MODE_REFLECT_Y;
-// 			sep = delim;
-// 		} else if (!strncmp(option, "margin_right", delim - option)) {
-// 			const char *value = delim + 1;
-// 			unsigned int margin;
-
-// 			margin = simple_strtol(value, &sep, 10);
-
-// 			/* Make sure we have parsed something */
-// 			if (sep == value)
-// 				return -EINVAL;
-
-// 			mode->tv_margins.right = margin;
-// 		} else if (!strncmp(option, "margin_left", delim - option)) {
-// 			const char *value = delim + 1;
-// 			unsigned int margin;
-
-// 			margin = simple_strtol(value, &sep, 10);
-
-// 			/* Make sure we have parsed something */
-// 			if (sep == value)
-// 				return -EINVAL;
-
-// 			mode->tv_margins.left = margin;
-// 		} else if (!strncmp(option, "margin_top", delim - option)) {
-// 			const char *value = delim + 1;
-// 			unsigned int margin;
-
-// 			margin = simple_strtol(value, &sep, 10);
-
-// 			/* Make sure we have parsed something */
-// 			if (sep == value)
-// 				return -EINVAL;
-
-// 			mode->tv_margins.top = margin;
-// 		} else if (!strncmp(option, "margin_bottom", delim - option)) {
-// 			const char *value = delim + 1;
-// 			unsigned int margin;
-
-// 			margin = simple_strtol(value, &sep, 10);
-
-// 			/* Make sure we have parsed something */
-// 			if (sep == value)
-// 				return -EINVAL;
-
-// 			mode->tv_margins.bottom = margin;
-// 		} else {
-// 			return -EINVAL;
-// 		}
-// 	}
-
-// 	if (!(rotation & DRM_MODE_ROTATE_MASK))
-// 		rotation |= DRM_MODE_ROTATE_0;
-
-// 	/* Make sure there is exactly one rotation defined */
-// 	if (!is_power_of_2(rotation & DRM_MODE_ROTATE_MASK))
-// 		return -EINVAL;
-
-// 	mode->rotation_reflection = rotation;
-
-// 	return 0;
-// }
-
-// static const char * const drm_named_modes_whitelist[] = {
-// 	"NTSC",
-// 	"PAL",
-// };
-
-// static bool drm_named_mode_is_in_whitelist(const char *mode, unsigned int size)
-// {
-// 	int i;
-
-// 	for (i = 0; i < ARRAY_SIZE(drm_named_modes_whitelist); i++)
-// 		if (!strncmp(mode, drm_named_modes_whitelist[i], size))
-// 			return true;
-
-// 	return false;
-// }
-
-// /**
-//  * drm_mode_parse_command_line_for_connector - parse command line modeline for connector
-//  * @mode_option: optional per connector mode option
-//  * @connector: connector to parse modeline for
-//  * @mode: preallocated drm_cmdline_mode structure to fill out
-//  *
-//  * This parses @mode_option command line modeline for modes and options to
-//  * configure the connector. If @mode_option is NULL the default command line
-//  * modeline in fb_mode_option will be parsed instead.
-//  *
-//  * This uses the same parameters as the fb modedb.c, except for an extra
-//  * force-enable, force-enable-digital and force-disable bit at the end::
-//  *
-//  *	<xres>x<yres>[M][R][-<bpp>][@<refresh>][i][m][eDd]
-//  *
-//  * Additionals options can be provided following the mode, using a comma to
-//  * separate each option. Valid options can be found in
-//  * Documentation/fb/modedb.rst.
-//  *
-//  * The intermediate drm_cmdline_mode structure is required to store additional
-//  * options from the command line modline like the force-enable/disable flag.
-//  *
-//  * Returns:
-//  * True if a valid modeline has been parsed, false otherwise.
-//  */
-// bool drm_mode_parse_command_line_for_connector(const char *mode_option,
-// 					       const struct drm_connector *connector,
-// 					       struct drm_cmdline_mode *mode)
-// {
-// 	const char *name;
-// 	bool named_mode = false, parse_extras = false;
-// 	unsigned int bpp_off = 0, refresh_off = 0, options_off = 0;
-// 	unsigned int mode_end = 0;
-// 	char *bpp_ptr = NULL, *refresh_ptr = NULL, *extra_ptr = NULL;
-// 	char *options_ptr = NULL;
-// 	char *bpp_end_ptr = NULL, *refresh_end_ptr = NULL;
-// 	int ret;
-
-// #ifdef CONFIG_FB
-// 	if (!mode_option)
-// 		mode_option = fb_mode_option;
-// #endif
-
-// 	if (!mode_option) {
-// 		mode->specified = false;
-// 		return false;
-// 	}
-
-// 	name = mode_option;
-
-// 	/*
-// 	 * This is a bit convoluted. To differentiate between the
-// 	 * named modes and poorly formatted resolutions, we need a
-// 	 * bunch of things:
-// 	 *   - We need to make sure that the first character (which
-// 	 *     would be our resolution in X) is a digit.
-// 	 *   - If not, then it's either a named mode or a force on/off.
-// 	 *     To distinguish between the two, we need to run the
-// 	 *     extra parsing function, and if not, then we consider it
-// 	 *     a named mode.
-// 	 *
-// 	 * If this isn't enough, we should add more heuristics here,
-// 	 * and matching unit-tests.
-// 	 */
-// 	if (!isdigit(name[0]) && name[0] != 'x') {
-// 		unsigned int namelen = strlen(name);
-
-// 		/*
-// 		 * Only the force on/off options can be in that case,
-// 		 * and they all take a single character.
-// 		 */
-// 		if (namelen == 1) {
-// 			ret = drm_mode_parse_cmdline_extra(name, namelen, true,
-// 							   connector, mode);
-// 			if (!ret)
-// 				return true;
-// 		}
-
-// 		named_mode = true;
-// 	}
-
-// 	/* Try to locate the bpp and refresh specifiers, if any */
-// 	bpp_ptr = strchr(name, '-');
-// 	if (bpp_ptr) {
-// 		bpp_off = bpp_ptr - name;
-// 		mode->bpp_specified = true;
-// 	}
-
-// 	refresh_ptr = strchr(name, '@');
-// 	if (refresh_ptr) {
-// 		if (named_mode)
-// 			return false;
-
-// 		refresh_off = refresh_ptr - name;
-// 		mode->refresh_specified = true;
-// 	}
-
-// 	/* Locate the start of named options */
-// 	options_ptr = strchr(name, ',');
-// 	if (options_ptr)
-// 		options_off = options_ptr - name;
-
-// 	/* Locate the end of the name / resolution, and parse it */
-// 	if (bpp_ptr) {
-// 		mode_end = bpp_off;
-// 	} else if (refresh_ptr) {
-// 		mode_end = refresh_off;
-// 	} else if (options_ptr) {
-// 		mode_end = options_off;
-// 	} else {
-// 		mode_end = strlen(name);
-// 		parse_extras = true;
-// 	}
-
-// 	if (named_mode) {
-// 		if (mode_end + 1 > DRM_DISPLAY_MODE_LEN)
-// 			return false;
-
-// 		if (!drm_named_mode_is_in_whitelist(name, mode_end))
-// 			return false;
-
-// 		strscpy(mode->name, name, mode_end + 1);
-// 	} else {
-// 		ret = drm_mode_parse_cmdline_res_mode(name, mode_end,
-// 						      parse_extras,
-// 						      connector,
-// 						      mode);
-// 		if (ret)
-// 			return false;
-// 	}
-// 	mode->specified = true;
-
-// 	if (bpp_ptr) {
-// 		ret = drm_mode_parse_cmdline_bpp(bpp_ptr, &bpp_end_ptr, mode);
-// 		if (ret)
-// 			return false;
-// 	}
-
-// 	if (refresh_ptr) {
-// 		ret = drm_mode_parse_cmdline_refresh(refresh_ptr,
-// 						     &refresh_end_ptr, mode);
-// 		if (ret)
-// 			return false;
-// 	}
-
-// 	/*
-// 	 * Locate the end of the bpp / refresh, and parse the extras
-// 	 * if relevant
-// 	 */
-// 	if (bpp_ptr && refresh_ptr)
-// 		extra_ptr = max(bpp_end_ptr, refresh_end_ptr);
-// 	else if (bpp_ptr)
-// 		extra_ptr = bpp_end_ptr;
-// 	else if (refresh_ptr)
-// 		extra_ptr = refresh_end_ptr;
-
-// 	if (extra_ptr &&
-// 	    extra_ptr != options_ptr) {
-// 		int len = strlen(name) - (extra_ptr - name);
-
-// 		ret = drm_mode_parse_cmdline_extra(extra_ptr, len, false,
-// 						   connector, mode);
-// 		if (ret)
-// 			return false;
-// 	}
-
-// 	if (options_ptr) {
-// 		int len = strlen(name) - (options_ptr - name);
-
-// 		ret = drm_mode_parse_cmdline_options(options_ptr, len,
-// 						     connector, mode);
-// 		if (ret)
-// 			return false;
-// 	}
-
-// 	return true;
-// }
-// EXPORT_SYMBOL(drm_mode_parse_command_line_for_connector);
+static int drm_mode_parse_cmdline_bpp(const char *str, char **end_ptr,
+				      struct drm_cmdline_mode *mode)
+{
+	unsigned int bpp;
+
+	if (str[0] != '-')
+		return -EINVAL;
+
+	str++;
+	bpp = simple_strtol(str, end_ptr, 10);
+	if (*end_ptr == str)
+		return -EINVAL;
+
+	mode->bpp = bpp;
+	mode->bpp_specified = true;
+
+	return 0;
+}
+
+static int drm_mode_parse_cmdline_refresh(const char *str, char **end_ptr,
+					  struct drm_cmdline_mode *mode)
+{
+	unsigned int refresh;
+
+	if (str[0] != '@')
+		return -EINVAL;
+
+	str++;
+	refresh = simple_strtol(str, end_ptr, 10);
+	if (*end_ptr == str)
+		return -EINVAL;
+
+	mode->refresh = refresh;
+	mode->refresh_specified = true;
+
+	return 0;
+}
+
+static int drm_mode_parse_cmdline_extra(const char *str, int length,
+					bool freestanding,
+					const struct drm_connector *connector,
+					struct drm_cmdline_mode *mode)
+{
+	int i;
+
+	for (i = 0; i < length; i++) {
+		switch (str[i]) {
+		case 'i':
+			if (freestanding)
+				return -EINVAL;
+
+			mode->interlace = true;
+			break;
+		case 'm':
+			if (freestanding)
+				return -EINVAL;
+
+			mode->margins = true;
+			break;
+		case 'D':
+			if (mode->force != DRM_FORCE_UNSPECIFIED)
+				return -EINVAL;
+
+			if ((connector->connector_type != DRM_MODE_CONNECTOR_DVII) &&
+			    (connector->connector_type != DRM_MODE_CONNECTOR_HDMIB))
+				mode->force = DRM_FORCE_ON;
+			else
+				mode->force = DRM_FORCE_ON_DIGITAL;
+			break;
+		case 'd':
+			if (mode->force != DRM_FORCE_UNSPECIFIED)
+				return -EINVAL;
+
+			mode->force = DRM_FORCE_OFF;
+			break;
+		case 'e':
+			if (mode->force != DRM_FORCE_UNSPECIFIED)
+				return -EINVAL;
+
+			mode->force = DRM_FORCE_ON;
+			break;
+		default:
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+static int drm_mode_parse_cmdline_res_mode(const char *str, unsigned int length,
+					   bool extras,
+					   const struct drm_connector *connector,
+					   struct drm_cmdline_mode *mode)
+{
+	const char *str_start = str;
+	bool rb = false, cvt = false;
+	int xres = 0, yres = 0;
+	int remaining, i;
+	char *end_ptr;
+
+	xres = simple_strtol(str, &end_ptr, 10);
+	if (end_ptr == str)
+		return -EINVAL;
+
+	if (end_ptr[0] != 'x')
+		return -EINVAL;
+	end_ptr++;
+
+	str = end_ptr;
+	yres = simple_strtol(str, &end_ptr, 10);
+	if (end_ptr == str)
+		return -EINVAL;
+
+	remaining = length - (end_ptr - str_start);
+	if (remaining < 0)
+		return -EINVAL;
+
+	for (i = 0; i < remaining; i++) {
+		switch (end_ptr[i]) {
+		case 'M':
+			cvt = true;
+			break;
+		case 'R':
+			rb = true;
+			break;
+		default:
+			/*
+			 * Try to pass that to our extras parsing
+			 * function to handle the case where the
+			 * extras are directly after the resolution
+			 */
+			if (extras) {
+				int ret = drm_mode_parse_cmdline_extra(end_ptr + i,
+								       1,
+								       false,
+								       connector,
+								       mode);
+				if (ret)
+					return ret;
+			} else {
+				return -EINVAL;
+			}
+		}
+	}
+
+	mode->xres = xres;
+	mode->yres = yres;
+	mode->cvt = cvt;
+	mode->rb = rb;
+
+	return 0;
+}
+
+static int drm_mode_parse_cmdline_options(char *str, size_t len,
+					  const struct drm_connector *connector,
+					  struct drm_cmdline_mode *mode)
+{
+	unsigned int rotation = 0;
+	char *sep = str;
+
+	while ((sep = strchr(sep, ','))) {
+		char *delim, *option;
+
+		option = sep + 1;
+		delim = strchr(option, '=');
+		if (!delim) {
+			delim = strchr(option, ',');
+
+			if (!delim)
+				delim = str + len;
+		}
+
+		if (!strncmp(option, "rotate", delim - option)) {
+			const char *value = delim + 1;
+			unsigned int deg;
+
+			deg = simple_strtol(value, &sep, 10);
+
+			/* Make sure we have parsed something */
+			if (sep == value)
+				return -EINVAL;
+
+			switch (deg) {
+			case 0:
+				rotation |= DRM_MODE_ROTATE_0;
+				break;
+
+			case 90:
+				rotation |= DRM_MODE_ROTATE_90;
+				break;
+
+			case 180:
+				rotation |= DRM_MODE_ROTATE_180;
+				break;
+
+			case 270:
+				rotation |= DRM_MODE_ROTATE_270;
+				break;
+
+			default:
+				return -EINVAL;
+			}
+		} else if (!strncmp(option, "reflect_x", delim - option)) {
+			rotation |= DRM_MODE_REFLECT_X;
+			sep = delim;
+		} else if (!strncmp(option, "reflect_y", delim - option)) {
+			rotation |= DRM_MODE_REFLECT_Y;
+			sep = delim;
+		} else if (!strncmp(option, "margin_right", delim - option)) {
+			const char *value = delim + 1;
+			unsigned int margin;
+
+			margin = simple_strtol(value, &sep, 10);
+
+			/* Make sure we have parsed something */
+			if (sep == value)
+				return -EINVAL;
+
+			mode->tv_margins.right = margin;
+		} else if (!strncmp(option, "margin_left", delim - option)) {
+			const char *value = delim + 1;
+			unsigned int margin;
+
+			margin = simple_strtol(value, &sep, 10);
+
+			/* Make sure we have parsed something */
+			if (sep == value)
+				return -EINVAL;
+
+			mode->tv_margins.left = margin;
+		} else if (!strncmp(option, "margin_top", delim - option)) {
+			const char *value = delim + 1;
+			unsigned int margin;
+
+			margin = simple_strtol(value, &sep, 10);
+
+			/* Make sure we have parsed something */
+			if (sep == value)
+				return -EINVAL;
+
+			mode->tv_margins.top = margin;
+		} else if (!strncmp(option, "margin_bottom", delim - option)) {
+			const char *value = delim + 1;
+			unsigned int margin;
+
+			margin = simple_strtol(value, &sep, 10);
+
+			/* Make sure we have parsed something */
+			if (sep == value)
+				return -EINVAL;
+
+			mode->tv_margins.bottom = margin;
+		} else {
+			return -EINVAL;
+		}
+	}
+
+	if (!(rotation & DRM_MODE_ROTATE_MASK))
+		rotation |= DRM_MODE_ROTATE_0;
+
+	/* Make sure there is exactly one rotation defined */
+	if (!is_power_of_2(rotation & DRM_MODE_ROTATE_MASK))
+		return -EINVAL;
+
+	mode->rotation_reflection = rotation;
+
+	return 0;
+}
+
+static const char * const drm_named_modes_whitelist[] = {
+	"NTSC",
+	"PAL",
+};
+
+static bool drm_named_mode_is_in_whitelist(const char *mode, unsigned int size)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(drm_named_modes_whitelist); i++)
+		if (!strncmp(mode, drm_named_modes_whitelist[i], size))
+			return true;
+
+	return false;
+}
+
+/**
+ * drm_mode_parse_command_line_for_connector - parse command line modeline for connector
+ * @mode_option: optional per connector mode option
+ * @connector: connector to parse modeline for
+ * @mode: preallocated drm_cmdline_mode structure to fill out
+ *
+ * This parses @mode_option command line modeline for modes and options to
+ * configure the connector. If @mode_option is NULL the default command line
+ * modeline in fb_mode_option will be parsed instead.
+ *
+ * This uses the same parameters as the fb modedb.c, except for an extra
+ * force-enable, force-enable-digital and force-disable bit at the end::
+ *
+ *	<xres>x<yres>[M][R][-<bpp>][@<refresh>][i][m][eDd]
+ *
+ * Additionals options can be provided following the mode, using a comma to
+ * separate each option. Valid options can be found in
+ * Documentation/fb/modedb.rst.
+ *
+ * The intermediate drm_cmdline_mode structure is required to store additional
+ * options from the command line modline like the force-enable/disable flag.
+ *
+ * Returns:
+ * True if a valid modeline has been parsed, false otherwise.
+ */
+bool drm_mode_parse_command_line_for_connector(const char *mode_option,
+					       const struct drm_connector *connector,
+					       struct drm_cmdline_mode *mode)
+{
+	const char *name;
+	bool named_mode = false, parse_extras = false;
+	unsigned int bpp_off = 0, refresh_off = 0, options_off = 0;
+	unsigned int mode_end = 0;
+	char *bpp_ptr = NULL, *refresh_ptr = NULL, *extra_ptr = NULL;
+	char *options_ptr = NULL;
+	char *bpp_end_ptr = NULL, *refresh_end_ptr = NULL;
+	int ret;
+
+#ifdef CONFIG_FB
+	if (!mode_option)
+		mode_option = fb_mode_option;
+#endif
+
+	if (!mode_option) {
+		mode->specified = false;
+		return false;
+	}
+
+	name = mode_option;
+
+	/*
+	 * This is a bit convoluted. To differentiate between the
+	 * named modes and poorly formatted resolutions, we need a
+	 * bunch of things:
+	 *   - We need to make sure that the first character (which
+	 *     would be our resolution in X) is a digit.
+	 *   - If not, then it's either a named mode or a force on/off.
+	 *     To distinguish between the two, we need to run the
+	 *     extra parsing function, and if not, then we consider it
+	 *     a named mode.
+	 *
+	 * If this isn't enough, we should add more heuristics here,
+	 * and matching unit-tests.
+	 */
+	if (!isdigit(name[0]) && name[0] != 'x') {
+		unsigned int namelen = strlen(name);
+
+		/*
+		 * Only the force on/off options can be in that case,
+		 * and they all take a single character.
+		 */
+		if (namelen == 1) {
+			ret = drm_mode_parse_cmdline_extra(name, namelen, true,
+							   connector, mode);
+			if (!ret)
+				return true;
+		}
+
+		named_mode = true;
+	}
+
+	/* Try to locate the bpp and refresh specifiers, if any */
+	bpp_ptr = strchr(name, '-');
+	if (bpp_ptr) {
+		bpp_off = bpp_ptr - name;
+		mode->bpp_specified = true;
+	}
+
+	refresh_ptr = strchr(name, '@');
+	if (refresh_ptr) {
+		if (named_mode)
+			return false;
+
+		refresh_off = refresh_ptr - name;
+		mode->refresh_specified = true;
+	}
+
+	/* Locate the start of named options */
+	options_ptr = strchr(name, ',');
+	if (options_ptr)
+		options_off = options_ptr - name;
+
+	/* Locate the end of the name / resolution, and parse it */
+	if (bpp_ptr) {
+		mode_end = bpp_off;
+	} else if (refresh_ptr) {
+		mode_end = refresh_off;
+	} else if (options_ptr) {
+		mode_end = options_off;
+	} else {
+		mode_end = strlen(name);
+		parse_extras = true;
+	}
+
+	if (named_mode) {
+		if (mode_end + 1 > DRM_DISPLAY_MODE_LEN)
+			return false;
+
+		if (!drm_named_mode_is_in_whitelist(name, mode_end))
+			return false;
+
+		strscpy(mode->name, name, mode_end + 1);
+	} else {
+		ret = drm_mode_parse_cmdline_res_mode(name, mode_end,
+						      parse_extras,
+						      connector,
+						      mode);
+		if (ret)
+			return false;
+	}
+	mode->specified = true;
+
+	if (bpp_ptr) {
+		ret = drm_mode_parse_cmdline_bpp(bpp_ptr, &bpp_end_ptr, mode);
+		if (ret)
+			return false;
+	}
+
+	if (refresh_ptr) {
+		ret = drm_mode_parse_cmdline_refresh(refresh_ptr,
+						     &refresh_end_ptr, mode);
+		if (ret)
+			return false;
+	}
+
+	/*
+	 * Locate the end of the bpp / refresh, and parse the extras
+	 * if relevant
+	 */
+	if (bpp_ptr && refresh_ptr)
+		extra_ptr = max(bpp_end_ptr, refresh_end_ptr);
+	else if (bpp_ptr)
+		extra_ptr = bpp_end_ptr;
+	else if (refresh_ptr)
+		extra_ptr = refresh_end_ptr;
+
+	if (extra_ptr &&
+	    extra_ptr != options_ptr) {
+		int len = strlen(name) - (extra_ptr - name);
+
+		ret = drm_mode_parse_cmdline_extra(extra_ptr, len, false,
+						   connector, mode);
+		if (ret)
+			return false;
+	}
+
+	if (options_ptr) {
+		int len = strlen(name) - (options_ptr - name);
+
+		ret = drm_mode_parse_cmdline_options(options_ptr, len,
+						     connector, mode);
+		if (ret)
+			return false;
+	}
+
+	return true;
+}
+EXPORT_SYMBOL(drm_mode_parse_command_line_for_connector);
 
 // /**
 //  * drm_mode_create_from_cmdline_mode - convert a command line modeline into a DRM display mode

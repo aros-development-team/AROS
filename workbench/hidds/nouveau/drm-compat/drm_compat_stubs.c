@@ -103,7 +103,7 @@ void __drm_atomic_state_free() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_init() { NOT_IMPLEMENTED_STOP }
 void drm_connector_attach_encoder() { NOT_IMPLEMENTED_STOP }
 void drm_connector_cleanup() { NOT_IMPLEMENTED_STOP }
-void drm_connector_init() { NOT_IMPLEMENTED_STOP }
+
 
 
 

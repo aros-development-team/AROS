@@ -228,34 +228,34 @@ enum drm_link_status {
 	DRM_LINK_STATUS_BAD = DRM_MODE_LINK_STATUS_BAD,
 };
 
-// /**
-//  * enum drm_panel_orientation - panel_orientation info for &drm_display_info
-//  *
-//  * This enum is used to track the (LCD) panel orientation. There are no
-//  * separate #defines for the uapi!
-//  *
-//  * @DRM_MODE_PANEL_ORIENTATION_UNKNOWN: The drm driver has not provided any
-//  *					panel orientation information (normal
-//  *					for non panels) in this case the "panel
-//  *					orientation" connector prop will not be
-//  *					attached.
-//  * @DRM_MODE_PANEL_ORIENTATION_NORMAL:	The top side of the panel matches the
-//  *					top side of the device's casing.
-//  * @DRM_MODE_PANEL_ORIENTATION_BOTTOM_UP: The top side of the panel matches the
-//  *					bottom side of the device's casing, iow
-//  *					the panel is mounted upside-down.
-//  * @DRM_MODE_PANEL_ORIENTATION_LEFT_UP:	The left side of the panel matches the
-//  *					top side of the device's casing.
-//  * @DRM_MODE_PANEL_ORIENTATION_RIGHT_UP: The right side of the panel matches the
-//  *					top side of the device's casing.
-//  */
-// enum drm_panel_orientation {
-// 	DRM_MODE_PANEL_ORIENTATION_UNKNOWN = -1,
-// 	DRM_MODE_PANEL_ORIENTATION_NORMAL = 0,
-// 	DRM_MODE_PANEL_ORIENTATION_BOTTOM_UP,
-// 	DRM_MODE_PANEL_ORIENTATION_LEFT_UP,
-// 	DRM_MODE_PANEL_ORIENTATION_RIGHT_UP,
-// };
+/**
+ * enum drm_panel_orientation - panel_orientation info for &drm_display_info
+ *
+ * This enum is used to track the (LCD) panel orientation. There are no
+ * separate #defines for the uapi!
+ *
+ * @DRM_MODE_PANEL_ORIENTATION_UNKNOWN: The drm driver has not provided any
+ *					panel orientation information (normal
+ *					for non panels) in this case the "panel
+ *					orientation" connector prop will not be
+ *					attached.
+ * @DRM_MODE_PANEL_ORIENTATION_NORMAL:	The top side of the panel matches the
+ *					top side of the device's casing.
+ * @DRM_MODE_PANEL_ORIENTATION_BOTTOM_UP: The top side of the panel matches the
+ *					bottom side of the device's casing, iow
+ *					the panel is mounted upside-down.
+ * @DRM_MODE_PANEL_ORIENTATION_LEFT_UP:	The left side of the panel matches the
+ *					top side of the device's casing.
+ * @DRM_MODE_PANEL_ORIENTATION_RIGHT_UP: The right side of the panel matches the
+ *					top side of the device's casing.
+ */
+enum drm_panel_orientation {
+	DRM_MODE_PANEL_ORIENTATION_UNKNOWN = -1,
+	DRM_MODE_PANEL_ORIENTATION_NORMAL = 0,
+	DRM_MODE_PANEL_ORIENTATION_BOTTOM_UP,
+	DRM_MODE_PANEL_ORIENTATION_LEFT_UP,
+	DRM_MODE_PANEL_ORIENTATION_RIGHT_UP,
+};
 
 // /*
 //  * This is a consolidated colorimetry list supported by HDMI and
@@ -387,14 +387,14 @@ struct drm_display_info {
 // #define DRM_COLOR_FORMAT_YCRCB422	(1<<2)
 // #define DRM_COLOR_FORMAT_YCRCB420	(1<<3)
 
-// 	/**
-// 	 * @panel_orientation: Read only connector property for built-in panels,
-// 	 * indicating the orientation of the panel vs the device's casing.
-// 	 * drm_connector_init() sets this to DRM_MODE_PANEL_ORIENTATION_UNKNOWN.
-// 	 * When not UNKNOWN this gets used by the drm_fb_helpers to rotate the
-// 	 * fb to compensate and gets exported as prop to userspace.
-// 	 */
-// 	int panel_orientation;
+	/**
+	 * @panel_orientation: Read only connector property for built-in panels,
+	 * indicating the orientation of the panel vs the device's casing.
+	 * drm_connector_init() sets this to DRM_MODE_PANEL_ORIENTATION_UNKNOWN.
+	 * When not UNKNOWN this gets used by the drm_fb_helpers to rotate the
+	 * fb to compensate and gets exported as prop to userspace.
+	 */
+	int panel_orientation;
 
 // 	/**
 // 	 * @color_formats: HDMI Color formats, selects between RGB and YCrCb
@@ -964,91 +964,91 @@ struct drm_connector_funcs {
  * parser.
  */
 struct drm_cmdline_mode {
-// 	/**
-// 	 * @name:
-// 	 *
-// 	 * Name of the mode.
-// 	 */
-// 	char name[DRM_DISPLAY_MODE_LEN];
+	/**
+	 * @name:
+	 *
+	 * Name of the mode.
+	 */
+	char name[DRM_DISPLAY_MODE_LEN];
 
-// 	/**
-// 	 * @specified:
-// 	 *
-// 	 * Has a mode been read from the command-line?
-// 	 */
-// 	bool specified;
+	/**
+	 * @specified:
+	 *
+	 * Has a mode been read from the command-line?
+	 */
+	bool specified;
 
-// 	/**
-// 	 * @refresh_specified:
-// 	 *
-// 	 * Did the mode have a preferred refresh rate?
-// 	 */
-// 	bool refresh_specified;
+	/**
+	 * @refresh_specified:
+	 *
+	 * Did the mode have a preferred refresh rate?
+	 */
+	bool refresh_specified;
 
-// 	/**
-// 	 * @bpp_specified:
-// 	 *
-// 	 * Did the mode have a preferred BPP?
-// 	 */
-// 	bool bpp_specified;
+	/**
+	 * @bpp_specified:
+	 *
+	 * Did the mode have a preferred BPP?
+	 */
+	bool bpp_specified;
 
-// 	/**
-// 	 * @xres:
-// 	 *
-// 	 * Active resolution on the X axis, in pixels.
-// 	 */
-// 	int xres;
+	/**
+	 * @xres:
+	 *
+	 * Active resolution on the X axis, in pixels.
+	 */
+	int xres;
 
-// 	/**
-// 	 * @yres:
-// 	 *
-// 	 * Active resolution on the Y axis, in pixels.
-// 	 */
-// 	int yres;
+	/**
+	 * @yres:
+	 *
+	 * Active resolution on the Y axis, in pixels.
+	 */
+	int yres;
 
-// 	/**
-// 	 * @bpp:
-// 	 *
-// 	 * Bits per pixels for the mode.
-// 	 */
-// 	int bpp;
+	/**
+	 * @bpp:
+	 *
+	 * Bits per pixels for the mode.
+	 */
+	int bpp;
 
-// 	/**
-// 	 * @refresh:
-// 	 *
-// 	 * Refresh rate, in Hertz.
-// 	 */
-// 	int refresh;
+	/**
+	 * @refresh:
+	 *
+	 * Refresh rate, in Hertz.
+	 */
+	int refresh;
 
-// 	/**
-// 	 * @rb:
-// 	 *
-// 	 * Do we need to use reduced blanking?
-// 	 */
-// 	bool rb;
+	/**
+	 * @rb:
+	 *
+	 * Do we need to use reduced blanking?
+	 */
+	bool rb;
 
-// 	/**
-// 	 * @interlace:
-// 	 *
-// 	 * The mode is interlaced.
-// 	 */
-// 	bool interlace;
+	/**
+	 * @interlace:
+	 *
+	 * The mode is interlaced.
+	 */
+	bool interlace;
 
-// 	/**
-// 	 * @cvt:
-// 	 *
-// 	 * The timings will be calculated using the VESA Coordinated
-// 	 * Video Timings instead of looking up the mode from a table.
-// 	 */
-// 	bool cvt;
+	/**
+	 * @cvt:
+	 *
+	 * The timings will be calculated using the VESA Coordinated
+	 * Video Timings instead of looking up the mode from a table.
+	 */
+	bool cvt;
 
-// 	/**
-// 	 * @margins:
-// 	 *
-// 	 * Add margins to the mode calculation (1.8% of xres rounded
-// 	 * down to 8 pixels and 1.8% of yres).
-// 	 */
-// 	bool margins;
+	/**
+	 * @margins:
+	 *
+	 * Add margins to the mode calculation (1.8% of xres rounded
+	 * down to 8 pixels and 1.8% of yres).
+	 */
+	bool margins;
 
 	/**
 	 * @force:
@@ -1058,20 +1058,20 @@ struct drm_cmdline_mode {
 	 */
 	enum drm_connector_force force;
 
-// 	/**
-// 	 * @rotation_reflection:
-// 	 *
-// 	 * Initial rotation and reflection of the mode setup from the
-// 	 * command line. See DRM_MODE_ROTATE_* and
-// 	 * DRM_MODE_REFLECT_*. The only rotations supported are
-// 	 * DRM_MODE_ROTATE_0 and DRM_MODE_ROTATE_180.
-// 	 */
-// 	unsigned int rotation_reflection;
+	/**
+	 * @rotation_reflection:
+	 *
+	 * Initial rotation and reflection of the mode setup from the
+	 * command line. See DRM_MODE_ROTATE_* and
+	 * DRM_MODE_REFLECT_*. The only rotations supported are
+	 * DRM_MODE_ROTATE_0 and DRM_MODE_ROTATE_180.
+	 */
+	unsigned int rotation_reflection;
 
-// 	/**
-// 	 * @tv_margins: TV margins to apply to the mode.
-// 	 */
-// 	struct drm_connector_tv_margins tv_margins;
+	/**
+	 * @tv_margins: TV margins to apply to the mode.
+	 */
+	struct drm_connector_tv_margins tv_margins;
 };
 
 /**
@@ -1106,12 +1106,12 @@ struct drm_connector {
 	/** @name: human readable name, can be overwritten by the driver */
 	char *name;
 
-// 	/**
-// 	 * @mutex: Lock for general connector state, but currently only protects
-// 	 * @registered. Most of the connector state is still protected by
-// 	 * &drm_mode_config.mutex.
-// 	 */
-// 	struct mutex mutex;
+	/**
+	 * @mutex: Lock for general connector state, but currently only protects
+	 * @registered. Most of the connector state is still protected by
+	 * &drm_mode_config.mutex.
+	 */
+	struct mutex mutex;
 
 	/**
 	 * @index: Compacted connector index, which matches the position inside
@@ -1206,8 +1206,8 @@ struct drm_connector {
 // 	 */
 // 	struct drm_property_blob *edid_blob_ptr;
 
-// 	/** @properties: property tracking for this connector */
-// 	struct drm_object_properties properties;
+	/** @properties: property tracking for this connector */
+	struct drm_object_properties properties;
 
 	/**
 	 * @scaling_mode_property: Optional atomic property to control the
@@ -1284,8 +1284,8 @@ struct drm_connector {
 	/** @helper_private: mid-layer private data */
 	const struct drm_connector_helper_funcs *helper_private;
 
-// 	/** @cmdline_mode: mode line parsed from the kernel cmdline for this connector */
-// 	struct drm_cmdline_mode cmdline_mode;
+	/** @cmdline_mode: mode line parsed from the kernel cmdline for this connector */
+	struct drm_cmdline_mode cmdline_mode;
 	/** @force: a DRM_FORCE_<foo> state for forced mode sets */
 	enum drm_connector_force force;
 // 	/** @override_edid: has the EDID been overwritten through debugfs for testing? */
@@ -1370,20 +1370,20 @@ struct drm_connector {
 
 // 	/* DisplayID bits. FIXME: Extract into a substruct? */
 
-// 	/**
-// 	 * @tile_blob_ptr:
-// 	 *
-// 	 * DRM blob property data for the tile property (used mostly by DP MST).
-// 	 * This is meant for screens which are driven through separate display
-// 	 * pipelines represented by &drm_crtc, which might not be running with
-// 	 * genlocked clocks. For tiled panels which are genlocked, like
-// 	 * dual-link LVDS or dual-link DSI, the driver should try to not expose
-// 	 * the tiling and virtualize both &drm_crtc and &drm_plane if needed.
-// 	 *
-// 	 * This should only be updated by calling
-// 	 * drm_connector_set_tile_property().
-// 	 */
-// 	struct drm_property_blob *tile_blob_ptr;
+	/**
+	 * @tile_blob_ptr:
+	 *
+	 * DRM blob property data for the tile property (used mostly by DP MST).
+	 * This is meant for screens which are driven through separate display
+	 * pipelines represented by &drm_crtc, which might not be running with
+	 * genlocked clocks. For tiled panels which are genlocked, like
+	 * dual-link LVDS or dual-link DSI, the driver should try to not expose
+	 * the tiling and virtualize both &drm_crtc and &drm_plane if needed.
+	 *
+	 * This should only be updated by calling
+	 * drm_connector_set_tile_property().
+	 */
+	struct drm_property_blob *tile_blob_ptr;
 
 // 	/** @has_tile: is this connector connected to a tiled monitor */
 // 	bool has_tile;

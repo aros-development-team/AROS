@@ -432,10 +432,10 @@ struct drm_mode_config {
 	 * @connector_list_lock.
 	 */
 	int num_connector;
-// 	/**
-// 	 * @connector_ida: ID allocator for connector indices.
-// 	 */
-// 	struct ida connector_ida;
+	/**
+	 * @connector_ida: ID allocator for connector indices.
+	 */
+	struct ida connector_ida;
 	/**
 	 * @connector_list:
 	 *
