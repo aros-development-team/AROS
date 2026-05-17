@@ -39,69 +39,69 @@
 // #include <drm/drm_util.h>
 
 #include "drm_crtc_internal.h"
-// #include "drm_internal.h"
+#include "drm_internal.h"
 
-// /**
-//  * DOC: overview
-//  *
-//  * Frame buffers are abstract memory objects that provide a source of pixels to
-//  * scanout to a CRTC. Applications explicitly request the creation of frame
-//  * buffers through the DRM_IOCTL_MODE_ADDFB(2) ioctls and receive an opaque
-//  * handle that can be passed to the KMS CRTC control, plane configuration and
-//  * page flip functions.
-//  *
-//  * Frame buffers rely on the underlying memory manager for allocating backing
-//  * storage. When creating a frame buffer applications pass a memory handle
-//  * (or a list of memory handles for multi-planar formats) through the
-//  * &struct drm_mode_fb_cmd2 argument. For drivers using GEM as their userspace
-//  * buffer management interface this would be a GEM handle.  Drivers are however
-//  * free to use their own backing storage object handles, e.g. vmwgfx directly
-//  * exposes special TTM handles to userspace and so expects TTM handles in the
-//  * create ioctl and not GEM handles.
-//  *
-//  * Framebuffers are tracked with &struct drm_framebuffer. They are published
-//  * using drm_framebuffer_init() - after calling that function userspace can use
-//  * and access the framebuffer object. The helper function
-//  * drm_helper_mode_fill_fb_struct() can be used to pre-fill the required
-//  * metadata fields.
-//  *
-//  * The lifetime of a drm framebuffer is controlled with a reference count,
-//  * drivers can grab additional references with drm_framebuffer_get() and drop
-//  * them again with drm_framebuffer_put(). For driver-private framebuffers for
-//  * which the last reference is never dropped (e.g. for the fbdev framebuffer
-//  * when the struct &struct drm_framebuffer is embedded into the fbdev helper
-//  * struct) drivers can manually clean up a framebuffer at module unload time
-//  * with drm_framebuffer_unregister_private(). But doing this is not
-//  * recommended, and it's better to have a normal free-standing &struct
-//  * drm_framebuffer.
-//  */
+/**
+ * DOC: overview
+ *
+ * Frame buffers are abstract memory objects that provide a source of pixels to
+ * scanout to a CRTC. Applications explicitly request the creation of frame
+ * buffers through the DRM_IOCTL_MODE_ADDFB(2) ioctls and receive an opaque
+ * handle that can be passed to the KMS CRTC control, plane configuration and
+ * page flip functions.
+ *
+ * Frame buffers rely on the underlying memory manager for allocating backing
+ * storage. When creating a frame buffer applications pass a memory handle
+ * (or a list of memory handles for multi-planar formats) through the
+ * &struct drm_mode_fb_cmd2 argument. For drivers using GEM as their userspace
+ * buffer management interface this would be a GEM handle.  Drivers are however
+ * free to use their own backing storage object handles, e.g. vmwgfx directly
+ * exposes special TTM handles to userspace and so expects TTM handles in the
+ * create ioctl and not GEM handles.
+ *
+ * Framebuffers are tracked with &struct drm_framebuffer. They are published
+ * using drm_framebuffer_init() - after calling that function userspace can use
+ * and access the framebuffer object. The helper function
+ * drm_helper_mode_fill_fb_struct() can be used to pre-fill the required
+ * metadata fields.
+ *
+ * The lifetime of a drm framebuffer is controlled with a reference count,
+ * drivers can grab additional references with drm_framebuffer_get() and drop
+ * them again with drm_framebuffer_put(). For driver-private framebuffers for
+ * which the last reference is never dropped (e.g. for the fbdev framebuffer
+ * when the struct &struct drm_framebuffer is embedded into the fbdev helper
+ * struct) drivers can manually clean up a framebuffer at module unload time
+ * with drm_framebuffer_unregister_private(). But doing this is not
+ * recommended, and it's better to have a normal free-standing &struct
+ * drm_framebuffer.
+ */
 
-// int drm_framebuffer_check_src_coords(uint32_t src_x, uint32_t src_y,
-// 				     uint32_t src_w, uint32_t src_h,
-// 				     const struct drm_framebuffer *fb)
-// {
-// 	unsigned int fb_width, fb_height;
+int drm_framebuffer_check_src_coords(uint32_t src_x, uint32_t src_y,
+				     uint32_t src_w, uint32_t src_h,
+				     const struct drm_framebuffer *fb)
+{
+	unsigned int fb_width, fb_height;
 
-// 	fb_width = fb->width << 16;
-// 	fb_height = fb->height << 16;
+	fb_width = fb->width << 16;
+	fb_height = fb->height << 16;
 
-// 	/* Make sure source coordinates are inside the fb. */
-// 	if (src_w > fb_width ||
-// 	    src_x > fb_width - src_w ||
-// 	    src_h > fb_height ||
-// 	    src_y > fb_height - src_h) {
-// 		DRM_DEBUG_KMS("Invalid source coordinates "
-// 			      "%u.%06ux%u.%06u+%u.%06u+%u.%06u (fb %ux%u)\n",
-// 			      src_w >> 16, ((src_w & 0xffff) * 15625) >> 10,
-// 			      src_h >> 16, ((src_h & 0xffff) * 15625) >> 10,
-// 			      src_x >> 16, ((src_x & 0xffff) * 15625) >> 10,
-// 			      src_y >> 16, ((src_y & 0xffff) * 15625) >> 10,
-// 			      fb->width, fb->height);
-// 		return -ENOSPC;
-// 	}
+	/* Make sure source coordinates are inside the fb. */
+	if (src_w > fb_width ||
+	    src_x > fb_width - src_w ||
+	    src_h > fb_height ||
+	    src_y > fb_height - src_h) {
+		DRM_DEBUG_KMS("Invalid source coordinates "
+			      "%u.%06ux%u.%06u+%u.%06u+%u.%06u (fb %ux%u)\n",
+			      src_w >> 16, ((src_w & 0xffff) * 15625) >> 10,
+			      src_h >> 16, ((src_h & 0xffff) * 15625) >> 10,
+			      src_x >> 16, ((src_x & 0xffff) * 15625) >> 10,
+			      src_y >> 16, ((src_y & 0xffff) * 15625) >> 10,
+			      fb->width, fb->height);
+		return -ENOSPC;
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
 /**
  * drm_mode_addfb - add an FB to the graphics configuration
@@ -755,29 +755,29 @@ out:
 }
 EXPORT_SYMBOL(drm_framebuffer_init);
 
-// /**
-//  * drm_framebuffer_lookup - look up a drm framebuffer and grab a reference
-//  * @dev: drm device
-//  * @file_priv: drm file to check for lease against.
-//  * @id: id of the fb object
-//  *
-//  * If successful, this grabs an additional reference to the framebuffer -
-//  * callers need to make sure to eventually unreference the returned framebuffer
-//  * again, using drm_framebuffer_put().
-//  */
-// struct drm_framebuffer *drm_framebuffer_lookup(struct drm_device *dev,
-// 					       struct drm_file *file_priv,
-// 					       uint32_t id)
-// {
-// 	struct drm_mode_object *obj;
-// 	struct drm_framebuffer *fb = NULL;
+/**
+ * drm_framebuffer_lookup - look up a drm framebuffer and grab a reference
+ * @dev: drm device
+ * @file_priv: drm file to check for lease against.
+ * @id: id of the fb object
+ *
+ * If successful, this grabs an additional reference to the framebuffer -
+ * callers need to make sure to eventually unreference the returned framebuffer
+ * again, using drm_framebuffer_put().
+ */
+struct drm_framebuffer *drm_framebuffer_lookup(struct drm_device *dev,
+					       struct drm_file *file_priv,
+					       uint32_t id)
+{
+	struct drm_mode_object *obj;
+	struct drm_framebuffer *fb = NULL;
 
-// 	obj = __drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_FB);
-// 	if (obj)
-// 		fb = obj_to_fb(obj);
-// 	return fb;
-// }
-// EXPORT_SYMBOL(drm_framebuffer_lookup);
+	obj = __drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_FB);
+	if (obj)
+		fb = obj_to_fb(obj);
+	return fb;
+}
+EXPORT_SYMBOL(drm_framebuffer_lookup);
 
 // /**
 //  * drm_framebuffer_unregister_private - unregister a private fb from the lookup idr

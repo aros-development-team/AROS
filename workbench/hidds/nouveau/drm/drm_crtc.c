@@ -429,49 +429,49 @@ int drm_mode_getcrtc(struct drm_device *dev,
 	return 0;
 }
 
-// static int __drm_mode_set_config_internal(struct drm_mode_set *set,
-// 					  struct drm_modeset_acquire_ctx *ctx)
-// {
-// 	struct drm_crtc *crtc = set->crtc;
-// 	struct drm_framebuffer *fb;
-// 	struct drm_crtc *tmp;
-// 	int ret;
+static int __drm_mode_set_config_internal(struct drm_mode_set *set,
+					  struct drm_modeset_acquire_ctx *ctx)
+{
+	struct drm_crtc *crtc = set->crtc;
+	struct drm_framebuffer *fb;
+	struct drm_crtc *tmp;
+	int ret;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(crtc->dev));
+	WARN_ON(drm_drv_uses_atomic_modeset(crtc->dev));
 
-// 	/*
-// 	 * NOTE: ->set_config can also disable other crtcs (if we steal all
-// 	 * connectors from it), hence we need to refcount the fbs across all
-// 	 * crtcs. Atomic modeset will have saner semantics ...
-// 	 */
-// 	drm_for_each_crtc(tmp, crtc->dev) {
-// 		struct drm_plane *plane = tmp->primary;
+	/*
+	 * NOTE: ->set_config can also disable other crtcs (if we steal all
+	 * connectors from it), hence we need to refcount the fbs across all
+	 * crtcs. Atomic modeset will have saner semantics ...
+	 */
+	drm_for_each_crtc(tmp, crtc->dev) {
+		struct drm_plane *plane = tmp->primary;
 
-// 		plane->old_fb = plane->fb;
-// 	}
+		plane->old_fb = plane->fb;
+	}
 
-// 	fb = set->fb;
+	fb = set->fb;
 
-// 	ret = crtc->funcs->set_config(set, ctx);
-// 	if (ret == 0) {
-// 		struct drm_plane *plane = crtc->primary;
+	ret = crtc->funcs->set_config(set, ctx);
+	if (ret == 0) {
+		struct drm_plane *plane = crtc->primary;
 
-// 		plane->crtc = fb ? crtc : NULL;
-// 		plane->fb = fb;
-// 	}
+		plane->crtc = fb ? crtc : NULL;
+		plane->fb = fb;
+	}
 
-// 	drm_for_each_crtc(tmp, crtc->dev) {
-// 		struct drm_plane *plane = tmp->primary;
+	drm_for_each_crtc(tmp, crtc->dev) {
+		struct drm_plane *plane = tmp->primary;
 
-// 		if (plane->fb)
-// 			drm_framebuffer_get(plane->fb);
-// 		if (plane->old_fb)
-// 			drm_framebuffer_put(plane->old_fb);
-// 		plane->old_fb = NULL;
-// 	}
+		if (plane->fb)
+			drm_framebuffer_get(plane->fb);
+		if (plane->old_fb)
+			drm_framebuffer_put(plane->old_fb);
+		plane->old_fb = NULL;
+	}
 
-// 	return ret;
-// }
+	return ret;
+}
 
 // /**
 //  * drm_mode_set_config_internal - helper to call &drm_mode_config_funcs.set_config
@@ -494,262 +494,276 @@ int drm_mode_getcrtc(struct drm_device *dev,
 // }
 // EXPORT_SYMBOL(drm_mode_set_config_internal);
 
-// /**
-//  * drm_crtc_check_viewport - Checks that a framebuffer is big enough for the
-//  *     CRTC viewport
-//  * @crtc: CRTC that framebuffer will be displayed on
-//  * @x: x panning
-//  * @y: y panning
-//  * @mode: mode that framebuffer will be displayed under
-//  * @fb: framebuffer to check size of
-//  */
-// int drm_crtc_check_viewport(const struct drm_crtc *crtc,
-// 			    int x, int y,
-// 			    const struct drm_display_mode *mode,
-// 			    const struct drm_framebuffer *fb)
+/**
+ * drm_crtc_check_viewport - Checks that a framebuffer is big enough for the
+ *     CRTC viewport
+ * @crtc: CRTC that framebuffer will be displayed on
+ * @x: x panning
+ * @y: y panning
+ * @mode: mode that framebuffer will be displayed under
+ * @fb: framebuffer to check size of
+ */
+int drm_crtc_check_viewport(const struct drm_crtc *crtc,
+			    int x, int y,
+			    const struct drm_display_mode *mode,
+			    const struct drm_framebuffer *fb)
 
-// {
-// 	int hdisplay, vdisplay;
+{
+	int hdisplay, vdisplay;
 
-// 	drm_mode_get_hv_timing(mode, &hdisplay, &vdisplay);
+	drm_mode_get_hv_timing(mode, &hdisplay, &vdisplay);
 
-// 	if (crtc->state &&
-// 	    drm_rotation_90_or_270(crtc->primary->state->rotation))
-// 		swap(hdisplay, vdisplay);
+	if (crtc->state &&
+	    drm_rotation_90_or_270(crtc->primary->state->rotation))
+		swap(hdisplay, vdisplay);
 
-// 	return drm_framebuffer_check_src_coords(x << 16, y << 16,
-// 						hdisplay << 16, vdisplay << 16,
-// 						fb);
-// }
-// EXPORT_SYMBOL(drm_crtc_check_viewport);
+	return drm_framebuffer_check_src_coords(x << 16, y << 16,
+						hdisplay << 16, vdisplay << 16,
+						fb);
+}
+EXPORT_SYMBOL(drm_crtc_check_viewport);
 
-// #if !defined(__AROS__)
-// /**
-//  * drm_mode_setcrtc - set CRTC configuration
-//  * @dev: drm device for the ioctl
-//  * @data: data pointer for the ioctl
-//  * @file_priv: drm file for the ioctl call
-//  *
-//  * Build a new CRTC configuration based on user request.
-//  *
-//  * Called by the user via ioctl.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_mode_setcrtc(struct drm_device *dev, void *data,
-// 		     struct drm_file *file_priv)
-// {
-// 	struct drm_mode_config *config = &dev->mode_config;
-// 	struct drm_mode_crtc *crtc_req = data;
-// 	struct drm_crtc *crtc;
-// 	struct drm_plane *plane;
-// 	struct drm_connector **connector_set = NULL, *connector;
-// 	struct drm_framebuffer *fb = NULL;
-// 	struct drm_display_mode *mode = NULL;
-// 	struct drm_mode_set set;
-// 	uint32_t __user *set_connectors_ptr;
-// 	struct drm_modeset_acquire_ctx ctx;
-// 	int ret, i, num_connectors = 0;
+#if defined(__AROS__)
+struct drm_modeset_acquire_ctx
+{
+    ULONG dummy;
+};
+#endif
+/**
+ * drm_mode_setcrtc - set CRTC configuration
+ * @dev: drm device for the ioctl
+ * @data: data pointer for the ioctl
+ * @file_priv: drm file for the ioctl call
+ *
+ * Build a new CRTC configuration based on user request.
+ *
+ * Called by the user via ioctl.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_setcrtc(struct drm_device *dev, void *data,
+		     struct drm_file *file_priv)
+{
+	struct drm_mode_config *config = &dev->mode_config;
+	struct drm_mode_crtc *crtc_req = data;
+	struct drm_crtc *crtc;
+	struct drm_plane *plane;
+	struct drm_connector **connector_set = NULL, *connector;
+	struct drm_framebuffer *fb = NULL;
+	struct drm_display_mode *mode = NULL;
+	struct drm_mode_set set;
+	uint32_t __user *set_connectors_ptr;
+	struct drm_modeset_acquire_ctx ctx;
+	int ret, i, num_connectors = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	/*
-// 	 * Universal plane src offsets are only 16.16, prevent havoc for
-// 	 * drivers using universal plane code internally.
-// 	 */
-// 	if (crtc_req->x & 0xffff0000 || crtc_req->y & 0xffff0000)
-// 		return -ERANGE;
+	/*
+	 * Universal plane src offsets are only 16.16, prevent havoc for
+	 * drivers using universal plane code internally.
+	 */
+	if (crtc_req->x & 0xffff0000 || crtc_req->y & 0xffff0000)
+		return -ERANGE;
 
-// 	crtc = drm_crtc_find(dev, file_priv, crtc_req->crtc_id);
-// 	if (!crtc) {
-// 		DRM_DEBUG_KMS("Unknown CRTC ID %d\n", crtc_req->crtc_id);
-// 		return -ENOENT;
-// 	}
-// 	DRM_DEBUG_KMS("[CRTC:%d:%s]\n", crtc->base.id, crtc->name);
+	crtc = drm_crtc_find(dev, file_priv, crtc_req->crtc_id);
+	if (!crtc) {
+		DRM_DEBUG_KMS("Unknown CRTC ID %d\n", crtc_req->crtc_id);
+		return -ENOENT;
+	}
+	DRM_DEBUG_KMS("[CRTC:%d:%s]\n", crtc->base.id, crtc->name);
 
-// 	plane = crtc->primary;
+	plane = crtc->primary;
 
-// 	/* allow disabling with the primary plane leased */
-// 	if (crtc_req->mode_valid && !drm_lease_held(file_priv, plane->base.id))
-// 		return -EACCES;
+	/* allow disabling with the primary plane leased */
+	if (crtc_req->mode_valid && !drm_lease_held(file_priv, plane->base.id))
+		return -EACCES;
 
-// 	mutex_lock(&crtc->dev->mode_config.mutex);
-// 	DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx,
-// 				   DRM_MODESET_ACQUIRE_INTERRUPTIBLE, ret);
+	mutex_lock(&crtc->dev->mode_config.mutex);
+#if !defined(__AROS__)
+	DRM_MODESET_LOCK_ALL_BEGIN(dev, ctx,
+				   DRM_MODESET_ACQUIRE_INTERRUPTIBLE, ret);
+#endif
 
-// 	if (crtc_req->mode_valid) {
-// 		/* If we have a mode we need a framebuffer. */
-// 		/* If we pass -1, set the mode with the currently bound fb */
-// 		if (crtc_req->fb_id == -1) {
-// 			struct drm_framebuffer *old_fb;
+	if (crtc_req->mode_valid) {
+		/* If we have a mode we need a framebuffer. */
+		/* If we pass -1, set the mode with the currently bound fb */
+		if (crtc_req->fb_id == -1) {
+			struct drm_framebuffer *old_fb;
 
-// 			if (plane->state)
-// 				old_fb = plane->state->fb;
-// 			else
-// 				old_fb = plane->fb;
+			if (plane->state)
+				old_fb = plane->state->fb;
+			else
+				old_fb = plane->fb;
 
-// 			if (!old_fb) {
-// 				DRM_DEBUG_KMS("CRTC doesn't have current FB\n");
-// 				ret = -EINVAL;
-// 				goto out;
-// 			}
+			if (!old_fb) {
+				DRM_DEBUG_KMS("CRTC doesn't have current FB\n");
+				ret = -EINVAL;
+				goto out;
+			}
 
-// 			fb = old_fb;
-// 			/* Make refcounting symmetric with the lookup path. */
-// 			drm_framebuffer_get(fb);
-// 		} else {
-// 			fb = drm_framebuffer_lookup(dev, file_priv, crtc_req->fb_id);
-// 			if (!fb) {
-// 				DRM_DEBUG_KMS("Unknown FB ID%d\n",
-// 						crtc_req->fb_id);
-// 				ret = -ENOENT;
-// 				goto out;
-// 			}
-// 		}
+			fb = old_fb;
+			/* Make refcounting symmetric with the lookup path. */
+			drm_framebuffer_get(fb);
+		} else {
+			fb = drm_framebuffer_lookup(dev, file_priv, crtc_req->fb_id);
+			if (!fb) {
+				DRM_DEBUG_KMS("Unknown FB ID%d\n",
+						crtc_req->fb_id);
+				ret = -ENOENT;
+				goto out;
+			}
+		}
 
-// 		mode = drm_mode_create(dev);
-// 		if (!mode) {
-// 			ret = -ENOMEM;
-// 			goto out;
-// 		}
-// 		if (!file_priv->aspect_ratio_allowed &&
-// 		    (crtc_req->mode.flags & DRM_MODE_FLAG_PIC_AR_MASK) != DRM_MODE_FLAG_PIC_AR_NONE) {
-// 			DRM_DEBUG_KMS("Unexpected aspect-ratio flag bits\n");
-// 			ret = -EINVAL;
-// 			goto out;
-// 		}
+		mode = drm_mode_create(dev);
+		if (!mode) {
+			ret = -ENOMEM;
+			goto out;
+		}
+#if !defined(__AROS__)
+		if (!file_priv->aspect_ratio_allowed &&
+#else
+		if (1 &&
+#endif
+		    (crtc_req->mode.flags & DRM_MODE_FLAG_PIC_AR_MASK) != DRM_MODE_FLAG_PIC_AR_NONE) {
+			DRM_DEBUG_KMS("Unexpected aspect-ratio flag bits\n");
+			ret = -EINVAL;
+			goto out;
+		}
 
 
-// 		ret = drm_mode_convert_umode(dev, mode, &crtc_req->mode);
-// 		if (ret) {
-// 			DRM_DEBUG_KMS("Invalid mode (ret=%d, status=%s)\n",
-// 				      ret, drm_get_mode_status_name(mode->status));
-// 			drm_mode_debug_printmodeline(mode);
-// 			goto out;
-// 		}
+		ret = drm_mode_convert_umode(dev, mode, &crtc_req->mode);
+		if (ret) {
+			DRM_DEBUG_KMS("Invalid mode (ret=%d, status=%s)\n",
+				      ret, drm_get_mode_status_name(mode->status));
+#if !defined(__AROS__)
+			drm_mode_debug_printmodeline(mode);
+#endif
+			goto out;
+		}
 
-// 		/*
-// 		 * Check whether the primary plane supports the fb pixel format.
-// 		 * Drivers not implementing the universal planes API use a
-// 		 * default formats list provided by the DRM core which doesn't
-// 		 * match real hardware capabilities. Skip the check in that
-// 		 * case.
-// 		 */
-// 		if (!plane->format_default) {
-// 			ret = drm_plane_check_pixel_format(plane,
-// 							   fb->format->format,
-// 							   fb->modifier);
-// 			if (ret) {
-// 				struct drm_format_name_buf format_name;
-// 				DRM_DEBUG_KMS("Invalid pixel format %s, modifier 0x%llx\n",
-// 					      drm_get_format_name(fb->format->format,
-// 								  &format_name),
-// 					      fb->modifier);
-// 				goto out;
-// 			}
-// 		}
+		/*
+		 * Check whether the primary plane supports the fb pixel format.
+		 * Drivers not implementing the universal planes API use a
+		 * default formats list provided by the DRM core which doesn't
+		 * match real hardware capabilities. Skip the check in that
+		 * case.
+		 */
+		if (!plane->format_default) {
+			ret = drm_plane_check_pixel_format(plane,
+							   fb->format->format,
+							   fb->modifier);
+			if (ret) {
+				struct drm_format_name_buf format_name;
+				DRM_DEBUG_KMS("Invalid pixel format %s, modifier 0x%llx\n",
+					      drm_get_format_name(fb->format->format,
+								  &format_name),
+					      fb->modifier);
+				goto out;
+			}
+		}
 
-// 		ret = drm_crtc_check_viewport(crtc, crtc_req->x, crtc_req->y,
-// 					      mode, fb);
-// 		if (ret)
-// 			goto out;
+		ret = drm_crtc_check_viewport(crtc, crtc_req->x, crtc_req->y,
+					      mode, fb);
+		if (ret)
+			goto out;
 
-// 	}
+	}
 
-// 	if (crtc_req->count_connectors == 0 && mode) {
-// 		DRM_DEBUG_KMS("Count connectors is 0 but mode set\n");
-// 		ret = -EINVAL;
-// 		goto out;
-// 	}
+	if (crtc_req->count_connectors == 0 && mode) {
+		DRM_DEBUG_KMS("Count connectors is 0 but mode set\n");
+		ret = -EINVAL;
+		goto out;
+	}
 
-// 	if (crtc_req->count_connectors > 0 && (!mode || !fb)) {
-// 		DRM_DEBUG_KMS("Count connectors is %d but no mode or fb set\n",
-// 			  crtc_req->count_connectors);
-// 		ret = -EINVAL;
-// 		goto out;
-// 	}
+	if (crtc_req->count_connectors > 0 && (!mode || !fb)) {
+		DRM_DEBUG_KMS("Count connectors is %d but no mode or fb set\n",
+			  crtc_req->count_connectors);
+		ret = -EINVAL;
+		goto out;
+	}
 
-// 	if (crtc_req->count_connectors > 0) {
-// 		u32 out_id;
+	if (crtc_req->count_connectors > 0) {
+		u32 out_id;
 
-// 		/* Avoid unbounded kernel memory allocation */
-// 		if (crtc_req->count_connectors > config->num_connector) {
-// 			ret = -EINVAL;
-// 			goto out;
-// 		}
+		/* Avoid unbounded kernel memory allocation */
+		if (crtc_req->count_connectors > config->num_connector) {
+			ret = -EINVAL;
+			goto out;
+		}
 
-// 		connector_set = kmalloc_array(crtc_req->count_connectors,
-// 					      sizeof(struct drm_connector *),
-// 					      GFP_KERNEL);
-// 		if (!connector_set) {
-// 			ret = -ENOMEM;
-// 			goto out;
-// 		}
+		connector_set = kmalloc_array(crtc_req->count_connectors,
+					      sizeof(struct drm_connector *),
+					      GFP_KERNEL);
+		if (!connector_set) {
+			ret = -ENOMEM;
+			goto out;
+		}
 
-// 		for (i = 0; i < crtc_req->count_connectors; i++) {
-// 			connector_set[i] = NULL;
-// 			set_connectors_ptr = (uint32_t __user *)(unsigned long)crtc_req->set_connectors_ptr;
-// 			if (get_user(out_id, &set_connectors_ptr[i])) {
-// 				ret = -EFAULT;
-// 				goto out;
-// 			}
+		for (i = 0; i < crtc_req->count_connectors; i++) {
+			connector_set[i] = NULL;
+			set_connectors_ptr = (uint32_t __user *)(unsigned long)crtc_req->set_connectors_ptr;
+			if (get_user(out_id, &set_connectors_ptr[i])) {
+				ret = -EFAULT;
+				goto out;
+			}
 
-// 			connector = drm_connector_lookup(dev, file_priv, out_id);
-// 			if (!connector) {
-// 				DRM_DEBUG_KMS("Connector id %d unknown\n",
-// 						out_id);
-// 				ret = -ENOENT;
-// 				goto out;
-// 			}
-// 			DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
-// 					connector->base.id,
-// 					connector->name);
+			connector = drm_connector_lookup(dev, file_priv, out_id);
+			if (!connector) {
+				DRM_DEBUG_KMS("Connector id %d unknown\n",
+						out_id);
+				ret = -ENOENT;
+				goto out;
+			}
+			DRM_DEBUG_KMS("[CONNECTOR:%d:%s]\n",
+					connector->base.id,
+					connector->name);
 
-// 			connector_set[i] = connector;
-// 			num_connectors++;
-// 		}
-// 	}
+			connector_set[i] = connector;
+			num_connectors++;
+		}
+	}
 
-// 	set.crtc = crtc;
-// 	set.x = crtc_req->x;
-// 	set.y = crtc_req->y;
-// 	set.mode = mode;
-// 	set.connectors = connector_set;
-// 	set.num_connectors = num_connectors;
-// 	set.fb = fb;
+	set.crtc = crtc;
+	set.x = crtc_req->x;
+	set.y = crtc_req->y;
+	set.mode = mode;
+	set.connectors = connector_set;
+	set.num_connectors = num_connectors;
+	set.fb = fb;
 
-// 	if (drm_drv_uses_atomic_modeset(dev))
-// 		ret = crtc->funcs->set_config(&set, &ctx);
-// 	else
-// 		ret = __drm_mode_set_config_internal(&set, &ctx);
+	if (drm_drv_uses_atomic_modeset(dev))
+		ret = crtc->funcs->set_config(&set, &ctx);
+	else
+		ret = __drm_mode_set_config_internal(&set, &ctx);
 
-// out:
-// 	if (fb)
-// 		drm_framebuffer_put(fb);
+out:
+	if (fb)
+		drm_framebuffer_put(fb);
 
-// 	if (connector_set) {
-// 		for (i = 0; i < num_connectors; i++) {
-// 			if (connector_set[i])
-// 				drm_connector_put(connector_set[i]);
-// 		}
-// 	}
-// 	kfree(connector_set);
-// 	drm_mode_destroy(dev, mode);
+	if (connector_set) {
+		for (i = 0; i < num_connectors; i++) {
+			if (connector_set[i])
+				drm_connector_put(connector_set[i]);
+		}
+	}
+	kfree(connector_set);
+	drm_mode_destroy(dev, mode);
 
-// 	/* In case we need to retry... */
-// 	connector_set = NULL;
-// 	fb = NULL;
-// 	mode = NULL;
-// 	num_connectors = 0;
+	/* In case we need to retry... */
+	connector_set = NULL;
+	fb = NULL;
+	mode = NULL;
+	num_connectors = 0;
 
-// 	DRM_MODESET_LOCK_ALL_END(ctx, ret);
-// 	mutex_unlock(&crtc->dev->mode_config.mutex);
+#if !defined(__AROS__)
+	DRM_MODESET_LOCK_ALL_END(ctx, ret);
+#endif
+	mutex_unlock(&crtc->dev->mode_config.mutex);
 
-// 	return ret;
-// }
-// #endif
+	return ret;
+}
 
 // int drm_mode_crtc_set_obj_prop(struct drm_mode_object *obj,
 // 			       struct drm_property *property,

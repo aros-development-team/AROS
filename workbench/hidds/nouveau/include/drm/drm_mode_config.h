@@ -111,16 +111,16 @@ struct drm_mode_config_funcs {
 // 	 */
 // 	void (*output_poll_changed)(struct drm_device *dev);
 
-// 	/**
-// 	 * @mode_valid:
-// 	 *
-// 	 * Device specific validation of display modes. Can be used to reject
-// 	 * modes that can never be supported. Only device wide constraints can
-// 	 * be checked here. crtc/encoder/bridge/connector specific constraints
-// 	 * should be checked in the .mode_valid() hook for each specific object.
-// 	 */
-// 	enum drm_mode_status (*mode_valid)(struct drm_device *dev,
-// 					   const struct drm_display_mode *mode);
+	/**
+	 * @mode_valid:
+	 *
+	 * Device specific validation of display modes. Can be used to reject
+	 * modes that can never be supported. Only device wide constraints can
+	 * be checked here. crtc/encoder/bridge/connector specific constraints
+	 * should be checked in the .mode_valid() hook for each specific object.
+	 */
+	enum drm_mode_status (*mode_valid)(struct drm_device *dev,
+					   const struct drm_display_mode *mode);
 
 	/**
 	 * @atomic_check:
@@ -427,11 +427,11 @@ struct drm_mode_config {
 	 * @connector_list and @connector_free_list.
 	 */
 	spinlock_t connector_list_lock;
-// 	/**
-// 	 * @num_connector: Number of connectors on this device. Protected by
-// 	 * @connector_list_lock.
-// 	 */
-// 	int num_connector;
+	/**
+	 * @num_connector: Number of connectors on this device. Protected by
+	 * @connector_list_lock.
+	 */
+	int num_connector;
 // 	/**
 // 	 * @connector_ida: ID allocator for connector indices.
 // 	 */

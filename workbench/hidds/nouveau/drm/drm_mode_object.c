@@ -201,22 +201,22 @@ EXPORT_SYMBOL(drm_mode_object_find);
 // }
 // EXPORT_SYMBOL(drm_mode_object_put);
 
-// /**
-//  * drm_mode_object_get - acquire a mode object reference
-//  * @obj: DRM mode object
-//  *
-//  * This function increments the object's refcount if it is a refcounted modeset
-//  * object. It is a no-op on any other object. References should be dropped again
-//  * by calling drm_mode_object_put().
-//  */
-// void drm_mode_object_get(struct drm_mode_object *obj)
-// {
-// 	if (obj->free_cb) {
-// 		DRM_DEBUG("OBJ ID: %d (%d)\n", obj->id, kref_read(&obj->refcount));
-// 		kref_get(&obj->refcount);
-// 	}
-// }
-// EXPORT_SYMBOL(drm_mode_object_get);
+/**
+ * drm_mode_object_get - acquire a mode object reference
+ * @obj: DRM mode object
+ *
+ * This function increments the object's refcount if it is a refcounted modeset
+ * object. It is a no-op on any other object. References should be dropped again
+ * by calling drm_mode_object_put().
+ */
+void drm_mode_object_get(struct drm_mode_object *obj)
+{
+	if (obj->free_cb) {
+		DRM_DEBUG("OBJ ID: %d (%d)\n", obj->id, kref_read(&obj->refcount));
+		kref_get(&obj->refcount);
+	}
+}
+EXPORT_SYMBOL(drm_mode_object_get);
 
 // /**
 //  * drm_object_attach_property - attach a property to a modeset object

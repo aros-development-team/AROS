@@ -448,28 +448,28 @@ struct drm_crtc_funcs {
 	int (*cursor_set)(struct drm_crtc *crtc, struct drm_file *file_priv,
 			  uint32_t handle, uint32_t width, uint32_t height);
 
-// 	/**
-// 	 * @cursor_set2:
-// 	 *
-// 	 * Update the cursor image, including hotspot information. The hotspot
-// 	 * must not affect the cursor position in CRTC coordinates, but is only
-// 	 * meant as a hint for virtualized display hardware to coordinate the
-// 	 * guests and hosts cursor position. The cursor hotspot is relative to
-// 	 * the cursor image. Otherwise this works exactly like @cursor_set.
-// 	 *
-// 	 * This entry point is deprecated, drivers should instead implement
-// 	 * universal plane support and register a proper cursor plane using
-// 	 * drm_crtc_init_with_planes().
-// 	 *
-// 	 * This callback is optional.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 on success or a negative error code on failure.
-// 	 */
-// 	int (*cursor_set2)(struct drm_crtc *crtc, struct drm_file *file_priv,
-// 			   uint32_t handle, uint32_t width, uint32_t height,
-// 			   int32_t hot_x, int32_t hot_y);
+	/**
+	 * @cursor_set2:
+	 *
+	 * Update the cursor image, including hotspot information. The hotspot
+	 * must not affect the cursor position in CRTC coordinates, but is only
+	 * meant as a hint for virtualized display hardware to coordinate the
+	 * guests and hosts cursor position. The cursor hotspot is relative to
+	 * the cursor image. Otherwise this works exactly like @cursor_set.
+	 *
+	 * This entry point is deprecated, drivers should instead implement
+	 * universal plane support and register a proper cursor plane using
+	 * drm_crtc_init_with_planes().
+	 *
+	 * This callback is optional.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success or a negative error code on failure.
+	 */
+	int (*cursor_set2)(struct drm_crtc *crtc, struct drm_file *file_priv,
+			   uint32_t handle, uint32_t width, uint32_t height,
+			   int32_t hot_x, int32_t hot_y);
 
 	/**
 	 * @cursor_move:
@@ -941,14 +941,14 @@ struct drm_crtc {
 	 */
 	struct drm_plane *primary;
 
-// 	/**
-// 	 * @cursor:
-// 	 * Cursor plane for this CRTC. Note that this is only relevant for
-// 	 * legacy IOCTL, it specifies the plane implicitly used by the SETCURSOR
-// 	 * and SETCURSOR2 IOCTLs. It does not have any significance
-// 	 * beyond that.
-// 	 */
-// 	struct drm_plane *cursor;
+	/**
+	 * @cursor:
+	 * Cursor plane for this CRTC. Note that this is only relevant for
+	 * legacy IOCTL, it specifies the plane implicitly used by the SETCURSOR
+	 * and SETCURSOR2 IOCTLs. It does not have any significance
+	 * beyond that.
+	 */
+	struct drm_plane *cursor;
 
 	/**
 	 * @index: Position inside the mode_config.list, can be used as an array
@@ -956,22 +956,22 @@ struct drm_crtc {
 	 */
 	unsigned index;
 
-// 	/**
-// 	 * @cursor_x: Current x position of the cursor, used for universal
-// 	 * cursor planes because the SETCURSOR IOCTL only can update the
-// 	 * framebuffer without supplying the coordinates. Drivers should not use
-// 	 * this directly, atomic drivers should look at &drm_plane_state.crtc_x
-// 	 * of the cursor plane instead.
-// 	 */
-// 	int cursor_x;
-// 	/**
-// 	 * @cursor_y: Current y position of the cursor, used for universal
-// 	 * cursor planes because the SETCURSOR IOCTL only can update the
-// 	 * framebuffer without supplying the coordinates. Drivers should not use
-// 	 * this directly, atomic drivers should look at &drm_plane_state.crtc_y
-// 	 * of the cursor plane instead.
-// 	 */
-// 	int cursor_y;
+	/**
+	 * @cursor_x: Current x position of the cursor, used for universal
+	 * cursor planes because the SETCURSOR IOCTL only can update the
+	 * framebuffer without supplying the coordinates. Drivers should not use
+	 * this directly, atomic drivers should look at &drm_plane_state.crtc_x
+	 * of the cursor plane instead.
+	 */
+	int cursor_x;
+	/**
+	 * @cursor_y: Current y position of the cursor, used for universal
+	 * cursor planes because the SETCURSOR IOCTL only can update the
+	 * framebuffer without supplying the coordinates. Drivers should not use
+	 * this directly, atomic drivers should look at &drm_plane_state.crtc_y
+	 * of the cursor plane instead.
+	 */
+	int cursor_y;
 
 	/**
 	 * @enabled:
@@ -1137,30 +1137,30 @@ struct drm_crtc {
 // 	struct drm_self_refresh_data *self_refresh_data;
 };
 
-// /**
-//  * struct drm_mode_set - new values for a CRTC config change
-//  * @fb: framebuffer to use for new config
-//  * @crtc: CRTC whose configuration we're about to change
-//  * @mode: mode timings to use
-//  * @x: position of this CRTC relative to @fb
-//  * @y: position of this CRTC relative to @fb
-//  * @connectors: array of connectors to drive with this CRTC if possible
-//  * @num_connectors: size of @connectors array
-//  *
-//  * This represents a modeset configuration for the legacy SETCRTC ioctl and is
-//  * also used internally. Atomic drivers instead use &drm_atomic_state.
-//  */
-// struct drm_mode_set {
-// 	struct drm_framebuffer *fb;
-// 	struct drm_crtc *crtc;
-// 	struct drm_display_mode *mode;
+/**
+ * struct drm_mode_set - new values for a CRTC config change
+ * @fb: framebuffer to use for new config
+ * @crtc: CRTC whose configuration we're about to change
+ * @mode: mode timings to use
+ * @x: position of this CRTC relative to @fb
+ * @y: position of this CRTC relative to @fb
+ * @connectors: array of connectors to drive with this CRTC if possible
+ * @num_connectors: size of @connectors array
+ *
+ * This represents a modeset configuration for the legacy SETCRTC ioctl and is
+ * also used internally. Atomic drivers instead use &drm_atomic_state.
+ */
+struct drm_mode_set {
+	struct drm_framebuffer *fb;
+	struct drm_crtc *crtc;
+	struct drm_display_mode *mode;
 
-// 	uint32_t x;
-// 	uint32_t y;
+	uint32_t x;
+	uint32_t y;
 
-// 	struct drm_connector **connectors;
-// 	size_t num_connectors;
-// };
+	struct drm_connector **connectors;
+	size_t num_connectors;
+};
 
 #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
 

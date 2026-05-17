@@ -59,27 +59,27 @@
 // }
 // EXPORT_SYMBOL(drm_mode_debug_printmodeline);
 
-// /**
-//  * drm_mode_create - create a new display mode
-//  * @dev: DRM device
-//  *
-//  * Create a new, cleared drm_display_mode with kzalloc, allocate an ID for it
-//  * and return it.
-//  *
-//  * Returns:
-//  * Pointer to new mode on success, NULL on error.
-//  */
-// struct drm_display_mode *drm_mode_create(struct drm_device *dev)
-// {
-// 	struct drm_display_mode *nmode;
+/**
+ * drm_mode_create - create a new display mode
+ * @dev: DRM device
+ *
+ * Create a new, cleared drm_display_mode with kzalloc, allocate an ID for it
+ * and return it.
+ *
+ * Returns:
+ * Pointer to new mode on success, NULL on error.
+ */
+struct drm_display_mode *drm_mode_create(struct drm_device *dev)
+{
+	struct drm_display_mode *nmode;
 
-// 	nmode = kzalloc(sizeof(struct drm_display_mode), GFP_KERNEL);
-// 	if (!nmode)
-// 		return NULL;
+	nmode = kzalloc(sizeof(struct drm_display_mode), GFP_KERNEL);
+	if (!nmode)
+		return NULL;
 
-// 	return nmode;
-// }
-// EXPORT_SYMBOL(drm_mode_create);
+	return nmode;
+}
+EXPORT_SYMBOL(drm_mode_create);
 
 // /**
 //  * drm_mode_destroy - remove a mode
@@ -807,25 +807,25 @@
 // }
 // EXPORT_SYMBOL(drm_mode_vrefresh);
 
-// /**
-//  * drm_mode_get_hv_timing - Fetches hdisplay/vdisplay for given mode
-//  * @mode: mode to query
-//  * @hdisplay: hdisplay value to fill in
-//  * @vdisplay: vdisplay value to fill in
-//  *
-//  * The vdisplay value will be doubled if the specified mode is a stereo mode of
-//  * the appropriate layout.
-//  */
-// void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
-// 			    int *hdisplay, int *vdisplay)
-// {
-// 	struct drm_display_mode adjusted = *mode;
+/**
+ * drm_mode_get_hv_timing - Fetches hdisplay/vdisplay for given mode
+ * @mode: mode to query
+ * @hdisplay: hdisplay value to fill in
+ * @vdisplay: vdisplay value to fill in
+ *
+ * The vdisplay value will be doubled if the specified mode is a stereo mode of
+ * the appropriate layout.
+ */
+void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
+			    int *hdisplay, int *vdisplay)
+{
+	struct drm_display_mode adjusted = *mode;
 
-// 	drm_mode_set_crtcinfo(&adjusted, CRTC_STEREO_DOUBLE_ONLY);
-// 	*hdisplay = adjusted.crtc_hdisplay;
-// 	*vdisplay = adjusted.crtc_vdisplay;
-// }
-// EXPORT_SYMBOL(drm_mode_get_hv_timing);
+	drm_mode_set_crtcinfo(&adjusted, CRTC_STEREO_DOUBLE_ONLY);
+	*hdisplay = adjusted.crtc_hdisplay;
+	*vdisplay = adjusted.crtc_vdisplay;
+}
+EXPORT_SYMBOL(drm_mode_get_hv_timing);
 
 // /**
 //  * drm_mode_set_crtcinfo - set CRTC modesetting timing parameters
@@ -1107,64 +1107,64 @@ EXPORT_SYMBOL(drm_mode_match);
 // }
 // EXPORT_SYMBOL(drm_mode_equal_no_clocks_no_stereo);
 
-// static enum drm_mode_status
-// drm_mode_validate_basic(const struct drm_display_mode *mode)
-// {
-// 	if (mode->type & ~DRM_MODE_TYPE_ALL)
-// 		return MODE_BAD;
+static enum drm_mode_status
+drm_mode_validate_basic(const struct drm_display_mode *mode)
+{
+	if (mode->type & ~DRM_MODE_TYPE_ALL)
+		return MODE_BAD;
 
-// 	if (mode->flags & ~DRM_MODE_FLAG_ALL)
-// 		return MODE_BAD;
+	if (mode->flags & ~DRM_MODE_FLAG_ALL)
+		return MODE_BAD;
 
-// 	if ((mode->flags & DRM_MODE_FLAG_3D_MASK) > DRM_MODE_FLAG_3D_MAX)
-// 		return MODE_BAD;
+	if ((mode->flags & DRM_MODE_FLAG_3D_MASK) > DRM_MODE_FLAG_3D_MAX)
+		return MODE_BAD;
 
-// 	if (mode->clock == 0)
-// 		return MODE_CLOCK_LOW;
+	if (mode->clock == 0)
+		return MODE_CLOCK_LOW;
 
-// 	if (mode->hdisplay == 0 ||
-// 	    mode->hsync_start < mode->hdisplay ||
-// 	    mode->hsync_end < mode->hsync_start ||
-// 	    mode->htotal < mode->hsync_end)
-// 		return MODE_H_ILLEGAL;
+	if (mode->hdisplay == 0 ||
+	    mode->hsync_start < mode->hdisplay ||
+	    mode->hsync_end < mode->hsync_start ||
+	    mode->htotal < mode->hsync_end)
+		return MODE_H_ILLEGAL;
 
-// 	if (mode->vdisplay == 0 ||
-// 	    mode->vsync_start < mode->vdisplay ||
-// 	    mode->vsync_end < mode->vsync_start ||
-// 	    mode->vtotal < mode->vsync_end)
-// 		return MODE_V_ILLEGAL;
+	if (mode->vdisplay == 0 ||
+	    mode->vsync_start < mode->vdisplay ||
+	    mode->vsync_end < mode->vsync_start ||
+	    mode->vtotal < mode->vsync_end)
+		return MODE_V_ILLEGAL;
 
-// 	return MODE_OK;
-// }
+	return MODE_OK;
+}
 
-// /**
-//  * drm_mode_validate_driver - make sure the mode is somewhat sane
-//  * @dev: drm device
-//  * @mode: mode to check
-//  *
-//  * First do basic validation on the mode, and then allow the driver
-//  * to check for device/driver specific limitations via the optional
-//  * &drm_mode_config_helper_funcs.mode_valid hook.
-//  *
-//  * Returns:
-//  * The mode status
-//  */
-// enum drm_mode_status
-// drm_mode_validate_driver(struct drm_device *dev,
-// 			const struct drm_display_mode *mode)
-// {
-// 	enum drm_mode_status status;
+/**
+ * drm_mode_validate_driver - make sure the mode is somewhat sane
+ * @dev: drm device
+ * @mode: mode to check
+ *
+ * First do basic validation on the mode, and then allow the driver
+ * to check for device/driver specific limitations via the optional
+ * &drm_mode_config_helper_funcs.mode_valid hook.
+ *
+ * Returns:
+ * The mode status
+ */
+enum drm_mode_status
+drm_mode_validate_driver(struct drm_device *dev,
+			const struct drm_display_mode *mode)
+{
+	enum drm_mode_status status;
 
-// 	status = drm_mode_validate_basic(mode);
-// 	if (status != MODE_OK)
-// 		return status;
+	status = drm_mode_validate_basic(mode);
+	if (status != MODE_OK)
+		return status;
 
-// 	if (dev->mode_config.funcs->mode_valid)
-// 		return dev->mode_config.funcs->mode_valid(dev, mode);
-// 	else
-// 		return MODE_OK;
-// }
-// EXPORT_SYMBOL(drm_mode_validate_driver);
+	if (dev->mode_config.funcs->mode_valid)
+		return dev->mode_config.funcs->mode_valid(dev, mode);
+	else
+		return MODE_OK;
+}
+EXPORT_SYMBOL(drm_mode_validate_driver);
 
 // /**
 //  * drm_mode_validate_size - make sure modes adhere to size constraints
@@ -1984,82 +1984,84 @@ void drm_mode_convert_to_umode(struct drm_mode_modeinfo *out,
 	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
 }
 
-// /**
-//  * drm_crtc_convert_umode - convert a modeinfo into a drm_display_mode
-//  * @dev: drm device
-//  * @out: drm_display_mode to return to the user
-//  * @in: drm_mode_modeinfo to use
-//  *
-//  * Convert a drm_mode_modeinfo into a drm_display_mode structure to return to
-//  * the caller.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_mode_convert_umode(struct drm_device *dev,
-// 			   struct drm_display_mode *out,
-// 			   const struct drm_mode_modeinfo *in)
-// {
-// 	if (in->clock > INT_MAX || in->vrefresh > INT_MAX)
-// 		return -ERANGE;
+/**
+ * drm_crtc_convert_umode - convert a modeinfo into a drm_display_mode
+ * @dev: drm device
+ * @out: drm_display_mode to return to the user
+ * @in: drm_mode_modeinfo to use
+ *
+ * Convert a drm_mode_modeinfo into a drm_display_mode structure to return to
+ * the caller.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_convert_umode(struct drm_device *dev,
+			   struct drm_display_mode *out,
+			   const struct drm_mode_modeinfo *in)
+{
+	if (in->clock > INT_MAX || in->vrefresh > INT_MAX)
+		return -ERANGE;
 
-// 	out->clock = in->clock;
-// 	out->hdisplay = in->hdisplay;
-// 	out->hsync_start = in->hsync_start;
-// 	out->hsync_end = in->hsync_end;
-// 	out->htotal = in->htotal;
-// 	out->hskew = in->hskew;
-// 	out->vdisplay = in->vdisplay;
-// 	out->vsync_start = in->vsync_start;
-// 	out->vsync_end = in->vsync_end;
-// 	out->vtotal = in->vtotal;
-// 	out->vscan = in->vscan;
-// 	out->vrefresh = in->vrefresh;
-// 	out->flags = in->flags;
-// 	/*
-// 	 * Old xf86-video-vmware (possibly others too) used to
-// 	 * leave 'type' unititialized. Just ignore any bits we
-// 	 * don't like. It's a just hint after all, and more
-// 	 * useful for the kernel->userspace direction anyway.
-// 	 */
-// 	out->type = in->type & DRM_MODE_TYPE_ALL;
-// 	strncpy(out->name, in->name, DRM_DISPLAY_MODE_LEN);
-// 	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
+	out->clock = in->clock;
+	out->hdisplay = in->hdisplay;
+	out->hsync_start = in->hsync_start;
+	out->hsync_end = in->hsync_end;
+	out->htotal = in->htotal;
+	out->hskew = in->hskew;
+	out->vdisplay = in->vdisplay;
+	out->vsync_start = in->vsync_start;
+	out->vsync_end = in->vsync_end;
+	out->vtotal = in->vtotal;
+	out->vscan = in->vscan;
+	out->vrefresh = in->vrefresh;
+	out->flags = in->flags;
+	/*
+	 * Old xf86-video-vmware (possibly others too) used to
+	 * leave 'type' unititialized. Just ignore any bits we
+	 * don't like. It's a just hint after all, and more
+	 * useful for the kernel->userspace direction anyway.
+	 */
+	out->type = in->type & DRM_MODE_TYPE_ALL;
+	strncpy(out->name, in->name, DRM_DISPLAY_MODE_LEN);
+	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
 
-// 	/* Clearing picture aspect ratio bits from out flags,
-// 	 * as the aspect-ratio information is not stored in
-// 	 * flags for kernel-mode, but in picture_aspect_ratio.
-// 	 */
-// 	out->flags &= ~DRM_MODE_FLAG_PIC_AR_MASK;
+	/* Clearing picture aspect ratio bits from out flags,
+	 * as the aspect-ratio information is not stored in
+	 * flags for kernel-mode, but in picture_aspect_ratio.
+	 */
+	out->flags &= ~DRM_MODE_FLAG_PIC_AR_MASK;
 
-// 	switch (in->flags & DRM_MODE_FLAG_PIC_AR_MASK) {
-// 	case DRM_MODE_FLAG_PIC_AR_4_3:
-// 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_4_3;
-// 		break;
-// 	case DRM_MODE_FLAG_PIC_AR_16_9:
-// 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9;
-// 		break;
-// 	case DRM_MODE_FLAG_PIC_AR_64_27:
-// 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_64_27;
-// 		break;
-// 	case DRM_MODE_FLAG_PIC_AR_256_135:
-// 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_256_135;
-// 		break;
-// 	case DRM_MODE_FLAG_PIC_AR_NONE:
-// 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_NONE;
-// 		break;
-// 	default:
-// 		return -EINVAL;
-// 	}
+#if !defined(__AROS__)
+	switch (in->flags & DRM_MODE_FLAG_PIC_AR_MASK) {
+	case DRM_MODE_FLAG_PIC_AR_4_3:
+		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_4_3;
+		break;
+	case DRM_MODE_FLAG_PIC_AR_16_9:
+		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_16_9;
+		break;
+	case DRM_MODE_FLAG_PIC_AR_64_27:
+		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_64_27;
+		break;
+	case DRM_MODE_FLAG_PIC_AR_256_135:
+		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_256_135;
+		break;
+	case DRM_MODE_FLAG_PIC_AR_NONE:
+		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_NONE;
+		break;
+	default:
+		return -EINVAL;
+	}
+#endif
 
-// 	out->status = drm_mode_validate_driver(dev, out);
-// 	if (out->status != MODE_OK)
-// 		return -EINVAL;
+	out->status = drm_mode_validate_driver(dev, out);
+	if (out->status != MODE_OK)
+		return -EINVAL;
 
-// 	drm_mode_set_crtcinfo(out, CRTC_INTERLACE_HALVE_V);
+	drm_mode_set_crtcinfo(out, CRTC_INTERLACE_HALVE_V);
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // /**
 //  * drm_mode_is_420_only - if a given videomode can be only supported in YCBCR420

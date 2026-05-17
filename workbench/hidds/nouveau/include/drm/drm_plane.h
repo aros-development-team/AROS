@@ -757,23 +757,23 @@ int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
 				       struct drm_property *property,
 				       uint64_t value);
 
-/**
- * drm_plane_find - find a &drm_plane
- * @dev: DRM device
- * @file_priv: drm file to check for lease against.
- * @id: plane id
- *
- * Returns the plane with @id, NULL if it doesn't exist. Simple wrapper around
- * drm_mode_object_find().
- */
-static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
-		struct drm_file *file_priv,
-		uint32_t id)
-{
-	struct drm_mode_object *mo;
-	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_PLANE);
-	return mo ? obj_to_plane(mo) : NULL;
-}
+// /**
+//  * drm_plane_find - find a &drm_plane
+//  * @dev: DRM device
+//  * @file_priv: drm file to check for lease against.
+//  * @id: plane id
+//  *
+//  * Returns the plane with @id, NULL if it doesn't exist. Simple wrapper around
+//  * drm_mode_object_find().
+//  */
+// static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
+// 		struct drm_file *file_priv,
+// 		uint32_t id)
+// {
+// 	struct drm_mode_object *mo;
+// 	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_PLANE);
+// 	return mo ? obj_to_plane(mo) : NULL;
+// }
 
 /**
  * drm_for_each_plane_mask - iterate over planes specified by bitmask
@@ -812,37 +812,37 @@ static inline struct drm_plane *drm_plane_find(struct drm_device *dev,
 
 bool drm_any_plane_has_format(struct drm_device *dev,
 			      u32 format, u64 modifier);
-/**
- * drm_plane_get_damage_clips_count - Returns damage clips count.
- * @state: Plane state.
- *
- * Simple helper to get the number of &drm_mode_rect clips set by user-space
- * during plane update.
- *
- * Return: Number of clips in plane fb_damage_clips blob property.
- */
-static inline unsigned int
-drm_plane_get_damage_clips_count(const struct drm_plane_state *state)
-{
-	return (state && state->fb_damage_clips) ?
-		state->fb_damage_clips->length/sizeof(struct drm_mode_rect) : 0;
-}
+// /**
+//  * drm_plane_get_damage_clips_count - Returns damage clips count.
+//  * @state: Plane state.
+//  *
+//  * Simple helper to get the number of &drm_mode_rect clips set by user-space
+//  * during plane update.
+//  *
+//  * Return: Number of clips in plane fb_damage_clips blob property.
+//  */
+// static inline unsigned int
+// drm_plane_get_damage_clips_count(const struct drm_plane_state *state)
+// {
+// 	return (state && state->fb_damage_clips) ?
+// 		state->fb_damage_clips->length/sizeof(struct drm_mode_rect) : 0;
+// }
 
-/**
- * drm_plane_get_damage_clips - Returns damage clips.
- * @state: Plane state.
- *
- * Note that this function returns uapi type &drm_mode_rect. Drivers might
- * instead be interested in internal &drm_rect which can be obtained by calling
- * drm_helper_get_plane_damage_clips().
- *
- * Return: Damage clips in plane fb_damage_clips blob property.
- */
-static inline struct drm_mode_rect *
-drm_plane_get_damage_clips(const struct drm_plane_state *state)
-{
-	return (struct drm_mode_rect *)((state && state->fb_damage_clips) ?
-					state->fb_damage_clips->data : NULL);
-}
+// /**
+//  * drm_plane_get_damage_clips - Returns damage clips.
+//  * @state: Plane state.
+//  *
+//  * Note that this function returns uapi type &drm_mode_rect. Drivers might
+//  * instead be interested in internal &drm_rect which can be obtained by calling
+//  * drm_helper_get_plane_damage_clips().
+//  *
+//  * Return: Damage clips in plane fb_damage_clips blob property.
+//  */
+// static inline struct drm_mode_rect *
+// drm_plane_get_damage_clips(const struct drm_plane_state *state)
+// {
+// 	return (struct drm_mode_rect *)((state && state->fb_damage_clips) ?
+// 					state->fb_damage_clips->data : NULL);
+// }
 
 #endif
