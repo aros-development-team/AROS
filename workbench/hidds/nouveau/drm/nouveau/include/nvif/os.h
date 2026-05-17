@@ -48,6 +48,7 @@
 #include <linux/refcount.h>
 #include <linux/list.h>
 #include <linux/minmax.h>
+#include <linux/string.h>
 
 #define CONFIG_ARM_ENABLED 0
 #define CONFIG_DRM_NOUVEAU_SVM_ENABLED 0

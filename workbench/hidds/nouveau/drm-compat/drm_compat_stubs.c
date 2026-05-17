@@ -37,9 +37,9 @@ IPTR sg_dma_len(struct scatterlist *s) { NOT_IMPLEMENTED_STOP }
 
 struct page *pfn_to_page(unsigned long pfn) { NOT_IMPLEMENTED_STOP }
 
-void *kmemdup(const void *src, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
-char *kstrndup(const char *c, size_t len, BYTE flags) { NOT_IMPLEMENTED_STOP }
-char *kstrdup(const char *c, BYTE flags) { NOT_IMPLEMENTED_STOP }
+
+
+
 int kstrtol(const char *s, unsigned int base, long *res) { NOT_IMPLEMENTED_STOP }
 
 unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_IMPLEMENTED_STOP }

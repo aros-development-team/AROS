@@ -52,7 +52,7 @@
  */
 static __always_inline bool __must_check __must_check_overflow(bool overflow)
 {
-	return unlikely(overflow);
+	return __builtin_expect((IPTR)(overflow),0);
 }
 
 /**
