@@ -23,6 +23,8 @@
 #ifndef __NOUVEAU_CHANNEL_H__
 #define __NOUVEAU_CHANNEL_H__
 
+#include "libdrm_redefines.h"
+
 struct nouveau_subchannel {
 	struct nouveau_grobj *gr;
 	unsigned sequence;
