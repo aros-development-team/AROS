@@ -596,20 +596,20 @@ drm_property_create_blob(struct drm_device *dev, size_t length,
 }
 EXPORT_SYMBOL(drm_property_create_blob);
 
-// /**
-//  * drm_property_blob_put - release a blob property reference
-//  * @blob: DRM blob property
-//  *
-//  * Releases a reference to a blob property. May free the object.
-//  */
-// void drm_property_blob_put(struct drm_property_blob *blob)
-// {
-// 	if (!blob)
-// 		return;
+/**
+ * drm_property_blob_put - release a blob property reference
+ * @blob: DRM blob property
+ *
+ * Releases a reference to a blob property. May free the object.
+ */
+void drm_property_blob_put(struct drm_property_blob *blob)
+{
+	if (!blob)
+		return;
 
-// 	drm_mode_object_put(&blob->base);
-// }
-// EXPORT_SYMBOL(drm_property_blob_put);
+	drm_mode_object_put(&blob->base);
+}
+EXPORT_SYMBOL(drm_property_blob_put);
 
 // void drm_property_destroy_user_blobs(struct drm_device *dev,
 // 				     struct drm_file *file_priv)

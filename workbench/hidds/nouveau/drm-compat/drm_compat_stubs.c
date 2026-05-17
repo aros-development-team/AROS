@@ -79,18 +79,18 @@ void drm_atomic_helper_check_plane_state() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_cleanup_planes() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_commit_cleanup_done() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_commit_hw_done() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_connector_destroy_state() { NOT_IMPLEMENTED_STOP }
+
 void __drm_atomic_helper_connector_duplicate_state() { NOT_IMPLEMENTED_STOP }
 
 void __drm_atomic_helper_crtc_destroy_state() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_crtc_duplicate_state() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_crtc_reset() { NOT_IMPLEMENTED_STOP }
+
 void drm_atomic_helper_disable_plane() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_legacy_gamma_set() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_plane_destroy_state() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_plane_duplicate_state() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_plane_reset() { NOT_IMPLEMENTED_STOP }
+
 void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_setup_commit() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_update_legacy_modeset_state() { NOT_IMPLEMENTED_STOP }
@@ -101,15 +101,15 @@ void drm_atomic_state_default_clear() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_default_release() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_state_free() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_init() { NOT_IMPLEMENTED_STOP }
-void drm_connector_attach_encoder() { NOT_IMPLEMENTED_STOP }
-void drm_connector_cleanup() { NOT_IMPLEMENTED_STOP }
 
 
 
 
-void drm_connector_register() { NOT_IMPLEMENTED_STOP }
+
+
+
 void drm_connector_set_path_property() { NOT_IMPLEMENTED_STOP }
-void drm_connector_unregister() { NOT_IMPLEMENTED_STOP }
+
 void drm_crtc_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_mode() { NOT_IMPLEMENTED_STOP }
@@ -139,7 +139,7 @@ void drm_dp_mst_topology_mgr_suspend() { NOT_IMPLEMENTED_STOP }
 void drm_dp_update_payload_part1() { NOT_IMPLEMENTED_STOP }
 void drm_dp_update_payload_part2() { NOT_IMPLEMENTED_STOP }
 void drm_encoder_cleanup() { NOT_IMPLEMENTED_STOP }
-void drm_encoder_init() { NOT_IMPLEMENTED_STOP }
+
 void drm_framebuffer_cleanup() { NOT_IMPLEMENTED_STOP }
 
 void drm_helper_connector_dpms() { NOT_IMPLEMENTED_STOP }

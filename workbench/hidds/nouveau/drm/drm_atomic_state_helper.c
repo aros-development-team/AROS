@@ -59,28 +59,28 @@
  * for these functions.
  */
 
-// /**
-//  * __drm_atomic_helper_crtc_reset - reset state on CRTC
-//  * @crtc: drm CRTC
-//  * @crtc_state: CRTC state to assign
-//  *
-//  * Initializes the newly allocated @crtc_state and assigns it to
-//  * the &drm_crtc->state pointer of @crtc, usually required when
-//  * initializing the drivers or when called from the &drm_crtc_funcs.reset
-//  * hook.
-//  *
-//  * This is useful for drivers that subclass the CRTC state.
-//  */
-// void
-// __drm_atomic_helper_crtc_reset(struct drm_crtc *crtc,
-// 			       struct drm_crtc_state *crtc_state)
-// {
-// 	if (crtc_state)
-// 		crtc_state->crtc = crtc;
+/**
+ * __drm_atomic_helper_crtc_reset - reset state on CRTC
+ * @crtc: drm CRTC
+ * @crtc_state: CRTC state to assign
+ *
+ * Initializes the newly allocated @crtc_state and assigns it to
+ * the &drm_crtc->state pointer of @crtc, usually required when
+ * initializing the drivers or when called from the &drm_crtc_funcs.reset
+ * hook.
+ *
+ * This is useful for drivers that subclass the CRTC state.
+ */
+void
+__drm_atomic_helper_crtc_reset(struct drm_crtc *crtc,
+			       struct drm_crtc_state *crtc_state)
+{
+	if (crtc_state)
+		crtc_state->crtc = crtc;
 
-// 	crtc->state = crtc_state;
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_crtc_reset);
+	crtc->state = crtc_state;
+}
+EXPORT_SYMBOL(__drm_atomic_helper_crtc_reset);
 
 // /**
 //  * drm_atomic_helper_crtc_reset - default &drm_crtc_funcs.reset hook for CRTCs
@@ -213,26 +213,26 @@
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_crtc_destroy_state);
 
-// /**
-//  * __drm_atomic_helper_plane_reset - resets planes state to default values
-//  * @plane: plane object, must not be NULL
-//  * @state: atomic plane state, must not be NULL
-//  *
-//  * Initializes plane state to default. This is useful for drivers that subclass
-//  * the plane state.
-//  */
-// void __drm_atomic_helper_plane_reset(struct drm_plane *plane,
-// 				     struct drm_plane_state *state)
-// {
-// 	state->plane = plane;
-// 	state->rotation = DRM_MODE_ROTATE_0;
+/**
+ * __drm_atomic_helper_plane_reset - resets planes state to default values
+ * @plane: plane object, must not be NULL
+ * @state: atomic plane state, must not be NULL
+ *
+ * Initializes plane state to default. This is useful for drivers that subclass
+ * the plane state.
+ */
+void __drm_atomic_helper_plane_reset(struct drm_plane *plane,
+				     struct drm_plane_state *state)
+{
+	state->plane = plane;
+	state->rotation = DRM_MODE_ROTATE_0;
 
-// 	state->alpha = DRM_BLEND_ALPHA_OPAQUE;
-// 	state->pixel_blend_mode = DRM_MODE_BLEND_PREMULTI;
+	state->alpha = DRM_BLEND_ALPHA_OPAQUE;
+	state->pixel_blend_mode = DRM_MODE_BLEND_PREMULTI;
 
-// 	plane->state = state;
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_plane_reset);
+	plane->state = state;
+}
+EXPORT_SYMBOL(__drm_atomic_helper_plane_reset);
 
 // /**
 //  * drm_atomic_helper_plane_reset - default &drm_plane_funcs.reset hook for planes
@@ -447,29 +447,31 @@ EXPORT_SYMBOL(__drm_atomic_helper_connector_reset);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_connector_duplicate_state);
 
-// /**
-//  * __drm_atomic_helper_connector_destroy_state - release connector state
-//  * @state: connector state object to release
-//  *
-//  * Releases all resources stored in the connector state without actually
-//  * freeing the memory of the connector state. This is useful for drivers that
-//  * subclass the connector state.
-//  */
-// void
-// __drm_atomic_helper_connector_destroy_state(struct drm_connector_state *state)
-// {
-// 	if (state->crtc)
-// 		drm_connector_put(state->connector);
+/**
+ * __drm_atomic_helper_connector_destroy_state - release connector state
+ * @state: connector state object to release
+ *
+ * Releases all resources stored in the connector state without actually
+ * freeing the memory of the connector state. This is useful for drivers that
+ * subclass the connector state.
+ */
+void
+__drm_atomic_helper_connector_destroy_state(struct drm_connector_state *state)
+{
+	if (state->crtc)
+		drm_connector_put(state->connector);
 
-// 	if (state->commit)
-// 		drm_crtc_commit_put(state->commit);
+	if (state->commit)
+		drm_crtc_commit_put(state->commit);
 
-// 	if (state->writeback_job)
-// 		drm_writeback_cleanup_job(state->writeback_job);
+#if !defined(__AROS__)
+	if (state->writeback_job)
+		drm_writeback_cleanup_job(state->writeback_job);
+#endif
 
-// 	drm_property_blob_put(state->hdr_output_metadata);
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_connector_destroy_state);
+	drm_property_blob_put(state->hdr_output_metadata);
+}
+EXPORT_SYMBOL(__drm_atomic_helper_connector_destroy_state);
 
 // /**
 //  * drm_atomic_helper_connector_destroy_state - default state destroy hook

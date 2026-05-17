@@ -189,7 +189,7 @@ nvif_notify_init(struct nvif_object *object, int (*func)(struct nvif_notify *),
 	notify->data = NULL;
 	notify->size = reply;
 	if (work) {
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 		INIT_WORK(&notify->work, nvif_notify_work);
 #endif

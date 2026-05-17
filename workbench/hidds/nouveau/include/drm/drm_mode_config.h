@@ -407,13 +407,13 @@ struct drm_mode_config {
 	 */
 	struct idr object_idr;
 
-// 	/**
-// 	 * @tile_idr:
-// 	 *
-// 	 * Use this idr for allocating new IDs for tiled sinks like use in some
-// 	 * high-res DP MST screens.
-// 	 */
-// 	struct idr tile_idr;
+	/**
+	 * @tile_idr:
+	 *
+	 * Use this idr for allocating new IDs for tiled sinks like use in some
+	 * high-res DP MST screens.
+	 */
+	struct idr tile_idr;
 
 	/** @fb_lock: Mutex to protect fb the global @fb_list and @num_fb. */
 	struct mutex fb_lock;
@@ -459,13 +459,13 @@ struct drm_mode_config {
 // 	 */
 // 	struct work_struct connector_free_work;
 
-// 	/**
-// 	 * @num_encoder:
-// 	 *
-// 	 * Number of encoders on this device. This is invariant over the
-// 	 * lifetime of a device and hence doesn't need any locks.
-// 	 */
-// 	int num_encoder;
+	/**
+	 * @num_encoder:
+	 *
+	 * Number of encoders on this device. This is invariant over the
+	 * lifetime of a device and hence doesn't need any locks.
+	 */
+	int num_encoder;
 	/**
 	 * @encoder_list:
 	 *

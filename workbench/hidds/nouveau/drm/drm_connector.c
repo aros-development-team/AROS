@@ -362,46 +362,46 @@ EXPORT_SYMBOL(drm_connector_init);
 // }
 // EXPORT_SYMBOL(drm_connector_attach_edid_property);
 
-// /**
-//  * drm_connector_attach_encoder - attach a connector to an encoder
-//  * @connector: connector to attach
-//  * @encoder: encoder to attach @connector to
-//  *
-//  * This function links up a connector to an encoder. Note that the routing
-//  * restrictions between encoders and crtcs are exposed to userspace through the
-//  * possible_clones and possible_crtcs bitmasks.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_connector_attach_encoder(struct drm_connector *connector,
-// 				 struct drm_encoder *encoder)
-// {
-// 	int i;
+/**
+ * drm_connector_attach_encoder - attach a connector to an encoder
+ * @connector: connector to attach
+ * @encoder: encoder to attach @connector to
+ *
+ * This function links up a connector to an encoder. Note that the routing
+ * restrictions between encoders and crtcs are exposed to userspace through the
+ * possible_clones and possible_crtcs bitmasks.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_connector_attach_encoder(struct drm_connector *connector,
+				 struct drm_encoder *encoder)
+{
+	int i;
 
-// 	/*
-// 	 * In the past, drivers have attempted to model the static association
-// 	 * of connector to encoder in simple connector/encoder devices using a
-// 	 * direct assignment of connector->encoder = encoder. This connection
-// 	 * is a logical one and the responsibility of the core, so drivers are
-// 	 * expected not to mess with this.
-// 	 *
-// 	 * Note that the error return should've been enough here, but a large
-// 	 * majority of drivers ignores the return value, so add in a big WARN
-// 	 * to get people's attention.
-// 	 */
-// 	if (WARN_ON(connector->encoder))
-// 		return -EINVAL;
+	/*
+	 * In the past, drivers have attempted to model the static association
+	 * of connector to encoder in simple connector/encoder devices using a
+	 * direct assignment of connector->encoder = encoder. This connection
+	 * is a logical one and the responsibility of the core, so drivers are
+	 * expected not to mess with this.
+	 *
+	 * Note that the error return should've been enough here, but a large
+	 * majority of drivers ignores the return value, so add in a big WARN
+	 * to get people's attention.
+	 */
+	if (WARN_ON(connector->encoder))
+		return -EINVAL;
 
-// 	for (i = 0; i < ARRAY_SIZE(connector->encoder_ids); i++) {
-// 		if (connector->encoder_ids[i] == 0) {
-// 			connector->encoder_ids[i] = encoder->base.id;
-// 			return 0;
-// 		}
-// 	}
-// 	return -ENOMEM;
-// }
-// EXPORT_SYMBOL(drm_connector_attach_encoder);
+	for (i = 0; i < ARRAY_SIZE(connector->encoder_ids); i++) {
+		if (connector->encoder_ids[i] == 0) {
+			connector->encoder_ids[i] = encoder->base.id;
+			return 0;
+		}
+	}
+	return -ENOMEM;
+}
+EXPORT_SYMBOL(drm_connector_attach_encoder);
 
 // /**
 //  * drm_connector_has_possible_encoder - check if the connector and encoder are assosicated with each other
@@ -426,145 +426,155 @@ EXPORT_SYMBOL(drm_connector_init);
 // }
 // EXPORT_SYMBOL(drm_connector_has_possible_encoder);
 
-// static void drm_mode_remove(struct drm_connector *connector,
-// 			    struct drm_display_mode *mode)
-// {
-// 	list_del(&mode->head);
-// 	drm_mode_destroy(connector->dev, mode);
-// }
+static void drm_mode_remove(struct drm_connector *connector,
+			    struct drm_display_mode *mode)
+{
+	list_del(&mode->head);
+	drm_mode_destroy(connector->dev, mode);
+}
 
-// /**
-//  * drm_connector_cleanup - cleans up an initialised connector
-//  * @connector: connector to cleanup
-//  *
-//  * Cleans up the connector but doesn't free the object.
-//  */
-// void drm_connector_cleanup(struct drm_connector *connector)
-// {
-// 	struct drm_device *dev = connector->dev;
-// 	struct drm_display_mode *mode, *t;
+/**
+ * drm_connector_cleanup - cleans up an initialised connector
+ * @connector: connector to cleanup
+ *
+ * Cleans up the connector but doesn't free the object.
+ */
+void drm_connector_cleanup(struct drm_connector *connector)
+{
+	struct drm_device *dev = connector->dev;
+	struct drm_display_mode *mode, *t;
 
-// 	/* The connector should have been removed from userspace long before
-// 	 * it is finally destroyed.
-// 	 */
-// 	if (WARN_ON(connector->registration_state ==
-// 		    DRM_CONNECTOR_REGISTERED))
-// 		drm_connector_unregister(connector);
+	/* The connector should have been removed from userspace long before
+	 * it is finally destroyed.
+	 */
+	if (WARN_ON(connector->registration_state ==
+		    DRM_CONNECTOR_REGISTERED))
+		drm_connector_unregister(connector);
 
-// 	if (connector->tile_group) {
-// 		drm_mode_put_tile_group(dev, connector->tile_group);
-// 		connector->tile_group = NULL;
-// 	}
+	if (connector->tile_group) {
+		drm_mode_put_tile_group(dev, connector->tile_group);
+		connector->tile_group = NULL;
+	}
 
-// 	list_for_each_entry_safe(mode, t, &connector->probed_modes, head)
-// 		drm_mode_remove(connector, mode);
+	list_for_each_entry_safe(mode, t, &connector->probed_modes, head)
+		drm_mode_remove(connector, mode);
 
-// 	list_for_each_entry_safe(mode, t, &connector->modes, head)
-// 		drm_mode_remove(connector, mode);
+	list_for_each_entry_safe(mode, t, &connector->modes, head)
+		drm_mode_remove(connector, mode);
 
-// 	ida_simple_remove(&drm_connector_enum_list[connector->connector_type].ida,
-// 			  connector->connector_type_id);
+	ida_simple_remove(&drm_connector_enum_list[connector->connector_type].ida,
+			  connector->connector_type_id);
 
-// 	ida_simple_remove(&dev->mode_config.connector_ida,
-// 			  connector->index);
+	ida_simple_remove(&dev->mode_config.connector_ida,
+			  connector->index);
 
-// 	kfree(connector->display_info.bus_formats);
-// 	drm_mode_object_unregister(dev, &connector->base);
-// 	kfree(connector->name);
-// 	connector->name = NULL;
-// 	spin_lock_irq(&dev->mode_config.connector_list_lock);
-// 	list_del(&connector->head);
-// 	dev->mode_config.num_connector--;
-// 	spin_unlock_irq(&dev->mode_config.connector_list_lock);
+	kfree(connector->display_info.bus_formats);
+	drm_mode_object_unregister(dev, &connector->base);
+	kfree(connector->name);
+	connector->name = NULL;
+	spin_lock_irq(&dev->mode_config.connector_list_lock);
+	list_del(&connector->head);
+	dev->mode_config.num_connector--;
+	spin_unlock_irq(&dev->mode_config.connector_list_lock);
 
-// 	WARN_ON(connector->state && !connector->funcs->atomic_destroy_state);
-// 	if (connector->state && connector->funcs->atomic_destroy_state)
-// 		connector->funcs->atomic_destroy_state(connector,
-// 						       connector->state);
+	WARN_ON(connector->state && !connector->funcs->atomic_destroy_state);
+	if (connector->state && connector->funcs->atomic_destroy_state)
+		connector->funcs->atomic_destroy_state(connector,
+						       connector->state);
 
-// 	mutex_destroy(&connector->mutex);
+	mutex_destroy(&connector->mutex);
 
-// 	memset(connector, 0, sizeof(*connector));
+	memset(connector, 0, sizeof(*connector));
 
-// 	if (dev->registered)
-// 		drm_sysfs_hotplug_event(dev);
-// }
-// EXPORT_SYMBOL(drm_connector_cleanup);
+#if !defined(__AROS__)
+	if (dev->registered)
+		drm_sysfs_hotplug_event(dev);
+#endif
+}
+EXPORT_SYMBOL(drm_connector_cleanup);
 
-// /**
-//  * drm_connector_register - register a connector
-//  * @connector: the connector to register
-//  *
-//  * Register userspace interfaces for a connector
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_connector_register(struct drm_connector *connector)
-// {
-// 	int ret = 0;
+/**
+ * drm_connector_register - register a connector
+ * @connector: the connector to register
+ *
+ * Register userspace interfaces for a connector
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_connector_register(struct drm_connector *connector)
+{
+	int ret = 0;
 
-// 	if (!connector->dev->registered)
-// 		return 0;
+	if (!connector->dev->registered)
+		return 0;
 
-// 	mutex_lock(&connector->mutex);
-// 	if (connector->registration_state != DRM_CONNECTOR_INITIALIZING)
-// 		goto unlock;
+	mutex_lock(&connector->mutex);
+	if (connector->registration_state != DRM_CONNECTOR_INITIALIZING)
+		goto unlock;
 
-// 	ret = drm_sysfs_connector_add(connector);
-// 	if (ret)
-// 		goto unlock;
+#if !defined(__AROS__)
+	ret = drm_sysfs_connector_add(connector);
+	if (ret)
+		goto unlock;
 
-// 	drm_debugfs_connector_add(connector);
+	drm_debugfs_connector_add(connector);
+#endif
 
-// 	if (connector->funcs->late_register) {
-// 		ret = connector->funcs->late_register(connector);
-// 		if (ret)
-// 			goto err_debugfs;
-// 	}
+	if (connector->funcs->late_register) {
+		ret = connector->funcs->late_register(connector);
+		if (ret)
+			goto err_debugfs;
+	}
 
-// 	drm_mode_object_register(connector->dev, &connector->base);
+	drm_mode_object_register(connector->dev, &connector->base);
 
-// 	connector->registration_state = DRM_CONNECTOR_REGISTERED;
+	connector->registration_state = DRM_CONNECTOR_REGISTERED;
 
-// 	/* Let userspace know we have a new connector */
-// 	drm_sysfs_hotplug_event(connector->dev);
+#if !defined(__AROS__)
+	/* Let userspace know we have a new connector */
+	drm_sysfs_hotplug_event(connector->dev);
+#endif
 
-// 	goto unlock;
+	goto unlock;
 
-// err_debugfs:
-// 	drm_debugfs_connector_remove(connector);
-// 	drm_sysfs_connector_remove(connector);
-// unlock:
-// 	mutex_unlock(&connector->mutex);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_connector_register);
+err_debugfs:
+#if !defined(__AROS__)
+	drm_debugfs_connector_remove(connector);
+	drm_sysfs_connector_remove(connector);
+#endif
+unlock:
+	mutex_unlock(&connector->mutex);
+	return ret;
+}
+EXPORT_SYMBOL(drm_connector_register);
 
-// /**
-//  * drm_connector_unregister - unregister a connector
-//  * @connector: the connector to unregister
-//  *
-//  * Unregister userspace interfaces for a connector
-//  */
-// void drm_connector_unregister(struct drm_connector *connector)
-// {
-// 	mutex_lock(&connector->mutex);
-// 	if (connector->registration_state != DRM_CONNECTOR_REGISTERED) {
-// 		mutex_unlock(&connector->mutex);
-// 		return;
-// 	}
+/**
+ * drm_connector_unregister - unregister a connector
+ * @connector: the connector to unregister
+ *
+ * Unregister userspace interfaces for a connector
+ */
+void drm_connector_unregister(struct drm_connector *connector)
+{
+	mutex_lock(&connector->mutex);
+	if (connector->registration_state != DRM_CONNECTOR_REGISTERED) {
+		mutex_unlock(&connector->mutex);
+		return;
+	}
 
-// 	if (connector->funcs->early_unregister)
-// 		connector->funcs->early_unregister(connector);
+	if (connector->funcs->early_unregister)
+		connector->funcs->early_unregister(connector);
 
-// 	drm_sysfs_connector_remove(connector);
-// 	drm_debugfs_connector_remove(connector);
+#if !defined(__AROS__)
+	drm_sysfs_connector_remove(connector);
+	drm_debugfs_connector_remove(connector);
+#endif
 
-// 	connector->registration_state = DRM_CONNECTOR_UNREGISTERED;
-// 	mutex_unlock(&connector->mutex);
-// }
-// EXPORT_SYMBOL(drm_connector_unregister);
+	connector->registration_state = DRM_CONNECTOR_UNREGISTERED;
+	mutex_unlock(&connector->mutex);
+}
+EXPORT_SYMBOL(drm_connector_unregister);
 
 // void drm_connector_unregister_all(struct drm_device *dev)
 // {
@@ -2289,41 +2299,41 @@ out:
 }
 
 
-// /**
-//  * DOC: Tile group
-//  *
-//  * Tile groups are used to represent tiled monitors with a unique integer
-//  * identifier. Tiled monitors using DisplayID v1.3 have a unique 8-byte handle,
-//  * we store this in a tile group, so we have a common identifier for all tiles
-//  * in a monitor group. The property is called "TILE". Drivers can manage tile
-//  * groups using drm_mode_create_tile_group(), drm_mode_put_tile_group() and
-//  * drm_mode_get_tile_group(). But this is only needed for internal panels where
-//  * the tile group information is exposed through a non-standard way.
-//  */
+/**
+ * DOC: Tile group
+ *
+ * Tile groups are used to represent tiled monitors with a unique integer
+ * identifier. Tiled monitors using DisplayID v1.3 have a unique 8-byte handle,
+ * we store this in a tile group, so we have a common identifier for all tiles
+ * in a monitor group. The property is called "TILE". Drivers can manage tile
+ * groups using drm_mode_create_tile_group(), drm_mode_put_tile_group() and
+ * drm_mode_get_tile_group(). But this is only needed for internal panels where
+ * the tile group information is exposed through a non-standard way.
+ */
 
-// static void drm_tile_group_free(struct kref *kref)
-// {
-// 	struct drm_tile_group *tg = container_of(kref, struct drm_tile_group, refcount);
-// 	struct drm_device *dev = tg->dev;
-// 	mutex_lock(&dev->mode_config.idr_mutex);
-// 	idr_remove(&dev->mode_config.tile_idr, tg->id);
-// 	mutex_unlock(&dev->mode_config.idr_mutex);
-// 	kfree(tg);
-// }
+static void drm_tile_group_free(struct kref *kref)
+{
+	struct drm_tile_group *tg = container_of(kref, struct drm_tile_group, refcount);
+	struct drm_device *dev = tg->dev;
+	mutex_lock(&dev->mode_config.idr_mutex);
+	idr_remove(&dev->mode_config.tile_idr, tg->id);
+	mutex_unlock(&dev->mode_config.idr_mutex);
+	kfree(tg);
+}
 
-// /**
-//  * drm_mode_put_tile_group - drop a reference to a tile group.
-//  * @dev: DRM device
-//  * @tg: tile group to drop reference to.
-//  *
-//  * drop reference to tile group and free if 0.
-//  */
-// void drm_mode_put_tile_group(struct drm_device *dev,
-// 			     struct drm_tile_group *tg)
-// {
-// 	kref_put(&tg->refcount, drm_tile_group_free);
-// }
-// EXPORT_SYMBOL(drm_mode_put_tile_group);
+/**
+ * drm_mode_put_tile_group - drop a reference to a tile group.
+ * @dev: DRM device
+ * @tg: tile group to drop reference to.
+ *
+ * drop reference to tile group and free if 0.
+ */
+void drm_mode_put_tile_group(struct drm_device *dev,
+			     struct drm_tile_group *tg)
+{
+	kref_put(&tg->refcount, drm_tile_group_free);
+}
+EXPORT_SYMBOL(drm_mode_put_tile_group);
 
 // /**
 //  * drm_mode_get_tile_group - get a reference to an existing tile group

@@ -404,12 +404,12 @@ struct drm_display_info {
 // 	 */
 // 	u32 color_formats;
 
-// 	/**
-// 	 * @bus_formats: Pixel data format on the wire, somewhat redundant with
-// 	 * @color_formats. Array of size @num_bus_formats encoded using
-// 	 * MEDIA_BUS_FMT\_ defines shared with v4l and media drivers.
-// 	 */
-// 	const u32 *bus_formats;
+	/**
+	 * @bus_formats: Pixel data format on the wire, somewhat redundant with
+	 * @color_formats. Array of size @num_bus_formats encoded using
+	 * MEDIA_BUS_FMT\_ defines shared with v4l and media drivers.
+	 */
+	const u32 *bus_formats;
 // 	/**
 // 	 * @num_bus_formats: Size of @bus_formats array.
 // 	 */
@@ -564,12 +564,12 @@ struct drm_connector_state {
 // 	/** @state: backpointer to global drm_atomic_state */
 // 	struct drm_atomic_state *state;
 
-// 	/**
-// 	 * @commit: Tracks the pending commit to prevent use-after-free conditions.
-// 	 *
-// 	 * Is only set when @crtc is NULL.
-// 	 */
-// 	struct drm_crtc_commit *commit;
+	/**
+	 * @commit: Tracks the pending commit to prevent use-after-free conditions.
+	 *
+	 * Is only set when @crtc is NULL.
+	 */
+	struct drm_crtc_commit *commit;
 
 	/** @tv: TV connector state */
 	struct drm_tv_connector_state tv;
@@ -1387,8 +1387,8 @@ struct drm_connector {
 
 // 	/** @has_tile: is this connector connected to a tiled monitor */
 // 	bool has_tile;
-// 	/** @tile_group: tile group for the connected monitor */
-// 	struct drm_tile_group *tile_group;
+	/** @tile_group: tile group for the connected monitor */
+	struct drm_tile_group *tile_group;
 // 	/** @tile_is_single_monitor: whether the tile is one monitor housing */
 // 	bool tile_is_single_monitor;
 
@@ -1547,29 +1547,29 @@ int drm_connector_init_panel_orientation_property(
 // int drm_connector_attach_max_bpc_property(struct drm_connector *connector,
 // 					  int min, int max);
 
-// /**
-//  * struct drm_tile_group - Tile group metadata
-//  * @refcount: reference count
-//  * @dev: DRM device
-//  * @id: tile group id exposed to userspace
-//  * @group_data: Sink-private data identifying this group
-//  *
-//  * @group_data corresponds to displayid vend/prod/serial for external screens
-//  * with an EDID.
-//  */
-// struct drm_tile_group {
-// 	struct kref refcount;
-// 	struct drm_device *dev;
-// 	int id;
-// 	u8 group_data[8];
-// };
+/**
+ * struct drm_tile_group - Tile group metadata
+ * @refcount: reference count
+ * @dev: DRM device
+ * @id: tile group id exposed to userspace
+ * @group_data: Sink-private data identifying this group
+ *
+ * @group_data corresponds to displayid vend/prod/serial for external screens
+ * with an EDID.
+ */
+struct drm_tile_group {
+	struct kref refcount;
+	struct drm_device *dev;
+	int id;
+	u8 group_data[8];
+};
 
 // struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
 // 						  char topology[8]);
 // struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
 // 					       char topology[8]);
-// void drm_mode_put_tile_group(struct drm_device *dev,
-// 			     struct drm_tile_group *tg);
+void drm_mode_put_tile_group(struct drm_device *dev,
+			     struct drm_tile_group *tg);
 
 /**
  * struct drm_connector_list_iter - connector_list iterator
