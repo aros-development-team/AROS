@@ -518,7 +518,7 @@ nv50_head_create(struct drm_device *dev, int index)
 	drm_crtc_init_with_planes(dev, crtc, &base->plane, &curs->plane,
 				  &nv50_head_func, "head-%d", head->base.index);
 	drm_crtc_helper_add(crtc, &nv50_head_help);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	drm_mode_crtc_set_gamma_size(crtc, 256);
 	if (disp->disp->object.oclass >= GF110_DISP)
