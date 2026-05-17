@@ -127,11 +127,11 @@ struct drm_crtc_state {
 	 */
 	bool active;
 
-// 	/**
-// 	 * @planes_changed: Planes on this crtc are updated. Used by the atomic
-// 	 * helpers and drivers to steer the atomic commit control flow.
-// 	 */
-// 	bool planes_changed : 1;
+	/**
+	 * @planes_changed: Planes on this crtc are updated. Used by the atomic
+	 * helpers and drivers to steer the atomic commit control flow.
+	 */
+	bool planes_changed : 1;
 
 	/**
 	 * @mode_changed: @mode or @enable has been changed. Used by the atomic
@@ -162,12 +162,12 @@ struct drm_crtc_state {
 	 * check code, e.g. from &drm_encoder_helper_funcs.atomic_check
 	 */
 	bool connectors_changed : 1;
-// 	/**
-// 	 * @zpos_changed: zpos values of planes on this crtc have been updated.
-// 	 * Used by the atomic helpers and drivers to steer the atomic commit
-// 	 * control flow.
-// 	 */
-// 	bool zpos_changed : 1;
+	/**
+	 * @zpos_changed: zpos values of planes on this crtc have been updated.
+	 * Used by the atomic helpers and drivers to steer the atomic commit
+	 * control flow.
+	 */
+	bool zpos_changed : 1;
 	/**
 	 * @color_mgmt_changed: Color management properties have changed
 	 * (@gamma_lut, @degamma_lut or @ctm). Used by the atomic helpers and

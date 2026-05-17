@@ -81,7 +81,7 @@ void drm_atomic_helper_commit_cleanup_done() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_commit_hw_done() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_connector_destroy_state() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_connector_duplicate_state() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_connector_reset() { NOT_IMPLEMENTED_STOP }
+
 void __drm_atomic_helper_crtc_destroy_state() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_crtc_duplicate_state() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_crtc_reset() { NOT_IMPLEMENTED_STOP }
