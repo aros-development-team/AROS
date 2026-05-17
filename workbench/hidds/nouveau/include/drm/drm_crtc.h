@@ -261,11 +261,11 @@ struct drm_crtc_state {
 	 */
 	struct drm_display_mode mode;
 
-// 	/**
-// 	 * @mode_blob: &drm_property_blob for @mode, for exposing the mode to
-// 	 * atomic userspace.
-// 	 */
-// 	struct drm_property_blob *mode_blob;
+	/**
+	 * @mode_blob: &drm_property_blob for @mode, for exposing the mode to
+	 * atomic userspace.
+	 */
+	struct drm_property_blob *mode_blob;
 
 	/**
 	 * @degamma_lut:
@@ -276,13 +276,13 @@ struct drm_crtc_state {
 	 */
 	struct drm_property_blob *degamma_lut;
 
-// 	/**
-// 	 * @ctm:
-// 	 *
-// 	 * Color transformation matrix. See drm_crtc_enable_color_mgmt(). The
-// 	 * blob (if not NULL) is a &struct drm_color_ctm.
-// 	 */
-// 	struct drm_property_blob *ctm;
+	/**
+	 * @ctm:
+	 *
+	 * Color transformation matrix. See drm_crtc_enable_color_mgmt(). The
+	 * blob (if not NULL) is a &struct drm_color_ctm.
+	 */
+	struct drm_property_blob *ctm;
 
 	/**
 	 * @gamma_lut:
@@ -309,14 +309,14 @@ struct drm_crtc_state {
 // 	 */
 // 	bool async_flip;
 
-// 	/**
-// 	 * @vrr_enabled:
-// 	 *
-// 	 * Indicates if variable refresh rate should be enabled for the CRTC.
-// 	 * Support for the requested vrr state will depend on driver and
-// 	 * hardware capabiltiy - lacking support is not treated as failure.
-// 	 */
-// 	bool vrr_enabled;
+	/**
+	 * @vrr_enabled:
+	 *
+	 * Indicates if variable refresh rate should be enabled for the CRTC.
+	 * Support for the requested vrr state will depend on driver and
+	 * hardware capabiltiy - lacking support is not treated as failure.
+	 */
+	bool vrr_enabled;
 
 	/**
 	 * @self_refresh_active:
@@ -671,74 +671,74 @@ struct drm_crtc_funcs {
 	void (*atomic_destroy_state)(struct drm_crtc *crtc,
 				     struct drm_crtc_state *state);
 
-// 	/**
-// 	 * @atomic_set_property:
-// 	 *
-// 	 * Decode a driver-private property value and store the decoded value
-// 	 * into the passed-in state structure. Since the atomic core decodes all
-// 	 * standardized properties (even for extensions beyond the core set of
-// 	 * properties which might not be implemented by all drivers) this
-// 	 * requires drivers to subclass the state structure.
-// 	 *
-// 	 * Such driver-private properties should really only be implemented for
-// 	 * truly hardware/vendor specific state. Instead it is preferred to
-// 	 * standardize atomic extension and decode the properties used to expose
-// 	 * such an extension in the core.
-// 	 *
-// 	 * Do not call this function directly, use
-// 	 * drm_atomic_crtc_set_property() instead.
-// 	 *
-// 	 * This callback is optional if the driver does not support any
-// 	 * driver-private atomic properties.
-// 	 *
-// 	 * NOTE:
-// 	 *
-// 	 * This function is called in the state assembly phase of atomic
-// 	 * modesets, which can be aborted for any reason (including on
-// 	 * userspace's request to just check whether a configuration would be
-// 	 * possible). Drivers MUST NOT touch any persistent state (hardware or
-// 	 * software) or data structures except the passed in @state parameter.
-// 	 *
-// 	 * Also since userspace controls in which order properties are set this
-// 	 * function must not do any input validation (since the state update is
-// 	 * incomplete and hence likely inconsistent). Instead any such input
-// 	 * validation must be done in the various atomic_check callbacks.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 if the property has been found, -EINVAL if the property isn't
-// 	 * implemented by the driver (which should never happen, the core only
-// 	 * asks for properties attached to this CRTC). No other validation is
-// 	 * allowed by the driver. The core already checks that the property
-// 	 * value is within the range (integer, valid enum value, ...) the driver
-// 	 * set when registering the property.
-// 	 */
-// 	int (*atomic_set_property)(struct drm_crtc *crtc,
-// 				   struct drm_crtc_state *state,
-// 				   struct drm_property *property,
-// 				   uint64_t val);
-// 	/**
-// 	 * @atomic_get_property:
-// 	 *
-// 	 * Reads out the decoded driver-private property. This is used to
-// 	 * implement the GETCRTC IOCTL.
-// 	 *
-// 	 * Do not call this function directly, use
-// 	 * drm_atomic_crtc_get_property() instead.
-// 	 *
-// 	 * This callback is optional if the driver does not support any
-// 	 * driver-private atomic properties.
-// 	 *
-// 	 * RETURNS:
-// 	 *
-// 	 * 0 on success, -EINVAL if the property isn't implemented by the
-// 	 * driver (which should never happen, the core only asks for
-// 	 * properties attached to this CRTC).
-// 	 */
-// 	int (*atomic_get_property)(struct drm_crtc *crtc,
-// 				   const struct drm_crtc_state *state,
-// 				   struct drm_property *property,
-// 				   uint64_t *val);
+	/**
+	 * @atomic_set_property:
+	 *
+	 * Decode a driver-private property value and store the decoded value
+	 * into the passed-in state structure. Since the atomic core decodes all
+	 * standardized properties (even for extensions beyond the core set of
+	 * properties which might not be implemented by all drivers) this
+	 * requires drivers to subclass the state structure.
+	 *
+	 * Such driver-private properties should really only be implemented for
+	 * truly hardware/vendor specific state. Instead it is preferred to
+	 * standardize atomic extension and decode the properties used to expose
+	 * such an extension in the core.
+	 *
+	 * Do not call this function directly, use
+	 * drm_atomic_crtc_set_property() instead.
+	 *
+	 * This callback is optional if the driver does not support any
+	 * driver-private atomic properties.
+	 *
+	 * NOTE:
+	 *
+	 * This function is called in the state assembly phase of atomic
+	 * modesets, which can be aborted for any reason (including on
+	 * userspace's request to just check whether a configuration would be
+	 * possible). Drivers MUST NOT touch any persistent state (hardware or
+	 * software) or data structures except the passed in @state parameter.
+	 *
+	 * Also since userspace controls in which order properties are set this
+	 * function must not do any input validation (since the state update is
+	 * incomplete and hence likely inconsistent). Instead any such input
+	 * validation must be done in the various atomic_check callbacks.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 if the property has been found, -EINVAL if the property isn't
+	 * implemented by the driver (which should never happen, the core only
+	 * asks for properties attached to this CRTC). No other validation is
+	 * allowed by the driver. The core already checks that the property
+	 * value is within the range (integer, valid enum value, ...) the driver
+	 * set when registering the property.
+	 */
+	int (*atomic_set_property)(struct drm_crtc *crtc,
+				   struct drm_crtc_state *state,
+				   struct drm_property *property,
+				   uint64_t val);
+	/**
+	 * @atomic_get_property:
+	 *
+	 * Reads out the decoded driver-private property. This is used to
+	 * implement the GETCRTC IOCTL.
+	 *
+	 * Do not call this function directly, use
+	 * drm_atomic_crtc_get_property() instead.
+	 *
+	 * This callback is optional if the driver does not support any
+	 * driver-private atomic properties.
+	 *
+	 * RETURNS:
+	 *
+	 * 0 on success, -EINVAL if the property isn't implemented by the
+	 * driver (which should never happen, the core only asks for
+	 * properties attached to this CRTC).
+	 */
+	int (*atomic_get_property)(struct drm_crtc *crtc,
+				   const struct drm_crtc_state *state,
+				   struct drm_property *property,
+				   uint64_t *val);
 
 // 	/**
 // 	 * @late_register:
@@ -1162,7 +1162,7 @@ struct drm_crtc {
 // 	size_t num_connectors;
 // };
 
-// #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
+#define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
 
 // __printf(6, 7)
 int drm_crtc_init_with_planes(struct drm_device *dev,
@@ -1200,24 +1200,24 @@ static inline uint32_t drm_crtc_mask(const struct drm_crtc *crtc)
 // int drm_mode_set_config_internal(struct drm_mode_set *set);
 // struct drm_crtc *drm_crtc_from_index(struct drm_device *dev, int idx);
 
-// /**
-//  * drm_crtc_find - look up a CRTC object from its ID
-//  * @dev: DRM device
-//  * @file_priv: drm file to check for lease against.
-//  * @id: &drm_mode_object ID
-//  *
-//  * This can be used to look up a CRTC from its userspace ID. Only used by
-//  * drivers for legacy IOCTLs and interface, nowadays extensions to the KMS
-//  * userspace interface should be done using &drm_property.
-//  */
-// static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
-// 		struct drm_file *file_priv,
-// 		uint32_t id)
-// {
-// 	struct drm_mode_object *mo;
-// 	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_CRTC);
-// 	return mo ? obj_to_crtc(mo) : NULL;
-// }
+/**
+ * drm_crtc_find - look up a CRTC object from its ID
+ * @dev: DRM device
+ * @file_priv: drm file to check for lease against.
+ * @id: &drm_mode_object ID
+ *
+ * This can be used to look up a CRTC from its userspace ID. Only used by
+ * drivers for legacy IOCTLs and interface, nowadays extensions to the KMS
+ * userspace interface should be done using &drm_property.
+ */
+static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
+		struct drm_file *file_priv,
+		uint32_t id)
+{
+	struct drm_mode_object *mo;
+	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_CRTC);
+	return mo ? obj_to_crtc(mo) : NULL;
+}
 
 /**
  * drm_for_each_crtc - iterate over all CRTCs

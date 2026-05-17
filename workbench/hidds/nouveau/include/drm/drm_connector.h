@@ -133,15 +133,15 @@ enum drm_connector_registration_state {
 	DRM_CONNECTOR_UNREGISTERED = 2,
 };
 
-// enum subpixel_order {
-// 	SubPixelUnknown = 0,
-// 	SubPixelHorizontalRGB,
-// 	SubPixelHorizontalBGR,
-// 	SubPixelVerticalRGB,
-// 	SubPixelVerticalBGR,
-// 	SubPixelNone,
+enum subpixel_order {
+	SubPixelUnknown = 0,
+	SubPixelHorizontalRGB,
+	SubPixelHorizontalBGR,
+	SubPixelVerticalRGB,
+	SubPixelVerticalBGR,
+	SubPixelNone,
 
-// };
+};
 
 // /**
 //  * struct drm_scrambling: sink's scrambling support.
@@ -212,21 +212,21 @@ enum drm_connector_registration_state {
 // 	u8 y420_dc_modes;
 // };
 
-// /**
-//  * enum drm_link_status - connector's link_status property value
-//  *
-//  * This enum is used as the connector's link status property value.
-//  * It is set to the values defined in uapi.
-//  *
-//  * @DRM_LINK_STATUS_GOOD: DP Link is Good as a result of successful
-//  *                        link training
-//  * @DRM_LINK_STATUS_BAD: DP Link is BAD as a result of link training
-//  *                       failure
-//  */
-// enum drm_link_status {
-// 	DRM_LINK_STATUS_GOOD = DRM_MODE_LINK_STATUS_GOOD,
-// 	DRM_LINK_STATUS_BAD = DRM_MODE_LINK_STATUS_BAD,
-// };
+/**
+ * enum drm_link_status - connector's link_status property value
+ *
+ * This enum is used as the connector's link status property value.
+ * It is set to the values defined in uapi.
+ *
+ * @DRM_LINK_STATUS_GOOD: DP Link is Good as a result of successful
+ *                        link training
+ * @DRM_LINK_STATUS_BAD: DP Link is BAD as a result of link training
+ *                       failure
+ */
+enum drm_link_status {
+	DRM_LINK_STATUS_GOOD = DRM_MODE_LINK_STATUS_GOOD,
+	DRM_LINK_STATUS_BAD = DRM_MODE_LINK_STATUS_BAD,
+};
 
 // /**
 //  * enum drm_panel_orientation - panel_orientation info for &drm_display_info
@@ -362,25 +362,25 @@ enum drm_connector_registration_state {
  * drm_add_edid_modes().
  */
 struct drm_display_info {
-// 	/**
-// 	 * @width_mm: Physical width in mm.
-// 	 */
-// 	unsigned int width_mm;
+	/**
+	 * @width_mm: Physical width in mm.
+	 */
+	unsigned int width_mm;
 
-// 	/**
-// 	 * @height_mm: Physical height in mm.
-// 	 */
-// 	unsigned int height_mm;
+	/**
+	 * @height_mm: Physical height in mm.
+	 */
+	unsigned int height_mm;
 
 	/**
 	 * @bpc: Maximum bits per color channel. Used by HDMI and DP outputs.
 	 */
 	unsigned int bpc;
 
-// 	/**
-// 	 * @subpixel_order: Subpixel order of LCD panels.
-// 	 */
-// 	enum subpixel_order subpixel_order;
+	/**
+	 * @subpixel_order: Subpixel order of LCD panels.
+	 */
+	enum subpixel_order subpixel_order;
 
 // #define DRM_COLOR_FORMAT_RGB444		(1<<0)
 // #define DRM_COLOR_FORMAT_YCRCB444	(1<<1)
@@ -470,57 +470,57 @@ struct drm_display_info {
 // 				     const u32 *formats,
 // 				     unsigned int num_formats);
 
-// /**
-//  * struct drm_connector_tv_margins - TV connector related margins
-//  *
-//  * Describes the margins in pixels to put around the image on TV
-//  * connectors to deal with overscan.
-//  */
-// struct drm_connector_tv_margins {
-// 	/**
-// 	 * @bottom: Bottom margin in pixels.
-// 	 */
-// 	unsigned int bottom;
+/**
+ * struct drm_connector_tv_margins - TV connector related margins
+ *
+ * Describes the margins in pixels to put around the image on TV
+ * connectors to deal with overscan.
+ */
+struct drm_connector_tv_margins {
+	/**
+	 * @bottom: Bottom margin in pixels.
+	 */
+	unsigned int bottom;
 
-// 	/**
-// 	 * @left: Left margin in pixels.
-// 	 */
-// 	unsigned int left;
+	/**
+	 * @left: Left margin in pixels.
+	 */
+	unsigned int left;
 
-// 	/**
-// 	 * @right: Right margin in pixels.
-// 	 */
-// 	unsigned int right;
+	/**
+	 * @right: Right margin in pixels.
+	 */
+	unsigned int right;
 
-// 	/**
-// 	 * @top: Top margin in pixels.
-// 	 */
-// 	unsigned int top;
-// };
+	/**
+	 * @top: Top margin in pixels.
+	 */
+	unsigned int top;
+};
 
-// /**
-//  * struct drm_tv_connector_state - TV connector related states
-//  * @subconnector: selected subconnector
-//  * @margins: TV margins
-//  * @mode: TV mode
-//  * @brightness: brightness in percent
-//  * @contrast: contrast in percent
-//  * @flicker_reduction: flicker reduction in percent
-//  * @overscan: overscan in percent
-//  * @saturation: saturation in percent
-//  * @hue: hue in percent
-//  */
-// struct drm_tv_connector_state {
-// 	enum drm_mode_subconnector subconnector;
-// 	struct drm_connector_tv_margins margins;
-// 	unsigned int mode;
-// 	unsigned int brightness;
-// 	unsigned int contrast;
-// 	unsigned int flicker_reduction;
-// 	unsigned int overscan;
-// 	unsigned int saturation;
-// 	unsigned int hue;
-// };
+/**
+ * struct drm_tv_connector_state - TV connector related states
+ * @subconnector: selected subconnector
+ * @margins: TV margins
+ * @mode: TV mode
+ * @brightness: brightness in percent
+ * @contrast: contrast in percent
+ * @flicker_reduction: flicker reduction in percent
+ * @overscan: overscan in percent
+ * @saturation: saturation in percent
+ * @hue: hue in percent
+ */
+struct drm_tv_connector_state {
+	enum drm_mode_subconnector subconnector;
+	struct drm_connector_tv_margins margins;
+	unsigned int mode;
+	unsigned int brightness;
+	unsigned int contrast;
+	unsigned int flicker_reduction;
+	unsigned int overscan;
+	unsigned int saturation;
+	unsigned int hue;
+};
 
 /**
  * struct drm_connector_state - mutable connector state
@@ -555,11 +555,11 @@ struct drm_connector_state {
 	 */
 	struct drm_encoder *best_encoder;
 
-// 	/**
-// 	 * @link_status: Connector link_status to keep track of whether link is
-// 	 * GOOD or BAD to notify userspace if retraining is necessary.
-// 	 */
-// 	enum drm_link_status link_status;
+	/**
+	 * @link_status: Connector link_status to keep track of whether link is
+	 * GOOD or BAD to notify userspace if retraining is necessary.
+	 */
+	enum drm_link_status link_status;
 
 // 	/** @state: backpointer to global drm_atomic_state */
 // 	struct drm_atomic_state *state;
@@ -571,8 +571,8 @@ struct drm_connector_state {
 // 	 */
 // 	struct drm_crtc_commit *commit;
 
-// 	/** @tv: TV connector state */
-// 	struct drm_tv_connector_state tv;
+	/** @tv: TV connector state */
+	struct drm_tv_connector_state tv;
 
 // 	/**
 // 	 * @self_refresh_aware:
@@ -597,38 +597,38 @@ struct drm_connector_state {
 // 	 */
 // 	enum hdmi_picture_aspect picture_aspect_ratio;
 
-// 	/**
-// 	 * @content_type: Connector property to control the
-// 	 * HDMI infoframe content type setting.
-// 	 * The %DRM_MODE_CONTENT_TYPE_\* values much
-// 	 * match the values.
-// 	 */
-// 	unsigned int content_type;
+	/**
+	 * @content_type: Connector property to control the
+	 * HDMI infoframe content type setting.
+	 * The %DRM_MODE_CONTENT_TYPE_\* values much
+	 * match the values.
+	 */
+	unsigned int content_type;
 
-// 	/**
-// 	 * @hdcp_content_type: Connector property to pass the type of
-// 	 * protected content. This is most commonly used for HDCP.
-// 	 */
-// 	unsigned int hdcp_content_type;
+	/**
+	 * @hdcp_content_type: Connector property to pass the type of
+	 * protected content. This is most commonly used for HDCP.
+	 */
+	unsigned int hdcp_content_type;
 
-// 	/**
-// 	 * @scaling_mode: Connector property to control the
-// 	 * upscaling, mostly used for built-in panels.
-// 	 */
-// 	unsigned int scaling_mode;
+	/**
+	 * @scaling_mode: Connector property to control the
+	 * upscaling, mostly used for built-in panels.
+	 */
+	unsigned int scaling_mode;
 
-// 	/**
-// 	 * @content_protection: Connector property to request content
-// 	 * protection. This is most commonly used for HDCP.
-// 	 */
-// 	unsigned int content_protection;
+	/**
+	 * @content_protection: Connector property to request content
+	 * protection. This is most commonly used for HDCP.
+	 */
+	unsigned int content_protection;
 
-// 	/**
-// 	 * @colorspace: State variable for Connector property to request
-// 	 * colorspace change on Sink. This is most commonly used to switch
-// 	 * to wider color gamuts like BT2020.
-// 	 */
-// 	u32 colorspace;
+	/**
+	 * @colorspace: State variable for Connector property to request
+	 * colorspace change on Sink. This is most commonly used to switch
+	 * to wider color gamuts like BT2020.
+	 */
+	u32 colorspace;
 
 // 	/**
 // 	 * @writeback_job: Writeback job for writeback connectors
@@ -643,11 +643,11 @@ struct drm_connector_state {
 // 	 */
 // 	struct drm_writeback_job *writeback_job;
 
-// 	/**
-// 	 * @max_requested_bpc: Connector property to limit the maximum bit
-// 	 * depth of the pixels.
-// 	 */
-// 	u8 max_requested_bpc;
+	/**
+	 * @max_requested_bpc: Connector property to limit the maximum bit
+	 * depth of the pixels.
+	 */
+	u8 max_requested_bpc;
 
 // 	/**
 // 	 * @max_bpc: Connector max_bpc based on the requested max_bpc property
@@ -655,11 +655,11 @@ struct drm_connector_state {
 // 	 */
 // 	u8 max_bpc;
 
-// 	/**
-// 	 * @hdr_output_metadata:
-// 	 * DRM blob property for HDR output metadata
-// 	 */
-// 	struct drm_property_blob *hdr_output_metadata;
+	/**
+	 * @hdr_output_metadata:
+	 * DRM blob property for HDR output metadata
+	 */
+	struct drm_property_blob *hdr_output_metadata;
 };
 
 /**
@@ -1163,19 +1163,19 @@ struct drm_connector {
 	 */
 	enum drm_connector_registration_state registration_state;
 
-// 	/**
-// 	 * @modes:
-// 	 * Modes available on this connector (from fill_modes() + user).
-// 	 * Protected by &drm_mode_config.mutex.
-// 	 */
-// 	struct list_head modes;
+	/**
+	 * @modes:
+	 * Modes available on this connector (from fill_modes() + user).
+	 * Protected by &drm_mode_config.mutex.
+	 */
+	struct list_head modes;
 
-// 	/**
-// 	 * @status:
-// 	 * One of the drm_connector_status enums (connected, not, or unknown).
-// 	 * Protected by &drm_mode_config.mutex.
-// 	 */
-// 	enum drm_connector_status status;
+	/**
+	 * @status:
+	 * One of the drm_connector_status enums (connected, not, or unknown).
+	 * Protected by &drm_mode_config.mutex.
+	 */
+	enum drm_connector_status status;
 
 	/**
 	 * @probed_modes:
@@ -1209,11 +1209,11 @@ struct drm_connector {
 // 	/** @properties: property tracking for this connector */
 // 	struct drm_object_properties properties;
 
-// 	/**
-// 	 * @scaling_mode_property: Optional atomic property to control the
-// 	 * upscaling. See drm_connector_attach_content_protection_property().
-// 	 */
-// 	struct drm_property *scaling_mode_property;
+	/**
+	 * @scaling_mode_property: Optional atomic property to control the
+	 * upscaling. See drm_connector_attach_content_protection_property().
+	 */
+	struct drm_property *scaling_mode_property;
 
 // 	/**
 // 	 * @vrr_capable_property: Optional property to help userspace
@@ -1226,11 +1226,11 @@ struct drm_connector {
 // 	 */
 // 	struct drm_property *vrr_capable_property;
 
-// 	/**
-// 	 * @colorspace_property: Connector property to set the suitable
-// 	 * colorspace supported by the sink.
-// 	 */
-// 	struct drm_property *colorspace_property;
+	/**
+	 * @colorspace_property: Connector property to set the suitable
+	 * colorspace supported by the sink.
+	 */
+	struct drm_property *colorspace_property;
 
 // 	/**
 // 	 * @path_blob_ptr:
@@ -1240,11 +1240,11 @@ struct drm_connector {
 // 	 */
 // 	struct drm_property_blob *path_blob_ptr;
 
-// 	/**
-// 	 * @max_bpc_property: Default connector property for the max bpc to be
-// 	 * driven out of the connector.
-// 	 */
-// 	struct drm_property *max_bpc_property;
+	/**
+	 * @max_bpc_property: Default connector property for the max bpc to be
+	 * driven out of the connector.
+	 */
+	struct drm_property *max_bpc_property;
 
 #define DRM_CONNECTOR_POLL_HPD (1 << 0)
 #define DRM_CONNECTOR_POLL_CONNECT (1 << 1)
@@ -1415,7 +1415,7 @@ struct drm_connector {
 // 	struct hdr_sink_metadata hdr_sink_metadata;
 };
 
-// #define obj_to_connector(x) container_of(x, struct drm_connector, base)
+#define obj_to_connector(x) container_of(x, struct drm_connector, base)
 
 int drm_connector_init(struct drm_device *dev,
 		       struct drm_connector *connector,
@@ -1444,23 +1444,23 @@ static inline unsigned int drm_connector_index(const struct drm_connector *conne
 // 	return 1 << connector->index;
 // }
 
-// /**
-//  * drm_connector_lookup - lookup connector object
-//  * @dev: DRM device
-//  * @file_priv: drm file to check for lease against.
-//  * @id: connector object id
-//  *
-//  * This function looks up the connector object specified by id
-//  * add takes a reference to it.
-//  */
-// static inline struct drm_connector *drm_connector_lookup(struct drm_device *dev,
-// 		struct drm_file *file_priv,
-// 		uint32_t id)
-// {
-// 	struct drm_mode_object *mo;
-// 	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_CONNECTOR);
-// 	return mo ? obj_to_connector(mo) : NULL;
-// }
+/**
+ * drm_connector_lookup - lookup connector object
+ * @dev: DRM device
+ * @file_priv: drm file to check for lease against.
+ * @id: connector object id
+ *
+ * This function looks up the connector object specified by id
+ * add takes a reference to it.
+ */
+static inline struct drm_connector *drm_connector_lookup(struct drm_device *dev,
+		struct drm_file *file_priv,
+		uint32_t id)
+{
+	struct drm_mode_object *mo;
+	mo = drm_mode_object_find(dev, file_priv, id, DRM_MODE_OBJECT_CONNECTOR);
+	return mo ? obj_to_connector(mo) : NULL;
+}
 
 // /**
 //  * drm_connector_get - acquire a connector reference

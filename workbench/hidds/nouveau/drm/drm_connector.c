@@ -2098,166 +2098,186 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
 // 	return drm_mode_obj_set_property_ioctl(dev, &obj_set_prop, file_priv);
 // }
 
-// static struct drm_encoder *drm_connector_get_encoder(struct drm_connector *connector)
-// {
-// 	/* For atomic drivers only state objects are synchronously updated and
-// 	 * protected by modeset locks, so check those first. */
-// 	if (connector->state)
-// 		return connector->state->best_encoder;
-// 	return connector->encoder;
-// }
+static struct drm_encoder *drm_connector_get_encoder(struct drm_connector *connector)
+{
+	/* For atomic drivers only state objects are synchronously updated and
+	 * protected by modeset locks, so check those first. */
+	if (connector->state)
+		return connector->state->best_encoder;
+	return connector->encoder;
+}
 
-// static bool
-// drm_mode_expose_to_userspace(const struct drm_display_mode *mode,
-// 			     const struct list_head *export_list,
-// 			     const struct drm_file *file_priv)
-// {
-// 	/*
-// 	 * If user-space hasn't configured the driver to expose the stereo 3D
-// 	 * modes, don't expose them.
-// 	 */
-// 	if (!file_priv->stereo_allowed && drm_mode_is_stereo(mode))
-// 		return false;
-// 	/*
-// 	 * If user-space hasn't configured the driver to expose the modes
-// 	 * with aspect-ratio, don't expose them. However if such a mode
-// 	 * is unique, let it be exposed, but reset the aspect-ratio flags
-// 	 * while preparing the list of user-modes.
-// 	 */
-// 	if (!file_priv->aspect_ratio_allowed) {
-// 		struct drm_display_mode *mode_itr;
+static bool
+drm_mode_expose_to_userspace(const struct drm_display_mode *mode,
+			     const struct list_head *export_list,
+			     const struct drm_file *file_priv)
+{
+	/*
+	 * If user-space hasn't configured the driver to expose the stereo 3D
+	 * modes, don't expose them.
+	 */
+#if !defined(__AROS__)
+	if (!file_priv->stereo_allowed && drm_mode_is_stereo(mode))
+#else
+	if (drm_mode_is_stereo(mode))
+#endif
+		return false;
+	/*
+	 * If user-space hasn't configured the driver to expose the modes
+	 * with aspect-ratio, don't expose them. However if such a mode
+	 * is unique, let it be exposed, but reset the aspect-ratio flags
+	 * while preparing the list of user-modes.
+	 */
+#if !defined(__AROS__)
+	if (!file_priv->aspect_ratio_allowed) {
+#else
+	if (1) {
+#endif
+		struct drm_display_mode *mode_itr;
 
-// 		list_for_each_entry(mode_itr, export_list, export_head)
-// 			if (drm_mode_match(mode_itr, mode,
-// 					   DRM_MODE_MATCH_TIMINGS |
-// 					   DRM_MODE_MATCH_CLOCK |
-// 					   DRM_MODE_MATCH_FLAGS |
-// 					   DRM_MODE_MATCH_3D_FLAGS))
-// 				return false;
-// 	}
+		list_for_each_entry(mode_itr, export_list, export_head)
+			if (drm_mode_match(mode_itr, mode,
+					   DRM_MODE_MATCH_TIMINGS |
+					   DRM_MODE_MATCH_CLOCK |
+					   DRM_MODE_MATCH_FLAGS |
+					   DRM_MODE_MATCH_3D_FLAGS))
+				return false;
+	}
 
-// 	return true;
-// }
+	return true;
+}
 
-// int drm_mode_getconnector(struct drm_device *dev, void *data,
-// 			  struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_connector *out_resp = data;
-// 	struct drm_connector *connector;
-// 	struct drm_encoder *encoder;
-// 	struct drm_display_mode *mode;
-// 	int mode_count = 0;
-// 	int encoders_count = 0;
-// 	int ret = 0;
-// 	int copied = 0;
-// 	int i;
-// 	struct drm_mode_modeinfo u_mode;
-// 	struct drm_mode_modeinfo __user *mode_ptr;
-// 	uint32_t __user *encoder_ptr;
-// 	LIST_HEAD(export_list);
+int drm_mode_getconnector(struct drm_device *dev, void *data,
+			  struct drm_file *file_priv)
+{
+	struct drm_mode_get_connector *out_resp = data;
+	struct drm_connector *connector;
+	struct drm_encoder *encoder;
+	struct drm_display_mode *mode;
+	int mode_count = 0;
+	int encoders_count = 0;
+	int ret = 0;
+	int copied = 0;
+	int i;
+	struct drm_mode_modeinfo u_mode;
+	struct drm_mode_modeinfo __user *mode_ptr;
+	uint32_t __user *encoder_ptr;
+	LIST_HEAD(export_list);
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	memset(&u_mode, 0, sizeof(struct drm_mode_modeinfo));
+	memset(&u_mode, 0, sizeof(struct drm_mode_modeinfo));
 
-// 	connector = drm_connector_lookup(dev, file_priv, out_resp->connector_id);
-// 	if (!connector)
-// 		return -ENOENT;
+	connector = drm_connector_lookup(dev, file_priv, out_resp->connector_id);
+	if (!connector)
+		return -ENOENT;
 
-// 	drm_connector_for_each_possible_encoder(connector, encoder, i)
-// 		encoders_count++;
+	drm_connector_for_each_possible_encoder(connector, encoder, i)
+		encoders_count++;
 
-// 	if ((out_resp->count_encoders >= encoders_count) && encoders_count) {
-// 		copied = 0;
-// 		encoder_ptr = (uint32_t __user *)(unsigned long)(out_resp->encoders_ptr);
+	if ((out_resp->count_encoders >= encoders_count) && encoders_count) {
+		copied = 0;
+		encoder_ptr = (uint32_t __user *)(unsigned long)(out_resp->encoders_ptr);
 
-// 		drm_connector_for_each_possible_encoder(connector, encoder, i) {
-// 			if (put_user(encoder->base.id, encoder_ptr + copied)) {
-// 				ret = -EFAULT;
-// 				goto out;
-// 			}
-// 			copied++;
-// 		}
-// 	}
-// 	out_resp->count_encoders = encoders_count;
+		drm_connector_for_each_possible_encoder(connector, encoder, i) {
+			if (put_user(encoder->base.id, encoder_ptr + copied)) {
+				ret = -EFAULT;
+				goto out;
+			}
+			copied++;
+		}
+	}
+	out_resp->count_encoders = encoders_count;
 
-// 	out_resp->connector_id = connector->base.id;
-// 	out_resp->connector_type = connector->connector_type;
-// 	out_resp->connector_type_id = connector->connector_type_id;
+	out_resp->connector_id = connector->base.id;
+	out_resp->connector_type = connector->connector_type;
+	out_resp->connector_type_id = connector->connector_type_id;
 
-// 	mutex_lock(&dev->mode_config.mutex);
-// 	if (out_resp->count_modes == 0) {
-// 		connector->funcs->fill_modes(connector,
-// 					     dev->mode_config.max_width,
-// 					     dev->mode_config.max_height);
-// 	}
+	mutex_lock(&dev->mode_config.mutex);
+	if (out_resp->count_modes == 0) {
+		connector->funcs->fill_modes(connector,
+					     dev->mode_config.max_width,
+					     dev->mode_config.max_height);
+	}
 
-// 	out_resp->mm_width = connector->display_info.width_mm;
-// 	out_resp->mm_height = connector->display_info.height_mm;
-// 	out_resp->subpixel = connector->display_info.subpixel_order;
-// 	out_resp->connection = connector->status;
+	out_resp->mm_width = connector->display_info.width_mm;
+	out_resp->mm_height = connector->display_info.height_mm;
+	out_resp->subpixel = connector->display_info.subpixel_order;
+	out_resp->connection = connector->status;
 
-// 	/* delayed so we get modes regardless of pre-fill_modes state */
-// 	list_for_each_entry(mode, &connector->modes, head)
-// 		if (drm_mode_expose_to_userspace(mode, &export_list,
-// 						 file_priv)) {
-// 			list_add_tail(&mode->export_head, &export_list);
-// 			mode_count++;
-// 		}
+	/* delayed so we get modes regardless of pre-fill_modes state */
+	list_for_each_entry(mode, &connector->modes, head)
+		if (drm_mode_expose_to_userspace(mode, &export_list,
+						 file_priv)) {
+			list_add_tail(&mode->export_head, &export_list);
+			mode_count++;
+		}
 
-// 	/*
-// 	 * This ioctl is called twice, once to determine how much space is
-// 	 * needed, and the 2nd time to fill it.
-// 	 * The modes that need to be exposed to the user are maintained in the
-// 	 * 'export_list'. When the ioctl is called first time to determine the,
-// 	 * space, the export_list gets filled, to find the no.of modes. In the
-// 	 * 2nd time, the user modes are filled, one by one from the export_list.
-// 	 */
-// 	if ((out_resp->count_modes >= mode_count) && mode_count) {
-// 		copied = 0;
-// 		mode_ptr = (struct drm_mode_modeinfo __user *)(unsigned long)out_resp->modes_ptr;
-// 		list_for_each_entry(mode, &export_list, export_head) {
-// 			drm_mode_convert_to_umode(&u_mode, mode);
-// 			/*
-// 			 * Reset aspect ratio flags of user-mode, if modes with
-// 			 * aspect-ratio are not supported.
-// 			 */
-// 			if (!file_priv->aspect_ratio_allowed)
-// 				u_mode.flags &= ~DRM_MODE_FLAG_PIC_AR_MASK;
-// 			if (copy_to_user(mode_ptr + copied,
-// 					 &u_mode, sizeof(u_mode))) {
-// 				ret = -EFAULT;
-// 				mutex_unlock(&dev->mode_config.mutex);
+	/*
+	 * This ioctl is called twice, once to determine how much space is
+	 * needed, and the 2nd time to fill it.
+	 * The modes that need to be exposed to the user are maintained in the
+	 * 'export_list'. When the ioctl is called first time to determine the,
+	 * space, the export_list gets filled, to find the no.of modes. In the
+	 * 2nd time, the user modes are filled, one by one from the export_list.
+	 */
+	if ((out_resp->count_modes >= mode_count) && mode_count) {
+		copied = 0;
+		mode_ptr = (struct drm_mode_modeinfo __user *)(unsigned long)out_resp->modes_ptr;
+		list_for_each_entry(mode, &export_list, export_head) {
+			drm_mode_convert_to_umode(&u_mode, mode);
+			/*
+			 * Reset aspect ratio flags of user-mode, if modes with
+			 * aspect-ratio are not supported.
+			 */
+#if !defined(__AROS__)
+			if (!file_priv->aspect_ratio_allowed)
+#else
+			if (1)
+#endif
+				u_mode.flags &= ~DRM_MODE_FLAG_PIC_AR_MASK;
+			if (copy_to_user(mode_ptr + copied,
+					 &u_mode, sizeof(u_mode))) {
+				ret = -EFAULT;
+				mutex_unlock(&dev->mode_config.mutex);
 
-// 				goto out;
-// 			}
-// 			copied++;
-// 		}
-// 	}
-// 	out_resp->count_modes = mode_count;
-// 	mutex_unlock(&dev->mode_config.mutex);
+				goto out;
+			}
+			copied++;
+		}
+	}
+	out_resp->count_modes = mode_count;
+	mutex_unlock(&dev->mode_config.mutex);
 
-// 	drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
-// 	encoder = drm_connector_get_encoder(connector);
-// 	if (encoder)
-// 		out_resp->encoder_id = encoder->base.id;
-// 	else
-// 		out_resp->encoder_id = 0;
+#if !defined(__AROS__)
+	drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
+#endif
+	encoder = drm_connector_get_encoder(connector);
+	if (encoder)
+		out_resp->encoder_id = encoder->base.id;
+	else
+		out_resp->encoder_id = 0;
 
-// 	/* Only grab properties after probing, to make sure EDID and other
-// 	 * properties reflect the latest status. */
-// 	ret = drm_mode_object_get_properties(&connector->base, file_priv->atomic,
-// 			(uint32_t __user *)(unsigned long)(out_resp->props_ptr),
-// 			(uint64_t __user *)(unsigned long)(out_resp->prop_values_ptr),
-// 			&out_resp->count_props);
-// 	drm_modeset_unlock(&dev->mode_config.connection_mutex);
+	/* Only grab properties after probing, to make sure EDID and other
+	 * properties reflect the latest status. */
+#if !defined(__AROS__)
+	ret = drm_mode_object_get_properties(&connector->base, file_priv->atomic,
+#else
+	ret = drm_mode_object_get_properties(&connector->base, false,
+#endif
+			(uint32_t __user *)(unsigned long)(out_resp->props_ptr),
+			(uint64_t __user *)(unsigned long)(out_resp->prop_values_ptr),
+			&out_resp->count_props);
+#if !defined(__AROS__)
+	drm_modeset_unlock(&dev->mode_config.connection_mutex);
+#endif
 
-// out:
-// 	drm_connector_put(connector);
+out:
+	drm_connector_put(connector);
 
-// 	return ret;
-// }
+	return ret;
+}
 
 
 // /**

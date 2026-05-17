@@ -5,6 +5,8 @@
 #ifndef DRM_COMPAT_DRM_LEASE_H
 #define DRM_COMPAT_DRM_LEASE_H
 
-#define drm_lease_held(x, y) (1)
+#define drm_lease_held(x, y)                (1)
+#define _drm_lease_held(x, y)               (1)
+#define drm_mode_object_lease_required(x)   (0)
 
 #endif

@@ -29,6 +29,7 @@
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
 // #include <drm/drm_file.h>
+#include <drm/drm_lease.h>
 #include <drm/drm_mode_object.h>
 #include <drm/drm_print.h>
 
@@ -135,53 +136,53 @@ void drm_mode_object_unregister(struct drm_device *dev,
 // 	}
 // }
 
-// struct drm_mode_object *__drm_mode_object_find(struct drm_device *dev,
-// 					       struct drm_file *file_priv,
-// 					       uint32_t id, uint32_t type)
-// {
-// 	struct drm_mode_object *obj = NULL;
+struct drm_mode_object *__drm_mode_object_find(struct drm_device *dev,
+					       struct drm_file *file_priv,
+					       uint32_t id, uint32_t type)
+{
+	struct drm_mode_object *obj = NULL;
 
-// 	mutex_lock(&dev->mode_config.idr_mutex);
-// 	obj = idr_find(&dev->mode_config.object_idr, id);
-// 	if (obj && type != DRM_MODE_OBJECT_ANY && obj->type != type)
-// 		obj = NULL;
-// 	if (obj && obj->id != id)
-// 		obj = NULL;
+	mutex_lock(&dev->mode_config.idr_mutex);
+	obj = idr_find(&dev->mode_config.object_idr, id);
+	if (obj && type != DRM_MODE_OBJECT_ANY && obj->type != type)
+		obj = NULL;
+	if (obj && obj->id != id)
+		obj = NULL;
 
-// 	if (obj && drm_mode_object_lease_required(obj->type) &&
-// 	    !_drm_lease_held(file_priv, obj->id))
-// 		obj = NULL;
+	if (obj && drm_mode_object_lease_required(obj->type) &&
+	    !_drm_lease_held(file_priv, obj->id))
+		obj = NULL;
 
-// 	if (obj && obj->free_cb) {
-// 		if (!kref_get_unless_zero(&obj->refcount))
-// 			obj = NULL;
-// 	}
-// 	mutex_unlock(&dev->mode_config.idr_mutex);
+	if (obj && obj->free_cb) {
+		if (!kref_get_unless_zero(&obj->refcount))
+			obj = NULL;
+	}
+	mutex_unlock(&dev->mode_config.idr_mutex);
 
-// 	return obj;
-// }
+	return obj;
+}
 
-// /**
-//  * drm_mode_object_find - look up a drm object with static lifetime
-//  * @dev: drm device
-//  * @file_priv: drm file
-//  * @id: id of the mode object
-//  * @type: type of the mode object
-//  *
-//  * This function is used to look up a modeset object. It will acquire a
-//  * reference for reference counted objects. This reference must be dropped again
-//  * by callind drm_mode_object_put().
-//  */
-// struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
-// 		struct drm_file *file_priv,
-// 		uint32_t id, uint32_t type)
-// {
-// 	struct drm_mode_object *obj = NULL;
+/**
+ * drm_mode_object_find - look up a drm object with static lifetime
+ * @dev: drm device
+ * @file_priv: drm file
+ * @id: id of the mode object
+ * @type: type of the mode object
+ *
+ * This function is used to look up a modeset object. It will acquire a
+ * reference for reference counted objects. This reference must be dropped again
+ * by callind drm_mode_object_put().
+ */
+struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
+		struct drm_file *file_priv,
+		uint32_t id, uint32_t type)
+{
+	struct drm_mode_object *obj = NULL;
 
-// 	obj = __drm_mode_object_find(dev, file_priv, id, type);
-// 	return obj;
-// }
-// EXPORT_SYMBOL(drm_mode_object_find);
+	obj = __drm_mode_object_find(dev, file_priv, id, type);
+	return obj;
+}
+EXPORT_SYMBOL(drm_mode_object_find);
 
 // /**
 //  * drm_mode_object_put - release a mode object reference
@@ -285,30 +286,30 @@ void drm_mode_object_unregister(struct drm_device *dev,
 // }
 // EXPORT_SYMBOL(drm_object_property_set_value);
 
-// static int __drm_object_property_get_value(struct drm_mode_object *obj,
-// 					   struct drm_property *property,
-// 					   uint64_t *val)
-// {
-// 	int i;
+static int __drm_object_property_get_value(struct drm_mode_object *obj,
+					   struct drm_property *property,
+					   uint64_t *val)
+{
+	int i;
 
-// 	/* read-only properties bypass atomic mechanism and still store
-// 	 * their value in obj->properties->values[].. mostly to avoid
-// 	 * having to deal w/ EDID and similar props in atomic paths:
-// 	 */
-// 	if (drm_drv_uses_atomic_modeset(property->dev) &&
-// 			!(property->flags & DRM_MODE_PROP_IMMUTABLE))
-// 		return drm_atomic_get_property(obj, property, val);
+	/* read-only properties bypass atomic mechanism and still store
+	 * their value in obj->properties->values[].. mostly to avoid
+	 * having to deal w/ EDID and similar props in atomic paths:
+	 */
+	if (drm_drv_uses_atomic_modeset(property->dev) &&
+			!(property->flags & DRM_MODE_PROP_IMMUTABLE))
+		return drm_atomic_get_property(obj, property, val);
 
-// 	for (i = 0; i < obj->properties->count; i++) {
-// 		if (obj->properties->properties[i] == property) {
-// 			*val = obj->properties->values[i];
-// 			return 0;
-// 		}
+	for (i = 0; i < obj->properties->count; i++) {
+		if (obj->properties->properties[i] == property) {
+			*val = obj->properties->values[i];
+			return 0;
+		}
 
-// 	}
+	}
 
-// 	return -EINVAL;
-// }
+	return -EINVAL;
+}
 
 // /**
 //  * drm_object_property_get_value - retrieve the value of a property
@@ -336,39 +337,39 @@ void drm_mode_object_unregister(struct drm_device *dev,
 // }
 // EXPORT_SYMBOL(drm_object_property_get_value);
 
-// /* helper for getconnector and getproperties ioctls */
-// int drm_mode_object_get_properties(struct drm_mode_object *obj, bool atomic,
-// 				   uint32_t __user *prop_ptr,
-// 				   uint64_t __user *prop_values,
-// 				   uint32_t *arg_count_props)
-// {
-// 	int i, ret, count;
+/* helper for getconnector and getproperties ioctls */
+int drm_mode_object_get_properties(struct drm_mode_object *obj, bool atomic,
+				   uint32_t __user *prop_ptr,
+				   uint64_t __user *prop_values,
+				   uint32_t *arg_count_props)
+{
+	int i, ret, count;
 
-// 	for (i = 0, count = 0; i < obj->properties->count; i++) {
-// 		struct drm_property *prop = obj->properties->properties[i];
-// 		uint64_t val;
+	for (i = 0, count = 0; i < obj->properties->count; i++) {
+		struct drm_property *prop = obj->properties->properties[i];
+		uint64_t val;
 
-// 		if ((prop->flags & DRM_MODE_PROP_ATOMIC) && !atomic)
-// 			continue;
+		if ((prop->flags & DRM_MODE_PROP_ATOMIC) && !atomic)
+			continue;
 
-// 		if (*arg_count_props > count) {
-// 			ret = __drm_object_property_get_value(obj, prop, &val);
-// 			if (ret)
-// 				return ret;
+		if (*arg_count_props > count) {
+			ret = __drm_object_property_get_value(obj, prop, &val);
+			if (ret)
+				return ret;
 
-// 			if (put_user(prop->base.id, prop_ptr + count))
-// 				return -EFAULT;
+			if (put_user(prop->base.id, prop_ptr + count))
+				return -EFAULT;
 
-// 			if (put_user(val, prop_values + count))
-// 				return -EFAULT;
-// 		}
+			if (put_user(val, prop_values + count))
+				return -EFAULT;
+		}
 
-// 		count++;
-// 	}
-// 	*arg_count_props = count;
+		count++;
+	}
+	*arg_count_props = count;
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // /**
 //  * drm_mode_obj_get_properties_ioctl - get the current value of a object's property

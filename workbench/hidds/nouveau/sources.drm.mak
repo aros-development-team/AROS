@@ -16,6 +16,9 @@ AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/arosdrm_nouveau \
 
 AROS_DRM_CORE_SOURCES = \
+            drm/drm_atomic_uapi \
+            drm/drm_crtc \
+            drm/drm_modes \
             drm/drm_modeset_helper \
             drm/drm_mode_object \
             drm/drm_property \
