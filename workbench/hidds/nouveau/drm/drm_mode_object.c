@@ -218,73 +218,73 @@ void drm_mode_object_get(struct drm_mode_object *obj)
 }
 EXPORT_SYMBOL(drm_mode_object_get);
 
-// /**
-//  * drm_object_attach_property - attach a property to a modeset object
-//  * @obj: drm modeset object
-//  * @property: property to attach
-//  * @init_val: initial value of the property
-//  *
-//  * This attaches the given property to the modeset object with the given initial
-//  * value. Currently this function cannot fail since the properties are stored in
-//  * a statically sized array.
-//  */
-// void drm_object_attach_property(struct drm_mode_object *obj,
-// 				struct drm_property *property,
-// 				uint64_t init_val)
-// {
-// 	int count = obj->properties->count;
+/**
+ * drm_object_attach_property - attach a property to a modeset object
+ * @obj: drm modeset object
+ * @property: property to attach
+ * @init_val: initial value of the property
+ *
+ * This attaches the given property to the modeset object with the given initial
+ * value. Currently this function cannot fail since the properties are stored in
+ * a statically sized array.
+ */
+void drm_object_attach_property(struct drm_mode_object *obj,
+				struct drm_property *property,
+				uint64_t init_val)
+{
+	int count = obj->properties->count;
 
-// 	if (count == DRM_OBJECT_MAX_PROPERTY) {
-// 		WARN(1, "Failed to attach object property (type: 0x%x). Please "
-// 			"increase DRM_OBJECT_MAX_PROPERTY by 1 for each time "
-// 			"you see this message on the same object type.\n",
-// 			obj->type);
-// 		return;
-// 	}
+	if (count == DRM_OBJECT_MAX_PROPERTY) {
+		WARN(1, "Failed to attach object property (type: 0x%x). Please "
+			"increase DRM_OBJECT_MAX_PROPERTY by 1 for each time "
+			"you see this message on the same object type.\n",
+			obj->type);
+		return;
+	}
 
-// 	obj->properties->properties[count] = property;
-// 	obj->properties->values[count] = init_val;
-// 	obj->properties->count++;
-// }
-// EXPORT_SYMBOL(drm_object_attach_property);
+	obj->properties->properties[count] = property;
+	obj->properties->values[count] = init_val;
+	obj->properties->count++;
+}
+EXPORT_SYMBOL(drm_object_attach_property);
 
-// /**
-//  * drm_object_property_set_value - set the value of a property
-//  * @obj: drm mode object to set property value for
-//  * @property: property to set
-//  * @val: value the property should be set to
-//  *
-//  * This function sets a given property on a given object. This function only
-//  * changes the software state of the property, it does not call into the
-//  * driver's ->set_property callback.
-//  *
-//  * Note that atomic drivers should not have any need to call this, the core will
-//  * ensure consistency of values reported back to userspace through the
-//  * appropriate ->atomic_get_property callback. Only legacy drivers should call
-//  * this function to update the tracked value (after clamping and other
-//  * restrictions have been applied).
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_object_property_set_value(struct drm_mode_object *obj,
-// 				  struct drm_property *property, uint64_t val)
-// {
-// 	int i;
+/**
+ * drm_object_property_set_value - set the value of a property
+ * @obj: drm mode object to set property value for
+ * @property: property to set
+ * @val: value the property should be set to
+ *
+ * This function sets a given property on a given object. This function only
+ * changes the software state of the property, it does not call into the
+ * driver's ->set_property callback.
+ *
+ * Note that atomic drivers should not have any need to call this, the core will
+ * ensure consistency of values reported back to userspace through the
+ * appropriate ->atomic_get_property callback. Only legacy drivers should call
+ * this function to update the tracked value (after clamping and other
+ * restrictions have been applied).
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_object_property_set_value(struct drm_mode_object *obj,
+				  struct drm_property *property, uint64_t val)
+{
+	int i;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(property->dev) &&
-// 		!(property->flags & DRM_MODE_PROP_IMMUTABLE));
+	WARN_ON(drm_drv_uses_atomic_modeset(property->dev) &&
+		!(property->flags & DRM_MODE_PROP_IMMUTABLE));
 
-// 	for (i = 0; i < obj->properties->count; i++) {
-// 		if (obj->properties->properties[i] == property) {
-// 			obj->properties->values[i] = val;
-// 			return 0;
-// 		}
-// 	}
+	for (i = 0; i < obj->properties->count; i++) {
+		if (obj->properties->properties[i] == property) {
+			obj->properties->values[i] = val;
+			return 0;
+		}
+	}
 
-// 	return -EINVAL;
-// }
-// EXPORT_SYMBOL(drm_object_property_set_value);
+	return -EINVAL;
+}
+EXPORT_SYMBOL(drm_object_property_set_value);
 
 static int __drm_object_property_get_value(struct drm_mode_object *obj,
 					   struct drm_property *property,

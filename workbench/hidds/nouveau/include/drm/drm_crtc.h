@@ -1043,8 +1043,8 @@ struct drm_crtc {
 	/** @helper_private: mid-layer private data */
 	const struct drm_crtc_helper_funcs *helper_private;
 
-// 	/** @properties: property tracking for this CRTC */
-// 	struct drm_object_properties properties;
+	/** @properties: property tracking for this CRTC */
+	struct drm_object_properties properties;
 
 	/**
 	 * @state:
@@ -1061,29 +1061,29 @@ struct drm_crtc {
 	 */
 	struct drm_crtc_state *state;
 
-// 	/**
-// 	 * @commit_list:
-// 	 *
-// 	 * List of &drm_crtc_commit structures tracking pending commits.
-// 	 * Protected by @commit_lock. This list holds its own full reference,
-// 	 * as does the ongoing commit.
-// 	 *
-// 	 * "Note that the commit for a state change is also tracked in
-// 	 * &drm_crtc_state.commit. For accessing the immediately preceding
-// 	 * commit in an atomic update it is recommended to just use that
-// 	 * pointer in the old CRTC state, since accessing that doesn't need
-// 	 * any locking or list-walking. @commit_list should only be used to
-// 	 * stall for framebuffer cleanup that's signalled through
-// 	 * &drm_crtc_commit.cleanup_done."
-// 	 */
-// 	struct list_head commit_list;
+	/**
+	 * @commit_list:
+	 *
+	 * List of &drm_crtc_commit structures tracking pending commits.
+	 * Protected by @commit_lock. This list holds its own full reference,
+	 * as does the ongoing commit.
+	 *
+	 * "Note that the commit for a state change is also tracked in
+	 * &drm_crtc_state.commit. For accessing the immediately preceding
+	 * commit in an atomic update it is recommended to just use that
+	 * pointer in the old CRTC state, since accessing that doesn't need
+	 * any locking or list-walking. @commit_list should only be used to
+	 * stall for framebuffer cleanup that's signalled through
+	 * &drm_crtc_commit.cleanup_done."
+	 */
+	struct list_head commit_list;
 
-// 	/**
-// 	 * @commit_lock:
-// 	 *
-// 	 * Spinlock to protect @commit_list.
-// 	 */
-// 	spinlock_t commit_lock;
+	/**
+	 * @commit_lock:
+	 *
+	 * Spinlock to protect @commit_list.
+	 */
+	spinlock_t commit_lock;
 
 // #ifdef CONFIG_DEBUG_FS
 // 	/**
@@ -1101,19 +1101,19 @@ struct drm_crtc {
 // 	 */
 // 	struct drm_crtc_crc crc;
 
-// 	/**
-// 	 * @fence_context:
-// 	 *
-// 	 * timeline context used for fence operations.
-// 	 */
-// 	unsigned int fence_context;
+	/**
+	 * @fence_context:
+	 *
+	 * timeline context used for fence operations.
+	 */
+	unsigned int fence_context;
 
-// 	/**
-// 	 * @fence_lock:
-// 	 *
-// 	 * spinlock to protect the fences in the fence_context.
-// 	 */
-// 	spinlock_t fence_lock;
+	/**
+	 * @fence_lock:
+	 *
+	 * spinlock to protect the fences in the fence_context.
+	 */
+	spinlock_t fence_lock;
 // 	/**
 // 	 * @fence_seqno:
 // 	 *
@@ -1122,12 +1122,12 @@ struct drm_crtc {
 // 	 */
 // 	unsigned long fence_seqno;
 
-// 	/**
-// 	 * @timeline_name:
-// 	 *
-// 	 * The name of the CRTC's fence timeline.
-// 	 */
-// 	char timeline_name[32];
+	/**
+	 * @timeline_name:
+	 *
+	 * The name of the CRTC's fence timeline.
+	 */
+	char timeline_name[32];
 
 // 	/**
 // 	 * @self_refresh_data: Holds the state for the self refresh helpers

@@ -113,7 +113,7 @@ void drm_connector_unregister() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_crtc_helper_set_mode() { NOT_IMPLEMENTED_STOP }
-void drm_crtc_init_with_planes() { NOT_IMPLEMENTED_STOP }
+
 void drm_cvt_mode() { NOT_IMPLEMENTED_STOP }
 void drm_dp_atomic_find_vcpi_slots() { NOT_IMPLEMENTED_STOP }
 void drm_dp_atomic_release_vcpi_slots() { NOT_IMPLEMENTED_STOP }
@@ -165,13 +165,13 @@ void drm_mode_object_put() { NOT_IMPLEMENTED_STOP }
 void drm_mode_probed_add() { NOT_IMPLEMENTED_STOP }
 void drm_mode_set_crtcinfo() { NOT_IMPLEMENTED_STOP }
 void drm_mode_vrefresh() { NOT_IMPLEMENTED_STOP }
-void drm_object_attach_property() { NOT_IMPLEMENTED_STOP }
-void drm_object_property_set_value() { NOT_IMPLEMENTED_STOP }
+
+
 void drm_plane_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_plane_create_alpha_property() { NOT_IMPLEMENTED_STOP }
 void drm_plane_create_blend_mode_property() { NOT_IMPLEMENTED_STOP }
-void drm_plane_create_zpos_immutable_property() { NOT_IMPLEMENTED_STOP }
-void drm_plane_create_zpos_property() { NOT_IMPLEMENTED_STOP }
+
+
 void drm_primary_helper_funcs() { NOT_IMPLEMENTED_STOP }
 
 

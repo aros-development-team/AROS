@@ -39,6 +39,7 @@
 #else
 #include <linux/list.h>
 #include <linux/minmax.h>
+#include <drm-compat/drm_compat_dma.h>
 #endif
 #include <drm/drm_crtc.h>
 // #include <drm/drm_edid.h>
@@ -109,17 +110,17 @@
 // 	return drm_mode_set_config_internal(&set);
 // }
 
-// static unsigned int drm_num_crtcs(struct drm_device *dev)
-// {
-// 	unsigned int num = 0;
-// 	struct drm_crtc *tmp;
+static unsigned int drm_num_crtcs(struct drm_device *dev)
+{
+	unsigned int num = 0;
+	struct drm_crtc *tmp;
 
-// 	drm_for_each_crtc(tmp, dev) {
-// 		num++;
-// 	}
+	drm_for_each_crtc(tmp, dev) {
+		num++;
+	}
 
-// 	return num;
-// }
+	return num;
+}
 
 // int drm_crtc_register_all(struct drm_device *dev)
 // {
@@ -149,17 +150,17 @@
 // 	}
 // }
 
-// static int drm_crtc_crc_init(struct drm_crtc *crtc)
-// {
-// #ifdef CONFIG_DEBUG_FS
-// 	spin_lock_init(&crtc->crc.lock);
-// 	init_waitqueue_head(&crtc->crc.wq);
-// 	crtc->crc.source = kstrdup("auto", GFP_KERNEL);
-// 	if (!crtc->crc.source)
-// 		return -ENOMEM;
-// #endif
-// 	return 0;
-// }
+static int drm_crtc_crc_init(struct drm_crtc *crtc)
+{
+#ifdef CONFIG_DEBUG_FS
+	spin_lock_init(&crtc->crc.lock);
+	init_waitqueue_head(&crtc->crc.wq);
+	crtc->crc.source = kstrdup("auto", GFP_KERNEL);
+	if (!crtc->crc.source)
+		return -ENOMEM;
+#endif
+	return 0;
+}
 
 // static void drm_crtc_crc_fini(struct drm_crtc *crtc)
 // {
@@ -209,106 +210,108 @@
 // 	return fence;
 // }
 
-// /**
-//  * drm_crtc_init_with_planes - Initialise a new CRTC object with
-//  *    specified primary and cursor planes.
-//  * @dev: DRM device
-//  * @crtc: CRTC object to init
-//  * @primary: Primary plane for CRTC
-//  * @cursor: Cursor plane for CRTC
-//  * @funcs: callbacks for the new CRTC
-//  * @name: printf style format string for the CRTC name, or NULL for default name
-//  *
-//  * Inits a new object created as base part of a driver crtc object. Drivers
-//  * should use this function instead of drm_crtc_init(), which is only provided
-//  * for backwards compatibility with drivers which do not yet support universal
-//  * planes). For really simple hardware which has only 1 plane look at
-//  * drm_simple_display_pipe_init() instead.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
-// 			      struct drm_plane *primary,
-// 			      struct drm_plane *cursor,
-// 			      const struct drm_crtc_funcs *funcs,
-// 			      const char *name, ...)
-// {
-// 	struct drm_mode_config *config = &dev->mode_config;
-// 	int ret;
+/**
+ * drm_crtc_init_with_planes - Initialise a new CRTC object with
+ *    specified primary and cursor planes.
+ * @dev: DRM device
+ * @crtc: CRTC object to init
+ * @primary: Primary plane for CRTC
+ * @cursor: Cursor plane for CRTC
+ * @funcs: callbacks for the new CRTC
+ * @name: printf style format string for the CRTC name, or NULL for default name
+ *
+ * Inits a new object created as base part of a driver crtc object. Drivers
+ * should use this function instead of drm_crtc_init(), which is only provided
+ * for backwards compatibility with drivers which do not yet support universal
+ * planes). For really simple hardware which has only 1 plane look at
+ * drm_simple_display_pipe_init() instead.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_crtc_init_with_planes(struct drm_device *dev, struct drm_crtc *crtc,
+			      struct drm_plane *primary,
+			      struct drm_plane *cursor,
+			      const struct drm_crtc_funcs *funcs,
+			      const char *name, ...)
+{
+	struct drm_mode_config *config = &dev->mode_config;
+	int ret;
 
-// 	WARN_ON(primary && primary->type != DRM_PLANE_TYPE_PRIMARY);
-// 	WARN_ON(cursor && cursor->type != DRM_PLANE_TYPE_CURSOR);
+	WARN_ON(primary && primary->type != DRM_PLANE_TYPE_PRIMARY);
+	WARN_ON(cursor && cursor->type != DRM_PLANE_TYPE_CURSOR);
 
-// 	/* crtc index is used with 32bit bitmasks */
-// 	if (WARN_ON(config->num_crtc >= 32))
-// 		return -EINVAL;
+	/* crtc index is used with 32bit bitmasks */
+	if (WARN_ON(config->num_crtc >= 32))
+		return -EINVAL;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
-// 		(!funcs->atomic_destroy_state ||
-// 		 !funcs->atomic_duplicate_state));
+	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
+		(!funcs->atomic_destroy_state ||
+		 !funcs->atomic_duplicate_state));
 
-// 	crtc->dev = dev;
-// 	crtc->funcs = funcs;
+	crtc->dev = dev;
+	crtc->funcs = funcs;
 
-// 	INIT_LIST_HEAD(&crtc->commit_list);
-// 	spin_lock_init(&crtc->commit_lock);
+	INIT_LIST_HEAD(&crtc->commit_list);
+	spin_lock_init(&crtc->commit_lock);
 
-// 	drm_modeset_lock_init(&crtc->mutex);
-// 	ret = drm_mode_object_add(dev, &crtc->base, DRM_MODE_OBJECT_CRTC);
-// 	if (ret)
-// 		return ret;
+#if !defined(__AROS__)
+	drm_modeset_lock_init(&crtc->mutex);
+#endif
+	ret = drm_mode_object_add(dev, &crtc->base, DRM_MODE_OBJECT_CRTC);
+	if (ret)
+		return ret;
 
-// 	if (name) {
-// 		va_list ap;
+	if (name) {
+		va_list ap;
 
-// 		va_start(ap, name);
-// 		crtc->name = kvasprintf(GFP_KERNEL, name, ap);
-// 		va_end(ap);
-// 	} else {
-// 		crtc->name = kasprintf(GFP_KERNEL, "crtc-%d",
-// 				       drm_num_crtcs(dev));
-// 	}
-// 	if (!crtc->name) {
-// 		drm_mode_object_unregister(dev, &crtc->base);
-// 		return -ENOMEM;
-// 	}
+		va_start(ap, name);
+		crtc->name = kvasprintf(GFP_KERNEL, name, ap);
+		va_end(ap);
+	} else {
+		crtc->name = kasprintf(GFP_KERNEL, "crtc-%d",
+				       drm_num_crtcs(dev));
+	}
+	if (!crtc->name) {
+		drm_mode_object_unregister(dev, &crtc->base);
+		return -ENOMEM;
+	}
 
-// 	crtc->fence_context = dma_fence_context_alloc(1);
-// 	spin_lock_init(&crtc->fence_lock);
-// 	snprintf(crtc->timeline_name, sizeof(crtc->timeline_name),
-// 		 "CRTC:%d-%s", crtc->base.id, crtc->name);
+	crtc->fence_context = dma_fence_context_alloc(1);
+	spin_lock_init(&crtc->fence_lock);
+	snprintf(crtc->timeline_name, sizeof(crtc->timeline_name),
+		 "CRTC:%d-%s", crtc->base.id, crtc->name);
 
-// 	crtc->base.properties = &crtc->properties;
+	crtc->base.properties = &crtc->properties;
 
-// 	list_add_tail(&crtc->head, &config->crtc_list);
-// 	crtc->index = config->num_crtc++;
+	list_add_tail(&crtc->head, &config->crtc_list);
+	crtc->index = config->num_crtc++;
 
-// 	crtc->primary = primary;
-// 	crtc->cursor = cursor;
-// 	if (primary && !primary->possible_crtcs)
-// 		primary->possible_crtcs = drm_crtc_mask(crtc);
-// 	if (cursor && !cursor->possible_crtcs)
-// 		cursor->possible_crtcs = drm_crtc_mask(crtc);
+	crtc->primary = primary;
+	crtc->cursor = cursor;
+	if (primary && !primary->possible_crtcs)
+		primary->possible_crtcs = drm_crtc_mask(crtc);
+	if (cursor && !cursor->possible_crtcs)
+		cursor->possible_crtcs = drm_crtc_mask(crtc);
 
-// 	ret = drm_crtc_crc_init(crtc);
-// 	if (ret) {
-// 		drm_mode_object_unregister(dev, &crtc->base);
-// 		return ret;
-// 	}
+	ret = drm_crtc_crc_init(crtc);
+	if (ret) {
+		drm_mode_object_unregister(dev, &crtc->base);
+		return ret;
+	}
 
-// 	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
-// 		drm_object_attach_property(&crtc->base, config->prop_active, 0);
-// 		drm_object_attach_property(&crtc->base, config->prop_mode_id, 0);
-// 		drm_object_attach_property(&crtc->base,
-// 					   config->prop_out_fence_ptr, 0);
-// 		drm_object_attach_property(&crtc->base,
-// 					   config->prop_vrr_enabled, 0);
-// 	}
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
+		drm_object_attach_property(&crtc->base, config->prop_active, 0);
+		drm_object_attach_property(&crtc->base, config->prop_mode_id, 0);
+		drm_object_attach_property(&crtc->base,
+					   config->prop_out_fence_ptr, 0);
+		drm_object_attach_property(&crtc->base,
+					   config->prop_vrr_enabled, 0);
+	}
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_crtc_init_with_planes);
+	return 0;
+}
+EXPORT_SYMBOL(drm_crtc_init_with_planes);
 
 // /**
 //  * drm_crtc_cleanup - Clean up the core crtc usage
