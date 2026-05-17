@@ -49,7 +49,7 @@
 // #include <drm/drm_debugfs_crc.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_print.h>
-// #include <drm/drm_file.h>
+#include <drm/drm_file.h>
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"

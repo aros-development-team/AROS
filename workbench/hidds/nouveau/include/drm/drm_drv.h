@@ -37,15 +37,7 @@
 #include <drm/drm_device.h>
 #include <drm/drm_ioctl.h>
 
-struct drm_file
-{
-    struct idr object_idr;
-    spinlock_t table_lock;
-    void *driver_priv;
-    struct list_head fbs;
-    struct mutex fbs_lock;
-};
-
+struct drm_file;
 struct drm_gem_object;
 // struct drm_master;
 // struct drm_minor;

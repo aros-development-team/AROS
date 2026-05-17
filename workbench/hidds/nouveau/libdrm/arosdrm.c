@@ -9,6 +9,7 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_gem.h>
+#include <drm/drm_file.h>
 
 void drm_gem_open(struct drm_device *dev, struct drm_file *file_private);
 void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);

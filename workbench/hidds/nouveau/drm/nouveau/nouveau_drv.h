@@ -67,7 +67,7 @@ struct drm_mode_fb_cmd2;
 struct drm_mode_create_dumb;
 #include <drm/drm_device.h>
 #include <drm/drm_drv.h>
-// #include <drm/drm_file.h>
+#include <drm/drm_file.h>
 
 #include <drm/ttm/ttm_bo_api.h>
 #include <drm/ttm/ttm_bo_driver.h>

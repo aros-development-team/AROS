@@ -532,3 +532,8 @@ unsigned int hweight8(unsigned int number)
     
     return result;
 }
+
+bool drm_mode_object_lease_required(uint32_t type)
+{
+    return false;
+}

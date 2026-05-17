@@ -26,10 +26,9 @@
 
 #include <drm/drm_drv.h>
 #include <drm/drm_encoder.h>
-// #include <drm/drm_file.h>
+#include <drm/drm_file.h>
 #include <drm/drm_mode_config.h>
 #include <drm/drm_print.h>
-#include <drm/drm_lease.h>
 
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
