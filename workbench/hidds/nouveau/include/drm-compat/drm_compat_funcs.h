@@ -253,17 +253,23 @@ static inline int atomic_inc_not_zero(atomic_t *v)
  * implemented in compat wrappers.
  */
 
-static inline void spin_lock_init(spinlock_t * lock)
+static inline void spin_lock_init(spinlock_t *lock)
 {
     /* No-Op */
 }
-static inline void spin_lock(spinlock_t * lock)
+static inline void spin_lock(spinlock_t *lock)
 {
     Forbid();
 }
-static inline void spin_unlock(spinlock_t * lock)
+static inline void spin_unlock(spinlock_t *lock)
 {
     Permit();
+}
+
+static inline void assert_spin_locked(spinlock_t *lock)
+{
+    /* No-Op */
+    /* This is debugging-only assert */
 }
 
 #define spin_lock_bh(x)                 spin_lock(x)
