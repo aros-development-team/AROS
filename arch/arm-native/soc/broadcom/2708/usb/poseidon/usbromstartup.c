@@ -2,10 +2,8 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
-/* Minimal Pi-only Poseidon bootstrap: registers the USB controller
- * (usb2otg.device) with poseidon.library at coldsart. USB classes are
- * disk-loaded by AddUSBClasses from Startup-Sequence, which
- * triggers class scan / binding. */
+/* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
+ * PsdStackloader should be started during startup-sequence nonetheless */
 
 #define DEBUG 0
 
@@ -60,7 +58,7 @@ const struct Resident usbHook =
     RTF_COLDSTART,
     41,
     NT_TASK,
-    /* Run after intuition (residentpri 15). */
+    /* Run after intuition (residentpri 15) so poseidon.library is initialised. */
     10,
     name,
     &version[5],
@@ -84,25 +82,57 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
     prewarm_library("poseidon.library", SysBase);
 
-    D(bug("[USBROMStartup] opening poseidon.library...\n"));
-
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
+        APTR msdclass;
+        IPTR usecount = 0;
+        ULONG bootdelay = 4;
+
+        D(bug("[USBROMStartup] Adding classes...\n"));
+
+        psdAddClass("hub.class", 0);
+        msdclass = psdAddClass("massstorage.class", 0);
+        /* hid/bootmouse/bootkeyboard are loaded from disk by AddUSBClasses in Startup-Sequence */
+
+        D(bug("[USBROMStartup] Added chipset drivers...\n"));
+
+        /* load the raspi usb hardware driver */
         if ((phw = psdAddHardware("usb2otg.device", 0)))
         {
             D(bug("[USBROMStartup] Added usb2otg.device unit %u\n", 0));
+
             psdEnumerateHardware(phw);
         }
-        else
+
+        D(bug("[USBROMStartup] Scanning classes...\n"));
+        psdClassScan();
+        D(bug("[USBROMStartup] classes enumerated\n"));
+
+        if(msdclass)
         {
-            bug("[USBROMStartup] psdAddHardware failed\n");
+            D(bug("[USBROMStartup] waiting for hubs..\n"));
+            psdDelayMS(1000); // wait for hubs to settle
+            D(bug("[USBROMStartup] checking for massstorage devices..\n"));
+            psdGetAttrs(PGA_USBCLASS, msdclass, UCA_UseCount, &usecount, TAG_END);
+            D(bug("[USBROMStartup] %d masstorage devices found\n", usecount));
+            if(usecount > 0)
+            {
+                D(bug("[USBROMStartup] adding boot delay\n"));
+
+                psdAddErrorMsg(RETURN_OK, (STRPTR)name,
+                               "Delaying further execution by %ld second(s) (boot delay).",
+                               bootdelay);
+                if(bootdelay > 1)
+                {
+                    psdDelayMS((bootdelay-1)*1000);
+                }
+            } else {
+                psdAddErrorMsg(RETURN_OK, (STRPTR)name, "Boot delay skipped, no mass storage devices found.");
+            }
         }
 
+        D(bug("[USBROMStartup] cleaning up .. \n"));
         CloseLibrary(ps);
-    }
-    else
-    {
-        D(bug("[USBROMStartup] OpenLibrary(poseidon.library) failed\n"));
     }
     D(bug("[USBROMStartup] Finished...\n"));
 
