@@ -62,9 +62,10 @@ NOUVEAU_DRM_C_SOURCES := \
             $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_NVIDIA_SOURCES)) \
             $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_CORE_SOURCES))
 
-%build_prog mmake=hidd-nouveau-drm files="nouveau-bin-main $(NOUVEAU_DRM_C_SOURCES)" \
+%build_prog mmake=hidd-nouveau-drm-bin files="nouveau-bin-main $(NOUVEAU_DRM_C_SOURCES)" \
     targetdir="$(AROS_C)" progname="nouveau-bin" uselibs="oop libdrm_nouveau" usesdks="config private drm"
 
+%build_linklib mmake=hidd-nouveau-drm libname=drm_nouveau files="$(NOUVEAU_DRM_C_SOURCES)" sdk=drm usesdks="config private"
 
 NOUVEAU_HIDD_C_SOURCES := \
             nouveau_hiddclass \
