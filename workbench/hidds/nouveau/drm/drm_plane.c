@@ -38,258 +38,260 @@
 
 #include "drm_crtc_internal.h"
 
-// /**
-//  * DOC: overview
-//  *
-//  * A plane represents an image source that can be blended with or overlayed on
-//  * top of a CRTC during the scanout process. Planes take their input data from a
-//  * &drm_framebuffer object. The plane itself specifies the cropping and scaling
-//  * of that image, and where it is placed on the visible are of a display
-//  * pipeline, represented by &drm_crtc. A plane can also have additional
-//  * properties that specify how the pixels are positioned and blended, like
-//  * rotation or Z-position. All these properties are stored in &drm_plane_state.
-//  *
-//  * To create a plane, a KMS drivers allocates and zeroes an instances of
-//  * &struct drm_plane (possibly as part of a larger structure) and registers it
-//  * with a call to drm_universal_plane_init().
-//  *
-//  * Cursor and overlay planes are optional. All drivers should provide one
-//  * primary plane per CRTC to avoid surprising userspace too much. See enum
-//  * drm_plane_type for a more in-depth discussion of these special uapi-relevant
-//  * plane types. Special planes are associated with their CRTC by calling
-//  * drm_crtc_init_with_planes().
-//  *
-//  * The type of a plane is exposed in the immutable "type" enumeration property,
-//  * which has one of the following values: "Overlay", "Primary", "Cursor".
-//  */
+/**
+ * DOC: overview
+ *
+ * A plane represents an image source that can be blended with or overlayed on
+ * top of a CRTC during the scanout process. Planes take their input data from a
+ * &drm_framebuffer object. The plane itself specifies the cropping and scaling
+ * of that image, and where it is placed on the visible are of a display
+ * pipeline, represented by &drm_crtc. A plane can also have additional
+ * properties that specify how the pixels are positioned and blended, like
+ * rotation or Z-position. All these properties are stored in &drm_plane_state.
+ *
+ * To create a plane, a KMS drivers allocates and zeroes an instances of
+ * &struct drm_plane (possibly as part of a larger structure) and registers it
+ * with a call to drm_universal_plane_init().
+ *
+ * Cursor and overlay planes are optional. All drivers should provide one
+ * primary plane per CRTC to avoid surprising userspace too much. See enum
+ * drm_plane_type for a more in-depth discussion of these special uapi-relevant
+ * plane types. Special planes are associated with their CRTC by calling
+ * drm_crtc_init_with_planes().
+ *
+ * The type of a plane is exposed in the immutable "type" enumeration property,
+ * which has one of the following values: "Overlay", "Primary", "Cursor".
+ */
 
-// static unsigned int drm_num_planes(struct drm_device *dev)
-// {
-// 	unsigned int num = 0;
-// 	struct drm_plane *tmp;
+static unsigned int drm_num_planes(struct drm_device *dev)
+{
+	unsigned int num = 0;
+	struct drm_plane *tmp;
 
-// 	drm_for_each_plane(tmp, dev) {
-// 		num++;
-// 	}
+	drm_for_each_plane(tmp, dev) {
+		num++;
+	}
 
-// 	return num;
-// }
+	return num;
+}
 
-// static inline u32 *
-// formats_ptr(struct drm_format_modifier_blob *blob)
-// {
-// 	return (u32 *)(((char *)blob) + blob->formats_offset);
-// }
+static inline u32 *
+formats_ptr(struct drm_format_modifier_blob *blob)
+{
+	return (u32 *)(((char *)blob) + blob->formats_offset);
+}
 
-// static inline struct drm_format_modifier *
-// modifiers_ptr(struct drm_format_modifier_blob *blob)
-// {
-// 	return (struct drm_format_modifier *)(((char *)blob) + blob->modifiers_offset);
-// }
+static inline struct drm_format_modifier *
+modifiers_ptr(struct drm_format_modifier_blob *blob)
+{
+	return (struct drm_format_modifier *)(((char *)blob) + blob->modifiers_offset);
+}
 
-// static int create_in_format_blob(struct drm_device *dev, struct drm_plane *plane)
-// {
-// 	const struct drm_mode_config *config = &dev->mode_config;
-// 	struct drm_property_blob *blob;
-// 	struct drm_format_modifier *mod;
-// 	size_t blob_size, formats_size, modifiers_size;
-// 	struct drm_format_modifier_blob *blob_data;
-// 	unsigned int i, j;
+static int create_in_format_blob(struct drm_device *dev, struct drm_plane *plane)
+{
+	const struct drm_mode_config *config = &dev->mode_config;
+	struct drm_property_blob *blob;
+	struct drm_format_modifier *mod;
+	size_t blob_size, formats_size, modifiers_size;
+	struct drm_format_modifier_blob *blob_data;
+	unsigned int i, j;
 
-// 	formats_size = sizeof(__u32) * plane->format_count;
-// 	if (WARN_ON(!formats_size)) {
-// 		/* 0 formats are never expected */
-// 		return 0;
-// 	}
+	formats_size = sizeof(__u32) * plane->format_count;
+	if (WARN_ON(!formats_size)) {
+		/* 0 formats are never expected */
+		return 0;
+	}
 
-// 	modifiers_size =
-// 		sizeof(struct drm_format_modifier) * plane->modifier_count;
+	modifiers_size =
+		sizeof(struct drm_format_modifier) * plane->modifier_count;
 
-// 	blob_size = sizeof(struct drm_format_modifier_blob);
-// 	/* Modifiers offset is a pointer to a struct with a 64 bit field so it
-// 	 * should be naturally aligned to 8B.
-// 	 */
-// 	BUILD_BUG_ON(sizeof(struct drm_format_modifier_blob) % 8);
-// 	blob_size += ALIGN(formats_size, 8);
-// 	blob_size += modifiers_size;
+	blob_size = sizeof(struct drm_format_modifier_blob);
+	/* Modifiers offset is a pointer to a struct with a 64 bit field so it
+	 * should be naturally aligned to 8B.
+	 */
+	BUILD_BUG_ON(sizeof(struct drm_format_modifier_blob) % 8);
+	blob_size += ALIGN(formats_size, 8);
+	blob_size += modifiers_size;
 
-// 	blob = drm_property_create_blob(dev, blob_size, NULL);
-// 	if (IS_ERR(blob))
-// 		return -1;
+	blob = drm_property_create_blob(dev, blob_size, NULL);
+	if (IS_ERR(blob))
+		return -1;
 
-// 	blob_data = blob->data;
-// 	blob_data->version = FORMAT_BLOB_CURRENT;
-// 	blob_data->count_formats = plane->format_count;
-// 	blob_data->formats_offset = sizeof(struct drm_format_modifier_blob);
-// 	blob_data->count_modifiers = plane->modifier_count;
+	blob_data = blob->data;
+	blob_data->version = FORMAT_BLOB_CURRENT;
+	blob_data->count_formats = plane->format_count;
+	blob_data->formats_offset = sizeof(struct drm_format_modifier_blob);
+	blob_data->count_modifiers = plane->modifier_count;
 
-// 	blob_data->modifiers_offset =
-// 		ALIGN(blob_data->formats_offset + formats_size, 8);
+	blob_data->modifiers_offset =
+		ALIGN(blob_data->formats_offset + formats_size, 8);
 
-// 	memcpy(formats_ptr(blob_data), plane->format_types, formats_size);
+	memcpy(formats_ptr(blob_data), plane->format_types, formats_size);
 
-// 	/* If we can't determine support, just bail */
-// 	if (!plane->funcs->format_mod_supported)
-// 		goto done;
+	/* If we can't determine support, just bail */
+	if (!plane->funcs->format_mod_supported)
+		goto done;
 
-// 	mod = modifiers_ptr(blob_data);
-// 	for (i = 0; i < plane->modifier_count; i++) {
-// 		for (j = 0; j < plane->format_count; j++) {
-// 			if (plane->funcs->format_mod_supported(plane,
-// 							       plane->format_types[j],
-// 							       plane->modifiers[i])) {
+	mod = modifiers_ptr(blob_data);
+	for (i = 0; i < plane->modifier_count; i++) {
+		for (j = 0; j < plane->format_count; j++) {
+			if (plane->funcs->format_mod_supported(plane,
+							       plane->format_types[j],
+							       plane->modifiers[i])) {
 
-// 				mod->formats |= 1ULL << j;
-// 			}
-// 		}
+				mod->formats |= 1ULL << j;
+			}
+		}
 
-// 		mod->modifier = plane->modifiers[i];
-// 		mod->offset = 0;
-// 		mod->pad = 0;
-// 		mod++;
-// 	}
+		mod->modifier = plane->modifiers[i];
+		mod->offset = 0;
+		mod->pad = 0;
+		mod++;
+	}
 
-// done:
-// 	drm_object_attach_property(&plane->base, config->modifiers_property,
-// 				   blob->base.id);
+done:
+	drm_object_attach_property(&plane->base, config->modifiers_property,
+				   blob->base.id);
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// /**
-//  * drm_universal_plane_init - Initialize a new universal plane object
-//  * @dev: DRM device
-//  * @plane: plane object to init
-//  * @possible_crtcs: bitmask of possible CRTCs
-//  * @funcs: callbacks for the new plane
-//  * @formats: array of supported formats (DRM_FORMAT\_\*)
-//  * @format_count: number of elements in @formats
-//  * @format_modifiers: array of struct drm_format modifiers terminated by
-//  *                    DRM_FORMAT_MOD_INVALID
-//  * @type: type of plane (overlay, primary, cursor)
-//  * @name: printf style format string for the plane name, or NULL for default name
-//  *
-//  * Initializes a plane object of type @type.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_universal_plane_init(struct drm_device *dev, struct drm_plane *plane,
-// 			     uint32_t possible_crtcs,
-// 			     const struct drm_plane_funcs *funcs,
-// 			     const uint32_t *formats, unsigned int format_count,
-// 			     const uint64_t *format_modifiers,
-// 			     enum drm_plane_type type,
-// 			     const char *name, ...)
-// {
-// 	struct drm_mode_config *config = &dev->mode_config;
-// 	unsigned int format_modifier_count = 0;
-// 	int ret;
+/**
+ * drm_universal_plane_init - Initialize a new universal plane object
+ * @dev: DRM device
+ * @plane: plane object to init
+ * @possible_crtcs: bitmask of possible CRTCs
+ * @funcs: callbacks for the new plane
+ * @formats: array of supported formats (DRM_FORMAT\_\*)
+ * @format_count: number of elements in @formats
+ * @format_modifiers: array of struct drm_format modifiers terminated by
+ *                    DRM_FORMAT_MOD_INVALID
+ * @type: type of plane (overlay, primary, cursor)
+ * @name: printf style format string for the plane name, or NULL for default name
+ *
+ * Initializes a plane object of type @type.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_universal_plane_init(struct drm_device *dev, struct drm_plane *plane,
+			     uint32_t possible_crtcs,
+			     const struct drm_plane_funcs *funcs,
+			     const uint32_t *formats, unsigned int format_count,
+			     const uint64_t *format_modifiers,
+			     enum drm_plane_type type,
+			     const char *name, ...)
+{
+	struct drm_mode_config *config = &dev->mode_config;
+	unsigned int format_modifier_count = 0;
+	int ret;
 
-// 	/* plane index is used with 32bit bitmasks */
-// 	if (WARN_ON(config->num_total_plane >= 32))
-// 		return -EINVAL;
+	/* plane index is used with 32bit bitmasks */
+	if (WARN_ON(config->num_total_plane >= 32))
+		return -EINVAL;
 
-// 	/*
-// 	 * First driver to need more than 64 formats needs to fix this. Each
-// 	 * format is encoded as a bit and the current code only supports a u64.
-// 	 */
-// 	if (WARN_ON(format_count > 64))
-// 		return -EINVAL;
+	/*
+	 * First driver to need more than 64 formats needs to fix this. Each
+	 * format is encoded as a bit and the current code only supports a u64.
+	 */
+	if (WARN_ON(format_count > 64))
+		return -EINVAL;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
-// 		(!funcs->atomic_destroy_state ||
-// 		 !funcs->atomic_duplicate_state));
+	WARN_ON(drm_drv_uses_atomic_modeset(dev) &&
+		(!funcs->atomic_destroy_state ||
+		 !funcs->atomic_duplicate_state));
 
-// 	ret = drm_mode_object_add(dev, &plane->base, DRM_MODE_OBJECT_PLANE);
-// 	if (ret)
-// 		return ret;
+	ret = drm_mode_object_add(dev, &plane->base, DRM_MODE_OBJECT_PLANE);
+	if (ret)
+		return ret;
 
-// 	drm_modeset_lock_init(&plane->mutex);
+#if !defined(__AROS__)
+	drm_modeset_lock_init(&plane->mutex);
+#endif
 
-// 	plane->base.properties = &plane->properties;
-// 	plane->dev = dev;
-// 	plane->funcs = funcs;
-// 	plane->format_types = kmalloc_array(format_count, sizeof(uint32_t),
-// 					    GFP_KERNEL);
-// 	if (!plane->format_types) {
-// 		DRM_DEBUG_KMS("out of memory when allocating plane\n");
-// 		drm_mode_object_unregister(dev, &plane->base);
-// 		return -ENOMEM;
-// 	}
+	plane->base.properties = &plane->properties;
+	plane->dev = dev;
+	plane->funcs = funcs;
+	plane->format_types = kmalloc_array(format_count, sizeof(uint32_t),
+					    GFP_KERNEL);
+	if (!plane->format_types) {
+		DRM_DEBUG_KMS("out of memory when allocating plane\n");
+		drm_mode_object_unregister(dev, &plane->base);
+		return -ENOMEM;
+	}
 
-// 	if (format_modifiers) {
-// 		const uint64_t *temp_modifiers = format_modifiers;
-// 		while (*temp_modifiers++ != DRM_FORMAT_MOD_INVALID)
-// 			format_modifier_count++;
-// 	}
+	if (format_modifiers) {
+		const uint64_t *temp_modifiers = format_modifiers;
+		while (*temp_modifiers++ != DRM_FORMAT_MOD_INVALID)
+			format_modifier_count++;
+	}
 
-// 	if (format_modifier_count)
-// 		config->allow_fb_modifiers = true;
+	if (format_modifier_count)
+		config->allow_fb_modifiers = true;
 
-// 	plane->modifier_count = format_modifier_count;
-// 	plane->modifiers = kmalloc_array(format_modifier_count,
-// 					 sizeof(format_modifiers[0]),
-// 					 GFP_KERNEL);
+	plane->modifier_count = format_modifier_count;
+	plane->modifiers = kmalloc_array(format_modifier_count,
+					 sizeof(format_modifiers[0]),
+					 GFP_KERNEL);
 
-// 	if (format_modifier_count && !plane->modifiers) {
-// 		DRM_DEBUG_KMS("out of memory when allocating plane\n");
-// 		kfree(plane->format_types);
-// 		drm_mode_object_unregister(dev, &plane->base);
-// 		return -ENOMEM;
-// 	}
+	if (format_modifier_count && !plane->modifiers) {
+		DRM_DEBUG_KMS("out of memory when allocating plane\n");
+		kfree(plane->format_types);
+		drm_mode_object_unregister(dev, &plane->base);
+		return -ENOMEM;
+	}
 
-// 	if (name) {
-// 		va_list ap;
+	if (name) {
+		va_list ap;
 
-// 		va_start(ap, name);
-// 		plane->name = kvasprintf(GFP_KERNEL, name, ap);
-// 		va_end(ap);
-// 	} else {
-// 		plane->name = kasprintf(GFP_KERNEL, "plane-%d",
-// 					drm_num_planes(dev));
-// 	}
-// 	if (!plane->name) {
-// 		kfree(plane->format_types);
-// 		kfree(plane->modifiers);
-// 		drm_mode_object_unregister(dev, &plane->base);
-// 		return -ENOMEM;
-// 	}
+		va_start(ap, name);
+		plane->name = kvasprintf(GFP_KERNEL, name, ap);
+		va_end(ap);
+	} else {
+		plane->name = kasprintf(GFP_KERNEL, "plane-%d",
+					drm_num_planes(dev));
+	}
+	if (!plane->name) {
+		kfree(plane->format_types);
+		kfree(plane->modifiers);
+		drm_mode_object_unregister(dev, &plane->base);
+		return -ENOMEM;
+	}
 
-// 	memcpy(plane->format_types, formats, format_count * sizeof(uint32_t));
-// 	plane->format_count = format_count;
-// 	memcpy(plane->modifiers, format_modifiers,
-// 	       format_modifier_count * sizeof(format_modifiers[0]));
-// 	plane->possible_crtcs = possible_crtcs;
-// 	plane->type = type;
+	memcpy(plane->format_types, formats, format_count * sizeof(uint32_t));
+	plane->format_count = format_count;
+	memcpy(plane->modifiers, format_modifiers,
+	       format_modifier_count * sizeof(format_modifiers[0]));
+	plane->possible_crtcs = possible_crtcs;
+	plane->type = type;
 
-// 	list_add_tail(&plane->head, &config->plane_list);
-// 	plane->index = config->num_total_plane++;
+	list_add_tail(&plane->head, &config->plane_list);
+	plane->index = config->num_total_plane++;
 
-// 	drm_object_attach_property(&plane->base,
-// 				   config->plane_type_property,
-// 				   plane->type);
+	drm_object_attach_property(&plane->base,
+				   config->plane_type_property,
+				   plane->type);
 
-// 	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
-// 		drm_object_attach_property(&plane->base, config->prop_fb_id, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_in_fence_fd, -1);
-// 		drm_object_attach_property(&plane->base, config->prop_crtc_id, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_crtc_x, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_crtc_y, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_crtc_w, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_crtc_h, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_src_x, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_src_y, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_src_w, 0);
-// 		drm_object_attach_property(&plane->base, config->prop_src_h, 0);
-// 	}
+	if (drm_core_check_feature(dev, DRIVER_ATOMIC)) {
+		drm_object_attach_property(&plane->base, config->prop_fb_id, 0);
+		drm_object_attach_property(&plane->base, config->prop_in_fence_fd, -1);
+		drm_object_attach_property(&plane->base, config->prop_crtc_id, 0);
+		drm_object_attach_property(&plane->base, config->prop_crtc_x, 0);
+		drm_object_attach_property(&plane->base, config->prop_crtc_y, 0);
+		drm_object_attach_property(&plane->base, config->prop_crtc_w, 0);
+		drm_object_attach_property(&plane->base, config->prop_crtc_h, 0);
+		drm_object_attach_property(&plane->base, config->prop_src_x, 0);
+		drm_object_attach_property(&plane->base, config->prop_src_y, 0);
+		drm_object_attach_property(&plane->base, config->prop_src_w, 0);
+		drm_object_attach_property(&plane->base, config->prop_src_h, 0);
+	}
 
-// 	if (config->allow_fb_modifiers)
-// 		create_in_format_blob(dev, plane);
+	if (config->allow_fb_modifiers)
+		create_in_format_blob(dev, plane);
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_universal_plane_init);
+	return 0;
+}
+EXPORT_SYMBOL(drm_universal_plane_init);
 
 // int drm_plane_register_all(struct drm_device *dev)
 // {

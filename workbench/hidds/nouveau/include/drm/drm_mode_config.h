@@ -535,23 +535,23 @@ struct drm_mode_config {
 // 	bool delayed_event;
 // 	struct delayed_work output_poll_work;
 
-// 	/**
-// 	 * @blob_lock:
-// 	 *
-// 	 * Mutex for blob property allocation and management, protects
-// 	 * @property_blob_list and &drm_file.blobs.
-// 	 */
-// 	struct mutex blob_lock;
+	/**
+	 * @blob_lock:
+	 *
+	 * Mutex for blob property allocation and management, protects
+	 * @property_blob_list and &drm_file.blobs.
+	 */
+	struct mutex blob_lock;
 
-// 	/**
-// 	 * @property_blob_list:
-// 	 *
-// 	 * List of all the blob property objects linked with
-// 	 * &drm_property_blob.head. Protected by @blob_lock.
-// 	 */
-// 	struct list_head property_blob_list;
+	/**
+	 * @property_blob_list:
+	 *
+	 * List of all the blob property objects linked with
+	 * &drm_property_blob.head. Protected by @blob_lock.
+	 */
+	struct list_head property_blob_list;
 
-// 	/* pointers to standard properties */
+	/* pointers to standard properties */
 
 	/**
 	 * @edid_property: Default connector property to hold the EDID of the

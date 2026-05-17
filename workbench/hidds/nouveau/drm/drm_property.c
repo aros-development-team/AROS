@@ -528,73 +528,73 @@ EXPORT_SYMBOL(drm_property_destroy);
 // 	return 0;
 // }
 
-// static void drm_property_free_blob(struct kref *kref)
-// {
-// 	struct drm_property_blob *blob =
-// 		container_of(kref, struct drm_property_blob, base.refcount);
+static void drm_property_free_blob(struct kref *kref)
+{
+	struct drm_property_blob *blob =
+		container_of(kref, struct drm_property_blob, base.refcount);
 
-// 	mutex_lock(&blob->dev->mode_config.blob_lock);
-// 	list_del(&blob->head_global);
-// 	mutex_unlock(&blob->dev->mode_config.blob_lock);
+	mutex_lock(&blob->dev->mode_config.blob_lock);
+	list_del(&blob->head_global);
+	mutex_unlock(&blob->dev->mode_config.blob_lock);
 
-// 	drm_mode_object_unregister(blob->dev, &blob->base);
+	drm_mode_object_unregister(blob->dev, &blob->base);
 
-// 	kvfree(blob);
-// }
+	kvfree(blob);
+}
 
-// /**
-//  * drm_property_create_blob - Create new blob property
-//  * @dev: DRM device to create property for
-//  * @length: Length to allocate for blob data
-//  * @data: If specified, copies data into blob
-//  *
-//  * Creates a new blob property for a specified DRM device, optionally
-//  * copying data. Note that blob properties are meant to be invariant, hence the
-//  * data must be filled out before the blob is used as the value of any property.
-//  *
-//  * Returns:
-//  * New blob property with a single reference on success, or an ERR_PTR
-//  * value on failure.
-//  */
-// struct drm_property_blob *
-// drm_property_create_blob(struct drm_device *dev, size_t length,
-// 			 const void *data)
-// {
-// 	struct drm_property_blob *blob;
-// 	int ret;
+/**
+ * drm_property_create_blob - Create new blob property
+ * @dev: DRM device to create property for
+ * @length: Length to allocate for blob data
+ * @data: If specified, copies data into blob
+ *
+ * Creates a new blob property for a specified DRM device, optionally
+ * copying data. Note that blob properties are meant to be invariant, hence the
+ * data must be filled out before the blob is used as the value of any property.
+ *
+ * Returns:
+ * New blob property with a single reference on success, or an ERR_PTR
+ * value on failure.
+ */
+struct drm_property_blob *
+drm_property_create_blob(struct drm_device *dev, size_t length,
+			 const void *data)
+{
+	struct drm_property_blob *blob;
+	int ret;
 
-// 	if (!length || length > INT_MAX - sizeof(struct drm_property_blob))
-// 		return ERR_PTR(-EINVAL);
+	if (!length || length > INT_MAX - sizeof(struct drm_property_blob))
+		return ERR_PTR(-EINVAL);
 
-// 	blob = kvzalloc(sizeof(struct drm_property_blob)+length, GFP_KERNEL);
-// 	if (!blob)
-// 		return ERR_PTR(-ENOMEM);
+	blob = kvzalloc(sizeof(struct drm_property_blob)+length, GFP_KERNEL);
+	if (!blob)
+		return ERR_PTR(-ENOMEM);
 
-// 	/* This must be explicitly initialised, so we can safely call list_del
-// 	 * on it in the removal handler, even if it isn't in a file list. */
-// 	INIT_LIST_HEAD(&blob->head_file);
-// 	blob->data = (void *)blob + sizeof(*blob);
-// 	blob->length = length;
-// 	blob->dev = dev;
+	/* This must be explicitly initialised, so we can safely call list_del
+	 * on it in the removal handler, even if it isn't in a file list. */
+	INIT_LIST_HEAD(&blob->head_file);
+	blob->data = (void *)blob + sizeof(*blob);
+	blob->length = length;
+	blob->dev = dev;
 
-// 	if (data)
-// 		memcpy(blob->data, data, length);
+	if (data)
+		memcpy(blob->data, data, length);
 
-// 	ret = __drm_mode_object_add(dev, &blob->base, DRM_MODE_OBJECT_BLOB,
-// 				    true, drm_property_free_blob);
-// 	if (ret) {
-// 		kvfree(blob);
-// 		return ERR_PTR(-EINVAL);
-// 	}
+	ret = __drm_mode_object_add(dev, &blob->base, DRM_MODE_OBJECT_BLOB,
+				    true, drm_property_free_blob);
+	if (ret) {
+		kvfree(blob);
+		return ERR_PTR(-EINVAL);
+	}
 
-// 	mutex_lock(&dev->mode_config.blob_lock);
-// 	list_add_tail(&blob->head_global,
-// 	              &dev->mode_config.property_blob_list);
-// 	mutex_unlock(&dev->mode_config.blob_lock);
+	mutex_lock(&dev->mode_config.blob_lock);
+	list_add_tail(&blob->head_global,
+	              &dev->mode_config.property_blob_list);
+	mutex_unlock(&dev->mode_config.blob_lock);
 
-// 	return blob;
-// }
-// EXPORT_SYMBOL(drm_property_create_blob);
+	return blob;
+}
+EXPORT_SYMBOL(drm_property_create_blob);
 
 // /**
 //  * drm_property_blob_put - release a blob property reference

@@ -396,17 +396,13 @@ void drm_mode_config_init(struct drm_device *dev)
 #endif
 	mutex_init(&dev->mode_config.idr_mutex);
 	mutex_init(&dev->mode_config.fb_lock);
-#if !defined(__AROS__)
 	mutex_init(&dev->mode_config.blob_lock);
-#endif
 	INIT_LIST_HEAD(&dev->mode_config.fb_list);
 	INIT_LIST_HEAD(&dev->mode_config.crtc_list);
 	INIT_LIST_HEAD(&dev->mode_config.connector_list);
 	INIT_LIST_HEAD(&dev->mode_config.encoder_list);
 	INIT_LIST_HEAD(&dev->mode_config.property_list);
-#if !defined(__AROS__)
 	INIT_LIST_HEAD(&dev->mode_config.property_blob_list);
-#endif
 	INIT_LIST_HEAD(&dev->mode_config.plane_list);
 #if !defined(__AROS__)
 	INIT_LIST_HEAD(&dev->mode_config.privobj_list);

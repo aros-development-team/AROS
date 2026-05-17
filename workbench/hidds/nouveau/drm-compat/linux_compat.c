@@ -29,6 +29,7 @@
 
 #include <aros/debug.h>
 
+#include <drm-compat/drm_compat_mem.h>
 #include <linux/rbtree.h>
 /* Undo Linux compat changes. */
 #undef RB_ROOT
@@ -43,5 +44,45 @@ panic_cmp(struct rb_node *one, struct rb_node *two)
 }
 
 RB_GENERATE(linux_root, rb_node, __entry, panic_cmp);
+
+#include <stdio.h>
+
+static char *
+devm_kvasprintf(struct device *dev, gfp_t gfp, const char *fmt, va_list ap)
+{
+	unsigned int len;
+	char *p;
+	va_list aq;
+
+	va_copy(aq, ap);
+	len = vsnprintf(NULL, 0, fmt, aq);
+	va_end(aq);
+
+	p = kmalloc(len + 1, gfp);
+	if (p != NULL)
+		vsnprintf(p, len + 1, fmt, ap);
+
+	return (p);
+}
+
+char *
+kvasprintf(gfp_t gfp, const char *fmt, va_list ap)
+{
+
+	return (devm_kvasprintf(NULL, gfp, fmt, ap));
+}
+
+char *
+kasprintf(gfp_t gfp, const char *fmt, ...)
+{
+	va_list ap;
+	char *p;
+
+	va_start(ap, fmt);
+	p = kvasprintf(gfp, fmt, ap);
+	va_end(ap);
+
+	return (p);
+}
 
 

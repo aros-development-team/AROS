@@ -8,6 +8,7 @@
 #include "drm_compat_types.h"
 
 VOID HIDDNouveauFree(APTR memory);
+APTR HIDDNouveauAlloc(ULONG size);
 
 #define gfp_t           ULONG
 #define GFP_KERNEL      (1UL < 0)
@@ -32,11 +33,14 @@ VOID HIDDNouveauFree(APTR memory);
 #define kvmalloc(size, flags)           HIDDNouveauAlloc(size)
 #define kvcalloc(count, size, flags)    HIDDNouveauAlloc((count) * (size))
 #define kvmalloc_array(n, size, flags)  kvmalloc(size *n, flags)
+#define kvzalloc(size, flags)           kvmalloc(size, flags | __GFP_ZERO)
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
 void *kmemdup(const void *src, size_t len, BYTE flags);
 void *kstrdup(const void *src, BYTE flags);
 char *kstrndup(const char *c, size_t len, BYTE flags);
 int kstrtol(const char *s, unsigned int base, long *res);
+char *kvasprintf(gfp_t, const char *, va_list);
+char *kasprintf(gfp_t, const char *, ...);
 
 #endif /* _DRM_COMPAT_MEM_ */
