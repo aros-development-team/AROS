@@ -38,6 +38,7 @@
 #include <linux/uaccess.h>
 #else
 #include <linux/list.h>
+#include <linux/minmax.h>
 #endif
 #include <drm/drm_crtc.h>
 // #include <drm/drm_edid.h>

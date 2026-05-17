@@ -34,9 +34,6 @@
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
 #define fls_long(x)                     ((sizeof(x) * 8) - __builtin_clzl(x))
-#define max(a, b)                       ((a) > (b) ? (a) : (b))
-#define min(a, b)                       ((a) < (b) ? (a) : (b))
-#define clamp(a, vmin, vmax)            ((min(vmax, max(vmin, a))))
 #define is_power_of_2(x)                (x != 0 && ((x & (x - 1)) == 0))
 #define access_ok(a, b, c)              TRUE
 #define le16_to_cpu(x)                  AROS_LE2WORD(x)
@@ -52,8 +49,6 @@
 #define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
 #define DIV_ROUND_UP_ULL(x, y)          DIV_ROUND_UP((unsigned long long)(x), (y))
 #define EREMOTEIO                       EIO
-#define max_t(t, x, y)                  ({(t)(x) > (t)(y) ? (t)(x) : (t)(y);})
-#define min_t(t, x, y)                  ({(t)(x) < (t)(y) ? (t)(x) : (t)(y);})
 
 static inline void __mutex_init(struct mutex *m, const char *name, void *ingore)
 {
