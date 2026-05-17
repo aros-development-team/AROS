@@ -44,23 +44,6 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/linux_idr \
 
 AROS_DRM_NVIDIA_SOURCES = \
-drm/nouveau/nouveau_dp \
-drm/nouveau/nouveau_connector \
-drm/nouveau/nouveau_gem \
-drm/nouveau/nouveau_display \
-drm/nouveau/dispnv04/dispnv04_root_1 \
-drm/nouveau/dispnv04/dispnv04_root_2 \
-drm/nouveau/dispnv50/dispnv50_root \
-drm/nouveau/nv04_fence \
-drm/nouveau/nv10_fence \
-drm/nouveau/nv17_fence \
-drm/nouveau/nv50_fence \
-drm/nouveau/nv84_fence \
-drm/nouveau/nvc0_fence \
-drm/nouveau/nouveau_abi16 \
-drm/nouveau/nouveau_chan \
-drm/nouveau/nouveau_bios \
-drm/nouveau/nouveau_drm \
             drm/nouveau/nvkm/engine/device/engine_device \
             drm/nouveau/nvkm/engine/gr/engine_gr \
             drm/nouveau/nvkm/engine/gr/ctxnv40 \
@@ -134,4 +117,21 @@ drm/nouveau/nouveau_drm \
             drm/nouveau/nouveau_mem \
             drm/nouveau/nouveau_sgdma \
             drm/nouveau/nouveau_nvif \
+            drm/nouveau/nouveau_dp \
+            drm/nouveau/nouveau_connector \
+            drm/nouveau/nouveau_gem \
+            drm/nouveau/nouveau_display \
+            drm/nouveau/dispnv04/dispnv04_root_1 \
+            drm/nouveau/dispnv04/dispnv04_root_2 \
+            drm/nouveau/dispnv50/dispnv50_root \
+            drm/nouveau/nv04_fence \
+            drm/nouveau/nv10_fence \
+            drm/nouveau/nv17_fence \
+            drm/nouveau/nv50_fence \
+            drm/nouveau/nv84_fence \
+            drm/nouveau/nvc0_fence \
+            drm/nouveau/nouveau_abi16 \
+            drm/nouveau/nouveau_chan \
+            drm/nouveau/nouveau_bios \
+            drm/nouveau/nouveau_drm \
 
