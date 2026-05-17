@@ -921,8 +921,17 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
                                 }
                                 break;
 
+                            case ELF_FP_v4:
+                            case ELF_FP_v4_Short:
+                                /* VFPv4 is a superset of VFPv3; accept on any VFPv3-capable CPU */
+                                if (!IDosBase(DOSBase)->arm_VFP_v3)
+                                {
+                                    DATTR(bug("[ELF.ARM] VFPv4 required but missing\n"));
+                                    return FALSE;
+                                }
+                                break;
+
                             default:
-                                /* This includes VFPv4 for now */
                                 DATTR(bug("[ELF.ARM] VFP %d required -- unsupported\n", val));
                                 return FALSE;
                             }
