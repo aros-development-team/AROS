@@ -29,6 +29,73 @@ VOID HIDDNouveauFree(APTR memory)
 
 int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
 
+static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
+    drmModeCrtcPtr * selectedcrtc)
+{
+    *selectedconnector = NULL;
+    *selectedcrtc = NULL;
+    drmModeResPtr drmmode = NULL;
+    LONG i; ULONG crtc_id;
+
+
+
+    /* Get all components information */
+    drmmode = drmModeGetResources(fd);
+    if (!drmmode)
+    {
+        D(bug("[Nouveau] Not able to get resources information\n"));
+
+        return FALSE;
+    }
+
+    /* Selecting connector */
+    // for (i = 0; i < drmmode->count_connectors; i++)
+    // {
+        drmModeConnectorPtr connector = drmModeGetConnector(fd, 1);
+
+    //     if (connector)
+    //     {
+    //         if (connector->connection == DRM_MODE_CONNECTED)
+    //         {
+    //             /* Found connected connector */
+    //             *selectedconnector = connector;
+    //             break;
+    //         }
+
+    //         drmModeFreeConnector(connector);
+    //     }
+    // }
+
+    // if (!(*selectedconnector))
+    // {
+    //     D(bug("[Nouveau] No connected connector\n"));
+    //     drmModeFreeResources(drmmode);
+
+    //     return FALSE;
+    // }
+
+    /* Selecting first available CRTC */
+    if (drmmode->count_crtcs > 0)
+        crtc_id = drmmode->crtcs[0];
+    else
+        crtc_id = 0;
+
+    *selectedcrtc = drmModeGetCrtc(fd, crtc_id);
+    if (!(*selectedcrtc))
+    {
+        D(bug("[Nouveau] Not able to get crtc information for crtc_id %d\n", crtc_id));
+        drmModeFreeConnector(*selectedconnector);
+        *selectedconnector = NULL;
+        drmModeFreeResources(drmmode);
+
+        return FALSE;
+    }
+
+    drmModeFreeResources(drmmode);
+
+    return TRUE;
+}
+
 void main()
 {
     NouveauMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED, 32 * 1024, 16 * 1024);
@@ -87,11 +154,18 @@ void main()
         goto _sleep;
     }
 
-    // bug("Switching mode to 640x480\n");
+    bug("---- Selecting CRTS/Connector\n");
 
+    drmModeCrtcPtr selectedcrtc = NULL;
+    drmModeConnectorPtr selectedconnector = NULL;
 
+    HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc);
 
-    // drmModeSetCrtc(0, 0, 0, 0 , 0, NULL, 0, NULL);
+    bug("Switching mode to 640x480\n");
+    uint32_t aa[] = {1};
+    drmModeSetCrtc(nvdev->fd, 1, fbid, 0, 0, aa, 1, NULL);
+
+    drmModeSetCursor(nvdev->fd, 1, 0, 64, 64);
 
 _sleep:
     bug("Sleeping\n");
