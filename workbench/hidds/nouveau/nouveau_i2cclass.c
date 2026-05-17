@@ -2,7 +2,6 @@
     Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
 */
 
-#include "drmP.h"
 #include "nouveau_intern.h"
 // #include "nouveau_i2c.h"
 

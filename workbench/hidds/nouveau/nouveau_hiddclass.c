@@ -7,19 +7,22 @@
 
 #include <graphics/displayinfo.h>
 #include <proto/utility.h>
-#include <uapi/drm/nouveau_drm.h>
-#include <drm_legacy.h>
-#include <nvif/object.h>
-#include <core/mm.h>
-#include <nvif/device.h>
-struct nouveau_drm;
-#include <nouveau/nouveau_abi16.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
 #include <proto/oop.h>
 
-#include "arosdrmmode.h"
+#include <libdrm/arosdrmmode.h>
+
+/* WARNING: Following definitions are only used to resolve types from nouveau_abi16.h. They arey INVALID!! */
+struct drm_device;
+struct drm_file;
+struct nouveau_drm;
+struct list_head { ULONG n; };
+struct nvkm_mm { ULONG n; };
+struct nvif_device { ULONG n; };
+struct nvif_object { ULONG n; };
+#include "drm/nouveau/nouveau_abi16.h"
 
 #undef HiddAttrBase
 #undef HiddPixFmtAttrBase

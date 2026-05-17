@@ -9,7 +9,7 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 
-#include "arosdrmmode.h"
+#include <libdrm/arosdrmmode.h>
 
 #undef HiddBitMapAttrBase
 #undef HiddPixFmtAttrBase

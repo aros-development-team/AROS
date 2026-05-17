@@ -73,11 +73,7 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_bitmapclass \
             nouveau_accel \
             nouveau_i2cclass \
-            arosc_emul \
             nouveau_compositorclass \
-            $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_DRM_CORE_SOURCES))  \
-            $(addprefix$(SRCDIR)/$(CURDIR)/,$(AROS_LIBDRM_CORE_SOURCES))        \
-            $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_LIBDRM_NVIDIA_SOURCES))      \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
 #NOUVEAU_HIDD_CXX_SOURCES := \
@@ -90,18 +86,10 @@ NOUVEAU_HIDD_C_SOURCES := \
 #            -iquote $(top_srcdir)/src/mesa \
 #            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
 
-
 USER_INCLUDES := \
+            -I$(XF86_NOUVEAU_PATH) \
+            -iquote $(SRCDIR)/$(CURDIR)/libdrm/nouveau \
             -I$(SRCDIR)/$(CURDIR)/include \
-            -I$(SRCDIR)/$(CURDIR)/drm \
-            -I$(SRCDIR)/$(CURDIR)/drm/nouveau \
-            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include \
-            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include/nvkm \
-            -I$(SRCDIR)/$(CURDIR)/drm-aros \
-            -I$(SRCDIR)/$(CURDIR)/drm-aros/nouveau \
-            -I$(SRCDIR)/$(CURDIR)/libdrm \
-            -I$(SRCDIR)/$(CURDIR)/libdrm/nouveau \
-            -I$(XF86_NOUVEAU_PATH)
 
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
@@ -109,10 +97,9 @@ USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
 
 USER_LDFLAGS += \
   -L$(top_libdir) \
-  -lgalliumauxiliary -lcompiler -lmesautil \
   -lhiddstubs -lstdcio -lstdc
   
  %build_module mmake=hidd-nouveau modname=nouveau modtype=hidd \
      files="$(NOUVEAU_HIDD_C_SOURCES)" cxxfiles="$(NOUVEAU_HIDD_CXX_SOURCES)" \
-     uselibs=""
+     uselibs="oop libdrm_nouveau drm_nouveau"
 

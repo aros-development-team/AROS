@@ -3,7 +3,6 @@
 */
 
 #include "nouveau_intern.h"
-#include "drm_aros_config.h"
 
 #include <proto/oop.h>
 #include <proto/exec.h>
