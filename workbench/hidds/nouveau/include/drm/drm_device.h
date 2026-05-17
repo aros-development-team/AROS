@@ -87,12 +87,12 @@ struct drm_device {
 // 	/** @render: Render node */
 // 	struct drm_minor *render;
 
-// 	/**
-// 	 * @registered:
-// 	 *
-// 	 * Internally used by drm_dev_register() and drm_connector_register().
-// 	 */
-// 	bool registered;
+	/**
+	 * @registered:
+	 *
+	 * Internally used by drm_dev_register() and drm_connector_register().
+	 */
+	bool registered;
 
 // 	/**
 // 	 * @master:

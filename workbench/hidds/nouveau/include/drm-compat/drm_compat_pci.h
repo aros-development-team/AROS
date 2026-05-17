@@ -10,7 +10,10 @@
 #include <drm-compat/drm_compat_types.h>
 
 /* PCI support */
-struct pci_device_id;
+struct pci_device_id
+{
+    IPTR driver_data;
+};
 
 struct pci_dev
 {

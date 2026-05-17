@@ -795,7 +795,7 @@ struct drm_driver {
 
 struct drm_device *drm_dev_alloc(struct drm_driver *driver,
 				 struct device *parent);
-// int drm_dev_register(struct drm_device *dev, unsigned long flags);
+int drm_dev_register(struct drm_device *dev, unsigned long flags);
 // void drm_dev_unregister(struct drm_device *dev);
 
 // void drm_dev_get(struct drm_device *dev);

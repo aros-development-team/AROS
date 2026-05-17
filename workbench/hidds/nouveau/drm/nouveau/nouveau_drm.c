@@ -832,12 +832,12 @@ NOT_IMPLEMENTED_CONTINUE
 	if (ret)
 		goto fail_pci;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	ret = drm_dev_register(drm_dev, pent->driver_data);
 	if (ret)
 		goto fail_drm_dev_init;
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	quirk_broken_nv_runpm(pdev);
 #endif
 #if defined(__AROS__)

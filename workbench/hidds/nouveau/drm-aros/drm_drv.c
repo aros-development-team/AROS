@@ -57,6 +57,11 @@ struct drm_device *drm_dev_alloc(struct drm_driver *driver,
 	return dev;
 }
 
+int drm_dev_register(struct drm_device *dev, unsigned long flags)
+{
+    dev->registered = true;
+}
+
 int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
 struct drm_device *current_drm_device;
 
