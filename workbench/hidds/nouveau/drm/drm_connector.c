@@ -576,35 +576,35 @@ void drm_connector_unregister(struct drm_connector *connector)
 }
 EXPORT_SYMBOL(drm_connector_unregister);
 
-// void drm_connector_unregister_all(struct drm_device *dev)
-// {
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
+void drm_connector_unregister_all(struct drm_device *dev)
+{
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter)
-// 		drm_connector_unregister(connector);
-// 	drm_connector_list_iter_end(&conn_iter);
-// }
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter)
+		drm_connector_unregister(connector);
+	drm_connector_list_iter_end(&conn_iter);
+}
 
-// int drm_connector_register_all(struct drm_device *dev)
-// {
-// 	struct drm_connector *connector;
-// 	struct drm_connector_list_iter conn_iter;
-// 	int ret = 0;
+int drm_connector_register_all(struct drm_device *dev)
+{
+	struct drm_connector *connector;
+	struct drm_connector_list_iter conn_iter;
+	int ret = 0;
 
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		ret = drm_connector_register(connector);
-// 		if (ret)
-// 			break;
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		ret = drm_connector_register(connector);
+		if (ret)
+			break;
+	}
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	if (ret)
-// 		drm_connector_unregister_all(dev);
-// 	return ret;
-// }
+	if (ret)
+		drm_connector_unregister_all(dev);
+	return ret;
+}
 
 // /**
 //  * drm_get_connector_status_name - return a string for connector status

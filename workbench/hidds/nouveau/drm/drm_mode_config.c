@@ -33,37 +33,37 @@
 #include "drm_crtc_internal.h"
 #include "drm_internal.h"
 
-// int drm_modeset_register_all(struct drm_device *dev)
-// {
-// 	int ret;
+int drm_modeset_register_all(struct drm_device *dev)
+{
+	int ret;
 
-// 	ret = drm_plane_register_all(dev);
-// 	if (ret)
-// 		goto err_plane;
+	ret = drm_plane_register_all(dev);
+	if (ret)
+		goto err_plane;
 
-// 	ret = drm_crtc_register_all(dev);
-// 	if  (ret)
-// 		goto err_crtc;
+	ret = drm_crtc_register_all(dev);
+	if  (ret)
+		goto err_crtc;
 
-// 	ret = drm_encoder_register_all(dev);
-// 	if (ret)
-// 		goto err_encoder;
+	ret = drm_encoder_register_all(dev);
+	if (ret)
+		goto err_encoder;
 
-// 	ret = drm_connector_register_all(dev);
-// 	if (ret)
-// 		goto err_connector;
+	ret = drm_connector_register_all(dev);
+	if (ret)
+		goto err_connector;
 
-// 	return 0;
+	return 0;
 
-// err_connector:
-// 	drm_encoder_unregister_all(dev);
-// err_encoder:
-// 	drm_crtc_unregister_all(dev);
-// err_crtc:
-// 	drm_plane_unregister_all(dev);
-// err_plane:
-// 	return ret;
-// }
+err_connector:
+	drm_encoder_unregister_all(dev);
+err_encoder:
+	drm_crtc_unregister_all(dev);
+err_crtc:
+	drm_plane_unregister_all(dev);
+err_plane:
+	return ret;
+}
 
 // void drm_modeset_unregister_all(struct drm_device *dev)
 // {

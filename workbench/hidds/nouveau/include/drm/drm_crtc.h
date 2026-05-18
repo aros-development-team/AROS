@@ -740,31 +740,31 @@ struct drm_crtc_funcs {
 				   struct drm_property *property,
 				   uint64_t *val);
 
-// 	/**
-// 	 * @late_register:
-// 	 *
-// 	 * This optional hook can be used to register additional userspace
-// 	 * interfaces attached to the crtc like debugfs interfaces.
-// 	 * It is called late in the driver load sequence from drm_dev_register().
-// 	 * Everything added from this callback should be unregistered in
-// 	 * the early_unregister callback.
-// 	 *
-// 	 * Returns:
-// 	 *
-// 	 * 0 on success, or a negative error code on failure.
-// 	 */
-// 	int (*late_register)(struct drm_crtc *crtc);
+	/**
+	 * @late_register:
+	 *
+	 * This optional hook can be used to register additional userspace
+	 * interfaces attached to the crtc like debugfs interfaces.
+	 * It is called late in the driver load sequence from drm_dev_register().
+	 * Everything added from this callback should be unregistered in
+	 * the early_unregister callback.
+	 *
+	 * Returns:
+	 *
+	 * 0 on success, or a negative error code on failure.
+	 */
+	int (*late_register)(struct drm_crtc *crtc);
 
-// 	/**
-// 	 * @early_unregister:
-// 	 *
-// 	 * This optional hook should be used to unregister the additional
-// 	 * userspace interfaces attached to the crtc from
-// 	 * @late_register. It is called from drm_dev_unregister(),
-// 	 * early in the driver unload sequence to disable userspace access
-// 	 * before data structures are torndown.
-// 	 */
-// 	void (*early_unregister)(struct drm_crtc *crtc);
+	/**
+	 * @early_unregister:
+	 *
+	 * This optional hook should be used to unregister the additional
+	 * userspace interfaces attached to the crtc from
+	 * @late_register. It is called from drm_dev_unregister(),
+	 * early in the driver unload sequence to disable userspace access
+	 * before data structures are torndown.
+	 */
+	void (*early_unregister)(struct drm_crtc *crtc);
 
 // 	/**
 // 	 * @set_crc_source:

@@ -293,30 +293,30 @@ int drm_universal_plane_init(struct drm_device *dev, struct drm_plane *plane,
 }
 EXPORT_SYMBOL(drm_universal_plane_init);
 
-// int drm_plane_register_all(struct drm_device *dev)
-// {
-// 	struct drm_plane *plane;
-// 	int ret = 0;
+int drm_plane_register_all(struct drm_device *dev)
+{
+	struct drm_plane *plane;
+	int ret = 0;
 
-// 	drm_for_each_plane(plane, dev) {
-// 		if (plane->funcs->late_register)
-// 			ret = plane->funcs->late_register(plane);
-// 		if (ret)
-// 			return ret;
-// 	}
+	drm_for_each_plane(plane, dev) {
+		if (plane->funcs->late_register)
+			ret = plane->funcs->late_register(plane);
+		if (ret)
+			return ret;
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// void drm_plane_unregister_all(struct drm_device *dev)
-// {
-// 	struct drm_plane *plane;
+void drm_plane_unregister_all(struct drm_device *dev)
+{
+	struct drm_plane *plane;
 
-// 	drm_for_each_plane(plane, dev) {
-// 		if (plane->funcs->early_unregister)
-// 			plane->funcs->early_unregister(plane);
-// 	}
-// }
+	drm_for_each_plane(plane, dev) {
+		if (plane->funcs->early_unregister)
+			plane->funcs->early_unregister(plane);
+	}
+}
 
 // /**
 //  * drm_plane_init - Initialize a legacy plane

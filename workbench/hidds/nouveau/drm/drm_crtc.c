@@ -122,33 +122,33 @@ static unsigned int drm_num_crtcs(struct drm_device *dev)
 	return num;
 }
 
-// int drm_crtc_register_all(struct drm_device *dev)
-// {
-// 	struct drm_crtc *crtc;
-// 	int ret = 0;
+int drm_crtc_register_all(struct drm_device *dev)
+{
+	struct drm_crtc *crtc;
+	int ret = 0;
 
-// 	drm_for_each_crtc(crtc, dev) {
-// 		drm_debugfs_crtc_add(crtc);
+	drm_for_each_crtc(crtc, dev) {
+		drm_debugfs_crtc_add(crtc);
 
-// 		if (crtc->funcs->late_register)
-// 			ret = crtc->funcs->late_register(crtc);
-// 		if (ret)
-// 			return ret;
-// 	}
+		if (crtc->funcs->late_register)
+			ret = crtc->funcs->late_register(crtc);
+		if (ret)
+			return ret;
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// void drm_crtc_unregister_all(struct drm_device *dev)
-// {
-// 	struct drm_crtc *crtc;
+void drm_crtc_unregister_all(struct drm_device *dev)
+{
+	struct drm_crtc *crtc;
 
-// 	drm_for_each_crtc(crtc, dev) {
-// 		if (crtc->funcs->early_unregister)
-// 			crtc->funcs->early_unregister(crtc);
-// 		drm_debugfs_crtc_remove(crtc);
-// 	}
-// }
+	drm_for_each_crtc(crtc, dev) {
+		if (crtc->funcs->early_unregister)
+			crtc->funcs->early_unregister(crtc);
+		drm_debugfs_crtc_remove(crtc);
+	}
+}
 
 static int drm_crtc_crc_init(struct drm_crtc *crtc)
 {

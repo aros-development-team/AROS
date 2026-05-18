@@ -12,6 +12,7 @@
 #include <drm/drm_drv.h>
 #include <drm/drm_print.h>
 
+int drm_modeset_register_all(struct drm_device *dev);
 int drm_gem_init(struct drm_device *dev);
 
 static int drm_dev_init(struct drm_device *dev, struct drm_driver *driver,
@@ -59,8 +60,19 @@ struct drm_device *drm_dev_alloc(struct drm_driver *driver,
 
 int drm_dev_register(struct drm_device *dev, unsigned long flags)
 {
+    int ret = 0;
+
     dev->registered = true;
-    return 0;
+    if (drm_core_check_feature(dev, DRIVER_MODESET))
+    {
+        ret = drm_modeset_register_all(dev);
+        if (ret)
+            goto err_unload;
+    }
+
+    return ret;
+err_unload:
+    return ret;
 }
 
 int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);

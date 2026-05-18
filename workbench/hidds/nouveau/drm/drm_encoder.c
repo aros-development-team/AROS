@@ -67,30 +67,30 @@ static const struct drm_prop_enum_list drm_encoder_enum_list[] = {
 	{ DRM_MODE_ENCODER_DPI, "DPI" },
 };
 
-// int drm_encoder_register_all(struct drm_device *dev)
-// {
-// 	struct drm_encoder *encoder;
-// 	int ret = 0;
+int drm_encoder_register_all(struct drm_device *dev)
+{
+	struct drm_encoder *encoder;
+	int ret = 0;
 
-// 	drm_for_each_encoder(encoder, dev) {
-// 		if (encoder->funcs->late_register)
-// 			ret = encoder->funcs->late_register(encoder);
-// 		if (ret)
-// 			return ret;
-// 	}
+	drm_for_each_encoder(encoder, dev) {
+		if (encoder->funcs->late_register)
+			ret = encoder->funcs->late_register(encoder);
+		if (ret)
+			return ret;
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
-// void drm_encoder_unregister_all(struct drm_device *dev)
-// {
-// 	struct drm_encoder *encoder;
+void drm_encoder_unregister_all(struct drm_device *dev)
+{
+	struct drm_encoder *encoder;
 
-// 	drm_for_each_encoder(encoder, dev) {
-// 		if (encoder->funcs->early_unregister)
-// 			encoder->funcs->early_unregister(encoder);
-// 	}
-// }
+	drm_for_each_encoder(encoder, dev) {
+		if (encoder->funcs->early_unregister)
+			encoder->funcs->early_unregister(encoder);
+	}
+}
 
 /**
  * drm_encoder_init - Init a preallocated encoder
