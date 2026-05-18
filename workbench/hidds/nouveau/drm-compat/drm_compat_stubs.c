@@ -153,18 +153,18 @@ void drm_i2c_encoder_save() { NOT_IMPLEMENTED_STOP }
 void drm_mode_config_cleanup() { NOT_IMPLEMENTED_STOP }
 
 
-void drm_mode_copy() { NOT_IMPLEMENTED_STOP }
+
 
 
 void drm_mode_create_tv_properties() { NOT_IMPLEMENTED_STOP }
 void drm_mode_destroy() { NOT_IMPLEMENTED_STOP }
-void drm_mode_duplicate() { NOT_IMPLEMENTED_STOP }
-void drm_mode_equal() { NOT_IMPLEMENTED_STOP }
 
 
-void drm_mode_probed_add() { NOT_IMPLEMENTED_STOP }
-void drm_mode_set_crtcinfo() { NOT_IMPLEMENTED_STOP }
-void drm_mode_vrefresh() { NOT_IMPLEMENTED_STOP }
+
+
+
+
+
 
 
 void drm_plane_cleanup() { NOT_IMPLEMENTED_STOP }

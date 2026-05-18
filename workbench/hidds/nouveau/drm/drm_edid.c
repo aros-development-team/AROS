@@ -2997,8 +2997,6 @@ cea_mode_alternate_clock(const struct drm_display_mode *cea_mode)
 	if (cea_mode->vrefresh % 6 != 0)
 		return clock;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	/*
 	 * edid_cea_modes contains the 59.94Hz
 	 * variant for 240 and 480 line modes,
@@ -3008,7 +3006,6 @@ NOT_IMPLEMENTED_STOP
 		clock = DIV_ROUND_CLOSEST(clock * 1001, 1000);
 	else
 		clock = DIV_ROUND_CLOSEST(clock * 1000, 1001);
-#endif
 	return clock;
 }
 
@@ -4648,16 +4645,14 @@ drm_reset_display_info(struct drm_connector *connector)
 	info->height_mm = 0;
 
 	info->bpc = 0;
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	info->color_formats = 0;
 #endif
 	info->cea_rev = 0;
 	info->max_tmds_clock = 0;
 	info->dvi_dual = false;
 	info->has_hdmi_infoframe = false;
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	info->rgb_quant_range_selectable = false;
 	memset(&info->hdmi, 0, sizeof(info->hdmi));
 	memset(&connector->hdr_sink_metadata, 0, sizeof(connector->hdr_sink_metadata));

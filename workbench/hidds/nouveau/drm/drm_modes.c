@@ -103,23 +103,23 @@ EXPORT_SYMBOL(drm_mode_create);
 // }
 // EXPORT_SYMBOL(drm_mode_destroy);
 
-// /**
-//  * drm_mode_probed_add - add a mode to a connector's probed_mode list
-//  * @connector: connector the new mode
-//  * @mode: mode data
-//  *
-//  * Add @mode to @connector's probed_mode list for later use. This list should
-//  * then in a second step get filtered and all the modes actually supported by
-//  * the hardware moved to the @connector's modes list.
-//  */
-// void drm_mode_probed_add(struct drm_connector *connector,
-// 			 struct drm_display_mode *mode)
-// {
-// 	WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+/**
+ * drm_mode_probed_add - add a mode to a connector's probed_mode list
+ * @connector: connector the new mode
+ * @mode: mode data
+ *
+ * Add @mode to @connector's probed_mode list for later use. This list should
+ * then in a second step get filtered and all the modes actually supported by
+ * the hardware moved to the @connector's modes list.
+ */
+void drm_mode_probed_add(struct drm_connector *connector,
+			 struct drm_display_mode *mode)
+{
+	// WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
 
-// 	list_add_tail(&mode->head, &connector->probed_modes);
-// }
-// EXPORT_SYMBOL(drm_mode_probed_add);
+	list_add_tail(&mode->head, &connector->probed_modes);
+}
+EXPORT_SYMBOL(drm_mode_probed_add);
 
 // /**
 //  * drm_cvt_mode -create a modeline based on the CVT algorithm
@@ -780,38 +780,38 @@ int drm_mode_hsync(const struct drm_display_mode *mode)
 }
 EXPORT_SYMBOL(drm_mode_hsync);
 
-// /**
-//  * drm_mode_vrefresh - get the vrefresh of a mode
-//  * @mode: mode
-//  *
-//  * Returns:
-//  * @modes's vrefresh rate in Hz, rounded to the nearest integer. Calculates the
-//  * value first if it is not yet set.
-//  */
-// int drm_mode_vrefresh(const struct drm_display_mode *mode)
-// {
-// 	int refresh = 0;
+/**
+ * drm_mode_vrefresh - get the vrefresh of a mode
+ * @mode: mode
+ *
+ * Returns:
+ * @modes's vrefresh rate in Hz, rounded to the nearest integer. Calculates the
+ * value first if it is not yet set.
+ */
+int drm_mode_vrefresh(const struct drm_display_mode *mode)
+{
+	int refresh = 0;
 
-// 	if (mode->vrefresh > 0)
-// 		refresh = mode->vrefresh;
-// 	else if (mode->htotal > 0 && mode->vtotal > 0) {
-// 		unsigned int num, den;
+	if (mode->vrefresh > 0)
+		refresh = mode->vrefresh;
+	else if (mode->htotal > 0 && mode->vtotal > 0) {
+		unsigned int num, den;
 
-// 		num = mode->clock * 1000;
-// 		den = mode->htotal * mode->vtotal;
+		num = mode->clock * 1000;
+		den = mode->htotal * mode->vtotal;
 
-// 		if (mode->flags & DRM_MODE_FLAG_INTERLACE)
-// 			num *= 2;
-// 		if (mode->flags & DRM_MODE_FLAG_DBLSCAN)
-// 			den *= 2;
-// 		if (mode->vscan > 1)
-// 			den *= mode->vscan;
+		if (mode->flags & DRM_MODE_FLAG_INTERLACE)
+			num *= 2;
+		if (mode->flags & DRM_MODE_FLAG_DBLSCAN)
+			den *= 2;
+		if (mode->vscan > 1)
+			den *= mode->vscan;
 
-// 		refresh = DIV_ROUND_CLOSEST(num, den);
-// 	}
-// 	return refresh;
-// }
-// EXPORT_SYMBOL(drm_mode_vrefresh);
+		refresh = DIV_ROUND_CLOSEST(num, den);
+	}
+	return refresh;
+}
+EXPORT_SYMBOL(drm_mode_vrefresh);
 
 /**
  * drm_mode_get_hv_timing - Fetches hdisplay/vdisplay for given mode
@@ -833,127 +833,127 @@ void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
 }
 EXPORT_SYMBOL(drm_mode_get_hv_timing);
 
-// /**
-//  * drm_mode_set_crtcinfo - set CRTC modesetting timing parameters
-//  * @p: mode
-//  * @adjust_flags: a combination of adjustment flags
-//  *
-//  * Setup the CRTC modesetting timing parameters for @p, adjusting if necessary.
-//  *
-//  * - The CRTC_INTERLACE_HALVE_V flag can be used to halve vertical timings of
-//  *   interlaced modes.
-//  * - The CRTC_STEREO_DOUBLE flag can be used to compute the timings for
-//  *   buffers containing two eyes (only adjust the timings when needed, eg. for
-//  *   "frame packing" or "side by side full").
-//  * - The CRTC_NO_DBLSCAN and CRTC_NO_VSCAN flags request that adjustment *not*
-//  *   be performed for doublescan and vscan > 1 modes respectively.
-//  */
-// void drm_mode_set_crtcinfo(struct drm_display_mode *p, int adjust_flags)
-// {
-// 	if (!p)
-// 		return;
+/**
+ * drm_mode_set_crtcinfo - set CRTC modesetting timing parameters
+ * @p: mode
+ * @adjust_flags: a combination of adjustment flags
+ *
+ * Setup the CRTC modesetting timing parameters for @p, adjusting if necessary.
+ *
+ * - The CRTC_INTERLACE_HALVE_V flag can be used to halve vertical timings of
+ *   interlaced modes.
+ * - The CRTC_STEREO_DOUBLE flag can be used to compute the timings for
+ *   buffers containing two eyes (only adjust the timings when needed, eg. for
+ *   "frame packing" or "side by side full").
+ * - The CRTC_NO_DBLSCAN and CRTC_NO_VSCAN flags request that adjustment *not*
+ *   be performed for doublescan and vscan > 1 modes respectively.
+ */
+void drm_mode_set_crtcinfo(struct drm_display_mode *p, int adjust_flags)
+{
+	if (!p)
+		return;
 
-// 	p->crtc_clock = p->clock;
-// 	p->crtc_hdisplay = p->hdisplay;
-// 	p->crtc_hsync_start = p->hsync_start;
-// 	p->crtc_hsync_end = p->hsync_end;
-// 	p->crtc_htotal = p->htotal;
-// 	p->crtc_hskew = p->hskew;
-// 	p->crtc_vdisplay = p->vdisplay;
-// 	p->crtc_vsync_start = p->vsync_start;
-// 	p->crtc_vsync_end = p->vsync_end;
-// 	p->crtc_vtotal = p->vtotal;
+	p->crtc_clock = p->clock;
+	p->crtc_hdisplay = p->hdisplay;
+	p->crtc_hsync_start = p->hsync_start;
+	p->crtc_hsync_end = p->hsync_end;
+	p->crtc_htotal = p->htotal;
+	p->crtc_hskew = p->hskew;
+	p->crtc_vdisplay = p->vdisplay;
+	p->crtc_vsync_start = p->vsync_start;
+	p->crtc_vsync_end = p->vsync_end;
+	p->crtc_vtotal = p->vtotal;
 
-// 	if (p->flags & DRM_MODE_FLAG_INTERLACE) {
-// 		if (adjust_flags & CRTC_INTERLACE_HALVE_V) {
-// 			p->crtc_vdisplay /= 2;
-// 			p->crtc_vsync_start /= 2;
-// 			p->crtc_vsync_end /= 2;
-// 			p->crtc_vtotal /= 2;
-// 		}
-// 	}
+	if (p->flags & DRM_MODE_FLAG_INTERLACE) {
+		if (adjust_flags & CRTC_INTERLACE_HALVE_V) {
+			p->crtc_vdisplay /= 2;
+			p->crtc_vsync_start /= 2;
+			p->crtc_vsync_end /= 2;
+			p->crtc_vtotal /= 2;
+		}
+	}
 
-// 	if (!(adjust_flags & CRTC_NO_DBLSCAN)) {
-// 		if (p->flags & DRM_MODE_FLAG_DBLSCAN) {
-// 			p->crtc_vdisplay *= 2;
-// 			p->crtc_vsync_start *= 2;
-// 			p->crtc_vsync_end *= 2;
-// 			p->crtc_vtotal *= 2;
-// 		}
-// 	}
+	if (!(adjust_flags & CRTC_NO_DBLSCAN)) {
+		if (p->flags & DRM_MODE_FLAG_DBLSCAN) {
+			p->crtc_vdisplay *= 2;
+			p->crtc_vsync_start *= 2;
+			p->crtc_vsync_end *= 2;
+			p->crtc_vtotal *= 2;
+		}
+	}
 
-// 	if (!(adjust_flags & CRTC_NO_VSCAN)) {
-// 		if (p->vscan > 1) {
-// 			p->crtc_vdisplay *= p->vscan;
-// 			p->crtc_vsync_start *= p->vscan;
-// 			p->crtc_vsync_end *= p->vscan;
-// 			p->crtc_vtotal *= p->vscan;
-// 		}
-// 	}
+	if (!(adjust_flags & CRTC_NO_VSCAN)) {
+		if (p->vscan > 1) {
+			p->crtc_vdisplay *= p->vscan;
+			p->crtc_vsync_start *= p->vscan;
+			p->crtc_vsync_end *= p->vscan;
+			p->crtc_vtotal *= p->vscan;
+		}
+	}
 
-// 	if (adjust_flags & CRTC_STEREO_DOUBLE) {
-// 		unsigned int layout = p->flags & DRM_MODE_FLAG_3D_MASK;
+	if (adjust_flags & CRTC_STEREO_DOUBLE) {
+		unsigned int layout = p->flags & DRM_MODE_FLAG_3D_MASK;
 
-// 		switch (layout) {
-// 		case DRM_MODE_FLAG_3D_FRAME_PACKING:
-// 			p->crtc_clock *= 2;
-// 			p->crtc_vdisplay += p->crtc_vtotal;
-// 			p->crtc_vsync_start += p->crtc_vtotal;
-// 			p->crtc_vsync_end += p->crtc_vtotal;
-// 			p->crtc_vtotal += p->crtc_vtotal;
-// 			break;
-// 		}
-// 	}
+		switch (layout) {
+		case DRM_MODE_FLAG_3D_FRAME_PACKING:
+			p->crtc_clock *= 2;
+			p->crtc_vdisplay += p->crtc_vtotal;
+			p->crtc_vsync_start += p->crtc_vtotal;
+			p->crtc_vsync_end += p->crtc_vtotal;
+			p->crtc_vtotal += p->crtc_vtotal;
+			break;
+		}
+	}
 
-// 	p->crtc_vblank_start = min(p->crtc_vsync_start, p->crtc_vdisplay);
-// 	p->crtc_vblank_end = max(p->crtc_vsync_end, p->crtc_vtotal);
-// 	p->crtc_hblank_start = min(p->crtc_hsync_start, p->crtc_hdisplay);
-// 	p->crtc_hblank_end = max(p->crtc_hsync_end, p->crtc_htotal);
-// }
-// EXPORT_SYMBOL(drm_mode_set_crtcinfo);
+	p->crtc_vblank_start = min(p->crtc_vsync_start, p->crtc_vdisplay);
+	p->crtc_vblank_end = max(p->crtc_vsync_end, p->crtc_vtotal);
+	p->crtc_hblank_start = min(p->crtc_hsync_start, p->crtc_hdisplay);
+	p->crtc_hblank_end = max(p->crtc_hsync_end, p->crtc_htotal);
+}
+EXPORT_SYMBOL(drm_mode_set_crtcinfo);
 
-// /**
-//  * drm_mode_copy - copy the mode
-//  * @dst: mode to overwrite
-//  * @src: mode to copy
-//  *
-//  * Copy an existing mode into another mode, preserving the object id and
-//  * list head of the destination mode.
-//  */
-// void drm_mode_copy(struct drm_display_mode *dst, const struct drm_display_mode *src)
-// {
-// 	struct list_head head = dst->head;
+/**
+ * drm_mode_copy - copy the mode
+ * @dst: mode to overwrite
+ * @src: mode to copy
+ *
+ * Copy an existing mode into another mode, preserving the object id and
+ * list head of the destination mode.
+ */
+void drm_mode_copy(struct drm_display_mode *dst, const struct drm_display_mode *src)
+{
+	struct list_head head = dst->head;
 
-// 	*dst = *src;
-// 	dst->head = head;
-// }
-// EXPORT_SYMBOL(drm_mode_copy);
+	*dst = *src;
+	dst->head = head;
+}
+EXPORT_SYMBOL(drm_mode_copy);
 
-// /**
-//  * drm_mode_duplicate - allocate and duplicate an existing mode
-//  * @dev: drm_device to allocate the duplicated mode for
-//  * @mode: mode to duplicate
-//  *
-//  * Just allocate a new mode, copy the existing mode into it, and return
-//  * a pointer to it.  Used to create new instances of established modes.
-//  *
-//  * Returns:
-//  * Pointer to duplicated mode on success, NULL on error.
-//  */
-// struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
-// 					    const struct drm_display_mode *mode)
-// {
-// 	struct drm_display_mode *nmode;
+/**
+ * drm_mode_duplicate - allocate and duplicate an existing mode
+ * @dev: drm_device to allocate the duplicated mode for
+ * @mode: mode to duplicate
+ *
+ * Just allocate a new mode, copy the existing mode into it, and return
+ * a pointer to it.  Used to create new instances of established modes.
+ *
+ * Returns:
+ * Pointer to duplicated mode on success, NULL on error.
+ */
+struct drm_display_mode *drm_mode_duplicate(struct drm_device *dev,
+					    const struct drm_display_mode *mode)
+{
+	struct drm_display_mode *nmode;
 
-// 	nmode = drm_mode_create(dev);
-// 	if (!nmode)
-// 		return NULL;
+	nmode = drm_mode_create(dev);
+	if (!nmode)
+		return NULL;
 
-// 	drm_mode_copy(nmode, mode);
+	drm_mode_copy(nmode, mode);
 
-// 	return nmode;
-// }
-// EXPORT_SYMBOL(drm_mode_duplicate);
+	return nmode;
+}
+EXPORT_SYMBOL(drm_mode_duplicate);
 
 static bool drm_mode_match_timings(const struct drm_display_mode *mode1,
 				   const struct drm_display_mode *mode2)
@@ -1050,27 +1050,27 @@ bool drm_mode_match(const struct drm_display_mode *mode1,
 }
 EXPORT_SYMBOL(drm_mode_match);
 
-// /**
-//  * drm_mode_equal - test modes for equality
-//  * @mode1: first mode
-//  * @mode2: second mode
-//  *
-//  * Check to see if @mode1 and @mode2 are equivalent.
-//  *
-//  * Returns:
-//  * True if the modes are equal, false otherwise.
-//  */
-// bool drm_mode_equal(const struct drm_display_mode *mode1,
-// 		    const struct drm_display_mode *mode2)
-// {
-// 	return drm_mode_match(mode1, mode2,
-// 			      DRM_MODE_MATCH_TIMINGS |
-// 			      DRM_MODE_MATCH_CLOCK |
-// 			      DRM_MODE_MATCH_FLAGS |
-// 			      DRM_MODE_MATCH_3D_FLAGS|
-// 			      DRM_MODE_MATCH_ASPECT_RATIO);
-// }
-// EXPORT_SYMBOL(drm_mode_equal);
+/**
+ * drm_mode_equal - test modes for equality
+ * @mode1: first mode
+ * @mode2: second mode
+ *
+ * Check to see if @mode1 and @mode2 are equivalent.
+ *
+ * Returns:
+ * True if the modes are equal, false otherwise.
+ */
+bool drm_mode_equal(const struct drm_display_mode *mode1,
+		    const struct drm_display_mode *mode2)
+{
+	return drm_mode_match(mode1, mode2,
+			      DRM_MODE_MATCH_TIMINGS |
+			      DRM_MODE_MATCH_CLOCK |
+			      DRM_MODE_MATCH_FLAGS |
+			      DRM_MODE_MATCH_3D_FLAGS|
+			      DRM_MODE_MATCH_ASPECT_RATIO);
+}
+EXPORT_SYMBOL(drm_mode_equal);
 
 // /**
 //  * drm_mode_equal_no_clocks - test modes for equality
