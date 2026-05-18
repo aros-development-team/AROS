@@ -40,8 +40,6 @@
 static struct nouveau_abi16 *
 nouveau_abi16(struct drm_file *file_priv)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nouveau_cli *cli = nouveau_cli(file_priv);
 	if (!cli->abi16) {
 		struct nouveau_abi16 *abi16;
@@ -67,20 +65,16 @@ NOT_IMPLEMENTED_STOP
 		}
 	}
 	return cli->abi16;
-#endif
 }
 
 struct nouveau_abi16 *
 nouveau_abi16_get(struct drm_file *file_priv)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nouveau_cli *cli = nouveau_cli(file_priv);
 	mutex_lock(&cli->mutex);
 	if (nouveau_abi16(file_priv))
 		return cli->abi16;
 	mutex_unlock(&cli->mutex);
-#endif
 	return NULL;
 }
 
@@ -254,8 +248,6 @@ int
 nouveau_abi16_ioctl_channel_alloc(ABI16_IOCTL_ARGS)
 {
 	struct drm_nouveau_channel_alloc *init = data;
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nouveau_cli *cli = nouveau_cli(file_priv);
 	struct nouveau_drm *drm = nouveau_drm(dev);
 	struct nouveau_abi16 *abi16 = nouveau_abi16_get(file_priv);
@@ -357,7 +349,6 @@ done:
 	if (ret)
 		nouveau_abi16_chan_fini(abi16, chan);
 	return nouveau_abi16_put(abi16, ret);
-#endif
 }
 
 static struct nouveau_abi16_chan *
