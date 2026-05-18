@@ -25,6 +25,7 @@
 #include <linux/uaccess.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <linux/math.h>
 #endif
 
 // #include <drm/drm_atomic.h>

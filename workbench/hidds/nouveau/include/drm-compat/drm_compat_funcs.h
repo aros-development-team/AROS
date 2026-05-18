@@ -20,7 +20,6 @@
 #define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
 #define readb(addr)                     (*(volatile UBYTE*)(addr))
 #define capable(p)                      TRUE
-#define round_up(x, y)                  roundup(x, y)
 #define lower_32_bits(n)                ((u32)(n))
 #define upper_32_bits(n)                ((u32)(((n) >> 16) >> 16))
 #define mutex_lock(x)                   ObtainSemaphore(&(x)->semaphore)
@@ -46,8 +45,6 @@
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
-#define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
-#define DIV_ROUND_UP_ULL(x, y)          DIV_ROUND_UP((unsigned long long)(x), (y))
 #define EREMOTEIO                       EIO
 
 static inline void __mutex_init(struct mutex *m, const char *name, void *ingore)

@@ -31,6 +31,8 @@
 
 #if !defined(__AROS__)
 #include <linux/uaccess.h>
+#else
+#include <linux/math.h>
 #endif
 
 #include "drm_crtc_internal.h"

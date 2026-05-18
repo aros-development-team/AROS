@@ -39,6 +39,7 @@
 #include <video/of_videomode.h>
 #include <video/videomode.h>
 #else
+#include <linux/math.h>
 #include <linux/list.h>
 #include <linux/minmax.h>
 #include <linux/string.h>

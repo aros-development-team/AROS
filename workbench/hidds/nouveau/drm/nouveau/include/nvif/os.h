@@ -50,6 +50,7 @@
 #include <linux/minmax.h>
 #include <linux/string.h>
 #include <linux/kstrtox.h>
+#include <linux/math.h>
 
 #define CONFIG_ARM_ENABLED 0
 #define CONFIG_DRM_NOUVEAU_SVM_ENABLED 0

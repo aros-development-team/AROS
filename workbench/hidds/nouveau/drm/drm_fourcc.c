@@ -29,6 +29,7 @@
 #include <linux/kernel.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <linux/math.h>
 #endif
 
 #include <drm/drm_device.h>

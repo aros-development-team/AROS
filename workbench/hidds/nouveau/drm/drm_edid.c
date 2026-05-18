@@ -39,6 +39,7 @@
 #include <linux/minmax.h>
 #include <linux/bitmap.h>
 #include <linux/string.h>
+#include <linux/math.h>
 #endif
 
 #include <drm/drm_displayid.h>
