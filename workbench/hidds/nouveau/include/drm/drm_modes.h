@@ -525,26 +525,26 @@ bool drm_mode_equal(const struct drm_display_mode *mode1,
 // bool drm_mode_equal_no_clocks_no_stereo(const struct drm_display_mode *mode1,
 // 					const struct drm_display_mode *mode2);
 
-// /* for use by the crtc helper probe functions */
-// enum drm_mode_status drm_mode_validate_driver(struct drm_device *dev,
-// 					      const struct drm_display_mode *mode);
-// enum drm_mode_status drm_mode_validate_size(const struct drm_display_mode *mode,
-// 					    int maxX, int maxY);
-// enum drm_mode_status
-// drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
-// 			   struct drm_connector *connector);
-// void drm_mode_prune_invalid(struct drm_device *dev,
-// 			    struct list_head *mode_list, bool verbose);
-// void drm_mode_sort(struct list_head *mode_list);
-// void drm_connector_list_update(struct drm_connector *connector);
+/* for use by the crtc helper probe functions */
+enum drm_mode_status drm_mode_validate_driver(struct drm_device *dev,
+					      const struct drm_display_mode *mode);
+enum drm_mode_status drm_mode_validate_size(const struct drm_display_mode *mode,
+					    int maxX, int maxY);
+enum drm_mode_status
+drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
+			   struct drm_connector *connector);
+void drm_mode_prune_invalid(struct drm_device *dev,
+			    struct list_head *mode_list, bool verbose);
+void drm_mode_sort(struct list_head *mode_list);
+void drm_connector_list_update(struct drm_connector *connector);
 
 // /* parsing cmdline modes */
 bool
 drm_mode_parse_command_line_for_connector(const char *mode_option,
 					  const struct drm_connector *connector,
 					  struct drm_cmdline_mode *mode);
-// struct drm_display_mode *
-// drm_mode_create_from_cmdline_mode(struct drm_device *dev,
-// 				  struct drm_cmdline_mode *cmd);
+struct drm_display_mode *
+drm_mode_create_from_cmdline_mode(struct drm_device *dev,
+				  struct drm_cmdline_mode *cmd);
 
 #endif /* __DRM_MODES_H__ */

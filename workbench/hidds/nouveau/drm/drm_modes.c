@@ -39,6 +39,7 @@
 #include <video/of_videomode.h>
 #include <video/videomode.h>
 #else
+#include <linux/list.h>
 #include <linux/minmax.h>
 #include <linux/string.h>
 #include <linux/kstrtox.h>
@@ -347,240 +348,240 @@ EXPORT_SYMBOL(drm_mode_create);
 // }
 // EXPORT_SYMBOL(drm_cvt_mode);
 
-// /**
-//  * drm_gtf_mode_complex - create the modeline based on the full GTF algorithm
-//  * @dev: drm device
-//  * @hdisplay: hdisplay size
-//  * @vdisplay: vdisplay size
-//  * @vrefresh: vrefresh rate.
-//  * @interlaced: whether to compute an interlaced mode
-//  * @margins: desired margin (borders) size
-//  * @GTF_M: extended GTF formula parameters
-//  * @GTF_2C: extended GTF formula parameters
-//  * @GTF_K: extended GTF formula parameters
-//  * @GTF_2J: extended GTF formula parameters
-//  *
-//  * GTF feature blocks specify C and J in multiples of 0.5, so we pass them
-//  * in here multiplied by two.  For a C of 40, pass in 80.
-//  *
-//  * Returns:
-//  * The modeline based on the full GTF algorithm stored in a drm_display_mode object.
-//  * The display mode object is allocated with drm_mode_create(). Returns NULL
-//  * when no mode could be allocated.
-//  */
-// struct drm_display_mode *
-// drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
-// 		     int vrefresh, bool interlaced, int margins,
-// 		     int GTF_M, int GTF_2C, int GTF_K, int GTF_2J)
-// {	/* 1) top/bottom margin size (% of height) - default: 1.8, */
-// #define	GTF_MARGIN_PERCENTAGE		18
-// 	/* 2) character cell horizontal granularity (pixels) - default 8 */
-// #define	GTF_CELL_GRAN			8
-// 	/* 3) Minimum vertical porch (lines) - default 3 */
-// #define	GTF_MIN_V_PORCH			1
-// 	/* width of vsync in lines */
-// #define V_SYNC_RQD			3
-// 	/* width of hsync as % of total line */
-// #define H_SYNC_PERCENT			8
-// 	/* min time of vsync + back porch (microsec) */
-// #define MIN_VSYNC_PLUS_BP		550
-// 	/* C' and M' are part of the Blanking Duty Cycle computation */
-// #define GTF_C_PRIME	((((GTF_2C - GTF_2J) * GTF_K / 256) + GTF_2J) / 2)
-// #define GTF_M_PRIME	(GTF_K * GTF_M / 256)
-// 	struct drm_display_mode *drm_mode;
-// 	unsigned int hdisplay_rnd, vdisplay_rnd, vfieldrate_rqd;
-// 	int top_margin, bottom_margin;
-// 	int interlace;
-// 	unsigned int hfreq_est;
-// 	int vsync_plus_bp, vback_porch;
-// 	unsigned int vtotal_lines, vfieldrate_est, hperiod;
-// 	unsigned int vfield_rate, vframe_rate;
-// 	int left_margin, right_margin;
-// 	unsigned int total_active_pixels, ideal_duty_cycle;
-// 	unsigned int hblank, total_pixels, pixel_freq;
-// 	int hsync, hfront_porch, vodd_front_porch_lines;
-// 	unsigned int tmp1, tmp2;
+/**
+ * drm_gtf_mode_complex - create the modeline based on the full GTF algorithm
+ * @dev: drm device
+ * @hdisplay: hdisplay size
+ * @vdisplay: vdisplay size
+ * @vrefresh: vrefresh rate.
+ * @interlaced: whether to compute an interlaced mode
+ * @margins: desired margin (borders) size
+ * @GTF_M: extended GTF formula parameters
+ * @GTF_2C: extended GTF formula parameters
+ * @GTF_K: extended GTF formula parameters
+ * @GTF_2J: extended GTF formula parameters
+ *
+ * GTF feature blocks specify C and J in multiples of 0.5, so we pass them
+ * in here multiplied by two.  For a C of 40, pass in 80.
+ *
+ * Returns:
+ * The modeline based on the full GTF algorithm stored in a drm_display_mode object.
+ * The display mode object is allocated with drm_mode_create(). Returns NULL
+ * when no mode could be allocated.
+ */
+struct drm_display_mode *
+drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
+		     int vrefresh, bool interlaced, int margins,
+		     int GTF_M, int GTF_2C, int GTF_K, int GTF_2J)
+{	/* 1) top/bottom margin size (% of height) - default: 1.8, */
+#define	GTF_MARGIN_PERCENTAGE		18
+	/* 2) character cell horizontal granularity (pixels) - default 8 */
+#define	GTF_CELL_GRAN			8
+	/* 3) Minimum vertical porch (lines) - default 3 */
+#define	GTF_MIN_V_PORCH			1
+	/* width of vsync in lines */
+#define V_SYNC_RQD			3
+	/* width of hsync as % of total line */
+#define H_SYNC_PERCENT			8
+	/* min time of vsync + back porch (microsec) */
+#define MIN_VSYNC_PLUS_BP		550
+	/* C' and M' are part of the Blanking Duty Cycle computation */
+#define GTF_C_PRIME	((((GTF_2C - GTF_2J) * GTF_K / 256) + GTF_2J) / 2)
+#define GTF_M_PRIME	(GTF_K * GTF_M / 256)
+	struct drm_display_mode *drm_mode;
+	unsigned int hdisplay_rnd, vdisplay_rnd, vfieldrate_rqd;
+	int top_margin, bottom_margin;
+	int interlace;
+	unsigned int hfreq_est;
+	int vsync_plus_bp, vback_porch;
+	unsigned int vtotal_lines, vfieldrate_est, hperiod;
+	unsigned int vfield_rate, vframe_rate;
+	int left_margin, right_margin;
+	unsigned int total_active_pixels, ideal_duty_cycle;
+	unsigned int hblank, total_pixels, pixel_freq;
+	int hsync, hfront_porch, vodd_front_porch_lines;
+	unsigned int tmp1, tmp2;
 
-// 	if (!hdisplay || !vdisplay)
-// 		return NULL;
+	if (!hdisplay || !vdisplay)
+		return NULL;
 
-// 	drm_mode = drm_mode_create(dev);
-// 	if (!drm_mode)
-// 		return NULL;
+	drm_mode = drm_mode_create(dev);
+	if (!drm_mode)
+		return NULL;
 
-// 	/* 1. In order to give correct results, the number of horizontal
-// 	 * pixels requested is first processed to ensure that it is divisible
-// 	 * by the character size, by rounding it to the nearest character
-// 	 * cell boundary:
-// 	 */
-// 	hdisplay_rnd = (hdisplay + GTF_CELL_GRAN / 2) / GTF_CELL_GRAN;
-// 	hdisplay_rnd = hdisplay_rnd * GTF_CELL_GRAN;
+	/* 1. In order to give correct results, the number of horizontal
+	 * pixels requested is first processed to ensure that it is divisible
+	 * by the character size, by rounding it to the nearest character
+	 * cell boundary:
+	 */
+	hdisplay_rnd = (hdisplay + GTF_CELL_GRAN / 2) / GTF_CELL_GRAN;
+	hdisplay_rnd = hdisplay_rnd * GTF_CELL_GRAN;
 
-// 	/* 2. If interlace is requested, the number of vertical lines assumed
-// 	 * by the calculation must be halved, as the computation calculates
-// 	 * the number of vertical lines per field.
-// 	 */
-// 	if (interlaced)
-// 		vdisplay_rnd = vdisplay / 2;
-// 	else
-// 		vdisplay_rnd = vdisplay;
+	/* 2. If interlace is requested, the number of vertical lines assumed
+	 * by the calculation must be halved, as the computation calculates
+	 * the number of vertical lines per field.
+	 */
+	if (interlaced)
+		vdisplay_rnd = vdisplay / 2;
+	else
+		vdisplay_rnd = vdisplay;
 
-// 	/* 3. Find the frame rate required: */
-// 	if (interlaced)
-// 		vfieldrate_rqd = vrefresh * 2;
-// 	else
-// 		vfieldrate_rqd = vrefresh;
+	/* 3. Find the frame rate required: */
+	if (interlaced)
+		vfieldrate_rqd = vrefresh * 2;
+	else
+		vfieldrate_rqd = vrefresh;
 
-// 	/* 4. Find number of lines in Top margin: */
-// 	top_margin = 0;
-// 	if (margins)
-// 		top_margin = (vdisplay_rnd * GTF_MARGIN_PERCENTAGE + 500) /
-// 				1000;
-// 	/* 5. Find number of lines in bottom margin: */
-// 	bottom_margin = top_margin;
+	/* 4. Find number of lines in Top margin: */
+	top_margin = 0;
+	if (margins)
+		top_margin = (vdisplay_rnd * GTF_MARGIN_PERCENTAGE + 500) /
+				1000;
+	/* 5. Find number of lines in bottom margin: */
+	bottom_margin = top_margin;
 
-// 	/* 6. If interlace is required, then set variable interlace: */
-// 	if (interlaced)
-// 		interlace = 1;
-// 	else
-// 		interlace = 0;
+	/* 6. If interlace is required, then set variable interlace: */
+	if (interlaced)
+		interlace = 1;
+	else
+		interlace = 0;
 
-// 	/* 7. Estimate the Horizontal frequency */
-// 	{
-// 		tmp1 = (1000000  - MIN_VSYNC_PLUS_BP * vfieldrate_rqd) / 500;
-// 		tmp2 = (vdisplay_rnd + 2 * top_margin + GTF_MIN_V_PORCH) *
-// 				2 + interlace;
-// 		hfreq_est = (tmp2 * 1000 * vfieldrate_rqd) / tmp1;
-// 	}
+	/* 7. Estimate the Horizontal frequency */
+	{
+		tmp1 = (1000000  - MIN_VSYNC_PLUS_BP * vfieldrate_rqd) / 500;
+		tmp2 = (vdisplay_rnd + 2 * top_margin + GTF_MIN_V_PORCH) *
+				2 + interlace;
+		hfreq_est = (tmp2 * 1000 * vfieldrate_rqd) / tmp1;
+	}
 
-// 	/* 8. Find the number of lines in V sync + back porch */
-// 	/* [V SYNC+BP] = RINT(([MIN VSYNC+BP] * hfreq_est / 1000000)) */
-// 	vsync_plus_bp = MIN_VSYNC_PLUS_BP * hfreq_est / 1000;
-// 	vsync_plus_bp = (vsync_plus_bp + 500) / 1000;
-// 	/*  9. Find the number of lines in V back porch alone: */
-// 	vback_porch = vsync_plus_bp - V_SYNC_RQD;
-// 	/*  10. Find the total number of lines in Vertical field period: */
-// 	vtotal_lines = vdisplay_rnd + top_margin + bottom_margin +
-// 			vsync_plus_bp + GTF_MIN_V_PORCH;
-// 	/*  11. Estimate the Vertical field frequency: */
-// 	vfieldrate_est = hfreq_est / vtotal_lines;
-// 	/*  12. Find the actual horizontal period: */
-// 	hperiod = 1000000 / (vfieldrate_rqd * vtotal_lines);
+	/* 8. Find the number of lines in V sync + back porch */
+	/* [V SYNC+BP] = RINT(([MIN VSYNC+BP] * hfreq_est / 1000000)) */
+	vsync_plus_bp = MIN_VSYNC_PLUS_BP * hfreq_est / 1000;
+	vsync_plus_bp = (vsync_plus_bp + 500) / 1000;
+	/*  9. Find the number of lines in V back porch alone: */
+	vback_porch = vsync_plus_bp - V_SYNC_RQD;
+	/*  10. Find the total number of lines in Vertical field period: */
+	vtotal_lines = vdisplay_rnd + top_margin + bottom_margin +
+			vsync_plus_bp + GTF_MIN_V_PORCH;
+	/*  11. Estimate the Vertical field frequency: */
+	vfieldrate_est = hfreq_est / vtotal_lines;
+	/*  12. Find the actual horizontal period: */
+	hperiod = 1000000 / (vfieldrate_rqd * vtotal_lines);
 
-// 	/*  13. Find the actual Vertical field frequency: */
-// 	vfield_rate = hfreq_est / vtotal_lines;
-// 	/*  14. Find the Vertical frame frequency: */
-// 	if (interlaced)
-// 		vframe_rate = vfield_rate / 2;
-// 	else
-// 		vframe_rate = vfield_rate;
-// 	/*  15. Find number of pixels in left margin: */
-// 	if (margins)
-// 		left_margin = (hdisplay_rnd * GTF_MARGIN_PERCENTAGE + 500) /
-// 				1000;
-// 	else
-// 		left_margin = 0;
+	/*  13. Find the actual Vertical field frequency: */
+	vfield_rate = hfreq_est / vtotal_lines;
+	/*  14. Find the Vertical frame frequency: */
+	if (interlaced)
+		vframe_rate = vfield_rate / 2;
+	else
+		vframe_rate = vfield_rate;
+	/*  15. Find number of pixels in left margin: */
+	if (margins)
+		left_margin = (hdisplay_rnd * GTF_MARGIN_PERCENTAGE + 500) /
+				1000;
+	else
+		left_margin = 0;
 
-// 	/* 16.Find number of pixels in right margin: */
-// 	right_margin = left_margin;
-// 	/* 17.Find total number of active pixels in image and left and right */
-// 	total_active_pixels = hdisplay_rnd + left_margin + right_margin;
-// 	/* 18.Find the ideal blanking duty cycle from blanking duty cycle */
-// 	ideal_duty_cycle = GTF_C_PRIME * 1000 -
-// 				(GTF_M_PRIME * 1000000 / hfreq_est);
-// 	/* 19.Find the number of pixels in the blanking time to the nearest
-// 	 * double character cell: */
-// 	hblank = total_active_pixels * ideal_duty_cycle /
-// 			(100000 - ideal_duty_cycle);
-// 	hblank = (hblank + GTF_CELL_GRAN) / (2 * GTF_CELL_GRAN);
-// 	hblank = hblank * 2 * GTF_CELL_GRAN;
-// 	/* 20.Find total number of pixels: */
-// 	total_pixels = total_active_pixels + hblank;
-// 	/* 21.Find pixel clock frequency: */
-// 	pixel_freq = total_pixels * hfreq_est / 1000;
-// 	/* Stage 1 computations are now complete; I should really pass
-// 	 * the results to another function and do the Stage 2 computations,
-// 	 * but I only need a few more values so I'll just append the
-// 	 * computations here for now */
-// 	/* 17. Find the number of pixels in the horizontal sync period: */
-// 	hsync = H_SYNC_PERCENT * total_pixels / 100;
-// 	hsync = (hsync + GTF_CELL_GRAN / 2) / GTF_CELL_GRAN;
-// 	hsync = hsync * GTF_CELL_GRAN;
-// 	/* 18. Find the number of pixels in horizontal front porch period */
-// 	hfront_porch = hblank / 2 - hsync;
-// 	/*  36. Find the number of lines in the odd front porch period: */
-// 	vodd_front_porch_lines = GTF_MIN_V_PORCH ;
+	/* 16.Find number of pixels in right margin: */
+	right_margin = left_margin;
+	/* 17.Find total number of active pixels in image and left and right */
+	total_active_pixels = hdisplay_rnd + left_margin + right_margin;
+	/* 18.Find the ideal blanking duty cycle from blanking duty cycle */
+	ideal_duty_cycle = GTF_C_PRIME * 1000 -
+				(GTF_M_PRIME * 1000000 / hfreq_est);
+	/* 19.Find the number of pixels in the blanking time to the nearest
+	 * double character cell: */
+	hblank = total_active_pixels * ideal_duty_cycle /
+			(100000 - ideal_duty_cycle);
+	hblank = (hblank + GTF_CELL_GRAN) / (2 * GTF_CELL_GRAN);
+	hblank = hblank * 2 * GTF_CELL_GRAN;
+	/* 20.Find total number of pixels: */
+	total_pixels = total_active_pixels + hblank;
+	/* 21.Find pixel clock frequency: */
+	pixel_freq = total_pixels * hfreq_est / 1000;
+	/* Stage 1 computations are now complete; I should really pass
+	 * the results to another function and do the Stage 2 computations,
+	 * but I only need a few more values so I'll just append the
+	 * computations here for now */
+	/* 17. Find the number of pixels in the horizontal sync period: */
+	hsync = H_SYNC_PERCENT * total_pixels / 100;
+	hsync = (hsync + GTF_CELL_GRAN / 2) / GTF_CELL_GRAN;
+	hsync = hsync * GTF_CELL_GRAN;
+	/* 18. Find the number of pixels in horizontal front porch period */
+	hfront_porch = hblank / 2 - hsync;
+	/*  36. Find the number of lines in the odd front porch period: */
+	vodd_front_porch_lines = GTF_MIN_V_PORCH ;
 
-// 	/* finally, pack the results in the mode struct */
-// 	drm_mode->hdisplay = hdisplay_rnd;
-// 	drm_mode->hsync_start = hdisplay_rnd + hfront_porch;
-// 	drm_mode->hsync_end = drm_mode->hsync_start + hsync;
-// 	drm_mode->htotal = total_pixels;
-// 	drm_mode->vdisplay = vdisplay_rnd;
-// 	drm_mode->vsync_start = vdisplay_rnd + vodd_front_porch_lines;
-// 	drm_mode->vsync_end = drm_mode->vsync_start + V_SYNC_RQD;
-// 	drm_mode->vtotal = vtotal_lines;
+	/* finally, pack the results in the mode struct */
+	drm_mode->hdisplay = hdisplay_rnd;
+	drm_mode->hsync_start = hdisplay_rnd + hfront_porch;
+	drm_mode->hsync_end = drm_mode->hsync_start + hsync;
+	drm_mode->htotal = total_pixels;
+	drm_mode->vdisplay = vdisplay_rnd;
+	drm_mode->vsync_start = vdisplay_rnd + vodd_front_porch_lines;
+	drm_mode->vsync_end = drm_mode->vsync_start + V_SYNC_RQD;
+	drm_mode->vtotal = vtotal_lines;
 
-// 	drm_mode->clock = pixel_freq;
+	drm_mode->clock = pixel_freq;
 
-// 	if (interlaced) {
-// 		drm_mode->vtotal *= 2;
-// 		drm_mode->flags |= DRM_MODE_FLAG_INTERLACE;
-// 	}
+	if (interlaced) {
+		drm_mode->vtotal *= 2;
+		drm_mode->flags |= DRM_MODE_FLAG_INTERLACE;
+	}
 
-// 	drm_mode_set_name(drm_mode);
-// 	if (GTF_M == 600 && GTF_2C == 80 && GTF_K == 128 && GTF_2J == 40)
-// 		drm_mode->flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC;
-// 	else
-// 		drm_mode->flags = DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC;
+	drm_mode_set_name(drm_mode);
+	if (GTF_M == 600 && GTF_2C == 80 && GTF_K == 128 && GTF_2J == 40)
+		drm_mode->flags = DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_PVSYNC;
+	else
+		drm_mode->flags = DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_NVSYNC;
 
-// 	return drm_mode;
-// }
-// EXPORT_SYMBOL(drm_gtf_mode_complex);
+	return drm_mode;
+}
+EXPORT_SYMBOL(drm_gtf_mode_complex);
 
-// /**
-//  * drm_gtf_mode - create the modeline based on the GTF algorithm
-//  * @dev: drm device
-//  * @hdisplay: hdisplay size
-//  * @vdisplay: vdisplay size
-//  * @vrefresh: vrefresh rate.
-//  * @interlaced: whether to compute an interlaced mode
-//  * @margins: desired margin (borders) size
-//  *
-//  * return the modeline based on GTF algorithm
-//  *
-//  * This function is to create the modeline based on the GTF algorithm.
-//  * Generalized Timing Formula is derived from:
-//  *
-//  *	GTF Spreadsheet by Andy Morrish (1/5/97)
-//  *	available at http://www.vesa.org
-//  *
-//  * And it is copied from the file of xserver/hw/xfree86/modes/xf86gtf.c.
-//  * What I have done is to translate it by using integer calculation.
-//  * I also refer to the function of fb_get_mode in the file of
-//  * drivers/video/fbmon.c
-//  *
-//  * Standard GTF parameters::
-//  *
-//  *     M = 600
-//  *     C = 40
-//  *     K = 128
-//  *     J = 20
-//  *
-//  * Returns:
-//  * The modeline based on the GTF algorithm stored in a drm_display_mode object.
-//  * The display mode object is allocated with drm_mode_create(). Returns NULL
-//  * when no mode could be allocated.
-//  */
-// struct drm_display_mode *
-// drm_gtf_mode(struct drm_device *dev, int hdisplay, int vdisplay, int vrefresh,
-// 	     bool interlaced, int margins)
-// {
-// 	return drm_gtf_mode_complex(dev, hdisplay, vdisplay, vrefresh,
-// 				    interlaced, margins,
-// 				    600, 40 * 2, 128, 20 * 2);
-// }
-// EXPORT_SYMBOL(drm_gtf_mode);
+/**
+ * drm_gtf_mode - create the modeline based on the GTF algorithm
+ * @dev: drm device
+ * @hdisplay: hdisplay size
+ * @vdisplay: vdisplay size
+ * @vrefresh: vrefresh rate.
+ * @interlaced: whether to compute an interlaced mode
+ * @margins: desired margin (borders) size
+ *
+ * return the modeline based on GTF algorithm
+ *
+ * This function is to create the modeline based on the GTF algorithm.
+ * Generalized Timing Formula is derived from:
+ *
+ *	GTF Spreadsheet by Andy Morrish (1/5/97)
+ *	available at http://www.vesa.org
+ *
+ * And it is copied from the file of xserver/hw/xfree86/modes/xf86gtf.c.
+ * What I have done is to translate it by using integer calculation.
+ * I also refer to the function of fb_get_mode in the file of
+ * drivers/video/fbmon.c
+ *
+ * Standard GTF parameters::
+ *
+ *     M = 600
+ *     C = 40
+ *     K = 128
+ *     J = 20
+ *
+ * Returns:
+ * The modeline based on the GTF algorithm stored in a drm_display_mode object.
+ * The display mode object is allocated with drm_mode_create(). Returns NULL
+ * when no mode could be allocated.
+ */
+struct drm_display_mode *
+drm_gtf_mode(struct drm_device *dev, int hdisplay, int vdisplay, int vrefresh,
+	     bool interlaced, int margins)
+{
+	return drm_gtf_mode_complex(dev, hdisplay, vdisplay, vrefresh,
+				    interlaced, margins,
+				    600, 40 * 2, 128, 20 * 2);
+}
+EXPORT_SYMBOL(drm_gtf_mode);
 
 // #ifdef CONFIG_VIDEOMODE_HELPERS
 // /**
@@ -1170,61 +1171,65 @@ drm_mode_validate_driver(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_mode_validate_driver);
 
-// /**
-//  * drm_mode_validate_size - make sure modes adhere to size constraints
-//  * @mode: mode to check
-//  * @maxX: maximum width
-//  * @maxY: maximum height
-//  *
-//  * This function is a helper which can be used to validate modes against size
-//  * limitations of the DRM device/connector. If a mode is too big its status
-//  * member is updated with the appropriate validation failure code. The list
-//  * itself is not changed.
-//  *
-//  * Returns:
-//  * The mode status
-//  */
-// enum drm_mode_status
-// drm_mode_validate_size(const struct drm_display_mode *mode,
-// 		       int maxX, int maxY)
-// {
-// 	if (maxX > 0 && mode->hdisplay > maxX)
-// 		return MODE_VIRTUAL_X;
+/**
+ * drm_mode_validate_size - make sure modes adhere to size constraints
+ * @mode: mode to check
+ * @maxX: maximum width
+ * @maxY: maximum height
+ *
+ * This function is a helper which can be used to validate modes against size
+ * limitations of the DRM device/connector. If a mode is too big its status
+ * member is updated with the appropriate validation failure code. The list
+ * itself is not changed.
+ *
+ * Returns:
+ * The mode status
+ */
+enum drm_mode_status
+drm_mode_validate_size(const struct drm_display_mode *mode,
+		       int maxX, int maxY)
+{
+	if (maxX > 0 && mode->hdisplay > maxX)
+		return MODE_VIRTUAL_X;
 
-// 	if (maxY > 0 && mode->vdisplay > maxY)
-// 		return MODE_VIRTUAL_Y;
+	if (maxY > 0 && mode->vdisplay > maxY)
+		return MODE_VIRTUAL_Y;
 
-// 	return MODE_OK;
-// }
-// EXPORT_SYMBOL(drm_mode_validate_size);
+	return MODE_OK;
+}
+EXPORT_SYMBOL(drm_mode_validate_size);
 
-// /**
-//  * drm_mode_validate_ycbcr420 - add 'ycbcr420-only' modes only when allowed
-//  * @mode: mode to check
-//  * @connector: drm connector under action
-//  *
-//  * This function is a helper which can be used to filter out any YCBCR420
-//  * only mode, when the source doesn't support it.
-//  *
-//  * Returns:
-//  * The mode status
-//  */
-// enum drm_mode_status
-// drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
-// 			   struct drm_connector *connector)
-// {
-// 	u8 vic = drm_match_cea_mode(mode);
-// 	enum drm_mode_status status = MODE_OK;
-// 	struct drm_hdmi_info *hdmi = &connector->display_info.hdmi;
+/**
+ * drm_mode_validate_ycbcr420 - add 'ycbcr420-only' modes only when allowed
+ * @mode: mode to check
+ * @connector: drm connector under action
+ *
+ * This function is a helper which can be used to filter out any YCBCR420
+ * only mode, when the source doesn't support it.
+ *
+ * Returns:
+ * The mode status
+ */
+enum drm_mode_status
+drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
+			   struct drm_connector *connector)
+{
+#if !defined(__AROS__)
+	u8 vic = drm_match_cea_mode(mode);
+#endif
+	enum drm_mode_status status = MODE_OK;
+#if !defined(__AROS__)
+	struct drm_hdmi_info *hdmi = &connector->display_info.hdmi;
 
-// 	if (test_bit(vic, hdmi->y420_vdb_modes)) {
-// 		if (!connector->ycbcr_420_allowed)
-// 			status = MODE_NO_420;
-// 	}
+	if (test_bit(vic, hdmi->y420_vdb_modes)) {
+		if (!connector->ycbcr_420_allowed)
+			status = MODE_NO_420;
+	}
+#endif
 
-// 	return status;
-// }
-// EXPORT_SYMBOL(drm_mode_validate_ycbcr420);
+	return status;
+}
+EXPORT_SYMBOL(drm_mode_validate_ycbcr420);
 
 // #define MODE_STATUS(status) [MODE_ ## status + 3] = #status
 
@@ -1283,147 +1288,147 @@ EXPORT_SYMBOL(drm_mode_validate_driver);
 // 	return drm_mode_status_names[index];
 // }
 
-// /**
-//  * drm_mode_prune_invalid - remove invalid modes from mode list
-//  * @dev: DRM device
-//  * @mode_list: list of modes to check
-//  * @verbose: be verbose about it
-//  *
-//  * This helper function can be used to prune a display mode list after
-//  * validation has been completed. All modes whose status is not MODE_OK will be
-//  * removed from the list, and if @verbose the status code and mode name is also
-//  * printed to dmesg.
-//  */
-// void drm_mode_prune_invalid(struct drm_device *dev,
-// 			    struct list_head *mode_list, bool verbose)
-// {
-// 	struct drm_display_mode *mode, *t;
+/**
+ * drm_mode_prune_invalid - remove invalid modes from mode list
+ * @dev: DRM device
+ * @mode_list: list of modes to check
+ * @verbose: be verbose about it
+ *
+ * This helper function can be used to prune a display mode list after
+ * validation has been completed. All modes whose status is not MODE_OK will be
+ * removed from the list, and if @verbose the status code and mode name is also
+ * printed to dmesg.
+ */
+void drm_mode_prune_invalid(struct drm_device *dev,
+			    struct list_head *mode_list, bool verbose)
+{
+	struct drm_display_mode *mode, *t;
 
-// 	list_for_each_entry_safe(mode, t, mode_list, head) {
-// 		if (mode->status != MODE_OK) {
-// 			list_del(&mode->head);
-// 			if (verbose) {
-// 				drm_mode_debug_printmodeline(mode);
-// 				DRM_DEBUG_KMS("Not using %s mode: %s\n",
-// 					      mode->name,
-// 					      drm_get_mode_status_name(mode->status));
-// 			}
-// 			drm_mode_destroy(dev, mode);
-// 		}
-// 	}
-// }
-// EXPORT_SYMBOL(drm_mode_prune_invalid);
+	list_for_each_entry_safe(mode, t, mode_list, head) {
+		if (mode->status != MODE_OK) {
+			list_del(&mode->head);
+			if (verbose) {
+#if !defined(__AROS__)
+				drm_mode_debug_printmodeline(mode);
+#endif
+				DRM_DEBUG_KMS("Not using %s mode: %s\n",
+					      mode->name,
+					      drm_get_mode_status_name(mode->status));
+			}
+			drm_mode_destroy(dev, mode);
+		}
+	}
+}
+EXPORT_SYMBOL(drm_mode_prune_invalid);
 
-// /**
-//  * drm_mode_compare - compare modes for favorability
-//  * @priv: unused
-//  * @lh_a: list_head for first mode
-//  * @lh_b: list_head for second mode
-//  *
-//  * Compare two modes, given by @lh_a and @lh_b, returning a value indicating
-//  * which is better.
-//  *
-//  * Returns:
-//  * Negative if @lh_a is better than @lh_b, zero if they're equivalent, or
-//  * positive if @lh_b is better than @lh_a.
-//  */
-// static int drm_mode_compare(void *priv, struct list_head *lh_a, struct list_head *lh_b)
-// {
-// 	struct drm_display_mode *a = list_entry(lh_a, struct drm_display_mode, head);
-// 	struct drm_display_mode *b = list_entry(lh_b, struct drm_display_mode, head);
-// 	int diff;
+/**
+ * drm_mode_compare - compare modes for favorability
+ * @priv: unused
+ * @lh_a: list_head for first mode
+ * @lh_b: list_head for second mode
+ *
+ * Compare two modes, given by @lh_a and @lh_b, returning a value indicating
+ * which is better.
+ *
+ * Returns:
+ * Negative if @lh_a is better than @lh_b, zero if they're equivalent, or
+ * positive if @lh_b is better than @lh_a.
+ */
+static int drm_mode_compare(void *priv, struct list_head *lh_a, struct list_head *lh_b)
+{
+	struct drm_display_mode *a = list_entry(lh_a, struct drm_display_mode, head);
+	struct drm_display_mode *b = list_entry(lh_b, struct drm_display_mode, head);
+	int diff;
 
-// #if !defined(__AROS__)
-// 	diff = ((b->type & DRM_MODE_TYPE_PREFERRED) != 0) -
-// 		((a->type & DRM_MODE_TYPE_PREFERRED) != 0);
-// 	if (diff)
-// 		return diff;
-// 	diff = b->hdisplay * b->vdisplay - a->hdisplay * a->vdisplay;
-// 	if (diff)
-// 		return diff;
+	diff = ((b->type & DRM_MODE_TYPE_PREFERRED) != 0) -
+		((a->type & DRM_MODE_TYPE_PREFERRED) != 0);
+	if (diff)
+		return diff;
+	diff = b->hdisplay * b->vdisplay - a->hdisplay * a->vdisplay;
+	if (diff)
+		return diff;
 
-// 	diff = b->vrefresh - a->vrefresh;
-// 	if (diff)
-// 		return diff;
+	diff = b->vrefresh - a->vrefresh;
+	if (diff)
+		return diff;
 
-// 	diff = b->clock - a->clock;
-// 	return diff;
-// }
+	diff = b->clock - a->clock;
+	return diff;
+}
 
-// /**
-//  * drm_mode_sort - sort mode list
-//  * @mode_list: list of drm_display_mode structures to sort
-//  *
-//  * Sort @mode_list by favorability, moving good modes to the head of the list.
-//  */
-// void drm_mode_sort(struct list_head *mode_list)
-// {
-// 	list_sort(NULL, mode_list, drm_mode_compare);
-// }
-// EXPORT_SYMBOL(drm_mode_sort);
+/**
+ * drm_mode_sort - sort mode list
+ * @mode_list: list of drm_display_mode structures to sort
+ *
+ * Sort @mode_list by favorability, moving good modes to the head of the list.
+ */
+void drm_mode_sort(struct list_head *mode_list)
+{
+	list_sort(NULL, mode_list, drm_mode_compare);
+}
+EXPORT_SYMBOL(drm_mode_sort);
 
-// #if !defined(__AROS__)
-// /**
-//  * drm_connector_list_update - update the mode list for the connector
-//  * @connector: the connector to update
-//  *
-//  * This moves the modes from the @connector probed_modes list
-//  * to the actual mode list. It compares the probed mode against the current
-//  * list and only adds different/new modes.
-//  *
-//  * This is just a helper functions doesn't validate any modes itself and also
-//  * doesn't prune any invalid modes. Callers need to do that themselves.
-//  */
-// void drm_connector_list_update(struct drm_connector *connector)
-// {
-// 	struct drm_display_mode *pmode, *pt;
+/**
+ * drm_connector_list_update - update the mode list for the connector
+ * @connector: the connector to update
+ *
+ * This moves the modes from the @connector probed_modes list
+ * to the actual mode list. It compares the probed mode against the current
+ * list and only adds different/new modes.
+ *
+ * This is just a helper functions doesn't validate any modes itself and also
+ * doesn't prune any invalid modes. Callers need to do that themselves.
+ */
+void drm_connector_list_update(struct drm_connector *connector)
+{
+	struct drm_display_mode *pmode, *pt;
 
-// 	WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
+	// WARN_ON(!mutex_is_locked(&connector->dev->mode_config.mutex));
 
-// 	list_for_each_entry_safe(pmode, pt, &connector->probed_modes, head) {
-// 		struct drm_display_mode *mode;
-// 		bool found_it = false;
+	list_for_each_entry_safe(pmode, pt, &connector->probed_modes, head) {
+		struct drm_display_mode *mode;
+		bool found_it = false;
 
-// 		/* go through current modes checking for the new probed mode */
-// 		list_for_each_entry(mode, &connector->modes, head) {
-// 			if (!drm_mode_equal(pmode, mode))
-// 				continue;
+		/* go through current modes checking for the new probed mode */
+		list_for_each_entry(mode, &connector->modes, head) {
+			if (!drm_mode_equal(pmode, mode))
+				continue;
 
-// 			found_it = true;
+			found_it = true;
 
-// 			/*
-// 			 * If the old matching mode is stale (ie. left over
-// 			 * from a previous probe) just replace it outright.
-// 			 * Otherwise just merge the type bits between all
-// 			 * equal probed modes.
-// 			 *
-// 			 * If two probed modes are considered equal, pick the
-// 			 * actual timings from the one that's marked as
-// 			 * preferred (in case the match isn't 100%). If
-// 			 * multiple or zero preferred modes are present, favor
-// 			 * the mode added to the probed_modes list first.
-// 			 */
-// 			if (mode->status == MODE_STALE) {
-// 				drm_mode_copy(mode, pmode);
-// 			} else if ((mode->type & DRM_MODE_TYPE_PREFERRED) == 0 &&
-// 				   (pmode->type & DRM_MODE_TYPE_PREFERRED) != 0) {
-// 				pmode->type |= mode->type;
-// 				drm_mode_copy(mode, pmode);
-// 			} else {
-// 				mode->type |= pmode->type;
-// 			}
+			/*
+			 * If the old matching mode is stale (ie. left over
+			 * from a previous probe) just replace it outright.
+			 * Otherwise just merge the type bits between all
+			 * equal probed modes.
+			 *
+			 * If two probed modes are considered equal, pick the
+			 * actual timings from the one that's marked as
+			 * preferred (in case the match isn't 100%). If
+			 * multiple or zero preferred modes are present, favor
+			 * the mode added to the probed_modes list first.
+			 */
+			if (mode->status == MODE_STALE) {
+				drm_mode_copy(mode, pmode);
+			} else if ((mode->type & DRM_MODE_TYPE_PREFERRED) == 0 &&
+				   (pmode->type & DRM_MODE_TYPE_PREFERRED) != 0) {
+				pmode->type |= mode->type;
+				drm_mode_copy(mode, pmode);
+			} else {
+				mode->type |= pmode->type;
+			}
 
-// 			list_del(&pmode->head);
-// 			drm_mode_destroy(connector->dev, pmode);
-// 			break;
-// 		}
+			list_del(&pmode->head);
+			drm_mode_destroy(connector->dev, pmode);
+			break;
+		}
 
-// 		if (!found_it) {
-// 			list_move_tail(&pmode->head, &connector->modes);
-// 		}
-// 	}
-// }
-// EXPORT_SYMBOL(drm_connector_list_update);
+		if (!found_it) {
+			list_move_tail(&pmode->head, &connector->modes);
+		}
+	}
+}
+EXPORT_SYMBOL(drm_connector_list_update);
 
 static int drm_mode_parse_cmdline_bpp(const char *str, char **end_ptr,
 				      struct drm_cmdline_mode *mode)
@@ -1889,43 +1894,48 @@ bool drm_mode_parse_command_line_for_connector(const char *mode_option,
 }
 EXPORT_SYMBOL(drm_mode_parse_command_line_for_connector);
 
-// /**
-//  * drm_mode_create_from_cmdline_mode - convert a command line modeline into a DRM display mode
-//  * @dev: DRM device to create the new mode for
-//  * @cmd: input command line modeline
-//  *
-//  * Returns:
-//  * Pointer to converted mode on success, NULL on error.
-//  */
-// struct drm_display_mode *
-// drm_mode_create_from_cmdline_mode(struct drm_device *dev,
-// 				  struct drm_cmdline_mode *cmd)
-// {
-// 	struct drm_display_mode *mode;
+/**
+ * drm_mode_create_from_cmdline_mode - convert a command line modeline into a DRM display mode
+ * @dev: DRM device to create the new mode for
+ * @cmd: input command line modeline
+ *
+ * Returns:
+ * Pointer to converted mode on success, NULL on error.
+ */
+struct drm_display_mode *
+drm_mode_create_from_cmdline_mode(struct drm_device *dev,
+				  struct drm_cmdline_mode *cmd)
+{
+	struct drm_display_mode *mode;
 
-// 	if (cmd->cvt)
-// 		mode = drm_cvt_mode(dev,
-// 				    cmd->xres, cmd->yres,
-// 				    cmd->refresh_specified ? cmd->refresh : 60,
-// 				    cmd->rb, cmd->interlace,
-// 				    cmd->margins);
-// 	else
-// 		mode = drm_gtf_mode(dev,
-// 				    cmd->xres, cmd->yres,
-// 				    cmd->refresh_specified ? cmd->refresh : 60,
-// 				    cmd->interlace,
-// 				    cmd->margins);
-// 	if (!mode)
-// 		return NULL;
+	if (cmd->cvt)
+		mode = drm_cvt_mode(dev,
+				    cmd->xres, cmd->yres,
+				    cmd->refresh_specified ? cmd->refresh : 60,
+				    cmd->rb, cmd->interlace,
+				    cmd->margins);
+	else
+		mode = drm_gtf_mode(dev,
+				    cmd->xres, cmd->yres,
+				    cmd->refresh_specified ? cmd->refresh : 60,
+				    cmd->interlace,
+				    cmd->margins);
+	if (!mode)
+		return NULL;
 
-// 	mode->type |= DRM_MODE_TYPE_USERDEF;
-// 	/* fix up 1368x768: GFT/CVT can't express 1366 width due to alignment */
-// 	if (cmd->xres == 1366)
-// 		drm_mode_fixup_1366x768(mode);
-// 	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
-// 	return mode;
-// }
-// EXPORT_SYMBOL(drm_mode_create_from_cmdline_mode);
+	mode->type |= DRM_MODE_TYPE_USERDEF;
+	/* fix up 1368x768: GFT/CVT can't express 1366 width due to alignment */
+	if (cmd->xres == 1366)
+{
+NOT_IMPLEMENTED_STOP
+#if 0
+		drm_mode_fixup_1366x768(mode);
+#endif
+}
+	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
+	return mode;
+}
+EXPORT_SYMBOL(drm_mode_create_from_cmdline_mode);
 
 /**
  * drm_crtc_convert_to_umode - convert a drm_display_mode into a modeinfo

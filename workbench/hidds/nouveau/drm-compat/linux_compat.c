@@ -31,6 +31,7 @@
 
 #include <drm-compat/drm_compat_mem.h>
 #include <linux/rbtree.h>
+#include <linux/list.h>
 /* Undo Linux compat changes. */
 #undef RB_ROOT
 #undef file
@@ -85,4 +86,27 @@ kasprintf(gfp_t gfp, const char *fmt, ...)
 	return (p);
 }
 
+void
+list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
+    struct list_head *a, struct list_head *b))
+{
+    struct list_head *p, *q;
+    int swapped;
 
+    if (list_empty(head) || list_is_singular(head))
+        return;
+
+    do {
+        swapped = 0;
+        list_for_each(p, head) {
+            q = p->next;
+            if (q == head) break;
+            if (cmp(priv, p, q) > 0) {
+                list_del(p);
+                list_add(p, q);   /* insert p after q */
+                p = q;            /* advance correctly after swap */
+                swapped = 1;
+            }
+        }
+    } while (swapped);
+}

@@ -145,7 +145,7 @@ void drm_framebuffer_cleanup() { NOT_IMPLEMENTED_STOP }
 void drm_helper_connector_dpms() { NOT_IMPLEMENTED_STOP }
 void drm_helper_hpd_irq_event() { NOT_IMPLEMENTED_STOP }
 
-void drm_helper_probe_single_connector_modes() { NOT_IMPLEMENTED_STOP }
+
 void drm_i2c_encoder_detect() { NOT_IMPLEMENTED_STOP }
 void drm_i2c_encoder_mode_fixup() { NOT_IMPLEMENTED_STOP }
 void drm_i2c_encoder_restore() { NOT_IMPLEMENTED_STOP }
