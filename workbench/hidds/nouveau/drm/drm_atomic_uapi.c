@@ -826,10 +826,8 @@ drm_atomic_connector_get_property(struct drm_connector *connector,
 		*val = state->tv.hue;
 	} else if (property == config->link_status_property) {
 		*val = state->link_status;
-#if !defined(__AROS__)
 	} else if (property == config->aspect_ratio_property) {
 		*val = state->picture_aspect_ratio;
-#endif
 	} else if (property == config->content_type_property) {
 		*val = state->content_type;
 	} else if (property == connector->colorspace_property) {

@@ -753,31 +753,31 @@ EXPORT_SYMBOL(drm_gtf_mode);
 // }
 // EXPORT_SYMBOL(drm_mode_set_name);
 
-// /**
-//  * drm_mode_hsync - get the hsync of a mode
-//  * @mode: mode
-//  *
-//  * Returns:
-//  * @modes's hsync rate in kHz, rounded to the nearest integer. Calculates the
-//  * value first if it is not yet set.
-//  */
-// int drm_mode_hsync(const struct drm_display_mode *mode)
-// {
-// 	unsigned int calc_val;
+/**
+ * drm_mode_hsync - get the hsync of a mode
+ * @mode: mode
+ *
+ * Returns:
+ * @modes's hsync rate in kHz, rounded to the nearest integer. Calculates the
+ * value first if it is not yet set.
+ */
+int drm_mode_hsync(const struct drm_display_mode *mode)
+{
+	unsigned int calc_val;
 
-// 	if (mode->hsync)
-// 		return mode->hsync;
+	if (mode->hsync)
+		return mode->hsync;
 
-// 	if (mode->htotal <= 0)
-// 		return 0;
+	if (mode->htotal <= 0)
+		return 0;
 
-// 	calc_val = (mode->clock * 1000) / mode->htotal; /* hsync in Hz */
-// 	calc_val += 500;				/* round to 1000Hz */
-// 	calc_val /= 1000;				/* truncate to kHz */
+	calc_val = (mode->clock * 1000) / mode->htotal; /* hsync in Hz */
+	calc_val += 500;				/* round to 1000Hz */
+	calc_val /= 1000;				/* truncate to kHz */
 
-// 	return calc_val;
-// }
-// EXPORT_SYMBOL(drm_mode_hsync);
+	return calc_val;
+}
+EXPORT_SYMBOL(drm_mode_hsync);
 
 // /**
 //  * drm_mode_vrefresh - get the vrefresh of a mode
@@ -1214,18 +1214,17 @@ enum drm_mode_status
 drm_mode_validate_ycbcr420(const struct drm_display_mode *mode,
 			   struct drm_connector *connector)
 {
-#if !defined(__AROS__)
 	u8 vic = drm_match_cea_mode(mode);
-#endif
 	enum drm_mode_status status = MODE_OK;
-#if !defined(__AROS__)
 	struct drm_hdmi_info *hdmi = &connector->display_info.hdmi;
 
 	if (test_bit(vic, hdmi->y420_vdb_modes)) {
+NOT_IMPLEMENTED_STOP
+#if 0
 		if (!connector->ycbcr_420_allowed)
 			status = MODE_NO_420;
-	}
 #endif
+	}
 
 	return status;
 }
@@ -1926,12 +1925,7 @@ drm_mode_create_from_cmdline_mode(struct drm_device *dev,
 	mode->type |= DRM_MODE_TYPE_USERDEF;
 	/* fix up 1368x768: GFT/CVT can't express 1366 width due to alignment */
 	if (cmd->xres == 1366)
-{
-NOT_IMPLEMENTED_STOP
-#if 0
 		drm_mode_fixup_1366x768(mode);
-#endif
-}
 	drm_mode_set_crtcinfo(mode, CRTC_INTERLACE_HALVE_V);
 	return mode;
 }
@@ -1970,7 +1964,6 @@ void drm_mode_convert_to_umode(struct drm_mode_modeinfo *out,
 	out->flags = in->flags;
 	out->type = in->type;
 
-#if !defined(__AROS__)
 	switch (in->picture_aspect_ratio) {
 	case HDMI_PICTURE_ASPECT_4_3:
 		out->flags |= DRM_MODE_FLAG_PIC_AR_4_3;
@@ -1992,7 +1985,6 @@ void drm_mode_convert_to_umode(struct drm_mode_modeinfo *out,
 		out->flags |= DRM_MODE_FLAG_PIC_AR_NONE;
 		break;
 	}
-#endif
 
 	strncpy(out->name, in->name, DRM_DISPLAY_MODE_LEN);
 	out->name[DRM_DISPLAY_MODE_LEN-1] = 0;
@@ -2046,7 +2038,6 @@ int drm_mode_convert_umode(struct drm_device *dev,
 	 */
 	out->flags &= ~DRM_MODE_FLAG_PIC_AR_MASK;
 
-#if !defined(__AROS__)
 	switch (in->flags & DRM_MODE_FLAG_PIC_AR_MASK) {
 	case DRM_MODE_FLAG_PIC_AR_4_3:
 		out->picture_aspect_ratio = HDMI_PICTURE_ASPECT_4_3;
@@ -2066,7 +2057,6 @@ int drm_mode_convert_umode(struct drm_device *dev,
 	default:
 		return -EINVAL;
 	}
-#endif
 
 	out->status = drm_mode_validate_driver(dev, out);
 	if (out->status != MODE_OK)

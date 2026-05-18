@@ -117,13 +117,10 @@ nv50_head_atomic_check_view(struct nv50_head_atom *armh,
 	struct edid *edid;
 	int umode_vdisplay, omode_hdisplay, omode_vdisplay;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (connector->edid_blob_ptr)
 		edid = (struct edid *)connector->edid_blob_ptr->data;
 	else
 		edid = NULL;
-#endif
 
 	if (!asyc->scaler.full) {
 		if (mode == DRM_MODE_SCALE_NONE)

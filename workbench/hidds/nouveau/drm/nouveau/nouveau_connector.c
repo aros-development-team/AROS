@@ -34,7 +34,7 @@
 #endif
 
 #include <drm/drm_atomic_helper.h>
-// #include <drm/drm_edid.h>
+#include <drm/drm_edid.h>
 #include <drm/drm_crtc_helper.h>
 #include <drm/drm_probe_helper.h>
 #include <drm/drm_atomic.h>
@@ -553,10 +553,7 @@ nouveau_connector_set_edid(struct nouveau_connector *nv_connector,
 	if (nv_connector->edid != edid) {
 		struct edid *old_edid = nv_connector->edid;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 		drm_connector_update_edid_property(&nv_connector->base, edid);
-#endif
 		kfree(old_edid);
 		nv_connector->edid = edid;
 	}
@@ -574,9 +571,8 @@ nouveau_connector_detect(struct drm_connector *connector, bool force)
 	int type;
 	int ret;
 	enum drm_connector_status conn_status = connector_status_disconnected;
-NOT_IMPLEMENTED_STOP
-#if 0
 
+#if !defined(__AROS__)
 	/* Outputs are only polled while runtime active, so resuming the
 	 * device here is unnecessary (and would deadlock upon runtime suspend
 	 * because it waits for polling to finish). We do however, want to
@@ -593,16 +589,19 @@ NOT_IMPLEMENTED_STOP
 			return conn_status;
 		}
 	}
+#endif
 
 	nv_encoder = nouveau_connector_ddc_detect(connector);
 	if (nv_encoder && (i2c = nv_encoder->i2c) != NULL) {
 		struct edid *new_edid;
 
+#if !defined(__AROS__)
 		if ((vga_switcheroo_handler_flags() &
 		     VGA_SWITCHEROO_CAN_SWITCH_DDC) &&
 		    nv_connector->type == DCB_CONNECTOR_LVDS)
 			new_edid = drm_get_edid_switcheroo(connector, i2c);
 		else
+#endif
 			new_edid = drm_get_edid(connector, i2c);
 
 		nouveau_connector_set_edid(nv_connector, new_edid);
@@ -649,7 +648,6 @@ NOT_IMPLEMENTED_STOP
 		conn_status = connector_status_connected;
 		goto out;
 	}
-#endif
 
 detect_analog:
 	nv_encoder = find_encoder(connector, DCB_OUTPUT_ANALOG);
@@ -963,8 +961,6 @@ nouveau_connector_get_modes(struct drm_connector *connector)
 		nv_connector->native_mode = NULL;
 	}
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (nv_connector->edid)
 		ret = drm_add_edid_modes(connector, nv_connector->edid);
 	else
@@ -976,7 +972,6 @@ NOT_IMPLEMENTED_STOP
 		nouveau_bios_fp_mode(dev, &mode);
 		nv_connector->native_mode = drm_mode_duplicate(dev, &mode);
 	}
-#endif
 
 	/* Determine display colour depth for everything except LVDS now,
 	 * DP requires this before mode_valid() is called.

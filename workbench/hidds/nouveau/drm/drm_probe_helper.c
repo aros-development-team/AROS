@@ -36,7 +36,7 @@
 
 // #include <drm/drm_client.h>
 #include <drm/drm_crtc.h>
-// #include <drm/drm_edid.h>
+#include <drm/drm_edid.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_modeset_helper_vtables.h>
@@ -509,31 +509,22 @@ retry:
 	if (connector->status == connector_status_disconnected) {
 		DRM_DEBUG_KMS("[CONNECTOR:%d:%s] disconnected\n",
 			connector->base.id, connector->name);
-#if !defined(__AROS__)
 		drm_connector_update_edid_property(connector, NULL);
-#endif
 		verbose_prune = false;
 		goto prune;
 	}
 
 	count = (*connector_funcs->get_modes)(connector);
 
-#if !defined(__AROS__)
 	/*
 	 * Fallback for when DDC probe failed in drm_get_edid() and thus skipped
 	 * override/firmware EDID.
 	 */
 	if (count == 0 && connector->status == connector_status_connected)
 		count = drm_add_override_edid_modes(connector);
-#endif
 
 	if (count == 0 && connector->status == connector_status_connected)
-{
-NOT_IMPLEMENTED_STOP
-#if 0
 		count = drm_add_modes_noedid(connector, 1024, 768);
-#endif
-}
 	count += drm_helper_probe_add_cmdline_mode(connector);
 	if (count == 0)
 		goto prune;

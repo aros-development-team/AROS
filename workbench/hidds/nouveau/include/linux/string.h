@@ -49,6 +49,9 @@
 #include <linux/overflow.h>
 #include <drm-compat/drm_compat_mem.h>
 #include <string.h>
+#ifndef	__DECONST
+#define	__DECONST(type, var)	((type)(IPTR)(const void *)(var))
+#endif
 #endif
 
 static inline int
@@ -203,24 +206,24 @@ kstrdup_const(const char *src, gfp_t gfp)
 // 	return (skip_spaces(str));
 // }
 
-// static inline void *
-// memchr_inv(const void *start, int c, size_t length)
-// {
-// 	const u8 *ptr;
-// 	const u8 *end;
-// 	u8 ch;
+static inline void *
+memchr_inv(const void *start, int c, size_t length)
+{
+	const u8 *ptr;
+	const u8 *end;
+	u8 ch;
 
-// 	ch = c;
-// 	ptr = start;
-// 	end = ptr + length;
+	ch = c;
+	ptr = start;
+	end = ptr + length;
 
-// 	while (ptr != end) {
-// 		if (*ptr != ch)
-// 			return (__DECONST(void *, ptr));
-// 		ptr++;
-// 	}
-// 	return (NULL);
-// }
+	while (ptr != end) {
+		if (*ptr != ch)
+			return (__DECONST(void *, ptr));
+		ptr++;
+	}
+	return (NULL);
+}
 
 // static inline bool
 // mem_is_zero(const void *start, size_t length)

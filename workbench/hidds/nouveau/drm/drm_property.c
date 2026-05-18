@@ -665,73 +665,73 @@ EXPORT_SYMBOL(drm_property_blob_put);
 // }
 // EXPORT_SYMBOL(drm_property_lookup_blob);
 
-// /**
-//  * drm_property_replace_global_blob - replace existing blob property
-//  * @dev: drm device
-//  * @replace: location of blob property pointer to be replaced
-//  * @length: length of data for new blob, or 0 for no data
-//  * @data: content for new blob, or NULL for no data
-//  * @obj_holds_id: optional object for property holding blob ID
-//  * @prop_holds_id: optional property holding blob ID
-//  * @return 0 on success or error on failure
-//  *
-//  * This function will replace a global property in the blob list, optionally
-//  * updating a property which holds the ID of that property.
-//  *
-//  * If length is 0 or data is NULL, no new blob will be created, and the holding
-//  * property, if specified, will be set to 0.
-//  *
-//  * Access to the replace pointer is assumed to be protected by the caller, e.g.
-//  * by holding the relevant modesetting object lock for its parent.
-//  *
-//  * For example, a drm_connector has a 'PATH' property, which contains the ID
-//  * of a blob property with the value of the MST path information. Calling this
-//  * function with replace pointing to the connector's path_blob_ptr, length and
-//  * data set for the new path information, obj_holds_id set to the connector's
-//  * base object, and prop_holds_id set to the path property name, will perform
-//  * a completely atomic update. The access to path_blob_ptr is protected by the
-//  * caller holding a lock on the connector.
-//  */
-// int drm_property_replace_global_blob(struct drm_device *dev,
-// 				     struct drm_property_blob **replace,
-// 				     size_t length,
-// 				     const void *data,
-// 				     struct drm_mode_object *obj_holds_id,
-// 				     struct drm_property *prop_holds_id)
-// {
-// 	struct drm_property_blob *new_blob = NULL;
-// 	struct drm_property_blob *old_blob = NULL;
-// 	int ret;
+/**
+ * drm_property_replace_global_blob - replace existing blob property
+ * @dev: drm device
+ * @replace: location of blob property pointer to be replaced
+ * @length: length of data for new blob, or 0 for no data
+ * @data: content for new blob, or NULL for no data
+ * @obj_holds_id: optional object for property holding blob ID
+ * @prop_holds_id: optional property holding blob ID
+ * @return 0 on success or error on failure
+ *
+ * This function will replace a global property in the blob list, optionally
+ * updating a property which holds the ID of that property.
+ *
+ * If length is 0 or data is NULL, no new blob will be created, and the holding
+ * property, if specified, will be set to 0.
+ *
+ * Access to the replace pointer is assumed to be protected by the caller, e.g.
+ * by holding the relevant modesetting object lock for its parent.
+ *
+ * For example, a drm_connector has a 'PATH' property, which contains the ID
+ * of a blob property with the value of the MST path information. Calling this
+ * function with replace pointing to the connector's path_blob_ptr, length and
+ * data set for the new path information, obj_holds_id set to the connector's
+ * base object, and prop_holds_id set to the path property name, will perform
+ * a completely atomic update. The access to path_blob_ptr is protected by the
+ * caller holding a lock on the connector.
+ */
+int drm_property_replace_global_blob(struct drm_device *dev,
+				     struct drm_property_blob **replace,
+				     size_t length,
+				     const void *data,
+				     struct drm_mode_object *obj_holds_id,
+				     struct drm_property *prop_holds_id)
+{
+	struct drm_property_blob *new_blob = NULL;
+	struct drm_property_blob *old_blob = NULL;
+	int ret;
 
-// 	WARN_ON(replace == NULL);
+	WARN_ON(replace == NULL);
 
-// 	old_blob = *replace;
+	old_blob = *replace;
 
-// 	if (length && data) {
-// 		new_blob = drm_property_create_blob(dev, length, data);
-// 		if (IS_ERR(new_blob))
-// 			return PTR_ERR(new_blob);
-// 	}
+	if (length && data) {
+		new_blob = drm_property_create_blob(dev, length, data);
+		if (IS_ERR(new_blob))
+			return PTR_ERR(new_blob);
+	}
 
-// 	if (obj_holds_id) {
-// 		ret = drm_object_property_set_value(obj_holds_id,
-// 						    prop_holds_id,
-// 						    new_blob ?
-// 						        new_blob->base.id : 0);
-// 		if (ret != 0)
-// 			goto err_created;
-// 	}
+	if (obj_holds_id) {
+		ret = drm_object_property_set_value(obj_holds_id,
+						    prop_holds_id,
+						    new_blob ?
+						        new_blob->base.id : 0);
+		if (ret != 0)
+			goto err_created;
+	}
 
-// 	drm_property_blob_put(old_blob);
-// 	*replace = new_blob;
+	drm_property_blob_put(old_blob);
+	*replace = new_blob;
 
-// 	return 0;
+	return 0;
 
-// err_created:
-// 	drm_property_blob_put(new_blob);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_property_replace_global_blob);
+err_created:
+	drm_property_blob_put(new_blob);
+	return ret;
+}
+EXPORT_SYMBOL(drm_property_replace_global_blob);
 
 // /**
 //  * drm_property_replace_blob - replace a blob property

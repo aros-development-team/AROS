@@ -27,8 +27,9 @@
 #if !defined(__AROS__)
 #include <linux/llist.h>
 #include <linux/ctype.h>
-#include <linux/hdmi.h>
 #endif
+#include <linux/hdmi.h>
+
 #include <drm/drm_mode_object.h>
 #include <drm/drm_util.h>
 
@@ -143,74 +144,74 @@ enum subpixel_order {
 
 };
 
-// /**
-//  * struct drm_scrambling: sink's scrambling support.
-//  */
-// struct drm_scrambling {
-// 	/**
-// 	 * @supported: scrambling supported for rates > 340 Mhz.
-// 	 */
-// 	bool supported;
-// 	/**
-// 	 * @low_rates: scrambling supported for rates <= 340 Mhz.
-// 	 */
-// 	bool low_rates;
-// };
+/**
+ * struct drm_scrambling: sink's scrambling support.
+ */
+struct drm_scrambling {
+	/**
+	 * @supported: scrambling supported for rates > 340 Mhz.
+	 */
+	bool supported;
+	/**
+	 * @low_rates: scrambling supported for rates <= 340 Mhz.
+	 */
+	bool low_rates;
+};
 
-// /*
-//  * struct drm_scdc - Information about scdc capabilities of a HDMI 2.0 sink
-//  *
-//  * Provides SCDC register support and capabilities related information on a
-//  * HDMI 2.0 sink. In case of a HDMI 1.4 sink, all parameter must be 0.
-//  */
-// struct drm_scdc {
-// 	/**
-// 	 * @supported: status control & data channel present.
-// 	 */
-// 	bool supported;
-// 	/**
-// 	 * @read_request: sink is capable of generating scdc read request.
-// 	 */
-// 	bool read_request;
-// 	/**
-// 	 * @scrambling: sink's scrambling capabilities
-// 	 */
-// 	struct drm_scrambling scrambling;
-// };
+/*
+ * struct drm_scdc - Information about scdc capabilities of a HDMI 2.0 sink
+ *
+ * Provides SCDC register support and capabilities related information on a
+ * HDMI 2.0 sink. In case of a HDMI 1.4 sink, all parameter must be 0.
+ */
+struct drm_scdc {
+	/**
+	 * @supported: status control & data channel present.
+	 */
+	bool supported;
+	/**
+	 * @read_request: sink is capable of generating scdc read request.
+	 */
+	bool read_request;
+	/**
+	 * @scrambling: sink's scrambling capabilities
+	 */
+	struct drm_scrambling scrambling;
+};
 
 
-// /**
-//  * struct drm_hdmi_info - runtime information about the connected HDMI sink
-//  *
-//  * Describes if a given display supports advanced HDMI 2.0 features.
-//  * This information is available in CEA-861-F extension blocks (like HF-VSDB).
-//  */
-// struct drm_hdmi_info {
-// 	/** @scdc: sink's scdc support and capabilities */
-// 	struct drm_scdc scdc;
+/**
+ * struct drm_hdmi_info - runtime information about the connected HDMI sink
+ *
+ * Describes if a given display supports advanced HDMI 2.0 features.
+ * This information is available in CEA-861-F extension blocks (like HF-VSDB).
+ */
+struct drm_hdmi_info {
+	/** @scdc: sink's scdc support and capabilities */
+	struct drm_scdc scdc;
 
-// 	/**
-// 	 * @y420_vdb_modes: bitmap of modes which can support ycbcr420
-// 	 * output only (not normal RGB/YCBCR444/422 outputs). There are total
-// 	 * 107 VICs defined by CEA-861-F spec, so the size is 128 bits to map
-// 	 * upto 128 VICs;
-// 	 */
-// 	unsigned long y420_vdb_modes[BITS_TO_LONGS(128)];
+	/**
+	 * @y420_vdb_modes: bitmap of modes which can support ycbcr420
+	 * output only (not normal RGB/YCBCR444/422 outputs). There are total
+	 * 107 VICs defined by CEA-861-F spec, so the size is 128 bits to map
+	 * upto 128 VICs;
+	 */
+	unsigned long y420_vdb_modes[BITS_TO_LONGS(128)];
 
-// 	/**
-// 	 * @y420_cmdb_modes: bitmap of modes which can support ycbcr420
-// 	 * output also, along with normal HDMI outputs. There are total 107
-// 	 * VICs defined by CEA-861-F spec, so the size is 128 bits to map upto
-// 	 * 128 VICs;
-// 	 */
-// 	unsigned long y420_cmdb_modes[BITS_TO_LONGS(128)];
+	/**
+	 * @y420_cmdb_modes: bitmap of modes which can support ycbcr420
+	 * output also, along with normal HDMI outputs. There are total 107
+	 * VICs defined by CEA-861-F spec, so the size is 128 bits to map upto
+	 * 128 VICs;
+	 */
+	unsigned long y420_cmdb_modes[BITS_TO_LONGS(128)];
 
-// 	/** @y420_cmdb_map: bitmap of SVD index, to extraxt vcb modes */
-// 	u64 y420_cmdb_map;
+	/** @y420_cmdb_map: bitmap of SVD index, to extraxt vcb modes */
+	u64 y420_cmdb_map;
 
-// 	/** @y420_dc_modes: bitmap of deep color support index */
-// 	u8 y420_dc_modes;
-// };
+	/** @y420_dc_modes: bitmap of deep color support index */
+	u8 y420_dc_modes;
+};
 
 /**
  * enum drm_link_status - connector's link_status property value
@@ -428,15 +429,15 @@ struct drm_display_info {
 	 */
 	int max_tmds_clock;
 
-// 	/**
-// 	 * @dvi_dual: Dual-link DVI sink?
-// 	 */
-// 	bool dvi_dual;
+	/**
+	 * @dvi_dual: Dual-link DVI sink?
+	 */
+	bool dvi_dual;
 
-// 	/**
-// 	 * @has_hdmi_infoframe: Does the sink support the HDMI infoframe?
-// 	 */
-// 	bool has_hdmi_infoframe;
+	/**
+	 * @has_hdmi_infoframe: Does the sink support the HDMI infoframe?
+	 */
+	bool has_hdmi_infoframe;
 
 // 	/**
 // 	 * @rgb_quant_range_selectable: Does the sink support selecting
@@ -444,26 +445,26 @@ struct drm_display_info {
 // 	 */
 // 	bool rgb_quant_range_selectable;
 
-// 	/**
-// 	 * @edid_hdmi_dc_modes: Mask of supported hdmi deep color modes. Even
-// 	 * more stuff redundant with @bus_formats.
-// 	 */
-// 	u8 edid_hdmi_dc_modes;
+	/**
+	 * @edid_hdmi_dc_modes: Mask of supported hdmi deep color modes. Even
+	 * more stuff redundant with @bus_formats.
+	 */
+	u8 edid_hdmi_dc_modes;
 
-// 	/**
-// 	 * @cea_rev: CEA revision of the HDMI sink.
-// 	 */
-// 	u8 cea_rev;
+	/**
+	 * @cea_rev: CEA revision of the HDMI sink.
+	 */
+	u8 cea_rev;
 
-// 	/**
-// 	 * @hdmi: advance features of a HDMI sink.
-// 	 */
-// 	struct drm_hdmi_info hdmi;
+	/**
+	 * @hdmi: advance features of a HDMI sink.
+	 */
+	struct drm_hdmi_info hdmi;
 
-// 	/**
-// 	 * @non_desktop: Non desktop display (HMD).
-// 	 */
-// 	bool non_desktop;
+	/**
+	 * @non_desktop: Non desktop display (HMD).
+	 */
+	bool non_desktop;
 };
 
 // int drm_display_info_set_bus_formats(struct drm_display_info *info,
@@ -588,14 +589,14 @@ struct drm_connector_state {
 // 	 */
 // 	bool self_refresh_aware;
 
-// 	/**
-// 	 * @picture_aspect_ratio: Connector property to control the
-// 	 * HDMI infoframe aspect ratio setting.
-// 	 *
-// 	 * The %DRM_MODE_PICTURE_ASPECT_\* values much match the
-// 	 * values for &enum hdmi_picture_aspect
-// 	 */
-// 	enum hdmi_picture_aspect picture_aspect_ratio;
+	/**
+	 * @picture_aspect_ratio: Connector property to control the
+	 * HDMI infoframe aspect ratio setting.
+	 *
+	 * The %DRM_MODE_PICTURE_ASPECT_\* values much match the
+	 * values for &enum hdmi_picture_aspect
+	 */
+	enum hdmi_picture_aspect picture_aspect_ratio;
 
 	/**
 	 * @content_type: Connector property to control the
@@ -1199,12 +1200,12 @@ struct drm_connector {
 	/** @funcs: connector control functions */
 	const struct drm_connector_funcs *funcs;
 
-// 	/**
-// 	 * @edid_blob_ptr: DRM property containing EDID if present. Protected by
-// 	 * &drm_mode_config.mutex. This should be updated only by calling
-// 	 * drm_connector_update_edid_property().
-// 	 */
-// 	struct drm_property_blob *edid_blob_ptr;
+	/**
+	 * @edid_blob_ptr: DRM property containing EDID if present. Protected by
+	 * &drm_mode_config.mutex. This should be updated only by calling
+	 * drm_connector_update_edid_property().
+	 */
+	struct drm_property_blob *edid_blob_ptr;
 
 	/** @properties: property tracking for this connector */
 	struct drm_object_properties properties;
@@ -1288,8 +1289,8 @@ struct drm_connector {
 	struct drm_cmdline_mode cmdline_mode;
 	/** @force: a DRM_FORCE_<foo> state for forced mode sets */
 	enum drm_connector_force force;
-// 	/** @override_edid: has the EDID been overwritten through debugfs for testing? */
-// 	bool override_edid;
+	/** @override_edid: has the EDID been overwritten through debugfs for testing? */
+	bool override_edid;
 
 #define DRM_CONNECTOR_MAX_ENCODER 3
 	/**
@@ -1306,21 +1307,21 @@ struct drm_connector {
 	 */
 	struct drm_encoder *encoder;
 
-// #define MAX_ELD_BYTES	128
-// 	/** @eld: EDID-like data, if present */
-// 	uint8_t eld[MAX_ELD_BYTES];
-// 	/** @latency_present: AV delay info from ELD, if found */
-// 	bool latency_present[2];
-// 	/**
-// 	 * @video_latency: Video latency info from ELD, if found.
-// 	 * [0]: progressive, [1]: interlaced
-// 	 */
-// 	int video_latency[2];
-// 	/**
-// 	 * @audio_latency: audio latency info from ELD, if found
-// 	 * [0]: progressive, [1]: interlaced
-// 	 */
-// 	int audio_latency[2];
+#define MAX_ELD_BYTES	128
+	/** @eld: EDID-like data, if present */
+	uint8_t eld[MAX_ELD_BYTES];
+	/** @latency_present: AV delay info from ELD, if found */
+	bool latency_present[2];
+	/**
+	 * @video_latency: Video latency info from ELD, if found.
+	 * [0]: progressive, [1]: interlaced
+	 */
+	int video_latency[2];
+	/**
+	 * @audio_latency: audio latency info from ELD, if found
+	 * [0]: progressive, [1]: interlaced
+	 */
+	int audio_latency[2];
 
 // 	/**
 // 	 * @ddc: associated ddc adapter.
@@ -1385,22 +1386,22 @@ struct drm_connector {
 	 */
 	struct drm_property_blob *tile_blob_ptr;
 
-// 	/** @has_tile: is this connector connected to a tiled monitor */
-// 	bool has_tile;
+	/** @has_tile: is this connector connected to a tiled monitor */
+	bool has_tile;
 	/** @tile_group: tile group for the connected monitor */
 	struct drm_tile_group *tile_group;
-// 	/** @tile_is_single_monitor: whether the tile is one monitor housing */
-// 	bool tile_is_single_monitor;
+	/** @tile_is_single_monitor: whether the tile is one monitor housing */
+	bool tile_is_single_monitor;
 
-// 	/** @num_h_tile: number of horizontal tiles in the tile group */
-// 	/** @num_v_tile: number of vertical tiles in the tile group */
-// 	uint8_t num_h_tile, num_v_tile;
-// 	/** @tile_h_loc: horizontal location of this tile */
-// 	/** @tile_v_loc: vertical location of this tile */
-// 	uint8_t tile_h_loc, tile_v_loc;
-// 	/** @tile_h_size: horizontal size of this tile. */
-// 	/** @tile_v_size: vertical size of this tile. */
-// 	uint16_t tile_h_size, tile_v_size;
+	/** @num_h_tile: number of horizontal tiles in the tile group */
+	/** @num_v_tile: number of vertical tiles in the tile group */
+	uint8_t num_h_tile, num_v_tile;
+	/** @tile_h_loc: horizontal location of this tile */
+	/** @tile_v_loc: vertical location of this tile */
+	uint8_t tile_h_loc, tile_v_loc;
+	/** @tile_h_size: horizontal size of this tile. */
+	/** @tile_v_size: vertical size of this tile. */
+	uint16_t tile_h_size, tile_v_size;
 
 // 	/**
 // 	 * @free_node:
@@ -1535,9 +1536,9 @@ int drm_mode_create_scaling_mode_property(struct drm_device *dev);
 
 int drm_connector_set_path_property(struct drm_connector *connector,
 				    const char *path);
-// int drm_connector_set_tile_property(struct drm_connector *connector);
-// int drm_connector_update_edid_property(struct drm_connector *connector,
-// 				       const struct edid *edid);
+int drm_connector_set_tile_property(struct drm_connector *connector);
+int drm_connector_update_edid_property(struct drm_connector *connector,
+				       const struct edid *edid);
 // void drm_connector_set_link_status_property(struct drm_connector *connector,
 // 					    uint64_t link_status);
 // void drm_connector_set_vrr_capable_property(
@@ -1564,10 +1565,10 @@ struct drm_tile_group {
 	u8 group_data[8];
 };
 
-// struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
-// 						  char topology[8]);
-// struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
-// 					       char topology[8]);
+struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
+						  char topology[8]);
+struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
+					       char topology[8]);
 void drm_mode_put_tile_group(struct drm_device *dev,
 			     struct drm_tile_group *tg);
 

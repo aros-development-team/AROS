@@ -27,9 +27,7 @@
 #ifndef __DRM_MODES_H__
 #define __DRM_MODES_H__
 
-#if !defined(__AROS__)
 #include <linux/hdmi.h>
-#endif
 
 #include <drm/drm_mode_object.h>
 #include <drm/drm_connector.h>
@@ -409,14 +407,12 @@ struct drm_display_mode {
 	 */
 	int hsync;
 
-#if !defined(__AROS__)
 	/**
 	 * @picture_aspect_ratio:
 	 *
 	 * Field for setting the HDMI picture aspect ratio of a mode.
 	 */
 	enum hdmi_picture_aspect picture_aspect_ratio;
-#endif
 
 	/**
 	 * @export_head:
@@ -485,15 +481,15 @@ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
 				      int hdisplay, int vdisplay, int vrefresh,
 				      bool reduced, bool interlaced,
 				      bool margins);
-// struct drm_display_mode *drm_gtf_mode(struct drm_device *dev,
-// 				      int hdisplay, int vdisplay, int vrefresh,
-// 				      bool interlaced, int margins);
-// struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
-// 					      int hdisplay, int vdisplay,
-// 					      int vrefresh, bool interlaced,
-// 					      int margins,
-// 					      int GTF_M, int GTF_2C,
-// 					      int GTF_K, int GTF_2J);
+struct drm_display_mode *drm_gtf_mode(struct drm_device *dev,
+				      int hdisplay, int vdisplay, int vrefresh,
+				      bool interlaced, int margins);
+struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
+					      int hdisplay, int vdisplay,
+					      int vrefresh, bool interlaced,
+					      int margins,
+					      int GTF_M, int GTF_2C,
+					      int GTF_K, int GTF_2J);
 // void drm_display_mode_from_videomode(const struct videomode *vm,
 // 				     struct drm_display_mode *dmode);
 // void drm_display_mode_to_videomode(const struct drm_display_mode *dmode,
@@ -504,7 +500,7 @@ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev,
 // 			    int index);
 
 void drm_mode_set_name(struct drm_display_mode *mode);
-// int drm_mode_hsync(const struct drm_display_mode *mode);
+int drm_mode_hsync(const struct drm_display_mode *mode);
 int drm_mode_vrefresh(const struct drm_display_mode *mode);
 void drm_mode_get_hv_timing(const struct drm_display_mode *mode,
 			    int *hdisplay, int *vdisplay);

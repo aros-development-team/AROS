@@ -21,7 +21,7 @@
  */
 
 #include <drm/drm_connector.h>
-// #include <drm/drm_edid.h>
+#include <drm/drm_edid.h>
 #include <drm/drm_encoder.h>
 #include <drm/drm_utils.h>
 #include <drm/drm_print.h>
@@ -250,9 +250,7 @@ int drm_connector_init(struct drm_device *dev,
 	INIT_LIST_HEAD(&connector->probed_modes);
 	INIT_LIST_HEAD(&connector->modes);
 	mutex_init(&connector->mutex);
-#if !defined(__AROS__)
 	connector->edid_blob_ptr = NULL;
-#endif
 	connector->tile_blob_ptr = NULL;
 	connector->status = connector_status_unknown;
 	connector->display_info.panel_orientation =
@@ -1846,107 +1844,107 @@ EXPORT_SYMBOL(drm_mode_create_scaling_mode_property);
 // }
 // EXPORT_SYMBOL(drm_connector_set_path_property);
 
-// /**
-//  * drm_connector_set_tile_property - set tile property on connector
-//  * @connector: connector to set property on.
-//  *
-//  * This looks up the tile information for a connector, and creates a
-//  * property for userspace to parse if it exists. The property is of
-//  * the form of 8 integers using ':' as a separator.
-//  * This is used for dual port tiled displays with DisplayPort SST
-//  * or DisplayPort MST connectors.
-//  *
-//  * Returns:
-//  * Zero on success, errno on failure.
-//  */
-// int drm_connector_set_tile_property(struct drm_connector *connector)
-// {
-// 	struct drm_device *dev = connector->dev;
-// 	char tile[256];
-// 	int ret;
+/**
+ * drm_connector_set_tile_property - set tile property on connector
+ * @connector: connector to set property on.
+ *
+ * This looks up the tile information for a connector, and creates a
+ * property for userspace to parse if it exists. The property is of
+ * the form of 8 integers using ':' as a separator.
+ * This is used for dual port tiled displays with DisplayPort SST
+ * or DisplayPort MST connectors.
+ *
+ * Returns:
+ * Zero on success, errno on failure.
+ */
+int drm_connector_set_tile_property(struct drm_connector *connector)
+{
+	struct drm_device *dev = connector->dev;
+	char tile[256];
+	int ret;
 
-// 	if (!connector->has_tile) {
-// 		ret  = drm_property_replace_global_blob(dev,
-// 		                                        &connector->tile_blob_ptr,
-// 		                                        0,
-// 		                                        NULL,
-// 		                                        &connector->base,
-// 		                                        dev->mode_config.tile_property);
-// 		return ret;
-// 	}
+	if (!connector->has_tile) {
+		ret  = drm_property_replace_global_blob(dev,
+		                                        &connector->tile_blob_ptr,
+		                                        0,
+		                                        NULL,
+		                                        &connector->base,
+		                                        dev->mode_config.tile_property);
+		return ret;
+	}
 
-// 	snprintf(tile, 256, "%d:%d:%d:%d:%d:%d:%d:%d",
-// 		 connector->tile_group->id, connector->tile_is_single_monitor,
-// 		 connector->num_h_tile, connector->num_v_tile,
-// 		 connector->tile_h_loc, connector->tile_v_loc,
-// 		 connector->tile_h_size, connector->tile_v_size);
+	snprintf(tile, 256, "%d:%d:%d:%d:%d:%d:%d:%d",
+		 connector->tile_group->id, connector->tile_is_single_monitor,
+		 connector->num_h_tile, connector->num_v_tile,
+		 connector->tile_h_loc, connector->tile_v_loc,
+		 connector->tile_h_size, connector->tile_v_size);
 
-// 	ret = drm_property_replace_global_blob(dev,
-// 	                                       &connector->tile_blob_ptr,
-// 	                                       strlen(tile) + 1,
-// 	                                       tile,
-// 	                                       &connector->base,
-// 	                                       dev->mode_config.tile_property);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_connector_set_tile_property);
+	ret = drm_property_replace_global_blob(dev,
+	                                       &connector->tile_blob_ptr,
+	                                       strlen(tile) + 1,
+	                                       tile,
+	                                       &connector->base,
+	                                       dev->mode_config.tile_property);
+	return ret;
+}
+EXPORT_SYMBOL(drm_connector_set_tile_property);
 
-// /**
-//  * drm_connector_update_edid_property - update the edid property of a connector
-//  * @connector: drm connector
-//  * @edid: new value of the edid property
-//  *
-//  * This function creates a new blob modeset object and assigns its id to the
-//  * connector's edid property.
-//  * Since we also parse tile information from EDID's displayID block, we also
-//  * set the connector's tile property here. See drm_connector_set_tile_property()
-//  * for more details.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_connector_update_edid_property(struct drm_connector *connector,
-// 				       const struct edid *edid)
-// {
-// 	struct drm_device *dev = connector->dev;
-// 	size_t size = 0;
-// 	int ret;
+/**
+ * drm_connector_update_edid_property - update the edid property of a connector
+ * @connector: drm connector
+ * @edid: new value of the edid property
+ *
+ * This function creates a new blob modeset object and assigns its id to the
+ * connector's edid property.
+ * Since we also parse tile information from EDID's displayID block, we also
+ * set the connector's tile property here. See drm_connector_set_tile_property()
+ * for more details.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_connector_update_edid_property(struct drm_connector *connector,
+				       const struct edid *edid)
+{
+	struct drm_device *dev = connector->dev;
+	size_t size = 0;
+	int ret;
 
-// 	/* ignore requests to set edid when overridden */
-// 	if (connector->override_edid)
-// 		return 0;
+	/* ignore requests to set edid when overridden */
+	if (connector->override_edid)
+		return 0;
 
-// 	if (edid)
-// 		size = EDID_LENGTH * (1 + edid->extensions);
+	if (edid)
+		size = EDID_LENGTH * (1 + edid->extensions);
 
-// 	/* Set the display info, using edid if available, otherwise
-// 	 * reseting the values to defaults. This duplicates the work
-// 	 * done in drm_add_edid_modes, but that function is not
-// 	 * consistently called before this one in all drivers and the
-// 	 * computation is cheap enough that it seems better to
-// 	 * duplicate it rather than attempt to ensure some arbitrary
-// 	 * ordering of calls.
-// 	 */
-// 	if (edid)
-// 		drm_add_display_info(connector, edid);
-// 	else
-// 		drm_reset_display_info(connector);
+	/* Set the display info, using edid if available, otherwise
+	 * reseting the values to defaults. This duplicates the work
+	 * done in drm_add_edid_modes, but that function is not
+	 * consistently called before this one in all drivers and the
+	 * computation is cheap enough that it seems better to
+	 * duplicate it rather than attempt to ensure some arbitrary
+	 * ordering of calls.
+	 */
+	if (edid)
+		drm_add_display_info(connector, edid);
+	else
+		drm_reset_display_info(connector);
 
-// 	drm_object_property_set_value(&connector->base,
-// 				      dev->mode_config.non_desktop_property,
-// 				      connector->display_info.non_desktop);
+	drm_object_property_set_value(&connector->base,
+				      dev->mode_config.non_desktop_property,
+				      connector->display_info.non_desktop);
 
-// 	ret = drm_property_replace_global_blob(dev,
-// 					       &connector->edid_blob_ptr,
-// 	                                       size,
-// 	                                       edid,
-// 	                                       &connector->base,
-// 	                                       dev->mode_config.edid_property);
-// 	if (ret)
-// 		return ret;
-// 	return drm_connector_set_tile_property(connector);
-// }
-// EXPORT_SYMBOL(drm_connector_update_edid_property);
+	ret = drm_property_replace_global_blob(dev,
+					       &connector->edid_blob_ptr,
+	                                       size,
+	                                       edid,
+	                                       &connector->base,
+	                                       dev->mode_config.edid_property);
+	if (ret)
+		return ret;
+	return drm_connector_set_tile_property(connector);
+}
+EXPORT_SYMBOL(drm_connector_update_edid_property);
 
 // /**
 //  * drm_connector_set_link_status_property - Set link status property of a connector
@@ -2335,70 +2333,70 @@ void drm_mode_put_tile_group(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_mode_put_tile_group);
 
-// /**
-//  * drm_mode_get_tile_group - get a reference to an existing tile group
-//  * @dev: DRM device
-//  * @topology: 8-bytes unique per monitor.
-//  *
-//  * Use the unique bytes to get a reference to an existing tile group.
-//  *
-//  * RETURNS:
-//  * tile group or NULL if not found.
-//  */
-// struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
-// 					       char topology[8])
-// {
-// 	struct drm_tile_group *tg;
-// 	int id;
-// 	mutex_lock(&dev->mode_config.idr_mutex);
-// 	idr_for_each_entry(&dev->mode_config.tile_idr, tg, id) {
-// 		if (!memcmp(tg->group_data, topology, 8)) {
-// 			if (!kref_get_unless_zero(&tg->refcount))
-// 				tg = NULL;
-// 			mutex_unlock(&dev->mode_config.idr_mutex);
-// 			return tg;
-// 		}
-// 	}
-// 	mutex_unlock(&dev->mode_config.idr_mutex);
-// 	return NULL;
-// }
-// EXPORT_SYMBOL(drm_mode_get_tile_group);
+/**
+ * drm_mode_get_tile_group - get a reference to an existing tile group
+ * @dev: DRM device
+ * @topology: 8-bytes unique per monitor.
+ *
+ * Use the unique bytes to get a reference to an existing tile group.
+ *
+ * RETURNS:
+ * tile group or NULL if not found.
+ */
+struct drm_tile_group *drm_mode_get_tile_group(struct drm_device *dev,
+					       char topology[8])
+{
+	struct drm_tile_group *tg;
+	int id;
+	mutex_lock(&dev->mode_config.idr_mutex);
+	idr_for_each_entry(&dev->mode_config.tile_idr, tg, id) {
+		if (!memcmp(tg->group_data, topology, 8)) {
+			if (!kref_get_unless_zero(&tg->refcount))
+				tg = NULL;
+			mutex_unlock(&dev->mode_config.idr_mutex);
+			return tg;
+		}
+	}
+	mutex_unlock(&dev->mode_config.idr_mutex);
+	return NULL;
+}
+EXPORT_SYMBOL(drm_mode_get_tile_group);
 
-// /**
-//  * drm_mode_create_tile_group - create a tile group from a displayid description
-//  * @dev: DRM device
-//  * @topology: 8-bytes unique per monitor.
-//  *
-//  * Create a tile group for the unique monitor, and get a unique
-//  * identifier for the tile group.
-//  *
-//  * RETURNS:
-//  * new tile group or NULL.
-//  */
-// struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
-// 						  char topology[8])
-// {
-// 	struct drm_tile_group *tg;
-// 	int ret;
+/**
+ * drm_mode_create_tile_group - create a tile group from a displayid description
+ * @dev: DRM device
+ * @topology: 8-bytes unique per monitor.
+ *
+ * Create a tile group for the unique monitor, and get a unique
+ * identifier for the tile group.
+ *
+ * RETURNS:
+ * new tile group or NULL.
+ */
+struct drm_tile_group *drm_mode_create_tile_group(struct drm_device *dev,
+						  char topology[8])
+{
+	struct drm_tile_group *tg;
+	int ret;
 
-// 	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
-// 	if (!tg)
-// 		return NULL;
+	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
+	if (!tg)
+		return NULL;
 
-// 	kref_init(&tg->refcount);
-// 	memcpy(tg->group_data, topology, 8);
-// 	tg->dev = dev;
+	kref_init(&tg->refcount);
+	memcpy(tg->group_data, topology, 8);
+	tg->dev = dev;
 
-// 	mutex_lock(&dev->mode_config.idr_mutex);
-// 	ret = idr_alloc(&dev->mode_config.tile_idr, tg, 1, 0, GFP_KERNEL);
-// 	if (ret >= 0) {
-// 		tg->id = ret;
-// 	} else {
-// 		kfree(tg);
-// 		tg = NULL;
-// 	}
+	mutex_lock(&dev->mode_config.idr_mutex);
+	ret = idr_alloc(&dev->mode_config.tile_idr, tg, 1, 0, GFP_KERNEL);
+	if (ret >= 0) {
+		tg->id = ret;
+	} else {
+		kfree(tg);
+		tg = NULL;
+	}
 
-// 	mutex_unlock(&dev->mode_config.idr_mutex);
-// 	return tg;
-// }
-// EXPORT_SYMBOL(drm_mode_create_tile_group);
+	mutex_unlock(&dev->mode_config.idr_mutex);
+	return tg;
+}
+EXPORT_SYMBOL(drm_mode_create_tile_group);
