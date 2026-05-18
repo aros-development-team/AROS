@@ -10,12 +10,11 @@
 #include <drm-compat/drm_compat_types.h>
 #include <drm/drm_drv.h>
 
-#include "libdrm/arosdrmmode.h"
-#include "libdrm/nouveau/nouveau_bo.h"
-#include "libdrm/nouveau/nouveau_drmif.h"
+#include <libdrm/arosdrmmode.h>
+#include "../libdrm/nouveau/nouveau_bo.h"
+#include "../libdrm/nouveau/nouveau_drmif.h"
 
 APTR NouveauMemPool;
-struct drm_device *current_drm_device;
 
 APTR HIDDNouveauAlloc(ULONG size)
 {
@@ -27,7 +26,7 @@ VOID HIDDNouveauFree(APTR memory)
     FreeVecPooled(NouveauMemPool, memory);
 }
 
-int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
+int nouveau_init();
 
 static BOOL HIDDNouveauSelectConnectorCrtc(LONG fd, drmModeConnectorPtr * selectedconnector,
     drmModeCrtcPtr * selectedcrtc)
@@ -102,11 +101,7 @@ void main()
 
     OpenLibrary("DEVS:Drivers/pcimock.hidd", 0L);
 
-    drm_aros_pci_init();
-
-    struct pci_dev *pdev = drm_aros_pci_find_supported_video_card();
-
-    nouveau_drm_probe(pdev, NULL, &current_drm_device);
+    nouveau_init();
 
     bug("FINISHED nouveau_drm_probe\n");
 

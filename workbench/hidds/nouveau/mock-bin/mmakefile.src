@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+include $(SRCDIR)/$(CURDIR)/../sources.drm.mak
+
+USER_INCLUDES := \
+            -I$(SRCDIR)/$(CURDIR)/../include \
+            -I$(SRCDIR)/$(CURDIR)/../drm/nouveau \
+            -I$(SRCDIR)/$(CURDIR)/../drm/nouveau/include \
+            -I$(SRCDIR)/$(CURDIR)/../drm/nouveau/include/nvkm \
+            -I$(SRCDIR)/$(CURDIR)/../drm/nouveau/nvkm \
+
+NOUVEAU_DRM_C_SOURCES := \
+            $(addprefix $(SRCDIR)/$(CURDIR)/../,$(AROS_DRM_NVIDIA_SOURCES)) \
+            $(addprefix $(SRCDIR)/$(CURDIR)/../,$(AROS_DRM_CORE_SOURCES))
+
+%build_prog mmake=hidd-nouveau-drm-bin files="nouveau-bin-main $(NOUVEAU_DRM_C_SOURCES)" \
+    targetdir="$(AROS_C)" progname="nouveau-bin" uselibs="oop libdrm_nouveau" usesdks="config private drm"
+
