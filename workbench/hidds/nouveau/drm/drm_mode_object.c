@@ -184,22 +184,22 @@ struct drm_mode_object *drm_mode_object_find(struct drm_device *dev,
 }
 EXPORT_SYMBOL(drm_mode_object_find);
 
-// /**
-//  * drm_mode_object_put - release a mode object reference
-//  * @obj: DRM mode object
-//  *
-//  * This function decrements the object's refcount if it is a refcounted modeset
-//  * object. It is a no-op on any other object. This is used to drop references
-//  * acquired with drm_mode_object_get().
-//  */
-// void drm_mode_object_put(struct drm_mode_object *obj)
-// {
-// 	if (obj->free_cb) {
-// 		DRM_DEBUG("OBJ ID: %d (%d)\n", obj->id, kref_read(&obj->refcount));
-// 		kref_put(&obj->refcount, obj->free_cb);
-// 	}
-// }
-// EXPORT_SYMBOL(drm_mode_object_put);
+/**
+ * drm_mode_object_put - release a mode object reference
+ * @obj: DRM mode object
+ *
+ * This function decrements the object's refcount if it is a refcounted modeset
+ * object. It is a no-op on any other object. This is used to drop references
+ * acquired with drm_mode_object_get().
+ */
+void drm_mode_object_put(struct drm_mode_object *obj)
+{
+	if (obj->free_cb) {
+		DRM_DEBUG("OBJ ID: %d (%d)\n", obj->id, kref_read(&obj->refcount));
+		kref_put(&obj->refcount, obj->free_cb);
+	}
+}
+EXPORT_SYMBOL(drm_mode_object_put);
 
 /**
  * drm_mode_object_get - acquire a mode object reference
