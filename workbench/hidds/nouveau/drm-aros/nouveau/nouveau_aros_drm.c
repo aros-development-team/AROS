@@ -42,3 +42,29 @@ void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t 
     /* Return virtual address */
     return addr;
 }
+
+void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t handle)
+{
+    struct drm_gem_object * gem_object = NULL;
+    struct nouveau_bo * nvbo = NULL;
+
+    if (!f) return;
+
+    /* Get GEM objects from handle */
+    gem_object = drm_gem_object_lookup(f, handle);
+    if (!gem_object) return;
+
+    /* Translate to nouveau_bo */
+    nvbo = nouveau_gem_object(gem_object);
+    if (nvbo)
+    {
+        /* Perform unmapping if not already done */
+        if (nvbo->kmap.virtual)
+            nouveau_bo_unmap(nvbo);
+    }
+
+    /* Release the acquired reference */
+    mutex_lock(&dev->struct_mutex);
+    drm_gem_object_put(gem_object);
+    mutex_unlock(&dev->struct_mutex);
+}
