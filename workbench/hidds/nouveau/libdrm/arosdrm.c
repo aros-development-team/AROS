@@ -11,11 +11,11 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_file.h>
 
-void drm_gem_open(struct drm_device *dev, struct drm_file *file_private);
 void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
 void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
 
 #include "drm_crtc_internal.h"
+#include "drm_internal.h"
 
 APTR HIDDNouveauAlloc(ULONG size);
 VOID HIDDNouveauFree(APTR memory);
@@ -178,21 +178,21 @@ int drmIoctl(int fd, unsigned long request, void *arg)
     {
         switch(request)
         {
-            // case(DRM_IOCTL_GEM_CLOSE):
-            //     ret = drm_gem_close_ioctl(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
-            // case(DRM_IOCTL_GEM_OPEN):
-            //     ret = drm_gem_open_ioctl(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
-            // case(DRM_IOCTL_GEM_FLINK):
-            //     ret = drm_gem_flink_ioctl(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
+            case(DRM_IOCTL_GEM_CLOSE):
+                ret = drm_gem_close_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_GEM_OPEN):
+                ret = drm_gem_open_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
+            case(DRM_IOCTL_GEM_FLINK):
+                ret = drm_gem_flink_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
             case(DRM_IOCTL_MODE_ADDFB):
                 ret = drm_mode_addfb(current_drm_device, arg, drm_files[fd]);
                 break;
-            // case(DRM_IOCTL_MODE_RMFB):
-            //     ret = drm_mode_rmfb(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
+            case(DRM_IOCTL_MODE_RMFB):
+                ret = drm_mode_rmfb_ioctl(current_drm_device, arg, drm_files[fd]);
+                break;
             case(DRM_IOCTL_MODE_SETCRTC):
                 ret = drm_mode_setcrtc(current_drm_device, arg, drm_files[fd]);
                 break;
@@ -208,9 +208,9 @@ int drmIoctl(int fd, unsigned long request, void *arg)
             case(DRM_IOCTL_MODE_CURSOR):
                 ret = drm_mode_cursor_ioctl(current_drm_device, arg, drm_files[fd]);
                 break;
-            // case(DRM_IOCTL_MODE_GETENCODER):
-            //     ret = drm_mode_getencoder(current_drm_driver->dev, arg, drm_files[fd]);
-            //     break;
+            case(DRM_IOCTL_MODE_GETENCODER):
+                ret = drm_mode_getencoder(current_drm_device, arg, drm_files[fd]);
+                break;
             default:
                 bug("NOT IMPLEMENTED IOCTL %d\n", request); while(1);
         }

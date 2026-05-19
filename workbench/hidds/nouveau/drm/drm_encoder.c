@@ -27,6 +27,7 @@
 #include <drm/drm_device.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_encoder.h>
+#include <drm/drm_file.h>
 
 #include "drm_crtc_internal.h"
 
@@ -187,64 +188,71 @@ EXPORT_SYMBOL(drm_encoder_init);
 // }
 // EXPORT_SYMBOL(drm_encoder_cleanup);
 
-// static struct drm_crtc *drm_encoder_get_crtc(struct drm_encoder *encoder)
-// {
-// 	struct drm_connector *connector;
-// 	struct drm_device *dev = encoder->dev;
-// 	bool uses_atomic = false;
-// 	struct drm_connector_list_iter conn_iter;
+static struct drm_crtc *drm_encoder_get_crtc(struct drm_encoder *encoder)
+{
+	struct drm_connector *connector;
+	struct drm_device *dev = encoder->dev;
+	bool uses_atomic = false;
+	struct drm_connector_list_iter conn_iter;
 
-// 	/* For atomic drivers only state objects are synchronously updated and
-// 	 * protected by modeset locks, so check those first. */
-// 	drm_connector_list_iter_begin(dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		if (!connector->state)
-// 			continue;
+	/* For atomic drivers only state objects are synchronously updated and
+	 * protected by modeset locks, so check those first. */
+	drm_connector_list_iter_begin(dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		if (!connector->state)
+			continue;
 
-// 		uses_atomic = true;
+		uses_atomic = true;
 
-// 		if (connector->state->best_encoder != encoder)
-// 			continue;
+		if (connector->state->best_encoder != encoder)
+			continue;
 
-// 		drm_connector_list_iter_end(&conn_iter);
-// 		return connector->state->crtc;
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
+		drm_connector_list_iter_end(&conn_iter);
+		return connector->state->crtc;
+	}
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	/* Don't return stale data (e.g. pending async disable). */
-// 	if (uses_atomic)
-// 		return NULL;
+	/* Don't return stale data (e.g. pending async disable). */
+	if (uses_atomic)
+		return NULL;
 
-// 	return encoder->crtc;
-// }
+	return encoder->crtc;
+}
 
-// int drm_mode_getencoder(struct drm_device *dev, void *data,
-// 			struct drm_file *file_priv)
-// {
-// 	struct drm_mode_get_encoder *enc_resp = data;
-// 	struct drm_encoder *encoder;
-// 	struct drm_crtc *crtc;
+int drm_mode_getencoder(struct drm_device *dev, void *data,
+			struct drm_file *file_priv)
+{
+	struct drm_mode_get_encoder *enc_resp = data;
+	struct drm_encoder *encoder;
+	struct drm_crtc *crtc;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	encoder = drm_encoder_find(dev, file_priv, enc_resp->encoder_id);
-// 	if (!encoder)
-// 		return -ENOENT;
+	encoder = drm_encoder_find(dev, file_priv, enc_resp->encoder_id);
+	if (!encoder)
+		return -ENOENT;
 
-// 	drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
-// 	crtc = drm_encoder_get_crtc(encoder);
-// 	if (crtc && drm_lease_held(file_priv, crtc->base.id))
-// 		enc_resp->crtc_id = crtc->base.id;
-// 	else
-// 		enc_resp->crtc_id = 0;
-// 	drm_modeset_unlock(&dev->mode_config.connection_mutex);
+#if !defined(__AROS__)
+	drm_modeset_lock(&dev->mode_config.connection_mutex, NULL);
+#endif
+	crtc = drm_encoder_get_crtc(encoder);
+	if (crtc && drm_lease_held(file_priv, crtc->base.id))
+		enc_resp->crtc_id = crtc->base.id;
+	else
+		enc_resp->crtc_id = 0;
+#if !defined(__AROS__)
+	drm_modeset_unlock(&dev->mode_config.connection_mutex);
+#endif
 
-// 	enc_resp->encoder_type = encoder->encoder_type;
-// 	enc_resp->encoder_id = encoder->base.id;
-// 	enc_resp->possible_crtcs = drm_lease_filter_crtcs(file_priv,
-// 							  encoder->possible_crtcs);
-// 	enc_resp->possible_clones = encoder->possible_clones;
+	enc_resp->encoder_type = encoder->encoder_type;
+	enc_resp->encoder_id = encoder->base.id;
+NOT_IMPLEMENTED_STOP
+#if 0
+	enc_resp->possible_crtcs = drm_lease_filter_crtcs(file_priv,
+							  encoder->possible_crtcs);
+#endif
+	enc_resp->possible_clones = encoder->possible_clones;
 
-// 	return 0;
-// }
+	return 0;
+}

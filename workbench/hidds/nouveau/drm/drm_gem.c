@@ -808,120 +808,120 @@ EXPORT_SYMBOL(drm_gem_object_lookup);
 // }
 // EXPORT_SYMBOL(drm_gem_dma_resv_wait);
 
-// /**
-//  * drm_gem_close_ioctl - implementation of the GEM_CLOSE ioctl
-//  * @dev: drm_device
-//  * @data: ioctl data
-//  * @file_priv: drm file-private structure
-//  *
-//  * Releases the handle to an mm object.
-//  */
-// int
-// drm_gem_close_ioctl(struct drm_device *dev, void *data,
-// 		    struct drm_file *file_priv)
-// {
-// 	struct drm_gem_close *args = data;
-// 	int ret;
+/**
+ * drm_gem_close_ioctl - implementation of the GEM_CLOSE ioctl
+ * @dev: drm_device
+ * @data: ioctl data
+ * @file_priv: drm file-private structure
+ *
+ * Releases the handle to an mm object.
+ */
+int
+drm_gem_close_ioctl(struct drm_device *dev, void *data,
+		    struct drm_file *file_priv)
+{
+	struct drm_gem_close *args = data;
+	int ret;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_GEM))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_GEM))
+		return -EOPNOTSUPP;
 
-// 	ret = drm_gem_handle_delete(file_priv, args->handle);
+	ret = drm_gem_handle_delete(file_priv, args->handle);
 
-// 	return ret;
-// }
+	return ret;
+}
 
-// /**
-//  * drm_gem_flink_ioctl - implementation of the GEM_FLINK ioctl
-//  * @dev: drm_device
-//  * @data: ioctl data
-//  * @file_priv: drm file-private structure
-//  *
-//  * Create a global name for an object, returning the name.
-//  *
-//  * Note that the name does not hold a reference; when the object
-//  * is freed, the name goes away.
-//  */
-// int
-// drm_gem_flink_ioctl(struct drm_device *dev, void *data,
-// 		    struct drm_file *file_priv)
-// {
-// 	struct drm_gem_flink *args = data;
-// 	struct drm_gem_object *obj;
-// 	int ret;
+/**
+ * drm_gem_flink_ioctl - implementation of the GEM_FLINK ioctl
+ * @dev: drm_device
+ * @data: ioctl data
+ * @file_priv: drm file-private structure
+ *
+ * Create a global name for an object, returning the name.
+ *
+ * Note that the name does not hold a reference; when the object
+ * is freed, the name goes away.
+ */
+int
+drm_gem_flink_ioctl(struct drm_device *dev, void *data,
+		    struct drm_file *file_priv)
+{
+	struct drm_gem_flink *args = data;
+	struct drm_gem_object *obj;
+	int ret;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_GEM))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_GEM))
+		return -EOPNOTSUPP;
 
-// 	obj = drm_gem_object_lookup(file_priv, args->handle);
-// 	if (obj == NULL)
-// 		return -ENOENT;
+	obj = drm_gem_object_lookup(file_priv, args->handle);
+	if (obj == NULL)
+		return -ENOENT;
 
-// 	mutex_lock(&dev->object_name_lock);
-// 	/* prevent races with concurrent gem_close. */
-// 	if (obj->handle_count == 0) {
-// 		ret = -ENOENT;
-// 		goto err;
-// 	}
+	mutex_lock(&dev->object_name_lock);
+	/* prevent races with concurrent gem_close. */
+	if (obj->handle_count == 0) {
+		ret = -ENOENT;
+		goto err;
+	}
 
-// 	if (!obj->name) {
-// 		ret = idr_alloc(&dev->object_name_idr, obj, 1, 0, GFP_KERNEL);
-// 		if (ret < 0)
-// 			goto err;
+	if (!obj->name) {
+		ret = idr_alloc(&dev->object_name_idr, obj, 1, 0, GFP_KERNEL);
+		if (ret < 0)
+			goto err;
 
-// 		obj->name = ret;
-// 	}
+		obj->name = ret;
+	}
 
-// 	args->name = (uint64_t) obj->name;
-// 	ret = 0;
+	args->name = (uint64_t) obj->name;
+	ret = 0;
 
-// err:
-// 	mutex_unlock(&dev->object_name_lock);
-// 	drm_gem_object_put_unlocked(obj);
-// 	return ret;
-// }
+err:
+	mutex_unlock(&dev->object_name_lock);
+	drm_gem_object_put_unlocked(obj);
+	return ret;
+}
 
-// /**
-//  * drm_gem_open - implementation of the GEM_OPEN ioctl
-//  * @dev: drm_device
-//  * @data: ioctl data
-//  * @file_priv: drm file-private structure
-//  *
-//  * Open an object using the global name, returning a handle and the size.
-//  */
-// int
-// drm_gem_open_ioctl(struct drm_device *dev, void *data,
-// 		   struct drm_file *file_priv)
-// {
-// 	struct drm_gem_open *args = data;
-// 	struct drm_gem_object *obj;
-// 	int ret;
-// 	u32 handle;
+/**
+ * drm_gem_open - implementation of the GEM_OPEN ioctl
+ * @dev: drm_device
+ * @data: ioctl data
+ * @file_priv: drm file-private structure
+ *
+ * Open an object using the global name, returning a handle and the size.
+ */
+int
+drm_gem_open_ioctl(struct drm_device *dev, void *data,
+		   struct drm_file *file_priv)
+{
+	struct drm_gem_open *args = data;
+	struct drm_gem_object *obj;
+	int ret;
+	u32 handle;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_GEM))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_GEM))
+		return -EOPNOTSUPP;
 
-// 	mutex_lock(&dev->object_name_lock);
-// 	obj = idr_find(&dev->object_name_idr, (int) args->name);
-// 	if (obj) {
-// 		drm_gem_object_get(obj);
-// 	} else {
-// 		mutex_unlock(&dev->object_name_lock);
-// 		return -ENOENT;
-// 	}
+	mutex_lock(&dev->object_name_lock);
+	obj = idr_find(&dev->object_name_idr, (int) args->name);
+	if (obj) {
+		drm_gem_object_get(obj);
+	} else {
+		mutex_unlock(&dev->object_name_lock);
+		return -ENOENT;
+	}
 
-// 	/* drm_gem_handle_create_tail unlocks dev->object_name_lock. */
-// 	ret = drm_gem_handle_create_tail(file_priv, obj, &handle);
-// 	if (ret)
-// 		goto err;
+	/* drm_gem_handle_create_tail unlocks dev->object_name_lock. */
+	ret = drm_gem_handle_create_tail(file_priv, obj, &handle);
+	if (ret)
+		goto err;
 
-// 	args->handle = handle;
-// 	args->size = obj->size;
+	args->handle = handle;
+	args->size = obj->size;
 
-// err:
-// 	drm_gem_object_put_unlocked(obj);
-// 	return ret;
-// }
+err:
+	drm_gem_object_put_unlocked(obj);
+	return ret;
+}
 
 /**
  * gem_gem_open - initalizes GEM file-private structures at devnode open time

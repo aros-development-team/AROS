@@ -28,7 +28,7 @@
 #include <linux/math.h>
 #endif
 
-// #include <drm/drm_atomic.h>
+#include <drm/drm_atomic.h>
 // #include <drm/drm_atomic_uapi.h>
 // #include <drm/drm_auth.h>
 // #include <drm/drm_debugfs.h>
@@ -399,10 +399,10 @@ int drm_mode_addfb2(struct drm_device *dev,
 // 	return drm_mode_addfb2(dev, data, file_priv);
 // }
 
-// struct drm_mode_rmfb_work {
-// 	struct work_struct work;
-// 	struct list_head fbs;
-// };
+struct drm_mode_rmfb_work {
+	struct work_struct work;
+	struct list_head fbs;
+};
 
 // static void drm_mode_rmfb_work_fn(struct work_struct *w)
 // {
@@ -417,82 +417,85 @@ int drm_mode_addfb2(struct drm_device *dev,
 // 	}
 // }
 
-// /**
-//  * drm_mode_rmfb - remove an FB from the configuration
-//  * @dev: drm device
-//  * @fb_id: id of framebuffer to remove
-//  * @file_priv: drm file
-//  *
-//  * Remove the specified FB.
-//  *
-//  * Called by the user via ioctl, or by an in-kernel client.
-//  *
-//  * Returns:
-//  * Zero on success, negative errno on failure.
-//  */
-// int drm_mode_rmfb(struct drm_device *dev, u32 fb_id,
-// 		  struct drm_file *file_priv)
-// {
-// 	struct drm_framebuffer *fb = NULL;
-// 	struct drm_framebuffer *fbl = NULL;
-// 	int found = 0;
+/**
+ * drm_mode_rmfb - remove an FB from the configuration
+ * @dev: drm device
+ * @fb_id: id of framebuffer to remove
+ * @file_priv: drm file
+ *
+ * Remove the specified FB.
+ *
+ * Called by the user via ioctl, or by an in-kernel client.
+ *
+ * Returns:
+ * Zero on success, negative errno on failure.
+ */
+int drm_mode_rmfb(struct drm_device *dev, u32 fb_id,
+		  struct drm_file *file_priv)
+{
+	struct drm_framebuffer *fb = NULL;
+	struct drm_framebuffer *fbl = NULL;
+	int found = 0;
 
-// 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
-// 		return -EOPNOTSUPP;
+	if (!drm_core_check_feature(dev, DRIVER_MODESET))
+		return -EOPNOTSUPP;
 
-// 	fb = drm_framebuffer_lookup(dev, file_priv, fb_id);
-// 	if (!fb)
-// 		return -ENOENT;
+	fb = drm_framebuffer_lookup(dev, file_priv, fb_id);
+	if (!fb)
+		return -ENOENT;
 
-// 	mutex_lock(&file_priv->fbs_lock);
-// 	list_for_each_entry(fbl, &file_priv->fbs, filp_head)
-// 		if (fb == fbl)
-// 			found = 1;
-// 	if (!found) {
-// 		mutex_unlock(&file_priv->fbs_lock);
-// 		goto fail_unref;
-// 	}
+	mutex_lock(&file_priv->fbs_lock);
+	list_for_each_entry(fbl, &file_priv->fbs, filp_head)
+		if (fb == fbl)
+			found = 1;
+	if (!found) {
+		mutex_unlock(&file_priv->fbs_lock);
+		goto fail_unref;
+	}
 
-// 	list_del_init(&fb->filp_head);
-// 	mutex_unlock(&file_priv->fbs_lock);
+	list_del_init(&fb->filp_head);
+	mutex_unlock(&file_priv->fbs_lock);
 
-// 	/* drop the reference we picked up in framebuffer lookup */
-// 	drm_framebuffer_put(fb);
+	/* drop the reference we picked up in framebuffer lookup */
+	drm_framebuffer_put(fb);
 
-// 	/*
-// 	 * we now own the reference that was stored in the fbs list
-// 	 *
-// 	 * drm_framebuffer_remove may fail with -EINTR on pending signals,
-// 	 * so run this in a separate stack as there's no way to correctly
-// 	 * handle this after the fb is already removed from the lookup table.
-// 	 */
-// 	if (drm_framebuffer_read_refcount(fb) > 1) {
-// 		struct drm_mode_rmfb_work arg;
+	/*
+	 * we now own the reference that was stored in the fbs list
+	 *
+	 * drm_framebuffer_remove may fail with -EINTR on pending signals,
+	 * so run this in a separate stack as there's no way to correctly
+	 * handle this after the fb is already removed from the lookup table.
+	 */
+	if (drm_framebuffer_read_refcount(fb) > 1) {
+		struct drm_mode_rmfb_work arg;
 
-// 		INIT_WORK_ONSTACK(&arg.work, drm_mode_rmfb_work_fn);
-// 		INIT_LIST_HEAD(&arg.fbs);
-// 		list_add_tail(&fb->filp_head, &arg.fbs);
+NOT_IMPLEMENTED_CONTINUE
+#if 0
+		INIT_WORK_ONSTACK(&arg.work, drm_mode_rmfb_work_fn);
+		INIT_LIST_HEAD(&arg.fbs);
+		list_add_tail(&fb->filp_head, &arg.fbs);
 
-// 		schedule_work(&arg.work);
-// 		flush_work(&arg.work);
-// 		destroy_work_on_stack(&arg.work);
-// 	} else
-// 		drm_framebuffer_put(fb);
+		schedule_work(&arg.work);
+		flush_work(&arg.work);
+		destroy_work_on_stack(&arg.work);
+#endif
+	} else
+		drm_framebuffer_put(fb);
 
-// 	return 0;
+	return 0;
 
-// fail_unref:
-// 	drm_framebuffer_put(fb);
-// 	return -ENOENT;
-// }
+fail_unref:
+	drm_framebuffer_put(fb);
+	return -ENOENT;
+}
 
-// int drm_mode_rmfb_ioctl(struct drm_device *dev,
-// 			void *data, struct drm_file *file_priv)
-// {
-// 	uint32_t *fb_id = data;
+int drm_mode_rmfb_ioctl(struct drm_device *dev,
+			void *data, struct drm_file *file_priv)
+{
+	uint32_t *fb_id = data;
 
-// 	return drm_mode_rmfb(dev, *fb_id, file_priv);
-// }
+	return drm_mode_rmfb(dev, *fb_id, file_priv);
+}
 
 // /**
 //  * drm_mode_getfb - get FB info
