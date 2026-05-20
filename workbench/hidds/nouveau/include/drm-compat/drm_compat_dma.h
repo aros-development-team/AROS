@@ -15,8 +15,8 @@
 #define DMA_ATTR_WEAK_ORDERING (1UL << 1)
 #define DMA_ATTR_WRITE_COMBINE (1UL << 2)
 #define dma_map_page(a, b, c, d, e)     (dma_addr_t)(b->address + c)
+#define dma_unmap_page(a, b, c, d)
 static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr) { return 0; }
-void dma_unmap_page(struct device *dev, dma_addr_t dma_handle, size_t size, ULONG dir);
 void dma_free_attrs(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle, unsigned long attrs);
 void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags, unsigned long attrs);
 void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags);

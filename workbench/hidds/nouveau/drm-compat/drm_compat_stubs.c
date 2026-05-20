@@ -21,7 +21,7 @@ unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 u64 div_u64(u64 a, u32 b) { NOT_IMPLEMENTED_STOP }
 s64 div64_s64(s64 a, s64 b) { NOT_IMPLEMENTED_STOP }
 
-void dma_unmap_page(struct device *dev, dma_addr_t dma_handle, size_t size, ULONG dir) { NOT_IMPLEMENTED_STOP }
+
 void dma_free_attrs(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle, unsigned long attrs) { NOT_IMPLEMENTED_STOP }
 void *dma_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags, unsigned long attrs) { NOT_IMPLEMENTED_STOP }
 void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle, ULONG flags) { NOT_IMPLEMENTED_STOP }
