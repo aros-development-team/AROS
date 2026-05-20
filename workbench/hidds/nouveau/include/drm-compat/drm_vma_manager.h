@@ -19,5 +19,6 @@ struct drm_vma_offset_manager
 #define drm_vma_node_allow(x, y) (0) /* Always allow */
 /* mmap() implementations will not use the offset_addr, they will directly return "kernel" mapping */
 #define drm_vma_node_offset_addr(x) (-1L)
+#define drm_vma_offset_remove(x, y)
 
 #endif
