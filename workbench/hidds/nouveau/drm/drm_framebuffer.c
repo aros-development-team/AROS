@@ -811,33 +811,33 @@ EXPORT_SYMBOL(drm_framebuffer_lookup);
 // }
 // EXPORT_SYMBOL(drm_framebuffer_unregister_private);
 
-// /**
-//  * drm_framebuffer_cleanup - remove a framebuffer object
-//  * @fb: framebuffer to remove
-//  *
-//  * Cleanup framebuffer. This function is intended to be used from the drivers
-//  * &drm_framebuffer_funcs.destroy callback. It can also be used to clean up
-//  * driver private framebuffers embedded into a larger structure.
-//  *
-//  * Note that this function does not remove the fb from active usage - if it is
-//  * still used anywhere, hilarity can ensue since userspace could call getfb on
-//  * the id and get back -EINVAL. Obviously no concern at driver unload time.
-//  *
-//  * Also, the framebuffer will not be removed from the lookup idr - for
-//  * user-created framebuffers this will happen in in the rmfb ioctl. For
-//  * driver-private objects (e.g. for fbdev) drivers need to explicitly call
-//  * drm_framebuffer_unregister_private.
-//  */
-// void drm_framebuffer_cleanup(struct drm_framebuffer *fb)
-// {
-// 	struct drm_device *dev = fb->dev;
+/**
+ * drm_framebuffer_cleanup - remove a framebuffer object
+ * @fb: framebuffer to remove
+ *
+ * Cleanup framebuffer. This function is intended to be used from the drivers
+ * &drm_framebuffer_funcs.destroy callback. It can also be used to clean up
+ * driver private framebuffers embedded into a larger structure.
+ *
+ * Note that this function does not remove the fb from active usage - if it is
+ * still used anywhere, hilarity can ensue since userspace could call getfb on
+ * the id and get back -EINVAL. Obviously no concern at driver unload time.
+ *
+ * Also, the framebuffer will not be removed from the lookup idr - for
+ * user-created framebuffers this will happen in in the rmfb ioctl. For
+ * driver-private objects (e.g. for fbdev) drivers need to explicitly call
+ * drm_framebuffer_unregister_private.
+ */
+void drm_framebuffer_cleanup(struct drm_framebuffer *fb)
+{
+	struct drm_device *dev = fb->dev;
 
-// 	mutex_lock(&dev->mode_config.fb_lock);
-// 	list_del(&fb->head);
-// 	dev->mode_config.num_fb--;
-// 	mutex_unlock(&dev->mode_config.fb_lock);
-// }
-// EXPORT_SYMBOL(drm_framebuffer_cleanup);
+	mutex_lock(&dev->mode_config.fb_lock);
+	list_del(&fb->head);
+	dev->mode_config.num_fb--;
+	mutex_unlock(&dev->mode_config.fb_lock);
+}
+EXPORT_SYMBOL(drm_framebuffer_cleanup);
 
 // static int atomic_remove_fb(struct drm_framebuffer *fb)
 // {

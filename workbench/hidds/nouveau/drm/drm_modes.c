@@ -87,21 +87,21 @@ struct drm_display_mode *drm_mode_create(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_mode_create);
 
-// /**
-//  * drm_mode_destroy - remove a mode
-//  * @dev: DRM device
-//  * @mode: mode to remove
-//  *
-//  * Release @mode's unique ID, then free it @mode structure itself using kfree.
-//  */
-// void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode)
-// {
-// 	if (!mode)
-// 		return;
+/**
+ * drm_mode_destroy - remove a mode
+ * @dev: DRM device
+ * @mode: mode to remove
+ *
+ * Release @mode's unique ID, then free it @mode structure itself using kfree.
+ */
+void drm_mode_destroy(struct drm_device *dev, struct drm_display_mode *mode)
+{
+	if (!mode)
+		return;
 
-// 	kfree(mode);
-// }
-// EXPORT_SYMBOL(drm_mode_destroy);
+	kfree(mode);
+}
+EXPORT_SYMBOL(drm_mode_destroy);
 
 /**
  * drm_mode_probed_add - add a mode to a connector's probed_mode list

@@ -42,65 +42,65 @@
 
 #include "drm_crtc_internal.h"
 
-// /**
-//  * DOC: overview
-//  *
-//  * This file contains the marshalling and demarshalling glue for the atomic UAPI
-//  * in all its forms: The monster ATOMIC IOCTL itself, code for GET_PROPERTY and
-//  * SET_PROPERTY IOCTLs. Plus interface functions for compatibility helpers and
-//  * drivers which have special needs to construct their own atomic updates, e.g.
-//  * for load detect or similiar.
-//  */
+/**
+ * DOC: overview
+ *
+ * This file contains the marshalling and demarshalling glue for the atomic UAPI
+ * in all its forms: The monster ATOMIC IOCTL itself, code for GET_PROPERTY and
+ * SET_PROPERTY IOCTLs. Plus interface functions for compatibility helpers and
+ * drivers which have special needs to construct their own atomic updates, e.g.
+ * for load detect or similiar.
+ */
 
-// /**
-//  * drm_atomic_set_mode_for_crtc - set mode for CRTC
-//  * @state: the CRTC whose incoming state to update
-//  * @mode: kernel-internal mode to use for the CRTC, or NULL to disable
-//  *
-//  * Set a mode (originating from the kernel) on the desired CRTC state and update
-//  * the enable property.
-//  *
-//  * RETURNS:
-//  * Zero on success, error code on failure. Cannot return -EDEADLK.
-//  */
-// int drm_atomic_set_mode_for_crtc(struct drm_crtc_state *state,
-// 				 const struct drm_display_mode *mode)
-// {
-// 	struct drm_crtc *crtc = state->crtc;
-// 	struct drm_mode_modeinfo umode;
+/**
+ * drm_atomic_set_mode_for_crtc - set mode for CRTC
+ * @state: the CRTC whose incoming state to update
+ * @mode: kernel-internal mode to use for the CRTC, or NULL to disable
+ *
+ * Set a mode (originating from the kernel) on the desired CRTC state and update
+ * the enable property.
+ *
+ * RETURNS:
+ * Zero on success, error code on failure. Cannot return -EDEADLK.
+ */
+int drm_atomic_set_mode_for_crtc(struct drm_crtc_state *state,
+				 const struct drm_display_mode *mode)
+{
+	struct drm_crtc *crtc = state->crtc;
+	struct drm_mode_modeinfo umode;
 
-// 	/* Early return for no change. */
-// 	if (mode && memcmp(&state->mode, mode, sizeof(*mode)) == 0)
-// 		return 0;
+	/* Early return for no change. */
+	if (mode && memcmp(&state->mode, mode, sizeof(*mode)) == 0)
+		return 0;
 
-// 	drm_property_blob_put(state->mode_blob);
-// 	state->mode_blob = NULL;
+	drm_property_blob_put(state->mode_blob);
+	state->mode_blob = NULL;
 
-// 	if (mode) {
-// 		struct drm_property_blob *blob;
+	if (mode) {
+		struct drm_property_blob *blob;
 
-// 		drm_mode_convert_to_umode(&umode, mode);
-// 		blob = drm_property_create_blob(crtc->dev,
-// 						sizeof(umode), &umode);
-// 		if (IS_ERR(blob))
-// 			return PTR_ERR(blob);
+		drm_mode_convert_to_umode(&umode, mode);
+		blob = drm_property_create_blob(crtc->dev,
+						sizeof(umode), &umode);
+		if (IS_ERR(blob))
+			return PTR_ERR(blob);
 
-// 		drm_mode_copy(&state->mode, mode);
+		drm_mode_copy(&state->mode, mode);
 
-// 		state->mode_blob = blob;
-// 		state->enable = true;
-// 		DRM_DEBUG_ATOMIC("Set [MODE:%s] for [CRTC:%d:%s] state %p\n",
-// 				 mode->name, crtc->base.id, crtc->name, state);
-// 	} else {
-// 		memset(&state->mode, 0, sizeof(state->mode));
-// 		state->enable = false;
-// 		DRM_DEBUG_ATOMIC("Set [NOMODE] for [CRTC:%d:%s] state %p\n",
-// 				 crtc->base.id, crtc->name, state);
-// 	}
+		state->mode_blob = blob;
+		state->enable = true;
+		DRM_DEBUG_ATOMIC("Set [MODE:%s] for [CRTC:%d:%s] state %p\n",
+				 mode->name, crtc->base.id, crtc->name, state);
+	} else {
+		memset(&state->mode, 0, sizeof(state->mode));
+		state->enable = false;
+		DRM_DEBUG_ATOMIC("Set [NOMODE] for [CRTC:%d:%s] state %p\n",
+				 crtc->base.id, crtc->name, state);
+	}
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_set_mode_for_crtc);
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_set_mode_for_crtc);
 
 /**
  * drm_atomic_set_mode_prop_for_crtc - set mode for CRTC

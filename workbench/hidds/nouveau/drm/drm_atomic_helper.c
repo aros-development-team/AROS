@@ -3031,49 +3031,49 @@ EXPORT_SYMBOL(drm_atomic_helper_update_plane);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_disable_plane);
 
-// /**
-//  * drm_atomic_helper_set_config - set a new config from userspace
-//  * @set: mode set configuration
-//  * @ctx: lock acquisition context
-//  *
-//  * Provides a default crtc set_config handler using the atomic driver interface.
-//  *
-//  * NOTE: For backwards compatibility with old userspace this automatically
-//  * resets the "link-status" property to GOOD, to force any link
-//  * re-training. The SETCRTC ioctl does not define whether an update does
-//  * need a full modeset or just a plane update, hence we're allowed to do
-//  * that. See also drm_connector_set_link_status_property().
-//  *
-//  * Returns:
-//  * Returns 0 on success, negative errno numbers on failure.
-//  */
-// int drm_atomic_helper_set_config(struct drm_mode_set *set,
-// 				 struct drm_modeset_acquire_ctx *ctx)
-// {
-// 	struct drm_atomic_state *state;
-// 	struct drm_crtc *crtc = set->crtc;
-// 	int ret = 0;
+/**
+ * drm_atomic_helper_set_config - set a new config from userspace
+ * @set: mode set configuration
+ * @ctx: lock acquisition context
+ *
+ * Provides a default crtc set_config handler using the atomic driver interface.
+ *
+ * NOTE: For backwards compatibility with old userspace this automatically
+ * resets the "link-status" property to GOOD, to force any link
+ * re-training. The SETCRTC ioctl does not define whether an update does
+ * need a full modeset or just a plane update, hence we're allowed to do
+ * that. See also drm_connector_set_link_status_property().
+ *
+ * Returns:
+ * Returns 0 on success, negative errno numbers on failure.
+ */
+int drm_atomic_helper_set_config(struct drm_mode_set *set,
+				 struct drm_modeset_acquire_ctx *ctx)
+{
+	struct drm_atomic_state *state;
+	struct drm_crtc *crtc = set->crtc;
+	int ret = 0;
 
-// 	state = drm_atomic_state_alloc(crtc->dev);
-// 	if (!state)
-// 		return -ENOMEM;
+	state = drm_atomic_state_alloc(crtc->dev);
+	if (!state)
+		return -ENOMEM;
 
-// 	state->acquire_ctx = ctx;
-// 	ret = __drm_atomic_helper_set_config(set, state);
-// 	if (ret != 0)
-// 		goto fail;
+	state->acquire_ctx = ctx;
+	ret = __drm_atomic_helper_set_config(set, state);
+	if (ret != 0)
+		goto fail;
 
-// 	ret = handle_conflicting_encoders(state, true);
-// 	if (ret)
-// 		goto fail;
+	ret = handle_conflicting_encoders(state, true);
+	if (ret)
+		goto fail;
 
-// 	ret = drm_atomic_commit(state);
+	ret = drm_atomic_commit(state);
 
-// fail:
-// 	drm_atomic_state_put(state);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_set_config);
+fail:
+	drm_atomic_state_put(state);
+	return ret;
+}
+EXPORT_SYMBOL(drm_atomic_helper_set_config);
 
 // /**
 //  * drm_atomic_helper_disable_all - disable all currently active outputs

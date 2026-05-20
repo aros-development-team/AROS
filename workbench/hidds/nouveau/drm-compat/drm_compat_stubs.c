@@ -91,7 +91,7 @@ void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
 
 
 
-void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
+
 
 
 
@@ -140,7 +140,7 @@ void drm_dp_update_payload_part1() { NOT_IMPLEMENTED_STOP }
 void drm_dp_update_payload_part2() { NOT_IMPLEMENTED_STOP }
 void drm_encoder_cleanup() { NOT_IMPLEMENTED_STOP }
 
-void drm_framebuffer_cleanup() { NOT_IMPLEMENTED_STOP }
+
 
 void drm_helper_connector_dpms() { NOT_IMPLEMENTED_STOP }
 void drm_helper_hpd_irq_event() { NOT_IMPLEMENTED_STOP }
@@ -157,7 +157,7 @@ void drm_mode_config_cleanup() { NOT_IMPLEMENTED_STOP }
 
 
 void drm_mode_create_tv_properties() { NOT_IMPLEMENTED_STOP }
-void drm_mode_destroy() { NOT_IMPLEMENTED_STOP }
+
 
 
 
