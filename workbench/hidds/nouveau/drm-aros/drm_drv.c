@@ -76,6 +76,11 @@ err_unload:
     return ret;
 }
 
+void drm_dev_get(struct drm_device *dev)
+{
+    /* No Op */
+}
+
 int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
 struct drm_device *current_drm_device;
 

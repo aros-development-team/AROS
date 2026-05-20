@@ -101,65 +101,67 @@ EXPORT_SYMBOL(__drm_atomic_helper_crtc_reset);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_crtc_reset);
 
-// /**
-//  * __drm_atomic_helper_crtc_duplicate_state - copy atomic CRTC state
-//  * @crtc: CRTC object
-//  * @state: atomic CRTC state
-//  *
-//  * Copies atomic state from a CRTC's current state and resets inferred values.
-//  * This is useful for drivers that subclass the CRTC state.
-//  */
-// void __drm_atomic_helper_crtc_duplicate_state(struct drm_crtc *crtc,
-// 					      struct drm_crtc_state *state)
-// {
-// 	memcpy(state, crtc->state, sizeof(*state));
+/**
+ * __drm_atomic_helper_crtc_duplicate_state - copy atomic CRTC state
+ * @crtc: CRTC object
+ * @state: atomic CRTC state
+ *
+ * Copies atomic state from a CRTC's current state and resets inferred values.
+ * This is useful for drivers that subclass the CRTC state.
+ */
+void __drm_atomic_helper_crtc_duplicate_state(struct drm_crtc *crtc,
+					      struct drm_crtc_state *state)
+{
+	memcpy(state, crtc->state, sizeof(*state));
 
-// 	if (state->mode_blob)
-// 		drm_property_blob_get(state->mode_blob);
-// 	if (state->degamma_lut)
-// 		drm_property_blob_get(state->degamma_lut);
-// 	if (state->ctm)
-// 		drm_property_blob_get(state->ctm);
-// 	if (state->gamma_lut)
-// 		drm_property_blob_get(state->gamma_lut);
-// 	state->mode_changed = false;
-// 	state->active_changed = false;
-// 	state->planes_changed = false;
-// 	state->connectors_changed = false;
-// 	state->color_mgmt_changed = false;
-// 	state->zpos_changed = false;
-// 	state->commit = NULL;
-// 	state->event = NULL;
-// 	state->async_flip = false;
+	if (state->mode_blob)
+		drm_property_blob_get(state->mode_blob);
+	if (state->degamma_lut)
+		drm_property_blob_get(state->degamma_lut);
+	if (state->ctm)
+		drm_property_blob_get(state->ctm);
+	if (state->gamma_lut)
+		drm_property_blob_get(state->gamma_lut);
+	state->mode_changed = false;
+	state->active_changed = false;
+	state->planes_changed = false;
+	state->connectors_changed = false;
+	state->color_mgmt_changed = false;
+	state->zpos_changed = false;
+	state->commit = NULL;
+	state->event = NULL;
+#if !defined(__AROS__)
+	state->async_flip = false;
+#endif
 
-// 	/* Self refresh should be canceled when a new update is available */
-// 	state->active = drm_atomic_crtc_effectively_active(state);
-// 	state->self_refresh_active = false;
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_crtc_duplicate_state);
+	/* Self refresh should be canceled when a new update is available */
+	state->active = drm_atomic_crtc_effectively_active(state);
+	state->self_refresh_active = false;
+}
+EXPORT_SYMBOL(__drm_atomic_helper_crtc_duplicate_state);
 
-// /**
-//  * drm_atomic_helper_crtc_duplicate_state - default state duplicate hook
-//  * @crtc: drm CRTC
-//  *
-//  * Default CRTC state duplicate hook for drivers which don't have their own
-//  * subclassed CRTC state structure.
-//  */
-// struct drm_crtc_state *
-// drm_atomic_helper_crtc_duplicate_state(struct drm_crtc *crtc)
-// {
-// 	struct drm_crtc_state *state;
+/**
+ * drm_atomic_helper_crtc_duplicate_state - default state duplicate hook
+ * @crtc: drm CRTC
+ *
+ * Default CRTC state duplicate hook for drivers which don't have their own
+ * subclassed CRTC state structure.
+ */
+struct drm_crtc_state *
+drm_atomic_helper_crtc_duplicate_state(struct drm_crtc *crtc)
+{
+	struct drm_crtc_state *state;
 
-// 	if (WARN_ON(!crtc->state))
-// 		return NULL;
+	if (WARN_ON(!crtc->state))
+		return NULL;
 
-// 	state = kmalloc(sizeof(*state), GFP_KERNEL);
-// 	if (state)
-// 		__drm_atomic_helper_crtc_duplicate_state(crtc, state);
+	state = kmalloc(sizeof(*state), GFP_KERNEL);
+	if (state)
+		__drm_atomic_helper_crtc_duplicate_state(crtc, state);
 
-// 	return state;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_crtc_duplicate_state);
+	return state;
+}
+EXPORT_SYMBOL(drm_atomic_helper_crtc_duplicate_state);
 
 // /**
 //  * __drm_atomic_helper_crtc_destroy_state - release CRTC state
@@ -253,50 +255,50 @@ EXPORT_SYMBOL(__drm_atomic_helper_plane_reset);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_plane_reset);
 
-// /**
-//  * __drm_atomic_helper_plane_duplicate_state - copy atomic plane state
-//  * @plane: plane object
-//  * @state: atomic plane state
-//  *
-//  * Copies atomic state from a plane's current state. This is useful for
-//  * drivers that subclass the plane state.
-//  */
-// void __drm_atomic_helper_plane_duplicate_state(struct drm_plane *plane,
-// 					       struct drm_plane_state *state)
-// {
-// 	memcpy(state, plane->state, sizeof(*state));
+/**
+ * __drm_atomic_helper_plane_duplicate_state - copy atomic plane state
+ * @plane: plane object
+ * @state: atomic plane state
+ *
+ * Copies atomic state from a plane's current state. This is useful for
+ * drivers that subclass the plane state.
+ */
+void __drm_atomic_helper_plane_duplicate_state(struct drm_plane *plane,
+					       struct drm_plane_state *state)
+{
+	memcpy(state, plane->state, sizeof(*state));
 
-// 	if (state->fb)
-// 		drm_framebuffer_get(state->fb);
+	if (state->fb)
+		drm_framebuffer_get(state->fb);
 
-// 	state->fence = NULL;
-// 	state->commit = NULL;
-// 	state->fb_damage_clips = NULL;
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_plane_duplicate_state);
+	state->fence = NULL;
+	state->commit = NULL;
+	state->fb_damage_clips = NULL;
+}
+EXPORT_SYMBOL(__drm_atomic_helper_plane_duplicate_state);
 
-// /**
-//  * drm_atomic_helper_plane_duplicate_state - default state duplicate hook
-//  * @plane: drm plane
-//  *
-//  * Default plane state duplicate hook for drivers which don't have their own
-//  * subclassed plane state structure.
-//  */
-// struct drm_plane_state *
-// drm_atomic_helper_plane_duplicate_state(struct drm_plane *plane)
-// {
-// 	struct drm_plane_state *state;
+/**
+ * drm_atomic_helper_plane_duplicate_state - default state duplicate hook
+ * @plane: drm plane
+ *
+ * Default plane state duplicate hook for drivers which don't have their own
+ * subclassed plane state structure.
+ */
+struct drm_plane_state *
+drm_atomic_helper_plane_duplicate_state(struct drm_plane *plane)
+{
+	struct drm_plane_state *state;
 
-// 	if (WARN_ON(!plane->state))
-// 		return NULL;
+	if (WARN_ON(!plane->state))
+		return NULL;
 
-// 	state = kmalloc(sizeof(*state), GFP_KERNEL);
-// 	if (state)
-// 		__drm_atomic_helper_plane_duplicate_state(plane, state);
+	state = kmalloc(sizeof(*state), GFP_KERNEL);
+	if (state)
+		__drm_atomic_helper_plane_duplicate_state(plane, state);
 
-// 	return state;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_plane_duplicate_state);
+	return state;
+}
+EXPORT_SYMBOL(drm_atomic_helper_plane_duplicate_state);
 
 // /**
 //  * __drm_atomic_helper_plane_destroy_state - release plane state
@@ -399,53 +401,55 @@ EXPORT_SYMBOL(__drm_atomic_helper_connector_reset);
 // }
 // EXPORT_SYMBOL(drm_atomic_helper_connector_tv_reset);
 
-// /**
-//  * __drm_atomic_helper_connector_duplicate_state - copy atomic connector state
-//  * @connector: connector object
-//  * @state: atomic connector state
-//  *
-//  * Copies atomic state from a connector's current state. This is useful for
-//  * drivers that subclass the connector state.
-//  */
-// void
-// __drm_atomic_helper_connector_duplicate_state(struct drm_connector *connector,
-// 					    struct drm_connector_state *state)
-// {
-// 	memcpy(state, connector->state, sizeof(*state));
-// 	if (state->crtc)
-// 		drm_connector_get(connector);
-// 	state->commit = NULL;
+/**
+ * __drm_atomic_helper_connector_duplicate_state - copy atomic connector state
+ * @connector: connector object
+ * @state: atomic connector state
+ *
+ * Copies atomic state from a connector's current state. This is useful for
+ * drivers that subclass the connector state.
+ */
+void
+__drm_atomic_helper_connector_duplicate_state(struct drm_connector *connector,
+					    struct drm_connector_state *state)
+{
+	memcpy(state, connector->state, sizeof(*state));
+	if (state->crtc)
+		drm_connector_get(connector);
+	state->commit = NULL;
 
-// 	if (state->hdr_output_metadata)
-// 		drm_property_blob_get(state->hdr_output_metadata);
+	if (state->hdr_output_metadata)
+		drm_property_blob_get(state->hdr_output_metadata);
 
-// 	/* Don't copy over a writeback job, they are used only once */
-// 	state->writeback_job = NULL;
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_connector_duplicate_state);
+#if !defined(__AROS__)
+	/* Don't copy over a writeback job, they are used only once */
+	state->writeback_job = NULL;
+#endif
+}
+EXPORT_SYMBOL(__drm_atomic_helper_connector_duplicate_state);
 
-// /**
-//  * drm_atomic_helper_connector_duplicate_state - default state duplicate hook
-//  * @connector: drm connector
-//  *
-//  * Default connector state duplicate hook for drivers which don't have their own
-//  * subclassed connector state structure.
-//  */
-// struct drm_connector_state *
-// drm_atomic_helper_connector_duplicate_state(struct drm_connector *connector)
-// {
-// 	struct drm_connector_state *state;
+/**
+ * drm_atomic_helper_connector_duplicate_state - default state duplicate hook
+ * @connector: drm connector
+ *
+ * Default connector state duplicate hook for drivers which don't have their own
+ * subclassed connector state structure.
+ */
+struct drm_connector_state *
+drm_atomic_helper_connector_duplicate_state(struct drm_connector *connector)
+{
+	struct drm_connector_state *state;
 
-// 	if (WARN_ON(!connector->state))
-// 		return NULL;
+	if (WARN_ON(!connector->state))
+		return NULL;
 
-// 	state = kmalloc(sizeof(*state), GFP_KERNEL);
-// 	if (state)
-// 		__drm_atomic_helper_connector_duplicate_state(connector, state);
+	state = kmalloc(sizeof(*state), GFP_KERNEL);
+	if (state)
+		__drm_atomic_helper_connector_duplicate_state(connector, state);
 
-// 	return state;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_connector_duplicate_state);
+	return state;
+}
+EXPORT_SYMBOL(drm_atomic_helper_connector_duplicate_state);
 
 /**
  * __drm_atomic_helper_connector_destroy_state - release connector state

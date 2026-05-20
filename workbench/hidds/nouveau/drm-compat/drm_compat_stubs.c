@@ -73,23 +73,23 @@ u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_
 
 struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 void drm_atomic_add_affected_planes() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_get_crtc_state() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_check() { NOT_IMPLEMENTED_STOP }
+
+
 void drm_atomic_helper_check_plane_state() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_cleanup_planes() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_commit_cleanup_done() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_commit_hw_done() { NOT_IMPLEMENTED_STOP }
 
-void __drm_atomic_helper_connector_duplicate_state() { NOT_IMPLEMENTED_STOP }
+
 
 void __drm_atomic_helper_crtc_destroy_state() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_crtc_duplicate_state() { NOT_IMPLEMENTED_STOP }
+
 
 void drm_atomic_helper_disable_plane() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_legacy_gamma_set() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_helper_plane_destroy_state() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_plane_duplicate_state() { NOT_IMPLEMENTED_STOP }
+
 
 void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_setup_commit() { NOT_IMPLEMENTED_STOP }
@@ -100,7 +100,7 @@ void drm_atomic_helper_wait_for_fences() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_default_clear() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_default_release() { NOT_IMPLEMENTED_STOP }
 void __drm_atomic_state_free() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_state_init() { NOT_IMPLEMENTED_STOP }
+
 
 
 

@@ -29,6 +29,8 @@
 #include <linux/sync_file.h>
 #else
 #include <linux/err.h>
+#include <linux/minmax.h>
+#include <drm-compat/drm_compat_mem.h>
 #endif
 
 #include <drm/drm_atomic.h>
@@ -72,50 +74,50 @@ EXPORT_SYMBOL(__drm_crtc_commit_free);
 // }
 // EXPORT_SYMBOL(drm_atomic_state_default_release);
 
-// /**
-//  * drm_atomic_state_init - init new atomic state
-//  * @dev: DRM device
-//  * @state: atomic state
-//  *
-//  * Default implementation for filling in a new atomic state.
-//  * This should only be used by drivers which are still subclassing
-//  * &drm_atomic_state and haven't switched to &drm_private_state yet.
-//  */
-// int
-// drm_atomic_state_init(struct drm_device *dev, struct drm_atomic_state *state)
-// {
-// 	kref_init(&state->ref);
+/**
+ * drm_atomic_state_init - init new atomic state
+ * @dev: DRM device
+ * @state: atomic state
+ *
+ * Default implementation for filling in a new atomic state.
+ * This should only be used by drivers which are still subclassing
+ * &drm_atomic_state and haven't switched to &drm_private_state yet.
+ */
+int
+drm_atomic_state_init(struct drm_device *dev, struct drm_atomic_state *state)
+{
+	kref_init(&state->ref);
 
-// 	/* TODO legacy paths should maybe do a better job about
-// 	 * setting this appropriately?
-// 	 */
-// 	state->allow_modeset = true;
+	/* TODO legacy paths should maybe do a better job about
+	 * setting this appropriately?
+	 */
+	state->allow_modeset = true;
 
-// 	state->crtcs = kcalloc(dev->mode_config.num_crtc,
-// 			       sizeof(*state->crtcs), GFP_KERNEL);
-// 	if (!state->crtcs)
-// 		goto fail;
-// 	state->planes = kcalloc(dev->mode_config.num_total_plane,
-// 				sizeof(*state->planes), GFP_KERNEL);
-// 	if (!state->planes)
-// 		goto fail;
+	state->crtcs = kcalloc(dev->mode_config.num_crtc,
+			       sizeof(*state->crtcs), GFP_KERNEL);
+	if (!state->crtcs)
+		goto fail;
+	state->planes = kcalloc(dev->mode_config.num_total_plane,
+				sizeof(*state->planes), GFP_KERNEL);
+	if (!state->planes)
+		goto fail;
 
-// 	/*
-// 	 * Because drm_atomic_state can be committed asynchronously we need our
-// 	 * own reference and cannot rely on the on implied by drm_file in the
-// 	 * ioctl call.
-// 	 */
-// 	drm_dev_get(dev);
-// 	state->dev = dev;
+	/*
+	 * Because drm_atomic_state can be committed asynchronously we need our
+	 * own reference and cannot rely on the on implied by drm_file in the
+	 * ioctl call.
+	 */
+	drm_dev_get(dev);
+	state->dev = dev;
 
-// 	DRM_DEBUG_ATOMIC("Allocated atomic state %p\n", state);
+	DRM_DEBUG_ATOMIC("Allocated atomic state %p\n", state);
 
-// 	return 0;
-// fail:
-// 	drm_atomic_state_default_release(state);
-// 	return -ENOMEM;
-// }
-// EXPORT_SYMBOL(drm_atomic_state_init);
+	return 0;
+fail:
+	drm_atomic_state_default_release(state);
+	return -ENOMEM;
+}
+EXPORT_SYMBOL(drm_atomic_state_init);
 
 /**
  * drm_atomic_state_alloc - allocate atomic state
@@ -283,54 +285,56 @@ EXPORT_SYMBOL(drm_atomic_state_alloc);
 // }
 // EXPORT_SYMBOL(__drm_atomic_state_free);
 
-// /**
-//  * drm_atomic_get_crtc_state - get crtc state
-//  * @state: global atomic state object
-//  * @crtc: crtc to get state object for
-//  *
-//  * This function returns the crtc state for the given crtc, allocating it if
-//  * needed. It will also grab the relevant crtc lock to make sure that the state
-//  * is consistent.
-//  *
-//  * Returns:
-//  *
-//  * Either the allocated state or the error code encoded into the pointer. When
-//  * the error is EDEADLK then the w/w mutex code has detected a deadlock and the
-//  * entire atomic sequence must be restarted. All other errors are fatal.
-//  */
-// struct drm_crtc_state *
-// drm_atomic_get_crtc_state(struct drm_atomic_state *state,
-// 			  struct drm_crtc *crtc)
-// {
-// 	int ret, index = drm_crtc_index(crtc);
-// 	struct drm_crtc_state *crtc_state;
+/**
+ * drm_atomic_get_crtc_state - get crtc state
+ * @state: global atomic state object
+ * @crtc: crtc to get state object for
+ *
+ * This function returns the crtc state for the given crtc, allocating it if
+ * needed. It will also grab the relevant crtc lock to make sure that the state
+ * is consistent.
+ *
+ * Returns:
+ *
+ * Either the allocated state or the error code encoded into the pointer. When
+ * the error is EDEADLK then the w/w mutex code has detected a deadlock and the
+ * entire atomic sequence must be restarted. All other errors are fatal.
+ */
+struct drm_crtc_state *
+drm_atomic_get_crtc_state(struct drm_atomic_state *state,
+			  struct drm_crtc *crtc)
+{
+	int ret, index = drm_crtc_index(crtc);
+	struct drm_crtc_state *crtc_state;
 
-// 	WARN_ON(!state->acquire_ctx);
+	WARN_ON(!state->acquire_ctx);
 
-// 	crtc_state = drm_atomic_get_existing_crtc_state(state, crtc);
-// 	if (crtc_state)
-// 		return crtc_state;
+	crtc_state = drm_atomic_get_existing_crtc_state(state, crtc);
+	if (crtc_state)
+		return crtc_state;
 
-// 	ret = drm_modeset_lock(&crtc->mutex, state->acquire_ctx);
-// 	if (ret)
-// 		return ERR_PTR(ret);
+#if !defined(__AROS__)
+	ret = drm_modeset_lock(&crtc->mutex, state->acquire_ctx);
+	if (ret)
+		return ERR_PTR(ret);
+#endif
 
-// 	crtc_state = crtc->funcs->atomic_duplicate_state(crtc);
-// 	if (!crtc_state)
-// 		return ERR_PTR(-ENOMEM);
+	crtc_state = crtc->funcs->atomic_duplicate_state(crtc);
+	if (!crtc_state)
+		return ERR_PTR(-ENOMEM);
 
-// 	state->crtcs[index].state = crtc_state;
-// 	state->crtcs[index].old_state = crtc->state;
-// 	state->crtcs[index].new_state = crtc_state;
-// 	state->crtcs[index].ptr = crtc;
-// 	crtc_state->state = state;
+	state->crtcs[index].state = crtc_state;
+	state->crtcs[index].old_state = crtc->state;
+	state->crtcs[index].new_state = crtc_state;
+	state->crtcs[index].ptr = crtc;
+	crtc_state->state = state;
 
-// 	DRM_DEBUG_ATOMIC("Added [CRTC:%d:%s] %p state to %p\n",
-// 			 crtc->base.id, crtc->name, crtc_state, state);
+	DRM_DEBUG_ATOMIC("Added [CRTC:%d:%s] %p state to %p\n",
+			 crtc->base.id, crtc->name, crtc_state, state);
 
-// 	return crtc_state;
-// }
-// EXPORT_SYMBOL(drm_atomic_get_crtc_state);
+	return crtc_state;
+}
+EXPORT_SYMBOL(drm_atomic_get_crtc_state);
 
 static int drm_atomic_crtc_check(const struct drm_crtc_state *old_crtc_state,
 				 const struct drm_crtc_state *new_crtc_state)
@@ -940,82 +944,84 @@ NOT_IMPLEMENTED_CONTINUE
 // }
 // EXPORT_SYMBOL(drm_atomic_get_new_connector_for_encoder);
 
-// /**
-//  * drm_atomic_get_connector_state - get connector state
-//  * @state: global atomic state object
-//  * @connector: connector to get state object for
-//  *
-//  * This function returns the connector state for the given connector,
-//  * allocating it if needed. It will also grab the relevant connector lock to
-//  * make sure that the state is consistent.
-//  *
-//  * Returns:
-//  *
-//  * Either the allocated state or the error code encoded into the pointer. When
-//  * the error is EDEADLK then the w/w mutex code has detected a deadlock and the
-//  * entire atomic sequence must be restarted. All other errors are fatal.
-//  */
-// struct drm_connector_state *
-// drm_atomic_get_connector_state(struct drm_atomic_state *state,
-// 			  struct drm_connector *connector)
-// {
-// 	int ret, index;
-// 	struct drm_mode_config *config = &connector->dev->mode_config;
-// 	struct drm_connector_state *connector_state;
+/**
+ * drm_atomic_get_connector_state - get connector state
+ * @state: global atomic state object
+ * @connector: connector to get state object for
+ *
+ * This function returns the connector state for the given connector,
+ * allocating it if needed. It will also grab the relevant connector lock to
+ * make sure that the state is consistent.
+ *
+ * Returns:
+ *
+ * Either the allocated state or the error code encoded into the pointer. When
+ * the error is EDEADLK then the w/w mutex code has detected a deadlock and the
+ * entire atomic sequence must be restarted. All other errors are fatal.
+ */
+struct drm_connector_state *
+drm_atomic_get_connector_state(struct drm_atomic_state *state,
+			  struct drm_connector *connector)
+{
+	int ret, index;
+	struct drm_mode_config *config = &connector->dev->mode_config;
+	struct drm_connector_state *connector_state;
 
-// 	WARN_ON(!state->acquire_ctx);
+	WARN_ON(!state->acquire_ctx);
 
-// 	ret = drm_modeset_lock(&config->connection_mutex, state->acquire_ctx);
-// 	if (ret)
-// 		return ERR_PTR(ret);
+#if !defined(__AROS__)
+	ret = drm_modeset_lock(&config->connection_mutex, state->acquire_ctx);
+	if (ret)
+		return ERR_PTR(ret);
+#endif
 
-// 	index = drm_connector_index(connector);
+	index = drm_connector_index(connector);
 
-// 	if (index >= state->num_connector) {
-// 		struct __drm_connnectors_state *c;
-// 		int alloc = max(index + 1, config->num_connector);
+	if (index >= state->num_connector) {
+		struct __drm_connnectors_state *c;
+		int alloc = max(index + 1, config->num_connector);
 
-// 		c = krealloc(state->connectors, alloc * sizeof(*state->connectors), GFP_KERNEL);
-// 		if (!c)
-// 			return ERR_PTR(-ENOMEM);
+		c = krealloc(state->connectors, alloc * sizeof(*state->connectors), GFP_KERNEL);
+		if (!c)
+			return ERR_PTR(-ENOMEM);
 
-// 		state->connectors = c;
-// 		memset(&state->connectors[state->num_connector], 0,
-// 		       sizeof(*state->connectors) * (alloc - state->num_connector));
+		state->connectors = c;
+		memset(&state->connectors[state->num_connector], 0,
+		       sizeof(*state->connectors) * (alloc - state->num_connector));
 
-// 		state->num_connector = alloc;
-// 	}
+		state->num_connector = alloc;
+	}
 
-// 	if (state->connectors[index].state)
-// 		return state->connectors[index].state;
+	if (state->connectors[index].state)
+		return state->connectors[index].state;
 
-// 	connector_state = connector->funcs->atomic_duplicate_state(connector);
-// 	if (!connector_state)
-// 		return ERR_PTR(-ENOMEM);
+	connector_state = connector->funcs->atomic_duplicate_state(connector);
+	if (!connector_state)
+		return ERR_PTR(-ENOMEM);
 
-// 	drm_connector_get(connector);
-// 	state->connectors[index].state = connector_state;
-// 	state->connectors[index].old_state = connector->state;
-// 	state->connectors[index].new_state = connector_state;
-// 	state->connectors[index].ptr = connector;
-// 	connector_state->state = state;
+	drm_connector_get(connector);
+	state->connectors[index].state = connector_state;
+	state->connectors[index].old_state = connector->state;
+	state->connectors[index].new_state = connector_state;
+	state->connectors[index].ptr = connector;
+	connector_state->state = state;
 
-// 	DRM_DEBUG_ATOMIC("Added [CONNECTOR:%d:%s] %p state to %p\n",
-// 			 connector->base.id, connector->name,
-// 			 connector_state, state);
+	DRM_DEBUG_ATOMIC("Added [CONNECTOR:%d:%s] %p state to %p\n",
+			 connector->base.id, connector->name,
+			 connector_state, state);
 
-// 	if (connector_state->crtc) {
-// 		struct drm_crtc_state *crtc_state;
+	if (connector_state->crtc) {
+		struct drm_crtc_state *crtc_state;
 
-// 		crtc_state = drm_atomic_get_crtc_state(state,
-// 						       connector_state->crtc);
-// 		if (IS_ERR(crtc_state))
-// 			return ERR_CAST(crtc_state);
-// 	}
+		crtc_state = drm_atomic_get_crtc_state(state,
+						       connector_state->crtc);
+		if (IS_ERR(crtc_state))
+			return ERR_CAST(crtc_state);
+	}
 
-// 	return connector_state;
-// }
-// EXPORT_SYMBOL(drm_atomic_get_connector_state);
+	return connector_state;
+}
+EXPORT_SYMBOL(drm_atomic_get_connector_state);
 
 // static void drm_atomic_connector_print_state(struct drm_printer *p,
 // 		const struct drm_connector_state *state)
@@ -1035,65 +1041,67 @@ NOT_IMPLEMENTED_CONTINUE
 // 		connector->funcs->atomic_print_state(p, state);
 // }
 
-// /**
-//  * drm_atomic_add_affected_connectors - add connectors for crtc
-//  * @state: atomic state
-//  * @crtc: DRM crtc
-//  *
-//  * This function walks the current configuration and adds all connectors
-//  * currently using @crtc to the atomic configuration @state. Note that this
-//  * function must acquire the connection mutex. This can potentially cause
-//  * unneeded seralization if the update is just for the planes on one crtc. Hence
-//  * drivers and helpers should only call this when really needed (e.g. when a
-//  * full modeset needs to happen due to some change).
-//  *
-//  * Returns:
-//  * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
-//  * then the w/w mutex code has detected a deadlock and the entire atomic
-//  * sequence must be restarted. All other errors are fatal.
-//  */
-// int
-// drm_atomic_add_affected_connectors(struct drm_atomic_state *state,
-// 				   struct drm_crtc *crtc)
-// {
-// 	struct drm_mode_config *config = &state->dev->mode_config;
-// 	struct drm_connector *connector;
-// 	struct drm_connector_state *conn_state;
-// 	struct drm_connector_list_iter conn_iter;
-// 	struct drm_crtc_state *crtc_state;
-// 	int ret;
+/**
+ * drm_atomic_add_affected_connectors - add connectors for crtc
+ * @state: atomic state
+ * @crtc: DRM crtc
+ *
+ * This function walks the current configuration and adds all connectors
+ * currently using @crtc to the atomic configuration @state. Note that this
+ * function must acquire the connection mutex. This can potentially cause
+ * unneeded seralization if the update is just for the planes on one crtc. Hence
+ * drivers and helpers should only call this when really needed (e.g. when a
+ * full modeset needs to happen due to some change).
+ *
+ * Returns:
+ * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
+ * then the w/w mutex code has detected a deadlock and the entire atomic
+ * sequence must be restarted. All other errors are fatal.
+ */
+int
+drm_atomic_add_affected_connectors(struct drm_atomic_state *state,
+				   struct drm_crtc *crtc)
+{
+	struct drm_mode_config *config = &state->dev->mode_config;
+	struct drm_connector *connector;
+	struct drm_connector_state *conn_state;
+	struct drm_connector_list_iter conn_iter;
+	struct drm_crtc_state *crtc_state;
+	int ret;
 
-// 	crtc_state = drm_atomic_get_crtc_state(state, crtc);
-// 	if (IS_ERR(crtc_state))
-// 		return PTR_ERR(crtc_state);
+	crtc_state = drm_atomic_get_crtc_state(state, crtc);
+	if (IS_ERR(crtc_state))
+		return PTR_ERR(crtc_state);
 
-// 	ret = drm_modeset_lock(&config->connection_mutex, state->acquire_ctx);
-// 	if (ret)
-// 		return ret;
+#if !defined(__AROS__)
+	ret = drm_modeset_lock(&config->connection_mutex, state->acquire_ctx);
+	if (ret)
+		return ret;
+#endif
 
-// 	DRM_DEBUG_ATOMIC("Adding all current connectors for [CRTC:%d:%s] to %p\n",
-// 			 crtc->base.id, crtc->name, state);
+	DRM_DEBUG_ATOMIC("Adding all current connectors for [CRTC:%d:%s] to %p\n",
+			 crtc->base.id, crtc->name, state);
 
-// 	/*
-// 	 * Changed connectors are already in @state, so only need to look
-// 	 * at the connector_mask in crtc_state.
-// 	 */
-// 	drm_connector_list_iter_begin(state->dev, &conn_iter);
-// 	drm_for_each_connector_iter(connector, &conn_iter) {
-// 		if (!(crtc_state->connector_mask & drm_connector_mask(connector)))
-// 			continue;
+	/*
+	 * Changed connectors are already in @state, so only need to look
+	 * at the connector_mask in crtc_state.
+	 */
+	drm_connector_list_iter_begin(state->dev, &conn_iter);
+	drm_for_each_connector_iter(connector, &conn_iter) {
+		if (!(crtc_state->connector_mask & drm_connector_mask(connector)))
+			continue;
 
-// 		conn_state = drm_atomic_get_connector_state(state, connector);
-// 		if (IS_ERR(conn_state)) {
-// 			drm_connector_list_iter_end(&conn_iter);
-// 			return PTR_ERR(conn_state);
-// 		}
-// 	}
-// 	drm_connector_list_iter_end(&conn_iter);
+		conn_state = drm_atomic_get_connector_state(state, connector);
+		if (IS_ERR(conn_state)) {
+			drm_connector_list_iter_end(&conn_iter);
+			return PTR_ERR(conn_state);
+		}
+	}
+	drm_connector_list_iter_end(&conn_iter);
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_add_affected_connectors);
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_add_affected_connectors);
 
 // /**
 //  * drm_atomic_add_affected_planes - add planes for crtc

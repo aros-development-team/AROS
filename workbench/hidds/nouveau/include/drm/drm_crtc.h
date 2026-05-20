@@ -217,17 +217,17 @@ struct drm_crtc_state {
 	 */
 	u32 plane_mask;
 
-// 	/**
-// 	 * @connector_mask: Bitmask of drm_connector_mask(connector) of
-// 	 * connectors attached to this CRTC.
-// 	 */
-// 	u32 connector_mask;
+	/**
+	 * @connector_mask: Bitmask of drm_connector_mask(connector) of
+	 * connectors attached to this CRTC.
+	 */
+	u32 connector_mask;
 
-// 	/**
-// 	 * @encoder_mask: Bitmask of drm_encoder_mask(encoder) of encoders
-// 	 * attached to this CRTC.
-// 	 */
-// 	u32 encoder_mask;
+	/**
+	 * @encoder_mask: Bitmask of drm_encoder_mask(encoder) of encoders
+	 * attached to this CRTC.
+	 */
+	u32 encoder_mask;
 
 	/**
 	 * @adjusted_mode:

@@ -626,19 +626,19 @@ EXPORT_SYMBOL(drm_property_blob_put);
 // 	}
 // }
 
-// /**
-//  * drm_property_blob_get - acquire blob property reference
-//  * @blob: DRM blob property
-//  *
-//  * Acquires a reference to an existing blob property. Returns @blob, which
-//  * allows this to be used as a shorthand in assignments.
-//  */
-// struct drm_property_blob *drm_property_blob_get(struct drm_property_blob *blob)
-// {
-// 	drm_mode_object_get(&blob->base);
-// 	return blob;
-// }
-// EXPORT_SYMBOL(drm_property_blob_get);
+/**
+ * drm_property_blob_get - acquire blob property reference
+ * @blob: DRM blob property
+ *
+ * Acquires a reference to an existing blob property. Returns @blob, which
+ * allows this to be used as a shorthand in assignments.
+ */
+struct drm_property_blob *drm_property_blob_get(struct drm_property_blob *blob)
+{
+	drm_mode_object_get(&blob->base);
+	return blob;
+}
+EXPORT_SYMBOL(drm_property_blob_get);
 
 // /**
 //  * drm_property_lookup_blob - look up a blob property and take a reference

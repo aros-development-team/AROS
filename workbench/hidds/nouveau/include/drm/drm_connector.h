@@ -562,8 +562,8 @@ struct drm_connector_state {
 	 */
 	enum drm_link_status link_status;
 
-// 	/** @state: backpointer to global drm_atomic_state */
-// 	struct drm_atomic_state *state;
+	/** @state: backpointer to global drm_atomic_state */
+	struct drm_atomic_state *state;
 
 	/**
 	 * @commit: Tracks the pending commit to prevent use-after-free conditions.
@@ -1440,10 +1440,10 @@ static inline unsigned int drm_connector_index(const struct drm_connector *conne
 	return connector->index;
 }
 
-// static inline u32 drm_connector_mask(const struct drm_connector *connector)
-// {
-// 	return 1 << connector->index;
-// }
+static inline u32 drm_connector_mask(const struct drm_connector *connector)
+{
+	return 1 << connector->index;
+}
 
 /**
  * drm_connector_lookup - lookup connector object
@@ -1463,16 +1463,16 @@ static inline struct drm_connector *drm_connector_lookup(struct drm_device *dev,
 	return mo ? obj_to_connector(mo) : NULL;
 }
 
-// /**
-//  * drm_connector_get - acquire a connector reference
-//  * @connector: DRM connector
-//  *
-//  * This function increments the connector's refcount.
-//  */
-// static inline void drm_connector_get(struct drm_connector *connector)
-// {
-// 	drm_mode_object_get(&connector->base);
-// }
+/**
+ * drm_connector_get - acquire a connector reference
+ * @connector: DRM connector
+ *
+ * This function increments the connector's refcount.
+ */
+static inline void drm_connector_get(struct drm_connector *connector)
+{
+	drm_mode_object_get(&connector->base);
+}
 
 /**
  * drm_connector_put - release a connector reference

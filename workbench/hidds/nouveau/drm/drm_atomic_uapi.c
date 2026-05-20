@@ -102,66 +102,68 @@
 // }
 // EXPORT_SYMBOL(drm_atomic_set_mode_for_crtc);
 
-// /**
-//  * drm_atomic_set_mode_prop_for_crtc - set mode for CRTC
-//  * @state: the CRTC whose incoming state to update
-//  * @blob: pointer to blob property to use for mode
-//  *
-//  * Set a mode (originating from a blob property) on the desired CRTC state.
-//  * This function will take a reference on the blob property for the CRTC state,
-//  * and release the reference held on the state's existing mode property, if any
-//  * was set.
-//  *
-//  * RETURNS:
-//  * Zero on success, error code on failure. Cannot return -EDEADLK.
-//  */
-// int drm_atomic_set_mode_prop_for_crtc(struct drm_crtc_state *state,
-//                                       struct drm_property_blob *blob)
-// {
-// 	struct drm_crtc *crtc = state->crtc;
+/**
+ * drm_atomic_set_mode_prop_for_crtc - set mode for CRTC
+ * @state: the CRTC whose incoming state to update
+ * @blob: pointer to blob property to use for mode
+ *
+ * Set a mode (originating from a blob property) on the desired CRTC state.
+ * This function will take a reference on the blob property for the CRTC state,
+ * and release the reference held on the state's existing mode property, if any
+ * was set.
+ *
+ * RETURNS:
+ * Zero on success, error code on failure. Cannot return -EDEADLK.
+ */
+int drm_atomic_set_mode_prop_for_crtc(struct drm_crtc_state *state,
+                                      struct drm_property_blob *blob)
+{
+	struct drm_crtc *crtc = state->crtc;
 
-// 	if (blob == state->mode_blob)
-// 		return 0;
+	if (blob == state->mode_blob)
+		return 0;
 
-// 	drm_property_blob_put(state->mode_blob);
-// 	state->mode_blob = NULL;
+	drm_property_blob_put(state->mode_blob);
+	state->mode_blob = NULL;
 
-// 	memset(&state->mode, 0, sizeof(state->mode));
+	memset(&state->mode, 0, sizeof(state->mode));
 
-// 	if (blob) {
-// 		int ret;
+	if (blob) {
+		int ret;
 
-// 		if (blob->length != sizeof(struct drm_mode_modeinfo)) {
-// 			DRM_DEBUG_ATOMIC("[CRTC:%d:%s] bad mode blob length: %zu\n",
-// 					 crtc->base.id, crtc->name,
-// 					 blob->length);
-// 			return -EINVAL;
-// 		}
+		if (blob->length != sizeof(struct drm_mode_modeinfo)) {
+			DRM_DEBUG_ATOMIC("[CRTC:%d:%s] bad mode blob length: %zu\n",
+					 crtc->base.id, crtc->name,
+					 blob->length);
+			return -EINVAL;
+		}
 
-// 		ret = drm_mode_convert_umode(crtc->dev,
-// 					     &state->mode, blob->data);
-// 		if (ret) {
-// 			DRM_DEBUG_ATOMIC("[CRTC:%d:%s] invalid mode (ret=%d, status=%s):\n",
-// 					 crtc->base.id, crtc->name,
-// 					 ret, drm_get_mode_status_name(state->mode.status));
-// 			drm_mode_debug_printmodeline(&state->mode);
-// 			return -EINVAL;
-// 		}
+		ret = drm_mode_convert_umode(crtc->dev,
+					     &state->mode, blob->data);
+		if (ret) {
+			DRM_DEBUG_ATOMIC("[CRTC:%d:%s] invalid mode (ret=%d, status=%s):\n",
+					 crtc->base.id, crtc->name,
+					 ret, drm_get_mode_status_name(state->mode.status));
+#if !defined(__AROS__)
+			drm_mode_debug_printmodeline(&state->mode);
+#endif
+			return -EINVAL;
+		}
 
-// 		state->mode_blob = drm_property_blob_get(blob);
-// 		state->enable = true;
-// 		DRM_DEBUG_ATOMIC("Set [MODE:%s] for [CRTC:%d:%s] state %p\n",
-// 				 state->mode.name, crtc->base.id, crtc->name,
-// 				 state);
-// 	} else {
-// 		state->enable = false;
-// 		DRM_DEBUG_ATOMIC("Set [NOMODE] for [CRTC:%d:%s] state %p\n",
-// 				 crtc->base.id, crtc->name, state);
-// 	}
+		state->mode_blob = drm_property_blob_get(blob);
+		state->enable = true;
+		DRM_DEBUG_ATOMIC("Set [MODE:%s] for [CRTC:%d:%s] state %p\n",
+				 state->mode.name, crtc->base.id, crtc->name,
+				 state);
+	} else {
+		state->enable = false;
+		DRM_DEBUG_ATOMIC("Set [NOMODE] for [CRTC:%d:%s] state %p\n",
+				 crtc->base.id, crtc->name, state);
+	}
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_set_mode_prop_for_crtc);
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_set_mode_prop_for_crtc);
 
 /**
  * drm_atomic_set_crtc_for_plane - set crtc for plane
@@ -282,64 +284,64 @@ EXPORT_SYMBOL(drm_atomic_set_fb_for_plane);
 // }
 // EXPORT_SYMBOL(drm_atomic_set_fence_for_plane);
 
-// /**
-//  * drm_atomic_set_crtc_for_connector - set crtc for connector
-//  * @conn_state: atomic state object for the connector
-//  * @crtc: crtc to use for the connector
-//  *
-//  * Changing the assigned crtc for a connector requires us to grab the lock and
-//  * state for the new crtc, as needed. This function takes care of all these
-//  * details besides updating the pointer in the state object itself.
-//  *
-//  * Returns:
-//  * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
-//  * then the w/w mutex code has detected a deadlock and the entire atomic
-//  * sequence must be restarted. All other errors are fatal.
-//  */
-// int
-// drm_atomic_set_crtc_for_connector(struct drm_connector_state *conn_state,
-// 				  struct drm_crtc *crtc)
-// {
-// 	struct drm_connector *connector = conn_state->connector;
-// 	struct drm_crtc_state *crtc_state;
+/**
+ * drm_atomic_set_crtc_for_connector - set crtc for connector
+ * @conn_state: atomic state object for the connector
+ * @crtc: crtc to use for the connector
+ *
+ * Changing the assigned crtc for a connector requires us to grab the lock and
+ * state for the new crtc, as needed. This function takes care of all these
+ * details besides updating the pointer in the state object itself.
+ *
+ * Returns:
+ * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
+ * then the w/w mutex code has detected a deadlock and the entire atomic
+ * sequence must be restarted. All other errors are fatal.
+ */
+int
+drm_atomic_set_crtc_for_connector(struct drm_connector_state *conn_state,
+				  struct drm_crtc *crtc)
+{
+	struct drm_connector *connector = conn_state->connector;
+	struct drm_crtc_state *crtc_state;
 
-// 	if (conn_state->crtc == crtc)
-// 		return 0;
+	if (conn_state->crtc == crtc)
+		return 0;
 
-// 	if (conn_state->crtc) {
-// 		crtc_state = drm_atomic_get_new_crtc_state(conn_state->state,
-// 							   conn_state->crtc);
+	if (conn_state->crtc) {
+		crtc_state = drm_atomic_get_new_crtc_state(conn_state->state,
+							   conn_state->crtc);
 
-// 		crtc_state->connector_mask &=
-// 			~drm_connector_mask(conn_state->connector);
+		crtc_state->connector_mask &=
+			~drm_connector_mask(conn_state->connector);
 
-// 		drm_connector_put(conn_state->connector);
-// 		conn_state->crtc = NULL;
-// 	}
+		drm_connector_put(conn_state->connector);
+		conn_state->crtc = NULL;
+	}
 
-// 	if (crtc) {
-// 		crtc_state = drm_atomic_get_crtc_state(conn_state->state, crtc);
-// 		if (IS_ERR(crtc_state))
-// 			return PTR_ERR(crtc_state);
+	if (crtc) {
+		crtc_state = drm_atomic_get_crtc_state(conn_state->state, crtc);
+		if (IS_ERR(crtc_state))
+			return PTR_ERR(crtc_state);
 
-// 		crtc_state->connector_mask |=
-// 			drm_connector_mask(conn_state->connector);
+		crtc_state->connector_mask |=
+			drm_connector_mask(conn_state->connector);
 
-// 		drm_connector_get(conn_state->connector);
-// 		conn_state->crtc = crtc;
+		drm_connector_get(conn_state->connector);
+		conn_state->crtc = crtc;
 
-// 		DRM_DEBUG_ATOMIC("Link [CONNECTOR:%d:%s] state %p to [CRTC:%d:%s]\n",
-// 				 connector->base.id, connector->name,
-// 				 conn_state, crtc->base.id, crtc->name);
-// 	} else {
-// 		DRM_DEBUG_ATOMIC("Link [CONNECTOR:%d:%s] state %p to [NOCRTC]\n",
-// 				 connector->base.id, connector->name,
-// 				 conn_state);
-// 	}
+		DRM_DEBUG_ATOMIC("Link [CONNECTOR:%d:%s] state %p to [CRTC:%d:%s]\n",
+				 connector->base.id, connector->name,
+				 conn_state, crtc->base.id, crtc->name);
+	} else {
+		DRM_DEBUG_ATOMIC("Link [CONNECTOR:%d:%s] state %p to [NOCRTC]\n",
+				 connector->base.id, connector->name,
+				 conn_state);
+	}
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_set_crtc_for_connector);
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_set_crtc_for_connector);
 
 // static void set_out_fence_for_crtc(struct drm_atomic_state *state,
 // 				   struct drm_crtc *crtc, s32 __user *fence_ptr)

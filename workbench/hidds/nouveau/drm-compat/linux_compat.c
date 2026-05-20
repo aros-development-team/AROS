@@ -32,6 +32,7 @@
 #include <drm-compat/drm_compat_mem.h>
 #include <linux/rbtree.h>
 #include <linux/list.h>
+#include <string.h>
 /* Undo Linux compat changes. */
 #undef RB_ROOT
 #undef file
@@ -109,4 +110,39 @@ list_sort(void *priv, struct list_head *head, int (*cmp)(void *priv,
             }
         }
     } while (swapped);
+}
+
+void *
+krealloc(const void *ptr, size_t size, gfp_t flags)
+{
+	void *nptr;
+	size_t osize;
+
+	/*
+	 * First handle invariants based on function arguments.
+	 */
+	if (ptr == NULL)
+		return (kmalloc(size, flags));
+
+bug("FIXME: implemented ZERO_SIZE_PTR\n");
+#if 0
+	if (size == 0) {
+		kfree(ptr);
+		return (ZERO_SIZE_PTR);
+	}
+#endif
+
+#if !defined(__AROS__)
+	osize = ksize(ptr);
+	if (size <= osize)
+		return (__DECONST(void *, ptr));
+#endif
+
+	nptr = kmalloc(size, flags);
+	if (nptr == NULL)
+		return (NULL);
+
+	memcpy(nptr, ptr, osize);
+	kfree(ptr);
+	return (nptr);
 }
