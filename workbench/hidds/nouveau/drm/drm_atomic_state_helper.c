@@ -36,6 +36,8 @@
 #if !defined(__AROS__)
 #include <linux/slab.h>
 #include <linux/dma-fence.h>
+#else
+#include <drm-compat/drm_compat_dma.h>
 #endif
 
 /**
@@ -163,41 +165,41 @@ drm_atomic_helper_crtc_duplicate_state(struct drm_crtc *crtc)
 }
 EXPORT_SYMBOL(drm_atomic_helper_crtc_duplicate_state);
 
-// /**
-//  * __drm_atomic_helper_crtc_destroy_state - release CRTC state
-//  * @state: CRTC state object to release
-//  *
-//  * Releases all resources stored in the CRTC state without actually freeing
-//  * the memory of the CRTC state. This is useful for drivers that subclass the
-//  * CRTC state.
-//  */
-// void __drm_atomic_helper_crtc_destroy_state(struct drm_crtc_state *state)
-// {
-// 	if (state->commit) {
-// 		/*
-// 		 * In the event that a non-blocking commit returns
-// 		 * -ERESTARTSYS before the commit_tail work is queued, we will
-// 		 * have an extra reference to the commit object. Release it, if
-// 		 * the event has not been consumed by the worker.
-// 		 *
-// 		 * state->event may be freed, so we can't directly look at
-// 		 * state->event->base.completion.
-// 		 */
-// 		if (state->event && state->commit->abort_completion)
-// 			drm_crtc_commit_put(state->commit);
+/**
+ * __drm_atomic_helper_crtc_destroy_state - release CRTC state
+ * @state: CRTC state object to release
+ *
+ * Releases all resources stored in the CRTC state without actually freeing
+ * the memory of the CRTC state. This is useful for drivers that subclass the
+ * CRTC state.
+ */
+void __drm_atomic_helper_crtc_destroy_state(struct drm_crtc_state *state)
+{
+	if (state->commit) {
+		/*
+		 * In the event that a non-blocking commit returns
+		 * -ERESTARTSYS before the commit_tail work is queued, we will
+		 * have an extra reference to the commit object. Release it, if
+		 * the event has not been consumed by the worker.
+		 *
+		 * state->event may be freed, so we can't directly look at
+		 * state->event->base.completion.
+		 */
+		if (state->event && state->commit->abort_completion)
+			drm_crtc_commit_put(state->commit);
 
-// 		kfree(state->commit->event);
-// 		state->commit->event = NULL;
+		kfree(state->commit->event);
+		state->commit->event = NULL;
 
-// 		drm_crtc_commit_put(state->commit);
-// 	}
+		drm_crtc_commit_put(state->commit);
+	}
 
-// 	drm_property_blob_put(state->mode_blob);
-// 	drm_property_blob_put(state->degamma_lut);
-// 	drm_property_blob_put(state->ctm);
-// 	drm_property_blob_put(state->gamma_lut);
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_crtc_destroy_state);
+	drm_property_blob_put(state->mode_blob);
+	drm_property_blob_put(state->degamma_lut);
+	drm_property_blob_put(state->ctm);
+	drm_property_blob_put(state->gamma_lut);
+}
+EXPORT_SYMBOL(__drm_atomic_helper_crtc_destroy_state);
 
 // /**
 //  * drm_atomic_helper_crtc_destroy_state - default state destroy hook
@@ -300,28 +302,28 @@ drm_atomic_helper_plane_duplicate_state(struct drm_plane *plane)
 }
 EXPORT_SYMBOL(drm_atomic_helper_plane_duplicate_state);
 
-// /**
-//  * __drm_atomic_helper_plane_destroy_state - release plane state
-//  * @state: plane state object to release
-//  *
-//  * Releases all resources stored in the plane state without actually freeing
-//  * the memory of the plane state. This is useful for drivers that subclass the
-//  * plane state.
-//  */
-// void __drm_atomic_helper_plane_destroy_state(struct drm_plane_state *state)
-// {
-// 	if (state->fb)
-// 		drm_framebuffer_put(state->fb);
+/**
+ * __drm_atomic_helper_plane_destroy_state - release plane state
+ * @state: plane state object to release
+ *
+ * Releases all resources stored in the plane state without actually freeing
+ * the memory of the plane state. This is useful for drivers that subclass the
+ * plane state.
+ */
+void __drm_atomic_helper_plane_destroy_state(struct drm_plane_state *state)
+{
+	if (state->fb)
+		drm_framebuffer_put(state->fb);
 
-// 	if (state->fence)
-// 		dma_fence_put(state->fence);
+	if (state->fence)
+		dma_fence_put(state->fence);
 
-// 	if (state->commit)
-// 		drm_crtc_commit_put(state->commit);
+	if (state->commit)
+		drm_crtc_commit_put(state->commit);
 
-// 	drm_property_blob_put(state->fb_damage_clips);
-// }
-// EXPORT_SYMBOL(__drm_atomic_helper_plane_destroy_state);
+	drm_property_blob_put(state->fb_damage_clips);
+}
+EXPORT_SYMBOL(__drm_atomic_helper_plane_destroy_state);
 
 // /**
 //  * drm_atomic_helper_plane_destroy_state - default state destroy hook

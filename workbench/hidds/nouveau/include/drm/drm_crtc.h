@@ -73,7 +73,7 @@ static inline uint64_t I642U64(int64_t val)
 }
 
 struct drm_crtc;
-struct drm_pending_vblank_event;
+struct drm_pending_vblank_event { ULONG dummy; };
 struct drm_plane;
 struct drm_bridge;
 struct drm_atomic_state;

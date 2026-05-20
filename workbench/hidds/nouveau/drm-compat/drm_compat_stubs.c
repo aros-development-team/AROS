@@ -76,30 +76,30 @@ void drm_atomic_add_affected_planes() { NOT_IMPLEMENTED_STOP }
 
 
 void drm_atomic_helper_check_plane_state() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_cleanup_planes() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_commit_cleanup_done() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_commit_hw_done() { NOT_IMPLEMENTED_STOP }
 
 
 
-void __drm_atomic_helper_crtc_destroy_state() { NOT_IMPLEMENTED_STOP }
+
+
+
+
 
 
 void drm_atomic_helper_disable_plane() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_legacy_gamma_set() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_helper_plane_destroy_state() { NOT_IMPLEMENTED_STOP }
+
 
 
 void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_setup_commit() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_update_legacy_modeset_state() { NOT_IMPLEMENTED_STOP }
 
-void drm_atomic_helper_wait_for_dependencies() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_wait_for_fences() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_state_default_clear() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_state_default_release() { NOT_IMPLEMENTED_STOP }
-void __drm_atomic_state_free() { NOT_IMPLEMENTED_STOP }
+
+
+
+
+
+
+
 
 
 
@@ -124,7 +124,7 @@ void drm_dp_check_act_status() { NOT_IMPLEMENTED_STOP }
 void drm_dp_dpcd_read() { NOT_IMPLEMENTED_STOP }
 void drm_dp_dpcd_write() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_allocate_vcpi() { NOT_IMPLEMENTED_STOP }
-void drm_dp_mst_atomic_check() { NOT_IMPLEMENTED_STOP }
+int drm_dp_mst_atomic_check() { NOT_IMPLEMENTED_CONTINUE; return 0; }
 void drm_dp_mst_deallocate_vcpi() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_detect_port() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_get_port_malloc() { NOT_IMPLEMENTED_STOP }

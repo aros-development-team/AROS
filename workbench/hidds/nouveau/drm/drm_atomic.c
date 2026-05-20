@@ -56,23 +56,23 @@ void __drm_crtc_commit_free(struct kref *kref)
 }
 EXPORT_SYMBOL(__drm_crtc_commit_free);
 
-// /**
-//  * drm_atomic_state_default_release -
-//  * release memory initialized by drm_atomic_state_init
-//  * @state: atomic state
-//  *
-//  * Free all the memory allocated by drm_atomic_state_init.
-//  * This should only be used by drivers which are still subclassing
-//  * &drm_atomic_state and haven't switched to &drm_private_state yet.
-//  */
-// void drm_atomic_state_default_release(struct drm_atomic_state *state)
-// {
-// 	kfree(state->connectors);
-// 	kfree(state->crtcs);
-// 	kfree(state->planes);
-// 	kfree(state->private_objs);
-// }
-// EXPORT_SYMBOL(drm_atomic_state_default_release);
+/**
+ * drm_atomic_state_default_release -
+ * release memory initialized by drm_atomic_state_init
+ * @state: atomic state
+ *
+ * Free all the memory allocated by drm_atomic_state_init.
+ * This should only be used by drivers which are still subclassing
+ * &drm_atomic_state and haven't switched to &drm_private_state yet.
+ */
+void drm_atomic_state_default_release(struct drm_atomic_state *state)
+{
+	kfree(state->connectors);
+	kfree(state->crtcs);
+	kfree(state->planes);
+	kfree(state->private_objs);
+}
+EXPORT_SYMBOL(drm_atomic_state_default_release);
 
 /**
  * drm_atomic_state_init - init new atomic state
@@ -147,143 +147,143 @@ drm_atomic_state_alloc(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_atomic_state_alloc);
 
-// /**
-//  * drm_atomic_state_default_clear - clear base atomic state
-//  * @state: atomic state
-//  *
-//  * Default implementation for clearing atomic state.
-//  * This should only be used by drivers which are still subclassing
-//  * &drm_atomic_state and haven't switched to &drm_private_state yet.
-//  */
-// void drm_atomic_state_default_clear(struct drm_atomic_state *state)
-// {
-// 	struct drm_device *dev = state->dev;
-// 	struct drm_mode_config *config = &dev->mode_config;
-// 	int i;
+/**
+ * drm_atomic_state_default_clear - clear base atomic state
+ * @state: atomic state
+ *
+ * Default implementation for clearing atomic state.
+ * This should only be used by drivers which are still subclassing
+ * &drm_atomic_state and haven't switched to &drm_private_state yet.
+ */
+void drm_atomic_state_default_clear(struct drm_atomic_state *state)
+{
+	struct drm_device *dev = state->dev;
+	struct drm_mode_config *config = &dev->mode_config;
+	int i;
 
-// 	DRM_DEBUG_ATOMIC("Clearing atomic state %p\n", state);
+	DRM_DEBUG_ATOMIC("Clearing atomic state %p\n", state);
 
-// 	for (i = 0; i < state->num_connector; i++) {
-// 		struct drm_connector *connector = state->connectors[i].ptr;
+	for (i = 0; i < state->num_connector; i++) {
+		struct drm_connector *connector = state->connectors[i].ptr;
 
-// 		if (!connector)
-// 			continue;
+		if (!connector)
+			continue;
 
-// 		connector->funcs->atomic_destroy_state(connector,
-// 						       state->connectors[i].state);
-// 		state->connectors[i].ptr = NULL;
-// 		state->connectors[i].state = NULL;
-// 		state->connectors[i].old_state = NULL;
-// 		state->connectors[i].new_state = NULL;
-// 		drm_connector_put(connector);
-// 	}
+		connector->funcs->atomic_destroy_state(connector,
+						       state->connectors[i].state);
+		state->connectors[i].ptr = NULL;
+		state->connectors[i].state = NULL;
+		state->connectors[i].old_state = NULL;
+		state->connectors[i].new_state = NULL;
+		drm_connector_put(connector);
+	}
 
-// 	for (i = 0; i < config->num_crtc; i++) {
-// 		struct drm_crtc *crtc = state->crtcs[i].ptr;
+	for (i = 0; i < config->num_crtc; i++) {
+		struct drm_crtc *crtc = state->crtcs[i].ptr;
 
-// 		if (!crtc)
-// 			continue;
+		if (!crtc)
+			continue;
 
-// 		crtc->funcs->atomic_destroy_state(crtc,
-// 						  state->crtcs[i].state);
+		crtc->funcs->atomic_destroy_state(crtc,
+						  state->crtcs[i].state);
 
-// 		state->crtcs[i].ptr = NULL;
-// 		state->crtcs[i].state = NULL;
-// 		state->crtcs[i].old_state = NULL;
-// 		state->crtcs[i].new_state = NULL;
+		state->crtcs[i].ptr = NULL;
+		state->crtcs[i].state = NULL;
+		state->crtcs[i].old_state = NULL;
+		state->crtcs[i].new_state = NULL;
 
-// 		if (state->crtcs[i].commit) {
-// 			drm_crtc_commit_put(state->crtcs[i].commit);
-// 			state->crtcs[i].commit = NULL;
-// 		}
-// 	}
+		if (state->crtcs[i].commit) {
+			drm_crtc_commit_put(state->crtcs[i].commit);
+			state->crtcs[i].commit = NULL;
+		}
+	}
 
-// 	for (i = 0; i < config->num_total_plane; i++) {
-// 		struct drm_plane *plane = state->planes[i].ptr;
+	for (i = 0; i < config->num_total_plane; i++) {
+		struct drm_plane *plane = state->planes[i].ptr;
 
-// 		if (!plane)
-// 			continue;
+		if (!plane)
+			continue;
 
-// 		plane->funcs->atomic_destroy_state(plane,
-// 						   state->planes[i].state);
-// 		state->planes[i].ptr = NULL;
-// 		state->planes[i].state = NULL;
-// 		state->planes[i].old_state = NULL;
-// 		state->planes[i].new_state = NULL;
-// 	}
+		plane->funcs->atomic_destroy_state(plane,
+						   state->planes[i].state);
+		state->planes[i].ptr = NULL;
+		state->planes[i].state = NULL;
+		state->planes[i].old_state = NULL;
+		state->planes[i].new_state = NULL;
+	}
 
-// 	for (i = 0; i < state->num_private_objs; i++) {
-// 		struct drm_private_obj *obj = state->private_objs[i].ptr;
+	for (i = 0; i < state->num_private_objs; i++) {
+		struct drm_private_obj *obj = state->private_objs[i].ptr;
 
-// 		obj->funcs->atomic_destroy_state(obj,
-// 						 state->private_objs[i].state);
-// 		state->private_objs[i].ptr = NULL;
-// 		state->private_objs[i].state = NULL;
-// 		state->private_objs[i].old_state = NULL;
-// 		state->private_objs[i].new_state = NULL;
-// 	}
-// 	state->num_private_objs = 0;
+		obj->funcs->atomic_destroy_state(obj,
+						 state->private_objs[i].state);
+		state->private_objs[i].ptr = NULL;
+		state->private_objs[i].state = NULL;
+		state->private_objs[i].old_state = NULL;
+		state->private_objs[i].new_state = NULL;
+	}
+	state->num_private_objs = 0;
 
-// 	if (state->fake_commit) {
-// 		drm_crtc_commit_put(state->fake_commit);
-// 		state->fake_commit = NULL;
-// 	}
-// }
-// EXPORT_SYMBOL(drm_atomic_state_default_clear);
+	if (state->fake_commit) {
+		drm_crtc_commit_put(state->fake_commit);
+		state->fake_commit = NULL;
+	}
+}
+EXPORT_SYMBOL(drm_atomic_state_default_clear);
 
-// /**
-//  * drm_atomic_state_clear - clear state object
-//  * @state: atomic state
-//  *
-//  * When the w/w mutex algorithm detects a deadlock we need to back off and drop
-//  * all locks. So someone else could sneak in and change the current modeset
-//  * configuration. Which means that all the state assembled in @state is no
-//  * longer an atomic update to the current state, but to some arbitrary earlier
-//  * state. Which could break assumptions the driver's
-//  * &drm_mode_config_funcs.atomic_check likely relies on.
-//  *
-//  * Hence we must clear all cached state and completely start over, using this
-//  * function.
-//  */
-// void drm_atomic_state_clear(struct drm_atomic_state *state)
-// {
-// 	struct drm_device *dev = state->dev;
-// 	struct drm_mode_config *config = &dev->mode_config;
+/**
+ * drm_atomic_state_clear - clear state object
+ * @state: atomic state
+ *
+ * When the w/w mutex algorithm detects a deadlock we need to back off and drop
+ * all locks. So someone else could sneak in and change the current modeset
+ * configuration. Which means that all the state assembled in @state is no
+ * longer an atomic update to the current state, but to some arbitrary earlier
+ * state. Which could break assumptions the driver's
+ * &drm_mode_config_funcs.atomic_check likely relies on.
+ *
+ * Hence we must clear all cached state and completely start over, using this
+ * function.
+ */
+void drm_atomic_state_clear(struct drm_atomic_state *state)
+{
+	struct drm_device *dev = state->dev;
+	struct drm_mode_config *config = &dev->mode_config;
 
-// 	if (config->funcs->atomic_state_clear)
-// 		config->funcs->atomic_state_clear(state);
-// 	else
-// 		drm_atomic_state_default_clear(state);
-// }
-// EXPORT_SYMBOL(drm_atomic_state_clear);
+	if (config->funcs->atomic_state_clear)
+		config->funcs->atomic_state_clear(state);
+	else
+		drm_atomic_state_default_clear(state);
+}
+EXPORT_SYMBOL(drm_atomic_state_clear);
 
-// /**
-//  * __drm_atomic_state_free - free all memory for an atomic state
-//  * @ref: This atomic state to deallocate
-//  *
-//  * This frees all memory associated with an atomic state, including all the
-//  * per-object state for planes, crtcs and connectors.
-//  */
-// void __drm_atomic_state_free(struct kref *ref)
-// {
-// 	struct drm_atomic_state *state = container_of(ref, typeof(*state), ref);
-// 	struct drm_device *dev = state->dev;
-// 	struct drm_mode_config *config = &dev->mode_config;
+/**
+ * __drm_atomic_state_free - free all memory for an atomic state
+ * @ref: This atomic state to deallocate
+ *
+ * This frees all memory associated with an atomic state, including all the
+ * per-object state for planes, crtcs and connectors.
+ */
+void __drm_atomic_state_free(struct kref *ref)
+{
+	struct drm_atomic_state *state = container_of(ref, typeof(*state), ref);
+	struct drm_device *dev = state->dev;
+	struct drm_mode_config *config = &dev->mode_config;
 
-// 	drm_atomic_state_clear(state);
+	drm_atomic_state_clear(state);
 
-// 	DRM_DEBUG_ATOMIC("Freeing atomic state %p\n", state);
+	DRM_DEBUG_ATOMIC("Freeing atomic state %p\n", state);
 
-// 	if (config->funcs->atomic_state_free) {
-// 		config->funcs->atomic_state_free(state);
-// 	} else {
-// 		drm_atomic_state_default_release(state);
-// 		kfree(state);
-// 	}
+	if (config->funcs->atomic_state_free) {
+		config->funcs->atomic_state_free(state);
+	} else {
+		drm_atomic_state_default_release(state);
+		kfree(state);
+	}
 
-// 	drm_dev_put(dev);
-// }
-// EXPORT_SYMBOL(__drm_atomic_state_free);
+	drm_dev_put(dev);
+}
+EXPORT_SYMBOL(__drm_atomic_state_free);
 
 /**
  * drm_atomic_get_crtc_state - get crtc state
