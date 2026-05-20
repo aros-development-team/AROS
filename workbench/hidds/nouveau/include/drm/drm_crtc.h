@@ -211,11 +211,11 @@ struct drm_crtc_state {
 // 	 */
 // 	bool no_vblank : 1;
 
-// 	/**
-// 	 * @plane_mask: Bitmask of drm_plane_mask(plane) of planes attached to
-// 	 * this CRTC.
-// 	 */
-// 	u32 plane_mask;
+	/**
+	 * @plane_mask: Bitmask of drm_plane_mask(plane) of planes attached to
+	 * this CRTC.
+	 */
+	u32 plane_mask;
 
 // 	/**
 // 	 * @connector_mask: Bitmask of drm_connector_mask(connector) of

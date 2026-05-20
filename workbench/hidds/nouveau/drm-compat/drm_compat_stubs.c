@@ -94,7 +94,7 @@ void __drm_atomic_helper_plane_duplicate_state() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_set_config() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_setup_commit() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_update_legacy_modeset_state() { NOT_IMPLEMENTED_STOP }
-void drm_atomic_helper_update_plane() { NOT_IMPLEMENTED_STOP }
+
 void drm_atomic_helper_wait_for_dependencies() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_wait_for_fences() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_state_default_clear() { NOT_IMPLEMENTED_STOP }

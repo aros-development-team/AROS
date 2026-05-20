@@ -163,87 +163,87 @@
 // }
 // EXPORT_SYMBOL(drm_atomic_set_mode_prop_for_crtc);
 
-// /**
-//  * drm_atomic_set_crtc_for_plane - set crtc for plane
-//  * @plane_state: the plane whose incoming state to update
-//  * @crtc: crtc to use for the plane
-//  *
-//  * Changing the assigned crtc for a plane requires us to grab the lock and state
-//  * for the new crtc, as needed. This function takes care of all these details
-//  * besides updating the pointer in the state object itself.
-//  *
-//  * Returns:
-//  * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
-//  * then the w/w mutex code has detected a deadlock and the entire atomic
-//  * sequence must be restarted. All other errors are fatal.
-//  */
-// int
-// drm_atomic_set_crtc_for_plane(struct drm_plane_state *plane_state,
-// 			      struct drm_crtc *crtc)
-// {
-// 	struct drm_plane *plane = plane_state->plane;
-// 	struct drm_crtc_state *crtc_state;
-// 	/* Nothing to do for same crtc*/
-// 	if (plane_state->crtc == crtc)
-// 		return 0;
-// 	if (plane_state->crtc) {
-// 		crtc_state = drm_atomic_get_crtc_state(plane_state->state,
-// 						       plane_state->crtc);
-// 		if (WARN_ON(IS_ERR(crtc_state)))
-// 			return PTR_ERR(crtc_state);
+/**
+ * drm_atomic_set_crtc_for_plane - set crtc for plane
+ * @plane_state: the plane whose incoming state to update
+ * @crtc: crtc to use for the plane
+ *
+ * Changing the assigned crtc for a plane requires us to grab the lock and state
+ * for the new crtc, as needed. This function takes care of all these details
+ * besides updating the pointer in the state object itself.
+ *
+ * Returns:
+ * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
+ * then the w/w mutex code has detected a deadlock and the entire atomic
+ * sequence must be restarted. All other errors are fatal.
+ */
+int
+drm_atomic_set_crtc_for_plane(struct drm_plane_state *plane_state,
+			      struct drm_crtc *crtc)
+{
+	struct drm_plane *plane = plane_state->plane;
+	struct drm_crtc_state *crtc_state;
+	/* Nothing to do for same crtc*/
+	if (plane_state->crtc == crtc)
+		return 0;
+	if (plane_state->crtc) {
+		crtc_state = drm_atomic_get_crtc_state(plane_state->state,
+						       plane_state->crtc);
+		if (WARN_ON(IS_ERR(crtc_state)))
+			return PTR_ERR(crtc_state);
 
-// 		crtc_state->plane_mask &= ~drm_plane_mask(plane);
-// 	}
+		crtc_state->plane_mask &= ~drm_plane_mask(plane);
+	}
 
-// 	plane_state->crtc = crtc;
+	plane_state->crtc = crtc;
 
-// 	if (crtc) {
-// 		crtc_state = drm_atomic_get_crtc_state(plane_state->state,
-// 						       crtc);
-// 		if (IS_ERR(crtc_state))
-// 			return PTR_ERR(crtc_state);
-// 		crtc_state->plane_mask |= drm_plane_mask(plane);
-// 	}
+	if (crtc) {
+		crtc_state = drm_atomic_get_crtc_state(plane_state->state,
+						       crtc);
+		if (IS_ERR(crtc_state))
+			return PTR_ERR(crtc_state);
+		crtc_state->plane_mask |= drm_plane_mask(plane);
+	}
 
-// 	if (crtc)
-// 		DRM_DEBUG_ATOMIC("Link [PLANE:%d:%s] state %p to [CRTC:%d:%s]\n",
-// 				 plane->base.id, plane->name, plane_state,
-// 				 crtc->base.id, crtc->name);
-// 	else
-// 		DRM_DEBUG_ATOMIC("Link [PLANE:%d:%s] state %p to [NOCRTC]\n",
-// 				 plane->base.id, plane->name, plane_state);
+	if (crtc)
+		DRM_DEBUG_ATOMIC("Link [PLANE:%d:%s] state %p to [CRTC:%d:%s]\n",
+				 plane->base.id, plane->name, plane_state,
+				 crtc->base.id, crtc->name);
+	else
+		DRM_DEBUG_ATOMIC("Link [PLANE:%d:%s] state %p to [NOCRTC]\n",
+				 plane->base.id, plane->name, plane_state);
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_set_crtc_for_plane);
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_set_crtc_for_plane);
 
-// /**
-//  * drm_atomic_set_fb_for_plane - set framebuffer for plane
-//  * @plane_state: atomic state object for the plane
-//  * @fb: fb to use for the plane
-//  *
-//  * Changing the assigned framebuffer for a plane requires us to grab a reference
-//  * to the new fb and drop the reference to the old fb, if there is one. This
-//  * function takes care of all these details besides updating the pointer in the
-//  * state object itself.
-//  */
-// void
-// drm_atomic_set_fb_for_plane(struct drm_plane_state *plane_state,
-// 			    struct drm_framebuffer *fb)
-// {
-// 	struct drm_plane *plane = plane_state->plane;
+/**
+ * drm_atomic_set_fb_for_plane - set framebuffer for plane
+ * @plane_state: atomic state object for the plane
+ * @fb: fb to use for the plane
+ *
+ * Changing the assigned framebuffer for a plane requires us to grab a reference
+ * to the new fb and drop the reference to the old fb, if there is one. This
+ * function takes care of all these details besides updating the pointer in the
+ * state object itself.
+ */
+void
+drm_atomic_set_fb_for_plane(struct drm_plane_state *plane_state,
+			    struct drm_framebuffer *fb)
+{
+	struct drm_plane *plane = plane_state->plane;
 
-// 	if (fb)
-// 		DRM_DEBUG_ATOMIC("Set [FB:%d] for [PLANE:%d:%s] state %p\n",
-// 				 fb->base.id, plane->base.id, plane->name,
-// 				 plane_state);
-// 	else
-// 		DRM_DEBUG_ATOMIC("Set [NOFB] for [PLANE:%d:%s] state %p\n",
-// 				 plane->base.id, plane->name, plane_state);
+	if (fb)
+		DRM_DEBUG_ATOMIC("Set [FB:%d] for [PLANE:%d:%s] state %p\n",
+				 fb->base.id, plane->base.id, plane->name,
+				 plane_state);
+	else
+		DRM_DEBUG_ATOMIC("Set [NOFB] for [PLANE:%d:%s] state %p\n",
+				 plane->base.id, plane->name, plane_state);
 
-// 	drm_framebuffer_assign(&plane_state->fb, fb);
-// }
-// EXPORT_SYMBOL(drm_atomic_set_fb_for_plane);
+	drm_framebuffer_assign(&plane_state->fb, fb);
+}
+EXPORT_SYMBOL(drm_atomic_set_fb_for_plane);
 
 // /**
 //  * drm_atomic_set_fence_for_plane - set fence for plane

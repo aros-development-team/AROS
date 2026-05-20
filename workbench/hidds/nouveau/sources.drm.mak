@@ -16,6 +16,7 @@ AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/arosdrm_nouveau \
 
 AROS_DRM_CORE_SOURCES = \
+            drm/drm_atomic_helper \
             drm/drm_edid \
             drm/drm_probe_helper \
             drm/drm_atomic \
