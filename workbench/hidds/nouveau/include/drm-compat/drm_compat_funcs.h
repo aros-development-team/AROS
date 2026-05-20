@@ -114,17 +114,6 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 #define WARN_ON(condition)          ({do { if (unlikely(condition)) bug("WARN_ON: %s:%d\n", __FILE__, __LINE__); } while(0); condition;})
 #define WARN_ON_ONCE(condition)     ({do { if (unlikely(condition)) bug("WARN_ON_ONCE: %s:%d\n", __FILE__, __LINE__); } while(0); condition;})
 #define EXPORT_SYMBOL(x)
-#define PTR_ERR(addr)               ((SIPTR)addr)
-#define ERR_PTR(error)              ((APTR)(SIPTR)error)
-static inline IPTR IS_ERR(APTR ptr)
-{
-    return (IPTR)(ptr) >= (IPTR)-MAX_ERRNO;
-}
-static inline bool IS_ERR_OR_NULL(APTR ptr)
-{
-    if (ptr == NULL) return TRUE;
-    return IS_ERR(ptr);
-}
 
 #define IS_ENABLED(option)  option##_ENABLED
 

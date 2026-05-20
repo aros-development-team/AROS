@@ -26,7 +26,7 @@
 #include <linux/types.h>
 #include <linux/hdmi.h>
 #if defined(__AROS__)
-#include <drm-compat/drm_compat_funcs.h>
+#include <linux/err.h>
 #endif
 // #include <drm/drm_mode.h>
 

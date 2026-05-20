@@ -40,6 +40,7 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_mem.h>
 #include <linux/minmax.h>
+#include <linux/err.h>
 #define M_IDR 0
 static inline void *idr_malloc(size_t size, int ignored, gfp_t flags)
 {

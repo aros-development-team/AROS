@@ -11,6 +11,7 @@
 #include <uapi/drm/drm.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_print.h>
+#include <linux/err.h>
 
 int drm_modeset_register_all(struct drm_device *dev);
 int drm_gem_init(struct drm_device *dev);

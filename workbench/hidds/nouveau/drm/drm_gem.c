@@ -40,6 +40,7 @@
 #include <linux/mem_encrypt.h>
 #include <linux/pagevec.h>
 #else
+#include <linux/err.h>
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_mem.h>
 #endif

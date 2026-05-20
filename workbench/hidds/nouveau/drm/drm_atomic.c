@@ -27,6 +27,8 @@
 
 #if !defined(__AROS__)
 #include <linux/sync_file.h>
+#else
+#include <linux/err.h>
 #endif
 
 #include <drm/drm_atomic.h>
