@@ -267,13 +267,11 @@ nv50_wndw_atomic_check_acquire(struct nv50_wndw *wndw, bool modeset,
 			asyw->image.pitch[0] = fb->base.pitches[0];
 		}
 
-NOT_IMPLEMENTED_STOP
-#if 0
 		if (!asyh->state.async_flip)
 			asyw->image.interval = 1;
 		else
 			asyw->image.interval = 0;
-#endif
+
 		asyw->image.mode = asyw->image.interval ? 0 : 1;
 		asyw->set.image = wndw->func->image_set != NULL;
 	}

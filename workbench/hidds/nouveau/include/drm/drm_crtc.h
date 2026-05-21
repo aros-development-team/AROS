@@ -301,13 +301,13 @@ struct drm_crtc_state {
 // 	 */
 // 	u32 target_vblank;
 
-// 	/**
-// 	 * @async_flip:
-// 	 *
-// 	 * This is set when DRM_MODE_PAGE_FLIP_ASYNC is set in the legacy
-// 	 * PAGE_FLIP IOCTL. It's not wired up for the atomic IOCTL itself yet.
-// 	 */
-// 	bool async_flip;
+	/**
+	 * @async_flip:
+	 *
+	 * This is set when DRM_MODE_PAGE_FLIP_ASYNC is set in the legacy
+	 * PAGE_FLIP IOCTL. It's not wired up for the atomic IOCTL itself yet.
+	 */
+	bool async_flip;
 
 	/**
 	 * @vrr_enabled:
