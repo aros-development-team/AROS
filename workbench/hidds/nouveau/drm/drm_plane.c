@@ -318,37 +318,37 @@ void drm_plane_unregister_all(struct drm_device *dev)
 	}
 }
 
-// /**
-//  * drm_plane_init - Initialize a legacy plane
-//  * @dev: DRM device
-//  * @plane: plane object to init
-//  * @possible_crtcs: bitmask of possible CRTCs
-//  * @funcs: callbacks for the new plane
-//  * @formats: array of supported formats (DRM_FORMAT\_\*)
-//  * @format_count: number of elements in @formats
-//  * @is_primary: plane type (primary vs overlay)
-//  *
-//  * Legacy API to initialize a DRM plane.
-//  *
-//  * New drivers should call drm_universal_plane_init() instead.
-//  *
-//  * Returns:
-//  * Zero on success, error code on failure.
-//  */
-// int drm_plane_init(struct drm_device *dev, struct drm_plane *plane,
-// 		   uint32_t possible_crtcs,
-// 		   const struct drm_plane_funcs *funcs,
-// 		   const uint32_t *formats, unsigned int format_count,
-// 		   bool is_primary)
-// {
-// 	enum drm_plane_type type;
+/**
+ * drm_plane_init - Initialize a legacy plane
+ * @dev: DRM device
+ * @plane: plane object to init
+ * @possible_crtcs: bitmask of possible CRTCs
+ * @funcs: callbacks for the new plane
+ * @formats: array of supported formats (DRM_FORMAT\_\*)
+ * @format_count: number of elements in @formats
+ * @is_primary: plane type (primary vs overlay)
+ *
+ * Legacy API to initialize a DRM plane.
+ *
+ * New drivers should call drm_universal_plane_init() instead.
+ *
+ * Returns:
+ * Zero on success, error code on failure.
+ */
+int drm_plane_init(struct drm_device *dev, struct drm_plane *plane,
+		   uint32_t possible_crtcs,
+		   const struct drm_plane_funcs *funcs,
+		   const uint32_t *formats, unsigned int format_count,
+		   bool is_primary)
+{
+	enum drm_plane_type type;
 
-// 	type = is_primary ? DRM_PLANE_TYPE_PRIMARY : DRM_PLANE_TYPE_OVERLAY;
-// 	return drm_universal_plane_init(dev, plane, possible_crtcs, funcs,
-// 					formats, format_count,
-// 					NULL, type, NULL);
-// }
-// EXPORT_SYMBOL(drm_plane_init);
+	type = is_primary ? DRM_PLANE_TYPE_PRIMARY : DRM_PLANE_TYPE_OVERLAY;
+	return drm_universal_plane_init(dev, plane, possible_crtcs, funcs,
+					formats, format_count,
+					NULL, type, NULL);
+}
+EXPORT_SYMBOL(drm_plane_init);
 
 // /**
 //  * drm_plane_cleanup - Clean up the core plane usage
@@ -409,44 +409,44 @@ void drm_plane_unregister_all(struct drm_device *dev)
 // }
 // EXPORT_SYMBOL(drm_plane_from_index);
 
-// /**
-//  * drm_plane_force_disable - Forcibly disable a plane
-//  * @plane: plane to disable
-//  *
-//  * Forces the plane to be disabled.
-//  *
-//  * Used when the plane's current framebuffer is destroyed,
-//  * and when restoring fbdev mode.
-//  *
-//  * Note that this function is not suitable for atomic drivers, since it doesn't
-//  * wire through the lock acquisition context properly and hence can't handle
-//  * retries or driver private locks. You probably want to use
-//  * drm_atomic_helper_disable_plane() or
-//  * drm_atomic_helper_disable_planes_on_crtc() instead.
-//  */
-// void drm_plane_force_disable(struct drm_plane *plane)
-// {
-// 	int ret;
+/**
+ * drm_plane_force_disable - Forcibly disable a plane
+ * @plane: plane to disable
+ *
+ * Forces the plane to be disabled.
+ *
+ * Used when the plane's current framebuffer is destroyed,
+ * and when restoring fbdev mode.
+ *
+ * Note that this function is not suitable for atomic drivers, since it doesn't
+ * wire through the lock acquisition context properly and hence can't handle
+ * retries or driver private locks. You probably want to use
+ * drm_atomic_helper_disable_plane() or
+ * drm_atomic_helper_disable_planes_on_crtc() instead.
+ */
+void drm_plane_force_disable(struct drm_plane *plane)
+{
+	int ret;
 
-// 	if (!plane->fb)
-// 		return;
+	if (!plane->fb)
+		return;
 
-// 	WARN_ON(drm_drv_uses_atomic_modeset(plane->dev));
+	WARN_ON(drm_drv_uses_atomic_modeset(plane->dev));
 
-// 	plane->old_fb = plane->fb;
-// 	ret = plane->funcs->disable_plane(plane, NULL);
-// 	if (ret) {
-// 		DRM_ERROR("failed to disable plane with busy fb\n");
-// 		plane->old_fb = NULL;
-// 		return;
-// 	}
-// 	/* disconnect the plane from the fb and crtc: */
-// 	drm_framebuffer_put(plane->old_fb);
-// 	plane->old_fb = NULL;
-// 	plane->fb = NULL;
-// 	plane->crtc = NULL;
-// }
-// EXPORT_SYMBOL(drm_plane_force_disable);
+	plane->old_fb = plane->fb;
+	ret = plane->funcs->disable_plane(plane, NULL);
+	if (ret) {
+		DRM_ERROR("failed to disable plane with busy fb\n");
+		plane->old_fb = NULL;
+		return;
+	}
+	/* disconnect the plane from the fb and crtc: */
+	drm_framebuffer_put(plane->old_fb);
+	plane->old_fb = NULL;
+	plane->fb = NULL;
+	plane->crtc = NULL;
+}
+EXPORT_SYMBOL(drm_plane_force_disable);
 
 // /**
 //  * drm_mode_plane_set_obj_prop - set the value of a property

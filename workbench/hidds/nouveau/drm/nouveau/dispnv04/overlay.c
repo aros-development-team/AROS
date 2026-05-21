@@ -52,7 +52,9 @@ struct nouveau_plane {
 	int brightness;
 	int hue;
 	int saturation;
+#if !defined(__AROS__)
 	enum drm_color_encoding color_encoding;
+#endif
 
 	void (*set_params)(struct nouveau_plane *);
 };
@@ -164,8 +166,11 @@ nv10_update_plane(struct drm_plane *plane, struct drm_crtc *crtc,
 	if (fb->format->format == DRM_FORMAT_NV12 ||
 	    fb->format->format == DRM_FORMAT_NV21)
 		format |= NV_PVIDEO_FORMAT_PLANAR;
+NOT_IMPLEMENTED_STOP
+#if 0
 	if (nv_plane->color_encoding == DRM_COLOR_YCBCR_BT709)
 		format |= NV_PVIDEO_FORMAT_MATRIX_ITURBT709;
+#endif
 	if (nv_plane->colorkey & (1 << 24))
 		format |= NV_PVIDEO_FORMAT_DISPLAY_COLOR_KEY;
 
@@ -227,8 +232,11 @@ nv10_set_params(struct nouveau_plane *plane)
 	nvif_wr32(dev, NV_PVIDEO_COLOR_KEY, plane->colorkey & 0xffffff);
 
 	if (plane->cur) {
+NOT_IMPLEMENTED_STOP
+#if 0
 		if (plane->color_encoding == DRM_COLOR_YCBCR_BT709)
 			format |= NV_PVIDEO_FORMAT_MATRIX_ITURBT709;
+#endif
 		if (plane->colorkey & (1 << 24))
 			format |= NV_PVIDEO_FORMAT_DISPLAY_COLOR_KEY;
 		nvif_mask(dev, NV_PVIDEO_FORMAT(plane->flip),
@@ -256,8 +264,10 @@ nv_set_property(struct drm_plane *plane,
 		nv_plane->hue = value;
 	else if (property == nv_plane->props.saturation)
 		nv_plane->saturation = value;
+#if 0
 	else if (property == nv_plane->base.color_encoding_property)
 		nv_plane->color_encoding = value;
+#endif
 	else
 		return -EINVAL;
 
@@ -338,6 +348,8 @@ nv10_overlay_init(struct drm_device *device)
 	drm_object_attach_property(&plane->base.base,
 				   plane->props.saturation, plane->saturation);
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	plane->color_encoding = DRM_COLOR_YCBCR_BT601;
 	drm_plane_create_color_properties(&plane->base,
 					  BIT(DRM_COLOR_YCBCR_BT601) |
@@ -345,6 +357,7 @@ nv10_overlay_init(struct drm_device *device)
 					  BIT(DRM_COLOR_YCBCR_LIMITED_RANGE),
 					  DRM_COLOR_YCBCR_BT601,
 					  DRM_COLOR_YCBCR_LIMITED_RANGE);
+#endif
 
 	plane->set_params = nv10_set_params;
 	nv10_set_params(plane);

@@ -8,3 +8,4 @@
 #include "tvnv17.c"
 #include "tvmodesnv17.c"
 #include "hw.c"
+#include "overlay.c"
