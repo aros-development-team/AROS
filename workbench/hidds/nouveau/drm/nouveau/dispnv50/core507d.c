@@ -47,15 +47,12 @@ int
 core507d_ntfy_wait_done(struct nouveau_bo *bo, u32 offset,
 			struct nvif_device *device)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	s64 time = nvif_msec(device, 2000ULL,
 		if (nouveau_bo_rd32(bo, offset / 4))
 			break;
 		usleep_range(1, 2);
 	);
 	return time < 0 ? time : 0;
-#endif
 }
 
 void

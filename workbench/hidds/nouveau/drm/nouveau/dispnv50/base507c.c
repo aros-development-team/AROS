@@ -113,8 +113,6 @@ int
 base507c_ntfy_wait_begun(struct nouveau_bo *bo, u32 offset,
 			 struct nvif_device *device)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	s64 time = nvif_msec(device, 2000ULL,
 		u32 data = nouveau_bo_rd32(bo, offset / 4);
 		if ((data & 0xc0000000) == 0x40000000)
@@ -122,7 +120,6 @@ NOT_IMPLEMENTED_STOP
 		usleep_range(1, 2);
 	);
 	return time < 0 ? time : 0;
-#endif
 }
 
 void

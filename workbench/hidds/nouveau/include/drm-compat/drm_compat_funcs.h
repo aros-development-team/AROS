@@ -40,6 +40,7 @@
 #define cpu_to_le16(x)                  AROS_WORD2LE(x)
 #define mdelay(x)                       udelay(1000 * x)
 #define msleep(x)                       udelay(1000 * x)
+#define usleep_range(a, b)              udelay(a);
 #define KHZ2PICOS(x)                    (1000000000UL/(x))
 #define uninitialized_var(x)            x = 0
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
