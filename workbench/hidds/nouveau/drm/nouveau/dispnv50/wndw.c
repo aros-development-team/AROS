@@ -373,8 +373,6 @@ nv50_wndw_atomic_check_lut(struct nv50_wndw *wndw,
 	    (!armw->visible || (armw->xlut.handle && !asyw->xlut.handle)))
 		asyw->set.xlut = true;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (wndw->func->csc && asyh->state.ctm) {
 		const struct drm_color_ctm *ctm = asyh->state.ctm->data;
 		wndw->func->csc(wndw, asyw, ctm);
@@ -387,7 +385,6 @@ NOT_IMPLEMENTED_STOP
 
 	/* Can't do an immediate flip while changing the LUT. */
 	asyh->state.async_flip = false;
-#endif
 }
 
 static int
@@ -507,7 +504,10 @@ nv50_wndw_prepare_fb(struct drm_plane *plane, struct drm_plane_state *state)
 		asyw->image.handle[0] = ctxdma->object.handle;
 	}
 
+NOT_IMPLEMENTED_CONTINUE
+#if 0
 	asyw->state.fence = dma_resv_get_excl_rcu(fb->nvbo->bo.base.resv);
+#endif
 	asyw->image.offset[0] = fb->nvbo->bo.offset;
 
 	if (wndw->func->prepare) {

@@ -4343,39 +4343,39 @@ static void drm_edid_to_eld(struct drm_connector *connector, struct edid *edid)
 // }
 // EXPORT_SYMBOL(drm_av_sync_delay);
 
-// /**
-//  * drm_detect_hdmi_monitor - detect whether monitor is HDMI
-//  * @edid: monitor EDID information
-//  *
-//  * Parse the CEA extension according to CEA-861-B.
-//  *
-//  * Return: True if the monitor is HDMI, false if not or unknown.
-//  */
-// bool drm_detect_hdmi_monitor(struct edid *edid)
-// {
-// 	u8 *edid_ext;
-// 	int i;
-// 	int start_offset, end_offset;
+/**
+ * drm_detect_hdmi_monitor - detect whether monitor is HDMI
+ * @edid: monitor EDID information
+ *
+ * Parse the CEA extension according to CEA-861-B.
+ *
+ * Return: True if the monitor is HDMI, false if not or unknown.
+ */
+bool drm_detect_hdmi_monitor(struct edid *edid)
+{
+	u8 *edid_ext;
+	int i;
+	int start_offset, end_offset;
 
-// 	edid_ext = drm_find_cea_extension(edid);
-// 	if (!edid_ext)
-// 		return false;
+	edid_ext = drm_find_cea_extension(edid);
+	if (!edid_ext)
+		return false;
 
-// 	if (cea_db_offsets(edid_ext, &start_offset, &end_offset))
-// 		return false;
+	if (cea_db_offsets(edid_ext, &start_offset, &end_offset))
+		return false;
 
-// 	/*
-// 	 * Because HDMI identifier is in Vendor Specific Block,
-// 	 * search it from all data blocks of CEA extension.
-// 	 */
-// 	for_each_cea_db(edid_ext, i, start_offset, end_offset) {
-// 		if (cea_db_is_hdmi_vsdb(&edid_ext[i]))
-// 			return true;
-// 	}
+	/*
+	 * Because HDMI identifier is in Vendor Specific Block,
+	 * search it from all data blocks of CEA extension.
+	 */
+	for_each_cea_db(edid_ext, i, start_offset, end_offset) {
+		if (cea_db_is_hdmi_vsdb(&edid_ext[i]))
+			return true;
+	}
 
-// 	return false;
-// }
-// EXPORT_SYMBOL(drm_detect_hdmi_monitor);
+	return false;
+}
+EXPORT_SYMBOL(drm_detect_hdmi_monitor);
 
 // /**
 //  * drm_detect_monitor_audio - check monitor audio capability

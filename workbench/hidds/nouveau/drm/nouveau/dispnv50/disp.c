@@ -29,13 +29,13 @@
 
 #if !defined(__AROS__)
 #include <linux/dma-mapping.h>
-#include <linux/hdmi.h>
 #endif
+#include <linux/hdmi.h>
 
 #include <drm/drm_print.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_dp_helper.h>
-// #include <drm/drm_edid.h>
+#include <drm/drm_edid.h>
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_probe_helper.h>
@@ -2025,7 +2025,7 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 	for_each_new_crtc_in_state(state, crtc, new_crtc_state, i) {
 		if (new_crtc_state->event) {
 			unsigned long flags;
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 			/* Get correct count/ts if racing with vblank irq */
 			if (new_crtc_state->active)
@@ -2084,8 +2084,7 @@ nv50_disp_atomic_commit(struct drm_device *dev,
 	if (ret)
 		goto done;
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	INIT_WORK(&state->commit_work, nv50_disp_atomic_commit_work);
 #endif
 
@@ -2121,11 +2120,12 @@ NOT_IMPLEMENTED_STOP
 	pm_runtime_get_noresume(dev->dev);
 #endif
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (nonblock)
 		queue_work(system_unbound_wq, &state->commit_work);
 	else
+		nv50_disp_atomic_commit_tail(state);
+#else
 		nv50_disp_atomic_commit_tail(state);
 #endif
 

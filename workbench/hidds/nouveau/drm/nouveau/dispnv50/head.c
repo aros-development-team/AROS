@@ -143,8 +143,6 @@ nv50_head_atomic_check_view(struct nv50_head_atom *armh,
 	asyh->view.oW = omode_hdisplay;
 	asyh->view.oH = omode_vdisplay;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	/* Add overscan compensation if necessary, will keep the aspect
 	 * ratio the same as the backend mode unless overridden by the
 	 * user setting both hborder and vborder properties.
@@ -166,7 +164,6 @@ NOT_IMPLEMENTED_STOP
 			else    asyh->view.oH  = ((asyh->view.oW * r) + (r / 2)) >> 19;
 		}
 	}
-#endif
 
 	/* Handle CENTER/ASPECT scaling, taking into account the areas
 	 * removed already for overscan compensation.

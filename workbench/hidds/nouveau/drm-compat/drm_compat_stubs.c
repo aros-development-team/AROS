@@ -72,10 +72,10 @@ u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_
 
 
 struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
-void drm_atomic_add_affected_planes() { NOT_IMPLEMENTED_STOP }
 
 
-void drm_atomic_helper_check_plane_state() { NOT_IMPLEMENTED_STOP }
+
+
 
 
 

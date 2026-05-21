@@ -1103,49 +1103,49 @@ drm_atomic_add_affected_connectors(struct drm_atomic_state *state,
 }
 EXPORT_SYMBOL(drm_atomic_add_affected_connectors);
 
-// /**
-//  * drm_atomic_add_affected_planes - add planes for crtc
-//  * @state: atomic state
-//  * @crtc: DRM crtc
-//  *
-//  * This function walks the current configuration and adds all planes
-//  * currently used by @crtc to the atomic configuration @state. This is useful
-//  * when an atomic commit also needs to check all currently enabled plane on
-//  * @crtc, e.g. when changing the mode. It's also useful when re-enabling a CRTC
-//  * to avoid special code to force-enable all planes.
-//  *
-//  * Since acquiring a plane state will always also acquire the w/w mutex of the
-//  * current CRTC for that plane (if there is any) adding all the plane states for
-//  * a CRTC will not reduce parallism of atomic updates.
-//  *
-//  * Returns:
-//  * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
-//  * then the w/w mutex code has detected a deadlock and the entire atomic
-//  * sequence must be restarted. All other errors are fatal.
-//  */
-// int
-// drm_atomic_add_affected_planes(struct drm_atomic_state *state,
-// 			       struct drm_crtc *crtc)
-// {
-// 	const struct drm_crtc_state *old_crtc_state =
-// 		drm_atomic_get_old_crtc_state(state, crtc);
-// 	struct drm_plane *plane;
+/**
+ * drm_atomic_add_affected_planes - add planes for crtc
+ * @state: atomic state
+ * @crtc: DRM crtc
+ *
+ * This function walks the current configuration and adds all planes
+ * currently used by @crtc to the atomic configuration @state. This is useful
+ * when an atomic commit also needs to check all currently enabled plane on
+ * @crtc, e.g. when changing the mode. It's also useful when re-enabling a CRTC
+ * to avoid special code to force-enable all planes.
+ *
+ * Since acquiring a plane state will always also acquire the w/w mutex of the
+ * current CRTC for that plane (if there is any) adding all the plane states for
+ * a CRTC will not reduce parallism of atomic updates.
+ *
+ * Returns:
+ * 0 on success or can fail with -EDEADLK or -ENOMEM. When the error is EDEADLK
+ * then the w/w mutex code has detected a deadlock and the entire atomic
+ * sequence must be restarted. All other errors are fatal.
+ */
+int
+drm_atomic_add_affected_planes(struct drm_atomic_state *state,
+			       struct drm_crtc *crtc)
+{
+	const struct drm_crtc_state *old_crtc_state =
+		drm_atomic_get_old_crtc_state(state, crtc);
+	struct drm_plane *plane;
 
-// 	WARN_ON(!drm_atomic_get_new_crtc_state(state, crtc));
+	WARN_ON(!drm_atomic_get_new_crtc_state(state, crtc));
 
-// 	DRM_DEBUG_ATOMIC("Adding all current planes for [CRTC:%d:%s] to %p\n",
-// 			 crtc->base.id, crtc->name, state);
+	DRM_DEBUG_ATOMIC("Adding all current planes for [CRTC:%d:%s] to %p\n",
+			 crtc->base.id, crtc->name, state);
 
-// 	drm_for_each_plane_mask(plane, state->dev, old_crtc_state->plane_mask) {
-// 		struct drm_plane_state *plane_state =
-// 			drm_atomic_get_plane_state(state, plane);
+	drm_for_each_plane_mask(plane, state->dev, old_crtc_state->plane_mask) {
+		struct drm_plane_state *plane_state =
+			drm_atomic_get_plane_state(state, plane);
 
-// 		if (IS_ERR(plane_state))
-// 			return PTR_ERR(plane_state);
-// 	}
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_add_affected_planes);
+		if (IS_ERR(plane_state))
+			return PTR_ERR(plane_state);
+	}
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_add_affected_planes);
 
 /**
  * drm_atomic_check_only - check whether a given config would work
@@ -1320,9 +1320,9 @@ static int update_output_state(struct drm_atomic_state *state,
 #if !defined(__AROS__)
 	ret = drm_modeset_lock(&dev->mode_config.connection_mutex,
 			       state->acquire_ctx);
-#endif
 	if (ret)
 		return ret;
+#endif
 
 	/* First disable all connectors on the target crtc. */
 	ret = drm_atomic_add_affected_connectors(state, set->crtc);
