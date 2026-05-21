@@ -501,13 +501,12 @@ static void ttm_tt_clear_mapping(struct ttm_tt *ttm)
 	if (ttm->page_flags & TTM_PAGE_FLAG_SG)
 		return;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	for (i = 0; i < ttm->num_pages; ++i) {
+#if !defined(__AROS__)
 		(*page)->mapping = NULL;
 		(*page++)->index = 0;
-	}
 #endif
+	}
 }
 
 void ttm_tt_unpopulate(struct ttm_tt *ttm)

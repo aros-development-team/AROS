@@ -1167,13 +1167,10 @@ nouveau_bo_move_m2mf(struct ttm_buffer_object *bo, int evict, bool intr,
 		if (ret == 0) {
 			ret = nouveau_fence_new(chan, false, &fence);
 			if (ret == 0) {
-NOT_IMPLEMENTED_STOP
-#if 0
 				ret = ttm_bo_move_accel_cleanup(bo,
 								&fence->base,
 								evict,
 								new_reg);
-#endif
 				nouveau_fence_unref(&fence);
 			}
 		}

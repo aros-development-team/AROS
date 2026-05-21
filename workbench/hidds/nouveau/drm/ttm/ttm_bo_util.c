@@ -535,10 +535,7 @@ static int ttm_buffer_object_transfer(struct ttm_buffer_object *bo,
 	INIT_LIST_HEAD(&fbo->base.io_reserve_lru);
 	mutex_init(&fbo->base.wu_mutex);
 	fbo->base.moving = NULL;
-NOT_IMPLEMENTED_STOP
-#if 0
 	drm_vma_node_reset(&fbo->base.base.vma_node);
-#endif
 	atomic_set(&fbo->base.cpu_writers, 0);
 
 	kref_init(&fbo->base.list_kref);
@@ -712,67 +709,67 @@ void ttm_bo_kunmap(struct ttm_bo_kmap_obj *map)
 }
 EXPORT_SYMBOL(ttm_bo_kunmap);
 
-// int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
-// 			      struct dma_fence *fence,
-// 			      bool evict,
-// 			      struct ttm_mem_reg *new_mem)
-// {
-// 	struct ttm_bo_device *bdev = bo->bdev;
-// 	struct ttm_mem_type_manager *man = &bdev->man[new_mem->mem_type];
-// 	struct ttm_mem_reg *old_mem = &bo->mem;
-// 	int ret;
-// 	struct ttm_buffer_object *ghost_obj;
+int ttm_bo_move_accel_cleanup(struct ttm_buffer_object *bo,
+			      struct dma_fence *fence,
+			      bool evict,
+			      struct ttm_mem_reg *new_mem)
+{
+	struct ttm_bo_device *bdev = bo->bdev;
+	struct ttm_mem_type_manager *man = &bdev->man[new_mem->mem_type];
+	struct ttm_mem_reg *old_mem = &bo->mem;
+	int ret;
+	struct ttm_buffer_object *ghost_obj;
 
-// 	dma_resv_add_excl_fence(bo->base.resv, fence);
-// 	if (evict) {
-// 		ret = ttm_bo_wait(bo, false, false);
-// 		if (ret)
-// 			return ret;
+	dma_resv_add_excl_fence(bo->base.resv, fence);
+	if (evict) {
+		ret = ttm_bo_wait(bo, false, false);
+		if (ret)
+			return ret;
 
-// 		if (man->flags & TTM_MEMTYPE_FLAG_FIXED) {
-// 			ttm_tt_destroy(bo->ttm);
-// 			bo->ttm = NULL;
-// 		}
-// 		ttm_bo_free_old_node(bo);
-// 	} else {
-// 		/**
-// 		 * This should help pipeline ordinary buffer moves.
-// 		 *
-// 		 * Hang old buffer memory on a new buffer object,
-// 		 * and leave it to be released when the GPU
-// 		 * operation has completed.
-// 		 */
+		if (man->flags & TTM_MEMTYPE_FLAG_FIXED) {
+			ttm_tt_destroy(bo->ttm);
+			bo->ttm = NULL;
+		}
+		ttm_bo_free_old_node(bo);
+	} else {
+		/**
+		 * This should help pipeline ordinary buffer moves.
+		 *
+		 * Hang old buffer memory on a new buffer object,
+		 * and leave it to be released when the GPU
+		 * operation has completed.
+		 */
 
-// 		dma_fence_put(bo->moving);
-// 		bo->moving = dma_fence_get(fence);
+		dma_fence_put(bo->moving);
+		bo->moving = dma_fence_get(fence);
 
-// 		ret = ttm_buffer_object_transfer(bo, &ghost_obj);
-// 		if (ret)
-// 			return ret;
+		ret = ttm_buffer_object_transfer(bo, &ghost_obj);
+		if (ret)
+			return ret;
 
-// 		dma_resv_add_excl_fence(ghost_obj->base.resv, fence);
+		dma_resv_add_excl_fence(ghost_obj->base.resv, fence);
 
-// 		/**
-// 		 * If we're not moving to fixed memory, the TTM object
-// 		 * needs to stay alive. Otherwhise hang it on the ghost
-// 		 * bo to be unbound and destroyed.
-// 		 */
+		/**
+		 * If we're not moving to fixed memory, the TTM object
+		 * needs to stay alive. Otherwhise hang it on the ghost
+		 * bo to be unbound and destroyed.
+		 */
 
-// 		if (!(man->flags & TTM_MEMTYPE_FLAG_FIXED))
-// 			ghost_obj->ttm = NULL;
-// 		else
-// 			bo->ttm = NULL;
+		if (!(man->flags & TTM_MEMTYPE_FLAG_FIXED))
+			ghost_obj->ttm = NULL;
+		else
+			bo->ttm = NULL;
 
-// 		ttm_bo_unreserve(ghost_obj);
-// 		ttm_bo_put(ghost_obj);
-// 	}
+		ttm_bo_unreserve(ghost_obj);
+		ttm_bo_put(ghost_obj);
+	}
 
-// 	*old_mem = *new_mem;
-// 	new_mem->mm_node = NULL;
+	*old_mem = *new_mem;
+	new_mem->mm_node = NULL;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(ttm_bo_move_accel_cleanup);
+	return 0;
+}
+EXPORT_SYMBOL(ttm_bo_move_accel_cleanup);
 
 // int ttm_bo_pipeline_move(struct ttm_buffer_object *bo,
 // 			 struct dma_fence *fence, bool evict,

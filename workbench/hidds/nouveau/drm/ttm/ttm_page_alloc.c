@@ -1035,7 +1035,7 @@ NOT_IMPLEMENTED_STOP
 static void
 ttm_pool_unpopulate_helper(struct ttm_tt *ttm, unsigned mem_count_update)
 {
-NOT_IMPLEMENTED_STOP
+bug("FIXME FIXME MEMORY LEAK!!! in ttm_pool_unpopulate_helper\n");
 #if 0
 	struct ttm_mem_global *mem_glob = ttm->bdev->glob->mem_glob;
 	unsigned i;

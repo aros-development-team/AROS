@@ -64,7 +64,7 @@ nouveau_fence_signal(struct nouveau_fence *fence)
 
 	dma_fence_signal_locked(&fence->base);
 	list_del(&fence->head);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	rcu_assign_pointer(fence->channel, NULL);
 #endif
@@ -219,7 +219,7 @@ nouveau_fence_emit(struct nouveau_fence *fence, struct nouveau_channel *chan)
 	int ret;
 
 	fence->channel  = chan;
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	fence->timeout  = jiffies + (15 * HZ);
 #endif
@@ -370,7 +370,7 @@ nouveau_fence_sync(struct nouveau_bo *nvbo, struct nouveau_channel *chan, bool e
 	struct nouveau_fence *f;
 	int ret = 0, i;
 
-NOT_IMPLEMENTED_STOP
+bug("FIXME!!! nouveau_fence_sync!!!\n");
 #if 0
 	if (!exclusive) {
 		ret = dma_resv_reserve_shared(resv, 1);
@@ -400,13 +400,10 @@ NOT_IMPLEMENTED_STOP
 
 		return ret;
 	}
-#endif
 
 	if (!exclusive || !fobj)
 		return ret;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	for (i = 0; i < fobj->shared_count && !ret; ++i) {
 		struct nouveau_channel *prev = NULL;
 		bool must_wait = true;

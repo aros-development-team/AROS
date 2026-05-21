@@ -511,8 +511,6 @@ NOT_IMPLEMENTED_STOP
 	spin_lock(&glob->lru_lock);
 	ret = dma_resv_trylock(bo->base.resv) ? 0 : -EBUSY;
 	if (!ret) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		if (dma_resv_test_signaled_rcu(&bo->base._resv, true)) {
 			ttm_bo_del_from_lru(bo);
 			spin_unlock(&glob->lru_lock);
@@ -523,7 +521,6 @@ NOT_IMPLEMENTED_STOP
 			dma_resv_unlock(bo->base.resv);
 			return;
 		}
-#endif
 
 		ttm_bo_flush_all_fences(bo);
 
@@ -711,10 +708,7 @@ static void ttm_bo_release(struct kref *kref)
 	if (bo->bdev->driver->release_notify)
 		bo->bdev->driver->release_notify(bo);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	drm_vma_offset_remove(&bdev->vma_manager, &bo->base.vma_node);
-#endif
 	ttm_mem_io_lock(man, false);
 	ttm_mem_io_free_vm(bo);
 	ttm_mem_io_unlock(man);
