@@ -18,8 +18,8 @@ int dma_fence_signal_locked(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout) { NOT_IMPLEMENTED_STOP }
 
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
-u64 div_u64(u64 a, u32 b) { NOT_IMPLEMENTED_STOP }
-s64 div64_s64(s64 a, s64 b) { NOT_IMPLEMENTED_STOP }
+
+
 
 
 void dma_free_attrs(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle, unsigned long attrs) { NOT_IMPLEMENTED_STOP }

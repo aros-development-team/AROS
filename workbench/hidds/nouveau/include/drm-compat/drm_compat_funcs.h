@@ -457,17 +457,9 @@ dma_addr_t sg_dma_address(struct scatterlist *s);
 IPTR sg_dma_len(struct scatterlist *s);
 
 /* other */
-#define do_div(n,base) ({ \
-int __res; \
-__res = ((unsigned long) n) % (unsigned) base; \
-n = ((unsigned long) n) / (unsigned) base; \
-__res; })
-
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
 int sprintf(char * restrict s, const char * restrict format, ...);
 unsigned long clk_get_rate(struct clk *);
-u64 div_u64(u64 a, u32 b);
-s64 div64_s64(s64 a, s64 b);
 u32 get_unaligned_le32(const void *p);
 u16 get_unaligned_le16(const void *p);
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
