@@ -49,6 +49,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/drm_compat_funcs \
             drm-compat/drm_compat_pci \
             drm-compat/drm_compat_irq \
+            drm-compat/drm_compat_workqueue \
             drm-compat/drm_compat_stubs \
             drm-compat/linux_compat \
             drm-compat/linux_idr \

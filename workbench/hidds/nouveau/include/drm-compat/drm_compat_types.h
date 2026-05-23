@@ -211,9 +211,12 @@ struct firmware
 };
 
 /* Other */
+struct workqueue_struct;
+struct work_struct;
+typedef void (*work_func_t)(struct work_struct *work);
 struct work_struct
 {
-    ULONG dummy;
+    work_func_t func;
 };
 struct module;
 struct edid;

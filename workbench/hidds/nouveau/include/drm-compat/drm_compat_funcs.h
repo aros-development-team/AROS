@@ -452,6 +452,10 @@ typedef struct {
         __ret;                                                    \
     })
 
+/* work_struct handling */
+#define INIT_WORK(_work, _func)  do { (_work)->func = (_func); } while (0)
+bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
+
 /* firmaware handling */
 #define MODULE_FIRMWARE(x)
 int request_firmware(const struct firmware **fw, const char *name, struct device *device);
