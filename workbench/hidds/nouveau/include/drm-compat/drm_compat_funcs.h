@@ -163,6 +163,12 @@ void __free_page(struct page * p);
 struct page *pfn_to_page(unsigned long pfn);
 struct page *alloc_page(ULONG mask);
 
+/* Interrupt handling */
+#define IRQF_SHARED 0x1
+typedef irqreturn_t (*irq_handler_t)(int irq, void *dev);
+int request_irq(unsigned int irq, irq_handler_t handler, unsigned long flags, const char *name, void *dev);
+
+
 /* Atomic handling */
 static inline int atomic_add_return(int i, atomic_t *v)
 {

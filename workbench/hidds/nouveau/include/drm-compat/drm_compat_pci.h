@@ -29,6 +29,7 @@ struct pci_dev
     UWORD   device;
     UWORD   subsystem_vendor;
     UWORD   subsystem_device;
+    UWORD   irq;
     IPTR    rom;
     size_t  romlen;
 };

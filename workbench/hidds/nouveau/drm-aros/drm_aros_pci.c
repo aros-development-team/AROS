@@ -75,6 +75,7 @@ AROS_UFH3(void, Enumerator,
     pdev->device            = (UWORD)ProductID;
     pdev->subsystem_vendor  = (UWORD)SubSystemVendorID;
     pdev->subsystem_device  = (UWORD)SubSystemProductID;
+    pdev->irq               = (UWORD)INTLine;
     pdev->oopdev            = pciDevice;
 
     /*
