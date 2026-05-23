@@ -116,14 +116,11 @@ nvkm_pci_oneinit(struct nvkm_subdev *subdev)
 			return ret;
 	}
 
-bug("FIXME: install interrupt handler!\n");
-#if 0
 	ret = request_irq(pdev->irq, nvkm_pci_intr, IRQF_SHARED, "nvkm", pci);
 	if (ret)
 		return ret;
 
 	pci->irq = pdev->irq;
-#endif
 	return 0;
 }
 
