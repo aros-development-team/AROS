@@ -176,9 +176,9 @@ NOT_IMPLEMENTED_CONTINUE
 	disp->wq = create_singlethread_workqueue("nvkm-disp");
 	if (!disp->wq)
 		return -ENOMEM;
+#endif
 
 	INIT_WORK(&disp->supervisor, func->super);
-#endif
 
 	return nvkm_event_init(func->uevent, 1, ARRAY_SIZE(disp->chan),
 			       &disp->uevent);
@@ -549,13 +549,8 @@ nv50_disp_super_1(struct nv50_disp *disp)
 void
 nv50_disp_super(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
 	struct nv50_disp *disp =
-#if 0
 		container_of(work, struct nv50_disp, supervisor);
-#else
-NULL;
-#endif
 	struct nvkm_subdev *subdev = &disp->base.engine.subdev;
 	struct nvkm_device *device = subdev->device;
 	struct nvkm_head *head;
@@ -686,10 +681,7 @@ nv50_disp_intr(struct nv50_disp *disp)
 
 	if (intr1 & 0x00000070) {
 		disp->super = (intr1 & 0x00000070);
-NOT_IMPLEMENTED_STOP
-#if 0
 		queue_work(disp->wq, &disp->supervisor);
-#endif
 		nvkm_wr32(device, 0x610024, disp->super);
 	}
 }

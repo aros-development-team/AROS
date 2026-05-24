@@ -12,9 +12,7 @@ struct nv50_disp {
 	struct nvkm_disp base;
 
 	struct workqueue_struct *wq;
-#if !defined(__AROS__)
 	struct work_struct supervisor;
-#endif
 	u32 super;
 
 	struct nvkm_event uevent;

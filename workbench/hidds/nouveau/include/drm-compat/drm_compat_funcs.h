@@ -452,7 +452,8 @@ typedef struct {
         __ret;                                                    \
     })
 
-/* work_struct handling */
+/* workqueue handling */
+#define system_unbound_wq NULL
 #define INIT_WORK(_work, _func)  do { (_work)->func = (_func); } while (0)
 bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
 

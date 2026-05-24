@@ -2084,9 +2084,7 @@ nv50_disp_atomic_commit(struct drm_device *dev,
 	if (ret)
 		goto done;
 
-#if !defined(__AROS__)
 	INIT_WORK(&state->commit_work, nv50_disp_atomic_commit_work);
-#endif
 
 	ret = drm_atomic_helper_prepare_planes(dev, state);
 	if (ret)
@@ -2120,14 +2118,10 @@ nv50_disp_atomic_commit(struct drm_device *dev,
 	pm_runtime_get_noresume(dev->dev);
 #endif
 
-#if !defined(__AROS__)
 	if (nonblock)
 		queue_work(system_unbound_wq, &state->commit_work);
 	else
 		nv50_disp_atomic_commit_tail(state);
-#else
-		nv50_disp_atomic_commit_tail(state);
-#endif
 
 err_cleanup:
 	if (ret)
