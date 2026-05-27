@@ -102,19 +102,19 @@ extern OOP_AttrBase HiddI2CNouveauAttrBase;
 
 enum
 {
-    aoHidd_I2C_Nouveau_Chan,                /* [I..] The nouveau_i2c_chan object */
+    aoHidd_I2C_Nouveau_Adapter,     /* [I..] The i2c_adapter object */
     
     num_Hidd_I2C_Nouveau_Attrs
 };
 
-#define aHidd_I2C_Nouveau_Chan          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Chan)
+#define aHidd_I2C_Nouveau_Adapter          (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
 
 #define IS_I2CNOUVEAU_ATTR(attr, idx) \
     (((idx) = (attr) - HiddI2CNouveauAttrBase) < num_Hidd_I2C_Nouveau_Attrs)
 
 struct HIDDNouveauI2CData
 {
-    IPTR    i2c_chan;
+    IPTR i2c_adapter;
 };
 
 #define CLID_Hidd_Gallium_Nouveau       "hidd.gallium.nouveau"

@@ -94,9 +94,9 @@ USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
 
 USER_LDFLAGS += \
   -L$(top_libdir) \
-  -lhiddstubs -lstdcio -lstdc
+  -lstdcio -lstdc
   
  %build_module mmake=hidd-nouveau modname=nouveau modtype=hidd \
      files="$(NOUVEAU_HIDD_C_SOURCES)" cxxfiles="$(NOUVEAU_HIDD_CXX_SOURCES)" \
-     uselibs="oop libdrm_nouveau drm_nouveau"
+     uselibs="oop libdrm_nouveau drm_nouveau hiddstubs"
 

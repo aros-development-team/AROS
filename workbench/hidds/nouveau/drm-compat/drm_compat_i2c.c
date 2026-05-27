@@ -5,7 +5,7 @@
 #include <drm-compat/drm_compat_i2c.h>
 #include <drm-compat/drm_compat_funcs.h>
 
-/* I2C handling */
+#include <proto/oop.h>
 #include <hidd/i2c.h>
 
 OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
@@ -131,8 +131,40 @@ NOT_IMPLEMENTED_STOP
     return 0;
 }
 
-int i2c_del_adapter(struct i2c_adapter * adap)
+int i2c_del_adapter(struct i2c_adapter *adap)
 {
-    IMPLEMENT("\n");
+    NOT_IMPLEMENTED_STOP
+    return 0;
+}
+
+/* FIXME: Duplicate defines here. Don't include nouveau_intern.h */
+/* Ugly hack actually */
+#define CLID_Hidd_I2C_Nouveau       "hidd.i2c.nouveau"
+#define IID_Hidd_I2C_Nouveau        "hidd.i2c.nouveau"
+
+#define HiddI2CNouveauAttrBase      __IHidd_I2C_Nouveau
+#define aoHidd_I2C_Nouveau_Adapter  0
+#define aHidd_I2C_Nouveau_Adapter   (HiddI2CNouveauAttrBase + aoHidd_I2C_Nouveau_Adapter)
+
+OOP_AttrBase HiddI2CNouveauAttrBase = 0;
+
+int i2c_bit_add_bus(struct i2c_adapter *adap)
+{
+    if (HiddI2CNouveauAttrBase == 0)
+        HiddI2CNouveauAttrBase = OOP_ObtainAttrBase((STRPTR)IID_Hidd_I2C_Nouveau);
+
+    struct TagItem i2c_attrs[] =
+    {
+        { aHidd_I2C_Nouveau_Adapter, (IPTR)adap },
+        { TAG_DONE, 0UL }
+    };
+
+    adap->i2cdriver = (IPTR)OOP_NewObject(NULL, CLID_Hidd_I2C_Nouveau, i2c_attrs);
+    if (adap->i2cdriver == (IPTR)0)
+    {
+        bug("Failed to create CLID_Hidd_I2C_Nouveau object\n");
+        return -EINVAL;
+    }
+
     return 0;
 }

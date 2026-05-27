@@ -32,6 +32,8 @@ struct i2c_algo_bit_data
     void (*setscl)(void *data, int state);
     int  (*getsda)(void *data);
     int  (*getscl)(void *data);
+
+    APTR data;
 };
 
 #define I2C_M_RD    0x0001
@@ -47,5 +49,6 @@ struct i2c_msg
 /* I2C handling */
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num);
 int i2c_del_adapter(struct i2c_adapter *);
+int i2c_bit_add_bus(struct i2c_adapter *);
 
 #endif /* _DRM_COMPAT_I2C_ */
