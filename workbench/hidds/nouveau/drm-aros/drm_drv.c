@@ -102,7 +102,7 @@ int nouveau_init()
     if (!pdev)
         return -1;
 
-    // bug("\003\n"); /* Tell vga text mode debug output to die */
+    bug("\003\n"); /* Tell vga text mode debug output to die */
 
     if (nouveau_drm_probe(pdev, &dummy, &current_drm_device))
         return -1;
