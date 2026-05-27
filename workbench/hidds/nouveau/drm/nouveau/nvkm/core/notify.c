@@ -156,11 +156,7 @@ nvkm_notify_init(struct nvkm_object *object, struct nvkm_event *event,
 			notify->func = func;
 			notify->data = NULL;
 			if (ret = 0, work) {
-#if !defined(__AROS__)
 				INIT_WORK(&notify->work, nvkm_notify_work);
-#else
-				bug("CHECKME kvkm_notify_init, INIT_WORK\n");
-#endif
 				set_bit(NVKM_NOTIFY_WORK, &notify->flags);
 #if defined(__AROS__)
 				if (reply == 0)

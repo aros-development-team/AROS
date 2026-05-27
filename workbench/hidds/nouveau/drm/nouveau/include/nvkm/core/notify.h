@@ -20,9 +20,7 @@ struct nvkm_notify {
 	int index;
 	u32 size;
 
-#if !defined(__AROS__)
 	struct work_struct work;
-#endif
 	/* this is const for a *very* good reason - the data might be on the
 	 * stack from an irq handler.  if you're not core/notify.c then you
 	 * should probably think twice before casting it away...
