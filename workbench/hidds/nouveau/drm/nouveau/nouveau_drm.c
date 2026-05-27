@@ -81,7 +81,7 @@ static char *nouveau_config;
 // module_param_named(config, nouveau_config, charp, 0400);
 
 // MODULE_PARM_DESC(debug, "debug string to pass to driver core");
-static char *nouveau_debug;
+static char *nouveau_debug = "debug";
 // module_param_named(debug, nouveau_debug, charp, 0400);
 
 // MODULE_PARM_DESC(noaccel, "disable kernel/abi16 acceleration");

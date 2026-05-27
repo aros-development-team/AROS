@@ -122,8 +122,8 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 #define __read_mostly
 
 /* Kernel debug */
-#define CONFIG_NOUVEAU_DEBUG            3 /* NV_DGB_INFO */
-#define CONFIG_NOUVEAU_DEBUG_DEFAULT    3
+#define CONFIG_NOUVEAU_DEBUG            4 /* NV_DGB_DEBUG */
+#define CONFIG_NOUVEAU_DEBUG_DEFAULT    4
 #define KERN_CRIT
 #define KERN_ERR
 #define KERN_DEBUG
