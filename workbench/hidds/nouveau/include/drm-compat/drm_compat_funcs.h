@@ -398,11 +398,6 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
 int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr, size_t size, int prot);
 
 
-/* I2C handling */
-int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num);
-int i2c_del_adapter(struct i2c_adapter *);
-
-
 /* jiffies (lame) handling */
 #define jiffies get_jiffies()
 unsigned long get_jiffies();

@@ -40,6 +40,7 @@
 #include <linux/bitmap.h>
 #include <linux/string.h>
 #include <linux/math.h>
+#include <drm-compat/drm_compat_i2c.h>
 #endif
 
 #include <drm/drm_displayid.h>

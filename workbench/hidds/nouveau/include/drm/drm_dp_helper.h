@@ -29,6 +29,7 @@
 #include <linux/delay.h>
 #else
 #include <drm-compat/drm_compat_types.h>
+#include <drm-compat/drm_compat_i2c.h>
 #include <linux/bitops.h>
 #endif
 

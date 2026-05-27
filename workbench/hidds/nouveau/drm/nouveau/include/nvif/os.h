@@ -40,6 +40,7 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_dma.h>
 #include <drm-compat/drm_compat_pci.h>
+#include <drm-compat/drm_compat_i2c.h>
 
 #include <linux/overflow.h>
 #include <linux/rbtree.h>

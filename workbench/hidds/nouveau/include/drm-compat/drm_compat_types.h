@@ -163,43 +163,6 @@ static int init_##name()                        \
 }                                               \
 ADD2INIT(init_##name, 0)
 
-/* I2C handling */
-struct i2c_adapter
-{
-    IPTR i2cdriver;     /* OOP_Object * */
-    APTR algo_data;
-};
-
-struct i2c_client;
-struct i2c_board_info
-{
-    BYTE type[20]; /* Name? */
-    UWORD addr;
-};
-
-struct i2c_driver
-{
-    ULONG dummy;
-};
-
-struct i2c_algo_bit_data
-{
-    void (*setsda)(void *data, int state);
-    void (*setscl)(void *data, int state);
-    int  (*getsda)(void *data);
-    int  (*getscl)(void *data);
-};
-
-#define I2C_M_RD    0x0001
-
-struct i2c_msg
-{
-    UWORD addr;
-    UWORD flags;
-    UWORD len;
-    UBYTE *buf;
-};
-
 /* Wait queue handling */
 typedef struct MinList wait_queue_head_t;
 
