@@ -31,6 +31,7 @@
 #include <linux/vga_switcheroo.h>
 #else
 #include <drm-compat/drm_compat_mem.h>
+#include <drm-compat/drm_compat_funcs.h>
 #endif
 
 #include <drm/drm_atomic_helper.h>
@@ -448,9 +449,6 @@ nouveau_connector_ddc_detect(struct drm_connector *connector)
 
 			break;
 		case DCB_OUTPUT_LVDS:
-NOT_IMPLEMENTED_STOP
-#if 0
-
 			switcheroo_ddc = !!(vga_switcheroo_handler_flags() &
 					    VGA_SWITCHEROO_CAN_SWITCH_DDC);
 		/* fall-through */
@@ -464,7 +462,6 @@ NOT_IMPLEMENTED_STOP
 				found = nv_encoder;
 			if (switcheroo_ddc)
 				vga_switcheroo_unlock_ddc(dev->pdev);
-#endif
 
 			break;
 		}
@@ -595,13 +592,11 @@ nouveau_connector_detect(struct drm_connector *connector, bool force)
 	if (nv_encoder && (i2c = nv_encoder->i2c) != NULL) {
 		struct edid *new_edid;
 
-#if !defined(__AROS__)
 		if ((vga_switcheroo_handler_flags() &
 		     VGA_SWITCHEROO_CAN_SWITCH_DDC) &&
 		    nv_connector->type == DCB_CONNECTOR_LVDS)
 			new_edid = drm_get_edid_switcheroo(connector, i2c);
 		else
-#endif
 			new_edid = drm_get_edid(connector, i2c);
 
 		nouveau_connector_set_edid(nv_connector, new_edid);

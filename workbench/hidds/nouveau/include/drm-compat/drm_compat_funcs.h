@@ -476,6 +476,20 @@ u32 get_unaligned_le32(const void *p);
 u16 get_unaligned_le16(const void *p);
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages);
 
+#define VGA_SWITCHEROO_CAN_SWITCH_DDC 0x1
+static inline int vga_switcheroo_handler_flags()
+{
+    return 0x0;
+}
+struct pci_dev;
+static inline void vga_switcheroo_lock_ddc(struct pci_dev *pdev)
+{
+}
+
+static inline void vga_switcheroo_unlock_ddc(struct pci_dev *pdev)
+{
+}
+
 #define u64_to_user_ptr(x) ((void *)(IPTR)(x))
 
 #endif /* _DRM_COMPAT_FUNCS_ */
