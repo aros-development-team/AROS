@@ -1334,21 +1334,21 @@ struct drm_connector {
 // 	 */
 // 	struct i2c_adapter *ddc;
 
-// 	/**
-// 	 * @null_edid_counter: track sinks that give us all zeros for the EDID.
-// 	 * Needed to workaround some HW bugs where we get all 0s
-// 	 */
-// 	int null_edid_counter;
+	/**
+	 * @null_edid_counter: track sinks that give us all zeros for the EDID.
+	 * Needed to workaround some HW bugs where we get all 0s
+	 */
+	int null_edid_counter;
 
-// 	/** @bad_edid_counter: track sinks that give us an EDID with invalid checksum */
-// 	unsigned bad_edid_counter;
+	/** @bad_edid_counter: track sinks that give us an EDID with invalid checksum */
+	unsigned bad_edid_counter;
 
-// 	/**
-// 	 * @edid_corrupt: Indicates whether the last read EDID was corrupt. Used
-// 	 * in Displayport compliance testing - Displayport Link CTS Core 1.2
-// 	 * rev1.1 4.2.2.6
-// 	 */
-// 	bool edid_corrupt;
+	/**
+	 * @edid_corrupt: Indicates whether the last read EDID was corrupt. Used
+	 * in Displayport compliance testing - Displayport Link CTS Core 1.2
+	 * rev1.1 4.2.2.6
+	 */
+	bool edid_corrupt;
 
 // 	/** @debugfs_entry: debugfs directory for this connector */
 // 	struct dentry *debugfs_entry;

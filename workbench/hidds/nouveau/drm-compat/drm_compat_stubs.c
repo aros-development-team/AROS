@@ -64,7 +64,7 @@ int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src) { NOT_IMPLE
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPLEMENTED_STOP }
 
 unsigned int drm_debug;
-void drm_mode_set_name(struct drm_display_mode *mode) { NOT_IMPLEMENTED_STOP }
+
 
 u64 dma_fence_context_alloc(unsigned int num) { bug("FIXME!!! dma_fence_context_alloc\n"); return 100; }
 

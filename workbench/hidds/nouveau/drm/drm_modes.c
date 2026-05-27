@@ -737,22 +737,22 @@ EXPORT_SYMBOL(drm_gtf_mode);
 // #endif /* CONFIG_OF */
 // #endif /* CONFIG_VIDEOMODE_HELPERS */
 
-// /**
-//  * drm_mode_set_name - set the name on a mode
-//  * @mode: name will be set in this mode
-//  *
-//  * Set the name of @mode to a standard format which is <hdisplay>x<vdisplay>
-//  * with an optional 'i' suffix for interlaced modes.
-//  */
-// void drm_mode_set_name(struct drm_display_mode *mode)
-// {
-// 	bool interlaced = !!(mode->flags & DRM_MODE_FLAG_INTERLACE);
+/**
+ * drm_mode_set_name - set the name on a mode
+ * @mode: name will be set in this mode
+ *
+ * Set the name of @mode to a standard format which is <hdisplay>x<vdisplay>
+ * with an optional 'i' suffix for interlaced modes.
+ */
+void drm_mode_set_name(struct drm_display_mode *mode)
+{
+	bool interlaced = !!(mode->flags & DRM_MODE_FLAG_INTERLACE);
 
-// 	snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "%dx%d%s",
-// 		 mode->hdisplay, mode->vdisplay,
-// 		 interlaced ? "i" : "");
-// }
-// EXPORT_SYMBOL(drm_mode_set_name);
+	snprintf(mode->name, DRM_DISPLAY_MODE_LEN, "%dx%d%s",
+		 mode->hdisplay, mode->vdisplay,
+		 interlaced ? "i" : "");
+}
+EXPORT_SYMBOL(drm_mode_set_name);
 
 /**
  * drm_mode_hsync - get the hsync of a mode

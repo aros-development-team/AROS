@@ -1560,33 +1560,35 @@ drm_do_probe_ddc_edid(void *data, u8 *buf, unsigned int block, size_t len)
 	return ret == xfers ? 0 : -1;
 }
 
-// static void connector_bad_edid(struct drm_connector *connector,
-// 			       u8 *edid, int num_blocks)
-// {
-// 	int i;
+static void connector_bad_edid(struct drm_connector *connector,
+			       u8 *edid, int num_blocks)
+{
+	int i;
 
-// 	if (connector->bad_edid_counter++ && !(drm_debug & DRM_UT_KMS))
-// 		return;
+	if (connector->bad_edid_counter++ && !(drm_debug & DRM_UT_KMS))
+		return;
 
-// 	dev_warn(connector->dev->dev,
-// 		 "%s: EDID is invalid:\n",
-// 		 connector->name);
-// 	for (i = 0; i < num_blocks; i++) {
-// 		u8 *block = edid + i * EDID_LENGTH;
-// 		char prefix[20];
+	dev_warn(connector->dev->dev,
+		 "%s: EDID is invalid:\n",
+		 connector->name);
+	for (i = 0; i < num_blocks; i++) {
+		u8 *block = edid + i * EDID_LENGTH;
+		char prefix[20];
 
-// 		if (drm_edid_is_zero(block, EDID_LENGTH))
-// 			sprintf(prefix, "\t[%02x] ZERO ", i);
-// 		else if (!drm_edid_block_valid(block, i, false, NULL))
-// 			sprintf(prefix, "\t[%02x] BAD  ", i);
-// 		else
-// 			sprintf(prefix, "\t[%02x] GOOD ", i);
+		if (drm_edid_is_zero(block, EDID_LENGTH))
+			sprintf(prefix, "\t[%02x] ZERO ", i);
+		else if (!drm_edid_block_valid(block, i, false, NULL))
+			sprintf(prefix, "\t[%02x] BAD  ", i);
+		else
+			sprintf(prefix, "\t[%02x] GOOD ", i);
 
-// 		print_hex_dump(KERN_WARNING,
-// 			       prefix, DUMP_PREFIX_NONE, 16, 1,
-// 			       block, EDID_LENGTH, false);
-// 	}
-// }
+#if !defined(__AROS__)
+		print_hex_dump(KERN_WARNING,
+			       prefix, DUMP_PREFIX_NONE, 16, 1,
+			       block, EDID_LENGTH, false);
+#endif
+	}
+}
 
 /* Get override or firmware EDID */
 static struct edid *drm_get_override_edid(struct drm_connector *connector)
@@ -1661,8 +1663,6 @@ struct edid *drm_do_get_edid(struct drm_connector *connector,
 	u8 *edid, *new;
 	struct edid *override;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	override = drm_get_override_edid(connector);
 	if (override)
 		return override;
@@ -1744,7 +1744,6 @@ carp:
 out:
 	kfree(edid);
 	return NULL;
-#endif
 }
 
 

@@ -8,6 +8,7 @@
 #include <proto/oop.h>
 #include <hidd/i2c.h>
 
+
 OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
 
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
@@ -15,7 +16,7 @@ int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
     /* FIXME: This function is not generic. It has hardcoded cases that are present in nouveau */
     if (adap->i2cdriver == (IPTR)0)
     {
-        bug("ERROR: i2c_transfer called without driver present\n");
+        bug("ERROR: i2c_transfer called without driver present for adapter %p\n", adap);
 NOT_IMPLEMENTED_STOP
         return 0;
     }
@@ -34,13 +35,10 @@ NOT_IMPLEMENTED_STOP
     {
         /* This is probing for DDC */
         D(bug("i2c_transfer - probing for DDC\n"));
-NOT_IMPLEMENTED_STOP
-#if 0
-        if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, 0xa0)) /* AROS has shifted addresses (<< 1) */
+        if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, msgs[0].addr << 1)) /* AROS has shifted addresses (<< 1) */
             return 2;
         else
             return 0;
-#endif
     }
     else if ((num == 2) && (msgs[0].addr == 0x75) && (msgs[1].addr == 0x75) && (msgs[0].len == 1) && (msgs[1].len == 1))
     {
@@ -59,16 +57,16 @@ NOT_IMPLEMENTED_STOP
         /* This is reading data from DDC */
         struct pHidd_I2CDevice_WriteRead msg;
         BOOL result = FALSE;
-        
+
         struct TagItem attrs[] = 
         {
             { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
-            { aHidd_I2CDevice_Address,  0xa0                    },
+            { aHidd_I2CDevice_Address,  0xa0                    }, /* AROS has shifted addresses (<< 1) */
             { aHidd_I2CDevice_Name,     (IPTR)"Read DDC"        },
             { TAG_DONE, 0UL }
         };
 
-        (bug("i2c_transfer - reading from DDC\n"));
+        D(bug("i2c_transfer - reading from DDC\n"));
 
         OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
         
@@ -92,7 +90,7 @@ NOT_IMPLEMENTED_STOP
         /* This is reading data from register 0x54 */
         struct pHidd_I2CDevice_WriteRead msg;
         BOOL result = FALSE;
-        
+NOT_IMPLEMENTED_STOP
         struct TagItem attrs[] = 
         {
             { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
