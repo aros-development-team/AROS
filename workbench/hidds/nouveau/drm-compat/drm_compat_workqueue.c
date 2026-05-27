@@ -2,6 +2,8 @@
     Copyright 2026, The AROS Development Team. All rights reserved.
 */
 
+#define DEBUG 1
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -9,7 +11,11 @@
 
 bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
 {
-    if (!wq || !work)
+    /* wq is NULL in current implementation */
+
+    D(bug("queue_work emulation called\n"));
+
+    if (!work)
         return FALSE;
 
     /* Dummy implementation, just execute */
