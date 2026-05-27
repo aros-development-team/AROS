@@ -1020,13 +1020,10 @@ get_tmds_link_bandwidth(struct drm_connector *connector)
 	unsigned duallink_scale =
 		nouveau_duallink && nv_encoder->dcb->duallink_possible ? 2 : 1;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (drm_detect_hdmi_monitor(nv_connector->edid)) {
 		info = &nv_connector->base.display_info;
 		duallink_scale = 1;
 	}
-#endif
 
 	if (info) {
 		if (nouveau_hdmimhz > 0)
@@ -1035,15 +1032,12 @@ NOT_IMPLEMENTED_STOP
 		 * can do 297 MHz. Unclear how this can be determined.
 		 */
 		if (drm->client.device.info.chipset >= 0x120) {
-NOT_IMPLEMENTED_STOP
-#if 0
 			const int max_tmds_clock =
 				info->hdmi.scdc.scrambling.supported ?
 				594000 : 340000;
 			return info->max_tmds_clock ?
 				min(info->max_tmds_clock, max_tmds_clock) :
 				max_tmds_clock;
-#endif
 		}
 		if (drm->client.device.info.family >= NV_DEVICE_INFO_V0_KEPLER)
 			return 297000;

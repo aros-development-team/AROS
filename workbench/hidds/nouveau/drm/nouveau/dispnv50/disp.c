@@ -39,7 +39,7 @@
 #include <drm/drm_fb_helper.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_probe_helper.h>
-// #include <drm/drm_scdc_helper.h>
+#include <drm/drm_scdc_helper.h>
 // #include <drm/drm_vblank.h>
 
 #include <nvif/class.h>
@@ -580,8 +580,6 @@ nv50_hdmi_enable(struct drm_encoder *encoder, struct drm_display_mode *mode)
 	struct nouveau_connector *nv_connector;
 	struct drm_hdmi_info *hdmi;
 	u32 max_ac_packet;
-NOT_IMPLEMENTED_STOP
-#if 0
 	union hdmi_infoframe avi_frame;
 	union hdmi_infoframe vendor_frame;
 	bool high_tmds_clock_ratio = false, scrambling = false;
@@ -655,7 +653,6 @@ NOT_IMPLEMENTED_STOP
 	if (ret < 0)
 		NV_ERROR(drm, "Failure to write SCDC_TMDS_CONFIG = 0x%02x: %d\n",
 			 config, ret);
-#endif
 }
 
 /******************************************************************************
@@ -1515,13 +1512,10 @@ nv50_sor_enable(struct drm_encoder *encoder)
 			 *  - Not an HDMI monitor, since there's no dual-link
 			 *    on HDMI.
 			 */
-NOT_IMPLEMENTED_STOP
-#if 0
 			if (mode->clock >= 165000 &&
 			    nv_encoder->dcb->duallink_possible &&
 			    !drm_detect_hdmi_monitor(nv_connector->edid))
 				proto |= 0x4;
-#endif
 		} else {
 			proto = 0x2;
 		}

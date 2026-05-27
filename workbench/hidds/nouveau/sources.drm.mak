@@ -16,6 +16,7 @@ AROS_LIBDRM_NVIDIA_SOURCES = \
             libdrm/arosdrm_nouveau \
 
 AROS_DRM_CORE_SOURCES = \
+            drm/drm_scdc_helper \
             drm/drm_rect \
             drm/drm_bridge \
             drm/drm_atomic_helper \
@@ -53,6 +54,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/drm_compat_workqueue \
             drm-compat/drm_compat_stubs \
             drm-compat/linux_compat \
+            drm-compat/linux_hdmi \
             drm-compat/linux_idr \
 
 AROS_DRM_NVIDIA_SOURCES = \

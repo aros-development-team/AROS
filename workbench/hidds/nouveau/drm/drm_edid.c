@@ -3122,18 +3122,18 @@ static bool drm_valid_cea_vic(u8 vic)
 	return vic > 0 && vic < ARRAY_SIZE(edid_cea_modes);
 }
 
-// /**
-//  * drm_get_cea_aspect_ratio - get the picture aspect ratio corresponding to
-//  * the input VIC from the CEA mode list
-//  * @video_code: ID given to each of the CEA modes
-//  *
-//  * Returns picture aspect ratio
-//  */
-// enum hdmi_picture_aspect drm_get_cea_aspect_ratio(const u8 video_code)
-// {
-// 	return edid_cea_modes[video_code].picture_aspect_ratio;
-// }
-// EXPORT_SYMBOL(drm_get_cea_aspect_ratio);
+/**
+ * drm_get_cea_aspect_ratio - get the picture aspect ratio corresponding to
+ * the input VIC from the CEA mode list
+ * @video_code: ID given to each of the CEA modes
+ *
+ * Returns picture aspect ratio
+ */
+enum hdmi_picture_aspect drm_get_cea_aspect_ratio(const u8 video_code)
+{
+	return edid_cea_modes[video_code].picture_aspect_ratio;
+}
+EXPORT_SYMBOL(drm_get_cea_aspect_ratio);
 
 /*
  * Calculate the alternate clock for HDMI modes (those from the HDMI vendor
@@ -5014,18 +5014,22 @@ EXPORT_SYMBOL(drm_add_modes_noedid);
 // }
 // EXPORT_SYMBOL(drm_set_preferred_mode);
 
-// static bool is_hdmi2_sink(struct drm_connector *connector)
-// {
-// 	/*
-// 	 * FIXME: sil-sii8620 doesn't have a connector around when
-// 	 * we need one, so we have to be prepared for a NULL connector.
-// 	 */
-// 	if (!connector)
-// 		return true;
+static bool is_hdmi2_sink(struct drm_connector *connector)
+{
+	/*
+	 * FIXME: sil-sii8620 doesn't have a connector around when
+	 * we need one, so we have to be prepared for a NULL connector.
+	 */
+	if (!connector)
+		return true;
 
-// 	return connector->display_info.hdmi.scdc.supported ||
-// 		connector->display_info.color_formats & DRM_COLOR_FORMAT_YCRCB420;
-// }
+#if !defined(__AROS__)
+	return connector->display_info.hdmi.scdc.supported ||
+		connector->display_info.color_formats & DRM_COLOR_FORMAT_YCRCB420;
+#else
+	return connector->display_info.hdmi.scdc.supported;
+#endif
+}
 
 // static inline bool is_eotf_supported(u8 output_eotf, u8 sink_eotf)
 // {
@@ -5099,94 +5103,98 @@ EXPORT_SYMBOL(drm_add_modes_noedid);
 // }
 // EXPORT_SYMBOL(drm_hdmi_infoframe_set_hdr_metadata);
 
-// /**
-//  * drm_hdmi_avi_infoframe_from_display_mode() - fill an HDMI AVI infoframe with
-//  *                                              data from a DRM display mode
-//  * @frame: HDMI AVI infoframe
-//  * @connector: the connector
-//  * @mode: DRM display mode
-//  *
-//  * Return: 0 on success or a negative error code on failure.
-//  */
-// int
-// drm_hdmi_avi_infoframe_from_display_mode(struct hdmi_avi_infoframe *frame,
-// 					 struct drm_connector *connector,
-// 					 const struct drm_display_mode *mode)
-// {
-// 	enum hdmi_picture_aspect picture_aspect;
-// 	int err;
+/**
+ * drm_hdmi_avi_infoframe_from_display_mode() - fill an HDMI AVI infoframe with
+ *                                              data from a DRM display mode
+ * @frame: HDMI AVI infoframe
+ * @connector: the connector
+ * @mode: DRM display mode
+ *
+ * Return: 0 on success or a negative error code on failure.
+ */
+int
+drm_hdmi_avi_infoframe_from_display_mode(struct hdmi_avi_infoframe *frame,
+					 struct drm_connector *connector,
+					 const struct drm_display_mode *mode)
+{
+	enum hdmi_picture_aspect picture_aspect;
+	int err;
 
-// 	if (!frame || !mode)
-// 		return -EINVAL;
+	if (!frame || !mode)
+		return -EINVAL;
 
-// 	err = hdmi_avi_infoframe_init(frame);
-// 	if (err < 0)
-// 		return err;
+#if !defined(__AROS__)
+	err = hdmi_avi_infoframe_init(frame);
+	if (err < 0)
+		return err;
+#else
+	hdmi_avi_infoframe_init(frame);
+#endif
 
-// 	if (mode->flags & DRM_MODE_FLAG_DBLCLK)
-// 		frame->pixel_repeat = 1;
+	if (mode->flags & DRM_MODE_FLAG_DBLCLK)
+		frame->pixel_repeat = 1;
 
-// 	frame->video_code = drm_match_cea_mode(mode);
+	frame->video_code = drm_match_cea_mode(mode);
 
-// 	/*
-// 	 * HDMI 1.4 VIC range: 1 <= VIC <= 64 (CEA-861-D) but
-// 	 * HDMI 2.0 VIC range: 1 <= VIC <= 107 (CEA-861-F). So we
-// 	 * have to make sure we dont break HDMI 1.4 sinks.
-// 	 */
-// 	if (!is_hdmi2_sink(connector) && frame->video_code > 64)
-// 		frame->video_code = 0;
+	/*
+	 * HDMI 1.4 VIC range: 1 <= VIC <= 64 (CEA-861-D) but
+	 * HDMI 2.0 VIC range: 1 <= VIC <= 107 (CEA-861-F). So we
+	 * have to make sure we dont break HDMI 1.4 sinks.
+	 */
+	if (!is_hdmi2_sink(connector) && frame->video_code > 64)
+		frame->video_code = 0;
 
-// 	/*
-// 	 * HDMI spec says if a mode is found in HDMI 1.4b 4K modes
-// 	 * we should send its VIC in vendor infoframes, else send the
-// 	 * VIC in AVI infoframes. Lets check if this mode is present in
-// 	 * HDMI 1.4b 4K modes
-// 	 */
-// 	if (frame->video_code) {
-// 		u8 vendor_if_vic = drm_match_hdmi_mode(mode);
-// 		bool is_s3d = mode->flags & DRM_MODE_FLAG_3D_MASK;
+	/*
+	 * HDMI spec says if a mode is found in HDMI 1.4b 4K modes
+	 * we should send its VIC in vendor infoframes, else send the
+	 * VIC in AVI infoframes. Lets check if this mode is present in
+	 * HDMI 1.4b 4K modes
+	 */
+	if (frame->video_code) {
+		u8 vendor_if_vic = drm_match_hdmi_mode(mode);
+		bool is_s3d = mode->flags & DRM_MODE_FLAG_3D_MASK;
 
-// 		if (drm_valid_hdmi_vic(vendor_if_vic) && !is_s3d)
-// 			frame->video_code = 0;
-// 	}
+		if (drm_valid_hdmi_vic(vendor_if_vic) && !is_s3d)
+			frame->video_code = 0;
+	}
 
-// 	frame->picture_aspect = HDMI_PICTURE_ASPECT_NONE;
+	frame->picture_aspect = HDMI_PICTURE_ASPECT_NONE;
 
-// 	/*
-// 	 * As some drivers don't support atomic, we can't use connector state.
-// 	 * So just initialize the frame with default values, just the same way
-// 	 * as it's done with other properties here.
-// 	 */
-// 	frame->content_type = HDMI_CONTENT_TYPE_GRAPHICS;
-// 	frame->itc = 0;
+	/*
+	 * As some drivers don't support atomic, we can't use connector state.
+	 * So just initialize the frame with default values, just the same way
+	 * as it's done with other properties here.
+	 */
+	frame->content_type = HDMI_CONTENT_TYPE_GRAPHICS;
+	frame->itc = 0;
 
-// 	/*
-// 	 * Populate picture aspect ratio from either
-// 	 * user input (if specified) or from the CEA mode list.
-// 	 */
-// 	picture_aspect = mode->picture_aspect_ratio;
-// 	if (picture_aspect == HDMI_PICTURE_ASPECT_NONE)
-// 		picture_aspect = drm_get_cea_aspect_ratio(frame->video_code);
+	/*
+	 * Populate picture aspect ratio from either
+	 * user input (if specified) or from the CEA mode list.
+	 */
+	picture_aspect = mode->picture_aspect_ratio;
+	if (picture_aspect == HDMI_PICTURE_ASPECT_NONE)
+		picture_aspect = drm_get_cea_aspect_ratio(frame->video_code);
 
-// 	/*
-// 	 * The infoframe can't convey anything but none, 4:3
-// 	 * and 16:9, so if the user has asked for anything else
-// 	 * we can only satisfy it by specifying the right VIC.
-// 	 */
-// 	if (picture_aspect > HDMI_PICTURE_ASPECT_16_9) {
-// 		if (picture_aspect !=
-// 		    drm_get_cea_aspect_ratio(frame->video_code))
-// 			return -EINVAL;
-// 		picture_aspect = HDMI_PICTURE_ASPECT_NONE;
-// 	}
+	/*
+	 * The infoframe can't convey anything but none, 4:3
+	 * and 16:9, so if the user has asked for anything else
+	 * we can only satisfy it by specifying the right VIC.
+	 */
+	if (picture_aspect > HDMI_PICTURE_ASPECT_16_9) {
+		if (picture_aspect !=
+		    drm_get_cea_aspect_ratio(frame->video_code))
+			return -EINVAL;
+		picture_aspect = HDMI_PICTURE_ASPECT_NONE;
+	}
 
-// 	frame->picture_aspect = picture_aspect;
-// 	frame->active_aspect = HDMI_ACTIVE_ASPECT_PICTURE;
-// 	frame->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+	frame->picture_aspect = picture_aspect;
+	frame->active_aspect = HDMI_ACTIVE_ASPECT_PICTURE;
+	frame->scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_hdmi_avi_infoframe_from_display_mode);
+	return 0;
+}
+EXPORT_SYMBOL(drm_hdmi_avi_infoframe_from_display_mode);
 
 // /* HDMI Colorspace Spec Definitions */
 // #define FULL_COLORIMETRY_MASK		0x1FF
@@ -5313,93 +5321,93 @@ EXPORT_SYMBOL(drm_add_modes_noedid);
 // }
 // EXPORT_SYMBOL(drm_hdmi_avi_infoframe_quant_range);
 
-// static enum hdmi_3d_structure
-// s3d_structure_from_display_mode(const struct drm_display_mode *mode)
-// {
-// 	u32 layout = mode->flags & DRM_MODE_FLAG_3D_MASK;
+static enum hdmi_3d_structure
+s3d_structure_from_display_mode(const struct drm_display_mode *mode)
+{
+	u32 layout = mode->flags & DRM_MODE_FLAG_3D_MASK;
 
-// 	switch (layout) {
-// 	case DRM_MODE_FLAG_3D_FRAME_PACKING:
-// 		return HDMI_3D_STRUCTURE_FRAME_PACKING;
-// 	case DRM_MODE_FLAG_3D_FIELD_ALTERNATIVE:
-// 		return HDMI_3D_STRUCTURE_FIELD_ALTERNATIVE;
-// 	case DRM_MODE_FLAG_3D_LINE_ALTERNATIVE:
-// 		return HDMI_3D_STRUCTURE_LINE_ALTERNATIVE;
-// 	case DRM_MODE_FLAG_3D_SIDE_BY_SIDE_FULL:
-// 		return HDMI_3D_STRUCTURE_SIDE_BY_SIDE_FULL;
-// 	case DRM_MODE_FLAG_3D_L_DEPTH:
-// 		return HDMI_3D_STRUCTURE_L_DEPTH;
-// 	case DRM_MODE_FLAG_3D_L_DEPTH_GFX_GFX_DEPTH:
-// 		return HDMI_3D_STRUCTURE_L_DEPTH_GFX_GFX_DEPTH;
-// 	case DRM_MODE_FLAG_3D_TOP_AND_BOTTOM:
-// 		return HDMI_3D_STRUCTURE_TOP_AND_BOTTOM;
-// 	case DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF:
-// 		return HDMI_3D_STRUCTURE_SIDE_BY_SIDE_HALF;
-// 	default:
-// 		return HDMI_3D_STRUCTURE_INVALID;
-// 	}
-// }
+	switch (layout) {
+	case DRM_MODE_FLAG_3D_FRAME_PACKING:
+		return HDMI_3D_STRUCTURE_FRAME_PACKING;
+	case DRM_MODE_FLAG_3D_FIELD_ALTERNATIVE:
+		return HDMI_3D_STRUCTURE_FIELD_ALTERNATIVE;
+	case DRM_MODE_FLAG_3D_LINE_ALTERNATIVE:
+		return HDMI_3D_STRUCTURE_LINE_ALTERNATIVE;
+	case DRM_MODE_FLAG_3D_SIDE_BY_SIDE_FULL:
+		return HDMI_3D_STRUCTURE_SIDE_BY_SIDE_FULL;
+	case DRM_MODE_FLAG_3D_L_DEPTH:
+		return HDMI_3D_STRUCTURE_L_DEPTH;
+	case DRM_MODE_FLAG_3D_L_DEPTH_GFX_GFX_DEPTH:
+		return HDMI_3D_STRUCTURE_L_DEPTH_GFX_GFX_DEPTH;
+	case DRM_MODE_FLAG_3D_TOP_AND_BOTTOM:
+		return HDMI_3D_STRUCTURE_TOP_AND_BOTTOM;
+	case DRM_MODE_FLAG_3D_SIDE_BY_SIDE_HALF:
+		return HDMI_3D_STRUCTURE_SIDE_BY_SIDE_HALF;
+	default:
+		return HDMI_3D_STRUCTURE_INVALID;
+	}
+}
 
-// /**
-//  * drm_hdmi_vendor_infoframe_from_display_mode() - fill an HDMI infoframe with
-//  * data from a DRM display mode
-//  * @frame: HDMI vendor infoframe
-//  * @connector: the connector
-//  * @mode: DRM display mode
-//  *
-//  * Note that there's is a need to send HDMI vendor infoframes only when using a
-//  * 4k or stereoscopic 3D mode. So when giving any other mode as input this
-//  * function will return -EINVAL, error that can be safely ignored.
-//  *
-//  * Return: 0 on success or a negative error code on failure.
-//  */
-// int
-// drm_hdmi_vendor_infoframe_from_display_mode(struct hdmi_vendor_infoframe *frame,
-// 					    struct drm_connector *connector,
-// 					    const struct drm_display_mode *mode)
-// {
-// 	/*
-// 	 * FIXME: sil-sii8620 doesn't have a connector around when
-// 	 * we need one, so we have to be prepared for a NULL connector.
-// 	 */
-// 	bool has_hdmi_infoframe = connector ?
-// 		connector->display_info.has_hdmi_infoframe : false;
-// 	int err;
-// 	u32 s3d_flags;
-// 	u8 vic;
+/**
+ * drm_hdmi_vendor_infoframe_from_display_mode() - fill an HDMI infoframe with
+ * data from a DRM display mode
+ * @frame: HDMI vendor infoframe
+ * @connector: the connector
+ * @mode: DRM display mode
+ *
+ * Note that there's is a need to send HDMI vendor infoframes only when using a
+ * 4k or stereoscopic 3D mode. So when giving any other mode as input this
+ * function will return -EINVAL, error that can be safely ignored.
+ *
+ * Return: 0 on success or a negative error code on failure.
+ */
+int
+drm_hdmi_vendor_infoframe_from_display_mode(struct hdmi_vendor_infoframe *frame,
+					    struct drm_connector *connector,
+					    const struct drm_display_mode *mode)
+{
+	/*
+	 * FIXME: sil-sii8620 doesn't have a connector around when
+	 * we need one, so we have to be prepared for a NULL connector.
+	 */
+	bool has_hdmi_infoframe = connector ?
+		connector->display_info.has_hdmi_infoframe : false;
+	int err;
+	u32 s3d_flags;
+	u8 vic;
 
-// 	if (!frame || !mode)
-// 		return -EINVAL;
+	if (!frame || !mode)
+		return -EINVAL;
 
-// 	if (!has_hdmi_infoframe)
-// 		return -EINVAL;
+	if (!has_hdmi_infoframe)
+		return -EINVAL;
 
-// 	vic = drm_match_hdmi_mode(mode);
-// 	s3d_flags = mode->flags & DRM_MODE_FLAG_3D_MASK;
+	vic = drm_match_hdmi_mode(mode);
+	s3d_flags = mode->flags & DRM_MODE_FLAG_3D_MASK;
 
-// 	/*
-// 	 * Even if it's not absolutely necessary to send the infoframe
-// 	 * (ie.vic==0 and s3d_struct==0) we will still send it if we
-// 	 * know that the sink can handle it. This is based on a
-// 	 * suggestion in HDMI 2.0 Appendix F. Apparently some sinks
-// 	 * have trouble realizing that they shuld switch from 3D to 2D
-// 	 * mode if the source simply stops sending the infoframe when
-// 	 * it wants to switch from 3D to 2D.
-// 	 */
+	/*
+	 * Even if it's not absolutely necessary to send the infoframe
+	 * (ie.vic==0 and s3d_struct==0) we will still send it if we
+	 * know that the sink can handle it. This is based on a
+	 * suggestion in HDMI 2.0 Appendix F. Apparently some sinks
+	 * have trouble realizing that they shuld switch from 3D to 2D
+	 * mode if the source simply stops sending the infoframe when
+	 * it wants to switch from 3D to 2D.
+	 */
 
-// 	if (vic && s3d_flags)
-// 		return -EINVAL;
+	if (vic && s3d_flags)
+		return -EINVAL;
 
-// 	err = hdmi_vendor_infoframe_init(frame);
-// 	if (err < 0)
-// 		return err;
+	err = hdmi_vendor_infoframe_init(frame);
+	if (err < 0)
+		return err;
 
-// 	frame->vic = vic;
-// 	frame->s3d_struct = s3d_structure_from_display_mode(mode);
+	frame->vic = vic;
+	frame->s3d_struct = s3d_structure_from_display_mode(mode);
 
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_hdmi_vendor_infoframe_from_display_mode);
+	return 0;
+}
+EXPORT_SYMBOL(drm_hdmi_vendor_infoframe_from_display_mode);
 
 static int drm_parse_tiled_block(struct drm_connector *connector,
 				 struct displayid_block *block)

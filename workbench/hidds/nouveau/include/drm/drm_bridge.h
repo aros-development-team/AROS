@@ -408,7 +408,9 @@ struct drm_bridge {
 
 void drm_bridge_add(struct drm_bridge *bridge);
 void drm_bridge_remove(struct drm_bridge *bridge);
+#ifdef CONFIG_OF
 struct drm_bridge *of_drm_find_bridge(struct device_node *np);
+#endif
 int drm_bridge_attach(struct drm_encoder *encoder, struct drm_bridge *bridge,
 		      struct drm_bridge *previous);
 
