@@ -88,6 +88,7 @@ void drm_dev_put(struct drm_device *dev)
 
 int nouveau_drm_probe(struct pci_dev *pdev, const struct pci_device_id *pent, struct drm_device **pdrm_dev);
 struct drm_device *current_drm_device;
+BOOL workqueue_init();
 
 int nouveau_init()
 {
@@ -100,6 +101,9 @@ int nouveau_init()
     pdev = drm_aros_pci_find_supported_video_card();
 
     if (!pdev)
+        return -1;
+
+    if (!workqueue_init())
         return -1;
 
     bug("\003\n"); /* Tell vga text mode debug output to die */
