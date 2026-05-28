@@ -243,37 +243,39 @@ struct drm_gem_object {
 	 */
 	int name;
 
-// 	/**
-// 	 * @dma_buf:
-// 	 *
-// 	 * dma-buf associated with this GEM object.
-// 	 *
-// 	 * Pointer to the dma-buf associated with this gem object (either
-// 	 * through importing or exporting). We break the resulting reference
-// 	 * loop when the last gem handle for this object is released.
-// 	 *
-// 	 * Protected by &drm_device.object_name_lock.
-// 	 */
-// 	struct dma_buf *dma_buf;
+#if !defined(__AROS__)
+	/**
+	 * @dma_buf:
+	 *
+	 * dma-buf associated with this GEM object.
+	 *
+	 * Pointer to the dma-buf associated with this gem object (either
+	 * through importing or exporting). We break the resulting reference
+	 * loop when the last gem handle for this object is released.
+	 *
+	 * Protected by &drm_device.object_name_lock.
+	 */
+	struct dma_buf *dma_buf;
 
-// 	/**
-// 	 * @import_attach:
-// 	 *
-// 	 * dma-buf attachment backing this object.
-// 	 *
-// 	 * Any foreign dma_buf imported as a gem object has this set to the
-// 	 * attachment point for the device. This is invariant over the lifetime
-// 	 * of a gem object.
-// 	 *
-// 	 * The &drm_driver.gem_free_object callback is responsible for cleaning
-// 	 * up the dma_buf attachment and references acquired at import time.
-// 	 *
-// 	 * Note that the drm gem/prime core does not depend upon drivers setting
-// 	 * this field any more. So for drivers where this doesn't make sense
-// 	 * (e.g. virtual devices or a displaylink behind an usb bus) they can
-// 	 * simply leave it as NULL.
-// 	 */
-// 	struct dma_buf_attachment *import_attach;
+	/**
+	 * @import_attach:
+	 *
+	 * dma-buf attachment backing this object.
+	 *
+	 * Any foreign dma_buf imported as a gem object has this set to the
+	 * attachment point for the device. This is invariant over the lifetime
+	 * of a gem object.
+	 *
+	 * The &drm_driver.gem_free_object callback is responsible for cleaning
+	 * up the dma_buf attachment and references acquired at import time.
+	 *
+	 * Note that the drm gem/prime core does not depend upon drivers setting
+	 * this field any more. So for drivers where this doesn't make sense
+	 * (e.g. virtual devices or a displaylink behind an usb bus) they can
+	 * simply leave it as NULL.
+	 */
+	struct dma_buf_attachment *import_attach;
+#endif
 
 	/**
 	 * @resv:

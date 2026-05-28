@@ -143,8 +143,7 @@ nouveau_bo_del_ttm(struct ttm_buffer_object *bo)
 	WARN_ON(nvbo->pin_refcnt > 0);
 	nv10_bo_put_tile_region(dev, nvbo->tile, NULL);
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (bo->base.import_attach)
 		drm_prime_gem_destroy(&bo->base, bo->sg);
 #endif

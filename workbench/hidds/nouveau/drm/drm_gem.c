@@ -201,17 +201,14 @@ static void drm_gem_object_handle_free(struct drm_gem_object *obj)
 	}
 }
 
-static void drm_gem_object_exported_dma_buf_free(struct drm_gem_object *obj)
-{
-NOT_IMPLEMENTED_STOP
-#if 0
-	/* Unbreak the reference cycle if we have an exported dma_buf. */
-	if (obj->dma_buf) {
-		dma_buf_put(obj->dma_buf);
-		obj->dma_buf = NULL;
-	}
-#endif
-}
+// static void drm_gem_object_exported_dma_buf_free(struct drm_gem_object *obj)
+// {
+// 	/* Unbreak the reference cycle if we have an exported dma_buf. */
+// 	if (obj->dma_buf) {
+// 		dma_buf_put(obj->dma_buf);
+// 		obj->dma_buf = NULL;
+// 	}
+// }
 
 static void
 drm_gem_object_handle_put_unlocked(struct drm_gem_object *obj)
@@ -231,7 +228,9 @@ drm_gem_object_handle_put_unlocked(struct drm_gem_object *obj)
 	mutex_lock(&dev->object_name_lock);
 	if (--obj->handle_count == 0) {
 		drm_gem_object_handle_free(obj);
+#if !defined(__AROS__)
 		drm_gem_object_exported_dma_buf_free(obj);
+#endif
 		final = true;
 	}
 	mutex_unlock(&dev->object_name_lock);
@@ -260,11 +259,11 @@ drm_gem_object_release_handle(int id, void *ptr, void *data)
 	else if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, file_priv);
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	drm_prime_remove_buf_handle(&file_priv->prime, id);
-	drm_vma_node_revoke(&obj->vma_node, file_priv);
 #endif
+	drm_vma_node_revoke(&obj->vma_node, file_priv);
 
 	drm_gem_object_handle_put_unlocked(obj);
 
@@ -479,12 +478,9 @@ EXPORT_SYMBOL(drm_gem_handle_create);
 void
 drm_gem_free_mmap_offset(struct drm_gem_object *obj)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct drm_device *dev = obj->dev;
 
 	drm_vma_offset_remove(dev->vma_offset_manager, &obj->vma_node);
-#endif
 }
 EXPORT_SYMBOL(drm_gem_free_mmap_offset);
 
