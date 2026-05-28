@@ -226,8 +226,8 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
     
 
     ret = drmModeSetCrtc(nvdev->fd, gfxdata->selectedcrtcid,
-	        bmdata->fbid, -bmdata->xoffset, -bmdata->yoffset, output_ids, 
-	        output_count, gfxdata->selectedmode);
+            bmdata->fbid, -bmdata->xoffset, -bmdata->yoffset, output_ids,
+            output_count, gfxdata->selectedmode);
 
     UNLOCK_BITMAP
     UNLOCK_ENGINE
@@ -534,9 +534,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
             }
 
             /* Allocate buffer object for cursor */
-            nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 
-                0, 64 * 64 * 4, &gfxdata->cursor);
-            /* TODO: Check return, hot to handle */
+            nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, &gfxdata->cursor);
+            /* TODO: Check return, how to handle */
             
             /* Allocate GART scratch buffer */
             if (carddata->dev->vm_gart_size > GART_BUFFER_SIZE)
@@ -811,7 +810,7 @@ ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
         .mID  = OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
         .data  = msg->Data
     };
-    
+
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));
 
     OOP_DoMethod(SD(cl)->compositor, (OOP_Msg)&bscmsg);
