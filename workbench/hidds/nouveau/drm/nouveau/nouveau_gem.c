@@ -934,6 +934,9 @@ NOT_IMPLEMENTED_CONTINUE
 		ret = 0;
 	else
 		ret = lret;
+#else
+/* HACK TO BE REMOVED */
+ret = 0;
 #endif
 
 	nouveau_bo_sync_for_cpu(nvbo);

@@ -80,5 +80,6 @@ long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long ti
 void dma_resv_lock_slow(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv);
+bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all);
 
 #endif /* _DRM_COMPAT_DMA_ */

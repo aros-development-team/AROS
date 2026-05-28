@@ -121,6 +121,8 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 #define __rcu
 #define __read_mostly
 
+#include <proto/dos.h>
+
 /* Kernel debug */
 #define CONFIG_NOUVEAU_DEBUG            4 /* NV_DGB_DEBUG */
 #define CONFIG_NOUVEAU_DEBUG_DEFAULT    4
@@ -145,8 +147,8 @@ static inline VOID memcpy_fromio(APTR dst, CONST_APTR src, ULONG size)
 #define pr_err(fmt, ...)                bug(fmt, ##__VA_ARGS__)
 #define pr_debug(fmt, ...)              bug(fmt, ##__VA_ARGS__)
 #define pr_notice(fmt, ...)             bug(fmt, ##__VA_ARGS__)
-#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1); }
-#define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); }
+#define NOT_IMPLEMENTED_STOP            { bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1){Delay(1);}; }
+#define NOT_IMPLEMENTED_CONTINUE        { bug("NOT IMPLEMENTED %s, %d\n", __func__, __LINE__); udelay(125); }
 
 /* Page handling */
 void __free_page(struct page * p);

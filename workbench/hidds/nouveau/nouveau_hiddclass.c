@@ -517,56 +517,56 @@ OOP_Object * METHOD(Nouveau, Root, New)
             else
                 carddata->IsPCIE = FALSE;
 
-            /* Allocate dma channel */
-            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
-                24 * 1024, &carddata->chan);
-            if (ret < 0)
-            {
-                /* TODO: Check ret, how to handle ? */
-            }
-
-            /* Initialize acceleration objects */
-        
-            ret = HIDDNouveauAccelCommonInit(carddata);
-            if (ret < 0)
-            {
-                /* TODO: Check ret, how to handle ? */
-            }
-
             /* Allocate buffer object for cursor */
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, &gfxdata->cursor);
             /* TODO: Check return, how to handle */
-            
-            /* Allocate GART scratch buffer */
-            if (carddata->dev->vm_gart_size > GART_BUFFER_SIZE)
-                gartsize = GART_BUFFER_SIZE;
-            else
-                /* always leave 512kb for other things like the fifos */
-                gartsize = carddata->dev->vm_gart_size - 512 * 1024;
 
-            /* This can fail */
-            nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
-                0, gartsize, &carddata->GART);
-            InitSemaphore(&carddata->gartsemaphore);
+            // /* Allocate dma channel */
+            // ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT,
+            //     24 * 1024, &carddata->chan);
+            // if (ret < 0)
+            // {
+            //     /* TODO: Check ret, how to handle ? */
+            // }
+
+            // /* Initialize acceleration objects */
+        
+            // ret = HIDDNouveauAccelCommonInit(carddata);
+            // if (ret < 0)
+            // {
+            //     /* TODO: Check ret, how to handle ? */
+            // }
+
+            // /* Allocate GART scratch buffer */
+            // if (carddata->dev->vm_gart_size > GART_BUFFER_SIZE)
+            //     gartsize = GART_BUFFER_SIZE;
+            // else
+            //     /* always leave 512kb for other things like the fifos */
+            //     gartsize = carddata->dev->vm_gart_size - 512 * 1024;
+
+            // /* This can fail */
+            // nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
+            //     0, gartsize, &carddata->GART);
+            // InitSemaphore(&carddata->gartsemaphore);
             
-            /* Set initial pattern (else 16-bit ROPs are not working) */
-            switch(carddata->architecture)
-            {
-            case(NV_ARCH_03):
-            case(NV_ARCH_04):
-            case(NV_ARCH_10):
-            case(NV_ARCH_20):
-            case(NV_ARCH_30):
-            case(NV_ARCH_40):
-                HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
-                break;
-            case(NV_ARCH_50):
-                HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
-                break;
-            case(NV_ARCH_C0):
-                HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
-                break;
-            }
+            // /* Set initial pattern (else 16-bit ROPs are not working) */
+            // switch(carddata->architecture)
+            // {
+            // case(NV_ARCH_03):
+            // case(NV_ARCH_04):
+            // case(NV_ARCH_10):
+            // case(NV_ARCH_20):
+            // case(NV_ARCH_30):
+            // case(NV_ARCH_40):
+            //     HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
+            //     break;
+            // case(NV_ARCH_50):
+            //     HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
+            //     break;
+            // case(NV_ARCH_C0):
+            //     HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
+            //     break;
+            // }
 
             /* Create compositor object */
             {
@@ -675,8 +675,9 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 {
     OOP_Class * srcclass = OOP_OCLASS(msg->src);
     OOP_Class * destclass = OOP_OCLASS(msg->dest);
-    
-    if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
+// bug("%s\n", __func__);
+    // if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
+    if (0)
     {
         /* FIXME: add checks for pixel format, etc */
         struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
