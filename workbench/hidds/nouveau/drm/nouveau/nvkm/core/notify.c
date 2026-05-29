@@ -41,11 +41,8 @@ nvkm_notify_put(struct nvkm_notify *notify)
 		spin_lock_irqsave(&event->refs_lock, flags);
 		nvkm_notify_put_locked(notify);
 		spin_unlock_irqrestore(&event->refs_lock, flags);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		if (test_bit(NVKM_NOTIFY_WORK, &notify->flags))
 			flush_work(&notify->work);
-#endif
 	}
 }
 
@@ -86,11 +83,8 @@ nvkm_notify_func(struct nvkm_notify *notify)
 static void
 nvkm_notify_work(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nvkm_notify *notify = container_of(work, typeof(*notify), work);
 	nvkm_notify_func(notify);
-#endif
 }
 
 void
@@ -115,10 +109,7 @@ NOT_IMPLEMENTED_STOP
 
 	if (test_bit(NVKM_NOTIFY_WORK, &notify->flags)) {
 		memcpy((void *)notify->data, data, size);
-NOT_IMPLEMENTED_STOP
-#if 0
 		schedule_work(&notify->work);
-#endif
 	} else {
 		notify->data = data;
 		nvkm_notify_func(notify);
