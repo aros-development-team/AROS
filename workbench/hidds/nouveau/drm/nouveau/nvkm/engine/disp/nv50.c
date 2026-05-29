@@ -171,12 +171,9 @@ nv50_disp_new_(const struct nv50_disp_func *func, struct nvkm_device *device,
 	if (ret)
 		return ret;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	disp->wq = create_singlethread_workqueue("nvkm-disp");
 	if (!disp->wq)
 		return -ENOMEM;
-#endif
 
 	INIT_WORK(&disp->supervisor, func->super);
 

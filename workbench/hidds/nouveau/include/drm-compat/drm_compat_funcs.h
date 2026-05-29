@@ -460,6 +460,7 @@ typedef struct {
 bool queue_work(struct workqueue_struct *wq, struct work_struct *work);
 bool flush_work(struct work_struct *work);
 bool schedule_work(struct work_struct *work);
+#define create_singlethread_workqueue(x) (APTR)0x1;
 
 /* firmaware handling */
 #define MODULE_FIRMWARE(x)
