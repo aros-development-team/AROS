@@ -8,10 +8,35 @@
 #include <exec/types.h>
 
 /* I2C handling */
+
+#define I2C_FUNC_I2C        (1 << 1)
+#define I2C_FUNC_SMBUS_EMUL (1 << 2)
+
+#define I2C_M_RD    0x0001
+
+struct i2c_msg
+{
+    UWORD addr;
+    UWORD flags;
+    UWORD len;
+    UBYTE *buf;
+};
+
+#define ADAP_TYPE_DEFAULT   1
+#define ADAP_TYPE_ALGO      2
+
 struct i2c_adapter
 {
     IPTR i2cdriver;     /* OOP_Object * */
     APTR algo_data;
+    CONST_APTR algo;
+    BYTE type;
+};
+
+struct i2c_algorithm
+{
+    unsigned int (*functionality)(struct i2c_adapter *adap);
+    int (*master_xfer)(struct i2c_adapter *adap, struct i2c_msg *msgs, int num);
 };
 
 struct i2c_client;
@@ -36,19 +61,10 @@ struct i2c_algo_bit_data
     APTR data;
 };
 
-#define I2C_M_RD    0x0001
-
-struct i2c_msg
-{
-    UWORD addr;
-    UWORD flags;
-    UWORD len;
-    UBYTE *buf;
-};
-
 /* I2C handling */
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num);
 int i2c_del_adapter(struct i2c_adapter *);
+int i2c_add_adapter(struct i2c_adapter *);
 int i2c_bit_add_bus(struct i2c_adapter *);
 
 #endif /* _DRM_COMPAT_I2C_ */

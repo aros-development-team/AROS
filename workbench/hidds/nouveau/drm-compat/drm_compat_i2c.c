@@ -13,6 +13,13 @@ OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
 
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 {
+
+    if (adap->type == ADAP_TYPE_ALGO)
+    {
+NOT_IMPLEMENTED_STOP
+return 0;
+    }
+
     /* FIXME: This function is not generic. It has hardcoded cases that are present in nouveau */
     if (adap->i2cdriver == (IPTR)0)
     {
@@ -163,6 +170,13 @@ int i2c_bit_add_bus(struct i2c_adapter *adap)
         bug("Failed to create CLID_Hidd_I2C_Nouveau object\n");
         return -EINVAL;
     }
+    adap->type = ADAP_TYPE_DEFAULT;
 
+    return 0;
+}
+
+int i2c_add_adapter(struct i2c_adapter *adap)
+{
+    adap->type = ADAP_TYPE_ALGO;
     return 0;
 }
