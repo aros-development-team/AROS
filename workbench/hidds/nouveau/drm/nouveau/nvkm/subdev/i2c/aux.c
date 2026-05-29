@@ -78,7 +78,6 @@ out:
 	return ret;
 }
 
-#if 0
 static u32
 nvkm_i2c_aux_i2c_func(struct i2c_adapter *adap)
 {
@@ -90,7 +89,6 @@ nvkm_i2c_aux_i2c_algo = {
 	.master_xfer = nvkm_i2c_aux_i2c_xfer,
 	.functionality = nvkm_i2c_aux_i2c_func
 };
-#endif
 
 void
 nvkm_i2c_aux_monitor(struct nvkm_i2c_aux *aux, bool monitor)
@@ -195,15 +193,14 @@ nvkm_i2c_aux_ctor(const struct nvkm_i2c_aux_func *func,
 	list_add_tail(&aux->head, &pad->i2c->aux);
 	AUX_TRACE(aux, "ctor");
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	snprintf(aux->i2c.name, sizeof(aux->i2c.name), "nvkm-%s-aux-%04x",
 		 dev_name(device->dev), id);
 	aux->i2c.owner = THIS_MODULE;
 	aux->i2c.dev.parent = device->dev;
+#endif
 	aux->i2c.algo = &nvkm_i2c_aux_i2c_algo;
 	return i2c_add_adapter(&aux->i2c);
-#endif
 }
 
 int
