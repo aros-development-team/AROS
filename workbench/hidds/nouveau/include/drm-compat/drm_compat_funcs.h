@@ -241,6 +241,11 @@ static inline int atomic_inc_not_zero(atomic_t *v)
     return val != 0;
 }
 
+static inline int atomic_xchg(atomic_t *v, int i)
+{
+    return __sync_lock_test_and_set(&v->count, i);
+}
+
 /* Lock handling */
 
 /* A code protected by spin lock is quaranteed to be atomic. This means that
@@ -468,6 +473,7 @@ dma_addr_t sg_dma_address(struct scatterlist *s);
 IPTR sg_dma_len(struct scatterlist *s);
 
 /* other */
+static inline int power_supply_is_system_supplied() { return -ENOSYS; }
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);
 int sprintf(char * restrict s, const char * restrict format, ...);
 unsigned long clk_get_rate(struct clk *);
