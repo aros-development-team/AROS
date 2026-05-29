@@ -22,6 +22,9 @@ static struct MsgPort       *workqueue_port = NULL;
 static struct Process       *workqueue_proc = NULL;
 static struct Task          *parent_task = NULL;
 
+#define WORK_DEFAULT    0
+#define WORK_SCHEDULED  1
+
 static void worker_main(void)
 {
     struct workqueue_message *wmsg;
@@ -45,10 +48,14 @@ static void worker_main(void)
 
         while ((wmsg = (struct workqueue_message *)GetMsg(workqueue_port)))
         {
-            D(bug("[Nouveau] WorkQueue: Executing work %p func %p\n",
-                wmsg->work, wmsg->work->func));
+            D(bug("[Nouveau] WorkQueue: Executing work %p func %p\n", wmsg->work, wmsg->work->func));
 
-            wmsg->work->func(wmsg->work);
+            /* Process only scheduled work */
+            if (wmsg->work->state == WORK_SCHEDULED)
+                wmsg->work->func(wmsg->work);
+
+            /* Return to default state for any work */
+            wmsg->work->state = WORK_DEFAULT;
 
             FreeVec(wmsg);
         }
@@ -92,6 +99,9 @@ bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
     if (!work)
         return FALSE;
 
+    if (work->state == WORK_SCHEDULED)
+        return FALSE;
+
     wmsg = (struct workqueue_message *)AllocVec(sizeof(struct workqueue_message), MEMF_PUBLIC | MEMF_CLEAR);
     if (!wmsg)
     {
@@ -101,10 +111,27 @@ bool queue_work(struct workqueue_struct *wq, struct work_struct *work)
 
     wmsg->msg.mn_Length = sizeof(struct workqueue_message);
     wmsg->work = work;
+    work->state = WORK_SCHEDULED;
 
     D(bug("[Nouveau] WorkQueue: Queuing work %p\n", work));
 
     PutMsg(workqueue_port, &wmsg->msg);
+
+    return TRUE;
+}
+
+bool schedule_work(struct work_struct *work)
+{
+    return queue_work(NULL, work);
+}
+
+bool flush_work(struct work_struct *work)
+{
+    if (work->state == WORK_DEFAULT)
+        return FALSE;
+
+    while(work->state != WORK_DEFAULT)
+        udelay(125);
 
     return TRUE;
 }
