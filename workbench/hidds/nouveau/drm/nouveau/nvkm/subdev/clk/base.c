@@ -299,8 +299,6 @@ nvkm_pstate_prog(struct nvkm_clk *clk, int pstatei)
 static void
 nvkm_pstate_work(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nvkm_clk *clk = container_of(work, typeof(*clk), work);
 	struct nvkm_subdev *subdev = &clk->subdev;
 	int pstate;
@@ -333,19 +331,15 @@ NOT_IMPLEMENTED_STOP
 
 	wake_up_all(&clk->wait);
 	nvkm_notify_get(&clk->pwrsrc_ntfy);
-#endif
 }
 
 static int
 nvkm_pstate_calc(struct nvkm_clk *clk, bool wait)
 {
 	atomic_set(&clk->waiting, 1);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	schedule_work(&clk->work);
 	if (wait)
 		wait_event(clk->wait, !atomic_read(&clk->waiting));
-#endif
 	return 0;
 }
 
@@ -589,10 +583,7 @@ nvkm_clk_fini(struct nvkm_subdev *subdev, bool suspend)
 {
 	struct nvkm_clk *clk = nvkm_clk(subdev);
 	nvkm_notify_put(&clk->pwrsrc_ntfy);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	flush_work(&clk->work);
-#endif
 	if (clk->func->fini)
 		clk->func->fini(clk);
 	return 0;
@@ -685,11 +676,7 @@ nvkm_clk_ctor(const struct nvkm_clk_func *func, struct nvkm_device *device,
 	clk->ustate_dc = -1;
 	clk->allow_reclock = allow_reclock;
 
-#if !defined(__AROS__)
 	INIT_WORK(&clk->work, nvkm_pstate_work);
-#else
-	bug("CHECKME: clk_ctor\n");
-#endif
 	init_waitqueue_head(&clk->wait);
 	atomic_set(&clk->waiting, 0);
 

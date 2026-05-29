@@ -90,9 +90,7 @@ struct nvkm_clk {
 	struct list_head states;
 	int state_nr;
 
-#if !defined(__AROS__)
 	struct work_struct work;
-#endif
 	wait_queue_head_t wait;
 	atomic_t waiting;
 
