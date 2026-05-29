@@ -87,10 +87,7 @@ nvkm_pmu_fini(struct nvkm_subdev *subdev, bool suspend)
 	if (pmu->func->fini)
 		pmu->func->fini(pmu);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	flush_work(&pmu->recv.work);
-#endif
 	return 0;
 }
 
@@ -171,10 +168,7 @@ nvkm_pmu_ctor(const struct nvkm_pmu_func *func, struct nvkm_device *device,
 {
 	nvkm_subdev_ctor(&nvkm_pmu, device, index, &pmu->subdev);
 	pmu->func = func;
-NOT_IMPLEMENTED_STOP
-#if 0
 	INIT_WORK(&pmu->recv.work, nvkm_pmu_recv);
-#endif
 	init_waitqueue_head(&pmu->recv.wait);
 	return 0;
 }

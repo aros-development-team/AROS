@@ -19,9 +19,7 @@ struct nvkm_pmu {
 		u32 base;
 		u32 size;
 
-#if !defined(__AROS__)
 		struct work_struct work;
-#endif
 		wait_queue_head_t wait;
 		u32 process;
 		u32 message;
