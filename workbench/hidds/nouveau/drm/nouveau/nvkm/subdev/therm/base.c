@@ -366,7 +366,10 @@ nvkm_therm_oneinit(struct nvkm_subdev *subdev)
 	nvkm_therm_sensor_ctor(therm);
 	nvkm_therm_ic_ctor(therm);
 	nvkm_therm_fan_ctor(therm);
-	nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_AUTO);
+	// nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_AUTO);
+bug("temp: %d\n", therm->func->temp_get(therm));
+bug("FIXME: THERM: fan control!!\n");
+    nvkm_therm_fan_mode(therm, NVKM_THERM_CTRL_NONE);
 	nvkm_therm_sensor_preinit(therm);
 	nvkm_therm_clkgate_oneinit(therm);
 	return 0;
