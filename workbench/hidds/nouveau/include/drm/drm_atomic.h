@@ -84,42 +84,44 @@ struct drm_crtc_commit {
 	 */
 	struct kref ref;
 
-	// /**
-	//  * @flip_done:
-	//  *
-	//  * Will be signaled when the hardware has flipped to the new set of
-	//  * buffers. Signals at the same time as when the drm event for this
-	//  * commit is sent to userspace, or when an out-fence is singalled. Note
-	//  * that for most hardware, in most cases this happens after @hw_done is
-	//  * signalled.
-	//  */
-	// struct completion flip_done;
+#if !defined(__AROS__)
+	/**
+	 * @flip_done:
+	 *
+	 * Will be signaled when the hardware has flipped to the new set of
+	 * buffers. Signals at the same time as when the drm event for this
+	 * commit is sent to userspace, or when an out-fence is singalled. Note
+	 * that for most hardware, in most cases this happens after @hw_done is
+	 * signalled.
+	 */
+	struct completion flip_done;
 
-	// /**
-	//  * @hw_done:
-	//  *
-	//  * Will be signalled when all hw register changes for this commit have
-	//  * been written out. Especially when disabling a pipe this can be much
-	//  * later than than @flip_done, since that can signal already when the
-	//  * screen goes black, whereas to fully shut down a pipe more register
-	//  * I/O is required.
-	//  *
-	//  * Note that this does not need to include separately reference-counted
-	//  * resources like backing storage buffer pinning, or runtime pm
-	//  * management.
-	//  */
-	// struct completion hw_done;
+	/**
+	 * @hw_done:
+	 *
+	 * Will be signalled when all hw register changes for this commit have
+	 * been written out. Especially when disabling a pipe this can be much
+	 * later than than @flip_done, since that can signal already when the
+	 * screen goes black, whereas to fully shut down a pipe more register
+	 * I/O is required.
+	 *
+	 * Note that this does not need to include separately reference-counted
+	 * resources like backing storage buffer pinning, or runtime pm
+	 * management.
+	 */
+	struct completion hw_done;
 
-	// /**
-	//  * @cleanup_done:
-	//  *
-	//  * Will be signalled after old buffers have been cleaned up by calling
-	//  * drm_atomic_helper_cleanup_planes(). Since this can only happen after
-	//  * a vblank wait completed it might be a bit later. This completion is
-	//  * useful to throttle updates and avoid hardware updates getting ahead
-	//  * of the buffer cleanup too much.
-	//  */
-	// struct completion cleanup_done;
+	/**
+	 * @cleanup_done:
+	 *
+	 * Will be signalled after old buffers have been cleaned up by calling
+	 * drm_atomic_helper_cleanup_planes(). Since this can only happen after
+	 * a vblank wait completed it might be a bit later. This completion is
+	 * useful to throttle updates and avoid hardware updates getting ahead
+	 * of the buffer cleanup too much.
+	 */
+	struct completion cleanup_done;
+#endif
 
 	/**
 	 * @commit_entry:

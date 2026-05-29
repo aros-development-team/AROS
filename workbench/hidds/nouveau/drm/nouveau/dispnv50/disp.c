@@ -2019,8 +2019,7 @@ nv50_disp_atomic_commit_tail(struct drm_atomic_state *state)
 	for_each_new_crtc_in_state(state, crtc, new_crtc_state, i) {
 		if (new_crtc_state->event) {
 			unsigned long flags;
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 			/* Get correct count/ts if racing with vblank irq */
 			if (new_crtc_state->active)
 				drm_crtc_accurate_vblank_count(crtc);

@@ -2097,32 +2097,29 @@ int drm_atomic_helper_setup_commit(struct drm_atomic_state *state,
 
 		new_crtc_state->commit = commit;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		ret = stall_checks(crtc, nonblock);
 		if (ret)
 			return ret;
 #endif
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		/* Drivers only send out events when at least either current or
 		 * new CRTC state is active. Complete right away if everything
 		 * stays off. */
 		if (!old_crtc_state->active && !new_crtc_state->active) {
+#if !defined(__AROS__)
 			complete_all(&commit->flip_done);
+#endif
 			continue;
 		}
-#endif
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		/* Legacy cursor updates are fully unsynced. */
 		if (state->legacy_cursor_update) {
+#if !defined(__AROS__)
 			complete_all(&commit->flip_done);
+#endif
 			continue;
 		}
-#endif
 
 		if (!new_crtc_state->event) {
 			commit->event = kzalloc(sizeof(*commit->event),
@@ -2133,8 +2130,7 @@ NOT_IMPLEMENTED_CONTINUE
 			new_crtc_state->event = commit->event;
 		}
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		new_crtc_state->event->base.completion = &commit->flip_done;
 		new_crtc_state->event->base.completion_release = release_crtc_commit;
 #endif
@@ -2147,8 +2143,7 @@ NOT_IMPLEMENTED_CONTINUE
 	}
 
 	for_each_oldnew_connector_in_state(state, conn, old_conn_state, new_conn_state, i) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		/* Userspace is not allowed to get ahead of the previous
 		 * commit with nonblocking ones. */
 		if (nonblock && old_conn_state->commit &&
@@ -2165,8 +2160,7 @@ NOT_IMPLEMENTED_CONTINUE
 	}
 
 	for_each_oldnew_plane_in_state(state, plane, old_plane_state, new_plane_state, i) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		/* Userspace is not allowed to get ahead of the previous
 		 * commit with nonblocking ones. */
 		if (nonblock && old_plane_state->commit &&
@@ -2216,8 +2210,7 @@ void drm_atomic_helper_wait_for_dependencies(struct drm_atomic_state *old_state)
 		if (!commit)
 			continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		ret = wait_for_completion_timeout(&commit->hw_done,
 						  10*HZ);
 		if (ret == 0)
@@ -2240,8 +2233,7 @@ NOT_IMPLEMENTED_CONTINUE
 		if (!commit)
 			continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		ret = wait_for_completion_timeout(&commit->hw_done,
 						  10*HZ);
 		if (ret == 0)
@@ -2264,8 +2256,7 @@ NOT_IMPLEMENTED_CONTINUE
 		if (!commit)
 			continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		ret = wait_for_completion_timeout(&commit->hw_done,
 						  10*HZ);
 		if (ret == 0)
@@ -2364,15 +2355,13 @@ void drm_atomic_helper_commit_hw_done(struct drm_atomic_state *old_state)
 
 		/* backend must have consumed any event by now */
 		WARN_ON(new_crtc_state->event);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		complete_all(&commit->hw_done);
 #endif
 	}
 
 	if (old_state->fake_commit) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		complete_all(&old_state->fake_commit->hw_done);
 		complete_all(&old_state->fake_commit->flip_done);
 #endif
@@ -2403,8 +2392,7 @@ void drm_atomic_helper_commit_cleanup_done(struct drm_atomic_state *old_state)
 		if (WARN_ON(!commit))
 			continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		complete_all(&commit->cleanup_done);
 		WARN_ON(!try_wait_for_completion(&commit->hw_done));
 #endif
@@ -2415,8 +2403,7 @@ NOT_IMPLEMENTED_CONTINUE
 	}
 
 	if (old_state->fake_commit) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		complete_all(&old_state->fake_commit->cleanup_done);
 		WARN_ON(!try_wait_for_completion(&old_state->fake_commit->hw_done));
 #endif
@@ -2832,8 +2819,7 @@ int drm_atomic_helper_swap_state(struct drm_atomic_state *state,
 
 			if (!commit)
 				continue;
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 			ret = wait_for_completion_interruptible(&commit->hw_done);
 			if (ret)
 				return ret;
@@ -2846,8 +2832,7 @@ NOT_IMPLEMENTED_CONTINUE
 			if (!commit)
 				continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 			ret = wait_for_completion_interruptible(&commit->hw_done);
 			if (ret)
 				return ret;
@@ -2860,8 +2845,7 @@ NOT_IMPLEMENTED_CONTINUE
 			if (!commit)
 				continue;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 			ret = wait_for_completion_interruptible(&commit->hw_done);
 			if (ret)
 				return ret;
