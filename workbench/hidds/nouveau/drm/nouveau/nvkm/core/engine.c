@@ -121,9 +121,7 @@ nvkm_engine_init(struct nvkm_subdev *subdev)
 
 	if (engine->func->oneinit && !engine->subdev.oneinit) {
 		nvkm_trace(subdev, "one-time init running...\n");
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get());
-#endif
 		ret = engine->func->oneinit(engine);
 		if (ret) {
 			nvkm_trace(subdev, "one-time init failed, %d\n", ret);
@@ -131,10 +129,8 @@ nvkm_engine_init(struct nvkm_subdev *subdev)
 		}
 
 		engine->subdev.oneinit = true;
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get()) - time;
 		nvkm_trace(subdev, "one-time init completed in %lldus\n", time);
-#endif
 	}
 
 	if (engine->func->init)

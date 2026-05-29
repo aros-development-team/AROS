@@ -114,9 +114,7 @@ nvkm_subdev_fini(struct nvkm_subdev *subdev, bool suspend)
 	s64 time;
 
 	nvkm_trace(subdev, "%s running...\n", action);
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get());
-#endif
 
 	if (subdev->func->fini) {
 		int ret = subdev->func->fini(subdev, suspend);
@@ -129,10 +127,8 @@ nvkm_subdev_fini(struct nvkm_subdev *subdev, bool suspend)
 
 	nvkm_mc_reset(device, subdev->index);
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvkm_trace(subdev, "%s completed in %lldus\n", action, time);
-#endif
 	return 0;
 }
 
@@ -142,9 +138,7 @@ nvkm_subdev_preinit(struct nvkm_subdev *subdev)
 	s64 time;
 
 	nvkm_trace(subdev, "preinit running...\n");
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get());
-#endif
 
 	if (subdev->func->preinit) {
 		int ret = subdev->func->preinit(subdev);
@@ -154,10 +148,8 @@ nvkm_subdev_preinit(struct nvkm_subdev *subdev)
 		}
 	}
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvkm_trace(subdev, "preinit completed in %lldus\n", time);
-#endif
 	return 0;
 }
 
@@ -168,16 +160,12 @@ nvkm_subdev_init(struct nvkm_subdev *subdev)
 	int ret;
 
 	nvkm_trace(subdev, "init running...\n");
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get());
-#endif
 
 	if (subdev->func->oneinit && !subdev->oneinit) {
 		s64 time;
 		nvkm_trace(subdev, "one-time init running...\n");
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get());
-#endif
 		ret = subdev->func->oneinit(subdev);
 		if (ret) {
 			nvkm_error(subdev, "one-time init failed, %d\n", ret);
@@ -185,10 +173,8 @@ nvkm_subdev_init(struct nvkm_subdev *subdev)
 		}
 
 		subdev->oneinit = true;
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get()) - time;
 		nvkm_trace(subdev, "one-time init completed in %lldus\n", time);
-#endif
 	}
 
 	if (subdev->func->init) {
@@ -199,10 +185,8 @@ nvkm_subdev_init(struct nvkm_subdev *subdev)
 		}
 	}
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvkm_trace(subdev, "init completed in %lldus\n", time);
-#endif
 	return 0;
 }
 
@@ -214,15 +198,11 @@ nvkm_subdev_del(struct nvkm_subdev **psubdev)
 
 	if (subdev && !WARN_ON(!subdev->func)) {
 		nvkm_trace(subdev, "destroy running...\n");
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get());
-#endif
 		if (subdev->func->dtor)
 			*psubdev = subdev->func->dtor(subdev);
-#if !defined(__AROS__)
 		time = ktime_to_us(ktime_get()) - time;
 		nvkm_trace(subdev, "destroy completed in %lldus\n", time);
-#endif
 		kfree(*psubdev);
 		*psubdev = NULL;
 	}

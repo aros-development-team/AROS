@@ -2731,10 +2731,8 @@ nvkm_device_fini(struct nvkm_device *device, bool suspend)
 	int ret, i;
 	s64 time;
 
-#if !defined(__AROS__)
 	nvdev_trace(device, "%s running...\n", action);
 	time = ktime_to_us(ktime_get());
-#endif
 
 	nvkm_acpi_fini(device);
 
@@ -2751,10 +2749,8 @@ nvkm_device_fini(struct nvkm_device *device, bool suspend)
 	if (device->func->fini)
 		device->func->fini(device, suspend);
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvdev_trace(device, "%s completed in %lldus...\n", action, time);
-#endif
 	return 0;
 
 fail:
@@ -2777,10 +2773,8 @@ nvkm_device_preinit(struct nvkm_device *device)
 	int ret, i;
 	s64 time;
 
-#if !defined(__AROS__)
 	nvdev_trace(device, "preinit running...\n");
 	time = ktime_to_us(ktime_get());
-#endif
 
 	if (device->func->preinit) {
 		ret = device->func->preinit(device);
@@ -2800,10 +2794,8 @@ nvkm_device_preinit(struct nvkm_device *device)
 	if (ret)
 		goto fail;
 
-#if !defined(__AROS__)
 	time = ktime_to_us(ktime_get()) - time;
 	nvdev_trace(device, "preinit completed in %lldus\n", time);
-#endif
 	return 0;
 
 fail:
