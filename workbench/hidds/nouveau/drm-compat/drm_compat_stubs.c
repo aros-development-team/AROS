@@ -124,7 +124,7 @@ void drm_dp_check_act_status() { NOT_IMPLEMENTED_STOP }
 void drm_dp_dpcd_read() { NOT_IMPLEMENTED_STOP }
 void drm_dp_dpcd_write() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_allocate_vcpi() { NOT_IMPLEMENTED_STOP }
-int drm_dp_mst_atomic_check() { NOT_IMPLEMENTED_CONTINUE; return 0; }
+
 void drm_dp_mst_deallocate_vcpi() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_detect_port() { NOT_IMPLEMENTED_STOP }
 void drm_dp_mst_get_port_malloc() { NOT_IMPLEMENTED_STOP }

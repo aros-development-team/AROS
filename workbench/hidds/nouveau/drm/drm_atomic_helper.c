@@ -35,7 +35,7 @@
 #include <drm/drm_atomic.h>
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_atomic_uapi.h>
-// #include <drm/drm_damage_helper.h>
+#include <drm/drm_damage_helper.h>
 #include <drm/drm_device.h>
 #include <drm/drm_plane_helper.h>
 #include <drm/drm_print.h>
@@ -74,33 +74,33 @@
  * also shares the &struct drm_plane_helper_funcs function table with the plane
  * helpers.
  */
-// static void
-// drm_atomic_helper_plane_changed(struct drm_atomic_state *state,
-// 				struct drm_plane_state *old_plane_state,
-// 				struct drm_plane_state *plane_state,
-// 				struct drm_plane *plane)
-// {
-// 	struct drm_crtc_state *crtc_state;
+static void
+drm_atomic_helper_plane_changed(struct drm_atomic_state *state,
+				struct drm_plane_state *old_plane_state,
+				struct drm_plane_state *plane_state,
+				struct drm_plane *plane)
+{
+	struct drm_crtc_state *crtc_state;
 
-// 	if (old_plane_state->crtc) {
-// 		crtc_state = drm_atomic_get_new_crtc_state(state,
-// 							   old_plane_state->crtc);
+	if (old_plane_state->crtc) {
+		crtc_state = drm_atomic_get_new_crtc_state(state,
+							   old_plane_state->crtc);
 
-// 		if (WARN_ON(!crtc_state))
-// 			return;
+		if (WARN_ON(!crtc_state))
+			return;
 
-// 		crtc_state->planes_changed = true;
-// 	}
+		crtc_state->planes_changed = true;
+	}
 
-// 	if (plane_state->crtc) {
-// 		crtc_state = drm_atomic_get_new_crtc_state(state, plane_state->crtc);
+	if (plane_state->crtc) {
+		crtc_state = drm_atomic_get_new_crtc_state(state, plane_state->crtc);
 
-// 		if (WARN_ON(!crtc_state))
-// 			return;
+		if (WARN_ON(!crtc_state))
+			return;
 
-// 		crtc_state->planes_changed = true;
-// 	}
-// }
+		crtc_state->planes_changed = true;
+	}
+}
 
 /*
  * For connectors that support multiple encoders, either the
@@ -914,12 +914,9 @@ drm_atomic_helper_check_planes(struct drm_device *dev,
 
 		funcs = plane->helper_private;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		drm_atomic_helper_plane_changed(state, old_plane_state, new_plane_state, plane);
 
 		drm_atomic_helper_check_plane_damage(state, new_plane_state);
-#endif
 
 		if (!funcs || !funcs->atomic_check)
 			continue;
@@ -988,12 +985,9 @@ int drm_atomic_helper_check(struct drm_device *dev,
 		return ret;
 
 	if (dev->mode_config.normalize_zpos) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		ret = drm_atomic_normalize_zpos(dev, state);
 		if (ret)
 			return ret;
-#endif
 	}
 
 	ret = drm_atomic_helper_check_planes(dev, state);
@@ -1222,8 +1216,7 @@ drm_atomic_helper_update_legacy_modeset_state(struct drm_device *dev,
 			crtc->y = new_plane_state->src_y >> 16;
 		}
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 		if (new_crtc_state->enable)
 			drm_calc_timestamping_constants(crtc,
 							&new_crtc_state->adjusted_mode);

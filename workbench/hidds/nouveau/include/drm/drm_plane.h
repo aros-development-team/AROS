@@ -28,6 +28,7 @@
 #include <linux/ctype.h>
 #endif
 #include <drm/drm_mode_object.h>
+#include <drm/drm_property.h>
 // #include <drm/drm_color_mgmt.h>
 #include <drm/drm_rect.h>
 // #include <drm/drm_modeset_lock.h>
@@ -812,37 +813,37 @@ int drm_mode_plane_set_obj_prop(struct drm_plane *plane,
 
 bool drm_any_plane_has_format(struct drm_device *dev,
 			      u32 format, u64 modifier);
-// /**
-//  * drm_plane_get_damage_clips_count - Returns damage clips count.
-//  * @state: Plane state.
-//  *
-//  * Simple helper to get the number of &drm_mode_rect clips set by user-space
-//  * during plane update.
-//  *
-//  * Return: Number of clips in plane fb_damage_clips blob property.
-//  */
-// static inline unsigned int
-// drm_plane_get_damage_clips_count(const struct drm_plane_state *state)
-// {
-// 	return (state && state->fb_damage_clips) ?
-// 		state->fb_damage_clips->length/sizeof(struct drm_mode_rect) : 0;
-// }
+/**
+ * drm_plane_get_damage_clips_count - Returns damage clips count.
+ * @state: Plane state.
+ *
+ * Simple helper to get the number of &drm_mode_rect clips set by user-space
+ * during plane update.
+ *
+ * Return: Number of clips in plane fb_damage_clips blob property.
+ */
+static inline unsigned int
+drm_plane_get_damage_clips_count(const struct drm_plane_state *state)
+{
+	return (state && state->fb_damage_clips) ?
+		state->fb_damage_clips->length/sizeof(struct drm_mode_rect) : 0;
+}
 
-// /**
-//  * drm_plane_get_damage_clips - Returns damage clips.
-//  * @state: Plane state.
-//  *
-//  * Note that this function returns uapi type &drm_mode_rect. Drivers might
-//  * instead be interested in internal &drm_rect which can be obtained by calling
-//  * drm_helper_get_plane_damage_clips().
-//  *
-//  * Return: Damage clips in plane fb_damage_clips blob property.
-//  */
-// static inline struct drm_mode_rect *
-// drm_plane_get_damage_clips(const struct drm_plane_state *state)
-// {
-// 	return (struct drm_mode_rect *)((state && state->fb_damage_clips) ?
-// 					state->fb_damage_clips->data : NULL);
-// }
+/**
+ * drm_plane_get_damage_clips - Returns damage clips.
+ * @state: Plane state.
+ *
+ * Note that this function returns uapi type &drm_mode_rect. Drivers might
+ * instead be interested in internal &drm_rect which can be obtained by calling
+ * drm_helper_get_plane_damage_clips().
+ *
+ * Return: Damage clips in plane fb_damage_clips blob property.
+ */
+static inline struct drm_mode_rect *
+drm_plane_get_damage_clips(const struct drm_plane_state *state)
+{
+	return (struct drm_mode_rect *)((state && state->fb_damage_clips) ?
+					state->fb_damage_clips->data : NULL);
+}
 
 #endif

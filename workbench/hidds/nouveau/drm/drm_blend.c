@@ -27,11 +27,13 @@
 #if !defined(__AROS__)
 #include <linux/export.h>
 #include <linux/slab.h>
-#include <linux/sort.h>
+#else
+#include <drm-compat/drm_compat_funcs.h>
 #endif
+#include <linux/sort.h>
 
 #include <drm/drm_atomic.h>
-// #include <drm/drm_blend.h>
+#include <drm/drm_blend.h>
 #include <drm/drm_device.h>
 #include <drm/drm_print.h>
 
@@ -410,117 +412,117 @@ int drm_plane_create_zpos_immutable_property(struct drm_plane *plane,
 }
 EXPORT_SYMBOL(drm_plane_create_zpos_immutable_property);
 
-// static int drm_atomic_state_zpos_cmp(const void *a, const void *b)
-// {
-// 	const struct drm_plane_state *sa = *(struct drm_plane_state **)a;
-// 	const struct drm_plane_state *sb = *(struct drm_plane_state **)b;
+static int drm_atomic_state_zpos_cmp(const void *a, const void *b)
+{
+	const struct drm_plane_state *sa = *(struct drm_plane_state **)a;
+	const struct drm_plane_state *sb = *(struct drm_plane_state **)b;
 
-// 	if (sa->zpos != sb->zpos)
-// 		return sa->zpos - sb->zpos;
-// 	else
-// 		return sa->plane->base.id - sb->plane->base.id;
-// }
+	if (sa->zpos != sb->zpos)
+		return sa->zpos - sb->zpos;
+	else
+		return sa->plane->base.id - sb->plane->base.id;
+}
 
-// static int drm_atomic_helper_crtc_normalize_zpos(struct drm_crtc *crtc,
-// 					  struct drm_crtc_state *crtc_state)
-// {
-// 	struct drm_atomic_state *state = crtc_state->state;
-// 	struct drm_device *dev = crtc->dev;
-// 	int total_planes = dev->mode_config.num_total_plane;
-// 	struct drm_plane_state **states;
-// 	struct drm_plane *plane;
-// 	int i, n = 0;
-// 	int ret = 0;
+static int drm_atomic_helper_crtc_normalize_zpos(struct drm_crtc *crtc,
+					  struct drm_crtc_state *crtc_state)
+{
+	struct drm_atomic_state *state = crtc_state->state;
+	struct drm_device *dev = crtc->dev;
+	int total_planes = dev->mode_config.num_total_plane;
+	struct drm_plane_state **states;
+	struct drm_plane *plane;
+	int i, n = 0;
+	int ret = 0;
 
-// 	DRM_DEBUG_ATOMIC("[CRTC:%d:%s] calculating normalized zpos values\n",
-// 			 crtc->base.id, crtc->name);
+	DRM_DEBUG_ATOMIC("[CRTC:%d:%s] calculating normalized zpos values\n",
+			 crtc->base.id, crtc->name);
 
-// 	states = kmalloc_array(total_planes, sizeof(*states), GFP_KERNEL);
-// 	if (!states)
-// 		return -ENOMEM;
+	states = kmalloc_array(total_planes, sizeof(*states), GFP_KERNEL);
+	if (!states)
+		return -ENOMEM;
 
-// 	/*
-// 	 * Normalization process might create new states for planes which
-// 	 * normalized_zpos has to be recalculated.
-// 	 */
-// 	drm_for_each_plane_mask(plane, dev, crtc_state->plane_mask) {
-// 		struct drm_plane_state *plane_state =
-// 			drm_atomic_get_plane_state(state, plane);
-// 		if (IS_ERR(plane_state)) {
-// 			ret = PTR_ERR(plane_state);
-// 			goto done;
-// 		}
-// 		states[n++] = plane_state;
-// 		DRM_DEBUG_ATOMIC("[PLANE:%d:%s] processing zpos value %d\n",
-// 				 plane->base.id, plane->name,
-// 				 plane_state->zpos);
-// 	}
+	/*
+	 * Normalization process might create new states for planes which
+	 * normalized_zpos has to be recalculated.
+	 */
+	drm_for_each_plane_mask(plane, dev, crtc_state->plane_mask) {
+		struct drm_plane_state *plane_state =
+			drm_atomic_get_plane_state(state, plane);
+		if (IS_ERR(plane_state)) {
+			ret = PTR_ERR(plane_state);
+			goto done;
+		}
+		states[n++] = plane_state;
+		DRM_DEBUG_ATOMIC("[PLANE:%d:%s] processing zpos value %d\n",
+				 plane->base.id, plane->name,
+				 plane_state->zpos);
+	}
 
-// 	sort(states, n, sizeof(*states), drm_atomic_state_zpos_cmp, NULL);
+	// sort(states, n, sizeof(*states), drm_atomic_state_zpos_cmp, NULL);
 
-// 	for (i = 0; i < n; i++) {
-// 		plane = states[i]->plane;
+	for (i = 0; i < n; i++) {
+		plane = states[i]->plane;
 
-// 		states[i]->normalized_zpos = i;
-// 		DRM_DEBUG_ATOMIC("[PLANE:%d:%s] normalized zpos value %d\n",
-// 				 plane->base.id, plane->name, i);
-// 	}
-// 	crtc_state->zpos_changed = true;
+		states[i]->normalized_zpos = i;
+		DRM_DEBUG_ATOMIC("[PLANE:%d:%s] normalized zpos value %d\n",
+				 plane->base.id, plane->name, i);
+	}
+	crtc_state->zpos_changed = true;
 
-// done:
-// 	kfree(states);
-// 	return ret;
-// }
+done:
+	kfree(states);
+	return ret;
+}
 
-// /**
-//  * drm_atomic_normalize_zpos - calculate normalized zpos values for all crtcs
-//  * @dev: DRM device
-//  * @state: atomic state of DRM device
-//  *
-//  * This function calculates normalized zpos value for all modified planes in
-//  * the provided atomic state of DRM device.
-//  *
-//  * For every CRTC this function checks new states of all planes assigned to
-//  * it and calculates normalized zpos value for these planes. Planes are compared
-//  * first by their zpos values, then by plane id (if zpos is equal). The plane
-//  * with lowest zpos value is at the bottom. The &drm_plane_state.normalized_zpos
-//  * is then filled with unique values from 0 to number of active planes in crtc
-//  * minus one.
-//  *
-//  * RETURNS
-//  * Zero for success or -errno
-//  */
-// int drm_atomic_normalize_zpos(struct drm_device *dev,
-// 			      struct drm_atomic_state *state)
-// {
-// 	struct drm_crtc *crtc;
-// 	struct drm_crtc_state *old_crtc_state, *new_crtc_state;
-// 	struct drm_plane *plane;
-// 	struct drm_plane_state *old_plane_state, *new_plane_state;
-// 	int i, ret = 0;
+/**
+ * drm_atomic_normalize_zpos - calculate normalized zpos values for all crtcs
+ * @dev: DRM device
+ * @state: atomic state of DRM device
+ *
+ * This function calculates normalized zpos value for all modified planes in
+ * the provided atomic state of DRM device.
+ *
+ * For every CRTC this function checks new states of all planes assigned to
+ * it and calculates normalized zpos value for these planes. Planes are compared
+ * first by their zpos values, then by plane id (if zpos is equal). The plane
+ * with lowest zpos value is at the bottom. The &drm_plane_state.normalized_zpos
+ * is then filled with unique values from 0 to number of active planes in crtc
+ * minus one.
+ *
+ * RETURNS
+ * Zero for success or -errno
+ */
+int drm_atomic_normalize_zpos(struct drm_device *dev,
+			      struct drm_atomic_state *state)
+{
+	struct drm_crtc *crtc;
+	struct drm_crtc_state *old_crtc_state, *new_crtc_state;
+	struct drm_plane *plane;
+	struct drm_plane_state *old_plane_state, *new_plane_state;
+	int i, ret = 0;
 
-// 	for_each_oldnew_plane_in_state(state, plane, old_plane_state, new_plane_state, i) {
-// 		crtc = new_plane_state->crtc;
-// 		if (!crtc)
-// 			continue;
-// 		if (old_plane_state->zpos != new_plane_state->zpos) {
-// 			new_crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
-// 			new_crtc_state->zpos_changed = true;
-// 		}
-// 	}
+	for_each_oldnew_plane_in_state(state, plane, old_plane_state, new_plane_state, i) {
+		crtc = new_plane_state->crtc;
+		if (!crtc)
+			continue;
+		if (old_plane_state->zpos != new_plane_state->zpos) {
+			new_crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
+			new_crtc_state->zpos_changed = true;
+		}
+	}
 
-// 	for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
-// 		if (old_crtc_state->plane_mask != new_crtc_state->plane_mask ||
-// 		    new_crtc_state->zpos_changed) {
-// 			ret = drm_atomic_helper_crtc_normalize_zpos(crtc,
-// 								    new_crtc_state);
-// 			if (ret)
-// 				return ret;
-// 		}
-// 	}
-// 	return 0;
-// }
-// EXPORT_SYMBOL(drm_atomic_normalize_zpos);
+	for_each_oldnew_crtc_in_state(state, crtc, old_crtc_state, new_crtc_state, i) {
+		if (old_crtc_state->plane_mask != new_crtc_state->plane_mask ||
+		    new_crtc_state->zpos_changed) {
+			ret = drm_atomic_helper_crtc_normalize_zpos(crtc,
+								    new_crtc_state);
+			if (ret)
+				return ret;
+		}
+	}
+	return 0;
+}
+EXPORT_SYMBOL(drm_atomic_normalize_zpos);
 
 // /**
 //  * drm_plane_create_blend_mode_property - create a new blend mode property

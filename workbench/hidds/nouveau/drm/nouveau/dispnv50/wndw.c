@@ -506,7 +506,8 @@ nv50_wndw_prepare_fb(struct drm_plane *plane, struct drm_plane_state *state)
 		asyw->image.handle[0] = ctxdma->object.handle;
 	}
 
-NOT_IMPLEMENTED_CONTINUE
+// used in drm_atomic_helper_wait_for_fences for synchronization
+#warning fence synchronization missing
 #if 0
 	asyw->state.fence = dma_resv_get_excl_rcu(fb->nvbo->bo.base.resv);
 #endif

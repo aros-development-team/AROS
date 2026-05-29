@@ -528,23 +528,23 @@ drm_atomic_get_plane_state(struct drm_atomic_state *state,
 }
 EXPORT_SYMBOL(drm_atomic_get_plane_state);
 
-// static bool
-// plane_switching_crtc(const struct drm_plane_state *old_plane_state,
-// 		     const struct drm_plane_state *new_plane_state)
-// {
-// 	if (!old_plane_state->crtc || !new_plane_state->crtc)
-// 		return false;
+static bool
+plane_switching_crtc(const struct drm_plane_state *old_plane_state,
+		     const struct drm_plane_state *new_plane_state)
+{
+	if (!old_plane_state->crtc || !new_plane_state->crtc)
+		return false;
 
-// 	if (old_plane_state->crtc == new_plane_state->crtc)
-// 		return false;
+	if (old_plane_state->crtc == new_plane_state->crtc)
+		return false;
 
-// 	/* This could be refined, but currently there's no helper or driver code
-// 	 * to implement direct switching of active planes nor userspace to take
-// 	 * advantage of more direct plane switching without the intermediate
-// 	 * full OFF state.
-// 	 */
-// 	return true;
-// }
+	/* This could be refined, but currently there's no helper or driver code
+	 * to implement direct switching of active planes nor userspace to take
+	 * advantage of more direct plane switching without the intermediate
+	 * full OFF state.
+	 */
+	return true;
+}
 
 /**
  * drm_atomic_plane_check - check plane state
@@ -638,8 +638,6 @@ static int drm_atomic_plane_check(const struct drm_plane_state *old_plane_state,
 		return -ENOSPC;
 	}
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	clips = drm_plane_get_damage_clips(new_plane_state);
 	num_clips = drm_plane_get_damage_clips_count(new_plane_state);
 
@@ -665,7 +663,7 @@ NOT_IMPLEMENTED_CONTINUE
 				 plane->base.id, plane->name);
 		return -EINVAL;
 	}
-#endif
+
 	return 0;
 }
 
