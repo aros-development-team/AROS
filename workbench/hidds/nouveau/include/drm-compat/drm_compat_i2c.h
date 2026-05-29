@@ -40,6 +40,10 @@ struct i2c_algorithm
 };
 
 struct i2c_client;
+
+#define I2C_BOARD_INFO(x, y) \
+    .type = (x), .addr = (y)
+
 struct i2c_board_info
 {
     BYTE type[20]; /* Name? */

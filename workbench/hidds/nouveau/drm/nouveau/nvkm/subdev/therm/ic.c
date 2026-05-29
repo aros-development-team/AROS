@@ -98,8 +98,6 @@ nvkm_therm_ic_ctor(struct nvkm_therm *therm)
 		return;
 
 	if (!nvbios_extdev_find(bios, NVBIOS_EXTDEV_LM89, &extdev_entry)) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		struct nvkm_i2c_bus_probe board[] = {
 		  { { I2C_BOARD_INFO("lm90", extdev_entry.addr >> 1) }, 0},
 		  { }
@@ -107,14 +105,11 @@ NOT_IMPLEMENTED_STOP
 
 		nvkm_i2c_bus_probe(bus, "monitoring device", board,
 				   probe_monitoring_device, therm);
-#endif
 		if (therm->ic)
 			return;
 	}
 
 	if (!nvbios_extdev_find(bios, NVBIOS_EXTDEV_ADT7473, &extdev_entry)) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		struct nvkm_i2c_bus_probe board[] = {
 		  { { I2C_BOARD_INFO("adt7473", extdev_entry.addr >> 1) }, 20 },
 		  { }
@@ -122,7 +117,6 @@ NOT_IMPLEMENTED_STOP
 
 		nvkm_i2c_bus_probe(bus, "monitoring device", board,
 				   probe_monitoring_device, therm);
-#endif
 		if (therm->ic)
 			return;
 	}

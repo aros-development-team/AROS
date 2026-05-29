@@ -47,6 +47,15 @@ NOT_IMPLEMENTED_STOP
         else
             return 0;
     }
+    else if ((num == 2) && (msgs[0].addr == 0x4c) && (msgs[1].addr == 0x4c) && (msgs[0].len == 1) && (msgs[1].len == 1))
+    {
+        /* G96 probing monitoring devices */
+        D(bug("i2c_transfer - G96 probing for monitoring devices \n"));
+        if (HIDD_I2C_ProbeAddress((OOP_Object *)adap->i2cdriver, msgs[0].addr << 1)) /* AROS has shifted addresses (<< 1) */
+            return 2;
+        else
+            return 0;
+    }
     else if ((num == 2) && (msgs[0].addr == 0x75) && (msgs[1].addr == 0x75) && (msgs[0].len == 1) && (msgs[1].len == 1))
     {
 NOT_IMPLEMENTED_STOP
@@ -129,6 +138,8 @@ NOT_IMPLEMENTED_STOP
     {
         /* Not supported case */
         bug("i2c_transfer case not supported: num = %d\n", num);
+        for (int i = 0; i < num; i++)
+            bug("   msg%d addr 0x%x len %d\n", i, msgs[i].addr, msgs[i].len);
 NOT_IMPLEMENTED_STOP
     }
     
