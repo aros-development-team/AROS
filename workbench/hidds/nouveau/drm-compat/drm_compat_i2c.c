@@ -11,6 +11,40 @@
 
 OOP_AttrBase HiddI2CDeviceAttrBase = 0; /* TODO: Implement  freeing */
 
+/* This function assumes there are two messages in msgs[] */
+static int i2c_writeread(struct i2c_adapter *adap, struct i2c_msg *msgs)
+{
+    struct pHidd_I2CDevice_WriteRead msg;
+    BOOL result = FALSE;
+
+    struct TagItem attrs[] =
+    {
+        { aHidd_I2CDevice_Driver,   (IPTR)adap->i2cdriver   },
+        { aHidd_I2CDevice_Address,  msgs[0].addr << 1       }, /* AROS has shifted addresses (<< 1) */
+        { aHidd_I2CDevice_Name,     (IPTR)"WriteRead Call"  },
+        { TAG_DONE, 0UL }
+    };
+
+    D(bug("i2c_transfer -WriteRead Call\n"));
+
+    OOP_Object *obj = OOP_NewObject(NULL, CLID_Hidd_I2CDevice, attrs);
+
+    msg.mID = OOP_GetMethodID((STRPTR)IID_Hidd_I2CDevice, moHidd_I2CDevice_WriteRead);
+    msg.readBuffer = msgs[1].buf;
+    msg.readLength = msgs[1].len;
+    msg.writeBuffer = msgs[0].buf;
+    msg.writeLength = msgs[0].len;
+
+    result = OOP_DoMethod(obj, &msg.mID);
+
+    OOP_DisposeObject(obj);
+
+    if (result)
+        return 2;
+    else
+        return 0;
+}
+
 int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 {
 
@@ -133,6 +167,11 @@ NOT_IMPLEMENTED_STOP
             return 2;
         else
             return 0;
+    }
+    else if ((num == 2) && (msgs[0].addr == 0x54) && (msgs[1].addr == 0x54) && (msgs[0].len == 2) && (msgs[1].len == 1))
+    {
+        /* Read during BIOS init, triggered first on GTX 550 Ti */
+        return i2c_writeread(adap, msgs);
     }
     else
     {
