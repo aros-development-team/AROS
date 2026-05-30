@@ -669,8 +669,6 @@ static inline int __ttm_bo_reserve(struct ttm_buffer_object *bo,
 				   struct ww_acquire_ctx *ticket)
 {
 	int ret = 0;
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 
 	if (no_wait) {
 		bool success;
@@ -685,7 +683,6 @@ NOT_IMPLEMENTED_CONTINUE
 		ret = dma_resv_lock_interruptible(bo->base.resv, ticket);
 	else
 		ret = dma_resv_lock(bo->base.resv, ticket);
-#endif
 	if (ret == -EINTR)
 		return -ERESTARTSYS;
 	return ret;
@@ -797,10 +794,7 @@ static inline void ttm_bo_unreserve(struct ttm_buffer_object *bo)
 	else
 		ttm_bo_move_to_lru_tail(bo, NULL);
 	spin_unlock(&bo->bdev->glob->lru_lock);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	dma_resv_unlock(bo->base.resv);
-#endif
 }
 
 /*
