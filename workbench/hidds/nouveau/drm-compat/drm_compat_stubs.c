@@ -5,16 +5,16 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_dma.h>
 
-struct dma_fence *dma_fence_get(struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; return fence; }
+struct dma_fence *dma_fence_get(struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; udelay(125); return fence; }
 struct dma_fence *dma_resv_get_excl(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; }
 void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 void dma_fence_free(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 signed long dma_fence_wait(struct dma_fence *fence, bool intr) { NOT_IMPLEMENTED_STOP }
 bool dma_fence_is_signaled(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
-void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, spinlock_t *lock, u64 context, u64 seqno) { NOT_IMPLEMENTED_CONTINUE; }
+void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, spinlock_t *lock, u64 context, u64 seqno) { NOT_IMPLEMENTED_CONTINUE; udelay(125); }
 void dma_fence_put(struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE }
-int dma_fence_signal_locked(struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; return 0; }
+int dma_fence_signal_locked(struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; udelay(500); return 0; }
 long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout) { NOT_IMPLEMENTED_STOP }
 bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all) { NOT_IMPLEMENTED_CONTINUE; return 1; }
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
