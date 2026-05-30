@@ -47,6 +47,7 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_mem.h>
 #include <linux/bitops.h>
+#include <linux/minmax.h>
 #endif
 
 // static void ttm_bo_global_kobj_release(struct kobject *kobj);
@@ -391,12 +392,9 @@ static int ttm_bo_handle_move_mem(struct ttm_buffer_object *bo,
 
 	if (ret) {
 		if (bdev->driver->move_notify) {
-NOT_IMPLEMENTED_STOP
-#if 0
 			swap(*mem, bo->mem);
 			bdev->driver->move_notify(bo, false, mem);
 			swap(*mem, bo->mem);
-#endif
 		}
 
 		goto out_err;

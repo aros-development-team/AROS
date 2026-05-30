@@ -2966,47 +2966,47 @@ fail:
 }
 EXPORT_SYMBOL(drm_atomic_helper_update_plane);
 
-// /**
-//  * drm_atomic_helper_disable_plane - Helper for primary plane disable using * atomic
-//  * @plane: plane to disable
-//  * @ctx: lock acquire context
-//  *
-//  * Provides a default plane disable handler using the atomic driver interface.
-//  *
-//  * RETURNS:
-//  * Zero on success, error code on failure
-//  */
-// int drm_atomic_helper_disable_plane(struct drm_plane *plane,
-// 				    struct drm_modeset_acquire_ctx *ctx)
-// {
-// 	struct drm_atomic_state *state;
-// 	struct drm_plane_state *plane_state;
-// 	int ret = 0;
+/**
+ * drm_atomic_helper_disable_plane - Helper for primary plane disable using * atomic
+ * @plane: plane to disable
+ * @ctx: lock acquire context
+ *
+ * Provides a default plane disable handler using the atomic driver interface.
+ *
+ * RETURNS:
+ * Zero on success, error code on failure
+ */
+int drm_atomic_helper_disable_plane(struct drm_plane *plane,
+				    struct drm_modeset_acquire_ctx *ctx)
+{
+	struct drm_atomic_state *state;
+	struct drm_plane_state *plane_state;
+	int ret = 0;
 
-// 	state = drm_atomic_state_alloc(plane->dev);
-// 	if (!state)
-// 		return -ENOMEM;
+	state = drm_atomic_state_alloc(plane->dev);
+	if (!state)
+		return -ENOMEM;
 
-// 	state->acquire_ctx = ctx;
-// 	plane_state = drm_atomic_get_plane_state(state, plane);
-// 	if (IS_ERR(plane_state)) {
-// 		ret = PTR_ERR(plane_state);
-// 		goto fail;
-// 	}
+	state->acquire_ctx = ctx;
+	plane_state = drm_atomic_get_plane_state(state, plane);
+	if (IS_ERR(plane_state)) {
+		ret = PTR_ERR(plane_state);
+		goto fail;
+	}
 
-// 	if (plane_state->crtc && plane_state->crtc->cursor == plane)
-// 		plane_state->state->legacy_cursor_update = true;
+	if (plane_state->crtc && plane_state->crtc->cursor == plane)
+		plane_state->state->legacy_cursor_update = true;
 
-// 	ret = __drm_atomic_helper_disable_plane(plane, plane_state);
-// 	if (ret != 0)
-// 		goto fail;
+	ret = __drm_atomic_helper_disable_plane(plane, plane_state);
+	if (ret != 0)
+		goto fail;
 
-// 	ret = drm_atomic_commit(state);
-// fail:
-// 	drm_atomic_state_put(state);
-// 	return ret;
-// }
-// EXPORT_SYMBOL(drm_atomic_helper_disable_plane);
+	ret = drm_atomic_commit(state);
+fail:
+	drm_atomic_state_put(state);
+	return ret;
+}
+EXPORT_SYMBOL(drm_atomic_helper_disable_plane);
 
 /**
  * drm_atomic_helper_set_config - set a new config from userspace

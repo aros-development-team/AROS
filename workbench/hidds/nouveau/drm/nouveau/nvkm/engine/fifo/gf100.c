@@ -82,12 +82,15 @@ gf100_fifo_runlist_commit(struct gf100_fifo *fifo)
 				    (target << 28));
 	nvkm_wr32(device, 0x002274, 0x01f00000 | nr);
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (wait_event_timeout(fifo->runlist.wait,
 			       !(nvkm_rd32(device, 0x00227c) & 0x00100000),
 			       msecs_to_jiffies(2000)) == 0)
 		nvkm_error(subdev, "runlist update timeout\n");
+#else
+#warning FIXME: wait_event_timeout
+	wait_event(fifo->runlist.wait,
+			       !(nvkm_rd32(device, 0x00227c) & 0x00100000));
 #endif
 	mutex_unlock(&subdev->mutex);
 }
@@ -456,10 +459,7 @@ gf100_fifo_intr_runlist(struct gf100_fifo *fifo)
 	u32 intr = nvkm_rd32(device, 0x002a00);
 
 	if (intr & 0x10000000) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		wake_up(&fifo->runlist.wait);
-#endif
 		nvkm_wr32(device, 0x002a00, 0x10000000);
 		intr &= ~0x10000000;
 	}

@@ -276,8 +276,6 @@ static int ttm_copy_io_page(void *dst, void *src, unsigned long page)
 #define __ttm_kmap_atomic_prot(__page, __prot) vmap(&__page, 1, 0,  __prot)
 #define __ttm_kunmap_atomic(__addr) vunmap(__addr)
 #endif
-#else
-    kunmap(d);
 #endif
 
 
@@ -297,12 +295,13 @@ static int ttm_copy_io_page(void *dst, void *src, unsigned long page)
  */
 void *ttm_kmap_atomic_prot(struct page *page, pgprot_t prot)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (pgprot_val(prot) == pgprot_val(PAGE_KERNEL))
 		return kmap_atomic(page);
 	else
 		return __ttm_kmap_atomic_prot(page, prot);
+#else
+		return kmap_atomic(page);
 #endif
 }
 EXPORT_SYMBOL(ttm_kmap_atomic_prot);
@@ -316,12 +315,13 @@ EXPORT_SYMBOL(ttm_kmap_atomic_prot);
  */
 void ttm_kunmap_atomic_prot(void *addr, pgprot_t prot)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	if (pgprot_val(prot) == pgprot_val(PAGE_KERNEL))
 		kunmap_atomic(addr);
 	else
 		__ttm_kunmap_atomic(addr);
+#else
+		kunmap_atomic(addr);
 #endif
 }
 EXPORT_SYMBOL(ttm_kunmap_atomic_prot);

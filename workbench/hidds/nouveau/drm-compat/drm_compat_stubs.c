@@ -85,7 +85,7 @@ struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv) { NOT_IMPLEMENTED
 
 
 
-void drm_atomic_helper_disable_plane() { NOT_IMPLEMENTED_STOP }
+
 void drm_atomic_helper_legacy_gamma_set() { NOT_IMPLEMENTED_STOP }
 void drm_atomic_helper_page_flip() { NOT_IMPLEMENTED_STOP }
 

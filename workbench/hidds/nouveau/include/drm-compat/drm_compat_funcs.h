@@ -156,9 +156,9 @@ void __free_page(struct page * p);
 #define put_page(p)                 __free_page(p)  /*FIXME: This might be wrong */
 #define page_to_phys(p)             (dma_addr_t)p->address
 #define kmap(p)                     p->address
-#define kmap_atomic(p, type)        p->address
+#define kmap_atomic(p)              p->address
 #define vmap(p, count, flags, prot) (p)[0]->address
-#define kunmap_atomic(addr, type)
+#define kunmap_atomic(addr)
 #define kunmap(addr)
 #define vunmap(addr)
 #define set_page_dirty(p)
@@ -424,6 +424,17 @@ typedef struct {
             Signal(wt->wt_Task, SIGF_SINGLE);   \
         }                                       \
     }
+
+#define wake_up(x)                              \
+    {                                           \
+        waitqueue_task_t *wt,*next;             \
+        ForeachNodeSafe(x, wt, next) {          \
+            REMOVE(wt);                         \
+            Signal(wt->wt_Task, SIGF_SINGLE);   \
+            break;                              \
+        }                                       \
+    }
+
 
 #define wait_event(wq, condition)       \
     {                                   \
