@@ -882,10 +882,7 @@ gk104_fifo_fini(struct nvkm_fifo *base)
 {
 	struct gk104_fifo *fifo = gk104_fifo(base);
 	struct nvkm_device *device = fifo->base.engine.subdev.device;
-NOT_IMPLEMENTED_STOP
-#if 0
 	flush_work(&fifo->recover.work);
-#endif
 	/* allow mmu fault interrupts, even when we're not using fifo */
 	nvkm_mask(device, 0x002140, 0x10000000, 0x10000000);
 }
@@ -1068,10 +1065,7 @@ gk104_fifo_new_(const struct gk104_fifo_func *func, struct nvkm_device *device,
 	if (!(fifo = kzalloc(sizeof(*fifo), GFP_KERNEL)))
 		return -ENOMEM;
 	fifo->func = func;
-NOT_IMPLEMENTED_STOP
-#if 0
 	INIT_WORK(&fifo->recover.work, gk104_fifo_recover_work);
-#endif
 	*pfifo = &fifo->base;
 
 	return nvkm_fifo_ctor(&gk104_fifo_, device, index, nr, &fifo->base);

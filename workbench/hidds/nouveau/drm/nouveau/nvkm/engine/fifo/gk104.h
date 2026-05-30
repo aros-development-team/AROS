@@ -14,9 +14,7 @@ struct gk104_fifo {
 	struct nvkm_fifo base;
 
 	struct {
-#if !defined(__AROS__)
 		struct work_struct work;
-#endif
 		u32 engm;
 		u32 runm;
 	} recover;
