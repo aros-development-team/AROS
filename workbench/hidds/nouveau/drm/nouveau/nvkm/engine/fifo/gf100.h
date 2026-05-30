@@ -13,9 +13,7 @@ struct gf100_fifo {
 	struct list_head chan;
 
 	struct {
-#if !defined(__AROS__)
 		struct work_struct work;
-#endif
 		u64 mask;
 	} recover;
 

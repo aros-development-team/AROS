@@ -626,10 +626,7 @@ static void
 gf100_fifo_fini(struct nvkm_fifo *base)
 {
 	struct gf100_fifo *fifo = gf100_fifo(base);
-NOT_IMPLEMENTED_STOP
-#if 0
 	flush_work(&fifo->recover.work);
-#endif
 }
 
 static void
@@ -704,10 +701,7 @@ gf100_fifo_new(struct nvkm_device *device, int index, struct nvkm_fifo **pfifo)
 	if (!(fifo = kzalloc(sizeof(*fifo), GFP_KERNEL)))
 		return -ENOMEM;
 	INIT_LIST_HEAD(&fifo->chan);
-NOT_IMPLEMENTED_STOP
-#if 0
 	INIT_WORK(&fifo->recover.work, gf100_fifo_recover_work);
-#endif
 	*pfifo = &fifo->base;
 
 	return nvkm_fifo_ctor(&gf100_fifo, device, index, 128, &fifo->base);
