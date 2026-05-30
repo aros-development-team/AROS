@@ -770,10 +770,7 @@ gk104_fifo_intr_runlist(struct gk104_fifo *fifo)
 	u32 mask = nvkm_rd32(device, 0x002a00);
 	while (mask) {
 		int runl = __ffs(mask);
-NOT_IMPLEMENTED_STOP
-#if 0
 		wake_up(&fifo->runlist[runl].wait);
-#endif
 		nvkm_wr32(device, 0x002a00, 1 << runl);
 		mask &= ~(1 << runl);
 	}

@@ -33,13 +33,8 @@
 void
 gf119_disp_super(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
 	struct nv50_disp *disp =
-#if 0
 		container_of(work, struct nv50_disp, supervisor);
-#else
-NULL;
-#endif
 	struct nvkm_subdev *subdev = &disp->base.engine.subdev;
 	struct nvkm_device *device = subdev->device;
 	struct nvkm_head *head;
@@ -153,10 +148,7 @@ gf119_disp_intr(struct nv50_disp *disp)
 		u32 stat = nvkm_rd32(device, 0x6100ac);
 		if (stat & 0x00000007) {
 			disp->super = (stat & 0x00000007);
-NOT_IMPLEMENTED_STOP
-#if 0
 			queue_work(disp->wq, &disp->supervisor);
-#endif
 			nvkm_wr32(device, 0x6100ac, disp->super);
 			stat &= ~0x00000007;
 		}
