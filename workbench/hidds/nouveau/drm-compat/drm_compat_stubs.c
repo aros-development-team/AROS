@@ -48,7 +48,7 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
 int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr, size_t size, int prot) { NOT_IMPLEMENTED_STOP }
 
 void dma_fence_enable_sw_signaling(struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
-void dma_resv_assert_held(struct dma_resv *resv) { NOT_IMPLEMENTED_CONTINUE }
+
 int dma_resv_trylock(struct dma_resv *resv) { NOT_IMPLEMENTED_CONTINUE; return 1; }
 int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLEMENTED_CONTINUE; return 0; }
 int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLEMENTED_STOP }

@@ -47,6 +47,9 @@ struct dma_fence
     spinlock_t *lock;
 };
 
+#define dma_resv_assert_held(x) \
+    (void)x;
+
 #define DMA_FENCE_FLAG_SIGNALED_BIT 0
 #define DMA_FENCE_FLAG_USER_BITS 3 /* last */
 
@@ -62,7 +65,6 @@ void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, sp
 void dma_fence_put(struct dma_fence *fence);
 int dma_fence_signal_locked(struct dma_fence *fence);
 void dma_fence_enable_sw_signaling(struct dma_fence *fence);
-void dma_resv_assert_held(struct dma_resv *resv);
 int dma_resv_trylock(struct dma_resv *resv);
 struct ww_acquire_ctx;
 int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
