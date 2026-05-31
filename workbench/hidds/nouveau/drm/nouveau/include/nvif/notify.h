@@ -21,9 +21,7 @@ struct nvif_notify {
 	 */
 	const void *data;
 	u32 size;
-#if !defined(__AROS__)
 	struct work_struct work;
-#endif
 };
 
 int  nvif_notify_init(struct nvif_object *, int (*func)(struct nvif_notify *),

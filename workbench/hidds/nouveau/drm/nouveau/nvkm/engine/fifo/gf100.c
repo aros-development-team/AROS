@@ -150,8 +150,6 @@ gf100_fifo_engine(struct gf100_fifo *fifo, u32 engn)
 static void
 gf100_fifo_recover_work(struct work_struct *w)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct gf100_fifo *fifo = container_of(w, typeof(*fifo), recover.work);
 	struct nvkm_device *device = fifo->base.engine.subdev.device;
 	struct nvkm_engine *engine;
@@ -178,7 +176,6 @@ NOT_IMPLEMENTED_STOP
 	gf100_fifo_runlist_commit(fifo);
 	nvkm_wr32(device, 0x00262c, engm);
 	nvkm_mask(device, 0x002630, engm, 0x00000000);
-#endif
 }
 
 static void
@@ -191,8 +188,6 @@ gf100_fifo_recover(struct gf100_fifo *fifo, struct nvkm_engine *engine,
 
 	nvkm_error(subdev, "%s engine fault on channel %d, recovering...\n",
 		   nvkm_subdev_name[engine->subdev.index], chid);
-NOT_IMPLEMENTED_STOP
-#if 0
 	assert_spin_locked(&fifo->base.lock);
 
 	nvkm_mask(device, 0x003004 + (chid * 0x08), 0x00000001, 0x00000000);
@@ -203,7 +198,6 @@ NOT_IMPLEMENTED_STOP
 		fifo->recover.mask |= 1ULL << engine->subdev.index;
 	schedule_work(&fifo->recover.work);
 	nvkm_fifo_kevent(&fifo->base, chid);
-#endif
 }
 
 static const struct nvkm_enum

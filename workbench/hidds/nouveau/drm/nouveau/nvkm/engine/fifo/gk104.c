@@ -275,8 +275,6 @@ gk104_fifo_pbdma = {
 static void
 gk104_fifo_recover_work(struct work_struct *w)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct gk104_fifo *fifo = container_of(w, typeof(*fifo), recover.work);
 	struct nvkm_device *device = fifo->base.engine.subdev.device;
 	struct nvkm_engine *engine;
@@ -305,7 +303,6 @@ NOT_IMPLEMENTED_STOP
 
 	nvkm_wr32(device, 0x00262c, runm);
 	nvkm_mask(device, 0x002630, runm, 0x00000000);
-#endif
 }
 
 static void gk104_fifo_recover_engn(struct gk104_fifo *fifo, int engn);
@@ -317,8 +314,6 @@ gk104_fifo_recover_runl(struct gk104_fifo *fifo, int runl)
 	struct nvkm_device *device = subdev->device;
 	const u32 runm = BIT(runl);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	assert_spin_locked(&fifo->base.lock);
 	if (fifo->recover.runm & runm)
 		return;
@@ -330,7 +325,6 @@ NOT_IMPLEMENTED_STOP
 	/* Schedule recovery. */
 	nvkm_warn(subdev, "runlist %d: scheduled for recovery\n", runl);
 	schedule_work(&fifo->recover.work);
-#endif
 }
 
 static struct gk104_fifo_chan *
@@ -371,10 +365,7 @@ gk104_fifo_recover_chan(struct nvkm_fifo *base, int chid)
 	unsigned long engn, engm = fifo->runlist[runl].engm;
 	struct gk104_fifo_chan *chan;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	assert_spin_locked(&fifo->base.lock);
-#endif
 	if (!used)
 		return;
 
@@ -413,8 +404,6 @@ gk104_fifo_recover_engn(struct gk104_fifo *fifo, int engn)
 	struct gk104_fifo_engine_status status;
 	int mmui = -1;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	assert_spin_locked(&fifo->base.lock);
 	if (fifo->recover.engm & engm)
 		return;
@@ -471,7 +460,6 @@ NOT_IMPLEMENTED_STOP
 	/* Schedule recovery. */
 	nvkm_warn(subdev, "engine %d: scheduled for recovery\n", engn);
 	schedule_work(&fifo->recover.work);
-#endif
 }
 
 static void

@@ -54,11 +54,8 @@ nvkm_pmu_pgob(struct nvkm_pmu *pmu, bool enable)
 static void
 nvkm_pmu_recv(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nvkm_pmu *pmu = container_of(work, typeof(*pmu), recv.work);
 	return pmu->func->recv(pmu);
-#endif
 }
 
 int

@@ -39,13 +39,8 @@ gv100_disp_wndw_cnt(struct nvkm_disp *disp, unsigned long *pmask)
 void
 gv100_disp_super(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
 	struct nv50_disp *disp =
-#if 0
 		container_of(work, struct nv50_disp, supervisor);
-#else
-NULL;
-#endif
 	struct nvkm_subdev *subdev = &disp->base.engine.subdev;
 	struct nvkm_device *device = subdev->device;
 	struct nvkm_head *head;
@@ -138,10 +133,7 @@ gv100_disp_intr_ctrl_disp(struct nv50_disp *disp)
 
 	if (stat & 0x00000007) {
 		disp->super = (stat & 0x00000007);
-NOT_IMPLEMENTED_STOP
-#if 0
 		queue_work(disp->wq, &disp->supervisor);
-#endif
 		nvkm_wr32(device, 0x611860, disp->super);
 		stat &= ~0x00000007;
 	}

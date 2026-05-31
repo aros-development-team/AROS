@@ -116,9 +116,7 @@ struct nouveau_cli {
 	struct list_head notifys;
 	char name[32];
 
-#if !defined(__AROS__)
 	struct work_struct work;
-#endif
 	struct list_head worker;
 	struct mutex lock;
 };
@@ -208,8 +206,8 @@ struct nouveau_drm {
 	/* modesetting */
 	struct nvbios vbios;
 	struct nouveau_display *display;
-#if !defined(__AROS__)
 	struct work_struct hpd_work;
+#if !defined(__AROS__)
 	struct work_struct fbcon_work;
 #endif
 	int fbcon_new_state;

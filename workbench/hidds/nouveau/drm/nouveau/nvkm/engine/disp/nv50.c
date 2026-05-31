@@ -72,11 +72,8 @@ nv50_disp_dtor_(struct nvkm_disp *base)
 	nvkm_gpuobj_del(&disp->inst);
 
 	nvkm_event_fini(&disp->uevent);
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (disp->wq)
 		destroy_workqueue(disp->wq);
-#endif
 
 	return disp;
 }

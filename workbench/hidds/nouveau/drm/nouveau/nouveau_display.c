@@ -28,13 +28,13 @@
 #include <acpi/video.h>
 #endif
 
-// #include <drm/drm_atomic.h>
-// #include <drm/drm_atomic_helper.h>
+#include <drm/drm_atomic.h>
+#include <drm/drm_atomic_helper.h>
 #include <drm/drm_crtc_helper.h>
-// #include <drm/drm_fb_helper.h>
+#include <drm/drm_fb_helper.h>
 #include <drm/drm_fourcc.h>
 #include <drm/drm_print.h>
-// #include <drm/drm_probe_helper.h>
+#include <drm/drm_probe_helper.h>
 // #include <drm/drm_vblank.h>
 
 struct drm_crtc;
@@ -360,18 +360,22 @@ static struct nouveau_drm_prop_enum_list dither_depth[] = {
 	}                                                                      \
 } while(0)
 
-// static void
-// nouveau_display_hpd_work(struct work_struct *work)
-// {
-// 	struct nouveau_drm *drm = container_of(work, typeof(*drm), hpd_work);
+static void
+nouveau_display_hpd_work(struct work_struct *work)
+{
+	struct nouveau_drm *drm = container_of(work, typeof(*drm), hpd_work);
 
-// 	pm_runtime_get_sync(drm->dev->dev);
+#if !defined(__AROS__)
+	pm_runtime_get_sync(drm->dev->dev);
 
-// 	drm_helper_hpd_irq_event(drm->dev);
+	drm_helper_hpd_irq_event(drm->dev);
 
-// 	pm_runtime_mark_last_busy(drm->dev->dev);
-// 	pm_runtime_put_sync(drm->dev->dev);
-// }
+	pm_runtime_mark_last_busy(drm->dev->dev);
+	pm_runtime_put_sync(drm->dev->dev);
+#else
+	drm_helper_hpd_irq_event(drm->dev);
+#endif
+}
 
 // #ifdef CONFIG_ACPI
 
@@ -586,10 +590,7 @@ nouveau_display_create(struct drm_device *dev)
 	}
 #endif
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	INIT_WORK(&drm->hpd_work, nouveau_display_hpd_work);
-#endif
 #ifdef CONFIG_ACPI
 	drm->acpi_nb.notifier_call = nouveau_display_acpi_ntfy;
 	register_acpi_notifier(&drm->acpi_nb);

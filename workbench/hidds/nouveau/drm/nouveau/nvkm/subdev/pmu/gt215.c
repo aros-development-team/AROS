@@ -119,10 +119,7 @@ gt215_pmu_recv(struct nvkm_pmu *pmu)
 			pmu->recv.data[0] = data0;
 			pmu->recv.data[1] = data1;
 			pmu->recv.process = 0;
-NOT_IMPLEMENTED_STOP
-#if 0
 			wake_up(&pmu->recv.wait);
-#endif
 			return;
 		}
 	}
@@ -158,10 +155,7 @@ gt215_pmu_intr(struct nvkm_pmu *pmu)
 	}
 
 	if (intr & 0x00000040) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		schedule_work(&pmu->recv.work);
-#endif
 		nvkm_wr32(device, 0x10a004, 0x00000040);
 		intr &= ~0x00000040;
 	}

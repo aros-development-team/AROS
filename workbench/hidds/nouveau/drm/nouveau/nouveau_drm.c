@@ -145,35 +145,38 @@ nouveau_name(struct drm_device *dev)
 		return nouveau_platform_name(to_platform_device(dev->dev));
 }
 
-// static inline bool
-// nouveau_cli_work_ready(struct dma_fence *fence)
-// {
-// 	bool ret = true;
+static inline bool
+nouveau_cli_work_ready(struct dma_fence *fence)
+{
+	bool ret = true;
 
-// 	spin_lock_irq(fence->lock);
-// 	if (!dma_fence_is_signaled_locked(fence))
-// 		ret = false;
-// 	spin_unlock_irq(fence->lock);
+NOT_IMPLEMENTED_STOP
+#if 0
+	spin_lock_irq(fence->lock);
+	if (!dma_fence_is_signaled_locked(fence))
+		ret = false;
+	spin_unlock_irq(fence->lock);
 
-// 	if (ret == true)
-// 		dma_fence_put(fence);
-// 	return ret;
-// }
+	if (ret == true)
+		dma_fence_put(fence);
+#endif
+	return ret;
+}
 
-// static void
-// nouveau_cli_work(struct work_struct *w)
-// {
-// 	struct nouveau_cli *cli = container_of(w, typeof(*cli), work);
-// 	struct nouveau_cli_work *work, *wtmp;
-// 	mutex_lock(&cli->lock);
-// 	list_for_each_entry_safe(work, wtmp, &cli->worker, head) {
-// 		if (!work->fence || nouveau_cli_work_ready(work->fence)) {
-// 			list_del(&work->head);
-// 			work->func(work);
-// 		}
-// 	}
-// 	mutex_unlock(&cli->lock);
-// }
+static void
+nouveau_cli_work(struct work_struct *w)
+{
+	struct nouveau_cli *cli = container_of(w, typeof(*cli), work);
+	struct nouveau_cli_work *work, *wtmp;
+	mutex_lock(&cli->lock);
+	list_for_each_entry_safe(work, wtmp, &cli->worker, head) {
+		if (!work->fence || nouveau_cli_work_ready(work->fence)) {
+			list_del(&work->head);
+			work->func(work);
+		}
+	}
+	mutex_unlock(&cli->lock);
+}
 
 // static void
 // nouveau_cli_work_fence(struct dma_fence *fence, struct dma_fence_cb *cb)
@@ -206,10 +209,7 @@ nouveau_cli_fini(struct nouveau_cli *cli)
 	 *
 	 * So, after flushing the workqueue, there should be nothing left.
 	 */
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	flush_work(&cli->work);
-#endif
 	WARN_ON(!list_empty(&cli->worker));
 
 NOT_IMPLEMENTED_CONTINUE
@@ -263,10 +263,7 @@ NOT_IMPLEMENTED_CONTINUE
 	usif_client_init(cli);
 #endif
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	INIT_WORK(&cli->work, nouveau_cli_work);
-#endif
 	INIT_LIST_HEAD(&cli->worker);
 	mutex_init(&cli->lock);
 

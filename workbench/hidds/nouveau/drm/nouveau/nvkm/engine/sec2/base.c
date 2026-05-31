@@ -44,10 +44,7 @@ nvkm_sec2_intr(struct nvkm_engine *engine)
 	u32 intr = nvkm_rd32(device, sec2->addr + 0x008) & disp & ~(disp >> 16);
 
 	if (intr & 0x00000040) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		schedule_work(&sec2->work);
-#endif
 		nvkm_wr32(device, sec2->addr + 0x004, 0x00000040);
 		intr &= ~0x00000040;
 	}
@@ -62,8 +59,6 @@ NOT_IMPLEMENTED_STOP
 static void
 nvkm_sec2_recv(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nvkm_sec2 *sec2 = container_of(work, typeof(*sec2), work);
 
 	if (!sec2->queue) {
@@ -73,7 +68,6 @@ NOT_IMPLEMENTED_STOP
 	}
 
 	nvkm_msgqueue_recv(sec2->queue);
-#endif
 }
 
 
@@ -96,10 +90,7 @@ static int
 nvkm_sec2_fini(struct nvkm_engine *engine, bool suspend)
 {
 	struct nvkm_sec2 *sec2 = nvkm_sec2(engine);
-NOT_IMPLEMENTED_STOP
-#if 0
 	flush_work(&sec2->work);
-#endif
 	return 0;
 }
 
@@ -120,10 +111,7 @@ nvkm_sec2_new_(struct nvkm_device *device, int index, u32 addr,
 	if (!(sec2 = *psec2 = kzalloc(sizeof(*sec2), GFP_KERNEL)))
 		return -ENOMEM;
 	sec2->addr = addr;
-NOT_IMPLEMENTED_STOP
-#if 0
 	INIT_WORK(&sec2->work, nvkm_sec2_recv);
-#endif
 
 	return nvkm_engine_ctor(&nvkm_sec2, device, index, true, &sec2->engine);
 };

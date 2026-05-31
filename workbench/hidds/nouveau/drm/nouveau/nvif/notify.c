@@ -53,11 +53,8 @@ nvif_notify_put(struct nvif_notify *notify)
 	if (likely(notify->object) &&
 	    test_and_clear_bit(NVIF_NOTIFY_USER, &notify->flags)) {
 		int ret = nvif_notify_put_(notify);
-NOT_IMPLEMENTED_STOP
-#if 0
 		if (test_bit(NVIF_NOTIFY_WORK, &notify->flags))
 			flush_work(&notify->work);
-#endif
 		return ret;
 	}
 	return 0;
@@ -107,11 +104,8 @@ nvif_notify_func(struct nvif_notify *notify, bool keep)
 static void
 nvif_notify_work(struct work_struct *work)
 {
-NOT_IMPLEMENTED_STOP
-#if 0
 	struct nvif_notify *notify = container_of(work, typeof(*notify), work);
 	nvif_notify_func(notify, true);
-#endif
 }
 
 int
@@ -135,10 +129,7 @@ nvif_notify(const void *header, u32 length, const void *data, u32 size)
 			atomic_inc(&notify->putcnt);
 			if (test_bit(NVIF_NOTIFY_WORK, &notify->flags)) {
 				memcpy((void *)notify->data, data, size);
-NOT_IMPLEMENTED_STOP
-#if 0
 				schedule_work(&notify->work);
-#endif
 				return NVIF_NOTIFY_DROP;
 			}
 			notify->data = data;
@@ -189,10 +180,7 @@ nvif_notify_init(struct nvif_object *object, int (*func)(struct nvif_notify *),
 	notify->data = NULL;
 	notify->size = reply;
 	if (work) {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		INIT_WORK(&notify->work, nvif_notify_work);
-#endif
 		set_bit(NVIF_NOTIFY_WORK, &notify->flags);
 		notify->data = kmalloc(notify->size, GFP_KERNEL);
 		if (!notify->data)
