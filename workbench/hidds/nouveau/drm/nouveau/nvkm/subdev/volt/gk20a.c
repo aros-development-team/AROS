@@ -53,11 +53,8 @@ gk20a_volt_get_cvb_voltage(int speedo, int s_scale, const struct cvb_coef *coef)
 {
 	int mv;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	mv = DIV_ROUND_CLOSEST(coef->c2 * speedo, s_scale);
 	mv = DIV_ROUND_CLOSEST((mv + coef->c1) * speedo, s_scale) + coef->c0;
-#endif
 	return mv;
 }
 
@@ -74,12 +71,9 @@ gk20a_volt_get_cvb_t_voltage(int speedo, int temp, int s_scale, int t_scale,
 
 	cvb_mv = gk20a_volt_get_cvb_voltage(speedo, s_scale, coef);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	mv = DIV_ROUND_CLOSEST(coef->c3 * speedo, s_scale) + coef->c4 +
 		DIV_ROUND_CLOSEST(coef->c5 * temp, t_scale);
 	mv = DIV_ROUND_CLOSEST(mv * temp, t_scale) + cvb_mv;
-#endif
 	return mv;
 }
 

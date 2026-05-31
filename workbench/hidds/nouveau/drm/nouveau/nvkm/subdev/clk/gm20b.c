@@ -192,8 +192,6 @@ gm20b_dvfs_calc_det_coeff(struct gm20b_clk *clk, s32 uv,
 	struct nvkm_subdev *subdev = &clk->base.base.subdev;
 	const struct gm20b_clk_dvfs_params *p = clk->dvfs_params;
 	u32 coeff;
-NOT_IMPLEMENTED_STOP
-#if 0
 	/* Work with mv as uv would likely trigger an overflow */
 	s32 mv = DIV_ROUND_CLOSEST(uv, 1000);
 
@@ -213,7 +211,6 @@ NOT_IMPLEMENTED_STOP
 	nvkm_debug(subdev, "%s uv: %d coeff: %x, ext_cal: %d, det_max: %d\n",
 		   __func__, uv, dvfs->dfs_coeff, dvfs->dfs_ext_cal,
 		   dvfs->dfs_det_max);
-#endif
 }
 
 /*
@@ -234,11 +231,8 @@ gm20b_dvfs_calc_ndiv(struct gm20b_clk *clk, u32 n_eff, u32 *n_int, u32 *sdm_din)
 	u32 rem, rem_range;
 
 	/* calculate current ext_cal and subtract previous one */
-NOT_IMPLEMENTED_STOP
-#if 0
 	det_delta = DIV_ROUND_CLOSEST(((s32)clk->uv) - clk->uvdet_offs,
 				      clk->uvdet_slope);
-#endif
 	det_delta -= clk->dvfs.dfs_ext_cal;
 	det_delta = min(det_delta, clk->dvfs.dfs_det_max);
 	det_delta *= clk->dvfs.dfs_coeff;

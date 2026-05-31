@@ -144,10 +144,7 @@ nvkm_therm_fan_sense(struct nvkm_therm *therm)
 				      therm->fan->tach.line);
 	cycles = 0;
 	do {
-NOT_IMPLEMENTED_STOP
-#if 0
 		usleep_range(500, 1000); /* supports 0 < rpm < 7500 */
-#endif
 
 		cur = nvkm_gpio_get(gpio, 0, therm->fan->tach.func,
 					     therm->fan->tach.line);

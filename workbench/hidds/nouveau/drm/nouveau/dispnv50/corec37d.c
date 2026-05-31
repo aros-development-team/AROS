@@ -53,8 +53,6 @@ corec37d_ntfy_wait_done(struct nouveau_bo *bo, u32 offset,
 			struct nvif_device *device)
 {
 	u32 data;
-NOT_IMPLEMENTED_STOP
-#if 0
 	s64 time = nvif_msec(device, 2000ULL,
 		data = nouveau_bo_rd32(bo, offset / 4 + 0);
 		if ((data & 0xc0000000) == 0x80000000)
@@ -62,7 +60,6 @@ NOT_IMPLEMENTED_STOP
 		usleep_range(1, 2);
 	);
 	return time < 0 ? time : 0;
-#endif
 }
 
 void
