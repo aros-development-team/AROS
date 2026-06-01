@@ -53,6 +53,7 @@ AROS_DRM_CORE_SOURCES = \
             drm-compat/drm_compat_irq \
             drm-compat/drm_compat_i2c \
             drm-compat/drm_compat_workqueue \
+            drm-compat/drm_compat_dma \
             drm-compat/drm_compat_stubs \
             drm-compat/linux_compat \
             drm-compat/linux_hdmi \

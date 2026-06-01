@@ -42,7 +42,7 @@ struct dma_fence
     struct kref refcount;
     ULONG flags;
     ULONG seqno;
-    struct dma_fence_ops *ops;
+    const struct dma_fence_ops *ops;
     IPTR context;
     spinlock_t *lock;
 };
