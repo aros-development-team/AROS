@@ -5,12 +5,10 @@
 #include <drm-compat/drm_compat_funcs.h>
 #include <drm-compat/drm_compat_dma.h>
 
-struct dma_fence *dma_resv_get_excl(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
-void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence) { NOT_IMPLEMENTED_CONTINUE; }
 void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
 signed long dma_fence_wait(struct dma_fence *fence, bool intr) { NOT_IMPLEMENTED_STOP }
 long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout) { NOT_IMPLEMENTED_STOP }
-bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all) { NOT_IMPLEMENTED_CONTINUE; return 1; }
+
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 
 
@@ -46,10 +44,8 @@ int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLE
 int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx) { NOT_IMPLEMENTED_STOP }
 void dma_resv_unlock(struct dma_resv *resv) { NOT_IMPLEMENTED_CONTINUE }
 struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
-void dma_resv_init(struct dma_resv *resv) { NOT_IMPLEMENTED_CONTINUE}
-void dma_resv_fini(struct dma_resv *resv) { NOT_IMPLEMENTED_CONTINUE }
+
 int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num) { NOT_IMPLEMENTED_STOP }
-struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 bool dma_resv_held(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src) { NOT_IMPLEMENTED_STOP }
 
@@ -63,7 +59,7 @@ unsigned int drm_debug;
 
 
 
-struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv) { NOT_IMPLEMENTED_STOP }
+
 
 
 

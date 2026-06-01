@@ -70,3 +70,96 @@ u64 dma_fence_context_alloc(unsigned int num)
     context_counter += num;
     return ret;
 }
+
+/* DMA RESV */
+
+struct dma_fence *dma_resv_get_excl(struct dma_resv *resv)
+{
+    return resv ? resv->fence_excl : NULL;
+}
+
+struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv)
+{
+    return dma_resv_get_excl(resv);
+}
+
+void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence)
+{
+    dma_fence_get(fence);
+    dma_fence_put(resv->fence_excl);
+    resv->fence_excl = fence;
+}
+
+bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all)
+{
+    if (!resv->fence_excl)
+        return 1;
+    return dma_fence_is_signaled(resv->fence_excl);
+}
+
+static bool dma_resv_all_fences_signaled(struct dma_resv *resv, bool wait_all)
+{
+    if (resv->fence_excl && !dma_fence_is_signaled(resv->fence_excl))
+        return 0;
+    if (wait_all && resv->fences_shared)
+    {
+        int i;
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+        {
+            struct dma_fence *fence = resv->fences_shared->shared[i];
+            if (fence && !dma_fence_is_signaled(fence))
+                return 0;
+        }
+    }
+    return 1;
+}
+
+long dma_resv_wait_timeout_rcu(struct dma_resv *resv, bool wait_all,
+                               bool intr, unsigned long timeout)
+{
+    int i;
+
+    if (resv->fence_excl)
+        dma_fence_enable_sw_signaling(resv->fence_excl);
+    if (wait_all && resv->fences_shared)
+    {
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+        {
+            struct dma_fence *fence = resv->fences_shared->shared[i];
+            if (fence)
+                dma_fence_enable_sw_signaling(fence);
+        }
+    }
+
+    if (dma_resv_all_fences_signaled(resv, wait_all))
+        return timeout ? timeout : 1;
+
+    while (timeout > 0)
+    {
+        unsigned long step = timeout > 100 ? 100 : timeout;
+        udelay(step);
+        timeout -= step;
+        if (dma_resv_all_fences_signaled(resv, wait_all))
+            return timeout;
+    }
+
+    return 0;
+}
+
+struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv)
+{
+    return resv ? resv->fences_shared : NULL;
+}
+
+void dma_resv_init(struct dma_resv *resv)
+{
+    resv->fence_excl = NULL;
+    resv->fences_shared = NULL;
+}
+
+void dma_resv_fini(struct dma_resv *resv)
+{
+    dma_fence_put(resv->fence_excl);
+    resv->fence_excl = NULL;
+    resv->fences_shared = NULL;
+}

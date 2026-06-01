@@ -23,11 +23,19 @@ void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle
 void dma_free_coherent(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle);
 
 /* dma fence handling */
+struct dma_fence;
+struct dma_resv_list
+{
+    u32 shared_count;
+    struct dma_fence *shared[];
+};
+
 struct dma_resv
 {
-    ULONG dummy;
+    struct dma_fence *fence_excl;
+    struct dma_resv_list *fences_shared;
 };
-struct dma_fence;
+
 struct dma_fence_ops
 {
     const char * (*get_driver_name)(struct dma_fence *fence);
@@ -74,7 +82,6 @@ struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv);
 void dma_resv_init(struct dma_resv *resv);
 void dma_resv_fini(struct dma_resv *resv);
 int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num);
-struct dma_resv_list;
 struct dma_resv_list *dma_resv_get_list(struct dma_resv *resv);
 bool dma_resv_held(struct dma_resv *resv);
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src);
@@ -83,5 +90,6 @@ void dma_resv_lock_slow(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv);
 bool dma_resv_test_signaled_rcu(struct dma_resv *resv, bool test_all);
+long dma_resv_wait_timeout_rcu(struct dma_resv *resv, bool wait_all, bool intr, unsigned long timeout);
 
 #endif /* _DRM_COMPAT_DMA_ */
