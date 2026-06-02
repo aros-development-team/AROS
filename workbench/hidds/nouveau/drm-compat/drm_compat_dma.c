@@ -70,6 +70,44 @@ void dma_fence_enable_sw_signaling(struct dma_fence *fence)
         fence->ops->enable_signaling(fence);
 }
 
+signed long dma_fence_wait(struct dma_fence *fence, bool intr)
+{
+    signed long ret;
+
+    ret = dma_fence_wait_timeout(fence, intr, LONG_MAX);
+    if (ret > 0)
+        return 0;
+    return ret;
+}
+
+long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout)
+{
+    if (fence->ops && fence->ops->wait)
+        return fence->ops->wait(fence, intr, timeout);
+
+    dma_fence_enable_sw_signaling(fence);
+
+    if (dma_fence_is_signaled(fence))
+        return timeout ? timeout : 1;
+
+    while (timeout > 0)
+    {
+        unsigned long step = timeout > 100 ? 100 : timeout;
+        udelay(step);
+        timeout -= step;
+
+        if (dma_fence_is_signaled(fence))
+            return timeout;
+
+#if 0
+        if (intr && (SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+            return -ERESTARTSYS;
+#endif
+    }
+
+    return 0;
+}
+
 u64 dma_fence_context_alloc(unsigned int num)
 {
     static u64 context_counter = 0;

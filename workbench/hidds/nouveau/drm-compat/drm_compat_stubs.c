@@ -6,8 +6,6 @@
 #include <drm-compat/drm_compat_dma.h>
 
 void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence) { NOT_IMPLEMENTED_STOP }
-signed long dma_fence_wait(struct dma_fence *fence, bool intr) { NOT_IMPLEMENTED_STOP }
-long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long timeout) { NOT_IMPLEMENTED_STOP }
 
 unsigned long clk_get_rate(struct clk *c) { NOT_IMPLEMENTED_STOP }
 
