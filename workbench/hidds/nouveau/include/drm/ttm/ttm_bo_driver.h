@@ -37,6 +37,8 @@
 #include <linux/fs.h>
 #include <linux/spinlock.h>
 #include <linux/dma-resv.h>
+#else
+#include <drm-compat/drm_compat_types.h>
 #endif
 
 #include "ttm_bo_api.h"
@@ -478,9 +480,7 @@ struct ttm_bo_device {
 	/*
 	 * Protected by internal locks.
 	 */
-#if !defined(__AROS__)
 	struct drm_vma_offset_manager vma_manager;
-#endif
 
 	/*
 	 * Protected by the global:lru lock.
@@ -497,9 +497,7 @@ struct ttm_bo_device {
 	 * Internal protection.
 	 */
 
-#if !defined(__AROS__)
 	struct delayed_work wq;
-#endif
 
 	bool need_dma32;
 

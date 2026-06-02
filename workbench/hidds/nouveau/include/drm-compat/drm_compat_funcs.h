@@ -473,6 +473,9 @@ bool flush_work(struct work_struct *work);
 bool schedule_work(struct work_struct *work);
 #define create_singlethread_workqueue(x) (APTR)0x1;
 #define destroy_workqueue(x)
+#define INIT_DELAYED_WORK(_delayed, _func)  do { (_delayed)->work.func = (_func); } while (0)
+bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay);
+bool cancel_delayed_work_sync(struct delayed_work *dwork);
 
 /* firmaware handling */
 #define MODULE_FIRMWARE(x)

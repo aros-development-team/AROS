@@ -498,11 +498,8 @@ static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)
 		/* Last resort, if we fail to allocate memory for the
 		 * fences block for the BO to become idle
 		 */
-NOT_IMPLEMENTED_STOP
-#if 0
 		dma_resv_wait_timeout_rcu(bo->base.resv, true, false,
 						    30 * HZ);
-#endif
 		spin_lock(&glob->lru_lock);
 		goto error;
 	}
@@ -545,11 +542,8 @@ error:
 	list_add_tail(&bo->ddestroy, &bdev->ddestroy);
 	spin_unlock(&glob->lru_lock);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	schedule_delayed_work(&bdev->wq,
 			      ((HZ / 100) < 1) ? 1 : HZ / 100);
-#endif
 }
 
 /**
@@ -578,13 +572,10 @@ static int ttm_bo_cleanup_refs(struct ttm_buffer_object *bo,
 	else
 		resv = &bo->base._resv;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (dma_resv_test_signaled_rcu(resv, true))
 		ret = 0;
 	else
 		ret = -EBUSY;
-#endif
 
 	if (ret && !no_wait_gpu) {
 		long lret;
@@ -593,12 +584,9 @@ NOT_IMPLEMENTED_STOP
 			dma_resv_unlock(bo->base.resv);
 		spin_unlock(&glob->lru_lock);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 		lret = dma_resv_wait_timeout_rcu(resv, true,
 							   interruptible,
 							   30 * HZ);
-#endif
 
 		if (lret < 0)
 			return lret;
@@ -685,17 +673,15 @@ static bool ttm_bo_delayed_delete(struct ttm_bo_device *bdev, bool remove_all)
 	return empty;
 }
 
-// #if !defined(__AROS__)
-// static void ttm_bo_delayed_workqueue(struct work_struct *work)
-// {
-// 	struct ttm_bo_device *bdev =
-// 	    container_of(work, struct ttm_bo_device, wq.work);
+static void ttm_bo_delayed_workqueue(struct work_struct *work)
+{
+	struct ttm_bo_device *bdev =
+	    container_of(work, struct ttm_bo_device, wq.work);
 
-// 	if (!ttm_bo_delayed_delete(bdev, false))
-// 		schedule_delayed_work(&bdev->wq,
-// 				      ((HZ / 100) < 1) ? 1 : HZ / 100);
-// }
-// #endif
+	if (!ttm_bo_delayed_delete(bdev, false))
+		schedule_delayed_work(&bdev->wq,
+				      ((HZ / 100) < 1) ? 1 : HZ / 100);
+}
 
 static void ttm_bo_release(struct kref *kref)
 {
@@ -1768,9 +1754,7 @@ int ttm_bo_device_release(struct ttm_bo_device *bdev)
 	list_del(&bdev->device_list);
 	mutex_unlock(&ttm_global_mutex);
 
-#if !defined(__AROS__)
 	cancel_delayed_work_sync(&bdev->wq);
-#endif
 
 	if (ttm_bo_delayed_delete(bdev, true))
 		pr_debug("Delayed destroy list was clean\n");
@@ -1781,10 +1765,7 @@ int ttm_bo_device_release(struct ttm_bo_device *bdev)
 			pr_debug("Swap list %d was clean\n", i);
 	spin_unlock(&glob->lru_lock);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	drm_vma_offset_manager_destroy(&bdev->vma_manager);
-#endif
 
 	if (!ret)
 		ttm_bo_global_release();
@@ -1817,13 +1798,10 @@ int ttm_bo_device_init(struct ttm_bo_device *bdev,
 	if (unlikely(ret != 0))
 		goto out_no_sys;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	drm_vma_offset_manager_init(&bdev->vma_manager,
 				    DRM_FILE_PAGE_OFFSET_START,
 				    DRM_FILE_PAGE_OFFSET_SIZE);
 	INIT_DELAYED_WORK(&bdev->wq, ttm_bo_delayed_workqueue);
-#endif
 	INIT_LIST_HEAD(&bdev->ddestroy);
 	bdev->dev_mapping = mapping;
 	bdev->glob = glob;

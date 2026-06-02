@@ -10,6 +10,7 @@
 #include <exec/lists.h>
 #include <exec/types.h>
 #include <exec/semaphores.h>
+#include <devices/timer.h>
 #include <sys/types.h>
 #include <stdbool.h>
 #include <errno.h>
@@ -181,6 +182,12 @@ struct work_struct
 {
     work_func_t func;
     UBYTE state;
+};
+struct delayed_work
+{
+    struct work_struct work;
+    struct timerequest  timer_req;
+    BOOL                timer_pending;
 };
 struct module;
 struct edid;
