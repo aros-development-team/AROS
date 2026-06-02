@@ -924,8 +924,6 @@ nouveau_gem_ioctl_cpu_prep(struct drm_device *dev, void *data,
 		return -ENOENT;
 	nvbo = nouveau_gem_object(gem);
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	lret = dma_resv_wait_timeout_rcu(nvbo->bo.base.resv, write, true,
 						   no_wait ? 0 : 30 * HZ);
 	if (!lret)
@@ -934,10 +932,6 @@ NOT_IMPLEMENTED_CONTINUE
 		ret = 0;
 	else
 		ret = lret;
-#else
-/* HACK TO BE REMOVED */
-ret = 0;
-#endif
 
 	nouveau_bo_sync_for_cpu(nvbo);
 	drm_gem_object_put_unlocked(gem);
