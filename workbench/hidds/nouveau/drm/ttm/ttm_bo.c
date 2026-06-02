@@ -474,7 +474,8 @@ static void ttm_bo_flush_all_fences(struct ttm_buffer_object *bo)
 	if (fence && !fence->ops->signaled)
 		dma_fence_enable_sw_signaling(fence);
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
+if (fobj) NOT_IMPLEMENTED_STOP
 #if 0
 	for (i = 0; fobj && i < fobj->shared_count; ++i) {
 		fence = rcu_dereference_protected(fobj->shared[i],
@@ -966,8 +967,6 @@ static int ttm_bo_add_move_fence(struct ttm_buffer_object *bo,
 	struct dma_fence *fence;
 	int ret;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	spin_lock(&man->move_lock);
 	fence = dma_fence_get(man->move);
 	spin_unlock(&man->move_lock);
@@ -989,7 +988,6 @@ NOT_IMPLEMENTED_CONTINUE
 	}
 
 	dma_fence_put(bo->moving);
-#endif
 	bo->moving = fence;
 	return 0;
 }
@@ -1890,8 +1888,6 @@ EXPORT_SYMBOL(ttm_bo_unmap_virtual);
 int ttm_bo_wait(struct ttm_buffer_object *bo,
 		bool interruptible, bool no_wait)
 {
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	long timeout = 15 * HZ;
 
 	if (no_wait) {
@@ -1910,7 +1906,6 @@ NOT_IMPLEMENTED_CONTINUE
 		return -EBUSY;
 
 	dma_resv_add_excl_fence(bo->base.resv, NULL);
-#endif
 	return 0;
 }
 EXPORT_SYMBOL(ttm_bo_wait);
