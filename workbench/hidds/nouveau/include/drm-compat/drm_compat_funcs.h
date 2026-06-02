@@ -485,6 +485,11 @@ struct scatterlist *sg_next(struct scatterlist *s);
 dma_addr_t sg_dma_address(struct scatterlist *s);
 IPTR sg_dma_len(struct scatterlist *s);
 
+/* rcu handling */
+#define rcu_dereference(x) (x)
+#define rcu_assign_pointer(x, y) (x) = (y)
+
+
 /* other */
 static inline int power_supply_is_system_supplied() { return -ENOSYS; }
 int snprintf(char * restrict s, size_t n, const char * restrict format, ...);

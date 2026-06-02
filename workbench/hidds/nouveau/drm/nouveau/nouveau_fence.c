@@ -64,11 +64,7 @@ nouveau_fence_signal(struct nouveau_fence *fence)
 
 	dma_fence_signal_locked(&fence->base);
 	list_del(&fence->head);
-NOT_IMPLEMENTED_CONTINUE
-udelay(500);
-#if 0
 	rcu_assign_pointer(fence->channel, NULL);
-#endif
 
 	if (test_bit(DMA_FENCE_FLAG_USER_BITS, &fence->base.flags)) {
 		struct nouveau_fence_chan *fctx = nouveau_fctx(fence);
@@ -220,8 +216,7 @@ nouveau_fence_emit(struct nouveau_fence *fence, struct nouveau_channel *chan)
 	int ret;
 
 	fence->channel  = chan;
-NOT_IMPLEMENTED_CONTINUE
-udelay(125);
+#warning fence->timeout
 #if 0
 	fence->timeout  = jiffies + (15 * HZ);
 #endif
@@ -372,14 +367,14 @@ nouveau_fence_sync(struct nouveau_bo *nvbo, struct nouveau_channel *chan, bool e
 	struct nouveau_fence *f;
 	int ret = 0, i;
 
-bug("FIXME!!! nouveau_fence_sync!!!\n");
-udelay(125);
-#if 0
 	if (!exclusive) {
+NOT_IMPLEMENTED_STOP
+#if 0
 		ret = dma_resv_reserve_shared(resv, 1);
 
 		if (ret)
 			return ret;
+#endif
 	}
 
 	fobj = dma_resv_get_list(resv);
@@ -391,11 +386,17 @@ udelay(125);
 
 		f = nouveau_local_fence(fence, chan->drm);
 		if (f) {
+#if !defined(__AROS__)
 			rcu_read_lock();
 			prev = rcu_dereference(f->channel);
 			if (prev && (prev == chan || fctx->sync(f, prev, chan) == 0))
 				must_wait = false;
 			rcu_read_unlock();
+#else
+			prev = rcu_dereference(f->channel);
+			if (prev && (prev == chan || fctx->sync(f, prev, chan) == 0))
+				must_wait = false;
+#endif
 		}
 
 		if (must_wait)
@@ -407,6 +408,8 @@ udelay(125);
 	if (!exclusive || !fobj)
 		return ret;
 
+NOT_IMPLEMENTED_STOP
+#if 0
 	for (i = 0; i < fobj->shared_count && !ret; ++i) {
 		struct nouveau_channel *prev = NULL;
 		bool must_wait = true;
@@ -487,13 +490,16 @@ static bool nouveau_fence_is_signaled(struct dma_fence *f)
 	struct nouveau_channel *chan;
 	bool ret = false;
 
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	rcu_read_lock();
 	chan = rcu_dereference(fence->channel);
 	if (chan)
 		ret = (int)(fctx->read(chan) - fence->base.seqno) >= 0;
 	rcu_read_unlock();
+#else
+	chan = rcu_dereference(fence->channel);
+	if (chan)
+		ret = (int)(fctx->read(chan) - fence->base.seqno) >= 0;
 #endif
 
 	return ret;
