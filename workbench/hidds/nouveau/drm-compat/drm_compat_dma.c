@@ -46,7 +46,16 @@ int dma_fence_signal_locked(struct dma_fence *fence)
 
 bool dma_fence_is_signaled(struct dma_fence *fence)
 {
-    return test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags);
+    if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+        return TRUE;
+
+    if (fence->ops && fence->ops->signaled && fence->ops->signaled(fence))
+    {
+        set_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags);
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 void dma_fence_free(struct dma_fence *fence)
