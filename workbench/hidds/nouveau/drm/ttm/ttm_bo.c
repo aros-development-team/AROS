@@ -1387,15 +1387,10 @@ int ttm_bo_init_reserved(struct ttm_bo_device *bdev,
 		 * struct elements we want use regardless.
 		 */
 		dma_resv_init(&bo->base._resv);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 		drm_vma_node_reset(&bo->base.vma_node);
-#endif
 	}
 	atomic_inc(&bo->bdev->glob->bo_count);
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	/*
 	 * For ttm_bo_type_device buffers, allocate
 	 * address space from the device.
@@ -1412,7 +1407,6 @@ NOT_IMPLEMENTED_CONTINUE
 		locked = dma_resv_trylock(bo->base.resv);
 		WARN_ON(!locked);
 	}
-#endif
 
 	if (likely(!ret))
 		ret = ttm_bo_validate(bo, placement, ctx);
@@ -1841,10 +1835,7 @@ bool ttm_mem_reg_is_pci(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
 void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	drm_vma_node_unmap(&bo->base.vma_node, bdev->dev_mapping);
-#endif
 	ttm_mem_io_free_vm(bo);
 }
 

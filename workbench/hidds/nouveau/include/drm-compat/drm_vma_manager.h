@@ -22,5 +22,7 @@ struct drm_vma_offset_manager
 #define drm_vma_offset_remove(x, y)
 #define drm_vma_node_revoke(x, y)
 #define drm_vma_offset_manager_destroy(x)
+#define drm_vma_offset_add(x, y, z) (0) /* success */
+#define drm_vma_node_unmap(x, y)
 
 #endif
