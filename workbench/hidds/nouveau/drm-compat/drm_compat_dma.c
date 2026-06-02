@@ -202,6 +202,8 @@ void dma_resv_init(struct dma_resv *resv)
 {
     resv->fence_excl = NULL;
     resv->fences_shared = NULL;
+    resv->locked = 0;
+    resv->locking_ctx = NULL;
 }
 
 void dma_resv_fini(struct dma_resv *resv)
@@ -209,4 +211,66 @@ void dma_resv_fini(struct dma_resv *resv)
     dma_fence_put(resv->fence_excl);
     resv->fence_excl = NULL;
     resv->fences_shared = NULL;
+    resv->locked = 0;
+    resv->locking_ctx = NULL;
+}
+
+int dma_resv_trylock(struct dma_resv *resv)
+{
+    if (__sync_val_compare_and_swap(&resv->locked, 0, 1) == 0)
+    {
+        resv->locking_ctx = NULL;
+        return 1;
+    }
+    return 0;
+}
+
+int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    while (__sync_val_compare_and_swap(&resv->locked, 0, 1) != 0)
+    {
+        udelay(1);
+    }
+    resv->locking_ctx = ctx;
+    return 0;
+}
+
+int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    while (__sync_val_compare_and_swap(&resv->locked, 0, 1) != 0)
+    {
+#if 0
+        if (SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+            return -EINTR;
+#endif
+        udelay(1);
+    }
+    resv->locking_ctx = ctx;
+    return 0;
+}
+
+void dma_resv_unlock(struct dma_resv *resv)
+{
+    resv->locking_ctx = NULL;
+    resv->locked = 0;
+}
+
+struct ww_acquire_ctx *dma_resv_locking_ctx(struct dma_resv *resv)
+{
+    return resv->locking_ctx;
+}
+
+bool dma_resv_held(struct dma_resv *resv)
+{
+    return resv->locked != 0;
+}
+
+void dma_resv_lock_slow(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    dma_resv_lock(resv, ctx);
+}
+
+int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx)
+{
+    return dma_resv_lock_interruptible(resv, ctx);
 }

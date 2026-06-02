@@ -34,6 +34,8 @@ struct dma_resv
 {
     struct dma_fence *fence_excl;
     struct dma_resv_list *fences_shared;
+    ULONG locked;
+    struct ww_acquire_ctx *locking_ctx;
 };
 
 struct dma_fence_ops
