@@ -25,6 +25,9 @@
  *
  */
 #include <core/enum.h>
+#if defined(__AROS__)
+#include <linux/kernel.h>
+#endif
 
 const struct nvkm_enum *
 nvkm_enum_find(const struct nvkm_enum *en, u32 value)
@@ -44,14 +47,11 @@ nvkm_snprintbf(char *data, int size, const struct nvkm_bitfield *bf, u32 value)
 	bool space = false;
 	while (size >= 1 && bf->name) {
 		if (value & bf->mask) {
-NOT_IMPLEMENTED_STOP
-#if 0
 			int this = scnprintf(data, size, "%s%s",
 					    space ? " " : "", bf->name);
 			size -= this;
 			data += this;
 			space = true;
-#endif
 		}
 		bf++;
 	}
