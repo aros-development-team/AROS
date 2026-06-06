@@ -219,14 +219,10 @@ nv50_instobj_acquire(struct nvkm_memory *memory)
 	struct nvkm_vmm *vmm;
 	void __iomem *map = NULL;
 
-#warning smp_rmb & smp_wmb
-
 	/* Already mapped? */
 	if (refcount_inc_not_zero(&iobj->maps)) {
 		/* read barrier match the wmb on refcount set */
-#if !defined(__AROS__)
 		smp_rmb();
-#endif
 		return iobj->map;
 	}
 
@@ -256,9 +252,7 @@ nv50_instobj_acquire(struct nvkm_memory *memory)
 		else
 			iobj->base.memory.ptrs = &nv50_instobj_slow;
 		/* barrier to ensure the ptrs are written before refcount is set */
-#if !defined(__AROS__)
 		smp_wmb();
-#endif
 		refcount_set(&iobj->maps, 1);
 	}
 

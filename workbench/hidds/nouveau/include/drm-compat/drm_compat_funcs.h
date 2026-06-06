@@ -31,7 +31,10 @@
 #define likely(x)                       __builtin_expect((IPTR)(x),1)
 #define unlikely(x)                     __builtin_expect((IPTR)(x),0)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
+#define rmb()                           __asm __volatile("" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
+#define smp_rmb()                       rmb()
+#define smp_wmb()                       wmb()
 #define fls_long(x)                     ((sizeof(x) * 8) - __builtin_clzl(x))
 #define is_power_of_2(x)                (x != 0 && ((x & (x - 1)) == 0))
 #define access_ok(a, b, c)              TRUE
