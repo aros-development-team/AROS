@@ -127,7 +127,7 @@ struct dma_fence *dma_resv_get_excl(struct dma_resv *resv)
 
 struct dma_fence *dma_resv_get_excl_rcu(struct dma_resv *resv)
 {
-    return dma_resv_get_excl(resv);
+    return dma_fence_get(dma_resv_get_excl(resv));
 }
 
 void dma_resv_add_excl_fence(struct dma_resv *resv, struct dma_fence *fence)
