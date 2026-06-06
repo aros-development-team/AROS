@@ -362,7 +362,7 @@ unsigned long get_jiffies()
 {
     struct timeval tv;
     unsigned long val = 0;
-
+NOT_IMPLEMENTED_STOP
     gettimeofday(&tv, NULL);
 
     val = tv.tv_sec * 1000000 + tv.tv_usec; /* Yes, overflow */
@@ -370,6 +370,11 @@ unsigned long get_jiffies()
     /* TODO: Maybe make sure that each call to get_jiffies returns a different value? */
 
     return val;
+}
+
+unsigned int jiffies_to_usecs(const unsigned long j)
+{
+    return j * 4 /* ms */ * 1000;
 }
 
 /* Other */

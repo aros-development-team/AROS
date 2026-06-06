@@ -408,6 +408,7 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr
 /* jiffies (lame) handling */
 #define jiffies get_jiffies()
 unsigned long get_jiffies();
+unsigned int jiffies_to_usecs(const unsigned long j);
 
 typedef struct {
     struct MinNode wt_Node;

@@ -195,7 +195,7 @@ bool flush_work(struct work_struct *work)
 
 bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay)
 {
-    D(bug("[Nouveau] schedule_delayed_work dwork=%p delay=%lu us\n", dwork, delay));
+    D(bug("[Nouveau] schedule_delayed_work dwork=%p delay=%lu jiffies\n", dwork, delay));
 
     if (!dwork)
         return FALSE;
@@ -209,13 +209,15 @@ bool schedule_delayed_work(struct delayed_work *dwork, unsigned long delay)
         return queue_work(NULL, &dwork->work);
     }
 
+    unsigned int usecs = jiffies_to_usecs(delay);
+
     /* Set up the timer request */
     dwork->timer_req = *io;
     dwork->timer_req.tr_node.io_Message.mn_Node.ln_Type  = NT_REPLYMSG;
     dwork->timer_req.tr_node.io_Message.mn_ReplyPort     = timer_port;
     dwork->timer_req.tr_node.io_Command                  = TR_ADDREQUEST;
-    dwork->timer_req.tr_time.tv_secs                     = delay / 1000000;
-    dwork->timer_req.tr_time.tv_micro                    = delay % 1000000;
+    dwork->timer_req.tr_time.tv_secs                     = usecs / 1000000;
+    dwork->timer_req.tr_time.tv_micro                    = usecs % 1000000;
 
     dwork->timer_pending = TRUE;
 
