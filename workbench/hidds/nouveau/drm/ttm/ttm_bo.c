@@ -1832,9 +1832,17 @@ bool ttm_mem_reg_is_pci(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
 	return true;
 }
 
+#if defined(__AROS__)
+void drm_nouveau_check_userspace_mapped(struct ttm_buffer_object *bo);
+#endif
+
 void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
+bug("DRM: ttm_bo_unmap_virtual_locked ttm bo %p\n", bo);
+#if defined(__AROS__)
+	drm_nouveau_check_userspace_mapped(bo);
+#endif
 	drm_vma_node_unmap(&bo->base.vma_node, bdev->dev_mapping);
 	ttm_mem_io_free_vm(bo);
 }

@@ -80,7 +80,7 @@ extern void          *drmMalloc(int size);
 extern void          drmFree(void *pt);
 
 /* AROS specific */
-extern void *       drmMMap(int fd, uint32_t handle);
+extern void *       drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data);
 extern void         drmMUnmap(int fd, uint32_t handle);
 
 #endif

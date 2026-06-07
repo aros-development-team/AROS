@@ -39,6 +39,11 @@ struct nouveau_bo {
 	int pin_refcnt;
 
 	struct ttm_bo_kmap_obj dma_buf_vmap;
+#if defined(__AROS__)
+	BOOL was_gpu_unmapped;
+	VOID (*gpu_unmapped)(APTR data);
+	APTR gpu_unmapped_data;
+#endif
 };
 
 static inline struct nouveau_bo *

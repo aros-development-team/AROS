@@ -161,6 +161,15 @@ nouveau_bo_kalloc(struct nouveau_bo_priv *nvbo, struct nouveau_channel *chan)
 	return 0;
 }
 
+#if defined(__AROS__)
+static VOID unmapped_callback(APTR data)
+{
+    struct nouveau_bo_priv *nvbo = (struct nouveau_bo_priv *)data;
+    /* Trigger remapping with next access */
+    nvbo->map = NULL;
+    nvbo->base.map = NULL;
+}
+#endif
 static int
 nouveau_bo_kmap(struct nouveau_bo_priv *nvbo)
 {
@@ -180,7 +189,7 @@ nouveau_bo_kmap(struct nouveau_bo_priv *nvbo)
 		return -errno;
 	}
 #else
-    nvbo->map = drmMMap(nvdev->fd, nvbo->handle);
+    nvbo->map = drmMMap(nvdev->fd, nvbo->handle, unmapped_callback, nvbo);
     if (nvbo->map == NULL)
         return -EINVAL;
 #endif

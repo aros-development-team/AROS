@@ -11,7 +11,7 @@
 #include <drm/drm_gem.h>
 #include <drm/drm_file.h>
 
-void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
+void *drm_gem_nouveau_mmap(struct drm_device *dev, struct drm_file *f, uint32_t handle, VOID (*unmapped)(APTR), APTR data);
 void drm_gem_nouveau_munmap(struct drm_device *dev, struct drm_file *f, uint32_t handle);
 
 #include "drm_crtc_internal.h"
@@ -230,10 +230,10 @@ void drmFree(void *pt)
     HIDDNouveauFree(pt);
 }
 
-void *drmMMap(int fd, uint32_t handle)
+void *drmMMap(int fd, uint32_t handle, VOID (*unmapped)(APTR), APTR data)
 {
     struct drm_file *f = drm_files[fd];
-    return drm_gem_nouveau_mmap(current_drm_device, f, handle);
+    return drm_gem_nouveau_mmap(current_drm_device, f, handle, unmapped, data);
 }
 
 void drmMUnmap(int fd, uint32_t handle)
