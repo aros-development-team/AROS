@@ -275,6 +275,9 @@ enum DMAObjects
 #define NV_ARCH_40  0x40
 #define NV_ARCH_50  0x50
 #define NV_ARCH_C0  0xC0
+#define NV_KEPLER   0xE0
+#define NV_MAXWELL  0x110
+#define NV_PASCAL   0x130
 
 #define BLENDOP_SOLID           1
 #define BLENDOP_ALPHA_PREMULT   3

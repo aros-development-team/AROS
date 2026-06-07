@@ -476,37 +476,46 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 if (SD(cl)->display)
                     OOP_GetAttr(SD(cl)->display, aHidd_Display_DMEnumerator, (IPTR *)&SD(cl)->dmenum);
             }
-            
+
             /* Check chipset architecture */
-            switch (carddata->dev->chipset & 0xf0) 
+            switch (carddata->dev->chipset & 0xff0)
             {
-            case 0x00:
+            case 0x000:
                 carddata->architecture = NV_ARCH_04;
                 break;
-            case 0x10:
+            case 0x010:
                 carddata->architecture = NV_ARCH_10;
                 break;
-            case 0x20:
+            case 0x020:
                 carddata->architecture = NV_ARCH_20;
                 break;
-            case 0x30:
+            case 0x030:
                 carddata->architecture = NV_ARCH_30;
                 break;
-            case 0x40:
-            case 0x60:
+            case 0x040:
+            case 0x060:
                 carddata->architecture = NV_ARCH_40;
                 break;
-            case 0x50:
-            case 0x80:
-            case 0x90:
-            case 0xa0:
+            case 0x050:
+            case 0x080:
+            case 0x090:
+            case 0x0a0:
                 carddata->architecture = NV_ARCH_50;
                 break;
-            case 0xc0:
+            case 0x0c0:
                 carddata->architecture = NV_ARCH_C0;
                 break;
+            case 0x0e0:
+                carddata->architecture = NV_KEPLER;
+                break;
+            case 0x100:
+                carddata->architecture = NV_MAXWELL;
+                break;
+            case 0x130:
+                carddata->architecture = NV_PASCAL;
+                break;
             default:
-                /* TODO: report error, how to handle it? */
+                bug("Unrecognized chipset: 0x%x, exiting.\n", carddata->dev->chipset);
                 UNLOCK_ENGINE
                 return NULL;
             }
