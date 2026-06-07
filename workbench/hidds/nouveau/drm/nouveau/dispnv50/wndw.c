@@ -493,9 +493,6 @@ nv50_wndw_prepare_fb(struct drm_plane *plane, struct drm_plane_state *state)
 	ret = nouveau_bo_pin(fb->nvbo, TTM_PL_FLAG_VRAM, true);
 	if (ret)
 		return ret;
-    /* HACK TO BE REMOVED */
-    nouveau_bo_map(fb->nvbo);
-
 	if (wndw->ctxdma.parent) {
 		ctxdma = nv50_wndw_ctxdma_new(wndw, fb);
 		if (IS_ERR(ctxdma)) {
