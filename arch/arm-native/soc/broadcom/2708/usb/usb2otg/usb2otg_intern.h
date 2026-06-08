@@ -197,6 +197,9 @@ struct USB2OTGUnit
         UBYTE               hc_WatchdogCount; /* Incremented each NakTimeout period while channel active */
         UBYTE               hc_SplitCSplitPending; /* SSPLIT was issued and request must not be resubmitted yet */
         UBYTE               hc_DeferCount;     /* Consecutive watchdog defers; caps total defer time */
+        UBYTE               hc_CsplitRetry;    /* CSPLIT NYET retries this interval; caps to TT result window */
+        UBYTE               hc_SplitState;     /* periodic-split SM: USB2OTG_SPLIT_{IDLE,SS,CS} */
+        UWORD               hc_SplitSSUframe;  /* HFNUM&0x3fff uframe the SSPLIT was issued in */
         struct IOUsbHWReq * hc_DiagReq;     /* Last bulk request tracked on this channel */
         ULONG               hc_DiagStartFrame;
         ULONG               hc_DiagLastProgressFrame;
@@ -332,6 +335,11 @@ struct USB2OTGDevice
 #define CHAN_INT5       6
 #define CHAN_INT_LAST   CHAN_INT5
 #define CHAN_BULK2      7
+
+/* Periodic-split sequencer state (hc_SplitState). */
+#define USB2OTG_SPLIT_IDLE  0   /* not a split, or split sequence finished */
+#define USB2OTG_SPLIT_SS    1   /* SSPLIT issued, awaiting ACK */
+#define USB2OTG_SPLIT_CS    2   /* CSPLIT issued/pending, awaiting completion */
 
 /*
  * Bulk-OUT per-packet throttle (busy-wait iterations before arming).

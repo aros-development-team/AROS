@@ -318,6 +318,17 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 
     /* Fresh request: clear watchdog defer counter. */
     otg_Unit->hu_Channel[chan].hc_DeferCount = 0;
+    otg_Unit->hu_Channel[chan].hc_CsplitRetry = 0;
+
+    /*
+     * A fresh arm is always a START-split — clear any CSPLIT-pending left
+     * over from a prior interval that requeued mid-split. If it leaks set,
+     * the splitpos logic below picks XactPos=0 (CSPLIT) instead of ALL,
+     * producing a malformed periodic SSPLIT that halts with bare CHHLTD.
+     * CSPLIT is only ever armed via StartChannel(quick=1) from the IRQ.
+     */
+    otg_Unit->hu_Channel[chan].hc_SplitCSplitPending = 0;
+    otg_Unit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_IDLE;
 
     /*
      * Inherit PING state from per-EP bitmap (channel-local flag does
@@ -464,8 +475,13 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
     /* If split transaction requested limit transfer size to max packet size or 188 bytes, whichever is less */
     if (req->iouh_Flags & UHFF_SPLITTRANS)
     {
-        if (req->iouh_Req.io_Command == UHCMD_INTXFER ||
-            req->iouh_Req.io_Command == UHCMD_ISOXFER)
+        /*
+         * HCCHAR.EC/MC = transactions per microframe; only high-bandwidth
+         * HS endpoints use >1. A low-/full-speed INT split must be EC=1
+         * (matches Linux dwc2 multi_count=1) — EC=3 makes the core expect
+         * 3 transactions and deschedule the periodic split (bare CHHLTD).
+         */
+        if (req->iouh_Req.io_Command == UHCMD_ISOXFER)
             reg |= USB2OTG_HOSTCHAR_EC(3);
         else
             reg |= USB2OTG_HOSTCHAR_EC(1);
@@ -490,6 +506,18 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
                     (splitpos << 14) |
                     ((req->iouh_SplitHubAddr & 0x7f) << 7) |
                     ((req->iouh_SplitHubPort & 0x0f)));
+        }
+
+        /*
+         * Periodic-split sequencer: a fresh INT split arm is a START-split.
+         * Record the phase and the microframe it is issued in so the SS->CS
+         * handoff can be paced and the watchdog can defer to this scheduler.
+         */
+        if (req->iouh_Req.io_Command == UHCMD_INTXFER)
+        {
+            otg_Unit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_SS;
+            otg_Unit->hu_Channel[chan].hc_SplitSSUframe =
+                (UWORD)(rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff);
         }
 
         if (xfer_size > req->iouh_MaxPktSize)
