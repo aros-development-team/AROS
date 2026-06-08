@@ -61,52 +61,59 @@ do { \
 		   	   	   	   	   :"cc"); \
 } while (0)
 
+/*
+ * Bitwise atomic RMW with full memory barrier. The dmb pair gives
+ * sequential-consistency semantics: prior stores are observable before
+ * the RMW, and the RMW is observable before later loads/stores. Without
+ * this, callers like signal.c (set tc_SigRecvd, then read tc_State)
+ * can have the trailing load hoist above the atomic write.
+ */
 #define __AROS_ATOMIC_AND_B(var, mask) \
 do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrexb %0, [%3]; and %0, %0, %4; strexb %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrexb %0, [%3]; and %0, %0, %4; strexb %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "I"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
 #define __AROS_ATOMIC_AND_W(var, mask) \
 do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrexh %0, [%3]; and %0, %0, %4; strexh %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrexh %0, [%3]; and %0, %0, %4; strexh %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "Ir"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
 #define __AROS_ATOMIC_AND_L(var, mask) \
 do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrex %0, [%3]; and %0, %0, %4; strex %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrex %0, [%3]; and %0, %0, %4; strex %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "Ir"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
 
 #define __AROS_ATOMIC_OR_B(var, mask) \
 do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrexb %0, [%3]; orr %0, %0, %4; strexb %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrexb %0, [%3]; orr %0, %0, %4; strexb %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "I"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
 #define __AROS_ATOMIC_OR_W(var, mask) \
     do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrexh %0, [%3]; orr %0, %0, %4; strexh %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrexh %0, [%3]; orr %0, %0, %4; strexh %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "Ir"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
 #define __AROS_ATOMIC_OR_L(var, mask) \
 do { \
     unsigned long temp; int result; \
-    __asm__ __volatile__("\n1: ldrex %0, [%3]; orr %0, %0, %4; strex %1, %0, [%3]; teq %1, #0; bne 1b" \
+    __asm__ __volatile__("dmb\n1: ldrex %0, [%3]; orr %0, %0, %4; strex %1, %0, [%3]; teq %1, #0; bne 1b; dmb" \
                         :"=&r"(result), "=&r"(temp), "+Qo"(var) \
                         :"r"(&var), "Ir"(mask) \
-                        :"cc"); \
+                        :"memory", "cc"); \
 } while(0)
