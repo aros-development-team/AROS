@@ -1839,7 +1839,6 @@ void drm_nouveau_check_userspace_mapped(struct ttm_buffer_object *bo);
 void ttm_bo_unmap_virtual_locked(struct ttm_buffer_object *bo)
 {
 	struct ttm_bo_device *bdev = bo->bdev;
-bug("DRM: ttm_bo_unmap_virtual_locked ttm bo %p\n", bo);
 #if defined(__AROS__)
 	drm_nouveau_check_userspace_mapped(bo);
 #endif
