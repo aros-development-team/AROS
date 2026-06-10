@@ -146,13 +146,6 @@ nvkm_notify_init(struct nvkm_object *object, struct nvkm_event *event,
 			if (ret = 0, work) {
 				INIT_WORK(&notify->work, nvkm_notify_work);
 				set_bit(NVKM_NOTIFY_WORK, &notify->flags);
-#if defined(__AROS__)
-				if (reply == 0)
-				{
-					bug("FIXME: 0 sized kmalloc\n");
-					reply = 1; /*FIXME: kmalloc allows 0 size allocations, see ZERO_SIZE_PTR */
-				}
-#endif
 				notify->data = kmalloc(reply, GFP_KERNEL);
 				if (!notify->data)
 					ret = -ENOMEM;

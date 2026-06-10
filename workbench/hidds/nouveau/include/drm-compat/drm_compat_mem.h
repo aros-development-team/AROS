@@ -17,10 +17,10 @@ APTR HIDDNouveauAlloc(ULONG size);
 #define GFP_HIGHUSER    (1UL < 3)
 #define GFP_USER        (1UL < 4)
 #define GFP_NOWAIT      (1UL < 5)
+#define GFP_ATOMIC      (1UL < 6)
 
 
 #define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
-#define kmalloc(size, flags)            HIDDNouveauAlloc(size)
 #define kzalloc(size, flags)            HIDDNouveauAlloc(size)
 #define kmalloc_array(n, size, flags)   kmalloc(size *n, flags)
 #define kfree(objp)                     HIDDNouveauFree((APTR)objp)
@@ -36,6 +36,7 @@ APTR HIDDNouveauAlloc(ULONG size);
 #define kvzalloc(size, flags)           kvmalloc(size, flags | __GFP_ZERO)
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
+void *kmalloc(size_t size, gfp_t flags);
 void *krealloc(const void *ptr, size_t size, gfp_t flags);
 
 char *kvasprintf(gfp_t, const char *, va_list);

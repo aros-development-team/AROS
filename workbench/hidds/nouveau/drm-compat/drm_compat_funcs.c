@@ -410,3 +410,16 @@ bool drm_mode_object_lease_required(uint32_t type)
 {
     return false;
 }
+
+#include <drm-compat/drm_compat_mem.h>
+
+void *kmalloc(size_t size, gfp_t flags)
+{
+    if (size == 0)
+    {
+bug("FIXME: implemented ZERO_SIZE_PTR\n");
+        size = 1;
+    }
+
+    return HIDDNouveauAlloc(size);
+}
