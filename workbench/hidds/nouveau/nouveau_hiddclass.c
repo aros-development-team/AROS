@@ -503,12 +503,16 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 carddata->architecture = NV_ARCH_50;
                 break;
             case 0x0c0:
+            case 0x0d0:
                 carddata->architecture = NV_ARCH_C0;
                 break;
             case 0x0e0:
+            case 0x0f0:
+            case 0x100:
                 carddata->architecture = NV_KEPLER;
                 break;
-            case 0x100:
+            case 0x110:
+            case 0x120:
                 carddata->architecture = NV_MAXWELL;
                 break;
             case 0x130:
