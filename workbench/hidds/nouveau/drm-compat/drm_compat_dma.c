@@ -90,11 +90,13 @@ long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long ti
     if (dma_fence_is_signaled(fence))
         return timeout ? timeout : 1;
 
-    while (timeout > 0)
+    unsigned int usecs = jiffies_to_usecs(timeout);
+
+    while (usecs > 0)
     {
-        unsigned long step = timeout > 100 ? 100 : timeout;
+        unsigned long step = usecs > 2000 ? 2000 : usecs;
         udelay(step);
-        timeout -= step;
+        usecs -= step;
 
         if (dma_fence_is_signaled(fence))
             return timeout;
@@ -181,11 +183,13 @@ long dma_resv_wait_timeout_rcu(struct dma_resv *resv, bool wait_all,
     if (dma_resv_all_fences_signaled(resv, wait_all))
         return timeout ? timeout : 1;
 
-    while (timeout > 0)
+    unsigned int usecs = jiffies_to_usecs(timeout);
+
+    while (usecs > 0)
     {
-        unsigned long step = timeout > 100 ? 100 : timeout;
+        unsigned long step = usecs > 2000 ? 2000 : usecs;
         udelay(step);
-        timeout -= step;
+        usecs -= step;
         if (dma_resv_all_fences_signaled(resv, wait_all))
             return timeout;
     }
