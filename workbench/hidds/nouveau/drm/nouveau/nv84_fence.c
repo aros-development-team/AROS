@@ -69,22 +69,9 @@ nv84_fence_emit(struct nouveau_fence *fence)
 {
 	struct nouveau_channel *chan = fence->channel;
 	struct nv84_fence_chan *fctx = chan->fence;
-	struct nv84_fence_priv *priv = chan->drm->fence;
 	u64 addr = fctx->vma->addr + chan->chid * 16;
-	u32 before = nouveau_bo_rd32(priv->bo, chan->chid * 4);
-	int ret = fctx->base.emit32(chan, addr, fence->base.seqno);
-	u32 after, i;
 
-//needed to make resolution change work - it's a workaround for some sort of synchronization issue
-	for (i = 0; i < 100000; i++) {
-		after = nouveau_bo_rd32(priv->bo, chan->chid * 4);
-		if (after != before)
-			break;
-	}
-	bug("FENCE_EMIT(bo %p, kmap.virtual %p): chid=%d addr=%llx seqno=%u bo_before=%u bo_after=%u (iter=%u)\n",
-	    priv->bo, priv->bo->kmap.virtual, chan->chid, addr, fence->base.seqno, before, after, i);
-
-	return ret;
+	return fctx->base.emit32(chan, addr, fence->base.seqno);
 }
 
 static int
