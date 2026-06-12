@@ -494,6 +494,7 @@ IPTR sg_dma_len(struct scatterlist *s);
 
 /* rcu handling */
 #define rcu_dereference(x) (x)
+#define rcu_dereference_protected(x, y) (x)
 #define rcu_assign_pointer(x, y) (x) = (y)
 
 

@@ -163,10 +163,7 @@ nouveau_fence_wait_uevent_handler(struct nvif_notify *notify)
 		struct nouveau_channel *chan;
 
 		fence = list_entry(fctx->pending.next, typeof(*fence), head);
-NOT_IMPLEMENTED_STOP
-#if 0
 		chan = rcu_dereference_protected(fence->channel, lockdep_is_held(&fctx->lock));
-#endif
 		if (nouveau_fence_update(chan, fctx))
 			ret = NVIF_NOTIFY_DROP;
 	}
