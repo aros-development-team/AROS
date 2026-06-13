@@ -16,6 +16,7 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/kernel.h>
+#include <proto/dma.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -69,13 +70,13 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->mastertask = (struct Process *) FindTask(NULL);
         dd->ahisubbase = RPiPWMBase;
         dd->periiobase = RPiPWMBase->periiobase;
-        dd->dma_channel = PWM_DMA_CHANNEL;
+        dd->dma_channel = DMAAllocChannel(0);
         dd->pwm_range = PWM_AUDIO_RANGE;
     } else {
         return AHISF_ERROR;
     }
 
-    if (dd->mastersignal == -1) {
+    if (dd->mastersignal == -1 || dd->dma_channel < 0) {
         return AHISF_ERROR;
     }
 
@@ -90,6 +91,8 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
 void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
 {
     if (AudioCtrl->ahiac_DriverData != NULL) {
+        if (dd->dma_channel >= 0)
+            DMAFreeChannel(dd->dma_channel);
         FreeSignal(dd->mastersignal);
         FreeVec(AudioCtrl->ahiac_DriverData);
         AudioCtrl->ahiac_DriverData = NULL;
@@ -170,17 +173,17 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * Each CB is 32 bytes and must be 32-byte aligned.
          * Allocate enough for 2 CBs + alignment padding.
          */
-        cb_alloc_size = sizeof(struct DMAControlBlock) * 2 + 32;
+        cb_alloc_size = sizeof(struct BCM2708DMACB) * 2 + 32;
         cb_raw = AllocVec(cb_alloc_size, MEMF_CLEAR | MEMF_PUBLIC);
         if (cb_raw == NULL)
             return AHIE_NOMEM;
 
-        dd->cb_base = (struct DMAControlBlock *) cb_raw;
+        dd->cb_base = (struct BCM2708DMACB *) cb_raw;
 
         /* Align to 32 bytes */
         cb_raw = (UBYTE *) (((ULONG) cb_raw + 31) & ~31);
-        dd->cb[0] = (struct DMAControlBlock *) cb_raw;
-        dd->cb[1] = (struct DMAControlBlock *) (cb_raw + sizeof(struct DMAControlBlock));
+        dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
+        dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
 
         /* Build the DMA control block chain */
         dma_build_control_blocks(dd, dd->periiobase);
@@ -190,7 +193,7 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * to physical RAM. The DMA engine reads via the GPU bus
          * (uncached alias 0xC0000000) and won't see cached data.
          */
-        CacheClearE(dd->cb[0], sizeof(struct DMAControlBlock) * 2, CACRF_ClearD);
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
         CacheClearE(dd->dmabuf[0], buf_bytes, CACRF_ClearD);
         CacheClearE(dd->dmabuf[1], buf_bytes, CACRF_ClearD);
 

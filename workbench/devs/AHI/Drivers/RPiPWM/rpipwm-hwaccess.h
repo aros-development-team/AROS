@@ -11,7 +11,7 @@
  * On BCM2835/2836, ARM physical 0x00000000 maps to GPU bus 0xC0000000
  * (uncached alias).
  */
-#define GPU_BUS_ADDR(x) (0xC0000000 | (ULONG) (x))
+#define GPU_BUS_ADDR(x) BCM2708_DMA_BUS_ADDR(x)
 
 /* Register access helpers (little-endian, with ARM memory barriers) */
 static inline void __dsb(void)
@@ -42,8 +42,7 @@ static inline void wr32le(ULONG addr, ULONG val)
 /* PWM range: 10-bit (1024 levels) gives decent audio quality */
 #define PWM_AUDIO_RANGE 1024
 
-/* DMA channel to use for audio (channel 5, avoiding GPU-reserved 0-3) */
-#define PWM_DMA_CHANNEL 5
+/* The audio DMA channel is allocated at runtime from dma.resource. */
 
 /* PLLD clock frequency (500 MHz on BCM2835/2836) */
 #define PLLD_FREQ 500000000

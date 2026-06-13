@@ -17,6 +17,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
+#include <proto/dma.h>
 
 #include <stddef.h>
 #include <string.h>
@@ -67,12 +68,12 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
         dd->mastertask = (struct Process *) FindTask(NULL);
         dd->ahisubbase = RPiHDMIBase;
         dd->periiobase = RPiHDMIBase->periiobase;
-        dd->dma_channel = HDMI_DMA_CHANNEL;
+        dd->dma_channel = DMAAllocChannel(0);
     } else {
         return AHISF_ERROR;
     }
 
-    if (dd->mastersignal == -1) {
+    if (dd->mastersignal == -1 || dd->dma_channel < 0) {
         return AHISF_ERROR;
     }
 
@@ -86,6 +87,8 @@ _AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, s
 void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
 {
     if (AudioCtrl->ahiac_DriverData != NULL) {
+        if (dd->dma_channel >= 0)
+            DMAFreeChannel(dd->dma_channel);
         FreeSignal(dd->mastersignal);
         FreeVec(AudioCtrl->ahiac_DriverData);
         AudioCtrl->ahiac_DriverData = NULL;
@@ -159,23 +162,23 @@ _AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase 
          * Allocate DMA control blocks.
          * Each CB is 32 bytes and must be 32-byte aligned.
          */
-        cb_alloc_size = sizeof(struct DMAControlBlock) * 2 + 32;
+        cb_alloc_size = sizeof(struct BCM2708DMACB) * 2 + 32;
         cb_raw = AllocVec(cb_alloc_size, MEMF_CLEAR | MEMF_PUBLIC);
         if (cb_raw == NULL)
             return AHIE_NOMEM;
 
-        dd->cb_base = (struct DMAControlBlock *) cb_raw;
+        dd->cb_base = (struct BCM2708DMACB *) cb_raw;
 
         /* Align to 32 bytes */
         cb_raw = (UBYTE *) (((ULONG) cb_raw + 31) & ~31);
-        dd->cb[0] = (struct DMAControlBlock *) cb_raw;
-        dd->cb[1] = (struct DMAControlBlock *) (cb_raw + sizeof(struct DMAControlBlock));
+        dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
+        dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
 
         /* Build the DMA control block chain */
         dma_build_control_blocks(dd, dd->periiobase);
 
         /* Flush DMA control blocks and buffers from ARM data cache */
-        CacheClearE(dd->cb[0], sizeof(struct DMAControlBlock) * 2, CACRF_ClearD);
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
         CacheClearE(dd->dmabuf[0], buf_bytes, CACRF_ClearD);
         CacheClearE(dd->dmabuf[1], buf_bytes, CACRF_ClearD);
 

@@ -222,7 +222,7 @@ void dma_build_control_blocks(struct RPiPWMData *dd, ULONG peribase)
     int i;
 
     for (i = 0; i < 2; i++) {
-        struct DMAControlBlock *cb = dd->cb[i];
+        struct BCM2708DMACB *cb = dd->cb[i];
 
         cb->ti = DMA_TI_INTEN | DMA_TI_WAIT_RESP | DMA_TI_DEST_DREQ | DMA_TI_SRC_INC | DMA_TI_PERMAP(DMA_DREQ_PWM) |
                  DMA_TI_NO_WIDE_BURSTS;
@@ -244,10 +244,8 @@ void dma_build_control_blocks(struct RPiPWMData *dd, ULONG peribase)
 void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr)
 {
     ULONG dma_base = peribase + 0x007000 + channel * 0x100;
-    ULONG enable_addr = peribase + 0x007FF0;
 
-    /* Enable the DMA channel */
-    wr32le(enable_addr, rd32le(enable_addr) | (1 << channel));
+    /* The channel is already enabled by dma.resource at allocation. */
 
     /* Reset the channel */
     wr32le(dma_base + 0x00, DMA_CS_RESET);

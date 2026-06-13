@@ -463,7 +463,7 @@ void dma_build_control_blocks(struct RPiHDMIData *dd, ULONG peribase)
     int i;
 
     for (i = 0; i < 2; i++) {
-        struct DMAControlBlock *cb = dd->cb[i];
+        struct BCM2708DMACB *cb = dd->cb[i];
 
         cb->ti = DMA_TI_INTEN | DMA_TI_WAIT_RESP | DMA_TI_DEST_DREQ | DMA_TI_SRC_INC | DMA_TI_BURST_LENGTH(2) |
                  DMA_TI_PERMAP(DMA_DREQ_HDMI) | DMA_TI_NO_WIDE_BURSTS;
@@ -481,9 +481,8 @@ void dma_build_control_blocks(struct RPiHDMIData *dd, ULONG peribase)
 void dma_setup(ULONG peribase, ULONG channel, ULONG cb_bus_addr)
 {
     ULONG dma_base = peribase + 0x007000 + channel * 0x100;
-    ULONG enable_addr = peribase + 0x007FF0;
 
-    wr32le(enable_addr, rd32le(enable_addr) | (1 << channel));
+    /* The channel is already enabled by dma.resource at allocation. */
     wr32le(dma_base + 0x00, DMA_CS_RESET);
     udelay(peribase, 10);
     wr32le(dma_base + 0x00, DMA_CS_INT | DMA_CS_END);

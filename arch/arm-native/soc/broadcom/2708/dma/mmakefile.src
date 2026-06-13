@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_module mmake=kernel-dma-bcm2708 	\
+  modname=dma modtype=resource		\
+  files="dma_init"

@@ -7,18 +7,8 @@
 
 #include "DriverBase.h"
 
-/*
- * BCM2835 DMA Control Block - must be 32-byte aligned
- */
-struct DMAControlBlock {
-    ULONG ti;          /* Transfer Information */
-    ULONG source_ad;   /* Source address (bus address) */
-    ULONG dest_ad;     /* Destination address (bus address) */
-    ULONG txfr_len;    /* Transfer length in bytes */
-    ULONG stride;      /* 2D stride */
-    ULONG nextconbk;   /* Next CB address (bus address), 0 = stop */
-    ULONG reserved[2]; /* Padding to 32 bytes */
-};
+/* Shared BCM2835 DMA control block layout (32-byte aligned). */
+#include <hardware/bcm2708_dma.h>
 
 /*
  * Driver library base
@@ -48,11 +38,11 @@ struct RPiHDMIData {
 
     /* Hardware state */
     ULONG periiobase;
-    ULONG dma_channel;
+    LONG dma_channel;     /* Allocated from dma.resource, -1 = none */
 
     /* DMA control blocks (32-byte aligned) */
-    struct DMAControlBlock *cb_base; /* Allocated block (for free) */
-    struct DMAControlBlock *cb[2];   /* Aligned pointers to CB A and CB B */
+    struct BCM2708DMACB *cb_base; /* Allocated block (for free) */
+    struct BCM2708DMACB *cb[2];   /* Aligned pointers to CB A and CB B */
 
     /* Audio buffers */
     APTR mixbuffer;       /* AHI mix buffer (signed 16-bit) */
