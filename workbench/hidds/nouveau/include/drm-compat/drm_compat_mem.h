@@ -22,7 +22,7 @@ APTR HIDDNouveauAlloc(ULONG size);
 
 #define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
 #define kzalloc(size, flags)            HIDDNouveauAlloc(size)
-#define kmalloc_array(n, size, flags)   kmalloc(size *n, flags)
+#define kmalloc_array(n, size, flags)   kmalloc((n) * (size), flags)
 #define kfree(objp)                     HIDDNouveauFree((APTR)objp)
 
 #define vmalloc_user(size)              HIDDNouveauAlloc(size)
@@ -32,7 +32,7 @@ APTR HIDDNouveauAlloc(ULONG size);
 
 #define kvmalloc(size, flags)           HIDDNouveauAlloc(size)
 #define kvcalloc(count, size, flags)    HIDDNouveauAlloc((count) * (size))
-#define kvmalloc_array(n, size, flags)  kvmalloc(size *n, flags)
+#define kvmalloc_array(n, size, flags)  kvmalloc((n) * (size), flags)
 #define kvzalloc(size, flags)           kvmalloc(size, flags | __GFP_ZERO)
 #define kvfree(objp)                    HIDDNouveauFree(objp)
 
