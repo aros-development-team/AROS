@@ -3,11 +3,13 @@
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include <proto/dma.h>
 
 #include "library.h"
 #include "DriverData.h"
 
 APTR KernelBase = NULL;
+APTR DMABase = NULL;
 
 /******************************************************************************
 ** Custom driver init *********************************************************
@@ -28,6 +30,13 @@ BOOL DriverInit(struct DriverBase *AHIsubBase)
 
     if (KernelBase == NULL) {
         Req("Unable to open 'kernel.resource'.\n");
+        return FALSE;
+    }
+
+    DMABase = OpenResource("dma.resource");
+
+    if (DMABase == NULL) {
+        Req("Unable to open 'dma.resource'.\n");
         return FALSE;
     }
 

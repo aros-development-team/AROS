@@ -20,6 +20,7 @@
 
 #include <proto/exec.h>
 #include <proto/mbox.h>
+#include <proto/dma.h>
 #include <proto/kernel.h>
 
 #include <hardware/mmc.h>
@@ -34,6 +35,7 @@
 #define VCMB_PROPCHAN                   8
 
 APTR            MBoxBase;
+APTR            DMABase;
 IPTR            __arm_periiobase __attribute__((used)) = 0;
 
 
@@ -141,6 +143,12 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
         goto sdhost_fail;
     }
 
+    if ((DMABase = OpenResource("dma.resource")) == NULL)
+    {
+        bug("[SDHost] %s: Failed to open dma.resource\n", __PRETTY_FUNCTION__);
+        goto sdhost_fail;
+    }
+
     /*
      * Query core clock rate.
      * SDHOST uses the core clock (VCCLOCK_CORE = 4), not the SDHCI clock.
@@ -184,22 +192,22 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
 
         /* Allocate DMA control block (must be 32-byte aligned) */
         {
-            ULONG cb_alloc_size = sizeof(struct SDHostDMACB) + 31;
+            ULONG cb_alloc_size = sizeof(struct BCM2708DMACB) + 31;
             APTR cb_raw = AllocMem(cb_alloc_size, MEMF_PUBLIC | MEMF_CLEAR);
             if (cb_raw)
             {
-                ULONG dma_enable;
-
                 priv->dma_cb_raw = cb_raw;
                 priv->dma_cb_raw_size = cb_alloc_size;
-                priv->dma_cb = (struct SDHostDMACB *)(((IPTR)cb_raw + 31) & ~31);
+                priv->dma_cb = (struct BCM2708DMACB *)(((IPTR)cb_raw + 31) & ~31);
 
-                /* Enable DMA channel and reset it */
-                dma_enable = AROS_LE2LONG(*(volatile ULONG *)DMA_ENABLE_REG);
-                *(volatile ULONG *)DMA_ENABLE_REG = AROS_LONG2LE(
-                    dma_enable | (1 << SDHOST_DMA_CHANNEL));
-                *(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL) =
-                    AROS_LONG2LE(DMA_CS_RESET);
+                /* A lite channel is sufficient — SDHOST is DREQ-paced. */
+                priv->dma_channel = DMAAllocChannel(0);
+                if (priv->dma_channel < 0)
+                {
+                    bug("[SDHost] %s: No DMA channel available — driver requires DMA\n",
+                        __PRETTY_FUNCTION__);
+                    goto sdhost_fail;
+                }
 
                 /* Allocate cache-line-aligned bounce buffer for DMA reads.
                  * CacheClearE on unaligned buffers corrupts adjacent memory. */
@@ -223,7 +231,7 @@ static int FNAME_SDHOST(SDHostInit)(struct SDCardBase *SDCardBase)
                 }
 
                 D(bug("[SDHost] %s: DMA channel %d enabled (bounce=%p)\n",
-                    __PRETTY_FUNCTION__, SDHOST_DMA_CHANNEL, priv->dma_bounce));
+                    __PRETTY_FUNCTION__, priv->dma_channel, priv->dma_bounce));
             }
             else
             {

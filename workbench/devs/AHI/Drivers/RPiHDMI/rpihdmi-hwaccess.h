@@ -11,7 +11,7 @@
  * On BCM2835/2836, ARM physical 0x00000000 maps to GPU bus 0xC0000000
  * (uncached alias).
  */
-#define GPU_BUS_ADDR(x) (0xC0000000 | (ULONG) (x))
+#define GPU_BUS_ADDR(x) BCM2708_DMA_BUS_ADDR(x)
 
 /* Register access helpers (little-endian, with ARM memory barriers) */
 static inline void __dsb(void)
@@ -104,8 +104,7 @@ static inline void wr32le(ULONG addr, ULONG val)
 #define CRP_CFG_EXTERNAL_CTS_EN (1 << 24)
 #define CRP_CFG_N(x)            ((x) & 0xFFFFF)
 
-/* DMA channel to use for HDMI audio (channel 6, avoiding PWM on 5) */
-#define HDMI_DMA_CHANNEL 6
+/* The audio DMA channel is allocated at runtime from dma.resource. */
 
 /* DMA DREQ peripheral map ID for HDMI audio */
 #define DMA_DREQ_HDMI 17

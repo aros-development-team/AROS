@@ -18,23 +18,13 @@
 extern IPTR __arm_periiobase;
 #define ARM_PERIIOBASE __arm_periiobase
 #include <hardware/bcm2708.h>
+#include <hardware/bcm2708_dma.h>
 #include <hardware/sdhost.h>
 
 #include "sdcard_base.h"
 
 #define FNAME_SDHOST(x)                 SDHOST__Device__ ## x
 #define FNAME_SDHOSTBUS(x)             SDHOST__SDBus__ ## x
-
-/* DMA control block — must be 32-byte aligned */
-struct SDHostDMACB {
-    ULONG   ti;           /* Transfer Information */
-    ULONG   source_ad;    /* Source address (bus address) */
-    ULONG   dest_ad;      /* Destination address (bus address) */
-    ULONG   txfr_len;     /* Transfer length in bytes */
-    ULONG   stride;       /* 2D stride (unused) */
-    ULONG   nextconbk;    /* Next CB address (bus address), 0 = stop */
-    ULONG   reserved[2];  /* Padding to 32 bytes */
-};
 
 /* Private data stored in sdcb_Private (cast to struct sdhost_private *) */
 struct sdhost_private {
@@ -43,8 +33,9 @@ struct sdhost_private {
     ULONG   hcfg;               /* Cached SDHCFG value */
 
     /* DMA state */
+    LONG    dma_channel;        /* Channel allocated from dma.resource */
     APTR    dma_cb_raw;         /* Unaligned alloc for CB */
-    struct SDHostDMACB *dma_cb; /* 32-byte aligned control block */
+    struct BCM2708DMACB *dma_cb; /* 32-byte aligned control block */
     ULONG   dma_cb_raw_size;    /* Allocation size */
 
     /* Bounce buffer used for DMA reads into possibly mis-aligned caller buffers. */

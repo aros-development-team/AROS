@@ -107,12 +107,9 @@
 /* SDHOST timing derives from the VideoCore core clock. */
 #define VCCLOCK_CORE                    4
 
-/* DMA parameters chosen by the AROS driver. */
-#define SDHOST_DMA_CHANNEL              10      /* Lite channel avoids firmware-owned full channels */
+/* DMA parameters chosen by the AROS driver. The channel itself is
+ * allocated at runtime from dma.resource. */
 #define SDHOST_DMA_DREQ                 13      /* BCM2835 DREQ map ID for SDHOST */
-
-/* System RAM must be presented to DMA through the uncached VC alias. */
-#define SDHOST_DMA_BUS_ALIAS(x)         (0xC0000000 | (ULONG)(x))
 
 /* DMA sees peripherals through the VideoCore bus aperture. */
 #define SDHOST_SDDATA_DMA_ADDR          (BCM2835_PERIBUSBASE + 0x202000 + SDDATA)

@@ -35,6 +35,7 @@
 
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include <proto/dma.h>
 #include <proto/utility.h>
 
 #include <hardware/mmc.h>
@@ -65,7 +66,7 @@ static inline void sdhost_dsb(void) { asm volatile("dsb" ::: "memory"); }
 static inline ULONG sdhost_bus_addr(struct sdcard_Bus *bus, APTR virt)
 {
     struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
-    return SDHOST_DMA_BUS_ALIAS((ULONG)(IPTR)KrnVirtualToPhysical(virt));
+    return BCM2708_DMA_BUS_ADDR((ULONG)(IPTR)KrnVirtualToPhysical(virt));
 }
 
 /* Fast bounce-buffer copy: 64 bytes/iteration via NEON for the bulk,
@@ -144,13 +145,13 @@ static void sdhost_dma_setup(struct sdcard_Bus *bus, APTR buf,
                               ULONG len, BOOL is_read)
 {
     struct sdhost_private *priv = SDHOST_PRIV(bus);
-    struct SDHostDMACB *cb = priv->dma_cb;
+    struct BCM2708DMACB *cb = priv->dma_cb;
     ULONG buf_bus = sdhost_bus_addr(bus, buf);
     ULONG ti;
     ULONG i;
 
-    /* Channel 10 is a "lite" DMA channel — 32-bit transfers only.
-     * Lite channels do not support the 128-bit WIDTH bit, so use
+    /* dma.resource hands out a "lite" DMA channel — 32-bit transfers
+     * only.  Lite channels do not support the 128-bit WIDTH bit, so use
      * NO_WIDE_BURSTS and a 4-beat burst length instead.  WAIT_RESP is
      * set for both directions to keep DMA in step with peripheral DREQ
      * pacing. */
@@ -198,17 +199,17 @@ static void sdhost_dma_setup(struct sdcard_Bus *bus, APTR buf,
 
     /* Reset DMA channel; loading a fresh CB after reset is the safest
      * way to clear any residual ACTIVE/INT/END state. */
-    *(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL) = AROS_LONG2LE(DMA_CS_RESET);
+    *(volatile ULONG *)DMA_CS(priv->dma_channel) = AROS_LONG2LE(DMA_CS_RESET);
     sdhost_dsb();
     for (i = 0; i < 100; i++)
     {
-        if (!(AROS_LE2LONG(*(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL)) & DMA_CS_RESET))
+        if (!(AROS_LE2LONG(*(volatile ULONG *)DMA_CS(priv->dma_channel)) & DMA_CS_RESET))
             break;
     }
-    *(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL) =
+    *(volatile ULONG *)DMA_CS(priv->dma_channel) =
         AROS_LONG2LE(DMA_CS_INT | DMA_CS_END);
-    *(volatile ULONG *)DMA_CONBLK_AD(SDHOST_DMA_CHANNEL) =
-        AROS_LONG2LE(SDHOST_DMA_BUS_ALIAS((ULONG)cb));
+    *(volatile ULONG *)DMA_CONBLK_AD(priv->dma_channel) =
+        AROS_LONG2LE(BCM2708_DMA_BUS_ADDR((ULONG)cb));
     sdhost_dsb();
 }
 
@@ -216,7 +217,7 @@ static inline void sdhost_dma_kick(struct sdcard_Bus *bus)
 {
     struct sdhost_private *priv = SDHOST_PRIV(bus);
 
-    *(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL) = AROS_LONG2LE(
+    *(volatile ULONG *)DMA_CS(priv->dma_channel) = AROS_LONG2LE(
         DMA_CS_WAIT_FOR_WRITES |
         DMA_CS_PANIC_PRI(15) |
         DMA_CS_PRI(8) |
@@ -226,10 +227,14 @@ static inline void sdhost_dma_kick(struct sdcard_Bus *bus)
 
 static int sdhost_dma_wait(struct sdcard_Bus *bus, ULONG timeout_us)
 {
-    volatile ULONG *dma_cs = (volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL);
-    /* Poll on 50 µs intervals — SD transfers run in the millisecond
-     * range so this is well below the minimum transfer time but
-     * 50× less CPU spin than per-microsecond polling. */
+    /* Deliberately a bounded poll, NOT DMAWaitChannel: sleeping here
+     * lets other tasks run mid-transfer, which both (a) speculatively
+     * refetches destination cache lines during direct-to-buffer reads
+     * and (b) lets shared edge lines go dirty, so the post-DMA ClearD
+     * writes stale data over the DMA result — random disk corruption.
+     * The tight poll keeps the window closed, as it always did. */
+    struct sdhost_private *priv = SDHOST_PRIV(bus);
+    volatile ULONG *dma_cs = (volatile ULONG *)DMA_CS(priv->dma_channel);
     const ULONG poll_step = 50;
 
     while (timeout_us > 0)
@@ -243,9 +248,8 @@ static int sdhost_dma_wait(struct sdcard_Bus *bus, ULONG timeout_us)
         }
         if (!(cs & DMA_CS_ACTIVE))
         {
-            bug("[SDHost%02u] DMA stopped early: CS=%08x SDHSTS=%08x SDEDM=%08x\n",
-                bus->sdcb_BusNum, cs,
-                sdhost_read(bus, SDHSTS), sdhost_read(bus, SDEDM));
+            bug("[SDHost%02u] DMA stopped early: CS=%08x SDHSTS=%08x\n",
+                bus->sdcb_BusNum, cs, sdhost_read(bus, SDHSTS));
             *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
             sdhost_dsb();
             return -1;
@@ -253,14 +257,13 @@ static int sdhost_dma_wait(struct sdcard_Bus *bus, ULONG timeout_us)
         sdcard_Udelay(poll_step);
         timeout_us = (timeout_us > poll_step) ? timeout_us - poll_step : 0;
     }
-    bug("[SDHost%02u] DMA timeout: CS=%08x SDHSTS=%08x SDEDM=%08x SDCMD=%04x\n",
-        bus->sdcb_BusNum, AROS_LE2LONG(*dma_cs),
-        sdhost_read(bus, SDHSTS), sdhost_read(bus, SDEDM),
-        sdhost_read(bus, SDCMD));
+    bug("[SDHost%02u] DMA timeout: SDHSTS=%08x\n",
+        bus->sdcb_BusNum, sdhost_read(bus, SDHSTS));
     *dma_cs = AROS_LONG2LE(DMA_CS_RESET);
     sdhost_dsb();
     return -1;
 }
+
 
 /* ---------------------------------------------------------------------- */
 /* SoftReset — bring registers to a known state and power up.              */
@@ -533,7 +536,7 @@ done:
      * issue cleanly. */
     if (has_data && retval != 0)
     {
-        *(volatile ULONG *)DMA_CS(SDHOST_DMA_CHANNEL) = AROS_LONG2LE(DMA_CS_RESET);
+        *(volatile ULONG *)DMA_CS(SDHOST_PRIV(bus)->dma_channel) = AROS_LONG2LE(DMA_CS_RESET);
         sdhost_dsb();
         sdhost_flush_fifo(bus);
     }
