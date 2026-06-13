@@ -88,6 +88,92 @@ static VOID Nouveau_Exit(LIBBASETYPEPTR LIBBASE)
     }
 }
 
+
+#if defined(MEM_GUAD_DEBUG)
+#include <aros/debug.h>
+
+#define BUFF_GUARD (4 * 1024)
+
+APTR HIDDNouveauAlloc(ULONG size)
+{
+    ULONG guarded_size = size + (2 * BUFF_GUARD);
+    char *memory = (char *)AllocVecPooled(NouveauMemPool, guarded_size);
+    memory += BUFF_GUARD;
+
+    char *start = (char *)memory - BUFF_GUARD;
+
+    ULONG *sizestore = (ULONG *)start;
+    *sizestore = size; /* store in first 4 bytes of front guard */
+    sizestore = (ULONG *)memory;
+    sizestore--;
+    *sizestore = size; /* store in last 4 bytes of front guard */
+
+    ULONG *patternstore = (ULONG *)start;
+    patternstore++;
+
+    /* Write pattern to front guard except for fields holding size */
+    for (int i = 0; i < (BUFF_GUARD / 4) - 2; i++)
+    {
+        *patternstore = 0xFEAB1381;
+        patternstore++;
+    }
+
+    /* Write patter to back guard */
+    patternstore = (ULONG *)(memory + size);
+    for (int i = 0; i < (BUFF_GUARD / 4); i++)
+    {
+        *patternstore = 0xFEAB1381;
+        patternstore++;
+    }
+
+    return memory;
+}
+
+VOID HIDDNouveauFree(APTR memory)
+{
+    if (memory == NULL) return;
+
+    char *start = (char *)memory - BUFF_GUARD;
+
+    ULONG *sizestore = (ULONG *)start;
+    ULONG size1 = *sizestore;
+    sizestore = (ULONG *)memory;
+    sizestore--;
+    ULONG size2 = *sizestore;
+
+    if (size1 != size2) bug("---- MEM CHECK: Size overwritten! %u <> %u", size1, size2);
+
+    ULONG *patternstore = (ULONG *)start;
+    patternstore++;
+
+    for (int i = 0; i < (BUFF_GUARD / 4) - 2; i++)
+    {
+        ULONG pattern = *patternstore;
+        if (pattern != 0xFEAB1381) bug("---- MEM CHECK: Damaged front guard pattern %08x!\n", pattern);
+        patternstore++;
+    }
+
+    patternstore = (ULONG *)(memory + size2);
+
+    LONG first = -1, last = 0;
+
+    for (int i = 0; i < (BUFF_GUARD / 4); i++)
+    {
+        ULONG pattern = *patternstore;
+        if (pattern != 0xFEAB1381)
+        {
+            if (first == -1) first = i;
+            if (last < i) last = i;
+        }
+        patternstore++;
+    }
+
+    if (first != -1 && last != 0)
+        bug("---- MEM CHECK: Damaged back guard for mem=%p(%d) from %d to %d\n", memory, size2, first * 4, last * 4);
+
+    FreeVecPooled(NouveauMemPool, start);
+}
+#else
 APTR HIDDNouveauAlloc(ULONG size)
 {
     return AllocVecPooled(NouveauMemPool, size);
@@ -95,8 +181,9 @@ APTR HIDDNouveauAlloc(ULONG size)
 
 VOID HIDDNouveauFree(APTR memory)
 {
-    // FreeVecPooled(NouveauMemPool, memory);
+    FreeVecPooled(NouveauMemPool, memory);
 }
+#endif
 
 ADD2INITLIB(Nouveau_Init, 0);
 ADD2EXPUNGELIB(Nouveau_Exit, 0);
