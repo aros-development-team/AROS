@@ -1035,9 +1035,9 @@ NOT_IMPLEMENTED_STOP
 static void
 ttm_pool_unpopulate_helper(struct ttm_tt *ttm, unsigned mem_count_update)
 {
-bug("FIXME FIXME MEMORY LEAK!!! in ttm_pool_unpopulate_helper\n");
-#if 0
+#if !defined(__AROS__)
 	struct ttm_mem_global *mem_glob = ttm->bdev->glob->mem_glob;
+#endif
 	unsigned i;
 
 	if (mem_count_update == 0)
@@ -1047,14 +1047,20 @@ bug("FIXME FIXME MEMORY LEAK!!! in ttm_pool_unpopulate_helper\n");
 		if (!ttm->pages[i])
 			continue;
 
+#if !defined(__AROS__)
 		ttm_mem_global_free_page(mem_glob, ttm->pages[i], PAGE_SIZE);
+#else
+		HIDDNouveauFree(ttm->pages[i]);
+		ttm->pages[i] = NULL;
+#endif
 	}
 
 put_pages:
+#if !defined(__AROS__)
 	ttm_put_pages(ttm->pages, ttm->num_pages, ttm->page_flags,
 		      ttm->caching_state);
-	ttm->state = tt_unpopulated;
 #endif
+	ttm->state = tt_unpopulated;
 }
 
 int ttm_pool_populate(struct ttm_tt *ttm, struct ttm_operation_ctx *ctx)

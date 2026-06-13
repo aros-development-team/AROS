@@ -321,6 +321,10 @@ void ttm_dma_tt_fini(struct ttm_dma_tt *ttm_dma)
 		kvfree(ttm_dma->dma_address);
 	ttm->pages = NULL;
 	ttm_dma->dma_address = NULL;
+#if defined(__AROS__)
+	HIDDNouveauFree(ttm->allocated_buffer);
+	ttm->allocated_buffer = NULL;
+#endif
 }
 EXPORT_SYMBOL(ttm_dma_tt_fini);
 
@@ -470,8 +474,7 @@ static void ttm_tt_add_mapping(struct ttm_tt *ttm)
 	if (ttm->page_flags & TTM_PAGE_FLAG_SG)
 		return;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	for (i = 0; i < ttm->num_pages; ++i)
 		ttm->pages[i]->mapping = ttm->bdev->dev_mapping;
 #endif
@@ -501,12 +504,12 @@ static void ttm_tt_clear_mapping(struct ttm_tt *ttm)
 	if (ttm->page_flags & TTM_PAGE_FLAG_SG)
 		return;
 
-	for (i = 0; i < ttm->num_pages; ++i) {
 #if !defined(__AROS__)
+	for (i = 0; i < ttm->num_pages; ++i) {
 		(*page)->mapping = NULL;
 		(*page++)->index = 0;
-#endif
 	}
+#endif
 }
 
 void ttm_tt_unpopulate(struct ttm_tt *ttm)
