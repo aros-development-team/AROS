@@ -11,13 +11,13 @@ VOID HIDDNouveauFree(APTR memory);
 APTR HIDDNouveauAlloc(ULONG size);
 
 #define gfp_t           ULONG
-#define GFP_KERNEL      (1UL < 0)
-#define __GFP_ZERO      (1UL < 1)
-#define GFP_DMA32       (1UL < 2)
-#define GFP_HIGHUSER    (1UL < 3)
-#define GFP_USER        (1UL < 4)
-#define GFP_NOWAIT      (1UL < 5)
-#define GFP_ATOMIC      (1UL < 6)
+#define GFP_KERNEL      (1UL << 0)
+#define __GFP_ZERO      (1UL << 1)
+#define GFP_DMA32       (1UL << 2)
+#define GFP_HIGHUSER    (1UL << 3)
+#define GFP_USER        (1UL << 4)
+#define GFP_NOWAIT      (1UL << 5)
+#define GFP_ATOMIC      (1UL << 6)
 
 
 #define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
