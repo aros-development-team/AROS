@@ -150,8 +150,6 @@ nouveau_cli_work_ready(struct dma_fence *fence)
 {
 	bool ret = true;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	spin_lock_irq(fence->lock);
 	if (!dma_fence_is_signaled_locked(fence))
 		ret = false;
@@ -159,7 +157,6 @@ NOT_IMPLEMENTED_STOP
 
 	if (ret == true)
 		dma_fence_put(fence);
-#endif
 	return ret;
 }
 
@@ -178,12 +175,12 @@ nouveau_cli_work(struct work_struct *w)
 	mutex_unlock(&cli->lock);
 }
 
-// static void
-// nouveau_cli_work_fence(struct dma_fence *fence, struct dma_fence_cb *cb)
-// {
-// 	struct nouveau_cli_work *work = container_of(cb, typeof(*work), cb);
-// 	schedule_work(&work->cli->work);
-// }
+static void
+nouveau_cli_work_fence(struct dma_fence *fence, struct dma_fence_cb *cb)
+{
+	struct nouveau_cli_work *work = container_of(cb, typeof(*work), cb);
+	schedule_work(&work->cli->work);
+}
 
 void
 nouveau_cli_work_queue(struct nouveau_cli *cli, struct dma_fence *fence,
@@ -193,11 +190,8 @@ nouveau_cli_work_queue(struct nouveau_cli *cli, struct dma_fence *fence,
 	work->cli = cli;
 	mutex_lock(&cli->lock);
 	list_add_tail(&work->head, &cli->worker);
-NOT_IMPLEMENTED_STOP
-#if 0
 	if (dma_fence_add_callback(fence, &work->cb, nouveau_cli_work_fence))
 		nouveau_cli_work_fence(fence, &work->cb);
-#endif
 	mutex_unlock(&cli->lock);
 }
 

@@ -474,9 +474,6 @@ static void ttm_bo_flush_all_fences(struct ttm_buffer_object *bo)
 	if (fence && !fence->ops->signaled)
 		dma_fence_enable_sw_signaling(fence);
 
-NOT_IMPLEMENTED_CONTINUE
-if (fobj) NOT_IMPLEMENTED_STOP
-#if 0
 	for (i = 0; fobj && i < fobj->shared_count; ++i) {
 		fence = rcu_dereference_protected(fobj->shared[i],
 					dma_resv_held(bo->base.resv));
@@ -484,7 +481,6 @@ if (fobj) NOT_IMPLEMENTED_STOP
 		if (!fence->ops->signaled)
 			dma_fence_enable_sw_signaling(fence);
 	}
-#endif
 }
 
 static void ttm_bo_cleanup_refs_or_queue(struct ttm_buffer_object *bo)

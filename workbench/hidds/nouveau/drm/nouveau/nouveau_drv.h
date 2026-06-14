@@ -127,9 +127,7 @@ struct nouveau_cli_work {
 	struct list_head head;
 
 	struct dma_fence *fence;
-#if !defined(__AROS__)
 	struct dma_fence_cb cb;
-#endif
 };
 
 void nouveau_cli_work_queue(struct nouveau_cli *, struct dma_fence *,

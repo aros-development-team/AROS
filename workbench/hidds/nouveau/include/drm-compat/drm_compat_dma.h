@@ -24,6 +24,11 @@ void *dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle
 void dma_free_coherent(struct device *dev, size_t size, void *cpuaddr, dma_addr_t dma_handle);
 
 /* dma fence handling */
+struct ww_acquire_ctx
+{
+    ULONG dummy;
+};
+
 struct dma_fence;
 struct dma_resv_list
 {
@@ -90,7 +95,6 @@ int dma_fence_signal_locked(struct dma_fence *fence);
 int dma_fence_add_callback(struct dma_fence *fence, struct dma_fence_cb *cb, dma_fence_func_t func);
 void dma_fence_enable_sw_signaling(struct dma_fence *fence);
 int dma_resv_trylock(struct dma_resv *resv);
-struct ww_acquire_ctx;
 int dma_resv_lock(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 int dma_resv_lock_interruptible(struct dma_resv *resv, struct ww_acquire_ctx *ctx);
 void dma_resv_unlock(struct dma_resv *resv);

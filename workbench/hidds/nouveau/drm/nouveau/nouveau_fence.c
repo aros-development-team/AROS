@@ -365,13 +365,10 @@ nouveau_fence_sync(struct nouveau_bo *nvbo, struct nouveau_channel *chan, bool e
 	int ret = 0, i;
 
 	if (!exclusive) {
-NOT_IMPLEMENTED_STOP
-#if 0
 		ret = dma_resv_reserve_shared(resv, 1);
 
 		if (ret)
 			return ret;
-#endif
 	}
 
 	fobj = dma_resv_get_list(resv);
@@ -405,8 +402,6 @@ NOT_IMPLEMENTED_STOP
 	if (!exclusive || !fobj)
 		return ret;
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	for (i = 0; i < fobj->shared_count && !ret; ++i) {
 		struct nouveau_channel *prev = NULL;
 		bool must_wait = true;
@@ -416,17 +411,22 @@ NOT_IMPLEMENTED_STOP
 
 		f = nouveau_local_fence(fence, chan->drm);
 		if (f) {
+#if !defined(__AROS__)
 			rcu_read_lock();
 			prev = rcu_dereference(f->channel);
 			if (prev && (prev == chan || fctx->sync(f, prev, chan) == 0))
 				must_wait = false;
 			rcu_read_unlock();
+#else
+			prev = rcu_dereference(f->channel);
+			if (prev && (prev == chan || fctx->sync(f, prev, chan) == 0))
+				must_wait = false;
+#endif
 		}
 
 		if (must_wait)
 			ret = dma_fence_wait(fence, intr);
 	}
-#endif
 
 	return ret;
 }

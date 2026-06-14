@@ -341,9 +341,7 @@ nouveau_gem_set_domain(struct drm_gem_object *gem, uint32_t read_domains,
 
 struct validate_op {
 	struct list_head list;
-#if !defined(__AROS__)
 	struct ww_acquire_ctx ticket;
-#endif
 };
 
 static void
@@ -388,7 +386,7 @@ validate_fini(struct validate_op *op, struct nouveau_channel *chan,
 	      struct drm_nouveau_gem_pushbuf_bo *pbbo)
 {
 	validate_fini_no_ticket(op, chan, fence, pbbo);
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	ww_acquire_fini(&op->ticket);
 #endif
@@ -407,7 +405,7 @@ validate_init(struct nouveau_channel *chan, struct drm_file *file_priv,
 	LIST_HEAD(vram_list);
 	LIST_HEAD(both_list);
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	ww_acquire_init(&op->ticket, &reservation_ww_class);
 #endif
@@ -443,21 +441,15 @@ retry:
 			break;
 		}
 
-NOT_IMPLEMENTED_STOP
-#if 0
 		ret = ttm_bo_reserve(&nvbo->bo, true, false, &op->ticket);
-#endif
 		if (ret) {
 			list_splice_tail_init(&vram_list, &op->list);
 			list_splice_tail_init(&gart_list, &op->list);
 			list_splice_tail_init(&both_list, &op->list);
 			validate_fini_no_ticket(op, chan, NULL, NULL);
 			if (unlikely(ret == -EDEADLK)) {
-NOT_IMPLEMENTED_STOP
-#if 0
 				ret = ttm_bo_reserve_slowpath(&nvbo->bo, true,
 							      &op->ticket);
-#endif
 				if (!ret)
 					res_bo = nvbo;
 			}
@@ -504,7 +496,7 @@ NOT_IMPLEMENTED_STOP
 			goto retry;
 	}
 
-NOT_IMPLEMENTED_STOP
+NOT_IMPLEMENTED_CONTINUE
 #if 0
 	ww_acquire_done(&op->ticket);
 #endif
