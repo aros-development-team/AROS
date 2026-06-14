@@ -257,12 +257,9 @@ nouveau_fence_done(struct nouveau_fence *fence)
 			return true;
 
 		spin_lock_irqsave(&fctx->lock, flags);
-NOT_IMPLEMENTED_STOP
-#if 0
 		chan = rcu_dereference_protected(fence->channel, lockdep_is_held(&fctx->lock));
 		if (chan && nouveau_fence_update(chan, fctx))
 			nvif_notify_put(&fctx->notify);
-#endif
 		spin_unlock_irqrestore(&fctx->lock, flags);
 	}
 	return dma_fence_is_signaled(&fence->base);
@@ -342,15 +339,12 @@ nouveau_fence_wait(struct nouveau_fence *fence, bool lazy, bool intr)
 	if (!lazy)
 		return nouveau_fence_wait_busy(fence, intr);
 
-NOT_IMPLEMENTED_STOP
-#if 0
 	ret = dma_fence_wait_timeout(&fence->base, intr, 15 * HZ);
 	if (ret < 0)
 		return ret;
 	else if (!ret)
 		return -EBUSY;
 	else
-#endif
 		return 0;
 }
 
