@@ -993,9 +993,11 @@ gf100_gr_wait_idle(struct gf100_gr *gr)
 {
 	struct nvkm_subdev *subdev = &gr->base.engine.subdev;
 	struct nvkm_device *device = subdev->device;
-NOT_IMPLEMENTED_STOP
-#if 0
+#if !defined(__AROS__)
 	unsigned long end_jiffies = jiffies + msecs_to_jiffies(2000);
+#else
+	unsigned long usecs = 2000 * 1000;
+#endif
 	bool gr_enabled, ctxsw_active, gr_busy;
 
 	do {
@@ -1011,12 +1013,17 @@ NOT_IMPLEMENTED_STOP
 
 		if (!gr_enabled || (!gr_busy && !ctxsw_active))
 			return 0;
+#if !defined(__AROS__)
 	} while (time_before(jiffies, end_jiffies));
+#else
+		usecs -= 1000;
+		udelay(1000);
+	} while (usecs != 0);
+#endif
 
 	nvkm_error(subdev,
 		   "wait for idle timeout (en: %d, ctxsw: %d, busy: %d)\n",
 		   gr_enabled, ctxsw_active, gr_busy);
-#endif
 	return -EAGAIN;
 }
 
