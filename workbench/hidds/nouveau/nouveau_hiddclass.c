@@ -534,6 +534,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, &gfxdata->cursor);
             /* TODO: Check return, how to handle */
 
+            if (carddata->architecture <= NV_ARCH_C0)
+            {
             /* Allocate dma channel */
             ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT,
                 24 * 1024, &carddata->chan);
@@ -579,6 +581,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case(NV_ARCH_C0):
                 HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
+            }
             }
 
             /* Create compositor object */
