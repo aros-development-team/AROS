@@ -214,6 +214,14 @@ void dma_resv_fini(struct dma_resv *resv)
 {
     dma_fence_put(resv->fence_excl);
     resv->fence_excl = NULL;
+
+    if (resv->fences_shared)
+    {
+        int i;
+        for (i = 0; i < resv->fences_shared->shared_count; i++)
+            dma_fence_put(resv->fences_shared->shared[i]);
+        kfree(resv->fences_shared);
+    }
     resv->fences_shared = NULL;
     resv->locked = 0;
     resv->locking_ctx = NULL;
@@ -278,3 +286,51 @@ int dma_resv_lock_slow_interruptible(struct dma_resv *resv, struct ww_acquire_ct
 {
     return dma_resv_lock_interruptible(resv, ctx);
 }
+
+int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num)
+{
+    struct dma_resv_list *old_list, *new_list;
+    unsigned int i, j, max;
+
+    if (!resv)
+        return 0;
+
+    WARN_ON(!dma_resv_held(resv));
+
+    old_list = resv->fences_shared;
+    if (old_list)
+    {
+        if (old_list->shared_max - old_list->shared_count >= num)
+            return 0; /* There is enough space */
+        max = old_list->shared_count + num;
+        if (max < old_list->shared_max * 2)
+            max = old_list->shared_max * 2; /* Double the size */
+    }
+    else
+        max = num;
+
+    new_list = kmalloc(sizeof(*new_list) + max * sizeof(struct dma_fence *), GFP_KERNEL);
+    if (!new_list)
+        return -ENOMEM;
+
+    j = 0;
+    if (old_list)
+    {
+        for (i = 0; i < old_list->shared_count; i++)
+        {
+            struct dma_fence *fence = old_list->shared[i];
+            if (fence)
+                new_list->shared[j++] = fence;
+        }
+        kfree(old_list);
+    }
+
+    new_list->shared_count = j;
+    new_list->shared_max = max;
+    for (i = j; i < max; i++)
+        new_list->shared[i] = NULL;
+
+    resv->fences_shared = new_list;
+    return 0;
+}
+

@@ -37,7 +37,6 @@ unsigned long find_first_zero_bit(const UBYTE *addr, unsigned long size) { NOT_I
 size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size) { NOT_IMPLEMENTED_STOP }
 int iommu_map(struct iommu_domain *domain, unsigned long iova, phys_addr_t paddr, size_t size, int prot) { NOT_IMPLEMENTED_STOP }
 
-int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num) { NOT_IMPLEMENTED_STOP }
 int dma_resv_copy_fences(struct dma_resv *dst, struct dma_resv *src) { NOT_IMPLEMENTED_STOP }
 
 void drm_clflush_pages(struct page *pages[], unsigned long num_pages) { NOT_IMPLEMENTED_STOP }

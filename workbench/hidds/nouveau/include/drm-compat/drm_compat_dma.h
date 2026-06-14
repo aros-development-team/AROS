@@ -27,6 +27,7 @@ struct dma_fence;
 struct dma_resv_list
 {
     u32 shared_count;
+    u32 shared_max;
     struct dma_fence *shared[];
 };
 
