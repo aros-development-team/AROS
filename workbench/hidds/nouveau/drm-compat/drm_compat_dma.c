@@ -334,3 +334,32 @@ int dma_resv_reserve_shared(struct dma_resv *resv, unsigned int num)
     return 0;
 }
 
+void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence)
+{
+    struct dma_resv_list *list;
+    unsigned int i, count;
+
+    if (!resv || !fence)
+        return;
+
+    WARN_ON(!dma_resv_held(resv));
+
+    list = resv->fences_shared;
+    if (!list || list->shared_count >= list->shared_max)
+    {
+        bug("BUG: dma_resv_add_shared called without space in shared fences array");
+        return;
+    }
+
+    count = list->shared_count;
+    for (i = 0; i < count; i++)
+    {
+        if (!list->shared[i])
+            break;
+    }
+
+    dma_fence_get(fence);
+
+    list->shared[i] = fence;
+    list->shared_count++;
+}
