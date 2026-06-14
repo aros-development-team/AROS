@@ -30,6 +30,7 @@ void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops,
     fence->context = context;
     fence->seqno = seqno;
     fence->flags = 0;
+    INIT_LIST_HEAD(&fence->cb_list);
 }
 
 void dma_fence_put(struct dma_fence *fence)
@@ -40,22 +41,62 @@ void dma_fence_put(struct dma_fence *fence)
 
 int dma_fence_signal_locked(struct dma_fence *fence)
 {
-    set_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags);
+    struct dma_fence_cb *cb, *tmp;
+
+    if (test_and_set_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
+        return -EINVAL;
+
+    list_for_each_entry_safe(cb, tmp, &fence->cb_list, node)
+    {
+        list_del(&cb->node);
+        cb->func(fence, cb);
+    }
+
     return 0;
 }
 
-bool dma_fence_is_signaled(struct dma_fence *fence)
+int dma_fence_add_callback(struct dma_fence *fence, struct dma_fence_cb *cb,
+                           dma_fence_func_t func)
+{
+    unsigned long flags = 0;
+    int ret = 0;
+
+    if (!fence || !cb || !func)
+        return -EINVAL;
+
+    spin_lock_irqsave(fence->lock, flags);
+    if (dma_fence_is_signaled(fence))
+    {
+        ret = -ENOENT;
+    }
+    else
+    {
+        cb->func = func;
+        list_add_tail(&cb->node, &fence->cb_list);
+        dma_fence_enable_sw_signaling(fence);
+    }
+    spin_unlock_irqrestore(fence->lock, flags);
+
+    return ret;
+}
+
+bool dma_fence_is_signaled_locked(struct dma_fence *fence)
 {
     if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
         return TRUE;
 
     if (fence->ops && fence->ops->signaled && fence->ops->signaled(fence))
     {
-        set_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags);
+        dma_fence_signal_locked(fence);
         return TRUE;
     }
 
     return FALSE;
+}
+
+bool dma_fence_is_signaled(struct dma_fence *fence)
+{
+    return dma_fence_is_signaled_locked(fence);
 }
 
 void dma_fence_free(struct dma_fence *fence)

@@ -6,6 +6,7 @@
 #define _DRM_COMPAT_DMA_
 
 #include "drm_compat_types.h"
+#include <linux/list.h>
 
 /* dma handling */
 #define DMA_BIDIRECTIONAL   0
@@ -48,14 +49,24 @@ struct dma_fence_ops
     void (*release)(struct dma_fence *fence);
     signed long (*wait)(struct dma_fence *fence, bool intr, signed long timeout);
 };
+
+struct dma_fence_cb;
+typedef void (*dma_fence_func_t)(struct dma_fence *fence, struct dma_fence_cb *cb);
+struct dma_fence_cb
+{
+    struct list_head node;
+    dma_fence_func_t func;
+};
+
 struct dma_fence
 {
     struct kref refcount;
-    ULONG flags;
+    UQUAD flags;
     ULONG seqno;
     const struct dma_fence_ops *ops;
     IPTR context;
     spinlock_t *lock;
+    struct list_head cb_list;
 };
 
 #define dma_resv_assert_held(x) \
@@ -72,9 +83,11 @@ void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence);
 void dma_fence_free(struct dma_fence *fence);
 signed long dma_fence_wait(struct dma_fence *fence, bool intr);
 bool dma_fence_is_signaled(struct dma_fence *fence);
+bool dma_fence_is_signaled_locked(struct dma_fence *fence);
 void dma_fence_init(struct dma_fence *fence, const struct dma_fence_ops *ops, spinlock_t *lock, u64 context, u64 seqno);
 void dma_fence_put(struct dma_fence *fence);
 int dma_fence_signal_locked(struct dma_fence *fence);
+int dma_fence_add_callback(struct dma_fence *fence, struct dma_fence_cb *cb, dma_fence_func_t func);
 void dma_fence_enable_sw_signaling(struct dma_fence *fence);
 int dma_resv_trylock(struct dma_resv *resv);
 struct ww_acquire_ctx;
