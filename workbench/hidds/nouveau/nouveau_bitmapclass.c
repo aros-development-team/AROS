@@ -299,6 +299,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
     
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     LOCK_ENGINE
 
     LOCK_BITMAP
@@ -345,6 +348,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
     struct CardData * carddata = &(SD(cl)->carddata);
     BOOL ret = FALSE;
     
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     LOCK_ENGINE
 
     LOCK_BITMAP
@@ -386,6 +392,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     LOCK_ENGINE
 
@@ -444,6 +453,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     LOCK_ENGINE
 
     LOCK_BITMAP
@@ -499,6 +511,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaImage)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     LOCK_ENGINE
     LOCK_BITMAP
@@ -643,6 +658,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutAlphaTemplate)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     /* Select acceleration method based on hardware and buffer size */
     if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
     {
@@ -725,6 +743,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
     /* Select execution method based on hardware and buffer size */
     if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
     {
@@ -776,6 +797,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
+
+    /* Tesla and Fermi only */
+    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     /* Select execution method based on hardware and buffer size */
     if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
