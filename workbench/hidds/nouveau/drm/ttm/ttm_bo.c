@@ -1122,12 +1122,9 @@ int ttm_bo_mem_space(struct ttm_buffer_object *bo,
 	bool type_found = false;
 	int i, ret;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
 	ret = dma_resv_reserve_shared(bo->base.resv, 1);
 	if (unlikely(ret))
 		return ret;
-#endif
 
 	mem->mm_node = NULL;
 	for (i = 0; i < placement->num_placement; ++i) {
