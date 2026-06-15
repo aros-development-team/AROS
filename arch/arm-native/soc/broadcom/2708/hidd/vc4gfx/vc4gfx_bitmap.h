@@ -15,10 +15,14 @@
 
 enum {
     aoHidd_VideoCoreGfxBitMap_Drawable,
+    aoHidd_VideoCoreGfxBitMap_BackDrawable,    /* [G..] back page phys addr, 0 = no flipping */
+    aoHidd_VideoCoreGfxBitMap_Flip,            /* [.S.] set TRUE to flip front/back page */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
 #define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
+#define aHidd_VideoCoreGfxBitMap_BackDrawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_BackDrawable)
+#define aHidd_VideoCoreGfxBitMap_Flip	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Flip)
 
 /* This structure is used for both onscreen and offscreen bitmaps !! */
 
@@ -39,11 +43,14 @@ struct BitmapData {
 	UBYTE               *VideoData;             /* Pointing to video data */
 	ULONG               width;                  /* Width of bitmap */
 	ULONG               height;                 /* Height of bitmap */
+	ULONG               bytesperrow;            /* Pitch in bytes (matches BitMap super) */
 	UBYTE               bytesperpix;
 	ULONG               cmap[16];               /* ColorMap */
 	BYTE                bpp;                    /* 8 -> chunky; planar otherwise */
 	BYTE                disp;                   /* !=0 - displayable */
 	struct MouseData    *mouse;
+	ULONG               gpuhandle;              /* Offscreen: firmware mem handle (0 = RAM-backed) */
+	ULONG               dispwidth;              /* Mode width (width is 16px-aligned) */
 };
 
 #endif /* _VIDEOCOREGFX_BITMAP_H */

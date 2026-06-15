@@ -21,6 +21,7 @@
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
 #include <hidd/gfx.h>
+#include <hidd/gallium.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
 #include <aros/symbolsets.h>
@@ -102,9 +103,8 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
     xsd->vcsd_MBoxMessage =
         (unsigned int *)((xsd->vcsd_MBoxBuff + 0xF) & ~0x0000000F);
 
-    /* Initialise the mailbox lock here, before the first MBoxWrite/Read,
-     * so every subsequent transaction (including ones triggered before
-     * InitMem runs) can take it. */
+    /* Init the mailbox lock before the first MBoxWrite/Read so every
+     * transaction (even those before InitMem) can take it. */
     InitSemaphore(&xsd->vcsd_GPUMemLock);
 
     D(bug("[VideoCoreGfx] %s: VideoCore Mailbox resource @ 0x%p\n", __PRETTY_FUNCTION__, MBoxBase));
@@ -135,10 +135,16 @@ static int FNAME_SUPPORT(Init)(LIBBASETYPEPTR LIBBASE)
 
             FNAME_HW(InitGfxHW)((APTR)xsd);
             FNAME_SUPPORT(InitCursor)(xsd);
+            FNAME_SUPPORT(InitDMA)(xsd);
 
             if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 41)) != NULL)
             {
                 LIBBASE->vsd.vcsd_basebm = OOP_FindClass(CLID_Hidd_BitMap);
+
+                /* vc4gallium.hidd lives on the FS, so it can't be opened from
+                 * InitLib (no disk yet); it loads lazily from
+                 * HIDD_Gfx_CreateObject, falling back to softpipe. */
+
                 if (AddDisplayDriver(LIBBASE->vsd.vcsd_VideoCoreGfxClass, NULL, TAG_DONE) == DD_OK)
                 {
                     D(bug("[VideoCoreGfx] Display Driver Registered\n"));

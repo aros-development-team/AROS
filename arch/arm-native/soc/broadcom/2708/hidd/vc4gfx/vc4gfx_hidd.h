@@ -12,11 +12,12 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 
+#include <hardware/bcm2708_dma.h>
+
 #include "vc4gfx_hardware.h"
 
-/* vcsd_MBoxMessage is a single shared buffer used by every mailbox
- * round-trip (palette, framebuffer alloc, cursor, mode set, memory).
- * Take vcsd_GPUMemLock around every pack-write-read sequence. */
+/* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
+ * take vcsd_GPUMemLock around each pack-write-read sequence. */
 #define VC4_MBOX_LOCK(xsd)   ObtainSemaphore(&(xsd)->vcsd_GPUMemLock)
 #define VC4_MBOX_UNLOCK(xsd) ReleaseSemaphore(&(xsd)->vcsd_GPUMemLock)
 
@@ -45,6 +46,8 @@ struct VideoCoreGfx_staticdata {
         struct MemHeaderExt     vcsd_GPUMemManage;
 
         OOP_Class 	    	*vcsd_basebm;            /* baseclass for CreateObject */
+        OOP_Class               *vcsd_basegallium;       /* baseclass for CreateObject */
+        struct Library          *vcsd_VC4GalliumLib;     /* keeps vc4gallium.hidd loaded */
 
         OOP_Class               *vcsd_VideoCoreGfxClass;
 	OOP_Object              *vcsd_VideoCoreGfxInstance;
@@ -67,14 +70,56 @@ struct VideoCoreGfx_staticdata {
         LONG                    vcsd_CurY;
         BOOL                    vcsd_CurVisible;
 
-        /* Firmware-reported native HDMI resolution, populated by
-         * HDMI_SyncGen at init time. Used as the default returned by
-         * NominalDimensions so a fresh boot lands on the panel's native
-         * mode instead of the AROS hardcoded 800x600.
+        /* Firmware-reported native HDMI resolution (set by HDMI_SyncGen),
+         * used as the NominalDimensions default so a fresh boot lands on
+         * the panel's native mode rather than 800x600.
          */
         ULONG                   vcsd_NativeWidth;
         ULONG                   vcsd_NativeHeight;
+
+        /* DMA-accelerated 2D state. Channel from dma.resource
+         * (DMACHF_TDMODE); -1 means no DMA (fall back to NEON). The shared
+         * CB and bounce buffer are serialized by vcsd_DMALock.
+         */
+        LONG                    vcsd_DMAChannel;
+        APTR                    vcsd_DMACBRaw;
+        struct BCM2708DMACB     *vcsd_DMACB;
+        ULONG                   *vcsd_DMAFillPx;    /* Fill source word */
+        APTR                    vcsd_DMABounceRaw;
+        UBYTE                   *vcsd_DMABounce;    /* 32-byte aligned */
+        ULONG                   vcsd_DMABouncePhys;
+        struct SignalSemaphore  vcsd_DMALock;
+
+        /* SETVOFFSET page flipping. The framebuffer is allocated at twice
+         * the virtual height and the two pages flipped with SETVOFFSET;
+         * full-frame producers (GL, video) render to the back and flip,
+         * incremental UI targets the front. vcsd_FBPages == 1 = no flipping
+         * (alloc/validation failed).
+         */
+        OOP_Object              *vcsd_FBObj;        /* The framebuffer bitmap */
+        ULONG                   vcsd_FBPage[2];     /* Page base phys addresses */
+        ULONG                   vcsd_FBPageHeight;  /* Rows per page */
+        UBYTE                   vcsd_FBPages;       /* 1 or 2 */
+        UBYTE                   vcsd_FBFront;       /* Currently scanned-out page */
 };
+
+/* DMA has a per-call setup + poll cost; below these sizes NEON wins.
+ * Uncached reads are ~10x slower than writes, hence the lower thresholds
+ * for read-heavy operations.
+ */
+#define VC4_DMA_COPY_THRESHOLD  2048    /* bytes (e.g. 32x16 px) */
+#define VC4_DMA_FILL_THRESHOLD  16384   /* bytes (e.g. 64x64 px) */
+#define VC4_DMA_PUT_THRESHOLD   16384   /* cached source, writes only */
+#define VC4_DMA_GET_THRESHOLD   4096    /* uncached source reads */
+
+/* Bounce buffer for DMA reads into cached memory. */
+#define VC4_DMA_BOUNCE_SIZE     65536
+
+/* Offscreen 32bpp bitmaps at least this large go in GPU memory so blits
+ * can use the DMA engine without cache maintenance; smaller ones stay in
+ * (cached) system RAM.
+ */
+#define VC4_GPUBM_THRESHOLD     65536
 
 /* Maximum HW cursor size supported by VideoCore firmware. */
 #define VC4_CURSOR_MAX_W 64
@@ -128,8 +173,28 @@ struct DisplayMode
 
 int     FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
 int     FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *);
+int     FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *);
 int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
 int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
 APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
+
+BOOL    vc4_dma_copy(struct VideoCoreGfx_staticdata *xsd,
+                     ULONG src_phys, ULONG src_pitch,
+                     ULONG dst_phys, ULONG dst_pitch,
+                     ULONG width_bytes, ULONG height, BOOL bottom_up);
+BOOL    vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
+                     ULONG dst_phys, ULONG dst_pitch,
+                     ULONG width_bytes, ULONG height, ULONG pixel);
+BOOL    vc4_dma_put(struct VideoCoreGfx_staticdata *xsd,
+                    const UBYTE *src, ULONG src_modulo,
+                    ULONG dst_phys, ULONG dst_pitch,
+                    ULONG width_bytes, ULONG height);
+BOOL    vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
+                    ULONG src_phys, ULONG src_pitch,
+                    UBYTE *dst, ULONG dst_modulo,
+                    ULONG width_bytes, ULONG height);
+
+ULONG   vc4_fb_backpage(struct VideoCoreGfx_staticdata *xsd);
+BOOL    vc4_fb_flip(struct VideoCoreGfx_staticdata *xsd);
 
 #endif /* _VIDEOCOREGFX_CLASS_H */
