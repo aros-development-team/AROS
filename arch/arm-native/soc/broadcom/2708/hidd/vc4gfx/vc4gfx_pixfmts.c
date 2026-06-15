@@ -20,50 +20,49 @@
 #define ARRAYSIZE_LUT           15
 
 #if defined(VC_FMT_32)
-/* With VCTAG_SETPIXFMT=VCPXFMT_RGB the VideoCore firmware lays out
- * 32-bpp framebuffers as R,G,B,X in memory order. The canonical AROS
- * pixfmt for that layout is vHidd_StdPixFmt_RGB032, with shifts and
- * masks taken from rom/hidds/gfx/stdpixfmts_{le,be}.h.
+/* With VCTAG_SETPIXFMT=VCPXFMT_RGB the firmware lays out 32-bpp as
+ * R,G,B,X in memory order; shifts/masks per
+ * rom/hidds/gfx/stdpixfmts_{le,be}.h.
  */
 #if AROS_BIG_ENDIAN
 IPTR pftags_32bpp[ARRAYSIZE_TRUECOLOR] =
 {
     ARRAYSIZE_TRUECOLOR,
-    0,
-    8,
     16,
+    8,
     0,
-    0xFF000000,
-    0x00FF0000,
+    0,
     0x0000FF00,
+    0x00FF0000,
+    0xFF000000,
     0x00000000,
     32,
     4,
     32,
-    vHidd_StdPixFmt_RGB032
+    vHidd_StdPixFmt_BGR032
 };
 #else
 IPTR pftags_32bpp[ARRAYSIZE_TRUECOLOR] =
 {
     ARRAYSIZE_TRUECOLOR,
-    24,
-    16,
     8,
+    16,
+    24,
     0,
-    0x000000FF,
-    0x0000FF00,
     0x00FF0000,
+    0x0000FF00,
+    0x000000FF,
     0x00000000,
     32,
     4,
     32,
-    vHidd_StdPixFmt_RGB032
+    vHidd_StdPixFmt_BGR032
 };
 #endif
 #endif
 
 #if defined(VC_FMT_24)
-/* 24-bpp packed: firmware lays out B,G,R bytes in memory. Match
+/* 24-bpp packed: firmware lays out B,G,R bytes; matches
  * vHidd_StdPixFmt_BGR24 from rom/hidds/gfx/stdpixfmts_{le,be}.h.
  */
 #if AROS_BIG_ENDIAN

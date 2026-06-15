@@ -1,17 +1,21 @@
 
 include $(SRCDIR)/config/aros.cfg
 
+#MM hidd-vc4gfx : includes hidd-gallium kernel-dma-bcm2708-includes
+
 USER_LDFLAGS := -static
 
 FILES	:=	\
 	vc4gfx_init \
 	vc4gfx_hiddclass \
+	vc4gfx_dma \
 	vc4gfx_memory \
 	vc4gfx_sdtv \
 	vc4gfx_hdmi \
 	vc4gfx_hardware \
 	vc4gfx_pixfmts \
-	vc4gfx_onbitmap
+	vc4gfx_onbitmap \
+	vc4gfx_offbitmap
 
 %build_module mmake=hidd-vc4gfx \
   modname=vc4gfx modtype=hidd \

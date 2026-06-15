@@ -22,6 +22,7 @@
 #include <hardware/custom.h>
 #include <hidd/hidd.h>
 #include <hidd/gfx.h>
+#include <hidd/gallium.h>
 #include <oop/oop.h>
 #include <clib/alib_protos.h>
 #include <string.h>
@@ -30,6 +31,7 @@
 
 #include "vc4gfx_hidd.h"
 #include "vc4gfx_hardware.h"
+#include "vc4gfx_neon.h"
 
 #ifdef MBoxBase
 #undef MBoxBase
@@ -218,16 +220,11 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
 {
-    /* Allocate a 64x64 ARGB scratch buffer in GPU memory for cursor pixels.
-     * The firmware reads cursor pixels from this buffer each time we issue
-     * SETCURSORINFO, so it must remain locked for the lifetime of the driver.
-     * Use VCMEM_DIRECT (uncached, 0xC alias) so the CPU can write pixels
-     * via the MMU's uncached mapping - VCMEM_NORMAL is rejected by the
-     * firmware when the request comes from ARM (videocore.h:108).
-     *
-     * ALLOCMEM tag layout: [tag, value_buf_size, code, size, alignment,
-     * flags] - the request value buffer is 3 u32 (size/align/flags),
-     * the response writes a 1 u32 handle into the first slot.
+    /* 64x64 ARGB cursor buffer in GPU memory, locked for the driver's
+     * lifetime (firmware re-reads it on each SETCURSORINFO). VCMEM_DIRECT
+     * (uncached 0xC alias) lets the CPU write pixels; VCMEM_NORMAL is
+     * rejected for ARM-side requests.
+     * ALLOCMEM value buffer: size/align/flags in, handle out.
      */
     VC4_MBOX_LOCK(xsd);
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(10 * 4);
@@ -254,9 +251,7 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
         return FALSE;
     }
 
-    /* LOCKMEM tag layout: [tag, value_buf_size, code, handle] - request
-     * value is the handle, response overwrites it with the bus address.
-     */
+    /* LOCKMEM: handle in, bus address out (same value slot). */
     xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
     xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
     xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
@@ -277,12 +272,9 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
     VC4_MBOX_UNLOCK(xsd);
     xsd->vcsd_CurVisible = FALSE;
 
-    /* The firmware should hand back a GPU bus address with the alias
-     * bits set (VCMEM_DIRECT == 0xC, VCMEM_NORMAL == 0x4). QEMU's
-     * mailbox emulation may return a bare low-RAM address instead,
-     * which overlaps with CPU-side allocations and would corrupt
-     * unrelated state. Treat anything outside the GPU alias range as
-     * "no HW cursor available".
+    /* A valid bus address has the GPU alias bits set (0xC/0x4). QEMU may
+     * return a bare low-RAM address that overlaps CPU allocations; treat
+     * anything outside the alias range as "no HW cursor".
      */
     if ((xsd->vcsd_CurBufBus & 0xC0000000) == 0)
     {
@@ -303,9 +295,8 @@ VOID MNAME_GFX(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
-    /* Hand back the panel's native HDMI resolution if we know it. Falls
-     * through to the superclass (which returns AROS_NOMINAL_*) when GETRES
-     * couldn't tell us - e.g. headless boot or unsupported firmware.
+    /* Return the panel's native HDMI resolution if known, else fall
+     * through to the superclass (AROS_NOMINAL_*).
      */
     if (xsd->vcsd_NativeWidth && xsd->vcsd_NativeHeight)
     {
@@ -355,12 +346,8 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
         width > VC4_CURSOR_MAX_W || height > VC4_CURSOR_MAX_H)
         return FALSE;
 
-    /* The VideoCore firmware wants cursor pixels as bytes R,G,B,A in
-     * memory (mailbox SET_CURSOR_INFO format=0), which corresponds to
-     * AROS' vHidd_StdPixFmt_RGBA32. HIDD's GetImage handles conversion.
-     */
     HIDD_BM_GetImage(msg->shape, (UBYTE *)xsd->vcsd_CurBuf,
-                     width * 4, 0, 0, width, height, vHidd_StdPixFmt_RGBA32);
+                     width * 4, 0, 0, width, height, vHidd_StdPixFmt_BGRA32);
 
     xsd->vcsd_CurWidth  = width;
     xsd->vcsd_CurHeight = height;
@@ -402,8 +389,11 @@ BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     if (!xsd->vcsd_CurBuf)
         return FALSE;
 
-    xsd->vcsd_CurX = msg->x;
-    xsd->vcsd_CurY = msg->y;
+    /* Firmware places the image top-left at (x,y) and ignores the
+     * SETCURSORINFO hotspot, so apply the AROS hotspot offset here
+     * (vcsd_CurHotX/Y = pointer xoffset/yoffset, typically <= 0). */
+    xsd->vcsd_CurX = (LONG)msg->x + (LONG)xsd->vcsd_CurHotX;
+    xsd->vcsd_CurY = (LONG)msg->y + (LONG)xsd->vcsd_CurHotY;
 
     if (!xsd->vcsd_CurVisible)
         return TRUE;
@@ -415,8 +405,8 @@ BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
     xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
     xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(1);     /* enable */
-    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)msg->x);
-    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)msg->y);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)xsd->vcsd_CurX);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)xsd->vcsd_CurY);
     xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords (firmware scales) */
     xsd->vcsd_MBoxMessage[9] = 0;
 
@@ -450,6 +440,124 @@ VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     VC4_MBOX_UNLOCK(xsd);
 }
 
+/* Returns the DMA-addressable buffer base for our on/offscreen bitmaps
+ * (uncached framebuffer / GPU mem), or 0 for foreign / RAM-backed ones.
+ */
+static ULONG vc4_bm_dma_base(OOP_Class *cl, OOP_Object *bm)
+{
+    OOP_Class *bmcl = OOP_OCLASS(bm);
+
+    if (bmcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass ||
+        bmcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
+    {
+        struct BitmapData *data = OOP_INST_DATA(bmcl, bm);
+        return (ULONG)(IPTR)data->VideoData;
+    }
+    return 0;
+}
+
+/* NEON rect copy between two chunky 32bpp bitmaps; falls through to
+ * super otherwise. Handles same-buffer overlap via row direction;
+ * same-row right-shift uses a reverse copyline.
+ */
+VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+{
+    IPTR src_buf = 0, dst_buf = 0;
+    IPTR src_pitch = 0, dst_pitch = 0;
+    IPTR src_bpp = 0, dst_bpp = 0;
+    UBYTE *srow_base, *drow_base;
+    ULONG row_bytes;
+    LONG y, y_start, y_end, y_step;
+    BOOL same_row_overlap;
+
+    if (GC_DRMD(msg->gc) != vHidd_GC_DrawMode_Copy)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    OOP_GetAttr(msg->src,  aHidd_ChunkyBM_Buffer,    &src_buf);
+    OOP_GetAttr(msg->dest, aHidd_ChunkyBM_Buffer,    &dst_buf);
+    OOP_GetAttr(msg->src,  aHidd_BitMap_BytesPerRow, &src_pitch);
+    OOP_GetAttr(msg->dest, aHidd_BitMap_BytesPerRow, &dst_pitch);
+    {
+        OOP_Object *src_pf = NULL, *dst_pf = NULL;
+        OOP_GetAttr(msg->src,  aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
+        OOP_GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dst_pf);
+        if (src_pf)
+            OOP_GetAttr(src_pf, aHidd_PixFmt_BytesPerPixel, &src_bpp);
+        if (dst_pf)
+            OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
+    }
+
+    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    row_bytes = msg->width * 4;
+    srow_base = (UBYTE *)src_buf + msg->srcY  * src_pitch + msg->srcX  * 4;
+    drow_base = (UBYTE *)dst_buf + msg->destY * dst_pitch + msg->destX * 4;
+
+    /* Pick row iteration direction so overlapping in-buffer copies
+     * read each source row before it's overwritten by a dest row.
+     */
+    if (src_buf == dst_buf && msg->destY > msg->srcY)
+    {
+        y_start = msg->height - 1;
+        y_end   = -1;
+        y_step  = -1;
+    }
+    else
+    {
+        y_start = 0;
+        y_end   = msg->height;
+        y_step  = 1;
+    }
+
+    /* Same buffer, same row(s), dest right of source within its extent:
+     * rows alias byte-wise, need a reverse copy.
+     */
+    same_row_overlap = (src_buf == dst_buf
+                        && msg->destY == msg->srcY
+                        && msg->destX > msg->srcX
+                        && (ULONG)(msg->destX - msg->srcX) < msg->width);
+
+    /* No page flip here: desktop rendering is incremental read-modify-write
+     * and higher layers cache the framebuffer base, so flipping would expose
+     * a stale page. Page flipping stays in the gallium full-screen path,
+     * where Mesa renders a complete frame in its own BO.
+     */
+
+    /* Large copies between two uncached DMA-addressable buffers go through
+     * the DMA engine (uncached CPU reads dominate the NEON cost). Same-row
+     * horizontal overlap can't be done in 2D stride mode (rows always go
+     * forward), so it stays on the NEON reverse copy.
+     */
+    if (!same_row_overlap
+        && (row_bytes * msg->height) >= VC4_DMA_COPY_THRESHOLD
+        && vc4_bm_dma_base(cl, msg->src) == (ULONG)src_buf
+        && vc4_bm_dma_base(cl, msg->dest) == (ULONG)dst_buf
+        && src_buf && dst_buf)
+    {
+        if (vc4_dma_copy(XSD(cl), (ULONG)(IPTR)srow_base, src_pitch,
+                         (ULONG)(IPTR)drow_base, dst_pitch,
+                         row_bytes, msg->height, (y_step < 0)))
+            return;
+    }
+
+    for (y = y_start; y != y_end; y += y_step)
+    {
+        UBYTE *srow = srow_base + y * src_pitch;
+        UBYTE *drow = drow_base + y * dst_pitch;
+        if (same_row_overlap)
+            neon_copyline_rev(drow, srow, row_bytes);
+        else
+            neon_copyline(drow, srow, row_bytes);
+    }
+}
+
 OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
@@ -474,13 +582,17 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
         }
         else
         {
-            /* Non-displayable friends of our bitmaps are plain chunky bitmaps */
+            /* Displayable bitmaps and friends of ours go to the offscreen
+             * class: large 32bpp ones land in GPU memory, the rest in a
+             * plain ChunkyBM system-RAM buffer. */
             OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+            OOP_Class *frcl = friend ? OOP_OCLASS(friend) : NULL;
 
-            if (displayable || (friend && (OOP_OCLASS(friend) == XSD(cl)->vcsd_VideoCoreGfxOnBMClass)))
+            if (displayable || frcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass
+                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass)
             {
-                newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassID;
-                newbm_tags[0].ti_Data = (IPTR)CLID_Hidd_ChunkyBM;
+                newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+                newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOffBMClass;
             }
         }
 
@@ -491,7 +603,30 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
         object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg);
     }
     else
-        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    {
+        /* Lazy lookup: at InitLib time the disk FS and gallium framework
+         * aren't up. By the time CreatePipe calls HIDD_Gfx_CreateObject the
+         * disk is mounted and CLID_Hidd_Gallium is registered. */
+        if (!XSD(cl)->vcsd_basegallium)
+            XSD(cl)->vcsd_basegallium = OOP_FindClass(CLID_Hidd_Gallium);
+
+        if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
+        {
+            /* hidd.gallium.vc4 lives on the FS; load it on first request
+             * so its OOP class registers before OOP_NewObject. */
+            if (!XSD(cl)->vcsd_VC4GalliumLib)
+                XSD(cl)->vcsd_VC4GalliumLib = OpenLibrary("vc4gallium.hidd", 0);
+
+            if (XSD(cl)->vcsd_VC4GalliumLib)
+            {
+                /* Must match CLID_Hidd_Gallium_VC4 in vc4gallium_intern.h */
+                object = OOP_NewObject(NULL, (STRPTR)"hidd.gallium.vc4", msg->attrList);
+            }
+            /* else: object stays NULL; CreatePipe will use its softpipe fallback. */
+        }
+        else
+            object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
 
     return object;
 }
