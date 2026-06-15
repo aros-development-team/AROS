@@ -84,6 +84,23 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen,
     if (namelen == 0)
         return CopyLock(fl, lock, glob);
 
+    /* Strip a leading volume/assign specifier (e.g. "SYS:foo"). GetDeviceProc()
+     * has already resolved the prefix to this base lock, so the remainder must
+     * be taken relative to it */
+    {
+        LONG i;
+
+        for (i = 0; i < namelen && name[i] != ':'; i++);
+
+        if (i < namelen)
+        {
+            name += i + 1;
+            namelen -= i + 1;
+            if (namelen == 0)
+                return CopyLock(fl, lock, glob);
+        }
+    }
+
     /* If the base lock is a file, the name must either be empty (handled
      * above) or start with '/' (handled here) */
     if (fl != NULL && !(fl->gl->attr & ATTR_DIRECTORY))
