@@ -356,12 +356,19 @@ LLVM_COMPILER_RT_CMAKEBASE :=                                                   
   -DCOMPILER_RT_LIBRARY_INSTALL_DIR="lib/clang/$(LLVM_VERSION)/lib/aros" \
   -DCOMPILER_RT_LIBRARY_OUTPUT_DIR="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros"
 
+# Without COMPILER_RT_ARMHF_TARGET, compiler-rt tags its builtins with
+# __pcs__("aapcs"), forcing the soft-float return ABI even under
+# -mfloat-abi=hard, so hard-float callers read garbage from e.g. __floatundidf.
+ifneq (,$(findstring -mfloat-abi=hard,$(ISA_FLAGS)))
+LLVM_COMPILER_RT_EXTRA_CFLAGS := -DCOMPILER_RT_ARMHF_TARGET
+endif
+
 LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                                                                        \
   $(LLVM_COMPILER_RT_CMAKEBASE)                                                                                                         \
   -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU)-unknown-aros                                                                             \
-  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                                \
-  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                              \
-  -DCMAKE_ASM_FLAGS="$(LLVM_TARGET_FLAGS)"                                                                                              \
+  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                               \
+  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                             \
+  -DCMAKE_ASM_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                             \
   -DCMAKE_EXE_LINKER_FLAGS="-nodefaultlibs -nostartfiles $(AROS_LIB)/startup.o -L$(AROS_LIB) -lexec -larossupport -lamiga -lautoinit -Wl,--allow-multiple-definition" \
   -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)
 
