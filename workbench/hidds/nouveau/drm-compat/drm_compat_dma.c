@@ -132,15 +132,19 @@ long dma_fence_wait_timeout(struct dma_fence *fence, bool intr, unsigned long ti
         return timeout ? timeout : 1;
 
     unsigned int usecs = jiffies_to_usecs(timeout);
+    unsigned int pstep = 5; /* progressive sleep step in us */
 
     while (usecs > 0)
     {
-        unsigned long step = usecs > 2000 ? 2000 : usecs;
-        udelay(step);
-        usecs -= step;
+        unsigned int sleep = usecs > pstep ? pstep : usecs;
+        udelay(sleep);
+        usecs -= sleep;
 
         if (dma_fence_is_signaled(fence))
             return timeout;
+
+        if (pstep == 5) pstep = 20;
+        else if (pstep == 20) pstep = 40;
 
 #if 0
         if (intr && (SetSignal(0, 0) & SIGBREAKF_CTRL_C))
@@ -225,14 +229,20 @@ long dma_resv_wait_timeout_rcu(struct dma_resv *resv, bool wait_all,
         return timeout ? timeout : 1;
 
     unsigned int usecs = jiffies_to_usecs(timeout);
+    unsigned int pstep = 5; /* progressive sleep step in us */
 
     while (usecs > 0)
     {
-        unsigned long step = usecs > 2000 ? 2000 : usecs;
-        udelay(step);
-        usecs -= step;
+        unsigned long sleep = usecs > pstep ? pstep : usecs;
+        udelay(sleep);
+        usecs -= sleep;
+
         if (dma_resv_all_fences_signaled(resv, wait_all))
             return timeout;
+
+        if (pstep == 5) pstep = 20;
+        else if (pstep == 20) pstep = 40;
+
     }
 
     return 0;
