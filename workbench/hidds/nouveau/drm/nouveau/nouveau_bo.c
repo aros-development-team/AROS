@@ -560,12 +560,15 @@ nouveau_bo_sync_for_device(struct nouveau_bo *nvbo)
 	if (nvbo->force_coherent)
 		return;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	for (i = 0; i < ttm_dma->ttm.num_pages; i++)
 		dma_sync_single_for_device(drm->dev->dev,
 					   ttm_dma->dma_address[i],
 					   PAGE_SIZE, DMA_TO_DEVICE);
+#else
+ #if !defined(__x86_64__) && !defined(__i386__)
+ #error DMA<->CPU coherency
+ #endif
 #endif
 }
 
@@ -583,11 +586,14 @@ nouveau_bo_sync_for_cpu(struct nouveau_bo *nvbo)
 	if (nvbo->force_coherent)
 		return;
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	for (i = 0; i < ttm_dma->ttm.num_pages; i++)
 		dma_sync_single_for_cpu(drm->dev->dev, ttm_dma->dma_address[i],
 					PAGE_SIZE, DMA_FROM_DEVICE);
+#else
+ #if !defined(__x86_64__) && !defined(__i386__)
+ #error DMA<->CPU coherency
+ #endif
 #endif
 }
 
