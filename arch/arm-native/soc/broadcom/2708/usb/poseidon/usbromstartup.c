@@ -1,11 +1,11 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /* Very basic bootstrap for Poseidon in AROS kernel for enabling of USB booting and HID devices.
  * PsdStackloader should be started during startup-sequence nonetheless */
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
@@ -28,6 +28,28 @@ AROS_UFP3(static IPTR, usbromstartup_init,
     AROS_UFHA(BPTR, seglist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
+/* Force a resident-list library to be initialised (its lib_init runs and it
+ * gets added to SysBase->LibList). Needed because AROS's OpenLibrary only
+ * looks in LibList - it does not trigger InitResident on RTF_AUTOINIT
+ * residents that haven't been COLDSTART-iterated yet. */
+static void prewarm_library(STRPTR name, struct ExecBase *SysBase)
+{
+    if (FindName(&SysBase->LibList, name))
+        return;
+    {
+        struct Resident *res = FindResident(name);
+        if (res)
+        {
+            D(bug("[USBROMStartup] prewarm InitResident(\"%s\")\n", name));
+            InitResident(res, BNULL);
+        }
+        else
+        {
+            bug("[USBROMStartup] prewarm: %s not in resident list\n", name);
+        }
+    }
+}
+
 const struct Resident usbHook =
 {
     RTC_MATCHWORD,
@@ -36,7 +58,8 @@ const struct Resident usbHook =
     RTF_COLDSTART,
     41,
     NT_TASK,
-    35,
+    /* Run after intuition (residentpri 15) so poseidon.library is initialised. */
+    10,
     name,
     &version[5],
     (APTR)usbromstartup_init
@@ -57,6 +80,8 @@ AROS_UFH3(static IPTR, usbromstartup_init,
 
     D(bug("[USBROMStartup] Loading poseidon...\n"));
 
+    prewarm_library("poseidon.library", SysBase);
+
     if((ps = OpenLibrary("poseidon.library", 4)))
     {
         APTR msdclass;
@@ -66,12 +91,8 @@ AROS_UFH3(static IPTR, usbromstartup_init,
         D(bug("[USBROMStartup] Adding classes...\n"));
 
         psdAddClass("hub.class", 0);
-        if(!(psdAddClass("hid.class", 0)))
-        {
-            psdAddClass("bootmouse.class", 0);
-            psdAddClass("bootkeyboard.class", 0);
-        }
         msdclass = psdAddClass("massstorage.class", 0);
+        /* hid/bootmouse/bootkeyboard are loaded from disk by AddUSBClasses in Startup-Sequence */
 
         D(bug("[USBROMStartup] Added chipset drivers...\n"));
 

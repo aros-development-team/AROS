@@ -153,7 +153,7 @@ PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
 PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse i2c i2c-bcm2708 vc4gfx
-PKG_CLASSES   := USB/hid USB/hub USB/bootmouse USB/bootkeyboard USB/massstorage
+PKG_CLASSES   := USB/hub USB/massstorage
 
 %make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/$(ARM_BSP) \
     libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
