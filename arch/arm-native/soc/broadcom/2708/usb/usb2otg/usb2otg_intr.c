@@ -634,13 +634,26 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         tmp |= 1 << 16;   /* Set "do complete split" */
                         wr32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL), tmp);
                         USBUnit->hu_Channel[chan].hc_SplitCSplitPending = 1;
+                        /* Fresh CSPLIT sequence — reset the NYET retry window. */
+                        USBUnit->hu_Channel[chan].hc_CsplitRetry = 0;
+                        USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_CS;
 
                         if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                             usb2otg_remove_bulk_queue_duplicates(USBUnit, req, chan);
 
                         D(bug("[USB2OTG] Completing split transaction in interrupt: chan=%d intr=%04x SPLITCTRL=%08x\n",
                               chan, intr, tmp));
-                        FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+
+                        /*
+                         * Periodic INT split: issue the CSPLIT one microframe
+                         * later (delayed_channel[] ticks per SOF) so it lands in
+                         * the TT result window instead of hammering the same
+                         * uframe. Bulk keeps the immediate re-arm.
+                         */
+                        if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
+                            delayed_channel[chan] = 1;
+                        else
+                            FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                     }
                     else if ((do_split == USB2OTG_HCSPLT_CSPLIT) &&
                              (req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
@@ -714,7 +727,36 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         else
                         {
                             if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
-                                FNAME_DEV(StartChannel)(USBUnit, chan, 1);
+                            {
+                                /*
+                                 * CSPLIT NYET = TT has not finished the
+                                 * LS/FS transaction yet. Retry the CSPLIT
+                                 * one microframe later (delayed_channel
+                                 * ticks per SOF = per microframe in HS)
+                                 * rather than re-arming in the same uframe.
+                                 * Bound to ~8 uframes from the SSPLIT
+                                 * (FreeBSD DWC_OTG_TT_SLOT_MAX); past that
+                                 * the TT result window is gone, so requeue
+                                 * for the next interval.
+                                 */
+                                if (USBUnit->hu_Channel[chan].hc_CsplitRetry < 8)
+                                {
+                                    USBUnit->hu_Channel[chan].hc_CsplitRetry++;
+                                    delayed_channel[chan] = 1;
+                                }
+                                else
+                                {
+                                    ULONG interval = req->iouh_Interval;
+                                    usb2otg_halt_channel_preserve_char(chan);
+                                    if ((req->iouh_Flags & UHFF_SPLITTRANS) && interval < 2)
+                                        interval = 2;
+                                    ULONG next = (frnm + interval) & 0x7ff;
+                                    req->iouh_DriverPrivate1 = (APTR)((frnm << 16) | next);
+                                    ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
+                                    USBUnit->hu_Channel[chan].hc_Request = NULL;
+                                    req = NULL;
+                                }
+                            }
                             else
                                 delayed_channel[chan] = 16;
                         }
@@ -1676,6 +1718,25 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                 continue;
             }
 
+            /*
+             * SOF scheduler owns active periodic-split channels: a CSPLIT
+             * re-arm is pending within microframes (delayed_channel != 0),
+             * so the channel is not stuck. Defer — the watchdog's lost-IRQ
+             * recovery would otherwise race the SS->CS handoff and corrupt
+             * CompSplt. The sequencer's bounded retry/requeue is the backstop.
+             */
+            if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+                otg_Unit->hu_Channel[chan].hc_SplitState != USB2OTG_SPLIT_IDLE &&
+                delayed_channel[chan] != 0)
+            {
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&otg_Unit->hu_Lock);
+#endif
+                Enable();
+                otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+                continue;
+            }
+
             ULONG charbase = rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE));
 
             if (!(charbase & USB2OTG_HOSTCHAR_ENABLE))
@@ -2061,6 +2122,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         {
                             otg_Unit->hu_Channel[chan].hc_DeferCount++;
                             otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
+
                             D(
                                 {
                                     struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
