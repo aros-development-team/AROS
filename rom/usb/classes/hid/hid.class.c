@@ -902,7 +902,11 @@ AROS_UFH0(void, GM_UNIQUENAME(nHidTask))
                             {
                                 wacomgood = nParseWacom(nch, buf, buflen);
                             }
-                            if(!wacomgood)
+                            /*
+                             * A zero-length reply (USB ZLP / buflen=0)
+                             * means "device has nothing to report".
+                             */
+                            if(!wacomgood && buflen > 0)
                             {
                                 // if the parser failed, use standard methods
                                 if(nch->nch_UsesReportID)
@@ -7458,4 +7462,3 @@ LONG nEasyRequestA(struct NepHidBase *nh, STRPTR body, STRPTR gadgets, RAWARG pa
     return(EasyRequestArgs(NULL, &es, NULL, params));
 }
 /* \\\ */
-
