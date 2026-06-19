@@ -2,7 +2,7 @@
 #define AROS_M68K_CPU_H
 
 /*
-    Copyright © 1995-2016, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -108,7 +108,7 @@ do                                                       \
 #define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
 
 /* Prototypes */
-extern void _aros_not_implemented ();
+extern void _aros_not_implemented (char *);
 extern void aros_not_implemented ();
 
 /*
