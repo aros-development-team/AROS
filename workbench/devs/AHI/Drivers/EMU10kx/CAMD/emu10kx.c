@@ -51,10 +51,15 @@ static struct MidiDeviceData MidiDeviceData = {
     "emu10kx",
     "emu10kx CAMD MIDI driver " VERS,
     VERSION, REVISION,
-    gwInit,
+    // The CAMD gate stubs are generated from camd_drv.sfd and, on m68k,
+    // are prototyped as (void) since arguments are passed in registers.
+    // Cast them to the typed MidiDeviceData fields to match the ABI.
+    (BOOL (*)(APTR))gwInit,
     gwExpunge,
-    gwOpenPort,
-    gwClosePort,
+    (struct MidiPortData *(*)(struct MidiDeviceData *, LONG,
+                             ULONG (*)(APTR), void (*)(UWORD, APTR),
+                             APTR))gwOpenPort,
+    (void (*)(struct MidiDeviceData *, LONG))gwClosePort,
     4,        // For some braindamaged reason, camd.library V40 reads
     // this value BEFORE calling Init(). :-(
     1         // Use new-style if using camd.library V40
@@ -190,7 +195,7 @@ _ActivateXmit(APTR  userdata,
 }
 
 struct MidiPortData MidiPortData = {
-    gwActivateXmit
+    (void (*)(APTR, ULONG))gwActivateXmit
 };
 
 
@@ -222,7 +227,7 @@ _Init(struct ExecBase *sysbase)
 
 #ifdef __AROS__
     if(!set_call_funcs(SETNAME(INIT), 1, 1))
-        return NULL;
+        return FALSE;
 #endif
 
     EMU10kxBase = OpenLibrary("DEVS:AHI/emu10kx.audio", VERSION);
