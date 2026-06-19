@@ -5,8 +5,8 @@
  *
  * Based upon usergroup.library from AmiTCP/IP.
  *
- * Copyright © 2025 The AROS Dev Team.
- * Copyright © 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
+ * Copyright Â© 2025-2026 The AROS Dev Team.
+ * Copyright Â© 1993 AmiTCP/IP Group, <AmiTCP-Group@hut.fi>
  *                  Helsinki University of Technology, Finland.
  */
 
@@ -145,7 +145,7 @@ AROS_LH0(void, setutent,
             UserGroupBase->utentbuf = AllocVec(sizeof(*UserGroupBase->utent) * UTENTS, MEMF_CLEAR | MEMF_PUBLIC);
         if (UserGroupBase->utentbuf != NULL) {
             UserGroupBase->utent_left = 0;
-            if (UserGroupBase->utfile == NULL) {
+            if (UserGroupBase->utfile == BNULL) {
                 UserGroupBase->utfile = Open(_PATH_UTMP, MODE_READWRITE);
             } else {
                 Seek(UserGroupBase->utfile, 0, OFFSET_BEGINNING);
@@ -233,8 +233,8 @@ AROS_LH0(void, endutent,
     } else {
         // Multi-User ...
 
-        if (UserGroupBase->utfile != NULL) {
-            Close(UserGroupBase->utfile), UserGroupBase->utfile = NULL;
+        if (UserGroupBase->utfile != BNULL) {
+            Close(UserGroupBase->utfile), UserGroupBase->utfile = BNULL;
         }
     }
 
@@ -468,7 +468,7 @@ AROS_LH1(struct utmp *, getutsid,
 
             if (UserGroupBase->utentbuf == NULL) {
                 error = ENOMEM;
-            } else if (UserGroupBase->utfile == NULL) {
+            } else if (UserGroupBase->utfile == BNULL) {
                 error = ENOENT;
             } else {
                 LONG utslot = -1;
