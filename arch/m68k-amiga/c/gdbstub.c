@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: m68k-amiga gdb stub
  */
@@ -112,7 +112,7 @@
  * external low-level support routines
  */
 typedef void (*ExceptionHook)(int);   /* pointer to function with int parm */
-typedef void (*Function)();           /* pointer to a function */
+typedef void (*Function)(void);           /* pointer to a function */
 
 extern int DebugPutChar(register int x);   /* write a single character      */
 extern int DebugGetChar();   /* read and return a single char */
@@ -174,8 +174,7 @@ jmp_buf remcomEnv;
 
 #define BREAKPOINT() asm("   trap #1");
 
-int hex(ch)
-char ch;
+static int hex(char ch)
 {
   if ((ch >= 'a') && (ch <= 'f')) return (ch-'a'+10);
   if ((ch >= '0') && (ch <= '9')) return (ch-'0');
@@ -185,8 +184,7 @@ char ch;
 
 
 /* scan for the sequence $<data>#<checksum>     */
-void getpacket(buffer)
-char * buffer;
+static void getpacket(char *buffer)
 {
   unsigned char checksum;
   unsigned char xmitcsum;
@@ -243,8 +241,7 @@ char * buffer;
    This routine does not wait for a positive acknowledge.  */
 
 
-void putpacket(buffer)
-char * buffer;
+static void putpacket(char *buffer)
 {
   unsigned char checksum;
   int  count;
@@ -275,21 +272,23 @@ char  remcomOutBuffer[BUFMAX];
 static short error;
 
 
-void debug_error(format, parm)
-char * format;
-char * parm;
+static void debug_error(const char *format, ...)
 {
 #ifdef HAVE_STDIO
-  if (remote_debug) fprintf (stderr,format,parm);
+    if (remote_debug)
+    {
+        va_list ap;
+
+        va_start(ap, format);
+        vfprintf(stderr, format, ap);
+        va_end(ap);
+    }
 #endif
 }
 
 /* convert the memory pointed to by mem into hex, placing result in buf */
 /* return a pointer to the last char put in buf (null) */
-char* mem2hex(mem, buf, count)
-char* mem;
-char* buf;
-int   count;
+static char *mem2hex(char *mem, char *buf, int count)
 {
       int i;
       unsigned char ch;
@@ -304,10 +303,7 @@ int   count;
 
 /* convert the hex array pointed to by buf into binary to be placed in mem */
 /* return a pointer to the character AFTER the last byte written */
-char* hex2mem(buf, mem, count)
-char* buf;
-char* mem;
-int   count;
+static char *hex2mem(char *buf, char *mem, int count)
 {
       int i;
       unsigned char ch;
@@ -322,15 +318,15 @@ int   count;
 /* a bus error has occurred, perform a longjmp
    to return execution and allow handling of the error */
 
-void handle_buserror()
+static void handle_buserror(int unused)
 {
+  (void)unused;
   longjmp(remcomEnv,1);
 }
 
 /* this function takes the 68000 exception number and attempts to
    translate this number into a unix compatible signal value */
-int computeSignal( exceptionVector )
-int exceptionVector;
+static int computeSignal(int exceptionVector)
 {
   int sigval;
   switch (exceptionVector) {
