@@ -8,14 +8,20 @@ include $(SRCDIR)/config/aros.cfg
 #MM- workbench-devs-AHI : workbench-devs-AHI-subsystem AHI-drivers
 #MM- workbench-devs-AHI-quick : workbench-devs-AHI-subsystem-quick AHI-drivers-quick
 
-#MM- AHI-hosted-stubs : \
+#MM- AHI-raspi-armhf :  kernel-dma-bcm2708-includes
+#MM- AHI-raspi-arm :  kernel-dma-bcm2708-includes
+
+#MM- AHI-standalone-prereqs : \
+#MM                         AHI-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- AHI-emulation-prereqs : \
 #MM                         AHI-alsa-bridge-$(AROS_TARGET_ARCH) \
 #MM                         AHI-pulseaudio-bridge-$(AROS_TARGET_ARCH) \
 #MM                         AHI-WASAPI-bridge-$(AROS_TARGET_ARCH)
 
 #MM workbench-devs-AHI-subsystem : includes \
 #MM                         linklibs \
-#MM                         AHI-hosted-stubs \
+#MM                         AHI-$(FLAVOUR)-prereqs \
 #MM                         workbench-libs-muimaster-includes
 
 EXEDIR := $(AROSDIR)
