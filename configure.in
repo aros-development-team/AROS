@@ -22,6 +22,11 @@ AC_CONFIG_MACRO_DIR(scripts/autoconf/m4)
 export_newline="
 "
 
+dnl Accumulates non-fatal warnings about optional features that will be
+dnl missing from the build (see the AROS_CONFIG_WARNING macro). Shown to the
+dnl user once configuration has completed.
+CONFIG_WARNINGS=""
+
 CONFIG_DT=`date -u "+%d/%m/%Y %T"`
 AC_MSG_NOTICE([date/time (UTC)... $CONFIG_DT])
 
@@ -200,6 +205,9 @@ AROS_REQUIRED(gawk,$AWK)
 AROS_PROG(MMAKE,mmake)
 
 AC_PATH_PROG([CMAKE],[cmake])
+if test "x$CMAKE" = "x"; then
+    AROS_CONFIG_WARNING([cmake not found - target components built with the CMake build system (e.g. AVIF support in heic.datatype) will not be built])
+fi
 
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
@@ -2385,7 +2393,15 @@ if test "$NASM" != "no"; then
     have_nasm=yes
 else
     NASM=
-    CONFIG_WARNINGS+="NASM not found: AVIF support may not be available in heic.datatype"
+    have_nasm=no
+    dnl nasm is only used to assemble the libaom SIMD code that accelerates
+    dnl AVIF decoding in heic.datatype, and only on x86 targets. AVIF still
+    dnl decodes without it, just without SIMD acceleration.
+    case "$aros_target_cpu" in
+        i386|x86_64)
+            AROS_CONFIG_WARNING([nasm not found - AVIF decoding in heic.datatype will not be SIMD accelerated])
+            ;;
+    esac
 fi
 
 case "$target_bootloader" in
@@ -2419,6 +2435,7 @@ case "$target_bootloader" in
             AC_DEFINE([HAVE_LZMA], [1], [Define if liblzma is available])
           ], [
             have_lzma=no
+            AROS_CONFIG_WARNING([liblzma not found - the grub2 boot image will not be LZMA compressed])
           ])
         else
           have_lzma=no
@@ -2439,15 +2456,17 @@ case "$target_bootloader" in
         fi
 
         if test "x-$have_xorriso" != "x-yes" -o "x-$have_mtools" != "x-yes" ; then
-            CONFIG_WARNINGS+="XORISSO or MTOOLS not found: bootiso will not have EFI support enabled"
+            AROS_CONFIG_WARNING([xorriso and/or mtools not found - the boot ISO will not have EFI boot support])
         fi
 
         AC_CHECK_HEADERS([libelf.h], have_libelf_h=yes, have_libelf_h=no)
 
-        AC_CHECK_LIB([elf], [elf_version], have_liblelf_lib=yes, have_liblelf_lib=no)
+        AC_CHECK_LIB([elf], [elf_version], have_libelf_lib=yes, have_libelf_lib=no)
 
-        if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
+        if test "x-$have_libelf_h" = "x-yes" -a "x-$have_libelf_lib" = "x-yes" ; then
             have_libelf=yes
+        else
+            AROS_CONFIG_WARNING([libelf not found - EFI shim (secure boot) support will not be built for grub2])
         fi
         ;;
 
@@ -3695,7 +3714,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
       PKG_CHECK_MODULES([ALSA], [alsa >= 1.0.0],
         [AC_DEFINE([HAVE_ALSA], [1], [Define if ALSA is available])
          have_alsa=yes],
-        [have_alsa=no])
+        [have_alsa=no
+         AROS_CONFIG_WARNING([ALSA development files not found - the hosted ALSA audio driver will not be built])])
     ])
 
     if test "x-$have_alsa" = "x-yes" ; then
@@ -3726,12 +3746,16 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 dnl and they explicitly asked for it, bail out
                 AC_MSG_ERROR([X11 libs/headers not found, cannot build X11 hidd as requested])
             fi
+            dnl auto mode: just disable it, but let the user know
+            AROS_CONFIG_WARNING([X11 libraries/headers not found - the hosted X11 graphics driver will not be built])
 
         else
             dnl found it, setup the metatarget
             aros_target_options+="$export_newline""# Enable X11 Gfx Driver$export_newline""OPT_HOST_X11GFX               := yes$export_newline"
             if test "x-$host_feature_glx" != "x-no" ; then
                 aros_target_options+="$export_newline""# Enable X11 HostGL 3D Passthrough$export_newline""OPT_HOST_X11_HOSTGL           := yes$export_newline"
+            else
+                AROS_CONFIG_WARNING([GL/glx.h not found - 3D passthrough (HostGL) will not be available in the hosted X11 driver])
             fi
             ENABLE_X11=1
 
@@ -3799,6 +3823,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             else
                 dnl otherwise just disable it
                 DO_XSHM_SUPPORT="0"
+                if test "x-$x11_hidd_shm" != "x-no" ; then
+                    AROS_CONFIG_WARNING([X11 MIT-SHM extension not available - the hosted X11 driver will use slower screen transfers])
+                fi
             fi
 
 
@@ -3836,6 +3863,9 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
             else
                 dnl otherwise just disable it
                 DO_VIDMODE_SUPPORT="0"
+                if test "x-$x11_hidd_vidmode" != "x-no" ; then
+                    AROS_CONFIG_WARNING([X11 VidMode extension not available - fullscreen mode will not be available in the hosted X11 driver])
+                fi
             fi
         fi
     fi
@@ -3864,6 +3894,8 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
                 dnl and they explicitly asked for it, bail out
                 AC_MSG_ERROR([SDL libs/headers not found, cannot build SDL hidd as requested])
             fi
+            dnl auto mode: just disable it, but let the user know
+            AROS_CONFIG_WARNING([SDL libraries/headers not found - the hosted SDL graphics driver will not be built])
 
         else
             dnl found it, enable the build
@@ -4589,16 +4621,34 @@ fi
 # cmake helper
 AC_CONFIG_FILES(${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in)
 
-echo "$CONFIG_WARNINGS" > config.warnings
+# Record any optional features that will be missing so they can be shown to
+# the user once configuration has completed. Only create the file when there
+# is something to report.
+rm -f config.warnings
+if test "x$CONFIG_WARNINGS" != "x"; then
+    {
+        echo "The following optional features will NOT be available in this build,"
+        echo "because the host components they depend on were not found:"
+        echo ""
+        printf "%s" "$CONFIG_WARNINGS"
+        echo ""
+        echo "Install the missing components listed above and re-run configure to"
+        echo "enable these features."
+    } > config.warnings
+fi
 
 # At the end, add a final message
 AC_CONFIG_COMMANDS([postmsg], [
   echo ""
   echo "Configuration complete!"
   if test -f config.warnings; then
+    echo ""
+    echo "------------------------------------------------------------------------"
     cat config.warnings
+    echo "------------------------------------------------------------------------"
     rm -f config.warnings
   fi
+  echo ""
   echo "Now run 'make' to build the project."
   echo ""
 ])

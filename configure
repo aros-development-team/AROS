@@ -3498,6 +3498,8 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 export_newline="
 "
 
+CONFIG_WARNINGS=""
+
 CONFIG_DT=`date -u "+%d/%m/%Y %T"`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: date/time (UTC)... $CONFIG_DT" >&5
 printf "%s\n" "$as_me: date/time (UTC)... $CONFIG_DT" >&6;}
@@ -5505,6 +5507,10 @@ printf "%s\n" "no" >&6; }
 fi
 
 
+if test "x$CMAKE" = "x"; then
+    CONFIG_WARNINGS="${CONFIG_WARNINGS}  * cmake not found - target components built with the CMake build system (e.g. AVIF support in heic.datatype) will not be built
+"
+fi
 
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
@@ -7922,7 +7928,7 @@ printf %s "checking if Python's mako templates are installed... " >&6; }
 for ac_prog in python \
      python3 \
      python2 \
-                         python4.0                    python3.9                    python3.8                    python3.7                    python3.6                    python3.5                    python3.4                    python3.3                    python3.2                    python3.1                    python3.0                                                            python2.7                    python2.6                    python2.5                    python2.4                    python2.3                    python2.2                    python2.1                    python2.0                    python
+                         python4.0                    python3.9                    python3.8                    python3.7                    python3.6                    python3.5                    python3.4                    python3.3                    python3.2                    python3.1                    python3.0                                                            python2.7                    python2.6                    python2.5                    python2.4                    python2.3                    python2.2                    python2.1                    python2.0
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -11700,7 +11706,13 @@ if test "$NASM" != "no"; then
     have_nasm=yes
 else
     NASM=
-    CONFIG_WARNINGS+="NASM not found: AVIF support may not be available in heic.datatype"
+    have_nasm=no
+                case "$aros_target_cpu" in
+        i386|x86_64)
+            CONFIG_WARNINGS="${CONFIG_WARNINGS}  * nasm not found - AVIF decoding in heic.datatype will not be SIMD accelerated
+"
+            ;;
+    esac
 fi
 
 case "$target_bootloader" in
@@ -11817,12 +11829,16 @@ fi
 
 
             have_lzma=no
+            CONFIG_WARNINGS="${CONFIG_WARNINGS}  * liblzma not found - the grub2 boot image will not be LZMA compressed
+"
 
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
 
             have_lzma=no
+            CONFIG_WARNINGS="${CONFIG_WARNINGS}  * liblzma not found - the grub2 boot image will not be LZMA compressed
+"
 
 else
         LZMA_CFLAGS=$pkg_cv_LZMA_CFLAGS
@@ -11947,7 +11963,8 @@ fi
         fi
 
         if test "x-$have_xorriso" != "x-yes" -o "x-$have_mtools" != "x-yes" ; then
-            CONFIG_WARNINGS+="XORISSO or MTOOLS not found: bootiso will not have EFI support enabled"
+            CONFIG_WARNINGS="${CONFIG_WARNINGS}  * xorriso and/or mtools not found - the boot ISO will not have EFI boot support
+"
         fi
 
                for ac_header in libelf.h
@@ -12009,15 +12026,18 @@ fi
 printf "%s\n" "$ac_cv_lib_elf_elf_version" >&6; }
 if test "x$ac_cv_lib_elf_elf_version" = xyes
 then :
-  have_liblelf_lib=yes
+  have_libelf_lib=yes
 else case e in #(
-  e) have_liblelf_lib=no ;;
+  e) have_libelf_lib=no ;;
 esac
 fi
 
 
-        if test "x-$have_libelf_h" = "x-yes" -a "x-$have_liblelf_lib" = "x-yes" ; then
+        if test "x-$have_libelf_h" = "x-yes" -a "x-$have_libelf_lib" = "x-yes" ; then
             have_libelf=yes
+        else
+            CONFIG_WARNINGS="${CONFIG_WARNINGS}  * libelf not found - EFI shim (secure boot) support will not be built for grub2
+"
         fi
         ;;
 
@@ -18673,10 +18693,14 @@ fi
         echo "$ALSA_PKG_ERRORS" >&5
 
         have_alsa=no
+         CONFIG_WARNINGS="${CONFIG_WARNINGS}  * ALSA development files not found - the hosted ALSA audio driver will not be built
+"
 elif test $pkg_failed = untried; then
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
 printf "%s\n" "no" >&6; }
         have_alsa=no
+         CONFIG_WARNINGS="${CONFIG_WARNINGS}  * ALSA development files not found - the hosted ALSA audio driver will not be built
+"
 else
         ALSA_CFLAGS=$pkg_cv_ALSA_CFLAGS
         ALSA_LIBS=$pkg_cv_ALSA_LIBS
@@ -18951,11 +18975,16 @@ fi
                         if test "x-$x11_hidd" != "x-auto" ; then
                                 as_fn_error $? "X11 libs/headers not found, cannot build X11 hidd as requested" "$LINENO" 5
             fi
+                        CONFIG_WARNINGS="${CONFIG_WARNINGS}  * X11 libraries/headers not found - the hosted X11 graphics driver will not be built
+"
 
         else
                         aros_target_options+="$export_newline""# Enable X11 Gfx Driver$export_newline""OPT_HOST_X11GFX               := yes$export_newline"
             if test "x-$host_feature_glx" != "x-no" ; then
                 aros_target_options+="$export_newline""# Enable X11 HostGL 3D Passthrough$export_newline""OPT_HOST_X11_HOSTGL           := yes$export_newline"
+            else
+                CONFIG_WARNINGS="${CONFIG_WARNINGS}  * GL/glx.h not found - 3D passthrough (HostGL) will not be available in the hosted X11 driver
+"
             fi
             ENABLE_X11=1
 
@@ -19079,6 +19108,10 @@ fi
                                 as_fn_error $? "X11 has no support for shared memory, cannot enable it as requested" "$LINENO" 5
             else
                                 DO_XSHM_SUPPORT="0"
+                if test "x-$x11_hidd_shm" != "x-no" ; then
+                    CONFIG_WARNINGS="${CONFIG_WARNINGS}  * X11 MIT-SHM extension not available - the hosted X11 driver will use slower screen transfers
+"
+                fi
             fi
 
 
@@ -19162,6 +19195,10 @@ fi
                                 as_fn_error $? "X11 vidmode extension not available, cannot enable it as requested" "$LINENO" 5
             else
                                 DO_VIDMODE_SUPPORT="0"
+                if test "x-$x11_hidd_vidmode" != "x-no" ; then
+                    CONFIG_WARNINGS="${CONFIG_WARNINGS}  * X11 VidMode extension not available - fullscreen mode will not be available in the hosted X11 driver
+"
+                fi
             fi
         fi
     fi
@@ -19462,6 +19499,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam \
                         if test "x-$sdl_hidd" != "x-auto" ; then
                                 as_fn_error $? "SDL libs/headers not found, cannot build SDL hidd as requested" "$LINENO" 5
             fi
+                        CONFIG_WARNINGS="${CONFIG_WARNINGS}  * SDL libraries/headers not found - the hosted SDL graphics driver will not be built
+"
 
         else
                         aros_target_options+="$export_newline""# Enable SDL Gfx Driver$export_newline""OPT_HOST_SDLGFX               := yes$export_newline"
@@ -20078,7 +20117,21 @@ fi
 ac_config_files="$ac_config_files ${aros_targetcfg_dir}/conf.cmake:config/conf.cmake.in"
 
 
-echo "$CONFIG_WARNINGS" > config.warnings
+# Record any optional features that will be missing so they can be shown to
+# the user once configuration has completed. Only create the file when there
+# is something to report.
+rm -f config.warnings
+if test "x$CONFIG_WARNINGS" != "x"; then
+    {
+        echo "The following optional features will NOT be available in this build,"
+        echo "because the host components they depend on were not found:"
+        echo ""
+        printf "%s" "$CONFIG_WARNINGS"
+        echo ""
+        echo "Install the missing components listed above and re-run configure to"
+        echo "enable these features."
+    } > config.warnings
+fi
 
 # At the end, add a final message
 ac_config_commands="$ac_config_commands postmsg"
@@ -21473,9 +21526,13 @@ printf "%s\n" "$as_me: executing $ac_file commands" >&6;}
   echo ""
   echo "Configuration complete!"
   if test -f config.warnings; then
+    echo ""
+    echo "------------------------------------------------------------------------"
     cat config.warnings
+    echo "------------------------------------------------------------------------"
     rm -f config.warnings
   fi
+  echo ""
   echo "Now run 'make' to build the project."
   echo ""
  ;;

@@ -18,6 +18,17 @@ if test "$req_avail" = "no"; then
     AC_MSG_ERROR([$1 is required to build AROS. Please install and run configure again.])
 fi])
 
+dnl AROS_CONFIG_WARNING(message)
+dnl Records a non-fatal configuration warning describing an optional feature
+dnl that will be missing from the build because a host component was not found.
+dnl All recorded warnings are presented together at the end of the configure
+dnl run. Each message is shown on its own line. Only call this for features
+dnl that are actually used by the target currently being configured.
+dnl
+AC_DEFUN([AROS_CONFIG_WARNING],
+[CONFIG_WARNINGS="${CONFIG_WARNINGS}  * $1
+"])
+
 dnl AROS_PROG(var,prog,args)
 dnl Checks if prog is on the path. If it is, sets var to "prog args".
 dnl args is optional.
