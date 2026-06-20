@@ -653,6 +653,7 @@ HAVE_WASAPI
 HAVE_PULSEAUDIO
 HAVE_ALSA
 HAVE_OSS
+HAVE_DMA_H
 HAVE_OPENPCI
 HAVE_ASMIO
 AHI_BUILDHANDLER
@@ -3506,6 +3507,7 @@ top_builddir=$(pwd)
 
 
 
+
   # Find a good install program.  We prefer a C program (faster),
 # so one script is as good as another.  But avoid the broken or
 # incompatible versions:
@@ -5334,6 +5336,20 @@ fi
 
 done
 
+
+
+
+       for ac_header in proto/dma.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "proto/dma.h" "ac_cv_header_proto_dma_h" "$ac_includes_default"
+if test "x$ac_cv_header_proto_dma_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_PROTO_DMA_H 1" >>confdefs.h
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: DMA resource found - Raspberry Pi audio drivers will be built" >&5
+printf "%s\n" "DMA resource found - Raspberry Pi audio drivers will be built" >&6; }; HAVE_DMA_H=1
+fi
+
+done
 
 
 

@@ -25,6 +25,7 @@ VPATH           = @srcdir@
 
 HAVE_ASMIO      = @HAVE_ASMIO@
 HAVE_OPENPCI    = @HAVE_OPENPCI@
+HAVE_DMA_H      = @HAVE_DMA_H@
 
 HAVE_ALSA       = @HAVE_ALSA@
 HAVE_OSS        = @HAVE_OSS@
@@ -83,11 +84,13 @@ SUBDIRS		+= WASAPI
 endif
 
 #
-# Raspberry Pi audio drivers (ARM targets)
+# Raspberry Pi audio drivers (ARM targets, require the BCM2708 DMA resource includes)
 #
+ifneq ($(strip $(HAVE_DMA_H)),)
 ifeq ($(host_cpu),arm)
 SUBDIRS		+= RPiPWM
 SUBDIRS		+= RPiHDMI
+endif
 endif
 
 all:

@@ -323,6 +323,11 @@ AC_CHECK_HEADERS( libraries/openpci.h, HAVE_OPENPCI=1, AC_MSG_WARN( "libraries/o
 AC_SUBST(HAVE_ASMIO)
 AC_SUBST(HAVE_OPENPCI)
 
+dnl Checks for Raspberry Pi (BCM2708) DMA resource driver support header files.
+
+AC_CHECK_HEADERS( proto/dma.h, [ AC_MSG_RESULT(DMA resource found - Raspberry Pi audio drivers will be built); HAVE_DMA_H=1],)
+AC_SUBST(HAVE_DMA_H)
+
 dnl Checks for AROS hosted driver header files.
 
 AC_CHECK_HEADERS( proto/oss.h, [ AC_MSG_RESULT(Hosted OSS Driver will be built); HAVE_OSS=1],)

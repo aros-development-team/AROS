@@ -20,6 +20,9 @@
 /* Define to 1 if you have the <libraries/openpci.h> header file. */
 #undef HAVE_LIBRARIES_OPENPCI_H
 
+/* Define to 1 if you have the <proto/dma.h> header file. */
+#undef HAVE_PROTO_DMA_H
+
 /* Define to 1 if you have the <proto/oss.h> header file. */
 #undef HAVE_PROTO_OSS_H
 
