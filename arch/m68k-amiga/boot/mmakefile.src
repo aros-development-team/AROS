@@ -135,10 +135,11 @@ ROMLOC_rom := 0x0f80000
 FILES=start early debug mmu
 AFILES=rom_entry rom_init cpu_detect superstack_swap
 
-KLIBS   := exec aros dos utility oop expansion partition debug
+KLIBS   := exec aros dos utility oop expansion partition debug \
+           keymap mathffp mathieeesingbas lowlevel
 KDEVS   := timer input keyboard console trackdisk gameport audio
 KHNDLRS := con afs ram
-KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse p96gfx
+KHIDDS  := amigakbd amigamouse amigavideo ata_gayle gfx hiddclass inputclass keyboard mouse
 KRSRCS  := battclock kernel processor task lddemon dosboot cia potgo disk FileSystem misc shell card bootloader
 KHOOKS  := diag romboot
 
@@ -159,12 +160,12 @@ $(GENDIR)/boot/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
-            mathffp mathieeesingbas freeanim lowlevel nonvolatile nvdisk \
+KLIBS   :=  graphics layers intuition gadtools icon workbench \
+            freeanim nonvolatile nvdisk \
             setpatch
 KDEVS   := cd ata
 KHNDLRS := cdrom
-KHIDDS  := bus storage system
+KHIDDS  := bus storage system p96gfx
 KRSRCS  := shellcommands workbook wbtag
 KHOOKS  := alert
 
