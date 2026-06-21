@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define PROTOTYPES
@@ -739,13 +739,15 @@ static int write_hunkrelocs(int hunk_fd, struct hunkheader **hh, int h)
             if (hh[h]->relreloc[count].shid != shid)
                 break;
         count -= i;
-#if (0)            
-        if (h == shid) {
+        /* PC-relative references within the same hunk are load-address
+         * invariant, so they need no relocation entry. Discard them. This
+         * also avoids the 16-bit HUNK_RELRELOC32 offset limit overflowing
+         * once a single hunk grows beyond 64KB. */
+        if (hh[h]->hunk == hh[shid]->hunk) {
             D(bug("RELRELOC32 within one hunk. Discarding...\n"));
             i+=count;
             continue;
         }
-#endif
         if (count > 65535)
         {
             bug("RELRELOC32 count exceeds 65535!\n");
