@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 
     Desc: 32-bit bootstrap code used to boot the 64-bit AROS kernel.
 */
@@ -410,6 +410,18 @@ int ParseCmdLine(const char *cmdline)
         tag->ti_Tag  = KRN_CmdLine;
         tag->ti_Data = KERNEL_OFFSET | (unsigned long)cmdline;
         tag++;
+
+        /*
+         * An explicit "novesa" request means the user wants the native VGA
+         * driver rather than the bootloader framebuffer. Pass on no framebuffer
+         * or VBE mode information, so the VESA driver bows out (its
+         * initVesaGfxHW() finds no BL_Video info) and vgagfx is selected.
+         * This matters under Multiboot2, where GRUB always hands over a linear
+         * framebuffer (the bootstrap header requests one for EFI support), which
+         * would otherwise force the VESA driver to always be used.
+         */
+        if (strstr(cmdline, "novesa"))
+            return 0;
 
         if (vesa)
         {
