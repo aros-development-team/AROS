@@ -34,8 +34,16 @@ AROS_LH0(void, CacheClearU,
 
     /* When called the first time, this patches up the
      * Exec syscall table to directly point to the right routine.
-     * NOTE: We may have been originally called from SetFunction()
-     * We must clear caches before calling SetFunction()
+     *
+     * NOTE: We must NOT call 'func' directly. The assembler cache routines
+     * expect the library base in A6, but a plain C call through a function
+     * pointer lets the compiler (observed with GCC 16) allocate that pointer
+     * into A6 itself, passing a bogus base. The routine would then execute
+     * 'jmp Supervisor(A6)' through a garbage vector and the machine hangs
+     * (68040 cpusha) or crashes (68020 returns to an odd address).
+     *
+     * So install the routine first and then invoke it through the freshly
+     * patched library vector, which always loads A6 = SysBase.
      */
 
     Disable();
@@ -52,9 +60,12 @@ AROS_LH0(void, CacheClearU,
         /* Everybody else (68000, 68010) */
         func = AROS_SLIB_ENTRY(CacheClearU_00, Exec, LVOCacheClearU);
     }
-    func();
     SetFunction((struct Library *)SysBase, -LVOCacheClearU * LIB_VECTSIZE, func);
     Enable();
+
+    /* Now perform the actual cache clear through the patched library vector
+     * (A6 = SysBase). SetFunction() above already invoked it once internally. */
+    CacheClearU();
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearU */

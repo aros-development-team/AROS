@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: CacheClearE() - Clear the caches with extended control.
 */
@@ -45,12 +45,15 @@ AROS_LH3(void, CacheClearE,
         /* Everybody else (68000, 68010) */
         func = AROS_SLIB_ENTRY(CacheClearE_00, Exec, LVOCacheClearE);
     }
-    AROS_UFC3NR(void, func,
-        AROS_UFCA(APTR, address, A0),
-        AROS_UFCA(ULONG, length, D0),
-        AROS_UFCA(ULONG, caches, D1));
     SetFunction((struct Library *)SysBase, -LVOCacheClearE * LIB_VECTSIZE, func);
     Enable();
+
+    /* Invoke through the patched library vector so the library base is passed
+     * in A6. A direct call (bare func() or AROS_UFC) lets the compiler
+     * (GCC 16) allocate the function pointer into A6, clobbering SysBase; the
+     * assembler routine then runs 'jmp Supervisor(A6)' through a garbage
+     * vector and the machine traps. */
+    CacheClearE(address, length, caches);
 
     AROS_LIBFUNC_EXIT
 } /* CacheClearE */
