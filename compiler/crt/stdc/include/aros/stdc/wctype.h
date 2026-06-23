@@ -1,7 +1,7 @@
 #ifndef _STDC_WCTYPE_H_
 #define _STDC_WCTYPE_H_
 /*
-    Copyright © 2020-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 2020-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard C Library: Extended multibyte and wide-character classification and mapping utilities.
@@ -22,26 +22,27 @@ extern "C" {
 #define WCTRANS_TOUPPER    2
 
 /* Classification bitmask flags                     */
-/* Wide character classification flags for wctype_t */
+/* Wide character classification flags for wctype_t. */
+/* These mirror the narrow <ctype.h> _ctype_* bit layout so the generated  */
+/* classification table (see tools/genctbl) can be shared and stays        */
+/* consistent between the narrow and wide character routines.              */
 #define _WCTYPE_UPPER    0x0001  /* Uppercase letter */
 #define _WCTYPE_LOWER    0x0002  /* Lowercase letter */
-#define _WCTYPE_ALPHA    (_WCTYPE_UPPER | _WCTYPE_LOWER)
+#define _WCTYPE_ALPHA    0x0004  /* Alphabetic letter (any cased or uncased) */
+#define _WCTYPE_DIGIT    0x0008  /* Decimal digit */
+#define _WCTYPE_XDIGIT   0x0010  /* Hexadecimal digit */
+#define _WCTYPE_SPACE    0x0020  /* Whitespace (space, tab, newline, etc.) */
+#define _WCTYPE_PRINT    0x0040  /* Printable characters (including space) */
+#define _WCTYPE_GRAPH    0x0080  /* Visible characters (not space) */
+#define _WCTYPE_BLANK    0x0100  /* Space or tab */
+#define _WCTYPE_CNTRL    0x0200  /* Control character */
+#define _WCTYPE_PUNCT    0x0400  /* Punctuation */
 
-#define _WCTYPE_DIGIT    0x0004  /* Decimal digit */
-#define _WCTYPE_ALNUM    (_WCTYPE_ALPHA | _WCTYPE_DIGIT)
-
-#define _WCTYPE_SPACE    0x0008  /* Whitespace (space, tab, newline, etc.) */
-#define _WCTYPE_PUNCT    0x0010  /* Punctuation */
-#define _WCTYPE_CNTRL    0x0020  /* Control character */
-#define _WCTYPE_BLANK    0x0040  /* Space or tab */
-#define _WCTYPE_XDIGIT   0x0080  /* Hexadecimal digit */
-
-#define _WCTYPE_GRAPH    0x0100  /* Visible characters (not space) */
-#define _WCTYPE_PRINT    0x0200  /* Printable characters (including space) */
+#define _WCTYPE_ALNUM    (_WCTYPE_ALPHA | _WCTYPE_DIGIT)  /* Letter or digit */
 
 /* Future-proofing: Reserved flags */
-#define _WCTYPE_RESERVED1 0x0400
-#define _WCTYPE_RESERVED2 0x0800
+#define _WCTYPE_RESERVED1 0x0800
+#define _WCTYPE_RESERVED2 0x1000
 
 #define _istype(c, type) \
     ((*__wctype_b_ptr)[(unsigned char)(c)] & (unsigned short)(type))

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function ungetc().
 */
@@ -52,6 +52,10 @@
 {
     /* Note: changes here might require changes in vfscanf.c!! */
 
+    /* If c equals EOF the operation fails and the stream is unchanged. */
+    if (c == EOF)
+        return EOF;
+
     if (c < -1)
         c = (unsigned int)c;
 
@@ -68,6 +72,11 @@
             stream->flags |= __STDCIO_STDIO_EOF;
 
         c = EOF;
+    }
+    else
+    {
+        /* A successful ungetc clears the end-of-file indicator (C99 7.21.7.10) */
+        stream->flags &= ~__STDCIO_STDIO_EOF;
     }
 
     return c;

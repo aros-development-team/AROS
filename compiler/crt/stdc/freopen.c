@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 
     C99 function freopen().
 */
@@ -8,6 +8,7 @@
 #include <stdlib.h>
 
 #include "__stdio.h"
+#include "__stdcio_intbase.h"
 
 /*****************************************************************************
 
@@ -57,14 +58,42 @@
 
     if (path != NULL)
     {
+        struct StdCIOIntBase *StdCIOBase =
+            (struct StdCIOIntBase *)__aros_getbase_StdCIOBase();
+        FILE *stream2;
+        struct MinNode savednode;
+        int keepflags;
+
+        /* First close the currently associated file (as if by fclose());
+           per C99 any failure to close is ignored. */
         if (!(stream->flags & __STDCIO_STDIO_DONTCLOSE))
             Close(stream->fh);
-        FILE *stream2 = fopen(path, mode);
-        int dontfree = stream->flags & __STDCIO_STDIO_DONTFREE;
+
+        stream2 = fopen(path, mode);
+        if (!stream2)
+        {
+            /* The open failed. The old file is already closed, so leave the
+               stream in a defined, unusable state and report failure. */
+            stream->fh = (BPTR)NULL;
+            stream->flags = __STDCIO_STDIO_ERROR;
+            return NULL;
+        }
+
+        /* Transfer the freshly opened state onto the caller's stream, but
+           preserve the caller stream's own list node and its DONTFREE/
+           DONTCLOSE attributes (e.g. when reopening stdin/stdout/stderr). */
+        savednode = stream->node;
+        keepflags = stream->flags & (__STDCIO_STDIO_DONTFREE | __STDCIO_STDIO_DONTCLOSE);
+
         *stream = *stream2;
-        stream->flags |= dontfree;
+        stream->node = savednode;
+        stream->flags |= keepflags;
+
+        /* fopen() linked stream2 into the stdcio file list and allocated it
+           from the stream pool; unlink and release it (its open handle now
+           belongs to stream). */
         Remove((struct Node *)stream2);
-        free(stream2);
+        FreePooled(StdCIOBase->streampool, stream2, sizeof(FILE));
     }
     else
     {
@@ -74,8 +103,10 @@
         if (l2 == 'b') l2 = mode[2];
         hasplus = (l2 == '+');
 
-        /* Keep some flags; clear the rest */
-        stream->flags &= ~(__STDCIO_STDIO_TMP | __STDCIO_STDIO_DONTCLOSE | __STDCIO_STDIO_DONTFREE);
+        /* Clear EOF/error indicators and the previous access-mode bits,
+           keeping only the stream's lifetime attributes. */
+        stream->flags &= ~(__STDCIO_STDIO_TMP | __STDCIO_STDIO_RDWR |
+            __STDCIO_STDIO_EOF | __STDCIO_STDIO_ERROR);
 
         /* Set mode */
         if (hasplus)

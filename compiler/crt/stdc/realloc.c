@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function realloc().
 */
@@ -53,6 +53,14 @@
 
     if (!oldmem)
         return malloc (size);
+
+    /* C allows realloc(ptr, 0) to free ptr; do so and return NULL, which is
+       the behaviour most callers expect (and matches the historical idiom). */
+    if (size == 0)
+    {
+        free (oldmem);
+        return NULL;
+    }
 
     mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
     oldsize = *((size_t *)mem);

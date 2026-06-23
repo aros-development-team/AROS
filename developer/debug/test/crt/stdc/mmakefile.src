@@ -42,6 +42,14 @@ STDCPRINTTESTFILES := \
 
 CUNITSTDCTESTFILES := \
     cunit-crt-types \
+    cunit-crt-ctype \
+    cunit-crt-string-c89 \
+    cunit-crt-string-posix \
+    cunit-crt-strto-c89 \
+    cunit-crt-strto-c99 \
+    cunit-crt-stdlib-c89 \
+    cunit-crt-stdlib-c99 \
+    cunit-crt-stdlib-c11 \
     cunit-crt-wchar \
     cunit-crt-wctype \
     cunit-crt-fileseek

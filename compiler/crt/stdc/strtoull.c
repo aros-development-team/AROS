@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strtoull().
 */
@@ -80,9 +80,10 @@
 
 ******************************************************************************/
 {
+    const char         *nptrsave = str;
     unsigned long long  val = 0;
     int                 digit;
-    char                c = 0;
+    int                 neg = 0;
     unsigned long long  cutoff;
     int                 cutlim;
     int                 any;
@@ -98,90 +99,87 @@
         return 0;
     }
 
-    while (isspace (*str))
+    while (isspace ((unsigned char)*str))
         str ++;
 
-    if (*str)
+    /* Optional sign */
+    if (*str == '+')
+        str++;
+    else if (*str == '-')
     {
-        if (*str == '+' || *str == '-')
-            c = *str ++;
+        neg = 1;
+        str++;
+    }
 
-        /* Assume base ? */
-        if (base == 0 || base == 16)
-        {
-            if (*str == '0') /* Base 8 or 16 */
-            {
-                str++;
-                if (*str == 'x' || *str == 'X')
-                {
-                    base = 16;
-                    str++;
-                }
-                else if(base == 0)
-                    base = 8;
-            }
-            else if(base == 0) /* Any other digit: Base 10 (decimal) */
-                base = 10;
-        }
+    /* Optional base prefix. Only consume a "0x"/"0X" prefix when it is
+       actually followed by a hexadecimal digit; otherwise the leading '0'
+       is converted as an ordinary digit by the loop below. */
+    if ((base == 0 || base == 16) && str[0] == '0' &&
+        (str[1] == 'x' || str[1] == 'X') && isxdigit((unsigned char)str[2]))
+    {
+        str += 2;
+        base = 16;
+    }
+    if (base == 0)
+        base = (str[0] == '0') ? 8 : 10;
+
+    /*
+        Conversion loop, derived from FreeBSD's src/lib/libc/stdlib/strtoull.c
+    */
+    cutoff = (unsigned long long)ULLONG_MAX / (unsigned long long)base;
+    cutlim = (unsigned long long)ULLONG_MAX % (unsigned long long)base;
+    val = 0;
+    any = 0;
+
+    for ( ; *str; str++)
+    {
+        digit = (unsigned char)*str;
+
+        if (digit >= '0' && digit <= '9')
+            digit -= '0';
+        else if (digit >= 'A' && digit <= 'Z')
+            digit -= 'A' - 10;
+        else if (digit >= 'a' && digit <= 'z')
+            digit -= 'a' - 10;
+        else
+            break;
+
+        if (digit >= base)
+            break;
 
         /*
-            Conversion loop, from FreeBSD's src/lib/libc/stdlib/strtoull.c
-
-            The previous AROS loop was
-            a) inefficient - it did a division each time around.
-            b) buggy - it returned the wrong value in endptr on overflow.
+            any < 0 when we have overflowed. We still need to find the
+            end of the subject sequence
         */
-        cutoff = (unsigned long long)ULLONG_MAX / (unsigned long long)base;
-        cutlim = (unsigned long long)ULLONG_MAX % (unsigned long long)base;
-        val = 0;
-        any = 0;
-
-        while (*str)
+        if (any < 0 || val > cutoff || (val == cutoff && (unsigned)digit > (unsigned)cutlim))
         {
-            digit = *str;
-
-            if (!isascii(digit))
-                break;
-
-            if (isdigit(digit))
-                digit -= '0';
-            else if (isalpha(digit))
-                digit -= isupper(digit) ? 'A' - 10 : 'a' - 10;
-            else
-                break;
-
-            if (digit >= base)
-                break;
-
-            /*
-                any < 0 when we have overflowed. We still need to find the
-                end of the subject sequence
-            */
-            if (any < 0 || val > cutoff || (val == cutoff && digit > cutlim))
-            {
-                any = -1;
-            }
-            else
-            {
-                any = 1;
-                val = (val * base) + digit;
-            }
-
-            str++;
+            any = -1;
         }
-
-        /* Range overflow */
-        if (any < 0)
+        else
         {
-            val = ULLONG_MAX;
-#ifndef STDC_STATIC
-            errno = ERANGE;
-#endif
+            any = 1;
+            val = (val * base) + digit;
         }
-
-        if (c == '-')
-            val = -val;
     }
+
+    /* Range overflow */
+    if (any < 0)
+    {
+        val = ULLONG_MAX;
+#ifndef STDC_STATIC
+        errno = ERANGE;
+#endif
+    }
+    else if (any == 0)
+    {
+        /* No digits were converted: store the original nptr (C99 7.22.1.4). */
+        str = nptrsave;
+    }
+
+    /* Negate (also on overflow) - strtoll() relies on this to detect a
+       negative overflow. */
+    if (neg)
+        val = -val;
 
     if (endptr)
         *endptr = (char *)str;

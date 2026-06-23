@@ -31,6 +31,14 @@ If NOT WARN
     Execute S/Test cunit/hidds/gfx/cunit-convertpixels
 
     ; Perform "stdc.library" unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-ctype
+    Execute S/Test cunit/crt/stdc/cunit-crt-string-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-string-posix
+    Execute S/Test cunit/crt/stdc/cunit-crt-strto-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-strto-c99
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c99
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c11
 
     ; Perform basic math unit tests...
     Execute S/Test cunit/crt/stdc/math/cunit-crt-math
@@ -38,8 +46,14 @@ If NOT WARN
     ; Perform complex math unit tests...
     Execute S/Test cunit/crt/stdc/math/cunit-crt-complexmath
 
+    ; Perform long double math unit tests...
+    Execute S/Test cunit/crt/stdc/math/cunit-crt-ldmath
+
     ; Perform wchar/multibyte unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-wchar
+
+    ; Perform wctype unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-wctype
 
     ; Perform basic "stdcio.library" unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-fileseek

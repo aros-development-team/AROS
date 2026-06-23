@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function dup2().
 */
@@ -93,13 +93,18 @@
     newfdesc->fcb = oldfdesc->fcb;
 
     /* Put new FD into its slot (and deallocate any FD previously there) */
-    newfd =__getfdslot(newfd);
-    if (newfd != -1)
+    int gotfd = __getfdslot(newfd);
+    if (gotfd == -1)
     {
-        newfdesc->fcb->opencount++;
-        __setfdesc(newfd, newfdesc);
+        /* Reservation failed: release the descriptor we just allocated so it
+           is not leaked. errno was set by __getfdslot(). */
+        __free_fdesc(newfdesc);
+        return -1;
     }
 
-    return newfd;
+    newfdesc->fcb->opencount++;
+    __setfdesc(gotfd, newfdesc);
+
+    return gotfd;
 }
 

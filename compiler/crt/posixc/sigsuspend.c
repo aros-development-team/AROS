@@ -6,6 +6,9 @@
 
 #include "__posixc_intbase.h"
 
+#include <proto/exec.h>
+#include <dos/dos.h>
+
 #include <string.h>
 #include <errno.h>
 
@@ -33,9 +36,10 @@
         after a signal handler) or EFAULT (bad pointer).
 
     NOTES
-        Since AROS does not deliver asynchronous signals, this function
-        sets the temporary mask, then immediately returns EINTR to
-        avoid blocking forever.
+        AROS has no asynchronous POSIX signal delivery. To still provide a
+        genuine suspend (rather than returning immediately), this blocks on
+        the task's CTRL-C break signal and translates a received break into
+        SIGINT when SIGINT is not blocked by the temporary mask.
 
     EXAMPLE
 
@@ -50,6 +54,7 @@
 {
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
+    sigset_t oldmask;
 
     if (!mask)
     {
@@ -57,17 +62,33 @@
         return -1;
     }
 
-    if (PosixCBase)
+    if (!PosixCBase)
     {
-        sigset_t oldmask;
-
-        /* Save current mask, apply temporary mask */
-        memcpy(&oldmask, &PosixCBase->sigmask, sizeof(sigset_t));
-        memcpy(&PosixCBase->sigmask, mask, sizeof(sigset_t));
-
-        /* Restore the original mask */
-        memcpy(&PosixCBase->sigmask, &oldmask, sizeof(sigset_t));
+        errno = EINVAL;
+        return -1;
     }
+
+    /* Atomically install the temporary signal mask. */
+    memcpy(&oldmask, &PosixCBase->sigmask, sizeof(sigset_t));
+    memcpy(&PosixCBase->sigmask, mask, sizeof(sigset_t));
+
+    /* Suspend until the task is broken with CTRL-C. Deliver SIGINT (under the
+       temporary mask) when it is not blocked, then return. A CTRL-C always
+       ends the wait so the call can never hang indefinitely. */
+    for (;;)
+    {
+        ULONG sigs = Wait(SIGBREAKF_CTRL_C);
+
+        if (sigs & SIGBREAKF_CTRL_C)
+        {
+            if (!sigismember(&PosixCBase->sigmask, SIGINT))
+                raise(SIGINT);
+            break;
+        }
+    }
+
+    /* Restore the previous mask before returning. */
+    memcpy(&PosixCBase->sigmask, &oldmask, sizeof(sigset_t));
 
     /* sigsuspend always returns -1 with EINTR */
     errno = EINTR;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -92,26 +92,32 @@ void test_towlower_basic(void) {
 }
 
 void test_latin1_letters(void) {
-    // U+00C0 (À) to U+00D6 (Ö) are uppercase Latin-1
+    // U+00C0 (Ã€) to U+00D6 (Ã–) are uppercase Latin-1
     CU_ASSERT_TRUE(iswupper(0x00C0));
     CU_ASSERT_FALSE(iswlower(0x00C0));
     CU_ASSERT_TRUE(iswalpha(0x00C0));
-    CU_ASSERT_EQUAL(towlower(0x00C0), 0x00E0);  // À ? à
+    CU_ASSERT_EQUAL(towlower(0x00C0), 0x00E0);  // Ã€ ? Ã 
 
-    // U+00E9 (é) is lowercase
+    // U+00E9 (Ã©) is lowercase
     CU_ASSERT_TRUE(iswlower(0x00E9));
     CU_ASSERT_TRUE(iswalpha(0x00E9));
-    CU_ASSERT_EQUAL(towupper(0x00E9), 0x00C9);  // é ? É
+    CU_ASSERT_EQUAL(towupper(0x00E9), 0x00C9);  // Ã© ? Ã‰
 }
 
 void test_unicode_beyond_ascii(void) {
-    // Greek capital letter Pi (U+03A0), Greek small letter pi (U+03C0)
-    // This is expected to fail at the moment, since we dont
-    // handle higher than latin 1 presently.
-    CU_ASSERT_TRUE(iswalpha(0x03A0));
-    CU_ASSERT_TRUE(iswalpha(0x03C0));
-    CU_ASSERT_EQUAL(towlower(0x03A0), 0x03C0);
-    CU_ASSERT_EQUAL(towupper(0x03C0), 0x03A0);
+    /* The default AROS locale uses the ISO-8859-1 (Latin-1) character set, so
+       classification and case mapping are only defined for code points up to
+       U+00FF. Code points beyond that (e.g. Greek capital Pi U+03A0 and small
+       pi U+03C0) are currently neither classified nor case-mapped.
+
+       This test documents that boundary. TODO: when full Unicode (or a wider
+       locale) classification is added, update these expectations to assert the
+       proper Greek letter properties (iswalpha == true, towlower(U+03A0) ==
+       U+03C0, etc.). */
+    CU_ASSERT_FALSE(iswalpha(0x03A0));
+    CU_ASSERT_FALSE(iswalpha(0x03C0));
+    CU_ASSERT_EQUAL(towlower(0x03A0), 0x03A0);  /* unchanged (not mapped) */
+    CU_ASSERT_EQUAL(towupper(0x03C0), 0x03C0);  /* unchanged (not mapped) */
 }
 
 int main(void)

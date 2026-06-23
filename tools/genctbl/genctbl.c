@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
 	Desc: Generates .ctbl files from unicode data.
 */
@@ -14,12 +14,19 @@
 #define CTBL_MAGIC "CTBL"
 #define CTBL_VERSION 1
 
-#define FLAG_UPPER  0x0001
-#define FLAG_LOWER  0x0002
-#define FLAG_ALPHA  0x0004
-#define FLAG_DIGIT  0x0008
-#define FLAG_SPACE  0x0010
-#define FLAG_PRINT  0x0020
+/* These MUST match the _WCTYPE_* flags in compiler/crt/stdc/include/aros/stdc/wctype.h
+   (and the narrow _ctype_* flags they mirror). */
+#define FLAG_UPPER   0x0001
+#define FLAG_LOWER   0x0002
+#define FLAG_ALPHA   0x0004
+#define FLAG_DIGIT   0x0008
+#define FLAG_XDIGIT  0x0010
+#define FLAG_SPACE   0x0020
+#define FLAG_PRINT   0x0040
+#define FLAG_GRAPH   0x0080
+#define FLAG_BLANK   0x0100
+#define FLAG_CNTRL   0x0200
+#define FLAG_PUNCT   0x0400
 
 struct CharsetTables {
     uint16_t classification[CHARSET_TABLE_SIZE];
@@ -27,24 +34,54 @@ struct CharsetTables {
     uint8_t to_lower[CHARSET_TABLE_SIZE];
 };
 
-static uint16_t classification_flags_from_category(const char *cat) {
+static uint16_t classification_flags_from_category(unsigned int cp, const char *cat) {
     uint16_t flags = 0;
+    int is_space_sep = (strcmp(cat, "Zs") == 0 || strcmp(cat, "Zl") == 0 ||
+                        strcmp(cat, "Zp") == 0);
+    int is_other = (cat[0] == 'C'); /* Cc, Cf, Cs, Co, Cn */
 
-    if (strcmp(cat, "Lu") == 0) {
+    /* Letters */
+    if (strcmp(cat, "Lu") == 0)
         flags |= FLAG_UPPER | FLAG_ALPHA;
-    } else if (strcmp(cat, "Ll") == 0) {
+    else if (strcmp(cat, "Ll") == 0)
         flags |= FLAG_LOWER | FLAG_ALPHA;
-    } else if (strcmp(cat, "Nd") == 0) {
-        flags |= FLAG_DIGIT;
-    } else if (strcmp(cat, "Zs") == 0) {
-        flags |= FLAG_SPACE;
-    } else if (cat[0] == 'L') {
+    else if (cat[0] == 'L')         /* Lt, Lm, Lo */
         flags |= FLAG_ALPHA;
-    }
 
-    if (cat[0] != 'C') {
+    /* Decimal digits */
+    if (strcmp(cat, "Nd") == 0)
+        flags |= FLAG_DIGIT;
+
+    /* Hexadecimal digits (ASCII only) */
+    if ((cp >= '0' && cp <= '9') || (cp >= 'A' && cp <= 'F') ||
+        (cp >= 'a' && cp <= 'f'))
+        flags |= FLAG_XDIGIT;
+
+    /* Whitespace: Unicode separators plus the standard C whitespace control
+       characters (which UnicodeData lists as category Cc). */
+    if (is_space_sep || cp == '\t' || cp == '\n' || cp == '\v' ||
+        cp == '\f' || cp == '\r')
+        flags |= FLAG_SPACE;
+
+    /* Blank: space and horizontal tab */
+    if (cp == ' ' || cp == '\t')
+        flags |= FLAG_BLANK;
+
+    /* Control characters */
+    if (strcmp(cat, "Cc") == 0)
+        flags |= FLAG_CNTRL;
+
+    /* Punctuation */
+    if (cat[0] == 'P')
+        flags |= FLAG_PUNCT;
+
+    /* Printable / graphic. A control or unassigned character is neither.
+       The space character is printable but not graphic; every other visible
+       (non-separator) character is both. */
+    if (!is_other && !is_space_sep && cp != ' ')
+        flags |= FLAG_GRAPH | FLAG_PRINT;
+    else if (cp == ' ' || is_space_sep)
         flags |= FLAG_PRINT;
-    }
 
     return flags;
 }
@@ -72,7 +109,7 @@ int parse_unicode_data_line(char *line,
 
     const char *category = fields[2];
 
-    classification[cp] = classification_flags_from_category(category);
+    classification[cp] = classification_flags_from_category(cp, category);
 
     if (field_count > 12 && fields[12][0] != '\0') {
         unsigned int up;

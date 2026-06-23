@@ -152,9 +152,14 @@ int __getfdslot(int wanted_fd)
     if (wanted_fd>=PosixCBase->fd_slots)
     {
         void *tmp;
-        
+
+        /* Note: internalpool is created with MEMF_CLEAR (see __posixc_init.c),
+           so AllocPooled() returns zeroed memory - the slots above the copied
+           range are already NULL. Do not call memset()/other stdc helpers
+           here: __getfdslot() runs during posixc OpenLib (via __init_stdfiles)
+           before stdc.library's relbase is available. */
         tmp = AllocPooled(PosixCBase->internalpool, (wanted_fd+1)*sizeof(fdesc *));
-        
+
         if (!tmp) return -1;
 
         if (PosixCBase->fd_array)

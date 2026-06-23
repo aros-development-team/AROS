@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -21,7 +21,7 @@ static wchar_t ascii_wcs[] = {
     0
 };
 
-/* UTF-8 test string with non-ASCII chars (ö and check mark) */
+/* UTF-8 test string with non-ASCII chars (Ã¶ and check mark) */
 static const char *utf8_str = "AROS R"
     "\xC3\xB6"
     "cks "
@@ -70,7 +70,7 @@ static const wchar_t *get_test_wcs(void) {
 
 void test_mblen(void)
 {
-    const char *s = "\xC3\xA4"; // "ä" UTF-8
+    const char *s = "\xC3\xA4"; // "Ã¤" UTF-8
 
     int mlen = mblen(s, 2);
 
@@ -94,7 +94,7 @@ void test_mbrlen(void) {
 
 void test_mbtowc(void)
 {
-    const char *s = "\xC3\xA4"; // "ä" UTF-8
+    const char *s = "\xC3\xA4"; // "Ã¤" UTF-8
     wchar_t wc;
     int len = mbtowc(&wc, s, 2);
 
@@ -135,7 +135,7 @@ void test_wctomb(void)
     char buf[5];
     memset(buf, 0, sizeof(buf));
 
-    wchar_t wc = 0x00E4; // 'ä'
+    wchar_t wc = 0x00E4; // 'Ã¤'
     int len2 = wctomb(buf, wc);
 
     CU_ASSERT_EQUAL(len2, 2);
@@ -148,7 +148,7 @@ void test_wcrtomb(void)
     char buf[5];
     memset(buf, 0, sizeof(buf));
 
-    wchar_t wc = 0x00E4; // 'ä'
+    wchar_t wc = 0x00E4; // 'Ã¤'
     size_t len = wcrtomb(buf, wc, NULL);
 
     CU_ASSERT_EQUAL(len, 2);
@@ -169,7 +169,8 @@ void test_wcstombs(void)
 
     const char *expected = get_test_str();
     CU_ASSERT(strcmp(dest, expected) == 0);
-    CU_ASSERT(src_ptr == NULL || *src_ptr == L'\0'); /* Should consume whole string */
+    /* Note: wcstombs() takes src by value, so (unlike wcsrtombs()) it does
+       not update the caller's pointer - hence no src consumption check. */
 }
 
 /* Test wcsrtombs conversion */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -30,7 +30,11 @@ static const struct __wctrans stdc_wctrans_list[] = {
 struct __locale __locale_C = {
     .__lc_name = "C",
     .__lc_mb_max = 1,
+#if __WCHAR_MAX__ > 255
+    .__lc_tbl_size = 256,   /* AROS default charset is ISO-8859-1 (Latin-1) */
+#else
     .__lc_tbl_size = 128,
+#endif
     .__lc_tbl_clsfy = unicode_wctype,
     .__lc_tbl_u2l = unicode_u2l,
     .__lc_tbl_l2u = unicode_l2u,

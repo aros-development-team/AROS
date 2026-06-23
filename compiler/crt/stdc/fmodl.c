@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function fmodl
 */
@@ -49,20 +49,14 @@
 
 ******************************************************************************/
 {
-//    FORWARD_IF_NAN_OR_INF2(fmodl, x, y);
-
-    // Handle special cases: y == 0 or x infinite ? domain error
+    // Handle special cases: y == 0 or x infinite -> domain error
     if (y == 0.0 || !isfinite(x)) {
         errno = EDOM;
         feraiseexcept(FE_INVALID);
-        return __builtin_nan("");  // or (x - x) as NaN
+        return __builtin_nanl("");
     }
 
-    double r = 0;
-    //r = __ieee754_fmodl(x, y);
-
-    // fmod should never overflow, so no ERANGE check here
-
-    return r;
+    /* fmod never overflows, so no ERANGE check is needed. */
+    return __ieee754_fmodl(x, y);
 }
 #endif

@@ -2,7 +2,7 @@
 #define	_POSIXC_GRP_H_
 
 /*
-    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
+    Copyright Â© 2003-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,10 +24,10 @@ void endgrent(void);
 struct group *getgrent(void);
 struct group *getgrgid(gid_t gid);
 struct group *getgrnam(const char *name);
-/* NOTIMPL int getgrgid_r(gid_t gid, struct group *grp, char *buffer, size_t bufsize,
-        struct group **result); */
-/* NOTIMPL int getgrnam_r(const char *name, struct group *grp, char *buffer,
-        size_t bufsize, struct group **resule); */
+int getgrgid_r(gid_t gid, struct group *grp, char *buffer, size_t bufsize,
+        struct group **result);
+int getgrnam_r(const char *name, struct group *grp, char *buffer,
+        size_t bufsize, struct group **result);
 void setgrent(void);
 
 __END_DECLS

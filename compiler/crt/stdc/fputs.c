@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fputs().
 */
@@ -58,6 +58,7 @@
     if (FPuts(stream->fh, str) == -1)
     {
         errno = __stdc_ioerr2errno(IoErr());
+        stream->flags |= __STDCIO_STDIO_ERROR;
         return EOF;
     }
 

@@ -1,10 +1,12 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function calloc().
 */
 
 #include <exec/types.h>
+#include <errno.h>
+#include <stdint.h>
 #include <string.h>
 
 /*****************************************************************************
@@ -45,6 +47,14 @@
 ******************************************************************************/
 {
     ULONG * mem;
+
+    /* Guard against count * size overflowing size_t, which would otherwise
+       under-allocate the buffer and let the caller write past its end. */
+    if (count != 0 && size > SIZE_MAX / count)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     size *= count;
 

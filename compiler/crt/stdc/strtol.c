@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strtol().
 */
@@ -78,45 +78,45 @@
 {
     long val    = 0;
     char        * ptr;
+    const char  * orig = str;
     char        * copy;
 
-    while (isspace (*str))
+    while (isspace ((unsigned char)*str))
         str ++;
 
     copy = (char *)str;
 
-    if (*str)
+    val = strtoul (str, &ptr, base);
+
+    /* No conversion performed: store the original nptr (C99 7.22.1.4). */
+    if (ptr == copy)
     {
-        val = strtoul (str, &ptr, base);
-
         if (endptr)
-        {
-            if (ptr == str)
-                str = copy;
-            else
-                str = ptr;
-        }
+            *endptr = (char *)orig;
+        return 0;
+    }
 
-        /* Remember: strtoul() has already done the sign conversion */
-        if (*copy == '-')
+    str = ptr;
+
+    /* Remember: strtoul() has already done the sign conversion */
+    if (*copy == '-')
+    {
+        if ((signed long)val > 0)
         {
-            if ((signed long)val > 0)
-            {
 #ifndef STDC_STATIC
-                errno = ERANGE;
+            errno = ERANGE;
 #endif
-                val = LONG_MIN;
-            }
+            val = LONG_MIN;
         }
-        else
+    }
+    else
+    {
+        if ((signed long)val < 0)
         {
-            if ((signed long)val < 0)
-            {
 #ifndef STDC_STATIC
-                errno = ERANGE;
+            errno = ERANGE;
 #endif
-                val = LONG_MAX;
-            }
+            val = LONG_MAX;
         }
     }
 

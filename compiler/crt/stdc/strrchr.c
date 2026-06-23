@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strrchr().
 */
@@ -56,14 +56,16 @@
 {
     char * p = NULL;
 
-    while (*str)
+    /* The terminating NUL is part of the string, so it is included in the
+       search (this lets strrchr(s, '\0') find the end of the string, as
+       required by C99 7.21.5.5). */
+    do
     {
         /* those casts are needed to compare chars > 127 */
         if ((unsigned char)*str == (unsigned char)c)
             p = (char *)str;
-
-        str ++;
     }
+    while (*str++);
 
     return p;
 } /* strrchr */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strtoll().
 */
@@ -83,41 +83,41 @@
 {
     long long   val     = 0;
     char        * ptr;
+    const char  * orig = str;
     char        * copy;
 
-    while (isspace (*str))
+    while (isspace ((unsigned char)*str))
         str ++;
 
     copy = (char *)str;
 
-    if (*str)
+    val = strtoull (str, &ptr, base);
+
+    /* No conversion performed: store the original nptr (C99 7.22.1.4). */
+    if (ptr == copy)
     {
-        val = strtoull (str, &ptr, base);
-
         if (endptr)
-        {
-            if (ptr == str)
-                str = copy;
-            else
-                str = ptr;
-        }
+            *endptr = (char *)orig;
+        return 0;
+    }
 
-        /* Remember: strtoull() has already done the sign conversion */
-        if (*copy == '-')
+    str = ptr;
+
+    /* Remember: strtoull() has already done the sign conversion */
+    if (*copy == '-')
+    {
+        if ((signed long long)val > 0)
         {
-            if ((signed long long)val > 0)
-            {
-                errno = ERANGE;
-                val = LLONG_MIN;
-            }
+            errno = ERANGE;
+            val = LLONG_MIN;
         }
-        else
+    }
+    else
+    {
+        if ((signed long long)val < 0)
         {
-            if ((signed long long)val < 0)
-            {
-                errno = ERANGE;
-                val = LLONG_MAX;
-            }
+            errno = ERANGE;
+            val = LLONG_MAX;
         }
     }
 

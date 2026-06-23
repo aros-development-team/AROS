@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mbsrtowcs().
 */
@@ -74,8 +74,10 @@
         if (res == 0) {
             if (dst)
                 dst[count] = L'\0';
-            s += 1;
-            count++;
+            /* The terminating null character was reached. Per C99 7.24.6.4.1
+               the source pointer is set to a null pointer and the null is not
+               counted in the return value. */
+            s = NULL;
             break;
         }
 

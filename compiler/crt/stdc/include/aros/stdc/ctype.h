@@ -2,7 +2,7 @@
 #define _STDC_CTYPE_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file ctype.h
@@ -33,7 +33,7 @@ extern const unsigned char     * const * const __ctype_toupper_ptr;
 extern const unsigned char     * const * const __ctype_tolower_ptr;
 
 #define _istype(c, type) \
-    ((*__ctype_b_ptr)[(unsigned char)(c)] & (unsigned short)(type))
+    ((unsigned)(c) <= 255 ? ((*__ctype_b_ptr)[(c)] & (unsigned short)(type)) : 0)
 
 #if !defined(STDC_NOINLINE) && !defined(STDC_NOINLINE_CTYPE)
 #define __ctype_make_func(__name__, __body__)    \
@@ -57,8 +57,8 @@ __ctype_make_func(iscntrl,  _istype(c, _ctype_cntrl))
 __ctype_make_func(ispunct,  _istype(c, _ctype_punct))
 __ctype_make_func(isalnum,  _istype(c, _ctype_alnum))
 
-__ctype_make_func(toupper,  (*__ctype_toupper_ptr)[(unsigned char)(c)])
-__ctype_make_func(tolower,  (*__ctype_tolower_ptr)[(unsigned char)(c)])
+__ctype_make_func(toupper,  ((unsigned)(c) <= 255 ? (int)(*__ctype_toupper_ptr)[(c)] : (c)))
+__ctype_make_func(tolower,  ((unsigned)(c) <= 255 ? (int)(*__ctype_tolower_ptr)[(c)] : (c)))
 
 /* POSIX and GNU Extensions */
 #if defined(_POSIX_C_SOURCE) || defined(_GNU_SOURCE)

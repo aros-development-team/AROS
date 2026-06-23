@@ -104,7 +104,9 @@ POSIXC := \
     getgid \
     getgrent \
     getgrgid \
+    getgrgid_r \
     getgrnam \
+    getgrnam_r \
     getgroups \
     getloadavg \
     getlogin \
@@ -115,7 +117,9 @@ POSIXC := \
     getppid \
     getpwent \
     getpwnam \
+    getpwnam_r \
     getpwuid \
+    getpwuid_r \
     getrlimit \
     gets \
     gettimeofday \

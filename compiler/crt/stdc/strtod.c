@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strtod().
 */
@@ -44,7 +44,6 @@
     EXAMPLE
 
     BUGS
-        NAN is not handled at the moment
 
     SEE ALSO
         atof(), atoi(), atol(), strtol(), strtoul()
@@ -54,7 +53,6 @@
 ******************************************************************************/
 {
     /* Unit tests available in : tests/clib/strtod.c */
-    /* FIXME: implement NAN handling */
     double  val = 0, precision;
     int     exp = 0;
     char    c = 0, c2 = 0;
@@ -74,6 +72,47 @@
         /* Is there a sign? */
         if (*str == '+' || *str == '-')
             c = *str ++;
+
+        /* Handle "inf"/"infinity" and "nan[(n-char-sequence)]" as required by
+           C99 7.22.1.3. Matching is case-insensitive. The && short-circuits
+           so we never read past the terminating NUL. */
+        if (tolower((unsigned char)str[0]) == 'i' &&
+            tolower((unsigned char)str[1]) == 'n' &&
+            tolower((unsigned char)str[2]) == 'f')
+        {
+            str += 3;
+            /* optionally consume the remaining "inity" of "infinity" */
+            if (tolower((unsigned char)str[0]) == 'i' &&
+                tolower((unsigned char)str[1]) == 'n' &&
+                tolower((unsigned char)str[2]) == 'i' &&
+                tolower((unsigned char)str[3]) == 't' &&
+                tolower((unsigned char)str[4]) == 'y')
+                str += 5;
+
+            if (endptr)
+                *endptr = (char *)str;
+            return (c == '-') ? -INFINITY : INFINITY;
+        }
+
+        if (tolower((unsigned char)str[0]) == 'n' &&
+            tolower((unsigned char)str[1]) == 'a' &&
+            tolower((unsigned char)str[2]) == 'n')
+        {
+            str += 3;
+            /* optional ( n-char-sequence ) */
+            if (*str == '(')
+            {
+                const char *p = str + 1;
+                while (isalnum((unsigned char)*p) || *p == '_')
+                    p++;
+                if (*p == ')')
+                    str = p + 1;
+            }
+
+            if (endptr)
+                *endptr = (char *)str;
+            return (c == '-') ? -NAN : NAN;
+        }
 
         /* scan numbers before the dot */
         while (isdigit(*str))

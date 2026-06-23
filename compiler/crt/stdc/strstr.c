@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function strstr().
 */
@@ -51,6 +51,10 @@
     size_t       done;
     size_t       len_s = strlen (search);
     const char * t;
+
+    /* An empty search string matches at the start of str (C99 7.21.5.7). */
+    if (len_s == 0)
+        return (char *)str;
 
     do
     {

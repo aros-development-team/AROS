@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2007-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2007-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mbstowcs().
 */
@@ -78,7 +78,15 @@
     wchar_t wc;
     mbstate_t ps = {0}; // Not used in our implementation
 
-    while (*src && count < n) {
+    while (count < n) {
+        if (*src == '\0') {
+            /* The null character is converted and stored, but is not counted
+               in the return value (C99 7.24.6.3.2). */
+            if (dest)
+                dest[count] = L'\0';
+            return count;
+        }
+
         len = mbtowc(&wc, src, StdCBase->__locale_cur->__lc_mb_max);
         if (len == (size_t)-1)
             return (size_t)-1;

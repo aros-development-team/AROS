@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function fseek()
 */
@@ -98,6 +98,8 @@
     else
     {
         D(bug("[%s] %s: Done\n", STDCNAME, __func__));
+        /* A successful seek clears the end-of-file indicator (C99 7.21.9.2) */
+        stream->flags &= ~__STDCIO_STDIO_EOF;
         return 0;
     }
 } /* fseek */

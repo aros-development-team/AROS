@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <math.h>
@@ -68,8 +68,10 @@ void testTANL(void)
     assert_ldouble_equal(tanl(5.0L), -3.3805150062465856L, GRANULARITY_L);
     assert_ldouble_equal(tanl(-5.0L), 3.3805150062465856L, GRANULARITY_L);
 
-    /* tanl(pi/2) tends to infinity, just test large value */
-    CU_ASSERT(tanl(M_PIl / 2) > 1e15L);
+    /* tanl(pi/2) tends to infinity. The nearest representable value to pi/2
+       may fall on either side of the true pole, so the sign of the result is
+       implementation-defined; only the magnitude is meaningful here. */
+    CU_ASSERT(fabsl(tanl(M_PIl / 2)) > 1e15L);
 }
 
 void testASINL(void)
@@ -498,7 +500,7 @@ int main()
     CU_basic_run_tests();
     CU_basic_set_mode(CU_BRM_SILENT);
     CU_automated_package_name_set("CRTMathUnitTests");
-    CU_set_output_filename("CRT-Math");
+    CU_set_output_filename("CRT-LdMath");
     CU_automated_enable_junit_xml(CU_TRUE);
     CU_automated_run_tests();
     CU_cleanup_registry();

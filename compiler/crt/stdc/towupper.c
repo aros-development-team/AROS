@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     C99 function towupper().
 */
@@ -58,7 +58,7 @@
     struct StdCIntBase *StdCBase =
         (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    if (StdCBase->__locale_cur && StdCBase->__locale_cur->__lc_tbl_l2u && (wc >= 0 && wc <= StdCBase->__locale_cur->__lc_tbl_size)) {
+    if (StdCBase->__locale_cur && StdCBase->__locale_cur->__lc_tbl_l2u && (wc >= 0 && wc < StdCBase->__locale_cur->__lc_tbl_size)) {
         wint_t mapped = StdCBase->__locale_cur->__lc_tbl_l2u[wc];
         return mapped ? mapped : wc;
     }
