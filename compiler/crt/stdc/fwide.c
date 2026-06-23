@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     C99 function fwide().
 */
@@ -49,26 +49,24 @@
     if (!stream)
         return 0;
 
-    // If mode == 0, just return current orientation
-    if (mode == 0) {
-        if (stream->flags & __STDCIO_STDIO_WIDE)
-            return 1;
-        else
-            return -1;
+    /* Determine the current orientation: 0 = none, 1 = wide, -1 = byte. */
+    int orientation = 0;
+    if (stream->flags & __STDCIO_STDIO_WIDE)
+        orientation = 1;
+    else if (stream->flags & __STDCIO_STDIO_BYTE)
+        orientation = -1;
+
+    /* A non-zero mode only sets the orientation of a stream that has not
+       yet been oriented; an already oriented stream is never changed. */
+    if (mode != 0 && orientation == 0) {
+        if (mode > 0) {
+            stream->flags |= __STDCIO_STDIO_WIDE;
+            orientation = 1;
+        } else {
+            stream->flags |= __STDCIO_STDIO_BYTE;
+            orientation = -1;
+        }
     }
 
-    // If stream is already oriented, return existing orientation
-    if (stream->flags & __STDCIO_STDIO_WIDE) {
-        if (mode > 0)
-            return 1;
-        else
-            return -1;
-    } else {
-        // Set orientation based on mode sign
-        if (mode > 0)
-            stream->flags |= __STDCIO_STDIO_WIDE;
-        else
-            stream->flags &= ~__STDCIO_STDIO_WIDE;
-        return mode > 0 ? 1 : -1;
-    }
+    return orientation;
 }

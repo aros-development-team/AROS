@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2026, The AROS Development Team. All rights reserved.
 
     Support functions for POSIX exec*() functions.
 */
@@ -130,6 +130,8 @@ static char * assign_filename(const char *filename, int searchpath, char **envir
         char *path = NULL, *path_ptr, *path_item, *filename2;
         const char * filename2_dos;
         BPTR lock;
+        BOOL found_noexec = FALSE;
+        struct FileInfoBlock *fib;
 
         if (environ)
         {
@@ -165,6 +167,11 @@ static char * assign_filename(const char *filename, int searchpath, char **envir
             return NULL;
         }
 
+        /* Optional: used to skip non-executable matches so that POSIX
+           EACCES vs ENOENT can be reported.  A NULL fib degrades to the
+           previous "first existing file wins" behaviour. */
+        fib = AllocDosObject(DOS_FIB, NULL);
+
         for(path_ptr = path, lock = (BPTR)NULL, path_item = strsep(&path_ptr, ",:");
             lock == (BPTR)NULL && path_item != NULL;
             path_item = strsep(&path_ptr, ",:")
@@ -182,6 +189,8 @@ static char * assign_filename(const char *filename, int searchpath, char **envir
                 filename2 = AllocPooled(PosixCBase->exec_pool, size);
                 if (!filename2)
                 {
+                    if (fib != NULL)
+                        FreeDosObject(DOS_FIB, fib);
                     errno = ENOMEM;
                     return NULL;
                 }
@@ -193,13 +202,31 @@ static char * assign_filename(const char *filename, int searchpath, char **envir
             filename2_dos = __path_u2a(filename2);
             lock = Lock(filename2_dos, SHARED_LOCK);
             D(bug("assign_filename: Lock(\"%s\") == %x\n", filename2, (APTR)lock));
+
+            /* POSIX: a file that exists but is not executable must not be
+               selected here; if no executable match is found we report
+               EACCES instead of ENOENT.  (FIBF_EXECUTE is active low.) */
+            if (lock != (BPTR)NULL && fib != NULL)
+            {
+                if (Examine(lock, fib) == DOSTRUE
+                    && fib->fib_DirEntryType < 0
+                    && (fib->fib_Protection & FIBF_EXECUTE))
+                {
+                    found_noexec = TRUE;
+                    UnLock(lock);
+                    lock = (BPTR)NULL;
+                }
+            }
         }
+
+        if (fib != NULL)
+            FreeDosObject(DOS_FIB, fib);
 
         if(lock != (BPTR)NULL)
             UnLock(lock);
         else
         {
-            errno = ENOENT;
+            errno = found_noexec ? EACCES : ENOENT;
             return NULL;
         }
 

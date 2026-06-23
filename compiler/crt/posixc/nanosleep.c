@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2008-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2008-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function nanosleep().
 */
@@ -7,6 +7,7 @@
 #include <proto/exec.h>
 #include <devices/timer.h>
 
+#include <errno.h>
 #include <unistd.h>
 
 /*****************************************************************************
@@ -45,7 +46,16 @@
     struct MsgPort      *timerMsgPort;
     struct timerequest  *timerIO;
     int retval = -1;
-    
+
+    /* Validate the requested interval (POSIX: EINVAL for an out-of-range
+       nanosecond count or a NULL request). */
+    if (req == NULL || req->tv_sec < 0 ||
+        req->tv_nsec < 0 || req->tv_nsec > 999999999)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
     /* FIXME: share TimerBase with gettimeofday and don't open/close it for each usleep call */
     if((timerMsgPort = CreateMsgPort()))
     {
@@ -73,6 +83,11 @@
         }
         DeleteMsgPort(timerMsgPort);
     }
+
+    /* Could not set up the timer device. */
+    if (retval != 0)
+        errno = EAGAIN;
+
     return retval;
 } /* nanosleep() */
 

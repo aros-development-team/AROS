@@ -2,7 +2,7 @@
 #define _STDC_TIME_H_
 
 /*
-    Copyright © 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 header file time.h
@@ -14,8 +14,12 @@
 
 #include <aros/types/size_t.h>
 #include <aros/types/null.h>
+#include <aros/types/timespec_s.h>
 
 #define CLOCKS_PER_SEC 50
+
+/* Time base for timespec_get() (C11) */
+#define TIME_UTC 1
 
 struct tm
 {
@@ -40,6 +44,7 @@ clock_t clock(void);
 double difftime(time_t, time_t);
 time_t mktime(struct tm *);
 time_t time(time_t *);
+int timespec_get(struct timespec *ts, int base);
 
 /* Time conversion functions */
 char *asctime(const struct tm *);

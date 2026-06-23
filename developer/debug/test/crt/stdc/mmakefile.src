@@ -50,6 +50,7 @@ CUNITSTDCTESTFILES := \
     cunit-crt-stdlib-c89 \
     cunit-crt-stdlib-c99 \
     cunit-crt-stdlib-c11 \
+    cunit-crt-uchar-c11 \
     cunit-crt-wchar \
     cunit-crt-wctype \
     cunit-crt-fileseek

@@ -2,7 +2,7 @@
 #define ___STDIO_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: internal header file for stdio
@@ -24,6 +24,7 @@
 #define __STDCIO_STDIO_FLUSHONREAD  0x0100L
 #define __STDCIO_STDIO_WIDE         0x0200L   /* Stream is wide-oriented */
 #define __STDCIO_STDIO_UNGETWC      0x0400L   /* ungetwc_char contains a pushed-back wide char */
+#define __STDCIO_STDIO_BYTE         0x0800L   /* Stream is byte-oriented */
 
 #endif /* ___STDIO_H */
 

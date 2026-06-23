@@ -2,7 +2,7 @@
 #define _STDC_STDLIB_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS implementation of the C Standard Library Header (C89/C99/GNU)
@@ -81,6 +81,10 @@ void abort(void) __noreturn;
 int atexit(void (*func)(void));
 void exit(int code) __noreturn;
 void _Exit(int status) __noreturn;
+
+/* C11 quick-exit interface */
+int at_quick_exit(void (*func)(void));
+void quick_exit(int status) __noreturn;
 
 #if !defined(__STRICT_ANSI__)
 char *getenv(const char *name);

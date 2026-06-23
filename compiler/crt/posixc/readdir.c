@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function readdir().
 */
@@ -133,7 +133,8 @@
             }
           
             strncpy(dir->ent.d_name, name, max);
-            dir->ent.d_reclen = strlen(name);
+            dir->ent.d_name[max] = '\0';    /* ensure NUL-termination */
+            dir->ent.d_reclen = strlen(dir->ent.d_name);
 
             switch (fib->fib_DirEntryType)
             {

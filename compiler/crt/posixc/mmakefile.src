@@ -42,6 +42,7 @@ POSIXC := \
     dirfd \
     dirname \
     drand48 \
+    dprintf \
     dup \
     dup2 \
     endgrent \
@@ -97,6 +98,7 @@ POSIXC := \
     getc_unlocked \
     getchar \
     getcwd \
+    getdelim \
     getegid \
     geteuid \
     getenv \
@@ -109,6 +111,7 @@ POSIXC := \
     getgrnam_r \
     getgroups \
     getloadavg \
+    getline \
     getlogin \
     getpass \
     getpgid \
@@ -234,6 +237,7 @@ POSIXC := \
     usleep \
     utime \
     utimes \
+    vdprintf \
     vfprintf \
     vfscanf \
     vprintf \
@@ -266,7 +270,9 @@ POSIXC_WCHAR := \
     wcstoll \
     wcstoull \
     wcstoumax \
-    wcswcs
+    wcswcs \
+    wcwidth \
+    wcswidth
 
 POSIXC_WCHAR_LOCALE := \
     iswalnum_l \

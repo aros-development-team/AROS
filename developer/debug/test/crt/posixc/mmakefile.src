@@ -45,7 +45,9 @@ POSIXCNIXTESTFILES := \
 
 CUNITPOSIXCTESTFILES := \
     cunit-crt-realpath \
-    cunit-crt-tmpfile
+    cunit-crt-tmpfile \
+    cunit-crt-wcwidth \
+    cunit-crt-ext
 
 EXEDIR := $(AROS_TESTS)/crt/posix
 CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/posixc

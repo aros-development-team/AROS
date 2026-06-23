@@ -2,7 +2,7 @@
 #define ___EXITFUNC_H
 
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,5 +35,8 @@ struct AtExitNode
 
 int __addexitfunc(struct AtExitNode *aen);
 void __callexitfuncs(void);
+
+int __add_quick_exit_func(struct AtExitNode *aen);
+void __call_quick_exit_funcs(void);
 
 #endif

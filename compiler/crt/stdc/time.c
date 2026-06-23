@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Return the current time in seconds.
 */
@@ -88,6 +88,59 @@ static int __init_timerbase(struct StdCIntBase *StdCBase);
         *tloc = tv.tv_sec;
     return tv.tv_sec;
 } /* time */
+
+/*****************************************************************************
+
+    NAME */
+        int timespec_get (
+
+/*  SYNOPSIS */
+        struct timespec *ts,
+        int              base)
+
+/*  FUNCTION
+        Store the current calendar time, based on the given time base, into
+        *ts. The only base required by C11 is TIME_UTC, for which the time is
+        the number of seconds and nanoseconds since the epoch (UTC).
+
+    INPUTS
+        ts   - the timespec to fill in.
+        base - the time base; TIME_UTC is supported.
+
+    RESULT
+        base on success, or 0 if base is not supported or the time could not
+        be obtained.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        time(), clock_gettime()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    struct timeval tv;
+
+    if (ts == NULL || base != TIME_UTC)
+        return 0;
+
+    if (TimerBase == NULL)
+        __init_timerbase(StdCBase);
+    if (TimerBase == NULL)
+        return 0;
+
+    GetSysTime(&tv);
+    ts->tv_sec  = tv.tv_sec + 2922 * 1440 * 60 + __stdc_gmtoffset() * 60;
+    ts->tv_nsec = tv.tv_usec * 1000;
+
+    return base;
+} /* timespec_get */
 
 
 static int __init_timerbase(struct StdCIntBase *StdCBase)

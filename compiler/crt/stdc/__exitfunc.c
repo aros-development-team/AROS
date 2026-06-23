@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "__stdc_intbase.h"
@@ -21,6 +21,7 @@ int __addexitfunc(struct AtExitNode *aen)
 int __init_atexit(struct StdCIntBase *StdCBase)
 {
     NEWLIST((struct List *)&StdCBase->atexit_list);
+    NEWLIST((struct List *)&StdCBase->quick_exit_list);
 
     return 1;
 }
@@ -56,6 +57,33 @@ void __callexitfuncs(void)
             break;
 
         }
+    }
+}
+
+int __add_quick_exit_func(struct AtExitNode *aen)
+{
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+
+    ADDHEAD((struct List *)&StdCBase->quick_exit_list, (struct Node *)aen);
+
+    return 0;
+}
+
+void __call_quick_exit_funcs(void)
+{
+    struct StdCIntBase *StdCBase =
+        (struct StdCIntBase *)__aros_getbase_StdCBase();
+    struct AtExitNode *aen;
+
+    /* at_quick_exit() registers only plain void(void) handlers; call them in
+       reverse order of registration. */
+    while (
+        (aen = (struct AtExitNode *) REMHEAD((struct List *) &StdCBase->quick_exit_list))
+    )
+    {
+        if (aen->node.ln_Type == AEN_VOID)
+            aen->func.fn();
     }
 }
 

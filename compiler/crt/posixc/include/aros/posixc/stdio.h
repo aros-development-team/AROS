@@ -2,7 +2,7 @@
 #define _POSIXC_STDIO_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file stdio.h
@@ -75,17 +75,17 @@ char *tempnam(const char *dir, const char *pfx);
 /* GNU extensions */
 #if defined(_GNU_SOURCE)
 /* NOTIMPL char *ctermid(char *); */
-/* NOTIMPL int dprintf(int, const char *restrict, ...); */
+int dprintf(int, const char *restrict, ...);
 /* NOTIMPL FILE *fmemopen(void *restrict, size_t, const char *restrict); */
 /* NOTIMPL int ftrylockfile(FILE *); */
 /* NOTIMPL int getchar_unlocked(void); */
-/* NOTIMPL ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict); */
-/* NOTIMPL ssize_t getline(char **restrict, size_t *restrict, FILE *restrict); */
+ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
+ssize_t getline(char **restrict, size_t *restrict, FILE *restrict);
 /* NOTIMPL FILE *open_memstream(char **, size_t *); */
 /* NOTIMPL int putc_unlocked(int, FILE *); */
 /* NOTIMPL int putchar_unlocked(int); */
 /* NOTIMPL int renameat(int, const char *, int, const char *); */
-/* NOTIMPL int vdprintf(int, const char *restrict, va_list); */
+int vdprintf(int, const char *restrict, va_list);
 #endif
 
 /* Large file support (non-standard) */

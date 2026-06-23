@@ -461,7 +461,11 @@ STDC_WCHAR := \
     vswscanf \
     wcsxfrm \
     vswprintf \
-    swprintf
+    swprintf \
+    mbrtoc16 \
+    c16rtomb \
+    mbrtoc32 \
+    c32rtomb
 
 STDC_WCHAR_LIBSTUBS := \
     wchar \
@@ -505,6 +509,7 @@ STDC := \
     malloc \
     $(STDC_MATH_RAW) \
     $(STDC_MATH) \
+    memccpy \
     memchr \
     memcmp \
     memcpy \
@@ -586,8 +591,10 @@ STDC_CRT := \
 STDC_C_CRT := \
     _exit \
     atexit \
+    at_quick_exit \
     exit \
-    on_exit
+    on_exit \
+    quick_exit
 
 STDC_CXX_CRT := \
     __cxa_atexit \

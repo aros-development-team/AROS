@@ -2,7 +2,7 @@
 #define _POSIXC_WCHAR_H_
 
 /*
- *  Copyright © 2025 The AROS Developmemt Team. All rights reserved.
+ *  Copyright Â© 2025-2026 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  POSIX.1-2008 header file wchar.h
@@ -13,6 +13,10 @@
 #include <aros/stdc/wchar.h>
 
 __BEGIN_DECLS
+
+/* XSI / POSIX character-cell width functions */
+int wcwidth(wchar_t wc);
+int wcswidth(const wchar_t *pwcs, size_t n);
 
 #if _POSIX_C_SOURCE >= 200809L
 

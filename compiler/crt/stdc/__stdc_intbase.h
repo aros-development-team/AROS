@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2012-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 
     This file defines the private part of StdCBase.
     This should only be used internally in stdc.library code so
@@ -57,6 +57,9 @@ struct StdCIntBase
 
     /* atexit.c */
     struct MinList              atexit_list;
+
+    /* at_quick_exit.c / quick_exit.c */
+    struct MinList              quick_exit_list;
 
     /* signal.c & co. */
     struct signal_func_data     *sigfunc_array;

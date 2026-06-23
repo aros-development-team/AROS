@@ -40,6 +40,9 @@ If NOT WARN
     Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c99
     Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c11
 
+    ; Perform C11 <uchar.h> Unicode conversion unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-uchar-c11
+
     ; Perform basic math unit tests...
     Execute S/Test cunit/crt/stdc/math/cunit-crt-math
 
@@ -61,6 +64,10 @@ If NOT WARN
     ; Perform basic "posixc.library" unit tests...
     Execute S/Test cunit/crt/posixc/cunit-crt-realpath
     Execute S/Test cunit/crt/posixc/cunit-crt-tmpfile
+    Execute S/Test cunit/crt/posixc/cunit-crt-ext
+
+    ; Perform posixc wcwidth/wcswidth unit tests...
+    Execute S/Test cunit/crt/posixc/cunit-crt-wcwidth
 
 Endif
 

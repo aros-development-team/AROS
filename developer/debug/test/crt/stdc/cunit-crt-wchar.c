@@ -223,6 +223,37 @@ void test_iswctype(void) {
 #endif
 }
 
+/* fwide(): a freshly opened stream is unoriented (must report 0); the first
+   non-zero mode locks the orientation, which thereafter never changes. */
+void test_fwide(void) {
+    FILE *fp;
+
+    /* NULL stream is always unoriented */
+    CU_ASSERT_EQUAL(fwide(NULL, 0), 0);
+
+    fp = tmpfile();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(fp);
+
+    /* Unoriented stream reports 0 (this is the regression L1 guarded). */
+    CU_ASSERT_EQUAL(fwide(fp, 0), 0);
+
+    /* Setting wide orientation returns a positive value... */
+    CU_ASSERT(fwide(fp, 1) > 0);
+    /* ...and the orientation now sticks. */
+    CU_ASSERT(fwide(fp, 0) > 0);
+    /* A later byte request must not change an oriented stream. */
+    CU_ASSERT(fwide(fp, -1) > 0);
+    fclose(fp);
+
+    /* A second stream oriented to byte mode reports negative. */
+    fp = tmpfile();
+    CU_ASSERT_PTR_NOT_NULL_FATAL(fp);
+    CU_ASSERT(fwide(fp, -1) < 0);
+    CU_ASSERT(fwide(fp, 0) < 0);
+    CU_ASSERT(fwide(fp, 1) < 0);
+    fclose(fp);
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -249,7 +280,8 @@ int main(void)
     (NULL == CU_add_test(pSuite, "wcstombs", test_wcstombs)) ||
     (NULL == CU_add_test(pSuite, "wcsrtombs", test_wcsrtombs)) ||
     (NULL == CU_add_test(pSuite, "towcase", test_towcase)) ||
-    (NULL == CU_add_test(pSuite, "iswctype", test_iswctype)))
+    (NULL == CU_add_test(pSuite, "iswctype", test_iswctype)) ||
+    (NULL == CU_add_test(pSuite, "fwide", test_fwide)))
     {
         CU_cleanup_registry();
         return CU_get_error();
