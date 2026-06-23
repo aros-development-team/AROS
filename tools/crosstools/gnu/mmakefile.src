@@ -353,3 +353,10 @@ ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
 endif
 %build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
 	basedir= gendir="$(LIBATOMIC_OBJDIR)" extraoptions="$(LIBATOMIC_OPTS)" install_env="$(LIBATOMIC_ENV)"
+
+LIBATOMIC_GCCOBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/gcc
+
+$(tools-crosstools-gcc-libatomic-installflag) : | $(LIBATOMIC_GCCOBJDIR)
+
+$(LIBATOMIC_GCCOBJDIR) :
+	%mkdirs_q $(LIBATOMIC_GCCOBJDIR)
