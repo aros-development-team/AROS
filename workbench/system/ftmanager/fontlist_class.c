@@ -160,7 +160,7 @@ IPTR flNew(Class *cl, Object *o, struct opSet *msg)
         NewList((struct List *) &dat->ScanDirTasks);
     }
 
-    DEBUG_FONTWINDOW(dprintf("FontList: created object 0x%lx.\n", o));
+    DEBUG_FONTWINDOW(bug("FontList: created object 0x%lx.\n", o));
 
     return (IPTR)o;
 }
@@ -219,23 +219,23 @@ void ScanDirTask(void)
 
     Signal(parent, SIGBREAKF_CTRL_F);
 
-        DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
+        DEBUG_ADDDIR(bug("flScanDirTask: dir <%s>\n", info->DirName));
 
     if (FT_Init_FreeType(&ftlibrary) == 0)
     {
-        DEBUG_ADDDIR(dprintf("flScanDirTask: ftlibrary 0x%x\n", ftlibrary));
+        DEBUG_ADDDIR(bug("flScanDirTask: ftlibrary 0x%x\n", ftlibrary));
 
         lock = Lock(info->DirName, ACCESS_READ);
         if (lock)
         {
-            DEBUG_ADDDIR(dprintf("flScanDirTask: lock 0x%lx\n", lock));
+            DEBUG_ADDDIR(bug("flScanDirTask: lock 0x%lx\n", lock));
 
             olddir = CurrentDir(lock);
 
             eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
             if (eac)
             {
-                DEBUG_ADDDIR(dprintf("flScanDirTask: eac 0x%lx\n", eac));
+                DEBUG_ADDDIR(bug("flScanDirTask: eac 0x%lx\n", eac));
 
                 eac->eac_LastKey = 0;
 
@@ -243,12 +243,12 @@ void ScanDirTask(void)
                 {
                     more = ExAll(lock, (struct ExAllData *) info->Buffer, sizeof(info->Buffer), ED_NAME, eac);
 
-                    DEBUG_ADDDIR(dprintf("flScanDirTask: more %d entries %d\n", more, eac->eac_Entries));
+                    DEBUG_ADDDIR(bug("flScanDirTask: more %d entries %d\n", more, eac->eac_Entries));
 
 
                     if (!more && IoErr() != ERROR_NO_MORE_ENTRIES)
                     {
-                        DEBUG_ADDDIR(dprintf("flScanDirTask: err %d\n", IoErr()));
+                        DEBUG_ADDDIR(bug("flScanDirTask: err %d\n", IoErr()));
                         break;
                     }
 
@@ -262,15 +262,15 @@ void ScanDirTask(void)
                         FT_Face face;
                         FT_Error error;
 
-                        DEBUG_ADDDIR(dprintf("flScanDirTask: ead 0x%x name %x <%s>\n", ead, ead->ed_Name, ead->ed_Name));
+                        DEBUG_ADDDIR(bug("flScanDirTask: ead 0x%x name %x <%s>\n", ead, ead->ed_Name, ead->ed_Name));
                         error = FT_New_Face(ftlibrary, ead->ed_Name, 0, &face);
-                        DEBUG_ADDDIR(dprintf("flScanDirTask: error %d\n", error));
+                        DEBUG_ADDDIR(bug("flScanDirTask: error %d\n", error));
                         if (error == 0)
                         {
                             struct MUIS_FontList_Entry *entry;
                             size_t len1, len2, len3;
 
-                            DEBUG_ADDDIR(dprintf("flScanDirTask: family 0x <%s> style 0x%x <%s>\n", face->family_name, face->family_name, face->style_name, face->style_name));
+                            DEBUG_ADDDIR(bug("flScanDirTask: family 0x <%s> style 0x%x <%s>\n", face->family_name, face->family_name, face->style_name, face->style_name));
 
                             strncpy(info->NameBuf, info->DirName, sizeof(info->NameBuf) - 1);
                             AddPart(info->NameBuf, ead->ed_Name, sizeof(info->NameBuf));
@@ -306,7 +306,7 @@ void ScanDirTask(void)
                 }
                 while (more);
 
-                DEBUG_ADDDIR(dprintf("flScanDirTask: done\n"));
+                DEBUG_ADDDIR(bug("flScanDirTask: done\n"));
 
                 FreeDosObject(DOS_EXALLCONTROL, eac);
             }

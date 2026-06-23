@@ -54,14 +54,14 @@ IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
 
     if (filename == NULL)
     {
-        DEBUG_FONTBITMAP(dprintf("FontBitmap: no filename.\n"));
+        DEBUG_FONTBITMAP(bug("FontBitmap: no filename.\n"));
         return 0;
     }
 
     engine = OpenEngine();
     if (engine == NULL)
     {
-        DEBUG_FONTBITMAP(dprintf("FontBitmap: no engine.\n"));
+        DEBUG_FONTBITMAP(bug("FontBitmap: no engine.\n"));
         return 0;
     }
 
@@ -79,7 +79,7 @@ IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
     info = AllocVec(length * sizeof(*info), MEMF_CLEAR);
     if (info == NULL)
     {
-        DEBUG_FONTBITMAP(dprintf("FontBitmap: can't alloc glyphs.\n"));
+        DEBUG_FONTBITMAP(bug("FontBitmap: can't alloc glyphs.\n"));
         length = 0;
     }
 
@@ -152,8 +152,8 @@ IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
     width = xmax - xmin + 1;
     height = ymax - ymin + 1;
 
-    DEBUG_FONTBITMAP(dprintf("FontBitmap: bbox %d %d %d %d\n", xmin, ymin, xmax, ymax));
-    DEBUG_FONTBITMAP(dprintf("FontBitmap: width %d height %d\n", width, height));
+    DEBUG_FONTBITMAP(bug("FontBitmap: bbox %d %d %d %d\n", xmin, ymin, xmax, ymax));
+    DEBUG_FONTBITMAP(bug("FontBitmap: width %d height %d\n", width, height));
 
     if (width > 0 && height > 0 && width < 32000 && height < 32000)
     {
@@ -384,7 +384,7 @@ IPTR fbNew(Class *cl, Object *o, struct opSet *msg)
 
     CloseEngine(engine);
 
-    DEBUG_FONTBITMAP(dprintf("FontBitmap: created object 0x%lx.\n", o));
+    DEBUG_FONTBITMAP(bug("FontBitmap: created object 0x%lx.\n", o));
 
     return (IPTR)o;
 }
@@ -393,7 +393,7 @@ IPTR fbDispose(Class *cl, Object *o)
 {
     FontBitmapData *dat = INST_DATA(cl, o);
 
-    DEBUG_FONTBITMAP(dprintf("FontBitmap: destroy object 0x%lx.\n", o));
+    DEBUG_FONTBITMAP(bug("FontBitmap: destroy object 0x%lx.\n", o));
 
     if (dat->GrayBitMap)
     {

@@ -81,7 +81,7 @@ static int Init(BOOL gui)
     error = FT_Init_FreeType(&ftlibrary);
     if (error != 0)
     {
-        DEBUG_MAIN(dprintf("Init_FreeType error %d\n", error));
+        DEBUG_MAIN(bug("Init_FreeType error %d\n", error));
         return 0;
     }
 
@@ -92,7 +92,7 @@ static int Init(BOOL gui)
                 !InitFontWindowClass() ||
                 !InitFontListClass())
         {
-            DEBUG_MAIN(dprintf("Can't create custom classes.\n"));
+            DEBUG_MAIN(bug("Can't create custom classes.\n"));
             return 0;
         }
     }

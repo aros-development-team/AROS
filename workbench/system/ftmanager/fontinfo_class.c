@@ -218,7 +218,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
 
     if (!filename || !face)
     {
-        DEBUG_FONTINFO(dprintf("FontInfo: filename 0x%x face 0x%x\n", filename, face));
+        DEBUG_FONTINFO(bug("FontInfo: filename 0x%x face 0x%x\n", filename, face));
         return 0;
     }
 
@@ -551,7 +551,7 @@ IPTR fiNew(Class *cl, Object *o, struct opSet *msg)
         DoMethod(o, MUIM_FontInfo_UpdatePreview);
     }
 
-    DEBUG_FONTINFO(dprintf("FontInfo: created object 0x%lx\n", o));
+    DEBUG_FONTINFO(bug("FontInfo: created object 0x%lx\n", o));
 
     return (IPTR)o;
 }
@@ -706,7 +706,7 @@ ULONG fiUpdatePreview(Class *cl, Object *o)
         MUIA_FontBitmap_Size, size,
         End;
 
-    DEBUG_FONTINFO(dprintf("FontInfo::UpdatePreview: new 0x%lx\n", preview));
+    DEBUG_FONTINFO(bug("FontInfo::UpdatePreview: new 0x%lx\n", preview));
 
     if (preview)
     {

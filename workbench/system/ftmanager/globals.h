@@ -3,12 +3,6 @@
 
 #include <dos/bptr.h>
 
-#define DEBUG_FONTBITMAP(x)
-
-#ifdef __AROS__
-#define dprintf kprintf
-#endif
-
 #ifndef MAKE_ID
 #	define MAKE_ID(a,b,c,d)	(((a)<<24)|((b)<<16)|((c)<<8)|(d))
 #endif

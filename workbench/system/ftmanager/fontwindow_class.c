@@ -50,14 +50,14 @@ IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
 
     if (filename == NULL)
     {
-        DEBUG_FONTWINDOW(dprintf("FontWindow: no filename.\n"));
+        DEBUG_FONTWINDOW(bug("FontWindow: no filename.\n"));
         return 0;
     }
 
     error = FT_New_Face(ftlibrary, filename, 0, &face);
     if (error)
     {
-        DEBUG_FONTWINDOW(dprintf("FontWindow: New_Face error %d.\n", error));
+        DEBUG_FONTWINDOW(bug("FontWindow: New_Face error %d.\n", error));
         return 0;
     }
 
@@ -65,7 +65,7 @@ IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
                    msg->ops_AttrList);
     if (NULL == app)
     {
-        DEBUG_FONTWINDOW(dprintf("FontWindow: no app ptr.\n"));
+        DEBUG_FONTWINDOW(bug("FontWindow: no app ptr.\n"));
         return 0;
     }
 
@@ -111,7 +111,7 @@ IPTR fwNew(Class *cl, Object *o, struct opSet *msg)
         FT_Done_Face(face);
     }
 
-    DEBUG_FONTWINDOW(dprintf("FontWindow: created object 0x%lx.\n", o));
+    DEBUG_FONTWINDOW(bug("FontWindow: created object 0x%lx.\n", o));
 
     return (IPTR)o;
 }
@@ -120,7 +120,7 @@ IPTR fwDispose(Class *cl, Object *o)
 {
     FontWindowData *dat = INST_DATA(cl, o);
 
-    DEBUG_FONTWINDOW(dprintf("FontWindow: destroy object 0x%lx\n", o));
+    DEBUG_FONTWINDOW(bug("FontWindow: destroy object 0x%lx\n", o));
 
     FT_Done_Face(dat->Face);
 
