@@ -1,5 +1,5 @@
 /*
-    Copyright © 2026, The AROS Development Team. All rights reserved.
+    Copyright © 2025-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Stub ctype functions for inclusion in the linklib only.
