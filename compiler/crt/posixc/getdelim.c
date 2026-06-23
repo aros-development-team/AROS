@@ -84,8 +84,15 @@
         if (len + 1 >= cap)
         {
             size_t newcap = cap * 2;
-            char  *newbuf = realloc(buf, newcap);
+            char  *newbuf;
 
+            if (newcap < cap)       /* size_t overflow - line too large */
+            {
+                errno = EOVERFLOW;
+                return -1;
+            }
+
+            newbuf = realloc(buf, newcap);
             if (newbuf == NULL)
             {
                 errno = ENOMEM;

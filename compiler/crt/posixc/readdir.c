@@ -134,7 +134,7 @@
           
             strncpy(dir->ent.d_name, name, max);
             dir->ent.d_name[max] = '\0';    /* ensure NUL-termination */
-            dir->ent.d_reclen = strlen(dir->ent.d_name);
+            dir->ent.d_reclen = strnlen(dir->ent.d_name, max);
 
             switch (fib->fib_DirEntryType)
             {
