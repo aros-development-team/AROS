@@ -4,8 +4,8 @@ include $(SRCDIR)/config/aros.cfg
 DEBUG_ACPI=no
 
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20251212
-INTELID            := 871486
+ACPICAVERSION      := 20260408
+INTELID            := 917611
 
 ACPICAREPOSITORIES := \
     cache:// \
