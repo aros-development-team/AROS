@@ -2250,6 +2250,13 @@ $(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
 %gen_archspecificrules mainmmake=%(mmake)
 %gen_archspecificrules mainmmake=%(mmake) target=-set-archincludes
 %gen_archspecificrules mainmmake=%(mmake) target=-linklib
+# The arch-specific linklib objects are pulled in through the -linklib arch
+# chain generated above (%(mmake)-linklib : %(mmake)-$(CPU)-linklib), whose leaf
+# is the %(mainmmake)-%(arch)-linklib target emitted by build_archspecific. We
+# deliberately do NOT depend on the bare %(mmake)-$(CPU) (the full arch module
+# build) here: that target can carry cross-module dependencies (e.g. a native
+# driver that links the module's own linklib), which would create a build cycle
+# linklib -> arch-module -> core-linklibs -> linklib.
 %gen_archspecificrules mainmmake=%(mmake) target=-kobj
 #MM- %(mmake)-kobj : %(mmake)-$(CPU)
 %gen_archspecificrules mainmmake=%(mmake) target=-kobj-quick
@@ -2505,7 +2512,10 @@ endif
 %(mmake)%(flavour)_CXX_NARCHFILES   := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_ARCHFILES),$(%(mmake)%(flavour)_CXXFILES))
 %(mmake)%(flavour)_OBJC_NARCHFILES  := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_ARCHFILES),$(%(mmake)%(flavour)_OBJCFILES))
 %(mmake)%(flavour)_NLIBARCHFILES    := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_LIBARCHFILES),$(%(mmake)%(flavour)_LIBFILES))
-%(mmake)%(flavour)_ARCHNLIBFILES    := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_LIBFILES),$(%(mmake)%(flavour)_LIBARCHFILES))
+# All arch-specific linklib objects are linked (from linklib/arch/). This
+# covers both arch-only files and arch overrides of a generic file; the
+# generic counterpart of an overridden file is dropped by NLIBARCHFILES above.
+%(mmake)%(flavour)_ARCHNLIBFILES    := $(%(mmake)%(flavour)_LIBARCHFILES)
 
 %(mmake)%(flavour)_CPPFLAGS         := $(strip %(cppflags) -I$(%(mmake)%(flavour)_OBJDIR)/include -include $(%(mmake)%(flavour)_DEFLIBDEFSINC))
 ifneq (%(includedir),)
@@ -3263,6 +3273,7 @@ endif
 %buildid targets="%(mainmmake)-%(arch)"
 
 #MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
+#MM %(mainmmake)-%(arch)-linklib : %(mainmmake)-%(arch)-includes
 #MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-includes
 
 ifneq (%(incextra),)
@@ -3295,7 +3306,11 @@ endif
 ifeq ($(TARGET),%(mainmmake)-%(arch)-quick)
     BD_TARGET := %(mainmmake)-%(arch)-quick
 else
+ifeq ($(TARGET),%(mainmmake)-%(arch)-linklib)
+    BD_TARGET := %(mainmmake)-%(arch)-linklib
+else
     BD_TARGET := %(mainmmake)-%(arch)
+endif
 endif
 
 ifeq ($(TARGET),$(BD_TARGET))
@@ -3319,6 +3334,14 @@ endif
 
 #MM
 %(mainmmake)-%(arch)-quick :: $(BD_OBJS$(BDID))
+
+# Build ONLY the arch-specific linklib objects (no file/asm module objects and no
+# cross-module deps of the bare arch target). This is the leaf of the -linklib
+# arch chain, so building %(mainmmake)-linklib produces these objects (into
+# linklib/arch/) before the main module archives them, without dragging in the
+# full arch module build.
+#MM
+%(mainmmake)-%(arch)-linklib :: $(BD_LINKLIBOBJS$(BDID)) $(BD_LINKLIBARCHOBJS$(BDID))
 
 ifeq ($(findstring %(compiler),host kernel target),)
     $(error unknown compiler %(compiler))
@@ -3407,7 +3430,7 @@ $(BD_OBJDIR$(BDID))/%.o : %.S
 	%assemble_q
 endif
 
-%include_deps depstargets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick" deps="$(BD_DEPS$(BDID))"
+%include_deps depstargets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick %(mainmmake)-%(arch)-linklib" deps="$(BD_DEPS$(BDID))"
 
 %end
 #------------------------------------------------------------------------------

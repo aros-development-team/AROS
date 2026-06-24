@@ -8,6 +8,12 @@ USER_AFLAGS := -I$(GENINCDIR)
 STDC_I386_SSE_FILES := \
     sse
 
+# Link-library only sources (pulled into every executable, not part of the
+# shared stdc.library). __stdc_mathinit overrides the generic placeholder and
+# establishes the default x87 rounding direction at program start-up.
+STDC_I386_LINKLIB_FILES := \
+    __stdc_mathinit
+
 STDC_I386_FILES := \
     fenv \
     $(STDC_I386_SSE_FILES)
@@ -78,6 +84,6 @@ STDC_I386_ASMFILES += \
   mainmmake=compiler-stdc \
   modname=stdc maindir=compiler/crt/stdc \
   arch=i386 \
-  files="$(STDC_I386_FILES)" linklibfiles="$(STDC_I386_SSE_FILES)" asmfiles="$(STDC_I386_ASMFILES)"
+  files="$(STDC_I386_FILES)" linklibfiles="$(STDC_I386_SSE_FILES) $(STDC_I386_LINKLIB_FILES)" asmfiles="$(STDC_I386_ASMFILES)"
 
 #MM- compiler-stdc-i386 : includes-asm_h

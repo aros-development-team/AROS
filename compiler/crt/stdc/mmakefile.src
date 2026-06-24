@@ -603,7 +603,8 @@ STDC_CXX_CRT := \
 STDC_LINKLIB := \
     __flt_rounds \
     __ctype_linklib \
-    strcasestr
+    strcasestr \
+    __stdc_mathinit
 
 STDC_LINKLIB_COMMON := \
     __stdc_mb_cur_max

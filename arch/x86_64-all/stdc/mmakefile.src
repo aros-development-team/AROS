@@ -7,6 +7,12 @@ USER_AFLAGS 	:= -I$(GENINCDIR)
 STDC_X8664_FILES := \
     fenv
 
+# Link-library only sources (pulled into every executable, not part of the
+# shared stdc.library). __stdc_mathinit overrides the generic placeholder and
+# establishes the default x87 rounding direction at program start-up.
+STDC_X8664_LINKLIB_FILES := \
+    __stdc_mathinit
+
 STDC_X8664_ASMFILES := \
     longjmp \
     setjmp
@@ -41,6 +47,6 @@ STDC_X8664_ASMFILES += \
   mainmmake=compiler-stdc \
   modname=stdc maindir=compiler/crt/stdc \
   arch=x86_64 \
-  files="$(STDC_X8664_FILES)" asmfiles="$(STDC_X8664_ASMFILES)"
+  files="$(STDC_X8664_FILES)" linklibfiles="$(STDC_X8664_LINKLIB_FILES)" asmfiles="$(STDC_X8664_ASMFILES)"
 
 #MM compiler-stdc-x86_64 : includes-asm_h

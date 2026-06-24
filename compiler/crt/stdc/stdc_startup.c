@@ -7,22 +7,21 @@
 #include <aros/startup.h>
 #include <libraries/stdc.h>
 
-#include <fenv.h>
-
 #include "debug.h"
+
+/* The floating point environment start-up (which, on architectures that need
+   it, establishes the C standard default rounding direction) lives in its own
+   link-library module - __stdc_mathinit.c - and registers itself through
+   ADD2INIT(). Reference the module's marker symbol here: stdc_startup.c is
+   linked into every executable that uses stdc, so this pulls the module (and
+   hence its ADD2INIT() handler) in. Architectures that need no set-up provide
+   a do-nothing module exporting the same symbol. */
+extern ULONG __stdc_mathinit;
+ULONG *const __stdc_mathinit_ref = &__stdc_mathinit;
 
 static void __stdc_startup(struct ExecBase *SysBase)
 {
     jmp_buf exitjmp;
-
-    /* C99 7.6.1: on program startup the floating-point environment is
-       initialized to the default - in particular the rounding direction is
-       round-to-nearest. AROS does not guarantee this for a fresh task (the
-       x87 unit may come up rounding toward zero, which breaks long double
-       rint()/nearbyint()/lrint() and the accuracy of the l-suffixed math
-       routines), so establish it here. On targets whose fenv is a stub this
-       is a harmless no-op. */
-    fesetround(FE_TONEAREST);
 
     if (setjmp(exitjmp) == 0)
     {
