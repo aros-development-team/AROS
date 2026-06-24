@@ -386,8 +386,7 @@ validate_fini(struct validate_op *op, struct nouveau_channel *chan,
 	      struct drm_nouveau_gem_pushbuf_bo *pbbo)
 {
 	validate_fini_no_ticket(op, chan, fence, pbbo);
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	ww_acquire_fini(&op->ticket);
 #endif
 }
@@ -405,8 +404,7 @@ validate_init(struct nouveau_channel *chan, struct drm_file *file_priv,
 	LIST_HEAD(vram_list);
 	LIST_HEAD(both_list);
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	ww_acquire_init(&op->ticket, &reservation_ww_class);
 #endif
 retry:
@@ -496,8 +494,7 @@ retry:
 			goto retry;
 	}
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	ww_acquire_done(&op->ticket);
 #endif
 	list_splice_tail(&vram_list, &op->list);

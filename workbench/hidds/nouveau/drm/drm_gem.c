@@ -259,8 +259,7 @@ drm_gem_object_release_handle(int id, void *ptr, void *data)
 	else if (dev->driver->gem_close_object)
 		dev->driver->gem_close_object(obj, file_priv);
 
-NOT_IMPLEMENTED_CONTINUE
-#if 0
+#if !defined(__AROS__)
 	drm_prime_remove_buf_handle(&file_priv->prime, id);
 #endif
 	drm_vma_node_revoke(&obj->vma_node, file_priv);
