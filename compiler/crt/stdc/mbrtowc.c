@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mbrtowc().
 */
@@ -40,7 +40,7 @@
         Locale-specific or stateful encodings are not implemented.
 
     EXAMPLE
-        const char *mbs = "ä";
+        const char *mbs = "Ã¤";
         wchar_t wc;
         size_t len = mbrtowc(&wc, mbs, strlen(mbs), NULL);
 
@@ -99,6 +99,15 @@
         if (n < 4 || (c & 0xF8) == 0xF0) return (size_t)-2;
         goto ilseq;
     }
+
+    /* Reject overlong encodings, UTF-16 surrogate code points and values
+       beyond U+10FFFF (C99 7.24.6; Unicode well-formedness).  mbtowc()
+       performs the identical check. */
+    if ((len == 2 && wc < 0x80) ||
+        (len == 3 && wc < 0x800) ||
+        (len == 4 && wc < 0x10000) ||
+        (wc >= 0xD800 && wc <= 0xDFFF) || wc > 0x10FFFF)
+        goto ilseq;
 
     if (pwc)
         *pwc = wc;

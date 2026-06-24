@@ -9,6 +9,7 @@
 #include <locale.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <errno.h>
 
 #include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
@@ -100,6 +101,49 @@ void test_mbtowc(void)
 
     CU_ASSERT_EQUAL(len, 2);
     CU_ASSERT_EQUAL(wc, 0x00E4);
+}
+
+/* Invalid UTF-8 multibyte sequences must be rejected (return -1 / (size_t)-1
+   with errno == EILSEQ): overlong encodings, UTF-16 surrogate code points and
+   code points beyond U+10FFFF are all ill-formed (C99 7.24.6, Unicode). */
+void test_mb_invalid(void)
+{
+    wchar_t wc;
+
+    /* Overlong 2-byte encoding of U+0000 (0xC0 0x80) and of U+007F. */
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xC0\x80", 2), -1);
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xC1\xBF", 2), -1);
+
+    /* Overlong 3-byte encoding of U+007F (0xE0 0x81 0xBF). */
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xE0\x81\xBF", 3), -1);
+
+    /* UTF-16 surrogate halves U+D800 and U+DFFF are not valid scalars. */
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xED\xA0\x80", 3), -1);
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xED\xBF\xBF", 3), -1);
+
+    /* Code point U+110000 and an out-of-range lead byte exceed U+10FFFF. */
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xF4\x90\x80\x80", 4), -1);
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xF5\x80\x80\x80", 4), -1);
+
+    /* A malformed continuation byte is still rejected. */
+    CU_ASSERT_EQUAL(mbtowc(&wc, "\xC3\x28", 2), -1);
+
+    /* mbrtowc() must reject the same way, setting errno to EILSEQ. */
+    {
+        mbstate_t st = {0};
+        size_t r;
+        errno = 0;
+        r = mbrtowc(&wc, "\xED\xA0\x80", 3, &st);
+        CU_ASSERT_EQUAL(r, (size_t)-1);
+        CU_ASSERT_EQUAL(errno, EILSEQ);
+    }
+
+    /* mbrlen() is defined in terms of mbrtowc() and must agree on ill-formed
+       input. */
+    {
+        mbstate_t st = {0};
+        CU_ASSERT_EQUAL(mbrlen("\xC0\x80", 2, &st), (size_t)-1);
+    }
 }
 
 /* Test mbstowcs conversion */
@@ -273,6 +317,7 @@ int main(void)
     if ((NULL == CU_add_test(pSuite, "mblen", test_mblen)) ||
     (NULL == CU_add_test(pSuite, "mbrlen", test_mbrlen)) ||
     (NULL == CU_add_test(pSuite, "mbtowc", test_mbtowc)) ||
+    (NULL == CU_add_test(pSuite, "mb_invalid", test_mb_invalid)) ||
     (NULL == CU_add_test(pSuite, "mbstowcs", test_mbstowcs)) ||
     (NULL == CU_add_test(pSuite, "mbsrtowcs", test_mbsrtowcs)) ||
     (NULL == CU_add_test(pSuite, "wctomb", test_wctomb)) ||

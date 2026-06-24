@@ -171,6 +171,23 @@ void testCALLOC_overflow(void)
     CU_PASS("calloc(0, n) handled");
 }
 
+/* malloc() must reject a request whose internal (size + header) bookkeeping
+   would wrap size_t, rather than under-allocating the block. */
+void testMALLOC_overflow(void)
+{
+    void *p;
+
+    errno = 0;
+    p = malloc(SIZE_MAX);
+    CU_ASSERT_PTR_NULL(p);
+    if (p) free(p);
+
+    errno = 0;
+    p = malloc(SIZE_MAX - 4);
+    CU_ASSERT_PTR_NULL(p);
+    if (p) free(p);
+}
+
 void testREALLOC_grow(void)
 {
     char *p = malloc(8);
@@ -229,6 +246,7 @@ int main(void)
         (NULL == CU_add_test(pSuite, "malloc()/free()", testMALLOCFREE)) ||
         (NULL == CU_add_test(pSuite, "calloc()", testCALLOC)) ||
         (NULL == CU_add_test(pSuite, "calloc() overflow guard", testCALLOC_overflow)) ||
+        (NULL == CU_add_test(pSuite, "malloc() overflow guard", testMALLOC_overflow)) ||
         (NULL == CU_add_test(pSuite, "realloc() grow", testREALLOC_grow)) ||
         (NULL == CU_add_test(pSuite, "realloc(NULL, n)", testREALLOC_null)) ||
         (NULL == CU_add_test(pSuite, "realloc(ptr, 0)", testREALLOC_zero)))

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Convert a time into a string.
 */
@@ -58,7 +58,5 @@
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
 
-    strftime (StdCBase->timebuffer, 26, "%C\n", tm);
-
-    return StdCBase->timebuffer;
+    return asctime_r(tm, StdCBase->timebuffer);
 } /* asctime */

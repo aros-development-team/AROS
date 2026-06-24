@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C99 function malloc().
 */
@@ -7,6 +7,7 @@
 #include "__stdc_intbase.h"
 
 #include <errno.h>
+#include <stdint.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -52,6 +53,14 @@
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     UBYTE *mem = NULL;
+
+    /* Guard against (size + header) wrapping size_t, which would otherwise
+       under-allocate the block and let the caller overrun it. */
+    if (size > SIZE_MAX - AROS_ALIGN(sizeof(size_t)))
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
 
     /* Allocate the memory */
     mem = AllocPooled (StdCBase->mempool, size + AROS_ALIGN(sizeof(size_t)));

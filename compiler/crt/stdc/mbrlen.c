@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mbrlen().
 */
@@ -35,10 +35,12 @@
 
     NOTES
         Only UTF-8 multibyte sequences are supported.
-        The encoding is stateless; mbstate_t is unused.
+        Implemented in terms of mbrtowc(NULL, s, n, ps) as required by
+        C99 7.24.6.2, so the two functions always agree on what constitutes a
+        valid sequence (including overlong/surrogate/out-of-range rejection).
 
     EXAMPLE
-        const char *mbs = "ä";
+        const char *mbs = "Ã¤";
         size_t len = mbrlen(mbs, strlen(mbs), NULL);
 
     SEE ALSO
@@ -46,42 +48,7 @@
 
 ******************************************************************************/
 {
-    unsigned char c;
+    static mbstate_t __mbrlen_state;
 
-    if (s == NULL || *s == '\0')
-        return 0;
-
-    if (n == 0)
-        return (size_t)-2;
-
-    c = (unsigned char)s[0];
-
-    /* ASCII character (1-byte UTF-8) */
-    if (c < 0x80)
-        return 1;
-
-    /* Check UTF-8 multibyte sequence length */
-    if ((c & 0xE0) == 0xC0) {
-        if (n < 2) return (size_t)-2;
-        if ((s[1] & 0xC0) != 0x80) goto ilseq;
-        return 2;
-    }
-
-    if ((c & 0xF0) == 0xE0) {
-        if (n < 3) return (size_t)-2;
-        if ((s[1] & 0xC0) != 0x80 || (s[2] & 0xC0) != 0x80) goto ilseq;
-        return 3;
-    }
-
-    if ((c & 0xF8) == 0xF0) {
-        if (n < 4) return (size_t)-2;
-        if ((s[1] & 0xC0) != 0x80 ||
-            (s[2] & 0xC0) != 0x80 ||
-            (s[3] & 0xC0) != 0x80) goto ilseq;
-        return 4;
-    }
-
-ilseq:
-    errno = EILSEQ;
-    return (size_t)-1;
+    return mbrtowc(NULL, s, n, ps ? ps : &__mbrlen_state);
 }
