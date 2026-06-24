@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <libraries/localestd.h>
@@ -50,6 +50,35 @@ static size_t __strfnumb_locale(char *s, size_t maxsize, signed int places, size
         *s++ = buffer[pos], len++;
 
     return len;
+}
+
+static int __strf_is_leap(int year)
+{
+    return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+}
+
+/* ISO 8601 week number (1..53); sets *iso_year to the ISO week-based year.
+   The week of a date is the week whose Thursday it shares, and that Thursday's
+   year is the week-based year.  tm_yday is 0-based, tm_wday is 0=Sunday. */
+static int __strf_iso_week(const struct tm *tm, int *iso_year)
+{
+    int year     = tm->tm_year + 1900;
+    int iso_wday  = (tm->tm_wday + 6) % 7;          /* 0=Mon .. 6=Sun */
+    int thursday  = tm->tm_yday - iso_wday + 3;     /* this week's Thursday (yday) */
+
+    if (thursday < 0)
+    {
+        year--;
+        thursday += __strf_is_leap(year) ? 366 : 365;
+    }
+    else if (thursday >= (__strf_is_leap(year) ? 366 : 365))
+    {
+        thursday -= __strf_is_leap(year) ? 366 : 365;
+        year++;
+    }
+
+    *iso_year = year;
+    return thursday / 7 + 1;
 }
 
 static size_t __strftime_locale(char *s, size_t maxsize, const char *format, const struct tm *timeptr, struct Locale *locale)
@@ -143,15 +172,129 @@ static size_t __strftime_locale(char *s, size_t maxsize, const char *format, con
                     break;
 
                 case 'n':
-                    if (size + 1 < maxsize) { *s++ = '\n'; tmp = 1; }
+                    if (size + 1 < maxsize) { s[0] = '\n'; tmp = 1; }
                     break;
 
                 case 't':
-                    if (size + 1 < maxsize) { *s++ = '\t'; tmp = 1; }
+                    if (size + 1 < maxsize) { s[0] = '\t'; tmp = 1; }
                     break;
 
                 case '%':
-                    if (size + 1 < maxsize) { *s++ = '%'; tmp = 1; }
+                    if (size + 1 < maxsize) { s[0] = '%'; tmp = 1; }
+                    break;
+
+                case 'C':
+                    tmp = __strfnumb_locale(s, maxsize - size, 2,
+                              (timeptr->tm_year + 1900) / 100);
+                    break;
+
+                case 'e':
+                    tmp = __strfnumb_locale(s, maxsize - size, -2, timeptr->tm_mday);
+                    break;
+
+                case 'j':
+                    tmp = __strfnumb_locale(s, maxsize - size, 3, timeptr->tm_yday + 1);
+                    break;
+
+                case 'u':
+                    tmp = __strfnumb_locale(s, maxsize - size, 1,
+                              timeptr->tm_wday == 0 ? 7 : timeptr->tm_wday);
+                    break;
+
+                case 'w':
+                    tmp = __strfnumb_locale(s, maxsize - size, 1, timeptr->tm_wday);
+                    break;
+
+                case 'k':
+                    tmp = __strfnumb_locale(s, maxsize - size, -2, timeptr->tm_hour);
+                    break;
+
+                case 'l':
+                {
+                    int hour = timeptr->tm_hour % 12;
+                    if (hour == 0) hour = 12;
+                    tmp = __strfnumb_locale(s, maxsize - size, -2, hour);
+                    break;
+                }
+
+                case 'U':
+                    tmp = __strfnumb_locale(s, maxsize - size, 2,
+                              (timeptr->tm_yday + 7 - timeptr->tm_wday) / 7);
+                    break;
+
+                case 'W':
+                    tmp = __strfnumb_locale(s, maxsize - size, 2,
+                              (timeptr->tm_yday + 7 - ((timeptr->tm_wday + 6) % 7)) / 7);
+                    break;
+
+                case 'V':
+                {
+                    int iso_year;
+                    int week = __strf_iso_week(timeptr, &iso_year);
+                    tmp = __strfnumb_locale(s, maxsize - size, 2, week);
+                    break;
+                }
+
+                case 'G':
+                {
+                    int iso_year;
+                    (void)__strf_iso_week(timeptr, &iso_year);
+                    tmp = __strfnumb_locale(s, maxsize - size, 4, iso_year);
+                    break;
+                }
+
+                case 'g':
+                {
+                    int iso_year;
+                    (void)__strf_iso_week(timeptr, &iso_year);
+                    tmp = __strfnumb_locale(s, maxsize - size, 2, iso_year % 100);
+                    break;
+                }
+
+                case 'P':
+                    tmp = snprintf(s, maxsize - size, "%s",
+                              timeptr->tm_hour >= 12 ? "pm" : "am");
+                    break;
+
+                case 'z':
+                    /* AROS keeps broken-down time in UTC with no offset. */
+                    tmp = snprintf(s, maxsize - size, "%s", "+0000");
+                    break;
+
+                case 'Z':
+                    /* No timezone name is available; emit nothing (allowed). */
+                    break;
+
+                case 'D':
+                    tmp = __strftime_locale(s, maxsize - size, "%m/%d/%y", timeptr, locale);
+                    break;
+
+                case 'F':
+                    tmp = __strftime_locale(s, maxsize - size, "%Y-%m-%d", timeptr, locale);
+                    break;
+
+                case 'R':
+                    tmp = __strftime_locale(s, maxsize - size, "%H:%M", timeptr, locale);
+                    break;
+
+                case 'T':
+                    tmp = __strftime_locale(s, maxsize - size, "%H:%M:%S", timeptr, locale);
+                    break;
+
+                case 'r':
+                    tmp = __strftime_locale(s, maxsize - size, "%I:%M:%S %p", timeptr, locale);
+                    break;
+
+                case 'c':
+                    tmp = __strftime_locale(s, maxsize - size, "%a %b %e %H:%M:%S %Y", timeptr, locale);
+                    break;
+
+                case 'x':
+                    tmp = __strftime_locale(s, maxsize - size, "%m/%d/%y", timeptr, locale);
+                    break;
+
+                case 'X':
+                    tmp = __strftime_locale(s, maxsize - size, "%H:%M:%S", timeptr, locale);
                     break;
 
                 default:
@@ -244,7 +387,7 @@ static struct Locale * __crt_get_locale()
 
     BUGS
         - Does not support all strftime() specifiers.
-        - Does not use the user’s actual locale settings.
+        - Does not use the userï¿½s actual locale settings.
 
     SEE ALSO
 

@@ -51,6 +51,7 @@ CUNITSTDCTESTFILES := \
     cunit-crt-stdlib-c99 \
     cunit-crt-stdlib-c11 \
     cunit-crt-time-c89 \
+    cunit-crt-strftime-c89 \
     cunit-crt-scanf-c89 \
     cunit-crt-uchar-c11 \
     cunit-crt-wchar \
