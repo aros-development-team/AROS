@@ -217,6 +217,26 @@ void test_wcstombs(void)
        not update the caller's pointer - hence no src consumption check. */
 }
 
+/* With a NULL destination, mbstowcs()/wcstombs() must return the full
+   converted length and ignore the length limit (C99 7.24.6 / POSIX). */
+void test_mb_null_count(void)
+{
+    const char *mbs = "hello";
+    wchar_t wcs[] = { L'h', L'e', L'l', L'l', L'o', 0 };
+    wchar_t wbuf[8];
+    char cbuf[8];
+
+    /* dst == NULL: the limit is ignored, the full length is returned. */
+    CU_ASSERT_EQUAL(mbstowcs(NULL, mbs, 0), 5);
+    CU_ASSERT_EQUAL(mbstowcs(NULL, mbs, 2), 5);
+    CU_ASSERT_EQUAL(wcstombs(NULL, wcs, 0), 5);
+    CU_ASSERT_EQUAL(wcstombs(NULL, wcs, 2), 5);
+
+    /* With a real buffer, the limit still bounds the conversion. */
+    CU_ASSERT_EQUAL(mbstowcs(wbuf, mbs, 3), 3);
+    CU_ASSERT_EQUAL(wcstombs(cbuf, wcs, 3), 3);
+}
+
 /* Test wcsrtombs conversion */
 void test_wcsrtombs(void) {
     const wchar_t *src = get_test_wcs();
@@ -323,6 +343,7 @@ int main(void)
     (NULL == CU_add_test(pSuite, "wctomb", test_wctomb)) ||
     (NULL == CU_add_test(pSuite, "wcrtomb", test_wcrtomb)) ||
     (NULL == CU_add_test(pSuite, "wcstombs", test_wcstombs)) ||
+    (NULL == CU_add_test(pSuite, "mb_null_count", test_mb_null_count)) ||
     (NULL == CU_add_test(pSuite, "wcsrtombs", test_wcsrtombs)) ||
     (NULL == CU_add_test(pSuite, "towcase", test_towcase)) ||
     (NULL == CU_add_test(pSuite, "iswctype", test_iswctype)) ||

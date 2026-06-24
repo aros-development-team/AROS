@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function tgamma
 */
@@ -49,9 +49,20 @@
 {
     FORWARD_IF_NAN_OR_INF(tgamma, x);
     double r = __ieee754_tgamma(x);
-    if (!isfinite(r)) {
-        errno = ERANGE;
-        feraiseexcept(FE_OVERFLOW);
+    if (isnan(r)) {
+        /* Domain error: a negative integer argument (Annex F.10.5.4). */
+        errno = EDOM;
+        feraiseexcept(FE_INVALID);
+    } else if (isinf(r) && isfinite(x)) {
+        if (x == 0.0) {
+            /* Pole error at zero. */
+            errno = ERANGE;
+            feraiseexcept(FE_DIVBYZERO);
+        } else {
+            /* Range error: overflow for large x. */
+            errno = ERANGE;
+            feraiseexcept(FE_OVERFLOW);
+        }
     }
     return r;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function cbrtl
 */
@@ -47,7 +47,26 @@
 
 ******************************************************************************/
 {
+    long double r;
+
     if (isnan(x)) return x;
-    return __ieee754_tgammal(x);
+
+    r = __ieee754_tgammal(x);
+    if (isnan(r)) {
+        /* Domain error: a negative integer argument (Annex F.10.5.4). */
+        errno = EDOM;
+        feraiseexcept(FE_INVALID);
+    } else if (isinf(r) && isfinite(x)) {
+        if (x == 0.0L) {
+            /* Pole error at zero. */
+            errno = ERANGE;
+            feraiseexcept(FE_DIVBYZERO);
+        } else {
+            /* Range error: overflow for large x. */
+            errno = ERANGE;
+            feraiseexcept(FE_OVERFLOW);
+        }
+    }
+    return r;
 }
 #endif	/* LDBL_MANT_DIG == DBL_MANT_DIG */

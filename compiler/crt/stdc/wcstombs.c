@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2007-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2007-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function wcstombs().
 */
@@ -91,10 +91,12 @@
             return (size_t)-1;
         }
 
-        if (total + len > n)
-            break;
-
+        /* When dest is NULL, len is ignored and the full converted length is
+           counted (C99 7.24.6.4); the byte limit only applies with a buffer. */
         if (dest) {
+            if (total + len > n)
+                break;
+
             for (size_t i = 0; i < len; ++i)
                 dest[total + i] = buf[i];
         }

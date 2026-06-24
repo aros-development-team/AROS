@@ -78,7 +78,7 @@
     wchar_t wc;
     mbstate_t ps = {0}; // Not used in our implementation
 
-    while (count < n) {
+    while (dest == NULL || count < n) {
         if (*src == '\0') {
             /* The null character is converted and stored, but is not counted
                in the return value (C99 7.24.6.3.2). */

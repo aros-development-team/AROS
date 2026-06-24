@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function cbrtl
 */
@@ -31,10 +31,10 @@
         Returns ln|G(x)|.
 
     NOTES
-        Useful for large factorials: lgammal(n+1) ˜ ln(n!)
+        Useful for large factorials: lgammal(n+1) Ëœ ln(n!)
 
     EXAMPLE
-        long double r = lgammal(5.0L);  // ˜ ln(24)
+        long double r = lgammal(5.0L);  // Ëœ ln(24)
 
     BUGS
         None known.
@@ -47,7 +47,22 @@
 
 ******************************************************************************/
 {
+    long double r;
+
     if (isnan(x)) return x;
-    return __ieee754_lgammal(x);
+
+    r = __ieee754_lgammal(x);
+    if (isinf(r) && isfinite(x)) {
+        if (x <= 0.0L && floorl(x) == x) {
+            /* Pole error: zero or a negative integer (Annex F.10.5.3). */
+            errno = ERANGE;
+            feraiseexcept(FE_DIVBYZERO);
+        } else {
+            /* Range error: overflow for a very large argument. */
+            errno = ERANGE;
+            feraiseexcept(FE_OVERFLOW);
+        }
+    }
+    return r;
 }
 #endif	/* LDBL_MANT_DIG == DBL_MANT_DIG */

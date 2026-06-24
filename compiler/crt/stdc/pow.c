@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function pow
 */
@@ -58,7 +58,12 @@
     }
 
     double r = __ieee754_pow(x, y);
-    if (!isfinite(r)) {
+    if (x == 0.0 && y < 0.0) {
+        /* Pole error: zero raised to a negative power (Annex F.10.4.4). */
+        STDC_SETMATHERRNO(ERANGE)
+        STDC_RAISEMATHEXCPT(FE_DIVBYZERO)
+    } else if (!isfinite(r)) {
+        /* Range error: overflow. */
         STDC_SETMATHERRNO(ERANGE)
         STDC_RAISEMATHEXCPT(FE_OVERFLOW)
     }

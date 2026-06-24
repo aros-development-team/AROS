@@ -53,6 +53,7 @@ CUNITSTDCTESTFILES := \
     cunit-crt-time-c89 \
     cunit-crt-strftime-c89 \
     cunit-crt-scanf-c89 \
+    cunit-crt-matherr-c99 \
     cunit-crt-uchar-c11 \
     cunit-crt-wchar \
     cunit-crt-wctype \

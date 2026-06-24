@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function lgamma
 */
@@ -48,7 +48,19 @@
 ******************************************************************************/
 {
     FORWARD_IF_NAN_OR_INF(lgamma, x);
-    return __ieee754_lgamma(x);
+    double r = __ieee754_lgamma(x);
+    if (isinf(r)) {
+        if (x <= 0.0 && floor(x) == x) {
+            /* Pole error: zero or a negative integer (Annex F.10.5.3). */
+            errno = ERANGE;
+            feraiseexcept(FE_DIVBYZERO);
+        } else {
+            /* Range error: overflow for a very large argument. */
+            errno = ERANGE;
+            feraiseexcept(FE_OVERFLOW);
+        }
+    }
+    return r;
 }
 
 #if	LDBL_MANT_DIG == DBL_MANT_DIG

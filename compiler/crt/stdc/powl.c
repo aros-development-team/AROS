@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Desc: C99 function cbrtl
 */
@@ -48,20 +48,29 @@
 
 ******************************************************************************/
 {
+    long double r;
+
     if (isnan(x) || isnan(y)) return x + y;
 
-    // Domain errors for real-valued pow
-    if (x == 0.0L && y < 0.0L) {
-        errno = EDOM;
-        feraiseexcept(FE_DIVBYZERO);
-        return HUGE_VALL;
-    }
+    // Domain error: negative base with non-integer exponent
     if (x < 0.0L && floorl(y) != y) {
         errno = EDOM;
         feraiseexcept(FE_INVALID);
         return NAN;
     }
 
-    return __ieee754_powl(x, y);
+    r = __ieee754_powl(x, y);
+
+    if (x == 0.0L && y < 0.0L) {
+        /* Pole error: zero raised to a negative power (Annex F.10.4.4). */
+        errno = ERANGE;
+        feraiseexcept(FE_DIVBYZERO);
+    } else if (!isfinite(r) && isfinite(x) && isfinite(y)) {
+        /* Range error: overflow (a non-finite result from finite inputs). */
+        errno = ERANGE;
+        feraiseexcept(FE_OVERFLOW);
+    }
+
+    return r;
 }
 #endif	/* LDBL_MANT_DIG == DBL_MANT_DIG */

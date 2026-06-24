@@ -179,6 +179,14 @@ int __getfdslot(int wanted_fd)
     }
     else if (PosixCBase->fd_array[wanted_fd])
     {
+        /* The slot is grown above for an out-of-range wanted_fd (which is
+           empty, so nothing is closed if that allocation fails); only an
+           in-range, occupied slot is closed here.  The FD_Reserve() below then
+           re-claims the very fd just freed, which does not realistically fail -
+           so dup2()/open() do not lose wanted_fd on the common failure paths.
+           A strictly-atomic guarantee would require splitting close() into
+           "close file" + "release fd" to retain the reservation across the
+           swap; see CRT_REVIEW.md (dup2 ENOMEM edge). */
         close(wanted_fd);
     }
 
