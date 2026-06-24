@@ -411,7 +411,11 @@ void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence)
         /* Re-use slot from a signaled fence, thus removing it from list */
         if (dma_fence_is_signaled(list->shared[i]))
         {
+// FIXME: casues freeze during gfxbench after LUT_8 WPA. Possibly semaphore deadlock? (memory is allocated
+// from semapahore synchronized pool)
+#if 0
             dma_fence_put(list->shared[i]);
+#endif
             list->shared[i] = NULL;
             break;
         }
