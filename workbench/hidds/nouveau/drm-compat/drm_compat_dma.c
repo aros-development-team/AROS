@@ -407,10 +407,19 @@ void dma_resv_add_shared_fence(struct dma_resv *resv, struct dma_fence *fence)
     {
         if (!list->shared[i])
             break;
+
+        /* Re-use slot from a signaled fence, thus removing it from list */
+        if (dma_fence_is_signaled(list->shared[i]))
+        {
+            dma_fence_put(list->shared[i]);
+            list->shared[i] = NULL;
+            break;
+        }
     }
 
     dma_fence_get(fence);
 
     list->shared[i] = fence;
-    list->shared_count++;
+    if (i == count)
+        list->shared_count++;
 }
