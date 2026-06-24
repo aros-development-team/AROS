@@ -145,7 +145,7 @@ static BOOL computeVendorIndexes(const char *buffer, LONG size)
 {
     LONG i, j;
 
-    vi_allocated = 2500;
+    vi_allocated = 3000;
     vendor_index = AllocVec(vi_allocated * sizeof(struct vendor_cell), MEMF_ANY);
     if (NULL == vendor_index)
         return FALSE;
