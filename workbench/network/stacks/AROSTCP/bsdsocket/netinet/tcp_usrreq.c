@@ -171,6 +171,10 @@ struct mbuf *m, *nam, *control;
          * Give the socket an address.
          */
     case PRU_BIND:
+        if(tcp_isipv6(inp)) {
+            error = in6_pcbbind(inp, nam);
+            break;
+        }
         /*
          * Must check for multicast addresses and disallow binding
          * to them.
@@ -191,7 +195,8 @@ struct mbuf *m, *nam, *control;
          */
     case PRU_LISTEN:
         if(inp->inp_lport == 0)
-            error = in_pcbbind(inp, NULL);
+            error = tcp_isipv6(inp) ? in6_pcbbind(inp, (struct mbuf *)0)
+                                    : in_pcbbind(inp, (struct mbuf *)0);
         if(error == 0)
             tp->t_state = TCPS_LISTEN;
         break;
@@ -207,11 +212,13 @@ struct mbuf *m, *nam, *control;
         /*
          * Must disallow TCP ``connections'' to multicast addresses.
          */
-        sinp = mtod(nam, struct sockaddr_in *);
-        if(sinp->sin_family == AF_INET
-                && IN_MULTICAST(ntohl(sinp->sin_addr.s_addr))) {
-            error = EAFNOSUPPORT;
-            break;
+        if(!tcp_isipv6(inp)) {
+            sinp = mtod(nam, struct sockaddr_in *);
+            if(sinp->sin_family == AF_INET
+                    && IN_MULTICAST(ntohl(sinp->sin_addr.s_addr))) {
+                error = EAFNOSUPPORT;
+                break;
+            }
         }
 
         if((error = tcp_connect(tp, nam)) != 0)
@@ -247,7 +254,10 @@ struct mbuf *m, *nam, *control;
          * of the peer, storing through addr.
          */
     case PRU_ACCEPT:
-        in_setpeeraddr(inp, nam);
+        if(tcp_isipv6(inp))
+            in6_setpeeraddr(inp, nam);
+        else
+            in_setpeeraddr(inp, nam);
         break;
 
         /*
@@ -352,11 +362,17 @@ struct mbuf *m, *nam, *control;
         break;
 
     case PRU_SOCKADDR:
-        in_setsockaddr(inp, nam);
+        if(tcp_isipv6(inp))
+            in6_setsockaddr(inp, nam);
+        else
+            in_setsockaddr(inp, nam);
         break;
 
     case PRU_PEERADDR:
-        in_setpeeraddr(inp, nam);
+        if(tcp_isipv6(inp))
+            in6_setpeeraddr(inp, nam);
+        else
+            in_setpeeraddr(inp, nam);
         break;
 
         /*
@@ -402,6 +418,34 @@ struct mbuf *nam;
     struct sockaddr_in *sin = mtod(nam, struct sockaddr_in *);
     struct sockaddr_in *ifaddr;
     int error;
+
+    if(tcp_isipv6(inp)) {
+        /* IPv6 connect: bind an ephemeral local port/addr, then connect. */
+        if(inp->inp_lport == 0) {
+            error = in6_pcbbind(inp, (struct mbuf *)0);
+            if(error)
+                return error;
+        }
+        error = in6_pcbconnect(inp, nam);
+        if(error)
+            return error;
+        tp->t_template = tcp_template(tp);
+        if(tp->t_template == 0) {
+            in6_pcbdisconnect(inp);
+            return ENOBUFS;
+        }
+        while(tp->request_r_scale < TCP_MAX_WINSHIFT &&
+                (TCP_MAXWIN << tp->request_r_scale) < so->so_rcv.sb_hiwat)
+            tp->request_r_scale++;
+        soisconnecting(so);
+        tcpstat.tcps_connattempt++;
+        tp->t_state = TCPS_SYN_SENT;
+        tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
+        tp->iss = tcp_new_isn(inp);
+        tcp_sendseqinit(tp);
+        tp->cc_send = CC_INC(tcp_ccgen);
+        return 0;
+    }
 
     if(inp->inp_lport == 0) {
         error = in_pcbbind(inp, NULL);

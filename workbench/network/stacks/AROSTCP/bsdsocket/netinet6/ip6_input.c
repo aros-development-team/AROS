@@ -532,6 +532,8 @@ ip6_input(struct mbuf *m)
     /* discard unspecified source except when link-local */
     if(IN6_IS_ADDR_UNSPECIFIED(&ip6->ip6_src) &&
             !IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        D(bug("[AROSTCP:IP6] %s: drop unspecified source (nxt=%d)\n",
+              __func__, ip6->ip6_nxt));
         ip6stat.ip6s_badscope++;
         goto bad;
     }

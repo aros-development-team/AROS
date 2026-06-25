@@ -71,7 +71,7 @@ NETINET_C:= \
 	netinet/ip_icmp \
 	netinet/ip_input netinet/ip_output netinet/raw_ip \
 	netinet/tcp_debug netinet/tcp_input netinet/tcp_output \
-	netinet/tcp_subr netinet/tcp_timer netinet/tcp_usrreq \
+	netinet/tcp_subr netinet/tcp_syncache netinet/tcp_timer netinet/tcp_usrreq \
 	netinet/tcp_cc_newreno netinet/tcp_cc_cubic \
 	netinet/udp_usrreq
 

@@ -4,13 +4,18 @@
 include $(SRCDIR)/config/aros.cfg
 
 FILES := \
-    tcp
+    tcp \
+    tapecho \
+    v6diag
 
 EXEDIR := $(AROS_TESTS)/Socket
 CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
-    cunit-net-socket
+    cunit-net-socket \
+    cunit-net-tcp \
+    cunit-net-udp \
+    cunit-net-inet6
 
 #MM test-socket : includes linklibs
 

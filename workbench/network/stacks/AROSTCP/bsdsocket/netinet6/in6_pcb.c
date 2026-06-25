@@ -55,6 +55,37 @@
 #include <netinet/in_var.h>
 #include <netinet6/in6_var.h>
 
+/* Defined later in this file. */
+struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
+                            struct in6_addr *, u_int);
+
+/* ------------------------------------------------------------------ *
+ * in6_pcballoclport - allocate an unused ephemeral local port for inp.
+ *
+ * Mirrors the IPv4 in_pcbbind() ephemeral algorithm: pick a port in the
+ * [IPPORT_RESERVED, IPPORT_USERRESERVED] range and skip any already in use.
+ * Returns the port in network byte order.  inp->inp_laddr6 must already be
+ * set (it may be the unspecified/wildcard address).
+ * ------------------------------------------------------------------ */
+static u_short
+in6_pcballoclport(struct inpcb *inp)
+{
+    struct inpcbinfo *pcbinfo = inp->inp_pcbinfo;
+    struct inpcbhead *head = pcbinfo->listhead;
+    unsigned short *lastport = &pcbinfo->lastport;
+    struct in6_addr wild;
+    u_short lport;
+
+    bzero(&wild, sizeof(wild));
+    do {
+        ++*lastport;
+        if(*lastport < IPPORT_RESERVED || *lastport > IPPORT_USERRESERVED)
+            *lastport = IPPORT_RESERVED;
+        lport = htons(*lastport);
+    } while(in6_pcblookup(head, &wild, 0, &inp->inp_laddr6, lport) != NULL);
+    return lport;
+}
+
 /* ------------------------------------------------------------------ *
  * in6_pcbbind - bind an IPv6 PCB to a local address and/or port.
  *
@@ -68,12 +99,8 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
         return EINVAL;
 
     if(nam == NULL) {
-        /* wildcard bind: allocate an ephemeral port */
-        u_short lport = htons(++(inp->inp_pcbinfo->lastport));
-        if(lport == 0)
-            lport = htons(++(inp->inp_pcbinfo->lastport));
-        inp->inp_lport = lport;
-        /* leave inp_laddr6 as all-zeros (wildcard) */
+        /* wildcard bind: ephemeral port, wildcard (unspecified) address */
+        inp->inp_lport = in6_pcballoclport(inp);
         return 0;
     }
 
@@ -86,7 +113,11 @@ in6_pcbbind(struct inpcb *inp, struct mbuf *nam)
             return EAFNOSUPPORT;
 
         inp->inp_laddr6 = sin6->sin6_addr;
-        inp->inp_lport  = sin6->sin6_port; /* already in network byte order */
+        if(sin6->sin6_port == 0)
+            /* explicit address, but port 0 means "pick an ephemeral one" */
+            inp->inp_lport = in6_pcballoclport(inp);
+        else
+            inp->inp_lport = sin6->sin6_port; /* already in network byte order */
     }
 
     return 0;
@@ -99,6 +130,7 @@ int
 in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
 {
     struct sockaddr_in6 *sin6;
+    extern struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
 
     if(nam == NULL || nam->m_len < (int)sizeof(struct sockaddr_in6))
         return EINVAL;
@@ -115,6 +147,32 @@ in6_pcbconnect(struct inpcb *inp, struct mbuf *nam)
         int error = in6_pcbbind(inp, NULL);
         if(error)
             return error;
+    }
+
+    /*
+     * Select a source address if the socket is not bound to a specific local
+     * address.  Without this the connection would use the unspecified source
+     * (::), which the peer's ip6_input() discards as an invalid scope - so the
+     * SYN (and every later segment) would never be accepted.  Mirrors the
+     * source selection udp6_output() performs for unbound datagram sockets.
+     */
+    if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6)) {
+        struct route_in6 ro;
+        struct in6_ifaddr *ia;
+
+        bzero((caddr_t)&ro, sizeof(ro));
+        ro.ro_dst.sin6_family = AF_INET6;
+        ro.ro_dst.sin6_len    = sizeof(ro.ro_dst);
+        ro.ro_dst.sin6_addr   = sin6->sin6_addr;
+        rtalloc((struct route *)&ro);
+        if(ro.ro_rt != NULL) {
+            ia = in6_ifawithifp(ro.ro_rt->rt_ifp, &sin6->sin6_addr);
+            if(ia)
+                inp->inp_laddr6 = ia->ia_addr.sin6_addr;
+            RTFREE(ro.ro_rt);
+        }
+        if(IN6_IS_ADDR_UNSPECIFIED(&inp->inp_laddr6))
+            return EADDRNOTAVAIL;
     }
 
     inp->inp_faddr6 = sin6->sin6_addr;

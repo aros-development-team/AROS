@@ -45,6 +45,7 @@
 #include <sys/socket.h>
 #include <sys/socketvar.h>
 #include <sys/protosw.h>
+#include <sys/domain.h>
 #include <sys/errno.h>
 #include <sys/queue.h>
 
@@ -54,10 +55,12 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <netinet/in_pcb.h>
 #include <netinet/in_var.h>
 #include <netinet/ip_var.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/in_cksum_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -70,14 +73,75 @@
 
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
+#include "tcp_syncache.h"
 
 #include <kern/amiga_includes.h>
 
 #include <kern/kern_subr_protos.h>
 
 /*
- * RFC 6528 ISN randomization: secret key and hash function.
+ * Dual-stack helper: true if the socket bound to this PCB is an AF_INET6
+ * (IPv6) socket.  Derived from the socket's protocol domain so it is correct
+ * for listen children and syncache-created sockets too.
  */
+int
+tcp_isipv6(struct inpcb *inp)
+{
+#if INET6
+    if(inp && inp->inp_socket && inp->inp_socket->so_proto &&
+            inp->inp_socket->so_proto->pr_domain)
+        return (inp->inp_socket->so_proto->pr_domain->dom_family == AF_INET6);
+#endif
+    return (0);
+}
+
+#if INET6
+/*
+ * Dual-stack output helper.  The mbuf m must already start at the TCP header
+ * (TCP header + options + data), with m_len / m_pkthdr.len == tlen.  Prepend
+ * and fill an IPv6 header, compute the TCP checksum over the IPv6 pseudo-header
+ * and hand the datagram to ip6_output().  Shared by tcp_output(), tcp_respond()
+ * and the SYN cache, mirroring udp6_output()'s construction.
+ */
+int
+tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
+    int hlim, int tlen, struct inpcb *inp)
+{
+    struct ip6_hdr *ip6;
+    struct tcphdr  *th;
+    struct ip6_moptions *im6o = inp ? inp->in6p_moptions : NULL;
+
+    M_PREPEND(m, sizeof(struct ip6_hdr), M_DONTWAIT);
+    if(m == NULL)
+        return (ENOBUFS);
+    /*
+     * M_PREPEND may have allocated a fresh mbuf for the IPv6 header, leaving
+     * the TCP header in the following mbuf.  Pull the IPv6 + TCP headers into
+     * one contiguous mbuf so the th_sum store below lands on the real TCP
+     * header (and not on stray bytes of a separate header mbuf).
+     */
+    if(m->m_len < sizeof(struct ip6_hdr) + sizeof(struct tcphdr)) {
+        m = m_pullup(m, sizeof(struct ip6_hdr) + sizeof(struct tcphdr));
+        if(m == NULL)
+            return (ENOBUFS);
+    }
+    ip6 = mtod(m, struct ip6_hdr *);
+    ip6->ip6_flow = 0;
+    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
+    ip6->ip6_plen = htons((u_short)tlen);
+    ip6->ip6_nxt  = IPPROTO_TCP;
+    ip6->ip6_hlim = (hlim > 0) ? (u_int8_t)hlim : (u_int8_t)ip6_defhlim;
+    ip6->ip6_src  = *laddr;
+    ip6->ip6_dst  = *faddr;
+
+    th = (struct tcphdr *)(ip6 + 1);
+    th->th_sum = 0;
+    th->th_sum = in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr),
+                           (u_int32_t)tlen);
+
+    return (ip6_output(m, NULL, NULL, 0, im6o, NULL, inp));
+}
+#endif /* INET6 */
 u_int32_t tcp_secret_key[4];
 
 /* Mix-based hash for ISN generation (Murmur-style) */
@@ -104,6 +168,20 @@ tcp_seq
 tcp_new_isn(struct inpcb *inp)
 {
 	u_int32_t hash;
+
+#if INET6
+	if(tcp_isipv6(inp)) {
+		u_int32_t *la = (u_int32_t *)&inp->inp_laddr6;
+		u_int32_t *fa = (u_int32_t *)&inp->inp_faddr6;
+		hash = tcp_isn_hash(
+		    la[0] ^ la[1] ^ la[2] ^ la[3],
+		    (u_int32_t)inp->inp_lport,
+		    fa[0] ^ fa[1] ^ fa[2] ^ fa[3],
+		    (u_int32_t)inp->inp_fport,
+		    tcp_secret_key);
+		return ((tcp_seq)tcp_iss + hash);
+	}
+#endif
 
 	hash = tcp_isn_hash(
 	    inp->inp_laddr.s_addr,
@@ -272,6 +350,7 @@ tcp_init()
     LIST_INIT(&tcb);
     tcbinfo.listhead = &tcb;
     tcbinfo.hashbase = phashinit(TCBHASHSIZE, M_PCB, &tcbinfo.hashsize);
+    syncache_init();
     if(max_protohdr < sizeof(struct tcpiphdr))
         max_protohdr = sizeof(struct tcpiphdr);
     if(max_linkhdr + sizeof(struct tcpiphdr) > MHLEN)
@@ -331,20 +410,41 @@ struct tcpcb *tp;
  * segment are as specified by the parameters.
  */
 void
-tcp_respond(tp, ti, m, ack, seq, flags)
+tcp_respond(tp, ti, m, ack, seq, flags, isipv6, laddr6, faddr6)
 struct tcpcb *tp;
 register struct tcpiphdr *ti;
 register struct mbuf *m;
 tcp_seq ack, seq;
 int flags;
+int isipv6;
+struct in6_addr *laddr6, *faddr6;
 {
     register int tlen;
     int win = 0;
+    int hlim = 0;
     struct route *ro = 0;
+
+#if INET6
+    /*
+     * Auto-detect IPv6 from the connection when the caller did not pass an
+     * explicit family (e.g. the keep-alive timer).  The send-orientation
+     * addresses then come from the PCB.  Callers without a PCB (a RST for a
+     * stray segment) pass isipv6 and laddr6/faddr6 themselves.
+     */
+    if(!isipv6 && tp && tcp_isipv6(tp->t_inpcb)) {
+        isipv6 = 1;
+        laddr6 = &tp->t_inpcb->inp_laddr6;
+        faddr6 = &tp->t_inpcb->inp_faddr6;
+    }
+#endif
 
     if(tp) {
         win = sbspace(&tp->t_inpcb->inp_socket->so_rcv);
         ro = &tp->t_inpcb->inp_route;
+#if INET6
+        if(isipv6)
+            hlim = tp->t_inpcb->in6p_hops;
+#endif
     }
     if(m == 0) {
         m = m_gethdr(M_DONTWAIT, MT_HEADER);
@@ -366,7 +466,16 @@ int flags;
         m->m_len = sizeof(struct tcpiphdr);
         tlen = 0;
 #define xchg(a,b,type) { type t; t=a; a=b; b=t; }
-        xchg(ti->ti_dst.s_addr, ti->ti_src.s_addr, u_long);
+        /*
+         * Swap the ports to bounce the segment back to its origin.  For IPv4
+         * the addresses are swapped in the overlay too; for IPv6 the source
+         * and destination are taken from laddr6/faddr6 (already in our send
+         * orientation) by tcp_v6output() below.
+         */
+#if INET6
+        if(!isipv6)
+#endif
+            xchg(ti->ti_dst.s_addr, ti->ti_src.s_addr, u_long);
         xchg(ti->ti_dport, ti->ti_sport, u_short);
 #undef xchg
     }
@@ -395,6 +504,23 @@ int flags;
         win = 0;
     ti->ti_win = htons((u_short)win);
     ti->ti_urp = 0;
+#if INET6
+    if(isipv6) {
+        /*
+         * Slide off the IPv4 ipovly overlay so the mbuf starts at the TCP
+         * header, then build and transmit the IPv6 datagram.  tlen still
+         * counts the overlay; the IPv6 TCP length excludes it.
+         */
+        int t6 = tlen - sizeof(struct ipovly);
+
+        m->m_data       += sizeof(struct ipovly);
+        m->m_len         = t6;
+        m->m_pkthdr.len  = t6;
+        (void) tcp_v6output(m, laddr6, faddr6, hlim, t6,
+                            tp ? tp->t_inpcb : NULL);
+        return;
+    }
+#endif
     ti->ti_sum = 0;
     ti->ti_sum = in_cksum(m, tlen);
     ((struct ip *)ti)->ip_len = tlen;
@@ -571,6 +697,9 @@ register struct tcpcb *tp;
         }
     }
 #endif /* RTV_RTT */
+    /* Drop any half-open syncache entries for a closing listen socket. */
+    if(so->so_options & SO_ACCEPTCONN)
+        syncache_purge(so);
     /* free the reassembly queue, if any */
     for(q = tp->t_segq; q; q = nq) {
         nq = q->m_nextpkt;

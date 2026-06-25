@@ -185,8 +185,8 @@ udp6_output(struct inpcb *inp, struct mbuf *m,
         return error;
     }
     ip6 = mtod(m, struct ip6_hdr *);
-    ip6->ip6_vfc  = IPV6_VERSION;
     ip6->ip6_flow = 0;
+    ip6->ip6_vfc  = IPV6_VERSION;	/* must follow ip6_flow (they overlap) */
     ip6->ip6_plen = htons((u_short)udplen);
     ip6->ip6_nxt  = IPPROTO_UDP;
     ip6->ip6_hlim = (inp->in6p_hops >= 0) ? (u_int8_t)inp->in6p_hops
@@ -279,8 +279,8 @@ udp6_input(void *args, ...)
         return;
     }
 
-    /* Strip IPv6 header + extension headers, leaving UDP header + data */
-    m_adj(m, off);
+    /* Strip the IPv6 (+ extension) headers and the UDP header, leaving data. */
+    m_adj(m, off + sizeof(struct udphdr));
 
     /* Deliver to socket */
     {

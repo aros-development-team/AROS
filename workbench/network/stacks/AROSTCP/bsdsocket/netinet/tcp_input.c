@@ -50,11 +50,21 @@
 #include <net/route.h>
 #include <net/if.h>
 
+/*
+ * conf.h (the aggregating wrapper) defines INET6 and then pulls in
+ * <netinet/in_pcb.h>, so struct inpcb is compiled with its IPv6 members.
+ * It must precede the explicit netinet includes below for the dual-stack
+ * receive path to see inp_laddr6/inp_faddr6/in6p_*.
+ */
+#include <conf.h>
+
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <netinet/in_pcb.h>
 #include <netinet/ip_var.h>
+#include <netinet/in_cksum_protos.h>
 #include <netinet/tcp.h>
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
@@ -66,9 +76,9 @@
 struct	tcpiphdr tcp_saveti;
 #endif
 
-#include <conf.h>
 #include "tcp_compat.h"
 #include <netinet/tcp_cc.h>
+#include "tcp_syncache.h"
 
 extern int ip_defttl;		/* default TTL for TCP segments */
 
@@ -296,11 +306,12 @@ void tcp_input(void *arg, ...)
     int todrop, acked, ourfinisacked, needoutput = 0;
     struct in_addr laddr;
     int dropsocket = 0;
-    int iss = 0;
     u_long tiwin;
     struct tcpopt to;		/* options in this segment */
     struct rmxp_tao *taop;		/* pointer to our TAO cache entry */
     struct rmxp_tao	tao_noncached;	/* in case there's no cached entry */
+    int isipv6 = 0;			/* this segment arrived over IPv6 */
+    struct in6_addr src6, dst6;		/* IPv6 peer/local addresses */
 #ifdef TCPDEBUG
     short ostate = 0;
 #endif
@@ -322,33 +333,83 @@ void tcp_input(void *arg, ...)
     /*
      * Get IP and TCP header together in first mbuf.
      * Note: IP leaves IP header in first mbuf.
+     *
+     * The packet may have arrived over IPv4 or IPv6 (ip_input / ip6_input both
+     * dispatch here with the IP header still at the front of the mbuf).  The IP
+     * version nibble of the leading byte tells which.  The IPv6 path verifies
+     * the checksum over the IPv6 pseudo-header, saves the v6 addresses, then
+     * normalises the mbuf to the IPv4 struct tcpiphdr layout the rest of the
+     * engine is written around (strip the 40-byte IPv6 header, leaving a
+     * 20-byte ipovly overlay in front of the TCP header).  Address-dependent
+     * steps (PCB lookup, RST/responses, the SYN cache) branch on isipv6 and use
+     * src6/dst6 instead of the (unused) overlay addresses.
      */
-    ti = mtod(m, struct tcpiphdr *);
-    if(iphlen > sizeof(struct ip))
-        ip_stripoptions(m, (struct mbuf *)0);
-    if(m->m_len < sizeof(struct tcpiphdr)) {
-        if((m = m_pullup(m, sizeof(struct tcpiphdr))) == 0) {
-            tcpstat.tcps_rcvshort++;
-            return;
-        }
-        ti = mtod(m, struct tcpiphdr *);
-    }
+    isipv6 = (mtod(m, struct ip *)->ip_v == 6);
 
-    /*
-     * Checksum extended TCP header and data.
-     */
-    tlen = ((struct ip *)ti)->ip_len;
-    len = sizeof(struct ip) + tlen;
-    /* Save IP TOS for ECN detection before pseudo-header overwrites it */
-    iptos = ((struct ip *)ti)->ip_tos;
-    bzero(ti->ti_x1, sizeof(ti->ti_x1));
-    ti->ti_len = (u_short)tlen;
-    HTONS(ti->ti_len);
-    ti->ti_sum = in_cksum(m, len);
-    if(ti->ti_sum) {
-        D(bug("[AROSTCP:TCP] %s: BAD CHECKSUM, dropping\n", __func__));
-        tcpstat.tcps_rcvbadsum++;
-        goto drop;
+#if INET6
+    if(isipv6) {
+        struct ip6_hdr *ip6;
+
+        if(m->m_len < sizeof(struct ip6_hdr) + sizeof(struct tcphdr)) {
+            if((m = m_pullup(m,
+                    sizeof(struct ip6_hdr) + sizeof(struct tcphdr))) == 0) {
+                tcpstat.tcps_rcvshort++;
+                return;
+            }
+        }
+        ip6 = mtod(m, struct ip6_hdr *);
+        src6 = ip6->ip6_src;
+        dst6 = ip6->ip6_dst;
+        /* IPv6 traffic class -> TOS byte, for ECN detection. */
+        iptos = (u_char)((ntohl(ip6->ip6_flow) >> 20) & 0xff);
+        tlen = ntohs(ip6->ip6_plen);	/* TCP length (no ext. headers) */
+
+        if(in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr),
+                     (u_int32_t)tlen)) {
+            D(bug("[AROSTCP:TCP] %s: BAD IPv6 CHECKSUM, dropping\n", __func__));
+            tcpstat.tcps_rcvbadsum++;
+            goto drop;
+        }
+
+        /* Strip 40-byte IPv6 header, leave 20-byte ipovly overlay (net +20). */
+        m->m_data       += sizeof(struct ip6_hdr) - sizeof(struct ipovly);
+        m->m_len        -= sizeof(struct ip6_hdr) - sizeof(struct ipovly);
+        m->m_pkthdr.len -= sizeof(struct ip6_hdr) - sizeof(struct ipovly);
+        ti = mtod(m, struct tcpiphdr *);
+        bzero(ti->ti_x1, sizeof(ti->ti_x1));
+        ti->ti_len = (u_short)tlen;
+        HTONS(ti->ti_len);
+        ti->ti_sum = 0;			/* already verified by in6_cksum */
+    } else
+#endif
+    {
+        ti = mtod(m, struct tcpiphdr *);
+        if(iphlen > sizeof(struct ip))
+            ip_stripoptions(m, (struct mbuf *)0);
+        if(m->m_len < sizeof(struct tcpiphdr)) {
+            if((m = m_pullup(m, sizeof(struct tcpiphdr))) == 0) {
+                tcpstat.tcps_rcvshort++;
+                return;
+            }
+            ti = mtod(m, struct tcpiphdr *);
+        }
+
+        /*
+         * Checksum extended TCP header and data.
+         */
+        tlen = ((struct ip *)ti)->ip_len;
+        len = sizeof(struct ip) + tlen;
+        /* Save IP TOS for ECN detection before pseudo-header overwrites it */
+        iptos = ((struct ip *)ti)->ip_tos;
+        bzero(ti->ti_x1, sizeof(ti->ti_x1));
+        ti->ti_len = (u_short)tlen;
+        HTONS(ti->ti_len);
+        ti->ti_sum = in_cksum(m, len);
+        if(ti->ti_sum) {
+            D(bug("[AROSTCP:TCP] %s: BAD CHECKSUM, dropping\n", __func__));
+            tcpstat.tcps_rcvbadsum++;
+            goto drop;
+        }
     }
 
     /*
@@ -401,15 +462,23 @@ void tcp_input(void *arg, ...)
     NTOHS(ti->ti_urp);
 
     D({
-        u_char *sa = (u_char *)&ti->ti_src.s_addr;
-        u_char *da = (u_char *)&ti->ti_dst.s_addr;
-        bug("[AROSTCP:TCP] %s: RECV %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u "
-            "flags=0x%02x seq=%lu ack=%lu win=%u tlen=%d off=%d\n",
-            __func__,
-            sa[0], sa[1], sa[2], sa[3], ntohs(ti->ti_sport),
-            da[0], da[1], da[2], da[3], ntohs(ti->ti_dport),
-            tiflags, (unsigned long)ti->ti_seq, (unsigned long)ti->ti_ack,
-            ti->ti_win, tlen, off);
+        if(isipv6) {
+            bug("[AROSTCP:TCP] %s: RECV6 [v6]:%u -> [v6]:%u "
+                "flags=0x%02x seq=%lu ack=%lu win=%u tlen=%d off=%d\n",
+                __func__, ntohs(ti->ti_sport), ntohs(ti->ti_dport),
+                tiflags, (unsigned long)ti->ti_seq, (unsigned long)ti->ti_ack,
+                ti->ti_win, tlen, off);
+        } else {
+            u_char *sa = (u_char *)&ti->ti_src.s_addr;
+            u_char *da = (u_char *)&ti->ti_dst.s_addr;
+            bug("[AROSTCP:TCP] %s: RECV %u.%u.%u.%u:%u -> %u.%u.%u.%u:%u "
+                "flags=0x%02x seq=%lu ack=%lu win=%u tlen=%d off=%d\n",
+                __func__,
+                sa[0], sa[1], sa[2], sa[3], ntohs(ti->ti_sport),
+                da[0], da[1], da[2], da[3], ntohs(ti->ti_dport),
+                tiflags, (unsigned long)ti->ti_seq, (unsigned long)ti->ti_ack,
+                ti->ti_win, tlen, off);
+        }
     });
 
     /*
@@ -422,6 +491,17 @@ void tcp_input(void *arg, ...)
      * Locate pcb for segment.
      */
 findpcb:
+#if INET6
+    if(isipv6) {
+        /*
+         * in6_pcblookup() handles both the connected (exact) and the
+         * wildcard/listen cases in a single priority-ordered pass.
+         */
+        inp = in6_pcblookup(&tcb, &src6, ti->ti_sport,
+                            &dst6, ti->ti_dport);
+    } else
+#endif
+    {
     /*
      * First look for an exact match.
      */
@@ -433,6 +513,7 @@ findpcb:
     if(inp == NULL) {
         inp = in_pcblookup(&tcb, ti->ti_src, ti->ti_sport,
                            ti->ti_dst, ti->ti_dport, INPLOOKUP_WILDCARD);
+    }
     }
 
     /*
@@ -468,218 +549,53 @@ findpcb:
         }
 #endif
         if(so->so_options & SO_ACCEPTCONN) {
-            register struct tcpcb *tp0 = tp;
             /*
-            	 * call to access control.. (AmiTCP/IP extra)
+             * Incoming segment for a listening socket.
+             *
+             * Half-open connections are tracked in the SYN cache
+             * (netinet/tcp_syncache.c) rather than as real sockets on
+             * the listen queue, with stateless SYN cookies as the
+             * overflow fallback, so a SYN flood cannot exhaust socket
+             * or accept-queue resources.
+             *
+             * AmiTCP/IP access-control hook (IPv4 address list only; IPv6
+             * peers are not filtered here).
              */
-            if(controlaccess(ti->ti_src, ti->ti_dport) == 0)
+            if(!isipv6 && controlaccess(ti->ti_src, ti->ti_dport) == 0)
                 goto dropwithreset;
 
-            /*
-             * SYN cookie mode: only as a fallback when the listen
-             * backlog is overflowing (i.e. when sonewconn() would
-             * otherwise drop the SYN).  Under normal load incoming
-             * connections take the regular three-way handshake below,
-             * which negotiates window scaling, SACK and timestamps.
-             *
-             * Handle the SYN statelessly by encoding connection state
-             * into the ISN of our SYN-ACK.  No socket or TCB is
-             * allocated.
-             */
-            if(tcp_syncookies &&
-                (so->so_qlen + so->so_q0len >
-                    3 * so->so_qlimit / 2) &&
-                (tiflags & TH_SYN) && !(tiflags & TH_ACK)) {
-                u_int16_t peer_mss = 0;
-                tcp_seq cookie_isn;
-
-                /* Extract MSS from SYN options */
-                if(optp && optlen > 0) {
-                    u_char *cp = (u_char *)optp;
-                    int cnt = optlen;
-                    while(cnt > 0) {
-                        if(*cp == TCPOPT_EOL) break;
-                        if(*cp == TCPOPT_NOP) {
-                            cp++; cnt--; continue;
-                        }
-                        if(cnt < 2) break;
-                        if(*cp == TCPOPT_MAXSEG &&
-                            cp[1] == TCPOLEN_MAXSEG &&
-                            cnt >= TCPOLEN_MAXSEG) {
-                            bcopy(cp + 2, &peer_mss,
-                                sizeof(u_int16_t));
-                            NTOHS(peer_mss);
-                            break;
-                        }
-                        if(cp[1] < 2) break;
-                        cnt -= cp[1];
-                        cp += cp[1];
-                    }
-                }
-                if(peer_mss == 0)
-                    peer_mss = tcp_mssdflt;
-
-                cookie_isn = tcp_syncookie_generate(
-                    ti->ti_dst, ti->ti_src,
-                    ti->ti_dport, ti->ti_sport,
-                    peer_mss);
-
-                tcpstat.tcps_sc_sendcookie++;
-
-                /* Send SYN-ACK with cookie ISN; consumes mbuf */
-                tcp_respond(tp, ti, m,
-                    ti->ti_seq + 1,     /* ack peer SYN */
-                    cookie_isn,         /* our cookie ISN */
-                    TH_SYN | TH_ACK);
-                return;
+            if(tiflags & TH_RST) {
+                syncache_chkrst(ti, isipv6, &src6, &dst6);
+                goto drop;
             }
+            if(tiflags & TH_SYN) {
+                /* A SYN|ACK to a listening socket is invalid. */
+                if(tiflags & TH_ACK)
+                    goto dropwithreset;
+                syncache_add(so, ti, optp, optlen, m, isipv6, &src6, &dst6);
+                goto drop;
+            }
+            if(tiflags & TH_ACK) {
+                struct socket *nso = NULL;
 
-            /*
-             * SYN cookie validation: an ACK on a listen socket
-             * may be completing a cookie handshake.
-             */
-            if(tcp_syncookies &&
-                (tiflags & TH_ACK) &&
-                !(tiflags & TH_SYN) && !(tiflags & TH_RST)) {
-                u_int16_t sc_mss;
-                struct socket *lso = so;
-
-                sc_mss = tcp_syncookie_validate(
-                    ti->ti_dst, ti->ti_src,
-                    ti->ti_dport, ti->ti_sport,
-                    ti->ti_ack);
-                if(sc_mss > 0) {
-                    struct mbuf *am;
-                    register struct sockaddr_in *sin;
-
-                    /* Valid cookie: create the full connection */
-                    so = sonewconn(lso, 0);
-                    if(so == NULL)
-                        goto drop;
-                    /*
-                     * Mark the new socket discardable until we are
-                     * committed to it (see ``drop'').
-                     */
-                    dropsocket++;
-
+                /*
+                 * Final ACK of a handshake: complete it from the SYN
+                 * cache (or a valid cookie), creating the established
+                 * socket, then run normal segment processing on this
+                 * ACK via step6.
+                 */
+                if(syncache_expand(so, ti, optp, optlen, m, &nso,
+                                   isipv6, &src6, &dst6)) {
+                    so = nso;
                     inp = (struct inpcb *)so->so_pcb;
-                    inp->inp_laddr = ti->ti_dst;
-                    inp->inp_lport = ti->ti_dport;
-                    in_pcbrehash(inp);
-
-                    /*
-                     * Wire up the foreign address and route via
-                     * in_pcbconnect(), exactly as the normal LISTEN
-                     * path does, so the connection is fully set up.
-                     */
-                    am = m_get(M_DONTWAIT, MT_SONAME);
-                    if(am == NULL)
-                        goto drop;
-                    am->m_len = sizeof(struct sockaddr_in);
-                    sin = mtod(am, struct sockaddr_in *);
-                    sin->sin_family = AF_INET;
-                    sin->sin_len = sizeof(*sin);
-                    sin->sin_addr = ti->ti_src;
-                    sin->sin_port = ti->ti_sport;
-                    bzero((caddr_t)sin->sin_zero,
-                        sizeof(sin->sin_zero));
-                    laddr = inp->inp_laddr;
-                    if(inp->inp_laddr.s_addr == INADDR_ANY)
-                        inp->inp_laddr = ti->ti_dst;
-                    if(in_pcbconnect(inp, am)) {
-                        inp->inp_laddr = laddr;
-                        (void) m_free(am);
-                        goto drop;
-                    }
-                    (void) m_free(am);
-
                     tp = intotcpcb(inp);
-
-                    /*
-                     * tcp_output() requires a header template;
-                     * without it the first transmit would panic.
-                     */
-                    tp->t_template = tcp_template(tp);
-                    if(tp->t_template == 0) {
-                        tp = tcp_drop(tp, ENOBUFS);
-                        dropsocket = 0;	/* socket is already gone */
-                        goto drop;
-                    }
-
-                    tp->t_state = TCPS_ESTABLISHED;
-                    tp->iss = ti->ti_ack - 1;
-                    tp->irs = ti->ti_seq - 1;
-                    tcp_sendseqinit(tp);
-                    tcp_rcvseqinit(tp);
-                    /*
-                     * Our cookie SYN-ACK has been acknowledged, so
-                     * advance the send sequence past it.  rcv_adv is
-                     * left equal to rcv_nxt (as tcp_rcvseqinit sets
-                     * it) so tcp_output() advertises a window that is
-                     * correctly clamped to TCP_MAXWIN; pre-seeding it
-                     * with sbspace() would overflow the unscaled
-                     * window field on large socket buffers.
-                     */
-                    tp->snd_una = ti->ti_ack;
-                    tp->snd_nxt = ti->ti_ack;
-                    tp->snd_max = ti->ti_ack;
-                    tp->snd_wnd = tiwin;
-                    tp->snd_wl1 = ti->ti_seq - 1;
-                    tp->snd_wl2 = ti->ti_ack;
-                    tp->t_maxseg = sc_mss;
-                    tp->t_maxopd = sc_mss;
-                    tp->t_flags |= TF_ACKNOW;
-                    tp->t_timer[TCPT_KEEP] = tcp_keepidle;
-                    inp->inp_ip.ip_ttl = ip_defttl;
-
-                    /* Initialize congestion control */
-                    tp->snd_cwnd = tp->t_maxseg;
-                    tp->snd_ssthresh =
-                        TCP_MAXWIN << TCP_MAX_WINSHIFT;
-                    tp->t_cc_algo = tcp_cc_default;
-                    CC_INIT(tp);
-
-                    dropsocket = 0;	/* committed to the socket */
-                    tcpstat.tcps_sc_recvcookie++;
-                    tcpstat.tcps_connects++;
-                    tcpstat.tcps_accepts++;
-                    soisconnected(so);
+                    tiwin = ti->ti_win << tp->snd_scale;
                     goto step6;
                 }
-                tcpstat.tcps_sc_badcookie++;
-                goto dropwithreset;
-            }
-
-            so = sonewconn(so, 0);
-            if(so == 0)
                 goto drop;
-            /*
-             * This is ugly, but ....
-             *
-             * Mark socket as temporary until we're
-             * committed to keeping it.  The code at
-             * ``drop'' and ``dropwithreset'' check the
-             * flag dropsocket to see if the temporary
-             * socket created here should be discarded.
-             * We mark the socket as discardable until
-             * we're committed to it below in TCPS_LISTEN.
-             */
-            dropsocket++;
-            inp = (struct inpcb *)so->so_pcb;
-            inp->inp_laddr = ti->ti_dst;
-            inp->inp_lport = ti->ti_dport;
-            in_pcbrehash(inp);
-#if BSD>=43
-            inp->inp_options = ip_srcroute();
-#endif
-            tp = intotcpcb(inp);
-            tp->t_state = TCPS_LISTEN;
-            tp->t_flags |= tp0->t_flags & (TF_NOPUSH | TF_NOOPT);
-
-            /* Compute proper scaling value from buffer space */
-            while(tp->request_r_scale < TCP_MAX_WINSHIFT &&
-                    TCP_MAXWIN << tp->request_r_scale < so->so_rcv.sb_hiwat)
-                tp->request_r_scale++;
+            }
+            /* Stray segment to a listening socket: ignore. */
+            goto drop;
         }
     }
 
@@ -838,153 +754,12 @@ findpcb:
     switch(tp->t_state) {
 
     /*
-     * If the state is LISTEN then ignore segment if it contains an RST.
-     * If the segment contains an ACK then it is bad and send a RST.
-     * If it does not contain a SYN then it is not interesting; drop it.
-     * Don't bother responding if the destination was a broadcast.
-     * Otherwise initialize tp->rcv_nxt, and tp->irs, select an initial
-     * tp->iss, and send a segment:
-     *     <SEQ=ISS><ACK=RCV_NXT><CTL=SYN,ACK>
-     * Also initialize tp->snd_nxt to tp->iss+1 and tp->snd_una to tp->iss.
-     * Fill in remote peer address fields if not previously specified.
-     * Enter SYN_RECEIVED state, and process any other fields of this
-     * segment in this state.
+     * Listening sockets are serviced entirely by the SYN cache
+     * dispatch above (incoming SYN/ACK/RST never reach the state
+     * machine), so this state is unreachable here; drop defensively.
      */
-    case TCPS_LISTEN: {
-        struct mbuf *am;
-        register struct sockaddr_in *sin;
-
-        if(tiflags & TH_RST)
-            goto drop;
-        if(tiflags & TH_ACK)
-            goto dropwithreset;
-        if((tiflags & TH_SYN) == 0)
-            goto drop;
-        /*
-         * RFC1122 4.2.3.10, p. 104: discard bcast/mcast SYN
-         * in_broadcast() should never return true on a received
-         * packet with M_BCAST not set.
-         */
-        if(m->m_flags & (M_BCAST | M_MCAST) ||
-                IN_MULTICAST(ntohl(ti->ti_dst.s_addr)))
-            goto drop;
-        am = m_get(M_DONTWAIT, MT_SONAME);	/* XXX */
-        if(am == NULL)
-            goto drop;
-        am->m_len = sizeof(struct sockaddr_in);
-        sin = mtod(am, struct sockaddr_in *);
-        sin->sin_family = AF_INET;
-        sin->sin_len = sizeof(*sin);
-        sin->sin_addr = ti->ti_src;
-        sin->sin_port = ti->ti_sport;
-        bzero((caddr_t)sin->sin_zero, sizeof(sin->sin_zero));
-        laddr = inp->inp_laddr;
-        if(inp->inp_laddr.s_addr == INADDR_ANY)
-            inp->inp_laddr = ti->ti_dst;
-        if(in_pcbconnect(inp, am)) {
-            inp->inp_laddr = laddr;
-            (void) m_free(am);
-            goto drop;
-        }
-        (void) m_free(am);
-        tp->t_template = tcp_template(tp);
-        if(tp->t_template == 0) {
-            tp = tcp_drop(tp, ENOBUFS);
-            dropsocket = 0;		/* socket is already gone */
-            goto drop;
-        }
-        if((taop = tcp_gettaocache(inp)) == NULL) {
-            taop = &tao_noncached;
-            bzero(taop, sizeof(*taop));
-        }
-        if(optp)
-            tcp_dooptions(tp, optp, optlen, ti,
-                          &to);
-        /* Enable SACK if peer offered it and we support it */
-        if(tcp_do_sack && (to.to_flag & TOF_SACK_PERMITTED))
-            tp->t_flags |= TF_SACK_PERMIT;
-        else
-            tp->t_flags &= ~TF_SACK_PERMIT;
-        /*
-         * ECN negotiation (RFC 3168, server side):
-         * Client sent SYN with ECE+CWR. If we support ECN,
-         * enable it and we'll respond with ECE in SYN-ACK.
-         */
-        if(tcp_do_ecn &&
-                (tiflags & (TH_ECE | TH_CWR)) == (TH_ECE | TH_CWR))
-            tp->t_flagsext |= TF_ECN_PERMIT;
-        if(iss)
-            tp->iss = iss;
-        else
-            tp->iss = tcp_new_isn(inp);
-        tp->irs = ti->ti_seq;
-        tcp_sendseqinit(tp);
-        tcp_rcvseqinit(tp);
-        /*
-         * Initialization of the tcpcb for transaction;
-         *   set SND.WND = SEG.WND,
-         *   initialize CCsend and CCrecv.
-         */
-        tp->snd_wnd = tiwin;	/* initial send-window */
-        tp->cc_send = CC_INC(tcp_ccgen);
-        tp->cc_recv = to.to_cc;
-        /*
-         * Perform TAO test on incoming CC (SEG.CC) option, if any.
-         * - compare SEG.CC against cached CC from the same host,
-         *	if any.
-         * - if SEG.CC > chached value, SYN must be new and is accepted
-         *	immediately: save new CC in the cache, mark the socket
-         *	connected, enter ESTABLISHED state, turn on flag to
-         *	send a SYN in the next segment.
-         *	A virtual advertised window is set in rcv_adv to
-         *	initialize SWS prevention.  Then enter normal segment
-         *	processing: drop SYN, process data and FIN.
-         * - otherwise do a normal 3-way handshake.
-         */
-        if((to.to_flag & TOF_CC) != 0) {
-            if(taop->tao_cc != 0 && SEQ_GT(to.to_cc, taop->tao_cc)) {
-                taop->tao_cc = to.to_cc;
-                tp->t_state = TCPS_ESTABLISHED;
-
-                /*
-                 * If there is a FIN, or if there is data and the
-                 * connection is local, then delay SYN,ACK(SYN) in
-                 * the hope of piggy-backing it on a response
-                 * segment.  Otherwise must send ACK now in case
-                 * the other side is slow starting.
-                 */
-                if((tiflags & TH_FIN) || (ti->ti_len != 0 &&
-                                          in_localaddr(inp->inp_faddr)))
-                    tp->t_flags |= (TF_DELACK | TF_NEEDSYN);
-                else
-                    tp->t_flags |= (TF_ACKNOW | TF_NEEDSYN);
-                tp->rcv_adv += tp->rcv_wnd;
-                tcpstat.tcps_connects++;
-                soisconnected(so);
-                tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
-                dropsocket = 0;		/* committed to socket */
-                tcpstat.tcps_accepts++;
-                goto trimthenstep6;
-            }
-            /* else do standard 3-way handshake */
-        } else {
-            /*
-             * No CC option, but maybe CC.NEW:
-             *   invalidate cached value.
-             */
-            taop->tao_cc = 0;
-        }
-        /*
-         * TAO test failed or there was no CC option,
-         *    do a standard 3-way handshake.
-         */
-        tp->t_flags |= TF_ACKNOW;
-        tp->t_state = TCPS_SYN_RECEIVED;
-        tp->t_timer[TCPT_KEEP] = TCPTV_KEEP_INIT;
-        dropsocket = 0;		/* committed to socket */
-        tcpstat.tcps_accepts++;
-        goto trimthenstep6;
-    }
+    case TCPS_LISTEN:
+        goto drop;
 
     /*
      * If the state is SYN_SENT:
@@ -1320,7 +1095,10 @@ trimthenstep6:
             if(tiflags & TH_SYN &&
                     tp->t_state == TCPS_TIME_WAIT &&
                     SEQ_GT(ti->ti_seq, tp->rcv_nxt)) {
-                iss = tp->rcv_nxt + TCP_ISSINCR;
+                /*
+                 * A fresh initial sequence number is chosen by the
+                 * SYN cache when the reprocessed SYN is handled.
+                 */
                 tp = tcp_close(tp);
                 goto findpcb;
             }
@@ -1987,20 +1765,32 @@ dropwithreset:
      * Don't bother to respond if destination was broadcast/multicast.
      */
     D(bug("[AROSTCP:TCP] %s: dropwithreset: flags=0x%02x\n", __func__, tiflags));
-    if((tiflags & TH_RST) || m->m_flags & (M_BCAST | M_MCAST) ||
-            IN_MULTICAST(ntohl(ti->ti_dst.s_addr)))
+    if((tiflags & TH_RST) || m->m_flags & (M_BCAST | M_MCAST))
         goto drop;
+#if INET6
+    if(isipv6) {
+        if(IN6_IS_ADDR_MULTICAST(&dst6))
+            goto drop;
+    } else
+#endif
+        if(IN_MULTICAST(ntohl(ti->ti_dst.s_addr)))
+            goto drop;
 #ifdef TCPDEBUG
     if(tp == 0 || (tp->t_inpcb->inp_socket->so_options & SO_DEBUG))
         tcp_trace(TA_DROP, ostate, tp, &tcp_saveti, 0);
 #endif
+    /*
+     * For IPv6 the reply source/destination are the segment's destination and
+     * source (dst6/src6); tcp_respond() swaps the ports itself.
+     */
     if(tiflags & TH_ACK)
-        tcp_respond(tp, ti, m, (tcp_seq)0, ti->ti_ack, TH_RST);
+        tcp_respond(tp, ti, m, (tcp_seq)0, ti->ti_ack, TH_RST,
+                    isipv6, &dst6, &src6);
     else {
         if(tiflags & TH_SYN)
             ti->ti_len++;
         tcp_respond(tp, ti, m, ti->ti_seq + ti->ti_len, (tcp_seq)0,
-                    TH_RST | TH_ACK);
+                    TH_RST | TH_ACK, isipv6, &dst6, &src6);
     }
     /* destroy temporarily created socket */
     if(dropsocket)

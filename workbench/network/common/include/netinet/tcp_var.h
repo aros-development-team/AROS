@@ -347,6 +347,16 @@ struct	tcpstat {
 	u_long	tcps_sc_sendcookie;	/* SYN cookies sent */
 	u_long	tcps_sc_recvcookie;	/* SYN cookies validated */
 	u_long	tcps_sc_badcookie;	/* SYN cookies failed validation */
+/* SYN cache statistics */
+	u_long	tcps_sc_added;		/* entries added to the syncache */
+	u_long	tcps_sc_completed;	/* connections completed from syncache */
+	u_long	tcps_sc_retransmitted;	/* syncache SYN-ACK retransmits */
+	u_long	tcps_sc_dupsyn;		/* duplicate SYNs for an entry */
+	u_long	tcps_sc_bucketoverflow;	/* bucket overflows (oldest dropped) */
+	u_long	tcps_sc_timeout;	/* entries timed out (never completed) */
+	u_long	tcps_sc_reset;		/* entries removed by RST */
+	u_long	tcps_sc_zonefail;	/* entry allocation failures */
+	u_long	tcps_sc_aborted;	/* completions aborted (listen full) */
 };
 
 /*
@@ -419,8 +429,10 @@ void	 tcp_pulloutofband __P((struct socket *,
 	    struct tcpiphdr *, struct mbuf *));
 void	 tcp_quench __P((struct inpcb *, int));
 int	 tcp_reass __P((struct tcpcb *, struct tcpiphdr *, struct mbuf *));
+struct in6_addr;
 void	 tcp_respond __P((struct tcpcb *,
-	    struct tcpiphdr *, struct mbuf *, tcp_seq, tcp_seq, int));
+	    struct tcpiphdr *, struct mbuf *, tcp_seq, tcp_seq, int,
+	    int, struct in6_addr *, struct in6_addr *));
 struct rtentry *
 	 tcp_rtlookup __P((struct inpcb *));
 void	 tcp_setpersist __P((struct tcpcb *));

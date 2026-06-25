@@ -36,6 +36,17 @@
  * $Id$
  */
 
+/*
+ * conf.h is an aggregating wrapper: it defines INET6 (via conf/conf.h) and
+ * then pulls in <netinet/in_pcb.h> with the IPv6 members of struct inpcb
+ * (inp_laddr6, inp_faddr6, in6p_*) enabled - exactly what the dual-stack
+ * output path below needs.  It also transitively includes
+ * <netinet/tcp_fsm.h>, so TCPOUTFLAGS must be defined here, before conf.h,
+ * for tcp_outflags[] to be declared at that first inclusion.
+ */
+#define	TCPOUTFLAGS
+#include <conf.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/malloc.h>
@@ -52,10 +63,10 @@
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+#include <netinet/ip6.h>
 #include <netinet/in_pcb.h>
 #include <netinet/ip_var.h>
 #include <netinet/tcp.h>
-#define	TCPOUTFLAGS
 #include <netinet/tcp_fsm.h>
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
@@ -65,8 +76,9 @@
 #include <netinet/tcp_debug.h>
 #endif
 
-#include <conf.h>
 #include <netinet/tcp_cc.h>
+#include <netinet/in_cksum_protos.h>
+#include "tcp_compat.h"
 
 #ifdef notyet
 extern struct mbuf *m_copypack();
@@ -90,6 +102,7 @@ register struct tcpcb *tp;
     int idle, sendalot;
     struct rmxp_tao *taop;
     struct rmxp_tao tao_noncached;
+    int isipv6 = tcp_isipv6(tp->t_inpcb);
 
     D(bug("[AROSTCP:TCP] %s: tp=0x%p state=%d flags=0x%x snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
           __func__, tp, tp->t_state, tp->t_flags,
@@ -699,7 +712,15 @@ skip_sack:
     if(len + optlen)
         ti->ti_len = htons((u_short)(sizeof(struct tcphdr) +
                                      optlen + len));
-    ti->ti_sum = in_cksum(m, (int)(hdrlen + len));
+    /*
+     * IPv4 uses the struct ipovly overlay as the checksum pseudo-header.
+     * For IPv6 the checksum is computed later (in6_cksum) once the real
+     * IPv6 header has been prepended, so just zero it here.
+     */
+    if(!isipv6)
+        ti->ti_sum = in_cksum(m, (int)(hdrlen + len));
+    else
+        ti->ti_sum = 0;
 
     /*
      * In transmit state, time the transmission and arrange for
@@ -777,7 +798,29 @@ skip_sack:
         error = tuba_output(m, tp);
     else
 #endif
-    {
+    if(isipv6) {
+        /*
+         * IPv6 send path.
+         *
+         * The segment was assembled with the IPv4 struct ipovly overlay in
+         * front of the TCP header (so the generic header-building code above
+         * could be shared).  Slide the mbuf forward over that overlay so it
+         * starts at the TCP header, then let tcp_v6output() prepend a real
+         * IPv6 header, checksum and transmit it (RFC 8200 / KAME style).
+         */
+        struct inpcb *inp = tp->t_inpcb;
+        int           tlen = sizeof(struct tcphdr) + optlen + len;
+
+        m->m_data       += sizeof(struct ipovly);
+        m->m_len        -= sizeof(struct ipovly);
+        m->m_pkthdr.len -= sizeof(struct ipovly);
+
+        D(bug("[AROSTCP:TCP] %s: SEND6 mbuf=0x%p plen=%d\n",
+              __func__, m, tlen));
+
+        error = tcp_v6output(m, &inp->inp_laddr6, &inp->inp_faddr6,
+                             inp->in6p_hops, tlen, inp);
+    } else {
         ((struct ip *)ti)->ip_len = m->m_pkthdr.len;
         ((struct ip *)ti)->ip_ttl = tp->t_inpcb->inp_ip.ip_ttl;	/* XXX */
         ((struct ip *)ti)->ip_tos = tp->t_inpcb->inp_ip.ip_tos;	/* XXX */

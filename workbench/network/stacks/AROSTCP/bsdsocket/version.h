@@ -38,11 +38,11 @@
 #define MIAMILIBNAME    "miami.library"
 
 #define VERSION         5
-#define REVISION        2
+#define REVISION        5
 #define DATE            "25.06.2026"
-#define VERS            SOCLIBNAME "5.02"
+#define VERS            SOCLIBNAME "5.05"
 #define VSTRING         SOCLIBNAME STR(VERSION) "." STR(REVISION) "(" DATE ")"
-#define VERSTAG         "\0$VER: " SOCLIBNAME " 5.02 (" DATE ")"
+#define VERSTAG         "\0$VER: " SOCLIBNAME " 5.05 (" DATE ")"
 
 #define MIAMI_VERSION   13
 #define MIAMI_REVISION  10

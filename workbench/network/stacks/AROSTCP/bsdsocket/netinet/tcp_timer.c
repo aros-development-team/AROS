@@ -72,6 +72,7 @@ int	tcp_maxidle;
 #endif /* TUBA_INCLUDE */
 
 #include "tcp_compat.h"
+#include "tcp_syncache.h"
 
 /*
  * Fast timeout routine for processing delayed acks
@@ -144,6 +145,7 @@ tpgone:
     }
     tcp_iss += TCP_ISSINCR / PR_SLOWHZ;		/* increment iss */
     tcp_now++;					/* for timestamps */
+    syncache_timer();				/* retransmit/expire half-opens */
     splx(s);
 }
 #ifndef TUBA_INCLUDE
@@ -317,10 +319,12 @@ int timer;
              * to get a 4.2 host to respond.
              */
             tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt - 1, tp->snd_una - 1, 0);
+                        tp->rcv_nxt - 1, tp->snd_una - 1, 0,
+                        0, NULL, NULL);
 #else
             tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt, tp->snd_una - 1, 0);
+                        tp->rcv_nxt, tp->snd_una - 1, 0,
+                        0, NULL, NULL);
 #endif
             tp->t_timer[TCPT_KEEP] = tcp_keepintvl;
         } else
