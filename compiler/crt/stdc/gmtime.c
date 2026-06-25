@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Convert a time into UTC.
 */
 
 #include "__stdc_intbase.h"
+#include "__crt_time.h"
 
 /*****************************************************************************
 
@@ -48,14 +49,20 @@
     BUGS
 
     SEE ALSO
-        time(), ctime(), asctime(), localtime()
+        time(), ctime(), asctime(), localtime(), gmtime_r()
 
     INTERNALS
+        The conversion algorithm is shared with the re-entrant gmtime_r() via
+        the __CRT_GMTIME() macro in <__crt_time.h>; here it targets the shared
+        per-base buffer.
 
 ******************************************************************************/
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
-    extern struct tm * gmtime_r (const time_t * tt, struct tm * tm);
+    struct tm          *tm = &StdCBase->tmbuffer;
 
-    return gmtime_r(tt, &StdCBase->tmbuffer);
+    __CRT_GMTIME(&StdCBase->StdCBase, tt, tm);
+
+    return tm;
 } /* gmtime */
+

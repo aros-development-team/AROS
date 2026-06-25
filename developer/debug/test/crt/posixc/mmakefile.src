@@ -22,6 +22,8 @@ POSIXCTESTFILES := \
         pipe \
         statfs \
         strptime \
+        strtok_r \
+        time_r \
         uname \
         usleep \
         vfork \

@@ -1,7 +1,8 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 */
 
+#define _GNU_SOURCE
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <stdlib.h>

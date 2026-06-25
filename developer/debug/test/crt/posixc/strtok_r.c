@@ -10,13 +10,13 @@
 int main(void)
 {
     {
-        // strtok()
+        // strtok_r()
         char str[] = "This;is,a test"; // must be array
         char del[] = ",;";
-        char *ptr;
+        char *ptr, *save;
         int cnt = 0;
 
-        ptr = strtok(str, del);
+        ptr = strtok_r(str, del, &save);
         while (ptr)
         {
             cnt++;
@@ -36,13 +36,12 @@ int main(void)
                     break;
             }
             printf("%s\n", ptr);
-            ptr = strtok(NULL, del);
+            ptr = strtok_r(NULL, del, &save);
         }
     }
 
     return OK;
 }
-
 
 
 void cleanup()

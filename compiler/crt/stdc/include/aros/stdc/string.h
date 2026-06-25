@@ -2,7 +2,7 @@
 #define _STDC_STRING_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     C99 & POSIX.1-2008 header file string.h with extra SAS/C and other extensions
@@ -83,7 +83,6 @@ size_t strnlen(const char *, size_t);
 STDC_STRING_NOTIMPL(
 char *strsignal(int);
 )
-char *strtok_r(char *restrict, const char *restrict, char **restrict);
 STDC_STRING_NOTIMPL(
 size_t strxfrm_l(char *restrict, const char *restrict,
        size_t, locale_t);

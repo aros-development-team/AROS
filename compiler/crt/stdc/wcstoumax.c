@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function wcstoumax().
 */

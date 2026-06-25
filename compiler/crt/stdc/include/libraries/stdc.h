@@ -2,7 +2,7 @@
 #define _LIBRARIES_STDC_H
 
 /*
-    Copyright © 2012-2025, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Public part of StdC libbase.
@@ -33,6 +33,12 @@ struct StdCBase
 
     /* signal.h */
     unsigned char sigrunning, sigpending;
+
+    /* time.h - constant tables shared with the re-entrant (_r) variants in
+       posixc.library (initialised by stdc.library, see __stdc_time.c) */
+    const char         *__time_monthdays;    /* [11] days per month        */
+    const char        (*__time_wday_name)[3];/* [7][3] weekday name table   */
+    const char        (*__time_mon_name)[3]; /* [12][3] month name table    */
 };
 
 __BEGIN_DECLS

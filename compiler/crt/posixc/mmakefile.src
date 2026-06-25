@@ -25,6 +25,7 @@ POSIXC := \
     access \
     alphasort \
     alphasort64 \
+    asctime_r \
     basename \
     cfgetispeed \
     cfgetospeed \
@@ -39,6 +40,7 @@ POSIXC := \
     closedir \
     creat \
     creat64 \
+    ctime_r \
     dirfd \
     dirname \
     drand48 \
@@ -127,12 +129,14 @@ POSIXC := \
     gets \
     gettimeofday \
     getuid \
+    gmtime_r \
     ioctl \
     isatty \
     jrand48 \
     kill \
     lcong48 \
     link \
+    localtime_r \
     lrand48 \
     lseek \
     lseek64 \
@@ -213,6 +217,7 @@ POSIXC := \
     statvfs \
     strerror \
     strptime \
+    strtok_r \
     swab \
     symlink \
     sync \
@@ -265,11 +270,6 @@ POSIXC_LOCALE := \
 POSIXC_WCHAR := \
     mbsnrtowcs \
     wcsnrtombs \
-    wcstoimax \
-    wcscoll \
-    wcstoll \
-    wcstoull \
-    wcstoumax \
     wcswcs \
     wcwidth \
     wcswidth
@@ -314,7 +314,7 @@ POSIXC_COMMON := \
 
 NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
 USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
-USER_INCLUDES += -iquote $(SRCDIR)/compiler/crt/stdc
+USER_INCLUDES += -iquote $(SRCDIR)/compiler/crt/stdc -iquote $(SRCDIR)/compiler/crt/common
 
 USER_CPPFLAGS := \
         -DAROS_POSIXC_BUILD \

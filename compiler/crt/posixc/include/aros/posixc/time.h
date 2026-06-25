@@ -2,7 +2,7 @@
 #define _POSIXC_TIME_H_
 
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file time.h
@@ -38,6 +38,13 @@ struct sigevent;
 
 
 __BEGIN_DECLS
+
+/* Reentrant (_r) variants of the ISO C time functions are POSIX additions
+   implemented in posixc.library. */
+char *asctime_r(const struct tm *, char *);
+char *ctime_r(const time_t *, char *);
+struct tm *gmtime_r(const time_t *, struct tm *);
+struct tm *localtime_r(const time_t *, struct tm *);
 
 /* NOTIMPL int clock_getcpuclockid(pid_t, clockid_t *); */
 /* NOTIMPL int clock_getres(clockid_t, struct timespec *); */

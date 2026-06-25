@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
-    POSIX.1-2008 function wcstoll.
+    POSIX.1-2008 function wcstoull.
 */
 
 #include <wctype.h>
@@ -13,7 +13,7 @@
     NAME */
 #include <wchar.h>
 
-long long wcstoll(
+unsigned long long wcstoull(
 
 /*  SYNOPSIS */
     const wchar_t *nptr,
@@ -21,54 +21,54 @@ long long wcstoll(
     int base)
 
 /*  FUNCTION
-        Converts the initial part of wide string nptr to a long long integer,
-        respecting the base (2 to 36) or auto-detect if base is 0.
+        Converts the initial part of wide string nptr to an unsigned long long
+        integer according to the specified base or auto-detect if base is 0.
 
     INPUTS
         nptr   - Wide string input.
-        endptr - If not NULL, updated to point after last converted character.
-        base   - Numeric base for conversion.
+        endptr - If not NULL, set to the character after last consumed character.
+        base   - Numeric base for conversion (0 or 2 to 36).
 
     RESULT
-        Returns converted long long integer. On overflow, returns LLONG_MAX or
-        LLONG_MIN and sets errno to ERANGE. Returns 0 if no conversion.
+        Returns converted unsigned long long integer. On overflow, returns
+        ULLONG_MAX and sets errno to ERANGE. Returns 0 if no conversion.
 
     NOTES
-        Handles optional whitespace and sign. Base 0 auto-detects hex/octal/decimal.
+        Supports optional whitespace and plus sign. Base 0 auto-detects.
 
     EXAMPLE
 
         wchar_t *end;
-        long long val = wcstoll(L"123456789LLxyz", &end, 10);
-        // val == 123456789LL, *end == L'x'
+        unsigned long long val = wcstoull(L"18446744073709551615xyz", &end, 10);
+        // val == 18446744073709551615ULL, *end == L'x'
 
     BUGS
 
     SEE ALSO
-        wcstol(), wcstoul(), wcstoull()
+        wcstol(), wcstoll(), wcstoul()
 
     INTERNALS
 
 ******************************************************************************/
 {
     const wchar_t *p = nptr;
-    long long result = 0;
-    int sign = 1;
+    unsigned long long result = 0;
     int digit;
     int any = 0;
 
     // Skip leading whitespace
     while (iswspace(*p)) p++;
 
-    // Optional sign
+    // Optional sign — plus only, minus results in ERANGE and returns 0 here
     if (*p == L'+') {
         p++;
     } else if (*p == L'-') {
-        sign = -1;
-        p++;
+        errno = ERANGE;
+        if (endptr) *endptr = (wchar_t *)nptr;
+        return 0ULL;
     }
 
-    // Detect base if base==0
+    // Detect base if base == 0
     if (base == 0) {
         if (*p == L'0') {
             p++;
@@ -102,11 +102,10 @@ long long wcstoll(
 
         if (digit >= base) break;
 
-        // Check overflow:
-        if (result > (LLONG_MAX - digit) / base) {
+        // Check overflow for unsigned long long
+        if (result > (ULLONG_MAX - digit) / base) {
             errno = ERANGE;
-            result = LLONG_MAX;
-            if (sign < 0) result = LLONG_MIN;
+            result = ULLONG_MAX;
             any = 1;
             break;
         }
@@ -120,5 +119,5 @@ long long wcstoll(
         *endptr = (wchar_t *)(any ? p : nptr);
     }
 
-    return sign * result;
+    return result;
 }

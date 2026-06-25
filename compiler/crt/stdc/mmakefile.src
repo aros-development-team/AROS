@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- AROS : compiler-stdc compiler-stdcio
 
 FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
-USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR) -iquote $(SRCDIR)/compiler/crt/common
 
 STDC_MATH := \
     acos \
@@ -454,6 +454,11 @@ STDC_WCHAR := \
     wcstold \
     wcstol \
     wcstoul \
+    wcstoll \
+    wcstoull \
+    wcstoimax \
+    wcstoumax \
+    wcscoll \
     wctob \
     btowc \
     wcsftime \
@@ -477,6 +482,7 @@ STDC := \
     __signal \
     __assert \
     __stdc_gmtoffset \
+    __stdc_time \
     __stdc_startup \
     __stdc_fpuprivate \
     __vcformat \
@@ -484,7 +490,7 @@ STDC := \
     abort \
     abs labs llabs \
     aligned_alloc \
-    asctime asctime_r \
+    asctime \
     asprintf \
     atof \
     atoi \
@@ -493,18 +499,18 @@ STDC := \
     bsearch \
     calloc \
     clock \
-    ctime ctime_r \
+    ctime \
     difftime \
     div ldiv lldiv \
     fenv _fenv \
     free \
     getc \
-    gmtime gmtime_r \
+    gmtime \
     imaxabs \
     imaxdiv \
     ioerr2errno \
     localeconv \
-    localtime localtime_r \
+    localtime \
     longjmp \
     malloc \
     $(STDC_MATH_RAW) \
@@ -569,7 +575,6 @@ STDC := \
     strtof \
     strtoimax \
     strtok \
-    strtok_r \
     strtol \
     strtold \
     strtoll \

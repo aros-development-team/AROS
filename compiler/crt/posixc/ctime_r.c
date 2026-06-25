@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Return the current time in seconds, reentrant.
+    Convert a time into a string, reentrant.
 */
 
 /*****************************************************************************
@@ -21,35 +21,40 @@
 
             "Wed Jun 30 21:49:08 1993\n"
 
+        It is the reentrant variant of ctime(): the result is stored in the
+        caller-supplied buffer rather than in a shared static buffer.  It is
+        equivalent to asctime_r(localtime_r(tt, &tm), buf).
+
     INPUTS
         tt - Convert this time.
         buf - Buffer of at least 26 characters to store the string in
 
     RESULT
-        The pointer passed in buf, containing the converted time. Note that
-        there is a newline at the end of the buffer.
+        The pointer passed in buf, containing the converted time (with a
+        trailing newline), or NULL on failure.
 
     NOTES
 
     EXAMPLE
         time_t tt;
-        char str[26];
+        char   str[26];
 
         // Get time
         time (&tt);
 
         // Convert to string
-        ctime (&tt, str);
+        ctime_r (&tt, str);
 
     BUGS
 
     SEE ALSO
-        time(), asctime_r(), gmtime_r(), localtime_r()
+        time(), asctime_r(), gmtime_r(), localtime_r(), ctime()
 
     INTERNALS
 
 ******************************************************************************/
 {
     struct tm tm;
+
     return asctime_r (localtime_r (tt, &tm), buf);
-} /* ctime */
+} /* ctime_r */

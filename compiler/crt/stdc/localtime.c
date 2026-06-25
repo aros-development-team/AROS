@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Convert a time into a string.
 */
 
 #include "__stdc_intbase.h"
+#include "__crt_time.h"
 
 /*****************************************************************************
 
@@ -47,13 +48,20 @@
     BUGS
 
     SEE ALSO
-        time(), ctime(), asctime(), gmtime()
+        time(), ctime(), asctime(), gmtime(), localtime_r()
 
     INTERNALS
+        The conversion algorithm is shared with the re-entrant localtime_r()
+        via the __CRT_LOCALTIME() macro in <__crt_time.h>; here it targets the
+        shared per-base buffer.
 
 ******************************************************************************/
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
+    struct tm          *tm = &StdCBase->tmbuffer;
 
-    return localtime_r (tt, &StdCBase->tmbuffer);
+    __CRT_LOCALTIME(&StdCBase->StdCBase, tt, tm);
+
+    return tm;
 } /* localtime */
+
