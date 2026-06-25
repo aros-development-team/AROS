@@ -476,11 +476,19 @@ findpcb:
                 goto dropwithreset;
 
             /*
-             * SYN cookie mode: handle incoming SYN statelessly
-             * by encoding connection state into the ISN of our
-             * SYN-ACK.  No socket or TCB is allocated.
+             * SYN cookie mode: only as a fallback when the listen
+             * backlog is overflowing (i.e. when sonewconn() would
+             * otherwise drop the SYN).  Under normal load incoming
+             * connections take the regular three-way handshake below,
+             * which negotiates window scaling, SACK and timestamps.
+             *
+             * Handle the SYN statelessly by encoding connection state
+             * into the ISN of our SYN-ACK.  No socket or TCB is
+             * allocated.
              */
             if(tcp_syncookies &&
+                (so->so_qlen + so->so_q0len >
+                    3 * so->so_qlimit / 2) &&
                 (tiflags & TH_SYN) && !(tiflags & TH_ACK)) {
                 u_int16_t peer_mss = 0;
                 tcp_seq cookie_isn;
@@ -541,30 +549,83 @@ findpcb:
                     ti->ti_dport, ti->ti_sport,
                     ti->ti_ack);
                 if(sc_mss > 0) {
+                    struct mbuf *am;
+                    register struct sockaddr_in *sin;
+
                     /* Valid cookie: create the full connection */
                     so = sonewconn(lso, 0);
                     if(so == NULL)
                         goto drop;
+                    /*
+                     * Mark the new socket discardable until we are
+                     * committed to it (see ``drop'').
+                     */
+                    dropsocket++;
 
                     inp = (struct inpcb *)so->so_pcb;
                     inp->inp_laddr = ti->ti_dst;
                     inp->inp_lport = ti->ti_dport;
-                    inp->inp_faddr = ti->ti_src;
-                    inp->inp_fport = ti->ti_sport;
                     in_pcbrehash(inp);
 
+                    /*
+                     * Wire up the foreign address and route via
+                     * in_pcbconnect(), exactly as the normal LISTEN
+                     * path does, so the connection is fully set up.
+                     */
+                    am = m_get(M_DONTWAIT, MT_SONAME);
+                    if(am == NULL)
+                        goto drop;
+                    am->m_len = sizeof(struct sockaddr_in);
+                    sin = mtod(am, struct sockaddr_in *);
+                    sin->sin_family = AF_INET;
+                    sin->sin_len = sizeof(*sin);
+                    sin->sin_addr = ti->ti_src;
+                    sin->sin_port = ti->ti_sport;
+                    bzero((caddr_t)sin->sin_zero,
+                        sizeof(sin->sin_zero));
+                    laddr = inp->inp_laddr;
+                    if(inp->inp_laddr.s_addr == INADDR_ANY)
+                        inp->inp_laddr = ti->ti_dst;
+                    if(in_pcbconnect(inp, am)) {
+                        inp->inp_laddr = laddr;
+                        (void) m_free(am);
+                        goto drop;
+                    }
+                    (void) m_free(am);
+
                     tp = intotcpcb(inp);
+
+                    /*
+                     * tcp_output() requires a header template;
+                     * without it the first transmit would panic.
+                     */
+                    tp->t_template = tcp_template(tp);
+                    if(tp->t_template == 0) {
+                        tp = tcp_drop(tp, ENOBUFS);
+                        dropsocket = 0;	/* socket is already gone */
+                        goto drop;
+                    }
+
                     tp->t_state = TCPS_ESTABLISHED;
                     tp->iss = ti->ti_ack - 1;
+                    tp->irs = ti->ti_seq - 1;
+                    tcp_sendseqinit(tp);
+                    tcp_rcvseqinit(tp);
+                    /*
+                     * Our cookie SYN-ACK has been acknowledged, so
+                     * advance the send sequence past it.  rcv_adv is
+                     * left equal to rcv_nxt (as tcp_rcvseqinit sets
+                     * it) so tcp_output() advertises a window that is
+                     * correctly clamped to TCP_MAXWIN; pre-seeding it
+                     * with sbspace() would overflow the unscaled
+                     * window field on large socket buffers.
+                     */
                     tp->snd_una = ti->ti_ack;
                     tp->snd_nxt = ti->ti_ack;
                     tp->snd_max = ti->ti_ack;
-                    tp->irs = ti->ti_seq - 1;
-                    tp->rcv_nxt = ti->ti_seq;
-                    tp->rcv_adv = ti->ti_seq +
-                        sbspace(&so->so_rcv);
                     tp->snd_wnd = tiwin;
                     tp->snd_wl1 = ti->ti_seq - 1;
+                    tp->snd_wl2 = ti->ti_ack;
                     tp->t_maxseg = sc_mss;
                     tp->t_maxopd = sc_mss;
                     tp->t_flags |= TF_ACKNOW;
@@ -578,8 +639,10 @@ findpcb:
                     tp->t_cc_algo = tcp_cc_default;
                     CC_INIT(tp);
 
+                    dropsocket = 0;	/* committed to the socket */
                     tcpstat.tcps_sc_recvcookie++;
                     tcpstat.tcps_connects++;
+                    tcpstat.tcps_accepts++;
                     soisconnected(so);
                     goto step6;
                 }

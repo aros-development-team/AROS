@@ -381,10 +381,19 @@ int flags;
     ti->ti_x2 = 0;
     ti->ti_off = sizeof(struct tcphdr) >> 2;
     ti->ti_flags = flags;
+    /*
+     * Clamp the advertised window to the 16-bit field.  The window is only
+     * scaled on an established connection (rcv_scale != 0); on a listen
+     * socket rcv_scale is 0, and with large socket buffers the raw value
+     * would otherwise overflow the u_short field (e.g. 128KB -> 0).
+     */
     if(tp)
-        ti->ti_win = htons((u_short)(win >> tp->rcv_scale));
-    else
-        ti->ti_win = htons((u_short)win);
+        win >>= tp->rcv_scale;
+    if(win > TCP_MAXWIN)
+        win = TCP_MAXWIN;
+    else if(win < 0)
+        win = 0;
+    ti->ti_win = htons((u_short)win);
     ti->ti_urp = 0;
     ti->ti_sum = 0;
     ti->ti_sum = in_cksum(m, tlen);
