@@ -71,19 +71,26 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
 #define ADDCARRY(x) (x > 65535 ? x -= 65535 : x)
 #define REDUCE { l_util.l = sum; sum = l_util.s[0] + l_util.s[1]; ADDCARRY(sum); }
 
-    /* ---- IPv6 pseudo-header (RFC 2460 §8.1) ---- */
+    /* ---- IPv6 pseudo-header (RFC 2460 section 8.1) ---- */
     if(nxt != 0) {
         struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+        struct in6_addr a;	/* aligned copy of a (packed) address */
         u_int16_t *addr;
         int i;
 
-        /* source address: 16 bytes = 8 words */
-        addr = (u_int16_t *)&ip6->ip6_src;
+        /*
+         * struct ip6_hdr is packed, so summing ip6_src/ip6_dst through a
+         * u_int16_t * taken directly from the header would be an unaligned
+         * access on strict-alignment targets (m68k, some ARM).  Copy each
+         * address into an aligned local first.
+         */
+        a = ip6->ip6_src;		/* source address: 16 bytes = 8 words */
+        addr = (u_int16_t *)&a;
         for(i = 0; i < 8; i++)
             sum += addr[i];
 
-        /* destination address: 16 bytes = 8 words */
-        addr = (u_int16_t *)&ip6->ip6_dst;
+        a = ip6->ip6_dst;		/* destination address: 16 bytes = 8 words */
+        addr = (u_int16_t *)&a;
         for(i = 0; i < 8; i++)
             sum += addr[i];
 

@@ -145,7 +145,7 @@ void rexx_deinit(void)
              */
             while(rmsg = (struct RexxMsg *)GetMsg(ARexxPort)) {
                 SetRexxVar(rmsg, REXX_ERROR_NAME,
-                           errstr, strnlen(errstr, REPLYBUFLEN));
+                           errstr, strlen(errstr));
                 if(rmsg != REXX_RETURN_ERROR) {
                     rmsg->rm_Result2 = 0;
                     rmsg->rm_Result1 = 100;
