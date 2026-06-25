@@ -1,0 +1,40 @@
+#
+#   Makefile for AROS bsdsocket.library socket tests
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    tcp
+
+EXEDIR := $(AROS_TESTS)/Socket
+CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
+
+CUNITSOCKETTESTFILES := \
+    cunit-net-socket
+
+#MM test-socket : includes linklibs
+
+#MM- test : test-socket
+#MM- test-quick : test-socket-quick
+
+%build_progs mmake=test-socket \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+#MM- test : test-socket-cunit
+#MM- test-quick : test-socket-cunit-quick
+#MM- test-cunit : test-socket-cunit
+#MM- test-cunit-quick : test-socket-cunit-quick
+
+#MM- test-socket-cunit : test-socket-$(TARGET_UNITTESTS)-cunit
+#MM- test-socket-cunit-quick : test-socket-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-socket-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-socket-yes-cunit \
+    files=$(CUNITSOCKETTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common
