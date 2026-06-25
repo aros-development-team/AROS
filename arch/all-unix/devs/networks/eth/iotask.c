@@ -1,7 +1,7 @@
 /*
  * eth - TUN/ETH network driver for AROS
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2011 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -20,7 +20,7 @@ static void eth_receive(struct eth_base *ETHBase, struct eth_unit *unit)
     int nread, ioerr;
     struct ethhdr *eth;
     char *dest;
-    WORD packet_type;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     struct eth_opener *opener, *opener_next;
     struct IOSana2Req *req, *req_next;
     BOOL bcast = FALSE, mcast = FALSE;

@@ -66,7 +66,7 @@
 
 #include "ip.h"
 
-const TEXT version[] = "$VER: ip 1.0 (03.03.2026)";
+const TEXT version[] = "$VER: ip 1.1 (25.06.2026)";
 
 /* Global options */
 struct ipcmd_opts opts;

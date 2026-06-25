@@ -196,6 +196,19 @@ show_ndp_neighbors(const char *dev)
 		if (addrs[RTAX_DST]->sa_family != AF_INET6)
 			continue;
 
+		/*
+		 * A genuine NDP neighbour entry always has an AF_LINK
+		 * (sockaddr_dl) gateway - even when still INCOMPLETE the
+		 * gateway is a zero-length link-layer placeholder.  Local
+		 * interface routes such as the loopback "::1 via ::1" carry
+		 * an AF_INET6 gateway instead; they are not neighbours, so
+		 * skip them (matching "ip neigh" on other systems, which
+		 * never lists loopback addresses as INCOMPLETE).
+		 */
+		if (addrs[RTAX_GATEWAY] == NULL ||
+		    addrs[RTAX_GATEWAY]->sa_family != AF_LINK)
+			continue;
+
 		{
 			struct sockaddr_in6 *sin6 =
 			    (struct sockaddr_in6 *)addrs[RTAX_DST];

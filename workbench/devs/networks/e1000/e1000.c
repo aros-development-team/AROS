@@ -1263,6 +1263,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
     int cleaned_count = 0;
     UBYTE status = 0;
     ULONG length;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     BOOL accepted, is_orphan, cleaned = FALSE, update = FALSE;
 
     i = rx_ring->next_to_clean;
@@ -1358,9 +1359,17 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         /* Check for address validity */
         if(AddressFilter(LIBBASE, unit, frame->eth_packet_dest))
         {
+            /*
+             * Cache the ethertype as UWORD.  AROS_BE2WORD() yields a signed
+             * WORD, so an ethertype with the high bit set (e.g. IPv6 0x86dd)
+             * would sign-extend to 0xffff86dd and never match the opener's
+             * ios2_PacketType (a ULONG, 0x000086dd) - silently dropping all
+             * IPv6 (and breaking Neighbour Discovery).
+             */
+            packet_type = (UWORD)AROS_BE2WORD(frame->eth_packet_type);
             D(
                 ULONG *framecrc_ptr = (ULONG *)frame->eth_packet_crc;
-                bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __func__, AROS_BE2WORD(frame->eth_packet_type), AROS_LE2LONG(*framecrc_ptr));
+                bug("[%s] %s: Packet IP accepted with type = %d, checksum = %08x\n", unit->e1ku_name, __func__, packet_type, AROS_LE2LONG(*framecrc_ptr));
               ) 
             /* Packet is addressed to this driver */
 
@@ -1377,10 +1386,10 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                 /* Offer packet to each request until it's accepted */
                 while((request != request_tail) && !accepted)
                 {
-                    if (request->ios2_PacketType == AROS_BE2WORD(frame->eth_packet_type))
+                    if (request->ios2_PacketType == packet_type)
                     {
                         D(bug("[%s] %s: copy packet for opener ..\n", unit->e1ku_name, __func__);)
-                        CopyPacket(LIBBASE, unit, request, length, AROS_BE2WORD(frame->eth_packet_type), frame);
+                        CopyPacket(LIBBASE, unit, request, length, packet_type, frame);
                         accepted = TRUE;
                     }
                     request = (struct IOSana2Req *)request->ios2_Req.io_Message.mn_Node.ln_Succ;
@@ -1401,7 +1410,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                 {
                     CopyPacket(LIBBASE, unit,
                         (APTR)unit->e1ku_request_ports[ADOPT_QUEUE]->
-                        mp_MsgList.lh_Head, length, AROS_BE2WORD(frame->eth_packet_type), frame);
+                        mp_MsgList.lh_Head, length, packet_type, frame);
                     D(bug("[%s] %s: packet copied to orphan queue\n", unit->e1ku_name, __func__);)
                 }
             }

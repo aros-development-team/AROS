@@ -917,6 +917,56 @@ caddr_t data;
             ar->arp_ha.sa_family != AF_UNSPEC)
         return (EAFNOSUPPORT);
 
+    /*
+     * SIOCGARPT with an unspecified (INADDR_ANY) address is a request
+     * to dump *every* interface's ARP table - this is how "ip neigh"
+     * reads the IPv4 cache.  The per-interface lookup further down maps
+     * a real address to one interface via ifa_ifwithnet(), which cannot
+     * resolve 0.0.0.0 (it would fail with ENETUNREACH and the cache
+     * would never be shown), so walk the whole SANA interface list here.
+     */
+    if(cmd == SIOCGARPT && sin->sin_addr.s_addr == INADDR_ANY) {
+        register struct arptabreq *atr = (struct arptabreq *)data;
+        struct sana_softc *ssc2;
+        struct arptable *atb2;
+        int i, n = 0;
+        long siz;
+
+        ar = atr->atr_table;
+        siz = ar ? atr->atr_size : 0;
+
+        for(ssc2 = ssq; ssc2 != NULL; ssc2 = ssc2->ss_next) {
+            if((atb2 = ssc2->ss_arp.table) == NULL)
+                continue;
+
+            ARPTAB_LOCK(atb2);
+            for(i = 0; i < ARPTAB_HSIZE; i++) {
+                for(at = (struct arptab *)atb2->atb_entries[i].mlh_Head;
+                        at->at_succ; at = at->at_succ) {
+                    n++;
+                    if(siz > 0) {
+                        struct sockaddr_in *asin =
+                            (struct sockaddr_in *)&ar->arp_pa;
+                        asin->sin_len = sizeof(*asin);
+                        asin->sin_family = AF_INET;
+                        asin->sin_addr = at->at_iaddr;
+                        bcopy((caddr_t)at->at_hwaddr,
+                              (caddr_t)ar->arp_ha.sa_data,
+                              ar->arp_ha.sa_len =
+                                  ssc2->ss_if.if_addrlen + 2);
+                        ar->arp_flags = at->at_flags;
+                        siz--;
+                        ar++;
+                    }
+                }
+            }
+            ARPTAB_UNLOCK(atb2);
+        }
+        atr->atr_size -= siz;
+        atr->atr_inuse = n;
+        return 0;
+    }
+
     s = splimp();
     if((ifa = ifa_ifwithnet(&ar->arp_pa)) == NULL) {
         splx(s);

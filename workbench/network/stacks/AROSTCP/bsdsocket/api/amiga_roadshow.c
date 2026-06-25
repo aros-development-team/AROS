@@ -25,6 +25,9 @@
 #include <net/radix.h>
 #include <net/bpf.h>
 #include <net/if_sana.h>
+#if INET6
+#include <netinet6/nd6.h>	/* struct llinfo_nd6 (ND6 neighbour expiry) */
+#endif
 #include <sys/ioctl.h>
 #include <protos/net/route_protos.h>
 #include <syslog.h>
@@ -772,6 +775,23 @@ getri_callback(struct radix_node *rn, void *arg)
             rtm->rtm_flags   = rt->rt_flags;
             rtm->rtm_use     = rt->rt_use;
             rtm->rtm_rmx     = rt->rt_rmx;
+#if INET6
+            /*
+             * IPv6 neighbour (ND6) entries keep their expiry time in
+             * llinfo_nd6.ln_expire, not in rt_rmx.  Surface it as
+             * rmx_expire so userland (ip neigh / ndp) can distinguish a
+             * dynamically resolved REACHABLE neighbour (non-zero expiry)
+             * from a permanent one (zero).  RTF_LLINFO is only ever set
+             * by nd6 in this stack, and we additionally guard on the
+             * AF_INET6 key so an IPv4 llinfo could never be misread.
+             */
+            if((rt->rt_flags & RTF_LLINFO) && rt->rt_llinfo != NULL) {
+                struct sockaddr *rk = rt_key(rt);
+                if(rk != NULL && rk->sa_family == AF_INET6)
+                    rtm->rtm_rmx.rmx_expire =
+                        ((struct llinfo_nd6 *)rt->rt_llinfo)->ln_expire;
+            }
+#endif
             if(rt->rt_ifp)
                 rtm->rtm_index = rt->rt_ifp->if_index;
 

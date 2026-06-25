@@ -139,7 +139,8 @@ tcp_v6output(struct mbuf *m, struct in6_addr *laddr, struct in6_addr *faddr,
     th->th_sum = in6_cksum(m, IPPROTO_TCP, sizeof(struct ip6_hdr),
                            (u_int32_t)tlen);
 
-    return (ip6_output(m, NULL, NULL, 0, im6o, NULL, inp));
+    return (ip6_output(m, (struct mbuf *)NULL, (struct route *)NULL, 0,
+                       im6o, (struct ifnet **)NULL, inp));
 }
 #endif /* INET6 */
 u_int32_t tcp_secret_key[4];
@@ -421,7 +422,6 @@ struct in6_addr *laddr6, *faddr6;
 {
     register int tlen;
     int win = 0;
-    int hlim = 0;
     struct route *ro = 0;
 
 #if INET6
@@ -441,10 +441,6 @@ struct in6_addr *laddr6, *faddr6;
     if(tp) {
         win = sbspace(&tp->t_inpcb->inp_socket->so_rcv);
         ro = &tp->t_inpcb->inp_route;
-#if INET6
-        if(isipv6)
-            hlim = tp->t_inpcb->in6p_hops;
-#endif
     }
     if(m == 0) {
         m = m_gethdr(M_DONTWAIT, MT_HEADER);
@@ -509,9 +505,12 @@ struct in6_addr *laddr6, *faddr6;
         /*
          * Slide off the IPv4 ipovly overlay so the mbuf starts at the TCP
          * header, then build and transmit the IPv6 datagram.  tlen still
-         * counts the overlay; the IPv6 TCP length excludes it.
+         * counts the overlay; the IPv6 TCP length excludes it.  The hop limit
+         * comes from the connection (in6p_hops) when there is a PCB, else 0
+         * (tcp_v6output() substitutes the default).
          */
         int t6 = tlen - sizeof(struct ipovly);
+        int hlim = tp ? tp->t_inpcb->in6p_hops : 0;
 
         m->m_data       += sizeof(struct ipovly);
         m->m_len         = t6;

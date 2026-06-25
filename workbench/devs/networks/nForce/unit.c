@@ -174,7 +174,7 @@ static AROS_INTH1(RX_Int, struct NFUnit *,  unit)
     struct fe_priv *np = unit->nu_fe_priv;
     ULONG Flags;
     struct TypeStats *tracker;
-    ULONG packet_type;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     struct Opener *opener, *opener_tail;
     struct IOSana2Req *request, *request_tail;
     BOOL accepted, is_orphan;

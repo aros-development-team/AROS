@@ -51,7 +51,7 @@ int ip6_output(void *, ...);
 
 #include <protos/netinet/in_cksum_protos.h>
 
-/* DAD queue — singly-linked list */
+/* DAD queue - singly-linked list */
 static struct dadq *dadq_head = NULL;
 
 /* ------------------------------------------------------------------
@@ -292,6 +292,7 @@ nd6_na_output(struct ifnet *ifp, struct in6_addr *dst,
     caddr_t mac;
     int icmp6len = sizeof(*nd_na);
     int optlen   = 0;
+
     int hlen     = sizeof(struct ip6_hdr);
     int pktlen;
 

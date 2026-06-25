@@ -154,7 +154,7 @@ static AROS_INTH1(SiS900_RX_IntF, struct SiS900Unit *, unit)
 
     struct SiS900Base *SiS900DeviceBase = unit->sis900u_device;
     struct TypeStats *tracker;
-    ULONG packet_type;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     struct Opener *opener, *opener_tail;
     struct IOSana2Req *request, *request_tail;
     BOOL accepted, is_orphan;

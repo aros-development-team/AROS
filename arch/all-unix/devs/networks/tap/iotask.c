@@ -19,7 +19,9 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
     unsigned char buf[ETH_FRAME_LEN], *packet;
     int nread, ioerr;
     struct ethhdr *eth;
-    WORD packet_type;
+    UWORD packet_type;		/* unsigned: ethertypes >= 0x8000 (e.g. IPv6
+				 * 0x86dd) must not sign-extend, or the compare
+				 * against ios2_PacketType (ULONG) never matches */
     char *dest;
     struct tap_opener *opener, *opener_next;
     struct IOSana2Req *req, *req_next;
@@ -70,11 +72,14 @@ static void tap_receive(struct tap_base *TAPBase, struct tap_unit *unit)
         mcast = TRUE;
     }
 
-    /* drop multicast packets (until we have support for them) */
-    if (mcast) {
-        D(bug("[tap] [io:%d] no support for multicast packets, dropping it\n", unit->num));
-        return;
-    }
+    /*
+     * Deliver multicast frames to openers (they used to be dropped here).
+     * The tap is a virtual wire with no hardware multicast filter, so pass
+     * all multicast up and let the protocol stack's group membership decide
+     * what to keep; the SANA2IOF_MCAST flag is recorded on the read request
+     * below.  This is required for IPv6 Neighbour Discovery (NS/NA/RS/RA are
+     * all multicast) and for IPv4 multicast / IGMP.
+     */
 
     /* now we loop through our openers, seeing if anyone wants the packet */
     ForeachNodeSafe(&(unit->openers), opener, opener_next) {

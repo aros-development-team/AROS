@@ -169,7 +169,7 @@ void RTL8169_Rx_Process(struct RTL8169Unit *unit)
     // UBYTE *base = unit->rtl8169u_BaseMem;
 
     struct TypeStats *tracker;
-    ULONG packet_type;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     struct Opener *opener;
     struct Opener *opener_tail;
     struct IOSana2Req *request;

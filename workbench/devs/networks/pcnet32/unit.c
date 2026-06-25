@@ -284,7 +284,7 @@ AROS_INTH1(PCN32_RX_Int, struct PCN32Unit *,  unit)
     struct fe_priv *np = unit->pcnu_fe_priv;
     UWORD Flags;
     struct TypeStats *tracker;
-    ULONG packet_type;
+    UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     struct Opener *opener, *opener_tail;
     struct IOSana2Req *request, *request_tail;
     BOOL accepted, is_orphan;

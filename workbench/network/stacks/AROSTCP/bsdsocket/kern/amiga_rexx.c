@@ -134,7 +134,7 @@ rexx_hide(void)
 
 void rexx_deinit(void)
 {
-    static STRPTR errstr = "99: Port Closed!";
+    static const char errstr[] = "99: Port Closed!";
 
     if(RexxSysBase) {
         if(ARexxPort) {
@@ -145,7 +145,7 @@ void rexx_deinit(void)
              */
             while(rmsg = (struct RexxMsg *)GetMsg(ARexxPort)) {
                 SetRexxVar(rmsg, REXX_ERROR_NAME,
-                           errstr, strlen(errstr));
+                           (char *)errstr, sizeof(errstr) - 1);
                 if(rmsg != REXX_RETURN_ERROR) {
                     rmsg->rm_Result2 = 0;
                     rmsg->rm_Result1 = 100;
