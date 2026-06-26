@@ -52,6 +52,9 @@ If NOT WARN
     ; Perform formatted-input (scanf) unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-scanf-c89
 
+    ; Perform formatted-output (printf/swprintf) unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-printf-c99
+
     ; Perform math error-handling (pole/domain/overflow) unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-matherr-c99
 

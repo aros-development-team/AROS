@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Function to format a string like printf().
 */
@@ -17,6 +17,7 @@
 #include <float.h>
 
 #include <ctype.h>
+#include <wchar.h>
 
 #ifndef STDC_STATIC
 #define FULL_SPECIFIERS
@@ -27,6 +28,10 @@ const unsigned char *const __stdc_char_decimalpoint = ".";
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_TYPE          char
 #define FMTPRINTF_UTYPE         unsigned char
+#define FMTPRINTF_WIDE          0       /* narrow (char) output */
+#ifdef FULL_SPECIFIERS
+#define FMTPRINTF_MB                    /* %ls/%S/%lc/%C need wctomb()/mbtowc() */
+#endif
 #define FMTPRINTF_STR(str)      str
 #define FMTPRINTF_STRLEN(str)   strlen(str)
 #define FMTPRINTF_DECIMALPOINT  __stdc_char_decimalpoint

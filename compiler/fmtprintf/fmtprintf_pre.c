@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
 
     Prelude for common code block to format a string like printf().
 */
@@ -10,6 +10,13 @@
 #   define BITSPERBYTE 8
 #endif
 
+/* Output character width selector: 0 = narrow (char), 1 = wide (wchar_t).
+   Defaulted here so includers that do not set it (e.g. the raw kprintf
+   backend) keep the historic narrow behaviour. */
+#ifndef FMTPRINTF_WIDE
+#   define FMTPRINTF_WIDE 0
+#endif
+
 #if (__WORDSIZE == 64)
 /* On 64-bit machines long and long long are the same, so we don't need separate processing for long long */
 #undef AROS_HAVE_LONG_LONG
@@ -18,7 +25,12 @@
 #define MININTSIZE (sizeof(unsigned long)*BITSPERBYTE/3+1)
 #define MINPOINTSIZE (sizeof(void *)*BITSPERBYTE/4+1)
 #if defined(FULL_SPECIFIERS)
-#define MINFLOATSIZE (DBL_DIG+1) /* Why not 1 more - it's 97% reliable */
+/* Number of significant digits generated for floating point conversions.
+   DBL_DIG+2 (== DBL_DECIMAL_DIG, 17) is the number of decimal digits needed to
+   round-trip a double, so this yields the full inherent precision of a double.
+   Going higher than this only emits digits the simple digit-by-digit algorithm
+   can no longer compute reliably. */
+#define MINFLOATSIZE (DBL_DIG+2)
 #define REQUIREDBUFFER (MININTSIZE>MINPOINTSIZE? \
                         (MININTSIZE>MINFLOATSIZE?MININTSIZE:MINFLOATSIZE): \
                         (MINPOINTSIZE>MINFLOATSIZE?MINPOINTSIZE:MINFLOATSIZE))

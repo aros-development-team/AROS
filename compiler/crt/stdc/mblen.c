@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mblen().
 */
@@ -48,10 +48,10 @@
         The function relies on UTF-8 byte patterns to determine the multibyte length.
 
     EXAMPLE
-        const char *mb = "ä";
+        const char *mb = "Ã¤";
         int len = mblen(mb, MB_CUR_MAX);
         if (len > 0) {
-            // len indicates how many bytes 'ä' takes in the current encoding
+            // len indicates how many bytes 'Ã¤' takes in the current encoding
         }
 
     BUGS
@@ -62,7 +62,7 @@
         mbtowc(), mbstowcs(), wctomb(), wcstombs()
 
     INTERNALS
-        If the first byte is ASCII (< 0x80), returns 1.
+        If the first byte is ASCII (< 0x80), returns 1 (or 0 for the null byte).
         For multibyte sequences, examines the leading byte to determine the expected length.
         Validates continuation bytes and rejects overlong or out-of-range encodings.
 
@@ -79,7 +79,7 @@
 
     // ASCII fast path
     if (c < 0x80)
-        return 1;
+        return c ? 1 : 0;       // C99 7.22.7.1: return 0 for the null character
 
     int len;
     wchar_t wc = 0;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Function to format a wide string like printf().
 */
@@ -28,6 +28,10 @@ const wchar_t *const __stdc_wchar_decimalpoint = L".";
 /* support macros for FMTPRINTF */
 #define FMTPRINTF_TYPE          wchar_t
 #define FMTPRINTF_UTYPE         wchar_t
+#define FMTPRINTF_WIDE          1       /* wide (wchar_t) output */
+#ifdef FULL_SPECIFIERS
+#define FMTPRINTF_MB                    /* %s/%c need mbtowc() narrow-source conv */
+#endif
 #define FMTPRINTF_STR(str)      L ## str
 #define FMTPRINTF_STRLEN(str)   wcslen(str)
 #define FMTPRINTF_DECIMALPOINT  __stdc_wchar_decimalpoint

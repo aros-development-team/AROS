@@ -76,6 +76,10 @@ void test_mblen(void)
     int mlen = mblen(s, 2);
 
     CU_ASSERT_EQUAL(mlen, 2);
+
+    /* The null byte is a valid character of length 0 (C99 7.22.7.1), not 1. */
+    CU_ASSERT_EQUAL(mblen("", 1), 0);
+    CU_ASSERT_EQUAL(mblen("A", 1), 1);
 }
 
 /* Test mbrlen with single multibyte characters */
@@ -101,6 +105,14 @@ void test_mbtowc(void)
 
     CU_ASSERT_EQUAL(len, 2);
     CU_ASSERT_EQUAL(wc, 0x00E4);
+
+    /* The null byte converts to L'\0' and returns 0 (C99 7.22.7.2), not 1. */
+    wc = 0xFFFF;
+    CU_ASSERT_EQUAL(mbtowc(&wc, "", 1), 0);
+    CU_ASSERT_EQUAL(wc, L'\0');
+
+    CU_ASSERT_EQUAL(mbtowc(&wc, "A", 1), 1);
+    CU_ASSERT_EQUAL(wc, L'A');
 }
 
 /* Invalid UTF-8 multibyte sequences must be rejected (return -1 / (size_t)-1
@@ -143,6 +155,18 @@ void test_mb_invalid(void)
     {
         mbstate_t st = {0};
         CU_ASSERT_EQUAL(mbrlen("\xC0\x80", 2, &st), (size_t)-1);
+    }
+
+    /* The whole mb-decode family must report the null character as length 0
+       (C99 7.22.7), not 1. */
+    {
+        mbstate_t st = {0};
+        wchar_t wc2 = 0xFFFF;
+        CU_ASSERT_EQUAL(mblen("", 1), 0);
+        CU_ASSERT_EQUAL(mbtowc(&wc2, "", 1), 0);
+        CU_ASSERT_EQUAL(wc2, L'\0');
+        CU_ASSERT_EQUAL(mbrtowc(&wc2, "", 1, &st), 0);
+        CU_ASSERT_EQUAL(mbrlen("", 1, &st), 0);
     }
 }
 

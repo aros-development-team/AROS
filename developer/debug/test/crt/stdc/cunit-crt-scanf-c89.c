@@ -167,6 +167,32 @@ void test_scanf_float(void)
     CU_ASSERT_DOUBLE_EQUAL(f, -0.5f, 0.0001);
 }
 
+/* The ll length modifier must read full 64-bit values, not truncate to the
+   32-bit range (C99 7.19.6.2).  Regression guard for %llu/%lld/%llx. */
+void test_scanf_longlong(void)
+{
+    unsigned long long u = 0;
+    long long s = 0;
+
+    /* ULLONG_MAX must round-trip without being capped at 0xFFFFFFFF. */
+    CU_ASSERT_EQUAL(sscanf("18446744073709551615", "%llu", &u), 1);
+    CU_ASSERT_TRUE(u == 18446744073709551615ULL);
+
+    /* A value above the 32-bit range. */
+    u = 0;
+    CU_ASSERT_EQUAL(sscanf("4294967296", "%llu", &u), 1);
+    CU_ASSERT_TRUE(u == 4294967296ULL);
+
+    /* Signed long long, including a large negative value. */
+    CU_ASSERT_EQUAL(sscanf("-9223372036854775807", "%lld", &s), 1);
+    CU_ASSERT_TRUE(s == -9223372036854775807LL);
+
+    /* Hexadecimal long long. */
+    u = 0;
+    CU_ASSERT_EQUAL(sscanf("ffffffffffffffff", "%llx", &u), 1);
+    CU_ASSERT_TRUE(u == 0xFFFFFFFFFFFFFFFFULL);
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -190,7 +216,8 @@ int main(void)
         (NULL == CU_add_test(pSuite, "suppress", test_scanf_suppress)) ||
         (NULL == CU_add_test(pSuite, "n_directive", test_scanf_n)) ||
         (NULL == CU_add_test(pSuite, "returns", test_scanf_returns)) ||
-        (NULL == CU_add_test(pSuite, "float", test_scanf_float)))
+        (NULL == CU_add_test(pSuite, "float", test_scanf_float)) ||
+        (NULL == CU_add_test(pSuite, "longlong", test_scanf_longlong)))
     {
         CU_cleanup_registry();
         return CU_get_error();

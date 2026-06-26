@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2007-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2007-2026, The AROS Development Team. All rights reserved.
 
     Desc: AROS implementation of the C99 function mbtowc().
 */
@@ -72,7 +72,7 @@
 {
     static mbstate_t ps;
 
-    // If s == NULL, reset state — not used in our case
+    // If s == NULL, reset state â€” not used in our case
     if (!s)
         return 0;
 
@@ -84,7 +84,7 @@
     // ASCII fast path
     if (c < 0x80) {
         if (pwc) *pwc = c;
-        return 1;
+        return c ? 1 : 0;       // C99 7.22.7.2: return 0 for the null character
     }
 
     int len;

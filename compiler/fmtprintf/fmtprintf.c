@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
     $Id:$
 
     Common code block to format a string like printf().
@@ -35,14 +35,14 @@
             } fparg;
 #endif
             do                                          /* read flags */
-                for (i = 0; i < sizeof(flagc); i++)
+                for (i = 0; i < sizeof(flagc) / sizeof(flagc[0]); i++)
                     if (flagc[i] == *ptr)
                     {
                         flags |= 1<<i;
                         ptr++;
                         break;
                     }
-            while (i < sizeof(flagc));
+            while (i < sizeof(flagc) / sizeof(flagc[0]));
 
             if (*ptr == FMTPRINTF_STR('*'))                            /* read width from arguments */
             {
@@ -199,7 +199,7 @@
                         }
                     }
 
-                    buffer2 = &buffer[sizeof(buffer)];  /* Calculate body string */
+                    buffer2 = &buffer[sizeof(buffer) / sizeof(buffer[0])];  /* Calculate body string */
 
 #ifdef AROS_HAVE_LONG_LONG
                     /*
@@ -223,24 +223,146 @@
                     break;
             }
 
+            case FMTPRINTF_STR('C'):
+                    subtype = FMTPRINTF_STR('l');       /* %C is an alias for %lc */
+                    /* fall through */
             case FMTPRINTF_STR('c'):
-                    if (subtype == FMTPRINTF_STR('l'))
+#if defined(FMTPRINTF_MB)
+                    if ((subtype == FMTPRINTF_STR('l')) != FMTPRINTF_WIDE)
                     {
-#ifdef AROS_HAVE_LONG_LONG
-                        if (lltype)
-                            *buffer2 = va_arg(args, long long);
-                        else
+                        /* The character argument is the opposite width to the
+                           output stream - convert it. */
+#if FMTPRINTF_WIDE
+                        /* wide output, narrow (char) argument */
+                        unsigned char nc = (unsigned char)va_arg(args, int);
+                        wchar_t wc;
+                        if (mbtowc(&wc, (const char *)&nc, 1) <= 0)
+                            wc = (wchar_t)nc;
+                        buffer[0] = wc;
+                        size2 = 1;
+#else
+                        /* narrow output, wide (wchar_t) argument */
+                        wchar_t wc = (wchar_t)va_arg(args, wint_t);
+                        int clen = wctomb((char *)buffer, wc);
+                        if (clen <= 0)
+                        {
+                            buffer[0] = (char)wc;
+                            clen = 1;
+                        }
+                        size2 = clen;
 #endif
-                            *buffer2 = va_arg(args, long);
+                        buffer2 = buffer;
+                        preci = 0;
+                        break;
                     }
-                    else
-                        *buffer2 = va_arg(args, int);
-
+#endif /* FMTPRINTF_MB */
+#if FMTPRINTF_WIDE
+                    buffer[0] = (FMTPRINTF_TYPE)va_arg(args, wint_t);
+#else
+                    buffer[0] = (FMTPRINTF_TYPE)va_arg(args, int);
+#endif
+                    buffer2 = buffer;
                     size2 = 1;
                     preci = 0;
                     break;
 
+            case FMTPRINTF_STR('S'):
+                    subtype = FMTPRINTF_STR('l');       /* %S is an alias for %ls */
+                    /* fall through */
             case FMTPRINTF_STR('s'):
+#if defined(FMTPRINTF_MB)
+                    if ((subtype == FMTPRINTF_STR('l')) != FMTPRINTF_WIDE)
+                    {
+                        /* The string argument is the opposite width to the
+                           output stream - convert it on the fly, honouring the
+                           field width and precision, then bypass the common
+                           output tail (size1/size2 stay 0, like the float case). */
+                        size_t slen = 0;
+#if FMTPRINTF_WIDE
+                        /* wide output, narrow (multibyte char *) source;
+                           precision counts the wide characters produced. */
+                        const char *src = va_arg(args, const char *);
+                        const char *sp;
+                        wchar_t wc;
+                        int clen;
+
+                        if (!src)
+                            src = "(null)";
+                        sp = src;
+                        mbtowc(NULL, NULL, 0);
+                        while (*sp && slen < preci)
+                        {
+                            clen = mbtowc(&wc, sp, MB_LEN_MAX);
+                            if (clen <= 0)
+                                break;
+                            slen++;
+                            sp += clen;
+                        }
+#else
+                        /* narrow output, wide (wchar_t *) source; precision
+                           counts bytes, and a multibyte sequence is emitted
+                           only when it fits in full. */
+                        const wchar_t *src = va_arg(args, const wchar_t *);
+                        const wchar_t *sp;
+                        char mb[MB_LEN_MAX];
+                        int clen;
+
+                        if (!src)
+                            src = L"(null)";
+                        sp = src;
+                        wctomb(NULL, 0);
+                        while (*sp)
+                        {
+                            clen = wctomb(mb, *sp);
+                            if (clen <= 0 || slen + clen > preci)
+                                break;
+                            slen += clen;
+                            sp++;
+                        }
+#endif
+                        pad = slen >= width ? 0 : width - slen;
+
+                        if (!(flags & LALIGNFLAG))
+                            for (i = 0; i < pad; i++)
+                                FMTPRINTF_OUT(FMTPRINTF_STR(' '), ctx);
+
+#if FMTPRINTF_WIDE
+                        sp = src;
+                        mbtowc(NULL, NULL, 0);
+                        for (i = 0; i < slen; i++)
+                        {
+                            clen = mbtowc(&wc, sp, MB_LEN_MAX);
+                            if (clen <= 0)
+                                break;
+                            FMTPRINTF_OUT(wc, ctx);
+                            sp += clen;
+                        }
+#else
+                        {
+                            size_t emitted = 0;
+                            sp = src;
+                            wctomb(NULL, 0);
+                            while (emitted < slen)
+                            {
+                                int k;
+                                clen = wctomb(mb, *sp);
+                                if (clen <= 0)
+                                    break;
+                                for (k = 0; k < clen; k++)
+                                    FMTPRINTF_OUT(mb[k], ctx);
+                                emitted += clen;
+                                sp++;
+                            }
+                        }
+#endif
+                        if (flags & LALIGNFLAG)
+                            for (i = 0; i < pad; i++)
+                                FMTPRINTF_OUT(FMTPRINTF_STR(' '), ctx);
+
+                        width = preci = 0;
+                        break;
+                    }
+#endif /* FMTPRINTF_MB */
                     buffer2 = va_arg(args, FMTPRINTF_TYPE *);
                     if (!buffer2)
                         buffer2 = FMTPRINTF_STR("(null)");
