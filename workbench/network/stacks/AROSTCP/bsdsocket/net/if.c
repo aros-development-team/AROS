@@ -802,7 +802,10 @@ caddr_t data;
                         bcopy(&ifr, ifrp, sizeof(ifr));
                         ifrp++;
                     } else {
-                        space -= sa->sa_len - sizeof(*sa);
+                        unsigned int padlen =
+                                (sa->sa_len + sizeof(u_long) - 1) &
+                                ~(sizeof(u_long) - 1);
+                        space -= padlen - sizeof(*sa);
                         if(space < sizeof(ifr))
                             break;
 #ifdef AMITCP
@@ -811,6 +814,12 @@ caddr_t data;
                                             sizeof(ifr.ifr_name));
                         aligned_bcopy((caddr_t)sa,
                                       (caddr_t)&ifrp->ifr_addr, sa->sa_len);
+                        if (padlen > sa->sa_len)
+                            aligned_bzero(
+                                (caddr_t)&ifrp->ifr_addr + sa->sa_len,
+                                padlen - sa->sa_len);
+                        ((struct sockaddr *)&ifrp->ifr_addr)->sa_len =
+                            (u_char)padlen;
 #else
                         error = copyout((caddr_t)&ifr, (caddr_t)ifrp,
                                         sizeof(ifr.ifr_name));
@@ -819,7 +828,7 @@ caddr_t data;
                                             (caddr_t)&ifrp->ifr_addr, sa->sa_len);
 #endif
                         ifrp = (struct ifreq *)
-                               (sa->sa_len + (caddr_t)&ifrp->ifr_addr);
+                            (padlen + (caddr_t)&ifrp->ifr_addr);
                     }
 #ifndef AMITCP
                 if(error)
