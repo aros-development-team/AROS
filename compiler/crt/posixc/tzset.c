@@ -177,10 +177,8 @@ static size_t parse_tzoffset(const char *p, long *off)
     timezone = off;
     daylight = dst;
 
-    strncpy(__tzname_std, std, TZNAME_MAX);
-    __tzname_std[TZNAME_MAX] = '\0';
-    strncpy(__tzname_dst, dstn, TZNAME_MAX);
-    __tzname_dst[TZNAME_MAX] = '\0';
+    strlcpy(__tzname_std, std, sizeof(__tzname_std));
+    strlcpy(__tzname_dst, dstn, sizeof(__tzname_dst));
 
     tzname[0] = __tzname_std;
     tzname[1] = __tzname_dst;
