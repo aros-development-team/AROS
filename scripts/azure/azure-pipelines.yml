@@ -656,7 +656,10 @@ jobs:
           fi
         } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
       }
-      cp -r $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib
+      # Snapshot the base tree's file list instead of making a full duplicate
+      # copy (AROS.precontrib). The package step below packages exactly the
+      # files contrib adds on top of this snapshot.
+      ( cd "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS" && find . \( -type f -o -type l \) | LC_ALL=C sort ) > /tmp/_aros_base_manifest
       mv $(AROSCONTRIBSRCDIR) $(AROSSRCDIR)/contrib
       if [ "$AROSBUILDENVPATH" != "" ]; then
           export PATH="$AROSBUILDENVPATH"
@@ -674,20 +677,9 @@ jobs:
     displayName: 'Build $(arosbuild.name) contrib'
 
   - script: |
-      function copycontribrecursive() {
-        for e in $*/*; do
-          if [ -d "$e" ]; then
-            (copycontribrecursive $e)
-          fi
-          if [ -e "$e" ]; then
-            file=`echo $e | sed "s|$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS/||g"`
-            if [ ! -e "$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS.precontrib/$file" ]; then
-              mkdir -p `dirname $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file`
-              cp $e $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$file
-            fi
-          fi
-        done
-      }
+      # Contrib package = files present after 'make contrib' that were NOT in the
+      # base tree (per the /tmp/_aros_base_manifest snapshot taken before contrib).
+      # This replaces the old AROS.precontrib full-tree duplicate + recursive diff.
 
       if [ -d "$(AROSBUILDDIR)/distfiles-boot" ]; then
         if [ ! -f /tmp/_aros_boot_build_failed ]; then
@@ -743,7 +735,14 @@ jobs:
       if [ "$AROSBUILD_WITHCONTRIB" = "yes" ]; then
         if [ ! -f /tmp/_aros_contrib_build_failed ]; then
           mkdir -p '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib'
-          copycontribrecursive $(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS
+          AROSROOT=$(AROSBUILDDIR)/bin/$(arosbuild.name)/AROS
+          ( cd "$AROSROOT" && find . \( -type f -o -type l \) | LC_ALL=C sort ) > /tmp/_aros_post_manifest
+          LC_ALL=C comm -13 /tmp/_aros_base_manifest /tmp/_aros_post_manifest | while IFS= read -r f; do
+            rel="${f#./}"
+            dest="$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/$rel"
+            mkdir -p "${dest%/*}"
+            cp "$AROSROOT/$rel" "$dest"
+          done
           cp -r $(AROSSRCDIR)/LICENSE $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           cp -r $(AROSSRCDIR)/ACKNOWLEDGEMENTS $(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-contrib/
           tar cjvf $(AROSBUILDID)-$(arosbuild.name)-contrib.tar.bz2 $(AROSBUILDID)-$(arosbuild.name)-contrib
