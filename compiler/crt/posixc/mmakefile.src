@@ -304,7 +304,8 @@ POSIXC_LINKLIB := \
     gcvt \
     getopt \
     getopt_long \
-    setlinebuf
+    setlinebuf \
+    tzset
 
 # Both in linklib and shared library
 POSIXC_COMMON := \

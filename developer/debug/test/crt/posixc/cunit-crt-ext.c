@@ -152,6 +152,69 @@ void testDPRINTF(void)
     CU_ASSERT_STRING_EQUAL(buf, "x=42 y=hi");
 }
 
+/* tzset() parses the POSIX TZ variable into the timezone/daylight/tzname
+   globals.  Offsets in TZ are seconds *West* of UTC, so a leading '-' (East of
+   UTC) yields a negative timezone.  DST transition rules are not applied, but
+   the presence of a DST zone name must still set daylight. */
+void testTZSET(void)
+{
+    char *saved = getenv("TZ");
+    if (saved)
+        saved = strdup(saved);              /* getenv() buffer may be reused */
+
+    /* Standard zone, positive (West) offset, no DST. */
+    setenv("TZ", "EST5", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, 5 * 3600);
+    CU_ASSERT_EQUAL(daylight, 0);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "EST");
+    CU_ASSERT_STRING_EQUAL(tzname[1], "EST");
+
+    /* A DST zone name sets daylight and tzname[1] (offset unchanged). */
+    setenv("TZ", "EST5EDT", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, 5 * 3600);
+    CU_ASSERT_NOT_EQUAL(daylight, 0);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "EST");
+    CU_ASSERT_STRING_EQUAL(tzname[1], "EDT");
+
+    /* Negative (East) offset with minutes, given as "-hh:mm". */
+    setenv("TZ", "IST-5:30", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, -(5 * 3600 + 30 * 60));
+    CU_ASSERT_EQUAL(daylight, 0);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "IST");
+
+    /* Modern bracketed numeric abbreviation "<+05>-5" (East of UTC). */
+    setenv("TZ", "<+05>-5", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, -5 * 3600);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "+05");
+
+    /* Empty TZ means UTC0. */
+    setenv("TZ", "", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, 0);
+    CU_ASSERT_EQUAL(daylight, 0);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "UTC");
+
+    /* Named zero-offset zone keeps its abbreviation. */
+    setenv("TZ", "GMT0", 1);
+    tzset();
+    CU_ASSERT_EQUAL(timezone, 0);
+    CU_ASSERT_EQUAL(daylight, 0);
+    CU_ASSERT_STRING_EQUAL(tzname[0], "GMT");
+
+    if (saved)
+    {
+        setenv("TZ", saved, 1);
+        free(saved);
+    }
+    else
+        unsetenv("TZ");
+    tzset();
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -169,7 +232,8 @@ int main(void)
         (NULL == CU_add_test(pSuite, "timespec_get()", testTIMESPEC_GET)) ||
         (NULL == CU_add_test(pSuite, "getline()", testGETLINE)) ||
         (NULL == CU_add_test(pSuite, "getdelim()", testGETDELIM)) ||
-        (NULL == CU_add_test(pSuite, "dprintf()", testDPRINTF)))
+        (NULL == CU_add_test(pSuite, "dprintf()", testDPRINTF)) ||
+        (NULL == CU_add_test(pSuite, "tzset()", testTZSET)))
     {
         CU_cleanup_registry();
         return CU_get_error();

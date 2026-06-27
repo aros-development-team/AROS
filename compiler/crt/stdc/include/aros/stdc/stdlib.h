@@ -96,6 +96,13 @@ void *bsearch(const void * key, const void * base, size_t count, size_t size,
               int (*comparefunction)(const void *, const void *));
 void qsort(void * array, size_t count, size_t elementsize,
            int (*comparefunction)(const void *, const void *));
+#if !defined(__STRICT_ANSI__)
+/* GNU/BSD extension (POSIX.1-2024); context pointer is passed last, matching
+   glibc.  The comparison function is compar(a, b, arg). */
+void qsort_r(void * array, size_t count, size_t elementsize,
+             int (*comparefunction)(const void *, const void *, void *),
+             void * arg);
+#endif
 
 /* Integer arithmetic */
 int abs(int j);

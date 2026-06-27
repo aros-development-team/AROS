@@ -39,6 +39,7 @@ If NOT WARN
     Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c89
     Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c99
     Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c11
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-ext
 
     ; Perform C11 <uchar.h> Unicode conversion unit tests...
     Execute S/Test cunit/crt/stdc/cunit-crt-uchar-c11

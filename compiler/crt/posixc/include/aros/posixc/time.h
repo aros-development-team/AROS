@@ -31,10 +31,13 @@ struct sigevent;
 #define TIMER_ABSTIME		0x01
 
 /* NOTIMPL
-   daylight
-   timezone
-   tzname
+   getdate_err
 */
+
+/* POSIX timezone variables, set by tzset() (implemented in posixc.library). */
+extern int   daylight;          /* nonzero if a daylight-saving zone is set  */
+extern long  timezone;          /* seconds West of UTC                       */
+extern char *tzname[2];          /* { standard, daylight } abbreviations      */
 
 
 __BEGIN_DECLS
@@ -45,6 +48,8 @@ char *asctime_r(const struct tm *, char *);
 char *ctime_r(const time_t *, char *);
 struct tm *gmtime_r(const time_t *, struct tm *);
 struct tm *localtime_r(const time_t *, struct tm *);
+
+void tzset(void);
 
 /* NOTIMPL int clock_getcpuclockid(pid_t, clockid_t *); */
 /* NOTIMPL int clock_getres(clockid_t, struct timespec *); */
@@ -61,7 +66,6 @@ char *strptime(const char *, const char *, struct tm *);
 /* NOTIMPL int timer_gettime(timer_t, struct itimerspec *); */
 /* NOTIMPL int timer_settime(timer_t, int, const struct itimerspec *,
                struct itimerspec *); */
-/* NOTIMPL void tzset(void); */
 
 __END_DECLS
 

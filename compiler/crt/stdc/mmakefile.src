@@ -524,6 +524,7 @@ STDC := \
     mktime \
     putc \
     qsort \
+    qsort_r \
     raise \
     rand \
     realloc \
@@ -821,6 +822,7 @@ STDC_STATIC := \
     memmove \
     memset \
     qsort \
+    qsort_r \
     snprintf \
     sprintf \
     sscanf \
