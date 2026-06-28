@@ -75,6 +75,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
 #MM kernel-sdio-bcm2708-quick \
+#MM kernel-bwfm-bcm2708-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vc4gfx-quick \
@@ -128,6 +129,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
 #MM kernel-sdio-bcm2708 \
+#MM kernel-bwfm-bcm2708 \
 #MM kernel-sdcard \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
@@ -147,7 +149,7 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-r
 
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma sdio
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer

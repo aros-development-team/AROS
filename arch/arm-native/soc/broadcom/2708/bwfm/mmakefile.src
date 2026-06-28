@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_module mmake=kernel-bwfm-bcm2708 	\
+  modname=bwfm modtype=resource		\
+  files="bwfm_init"
