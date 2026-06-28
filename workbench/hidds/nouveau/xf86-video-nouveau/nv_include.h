@@ -1,21 +1,21 @@
 #ifndef __NV_INCLUDE_H__
 #define __NV_INCLUDE_H__
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "nouveau_intern.h"
-#include "nouveau_class.h"
+#include <string.h>
+#include <math.h>
+#include <aros/debug.h>
 
-#include "nouveau_local.h"
+#include "nouveau_intern.h"
 
 /* Some overriding defines for AROS */
 #define Bool                        BOOL
 #define ScrnInfoPtr                 struct CardData *
 #define NVPTR(x)                    x
 #define NVPtr                       struct CardData *
-#define Architecture                architecture
 #define PixmapPtr                   struct HIDDNouveauBitMapData *
 #define xf86DrvMsg(a, b, fmt, ...)  bug(fmt, ##__VA_ARGS__)
 #define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
@@ -23,6 +23,58 @@
 #define PictTransformPtr            APTR
 #define Pixel                       HIDDT_Pixel
 #define CARD32                      LONG
+#define BoxPtr                      APTR
+
+#include "nouveau_local.h"
+
+/* This construction is implemented so that original EXA funtion calls don't 
+   have to be extended with ScrnInfoPtr parameter which makes code harder to
+   maintain */
+extern struct CardData * globalcarddataptr;
+
+#define xf86ScreenToScrn(x) globalcarddataptr
+
+
+#define nouveau_pixmap_bo(x)    (x->bo)
+#define exaGetPixmapPitch(x)    (x->pitch)
+
+#define PictOpSaturate          14
+#define GXcopy                  0x03
+#define EXA_PM_IS_SOLID(a, b)   1
+
+void NVXVComputeBicubicFilter(struct nouveau_bo *, unsigned, unsigned);
+
+Bool NV04EXARectM2MF(NVPtr pNv, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
+Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
+Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
+Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
+
+Bool NVAccelInitM2MF_NV50(ScrnInfoPtr pScrn);
+Bool NVAccelInit2D_NV50(ScrnInfoPtr pScrn);
+Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
+Bool NV50EXARectM2MF(NVPtr pNv, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
+Bool NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn);
+Bool NVAccelInit2D_NVC0(ScrnInfoPtr pScrn);
+Bool NVAccelInit3D_NVC0(ScrnInfoPtr pScrn);
+Bool NVC0EXARectM2MF(NVPtr pNv, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
+Bool NVAccelInitP2MF_NVE0(ScrnInfoPtr pScrn);
+Bool NVAccelInitCOPY_NVE0(ScrnInfoPtr pScrn);
+Bool NVE0EXARectCopy(NVPtr pNv, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int,
+             struct nouveau_bo *, uint32_t, int, int, int, int, int);
+
+Bool nv50_style_tiled_pixmap(PixmapPtr ppix);
+
+
 
 struct Picture
 {
@@ -31,14 +83,15 @@ struct Picture
     LONG filter;
     BOOL repeat;
     LONG repeatType;
+
+    struct
+    {
+        ULONG width;
+        ULONG height;
+    } *pDrawable, drawableAREA;
 };
 
 typedef struct Picture * PicturePtr;
-
-/* This construction is implemented so that original EXA funtion calls don't 
-   have to be extended with ScrnInfoPtr parameter which makes code harder to
-   maintain */
-extern struct CardData * globalcarddataptr;
 
 #define PictFilterNearest   1
 #define PictFilterBilinear  2
@@ -70,22 +123,6 @@ extern struct CardData * globalcarddataptr;
 #define PICT_r5g6b5         19
 #define PICT_b5g6r5         20
 #define PICT_a8             21
-
-
-#define nouveau_pixmap_bo(x)    (x->bo)
-#define exaGetPixmapPitch(x)    (x->pitch)
-
-#define PictOpSaturate      14
-
-Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
-Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
-Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
-Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
-Bool NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn);
-Bool NVAccelInit2D_NVC0(ScrnInfoPtr pScrn);
-Bool NVAccelInit3D_NVC0(ScrnInfoPtr pScrn);
-Bool nv50_style_tiled_pixmap(PixmapPtr ppix);
-
 
 static inline BOOL PICT_FORMAT_A(int format)
 {
@@ -142,11 +179,11 @@ static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict,
     struct HIDDNouveauBitMapData * bmdata)
 {
     /* pPict->format */
-    if (bmdata->depth == 32)
+    if (bmdata->drawable.depth == 32)
         pPict->format = PICT_a8r8g8b8;
-    else if (bmdata->depth == 24)
+    else if (bmdata->drawable.depth == 24)
         pPict->format = PICT_x8r8g8b8;
-    else if (bmdata->depth == 16)
+    else if (bmdata->drawable.depth == 16)
         pPict->format = PICT_r5g6b5;
     else
         pPict->format = PICT_UNKNOWN;
@@ -163,6 +200,11 @@ static inline VOID HIDDNouveauFillPictureFromBitMapData(struct Picture * pPict,
     pPict->repeat = FALSE;
     /* pPict->repeatType - value does not matter as long as repeat is FALSE */
     pPict->repeatType = RepeatNone;
+
+    /* pPict->pDrawable - copy width and height to minize source code changes */
+    pPict->pDrawable = &pPict->drawableAREA;
+    pPict->pDrawable->width = bmdata->drawable.width;
+    pPict->pDrawable->height = bmdata->drawable.height;
 }
 
 #endif /* __NV_INCLUDE_H__ */

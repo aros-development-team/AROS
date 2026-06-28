@@ -36,7 +36,6 @@ XF86_NOUVEAU_SOURCES = \
             nv_accel_common \
             nv50_accel \
             nv40_exa \
-            nv30_shaders \
             nv30_exa \
             nv10_exa \
             nv50_exa \
@@ -44,6 +43,10 @@ XF86_NOUVEAU_SOURCES = \
             nvc0_accel \
             nvc0_exa \
             nv04_exa \
+            nouveau_xv \
+            nouveau_copya0b5 \
+
+
 
 XF86_NOUVEAU_PATH = $(SRCDIR)/$(CURDIR)/xf86-video-nouveau/
 
@@ -85,8 +88,8 @@ NOUVEAU_HIDD_C_SOURCES := \
 
 USER_INCLUDES := \
             -I$(XF86_NOUVEAU_PATH) \
-            -iquote $(SRCDIR)/$(CURDIR)/libdrm/nouveau \
             -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
 
 
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
@@ -98,5 +101,5 @@ USER_LDFLAGS += \
   
  %build_module mmake=hidd-nouveau modname=nouveau modtype=hidd \
      files="$(NOUVEAU_HIDD_C_SOURCES)" cxxfiles="$(NOUVEAU_HIDD_CXX_SOURCES)" \
-     uselibs="oop libdrm_nouveau drm_nouveau hiddstubs"
+     uselibs="oop libdrm_nouveau drm_nouveau pthread hiddstubs"
 

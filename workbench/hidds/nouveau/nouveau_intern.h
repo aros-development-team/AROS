@@ -11,11 +11,7 @@
 #include <hidd/gallium.h>
 
 // #include "util/u_simple_screen.h"
-#include "nouveau_drmif.h"
-#include "nouveau_bo.h"
-#include "nouveau_channel.h"
-#include "nouveau_notifier.h"
-#include "nouveau_grobj.h"
+#include <nouveau.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -133,26 +129,33 @@ struct HIDDGalliumNouveauData
 struct CardData
 {
     /* Card controlling objects */
-    ULONG                   architecture;
+    ULONG                   Architecture;
     BOOL                    IsPCIE;
-    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
-    struct nouveau_channel  *chan;
 
-    struct nouveau_notifier *notify0;
-    struct nouveau_notifier *vblank_sem;
-    
-    struct nouveau_grobj    *NvImageBlit;
-    struct nouveau_grobj    *NvContextSurfaces;
-    struct nouveau_grobj    *NvRop;
-    struct nouveau_grobj    *NvImagePattern;
-    struct nouveau_grobj    *NvRectangle;
-    struct nouveau_grobj    *NvMemFormat;
-    struct nouveau_grobj    *Nv2D;
-    struct nouveau_grobj    *Nv3D;
-    struct nouveau_grobj    *NvSW;
-    struct nouveau_bo       *shader_mem;
-    struct nouveau_bo       *tesla_scratch;
-    
+    LONG                    currentRop;
+
+    struct nouveau_device   *dev;                   /* Device object acquired from libdrm */
+    struct nouveau_client   *client;
+
+    struct nouveau_object   *channel;
+    struct nouveau_pushbuf  *pushbuf;
+    struct nouveau_bufctx   *bufctx;
+    struct nouveau_object   *notify0;
+
+    struct nouveau_object   *vblank_sem;
+    struct nouveau_object   *NvNull;
+    struct nouveau_object   *NvContextSurfaces;
+    struct nouveau_object   *NvImagePattern;
+    struct nouveau_object   *NvRop;
+    struct nouveau_object   *NvRectangle;
+    struct nouveau_object   *NvImageBlit;
+    struct nouveau_object   *NvMemFormat;
+    struct nouveau_object   *Nv2D;
+    struct nouveau_object   *Nv3D;
+    struct nouveau_object   *NvSW;
+    struct nouveau_object   *NvCOPY;
+    struct nouveau_bo       *scratch;
+
     struct nouveau_bo       *GART;                  /* Buffer in GART for upload/download of images */
     struct SignalSemaphore  gartsemaphore;
 };
@@ -235,11 +238,7 @@ LIBBASETYPE
 #define LOCK_MULTI_BITMAP           { ObtainSemaphore(&(SD(cl))->multibitmapsemaphore); }
 #define UNLOCK_MULTI_BITMAP         { ReleaseSemaphore(&(SD(cl))->multibitmapsemaphore); }
 
-#define UNMAP_BUFFER                { if (bmdata->bo->map) nouveau_bo_unmap(bmdata->bo); }
-#define UNMAP_BUFFER_BM(bmdata)     { if ((bmdata)->bo->map) nouveau_bo_unmap((bmdata)->bo); }
-
-#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
-#define MAP_BUFFER_BM(bmdata)       { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
+#define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR, carddata->client); }
 
 #define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
 
@@ -278,9 +277,9 @@ enum DMAObjects
 #define NV_ARCH_20  0x20
 #define NV_ARCH_30  0x30
 #define NV_ARCH_40  0x40
-#define NV_ARCH_50  0x50
-#define NV_ARCH_C0  0xC0
-#define NV_KEPLER   0xE0
+#define NV_TESLA    0x50
+#define NV_FERMI    0xc0
+#define NV_KEPLER   0xe0
 #define NV_MAXWELL  0x110
 #define NV_PASCAL   0x130
 

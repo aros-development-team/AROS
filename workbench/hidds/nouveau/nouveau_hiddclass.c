@@ -13,16 +13,7 @@
 #include <proto/oop.h>
 
 #include <libdrm/arosdrmmode.h>
-
-/* WARNING: Following definitions are only used to resolve types from nouveau_abi16.h. They arey INVALID!! */
-struct drm_device;
-struct drm_file;
-struct nouveau_drm;
-struct list_head { ULONG n; };
-struct nvkm_mm { ULONG n; };
-struct nvif_device { ULONG n; };
-struct nvif_object { ULONG n; };
-#include "drm/nouveau/nouveau_abi16.h"
+#include <uapi/drm/nouveau_drm.h>
 
 #undef HiddAttrBase
 #undef HiddPixFmtAttrBase
@@ -56,7 +47,7 @@ VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible)
     OOP_Class * cl = OOP_OCLASS(gfx);
     struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, gfx);
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
+    struct nouveau_device *nvdev = carddata->dev;
 
     LOCK_ENGINE
 
@@ -200,7 +191,7 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
     struct HIDDNouveauData * gfxdata = NULL;
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, bm);
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
+    struct nouveau_device *nvdev = carddata->dev;
     uint32_t output_ids[] = {0};
     uint32_t output_count = 1;
     IPTR e = (IPTR)NULL;
@@ -242,7 +233,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     OOP_Object * gfx = NULL;
     struct HIDDNouveauData * gfxdata = NULL; 
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct nouveau_device_priv *nvdev = nouveau_device(carddata->dev);
+    struct nouveau_device *nvdev = carddata->dev;
     LONG i;
     drmModeConnectorPtr selectedconnector = NULL;
     HIDDT_ModeID modeid;
@@ -351,8 +342,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
 {
     drmModeCrtcPtr selectedcrtc = NULL;
     drmModeConnectorPtr selectedconnector = NULL;
-    struct nouveau_device * dev = NULL;
-    struct nouveau_device_priv * nvdev = NULL;
+    struct nouveau_device *nvdev = NULL;
+    struct nouveau_client *nvclient = NULL;
     struct TagItem * syncs = NULL;
     struct CardData * carddata = &(SD(cl)->carddata);
     LONG ret;
@@ -363,8 +354,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
     LOCK_ENGINE
 
-    nouveau_device_open(&dev, "");
-    nvdev = nouveau_device(dev);
+    nouveau_device_open("", &nvdev);
+
+    nouveau_client_new(nvdev, &nvclient);
+
 
     /* Select crtc and connector */
     if (!HIDDNouveauSelectConnectorCrtc(nvdev->fd, &selectedconnector, &selectedcrtc))
@@ -460,7 +453,8 @@ OOP_Object * METHOD(Nouveau, Root, New)
             gfxdata->selectedcrtcid = selectedcrtcid;
             gfxdata->selectedmode = NULL;
             gfxdata->selectedconnector = selectedconnector;
-            carddata->dev = dev;
+            carddata->dev = nvdev;
+            carddata->client = nvclient;
             ULONG gartsize = 0;
             UQUAD value;
 
@@ -477,46 +471,46 @@ OOP_Object * METHOD(Nouveau, Root, New)
                     OOP_GetAttr(SD(cl)->display, aHidd_Display_DMEnumerator, (IPTR *)&SD(cl)->dmenum);
             }
 
-            /* Check chipset architecture */
+            /* Check chipset Architecture */
             switch (carddata->dev->chipset & 0xff0)
             {
             case 0x000:
-                carddata->architecture = NV_ARCH_04;
+                carddata->Architecture = NV_ARCH_04;
                 break;
             case 0x010:
-                carddata->architecture = NV_ARCH_10;
+                carddata->Architecture = NV_ARCH_10;
                 break;
             case 0x020:
-                carddata->architecture = NV_ARCH_20;
+                carddata->Architecture = NV_ARCH_20;
                 break;
             case 0x030:
-                carddata->architecture = NV_ARCH_30;
+                carddata->Architecture = NV_ARCH_30;
                 break;
             case 0x040:
             case 0x060:
-                carddata->architecture = NV_ARCH_40;
+                carddata->Architecture = NV_ARCH_40;
                 break;
             case 0x050:
             case 0x080:
             case 0x090:
             case 0x0a0:
-                carddata->architecture = NV_ARCH_50;
+                carddata->Architecture = NV_TESLA;
                 break;
             case 0x0c0:
             case 0x0d0:
-                carddata->architecture = NV_ARCH_C0;
+                carddata->Architecture = NV_FERMI;
                 break;
             case 0x0e0:
             case 0x0f0:
             case 0x100:
-                carddata->architecture = NV_KEPLER;
+                carddata->Architecture = NV_KEPLER;
                 break;
             case 0x110:
             case 0x120:
-                carddata->architecture = NV_MAXWELL;
+                carddata->Architecture = NV_MAXWELL;
                 break;
             case 0x130:
-                carddata->architecture = NV_PASCAL;
+                carddata->Architecture = NV_PASCAL;
                 break;
             default:
                 bug("Unrecognized chipset: 0x%x, exiting.\n", carddata->dev->chipset);
@@ -524,25 +518,18 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 return NULL;
             }
             
-            nouveau_device_get_param(carddata->dev, NOUVEAU_GETPARAM_BUS_TYPE, &value);
+            nouveau_getparam(carddata->dev, NOUVEAU_GETPARAM_BUS_TYPE, &value);
             if (value == 2 /* NV_PCIE */)
                 carddata->IsPCIE = TRUE;
             else
                 carddata->IsPCIE = FALSE;
 
             /* Allocate buffer object for cursor */
-            nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, &gfxdata->cursor);
+            nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, NULL, &gfxdata->cursor);
             /* TODO: Check return, how to handle */
 
-            if (carddata->architecture <= NV_ARCH_C0)
+            if (carddata->Architecture <= NV_FERMI)
             {
-            /* Allocate dma channel */
-            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT,
-                24 * 1024, &carddata->chan);
-            if (ret < 0)
-            {
-                /* TODO: Check ret, how to handle ? */
-            }
 
             /* Initialize acceleration objects */
         
@@ -553,19 +540,19 @@ OOP_Object * METHOD(Nouveau, Root, New)
             }
 
             /* Allocate GART scratch buffer */
-            if (carddata->dev->vm_gart_size > GART_BUFFER_SIZE)
+            if (carddata->dev->gart_size > GART_BUFFER_SIZE)
                 gartsize = GART_BUFFER_SIZE;
             else
                 /* always leave 512kb for other things like the fifos */
-                gartsize = carddata->dev->vm_gart_size - 512 * 1024;
+                gartsize = carddata->dev->gart_size - 512 * 1024;
 
             /* This can fail */
-            nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 0, gartsize, &carddata->GART);
+            nouveau_bo_new(carddata->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP, 0, gartsize, NULL, &carddata->GART);
 
             InitSemaphore(&carddata->gartsemaphore);
             
             /* Set initial pattern (else 16-bit ROPs are not working) */
-            switch(carddata->architecture)
+            switch(carddata->Architecture)
             {
             case(NV_ARCH_03):
             case(NV_ARCH_04):
@@ -575,10 +562,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
             case(NV_ARCH_40):
                 HIDDNouveauNV04SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
-            case(NV_ARCH_50):
+            case(NV_TESLA):
                 HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
-            case(NV_ARCH_C0):
+            case(NV_FERMI):
                 HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             }
@@ -694,7 +681,7 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 
     /* Tesla and Fermi only */
     struct CardData * carddata = &(SD(cl)->carddata);
-    if (carddata->architecture > NV_ARCH_C0) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (carddata->Architecture > NV_FERMI) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
     {
@@ -712,10 +699,8 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         LOCK_BITMAP_BM(srcdata)
         LOCK_BITMAP_BM(destdata)
         UNLOCK_MULTI_BITMAP
-        UNMAP_BUFFER_BM(srcdata)
-        UNMAP_BUFFER_BM(destdata)
         
-        switch(carddata->architecture)
+        switch(carddata->Architecture)
         {
         case(NV_ARCH_03):
         case(NV_ARCH_04):
@@ -727,12 +712,12 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
-        case(NV_ARCH_50):
+        case(NV_TESLA):
             ret = HIDDNouveauNV50CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
-        case(NV_ARCH_C0):
+        case(NV_FERMI):
             ret = HIDDNouveauNVC0CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
@@ -787,28 +772,28 @@ VOID METHOD(Nouveau, Root, Get)
                             case tHidd_Gfx_MemTotal:
                                 {
                                     UQUAD value;
-                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
+                                    nouveau_getparam(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
                             case tHidd_Gfx_MemAddressableTotal:
                                 {
                                     UQUAD value;
-                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
+                                    nouveau_getparam(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
                             case tHidd_Gfx_MemFree:
                                 {
                                     UQUAD value;
-                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
+                                    nouveau_getparam(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
                             case tHidd_Gfx_MemAddressableFree:
                                 {
                                     UQUAD value;
-                                    nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
+                                    nouveau_getparam(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
                                     matag->ti_Data = (IPTR)value;
                                 }
                                 break;
@@ -875,7 +860,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
         LOCK_ENGINE
 
         /* Map the cursor buffer */
-        nouveau_bo_map(gfxdata->cursor, NOUVEAU_BO_WR);
+        nouveau_bo_map(gfxdata->cursor, NOUVEAU_BO_WR, carddata->client);
 
         /* Clear the matrix */
         for (i = 0; i < 64 * 64; i++)
@@ -885,7 +870,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
         HIDD_BM_GetImage(msg->shape, (UBYTE *)curimage, 64 * 4, 0, 0, 
             width, height, Machine_ARGB32);
         
-        if (carddata->architecture < NV_ARCH_50)
+        if (carddata->Architecture < NV_TESLA)
         {
             ULONG offset, pixel, blue, green, red, alpha;
 
@@ -915,8 +900,6 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
                 writel(curimage[offset], ((ULONG *)gfxdata->cursor->map) + (offset));
             }
 
-        nouveau_bo_unmap(gfxdata->cursor);
-        
         /* Show updated cursor */
         HIDDNouveauShowCursor(gfx, TRUE);
 
@@ -931,7 +914,7 @@ BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)
     OOP_Object *gfx = NULL;
     struct HIDDNouveauData * gfxdata;
     struct CardData * carddata = &(SD(cl)->carddata);
-    struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
+    struct nouveau_device *nvdev = carddata->dev;
 
     OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
     gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);

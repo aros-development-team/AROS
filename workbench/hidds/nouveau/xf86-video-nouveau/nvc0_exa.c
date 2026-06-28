@@ -24,298 +24,15 @@
 #include "nv_include.h"
 #include "nv_rop.h"
 #include "nvc0_accel.h"
-#include "nv50_texture.h"
+#include "nouveau_copy.h"
 
 #define NOUVEAU_BO(a, b, c) (NOUVEAU_BO_##a | NOUVEAU_BO_##b | NOUVEAU_BO_##c)
 
-#if !defined(__AROS__)
-Bool
-NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
-		      char *dst, unsigned dst_pitch)
-{
-	ScrnInfoPtr pScrn = xf86Screens[pspix->drawable.pScreen->myNum];
-#else
-Bool
-NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
-		      char *dst, unsigned dst_pitch,
-		      HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
-{
-	ScrnInfoPtr pScrn = globalcarddataptr;
-#endif
-	NVPtr pNv = NVPTR(pScrn);
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_bo *bo = nouveau_pixmap_bo(pspix);
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
-#if !defined(__AROS__)
-	const int cpp = pspix->drawable.bitsPerPixel / 8;
-	const int line_len = w * cpp;
-	const int line_limit = (128 << 10) / line_len;
-	unsigned src_offset = 0, src_pitch = 0, tiled = 1;
-#else
-	const int cpp = pspix->depth > 16 ? 4 : 2;
-	const int line_len = w * cpp;
-	const int line_limit = pNv->GART->size / line_len;
-	unsigned src_offset = 0, src_pitch = 0, tiled = 1;
-	unsigned int exec = (1 << 20) | NVC0_M2MF_EXEC_LINEAR_OUT;
-#endif
+#define NVC0EXA_LOCALS(p)                                                      \
+	ScrnInfoPtr pScrn = xf86ScreenToScrn((p)->drawable.pScreen);         \
+	NVPtr pNv = NVPTR(pScrn);                                              \
+	struct nouveau_pushbuf *push = pNv->pushbuf; (void)push;
 
-	if (!nv50_style_tiled_pixmap(pspix)) {
-
-		tiled = 0;
-		src_pitch = exaGetPixmapPitch(pspix);
-		src_offset = (y * src_pitch) + (x * cpp);
-#if defined(__AROS__)
-		exec |= NVC0_M2MF_EXEC_LINEAR_IN;
-#endif
-	} else {
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_TILING_MODE_IN, 5);
-		OUT_RING  (chan, bo->tile_mode);
-#if !defined(__AROS__)
-		OUT_RING  (chan, pspix->drawable.width * cpp);
-		OUT_RING  (chan, pspix->drawable.height);
-#else
-		OUT_RING  (chan, pspix->width * cpp);
-		OUT_RING  (chan, pspix->height);
-#endif
-		OUT_RING  (chan, 1);
-		OUT_RING  (chan, 0);
-	}
-
-	while (h) {
-		const char *src;
-		int line_count, i;
-
-		/* GART size >= 128 KiB assumed */
-		line_count = h;
-		if (line_count > line_limit)
-			line_count = line_limit;
-
-		MARK_RING(chan, 16, 4);
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_OUT_HIGH, 2);
-		OUT_RELOCh(chan, pNv->GART, 0, NOUVEAU_BO(GART, GART, WR));
-		OUT_RELOCl(chan, pNv->GART, 0, NOUVEAU_BO(GART, GART, WR));
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_IN_HIGH, 6);
-		OUT_RELOCh(chan, bo, src_offset, NOUVEAU_BO(VRAM, GART, RD));
-		OUT_RELOCl(chan, bo, src_offset, NOUVEAU_BO(VRAM, GART, RD));
-		OUT_RING  (chan, src_pitch);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_count);
-
-		if (tiled) {
-			BEGIN_RING(chan, m2mf,
-				   NVC0_M2MF_TILING_POSITION_IN_X, 2);
-			OUT_RING  (chan, x * cpp);
-			OUT_RING  (chan, y);
-		}
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_EXEC, 1);
-#if !defined(__AROS__)
-		OUT_RING  (chan, 0x100000 | (tiled << 8));
-#else
-		OUT_RING  (chan, exec | (tiled << 8));
-#endif
-
-		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_RD)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-		src = pNv->GART->map;
-
-#if !defined(__AROS__)
-		if (dst_pitch == line_len) {
-			memcpy(dst, src, dst_pitch * line_count);
-			dst += dst_pitch * line_count;
-		} else {
-			for (i = 0; i < line_count; ++i) {
-				memcpy(dst, src, line_len);
-				src += line_len;
-				dst += dst_pitch;
-			}
-		}
-#else
-        (void)i;
-        HiddNouveauReadIntoRAM(
-            (char *)src, line_len,
-            dst, dst_pitch, dstPixFmt,
-            w, line_count,
-            cl, o);
-        dst += dst_pitch * line_count;
-#endif
-		nouveau_bo_unmap(pNv->GART);
-
-		if (!tiled)
-			src_offset += line_count * src_pitch;
-		h -= line_count;
-		y += line_count;
-	}
-
-	return TRUE;
-}
-
-#if !defined(__AROS__)
-Bool
-NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
-		    const char *src, int src_pitch)
-{
-	ScrnInfoPtr pScrn = xf86Screens[pdpix->drawable.pScreen->myNum];
-#else
-Bool
-NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
-		    const char *src, int src_pitch,
-		    HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
-{
-	ScrnInfoPtr pScrn = globalcarddataptr;
-#endif
-	NVPtr pNv = NVPTR(pScrn);
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
-#if !defined(__AROS__)
-	int cpp = pdpix->drawable.bitsPerPixel / 8;
-	int line_len = w * cpp;
-	int line_limit = (128 << 10) / line_len;
-	unsigned dst_offset = 0, dst_pitch = 0, tiled = 1;
-#else
-	int cpp = pdpix->depth > 16 ? 4 : 2;
-	int line_len = w * cpp;
-	int line_limit = pNv->GART->size / line_len;
-	unsigned dst_offset = 0, dst_pitch = 0, tiled = 1;
-	unsigned int exec = (1 << 20) | NVC0_M2MF_EXEC_LINEAR_IN;
-#endif
-
-	if (!nv50_style_tiled_pixmap(pdpix)) {
-		tiled = 0;
-		dst_pitch = exaGetPixmapPitch(pdpix);
-		dst_offset = (y * dst_pitch) + (x * cpp);
-#if defined(__AROS__)
-		exec |= NVC0_M2MF_EXEC_LINEAR_OUT;
-#endif
-	} else {
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_TILING_MODE_OUT, 5);
-		OUT_RING  (chan, bo->tile_mode);
-#if !defined(__AROS__)
-		OUT_RING  (chan, pdpix->drawable.width * cpp);
-		OUT_RING  (chan, pdpix->drawable.height);
-#else
-		OUT_RING  (chan, pdpix->width * cpp);
-		OUT_RING  (chan, pdpix->height);
-#endif
-		OUT_RING  (chan, 1);
-		OUT_RING  (chan, 0);
-	}
-
-	while (h) {
-		char *dst;
-		int i, line_count;
-
-		line_count = h;
-		if (line_count > line_limit)
-			line_count = line_limit;
-
-		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR))
-			return FALSE;
-		dst = pNv->GART->map;
-
-#if !defined(__AROS__)
-		if (src_pitch == line_len) {
-			memcpy(dst, src, src_pitch * line_count);
-			src += src_pitch * line_count;
-		} else {
-			for (i = 0; i < line_count; i++) {
-				memcpy(dst, src, line_len);
-				src += src_pitch;
-				dst += line_len;
-            }
-		}
-#else
-        (void)i;
-        HiddNouveauWriteFromRAM(
-            (APTR)src, src_pitch, srcPixFmt,
-            dst, line_len,
-            w, line_count,
-            cl, o);
-        src += src_pitch * line_count;
-#endif
-		nouveau_bo_unmap(pNv->GART);
-
-		if (MARK_RING(chan, 16, 4))
-			return FALSE;
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_IN_HIGH, 2);
-		OUT_RELOCh(chan, pNv->GART, 0, NOUVEAU_BO(GART, GART, RD));
-		OUT_RELOCl(chan, pNv->GART, 0, NOUVEAU_BO(GART, GART, RD));
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_OUT_HIGH, 2);
-		OUT_RELOCh(chan, bo, dst_offset, NOUVEAU_BO(VRAM, GART, WR));
-		OUT_RELOCl(chan, bo, dst_offset, NOUVEAU_BO(VRAM, GART, WR));
-
-		if (tiled) {
-			BEGIN_RING(chan, m2mf,
-				   NVC0_M2MF_TILING_POSITION_OUT_X, 2);
-			OUT_RING  (chan, x * cpp);
-			OUT_RING  (chan, y);
-		}
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_PITCH_IN, 4);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, dst_pitch);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_count);
-
-		BEGIN_RING(chan, m2mf, NVC0_M2MF_EXEC, 1);
-#if !defined(__AROS__)
-		OUT_RING  (chan, 0x100000 | (tiled << 4));
-#else
-		OUT_RING  (chan, exec | (tiled << 4));
-#endif
-		FIRE_RING (chan);
-
-		if (!tiled)
-			dst_offset += line_count * dst_pitch;
-		h -= line_count;
-		y += line_count;
-	}
-
-	return TRUE;
-}
-
-#if !defined(__AROS__)
-struct nvc0_exa_state {
-	struct {
-		PictTransformPtr transform;
-		float width;
-		float height;
-	} unit[2];
-
-	Bool have_mask;
-};
-
-static struct nvc0_exa_state exa_state;
-#endif
-
-#if !defined(__AROS__)
-#define NVC0EXA_LOCALS(p)                                              \
-	ScrnInfoPtr pScrn = xf86Screens[(p)->drawable.pScreen->myNum]; \
-	NVPtr pNv = NVPTR(pScrn);                                      \
-	struct nouveau_channel *chan = pNv->chan; (void)chan;          \
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat; (void)m2mf;     \
-	struct nouveau_grobj *eng2d = pNv->Nv2D; (void)eng2d;          \
-	struct nouveau_grobj *fermi = pNv->Nv3D; (void)fermi;          \
-	struct nvc0_exa_state *state = &exa_state; (void)state
-#else
-#define NVC0EXA_LOCALS(p)                                          \
-	ScrnInfoPtr pScrn = globalcarddataptr;                         \
-	NVPtr pNv = NVPTR(pScrn);                                      \
-	struct nouveau_channel *chan = pNv->chan; (void)chan;          \
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat; (void)m2mf;     \
-	struct nouveau_grobj *eng2d = pNv->Nv2D; (void)eng2d;          \
-	struct nouveau_grobj *fermi = pNv->Nv3D; (void)fermi;
-#endif
-
-#if !defined(__AROS__)
 #define BF(f) NV50_BLEND_FACTOR_##f
 
 struct nvc0_blend_op {
@@ -341,24 +58,19 @@ NVC0EXABlendOp[] = {
 /* Xor         */ { 1, 1, BF(ONE_MINUS_DST_ALPHA), BF(ONE_MINUS_SRC_ALPHA) },
 /* Add         */ { 0, 0, BF(                ONE), BF(                ONE) },
 };
-#endif
 
 static Bool
 NVC0EXA2DSurfaceFormat(PixmapPtr ppix, uint32_t *fmt)
 {
 	NVC0EXA_LOCALS(ppix);
 
-#if !defined(__AROS__)
 	switch (ppix->drawable.bitsPerPixel) {
-#else
-	switch (ppix->depth) {
-#endif
-	case 8 : *fmt = NV50_2D_SRC_FORMAT_R8_UNORM; break;
-	case 15: *fmt = NV50_2D_SRC_FORMAT_X1R5G5B5_UNORM; break;
-	case 16: *fmt = NV50_2D_SRC_FORMAT_R5G6B5_UNORM; break;
-	case 24: *fmt = NV50_2D_SRC_FORMAT_X8R8G8B8_UNORM; break;
-	case 30: *fmt = NV50_2D_SRC_FORMAT_A2B10G10R10_UNORM; break;
-	case 32: *fmt = NV50_2D_SRC_FORMAT_A8R8G8B8_UNORM; break;
+	case 8 : *fmt = NV50_SURFACE_FORMAT_R8_UNORM; break;
+	case 15: *fmt = NV50_SURFACE_FORMAT_BGR5_X1_UNORM; break;
+	case 16: *fmt = NV50_SURFACE_FORMAT_B5G6R5_UNORM; break;
+	case 24: *fmt = NV50_SURFACE_FORMAT_BGRX8_UNORM; break;
+	case 30: *fmt = NV50_SURFACE_FORMAT_RGB10_A2_UNORM; break;
+	case 32: *fmt = NV50_SURFACE_FORMAT_BGRA8_UNORM; break;
 	default:
 		 NOUVEAU_FALLBACK("Unknown surface format for bpp=%d\n",
 				  ppix->drawable.bitsPerPixel);
@@ -372,62 +84,56 @@ static void NVC0EXASetClip(PixmapPtr ppix, int x, int y, int w, int h)
 {
 	NVC0EXA_LOCALS(ppix);
 
-	BEGIN_RING(chan, eng2d, NV50_2D_CLIP_X, 4);
-	OUT_RING  (chan, x);
-	OUT_RING  (chan, y);
-	OUT_RING  (chan, w);
-	OUT_RING  (chan, h);
+	BEGIN_NVC0(push, NV50_2D(CLIP_X), 4);
+	PUSH_DATA (push, x);
+	PUSH_DATA (push, y);
+	PUSH_DATA (push, w);
+	PUSH_DATA (push, h);
 }
 
-static Bool
-NVC0EXAAcquireSurface2D(PixmapPtr ppix, int is_src)
+static void
+NVC0EXAAcquireSurface2D(PixmapPtr ppix, int is_src, uint32_t fmt)
 {
 	NVC0EXA_LOCALS(ppix);
 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+#if !defined(__AROS__)
+	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);
+#endif
 	int mthd = is_src ? NV50_2D_SRC_FORMAT : NV50_2D_DST_FORMAT;
-	uint32_t fmt, bo_flags;
+	uint32_t bo_flags;
 
-	if (!NVC0EXA2DSurfaceFormat(ppix, &fmt))
-		return FALSE;
-
-	bo_flags  = NOUVEAU_BO_VRAM;
+#if !defined(__AROS__)
+	bo_flags = nvpix->shared ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM;
+#else
+	bo_flags = NOUVEAU_BO_VRAM; /* AROS allocates all bitmaps in VRAM only */
+#endif
 	bo_flags |= is_src ? NOUVEAU_BO_RD : NOUVEAU_BO_WR;
 
 	if (!nv50_style_tiled_pixmap(ppix)) {
-		BEGIN_RING(chan, eng2d, mthd, 2);
-		OUT_RING  (chan, fmt);
-		OUT_RING  (chan, 1);
-		BEGIN_RING(chan, eng2d, mthd + 0x14, 1);
-		OUT_RING  (chan, (uint32_t)exaGetPixmapPitch(ppix));
+		BEGIN_NVC0(push, SUBC_2D(mthd), 2);
+		PUSH_DATA (push, fmt);
+		PUSH_DATA (push, 1);
+		BEGIN_NVC0(push, SUBC_2D(mthd + 0x14), 1);
+		PUSH_DATA (push, (uint32_t)exaGetPixmapPitch(ppix));
 	} else {
-		BEGIN_RING(chan, eng2d, mthd, 5);
-		OUT_RING  (chan, fmt);
-		OUT_RING  (chan, 0);
-		OUT_RING  (chan, bo->tile_mode);
-		OUT_RING  (chan, 1);
-		OUT_RING  (chan, 0);
+		BEGIN_NVC0(push, SUBC_2D(mthd), 5);
+		PUSH_DATA (push, fmt);
+		PUSH_DATA (push, 0);
+		PUSH_DATA (push, bo->config.nvc0.tile_mode);
+		PUSH_DATA (push, 1);
+		PUSH_DATA (push, 0);
 	}
 
-	BEGIN_RING(chan, eng2d, mthd + 0x18, 4);
-#if !defined(__AROS__)
-	OUT_RING  (chan, ppix->drawable.width);
-	OUT_RING  (chan, ppix->drawable.height);
-#else
-	OUT_RING  (chan, ppix->width);
-	OUT_RING  (chan, ppix->height);
-#endif
-	if (OUT_RELOCh(chan, bo, 0, bo_flags) ||
-	    OUT_RELOCl(chan, bo, 0, bo_flags))
-		return FALSE;
+	BEGIN_NVC0(push, SUBC_2D(mthd + 0x18), 4);
+	PUSH_DATA (push, ppix->drawable.width);
+	PUSH_DATA (push, ppix->drawable.height);
+	PUSH_DATA (push, bo->offset >> 32);
+	PUSH_DATA (push, bo->offset);
 
 	if (is_src == 0)
-#if !defined(__AROS__)
 		NVC0EXASetClip(ppix, 0, 0, ppix->drawable.width, ppix->drawable.height);
-#else
-		NVC0EXASetClip(ppix, 0, 0, ppix->width, ppix->height);
-#endif
 
-	return TRUE;
+	PUSH_REFN (push, bo, bo_flags);
 }
 
 static void
@@ -435,14 +141,13 @@ NVC0EXASetPattern(PixmapPtr pdpix, int col0, int col1, int pat0, int pat1)
 {
 	NVC0EXA_LOCALS(pdpix);
 
-	BEGIN_RING(chan, eng2d, NV50_2D_PATTERN_COLOR(0), 4);
-	OUT_RING  (chan, col0);
-	OUT_RING  (chan, col1);
-	OUT_RING  (chan, pat0);
-	OUT_RING  (chan, pat1);
+	BEGIN_NVC0(push, NV50_2D(PATTERN_COLOR(0)), 4);
+	PUSH_DATA (push, col0);
+	PUSH_DATA (push, col1);
+	PUSH_DATA (push, pat0);
+	PUSH_DATA (push, pat1);
 }
 
-#if !defined(__AROS__)
 static void
 NVC0EXASetROP(PixmapPtr pdpix, int alu, Pixel planemask)
 {
@@ -454,26 +159,26 @@ NVC0EXASetROP(PixmapPtr pdpix, int alu, Pixel planemask)
 	else
 		rop = NVROP[alu].copy;
 
-	BEGIN_RING(chan, eng2d, NV50_2D_OPERATION, 1);
+	BEGIN_NVC0(push, NV50_2D(OPERATION), 1);
 	if (alu == GXcopy && EXA_PM_IS_SOLID(&pdpix->drawable, planemask)) {
-		OUT_RING  (chan, NV50_2D_OPERATION_SRCCOPY);
+		PUSH_DATA (push, NV50_2D_OPERATION_SRCCOPY);
 		return;
 	} else {
-		OUT_RING  (chan, NV50_2D_OPERATION_SRCCOPY_PREMULT);
+		PUSH_DATA (push, NV50_2D_OPERATION_ROP);
 	}
 
-	BEGIN_RING(chan, eng2d, NV50_2D_PATTERN_FORMAT, 2);
+	BEGIN_NVC0(push, NV50_2D(PATTERN_COLOR_FORMAT), 2);
 	switch (pdpix->drawable.bitsPerPixel) {
-	case  8: OUT_RING  (chan, 3); break;
-	case 15: OUT_RING  (chan, 1); break;
-	case 16: OUT_RING  (chan, 0); break;
+	case  8: PUSH_DATA (push, 3); break;
+	case 15: PUSH_DATA (push, 1); break;
+	case 16: PUSH_DATA (push, 0); break;
 	case 24:
 	case 32:
 	default:
-		 OUT_RING  (chan, 2);
+		 PUSH_DATA (push, 2);
 		 break;
 	}
-	OUT_RING  (chan, 1);
+	PUSH_DATA (push, 1);
 
 	/* There are 16 ALUs.
 	 * 0-15: copy
@@ -489,57 +194,11 @@ NVC0EXASetROP(PixmapPtr pdpix, int alu, Pixel planemask)
 	}
 
 	if (pNv->currentRop != alu) {
-		BEGIN_RING(chan, eng2d, NV50_2D_ROP, 1);
-		OUT_RING  (chan, rop);
+		BEGIN_NVC0(push, NV50_2D(ROP), 1);
+		PUSH_DATA (push, rop);
 		pNv->currentRop = alu;
 	}
 }
-#else
-static void
-NVC0EXASetROP(PixmapPtr pdpix, int alu, Pixel planemask)
-{
-	NVC0EXA_LOCALS(pdpix);
-	LONG rop;
-
-	rop = NVROP[alu].copy;
-
-	BEGIN_RING(chan, eng2d, NV50_2D_OPERATION, 1);
-	if (alu == 0x03 /* DrawMode_Copy */) {
-		OUT_RING  (chan, NV50_2D_OPERATION_SRCCOPY);
-		return;
-	} else {
-		OUT_RING  (chan, NV50_2D_OPERATION_SRCCOPY_PREMULT);
-	}
-
-	BEGIN_RING(chan, eng2d, NV50_2D_PATTERN_FORMAT, 2);
-	switch (pdpix->depth) {
-	case  8: OUT_RING  (chan, 3); break;
-	case 15: OUT_RING  (chan, 1); break;
-	case 16: OUT_RING  (chan, 0); break;
-	case 24:
-	case 32:
-	default:
-		 OUT_RING  (chan, 2);
-		 break;
-	}
-	OUT_RING  (chan, 1);
-
-	BEGIN_RING(chan, eng2d, NV50_2D_ROP, 1);
-	OUT_RING  (chan, rop);
-}
-#endif
-
-#if !defined(__AROS__)
-static void
-NVC0EXAStateSolidResubmit(struct nouveau_channel *chan)
-{
-	ScrnInfoPtr pScrn = chan->user_private;
-	NVPtr pNv = NVPTR(pScrn);
-
-	NVC0EXAPrepareSolid(pNv->pdpix, pNv->alu, pNv->planemask,
-			    pNv->fg_colour);
-}
-#endif
 
 Bool
 NVC0EXAPrepareSolid(PixmapPtr pdpix, int alu, Pixel planemask, Pixel fg)
@@ -550,30 +209,24 @@ NVC0EXAPrepareSolid(PixmapPtr pdpix, int alu, Pixel planemask, Pixel fg)
 	if (!NVC0EXA2DSurfaceFormat(pdpix, &fmt))
 		NOUVEAU_FALLBACK("rect format\n");
 
-	if (MARK_RING(chan, 64, 4))
-		NOUVEAU_FALLBACK("ring space\n");
+	if (!PUSH_SPACE(push, 64))
+		NOUVEAU_FALLBACK("space\n");
+	PUSH_RESET(push);
 
-	if (!NVC0EXAAcquireSurface2D(pdpix, 0)) {
-		MARK_UNDO(chan);
-		NOUVEAU_FALLBACK("dest pixmap\n");
-	}
-
+	NVC0EXAAcquireSurface2D(pdpix, 0, fmt);
 	NVC0EXASetROP(pdpix, alu, planemask);
 
-	BEGIN_RING(chan, eng2d, NV50_2D_DRAW_SHAPE, 3);
-	OUT_RING  (chan, NV50_2D_DRAW_SHAPE_RECTANGLES);
-	OUT_RING  (chan, fmt);
-	OUT_RING  (chan, fg);
+	BEGIN_NVC0(push, NV50_2D(DRAW_SHAPE), 3);
+	PUSH_DATA (push, NV50_2D_DRAW_SHAPE_RECTANGLES);
+	PUSH_DATA (push, fmt);
+	PUSH_DATA (push, fg);
 
-#if !defined(__AROS__)
-	pNv->pdpix = pdpix;
-	pNv->alu = alu;
-	pNv->planemask = planemask;
-	pNv->fg_colour = fg;
-	chan->flush_notify = NVC0EXAStateSolidResubmit;
-#else
-	chan->flush_notify = NULL;
-#endif
+	nouveau_pushbuf_bufctx(push, pNv->bufctx);
+	if (nouveau_pushbuf_validate(push)) {
+		nouveau_pushbuf_bufctx(push, NULL);
+		NOUVEAU_FALLBACK("validate\n");
+	}
+
 	return TRUE;
 }
 
@@ -582,69 +235,54 @@ NVC0EXASolid(PixmapPtr pdpix, int x1, int y1, int x2, int y2)
 {
 	NVC0EXA_LOCALS(pdpix);
 
-	WAIT_RING (chan, 5);
-	BEGIN_RING(chan, eng2d, NV50_2D_DRAW_POINT32_X(0), 4);
-	OUT_RING  (chan, x1);
-	OUT_RING  (chan, y1);
-	OUT_RING  (chan, x2);
-	OUT_RING  (chan, y2);
+	if (!PUSH_SPACE(push, 8))
+		return;
+
+	BEGIN_NVC0(push, NV50_2D(DRAW_POINT32_X(0)), 4);
+	PUSH_DATA (push, x1);
+	PUSH_DATA (push, y1);
+	PUSH_DATA (push, x2);
+	PUSH_DATA (push, y2);
 
 #if !defined(__AROS__)
 	if ((x2 - x1) * (y2 - y1) >= 512)
 #endif
-		FIRE_RING (chan);
+		PUSH_KICK(push);
 }
 
-#if !defined(__AROS__)
 void
 NVC0EXADoneSolid(PixmapPtr pdpix)
 {
 	NVC0EXA_LOCALS(pdpix);
-
-	chan->flush_notify = NULL;
+	nouveau_pushbuf_bufctx(push, NULL);
 }
-
-static void
-NVC0EXAStateCopyResubmit(struct nouveau_channel *chan)
-{
-	ScrnInfoPtr pScrn = chan->user_private;
-	NVPtr pNv = NVPTR(pScrn);
-
-	NVC0EXAPrepareCopy(pNv->pspix, pNv->pdpix, 0, 0, pNv->alu,
-			   pNv->planemask);
-}
-#endif
 
 Bool
 NVC0EXAPrepareCopy(PixmapPtr pspix, PixmapPtr pdpix, int dx, int dy,
 		   int alu, Pixel planemask)
 {
 	NVC0EXA_LOCALS(pdpix);
+	uint32_t src, dst;
 
-	if (MARK_RING(chan, 64, 4))
-		NOUVEAU_FALLBACK("ring space\n");
+	if (!NVC0EXA2DSurfaceFormat(pspix, &src))
+		NOUVEAU_FALLBACK("src format\n");
+	if (!NVC0EXA2DSurfaceFormat(pdpix, &dst))
+		NOUVEAU_FALLBACK("dst format\n");
 
-	if (!NVC0EXAAcquireSurface2D(pspix, 1)) {
-		MARK_UNDO(chan);
-		NOUVEAU_FALLBACK("src pixmap\n");
-	}
+	if (!PUSH_SPACE(push, 64))
+		NOUVEAU_FALLBACK("space\n");
+	PUSH_RESET(push);
 
-	if (!NVC0EXAAcquireSurface2D(pdpix, 0)) {
-		MARK_UNDO(chan);
-		NOUVEAU_FALLBACK("dest pixmap\n");
-	}
-
+	NVC0EXAAcquireSurface2D(pspix, 1, src);
+	NVC0EXAAcquireSurface2D(pdpix, 0, dst);
 	NVC0EXASetROP(pdpix, alu, planemask);
 
-#if !defined(__AROS__)
-	pNv->pspix = pspix;
-	pNv->pdpix = pdpix;
-	pNv->alu = alu;
-	pNv->planemask = planemask;
-	chan->flush_notify = NVC0EXAStateCopyResubmit;
-#else
-	chan->flush_notify = NULL;
-#endif
+	nouveau_pushbuf_bufctx(push, pNv->bufctx);
+	if (nouveau_pushbuf_validate(push)) {
+		nouveau_pushbuf_bufctx(push, NULL);
+		NOUVEAU_FALLBACK("validate\n");
+	}
+
 	return TRUE;
 }
 
@@ -655,53 +293,41 @@ NVC0EXACopy(PixmapPtr pdpix, int srcX , int srcY,
 {
 	NVC0EXA_LOCALS(pdpix);
 
-	WAIT_RING (chan, 17);
-	BEGIN_RING(chan, eng2d, NV50_2D_SERIALIZE, 1);
-	OUT_RING  (chan, 0);
-	BEGIN_RING(chan, eng2d, 0x088c, 1);
-	OUT_RING  (chan, 0);
-	BEGIN_RING(chan, eng2d, NV50_2D_BLIT_DST_X, 12);
-	OUT_RING  (chan, dstX);
-	OUT_RING  (chan, dstY);
-	OUT_RING  (chan, width);
-	OUT_RING  (chan, height);
-	OUT_RING  (chan, 0); /* DU,V_DX,Y_FRACT,INT */
-	OUT_RING  (chan, 1);
-	OUT_RING  (chan, 0);
-	OUT_RING  (chan, 1);
-	OUT_RING  (chan, 0); /* BLIT_SRC_X,Y_FRACT,INT */
-	OUT_RING  (chan, srcX);
-	OUT_RING  (chan, 0);
-	OUT_RING  (chan, srcY);
+	if (!PUSH_SPACE(push, 32))
+		return;
+
+	BEGIN_NVC0(push, SUBC_2D(NV50_GRAPH_SERIALIZE), 1);
+	PUSH_DATA (push, 0);
+	BEGIN_NVC0(push, NV50_2D(BLIT_CONTROL), 1);
+	PUSH_DATA (push, 0);
+	BEGIN_NVC0(push, NV50_2D(BLIT_DST_X), 12);
+	PUSH_DATA (push, dstX);
+	PUSH_DATA (push, dstY);
+	PUSH_DATA (push, width);
+	PUSH_DATA (push, height);
+	PUSH_DATA (push, 0); /* DU,V_DX,Y_FRACT,INT */
+	PUSH_DATA (push, 1);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, 1);
+	PUSH_DATA (push, 0); /* BLIT_SRC_X,Y_FRACT,INT */
+	PUSH_DATA (push, srcX);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, srcY);
 
 #if !defined(__AROS__)
 	if (width * height >= 512)
 #endif
-		FIRE_RING (chan);
+		PUSH_KICK(push);
 }
 
-#if !defined(__AROS__)
 void
 NVC0EXADoneCopy(PixmapPtr pdpix)
 {
 	NVC0EXA_LOCALS(pdpix);
-
-	chan->flush_notify = NULL;
+	nouveau_pushbuf_bufctx(push, NULL);
 }
 
-static void
-NVC0EXAStateSIFCResubmit(struct nouveau_channel *chan)
-{
-	ScrnInfoPtr pScrn = chan->user_private;
-	NVPtr pNv = NVPTR(pScrn);
-	
-	if (MARK_RING(pNv->chan, 32, 2))
-		return;
-
-	if (!NVC0EXAAcquireSurface2D(pNv->pdpix, 0))
-		MARK_UNDO(pNv->chan);
-}
-
+#if !defined(__AROS__)
 Bool
 NVC0EXAUploadSIFC(const char *src, int src_pitch,
 		  PixmapPtr pdpix, int x, int y, int w, int h, int cpp)
@@ -710,42 +336,38 @@ NVC0EXAUploadSIFC(const char *src, int src_pitch,
 	ScreenPtr pScreen = pdpix->drawable.pScreen;
 	int line_dwords = (w * cpp + 3) / 4;
 	uint32_t sifc_fmt;
+	Bool ret = FALSE;
 
 	if (!NVC0EXA2DSurfaceFormat(pdpix, &sifc_fmt))
 		NOUVEAU_FALLBACK("hostdata format\n");
 
-	if (MARK_RING(chan, 64, 2))
-		return FALSE;
+	if (!PUSH_SPACE(push, 64))
+		NOUVEAU_FALLBACK("pushbuf\n");
+	PUSH_RESET(push);
 
-	if (!NVC0EXAAcquireSurface2D(pdpix, 0)) {
-		MARK_UNDO(chan);
-		NOUVEAU_FALLBACK("dest pixmap\n");
-	}
-
-	/* If the pitch isn't aligned to a dword you can
-	 * get corruption at the end of a line.
-	 */
+	NVC0EXAAcquireSurface2D(pdpix, 0, sifc_fmt);
 	NVC0EXASetClip(pdpix, x, y, w, h);
 
-	BEGIN_RING(chan, eng2d, NV50_2D_OPERATION, 1);
-	OUT_RING  (chan, NV50_2D_OPERATION_SRCCOPY);
-	BEGIN_RING(chan, eng2d, NV50_2D_SIFC_BITMAP_ENABLE, 2);
-	OUT_RING  (chan, 0);
-	OUT_RING  (chan, sifc_fmt);
-	BEGIN_RING(chan, eng2d, NV50_2D_SIFC_WIDTH, 10);
-	OUT_RING  (chan, (line_dwords * 4) / cpp);
-	OUT_RING  (chan, h);
-	OUT_RING  (chan, 0); /* SIFC_DX,Y_DU,V_FRACT,INT */
-	OUT_RING  (chan, 1);
-	OUT_RING  (chan, 0);
-	OUT_RING  (chan, 1);
-	OUT_RING  (chan, 0); /* SIFC_DST_X,Y_FRACT,INT */
-	OUT_RING  (chan, x);
-	OUT_RING  (chan, 0);
-	OUT_RING  (chan, y);
+	BEGIN_NVC0(push, NV50_2D(OPERATION), 1);
+	PUSH_DATA (push, NV50_2D_OPERATION_SRCCOPY);
+	BEGIN_NVC0(push, NV50_2D(SIFC_BITMAP_ENABLE), 2);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, sifc_fmt);
+	BEGIN_NVC0(push, NV50_2D(SIFC_WIDTH), 10);
+	PUSH_DATA (push, (line_dwords * 4) / cpp);
+	PUSH_DATA (push, h);
+	PUSH_DATA (push, 0); /* SIFC_DX,Y_DU,V_FRACT,INT */
+	PUSH_DATA (push, 1);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, 1);
+	PUSH_DATA (push, 0); /* SIFC_DST_X,Y_FRACT,INT */
+	PUSH_DATA (push, x);
+	PUSH_DATA (push, 0);
+	PUSH_DATA (push, y);
 
-	pNv->pdpix = pdpix;
-	chan->flush_notify = NVC0EXAStateSIFCResubmit;
+	nouveau_pushbuf_bufctx(push, pNv->bufctx);
+	if (nouveau_pushbuf_validate(push))
+		goto out;
 
 	while (h--) {
 		const char *ptr = src;
@@ -754,9 +376,10 @@ NVC0EXAUploadSIFC(const char *src, int src_pitch,
 		while (count) {
 			int size = count > 1792 ? 1792 : count;
 
-			WAIT_RING (chan, size + 1);
-			BEGIN_RING_NI(chan, eng2d, NV50_2D_SIFC_DATA, size);
-			OUT_RINGp (chan, ptr, size);
+			if (!PUSH_SPACE(push, size + 1))
+				goto out;
+			BEGIN_NIC0(push, NV50_2D(SIFC_DATA), size);
+			PUSH_DATAp(push, ptr, size);
 
 			ptr += size * 4;
 			count -= size;
@@ -765,12 +388,14 @@ NVC0EXAUploadSIFC(const char *src, int src_pitch,
 		src += src_pitch;
 	}
 
-	chan->flush_notify = NULL;
-
+	ret = TRUE;
+out:
+	nouveau_pushbuf_bufctx(push, NULL);
 	if (pdpix == pScreen->GetScreenPixmap(pScreen))
-		FIRE_RING(chan);
-	return TRUE;
+		PUSH_KICK(push);
+	return ret;
 }
+#endif
 
 static Bool
 NVC0EXACheckRenderTarget(PicturePtr ppict)
@@ -813,50 +438,54 @@ NVC0EXARenderTarget(PixmapPtr ppix, PicturePtr ppict)
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
 
 	switch (ppict->format) {
-	case PICT_a8r8g8b8: format = NV50_SURFACE_FORMAT_A8R8G8B8_UNORM; break;
-	case PICT_x8r8g8b8: format = NV50_SURFACE_FORMAT_X8R8G8B8_UNORM; break;
-	case PICT_r5g6b5:   format = NV50_SURFACE_FORMAT_R5G6B5_UNORM; break;
-	case PICT_a8:       format = NV50_SURFACE_FORMAT_A8_UNORM; break;
-	case PICT_x1r5g5b5: format = NV50_SURFACE_FORMAT_X1R5G5B5_UNORM; break;
-	case PICT_a1r5g5b5: format = NV50_SURFACE_FORMAT_A1R5G5B5_UNORM; break;
-	case PICT_x8b8g8r8: format = NV50_SURFACE_FORMAT_X8B8G8R8_UNORM; break;
+	case PICT_a8r8g8b8: format = NV50_SURFACE_FORMAT_BGRA8_UNORM; break;
+	case PICT_x8r8g8b8: format = NV50_SURFACE_FORMAT_BGRX8_UNORM; break;
+	case PICT_r5g6b5  : format = NV50_SURFACE_FORMAT_B5G6R5_UNORM; break;
+	case PICT_a8      : format = NV50_SURFACE_FORMAT_A8_UNORM; break;
+	case PICT_x1r5g5b5: format = NV50_SURFACE_FORMAT_BGR5_X1_UNORM; break;
+	case PICT_a1r5g5b5: format = NV50_SURFACE_FORMAT_BGR5_A1_UNORM; break;
+	case PICT_x8b8g8r8: format = NV50_SURFACE_FORMAT_RGBX8_UNORM; break;
 	case PICT_a2b10g10r10:
 	case PICT_x2b10g10r10:
-		format = NV50_SURFACE_FORMAT_A2B10G10R10_UNORM;
+		format = NV50_SURFACE_FORMAT_RGB10_A2_UNORM;
 		break;
 	case PICT_a2r10g10b10:
 	case PICT_x2r10g10b10:
-		format = NV50_SURFACE_FORMAT_A2R10G10B10_UNORM;
+		format = NV50_SURFACE_FORMAT_BGR10_A2_UNORM;
 		break;
 	default:
 		NOUVEAU_FALLBACK("invalid picture format\n");
 	}
 
-	BEGIN_RING(chan, fermi, NVC0_3D_RT_ADDRESS_HIGH(0), 8);
-	if (OUT_RELOCh(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR) ||
-	    OUT_RELOCl(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR))
-		return FALSE;
-	OUT_RING  (chan, ppix->drawable.width);
-	OUT_RING  (chan, ppix->drawable.height);
-	OUT_RING  (chan, format);
-	OUT_RING  (chan, bo->tile_mode);
-	OUT_RING  (chan, 0x00000001);
-	OUT_RING  (chan, 0x00000000);
-
+	BEGIN_NVC0(push, NVC0_3D(RT_ADDRESS_HIGH(0)), 8);
+	PUSH_DATA (push, bo->offset >> 32);
+	PUSH_DATA (push, bo->offset);
+	PUSH_DATA (push, ppix->drawable.width);
+	PUSH_DATA (push, ppix->drawable.height);
+	PUSH_DATA (push, format);
+	PUSH_DATA (push, bo->config.nvc0.tile_mode);
+	PUSH_DATA (push, 0x00000001);
+	PUSH_DATA (push, 0x00000000);
 	return TRUE;
 }
 
+#if !defined(__AROS__)
 static Bool
 NVC0EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
 {
-	if (!ppict->pDrawable)
-		NOUVEAU_FALLBACK("Solid and gradient pictures unsupported.\n");
-
-	if (ppict->pDrawable->width > 8192 ||
-	    ppict->pDrawable->height > 8192)
-		NOUVEAU_FALLBACK("texture dimensions exceeded %dx%d\n",
-				 ppict->pDrawable->width,
-				 ppict->pDrawable->height);
+	if (ppict->pDrawable) {
+		if (ppict->pDrawable->width > 8192 ||
+		    ppict->pDrawable->height > 8192)
+			NOUVEAU_FALLBACK("texture too large\n");
+	} else {
+		switch (ppict->pSourcePict->type) {
+		case SourcePictTypeSolidFill:
+			break;
+		default:
+			NOUVEAU_FALLBACK("pict %d\n", ppict->pSourcePict->type);
+			break;
+		}
+	}
 
 	switch (ppict->format) {
 	case PICT_a8r8g8b8:
@@ -905,6 +534,7 @@ NVC0EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
 
 	return TRUE;
 }
+#endif
 
 #define _(X1, X2, X3, X4, FMT)						\
 	(NV50TIC_0_0_TYPER_UNORM | NV50TIC_0_0_TYPEG_UNORM |		\
@@ -913,186 +543,224 @@ NVC0EXACheckTexture(PicturePtr ppict, PicturePtr pdpict, int op)
 	 NV50TIC_0_0_MAP##X3 | NV50TIC_0_0_MAP##X4 |			\
 	 NV50TIC_0_0_FMT_##FMT)
 
+#if !defined(__AROS__)
 static Bool
-NVC0EXATexture(PixmapPtr ppix, PicturePtr ppict, unsigned unit)
+NVC0EXAPictSolid(NVPtr pNv, PicturePtr ppict, unsigned unit)
 {
-	NVC0EXA_LOCALS(ppix);
-	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
-	const unsigned tcb_flags = NOUVEAU_BO_RDWR | NOUVEAU_BO_VRAM;
-	uint32_t mode;
+	struct nouveau_pushbuf *push = pNv->pushbuf;
 
-	/* XXX: maybe add support for linear textures at some point */
+	PUSH_DATAu(push, pNv->scratch, SOLID(unit), 1);
+	PUSH_DATA (push, ppict->pSourcePict->solidFill.color);
+	PUSH_DATAu(push, pNv->scratch, TIC_OFFSET + (unit * 32), 8);
+	PUSH_TIC  (push, pNv->scratch, SOLID(unit), 1, 1, 4,
+		   _(B_C0, G_C1, R_C2, A_C3, 8_8_8_8));
+	PUSH_DATAu(push, pNv->scratch, TSC_OFFSET + (unit * 32), 8);
+	PUSH_DATA (push, NV50TSC_1_0_WRAPS_REPEAT |
+			 NV50TSC_1_0_WRAPT_REPEAT |
+			 NV50TSC_1_0_WRAPR_REPEAT | 0x00024000);
+	PUSH_DATA (push, NV50TSC_1_1_MAGF_NEAREST |
+			 NV50TSC_1_1_MINF_NEAREST |
+			 NV50TSC_1_1_MIPF_NONE);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+
+	return TRUE;
+}
+#endif
+
+static Bool
+NVC0EXAPictGradient(NVPtr pNv, PicturePtr ppict, unsigned unit)
+{
+	return FALSE;
+}
+
+static Bool
+NVC0EXAPictTexture(NVPtr pNv, PixmapPtr ppix, PicturePtr ppict, unsigned unit)
+{
+	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+	struct nouveau_pushbuf *push = pNv->pushbuf;
+	uint32_t format;
+
+	/*XXX: Scanout buffer not tiled, someone needs to figure it out */
 	if (!nv50_style_tiled_pixmap(ppix))
 		NOUVEAU_FALLBACK("pixmap is scanout buffer\n");
 
-	BEGIN_RING(chan, fermi, NVC0_3D_TIC_ADDRESS_HIGH, 3);
-	if (OUT_RELOCh(chan, pNv->tesla_scratch, TIC_OFFSET, tcb_flags) ||
-	    OUT_RELOCl(chan, pNv->tesla_scratch, TIC_OFFSET, tcb_flags))
-		return FALSE;
-	OUT_RING  (chan, 15);
-
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_OUT_HIGH, 2);
-	if (OUT_RELOCh(chan, pNv->tesla_scratch,
-		       TIC_OFFSET + unit * 32, tcb_flags) ||
-	    OUT_RELOCl(chan, pNv->tesla_scratch,
-		       TIC_OFFSET + unit * 32, tcb_flags))
-		return FALSE;
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_LINE_LENGTH_IN, 2);
-	OUT_RING  (chan, 8 * 4);
-	OUT_RING  (chan, 1);
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_EXEC, 1);
-	OUT_RING  (chan, 0x100111);
-	BEGIN_RING_NI(chan, m2mf, NVC0_M2MF_DATA, 8);
-
 	switch (ppict->format) {
 	case PICT_a8r8g8b8:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_C3, 8_8_8_8));
+		format = _(B_C0, G_C1, R_C2, A_C3, 8_8_8_8);
 		break;
 	case PICT_a8b8g8r8:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_C3, 8_8_8_8));
+		format = _(R_C0, G_C1, B_C2, A_C3, 8_8_8_8);
 		break;
 	case PICT_x8r8g8b8:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_ONE, 8_8_8_8));
+		format = _(B_C0, G_C1, R_C2, A_ONE, 8_8_8_8);
 		break;
 	case PICT_x8b8g8r8:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_ONE, 8_8_8_8));
+		format = _(R_C0, G_C1, B_C2, A_ONE, 8_8_8_8);
 		break;
 	case PICT_r5g6b5:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_ONE, 5_6_5));
+		format = _(B_C0, G_C1, R_C2, A_ONE, 5_6_5);
 		break;
 	case PICT_a8:
-		OUT_RING(chan, _(A_C0, B_ZERO, G_ZERO, R_ZERO, 8));
+		format = _(A_C0, B_ZERO, G_ZERO, R_ZERO, 8);
 		break;
 	case PICT_x1r5g5b5:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_ONE, 1_5_5_5));
+		format = _(B_C0, G_C1, R_C2, A_ONE, 1_5_5_5);
 		break;
 	case PICT_x1b5g5r5:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_ONE, 1_5_5_5));
+		format = _(R_C0, G_C1, B_C2, A_ONE, 1_5_5_5);
 		break;
 	case PICT_a1r5g5b5:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_C3, 1_5_5_5));
+		format = _(B_C0, G_C1, R_C2, A_C3, 1_5_5_5);
 		break;
 	case PICT_a1b5g5r5:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_C3, 1_5_5_5));
+		format = _(R_C0, G_C1, B_C2, A_C3, 1_5_5_5);
 		break;
 	case PICT_b5g6r5:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_ONE, 5_6_5));
+		format = _(R_C0, G_C1, B_C2, A_ONE, 5_6_5);
 		break;
 	case PICT_b8g8r8x8:
-		OUT_RING(chan, _(A_ONE, R_C1, G_C2, B_C3, 8_8_8_8));
+		format = _(A_ONE, R_C1, G_C2, B_C3, 8_8_8_8);
 		break;
 	case PICT_b8g8r8a8:
-		OUT_RING(chan, _(A_C0, R_C1, G_C2, B_C3, 8_8_8_8));
+		format = _(A_C0, R_C1, G_C2, B_C3, 8_8_8_8);
 		break;
 	case PICT_a2b10g10r10:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_C3, 2_10_10_10));
+		format = _(R_C0, G_C1, B_C2, A_C3, 2_10_10_10);
 		break;
 	case PICT_x2b10g10r10:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_ONE, 2_10_10_10));
+		format = _(R_C0, G_C1, B_C2, A_ONE, 2_10_10_10);
 		break;
 	case PICT_x2r10g10b10:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_ONE, 2_10_10_10));
+		format = _(B_C0, G_C1, R_C2, A_ONE, 2_10_10_10);
 		break;
 	case PICT_a2r10g10b10:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_C3, 2_10_10_10));
+		format = _(B_C0, G_C1, R_C2, A_C3, 2_10_10_10);
 		break;
 	case PICT_x4r4g4b4:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_ONE, 4_4_4_4));
+		format = _(B_C0, G_C1, R_C2, A_ONE, 4_4_4_4);
 		break;
 	case PICT_x4b4g4r4:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_ONE, 4_4_4_4));
+		format = _(R_C0, G_C1, B_C2, A_ONE, 4_4_4_4);
 		break;
 	case PICT_a4r4g4b4:
-		OUT_RING(chan, _(B_C0, G_C1, R_C2, A_C3, 4_4_4_4));
+		format = _(B_C0, G_C1, R_C2, A_C3, 4_4_4_4);
 		break;
 	case PICT_a4b4g4r4:
-		OUT_RING(chan, _(R_C0, G_C1, B_C2, A_C3, 4_4_4_4));
+		format = _(R_C0, G_C1, B_C2, A_C3, 4_4_4_4);
 		break;
 	default:
 		NOUVEAU_FALLBACK("invalid picture format, this SHOULD NOT HAPPEN. Expect trouble.\n");
 	}
 #undef _
 
-	mode = 0xd0005000 | (bo->tile_mode << (22 - 4));
-	if (OUT_RELOCl(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD) ||
-	    OUT_RELOCd(chan, bo, 0, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD |
-		       NOUVEAU_BO_HIGH | NOUVEAU_BO_OR, mode, mode))
-		return FALSE;
-	OUT_RING  (chan, 0x00300000);
-	OUT_RING  (chan, (1 << 31) | ppix->drawable.width);
-	OUT_RING  (chan, (1 << 16) | ppix->drawable.height);
-	OUT_RING  (chan, 0x03000000);
-	OUT_RING  (chan, 0x00000000);
+	PUSH_REFN (push, bo, NOUVEAU_BO_VRAM | NOUVEAU_BO_RD);
+	PUSH_DATAu(push, pNv->scratch, TIC_OFFSET + (unit * 32), 8);
+	PUSH_TIC  (push, bo, 0, ppix->drawable.width, ppix->drawable.height, 0,
+		   format);
 
-	BEGIN_RING(chan, fermi, NVC0_3D_TSC_ADDRESS_HIGH, 3);
-	if (OUT_RELOCh(chan, pNv->tesla_scratch, TSC_OFFSET, tcb_flags) ||
-	    OUT_RELOCl(chan, pNv->tesla_scratch, TSC_OFFSET, tcb_flags))
-		return FALSE;
-	OUT_RING  (chan, 0);
-
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_OFFSET_OUT_HIGH, 2);
-	if (OUT_RELOCh(chan, pNv->tesla_scratch,
-		       TSC_OFFSET + unit * 32, tcb_flags) ||
-	    OUT_RELOCl(chan, pNv->tesla_scratch,
-		       TSC_OFFSET + unit * 32, tcb_flags))
-		return FALSE;
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_LINE_LENGTH_IN, 2);
-	OUT_RING  (chan, 8 * 4);
-	OUT_RING  (chan, 1);
-	BEGIN_RING(chan, m2mf, NVC0_M2MF_EXEC, 1);
-	OUT_RING  (chan, 0x100111);
-	BEGIN_RING_NI(chan, m2mf, NVC0_M2MF_DATA, 8);
-
+	PUSH_DATAu(push, pNv->scratch, TSC_OFFSET + (unit * 32), 8);
 	if (ppict->repeat) {
 		switch (ppict->repeatType) {
 		case RepeatPad:
-			OUT_RING  (chan, 0x00024000 |
-				   NV50TSC_1_0_WRAPS_CLAMP |
-				   NV50TSC_1_0_WRAPT_CLAMP |
-				   NV50TSC_1_0_WRAPR_CLAMP);
+			PUSH_DATA (push, 0x00024000 |
+					 NV50TSC_1_0_WRAPS_CLAMP_TO_EDGE |
+					 NV50TSC_1_0_WRAPT_CLAMP_TO_EDGE |
+					 NV50TSC_1_0_WRAPR_CLAMP_TO_EDGE);
 			break;
 		case RepeatReflect:
-			OUT_RING  (chan, 0x00024000 |
-				   NV50TSC_1_0_WRAPS_MIRROR_REPEAT |
-				   NV50TSC_1_0_WRAPT_MIRROR_REPEAT |
-				   NV50TSC_1_0_WRAPR_MIRROR_REPEAT);
+			PUSH_DATA (push, 0x00024000 |
+					 NV50TSC_1_0_WRAPS_MIRROR_REPEAT |
+					 NV50TSC_1_0_WRAPT_MIRROR_REPEAT |
+					 NV50TSC_1_0_WRAPR_MIRROR_REPEAT);
 			break;
 		case RepeatNormal:
 		default:
-			OUT_RING  (chan, 0x00024000 |
-				   NV50TSC_1_0_WRAPS_REPEAT |
-				   NV50TSC_1_0_WRAPT_REPEAT |
-				   NV50TSC_1_0_WRAPR_REPEAT);
+			PUSH_DATA (push, 0x00024000 |
+					 NV50TSC_1_0_WRAPS_REPEAT |
+					 NV50TSC_1_0_WRAPT_REPEAT |
+					 NV50TSC_1_0_WRAPR_REPEAT);
 			break;
 		}
 	} else {
-		OUT_RING  (chan, 0x00024000 |
-			   NV50TSC_1_0_WRAPS_CLAMP_TO_BORDER |
-			   NV50TSC_1_0_WRAPT_CLAMP_TO_BORDER |
-			   NV50TSC_1_0_WRAPR_CLAMP_TO_BORDER);
+		PUSH_DATA (push, 0x00024000 |
+				 NV50TSC_1_0_WRAPS_CLAMP_TO_BORDER |
+				 NV50TSC_1_0_WRAPT_CLAMP_TO_BORDER |
+				 NV50TSC_1_0_WRAPR_CLAMP_TO_BORDER);
 	}
 	if (ppict->filter == PictFilterBilinear) {
-		OUT_RING  (chan,
-			   NV50TSC_1_1_MAGF_LINEAR |
-			   NV50TSC_1_1_MINF_LINEAR | NV50TSC_1_1_MIPF_NONE);
+		PUSH_DATA (push, NV50TSC_1_1_MAGF_LINEAR |
+				 NV50TSC_1_1_MINF_LINEAR |
+				 NV50TSC_1_1_MIPF_NONE);
 	} else {
-		OUT_RING  (chan,
-			   NV50TSC_1_1_MAGF_NEAREST |
-			   NV50TSC_1_1_MINF_NEAREST | NV50TSC_1_1_MIPF_NONE);
+		PUSH_DATA (push, NV50TSC_1_1_MAGF_NEAREST |
+				 NV50TSC_1_1_MINF_NEAREST |
+				 NV50TSC_1_1_MIPF_NONE);
 	}
-	OUT_RING  (chan, 0x00000000);
-	OUT_RING  (chan, 0x00000000);
-	OUT_RINGf (chan, 0.0f);
-	OUT_RINGf (chan, 0.0f);
-	OUT_RINGf (chan, 0.0f);
-	OUT_RINGf (chan, 0.0f);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
+	PUSH_DATA (push, 0x00000000);
 
-	state->unit[unit].width = ppix->drawable.width;
-	state->unit[unit].height = ppix->drawable.height;
-	state->unit[unit].transform = ppict->transform;
+	PUSH_DATAu(push, pNv->scratch, PVP_DATA + (unit * 11 * 4), 11);
+#if !defined(__AROS__)
+	if (ppict->transform) {
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][0]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][1]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[0][2]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[1][0]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[1][1]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[1][2]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][0]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][1]));
+		PUSH_DATAf(push, xFixedToFloat(ppict->transform->matrix[2][2]));
+	} else {
+#else
+	{ // we are not doing any transformations
+#endif
+		PUSH_DATAf(push, 1.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 1.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 0.0);
+		PUSH_DATAf(push, 1.0);
+	}
+	PUSH_DATAf(push, 1.0 / ppix->drawable.width);
+	PUSH_DATAf(push, 1.0 / ppix->drawable.height);
 	return TRUE;
 }
 
+static Bool
+NVC0EXAPicture(NVPtr pNv, PixmapPtr ppix, PicturePtr ppict, int unit)
+{
+	if (ppict->pDrawable)
+		return NVC0EXAPictTexture(pNv, ppix, ppict, unit);
+
+NOT_IMPLEMENTED_STOP
+#if 0
+	switch (ppict->pSourcePict->type) {
+	case SourcePictTypeSolidFill:
+		return NVC0EXAPictSolid(pNv, ppict, unit);
+	case SourcePictTypeLinear:
+		return NVC0EXAPictGradient(pNv, ppict, unit);
+	default:
+		break;
+	}
+#endif
+
+	return FALSE;
+}
+
+#if !defined(__AROS__)
 static Bool
 NVC0EXACheckBlend(int op)
 {
@@ -1100,6 +768,7 @@ NVC0EXACheckBlend(int op)
 		NOUVEAU_FALLBACK("unsupported blend op %d\n", op);
 	return TRUE;
 }
+#endif
 
 static void
 NVC0EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
@@ -1128,22 +797,23 @@ NVC0EXABlend(PixmapPtr ppix, PicturePtr ppict, int op, int component_alpha)
 	}
 
 	if (sblend == BF(ONE) && dblend == BF(ZERO)) {
-		BEGIN_RING(chan, fermi, NVC0_3D_BLEND_ENABLE(0), 1);
-		OUT_RING  (chan, 0);
+		BEGIN_NVC0(push, NVC0_3D(BLEND_ENABLE(0)), 1);
+		PUSH_DATA (push, 0);
 	} else {
-		BEGIN_RING(chan, fermi, NVC0_3D_BLEND_ENABLE(0), 1);
-		OUT_RING  (chan, 1);
-		BEGIN_RING(chan, fermi, NVC0_3D_BLEND_EQUATION_RGB, 5);
-		OUT_RING  (chan, NVC0_3D_BLEND_EQUATION_RGB_FUNC_ADD);
-		OUT_RING  (chan, sblend);
-		OUT_RING  (chan, dblend);
-		OUT_RING  (chan, NVC0_3D_BLEND_EQUATION_ALPHA_FUNC_ADD);
-		OUT_RING  (chan, sblend);
-		BEGIN_RING(chan, fermi, NVC0_3D_BLEND_FUNC_DST_ALPHA, 1);
-		OUT_RING  (chan, dblend);
+		BEGIN_NVC0(push, NVC0_3D(BLEND_ENABLE(0)), 1);
+		PUSH_DATA (push, 1);
+		BEGIN_NVC0(push, NVC0_3D(BLEND_EQUATION_RGB), 5);
+		PUSH_DATA (push, NVC0_3D_BLEND_EQUATION_RGB_FUNC_ADD);
+		PUSH_DATA (push, sblend);
+		PUSH_DATA (push, dblend);
+		PUSH_DATA (push, NVC0_3D_BLEND_EQUATION_ALPHA_FUNC_ADD);
+		PUSH_DATA (push, sblend);
+		BEGIN_NVC0(push, NVC0_3D(BLEND_FUNC_DST_ALPHA), 1);
+		PUSH_DATA (push, dblend);
 	}
 }
 
+#if !defined(__AROS__)
 Bool
 NVC0EXACheckComposite(int op,
 		      PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict)
@@ -1170,134 +840,81 @@ NVC0EXACheckComposite(int op,
 
 	return TRUE;
 }
-
-static void
-NVC0EXAStateCompositeResubmit(struct nouveau_channel *chan)
-{
-	ScrnInfoPtr pScrn = chan->user_private;
-	NVPtr pNv = NVPTR(pScrn);
-
-	NVC0EXAPrepareComposite(pNv->alu, pNv->pspict, pNv->pmpict, pNv->pdpict,
-				pNv->pspix, pNv->pmpix, pNv->pdpix);
-}
+#endif
 
 Bool
 NVC0EXAPrepareComposite(int op,
 			PicturePtr pspict, PicturePtr pmpict, PicturePtr pdpict,
 			PixmapPtr pspix, PixmapPtr pmpix, PixmapPtr pdpix)
 {
-	NVC0EXA_LOCALS(pspix);
-	const unsigned shd_flags = NOUVEAU_BO_VRAM | NOUVEAU_BO_RD;
+	struct nouveau_bo *dst = nouveau_pixmap_bo(pdpix);
+	NVC0EXA_LOCALS(pdpix);
 
-	if (MARK_RING (chan, 128, 4 + 2 + 2 * 10))
-		NOUVEAU_FALLBACK("ring space\n");
+	if (!PUSH_SPACE(push, 256))
+		NOUVEAU_FALLBACK("space\n");
 
-	// fonts: !pmpict, op == 12 (Add, ONE/ONE)
-	/*
-	if (pmpict || op != 12)
-		NOUVEAU_FALLBACK("comp-alpha");
-	*/
+	BEGIN_NVC0(push, SUBC_2D(NV50_GRAPH_SERIALIZE), 1);
+	PUSH_DATA (push, 0);
 
-	BEGIN_RING(chan, eng2d, NV50_2D_SERIALIZE, 1);
-	OUT_RING  (chan, 0);
-
-	if (!NVC0EXARenderTarget(pdpix, pdpict)) {
-		MARK_UNDO(chan);
+	if (!NVC0EXARenderTarget(pdpix, pdpict))
 		NOUVEAU_FALLBACK("render target invalid\n");
-	}
 
 	NVC0EXABlend(pdpix, pdpict, op, pmpict && pmpict->componentAlpha &&
 		     PICT_FORMAT_RGB(pmpict->format));
 
-	BEGIN_RING(chan, fermi, NVC0_3D_CODE_ADDRESS_HIGH, 2);
-	if (OUT_RELOCh(chan, pNv->tesla_scratch, CODE_OFFSET, shd_flags) ||
-	    OUT_RELOCl(chan, pNv->tesla_scratch, CODE_OFFSET, shd_flags)) {
-		MARK_UNDO(chan);
-		return FALSE;
-	}
-
-	if (!NVC0EXATexture(pspix, pspict, 0)) {
-		MARK_UNDO(chan);
+	if (!NVC0EXAPicture(pNv, pspix, pspict, 0))
 		NOUVEAU_FALLBACK("src picture invalid\n");
-	}
-	BEGIN_RING(chan, fermi, NVC0_3D_BIND_TIC(4), 1);
-	OUT_RING  (chan, NVC0_3D_BIND_TIC_ACTIVE);
 
 	if (pmpict) {
-		if (!NVC0EXATexture(pmpix, pmpict, 1)) {
-			MARK_UNDO(chan);
+		if (!NVC0EXAPicture(pNv, pmpix, pmpict, 1))
 			NOUVEAU_FALLBACK("mask picture invalid\n");
-		}
-		state->have_mask = TRUE;
 
-		BEGIN_RING(chan, fermi, NVC0_3D_BIND_TIC(4), 1);
-		OUT_RING  (chan, (1 << 9) | (1 << 1) | NVC0_3D_BIND_TIC_ACTIVE);
-
-		BEGIN_RING(chan, fermi, NVC0_3D_SP_START_ID(5), 1);
+		BEGIN_NVC0(push, NVC0_3D(SP_START_ID(5)), 1);
 		if (pdpict->format == PICT_a8) {
-			OUT_RING  (chan, PFP_C_A8);
+			PUSH_DATA (push, PFP_C_A8);
 		} else {
 			if (pmpict->componentAlpha &&
 			    PICT_FORMAT_RGB(pmpict->format)) {
 				if (NVC0EXABlendOp[op].src_alpha)
-					OUT_RING  (chan, PFP_CCASA);
+					PUSH_DATA (push, PFP_CCASA);
 				else
-					OUT_RING  (chan, PFP_CCA);
+					PUSH_DATA (push, PFP_CCA);
 			} else {
-				OUT_RING  (chan, PFP_C);
+				PUSH_DATA (push, PFP_C);
 			}
 		}
 	} else {
-		state->have_mask = FALSE;
-
-		BEGIN_RING(chan, fermi, NVC0_3D_BIND_TIC(4), 1);
-		OUT_RING  (chan, (1 << 1));
-
-		BEGIN_RING(chan, fermi, NVC0_3D_SP_START_ID(5), 1);
+		BEGIN_NVC0(push, NVC0_3D(SP_START_ID(5)), 1);
 		if (pdpict->format == PICT_a8)
-			OUT_RING  (chan, PFP_S_A8);
+			PUSH_DATA (push, PFP_S_A8);
 		else
-			OUT_RING  (chan, PFP_S);
+			PUSH_DATA (push, PFP_S);
 	}
 
-	BEGIN_RING(chan, fermi, NVC0_3D_TSC_FLUSH, 1);
-	OUT_RING  (chan, 0);
-	BEGIN_RING(chan, fermi, NVC0_3D_TIC_FLUSH, 1);
-	OUT_RING  (chan, 0);
-	BEGIN_RING(chan, fermi, NVC0_3D_TEX_CACHE_CTL, 1);
-	OUT_RING  (chan, 0);
+	BEGIN_NVC0(push, NVC0_3D(TSC_FLUSH), 1);
+	PUSH_DATA (push, 0);
+	BEGIN_NVC0(push, NVC0_3D(TIC_FLUSH), 1);
+	PUSH_DATA (push, 0);
+	BEGIN_NVC0(push, NVC0_3D(TEX_CACHE_CTL), 1);
+	PUSH_DATA (push, 0);
 
-	pNv->alu = op;
-	pNv->pspict = pspict;
-	pNv->pmpict = pmpict;
-	pNv->pdpict = pdpict;
-	pNv->pspix = pspix;
-	pNv->pmpix = pmpix;
-	pNv->pdpix = pdpix;
-	chan->flush_notify = NVC0EXAStateCompositeResubmit;
+	PUSH_RESET(push);
+	PUSH_REFN (push, pNv->scratch, NOUVEAU_BO_VRAM | NOUVEAU_BO_RDWR);
+	if (pspict->pDrawable)
+		PUSH_REFN (push, nouveau_pixmap_bo(pspix),
+			   NOUVEAU_BO_VRAM | NOUVEAU_BO_RD);
+	PUSH_REFN (push, dst, NOUVEAU_BO_VRAM | NOUVEAU_BO_WR);
+	if (pmpict && pmpict->pDrawable)
+		PUSH_REFN (push, nouveau_pixmap_bo(pmpix),
+			   NOUVEAU_BO_VRAM | NOUVEAU_BO_RD);
+
+	nouveau_pushbuf_bufctx(push, pNv->bufctx);
+	if (nouveau_pushbuf_validate(push)) {
+		nouveau_pushbuf_bufctx(push, NULL);
+		NOUVEAU_FALLBACK("validate\n");
+	}
+
 	return TRUE;
-}
-
-#define xFixedToFloat(v) \
-	((float)xFixedToInt((v)) + ((float)xFixedFrac(v) / 65536.0))
-
-static inline void
-NVC0EXATransform(PictTransformPtr t, int x, int y, float sx, float sy,
-		 float *x_ret, float *y_ret)
-{
-	if (t) {
-		PictVector v;
-
-		v.vector[0] = IntToxFixed(x);
-		v.vector[1] = IntToxFixed(y);
-		v.vector[2] = xFixed1;
-		PictureTransformPoint(t, &v);
-		*x_ret = xFixedToFloat(v.vector[0]) / sx;
-		*y_ret = xFixedToFloat(v.vector[1]) / sy;
-	} else {
-		*x_ret = (float)x / sx;
-		*y_ret = (float)y / sy;
-	}
 }
 
 void
@@ -1306,59 +923,176 @@ NVC0EXAComposite(PixmapPtr pdpix,
 		 int dx, int dy, int w, int h)
 {
 	NVC0EXA_LOCALS(pdpix);
-	float sX0, sX1, sX2, sY0, sY1, sY2;
 
-	WAIT_RING (chan, 64);
-	BEGIN_RING(chan, fermi, NVC0_3D_SCISSOR_HORIZ(0), 2);
-	OUT_RING  (chan, ((dx + w) << 16) | dx);
-	OUT_RING  (chan, ((dy + h) << 16) | dy);
-	BEGIN_RING(chan, fermi, NVC0_3D_VERTEX_BEGIN_GL, 1);
-	OUT_RING  (chan, NVC0_3D_VERTEX_BEGIN_GL_PRIMITIVE_TRIANGLES);
+	if (!PUSH_SPACE(push, 64))
+		return;
 
-	NVC0EXATransform(state->unit[0].transform, sx, sy + (h * 2),
-			 state->unit[0].width, state->unit[0].height,
-			 &sX0, &sY0);
-	NVC0EXATransform(state->unit[0].transform, sx, sy,
-			 state->unit[0].width, state->unit[0].height,
-			 &sX1, &sY1);
-	NVC0EXATransform(state->unit[0].transform, sx + (w * 2), sy,
-			 state->unit[0].width, state->unit[0].height,
-			 &sX2, &sY2);
+	if (pNv->dev->chipset >= 0x110) {
+		BEGIN_NVC0(push, NVC0_3D(CB_SIZE), 3);
+		PUSH_DATA (push, 256);
+		PUSH_DATA (push, (pNv->scratch->offset + PVP_DATA) >> 32);
+		PUSH_DATA (push, (pNv->scratch->offset + PVP_DATA));
+		BEGIN_1IC0(push, NVC0_3D(CB_POS), 24 + 1);
+		PUSH_DATA (push, 0x80);
 
-	if (state->have_mask) {
-		float mX0, mX1, mX2, mY0, mY1, mY2;
+		PUSH_DATAf(push, dx);
+		PUSH_DATAf(push, dy + (h * 2));
+		PUSH_DATAf(push, 0);
+		PUSH_DATAf(push, 1);
+		PUSH_DATAf(push, sx);
+		PUSH_DATAf(push, sy + (h * 2));
+		PUSH_DATAf(push, mx);
+		PUSH_DATAf(push, my + (h * 2));
 
-		NVC0EXATransform(state->unit[1].transform, mx, my + (h * 2),
-				 state->unit[1].width, state->unit[1].height,
-				 &mX0, &mY0);
-		NVC0EXATransform(state->unit[1].transform, mx, my,
-				 state->unit[1].width, state->unit[1].height,
-				 &mX1, &mY1);
-		NVC0EXATransform(state->unit[1].transform, mx + (w * 2), my,
-				 state->unit[1].width, state->unit[1].height,
-				 &mX2, &mY2);
+		PUSH_DATAf(push, dx);
+		PUSH_DATAf(push, dy);
+		PUSH_DATAf(push, 0);
+		PUSH_DATAf(push, 1);
+		PUSH_DATAf(push, sx);
+		PUSH_DATAf(push, sy);
+		PUSH_DATAf(push, mx);
+		PUSH_DATAf(push, my);
 
-		VTX2s(pNv, sX0, sY0, mX0, mY0, dx, dy + (h * 2));
-		VTX2s(pNv, sX1, sY1, mX1, mY1, dx, dy);
-		VTX2s(pNv, sX2, sY2, mX2, mY2, dx + (w * 2), dy);
-	} else {
-		VTX1s(pNv, sX0, sY0, dx, dy + (h * 2));
-		VTX1s(pNv, sX1, sY1, dx, dy);
-		VTX1s(pNv, sX2, sY2, dx + (w * 2), dy);
+		PUSH_DATAf(push, dx + (w * 2));
+		PUSH_DATAf(push, dy);
+		PUSH_DATAf(push, 0);
+		PUSH_DATAf(push, 1);
+		PUSH_DATAf(push, sx + (w * 2));
+		PUSH_DATAf(push, sy);
+		PUSH_DATAf(push, mx + (w * 2));
+		PUSH_DATAf(push, my);
 	}
 
-	BEGIN_RING(chan, fermi, NVC0_3D_VERTEX_END_GL, 1);
-	OUT_RING  (chan, 0);
+	BEGIN_NVC0(push, NVC0_3D(SCISSOR_HORIZ(0)), 2);
+	PUSH_DATA (push, ((dx + w) << 16) | dx);
+	PUSH_DATA (push, ((dy + h) << 16) | dy);
+	BEGIN_NVC0(push, NVC0_3D(VERTEX_BEGIN_GL), 1);
+	PUSH_DATA (push, NVC0_3D_VERTEX_BEGIN_GL_PRIMITIVE_TRIANGLES);
+	if (pNv->dev->chipset < 0x110) {
+		PUSH_VTX2s(push, sx, sy + (h * 2), mx, my + (h * 2), dx, dy + (h * 2));
+		PUSH_VTX2s(push, sx, sy, mx, my, dx, dy);
+		PUSH_VTX2s(push, sx + (w * 2), sy, mx + (w * 2), my, dx + (w * 2), dy);
+	} else {
+		BEGIN_NVC0(push, NVC0_3D(VERTEX_BUFFER_FIRST), 2);
+		PUSH_DATA (push, 0);
+		PUSH_DATA (push, 3);
+	}
+	BEGIN_NVC0(push, NVC0_3D(VERTEX_END_GL), 1);
+	PUSH_DATA (push, 0);
 }
 
 void
 NVC0EXADoneComposite(PixmapPtr pdpix)
 {
 	NVC0EXA_LOCALS(pdpix);
-
-	chan->flush_notify = NULL;
+	nouveau_pushbuf_bufctx(push, NULL);
 }
-#endif
+
+Bool
+NVC0EXARectM2MF(NVPtr pNv, int w, int h, int cpp,
+		struct nouveau_bo *src, uint32_t src_off, int src_dom,
+		int src_pitch, int src_h, int src_x, int src_y,
+		struct nouveau_bo *dst, uint32_t dst_off, int dst_dom,
+		int dst_pitch, int dst_h, int dst_x, int dst_y)
+{
+	struct nouveau_pushbuf_refn refs[] = {
+		{ src, src_dom | NOUVEAU_BO_RD },
+		{ dst, dst_dom | NOUVEAU_BO_WR },
+	};
+	struct nouveau_pushbuf *push = pNv->pushbuf;
+	unsigned exec = 0;
+
+	if (!PUSH_SPACE(push, 64))
+		return FALSE;
+
+	if (src->config.nvc0.memtype) {
+		BEGIN_NVC0(push, NVC0_M2MF(TILING_MODE_IN), 5);
+		PUSH_DATA (push, src->config.nvc0.tile_mode);
+		PUSH_DATA (push, src_pitch);
+		PUSH_DATA (push, src_h);
+		PUSH_DATA (push, 1);
+		PUSH_DATA (push, 0);
+	} else {
+		BEGIN_NVC0(push, NVC0_M2MF(PITCH_IN), 1);
+		PUSH_DATA (push, src_pitch);
+
+		src_off += src_y * src_pitch + src_x * cpp;
+		exec |= NVC0_M2MF_EXEC_LINEAR_IN;
+	}
+
+	if (dst->config.nvc0.memtype) {
+		BEGIN_NVC0(push, NVC0_M2MF(TILING_MODE_OUT), 5);
+		PUSH_DATA (push, dst->config.nvc0.tile_mode);
+		PUSH_DATA (push, dst_pitch);
+		PUSH_DATA (push, dst_h);
+		PUSH_DATA (push, 1);
+		PUSH_DATA (push, 0);
+	} else {
+		BEGIN_NVC0(push, NVC0_M2MF(PITCH_OUT), 1);
+		PUSH_DATA (push, dst_pitch);
+
+		dst_off += dst_y * dst_pitch + dst_x * cpp;
+		exec |= NVC0_M2MF_EXEC_LINEAR_OUT;
+	}
+
+	while (h) {
+		int line_count = h;
+		if (line_count > 2047)
+			line_count = 2047;
+
+		if (nouveau_pushbuf_space(push, 32, 0, 0) ||
+		    nouveau_pushbuf_refn (push, refs, 2))
+			return FALSE;
+
+		BEGIN_NVC0(push, NVC0_M2MF(OFFSET_OUT_HIGH), 2);
+		PUSH_DATA (push, (dst->offset + dst_off) >> 32);
+		PUSH_DATA (push, (dst->offset + dst_off));
+		BEGIN_NVC0(push, NVC0_M2MF(OFFSET_IN_HIGH), 2);
+		PUSH_DATA (push, (src->offset + src_off) >> 32);
+		PUSH_DATA (push, (src->offset + src_off));
+
+		if (src->config.nvc0.memtype) {
+			BEGIN_NVC0(push, NVC0_M2MF(TILING_POSITION_IN_X), 2);
+			PUSH_DATA (push, src_x * cpp);
+			PUSH_DATA (push, src_y);
+		} else {
+			src_off += line_count * src_pitch;
+		}
+
+		if (dst->config.nvc0.memtype) {
+			BEGIN_NVC0(push, NVC0_M2MF(TILING_POSITION_OUT_X), 2);
+			PUSH_DATA (push, dst_x * cpp);
+			PUSH_DATA (push, dst_y);
+		} else {
+			dst_off += line_count * dst_pitch;
+		}
+
+		BEGIN_NVC0(push, NVC0_M2MF(LINE_LENGTH_IN), 2);
+		PUSH_DATA (push, w * cpp);
+		PUSH_DATA (push, line_count);
+		BEGIN_NVC0(push, NVC0_M2MF(EXEC), 1);
+		PUSH_DATA (push, NVC0_M2MF_EXEC_QUERY_SHORT | exec);
+
+		src_y += line_count;
+		dst_y += line_count;
+		h  -= line_count;
+	}
+
+	return TRUE;
+}
+
+Bool
+NVE0EXARectCopy(NVPtr pNv, int w, int h, int cpp,
+		struct nouveau_bo *src, uint32_t src_off, int src_dom,
+		int src_pitch, int src_h, int src_x, int src_y,
+		struct nouveau_bo *dst, uint32_t dst_off, int dst_dom,
+		int dst_pitch, int dst_h, int dst_x, int dst_y)
+{
+	return nouveau_copya0b5_rect(pNv->pushbuf, pNv->NvCOPY, w, h, cpp,
+				     src, src_off, src_dom, src_pitch,
+				     src_h, src_x, src_y, dst, dst_off,
+				     dst_dom, dst_pitch, dst_h, dst_x, dst_y);
+}
 
 /* AROS CODE */
 

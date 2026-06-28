@@ -1,14 +1,37 @@
 #ifndef __NV50_ACCEL_H__
 #define __NV50_ACCEL_H__
 
-#include "nv04_pushbuf.h"
 
-/* "Tesla scratch buffer" offsets */
+#include "hwdefs/nv50_2d.xml.h"
+#include "hwdefs/nv50_3d.xml.h"
+#include "hwdefs/nv50_defs.xml.h"
+#include "hwdefs/nv50_texture.h"
+#include "hwdefs/nv_3ddefs.xml.h"
+#include "hwdefs/nv_m2mf.xml.h"
+#include "hwdefs/nv_object.xml.h"
+
+/* subchannel assignments - graphics channel */
+#define SUBC_M2MF(mthd)  0, (mthd)
+#define NV03_M2MF(mthd)  SUBC_M2MF(NV03_M2MF_##mthd)
+#define NV50_M2MF(mthd)  SUBC_M2MF(NV50_M2MF_##mthd)
+#define SUBC_NVSW(mthd)  1, (mthd)
+#define SUBC_2D(mthd)    2, (mthd)
+#define NV50_2D(mthd)    SUBC_2D(NV50_2D_##mthd)
+#define NVC0_2D(mthd)    SUBC_2D(NVC0_2D_##mthd)
+#define SUBC_3D(mthd)    7, (mthd)
+#define NV50_3D(mthd)    SUBC_3D(NV50_3D_##mthd)
+
+/* subchannel assignments - copy engine channel */
+#define SUBC_COPY(mthd)  2, (mthd)
+
+/* scratch buffer offsets */
 #define PVP_OFFSET  0x00000000 /* Vertex program */
 #define PFP_OFFSET  0x00001000 /* Fragment program */
 #define TIC_OFFSET  0x00002000 /* Texture Image Control */
 #define TSC_OFFSET  0x00003000 /* Texture Sampler Control */
-#define PFP_DATA    0x00004000 /* FP constbuf */
+#define PVP_DATA    0x00004000 /* VP constbuf */
+#define PFP_DATA    0x00004100 /* FP constbuf */
+#define SOLID(i)   (0x00006000 + (i) * 0x100)
 
 /* Fragment programs */
 #define PFP_S     0x0000 /* (src) */
@@ -20,37 +43,44 @@
 #define PFP_NV12  0x0600 /* NV12 YUV->RGB */
 
 /* Constant buffer assignments */
-#define CB_TSC 0
-#define CB_TIC 1
+#define CB_PSH 0
+#define CB_PVP 1
 #define CB_PFP 2
 
 static __inline__ void
-VTX1s(NVPtr pNv, float sx, float sy, unsigned dx, unsigned dy)
+PUSH_VTX1s(struct nouveau_pushbuf *push, float sx, float sy, int dx, int dy)
 {
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_grobj *tesla = pNv->Nv3D;
-
-	BEGIN_RING(chan, tesla, NV50TCL_VTX_ATTR_2F_X(8), 2);
-	OUT_RINGf (chan, sx);
-	OUT_RINGf (chan, sy);
-	BEGIN_RING(chan, tesla, NV50TCL_VTX_ATTR_2I(0), 1);
- 	OUT_RING  (chan, (dy << 16) | dx);
+	BEGIN_NV04(push, NV50_3D(VTX_ATTR_2F_X(8)), 2);
+	PUSH_DATAf(push, sx);
+	PUSH_DATAf(push, sy);
+	BEGIN_NV04(push, NV50_3D(VTX_ATTR_2I(0)), 1);
+	PUSH_DATA (push, ((dy & 0xffff) << 16) | (dx & 0xffff));
 }
 
 static __inline__ void
-VTX2s(NVPtr pNv, float s1x, float s1y, float s2x, float s2y,
-		 unsigned dx, unsigned dy)
+PUSH_VTX2s(struct nouveau_pushbuf *push,
+	   int x1, int y1, int x2, int y2, int dx, int dy)
 {
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_grobj *tesla = pNv->Nv3D;
+	BEGIN_NV04(push, NV50_3D(VTX_ATTR_2I(8)), 2);
+	PUSH_DATA (push, ((y1 & 0xffff) << 16) | (x1 & 0xffff));
+	PUSH_DATA (push, ((y2 & 0xffff) << 16) | (x2 & 0xffff));
+	BEGIN_NV04(push, NV50_3D(VTX_ATTR_2I(0)), 1);
+	PUSH_DATA (push, ((dy & 0xffff) << 16) | (dx & 0xffff));
+}
 
-	BEGIN_RING(chan, tesla, NV50TCL_VTX_ATTR_2F_X(8), 4);
-	OUT_RINGf (chan, s1x);
-	OUT_RINGf (chan, s1y);
-	OUT_RINGf (chan, s2x);
-	OUT_RINGf (chan, s2y);
-	BEGIN_RING(chan, tesla, NV50TCL_VTX_ATTR_2I(0), 1);
- 	OUT_RING  (chan, (dy << 16) | dx);
+static __inline__ void
+PUSH_DATAu(struct nouveau_pushbuf *push, struct nouveau_bo *bo,
+	   unsigned delta, unsigned dwords)
+{
+	const unsigned idx = (delta & 0x000000fc) >> 2;
+	const unsigned off = (delta & 0xffffff00);
+	BEGIN_NV04(push, NV50_3D(CB_DEF_ADDRESS_HIGH), 3);
+	PUSH_DATA (push, (bo->offset + off) >> 32);
+	PUSH_DATA (push, (bo->offset + off));
+	PUSH_DATA (push, (CB_PSH << NV50_3D_CB_DEF_SET_BUFFER__SHIFT) | 0x2000);
+	BEGIN_NV04(push, NV50_3D(CB_ADDR), 1);
+	PUSH_DATA (push, CB_PSH | (idx << NV50_3D_CB_ADDR_ID__SHIFT));
+	BEGIN_NI04(push, NV50_3D(CB_DATA(0)), dwords);
 }
 
 #endif

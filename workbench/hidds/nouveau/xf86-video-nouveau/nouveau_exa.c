@@ -21,9 +21,11 @@
  */
 
 #include "nv_include.h"
-#include "nv04_pushbuf.h"
 #if !defined(__AROS__)
 #include "exa.h"
+#endif
+
+#include "hwdefs/nv_m2mf.xml.h"
 
 static inline Bool
 NVAccelMemcpyRect(char *dst, const char *src, int height, int dst_pitch,
@@ -41,291 +43,39 @@ NVAccelMemcpyRect(char *dst, const char *src, int height, int dst_pitch,
 
 	return TRUE;
 }
-#endif
 
-#if !defined(__AROS__)
-static inline Bool
-NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
-		    char *dst, unsigned dst_pitch)
+Bool
+NVAccelM2MF(NVPtr pNv, int w, int h, int cpp, uint32_t srcoff, uint32_t dstoff,
+	    struct nouveau_bo *src, int sd, int sp, int sh, int sx, int sy,
+	    struct nouveau_bo *dst, int dd, int dp, int dh, int dx, int dy)
 {
-	ScrnInfoPtr pScrn = xf86Screens[pspix->drawable.pScreen->myNum];
-#else
-static inline Bool
-NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
-		    char *dst, unsigned dst_pitch,
-		    HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
-{
-	ScrnInfoPtr pScrn = globalcarddataptr;
+#warning implement better COPY
+#if 0
+	if (pNv->ce_rect && pNv->ce_enabled)
+		return pNv->ce_rect(pNv->ce_pushbuf, pNv->NvCopy, w, h, cpp,
+				    src, srcoff, sd, sp, sh, sx, sy,
+				    dst, dstoff, dd, dp, dh, dx, dy);
+	else
 #endif
-	NVPtr pNv = NVPTR(pScrn);
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
-	struct nouveau_bo *bo = nouveau_pixmap_bo(pspix);
-#if !defined(__AROS__)
-	unsigned cpp = pspix->drawable.bitsPerPixel / 8;
-#else
-	unsigned cpp = pspix->depth > 16 ? 4 : 2;
-#endif
-	unsigned line_len = w * cpp;
-	unsigned src_offset = 0, src_pitch = 0, linear = 0;
-	/* Maximum DMA transfer */
-	unsigned line_count = pNv->GART->size / line_len;
-
-	if (!nv50_style_tiled_pixmap(pspix)) {
-		linear     = 1;
-		src_pitch  = exaGetPixmapPitch(pspix);
-		src_offset += (y * src_pitch) + (x * cpp);
-	}
-
-	/* HW limitations */
-	if (line_count > 2047)
-		line_count = 2047;
-
-	while (h) {
-		int i;
-		char *src;
-
-		if (line_count > h)
-			line_count = h;
-
-		if (MARK_RING(chan, 32, 6))
-			return FALSE;
-
-		BEGIN_RING(chan, m2mf, NV04_MEMORY_TO_MEMORY_FORMAT_DMA_BUFFER_IN, 2);
-		if (OUT_RELOCo(chan, bo, NOUVEAU_BO_GART | NOUVEAU_BO_VRAM |
-			       NOUVEAU_BO_RD) ||
-		    OUT_RELOCo(chan, pNv->GART, NOUVEAU_BO_GART |
-			       NOUVEAU_BO_WR)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-
-		if (pNv->Architecture >= NV_ARCH_50) {
-			if (!linear) {
-				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_IN, 7);
-				OUT_RING  (chan, 0);
-				OUT_RING  (chan, bo->tile_mode << 4);
-#if !defined(__AROS__)
-				OUT_RING  (chan, pspix->drawable.width * cpp);
-				OUT_RING  (chan, pspix->drawable.height);
-#else
-				OUT_RING  (chan, pspix->width * cpp);
-				OUT_RING  (chan, pspix->height);
-#endif
-				OUT_RING  (chan, 1);
-				OUT_RING  (chan, 0);
-				OUT_RING  (chan, (y << 16) | (x * cpp));
-			} else {
-				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_IN, 1);
-				OUT_RING  (chan, 1);
-			}
-
-			BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_OUT, 1);
-			OUT_RING  (chan, 1);
-
-			BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_OFFSET_IN_HIGH, 2);
-			if (OUT_RELOCh(chan, bo, src_offset, NOUVEAU_BO_GART |
-				       NOUVEAU_BO_VRAM | NOUVEAU_BO_RD) ||
-			    OUT_RELOCh(chan, pNv->GART, 0, NOUVEAU_BO_GART |
-				       NOUVEAU_BO_WR)) {
-				MARK_UNDO(chan);
-				return FALSE;
-			}
-		}
-
-		BEGIN_RING(chan, m2mf,
-			   NV04_MEMORY_TO_MEMORY_FORMAT_OFFSET_IN, 8);
-		if (OUT_RELOCl(chan, bo, src_offset, NOUVEAU_BO_GART |
-			       NOUVEAU_BO_VRAM | NOUVEAU_BO_RD) ||
-		    OUT_RELOCl(chan, pNv->GART, 0, NOUVEAU_BO_GART |
-			       NOUVEAU_BO_WR)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-		OUT_RING  (chan, src_pitch);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_count);
-		OUT_RING  (chan, (1<<8)|1);
-		OUT_RING  (chan, 0);
-
-		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_RD)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-		src = pNv->GART->map;
-#if !defined(__AROS__)
-		if (dst_pitch == line_len) {
-			memcpy(dst, src, dst_pitch * line_count);
-			dst += dst_pitch * line_count;
-		} else {
-			for (i = 0; i < line_count; i++) {
-				memcpy(dst, src, line_len);
-				src += line_len;
-				dst += dst_pitch;
-			}
-		}
-#else
-        (void)i;
-        HiddNouveauReadIntoRAM(
-            src, line_len,
-            dst, dst_pitch, dstPixFmt,
-            w, line_count,
-            cl, o);
-        dst += dst_pitch * line_count;
-#endif
-		nouveau_bo_unmap(pNv->GART);
-
-		if (linear)
-			src_offset += line_count * src_pitch;
-		h -= line_count;
-		y += line_count;
-	}
-
-	return TRUE;
-}
-
-#if !defined(__AROS__)
-static inline Bool
-NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
-		  const char *src, int src_pitch)
-{
-	ScrnInfoPtr pScrn = xf86Screens[pdpix->drawable.pScreen->myNum];
-#else
-static inline Bool
-NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
-		  const char *src, int src_pitch, 
-		  HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
-{
-	ScrnInfoPtr pScrn = globalcarddataptr;
-#endif
-	NVPtr pNv = NVPTR(pScrn);
-	struct nouveau_channel *chan = pNv->chan;
-	struct nouveau_grobj *m2mf = pNv->NvMemFormat;
-	struct nouveau_bo *bo = nouveau_pixmap_bo(pdpix);
-#if !defined(__AROS__)
-	unsigned cpp = pdpix->drawable.bitsPerPixel / 8;
-#else
-	unsigned cpp = pdpix->depth > 16 ? 4 : 2;
-#endif
-	unsigned line_len = w * cpp;
-	unsigned dst_offset = 0, dst_pitch = 0, linear = 0;
-	/* Maximum DMA transfer */
-	unsigned line_count = pNv->GART->size / line_len;
-
-	if (!nv50_style_tiled_pixmap(pdpix)) {
-		linear     = 1;
-		dst_pitch  = exaGetPixmapPitch(pdpix);
-		dst_offset += (y * dst_pitch) + (x * cpp);
-	}
-
-	/* HW limitations */
-	if (line_count > 2047)
-		line_count = 2047;
-
-	while (h) {
-		int i;
-		char *dst;
-
-		if (line_count > h)
-			line_count = h;
-
-		/* Upload to GART */
-		if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR))
-			return FALSE;
-		dst = pNv->GART->map;
-#if !defined(__AROS__)
-		if (src_pitch == line_len) {
-			memcpy(dst, src, src_pitch * line_count);
-			src += src_pitch * line_count;
-		} else {
-			for (i = 0; i < line_count; i++) {
-				memcpy(dst, src, line_len);
-				src += src_pitch;
-				dst += line_len;
-			}
-		}
-#else
-        (void)i;
-        HiddNouveauWriteFromRAM(
-            (APTR)src, src_pitch, srcPixFmt,
-            dst, line_len,
-            w, line_count,
-            cl, o);
-        src += src_pitch * line_count;
-#endif
-		nouveau_bo_unmap(pNv->GART);
-
-		if (MARK_RING(chan, 32, 6))
-			return FALSE;
-
-		BEGIN_RING(chan, m2mf, NV04_MEMORY_TO_MEMORY_FORMAT_DMA_BUFFER_IN, 2);
-		if (OUT_RELOCo(chan, pNv->GART, NOUVEAU_BO_GART |
-			       NOUVEAU_BO_RD) ||
-		    OUT_RELOCo(chan, bo, NOUVEAU_BO_VRAM | NOUVEAU_BO_GART |
-			       NOUVEAU_BO_WR)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-
-		if (pNv->Architecture >= NV_ARCH_50) {
-			BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_IN, 1);
-			OUT_RING  (chan, 1);
-
-			if (!linear) {
-				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_OUT, 7);
-				OUT_RING  (chan, 0);
-				OUT_RING  (chan, bo->tile_mode << 4);
-#if !defined(__AROS__)
-				OUT_RING  (chan, pdpix->drawable.width * cpp);
-				OUT_RING  (chan, pdpix->drawable.height);
-#else
-				OUT_RING  (chan, pdpix->width * cpp);
-				OUT_RING  (chan, pdpix->height);
-#endif
-				OUT_RING  (chan, 1);
-				OUT_RING  (chan, 0);
-				OUT_RING  (chan, (y << 16) | (x * cpp));
-			} else {
-				BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_LINEAR_OUT, 1);
-				OUT_RING  (chan, 1);
-			}
-
-			BEGIN_RING(chan, m2mf, NV50_MEMORY_TO_MEMORY_FORMAT_OFFSET_IN_HIGH, 2);
-			if (OUT_RELOCh(chan, pNv->GART, 0, NOUVEAU_BO_GART |
-				       NOUVEAU_BO_RD) ||
-			    OUT_RELOCh(chan, bo, dst_offset, NOUVEAU_BO_VRAM |
-				       NOUVEAU_BO_GART | NOUVEAU_BO_WR)) {
-				MARK_UNDO(chan);
-				return FALSE;
-			}
-		}
-
-		/* DMA to VRAM */
-		BEGIN_RING(chan, m2mf,
-			   NV04_MEMORY_TO_MEMORY_FORMAT_OFFSET_IN, 8);
-		if (OUT_RELOCl(chan, pNv->GART, 0, NOUVEAU_BO_GART |
-			       NOUVEAU_BO_RD) ||
-		    OUT_RELOCl(chan, bo, dst_offset, NOUVEAU_BO_VRAM |
-			       NOUVEAU_BO_GART | NOUVEAU_BO_WR)) {
-			MARK_UNDO(chan);
-			return FALSE;
-		}
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, dst_pitch);
-		OUT_RING  (chan, line_len);
-		OUT_RING  (chan, line_count);
-		OUT_RING  (chan, (1<<8)|1);
-		OUT_RING  (chan, 0);
-		FIRE_RING (chan);
-
-		if (linear)
-			dst_offset += line_count * dst_pitch;
-		h -= line_count;
-		y += line_count;
-	}
-
-	return TRUE;
+	if (pNv->Architecture >= NV_KEPLER)
+		return NVE0EXARectCopy(pNv, w, h, cpp,
+				       src, srcoff, sd, sp, sh, sx, sy,
+				       dst, dstoff, dd, dp, dh, dx, dy);
+	else
+	if (pNv->Architecture >= NV_FERMI)
+		return NVC0EXARectM2MF(pNv, w, h, cpp,
+				       src, srcoff, sd, sp, sh, sx, sy,
+				       dst, dstoff, dd, dp, dh, dx, dy);
+	else
+	if (pNv->Architecture >= NV_TESLA)
+		return NV50EXARectM2MF(pNv, w, h, cpp,
+				       src, srcoff, sd, sp, sh, sx, sy,
+				       dst, dstoff, dd, dp, dh, dx, dy);
+	else
+		return NV04EXARectM2MF(pNv, w, h, cpp,
+				       src, srcoff, sd, sp, sh, sx, sy,
+				       dst, dstoff, dd, dp, dh, dx, dy);
+	return FALSE;
 }
 
 #if !defined(__AROS__)
@@ -344,11 +94,11 @@ static Bool
 nouveau_exa_prepare_access(PixmapPtr ppix, int index)
 {
 	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
-	NVPtr pNv = NVPTR(xf86Screens[ppix->drawable.pScreen->myNum]);
+	NVPtr pNv = NVPTR(xf86ScreenToScrn(ppix->drawable.pScreen));
 
 	if (nv50_style_tiled_pixmap(ppix) && !pNv->wfb_enabled)
 		return FALSE;
-	if (nouveau_bo_map(bo, NOUVEAU_BO_RDWR))
+	if (nouveau_bo_map(bo, NOUVEAU_BO_RDWR, pNv->client))
 		return FALSE;
 	ppix->devPrivate.ptr = bo->map;
 	return TRUE;
@@ -357,9 +107,6 @@ nouveau_exa_prepare_access(PixmapPtr ppix, int index)
 static void
 nouveau_exa_finish_access(PixmapPtr ppix, int index)
 {
-	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
-
-	nouveau_bo_unmap(bo);
 }
 
 static Bool
@@ -372,7 +119,7 @@ static void *
 nouveau_exa_create_pixmap(ScreenPtr pScreen, int width, int height, int depth,
 			  int usage_hint, int bitsPerPixel, int *new_pitch)
 {
-	ScrnInfoPtr scrn = xf86Screens[pScreen->myNum];
+	ScrnInfoPtr scrn = xf86ScreenToScrn(pScreen);
 	NVPtr pNv = NVPTR(scrn);
 	struct nouveau_pixmap *nvpix;
 	int ret;
@@ -380,8 +127,7 @@ nouveau_exa_create_pixmap(ScreenPtr pScreen, int width, int height, int depth,
 	if (!width || !height)
 		return calloc(1, sizeof(*nvpix));
 
-	if (!pNv->exa_force_cp &&
-	     pNv->dev->vm_vram_size <= 32*1024*1024)
+	if (!pNv->exa_force_cp && pNv->dev->vram_size <= 32 * 1024 * 1024)
 		return NULL;
 
 	nvpix = calloc(1, sizeof(*nvpix));
@@ -394,6 +140,11 @@ nouveau_exa_create_pixmap(ScreenPtr pScreen, int width, int height, int depth,
 		free(nvpix);
 		return NULL;
 	}
+
+#ifdef NOUVEAU_PIXMAP_SHARING
+	if ((usage_hint & 0xffff) == CREATE_PIXMAP_USAGE_SHARED)
+		nvpix->shared = TRUE;
+#endif
 
 	return nvpix;
 }
@@ -411,55 +162,150 @@ nouveau_exa_destroy_pixmap(ScreenPtr pScreen, void *priv)
 }
 #endif
 
+#ifdef NOUVEAU_PIXMAP_SHARING
+static Bool
+nouveau_exa_share_pixmap_backing(PixmapPtr ppix, ScreenPtr slave, void **handle_p)
+{
+	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);
+	int ret;
+	int handle;
+
+	ret = nouveau_bo_set_prime(bo, &handle);
+	if (ret != 0) {
+		ErrorF("%s: ret is %d errno is %d\n", __func__, ret, errno);
+		return FALSE;
+	}
+	nvpix->shared = TRUE;
+	*handle_p = (void *)(long)handle;
+	return TRUE;
+}
+
+static Bool
+nouveau_exa_set_shared_pixmap_backing(PixmapPtr ppix, void *handle)
+{
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(ppix->drawable.pScreen);
+	NVPtr pNv = NVPTR(pScrn);
+	struct nouveau_bo *bo = nouveau_pixmap_bo(ppix);
+	struct nouveau_pixmap *nvpix = nouveau_pixmap(ppix);
+	int ret;
+	int ihandle = (int)(long)(handle);
+
+	ret = nouveau_bo_prime_handle_ref(pNv->dev, ihandle, &bo);
+	if (ret) {
+		ErrorF("failed to get BO with handle %d\n", ihandle);
+		return FALSE;
+	}
+	nvpix->bo = bo;
+	nvpix->shared = TRUE;
+	close(ihandle);
+	return TRUE;
+}
+#endif
+
 Bool
 nv50_style_tiled_pixmap(PixmapPtr ppix)
 {
-#if !defined(__AROS__)
-	ScrnInfoPtr pScrn = xf86Screens[ppix->drawable.pScreen->myNum];
-#else
-	ScrnInfoPtr pScrn = globalcarddataptr;
-#endif
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(ppix->drawable.pScreen);
 	NVPtr pNv = NVPTR(pScrn);
 
-	return pNv->Architecture >= NV_ARCH_50 &&
-		(nouveau_pixmap_bo(ppix)->tile_flags &
-		 NOUVEAU_BO_TILE_LAYOUT_MASK);
+	return pNv->Architecture >= NV_TESLA &&
+	       nouveau_pixmap_bo(ppix)->config.nv50.memtype;
 }
 
 #if !defined(__AROS__)
+static int
+nouveau_exa_scratch(NVPtr pNv, int size, struct nouveau_bo **pbo, int *off)
+{
+	struct nouveau_bo *bo;
+	int ret;
+
+	if (!pNv->transfer ||
+	     pNv->transfer->size <= pNv->transfer_offset + size) {
+		ret = nouveau_bo_new(pNv->dev, NOUVEAU_BO_GART | NOUVEAU_BO_MAP,
+				     0, NOUVEAU_ALIGN(size, 1 * 1024 * 1024),
+				     NULL, &bo);
+		if (ret != 0)
+			return ret;
+
+		ret = nouveau_bo_map(bo, NOUVEAU_BO_RDWR, pNv->client);
+		if (ret != 0) {
+			nouveau_bo_ref(NULL, &bo);
+			return ret;
+		}
+
+		nouveau_bo_ref(bo, &pNv->transfer);
+		nouveau_bo_ref(NULL, &bo);
+		pNv->transfer_offset = 0;
+	}
+
+	*off = pNv->transfer_offset;
+	*pbo = pNv->transfer;
+
+	pNv->transfer_offset += size;
+	return 0;
+}
+
 static Bool
 nouveau_exa_download_from_screen(PixmapPtr pspix, int x, int y, int w, int h,
 				 char *dst, int dst_pitch)
 {
-	ScrnInfoPtr pScrn = xf86Screens[pspix->drawable.pScreen->myNum];
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pspix->drawable.pScreen);
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_bo *bo;
-	int src_pitch, cpp, offset;
+	int src_pitch, tmp_pitch, cpp, i;
 	const char *src;
 	Bool ret;
 
-	src_pitch  = exaGetPixmapPitch(pspix);
 	cpp = pspix->drawable.bitsPerPixel >> 3;
-	offset = (y * src_pitch) + (x * cpp);
+	src_pitch  = exaGetPixmapPitch(pspix);
+	tmp_pitch = w * cpp;
 
-	if (pNv->GART) {
-		if (pNv->Architecture >= NV_ARCH_C0) {
-			if (NVC0AccelDownloadM2MF(pspix, x, y, w, h,
-						  dst, dst_pitch))
-				return TRUE;
+	while (h) {
+		const int lines = (h > 2047) ? 2047 : h;
+		struct nouveau_bo *tmp;
+		int tmp_offset;
+
+		if (nouveau_exa_scratch(pNv, lines * tmp_pitch,
+					&tmp, &tmp_offset))
+			goto memcpy;
+
+		if (!NVAccelM2MF(pNv, w, lines, cpp, 0, tmp_offset,
+				 nouveau_pixmap_bo(pspix), NOUVEAU_BO_VRAM,
+				 src_pitch, pspix->drawable.height, x, y,
+				 tmp, NOUVEAU_BO_GART, tmp_pitch,
+				 lines, 0, 0))
+			goto memcpy;
+
+		nouveau_bo_wait(tmp, NOUVEAU_BO_RD, pNv->client);
+		if (dst_pitch == tmp_pitch) {
+			memcpy(dst, tmp->map + tmp_offset, dst_pitch * lines);
+			dst += dst_pitch * lines;
 		} else {
-			if (NVAccelDownloadM2MF(pspix, x, y, w, h,
-						dst, dst_pitch))
-				return TRUE;
+			src = tmp->map + tmp_offset;
+			for (i = 0; i < lines; i++) {
+				memcpy(dst, src, tmp_pitch);
+				src += tmp_pitch;
+				dst += dst_pitch;
+			}
 		}
-	}
 
+		/* next! */
+		h -= lines;
+		y += lines;
+	}
+	return TRUE;
+
+memcpy:
 	bo = nouveau_pixmap_bo(pspix);
-	if (nouveau_bo_map(bo, NOUVEAU_BO_RD))
+	if (nv50_style_tiled_pixmap(pspix))
+		ErrorF("%s:%d - falling back to memcpy ignores tiling\n",
+		       __func__, __LINE__);
+
+	if (nouveau_bo_map(bo, NOUVEAU_BO_RD, pNv->client))
 		return FALSE;
-	src = (char *)bo->map + offset;
+	src = (char *)bo->map + (y * src_pitch) + (x * cpp);
 	ret = NVAccelMemcpyRect(dst, src, h, dst_pitch, src_pitch, w*cpp);
-	nouveau_bo_unmap(bo);
 	return ret;
 }
 
@@ -467,71 +313,91 @@ static Bool
 nouveau_exa_upload_to_screen(PixmapPtr pdpix, int x, int y, int w, int h,
 			     char *src, int src_pitch)
 {
-	ScrnInfoPtr pScrn = xf86Screens[pdpix->drawable.pScreen->myNum];
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pdpix->drawable.pScreen);
 	NVPtr pNv = NVPTR(pScrn);
+	int dst_pitch, tmp_pitch, cpp, i;
 	struct nouveau_bo *bo;
-	int dst_pitch, cpp;
 	char *dst;
 	Bool ret;
 
-	dst_pitch  = exaGetPixmapPitch(pdpix);
 	cpp = pdpix->drawable.bitsPerPixel >> 3;
+	dst_pitch  = exaGetPixmapPitch(pdpix);
+	tmp_pitch = w * cpp;
 
 	/* try hostdata transfer */
 	if (w * h * cpp < 16*1024) /* heuristic */
 	{
-		if (pNv->Architecture < NV_ARCH_50) {
+		if (pNv->Architecture < NV_TESLA) {
 			if (NV04EXAUploadIFC(pScrn, src, src_pitch, pdpix,
 					     x, y, w, h, cpp)) {
-				exaMarkSync(pdpix->drawable.pScreen);
 				return TRUE;
 			}
 		} else
-		if (pNv->Architecture < NV_ARCH_C0) {
+		if (pNv->Architecture < NV_FERMI) {
 			if (NV50EXAUploadSIFC(src, src_pitch, pdpix,
 					      x, y, w, h, cpp)) {
-				exaMarkSync(pdpix->drawable.pScreen);
 				return TRUE;
 			}
 		} else {
 			if (NVC0EXAUploadSIFC(src, src_pitch, pdpix,
 					      x, y, w, h, cpp)) {
-				exaMarkSync(pdpix->drawable.pScreen);
 				return TRUE;
 			}
 		}
 	}
 
-	/* try gart-based transfer */
-	if (pNv->GART) {
-		if (pNv->Architecture < NV_ARCH_C0) {
-			ret = NVAccelUploadM2MF(pdpix, x, y, w, h,
-						src, src_pitch);
+	while (h) {
+		const int lines = (h > 2047) ? 2047 : h;
+		struct nouveau_bo *tmp;
+		int tmp_offset;
+
+		if (nouveau_exa_scratch(pNv, lines * tmp_pitch,
+					&tmp, &tmp_offset))
+			goto memcpy;
+
+		if (src_pitch == tmp_pitch) {
+			memcpy(tmp->map + tmp_offset, src, src_pitch * lines);
+			src += src_pitch * lines;
 		} else {
-			ret = NVC0AccelUploadM2MF(pdpix, x, y, w, h,
-						  src, src_pitch);
+			dst = tmp->map + tmp_offset;
+			for (i = 0; i < lines; i++) {
+				memcpy(dst, src, tmp_pitch);
+				src += src_pitch;
+				dst += tmp_pitch;
+			}
 		}
 
-		if (ret) {
-			exaMarkSync(pdpix->drawable.pScreen);
-			return TRUE;
-		}
+		if (!NVAccelM2MF(pNv, w, lines, cpp, tmp_offset, 0, tmp,
+				 NOUVEAU_BO_GART, tmp_pitch, lines, 0, 0,
+				 nouveau_pixmap_bo(pdpix), NOUVEAU_BO_VRAM,
+				 dst_pitch, pdpix->drawable.height, x, y))
+			goto memcpy;
+
+		/* next! */
+		h -= lines;
+		y += lines;
 	}
 
+	return TRUE;
+
 	/* fallback to memcpy-based transfer */
+memcpy:
 	bo = nouveau_pixmap_bo(pdpix);
-	if (nouveau_bo_map(bo, NOUVEAU_BO_WR))
+	if (nv50_style_tiled_pixmap(pdpix))
+		ErrorF("%s:%d - falling back to memcpy ignores tiling\n",
+		       __func__, __LINE__);
+
+	if (nouveau_bo_map(bo, NOUVEAU_BO_WR, pNv->client))
 		return FALSE;
 	dst = (char *)bo->map + (y * dst_pitch) + (x * cpp);
 	ret = NVAccelMemcpyRect(dst, src, h, dst_pitch, src_pitch, w*cpp);
-	nouveau_bo_unmap(bo);
 	return ret;
 }
 
 Bool
 nouveau_exa_pixmap_is_onscreen(PixmapPtr ppix)
 {
-	ScrnInfoPtr pScrn = xf86Screens[ppix->drawable.pScreen->myNum];
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(ppix->drawable.pScreen);
 
 	if (pScrn->pScreen->GetScreenPixmap(pScrn->pScreen) == ppix)
 		return TRUE;
@@ -539,18 +405,26 @@ nouveau_exa_pixmap_is_onscreen(PixmapPtr ppix)
 	return FALSE;
 }
 
+static void
+nouveau_exa_flush(ScrnInfoPtr pScrn)
+{
+	NVPtr pNv = NVPTR(pScrn);
+	nouveau_pushbuf_kick(pNv->pushbuf, pNv->pushbuf->channel);
+}
+
 Bool
 nouveau_exa_init(ScreenPtr pScreen) 
 {
-	ScrnInfoPtr pScrn = xf86Screens[pScreen->myNum];
+	ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
 	NVPtr pNv = NVPTR(pScrn);
 	ExaDriverPtr exa;
 
-	exa = exaDriverAlloc();
-	if (!exa) {
-		pNv->NoAccel = TRUE;
+	if (!xf86LoadSubModule(pScrn, "exa"))
 		return FALSE;
-	}
+
+	exa = exaDriverAlloc();
+	if (!exa)
+		return FALSE;
 
 	exa->exa_major = EXA_VERSION_MAJOR;
 	exa->exa_minor = EXA_VERSION_MINOR;
@@ -570,8 +444,12 @@ nouveau_exa_init(ScreenPtr pScreen)
 
 	exa->CreatePixmap2 = nouveau_exa_create_pixmap;
 	exa->DestroyPixmap = nouveau_exa_destroy_pixmap;
+#ifdef NOUVEAU_PIXMAP_SHARING
+	exa->SharePixmapBacking = nouveau_exa_share_pixmap_backing;
+	exa->SetSharedPixmapBacking = nouveau_exa_set_shared_pixmap_backing;
+#endif
 
-	if (pNv->Architecture >= NV_ARCH_50) {
+	if (pNv->Architecture >= NV_TESLA) {
 		exa->maxX = 8192;
 		exa->maxY = 8192;
 	} else
@@ -589,7 +467,7 @@ nouveau_exa_init(ScreenPtr pScreen)
 	exa->DownloadFromScreen = nouveau_exa_download_from_screen;
 	exa->UploadToScreen = nouveau_exa_upload_to_screen;
 
-	if (pNv->Architecture < NV_ARCH_50) {
+	if (pNv->Architecture < NV_TESLA) {
 		exa->PrepareCopy = NV04EXAPrepareCopy;
 		exa->Copy = NV04EXACopy;
 		exa->DoneCopy = NV04EXADoneCopy;
@@ -598,7 +476,7 @@ nouveau_exa_init(ScreenPtr pScreen)
 		exa->Solid = NV04EXASolid;
 		exa->DoneSolid = NV04EXADoneSolid;
 	} else
-	if (pNv->Architecture < NV_ARCH_C0) {
+	if (pNv->Architecture < NV_FERMI) {
 		exa->PrepareCopy = NV50EXAPrepareCopy;
 		exa->Copy = NV50EXACopy;
 		exa->DoneCopy = NV50EXADoneCopy;
@@ -636,13 +514,16 @@ nouveau_exa_init(ScreenPtr pScreen)
 		exa->Composite        = NV40EXAComposite;
 		exa->DoneComposite    = NV40EXADoneComposite;
 		break;
-	case NV_ARCH_50:
+	case NV_TESLA:
 		exa->CheckComposite   = NV50EXACheckComposite;
 		exa->PrepareComposite = NV50EXAPrepareComposite;
 		exa->Composite        = NV50EXAComposite;
 		exa->DoneComposite    = NV50EXADoneComposite;
 		break;
-	case NV_ARCH_C0:
+	case NV_FERMI:
+	case NV_KEPLER:
+	case NV_MAXWELL:
+	case NV_PASCAL:
 		exa->CheckComposite   = NVC0EXACheckComposite;
 		exa->PrepareComposite = NVC0EXAPrepareComposite;
 		exa->Composite        = NVC0EXAComposite;
@@ -656,57 +537,137 @@ nouveau_exa_init(ScreenPtr pScreen)
 		return FALSE;
 
 	pNv->EXADriverPtr = exa;
+	pNv->Flush = nouveau_exa_flush;
 	return TRUE;
 }
 #endif
 
-
 /* AROS CODE */
-
-Bool NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
-		    const char *src, int src_pitch,
-		    HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o);
 
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
-    LONG x, LONG y, LONG width, LONG height, 
+    LONG x, LONG y, LONG width, LONG height,
     OOP_Class *cl, OOP_Object *o)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
-    
-    if (carddata->architecture >= NV_ARCH_C0)
-        return NVC0AccelUploadM2MF(bmdata, x, y, width, height,
-		        srcpixels, srcpitch, srcPixFmt, cl, o);
-    else
-        return NVAccelUploadM2MF(bmdata, x, y, width, height,
-		        srcpixels, srcpitch, srcPixFmt, cl, o);
+
+    PixmapPtr pdpix = bmdata;
+	NVPtr pNv = carddata;
+
+    int dst_pitch, tmp_pitch, cpp;
+    char *dst;
+    Bool ret;
+
+    cpp = pdpix->drawable.depth > 16 ? 4 : 2;
+    dst_pitch  = exaGetPixmapPitch(pdpix);
+    tmp_pitch = width * cpp;
+
+#warning removed optimization
+#if 0
+    /* try hostdata transfer */
+    if (w * h * cpp < 16*1024) /* heuristic */
+    {
+        if (pNv->Architecture < NV_TESLA) {
+            if (NV04EXAUploadIFC(pScrn, src, src_pitch, pdpix,
+                            x, y, w, h, cpp)) {
+                return TRUE;
+            }
+        } else
+        if (pNv->Architecture < NV_FERMI) {
+            if (NV50EXAUploadSIFC(src, src_pitch, pdpix,
+                            x, y, w, h, cpp)) {
+                return TRUE;
+            }
+        } else {
+            if (NVC0EXAUploadSIFC(src, src_pitch, pdpix,
+                            x, y, w, h, cpp)) {
+                return TRUE;
+            }
+        }
+    }
+#endif
+
+    while (height) {
+        const int lines = (height > 2047) ? 2047 : height;
+        int tmp_offset = 0;
+
+        /* RAM -> CPU -> GART */
+        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
+            return FALSE;
+        dst = pNv->GART->map;
+
+        HiddNouveauWriteFromRAM( (APTR)srcpixels, srcpitch, srcPixFmt, dst, tmp_pitch,
+            width, lines, cl, o);
+        srcpixels += srcpitch * lines;
+
+        /* GART -> GPU -> VRAM */
+        if (!NVAccelM2MF(pNv, width, lines, cpp, tmp_offset, 0, pNv->GART,
+                    NOUVEAU_BO_GART, tmp_pitch, lines, 0, 0,
+                    nouveau_pixmap_bo(pdpix), NOUVEAU_BO_VRAM,
+                    dst_pitch, pdpix->drawable.height, x, y))
+            return FALSE;
+
+        /* next! */
+        height -= lines;
+        y += lines;
+    }
+
+    return TRUE;
 }
 
-Bool
-NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
-		      char *dst, unsigned dst_pitch,
-		      HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o);
-		      
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
-    LONG x, LONG y, LONG width, LONG height, 
-    OOP_Class *cl, OOP_Object *o)  
+    LONG x, LONG y, LONG width, LONG height,
+    OOP_Class *cl, OOP_Object *o)
 {
-    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
-    struct CardData * carddata = &(SD(cl)->carddata);
+    struct HIDDNouveauBitMapData *bmdata = OOP_INST_DATA(cl, o);
+    struct CardData *carddata = &(SD(cl)->carddata);
 
-    if (carddata->architecture >= NV_ARCH_C0)
-        return NVC0AccelDownloadM2MF(bmdata, x, y, width, height,
-		        dstpixels, dstpitch, dstPixFmt, cl, o);
-    else
-        return NVAccelDownloadM2MF(bmdata, x, y, width, height,
-		        dstpixels, dstpitch, dstPixFmt, cl, o);
+    PixmapPtr pspix = bmdata;
+    NVPtr pNv = carddata;
+
+    int src_pitch, tmp_pitch, cpp;
+    char *src;
+    Bool ret;
+
+    cpp = pspix->drawable.depth > 16 ? 4 : 2;
+    src_pitch  = exaGetPixmapPitch(pspix);
+    tmp_pitch = width * cpp;
+
+    while (height) {
+        const int lines = (height > 2047) ? 2047 : height;
+        int tmp_offset = 0;
+
+        /* VRAM -> GPU -> GART */
+        if (!NVAccelM2MF(pNv, width, lines, cpp, 0, tmp_offset,
+                    nouveau_pixmap_bo(pspix), NOUVEAU_BO_VRAM,
+                    src_pitch, pspix->drawable.height, x, y,
+                    pNv->GART, NOUVEAU_BO_GART, tmp_pitch,
+                    lines, 0, 0))
+            return FALSE;
+
+        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_RD, pNv->client);
+
+        /* GART -> CPU -> RAM */
+        if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_RD, pNv->client))
+            return FALSE;
+        src = pNv->GART->map;
+
+        HiddNouveauReadIntoRAM(src, tmp_pitch, dstpixels, dstpitch,
+            dstPixFmt, width, lines, cl, o);
+        dstpixels += dstpitch * lines;
+
+        /* next! */
+        height -= lines;
+        y += lines;
+    }
+
+    return TRUE;
 }
-
