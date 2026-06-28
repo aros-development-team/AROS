@@ -85,7 +85,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     LOCK_ENGINE
     /* Creation of buffer object */
     HIDDNouveauAccelAllocSurface(&SD(cl)->carddata, bmdata->drawable.width, bmdata->drawable.height,
-        bmdata->bytesperpixel * 4, &bmdata->pitch, &bmdata->bo);
+        bmdata->bytesperpixel * 8, &bmdata->pitch, &bmdata->bo);
     UNLOCK_ENGINE
 
     if (bmdata->bo == NULL)
