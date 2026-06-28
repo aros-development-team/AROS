@@ -75,6 +75,9 @@ Bool NVE0EXARectCopy(NVPtr pNv, int, int, int,
 Bool nv50_style_tiled_pixmap(PixmapPtr ppix);
 
 
+#define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
+#define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
+#define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
 
 struct Picture
 {

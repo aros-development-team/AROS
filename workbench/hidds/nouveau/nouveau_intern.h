@@ -289,13 +289,14 @@ enum DMAObjects
 
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
-VOID HIDDNouveauAccelFree(struct CardData * carddata);
+BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch,
+    struct nouveau_bo **bo);
 
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
 /* nv04_exa.c */
 VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
-		  LONG pat0, LONG pat1);
+    LONG pat0, LONG pat1);
 BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
     struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
     LONG maxY, ULONG drawmode, ULONG color);

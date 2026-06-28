@@ -78,20 +78,14 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->drawable.height = height;
     bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
     bmdata->bytesperpixel = bytesperpixel;
-    bmdata->pitch = bmdata->drawable.width * bmdata->bytesperpixel;
-    if (carddata->Architecture >= NV_TESLA)
-        bmdata->pitch = (bmdata->pitch + 255) & ~255; 
-    else
-        bmdata->pitch = (bmdata->pitch + 63) & ~63;
 
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
 
     LOCK_ENGINE
     /* Creation of buffer object */
-    nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
-            bmdata->pitch * bmdata->drawable.height,
-            NULL, &bmdata->bo);
+    HIDDNouveauAccelAllocSurface(&SD(cl)->carddata, bmdata->drawable.width, bmdata->drawable.height,
+        bmdata->bytesperpixel * 4, &bmdata->pitch, &bmdata->bo);
     UNLOCK_ENGINE
 
     if (bmdata->bo == NULL)

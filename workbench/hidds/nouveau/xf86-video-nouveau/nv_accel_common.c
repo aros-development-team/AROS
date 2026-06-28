@@ -33,7 +33,6 @@
 #include "hwdefs/nv50_2d.xml.h"
 #include "nv04_accel.h"
 
-#if !defined(__AROS__)
 Bool
 nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
 			 int usage_hint, int *pitch, struct nouveau_bo **bo)
@@ -54,8 +53,10 @@ nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
 	if (bpp >= 8)
 		flags |= shared ? NOUVEAU_BO_GART : NOUVEAU_BO_VRAM;
 
+#if !defined(__AROS__)
 	if (scanout && pNv->tiled_scanout)
 		tiled = TRUE;
+#endif
 
 	if (pNv->Architecture >= NV_TESLA) {
 		if (!scanout && bpp >= 8 && !shared)
@@ -128,6 +129,7 @@ nouveau_allocate_surface(ScrnInfoPtr scrn, int width, int height, int bpp,
 	return TRUE;
 }
 
+#if !defined(__AROS__)
 void
 NV11SyncToVBlank(PixmapPtr ppix, BoxPtr box)
 {
@@ -769,9 +771,15 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Channel setup complete.\n");
 	return TRUE;
 }
+
 /* AROS CODE */
 
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata)
 {
     return NVAccelCommonInit(carddata);
+}
+
+BOOL HIDDNouveauAccelAllocSurface(struct CardData *carddata, ULONG width, ULONG height, UBYTE bpp, ULONG *pitch, struct nouveau_bo **bo)
+{
+    return nouveau_allocate_surface(carddata, width, height, bpp, NOUVEAU_CREATE_PIXMAP_SCANOUT, pitch, bo);
 }
