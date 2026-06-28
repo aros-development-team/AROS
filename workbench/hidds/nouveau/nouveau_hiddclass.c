@@ -528,9 +528,6 @@ OOP_Object * METHOD(Nouveau, Root, New)
             nouveau_bo_new(carddata->dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 64 * 64 * 4, NULL, &gfxdata->cursor);
             /* TODO: Check return, how to handle */
 
-            if (carddata->Architecture <= NV_FERMI)
-            {
-
             /* Initialize acceleration objects */
         
             ret = HIDDNouveauAccelCommonInit(carddata);
@@ -566,9 +563,11 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             case(NV_FERMI):
+            case(NV_KEPLER):
+            case(NV_MAXWELL):
+            case(NV_PASCAL):
                 HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
-            }
             }
 
             /* Create compositor object */
@@ -679,10 +678,6 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
     OOP_Class * srcclass = OOP_OCLASS(msg->src);
     OOP_Class * destclass = OOP_OCLASS(msg->dest);
 
-    /* Tesla and Fermi only */
-    struct CardData * carddata = &(SD(cl)->carddata);
-    if (carddata->Architecture > NV_FERMI) OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-
     if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
     {
         /* FIXME: add checks for pixel format, etc */
@@ -718,6 +713,9 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
         case(NV_FERMI):
+        case(NV_KEPLER):
+        case(NV_MAXWELL):
+        case(NV_PASCAL):
             ret = HIDDNouveauNVC0CopySameFormat(carddata, srcdata, destdata, 
                         msg->srcX, msg->srcY, msg->destX, msg->destY, 
                         msg->width, msg->height, GC_DRMD(msg->gc));
