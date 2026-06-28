@@ -75,11 +75,16 @@ struct HIDDNouveauBitMapData
                                     state. This state however can only be changed
                                     when lock is held on bitmap */
 
-    ULONG   height;         /* Height of bitmap in pixels */
-    ULONG   width;          /* Width of bitmap in pixels */
     ULONG   pitch;          /* Width of single data row in bytes */
     UBYTE   bytesperpixel;  /* In bytes, how many bytes to store a pixel */
-    UBYTE   depth;          /* In bits, how many bits used to represt the color */
+    struct
+    {
+        ULONG height;           /* Height of bitmap in pixels */
+        ULONG width;            /* Width of bitmap in pixels */
+        UBYTE bitsPerPixel;     /* In bits, how many bits used to represt the color */
+        UBYTE depth;            /* In bits, how many bits used to represt the color */
+    } drawable;
+
     BOOL    displayable;    /* Can bitmap be displayed on screen */
     
     /* Information connected with display */

@@ -320,8 +320,8 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     /* Add as frame buffer */
     if (bmdata->fbid == 0)
     {
-	    ret = drmModeAddFB(nvdev->fd, bmdata->width, bmdata->height, 
-	                bmdata->depth, bmdata->bytesperpixel * 8, 
+	    ret = drmModeAddFB(nvdev->fd, bmdata->drawable.width, bmdata->drawable.height,
+	                bmdata->drawable.depth, bmdata->bytesperpixel * 8,
 	                bmdata->pitch, bmdata->bo->handle, &bmdata->fbid);
         if (ret)
         {

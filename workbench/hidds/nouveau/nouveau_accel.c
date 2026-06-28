@@ -864,9 +864,9 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
 
     /* Wrap GART */
     srcdata.bo = carddata->GART;
-    srcdata.width = width;
-    srcdata.height = height;
-    srcdata.depth = 32;
+    srcdata.drawable.width = width;
+    srcdata.drawable.height = height;
+    srcdata.drawable.depth = srcdata.drawable.bitsPerPixel = 32;
     srcdata.bytesperpixel = 4;
     srcdata.pitch = gartpitch;
 

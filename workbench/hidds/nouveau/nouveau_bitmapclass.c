@@ -74,11 +74,11 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
         goto exit_fail;
 
     /* Initialize properties */
-    bmdata->width = width;
-    bmdata->height = height;
-    bmdata->depth = depth;
+    bmdata->drawable.width = width;
+    bmdata->drawable.height = height;
+    bmdata->drawable.depth = bmdata->drawable.bitsPerPixel = depth;
     bmdata->bytesperpixel = bytesperpixel;
-    bmdata->pitch = bmdata->width * bmdata->bytesperpixel;
+    bmdata->pitch = bmdata->drawable.width * bmdata->bytesperpixel;
     if (carddata->architecture >= NV_ARCH_50)
         bmdata->pitch = (bmdata->pitch + 255) & ~255; 
     else
@@ -90,7 +90,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     LOCK_ENGINE
     /* Creation of buffer object */
     nouveau_bo_new(SD(cl)->carddata.dev, NOUVEAU_BO_VRAM | NOUVEAU_BO_MAP, 0, 
-            bmdata->pitch * bmdata->height,
+            bmdata->pitch * bmdata->drawable.height,
             &bmdata->bo);
     UNLOCK_ENGINE
 
@@ -316,15 +316,15 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
     case(NV_ARCH_30):
     case(NV_ARCH_40):
         ret = HIDDNouveauNV04FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     case(NV_ARCH_50):
         ret = HIDDNouveauNV50FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     case(NV_ARCH_C0):
         ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
-                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
+                    0, 0, bmdata->drawable.width - 1, bmdata->drawable.height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     }    
 
@@ -616,8 +616,8 @@ BOOL METHOD(NouveauBitMap, Hidd_BitMap, ObtainDirectAccess)
 
     *msg->addressReturn = (UBYTE*)bmdata->bo->map;
     *msg->widthReturn = bmdata->pitch / bmdata->bytesperpixel;
-    *msg->heightReturn = bmdata->height;
-    *msg->bankSizeReturn = *msg->memSizeReturn = bmdata->pitch * bmdata->height;
+    *msg->heightReturn = bmdata->drawable.height;
+    *msg->bankSizeReturn = *msg->memSizeReturn = bmdata->pitch * bmdata->drawable.height;
 
     return TRUE;
 }
