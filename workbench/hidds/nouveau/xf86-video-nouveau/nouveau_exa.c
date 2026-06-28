@@ -596,6 +596,8 @@ BOOL HiddNouveauNVAccelUploadM2MF(
         int tmp_offset = 0;
 
         /* RAM -> CPU -> GART */
+        nouveau_bo_wait(pNv->GART, NOUVEAU_BO_WR, pNv->client);
+
         if (nouveau_bo_map(pNv->GART, NOUVEAU_BO_WR, pNv->client))
             return FALSE;
         dst = pNv->GART->map;
