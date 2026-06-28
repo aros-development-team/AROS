@@ -437,7 +437,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         }
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL
             || strstr(GetDevice(iface), "prism2.device") != NULL
-            || strstr(GetDevice(iface), "realtek8180.device") != NULL)
+            || strstr(GetDevice(iface), "realtek8180.device") != NULL
+            || strstr(GetDevice(iface), "bwfm.device") != NULL)
         {
             SetWirelessDevice(GetDevice(iface));
             SetWirelessUnit(GetUnit(iface));

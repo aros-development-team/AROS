@@ -33,6 +33,7 @@
 #define S2INFO_WPAInfo        (TAG_USER + 12)
 #define S2INFO_Band           (TAG_USER + 13)
 #define S2INFO_DefaultKeyNo   (TAG_USER + 14)
+#define S2INFO_Passphrase     (TAG_USER + 15)  /* PSK passphrase (driver-side 4-way) */
 
 /* Wireless Commands */
 
