@@ -161,9 +161,7 @@ NV04EXASolid (PixmapPtr pPixmap, int x, int y, int x2, int y2, Pixel fg)
 	BEGIN_NV04(push, NV04_RECT(UNCLIPPED_RECTANGLE_POINT(0)), 2);
 	PUSH_DATA (push, (x << 16) | y);
 	PUSH_DATA (push, (w << 16) | h);
-#if !defined(__AROS__)
 	if ((w * h) >= 512)
-#endif
 		PUSH_KICK(push);
 }
 
@@ -279,9 +277,7 @@ NV04EXACopy(PixmapPtr pdpix, int srcX, int srcY, int dstX, int dstY,
 	}
 #endif
 
-#if !defined(__AROS__)
 	if ((width * height) >= 512)
-#endif
 		PUSH_KICK(push);
 }
 

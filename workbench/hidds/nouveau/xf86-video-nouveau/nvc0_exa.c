@@ -244,9 +244,7 @@ NVC0EXASolid(PixmapPtr pdpix, int x1, int y1, int x2, int y2)
 	PUSH_DATA (push, x2);
 	PUSH_DATA (push, y2);
 
-#if !defined(__AROS__)
 	if ((x2 - x1) * (y2 - y1) >= 512)
-#endif
 		PUSH_KICK(push);
 }
 
@@ -314,9 +312,7 @@ NVC0EXACopy(PixmapPtr pdpix, int srcX , int srcY,
 	PUSH_DATA (push, 0);
 	PUSH_DATA (push, srcY);
 
-#if !defined(__AROS__)
 	if (width * height >= 512)
-#endif
 		PUSH_KICK(push);
 }
 
