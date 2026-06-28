@@ -3,20 +3,17 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../include \
-            -iquote $(SRCDIR)/$(CURDIR)/../drm \
             -I$(SRCDIR)/$(CURDIR)/../drm/nouveau/include \
-            -I$(SRCDIR)/$(CURDIR)/../drm/nouveau/include/nvkm \
+            -iquote $(SRCDIR)/$(CURDIR)/../drm \
+            -iquote $(SRCDIR)/$(CURDIR)/../include/libdrm/nouveau
 
 LIBDRM_C_SOURCES := \
             arosdrmmode \
             arosdrm \
-            nouveau/nouveau_bo \
-            nouveau/nouveau_pushbuf \
-            nouveau/nouveau_reloc \
-            nouveau/nouveau_device \
-            nouveau/nouveau_grobj \
-            nouveau/nouveau_notifier \
-            nouveau/nouveau_channel \
+            nouveau/bufctx \
+            nouveau/nouveau \
+            nouveau/pushbuf \
+            nouveau/abi16
 
 %build_linklib mmake=hidd-nouveau-libdrm libname=libdrm_nouveau files="$(LIBDRM_C_SOURCES)" sdk=drm usesdks="config"
 

@@ -33,6 +33,9 @@
 typedef unsigned int  drmSize,     *drmSizePtr;     /**< For mapped regions */
 typedef void          *drmAddress, **drmAddressPtr; /**< For mapped regions */
 
+#define drm_private
+#define drm_public
+
 typedef struct _drmLock {
     volatile unsigned int lock;
     char                      padding[60];

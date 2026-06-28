@@ -78,6 +78,13 @@ typedef struct _drmMMListHead
 
 #define DRMLISTEMPTY(__item) ((__item)->next == (__item))
 
+#define DRMLISTSINGLE(__list) \
+	(!DRMLISTEMPTY(__list) && ((__list)->next == (__list)->prev))
+
+#define DRMLISTFOREACH(__item, __list)					\
+	for ((__item) = (__list)->next;					\
+	     (__item) != (__list); (__item) = (__item)->next)
+
 #define DRMLISTFOREACHSAFE(__item, __temp, __list)			\
 	for ((__item) = (__list)->next, (__temp) = (__item)->next;	\
 	     (__item) != (__list);					\
@@ -87,3 +94,25 @@ typedef struct _drmMMListHead
 	for ((__item) = (__list)->prev, (__temp) = (__item)->prev;	\
 	     (__item) != (__list);					\
 	     (__item) = (__temp), (__temp) = (__item)->prev)
+
+#define DRMLISTFOREACHENTRY(__item, __list, __head)                            \
+	for ((__item) = DRMLISTENTRY(typeof(*__item), (__list)->next, __head); \
+	     &(__item)->__head != (__list);                                    \
+	     (__item) = DRMLISTENTRY(typeof(*__item),                          \
+				     (__item)->__head.next, __head))
+
+#define DRMLISTFOREACHENTRYSAFE(__item, __temp, __list, __head)                \
+	for ((__item) = DRMLISTENTRY(typeof(*__item), (__list)->next, __head), \
+	     (__temp) = DRMLISTENTRY(typeof(*__item),                          \
+				     (__item)->__head.next, __head);           \
+	     &(__item)->__head != (__list);                                    \
+	     (__item) = (__temp),                                              \
+	     (__temp) = DRMLISTENTRY(typeof(*__item),                          \
+				     (__temp)->__head.next, __head))
+
+#define DRMLISTJOIN(__list, __join) if (!DRMLISTEMPTY(__list)) {	\
+	(__list)->next->prev = (__join);				\
+	(__list)->prev->next = (__join)->next;				\
+	(__join)->next->prev = (__list)->prev;				\
+	(__join)->next = (__list)->next;				\
+}
