@@ -28,12 +28,16 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM distfiles-raspi : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
-#MM distfiles-raspi-fw
+#MM workbench-devs-networks-bwfm \
+#MM distfiles-raspi-fw \
+#MM distfiles-raspi-wifi-fw
 
 #MM distfiles-raspi-be : \
 #MM kernel-raspi-arm \
 #MM kernel-package-raspi-arm \
-#MM distfiles-raspi-fw
+#MM workbench-devs-networks-bwfm \
+#MM distfiles-raspi-fw \
+#MM distfiles-raspi-wifi-fw
 
 #MM kernel-package-raspi-arm-quick: \
 #MM linklibs-stdc-static-quick \
@@ -74,6 +78,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-processor-quick \
 #MM kernel-mbox-bcm2708-quick \
 #MM kernel-dma-bcm2708-quick \
+#MM kernel-sdio-bcm2708-quick \
+#MM kernel-bwfm-bcm2708-quick \
 #MM hidd-i2c-quick \
 #MM kernel-hidd-gfx-quick \
 #MM hidd-vc4gfx-quick \
@@ -126,6 +132,8 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-processor \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
+#MM kernel-sdio-bcm2708 \
+#MM kernel-bwfm-bcm2708 \
 #MM kernel-sdcard \
 #MM hidd-i2c \
 #MM hidd-i2c-bcm2708 \
@@ -143,9 +151,21 @@ RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
 
+# Broadcom WiFi firmware for bwfm.device (loaded at runtime from DEVS:Firmware).
+# The "buster" branch keeps real files under brcm/ (newer branches symlink to
+# cypress/, which github ?raw= would return as link text). The generic nvram
+# .txt names match what bwfm.device requests for the detected chip; brcmfmac
+# firmware is redistributable under LICENCE.broadcom_bcm43xx (shipped too).
+RASPIWIFIFW_BRANCH := buster
+RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
+                     brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
+                     LICENCE.broadcom_bcm43xx
+
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
 PKG_LIBS_ARCH := expansion
-PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
@@ -161,6 +181,14 @@ PKG_CLASSES   := USB/hub USB/massstorage
 #MM
 distfiles-raspi-fw:
 	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+
+#MM
+distfiles-raspi-wifi-fw:
+	@$(MKDIR) $(AROSDIR)/Devs/Firmware
+	@for f in $(RASPIWIFIFW_FILES) ; do \
+	    wget -t 5 -T 15 -c "$(RASPIWIFIFW_URI)/$$f?raw=true" -O "$(AROSDIR)/Devs/Firmware/$${f##*/}" \
+	        || $(ECHO) "WARNING: could not fetch WiFi firmware $$f" ; \
+	done
 
 #MM
 distfiles-raspi-be-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img

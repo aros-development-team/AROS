@@ -392,6 +392,10 @@ static int wpa_driver_sana2_associate(
 		{S2INFO_WPAInfo, (params->wpa_ie_len > 0) ?
 			(UPINT)params->wpa_ie : (UPINT)NULL},
 		{S2INFO_AuthTypes, params->auth_alg},
+		/* PSK passphrase for the driver-side 4-way handshake (the firmware
+		 * does the handshake; see WPA_DRIVER_FLAGS_4WAY_HANDSHAKE). */
+		{(params->passphrase != NULL) ? S2INFO_Passphrase : TAG_IGNORE,
+			(UPINT)params->passphrase},
 		{TAG_END, 0}};
 
 	if (ssid == NULL) {
@@ -484,6 +488,11 @@ static int wpa_driver_sana2_get_capa(void *priv, struct wpa_driver_capa *capa)
 
 	if (!drv->hard_mac)
 		capa->flags = WPA_DRIVER_FLAGS_USER_SPACE_MLME;
+
+	/* The FullMAC firmware runs the WPA 4-way handshake itself. Tell
+	 * wpa_supplicant not to, so it hands us the passphrase/PSK in the
+	 * associate parameters instead of doing EAPOL in software. */
+	capa->flags |= WPA_DRIVER_FLAGS_4WAY_HANDSHAKE;
 
 	return 0;
 }

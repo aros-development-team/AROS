@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_module mmake=kernel-sdio-bcm2708 	\
+  modname=sdio modtype=resource		\
+  files="sdio_init"

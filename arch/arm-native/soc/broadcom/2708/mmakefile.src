@@ -13,6 +13,8 @@ BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
 #MM kernel-gpio-bcm2708 \
 #MM kernel-mbox-bcm2708 \
 #MM kernel-dma-bcm2708 \
+#MM kernel-sdio-bcm2708 \
+#MM kernel-bwfm-bcm2708 \
 #MM kernel-sdcard \
 #MM hidd-i2c-bcm2708 \
 #MM hidd-vc4gfx \
@@ -23,7 +25,7 @@ BCM2708_SP := aros-$(AROS_TARGET_CPU)-bcm2708.rom
 
 PKG_LIBS      :=
 PKG_LIBS_ARCH :=
-PKG_RSRC      := gpio mbox dma
+PKG_RSRC      := gpio mbox dma sdio bwfm
 PKG_RSRC_ARCH :=
 PKG_DEVS      := sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
