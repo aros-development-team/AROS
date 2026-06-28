@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/battclock
+
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock \
+  arch=raspi-arm modname=battclock \
+  files="readbattclock writebattclock"
+
+%common

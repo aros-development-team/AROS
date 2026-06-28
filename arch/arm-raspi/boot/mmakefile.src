@@ -89,6 +89,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-package-raspi-arm: \
 #MM linklibs-stdc-static \
 #MM kernel-dos \
+#MM kernel-battclock \
 #MM kernel-bootloader \
 #MM kernel-dosboot \
 #MM kernel-oop \
@@ -138,9 +139,6 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 #MM kernel-usb-romstrap-raspi \
 #MM kernel-econsole
 
-#MM kernel-package-raspi-arm-missing: \
-#MM kernel-battclock
-
 RASPIFW_BRANCH    := master
 RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
 RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb
@@ -148,7 +146,7 @@ RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf bcm2709-r
 PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos poseidon cgxbootpic gadtools lowlevel
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands mbox dma
-PKG_RSRC_ARCH := processor
+PKG_RSRC_ARCH := processor battclock
 PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
 PKG_DEVS_ARCH := timer
 PKG_HANDLERS  := con ram cdrom sfs fat afs
