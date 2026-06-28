@@ -654,6 +654,12 @@ isc_result_t omapi_one_dispatch (omapi_object_t *wo,
 		count = select(max + 1, &r, &w, &x, t ? &to : NULL);
 #ifdef __AROS__
 		bug("[dhclient] omapi_one_dispatch: blocking select count=%d errno=%d\n", count, errno);
+		/* AROSTCP asks us to terminate (e.g. a new WiFi association needs a
+		 * fresh lease) by sending SIGBREAKF_CTRL_C; WaitSelect() reports it as
+		 * EINTR. The count<0 recovery below assumes a bad fd, finds none, and we
+		 * would busy-spin forever. Honour the break and exit. */
+		if (count < 0 && errno == EINTR)
+			exit(0);
 #endif
 	}
 
