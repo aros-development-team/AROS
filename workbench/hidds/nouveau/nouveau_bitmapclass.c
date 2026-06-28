@@ -322,6 +322,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
         break;
     }    
 
+nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+
     UNLOCK_BITMAP
 
     UNLOCK_ENGINE
@@ -370,6 +372,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
         break;
     }
 
+nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+
     UNLOCK_BITMAP
 
     UNLOCK_ENGINE
@@ -406,7 +410,9 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
                     msg->pixels, msg->modulo, msg->pixFmt,
                     msg->x, msg->y, msg->width, msg->height, 
                     cl, o);
-        
+
+nouveau_bo_wait(bmdata->bo, NOUVEAU_BO_RD, carddata->client);
+
         ReleaseSemaphore(&carddata->gartsemaphore);
 
         if (result)
