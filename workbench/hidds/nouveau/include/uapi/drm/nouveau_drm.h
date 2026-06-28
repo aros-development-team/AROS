@@ -33,6 +33,37 @@
 extern "C" {
 #endif
 
+#if defined(__AROS__)
+#define NOUVEAU_GETPARAM_PCI_VENDOR      3
+#define NOUVEAU_GETPARAM_PCI_DEVICE      4
+#define NOUVEAU_GETPARAM_BUS_TYPE        5
+#define NOUVEAU_GETPARAM_FB_PHYSICAL     6
+#define NOUVEAU_GETPARAM_AGP_PHYSICAL    7
+#define NOUVEAU_GETPARAM_FB_SIZE         8
+#define NOUVEAU_GETPARAM_AGP_SIZE        9
+#define NOUVEAU_GETPARAM_PCI_PHYSICAL    10
+#define NOUVEAU_GETPARAM_CHIPSET_ID      11
+#define NOUVEAU_GETPARAM_VM_VRAM_BASE    12
+#define NOUVEAU_GETPARAM_GRAPH_UNITS     13
+#define NOUVEAU_GETPARAM_PTIMER_TIME     14
+#define NOUVEAU_GETPARAM_HAS_BO_USAGE    15
+#define NOUVEAU_GETPARAM_HAS_PAGEFLIP    16
+#define NOUVEAU_GETPARAM_VRAM_SIZE       128
+#define NOUVEAU_GETPARAM_GART_SIZE       129
+#define NOUVEAU_GETPARAM_VRAM_FREE       130
+#define NOUVEAU_GETPARAM_GART_FREE       131
+
+struct drm_nouveau_getparam {
+	uint64_t param;
+	uint64_t value;
+};
+
+struct drm_nouveau_setparam {
+	uint64_t param;
+	uint64_t value;
+};
+#endif
+
 #define NOUVEAU_GEM_DOMAIN_CPU       (1 << 0)
 #define NOUVEAU_GEM_DOMAIN_VRAM      (1 << 1)
 #define NOUVEAU_GEM_DOMAIN_GART      (1 << 2)
