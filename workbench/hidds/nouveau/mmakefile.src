@@ -16,35 +16,46 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 #MM- workbench-hidds-nouveau : hidd-nouveau-$(AROS_TARGET_CPU)
 #MM- hidd-nouveau-i386 : hidd-nouveau
 #MM- hidd-nouveau-x86_64 : hidd-nouveau
-#MM hidd-nouveau : hidd-nouveau-libdrm hidd-nouveau-drm hidd-i2c hidd-agp hidd-gallium
+#MM hidd-nouveau : hidd-nouveau-libdrm hidd-nouveau-drm hidd-nouveau-gallium hidd-i2c hidd-agp hidd-gallium
+
+USER_INCLUDES := \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(top_srcdir)/include \
+            -iquote $(top_srcdir)/src \
+            -iquote $(top_srcdir)/src/mesa \
+            -iquote $(GALLIUM_PATH)/drivers/nouveau \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+            -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
+            -I$(SRCDIR)/$(CURDIR)/include/uapi/drm \
+            -I$(SRCDIR)/$(CURDIR)/include \
+            -I$(top_srcdir)/src \
+            -I$(SRCDIR)/$(CURDIR)/drm/nouveau/include \
+
 
 GALLIUM_NOUVEAU_SOURCES := \
-            	$(C_SOURCES) \
-            	$(NV30_C_SOURCES) \
-            	$(NV50_CODEGEN_SOURCES) \
-            	$(NV50_C_SOURCES) \
-            	$(NVC0_CODEGEN_SOURCES) \
-            	$(NVC0_C_SOURCES)
+                $(C_SOURCES) \
+                $(NV30_C_SOURCES) \
+                $(NV50_CODEGEN_SOURCES) \
+                $(NV50_C_SOURCES) \
+                $(NVC0_CODEGEN_SOURCES) \
+                $(NVC0_C_SOURCES)
+
+TMP_GALLIUM_NOUVEAU_C_SOURCES := \
+                $(filter %.c, $(GALLIUM_NOUVEAU_SOURCES))
 
 GALLIUM_NOUVEAU_C_SOURCES := \
-            	$(filter %.c, $(GALLIUM_NOUVEAU_SOURCES))
+                $(GALLIUM_PATH)/winsys/nouveau/drm/nouveau_drm_winsys \
+                $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(TMP_GALLIUM_NOUVEAU_C_SOURCES:.c=))
+
+TMP_GALLIUM_NOUVEAU_CXX_SOURCES := \
+                $(filter %.cpp, $(GALLIUM_NOUVEAU_SOURCES))
 
 GALLIUM_NOUVEAU_CXX_SOURCES := \
-            	$(filter %.cpp, $(GALLIUM_NOUVEAU_SOURCES))
+                $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(TMP_GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
 
-#NOUVEAU_HIDD_CXX_SOURCES := \
-#            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_CXX_SOURCES:.cpp=))
-
-#            -iquote $(GALLIUM_PATH)/drivers \
-#            -iquote $(GALLIUM_PATH)/drivers/nouveau \
-#            -iquote $(GALLIUM_PATH)/include \
-#            -iquote $(GALLIUM_PATH)/auxiliary \
-#            -iquote $(top_srcdir)/src/mesa \
-#            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
-
-#FIXME
-#            nouveau_galliumclass \
-#            $(addprefix $(GALLIUM_PATH)/drivers/nouveau/, $(GALLIUM_NOUVEAU_C_SOURCES:.c=)) \
+%build_linklib mmake=hidd-nouveau-gallium libname=gallium_nouveau sdk=mesa objdir=$(GENDIR)/$(CURDIR)/gallium \
+    files="$(GALLIUM_NOUVEAU_C_SOURCES)" cxxfiles="$(GALLIUM_NOUVEAU_CXX_SOURCES)" usesdks="config private"
 
 ###############################################
 # drm, drm-aros, drm-compat -> libdrm_nouveau.a
@@ -90,6 +101,7 @@ NOUVEAU_HIDD_C_SOURCES := \
             nouveau_accel \
             nouveau_i2cclass \
             nouveau_compositorclass \
+            nouveau_galliumclass \
             $(addprefix $(XF86_NOUVEAU_PATH), $(XF86_NOUVEAU_SOURCES))  \
 
 USER_INCLUDES := \
@@ -97,14 +109,21 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/include \
             -I$(SRCDIR)/$(CURDIR)/include/libdrm/nouveau \
 
+USER_INCLUDES += \
+            -iquote $(top_srcdir)/src \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(top_srcdir)/include \
+            -iquote $(GALLIUM_PATH)/drivers/nouveau \
+
 NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_STRICT_ALIASING)
 USER_CFLAGS += $(NOWARN_FLAGS) -std=gnu99
 
 USER_LDFLAGS += \
   -L$(top_libdir) \
   -lstdcio -lstdc
-  
- %build_module mmake=hidd-nouveau modname=nouveau modtype=hidd \
-     files="$(NOUVEAU_HIDD_C_SOURCES)" cxxfiles="$(NOUVEAU_HIDD_CXX_SOURCES)" \
-     uselibs="oop libdrm_nouveau drm_nouveau pthread hiddstubs"
+
+%build_module mmake=hidd-nouveau modname=nouveau modtype=hidd \
+    files="$(NOUVEAU_HIDD_C_SOURCES)" alwayscxxlink=yes \
+    uselibs="oop gallium_nouveau galliumauxiliary mesautil compiler libdrm_nouveau drm_nouveau pthread" \
 
