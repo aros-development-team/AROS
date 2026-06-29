@@ -54,8 +54,6 @@
     const typeof(((type *)0)->member) *__mptr = (ptr);    \
              (type *)((char *)__mptr - offsetof(type, member)); })
 
-#define ARRAY_SIZE(x) (sizeof(x)/sizeof(x[0]))
-
 #define	DECLARE_BITMAP(n, bits) \
     unsigned long n[howmany(bits, sizeof(long) * 8)]
 

@@ -26,6 +26,7 @@
 #include <linux/delay.h>
 #else
 #include <drm-compat/drm_compat_funcs.h>
+#include <drm-compat/drm_compat_macros.h>
 #include <drm-compat/drm_compat_mem.h>
 #endif
 

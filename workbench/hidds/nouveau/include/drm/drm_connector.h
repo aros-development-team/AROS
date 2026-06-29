@@ -27,6 +27,8 @@
 #if !defined(__AROS__)
 #include <linux/llist.h>
 #include <linux/ctype.h>
+#else
+#include <drm-compat/drm_compat_macros.h>
 #endif
 #include <linux/hdmi.h>
 
