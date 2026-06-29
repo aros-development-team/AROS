@@ -1,7 +1,7 @@
 #ifndef HIDD_COMPOSITOR_H
 #define HIDD_COMPOSITOR_H
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2017, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,7 +50,7 @@ enum
 
 enum
 {
-    aoHidd_Compositor_GfxHidd = 0,  /* [I..] Gfx driver object connected with this compositor object  */
+    aoHidd_Compositor_DisplayHidd = 0,  /* [I..] display object connected with this compositor instance   */
     aoHidd_Compositor_DisplayID,    /* [I.G] Card ID part of Display mode ID                          */
     aoHidd_Compositor_Capabilities, /* [..G] Composition capabilities of this implementation          */
     aoHidd_Compositor_State,        /* [ISG] Currently used capabilities                              */
@@ -60,7 +60,7 @@ enum
     num_Hidd_Compositor_Attrs
 };
 
-#define aHidd_Compositor_GfxHidd       (HiddCompositorAttrBase + aoHidd_Compositor_GfxHidd)
+#define aHidd_Compositor_DisplayHidd   (HiddCompositorAttrBase + aoHidd_Compositor_DisplayHidd)
 #define aHidd_Compositor_DisplayID     (HiddCompositorAttrBase + aoHidd_Compositor_DisplayID)
 #define aHidd_Compositor_Capabilities  (HiddCompositorAttrBase + aoHidd_Compositor_Capabilities)
 #define aHidd_Compositor_State         (HiddCompositorAttrBase + aoHidd_Compositor_State)

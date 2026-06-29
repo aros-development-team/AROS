@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: X11 bitmap class, internal definitions
 */
@@ -27,7 +27,7 @@ struct bitmap_data
     int             flags;          /* See below                */
     IPTR            width;          /* Cached size, used by Clear method    */
     IPTR            height;
-    OOP_Object      *gfxhidd;       /* Cached owner, for ModeID switch    */
+    OOP_Object      *dmenum;        /* Cached display mode enumerator      */
     Drawable        windowdrawable; /* Explicit pointer to window drawable for BMDF_FRAMEBUFFER */
 };
 

@@ -8,7 +8,8 @@
 #include <proto/oop.h>
 
 #include "graphics_intern.h"
-#include "compositor_driver.h"
+#include "graphics_display.h"
+#include "graphics_compositor.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -62,12 +63,12 @@
 
     if(vpe) {
         OOP_Object *bm = VPE_DATA(vpe)->Bitmap;
-        struct monitor_driverdata *mdd = VPE_DRIVER(vpe);
+        struct monitor_displaydata *mdd = (struct monitor_displaydata *)VPE_DRIVER(vpe);
         IPTR x = vp->DxOffset;
         IPTR y = vp->DyOffset;
         BOOL compositing = FALSE;
 
-        D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, compositor 0x%p, offset (%ld, %ld)\n", vp, vpe, mdd->compositor, x, y));
+        D(bug("[ScrollVPort] ViewPort 0x%p, Extra 0x%p, compositor 0x%p, offset (%ld, %ld)\n", vp, vpe, mdd->mdisplay.display_compositor, x, y));
 
         /*
          * First we actually move the bitmap.
@@ -80,19 +81,19 @@
          */
         OOP_SetAttrsTags(bm, aHidd_BitMap_LeftEdge, x, aHidd_BitMap_TopEdge, y, TAG_DONE);
 
-        if(mdd->compositor) {
+        if(mdd->mdisplay.display_compositor) {
             /*
              * Perform the operation via software compositor.
              * x and y will be updated to the validated values.
              */
-            compositing = compositor_ScrollBitMap(mdd->compositor, bm, &x, &y, GfxBase);
+            compositing = compositor_ScrollBitMap(mdd->mdisplay.display_compositor, bm, &x, &y, GfxBase);
 
             if(compositing) {
                 /*
                  * Composition is active.
                  * Uninstall the framebuffer from the frontmost bitmap
                  */
-                UninstallFB(mdd, GfxBase);
+                display_FBUninstall(mdd, GfxBase);
             } else if(!mdd->bm_bak) {
                 /*
                  * Composition is inactive. Install the framebuffer into the frontmost
@@ -100,7 +101,7 @@
                  * This will actually trigger only once, when composition switched from
                  * active to inactive state.
                  */
-                InstallFB(mdd, GfxBase);
+                display_FBInstall(mdd, GfxBase);
             }
         }
 

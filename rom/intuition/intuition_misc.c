@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2013, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -74,17 +74,20 @@ void SetDisplayDefaults(struct IntuitionBase * IntuitionBase)
             if (sync)
             {
                 OOP_AttrBase HiddSyncAttrBase = _intuitionBase->HiddSyncAttrBase;
+                OOP_AttrBase HiddDMEnumAttrBase = _intuitionBase->HiddDMEnumAttrBase;
                 struct Library *OOPBase = _intuitionBase->OOPBase;
+                OOP_Object *dmenum, *display;
 
                 D(bug("[Intuition] %s: monitor sync obj @ 0x%p\n", __PRETTY_FUNCTION__, sync));
 
-                OOP_GetAttr(sync, aHidd_Sync_GfxHidd, (IPTR *)&drv);
-                if (drv)
+                OOP_GetAttr(sync, aHidd_Sync_DMEnumerator, (IPTR *)&dmenum);
+                if (dmenum)
                 {
-                    OOP_MethodID HiddGfxBase = _intuitionBase->ib_HiddGfxBase;
+                    OOP_MethodID HiddDisplayBase = _intuitionBase->ib_HiddDisplayBase;
                     UBYTE depth;
 
-                    HIDD_Gfx_NominalDimensions(drv,
+                    OOP_GetAttr(dmenum, aHidd_DMEnum_Display, (IPTR *)&display);
+                    HIDD_Display_NominalDimensions(display,
                         &_intuitionBase->ScreenModePrefs->smp_Width,
                         &_intuitionBase->ScreenModePrefs->smp_Height,
                         &depth);

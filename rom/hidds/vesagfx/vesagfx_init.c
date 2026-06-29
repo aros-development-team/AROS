@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: VESA Gfx Hidd for standalone i386 AROS
 */
@@ -64,7 +64,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
-    IID_Hidd
+    IID_Hidd,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum
 };
 
 static int VESAGfx_Init(LIBBASETYPEPTR LIBBASE)
@@ -87,6 +89,7 @@ static int VESAGfx_Init(LIBBASETYPEPTR LIBBASE)
             if (GetAttrBases(interfaces, xsd->attrBases, ATTRBASES_NUM))
             {
                 xsd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+                xsd->mid_Dispose = OOP_GetMethodID(IID_Root, moRoot_Dispose);
                 D(bug("[VESAGfx] BitMap class @ 0x%p\n", xsd->basebm));
 
                 InitSemaphore(&xsd->framebufferlock);

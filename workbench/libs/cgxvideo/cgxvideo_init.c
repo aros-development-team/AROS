@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/symbolsets.h>
@@ -12,8 +12,6 @@ static int cgxv_init(struct IntCGXVBase *CGXVideoBase)
 {
     CGXVideoBase->attrbases[0].interfaceID = IID_Hidd_BitMap;
     CGXVideoBase->attrbases[0].attrBase = &HiddBitMapAttrBase;
-    CGXVideoBase->attrbases[1].interfaceID = IID_Hidd_Overlay;
-    CGXVideoBase->attrbases[1].attrBase = &HiddOverlayAttrBase;
 
     return OOP_ObtainAttrBases(CGXVideoBase->attrbases);
 }

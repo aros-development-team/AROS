@@ -11,6 +11,7 @@
 #include <hidd/gfx.h>
 
 #include "graphics_intern.h"
+#include "graphics_display.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -78,11 +79,11 @@
                      * We don't check against vpd == NULL because we already know
                      * there's at least one ViewPort (our one) in the chain.
                      */
-                    struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(vp);
-                    struct HIDD_ViewPortData *vpd = driver_FindViewPorts(GfxBase->ActiView, mdd, GfxBase);
+                    struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_VP_DRIVERDATA(vp);
+                    struct HIDD_ViewPortData *vpd = display_FindViewPorts(mdd, GfxBase->ActiView, GfxBase);
 
-                    HIDD_Gfx_PrepareViewPorts(mdd->gfxhidd, vpd, GfxBase->ActiView);
-                    driver_LoadViewPorts(vpd, GfxBase->ActiView, mdd, GfxBase);
+                    HIDD_Display_InitViewPorts(mdd->mdisplay.display_obj, vpd, GfxBase->ActiView);
+                    display_LoadViewPorts(mdd, vpd, GfxBase->ActiView, GfxBase);
                 }
 
                 break;

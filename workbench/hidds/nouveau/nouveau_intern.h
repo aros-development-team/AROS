@@ -1,7 +1,7 @@
 #ifndef _NOUVEAU_INTERN_H
 #define _NOUVEAU_INTERN_H
 /*
-    Copyright © 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,6 +38,13 @@ struct HIDDNouveauData
     APTR                selectedconnector;
     OOP_Object          *compositor;
 };
+
+struct HIDDNouveauDisplayData
+{
+};
+
+#define CLID_Hidd_Display_Nouveau       "hidd.display.nouveau"
+#define IID_Hidd_Display_Nouveau        "hidd.display.nouveau"
 
 #define CLID_Hidd_BitMap_Nouveau        "hidd.bitmap.nouveau"
 #define IID_Hidd_BitMap_Nouveau         "hidd.bitmap.nouveau"
@@ -153,14 +160,21 @@ struct staticdata
     OOP_Class       *basei2c;
 
     OOP_Class       *gfxclass;
+    OOP_Class       *displayclass;
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;
     OOP_Class       *galliumclass;
     OOP_Class       *compositorclass;
 
+    OOP_Object      *display;
+    OOP_Object      *compositor;
+    OOP_Object      *dmenum;
+
     OOP_AttrBase    hiddAttrBase;    
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
+    OOP_AttrBase    displayAttrBase;
+    OOP_AttrBase    dmenumAttrBase;
     OOP_AttrBase    gfxNouveauAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;

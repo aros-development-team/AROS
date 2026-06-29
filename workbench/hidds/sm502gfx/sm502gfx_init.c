@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: sm502 Gfx Hidd for standalone i386 AROS
 */
@@ -65,7 +65,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
-    IID_Hidd
+    IID_Hidd,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum
 };
 
 static int SM502Gfx_Init(LIBBASETYPEPTR LIBBASE)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -275,7 +275,7 @@ APTR FNAME_SUPPORT(GenPixFmts)(OOP_Class *cl)
                 supportedfmts++;
                 continue;
             }
-            pixfmtarray[fmtcount].ti_Tag = aHidd_Gfx_PixFmtTags;
+            pixfmtarray[fmtcount].ti_Tag = aHidd_DMEnum_PixFmtTags;
             pixfmtarray[fmtcount].ti_Data = (IPTR)newfmt_tags;
         }
         pixfmtarray[fmtcount].ti_Tag = TAG_DONE;

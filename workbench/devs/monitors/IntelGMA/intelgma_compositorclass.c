@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 /*
@@ -145,13 +145,13 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     IPTR modeid, hdisp, vdisp, e, depth;
     struct TagItem bmtags[5];
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, &e);
 
     /* Sanity check */
-    if (compdata->gfx != (OOP_Object *)e)
+    if (compdata->display != (OOP_Object *)e)
     {
         /* Provided top bitmap is not using the same driver as compositor. Fail. */
-        D(bug("[Compositor] GfxHidd different than one used by compositor\n"));
+        D(bug("[Compositor] Display different than one used by compositor\n"));
         return FALSE;
     }
 
@@ -168,15 +168,7 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
         return TRUE;
     
     /* Get width and height of mode */
-    struct pHidd_Gfx_GetMode __getmodemsg =
-    {
-        .modeID     = modeid,
-        .syncPtr    = &sync,
-        .pixFmtPtr  = &pf,
-    }, *getmodemsg = &__getmodemsg;
-
-    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-    OOP_DoMethod(compdata->gfx, (OOP_Msg)getmodemsg);
+    HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf);
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
@@ -189,7 +181,7 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = modeid;
     bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
     
-    fbbitmap = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
+    fbbitmap = HIDD_Display_CreateObject(compdata->display, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
     if (fbbitmap)
     {
         BOOL ret = HIDD_INTELG45_SwitchToVideoMode(fbbitmap);
@@ -246,7 +238,7 @@ static BOOL HIDDCompositorCanCompositeWithScreenBitMap(struct HIDDCompositorData
     OOP_GetAttr(screenbm, aHidd_BitMap_PixFmt, &pf);
     OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &screenbmstdpixfmt);
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, &bmgfx);
     OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
     OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
     OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
@@ -254,7 +246,7 @@ static BOOL HIDDCompositorCanCompositeWithScreenBitMap(struct HIDDCompositorData
     OOP_GetAttr((OOP_Object*)pf, aHidd_PixFmt_StdPixFmt, &bmstdpixfmt);
 
     /* If bm uses different instances of gfx hidd than screenbm(=composing), they cannot be composited */
-    if (compdata->gfx != (OOP_Object *)bmgfx)
+    if (compdata->display != (OOP_Object *)bmgfx)
         return FALSE;
     
     /* If bitmaps have the same modeid, they can be composited */
@@ -431,15 +423,18 @@ OOP_Object *METHOD(Compositor, Root, New)
         compdata->screenmodeid  = vHidd_ModeID_Invalid;
         InitSemaphore(&compdata->semaphore);
                 
-        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
+        compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
         
-        if (compdata->gfx != NULL)
+        if (compdata->display != NULL)
         {
+            OOP_GetAttr(compdata->display, aHidd_Display_GfxHidd, (IPTR *)&compdata->gfx);
+            OOP_GetAttr(compdata->display, aHidd_Display_DMEnumerator, (IPTR *)&compdata->dmenum);
+
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basegc, NULL);
+            compdata->gc = HIDD_Display_CreateObject(compdata->display, SD(OOP_OCLASS(compdata->gfx))->basegc, NULL);
         }
         
-        if ((compdata->gfx == NULL) || (compdata->gc == NULL))
+        if ((compdata->display == NULL) || (compdata->gfx == NULL) || (compdata->gc == NULL))
         {
             /* Creation failed */
             OOP_MethodID disposemid;

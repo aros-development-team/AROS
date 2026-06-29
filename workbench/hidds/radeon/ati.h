@@ -2,7 +2,7 @@
 #define _ATI_H
 
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,16 +33,23 @@
 #define IID_Hidd_Gfx_Ati    "hidd.gfx.radeon"
 #define IID_Hidd_BitMap_ATI  "hidd.bitmap.radeon"
 #define CLID_Hidd_Gfx_Ati   "hidd.gfx.radeon"
+#define CLID_Hidd_Display_Ati   "hidd.display.radeon"
 
 extern OOP_AttrBase HiddPCIDeviceAttrBase;
 extern OOP_AttrBase HiddBitMapAttrBase;
 extern OOP_AttrBase HiddPixFmtAttrBase;
 extern OOP_AttrBase HiddSyncAttrBase;
 extern OOP_AttrBase HiddGfxAttrBase;
+extern OOP_AttrBase HiddDisplayAttrBase;
+extern OOP_AttrBase HiddDMEnumAttrBase;
 extern OOP_AttrBase HiddATIBitMapAttrBase;
 extern OOP_AttrBase HiddI2CAttrBase;
 extern OOP_AttrBase HiddI2CDeviceAttrBase;
 extern OOP_AttrBase __IHidd_PlanarBM;
+
+struct atiDisplayData
+{
+};
 
 enum {
     aoHidd_ATIBitMap_Drawable,
@@ -105,6 +112,8 @@ struct ati_staticdata {
     UBYTE           *cpuscratch;
 
     OOP_Object      *AtiObject;
+    OOP_Object      *AtiDisplay;
+    OOP_Object      *dmenum;
     OOP_Object      *PCIObject;
     OOP_Object      *PCIDevice;
     OOP_Object      *PCIDriver;
@@ -112,6 +121,7 @@ struct ati_staticdata {
     OOP_Class      *basebm;            /* baseclass for CreateObject */
 
     OOP_Class       *AtiClass;
+    OOP_Class       *AtiDisplayClass;
     OOP_Class       *AtiI2C;
     OOP_Class       *OnBMClass;
     OOP_Class       *OffBMClass;
@@ -123,6 +133,8 @@ struct ati_staticdata {
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
+    OOP_AttrBase    displayAttrBase;
+    OOP_AttrBase    dmenumAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    i2cAttrBase;
     OOP_AttrBase    i2cDeviceAttrBase;

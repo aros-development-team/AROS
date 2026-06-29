@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2017 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -96,24 +96,25 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (IPTR *)&pixfmt);
 
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+    {
+        /*
+         * SDL surfaces must be created with the pixelformat's storage size
+         * (bytes-per-pixel * 8), not its colour depth. For e.g. 0RGB32 the
+         * colour depth is 24 but the storage is 4 bytes/pixel; creating a
+         * 24-bit (3-byte) SDL surface here would not match the AROS
+         * pixelformat (4 bytes/pixel) and leads to out-of-bounds access.
+         */
+        IPTR bytesperpixel = 0;
+        OOP_GetAttr(pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+        if (bytesperpixel)
+            depth = bytesperpixel * 8;
+    }
 
     D(bug("[sdl] width %d height %d depth %d\n", width, height, depth));
 
     framebuffer  = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
     if (framebuffer) {
         D(bug("[sdl] creating new framebuffer\n"));
-
-        /* XXX we should free any existing onscreen surface. the problem is
-         * that we can't dispose the existing framebuffer object because the
-         * caller may still have a handle on it. we could fiddle at its
-         * innards well enough (store the current onscreen bitmap in class
-         * static data, and now grab it and free its surface), but then we
-         * have a bitmap with no associated surface, so we need checks for
-         * that.
-         *
-         * I expect that if the caller wants to make a new framebuffer, it
-         * should have to free the old one
-         */
 
         if (!LIBBASE->use_hwsurface)
             D(bug("[sdl] hardware surface not available, using software surface instead\n"));
@@ -126,12 +127,25 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         if (LIBBASE->icon)
             SV(SDL_WM_SetIcon, LIBBASE->icon, NULL);
 
-        s = SP(SDL_SetVideoMode, width, height, depth,
-                                (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
-                                (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
-                                SDL_ANYFORMAT);
-
         SV(SDL_WM_SetCaption, "AROS Research Operating System", "AROS");
+
+        /*
+         * Defer opening the SDL window until Show().
+         *
+         * graphics.library creates the framebuffer bitmap at the highest
+         * resolution the driver reports (see get_best_resolution_and_depth),
+         * which is not necessarily the mode that will actually be shown.
+         * The real display mode is only known when a screen is shown, so we
+         * set the SDL video mode in Show() (which fills in this object's
+         * surface and dimensions) rather than opening a window here at the
+         * wrong resolution and resizing it later.
+         */
+        bmdata->surface = NULL;
+        bmdata->is_onscreen = TRUE;
+
+        D(bug("[sdl] framebuffer surface creation deferred to Show()\n"));
+
+        return o;
     }
 
     else {
@@ -148,7 +162,7 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     if (s == NULL) {
         OOP_MethodID dispose;
 
-        D(bug("[sdl] failed to create surface: %s\n", S(SDL_GetError, )));
+        D(bug("[sdl] failed to create surface: %s\n", SP(SDL_GetError, )));
 
         dispose = OOP_GetMethodID(IID_Root, moRoot_Dispose);
         OOP_CoerceMethod(cl, o, (OOP_Msg) &dispose);
@@ -157,9 +171,6 @@ OOP_Object *SDLBitMap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     }
 
     bmdata->surface = s;
-
-    if (framebuffer)
-        bmdata->is_onscreen = TRUE;
 
     D(bug("[sdl] created surface: 0x%08x\n", s));
 
@@ -355,8 +366,11 @@ VOID SDLBitMap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHi
     D(bug("[sdl] SDLBitMap::UpdateRect\n"));
     D(bug("[sdl] Updating region (%d,%d) [%d,%d]\n", msg->x, msg->y, msg->width, msg->height));
 
-    if (bmdata->is_onscreen)
+    if (bmdata->is_onscreen && bmdata->surface) {
+        ObtainSemaphore(&xsd.sdl_lock);
         SV(SDL_UpdateRect, bmdata->surface, msg->x, msg->y, msg->width, msg->height);
+        ReleaseSemaphore(&xsd.sdl_lock);
+    }
 }
 
 VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg) {
@@ -388,10 +402,7 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
         default:
             DPUTIMAGE(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
-            OOP_Object *gfxhidd;
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-
-            OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+            OOP_Object *pixfmt = HIDD_DMEnum_GetPixFmt(LIBBASE->dmenum, msg->pixFmt);
 
             OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     &depth);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
@@ -409,8 +420,21 @@ VOID SDLBitMap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     DPUTIMAGE(bug("[sdl] source format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
 
-    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
-    if (native32) {
+    /*
+     * SDL_CreateRGBSurfaceFrom() rejects a pitch smaller than width*bytesperpixel
+     * (it returns NULL). Some callers (e.g. cybergraphics single-row blits) pass a
+     * modulo that is the natural row size in pixels rather than bytes; in that case
+     * the supplied pixel row is actually width*bytesperpixel bytes long, so clamp the
+     * pitch up to that minimum. Padded sources (modulo > width*bpp) are preserved.
+     */
+    {
+        LONG bpp   = (depth + 7) >> 3;
+        LONG pitch = (LONG)msg->modulo;
+        if (pitch < (LONG)msg->width * bpp)
+            pitch = (LONG)msg->width * bpp;
+        s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, pitch, red_mask, green_mask, blue_mask, alpha_mask);
+    }
+    if (native32 && s) {
         DPUTIMAGE(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
         s->format->BytesPerPixel = 4;
     }
@@ -459,10 +483,7 @@ VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd
         default:
             D(bug("[sdl] pixel format %d, asking the gfxhidd for attributes\n", msg->pixFmt));
 
-            OOP_Object *gfxhidd;
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-
-            OOP_Object *pixfmt = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+            OOP_Object *pixfmt = HIDD_DMEnum_GetPixFmt(LIBBASE->dmenum, msg->pixFmt);
 
             OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth,     &depth);
             OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask,   &red_mask);
@@ -475,8 +496,16 @@ VOID SDLBitMap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd
 
     D(bug("[sdl] target format: depth %d red 0x%08x green 0x%08x blue 0x%08x alpha 0x%08x\n", depth, red_mask, green_mask, blue_mask, alpha_mask));
 
-    s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, msg->modulo, red_mask, green_mask, blue_mask, alpha_mask);
-    if (native32) {
+    /* See PutImage: clamp the destination pitch up to width*bytesperpixel so
+       SDL_CreateRGBSurfaceFrom() does not reject an undersized modulo. */
+    {
+        LONG bpp   = (depth + 7) >> 3;
+        LONG pitch = (LONG)msg->modulo;
+        if (pitch < (LONG)msg->width * bpp)
+            pitch = (LONG)msg->width * bpp;
+        s = SP(SDL_CreateRGBSurfaceFrom, msg->pixels, msg->width, msg->height, depth, pitch, red_mask, green_mask, blue_mask, alpha_mask);
+    }
+    if (native32 && s) {
         D(bug("[sdl] native32 format, setting pixel width to 4 bytes\n"));
         s->format->BytesPerPixel = 4;
     }

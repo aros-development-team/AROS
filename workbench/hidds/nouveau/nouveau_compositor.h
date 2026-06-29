@@ -1,7 +1,7 @@
 #ifndef _COMPOSITOR_INTERN_H
 #define _COMPOSITOR_INTERN_H
 /*
-    Copyright © 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -49,6 +49,8 @@ struct HIDDCompositorData
     struct SignalSemaphore  semaphore;
     
     OOP_Object              *gfx;           /* GFX driver object */
+    OOP_Object              *display;       /* Display driver object */
+    OOP_Object              *dmenum;        /* Display mode enumerator object */
     OOP_Object              *gc;            /* GC object used for drawing operations */
 
     /* Attr bases */
@@ -56,6 +58,7 @@ struct HIDDCompositorData
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    gcAttrBase;
+    OOP_AttrBase    displayAttrBase;
     OOP_AttrBase    compositorAttrBase;
 };
 

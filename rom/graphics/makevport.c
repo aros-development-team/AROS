@@ -117,7 +117,7 @@
                 struct DisplayInfoHandle *dih = viewport->ColorMap->NormalDisplayInfo;
 
                 if(dih) {
-                    if((HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
+                    if(((struct gfxdisplay_data *)HIDD_BM_DRVDATA(viewport->RasInfo->BitMap) != dih->drv) ||
                             (HIDD_BM_HIDDMODE(viewport->RasInfo->BitMap) != dih->id)) {
 
                         D(bug("[MakeVPort] Bad NormalDisplayInfo\n"));
@@ -142,7 +142,7 @@
          * OBTAIN_HIDD_BM() may fail on planar bitmap in low memory situation.
          */
         if(vpd->Bitmap) {
-            struct monitor_driverdata *mdd = GET_VP_DRIVERDATA(viewport);
+            struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_VP_DRIVERDATA(viewport);
 
             /*
              * Store driverdata pointer in private ViewPortExtra field.
@@ -151,7 +151,7 @@
              * driver pointer from the bitmap in FreeVPortCopLists().
              */
             vpe->DriverData[1] = mdd;
-            ret = HIDD_Gfx_MakeViewPort(mdd->gfxhidd, vpd);
+            ret = HIDD_Display_MakeViewPort(mdd->mdisplay.display_obj, vpd);
         } else
             ret = MVP_NO_MEM;
     } else

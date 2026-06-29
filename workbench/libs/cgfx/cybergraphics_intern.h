@@ -51,6 +51,7 @@ struct IntCGFXBase
     OOP_AttrBase    	    hiddSyncAttrBase;
     OOP_AttrBase    	    hiddPixFmtAttrBase;
     OOP_AttrBase    	    hiddGfxAttrBase;
+    OOP_AttrBase    	    hiddDisplayAttrBase;
 
     /* baseclasses for CreateObject */
     OOP_Class                   *basegc;
@@ -67,6 +68,7 @@ struct IntCGFXBase
 #define __IHidd_Sync        GetCGFXBase(CyberGfxBase)->hiddSyncAttrBase
 #define __IHidd_PixFmt      GetCGFXBase(CyberGfxBase)->hiddPixFmtAttrBase
 #define __IHidd_Gfx         GetCGFXBase(CyberGfxBase)->hiddGfxAttrBase
+#define __IHidd_Display     GetCGFXBase(CyberGfxBase)->hiddDisplayAttrBase
 
 /* Pixelbuffer, the same as in graphics.library */
 #ifdef __mc68000

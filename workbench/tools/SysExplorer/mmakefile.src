@@ -59,9 +59,10 @@ TELEMETRYFILES := \
         $(TELEMETRYMODDIR)/telemetry_enum \
         $(TELEMETRYMODDIR)/telemetry_window_cl
 
-# disabled until a later date ;)
 GFXMODDIR := Modules/Gfx
 GFXFILES := \
+        sysexp_locale \
+        $(GFXMODDIR)/gfx_init \
         $(GFXMODDIR)/gfx_enum \
         $(GFXMODDIR)/gfx_window_cl \
         $(GFXMODDIR)/gfxmonitor_window_cl
@@ -108,14 +109,15 @@ USER_LDFLAGS := -static
     files="$(TELEMETRYFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
     uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(TELEMETRYMODDIR)/telemetry.conf
 
-##MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes
-##MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx
-#USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(GFXMODDIR)
-#USER_LDFLAGS := -static
-#%build_module mmake=workbench-tools-sysexplorer-module-gfx \
-#    modname=gfx modtype=library modsuffix=sysexp \
-#    files="$(GFXFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
-#    uselibs="amiga"
+#MM workbench-tools-sysexplorer-module-gfx : workbench-tools-sysexplorer-includes kernel-hidd-gfx-includes
+#MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-gfx
+#MM- workbench-tools-sysexplorer-modules-quick : workbench-tools-sysexplorer-module-gfx-quick
+USER_INCLUDES := $(SYSEXPCOMMON_INCLUDES) -I$(SRCDIR)/$(CURDIR)/$(GFXMODDIR)
+USER_LDFLAGS := -static
+%build_module mmake=workbench-tools-sysexplorer-module-gfx \
+    modname=gfx modtype=library modsuffix=sysexp \
+    files="$(GFXFILES)" moduledir=$(AROS_DIR_TOOLS)/SysExpModules \
+    uselibs="amiga" includedir=$(SYSEXP_GENINCDIR) conffile=$(SRCDIR)/$(CURDIR)/$(GFXMODDIR)/gfx.conf
 
 #MM workbench-tools-sysexplorer-module-storage : workbench-tools-sysexplorer-includes kernel-hidd-storage-includes kernel-hidd-bus-includes
 #MM- workbench-tools-sysexplorer-modules : workbench-tools-sysexplorer-module-storage

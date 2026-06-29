@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <graphics/gfxbase.h>
@@ -12,6 +12,7 @@
 
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
 
 static void PrintMode(HIDDT_ModeID m, OOP_Object *sync, OOP_Object *pixfmt)
 {
@@ -47,10 +48,19 @@ int main(void)
         return RETURN_FAIL;
     }
 
+    HiddDisplayAttrBase = OOP_ObtainAttrBase(IID_Hidd_Display);
+    if (!HiddDisplayAttrBase) {
+        printf("Failed to obtain IID_Hidd_Display\n");
+        OOP_ReleaseAttrBase(IID_Hidd_Sync);
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+        return RETURN_FAIL;
+    }
+
     scr = LockPubScreen(NULL);
 
     if (!scr) {
         printf("Failed to lock default public screen\n");
+        OOP_ReleaseAttrBase(IID_Hidd_Display);
         OOP_ReleaseAttrBase(IID_Hidd_Sync);
         OOP_ReleaseAttrBase(IID_Hidd_BitMap);
         return RETURN_FAIL;
@@ -60,17 +70,19 @@ int main(void)
 
     if (IS_HIDD_BM(bm)) {
         OOP_Object *bmobj = HIDD_BM_OBJ(bm);
-        OOP_Object *gfxhidd = NULL;
+        OOP_Object *display = NULL, *dmenum = NULL;
 
-        OOP_GetAttr(bmobj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+        OOP_GetAttr(bmobj, aHidd_BitMap_Display, (IPTR *)&display);
+        if (display)
+            OOP_GetAttr(display, aHidd_Display_DMEnumerator, (IPTR *)&dmenum);
 
-        if (gfxhidd) {
+        if (dmenum) {
             HIDDT_ModeID *modes;
             HIDDT_ModeID mode;
             OOP_Object *sync, *pixfmt;
 
             printf("Checking QueryModeIDs()...\n");
-            modes = HIDD_Gfx_QueryModeIDs(gfxhidd, NULL);
+            modes = HIDD_DMEnum_QueryModeIDs(dmenum, NULL);
             if (modes) {
                 HIDDT_ModeID *m = modes;
                 
@@ -78,13 +90,13 @@ int main(void)
                     sync = NULL;
                     pixfmt = NULL;
                     if ((*m == vHidd_ModeID_Invalid) ||
-                        HIDD_Gfx_GetMode(gfxhidd, *m, &sync, &pixfmt))
+                        HIDD_DMEnum_GetMode(dmenum, *m, &sync, &pixfmt))
                         PrintMode(*m, sync, pixfmt);
                     else
                         printf("ModeID 0x%08lX GetMode() failed\n", *m);
                 } while (*m++ != vHidd_ModeID_Invalid);
 
-                HIDD_Gfx_ReleaseModeIDs(gfxhidd, modes);
+                HIDD_DMEnum_ReleaseModeIDs(dmenum, modes);
             } else
                 printf("Failed to obtain ModeID list\n");
 
@@ -94,16 +106,17 @@ int main(void)
             do {
                 sync = NULL;
                 pixfmt = NULL;
-                mode = HIDD_Gfx_NextModeID(gfxhidd, mode, &sync, &pixfmt);
+                mode = HIDD_DMEnum_NextModeID(dmenum, mode, &sync, &pixfmt);
                 PrintMode(mode, sync, pixfmt);
             } while (mode != vHidd_ModeID_Invalid);
             
         } else
-            printf("Public screen bitmap does not have aHidd_BitMap_GfxHidd, weird\n");
+            printf("Public screen bitmap does not have a display mode enumerator, weird\n");
     } else
         printf("Public screen bitmap is not a HIDD bitmap, unsupported for now\n");
 
     UnlockPubScreen(NULL, scr);
+    OOP_ReleaseAttrBase(IID_Hidd_Display);
     OOP_ReleaseAttrBase(IID_Hidd_Sync);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     return 0;

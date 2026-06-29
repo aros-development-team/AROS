@@ -44,6 +44,7 @@ FILES :=  \
     x11 \
     x11_support \
     x11gfx_hiddclass \
+    x11gfx_displayclass \
     x11gfx_onbitmap \
     x11gfx_offbitmap \
     x11_kbdclass \

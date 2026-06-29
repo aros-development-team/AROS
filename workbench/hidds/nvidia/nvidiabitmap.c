@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: NVidia bitmap class
 */
@@ -169,14 +169,7 @@ OOP_Object *NVOnBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 		IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
 	
 		/* Get Sync and PixelFormat properties */
-		struct pHidd_Gfx_GetMode __getmodemsg = {
-		    modeID:	modeid,
-		    syncPtr:	&sync,
-		    pixFmtPtr:	&pf,
-		}, *getmodemsg = &__getmodemsg;
-
-		getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-		OOP_DoMethod(_sd->nvobject, (OOP_Msg)getmodemsg);
+		HIDD_DMEnum_GetMode(_sd->dmenum, modeid, &sync, &pf);
 
 		OOP_GetAttr(sync, aHidd_Sync_PixelClock, 	&pixel);
 		OOP_GetAttr(sync, aHidd_Sync_HDisp, 		&hdisp);

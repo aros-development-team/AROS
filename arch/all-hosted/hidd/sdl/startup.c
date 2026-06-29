@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -37,6 +37,8 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddColorMapAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
+OOP_AttrBase HiddDMEnumAttrBase;
 OOP_AttrBase HiddSDLBitMapAttrBase;
 OOP_AttrBase HiddMouseAB;
 OOP_AttrBase HiddInputAB;
@@ -49,6 +51,8 @@ static struct OOP_ABDescr attrbases[] = {
     { IID_Hidd_ColorMap,  &HiddColorMapAttrBase  },
     { IID_Hidd_Sync,      &HiddSyncAttrBase      },
     { IID_Hidd_Gfx,       &HiddGfxAttrBase       },
+    { IID_Hidd_Display,   &HiddDisplayAttrBase   },
+    { IID_Hidd_DMEnum,    &HiddDMEnumAttrBase    },
     { IID_Hidd_BitMap_SDL, &HiddSDLBitMapAttrBase },
     { IID_Hidd_Mouse,     &HiddMouseAB           },
     { IID_Hidd_Input,     &HiddInputAB           },
@@ -221,6 +225,13 @@ int main(void)
 
             xsd.gfxclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLGfx_tags);
             if (xsd.gfxclass) {
+                struct TagItem SDLDisplay_tags[] = {
+                    {aMeta_SuperID       , (IPTR)CLID_Hidd_Display},
+                    {aMeta_InterfaceDescr, (IPTR)SDLGfx_Display_ifdescr},
+                    {aMeta_InstSize      , 0},
+                    {aMeta_ID            , (IPTR)CLID_Hidd_Display_SDL},
+                    {TAG_DONE            , 0}
+                };
                 struct TagItem SDLBitMap_tags[] = {
                     {aMeta_SuperID       , (IPTR)CLID_Hidd_BitMap },
                     {aMeta_InterfaceDescr, (IPTR)SDLBitMap_ifdescr},
@@ -229,10 +240,15 @@ int main(void)
                 };
 
                 xsd.gfxclass->UserData = &xsd;
+
+                xsd.displayclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLDisplay_tags);
+                if (xsd.displayclass)
+                    xsd.displayclass->UserData = &xsd;
+
                 xsd.bmclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLBitMap_tags);
                 if (xsd.bmclass) {
                     struct TagItem SDLMouse_tags[] = {
-                        {aMeta_SuperID       , (IPTR)CLID_Hidd         },
+                        {aMeta_SuperID       , (IPTR)CLID_Hidd_Mouse   },
                         {aMeta_InterfaceDescr, (IPTR)SDLMouse_ifdescr  },
                         {aMeta_InstSize      , sizeof(struct mousedata)},
                         {TAG_DONE            , 0                       }
@@ -242,7 +258,7 @@ int main(void)
                     xsd.mouseclass = OOP_NewObject(NULL, CLID_HiddMeta, SDLMouse_tags);
                     if (xsd.mouseclass) {
                         struct TagItem SDLKbd_tags[] = {
-                            {aMeta_SuperID       , (IPTR)CLID_Hidd       },
+                            {aMeta_SuperID       , (IPTR)CLID_Hidd_Kbd   },
                             {aMeta_InterfaceDescr, (IPTR)SDLKbd_ifdescr  },
                             {aMeta_InstSize      , sizeof(struct kbddata)},
                             {TAG_DONE            , 0                     }
@@ -255,6 +271,7 @@ int main(void)
 
                             /* Init internal stuff */
                             sdl_keymap_init(&xsd);
+                            InitSemaphore(&xsd.sdl_lock);
                             if (sdl_event_init(&xsd)) {
                                 if (sdl_hidd_init(&xsd)) {
                                     if (sdl_Startup(&xsd)) {

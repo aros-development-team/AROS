@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "nouveau_intern.h"
@@ -29,6 +29,8 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     { IID_Hidd_PixFmt,	        &LIBBASE->sd.pixFmtAttrBase },
     { IID_Hidd_Sync,            &LIBBASE->sd.syncAttrBase },
     { IID_Hidd_Gfx,             &LIBBASE->sd.gfxAttrBase },
+    { IID_Hidd_Display,         &LIBBASE->sd.displayAttrBase },
+    { IID_Hidd_DMEnum,          &LIBBASE->sd.dmenumAttrBase },
     { IID_Hidd_Gfx_Nouveau,     &LIBBASE->sd.gfxNouveauAttrBase },
     { IID_Hidd_PlanarBM,        &LIBBASE->sd.planarAttrBase },
     { IID_Hidd_I2C_Nouveau,     &LIBBASE->sd.i2cNouveauAttrBase },
@@ -58,7 +60,7 @@ static ULONG Nouveau_Init(LIBBASETYPEPTR LIBBASE)
     LIBBASE->sd.mid_PutMemPattern16 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern16);
     LIBBASE->sd.mid_PutMemPattern32 = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_PutMemPattern32);
     LIBBASE->sd.mid_ConvertPixels   = OOP_GetMethodID((STRPTR)IID_Hidd_BitMap, moHidd_BitMap_ConvertPixels);
-    LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_Gfx, moHidd_Gfx_GetPixFmt);
+    LIBBASE->sd.mid_GetPixFmt       = OOP_GetMethodID((STRPTR)IID_Hidd_DMEnum, moHidd_DMEnum_GetPixFmt);
 
     LIBBASE->sd.mid_BitMapPositionChanged   =
         OOP_GetMethodID((STRPTR)IID_Hidd_Compositor, moHidd_Compositor_BitMapPositionChanged);

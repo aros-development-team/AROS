@@ -1,7 +1,7 @@
 #ifndef _VIDEOCOREGFX_CLASS_H
 #define _VIDEOCOREGFX_CLASS_H
 /*
-    Copyright � 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright � 2013-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,9 +33,14 @@
 
 #define IID_Hidd_Gfx_VideoCore4  "hidd.gfx.bcmvc4"
 #define CLID_Hidd_Gfx_VideoCore4 "hidd.gfx.bcmvc4"
+#define CLID_Hidd_Display_VideoCore4 "hidd.display.bcmvc4"
 
 #define MAX_TAGS        256
-#define ATTRBASES_NUM   8
+#define ATTRBASES_NUM   10
+
+struct VideoCoreGfxDisplayData
+{
+};
 
 struct VideoCoreGfx_staticdata {
         APTR                    vcsd_MBoxBase;
@@ -51,6 +56,9 @@ struct VideoCoreGfx_staticdata {
 
         OOP_Class               *vcsd_VideoCoreGfxClass;
 	OOP_Object              *vcsd_VideoCoreGfxInstance;
+        OOP_Class               *vcsd_VideoCoreGfxDisplayClass;
+        OOP_Object              *vcsd_VideoCoreGfxDisplay;
+        OOP_Object              *vcsd_DMEnum;
 	OOP_Class               *vcsd_VideoCoreGfxOnBMClass;
 	OOP_Class               *vcsd_VideoCoreGfxOffBMClass;
 
@@ -157,6 +165,8 @@ struct DisplayMode
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddAttrBase
 
 /* These must stay in the same order as interfaces[] array in vc4gfx_init.c */
@@ -167,7 +177,9 @@ struct DisplayMode
 #define HiddPixFmtAttrBase               XSD(cl)->vcsd_attrBases[4]
 #define HiddSyncAttrBase                 XSD(cl)->vcsd_attrBases[5]
 #define HiddGfxAttrBase                  XSD(cl)->vcsd_attrBases[6]
-#define HiddAttrBase                     XSD(cl)->vcsd_attrBases[7]
+#define HiddDisplayAttrBase              XSD(cl)->vcsd_attrBases[7]
+#define HiddDMEnumAttrBase               XSD(cl)->vcsd_attrBases[8]
+#define HiddAttrBase                     XSD(cl)->vcsd_attrBases[9]
 
 #define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
 

@@ -27,8 +27,11 @@ struct UIKitBase
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class		  *gfxclass;
+    OOP_Class		  *displayclass;
     OOP_Class		  *bmclass;
     OOP_Class		  *mouseclass;
+    OOP_Object		  *displayhidd;
+    OOP_Object		  *dmenum;
     struct Task		  *eventTask;
     ULONG		   eventMask;
     struct Interrupt	   eventInt;

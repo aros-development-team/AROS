@@ -64,7 +64,7 @@
 
         if(vpd) {
             /* Do driver-specific cleanup */
-            HIDD_Gfx_CleanViewPort(VPE_DRIVER(vpe)->gfxhidd, vpd);
+            HIDD_Display_DeinitViewPort(VPE_DRIVER(vpe)->display_obj, vpd);
 
             FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
 

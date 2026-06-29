@@ -2,7 +2,7 @@
 #define HIDD_GDI_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the gdi HIDD.
@@ -94,6 +94,7 @@ struct gdi_staticdata
     OOP_Class 	    	   *basebm;            /* baseclass for CreateObject */
 
     OOP_Class               *gfxclass;
+    OOP_Class               *displayclass;
 
     OOP_Class               *bmclass;
     OOP_Class               *mouseclass;
@@ -105,6 +106,8 @@ struct gdi_staticdata
     
     OOP_Object              *mousehidd;
     OOP_Object              *kbdhidd;
+    OOP_Object              *displayhidd;
+    OOP_Object              *dmenum;
 
     struct GDI_Control      *ctl;
 };
@@ -120,6 +123,12 @@ struct gdiclbase
 #define XSD(cl)         (&((struct gdiclbase *)cl->UserData)->xsd)
 
 extern OOP_AttrBase HiddAttrBase;
+
+#define CLID_Hidd_Display_WinGDI "hidd.display.wingdi"
+
+struct gdiDisplayData
+{
+};
 
 #else
 

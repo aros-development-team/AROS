@@ -52,7 +52,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct monitor_driverdata *mdd;
+    struct monitor_displaydata *mdd;
     struct DisplayInfoHandle *ret = NULL;
     HIDDT_ModeID hiddmode;
 
@@ -63,15 +63,15 @@
         return NULL;
 
     /* Find display driver data */
-    for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-        if(mdd->id == (ID & mdd->mask))
+    for(mdd = GFXPRIVATE_MONITORFIRST; mdd; mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next) {
+        if(mdd->mdisplay.display_idbase == (ID & mdd->mdisplay.display_mask))
             break;
     }
     if(!mdd)
         return NULL;
 
     /* Calculate HIDD part of ModeID */
-    hiddmode = ID & (~mdd->mask);
+    hiddmode = ID & (~mdd->mdisplay.display_mask);
 
     /* Go through all mode records of this driver */
     for(ret = mdd->modes; ret->id != vHidd_ModeID_Invalid; ret++) {

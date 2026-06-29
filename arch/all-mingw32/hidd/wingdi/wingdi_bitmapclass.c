@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022 The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026 The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for GDI hidd.
     
@@ -252,7 +252,6 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat *src_pixfmt, *dst_pixfmt;
-    OOP_Object *gfxhidd;
     HIDDT_StdPixFmt src_stdpf;
     APTR buf, src, dst;
     ULONG bufmod, bufsize;
@@ -285,10 +284,9 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     {
         ULONG drmd = GC_DRMD(msg->gc);
 
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-        src_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, src_stdpf);
+        src_pixfmt = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, src_stdpf);
         /* DIB pixels are expected to be 0x00RRGGBB */
-        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
+        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, vHidd_StdPixFmt_0RGB32_Native);
         src = msg->pixels;
         dst = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
@@ -331,7 +329,6 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
     HIDDT_PixelFormat *src_pixfmt, *dst_pixfmt;
-    OOP_Object *gfxhidd;
     HIDDT_StdPixFmt dst_stdpf;
     APTR tmp_dc, tmp_bitmap, dc_bitmap;
     APTR buf, src, dst;
@@ -380,10 +377,9 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
             GDICALL(DeleteDC, tmp_dc);
         }
         Permit();
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
         /* DIB pixels will be 0x00RRGGBB) */
-        src_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
-        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
+        src_pixfmt = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, vHidd_StdPixFmt_0RGB32_Native);
+        dst_pixfmt = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, dst_stdpf);
         dst = msg->pixels;
         src = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, bufmod, &dst, dst_pixfmt, msg->modulo,
@@ -515,11 +511,10 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
        beleive it should stay so */
     modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
     if (modeid != vHidd_ModeID_Invalid) {
-        OOP_Object *gfx = (OOP_Object *)GetTagData(aHidd_BitMap_GfxHidd, 0, msg->attrList);
         OOP_Object *sync, *pixfmt;
 
-        D(bug("[WinGDI:BitMap] Display driver object: 0x%p\n", gfx));
-        HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+        D(bug("[WinGDI:BitMap] Mode enumerator object: 0x%p\n", XSD(cl)->dmenum));
+        HIDD_DMEnum_GetMode(XSD(cl)->dmenum, modeid, &sync, &pixfmt);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
         D(bug("[WinGDI:BitMap] Display window size: %dx%d\n", win_width, win_height));

@@ -4,7 +4,7 @@
 /****************************************************************************************/
 
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,6 +14,8 @@
 #include <graphics/gfxbase.h>
 #include <hidd/gfx.h>
 
+#include "graphics_intern.h"
+
 #define PEN_BITS    8
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
@@ -22,7 +24,7 @@
 
 /* Our own usage of some private fields in ViewPortExtra */
 #define VPE_DATA(vpe)   ((struct HIDD_ViewPortData *)(vpe)->DriverData[0])
-#define VPE_DRIVER(vpe) ((struct monitor_driverdata *)(vpe)->DriverData[1])
+#define VPE_DRIVER(vpe) ((struct gfxdisplay_data *)(vpe)->DriverData[1])
 
 /* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE
    THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
@@ -48,11 +50,11 @@ do                                                                             \
 
 #define GET_BM_DRIVERDATA(bitmap) \
 	((IS_HIDD_BM(bitmap)) \
-		? HIDD_BM_DRVDATA(bitmap) \
-		: (struct monitor_driverdata *)CDD(GfxBase))
-
+		? (struct gfxdisplay_data *)HIDD_BM_DRVDATA(bitmap) \
+		: (struct gfxdisplay_data *)CDD(GfxBase))
+#define HIDD_BM_DISPINT(bitmap) ((struct gfxdisplay_data *)GET_BM_DRIVERDATA(bitmap))
 #define GET_BM_MODEID(bitmap) \
-	(HIDD_BM_DRVDATA(bitmap)->id | HIDD_BM_HIDDMODE(bitmap))
+	(HIDD_BM_DISPINT(bitmap)->display_idbase | HIDD_BM_HIDDMODE(bitmap))
 
 /* An idea for future Amiga(tm) chipset driver: it should be implemented in
    architecture-specific part of gfx.hidd. In this case many things will
@@ -218,10 +220,6 @@ void GenMinterms(struct RastPort *rp);
 
 /****************************************************************************************/
 
-static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r,
-        struct GfxBase *GfxBase)
-{
-    return GetRPClipRectangleForRect(rp, &lay->bounds, r);
-}
+#include "graphics_inline.h"
 
 #endif

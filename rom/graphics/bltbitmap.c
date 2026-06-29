@@ -124,7 +124,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
         ULONG wSrc, wDest;
         ULONG x;
         ULONG depth;
-        struct monitor_driverdata *driver, *dst_driver;
+        struct gfxdisplay_data *driver, *dst_driver;
         OOP_Object *tmp_gc;
 
         EnterFunc(bug("driver_BltBitMap()\n"));
@@ -174,32 +174,23 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
         /*
          * Select a driver to call
-         * Selection rules:
-         * 1. If one of drivers is fakegfx.hidd, we must use it in order
-         *    to de-masquerade fakefb objects.
-         * 2. If one of drivers is our default software bitmap driver,
-         *    we use another one, which can be an accelerated video driver.
+         * Selection rule: if one of the drivers is our default software bitmap
+         * driver, or the destination uses a software cursor, we use the other
+         * one, which can be an accelerated video driver.
          */
         driver     = GET_BM_DRIVERDATA(srcBitMap);
         dst_driver = GET_BM_DRIVERDATA(destBitMap);
 
-        if(driver == (struct monitor_driverdata *)CDD(GfxBase)) {
+        if((driver == (struct gfxdisplay_data *)CDD(GfxBase)) ||
+                (dst_driver->display_flags & DF_SoftCursor)) {
             /*
-             * If source bitmap is generic software one, we select destination bitmap.
-             * It can be either fakegfx or accelerated hardware driver.
-             */
-            driver = dst_driver;
-        } else if(dst_driver->flags & DF_UseFakeGfx) {
-            /*
-             * If destination bitmap is fakegfx bitmap, we use its driver.
-             * Source one might be not fakegfx.
+             * If source bitmap is the generic software one, or the destination
+             * display uses a software cursor, we select the destination bitmap.
              */
             driver = dst_driver;
         }
         /*
-         * If both tests failed, we use source driver. We know that source it not a
-         * generic software driver, and destionation is not fakegfx. So, source
-         * can be either fakegfx or hardware driver.
+         * Otherwise we use the source driver.
          */
 
         tmp_gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
@@ -219,7 +210,7 @@ static void copyonepixel(PLANEPTR src, ULONG xsrc, PLANEPTR dest,
                                   , xDest, yDest
                                   , xSize, ySize
                                   , minterm
-                                  , driver->gfxhidd
+                                  , driver->display_gfxhidd
                                   , tmp_gc
                                   , GfxBase);
                     update_bitmap(destBitMap, dstbm_obj, xDest, yDest, xSize, ySize, GfxBase);

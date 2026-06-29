@@ -1,7 +1,7 @@
 #ifndef _NV_H
 #define _NV_H
 /*
-    Copyright © 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2004-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: private header file
@@ -27,6 +27,11 @@
 
 #define IID_Hidd_Gfx_nVidia	"hidd.gfx.nv"
 #define CLID_Hidd_Gfx_nVidia	"hidd.gfx.nv"
+#define CLID_Hidd_Display_nVidia	"hidd.display.nv"
+
+struct nvDisplayData
+{
+};
 
 #define IID_Hidd_nvBitMap	"hidd.bitmap.nv"
 
@@ -186,6 +191,7 @@ struct staticdata {
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class		    *nvclass;
+    OOP_Class		    *nvdisplayclass;
     OOP_Class		    *onbmclass;
     OOP_Class		    *offbmclass;
     OOP_Class		    *planarbmclass;
@@ -193,6 +199,8 @@ struct staticdata {
     OOP_Object		    *pci;
     OOP_Object		    *Device;
     OOP_Object		    *nvobject;
+    OOP_Object		    *nvdisplay;
+    OOP_Object		    *dmenum;
     OOP_Object		    *pcidriver;
 
     OOP_AttrBase	    hiddAttrBase;
@@ -201,6 +209,8 @@ struct staticdata {
     OOP_AttrBase	    nvBitMapAttrBase;
     OOP_AttrBase	    pixFmtAttrBase;
     OOP_AttrBase	    gfxAttrBase;
+    OOP_AttrBase	    displayAttrBase;
+    OOP_AttrBase	    dmenumAttrBase;
     OOP_AttrBase	    syncAttrBase;
     OOP_AttrBase	    planarAttrBase;
 

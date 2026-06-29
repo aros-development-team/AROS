@@ -16,7 +16,6 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
-#include "fakegfxhidd.h"
 
 #define SET_TAG(tags, idx, tag, val)    \
     tags[idx].ti_Tag = tag ; tags[idx].ti_Data = (IPTR)val;
@@ -190,7 +189,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
     struct BitMap *nbm;
     HIDDT_ModeID hiddmode = vHidd_ModeID_Invalid;
     struct DisplayInfoHandle *dh;
-    struct monitor_driverdata *drv = NULL;
+    struct gfxdisplay_data *drv = NULL;
     ULONG clear = flags & BMF_CLEAR;
     BOOL alloc = TRUE;
 
@@ -261,17 +260,6 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
 
             D(bug("[AllocBitMap] Setting friend bitmap 0x%p, object 0x%p\n", friend_bitmap, friend_obj));
 
-            /*
-             * Friend bitmap may hold a fakegfx bitmap object.
-             * fakegfx is our proxy layer on top of graphics drivers, providing
-             * software mouse pointer implementation. Graphics drivers do (and must)
-             * not know about fakegfx, so we need to de-masquerade such objects.
-             */
-            if(OOP_OCLASS(friend_obj) == CDD(GfxBase)->fakefbclass) {
-                OOP_GetAttr(friend_obj, aHidd_FakeFB_RealBitMap, (IPTR *)&friend_obj);
-                D(bug("[AllocBitMap] Fakefb friend de-masqueraded to 0x%p\n", friend_obj));
-            }
-
             SET_BM_TAG(bm_tags, 3, Friend, friend_obj);
 
             /*
@@ -288,7 +276,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                 depth = HIDD_BM_REALDEPTH(friend_bitmap);
 
             /* Obtain also GFX driver from friend bitmap */
-            drv = HIDD_BM_DRVDATA(friend_bitmap);
+            drv = (struct gfxdisplay_data *)HIDD_BM_DRVDATA(friend_bitmap);
         }
 
         SET_BM_TAG(bm_tags, 2, Depth,  depth);
@@ -352,10 +340,10 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
 
             /* Use the memory driver if we didn't get another object in any way */
             if(!drv)
-                drv = (struct monitor_driverdata *)CDD(GfxBase);
+                drv = (struct gfxdisplay_data *)CDD(GfxBase);
 
             if(alloc) {
-                bm_obj = HIDD_Gfx_CreateObject(drv->gfxhidd, PrivGBase(GfxBase)->basebm, bm_tags);
+                bm_obj = HIDD_Display_CreateObject(drv->display_obj, PrivGBase(GfxBase)->basebm, bm_tags);
                 D(bug("[AllocBitMap] Created bitmap object 0x%p\n", bm_obj));
                 if(!bm_obj)
                     ok = FALSE;
@@ -395,7 +383,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] = {
                     clear = FALSE;
                 }
 
-                HIDD_BM_DRVDATA(nbm)  = drv;
+                HIDD_BM_DRVDATA(nbm)  = (struct monitor_driverdata *)drv;
                 HIDD_BM_HIDDMODE(nbm) = hiddmode;
 
                 nbm->Rows        = sizey;

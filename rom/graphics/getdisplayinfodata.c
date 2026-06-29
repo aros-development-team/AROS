@@ -13,7 +13,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
-#include "compositor_driver.h"
+#include "graphics_compositor.h"
 #include "dispinfo.h"
 
 /****************************************************************************************/
@@ -137,8 +137,9 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
 
     struct QueryHeader  *qh;
     ULONG               structsize;
-    OOP_Object          *gfxhidd, *sync, *pf;
+    OOP_Object          *sync, *pf;
     HIDDT_ModeID        hiddmode;
+    struct monitor_displaydata *mdd;
     struct HIDD_ModeProperties HIDDProps = {0};
     IPTR maxdwidth, maxdheight;
 
@@ -150,7 +151,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
          * ID is likely INVALID_ID, but we need its value.
          * Get it from the handle.
          */
-        ID = DIH(handle)->id | DIH(handle)->drv->id;
+        ID = DIH(handle)->id | DIH(handle)->drv->display_idbase;
     }
 
     if(NULL == handle) {
@@ -158,11 +159,11 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
         return 0;
     }
 
-    gfxhidd  = DIH(handle)->drv->gfxhidd;
+    mdd      = (struct monitor_displaydata *)DIH(handle)->drv;
     hiddmode = DIH(handle)->id;
 
     /* Get mode info from the HIDD */
-    if(!HIDD_Gfx_GetMode(gfxhidd, hiddmode, &sync, &pf)) {
+    if(!HIDD_DMEnum_GetMode(mdd->mdisplay.display_dmenum, hiddmode, &sync, &pf)) {
         D(bug("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n"));
         return 0;
     }
@@ -195,7 +196,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
         IPTR redmask, greenmask, bluemask;
         IPTR val = 0;
 
-        HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+        HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
         di = (struct DisplayInfo *)qh;
 
@@ -212,7 +213,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
          * Some more tweaks.
          * All non-planar modes are considered Workbench-compatible. This is done
          * for compatibility with existing RTG drivers which never set this flag themselves.
-         * This can be considered historical, in initial API design HIDD_Gfx_ModeProperties()
+         * This can be considered historical, in initial API design HIDD_Display_ModeProperties()
          * did not exist at all and this flag was simply always set.
          * In fact all modes can be considered Workbench-compatible. This flag is
          * known to be used by original AmigaOS screenmode prefs program to filter out
@@ -330,13 +331,13 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
          * It can't be done in another way because only we (graphics.library) know about existence
          * of software screen composition.
          */
-        if(DIH(handle)->drv->compositor) {
+        if(mdd->mdisplay.display_compositor) {
             IPTR capabilities, state;
-            OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_Capabilities, &capabilities);
-            OOP_GetAttr(DIH(handle)->drv->compositor, aHidd_Compositor_State, &state);
+            OOP_GetAttr(mdd->mdisplay.display_compositor, aHidd_Compositor_Capabilities, &capabilities);
+            OOP_GetAttr(mdd->mdisplay.display_compositor, aHidd_Compositor_State, &state);
             di->reserved[0] = (capabilities << 16) | state;
         } else {
-            HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+            HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
             di->reserved[0] = (HIDDProps.CompositionFlags << 16) | HIDDProps.CompositionFlags;
         }
 
@@ -378,7 +379,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
          */
         mi->PreferredModeID = ID;
 
-        if(DIH(handle)->drv->compositor) {
+        if(mdd->mdisplay.display_compositor) {
             /*
              * If we have software screen composition, we know we can compose.
              * We use MCOMPAT_MIXED here because of changed understanding of what is "monitor".
@@ -391,7 +392,7 @@ static inline void CalcScreenResolution(Point *res, const struct MonitorSpec *ms
             mi->Compatibility = MCOMPAT_MIXED;
         } else {
             /* Otherwise query the driver */
-            HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+            HIDD_Display_ModeProperties(mdd->mdisplay.display_obj, hiddmode, &HIDDProps, sizeof(HIDDProps));
 
             if(HIDDProps.CompositionFlags)
                 mi->Compatibility = (HIDDProps.CompositionFlags & COMPF_SAME) ? MCOMPAT_SELF : MCOMPAT_MIXED;

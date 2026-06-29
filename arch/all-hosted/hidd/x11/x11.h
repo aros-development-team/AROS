@@ -2,7 +2,7 @@
 #define HIDD_X11_H
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the x11 HIDD.
@@ -153,6 +153,7 @@ struct x11_staticdata
     OOP_Class 	    	        *gfxclass;
 
     OOP_Class 	    	        *bmclass;
+    OOP_Class 	    	        *displayclass;
     OOP_Class 	    	        *mouseclass;
     OOP_Class 	    	        *kbdclass;
 
@@ -169,6 +170,7 @@ struct x11_staticdata
     ULONG   	    	        refcount;
     
     OOP_Object      	        *gfxhidd;
+    OOP_Object      	        *x11display;
     OOP_Object      	        *mousehidd;
     OOP_Object      	        *kbdhidd;
 
@@ -290,6 +292,11 @@ BOOL  x11clipboard_want_event(XEvent *);
 VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 
 int X11_Init(struct x11_staticdata *xsd);
+
+/* Shared between the gfx (driver) class and the display class */
+VOID  cleanupx11stuff(struct x11_staticdata *xsd);
+BOOL  initx11stuff(struct x11_staticdata *xsd);
+ULONG mask_to_shift(ULONG mask);
 
 #undef XSD
 #define XSD(cl)     	(&((struct x11clbase *)cl->UserData)->xsd)

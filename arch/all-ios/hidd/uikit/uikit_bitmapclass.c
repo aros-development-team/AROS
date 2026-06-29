@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Quartz bitmap class.
 */
@@ -30,7 +30,6 @@ OOP_Object *QBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     if (o)
     {
         struct bitmap_data *data = OOP_INST_DATA(cl, o);
-        OOP_Object *gfx = NULL;
         HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
 
         /* For faster operation we cache some data about ourselves */
@@ -38,7 +37,6 @@ OOP_Object *QBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         data->height = OOP_GET(o, aHidd_BitMap_Height);
         data->mod    = OOP_GET(o, aHidd_BitMap_BytesPerRow);
         OOP_GetAttr(o, aHidd_BitMap_ModeID  , &modeid);
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd , (IPTR *)&gfx);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->pixels);
 
         /*
@@ -51,7 +49,6 @@ OOP_Object *QBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
         DNEW(bug("[QBitmap] Created bitmap %d x %d\n", data->width, data->height));
         DNEW(bug("[QBitmap] Buffer at 0x%p, %d bytes per row\n", data->pixels, data->mod));
-        DNEW(bug("[QBitmap] Display driver object: 0x%p\n", gfx));
 
         HostLib_Lock();
 
@@ -75,7 +72,7 @@ OOP_Object *QBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
             OOP_Object *sync    = NULL;
             OOP_Object *pixfmt  = NULL;
 
-            HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+            HIDD_DMEnum_GetMode(base->dmenum, modeid, &sync, &pixfmt);
             
             data->win_width  = OOP_GET(sync, aHidd_Sync_HDisp);
             data->win_height = OOP_GET(sync, aHidd_Sync_VDisp);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef INTELG45_INTERN_H_
@@ -20,6 +20,8 @@
 
 #define CLID_Hidd_Gfx_IntelGMA		"hidd.gfx.intelgma"
 #define IID_Hidd_Gfx_IntelGMA		"hidd.gfx.intelgma"
+#define CLID_Hidd_Display_IntelGMA	"hidd.display.intelgma"
+#define IID_Hidd_Display_IntelGMA	"hidd.display.intelgma"
 #define CLID_Hidd_BitMap_IntelGMA       "hidd.bitmap.intelgma"
 #define IID_Hidd_BitMap_IntelGMA        "hidd.bitmap.intelgma"
 
@@ -159,12 +161,15 @@ struct g45staticdata
     OOP_Class 	    	    *basei2c;            /* baseclass for CreateObject */
 
 	OOP_Class *				IntelG45Class;
+	OOP_Class *				IntelG45DisplayClass;
 	OOP_Class *				IntelI2C;
 	OOP_Class *				BMClass;
     OOP_Class *				compositorclass;
     OOP_Class *				galliumclass;
     
 	OOP_Object          *compositor;
+	OOP_Object          *display;
+	OOP_Object          *dmenum;
     
 	OOP_Object *			PCIObject;
 	OOP_Object *			PCIDevice;
@@ -245,6 +250,7 @@ enum {
 #define UNLOCK_MULTI_BITMAP  { ReleaseSemaphore(&sd->MultiBMLock); }
 
 extern const struct OOP_InterfaceDescr INTELG45_ifdescr[];
+extern const struct OOP_InterfaceDescr INTELG45_Display_ifdescr[];
 extern const struct OOP_InterfaceDescr GMABM_ifdescr[];
 extern const struct OOP_InterfaceDescr INTELI2C_ifdescr[];
 

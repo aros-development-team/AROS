@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Android-hosted graphics driver class.
 */
@@ -76,19 +76,18 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     struct TagItem mode_tags[] =
     {
-        { aHidd_Gfx_PixFmtTags  , (IPTR)pftags          },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags         },
 #ifdef ENABLE_SCROLL
         { aHidd_Sync_HMax       , 16384                 },
         { aHidd_Sync_VMax       , 16384                 },
 #endif
-        { aHidd_Gfx_SyncTags    , (IPTR)p_sync_tags     },
-        { aHidd_Gfx_SyncTags    , (IPTR)l_sync_tags     },
+        { aHidd_DMEnum_SyncTags , (IPTR)p_sync_tags     },
+        { aHidd_DMEnum_SyncTags , (IPTR)l_sync_tags     },
         { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem mytags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)mode_tags        },
         { aHidd_Name            , (IPTR)"androidgfx"},
         { aHidd_HardwareName    , (IPTR)"Android OS Gfx Host"    },
         { aHidd_ProducerName    , (IPTR)"Google inc."    },
@@ -137,20 +136,42 @@ OOP_Object *AGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         data->width  = query.width;
         data->height = query.height;
+
+        {
+            struct TagItem displaytags[] =
+            {
+                { aHidd_Display_GfxHidd,  (IPTR)o         },
+                { aHidd_Display_ModeTags, (IPTR)mode_tags },
+                { TAG_DONE,               0               }
+            };
+
+            XSD(cl)->displayhidd = OOP_NewObject(XSD(cl)->displayclass, NULL, displaytags);
+            if (XSD(cl)->displayhidd)
+            {
+                OOP_GetAttr(XSD(cl)->displayhidd, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
+            }
+            else
+            {
+                OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+                o = NULL;
+            }
+        }
     }
     ReturnPtr("AGFXGfx::New", OOP_Object *, o);
 }
 
 /****************************************************************************************/
 
-OOP_Object *AGFXCl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *AGFXDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
     if (msg->cl == XSD(cl)->basebm)
     {
         BOOL displayable;
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
         struct TagItem tags[] =
         {
             {TAG_IGNORE, 0                      },
@@ -210,6 +231,10 @@ VOID AGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"Android";
                 return;
+
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)XSD(cl)->displayhidd;
+                return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -217,9 +242,20 @@ VOID AGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-OOP_Object *AGFXCl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+VOID AGFXDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+OOP_Object *AGFXDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+{
+    OOP_Object *gfxhidd;
+    struct gfx_data *data;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfxhidd);
+    data = OOP_INST_DATA(XSD(cl)->gfxclass, gfxhidd);
 
     D(bug("[AGFX] Show(0x%p)\n", msg->bitMap));
 
@@ -293,6 +329,8 @@ static const STRPTR interfaces[] =
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,
     IID_Hidd_Gfx,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum,
     IID_Hidd_Kbd,
     IID_Hidd_Mouse,
     IID_Hidd,

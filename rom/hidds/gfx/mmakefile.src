@@ -10,6 +10,9 @@ FILES       := \
                 gfx_init \
                 gfx_hwclass \
                 gfx_hiddclass \
+                gfx_displayclass \
+                gfx_cursorfbclass \
+                gfx_dmenumclass \
                 gfx_bitmapclass \
                 gfx_histogramclass \
                 gfx_colormapclass \

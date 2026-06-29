@@ -24,7 +24,6 @@
 
 #include "graphics_intern.h"
 #include "default_font.h"
-#include "fakegfxhidd.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -49,6 +48,8 @@ static int GfxInit(struct GfxBase *LIBBASE)
     HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     HiddColorMapBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    HiddDisplayBase = OOP_GetMethodID(IID_Hidd_Display, 0);
+    HiddDMEnumBase = OOP_GetMethodID(IID_Hidd_DMEnum, 0);
     HiddGCBase = OOP_GetMethodID(IID_Hidd_GC, 0);
     HiddPlanarBMBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -21,6 +21,8 @@ static void ReleaseAttrBases(struct IntCGFXBase *CyberGfxBase)
         OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
     if (__IHidd_Gfx)
         OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+    if (__IHidd_Display)
+        OOP_ReleaseAttrBase(IID_Hidd_Display);
 }
 
 static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
@@ -37,6 +39,7 @@ static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
     __IHidd_Sync        = OOP_ObtainAttrBase(IID_Hidd_Sync);
     __IHidd_PixFmt      = OOP_ObtainAttrBase(IID_Hidd_PixFmt);
     __IHidd_Gfx         = OOP_ObtainAttrBase(IID_Hidd_Gfx);
+    __IHidd_Display     = OOP_ObtainAttrBase(IID_Hidd_Display);
     
     CyberGfxBase->basegc = OOP_FindClass(CLID_Hidd_GC);
     CyberGfxBase->basebm = OOP_FindClass(CLID_Hidd_BitMap);
@@ -45,7 +48,8 @@ static int cgfx_init(struct IntCGFXBase *CyberGfxBase)
         __IHidd_GC       &&
         __IHidd_Sync     &&
         __IHidd_PixFmt   &&
-        __IHidd_Gfx)
+        __IHidd_Gfx      &&
+        __IHidd_Display)
     {
         CyberGfxBase->pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
         if (CyberGfxBase->pixel_buf)

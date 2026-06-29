@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <utility/tagitem.h>
@@ -23,6 +23,8 @@
 #undef HiddAttrBase
 #undef HiddPCIDeviceAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
@@ -32,6 +34,8 @@
 #define HiddBitMapAttrBase  (sd->bitMapAttrBase)
 #define HiddPixFmtAttrBase  (sd->pixFmtAttrBase)
 #define HiddGfxAttrBase     (sd->gfxAttrBase)
+#define HiddDisplayAttrBase (sd->displayAttrBase)
+#define HiddDMEnumAttrBase  (sd->dmenumAttrBase)
 #define HiddSyncAttrBase    (sd->syncAttrBase)
 
 #define ToRGB8888(alp,c) ((c) | ((alp) << 24))
@@ -91,7 +95,7 @@ bug("[ATI] Pointer data:\n");			\
 #define PRINT_POINTER(image, xsize, xmax, ymax)
 #endif
 
-OOP_Object *METHOD(ATI, Hidd_Gfx, Show)
+OOP_Object *METHOD(ATIDisplay, Hidd_Display, Show)
 {
     OOP_Object *fb = NULL;
     if (msg->bitMap)
@@ -125,7 +129,7 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, Show)
     return fb;
 }
 
-OOP_Object *METHOD(ATI, Hidd_Gfx, CreateObject)
+OOP_Object *METHOD(ATIDisplay, Hidd_Display, CreateObject)
 {
     OOP_Object      *object = NULL;
 
@@ -139,7 +143,7 @@ OOP_Object *METHOD(ATI, Hidd_Gfx, CreateObject)
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
 
         /* Displayable bitmap ? */
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
@@ -352,7 +356,7 @@ void METHOD(ATI, Hidd_Gfx, CopyBox)
     }
 }
 
-BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
+BOOL METHOD(ATIDisplay, Hidd_Display, SetCursorShape)
 {
     D(bug("[ATI] Set cursor shape %08x\n", msg->shape));
 
@@ -420,13 +424,13 @@ BOOL METHOD(ATI, Hidd_Gfx, SetCursorShape)
     return TRUE;
 }
 
-void METHOD(ATI, Hidd_Gfx, SetCursorVisible)
+void METHOD(ATIDisplay, Hidd_Display, SetCursorVisible)
 {
     ShowHideCursor(sd, msg->visible);
     sd->Card.cursorVisible = msg->visible;
 }
 
-void METHOD(ATI, Hidd_Gfx, SetCursorPos)
+void METHOD(ATIDisplay, Hidd_Display, SetCursorPos)
 {
     D(bug("[ATI] Set cursor pos %d:%d\n", msg->x, msg->y));
 
@@ -595,26 +599,25 @@ OOP_Object *METHOD(ATI, Root, New)
 //	"ATI:1920x1200");
 
     struct TagItem modetags[] = {
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_24bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_16bpp  },
-        { aHidd_Gfx_PixFmtTags, (IPTR)pftags_15bpp  },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x1024_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_640x480_60   },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_800x600_56   },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1024x768_60  },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1152x864_60  },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1600x1200_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
-        { aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_24bpp  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_16bpp  },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags_15bpp  },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1280x1024_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_640x480_60   },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_800x600_56   },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1024x768_60  },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1152x864_60  },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1600x1200_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1280x800_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1440x900_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1680x1050_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1080_60 },
+        { aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1200_60 },
 
         { TAG_DONE, 0UL }
     };
 
     struct TagItem mytags[] = {
-        { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
         { aHidd_Name            , (IPTR)"ATI"     },
         { aHidd_HardwareName    , (IPTR)"ATI/AMD Gfx Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Advanced Micro Devices, Inc."  },
@@ -631,7 +634,27 @@ OOP_Object *METHOD(ATI, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
+
         sd->AtiObject = o;
+
+        sd->AtiDisplay = OOP_NewObject(sd->AtiDisplayClass, NULL, displaytags);
+        if (sd->AtiDisplay)
+        {
+            OOP_GetAttr(sd->AtiDisplay, aHidd_Display_DMEnumerator, (IPTR *)&sd->dmenum);
+        }
+        else
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            sd->AtiObject = NULL;
+            o = NULL;
+        }
     }
 
     EnterFunc(bug("[ATI] RadeonDriver::New()=%08x\n",o));
@@ -653,8 +676,8 @@ void METHOD(ATI, Root, Get)
                 found = TRUE;
                 break;
 
-            case aoHidd_Gfx_DPMSLevel:
-                *msg->storage = sd->dpms;
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)sd->AtiDisplay;
                 found = TRUE;
                 break;
         }
@@ -666,7 +689,26 @@ void METHOD(ATI, Root, Get)
     return;
 }
 
-void METHOD(ATI, Root, Set)
+void METHOD(ATIDisplay, Root, Get)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+        case aoHidd_Display_DPMSLevel:
+            *msg->storage = sd->dpms;
+            found = TRUE;
+            break;
+    }
+
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return;
+}
+
+void METHOD(ATIDisplay, Root, Set)
 {
     ULONG idx;
     struct TagItem *tag;
@@ -674,20 +716,17 @@ void METHOD(ATI, Root, Set)
 
     while ((tag = NextTagItem(&tags)))
     {
-        if (IS_GFX_ATTR(tag->ti_Tag, idx))
+        Hidd_Display_Switch(tag->ti_Tag, idx)
         {
-            switch(idx)
-            {
-                case aoHidd_Gfx_DPMSLevel:
-                    LOCK_HW
+            case aoHidd_Display_DPMSLevel:
+                LOCK_HW
 
-                    DPMS(sd, tag->ti_Data);
-                    sd->dpms = tag->ti_Data;
+                DPMS(sd, tag->ti_Data);
+                sd->dpms = tag->ti_Data;
 
-                    UNLOCK_HW
-                    break;
-            }
-       }
+                UNLOCK_HW
+                break;
+        }
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);

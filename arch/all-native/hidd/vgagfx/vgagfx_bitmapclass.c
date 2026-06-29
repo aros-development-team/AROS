@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for VGA Hidd.
 */
@@ -49,7 +49,7 @@ OOP_Object *VGAGfxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     if (o)
     {
         struct VGAGfxBitMapData *data;
-        OOP_Object *gfxhidd, *sync, *pf;
+        OOP_Object *display, *dmenum, *sync, *pf;
         IPTR modeid = vHidd_ModeID_Invalid;
         IPTR width, height, depth;
         IPTR dwidth, dheight;
@@ -79,8 +79,9 @@ OOP_Object *VGAGfxBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         
         if (modeid != vHidd_ModeID_Invalid) {
             
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-            HIDD_Gfx_GetMode(gfxhidd, modeid, &sync, &pf);
+            OOP_GetAttr(o, aHidd_BitMap_Display, (IPTR *)&display);
+            OOP_GetAttr(display, aHidd_Display_DMEnumerator, (IPTR *)&dmenum);
+            HIDD_DMEnum_GetMode(dmenum, modeid, &sync, &pf);
             OOP_GetAttr(sync, aHidd_Sync_HDisp, &dwidth);
             OOP_GetAttr(sync, aHidd_Sync_VDisp, &dheight);
             data->disp_width  = dwidth;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: nvidia.hidd initialization
 */
@@ -86,12 +86,16 @@
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #define HiddPCIDeviceAttrBase	(sd->pciAttrBase)
 #define HiddAttrBase		(sd->hiddAttrBase)
 #define HiddBitMapAttrBase	(sd->bitMapAttrBase)
 #define HiddNVidiaBitMapAttrBase (sd->nvBitMapAttrBase)
 #define HiddPixFmtAttrBase	(sd->pixFmtAttrBase)
 #define HiddGfxAttrBase		(sd->gfxAttrBase)
+#define HiddDisplayAttrBase	(sd->displayAttrBase)
+#define HiddDMEnumAttrBase	(sd->dmenumAttrBase)
 #define HiddSyncAttrBase	(sd->syncAttrBase)
 #define __IHidd_PlanarBM	(sd->planarAttrBase)
 
@@ -769,6 +773,8 @@ static int NV_Init(LIBBASETYPEPTR LIBBASE)
 		{ IID_Hidd_PixFmt,	    &HiddPixFmtAttrBase },
 		{ IID_Hidd_Sync,	    &HiddSyncAttrBase },
 		{ IID_Hidd_Gfx,	    &HiddGfxAttrBase },
+		{ IID_Hidd_Display,	    &HiddDisplayAttrBase },
+		{ IID_Hidd_DMEnum,	    &HiddDMEnumAttrBase },
 		{ IID_Hidd_nvBitMap,    &HiddNVidiaBitMapAttrBase },
 		{ IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
 		{ NULL, NULL }

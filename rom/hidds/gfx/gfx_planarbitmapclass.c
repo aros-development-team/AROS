@@ -279,7 +279,7 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
     pftags[0].ti_Data = bm->Depth;      /* PixFmt_Depth */
     pftags[1].ti_Data = bm->Depth;      /* PixFmt_BitsPerPixel */
 
-    pf = GFXHIDD__Hidd_Gfx__RegisterPixFmt(CSD(cl)->gfxhiddclass, pftags);
+    pf = DMEnum__Internal__RegisterPixFmt(CSD(cl)->dmenumclass, pftags);
 
     if (!pf)
     {

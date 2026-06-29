@@ -1,9 +1,12 @@
 /*
-    Copyright (C) 2015-2019, The AROS Development Team.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
+
+    Desc: SysExplorer graphics subsystem enumerator.
 */
 
-#define DEBUG 1
 #include <aros/debug.h>
+
+#include <proto/sysexp.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -24,27 +27,27 @@
 #include "gfx_classes.h"
 #include "enums.h"
 
-OOP_AttrBase HiddGfxAttrBase;
+#include "gfx_intern.h"
 
-const struct OOP_ABDescr gfx_abd[] =
-{
-    {IID_Hidd_Gfx,      &HiddGfxAttrBase},
-    {NULL            ,  NULL          }
-};
+extern OOP_AttrBase HiddAttrBase;
+extern OOP_AttrBase HiddGfxAttrBase;
 
-static void addGgfxDisplay(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent)
+static struct SysexpBase *gfxSysexpBase = NULL;
+
+static void addGfxDisplay(OOP_Object *obj, struct MUI_NListtree_TreeNode *parent)
 {
+    struct SysexpBase *SysexpBase = gfxSysexpBase;
     struct InsertObjectMsg msg =
     {
         .obj      = obj,
         .winClass = MonitorWindow_CLASS
     };
-    CONST_STRPTR name;
+    CONST_STRPTR name = NULL;
 
     OOP_GetAttr(obj, aHidd_Name, (IPTR *)&name);
 
-    sysExplGlobalCount++;
-    DoMethod(hidd_tree, MUIM_NListtree_Insert, name, &msg,
+    SysexpBase->GlobalCount++;
+    DoMethod(SysexpBase->sesb_Tree, MUIM_NListtree_Insert, name, &msg,
              parent, MUIV_NListtree_Insert_PrevNode_Tail, 0);
 }
 
@@ -53,9 +56,9 @@ void gfxEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
     OOP_Object *display = NULL;
     struct List *displays = NULL;
 
-    D(bug("[SysExplorer:Gfx] %s: found '%s'\n", __PRETTY_FUNCTION__, OOP_OCLASS(obj)->ClassNode.ln_Name));
+    D(bug("[gfx.sysexp] %s: found '%s'\n", __func__, OOP_OCLASS(obj)->ClassNode.ln_Name));
 
-    /* software rasterizer doesnt have an actual "display" */
+    /* The base software rasterizer doesn't have an actual "display" */
     if (OOP_OCLASS(obj) == OOP_FindClass(CLID_Hidd_Gfx))
         return;
 
@@ -64,36 +67,31 @@ void gfxEnum(OOP_Object *obj, struct MUI_NListtree_TreeNode *tn)
     {
         ForeachNode(displays, display)
         {
-            addGgfxDisplay(display, tn);
+            addGfxDisplay(display, tn);
         }
     }
     else
     {
         OOP_GetAttr(obj, aHidd_Gfx_DisplayDefault, (IPTR *)&display);
         if (display)
-            addGgfxDisplay(display, tn);
+            addGfxDisplay(display, tn);
     }
 }
 
 BOOL gfxValid(OOP_Object *obj, ULONG *flags)
 {
+    /* The base software rasterizer has no displays, so it is a leaf node */
     if (OOP_OCLASS(obj) == OOP_FindClass(CLID_Hidd_Gfx))
-    {
-        ULONG _flags = *flags;
-        _flags &= ~ TNF_LIST;
-        *flags = _flags;
-    }
+        *flags &= ~TNF_LIST;
+
     return TRUE;
 }
 
-BOOL gfxenum_init(void)
+void GfxStartup(struct SysexpBase *SysexpBase)
 {
-    D(bug("[SysExplorer:Gfx] Initialising..\n"));
+    D(bug("[gfx.sysexp] %s(%p)\n", __func__, SysexpBase));
 
-    OOP_ObtainAttrBases(gfx_abd);
-    RegisterClassHandler(CLID_Hidd_Gfx, 60, &GfxWindow_CLASS, gfxEnum, gfxValid);
+    gfxSysexpBase = SysexpBase;
 
-    return TRUE;
+    RegisterClassHandler(CLID_Hidd_Gfx, 60, GfxWindow_CLASS, gfxEnum, gfxValid);
 }
-
-ADD2INIT(gfxenum_init, 10);

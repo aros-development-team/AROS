@@ -75,7 +75,7 @@
     AROS_LIBFUNC_INIT
 
     CDD(GfxBase)->DriverNotify = callback;
-    CDD(GfxBase)->notify_data  = userdata;
+    CDD(GfxBase)->mdisplay.display_userdata  = userdata;
 
     AROS_LIBFUNC_EXIT
 }

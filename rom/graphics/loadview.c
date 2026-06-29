@@ -8,6 +8,8 @@
 #include <graphics/view.h>
 
 #include "graphics_intern.h"
+#include "graphics_driver.h"
+#include "graphics_display.h"
 #include "gfxfuncsupport.h"
 /*****************************************************************************
 
@@ -53,7 +55,7 @@
 
     if(GfxBase->ActiView != view) {
         GfxBase->ActiView = view;
-        DoViewFunction(view, driver_LoadViewPorts, GfxBase);
+        DoViewFunction(view, display_LoadViewPorts, GfxBase);
     }
 
     ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);

@@ -2,7 +2,7 @@
 #define _COMPOSITOR_INTERN_H
 
 /*
-    Copyright © 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2013, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,6 +59,8 @@ struct HIDDCompositorData
     struct Hook                 *backfillhook;
 
     OOP_Object                  *gfx;           /* GFX driver object                    */
+    OOP_Object                  *display;        /* Display object this compositor serves        */
+    OOP_Object                  *dmenum;         /* Display mode enumerator of the display       */
     OOP_Object                  *fb;            /* Framebuffer bitmap (if present)            */
     OOP_Object                  *gc;            /* GC object used for drawing operations        */
 

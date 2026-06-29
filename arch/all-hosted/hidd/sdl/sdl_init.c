@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2007-2010 The AROS Development Team
+ * Copyright (C) 2007-2026 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -46,6 +46,6 @@ int sdl_hidd_init(LIBBASETYPEPTR LIBBASE) {
     }
 
     S(SDL_ShowCursor, SDL_DISABLE);
-    
+
     return TRUE;
 }

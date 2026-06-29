@@ -1,11 +1,14 @@
 /*
-    Copyright (C) 2013-2018, The AROS Development Team.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc: SysExplorer property window for a graphics display object.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
 #include <hidd/hidd.h>
+#include <hidd/gfx.h>
 #include <libraries/mui.h>
 #include <mui/NFloattext_mcc.h>
 #include <utility/tagitem.h>
@@ -27,6 +30,8 @@
 
 #include <zune/customclasses.h>
 
+extern OOP_AttrBase HiddAttrBase;
+
 /*** Instance Data **********************************************************/
 struct MonitorWindow_DATA
 {
@@ -42,7 +47,7 @@ static Object *MonitorWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         NULL
     };
 
-    IPTR name;
+    IPTR name = (IPTR)NULL;
     OOP_Object *display_obj =
         (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
 
@@ -54,13 +59,13 @@ static Object *MonitorWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         MUIA_Window_Title, name,
         MUIA_Window_ID, MAKE_ID('D', 'I', 'S', 'P'),
         WindowContents, (IPTR)(RegisterObject,
-            MUIA_Register_Titles, (IPTR) pagetitles,
-            Child, VGroup,
-                Child, HVSpace,
-            End,
-            Child, VGroup,
-                Child, HVSpace,
-            End,
+            MUIA_Register_Titles, (IPTR)pagetitles,
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)HVSpace,
+            End),
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)HVSpace,
+            End),
         End),
         TAG_DONE
     );

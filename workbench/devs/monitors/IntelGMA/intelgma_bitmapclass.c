@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -139,14 +139,7 @@ OOP_Object *METHOD(GMABM, Root, New)
                     IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal, flags;
 
                     /* Get Sync and PixelFormat properties */
-                    struct pHidd_Gfx_GetMode __getmodemsg = {
-                        .modeID = modeid,
-                        .syncPtr =    &sync,
-                        .pixFmtPtr =  &pf,
-                    }, *getmodemsg = &__getmodemsg;
-
-                    getmodemsg->mID = OOP_GetMethodID((STRPTR)CLID_Hidd_Gfx, moHidd_Gfx_GetMode);
-                    OOP_DoMethod(sd->GMAObject, (OOP_Msg)getmodemsg);
+                    HIDD_DMEnum_GetMode(sd->dmenum, modeid, &sync, &pf);
 
                     OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
                     OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
@@ -1474,8 +1467,8 @@ VOID METHOD(GMABM, Hidd_BitMap, PutImage)
 
                                         HIDDT_PixelFormat *srcpf, *dstpf;
 
-                                        srcpf = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(
-                            sd->GMAObject, msg->pixFmt);
+                                        srcpf = (HIDDT_PixelFormat *)HIDD_DMEnum_GetPixFmt(
+                            sd->dmenum, msg->pixFmt);
                                         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstpf);
 
                                         /* Attach memory, if necessary */

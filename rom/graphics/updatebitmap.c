@@ -6,7 +6,7 @@
 */
 
 #include "graphics_intern.h"
-#include "compositor_driver.h"
+#include "graphics_compositor.h"
 #include "gfxfuncsupport.h"
 
 #include <hidd/gfx.h>
@@ -30,10 +30,10 @@ AROS_LH5(void, UpdateBitMap,
 void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height,
                    struct GfxBase *GfxBase)
 {
-    struct monitor_driverdata *mdd = GET_BM_DRIVERDATA(bitmap);
+    struct monitor_displaydata *mdd = (struct monitor_displaydata *)GET_BM_DRIVERDATA(bitmap);
 
-    if(mdd->compositor)
-        compositor_UpdateBitMap(mdd->compositor, bm, x, y, width, height, GfxBase);
+    if(mdd && mdd->mdisplay.display_compositor)
+        compositor_UpdateBitMap(mdd->mdisplay.display_compositor, bm, x, y, width, height, GfxBase);
     else
         HIDD_BM_UpdateRect(bm, x, y, width, height);
 }

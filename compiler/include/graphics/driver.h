@@ -2,7 +2,7 @@
 #define GRAPHICS_DRIVER_H
 
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Display driver definitions.
@@ -34,6 +34,8 @@ struct MonitorHandle
     struct MonitorHandle *next;
     ULONG		  id;
     ULONG		  mask;
+    ULONG		  pad;
+    APTR		  display;
     APTR		  gfxhidd;
 };
 

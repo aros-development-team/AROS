@@ -14,6 +14,8 @@
 #include <proto/oop.h>
 
 #include "graphics_intern.h"
+#include "graphics_driver.h"
+#include "graphics_display.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -75,7 +77,7 @@
         /* Ignore hidden ViewPorts */
         if(!(first->Modes & VP_HIDE)) {
 
-            mdd = GET_VP_DRIVERDATA(first);
+            mdd = (struct monitor_driverdata *)GET_VP_DRIVERDATA(first);
             /* Ignore next ViewPort if it belongs to the same display.
                This makes us slightly faster */
             if(mdd == prev_mdd)
@@ -94,7 +96,7 @@
             for(vp = first->Next; vp; vp = vp->Next) {
                 if(!(vp->Modes & VP_HIDE)) {
 
-                    if(GET_VP_DRIVERDATA(vp) == mdd) {
+                    if((struct monitor_driverdata *)GET_VP_DRIVERDATA(vp) == mdd) {
                         vpd = VPE_DATA((struct ViewPortExtra *)GfxLookUp(vp));
                         D(bug("[MrgCop] Attaching ViewPort 0x%p, data 0x%p\n", vp, vpd));
 
@@ -108,14 +110,14 @@
     }
 
     if(prev_mdd) {
-        ret = DoViewFunction(view, driver_PrepareViewPorts, GfxBase);
+        ret = DoViewFunction(view, display_PrepareViewPorts, GfxBase);
 
         if(ret == MCOP_OK) {
             ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
 
             /* If the given view is a currently displayed one, refresh immediately */
             if(GfxBase->ActiView == view)
-                DoViewFunction(view, driver_LoadViewPorts, GfxBase);
+                DoViewFunction(view, display_LoadViewPorts, GfxBase);
 
             ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
         }

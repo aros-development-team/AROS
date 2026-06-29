@@ -214,11 +214,12 @@ static const CONST_STRPTR interfaces[NUM_ATTRBASES] =
     IID_Hidd_BitMap,
     IID_Hidd_BMHistogram,
     IID_Hidd_Gfx,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum,
     IID_Hidd_GC,
     IID_Hidd_ColorMap,
     IID_HW,
     IID_Hidd,
-    IID_Hidd_Overlay,
     IID_Hidd_Sync,
     IID_Hidd_PixFmt,
     IID_Hidd_PlanarBM,
@@ -307,6 +308,13 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
     D(bug("[HiddGfx] %s: Creating std pixelfmts\n", __func__));
     create_std_pixfmts(csd);
 
+    D(bug("[HiddGfx] %s: Creating CursorFB wrapper class\n", __func__));
+    if (!init_cursorfbclass(csd))
+    {
+        D(bug("[HiddGfx] %s: Failed to create CursorFB class\n", __func__));
+        ReturnInt("init_gfxhiddclass", BOOL, FALSE);
+    }
+
     D(bug("[HiddGfx] %s: Prepairing Gfx HW Root\n", __func__));
     hwroot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
     if ((hwroot) && (HW_AddDriver(hwroot, csd->gfxhwclass, NULL)))
@@ -329,6 +337,12 @@ static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
     struct Library *OOPBase = csd->cs_OOPBase;
     
     EnterFunc(bug("free_gfxhiddclass(csd=%p)\n", csd));
+
+    if (csd->cursorfbclass)
+    {
+        OOP_DisposeObject((OOP_Object *)csd->cursorfbclass);
+        csd->cursorfbclass = NULL;
+    }
 
     delete_pixfmts(csd);
     ReleaseAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES, OOPBase);

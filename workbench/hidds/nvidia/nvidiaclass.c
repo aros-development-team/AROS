@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2004-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
 
     Desc: NVidia gfx class
 */
@@ -25,6 +25,8 @@
 #undef HiddPCIDeviceAttrBase
 #undef HiddAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
@@ -34,6 +36,8 @@
 #define HiddBitMapAttrBase	(_sd->bitMapAttrBase)
 #define HiddPixFmtAttrBase	(_sd->pixFmtAttrBase)
 #define HiddGfxAttrBase		(_sd->gfxAttrBase)
+#define HiddDisplayAttrBase	(_sd->displayAttrBase)
+#define HiddDMEnumAttrBase	(_sd->dmenumAttrBase)
 #define HiddSyncAttrBase	(_sd->syncAttrBase)
 
 /* Class methods */
@@ -51,8 +55,8 @@ VOID NV__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		found = TRUE;
 		break;
 
-	    case aoHidd_Gfx_DPMSLevel:
-		*msg->storage = _sd->dpms;
+	    case aoHidd_Gfx_DisplayDefault:
+		*msg->storage = (IPTR)_sd->nvdisplay;
 		found = TRUE;
 		break;
         }
@@ -64,7 +68,26 @@ VOID NV__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     return;
 }
 
-VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
+VOID NVDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+	    case aoHidd_Display_DPMSLevel:
+		*msg->storage = _sd->dpms;
+		found = TRUE;
+		break;
+    }
+
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return;
+}
+
+VOID NVDisplay__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     ULONG idx;
 
@@ -73,11 +96,9 @@ VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     while ((tag = NextTagItem(&tags)))
     {
-        if (IS_GFX_ATTR(tag->ti_Tag, idx))
+        Hidd_Display_Switch(tag->ti_Tag, idx)
         {
-            switch(idx)
-            {
-		case aoHidd_Gfx_DPMSLevel:
+		case aoHidd_Display_DPMSLevel:
             LOCK_HW
 
 		    DPMS(_sd, tag->ti_Data);
@@ -86,7 +107,6 @@ VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
             UNLOCK_HW
 		    break;
 	    }
-	}
     }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -225,27 +245,26 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         "NVIDIA:1920x1200");
 
     struct TagItem modetags[] = {
-	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
-	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
-	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_15bpp	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_640x480_60	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_800x600_56	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1024x768_60	},
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1152x864_60  },
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1280x1024_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1400x1050_60 },
-	{ aHidd_Gfx_SyncTags,	(IPTR)sync_1600x1200_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1280x800_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1440x900_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1680x1050_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1080_60 },
-	{ aHidd_Gfx_SyncTags,   (IPTR)sync_1920x1200_60 },
+	{ aHidd_DMEnum_PixFmtTags,	(IPTR)pftags_24bpp	},
+	{ aHidd_DMEnum_PixFmtTags,	(IPTR)pftags_16bpp	},
+	{ aHidd_DMEnum_PixFmtTags,	(IPTR)pftags_15bpp	},
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_640x480_60	},
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_800x600_56	},
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_1024x768_60	},
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_1152x864_60  },
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_1280x1024_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1400x1050_60 },
+	{ aHidd_DMEnum_SyncTags,	(IPTR)sync_1600x1200_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1280x800_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1440x900_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1680x1050_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1080_60 },
+	{ aHidd_DMEnum_SyncTags,   (IPTR)sync_1920x1200_60 },
 
 	{ TAG_DONE, 0UL }
     };
 
     struct TagItem mytags[] = {
-	{ aHidd_Gfx_ModeTags,	(IPTR)modetags	},
         { aHidd_Name            , (IPTR)"Nvidia"     },
         { aHidd_HardwareName    , (IPTR)"Nvidia Gfx Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Nvidia Corporation"  },
@@ -264,14 +283,34 @@ OOP_Object *NV__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
+
 	_sd->nvobject = o;
+
+        _sd->nvdisplay = OOP_NewObject(_sd->nvdisplayclass, NULL, displaytags);
+        if (_sd->nvdisplay)
+        {
+            OOP_GetAttr(_sd->nvdisplay, aHidd_Display_DMEnumerator, (IPTR *)&_sd->dmenum);
+        }
+        else
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            _sd->nvobject = NULL;
+            o = NULL;
+        }
     }
 
     return o;
 }
 
-OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
-	    struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *NVDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o,
+	    struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -285,7 +324,7 @@ OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
 
         /* Displayable bitmap ? */
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
@@ -385,8 +424,8 @@ OOP_Object *NV__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o,
     return object;
 }
 
-OOP_Object *NV__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o,
-		        struct pHidd_Gfx_Show *msg)
+OOP_Object *NVDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o,
+		        struct pHidd_Display_Show *msg)
 {
     OOP_Object *fb = NULL;
     if (msg->bitMap)
@@ -629,7 +668,7 @@ D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
 #define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
 #endif
 
-BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL NVDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     if (msg->shape == NULL)
     {
@@ -694,15 +733,15 @@ BOOL NV__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
 
 }
 
-VOID NV__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
-		struct pHidd_Gfx_SetCursorVisible *msg)
+VOID NVDisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o,
+		struct pHidd_Display_SetCursorVisible *msg)
 {
     NVShowHideCursor(_sd, msg->visible);
     _sd->Card.cursorVisible = msg->visible;
 }
 
-VOID NV__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o,
-	        struct pHidd_Gfx_SetCursorPos *msg)
+VOID NVDisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o,
+	        struct pHidd_Display_SetCursorPos *msg)
 {
     _sd->Card.PRAMDAC[0x0300 / 4] = (msg->y << 16) | (msg->x & 0xffff);
 }

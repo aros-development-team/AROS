@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Cocoa Touch display HIDD for AROS
 */
@@ -29,6 +29,8 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddPixFmtAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
+OOP_AttrBase HiddDMEnumAttrBase;
 OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
@@ -38,6 +40,8 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync     , &HiddSyncAttrBase     },
     { IID_Hidd_PixFmt   , &HiddPixFmtAttrBase   },
     { IID_Hidd_Gfx      , &HiddGfxAttrBase      },
+    { IID_Hidd_Display  , &HiddDisplayAttrBase  },
+    { IID_Hidd_DMEnum   , &HiddDMEnumAttrBase   },
     { IID_Hidd          , &HiddAttrBase         },
     { NULL              , NULL                  }
 };
@@ -86,19 +90,18 @@ OOP_Object *UIKit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem mode_tags[] =
     {
-        { aHidd_Gfx_PixFmtTags  , (IPTR)pftags          },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags         },
         { aHidd_Sync_HMin       , 112                   }, /* In fact these can be even smaller, and */
         { aHidd_Sync_VMin       , 112                   }, /* maximum can be even bigger...          */
         { aHidd_Sync_HMax       , 16384                 },
         { aHidd_Sync_VMax       , 16384                 },
-        { aHidd_Gfx_SyncTags    , (IPTR)p_synctags      },
-        { aHidd_Gfx_SyncTags    , (IPTR)l_synctags      },
+        { aHidd_DMEnum_SyncTags , (IPTR)p_synctags      },
+        { aHidd_DMEnum_SyncTags , (IPTR)l_synctags      },
         { TAG_DONE              , 0UL                   }
     };
 
     struct TagItem mytags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)mode_tags        },
         { aHidd_Name            , (IPTR)"UIKit"          },
         { aHidd_HardwareName    , (IPTR)"iOS Cocoa Touch Gfx Host"},
         { aHidd_ProducerName    , (IPTR)"Apple Corp."    },
@@ -147,6 +150,27 @@ OOP_Object *UIKit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 
         D(bug("UIKitGfx::New(): Got object from super\n"));
         data->display = display;
+
+        {
+            struct TagItem displaytags[] =
+            {
+                { aHidd_Display_GfxHidd,  (IPTR)o         },
+                { aHidd_Display_ModeTags, (IPTR)mode_tags },
+                { TAG_DONE,               0               }
+            };
+
+            base->displayhidd = OOP_NewObject(base->displayclass, NULL, displaytags);
+            if (base->displayhidd)
+            {
+                OOP_GetAttr(base->displayhidd, aHidd_Display_DMEnumerator, (IPTR *)&base->dmenum);
+            }
+            else
+            {
+                OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+                o = NULL;
+            }
+        }
     }
     ReturnPtr("UIKitGfx::New", OOP_Object *, o);
 }
@@ -164,11 +188,14 @@ VOID UIKit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     D(bug("UIKitGfx::Dispose: calling super\n"));
     OOP_DoSuperMethod(cl, o, msg);
+    base->displayhidd = NULL;
+    base->dmenum = NULL;
 }
 
 /****************************************************************************************/
 
-OOP_Object *UIKit__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *UIKitDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Display_CreateObject *msg)
 {
     struct UIKitBase *base = cl->UserData;
     OOP_Object      *object = NULL;
@@ -176,7 +203,7 @@ OOP_Object *UIKit__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
     if (msg->cl == base->basebm)
     {
         HIDDT_ModeID modeid;
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
         struct TagItem tags[] =
         {
             {TAG_IGNORE, 0                      },
@@ -209,6 +236,7 @@ OOP_Object *UIKit__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
 
 VOID UIKit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct UIKitBase *base = cl->UserData;
     ULONG            idx;
     
     if (IS_GFX_ATTR(msg->attrID, idx))
@@ -223,6 +251,10 @@ VOID UIKit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"CocoaTouch";
                 return;
+
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)base->displayhidd;
+                return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -230,7 +262,15 @@ VOID UIKit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 /****************************************************************************************/
 
-ULONG UIKit__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+VOID UIKitDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+ULONG UIKitDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Display_ShowViewPorts *msg)
 {
     /* TODO */
     return TRUE;
@@ -253,7 +293,8 @@ static struct HIDD_ModeProperties mode_props =
     COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT
 };
 
-ULONG UIKit__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
+ULONG UIKitDisplay__Hidd_Display__ModeProperties(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_Display_ModeProperties *msg)
 {
     ULONG len = msg->propsLen;
 

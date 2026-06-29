@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -124,7 +124,7 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
     struct BitScaleArgs scale_args = {0};
     struct TagItem bm_tags[] =
     {
-        {aHidd_BitMap_GfxHidd, 0},
+        {aHidd_BitMap_Display, 0},
         {aHidd_BitMap_Width, SrcW},
         {aHidd_BitMap_Height, SrcH},
         {aHidd_BitMap_StdPixFmt, 0},
@@ -153,9 +153,9 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
 
     /* Query the bitmaps Gfx Hidd, and create a suitable GC Object (graphics context) */
 
-    OOP_GetAttr(HIDD_BM_OBJ(RastPort->BitMap), aHidd_BitMap_GfxHidd,
+    OOP_GetAttr(HIDD_BM_OBJ(RastPort->BitMap), aHidd_BitMap_Display,
         (IPTR *)&gfx_hidd);
-    gc = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basegc, gc_tags);
+    gc = HIDD_Display_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basegc, gc_tags);
     if (gc)
     {
         /* Create two temporary bitmap objects: one the size of the source area
@@ -163,7 +163,7 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
 
         bm_tags[0].ti_Data = (IPTR)gfx_hidd;
         bm_tags[3].ti_Data = GetHIDDRectFmt(SrcFormat, RastPort, CyberGfxBase);
-        tempbm_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
+        tempbm_obj = HIDD_Display_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
         if (tempbm_obj)
         {
             bm_tags[1].ti_Data = dest_bounds->w;
@@ -173,7 +173,7 @@ LONG internal_ScalePixelArray(APTR srcRect, UWORD SrcW, UWORD SrcH,
             bm_tags[3].ti_Tag = aHidd_BitMap_Friend;
             bm_tags[3].ti_Data = (IPTR)HIDD_BM_OBJ(RastPort->BitMap);
 #endif
-            tempbm2_obj = HIDD_Gfx_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
+            tempbm2_obj = HIDD_Display_CreateObject(gfx_hidd, GetCGFXBase(CyberGfxBase)->basebm, bm_tags);
             if (tempbm2_obj)
             {
                 /* Copy the source array to its temporary bitmap object */

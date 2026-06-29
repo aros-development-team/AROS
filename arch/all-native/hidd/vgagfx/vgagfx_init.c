@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: VGA Gfx Hidd for standalone AROS
 */
@@ -46,6 +46,8 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
         { IID_Hidd_ChunkyBM,    &HiddChunkyBMAttrBase },
         { IID_Hidd_PixFmt,              &HiddPixFmtAttrBase },
         { IID_Hidd_Gfx,         &HiddGfxAttrBase },
+        { IID_Hidd_Display,     &HiddDisplayAttrBase },
+        { IID_Hidd_DMEnum,      &HiddDMEnumAttrBase },
         { IID_Hidd_Sync,                &HiddSyncAttrBase },
         /* Private bases */
         { IID_Hidd_BitMap_VGA,  &HiddVGABitMapAB },
@@ -111,6 +113,7 @@ static int VGAGfx_Init(LIBBASETYPEPTR LIBBASE)
     }
 
     csd->basebm = OOP_FindClass(CLID_Hidd_BitMap);
+    csd->mid_Dispose = OOP_GetMethodID(IID_Root, moRoot_Dispose);
 
     /*
      * It is unknown (and no way to know) what hardware part this driver uses.

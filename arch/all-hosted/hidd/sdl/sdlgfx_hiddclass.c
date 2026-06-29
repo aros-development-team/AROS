@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2020 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  * Copyright (C) 2007 Robert Norris. All rights reserved.
  *
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
@@ -64,7 +64,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct pRoot_New supermsg;
 
 #if DEBUG
-    S(SDL_VideoDriverName, driver, sizeof(driver));
+    SP(SDL_VideoDriverName, driver, sizeof(driver));
     kprintf("sdlgfx: using %s driver\n", driver);
 #endif
     info = SP(SDL_GetVideoInfo);
@@ -74,6 +74,8 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     LIBBASE->use_hwsurface = info->hw_available ? TRUE : FALSE;
     surftype = LIBBASE->use_hwsurface ? SDL_HWSURFACE : SDL_SWSURFACE;
+
+    tagpool = CreatePool(MEMF_CLEAR, 1024, 128);
 
     D(bug("[sdl] colour model: %s\n", pixfmt->palette == NULL ? "truecolour" : "palette"));
     if (pixfmt->palette == NULL) {
@@ -199,7 +201,13 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         D(bug("[sdl] selected pixel format %d\n", stdpixfmt));
 
-        pftags = TAGLIST(
+        /*
+         * NB: TAGLIST() expands to a block-scope compound literal, whose
+         * lifetime ends with this block. pftags is consumed much later (when
+         * the display object is created), so copy it into the tag pool to keep
+         * it valid until DeletePool().
+         */
+        struct TagItem *pftmp = TAGLIST(
             aHidd_PixFmt_ColorModel,    vHidd_ColorModel_TrueColor,
             aHidd_PixFmt_RedShift,      red_shift,
             aHidd_PixFmt_GreenShift,    green_shift,
@@ -215,6 +223,13 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             aHidd_PixFmt_StdPixFmt,     stdpixfmt,
             aHidd_PixFmt_BitMapType,    vHidd_BitMapType_Chunky
         );
+        ULONG pfcount = 0;
+        while (pftmp[pfcount].ti_Tag != TAG_DONE)
+            pfcount++;
+        pfcount++;
+        pftags = AllocPooled(tagpool, sizeof(struct TagItem) * pfcount);
+        if (pftags)
+            CopyMem(pftmp, pftags, sizeof(struct TagItem) * pfcount);
     }
 
     modes = SP(SDL_ListModes, NULL, surftype | LIBBASE->use_fullscreen ? SDL_FULLSCREEN : 0);
@@ -234,8 +249,6 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     }
 
     D(bug("[sdl] building %d mode sync items\n", nmodes));
-
-    tagpool = CreatePool(MEMF_CLEAR, 1024, 128);
 
     synctags = AllocPooled(tagpool, sizeof(struct TagItem *) * (nmodes+1));
 
@@ -258,7 +271,7 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
     modetags = AllocPooled(tagpool, sizeof(struct TagItem) * (nmodes+2));
 
-    modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;   modetags[0].ti_Data = (IPTR) pftags;
+    modetags[0].ti_Tag = aHidd_DMEnum_PixFmtTags;   modetags[0].ti_Data = (IPTR) pftags;
 
     for (i = 0; i < nmodes; i++) {
         if (synctags[i] == NULL) {
@@ -266,14 +279,13 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
             continue;
         }
 
-        modetags[1+i].ti_Tag = aHidd_Gfx_SyncTags;
+        modetags[1+i].ti_Tag = aHidd_DMEnum_SyncTags;
         modetags[1+i].ti_Data = (IPTR) synctags[i];
     }
 
     modetags[1+i].ti_Tag = TAG_DONE;
 
     msgtags = TAGLIST(
-        aHidd_Gfx_ModeTags, (IPTR)modetags,
         aHidd_Name        , (IPTR)"SDL",
         aHidd_HardwareName, (IPTR)"Simple DirectMedia Layer Gfx Host",
         aHidd_ProducerName, (IPTR)"SDL development team (http://libsdl.org/credits.php)",
@@ -286,6 +298,17 @@ OOP_Object *SDLGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     D(bug("[sdl] hidd tags built, calling supermethod\n"));
 
     o = (OOP_Object *) OOP_DoSuperMethod(cl, o, (OOP_Msg) &supermsg);
+
+    if (o != NULL) {
+        struct TagItem displaytags[] = {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
+        LIBBASE->display = OOP_NewObject(LIBBASE->displayclass, NULL, displaytags);
+        if (LIBBASE->display)
+            OOP_GetAttr(LIBBASE->display, aHidd_Display_DMEnumerator, (IPTR *)&LIBBASE->dmenum);
+    }
 
     DeletePool(tagpool);
 
@@ -328,6 +351,10 @@ VOID SDLGfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"SDL";
                 return;
+
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)LIBBASE->display;
+                return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -357,24 +384,36 @@ VOID SDLGfx__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
 }
 
-OOP_Object *SDLGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg) {
+OOP_Object *SDLGfx__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg) {
     OOP_Object      *object = NULL;
 
     if (msg->cl == LIBBASE->basebm)
     {
+        struct TagItem bmtags[] = {
+            { aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass },
+            { TAG_MORE,              (IPTR) NULL             }
+        };
         struct TagItem *msgtags;
-        struct pHidd_Gfx_CreateObject supermsg;
-        struct gfxdata *data = OOP_INST_DATA(cl, o);
+        struct pHidd_Display_CreateObject supermsg;
+        OOP_Object *gfx = NULL;
+        struct gfxdata *data;
+
+        OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+        data = OOP_INST_DATA(LIBBASE->gfxclass, gfx);
 
         D(bug("[sdl] SDLGfx::CreateObject, UtilityBase is 0x%p\n", UtilityBase));
 
         if (GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList) != vHidd_ModeID_Invalid) {
             D(bug("[sdl] bitmap with valid mode, we can handle it\n"));
 
-            msgtags = TAGLIST(
-                aHidd_BitMap_ClassPtr, (IPTR) LIBBASE->bmclass,
-                TAG_MORE,              (IPTR) msg->attrList
-            );
+            /*
+             * NB: bmtags must outlive the OOP_DoSuperMethod() call below, so it
+             * is declared in the enclosing block rather than built here with a
+             * block-scope compound literal (whose storage would be released
+             * before it is consumed).
+             */
+            bmtags[1].ti_Data = (IPTR) msg->attrList;
+            msgtags = bmtags;
             D(bug("[sdl] ClassPtr is 0x%p\n", LIBBASE->bmclass));
         } else
             msgtags = msg->attrList;
@@ -430,15 +469,19 @@ VOID SDLGfx__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Co
     return;
 }
 
-OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *SDLGfx__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
-    struct gfxdata *data = OOP_INST_DATA(cl, o);
-    struct pHidd_Gfx_Show mymsg = {msg->mID, msg->bitMap, 0};
+    OOP_Object *gfx = NULL;
+    struct gfxdata *data;
+    struct pHidd_Display_Show mymsg = {msg->mID, msg->bitMap, 0};
     IPTR width, height;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    data = OOP_INST_DATA(LIBBASE->gfxclass, gfx);
 
     /* Resetting SDL onscreen surface will destroy its old contents.
        Copy back old bitmap data if there's one and if asked to do so */
-    if (data->shownbm && (msg->flags & fHidd_Gfx_Show_CopyBack)) {
+    if (data->shownbm && (msg->flags & fHidd_Display_Show_CopyBack)) {
         OOP_Object *colmap;
         IPTR numentries, i;
 
@@ -457,7 +500,7 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         }
 
         /* Our CopyBox() happily ignores the GC, so set it to NULL and don't bother */
-        HIDD_Gfx_CopyBox(o, data->framebuffer, 0, 0, data->shownbm, 0, 0, width, height, NULL);
+        HIDD_Gfx_CopyBox(gfx, data->framebuffer, 0, 0, data->shownbm, 0, 0, width, height, NULL);
     }
 
     /* Set up new onscreen surface if there's a new bitmap to show.
@@ -480,16 +523,26 @@ OOP_Object *SDLGfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         if (modeid == vHidd_ModeID_Invalid)
             return NULL;
 
-        HIDD_Gfx_GetMode(o, modeid, &sync, &pixfmt);
+        HIDD_DMEnum_GetMode(LIBBASE->dmenum, modeid, &sync, &pixfmt);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
         OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+        {
+            /* Use the pixelformat storage size (bytes/pixel), not colour depth,
+               so the SDL video surface matches the AROS pixelformat. */
+            IPTR bytesperpixel = 0;
+            OOP_GetAttr(pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+            if (bytesperpixel)
+                depth = bytesperpixel * 8;
+        }
 
         /* Set up new onscreen surface */
+        ObtainSemaphore(&LIBBASE->sdl_lock);
         s = SP(SDL_SetVideoMode, width, height, depth,
               (LIBBASE->use_hwsurface  ? SDL_HWSURFACE | SDL_HWPALETTE : SDL_SWSURFACE) |
               (LIBBASE->use_fullscreen ? SDL_FULLSCREEN                : 0) |
               SDL_ANYFORMAT);
+        ReleaseSemaphore(&LIBBASE->sdl_lock);
         if (!s)
             return NULL;
 
@@ -517,15 +570,25 @@ static struct OOP_MethodDescr SDLGfx_Root_descr[] = {
 #define NUM_SDLGfx_Root_METHODS 4
 
 static struct OOP_MethodDescr SDLGfx_Hidd_Gfx_descr[] = {
-    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__CreateObject, moHidd_Gfx_CreateObject},
-    {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__Show, moHidd_Gfx_Show},
     {(OOP_MethodFunc)SDLGfx__Hidd_Gfx__CopyBox, moHidd_Gfx_CopyBox},
     {NULL, 0}
 };
-#define NUM_SDLGfx_Hidd_Gfx_METHODS 3
+#define NUM_SDLGfx_Hidd_Gfx_METHODS 1
 
 struct OOP_InterfaceDescr SDLGfx_ifdescr[] = {
     {SDLGfx_Root_descr    , IID_Root    , NUM_SDLGfx_Root_METHODS    },
     {SDLGfx_Hidd_Gfx_descr, IID_Hidd_Gfx, NUM_SDLGfx_Hidd_Gfx_METHODS},
     {NULL                 , NULL                                     }
+};
+
+static struct OOP_MethodDescr SDLGfx_Hidd_Display_descr[] = {
+    {(OOP_MethodFunc)SDLGfx__Hidd_Display__CreateObject, moHidd_Display_CreateObject},
+    {(OOP_MethodFunc)SDLGfx__Hidd_Display__Show, moHidd_Display_Show},
+    {NULL, 0}
+};
+#define NUM_SDLGfx_Hidd_Display_METHODS 2
+
+struct OOP_InterfaceDescr SDLGfx_Display_ifdescr[] = {
+    {SDLGfx_Hidd_Display_descr, IID_Hidd_Display, NUM_SDLGfx_Hidd_Display_METHODS},
+    {NULL                     , NULL                                             }
 };

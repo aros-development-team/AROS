@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Gfx Hidd class for SM502.
 */
@@ -76,13 +76,12 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     };
     struct TagItem modetags[] =
     {
-        {aHidd_Gfx_PixFmtTags, (IPTR)pftags},
-        {aHidd_Gfx_SyncTags,   (IPTR)sync_mode},
+        {aHidd_DMEnum_PixFmtTags, (IPTR)pftags},
+        {aHidd_DMEnum_SyncTags,   (IPTR)sync_mode},
         {TAG_DONE, 0UL}
     };
     struct TagItem yourtags[] =
     {
-        {aHidd_Gfx_ModeTags, (IPTR)modetags},
         { aHidd_Name            , (IPTR)"sm502gfx"     },
         { aHidd_HardwareName    , (IPTR)"Silicon Motion SM502 Gfx Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Silicon Motion"  },
@@ -113,7 +112,7 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     sync_mode[3].ti_Data = XSD(cl)->data.width;
     sync_mode[4].ti_Data = XSD(cl)->data.height;
 
-    yourtags[1].ti_Data = (IPTR)msg->attrList;
+    yourtags[3].ti_Data = (IPTR)msg->attrList;
     yourmsg.mID = msg->mID;
     yourmsg.attrList = yourtags;
     msg = &yourmsg;
@@ -121,6 +120,12 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
     {
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
         struct SM502Gfx_data *data = OOP_INST_DATA(cl, o);
 
         D(bug("[SM502] Got object from super\n"));
@@ -129,6 +134,19 @@ OOP_Object *SM502Gfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
         data->ResetInterrupt.is_Code = (APTR)ResetHandler;
         data->ResetInterrupt.is_Data = &XSD(cl)->data;
         AddResetCallback(&data->ResetInterrupt);
+
+        XSD(cl)->sm502gfxdisplay = OOP_NewObject(XSD(cl)->sm502gfxdisplayclass, NULL, displaytags);
+        if (XSD(cl)->sm502gfxdisplay)
+        {
+            OOP_GetAttr(XSD(cl)->sm502gfxdisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
+        }
+        else
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            XSD(cl)->sm502gfxhidd = NULL;
+            o = NULL;
+        }
     }
     ReturnPtr("SM502Gfx::New", OOP_Object *, o);
 }
@@ -140,6 +158,8 @@ VOID SM502Gfx__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     RemResetCallback(&data->ResetInterrupt);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     XSD(cl)->sm502gfxhidd = NULL;
+    XSD(cl)->sm502gfxdisplay = NULL;
+    XSD(cl)->dmenum = NULL;
 }
 
 VOID SM502Gfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
@@ -153,12 +173,21 @@ VOID SM502Gfx__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             case aoHidd_Gfx_NoFrameBuffer:
                 *msg->storage = TRUE;
                 return;
+
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)XSD(cl)->sm502gfxdisplay;
+                return;
         }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *SM502Gfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+VOID SM502GfxDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+OOP_Object *SM502GfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -172,7 +201,7 @@ OOP_Object *SM502Gfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
             {TAG_IGNORE, 0                  },
             {TAG_MORE  , (IPTR)msg->attrList}
         };
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
 
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
         if (displayable)
@@ -207,7 +236,7 @@ OOP_Object *SM502Gfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struc
 
 /*********  GfxHidd::Show()  ***************************/
 
-OOP_Object *SM502Gfx__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *SM502GfxDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
     struct SM502Gfx_staticdata *data = XSD(cl);
     struct TagItem tags[] = {

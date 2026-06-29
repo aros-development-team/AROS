@@ -67,12 +67,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct monitor_driverdata *mdd;
+    struct monitor_displaydata *mdd;
 
     if(vp) {
         sprite->x = x + vp->DxOffset;
         sprite->y = y + vp->DyOffset;
-        mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
+        mdd = (struct monitor_displaydata *)GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
     } else {
         sprite->x = x;
         sprite->y = y;
@@ -83,7 +83,7 @@
     if(sprite->num)  /* We have only sprite #0 for the mouse cursor */
         return;
 
-    HIDD_Gfx_SetCursorPos(mdd->gfxhidd, sprite->x, sprite->y);
+    HIDD_Display_SetCursorPos(mdd->mdisplay.display_obj, sprite->x, sprite->y);
 
     AROS_LIBFUNC_EXIT
 } /* MoveSprite */

@@ -51,17 +51,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct monitor_driverdata *mdd = NULL;
+    struct monitor_displaydata *mdd = NULL;
     struct DisplayInfoHandle *dh = NULL;
 
     if(last_ID == INVALID_ID)
         /* Start from the beginning */
-        mdd = CDD(GfxBase)->monitors;
+        mdd = GFXPRIVATE_MONITORFIRST;
     else {
         /* Find handle and driver of current mode */
         dh = FindDisplayInfo(last_ID);
         if(dh)
-            mdd = dh->drv;
+            mdd = (struct monitor_displaydata *)dh->drv;
     }
 
     while(mdd) {
@@ -73,10 +73,10 @@
 
         /* If it's not the last handle, return it */
         if(dh->id != vHidd_ModeID_Invalid)
-            return dh->drv->id | dh->id;
+            return dh->drv->display_idbase | dh->id;
 
         /* Next driver, first handle */
-        mdd = mdd->next;
+        mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next;
         dh = NULL;
     }
 

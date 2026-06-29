@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES := \
         vgagfx_init \
         vgagfx_hiddclass \
+        vgagfx_displayclass \
         vgagfx_support \
         vgagfx_bitmapclass
 

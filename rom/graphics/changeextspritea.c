@@ -65,7 +65,7 @@
     AROS_LIBFUNC_INIT
 
     OOP_Object *bitmap;
-    struct monitor_driverdata *mdd;
+    struct gfxdisplay_data *mdd;
     LONG res;
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
@@ -85,9 +85,9 @@
     if(vp) {
         /* Pick up display driver from ViewPort's bitmap */
         mdd = GET_BM_DRIVERDATA(vp->RasInfo->BitMap);
-        res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
+        res = HIDD_Display_SetCursorShape(mdd->display_obj, bitmap, 0, 0);
         if(res)
-            HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+            HIDD_Display_SetCursorVisible(mdd->display_obj, TRUE);
     } else
         /* TODO: NULL ViewPort means Amiga(tm) chipset display */
         res = FALSE;

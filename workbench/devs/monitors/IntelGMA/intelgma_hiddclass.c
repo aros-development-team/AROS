@@ -181,7 +181,7 @@ void createSync(OOP_Class *cl, int x, int y, int refresh, struct TagItem **tagsp
                         sync.pixel / 1000, sync.width, sync.hstart, sync.hend, sync.htotal,
                         sync.height, sync.vstart, sync.vend, sync.vtotal));
 
-        PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, *poolptr);
+        PUSH_TAG(tagsptr, aHidd_DMEnum_SyncTags, *poolptr);
 
         PUSH_TAG(poolptr, aHidd_Sync_Description, description);
         PUSH_TAG(poolptr, aHidd_Sync_PixelClock, sync.pixel);
@@ -330,7 +330,7 @@ static VOID G45_parse_ddc(OOP_Class *cl, struct TagItem **tagsptr,
                                         ha, va, (int)(((pixel * 10 / (uint32_t)(ha + hb)) * 1000)
                                         / ((uint32_t)(va + vb))));
 
-                                PUSH_TAG(tagsptr, aHidd_Gfx_SyncTags, poolptr);
+                                PUSH_TAG(tagsptr, aHidd_DMEnum_SyncTags, poolptr);
 
                                 PUSH_TAG(&poolptr, aHidd_Sync_Description, description);
                                 PUSH_TAG(&poolptr, aHidd_Sync_PixelClock, pixel*10000);
@@ -466,11 +466,11 @@ OOP_Object *METHOD(INTELG45, Root, New)
         { TAG_DONE, 0UL }
     };
 
-    tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+    tags->ti_Tag = aHidd_DMEnum_PixFmtTags;
     tags->ti_Data = (IPTR)pftags_24bpp;
     tags++;
 
-    tags->ti_Tag = aHidd_Gfx_PixFmtTags;
+    tags->ti_Tag = aHidd_DMEnum_PixFmtTags;
     tags->ti_Data = (IPTR)pftags_16bpp;
     tags++;
 
@@ -481,11 +481,11 @@ OOP_Object *METHOD(INTELG45, Root, New)
                 sd->lvds_fixed.hdisp, sd->lvds_fixed.vdisp);
         sync_native[13].ti_Data = (IPTR)description;
 
-        tags->ti_Tag =  aHidd_Gfx_SyncTags;
+        tags->ti_Tag =  aHidd_DMEnum_SyncTags;
         tags->ti_Data = (IPTR)sync_640x480_60;
         tags++;
 
-        tags->ti_Tag =  aHidd_Gfx_SyncTags;
+        tags->ti_Tag =  aHidd_DMEnum_SyncTags;
         tags->ti_Data = (IPTR)sync_native;
         tags++;
     }
@@ -521,7 +521,6 @@ OOP_Object *METHOD(INTELG45, Root, New)
     tags->ti_Data = 0;
 
     struct TagItem mytags[] = {
-        { aHidd_Gfx_ModeTags,   (IPTR)modetags  },
         { aHidd_Name            , (IPTR)"IntelGMA"     },
         { aHidd_HardwareName    , (IPTR)"Intel GMA Display Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Intel Corporation"  },
@@ -542,10 +541,22 @@ OOP_Object *METHOD(INTELG45, Root, New)
         gfxdata->i2cobj = i2cBus;
         sd->GMAObject = o;
 
+        /* Create the display object and its mode enumerator */
+        {
+            struct TagItem displaytags[] = {
+                { aHidd_Display_GfxHidd,  (IPTR)o        },
+                { aHidd_Display_ModeTags, (IPTR)modetags },
+                { TAG_DONE,               0              }
+            };
+            sd->display = OOP_NewObject(sd->IntelG45DisplayClass, NULL, displaytags);
+            if (sd->display)
+                OOP_GetAttr(sd->display, aHidd_Display_DMEnumerator, (IPTR *)&sd->dmenum);
+        }
+
         /* Create compositor object */
         {
             struct TagItem comptags [] = {
-                { aHidd_Compositor_GfxHidd, (IPTR)o },
+                { aHidd_Compositor_DisplayHidd, (IPTR)sd->display },
                 { TAG_DONE, TAG_DONE }
             };
             sd->compositor = OOP_NewObject(sd->compositorclass, NULL, comptags);
@@ -581,13 +592,8 @@ void METHOD(INTELG45, Root, Get)
                 found = TRUE;
                 break;
 
-        case aoHidd_Gfx_HWSpriteTypes:
-            *msg->storage = vHidd_SpriteType_DirectColor;
-            found = TRUE;
-            return;
-
-        case aoHidd_Gfx_DPMSLevel:
-                *msg->storage = SD(cl)->dpms;
+        case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)SD(cl)->display;
                 found = TRUE;
                 break;
         }
@@ -599,21 +605,41 @@ void METHOD(INTELG45, Root, Get)
     return;
 }
 
-void METHOD(INTELG45, Root, Set)
+void METHOD(INTELG45Display, Root, Get)
 {
-        D(bug("[GMA] Root Set\n"));
+    uint32_t idx;
+    BOOL found = FALSE;
 
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Display_SpriteTypes:
+        *msg->storage = vHidd_SpriteType_DirectColor;
+        found = TRUE;
+        break;
+
+    case aoHidd_Display_DPMSLevel:
+        *msg->storage = SD(cl)->dpms;
+        found = TRUE;
+        break;
+    }
+
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return;
+}
+
+void METHOD(INTELG45Display, Root, Set)
+{
         ULONG idx;
         struct TagItem *tag;
         struct TagItem *tags = msg->attrList;
 
         while ((tag = NextTagItem(&tags)))
         {
-                if (IS_GFX_ATTR(tag->ti_Tag, idx))
+                Hidd_Display_Switch(tag->ti_Tag, idx)
                 {
-                        switch(idx)
-                        {
-                        case aoHidd_Gfx_DPMSLevel:
+                        case aoHidd_Display_DPMSLevel:
                                 LOCK_HW
                                 uint32_t adpa = readl(sd->Card.MMIO + G45_ADPA) & ~G45_ADPA_DPMS_MASK;
                                 switch (tag->ti_Data)
@@ -636,7 +662,6 @@ void METHOD(INTELG45, Root, Set)
 
                                 UNLOCK_HW
                                 break;
-                        }
                 }
         }
 
@@ -644,13 +669,13 @@ void METHOD(INTELG45, Root, Set)
 }
 
 
-OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
+OOP_Object * METHOD(INTELG45, Hidd_Display, CreateObject)
 {
     OOP_Object      *object = NULL;
 
     if (msg->cl == SD(cl)->basebm)
     {
-        struct pHidd_Gfx_CreateObject mymsg;
+        struct pHidd_Display_CreateObject mymsg;
         HIDDT_ModeID modeid;
         HIDDT_StdPixFmt stdpf;
 
@@ -697,7 +722,10 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
     }
     else if (SD(cl)->basei2c && (msg->cl == SD(cl)->basei2c))
     {
-                struct g45data * gfxdata = OOP_INST_DATA(cl, o);
+                OOP_Object *gfx = NULL;
+                struct g45data * gfxdata;
+                OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+                gfxdata = OOP_INST_DATA(SD(cl)->IntelG45Class, gfx);
         /* Expose the i2c bus object .. */
                 object = gfxdata->i2cobj;
     }
@@ -708,7 +736,7 @@ OOP_Object * METHOD(INTELG45, Hidd_Gfx, CreateObject)
 }
 
 
-void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
+void METHOD(INTELG45, Hidd_Display, SetCursorVisible)
 {
     sd->CursorVisible = msg->visible;
     if (msg->visible)
@@ -725,14 +753,14 @@ void METHOD(INTELG45, Hidd_Gfx, SetCursorVisible)
 }
 
 
-void METHOD(INTELG45, Hidd_Gfx, SetCursorPos)
+void METHOD(INTELG45, Hidd_Display, SetCursorPos)
 {
         SetCursorPosition(sd,msg->x,msg->y);
         sd->pointerx = msg->x;
         sd->pointery = msg->y;
 }
 
-BOOL METHOD(INTELG45, Hidd_Gfx, SetCursorShape)
+BOOL METHOD(INTELG45, Hidd_Display, SetCursorShape)
 {
     if (msg->shape == NULL)
     {
@@ -879,7 +907,7 @@ void METHOD(INTELG45, Hidd_Gfx, CopyBox)
     }
 }
 
-ULONG METHOD(INTELG45, Hidd_Gfx, ShowViewPorts)
+ULONG METHOD(INTELG45, Hidd_Display, ShowViewPorts)
 {
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
@@ -895,15 +923,11 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
 {
     OOP_Class * cl = OOP_OCLASS(bm);
     GMABitMap_t * bmdata = OOP_INST_DATA(cl, bm);
-    OOP_Object * gfx = NULL;
     HIDDT_ModeID modeid;
     OOP_Object * sync;
     OOP_Object * pf;
-    IPTR pixel, e;
+    IPTR pixel;
     IPTR hdisp, vdisp, hstart, hend, htotal, vstart, vend, vtotal;
-
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
-    gfx = (OOP_Object *)e;
 
     bug("[IntelG45] HIDD_INTELG45_SwitchToVideoMode bitmap:%x\n",bmdata);
     
@@ -917,15 +941,7 @@ BOOL HIDD_INTELG45_SwitchToVideoMode(OOP_Object * bm)
     }
 
     /* Get Sync and PixelFormat properties */
-    struct pHidd_Gfx_GetMode __getmodemsg =
-    {
-        .modeID     = modeid,
-        .syncPtr    = &sync,
-        .pixFmtPtr  = &pf,
-    }, *getmodemsg = &__getmodemsg;
-
-    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-    OOP_DoMethod(gfx, (OOP_Msg)getmodemsg);
+    HIDD_DMEnum_GetMode(sd->dmenum, modeid, &sync, &pf);
 
     OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
     OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
@@ -991,7 +1007,7 @@ static struct HIDD_ModeProperties modeprops =
     COMPF_ABOVE
 };
 
-ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
+ULONG METHOD(INTELG45, Hidd_Display, ModeProperties)
 {
     ULONG len = msg->propsLen;
     if (len > sizeof(modeprops))
@@ -1001,7 +1017,7 @@ ULONG METHOD(INTELG45, Hidd_Gfx, ModeProperties)
     return len;
 }
 
-VOID METHOD(INTELG45, Hidd_Gfx, NominalDimensions)
+VOID METHOD(INTELG45, Hidd_Display, NominalDimensions)
 {
     if (msg->width)
         *(msg->width) = 1024;
@@ -1015,28 +1031,48 @@ static const struct OOP_MethodDescr INTELG45_Root_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Root__New, moRoot_New},
     {(OOP_MethodFunc)INTELG45__Root__Get, moRoot_Get},
-    {(OOP_MethodFunc)INTELG45__Root__Set, moRoot_Set},
     {NULL, 0}
 };
-#define NUM_INTELG45_Root_METHODS 3
+#define NUM_INTELG45_Root_METHODS 2
 
 static const struct OOP_MethodDescr INTELG45_Hidd_Gfx_descr[] =
 {
     {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CopyBox         , moHidd_Gfx_CopyBox         },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__CreateObject    , moHidd_Gfx_CreateObject    },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorVisible, moHidd_Gfx_SetCursorVisible},
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorPos    , moHidd_Gfx_SetCursorPos    },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__SetCursorShape  , moHidd_Gfx_SetCursorShape  },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ShowViewPorts   , moHidd_Gfx_ShowViewPorts   },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__ModeProperties  , moHidd_Gfx_ModeProperties  },
-    {(OOP_MethodFunc)INTELG45__Hidd_Gfx__NominalDimensions, moHidd_Gfx_NominalDimensions    },
     {NULL, 0}
 };
-#define NUM_INTELG45_Hidd_Gfx_METHODS 8
+#define NUM_INTELG45_Hidd_Gfx_METHODS 1
 
 const struct OOP_InterfaceDescr INTELG45_ifdescr[] =
 {
     {INTELG45_Root_descr    , IID_Root    , NUM_INTELG45_Root_METHODS    },
     {INTELG45_Hidd_Gfx_descr, IID_Hidd_Gfx, NUM_INTELG45_Hidd_Gfx_METHODS},
     {NULL                   , NULL        , 0                            }
+};
+
+static const struct OOP_MethodDescr INTELG45Display_Root_descr[] =
+{
+    {(OOP_MethodFunc)INTELG45Display__Root__Get, moRoot_Get},
+    {(OOP_MethodFunc)INTELG45Display__Root__Set, moRoot_Set},
+    {NULL, 0}
+};
+#define NUM_INTELG45Display_Root_METHODS 2
+
+static const struct OOP_MethodDescr INTELG45_Hidd_Display_descr[] =
+{
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__CreateObject    , moHidd_Display_CreateObject    },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorVisible, moHidd_Display_SetCursorVisible},
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorPos    , moHidd_Display_SetCursorPos    },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__SetCursorShape  , moHidd_Display_SetCursorShape  },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__ShowViewPorts   , moHidd_Display_ShowViewPorts   },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__ModeProperties  , moHidd_Display_ModeProperties  },
+    {(OOP_MethodFunc)INTELG45__Hidd_Display__NominalDimensions, moHidd_Display_NominalDimensions},
+    {NULL, 0}
+};
+#define NUM_INTELG45_Hidd_Display_METHODS 7
+
+const struct OOP_InterfaceDescr INTELG45_Display_ifdescr[] =
+{
+    {INTELG45Display_Root_descr , IID_Root        , NUM_INTELG45Display_Root_METHODS },
+    {INTELG45_Hidd_Display_descr, IID_Hidd_Display, NUM_INTELG45_Hidd_Display_METHODS},
+    {NULL                       , NULL            , 0                                }
 };

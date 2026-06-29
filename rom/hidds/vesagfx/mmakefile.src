@@ -6,6 +6,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES	:=	\
 	vesagfx_init \
 	vesagfx_hiddclass \
+	vesagfx_displayclass \
 	vesagfx_support \
 	vesagfx_bitmapclass
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -94,21 +94,14 @@
 
     if (IS_HIDD_BM(bm))
     {
-        struct TagItem layerTags[] = {
-            {aHidd_Overlay_SrcWidth , 0           },
-            {aHidd_Overlay_SrcHeight, 0           },
-            {aHidd_Overlay_SrcFormat, 0           },
-            {aHidd_Overlay_Error    , (IPTR)errPtr},
-            {TAG_DONE               , 0           }
-        };
-
-        /* CHECKME: Are there any reasonable defaults ? */
-        layerTags[0].ti_Data = GetTagData(VOA_SrcWidth , 0, TagItems);
-        layerTags[1].ti_Data = GetTagData(VOA_SrcHeight, 0, TagItems);
-        layerTags[2].ti_Data = GetTagData(VOA_SrcType  , 0, TagItems);
-
-        OOP_GetAttr((OOP_Object *)bm->Planes[0], aHidd_BitMap_GfxHidd, (IPTR *)&vh->drv);
-        vh->obj = HIDD_Gfx_NewOverlay(vh->drv, layerTags);
+        /*
+         * Hardware video overlay support has been removed pending a rework of
+         * the overlay handling (the Hidd_Overlay interface no longer exists).
+         * Until the replacement mechanism is in place, fail gracefully.
+         */
+        vh->drv = NULL;
+        vh->obj = NULL;
+        setError(VOERR_INVSCRMODE);
     }
     else
     {

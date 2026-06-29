@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/symbolsets.h>
@@ -40,12 +40,16 @@
 #undef HiddBitMapAttrBase
 #undef HiddI2CAttrBase
 #undef HiddI2CDeviceAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #define HiddAttrBase            (LIBBASE->sd.hiddAttrBase)
 #define HiddPCIDeviceAttrBase   (LIBBASE->sd.pciAttrBase)
 #define HiddATIBitMapAttrBase   (LIBBASE->sd.atiBitMapAttrBase)
 #define HiddBitMapAttrBase      (LIBBASE->sd.bitMapAttrBase)
 #define HiddPixFmtAttrBase      (LIBBASE->sd.pixFmtAttrBase)
 #define HiddGfxAttrBase         (LIBBASE->sd.gfxAttrBase)
+#define HiddDisplayAttrBase     (LIBBASE->sd.displayAttrBase)
+#define HiddDMEnumAttrBase      (LIBBASE->sd.dmenumAttrBase)
 #define HiddSyncAttrBase        (LIBBASE->sd.syncAttrBase)
 #define HiddI2CAttrBase         (LIBBASE->sd.i2cAttrBase)
 #define HiddI2CDeviceAttrBase   (LIBBASE->sd.i2cDeviceAttrBase)
@@ -223,6 +227,8 @@ static int ATI_Init(LIBBASETYPEPTR LIBBASE)
         { (STRPTR)IID_Hidd_I2C,         &HiddI2CAttrBase },
         { (STRPTR)IID_Hidd_I2CDevice,   &HiddI2CDeviceAttrBase },
         { (STRPTR)IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
+        { (STRPTR)IID_Hidd_Display,     &HiddDisplayAttrBase },
+        { (STRPTR)IID_Hidd_DMEnum,      &HiddDMEnumAttrBase },
         { NULL, NULL }
     };
 
@@ -316,6 +322,8 @@ static int ATI_Expunge(LIBBASETYPEPTR LIBBASE)
         { (STRPTR)IID_Hidd_I2C,         &HiddI2CAttrBase },
         { (STRPTR)IID_Hidd_I2CDevice,   &HiddI2CDeviceAttrBase },
         { (STRPTR)IID_Hidd_PlanarBM,    &__IHidd_PlanarBM },
+        { (STRPTR)IID_Hidd_Display,     &HiddDisplayAttrBase },
+        { (STRPTR)IID_Hidd_DMEnum,      &HiddDMEnumAttrBase },
         { NULL, NULL }
     };
 

@@ -2,8 +2,8 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2023, The AROS Development Team. All rights reserved.
-    Copyright © 2001-2013, The MorphOS Development Team. All Rights Reserved.
+    Copyright ï¿½ 1995-2023, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2001-2013, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 #include <aros/config.h>
@@ -630,9 +630,13 @@ struct IntIntuitionBase
     OOP_AttrBase		 HiddBitMapAttrBase;
     OOP_AttrBase		 HiddPixFmtAttrBase;
     OOP_AttrBase		 HiddSyncAttrBase;
+    OOP_AttrBase		 HiddDisplayAttrBase;
+    OOP_AttrBase		 HiddDMEnumAttrBase;
 
     OOP_MethodID		 ib_HiddGfxBase;
     OOP_MethodID		 ib_HiddBitMapBase;
+    OOP_MethodID		 ib_HiddDisplayBase;
+    OOP_MethodID		 ib_HiddDMEnumBase;
 
     struct IClass		*monitorclass;
     struct MinList		 MonitorList;

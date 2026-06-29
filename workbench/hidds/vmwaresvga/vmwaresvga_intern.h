@@ -2,7 +2,7 @@
 #define _VMWARESVGA_CLASS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some VMWareSVGA useful data.
@@ -47,12 +47,15 @@ struct VMWareSVGA_staticdata {
 
     /* VMWareSVGA classes */
     OOP_Class                   *vmwaresvgaclass;
+    OOP_Class                   *vmwaresvgadisplayclass;
     OOP_Class                   *vmwaresvgaonbmclass;
     OOP_Class                   *vmwaresvgaoffbmclass;
     OOP_Class                   *galliumclass;
 
     /* Private object refrences */
     OOP_Object                  *vmwaresvgahidd;
+    OOP_Object                  *vmwaresvgadisplay;
+    OOP_Object                  *dmenum;
     OOP_Object                  *card;
     OOP_Object                  *pcihidd;
 

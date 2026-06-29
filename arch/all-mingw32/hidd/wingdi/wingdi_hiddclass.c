@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2022, The AROS Development Team. All rights reserved.
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: GDI gfx HIDD for AROS.
 */
@@ -66,6 +66,8 @@ static OOP_AttrBase HiddGDIBitMapAB;
 static OOP_AttrBase HiddSyncAttrBase;
 static OOP_AttrBase HiddPixFmtAttrBase;
 static OOP_AttrBase HiddGfxAttrBase;
+static OOP_AttrBase HiddDisplayAttrBase;
+static OOP_AttrBase HiddDMEnumAttrBase;
 OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
@@ -75,6 +77,8 @@ static struct OOP_ABDescr attrbases[] =
     { IID_Hidd_Sync     , &HiddSyncAttrBase     },
     { IID_Hidd_PixFmt   , &HiddPixFmtAttrBase   },
     { IID_Hidd_Gfx      , &HiddGfxAttrBase      },
+    { IID_Hidd_Display  , &HiddDisplayAttrBase  },
+    { IID_Hidd_DMEnum   , &HiddDMEnumAttrBase   },
     { IID_Hidd          , &HiddAttrBase         },
     { NULL              , NULL                  }
 };
@@ -217,7 +221,7 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     
     struct TagItem mode_tags[] =
     {
-        { aHidd_Gfx_PixFmtTags  , (IPTR)pftags          },
+        { aHidd_DMEnum_PixFmtTags, (IPTR)pftags         },
 
         /* Default values for the sync attributes */
         { aHidd_Sync_PixelClock , 0                     },
@@ -238,25 +242,24 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
             will be applied to each of these. Note that
             you can alter the defaults between the tags below
         */
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_160_160    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_240_320    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_320_240    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_512_384    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_640_480    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_800_600    },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1024_768   },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1152_864   },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_800   },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_960   },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1280_1024  },
-        { aHidd_Gfx_SyncTags    , (IPTR)tags_1600_1200  },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_160_160    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_240_320    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_320_240    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_512_384    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_640_480    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_800_600    },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1024_768   },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1152_864   },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1280_800   },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1280_960   },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1280_1024  },
+        { aHidd_DMEnum_SyncTags , (IPTR)tags_1600_1200  },
         { TAG_DONE              , 0UL                   }
     };
 
     STRPTR name[32];
     struct TagItem mytags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)mode_tags       },
         { aHidd_Name            , (IPTR)name            },
         { aHidd_HardwareName    , (IPTR)"Windows GDI Gfx Host"  },
         { aHidd_ProducerName    , (IPTR)"Microsoft corporation"},
@@ -302,11 +305,29 @@ OOP_Object *GDICl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     if (NULL != o)
     {
         struct gfx_data *data = OOP_INST_DATA(cl, o);
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o         },
+            { aHidd_Display_ModeTags, (IPTR)mode_tags },
+            { TAG_DONE,               0               }
+        };
 
         D(bug("GDIGfx::New(): Got object from super\n"));
         data->display = display;
         NewList((struct List *)&data->bitmaps);
         XSD(cl)->displaynum++;
+
+        XSD(cl)->displayhidd = OOP_NewObject(XSD(cl)->displayclass, NULL, displaytags);
+        if (XSD(cl)->displayhidd)
+        {
+            OOP_GetAttr(XSD(cl)->displayhidd, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
+        }
+        else
+        {
+            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&disp_mid);
+            o = NULL;
+        }
     }
     ReturnPtr("GDIGfx::New", OOP_Object *, o);
 }
@@ -336,16 +357,17 @@ VOID GDICl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-OOP_Object *GDICl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *GDIDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
     if (msg->cl == XSD(cl)->basebm)
     {
         HIDDT_ModeID             modeid;
-        struct pHidd_Gfx_CreateObject   p;
+        struct pHidd_Display_CreateObject p;
         HIDDT_StdPixFmt          stdpf;
 
+        OOP_Object                      *gfxhidd;
         struct gfx_data                 *data;
         struct TagItem                   tags[] =
         {
@@ -356,7 +378,8 @@ OOP_Object *GDICl__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct p
         };
 
         EnterFunc(bug("GDIGfx::CreateObject()\n"));
-        data = OOP_INST_DATA(cl, o);
+        OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfxhidd);
+        data = OOP_INST_DATA(XSD(cl)->gfxclass, gfxhidd);
 
         tags[0].ti_Data = (IPTR)data->display;
         tags[1].ti_Data = (IPTR)XSD(cl)->bmclass;
@@ -412,12 +435,30 @@ VOID GDICl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 *msg->storage = TRUE;
                 return;
 
-            case aoHidd_Gfx_HWSpriteTypes:
-                *msg->storage = vHidd_SpriteType_DirectColor;
-                return;
-
             case aoHidd_Gfx_DriverName:
                 *msg->storage = (IPTR)"GDI";
+                return;
+
+            case aoHidd_Gfx_DisplayDefault:
+                *msg->storage = (IPTR)XSD(cl)->displayhidd;
+                return;
+        }
+    }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
+VOID GDIDisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+
+    if (IS_DISPLAY_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+            case aoHidd_Display_SpriteTypes:
+                *msg->storage = vHidd_SpriteType_DirectColor;
                 return;
         }
     }
@@ -502,11 +543,15 @@ static void ShowList(struct gdi_staticdata *xsd, struct gfx_data *data, struct M
     xsd->showtask = NULL;
 }
 
-ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
+ULONG GDIDisplay__Hidd_Display__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ShowViewPorts *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfxhidd;
+    struct gfx_data *data;
     struct HIDD_ViewPortData *vpdata;
     struct MinList new_bitmaps;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfxhidd);
+    data = OOP_INST_DATA(XSD(cl)->gfxclass, gfxhidd);
 
     Forbid();
 
@@ -529,10 +574,14 @@ ULONG GDICl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_
 /* This method is needed for software mouse sprite emulation so that we can test it on
    this driver */
 
-OOP_Object *GDICl__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
+OOP_Object *GDIDisplay__Hidd_Display__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfxhidd;
+    struct gfx_data *data;
     struct MinList new_bitmaps;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfxhidd);
+    data = OOP_INST_DATA(XSD(cl)->gfxclass, gfxhidd);
 
     Forbid();
 
@@ -585,9 +634,10 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 
 /****************************************************************************************/
 
-BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL GDIDisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
-    struct gfx_data *data = OOP_INST_DATA(cl, o);
+    OOP_Object *gfxhidd;
+    struct gfx_data *data;
     OOP_Object *pfmt;
     OOP_Object *colormap;
     IPTR depth;
@@ -596,6 +646,9 @@ BOOL GDICl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_
     ULONG bufsize;
     APTR buf_bm, mask_bm;
     APTR cursor = NULL;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfxhidd);
+    data = OOP_INST_DATA(XSD(cl)->gfxclass, gfxhidd);
     
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -667,7 +720,7 @@ static struct HIDD_ModeProperties mode_props = {
     COMPF_ABOVE|COMPF_BELOW|COMPF_LEFT|COMPF_RIGHT
 };
 
-ULONG GDICl__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
+ULONG GDIDisplay__Hidd_Display__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_ModeProperties *msg)
 {
     ULONG len = msg->propsLen;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc: BCM VideoCore4 Gfx Hidd initialisation code
 */
@@ -80,6 +80,8 @@ static const STRPTR interfaces[] =
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
     IID_Hidd_Gfx,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum,
     IID_Hidd
 };
 

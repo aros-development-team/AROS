@@ -36,8 +36,8 @@
 
 /****************************************************************************************/
 
-HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxBase *GfxBase);
+HIDDT_ModeID get_best_resolution_and_depth(struct monitor_displaydata *mdd, struct GfxBase *GfxBase);
+struct monitor_displaydata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxBase *GfxBase);
 
 /****************************************************************************************/
 

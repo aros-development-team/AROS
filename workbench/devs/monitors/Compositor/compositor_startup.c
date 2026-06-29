@@ -18,6 +18,8 @@ OOP_AttrBase HiddPixFmtAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddGCAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
+OOP_AttrBase HiddDMEnumAttrBase;
 OOP_AttrBase HiddCompositorAttrBase;
 
 const TEXT version[] = "$VER: Compositor 41.2 (22.06.2019)\n";
@@ -56,6 +58,8 @@ int main(void)
         { IID_Hidd_Sync,            &HiddSyncAttrBase                   },
         { IID_Hidd_BitMap,          &HiddBitMapAttrBase                 },
         { IID_Hidd_GC,              &HiddGCAttrBase                     },
+        { IID_Hidd_Display,         &HiddDisplayAttrBase                },
+        { IID_Hidd_DMEnum,          &HiddDMEnumAttrBase                 },
         { IID_Hidd_Compositor,      &HiddCompositorAttrBase             },
         { NULL,                     NULL                                }
     };

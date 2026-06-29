@@ -1,7 +1,7 @@
 #ifndef HIDD_COMPOSITING_H
 #define HIDD_COMPOSITING_H
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,12 +45,12 @@ enum
 
 enum
 {
-    aoHidd_Compositor_GfxHidd = 0, /* [I..] Gfx driver object connected with this compositor object */
+    aoHidd_Compositor_DisplayHidd = 0, /* [I..] Display driver object connected with this compositor object */
     
     num_Hidd_Compositor_Attrs
 };
 
-#define aHidd_Compositor_GfxHidd  (HiddCompositorAttrBase + aoHidd_Compositor_GfxHidd)
+#define aHidd_Compositor_DisplayHidd  (HiddCompositorAttrBase + aoHidd_Compositor_DisplayHidd)
 
 #define IS_COMPOSITING_ATTR(attr, idx) \
     (((idx) = (attr) - HiddCompositorAttrBase) < num_Hidd_Compositor_Attrs)

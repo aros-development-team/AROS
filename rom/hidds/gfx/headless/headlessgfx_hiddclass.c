@@ -62,13 +62,12 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     };
     struct TagItem modetags[] =
     {
-        {aHidd_Gfx_PixFmtTags, (IPTR)pftags},
-        {aHidd_Gfx_SyncTags,   (IPTR)sync_mode},
+        {aHidd_DMEnum_PixFmtTags, (IPTR)pftags},
+        {aHidd_DMEnum_SyncTags,   (IPTR)sync_mode},
         {TAG_DONE, 0UL}
     };
     struct TagItem msgNewTags[] =
     {
-        { aHidd_Gfx_ModeTags, (IPTR)modetags},
         { aHidd_Name            , (IPTR)"headlessgfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"Headless Display Controller"   },
         { aHidd_ProducerName    , (IPTR)"The AROS Dev Team"  },
@@ -83,8 +82,8 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     if (XSD(cl)->headlessgfxhidd)
         return NULL;
 
-    if ((msgNewTags[4].ti_Data = (IPTR)msg->attrList) == 0)
-        msgNewTags[4].ti_Tag = TAG_DONE;
+    if ((msgNewTags[3].ti_Data = (IPTR)msg->attrList) == 0)
+        msgNewTags[3].ti_Tag = TAG_DONE;
 
     msgNew.mID = msg->mID;
     msgNew.attrList = msgNewTags;
@@ -92,15 +91,24 @@ OOP_Object *HeadlessGfx__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&msgNew);
     if (o)
     {
-        struct HeadlessGfxHiddData *data = OOP_INST_DATA(cl, o);
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
 
         D(bug("Got object from super\n"));
         XSD(cl)->headlessgfxhidd = o;
+
+        XSD(cl)->headlessgfxdisplay = OOP_NewObject(XSD(cl)->displayclass, NULL, displaytags);
+        if (XSD(cl)->headlessgfxdisplay)
+            OOP_GetAttr(XSD(cl)->headlessgfxdisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
     }
     ReturnPtr("HeadlessGfx::New", OOP_Object *, o);
 }
 
-OOP_Object *HeadlessGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *HeadlessGfxDisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -116,7 +124,7 @@ OOP_Object *HeadlessGfx__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, st
             {TAG_IGNORE, 0                  },
             {TAG_MORE  , (IPTR)msg->attrList}
         };
-        struct pHidd_Gfx_CreateObject p;
+        struct pHidd_Display_CreateObject p;
 
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
         if (displayable)

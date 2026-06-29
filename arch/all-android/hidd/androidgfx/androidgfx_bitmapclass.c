@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Android bitmap class.
 */
@@ -33,7 +33,6 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     {
         struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
-        OOP_Object *gfx     = NULL;
         OOP_Object *sync    = NULL;
         OOP_Object *pixfmt  = NULL;
         HIDDT_ModeID modeid = vHidd_ModeID_Invalid;
@@ -46,7 +45,6 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         OOP_GetAttr(o, aHidd_BitMap_Height, &height);
         OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &mod);
         OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfx);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, &data->pixels);
 
         data->bm_width    = width;
@@ -62,9 +60,8 @@ OOP_Object *ABitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
         DNEW(bug("[ABitmap] Created bitmap %ldx%ld\n", width, height));
         DNEW(bug("[ABitmap] Buffer at 0x%p, %ld bytes per row\n", data->pixels, mod));
-        DNEW(bug("[ABitmap] Display driver object: 0x%p\n", gfx));
 
-        HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+        HIDD_DMEnum_GetMode(XSD(cl)->dmenum, modeid, &sync, &pixfmt);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 

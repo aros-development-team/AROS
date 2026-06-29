@@ -31,7 +31,7 @@
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
 
-HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
+HIDDT_ModeID get_best_resolution_and_depth(struct monitor_displaydata *mdd, struct GfxBase *GfxBase)
 {
     HIDDT_ModeID ret = vHidd_ModeID_Invalid;
     struct DisplayInfoHandle *dh;
@@ -42,7 +42,7 @@ HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struc
         OOP_Object *sync, *pf;
         IPTR depth;
 
-        HIDD_Gfx_GetMode(mdd->gfxhidd, dh->id, &sync, &pf);
+        HIDD_DMEnum_GetMode(mdd->mdisplay.display_dmenum, dh->id, &sync, &pf);
         OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
 
         if(depth >= best_depth) {
@@ -64,11 +64,11 @@ HIDDT_ModeID get_best_resolution_and_depth(struct monitor_driverdata *mdd, struc
 }
 
 /* Looks up a DriverData corresponding to a MonitorSpec */
-struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxBase *GfxBase)
+struct monitor_displaydata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxBase *GfxBase)
 {
-    struct monitor_driverdata *ret = NULL;
-    struct monitor_driverdata *mdd;
-    OOP_Object *drv;
+    struct monitor_displaydata *ret = NULL;
+    struct monitor_displaydata *mdd;
+    OOP_Object *dmenum;
 
     if(!mspc)
         return NULL;
@@ -80,16 +80,19 @@ struct monitor_driverdata *MonitorFromSpec(struct MonitorSpec *mspc, struct GfxB
     if(!mspc->ms_Object)
         return NULL;
 
-    OOP_GetAttr((OOP_Object *)mspc->ms_Object, aHidd_Sync_GfxHidd, (IPTR *)&drv);
+    D(bug("[graphics.library] %s: driver display @ 0x%p\n", __func__, mspc->ms_Object));
+
+    OOP_GetAttr((OOP_Object *)mspc->ms_Object, aHidd_Sync_DMEnumerator, (IPTR *)&dmenum);
+    D(bug("[graphics.library] %s: dmenum @ 0x%p\n", __func__, dmenum));
 
     ObtainSemaphoreShared(&CDD(GfxBase)->displaydb_sem);
 
-    for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
+    for(mdd = GFXPRIVATE_MONITORFIRST; mdd; mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next) {
         /*
-         * Sync objects know nothing about fakegfx proxy class.
-         * They carry a pointer to a real driver object.
+         * Sync objects carry a pointer to the display mode enumerator
+         * of the display they belong to.
          */
-        if(mdd->gfxhidd_orig == drv) {
+        if(mdd->mdisplay.display_dmenum == dmenum) {
             ret = mdd;
             break;
         }

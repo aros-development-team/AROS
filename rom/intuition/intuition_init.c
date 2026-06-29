@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     Copyright (C) 2001-2013, The MorphOS Development Team. All Rights Reserved.
 */
 
@@ -87,6 +87,8 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         {IID_Hidd_Sync   , &GetPrivIBase(LIBBASE)->HiddSyncAttrBase   },
         {IID_Hidd_BitMap, &GetPrivIBase(LIBBASE)->HiddBitMapAttrBase},
         {IID_Hidd_PixFmt, &GetPrivIBase(LIBBASE)->HiddPixFmtAttrBase},
+        {IID_Hidd_Display, &GetPrivIBase(LIBBASE)->HiddDisplayAttrBase},
+        {IID_Hidd_DMEnum, &GetPrivIBase(LIBBASE)->HiddDMEnumAttrBase},
         {NULL           , NULL                                       }
     };
 
@@ -119,6 +121,8 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->ib_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
     LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    LIBBASE->ib_HiddDisplayBase = OOP_GetMethodID(IID_Hidd_Display, 0);
+    LIBBASE->ib_HiddDMEnumBase = OOP_GetMethodID(IID_Hidd_DMEnum, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
         return FALSE;

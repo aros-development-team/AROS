@@ -65,7 +65,9 @@ static const STRPTR interfaces[ATTRBASES_NUM] =
     IID_Hidd_Gfx,
     IID_Hidd_PixFmt,
     IID_Hidd_Sync,
-    IID_Hidd
+    IID_Hidd,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum
 };
 
 static int HeadlessGfx_Init(LIBBASETYPEPTR LIBBASE)

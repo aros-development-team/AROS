@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2015 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -22,6 +22,8 @@
 
 #define CLID_Hidd_Gfx_SDL    "hidd.gfx.sdl"
 #define IID_Hidd_Gfx_SDL     "hidd.gfx.sdl"
+#define CLID_Hidd_Display_SDL "hidd.display.sdl"
+#define IID_Hidd_Display_SDL  "hidd.display.sdl"
 
 struct gfxdata
 {
@@ -91,9 +93,13 @@ struct sdlhidd
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class               *gfxclass;
+    OOP_Class               *displayclass;
     OOP_Class               *bmclass;
     OOP_Class               *mouseclass;
     OOP_Class               *kbdclass;
+
+    OOP_Object              *display;
+    OOP_Object              *dmenum;
 
     struct Task             *eventtask;
     /* Object instance would be a better place for this, but event handler task gets
@@ -109,12 +115,16 @@ struct sdlhidd
 
     BOOL                    use_hwsurface;
     BOOL                    use_fullscreen;
+
+    struct SignalSemaphore  sdl_lock;       /* Serialises SDL/Xlib access between
+                                               the render path and the event task */
 };
 
 #define LIBBASETYPEPTR struct sdlhidd *
 
 /* Class descriptors */
 extern struct OOP_InterfaceDescr SDLGfx_ifdescr[];
+extern struct OOP_InterfaceDescr SDLGfx_Display_ifdescr[];
 extern struct OOP_InterfaceDescr SDLBitMap_ifdescr[];
 extern struct OOP_InterfaceDescr SDLMouse_ifdescr[];
 extern struct OOP_InterfaceDescr SDLKbd_ifdescr[];

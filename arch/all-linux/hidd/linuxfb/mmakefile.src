@@ -12,6 +12,7 @@ FILES	:=	\
 	linuxfbgfx_startup \
 	linuxfbgfx_init \
 	linuxfbgfx_hiddclass \
+	linuxfbgfx_displayclass \
 	linuxfbgfx_bitmapclass
 
 #MM kernel-hidd-linuxfb : linklibs

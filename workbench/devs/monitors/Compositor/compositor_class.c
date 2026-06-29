@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -674,7 +674,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
                      * 3. Internally this is a simple blit operation, it can't fail.
                      */
                     DTOGGLE(bug("[Compositor] %s: Copying old Famebuffer BitMap\n", __func__));
-                    compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, compdata->fb, fHidd_Gfx_Show_CopyBack);
+                    compdata->screenbitmap = HIDD_Display_Show(compdata->display, compdata->fb, fHidd_Display_Show_CopyBack);
                 }
 
                 /* Switch display mode on the framebuffer. */
@@ -762,7 +762,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
     {
         IPTR w, h;
 
-        compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, newsdispbitmap, fHidd_Gfx_Show_CopyBack);
+        compdata->screenbitmap = HIDD_Display_Show(compdata->display, newsdispbitmap, fHidd_Display_Show_CopyBack);
         DTOGGLE(bug("[Compositor] %s: Displayed HiddBitMap 0x%p, Show returned 0x%p\n", __func__, newsdispbitmap, compdata->screenbitmap));
 
         /* After Show we need Update for mirroring drivers */
@@ -773,6 +773,7 @@ static BOOL HIDDCompositorToggleCompositing(struct HIDDCompositorData *compdata,
             HIDD_BM_UpdateRect(compdata->screenbitmap, 0, 0, w, h);
         }
     }
+
 
     /*
      * (a) - disposing of previous compositing buffers needs to happen after mode switch
@@ -831,7 +832,7 @@ static void HIDDCompositorShowSingle(struct HIDDCompositorData *compdata, OOP_Ob
 {
     /* Show the single top bitmap */
     compdata->topbitmap = bm;
-    compdata->screenbitmap = HIDD_Gfx_Show(compdata->gfx, bm, fHidd_Gfx_Show_CopyBack);
+    compdata->screenbitmap = HIDD_Display_Show(compdata->display, bm, fHidd_Display_Show_CopyBack);
 
     /* Dispose working bitmap (if any) */
     if (compdata->displaybitmap)
@@ -983,23 +984,34 @@ OOP_Object *METHOD(Compositor, Root, New)
         InitSemaphore(&compdata->semaphore);
 
         compdata->displayid = (ULONG)GetTagData(aHidd_Compositor_DisplayID, 0, msg->attrList);
-        compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
+        compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
         compdata->fb  = (OOP_Object *)GetTagData(aHidd_Compositor_FrameBuffer, 0, msg->attrList);
 
-        D(bug("[Compositor] %s: DisplayID %08lx for Gfx Driver @ 0x%p\n", __func__, compdata->displayid, compdata->gfx));
+        /*
+         * The compositor is attached to a Display object. Drawing (CopyBox) is still
+         * performed via the underlying gfx driver, and mode lookups via the display's
+         * mode enumerator, so cache both from the display.
+         */
+        if (compdata->display)
+        {
+            OOP_GetAttr(compdata->display, aHidd_Display_GfxHidd, (IPTR *)&compdata->gfx);
+            OOP_GetAttr(compdata->display, aHidd_Display_DMEnumerator, (IPTR *)&compdata->dmenum);
+        }
+
+        D(bug("[Compositor] %s: DisplayID %08lx for Display @ 0x%p (Gfx @ 0x%p)\n", __func__, compdata->displayid, compdata->display, compdata->gfx));
 
         GfxBase = (APTR)OpenLibrary("graphics.library", 41);
         IntuitionBase = (APTR)OpenLibrary("intuition.library", 50);
 
-        /* GfxHidd is mandatory */
-        if ((compdata->GraphicsBase) && (compdata->gfx != NULL))
+        /* Display is mandatory */
+        if ((compdata->GraphicsBase) && (compdata->display != NULL))
         {
             /* Create GC object that will be used for drawing operations */
-            compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, OOP_FindClass(CLID_Hidd_GC), NULL);
+            compdata->gc = HIDD_Display_CreateObject(compdata->display, OOP_FindClass(CLID_Hidd_GC), NULL);
 
             D(bug("[Compositor] %s: Compositor GC @ %p\n", __func__, compdata->gc));
 
-            if ((compdata->gfx) && (compdata->gc))
+            if ((compdata->display) && (compdata->gc))
                     return o;
         }
 
@@ -1383,7 +1395,7 @@ IPTR METHOD(Compositor, Hidd_Compositor, BitMapPositionChange)
             return FALSE;
         }
 
-        HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
+        HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &disp_width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &disp_height);
     }

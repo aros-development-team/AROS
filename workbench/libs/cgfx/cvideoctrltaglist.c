@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -61,11 +61,11 @@
 
     struct TagItem *tag, *tstate;
     ULONG dpmslevel = 0;
-    OOP_Object *gfxhidd = NULL;
+    OOP_Object *displayhidd = NULL;
     
     struct TagItem htags[] =
     {
-        { aHidd_Gfx_DPMSLevel,  0UL     },
+        { aHidd_Display_DPMSLevel,  0UL     },
         { TAG_DONE, 0UL }
     };
     
@@ -133,9 +133,9 @@
         htags[0].ti_Tag = TAG_IGNORE;
     }
     
-    OOP_GetAttr(HIDD_BM_OBJ(vp->RasInfo->BitMap), aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-    if (gfxhidd)
-        OOP_SetAttrs(gfxhidd, htags);
+    OOP_GetAttr(HIDD_BM_OBJ(vp->RasInfo->BitMap), aHidd_BitMap_Display, (IPTR *)&displayhidd);
+    if (displayhidd)
+        OOP_SetAttrs(displayhidd, htags);
 
     AROS_LIBFUNC_EXIT
 } /* CVideoCtrlTagList */

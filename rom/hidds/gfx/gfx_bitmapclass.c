@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include "gfx_intern.h"
+#include "gfx_display.h"
 
 /****************************************************************************************/
 
@@ -396,7 +397,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
 /*****************************************************************************************
 
     NAME
-        aoHidd_BitMap_GfxHidd
+        aoHidd_BitMap_Display
 
     SYNOPSIS
         [I.G], OOP_Object *
@@ -409,7 +410,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWOR
 
         Normally the user doesn't have to supply this attribute. Instead you should use
         driver's moHidd_Gfx_CreateObject method in order to create bitmaps. In this case
-        aoHidd_BitMap_GfxHidd attribute will be provided by graphics driver base class
+        aoHidd_BitMap_Display attribute will be provided by graphics driver base class
         with the correct value.
 
         It is illegal to manually create bitmap objects with no driver associated.
@@ -927,8 +928,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
                     data->bytesPerRow = tag->ti_Data;
                     break;
 
-                case aoHidd_BitMap_GfxHidd:
-                    data->gfxhidd = (OOP_Object *)tag->ti_Data;
+                case aoHidd_BitMap_Display:
+                    data->display_obj = (OOP_Object *)tag->ti_Data;
                     break;
 
                 case aoHidd_BitMap_Friend:
@@ -958,8 +959,8 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             }
         }
 
-        /* aoHidd_BitMap_GfxHidd is mandatory */
-        if (!data->gfxhidd)
+        /* aoHidd_BitMap_Display is mandatory */
+        if (!data->display_obj)
         {
             D(bug("!!!! BM CLASS DID NOT GET GFX HIDD !!!\n"));
             D(bug("!!!! The reason for this is that the gfxhidd subclass CreateObject() method\n"));
@@ -968,6 +969,10 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
             ok = FALSE;
         }
+
+        /* Cache the display's mode enumerator for mode/pixfmt lookups */
+        if (data->display_obj)
+            OOP_GetAttr(data->display_obj, aHidd_Display_DMEnumerator, (IPTR *)&data->dmenum);
 
         /* FrameBuffer implies Displayable */
         if (data->framebuffer)
@@ -993,7 +998,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             {
                 OOP_Object *sync, *pf;
 
-                if (!HIDD_Gfx_GetMode(data->gfxhidd, bmmodeid, &sync, &pf))
+                if (!HIDD_DMEnum_GetMode(data->dmenum, bmmodeid, &sync, &pf))
                 {
                     D(bug("!!! BitMap::New() RECEIVED INVALID MODEID 0x%08X\n", bmmodeid));
                     data->compositable = ok = FALSE;
@@ -1051,7 +1056,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             InitSemaphore(&data->lock);
 
             /* Cache default GC */
-            OOP_GetAttr(data->gfxhidd, aHidd_Gfx_DefaultGC, (IPTR *)&data->gc);
+            OOP_GetAttr(data->display_obj, aHidd_Display_DefaultGC, (IPTR *)&data->gc);
 
             /*
              * Initialize the direct method calling.
@@ -1143,7 +1148,7 @@ void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 
     /* Release the previously registered pixel format */
     if (data->pf_registered)
-        GFXHIDD__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
+        DMEnum__Internal__ReleasePixFmt(CSD(cl)->dmenumclass, data->prot.pixfmt);
 
     OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
 
@@ -1204,8 +1209,8 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             *msg->storage = (IPTR)data->colmap;
             return;
 
-        case aoHidd_BitMap_GfxHidd:
-            *msg->storage = (IPTR)data->gfxhidd;
+        case aoHidd_BitMap_Display:
+            *msg->storage = (IPTR)data->display_obj;
             return;
 
         case aoHidd_BitMap_ModeID:
@@ -1341,7 +1346,7 @@ BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
 
         if (data->visible)
         {
-            ret = GFXHIDD__Hidd_Gfx__SetFBColors(CSD(cl)->gfxhiddclass, data->gfxhidd, msg);
+            ret = Display__Hidd_Display__SetFBColors(CSD(cl)->displayclass, data->display_obj, msg);
         }
 
         ReleaseSemaphore(&data->lock);
@@ -2591,7 +2596,7 @@ static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt st
             break;
 
         default:
-            pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, stdpf);
+            pf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, stdpf);
 
             if (NULL == pf)
             {
@@ -2723,7 +2728,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
                 OOP_Object *dstpf;
                 APTR        buf, srcPixels;
 
-                dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                dstpf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, msg->pixFmt);
 
                 buf = srcPixels = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
                 if (buf)
@@ -2887,7 +2892,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
                 OOP_Object *srcpf;
                 APTR        buf, destPixels;
 
-                srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+                srcpf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, msg->pixFmt);
 
                 buf = destPixels = AllocVec(msg->width * sizeof(HIDDT_Pixel), MEMF_PUBLIC);
                 if (buf)
@@ -4364,7 +4369,7 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
             data = OOP_INST_DATA(cl, o);
 
-            pf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+            pf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, msg->pixFmt);
 
             if (NULL == pf)
             {
@@ -4416,7 +4421,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
         HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         OOP_Object *sync, *pixfmt;
 
-        if (HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt))
+        if (HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt))
         {
             data->modeid = modeid;
             /*
@@ -4507,7 +4512,7 @@ IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
             if (data->visible)
             {
-                GFXHIDD__Hidd_Gfx__UpdateFB(CSD(cl)->gfxhiddclass, data->gfxhidd,
+                Display__Hidd_Display__UpdateFB(CSD(cl)->displayclass, data->display_obj,
                                         obj, data->display.MinX, data->display.MinY,
                                         0, 0, data->displayWidth, data->displayHeight);
             }
@@ -5097,7 +5102,7 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
             /* Update the intersection region, if any */
             if ((xLimit > srcX) && (yLimit > srcY))
             {
-                GFXHIDD__Hidd_Gfx__UpdateFB(CSD(cl)->gfxhiddclass, data->gfxhidd,
+                Display__Hidd_Display__UpdateFB(CSD(cl)->displayclass, data->display_obj,
                                         o, srcX, srcY,
                                         srcX - data->display.MinX, srcY - data->display.MinY,
                                         xLimit - srcX, yLimit - srcY);
@@ -5164,7 +5169,7 @@ void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem
                     {
                         OOP_Object *sync, *pf;
 
-                        if (!HIDD_Gfx_GetMode(data->gfxhidd, compositmodeid, &sync, &pf))
+                        if (!HIDD_DMEnum_GetMode(data->dmenum, compositmodeid, &sync, &pf))
                         {
                             data->compositable = FALSE;
                         }
@@ -5198,7 +5203,7 @@ void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf)
 
     /* Already a pixfmt registered? */
     if (data->pf_registered)
-        GFXHIDD__Hidd_Gfx__ReleasePixFmt(CSD(cl)->gfxhiddclass, data->prot.pixfmt);
+        DMEnum__Internal__ReleasePixFmt(CSD(cl)->dmenumclass, data->prot.pixfmt);
 
     /* Remember the new pixelformat */
     data->prot.pixfmt = pf;

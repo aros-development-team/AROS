@@ -1592,16 +1592,17 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         }
 
         /*
-         * Store new mouse coords. If a screen is being dragged, lock drag point
+         * Store new mouse coords.
+         *
+         * While a screen is being dragged it is repositioned separately, from the
+         * mouse delta, via ScreenPosition() above. The screen only follows the
+         * pointer in the direction(s) it is permitted to move (e.g. a full-width
+         * screen can only move vertically). The pointer itself must keep tracking
+         * the real mouse, otherwise it gets locked to the drag point in whatever
+         * direction the screen cannot move.
          */
-        scr = iihdata->ScreenDrag;
-        if (scr) {
-            IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
-            IntuitionBase->MouseY = scr->TopEdge + iihdata->ScreenDragPointY;
-        } else {
-            IntuitionBase->MouseX = ie->ie_X;
-            IntuitionBase->MouseY = ie->ie_Y;
-        }
+        IntuitionBase->MouseX = ie->ie_X;
+        IntuitionBase->MouseY = ie->ie_Y;
         notify_mousemove_screensandwindows(IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
         SetActiveMonPointerPos(IntuitionBase);

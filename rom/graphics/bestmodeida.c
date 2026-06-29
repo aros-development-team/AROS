@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include "graphics_intern.h"
+#include "graphics_driver.h"
 #include "gfxfuncsupport.h"
 #include "dispinfo.h"
 
@@ -45,7 +46,7 @@ struct MatchData {
     UWORD  found_height;
 };
 
-static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchData *args, ULONG modemask,
+static void BestModeIDForMonitor(struct monitor_displaydata *mdd, struct MatchData *args, ULONG modemask,
                                  struct GfxBase *GfxBase)
 {
     struct DisplayInfoHandle *dinfo;
@@ -55,7 +56,7 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
     if(args->boardname) {
         STRPTR name;
 
-        OOP_GetAttr(mdd->gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
+        OOP_GetAttr(mdd->mdisplay.display_gfxhidd, aHidd_Gfx_DriverName, (IPTR *)&name);
         if(strcmp(args->boardname, name)) {
             D(bug("[Gfx] %s: CYBRBIDTG_BoardName didn't match. '%s' != '%s'\n", __PRETTY_FUNCTION__, args->boardname, name));
             return;
@@ -64,7 +65,7 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
 
     for(dinfo = mdd->modes; dinfo->id != vHidd_ModeID_Invalid; dinfo++) {
         UWORD gm_width, gm_height;
-        ULONG modeid = mdd->id | dinfo->id;
+        ULONG modeid = mdd->mdisplay.display_idbase | dinfo->id;
 
         D(bug("[Gfx] %s: Checking ModeID 0x%08X (0x%08X 0x%08X)... ", __PRETTY_FUNCTION__, modeid, modeid & modemask,
               modemask));
@@ -135,7 +136,7 @@ static void BestModeIDForMonitor(struct monitor_driverdata *mdd, struct MatchDat
     } /* for (each mode) */
 }
 
-static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct MatchData *args, ULONG modemask,
+static BOOL FindBestModeIDForMonitor(struct monitor_displaydata *monitor, struct MatchData *args, ULONG modemask,
                                      struct GfxBase *GfxBase)
 {
     /* First we try to search in preferred monitor (if present) */
@@ -144,10 +145,10 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
 
     /* And if nothing was found there, check other monitors */
     if(args->found_id == INVALID_ID) {
-        struct monitor_driverdata *mdd;
+        struct monitor_displaydata *mdd;
 
-        for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-            if(mdd != monitor)
+        for(mdd = GFXPRIVATE_MONITORFIRST; mdd; mdd = (struct monitor_displaydata *)mdd->mdisplay.display_next) {
+            if((mdd != monitor) && (mdd->mdisplay.display_flags & DF_Enabled))
                 BestModeIDForMonitor(mdd, args, modemask, GfxBase);
         }
     }
@@ -225,7 +226,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
     struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;
     struct DimensionInfo dims;
-    struct monitor_driverdata *monitor;
+    struct monitor_displaydata *monitor;
     struct ViewPort *vp = NULL;
     ULONG  sourceid = INVALID_ID;
     struct MatchData args = {
@@ -243,8 +244,50 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
 
     D(bug("[Gfx] %s()\n", __PRETTY_FUNCTION__));
 
-    /* Obtain default monitor driver */
-    monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
+    /*
+     * Obtain default monitor driver.  If there is no default monitor yet,
+     * replay any queued boot-mode drivers (e.g. the boot VESA/VGA framebuffer
+     * driver registered with DDRV_BootMode) so they are instantiated on demand.
+     * driver_Setup() queues such drivers instead of bringing them up; without
+     * this replay the machine is left with no usable display.
+     */
+    monitor = NULL;
+    while (1)
+    {
+        struct gfxboot_entry *boote;
+
+        if (GfxBase->default_monitor)
+        {
+            monitor = MonitorFromSpec(GfxBase->default_monitor, GfxBase);
+            break;
+        }
+
+        if ((boote = PrivGBase(GfxBase)->boot_first) == NULL)
+            break;
+
+        D(bug("[BestModeIDA] replaying queued boot driver entry=0x%p cfg=0x%p\n",
+            boote, boote->boot_cfg));
+
+        if (driver_Setup(boote->boot_cfg, boote->boot_attribs, TRUE, GfxBase))
+        {
+            D(bug("[BestModeIDA]   -> launched; default_monitor now 0x%p\n",
+                GfxBase->default_monitor));
+            PrivGBase(GfxBase)->boot_first = boote->boot_next;
+            FreeMem(boote, sizeof(struct gfxboot_entry));
+            continue;
+        }
+
+        D(bug("[BestModeIDA]   -> FAILED to instantiate boot driver\n"));
+        PrivGBase(GfxBase)->boot_first = boote->boot_next;
+        boote->boot_next = NULL;
+        if (PrivGBase(GfxBase)->boot_first != NULL)
+        {
+            driver_Queue(boote, GfxBase);
+            continue;
+        }
+        FreeMem(boote, sizeof(struct gfxboot_entry));
+        break;
+    }
 
     /* Get defaults which can be overriden */
     while((tag = NextTagItem(&tstate))) {
@@ -276,7 +319,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
             args.nominal_height = vp->DHeight;
             args.depth          = GET_BM_DEPTH(vp->RasInfo->BitMap);
             sourceid            = GetVPModeID(vp);
-            monitor             = GET_VP_DRIVERDATA(vp);
+            monitor             = (struct monitor_displaydata *)GET_VP_DRIVERDATA(vp);
             break;
 
         /* Offer some help to cybergraphics.library */
@@ -298,7 +341,7 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
             /* Override monitor and nominal size from source ID only if there was no ViewPort specified */
             dinfo = FindDisplayInfo(sourceid);
             if(dinfo)
-                monitor = dinfo->drv;
+                monitor = (struct monitor_displaydata *)dinfo->drv;
 
             if(GetDisplayInfoData(dinfo, (UBYTE *)&dims, sizeof(dims), DTAG_DIMS, sourceid) >= offsetof(struct DimensionInfo,
                     MaxOScan)) {
@@ -321,9 +364,9 @@ static BOOL FindBestModeIDForMonitor(struct monitor_driverdata *monitor, struct 
     if(!args.nominal_width) {
         D(bug("[Gfx] %s: obtaining nominal values ...\n", __PRETTY_FUNCTION__));
 
-        if(monitor && monitor->gfxhidd) {
-            D(bug("[Gfx] %s: querying monitors gfx driver @ 0x%p\n", __PRETTY_FUNCTION__, monitor->gfxhidd));
-            HIDD_Gfx_NominalDimensions(monitor->gfxhidd, &args.nominal_width, &args.nominal_height, &args.depth);
+        if(monitor && monitor->mdisplay.display_obj) {
+            D(bug("[Gfx] %s: querying monitors display obj @ 0x%p\n", __PRETTY_FUNCTION__, monitor->mdisplay.display_obj));
+            HIDD_Display_NominalDimensions(monitor->mdisplay.display_obj, &args.nominal_width, &args.nominal_height, &args.depth);
         } else {
             //  fallback to hardcoded values..
             args.nominal_width  = 640;

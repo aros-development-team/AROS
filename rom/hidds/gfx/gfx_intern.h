@@ -75,7 +75,8 @@ struct planarbm_data
 
 struct chunkybm_data
 {
-    OOP_Object *gfxhidd;       	/* Cached driver object				*/
+    OOP_Object *display;       	/* Owning display				*/
+    OOP_Object *dmenum;        	/* Owning display's mode enumerator		*/
     UBYTE      *buffer;		/* Pixelbuffer		  			*/
     ULONG	bytesperrow;	/* Cached for faster access 			*/
     UWORD	bytesperpixel;
@@ -103,7 +104,7 @@ struct sync_data
     ULONG vmin;
     ULONG vmax;
 
-    OOP_Object	 *gfxhidd;	 /* Graphics driver that owns this sync		*/
+    OOP_Object	 *dmenum;	 /* DMEnum that owns this sync			*/
     ULONG InternalFlags;	 /* Internal flags, see below			*/
 };
 
@@ -150,48 +151,22 @@ struct mode_db {
 
 struct HiddGfxData
 {
-	/* Gfx mode "database" */
-	struct mode_db mdb;
-
-	/* Framebuffer control stuff */
-	OOP_Object *framebuffer;
-	OOP_Object *shownbm;
-	BYTE        fbmode;
-	struct SignalSemaphore fbsem;
-
-	/* gc used for stuff like rendering cursor */
-	OOP_Object *gc;
+	IPTR        fbmode;         /* cached framebuffer type */
 };
 
-/* Private gfxhidd methods */
-OOP_Object *GFXHIDD__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
-VOID GFXHIDD__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
-
-static inline BOOL GFXHIDD__Hidd_Gfx__SetFBColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
+struct HIDDDMEnumData
 {
-    struct HiddGfxData *data = OOP_INST_DATA(cl, o);
+	OOP_Object *display;        /* The display object this enumerator belongs to */
 
-    return OOP_DoMethod(data->framebuffer, &msg->mID);
-}    
+	/* Gfx mode "database" */
+	struct mode_db mdb;
+};
 
-static inline UBYTE GFXHIDD__Hidd_Gfx__GetFBModeQuick(OOP_Class *cl, OOP_Object *o)
-{
-    struct HiddGfxData *data = OOP_INST_DATA(cl, o);
+/* Private dmenum methods */
+OOP_Object *DMEnum__Internal__GetPixFmt(OOP_Class *cl, HIDDT_StdPixFmt pixFmt);
+OOP_Object *DMEnum__Internal__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
+VOID DMEnum__Internal__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
 
-    return data->fbmode;
-}
-
-/* This has to be a #define, otherwise the HIDD_Gfx_CopyBox()
- * macro won't expand the HiddGfxBase macro to the csd
- * structure.
- */
-#define GFXHIDD__Hidd_Gfx__UpdateFB(cl, o, bm, srcX, srcY, destX, destY, xSize, ySize) \
-do { \
-    struct HiddGfxData *__data = OOP_INST_DATA(cl, o); \
-    HIDD_Gfx_CopyBox(o, bm, srcX, srcY, \
-                     __data->framebuffer, destX, destY, \
-                     xSize, ySize, __data->gc); \
-} while (0)
 
 /* Private bitmap methods */
 void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
@@ -218,7 +193,8 @@ struct HIDDBitMapData
     ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */
     ULONG                  bytesPerRow;   /* bytes per row                                 */
     OOP_Object            *friend;        /* Friend bitmap		                   */
-    OOP_Object            *gfxhidd;       /* Owning driver		                   */
+    OOP_Object            *display_obj;   /* Owning display                                */
+    OOP_Object            *dmenum;        /* Owning display's mode enumerator             */
     OOP_Object            *colmap;        /* Colormap                                      */
     OOP_Object            *gc;            /* Shared GC for copy operations                 */
     HIDDT_ModeID           modeid;        /* Display mode ID		                   */
@@ -295,8 +271,8 @@ struct HiddBMHistogramData
 #endif
 };
 
-#define NUM_ATTRBASES   12
-#define NUM_METHODBASES 6
+#define NUM_ATTRBASES   13
+#define NUM_METHODBASES 8
 
 struct class_static_data
 {
@@ -312,7 +288,10 @@ struct class_static_data
 
     OOP_Class            *gfxhwclass;                   /* graphics hw enumerator class         */
     OOP_Class            *gfxhiddclass; /* graphics hidd class    */
+    OOP_Class            *dmenumclass;  /* display mode enumerator class */
+    OOP_Class            *displayclass; /* display class          */
     OOP_Class            *bitmapclass;  /* bitmap class           */
+    OOP_Class            *cursorfbclass;        /* software-cursor framebuffer wrapper bitmap class */
     OOP_Class            *bmhistogramclass;
     OOP_Class            *gcclass;      /* graphics context class */
     OOP_Class		 *colormapclass; /* colormap class	  */
@@ -345,28 +324,33 @@ struct class_static_data
 #define __IHidd_BitMap	    (csd->attrBases[0])
 #define __IHidd_BMHistogram (csd->attrBases[1])
 #define __IHidd_Gfx 	    (csd->attrBases[2])
-#define __IHidd_GC  	    (csd->attrBases[3])
-#define __IHidd_ColorMap    (csd->attrBases[4])
-#define __IHW 	            (csd->attrBases[5])
-#define __IHidd             (csd->attrBases[6])
-#define __IHidd_Overlay	    (csd->attrBases[7])
-#define __IHidd_Sync	    (csd->attrBases[8])
-#define __IHidd_PixFmt      (csd->attrBases[9])
-#define __IHidd_PlanarBM    (csd->attrBases[10])
-#define __IHidd_ChunkyBM    (csd->attrBases[11])
+#define __IHidd_Display	    (csd->attrBases[3])
+#define __IHidd_DMEnum	    (csd->attrBases[4])
+#define __IHidd_GC  	    (csd->attrBases[5])
+#define __IHidd_ColorMap    (csd->attrBases[6])
+#define __IHW 	            (csd->attrBases[7])
+#define __IHidd             (csd->attrBases[8])
+#define __IHidd_Sync	    (csd->attrBases[9])
+#define __IHidd_PixFmt      (csd->attrBases[10])
+#define __IHidd_PlanarBM    (csd->attrBases[11])
+#define __IHidd_ChunkyBM    (csd->attrBases[12])
 
 #undef HiddBitMapBase
 #undef HiddBMHistogramBase
 #undef HiddGfxBase
+#undef HiddDisplayBase
+#undef HiddDMEnumBase
 #undef HiddGCBase
 #undef HiddColorMapBase
 #undef HWBase
 #define HiddBitMapBase	    (csd->methodBases[0])
 #define HiddBMHistogramBase (csd->methodBases[1])
 #define HiddGfxBase	    (csd->methodBases[2])
-#define HiddGCBase	    (csd->methodBases[3])
-#define HiddColorMapBase    (csd->methodBases[4])
-#define HWBase              (csd->methodBases[5])
+#define HiddDisplayBase	    (csd->methodBases[3])
+#define HiddDMEnumBase	    (csd->methodBases[4])
+#define HiddGCBase	    (csd->methodBases[5])
+#define HiddColorMapBase    (csd->methodBases[6])
+#define HWBase              (csd->methodBases[7])
 
 /* Library base */
 
@@ -381,6 +365,30 @@ struct IntHIDDGraphicsBase
 /* pre declarations */
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
+
+/*
+ * Software cursor framebuffer wrapper (CursorFB) support.
+ *
+ * The Display class renders the mouse pointer in software for drivers that have
+ * no hardware sprite. To keep the pointer from corrupting the display when the
+ * desktop is drawn underneath it, displayable/framebuffer bitmaps are wrapped in
+ * a CursorFB bitmap that brackets every pixel-writing operation with a
+ * hide/show of the pointer. These helpers (implemented in the Display class) are
+ * called by the CursorFB wrapper and by the gfx CopyBox de-masquerade.
+ */
+OOP_Class *init_cursorfbclass(struct class_static_data *csd);
+OOP_Object *create_cursorfb(struct class_static_data *csd, OOP_Object *display, OOP_Object *realbm);
+OOP_Object *cursorfb_realbitmap(struct class_static_data *csd, OOP_Object *bm);
+OOP_Object *cursorfb_display(struct class_static_data *csd, OOP_Object *bm);
+
+/* Display cursor primitives, called by the CursorFB wrapper while bracketing */
+struct SignalSemaphore *GfxDisplay_CursorSem(struct class_static_data *csd, OOP_Object *display);
+BOOL GfxDisplay_CursorIntersects(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm, WORD x1, WORD y1, WORD x2, WORD y2);
+void GfxDisplay_CursorRemove(struct class_static_data *csd, OOP_Object *display);
+void GfxDisplay_CursorRender(struct class_static_data *csd, OOP_Object *display);
+void GfxDisplay_CursorSetTarget(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm);
+void GfxDisplay_CursorUntarget(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm);
+
 
 static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD a2, UWORD r2, UWORD g2, UWORD b2)
 {
@@ -405,6 +413,14 @@ static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD
 
 #define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
 #define csd CSD(cl)
+
+#define SD(x)                       ((struct sync_data *)x)
+#define PF(x)                       ((HIDDT_PixelFormat *)x)
+
+#define XCOORD_TO_BYTEIDX(x)        ( (x) >> 3)
+#define COORD_TO_BYTEIDX(x, y, bpr) ( ( (y) * bpr ) + XCOORD_TO_BYTEIDX(x) )
+#define XCOORD_TO_MASK(x)           (1L << (7 - ((x) & 0x07) ))
+#define WIDTH_TO_BYTES(width)       ( (( (width) - 1) >> 3) + 1)
 
 /* The following calls are optimized by calling the method functions directly */
 

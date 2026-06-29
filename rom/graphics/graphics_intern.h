@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright Â© 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -75,85 +75,103 @@ typedef WORD PalExtra_AllocList_Type;
  * DisplayInfoData.
  */
 
-struct monitor_driverdata;
+/* driver data shared between its displays */
+struct gfxdriver_data {
+    APTR                        drv_class;
+    ULONG                       *drv_idstore;
+    ULONG                       drv_idbase;
+    ULONG                       drv_idnext;
+    ULONG                       drv_idcnt;
+    ULONG                       drv_idmask;
+    UWORD                       drv_flags;
+};
+
+struct gfxboot_entry {
+    struct gfxboot_entry        *boot_next;
+    struct gfxdriver_data       *boot_cfg;
+    struct TagItem              *boot_attribs;
+};
+
+/* common data describing a single physical display */
+struct gfxdisplay_data {
+    struct gfxdisplay_data      *display_next;	/* Next display in the chain			  */
+    ULONG                       display_idbase;	/* Card ID (part of display mode ID)		  */
+    ULONG                       display_mask;	/* Mask of mode ID				  */
+    UWORD                       display_flags;	/* Flags, see below				  */
+    UWORD                       display_private;
+    OOP_Object                  *display_obj;	/* display object to use			  */
+    OOP_Object                  *display_gfxhidd;/* displays graphics driver object		  */
+    OOP_Object                  *display_compositor;	/* screen composition object		  */
+    OOP_Object                  *display_dmenum;	/* display mode enumerator		  */
+    APTR                        display_userdata;
+    struct gfxdriver_data       *display_cfg;
+};
 
 struct DisplayInfoHandle {
-    HIDDT_ModeID	       id;  	/* HIDD Mode ID (without card ID)	    */
-    struct monitor_driverdata *drv;	/* Points back to display driver descriptor */
+    HIDDT_ModeID                id;  	        /* HIDD Mode ID (without card ID)	    */
+    struct gfxdisplay_data      *drv;	        /* Points back to display descriptor        */
 };
 
 #define DIH(x) ((struct DisplayInfoHandle *)x)
 
-/* Monitor driver data. Describes a single physical display. */
-struct monitor_driverdata {
-    struct monitor_driverdata *next;		/* Next driver data in chain			  */
-    ULONG		       id;		/* Card ID (part of display mode ID)		  */
-    ULONG		       mask;		/* Mask of mode ID				  */
-    OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
-    UWORD		       flags;		/* Flags, see below				  */
+/* Describes a single physical display. */
+struct monitor_displaydata {
+    struct gfxdisplay_data      mdisplay;	/* Display chain node (must be first)		  */
 
-    APTR		       userdata;	/* Associated data from notification callback	  */
-    struct HIDD_ViewPortData  *display;		/* What is currently displayed			  */
-
-    /* FakeGfx-related */
-    OOP_Object      	      *gfxhidd_orig;	/* Real graphics driver object			  */
-
-    /* Compositor-related */
-    OOP_Object		      *compositor;	/* screen composition HIDD object		  */
+    struct HIDD_ViewPortData    *display;	/* What is currently displayed			  */
 
     /* Framebuffer stuff */
-    struct BitMap   	      *frontbm;		/* Currently shown bitmap			  */
-    OOP_Object	    	      *framebuffer;	/* Framebuffer bitmap object			  */
-    OOP_Object	    	      *bm_bak;		/* Original shown bitmap object			  */
-    OOP_Object	    	      *colmap_bak;	/* Original colormap object of shown bitmap	  */
-    HIDDT_ColorModel 	      colmod_bak;	/* Original colormodel of shown bitmap		  */
+    struct BitMap               *frontbm;	/* Currently shown bitmap			  */
+    OOP_Object                  *framebuffer;	/* Framebuffer bitmap object			  */
+    OOP_Object                  *bm_bak;	/* Original shown bitmap object			  */
+    OOP_Object                  *colmap_bak;	/* Original colormap object of shown bitmap	  */
+    HIDDT_ColorModel            colmod_bak;	/* Original colormodel of shown bitmap		  */
 
     /* Display mode database. */
-    struct DisplayInfoHandle  modes[1];		/* Display modes array				  */
+    struct DisplayInfoHandle    modes[1];	/* Display modes array				  */
 };
+
+#define GFXPRIVATE_DISPLAYDATA(x) ((struct monitor_displaydata *)(x))
 
 /* Driver flags */
-#define DF_BootMode    0x0001	/* Boot mode driver				*/
-#define DF_UseFakeGfx  0x0002	/* Software mouse sprite is in use		*/
-#define DF_SoftCompose 0x0004	/* Software screen composition requested	*/
-#define DF_DirectFB    0x0008	/* Driver uses a direct-mode framebuffer	*/
+#define DF_Enabled      (1 << 0)
+#define DF_SoftCursor   (1 << 1)	/* Software cursor used				*/
+#define DF_SoftComposit (1 << 2)	/* Software screen composition requested	*/
+#define DF_DirectFB     (1 << 3)	/* Driver uses a direct-mode framebuffer	*/
+#define DF_BootSurvive  (1 << 15)	/* Boot mode driver that shouldnt be flushed	*/
+#define DF_BootMode     (1 << 14)	/* Boot mode driver				*/
 
-/* Common driver data data to all monitors */
-struct common_driverdata {
-    /* The order of these fields match struct monitor_driverdata */
-    struct monitor_driverdata *monitors;		/* First monitor driver		   */
-    ULONG		       invalid_id;		/* INVALID_ID, for GET_BM_MODEID() */
-    ULONG		       last_id;			/* Last card ID		           */
-    OOP_Object		      *memorygfx;		/* Memory graphics driver	   */
-    UWORD		       flags;			/* Always zero			   */
+/* software rasterizer, and common monitor data */
+struct gfxsoftrast_data {
+    struct gfxdisplay_data      mdisplay;	/* Display chain head (must be first)		*/
 
-    /* End of driverdata */
-    APTR		       notify_data;		      /* User data for notification callback  */
     APTR(*DriverNotify)(APTR obj, BOOL add, APTR userdata);  /* Display driver notification callback */
-    struct SignalSemaphore     displaydb_sem;		/* Display mode database semaphore */
+    struct SignalSemaphore      displaydb_sem;	/* Display mode database semaphore */
 
-    ObjectCache     	      *gc_cache;		/* GC cache			   */
-    ObjectCache     	      *planarbm_cache;		/* Planar bitmaps cache		   */
+    ObjectCache                 *gc_cache;	/* GC cache			   */
+    ObjectCache                 *planarbm_cache;/* Planar bitmaps cache		   */
 
     /* HIDD classes */
-    OOP_Class		      *fakegfxclass;		/* Fakegfx (SW sprite) classes	   */
-    OOP_Class		      *fakefbclass;
-    OOP_Class		      *compositorClass;		/* Compositor class		   */
-    OOP_Class		      *gcClass;			/* GC class			   */
+    OOP_Class                   *compositorClass;	/* Compositor class		   */
+    OOP_Class                   *gcClass;	/* GC class			   */
 
     /* Attribute bases */
-    OOP_AttrBase    	     hiddBitMapAttrBase;
-    OOP_AttrBase    	     hiddGCAttrBase;
-    OOP_AttrBase    	     hiddSyncAttrBase;
-    OOP_AttrBase    	     hiddPixFmtAttrBase;
-    OOP_AttrBase    	     hiddPlanarBMAttrBase;
-    OOP_AttrBase    	     hiddGfxAttrBase;
-    OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
-    OOP_AttrBase	     hiddFakeFBAttrBase;
-    OOP_AttrBase	     hiddCompositorAttrBase;
+    OOP_AttrBase                hiddBitMapAttrBase;
+    OOP_AttrBase                hiddGCAttrBase;
+    OOP_AttrBase                hiddSyncAttrBase;
+    OOP_AttrBase                hiddPixFmtAttrBase;
+    OOP_AttrBase                hiddPlanarBMAttrBase;
+    OOP_AttrBase                hiddGfxAttrBase;
+    OOP_AttrBase                hiddDisplayAttrBase;
+    OOP_AttrBase                hiddDMEnumAttrBase;
+    OOP_AttrBase                hiddCompositorAttrBase;
 };
 
-#define CDD(base)   	    ((struct common_driverdata *)&PrivGBase(base)->shared_driverdata)
+#define GFXPRIVATE_SOFTRASTDATA(x)  ((struct gfxsoftrast_data *)(x))
+#define CDD(base)   	    GFXPRIVATE_SOFTRASTDATA(&PrivGBase(base)->softrast)
+
+#define GFXPRIVATE_MODELAST       CDD(GfxBase)->mdisplay.display_mask
+#define GFXPRIVATE_MONITORFIRST   ((struct monitor_displaydata *)CDD(GfxBase)->mdisplay.display_next)
 
 #define __IHidd_BitMap      	CDD(GfxBase)->hiddBitMapAttrBase
 #define __IHidd_GC          	CDD(GfxBase)->hiddGCAttrBase
@@ -161,8 +179,8 @@ struct common_driverdata {
 #define __IHidd_PixFmt      	CDD(GfxBase)->hiddPixFmtAttrBase
 #define __IHidd_PlanarBM    	CDD(GfxBase)->hiddPlanarBMAttrBase
 #define __IHidd_Gfx         	CDD(GfxBase)->hiddGfxAttrBase
-#define __IHidd_FakeGfxHidd 	CDD(GfxBase)->hiddFakeGfxHiddAttrBase
-#define __IHidd_FakeFB	    	CDD(GfxBase)->hiddFakeFBAttrBase
+#define __IHidd_Display     	CDD(GfxBase)->hiddDisplayAttrBase
+#define __IHidd_DMEnum      	CDD(GfxBase)->hiddDMEnumAttrBase
 #define HiddCompositorAttrBase  CDD(GfxBase)->hiddCompositorAttrBase
 
 /* Hashtable sizes. Must be powers of two */
@@ -175,7 +193,7 @@ struct GfxBase_intern {
     struct GfxBase 	 	gfxbase;
 
     ULONG			displays;	     /* Number of display drivers installed in the system	 */
-    struct common_driverdata	shared_driverdata;   /* Driver data shared between all monitors (allocated once) */
+    struct gfxsoftrast_data	softrast;	     /* base software rasterizer; additional displays chain to it */
     struct SignalSemaphore	monitors_sema;	     /* Monitor list semaphore					 */
     struct SignalSemaphore	hashtab_sema;	     /* hash_table arbitration semaphore			 */
     struct SignalSemaphore	view_sema;	     /* ActiView arbitration semaphore				 */
@@ -200,6 +218,7 @@ struct GfxBase_intern {
 
     /* HW Driver root */
     OOP_Object                  *GfxRoot;
+    struct gfxboot_entry        *boot_first;	     /* Queue of boot-mode drivers awaiting replay */
 
     /* Private HIDD method bases */
     OOP_MethodID                HWBase;
@@ -207,6 +226,8 @@ struct GfxBase_intern {
     OOP_MethodID                HiddColorMapBase;
     OOP_MethodID                HiddGCBase;
     OOP_MethodID                HiddGfxBase;
+    OOP_MethodID                HiddDisplayBase;
+    OOP_MethodID                HiddDMEnumBase;
     OOP_MethodID                HiddPlanarBMBase;
     OOP_MethodID		HiddCompositorMethodBase;
 
@@ -226,6 +247,8 @@ struct GfxBase_intern {
 #define HiddColorMapBase	(PrivGBase(GfxBase)->HiddColorMapBase)
 #define HiddGCBase		(PrivGBase(GfxBase)->HiddGCBase)
 #define HiddGfxBase		(PrivGBase(GfxBase)->HiddGfxBase)
+#define HiddDisplayBase		(PrivGBase(GfxBase)->HiddDisplayBase)
+#define HiddDMEnumBase		(PrivGBase(GfxBase)->HiddDMEnumBase)
 #define HiddPlanarBMBase	(PrivGBase(GfxBase)->HiddPlanarBMBase)
 
 /* struct Utilitybase is used in the following file so include it
@@ -288,22 +311,8 @@ void internal_ClipBlit(struct RastPort *srcRP,
                        UBYTE minterm,
                        struct GfxBase *GfxBase);
 
-/* Driver prototypes */
-
-typedef ULONG(*VIEW_FUNC)(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
-                          struct GfxBase *GfxBase);
-
-extern ULONG driver_PrepareViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
-                                     struct GfxBase *GfxBase);
-extern ULONG driver_LoadViewPorts(struct HIDD_ViewPortData *vpd, struct View *v, struct monitor_driverdata *mdd,
-                                  struct GfxBase *GfxBase);
-extern struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *GfxBase);
-extern void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern struct HIDD_ViewPortData *driver_FindViewPorts(struct View *view, struct monitor_driverdata *mdd,
-        struct GfxBase *GfxBase);
-extern ULONG DoViewFunction(struct View *view, VIEW_FUNC fn, struct GfxBase *GfxBase);
-extern void InstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
-extern void UninstallFB(struct monitor_driverdata *mdd, struct GfxBase *GfxBase);
+/* Driver / display / view prototypes are declared in graphics_driver.h and
+   graphics_display.h respectively. */
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp

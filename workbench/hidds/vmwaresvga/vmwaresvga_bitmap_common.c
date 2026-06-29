@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -286,14 +286,12 @@ VOID MNAME_BM(PutImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutIma
     {
         APTR dst_pixels, src_pixels;
         OOP_Object *srcPF, *dstPF;
-        OOP_Object * gfxHidd;
 
         src_pixels = msg->pixels;
         dst_pixels = data->VideoData + msg->y * dstmod
             + msg->x * data->bytesperpix;
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstPF);
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-        srcPF = HIDD_Gfx_GetPixFmt(gfxHidd, msg->pixFmt);
+        srcPF = HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, msg->pixFmt);
 
         HIDD_BM_ConvertPixels(o, &src_pixels,
             (HIDDT_PixelFormat *)srcPF, msg->modulo, &dst_pixels,
@@ -384,14 +382,12 @@ VOID MNAME_BM(GetImage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIma
     {
         APTR dst_pixels, src_pixels;
         OOP_Object *srcPF, *dstPF;
-        OOP_Object * gfxHidd;
 
         src_pixels = data->VideoData + msg->y * srcmod
             + msg->x * data->bytesperpix;
         dst_pixels = msg->pixels;
         OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-        dstPF = HIDD_Gfx_GetPixFmt(gfxHidd, msg->pixFmt);
+        dstPF = HIDD_DMEnum_GetPixFmt(XSD(cl)->dmenum, msg->pixFmt);
 
         HIDD_BM_ConvertPixels(o, &src_pixels, (HIDDT_PixelFormat *)srcPF,
             srcmod, &dst_pixels, (HIDDT_PixelFormat *)dstPF,

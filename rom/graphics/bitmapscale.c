@@ -171,7 +171,7 @@ static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
             }
 
             if(success && colmaps_ok) {
-                struct monitor_driverdata *driver, *dst_driver;
+                struct gfxdisplay_data *driver, *dst_driver;
                 OOP_Object *bm_obj;
                 HIDDT_DrawMode old_drmd;
                 struct TagItem cbtags[] = {
@@ -197,9 +197,9 @@ static inline ULONG bms_clamp_ul(ULONG v, ULONG lo, ULONG hi)
                 driver     = GET_BM_DRIVERDATA(bitScaleArgs->bsa_SrcBitMap);
                 dst_driver = GET_BM_DRIVERDATA(bitScaleArgs->bsa_DestBitMap);
 
-                if(driver == (struct monitor_driverdata *)CDD(GfxBase))
+                if(driver == (struct gfxdisplay_data *)CDD(GfxBase))
                     bm_obj = dstbm_obj;
-                else if(dst_driver->flags & DF_UseFakeGfx)
+                else if(dst_driver->display_flags & DF_SoftCursor)
                     bm_obj = dstbm_obj;
                 else
                     bm_obj = srcbm_obj;

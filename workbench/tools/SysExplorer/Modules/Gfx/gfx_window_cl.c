@@ -1,5 +1,7 @@
 /*
-    Copyright (C) 2013-2018, The AROS Development Team.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc: SysExplorer property window for a graphics driver object.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -28,6 +30,9 @@
 
 #include <zune/customclasses.h>
 
+extern OOP_AttrBase HiddAttrBase;
+extern OOP_AttrBase HiddGfxAttrBase;
+
 /*** Instance Data **********************************************************/
 struct GfxWindow_DATA
 {
@@ -47,7 +52,7 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         NULL
     };
     Object *memTotal, *memFree, *GARTTotal, *GARTFree;
-    IPTR name, driver;
+    IPTR name = (IPTR)NULL, driver = (IPTR)NULL;
     OOP_Object *gfxhidd_obj =
         (OOP_Object *)GetTagData(MUIA_PropertyWin_Object, 0, msg->ops_AttrList);
 
@@ -60,29 +65,29 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
         MUIA_Window_Title, name,
         MUIA_Window_ID, MAKE_ID('G', 'F', 'X', 'D'),
         WindowContents, (IPTR)(RegisterObject,
-            MUIA_Register_Titles, (IPTR) pagetitles,
-            Child, (VGroup,
-                Child, (VGroup,
+            MUIA_Register_Titles, (IPTR)pagetitles,
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)(VGroup,
                     GroupFrameT("Details"),
-                    Child, ColGroup(2),
-                        Child, Label("Device:"),
-                        Child, LLabel(name),
-                        Child, Label("Manufacturer:"),
-                        Child, LLabel(""),
-                        Child, Label("Driver:"),
-                        Child, LLabel(driver),
-                    End,
-                End),
-                Child, (HGroup,
-                    GroupFrameT("Memory Information"),
-                    Child, (VGroup,
-                        Child, Label(""),
-                        Child, Label("Video RAM"),
-                        Child, Label("GART"),
+                    Child, (IPTR)(ColGroup(2),
+                        Child, (IPTR)Label("Device:"),
+                        Child, (IPTR)LLabel((STRPTR)name),
+                        Child, (IPTR)Label("Manufacturer:"),
+                        Child, (IPTR)LLabel(""),
+                        Child, (IPTR)Label("Driver:"),
+                        Child, (IPTR)LLabel((STRPTR)driver),
                     End),
-                    Child, (ColGroup(2),
-                        Child, Label("Total"),
-                        Child, Label("Free"),
+                End),
+                Child, (IPTR)(HGroup,
+                    GroupFrameT("Memory Information"),
+                    Child, (IPTR)(VGroup,
+                        Child, (IPTR)Label(""),
+                        Child, (IPTR)Label("Video RAM"),
+                        Child, (IPTR)Label("GART"),
+                    End),
+                    Child, (IPTR)(ColGroup(2),
+                        Child, (IPTR)Label("Total"),
+                        Child, (IPTR)Label("Free"),
                         Child, (IPTR)(memTotal = TextObject, TextFrame, MUIA_Background, MUII_TextBack,
                                 MUIA_Text_PreParse, (IPTR)"\33r", MUIA_Text_Contents, (IPTR)"N/A",
                         End),
@@ -98,8 +103,8 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
                     End),
                 End),
             End),
-            Child, (VGroup,
-                Child, HVSpace,
+            Child, (IPTR)(VGroup,
+                Child, (IPTR)HVSpace,
             End),
         End),
         TAG_DONE
@@ -108,33 +113,33 @@ static Object *GfxWindow__OM_NEW(Class *cl, Object *self, struct opSet *msg)
     if (self)
     {
         struct GfxWindow_DATA *data = INST_DATA(cl, self);
-        char valBuf[20];
+        char valBuf[24];
         data->memTotal = memTotal;
         data->memFree = memFree;
         data->GARTTotal = GARTTotal;
         data->GARTFree = GARTFree;
 
-        data->gfxMemTags[0].ti_Tag = vHidd_Gfx_MemTotal;
-        data->gfxMemTags[1].ti_Tag = vHidd_Gfx_MemFree;
-        data->gfxMemTags[2].ti_Tag = vHidd_Gfx_MemAddressableTotal;
-        data->gfxMemTags[3].ti_Tag = vHidd_Gfx_MemAddressableFree;
-        data->gfxMemTags[4].ti_Tag = vHidd_Gfx_MemClock;
+        data->gfxMemTags[0].ti_Tag = tHidd_Gfx_MemTotal;
+        data->gfxMemTags[1].ti_Tag = tHidd_Gfx_MemFree;
+        data->gfxMemTags[2].ti_Tag = tHidd_Gfx_MemAddressableTotal;
+        data->gfxMemTags[3].ti_Tag = tHidd_Gfx_MemAddressableFree;
+        data->gfxMemTags[4].ti_Tag = tHidd_Gfx_MemClock;
         data->gfxMemTags[5].ti_Tag = TAG_DONE;
 
-        OOP_GetAttr(gfxhidd_obj, aHidd_Gfx_MemoryAttribs, &data->gfxMemTags);
+        OOP_GetAttr(gfxhidd_obj, aHidd_Gfx_MemoryAttribs, (IPTR *)data->gfxMemTags);
 
         if (data->gfxMemTags[0].ti_Data)
         {
-            sprintf(valBuf, "%ld", data->gfxMemTags[0].ti_Data);
+            sprintf(valBuf, "%ld", (long)data->gfxMemTags[0].ti_Data);
             SET(data->memTotal, MUIA_Text_Contents, valBuf);
-            sprintf(valBuf, "%ld", data->gfxMemTags[1].ti_Data);
+            sprintf(valBuf, "%ld", (long)data->gfxMemTags[1].ti_Data);
             SET(data->memFree, MUIA_Text_Contents, valBuf);
         }
         if (data->gfxMemTags[2].ti_Data)
         {
-            sprintf(valBuf, "%ld", data->gfxMemTags[2].ti_Data);
+            sprintf(valBuf, "%ld", (long)data->gfxMemTags[2].ti_Data);
             SET(data->GARTTotal, MUIA_Text_Contents, valBuf);
-            sprintf(valBuf, "%ld", data->gfxMemTags[3].ti_Data);
+            sprintf(valBuf, "%ld", (long)data->gfxMemTags[3].ti_Data);
             SET(data->GARTFree, MUIA_Text_Contents, valBuf);
         }
     }

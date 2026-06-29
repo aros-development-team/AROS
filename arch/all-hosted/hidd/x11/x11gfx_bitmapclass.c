@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "x11_debug.h"
@@ -476,13 +476,14 @@ static ULONG *ximage_to_buf(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XIm
     default:
     {
 
-        OOP_Object *srcpf, *dstpf, *gfxhidd;
+        OOP_Object *srcpf, *dstpf, *dmenum;
         APTR srcPixels = image->data, dstBuf = buf;
 
         //bug("DEFAULT PIXEL CONVERSION\n");
 
-        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *) &gfxhidd);
-        dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+        OOP_GetAttr(bm, aHidd_BitMap_Display, (IPTR *) &dmenum);
+        OOP_GetAttr(dmenum, aHidd_Display_DMEnumerator, (IPTR *) &dmenum);
+        dstpf = HIDD_DMEnum_GetPixFmt(dmenum, msg->pixFmt);
 
         OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *) &srcpf);
 
@@ -975,13 +976,14 @@ static ULONG *buf_to_ximage(OOP_Class *cl, OOP_Object *bm, HIDDT_Pixel *buf, XIm
 
     default:
     {
-        OOP_Object *srcpf, *dstpf, *gfxhidd;
+        OOP_Object *srcpf, *dstpf, *dmenum;
         APTR srcPixels = buf, dstBuf = image->data;
 
         //bug("DEFAULT PIXEL CONVERSION\n");
 
-        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *) &gfxhidd);
-        srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
+        OOP_GetAttr(bm, aHidd_BitMap_Display, (IPTR *) &dmenum);
+        OOP_GetAttr(dmenum, aHidd_Display_DMEnumerator, (IPTR *) &dmenum);
+        srcpf = HIDD_DMEnum_GetPixFmt(dmenum, msg->pixFmt);
 
         OOP_GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *) &dstpf);
 

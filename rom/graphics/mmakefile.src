@@ -17,9 +17,9 @@ FILES	  := \
 	gels_internal \
 	objcache \
 	default_font \
-	compositor_driver \
+	graphics_compositor \
+	graphics_display \
 	graphics_driver \
-	fakegfxhidd \
 	dispinfo \
 	gfxfuncsupport \
 	cgx_support

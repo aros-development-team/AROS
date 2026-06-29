@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -81,6 +81,8 @@ Object *DisplayDriverNotify(APTR obj, BOOL add, struct IntuitionBase *IntuitionB
 static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *IntuitionBase)
 {
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     ULONG x = data->mouseX;
     ULONG y = data->mouseY;
 
@@ -97,7 +99,7 @@ static void SetPointerPos(struct IMonitorNode *data, struct IntuitionBase *Intui
 
     DEBUG_POINTER(bug("[Monitor] %s: Physical co-ordinates %d,%d\n", __func__, x, y);)
 
-    HIDD_Gfx_SetCursorPos(data->handle->gfxhidd, x, y);
+    HIDD_Display_SetCursorPos(data->handle->display, x, y);
 }
 
 /*i**************************************************************************/
@@ -179,12 +181,16 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
+    OOP_AttrBase HiddDMEnumAttrBase = GetPrivIBase(IntuitionBase)->HiddDMEnumAttrBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
     struct MonitorHandle *handle = (struct MonitorHandle *)GetTagData(MA_MonitorHandle, 0, msg->ops_AttrList);
     HIDDT_ModeID mode = vHidd_ModeID_Invalid;
     struct IMonitorNode *data;
-    OOP_Object *sync, *pixfmt;
+    OOP_Object *sync, *pixfmt, *dmenum;
     /* Tags order is important because CallBackData needs to be set before
        function pointer. Otherwise the function can be called with a wrong
        pointer. */
@@ -210,16 +216,18 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
     data->handle = handle;
 
+    OOP_GetAttr(handle->display, aHidd_Display_DMEnumerator, (IPTR *)&dmenum);
+
 #if USE_FAST_DISPLAYTOBMCOORDS
-    data->displaytobmcoords = OOP_GetMethod(handle->gfxhidd, HiddGfxBase + moHidd_Gfx_DisplayToBMCoords, &data->displaytobmcoords_Class);
+    data->displaytobmcoords = OOP_GetMethod(handle->display, HiddDisplayBase + moHidd_Display_DisplayToBMCoords, &data->displaytobmcoords_Class);
 #endif
 #if USE_FAST_BMTODISPLAYCOORDS
-    data->bmtodisplaycoords = OOP_GetMethod(handle->gfxhidd, HiddGfxBase + moHidd_Gfx_BMToDisplayCoords, &data->bmtodisplaycoords_Class);
+    data->bmtodisplaycoords = OOP_GetMethod(handle->display, HiddDisplayBase + moHidd_Display_BMToDisplayCoords, &data->bmtodisplaycoords_Class);
 #endif
 
     /* We can't list driver's pixelformats, we can list only modes. This does not harm however,
        just some pixelformats will be processed more than once */
-    while ((mode = HIDD_Gfx_NextModeID(handle->gfxhidd, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid)
+    while ((mode = HIDD_DMEnum_NextModeID(dmenum, mode, &sync, &pixfmt)) != vHidd_ModeID_Invalid)
     {
         IPTR cgxpf;
 
@@ -233,7 +241,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         }
     }
 
-    if (OOP_GET(data->handle->gfxhidd, aHidd_Gfx_SupportsGamma))
+    if (OOP_GET(data->handle->display, aHidd_Display_SupportsGamma))
     {
         UWORD i;
 
@@ -256,8 +264,8 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
         ResetGamma(data);
     }
 
-    OOP_GetAttr(handle->gfxhidd, aHidd_Name, (IPTR *)&data->MonitorName);
-    OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_HWSpriteTypes, (IPTR *)&data->SpriteType);
+    OOP_GetAttr(handle->display, aHidd_Name, (IPTR *)&data->MonitorName);
+    OOP_GetAttr(handle->display, aHidd_Display_SpriteTypes, (IPTR *)&data->SpriteType);
     D(bug("[Monitor] %s: SpriteType = %08x\n", __func__, data->SpriteType));
     OOP_GetAttr(handle->gfxhidd, aHidd_Gfx_FrameBufferType, (IPTR *)&data->FrameBufferType);
     D(bug("[Monitor] %s: FrameBufferType = %08x\n", __func__, data->FrameBufferType));
@@ -897,7 +905,10 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddAttrBase = GetPrivIBase(IntuitionBase)->HiddAttrBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
+    OOP_AttrBase HiddDMEnumAttrBase = GetPrivIBase(IntuitionBase)->HiddDMEnumAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, o);
+    struct TagItem memTags[2] = {{ 0, 0 }, { TAG_DONE, 0 }};
 
     D(bug("[Monitor] %s()\n", __func__));
 
@@ -908,19 +919,21 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case MA_Manufacturer:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_ProducerName, msg->opg_Storage);
+        OOP_GetAttr(data->handle->display, aHidd_ProducerName, msg->opg_Storage);
         break;
 
     case MA_ManufacturerID:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_Producer, msg->opg_Storage);
+        OOP_GetAttr(data->handle->display, aHidd_Producer, msg->opg_Storage);
         break;
 
     case MA_ProductID:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_Product, msg->opg_Storage);
+        OOP_GetAttr(data->handle->display, aHidd_Product, msg->opg_Storage);
         break;
 
     case MA_MemorySize:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemorySize, msg->opg_Storage);
+        memTags[0].ti_Tag = tHidd_Gfx_MemTotal;
+        OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
+        *msg->opg_Storage = memTags[0].ti_Data;
         break;
 
     case MA_PixelFormats:
@@ -964,7 +977,7 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case MA_PointerType:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_HWSpriteTypes, msg->opg_Storage);
+        OOP_GetAttr(data->handle->display, aHidd_Display_SpriteTypes, msg->opg_Storage);
         break;
 
     case MA_DriverName:
@@ -972,7 +985,9 @@ IPTR MonitorClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
         break;
 
     case MA_MemoryClock:
-        OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemoryClock, msg->opg_Storage);
+        memTags[0].ti_Tag = tHidd_Gfx_MemClock;
+        OOP_GetAttr(data->handle->gfxhidd, aHidd_Gfx_MemoryAttribs, (IPTR *)memTags);
+        *msg->opg_Storage = memTags[0].ti_Data;
         break;
 
     case MA_Windowed:
@@ -997,6 +1012,8 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     struct IMonitorNode *data = INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
 
@@ -1036,7 +1053,7 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
             break;
         
         case MA_PointerVisible:
-            HIDD_Gfx_SetCursorVisible(data->handle->gfxhidd, tag->ti_Data);
+            HIDD_Display_SetCursorVisible(data->handle->display, tag->ti_Data);
             break;
         }
     }
@@ -1056,6 +1073,8 @@ IPTR MonitorClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
+    OOP_AttrBase HiddDMEnumAttrBase = GetPrivIBase(IntuitionBase)->HiddDMEnumAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, o);
     struct TagItem tags[] =
     {
@@ -1217,21 +1236,21 @@ void MonitorClass__MM_DisplayToScreenCoords(Class *cl, Object *obj, struct msDis
     if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-        OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-        struct pHidd_Gfx_DisplayToBMCoords dtbmcmsg =
+        OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+        struct pHidd_Display_DisplayToBMCoords dtbmcmsg =
         {
-            .mID        = HiddGfxBase + moHidd_Gfx_DisplayToBMCoords,
+            .mID        = HiddDisplayBase + moHidd_Display_DisplayToBMCoords,
             .Target     = HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
             .DispX      = msg->DispX,
             .DispY      = msg->DispY,
             .TargetX    = msg->ScrX,
             .TargetY    = msg->ScrY
         };
-        /* call the gfx driver to transform the co-ords */
+        /* call the display to transform the co-ords */
 #if USE_FAST_DISPLAYTOBMCOORDS
-        data->displaytobmcoords(data->displaytobmcoords_Class, data->handle->gfxhidd, (OOP_Msg)&dtbmcmsg.mID);
+        data->displaytobmcoords(data->displaytobmcoords_Class, data->handle->display, (OOP_Msg)&dtbmcmsg.mID);
 #else
-        OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&dtbmcmsg.mID);
+        OOP_DoMethod(data->handle->display, (OOP_Msg)&dtbmcmsg.mID);
 #endif
     }
     else
@@ -1287,21 +1306,21 @@ void MonitorClass__MM_ScreenToDisplayCoords(Class *cl, Object *obj, struct msScr
     if ((data->dcsupported) && IS_HIDD_BM(msg->Screen->RastPort.BitMap))
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
-        OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
-        struct pHidd_Gfx_BMToDisplayCoords bmtdcmsg =
+        OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+        struct pHidd_Display_BMToDisplayCoords bmtdcmsg =
         {
-            .mID        = HiddGfxBase + moHidd_Gfx_BMToDisplayCoords,
+            .mID        = HiddDisplayBase + moHidd_Display_BMToDisplayCoords,
             .Target     = HIDD_BM_OBJ(msg->Screen->RastPort.BitMap),
             .TargetX    = msg->ScrX,
             .TargetY    = msg->ScrY,
             .DispX      = msg->DispX,
             .DispY      = msg->DispY
         };
-        /* call the gfx driver to transform the co-ords */
+        /* call the display to transform the co-ords */
 #if USE_FAST_BMTODISPLAYCOORDS
-        data->bmtodisplaycoords(data->bmtodisplaycoords_Class, data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
+        data->bmtodisplaycoords(data->bmtodisplaycoords_Class, data->handle->display, (OOP_Msg)&bmtdcmsg.mID);
 #else
-        OOP_DoMethod(data->handle->gfxhidd, (OOP_Msg)&bmtdcmsg.mID);
+        OOP_DoMethod(data->handle->display, (OOP_Msg)&bmtdcmsg.mID);
 #endif
     }
     else
@@ -1419,23 +1438,19 @@ IPTR MonitorClass__MM_Query3DSupport(Class *cl, Object *obj, struct msQuery3DSup
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
-    OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     OOP_Object *pf = data->pfobjects[msg->PixelFormat];
 
     if (pf) {
-        if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, pf))
-            *msg->Store = MSQUERY3D_HWDRIVER;
-        else {
-            IPTR depth;
+        IPTR depth;
 
-            OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
-            if (depth > 8)
-                *msg->Store = MSQUERY3D_SWDRIVER;
-            else
-                *msg->Store = MSQUERY3D_NODRIVER;
-        }
+        /* Hardware 3D is not supported on AROS; fall back to software. */
+        OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+        if (depth > 8)
+            *msg->Store = MSQUERY3D_SWDRIVER;
+        else
+            *msg->Store = MSQUERY3D_NODRIVER;
     } else
         *msg->Store = MSQUERY3D_UNKNOWN;
 
@@ -1613,9 +1628,11 @@ IPTR MonitorClass__MM_GetPointerBounds(Class *cl, Object *obj, struct msGetPoint
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
 
-    return HIDD_Gfx_GetMaxSpriteSize(data->handle->gfxhidd, msg->PointerType, msg->Width, msg->Height);
+    return HIDD_Display_GetMaxSpriteSize(data->handle->display, msg->PointerType, msg->Width, msg->Height);
 }
 
 /*i***************************************************************************
@@ -1704,15 +1721,15 @@ IPTR MonitorClass__MM_EnterPowerSaveMode(Class *cl, Object *obj, Msg *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
-    OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-        {aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_Off},
-        {TAG_DONE           , 0                      }
+        {aHidd_Display_DPMSLevel, vHidd_Gfx_DPMSLevel_Off},
+        {TAG_DONE               , 0                      }
     };
     
-    return OOP_SetAttrs(data->handle->gfxhidd, tags);
+    return OOP_SetAttrs(data->handle->display, tags);
 }
 
 /*i***************************************************************************
@@ -1754,15 +1771,15 @@ IPTR MonitorClass__MM_ExitBlanker(Class *cl, Object *obj, Msg *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
-    OOP_AttrBase HiddGfxAttrBase = GetPrivIBase(IntuitionBase)->HiddGfxAttrBase;
+    OOP_AttrBase HiddDisplayAttrBase = GetPrivIBase(IntuitionBase)->HiddDisplayAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct TagItem tags[] =
     {
-        {aHidd_Gfx_DPMSLevel, vHidd_Gfx_DPMSLevel_On},
-        {TAG_DONE           , 0                     }
+        {aHidd_Display_DPMSLevel, vHidd_Gfx_DPMSLevel_On},
+        {TAG_DONE               , 0                     }
     };
     
-    return OOP_SetAttrs(data->handle->gfxhidd, tags);
+    return OOP_SetAttrs(data->handle->display, tags);
 }
 
 /*i***************************************************************************
@@ -1844,8 +1861,10 @@ IPTR MonitorClass__MM_SetDefaultGammaTables(Class *cl, Object *obj, struct msSet
              * Update it.
              */
             OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+            OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+            OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
 
-            ret = HIDD_Gfx_SetGamma(data->handle->gfxhidd, data->active_r, data->active_g, data->active_b);
+            ret = HIDD_Display_SetGamma(data->handle->display, data->active_r, data->active_g, data->active_b);
         }
 
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
@@ -1861,10 +1880,12 @@ ULONG MonitorClass__MM_GetCompositionFlags(Class *cl, Object *obj, struct msGetC
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct HIDD_ModeProperties modeprops;
 
-    HIDD_Gfx_ModeProperties(data->handle->gfxhidd, msg->ModeID & (!data->handle->mask),
+    HIDD_Display_ModeProperties(data->handle->display, msg->ModeID & (!data->handle->mask),
                             &modeprops, sizeof(modeprops));
     return modeprops.CompositionFlags;
 }
@@ -1897,6 +1918,8 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     struct BitMap *bm;
     BOOL res;
@@ -1928,7 +1951,7 @@ IPTR MonitorClass__MM_SetPointerShape(Class *cl, Object *obj, struct msSetPointe
         bm = data->tmpPtr;
     }
 
-    res = HIDD_Gfx_SetCursorShape(data->handle->gfxhidd, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
+    res = HIDD_Display_SetCursorShape(data->handle->display, HIDD_BM_OBJ(bm), msg->pointer->xoffset, msg->pointer->yoffset);
     DEBUG_POINTER(bug("[Monitor] %s: SetCursorShape() returned %d\n", __func__, res));
     if (res) {
         data->pointer = msg->pointer;
@@ -1947,6 +1970,8 @@ void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenG
     {
         struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
         OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+        OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+        OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
         struct GammaControl *gamma = msg->gamma;
 
         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ViewLordLock);
@@ -1984,7 +2009,7 @@ void MonitorClass__MM_SetScreenGamma(Class *cl, Object *obj, struct msSetScreenG
             if (data->screenGamma || screengamma || msg->force)
             {
                 data->screenGamma = screengamma;
-                HIDD_Gfx_SetGamma(data->handle->gfxhidd, data->active_r, data->active_g, data->active_b);
+                HIDD_Display_SetGamma(data->handle->display, data->active_r, data->active_g, data->active_b);
             }
         }
 
@@ -2001,6 +2026,8 @@ ULONG MonitorClass__MM_FindBest3dDepth(Class *cl, Object *obj, struct msFindBest
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     ULONG swdepth = -1;
@@ -2018,12 +2045,6 @@ ULONG MonitorClass__MM_FindBest3dDepth(Class *cl, Object *obj, struct msFindBest
             {
                 /* Skip all pixelformats with depth less than requested */
                 continue;
-            }
-
-            if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, data->pfobjects[i]))
-            {
-                /* Found hardware 3D ? Good. */
-                return depth;
             }
 
             if ((depth > 8) && (swdepth == -1))
@@ -2046,6 +2067,8 @@ ULONG MonitorClass__MM_Calc3dCapability(Class *cl, Object *obj, Msg msg)
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *OOPBase = GetPrivIBase(IntuitionBase)->OOPBase;
     OOP_MethodID HiddGfxBase = GetPrivIBase(IntuitionBase)->ib_HiddGfxBase;
+    OOP_MethodID HiddDisplayBase = GetPrivIBase(IntuitionBase)->ib_HiddDisplayBase;
+    OOP_MethodID HiddDMEnumBase = GetPrivIBase(IntuitionBase)->ib_HiddDMEnumBase;
     OOP_AttrBase HiddPixFmtAttrBase = GetPrivIBase(IntuitionBase)->HiddPixFmtAttrBase;
     struct IMonitorNode *data = INST_DATA(cl, obj);
     ULONG idx = 0;
@@ -2055,17 +2078,9 @@ ULONG MonitorClass__MM_Calc3dCapability(Class *cl, Object *obj, Msg msg)
     {
         if (data->pfobjects[i])
         {
-            if (HIDD_Gfx_QueryHardware3D(data->handle->gfxhidd, data->pfobjects[i]))
+            if (OOP_GET(data->pfobjects[i], aHidd_PixFmt_Depth) > 8)
             {
-                /*
-                 * Each HW 3D mode scores 2.
-                 * As a result, monitor with one HW 3D mode will beat SW-only 3D.
-                 */
-                idx += 2;
-            }
-            else if (OOP_GET(data->pfobjects[i], aHidd_PixFmt_Depth) > 8)
-            {
-                /* Any number of SW 3D modes scores 1 */
+                /* Any number of SW 3D modes scores 1 (no HW 3D on AROS) */
                 idx |= 1;
             }
         }

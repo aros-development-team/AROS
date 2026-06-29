@@ -195,7 +195,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         OOP_Object *sync = NULL, *modepf = NULL;
 
-        if (HIDD_Gfx_GetMode(xsd->vcsd_VideoCoreGfxInstance, modeid, &sync, &modepf)
+        if (HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf)
             && modepf)
         {
             pf = modepf;

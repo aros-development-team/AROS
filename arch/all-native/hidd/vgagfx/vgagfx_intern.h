@@ -2,8 +2,7 @@
 #define VGAGFX_INTERN_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
-    $Id$
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Private Includes for the VGA Gfx Hidd.
     Lang: English.
@@ -27,8 +26,10 @@
 struct VGAGfx_staticdata
 {
     OOP_Class 	*vgaclass;
+    OOP_Class 	*displayclass;
     OOP_Class 	*bmclass;
     OOP_Object 	*vgahidd;
+    OOP_Object 	*vgadisplay;
     struct SignalSemaphore	sema;	/* Protecting this whole struct */
     struct List		modelist;	/* List of modes supported */
 
@@ -47,11 +48,15 @@ struct VGAGfx_staticdata
     /* baseclass for CreateObject */
     OOP_Class *basebm;
 
+    OOP_MethodID	mid_Dispose;
+
     OOP_AttrBase hiddAttrBase;
     OOP_AttrBase bitMapAttrBase;
     OOP_AttrBase chunkyBMAttrBase;
     OOP_AttrBase pixFmtAttrBase;
     OOP_AttrBase gfxAttrBase;
+    OOP_AttrBase displayAttrBase;
+    OOP_AttrBase dmEnumAttrBase;
     OOP_AttrBase syncAttrBase;
     OOP_AttrBase vgaBitMapAttrBase;
 };
@@ -61,6 +66,8 @@ struct VGAGfx_staticdata
 #undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddAttrBase
@@ -70,6 +77,8 @@ struct VGAGfx_staticdata
 #define HiddChunkyBMAttrBase	  csd->chunkyBMAttrBase
 #define HiddBitMapAttrBase	  csd->bitMapAttrBase
 #define HiddGfxAttrBase		  csd->gfxAttrBase
+#define HiddDisplayAttrBase	  csd->displayAttrBase
+#define HiddDMEnumAttrBase	  csd->dmEnumAttrBase
 #define HiddPixFmtAttrBase	  csd->pixFmtAttrBase
 #define HiddSyncAttrBase	  csd->syncAttrBase
 #define HiddAttrBase		  csd->hiddAttrBase

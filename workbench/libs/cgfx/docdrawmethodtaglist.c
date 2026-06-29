@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -192,7 +192,7 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
         };
         ULONG tocopy_h, max_tocopy_h;
         ULONG lines_todo;
-        OOP_Object *gfxhidd, *gc;
+        OOP_Object *displayhidd, *gc;
 
         lines_todo = height;
 
@@ -215,8 +215,8 @@ static ULONG RenderHook(struct render_data *data, LONG srcx, LONG srcy,
         msg->cdm_offy = 0;
 #endif
 
-        OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *) & gfxhidd);
-        gc = HIDD_Gfx_CreateObject(gfxhidd, CyberGfxBase->basegc, gc_tags);
+        OOP_GetAttr(dstbm_obj, aHidd_BitMap_Display, (IPTR *) &displayhidd);
+        gc = HIDD_Display_CreateObject(displayhidd, CyberGfxBase->basegc, gc_tags);
         if (gc)
         {
                 /* Get the maximum number of lines */

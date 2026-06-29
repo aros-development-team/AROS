@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "nouveau_intern.h"
@@ -18,6 +18,8 @@
 #undef HiddAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddGfxNouveauAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
@@ -27,6 +29,8 @@
 #define HiddAttrBase          (SD(cl)->hiddAttrBase)
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
+#define HiddDisplayAttrBase         (SD(cl)->displayAttrBase)
+#define HiddDMEnumAttrBase          (SD(cl)->dmenumAttrBase)
 #define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
@@ -173,7 +177,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         
         sync[j].ti_Tag = TAG_DONE;                 sync[j++].ti_Data = 0UL;
         
-        syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
+        syncs[i].ti_Tag = aHidd_DMEnum_SyncTags;
         syncs[i].ti_Data = (IPTR)sync;
     }
     
@@ -205,7 +209,8 @@ static BOOL HIDDNouveauShowBitmapForSelectedMode(OOP_Object * bm)
         return FALSE;
     }
     
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, &e);
+    OOP_GetAttr((OOP_Object *)e, aHidd_Display_GfxHidd, &e);
     gfx = (OOP_Object *)e;
     gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     output_ids[0] = ((drmModeConnectorPtr)gfxdata->selectedconnector)->connector_id;
@@ -240,7 +245,8 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
 
     LOCK_ENGINE
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, &e);
+    OOP_GetAttr((OOP_Object *)e, aHidd_Display_GfxHidd, &e);
     gfx = (OOP_Object *)e;
     gfxdata = OOP_INST_DATA(OOP_OCLASS(gfx), gfx);
     selectedconnector = (drmModeConnectorPtr)gfxdata->selectedconnector;
@@ -258,15 +264,7 @@ BOOL HIDDNouveauSwitchToVideoMode(OOP_Object * bm)
     }
 
     /* Get Sync and PixelFormat properties */
-    struct pHidd_Gfx_GetMode __getmodemsg = 
-    {
-        modeID:	modeid,
-        syncPtr:	&sync,
-        pixFmtPtr:	&pf,
-    }, *getmodemsg = &__getmodemsg;
-
-    getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-    OOP_DoMethod(gfx, (OOP_Msg)getmodemsg);
+    HIDD_DMEnum_GetMode(SD(cl)->dmenum, modeid, &sync, &pf);
 
     OOP_GetAttr(sync, aHidd_Sync_PixelClock,    &pixel);
     OOP_GetAttr(sync, aHidd_Sync_HDisp,         &hdisp);
@@ -421,14 +419,13 @@ OOP_Object * METHOD(Nouveau, Root, New)
         };
 
         struct TagItem modetags[] = {
-	    { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
-	    { aHidd_Gfx_PixFmtTags,	(IPTR)pftags_16bpp	},
+	    { aHidd_DMEnum_PixFmtTags,	(IPTR)pftags_24bpp	},
+	    { aHidd_DMEnum_PixFmtTags,	(IPTR)pftags_16bpp	},
         { TAG_MORE, (IPTR)syncs },  /* FIXME: sync tags will leak */
 	    { TAG_DONE, 0UL }
         };
 
         struct TagItem mytags[] = {
-	    { aHidd_Gfx_ModeTags,	(IPTR)modetags	},
             { aHidd_Name            , (IPTR)"Nouveau"     },
             { aHidd_HardwareName    , (IPTR)"Nvidia Gfx Adaptor"   },
             { aHidd_ProducerName    , (IPTR)"Nvidia Corporation"  },
@@ -457,6 +454,19 @@ OOP_Object * METHOD(Nouveau, Root, New)
             carddata->dev = dev;
             ULONG gartsize = 0;
             UQUAD value;
+
+            /* Create the display object and its mode enumerator */
+            {
+                struct TagItem displaytags[] =
+                {
+                    { aHidd_Display_GfxHidd,  (IPTR)o        },
+                    { aHidd_Display_ModeTags, (IPTR)modetags },
+                    { TAG_DONE,               0              }
+                };
+                SD(cl)->display = OOP_NewObject(SD(cl)->displayclass, NULL, displaytags);
+                if (SD(cl)->display)
+                    OOP_GetAttr(SD(cl)->display, aHidd_Display_DMEnumerator, (IPTR *)&SD(cl)->dmenum);
+            }
             
             /* Check chipset architecture */
             switch (carddata->dev->chipset & 0xf0) 
@@ -554,10 +564,11 @@ OOP_Object * METHOD(Nouveau, Root, New)
             {
                 struct TagItem comptags [] =
                 {
-                    { aHidd_Compositor_GfxHidd, (IPTR)o },
+                    { aHidd_Compositor_DisplayHidd, (IPTR)SD(cl)->display },
                     { TAG_DONE, TAG_DONE }
                 };
                 gfxdata->compositor = OOP_NewObject(SD(cl)->compositorclass, NULL, comptags);
+                SD(cl)->compositor = gfxdata->compositor;
                 /* TODO: Check if object was created, how to handle ? */
             }
 
@@ -576,14 +587,27 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
 /* FIXME: IMPLEMENT DISPOSE BITMAP - REMOVE FROM FB IF MARKED AS SUCH */
 
-OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
+VOID METHOD(NouveauDisplay, Root, Get)
 {
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+    ULONG idx;
+
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Display_SpriteTypes:
+        *msg->storage = vHidd_SpriteType_DirectColor;
+        return;
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+OOP_Object * METHOD(NouveauDisplay, Hidd_Display, CreateObject)
+{
     OOP_Object      *object = NULL;
 
     if (msg->cl == SD(cl)->basebm)
     {
-        struct pHidd_Gfx_CreateObject mymsg;
+        struct pHidd_Display_CreateObject mymsg;
         HIDDT_ModeID modeid;
         HIDDT_StdPixFmt stdpf;
 
@@ -591,7 +615,7 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, CreateObject)
         {
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_ClassPtr */
             { TAG_IGNORE, TAG_IGNORE }, /* Placeholder for aHidd_BitMap_Align */
-            { aHidd_BitMap_Nouveau_CompositorHidd, (IPTR)gfxdata->compositor },
+            { aHidd_BitMap_Nouveau_CompositorHidd, (IPTR)SD(cl)->compositor },
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
@@ -716,8 +740,8 @@ VOID METHOD(Nouveau, Root, Get)
         case aoHidd_Gfx_SupportsHWCursor:
             *msg->storage = (IPTR)TRUE;
             return;
-        case aoHidd_Gfx_HWSpriteTypes:
-            *msg->storage = vHidd_SpriteType_DirectColor;
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)SD(cl)->display;
             return;
         case aoHidd_Gfx_DriverName:
             *msg->storage = (IPTR)"Nouveau";
@@ -771,9 +795,8 @@ VOID METHOD(Nouveau, Root, Get)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
+ULONG METHOD(NouveauDisplay, Hidd_Display, ShowViewPorts)
 {
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
     struct pHidd_Compositor_BitMapStackChanged bscmsg =
     {
         mID : OOP_GetMethodID(IID_Hidd_Compositor, moHidd_Compositor_BitMapStackChanged),
@@ -782,7 +805,7 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
     
     D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));
 
-    OOP_DoMethod(gfxdata->compositor, (OOP_Msg)&bscmsg);
+    OOP_DoMethod(SD(cl)->compositor, (OOP_Msg)&bscmsg);
 
     return TRUE; /* Indicate driver supports this method */
 }
@@ -793,14 +816,18 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
 #define Machine_ARGB32 vHidd_StdPixFmt_BGRA32
 #endif
 
-BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
+BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorShape)
 {
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct HIDDNouveauData * gfxdata;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
         
     if (msg->shape == NULL)
     {
         /* Hide cursor */
-        HIDDNouveauShowCursor(o, FALSE);
+        HIDDNouveauShowCursor(gfx, FALSE);
     }
     else
     {
@@ -863,7 +890,7 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
         nouveau_bo_unmap(gfxdata->cursor);
         
         /* Show updated cursor */
-        HIDDNouveauShowCursor(o, TRUE);
+        HIDDNouveauShowCursor(gfx, TRUE);
 
         UNLOCK_ENGINE
     }
@@ -871,11 +898,15 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorShape)
     return TRUE;   
 }
 
-BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
+BOOL METHOD(NouveauDisplay, Hidd_Display, SetCursorPos)
 {
-    struct HIDDNouveauData * gfxdata = OOP_INST_DATA(cl, o);
+    OOP_Object *gfx = NULL;
+    struct HIDDNouveauData * gfxdata;
     struct CardData * carddata = &(SD(cl)->carddata);
     struct nouveau_device_priv * nvdev = nouveau_device(carddata->dev);
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    gfxdata = OOP_INST_DATA(SD(cl)->gfxclass, gfx);
 
     LOCK_ENGINE
     drmModeMoveCursor(nvdev->fd, gfxdata->selectedcrtcid, msg->x, msg->y);
@@ -884,9 +915,12 @@ BOOL METHOD(Nouveau, Hidd_Gfx, SetCursorPos)
     return TRUE;
 }
 
-VOID METHOD(Nouveau, Hidd_Gfx, SetCursorVisible)
+VOID METHOD(NouveauDisplay, Hidd_Display, SetCursorVisible)
 {
-    HIDDNouveauShowCursor(o, msg->visible);
+    OOP_Object *gfx = NULL;
+
+    OOP_GetAttr(o, aHidd_Display_GfxHidd, (IPTR *)&gfx);
+    HIDDNouveauShowCursor(gfx, msg->visible);
 }
 
 static struct HIDD_ModeProperties modeprops = 
@@ -896,7 +930,7 @@ static struct HIDD_ModeProperties modeprops =
     COMPF_ABOVE
 };
 
-ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
+ULONG METHOD(NouveauDisplay, Hidd_Display, ModeProperties)
 {
     ULONG len = msg->propsLen;
 
@@ -907,7 +941,7 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ModeProperties)
     return len;
 }
 
-VOID METHOD(Nouveau, Hidd_Gfx, NominalDimensions)
+VOID METHOD(NouveauDisplay, Hidd_Display, NominalDimensions)
 {
     if (msg->width)
         *(msg->width) = 1024;

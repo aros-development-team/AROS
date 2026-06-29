@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc: BCM VideoCore4 Gfx Hidd Class.
 */
@@ -42,6 +42,8 @@
 
 #define MNAME_ROOT(x) VideoCoreGfx__Root__ ## x
 #define MNAME_GFX(x) VideoCoreGfx__Hidd_Gfx__ ## x
+#define MNAME_DISPLAY(x) VideoCoreGfxDisplay__Hidd_Display__ ## x
+#define MNAME_DISPLAY_ROOT(x) VideoCoreGfxDisplay__Root__ ## x
 
 #define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
 
@@ -53,7 +55,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
     struct DisplayMode  *modecurrent;
 
     /* quickly count fmts and modes */
-    while (fmts[fmtcount].ti_Tag == aHidd_Gfx_PixFmtTags)
+    while (fmts[fmtcount].ti_Tag == aHidd_DMEnum_PixFmtTags)
         fmtcount++;
 
     ForeachNode(modelist, modecurrent)
@@ -75,7 +77,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             for (i = 0; i < fmtcount; i ++)
             {
                 D(bug("[VideoCoreGfx] %s: PixFmt #%d @ 0x%p\n", __PRETTY_FUNCTION__, i, fmts[i].ti_Data));
-                ma_fmts[i].ti_Tag = aHidd_Gfx_PixFmtTags;
+                ma_fmts[i].ti_Tag = aHidd_DMEnum_PixFmtTags;
                 ma_fmts[i].ti_Data = fmts[i].ti_Data;
             }
             ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
@@ -86,7 +88,7 @@ APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *mode
             {
                 D(bug("[VideoCoreGfx] %s: SyncMode #%d Tags @ 0x%p\n", __PRETTY_FUNCTION__, i, ma_synctags));
 
-                ma_syncs[i].ti_Tag = aHidd_Gfx_SyncTags;
+                ma_syncs[i].ti_Tag = aHidd_DMEnum_SyncTags;
                 ma_syncs[i].ti_Data = (IPTR)ma_synctags;
 
                 ma_synctags[0].ti_Tag = aHidd_Sync_PixelClock;
@@ -143,7 +145,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     struct TagItem gfxmsg_tags[] =
     {
-        { aHidd_Gfx_ModeTags    , (IPTR)NULL   },
         { aHidd_Name            , (IPTR)"vc4gfx.hidd"     },
         { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
@@ -166,8 +167,6 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     {
         D(bug("[VideoCoreGfx] VideoCoreGfx::New: Generated Mode Array @ 0x%p\n", vc_modearray));
 
-        gfxmsg_tags[0].ti_Data = (IPTR)vc_modearray;
-
         gfxmsg_New.mID = msg->mID;
         gfxmsg_New.attrList = gfxmsg_tags;
         msg = &gfxmsg_New;
@@ -176,8 +175,28 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
         if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
         {
+            struct TagItem displaytags[] =
+            {
+                { aHidd_Display_GfxHidd,  (IPTR)self         },
+                { aHidd_Display_ModeTags, (IPTR)vc_modearray },
+                { TAG_DONE,               0                  }
+            };
+
             D(bug("[VideoCoreGfx] VideoCoreGfx::New: Storing reference to self in staticdata\n"));
             XSD(cl)->vcsd_VideoCoreGfxInstance = self;
+            XSD(cl)->vcsd_VideoCoreGfxDisplay =
+                OOP_NewObject(XSD(cl)->vcsd_VideoCoreGfxDisplayClass, NULL, displaytags);
+            if (XSD(cl)->vcsd_VideoCoreGfxDisplay)
+            {
+                OOP_GetAttr(XSD(cl)->vcsd_VideoCoreGfxDisplay,
+                    aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->vcsd_DMEnum);
+            }
+            else
+            {
+                OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_CoerceMethod(cl, self, (OOP_Msg)&disp_mid);
+                self = NULL;
+            }
         }
         FNAME_SUPPORT(DestroyModeArray)(&vc_modelist, vc_modearray);
     }
@@ -203,12 +222,53 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     {
         switch (idx)
         {
-        case aoHidd_Gfx_MemorySize:
-            *msg->storage = (IPTR)(XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper - XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower);
+        case aoHidd_Gfx_MemoryAttribs:
+            {
+                struct TagItem *matstate = (struct TagItem *)msg->storage;
+                found = TRUE;
+                if (matstate)
+                {
+                    struct TagItem *matag;
+                    IPTR memsize = (IPTR)(XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Upper - XSD(cl)->vcsd_GPUMemManage.mhe_MemHeader.mh_Lower);
+                    while ((matag = NextTagItem(&matstate)))
+                    {
+                        switch(matag->ti_Tag)
+                        {
+                        case tHidd_Gfx_MemTotal:
+                        case tHidd_Gfx_MemAddressableTotal:
+                            matag->ti_Data = memsize;
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+
+        case aoHidd_Gfx_SupportsHWCursor:
+            *msg->storage = XSD(cl)->vcsd_CurBuf ? TRUE : FALSE;
             found = TRUE;
             break;
 
-        case aoHidd_Gfx_HWSpriteTypes:
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)XSD(cl)->vcsd_VideoCoreGfxDisplay;
+            found = TRUE;
+            break;
+        }
+    }
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_DISPLAY_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    if (IS_DISPLAY_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Display_SpriteTypes:
             *msg->storage = XSD(cl)->vcsd_CurBuf ? vHidd_SpriteType_DirectColor : 0;
             found = TRUE;
             break;
@@ -291,7 +351,7 @@ int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
     return TRUE;
 }
 
-VOID MNAME_GFX(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_NominalDimensions *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
@@ -312,7 +372,7 @@ VOID MNAME_GFX(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
     IPTR width = 0, height = 0;
@@ -382,7 +442,7 @@ BOOL MNAME_GFX(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
     }
 }
 
-BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL MNAME_DISPLAY(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
@@ -415,7 +475,7 @@ BOOL MNAME_GFX(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
     return TRUE;
 }
 
-VOID MNAME_GFX(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
 {
     struct VideoCoreGfx_staticdata *xsd = XSD(cl);
 
@@ -558,7 +618,7 @@ VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     }
 }
 
-OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -571,7 +631,7 @@ OOP_Object *MNAME_GFX(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_G
             {TAG_IGNORE, 0                  },
             {TAG_MORE  , (IPTR)msg->attrList}
         };
-        struct pHidd_Gfx_CreateObject newbm_msg;
+        struct pHidd_Display_CreateObject newbm_msg;
 
         displayable = (BOOL)GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
         framebuffer = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);

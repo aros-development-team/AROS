@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2013-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
 
     Desc: BCM VideoCore4 Gfx Hidd Onscreen Bitmap Class.
 */
@@ -339,7 +339,7 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_Object *sync = NULL;
         OOP_Object *modepf = NULL;
 
-        if (!HIDD_Gfx_GetMode(xsd->vcsd_VideoCoreGfxInstance, modeid, &sync, &modepf)
+        if (!HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, modeid, &sync, &modepf)
             || !sync || !modepf)
         {
             D(bug("[VideoCoreGfx] OnBitMap::New: GetMode(0x%08x) failed\n", (ULONG)modeid));
@@ -483,7 +483,7 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     {
         OOP_Object *sync = NULL, *pf = NULL;
 
-        if (HIDD_Gfx_GetMode(xsd->vcsd_VideoCoreGfxInstance, newmodeid, &sync, &pf)
+        if (HIDD_DMEnum_GetMode(xsd->vcsd_DMEnum, newmodeid, &sync, &pf)
             && sync && pf)
         {
             IPTR width = 0, height = 0, bytesperpix_attr = 0;

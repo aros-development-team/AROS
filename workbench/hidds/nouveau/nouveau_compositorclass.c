@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 /* 
@@ -28,12 +28,14 @@
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddGCAttrBase
+#undef HiddDisplayAttrBase
 #undef HiddCompositorAttrBase
 
 #define HiddPixFmtAttrBase      (compdata->pixFmtAttrBase)
 #define HiddSyncAttrBase        (compdata->syncAttrBase)
 #define HiddBitMapAttrBase      (compdata->bitMapAttrBase)
 #define HiddGCAttrBase          (compdata->gcAttrBase)
+#define HiddDisplayAttrBase     (compdata->displayAttrBase)
 #define HiddCompositorAttrBase (compdata->compositorAttrBase)
 
 #define MAX(a,b) a > b ? a : b
@@ -143,13 +145,13 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     OOP_Object * pf = NULL;
     IPTR modeid, hdisp, vdisp, e, depth;
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &e);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, &e);
 
     /* Sanity check */
-    if (compdata->gfx != (OOP_Object *)e)
+    if (compdata->display != (OOP_Object *)e)
     {
         /* Provided top bitmap is not using the same driver as compositor. Fail. */
-        D(bug("[Compositor] GfxHidd different than one used by compositor\n"));
+        D(bug("[Compositor] Display different than one used by compositor\n"));
         return FALSE;
     }
     
@@ -176,21 +178,13 @@ static BOOL HIDDCompositorTopBitMapChanged(struct HIDDCompositorData * compdata,
     /* The mode is different. Need to prepare information needed for compositor */
     {
         /* Get width and height of mode */
-        struct pHidd_Gfx_GetMode __getmodemsg = 
-        {
-            modeID:     modeid,
-            syncPtr:    &sync,
-            pixFmtPtr:  &pf,
-        }, *getmodemsg = &__getmodemsg;
         struct TagItem gctags[] =
         {
             { aHidd_GC_Foreground, (HIDDT_Pixel)0x99999999 }, 
             { TAG_DONE, TAG_DONE }
         };
 
-
-        getmodemsg->mID = OOP_GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_GetMode);
-        OOP_DoMethod(compdata->gfx, (OOP_Msg)getmodemsg);
+        HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf);
 
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &hdisp);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &vdisp);
@@ -232,7 +226,7 @@ static BOOL HIDDCompositorCanCompositeWithScreenBitMap(struct HIDDCompositorData
 
     {
         IPTR pf;
-        OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, &bmgfx);
+        OOP_GetAttr(bm, aHidd_BitMap_Display, &bmgfx);
         OOP_GetAttr(bm, aHidd_BitMap_ModeID, &bmmodeid);
         OOP_GetAttr(bm, aHidd_BitMap_Width, &bmwidth);
         OOP_GetAttr(bm, aHidd_BitMap_Height, &bmheight);
@@ -241,7 +235,7 @@ static BOOL HIDDCompositorCanCompositeWithScreenBitMap(struct HIDDCompositorData
     }
 
     /* If bm uses different instances of gfx hidd than screenbm(=composing), they cannot be composited */
-    if (compdata->gfx != (OOP_Object *)bmgfx)
+    if (compdata->display != (OOP_Object *)bmgfx)
         return FALSE;
     
     /* If bitmaps have the same modeid, they can be composited */
@@ -460,7 +454,7 @@ static VOID HIDDCompositorToggleCompositing(struct HIDDCompositorData * compdata
             bmtags[3].ti_Tag = aHidd_BitMap_ModeID;         bmtags[3].ti_Data = compdata->screenmodeid;
             bmtags[4].ti_Tag = TAG_DONE;                    bmtags[4].ti_Data = TAG_DONE;
 
-            compdata->compositedbitmap = HIDD_Gfx_CreateObject(compdata->gfx, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
+            compdata->compositedbitmap = HIDD_Display_CreateObject(compdata->display, SD(OOP_OCLASS(compdata->gfx))->basebm, bmtags);
         }
         
         /* (c) */
@@ -528,6 +522,7 @@ OOP_Object *METHOD(Compositor, Root, New)
         { IID_Hidd_Sync,            &compdata->syncAttrBase },
         { IID_Hidd_BitMap,          &compdata->bitMapAttrBase },
         { IID_Hidd_GC,              &compdata->gcAttrBase },
+        { IID_Hidd_Display,         &compdata->displayAttrBase },
         { IID_Hidd_Compositor,     &compdata->compositorAttrBase },
         { NULL, NULL }
         };
@@ -543,16 +538,19 @@ OOP_Object *METHOD(Compositor, Root, New)
         /* Obtain Attr bases - make this class self-contained */
         if (OOP_ObtainAttrBases(attrbases))
         {
-            compdata->gfx = (OOP_Object *)GetTagData(aHidd_Compositor_GfxHidd, 0, msg->attrList);
+            compdata->display = (OOP_Object *)GetTagData(aHidd_Compositor_DisplayHidd, 0, msg->attrList);
             
-            if (compdata->gfx != NULL)
+            if (compdata->display != NULL)
             {
+                OOP_GetAttr(compdata->display, aHidd_Display_GfxHidd, (IPTR *)&compdata->gfx);
+                OOP_GetAttr(compdata->display, aHidd_Display_DMEnumerator, (IPTR *)&compdata->dmenum);
+
                 /* Create GC object that will be used for drawing operations */
-                compdata->gc = HIDD_Gfx_CreateObject(compdata->gfx, SD(cl)->basegc, NULL);
+                compdata->gc = HIDD_Display_CreateObject(compdata->display, SD(cl)->basegc, NULL);
             }
         }
         
-        if ((compdata->gfx == NULL) || (compdata->gc == NULL))
+        if ((compdata->display == NULL) || (compdata->gfx == NULL) || (compdata->gc == NULL))
         {
             /* Creation failed */
             OOP_MethodID disposemid;

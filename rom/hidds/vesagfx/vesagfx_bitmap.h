@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef VESAGFX_BITMAP_H
@@ -26,7 +26,7 @@ struct VESAGfxBitMapData
     BYTE    	    	bpp;         	/* Cached bits per pixel */
     BYTE    	    	disp;        	/* !=0 - displayable */
     OOP_Object	    	*pixfmtobj;	/* Cached pixelformat object */
-    OOP_Object	    	*gfxhidd;	/* Cached driver object */
+    OOP_Object	    	*displayhidd;	/* display object */
     LONG		disp_width;	/* Display size */
     LONG		disp_height;
     LONG		xoffset;	/* Bitmap offset */

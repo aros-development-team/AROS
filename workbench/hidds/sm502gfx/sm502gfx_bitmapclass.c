@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for SM502 Gfx Hidd.
 */
@@ -44,12 +44,12 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         data = OOP_INST_DATA(cl, o);
 
         /* Get attr values */
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd , (APTR)&data->gfxhidd);
+        OOP_GetAttr(o, aHidd_BitMap_Display , (APTR)&data->display);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt  , (APTR)&data->pixfmtobj);
         OOP_GetAttr(o, aHidd_BitMap_ModeID  , &modeid);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->VideoData);
 
-        HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf);
+        HIDD_DMEnum_GetMode(XSD(cl)->dmenum, modeid, &sync, &pf);
 
         data->width        = OOP_GET(o, aHidd_BitMap_Width);
         data->height       = OOP_GET(o, aHidd_BitMap_Height);

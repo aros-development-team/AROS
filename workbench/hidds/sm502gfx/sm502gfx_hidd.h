@@ -2,7 +2,7 @@
 #define SM502GFX_HIDD_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Some SM502Gfx useful data.
@@ -19,21 +19,29 @@
 #include "sm502gfx_support.h"
 
 #define CLID_Hidd_Gfx_SM502 "hidd.gfx.sm502"
+#define CLID_Hidd_Display_SM502 "hidd.display.sm502"
 
 struct SM502Gfx_data
 {
     struct Interrupt ResetInterrupt;
 };
 
-#define ATTRBASES_NUM 6
+struct SM502GfxDisplayData
+{
+};
+
+#define ATTRBASES_NUM 8
 
 struct SM502Gfx_staticdata
 {
     OOP_Class 	    	    *basebm;            /* baseclass for CreateObject */
 
     OOP_Class 	    	    *sm502gfxclass;
+    OOP_Class 	    	    *sm502gfxdisplayclass;
     OOP_Class 	    	    *bmclass;
     OOP_Object      	    *sm502gfxhidd;
+    OOP_Object      	    *sm502gfxdisplay;
+    OOP_Object      	    *dmenum;
     OOP_Object       	    *visible;		/* Currently visible bitmap */
     struct SM502_HWData      data;
     struct SignalSemaphore  framebufferlock;
@@ -55,6 +63,8 @@ struct SM502GfxBase
 #undef HiddChunkyBMAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddPixFmtAttrBase
 #undef HiddSyncAttrBase
 #undef HiddAttrBase
@@ -66,5 +76,7 @@ struct SM502GfxBase
 #define HiddPixFmtAttrBase	  XSD(cl)->attrBases[3]
 #define HiddSyncAttrBase	  XSD(cl)->attrBases[4]
 #define HiddAttrBase		  XSD(cl)->attrBases[5]
+#define HiddDisplayAttrBase	  XSD(cl)->attrBases[6]
+#define HiddDMEnumAttrBase	  XSD(cl)->attrBases[7]
 
 #endif /* SM502GFX_HIDD_H */

@@ -2,7 +2,7 @@
 #define LINUXFBGFX_INTERN_H
 
 /*
-    Copyright © 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Linux FB Gfx Hidd private data
@@ -32,10 +32,16 @@ extern OOP_AttrBase HiddLinuxFBAttrBase;
 enum
 {
     aoHidd_LinuxFB_File,
+    aoHidd_LinuxFB_DevInfo,
+    aoHidd_LinuxFB_FSI,
+    aoHidd_LinuxFB_VSI,
     num_Hidd_LinuxFB_Attrs   
 };
 
 #define aHidd_LinuxFB_File HiddLinuxFBAttrBase + aoHidd_LinuxFB_File
+#define aHidd_LinuxFB_DevInfo HiddLinuxFBAttrBase + aoHidd_LinuxFB_DevInfo
+#define aHidd_LinuxFB_FSI HiddLinuxFBAttrBase + aoHidd_LinuxFB_FSI
+#define aHidd_LinuxFB_VSI HiddLinuxFBAttrBase + aoHidd_LinuxFB_VSI
 
 #define IID_Hidd_BitMap_LinuxFB  "hidd.bitmap.linuxfb"
 
@@ -59,6 +65,8 @@ struct FBDevInfo
     LONG bpp;
     LONG xres;
     LONG yres;
+    int confd;			/* Console fd for gfx-mode switch (shared with Display) */
+    long kbmode;		/* Saved keyboard mode                                 */
 };
 
 struct LinuxFB_data
@@ -67,8 +75,6 @@ struct LinuxFB_data
 
     OOP_Object *visible;
     OOP_Object *unixio;
-    int confd;
-    long kbmode;
     BOOL gamma;
     UWORD scale_size;
     UBYTE r_step;
@@ -89,8 +95,10 @@ struct LinuxFB_staticdata
     struct SignalSemaphore sema;
     
     OOP_Class *gfxclass;
+    OOP_Class *displayclass;
     OOP_Class *bmclass;
     OOP_Object *unixio;
+    OOP_Object *linuxfbdisplay;
 
     OOP_AttrBase gfxAttrBase;
     OOP_AttrBase bmAttrBase;
@@ -98,6 +106,8 @@ struct LinuxFB_staticdata
     OOP_AttrBase pfAttrBase;
     OOP_AttrBase cmAttrBase;
     OOP_AttrBase chunkyAttrBase;
+    OOP_AttrBase displayAttrBase;
+    OOP_AttrBase dmEnumAttrBase;
     OOP_AttrBase linuxFBAttrBase;
     OOP_AttrBase linuxBMAttrBase;
 };
@@ -118,6 +128,8 @@ struct BitmapData;
 #undef HiddPixFmtAttrBase
 #undef HiddColorMapAttrBase
 #undef HiddChunkyBMAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
 #undef HiddLinuxFBAttrBase
 #undef HiddLinuxFBBitmapAttrBase
 #define HiddGfxAttrBase           LSD(cl)->gfxAttrBase
@@ -126,6 +138,8 @@ struct BitmapData;
 #define HiddPixFmtAttrBase        LSD(cl)->pfAttrBase
 #define HiddColorMapAttrBase      LSD(cl)->cmAttrBase
 #define HiddChunkyBMAttrBase      LSD(cl)->chunkyAttrBase
+#define HiddDisplayAttrBase       LSD(cl)->displayAttrBase
+#define HiddDMEnumAttrBase        LSD(cl)->dmEnumAttrBase
 #define HiddLinuxFBAttrBase       LSD(cl)->linuxFBAttrBase
 #define HiddLinuxFBBitmapAttrBase LSD(cl)->linuxBMAttrBase
 #define METHOD(base, id, name) \

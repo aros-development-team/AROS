@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include "sysmon_intern.h"
@@ -15,6 +15,7 @@
 
 #undef HiddBitMapAttrBase
 OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;
 
 struct Library * OOPBase = NULL;
@@ -26,10 +27,12 @@ static BOOL InitVideo(struct SysMonData *smdata)
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Gfx,         &HiddGfxAttrBase        },
+        { IID_Hidd_Display,     &HiddDisplayAttrBase    },
         { IID_Hidd_BitMap,      &HiddBitMapAttrBase     },
         { NULL,                 NULL                    }
     };
     struct Screen * wbscreen;
+    OOP_Object *display = NULL;
 
     OOPBase = OpenLibrary("oop.library", 0L);
 
@@ -40,7 +43,9 @@ static BOOL InitVideo(struct SysMonData *smdata)
         return FALSE;
 
     wbscreen = LockPubScreen(NULL);
-    OOP_GetAttr(HIDD_BM_OBJ(wbscreen->RastPort.BitMap), aHidd_BitMap_GfxHidd, (APTR)&gfxhidd);
+    OOP_GetAttr(HIDD_BM_OBJ(wbscreen->RastPort.BitMap), aHidd_BitMap_Display, (APTR)&display);
+    if (display)
+        OOP_GetAttr(display, aHidd_Display_GfxHidd, (APTR)&gfxhidd);
     D(bug("[SysMon:Video] %s: gfxhidd @ 0x%p\n", __func__, gfxhidd);)
     UnlockPubScreen(NULL, wbscreen);
 
@@ -49,6 +54,7 @@ static BOOL InitVideo(struct SysMonData *smdata)
 
 static VOID DeInitVideo(struct SysMonData *smdata)
 {
+    OOP_ReleaseAttrBase(IID_Hidd_Display);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
 
     CloseLibrary(OOPBase);

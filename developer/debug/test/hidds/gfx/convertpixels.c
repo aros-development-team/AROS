@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define __OOP_NOATTRBASES__
@@ -17,6 +17,7 @@
 #undef ConvertPixels
 
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddDisplayAttrBase;
 
 #if AROS_BIG_ENDIAN
 #define SRC_PIXFMT vHidd_StdPixFmt_ARGB32
@@ -34,20 +35,22 @@ static void ConvertPixels(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFm
                    APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
                    ULONG width, ULONG height, OOP_Object *bm)
 {
-    OOP_Object *gfxhidd = NULL;
+    OOP_Object *display = NULL, *dmenum = NULL;
     OOP_Object *srcpf, *dstpf;
     APTR src = srcPixels;
     APTR dst = dstPixels;
 
-    OOP_GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+    OOP_GetAttr(bm, aHidd_BitMap_Display, (IPTR *)&display);
+    if (display)
+        OOP_GetAttr(display, aHidd_Display_DMEnumerator, (IPTR *)&dmenum);
 
-    if (!gfxhidd) {
+    if (!dmenum) {
         printf("ConvertPixels(): Failed to obtain graphics driver\n");
         return;
     }
 
-    srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, srcPixFmt);
-    dstpf = HIDD_Gfx_GetPixFmt(gfxhidd, dstPixFmt);
+    srcpf = HIDD_DMEnum_GetPixFmt(dmenum, srcPixFmt);
+    dstpf = HIDD_DMEnum_GetPixFmt(dmenum, dstPixFmt);
 
     if (!srcpf || !dstpf)
     {
@@ -119,6 +122,16 @@ int main(void)
         FreeMem(rgb15, GFXBUFSIZE);
         FreeMem(argb, GFXBUFSIZE);
         printf("Failed to allocate a placeholder bitmap!\n");
+        OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+        return RETURN_FAIL;
+    }
+
+    HiddDisplayAttrBase = OOP_ObtainAttrBase(IID_Hidd_Display);
+    if (!HiddDisplayAttrBase) {
+        FreeMem(argb_inv, GFXBUFSIZE);
+        FreeMem(rgb15, GFXBUFSIZE);
+        FreeMem(argb, GFXBUFSIZE);
+        printf("Failed to obtain IID_Hidd_Display\n");
         OOP_ReleaseAttrBase(IID_Hidd_BitMap);
         return RETURN_FAIL;
     }
@@ -229,6 +242,7 @@ int main(void)
     FreeMem(rgb15, GFXBUFSIZE);
     FreeMem(argb, GFXBUFSIZE);
 
+    OOP_ReleaseAttrBase(IID_Hidd_Display);
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
 
     return 0;

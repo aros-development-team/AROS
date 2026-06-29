@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -41,6 +41,8 @@ OOP_AttrBase HiddBitMapAttrBase;
 OOP_AttrBase HiddColorMapAttrBase;
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddGfxAttrBase;
+OOP_AttrBase HiddDisplayAttrBase;
+OOP_AttrBase HiddDMEnumAttrBase;
 OOP_AttrBase __IHidd_PlanarBM;
 
 /*
@@ -59,6 +61,8 @@ static const struct OOP_ABDescr attrbases[] =
     {IID_Hidd_PixFmt        , &HiddPixFmtAttrBase     },
     {IID_Hidd_Sync          , &HiddSyncAttrBase       },
     {IID_Hidd_Gfx           , &HiddGfxAttrBase        },
+    {IID_Hidd_Display       , &HiddDisplayAttrBase    },
+    {IID_Hidd_DMEnum        , &HiddDMEnumAttrBase     },
     {IID_Hidd_BitMap_IntelGMA, &HiddGMABitMapAttrBase  },
     {IID_Hidd_I2C           , &HiddI2CAttrBase        },
     {IID_Hidd_I2CDevice     , &HiddI2CDeviceAttrBase  },
@@ -199,7 +203,19 @@ int main(void)
 
             /* According to a tradition, we store a pointer to static data in class' UserData */
             sd.IntelG45Class->UserData = &sd;
-            
+
+            struct TagItem INTELG45Display_tags[] =
+            {
+                {aMeta_SuperID       , (IPTR)CLID_Hidd_Display},
+                {aMeta_InterfaceDescr, (IPTR)INTELG45_Display_ifdescr},
+                {aMeta_InstSize      , 0},
+                {aMeta_ID            , (IPTR)CLID_Hidd_Display_IntelGMA},
+                {TAG_DONE, 0}
+            };
+            sd.IntelG45DisplayClass = OOP_NewObject(NULL, CLID_HiddMeta, INTELG45Display_tags);
+            if (sd.IntelG45DisplayClass)
+                sd.IntelG45DisplayClass->UserData = &sd;
+
             sd.BMClass = OOP_NewObject(NULL, CLID_HiddMeta, GMABM_tags);
             if (sd.BMClass)
             {

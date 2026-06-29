@@ -2,7 +2,7 @@
 #define HIDD_GRAPHICS_H
 
 /*
-    Copyright © 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright ï¿½ 1995-2019, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the Gfx Hidd system.
@@ -23,6 +23,8 @@ typedef OOP_Object *HIDDT_GC;
 
 #ifdef __GRAPHICS_NOHIDDBASE__
 #define __Hidd_Gfx_NOMETHODBASE__
+#define __Hidd_Display_NOMETHODBASE__
+#define __Hidd_DMEnum_NOMETHODBASE__
 #define __Hidd_BitMap_NOMETHODBASE__
 #define __Hidd_ColorMap_NOMETHODBASE__
 #define __Hidd_GC_NOMETHODBASE__
@@ -137,7 +139,7 @@ struct HIDD_ViewPortData
    prejudice:  YOU MUST BE TOTALLY SURE THAT THE BITMAP
    YOU CALLED SHOW ON BEFORE THIS CALL HAS NOT BEEN DISPOSED
 */
-#define fHidd_Gfx_Show_CopyBack 0x01
+#define fHidd_Display_Show_CopyBack 0x01
 
 enum
 {
@@ -568,12 +570,23 @@ enum
 #define IS_SYNC_ATTR(attr, idx) \
         ( ( ( idx ) = (attr) - HiddSyncAttrBase) < num_Hidd_Sync_Attrs)
 
-/************* Video overlay class *****************************/
+/************* DMEnum class *****************************/
 
-#include <interface/Hidd_Overlay.h>
+#include <interface/Hidd_DMEnum.h>
 
-#define IS_OVERLAY_ATTR(attr, idx) \
-        (((idx) = (attr) - HiddOverlayAttrBase) < num_Hidd_Overlay_Attrs)
+#define IS_DMENUM_ATTR(attr, idx)  \
+        ( ( ( idx ) = (attr) - HiddDMEnumAttrBase) < num_Hidd_DMEnum_Attrs)
+
+#define CLID_Hidd_DMEnum IID_Hidd_DMEnum
+
+/************* Display class *****************************/
+
+#include <interface/Hidd_Display.h>
+
+#define IS_DISPLAY_ATTR(attr, idx)  \
+        ( ( ( idx ) = (attr) - HiddDisplayAttrBase) < num_Hidd_Display_Attrs)
+
+#define CLID_Hidd_Display IID_Hidd_Display
 
 /************* Graphics class *****************************/
 

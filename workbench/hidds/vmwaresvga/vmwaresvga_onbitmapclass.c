@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for VMWareSVGA hidd.
 */
@@ -133,13 +133,11 @@ IPTR MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         HIDDT_ModeID modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
         OOP_Object *sync, *pixfmt;
         IPTR width, height;
-        OOP_Object *gfxHidd;
 
         if (modeid == vHidd_ModeID_Invalid)
             return FALSE;
 
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-        HIDD_Gfx_GetMode(gfxHidd, modeid, &sync, &pixfmt);
+        HIDD_DMEnum_GetMode(XSD(cl)->dmenum, modeid, &sync, &pixfmt);
         OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
         OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 

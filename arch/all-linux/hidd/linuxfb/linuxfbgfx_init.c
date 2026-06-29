@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: LinuxFB Hidd initialization code.
 */
@@ -29,6 +29,8 @@ static CONST_STRPTR const abd[] =
     IID_Hidd_PixFmt,
     IID_Hidd_ColorMap,
     IID_Hidd_ChunkyBM,
+    IID_Hidd_Display,
+    IID_Hidd_DMEnum,
     IID_Hidd_Gfx_LinuxFB,
     IID_Hidd_BitMap_LinuxFB,
     NULL

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -87,12 +87,12 @@
         OOP_Object *bmObj = HIDD_BM_OBJ(friendbm);
         if (bmObj)
         {
-            OOP_Object *gfxhidd;
-            OOP_GetAttr(bmObj, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
+            OOP_Object *display;
+            OOP_GetAttr(bmObj, aHidd_BitMap_Display, (IPTR *)&display);
 
-            if (gfxhidd)
+            if (display)
             {
-                *driver = HIDD_Gfx_CreateObject(gfxhidd, GB(GalliumBase)->basegallium, galliumTags);
+                *driver = HIDD_Display_CreateObject(display, GB(GalliumBase)->basegallium, galliumTags);
             }
         }
     }

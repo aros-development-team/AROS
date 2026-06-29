@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for VESA Gfx hidd.
 */
@@ -37,17 +37,18 @@ OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
         OOP_MethodID       disp_mid;
         struct VESAGfxBitMapData *data;
         HIDDT_ModeID       modeid;
-        OOP_Object        *sync, *pf;
+        OOP_Object        *sync, *pf, *dmenum;
 
         data = OOP_INST_DATA(cl, o);
 
         /* Get attr values */
-        OOP_GetAttr(o, aHidd_BitMap_GfxHidd , (APTR)&data->gfxhidd);
+        OOP_GetAttr(o, aHidd_BitMap_Display , (APTR)&data->displayhidd);
         OOP_GetAttr(o, aHidd_BitMap_PixFmt  , (APTR)&data->pixfmtobj);
         OOP_GetAttr(o, aHidd_BitMap_ModeID  , &modeid);
         OOP_GetAttr(o, aHidd_ChunkyBM_Buffer, (IPTR *)&data->VideoData);
 
-        HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pf);
+        OOP_GetAttr(data->displayhidd, aHidd_Display_DMEnumerator, (APTR)&dmenum);
+        HIDD_DMEnum_GetMode(dmenum, modeid, &sync, &pf);
 
         data->width        = OOP_GET(o, aHidd_BitMap_Width);
         data->height       = OOP_GET(o, aHidd_BitMap_Height);

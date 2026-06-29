@@ -1,7 +1,7 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (C) 2007 Robert Norris. All rights reserved.
- * Copyright (C) 2010-2017 The AROS Development Team. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -68,8 +68,11 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
 
         Wait(SIGBREAKF_CTRL_D);
 
+        ObtainSemaphore(&LIBBASE->sdl_lock);
         SV(SDL_PumpEvents);
         if ((nevents = S(SDL_PeepEvents, e, MAX_EVENTS, SDL_GETEVENT, SDL_MOUSEEVENTMASK|SDL_KEYEVENTMASK|SDL_ACTIVEEVENTMASK)) > 0) {
+            ReleaseSemaphore(&LIBBASE->sdl_lock);
+
             D(bug("[sdl] %d events pending\n", nevents));
 
             for (i = 0; i < nevents; i++) {
@@ -106,6 +109,8 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
                         break;
                 }
             }
+        } else {
+            ReleaseSemaphore(&LIBBASE->sdl_lock);
         }
     }
 }

@@ -44,7 +44,8 @@ OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     SetMem(data, 0, sizeof (*data));
 
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&pf);
-    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&data->gfxhidd);
+    OOP_GetAttr(o, aHidd_BitMap_Display, (APTR)&data->display);
+    OOP_GetAttr(data->display, aHidd_Display_DMEnumerator, (APTR)&data->dmenum);
     /* Get some dimensions of the bitmap */
     OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
@@ -410,7 +411,7 @@ VOID CBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
             src_pixels = msg->pixels;
             dst_pixels = data->buffer + msg->y * data->bytesperrow
                 + msg->x * data->bytesperpixel;
-            srcpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+            srcpf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, msg->pixFmt);
 
             HIDD_BM_ConvertPixels(o, &src_pixels,
                 (HIDDT_PixelFormat *)srcpf, msg->modulo, &dst_pixels,
@@ -679,7 +680,7 @@ VOID CBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMa
             src_pixels = data->buffer + msg->y * data->bytesperrow
                 + msg->x * data->bytesperpixel;
             dst_pixels = msg->pixels;
-            dstpf = HIDD_Gfx_GetPixFmt(data->gfxhidd, msg->pixFmt);
+            dstpf = DMEnum__Internal__GetPixFmt(CSD(cl)->dmenumclass, msg->pixFmt);
 
             HIDD_BM_ConvertPixels(o, &src_pixels, BM_PIXFMT(o),
                 data->bytesperrow, &dst_pixels, (HIDDT_PixelFormat *)dstpf,

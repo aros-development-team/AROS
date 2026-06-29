@@ -14,7 +14,8 @@
 #include <string.h>
 
 #include "graphics_intern.h"
-#include "compositor_driver.h"
+#include "graphics_driver.h"
+#include "graphics_compositor.h"
 #include "dispinfo.h"
 
 #define CL(x) ((OOP_Class *)x)
@@ -146,14 +147,8 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag, *tstate = (struct TagItem *)tags;
-    struct monitor_driverdata *mdd;
-    ULONG FirstID = INVALID_ID;
-    ULONG NextID;
-    ULONG NumIDs = 1;
-    ULONG IDMask = AROS_MONITOR_ID_MASK;
-    BOOL keep_boot = FALSE;
-    UWORD flags = 0;
-    ULONG *ResultID = NULL;
+    struct gfxdisplay_data *mdd;
+    struct gfxdriver_data *cfg;
     ULONG ret = DD_OK;
 
     EnterFunc(bug("AddDisplayDriverA(0x%p) <%s>\n", gfxclass, CL(gfxclass)->ClassNode.ln_Name));
@@ -162,41 +157,56 @@
      * MAGIC: Detect composition HIDD here.
      * This allows to hotplug it, and even (potentially) replace.
      */
-    if(IS_CLASS(gfxclass, CLID_Hidd_Compositor)) {
-        ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
-        ret = compositor_Install(gfxclass, GfxBase);
-        ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
+    if (IS_CLASS(gfxclass, CLID_Hidd_Compositor))
+    {
+	ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
+    	ret = compositor_Install(gfxclass, GfxBase);
+    	ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
-        return ret;
+    	return ret;
     }
 
+    cfg = AllocMem(sizeof(struct gfxdriver_data), MEMF_ANY);
+    if (!cfg)
+        return DD_NO_MEM;
+
+    /* initialise the base config */
+    cfg->drv_class = gfxclass;
+    cfg->drv_idstore = NULL;
+    cfg->drv_idbase = INVALID_ID;
+    cfg->drv_idnext = 0;
+    cfg->drv_idcnt = 1;
+    cfg->drv_idmask = AROS_MONITOR_ID_MASK;
+    cfg->drv_flags = 0;
+
     /* First parse parameters */
-    while((tag = NextTagItem(&tstate))) {
-        switch(tag->ti_Tag) {
-        case DDRV_MonitorID:
-            FirstID = tag->ti_Data;
-            break;
+    while ((tag = NextTagItem(&tstate)))
+    {
+    	switch (tag->ti_Tag)
+    	{
+    	case DDRV_MonitorID:
+    	    cfg->drv_idbase = tag->ti_Data;
+    	    break;
 
-        case DDRV_ReserveIDs:
-            NumIDs = tag->ti_Data;
-            break;
+    	case DDRV_ReserveIDs:
+    	    cfg->drv_idcnt = tag->ti_Data;
+    	    break;
 
-        case DDRV_IDMask:
-            IDMask = tag->ti_Data;
-            break;
+	case DDRV_IDMask:
+	    cfg->drv_idmask = tag->ti_Data;
+	    break;
 
-        case DDRV_KeepBootMode:
-            keep_boot = tag->ti_Data;
-            break;
+	case DDRV_BootMode:
+            if (tag->ti_Data)
+                cfg->drv_flags |= DF_BootMode;
+            else
+                cfg->drv_flags &= ~DF_BootMode;
+	    break;
 
-        case DDRV_BootMode:
-            flags = tag->ti_Data ? DF_BootMode : 0;
-            break;
-
-        case DDRV_ResultID:
-            ResultID = (ULONG *)tag->ti_Data;
-            break;
-        }
+	case DDRV_ResultID:
+	    cfg->drv_idstore = (ULONG *)tag->ti_Data;
+	    break;
+	}
     }
 
     /* We lock for the entire function because we want to be sure that
@@ -204,22 +214,23 @@
     ObtainSemaphore(&CDD(GfxBase)->displaydb_sem);
 
     /* Default value for monitor ID */
-    if(FirstID == INVALID_ID) {
-        /*
-         * The logic here prevents ID clash if specified mask is wider than previous one.
-         * Example situation:
-         * 1. Add driver with mask = 0xFFFF0000. FirstID = 0x00100000, NextID = 0x00110000.
-         * 2. Add driver with mask = 0xF0000000. FirstID = 0x00110000, AND with this mask
-         *    would give monitor ID = 0.
-         * In order to prevent this, we make one more increment, so that in (2) FirstID becomes
-         * 0x10000000. The increment mechanism itself is explained below.
-         * Note that the adjustments happens only for automatic ID assignment. In case of manual
-         * one (DDRV_MonitorID specified) we suggest our caller knows what he does.
-         */
-        FirstID = CDD(GfxBase)->last_id & IDMask;
+    if (cfg->drv_idbase == INVALID_ID)
+    {
+	/*
+	 * The logic here prevents ID clash if specified mask is wider than previous one.
+	 * Example situation:
+	 * 1. Add driver with mask = 0xFFFF0000. BaseID = 0x00100000, NextID = 0x00110000.
+	 * 2. Add driver with mask = 0xF0000000. BaseID = 0x00110000, AND with this mask
+	 *    would give monitor ID = 0.
+	 * In order to prevent this, we make one more increment, so that in (2) BaseID becomes
+	 * 0x10000000. The increment mechanism itself is explained below.
+	 * Note that the adjustments happens only for automatic ID assignment. In case of manual
+	 * one (DDRV_MonitorID specified) we suggest our caller knows what he does.
+	 */
+	cfg->drv_idbase = GFXPRIVATE_MODELAST & cfg->drv_idmask;
 
-        if(FirstID < CDD(GfxBase)->last_id)
-            FirstID += (~(IDMask & AROS_MONITOR_ID_MASK) + 1);
+	if (cfg->drv_idbase < GFXPRIVATE_MODELAST)
+	    cfg->drv_idbase += (~(cfg->drv_idmask & AROS_MONITOR_ID_MASK) + 1);
     }
 
     /*
@@ -229,149 +240,27 @@
      * Before doing this we make sure that mask used in this equation is not
      * longer than 0xFFFF0000, for proper ID counting.
      */
-    NextID = FirstID + NumIDs * (~(IDMask & AROS_MONITOR_ID_MASK) + 1);
-    D(bug("[AddDisplayDriverA] First ID 0x%08X, next ID 0x%08X\n", FirstID, NextID));
+    cfg->drv_idnext = cfg->drv_idbase + cfg->drv_idcnt * (~(cfg->drv_idmask & AROS_MONITOR_ID_MASK) + 1);
+    D(bug("[graphics.library] %s: First ID 0x%08X, next ID 0x%08X\n", __func__, cfg->drv_idbase, cfg->drv_idnext));
 
     /* First check if the operation can actually be performed */
-    for(mdd = CDD(GfxBase)->monitors; mdd; mdd = mdd->next) {
-        /* Check if requested IDs are already allocated */
-        if((mdd->id >= FirstID && mdd->id < NextID)) {
-            ret = DD_ID_EXISTS;
-            break;
-        }
-
-        /*
-         * Now check if boot mode drivers can really be unloaded.
-         * Display drivers can start playing with their hardware during
-         * object creation, so we need to check it before instantiating
-         * the given class.
-         */
-        if(!keep_boot) {
-            /* The driver can be unloaded if it has nothing on display */
-            if((mdd->flags & DF_BootMode) && (mdd->display)) {
-                ret = DD_IN_USE;
-                break;
-            }
-        }
+    for (mdd = (struct gfxdisplay_data *)CDD(GfxBase); mdd; mdd = mdd->display_next)
+    {
+    	/* Check if requested IDs are already allocated */
+	if ((mdd->display_idbase >= cfg->drv_idbase && mdd->display_idbase < cfg->drv_idnext))
+	{
+	    ret = DD_ID_EXISTS;
+	    break;
+	}
     }
 
-    /*
-     * Now, if everything is okay, we are ready to instantiate the driver.
-     * A well-behaved driver must touch the hardware only in object, not
-     * in class. This makes this function much safer. If we can't exit boot mode,
-     * the driver will not be instantiated and hardware state will not be clobbered.
-     */
-    if(ret == DD_OK) {
-        OOP_Object *gfxhidd = HW_AddDriver(PrivGBase(GfxBase)->GfxRoot, gfxclass, (struct TagItem *)attrs);
-
-        if(gfxhidd) {
-            D(bug("[AddDisplayDriverA] Installing driver\n"));
-
-            /* Attach system structures to the driver */
-            mdd = driver_Setup(gfxhidd, GfxBase);
-            D(bug("[AddDisplayDriverA] monitor_driverdata 0x%p\n", mdd));
-
-            if(mdd) {
-                struct monitor_driverdata *last, *old;
-
-                mdd->id    =  FirstID;
-                mdd->mask  =  IDMask;
-                mdd->flags |= flags;
-
-                if(CDD(GfxBase)->DriverNotify) {
-                    /* Use mdd->gfxhidd here because it can be substituted by fakegfx object */
-                    mdd->userdata = CDD(GfxBase)->DriverNotify(mdd, TRUE, CDD(GfxBase)->notify_data);
-                }
-
-                /* Remove boot mode drivers */
-                if(!keep_boot) {
-                    D(bug("[AddDisplayDriverA] Shutting down boot mode drivers\n"));
-                    for(last = (struct monitor_driverdata *)CDD(GfxBase);; last = last->next) {
-                        D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p\n", last, last->next));
-
-                        while(last->next && (last->next->flags & DF_BootMode)) {
-                            old = last->next;
-                            D(bug("[AddDisplayDriverA] Shutting down driver 0x%p (ID 0x%08lX, next 0x%p)\n", old, old->id, old->next));
-
-                            last->next = old->next;
-                            driver_Expunge(old, GfxBase);
-                            D(bug("[AddDisplayDriverA] Shutdown OK, next 0x%p\n", last->next));
-                        }
-
-                        /*
-                         * We check this condition here explicitly because last->next is modified inside loop body.
-                         * If we check it in for() statement, last = last->next will be executed BEFORE the check,
-                         * and NULL pointer may be hit.
-                         */
-                        if(!last->next)
-                            break;
-                    }
-                }
-
-                /* Insert the driverdata into chain, sorted by ID */
-                D(bug("[AddDisplayDriverA] Inserting driver 0x%p, ID 0x%08lX\n", mdd, mdd->id));
-                for(last = (struct monitor_driverdata *)CDD(GfxBase); last->next; last = last->next) {
-                    D(bug("[AddDisplayDriverA] Current 0x%p, next 0x%p, ID 0x%08lX\n", last, last->next, last->next->id));
-                    if(mdd->id < last->next->id)
-                        break;
-                }
-
-                D(bug("[AddDisplayDriverA] Inserting after 0x%p\n", last));
-                mdd->next = last->next;
-                last->next = mdd;
-
-                /* Remember next available ID */
-                if(NextID > CDD(GfxBase)->last_id)
-                    CDD(GfxBase)->last_id = NextID;
-
-                /* Return the assigned ID if the caller asked to do so */
-                if(ResultID)
-                    *ResultID = FirstID;
-            } else { /* if (mdd) */
-                OOP_DisposeObject(gfxhidd);
-                ret = DD_NO_MEM;
-            }
-        } else { /* if (gfxhidd) */
-            ret = DD_DRIVER_ERROR;
-        }
-    } /* if (ret == DD_OK) */
+    /* Now, we are ready to add the driver for the system to find. */
+    if ((ret == DD_OK) && !(driver_Setup(cfg, attrs, FALSE, GfxBase)))
+        ret = DD_DRIVER_ERROR;
 
     ReleaseSemaphore(&CDD(GfxBase)->displaydb_sem);
 
-    /* Set the first non-boot non-planar driver as default */
-    if((ret == DD_OK) && (!GfxBase->default_monitor) && (!(mdd->flags & DF_BootMode))) {
-        /*
-         * Amiga(tm) chipset driver does not become a default.
-         * This is done because RTG modes (if any) are commonly preferred
-         * over it.
-         * TODO: in future some prefs program could be implemented. It would
-         * allow the user to describe the physical placement of several displays
-         * in his environment, and explicitly set the preferred display.
-         */
-        if(!IS_CLASS(gfxclass, "hidd.gfx.amigavideo")) {
-            /*
-             * graphics.library uses struct MonitorSpec pointers for historical reasons,
-             * so we satisfy it.
-             * Here we just get the first available sync object from the driver and
-             * set default_monitor fo its MonitorSpec. This allows BestModeIDA() to
-             * obtain preferred monitor back from this MonitorSpec (by asking the associated
-             * sync object about its parent driver).
-             *
-             * TODO:
-             * Originally display drivers in AmigaOS had a concept of "preferred mode ID".
-             * Every driver supplied own hardcoded ID which can be retrieved by GetDisplayInfoData()
-             * in MonitorInfo->PreferredModeID. Currently AROS does not implement this concept.
-             * However this sync could be a preferred mode's sync.
-             * It needs to be researched what exactly this mode ID is. Implementing this concept would
-             * improve AmigaOS(tm) compatibility.
-             */
-            OOP_Object *sync = HIDD_Gfx_GetSync(mdd->gfxhidd_orig, 0);
-
-            OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&GfxBase->default_monitor);
-        }
-    }
-
-    D(bug("[AddDisplayDriverA] Returning %u\n", ret));
+    D(bug("[graphics.library] %s: Returning %u\n", __func__, ret));
     return ret;
 
     AROS_LIBFUNC_EXIT

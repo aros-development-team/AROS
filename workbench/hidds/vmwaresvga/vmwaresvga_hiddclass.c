@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Class for VMWare.
 */
@@ -46,6 +46,8 @@ static OOP_AttrBase             HiddAttrBase;
 static OOP_AttrBase             HiddBitMapAttrBase;
 static OOP_AttrBase             HiddPixFmtAttrBase;
 static OOP_AttrBase             HiddGfxAttrBase;
+static OOP_AttrBase             HiddDisplayAttrBase;
+static OOP_AttrBase             HiddDMEnumAttrBase;
 static OOP_AttrBase             HiddSyncAttrBase;
 static OOP_AttrBase             HiddVMWareSVGAAttrBase;
 static OOP_AttrBase             HiddVMWareSVGABitMapAttrBase;
@@ -59,6 +61,8 @@ static struct OOP_ABDescr attrbases[] =
     {IID_Hidd_PixFmt,           &HiddPixFmtAttrBase             },
     {IID_Hidd_Sync,             &HiddSyncAttrBase               },
     {IID_Hidd_Gfx,              &HiddGfxAttrBase                },
+    {IID_Hidd_Display,          &HiddDisplayAttrBase            },
+    {IID_Hidd_DMEnum,           &HiddDMEnumAttrBase             },
     {NULL,                      NULL                            }
 };
 
@@ -211,7 +215,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         sync_curr += 1;
 #endif
     modetags = AllocVec((sync_count + sync_curr + 1) * sizeof(struct TagItem), MEMF_CLEAR);
-    modetags[0].ti_Tag = aHidd_Gfx_PixFmtTags;
+    modetags[0].ti_Tag = aHidd_DMEnum_PixFmtTags;
     modetags[0].ti_Data = (IPTR)pftags;
 #if defined(VMWARESVGA_USE8BIT)
     if ((data->capabilities & SVGA_CAP_8BIT_EMULATION) && (XSD(cl)->data.depth > 8))
@@ -269,7 +273,7 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
         sync_mode[smtagno].ti_Tag = TAG_DONE;
 
-        modetags[1 + sync_curr].ti_Tag = aHidd_Gfx_SyncTags;
+        modetags[1 + sync_curr].ti_Tag = aHidd_DMEnum_SyncTags;
         modetags[1 + sync_curr].ti_Data = (IPTR)sync_mode;
         sync_curr++;
     }
@@ -277,7 +281,6 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
 
     struct TagItem svganewtags[] =
     {
-        {aHidd_Gfx_ModeTags,    (IPTR)modetags  },
         { aHidd_Name            , (IPTR)"VMWareSVGA"     },
         { aHidd_HardwareName    , (IPTR)"VMWare SVGA Gfx Adaptor"   },
         { aHidd_ProducerName    , (IPTR)"VMWare Inc"  },
@@ -419,10 +422,30 @@ OOP_Object *VMWareSVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New
         /* Set the ID so vmware knows we are here */
         vmwareWriteReg(&XSD(cl)->data, SVGA_REG_GUEST_ID, 0x09);
 #endif
-        data->ResetInterrupt.is_Node.ln_Name = (char *)svganewtags[1].ti_Data;
+        data->ResetInterrupt.is_Node.ln_Name = (char *)svganewtags[0].ti_Data;
         data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
         data->ResetInterrupt.is_Data = &XSD(cl)->data;
         AddResetCallback(&data->ResetInterrupt);
+
+        struct TagItem displaytags[] =
+        {
+            { aHidd_Display_GfxHidd,  (IPTR)o        },
+            { aHidd_Display_ModeTags, (IPTR)modetags },
+            { TAG_DONE,               0              }
+        };
+
+        XSD(cl)->vmwaresvgadisplay = OOP_NewObject(XSD(cl)->vmwaresvgadisplayclass, NULL, displaytags);
+        if (XSD(cl)->vmwaresvgadisplay)
+        {
+            OOP_GetAttr(XSD(cl)->vmwaresvgadisplay, aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->dmenum);
+        }
+        else
+        {
+            OOP_MethodID dispose_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+            OOP_CoerceMethod(cl, o, (OOP_Msg)&dispose_mid);
+            XSD(cl)->vmwaresvgahidd = NULL;
+            o = NULL;
+        }
     }
 
     D(bug("[VMWareSVGA] %s: returning 0x%p\n", __func__, o);)
@@ -452,8 +475,8 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
             }
             break;
 
-        case aoHidd_Gfx_SupportsGamma:
-            *msg->storage = (IPTR)TRUE;
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)XSD(cl)->vmwaresvgadisplay;
             found = TRUE;
             break;
 
@@ -488,7 +511,24 @@ VOID VMWareSVGA__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CreateObject *msg)
+VOID VMWareSVGADisplay__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    Hidd_Display_Switch(msg->attrID, idx)
+    {
+    case aoHidd_Display_SupportsGamma:
+        *msg->storage = (IPTR)TRUE;
+        found = TRUE;
+        break;
+    }
+
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+OOP_Object *VMWareSVGADisplay__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
 {
     OOP_Object      *object = NULL;
 
@@ -505,7 +545,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
             { TAG_MORE, (IPTR)msg->attrList }
         };
 
-        struct pHidd_Gfx_CreateObject comsg;
+        struct pHidd_Display_CreateObject comsg;
 
         displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
         framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
@@ -561,7 +601,7 @@ OOP_Object *VMWareSVGA__Hidd_Gfx__CreateObject(OOP_Class *cl, OOP_Object *o, str
     return object;
 }
 
-BOOL VMWareSVGA__Hidd_Gfx__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Gamma *msg)
+BOOL VMWareSVGADisplay__Hidd_Display__SetGamma(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetGamma *msg)
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 #if (0)
@@ -753,7 +793,7 @@ VOID VMWareSVGA__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
     D(bug("[VMWareSVGA] %s: done\n", __func__);)
 }
 
-BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+BOOL VMWareSVGADisplay__Hidd_Display__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
 {
     struct VMWareSVGA_staticdata *data = XSD(cl);
 
@@ -816,7 +856,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *o, struct p
     return FALSE;
 }
 
-BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+BOOL VMWareSVGADisplay__Hidd_Display__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
@@ -835,7 +875,7 @@ BOOL VMWareSVGA__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHi
     return TRUE;
 }
 
-VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+VOID VMWareSVGADisplay__Hidd_Display__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
 {
     D(bug("[VMWareSVGA] %s()\n", __func__);)
 
@@ -850,7 +890,7 @@ VOID VMWareSVGA__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct
     }
 }
 
-VOID VMWareSVGA__Hidd_Gfx__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NominalDimensions *msg)
+VOID VMWareSVGADisplay__Hidd_Display__NominalDimensions(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_NominalDimensions *msg)
 {
     if (msg->width)
         *(msg->width) = 1024;

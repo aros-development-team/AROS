@@ -64,7 +64,7 @@
     AROS_LIBFUNC_INIT
 
     OOP_Object *bitmap;
-    struct monitor_driverdata *mdd;
+    struct gfxdisplay_data *mdd;
     LONG res;
 
     D(bug("ChangeExtSpriteA(0x%p, 0x%p, 0x%p)\n", vp, oldsprite, newsprite));
@@ -83,16 +83,16 @@
 
         if(newsprite->es_SimpleSprite.num == 0)
         {
-            res = HIDD_Gfx_SetCursorShape(mdd->gfxhidd, bitmap, 0, 0);
+            res = HIDD_Display_SetCursorShape(mdd->display_obj, bitmap, 0, 0);
             if (res)
-                HIDD_Gfx_SetCursorVisible(mdd->gfxhidd, TRUE);
+                HIDD_Display_SetCursorVisible(mdd->display_obj, TRUE);
         }
         else
         {
             OOP_MethodID HiddAmigaGfxBase = OOP_GetMethodID(IID_Hidd_AmigaGfx, 0);
-            res = HIDD_AMIGAGFX_SetSpriteShape(mdd->gfxhidd, bitmap, 0, 0, newsprite->es_SimpleSprite.num);
+            res = HIDD_AMIGAGFX_SetSpriteShape(mdd->display_gfxhidd, bitmap, 0, 0, newsprite->es_SimpleSprite.num);
             if (res)
-                HIDD_AMIGAGFX_SetSpriteVisible(mdd->gfxhidd, TRUE, newsprite->es_SimpleSprite.num);
+                HIDD_AMIGAGFX_SetSpriteVisible(mdd->display_gfxhidd, TRUE, newsprite->es_SimpleSprite.num);
         }
     } else
         /* TODO: NULL ViewPort means Amiga(tm) chipset display */

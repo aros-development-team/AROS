@@ -718,15 +718,13 @@ BOOL HiddNouveauWriteFromRAM(
             APTR * pdst = &cdst;
             OOP_Object * dstPF = NULL;
             OOP_Object * srcPF = NULL;
-            OOP_Object * gfxHidd = NULL;
-            struct pHidd_Gfx_GetPixFmt __gpf =
+            struct pHidd_DMEnum_GetPixFmt __gpf =
             {
                 SD(cl)->mid_GetPixFmt, srcPixFmt
             }, *gpf = &__gpf;
             
             OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&dstPF);
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-            srcPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpf);
+            srcPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpf);
 
             {
                 struct pHidd_BitMap_ConvertPixels __m =
@@ -832,15 +830,13 @@ BOOL HiddNouveauReadIntoRAM(
             APTR * pdst = &cdst;
             OOP_Object * dstPF = NULL;
             OOP_Object * srcPF = NULL;
-            OOP_Object * gfxHidd = NULL;
-            struct pHidd_Gfx_GetPixFmt __gpf =
+            struct pHidd_DMEnum_GetPixFmt __gpf =
             {
                 SD(cl)->mid_GetPixFmt, dstPixFmt
             }, *gpf = &__gpf;
             
             OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&srcPF);
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-            dstPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpf);
+            dstPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpf);
 
             {
                 struct pHidd_BitMap_ConvertPixels __m =
@@ -950,19 +946,17 @@ BOOL HiddNouveauAccelARGBUpload3D(
             APTR * pdst = &cdst;
             OOP_Object * dstPF = NULL;
             OOP_Object * srcPF = NULL;
-            OOP_Object * gfxHidd = NULL;
-            struct pHidd_Gfx_GetPixFmt __gpfsrc =
+            struct pHidd_DMEnum_GetPixFmt __gpfsrc =
             {
                 SD(cl)->mid_GetPixFmt, vHidd_StdPixFmt_BGRA32
             }, *gpfsrc = &__gpfsrc;
-            struct pHidd_Gfx_GetPixFmt __gpfdst =
+            struct pHidd_DMEnum_GetPixFmt __gpfdst =
             {
                 SD(cl)->mid_GetPixFmt, vHidd_StdPixFmt_ARGB32
             }, *gpfdst = &__gpfdst;
 
-            OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (APTR)&gfxHidd);
-            srcPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpfsrc);
-            dstPF = (OOP_Object *)OOP_DoMethod(gfxHidd, (OOP_Msg)gpfdst);
+            srcPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpfsrc);
+            dstPF = (OOP_Object *)OOP_DoMethod(SD(cl)->dmenum, (OOP_Msg)gpfdst);
 
             {
                 struct pHidd_BitMap_ConvertPixels __m =

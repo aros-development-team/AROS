@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2010-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -21,7 +21,7 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositorData *compdata, ULONG 
 
     D(bug("[%s] Finding best match for mode %ux%ux%u\n", __PRETTY_FUNCTION__, width, height, depth));
 
-    while ((mode = HIDD_Gfx_NextModeID(compdata->gfx, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
+    while ((mode = HIDD_DMEnum_NextModeID(compdata->dmenum, mode, &sync, &pf)) != vHidd_ModeID_Invalid)
     {
         BOOL match;
 
@@ -110,7 +110,7 @@ static void CalculateParametersAlpha(struct HIDDCompositorData *compdata, ULONG 
         if ((!(n->sbmflags & COMPF_ALPHA)) && (n->sbmflags & STACKNODEF_DISPLAYABLE))
         {
             OOP_GetAttr(n->bm, aHidd_BitMap_ModeID, &modeid);
-            HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
+            HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf);
 
             if (sync)
             {
@@ -195,7 +195,7 @@ static void CalculateParametersRegular(struct HIDDCompositorData *compdata, ULON
           n->n.mln_Pred; n = (struct StackBitMapNode *)n->n.mln_Pred)
      {
          OOP_GetAttr(n->bm, aHidd_BitMap_ModeID, &modeid);
-         HIDD_Gfx_GetMode(compdata->gfx, modeid, &sync, &pf);
+         HIDD_DMEnum_GetMode(compdata->dmenum, modeid, &sync, &pf);
 
          if (OOP_GET(pf, aHidd_PixFmt_ColorModel) == vHidd_ColorModel_TrueColor)
          {

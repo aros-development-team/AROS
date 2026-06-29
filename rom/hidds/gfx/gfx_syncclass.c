@@ -118,15 +118,15 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                     data->mspc = (struct MonitorSpec *)tag->ti_Data;
                     break;
 
-                case aoHidd_Sync_GfxHidd:
-                    data->gfxhidd = (OOP_Object *)tag->ti_Data;
+                case aoHidd_Sync_DMEnumerator:
+                    data->dmenum = (OOP_Object *)tag->ti_Data;
                     break;
                 }
             }
         }
 
         /* We must have HDisp, VDisp and GfxHidd */
-        if ((!data->hdisp) || (!data->vdisp) || (!data->gfxhidd))
+        if ((!data->hdisp) || (!data->vdisp) || (!data->dmenum))
             ok = FALSE;
 
         if (ok && (!data->mspc))
@@ -158,20 +158,17 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 data->vdispmax = data->vdisp;
 
             /* By default minimum/maximum bitmap size is equal to display size */
-            data->hmin = data->hdisp;
-            data->vmin = data->vdisp;
-            
-            if (GFXHIDD__Hidd_Gfx__GetFBModeQuick(csd->gfxhiddclass, data->gfxhidd) == vHidd_FrameBuffer_Mirrored)
+            data->hmax = data->hmin = data->hdisp;
+            data->vmax = data->vmin = data->vdisp;
+
+#if (0) /* TODO: move framebuffer-mode check to the display mode enumerator */
+            if (GetFBModeQuick(...) == vHidd_FrameBuffer_Mirrored)
             {
                 /* But for mirrored framebuffer mode we can have larger bitmaps */
                 data->hmax = 16384;
                 data->vmax = 16384;
             }
-            else
-            {
-                data->hmax = data->hdisp;
-                data->vmax = data->vdisp;
-            }
+#endif
 
             /* Now try to override defaults */
             tstate = msg->attrList;
@@ -457,8 +454,8 @@ VOID Sync__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
                 *msg->storage = (IPTR)data->mspc;
                 break;
 
-            case aoHidd_Sync_GfxHidd:
-                *msg->storage = (IPTR)data->gfxhidd;
+            case aoHidd_Sync_DMEnumerator:
+                *msg->storage = (IPTR)data->dmenum;
                 break;
 
             default:
@@ -486,7 +483,7 @@ void Sync__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
         BOOL notify_driver = parse_sync_tags(csd, data, msg->attrList, FALSE);
     
         if (notify_driver)
-            HIDD_Gfx_SetMode(data->gfxhidd, (OOP_Object *)data->mspc->ms_Object);
+            HIDD_DMEnum_SetMode(data->dmenum, (OOP_Object *)data->mspc->ms_Object);
     }
 
     OOP_DoSuperMethod(cl, o, &msg->mID);
@@ -511,7 +508,7 @@ static LONG do_monitor(struct MonitorSpec *mspc)
     struct class_static_data *csd = CSD(cl);
 
     data->htotal = 100000000 / mspc->total_colorclocks / 28 / data->pixelclock;
-    HIDD_Gfx_SetMode(data->gfxhidd, obj);
+    HIDD_DMEnum_SetMode(data->dmenum, obj);
 
     return 0;
 }

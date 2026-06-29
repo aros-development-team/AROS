@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Bitmap class for X11 hidd.
 */
@@ -69,10 +69,11 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
      * We can't support scrolling in framebuffer mode.
      */
     OOP_GetAttr(o, aHidd_BitMap_ModeID, &modeid);
-    OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *) &data->gfxhidd);
-    D(bug("[X11OnBm] ModeID 0x%08X, driver @ 0x%p\n", modeid, data->gfxhidd));
+    OOP_GetAttr(o, aHidd_BitMap_Display, (IPTR *) &data->dmenum);
+    OOP_GetAttr(data->dmenum, aHidd_Display_DMEnumerator, (IPTR *) &data->dmenum);
+    D(bug("[X11OnBm] ModeID 0x%08X, dmenum @ 0x%p\n", modeid, data->dmenum));
 
-    HIDD_Gfx_GetMode(data->gfxhidd, modeid, &sync, &pixfmt);
+    HIDD_DMEnum_GetMode(data->dmenum, modeid, &sync, &pixfmt);
 
     OOP_GetAttr(sync, aHidd_Sync_HDisp, &data->width);
     OOP_GetAttr(sync, aHidd_Sync_VDisp, &data->height);
@@ -376,7 +377,7 @@ BOOL X11BM_SetMode(struct bitmap_data *data, HIDDT_ModeID modeid,
 
     D(bug("[X11OnBm] %s()\n", __PRETTY_FUNCTION__));
 
-    if (HIDD_Gfx_GetMode(data->gfxhidd, (HIDDT_ModeID) modeid, &sync, &pf))
+    if (HIDD_DMEnum_GetMode(data->dmenum, (HIDDT_ModeID) modeid, &sync, &pf))
     {
         struct MsgPort *port;
         IPTR new_width, new_height;
