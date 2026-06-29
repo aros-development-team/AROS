@@ -165,6 +165,257 @@ diff -ruN mesa-20.0.8/src/gallium/auxiliary/tgsi/tgsi_exec.c mesa-20.0.8.aros/sr
        }
        break;
  
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_fence.h mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_fence.h
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_fence.h	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_fence.h	2026-06-29 10:30:34.222029779 +0000
+@@ -29,6 +29,12 @@
+    struct list_head work;
+ };
+ 
++#if defined(__AROS__)
++#define nouveau_fence_emit  gallium_nouveau_fence_emit
++#define nouveau_fence_new   gallium_nouveau_fence_new
++#define nouveau_fence_wait  gallium_nouveau_fence_wait
++#endif
++
+ void nouveau_fence_emit(struct nouveau_fence *);
+ void nouveau_fence_del(struct nouveau_fence *);
+ 
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_screen.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_screen.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_screen.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_screen.c	2026-06-29 14:19:35.266122007 +0000
+@@ -28,6 +28,11 @@
+ /* XXX this should go away */
+ #include "state_tracker/drm_driver.h"
+ 
++#if defined(__AROS__)
++#include <aros/debug.h>
++#include <proto/dos.h>
++#endif
++
+ int nouveau_mesa_debug = 0;
+ 
+ static const char *
+@@ -114,8 +119,12 @@
+    if (whandle->type == WINSYS_HANDLE_TYPE_SHARED)
+       ret = nouveau_bo_name_ref(dev, whandle->handle, &bo);
+    else
++{
++{ bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1){Delay(1);}; }
++#if 0
+       ret = nouveau_bo_prime_handle_ref(dev, whandle->handle, &bo);
+-
++#endif
++}
+    if (ret) {
+       debug_printf("%s: ref name 0x%08x failed with %d\n",
+                    __FUNCTION__, whandle->handle, ret);
+@@ -141,7 +150,10 @@
+       whandle->handle = bo->handle;
+       return true;
+    } else if (whandle->type == WINSYS_HANDLE_TYPE_FD) {
++{ bug("NOT IMPLEMENTED STOP %s, %d\n", __func__, __LINE__); while(1){Delay(1);}; }
++#if 0
+       return nouveau_bo_set_prime(bo, (int *)&whandle->handle) == 0;
++#endif
+    } else {
+       return false;
+    }
+@@ -156,8 +168,10 @@
+    uint64_t driver_flags = 0;
+ 
+    _mesa_sha1_init(&ctx);
++#if !defined(__AROS__)
+    if (!disk_cache_get_function_identifier(nouveau_disk_cache_create,
+                                            &ctx))
++#endif
+       return;
+ 
+    _mesa_sha1_final(&ctx, sha1);
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_vp3_video.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_vp3_video.c	2026-06-29 15:36:13.384229262 +0000
+@@ -20,7 +20,9 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <stdio.h>
+ #include <fcntl.h>
+@@ -294,7 +296,11 @@
+    if (nouveau_bo_map(dec->fw_bo, NOUVEAU_BO_WR, dec->client))
+       return 1;
+ 
++#if !defined(__AROS__)
+    fd = open(path, O_RDONLY | O_CLOEXEC);
++#else
++   fd = open(path, O_RDONLY);
++#endif
+    if (fd < 0) {
+       fprintf(stderr, "opening firmware file %s failed: %m\n", path);
+       return 1;
+@@ -348,7 +354,9 @@
+       default:
+          return 1;
+    }
++#if !defined(__AROS__)
+    munmap(dec->fw_bo->map, dec->fw_bo->size);
++#endif
+    dec->fw_bo->map = NULL;
+    return 0;
+ }
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_winsys.h mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_winsys.h
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nouveau_winsys.h	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nouveau_winsys.h	2026-06-29 15:36:47.624960702 +0000
+@@ -6,7 +6,9 @@
+ 
+ #include "pipe/p_defines.h"
+ 
++#if !defined(__AROS__)
+ #include "drm-uapi/drm.h"
++#endif
+ #include <nouveau.h>
+ 
+ #ifndef NV04_PFIFO_MAX_PACKET_LEN
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nv30/nv30_screen.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv30/nv30_screen.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nv30/nv30_screen.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv30/nv30_screen.c	2026-06-29 09:52:15.739962969 +0000
+@@ -23,7 +23,9 @@
+  *
+  */
+ 
++#if !defined(__AROS__)
+ #include <xf86drm.h>
++#endif
+ #include <nouveau_drm.h>
+ #include "util/format/u_format.h"
+ #include "util/format/u_format_s3tc.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nv30/nvfx_vertprog.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv30/nvfx_vertprog.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nv30/nvfx_vertprog.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv30/nvfx_vertprog.c	2026-06-29 14:13:44.224643561 +0000
+@@ -1,4 +1,5 @@
+ #include <strings.h>
++#include "util/bitscan.h"
+ #include "pipe/p_context.h"
+ #include "pipe/p_defines.h"
+ #include "pipe/p_state.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv50_screen.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv50_screen.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv50_screen.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv50_screen.c	2026-06-29 09:52:49.139064204 +0000
+@@ -21,7 +21,9 @@
+  */
+ 
+ #include <errno.h>
++#if !defined(__AROS__)
+ #include <xf86drm.h>
++#endif
+ #include <nouveau_drm.h>
+ #include "util/format/u_format.h"
+ #include "util/format/u_format_s3tc.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv84_video.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv84_video.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv84_video.c	2026-06-29 15:37:34.257958102 +0000
+@@ -20,7 +20,9 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <sys/mman.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <fcntl.h>
+@@ -34,7 +36,11 @@
+ static int
+ nv84_copy_firmware(const char *path, void *dest, ssize_t len)
+ {
++#if !defined(__AROS__)
+    int fd = open(path, O_RDONLY | O_CLOEXEC);
++#else
++   int fd = open(path, O_RDONLY);
++#endif
+    ssize_t r;
+    if (fd < 0) {
+       fprintf(stderr, "opening firmware file %s failed: %m\n", path);
+@@ -88,7 +94,9 @@
+    ret = nv84_copy_firmware(fw1, fw->map, size1);
+    if (fw2 && !ret)
+       ret = nv84_copy_firmware(fw2, fw->map + dec->vp_fw2_offset, size2);
++#if !defined(__AROS__)
+    munmap(fw->map, fw->size);
++#endif
+    fw->map = NULL;
+    if (!ret)
+       return fw;
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nv50/nv98_video_vp.c	2026-06-29 09:56:01.593291898 +0000
+@@ -21,7 +21,9 @@
+  */
+ 
+ #include "nv50/nv98_video.h"
++#if !defined(__AROS__)
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_miptree.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_miptree.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_miptree.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_miptree.c	2026-06-29 09:57:03.876271625 +0000
+@@ -20,7 +20,11 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include "drm-uapi/drm_fourcc.h"
++#else
++#include "drm_fourcc.h"
++#endif
+ 
+ #include "pipe/p_state.h"
+ #include "pipe/p_defines.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_resource.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_resource.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_resource.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_resource.c	2026-06-29 09:57:39.443483684 +0000
+@@ -1,4 +1,8 @@
++#if !defined(__AROS__)
+ #include "drm-uapi/drm_fourcc.h"
++#else
++#include "drm_fourcc.h"
++#endif
+ 
+ #include "pipe/p_context.h"
+ #include "nvc0/nvc0_resource.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_screen.c	2026-06-29 09:36:31.542897004 +0000
+@@ -20,7 +20,9 @@
+  * OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#if !defined(__AROS__)
+ #include <xf86drm.h>
++#endif
+ #include <nouveau_drm.h>
+ #include <nvif/class.h>
+ #include "util/format/u_format.h"
+diff -ruN mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c
+--- mesa-20.0.8/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/drivers/nouveau/nvc0/nvc0_video_vp.c	2026-06-29 09:37:36.119078510 +0000
+@@ -21,7 +21,9 @@
+  */
+ 
+ #include "nvc0/nvc0_video.h"
++#if !defined(__AROS__)
+ #include <sys/mman.h>
++#endif
+ 
+ #if NOUVEAU_VP3_DEBUG_FENCE
+ static void dump_comm_vp(struct nouveau_vp3_decoder *dec, struct comm *comm, u32 comm_seq,
 diff -ruN mesa-20.0.8/src/gallium/drivers/softpipe/sp_setup.c mesa-20.0.8.aros/src/gallium/drivers/softpipe/sp_setup.c
 --- mesa-20.0.8/src/gallium/drivers/softpipe/sp_setup.c	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/gallium/drivers/softpipe/sp_setup.c	2025-08-03 13:02:00.753133979 +0000
@@ -233,6 +484,22 @@ diff -ruN mesa-20.0.8/src/gallium/include/pipe/p_config.h mesa-20.0.8.aros/src/g
  #if DETECT_OS_LINUX
  #define PIPE_OS_LINUX
  #endif
+diff -ruN mesa-20.0.8/src/gallium/winsys/nouveau/drm/nouveau_drm_winsys.c mesa-20.0.8.aros/src/gallium/winsys/nouveau/drm/nouveau_drm_winsys.c
+--- mesa-20.0.8/src/gallium/winsys/nouveau/drm/nouveau_drm_winsys.c	2020-06-12 01:21:17.000000000 +0000
++++ mesa-20.0.8.aros/src/gallium/winsys/nouveau/drm/nouveau_drm_winsys.c	2026-06-29 14:25:57.675000384 +0000
+@@ -11,9 +11,10 @@
+ 
+ #include "nouveau_drm_public.h"
+ 
+-#include "nouveau/nouveau_winsys.h"
+-#include "nouveau/nouveau_screen.h"
++#include "nouveau_winsys.h"
++#include "nouveau_screen.h"
+ 
++#include <nouveau_drm.h>
+ #include <nvif/class.h>
+ #include <nvif/cl0080.h>
+ 
 diff -ruN mesa-20.0.8/src/intel/genxml/gen_sort_tags.py mesa-20.0.8.aros/src/intel/genxml/gen_sort_tags.py
 --- mesa-20.0.8/src/intel/genxml/gen_sort_tags.py	2020-06-12 01:21:17.000000000 +0000
 +++ mesa-20.0.8.aros/src/intel/genxml/gen_sort_tags.py	2021-02-04 23:44:45.550000000 +0000
