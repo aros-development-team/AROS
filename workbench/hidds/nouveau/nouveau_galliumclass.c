@@ -225,6 +225,7 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
         break;
     }
 
+nouveau_bo_wait(dstdata->bo, NOUVEAU_BO_RD, carddata->client);
 
     UNLOCK_BITMAP_BM(dstdata)
 
